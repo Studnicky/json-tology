@@ -1,6 +1,9 @@
-node_modules/
-dist/
-*.tsbuildinfo
+.git
+node_modules
+dist
+vendor
+.flame
+*.map
 *.js.map
 *.d.ts.map
-.DS_Store
+ git -C /Users/studs/Workspace/json-tology rm --cached vendor/dev-tools git -C /Users/studs/Workspace/json-tology add .gitignore
