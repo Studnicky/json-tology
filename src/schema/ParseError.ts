@@ -12,10 +12,11 @@ import { ValidationErrors } from './ValidationErrors.js';
 export class ParseError extends Error {
   public readonly errors: ValidationErrors;
 
-  public constructor(errors: ValidationErrors | ValidationError[]) {
+  public constructor(errors: ValidationError[] | ValidationErrors) {
     const validationErrors = errors instanceof ValidationErrors ? errors : new ValidationErrors(errors);
+
     super(validationErrors.messages().join('; '));
-    this.name   = 'ParseError';
+    this.name = 'ParseError';
     this.errors = validationErrors;
     Object.setPrototypeOf(this, new.target.prototype);
   }

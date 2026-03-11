@@ -1,7 +1,7 @@
 {
   "name": "json-tology",
   "version": "0.1.0",
-  "description": "JSON-Schema type system + ontology builder for TypeScript projects",
+  "description": "Graph-native JSON Schema type system with JSON-LD ontology support",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -11,8 +11,8 @@
       "types": "./dist/index.d.ts"
     },
     "./types": {
-      "import": "./dist/schema/index.js",
-      "types": "./dist/schema/index.d.ts"
+      "import": "./dist/types/index.js",
+      "types": "./dist/types/index.d.ts"
     },
     "./schema": {
       "import": "./dist/schema/index.js",
@@ -47,8 +47,6 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "ajv": "^8.18.0",
-    "ajv-formats": "^3.0.1",
     "json-schema-to-ts": "^3.1.1"
   },
   "devDependencies": {

@@ -1,13 +1,15 @@
 /**
- * Validation benchmarks: our AJV-backed registry vs TypeBox TypeCompiler.
+ * Validation benchmarks: our graph-backed registry vs TypeBox TypeCompiler.
  */
 
 import { TypeCompiler } from '@sinclair/typebox/compiler';
 import { SchemaRegistry } from '../src/schema/SchemaRegistry.js';
-import { bench, section, type BenchResult } from './harness.js';
 import {
-  SimpleSchema, SimpleSchemaTypebox, simpleValid,
+  bench, type BenchResult, section
+} from './harness.js';
+import {
   NestedSchema, NestedSchemaTypebox, nestedValid,
+  SimpleSchema, SimpleSchemaTypebox, simpleValid
 } from './fixtures.js';
 
 export function runValidateBench(): BenchResult[] {
@@ -15,6 +17,7 @@ export function runValidateBench(): BenchResult[] {
 
   // Pre-compile everything before benchmarking
   const registry = new SchemaRegistry();
+
   registry.register(SimpleSchema);
   registry.register(NestedSchema);
 
@@ -27,7 +30,7 @@ export function runValidateBench(): BenchResult[] {
 
   section('Validation — simple flat schema');
 
-  results.push(bench('ours  (ajv)       simple', () => {
+  results.push(bench('ours  (graph)     simple', () => {
     registry.validate(SimpleSchema.$id, simpleValid);
   }));
 
@@ -37,7 +40,7 @@ export function runValidateBench(): BenchResult[] {
 
   section('Validation — nested schema');
 
-  results.push(bench('ours  (ajv)       nested', () => {
+  results.push(bench('ours  (graph)     nested', () => {
     registry.validate(NestedSchema.$id, nestedValid);
   }));
 

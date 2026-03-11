@@ -6,21 +6,39 @@ import { Value as TBValue } from '@sinclair/typebox/value';
 import { FormatRegistry } from '@sinclair/typebox';
 
 // Register formats for TypeBox
-FormatRegistry.Set('email', (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v));
-FormatRegistry.Set('date-time', (v) => !isNaN(Date.parse(v)));
+FormatRegistry.Set('email', (v) => {
+  return /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/u.test(v);
+});
+FormatRegistry.Set('date-time', (v) => {
+  return !isNaN(Date.parse(v));
+});
 import { Value } from '../src/schema/Value.js';
-import { bench, section, type BenchResult } from './harness.js';
 import {
-  SimpleSchema, SimpleSchemaTypebox,
+  bench, type BenchResult, section
+} from './harness.js';
+import {
   NestedSchema, NestedSchemaTypebox,
-  simpleValid, simpleCoercible, nestedValid,
+  nestedValid, simpleCoercible,
+  SimpleSchema, SimpleSchemaTypebox, simpleValid
 } from './fixtures.js';
 
-const dirtySimple = { ...simpleValid, extra1: 'junk', extra2: 42, extra3: true };
+const dirtySimple = {
+  ...simpleValid,
+  'extra1': 'junk',
+  'extra2': 42,
+  'extra3': true
+};
 const dirtyNested = {
   ...nestedValid,
-  customer: { ...nestedValid.customer, hackField: 'bad', address: { ...nestedValid.customer.address, extra: 'x' } },
-  extraTop: 'remove me',
+  'customer': {
+    ...nestedValid.customer,
+    'address': {
+      ...nestedValid.customer.address,
+      'extra': 'x'
+    },
+    'hackField': 'bad'
+  },
+  'extraTop': 'remove me'
 };
 
 export function runValueOpsBench(): BenchResult[] {
@@ -73,9 +91,12 @@ export function runValueOpsBench(): BenchResult[] {
 
   const nestedModified = {
     ...nestedValid,
-    customer: { ...nestedValid.customer, name: 'Robert Smith' },
-    total: 50.00,
-    status: 'paid',
+    'customer': {
+      ...nestedValid.customer,
+      'name': 'Robert Smith'
+    },
+    'status': 'paid',
+    'total': 50
   };
 
   results.push(bench('ours  Value.diff   nested', () => {
@@ -85,7 +106,7 @@ export function runValueOpsBench(): BenchResult[] {
   // TypeBox Value.Diff equivalent
   results.push(bench('typebox Value.Diff nested', () => {
     // Collect iterator — TypeBox returns a generator
-    Array.from(TBValue.Diff(nestedValid, nestedModified));
+    [...TBValue.Diff(nestedValid, nestedModified)];
   }));
 
   return results;

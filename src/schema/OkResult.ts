@@ -2,7 +2,7 @@
  * OkResult — successful parse result
  */
 
-import { ValidationErrors } from './ValidationErrors.js';
+import type { ValidationErrors } from './ValidationErrors.js';
 
 /**
  * Returned by safeParse() on success.

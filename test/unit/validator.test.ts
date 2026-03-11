@@ -8,7 +8,7 @@ import { Validator } from '../../src/schema/Validator.js';
 
 const UserSchema = {
   '$id': 'https://example.io/user',
-  '$schema': 'http://json-schema.org/draft-07/schema#',
+  '$schema': 'https://json-schema.org/draft/2020-12/schema',
   'type': 'object',
   'properties': {
     'id': { 'type': 'number' },

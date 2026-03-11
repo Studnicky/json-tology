@@ -5,10 +5,22 @@ import type { Logger } from './interfaces/logger.js';
  * Suitable for development, testing, and CLI usage.
  */
 export const ConsoleLogger: Logger = {
-  trace: (msg, ...args) => console.trace(msg, ...args),
-  debug: (msg, ...args) => console.debug(msg, ...args),
-  info:  (msg, ...args) => console.info(msg,  ...args),
-  warn:  (msg, ...args) => console.warn(msg,  ...args),
-  error: (msg, ...args) => console.error(msg, ...args),
-  fatal: (msg, ...args) => console.error(`[fatal] ${msg}`, ...args),
+  'debug': (msg, ...args) => {
+    return console.debug(msg, ...args);
+  },
+  'error': (msg, ...args) => {
+    return console.error(msg, ...args);
+  },
+  'fatal': (msg, ...args) => {
+    return console.error(`[fatal] ${msg}`, ...args);
+  },
+  'info': (msg, ...args) => {
+    return console.info(msg, ...args);
+  },
+  'trace': (msg, ...args) => {
+    return console.trace(msg, ...args);
+  },
+  'warn': (msg, ...args) => {
+    return console.warn(msg, ...args);
+  }
 };

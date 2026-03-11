@@ -11,42 +11,58 @@ import { Type } from '@sinclair/typebox';
 // ---------------------------------------------------------------------------
 
 export const SimpleSchema = {
-  $id: 'Simple',
-  type: 'object',
-  properties: {
-    id:    { type: 'integer' },
-    name:  { type: 'string' },
-    email: { type: 'string', format: 'email' },
-    age:   { type: 'integer', minimum: 0, maximum: 150 },
-    active: { type: 'boolean' },
+  '$id': 'Simple',
+  'additionalProperties': false,
+  'properties': {
+    'active': { 'type': 'boolean' },
+    'age': {
+      'maximum': 150,
+      'minimum': 0,
+      'type': 'integer'
+    },
+    'email': {
+      'format': 'email',
+      'type': 'string'
+    },
+    'id': { 'type': 'integer' },
+    'name': { 'type': 'string' }
   },
-  required: ['id', 'name', 'email', 'age', 'active'],
-  additionalProperties: false,
+  'required': [
+    'id',
+    'name',
+    'email',
+    'age',
+    'active'
+  ],
+  'type': 'object'
 } as const;
 
 export const SimpleSchemaTypebox = Type.Object({
-  id:     Type.Integer(),
-  name:   Type.String(),
-  email:  Type.String({ format: 'email' }),
-  age:    Type.Integer({ minimum: 0, maximum: 150 }),
-  active: Type.Boolean(),
+  'active': Type.Boolean(),
+  'age': Type.Integer({
+    'maximum': 150,
+    'minimum': 0
+  }),
+  'email': Type.String({ 'format': 'email' }),
+  'id': Type.Integer(),
+  'name': Type.String()
 });
 
 export const simpleValid = {
-  id: 1,
-  name: 'Alice',
-  email: 'alice@example.com',
-  age: 30,
-  active: true,
+  'active': true,
+  'age': 30,
+  'email': 'alice@example.com',
+  'id': 1,
+  'name': 'Alice'
 };
 
 export const simpleCoercible = {
-  id: '1',
-  name: 'Alice',
-  email: 'alice@example.com',
-  age: '30',
-  active: 'true',
-  extra: 'should be removed',
+  'active': 'true',
+  'age': '30',
+  'email': 'alice@example.com',
+  'extra': 'should be removed',
+  'id': '1',
+  'name': 'Alice'
 };
 
 // ---------------------------------------------------------------------------
@@ -54,95 +70,161 @@ export const simpleCoercible = {
 // ---------------------------------------------------------------------------
 
 export const NestedSchema = {
-  $id: 'Order',
-  type: 'object',
-  properties: {
-    orderId:   { type: 'string' },
-    createdAt: { type: 'string', format: 'date-time' },
-    customer: {
-      type: 'object',
-      properties: {
-        id:    { type: 'integer' },
-        name:  { type: 'string' },
-        email: { type: 'string', format: 'email' },
-        address: {
-          type: 'object',
-          properties: {
-            street:  { type: 'string' },
-            city:    { type: 'string' },
-            country: { type: 'string', minLength: 2, maxLength: 2 },
-            zip:     { type: 'string', pattern: '^[0-9]{5}$' },
+  '$id': 'Order',
+  'properties': {
+    'createdAt': {
+      'format': 'date-time',
+      'type': 'string'
+    },
+    'customer': {
+      'properties': {
+        'address': {
+          'properties': {
+            'city': { 'type': 'string' },
+            'country': {
+              "maxLength": 2,
+              "minLength": 2,
+              'type': 'string'
+            },
+            'street': { 'type': 'string' },
+            'zip': {
+              'pattern': '^[0-9]{5}$',
+              'type': 'string'
+            }
           },
-          required: ['street', 'city', 'country', 'zip'],
+          'required': [
+            'street',
+            'city',
+            'country',
+            'zip'
+          ],
+          'type': 'object'
         },
-      },
-      required: ['id', 'name', 'email', 'address'],
-    },
-    items: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          sku:      { type: 'string' },
-          quantity: { type: 'integer', minimum: 1 },
-          price:    { type: 'number', minimum: 0 },
+        'email': {
+          'format': 'email',
+          'type': 'string'
         },
-        required: ['sku', 'quantity', 'price'],
+        'id': { 'type': 'integer' },
+        'name': { 'type': 'string' }
       },
-      minItems: 1,
+      'required': [
+        'id',
+        'name',
+        'email',
+        'address'
+      ],
+      'type': 'object'
     },
-    total: { type: 'number', minimum: 0 },
-    status: { type: 'string', enum: ['pending', 'paid', 'shipped', 'delivered', 'cancelled'] },
+    'items': {
+      'items': {
+        'properties': {
+          'price': {
+            'minimum': 0,
+            'type': 'number'
+          },
+          'quantity': {
+            'minimum': 1,
+            'type': 'integer'
+          },
+          'sku': { 'type': 'string' }
+        },
+        'required': [
+          'sku',
+          'quantity',
+          'price'
+        ],
+        'type': 'object'
+      },
+      'minItems': 1,
+      'type': 'array'
+    },
+    'orderId': { 'type': 'string' },
+    'status': {
+      'enum': [
+        'pending',
+        'paid',
+        'shipped',
+        'delivered',
+        'cancelled'
+      ],
+      'type': 'string'
+    },
+    'total': {
+      'minimum': 0,
+      'type': 'number'
+    }
   },
-  required: ['orderId', 'createdAt', 'customer', 'items', 'total', 'status'],
+  'required': [
+    'orderId',
+    'createdAt',
+    'customer',
+    'items',
+    'total',
+    'status'
+  ],
+  'type': 'object'
 } as const;
 
 export const NestedSchemaTypebox = Type.Object({
-  orderId:   Type.String(),
-  createdAt: Type.String({ format: 'date-time' }),
-  customer: Type.Object({
-    id:    Type.Integer(),
-    name:  Type.String(),
-    email: Type.String({ format: 'email' }),
-    address: Type.Object({
-      street:  Type.String(),
-      city:    Type.String(),
-      country: Type.String({ minLength: 2, maxLength: 2 }),
-      zip:     Type.String({ pattern: '^[0-9]{5}$' }),
+  'createdAt': Type.String({ 'format': 'date-time' }),
+  'customer': Type.Object({
+    'address': Type.Object({
+      'city': Type.String(),
+      'country': Type.String({
+        'maxLength': 2,
+        'minLength': 2
+      }),
+      'street': Type.String(),
+      'zip': Type.String({ 'pattern': '^[0-9]{5}$' })
     }),
+    'email': Type.String({ 'format': 'email' }),
+    'id': Type.Integer(),
+    'name': Type.String()
   }),
-  items: Type.Array(Type.Object({
-    sku:      Type.String(),
-    quantity: Type.Integer({ minimum: 1 }),
-    price:    Type.Number({ minimum: 0 }),
-  }), { minItems: 1 }),
-  total:  Type.Number({ minimum: 0 }),
-  status: Type.Union([
-    Type.Literal('pending'), Type.Literal('paid'), Type.Literal('shipped'),
-    Type.Literal('delivered'), Type.Literal('cancelled'),
+  'items': Type.Array(Type.Object({
+    'price': Type.Number({ 'minimum': 0 }),
+    'quantity': Type.Integer({ 'minimum': 1 }),
+    'sku': Type.String()
+  }), { 'minItems': 1 }),
+  'orderId': Type.String(),
+  'status': Type.Union([
+    Type.Literal('pending'),
+    Type.Literal('paid'),
+    Type.Literal('shipped'),
+    Type.Literal('delivered'),
+    Type.Literal('cancelled')
   ]),
+  'total': Type.Number({ 'minimum': 0 })
 });
 
 export const nestedValid = {
-  orderId: 'ORD-001',
-  createdAt: '2024-01-15T10:30:00.000Z',
-  customer: {
-    id: 42,
-    name: 'Bob Smith',
-    email: 'bob@example.com',
-    address: {
-      street: '123 Main St',
-      city: 'Springfield',
-      country: 'US',
-      zip: '12345',
+  'createdAt': '2024-01-15T10:30:00.000Z',
+  'customer': {
+    'address': {
+      'city': 'Springfield',
+      'country': 'US',
+      'street': '123 Main St',
+      'zip': '12345'
     },
+    'email': 'bob@example.com',
+    'id': 42,
+    'name': 'Bob Smith'
   },
-  items: [
-    { sku: 'WIDGET-A', quantity: 2, price: 9.99 },
-    { sku: 'WIDGET-B', quantity: 1, price: 24.99 },
+  'items': [
+    {
+      'price': 9.99,
+      'quantity': 2,
+      'sku': 'WIDGET-A'
+    },
+    {
+      'price': 24.99,
+      'quantity': 1,
+      'sku': 'WIDGET-B'
+    }
   ],
-  total: 44.97,
-  status: 'pending',
+  'orderId': 'ORD-001',
+  'status': 'pending',
+  'total': 44.97
 };
 
 // ---------------------------------------------------------------------------
@@ -150,23 +232,47 @@ export const nestedValid = {
 // ---------------------------------------------------------------------------
 
 export const DefaultsSchema = {
-  $id: 'Defaults',
-  type: 'object',
-  properties: {
-    role:    { type: 'string', default: 'user' },
-    active:  { type: 'boolean', default: true },
-    score:   { type: 'integer', default: 0 },
-    tags:    { type: 'array', items: { type: 'string' }, default: [] },
-    meta: {
-      type: 'object',
-      properties: {
-        createdAt: { type: 'string', default: '2024-01-01T00:00:00.000Z' },
-        version:   { type: 'integer', default: 1 },
-      },
-      default: {},
+  '$id': 'Defaults',
+  'properties': {
+    'active': {
+      'default': true,
+      'type': 'boolean'
     },
+    'meta': {
+      'default': {},
+      'properties': {
+        'createdAt': {
+          'default': '2024-01-01T00:00:00.000Z',
+          'type': 'string'
+        },
+        'version': {
+          'default': 1,
+          'type': 'integer'
+        }
+      },
+      'type': 'object'
+    },
+    'role': {
+      'default': 'user',
+      'type': 'string'
+    },
+    'score': {
+      'default': 0,
+      'type': 'integer'
+    },
+    'tags': {
+      'default': [],
+      'items': { 'type': 'string' },
+      'type': 'array'
+    }
   },
-  required: ['role', 'active', 'score', 'tags'],
+  'required': [
+    'role',
+    'active',
+    'score',
+    'tags'
+  ],
+  'type': 'object'
 } as const;
 
-export const defaultsInput = { role: 'admin' };
+export const defaultsInput = { 'role': 'admin' };

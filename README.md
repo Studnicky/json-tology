@@ -1,315 +1,127 @@
 # json-tology
 
-A JSON-Schema type system + ontology builder for TypeScript projects.
+An ontology-native type system for TypeScript projects with declarative JSON Schema authoring.
 
-Extracts reusable validation and entity building patterns from the arcade-blaster VSCode extension into a standalone npm package.
+`json-tology` is being built around one canonical graph that drives:
 
-## Features
+- runtime validation and normalization
+- JSON-LD / RDF / N3 ontology export
+- TBox reasoning over type structure
+- ABox reasoning over instance data
+- visual exploration of schema and data relationships
 
-- **Schema Registry**: Centralized AJV instance with smart duplicate detection (FNV-1a hashing)
-- **Unified Register API**: Accept single schema or array - register() handles both
-- **Entity Builder**: Build typed instances with schema defaults
-- **Schema Loader**: Recursively load schemas from directories with error reporting
-- **Ontology Builder**: Generate JSON-LD and N3 from parameterized configuration
-- **CURIE Expander**: Expand compact URIs to full IRIs
-- **TypeScript-first**: Full type safety with `json-schema-to-ts`
+JSON Schema is the authoring surface. The canonical runtime artifact is the graph.
 
-## Installation
+## Objectives
 
-```bash
-npm install json-tology
-```
+- Use declarative JSON Schema as the input language for types and constraints.
+- Translate authored JSON Schema into one canonical graph that is lossless execution data.
+- Make validation consume that graph directly instead of re-interpreting JSON Schema ad hoc.
+- Emit ontology output from the same graph used by validation.
+- Support JSON-LD graphs as the semantic backbone for ontological tooling, reasoning, and exploration.
+- Deliver a developer experience that exceeds TypeBox + AJV by unifying type authoring, validation, and semantics in one model.
 
-## Quick Start
+## Design Contract
 
-### Runtime Validation (Direct)
+The project is now defined by these architectural constraints:
 
-Use the same schemas for types and runtime validation:
+- The canonical internal representation is a graph, not raw JSON Schema objects.
+- Validation uses the graph natively.
+- Ontology generation consumes the same canonical graph as validation.
+- The ontology is not a heuristic documentation layer. It is lossless execution data.
+- JSON Schema keywords such as object properties, `$ref`, `$defs`, anchors, composition, and conditional structure must lower into explicit graph entities and relationships.
+- Domain and range are first-class graph relations, not a post-processing guess.
+- TBox and ABox exports must preserve the identifiers and semantic relationships used at runtime.
+
+## Architecture
+
+### Authoring
+
+Users author schemas declaratively in JSON Schema.
 
 ```typescript
-import { Validator } from 'json-tology/schema';
-import type { FromSchema } from 'json-schema-to-ts';
-
-// Declare schema as const for type derivation
 const UserSchema = {
+  $id: 'https://example.com/User',
   type: 'object',
   properties: {
-    id: { type: 'number' },
+    id: { type: 'string' },
     name: { type: 'string' },
+    manager: { $ref: 'https://example.com/User' },
   },
   required: ['id', 'name'],
 } as const;
-
-// Derive type from schema
-type User = FromSchema<typeof UserSchema>;
-
-const validator = new Validator();
-
-// Validate I/O at runtime using the same schema as types
-const result = validator.validateTyped<User>(UserSchema, incomingData);
-
-if (result.valid) {
-  const user: User = result.data;
-  // ... use user with full type safety
-} else {
-  console.error('Invalid user:', result.errors);
-}
-
-// Other validation APIs
-validator.isValid(UserSchema, data);           // boolean check
-validator.assert(UserSchema, data, 'User');   // throw on invalid
 ```
 
-### Schema Registry & Validation
-
-For bulk validation with pre-registered schemas:
-
-```typescript
-import { SchemaRegistry } from 'json-tology/schema';
-
-const registry = new SchemaRegistry();
-
-// Register - accepts single schema or array
-const UserSchema = {
-  $id: 'https://example.io/user',
-  type: 'object',
-  properties: { name: { type: 'string' }, age: { type: 'number' } },
-  required: ['name'],
-};
-
-const ProductSchema = {
-  $id: 'https://example.io/product',
-  type: 'object',
-  properties: { sku: { type: 'string' }, price: { type: 'number' } },
-};
-
-registry.register(UserSchema);                    // Single
-registry.register([ProductSchema]);               // Array
-registry.register([...moreSchemas]);              // Batch
-
-// Safe to call multiple times - idempotent registration
-registry.register(UserSchema);  // No warning
-
-// Validate data
-const errors = registry.validate('https://example.io/user', {
-  name: 'Alice',
-  age: 30,
-});
-
-if (errors.length === 0) {
-  console.log('Valid!');
-}
-```
-
-**Features**:
-- ✅ Unified `register()` accepts single schema or array
-- ✅ Idempotent - safe to call multiple times with same schemas
-- ✅ Smart duplicate detection using fast FNV-1a hashing
-- ✅ Warns on structural duplicates or ID conflicts
-- ✅ Configurable logger for warnings
-
-### Loading Schemas from Files/Directories
-
-Use `SchemaLoader` to load schemas from the file system with error reporting:
-
-```typescript
-import { SchemaLoader, consoleLogger } from 'json-tology/schema';
-import { SchemaRegistry } from 'json-tology/schema';
-
-// Load all schemas from a directory recursively
-const loader = new SchemaLoader(consoleLogger); // or pass custom logger
-const [schemas, result] = loader.loadDirectory('./schemas');
-
-console.log(`Loaded ${result.successful}, failed ${result.failed}`);
-
-if (result.errors.length > 0) {
-  result.errors.forEach((err) => {
-    console.error(`${err.file}: ${err.message}`);
-  });
-}
-
-// Register loaded schemas
-const registry = new SchemaRegistry();
-registry.registerAll(schemas);
-
-// Now validate using the registry
-registry.validate('https://example.io/user', userData);
-```
-
-**SchemaLoader Features**:
-- ✅ Recursively scans directories for `.json` files
-- ✅ Validates schema structure (`$id` required, has type/properties/$defs)
-- ✅ Detects duplicate schema IDs
-- ✅ Reports all errors with file location and reason
-- ✅ Customizable logger (console, silent, or your own)
-- ✅ Optional stop-on-first-error mode
-- ✅ File pattern filtering
-
-### Entity Building with Defaults
-
-```typescript
-import { SchemaSystem } from 'json-tology/schema';
-import type { FromSchema } from 'json-schema-to-ts';
-
-const ConfigSchema = {
-  $id: 'https://example.io/config',
-  type: 'object',
-  properties: {
-    debug: { type: 'boolean', default: false },
-    timeout: { type: 'number', default: 5000 },
-    name: { type: 'string' },
-  },
-  required: ['name'],
-} as const;
+TypeScript types are still derived from authored schemas with `json-schema-to-ts`.
 
-type ConfigType = FromSchema<typeof ConfigSchema>;
+### Canonical Graph Construction
 
-const system = new SchemaSystem();
-system.register(ConfigSchema);
+Authored schemas are translated into one canonical graph containing:
 
-// Build with defaults
-const config = system.build<ConfigType>(
-  'https://example.io/config',
-  { name: 'my-app' }
-);
+- schema entities
+- property entities
+- domain and range relations
+- `$ref`, `$defs`, anchor, and pointer-addressable relations
+- composition and conditional structures
+- execution metadata required for validation and normalization
 
-console.log(config);
-// { name: 'my-app', debug: false, timeout: 5000 }
-```
+This graph is the runtime source of truth.
 
-### Ontology Generation
+### Execution
 
-```typescript
-import { OntologyBuilder } from 'json-tology/ontology';
+Validation, normalization, parsing, materialization, and pointer-based entry execution must all run against the same graph.
 
-const ontology = new OntologyBuilder({
-  baseIRI: 'https://my-project.io',
-  prefixes: {
-    ex: 'https://example.io/ns#',
-    rdf: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
-  },
-  graphBuilders: [
-    (graph) => {
-      graph.push({
-        '@id': 'ex:Thing',
-        '@type': 'owl:Class',
-        'rdfs:label': 'Thing',
-      });
-    },
-  ],
-});
+There is one semantic model and one execution backbone.
 
-// Generate N3
-console.log(ontology.n3());
+### Semantics
 
-// Generate JSON-LD
-console.log(ontology.jsonLd());
-```
+The graph must be serializable to JSON-LD / RDF without losing runtime meaning.
 
-### CURIE Expansion
+That serialization supports:
 
-```typescript
-import { CurieExpander } from 'json-tology/ontology';
+- TBox reasoning over schema structure
+- ABox reasoning over validated or built instance data
+- graph visualization and inspection
+- semantic tooling that can navigate types, fields, references, constraints, and derived relationships
 
-const expander = new CurieExpander({
-  ex: 'https://example.io/ns#',
-  rdf: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
-});
+## Public Surface
 
-expander.expand('ex:Thing');
-// → '<https://example.io/ns#Thing>'
+The repository currently exposes:
 
-expander.expandTokens('ex:Thing rdf:type owl:Class .');
-// → '<https://example.io/ns#Thing> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> owl:Class .'
-```
+- `json-tology` for the high-level entry point
+- `json-tology/schema` for lower-level schema and validation primitives
+- `json-tology/ontology` for ontology serialization utilities
 
-## API Reference
+The docs in this repository describe the target architecture and product contract first. When code and docs diverge, the graph-native contract is the intended direction.
 
-### SchemaLoader
+## High-Level Objectives
 
-Load schemas from the file system with error reporting:
+- one graph-native semantic backbone
+- declarative JSON Schema authoring
+- TypeScript-compatible typing from the same semantics used at runtime
+- compile-time, build-time, and runtime use of one canonical graph
+- faithful serialization to JSON-LD / RDF, JSON Schema, and TypeScript types
+- TBox and ABox support from the same identifiers and relations
 
-- `loadSchema(filePath)` - Load single schema from file, returns schema or null
-- `loadDirectory(dirPath, options?)` - Load all schemas from directory recursively, returns `[schemas, SchemaLoadResult]`
+## Coverage Goal
 
-Options:
-- `stopOnError?: boolean` - Stop on first error (default: false, continue loading)
-- `filePattern?: RegExp` - Filter files to load (default: `/\.json$/i`)
+The long-term coverage target is the shared semantic surface spanned by TypeBox, `json-schema-to-ts`, TypeScript typing, JSON-LD, SHACL, and AJV.
 
-Logging:
-- Pass `consoleLogger` for console output
-- Pass custom logger implementing `SchemaLogger` interface
-- Default: silent (no output)
+`json-tology` should model those common cases once in its canonical graph and expose the corresponding authoring, inference, execution, and serialization behavior from that one backbone.
 
-Error types: `'not-json'` | `'invalid-json'` | `'no-id'` | `'duplicate-id'` | `'invalid-schema'` | `'unknown'`
+## Non-Goals
 
-### Validator
+- maintaining a separate ontology derivation path
+- treating ontology output as best-effort documentation only
+- preserving convenience APIs that obscure the canonical graph boundary
+- competing with validator libraries on validation alone while ignoring semantics
 
-Direct validation without pre-registration:
+## Repository Notes
 
-- `validate(schema, data)` - Validate, returns error strings array
-- `validateTyped<T>(schema, data)` - Validate, returns `ValidationResult<T>`
-- `isValid(schema, data)` - Check validity (boolean)
-- `assert(schema, data, context?)` - Validate, throw on failure
-
-### SchemaRegistry
-
-Pre-register schemas for batch operations:
-
-- `register(schema)` - Register a single schema by `$id`
-- `registerAll(schemas)` - Register multiple schemas
-- `get(schemaId)` - Retrieve a schema
-- `validate(schemaId, data)` - Validate data, returns array of error strings
-- `validateAt(schemaId, pointer, data)` - Validate at a JSON Pointer
-
-### EntityBuilder
-
-Build instances with schema defaults:
-
-- `build<T>(schemaId, partial?)` - Build instance with defaults and merge partial
-
-### SchemaSystem
-
-Combined API for registry + builder convenience:
-
-- `register()`, `registerAll()`, `get()`
-- `validate()`, `validateAt()`
-- `build<T>()`
-
-### OntologyBuilder
-
-- `context()` - Get prefix map
-- `raw()` - Get raw graph data
-- `jsonLdObject()` - Generate JSON-LD object
-- `jsonLd()` - Generate JSON-LD string
-- `n3()` - Generate N3 with prefix declarations
-
-### CurieExpander
-
-- `expand(value)` - Expand CURIE to full IRI
-- `expandTokens(n3)` - Expand CURIEs in N3 text
-
-## Types
-
-Import base types from `json-tology/types`:
-
-```typescript
-import { BaseTypes } from 'json-tology/types';
-
-type Response<T> = BaseTypes.ResponseInterface<T>;
-type Result<T> = BaseTypes.ResultInterface<T>;
-```
-
-## Package Exports
-
-```json
-{
-  ".": "Main entry point (all modules)",
-  "./schema": "SchemaRegistry, EntityBuilder, SchemaSystem",
-  "./ontology": "OntologyBuilder, CurieExpander",
-  "./types": "BaseTypes"
-}
-```
+- Build: `npm run build`
+- Type check: `npm run type-check`
+- Test: `npm run test`
+- Benchmarks: `npm run bench`
 
 ## License
 

@@ -2,7 +2,7 @@
  * FailResult — failed parse result
  */
 
-import { ValidationErrors } from './ValidationErrors.js';
+import type { ValidationErrors } from './ValidationErrors.js';
 import { ParseError } from './ParseError.js';
 import type { OkResult } from './OkResult.js';
 
@@ -52,4 +52,4 @@ export class FailResult<T> {
  * result.unwrap()   // returns T or throws ParseError
  * ```
  */
-export type ParseResult<T> = OkResult<T> | FailResult<T>;
+export type ParseResult<T> = FailResult<T> | OkResult<T>;

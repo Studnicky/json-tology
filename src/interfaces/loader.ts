@@ -2,19 +2,19 @@
  * Schema loading result
  */
 export interface SchemaLoadResult {
-  successful: number;
-  failed: number;
-  skipped: number;
-  errors: SchemaLoadError[];
+  'errors': SchemaLoadError[];
+  'failed': number;
+  'skipped': number;
+  'successful': number;
 }
 
 /**
  * Schema load error details
  */
 export interface SchemaLoadError {
-  file: string;
-  reason: 'not-json' | 'invalid-json' | 'no-id' | 'duplicate-id' | 'invalid-schema' | 'unknown';
-  message: string;
+  'file': string;
+  'message': string;
+  'reason': 'duplicate-id' | 'invalid-json' | 'invalid-schema' | 'no-id' | 'not-json' | 'unknown';
 }
 
 import type { Logger } from './logger.js';

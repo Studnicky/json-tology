@@ -32,6 +32,30 @@ const RoleSchema = {
   required: ['name'],
 } as const;
 
+const DirectorySchema = {
+  $id: 'https://myapp.io/Directory',
+  type: 'object',
+  properties: {
+    employees: {
+      type: 'array',
+      items: { $ref: '#/$defs/Employee' },
+    },
+    primaryEmployee: { $ref: '#/$defs/Employee' },
+  },
+  $defs: {
+    Employee: {
+      $anchor: 'employee',
+      type: 'object',
+      title: 'Employee',
+      properties: {
+        id: { type: 'string' },
+      },
+      required: ['id'],
+    },
+  },
+  required: ['primaryEmployee'],
+} as const;
+
 // ---------------------------------------------------------------------------
 // Construction
 // ---------------------------------------------------------------------------
@@ -47,10 +71,10 @@ describe('JsonTology construction', () => {
     assert.ok(jt instanceof JsonTology);
   });
 
-  it('exposes registry and builder', () => {
+  it('exposes registry and materializer', () => {
     const jt = new JsonTology({ baseIRI: 'https://myapp.io' });
     assert.ok(jt.registry);
-    assert.ok(jt.builder);
+    assert.ok(jt.materializer);
   });
 
   it('pre-registers schemas passed in options', () => {
@@ -166,20 +190,20 @@ describe('JsonTology.is()', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Building
+// Materialization
 // ---------------------------------------------------------------------------
 
-describe('JsonTology.build()', () => {
-  it('builds an entity with defaults applied', () => {
+describe('JsonTology.materialize()', () => {
+  it('materializes an entity with defaults applied', () => {
     const jt = new JsonTology({ baseIRI: 'https://myapp.io' });
-    const user = jt.build(UserSchema, { email: 'a@b.com' });
+    const user = jt.materialize(UserSchema, { email: 'a@b.com' });
     assert.equal((user as { name: string }).name, 'Anonymous');
     assert.equal((user as { active: boolean }).active, true);
   });
 
   it('merges provided values with defaults', () => {
     const jt = new JsonTology({ baseIRI: 'https://myapp.io' });
-    const user = jt.build(UserSchema, { name: 'Alice', email: 'a@b.com' });
+    const user = jt.materialize(UserSchema, { name: 'Alice', email: 'a@b.com' });
     assert.equal((user as { name: string }).name, 'Alice');
   });
 });
@@ -288,5 +312,93 @@ describe('JsonTology.ontology()', () => {
     const graph = jt.ontology().raw() as Array<Record<string, unknown>>;
     const ids = graph.filter((n) => n['@type'] === 'owl:Class').map((n) => n['@id']);
     assert.ok(ids.includes(RoleSchema.$id));
+  });
+
+  it('serializes local $defs object schemas as class nodes from the canonical graph', () => {
+    const jt = new JsonTology({ baseIRI: 'https://myapp.io', schemas: [DirectorySchema] });
+    const graph = jt.ontology().raw() as Array<Record<string, unknown>>;
+    const employeeClass = graph.find((n) => {
+      return n['@id'] === 'https://myapp.io/Directory#/$defs/Employee' && n['@type'] === 'owl:Class';
+    });
+
+    assert.ok(employeeClass);
+    assert.equal(employeeClass?.['rdfs:label'], 'Employee');
+  });
+
+  it('resolves local $ref ranges through the canonical graph', () => {
+    const jt = new JsonTology({ baseIRI: 'https://myapp.io', schemas: [DirectorySchema] });
+    const graph = jt.ontology().raw() as Array<Record<string, unknown>>;
+    const employeeProp = graph.find((n) => {
+      return n['@id'] === 'https://myapp.io/Directory#primaryEmployee';
+    });
+
+    assert.deepEqual(employeeProp?.['rdfs:range'], { '@id': 'https://myapp.io/Directory#/$defs/Employee' });
+  });
+
+  it('resolves local array item refs through the canonical graph', () => {
+    const jt = new JsonTology({ baseIRI: 'https://myapp.io', schemas: [DirectorySchema] });
+    const graph = jt.ontology().raw() as Array<Record<string, unknown>>;
+    const employeesProp = graph.find((n) => {
+      return n['@id'] === 'https://myapp.io/Directory#employees';
+    });
+
+    assert.deepEqual(employeesProp?.['jt:itemType'], { '@id': 'https://myapp.io/Directory#/$defs/Employee' });
+  });
+});
+
+describe('JsonTology.abox()', () => {
+  it('projects validated instance data into ABox nodes typed by the schema graph', () => {
+    const jt = new JsonTology({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
+    const graph = jt.abox(UserSchema, {
+      name: 'Alice',
+      email: 'alice@example.com',
+      active: true,
+    }).raw() as Array<Record<string, unknown>>;
+    const root = graph.find((node) => {
+      return typeof node['@id'] === 'string' && String(node['@id']).includes('/instances/');
+    });
+
+    assert.ok(root);
+    assert.deepEqual(root?.['@type'], { '@id': UserSchema.$id });
+    assert.equal(root?.['https://myapp.io/User#name'], 'Alice');
+    assert.equal(root?.['https://myapp.io/User#email'], 'alice@example.com');
+  });
+
+  it('reuses canonical property and class identifiers for nested object references', () => {
+    const schema = {
+      $id: 'https://myapp.io/Team',
+      type: 'object',
+      properties: {
+        lead: { $ref: '#/$defs/Person' },
+        name: { type: 'string' },
+      },
+      $defs: {
+        Person: {
+          type: 'object',
+          properties: {
+            name: { type: 'string' },
+          },
+          required: ['name'],
+        },
+      },
+      required: ['lead', 'name'],
+    } as const;
+    const jt = new JsonTology({ baseIRI: 'https://myapp.io', schemas: [schema] });
+    const graph = jt.abox(schema, {
+      lead: { name: 'Dana' },
+      name: 'Platform',
+    }).raw() as Array<Record<string, unknown>>;
+    const team = graph.find((node) => {
+      return (node['@type'] as Record<string, unknown>)?.['@id'] === schema.$id;
+    });
+    const leadRef = team['https://myapp.io/Team#lead'] as Record<string, unknown>;
+    const lead = graph.find((node) => {
+      return node['@id'] === leadRef?.['@id'];
+    });
+
+    assert.ok(team);
+    assert.deepEqual(team['@type'], { '@id': schema.$id });
+    assert.deepEqual(lead?.['@type'], { '@id': 'https://myapp.io/Team#/$defs/Person' });
+    assert.equal(lead?.['https://myapp.io/Team#/$defs/Person#name'], 'Dana');
   });
 });

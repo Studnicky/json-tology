@@ -9,7 +9,7 @@ import { ConsoleLogger } from '../../src/ConsoleLogger.js';
 
 const TestSchema = {
   '$id': 'https://example.io/test-schema',
-  '$schema': 'http://json-schema.org/draft-07/schema#',
+  '$schema': 'https://json-schema.org/draft/2020-12/schema',
   'properties': {
     'name': { 'type': 'string' },
     'age': { 'type': 'number' },
@@ -20,7 +20,7 @@ const TestSchema = {
 
 const TestSchemaWithDefs = {
   '$id': 'https://example.io/schema-with-defs',
-  '$schema': 'http://json-schema.org/draft-07/schema#',
+  '$schema': 'https://json-schema.org/draft/2020-12/schema',
   '$defs': {
     'Person': {
       'properties': {
@@ -176,9 +176,9 @@ describe('SchemaRegistry', () => {
     assert.ok(errors[0].includes('No validator registered'));
   });
 
-  it('should accept AJV options in constructor', () => {
-    const registry = new SchemaRegistry({ ajv: { 'strict': false } });
-    assert.ok(registry.ajv);
+  it('should accept coerce option in constructor', () => {
+    const registry = new SchemaRegistry({ 'coerce': true });
+    assert.strictEqual(registry.coerce, true);
   });
 
   it('should accept logger in constructor', () => {
@@ -207,6 +207,20 @@ describe('SchemaRegistry', () => {
 
     assert.ok(registry.get('https://example.io/test-schema'));
     assert.ok(registry.get('https://example.io/schema-with-defs'));
+  });
+
+  it('caches canonical graphs per registered schema', () => {
+    const registry = new SchemaRegistry({ logger: ConsoleLogger });
+
+    registry.register([TestSchema, TestSchemaWithDefs]);
+
+    const first = registry.graph(TestSchema.$id);
+    const second = registry.graph(TestSchema.$id);
+    const listed = registry.listGraphs();
+
+    assert.ok(first);
+    assert.strictEqual(first, second);
+    assert.ok(listed.includes(first as NonNullable<typeof first>));
   });
 });
 

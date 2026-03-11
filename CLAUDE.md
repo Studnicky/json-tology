@@ -16,41 +16,67 @@ tsx --test 'test/unit/schemaRegistry.test.ts'
 
 ## Architecture
 
-**json-tology** is a TypeScript library combining JSON Schema validation with ontology/semantic web support. Schemas serve triple duty: TypeScript type derivation (via `json-schema-to-ts`), runtime validation (via AJV), and ontology generation.
+**json-tology** is an ontology-native type system with declarative JSON Schema authoring.
 
-### Module Structure
+The project contract is:
 
-- **`src/schema/`** — Core validation layer
-  - `Validator.ts` — Stateless validation (no registry); methods: `validate()`, `validateTyped<T>()`, `isValid()`, `assert()`
-  - `SchemaRegistry.ts` — Central registry backed by AJV; lazy-compiles validators on first use; FNV-1a hashing for duplicate detection (ID conflicts vs structural duplicates)
-  - `EntityBuilder.ts` — Constructs typed instances by extracting schema `default` values and merging with user input
-  - `SchemaSystem.ts` — Unified API combining registry + builder
-  - `SchemaLoader.ts` — Recursively loads `.json` schema files from directories; validates structure, detects duplicates, returns typed error reports
+- JSON Schema is the authoring language.
+- The canonical runtime representation is a graph.
+- Validation and normalization must execute against that graph.
+- Ontology export must consume the same graph.
+- The graph is lossless execution data intended to support TBox/ABox reasoning and graph exploration.
 
-- **`src/ontology/`** — Semantic web support
-  - `OntologyBuilder.ts` — Generates JSON-LD and N3 from parameterized configs (baseIRI, prefix map, graph builder callbacks)
-  - `CurieExpander.ts` — Expands CURIE (`prefix:localName`) to full IRIs, with intelligent token boundary handling
+### Module Direction
 
-- **`src/types/`** — Pre-built schema library (`Duration`, `Progress`, `Response`, `Result`, `Timed`, `Timestamped`) exportable as both JSON schemas and TypeScript types
+- **`src/schema/`**
+  - owns canonical graph construction from authored schema, registry behavior, validation, parsing, normalization, materialization, pointer entry selection, and execution planning
+  - `SchemaGraph.ts` should evolve toward the canonical semantic graph rather than remaining a validation-only helper
+  - `GraphEngine.ts` should consume graph node kinds and relations directly
+  - `Materializer.ts` should project normalized graph execution into JS values and ABox nodes without a second semantic walker
 
-### Key Patterns
+- **`src/ontology/`**
+  - owns serialization and graph-facing ontology utilities
+  - ontology output must be a serialization of the canonical graph, not a separate semantic derivation path
 
-**Dual-purpose schemas** — Declare schemas `as const`, derive types with `FromSchema<typeof MySchema>`:
+- **`src/types/`**
+  - contains reusable schema/type building blocks
+
+### Architectural Rules
+
+- Do not introduce a second semantic model for ontology generation.
+- Do not add features that require validation to bypass the canonical graph.
+- Domain and range must be explicit graph relations produced during translation from authored schema into the canonical graph.
+- `$ref`, `$defs`, anchors, pointers, composition, and conditionals must all be representable in the canonical graph.
+- When code and docs disagree, prefer the graph-native architecture described here and in `docs/validation-engine-plan.md`.
+
+### Working Assumptions
+
+**Schema authoring remains declarative**
 ```ts
-const UserSchema = { type: 'object', properties: { name: { type: 'string' } } } as const;
+const UserSchema = {
+  $id: 'https://example.com/User',
+  type: 'object',
+  properties: {
+    id: { type: 'string' },
+    manager: { $ref: 'https://example.com/User' }
+  },
+  required: ['id']
+} as const;
+```
+
+**Type derivation still comes from authored schema**
+```ts
 type User = FromSchema<typeof UserSchema>;
 ```
 
-**Registry deduplication** — `SchemaRegistry` hashes schema content (excluding `$id`) to detect when the same schema is registered under multiple IDs, or the same `$id` with different content.
+**Execution semantics come from the canonical graph**
 
-**Nested validation** — `SchemaRegistry.validateAt(schemaId, '/$defs/SubType', data)` validates against a JSON Pointer into a registered schema's `$defs`.
-
-**Logger injection** — Both `SchemaRegistry` and `SchemaLoader` accept a logger interface; default is silent. Use exported `consoleLogger` to enable logging.
+Validation, parsing, materialization, and ontology serialization should all read from the same graph-backed representation.
 
 ### Package Exports
 
 ```json
-{ ".": "all", "./schema": "schema module", "./ontology": "ontology module", "./types": "base types" }
+{ ".": "high-level entry", "./schema": "schema/runtime internals", "./ontology": "ontology utilities", "./types": "reusable type/schema building blocks" }
 ```
 
 Output goes to `dist/` (ESNext modules, ES2020 target, declaration maps + source maps).

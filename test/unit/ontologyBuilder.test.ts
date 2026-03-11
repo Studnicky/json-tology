@@ -14,7 +14,7 @@ describe('OntologyBuilder', () => {
         'ex': 'https://example.io/ns#',
         'rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
       },
-      'graphBuilders': [],
+      'graphSources': [],
     });
 
     assert.ok(builder);
@@ -29,7 +29,7 @@ describe('OntologyBuilder', () => {
     const builder = new OntologyBuilder({
       'baseIRI': 'https://example.io',
       'prefixes': prefixes,
-      'graphBuilders': [],
+      'graphSources': [],
     });
 
     const context = builder.context();
@@ -37,27 +37,23 @@ describe('OntologyBuilder', () => {
     assert.deepStrictEqual(context, prefixes);
   });
 
-  it('should build graph by invoking graphBuilders', () => {
+  it('should build graph from graphSources', () => {
     const builder = new OntologyBuilder({
       'baseIRI': 'https://example.io',
       'prefixes': {
         'ex': 'https://example.io/ns#',
       },
-      'graphBuilders': [
-        (graph) => {
-          graph.push({
-            '@id': 'ex:Thing',
-            '@type': 'owl:Class',
-            'rdfs:label': 'Thing',
-          });
-        },
-        (graph) => {
-          graph.push({
-            '@id': 'ex:SubThing',
-            '@type': 'owl:Class',
-            'rdfs:subClassOf': 'ex:Thing',
-          });
-        },
+      'graphSources': [
+        [{
+          '@id': 'ex:Thing',
+          '@type': 'owl:Class',
+          'rdfs:label': 'Thing',
+        }],
+        () => [{
+          '@id': 'ex:SubThing',
+          '@type': 'owl:Class',
+          'rdfs:subClassOf': 'ex:Thing',
+        }],
       ],
     });
 
@@ -75,7 +71,7 @@ describe('OntologyBuilder', () => {
         'ex': 'https://example.io/ns#',
         'rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
       },
-      'graphBuilders': [],
+      'graphSources': [],
     });
 
     const n3 = builder.n3();
@@ -91,7 +87,7 @@ describe('OntologyBuilder', () => {
         '@vocab': 'https://example.io/default#',
         'ex': 'https://example.io/ns#',
       },
-      'graphBuilders': [],
+      'graphSources': [],
     });
 
     const n3 = builder.n3();
@@ -106,14 +102,10 @@ describe('OntologyBuilder', () => {
       'prefixes': {
         'ex': 'https://example.io/ns#',
       },
-      'graphBuilders': [
-        (graph) => {
-          graph.push({
-            '@id': 'ex:Thing',
-            '@type': 'owl:Class',
-          });
-        },
-      ],
+      'graphSources': [[{
+        '@id': 'ex:Thing',
+        '@type': 'owl:Class',
+      }]],
     });
 
     const jsonLd = builder.jsonLdObject();
@@ -130,7 +122,7 @@ describe('OntologyBuilder', () => {
       'prefixes': {
         'ex': 'https://example.io/ns#',
       },
-      'graphBuilders': [],
+      'graphSources': [],
     });
 
     const jsonLdString = builder.jsonLd();
@@ -141,13 +133,13 @@ describe('OntologyBuilder', () => {
     assert.ok(parsed['@context']);
   });
 
-  it('should handle empty graph builders', () => {
+  it('should handle empty graph sources', () => {
     const builder = new OntologyBuilder({
       'baseIRI': 'https://example.io',
       'prefixes': {
         'ex': 'https://example.io/ns#',
       },
-      'graphBuilders': [],
+      'graphSources': [],
     });
 
     const graph = builder.raw();
@@ -167,16 +159,12 @@ describe('OntologyBuilder', () => {
         'owl': 'http://www.w3.org/2002/07/owl#',
         'rdfs': 'http://www.w3.org/2000/01/rdf-schema#',
       },
-      'graphBuilders': [
-        (graph) => {
-          graph.push({
-            '@id': 'ex:Thing',
-            '@type': 'owl:Class',
-            'rdfs:label': 'Thing',
-            'rdfs:subClassOf': 'ex:Parent',
-          });
-        },
-      ],
+      'graphSources': [[{
+        '@id': 'ex:Thing',
+        '@type': 'owl:Class',
+        'rdfs:label': 'Thing',
+        'rdfs:subClassOf': 'ex:Parent',
+      }]],
     });
 
     const n3 = builder.n3();
@@ -191,14 +179,10 @@ describe('OntologyBuilder', () => {
     const builder = new OntologyBuilder({
       'baseIRI': 'https://example.io',
       'prefixes': { 'ex': 'https://example.io/ns#' },
-      'graphBuilders': [
-        (graph) => {
-          graph.push({
-            '@id': 'ex:Foo',
-            '@type': 'https://example.io/ns#Bar',
-          });
-        },
-      ],
+      'graphSources': [[{
+        '@id': 'ex:Foo',
+        '@type': 'https://example.io/ns#Bar',
+      }]],
     });
 
     const n3 = builder.n3();
@@ -213,14 +197,10 @@ describe('OntologyBuilder', () => {
         'ex': 'https://example.io/ns#',
         'owl': 'http://www.w3.org/2002/07/owl#',
       },
-      'graphBuilders': [
-        (graph) => {
-          graph.push({
-            '@id': 'ex:Multi',
-            '@type': ['owl:Class', 'owl:Thing'],
-          });
-        },
-      ],
+      'graphSources': [[{
+        '@id': 'ex:Multi',
+        '@type': ['owl:Class', 'owl:Thing'],
+      }]],
     });
 
     const n3 = builder.n3();
@@ -236,15 +216,11 @@ describe('OntologyBuilder', () => {
         'owl': 'http://www.w3.org/2002/07/owl#',
         'rdfs': 'http://www.w3.org/2000/01/rdf-schema#',
       },
-      'graphBuilders': [
-        (graph) => {
-          graph.push({
-            '@id': 'ex:Widget',
-            '@type': 'owl:Class',
-            'rdfs:label': 'Widget',
-          });
-        },
-      ],
+      'graphSources': [[{
+        '@id': 'ex:Widget',
+        '@type': 'owl:Class',
+        'rdfs:label': 'Widget',
+      }]],
     });
 
     const n3 = builder.n3();
@@ -260,14 +236,10 @@ describe('OntologyBuilder', () => {
         'ex': 'https://example.io/ns#',
         'owl': 'http://www.w3.org/2002/07/owl#',
       },
-      'graphBuilders': [
-        (graph) => {
-          graph.push(
-            { '@id': 'ex:A', '@type': 'owl:Class' },
-            { '@id': 'ex:B', '@type': 'owl:Class', 'ex:related': 'ex:A' },
-          );
-        },
-      ],
+      'graphSources': [[
+        { '@id': 'ex:A', '@type': 'owl:Class' },
+        { '@id': 'ex:B', '@type': 'owl:Class', 'ex:related': 'ex:A' },
+      ]],
     });
 
     const n3 = builder.n3();

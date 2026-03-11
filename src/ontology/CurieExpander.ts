@@ -139,12 +139,12 @@ export class CurieExpander {
          */
         if (character === '.') {
           const nextCharacter = line[index + 1];
-          const lastCharacterInBuffer = buffer[buffer.length - 1];
-          const isDecimalPoint =
-            buffer.length > 0
+          const lastCharacterInBuffer = buffer.at(-1);
+          const isDecimalPoint
+            = buffer.length > 0
             && lastCharacterInBuffer !== undefined
             && DECIMAL_DIGIT.test(lastCharacterInBuffer)
-            && nextCharacter !== undefined
+            && nextCharacter !== ''
             && DECIMAL_DIGIT.test(nextCharacter);
 
           if (isDecimalPoint) {

@@ -1,0 +1,5 @@
+{
+  "$schema": "https://raw.githubusercontent.com/ApacenAI/dev-tools/main/schemas/security.schema.json",
+  "expirationBehavior": "warn",
+  "allowlist": []
+}

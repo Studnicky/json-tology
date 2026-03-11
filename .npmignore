@@ -1,0 +1,43 @@
+# Source files (dist is published)
+src/
+
+# Tests
+__tests__/
+*.spec.js
+*.spec.ts
+*.test.js
+*.test.ts
+tests/
+
+# Test coverage
+coverage/
+
+# Development config
+.eslintrc*
+.github/
+.idea/
+.prettierrc*
+.vscode/
+api-extractor.json
+dev-tools.json
+jest.config.*
+tsconfig.json
+vitest.config.*
+
+# API extraction
+.api/
+
+# Documentation source
+docs/
+
+# Build artifacts not needed
+.cache/
+.turbo/
+*.tsbuildinfo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

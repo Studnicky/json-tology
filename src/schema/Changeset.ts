@@ -5,10 +5,14 @@
  */
 
 import type { DiffOp } from '../types/errors.js';
-import { Value, applyOp } from './Value.js';
+import {
+  applyOp, Value
+} from './Value.js';
 
+export type {
+  DelOp, SetOp
+} from '../interfaces/diff.js';
 export type { DiffOp } from '../types/errors.js';
-export type { SetOp, DelOp } from '../interfaces/diff.js';
 
 /**
  * An ordered set of diff operations that transforms one value into another.
@@ -22,20 +26,10 @@ export type { SetOp, DelOp } from '../interfaces/diff.js';
  * changes.apply(a)    // produce b from a without mutating a
  */
 export class Changeset {
-  public readonly operations: ReadonlyArray<DiffOp>;
+  public readonly operations: readonly DiffOp[];
 
-  public constructor(operations: ReadonlyArray<DiffOp>) {
+  public constructor(operations: readonly DiffOp[]) {
     this.operations = operations;
-  }
-
-  /** Number of operations in this changeset. */
-  public get length(): number {
-    return this.operations.length;
-  }
-
-  /** True when there are no differences (a and b were structurally equal). */
-  public get isEmpty(): boolean {
-    return this.operations.length === 0;
   }
 
   /**
@@ -44,9 +38,21 @@ export class Changeset {
    */
   public apply<T>(value: T): T {
     let result: unknown = Value.clone(value);
+
     for (const operation of this.operations) {
       result = applyOp(result, operation);
     }
+
     return result as T;
+  }
+
+  /** True when there are no differences (a and b were structurally equal). */
+  public get isEmpty(): boolean {
+    return this.operations.length === 0;
+  }
+
+  /** Number of operations in this changeset. */
+  public get length(): number {
+    return this.operations.length;
   }
 }

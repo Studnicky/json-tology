@@ -1,9 +1,35 @@
-.git
-node_modules
-dist
-vendor
 .flame
-*.map
-*.js.map
+.git
 *.d.ts.map
- git -C /Users/studs/Workspace/json-tology rm --cached vendor/dev-tools git -C /Users/studs/Workspace/json-tology add .gitignore
+*.js.map
+*.map
+dist
+git -C /Users/studs/Workspace/json-tology rm --cached vendor/dev-tools git -C /Users/studs/Workspace/json-tology add .gitignore
+node_modules
+vendor
+
+# Added by dev-tools init
+.cache/
+.dev-tools/.previous.api.json
+.dev-tools/*.log
+.DS_Store
+.env
+.env.*.local
+.env.local
+.eslintcache
+.idea/
+.parcel-cache/
+.turbo/
+.vscode/
+*.log
+*.swo
+*.swp
+*.tsbuildinfo
+*~
+build/
+coverage/
+npm-debug.log*
+out/
+Thumbs.db
+yarn-debug.log*
+yarn-error.log*

@@ -5,39 +5,54 @@
  * and use the JsonTology class instead.
  */
 
-export { SchemaRegistry, type RegistryOptions, type RegistryLogger } from './SchemaRegistry.js';
-export { EntityBuilder, type EntityBuilderOptions, type InferSchema, type Infer } from './EntityBuilder.js';
-export { Validator, type ValidationResult } from './Validator.js';
-export {
-  SchemaLoader,
-  type SchemaLoadResult,
-  type SchemaLoadError,
-  type SchemaLogger,
-} from './SchemaLoader.js';
-export { ValidationErrors } from './ValidationErrors.js';
-export { ParseError } from './ParseError.js';
-export { OkResult } from './OkResult.js';
-export { FailResult, type ParseResult } from './FailResult.js';
 export type { ValidationError } from '../interfaces/validation.js';
-export { Compose } from './Compose.js';
 export type {
-  ExtractRequired,
-  ExtendSchema,
-  IntersectionSchema,
   DiscriminatedUnionSchema,
-  PartialSchema,
-  RequiredSchema,
-  PickSchema,
+  ExtendSchema,
+  ExtractRequired,
+  IntersectionSchema,
   OmitSchema,
+  PartialSchema,
+  PickSchema,
+  RequiredSchema
 } from '../types/compose.js';
 export {
-  Transform,
-  type Transformed,
-  type WithCatchSchema,
-  type ParseOutput,
+  Changeset, type DelOp, type DiffOp, type SetOp
+} from './Changeset.js';
+export {
+  type CompiledSchema, Compiler
+} from './Compiler.js';
+export { Compose } from './Compose.js';
+export {
+  GraphEngine, type GraphEngineOptions, type GraphExecutionResult
+} from './GraphEngine.js';
+export {
+  Materializer, type MaterializerOptions, type Infer, type InferSchema
+} from './Materializer.js';
+export {
+  FailResult, type ParseResult
+} from './FailResult.js';
+export { OkResult } from './OkResult.js';
+export { ParseError } from './ParseError.js';
+export {
+  SchemaLoader,
+  type SchemaLoadError,
+  type SchemaLoadResult,
+  type SchemaLogger
+} from './SchemaLoader.js';
+export {
+  type RegistryLogger, type RegistryOptions, SchemaRegistry
+} from './SchemaRegistry.js';
+export {
   type Branded,
   type BrandOutput,
+  type ParseOutput,
+  Transform,
+  type Transformed,
+  type WithCatchSchema
 } from './Transform.js';
+export { ValidationErrors } from './ValidationErrors.js';
+export {
+  type ValidationResult, Validator
+} from './Validator.js';
 export { Value } from './Value.js';
-export { Changeset, type DiffOp, type SetOp, type DelOp } from './Changeset.js';
-export { Compiler, type CompiledSchema } from './Compiler.js';

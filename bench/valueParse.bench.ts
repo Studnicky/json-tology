@@ -3,17 +3,25 @@
  */
 
 import { Value as TBValue } from '@sinclair/typebox/value';
-import { FormatRegistry, Type } from '@sinclair/typebox';
+import {
+  FormatRegistry, Type
+} from '@sinclair/typebox';
 import { Value } from '../src/schema/Value.js';
 
 // Register email format for TypeBox (it ships without built-in formats)
-FormatRegistry.Set('email', (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v));
-FormatRegistry.Set('date-time', (v) => !isNaN(Date.parse(v)));
-import { bench, section, type BenchResult } from './harness.js';
+FormatRegistry.Set('email', (v) => {
+  return /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/u.test(v);
+});
+FormatRegistry.Set('date-time', (v) => {
+  return !isNaN(Date.parse(v));
+});
 import {
-  SimpleSchema, SimpleSchemaTypebox,
-  simpleValid, simpleCoercible,
-  DefaultsSchema, defaultsInput,
+  bench, type BenchResult, section
+} from './harness.js';
+import {
+  defaultsInput, DefaultsSchema,
+  simpleCoercible, SimpleSchema,
+  SimpleSchemaTypebox, simpleValid
 } from './fixtures.js';
 
 export function runValueParseBench(): BenchResult[] {
@@ -50,10 +58,10 @@ export function runValueParseBench(): BenchResult[] {
   }));
 
   const TBDefaultsSchema = Type.Object({
-    role:   Type.String({ default: 'user' }),
-    active: Type.Boolean({ default: true }),
-    score:  Type.Integer({ default: 0 }),
-    tags:   Type.Array(Type.String(), { default: [] }),
+    'active': Type.Boolean({ 'default': true }),
+    'role': Type.String({ 'default': 'user' }),
+    'score': Type.Integer({ 'default': 0 }),
+    'tags': Type.Array(Type.String(), { 'default': [] })
   });
 
   results.push(bench('typebox Value.Parse defaults', () => {

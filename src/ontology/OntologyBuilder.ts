@@ -2,7 +2,7 @@
  * Ontology Builder
  *
  * Builds JSON-LD and N3/Turtle ontologies from parameterized configuration.
- * Accepts custom base IRIs, prefix maps, and graph builder callbacks.
+ * Accepts custom base IRIs, prefix maps, and graph node sources.
  */
 
 import type { OntologyBuilderOptions } from '../interfaces/ontology.js';
@@ -10,7 +10,7 @@ import type { OntologyBuilderOptions } from '../interfaces/ontology.js';
 export type { OntologyBuilderOptions } from '../interfaces/ontology.js';
 
 // Matches a CURIE (prefix:local) but NOT a full IRI (http://... / https://...)
-const CURIE_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_-]*:[^/]/u;
+const CURIE_PATTERN = /^[a-zA-Z_][\w-]*:[^/]/u;
 const FULL_IRI_PATTERN = /^https?:\/\//u;
 
 /**
@@ -20,13 +20,19 @@ const FULL_IRI_PATTERN = /^https?:\/\//u;
  */
 export class OntologyBuilder {
   private readonly baseIRI: string;
+  private readonly graphSources: ReadonlyArray<() => ReadonlyArray<unknown>>;
   private readonly prefixes: Record<string, string>;
-  private readonly graphBuilders: ReadonlyArray<(graph: unknown[]) => void>;
 
   public constructor(config: Readonly<OntologyBuilderOptions>) {
     this.baseIRI = config.baseIRI;
     this.prefixes = config.prefixes;
-    this.graphBuilders = config.graphBuilders;
+    this.graphSources = config.graphSources.map((source) => {
+      if (typeof source === 'function') {
+        return source;
+      }
+
+      return () => source;
+    });
   }
 
   /**
@@ -37,14 +43,13 @@ export class OntologyBuilder {
   }
 
   /**
-   * Get the raw graph data by invoking all graph builder callbacks.
+   * Generate JSON-LD as a JSON string.
    */
-  public raw(): unknown[] {
-    const graph: unknown[] = [];
-    for (let i = 0; i < this.graphBuilders.length; i++) {
-      this.graphBuilders[i](graph);
-    }
-    return graph;
+  public jsonLd(): string {
+    const obj = this.jsonLdObject();
+    const json = JSON.stringify(obj, undefined, 2);
+
+    return json;
   }
 
   /**
@@ -58,15 +63,8 @@ export class OntologyBuilder {
       '@graph': this.raw(),
       '@id': `${this.baseIRI}/ontology/`,
       '@type': 'owl:Ontology',
-      'rdfs:label': 'Generated Ontology',
+      'rdfs:label': 'Generated Ontology'
     };
-  }
-
-  /**
-   * Generate JSON-LD as a JSON string.
-   */
-  public jsonLd(): string {
-    return JSON.stringify(this.jsonLdObject(), undefined, 2);
   }
 
   /**
@@ -84,7 +82,10 @@ export class OntologyBuilder {
   public n3(): string {
     const lines: string[] = [];
 
-    for (const [key, value] of Object.entries(this.prefixes)) {
+    for (const [
+      key,
+      value
+    ] of Object.entries(this.prefixes)) {
       if (key === '@vocab') {
         lines.push(`@prefix : <${value}>.`);
       } else {
@@ -93,30 +94,42 @@ export class OntologyBuilder {
     }
 
     const graph = this.raw();
-    if (graph.length > 0) lines.push('');
+
+    if (graph.length > 0) {
+      lines.push('');
+    }
 
     for (const node of graph) {
-      if (typeof node !== 'object' || node === null) continue;
+      if (typeof node !== 'object' || node === null) {
+        continue;
+      }
       const triple = this.nodeToN3(node as Record<string, unknown>);
-      if (triple) lines.push(triple);
+
+      if (triple) {
+        lines.push(triple);
+      }
     }
 
     return lines.join('\n');
   }
 
-  // ---------------------------------------------------------------------------
-  // Private serialization helpers
-  // ---------------------------------------------------------------------------
-
   private nodeToN3(node: Record<string, unknown>): string {
     const subjectId = node['@id'];
-    if (typeof subjectId !== 'string') return '';
+
+    if (typeof subjectId !== 'string') {
+      return '';
+    }
 
     const subject = this.renderTerm(subjectId, true);
     const predicateParts: string[] = [];
 
-    for (const [key, value] of Object.entries(node)) {
-      if (key === '@id') continue;
+    for (const [
+      key,
+      value
+    ] of Object.entries(node)) {
+      if (key === '@id') {
+        continue;
+      }
 
       const predicate = key === '@type' ? 'a' : key;
       const objectStr = this.renderValue(value, key === '@type');
@@ -126,29 +139,56 @@ export class OntologyBuilder {
       }
     }
 
-    if (predicateParts.length === 0) return '';
+    if (predicateParts.length === 0) {
+      return '';
+    }
+
     return `${subject}\n    ${predicateParts.join(' ;\n    ')} .`;
   }
 
+  // ---------------------------------------------------------------------------
+  // Private serialization helpers
+  // ---------------------------------------------------------------------------
+
   /**
-   * Render a predicate value to N3 string.
-   * Handles: scalars, arrays (comma-separated), @list (RDF list), @value typed literals,
-   * and anonymous blank node objects.
-   *
-   * @param forceResource - treat all string values as resources (used for @type)
+   * Get the raw graph data by resolving all graph node sources.
    */
-  private renderValue(value: unknown, forceResource = false): string | null {
-    if (Array.isArray(value)) {
-      // Plain array = multiple values, rendered as comma-separated
-      const parts = value
-        .map((item) => this.renderScalar(item, forceResource))
-        .filter((item): item is string => item !== null);
-      return parts.length > 0 ? parts.join(', ') : null;
-    }
-    return this.renderScalar(value, forceResource);
+  public raw(): unknown[] {
+    return this.graphSources.flatMap((graphSource) => {
+      return Array.from(graphSource());
+    });
   }
 
-  private renderScalar(value: unknown, forceResource = false): string | null {
+  /**
+   * Render an anonymous object as a Turtle blank node: [ pred obj ; pred obj ]
+   */
+  private renderBlankNode(node: Record<string, unknown>): string {
+    const parts: string[] = [];
+
+    for (const [
+      key,
+      val
+    ] of Object.entries(node)) {
+      if (key.startsWith('@') && key !== '@type') {
+        continue;
+      }
+
+      const predicate = key === '@type' ? 'a' : key;
+      const rendered = this.renderValue(val, key === '@type');
+
+      if (rendered !== null) {
+        parts.push(`${predicate} ${rendered}`);
+      }
+    }
+
+    if (parts.length === 0) {
+      return '[]';
+    }
+
+    return `[ ${parts.join(' ; ')} ]`;
+  }
+
+  private renderScalar(value: unknown, forceResource = false): null | string {
     if (typeof value === 'string') {
       return this.renderTerm(value, forceResource);
     }
@@ -167,12 +207,19 @@ export class OntologyBuilder {
       // { '@list': [...] } — RDF list: (item1 item2 ...)
       if ('@list' in obj) {
         const items = obj['@list'];
+
         if (Array.isArray(items)) {
           const rendered = items
-            .map((item) => this.renderScalar(item, false))
-            .filter((s): s is string => s !== null);
+            .map((item) => {
+              return this.renderScalar(item, false);
+            })
+            .filter((scalar): scalar is string => {
+              return scalar !== null;
+            });
+
           return `(${rendered.join(' ')})`;
         }
+
         return '()';
       }
 
@@ -183,8 +230,10 @@ export class OntologyBuilder {
 
         if (typeof rawType === 'string') {
           const type = this.renderTerm(rawType, true);
+
           if (typeof rawValue === 'string') {
-            const escaped = rawValue.replace(/\\/gu, '\\\\').replace(/"/gu, '\\"');
+            const escaped = rawValue.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
+
             return `"${escaped}"^^${type}`;
           }
           if (typeof rawValue === 'number' || typeof rawValue === 'boolean') {
@@ -193,16 +242,21 @@ export class OntologyBuilder {
         }
         // No type — plain literal
         if (typeof rawValue === 'string') {
-          const escaped = rawValue.replace(/\\/gu, '\\\\').replace(/"/gu, '\\"');
+          const escaped = rawValue.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
+
           return `"${escaped}"`;
         }
+
         return String(rawValue);
       }
 
       // { '@id': iri } — named resource
       if ('@id' in obj) {
         const id = obj['@id'];
-        if (typeof id === 'string') return this.renderTerm(id, true);
+
+        if (typeof id === 'string') {
+          return this.renderTerm(id, true);
+        }
       }
 
       // Anonymous object (no @id) — blank node: [ pred obj ; pred obj ]
@@ -210,26 +264,6 @@ export class OntologyBuilder {
     }
 
     return null;
-  }
-
-  /**
-   * Render an anonymous object as a Turtle blank node: [ pred obj ; pred obj ]
-   */
-  private renderBlankNode(node: Record<string, unknown>): string {
-    const parts: string[] = [];
-
-    for (const [key, val] of Object.entries(node)) {
-      if (key.startsWith('@') && key !== '@type') continue;
-
-      const predicate = key === '@type' ? 'a' : key;
-      const rendered = this.renderValue(val, key === '@type');
-      if (rendered !== null) {
-        parts.push(`${predicate} ${rendered}`);
-      }
-    }
-
-    if (parts.length === 0) return '[]';
-    return `[ ${parts.join(' ; ')} ]`;
   }
 
   /**
@@ -245,6 +279,31 @@ export class OntologyBuilder {
     if (CURIE_PATTERN.test(value) || forceResource) {
       return value;
     }
-    return `"${value.replace(/\\/gu, '\\\\').replace(/"/gu, '\\"')}"`;
+
+    return `"${value.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"`;
+  }
+
+  /**
+   * Render a predicate value to N3 string.
+   * Handles: scalars, arrays (comma-separated), @list (RDF list), @value typed literals,
+   * and anonymous blank node objects.
+   *
+   * @param forceResource - treat all string values as resources (used for @type)
+   */
+  private renderValue(value: unknown, forceResource = false): null | string {
+    if (Array.isArray(value)) {
+      // Plain array = multiple values, rendered as comma-separated
+      const parts = value
+        .map((item) => {
+          return this.renderScalar(item, forceResource);
+        })
+        .filter((item): item is string => {
+          return item !== null;
+        });
+
+      return parts.length > 0 ? parts.join(', ') : null;
+    }
+
+    return this.renderScalar(value, forceResource);
   }
 }

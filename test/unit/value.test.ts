@@ -149,6 +149,32 @@ describe('Value.cast()', () => {
     const r = Value.cast(ItemSchema, null);
     assert.ok(typeof r === 'object');
   });
+
+  it('uses graph-engine ref resolution for nested defaults and coercion', () => {
+    const schema = {
+      '$defs': {
+        'metrics': {
+          'properties': {
+            'count': { 'default': 0, 'type': 'integer' }
+          },
+          'type': 'object'
+        }
+      },
+      'properties': {
+        'metrics': { '$ref': '#/$defs/metrics' }
+      },
+      'type': 'object'
+    } as const;
+
+    const r = Value.cast(schema, {
+      'metrics': { 'count': '5' }
+    }) as Record<string, Record<string, unknown>>;
+
+    assert.equal(r['metrics']['count'], 5);
+    assert.deepEqual(Value.cast(schema, {}) as Record<string, unknown>, {
+      'metrics': { 'count': 0 }
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------

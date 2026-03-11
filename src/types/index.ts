@@ -5,11 +5,13 @@
  * and all type aliases used across the library.
  */
 
-export * from './schema.js';
-export * from './transform.js';
-export * from './brand.js';
-export * from './compose.js';
-export * from './errors.js';
-
 // Keep existing BaseTypes
-export { BaseTypes, makeResponseSchema, makeResultSchema, makePageSchema } from './BaseTypes.js';
+export {
+  BaseTypes, makePageSchema, makeResponseSchema, makeResultSchema
+} from './BaseTypes.js';
+export type * from './brand.js';
+export type * from './compose.js';
+export type * from './errors.js';
+export type * from './schema.js';
+
+export type * from './transform.js';

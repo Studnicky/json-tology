@@ -1,6 +1,5 @@
-import type { Options as AjvOptions } from 'ajv';
 import type { RegistryLogger } from './registry.js';
-import type { EntityBuilderOptions } from './builder.js';
+import type { MaterializerOptions } from './materializer.js';
 
 export interface JsonTologyOptions {
   /**
@@ -9,32 +8,29 @@ export interface JsonTologyOptions {
    *
    * @example 'https://myapp.io'
    */
-  baseIRI: string;
+  'baseIRI': string;
+
+  /** Materializer behaviour options */
+  'materializer'?: MaterializerOptions;
 
   /**
-   * Schemas to register at construction time.
-   * Additional schemas can be registered later via .register().
+   * When true, the graph engine coerces types during parsing and materialization
+   * (e.g. 123 accepted where "123" is expected, and vice versa).
    */
-  schemas?: ReadonlyArray<Record<string, unknown>>;
+  'coerce'?: boolean;
+
+  /** Logger for duplicate/conflict warnings */
+  'logger'?: RegistryLogger;
 
   /**
    * Additional prefix declarations for ontology output.
    * owl, rdf, rdfs, and xsd are always included.
    */
-  prefixes?: Record<string, string>;
-
-  /** AJV options forwarded to the registry */
-  ajv?: AjvOptions;
-
-  /** Logger for duplicate/conflict warnings */
-  logger?: RegistryLogger;
+  'prefixes'?: Record<string, string>;
 
   /**
-   * When true, AJV coerces types during validation and entity building
-   * (e.g. 123 accepted where "123" is expected, and vice versa).
+   * Schemas to register at construction time.
+   * Additional schemas can be registered later via .register().
    */
-  coerce?: boolean;
-
-  /** EntityBuilder behaviour options */
-  builder?: EntityBuilderOptions;
+  'schemas'?: ReadonlyArray<Record<string, unknown>>;
 }
