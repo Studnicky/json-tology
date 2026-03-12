@@ -5,18 +5,14 @@
  * pointer-based sub-schema execution.
  */
 
-import type {
-  FromSchema, JSONSchema
-} from 'json-schema-to-ts';
 import { ParseError } from './ParseError.js';
 import { ValidationErrors } from './ValidationErrors.js';
-import { OkResult } from './OkResult.js';
-import {
-  FailResult, type ParseResult
-} from './FailResult.js';
 import { Transform } from './Transform.js';
+import type { FormatRegistry } from './FormatRegistry.js';
+import type { KeywordDefinition } from './GraphEngine.js';
 import { GraphEngine } from './GraphEngine.js';
 import { SchemaGraph } from './SchemaGraph.js';
+import { SchemaCompiler, type CompiledValidator } from './SchemaCompiler.js';
 import type {
   RegistryLogger, RegistryOptions
 } from '../interfaces/registry.js';
@@ -30,6 +26,7 @@ const NO_ERRORS: string[] = Object.freeze([]) as unknown as string[];
 const NO_VALIDATION_ERRORS = new ValidationErrors([]);
 
 interface SchemaRegistryEntry {
+  'compiled'?: CompiledValidator;
   'engine'?: GraphEngine;
   'graph'?: SchemaGraph;
   'hash': string;
@@ -39,6 +36,9 @@ interface SchemaRegistryEntry {
 export class SchemaRegistry {
   public readonly coerce: boolean;
 
+  private readonly compiler: SchemaCompiler;
+  private readonly formatRegistry: FormatRegistry | undefined;
+  private readonly keywords: KeywordDefinition[] | undefined;
   private readonly logger: RegistryLogger;
   private readonly schemaHashes = new Map<string, string>();
   private readonly schemas = new Map<string, SchemaRegistryEntry>();
@@ -46,12 +46,25 @@ export class SchemaRegistry {
   public constructor(options?: RegistryOptions) {
     this.logger = options?.logger ?? SilentLogger;
     this.coerce = options?.coerce ?? false;
+    this.formatRegistry = options?.formatRegistry;
+    this.keywords = options?.keywords;
+    this.compiler = new SchemaCompiler({
+      'lookupCompiled': (schemaId) => {
+        const entry = this.schemas.get(schemaId);
+
+        if (entry !== undefined) {
+          return this.compiled(schemaId);
+        }
+
+        return undefined;
+      }
+    });
   }
 
   public errors(schemaId: string, data: unknown): ValidationErrors {
-    const entry = this.schemas.get(schemaId);
+    const compiled = this.compiled(schemaId);
 
-    if (!entry) {
+    if (compiled === undefined) {
       return new ValidationErrors([{
         'keyword': 'unknown',
         'message': `No validator registered for schema: ${schemaId}`,
@@ -60,14 +73,9 @@ export class SchemaRegistry {
       }]);
     }
 
-    const errors = this.execute(entry.schema, data, {
-      'applyDefaults': false,
-      'collectErrors': true,
-      'coerce': false,
-      'removeAdditional': false
-    }).errors;
+    const result = compiled.validate(data, { 'collectErrors': true });
 
-    return errors.length === 0 ? NO_VALIDATION_ERRORS : new ValidationErrors(errors);
+    return result.errors.length === 0 ? NO_VALIDATION_ERRORS : new ValidationErrors(result.errors);
   }
 
   public get(schemaId: string): Record<string, unknown> | undefined {
@@ -81,21 +89,21 @@ export class SchemaRegistry {
       return undefined;
     }
 
-    return this.getGraph(entry);
+    return this.graphOf(entry);
   }
 
-  public is<T = unknown>(
-    schema: Record<string, unknown> & { '$id': string },
+  public is(
+    schema: string | (Record<string, unknown> & { '$id': string }),
     data: unknown
-  ): data is T {
-    this.register(schema);
+  ): boolean {
+    const schemaId = typeof schema === 'string' ? schema : schema.$id;
+    const compiled = this.compiled(schemaId);
 
-    return this.execute(schema, data, {
-      'applyDefaults': false,
-      'collectErrors': false,
-      'coerce': false,
-      'removeAdditional': false
-    }).valid;
+    if (compiled === undefined) {
+      throw new Error(`Schema not registered: ${schemaId}. Call register() first.`);
+    }
+
+    return compiled.check(data);
   }
 
   public list(): ReadonlyArray<Record<string, unknown>> {
@@ -106,37 +114,44 @@ export class SchemaRegistry {
 
   public listGraphs(): ReadonlyArray<SchemaGraph> {
     return [...this.schemas.values()].map((entry) => {
-      return this.getGraph(entry);
+      return this.graphOf(entry);
     });
   }
 
-  public parse<TSchema extends JSONSchema & { readonly '$id': string }>(
-    schema: TSchema,
-    data: unknown,
-  ): FromSchema<TSchema>;
   public parse(
-    schema: Record<string, unknown> & { '$id': string },
+    schema: string | (Record<string, unknown> & { '$id': string }),
     data: unknown
   ): unknown {
-    this.register(schema);
-    const clone = structuredClone(data);
-    const result = this.execute(schema, clone, {
+    const schemaObj = typeof schema === 'string'
+      ? this.schemas.get(schema)?.schema
+      : schema;
+
+    if (schemaObj === undefined) {
+      throw new Error(`Schema not registered: ${String(schema)}. Call register() first.`);
+    }
+
+    const schemaId = schemaObj.$id as string;
+    const compiled = this.compiled(schemaId)!;
+
+    const result = compiled.validate(structuredClone(data), {
       'applyDefaults': true,
-      'collectErrors': true,
       'coerce': this.coerce,
-      'removeAdditional': false
+      'collectErrors': true,
+      'removeAdditional': true
     });
 
     if (!result.valid) {
       throw new ParseError(new ValidationErrors(result.errors));
     }
 
-    const decoder = Transform.getDecoder(schema);
+    const decoder = Transform.getDecoder(schemaObj);
 
     return decoder === undefined ? result.value : decoder.decode(result.value);
   }
 
-  public register(schemas: Array<Record<string, unknown>> | Record<string, unknown>): void {
+  public register(
+    schemas: ReadonlyArray<Record<string, unknown>> | Record<string, unknown>
+  ): void {
     const list = Array.isArray(schemas) ? schemas : [schemas];
 
     for (const element of list) {
@@ -144,54 +159,24 @@ export class SchemaRegistry {
     }
   }
 
-  public safeParse<TSchema extends JSONSchema & { readonly '$id': string }>(
-    schema: TSchema,
-    data: unknown,
-  ): ParseResult<FromSchema<TSchema>>;
-  public safeParse(
-    schema: Record<string, unknown> & { '$id': string },
-    data: unknown
-  ): ParseResult<unknown> {
-    try {
-      const result = (this.parse as (parseSchema: typeof schema, parseData: unknown) => unknown)(schema, data);
-
-      return new OkResult(result);
-    } catch (error) {
-      if (Transform.hasFallback(schema)) {
-        return new OkResult(Transform.getFallback(schema));
-      }
-      if (error instanceof ParseError) {
-        return new FailResult(error.errors);
-      }
-
-      return new FailResult(new ValidationErrors([{
-        'keyword': 'unknown',
-        'message': String(error),
-        'params': {},
-        'path': ''
-      }]));
-    }
-  }
-
   public validate(schemaId: string, data: unknown): string[] {
-    const entry = this.schemas.get(schemaId);
+    const compiled = this.compiled(schemaId);
 
-    if (!entry) {
+    if (compiled === undefined) {
       return [`No validator registered for schema: ${schemaId}`];
     }
 
-    const errors = this.execute(entry.schema, data, {
-      'applyDefaults': false,
-      'collectErrors': true,
-      'coerce': false,
-      'removeAdditional': false
-    }).errors;
-
-    if (errors.length === 0) {
+    if (compiled.compiled && compiled.check(data)) {
       return NO_ERRORS;
     }
 
-    return errors.map((error) => {
+    const result = compiled.validate(data, { 'collectErrors': true });
+
+    if (result.errors.length === 0) {
+      return NO_ERRORS;
+    }
+
+    return result.errors.map((error) => {
       return `${error.path === '' ? 'root' : error.path}: ${error.message}`;
     });
   }
@@ -225,6 +210,67 @@ export class SchemaRegistry {
     }
   }
 
+  public cast(schemaOrId: string | (Record<string, unknown> & { '$id': string }), data: unknown): unknown {
+    const schemaId = this.resolveSchemaId(schemaOrId);
+    const compiled = this.compiled(schemaId)!;
+
+    return compiled.validate(structuredClone(data), {
+      'applyDefaults': true,
+      'coerce': true,
+      'collectErrors': false
+    }).value;
+  }
+
+  public clean(schemaOrId: string | (Record<string, unknown> & { '$id': string }), data: unknown): unknown {
+    const schemaId = this.resolveSchemaId(schemaOrId);
+    const compiled = this.compiled(schemaId)!;
+
+    return compiled.validate(structuredClone(data), {
+      'collectErrors': false,
+      'stripUnknownProperties': true
+    }).value;
+  }
+
+  public convert(schemaOrId: string | (Record<string, unknown> & { '$id': string }), data: unknown): unknown {
+    const schemaId = this.resolveSchemaId(schemaOrId);
+    const compiled = this.compiled(schemaId)!;
+
+    return compiled.validate(structuredClone(data), {
+      'coerce': true,
+      'collectErrors': false
+    }).value;
+  }
+
+  private resolveSchemaId(schemaOrId: string | (Record<string, unknown> & { '$id': string })): string {
+    return typeof schemaOrId === 'string' ? schemaOrId : schemaOrId.$id;
+  }
+
+  public create(schemaId: string): unknown {
+    const entry = this.schemas.get(schemaId);
+
+    if (entry === undefined) {
+      throw new Error(`No schema registered for: ${schemaId}`);
+    }
+
+    return this.instanceFromSchema(entry.schema);
+  }
+
+  private compiled(schemaId: string): CompiledValidator | undefined {
+    const entry = this.schemas.get(schemaId);
+
+    if (entry === undefined) {
+      return undefined;
+    }
+
+    if (entry.compiled === undefined) {
+      const engine = this.engine(entry.schema);
+
+      entry.compiled = this.compiler.compile(engine);
+    }
+
+    return entry.compiled;
+  }
+
   private execute(
     schema: Record<string, unknown>,
     data: unknown,
@@ -236,7 +282,7 @@ export class SchemaRegistry {
     },
     pointer = ''
   ) {
-    const engine = this.getEngine(schema);
+    const engine = this.engine(schema);
 
     return engine.execute(data, pointer, options);
   }
@@ -253,7 +299,7 @@ export class SchemaRegistry {
     return hash.toString(16);
   }
 
-  private getEngine(schema: Record<string, unknown>): GraphEngine {
+  public engine(schema: Record<string, unknown>): GraphEngine {
     const schemaId = schema.$id as string;
     const entry = this.schemas.get(schemaId);
 
@@ -262,6 +308,8 @@ export class SchemaRegistry {
     }
     if (entry.engine === undefined) {
       entry.engine = new GraphEngine(entry.schema, {
+        ...(this.formatRegistry ? { 'formatRegistry': this.formatRegistry } : {}),
+        ...(this.keywords && this.keywords.length > 0 ? { 'keywords': this.keywords } : {}),
         'lookupSchema': (lookupSchemaId) => {
           return this.schemas.get(lookupSchemaId)?.schema;
         }
@@ -271,7 +319,7 @@ export class SchemaRegistry {
     return entry.engine;
   }
 
-  private getGraph(entry: SchemaRegistryEntry): SchemaGraph {
+  private graphOf(entry: SchemaRegistryEntry): SchemaGraph {
     if (entry.graph === undefined) {
       entry.graph = new SchemaGraph(entry.schema);
     }
@@ -318,5 +366,64 @@ export class SchemaRegistry {
     });
     this.schemaHashes.set(hash, schemaId);
     this.logger.trace(`Schema registered: ${schemaId}`);
+
+    const graph = this.graphOf(this.schemas.get(schemaId) as SchemaRegistryEntry);
+    const warnings = graph.validateStructure();
+
+    if (warnings.length > 0) {
+      throw new Error(
+        `Structure validation failed for schema "${schemaId}": ${warnings.map((w) => w.message).join('; ')}`
+      );
+    }
+  }
+
+  private instanceFromSchema(schema: Record<string, unknown>): unknown {
+    if ('default' in schema) {
+      return structuredClone(schema['default']);
+    }
+    if ('const' in schema) {
+      return schema['const'];
+    }
+    if (Array.isArray(schema['enum']) && (schema['enum'] as unknown[]).length > 0) {
+      return (schema['enum'] as unknown[])[0];
+    }
+
+    if (typeof schema['$ref'] === 'string') {
+      const refSchema = this.schemas.get(schema['$ref'] as string)?.schema;
+
+      if (refSchema) {
+        return this.instanceFromSchema(refSchema);
+      }
+    }
+
+    const type = schema['type'];
+
+    if (type === 'string') return '';
+    if (type === 'number' || type === 'integer') return 0;
+    if (type === 'boolean') return false;
+    if (type === 'null') return null;
+    if (type === 'array') return [];
+
+    if (type === 'object') {
+      const result: Record<string, unknown> = {};
+      const properties = schema['properties'] as Record<string, Record<string, unknown>> | undefined;
+      const required = Array.isArray(schema['required']) ? schema['required'] as string[] : [];
+
+      if (properties) {
+        for (const key of Object.keys(properties)) {
+          const propSchema = properties[key];
+          const hasDefault = 'default' in propSchema || 'const' in propSchema ||
+            (Array.isArray(propSchema['enum']) && (propSchema['enum'] as unknown[]).length > 0);
+
+          if (hasDefault || required.includes(key)) {
+            result[key] = this.instanceFromSchema(propSchema);
+          }
+        }
+      }
+
+      return result;
+    }
+
+    return null;
   }
 }

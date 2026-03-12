@@ -9,3 +9,4 @@ export {
   OntologyBuilder, type OntologyBuilderOptions
 } from './OntologyBuilder.js';
 export { GraphOntologySerializer } from './GraphOntologySerializer.js';
+export { GraphShaclSerializer } from './GraphShaclSerializer.js';

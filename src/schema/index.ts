@@ -20,19 +20,20 @@ export {
   Changeset, type DelOp, type DiffOp, type SetOp
 } from './Changeset.js';
 export {
-  type CompiledSchema, Compiler
-} from './Compiler.js';
+  FormatRegistry, builtinFormats
+} from './FormatRegistry.js';
+export {
+  type CompiledValidateOptions, type CompiledValidationResult,
+  type CompiledValidator, SchemaCompiler
+} from './SchemaCompiler.js';
 export { Compose } from './Compose.js';
 export {
-  GraphEngine, type GraphEngineOptions, type GraphExecutionResult
+  GraphEngine, type GraphEngineOptions, type GraphExecutionResult,
+  type KeywordContext, type KeywordDefinition
 } from './GraphEngine.js';
 export {
   Materializer, type MaterializerOptions, type Infer, type InferSchema
 } from './Materializer.js';
-export {
-  FailResult, type ParseResult
-} from './FailResult.js';
-export { OkResult } from './OkResult.js';
 export { ParseError } from './ParseError.js';
 export {
   SchemaLoader,
@@ -43,6 +44,7 @@ export {
 export {
   type RegistryLogger, type RegistryOptions, SchemaRegistry
 } from './SchemaRegistry.js';
+export { type StructureWarning } from './SchemaGraph.js';
 export {
   type Branded,
   type BrandOutput,

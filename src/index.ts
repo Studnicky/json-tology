@@ -50,11 +50,6 @@ export {
   type Infer, type InferSchema
 } from './schema/Materializer.js';
 
-export {
-  FailResult, type ParseResult
-} from './schema/FailResult.js';
-export { OkResult } from './schema/OkResult.js';
-
 export { ParseError } from './schema/ParseError.js';
 // Transforms and branding
 export {

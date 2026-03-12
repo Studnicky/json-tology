@@ -1,7 +1,8 @@
-import type { RegistryLogger } from './registry.js';
+import type { KeywordDefinition } from '../schema/GraphEngine.js';
 import type { MaterializerOptions } from './materializer.js';
+import type { RegistryLogger } from './registry.js';
 
-export interface JsonTologyOptions {
+export interface JsonTologyOptions<TSchemas extends readonly unknown[] = readonly unknown[]> {
   /**
    * Base IRI for the ontology and schema namespace.
    * Used as the ontology document IRI and as the root for derived property IRIs.
@@ -29,8 +30,18 @@ export interface JsonTologyOptions {
   'prefixes'?: Record<string, string>;
 
   /**
-   * Schemas to register at construction time.
-   * Additional schemas can be registered later via .register().
+   * Custom format validators to register in addition to (or overriding) the
+   * built-in set.  Keys are format names (e.g. `"phone"`), values are
+   * validator functions that return `true` when the value is valid.
    */
-  'schemas'?: ReadonlyArray<Record<string, unknown>>;
+  'formats'?: Record<string, (value: unknown) => boolean>;
+
+  /** Custom keyword definitions passed to the graph engine. */
+  'keywords'?: KeywordDefinition[];
+
+  /**
+   * Schemas to register at construction time.
+   * Use `as const` for compile-time type inference.
+   */
+  'schemas'?: TSchemas;
 }

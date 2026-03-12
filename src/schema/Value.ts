@@ -2,7 +2,8 @@
  * Value utilities
  *
  * Standalone operations on plain values — no schema required for most.
- * For schema-aware operations (cast, clean) a plain schema object is accepted.
+ * For schema-aware operations (cast, clean, convert, parse) a plain schema
+ * object is accepted. These use SchemaCompiler for optimized execution.
  *
  * Value.cast(schema, value)    — coerce types and fill defaults; never throws
  * Value.clean(schema, value)   — strip keys not declared in schema properties
@@ -13,7 +14,7 @@
  * Value.diff(a, b)             — returns a Changeset describing how to transform a into b
  */
 
-import type { JSONSchema } from 'json-schema-to-ts';
+import type { JSONSchema } from '../types/json-schema.js';
 import type { Infer } from './Materializer.js';
 import type { DiffOp } from '../types/errors.js';
 import { Changeset } from './Changeset.js';
@@ -21,6 +22,27 @@ import { ParseError } from './ParseError.js';
 import { ValidationErrors } from './ValidationErrors.js';
 import { Transform } from './Transform.js';
 import { GraphEngine } from './GraphEngine.js';
+import { SchemaCompiler, type CompiledValidator } from './SchemaCompiler.js';
+
+// ---------------------------------------------------------------------------
+// Shared compiler + cache for standalone usage
+// ---------------------------------------------------------------------------
+
+const compiler = new SchemaCompiler();
+const validatorCache = new WeakMap<object, CompiledValidator>();
+
+function validatorFor(schema: Record<string, unknown>): CompiledValidator {
+  let cached = validatorCache.get(schema);
+
+  if (cached === undefined) {
+    const engine = new GraphEngine(schema);
+
+    cached = compiler.compile(engine);
+    validatorCache.set(schema, cached);
+  }
+
+  return cached;
+}
 
 // ---------------------------------------------------------------------------
 // Value class
@@ -28,55 +50,43 @@ import { GraphEngine } from './GraphEngine.js';
 
 export class Value {
   /**
+   * Generate a fully-defaulted instance from schema defaults and type-appropriate zero values.
+   * Walks the schema declaratively — does not use GraphEngine.
+   */
+  public static create<TSchema extends JSONSchema>(schema: TSchema): Infer<TSchema> {
+    return instanceFromSchema(schema as Record<string, unknown>) as Infer<TSchema>;
+  }
+
+  /**
    * Coerce a value to match a schema and fill in defaults — never throws.
-   * Uses a lightweight pass that handles common type mismatches.
-   *
-   * Returns the (possibly invalid) coerced value. Intended as a best-effort
-   * operation for normalising external data before validation.
-   *
-   * For strict validated output use jt.parse() instead.
    */
   public static cast<TSchema extends JSONSchema>(
     schema: TSchema,
     value: unknown
   ): Infer<TSchema> {
-    return new GraphEngine(schema as Record<string, unknown>).execute(structuredClone(value), '', {
+    return validatorFor(schema as Record<string, unknown>).validate(structuredClone(value), {
       'applyDefaults': true,
       'coerce': true,
-      'collectErrors': false,
-      'materializeContainers': true,
-      'removeAdditional': false,
-      'stripUnknownProperties': false
+      'collectErrors': false
     }).value as Infer<TSchema>;
   }
 
   /**
    * Recursively remove properties from `value` that are not declared in the
    * schema's `properties`. Does not mutate the original.
-   *
-   * Useful for sanitising external data before storage or serialisation.
-   *
-   * @example
-   * const safe = Value.clean(UserSchema, { name: 'Alice', hackField: '...' });
-   * // safe = { name: 'Alice' }
    */
   public static clean<TSchema extends JSONSchema>(
     schema: TSchema,
     value: unknown
   ): Infer<TSchema> {
-    return new GraphEngine(schema as Record<string, unknown>).execute(structuredClone(value), '', {
-      'applyDefaults': false,
-      'coerce': false,
+    return validatorFor(schema as Record<string, unknown>).validate(structuredClone(value), {
       'collectErrors': false,
-      'materializeContainers': false,
-      'removeAdditional': false,
       'stripUnknownProperties': true
     }).value as Infer<TSchema>;
   }
 
   /**
    * Deep clone a value using structuredClone.
-   * Works with objects, arrays, Dates, Maps, Sets, typed arrays, etc.
    */
   public static clone<T>(value: T): T {
     return structuredClone(value);
@@ -84,38 +94,20 @@ export class Value {
 
   /**
    * Coerce a value's primitive types to match the schema — without applying
-   * defaults or throwing. Unlike `cast`, convert leaves missing properties
-   * untouched and does not fill `default` values.
-   *
-   * - `"42"` → `42` for `type: "number"`
-   * - `"true"` / `"1"` → `true` for `type: "boolean"`
-   * - `42` → `"42"` for `type: "string"` (when value is not already a string)
-   * - `"null"` → `null` for `type: "null"`
-   *
-   * Recurses into object properties and array items.
+   * defaults or throwing.
    */
   public static convert<TSchema extends JSONSchema>(
     schema: TSchema,
     value: unknown
   ): unknown {
-    return new GraphEngine(schema as Record<string, unknown>).execute(structuredClone(value), '', {
-      'applyDefaults': false,
+    return validatorFor(schema as Record<string, unknown>).validate(structuredClone(value), {
       'coerce': true,
-      'collectErrors': false,
-      'materializeContainers': false,
-      'removeAdditional': false,
-      'stripUnknownProperties': false
+      'collectErrors': false
     }).value;
   }
 
   /**
    * Produce a Changeset describing the minimal operations needed to transform `before` into `after`.
-   * Paths use JSON Pointer format (e.g. "/user/name").
-   *
-   * @example
-   * const changes = Value.diff(before, after);
-   * changes.isEmpty       // true if no differences
-   * const result = changes.apply(before);  // equals after
    */
   public static diff(before: unknown, after: unknown): Changeset {
     const operations: DiffOp[] = [];
@@ -127,10 +119,10 @@ export class Value {
 
   /**
    * Produce a deterministic hex string hash of any JSON-serialisable value.
-   * Uses FNV-1a (32-bit). Identical values always produce identical hashes.
+   * Uses FNV-1a (32-bit).
    */
   public static hash(value: unknown): string {
-    const str = JSON.stringify(value, stableReplacer);
+    const str = JSON.stringify(value, keySortReplacer);
     let hashValue = 2_166_136_261;
     const fnvPrime = 16_777_619;
 
@@ -143,26 +135,19 @@ export class Value {
   }
 
   /**
-   * Full parse pipeline — the safest and most complete way to normalise external data.
-   *
-   * Pipeline: Clone → Convert → Cast (defaults) → Clean → Validate → Decode
+   * Full parse pipeline — Clone → Convert → Cast (defaults) → Clean → Validate → Decode
    *
    * Throws `ParseError` if validation fails after all coercions are applied.
-   * If the schema has a Transform attached (via `Transform.create`), the decoded
-   * value is returned instead of the raw validated value.
-   *
-   * @example
-   * const user = Value.parse(UserSchema, rawInput);
    */
   public static parse<TSchema extends JSONSchema>(
     schema: TSchema,
     data: unknown
   ): Infer<TSchema> {
-    const result = new GraphEngine(schema as Record<string, unknown>).execute(structuredClone(data), '', {
+    const compiled = validatorFor(schema as Record<string, unknown>);
+    const result = compiled.validate(structuredClone(data), {
       'applyDefaults': true,
-      'collectErrors': true,
       'coerce': true,
-      'materializeContainers': false,
+      'collectErrors': true,
       'removeAdditional': true
     });
 
@@ -173,9 +158,7 @@ export class Value {
     const decoder = Transform.getDecoder(schema as object);
 
     if (decoder !== undefined) {
-      const decoded: unknown = decoder.decode(result.value);
-
-      return decoded as Infer<TSchema>;
+      return decoder.decode(result.value) as Infer<TSchema>;
     }
 
     return result.value as Infer<TSchema>;
@@ -186,8 +169,7 @@ export class Value {
 // Internal helpers (exported for use by Changeset)
 // ---------------------------------------------------------------------------
 
-/** Replacer that sorts object keys for deterministic serialization. */
-function stableReplacer(_key: string, value: unknown): unknown {
+function keySortReplacer(_key: string, value: unknown): unknown {
   if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
     const sorted: Record<string, unknown> = {};
     const sortedKeys = Object.keys(value).sort();
@@ -207,7 +189,6 @@ function diffAt(path: string, before: unknown, after: unknown, ops: DiffOp[]): v
     const beforeObj = before as Record<string, unknown>;
     const afterObj = after as Record<string, unknown>;
 
-    // Phase 1: walk before — find deletes and recurse into shared keys
     for (const key in beforeObj) {
       const child = `${path}/${key}`;
 
@@ -220,7 +201,6 @@ function diffAt(path: string, before: unknown, after: unknown, ops: DiffOp[]): v
         });
       }
     }
-    // Phase 2: walk after — find new keys not in before
     for (const key in afterObj) {
       if (!(key in beforeObj)) {
         ops.push({
@@ -309,6 +289,48 @@ export function applyOp(root: unknown, operation: DiffOp): unknown {
   }
 
   return result;
+}
+
+function instanceFromSchema(schema: Record<string, unknown>): unknown {
+  if ('default' in schema) {
+    return structuredClone(schema['default']);
+  }
+  if ('const' in schema) {
+    return schema['const'];
+  }
+  if (Array.isArray(schema['enum']) && (schema['enum'] as unknown[]).length > 0) {
+    return (schema['enum'] as unknown[])[0];
+  }
+
+  const type = schema['type'];
+
+  if (type === 'string') return '';
+  if (type === 'number' || type === 'integer') return 0;
+  if (type === 'boolean') return false;
+  if (type === 'null') return null;
+  if (type === 'array') return [];
+
+  if (type === 'object') {
+    const result: Record<string, unknown> = {};
+    const properties = schema['properties'] as Record<string, Record<string, unknown>> | undefined;
+    const required = Array.isArray(schema['required']) ? schema['required'] as string[] : [];
+
+    if (properties) {
+      for (const key of Object.keys(properties)) {
+        const propSchema = properties[key];
+        const hasDefault = 'default' in propSchema || 'const' in propSchema ||
+          (Array.isArray(propSchema['enum']) && (propSchema['enum'] as unknown[]).length > 0);
+
+        if (hasDefault || required.includes(key)) {
+          result[key] = instanceFromSchema(propSchema);
+        }
+      }
+    }
+
+    return result;
+  }
+
+  return null;
 }
 
 function isPlainObject(value: unknown): boolean {

@@ -29,6 +29,41 @@ export interface SchemaGraphSemantics {
   'thenNode': SchemaGraphNode | undefined;
   'unevaluatedItemsNode': SchemaGraphNode | undefined;
   'unevaluatedPropertiesNode': SchemaGraphNode | undefined;
+  'title': string | undefined;
+  'description': string | undefined;
+  'format': string | undefined;
+  'defaultValue': unknown;
+  'hasDefault': boolean;
+  'constValue': unknown;
+  'hasConst': boolean;
+  'enumValues': unknown[] | undefined;
+  'minimum': number | undefined;
+  'maximum': number | undefined;
+  'exclusiveMinimum': number | undefined;
+  'exclusiveMaximum': number | undefined;
+  'multipleOf': number | undefined;
+  'minLength': number | undefined;
+  'maxLength': number | undefined;
+  'pattern': string | undefined;
+  'minItems': number | undefined;
+  'maxItems': number | undefined;
+  'uniqueItems': boolean;
+  'minProperties': number | undefined;
+  'maxProperties': number | undefined;
+  'additionalPropertiesNode': SchemaGraphNode | boolean | undefined;
+  'notNode': SchemaGraphNode | undefined;
+  'contentEncoding': string | undefined;
+  'contentMediaType': string | undefined;
+  'readOnly': boolean;
+  'writeOnly': boolean;
+  'deprecated': boolean;
+  'rdfsDomain': string | undefined;
+  'rdfsRange': string | undefined;
+  'disjointWith': string | undefined;
+  'equivalentTo': string | undefined;
+  'inverseOf': string | undefined;
+  'transitive': boolean;
+  'symmetric': boolean;
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -43,6 +78,35 @@ function unescapeJsonPointer(segment: string): string {
   return segment.replaceAll('~1', '/').replaceAll('~0', '~');
 }
 
+export type RelationPredicate =
+  | 'rdfs:domain'
+  | 'rdfs:range'
+  | 'rdfs:subClassOf'
+  | 'rdfs:label'
+  | 'rdfs:comment'
+  | 'owl:equivalentClass'
+  | 'owl:complementOf'
+  | 'owl:disjointWith'
+  | 'owl:inverseOf'
+  | 'owl:TransitiveProperty'
+  | 'owl:SymmetricProperty'
+  | 'owl:deprecated'
+  | 'owl:Restriction'
+  | 'owl:oneOf';
+
+export interface SchemaGraphRelation {
+  predicate: RelationPredicate;
+  source: SchemaGraphNode;
+  target: SchemaGraphNode | string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface StructureWarning {
+  path: string;
+  rule: string;
+  message: string;
+}
+
 export class SchemaGraph {
   private readonly anchorMap = new Map<string, SchemaGraphNode>();
   private readonly childMap = new WeakMap<SchemaGraphNode, Map<string, SchemaGraphNode>>();
@@ -50,6 +114,7 @@ export class SchemaGraph {
   private readonly identityMap = new WeakMap<object, SchemaGraphNode>();
   private readonly indexedChildMap = new WeakMap<SchemaGraphNode, Map<string, SchemaGraphNode[]>>();
   private readonly nodeMap = new Map<string, SchemaGraphNode>();
+  private readonly relationMap = new WeakMap<SchemaGraphNode, SchemaGraphRelation[]>();
   private readonly semanticMap = new WeakMap<SchemaGraphNode, SchemaGraphSemantics>();
 
   public constructor(public readonly rootSchema: JsonSchema) {
@@ -114,7 +179,7 @@ export class SchemaGraph {
     return this.entryMap.get(node)?.get(key) ?? [];
   }
 
-  public getNode(schema: Record<string, unknown>): SchemaGraphNode | undefined {
+  public node(schema: Record<string, unknown>): SchemaGraphNode | undefined {
     return this.identityMap.get(schema);
   }
 
@@ -130,6 +195,43 @@ export class SchemaGraph {
     return [...this.nodeMap.values()];
   }
 
+  public validateStructure(): StructureWarning[] {
+    const warnings: StructureWarning[] = [];
+
+    for (const node of this.nodeMap.values()) {
+      if (node.pointer === '') {
+        continue;
+      }
+      if (!isObject(node.schema)) {
+        continue;
+      }
+      const schema = node.schema;
+      if (!('properties' in schema)) {
+        continue;
+      }
+      const rawType = schema.type;
+      const hasObjectType = rawType === 'object'
+        || (Array.isArray(rawType) && rawType.includes('object'));
+      if (!hasObjectType) {
+        continue;
+      }
+      if (typeof schema.$id === 'string') {
+        continue;
+      }
+      if (node.pointer.includes('/$defs/')) {
+        continue;
+      }
+
+      warnings.push({
+        path: node.pointer,
+        rule: 'inline-object',
+        message: `Inline nested object at "${node.pointer}" must be extracted to its own schema with a $id and referenced via $ref.`
+      });
+    }
+
+    return warnings;
+  }
+
   public semantics(node: SchemaGraphNode): SchemaGraphSemantics {
     const cached = this.semanticMap.get(node);
 
@@ -137,14 +239,126 @@ export class SchemaGraph {
       return cached;
     }
 
-    const semantics = this.buildSemantics(node);
+    const semantics = this.extractSemantics(node);
 
     this.semanticMap.set(node, semantics);
 
     return semantics;
   }
 
-  private buildSemantics(node: SchemaGraphNode): SchemaGraphSemantics {
+  public relations(node: SchemaGraphNode): SchemaGraphRelation[] {
+    const cached = this.relationMap.get(node);
+
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    const relations = this.extractRelations(node);
+
+    this.relationMap.set(node, relations);
+
+    return relations;
+  }
+
+  public allRelations(): SchemaGraphRelation[] {
+    const result: SchemaGraphRelation[] = [];
+
+    for (const node of this.nodeMap.values()) {
+      result.push(...this.relations(node));
+    }
+
+    return result;
+  }
+
+  private extractRelations(node: SchemaGraphNode): SchemaGraphRelation[] {
+    const sem = this.semantics(node);
+    const relations: SchemaGraphRelation[] = [];
+
+    // Explicit annotation keys
+    if (sem.rdfsDomain !== undefined) {
+      relations.push({ predicate: 'rdfs:domain', source: node, target: sem.rdfsDomain });
+    }
+    if (sem.rdfsRange !== undefined) {
+      relations.push({ predicate: 'rdfs:range', source: node, target: sem.rdfsRange });
+    }
+    if (sem.disjointWith !== undefined) {
+      relations.push({ predicate: 'owl:disjointWith', source: node, target: sem.disjointWith });
+    }
+    if (sem.equivalentTo !== undefined) {
+      relations.push({ predicate: 'owl:equivalentClass', source: node, target: sem.equivalentTo });
+    }
+    if (sem.inverseOf !== undefined) {
+      relations.push({ predicate: 'owl:inverseOf', source: node, target: sem.inverseOf });
+    }
+    if (sem.transitive) {
+      relations.push({ predicate: 'owl:TransitiveProperty', source: node, target: node.id });
+    }
+    if (sem.symmetric) {
+      relations.push({ predicate: 'owl:SymmetricProperty', source: node, target: node.id });
+    }
+
+    // Structural: title → rdfs:label
+    if (sem.title !== undefined) {
+      relations.push({ predicate: 'rdfs:label', source: node, target: sem.title });
+    }
+    // Structural: description → rdfs:comment
+    if (sem.description !== undefined) {
+      relations.push({ predicate: 'rdfs:comment', source: node, target: sem.description });
+    }
+    // Structural: deprecated → owl:deprecated
+    if (sem.deprecated) {
+      relations.push({ predicate: 'owl:deprecated', source: node, target: 'true' });
+    }
+
+    // Structural: allOf → rdfs:subClassOf
+    for (const parent of sem.allOf) {
+      const parentSem = this.semantics(parent);
+
+      if (parentSem.ref !== undefined) {
+        relations.push({ predicate: 'rdfs:subClassOf', source: node, target: this.resolveRefId(parentSem.ref) });
+      } else {
+        relations.push({ predicate: 'rdfs:subClassOf', source: node, target: parent });
+      }
+    }
+
+    // Structural: anyOf/oneOf → owl:equivalentClass (union members)
+    for (const branch of [...sem.anyOf, ...sem.oneOf]) {
+      relations.push({ predicate: 'owl:equivalentClass', source: node, target: branch });
+    }
+
+    // Structural: not → owl:complementOf
+    if (sem.notNode !== undefined) {
+      relations.push({ predicate: 'owl:complementOf', source: node, target: sem.notNode });
+    }
+
+    // Structural: required → owl:Restriction (minCardinality)
+    for (const propertyName of sem.required) {
+      const propEntry = sem.properties.find(([key]) => key === propertyName);
+      const propIRI = `${node.id}#${propertyName}`;
+
+      relations.push({
+        predicate: 'owl:Restriction',
+        source: node,
+        target: propEntry !== undefined ? propEntry[1] : propIRI,
+        metadata: { minCardinality: 1, onProperty: propIRI }
+      });
+    }
+
+    // Structural: enum → owl:oneOf
+    if (sem.enumValues !== undefined) {
+      for (const value of sem.enumValues) {
+        relations.push({
+          predicate: 'owl:oneOf',
+          source: node,
+          target: typeof value === 'string' ? value : JSON.stringify(value)
+        });
+      }
+    }
+
+    return relations;
+  }
+
+  private extractSemantics(node: SchemaGraphNode): SchemaGraphSemantics {
     if (!isObject(node.schema)) {
       return {
         'allOf': [],
@@ -168,7 +382,42 @@ export class SchemaGraph {
         'schemaTypes': [],
         'thenNode': undefined,
         'unevaluatedItemsNode': undefined,
-        'unevaluatedPropertiesNode': undefined
+        'unevaluatedPropertiesNode': undefined,
+        'title': undefined,
+        'description': undefined,
+        'format': undefined,
+        'defaultValue': undefined,
+        'hasDefault': false,
+        'constValue': undefined,
+        'hasConst': false,
+        'enumValues': undefined,
+        'minimum': undefined,
+        'maximum': undefined,
+        'exclusiveMinimum': undefined,
+        'exclusiveMaximum': undefined,
+        'multipleOf': undefined,
+        'minLength': undefined,
+        'maxLength': undefined,
+        'pattern': undefined,
+        'minItems': undefined,
+        'maxItems': undefined,
+        'uniqueItems': false,
+        'minProperties': undefined,
+        'maxProperties': undefined,
+        'additionalPropertiesNode': undefined,
+        'notNode': undefined,
+        'contentEncoding': undefined,
+        'contentMediaType': undefined,
+        'readOnly': false,
+        'writeOnly': false,
+        'deprecated': false,
+        'rdfsDomain': undefined,
+        'rdfsRange': undefined,
+        'disjointWith': undefined,
+        'equivalentTo': undefined,
+        'inverseOf': undefined,
+        'transitive': false,
+        'symmetric': false
       };
     }
 
@@ -227,8 +476,53 @@ export class SchemaGraph {
       schemaTypes,
       'thenNode': this.child(node, 'then'),
       'unevaluatedItemsNode': this.child(node, 'unevaluatedItems'),
-      'unevaluatedPropertiesNode': this.child(node, 'unevaluatedProperties')
+      'unevaluatedPropertiesNode': this.child(node, 'unevaluatedProperties'),
+      'title': typeof node.schema.title === 'string' ? node.schema.title : undefined,
+      'description': typeof node.schema.description === 'string' ? node.schema.description : undefined,
+      'format': typeof node.schema.format === 'string' ? node.schema.format : undefined,
+      'defaultValue': 'default' in node.schema ? node.schema.default : undefined,
+      'hasDefault': 'default' in node.schema,
+      'constValue': 'const' in node.schema ? node.schema.const : undefined,
+      'hasConst': 'const' in node.schema,
+      'enumValues': Array.isArray(node.schema.enum) ? node.schema.enum as unknown[] : undefined,
+      'minimum': typeof node.schema.minimum === 'number' ? node.schema.minimum : undefined,
+      'maximum': typeof node.schema.maximum === 'number' ? node.schema.maximum : undefined,
+      'exclusiveMinimum': typeof node.schema.exclusiveMinimum === 'number' ? node.schema.exclusiveMinimum : undefined,
+      'exclusiveMaximum': typeof node.schema.exclusiveMaximum === 'number' ? node.schema.exclusiveMaximum : undefined,
+      'multipleOf': typeof node.schema.multipleOf === 'number' ? node.schema.multipleOf : undefined,
+      'minLength': typeof node.schema.minLength === 'number' ? node.schema.minLength : undefined,
+      'maxLength': typeof node.schema.maxLength === 'number' ? node.schema.maxLength : undefined,
+      'pattern': typeof node.schema.pattern === 'string' ? node.schema.pattern : undefined,
+      'minItems': typeof node.schema.minItems === 'number' ? node.schema.minItems : undefined,
+      'maxItems': typeof node.schema.maxItems === 'number' ? node.schema.maxItems : undefined,
+      'uniqueItems': node.schema.uniqueItems === true,
+      'minProperties': typeof node.schema.minProperties === 'number' ? node.schema.minProperties : undefined,
+      'maxProperties': typeof node.schema.maxProperties === 'number' ? node.schema.maxProperties : undefined,
+      'additionalPropertiesNode': this.resolveAdditionalProperties(node),
+      'notNode': this.child(node, 'not'),
+      'contentEncoding': typeof node.schema.contentEncoding === 'string' ? node.schema.contentEncoding : undefined,
+      'contentMediaType': typeof node.schema.contentMediaType === 'string' ? node.schema.contentMediaType : undefined,
+      'readOnly': node.schema.readOnly === true,
+      'writeOnly': node.schema.writeOnly === true,
+      'deprecated': node.schema.deprecated === true,
+      'rdfsDomain': typeof node.schema['rdfs:domain'] === 'string' ? node.schema['rdfs:domain'] : undefined,
+      'rdfsRange': typeof node.schema['rdfs:range'] === 'string' ? node.schema['rdfs:range'] : undefined,
+      'disjointWith': typeof node.schema.disjointWith === 'string' ? node.schema.disjointWith : undefined,
+      'equivalentTo': typeof node.schema.equivalentTo === 'string' ? node.schema.equivalentTo : undefined,
+      'inverseOf': typeof node.schema.inverseOf === 'string' ? node.schema.inverseOf : undefined,
+      'transitive': node.schema.transitive === true,
+      'symmetric': node.schema.symmetric === true
     };
+  }
+
+  private resolveAdditionalProperties(node: SchemaGraphNode): SchemaGraphNode | boolean | undefined {
+    if (!isObject(node.schema) || !('additionalProperties' in node.schema)) {
+      return undefined;
+    }
+    if (typeof node.schema.additionalProperties === 'boolean') {
+      return node.schema.additionalProperties;
+    }
+    return this.child(node, 'additionalProperties');
   }
 
   private resolveLocalRef(ref: string): SchemaGraphNode {

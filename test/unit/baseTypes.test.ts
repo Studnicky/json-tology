@@ -109,11 +109,16 @@ describe('makeResponseSchema()', () => {
 
   it('validates via registry', () => {
     const registry = new SchemaRegistry();
+    const IdBodySchema = {
+      '$id': 'https://test.io/IdBody',
+      'type': 'object',
+      'properties': { 'id': { 'type': 'number' } },
+    } as const;
     const schema = makeResponseSchema(
-      { type: 'object', properties: { id: { type: 'number' } } } as const,
+      { '$ref': 'https://test.io/IdBody' } as const,
       'https://test.io/IdResponse',
     );
-    registry.register(schema);
+    registry.register([IdBodySchema, schema]);
     const errors = registry.validate(schema.$id, { success: true, body: { id: 1 } });
     assert.equal(errors.length, 0);
   });
@@ -146,11 +151,16 @@ describe('makePageSchema()', () => {
 
   it('validates via registry', () => {
     const registry = new SchemaRegistry();
+    const NameItemSchema = {
+      '$id': 'https://test.io/NameItem',
+      'type': 'object',
+      'properties': { 'name': { 'type': 'string' } },
+    } as const;
     const schema = makePageSchema(
-      { type: 'object', properties: { name: { type: 'string' } } } as const,
+      { '$ref': 'https://test.io/NameItem' } as const,
       'https://test.io/NamePage',
     );
-    registry.register(schema);
+    registry.register([NameItemSchema, schema]);
     const errors = registry.validate(schema.$id, {
       items: [{ name: 'Alice' }],
       total: 1,

@@ -97,9 +97,9 @@ describe('SchemaRegistry', () => {
 
     const registry = new SchemaRegistry({ logger: mockLogger });
     registry.register(TestSchema);
-    registry.register(TestSchema); // Register same schema again
+    registry.register({ ...TestSchema }); // Register different object with same content
 
-    // Should have a debug message about identical schema
+    // Should have a trace message about identical schema
     assert.ok(logs.some((log) => log.includes('identical')));
   });
 
@@ -236,9 +236,10 @@ const ParseTestSchema = {
   'required': ['name'],
 } as const;
 
-describe('parse / safeParse / is / errors', () => {
+describe('parse / is / errors', () => {
   it('parse() returns data with defaults applied', () => {
     const registry = new SchemaRegistry({ logger: ConsoleLogger });
+    registry.register(ParseTestSchema);
     const result = registry.parse(ParseTestSchema, { 'name': 'Alice' }) as any;
     assert.strictEqual(result.name, 'Alice');
     assert.strictEqual(result.count, 0);
@@ -246,6 +247,7 @@ describe('parse / safeParse / is / errors', () => {
 
   it('parse() does not mutate the original object', () => {
     const registry = new SchemaRegistry({ logger: ConsoleLogger });
+    registry.register(ParseTestSchema);
     const original = { 'name': 'Bob' };
     registry.parse(ParseTestSchema, original);
     assert.strictEqual('count' in original, false);
@@ -253,6 +255,7 @@ describe('parse / safeParse / is / errors', () => {
 
   it('parse() throws ParseError on invalid data', () => {
     const registry = new SchemaRegistry({ logger: ConsoleLogger });
+    registry.register(ParseTestSchema);
     assert.throws(
       () => registry.parse(ParseTestSchema, { 'count': 5 }),
       (err: unknown) => err instanceof ParseError,
@@ -261,6 +264,7 @@ describe('parse / safeParse / is / errors', () => {
 
   it('parse() ParseError has structured errors array', () => {
     const registry = new SchemaRegistry({ logger: ConsoleLogger });
+    registry.register(ParseTestSchema);
     try {
       registry.parse(ParseTestSchema, {});
       assert.fail('should have thrown');
@@ -273,30 +277,15 @@ describe('parse / safeParse / is / errors', () => {
     }
   });
 
-  it('safeParse() returns success:true with data on valid input', () => {
-    const registry = new SchemaRegistry({ logger: ConsoleLogger });
-    const result = registry.safeParse(ParseTestSchema, { 'name': 'Carol' });
-    assert.strictEqual(result.success, true);
-    if (result.success) assert.strictEqual((result.data as any).name, 'Carol');
-  });
-
-  it('safeParse() returns success:false with errors on invalid input', () => {
-    const registry = new SchemaRegistry({ logger: ConsoleLogger });
-    const result = registry.safeParse(ParseTestSchema, { 'count': 99 });
-    assert.strictEqual(result.success, false);
-    if (!result.success) {
-      assert.ok(result.errors.length > 0);
-      assert.ok(typeof result.errors.items[0].message === 'string');
-    }
-  });
-
   it('is() returns true for valid data', () => {
     const registry = new SchemaRegistry({ logger: ConsoleLogger });
+    registry.register(ParseTestSchema);
     assert.strictEqual(registry.is(ParseTestSchema, { 'name': 'Dave' }), true);
   });
 
   it('is() returns false for invalid data', () => {
     const registry = new SchemaRegistry({ logger: ConsoleLogger });
+    registry.register(ParseTestSchema);
     assert.strictEqual(registry.is(ParseTestSchema, { 'count': 1 }), false);
   });
 
@@ -316,8 +305,9 @@ describe('parse / safeParse / is / errors', () => {
     assert.equal(registry.errors(ParseTestSchema.$id, { 'name': 'Eve' }).length, 0);
   });
 
-  it('parse() / safeParse() / is() auto-register without prior register() call', () => {
+  it('parse() / is() require explicit register() call', () => {
     const registry = new SchemaRegistry({ logger: ConsoleLogger });
+    registry.register(ParseTestSchema);
     assert.strictEqual(registry.is(ParseTestSchema, { 'name': 'Frank' }), true);
     assert.ok(registry.get(ParseTestSchema.$id) !== undefined);
   });

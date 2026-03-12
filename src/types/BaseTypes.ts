@@ -4,9 +4,8 @@
  * Core container types and patterns used across multiple domains.
  */
 
-import type {
-  FromSchema, JSONSchema
-} from 'json-schema-to-ts';
+import type { JSONSchema } from './json-schema.js';
+import type { Infer } from './schema.js';
 
 export namespace BaseTypes {
   /* ── Schema definitions ── */
@@ -272,15 +271,15 @@ export namespace BaseTypes {
 
   /* ── Schema-derived types ── */
 
-  export type Duration = FromSchema<typeof DurationDef>;
-  export type ErrorDetails = FromSchema<typeof ErrorDetailsDef>;
-  export type Progress = FromSchema<typeof ProgressDef>;
-  export type Timed = FromSchema<typeof TimedDef>;
-  export type Timestamped = FromSchema<typeof TimestampedDef>;
-  export type SortOrder = FromSchema<typeof SortOrderDef>;
+  export type Duration = Infer<typeof DurationDef>;
+  export type ErrorDetails = Infer<typeof ErrorDetailsDef>;
+  export type Progress = Infer<typeof ProgressDef>;
+  export type Timed = Infer<typeof TimedDef>;
+  export type Timestamped = Infer<typeof TimestampedDef>;
+  export type SortOrder = Infer<typeof SortOrderDef>;
   export type Cursor = string;
-  export type Pagination = FromSchema<typeof PaginationDef>;
-  export type Filter = FromSchema<typeof FilterDef>;
+  export type Pagination = Infer<typeof PaginationDef>;
+  export type Filter = Infer<typeof FilterDef>;
 
   /**
    * Generic response container.

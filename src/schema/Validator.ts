@@ -2,21 +2,21 @@
  * Validator
  *
  * Stateless schema validation without a registry.
+ * Internally uses SchemaCompiler for optimized validation.
  */
 
 import { ParseError } from './ParseError.js';
 import { ValidationErrors } from './ValidationErrors.js';
-import { OkResult } from './OkResult.js';
-import {
-  FailResult, type ParseResult
-} from './FailResult.js';
 import { GraphEngine } from './GraphEngine.js';
+import { SchemaCompiler, type CompiledValidator } from './SchemaCompiler.js';
 import type { ValidationResult } from '../interfaces/validation.js';
 
 export type { ValidationResult } from '../interfaces/validation.js';
 
+const compiler = new SchemaCompiler();
+
 export class Validator {
-  private readonly validators = new Map<string, GraphEngine>();
+  private readonly validators = new Map<string, CompiledValidator>();
 
   public constructor() {}
 
@@ -32,9 +32,10 @@ export class Validator {
 
   public errors(schema: Record<string, unknown>, data: unknown): ValidationErrors {
     try {
-      const errors = this.getOrCompileValidator(schema).errors(data);
+      const compiled = this.compiled(schema);
+      const result = compiled.validate(data, { 'collectErrors': true });
 
-      return errors.length === 0 ? new ValidationErrors([]) : new ValidationErrors(errors);
+      return result.errors.length === 0 ? new ValidationErrors([]) : new ValidationErrors(result.errors);
     } catch (error) {
       return new ValidationErrors([{
         'keyword': 'unknown',
@@ -46,11 +47,11 @@ export class Validator {
   }
 
   public is<T>(schema: Record<string, unknown>, data: unknown): data is T {
-    return this.validate(schema, data).length === 0;
+    return this.compiled(schema).check(data);
   }
 
   public isValid(schema: Record<string, unknown>, data: unknown): boolean {
-    return this.validate(schema, data).length === 0;
+    return this.compiled(schema).check(data);
   }
 
   public parse<T>(schema: Record<string, unknown>, data: unknown): T {
@@ -63,21 +64,17 @@ export class Validator {
     return data as T;
   }
 
-  public safeParse<T>(schema: Record<string, unknown>, data: unknown): ParseResult<T> {
-    const errs = this.errors(schema, data);
-
-    if (!errs.ok) {
-      return new FailResult<T>(errs);
-    }
-
-    return new OkResult(data as T);
-  }
-
   public validate(schema: Record<string, unknown>, data: unknown): string[] {
     try {
-      const errors = this.getOrCompileValidator(schema).errors(data);
+      const compiled = this.compiled(schema);
 
-      return errors.map((error) => {
+      if (compiled.compiled && compiled.check(data)) {
+        return [];
+      }
+
+      const result = compiled.validate(data, { 'collectErrors': true });
+
+      return result.errors.map((error) => {
         return `${error.path === '' ? 'root' : error.path}: ${error.message}`;
       });
     } catch (error) {
@@ -101,19 +98,17 @@ export class Validator {
     };
   }
 
-  private getOrCompileValidator(schema: Record<string, unknown>): GraphEngine {
+  private compiled(schema: Record<string, unknown>): CompiledValidator {
     const cacheKey = (schema.$id as string | undefined) ?? JSON.stringify(schema);
+    let compiled = this.validators.get(cacheKey);
 
-    if (!this.validators.has(cacheKey)) {
-      this.validators.set(cacheKey, new GraphEngine(schema));
+    if (compiled === undefined) {
+      const engine = new GraphEngine(schema);
+
+      compiled = compiler.compile(engine);
+      this.validators.set(cacheKey, compiled);
     }
 
-    const validator = this.validators.get(cacheKey);
-
-    if (validator === undefined) {
-      throw new Error(`Validator unexpectedly missing for: ${cacheKey}`);
-    }
-
-    return validator;
+    return compiled;
   }
 }

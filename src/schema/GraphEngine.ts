@@ -1,14 +1,29 @@
-import { isIP } from 'node:net';
-import { domainToASCII } from 'node:url';
 import type { ValidationError } from '../interfaces/validation.js';
+import { type FormatRegistry, builtinFormats } from './FormatRegistry.js';
 import { SchemaGraph, type SchemaGraphNode } from './SchemaGraph.js';
 
 type JsonSchema = boolean | Record<string, unknown>;
+
+export interface KeywordContext {
+  'parentData': unknown;
+  'parentKey': number | string;
+  'path': string;
+  'rootData': unknown;
+}
+
+export interface KeywordDefinition {
+  'keyword': string;
+  'type'?: string | string[];
+  'validate': (schema: unknown, data: unknown, context: KeywordContext) => boolean | ValidationError[];
+}
 
 export interface GraphEngineOptions {
   'applyDefaults'?: boolean;
   'coerce'?: boolean;
   'collectErrors'?: boolean;
+  'formatRegistry'?: FormatRegistry;
+  'ignoreAdditionalProperties'?: boolean;
+  'keywords'?: KeywordDefinition[];
   'lookupSchema'?: (schemaId: string) => Record<string, unknown> | undefined;
   'materializeContainers'?: boolean;
   'removeAdditional'?: boolean;
@@ -95,6 +110,7 @@ interface SchemaNodePlan {
   'unevaluatedItems': JsonSchema | boolean | undefined;
   'unevaluatedProperties': JsonSchema | boolean | undefined;
   'uniqueItems': boolean;
+  'discriminatorPropertyName': string | undefined;
   'elseSchema': JsonSchema | undefined;
 }
 
@@ -102,109 +118,14 @@ interface RootDialectPlan {
   'formatAssertions': boolean;
 }
 
-const DEFAULT_OPTIONS: Required<Omit<GraphEngineOptions, 'lookupSchema'>> = {
+const DEFAULT_OPTIONS: Required<Omit<GraphEngineOptions, 'formatRegistry' | 'keywords' | 'lookupSchema'>> = {
   'applyDefaults': false,
   'coerce': false,
   'collectErrors': true,
+  'ignoreAdditionalProperties': false,
   'materializeContainers': false,
   'removeAdditional': false,
   'stripUnknownProperties': false
-};
-
-const FORMAT_VALIDATORS: Record<string, (value: string) => boolean> = {
-  'binary': (value) => {
-    return value.length > 0 && value.length % 2 === 0 && /^[\da-f]+$/iu.test(value);
-  },
-  'byte': (value) => {
-    return /^(?:[A-Za-z\d+/]{4})*(?:[A-Za-z\d+/]{2}==|[A-Za-z\d+/]{3}=)?$/u.test(value);
-  },
-  'date': (value) => {
-    if (!/^\d{4}-\d{2}-\d{2}$/u.test(value)) {
-      return false;
-    }
-
-    const candidate = new Date(`${value}T00:00:00.000Z`);
-
-    return !Number.isNaN(candidate.getTime()) && candidate.toISOString().startsWith(value);
-  },
-  'date-time': (value) => {
-    return value.length > 15 && value.includes('T') && !Number.isNaN(Date.parse(value));
-  },
-  'duration': (value) => {
-    return /^P(?=\d|T\d)(?:\d+Y)?(?:\d+M)?(?:\d+W)?(?:\d+D)?(?:T(?:\d+H)?(?:\d+M)?(?:\d+(?:\.\d+)?S)?)?$/u.test(value);
-  },
-  'email': (value) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(value);
-  },
-  'hostname': (value) => {
-    return isAsciiHostname(value);
-  },
-  'idn-email': (value) => {
-    if (!/^[^\s@]+@[^\s@]+$/u.test(value)) {
-      return false;
-    }
-
-    const domain = value.slice(value.lastIndexOf('@') + 1);
-
-    return domainToASCII(domain).length > 0;
-  },
-  'idn-hostname': (value) => {
-    return domainToASCII(value).length > 0;
-  },
-  'ipv4': (value) => {
-    return isIP(value) === 4;
-  },
-  'ipv6': (value) => {
-    return isIP(value) === 6;
-  },
-  'iri': (value) => {
-    return isUriLike(value);
-  },
-  'iri-reference': (value) => {
-    return isUriReference(value);
-  },
-  'json-pointer': (value) => {
-    return /^(?:\/(?:[^~/]|~0|~1)*)*$/u.test(value);
-  },
-  'regex': (value) => {
-    try {
-      new RegExp(value, 'u');
-
-      return true;
-    } catch {
-      return false;
-    }
-  },
-  'time': (value) => {
-    return /^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|[+-][01]\d:[0-5]\d)?$/u.test(value);
-  },
-  'uri': (value) => {
-    return isUriLike(value);
-  },
-  'uri-reference': (value) => {
-    return isUriReference(value);
-  },
-  'uri-template': (value) => {
-    return isUriReference(value) && hasBalancedBraces(value);
-  },
-  'uuid': (value) => {
-    return /^[\da-f]{8}-[\da-f]{4}-[1-8][\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/iu.test(value);
-  }
-};
-
-const NUMBER_FORMAT_VALIDATORS: Record<string, (value: number) => boolean> = {
-  'double': (value) => {
-    return Number.isFinite(value);
-  },
-  'float': (value) => {
-    return Number.isFinite(value) && Math.fround(value) === value;
-  },
-  'int32': (value) => {
-    return Number.isInteger(value) && value >= -2147483648 && value <= 2147483647;
-  },
-  'int64': (value) => {
-    return Number.isInteger(value) && Number.isSafeInteger(value);
-  }
 };
 
 const CURRENT_DIALECT_PREFIX = 'https://json-schema.org/draft/2020-12/';
@@ -236,7 +157,7 @@ function escapeJsonPointer(segment: string): string {
   return segment.replaceAll('~', '~0').replaceAll('/', '~1');
 }
 
-function isObject(value: unknown): value is Record<string, unknown> {
+export function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
@@ -297,24 +218,7 @@ function toArray<T>(value: T | T[] | undefined): T[] {
   return Array.isArray(value) ? value : [value];
 }
 
-function hasBalancedBraces(value: string): boolean {
-  let depth = 0;
-
-  for (const char of value) {
-    if (char === '{') {
-      depth++;
-    } else if (char === '}') {
-      depth--;
-      if (depth < 0) {
-        return false;
-      }
-    }
-  }
-
-  return depth === 0;
-}
-
-function stableReplacer(_key: string, value: unknown): unknown {
+export function keySortReplacer(_key: string, value: unknown): unknown {
   if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
     const sorted: Record<string, unknown> = {};
 
@@ -328,8 +232,8 @@ function stableReplacer(_key: string, value: unknown): unknown {
   return value;
 }
 
-function stableHash(value: unknown): string {
-  const serialized = JSON.stringify(value, stableReplacer);
+export function deterministicHash(value: unknown): string {
+  const serialized = JSON.stringify(value, keySortReplacer);
   let hash = 2_166_136_261;
   const fnvPrime = 16_777_619;
 
@@ -341,39 +245,6 @@ function stableHash(value: unknown): string {
   return hash.toString(16);
 }
 
-function isAsciiHostname(value: string): boolean {
-  return /^[a-z\d](?:[a-z\d-]{0,61}[a-z\d])?(?:\.[a-z\d](?:[a-z\d-]{0,61}[a-z\d])?)*$/iu.test(value);
-}
-
-function isUriLike(value: string): boolean {
-  try {
-    new URL(value);
-
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function isUriReference(value: string): boolean {
-  if (value === '') {
-    return true;
-  }
-
-  try {
-    new URL(value);
-
-    return true;
-  } catch {
-    try {
-      new URL(value, 'https://example.invalid');
-
-      return !value.includes(' ');
-    } catch {
-      return false;
-    }
-  }
-}
 
 function keywordValue<T>(
   graph: SchemaGraph | undefined,
@@ -459,33 +330,46 @@ function schemaEntries(
   return Object.entries(isObject(candidate) ? candidate : {}).filter(([, entry]) => isJsonSchema(entry)) as Array<[string, JsonSchema]>;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function escapeInstanceSegment(value: string): string {
+export function escapeInstanceSegment(value: string): string {
   return encodeURIComponent(value).replaceAll('%2F', '/');
 }
 
-function propertyIri(classId: string, propertyName: string): string {
+export function propertyIri(classId: string, propertyName: string): string {
   return `${classId}#${propertyName}`;
 }
 
 export class GraphEngine {
+  private readonly customKeywords: KeywordDefinition[];
   private readonly dialectPlan: RootDialectPlan;
+  public readonly formatRegistry: FormatRegistry;
   private readonly graphCache = new WeakMap<object, SchemaGraph>();
   private readonly nodePlanCache = new WeakMap<object, SchemaNodePlan>();
   private readonly objectPlanCache = new WeakMap<object, ObjectValidationPlan>();
-  private readonly options: Required<Omit<GraphEngineOptions, 'lookupSchema'>> & Pick<GraphEngineOptions, 'lookupSchema'>;
+  private readonly options: Required<Omit<GraphEngineOptions, 'formatRegistry' | 'keywords' | 'lookupSchema'>> & Pick<GraphEngineOptions, 'lookupSchema'>;
   private readonly refCache = new Map<string, RefTarget>();
   private readonly regexCache = new Map<string, RegExp>();
 
-  public constructor(private readonly rootSchema: JsonSchema, options: GraphEngineOptions = {}) {
+  public constructor(public readonly rootSchema: JsonSchema, options: GraphEngineOptions = {}) {
+    const { formatRegistry, keywords, ...rest } = options;
+    this.formatRegistry = formatRegistry ?? builtinFormats();
+    this.customKeywords = keywords ?? [];
     this.options = {
       ...DEFAULT_OPTIONS,
-      ...options
+      ...rest
     };
     this.dialectPlan = this.rootDialectPlan(rootSchema);
+  }
+
+  public hasCustomKeywords(): boolean {
+    return this.customKeywords.length > 0;
+  }
+
+  public schemaLookup(): ((schemaId: string) => Record<string, unknown> | undefined) | undefined {
+    return this.options.lookupSchema;
   }
 
   public check(value: unknown, pointer = ''): boolean {
@@ -499,7 +383,7 @@ export class GraphEngine {
   public execute(
     value: unknown,
     pointer = '',
-    overrides: Partial<Omit<GraphEngineOptions, 'lookupSchema'>> = {}
+    overrides: Partial<Omit<GraphEngineOptions, 'formatRegistry' | 'lookupSchema'>> = {}
   ): GraphExecutionResult {
     const graph = this.graphFor(this.rootSchema);
     const entryNode = graph.resolvePointer(pointer);
@@ -522,37 +406,8 @@ export class GraphEngine {
     };
   }
 
-  public materializeResult(result: GraphExecutionResult): unknown {
-    const value = structuredClone(result.value);
 
-    this.fillImplicitProperties(result.graph, result.entryNode, value);
-
-    return value;
-  }
-
-  public projectAbox(value: unknown, baseIRI: string, pointer = ''): unknown[] {
-    const execution = this.execute(value, pointer, {
-      'applyDefaults': true,
-      'collectErrors': true,
-      'coerce': this.options.coerce,
-      'removeAdditional': false
-    });
-    const materialized = this.materializeResult(execution);
-    const rootId = this.rootSchemaId();
-
-    if (rootId === undefined) {
-      return [];
-    }
-
-    const instanceRoot = `${baseIRI}/instances/${escapeInstanceSegment(rootId)}-${stableHash(materialized)}`;
-    const nodes: Array<Record<string, unknown>> = [];
-
-    this.projectNode(execution.graph, execution.entryNode, materialized, instanceRoot, nodes, '', this.rootSchema);
-
-    return nodes;
-  }
-
-  private fillImplicitProperties(
+  public fillImplicitProperties(
     graph: SchemaGraph,
     node: SchemaGraphNode,
     value: unknown,
@@ -591,7 +446,7 @@ export class GraphEngine {
     }
   }
 
-  private projectNode(
+  public projectNode(
     graph: SchemaGraph,
     schemaNode: SchemaGraphNode,
     value: unknown,
@@ -657,7 +512,7 @@ export class GraphEngine {
     nodes.push(node);
   }
 
-  private projectPropertyValue(
+  public projectPropertyValue(
     graph: SchemaGraph,
     schemaNode: SchemaGraphNode,
     value: unknown,
@@ -684,7 +539,7 @@ export class GraphEngine {
     return { '@id': subjectId };
   }
 
-  private resolveGraphTargetNode(
+  public resolveGraphTargetNode(
     graph: SchemaGraph,
     schemaNode: SchemaGraphNode,
     currentRoot: JsonSchema
@@ -701,10 +556,10 @@ export class GraphEngine {
       return schemaNode;
     }
 
-    return this.graphFor(resolved.rootSchema).getNode(resolved.schema) ?? schemaNode;
+    return this.graphFor(resolved.rootSchema).node(resolved.schema) ?? schemaNode;
   }
 
-  private rootSchemaId(): string | undefined {
+  public rootSchemaId(): string | undefined {
     return this.schemaId(this.rootSchema);
   }
 
@@ -859,7 +714,7 @@ export class GraphEngine {
     currentRoot: JsonSchema,
     value: unknown,
     path: string,
-    options: Required<Omit<GraphEngineOptions, 'lookupSchema'>> & Pick<GraphEngineOptions, 'lookupSchema'>,
+    options: Required<Omit<GraphEngineOptions, 'formatRegistry' | 'keywords' | 'lookupSchema'>> & Pick<GraphEngineOptions, 'lookupSchema'>,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntry[]
   ): InternalExecutionResult {
@@ -884,7 +739,7 @@ export class GraphEngine {
     let workingValue = value;
 
     const graph = isObject(currentRoot) ? this.graphFor(currentRoot) : undefined;
-    const currentNode = graph?.getNode(schema);
+    const currentNode = graph?.node(schema);
     const nodePlan = this.schemaNodePlan(schema, graph, currentNode);
     const {
       constValue,
@@ -1147,15 +1002,67 @@ export class GraphEngine {
       let matches = 0;
       let matchedResult: InternalExecutionResult | undefined;
 
-      for (const element of oneOfNodes) {
-        const candidate = this.visit(element.schema, currentRoot, cloneCandidate(workingValue), path, {
-          ...options,
-          'collectErrors': true
-        }, refStack, nextDynamicScope);
+      // Discriminator optimization: if the schema has a discriminator property,
+      // check the discriminator value first and only validate against the matching variant.
+      const discProp = nodePlan.discriminatorPropertyName;
+      let discriminatorHandled = false;
 
-        if (candidate.valid) {
-          matches++;
-          matchedResult = candidate;
+      if (
+        discProp !== undefined
+        && typeof workingValue === 'object'
+        && workingValue !== null
+        && !Array.isArray(workingValue)
+      ) {
+        const dataObj = workingValue as Record<string, unknown>;
+        const discValue = dataObj[discProp];
+
+        if (discValue !== undefined) {
+          // Find the variant whose discriminator property has a matching const value
+          for (const element of oneOfNodes) {
+            const variantSchema = element.schema;
+
+            if (typeof variantSchema === 'object' && variantSchema !== null) {
+              const variant = variantSchema as Record<string, unknown>;
+              const props = variant.properties as Record<string, unknown> | undefined;
+
+              if (props !== undefined && props !== null) {
+                const discSchema = props[discProp];
+
+                if (typeof discSchema === 'object' && discSchema !== null) {
+                  const discSchemaObj = discSchema as Record<string, unknown>;
+                  const constVal = discSchemaObj.const;
+
+                  if (constVal !== undefined && constVal === discValue) {
+                    const candidate = this.visit(element.schema, currentRoot, cloneCandidate(workingValue), path, {
+                      ...options,
+                      'collectErrors': true
+                    }, refStack, nextDynamicScope);
+
+                    if (candidate.valid) {
+                      matches = 1;
+                      matchedResult = candidate;
+                    }
+                    discriminatorHandled = true;
+                    break;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (!discriminatorHandled) {
+        for (const element of oneOfNodes) {
+          const candidate = this.visit(element.schema, currentRoot, cloneCandidate(workingValue), path, {
+            ...options,
+            'collectErrors': true
+          }, refStack, nextDynamicScope);
+
+          if (candidate.valid) {
+            matches++;
+            matchedResult = candidate;
+          }
         }
       }
 
@@ -1194,6 +1101,14 @@ export class GraphEngine {
         'collectErrors': true
       }, refStack, nextDynamicScope);
       const branchSchema = condition.valid ? nodePlan.thenSchema : nodePlan.elseSchema;
+
+      // Properties evaluated by the if condition count as evaluated (JSON Schema 2020-12 §10.2.2.1)
+      for (const key of condition.evaluatedProperties) {
+        evaluatedProperties.add(key);
+      }
+      for (const index of condition.evaluatedItems) {
+        evaluatedItems.add(index);
+      }
 
       if (branchSchema !== undefined) {
         const branch = this.visit(branchSchema as JsonSchema, currentRoot, workingValue, path, options, refStack, nextDynamicScope);
@@ -1253,6 +1168,106 @@ export class GraphEngine {
       pushErrors(unevaluatedResult.errors);
       for (const key of unevaluatedResult.evaluatedProperties) {
         evaluatedProperties.add(key);
+      }
+    }
+
+    if (this.customKeywords.length > 0) {
+      const dataType = inferType(workingValue);
+
+      for (const kw of this.customKeywords) {
+        if (!(kw.keyword in schema)) {
+          continue;
+        }
+        if (kw.type !== undefined) {
+          const allowedTypes = Array.isArray(kw.type) ? kw.type : [kw.type];
+
+          if (!allowedTypes.includes(dataType)) {
+            continue;
+          }
+        }
+        const kwContext: KeywordContext = {
+          'parentData': undefined,
+          'parentKey': '',
+          'path': path,
+          'rootData': workingValue
+        };
+        const kwResult = kw.validate(
+          (schema as Record<string, unknown>)[kw.keyword],
+          workingValue,
+          kwContext
+        );
+
+        if (kwResult === false) {
+          const kwError = this.createError(path, kw.keyword, `must pass "${kw.keyword}" validation`);
+
+          if (options.collectErrors) {
+            errors.push(kwError);
+          } else {
+            return {
+              'errors': [kwError],
+              evaluatedItems,
+              evaluatedProperties,
+              'valid': false,
+              'value': workingValue
+            };
+          }
+        } else if (Array.isArray(kwResult) && kwResult.length > 0) {
+          if (options.collectErrors) {
+            errors.push(...kwResult);
+          } else {
+            return {
+              'errors': kwResult,
+              evaluatedItems,
+              evaluatedProperties,
+              'valid': false,
+              'value': workingValue
+            };
+          }
+        }
+      }
+    }
+
+    // rdfs:range validation — enforce range schema on object/array values
+    const rdfsRange = typeof schema === 'object' && schema !== null && !Array.isArray(schema)
+      ? (schema as Record<string, unknown>)['rdfs:range']
+      : undefined;
+
+    if (typeof rdfsRange === 'string' && options.lookupSchema !== undefined) {
+      const rangeSchema = options.lookupSchema(rdfsRange);
+
+      if (rangeSchema !== undefined) {
+        const rangeRefKey = `rdfs:range::${rdfsRange}`;
+
+        if (!refStack.has(rangeRefKey)) {
+          refStack.add(rangeRefKey);
+
+          if (isObject(workingValue)) {
+            const rangeResult = this.visit(
+              rangeSchema, rangeSchema, workingValue, path, options, refStack, []
+            );
+
+            if (!rangeResult.valid) {
+              pushErrors(rangeResult.errors);
+            }
+          } else if (Array.isArray(workingValue)) {
+            for (let i = 0; i < workingValue.length; i++) {
+              const item = workingValue[i];
+
+              if (isObject(item) || Array.isArray(item)) {
+                const itemPath = `${path}/${i}`;
+                const itemResult = this.visit(
+                  rangeSchema, rangeSchema, item, itemPath, options, refStack, []
+                );
+
+                if (!itemResult.valid) {
+                  pushErrors(itemResult.errors);
+                }
+              }
+            }
+          }
+
+          refStack.delete(rangeRefKey);
+        }
       }
     }
 
@@ -1362,7 +1377,7 @@ export class GraphEngine {
       errors.push(this.createError(path, 'pattern', 'must match pattern', { pattern }));
     }
     if (format !== undefined) {
-      const validator = FORMAT_VALIDATORS[format];
+      const validator = this.formatRegistry.get(format);
 
       if (validator !== undefined && this.dialectPlan.formatAssertions && !validator(value)) {
         errors.push(this.createError(path, 'format', `must match format "${format}"`, { format }));
@@ -1407,7 +1422,7 @@ export class GraphEngine {
       }
     }
     if (format !== undefined) {
-      const validator = NUMBER_FORMAT_VALIDATORS[format];
+      const validator = this.formatRegistry.get(format);
 
       if (validator !== undefined && this.dialectPlan.formatAssertions && !validator(value)) {
         errors.push(this.createError(path, 'format', `must match format "${format}"`, { format }));
@@ -1421,7 +1436,7 @@ export class GraphEngine {
     currentRoot: JsonSchema,
     value: unknown[],
     path: string,
-    options: Required<Omit<GraphEngineOptions, 'lookupSchema'>> & Pick<GraphEngineOptions, 'lookupSchema'>,
+    options: Required<Omit<GraphEngineOptions, 'formatRegistry' | 'keywords' | 'lookupSchema'>> & Pick<GraphEngineOptions, 'lookupSchema'>,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntry[],
     nodePlan: SchemaNodePlan
@@ -1551,14 +1566,14 @@ export class GraphEngine {
     currentRoot: JsonSchema,
     value: Record<string, unknown>,
     path: string,
-    options: Required<Omit<GraphEngineOptions, 'lookupSchema'>> & Pick<GraphEngineOptions, 'lookupSchema'>,
+    options: Required<Omit<GraphEngineOptions, 'formatRegistry' | 'keywords' | 'lookupSchema'>> & Pick<GraphEngineOptions, 'lookupSchema'>,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntry[]
   ): InternalExecutionResult {
     const errors: ValidationError[] = [];
     const evaluatedProperties = new Set<string>();
     const graph = isObject(currentRoot) ? this.graphFor(currentRoot) : undefined;
-    const currentNode = graph?.getNode(schema);
+    const currentNode = graph?.node(schema);
     const nodePlan = this.schemaNodePlan(schema, graph, currentNode);
     const objectPlan = this.objectValidationPlan(schema, graph, currentNode);
     const propertyEntries = objectPlan.propertyEntries;
@@ -1698,6 +1713,10 @@ export class GraphEngine {
     }
 
     const applyAdditional = (key: string): void => {
+      if (options.ignoreAdditionalProperties) {
+        return;
+      }
+
       const additionalProperties = nodePlan.additionalProperties;
 
       if (additionalProperties === false) {
@@ -1750,7 +1769,7 @@ export class GraphEngine {
     currentRoot: JsonSchema,
     value: unknown[],
     path: string,
-    options: Required<Omit<GraphEngineOptions, 'lookupSchema'>> & Pick<GraphEngineOptions, 'lookupSchema'>,
+    options: Required<Omit<GraphEngineOptions, 'formatRegistry' | 'keywords' | 'lookupSchema'>> & Pick<GraphEngineOptions, 'lookupSchema'>,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntry[],
     alreadyEvaluated: Set<number>
@@ -1759,7 +1778,7 @@ export class GraphEngine {
     const evaluatedItems = new Set<number>();
     const workingValue = value;
     const graph = isObject(currentRoot) ? this.graphFor(currentRoot) : undefined;
-    const currentNode = graph?.getNode(schema);
+    const currentNode = graph?.node(schema);
     const nodePlan = this.schemaNodePlan(schema, graph, currentNode);
 
     for (let index = 0; index < workingValue.length; index++) {
@@ -1799,7 +1818,7 @@ export class GraphEngine {
     currentRoot: JsonSchema,
     value: Record<string, unknown>,
     path: string,
-    options: Required<Omit<GraphEngineOptions, 'lookupSchema'>> & Pick<GraphEngineOptions, 'lookupSchema'>,
+    options: Required<Omit<GraphEngineOptions, 'formatRegistry' | 'keywords' | 'lookupSchema'>> & Pick<GraphEngineOptions, 'lookupSchema'>,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntry[],
     alreadyEvaluated: Set<string>
@@ -1808,7 +1827,7 @@ export class GraphEngine {
     const evaluatedProperties = new Set<string>();
     const workingValue = value;
     const graph = isObject(currentRoot) ? this.graphFor(currentRoot) : undefined;
-    const currentNode = graph?.getNode(schema);
+    const currentNode = graph?.node(schema);
     const nodePlan = this.schemaNodePlan(schema, graph, currentNode);
 
     for (const key of Object.keys(workingValue)) {
@@ -1848,7 +1867,7 @@ export class GraphEngine {
   private createImplicitDefault(
     schema: JsonSchema,
     currentRoot: JsonSchema,
-    options: Required<Omit<GraphEngineOptions, 'lookupSchema'>> & Pick<GraphEngineOptions, 'lookupSchema'>,
+    options: Required<Omit<GraphEngineOptions, 'formatRegistry' | 'keywords' | 'lookupSchema'>> & Pick<GraphEngineOptions, 'lookupSchema'>,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntry[]
   ): unknown {
@@ -1856,7 +1875,7 @@ export class GraphEngine {
       return undefined;
     }
     const graph = isObject(currentRoot) ? this.graphFor(currentRoot) : undefined;
-    const currentNode = graph?.getNode(schema);
+    const currentNode = graph?.node(schema);
     const nodePlan = this.schemaNodePlan(schema, graph, currentNode);
     const objectPlan = this.objectValidationPlan(schema, graph, currentNode);
     const defaultValue = keywordValue(graph, currentNode, schema, 'default');
@@ -2014,9 +2033,24 @@ export class GraphEngine {
       'anyOf': semantics?.anyOf.map((child) => {
         return child.schema;
       }) ?? indexedSchemaChildren(graph, currentNode, schema, 'anyOf'),
-      'constValue': keywordValue(graph, currentNode, schema, 'const'),
+      'discriminatorPropertyName': (() => {
+        const disc = schema.discriminator;
+
+        if (typeof disc === 'object' && disc !== null && !Array.isArray(disc)) {
+          const pn = (disc as Record<string, unknown>).propertyName;
+
+          return typeof pn === 'string' ? pn : undefined;
+        }
+
+        return undefined;
+      })(),
+      'constValue': semantics !== undefined
+        ? (semantics.hasConst ? semantics.constValue : undefined)
+        : keywordValue(graph, currentNode, schema, 'const'),
       'containsSchema': semantics?.containsNode?.schema ?? childSchema(graph, currentNode, schema, 'contains'),
-      'defaultValue': keywordValue(graph, currentNode, schema, 'default'),
+      'defaultValue': semantics !== undefined
+        ? (semantics.hasDefault ? semantics.defaultValue : undefined)
+        : keywordValue(graph, currentNode, schema, 'default'),
       'dynamicAnchor': semantics?.dynamicAnchor ?? (() => {
         const dynamicAnchorValue = keywordValue<string | boolean>(graph, currentNode, schema, '$dynamicAnchor');
 
@@ -2028,10 +2062,10 @@ export class GraphEngine {
       })(),
       'dynamicRef': semantics?.dynamicRef ?? keywordValue<string>(graph, currentNode, schema, '$dynamicRef'),
       'elseSchema': semantics?.elseNode?.schema ?? childSchema(graph, currentNode, schema, 'else'),
-      'enumValues': keywordValue<unknown[]>(graph, currentNode, schema, 'enum'),
-      'exclusiveMaximum': keywordValue<number>(graph, currentNode, schema, 'exclusiveMaximum'),
-      'exclusiveMinimum': keywordValue<number>(graph, currentNode, schema, 'exclusiveMinimum'),
-      'format': keywordValue<string>(graph, currentNode, schema, 'format'),
+      'enumValues': semantics?.enumValues ?? keywordValue<unknown[]>(graph, currentNode, schema, 'enum'),
+      'exclusiveMaximum': semantics?.exclusiveMaximum ?? keywordValue<number>(graph, currentNode, schema, 'exclusiveMaximum'),
+      'exclusiveMinimum': semantics?.exclusiveMinimum ?? keywordValue<number>(graph, currentNode, schema, 'exclusiveMinimum'),
+      'format': semantics?.format ?? keywordValue<string>(graph, currentNode, schema, 'format'),
       'ifSchema': semantics?.ifNode?.schema ?? childSchema(graph, currentNode, schema, 'if'),
       'itemsSchema': Array.isArray(prefixItems)
         ? ((semantics?.itemsNode?.schema)
@@ -2039,21 +2073,21 @@ export class GraphEngine {
           ?? keywordValue<JsonSchema | boolean>(graph, currentNode, schema, 'items'))
         : (semantics?.itemsNode?.schema ?? childSchema(graph, currentNode, schema, 'items')),
       'maxContains': keywordValue<number>(graph, currentNode, schema, 'maxContains'),
-      'maxItems': keywordValue<number>(graph, currentNode, schema, 'maxItems'),
-      'maxLength': keywordValue<number>(graph, currentNode, schema, 'maxLength'),
-      'maxProperties': keywordValue<number>(graph, currentNode, schema, 'maxProperties'),
-      'maximum': keywordValue<number>(graph, currentNode, schema, 'maximum'),
+      'maxItems': semantics?.maxItems ?? keywordValue<number>(graph, currentNode, schema, 'maxItems'),
+      'maxLength': semantics?.maxLength ?? keywordValue<number>(graph, currentNode, schema, 'maxLength'),
+      'maxProperties': semantics?.maxProperties ?? keywordValue<number>(graph, currentNode, schema, 'maxProperties'),
+      'maximum': semantics?.maximum ?? keywordValue<number>(graph, currentNode, schema, 'maximum'),
       'minContains': keywordValue<number>(graph, currentNode, schema, 'minContains'),
-      'minItems': keywordValue<number>(graph, currentNode, schema, 'minItems'),
-      'minLength': keywordValue<number>(graph, currentNode, schema, 'minLength'),
-      'minProperties': keywordValue<number>(graph, currentNode, schema, 'minProperties'),
-      'minimum': keywordValue<number>(graph, currentNode, schema, 'minimum'),
-      'multipleOf': keywordValue<number>(graph, currentNode, schema, 'multipleOf'),
-      'notSchema': childSchema(graph, currentNode, schema, 'not'),
+      'minItems': semantics?.minItems ?? keywordValue<number>(graph, currentNode, schema, 'minItems'),
+      'minLength': semantics?.minLength ?? keywordValue<number>(graph, currentNode, schema, 'minLength'),
+      'minProperties': semantics?.minProperties ?? keywordValue<number>(graph, currentNode, schema, 'minProperties'),
+      'minimum': semantics?.minimum ?? keywordValue<number>(graph, currentNode, schema, 'minimum'),
+      'multipleOf': semantics?.multipleOf ?? keywordValue<number>(graph, currentNode, schema, 'multipleOf'),
+      'notSchema': semantics?.notNode?.schema ?? childSchema(graph, currentNode, schema, 'not'),
       'oneOf': semantics?.oneOf.map((child) => {
         return child.schema;
       }) ?? indexedSchemaChildren(graph, currentNode, schema, 'oneOf'),
-      'pattern': keywordValue<string>(graph, currentNode, schema, 'pattern'),
+      'pattern': semantics?.pattern ?? keywordValue<string>(graph, currentNode, schema, 'pattern'),
       prefixItems,
       'propertyNamesSchema': semantics?.propertyNamesNode?.schema ?? childSchema(graph, currentNode, schema, 'propertyNames'),
       'ref': semantics?.ref ?? keywordValue<string>(graph, currentNode, schema, '$ref'),
@@ -2066,7 +2100,9 @@ export class GraphEngine {
       'unevaluatedProperties': semantics?.unevaluatedPropertiesNode?.schema
         ?? childSchema(graph, currentNode, schema, 'unevaluatedProperties')
         ?? keywordValue(graph, currentNode, schema, 'unevaluatedProperties'),
-      'uniqueItems': keywordValue<boolean>(graph, currentNode, schema, 'uniqueItems') === true
+      'uniqueItems': semantics !== undefined
+        ? semantics.uniqueItems
+        : keywordValue<boolean>(graph, currentNode, schema, 'uniqueItems') === true
     };
 
     this.nodePlanCache.set(schema, plan);

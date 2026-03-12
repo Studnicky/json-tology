@@ -7,6 +7,88 @@ import assert from 'node:assert/strict';
 import { Value } from '../../src/schema/Value.js';
 
 // ---------------------------------------------------------------------------
+// create
+// ---------------------------------------------------------------------------
+
+describe('Value.create()', () => {
+  it('creates string default', () => {
+    assert.equal(Value.create({ type: 'string' } as const), '');
+  });
+
+  it('creates number default', () => {
+    assert.equal(Value.create({ type: 'number' } as const), 0);
+  });
+
+  it('creates integer default', () => {
+    assert.equal(Value.create({ type: 'integer' } as const), 0);
+  });
+
+  it('creates boolean default', () => {
+    assert.equal(Value.create({ type: 'boolean' } as const), false);
+  });
+
+  it('creates null default', () => {
+    assert.equal(Value.create({ type: 'null' } as const), null);
+  });
+
+  it('creates array default', () => {
+    assert.deepEqual(Value.create({ type: 'array', items: { type: 'string' } } as const), []);
+  });
+
+  it('creates object with nested defaults', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        name: { type: 'string', default: 'anonymous' },
+        age: { type: 'number' },
+        nested: {
+          type: 'object',
+          properties: {
+            flag: { type: 'boolean', default: true },
+          },
+        },
+      },
+      required: ['age', 'nested'],
+    } as const;
+    const result = Value.create(schema) as Record<string, unknown>;
+    assert.equal(result['name'], 'anonymous');
+    assert.equal(result['age'], 0);
+    assert.deepEqual(result['nested'], { flag: true });
+  });
+
+  it('honors explicit default values', () => {
+    assert.equal(Value.create({ type: 'string', default: 'hello' } as const), 'hello');
+    assert.equal(Value.create({ type: 'number', default: 42 } as const), 42);
+  });
+
+  it('honors const values', () => {
+    assert.equal(Value.create({ const: 'fixed' } as const), 'fixed');
+  });
+
+  it('honors enum (picks first)', () => {
+    assert.equal(Value.create({ enum: ['a', 'b', 'c'] } as const), 'a');
+  });
+
+  it('creates required properties even without defaults', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        optional: { type: 'number' },
+      },
+      required: ['id'],
+    } as const;
+    const result = Value.create(schema) as Record<string, unknown>;
+    assert.equal(result['id'], '');
+    assert.equal('optional' in result, false);
+  });
+
+  it('returns null for schema with no type', () => {
+    assert.equal(Value.create({} as const), null);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // clone
 // ---------------------------------------------------------------------------
 

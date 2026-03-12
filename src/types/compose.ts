@@ -1,4 +1,4 @@
-import type { JSONSchema } from 'json-schema-to-ts';
+import type { JSONSchema } from './json-schema.js';
 
 /** Extract the union of required field names from a schema's `required` array. */
 export type ExtractRequired<T>

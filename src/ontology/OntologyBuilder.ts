@@ -22,6 +22,7 @@ export class OntologyBuilder {
   private readonly baseIRI: string;
   private readonly graphSources: ReadonlyArray<() => ReadonlyArray<unknown>>;
   private readonly prefixes: Record<string, string>;
+  private shaclSource: ReadonlyArray<unknown> | (() => ReadonlyArray<unknown>) | undefined;
 
   public constructor(config: Readonly<OntologyBuilderOptions>) {
     this.baseIRI = config.baseIRI;
@@ -33,6 +34,78 @@ export class OntologyBuilder {
 
       return () => source;
     });
+  }
+
+  /**
+   * Set the SHACL graph source for SHACL output methods.
+   */
+  public addShacl(source: ReadonlyArray<unknown> | (() => ReadonlyArray<unknown>)): this {
+    this.shaclSource = source;
+
+    return this;
+  }
+
+  /**
+   * Get raw SHACL shapes as a JSON-LD object.
+   */
+  public shaclObject(): Record<string, unknown> {
+    const shaclPrefixes = {
+      ...this.prefixes,
+      'sh': 'http://www.w3.org/ns/shacl#'
+    };
+
+    return {
+      '@context': shaclPrefixes,
+      '@graph': this.rawShacl()
+    };
+  }
+
+  /**
+   * Get SHACL shapes as a Turtle string.
+   */
+  public shacl(): string {
+    const lines: string[] = [];
+    const shaclPrefixes = {
+      ...this.prefixes,
+      'sh': 'http://www.w3.org/ns/shacl#'
+    };
+
+    for (const [key, value] of Object.entries(shaclPrefixes)) {
+      if (key === '@vocab') {
+        lines.push(`@prefix : <${value}>.`);
+      } else {
+        lines.push(`@prefix ${key}: <${value}>.`);
+      }
+    }
+
+    const graph = this.rawShacl();
+
+    if (graph.length > 0) {
+      lines.push('');
+    }
+
+    for (const node of graph) {
+      if (typeof node !== 'object' || node === null) {
+        continue;
+      }
+      const triple = this.nodeToN3(node as Record<string, unknown>);
+
+      if (triple) {
+        lines.push(triple);
+      }
+    }
+
+    return lines.join('\n');
+  }
+
+  private rawShacl(): unknown[] {
+    if (this.shaclSource === undefined) {
+      return [];
+    }
+
+    return typeof this.shaclSource === 'function'
+      ? Array.from(this.shaclSource())
+      : Array.from(this.shaclSource);
   }
 
   /**

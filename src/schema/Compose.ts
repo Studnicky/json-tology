@@ -6,7 +6,7 @@
  * stays in sync with the TypeScript return type — no manual annotation needed.
  */
 
-import type { JSONSchema } from 'json-schema-to-ts';
+import type { JSONSchema } from '../types/json-schema.js';
 import type {
   DiscriminatedUnionSchema,
   ExtendSchema,

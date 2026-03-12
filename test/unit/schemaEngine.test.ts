@@ -398,7 +398,7 @@ describe('Graph engine advanced keywords', () => {
       'unevaluatedProperties': false
     } as const;
 
-    assert.equal(validator.isValid(schema, { 'kind': 'business', 'taxId': '123' }), false);
+    assert.equal(validator.isValid(schema, { 'kind': 'business', 'taxId': '123' }), true);
     assert.equal(validator.isValid(schema, { 'kind': 'business', 'extra': true, 'taxId': '123' }), false);
   });
 
@@ -528,23 +528,25 @@ describe('Graph engine advanced keywords', () => {
       'required': ['value'],
       'type': 'object'
     } as const;
+    const tagMixinSchema = {
+      '$id': 'https://example.io/tag-mixin',
+      'properties': {
+        'tag': { 'type': 'string' }
+      },
+      'required': ['tag'],
+      'type': 'object'
+    } as const;
     const strictTreeSchema = {
       '$dynamicAnchor': 'node',
       '$id': 'https://example.io/strict-tree',
       'allOf': [
         { '$ref': 'https://example.io/tree' },
-        {
-          'properties': {
-            'tag': { 'type': 'string' }
-          },
-          'required': ['tag'],
-          'type': 'object'
-        }
+        { '$ref': 'https://example.io/tag-mixin' }
       ],
       'type': 'object'
     } as const;
 
-    registry.register([treeSchema, strictTreeSchema]);
+    registry.register([treeSchema, tagMixinSchema, strictTreeSchema]);
 
     assert.deepEqual(registry.validate(strictTreeSchema.$id, {
       'children': [
@@ -623,5 +625,224 @@ describe('Graph engine advanced keywords', () => {
     } as const;
 
     assert.equal(validator.isValid(schema, [{ 'a': 1, 'b': 2 }, { 'b': 2, 'a': 1 }]), false);
+  });
+});
+
+describe('Phase 2.4 — edge case hardening', () => {
+  it('boolean schemas at composition boundaries: allOf [true] passes anything', () => {
+    const validator = new Validator();
+    assert.equal(validator.isValid({ 'allOf': [true] }, 'hello'), true);
+    assert.equal(validator.isValid({ 'allOf': [true] }, 42), true);
+    assert.equal(validator.isValid({ 'allOf': [true] }, null), true);
+  });
+
+  it('boolean schemas at composition boundaries: allOf [false] rejects everything', () => {
+    const validator = new Validator();
+    assert.equal(validator.isValid({ 'allOf': [false] }, 'hello'), false);
+    assert.equal(validator.isValid({ 'allOf': [false] }, 42), false);
+  });
+
+  it('boolean schemas at composition boundaries: allOf [true, false] rejects everything', () => {
+    const validator = new Validator();
+    assert.equal(validator.isValid({ 'allOf': [true, false] }, 'hello'), false);
+    assert.equal(validator.isValid({ 'allOf': [true, false] }, 42), false);
+    assert.equal(validator.isValid({ 'allOf': [true, false] }, null), false);
+  });
+
+  it('contains with minContains: 0 always passes', () => {
+    const validator = new Validator();
+    const schema = {
+      'type': 'array',
+      'contains': { 'type': 'string' },
+      'minContains': 0
+    };
+
+    assert.equal(validator.isValid(schema, []), true);
+    assert.equal(validator.isValid(schema, [1, 2, 3]), true);
+    assert.equal(validator.isValid(schema, ['a', 'b']), true);
+  });
+
+  it('if/then/else interaction with unevaluatedProperties: then-branch properties count as evaluated', () => {
+    const validator = new Validator();
+    const schema = {
+      'type': 'object',
+      'if': {
+        'properties': { 'kind': { 'const': 'business' } },
+        'type': 'object'
+      },
+      'then': {
+        'properties': { 'taxId': { 'type': 'string' } },
+        'required': ['taxId'],
+        'type': 'object'
+      },
+      'else': {
+        'properties': { 'ssn': { 'type': 'string' } },
+        'required': ['ssn'],
+        'type': 'object'
+      },
+      'unevaluatedProperties': false
+    };
+
+    // kind evaluated by if, taxId by then — both should be allowed
+    assert.equal(validator.isValid(schema, { 'kind': 'business', 'taxId': '123' }), true);
+    // kind evaluated by if, ssn by else — both should be allowed
+    assert.equal(validator.isValid(schema, { 'kind': 'person', 'ssn': '999' }), true);
+    // extra property should still be rejected
+    assert.equal(validator.isValid(schema, { 'kind': 'business', 'taxId': '123', 'extra': true }), false);
+  });
+
+  it('propertyNames with complex schemas (minLength + maxLength)', () => {
+    const validator = new Validator();
+    const schema = {
+      'type': 'object',
+      'propertyNames': { 'minLength': 3, 'maxLength': 10 }
+    };
+
+    assert.equal(validator.isValid(schema, { 'foo': 1, 'barbaz': 2 }), true);
+    assert.equal(validator.isValid(schema, { 'ab': 1 }), false);
+    assert.equal(validator.isValid(schema, { 'thisnameiswaytoolong': 1 }), false);
+    assert.equal(validator.isValid(schema, {}), true);
+  });
+
+  it('nested $ref chains: A refs B which refs C', () => {
+    const registry = new SchemaRegistry();
+    const schemaC = {
+      '$id': 'https://example.io/C',
+      'type': 'object',
+      'properties': { 'value': { 'type': 'number' } },
+      'required': ['value']
+    };
+    const schemaB = {
+      '$id': 'https://example.io/B',
+      'type': 'object',
+      'properties': { 'nested': { '$ref': 'https://example.io/C' } },
+      'required': ['nested']
+    };
+    const schemaA = {
+      '$id': 'https://example.io/A',
+      'type': 'object',
+      'properties': { 'inner': { '$ref': 'https://example.io/B' } },
+      'required': ['inner']
+    };
+
+    registry.register([schemaC, schemaB, schemaA]);
+
+    assert.deepEqual(registry.validate('https://example.io/A', {
+      'inner': { 'nested': { 'value': 42 } }
+    }), []);
+    assert.notDeepEqual(registry.validate('https://example.io/A', {
+      'inner': { 'nested': { 'value': 'not a number' } }
+    }), []);
+    assert.notDeepEqual(registry.validate('https://example.io/A', {
+      'inner': {}
+    }), []);
+  });
+
+  it('additionalProperties: false with allOf only considers local properties', () => {
+    const validator = new Validator();
+    // Per JSON Schema spec, additionalProperties only sees properties/patternProperties
+    // from the SAME schema object, NOT from allOf subschemas.
+    // Use unevaluatedProperties for cross-allOf property tracking.
+    const schema = {
+      'type': 'object',
+      'properties': { 'a': { 'type': 'string' } },
+      'allOf': [
+        { 'properties': { 'b': { 'type': 'number' } } }
+      ],
+      'additionalProperties': false
+    };
+
+    // 'a' is known to additionalProperties, 'b' is NOT (it's in allOf, not local)
+    assert.equal(validator.isValid(schema, { 'a': 'ok' }), true);
+    assert.equal(validator.isValid(schema, { 'a': 'ok', 'b': 1 }), false);
+
+    // The correct approach uses unevaluatedProperties instead
+    const schemaWithUnevaluated = {
+      'type': 'object',
+      'properties': { 'a': { 'type': 'string' } },
+      'allOf': [
+        { 'properties': { 'b': { 'type': 'number' } } }
+      ],
+      'unevaluatedProperties': false
+    };
+
+    assert.equal(validator.isValid(schemaWithUnevaluated, { 'a': 'ok', 'b': 1 }), true);
+    assert.equal(validator.isValid(schemaWithUnevaluated, { 'a': 'ok', 'b': 1, 'c': true }), false);
+  });
+});
+
+describe('Discriminator-based oneOf optimization', () => {
+  const CircleSchema = {
+    'type': 'object',
+    'properties': {
+      'kind': { 'type': 'string', 'const': 'circle' },
+      'radius': { 'type': 'number' }
+    },
+    'required': ['kind', 'radius']
+  } as const;
+
+  const RectSchema = {
+    'type': 'object',
+    'properties': {
+      'kind': { 'type': 'string', 'const': 'rect' },
+      'width': { 'type': 'number' },
+      'height': { 'type': 'number' }
+    },
+    'required': ['kind', 'width', 'height']
+  } as const;
+
+  const discriminatedSchema = {
+    'discriminator': { 'propertyName': 'kind' },
+    'oneOf': [CircleSchema, RectSchema]
+  } as const;
+
+  it('validates matching discriminator variant (circle)', () => {
+    const validator = new Validator();
+
+    assert.equal(validator.isValid(discriminatedSchema, { 'kind': 'circle', 'radius': 5 }), true);
+  });
+
+  it('validates matching discriminator variant (rect)', () => {
+    const validator = new Validator();
+
+    assert.equal(validator.isValid(discriminatedSchema, { 'kind': 'rect', 'width': 10, 'height': 20 }), true);
+  });
+
+  it('rejects data that does not match the discriminated variant', () => {
+    const validator = new Validator();
+
+    // kind=circle but missing radius
+    assert.equal(validator.isValid(discriminatedSchema, { 'kind': 'circle' }), false);
+  });
+
+  it('rejects data with unknown discriminator value', () => {
+    const validator = new Validator();
+
+    assert.equal(validator.isValid(discriminatedSchema, { 'kind': 'triangle', 'sides': 3 }), false);
+  });
+
+  it('falls back to normal oneOf when discriminator property is missing from data', () => {
+    const validator = new Validator();
+
+    // No 'kind' property — should fall back to iterating all variants
+    assert.equal(validator.isValid(discriminatedSchema, { 'radius': 5 }), false);
+  });
+
+  it('schemas without discriminator behave identically', () => {
+    const validator = new Validator();
+    const plainOneOf = {
+      'oneOf': [CircleSchema, RectSchema]
+    } as const;
+
+    assert.equal(validator.isValid(plainOneOf, { 'kind': 'circle', 'radius': 5 }), true);
+    assert.equal(validator.isValid(plainOneOf, { 'kind': 'rect', 'width': 10, 'height': 20 }), true);
+    assert.equal(validator.isValid(plainOneOf, { 'kind': 'circle' }), false);
+  });
+
+  it('works with non-object data (falls back to normal oneOf)', () => {
+    const validator = new Validator();
+
+    assert.equal(validator.isValid(discriminatedSchema, 'hello'), false);
+    assert.equal(validator.isValid(discriminatedSchema, 42), false);
   });
 });

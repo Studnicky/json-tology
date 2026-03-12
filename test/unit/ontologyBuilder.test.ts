@@ -5,6 +5,8 @@
 import { describe, it } from 'node:test';
 import * as assert from 'node:assert';
 import { OntologyBuilder } from '../../src/ontology/OntologyBuilder.js';
+import { GraphOntologySerializer } from '../../src/ontology/GraphOntologySerializer.js';
+import { SchemaGraph } from '../../src/schema/SchemaGraph.js';
 
 describe('OntologyBuilder', () => {
   it('should create an ontology builder with configuration', () => {
@@ -247,5 +249,90 @@ describe('OntologyBuilder', () => {
     assert.ok(n3.includes('ex:A'), 'first node subject must appear');
     assert.ok(n3.includes('ex:B'), 'second node subject must appear');
     assert.ok(n3.includes('ex:related ex:A'), 'cross-reference must be preserved');
+  });
+});
+
+describe('GraphOntologySerializer', () => {
+  function serializeSchema(schema: Record<string, unknown>): unknown[] {
+    const graph = new SchemaGraph(schema);
+    const serializer = new GraphOntologySerializer();
+
+    return serializer.serialize([graph]);
+  }
+
+  it('should serialize if/then/else as jt:conditional', () => {
+    const nodes = serializeSchema({
+      '$id': 'https://example.com/Conditional',
+      'type': 'object',
+      'if': { 'properties': { 'kind': { 'const': 'a' } } },
+      'then': { 'properties': { 'value': { 'type': 'string' } } },
+      'else': { 'properties': { 'other': { 'type': 'number' } } }
+    });
+
+    const classNode = nodes.find((n: any) => n['@id'] === 'https://example.com/Conditional') as any;
+
+    assert.ok(classNode, 'class node must exist');
+    assert.ok(classNode['jt:conditional'], 'jt:conditional must be present');
+    assert.ok(classNode['jt:conditional']['if'], 'conditional must have if');
+    assert.ok(classNode['jt:conditional']['then'], 'conditional must have then');
+    assert.ok(classNode['jt:conditional']['else'], 'conditional must have else');
+  });
+
+  it('should serialize contains as jt:contains', () => {
+    const nodes = serializeSchema({
+      '$id': 'https://example.com/Arr',
+      'type': 'array',
+      'contains': { 'type': 'string' }
+    });
+
+    const classNode = nodes.find((n: any) => n['@id'] === 'https://example.com/Arr') as any;
+
+    assert.ok(classNode, 'class node must exist');
+    assert.deepStrictEqual(classNode['jt:contains'], { '@id': 'xsd:string' });
+  });
+
+  it('should serialize prefixItems as jt:tupleItem entries', () => {
+    const nodes = serializeSchema({
+      '$id': 'https://example.com/Tuple',
+      'type': 'array',
+      'prefixItems': [
+        { 'type': 'string' },
+        { 'type': 'number' },
+        { 'type': 'boolean' }
+      ]
+    });
+
+    const classNode = nodes.find((n: any) => n['@id'] === 'https://example.com/Tuple') as any;
+
+    assert.ok(classNode, 'class node must exist');
+    assert.ok(Array.isArray(classNode['jt:tupleItem']), 'jt:tupleItem must be an array');
+    assert.strictEqual(classNode['jt:tupleItem'].length, 3);
+    assert.strictEqual(classNode['jt:tupleItem'][0]['jt:position'], 0);
+    assert.deepStrictEqual(classNode['jt:tupleItem'][0]['jt:type'], { '@id': 'xsd:string' });
+    assert.strictEqual(classNode['jt:tupleItem'][1]['jt:position'], 1);
+    assert.deepStrictEqual(classNode['jt:tupleItem'][1]['jt:type'], { '@id': 'xsd:decimal' });
+    assert.strictEqual(classNode['jt:tupleItem'][2]['jt:position'], 2);
+    assert.deepStrictEqual(classNode['jt:tupleItem'][2]['jt:type'], { '@id': 'xsd:boolean' });
+  });
+
+  it('should serialize patternProperties as jt:patternProperty', () => {
+    const nodes = serializeSchema({
+      '$id': 'https://example.com/PatternObj',
+      'type': 'object',
+      'patternProperties': {
+        '^S_': { 'type': 'string' },
+        '^I_': { 'type': 'integer' }
+      }
+    });
+
+    const classNode = nodes.find((n: any) => n['@id'] === 'https://example.com/PatternObj') as any;
+
+    assert.ok(classNode, 'class node must exist');
+    assert.ok(Array.isArray(classNode['jt:patternProperty']), 'jt:patternProperty must be an array');
+    assert.strictEqual(classNode['jt:patternProperty'].length, 2);
+    assert.strictEqual(classNode['jt:patternProperty'][0]['jt:pattern'], '^S_');
+    assert.deepStrictEqual(classNode['jt:patternProperty'][0]['jt:type'], { '@id': 'xsd:string' });
+    assert.strictEqual(classNode['jt:patternProperty'][1]['jt:pattern'], '^I_');
+    assert.deepStrictEqual(classNode['jt:patternProperty'][1]['jt:type'], { '@id': 'xsd:integer' });
   });
 });

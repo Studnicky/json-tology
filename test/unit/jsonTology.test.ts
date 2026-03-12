@@ -62,23 +62,23 @@ const DirectorySchema = {
 
 describe('JsonTology construction', () => {
   it('constructs with baseIRI and schemas', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
     assert.ok(jt instanceof JsonTology);
   });
 
   it('constructs with no schemas', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io' });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io' });
     assert.ok(jt instanceof JsonTology);
   });
 
   it('exposes registry and materializer', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io' });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io' });
     assert.ok(jt.registry);
     assert.ok(jt.materializer);
   });
 
   it('pre-registers schemas passed in options', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
     assert.ok(jt.get(UserSchema.$id));
   });
 });
@@ -89,20 +89,20 @@ describe('JsonTology construction', () => {
 
 describe('JsonTology.register()', () => {
   it('registers a single schema', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io' });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io' });
     jt.register(UserSchema);
     assert.ok(jt.get(UserSchema.$id));
   });
 
   it('registers an array of schemas', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io' });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io' });
     jt.register([UserSchema, RoleSchema]);
     assert.ok(jt.get(UserSchema.$id));
     assert.ok(jt.get(RoleSchema.$id));
   });
 
   it('is fluent — returns this', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io' });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io' });
     const result = jt.register(UserSchema);
     assert.strictEqual(result, jt);
   });
@@ -114,19 +114,19 @@ describe('JsonTology.register()', () => {
 
 describe('JsonTology.validate()', () => {
   it('returns empty array for valid data', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
     const errors = jt.validate(UserSchema.$id, { name: 'Alice', email: 'a@b.com' });
     assert.deepEqual(errors, []);
   });
 
   it('returns errors for invalid data', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
     const errors = jt.validate(UserSchema.$id, { name: 42, email: 'a@b.com' });
     assert.ok(errors.length > 0);
   });
 
   it('returns errors for missing required fields', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
     const errors = jt.validate(UserSchema.$id, { name: 'Alice' });
     assert.ok(errors.length > 0);
   });
@@ -134,7 +134,7 @@ describe('JsonTology.validate()', () => {
 
 describe('JsonTology.errors()', () => {
   it('returns ValidationErrors with items for invalid data', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
     const errors = jt.errors(UserSchema.$id, { name: 'Alice' });
     assert.ok(errors.length > 0);
     assert.ok(typeof errors.items[0].path === 'string');
@@ -142,7 +142,7 @@ describe('JsonTology.errors()', () => {
   });
 
   it('returns empty ValidationErrors for valid data', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
     const errors = jt.errors(UserSchema.$id, { name: 'Alice', email: 'a@b.com' });
     assert.equal(errors.length, 0);
     assert.equal(errors.ok, true);
@@ -151,40 +151,29 @@ describe('JsonTology.errors()', () => {
 
 describe('JsonTology.parse()', () => {
   it('returns data with defaults applied', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io' });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io' });
+    jt.register(UserSchema);
     const user = jt.parse(UserSchema, { name: 'Alice', email: 'a@b.com' });
     assert.equal((user as { active: boolean }).active, true);
   });
 
   it('throws ParseError on invalid data', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io' });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io' });
+    jt.register(UserSchema);
     assert.throws(() => jt.parse(UserSchema, { name: 'Alice' }));
-  });
-});
-
-describe('JsonTology.safeParse()', () => {
-  it('returns success:true with data on valid input', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io' });
-    const result = jt.safeParse(UserSchema, { name: 'Alice', email: 'a@b.com' });
-    assert.equal(result.success, true);
-  });
-
-  it('returns success:false with errors on invalid input', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io' });
-    const result = jt.safeParse(UserSchema, { name: 'Alice' });
-    assert.equal(result.success, false);
-    assert.ok(result.success === false && result.errors.length > 0);
   });
 });
 
 describe('JsonTology.is()', () => {
   it('returns true for valid data', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io' });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io' });
+    jt.register(UserSchema);
     assert.equal(jt.is(UserSchema, { name: 'Alice', email: 'a@b.com' }), true);
   });
 
   it('returns false for invalid data', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io' });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io' });
+    jt.register(UserSchema);
     assert.equal(jt.is(UserSchema, { name: 'Alice' }), false);
   });
 });
@@ -195,14 +184,14 @@ describe('JsonTology.is()', () => {
 
 describe('JsonTology.materialize()', () => {
   it('materializes an entity with defaults applied', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io' });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io' });
     const user = jt.materialize(UserSchema, { email: 'a@b.com' });
     assert.equal((user as { name: string }).name, 'Anonymous');
     assert.equal((user as { active: boolean }).active, true);
   });
 
   it('merges provided values with defaults', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io' });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io' });
     const user = jt.materialize(UserSchema, { name: 'Alice', email: 'a@b.com' });
     assert.equal((user as { name: string }).name, 'Alice');
   });
@@ -214,7 +203,7 @@ describe('JsonTology.materialize()', () => {
 
 describe('JsonTology.ontology()', () => {
   it('returns an OntologyBuilder', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
     const o = jt.ontology();
     assert.ok(typeof o.n3 === 'function');
     assert.ok(typeof o.jsonLd === 'function');
@@ -222,7 +211,7 @@ describe('JsonTology.ontology()', () => {
   });
 
   it('n3() output includes OWL prefix declarations', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
     const n3 = jt.ontology().n3();
     assert.ok(n3.includes('@prefix owl:'));
     assert.ok(n3.includes('@prefix rdfs:'));
@@ -230,19 +219,19 @@ describe('JsonTology.ontology()', () => {
   });
 
   it('n3() output includes the schema class IRI', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
     const n3 = jt.ontology().n3();
     assert.ok(n3.includes(UserSchema.$id));
   });
 
   it('n3() output includes property entries for schema properties', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
     const n3 = jt.ontology().n3();
     assert.ok(n3.includes('owl:DatatypeProperty'));
   });
 
   it('jsonLdObject() includes @context with standard prefixes', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
     const obj = jt.ontology().jsonLdObject();
     const ctx = obj['@context'] as Record<string, string>;
     assert.ok('owl' in ctx);
@@ -251,7 +240,7 @@ describe('JsonTology.ontology()', () => {
   });
 
   it('raw graph includes class node for each registered schema', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io', schemas: [UserSchema, RoleSchema] });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io', schemas: [UserSchema, RoleSchema] });
     const graph = jt.ontology().raw() as Array<Record<string, unknown>>;
     const classNodes = graph.filter((n) => n['@type'] === 'owl:Class');
     const ids = classNodes.map((n) => n['@id']);
@@ -260,21 +249,21 @@ describe('JsonTology.ontology()', () => {
   });
 
   it('class node includes rdfs:label from title', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
     const graph = jt.ontology().raw() as Array<Record<string, unknown>>;
     const userClass = graph.find((n) => n['@id'] === UserSchema.$id);
     assert.equal(userClass?.['rdfs:label'], 'User');
   });
 
   it('class node includes rdfs:comment from description', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
     const graph = jt.ontology().raw() as Array<Record<string, unknown>>;
     const userClass = graph.find((n) => n['@id'] === UserSchema.$id);
     assert.equal(userClass?.['rdfs:comment'], 'An application user');
   });
 
   it('class node has owl:Restriction blank node for required fields', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
     const graph = jt.ontology().raw() as Array<Record<string, unknown>>;
     const userClass = graph.find((n) => n['@id'] === UserSchema.$id);
     const subClassOf = userClass?.['rdfs:subClassOf'] as Array<Record<string, unknown>>;
@@ -288,7 +277,7 @@ describe('JsonTology.ontology()', () => {
   });
 
   it('property nodes use class-scoped IRIs', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
     const graph = jt.ontology().raw() as Array<Record<string, unknown>>;
     const emailProp = graph.find((n) => n['@id'] === 'https://myapp.io/User#email');
     assert.ok(emailProp, 'email property should have scoped IRI');
@@ -296,7 +285,7 @@ describe('JsonTology.ontology()', () => {
   });
 
   it('merges custom prefixes with defaults', () => {
-    const jt = new JsonTology({
+    const jt = JsonTology.create({
       baseIRI: 'https://myapp.io',
       schemas: [UserSchema],
       prefixes: { myns: 'https://myapp.io/ns#' },
@@ -307,7 +296,7 @@ describe('JsonTology.ontology()', () => {
   });
 
   it('reflects newly registered schemas on each ontology() call', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
     jt.register(RoleSchema);
     const graph = jt.ontology().raw() as Array<Record<string, unknown>>;
     const ids = graph.filter((n) => n['@type'] === 'owl:Class').map((n) => n['@id']);
@@ -315,7 +304,7 @@ describe('JsonTology.ontology()', () => {
   });
 
   it('serializes local $defs object schemas as class nodes from the canonical graph', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io', schemas: [DirectorySchema] });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io', schemas: [DirectorySchema] });
     const graph = jt.ontology().raw() as Array<Record<string, unknown>>;
     const employeeClass = graph.find((n) => {
       return n['@id'] === 'https://myapp.io/Directory#/$defs/Employee' && n['@type'] === 'owl:Class';
@@ -326,7 +315,7 @@ describe('JsonTology.ontology()', () => {
   });
 
   it('resolves local $ref ranges through the canonical graph', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io', schemas: [DirectorySchema] });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io', schemas: [DirectorySchema] });
     const graph = jt.ontology().raw() as Array<Record<string, unknown>>;
     const employeeProp = graph.find((n) => {
       return n['@id'] === 'https://myapp.io/Directory#primaryEmployee';
@@ -336,7 +325,7 @@ describe('JsonTology.ontology()', () => {
   });
 
   it('resolves local array item refs through the canonical graph', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io', schemas: [DirectorySchema] });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io', schemas: [DirectorySchema] });
     const graph = jt.ontology().raw() as Array<Record<string, unknown>>;
     const employeesProp = graph.find((n) => {
       return n['@id'] === 'https://myapp.io/Directory#employees';
@@ -348,7 +337,7 @@ describe('JsonTology.ontology()', () => {
 
 describe('JsonTology.abox()', () => {
   it('projects validated instance data into ABox nodes typed by the schema graph', () => {
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io', schemas: [UserSchema] });
     const graph = jt.abox(UserSchema, {
       name: 'Alice',
       email: 'alice@example.com',
@@ -383,7 +372,7 @@ describe('JsonTology.abox()', () => {
       },
       required: ['lead', 'name'],
     } as const;
-    const jt = new JsonTology({ baseIRI: 'https://myapp.io', schemas: [schema] });
+    const jt = JsonTology.create({ baseIRI: 'https://myapp.io', schemas: [schema] });
     const graph = jt.abox(schema, {
       lead: { name: 'Dana' },
       name: 'Platform',

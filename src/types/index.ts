@@ -12,6 +12,8 @@ export {
 export type * from './brand.js';
 export type * from './compose.js';
 export type * from './errors.js';
+export type * from './json-schema.js';
+export type * from './infer.js';
 export type * from './schema.js';
 
 export type * from './transform.js';

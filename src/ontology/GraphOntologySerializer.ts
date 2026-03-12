@@ -1,4 +1,4 @@
-import { SchemaGraph, type SchemaGraphNode } from '../schema/SchemaGraph.js';
+import { SchemaGraph, type SchemaGraphNode, type SchemaGraphSemantics } from '../schema/SchemaGraph.js';
 
 const BASE_TYPE_MAP: Record<string, string> = {
   'boolean': 'xsd:boolean',
@@ -40,10 +40,6 @@ const NUMBER_FORMAT_MAP: Record<string, string> = {
   'int64': 'xsd:long'
 };
 
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
 function rdfList(items: unknown[]): Record<string, unknown[]> {
   return { '@list': items };
 }
@@ -66,17 +62,9 @@ function resolveSingleType(type: string, format?: string): null | string {
   return BASE_TYPE_MAP[type] ?? null;
 }
 
-function resolveXsdType(propSchema: Record<string, unknown>): null | string {
-  const rawType = propSchema.type;
-  const format = typeof propSchema.format === 'string' ? propSchema.format : undefined;
-
-  const types = typeof rawType === 'string'
-    ? [rawType]
-    : Array.isArray(rawType)
-      ? rawType.filter((entry): entry is string => {
-        return typeof entry === 'string';
-      })
-      : [];
+function resolveXsdTypeFromSemantics(semantics: SchemaGraphSemantics): null | string {
+  const types = semantics.schemaTypes;
+  const format = semantics.format;
 
   const nonNull = types.filter((entry) => {
     return entry !== 'null';
@@ -141,26 +129,44 @@ export class GraphOntologySerializer {
     nodeMap.set(id, nextNode);
   }
 
-  private classCandidate(node: SchemaGraphNode): boolean {
-    if (!isObject(node.schema)) {
+  private classCandidate(graph: SchemaGraph, node: SchemaGraphNode): boolean {
+    const semantics = graph.semantics(node);
+
+    if (semantics.schemaTypes.length === 0
+      && semantics.properties.length === 0
+      && semantics.allOf.length === 0
+      && semantics.anyOf.length === 0
+      && semantics.oneOf.length === 0
+      && semantics.notNode === undefined
+      && semantics.enumValues === undefined
+      && !semantics.hasConst
+      && semantics.ref === undefined
+      && semantics.ifNode === undefined
+      && semantics.containsNode === undefined
+      && semantics.prefixItems.length === 0
+      && semantics.patternPropertyEntries.length === 0
+      && semantics.dependentSchemaEntries.length === 0
+      && node.pointer !== '') {
       return false;
     }
 
     return node.pointer === ''
-      || node.schema.type === 'object'
-      || isObject(node.schema.properties)
-      || 'allOf' in node.schema
-      || 'anyOf' in node.schema
-      || 'oneOf' in node.schema
-      || 'not' in node.schema
-      || 'enum' in node.schema
-      || 'const' in node.schema;
+      || semantics.schemaTypes.includes('object')
+      || semantics.properties.length > 0
+      || semantics.allOf.length > 0
+      || semantics.anyOf.length > 0
+      || semantics.oneOf.length > 0
+      || semantics.notNode !== undefined
+      || semantics.enumValues !== undefined
+      || semantics.hasConst
+      || semantics.ifNode !== undefined
+      || semantics.containsNode !== undefined
+      || semantics.prefixItems.length > 0
+      || semantics.patternPropertyEntries.length > 0
+      || semantics.dependentSchemaEntries.length > 0;
   }
 
   private namedNodeId(graph: SchemaGraph, node: SchemaGraphNode): string | undefined {
-    if (!isObject(node.schema)) {
-      return undefined;
-    }
     const semantics = graph.semantics(node);
 
     if (typeof semantics.ref === 'string') {
@@ -174,12 +180,12 @@ export class GraphOntologySerializer {
     return `${classId}#${propName}`;
   }
 
-  private resolvePropertyRange(graph: SchemaGraph, propSchema: Record<string, unknown>): null | unknown {
-    if (typeof propSchema.$ref === 'string') {
-      return { '@id': graph.resolveRefId(propSchema.$ref) };
+  private resolvePropertyRange(graph: SchemaGraph, propSemantics: SchemaGraphSemantics): null | unknown {
+    if (typeof propSemantics.ref === 'string') {
+      return { '@id': graph.resolveRefId(propSemantics.ref) };
     }
 
-    const xsdType = resolveXsdType(propSchema);
+    const xsdType = resolveXsdTypeFromSemantics(propSemantics);
 
     if (xsdType !== null) {
       return { '@id': xsdType };
@@ -193,66 +199,89 @@ export class GraphOntologySerializer {
     node: SchemaGraphNode,
     nodeMap: Map<string, Record<string, unknown>>
   ): void {
-    if (!this.classCandidate(node) || !isObject(node.schema)) {
+    if (!this.classCandidate(graph, node)) {
       return;
     }
+
+    const semantics = graph.semantics(node);
+    const relations = graph.relations(node);
 
     const classNode: Record<string, unknown> = {
       '@id': node.id,
       '@type': 'owl:Class'
     };
 
-    if (typeof node.schema.title === 'string') {
-      classNode['rdfs:label'] = node.schema.title;
+    // rdfs:label from relations
+    const labelRel = relations.find((r) => r.predicate === 'rdfs:label');
+
+    if (labelRel !== undefined) {
+      classNode['rdfs:label'] = labelRel.target;
     }
-    if (typeof node.schema.description === 'string') {
-      classNode['rdfs:comment'] = node.schema.description;
+
+    // rdfs:comment from relations
+    const commentRel = relations.find((r) => r.predicate === 'rdfs:comment');
+
+    if (commentRel !== undefined) {
+      classNode['rdfs:comment'] = commentRel.target;
+    }
+
+    // owl:deprecated from relations
+    if (relations.some((r) => r.predicate === 'owl:deprecated')) {
+      classNode['owl:deprecated'] = true;
     }
 
     const subClassOf: unknown[] = [];
 
-    for (const parent of graph.indexedChildren(node, 'allOf')) {
-      const parentId = this.namedNodeId(graph, parent);
+    // rdfs:subClassOf from relations
+    for (const rel of relations.filter((r) => r.predicate === 'rdfs:subClassOf')) {
+      const targetId = typeof rel.target === 'string' ? rel.target : rel.target.id;
 
-      if (typeof parentId === 'string') {
-        subClassOf.push({ '@id': parentId });
-      }
+      subClassOf.push({ '@id': targetId });
     }
 
-    for (const branchKey of [
-      'anyOf',
-      'oneOf'
-    ] as const) {
-      const branchIds = graph.indexedChildren(node, branchKey)
-        .map((branchNode) => {
-          return this.namedNodeId(graph, branchNode);
-        })
-        .filter((id): id is string => {
-          return typeof id === 'string';
-        });
+    // owl:equivalentClass from relations (union members)
+    const equivRels = relations.filter((r) => r.predicate === 'owl:equivalentClass');
+
+    if (equivRels.length > 0) {
+      const branchIds = equivRels
+        .map((r) => typeof r.target === 'string' ? r.target : this.namedNodeId(graph, r.target))
+        .filter((id): id is string => typeof id === 'string');
 
       if (branchIds.length > 0) {
         classNode['owl:equivalentClass'] = {
           '@type': 'owl:Class',
-          'owl:unionOf': rdfList(branchIds.map((id) => {
-            return { '@id': id };
-          }))
+          'owl:unionOf': rdfList(branchIds.map((id) => ({ '@id': id })))
         };
       }
     }
 
-    const notNode = graph.child(node, 'not');
+    // owl:complementOf from relations
+    const complementRel = relations.find((r) => r.predicate === 'owl:complementOf');
 
-    if (notNode !== undefined) {
-      const notId = this.namedNodeId(graph, notNode);
+    if (complementRel !== undefined) {
+      const targetId = typeof complementRel.target === 'string'
+        ? complementRel.target
+        : this.namedNodeId(graph, complementRel.target);
 
-      if (typeof notId === 'string') {
-        classNode['owl:complementOf'] = { '@id': notId };
+      if (typeof targetId === 'string') {
+        classNode['owl:complementOf'] = { '@id': targetId };
       }
     }
 
-    if (Array.isArray(node.schema.enum)) {
-      const literals = node.schema.enum.map((value) => {
+    // owl:disjointWith from relations
+    const disjointRel = relations.find((r) => r.predicate === 'owl:disjointWith');
+
+    if (disjointRel !== undefined) {
+      const targetId = typeof disjointRel.target === 'string'
+        ? disjointRel.target
+        : disjointRel.target.id;
+
+      classNode['owl:disjointWith'] = { '@id': targetId };
+    }
+
+    // owl:oneOf from enum values
+    if (semantics.enumValues !== undefined) {
+      const literals = semantics.enumValues.map((value) => {
         return typedLiteral(value);
       }).filter((value): value is Record<string, unknown> => {
         return value !== null;
@@ -263,25 +292,20 @@ export class GraphOntologySerializer {
       }
     }
 
-    if ('const' in node.schema) {
-      const literal = typedLiteral(node.schema.const);
+    if (semantics.hasConst) {
+      const literal = typedLiteral(semantics.constValue);
 
       if (literal !== null) {
         classNode['owl:oneOf'] = rdfList([literal]);
       }
     }
 
-    const required = Array.isArray(node.schema.required)
-      ? node.schema.required.filter((value): value is string => {
-        return typeof value === 'string';
-      })
-      : [];
-
-    for (const propertyName of required) {
+    // owl:Restriction from relations
+    for (const rel of relations.filter((r) => r.predicate === 'owl:Restriction')) {
       subClassOf.push({
         '@type': 'owl:Restriction',
-        'owl:minCardinality': 1,
-        'owl:onProperty': { '@id': this.propIri(node.id, propertyName) }
+        'owl:minCardinality': rel.metadata?.minCardinality ?? 1,
+        'owl:onProperty': { '@id': rel.metadata?.onProperty as string }
       });
     }
 
@@ -297,82 +321,110 @@ export class GraphOntologySerializer {
     node: SchemaGraphNode,
     nodeMap: Map<string, Record<string, unknown>>
   ): void {
-    if (!isObject(node.schema)) {
+    const nodeSemantics = graph.semantics(node);
+
+    if (nodeSemantics.properties.length === 0) {
       return;
     }
 
     for (const [propertyName, propertyNode] of graph.entries(node, 'properties')) {
-      if (!isObject(propertyNode.schema)) {
-        continue;
-      }
+      const propSemantics = graph.semantics(propertyNode);
+      const propRelations = graph.relations(propertyNode);
+      const schemaTypes = propSemantics.schemaTypes;
 
-      const rawType = propertyNode.schema.type;
-      const primaryType = typeof rawType === 'string'
-        ? rawType
-        : Array.isArray(rawType)
-          ? rawType.find((entry): entry is string => {
-            return typeof entry === 'string' && entry !== 'null';
-          }) ?? null
-          : null;
+      const nonNullTypes = schemaTypes.filter((t) => t !== 'null');
+      const primaryType = nonNullTypes.length > 0 ? nonNullTypes[0] : null;
       const isArray = primaryType === 'array';
-      const isObjectProperty = isArray || primaryType === 'object' || '$ref' in propertyNode.schema || primaryType === null;
+      const isObjectProperty = isArray
+        || primaryType === 'object'
+        || typeof propSemantics.ref === 'string'
+        || primaryType === null;
+
+      // Domain from relations, fallback to parent node
+      const domainRel = propRelations.find((r) => r.predicate === 'rdfs:domain');
+      const domainId = domainRel !== undefined
+        ? (typeof domainRel.target === 'string' ? domainRel.target : domainRel.target.id)
+        : node.id;
+
+      const rdfTypes: string[] = [isObjectProperty ? 'owl:ObjectProperty' : 'owl:DatatypeProperty'];
+
+      // Transitive/Symmetric from relations
+      if (propRelations.some((r) => r.predicate === 'owl:TransitiveProperty')) {
+        rdfTypes.push('owl:TransitiveProperty');
+      }
+      if (propRelations.some((r) => r.predicate === 'owl:SymmetricProperty')) {
+        rdfTypes.push('owl:SymmetricProperty');
+      }
 
       const propertyGraphNode: Record<string, unknown> = {
         '@id': this.propIri(node.id, propertyName),
-        '@type': isObjectProperty ? 'owl:ObjectProperty' : 'owl:DatatypeProperty',
-        'rdfs:domain': { '@id': node.id }
+        '@type': rdfTypes.length === 1 ? rdfTypes[0] : rdfTypes,
+        'rdfs:domain': { '@id': domainId }
       };
+
+      // Range from relations
+      const rangeRel = propRelations.find((r) => r.predicate === 'rdfs:range');
 
       if (isArray) {
         propertyGraphNode['rdfs:range'] = { '@id': 'rdf:List' };
 
-        const itemsNode = graph.child(propertyNode, 'items');
+        if (rangeRel !== undefined) {
+          const rangeId = typeof rangeRel.target === 'string' ? rangeRel.target : rangeRel.target.id;
 
-        if (itemsNode !== undefined && isObject(itemsNode.schema)) {
-          const itemSemantics = graph.semantics(itemsNode);
+          propertyGraphNode['jt:itemType'] = { '@id': rangeId };
+        } else {
+          const itemsNode = propSemantics.itemsNode;
 
-          if (typeof itemSemantics.ref === 'string') {
-            propertyGraphNode['jt:itemType'] = { '@id': graph.resolveRefId(itemSemantics.ref) };
-          } else if (typeof itemsNode.schema.$id === 'string' || itemsNode.pointer !== '') {
-            propertyGraphNode['jt:itemType'] = { '@id': itemsNode.id };
-          } else {
-            const itemXsd = resolveXsdType(itemsNode.schema);
+          if (itemsNode !== undefined) {
+            const itemSemantics = graph.semantics(itemsNode);
 
-            if (itemXsd !== null) {
-              propertyGraphNode['jt:itemType'] = { '@id': itemXsd };
+            if (typeof itemSemantics.ref === 'string') {
+              propertyGraphNode['jt:itemType'] = { '@id': graph.resolveRefId(itemSemantics.ref) };
+            } else if (itemsNode.id !== itemsNode.pointer || itemsNode.pointer !== '') {
+              propertyGraphNode['jt:itemType'] = { '@id': itemsNode.id };
+            } else {
+              const itemXsd = resolveXsdTypeFromSemantics(itemSemantics);
+
+              if (itemXsd !== null) {
+                propertyGraphNode['jt:itemType'] = { '@id': itemXsd };
+              }
             }
           }
         }
+      } else if (rangeRel !== undefined) {
+        const rangeId = typeof rangeRel.target === 'string' ? rangeRel.target : rangeRel.target.id;
+
+        propertyGraphNode['rdfs:range'] = { '@id': rangeId };
       } else {
-        const range = this.resolvePropertyRange(graph, propertyNode.schema);
+        const range = this.resolvePropertyRange(graph, propSemantics);
 
         if (range !== null) {
           propertyGraphNode['rdfs:range'] = range;
-        } else if (Array.isArray(rawType)) {
-          const resolved = rawType
-            .filter((entry): entry is string => {
-              return typeof entry === 'string' && entry !== 'null';
-            })
-            .map((entry) => {
-              return resolveSingleType(entry);
-            })
-            .filter((entry): entry is string => {
-              return entry !== null;
-            });
+        } else if (schemaTypes.length > 1) {
+          const resolved = nonNullTypes
+            .map((entry) => resolveSingleType(entry))
+            .filter((entry): entry is string => entry !== null);
 
           if (resolved.length > 1) {
-            propertyGraphNode['owl:unionOf'] = rdfList(resolved.map((entry) => {
-              return { '@id': entry };
-            }));
+            propertyGraphNode['owl:unionOf'] = rdfList(resolved.map((entry) => ({ '@id': entry })));
           }
         }
       }
 
-      if (Array.isArray(rawType) && rawType.includes('null')) {
+      // owl:inverseOf from relations
+      const inverseRel = propRelations.find((r) => r.predicate === 'owl:inverseOf');
+
+      if (inverseRel !== undefined) {
+        const inverseId = typeof inverseRel.target === 'string' ? inverseRel.target : inverseRel.target.id;
+
+        propertyGraphNode['owl:inverseOf'] = { '@id': inverseId };
+      }
+
+      if (schemaTypes.includes('null')) {
         propertyGraphNode['jt:nullable'] = true;
       }
-      if (typeof propertyNode.schema.description === 'string') {
-        propertyGraphNode['rdfs:comment'] = propertyNode.schema.description;
+      if (typeof propSemantics.description === 'string') {
+        propertyGraphNode['rdfs:comment'] = propSemantics.description;
       }
 
       this.addNode(nodeMap, propertyGraphNode);
@@ -386,5 +438,157 @@ export class GraphOntologySerializer {
   ): void {
     this.serializeClassNode(graph, node, nodeMap);
     this.serializePropertyNodes(graph, node, nodeMap);
+    this.serializeConditional(graph, node, nodeMap);
+    this.serializeDependentSchemas(graph, node, nodeMap);
+    this.serializeContains(graph, node, nodeMap);
+    this.serializePrefixItems(graph, node, nodeMap);
+    this.serializePatternProperties(graph, node, nodeMap);
+  }
+
+  private resolveTypeRef(graph: SchemaGraph, targetNode: SchemaGraphNode): { '@id': string } {
+    const targetSemantics = graph.semantics(targetNode);
+
+    if (typeof targetSemantics.ref === 'string') {
+      return { '@id': graph.resolveRefId(targetSemantics.ref) };
+    }
+
+    const xsd = resolveXsdTypeFromSemantics(targetSemantics);
+
+    if (xsd !== null) {
+      return { '@id': xsd };
+    }
+
+    return { '@id': targetNode.id };
+  }
+
+  private serializeConditional(
+    graph: SchemaGraph,
+    node: SchemaGraphNode,
+    nodeMap: Map<string, Record<string, unknown>>
+  ): void {
+    const semantics = graph.semantics(node);
+
+    if (semantics.ifNode === undefined) {
+      return;
+    }
+
+    const conditional: Record<string, unknown> = {
+      'if': this.resolveTypeRef(graph, semantics.ifNode)
+    };
+
+    if (semantics.thenNode !== undefined) {
+      conditional['then'] = this.resolveTypeRef(graph, semantics.thenNode);
+    }
+
+    if (semantics.elseNode !== undefined) {
+      conditional['else'] = this.resolveTypeRef(graph, semantics.elseNode);
+    }
+
+    const existing = nodeMap.get(node.id);
+
+    if (existing !== undefined) {
+      existing['jt:conditional'] = conditional;
+    }
+  }
+
+  private serializeDependentSchemas(
+    graph: SchemaGraph,
+    node: SchemaGraphNode,
+    nodeMap: Map<string, Record<string, unknown>>
+  ): void {
+    const semantics = graph.semantics(node);
+
+    if (semantics.dependentSchemaEntries.length === 0) {
+      return;
+    }
+
+    const existing = nodeMap.get(node.id);
+
+    if (existing === undefined) {
+      return;
+    }
+
+    const annotations = semantics.dependentSchemaEntries.map(([propertyName, schemaNode]) => {
+      return {
+        'jt:propertyName': propertyName,
+        'jt:schema': this.resolveTypeRef(graph, schemaNode)
+      };
+    });
+
+    existing['jt:dependentSchema'] = annotations;
+  }
+
+  private serializeContains(
+    graph: SchemaGraph,
+    node: SchemaGraphNode,
+    nodeMap: Map<string, Record<string, unknown>>
+  ): void {
+    const semantics = graph.semantics(node);
+
+    if (semantics.containsNode === undefined) {
+      return;
+    }
+
+    const existing = nodeMap.get(node.id);
+
+    if (existing === undefined) {
+      return;
+    }
+
+    existing['jt:contains'] = this.resolveTypeRef(graph, semantics.containsNode);
+  }
+
+  private serializePrefixItems(
+    graph: SchemaGraph,
+    node: SchemaGraphNode,
+    nodeMap: Map<string, Record<string, unknown>>
+  ): void {
+    const semantics = graph.semantics(node);
+
+    if (semantics.prefixItems.length === 0) {
+      return;
+    }
+
+    const existing = nodeMap.get(node.id);
+
+    if (existing === undefined) {
+      return;
+    }
+
+    const tupleItems = semantics.prefixItems.map((itemNode, index) => {
+      return {
+        'jt:position': index,
+        'jt:type': this.resolveTypeRef(graph, itemNode)
+      };
+    });
+
+    existing['jt:tupleItem'] = tupleItems;
+  }
+
+  private serializePatternProperties(
+    graph: SchemaGraph,
+    node: SchemaGraphNode,
+    nodeMap: Map<string, Record<string, unknown>>
+  ): void {
+    const semantics = graph.semantics(node);
+
+    if (semantics.patternPropertyEntries.length === 0) {
+      return;
+    }
+
+    const existing = nodeMap.get(node.id);
+
+    if (existing === undefined) {
+      return;
+    }
+
+    const patterns = semantics.patternPropertyEntries.map(([pattern, schemaNode]) => {
+      return {
+        'jt:pattern': pattern,
+        'jt:type': this.resolveTypeRef(graph, schemaNode)
+      };
+    });
+
+    existing['jt:patternProperty'] = patterns;
   }
 }

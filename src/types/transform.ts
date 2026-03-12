@@ -1,6 +1,4 @@
-import type {
-  FromSchema, JSONSchema
-} from 'json-schema-to-ts';
+import type { InferSchema } from './infer.js';
 
 declare const TRANSFORM_OUT: unique symbol;
 declare const CATCH_BRAND: unique symbol;
@@ -22,7 +20,7 @@ export type WithCatchSchema<TSchema, TFallback> = CatchBrand<TFallback> & TSchem
 /**
  * Resolve the output type of parse() for a schema.
  * - Transformed schemas return the decoded TOut.
- * - All other schemas return the standard FromSchema result.
+ * - All other schemas return the standard inferred result.
  */
 export type ParseOutput<TSchema>
-  = TSchema extends TransformBrand<infer Out> ? Out : FromSchema<JSONSchema & TSchema>;
+  = TSchema extends TransformBrand<infer Out> ? Out : InferSchema<TSchema>;

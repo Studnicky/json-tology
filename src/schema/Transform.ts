@@ -18,7 +18,7 @@
  * type Decoded = ParseOutput<typeof DateSchema>; // Date
  */
 
-import type { JSONSchema } from 'json-schema-to-ts';
+import type { JSONSchema } from '../types/json-schema.js';
 import type {
   ParseOutput, Transformed, WithCatchSchema
 } from '../types/transform.js';
