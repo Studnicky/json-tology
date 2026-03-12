@@ -5,26 +5,28 @@
  * pointer-based sub-schema execution.
  */
 
-import { BaseError, ParseError, SchemaError } from '../errors/index.js';
-import { ValidationErrors } from '../validation/ValidationErrors.js';
-import { Transform } from '../transform/Transform.js';
-import type { CompiledValidatorInterface } from '../../interfaces/compiler.js';
-import type { KeywordDefinitionInterface } from '../../interfaces/graph-engine.js';
-import type { FormatRegistry } from '../format/FormatRegistry.js';
-import { GraphEngine } from '../graph/GraphEngine.js';
-import { Hash } from '../hash/Hash.js';
-import { SchemaGraph } from '../graph/SchemaGraph.js';
-import { SchemaCompiler } from '../validation/SchemaCompiler.js';
-import type { LoggerInterface } from '../../interfaces/logger.js';
-import type { RegistryOptionsInterface } from '../../interfaces/registry.js';
-import { Logger } from '../logger/Logger.js';
+import { ParseError } from './ParseError.js';
+import { ValidationErrors } from './ValidationErrors.js';
+import { Transform } from './Transform.js';
+import type { FormatRegistry } from './FormatRegistry.js';
+import type { KeywordDefinition } from './GraphEngine.js';
+import { GraphEngine } from './GraphEngine.js';
+import { SchemaGraph } from './SchemaGraph.js';
+import { SchemaCompiler, type CompiledValidator } from './SchemaCompiler.js';
+import type {
+  RegistryLogger, RegistryOptions
+} from '../interfaces/registry.js';
+import { SilentLogger } from '../SilentLogger.js';
 
+export type {
+  RegistryLogger, RegistryOptions
+} from '../interfaces/registry.js';
 
 const NO_ERRORS: string[] = Object.freeze([]) as unknown as string[];
 const NO_VALIDATION_ERRORS = new ValidationErrors([]);
 
-interface SchemaRegistryEntryInterface {
-  'compiled'?: CompiledValidatorInterface;
+interface SchemaRegistryEntry {
+  'compiled'?: CompiledValidator;
   'engine'?: GraphEngine;
   'graph'?: SchemaGraph;
   'hash': string;
@@ -36,13 +38,13 @@ export class SchemaRegistry {
 
   private readonly compiler: SchemaCompiler;
   private readonly formatRegistry: FormatRegistry | undefined;
-  private readonly keywords: KeywordDefinitionInterface[] | undefined;
-  private readonly logger: LoggerInterface;
+  private readonly keywords: KeywordDefinition[] | undefined;
+  private readonly logger: RegistryLogger;
   private readonly schemaHashes = new Map<string, string>();
-  private readonly schemas = new Map<string, SchemaRegistryEntryInterface>();
+  private readonly schemas = new Map<string, SchemaRegistryEntry>();
 
-  public constructor(options?: RegistryOptionsInterface) {
-    this.logger = options?.logger ?? new Logger({ silent: true });
+  public constructor(options?: RegistryOptions) {
+    this.logger = options?.logger ?? SilentLogger;
     this.coerce = options?.coerce ?? false;
     this.formatRegistry = options?.formatRegistry;
     this.keywords = options?.keywords;
@@ -91,14 +93,14 @@ export class SchemaRegistry {
   }
 
   public is(
-    schema: string | (Record<string, unknown> & { '$id': string; }),
+    schema: string | (Record<string, unknown> & { '$id': string }),
     data: unknown
   ): boolean {
     const schemaId = typeof schema === 'string' ? schema : schema.$id;
     const compiled = this.compiled(schemaId);
 
     if (compiled === undefined) {
-      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`, schemaId);
+      throw new Error(`Schema not registered: ${schemaId}. Call register() first.`);
     }
 
     return compiled.check(data);
@@ -117,7 +119,7 @@ export class SchemaRegistry {
   }
 
   public parse(
-    schema: string | (Record<string, unknown> & { '$id': string; }),
+    schema: string | (Record<string, unknown> & { '$id': string }),
     data: unknown
   ): unknown {
     const schemaObj = typeof schema === 'string'
@@ -125,7 +127,7 @@ export class SchemaRegistry {
       : schema;
 
     if (schemaObj === undefined) {
-      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${String(schema)}. Call register() first.`);
+      throw new Error(`Schema not registered: ${String(schema)}. Call register() first.`);
     }
 
     const schemaId = schemaObj.$id as string;
@@ -174,7 +176,9 @@ export class SchemaRegistry {
       return NO_ERRORS;
     }
 
-    return BaseError.formatErrors(result.errors);
+    return result.errors.map((error) => {
+      return `${error.path === '' ? 'root' : error.path}: ${error.message}`;
+    });
   }
 
   public validateAt(schemaId: string, pointer: string, data: unknown): string[] {
@@ -196,7 +200,9 @@ export class SchemaRegistry {
         return NO_ERRORS;
       }
 
-      return BaseError.formatErrors(errors);
+      return errors.map((error) => {
+        return `${error.path === '' ? 'root' : error.path}: ${error.message}`;
+      });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
 
@@ -204,7 +210,7 @@ export class SchemaRegistry {
     }
   }
 
-  public cast(schemaOrId: string | (Record<string, unknown> & { '$id': string; }), data: unknown): unknown {
+  public cast(schemaOrId: string | (Record<string, unknown> & { '$id': string }), data: unknown): unknown {
     const schemaId = this.resolveSchemaId(schemaOrId);
     const compiled = this.compiled(schemaId)!;
 
@@ -215,7 +221,7 @@ export class SchemaRegistry {
     }).value;
   }
 
-  public clean(schemaOrId: string | (Record<string, unknown> & { '$id': string; }), data: unknown): unknown {
+  public clean(schemaOrId: string | (Record<string, unknown> & { '$id': string }), data: unknown): unknown {
     const schemaId = this.resolveSchemaId(schemaOrId);
     const compiled = this.compiled(schemaId)!;
 
@@ -225,7 +231,7 @@ export class SchemaRegistry {
     }).value;
   }
 
-  public convert(schemaOrId: string | (Record<string, unknown> & { '$id': string; }), data: unknown): unknown {
+  public convert(schemaOrId: string | (Record<string, unknown> & { '$id': string }), data: unknown): unknown {
     const schemaId = this.resolveSchemaId(schemaOrId);
     const compiled = this.compiled(schemaId)!;
 
@@ -235,7 +241,7 @@ export class SchemaRegistry {
     }).value;
   }
 
-  private resolveSchemaId(schemaOrId: string | (Record<string, unknown> & { '$id': string; })): string {
+  private resolveSchemaId(schemaOrId: string | (Record<string, unknown> & { '$id': string })): string {
     return typeof schemaOrId === 'string' ? schemaOrId : schemaOrId.$id;
   }
 
@@ -243,13 +249,13 @@ export class SchemaRegistry {
     const entry = this.schemas.get(schemaId);
 
     if (entry === undefined) {
-      throw new SchemaError('SCHEMA_NOT_REGISTERED', `No schema registered for: ${schemaId}`, schemaId);
+      throw new Error(`No schema registered for: ${schemaId}`);
     }
 
     return this.instanceFromSchema(entry.schema);
   }
 
-  private compiled(schemaId: string): CompiledValidatorInterface | undefined {
+  private compiled(schemaId: string): CompiledValidator | undefined {
     const entry = this.schemas.get(schemaId);
 
     if (entry === undefined) {
@@ -281,14 +287,24 @@ export class SchemaRegistry {
     return engine.execute(data, pointer, options);
   }
 
+  private fastHash(str: string): string {
+    let hash = 2_166_136_261;
+    const fnvPrime = 16_777_619;
 
+    for (let i = 0; i < str.length; i++) {
+      hash ^= str.codePointAt(i) ?? 0;
+      hash = (hash * fnvPrime) >>> 0;
+    }
+
+    return hash.toString(16);
+  }
 
   public engine(schema: Record<string, unknown>): GraphEngine {
     const schemaId = schema.$id as string;
     const entry = this.schemas.get(schemaId);
 
     if (entry === undefined) {
-      throw new SchemaError('SCHEMA_VALIDATOR_MISSING', `No validator registered for schema: ${schemaId}`, schemaId);
+      throw new Error(`No validator registered for schema: ${schemaId}`);
     }
     if (entry.engine === undefined) {
       entry.engine = new GraphEngine(entry.schema, {
@@ -303,7 +319,7 @@ export class SchemaRegistry {
     return entry.engine;
   }
 
-  private graphOf(entry: SchemaRegistryEntryInterface): SchemaGraph {
+  private graphOf(entry: SchemaRegistryEntry): SchemaGraph {
     if (entry.graph === undefined) {
       entry.graph = new SchemaGraph(entry.schema);
     }
@@ -312,16 +328,19 @@ export class SchemaRegistry {
   }
 
   private hashSchema(schema: Record<string, unknown>): string {
-    const { $id: _, ...rest } = schema;
+    const copy = { ...schema };
 
-    return Hash.value(rest);
+    delete copy.$id;
+    const sortedKeys = Object.keys(copy).sort();
+
+    return this.fastHash(JSON.stringify(copy, sortedKeys));
   }
 
   private registerSingle(schema: Record<string, unknown>): void {
     const schemaId = schema.$id as string | undefined;
 
     if (schemaId === undefined || schemaId === '') {
-      throw new SchemaError('SCHEMA_MISSING_ID', 'Schema must have a $id property');
+      throw new Error('Schema must have a $id property');
     }
 
     const hash = this.hashSchema(schema);
@@ -348,14 +367,12 @@ export class SchemaRegistry {
     this.schemaHashes.set(hash, schemaId);
     this.logger.trace(`Schema registered: ${schemaId}`);
 
-    const graph = this.graphOf(this.schemas.get(schemaId) as SchemaRegistryEntryInterface);
+    const graph = this.graphOf(this.schemas.get(schemaId) as SchemaRegistryEntry);
     const warnings = graph.validateStructure();
 
     if (warnings.length > 0) {
-      throw new SchemaError(
-        'SCHEMA_STRUCTURE_INVALID',
-        `Structure validation failed for schema "${schemaId}": ${warnings.map((w) => w.message).join('; ')}`,
-        schemaId
+      throw new Error(
+        `Structure validation failed for schema "${schemaId}": ${warnings.map((w) => w.message).join('; ')}`
       );
     }
   }

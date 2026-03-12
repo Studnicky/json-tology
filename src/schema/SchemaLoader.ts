@@ -12,12 +12,13 @@ import {
   relative, resolve
 } from 'node:path';
 import type {
-  SchemaLoadErrorType, SchemaLoadResultType
-} from '../../types/loader.js';
-import type { LoggerInterface } from '../../interfaces/logger.js';
-import { LoadError } from '../errors/LoadError.js';
-import { Logger } from '../logger/Logger.js';
+  SchemaLoadError, SchemaLoadResult, SchemaLogger
+} from '../interfaces/loader.js';
+import { SilentLogger } from '../SilentLogger.js';
 
+export type {
+  SchemaLoadError, SchemaLoadResult, SchemaLogger
+} from '../interfaces/loader.js';
 
 /**
  * Schema Loader
@@ -30,7 +31,7 @@ export class SchemaLoader {
    *
    * @param logger - Optional logger (defaults to silent)
    */
-  public constructor(private readonly logger: LoggerInterface = new Logger({ silent: true })) {}
+  public constructor(private readonly logger: SchemaLogger = SilentLogger) {}
 
   /**
    * Check if an object is a valid schema.
@@ -65,10 +66,10 @@ export class SchemaLoader {
       'filePattern'?: RegExp;
       'stopOnError'?: boolean;
     }
-  ): [schemas: Array<Record<string, unknown>>, result: SchemaLoadResultType] {
+  ): [schemas: Array<Record<string, unknown>>, result: SchemaLoadResult] {
     const absolutePath = resolve(dirPath);
     const schemas: Array<Record<string, unknown>> = [];
-    const errors: SchemaLoadErrorType[] = [];
+    const errors: SchemaLoadError[] = [];
     const seenIds = new Set<string>();
     let successful = 0;
     let failed = 0;
@@ -111,7 +112,7 @@ export class SchemaLoader {
             });
             failed++;
             if (stopOnError) {
-              throw new LoadError('LOAD_INVALID_JSON', `Stopping: ${relativePath}`, relativePath, { 'cause': jsonError as Error });
+              throw new Error(`Stopping: ${relativePath}`, { 'cause': jsonError });
             }
 
             continue;
@@ -127,7 +128,7 @@ export class SchemaLoader {
             });
             failed++;
             if (stopOnError) {
-              throw new LoadError('LOAD_INVALID_SCHEMA', `Stopping: ${relativePath}`, relativePath);
+              throw new Error(`Stopping: ${relativePath}`);
             }
 
             continue;
@@ -145,7 +146,7 @@ export class SchemaLoader {
             });
             failed++;
             if (stopOnError) {
-              throw new LoadError('LOAD_MISSING_ID', `Stopping: ${relativePath}`, relativePath);
+              throw new Error(`Stopping: ${relativePath}`);
             }
 
             continue;
@@ -163,7 +164,7 @@ export class SchemaLoader {
             });
             failed++;
             if (stopOnError) {
-              throw new LoadError('LOAD_DUPLICATE_ID', `Stopping: ${relativePath}`, relativePath);
+              throw new Error(`Stopping: ${relativePath}`);
             }
 
             continue;
@@ -179,7 +180,7 @@ export class SchemaLoader {
             });
             failed++;
             if (stopOnError) {
-              throw new LoadError('LOAD_INVALID_SCHEMA', `Stopping: ${relativePath}`, relativePath);
+              throw new Error(`Stopping: ${relativePath}`);
             }
 
             continue;
@@ -190,7 +191,7 @@ export class SchemaLoader {
           successful++;
           this.logger.trace(`Loaded schema: ${schemaId} (${relativePath})`);
         } catch (error) {
-          if (error instanceof LoadError) {
+          if (error instanceof Error && error.message.startsWith('Stopping:')) {
             throw error;
           }
           const message = error instanceof Error ? error.message : String(error);
@@ -203,19 +204,19 @@ export class SchemaLoader {
           });
           failed++;
           if (stopOnError) {
-            throw new LoadError('LOAD_IO_FAILURE', `Stopping: ${relativePath}`, relativePath, { 'cause': error instanceof Error ? error : new Error(String(error)) });
+            throw new Error(`Stopping: ${relativePath}`, { 'cause': error });
           }
         }
       }
     } catch (error) {
-      if (error instanceof LoadError) {
+      if (error instanceof Error && error.message.startsWith('Stopping:')) {
         this.logger.warn('Loading stopped due to error');
       } else {
         this.logger.error(`Failed to scan directory: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
-    const result: SchemaLoadResultType = {
+    const result: SchemaLoadResult = {
       errors,
       failed,
       skipped,

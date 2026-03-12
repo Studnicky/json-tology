@@ -1,12 +1,74 @@
-import type {
-  SchemaGraphNodeInterface, SchemaGraphRelationInterface,
-  SchemaGraphSemanticsInterface, StructureWarningInterface
-} from '../../interfaces/schema-graph.js';
-import { isRecord as isObject } from '../data/DataTypes.js';
-import { GraphError } from '../errors/GraphError.js';
+type JsonSchema = boolean | Record<string, unknown>;
 
+export interface SchemaGraphNode {
+  'id': string;
+  'pointer': string;
+  'schema': JsonSchema;
+}
 
-type JsonSchemaType = boolean | Record<string, unknown>;
+export interface SchemaGraphSemantics {
+  'allOf': SchemaGraphNode[];
+  'anyOf': SchemaGraphNode[];
+  'containsNode': SchemaGraphNode | undefined;
+  'dependentRequired': Record<string, string[]>;
+  'dependentSchemaEntries': Array<[string, SchemaGraphNode]>;
+  'dynamicAnchor': string | undefined;
+  'dynamicRef': string | undefined;
+  'elseNode': SchemaGraphNode | undefined;
+  'ifNode': SchemaGraphNode | undefined;
+  'itemsNode': SchemaGraphNode | undefined;
+  'oneOf': SchemaGraphNode[];
+  'patternPropertyEntries': Array<[string, SchemaGraphNode]>;
+  'prefixItems': SchemaGraphNode[];
+  'properties': Array<[string, SchemaGraphNode]>;
+  'propertyNamesNode': SchemaGraphNode | undefined;
+  'ref': string | undefined;
+  'refTargetNode': SchemaGraphNode | undefined;
+  'required': string[];
+  'schemaTypes': string[];
+  'thenNode': SchemaGraphNode | undefined;
+  'unevaluatedItemsNode': SchemaGraphNode | undefined;
+  'unevaluatedPropertiesNode': SchemaGraphNode | undefined;
+  'title': string | undefined;
+  'description': string | undefined;
+  'format': string | undefined;
+  'defaultValue': unknown;
+  'hasDefault': boolean;
+  'constValue': unknown;
+  'hasConst': boolean;
+  'enumValues': unknown[] | undefined;
+  'minimum': number | undefined;
+  'maximum': number | undefined;
+  'exclusiveMinimum': number | undefined;
+  'exclusiveMaximum': number | undefined;
+  'multipleOf': number | undefined;
+  'minLength': number | undefined;
+  'maxLength': number | undefined;
+  'pattern': string | undefined;
+  'minItems': number | undefined;
+  'maxItems': number | undefined;
+  'uniqueItems': boolean;
+  'minProperties': number | undefined;
+  'maxProperties': number | undefined;
+  'additionalPropertiesNode': SchemaGraphNode | boolean | undefined;
+  'notNode': SchemaGraphNode | undefined;
+  'contentEncoding': string | undefined;
+  'contentMediaType': string | undefined;
+  'readOnly': boolean;
+  'writeOnly': boolean;
+  'deprecated': boolean;
+  'rdfsDomain': string | undefined;
+  'rdfsRange': string | undefined;
+  'disjointWith': string | undefined;
+  'equivalentTo': string | undefined;
+  'inverseOf': string | undefined;
+  'transitive': boolean;
+  'symmetric': boolean;
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
 
 function escapeJsonPointer(segment: string): string {
   return segment.replaceAll('~', '~0').replaceAll('/', '~1');
@@ -16,21 +78,50 @@ function unescapeJsonPointer(segment: string): string {
   return segment.replaceAll('~1', '/').replaceAll('~0', '~');
 }
 
-export class SchemaGraph {
-  private readonly anchorMap = new Map<string, SchemaGraphNodeInterface>();
-  private readonly childMap = new WeakMap<SchemaGraphNodeInterface, Map<string, SchemaGraphNodeInterface>>();
-  private readonly entryMap = new WeakMap<SchemaGraphNodeInterface, Map<string, Array<[string, SchemaGraphNodeInterface]>>>();
-  private readonly identityMap = new WeakMap<object, SchemaGraphNodeInterface>();
-  private readonly indexedChildMap = new WeakMap<SchemaGraphNodeInterface, Map<string, SchemaGraphNodeInterface[]>>();
-  private readonly nodeMap = new Map<string, SchemaGraphNodeInterface>();
-  private readonly relationMap = new WeakMap<SchemaGraphNodeInterface, SchemaGraphRelationInterface[]>();
-  private readonly semanticMap = new WeakMap<SchemaGraphNodeInterface, SchemaGraphSemanticsInterface>();
+export type RelationPredicate =
+  | 'rdfs:domain'
+  | 'rdfs:range'
+  | 'rdfs:subClassOf'
+  | 'rdfs:label'
+  | 'rdfs:comment'
+  | 'owl:equivalentClass'
+  | 'owl:complementOf'
+  | 'owl:disjointWith'
+  | 'owl:inverseOf'
+  | 'owl:TransitiveProperty'
+  | 'owl:SymmetricProperty'
+  | 'owl:deprecated'
+  | 'owl:Restriction'
+  | 'owl:oneOf';
 
-  public constructor(public readonly rootSchema: JsonSchemaType) {
+export interface SchemaGraphRelation {
+  predicate: RelationPredicate;
+  source: SchemaGraphNode;
+  target: SchemaGraphNode | string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface StructureWarning {
+  path: string;
+  rule: string;
+  message: string;
+}
+
+export class SchemaGraph {
+  private readonly anchorMap = new Map<string, SchemaGraphNode>();
+  private readonly childMap = new WeakMap<SchemaGraphNode, Map<string, SchemaGraphNode>>();
+  private readonly entryMap = new WeakMap<SchemaGraphNode, Map<string, Array<[string, SchemaGraphNode]>>>();
+  private readonly identityMap = new WeakMap<object, SchemaGraphNode>();
+  private readonly indexedChildMap = new WeakMap<SchemaGraphNode, Map<string, SchemaGraphNode[]>>();
+  private readonly nodeMap = new Map<string, SchemaGraphNode>();
+  private readonly relationMap = new WeakMap<SchemaGraphNode, SchemaGraphRelation[]>();
+  private readonly semanticMap = new WeakMap<SchemaGraphNode, SchemaGraphSemantics>();
+
+  public constructor(public readonly rootSchema: JsonSchema) {
     this.lower(rootSchema, '');
   }
 
-  public resolveFragment(fragment: string): SchemaGraphNodeInterface {
+  public resolveFragment(fragment: string): SchemaGraphNode {
     if (fragment === '') {
       return this.rootNode;
     }
@@ -41,24 +132,24 @@ export class SchemaGraph {
     const anchored = this.anchorMap.get(fragment);
 
     if (anchored === undefined) {
-      throw new GraphError('ANCHOR_NOT_FOUND', `Unknown schema anchor: #${fragment}`, fragment);
+      throw new Error(`Unknown schema anchor: #${fragment}`);
     }
 
     return anchored;
   }
 
-  public resolvePointer(pointer: string): SchemaGraphNodeInterface {
+  public resolvePointer(pointer: string): SchemaGraphNode {
     if (pointer === '') {
       return this.rootNode;
     }
     if (!pointer.startsWith('/')) {
-      throw new GraphError('POINTER_INVALID', `Invalid JSON Pointer: ${pointer}`, pointer);
+      throw new Error(`Invalid JSON Pointer: ${pointer}`);
     }
 
     const resolved = this.nodeMap.get(pointer);
 
     if (resolved === undefined) {
-      throw new GraphError('POINTER_NOT_FOUND', `Pointer not found: ${pointer}`, pointer);
+      throw new Error(`Pointer not found: ${pointer}`);
     }
 
     return resolved;
@@ -72,11 +163,11 @@ export class SchemaGraph {
     return this.resolveLocalRef(ref).id;
   }
 
-  public child(node: SchemaGraphNodeInterface, key: string): SchemaGraphNodeInterface | undefined {
+  public child(node: SchemaGraphNode, key: string): SchemaGraphNode | undefined {
     return this.childMap.get(node)?.get(key);
   }
 
-  public keywordValue(node: SchemaGraphNodeInterface, key: string): unknown {
+  public keywordValue(node: SchemaGraphNode, key: string): unknown {
     if (!isObject(node.schema)) {
       return undefined;
     }
@@ -84,28 +175,28 @@ export class SchemaGraph {
     return node.schema[key];
   }
 
-  public entries(node: SchemaGraphNodeInterface, key: string): Array<[string, SchemaGraphNodeInterface]> {
+  public entries(node: SchemaGraphNode, key: string): Array<[string, SchemaGraphNode]> {
     return this.entryMap.get(node)?.get(key) ?? [];
   }
 
-  public node(schema: Record<string, unknown>): SchemaGraphNodeInterface | undefined {
+  public node(schema: Record<string, unknown>): SchemaGraphNode | undefined {
     return this.identityMap.get(schema);
   }
 
-  public indexedChildren(node: SchemaGraphNodeInterface, key: string): SchemaGraphNodeInterface[] {
+  public indexedChildren(node: SchemaGraphNode, key: string): SchemaGraphNode[] {
     return this.indexedChildMap.get(node)?.get(key) ?? [];
   }
 
-  public get rootNode(): SchemaGraphNodeInterface {
-    return this.nodeMap.get('') as SchemaGraphNodeInterface;
+  public get rootNode(): SchemaGraphNode {
+    return this.nodeMap.get('') as SchemaGraphNode;
   }
 
-  public nodes(): SchemaGraphNodeInterface[] {
+  public nodes(): SchemaGraphNode[] {
     return [...this.nodeMap.values()];
   }
 
-  public validateStructure(): StructureWarningInterface[] {
-    const warnings: StructureWarningInterface[] = [];
+  public validateStructure(): StructureWarning[] {
+    const warnings: StructureWarning[] = [];
 
     for (const node of this.nodeMap.values()) {
       if (node.pointer === '') {
@@ -141,7 +232,7 @@ export class SchemaGraph {
     return warnings;
   }
 
-  public semantics(node: SchemaGraphNodeInterface): SchemaGraphSemanticsInterface {
+  public semantics(node: SchemaGraphNode): SchemaGraphSemantics {
     const cached = this.semanticMap.get(node);
 
     if (cached !== undefined) {
@@ -155,7 +246,7 @@ export class SchemaGraph {
     return semantics;
   }
 
-  public relations(node: SchemaGraphNodeInterface): SchemaGraphRelationInterface[] {
+  public relations(node: SchemaGraphNode): SchemaGraphRelation[] {
     const cached = this.relationMap.get(node);
 
     if (cached !== undefined) {
@@ -169,8 +260,8 @@ export class SchemaGraph {
     return relations;
   }
 
-  public allRelations(): SchemaGraphRelationInterface[] {
-    const result: SchemaGraphRelationInterface[] = [];
+  public allRelations(): SchemaGraphRelation[] {
+    const result: SchemaGraphRelation[] = [];
 
     for (const node of this.nodeMap.values()) {
       result.push(...this.relations(node));
@@ -179,9 +270,9 @@ export class SchemaGraph {
     return result;
   }
 
-  private extractRelations(node: SchemaGraphNodeInterface): SchemaGraphRelationInterface[] {
+  private extractRelations(node: SchemaGraphNode): SchemaGraphRelation[] {
     const sem = this.semantics(node);
-    const relations: SchemaGraphRelationInterface[] = [];
+    const relations: SchemaGraphRelation[] = [];
 
     // Explicit annotation keys
     if (sem.rdfsDomain !== undefined) {
@@ -267,7 +358,7 @@ export class SchemaGraph {
     return relations;
   }
 
-  private extractSemantics(node: SchemaGraphNodeInterface): SchemaGraphSemanticsInterface {
+  private extractSemantics(node: SchemaGraphNode): SchemaGraphSemantics {
     if (!isObject(node.schema)) {
       return {
         'allOf': [],
@@ -424,7 +515,7 @@ export class SchemaGraph {
     };
   }
 
-  private resolveAdditionalProperties(node: SchemaGraphNodeInterface): SchemaGraphNodeInterface | boolean | undefined {
+  private resolveAdditionalProperties(node: SchemaGraphNode): SchemaGraphNode | boolean | undefined {
     if (!isObject(node.schema) || !('additionalProperties' in node.schema)) {
       return undefined;
     }
@@ -434,7 +525,7 @@ export class SchemaGraph {
     return this.child(node, 'additionalProperties');
   }
 
-  private resolveLocalRef(ref: string): SchemaGraphNodeInterface {
+  private resolveLocalRef(ref: string): SchemaGraphNode {
     if (ref === '#') {
       return this.rootNode;
     }
@@ -445,7 +536,7 @@ export class SchemaGraph {
     return this.resolveFragment(ref.slice(1));
   }
 
-  private lower(schema: JsonSchemaType, pointer: string): void {
+  private lower(schema: JsonSchema, pointer: string): void {
     const id = this.nodeId(pointer, schema);
     const node = {
       id,
@@ -466,21 +557,21 @@ export class SchemaGraph {
     }
 
     if (typeof schema.$anchor === 'string') {
-      this.anchorMap.set(schema.$anchor, this.nodeMap.get(pointer) as SchemaGraphNodeInterface);
+      this.anchorMap.set(schema.$anchor, this.nodeMap.get(pointer) as SchemaGraphNode);
     }
     if (typeof schema.$dynamicAnchor === 'string') {
-      this.anchorMap.set(schema.$dynamicAnchor, this.nodeMap.get(pointer) as SchemaGraphNodeInterface);
+      this.anchorMap.set(schema.$dynamicAnchor, this.nodeMap.get(pointer) as SchemaGraphNode);
     }
 
     for (const [key, value] of Object.entries(schema)) {
       if (typeof value === 'boolean' || isObject(value)) {
         const childPointer = `${pointer}/${escapeJsonPointer(key)}`;
 
-        this.lower(value as JsonSchemaType, childPointer);
-        this.childMap.get(node)?.set(key, this.nodeMap.get(childPointer) as SchemaGraphNodeInterface);
+        this.lower(value as JsonSchema, childPointer);
+        this.childMap.get(node)?.set(key, this.nodeMap.get(childPointer) as SchemaGraphNode);
 
         if (isObject(value)) {
-          const entries: Array<[string, SchemaGraphNodeInterface]> = [];
+          const entries: Array<[string, SchemaGraphNode]> = [];
 
           for (const entryKey of Object.keys(value)) {
             const entryValue = value[entryKey];
@@ -491,7 +582,7 @@ export class SchemaGraph {
 
             const entryPointer = `${childPointer}/${escapeJsonPointer(entryKey)}`;
 
-            entries.push([entryKey, this.nodeMap.get(entryPointer) as SchemaGraphNodeInterface]);
+            entries.push([entryKey, this.nodeMap.get(entryPointer) as SchemaGraphNode]);
           }
 
           if (entries.length > 0) {
@@ -504,14 +595,14 @@ export class SchemaGraph {
         continue;
       }
 
-      const indexedChildren: SchemaGraphNodeInterface[] = [];
+      const indexedChildren: SchemaGraphNode[] = [];
 
       for (const [index, element] of value.entries()) {
         if (typeof element === 'boolean' || isObject(element)) {
           const elementPointer = `${pointer}/${escapeJsonPointer(key)}/${index}`;
 
-          this.lower(element as JsonSchemaType, elementPointer);
-          indexedChildren.push(this.nodeMap.get(elementPointer) as SchemaGraphNodeInterface);
+          this.lower(element as JsonSchema, elementPointer);
+          indexedChildren.push(this.nodeMap.get(elementPointer) as SchemaGraphNode);
         }
       }
 
@@ -521,7 +612,7 @@ export class SchemaGraph {
     }
   }
 
-  private nodeId(pointer: string, schema: JsonSchemaType): string {
+  private nodeId(pointer: string, schema: JsonSchema): string {
     if (!isObject(schema)) {
       return this.pointerId(pointer);
     }
@@ -552,27 +643,27 @@ export class SchemaGraph {
 
     return `#${pointer}`;
   }
+}
 
-  static resolvePointer(rootSchema: JsonSchemaType, pointer: string): JsonSchemaType {
-    if (pointer === '') {
-      return rootSchema;
-    }
-    if (!pointer.startsWith('/')) {
-      throw new GraphError('POINTER_INVALID', `Invalid JSON Pointer: ${pointer}`, pointer);
-    }
-
-    let current: unknown = rootSchema;
-
-    for (const segment of pointer.slice(1).split('/').map(unescapeJsonPointer)) {
-      if (!isObject(current) && !Array.isArray(current)) {
-        throw new GraphError('POINTER_NOT_FOUND', `Pointer not found: ${pointer}`, pointer);
-      }
-      current = (current as Record<string, unknown>)[segment];
-    }
-    if (typeof current !== 'boolean' && !isObject(current)) {
-      throw new GraphError('POINTER_NOT_SCHEMA', `Pointer does not resolve to a schema: ${pointer}`, pointer);
-    }
-
-    return current;
+export function resolvePointerValue(rootSchema: JsonSchema, pointer: string): JsonSchema {
+  if (pointer === '') {
+    return rootSchema;
   }
+  if (!pointer.startsWith('/')) {
+    throw new Error(`Invalid JSON Pointer: ${pointer}`);
+  }
+
+  let current: unknown = rootSchema;
+
+  for (const segment of pointer.slice(1).split('/').map(unescapeJsonPointer)) {
+    if (!isObject(current) && !Array.isArray(current)) {
+      throw new Error(`Pointer not found: ${pointer}`);
+    }
+    current = (current as Record<string, unknown>)[segment];
+  }
+  if (typeof current !== 'boolean' && !isObject(current)) {
+    throw new Error(`Pointer does not resolve to a schema: ${pointer}`);
+  }
+
+  return current;
 }

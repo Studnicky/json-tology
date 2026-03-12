@@ -1,56 +1,83 @@
-import type { ValidationErrorType } from '../../types/validation.js';
-import type {
-  GraphEngineOptionsInterface, GraphExecutionResultInterface,
-  KeywordContextInterface, KeywordDefinitionInterface
-} from '../../interfaces/graph-engine.js';
-import type { SchemaGraphNodeInterface } from '../../interfaces/schema-graph.js';
-import { isRecord, propertyIri } from '../data/DataTypes.js';
-import { GraphError } from '../errors/GraphError.js';
-import { FormatRegistry } from '../format/FormatRegistry.js';
-import { Hash } from '../hash/Hash.js';
-import { SchemaGraph } from './SchemaGraph.js';
+import type { ValidationError } from '../interfaces/validation.js';
+import { type FormatRegistry, builtinFormats } from './FormatRegistry.js';
+import { SchemaGraph, type SchemaGraphNode } from './SchemaGraph.js';
 
+type JsonSchema = boolean | Record<string, unknown>;
 
-type JsonSchemaType = boolean | Record<string, unknown>;
+export interface KeywordContext {
+  'parentData': unknown;
+  'parentKey': number | string;
+  'path': string;
+  'rootData': unknown;
+}
 
-interface InternalExecutionResultInterface {
-  'errors': ValidationErrorType[];
+export interface KeywordDefinition {
+  'keyword': string;
+  'type'?: string | string[];
+  'validate': (schema: unknown, data: unknown, context: KeywordContext) => boolean | ValidationError[];
+}
+
+export interface GraphEngineOptions {
+  'applyDefaults'?: boolean;
+  'coerce'?: boolean;
+  'collectErrors'?: boolean;
+  'formatRegistry'?: FormatRegistry;
+  'ignoreAdditionalProperties'?: boolean;
+  'keywords'?: KeywordDefinition[];
+  'lookupSchema'?: (schemaId: string) => Record<string, unknown> | undefined;
+  'materializeContainers'?: boolean;
+  'removeAdditional'?: boolean;
+  'stripUnknownProperties'?: boolean;
+}
+
+interface InternalExecutionResult {
+  'errors': ValidationError[];
   'evaluatedItems': Set<number>;
   'evaluatedProperties': Set<string>;
   'valid': boolean;
   'value': unknown;
 }
 
-interface RefTargetInterface {
-  'rootSchema': JsonSchemaType;
-  'schema': JsonSchemaType;
+export interface GraphExecutionResult {
+  'entryNode': SchemaGraphNode;
+  'errors': ValidationError[];
+  'evaluatedItems': Set<number>;
+  'evaluatedProperties': Set<string>;
+  'graph': SchemaGraph;
+  'valid': boolean;
+  'value': unknown;
 }
 
-interface DynamicScopeEntryInterface {
+interface RefTarget {
+  'rootSchema': JsonSchema;
+  'schema': JsonSchema;
+}
+
+interface DynamicScopeEntry {
   'anchor': string;
-  'rootSchema': JsonSchemaType;
-  'schema': JsonSchemaType;
+  'rootSchema': JsonSchema;
+  'schema': JsonSchema;
 }
 
-interface ObjectValidationPlanInterface {
+interface ObjectValidationPlan {
   'dependentRequired': Record<string, string[]>;
-  'dependentSchemaEntries': Array<[string, JsonSchemaType]>;
+  'dependentSchemaEntries': Array<[string, JsonSchema]>;
   'patternPropertyEntries': Array<{
     'pattern': string;
     'regex': RegExp;
-    'schema': JsonSchemaType;
+    'schema': JsonSchema;
   }>;
-  'propertyEntries': Array<[string, JsonSchemaType]>;
-  'propertySchemaMap': Map<string, JsonSchemaType>;
+  'propertyEntries': Array<[string, JsonSchema]>;
+  'propertySchemaMap': Map<string, JsonSchema>;
   'required': string[];
 }
 
-interface SchemaNodePlanInterface {
-  'additionalProperties': JsonSchemaType | boolean | undefined;
-  'allOf': JsonSchemaType[];
-  'anyOf': JsonSchemaType[];
+interface SchemaNodePlan {
+  'additionalProperties': JsonSchema | boolean | undefined;
+  'allOf': JsonSchema[];
+  'anyOf': JsonSchema[];
   'constValue': unknown;
-  'containsSchema': JsonSchemaType | undefined;
+  'containsSchema': JsonSchema | undefined;
   'defaultValue': unknown;
   'dynamicAnchor': string | undefined;
   'dynamicRef': string | undefined;
@@ -58,8 +85,8 @@ interface SchemaNodePlanInterface {
   'exclusiveMaximum': number | undefined;
   'exclusiveMinimum': number | undefined;
   'format': string | undefined;
-  'ifSchema': JsonSchemaType | undefined;
-  'itemsSchema': JsonSchemaType | undefined;
+  'ifSchema': JsonSchema | undefined;
+  'itemsSchema': JsonSchema | undefined;
   'maxContains': number | undefined;
   'maxItems': number | undefined;
   'maxLength': number | undefined;
@@ -71,27 +98,27 @@ interface SchemaNodePlanInterface {
   'minProperties': number | undefined;
   'minimum': number | undefined;
   'multipleOf': number | undefined;
-  'notSchema': JsonSchemaType | undefined;
-  'oneOf': JsonSchemaType[];
+  'notSchema': JsonSchema | undefined;
+  'oneOf': JsonSchema[];
   'pattern': string | undefined;
-  'prefixItems': JsonSchemaType[] | undefined;
-  'propertyNamesSchema': JsonSchemaType | undefined;
+  'prefixItems': JsonSchema[] | undefined;
+  'propertyNamesSchema': JsonSchema | undefined;
   'ref': string | undefined;
   'schemaTypes': string[];
-  'thenSchema': JsonSchemaType | undefined;
+  'thenSchema': JsonSchema | undefined;
   'tupleItems': undefined;
-  'unevaluatedItems': JsonSchemaType | boolean | undefined;
-  'unevaluatedProperties': JsonSchemaType | boolean | undefined;
+  'unevaluatedItems': JsonSchema | boolean | undefined;
+  'unevaluatedProperties': JsonSchema | boolean | undefined;
   'uniqueItems': boolean;
   'discriminatorPropertyName': string | undefined;
-  'elseSchema': JsonSchemaType | undefined;
+  'elseSchema': JsonSchema | undefined;
 }
 
-interface RootDialectPlanInterface {
+interface RootDialectPlan {
   'formatAssertions': boolean;
 }
 
-const DEFAULT_OPTIONS: Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>> = {
+const DEFAULT_OPTIONS: Required<Omit<GraphEngineOptions, 'formatRegistry' | 'keywords' | 'lookupSchema'>> = {
   'applyDefaults': false,
   'coerce': false,
   'collectErrors': true,
@@ -130,13 +157,15 @@ function escapeJsonPointer(segment: string): string {
   return segment.replaceAll('~', '~0').replaceAll('/', '~1');
 }
 
-const isObject = isRecord;
+export function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
 
 function isInteger(value: unknown): boolean {
   return typeof value === 'number' && Number.isInteger(value);
 }
 
-function isJsonSchemaType(value: unknown): value is JsonSchemaType {
+function isJsonSchema(value: unknown): value is JsonSchema {
   return typeof value === 'boolean' || isObject(value);
 }
 
@@ -189,6 +218,33 @@ function toArray<T>(value: T | T[] | undefined): T[] {
   return Array.isArray(value) ? value : [value];
 }
 
+export function keySortReplacer(_key: string, value: unknown): unknown {
+  if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    const sorted: Record<string, unknown> = {};
+
+    for (const key of Object.keys(value).sort()) {
+      sorted[key] = (value as Record<string, unknown>)[key];
+    }
+
+    return sorted;
+  }
+
+  return value;
+}
+
+export function deterministicHash(value: unknown): string {
+  const serialized = JSON.stringify(value, keySortReplacer);
+  let hash = 2_166_136_261;
+  const fnvPrime = 16_777_619;
+
+  for (let i = 0; i < serialized.length; i++) {
+    hash ^= serialized.codePointAt(i) ?? 0;
+    hash = (hash * fnvPrime) >>> 0;
+  }
+
+  return hash.toString(16);
+}
+
 
 function keywordValue<T>(
   graph: SchemaGraph | undefined,
@@ -220,7 +276,7 @@ function childSchema(
   node: unknown,
   schema: Record<string, unknown>,
   key: string
-): JsonSchemaType | undefined {
+): JsonSchema | undefined {
   if (graph !== undefined && node !== undefined) {
     const direct = graph.child(node as never, key)?.schema;
 
@@ -233,7 +289,7 @@ function childSchema(
 
   const value = schema[key];
 
-  return isJsonSchemaType(value) ? value : undefined;
+  return isJsonSchema(value) ? value : undefined;
 }
 
 function indexedSchemaChildren(
@@ -241,7 +297,7 @@ function indexedSchemaChildren(
   node: unknown,
   schema: Record<string, unknown>,
   key: string
-): JsonSchemaType[] {
+): JsonSchema[] {
   if (graph !== undefined && node !== undefined) {
     return Array.isArray(graph.keywordValue(node as never, key))
       ? graph.indexedChildren(node as never, key).map((child) => child.schema)
@@ -250,7 +306,7 @@ function indexedSchemaChildren(
 
   const value = schema[key];
 
-  return Array.isArray(value) ? value.filter((entry) => isJsonSchemaType(entry)) : [];
+  return Array.isArray(value) ? value.filter((entry) => isJsonSchema(entry)) : [];
 }
 
 function schemaEntries(
@@ -258,9 +314,9 @@ function schemaEntries(
   node: unknown,
   schema: Record<string, unknown>,
   key: string
-): Array<[string, JsonSchemaType]> {
+): Array<[string, JsonSchema]> {
   if (graph !== undefined && node !== undefined) {
-    const direct = graph.entries(node as never, key).map(([entryKey, child]) => [entryKey, child.schema] as [string, JsonSchemaType]);
+    const direct = graph.entries(node as never, key).map(([entryKey, child]) => [entryKey, child.schema] as [string, JsonSchema]);
 
     if (direct.length > 0) {
       return direct;
@@ -271,35 +327,35 @@ function schemaEntries(
 
   const candidate = schema[key];
 
-  return Object.entries(isObject(candidate) ? candidate : {}).filter(([, entry]) => isJsonSchemaType(entry)) as Array<[string, JsonSchemaType]>;
+  return Object.entries(isObject(candidate) ? candidate : {}).filter(([, entry]) => isJsonSchema(entry)) as Array<[string, JsonSchema]>;
+}
+
+export function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+export function escapeInstanceSegment(value: string): string {
+  return encodeURIComponent(value).replaceAll('%2F', '/');
+}
+
+export function propertyIri(classId: string, propertyName: string): string {
+  return `${classId}#${propertyName}`;
 }
 
 export class GraphEngine {
-  static escapeSegment(value: string): string {
-    return encodeURIComponent(value).replaceAll('%2F', '/');
-  }
-
-  static hash(value: unknown): string {
-    return Hash.value(value);
-  }
-
-  static propertyIri(classId: string, propertyName: string): string {
-    return propertyIri(classId, propertyName);
-  }
-
-  private readonly customKeywords: KeywordDefinitionInterface[];
-  private readonly dialectPlan: RootDialectPlanInterface;
+  private readonly customKeywords: KeywordDefinition[];
+  private readonly dialectPlan: RootDialectPlan;
   public readonly formatRegistry: FormatRegistry;
   private readonly graphCache = new WeakMap<object, SchemaGraph>();
-  private readonly nodePlanCache = new WeakMap<object, SchemaNodePlanInterface>();
-  private readonly objectPlanCache = new WeakMap<object, ObjectValidationPlanInterface>();
-  private readonly options: Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>> & Pick<GraphEngineOptionsInterface, 'lookupSchema'>;
-  private readonly refCache = new Map<string, RefTargetInterface>();
+  private readonly nodePlanCache = new WeakMap<object, SchemaNodePlan>();
+  private readonly objectPlanCache = new WeakMap<object, ObjectValidationPlan>();
+  private readonly options: Required<Omit<GraphEngineOptions, 'formatRegistry' | 'keywords' | 'lookupSchema'>> & Pick<GraphEngineOptions, 'lookupSchema'>;
+  private readonly refCache = new Map<string, RefTarget>();
   private readonly regexCache = new Map<string, RegExp>();
 
-  public constructor(public readonly rootSchema: JsonSchemaType, options: GraphEngineOptionsInterface = {}) {
+  public constructor(public readonly rootSchema: JsonSchema, options: GraphEngineOptions = {}) {
     const { formatRegistry, keywords, ...rest } = options;
-    this.formatRegistry = formatRegistry ?? FormatRegistry.builtin();
+    this.formatRegistry = formatRegistry ?? builtinFormats();
     this.customKeywords = keywords ?? [];
     this.options = {
       ...DEFAULT_OPTIONS,
@@ -320,15 +376,15 @@ export class GraphEngine {
     return this.execute(value, pointer, { 'collectErrors': false }).valid;
   }
 
-  public errors(value: unknown, pointer = ''): ValidationErrorType[] {
+  public errors(value: unknown, pointer = ''): ValidationError[] {
     return this.execute(value, pointer, { 'collectErrors': true }).errors;
   }
 
   public execute(
     value: unknown,
     pointer = '',
-    overrides: Partial<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'lookupSchema'>> = {}
-  ): GraphExecutionResultInterface {
+    overrides: Partial<Omit<GraphEngineOptions, 'formatRegistry' | 'lookupSchema'>> = {}
+  ): GraphExecutionResult {
     const graph = this.graphFor(this.rootSchema);
     const entryNode = graph.resolvePointer(pointer);
     const schema = entryNode.schema;
@@ -353,9 +409,9 @@ export class GraphEngine {
 
   public fillImplicitProperties(
     graph: SchemaGraph,
-    node: SchemaGraphNodeInterface,
+    node: SchemaGraphNode,
     value: unknown,
-    currentRoot: JsonSchemaType = this.rootSchema
+    currentRoot: JsonSchema = this.rootSchema
   ): void {
     const targetNode = this.resolveGraphTargetNode(graph, node, currentRoot);
 
@@ -392,12 +448,12 @@ export class GraphEngine {
 
   public projectNode(
     graph: SchemaGraph,
-    schemaNode: SchemaGraphNodeInterface,
+    schemaNode: SchemaGraphNode,
     value: unknown,
     subjectId: string,
     nodes: Array<Record<string, unknown>>,
     path: string,
-    currentRoot: JsonSchemaType
+    currentRoot: JsonSchema
   ): void {
     const targetNode = this.resolveGraphTargetNode(graph, schemaNode, currentRoot);
 
@@ -416,7 +472,7 @@ export class GraphEngine {
       }
 
       const propertyValue = value[propertyName];
-      const propertyId = GraphEngine.propertyIri(targetNode.id, propertyName);
+      const propertyId = propertyIri(targetNode.id, propertyName);
       const childPath = path === '' ? propertyName : `${path}/${propertyName}`;
 
       if (Array.isArray(propertyValue)) {
@@ -458,12 +514,12 @@ export class GraphEngine {
 
   public projectPropertyValue(
     graph: SchemaGraph,
-    schemaNode: SchemaGraphNodeInterface,
+    schemaNode: SchemaGraphNode,
     value: unknown,
     subjectId: string,
     nodes: Array<Record<string, unknown>>,
     path: string,
-    currentRoot: JsonSchemaType
+    currentRoot: JsonSchema
   ): unknown {
     const targetNode = this.resolveGraphTargetNode(graph, schemaNode, currentRoot);
     const targetSchema = targetNode.schema;
@@ -485,9 +541,9 @@ export class GraphEngine {
 
   public resolveGraphTargetNode(
     graph: SchemaGraph,
-    schemaNode: SchemaGraphNodeInterface,
-    currentRoot: JsonSchemaType
-  ): SchemaGraphNodeInterface {
+    schemaNode: SchemaGraphNode,
+    currentRoot: JsonSchema
+  ): SchemaGraphNode {
     const semantics = graph.semantics(schemaNode);
 
     if (semantics.ref === undefined) {
@@ -512,7 +568,7 @@ export class GraphEngine {
     keyword: string,
     message: string,
     params: Record<string, unknown> = {}
-  ): ValidationErrorType {
+  ): ValidationError {
     return {
       keyword,
       message,
@@ -521,7 +577,7 @@ export class GraphEngine {
     };
   }
 
-  private resolveRef(ref: string, currentRoot: JsonSchemaType): RefTargetInterface {
+  private resolveRef(ref: string, currentRoot: JsonSchema): RefTarget {
     const currentRootId = this.schemaId(currentRoot);
     const cacheKey = `${currentRootId ?? '<anonymous>'}::${ref}`;
     const cached = this.refCache.get(cacheKey);
@@ -543,7 +599,7 @@ export class GraphEngine {
       const lookedUp = this.options.lookupSchema?.(schemaId);
 
       if (lookedUp === undefined) {
-        throw new GraphError('REF_UNRESOLVED', `Unresolved schema reference: ${ref}`, ref);
+        throw new Error(`Unresolved schema reference: ${ref}`);
       }
       rootSchema = lookedUp;
     }
@@ -561,9 +617,9 @@ export class GraphEngine {
 
   private resolveDynamicRef(
     ref: string,
-    currentRoot: JsonSchemaType,
-    dynamicScope: DynamicScopeEntryInterface[]
-  ): RefTargetInterface {
+    currentRoot: JsonSchema,
+    dynamicScope: DynamicScopeEntry[]
+  ): RefTarget {
     if (ref === '#') {
       for (let index = dynamicScope.length - 1; index >= 0; index--) {
         if (dynamicScope[index].anchor === '') {
@@ -601,7 +657,7 @@ export class GraphEngine {
     return resolved;
   }
 
-  private schemaId(schema: JsonSchemaType): string | undefined {
+  private schemaId(schema: JsonSchema): string | undefined {
     if (!isObject(schema)) {
       return undefined;
     }
@@ -624,18 +680,18 @@ export class GraphEngine {
     return fragment;
   }
 
-  private resolveFragment(rootSchema: JsonSchemaType, fragment: string): JsonSchemaType {
+  private resolveFragment(rootSchema: JsonSchema, fragment: string): JsonSchema {
     if (!isObject(rootSchema)) {
       if (fragment === '') {
         return rootSchema;
       }
-      throw new GraphError('BOOLEAN_SCHEMA_FRAGMENT', `Cannot resolve fragment on boolean schema: #${fragment}`, fragment);
+      throw new Error(`Cannot resolve fragment on boolean schema: #${fragment}`);
     }
 
     return this.graphFor(rootSchema).resolveFragment(fragment).schema;
   }
 
-  private graphFor(rootSchema: JsonSchemaType): SchemaGraph {
+  private graphFor(rootSchema: JsonSchema): SchemaGraph {
     if (!isObject(rootSchema)) {
       return new SchemaGraph(rootSchema);
     }
@@ -654,14 +710,14 @@ export class GraphEngine {
   }
 
   private visit(
-    schema: JsonSchemaType,
-    currentRoot: JsonSchemaType,
+    schema: JsonSchema,
+    currentRoot: JsonSchema,
     value: unknown,
     path: string,
-    options: Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>> & Pick<GraphEngineOptionsInterface, 'lookupSchema'>,
+    options: Required<Omit<GraphEngineOptions, 'formatRegistry' | 'keywords' | 'lookupSchema'>> & Pick<GraphEngineOptions, 'lookupSchema'>,
     refStack: Set<string>,
-    dynamicScope: DynamicScopeEntryInterface[]
-  ): InternalExecutionResultInterface {
+    dynamicScope: DynamicScopeEntry[]
+  ): InternalExecutionResult {
     if (typeof schema === 'boolean') {
       return schema
         ? {
@@ -775,11 +831,11 @@ export class GraphEngine {
       workingValue = resolvedResult.value;
     }
 
-    const errors: ValidationErrorType[] = [];
+    const errors: ValidationError[] = [];
     const evaluatedProperties = new Set<string>();
     const evaluatedItems = new Set<number>();
 
-    const pushErrors = (nextErrors: ValidationErrorType[]): void => {
+    const pushErrors = (nextErrors: ValidationError[]): void => {
       if (nextErrors.length === 0) {
         return;
       }
@@ -788,7 +844,7 @@ export class GraphEngine {
       }
     };
 
-    const invalid = (error: ValidationErrorType): InternalExecutionResultInterface => {
+    const invalid = (error: ValidationError): InternalExecutionResult => {
       if (options.collectErrors) {
         errors.push(error);
       }
@@ -908,7 +964,7 @@ export class GraphEngine {
     const anyOfNodes = nodePlan.anyOf.map((element) => ({ schema: element }));
 
     if (anyOfNodes.length > 0) {
-      let successfulResults: InternalExecutionResultInterface[] = [];
+      let successfulResults: InternalExecutionResult[] = [];
 
       for (const element of anyOfNodes) {
         const candidate = this.visit(element.schema, currentRoot, cloneCandidate(workingValue), path, {
@@ -931,7 +987,7 @@ export class GraphEngine {
         workingValue = matchedResult.value;
         for (const successful of successfulResults) {
           for (const key of successful.evaluatedProperties) {
-            evaluatedProperties.add(key);
+          evaluatedProperties.add(key);
           }
           for (const index of successful.evaluatedItems) {
             evaluatedItems.add(index);
@@ -944,7 +1000,7 @@ export class GraphEngine {
 
     if (oneOfNodes.length > 0) {
       let matches = 0;
-      let matchedResult: InternalExecutionResultInterface | undefined;
+      let matchedResult: InternalExecutionResult | undefined;
 
       // Discriminator optimization: if the schema has a discriminator property,
       // check the discriminator value first and only validate against the matching variant.
@@ -1055,7 +1111,7 @@ export class GraphEngine {
       }
 
       if (branchSchema !== undefined) {
-        const branch = this.visit(branchSchema as JsonSchemaType, currentRoot, workingValue, path, options, refStack, nextDynamicScope);
+        const branch = this.visit(branchSchema as JsonSchema, currentRoot, workingValue, path, options, refStack, nextDynamicScope);
 
         if (!branch.valid && !options.collectErrors) {
           return branch;
@@ -1129,7 +1185,7 @@ export class GraphEngine {
             continue;
           }
         }
-        const kwContext: KeywordContextInterface = {
+        const kwContext: KeywordContext = {
           'parentData': undefined,
           'parentKey': '',
           'path': path,
@@ -1300,9 +1356,9 @@ export class GraphEngine {
   private validateString(
     path: string,
     value: string,
-    nodePlan: SchemaNodePlanInterface
-  ): ValidationErrorType[] {
-    const errors: ValidationErrorType[] = [];
+    nodePlan: SchemaNodePlan
+  ): ValidationError[] {
+    const errors: ValidationError[] = [];
     const {
       format,
       'maxLength': maximum,
@@ -1334,9 +1390,9 @@ export class GraphEngine {
   private validateNumber(
     path: string,
     value: number,
-    nodePlan: SchemaNodePlanInterface
-  ): ValidationErrorType[] {
-    const errors: ValidationErrorType[] = [];
+    nodePlan: SchemaNodePlan
+  ): ValidationError[] {
+    const errors: ValidationError[] = [];
     const {
       'exclusiveMaximum': exclusiveMaximum,
       'exclusiveMinimum': exclusiveMinimum,
@@ -1377,15 +1433,15 @@ export class GraphEngine {
   }
 
   private validateArray(
-    currentRoot: JsonSchemaType,
+    currentRoot: JsonSchema,
     value: unknown[],
     path: string,
-    options: Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>> & Pick<GraphEngineOptionsInterface, 'lookupSchema'>,
+    options: Required<Omit<GraphEngineOptions, 'formatRegistry' | 'keywords' | 'lookupSchema'>> & Pick<GraphEngineOptions, 'lookupSchema'>,
     refStack: Set<string>,
-    dynamicScope: DynamicScopeEntryInterface[],
-    nodePlan: SchemaNodePlanInterface
-  ): InternalExecutionResultInterface {
-    const errors: ValidationErrorType[] = [];
+    dynamicScope: DynamicScopeEntry[],
+    nodePlan: SchemaNodePlan
+  ): InternalExecutionResult {
+    const errors: ValidationError[] = [];
     const evaluatedItems = new Set<number>();
     let workingValue = value;
     const {
@@ -1445,7 +1501,7 @@ export class GraphEngine {
         errors.push(this.createError(path, 'items', 'must NOT have items beyond prefixItems'));
       } else if (itemsSchema !== undefined && itemsSchema !== true && itemsSchema !== false) {
         for (let index = extraStart; index < workingValue.length; index++) {
-          const child = this.visit(itemsSchema as JsonSchemaType, currentRoot, workingValue[index], `${path}/${index}`, options, refStack, dynamicScope);
+          const child = this.visit(itemsSchema as JsonSchema, currentRoot, workingValue[index], `${path}/${index}`, options, refStack, dynamicScope);
 
           if (!child.valid && !options.collectErrors) {
             return child;
@@ -1457,16 +1513,16 @@ export class GraphEngine {
       }
     } else {
       if (itemsSchema !== undefined) {
-        for (let index = 0; index < workingValue.length; index++) {
-          const child = this.visit(itemsSchema, currentRoot, workingValue[index], `${path}/${index}`, options, refStack, dynamicScope);
+      for (let index = 0; index < workingValue.length; index++) {
+        const child = this.visit(itemsSchema, currentRoot, workingValue[index], `${path}/${index}`, options, refStack, dynamicScope);
 
-          if (!child.valid && !options.collectErrors) {
-            return child;
-          }
-          workingValue[index] = child.value;
-          evaluatedItems.add(index);
-          errors.push(...child.errors);
+        if (!child.valid && !options.collectErrors) {
+          return child;
         }
+        workingValue[index] = child.value;
+        evaluatedItems.add(index);
+        errors.push(...child.errors);
+      }
       }
     }
 
@@ -1474,7 +1530,7 @@ export class GraphEngine {
       let matches = 0;
 
       for (let index = 0; index < workingValue.length; index++) {
-        const candidate = this.visit(containsSchema as JsonSchemaType, currentRoot, cloneCandidate(workingValue[index]), `${path}/${index}`, {
+        const candidate = this.visit(containsSchema as JsonSchema, currentRoot, cloneCandidate(workingValue[index]), `${path}/${index}`, {
           ...options,
           'collectErrors': true
         }, refStack, dynamicScope);
@@ -1507,14 +1563,14 @@ export class GraphEngine {
 
   private validateObject(
     schema: Record<string, unknown>,
-    currentRoot: JsonSchemaType,
+    currentRoot: JsonSchema,
     value: Record<string, unknown>,
     path: string,
-    options: Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>> & Pick<GraphEngineOptionsInterface, 'lookupSchema'>,
+    options: Required<Omit<GraphEngineOptions, 'formatRegistry' | 'keywords' | 'lookupSchema'>> & Pick<GraphEngineOptions, 'lookupSchema'>,
     refStack: Set<string>,
-    dynamicScope: DynamicScopeEntryInterface[]
-  ): InternalExecutionResultInterface {
-    const errors: ValidationErrorType[] = [];
+    dynamicScope: DynamicScopeEntry[]
+  ): InternalExecutionResult {
+    const errors: ValidationError[] = [];
     const evaluatedProperties = new Set<string>();
     const graph = isObject(currentRoot) ? this.graphFor(currentRoot) : undefined;
     const currentNode = graph?.node(schema);
@@ -1548,7 +1604,7 @@ export class GraphEngine {
         if (key in workingValue) {
           continue;
         }
-        const prepared = this.createImplicitDefault(propSchema as JsonSchemaType, currentRoot, options, refStack, dynamicScope);
+        const prepared = this.createImplicitDefault(propSchema as JsonSchema, currentRoot, options, refStack, dynamicScope);
 
         if (prepared !== undefined) {
           workingValue[key] = prepared;
@@ -1561,7 +1617,7 @@ export class GraphEngine {
         const propSchema = propertySchemaMap.get(key);
 
         if (options.applyDefaults && (propSchema === true || propSchema === false || isObject(propSchema))) {
-          const prepared = this.createImplicitDefault(propSchema as JsonSchemaType, currentRoot, options, refStack, dynamicScope);
+          const prepared = this.createImplicitDefault(propSchema as JsonSchema, currentRoot, options, refStack, dynamicScope);
 
           if (prepared !== undefined) {
             workingValue[key] = prepared;
@@ -1593,7 +1649,7 @@ export class GraphEngine {
       }
 
       if (propertySchemaMap.has(key)) {
-        const child = this.visit(propertySchemaMap.get(key) as JsonSchemaType, currentRoot, workingValue[key], `${path}/${escapeJsonPointer(key)}`, options, refStack, dynamicScope);
+        const child = this.visit(propertySchemaMap.get(key) as JsonSchema, currentRoot, workingValue[key], `${path}/${escapeJsonPointer(key)}`, options, refStack, dynamicScope);
 
         if (!child.valid && !options.collectErrors) {
           return child;
@@ -1644,7 +1700,7 @@ export class GraphEngine {
         if (!(key in workingValue)) {
           continue;
         }
-        const child = this.visit(dependencySchema as JsonSchemaType, currentRoot, workingValue, path, options, refStack, dynamicScope);
+        const child = this.visit(dependencySchema as JsonSchema, currentRoot, workingValue, path, options, refStack, dynamicScope);
 
         if (!child.valid && !options.collectErrors) {
           return child;
@@ -1683,7 +1739,7 @@ export class GraphEngine {
         return;
       }
 
-      const child = this.visit(additionalProperties as JsonSchemaType, currentRoot, workingValue[key], `${path}/${escapeJsonPointer(key)}`, options, refStack, dynamicScope);
+      const child = this.visit(additionalProperties as JsonSchema, currentRoot, workingValue[key], `${path}/${escapeJsonPointer(key)}`, options, refStack, dynamicScope);
 
       if (!child.valid) {
         errors.push(...child.errors);
@@ -1710,15 +1766,15 @@ export class GraphEngine {
 
   private applyUnevaluatedItems(
     schema: Record<string, unknown>,
-    currentRoot: JsonSchemaType,
+    currentRoot: JsonSchema,
     value: unknown[],
     path: string,
-    options: Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>> & Pick<GraphEngineOptionsInterface, 'lookupSchema'>,
+    options: Required<Omit<GraphEngineOptions, 'formatRegistry' | 'keywords' | 'lookupSchema'>> & Pick<GraphEngineOptions, 'lookupSchema'>,
     refStack: Set<string>,
-    dynamicScope: DynamicScopeEntryInterface[],
+    dynamicScope: DynamicScopeEntry[],
     alreadyEvaluated: Set<number>
-  ): InternalExecutionResultInterface {
-    const errors: ValidationErrorType[] = [];
+  ): InternalExecutionResult {
+    const errors: ValidationError[] = [];
     const evaluatedItems = new Set<number>();
     const workingValue = value;
     const graph = isObject(currentRoot) ? this.graphFor(currentRoot) : undefined;
@@ -1738,7 +1794,7 @@ export class GraphEngine {
       if (subSchema === true) {
         continue;
       }
-      const child = this.visit(subSchema as JsonSchemaType, currentRoot, workingValue[index], `${path}/${index}`, options, refStack, dynamicScope);
+      const child = this.visit(subSchema as JsonSchema, currentRoot, workingValue[index], `${path}/${index}`, options, refStack, dynamicScope);
 
       if (!child.valid && !options.collectErrors) {
         return child;
@@ -1759,15 +1815,15 @@ export class GraphEngine {
 
   private applyUnevaluatedProperties(
     schema: Record<string, unknown>,
-    currentRoot: JsonSchemaType,
+    currentRoot: JsonSchema,
     value: Record<string, unknown>,
     path: string,
-    options: Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>> & Pick<GraphEngineOptionsInterface, 'lookupSchema'>,
+    options: Required<Omit<GraphEngineOptions, 'formatRegistry' | 'keywords' | 'lookupSchema'>> & Pick<GraphEngineOptions, 'lookupSchema'>,
     refStack: Set<string>,
-    dynamicScope: DynamicScopeEntryInterface[],
+    dynamicScope: DynamicScopeEntry[],
     alreadyEvaluated: Set<string>
-  ): InternalExecutionResultInterface {
-    const errors: ValidationErrorType[] = [];
+  ): InternalExecutionResult {
+    const errors: ValidationError[] = [];
     const evaluatedProperties = new Set<string>();
     const workingValue = value;
     const graph = isObject(currentRoot) ? this.graphFor(currentRoot) : undefined;
@@ -1789,7 +1845,7 @@ export class GraphEngine {
       if (unevaluatedProperties === true) {
         continue;
       }
-      const child = this.visit(unevaluatedProperties as JsonSchemaType, currentRoot, workingValue[key], `${path}/${escapeJsonPointer(key)}`, options, refStack, dynamicScope);
+      const child = this.visit(unevaluatedProperties as JsonSchema, currentRoot, workingValue[key], `${path}/${escapeJsonPointer(key)}`, options, refStack, dynamicScope);
 
       if (!child.valid && !options.collectErrors) {
         return child;
@@ -1809,11 +1865,11 @@ export class GraphEngine {
   }
 
   private createImplicitDefault(
-    schema: JsonSchemaType,
-    currentRoot: JsonSchemaType,
-    options: Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>> & Pick<GraphEngineOptionsInterface, 'lookupSchema'>,
+    schema: JsonSchema,
+    currentRoot: JsonSchema,
+    options: Required<Omit<GraphEngineOptions, 'formatRegistry' | 'keywords' | 'lookupSchema'>> & Pick<GraphEngineOptions, 'lookupSchema'>,
     refStack: Set<string>,
-    dynamicScope: DynamicScopeEntryInterface[]
+    dynamicScope: DynamicScopeEntry[]
   ): unknown {
     if (typeof schema === 'boolean') {
       return undefined;
@@ -1852,7 +1908,7 @@ export class GraphEngine {
         key,
         childSchema
       ] of propertyEntries) {
-        const childValue = this.createImplicitDefault(childSchema as JsonSchemaType, currentRoot, options, refStack, dynamicScope);
+        const childValue = this.createImplicitDefault(childSchema as JsonSchema, currentRoot, options, refStack, dynamicScope);
 
         if (childValue !== undefined) {
           result[key] = childValue;
@@ -1884,26 +1940,26 @@ export class GraphEngine {
     schema: Record<string, unknown>,
     graph: SchemaGraph | undefined,
     currentNode: unknown
-  ): ObjectValidationPlanInterface {
+  ): ObjectValidationPlan {
     const cached = this.objectPlanCache.get(schema);
 
     if (cached !== undefined) {
       return cached;
     }
 
-    const graphNode = currentNode as SchemaGraphNodeInterface | undefined;
+    const graphNode = currentNode as SchemaGraphNode | undefined;
     const semantics = graph !== undefined && graphNode !== undefined
       ? graph.semantics(graphNode)
       : undefined;
     const propertyEntries = semantics?.properties.map(([propertyName, propertyNode]) => {
-      return [propertyName, propertyNode.schema] as [string, JsonSchemaType];
+      return [propertyName, propertyNode.schema] as [string, JsonSchema];
     }) ?? schemaEntries(graph, currentNode, schema, 'properties');
     const required = semantics?.required
       ?? (Array.isArray(keywordValue<string[]>(graph, currentNode, schema, 'required'))
         ? keywordValue<string[]>(graph, currentNode, schema, 'required') as string[]
         : []);
     const patternPropertyEntries = (semantics?.patternPropertyEntries.map(([pattern, patternNode]) => {
-      return [pattern, patternNode.schema] as [string, JsonSchemaType];
+      return [pattern, patternNode.schema] as [string, JsonSchema];
     }) ?? schemaEntries(graph, currentNode, schema, 'patternProperties')).map(([pattern, patternSchema]) => {
       return {
         pattern,
@@ -1928,7 +1984,7 @@ export class GraphEngine {
         }))
         : {});
     const dependentSchemaEntries = semantics?.dependentSchemaEntries.map(([key, dependencyNode]) => {
-      return [key, dependencyNode.schema] as [string, JsonSchemaType];
+      return [key, dependencyNode.schema] as [string, JsonSchema];
     }) ?? schemaEntries(graph, currentNode, schema, 'dependentSchemas');
     const plan = {
       dependentRequired,
@@ -1948,14 +2004,14 @@ export class GraphEngine {
     schema: Record<string, unknown>,
     graph: SchemaGraph | undefined,
     currentNode: unknown
-  ): SchemaNodePlanInterface {
+  ): SchemaNodePlan {
     const cached = this.nodePlanCache.get(schema);
 
     if (cached !== undefined) {
       return cached;
     }
 
-    const graphNode = currentNode as SchemaGraphNodeInterface | undefined;
+    const graphNode = currentNode as SchemaGraphNode | undefined;
     const semantics = graph !== undefined && graphNode !== undefined
       ? graph.semantics(graphNode)
       : undefined;
@@ -2014,7 +2070,7 @@ export class GraphEngine {
       'itemsSchema': Array.isArray(prefixItems)
         ? ((semantics?.itemsNode?.schema)
           ?? childSchema(graph, currentNode, schema, 'items')
-          ?? keywordValue<JsonSchemaType | boolean>(graph, currentNode, schema, 'items'))
+          ?? keywordValue<JsonSchema | boolean>(graph, currentNode, schema, 'items'))
         : (semantics?.itemsNode?.schema ?? childSchema(graph, currentNode, schema, 'items')),
       'maxContains': keywordValue<number>(graph, currentNode, schema, 'maxContains'),
       'maxItems': semantics?.maxItems ?? keywordValue<number>(graph, currentNode, schema, 'maxItems'),
@@ -2054,7 +2110,7 @@ export class GraphEngine {
     return plan;
   }
 
-  private rootDialectPlan(rootSchema: JsonSchemaType): RootDialectPlanInterface {
+  private rootDialectPlan(rootSchema: JsonSchema): RootDialectPlan {
     if (!isObject(rootSchema)) {
       return { 'formatAssertions': true };
     }
@@ -2062,7 +2118,7 @@ export class GraphEngine {
     const schemaUri = typeof rootSchema.$schema === 'string' ? rootSchema.$schema : undefined;
 
     if (schemaUri !== undefined && !schemaUri.startsWith(CURRENT_DIALECT_PREFIX)) {
-      throw new GraphError('DIALECT_UNSUPPORTED', `Unsupported JSON Schema dialect: ${schemaUri}`);
+      throw new Error(`Unsupported JSON Schema dialect: ${schemaUri}`);
     }
 
     const rawVocabulary = isObject(rootSchema.$vocabulary)
@@ -2073,7 +2129,7 @@ export class GraphEngine {
     if (rawVocabulary !== undefined) {
       for (const [uri, enabled] of Object.entries(rawVocabulary)) {
         if (enabled === true && !SUPPORTED_VOCABULARIES.has(uri)) {
-          throw new GraphError('VOCABULARY_UNSUPPORTED', `Unsupported required JSON Schema vocabulary: ${uri}`);
+          throw new Error(`Unsupported required JSON Schema vocabulary: ${uri}`);
         }
       }
 

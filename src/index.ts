@@ -50,7 +50,12 @@ export { Compose } from './modules/composition/Compose.js';
 export { GraphEngine } from './modules/graph/GraphEngine.js';
 export { Hash } from './modules/hash/Hash.js';
 export { Materializer } from './modules/materialization/Materializer.js';
-export { ParseError } from './modules/validation/ParseError.js';
 export { Transform } from './modules/transform/Transform.js';
 export { ValidationErrors } from './modules/validation/ValidationErrors.js';
 export { Value } from './modules/data/Value.js';
+
+// Errors — canonical location
+export {
+  BaseError, GraphError, LoadError, MaterializationError, ParseError, SchemaError
+} from './modules/errors/index.js';
+export type { ErrorJsonInterface, GraphErrorCodeType, LoadErrorCodeType, SchemaErrorCodeType } from './modules/errors/index.js';
