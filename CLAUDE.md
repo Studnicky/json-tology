@@ -28,18 +28,21 @@ The project contract is:
 
 ### Module Direction
 
-- **`src/schema/`**
-  - owns canonical graph construction from authored schema, registry behavior, validation, parsing, normalization, materialization, pointer entry selection, and execution planning
+- **`src/modules/graph/`** — canonical graph construction, engine execution
   - `SchemaGraph.ts` should evolve toward the canonical semantic graph rather than remaining a validation-only helper
   - `GraphEngine.ts` should consume graph node kinds and relations directly
+
+- **`src/modules/registry/`** — schema registration, loading
+- **`src/modules/validation/`** — compiled validation (SchemaCompiler)
+- **`src/modules/materialization/`** — materialization and ABox projection
   - `Materializer.ts` should project normalized graph execution into JS values and ABox nodes without a second semantic walker
 
-- **`src/ontology/`**
-  - owns serialization and graph-facing ontology utilities
+- **`src/modules/ontology/`** — serialization and graph-facing ontology utilities
   - ontology output must be a serialization of the canonical graph, not a separate semantic derivation path
 
-- **`src/types/`**
-  - contains reusable schema/type building blocks
+- **`src/modules/data/`** — shared data utilities (DataTypes, Value, Changeset)
+- **`src/errors/`** — all error classes (see Code Organization Patterns)
+- **`src/types/`** — reusable schema/type building blocks
 
 ### Architectural Rules
 
@@ -48,6 +51,25 @@ The project contract is:
 - Domain and range must be explicit graph relations produced during translation from authored schema into the canonical graph.
 - `$ref`, `$defs`, anchors, pointers, composition, and conditionals must all be representable in the canonical graph.
 - When code and docs disagree, prefer the graph-native architecture described here and in `docs/validation-engine-plan.md`.
+
+### Code Organization Patterns
+
+**Canonical locations — no re-exports**
+Every definition lives in exactly one file and is imported from that file directly. Never create re-export shims or barrel files that proxy to the real location. If something moves, update every import.
+
+**Errors live in `src/errors/`**
+All error classes and ValidationErrors are defined in `src/errors/`. Every error extends `BaseError`, which carries `code` (machine-readable string), `message`, `retryable` flag, optional `cause` chain, `toJson()`, and `flatten()`. Never throw bare `new Error()` — use the appropriate subclass:
+- `SchemaError` — registration, missing $id, structure validation
+- `GraphError` — pointer resolution, anchor lookup, ref resolution, dialect issues
+- `LoadError` — file loading failures
+- `MaterializationError` — materialization/ABox validation failures
+- `ParseError` — parse validation failures (carries `ValidationErrors` collection)
+
+**Shared utilities in `src/modules/data/DataTypes.ts`**
+Type guards (`isRecord`, `isPlainObject`), `deepEqual`, XSD type maps/resolvers, and `propertyIri` live here. Do not duplicate these — import from DataTypes.
+
+**Serializers extend `BaseSerializer`**
+`GraphOntologySerializer` and `GraphShaclSerializer` both extend `src/modules/ontology/BaseSerializer.ts`, which owns shared graph traversal helpers: `relationTargetId()`, `relationTargetRef()`, `propertyIri()`, `namedNodeId()`, `resolveTypeRef()`, `isSerializationCandidate()`. Do not duplicate relation-target or type-resolution logic in individual serializers.
 
 ### Working Assumptions
 
