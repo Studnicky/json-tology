@@ -161,7 +161,7 @@ describe('Compose.narrow()', () => {
 // ValidationErrors — .format() and .flatten() methods
 // ---------------------------------------------------------------------------
 
-import { ValidationErrors } from '../../src/modules/validation/ValidationErrors.js';
+import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
 describe('ValidationErrors.format()', () => {
   it('groups errors by path', () => {

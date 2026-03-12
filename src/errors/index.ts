@@ -8,3 +8,4 @@ export { MaterializationError } from './MaterializationError.js';
 export { ParseError } from './ParseError.js';
 export { SchemaError } from './SchemaError.js';
 export type { SchemaErrorCodeType } from './SchemaError.js';
+export { ValidationErrors } from './ValidationErrors.js';

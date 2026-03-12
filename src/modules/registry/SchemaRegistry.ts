@@ -6,7 +6,7 @@
  */
 
 import { BaseError, ParseError, SchemaError } from '../../errors/index.js';
-import { ValidationErrors } from '../validation/ValidationErrors.js';
+import { ValidationErrors } from '../../errors/ValidationErrors.js';
 import { Transform } from '../transform/Transform.js';
 import type { CompiledValidatorInterface } from '../../interfaces/compiler.js';
 import type { KeywordDefinitionInterface } from '../../interfaces/graph-engine.js';

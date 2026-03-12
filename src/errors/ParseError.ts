@@ -5,7 +5,7 @@
  */
 
 import type { ValidationErrorType } from '../types/validation.js';
-import { ValidationErrors } from '../modules/validation/ValidationErrors.js';
+import { ValidationErrors } from './ValidationErrors.js';
 import { BaseError } from './BaseError.js';
 
 export class ParseError extends BaseError {

@@ -224,7 +224,7 @@ describe('SchemaRegistry', () => {
   });
 });
 
-import { ParseError } from '../../src/modules/validation/ParseError.js';
+import { ParseError } from '../../src/errors/ParseError.js';
 
 const ParseTestSchema = {
   '$id': 'https://example.io/parse-test',

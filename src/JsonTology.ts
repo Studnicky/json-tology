@@ -23,7 +23,7 @@ import type { SchemaEntryType, SchemaMapFromTupleType } from './interfaces/regis
 import { FormatRegistry } from './modules/format/FormatRegistry.js';
 import type { RegistryOptionsInterface } from './interfaces/registry.js';
 import type { TransformedType } from './types/transform.js';
-import type { ValidationErrors } from './modules/validation/ValidationErrors.js';
+import type { ValidationErrors } from './errors/ValidationErrors.js';
 import { SchemaRegistry } from './modules/registry/SchemaRegistry.js';
 import { Materializer } from './modules/materialization/Materializer.js';
 import { OntologyBuilder } from './modules/ontology/OntologyBuilder.js';

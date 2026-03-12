@@ -51,7 +51,7 @@ export { GraphEngine } from './modules/graph/GraphEngine.js';
 export { Hash } from './modules/hash/Hash.js';
 export { Materializer } from './modules/materialization/Materializer.js';
 export { Transform } from './modules/transform/Transform.js';
-export { ValidationErrors } from './modules/validation/ValidationErrors.js';
+export { ValidationErrors } from './errors/ValidationErrors.js';
 export { Value } from './modules/data/Value.js';
 
 // Errors — canonical location
