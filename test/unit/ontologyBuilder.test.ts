@@ -4,9 +4,9 @@
 
 import { describe, it } from 'node:test';
 import * as assert from 'node:assert';
-import { OntologyBuilder } from '../../src/ontology/OntologyBuilder.js';
-import { GraphOntologySerializer } from '../../src/ontology/GraphOntologySerializer.js';
-import { SchemaGraph } from '../../src/schema/SchemaGraph.js';
+import { OntologyBuilder } from '../../src/modules/ontology/OntologyBuilder.js';
+import { GraphOntologySerializer } from '../../src/modules/ontology/GraphOntologySerializer.js';
+import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 
 describe('OntologyBuilder', () => {
   it('should create an ontology builder with configuration', () => {

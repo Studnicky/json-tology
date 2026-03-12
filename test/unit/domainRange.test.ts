@@ -1,8 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { SchemaRegistry } from '../../src/schema/SchemaRegistry.js';
-import { GraphOntologySerializer } from '../../src/ontology/GraphOntologySerializer.js';
-import { GraphShaclSerializer } from '../../src/ontology/GraphShaclSerializer.js';
+import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
+import { GraphOntologySerializer } from '../../src/modules/ontology/GraphOntologySerializer.js';
+import { GraphShaclSerializer } from '../../src/modules/ontology/GraphShaclSerializer.js';
 
 const AddressSchema = {
   $id: 'https://example.io/Address',

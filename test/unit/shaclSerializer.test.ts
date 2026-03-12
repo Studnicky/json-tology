@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { SchemaGraph } from '../../src/schema/SchemaGraph.js';
-import { GraphShaclSerializer } from '../../src/ontology/GraphShaclSerializer.js';
+import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
+import { GraphShaclSerializer } from '../../src/modules/ontology/GraphShaclSerializer.js';
 
 const serializer = new GraphShaclSerializer();
 

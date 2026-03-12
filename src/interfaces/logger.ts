@@ -4,7 +4,7 @@
  * All methods accept an optional message followed by additional interpolation
  * arguments, matching the Pino/Fastify call signatures.
  */
-export interface Logger {
+export interface LoggerInterface {
   debug(msg: string, ...args: unknown[]): void;
   error(msg: string, ...args: unknown[]): void;
   fatal(msg: string, ...args: unknown[]): void;

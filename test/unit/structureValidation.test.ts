@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { SchemaGraph } from '../../src/schema/SchemaGraph.js';
-import { SchemaRegistry } from '../../src/schema/SchemaRegistry.js';
+import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
+import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
 describe('Structure Validation', () => {
   it('detects inline nested object', () => {

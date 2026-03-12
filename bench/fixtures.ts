@@ -1,10 +1,19 @@
 /**
  * Shared fixtures for benchmarks.
- * Schemas are declared as const for TypeScript type inference.
- * Matching TypeBox schemas are defined for apples-to-apples comparison.
+ * Schemas declared for json-tology, TypeBox, AJV, and Zod.
  */
 
 import { Type } from '@sinclair/typebox';
+import Ajv from 'ajv';
+import addFormats from 'ajv-formats';
+import { z } from 'zod';
+
+// ---------------------------------------------------------------------------
+// AJV instance (shared)
+// ---------------------------------------------------------------------------
+
+export const ajv = new Ajv({ allErrors: true });
+addFormats(ajv);
 
 // ---------------------------------------------------------------------------
 // Simple flat schema
@@ -48,12 +57,30 @@ export const SimpleSchemaTypebox = Type.Object({
   'name': Type.String()
 });
 
+export const SimpleSchemaZod = z.object({
+  'active': z.boolean(),
+  'age': z.number().int().min(0).max(150),
+  'email': z.string().email(),
+  'id': z.number().int(),
+  'name': z.string()
+}).strict();
+
+export const ajvValidateSimple = ajv.compile(SimpleSchema);
+
 export const simpleValid = {
   'active': true,
   'age': 30,
   'email': 'alice@example.com',
   'id': 1,
   'name': 'Alice'
+};
+
+export const simpleInvalid = {
+  'active': 'not-bool',
+  'age': 200,
+  'email': 'not-an-email',
+  'id': 'not-a-number',
+  'name': 42
 };
 
 export const simpleCoercible = {
@@ -69,99 +96,112 @@ export const simpleCoercible = {
 // Nested schema
 // ---------------------------------------------------------------------------
 
+// Properly decomposed nested schema (no inline objects)
+export const AddressSchema = {
+  '$id': 'Address',
+  'properties': {
+    'city': { 'type': 'string' },
+    'country': {
+      "maxLength": 2,
+      "minLength": 2,
+      'type': 'string'
+    },
+    'street': { 'type': 'string' },
+    'zip': {
+      'pattern': '^[0-9]{5}$',
+      'type': 'string'
+    }
+  },
+  'required': ['street', 'city', 'country', 'zip'],
+  'type': 'object'
+} as const;
+
+export const CustomerSchema = {
+  '$id': 'Customer',
+  'properties': {
+    'address': { '$ref': 'Address' },
+    'email': { 'format': 'email', 'type': 'string' },
+    'id': { 'type': 'integer' },
+    'name': { 'type': 'string' }
+  },
+  'required': ['id', 'name', 'email', 'address'],
+  'type': 'object'
+} as const;
+
+export const OrderItemSchema = {
+  '$id': 'OrderItem',
+  'properties': {
+    'price': { 'minimum': 0, 'type': 'number' },
+    'quantity': { 'minimum': 1, 'type': 'integer' },
+    'sku': { 'type': 'string' }
+  },
+  'required': ['sku', 'quantity', 'price'],
+  'type': 'object'
+} as const;
+
 export const NestedSchema = {
   '$id': 'Order',
   'properties': {
-    'createdAt': {
-      'format': 'date-time',
+    'createdAt': { 'format': 'date-time', 'type': 'string' },
+    'customer': { '$ref': 'Customer' },
+    'items': {
+      'items': { '$ref': 'OrderItem' },
+      'minItems': 1,
+      'type': 'array'
+    },
+    'orderId': { 'type': 'string' },
+    'status': {
+      'enum': ['pending', 'paid', 'shipped', 'delivered', 'cancelled'],
       'type': 'string'
     },
+    'total': { 'minimum': 0, 'type': 'number' }
+  },
+  'required': ['orderId', 'createdAt', 'customer', 'items', 'total', 'status'],
+  'type': 'object'
+} as const;
+
+// Flat version for AJV (which doesn't share our registry — needs inline objects)
+const NestedSchemaAjv = {
+  '$id': 'OrderAjv',
+  'properties': {
+    'createdAt': { 'format': 'date-time', 'type': 'string' },
     'customer': {
       'properties': {
         'address': {
           'properties': {
             'city': { 'type': 'string' },
-            'country': {
-              "maxLength": 2,
-              "minLength": 2,
-              'type': 'string'
-            },
+            'country': { "maxLength": 2, "minLength": 2, 'type': 'string' },
             'street': { 'type': 'string' },
-            'zip': {
-              'pattern': '^[0-9]{5}$',
-              'type': 'string'
-            }
+            'zip': { 'pattern': '^[0-9]{5}$', 'type': 'string' }
           },
-          'required': [
-            'street',
-            'city',
-            'country',
-            'zip'
-          ],
+          'required': ['street', 'city', 'country', 'zip'],
           'type': 'object'
         },
-        'email': {
-          'format': 'email',
-          'type': 'string'
-        },
+        'email': { 'format': 'email', 'type': 'string' },
         'id': { 'type': 'integer' },
         'name': { 'type': 'string' }
       },
-      'required': [
-        'id',
-        'name',
-        'email',
-        'address'
-      ],
+      'required': ['id', 'name', 'email', 'address'],
       'type': 'object'
     },
     'items': {
       'items': {
         'properties': {
-          'price': {
-            'minimum': 0,
-            'type': 'number'
-          },
-          'quantity': {
-            'minimum': 1,
-            'type': 'integer'
-          },
+          'price': { 'minimum': 0, 'type': 'number' },
+          'quantity': { 'minimum': 1, 'type': 'integer' },
           'sku': { 'type': 'string' }
         },
-        'required': [
-          'sku',
-          'quantity',
-          'price'
-        ],
+        'required': ['sku', 'quantity', 'price'],
         'type': 'object'
       },
       'minItems': 1,
       'type': 'array'
     },
     'orderId': { 'type': 'string' },
-    'status': {
-      'enum': [
-        'pending',
-        'paid',
-        'shipped',
-        'delivered',
-        'cancelled'
-      ],
-      'type': 'string'
-    },
-    'total': {
-      'minimum': 0,
-      'type': 'number'
-    }
+    'status': { 'enum': ['pending', 'paid', 'shipped', 'delivered', 'cancelled'], 'type': 'string' },
+    'total': { 'minimum': 0, 'type': 'number' }
   },
-  'required': [
-    'orderId',
-    'createdAt',
-    'customer',
-    'items',
-    'total',
-    'status'
-  ],
+  'required': ['orderId', 'createdAt', 'customer', 'items', 'total', 'status'],
   'type': 'object'
 } as const;
 
@@ -197,6 +237,31 @@ export const NestedSchemaTypebox = Type.Object({
   'total': Type.Number({ 'minimum': 0 })
 });
 
+export const NestedSchemaZod = z.object({
+  'createdAt': z.string().datetime(),
+  'customer': z.object({
+    'address': z.object({
+      'city': z.string(),
+      'country': z.string().length(2),
+      'street': z.string(),
+      'zip': z.string().regex(/^[0-9]{5}$/)
+    }),
+    'email': z.string().email(),
+    'id': z.number().int(),
+    'name': z.string()
+  }),
+  'items': z.array(z.object({
+    'price': z.number().min(0),
+    'quantity': z.number().int().min(1),
+    'sku': z.string()
+  })).min(1),
+  'orderId': z.string(),
+  'status': z.enum(['pending', 'paid', 'shipped', 'delivered', 'cancelled']),
+  'total': z.number().min(0)
+});
+
+export const ajvValidateNested = ajv.compile(NestedSchemaAjv);
+
 export const nestedValid = {
   'createdAt': '2024-01-15T10:30:00.000Z',
   'customer': {
@@ -228,7 +293,7 @@ export const nestedValid = {
 };
 
 // ---------------------------------------------------------------------------
-// Schema with defaults (for Value.parse / EntityBuilder benchmarks)
+// Schema with defaults (for Value.parse benchmarks)
 // ---------------------------------------------------------------------------
 
 export const DefaultsSchema = {
@@ -237,20 +302,6 @@ export const DefaultsSchema = {
     'active': {
       'default': true,
       'type': 'boolean'
-    },
-    'meta': {
-      'default': {},
-      'properties': {
-        'createdAt': {
-          'default': '2024-01-01T00:00:00.000Z',
-          'type': 'string'
-        },
-        'version': {
-          'default': 1,
-          'type': 'integer'
-        }
-      },
-      'type': 'object'
     },
     'role': {
       'default': 'user',

@@ -1,4 +1,4 @@
-export interface OntologyBuilderOptions {
+export interface OntologyBuilderOptionsInterface {
   /**
    * Base IRI for the ontology (e.g., 'https://my-project.io')
    */

@@ -22,13 +22,13 @@ let sink = 0;
 
 section('Object iteration patterns');
 
-results.push(bench('for...in', () => {
+results.push(bench('for...in', 'native', () => {
   for (const k in obj) {
     sink += (obj as any)[k] ? 1 : 0;
   }
 }));
 
-results.push(bench('for...of Object.entries() (fresh)', () => {
+results.push(bench('for...of Object.entries() (fresh)', 'native', () => {
   for (const [
     k,
     v
@@ -37,13 +37,13 @@ results.push(bench('for...of Object.entries() (fresh)', () => {
   }
 }));
 
-results.push(bench('for...of Object.keys() (fresh)', () => {
+results.push(bench('for...of Object.keys() (fresh)', 'native', () => {
   for (const k of Object.keys(obj)) {
     sink += (obj as any)[k] ? 1 : 0;
   }
 }));
 
-results.push(bench('indexed Object.entries() (fresh)', () => {
+results.push(bench('indexed Object.entries() (fresh)', 'native', () => {
   const e = Object.entries(obj);
 
   for (const element of e) {
@@ -51,13 +51,13 @@ results.push(bench('indexed Object.entries() (fresh)', () => {
   }
 }));
 
-results.push(bench('indexed Object.entries() (cached)', () => {
+results.push(bench('indexed Object.entries() (cached)', 'native', () => {
   for (const entry of entries) {
     sink += entry[1] ? 1 : 0;
   }
 }));
 
-results.push(bench('indexed Object.keys() (cached)', () => {
+results.push(bench('indexed Object.keys() (cached)', 'native', () => {
   for (const key of keys) {
     sink += (obj as any)[key] ? 1 : 0;
   }

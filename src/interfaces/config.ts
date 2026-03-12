@@ -1,8 +1,8 @@
-import type { KeywordDefinition } from '../schema/GraphEngine.js';
-import type { MaterializerOptions } from './materializer.js';
-import type { RegistryLogger } from './registry.js';
+import type { KeywordDefinitionInterface } from './graph-engine.js';
+import type { LoggerInterface } from './logger.js';
+import type { MaterializerOptionsInterface } from './materializer.js';
 
-export interface JsonTologyOptions<TSchemas extends readonly unknown[] = readonly unknown[]> {
+export interface JsonTologyOptionsInterface<TSchemas extends readonly unknown[] = readonly unknown[]> {
   /**
    * Base IRI for the ontology and schema namespace.
    * Used as the ontology document IRI and as the root for derived property IRIs.
@@ -12,7 +12,7 @@ export interface JsonTologyOptions<TSchemas extends readonly unknown[] = readonl
   'baseIRI': string;
 
   /** Materializer behaviour options */
-  'materializer'?: MaterializerOptions;
+  'materializer'?: MaterializerOptionsInterface;
 
   /**
    * When true, the graph engine coerces types during parsing and materialization
@@ -21,7 +21,7 @@ export interface JsonTologyOptions<TSchemas extends readonly unknown[] = readonl
   'coerce'?: boolean;
 
   /** Logger for duplicate/conflict warnings */
-  'logger'?: RegistryLogger;
+  'logger'?: LoggerInterface;
 
   /**
    * Additional prefix declarations for ontology output.
@@ -37,7 +37,7 @@ export interface JsonTologyOptions<TSchemas extends readonly unknown[] = readonl
   'formats'?: Record<string, (value: unknown) => boolean>;
 
   /** Custom keyword definitions passed to the graph engine. */
-  'keywords'?: KeywordDefinition[];
+  'keywords'?: KeywordDefinitionInterface[];
 
   /**
    * Schemas to register at construction time.

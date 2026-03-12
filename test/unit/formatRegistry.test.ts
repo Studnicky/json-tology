@@ -4,13 +4,13 @@
 
 import { describe, it } from 'node:test';
 import * as assert from 'node:assert';
-import { FormatRegistry, builtinFormats } from '../../src/schema/FormatRegistry.js';
-import { GraphEngine } from '../../src/schema/GraphEngine.js';
+import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
+import { GraphEngine } from '../../src/modules/graph/GraphEngine.js';
 
 describe('FormatRegistry', () => {
-  describe('builtinFormats', () => {
+  describe('FormatRegistry.builtin', () => {
     it('has built-in string formats', () => {
-      const registry = builtinFormats();
+      const registry = FormatRegistry.builtin();
 
       assert.ok(registry.has('email'));
       assert.ok(registry.has('uri'));
@@ -23,7 +23,7 @@ describe('FormatRegistry', () => {
     });
 
     it('has built-in number formats', () => {
-      const registry = builtinFormats();
+      const registry = FormatRegistry.builtin();
 
       assert.ok(registry.has('int32'));
       assert.ok(registry.has('int64'));
@@ -32,7 +32,7 @@ describe('FormatRegistry', () => {
     });
 
     it('validates email format correctly', () => {
-      const registry = builtinFormats();
+      const registry = FormatRegistry.builtin();
       const validator = registry.get('email')!;
 
       assert.ok(validator('user@example.com'));
@@ -41,7 +41,7 @@ describe('FormatRegistry', () => {
     });
 
     it('validates int32 format correctly', () => {
-      const registry = builtinFormats();
+      const registry = FormatRegistry.builtin();
       const validator = registry.get('int32')!;
 
       assert.ok(validator(42));
@@ -74,7 +74,7 @@ describe('FormatRegistry', () => {
 
   describe('custom format used during validation', () => {
     it('validates with a custom format via GraphEngine', () => {
-      const registry = builtinFormats();
+      const registry = FormatRegistry.builtin();
 
       registry.register('hex-color', (v) => typeof v === 'string' && /^#[\da-f]{6}$/i.test(v));
 
@@ -98,7 +98,7 @@ describe('FormatRegistry', () => {
 
   describe('override built-in format', () => {
     it('overrides the email format validator', () => {
-      const registry = builtinFormats();
+      const registry = FormatRegistry.builtin();
 
       // Override email to reject everything
       registry.register('email', () => false);

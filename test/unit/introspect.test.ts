@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { Compose } from '../../src/schema/Compose.js';
+import { Compose } from '../../src/modules/composition/Compose.js';
 
 const TestSchema = {
   type: 'object',

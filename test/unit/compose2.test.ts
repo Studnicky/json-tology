@@ -4,8 +4,8 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { Compose } from '../../src/schema/Compose.js';
-import { SchemaRegistry } from '../../src/schema/SchemaRegistry.js';
+import { Compose } from '../../src/modules/composition/Compose.js';
+import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
 const UserSchema = {
   $id: 'https://myapp.io/User',
@@ -161,7 +161,7 @@ describe('Compose.narrow()', () => {
 // ValidationErrors — .format() and .flatten() methods
 // ---------------------------------------------------------------------------
 
-import { ValidationErrors } from '../../src/schema/ValidationErrors.js';
+import { ValidationErrors } from '../../src/modules/validation/ValidationErrors.js';
 
 describe('ValidationErrors.format()', () => {
   it('groups errors by path', () => {

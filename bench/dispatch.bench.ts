@@ -221,19 +221,19 @@ function checkDispatch(v: Record<string, unknown>): boolean {
 
 section('Type dispatch: if/else vs switch vs table  (cycling all 7 types)');
 
-results.push(bench('if/else chain', () => {
+results.push(bench('if/else chain', 'pattern', () => {
   const t = nextType();
 
   dispatchIfElse(t, nextValue(t));
 }));
 
-results.push(bench('switch stmt  ', () => {
+results.push(bench('switch stmt  ', 'pattern', () => {
   const t = nextType();
 
   dispatchSwitch(t, nextValue(t));
 }));
 
-results.push(bench('dispatch table', () => {
+results.push(bench('dispatch table', 'pattern', () => {
   const t = nextType();
 
   dispatchTable(t, nextValue(t));
@@ -241,23 +241,23 @@ results.push(bench('dispatch table', () => {
 
 section('Property checking: sequential ifs vs for-in + dispatch table');
 
-results.push(bench('sequential ifs', () => {
+results.push(bench('sequential ifs', 'pattern', () => {
   checkSequential(sampleObj);
 }));
-results.push(bench('dispatch table ', () => {
+results.push(bench('dispatch table ', 'pattern', () => {
   checkDispatch(sampleObj);
 }));
 
 // Monomorphic case — always same type (best case for V8 specialization)
 section('Monomorphic dispatch (always "number") — best case for each approach');
 
-results.push(bench('if/else mono  ', () => {
+results.push(bench('if/else mono  ', 'pattern', () => {
   dispatchIfElse('number', 42);
 }));
-results.push(bench('switch mono   ', () => {
+results.push(bench('switch mono   ', 'pattern', () => {
   dispatchSwitch('number', 42);
 }));
-results.push(bench('table  mono   ', () => {
+results.push(bench('table  mono   ', 'pattern', () => {
   dispatchTable('number', 42);
 }));
 

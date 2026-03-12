@@ -1,12 +1,13 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { GraphEngine, type KeywordDefinition } from '../../src/schema/GraphEngine.js';
-import { SchemaRegistry } from '../../src/schema/SchemaRegistry.js';
+import type { KeywordDefinitionInterface } from '../../src/interfaces/graph-engine.js';
+import { GraphEngine } from '../../src/modules/graph/GraphEngine.js';
+import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 import { JsonTology } from '../../src/JsonTology.js';
-import type { ValidationError } from '../../src/interfaces/validation.js';
+import type { ValidationErrorType } from '../../src/types/validation.js';
 
 describe('Custom keyword extensions', () => {
-  const evenNumberKeyword: KeywordDefinition = {
+  const evenNumberKeyword: KeywordDefinitionInterface = {
     'keyword': 'evenNumber',
     'validate': (schema, data) => {
       if (schema !== true) {
@@ -34,7 +35,7 @@ describe('Custom keyword extensions', () => {
   });
 
   it('custom keyword scoped to specific type', () => {
-    const numberOnlyKeyword: KeywordDefinition = {
+    const numberOnlyKeyword: KeywordDefinitionInterface = {
       'keyword': 'evenNumber',
       'type': 'number',
       'validate': (schema, data) => {
@@ -60,14 +61,14 @@ describe('Custom keyword extensions', () => {
     assert.equal(engine.check('hello'), true);
   });
 
-  it('custom keyword returning ValidationError[]', () => {
-    const rangeKeyword: KeywordDefinition = {
+  it('custom keyword returning ValidationErrorType[]', () => {
+    const rangeKeyword: KeywordDefinitionInterface = {
       'keyword': 'customRange',
       'type': 'number',
-      'validate': (schema, data, context): ValidationError[] => {
+      'validate': (schema, data, context): ValidationErrorType[] => {
         const spec = schema as { max: number; min: number };
         const value = data as number;
-        const errors: ValidationError[] = [];
+        const errors: ValidationErrorType[] = [];
 
         if (value < spec.min) {
           errors.push({

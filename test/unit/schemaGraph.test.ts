@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { SchemaGraph } from '../../src/schema/SchemaGraph.js';
+import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 
 describe('SchemaGraph', () => {
   it('lowers pointer-addressable schema nodes', () => {

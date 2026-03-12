@@ -14,17 +14,53 @@
       "import": "./dist/types/index.js",
       "types": "./dist/types/index.d.ts"
     },
-    "./schema": {
-      "import": "./dist/schema/index.js",
-      "types": "./dist/schema/index.d.ts"
-    },
-    "./ontology": {
-      "import": "./dist/ontology/index.js",
-      "types": "./dist/ontology/index.d.ts"
-    },
     "./interfaces": {
       "import": "./dist/interfaces/index.js",
       "types": "./dist/interfaces/index.d.ts"
+    },
+    "./modules/graph": {
+      "import": "./dist/modules/graph/index.js",
+      "types": "./dist/modules/graph/index.d.ts"
+    },
+    "./modules/validation": {
+      "import": "./dist/modules/validation/index.js",
+      "types": "./dist/modules/validation/index.d.ts"
+    },
+    "./modules/data": {
+      "import": "./dist/modules/data/index.js",
+      "types": "./dist/modules/data/index.d.ts"
+    },
+    "./modules/registry": {
+      "import": "./dist/modules/registry/index.js",
+      "types": "./dist/modules/registry/index.d.ts"
+    },
+    "./modules/composition": {
+      "import": "./dist/modules/composition/index.js",
+      "types": "./dist/modules/composition/index.d.ts"
+    },
+    "./modules/format": {
+      "import": "./dist/modules/format/index.js",
+      "types": "./dist/modules/format/index.d.ts"
+    },
+    "./modules/hash": {
+      "import": "./dist/modules/hash/index.js",
+      "types": "./dist/modules/hash/index.d.ts"
+    },
+    "./modules/materialization": {
+      "import": "./dist/modules/materialization/index.js",
+      "types": "./dist/modules/materialization/index.d.ts"
+    },
+    "./modules/ontology": {
+      "import": "./dist/modules/ontology/index.js",
+      "types": "./dist/modules/ontology/index.d.ts"
+    },
+    "./modules/transform": {
+      "import": "./dist/modules/transform/index.js",
+      "types": "./dist/modules/transform/index.d.ts"
+    },
+    "./modules/logger": {
+      "import": "./dist/modules/logger/index.js",
+      "types": "./dist/modules/logger/index.d.ts"
     }
   },
   "scripts": {
@@ -49,13 +85,11 @@
   "devDependencies": {
     "@apacenai/dev-tools": "file:vendor/dev-tools",
     "@eslint/js": "^10.0.1",
-    "@sinclair/typebox": "^0.34.48",
     "@stylistic/eslint-plugin": "^5.10.0",
+    "@types/json-schema": "^7.0.15",
     "@typescript-eslint/eslint-plugin": "^8.57.0",
     "@typescript-eslint/parser": "^8.57.0",
     "0x": "^6.0.0",
-    "ajv": "^8.18.0",
-    "ajv-formats": "^3.0.1",
     "eslint": "^10.0.3",
     "eslint-plugin-filename-export": "^2.0.0",
     "eslint-plugin-import": "^2.32.0",
@@ -65,12 +99,16 @@
     "eslint-plugin-unicorn": "^63.0.0",
     "eslint-plugin-yml": "^3.3.1",
     "globals": "^17.4.0",
-    "json-schema-to-ts": "^3.1.1",
     "license-checker": "^25.0.1",
     "madge": "^8.0.0",
     "n3": "^2.0.3",
     "tsx": "^4.21.0",
-    "typedoc": "^0.28.17",
+    "typedoc": "^0.28.17"
+  },
+  "optionalDependencies": {
+    "@sinclair/typebox": "^0.34.48",
+    "ajv": "^8.18.0",
+    "ajv-formats": "^3.0.1",
     "zod": "^4.3.6"
   },
   "engines": {

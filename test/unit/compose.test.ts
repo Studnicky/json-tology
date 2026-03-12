@@ -4,7 +4,7 @@
 
 import { describe, it } from 'node:test';
 import * as assert from 'node:assert';
-import { Compose } from '../../src/schema/Compose.js';
+import { Compose } from '../../src/modules/composition/Compose.js';
 
 const PersonSchema = {
   $id: 'https://example.io/person',

@@ -12,11 +12,13 @@ FormatRegistry.Set('email', (v) => {
 FormatRegistry.Set('date-time', (v) => {
   return !isNaN(Date.parse(v));
 });
-import { Value } from '../src/schema/Value.js';
+import { Value } from '../src/modules/data/Value.js';
+import { SchemaRegistry } from '../src/modules/registry/SchemaRegistry.js';
 import {
   bench, type BenchResult, section
 } from './harness.js';
 import {
+  AddressSchema, CustomerSchema, OrderItemSchema,
   NestedSchema, NestedSchemaTypebox,
   nestedValid, simpleCoercible,
   SimpleSchema, SimpleSchemaTypebox, simpleValid
@@ -44,50 +46,61 @@ const dirtyNested = {
 export function runValueOpsBench(): BenchResult[] {
   const results: BenchResult[] = [];
 
-  // ---------------------------------------------------------------------------
-  section('Value.clean — strip unknown properties');
+  const registry = new SchemaRegistry({ coerce: true });
 
-  results.push(bench('ours  Value.clean  simple', () => {
-    Value.clean(SimpleSchema, dirtySimple);
+  registry.register(SimpleSchema);
+  registry.register(AddressSchema);
+  registry.register(CustomerSchema);
+  registry.register(OrderItemSchema);
+  registry.register(NestedSchema);
+
+  // Warm up engines
+  registry.validate(SimpleSchema.$id, simpleValid);
+  registry.validate(NestedSchema.$id, nestedValid);
+
+  // ---------------------------------------------------------------------------
+  section('clean — strip unknown properties');
+
+  results.push(bench('clean simple', 'json-tology', () => {
+    registry.clean(SimpleSchema.$id, dirtySimple);
   }));
 
-  results.push(bench('typebox Value.Clean simple', () => {
+  results.push(bench('clean simple', 'typebox', () => {
     TBValue.Clean(SimpleSchemaTypebox, structuredClone(dirtySimple));
   }));
 
-  results.push(bench('ours  Value.clean  nested', () => {
-    Value.clean(NestedSchema, dirtyNested);
+  results.push(bench('clean nested', 'json-tology', () => {
+    registry.clean(NestedSchema.$id, dirtyNested);
   }));
 
-  results.push(bench('typebox Value.Clean nested', () => {
+  results.push(bench('clean nested', 'typebox', () => {
     TBValue.Clean(NestedSchemaTypebox, structuredClone(dirtyNested));
   }));
 
   // ---------------------------------------------------------------------------
-  section('Value.convert — type coercion (no defaults)');
+  section('convert — type coercion (no defaults)');
 
-  results.push(bench('ours  Value.convert simple', () => {
-    Value.convert(SimpleSchema, simpleCoercible);
+  results.push(bench('convert simple', 'json-tology', () => {
+    registry.convert(SimpleSchema.$id, simpleCoercible);
   }));
 
-  results.push(bench('typebox Value.Convert simple', () => {
+  results.push(bench('convert simple', 'typebox', () => {
     TBValue.Convert(SimpleSchemaTypebox, simpleCoercible);
   }));
 
   // ---------------------------------------------------------------------------
-  section('Value.clone — deep clone');
+  section('clone — deep clone');
 
-  results.push(bench('ours  Value.clone  nested', () => {
+  results.push(bench('clone nested', 'json-tology', () => {
     Value.clone(nestedValid);
   }));
 
-  // TypeBox doesn't expose Value.Clone as a standalone; structuredClone is the baseline
-  results.push(bench('structuredClone   nested', () => {
+  results.push(bench('clone nested', 'structuredClone', () => {
     structuredClone(nestedValid);
   }));
 
   // ---------------------------------------------------------------------------
-  section('Value.diff — structural diff');
+  section('diff — structural diff');
 
   const nestedModified = {
     ...nestedValid,
@@ -99,13 +112,11 @@ export function runValueOpsBench(): BenchResult[] {
     'total': 50
   };
 
-  results.push(bench('ours  Value.diff   nested', () => {
+  results.push(bench('diff nested', 'json-tology', () => {
     Value.diff(nestedValid, nestedModified);
   }));
 
-  // TypeBox Value.Diff equivalent
-  results.push(bench('typebox Value.Diff nested', () => {
-    // Collect iterator — TypeBox returns a generator
+  results.push(bench('diff nested', 'typebox', () => {
     [...TBValue.Diff(nestedValid, nestedModified)];
   }));
 

@@ -5,8 +5,8 @@
  * inference by compiling successfully (and failing on @ts-expect-error lines).
  */
 
-import type { Infer, InferSchema } from '../../src/types/schema.js';
-import type { ParseOutput } from '../../src/types/transform.js';
+import type { InferType, InferSchemaType } from '../../src/types/schema.js';
+import type { ParseOutputType } from '../../src/types/transform.js';
 
 // ---------------------------------------------------------------------------
 // Test schemas
@@ -76,73 +76,73 @@ const RefSchema = {
 // Primitives
 // ---------------------------------------------------------------------------
 
-const _s: Infer<typeof StringSchema> = 'hello';
-const _n: Infer<typeof NumberSchema> = 42;
-const _i: Infer<typeof IntegerSchema> = 7;
-const _b: Infer<typeof BooleanSchema> = true;
-const _nl: Infer<typeof NullSchema> = null;
+const _s: InferType<typeof StringSchema> = 'hello';
+const _n: InferType<typeof NumberSchema> = 42;
+const _i: InferType<typeof IntegerSchema> = 7;
+const _b: InferType<typeof BooleanSchema> = true;
+const _nl: InferType<typeof NullSchema> = null;
 
 // @ts-expect-error — number is not string
-const _bad1: Infer<typeof StringSchema> = 42;
+const _bad1: InferType<typeof StringSchema> = 42;
 // @ts-expect-error — string is not number
-const _bad2: Infer<typeof NumberSchema> = 'hello';
+const _bad2: InferType<typeof NumberSchema> = 'hello';
 
 // ---------------------------------------------------------------------------
 // Const / Enum
 // ---------------------------------------------------------------------------
 
-const _c: Infer<typeof ConstSchema> = 'circle';
+const _c: InferType<typeof ConstSchema> = 'circle';
 // @ts-expect-error — 'square' is not 'circle'
-const _bad3: Infer<typeof ConstSchema> = 'square';
+const _bad3: InferType<typeof ConstSchema> = 'square';
 
-const _e: Infer<typeof EnumSchema> = 'asc';
-const _e2: Infer<typeof EnumSchema> = 'desc';
+const _e: InferType<typeof EnumSchema> = 'asc';
+const _e2: InferType<typeof EnumSchema> = 'desc';
 // @ts-expect-error — 'random' is not in enum
-const _bad4: Infer<typeof EnumSchema> = 'random';
+const _bad4: InferType<typeof EnumSchema> = 'random';
 
 // ---------------------------------------------------------------------------
 // Arrays
 // ---------------------------------------------------------------------------
 
-const _arr: Infer<typeof StringArraySchema> = ['a', 'b'];
+const _arr: InferType<typeof StringArraySchema> = ['a', 'b'];
 // @ts-expect-error — number[] not assignable to string[]
-const _bad5: Infer<typeof StringArraySchema> = [1, 2];
+const _bad5: InferType<typeof StringArraySchema> = [1, 2];
 
 // ---------------------------------------------------------------------------
 // Objects (required/optional split)
 // ---------------------------------------------------------------------------
 
-const _u: Infer<typeof UserSchema> = { name: 'Alice', email: 'a@b.c' };
-const _u2: Infer<typeof UserSchema> = { name: 'Alice', email: 'a@b.c', age: 30 };
+const _u: InferType<typeof UserSchema> = { name: 'Alice', email: 'a@b.c' };
+const _u2: InferType<typeof UserSchema> = { name: 'Alice', email: 'a@b.c', age: 30 };
 // @ts-expect-error — missing required 'email'
-const _bad6: Infer<typeof UserSchema> = { name: 'Alice' };
+const _bad6: InferType<typeof UserSchema> = { name: 'Alice' };
 
 // ---------------------------------------------------------------------------
 // Nullable
 // ---------------------------------------------------------------------------
 
-const _nullable1: Infer<typeof NullableSchema> = 'hello';
-const _nullable2: Infer<typeof NullableSchema> = null;
+const _nullable1: InferType<typeof NullableSchema> = 'hello';
+const _nullable2: InferType<typeof NullableSchema> = null;
 // @ts-expect-error — number not assignable to string | null
-const _bad7: Infer<typeof NullableSchema> = 42;
+const _bad7: InferType<typeof NullableSchema> = 42;
 
 // ---------------------------------------------------------------------------
 // Composition
 // ---------------------------------------------------------------------------
 
-const _anyOf: Infer<typeof AnyOfSchema> = 'hello';
-const _anyOf2: Infer<typeof AnyOfSchema> = 42;
+const _anyOf: InferType<typeof AnyOfSchema> = 'hello';
+const _anyOf2: InferType<typeof AnyOfSchema> = 42;
 
-const _oneOf: Infer<typeof OneOfSchema> = 'hello';
-const _oneOf2: Infer<typeof OneOfSchema> = 42;
+const _oneOf: InferType<typeof OneOfSchema> = 'hello';
+const _oneOf2: InferType<typeof OneOfSchema> = 42;
 
 // ---------------------------------------------------------------------------
 // $ref / $defs
 // ---------------------------------------------------------------------------
 
-const _ref: Infer<typeof RefSchema> = { child: { name: 'Bob' } };
+const _ref: InferType<typeof RefSchema> = { child: { name: 'Bob' } };
 // @ts-expect-error — child.name is required
-const _bad8: Infer<typeof RefSchema> = { child: {} };
+const _bad8: InferType<typeof RefSchema> = { child: {} };
 
 // ---------------------------------------------------------------------------
 // Suppress unused variable warnings

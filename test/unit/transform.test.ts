@@ -1,10 +1,10 @@
 /**
- * Transform / withCatch / brand tests
+ * Transform / brand tests
  */
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { Transform } from '../../src/schema/Transform.js';
+import { Transform } from '../../src/modules/transform/Transform.js';
 import { JsonTology } from '../../src/JsonTology.js';
 
 // ---------------------------------------------------------------------------
@@ -22,11 +22,6 @@ const TransformedDateSchema = Transform.create(DateTimeSchema, {
   encode: (d: Date) => d.toISOString(),
 });
 
-const NumberSchema = {
-  $id: 'https://myapp.io/Count',
-  type: 'integer',
-} as const;
-
 const UserSchema = {
   $id: 'https://myapp.io/User',
   type: 'object',
@@ -36,8 +31,6 @@ const UserSchema = {
   },
   required: ['name'],
 } as const;
-
-const SafeUserSchema = Transform.withCatch(UserSchema, { name: 'guest', score: 0 });
 
 // ---------------------------------------------------------------------------
 // Transform.create()
@@ -50,18 +43,22 @@ describe('Transform.create()', () => {
   });
 
   it('parse() applies decode function after validation', () => {
-    const jt = JsonTology.create({ baseIRI: 'https://myapp.io' });
-    jt.register(TransformedDateSchema);
-    const result = jt.parse(TransformedDateSchema, '2024-06-01T00:00:00.000Z');
+    const jt = JsonTology.create({
+      baseIRI: 'https://myapp.io',
+      schemas: [TransformedDateSchema] as const,
+    });
+    const result = jt.parse(TransformedDateSchema.$id, '2024-06-01T00:00:00.000Z');
     assert.ok(result instanceof Date);
     assert.equal(result.getFullYear(), 2024);
   });
 
   it('parse() still throws ParseError on invalid data', () => {
-    const jt = JsonTology.create({ baseIRI: 'https://myapp.io' });
-    jt.register(TransformedDateSchema);
+    const jt = JsonTology.create({
+      baseIRI: 'https://myapp.io',
+      schemas: [TransformedDateSchema] as const,
+    });
     assert.throws(
-      () => jt.parse(TransformedDateSchema, 'not-a-date'),
+      () => jt.parse(TransformedDateSchema.$id, 'not-a-date'),
       (err: unknown) => (err as Error).constructor.name === 'ParseError',
     );
   });
@@ -85,18 +82,6 @@ describe('Transform.create()', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Transform.withCatch()
-// ---------------------------------------------------------------------------
-
-describe('Transform.withCatch()', () => {
-  it('parse() throws on failure', () => {
-    const jt = JsonTology.create({ baseIRI: 'https://myapp.io' });
-    jt.register(SafeUserSchema);
-    assert.throws(() => jt.parse(SafeUserSchema, null));
-  });
-});
-
-// ---------------------------------------------------------------------------
 // Transform.brand()
 // ---------------------------------------------------------------------------
 
@@ -116,9 +101,6 @@ describe('Transform.brand()', () => {
       'UserId',
     );
     const jt = JsonTology.create({ baseIRI: 'https://myapp.io' });
-    const errors = jt.validate(UserIdSchema.$id, 'abc');
-    // UserIdSchema not registered yet via register(); validate uses $id
-    // register it first
     jt.register(UserIdSchema);
     const errs = jt.validate(UserIdSchema.$id, 'abc');
     assert.equal(errs.length, 0);

@@ -10,29 +10,28 @@
  *   schemas: [UserSchema, OrderSchema] as const,
  * });
  *
- * type User = Infer<typeof UserSchema>;
+ * type User = InferType<typeof UserSchema>;
  *
  * const user = jt.parse(UserSchema.$id, data); // typed as User
  * jt.validate(UserSchema.$id, data);
  * jt.ontology().n3();
  */
 
-import type { JSONSchema } from './types/json-schema.js';
-import type { InferSchema } from './types/infer.js';
-import type { SchemaEntry, SchemaMapFromTuple } from './interfaces/registry.js';
-import { builtinFormats } from './schema/FormatRegistry.js';
-import {
-  type RegistryOptions, SchemaRegistry
-} from './schema/SchemaRegistry.js';
-import { Materializer } from './schema/Materializer.js';
-import { OntologyBuilder } from './ontology/OntologyBuilder.js';
-import { GraphOntologySerializer } from './ontology/GraphOntologySerializer.js';
-import { GraphShaclSerializer } from './ontology/GraphShaclSerializer.js';
-import type { ValidationErrors } from './schema/ValidationErrors.js';
-import { Transform, type Transformed } from './schema/Transform.js';
-import type { JsonTologyOptions } from './interfaces/config.js';
+import type { JSONSchema7Definition as JSONSchemaType } from 'json-schema';
+import type { InferSchemaType } from './types/infer.js';
+import type { SchemaEntryType, SchemaMapFromTupleType } from './interfaces/registry.js';
+import { FormatRegistry } from './modules/format/FormatRegistry.js';
+import type { RegistryOptionsInterface } from './interfaces/registry.js';
+import type { TransformedType } from './types/transform.js';
+import type { ValidationErrors } from './modules/validation/ValidationErrors.js';
+import { SchemaRegistry } from './modules/registry/SchemaRegistry.js';
+import { Materializer } from './modules/materialization/Materializer.js';
+import { OntologyBuilder } from './modules/ontology/OntologyBuilder.js';
+import { GraphOntologySerializer } from './modules/ontology/GraphOntologySerializer.js';
+import { GraphShaclSerializer } from './modules/ontology/GraphShaclSerializer.js';
+import { Transform } from './modules/transform/Transform.js';
+import type { JsonTologyOptionsInterface } from './interfaces/config.js';
 
-export type { JsonTologyOptions } from './interfaces/config.js';
 
 const DEFAULT_PREFIXES: Record<string, string> = {
   'jt': 'https://json-tology.dev/vocab#',
@@ -68,19 +67,19 @@ export class JsonTology<TMap = {}> {
    * });
    * const user = jt.parse(UserSchema.$id, data); // typed
    */
-  public static create<const TSchemas extends readonly { readonly '$id': string }[]>(
-    options: JsonTologyOptions<TSchemas>
-  ): JsonTology<SchemaMapFromTuple<TSchemas>> {
+  public static create<const TSchemas extends readonly { readonly '$id': string; }[]>(
+    options: JsonTologyOptionsInterface<TSchemas>
+  ): JsonTology<SchemaMapFromTupleType<TSchemas>> {
     const jt = new JsonTology(options);
 
     if (options.schemas && options.schemas.length > 0) {
       jt.registry.register(options.schemas as unknown as Array<Record<string, unknown>>);
     }
 
-    return jt as unknown as JsonTology<SchemaMapFromTuple<TSchemas>>;
+    return jt as unknown as JsonTology<SchemaMapFromTupleType<TSchemas>>;
   }
 
-  private constructor(options: JsonTologyOptions) {
+  private constructor(options: JsonTologyOptionsInterface) {
     let baseIRI = options.baseIRI;
 
     while (baseIRI.endsWith('/')) {
@@ -93,7 +92,7 @@ export class JsonTology<TMap = {}> {
       ...options.prefixes
     };
 
-    const formatRegistry = builtinFormats();
+    const formatRegistry = FormatRegistry.builtin();
 
     if (options.formats) {
       for (const [name, validator] of Object.entries(options.formats)) {
@@ -101,7 +100,7 @@ export class JsonTology<TMap = {}> {
       }
     }
 
-    const registryOptions: RegistryOptions = {
+    const registryOptions: RegistryOptionsInterface = {
       'formatRegistry': formatRegistry,
       ...(options.logger === undefined ? {} : { 'logger': options.logger }),
       ...(options.coerce === undefined ? {} : { 'coerce': options.coerce }),
@@ -121,13 +120,13 @@ export class JsonTology<TMap = {}> {
   /**
    * Register a schema. Returns `this` with the schema's type accumulated.
    */
-  public register<const T extends { readonly '$id': string }>(
+  public register<const T extends { readonly '$id': string; }>(
     schema: T
-  ): JsonTology<TMap & SchemaEntry<T>> {
+  ): JsonTology<TMap & SchemaEntryType<T>> {
     this.registry.register(schema as unknown as Record<string, unknown>);
     this.ontologyCache = null;
 
-    return this as unknown as JsonTology<TMap & SchemaEntry<T>>;
+    return this as unknown as JsonTology<TMap & SchemaEntryType<T>>;
   }
 
   // ---------------------------------------------------------------------------
@@ -178,11 +177,11 @@ export class JsonTology<TMap = {}> {
   /**
    * Materialize an entity instance with schema defaults applied.
    */
-  public materialize<TSchema extends JSONSchema & { readonly '$id': string }>(
+  public materialize<TSchema extends JSONSchemaType & { readonly '$id': string; }>(
     schema: TSchema,
-    partial?: Partial<InferSchema<TSchema>>,
-  ): InferSchema<TSchema> {
-    return (this.materializer.materialize as (s: typeof schema, p?: typeof partial) => InferSchema<TSchema>)(
+    partial?: Partial<InferSchemaType<TSchema>>,
+  ): InferSchemaType<TSchema> {
+    return (this.materializer.materialize as (s: typeof schema, p?: typeof partial) => InferSchemaType<TSchema>)(
       schema,
       partial
     );
@@ -191,23 +190,23 @@ export class JsonTology<TMap = {}> {
   /**
    * Encode a decoded value back to its wire representation.
    */
-  public encode<TSchema extends JSONSchema & { readonly '$id': string }, TOut>(
-    schema: Transformed<TSchema, TOut>,
+  public encode<TSchema extends JSONSchemaType & { readonly '$id': string; }, TOut>(
+    schema: TransformedType<TSchema, TOut>,
     value: TOut,
-  ): InferSchema<TSchema> {
-    return (Transform.getDecoder(schema as object)?.encode(value) ?? value) as InferSchema<TSchema>;
+  ): InferSchemaType<TSchema> {
+    return (Transform.getDecoder(schema as object)?.encode(value) ?? value) as InferSchemaType<TSchema>;
   }
 
   // ---------------------------------------------------------------------------
   // Ontology
   // ---------------------------------------------------------------------------
 
-  public abox<TSchema extends JSONSchema & { readonly '$id': string }>(
+  public abox<TSchema extends JSONSchemaType & { readonly '$id': string; }>(
     schema: TSchema,
     data: unknown,
   ): OntologyBuilder {
     const graph = this.materializer.projectAbox(
-      schema as unknown as Record<string, unknown> & { '$id': string },
+      schema as unknown as Record<string, unknown> & { '$id': string; },
       data,
       this.baseIRI
     );

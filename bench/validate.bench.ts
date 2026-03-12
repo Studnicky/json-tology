@@ -1,51 +1,97 @@
 /**
- * Validation benchmarks: our graph-backed registry vs TypeBox TypeCompiler.
+ * Validation benchmarks: json-tology vs TypeBox vs AJV vs Zod.
  */
 
 import { TypeCompiler } from '@sinclair/typebox/compiler';
-import { SchemaRegistry } from '../src/schema/SchemaRegistry.js';
+import { SchemaRegistry } from '../src/modules/registry/SchemaRegistry.js';
 import {
   bench, type BenchResult, section
 } from './harness.js';
 import {
-  NestedSchema, NestedSchemaTypebox, nestedValid,
-  SimpleSchema, SimpleSchemaTypebox, simpleValid
+  AddressSchema, ajvValidateNested, ajvValidateSimple,
+  CustomerSchema, OrderItemSchema,
+  NestedSchema, NestedSchemaTypebox, NestedSchemaZod, nestedValid,
+  SimpleSchema, SimpleSchemaTypebox, SimpleSchemaZod, simpleInvalid, simpleValid
 } from './fixtures.js';
 
 export function runValidateBench(): BenchResult[] {
   const results: BenchResult[] = [];
 
-  // Pre-compile everything before benchmarking
+  // Pre-compile everything
   const registry = new SchemaRegistry();
 
   registry.register(SimpleSchema);
+  registry.register(AddressSchema);
+  registry.register(CustomerSchema);
+  registry.register(OrderItemSchema);
   registry.register(NestedSchema);
 
   const tbSimple = TypeCompiler.Compile(SimpleSchemaTypebox);
   const tbNested = TypeCompiler.Compile(NestedSchemaTypebox);
 
-  // Force our registry to lazily compile validators by running once
+  // Force lazy compilation
   registry.validate(SimpleSchema.$id, simpleValid);
   registry.validate(NestedSchema.$id, nestedValid);
 
-  section('Validation — simple flat schema');
+  // ── Simple valid ──────────────────────────────────────────────────────────
 
-  results.push(bench('ours  (graph)     simple', () => {
+  section('Validation — simple flat schema (valid data)');
+
+  results.push(bench('simple valid', 'json-tology', () => {
     registry.validate(SimpleSchema.$id, simpleValid);
   }));
 
-  results.push(bench('typebox TypeCompiler simple', () => {
+
+  results.push(bench('simple valid', 'typebox', () => {
     tbSimple.Check(simpleValid);
   }));
 
-  section('Validation — nested schema');
+  results.push(bench('simple valid', 'ajv', () => {
+    ajvValidateSimple(simpleValid);
+  }));
 
-  results.push(bench('ours  (graph)     nested', () => {
+  results.push(bench('simple valid', 'zod', () => {
+    SimpleSchemaZod.safeParse(simpleValid);
+  }));
+
+  // ── Simple invalid ────────────────────────────────────────────────────────
+
+  section('Validation — simple flat schema (invalid data, error collection)');
+
+  results.push(bench('simple invalid', 'json-tology', () => {
+    registry.validate(SimpleSchema.$id, simpleInvalid);
+  }));
+
+  results.push(bench('simple invalid', 'typebox', () => {
+    [...tbSimple.Errors(simpleInvalid)];
+  }));
+
+  results.push(bench('simple invalid', 'ajv', () => {
+    ajvValidateSimple(simpleInvalid);
+  }));
+
+  results.push(bench('simple invalid', 'zod', () => {
+    SimpleSchemaZod.safeParse(simpleInvalid);
+  }));
+
+  // ── Nested valid ──────────────────────────────────────────────────────────
+
+  section('Validation — nested schema (valid data)');
+
+  results.push(bench('nested valid', 'json-tology', () => {
     registry.validate(NestedSchema.$id, nestedValid);
   }));
 
-  results.push(bench('typebox TypeCompiler nested', () => {
+  results.push(bench('nested valid', 'typebox', () => {
     tbNested.Check(nestedValid);
+  }));
+
+  results.push(bench('nested valid', 'ajv', () => {
+    ajvValidateNested(nestedValid);
+  }));
+
+  results.push(bench('nested valid', 'zod', () => {
+    NestedSchemaZod.safeParse(nestedValid);
   }));
 
   return results;

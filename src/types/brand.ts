@@ -1,20 +1,20 @@
-import type { ParseOutput } from './transform.js';
+import type { ParseOutputType } from './transform.js';
 
 declare const BRAND: unique symbol;
 
-export interface BrandTag<TBrand extends string> { readonly [BRAND]: TBrand }
+export interface BrandTagInterface<TBrand extends string> { readonly [BRAND]: TBrand }
 
 /**
  * A schema annotated with a brand name.
  * The underlying JSON Schema is unchanged; only the TypeScript type is wider.
  */
-export type Branded<TSchema, TBrand extends string> = BrandTag<TBrand> & TSchema;
+export type BrandedType<TSchema, TBrand extends string> = BrandTagInterface<TBrand> & TSchema;
 
 /**
  * Derive the branded output type from a schema.
- * For a non-branded schema returns ParseOutput<TSchema> unchanged.
+ * For a non-branded schema returns ParseOutputType<TSchema> unchanged.
  */
-export type BrandOutput<TSchema>
-  = TSchema extends BrandTag<infer B extends string>
-    ? ParseOutput<TSchema> & { readonly 'brand': B }
-    : ParseOutput<TSchema>;
+export type BrandOutputType<TSchema>
+  = TSchema extends BrandTagInterface<infer B extends string>
+    ? ParseOutputType<TSchema> & { readonly 'brand': B }
+    : ParseOutputType<TSchema>;

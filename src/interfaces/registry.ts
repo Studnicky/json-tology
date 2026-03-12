@@ -1,28 +1,26 @@
-import type { FormatRegistry } from '../schema/FormatRegistry.js';
-import type { KeywordDefinition } from '../schema/GraphEngine.js';
-import type { InferSchema } from '../types/infer.js';
-import type { Logger } from './logger.js';
+import type { FormatRegistry } from '../modules/format/FormatRegistry.js';
+import type { KeywordDefinitionInterface } from './graph-engine.js';
+import type { InferSchemaType } from '../types/infer.js';
+import type { LoggerInterface } from './logger.js';
 
-/** Logger for schema registry operations. */
-export type RegistryLogger = Logger;
 
 // ---------------------------------------------------------------------------
 // Type-level helpers for compile-time schema map accumulation
 // ---------------------------------------------------------------------------
 
-/** Extract `{ [$id]: InferSchema<T> }` from a single schema. */
-export type SchemaEntry<T> =
+/** Extract `{ [$id]: InferSchemaType<T> }` from a single schema. */
+export type SchemaEntryType<T> =
   T extends { readonly '$id': infer Id extends string }
-    ? { [K in Id]: InferSchema<T> }
-    : {};
+    ? Record<Id, InferSchemaType<T>>
+    : Record<string, never>;
 
 /** Build a type map from a readonly tuple of schemas. */
-export type SchemaMapFromTuple<T extends readonly unknown[]> =
+export type SchemaMapFromTupleType<T extends readonly unknown[]> =
   T extends readonly [infer First, ...infer Rest]
-    ? SchemaEntry<First> & SchemaMapFromTuple<Rest>
-    : {};
+    ? SchemaEntryType<First> & SchemaMapFromTupleType<Rest>
+    : Record<string, never>;
 
-export interface RegistryOptions {
+export interface RegistryOptionsInterface {
   /**
    * When true, the graph engine coerces primitive types during parsing and materialization
    * (e.g. 123 accepted where "123" is expected).
@@ -31,6 +29,6 @@ export interface RegistryOptions {
   /** Optional format registry to pass to the graph engine. */
   'formatRegistry'?: FormatRegistry;
   /** Custom keyword definitions passed to the graph engine. */
-  'keywords'?: KeywordDefinition[];
-  'logger'?: RegistryLogger;
+  'keywords'?: KeywordDefinitionInterface[];
+  'logger'?: LoggerInterface;
 }

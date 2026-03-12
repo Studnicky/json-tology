@@ -4,8 +4,8 @@
 
 import { describe, it } from 'node:test';
 import * as assert from 'node:assert';
-import { SchemaRegistry } from '../../src/schema/SchemaRegistry.js';
-import { Materializer } from '../../src/schema/Materializer.js';
+import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
+import { Materializer } from '../../src/modules/materialization/Materializer.js';
 
 const ConfigSchema = {
   '$id': 'https://example.io/config',

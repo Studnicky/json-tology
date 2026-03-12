@@ -7,14 +7,14 @@
  */
 
 import {
-  type BenchResult, printResults
+  type BenchResult, printResults, section
 } from './harness.js';
 import { runValidateBench } from './validate.bench.js';
 import { runValueParseBench } from './valueParse.bench.js';
 import { runValueOpsBench } from './valueOps.bench.js';
 
 console.log('');
-console.log('json-tology vs TypeBox — performance benchmarks');
+console.log('json-tology vs TypeBox vs AJV vs Zod — performance benchmarks');
 console.log(`Node ${process.version}  •  ${new Date().toISOString()}`);
 
 const allResults: BenchResult[] = [];
@@ -38,31 +38,59 @@ printResults(opsResults);
 allResults.push(...opsResults);
 
 // --- Summary ---
-console.log('═'.repeat(80));
-console.log('SUMMARY');
-console.log('═'.repeat(80));
+console.log('═'.repeat(90));
+console.log('SUMMARY — json-tology vs each competitor');
+console.log('═'.repeat(90));
 
-let wins = 0;
-let losses = 0;
+// Group results by test name
+const testGroups = new Map<string, BenchResult[]>();
 
-for (let i = 0; i < allResults.length - 1; i += 2) {
-  const ours = allResults[i];
-  const theirs = allResults[i + 1];
-  const ratio = ours.opsPerSec / theirs.opsPerSec;
-  const faster = ratio >= 1;
+for (const r of allResults) {
+  const group = testGroups.get(r.name) ?? [];
 
-  if (faster) {
-    wins++;
-  } else {
-    losses++;
+  group.push(r);
+  testGroups.set(r.name, group);
+}
+
+const scorecard: Record<string, { wins: number; losses: number; ties: number }> = {};
+
+for (const [testName, group] of testGroups) {
+  const ours = group.find((r) => r.library === 'json-tology');
+
+  if (!ours) {
+    continue;
   }
-  const label = faster
-    ? `✓ ${ratio.toFixed(2)}x faster`
-    : `✗ ${(1 / ratio).toFixed(2)}x slower`;
 
-  console.log(`  ${ours.name.replace(/ours\s+/u, '').padEnd(35)}  ${label}`);
+  for (const other of group) {
+    if (other.library === 'json-tology') {
+      continue;
+    }
+
+    if (!scorecard[other.library]) {
+      scorecard[other.library] = { losses: 0, ties: 0, wins: 0 };
+    }
+
+    const ratio = ours.opsPerSec / other.opsPerSec;
+    const label = ratio >= 1.05
+      ? `✓ ${ratio.toFixed(2)}x faster`
+      : ratio <= 0.95
+        ? `✗ ${(1 / ratio).toFixed(2)}x slower`
+        : '≈ comparable';
+
+    if (ratio >= 1.05) {
+      scorecard[other.library].wins++;
+    } else if (ratio <= 0.95) {
+      scorecard[other.library].losses++;
+    } else {
+      scorecard[other.library].ties++;
+    }
+
+    console.log(`  ${testName.padEnd(25)} vs ${other.library.padEnd(15)} ${label}`);
+  }
 }
 
 console.log('');
-console.log(`Result: ${wins} wins, ${losses} losses out of ${wins + losses} comparisons`);
+for (const [lib, score] of Object.entries(scorecard)) {
+  console.log(`  vs ${lib}: ${score.wins}W ${score.ties}T ${score.losses}L`);
+}
 console.log('');

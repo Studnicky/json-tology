@@ -6,8 +6,8 @@ import { describe, it, before, after } from 'node:test';
 import * as assert from 'node:assert';
 import { mkdirSync, writeFileSync, rmSync } from 'fs';
 import { resolve } from 'path';
-import { SchemaLoader } from '../../src/schema/SchemaLoader.js';
-import { ConsoleLogger } from '../../src/ConsoleLogger.js';
+import { SchemaLoader } from '../../src/modules/registry/SchemaLoader.js';
+import { Logger } from '../../src/modules/logger/Logger.js';
 
 const testDir = resolve(import.meta.dirname ?? '.', 'fixtures', 'schemas');
 
@@ -57,7 +57,7 @@ describe('SchemaLoader', () => {
   });
 
   it('should load a single schema from file', () => {
-    const loader = new SchemaLoader(ConsoleLogger);
+    const loader = new SchemaLoader(new Logger());
     const schema = loader.loadSchema(resolve(testDir, 'valid', 'user.json'));
 
     assert.ok(schema);
@@ -65,28 +65,28 @@ describe('SchemaLoader', () => {
   });
 
   it('should return null for invalid JSON file', () => {
-    const loader = new SchemaLoader(ConsoleLogger);
+    const loader = new SchemaLoader(new Logger());
     const schema = loader.loadSchema(resolve(testDir, 'invalid', 'bad-json.json'));
 
     assert.strictEqual(schema, null);
   });
 
   it('should return null for schema without $id', () => {
-    const loader = new SchemaLoader(ConsoleLogger);
+    const loader = new SchemaLoader(new Logger());
     const schema = loader.loadSchema(resolve(testDir, 'invalid', 'no-id.json'));
 
     assert.strictEqual(schema, null);
   });
 
   it('should return null for non-object schema', () => {
-    const loader = new SchemaLoader(ConsoleLogger);
+    const loader = new SchemaLoader(new Logger());
     const schema = loader.loadSchema(resolve(testDir, 'invalid', 'not-object.json'));
 
     assert.strictEqual(schema, null);
   });
 
   it('should load all schemas from a directory recursively', () => {
-    const loader = new SchemaLoader(ConsoleLogger);
+    const loader = new SchemaLoader(new Logger());
     const [schemas, result] = loader.loadDirectory(resolve(testDir, 'valid'));
 
     assert.strictEqual(schemas.length, 2);
@@ -96,7 +96,7 @@ describe('SchemaLoader', () => {
   });
 
   it('should report loading errors', () => {
-    const loader = new SchemaLoader(ConsoleLogger);
+    const loader = new SchemaLoader(new Logger());
     const [schemas, result] = loader.loadDirectory(resolve(testDir, 'invalid'));
 
     assert.ok(result.failed > 0);
@@ -137,7 +137,7 @@ describe('SchemaLoader', () => {
     writeFileSync(resolve(dupDir, 'file1.json'), JSON.stringify(schema));
     writeFileSync(resolve(dupDir, 'file2.json'), JSON.stringify(schema));
 
-    const loader = new SchemaLoader(ConsoleLogger);
+    const loader = new SchemaLoader(new Logger());
     const [schemas, result] = loader.loadDirectory(dupDir);
 
     assert.strictEqual(schemas.length, 1);
@@ -154,7 +154,7 @@ describe('SchemaLoader', () => {
     // Create a non-JSON file
     writeFileSync(resolve(validDir, 'readme.txt'), 'This is not JSON');
 
-    const loader = new SchemaLoader(ConsoleLogger);
+    const loader = new SchemaLoader(new Logger());
     const [schemas, result] = loader.loadDirectory(validDir, {
       filePattern: /\.json$/i,
     });
@@ -164,7 +164,7 @@ describe('SchemaLoader', () => {
   });
 
   it('should stop on error if stopOnError is true', () => {
-    const loader = new SchemaLoader(ConsoleLogger);
+    const loader = new SchemaLoader(new Logger());
     const [schemas, result] = loader.loadDirectory(resolve(testDir, 'invalid'), {
       stopOnError: true,
     });

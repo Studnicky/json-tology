@@ -1,7 +1,7 @@
-import type { InferSchema } from './infer.js';
+import type { InferSchemaType } from './infer.js';
 
-export type { JSONSchema } from './json-schema.js';
-export type { InferSchema } from './infer.js';
+export type { JSONSchema7Definition as JSONSchemaType } from 'json-schema';
+export type { InferSchemaType } from './infer.js';
 
 /**
  * Primary type alias — derive a TypeScript type from a JSON Schema.
@@ -9,4 +9,4 @@ export type { InferSchema } from './infer.js';
  * @example
  * type User = Infer<typeof UserSchema>;
  */
-export type Infer<TSchema> = InferSchema<TSchema>;
+export type InferType<TSchema> = InferSchemaType<TSchema>;

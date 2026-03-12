@@ -4,14 +4,14 @@
  * Declare your schemas once. Get types, validation, ontology, and ABox projection from one graph-native model.
  *
  * @example
- * import { JsonTology, Infer } from 'json-tology';
+ * import { JsonTology, InferType } from 'json-tology';
  *
  * const jt = new JsonTology({
  *   baseIRI: 'https://myapp.io',
  *   schemas: [UserSchema, OrderSchema],
  * });
  *
- * type User = Infer<typeof UserSchema>;
+ * type User = InferType<typeof UserSchema>;
  *
  * jt.validate(UserSchema.$id, data);
  * jt.materialize(UserSchema, { name: 'Alice' });
@@ -19,69 +19,38 @@
  * jt.abox(UserSchema, data).jsonLd();
  */
 
-export { ConsoleLogger } from './ConsoleLogger.js';
-
-export type { Logger } from './interfaces/logger.js';
-export type { ValidationError } from './interfaces/validation.js';
-// Primary export
-export {
-  JsonTology, type JsonTologyOptions
-} from './JsonTology.js';
-
-// Ontology utilities (low-level, for advanced use)
-export {
-  CurieExpander, GraphOntologySerializer, OntologyBuilder, type OntologyBuilderOptions
-} from './ontology/index.js';
-
-export {
-  Changeset, type DelOp, type DiffOp, type SetOp
-} from './schema/Changeset.js';
-// Schema composition utilities
-export { Compose } from './schema/Compose.js';
-export {
-  GraphEngine, type GraphEngineOptions, type GraphExecutionResult
-} from './schema/GraphEngine.js';
-export {
-  Materializer, type MaterializerOptions
-} from './schema/Materializer.js';
-
-// Type derivation
-export {
-  type Infer, type InferSchema
-} from './schema/Materializer.js';
-
-export { ParseError } from './schema/ParseError.js';
-// Transforms and branding
-export {
-  type Branded,
-  type BrandOutput,
-  type ParseOutput,
-  Transform,
-  type Transformed,
-  type WithCatchSchema
-} from './schema/Transform.js';
-// Error types and utilities
-export { ValidationErrors } from './schema/ValidationErrors.js';
-// Value utilities
-export { Value } from './schema/Value.js';
-// Loggers
-export { SilentLogger } from './SilentLogger.js';
-
+// Types from canonical locations
+export type { LoggerInterface } from './interfaces/logger.js';
+export type { JsonTologyOptionsInterface } from './interfaces/config.js';
+export type { GraphEngineOptionsInterface, GraphExecutionResultInterface } from './interfaces/graph-engine.js';
+export type { MaterializerOptionsInterface } from './interfaces/materializer.js';
+export type { OntologyBuilderOptionsInterface } from './interfaces/ontology.js';
+export type { ValidationErrorType } from './types/validation.js';
+export type { DelOpType, DiffOpType, SetOpType } from './types/diff.js';
+export type { BrandedType, BrandOutputType } from './types/brand.js';
+export type { InferType, InferSchemaType } from './types/schema.js';
+export type { ParseOutputType, TransformedType } from './types/transform.js';
 export type {
-  DiscriminatedUnionSchema,
-  ExtendSchema,
-  ExtractRequired,
-  IntersectionSchema,
-  OmitSchema,
-  PartialSchema,
-  PickSchema,
-  RequiredSchema
+  DiscriminatedUnionSchemaInterface,
+  ExtendSchemaType,
+  ExtractRequiredType,
+  IntersectionSchemaInterface,
+  OmitSchemaInterface,
+  PartialSchemaType,
+  PickSchemaInterface,
+  RequiredSchemaType
 } from './types/compose.js';
 
-// Pre-built base types and schema factories
-export {
-  BaseTypes,
-  makePageSchema,
-  makeResponseSchema,
-  makeResultSchema
-} from './types/index.js';
+// Runtime exports
+export { Logger } from './modules/logger/Logger.js';
+export { JsonTology } from './JsonTology.js';
+export { CurieExpander, GraphOntologySerializer, OntologyBuilder } from './modules/ontology/index.js';
+export { Changeset } from './modules/data/Changeset.js';
+export { Compose } from './modules/composition/Compose.js';
+export { GraphEngine } from './modules/graph/GraphEngine.js';
+export { Hash } from './modules/hash/Hash.js';
+export { Materializer } from './modules/materialization/Materializer.js';
+export { ParseError } from './modules/validation/ParseError.js';
+export { Transform } from './modules/transform/Transform.js';
+export { ValidationErrors } from './modules/validation/ValidationErrors.js';
+export { Value } from './modules/data/Value.js';

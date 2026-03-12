@@ -4,7 +4,7 @@
 
 import { describe, it } from 'node:test';
 import * as assert from 'node:assert';
-import { CurieExpander } from '../../src/ontology/CurieExpander.js';
+import { CurieExpander } from '../../src/modules/ontology/CurieExpander.js';
 
 describe('CurieExpander', () => {
   it('should expand a CURIE with known prefix', () => {
