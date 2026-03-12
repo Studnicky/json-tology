@@ -3,7 +3,7 @@ import type {
   SchemaGraphSemanticsInterface, StructureWarningInterface
 } from '../../interfaces/schema-graph.js';
 import { isRecord as isObject } from '../data/DataTypes.js';
-import { GraphError } from '../errors/GraphError.js';
+import { GraphError } from '../../errors/GraphError.js';
 
 
 type JsonSchemaType = boolean | Record<string, unknown>;

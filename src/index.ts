@@ -57,5 +57,5 @@ export { Value } from './modules/data/Value.js';
 // Errors — canonical location
 export {
   BaseError, GraphError, LoadError, MaterializationError, ParseError, SchemaError
-} from './modules/errors/index.js';
-export type { ErrorJsonInterface, GraphErrorCodeType, LoadErrorCodeType, SchemaErrorCodeType } from './modules/errors/index.js';
+} from './errors/index.js';
+export type { ErrorJsonInterface, GraphErrorCodeType, LoadErrorCodeType, SchemaErrorCodeType } from './errors/index.js';

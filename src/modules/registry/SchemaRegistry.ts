@@ -5,7 +5,7 @@
  * pointer-based sub-schema execution.
  */
 
-import { BaseError, ParseError, SchemaError } from '../errors/index.js';
+import { BaseError, ParseError, SchemaError } from '../../errors/index.js';
 import { ValidationErrors } from '../validation/ValidationErrors.js';
 import { Transform } from '../transform/Transform.js';
 import type { CompiledValidatorInterface } from '../../interfaces/compiler.js';

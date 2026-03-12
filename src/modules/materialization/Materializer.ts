@@ -2,7 +2,7 @@ import type { GraphExecutionResultInterface } from '../../interfaces/graph-engin
 import type { MaterializationResultInterface, MaterializerOptionsInterface } from '../../interfaces/materializer.js';
 import type { InferSchemaType } from '../../types/infer.js';
 import type { JSONSchema7Definition as JSONSchemaType } from 'json-schema';
-import { BaseError, MaterializationError } from '../errors/index.js';
+import { BaseError, MaterializationError } from '../../errors/index.js';
 import { GraphEngine } from '../graph/GraphEngine.js';
 import type { SchemaRegistry } from '../registry/SchemaRegistry.js';
 

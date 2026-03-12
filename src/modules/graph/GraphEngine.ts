@@ -5,7 +5,7 @@ import type {
 } from '../../interfaces/graph-engine.js';
 import type { SchemaGraphNodeInterface } from '../../interfaces/schema-graph.js';
 import { isRecord, propertyIri } from '../data/DataTypes.js';
-import { GraphError } from '../errors/GraphError.js';
+import { GraphError } from '../../errors/GraphError.js';
 import { FormatRegistry } from '../format/FormatRegistry.js';
 import { Hash } from '../hash/Hash.js';
 import { SchemaGraph } from './SchemaGraph.js';

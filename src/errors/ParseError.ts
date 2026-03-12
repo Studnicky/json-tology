@@ -4,8 +4,8 @@
  * Carries a ValidationErrors collection with the full structured error list.
  */
 
-import type { ValidationErrorType } from '../../types/validation.js';
-import { ValidationErrors } from '../validation/ValidationErrors.js';
+import type { ValidationErrorType } from '../types/validation.js';
+import { ValidationErrors } from '../modules/validation/ValidationErrors.js';
 import { BaseError } from './BaseError.js';
 
 export class ParseError extends BaseError {

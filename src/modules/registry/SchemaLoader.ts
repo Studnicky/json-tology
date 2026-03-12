@@ -15,7 +15,7 @@ import type {
   SchemaLoadErrorType, SchemaLoadResultType
 } from '../../types/loader.js';
 import type { LoggerInterface } from '../../interfaces/logger.js';
-import { LoadError } from '../errors/LoadError.js';
+import { LoadError } from '../../errors/LoadError.js';
 import { Logger } from '../logger/Logger.js';
 
 

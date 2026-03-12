@@ -6,7 +6,7 @@
  * and flatten() for structured consumption.
  */
 
-import type { ValidationErrorType } from '../../types/validation.js';
+import type { ValidationErrorType } from '../types/validation.js';
 
 export interface ErrorJsonInterface {
   'cause'?: ErrorJsonInterface;
