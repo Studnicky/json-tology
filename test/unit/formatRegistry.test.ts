@@ -2,7 +2,9 @@
  * FormatRegistry Tests
  */
 
-import { describe, it } from 'node:test';
+import {
+  describe, it
+} from 'node:test';
 import * as assert from 'node:assert';
 import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
 import { GraphEngine } from '../../src/modules/graph/GraphEngine.js';
@@ -45,7 +47,7 @@ describe('FormatRegistry', () => {
       const validator = registry.get('int32')!;
 
       assert.ok(validator(42));
-      assert.ok(!validator(2147483648));
+      assert.ok(!validator(2_147_483_648));
       assert.ok(!validator('42'));
     });
   });
@@ -54,7 +56,9 @@ describe('FormatRegistry', () => {
     it('registers and retrieves a custom format', () => {
       const registry = new FormatRegistry();
 
-      registry.register('phone', (v) => typeof v === 'string' && /^\+\d{10,15}$/.test(v));
+      registry.register('phone', (v) => {
+        return typeof v === 'string' && /^\+\d{10,15}$/u.test(v);
+      });
 
       assert.ok(registry.has('phone'));
 
@@ -76,14 +80,16 @@ describe('FormatRegistry', () => {
     it('validates with a custom format via GraphEngine', () => {
       const registry = FormatRegistry.builtin();
 
-      registry.register('hex-color', (v) => typeof v === 'string' && /^#[\da-f]{6}$/i.test(v));
+      registry.register('hex-color', (v) => {
+        return typeof v === 'string' && /^#[\da-f]{6}$/iu.test(v);
+      });
 
       const schema = {
         '$schema': 'https://json-schema.org/draft/2020-12/schema',
         '$vocabulary': {
           'https://json-schema.org/draft/2020-12/vocab/core': true,
-          'https://json-schema.org/draft/2020-12/vocab/validation': true,
-          'https://json-schema.org/draft/2020-12/vocab/format-assertion': true
+          'https://json-schema.org/draft/2020-12/vocab/format-assertion': true,
+          'https://json-schema.org/draft/2020-12/vocab/validation': true
         },
         'format': 'hex-color',
         'type': 'string'
@@ -101,14 +107,16 @@ describe('FormatRegistry', () => {
       const registry = FormatRegistry.builtin();
 
       // Override email to reject everything
-      registry.register('email', () => false);
+      registry.register('email', () => {
+        return false;
+      });
 
       const schema = {
         '$schema': 'https://json-schema.org/draft/2020-12/schema',
         '$vocabulary': {
           'https://json-schema.org/draft/2020-12/vocab/core': true,
-          'https://json-schema.org/draft/2020-12/vocab/validation': true,
-          'https://json-schema.org/draft/2020-12/vocab/format-assertion': true
+          'https://json-schema.org/draft/2020-12/vocab/format-assertion': true,
+          'https://json-schema.org/draft/2020-12/vocab/validation': true
         },
         'format': 'email',
         'type': 'string'

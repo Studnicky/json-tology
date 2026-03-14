@@ -48,19 +48,27 @@ export function bench(
 }
 
 export function printResults(results: BenchResult[]): void {
-  const maxName = Math.max(...results.map((r) => r.name.length));
-  const maxLib = Math.max(...results.map((r) => r.library.length));
+  const maxName = Math.max(...results.map((r) => {
+    return r.name.length;
+  }));
+  const maxLib = Math.max(...results.map((r) => {
+    return r.library.length;
+  }));
 
   console.log('');
   console.log('─'.repeat(90));
 
-  const rows = results.map((r) => ({
-    ...r,
-    'opsStr': r.opsPerSec.toLocaleString(),
-    'usStr': r.avgUs.toFixed(3)
-  }));
+  const rows = results.map((r) => {
+    return {
+      ...r,
+      'opsStr': r.opsPerSec.toLocaleString(),
+      'usStr': r.avgUs.toFixed(3)
+    };
+  });
 
-  const maxOps = Math.max(...rows.map((r) => r.opsStr.length));
+  const maxOps = Math.max(...rows.map((r) => {
+    return r.opsStr.length;
+  }));
 
   // Group by test name and compare
   const groups = new Map<string, typeof rows>();
@@ -72,8 +80,12 @@ export function printResults(results: BenchResult[]): void {
     groups.set(r.name, group);
   }
 
-  for (const [, group] of groups) {
-    const best = Math.max(...group.map((r) => r.opsPerSec));
+  for (const [
+    , group
+  ] of groups) {
+    const best = Math.max(...group.map((r) => {
+      return r.opsPerSec;
+    }));
 
     for (const r of group) {
       const namePad = r.name.padEnd(maxName + 2);

@@ -1,4 +1,6 @@
-import { describe, it } from 'node:test';
+import {
+  describe, it
+} from 'node:test';
 import assert from 'node:assert/strict';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
@@ -7,16 +9,14 @@ describe('Structure Validation', () => {
   it('detects inline nested object', () => {
     const schema = {
       '$id': 'https://example.io/User',
-      'type': 'object',
       'properties': {
-        'name': { 'type': 'string' },
         'address': {
-          'type': 'object',
-          'properties': {
-            'street': { 'type': 'string' }
-          }
-        }
-      }
+          'properties': { 'street': { 'type': 'string' } },
+          'type': 'object'
+        },
+        'name': { 'type': 'string' }
+      },
+      'type': 'object'
     };
     const graph = new SchemaGraph(schema);
     const warnings = graph.validateStructure();
@@ -29,11 +29,11 @@ describe('Structure Validation', () => {
   it('$ref is clean — no warnings', () => {
     const schema = {
       '$id': 'https://example.io/User',
-      'type': 'object',
       'properties': {
-        'name': { 'type': 'string' },
-        'address': { '$ref': 'https://example.io/Address' }
-      }
+        'address': { '$ref': 'https://example.io/Address' },
+        'name': { 'type': 'string' }
+      },
+      'type': 'object'
     };
     const graph = new SchemaGraph(schema);
     const warnings = graph.validateStructure();
@@ -43,19 +43,15 @@ describe('Structure Validation', () => {
 
   it('$defs entries are exempt', () => {
     const schema = {
-      '$id': 'https://example.io/User',
-      'type': 'object',
       '$defs': {
         'Address': {
-          'type': 'object',
-          'properties': {
-            'street': { 'type': 'string' }
-          }
+          'properties': { 'street': { 'type': 'string' } },
+          'type': 'object'
         }
       },
-      'properties': {
-        'address': { '$ref': '#/$defs/Address' }
-      }
+      '$id': 'https://example.io/User',
+      'properties': { 'address': { '$ref': '#/$defs/Address' } },
+      'type': 'object'
     };
     const graph = new SchemaGraph(schema);
     const warnings = graph.validateStructure();
@@ -66,10 +62,8 @@ describe('Structure Validation', () => {
   it('bare object without properties is exempt', () => {
     const schema = {
       '$id': 'https://example.io/User',
-      'type': 'object',
-      'properties': {
-        'metadata': { 'type': 'object' }
-      }
+      'properties': { 'metadata': { 'type': 'object' } },
+      'type': 'object'
     };
     const graph = new SchemaGraph(schema);
     const warnings = graph.validateStructure();
@@ -83,82 +77,79 @@ describe('Structure Validation', () => {
     assert.throws(() => {
       registry.register({
         '$id': 'https://example.io/User',
-        'type': 'object',
         'properties': {
           'address': {
-            'type': 'object',
-            'properties': {
-              'street': { 'type': 'string' }
-            }
+            'properties': { 'street': { 'type': 'string' } },
+            'type': 'object'
           }
-        }
+        },
+        'type': 'object'
       });
-    }, /Structure validation failed/);
+    }, /Structure validation failed/u);
   });
 
   it('registration succeeds with proper $ref patterns', () => {
     const registry = new SchemaRegistry();
     const AddressSchema = {
       '$id': 'https://example.io/Address',
-      'type': 'object',
-      'properties': {
-        'street': { 'type': 'string' }
-      }
+      'properties': { 'street': { 'type': 'string' } },
+      'type': 'object'
     };
     const UserSchema = {
       '$id': 'https://example.io/User',
-      'type': 'object',
-      'properties': {
-        'address': { '$ref': 'https://example.io/Address' }
-      }
+      'properties': { 'address': { '$ref': 'https://example.io/Address' } },
+      'type': 'object'
     };
 
     assert.doesNotThrow(() => {
-      registry.register([AddressSchema, UserSchema]);
+      registry.register([
+        AddressSchema,
+        UserSchema
+      ]);
     });
   });
 
   it('deeply nested inline objects produce multiple warnings', () => {
     const schema = {
       '$id': 'https://example.io/User',
-      'type': 'object',
       'properties': {
         'address': {
-          'type': 'object',
           'properties': {
             'city': {
-              'type': 'object',
-              'properties': {
-                'name': { 'type': 'string' }
-              }
+              'properties': { 'name': { 'type': 'string' } },
+              'type': 'object'
             }
-          }
+          },
+          'type': 'object'
         }
-      }
+      },
+      'type': 'object'
     };
     const graph = new SchemaGraph(schema);
     const warnings = graph.validateStructure();
 
     assert.equal(warnings.length, 2);
-    assert.ok(warnings.some((w) => w.path === '/properties/address'));
-    assert.ok(warnings.some((w) => w.path === '/properties/address/properties/city'));
+    assert.ok(warnings.some((w) => {
+      return w.path === '/properties/address';
+    }));
+    assert.ok(warnings.some((w) => {
+      return w.path === '/properties/address/properties/city';
+    }));
   });
 
   it('array items with inline object produces warning', () => {
     const schema = {
       '$id': 'https://example.io/UserList',
-      'type': 'object',
       'properties': {
         'users': {
-          'type': 'array',
           'items': {
-            'type': 'object',
-            'properties': {
-              'name': { 'type': 'string' }
-            }
-          }
+            'properties': { 'name': { 'type': 'string' } },
+            'type': 'object'
+          },
+          'type': 'array'
         }
-      }
+      },
+      'type': 'object'
     };
     const graph = new SchemaGraph(schema);
     const warnings = graph.validateStructure();
@@ -170,16 +161,14 @@ describe('Structure Validation', () => {
   it('inline object with its own $id is exempt', () => {
     const schema = {
       '$id': 'https://example.io/User',
-      'type': 'object',
       'properties': {
         'address': {
           '$id': 'https://example.io/Address',
-          'type': 'object',
-          'properties': {
-            'street': { 'type': 'string' }
-          }
+          'properties': { 'street': { 'type': 'string' } },
+          'type': 'object'
         }
-      }
+      },
+      'type': 'object'
     };
     const graph = new SchemaGraph(schema);
     const warnings = graph.validateStructure();

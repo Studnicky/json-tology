@@ -6,14 +6,31 @@ import type { InferType } from './schema.js';
 
 export const ValidationErrorSchema = {
   '$id': 'https://json-tology.dev/ValidationError',
-  'type': 'object',
   'properties': {
-    'keyword': { 'type': 'string', 'description': 'Schema keyword that triggered the error' },
-    'message': { 'type': 'string', 'description': 'Human-readable error message' },
-    'params': { 'type': 'object', 'description': 'Keyword-specific parameters' },
-    'path': { 'type': 'string', 'description': 'JSON Pointer path to the failing value' }
+    'keyword': {
+      'description': 'Schema keyword that triggered the error',
+      'type': 'string'
+    },
+    'message': {
+      'description': 'Human-readable error message',
+      'type': 'string'
+    },
+    'params': {
+      'description': 'Keyword-specific parameters',
+      'type': 'object'
+    },
+    'path': {
+      'description': 'JSON Pointer path to the failing value',
+      'type': 'string'
+    }
   },
-  'required': ['keyword', 'message', 'params', 'path']
+  'required': [
+    'keyword',
+    'message',
+    'params',
+    'path'
+  ],
+  'type': 'object'
 } as const;
 
 export type ValidationErrorType = InferType<typeof ValidationErrorSchema>;

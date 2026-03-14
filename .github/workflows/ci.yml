@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          cache: npm
+          node-version: '22'
+
+      - name: Validate package-lock.json sync
+        run: |
+          if ! npm ci --dry-run 2>&1 | tee /tmp/npm-ci-output.txt; then
+            if grep -q "npm ci.*can only install packages when.*in sync" /tmp/npm-ci-output.txt; then
+              echo "::error::package-lock.json is out of sync with package.json"
+              echo "Run 'npm install' locally, commit package-lock.json, and push."
+              exit 1
+            fi
+          fi
+
+      - name: Install dependencies
+        run: npm ci --include=dev --include=optional
+
+      - name: Build
+        run: npm run build
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Type-level tests
+        run: npx tsc --noEmit --project tsconfig.test-types.json
+
+      - name: Run tests
+        run: npm test
+
+    timeout-minutes: 10
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          cache: npm
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci --include=dev --include=optional
+
+      - name: ESLint
+        run: npx eslint .
+
+    timeout-minutes: 10
+
+  static-analysis:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          cache: npm
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci --include=dev --include=optional
+
+      - name: Check circular dependencies
+        run: npx madge --circular src/
+
+    timeout-minutes: 10
+
+  ci-gate:
+    if: always()
+    name: CI Gate
+    needs: [build-test, lint, static-analysis]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check job results
+        run: |
+          echo "## CI Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Build & Test | ${{ needs.build-test.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Static Analysis | ${{ needs.static-analysis.result }} |" >> $GITHUB_STEP_SUMMARY
+
+          FAILED=""
+          if [[ "${{ needs.build-test.result }}" != "success" ]]; then
+            FAILED="$FAILED  - Build & Test (${{ needs.build-test.result }})\n"
+          fi
+          if [[ "${{ needs.lint.result }}" != "success" ]]; then
+            FAILED="$FAILED  - Lint (${{ needs.lint.result }})\n"
+          fi
+          if [[ "${{ needs.static-analysis.result }}" != "success" ]]; then
+            FAILED="$FAILED  - Static Analysis (${{ needs.static-analysis.result }})\n"
+          fi
+
+          if [[ -n "$FAILED" ]]; then
+            echo "CI failed:"
+            echo -e "$FAILED"
+            exit 1
+          fi
+
+          echo "All CI jobs passed."
+    timeout-minutes: 2

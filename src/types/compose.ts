@@ -1,5 +1,3 @@
-import type { JSONSchema7Definition as JSONSchemaType } from 'json-schema';
-
 /** Extract the union of required field names from a schema's `required` array. */
 export type ExtractRequiredType<T>
   = T extends { readonly 'required': ReadonlyArray<infer R extends string> } ? R : never;
@@ -11,8 +9,8 @@ export type ExtractPropertiesType<T>
     : Record<string, never>;
 
 export type ExtendSchemaType<
-  TSchema extends JSONSchemaType,
-  TAdditional extends Record<string, JSONSchemaType>,
+  TSchema extends Record<string, unknown>,
+  TAdditional extends Record<string, unknown>,
   TId extends string
 > = Omit<TSchema, '$id' | 'properties'> & {
   readonly '$id': TId;
@@ -20,7 +18,7 @@ export type ExtendSchemaType<
 };
 
 export interface IntersectionSchemaInterface<
-  TSchemas extends readonly JSONSchemaType[],
+  TSchemas extends ReadonlyArray<Record<string, unknown>>,
   TId extends string
 > {
   readonly '$id': TId;
@@ -29,7 +27,7 @@ export interface IntersectionSchemaInterface<
 
 export interface DiscriminatedUnionSchemaInterface<
   TDiscriminator extends string,
-  TVariants extends readonly JSONSchemaType[],
+  TVariants extends ReadonlyArray<Record<string, unknown>>,
   TId extends string
 > {
   readonly '$id': TId;

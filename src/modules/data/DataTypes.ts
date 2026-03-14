@@ -68,7 +68,7 @@ export const NUMBER_FORMAT_MAP: Readonly<Record<string, string>> = {
 // XSD type resolution
 // ---------------------------------------------------------------------------
 
-export function resolveSingleXsdType(type: string, format?: string): string | null {
+export function resolveSingleXsdType(type: string, format?: string): null | string {
   if (type === 'object' || type === 'array') {
     return null;
   }
@@ -86,11 +86,13 @@ export function resolveSingleXsdType(type: string, format?: string): string | nu
   return BASE_TYPE_MAP[type] ?? null;
 }
 
-export function resolveXsdType(semantics: SchemaGraphSemanticsInterface): string | null {
+export function resolveXsdType(semantics: SchemaGraphSemanticsInterface): null | string {
   const types = semantics.schemaTypes;
   const format = semantics.format;
 
-  const nonNull = types.filter((entry) => entry !== 'null');
+  const nonNull = types.filter((entry) => {
+    return entry !== 'null';
+  });
 
   if (nonNull.length === 0) {
     return types.length > 0 ? 'owl:Nothing' : null;
@@ -115,15 +117,25 @@ export function propertyIri(classId: string, propertyName: string): string {
 // ---------------------------------------------------------------------------
 
 export function deepEqual(a: unknown, b: unknown): boolean {
-  if (a === b) return true;
-  if (a === null || b === null) return false;
-  if (typeof a !== typeof b) return false;
+  if (a === b) {
+    return true;
+  }
+  if (a === null || b === null) {
+    return false;
+  }
+  if (typeof a !== typeof b) {
+    return false;
+  }
 
   if (Array.isArray(a)) {
-    if (!Array.isArray(b) || a.length !== b.length) return false;
+    if (!Array.isArray(b) || a.length !== b.length) {
+      return false;
+    }
 
     for (let i = 0; i < a.length; i++) {
-      if (!deepEqual(a[i], b[i])) return false;
+      if (!deepEqual(a[i], b[i])) {
+        return false;
+      }
     }
 
     return true;
@@ -135,11 +147,17 @@ export function deepEqual(a: unknown, b: unknown): boolean {
     const aKeys = Object.keys(aObj);
     const bKeys = Object.keys(bObj);
 
-    if (aKeys.length !== bKeys.length) return false;
+    if (aKeys.length !== bKeys.length) {
+      return false;
+    }
 
     for (const key of aKeys) {
-      if (!Object.prototype.hasOwnProperty.call(bObj, key)) return false;
-      if (!deepEqual(aObj[key], bObj[key])) return false;
+      if (!Object.prototype.hasOwnProperty.call(bObj, key)) {
+        return false;
+      }
+      if (!deepEqual(aObj[key], bObj[key])) {
+        return false;
+      }
     }
 
     return true;

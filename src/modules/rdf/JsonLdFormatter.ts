@@ -1,0 +1,183 @@
+/**
+ * JsonLdFormatter — generic quad-to-JSON-LD converter.
+ *
+ * Groups quads by subject into {@id, @type, ...} nodes. Inlines
+ * singly-referenced blank nodes (bottom-up). Converts rdf:type → @type,
+ * RDF lists → @list. Passes through literal values as-is.
+ *
+ * Pure function, no graph/schema access.
+ */
+
+import type {
+  QuadInterface, QuadObjectType
+} from './Quad.js';
+
+export function quadsToJsonLd(quads: QuadInterface[]): Array<Record<string, unknown>> {
+  // Phase 1: group quads by subject
+  const subjects = new Map<string, Record<string, unknown>>();
+
+  for (const q of quads) {
+    let node = subjects.get(q.subject);
+
+    if (node === undefined) {
+      node = { '@id': q.subject };
+      subjects.set(q.subject, node);
+    }
+
+    if (q.predicate === 'rdf:type') {
+      // @type values are plain strings, not { '@id': ... } wrappers
+      const typeValue = q.object.type === 'iri' ? q.object.value : objectToJsonLd(q.object);
+      const existing = node['@type'];
+
+      if (existing === undefined) {
+        node['@type'] = typeValue;
+      } else if (Array.isArray(existing)) {
+        (existing as unknown[]).push(typeValue);
+      } else {
+        node['@type'] = [
+          existing,
+          typeValue
+        ];
+      }
+    } else {
+      const value = objectToJsonLd(q.object);
+      const existing = node[q.predicate];
+
+      if (existing === undefined) {
+        node[q.predicate] = value;
+      } else if (Array.isArray(existing)) {
+        (existing as unknown[]).push(value);
+      } else {
+        node[q.predicate] = [
+          existing,
+          value
+        ];
+      }
+    }
+  }
+
+  // Phase 2: count bnode references for inlining
+  const bnodeRefCount = new Map<string, number>();
+
+  for (const q of quads) {
+    countBnodeRefs(q.object, bnodeRefCount);
+  }
+
+  // Phase 3: inline singly-referenced bnodes (bottom-up)
+  const inlinedIds = new Set<string>();
+
+  for (const [
+    bnodeId,
+    count
+  ] of bnodeRefCount) {
+    if (count === 1 && subjects.has(bnodeId)) {
+      inlinedIds.add(bnodeId);
+    }
+  }
+
+  // Resolve inlined bnodes in all nodes
+  for (const node of subjects.values()) {
+    inlineBnodes(node, subjects, inlinedIds);
+  }
+
+  // Phase 4: emit only non-inlined nodes, preserving insertion order
+  const result: Array<Record<string, unknown>> = [];
+
+  for (const [
+    id,
+    node
+  ] of subjects) {
+    if (!inlinedIds.has(id)) {
+      result.push(node);
+    }
+  }
+
+  return result;
+}
+
+function objectToJsonLd(obj: QuadObjectType): unknown {
+  switch (obj.type) {
+    case 'bnode':
+      return { '@id': obj.id };
+    case 'iri':
+      return { '@id': obj.value };
+    case 'list':
+      return { '@list': obj.items.map(objectToJsonLd) };
+    case 'literal':
+      return obj.value;
+  }
+}
+
+function countBnodeRefs(obj: QuadObjectType, counts: Map<string, number>): void {
+  if (obj.type === 'bnode') {
+    counts.set(obj.id, (counts.get(obj.id) ?? 0) + 1);
+  } else if (obj.type === 'list') {
+    for (const item of obj.items) {
+      countBnodeRefs(item, counts);
+    }
+  }
+}
+
+function inlineBnodes(
+  node: Record<string, unknown>,
+  subjects: Map<string, Record<string, unknown>>,
+  inlinedIds: Set<string>
+): void {
+  for (const [
+    key,
+    value
+  ] of Object.entries(node)) {
+    if (key === '@id') {
+      continue;
+    }
+
+    node[key] = resolveValue(value, subjects, inlinedIds);
+  }
+}
+
+function resolveValue(
+  value: unknown,
+  subjects: Map<string, Record<string, unknown>>,
+  inlinedIds: Set<string>
+): unknown {
+  if (Array.isArray(value)) {
+    return value.map((v) => {
+      return resolveValue(v, subjects, inlinedIds);
+    });
+  }
+
+  if (typeof value === 'object' && value !== null) {
+    const obj = value as Record<string, unknown>;
+
+    // Check if this is a bnode reference that should be inlined
+    if ('@id' in obj && typeof obj['@id'] === 'string' && Object.keys(obj).length === 1) {
+      const refId = obj['@id'];
+
+      if (inlinedIds.has(refId)) {
+        const inlined = subjects.get(refId);
+
+        if (inlined !== undefined) {
+          // Recursively resolve the inlined node
+          inlineBnodes(inlined, subjects, inlinedIds);
+          // Remove @id from inlined blank nodes
+          const copy = { ...inlined };
+
+          delete copy['@id'];
+
+          return copy;
+        }
+      }
+    }
+
+    // Recurse into @list
+    if ('@list' in obj && Array.isArray(obj['@list'])) {
+      return {
+        '@list': (obj['@list'] as unknown[]).map((v) => {
+          return resolveValue(v, subjects, inlinedIds);
+        })
+      };
+    }
+  }
+
+  return value;
+}

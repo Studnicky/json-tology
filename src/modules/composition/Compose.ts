@@ -6,7 +6,6 @@
  * stays in sync with the TypeScript return type — no manual annotation needed.
  */
 
-import type { JSONSchema7Definition as JSONSchemaType } from 'json-schema';
 import type {
   DiscriminatedUnionSchemaInterface,
   ExtendSchemaType,
@@ -36,7 +35,7 @@ export class Compose {
    */
   public static discriminatedUnion<
     TDiscriminator extends string,
-    TVariants extends readonly JSONSchemaType[],
+    TVariants extends ReadonlyArray<Record<string, unknown>>,
     TId extends string
   >(
     discriminatorProperty: TDiscriminator,
@@ -63,8 +62,8 @@ export class Compose {
    * );
    */
   public static extend<
-    TSchema extends JSONSchemaType & { readonly '$id': string; },
-    TAdditional extends Record<string, JSONSchemaType>,
+    TSchema extends Record<string, unknown> & { readonly '$id': string; },
+    TAdditional extends Record<string, unknown>,
     TId extends string
   >(
     schema: TSchema,
@@ -154,7 +153,7 @@ export class Compose {
    * type PersonWithAddress = Infer<typeof PersonWithAddress>;
    */
   public static intersection<
-    TSchemas extends readonly JSONSchemaType[],
+    TSchemas extends ReadonlyArray<Record<string, unknown>>,
     TId extends string
   >(schemas: TSchemas, newId: TId): IntersectionSchemaInterface<TSchemas, TId> {
     return {
@@ -198,7 +197,7 @@ export class Compose {
    * const PublicUserSchema = Compose.omit(UserSchema, ['passwordHash'] as const, 'https://myapp.io/PublicUser');
    */
   public static omit<
-    TSchema extends JSONSchemaType & { readonly '$id': string; },
+    TSchema extends Record<string, unknown> & { readonly '$id': string; },
     TKeys extends string,
     TId extends string
   >(schema: TSchema, keys: readonly TKeys[], newId: TId): OmitSchemaInterface<TSchema, TKeys, TId> {
@@ -238,7 +237,7 @@ export class Compose {
    * type PatchUser = Infer<typeof PatchUserSchema>; // { name?: string; email?: string }
    */
   public static partial<
-    TSchema extends JSONSchemaType & { readonly '$id': string; },
+    TSchema extends Record<string, unknown> & { readonly '$id': string; },
     TId extends string
   >(schema: TSchema, newId: TId): PartialSchemaType<TSchema, TId> {
     const source = { ...(schema as unknown as Record<string, unknown>) };
@@ -258,7 +257,7 @@ export class Compose {
    * const UserSummarySchema = Compose.pick(UserSchema, ['id', 'name'] as const, 'https://myapp.io/UserSummary');
    */
   public static pick<
-    TSchema extends JSONSchemaType & { readonly '$id': string; },
+    TSchema extends Record<string, unknown> & { readonly '$id': string; },
     TKeys extends string,
     TId extends string
   >(schema: TSchema, keys: readonly TKeys[], newId: TId): PickSchemaInterface<TSchema, TKeys, TId> {
@@ -302,7 +301,7 @@ export class Compose {
    * const StrictUserSchema = Compose.required(UserSchema, 'https://myapp.io/StrictUser');
    */
   public static required<
-    TSchema extends JSONSchemaType & { readonly '$id': string; },
+    TSchema extends Record<string, unknown> & { readonly '$id': string; },
     TId extends string
   >(schema: TSchema, newId: TId): RequiredSchemaType<TSchema, TId> {
     const source = schema as unknown as Record<string, unknown>;

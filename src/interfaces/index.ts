@@ -6,4 +6,3 @@ export type * from './materializer.js';
 export type * from './ontology.js';
 export type * from './registry.js';
 export type * from './schema-graph.js';
-export type * from './validation.js';

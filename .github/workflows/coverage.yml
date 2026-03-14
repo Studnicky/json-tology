@@ -1,0 +1,37 @@
+name: Code Coverage
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          cache: npm
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci --include=dev --include=optional
+
+      - name: Build
+        run: npm run build
+
+      - name: Run tests with coverage
+        run: npx tsx --test --experimental-test-coverage 'test/unit/**/*.test.ts' 2>&1 | tee coverage-report.txt
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage-report.txt
+          retention-days: 30
+
+    timeout-minutes: 15

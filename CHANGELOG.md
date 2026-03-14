@@ -19,10 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `SchemaOntologyDeriver` for semantic web output
 - Benchmark suite vs TypeBox — 1.08–9.56x faster across all operations
 
-### Added
-
-- Initial project setup with @apacenai/dev-tools
-
 ### Changed
 
 ### Deprecated

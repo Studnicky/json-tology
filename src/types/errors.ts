@@ -5,5 +5,6 @@ import type {
 // DiffOp is a type alias (union), so it lives here
 export type DiffOp = DelOp | SetOp;
 
-// Re-export ParseResult from FailResult.ts (where OkResult/FailResult classes live)
-export type { ParseResult } from '../schema/FailResult.js';
+import type { Result } from '../modules/data/Result.js';
+
+export type ParseResult<T> = Result<T>;

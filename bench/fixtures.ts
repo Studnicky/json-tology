@@ -12,7 +12,7 @@ import { z } from 'zod';
 // AJV instance (shared)
 // ---------------------------------------------------------------------------
 
-export const ajv = new Ajv({ allErrors: true });
+export const ajv = new Ajv({ 'allErrors': true });
 addFormats(ajv);
 
 // ---------------------------------------------------------------------------
@@ -59,7 +59,9 @@ export const SimpleSchemaTypebox = Type.Object({
 
 export const SimpleSchemaZod = z.object({
   'active': z.boolean(),
-  'age': z.number().int().min(0).max(150),
+  'age': z.number().int()
+    .min(0)
+    .max(150),
   'email': z.string().email(),
   'id': z.number().int(),
   'name': z.string()
@@ -102,8 +104,8 @@ export const AddressSchema = {
   'properties': {
     'city': { 'type': 'string' },
     'country': {
-      "maxLength": 2,
-      "minLength": 2,
+      'maxLength': 2,
+      'minLength': 2,
       'type': 'string'
     },
     'street': { 'type': 'string' },
@@ -112,7 +114,12 @@ export const AddressSchema = {
       'type': 'string'
     }
   },
-  'required': ['street', 'city', 'country', 'zip'],
+  'required': [
+    'street',
+    'city',
+    'country',
+    'zip'
+  ],
   'type': 'object'
 } as const;
 
@@ -120,29 +127,50 @@ export const CustomerSchema = {
   '$id': 'Customer',
   'properties': {
     'address': { '$ref': 'Address' },
-    'email': { 'format': 'email', 'type': 'string' },
+    'email': {
+      'format': 'email',
+      'type': 'string'
+    },
     'id': { 'type': 'integer' },
     'name': { 'type': 'string' }
   },
-  'required': ['id', 'name', 'email', 'address'],
+  'required': [
+    'id',
+    'name',
+    'email',
+    'address'
+  ],
   'type': 'object'
 } as const;
 
 export const OrderItemSchema = {
   '$id': 'OrderItem',
   'properties': {
-    'price': { 'minimum': 0, 'type': 'number' },
-    'quantity': { 'minimum': 1, 'type': 'integer' },
+    'price': {
+      'minimum': 0,
+      'type': 'number'
+    },
+    'quantity': {
+      'minimum': 1,
+      'type': 'integer'
+    },
     'sku': { 'type': 'string' }
   },
-  'required': ['sku', 'quantity', 'price'],
+  'required': [
+    'sku',
+    'quantity',
+    'price'
+  ],
   'type': 'object'
 } as const;
 
 export const NestedSchema = {
   '$id': 'Order',
   'properties': {
-    'createdAt': { 'format': 'date-time', 'type': 'string' },
+    'createdAt': {
+      'format': 'date-time',
+      'type': 'string'
+    },
     'customer': { '$ref': 'Customer' },
     'items': {
       'items': { '$ref': 'OrderItem' },
@@ -151,12 +179,28 @@ export const NestedSchema = {
     },
     'orderId': { 'type': 'string' },
     'status': {
-      'enum': ['pending', 'paid', 'shipped', 'delivered', 'cancelled'],
+      'enum': [
+        'pending',
+        'paid',
+        'shipped',
+        'delivered',
+        'cancelled'
+      ],
       'type': 'string'
     },
-    'total': { 'minimum': 0, 'type': 'number' }
+    'total': {
+      'minimum': 0,
+      'type': 'number'
+    }
   },
-  'required': ['orderId', 'createdAt', 'customer', 'items', 'total', 'status'],
+  'required': [
+    'orderId',
+    'createdAt',
+    'customer',
+    'items',
+    'total',
+    'status'
+  ],
   'type': 'object'
 } as const;
 
@@ -164,44 +208,96 @@ export const NestedSchema = {
 const NestedSchemaAjv = {
   '$id': 'OrderAjv',
   'properties': {
-    'createdAt': { 'format': 'date-time', 'type': 'string' },
+    'createdAt': {
+      'format': 'date-time',
+      'type': 'string'
+    },
     'customer': {
       'properties': {
         'address': {
           'properties': {
             'city': { 'type': 'string' },
-            'country': { "maxLength": 2, "minLength": 2, 'type': 'string' },
+            'country': {
+              'maxLength': 2,
+              'minLength': 2,
+              'type': 'string'
+            },
             'street': { 'type': 'string' },
-            'zip': { 'pattern': '^[0-9]{5}$', 'type': 'string' }
+            'zip': {
+              'pattern': '^[0-9]{5}$',
+              'type': 'string'
+            }
           },
-          'required': ['street', 'city', 'country', 'zip'],
+          'required': [
+            'street',
+            'city',
+            'country',
+            'zip'
+          ],
           'type': 'object'
         },
-        'email': { 'format': 'email', 'type': 'string' },
+        'email': {
+          'format': 'email',
+          'type': 'string'
+        },
         'id': { 'type': 'integer' },
         'name': { 'type': 'string' }
       },
-      'required': ['id', 'name', 'email', 'address'],
+      'required': [
+        'id',
+        'name',
+        'email',
+        'address'
+      ],
       'type': 'object'
     },
     'items': {
       'items': {
         'properties': {
-          'price': { 'minimum': 0, 'type': 'number' },
-          'quantity': { 'minimum': 1, 'type': 'integer' },
+          'price': {
+            'minimum': 0,
+            'type': 'number'
+          },
+          'quantity': {
+            'minimum': 1,
+            'type': 'integer'
+          },
           'sku': { 'type': 'string' }
         },
-        'required': ['sku', 'quantity', 'price'],
+        'required': [
+          'sku',
+          'quantity',
+          'price'
+        ],
         'type': 'object'
       },
       'minItems': 1,
       'type': 'array'
     },
     'orderId': { 'type': 'string' },
-    'status': { 'enum': ['pending', 'paid', 'shipped', 'delivered', 'cancelled'], 'type': 'string' },
-    'total': { 'minimum': 0, 'type': 'number' }
+    'status': {
+      'enum': [
+        'pending',
+        'paid',
+        'shipped',
+        'delivered',
+        'cancelled'
+      ],
+      'type': 'string'
+    },
+    'total': {
+      'minimum': 0,
+      'type': 'number'
+    }
   },
-  'required': ['orderId', 'createdAt', 'customer', 'items', 'total', 'status'],
+  'required': [
+    'orderId',
+    'createdAt',
+    'customer',
+    'items',
+    'total',
+    'status'
+  ],
   'type': 'object'
 } as const;
 
@@ -244,7 +340,7 @@ export const NestedSchemaZod = z.object({
       'city': z.string(),
       'country': z.string().length(2),
       'street': z.string(),
-      'zip': z.string().regex(/^[0-9]{5}$/)
+      'zip': z.string().regex(/^\d{5}$/u)
     }),
     'email': z.string().email(),
     'id': z.number().int(),
@@ -252,11 +348,18 @@ export const NestedSchemaZod = z.object({
   }),
   'items': z.array(z.object({
     'price': z.number().min(0),
-    'quantity': z.number().int().min(1),
+    'quantity': z.number().int()
+      .min(1),
     'sku': z.string()
   })).min(1),
   'orderId': z.string(),
-  'status': z.enum(['pending', 'paid', 'shipped', 'delivered', 'cancelled']),
+  'status': z.enum([
+    'pending',
+    'paid',
+    'shipped',
+    'delivered',
+    'cancelled'
+  ]),
   'total': z.number().min(0)
 });
 

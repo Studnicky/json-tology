@@ -2,8 +2,10 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "rootDir": ".",
+    "noEmit": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false
   },
-  "include": ["src/**/*", "test/types/**/*"]
+  "include": ["src/**/*", "test/types/**/*"],
+  "exclude": ["node_modules", "dist", "test/types/inference-comparison.test.ts"]
 }

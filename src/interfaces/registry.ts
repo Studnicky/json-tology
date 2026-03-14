@@ -1,6 +1,6 @@
 import type { FormatRegistry } from '../modules/format/FormatRegistry.js';
 import type { KeywordDefinitionInterface } from './graph-engine.js';
-import type { InferSchemaType } from '../types/infer.js';
+import type { ParseOutputType } from '../types/transform.js';
 import type { LoggerInterface } from './logger.js';
 
 
@@ -8,17 +8,19 @@ import type { LoggerInterface } from './logger.js';
 // Type-level helpers for compile-time schema map accumulation
 // ---------------------------------------------------------------------------
 
-/** Extract `{ [$id]: InferSchemaType<T> }` from a single schema. */
-export type SchemaEntryType<T> =
-  T extends { readonly '$id': infer Id extends string }
-    ? Record<Id, InferSchemaType<T>>
-    : Record<string, never>;
+/** Extract `{ [$id]: ParseOutputType<T> }` from a single schema.
+ *  Uses ParseOutputType so that transformed schemas map to the decoded type
+ *  (matching parse() behavior), while plain schemas map to the wire shape. */
+export type SchemaEntryType<T>
+  = T extends { readonly '$id': infer Id extends string }
+    ? Record<Id, ParseOutputType<T>>
+    : {};
 
 /** Build a type map from a readonly tuple of schemas. */
-export type SchemaMapFromTupleType<T extends readonly unknown[]> =
-  T extends readonly [infer First, ...infer Rest]
+export type SchemaMapFromTupleType<T extends readonly unknown[]>
+  = T extends readonly [infer First, ...infer Rest]
     ? SchemaEntryType<First> & SchemaMapFromTupleType<Rest>
-    : Record<string, never>;
+    : {};
 
 export interface RegistryOptionsInterface {
   /**
@@ -31,4 +33,6 @@ export interface RegistryOptionsInterface {
   /** Custom keyword definitions passed to the graph engine. */
   'keywords'?: KeywordDefinitionInterface[];
   'logger'?: LoggerInterface;
+  /** When true, validate that $schema references draft 2020-12. */
+  'strict'?: boolean;
 }

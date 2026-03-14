@@ -18,9 +18,9 @@ import {
   bench, type BenchResult, section
 } from './harness.js';
 import {
-  AddressSchema, CustomerSchema, OrderItemSchema,
-  NestedSchema, NestedSchemaTypebox,
-  nestedValid, simpleCoercible,
+  AddressSchema, CustomerSchema, NestedSchema,
+  NestedSchemaTypebox, nestedValid,
+  OrderItemSchema, simpleCoercible,
   SimpleSchema, SimpleSchemaTypebox, simpleValid
 } from './fixtures.js';
 
@@ -46,7 +46,7 @@ const dirtyNested = {
 export function runValueOpsBench(): BenchResult[] {
   const results: BenchResult[] = [];
 
-  const registry = new SchemaRegistry({ coerce: true });
+  const registry = new SchemaRegistry({ 'coerce': true });
 
   registry.register(SimpleSchema);
   registry.register(AddressSchema);

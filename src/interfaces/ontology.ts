@@ -8,7 +8,7 @@ export interface OntologyBuilderOptionsInterface {
    * Static graph node collections or producer functions.
    * Each producer returns JSON-LD-style node objects directly.
    */
-  'graphSources': ReadonlyArray<ReadonlyArray<unknown> | (() => ReadonlyArray<unknown>)>;
+  'graphSources': ReadonlyArray<(() => readonly unknown[]) | readonly unknown[]>;
 
   /**
    * Prefix to IRI map (e.g., { myns: 'https://my-project.io/ns#', rdf: '...' })

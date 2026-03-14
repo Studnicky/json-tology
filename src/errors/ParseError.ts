@@ -11,7 +11,7 @@ import { BaseError } from './BaseError.js';
 export class ParseError extends BaseError {
   public readonly errors: ValidationErrors;
 
-  public constructor(errors: ValidationErrorType[] | ValidationErrors, options?: { 'cause'?: Error }) {
+  public constructor(errors: ValidationErrors | ValidationErrorType[], options?: { 'cause'?: Error }) {
     const validationErrors = errors instanceof ValidationErrors ? errors : new ValidationErrors(errors);
 
     super('PARSE_FAILED', validationErrors.messages().join('; '), false, options);
@@ -19,21 +19,25 @@ export class ParseError extends BaseError {
     this.errors = validationErrors;
   }
 
-  public override toJson() {
-    return {
-      ...super.toJson(),
-      'errors': this.errors.items.map((item) => ({ ...item }))
-    };
-  }
-
   public override flatten() {
     return [
       ...super.flatten(),
-      ...this.errors.items.map((item) => ({
-        'code': item.keyword,
-        'message': `${item.path || 'root'}: ${item.message}`,
-        'retryable': false
-      }))
+      ...this.errors.items.map((item) => {
+        return {
+          'code': item.keyword,
+          'message': `${item.path || 'root'}: ${item.message}`,
+          'retryable': false
+        };
+      })
     ];
+  }
+
+  public override toJson() {
+    return {
+      ...super.toJson(),
+      'errors': this.errors.items.map((item) => {
+        return { ...item };
+      })
+    };
   }
 }

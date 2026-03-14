@@ -19,31 +19,32 @@ import { JsonTology } from '../../src/JsonTology.js';
 
 const UserSchema = {
   '$id': 'https://example.io/User',
-  'type': 'object',
   'properties': {
-    'name': { 'type': 'string' },
     'age': { 'type': 'number' },
+    'name': { 'type': 'string' }
   },
   'required': ['name'],
+  'type': 'object'
 } as const;
 
 const OrderSchema = {
   '$id': 'https://example.io/Order',
-  'type': 'object',
   'properties': {
     'orderId': { 'type': 'string' },
-    'total': { 'type': 'number' },
+    'total': { 'type': 'number' }
   },
-  'required': ['orderId', 'total'],
+  'required': [
+    'orderId',
+    'total'
+  ],
+  'type': 'object'
 } as const;
 
 const TagSchema = {
   '$id': 'https://example.io/Tag',
-  'type': 'object',
-  'properties': {
-    'label': { 'type': 'string' },
-  },
+  'properties': { 'label': { 'type': 'string' } },
   'required': ['label'],
+  'type': 'object'
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -52,7 +53,10 @@ const TagSchema = {
 
 const jt = JsonTology.create({
   'baseIRI': 'https://example.io',
-  'schemas': [UserSchema, OrderSchema] as const,
+  'schemas': [
+    UserSchema,
+    OrderSchema
+  ] as const
 });
 
 // parse() returns inferred type
@@ -96,7 +100,7 @@ jt.errors('https://example.io/NotRegistered', {});
 
 const jt2 = JsonTology.create({
   'baseIRI': 'https://example.io',
-  'schemas': [UserSchema] as const,
+  'schemas': [UserSchema] as const
 }).register(OrderSchema);
 
 // Both schemas accessible
@@ -120,10 +124,44 @@ jt3.parse('https://example.io/Tag', {});
 // 3. Empty registry — nothing should be parseable
 // ---------------------------------------------------------------------------
 
-const empty = JsonTology.create({ 'baseIRI': 'https://example.io', 'schemas': [] as const });
+const empty = JsonTology.create({
+  'baseIRI': 'https://example.io',
+  'schemas': [] as const
+});
 
 // @ts-expect-error — no schemas registered
 empty.parse('https://example.io/User', {});
+
+// ---------------------------------------------------------------------------
+// 4. Schema ID union type is accumulative
+// ---------------------------------------------------------------------------
+
+// Verified above: jt.parse('https://example.io/User', {}) compiles,
+// jt.parse('https://example.io/NotRegistered', {}) fails.
+// Direct string calls (not Parameters extraction) are the reliable way
+// to test key accumulation with overloaded methods.
+
+// ---------------------------------------------------------------------------
+// 5. Type-safe parse output matches schema structure
+// ---------------------------------------------------------------------------
+
+// Verify parse output types flow correctly through the generic
+const parsedUser = jt.parse('https://example.io/User', {});
+const _nameCheck: string = parsedUser.name;
+const _ageCheck: number | undefined = parsedUser.age;
+
+const parsedOrder = jt.parse('https://example.io/Order', {});
+const _orderIdCheck: string = parsedOrder.orderId;
+const _totalCheck: number = parsedOrder.total;
+
+// ---------------------------------------------------------------------------
+// 6. validateAt constrains to registered IDs
+// ---------------------------------------------------------------------------
+
+jt.validateAt('https://example.io/User', '/properties/name', {});
+
+// @ts-expect-error — unregistered schema
+jt.validateAt('https://example.io/NotRegistered', '/properties/name', {});
 
 // ---------------------------------------------------------------------------
 // Suppress unused variable warnings
@@ -131,3 +169,4 @@ empty.parse('https://example.io/User', {});
 
 void _userName, _userAge, _orderId, _orderTotal, _bad1;
 void _u2, _o2, _tagLabel;
+void _nameCheck, _ageCheck, _orderIdCheck, _totalCheck;

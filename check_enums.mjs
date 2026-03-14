@@ -40,5 +40,5 @@ const jsonld = jt.ontology().jsonLdObject();
 
 console.log(JSON.stringify(jsonld['@graph'], null, 2));
 
-console.log('\n=== FULL N3 OUTPUT ===');
-console.log(jt.ontology().n3());
+console.log('\n=== FULL JSON-LD OUTPUT ===');
+console.log(jt.ontology().jsonLd());

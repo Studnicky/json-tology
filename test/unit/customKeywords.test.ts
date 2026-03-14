@@ -1,4 +1,6 @@
-import { describe, it } from 'node:test';
+import {
+  describe, it
+} from 'node:test';
 import assert from 'node:assert/strict';
 import type { KeywordDefinitionInterface } from '../../src/interfaces/graph-engine.js';
 import { GraphEngine } from '../../src/modules/graph/GraphEngine.js';
@@ -24,8 +26,8 @@ describe('Custom keyword extensions', () => {
   it('validates a custom keyword constraint (evenNumber)', () => {
     const schema = {
       '$id': 'https://test.com/Even',
-      'type': 'number',
-      'evenNumber': true
+      'evenNumber': true,
+      'type': 'number'
     };
     const engine = new GraphEngine(schema, { 'keywords': [evenNumberKeyword] });
 
@@ -66,7 +68,8 @@ describe('Custom keyword extensions', () => {
       'keyword': 'customRange',
       'type': 'number',
       'validate': (schema, data, context): ValidationErrorType[] => {
-        const spec = schema as { max: number; min: number };
+        const spec = schema as { 'max': number;
+          'min': number };
         const value = data as number;
         const errors: ValidationErrorType[] = [];
 
@@ -93,8 +96,11 @@ describe('Custom keyword extensions', () => {
 
     const schema = {
       '$id': 'https://test.com/Range',
-      'type': 'number',
-      'customRange': { 'max': 100, 'min': 10 }
+      'customRange': {
+        'max': 100,
+        'min': 10
+      },
+      'type': 'number'
     };
     const engine = new GraphEngine(schema, { 'keywords': [rangeKeyword] });
 
@@ -111,8 +117,8 @@ describe('Custom keyword extensions', () => {
   it('schema without custom keywords is unchanged', () => {
     const schema = {
       '$id': 'https://test.com/Plain',
-      'type': 'string',
-      'minLength': 1
+      'minLength': 1,
+      'type': 'string'
     };
     const engine = new GraphEngine(schema);
 
@@ -121,14 +127,13 @@ describe('Custom keyword extensions', () => {
   });
 
   it('threads keywords through SchemaRegistry', () => {
-    const registry = new SchemaRegistry({
-      'keywords': [evenNumberKeyword]
-    });
+    const registry = new SchemaRegistry({ 'keywords': [evenNumberKeyword] });
     const schema = {
       '$id': 'https://test.com/RegEven',
-      'type': 'number',
-      'evenNumber': true
+      'evenNumber': true,
+      'type': 'number'
     };
+
     registry.register(schema);
 
     const errors = registry.validate('https://test.com/RegEven', 3);
@@ -137,14 +142,35 @@ describe('Custom keyword extensions', () => {
     assert.equal(registry.validate('https://test.com/RegEven', 4).length, 0);
   });
 
+  it('reads custom keyword values from graph semantics, not raw schema', () => {
+    const registry = new SchemaRegistry();
+    const schema = {
+      '$id': 'urn:test:graph-kw',
+      'evenNumber': true,
+      'type': 'number'
+    } as const;
+
+    registry.register(schema);
+    const graph = registry.graph('urn:test:graph-kw');
+    const sem = graph.semantics(graph.rootNode);
+
+    // The custom keyword must appear in extensions (graph-owned), not be absent
+    assert.equal(sem.extensions.evenNumber, true);
+    // And execution must use that value from extensions
+    const engine = new GraphEngine(schema, { 'keywords': [evenNumberKeyword] });
+
+    assert.equal(engine.execute(4).valid, true);
+    assert.equal(engine.execute(3).valid, false);
+  });
+
   it('threads keywords through JsonTology', () => {
     const jt = JsonTology.create({
       'baseIRI': 'https://test.com',
       'keywords': [evenNumberKeyword],
       'schemas': [{
         '$id': 'https://test.com/JtEven',
-        'type': 'number',
-        'evenNumber': true
+        'evenNumber': true,
+        'type': 'number'
       }]
     });
 

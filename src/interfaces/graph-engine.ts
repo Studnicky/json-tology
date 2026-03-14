@@ -27,6 +27,7 @@ export interface GraphEngineOptionsInterface {
   'materializeContainers'?: boolean;
   'removeAdditional'?: boolean;
   'stripUnknownProperties'?: boolean;
+  'synthesizeDefaults'?: boolean;
 }
 
 export interface GraphExecutionResultInterface {

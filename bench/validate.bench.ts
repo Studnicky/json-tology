@@ -9,9 +9,9 @@ import {
 } from './harness.js';
 import {
   AddressSchema, ajvValidateNested, ajvValidateSimple,
-  CustomerSchema, OrderItemSchema,
-  NestedSchema, NestedSchemaTypebox, NestedSchemaZod, nestedValid,
-  SimpleSchema, SimpleSchemaTypebox, SimpleSchemaZod, simpleInvalid, simpleValid
+  CustomerSchema, NestedSchema,
+  NestedSchemaTypebox, NestedSchemaZod, nestedValid, OrderItemSchema,
+  simpleInvalid, SimpleSchema, SimpleSchemaTypebox, SimpleSchemaZod, simpleValid
 } from './fixtures.js';
 
 export function runValidateBench(): BenchResult[] {

@@ -4,7 +4,7 @@
  * Core container types and patterns used across multiple domains.
  */
 
-import type { JSONSchema } from './json-schema.js';
+import type { JSONSchema7Definition as JSONSchema } from 'json-schema';
 import type { Infer } from './schema.js';
 
 export namespace BaseTypes {

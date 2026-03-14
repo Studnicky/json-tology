@@ -4,12 +4,22 @@
 
 import { BaseError } from './BaseError.js';
 
-export type LoadErrorCodeType =
+export type LoadErrorCodeType
+  = | 'LOAD_DUPLICATE_ANCHOR'
   | 'LOAD_DUPLICATE_ID'
   | 'LOAD_INVALID_JSON'
   | 'LOAD_INVALID_SCHEMA'
   | 'LOAD_IO_FAILURE'
   | 'LOAD_MISSING_ID';
+
+export const LoadErrorCode = {
+  'DUPLICATE_ANCHOR': 'LOAD_DUPLICATE_ANCHOR',
+  'DUPLICATE_ID': 'LOAD_DUPLICATE_ID',
+  'INVALID_JSON': 'LOAD_INVALID_JSON',
+  'INVALID_SCHEMA': 'LOAD_INVALID_SCHEMA',
+  'IO_FAILURE': 'LOAD_IO_FAILURE',
+  'MISSING_ID': 'LOAD_MISSING_ID'
+} as const satisfies Record<string, LoadErrorCodeType>;
 
 export class LoadError extends BaseError {
   public readonly filePath: string;

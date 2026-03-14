@@ -5,7 +5,7 @@ An ontology-native type system for TypeScript projects with declarative JSON Sch
 `json-tology` is being built around one canonical graph that drives:
 
 - runtime validation and normalization
-- JSON-LD / RDF / N3 ontology export
+- JSON-LD ontology export
 - TBox reasoning over type structure
 - ABox reasoning over instance data
 - visual exploration of schema and data relationships
@@ -75,7 +75,7 @@ There is one semantic model and one execution backbone.
 
 ### Semantics
 
-The graph must be serializable to JSON-LD / RDF without losing runtime meaning.
+The graph must be serializable to JSON-LD without losing runtime meaning.
 
 That serialization supports:
 
@@ -83,6 +83,8 @@ That serialization supports:
 - ABox reasoning over validated or built instance data
 - graph visualization and inspection
 - semantic tooling that can navigate types, fields, references, constraints, and derived relationships
+
+Consumers that need Turtle, N-Quads, or other RDF serializations should translate from the emitted JSON-LD with downstream tooling.
 
 ## Public Surface
 

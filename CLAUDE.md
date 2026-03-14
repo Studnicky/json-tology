@@ -68,8 +68,8 @@ All error classes and ValidationErrors are defined in `src/errors/`. Every error
 **Shared utilities in `src/modules/data/DataTypes.ts`**
 Type guards (`isRecord`, `isPlainObject`), `deepEqual`, XSD type maps/resolvers, and `propertyIri` live here. Do not duplicate these — import from DataTypes.
 
-**Serializers extend `BaseSerializer`**
-`GraphOntologySerializer` and `GraphShaclSerializer` both extend `src/modules/ontology/BaseSerializer.ts`, which owns shared graph traversal helpers: `relationTargetId()`, `relationTargetRef()`, `propertyIri()`, `namedNodeId()`, `resolveTypeRef()`, `isSerializationCandidate()`. Do not duplicate relation-target or type-resolution logic in individual serializers.
+**Serializers are thin wrappers over projection + formatting**
+`GraphOntologySerializer` and `GraphShaclSerializer` delegate to `src/modules/rdf/OwlProjection.ts` and `src/modules/rdf/ShaclProjection.ts` respectively. Projections read `graph.allRelations()` and emit vocabulary-specific quads. `src/modules/rdf/JsonLdFormatter.ts` converts quads to JSON-LD nodes. Serializers only add post-processing normalization (e.g. `ensureArray`, `normalizeArrays`).
 
 ### Working Assumptions
 

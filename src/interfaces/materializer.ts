@@ -1,5 +1,7 @@
+import type { QuadInterface } from '../modules/rdf/Quad.js';
+
 export interface MaterializationResultInterface {
-  'abox': unknown[];
+  'abox': QuadInterface[];
   'errors': string[];
   'valid': boolean;
   'value': unknown;

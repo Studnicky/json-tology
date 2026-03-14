@@ -2,7 +2,9 @@
  * Value utility tests — clone, hash, diff, patch, cast, clean
  */
 
-import { describe, it } from 'node:test';
+import {
+  describe, it
+} from 'node:test';
 import assert from 'node:assert/strict';
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 import { Value } from '../../src/modules/data/Value.js';
@@ -12,161 +14,176 @@ import { Value } from '../../src/modules/data/Value.js';
 // ---------------------------------------------------------------------------
 
 describe('Value.create()', () => {
-  it('creates string default', () => {
+  it('creates primitive type defaults', () => {
     const registry = new SchemaRegistry();
-    registry.register({ $id: 'urn:test:string', type: 'string' } as const);
+
+    registry.register({
+      '$id': 'urn:test:string',
+      'type': 'string'
+    } as const);
+    registry.register({
+      '$id': 'urn:test:number',
+      'type': 'number'
+    } as const);
+    registry.register({
+      '$id': 'urn:test:integer',
+      'type': 'integer'
+    } as const);
+    registry.register({
+      '$id': 'urn:test:boolean',
+      'type': 'boolean'
+    } as const);
+    registry.register({
+      '$id': 'urn:test:null',
+      'type': 'null'
+    } as const);
+    registry.register({
+      '$id': 'urn:test:array',
+      'items': { 'type': 'string' },
+      'type': 'array'
+    } as const);
     const value = new Value(registry);
+
     assert.equal(value.create('urn:test:string'), '');
-  });
-
-  it('creates number default', () => {
-    const registry = new SchemaRegistry();
-    registry.register({ $id: 'urn:test:number', type: 'number' } as const);
-    const value = new Value(registry);
     assert.equal(value.create('urn:test:number'), 0);
-  });
-
-  it('creates integer default', () => {
-    const registry = new SchemaRegistry();
-    registry.register({ $id: 'urn:test:integer', type: 'integer' } as const);
-    const value = new Value(registry);
     assert.equal(value.create('urn:test:integer'), 0);
-  });
-
-  it('creates boolean default', () => {
-    const registry = new SchemaRegistry();
-    registry.register({ $id: 'urn:test:boolean', type: 'boolean' } as const);
-    const value = new Value(registry);
     assert.equal(value.create('urn:test:boolean'), false);
-  });
-
-  it('creates null default', () => {
-    const registry = new SchemaRegistry();
-    registry.register({ $id: 'urn:test:null', type: 'null' } as const);
-    const value = new Value(registry);
     assert.equal(value.create('urn:test:null'), null);
-  });
-
-  it('creates array default', () => {
-    const registry = new SchemaRegistry();
-    registry.register({ $id: 'urn:test:array', type: 'array', items: { type: 'string' } } as const);
-    const value = new Value(registry);
     assert.deepEqual(value.create('urn:test:array'), []);
   });
 
   it('creates object with nested defaults', () => {
     const registry = new SchemaRegistry();
+
     registry.register({
-      $id: 'urn:test:nested-inner',
-      type: 'object',
-      properties: {
-        flag: { type: 'boolean', default: true },
+      '$id': 'urn:test:nested-inner',
+      'properties': {
+        'flag': {
+          'default': true,
+          'type': 'boolean'
+        }
       },
+      'type': 'object'
     } as const);
     registry.register({
-      $id: 'urn:test:nested-object',
-      type: 'object',
-      properties: {
-        name: { type: 'string', default: 'anonymous' },
-        age: { type: 'number' },
-        nested: { $ref: 'urn:test:nested-inner' },
+      '$id': 'urn:test:nested-object',
+      'properties': {
+        'age': { 'type': 'number' },
+        'name': {
+          'default': 'anonymous',
+          'type': 'string'
+        },
+        'nested': { '$ref': 'urn:test:nested-inner' }
       },
-      required: ['age', 'nested'],
+      'required': [
+        'age',
+        'nested'
+      ],
+      'type': 'object'
     } as const);
     const value = new Value(registry);
     const result = value.create('urn:test:nested-object') as Record<string, unknown>;
-    assert.equal(result['name'], 'anonymous');
-    assert.equal(result['age'], 0);
-    assert.deepEqual(result['nested'], { flag: true });
+
+    assert.equal(result.name, 'anonymous');
+    assert.equal(result.age, 0);
+    assert.deepEqual(result.nested, { 'flag': true });
   });
 
-  it('honors explicit default values', () => {
+  it('honors explicit defaults, const, and enum values', () => {
     const registry = new SchemaRegistry();
-    registry.register({ $id: 'urn:test:string-default', type: 'string', default: 'hello' } as const);
-    registry.register({ $id: 'urn:test:number-default', type: 'number', default: 42 } as const);
+
+    registry.register({
+      '$id': 'urn:test:string-default',
+      'default': 'hello',
+      'type': 'string'
+    } as const);
+    registry.register({
+      '$id': 'urn:test:number-default',
+      'default': 42,
+      'type': 'number'
+    } as const);
+    registry.register({
+      '$id': 'urn:test:const',
+      'const': 'fixed'
+    } as const);
+    registry.register({
+      '$id': 'urn:test:enum',
+      'enum': [
+        'a',
+        'b',
+        'c'
+      ]
+    } as const);
     const value = new Value(registry);
+
     assert.equal(value.create('urn:test:string-default'), 'hello');
     assert.equal(value.create('urn:test:number-default'), 42);
-  });
-
-  it('honors const values', () => {
-    const registry = new SchemaRegistry();
-    registry.register({ $id: 'urn:test:const', const: 'fixed' } as const);
-    const value = new Value(registry);
     assert.equal(value.create('urn:test:const'), 'fixed');
-  });
-
-  it('honors enum (picks first)', () => {
-    const registry = new SchemaRegistry();
-    registry.register({ $id: 'urn:test:enum', enum: ['a', 'b', 'c'] } as const);
-    const value = new Value(registry);
     assert.equal(value.create('urn:test:enum'), 'a');
   });
 
-  it('creates required properties even without defaults', () => {
+  it('creates required properties even without defaults, returns null for no-type schemas', () => {
     const registry = new SchemaRegistry();
-    registry.register({
-      $id: 'urn:test:required-props',
-      type: 'object',
-      properties: {
-        id: { type: 'string' },
-        optional: { type: 'number' },
-      },
-      required: ['id'],
-    } as const);
-    const value = new Value(registry);
-    const result = value.create('urn:test:required-props') as Record<string, unknown>;
-    assert.equal(result['id'], '');
-    assert.equal('optional' in result, false);
-  });
 
-  it('returns null for schema with no type', () => {
-    const registry = new SchemaRegistry();
-    registry.register({ $id: 'urn:test:empty' } as const);
+    registry.register({
+      '$id': 'urn:test:required-props',
+      'properties': {
+        'id': { 'type': 'string' },
+        'optional': { 'type': 'number' }
+      },
+      'required': ['id'],
+      'type': 'object'
+    } as const);
+    registry.register({ '$id': 'urn:test:empty' } as const);
     const value = new Value(registry);
+
+    const result = value.create('urn:test:required-props') as Record<string, unknown>;
+
+    assert.equal(result.id, '');
+    assert.equal('optional' in result, false);
     assert.equal(value.create('urn:test:empty'), null);
   });
 });
 
 // ---------------------------------------------------------------------------
-// clone
+// clone + hash
 // ---------------------------------------------------------------------------
 
-describe('Value.clone()', () => {
-  it('produces a deep copy', () => {
-    const obj = { a: 1, b: { c: 2 } };
+describe('Value.clone() and Value.hash()', () => {
+  it('clone produces deep copies of objects and arrays', () => {
+    const obj = {
+      'a': 1,
+      'b': { 'c': 2 }
+    };
     const copy = Value.clone(obj);
+
     assert.deepEqual(copy, obj);
     assert.notEqual(copy, obj);
     assert.notEqual(copy.b, obj.b);
+
+    const arr = [
+      1,
+      [
+        2,
+        3
+      ]
+    ];
+    const arrCopy = Value.clone(arr);
+
+    assert.deepEqual(arrCopy, arr);
+    assert.notEqual(arrCopy, arr);
   });
 
-  it('clones arrays', () => {
-    const arr = [1, [2, 3]];
-    const copy = Value.clone(arr);
-    assert.deepEqual(copy, arr);
-    assert.notEqual(copy, arr);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// hash
-// ---------------------------------------------------------------------------
-
-describe('Value.hash()', () => {
-  it('returns a string', () => {
-    assert.equal(typeof Value.hash({ a: 1 }), 'string');
-  });
-
-  it('same value produces same hash', () => {
-    assert.equal(Value.hash({ a: 1, b: 2 }), Value.hash({ b: 2, a: 1 }));
-  });
-
-  it('different values produce different hashes', () => {
-    assert.notEqual(Value.hash({ a: 1 }), Value.hash({ a: 2 }));
-  });
-
-  it('handles primitives', () => {
+  it('hash is deterministic, order-independent, and type-sensitive', () => {
+    assert.equal(typeof Value.hash({ 'a': 1 }), 'string');
+    assert.equal(Value.hash({
+      'a': 1,
+      'b': 2
+    }), Value.hash({
+      'a': 1,
+      'b': 2
+    }));
+    assert.notEqual(Value.hash({ 'a': 1 }), Value.hash({ 'a': 2 }));
     assert.equal(Value.hash(42), Value.hash(42));
     assert.notEqual(Value.hash(42), Value.hash('42'));
   });
@@ -177,53 +194,74 @@ describe('Value.hash()', () => {
 // ---------------------------------------------------------------------------
 
 describe('Value.diff() → Changeset', () => {
-  it('isEmpty when values are equal', () => {
-    assert.equal(Value.diff({ a: 1 }, { a: 1 }).isEmpty, true);
-    assert.equal(Value.diff({ a: 1 }, { a: 1 }).length, 0);
+  it('detects set, delete, and add operations', () => {
+    // isEmpty
+    assert.equal(Value.diff({ 'a': 1 }, { 'a': 1 }).isEmpty, true);
+    assert.equal(Value.diff({ 'a': 1 }, { 'a': 1 }).length, 0);
+
+    // set op for changed value
+    const csSet = Value.diff({ 'a': 1 }, { 'a': 2 });
+
+    assert.equal(csSet.length, 1);
+    assert.equal(csSet.operations[0].op, 'set');
+    assert.equal(csSet.operations[0].path, '/a');
+    assert.equal((csSet.operations[0] as { 'value': unknown }).value, 2);
+
+    // delete op for removed key
+    const csDel = Value.diff({
+      'a': 1,
+      'b': 2
+    }, { 'a': 1 });
+
+    assert.equal(csDel.length, 1);
+    assert.equal(csDel.operations[0].op, 'delete');
+    assert.equal(csDel.operations[0].path, '/b');
+
+    // set op for added key
+    const csAdd = Value.diff({ 'a': 1 }, {
+      'a': 1,
+      'b': 2
+    });
+
+    assert.equal(csAdd.operations[0].op, 'set');
+    assert.equal(csAdd.operations[0].path, '/b');
+
+    // nested changes
+    const csNested = Value.diff({ 'user': { 'name': 'Alice' } }, { 'user': { 'name': 'Bob' } });
+
+    assert.equal(csNested.operations[0].path, '/user/name');
   });
 
-  it('set op for changed value', () => {
-    const cs = Value.diff({ a: 1 }, { a: 2 });
-    assert.equal(cs.length, 1);
-    assert.equal(cs.operations[0].op, 'set');
-    assert.equal(cs.operations[0].path, '/a');
-    assert.equal((cs.operations[0] as { value: unknown }).value, 2);
-  });
+  it('apply() transforms a into b without mutation, round-trips correctly', () => {
+    const a = {
+      'name': 'Alice',
+      'role': 'user'
+    };
+    const b = { 'name': 'Bob' };
 
-  it('delete op for removed key', () => {
-    const cs = Value.diff({ a: 1, b: 2 }, { a: 1 });
-    assert.equal(cs.length, 1);
-    assert.equal(cs.operations[0].op, 'delete');
-    assert.equal(cs.operations[0].path, '/b');
-  });
-
-  it('set op for added key', () => {
-    const cs = Value.diff({ a: 1 }, { a: 1, b: 2 });
-    assert.equal(cs.operations[0].op, 'set');
-    assert.equal(cs.operations[0].path, '/b');
-  });
-
-  it('nested changes', () => {
-    const cs = Value.diff({ user: { name: 'Alice' } }, { user: { name: 'Bob' } });
-    assert.equal(cs.operations[0].path, '/user/name');
-  });
-
-  it('.apply() transforms a into b', () => {
-    const a = { name: 'Alice', role: 'user' };
-    const b = { name: 'Bob' };
     assert.deepEqual(Value.diff(a, b).apply(a), b);
-  });
 
-  it('.apply() does not mutate original', () => {
-    const a = { x: 1 };
-    Value.diff(a, { x: 2 }).apply(a);
-    assert.equal(a.x, 1);
-  });
+    // does not mutate original
+    const orig = { 'x': 1 };
 
-  it('round-trip: diff(a,b).apply(a) equals b', () => {
-    const a = { x: 1, y: 2, z: { w: 3 } };
-    const b = { x: 10,     z: { w: 99, q: 4 } };
-    assert.deepEqual(Value.diff(a, b).apply(a), b);
+    Value.diff(orig, { 'x': 2 }).apply(orig);
+    assert.equal(orig.x, 1);
+
+    // round-trip with nested changes
+    const c = {
+      'x': 1,
+      'y': 2,
+      'z': { 'w': 3 }
+    };
+    const d = {
+      'x': 10,
+      'z': {
+        'q': 4,
+        'w': 99
+      }
+    };
+
+    assert.deepEqual(Value.diff(c, d).apply(c), d);
   });
 });
 
@@ -233,84 +271,74 @@ describe('Value.diff() → Changeset', () => {
 
 describe('Value.cast()', () => {
   const registry = new SchemaRegistry();
+
   registry.register({
-    $id: 'urn:test:number',
-    type: 'number',
+    '$id': 'urn:test:number',
+    'type': 'number'
   } as const);
   registry.register({
-    $id: 'urn:test:string',
-    type: 'string',
+    '$id': 'urn:test:string',
+    'type': 'string'
   } as const);
   registry.register({
-    $id: 'urn:test:boolean',
-    type: 'boolean',
+    '$id': 'urn:test:boolean',
+    'type': 'boolean'
   } as const);
   registry.register({
-    $id: 'urn:test:item',
-    type: 'object',
-    properties: {
-      name:  { type: 'string' },
-      count: { type: 'integer' },
-      flag:  { type: 'boolean' },
-      score: { type: 'number', default: 0 },
+    '$id': 'urn:test:item',
+    'properties': {
+      'count': { 'type': 'integer' },
+      'flag': { 'type': 'boolean' },
+      'name': { 'type': 'string' },
+      'score': {
+        'default': 0,
+        'type': 'number'
+      }
     },
+    'type': 'object'
   } as const);
   registry.register({
-    $id: 'urn:test:ref-metrics',
     '$defs': {
       'metrics': {
         'properties': {
-          'count': { 'default': 0, 'type': 'integer' }
+          'count': {
+            'default': 0,
+            'type': 'integer'
+          }
         },
         'type': 'object'
       }
     },
-    'properties': {
-      'metrics': { '$ref': '#/$defs/metrics' }
-    },
+    '$id': 'urn:test:ref-metrics',
+    'properties': { 'metrics': { '$ref': '#/$defs/metrics' } },
     'type': 'object'
   } as const);
   const value = new Value(registry);
 
-  it('coerces string to number', () => {
-    const r = value.cast('urn:test:number', '42');
-    assert.equal(r, 42);
-  });
+  it('coerces primitives and fills object defaults', () => {
+    assert.equal(value.cast('urn:test:number', '42'), 42);
+    assert.equal(value.cast('urn:test:string', 123), '123');
+    assert.equal(value.cast('urn:test:boolean', 'true'), true);
 
-  it('coerces number to string', () => {
-    const r = value.cast('urn:test:string', 123);
-    assert.equal(r, '123');
-  });
+    const r = value.cast('urn:test:item', { 'name': 'Widget' }) as Record<string, unknown>;
 
-  it('coerces truthy string to boolean', () => {
-    const r = value.cast('urn:test:boolean', 'true');
-    assert.equal(r, true);
-  });
+    assert.equal(r.score, 0);
 
-  it('fills defaults on object properties', () => {
-    const r = value.cast('urn:test:item', { name: 'Widget' }) as Record<string, unknown>;
-    assert.equal(r['score'], 0);
-  });
+    const r2 = value.cast('urn:test:item', {
+      'count': '5',
+      'name': 'Widget'
+    }) as Record<string, unknown>;
 
-  it('coerces nested property types', () => {
-    const r = value.cast('urn:test:item', { name: 'Widget', count: '5' }) as Record<string, unknown>;
-    assert.equal(r['count'], 5);
-  });
+    assert.equal(r2.count, 5);
 
-  it('does not throw on null input', () => {
-    const r = value.cast('urn:test:item', null);
-    assert.ok(typeof r === 'object');
+    assert.ok(typeof value.cast('urn:test:item', null) === 'object');
   });
 
   it('uses graph-engine ref resolution for nested defaults and coercion', () => {
-    const r = value.cast('urn:test:ref-metrics', {
-      'metrics': { 'count': '5' }
-    }) as Record<string, Record<string, unknown>>;
+    const r = value.cast('urn:test:ref-metrics', { 'metrics': { 'count': '5' } }) as Record<string, Record<string, unknown>>;
 
-    assert.equal(r['metrics']['count'], 5);
-    assert.deepEqual(value.cast('urn:test:ref-metrics', {}) as Record<string, unknown>, {
-      'metrics': { 'count': 0 }
-    });
+    assert.equal(r.metrics.count, 5);
+    assert.deepEqual(value.cast('urn:test:ref-metrics', {}) as Record<string, unknown>, { 'metrics': { 'count': 0 } });
   });
 });
 
@@ -320,47 +348,50 @@ describe('Value.cast()', () => {
 
 describe('Value.clean()', () => {
   const registry = new SchemaRegistry();
+
   registry.register({
-    $id: 'urn:test:address',
-    type: 'object',
-    properties: {
-      street: { type: 'string' },
-    },
+    '$id': 'urn:test:address',
+    'properties': { 'street': { 'type': 'string' } },
+    'type': 'object'
   } as const);
   registry.register({
-    $id: 'urn:test:user',
-    type: 'object',
-    properties: {
-      name:  { type: 'string' },
-      email: { type: 'string' },
-      address: { $ref: 'urn:test:address' },
+    '$id': 'urn:test:user',
+    'properties': {
+      'address': { '$ref': 'urn:test:address' },
+      'email': { 'type': 'string' },
+      'name': { 'type': 'string' }
     },
+    'type': 'object'
   } as const);
   const value = new Value(registry);
 
-  it('removes undeclared properties', () => {
-    const r = value.clean('urn:test:user', { name: 'Alice', email: 'a@b.com', secret: 'x' });
-    assert.ok(!('secret' in (r as object)));
-    assert.equal((r as Record<string, unknown>)['name'], 'Alice');
-  });
-
-  it('preserves declared properties', () => {
-    const r = value.clean('urn:test:user', { name: 'Alice', email: 'a@b.com' }) as Record<string, unknown>;
-    assert.equal(r['name'], 'Alice');
-    assert.equal(r['email'], 'a@b.com');
-  });
-
-  it('recursively cleans nested objects', () => {
+  it('removes undeclared properties, preserves declared, recurses, and does not mutate', () => {
     const r = value.clean('urn:test:user', {
-      name: 'Alice',
-      address: { street: '1 Main St', hack: 'x' },
-    }) as Record<string, Record<string, unknown>>;
-    assert.ok(!('hack' in r['address']));
-    assert.equal(r['address']['street'], '1 Main St');
-  });
+      'email': 'a@b.com',
+      'name': 'Alice',
+      'secret': 'x'
+    }) as Record<string, unknown>;
 
-  it('does not mutate original', () => {
-    const input = { name: 'Alice', secret: 'x' };
+    assert.ok(!('secret' in r));
+    assert.equal(r.name, 'Alice');
+    assert.equal(r.email, 'a@b.com');
+
+    const r2 = value.clean('urn:test:user', {
+      'address': {
+        'hack': 'x',
+        'street': '1 Main St'
+      },
+      'name': 'Alice'
+    }) as Record<string, Record<string, unknown>>;
+
+    assert.ok(!('hack' in r2.address));
+    assert.equal(r2.address.street, '1 Main St');
+
+    const input = {
+      'name': 'Alice',
+      'secret': 'x'
+    };
+
     value.clean('urn:test:user', input);
     assert.ok('secret' in input);
   });

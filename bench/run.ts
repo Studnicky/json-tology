@@ -12,6 +12,7 @@ import {
 import { runValidateBench } from './validate.bench.js';
 import { runValueParseBench } from './valueParse.bench.js';
 import { runValueOpsBench } from './valueOps.bench.js';
+import { runCompiledBench } from './compiled.bench.js';
 
 console.log('');
 console.log('json-tology vs TypeBox vs AJV vs Zod — performance benchmarks');
@@ -37,6 +38,12 @@ const opsResults = runValueOpsBench();
 printResults(opsResults);
 allResults.push(...opsResults);
 
+// --- Compiled vs Interpreted ---
+const compiledResults = runCompiledBench();
+
+printResults(compiledResults);
+allResults.push(...compiledResults);
+
 // --- Summary ---
 console.log('═'.repeat(90));
 console.log('SUMMARY — json-tology vs each competitor');
@@ -52,10 +59,17 @@ for (const r of allResults) {
   testGroups.set(r.name, group);
 }
 
-const scorecard: Record<string, { wins: number; losses: number; ties: number }> = {};
+const scorecard: Record<string, { 'losses': number;
+  'ties': number
+  'wins': number; }> = {};
 
-for (const [testName, group] of testGroups) {
-  const ours = group.find((r) => r.library === 'json-tology');
+for (const [
+  testName,
+  group
+] of testGroups) {
+  const ours = group.find((r) => {
+    return r.library === 'json-tology';
+  });
 
   if (!ours) {
     continue;
@@ -67,7 +81,11 @@ for (const [testName, group] of testGroups) {
     }
 
     if (!scorecard[other.library]) {
-      scorecard[other.library] = { losses: 0, ties: 0, wins: 0 };
+      scorecard[other.library] = {
+        'losses': 0,
+        'ties': 0,
+        'wins': 0
+      };
     }
 
     const ratio = ours.opsPerSec / other.opsPerSec;
@@ -90,7 +108,10 @@ for (const [testName, group] of testGroups) {
 }
 
 console.log('');
-for (const [lib, score] of Object.entries(scorecard)) {
+for (const [
+  lib,
+  score
+] of Object.entries(scorecard)) {
   console.log(`  vs ${lib}: ${score.wins}W ${score.ties}T ${score.losses}L`);
 }
 console.log('');

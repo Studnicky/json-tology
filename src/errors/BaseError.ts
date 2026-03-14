@@ -16,10 +16,24 @@ export interface ErrorJsonInterface {
 }
 
 export class BaseError extends Error {
-  public override name: string = 'BaseError';
-  public readonly code: string;
-  public readonly retryable: boolean;
+  /**
+   * Format an array of validation errors into path-prefixed strings.
+   */
+  static formatErrors(errors: readonly ValidationErrorType[]): string[] {
+    return errors.map(BaseError.formatPath);
+  }
+  /**
+   * Format a validation error as "path: message", using "root" when the path is empty.
+   */
+  static formatPath(error: ValidationErrorType): string {
+    return `${error.path === '' ? 'root' : error.path}: ${error.message}`;
+  }
   public override readonly cause?: Error | undefined;
+  public readonly code: string;
+
+  public override name = 'BaseError';
+
+  public readonly retryable: boolean;
 
   public constructor(code: string, message: string, retryable = false, options?: { 'cause'?: Error }) {
     super(message, options);
@@ -27,29 +41,6 @@ export class BaseError extends Error {
     this.retryable = retryable;
     this.cause = options?.cause;
     Object.setPrototypeOf(this, new.target.prototype);
-  }
-
-  /**
-   * Serialize to a plain JSON-safe object, including the cause chain.
-   */
-  public toJson(): ErrorJsonInterface {
-    const json: ErrorJsonInterface = {
-      'code': this.code,
-      'message': this.message,
-      'retryable': this.retryable
-    };
-
-    if (this.cause instanceof BaseError) {
-      json.cause = this.cause.toJson();
-    } else if (this.cause instanceof Error) {
-      json.cause = {
-        'code': 'UNKNOWN',
-        'message': this.cause.message,
-        'retryable': false
-      };
-    }
-
-    return json;
   }
 
   /**
@@ -82,16 +73,25 @@ export class BaseError extends Error {
   }
 
   /**
-   * Format a validation error as "path: message", using "root" when the path is empty.
+   * Serialize to a plain JSON-safe object, including the cause chain.
    */
-  static formatPath(error: ValidationErrorType): string {
-    return `${error.path === '' ? 'root' : error.path}: ${error.message}`;
-  }
+  public toJson(): ErrorJsonInterface {
+    const json: ErrorJsonInterface = {
+      'code': this.code,
+      'message': this.message,
+      'retryable': this.retryable
+    };
 
-  /**
-   * Format an array of validation errors into path-prefixed strings.
-   */
-  static formatErrors(errors: readonly ValidationErrorType[]): string[] {
-    return errors.map(BaseError.formatPath);
+    if (this.cause instanceof BaseError) {
+      json.cause = this.cause.toJson();
+    } else if (this.cause instanceof Error) {
+      json.cause = {
+        'code': 'UNKNOWN',
+        'message': this.cause.message,
+        'retryable': false
+      };
+    }
+
+    return json;
   }
 }

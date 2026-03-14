@@ -15,7 +15,6 @@ import { Hash } from '../hash/Hash.js';
 import { Changeset } from './Changeset.js';
 
 export class Value {
-
   // ---------------------------------------------------------------------------
   // Static — pure value operations (no schema/registry)
   // ---------------------------------------------------------------------------
@@ -40,7 +39,7 @@ export class Value {
     let current: unknown = result;
 
     for (let i = 0; i < segments.length - 1; i++) {
-      const segment = segments[i] as string;
+      const segment = segments[i];
       const child = (current as Record<string, unknown>)[segment];
       let next: unknown;
 

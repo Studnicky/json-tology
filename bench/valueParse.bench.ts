@@ -27,7 +27,7 @@ import {
 export function runValueParseBench(): BenchResult[] {
   const results: BenchResult[] = [];
 
-  const registry = new SchemaRegistry({ coerce: true });
+  const registry = new SchemaRegistry({ 'coerce': true });
 
   registry.register(SimpleSchema);
   registry.register(DefaultsSchema);
