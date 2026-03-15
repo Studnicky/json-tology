@@ -7,8 +7,6 @@ import type {
 type JsonSchemaType = boolean | Record<string, unknown>;
 
 export interface SchemaGraphInterface {
-  readonly rootSchema: JsonSchemaType;
-  readonly rootNode: SchemaGraphNodeInterface;
   allRelations(): SchemaGraphRelationInterface[];
   child(node: SchemaGraphNodeInterface, key: string): SchemaGraphNodeInterface | undefined;
   entries(node: SchemaGraphNodeInterface, key: string): Array<[string, SchemaGraphNodeInterface]>;
@@ -21,6 +19,8 @@ export interface SchemaGraphInterface {
   resolveFragment(fragment: string): SchemaGraphNodeInterface;
   resolvePointer(pointer: string): SchemaGraphNodeInterface;
   resolveRefId(ref: string): string;
+  readonly 'rootNode': SchemaGraphNodeInterface;
+  readonly 'rootSchema': JsonSchemaType;
   semantics(node: SchemaGraphNodeInterface): SchemaGraphSemanticsInterface;
   validateStructure(): StructureWarningInterface[];
 }

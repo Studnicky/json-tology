@@ -4,9 +4,9 @@ import type { SchemaGraphInterface } from './schema-graph-impl.js';
 import type { ValidationErrors } from '../errors/ValidationErrors.js';
 
 export interface SchemaRegistryInterface {
-  readonly coerce: boolean;
   cast(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown): unknown;
   clean(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown): unknown;
+  readonly 'coerce': boolean;
   convert(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown): unknown;
   create(schemaId: string): unknown;
   engine(schema: Record<string, unknown>): GraphEngineInterface;

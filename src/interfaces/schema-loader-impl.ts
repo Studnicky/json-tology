@@ -1,7 +1,6 @@
 import type { SchemaLoadResultType } from '../types/loader.js';
 
 export interface SchemaLoaderInterface {
-  loadSchema(filePath: string): null | Record<string, unknown>;
   loadDirectory(
     dirPath: string,
     options?: {
@@ -9,4 +8,5 @@ export interface SchemaLoaderInterface {
       'stopOnError'?: boolean;
     }
   ): [schemas: Array<Record<string, unknown>>, result: SchemaLoadResultType];
+  loadSchema(filePath: string): null | Record<string, unknown>;
 }

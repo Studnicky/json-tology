@@ -14,27 +14,39 @@ import { JsonTology } from '../dist/index.js';
 // ---------------------------------------------------------------------------
 
 const ConfigSchema = {
-  $id: 'https://example.com/Config',
-  type: 'object',
-  properties: {
-    theme:    { type: 'string',  default: 'light' },
-    pageSize: { type: 'integer', default: 25 },
-    locale:   { type: 'string',  default: 'en' },
-    debug:    { type: 'boolean', default: false },
+  '$id': 'https://example.com/Config',
+  'properties': {
+    'debug': {
+      'default': false,
+      'type': 'boolean'
+    },
+    'locale': {
+      'default': 'en',
+      'type': 'string'
+    },
+    'pageSize': {
+      'default': 25,
+      'type': 'integer'
+    },
+    'theme': {
+      'default': 'light',
+      'type': 'string'
+    }
   },
-  required: [],
+  'required': [],
+  'type': 'object'
 };
 
 const jt = JsonTology.create({
-  baseIRI: 'https://example.com',
-  schemas: [ConfigSchema],
+  'baseIRI': 'https://example.com',
+  'schemas': [ConfigSchema]
 });
 
 // ---------------------------------------------------------------------------
 // 1. Parse incoming data — missing fields get defaults
 // ---------------------------------------------------------------------------
 
-const incoming = { theme: 'dark' };
+const incoming = { 'theme': 'dark' };
 const parsed = jt.parse(ConfigSchema, incoming);
 
 console.log('--- Parse with defaults ---');
@@ -48,7 +60,7 @@ console.log();
 
 console.log('--- Parse invalid data ---');
 try {
-  jt.parse(ConfigSchema, { pageSize: 'many' });
+  jt.parse(ConfigSchema, { 'pageSize': 'many' });
 } catch (err) {
   console.log('Caught error:', err.message);
 }
@@ -68,8 +80,14 @@ console.log();
 // 4. Materialize from partial — merge provided values with defaults
 // ---------------------------------------------------------------------------
 
-const fromPartial = jt.materialize(ConfigSchema, { locale: 'fr', debug: true });
+const fromPartial = jt.materialize(ConfigSchema, {
+  'debug': true,
+  'locale': 'fr'
+});
 
 console.log('--- Materialize from partial ---');
-console.log('Input:', JSON.stringify({ locale: 'fr', debug: true }));
+console.log('Input:', JSON.stringify({
+  'debug': true,
+  'locale': 'fr'
+}));
 console.log('Result:', JSON.stringify(fromPartial, null, 2));

@@ -8,7 +8,8 @@ export interface MaterializerInterface {
   execute(
     schema: Record<string, unknown> & { '$id': string },
     data?: unknown,
-    options?: { 'baseIRI'?: string; 'synthesizeDefaults'?: boolean }
+    options?: { 'baseIRI'?: string;
+      'synthesizeDefaults'?: boolean }
   ): MaterializationResultInterface;
   materialize<TSchema extends JSONSchemaType & { readonly '$id': string }>(
     schema: TSchema,

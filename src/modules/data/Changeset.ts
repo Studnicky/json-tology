@@ -6,7 +6,9 @@
 
 import type { ChangesetInterface } from '../../interfaces/changeset.js';
 import type { DiffOpType } from '../../types/diff.js';
-import { applyOp, clone } from './operations.js';
+import {
+  applyOp, clone
+} from './operations.js';
 
 
 /**

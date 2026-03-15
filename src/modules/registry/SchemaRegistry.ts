@@ -365,7 +365,10 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
 
     // Validate structure BEFORE committing to maps — failed registration must be a no-op
-    const entry: SchemaRegistryEntryInterface = { hash, schema };
+    const entry: SchemaRegistryEntryInterface = {
+      hash,
+      schema
+    };
     const graph = this.graphOf(entry);
     const warnings = graph.validateStructure();
 

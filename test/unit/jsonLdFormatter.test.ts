@@ -2,7 +2,9 @@
  * JsonLdFormatter tests — quad-to-JSON-LD conversion
  */
 
-import { describe, it } from 'node:test';
+import {
+  describe, it
+} from 'node:test';
 import assert from 'node:assert/strict';
 import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
 import type { QuadInterface } from '../../src/interfaces/quad.js';
@@ -11,20 +13,44 @@ void describe('quadsToJsonLd()', () => {
   void it('groups quads by subject into @id nodes', () => {
     const quads: QuadInterface[] = [
       {
-        subject: 'ex:Person',
-        predicate: 'rdfs:label',
-        object: { termType: 'Literal', value: 'Person', language: '', datatype: { termType: 'NamedNode', value: 'xsd:string' } },
+        'object': {
+          'datatype': {
+            'termType': 'NamedNode',
+            'value': 'xsd:string'
+          },
+          'language': '',
+          'termType': 'Literal',
+          'value': 'Person'
+        },
+        'predicate': 'rdfs:label',
+        'subject': 'ex:Person'
       },
       {
-        subject: 'ex:Person',
-        predicate: 'rdfs:comment',
-        object: { termType: 'Literal', value: 'A person', language: '', datatype: { termType: 'NamedNode', value: 'xsd:string' } },
+        'object': {
+          'datatype': {
+            'termType': 'NamedNode',
+            'value': 'xsd:string'
+          },
+          'language': '',
+          'termType': 'Literal',
+          'value': 'A person'
+        },
+        'predicate': 'rdfs:comment',
+        'subject': 'ex:Person'
       },
       {
-        subject: 'ex:Animal',
-        predicate: 'rdfs:label',
-        object: { termType: 'Literal', value: 'Animal', language: '', datatype: { termType: 'NamedNode', value: 'xsd:string' } },
-      },
+        'object': {
+          'datatype': {
+            'termType': 'NamedNode',
+            'value': 'xsd:string'
+          },
+          'language': '',
+          'termType': 'Literal',
+          'value': 'Animal'
+        },
+        'predicate': 'rdfs:label',
+        'subject': 'ex:Animal'
+      }
     ];
     const result = quadsToJsonLd(quads);
 
@@ -37,13 +63,14 @@ void describe('quadsToJsonLd()', () => {
   });
 
   void it('converts rdf:type to @type', () => {
-    const quads: QuadInterface[] = [
-      {
-        subject: 'ex:Person',
-        predicate: 'rdf:type',
-        object: { termType: 'NamedNode', value: 'owl:Class' },
+    const quads: QuadInterface[] = [{
+      'object': {
+        'termType': 'NamedNode',
+        'value': 'owl:Class'
       },
-    ];
+      'predicate': 'rdf:type',
+      'subject': 'ex:Person'
+    }];
     const result = quadsToJsonLd(quads);
 
     assert.equal(result[0]['@type'], 'owl:Class');
@@ -53,53 +80,92 @@ void describe('quadsToJsonLd()', () => {
   void it('multiple values for same predicate become arrays', () => {
     const quads: QuadInterface[] = [
       {
-        subject: 'ex:Person',
-        predicate: 'rdfs:label',
-        object: { termType: 'Literal', value: 'Person', language: '', datatype: { termType: 'NamedNode', value: 'xsd:string' } },
+        'object': {
+          'datatype': {
+            'termType': 'NamedNode',
+            'value': 'xsd:string'
+          },
+          'language': '',
+          'termType': 'Literal',
+          'value': 'Person'
+        },
+        'predicate': 'rdfs:label',
+        'subject': 'ex:Person'
       },
       {
-        subject: 'ex:Person',
-        predicate: 'rdfs:label',
-        object: { termType: 'Literal', value: 'Human', language: '', datatype: { termType: 'NamedNode', value: 'xsd:string' } },
-      },
+        'object': {
+          'datatype': {
+            'termType': 'NamedNode',
+            'value': 'xsd:string'
+          },
+          'language': '',
+          'termType': 'Literal',
+          'value': 'Human'
+        },
+        'predicate': 'rdfs:label',
+        'subject': 'ex:Person'
+      }
     ];
     const result = quadsToJsonLd(quads);
 
     assert.ok(Array.isArray(result[0]['rdfs:label']));
-    assert.deepEqual(result[0]['rdfs:label'], ['Person', 'Human']);
+    assert.deepEqual(result[0]['rdfs:label'], [
+      'Person',
+      'Human'
+    ]);
   });
 
   void it('multiple rdf:type values become an array under @type', () => {
     const quads: QuadInterface[] = [
       {
-        subject: 'ex:Person',
-        predicate: 'rdf:type',
-        object: { termType: 'NamedNode', value: 'owl:Class' },
+        'object': {
+          'termType': 'NamedNode',
+          'value': 'owl:Class'
+        },
+        'predicate': 'rdf:type',
+        'subject': 'ex:Person'
       },
       {
-        subject: 'ex:Person',
-        predicate: 'rdf:type',
-        object: { termType: 'NamedNode', value: 'rdfs:Resource' },
-      },
+        'object': {
+          'termType': 'NamedNode',
+          'value': 'rdfs:Resource'
+        },
+        'predicate': 'rdf:type',
+        'subject': 'ex:Person'
+      }
     ];
     const result = quadsToJsonLd(quads);
 
     assert.ok(Array.isArray(result[0]['@type']));
-    assert.deepEqual(result[0]['@type'], ['owl:Class', 'rdfs:Resource']);
+    assert.deepEqual(result[0]['@type'], [
+      'owl:Class',
+      'rdfs:Resource'
+    ]);
   });
 
   void it('inlines singly-referenced blank nodes and removes @id from inlined', () => {
     const quads: QuadInterface[] = [
       {
-        subject: 'ex:Person',
-        predicate: 'ex:address',
-        object: { termType: 'BlankNode', value: '_:b0' },
+        'object': {
+          'termType': 'BlankNode',
+          'value': '_:b0'
+        },
+        'predicate': 'ex:address',
+        'subject': 'ex:Person'
       },
       {
-        subject: '_:b0',
-        predicate: 'ex:city',
-        object: { termType: 'Literal', value: 'Portland', language: '', datatype: { termType: 'NamedNode', value: 'xsd:string' } },
-      },
+        'object': {
+          'datatype': {
+            'termType': 'NamedNode',
+            'value': 'xsd:string'
+          },
+          'language': '',
+          'termType': 'Literal',
+          'value': 'Portland'
+        },
+        'predicate': 'ex:city',
+        'subject': '_:b0'
+      }
     ];
     const result = quadsToJsonLd(quads);
 
@@ -118,20 +184,34 @@ void describe('quadsToJsonLd()', () => {
   void it('does NOT inline multiply-referenced blank nodes', () => {
     const quads: QuadInterface[] = [
       {
-        subject: 'ex:Person',
-        predicate: 'ex:address',
-        object: { termType: 'BlankNode', value: '_:b0' },
+        'object': {
+          'termType': 'BlankNode',
+          'value': '_:b0'
+        },
+        'predicate': 'ex:address',
+        'subject': 'ex:Person'
       },
       {
-        subject: 'ex:Company',
-        predicate: 'ex:address',
-        object: { termType: 'BlankNode', value: '_:b0' },
+        'object': {
+          'termType': 'BlankNode',
+          'value': '_:b0'
+        },
+        'predicate': 'ex:address',
+        'subject': 'ex:Company'
       },
       {
-        subject: '_:b0',
-        predicate: 'ex:city',
-        object: { termType: 'Literal', value: 'Portland', language: '', datatype: { termType: 'NamedNode', value: 'xsd:string' } },
-      },
+        'object': {
+          'datatype': {
+            'termType': 'NamedNode',
+            'value': 'xsd:string'
+          },
+          'language': '',
+          'termType': 'Literal',
+          'value': 'Portland'
+        },
+        'predicate': 'ex:city',
+        'subject': '_:b0'
+      }
     ];
     const result = quadsToJsonLd(quads);
 
@@ -149,46 +229,74 @@ void describe('quadsToJsonLd()', () => {
   });
 
   void it('converts List terms to @list arrays', () => {
-    const quads: QuadInterface[] = [
-      {
-        subject: 'ex:Shape',
-        predicate: 'sh:or',
-        object: {
-          termType: 'List',
-          items: [
-            { termType: 'NamedNode', value: 'ex:Circle' },
-            { termType: 'NamedNode', value: 'ex:Square' },
-          ],
-        },
+    const quads: QuadInterface[] = [{
+      'object': {
+        'items': [
+          {
+            'termType': 'NamedNode',
+            'value': 'ex:Circle'
+          },
+          {
+            'termType': 'NamedNode',
+            'value': 'ex:Square'
+          }
+        ],
+        'termType': 'List'
       },
-    ];
+      'predicate': 'sh:or',
+      'subject': 'ex:Shape'
+    }];
     const result = quadsToJsonLd(quads);
     const orValue = result[0]['sh:or'] as { '@list': unknown[] };
 
     assert.ok('@list' in orValue);
     assert.deepEqual(orValue['@list'], [
       { '@id': 'ex:Circle' },
-      { '@id': 'ex:Square' },
+      { '@id': 'ex:Square' }
     ]);
   });
 
   void it('preserves literal values as-is', () => {
     const quads: QuadInterface[] = [
       {
-        subject: 'ex:Item',
-        predicate: 'ex:count',
-        object: { termType: 'Literal', value: 42, language: '', datatype: { termType: 'NamedNode', value: 'xsd:integer' } },
+        'object': {
+          'datatype': {
+            'termType': 'NamedNode',
+            'value': 'xsd:integer'
+          },
+          'language': '',
+          'termType': 'Literal',
+          'value': 42
+        },
+        'predicate': 'ex:count',
+        'subject': 'ex:Item'
       },
       {
-        subject: 'ex:Item',
-        predicate: 'ex:active',
-        object: { termType: 'Literal', value: true, language: '', datatype: { termType: 'NamedNode', value: 'xsd:boolean' } },
+        'object': {
+          'datatype': {
+            'termType': 'NamedNode',
+            'value': 'xsd:boolean'
+          },
+          'language': '',
+          'termType': 'Literal',
+          'value': true
+        },
+        'predicate': 'ex:active',
+        'subject': 'ex:Item'
       },
       {
-        subject: 'ex:Item',
-        predicate: 'ex:name',
-        object: { termType: 'Literal', value: 'Widget', language: '', datatype: { termType: 'NamedNode', value: 'xsd:string' } },
-      },
+        'object': {
+          'datatype': {
+            'termType': 'NamedNode',
+            'value': 'xsd:string'
+          },
+          'language': '',
+          'termType': 'Literal',
+          'value': 'Widget'
+        },
+        'predicate': 'ex:name',
+        'subject': 'ex:Item'
+      }
     ];
     const result = quadsToJsonLd(quads);
 
@@ -198,13 +306,14 @@ void describe('quadsToJsonLd()', () => {
   });
 
   void it('handles NamedNode objects as @id references', () => {
-    const quads: QuadInterface[] = [
-      {
-        subject: 'ex:Person',
-        predicate: 'rdfs:subClassOf',
-        object: { termType: 'NamedNode', value: 'ex:Agent' },
+    const quads: QuadInterface[] = [{
+      'object': {
+        'termType': 'NamedNode',
+        'value': 'ex:Agent'
       },
-    ];
+      'predicate': 'rdfs:subClassOf',
+      'subject': 'ex:Person'
+    }];
     const result = quadsToJsonLd(quads);
     const ref = result[0]['rdfs:subClassOf'] as Record<string, unknown>;
 

@@ -6,7 +6,9 @@
  */
 
 import type { SchemaGraphSemanticsInterface } from '../../interfaces/schema-graph.js';
-import { BASE_TYPE_MAP, NUMBER_FORMAT_MAP, STRING_FORMAT_MAP } from '../../constants/xsd-maps.js';
+import {
+  BASE_TYPE_MAP, NUMBER_FORMAT_MAP, STRING_FORMAT_MAP
+} from '../../constants/xsd-maps.js';
 
 // ---------------------------------------------------------------------------
 // Type guards

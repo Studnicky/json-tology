@@ -15,14 +15,23 @@ import { JsonTology } from '../dist/index.js';
 // ---------------------------------------------------------------------------
 
 const UserSchema = {
-  $id: 'https://example.com/User',
-  type: 'object',
-  properties: {
-    name:  { type: 'string' },
-    email: { type: 'string', format: 'email' },
-    age:   { type: 'integer', minimum: 0 },
+  '$id': 'https://example.com/User',
+  'properties': {
+    'age': {
+      'minimum': 0,
+      'type': 'integer'
+    },
+    'email': {
+      'format': 'email',
+      'type': 'string'
+    },
+    'name': { 'type': 'string' }
   },
-  required: ['name', 'email'],
+  'required': [
+    'name',
+    'email'
+  ],
+  'type': 'object'
 };
 
 // ---------------------------------------------------------------------------
@@ -30,15 +39,19 @@ const UserSchema = {
 // ---------------------------------------------------------------------------
 
 const jt = JsonTology.create({
-  baseIRI: 'https://example.com',
-  schemas: [UserSchema],
+  'baseIRI': 'https://example.com',
+  'schemas': [UserSchema]
 });
 
 // ---------------------------------------------------------------------------
 // 1. Valid data
 // ---------------------------------------------------------------------------
 
-const validUser = { name: 'Alice', email: 'alice@example.com', age: 30 };
+const validUser = {
+  'age': 30,
+  'email': 'alice@example.com',
+  'name': 'Alice'
+};
 const validErrors = jt.validate(UserSchema.$id, validUser);
 
 console.log('--- Valid data ---');
@@ -50,7 +63,7 @@ console.log();
 // 2. Invalid data — missing required field, wrong type, bad age
 // ---------------------------------------------------------------------------
 
-const invalidUser = { age: -5 };
+const invalidUser = { 'age': -5 };
 const invalidErrors = jt.validate(UserSchema.$id, invalidUser);
 
 console.log('--- Invalid data (missing required, negative age) ---');
@@ -65,7 +78,11 @@ console.log();
 // 3. Wrong type
 // ---------------------------------------------------------------------------
 
-const wrongType = { name: 42, email: 'not-an-email', age: 'old' };
+const wrongType = {
+  'age': 'old',
+  'email': 'not-an-email',
+  'name': 42
+};
 const wrongTypeErrors = jt.validate(UserSchema.$id, wrongType);
 
 console.log('--- Wrong types ---');

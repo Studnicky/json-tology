@@ -14,25 +14,34 @@ import { JsonTology } from '../dist/index.js';
 // ---------------------------------------------------------------------------
 
 const EventSchema = {
-  $id: 'https://example.com/Event',
-  title: 'Event',
-  type: 'object',
-  $defs: {
-    Location: {
-      type: 'object',
-      properties: {
-        city:    { type: 'string' },
-        country: { type: 'string' },
+  '$defs': {
+    'Location': {
+      'properties': {
+        'city': { 'type': 'string' },
+        'country': { 'type': 'string' }
       },
-      required: ['city', 'country'],
+      'required': [
+        'city',
+        'country'
+      ],
+      'type': 'object'
+    }
+  },
+  '$id': 'https://example.com/Event',
+  'properties': {
+    'date': {
+      'format': 'date-time',
+      'type': 'string'
     },
+    'location': { '$ref': '#/$defs/Location' },
+    'title': { 'type': 'string' }
   },
-  properties: {
-    title: { type: 'string' },
-    date:  { type: 'string', format: 'date-time' },
-    location: { $ref: '#/$defs/Location' },
-  },
-  required: ['title', 'date'],
+  'required': [
+    'title',
+    'date'
+  ],
+  'title': 'Event',
+  'type': 'object'
 };
 
 // ---------------------------------------------------------------------------
@@ -40,12 +49,12 @@ const EventSchema = {
 // ---------------------------------------------------------------------------
 
 const event = {
-  title: 'JSON-LD Workshop',
-  date: '2026-06-15T09:00:00Z',
-  location: {
-    city: 'Berlin',
-    country: 'DE',
+  'date': '2026-06-15T09:00:00Z',
+  'location': {
+    'city': 'Berlin',
+    'country': 'DE'
   },
+  'title': 'JSON-LD Workshop'
 };
 
 // ---------------------------------------------------------------------------
@@ -53,8 +62,8 @@ const event = {
 // ---------------------------------------------------------------------------
 
 const jt = JsonTology.create({
-  baseIRI: 'https://example.com',
-  schemas: [EventSchema],
+  'baseIRI': 'https://example.com',
+  'schemas': [EventSchema]
 });
 
 const abox = jt.abox(EventSchema, event);
@@ -74,14 +83,21 @@ for (const node of nodes) {
   const id = node['@id'];
   const type = node['@type'];
   const typeId = typeof type === 'object' && type !== null ? type['@id'] : type;
+
   console.log(`  Node: ${id}`);
   console.log(`  Type: ${typeId}`);
 
-  for (const [key, value] of Object.entries(node)) {
-    if (key === '@id' || key === '@type') continue;
+  for (const [
+    key,
+    value
+  ] of Object.entries(node)) {
+    if (key === '@id' || key === '@type') {
+      continue;
+    }
     const display = typeof value === 'object' && value !== null
       ? JSON.stringify(value)
       : value;
+
     console.log(`    ${key}: ${display}`);
   }
   console.log();

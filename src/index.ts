@@ -27,9 +27,14 @@ export { MaterializationError } from './errors/MaterializationError.js';
 export { ParseError } from './errors/ParseError.js';
 export { SchemaError } from './errors/SchemaError.js';
 export { ValidationErrors } from './errors/ValidationErrors.js';
-export type { ErrorJsonInterface } from './interfaces/error.js';
-export type { GraphErrorCodeType, LoadErrorCodeType, SchemaErrorCodeType } from './types/error-codes.js';
+export type {
+  DiscriminatedUnionSchemaInterface,
+  IntersectionSchemaInterface,
+  OmitSchemaInterface,
+  PickSchemaInterface
+} from './interfaces/compose.js';
 export type { JsonTologyOptionsInterface } from './interfaces/config.js';
+export type { ErrorJsonInterface } from './interfaces/error.js';
 export type {
   GraphEngineOptionsInterface, GraphExecutionResultInterface
 } from './interfaces/graph-engine.js';
@@ -61,12 +66,6 @@ export type {
   BrandedType, BrandOutputType
 } from './types/brand.js';
 export type {
-  DiscriminatedUnionSchemaInterface,
-  IntersectionSchemaInterface,
-  OmitSchemaInterface,
-  PickSchemaInterface
-} from './interfaces/compose.js';
-export type {
   ExtendSchemaType,
   ExtractRequiredType,
   PartialSchemaType,
@@ -75,6 +74,9 @@ export type {
 export type {
   DelOpType, DiffOpType, SetOpType
 } from './types/diff.js';
+export type {
+  GraphErrorCodeType, LoadErrorCodeType, SchemaErrorCodeType
+} from './types/error-codes.js';
 export type {
   InferSchemaType, InferType
 } from './types/schema.js';

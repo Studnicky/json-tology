@@ -15,30 +15,34 @@ import { JsonTology } from '../dist/index.js';
 // ---------------------------------------------------------------------------
 
 const ProductSchema = {
-  $id: 'https://example.com/Product',
-  title: 'Product',
-  type: 'object',
-  properties: {
-    sku: {
-      type: 'string',
-      minLength: 3,
-      pattern: '^[A-Z]{2,}-\\d+$',
+  '$id': 'https://example.com/Product',
+  'properties': {
+    'name': {
+      'minLength': 1,
+      'type': 'string'
     },
-    name: {
-      type: 'string',
-      minLength: 1,
+    'price': {
+      'maximum': 999999,
+      'minimum': 0,
+      'type': 'number'
     },
-    price: {
-      type: 'number',
-      minimum: 0,
-      maximum: 999999,
+    'quantity': {
+      'minimum': 0,
+      'type': 'integer'
     },
-    quantity: {
-      type: 'integer',
-      minimum: 0,
-    },
+    'sku': {
+      'minLength': 3,
+      'pattern': '^[A-Z]{2,}-\\d+$',
+      'type': 'string'
+    }
   },
-  required: ['sku', 'name', 'price'],
+  'required': [
+    'sku',
+    'name',
+    'price'
+  ],
+  'title': 'Product',
+  'type': 'object'
 };
 
 // ---------------------------------------------------------------------------
@@ -46,8 +50,8 @@ const ProductSchema = {
 // ---------------------------------------------------------------------------
 
 const jt = JsonTology.create({
-  baseIRI: 'https://example.com',
-  schemas: [ProductSchema],
+  'baseIRI': 'https://example.com',
+  'schemas': [ProductSchema]
 });
 
 const shacl = jt.ontology().shaclObject();
@@ -67,17 +71,33 @@ if (Array.isArray(shapes)) {
     if (shape['@type'] === 'sh:NodeShape') {
       console.log(`--- NodeShape: ${shape['@id']} ---`);
       const props = shape['sh:property'];
+
       if (Array.isArray(props)) {
         for (const prop of props) {
           const path = prop['sh:path']?.['@id'] || '(unknown)';
+
           console.log(`  Property: ${path}`);
-          if (prop['sh:datatype'])    console.log(`    sh:datatype:      ${prop['sh:datatype']['@id']}`);
-          if (prop['sh:minCount'] !== undefined) console.log(`    sh:minCount:      ${prop['sh:minCount']}`);
-          if (prop['sh:maxCount'] !== undefined) console.log(`    sh:maxCount:      ${prop['sh:maxCount']}`);
-          if (prop['sh:minLength'] !== undefined) console.log(`    sh:minLength:     ${prop['sh:minLength']}`);
-          if (prop['sh:minInclusive'] !== undefined) console.log(`    sh:minInclusive:  ${prop['sh:minInclusive']}`);
-          if (prop['sh:maxInclusive'] !== undefined) console.log(`    sh:maxInclusive:  ${prop['sh:maxInclusive']}`);
-          if (prop['sh:pattern'])     console.log(`    sh:pattern:       ${prop['sh:pattern']}`);
+          if (prop['sh:datatype']) {
+            console.log(`    sh:datatype:      ${prop['sh:datatype']['@id']}`);
+          }
+          if (prop['sh:minCount'] !== undefined) {
+            console.log(`    sh:minCount:      ${prop['sh:minCount']}`);
+          }
+          if (prop['sh:maxCount'] !== undefined) {
+            console.log(`    sh:maxCount:      ${prop['sh:maxCount']}`);
+          }
+          if (prop['sh:minLength'] !== undefined) {
+            console.log(`    sh:minLength:     ${prop['sh:minLength']}`);
+          }
+          if (prop['sh:minInclusive'] !== undefined) {
+            console.log(`    sh:minInclusive:  ${prop['sh:minInclusive']}`);
+          }
+          if (prop['sh:maxInclusive'] !== undefined) {
+            console.log(`    sh:maxInclusive:  ${prop['sh:maxInclusive']}`);
+          }
+          if (prop['sh:pattern']) {
+            console.log(`    sh:pattern:       ${prop['sh:pattern']}`);
+          }
         }
       }
     }

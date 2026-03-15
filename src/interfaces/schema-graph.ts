@@ -1,4 +1,6 @@
-import type { RelationPredicateType, RelationStructure } from '../types/schema-graph.js';
+import type {
+  RelationPredicateType, RelationStructure
+} from '../types/schema-graph.js';
 
 type JsonSchemaType = boolean | Record<string, unknown>;
 

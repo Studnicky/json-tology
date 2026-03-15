@@ -160,9 +160,7 @@ void describe('GraphArtifact', () => {
         },
         'maxContains': 2,
         'minContains': 1,
-        'patternProperties': {
-          '^x-': { 'type': 'number' }
-        },
+        'patternProperties': { '^x-': { 'type': 'number' } },
         'properties': {
           'child': { '$dynamicRef': '#rootDynamic' },
           'kind': { 'type': 'string' },

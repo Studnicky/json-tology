@@ -8,22 +8,34 @@
  * Run: npm run build && node examples/06-composition.mjs
  */
 
-import { JsonTology, Compose } from '../dist/index.js';
+import {
+  Compose, JsonTology
+} from '../dist/index.js';
 
 // ---------------------------------------------------------------------------
 // Base schema
 // ---------------------------------------------------------------------------
 
 const EntitySchema = {
-  $id: 'https://example.com/Entity',
-  type: 'object',
-  properties: {
-    id:        { type: 'string' },
-    name:      { type: 'string' },
-    email:     { type: 'string', format: 'email' },
-    createdAt: { type: 'string', format: 'date-time' },
+  '$id': 'https://example.com/Entity',
+  'properties': {
+    'createdAt': {
+      'format': 'date-time',
+      'type': 'string'
+    },
+    'email': {
+      'format': 'email',
+      'type': 'string'
+    },
+    'id': { 'type': 'string' },
+    'name': { 'type': 'string' }
   },
-  required: ['id', 'name', 'email'],
+  'required': [
+    'id',
+    'name',
+    'email'
+  ],
+  'type': 'object'
 };
 
 // ---------------------------------------------------------------------------
@@ -33,8 +45,17 @@ const EntitySchema = {
 const AdminUserSchema = Compose.extend(
   EntitySchema,
   {
-    role:        { type: 'string', enum: ['admin', 'superadmin'] },
-    permissions: { type: 'array', items: { type: 'string' } },
+    'permissions': {
+      'items': { 'type': 'string' },
+      'type': 'array'
+    },
+    'role': {
+      'enum': [
+        'admin',
+        'superadmin'
+      ],
+      'type': 'string'
+    }
   },
   'https://example.com/AdminUser'
 );
@@ -51,7 +72,10 @@ console.log();
 
 const EntitySummarySchema = Compose.pick(
   EntitySchema,
-  ['id', 'name'],
+  [
+    'id',
+    'name'
+  ],
   'https://example.com/EntitySummary'
 );
 
@@ -81,8 +105,8 @@ console.log();
 // ---------------------------------------------------------------------------
 
 const jt = JsonTology.create({
-  baseIRI: 'https://example.com',
-  schemas: [EntitySchema],
+  'baseIRI': 'https://example.com',
+  'schemas': [EntitySchema]
 });
 
 jt.register(AdminUserSchema);
@@ -90,32 +114,47 @@ jt.register(EntitySummarySchema);
 jt.register(PatchEntitySchema);
 
 const fullEntity = {
-  id: '1',
-  name: 'Alice',
-  email: 'alice@example.com',
-  createdAt: '2026-01-01T00:00:00Z',
+  'createdAt': '2026-01-01T00:00:00Z',
+  'email': 'alice@example.com',
+  'id': '1',
+  'name': 'Alice'
 };
 
 const adminUser = {
   ...fullEntity,
-  role: 'admin',
-  permissions: ['read', 'write', 'delete'],
+  'permissions': [
+    'read',
+    'write',
+    'delete'
+  ],
+  'role': 'admin'
 };
 
 console.log('--- Validation results ---');
 
 const entityErrors = jt.validate(EntitySchema.$id, fullEntity);
+
 console.log('Entity (valid):', entityErrors.length === 0 ? 'PASS' : entityErrors);
 
 const adminErrors = jt.validate(AdminUserSchema.$id, adminUser);
+
 console.log('AdminUser (valid):', adminErrors.length === 0 ? 'PASS' : adminErrors);
 
-const summaryErrors = jt.validate(EntitySummarySchema.$id, { id: '1', name: 'Alice' });
+const summaryErrors = jt.validate(EntitySummarySchema.$id, {
+  'id': '1',
+  'name': 'Alice'
+});
+
 console.log('EntitySummary (valid):', summaryErrors.length === 0 ? 'PASS' : summaryErrors);
 
-const patchErrors = jt.validate(PatchEntitySchema.$id, { name: 'Bob' });
+const patchErrors = jt.validate(PatchEntitySchema.$id, { 'name': 'Bob' });
+
 console.log('PatchEntity (partial):', patchErrors.length === 0 ? 'PASS' : patchErrors);
 
-const badAdmin = { id: '2', name: 'Eve' };
+const badAdmin = {
+  'id': '2',
+  'name': 'Eve'
+};
 const badAdminErrors = jt.validate(AdminUserSchema.$id, badAdmin);
+
 console.log('AdminUser (missing email):', badAdminErrors.length > 0 ? 'FAIL as expected' : 'unexpected pass');

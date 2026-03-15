@@ -666,7 +666,10 @@ describe('quadsToJsonLdNodes', () => {
       },
       {
         'object': {
-          'datatype': { 'termType': 'NamedNode' as const, 'value': 'xsd:string' },
+          'datatype': {
+            'termType': 'NamedNode' as const,
+            'value': 'xsd:string'
+          },
           'language': '',
           'termType': 'Literal' as const,
           'value': 'nested'

@@ -39,12 +39,18 @@ export function resetBnodeCounter(): void {
 // ---------------------------------------------------------------------------
 
 export function iri(value: string): QuadObjectType {
-  return { 'termType': 'NamedNode', value };
+  return {
+    'termType': 'NamedNode',
+    value
+  };
 }
 
 export function literal(value: unknown, datatype: string): QuadObjectType {
   return {
-    'datatype': { 'termType': 'NamedNode' as const, 'value': datatype },
+    'datatype': {
+      'termType': 'NamedNode' as const,
+      'value': datatype
+    },
     'language': '',
     'termType': 'Literal',
     value
@@ -52,11 +58,17 @@ export function literal(value: unknown, datatype: string): QuadObjectType {
 }
 
 export function bnode(id: string): QuadObjectType {
-  return { 'termType': 'BlankNode', 'value': id };
+  return {
+    'termType': 'BlankNode',
+    'value': id
+  };
 }
 
 export function rdfList(items: QuadObjectType[]): QuadObjectType {
-  return { items, 'termType': 'List' };
+  return {
+    items,
+    'termType': 'List'
+  };
 }
 
 export function quad(subject: string, predicate: string, object: QuadObjectType): QuadInterface {
@@ -447,11 +459,11 @@ function quadObjectToJsonLd(obj: QuadObjectType): unknown {
   switch (obj.termType) {
     case 'BlankNode':
       return { '@id': obj.value };
-    case 'NamedNode':
-      return { '@id': obj.value };
     case 'List':
       return { '@list': obj.items.map(quadObjectToJsonLd) };
     case 'Literal':
       return obj.value;
+    case 'NamedNode':
+      return { '@id': obj.value };
   }
 }

@@ -98,12 +98,12 @@ function objectToJsonLd(obj: QuadObjectType): unknown {
   switch (obj.termType) {
     case 'BlankNode':
       return { '@id': obj.value };
-    case 'NamedNode':
-      return { '@id': obj.value };
     case 'List':
       return { '@list': obj.items.map(objectToJsonLd) };
     case 'Literal':
       return obj.value;
+    case 'NamedNode':
+      return { '@id': obj.value };
   }
 }
 

@@ -523,20 +523,18 @@ assert<AssertEqual<PropertyNamesResult, Record<string, unknown>>>();
  */
 // JSON Schema conditional — 'then' keyword requires JSON.parse for unicorn/no-thenable
 interface IfThenElseType {
-  readonly 'else': { readonly 'properties': {
-    readonly 'kind': { readonly 'const': 'b' };
+  readonly 'else': { readonly 'properties': { readonly 'kind': { readonly 'const': 'b' };
     readonly 'value': { readonly 'type': 'number' } };
-    readonly 'required': readonly ['kind', 'value'];
-    readonly 'type': 'object' };
+  readonly 'required': readonly ['kind', 'value'];
+  readonly 'type': 'object' };
   readonly 'if': { readonly 'properties': { readonly 'kind': { readonly 'const': 'a' } };
     readonly 'type': 'object' };
   readonly 'properties': { readonly 'shared': { readonly 'type': 'boolean' } };
   readonly 'required': readonly ['shared'];
-  readonly 'then': { readonly 'properties': {
-    readonly 'kind': { readonly 'const': 'a' };
+  readonly 'then': { readonly 'properties': { readonly 'kind': { readonly 'const': 'a' };
     readonly 'value': { readonly 'type': 'string' } };
-    readonly 'required': readonly ['kind', 'value'];
-    readonly 'type': 'object' };
+  readonly 'required': readonly ['kind', 'value'];
+  readonly 'type': 'object' };
   readonly 'type': 'object';
 }
 const _iteIf = '{"properties":{"kind":{"const":"a"}},"type":"object"}';
@@ -694,7 +692,7 @@ type ExternalDeepPointerRefResult = InferType<typeof ExternalDeepPointerRefSchem
 assert<AssertAssignable<ExternalDeepPointerRefResult, { readonly 'ext'?: unknown }>>();
 
 // With an explicit references map, external refs resolve at compile time
-type ReferenceMap = {
+interface ReferenceMap {
   readonly 'https://example.com/Other': {
     readonly '$anchor': 'someAnchor';
     readonly '$defs': {
@@ -712,7 +710,7 @@ type ReferenceMap = {
     readonly 'required': readonly ['name'];
     readonly 'type': 'object'
   };
-};
+}
 
 type ExternalWholeDocResolved = InferSchemaType<typeof ExternalRefSchema, typeof ExternalRefSchema, ReferenceMap>;
 assert<AssertAssignable<ExternalWholeDocResolved, {

@@ -14,7 +14,9 @@ import type { SchemaRegistryInterface } from '../../interfaces/schema-registry.j
 import { isPlainObject } from './DataTypes.js';
 import { Hash } from '../hash/Hash.js';
 import { Changeset } from './Changeset.js';
-import { applyOp as applyOpFn, clone as cloneFn } from './operations.js';
+import {
+  applyOp as applyOpFn, clone as cloneFn
+} from './operations.js';
 
 export class Value implements ValueInterface {
   // ---------------------------------------------------------------------------

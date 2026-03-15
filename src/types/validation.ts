@@ -3,6 +3,6 @@
  */
 
 import type { InferType } from './schema.js';
-import { ValidationErrorSchema } from '../constants/schemas.js';
+import type { ValidationErrorSchema } from '../constants/schemas.js';
 
 export type ValidationErrorType = InferType<typeof ValidationErrorSchema>;

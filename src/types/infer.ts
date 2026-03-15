@@ -286,15 +286,16 @@ type WithoutConditionalType<T>
 
 type InferConditionalType<T, TRoot, TReferences>
   = T extends { readonly 'if': unknown }
-    ? T extends { readonly 'then': infer TThen; readonly 'else': infer TElse }
-      ? InferSchemaType<WithoutConditionalType<T> & TThen, TRoot, TReferences>
-        | InferSchemaType<WithoutConditionalType<T> & TElse, TRoot, TReferences>
+    ? T extends { readonly 'else': infer TElse;
+      readonly 'then': infer TThen; }
+      ? InferSchemaType<TElse & WithoutConditionalType<T>, TRoot, TReferences>
+        | InferSchemaType<TThen & WithoutConditionalType<T>, TRoot, TReferences>
       : T extends { readonly 'then': infer TThen }
-        ? InferSchemaType<WithoutConditionalType<T>, TRoot, TReferences>
-          | InferSchemaType<WithoutConditionalType<T> & TThen, TRoot, TReferences>
+        ? InferSchemaType<TThen & WithoutConditionalType<T>, TRoot, TReferences>
+          | InferSchemaType<WithoutConditionalType<T>, TRoot, TReferences>
         : T extends { readonly 'else': infer TElse }
-          ? InferSchemaType<WithoutConditionalType<T>, TRoot, TReferences>
-            | InferSchemaType<WithoutConditionalType<T> & TElse, TRoot, TReferences>
+          ? InferSchemaType<TElse & WithoutConditionalType<T>, TRoot, TReferences>
+            | InferSchemaType<WithoutConditionalType<T>, TRoot, TReferences>
           : InferSchemaType<WithoutConditionalType<T>, TRoot, TReferences>
     : never;
 
@@ -325,12 +326,12 @@ export type InferSchemaType<T, TRoot = T, TReferences = {}>
                 : T extends { readonly 'allOf': readonly unknown[] } ? InferAllOfType<T, TRoot, TReferences>
                   : T extends { readonly 'anyOf': readonly unknown[] } ? InferAnyOfType<T, TRoot, TReferences>
                     : T extends { readonly 'oneOf': readonly unknown[] } ? InferOneOfType<T, TRoot, TReferences>
-                    : T extends { readonly 'if': unknown } ? InferConditionalType<T, TRoot, TReferences>
-                    // Phase 5: Type-based
-                      : T extends { readonly 'type': readonly unknown[] } ? InferTypeArrayType<T, TRoot, TReferences>
-                        : T extends { readonly 'type': 'array' } ? InferArrayType<T, TRoot, TReferences>
-                          : T extends { readonly 'type': 'object' } ? InferObjectType<T, TRoot, TReferences>
-                            : InferPrimitiveType<T> extends never ? unknown : InferPrimitiveType<T>;
+                      : T extends { readonly 'if': unknown } ? InferConditionalType<T, TRoot, TReferences>
+                      // Phase 5: Type-based
+                        : T extends { readonly 'type': readonly unknown[] } ? InferTypeArrayType<T, TRoot, TReferences>
+                          : T extends { readonly 'type': 'array' } ? InferArrayType<T, TRoot, TReferences>
+                            : T extends { readonly 'type': 'object' } ? InferObjectType<T, TRoot, TReferences>
+                              : InferPrimitiveType<T> extends never ? unknown : InferPrimitiveType<T>;
 
 // ---------------------------------------------------------------------------
 // Public helper types (re-exported via schema.ts)

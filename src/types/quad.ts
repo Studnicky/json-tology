@@ -8,25 +8,25 @@
  */
 
 export interface IriTermType {
-  termType: 'NamedNode';
-  value: string;
+  'termType': 'NamedNode';
+  'value': string;
 }
 
 export interface BnodeTermType {
-  termType: 'BlankNode';
-  value: string;
+  'termType': 'BlankNode';
+  'value': string;
 }
 
 export interface LiteralTermType {
-  termType: 'Literal';
-  value: unknown;
-  language: string;
-  datatype: IriTermType;
+  'datatype': IriTermType;
+  'language': string;
+  'termType': 'Literal';
+  'value': unknown;
 }
 
 export interface ListTermType {
-  termType: 'List';
-  items: QuadObjectType[];
+  'items': QuadObjectType[];
+  'termType': 'List';
 }
 
-export type QuadObjectType = BnodeTermType | IriTermType | LiteralTermType | ListTermType;
+export type QuadObjectType = BnodeTermType | IriTermType | ListTermType | LiteralTermType;
