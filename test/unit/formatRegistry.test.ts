@@ -5,13 +5,13 @@
 import {
   describe, it
 } from 'node:test';
-import * as assert from 'node:assert';
+import assert from 'node:assert/strict';
 import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
 import { GraphEngine } from '../../src/modules/graph/GraphEngine.js';
 
-describe('FormatRegistry', () => {
-  describe('FormatRegistry.builtin', () => {
-    it('has built-in string formats', () => {
+void describe('FormatRegistry', () => {
+  void describe('FormatRegistry.builtin', () => {
+    void it('has built-in string formats', () => {
       const registry = FormatRegistry.builtin();
 
       assert.ok(registry.has('email'));
@@ -24,7 +24,7 @@ describe('FormatRegistry', () => {
       assert.ok(registry.has('hostname'));
     });
 
-    it('has built-in number formats', () => {
+    void it('has built-in number formats', () => {
       const registry = FormatRegistry.builtin();
 
       assert.ok(registry.has('int32'));
@@ -33,42 +33,45 @@ describe('FormatRegistry', () => {
       assert.ok(registry.has('double'));
     });
 
-    it('validates email format correctly', () => {
+    void it('validates email format correctly', () => {
       const registry = FormatRegistry.builtin();
-      const validator = registry.get('email')!;
+      const validator = registry.get('email');
 
+      assert.ok(validator !== undefined);
       assert.ok(validator('user@example.com'));
       assert.ok(!validator('not-an-email'));
       assert.ok(!validator(42));
     });
 
-    it('validates int32 format correctly', () => {
+    void it('validates int32 format correctly', () => {
       const registry = FormatRegistry.builtin();
-      const validator = registry.get('int32')!;
+      const validator = registry.get('int32');
 
+      assert.ok(validator !== undefined);
       assert.ok(validator(42));
       assert.ok(!validator(2_147_483_648));
       assert.ok(!validator('42'));
     });
   });
 
-  describe('custom format registration', () => {
-    it('registers and retrieves a custom format', () => {
+  void describe('custom format registration', () => {
+    void it('registers and retrieves a custom format', () => {
       const registry = new FormatRegistry();
 
-      registry.register('phone', (v) => {
-        return typeof v === 'string' && /^\+\d{10,15}$/u.test(v);
+      registry.register('phone', (value) => {
+        return typeof value === 'string' && /^\+\d{10,15}$/u.test(value);
       });
 
       assert.ok(registry.has('phone'));
 
-      const validator = registry.get('phone')!;
+      const validator = registry.get('phone');
 
+      assert.ok(validator !== undefined);
       assert.ok(validator('+1234567890'));
       assert.ok(!validator('not-a-phone'));
     });
 
-    it('returns undefined for unknown format', () => {
+    void it('returns undefined for unknown format', () => {
       const registry = new FormatRegistry();
 
       assert.strictEqual(registry.get('nonexistent'), undefined);
@@ -76,12 +79,12 @@ describe('FormatRegistry', () => {
     });
   });
 
-  describe('custom format used during validation', () => {
-    it('validates with a custom format via GraphEngine', () => {
+  void describe('custom format used during validation', () => {
+    void it('validates with a custom format via GraphEngine', () => {
       const registry = FormatRegistry.builtin();
 
-      registry.register('hex-color', (v) => {
-        return typeof v === 'string' && /^#[\da-f]{6}$/iu.test(v);
+      registry.register('hex-color', (value) => {
+        return typeof value === 'string' && /^#[\da-f]{6}$/iu.test(value);
       });
 
       const schema = {
@@ -102,8 +105,8 @@ describe('FormatRegistry', () => {
     });
   });
 
-  describe('override built-in format', () => {
-    it('overrides the email format validator', () => {
+  void describe('override built-in format', () => {
+    void it('overrides the email format validator', () => {
       const registry = FormatRegistry.builtin();
 
       // Override email to reject everything

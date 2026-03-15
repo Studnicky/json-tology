@@ -96,6 +96,7 @@ export class Transform {
     schema: TSchema,
 
     transforms: Array<{
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       'decode': (value: any) => any;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       'encode': (value: any) => any;

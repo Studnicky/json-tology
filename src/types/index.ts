@@ -9,16 +9,20 @@ export type * from './brand.js';
 export type * from './compose.js';
 export {
   DelOpSchema, DiffOpSchema, SetOpSchema
-} from './diff.js';
+} from '../constants/schemas.js';
 export type * from './diff.js';
+export type * from './error-codes.js';
 export type * from './infer.js';
 export {
   SchemaLoadErrorSchema, SchemaLoadResultSchema
-} from './loader.js';
+} from '../constants/schemas.js';
 export type * from './loader.js';
+export type * from './quad.js';
+export type * from './registry.js';
+export type * from './schema-graph.js';
 export type * from './schema.js';
 export type * from './transform.js';
 export {
   ValidationErrorSchema
-} from './validation.js';
+} from '../constants/schemas.js';
 export type * from './validation.js';

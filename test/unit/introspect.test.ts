@@ -33,41 +33,41 @@ const TestSchema = {
   'type': 'object'
 } as const;
 
-describe('Compose.getDefaults()', () => {
-  it('returns defaults for top-level properties', () => {
+void describe('Compose.getDefaults()', () => {
+  void it('returns defaults for top-level properties', () => {
     const defaults = Compose.getDefaults(TestSchema);
 
     assert.equal(defaults.name, 'Alice');
     assert.equal(defaults.active, true);
   });
 
-  it('omits properties without defaults', () => {
+  void it('omits properties without defaults', () => {
     const defaults = Compose.getDefaults(TestSchema);
 
     assert.equal('age' in defaults, false);
   });
 
-  it('recurses into nested object properties', () => {
+  void it('recurses into nested object properties', () => {
     const defaults = Compose.getDefaults(TestSchema);
     const nested = defaults.nested as Record<string, unknown>;
 
-    assert.ok(nested !== undefined);
+    assert.equal(typeof nested, 'object');
     assert.equal(nested.count, 0);
     assert.equal('label' in nested, false);
   });
 
-  it('returns empty object for schema with no defaults', () => {
+  void it('returns empty object for schema with no defaults', () => {
     assert.deepEqual(Compose.getDefaults({
       'properties': { 'x': { 'type': 'string' } },
       'type': 'object'
     }), {});
   });
 
-  it('returns empty object for schema with no properties', () => {
+  void it('returns empty object for schema with no properties', () => {
     assert.deepEqual(Compose.getDefaults({ 'type': 'object' }), {});
   });
 
-  it('deep-clones default values to prevent mutation', () => {
+  void it('deep-clones default values to prevent mutation', () => {
     const schema = {
       'properties': {
         'tags': {

@@ -3,9 +3,12 @@ import type {
   GraphEngineOptionsInterface, GraphExecutionResultInterface,
   KeywordContextInterface, KeywordDefinitionInterface
 } from '../../interfaces/graph-engine.js';
+import type { GraphEngineInterface } from '../../interfaces/graph-engine-impl.js';
 import type {
   SchemaGraphNodeInterface, SchemaGraphSemanticsInterface
 } from '../../interfaces/schema-graph.js';
+import type { FormatRegistryInterface } from '../../interfaces/format-registry.js';
+import type { SchemaGraphInterface } from '../../interfaces/schema-graph-impl.js';
 import {
   isRecord, propertyIri
 } from '../data/DataTypes.js';
@@ -26,13 +29,13 @@ interface InternalExecutionResultInterface {
 }
 
 interface RefTargetInterface {
-  'graph': SchemaGraph;
+  'graph': SchemaGraphInterface;
   'node': SchemaGraphNodeInterface;
 }
 
 interface DynamicScopeEntryInterface {
   'anchor': string;
-  'graph': SchemaGraph;
+  'graph': SchemaGraphInterface;
   'node': SchemaGraphNodeInterface;
 }
 
@@ -130,7 +133,7 @@ function inferType(value: unknown): string {
 }
 
 
-export class GraphEngine {
+export class GraphEngine implements GraphEngineInterface {
   static escapeSegment(value: string): string {
     return encodeURIComponent(value).replaceAll('%2F', '/');
   }
@@ -145,7 +148,7 @@ export class GraphEngine {
 
   private readonly customKeywords: KeywordDefinitionInterface[];
   private readonly dialectPlan: RootDialectPlanInterface;
-  public readonly formatRegistry: FormatRegistry;
+  public readonly formatRegistry: FormatRegistryInterface;
   private readonly graphCache = new WeakMap<object, SchemaGraph>();
   private readonly options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>>;
   private readonly refCache = new Map<string, RefTargetInterface>();
@@ -167,7 +170,7 @@ export class GraphEngine {
 
   private applyUnevaluatedItems(
     _node: SchemaGraphNodeInterface,
-    graph: SchemaGraph,
+    graph: SchemaGraphInterface,
     value: unknown[],
     path: string,
     options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>>,
@@ -217,7 +220,7 @@ export class GraphEngine {
 
   private applyUnevaluatedProperties(
     _node: SchemaGraphNodeInterface,
-    graph: SchemaGraph,
+    graph: SchemaGraphInterface,
     value: Record<string, unknown>,
     path: string,
     options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>>,
@@ -337,7 +340,7 @@ export class GraphEngine {
 
   private createImplicitDefault(
     node: SchemaGraphNodeInterface,
-    graph: SchemaGraph,
+    graph: SchemaGraphInterface,
     options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>>,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntryInterface[],
@@ -442,7 +445,7 @@ export class GraphEngine {
     return fragment;
   }
 
-  private graphFor(rootSchema: JsonSchemaType): SchemaGraph {
+  private graphFor(rootSchema: JsonSchemaType): SchemaGraphInterface {
     if (!isObject(rootSchema)) {
       return new SchemaGraph(rootSchema as boolean);
     }
@@ -503,7 +506,7 @@ export class GraphEngine {
 
   private resolveDynamicRef(
     ref: string,
-    currentGraph: SchemaGraph,
+    currentGraph: SchemaGraphInterface,
     dynamicScope: DynamicScopeEntryInterface[]
   ): RefTargetInterface {
     if (ref === '#') {
@@ -538,7 +541,7 @@ export class GraphEngine {
     return resolved;
   }
 
-  private resolveRef(ref: string, currentGraph: SchemaGraph): RefTargetInterface {
+  private resolveRef(ref: string, currentGraph: SchemaGraphInterface): RefTargetInterface {
     const currentRootId = this.schemaId(currentGraph.rootSchema);
     const cacheKey = `${currentRootId ?? '<anonymous>'}::${ref}`;
     const cached = this.refCache.get(cacheKey);
@@ -631,7 +634,7 @@ export class GraphEngine {
 
   private synthesizeZeroValue(
     node: SchemaGraphNodeInterface,
-    graph: SchemaGraph,
+    graph: SchemaGraphInterface,
     options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>>,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntryInterface[],
@@ -694,7 +697,7 @@ export class GraphEngine {
   }
 
   private validateArray(
-    graph: SchemaGraph,
+    graph: SchemaGraphInterface,
     value: unknown[],
     path: string,
     options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>>,
@@ -870,7 +873,7 @@ export class GraphEngine {
 
   private validateObject(
     node: SchemaGraphNodeInterface,
-    graph: SchemaGraph,
+    graph: SchemaGraphInterface,
     value: Record<string, unknown>,
     path: string,
     options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>>,
@@ -1120,7 +1123,7 @@ export class GraphEngine {
 
   private visit(
     node: SchemaGraphNodeInterface,
-    graph: SchemaGraph,
+    graph: SchemaGraphInterface,
     value: unknown,
     path: string,
     options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>>,

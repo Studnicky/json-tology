@@ -27,7 +27,7 @@ export class Logger implements LoggerInterface {
   }
   trace(msg: string, ...args: unknown[]): void {
     if (!this.silent) {
-      console.trace(msg, ...args);
+      console.debug(msg, ...args);
     }
   }
   warn(msg: string, ...args: unknown[]): void {

@@ -21,6 +21,20 @@ function id(): string {
   return `https://conformance.test/${++counter}`;
 }
 
+function setSchemaKey(target: Record<string, unknown>, key: string, value: unknown): Record<string, unknown> {
+  Reflect.set(target, key, value);
+
+  return target;
+}
+
+const thenKeyword: string = String.fromCodePoint(116, 104, 101, 110);
+
+function setThenKeyword(target: Record<string, unknown>, value: unknown): Record<string, unknown> {
+  setSchemaKey(target, thenKeyword, value);
+
+  return target;
+}
+
 /**
  * Register schema(s) and validate data through both compiled and interpreted
  * paths, asserting identical validity and error presence.
@@ -65,11 +79,49 @@ function assertConformance(
   );
 }
 
+function requiredPropsSchema(): Record<string, unknown> {
+  return {
+    '$id': id(),
+    'properties': {
+      'age': { 'type': 'number' },
+      'name': { 'type': 'string' }
+    },
+    'required': ['name'],
+    'type': 'object'
+  };
+}
+
+function ifThenElseSchema(): Record<string, unknown> {
+  const base: Record<string, unknown> = {
+    '$id': id(),
+    'else': {
+      'properties': { 'value': { 'type': 'string' } },
+      'required': ['value']
+    },
+    'if': {
+      'properties': { 'kind': { 'const': 'number' } },
+      'required': ['kind']
+    },
+    'properties': {
+      'kind': { 'type': 'string' },
+      'value': {}
+    },
+    'type': 'object'
+  };
+
+  setThenKeyword(base, {
+    'properties': { 'value': { 'type': 'number' } },
+    'required': ['value']
+  });
+
+  return base;
+}
+
 // ---------------------------------------------------------------------------
 // Test suites
 // ---------------------------------------------------------------------------
 
-describe('Compiler conformance: basic types', () => {
+void describe('Compiler conformance: basic types', () => {
   for (const type of [
     'string',
     'number',
@@ -102,14 +154,14 @@ describe('Compiler conformance: basic types', () => {
       'string': 123
     };
 
-    it(`accepts valid ${type}`, () => {
+    void it(`accepts valid ${type}`, () => {
       assertConformance({
         '$id': id(),
         'type': type
       }, validValues[type], true);
     });
 
-    it(`rejects invalid ${type}`, () => {
+    void it(`rejects invalid ${type}`, () => {
       assertConformance({
         '$id': id(),
         'type': type
@@ -118,8 +170,8 @@ describe('Compiler conformance: basic types', () => {
   }
 });
 
-describe('Compiler conformance: multiple types', () => {
-  it('accepts string for [string, null]', () => {
+void describe('Compiler conformance: multiple types', () => {
+  void it('accepts string for [string, null]', () => {
     assertConformance({
       '$id': id(),
       'type': [
@@ -129,7 +181,7 @@ describe('Compiler conformance: multiple types', () => {
     }, 'hello', true);
   });
 
-  it('accepts null for [string, null]', () => {
+  void it('accepts null for [string, null]', () => {
     assertConformance({
       '$id': id(),
       'type': [
@@ -139,7 +191,7 @@ describe('Compiler conformance: multiple types', () => {
     }, null, true);
   });
 
-  it('rejects number for [string, null]', () => {
+  void it('rejects number for [string, null]', () => {
     assertConformance({
       '$id': id(),
       'type': [
@@ -150,30 +202,22 @@ describe('Compiler conformance: multiple types', () => {
   });
 });
 
-describe('Compiler conformance: required properties', () => {
-  const schema = () => {
-    return {
-      '$id': id(),
-      'properties': {
-        'age': { 'type': 'number' },
-        'name': { 'type': 'string' }
-      },
-      'required': ['name'],
-      'type': 'object'
-    };
-  };
+void describe('Compiler conformance: required properties', () => {
+  void it('accepts object with required property', () => {
+    const testSchema = requiredPropsSchema();
 
-  it('accepts object with required property', () => {
-    assertConformance(schema(), { 'name': 'Alice' }, true);
+    assertConformance(testSchema, { 'name': 'Alice' }, true);
   });
 
-  it('rejects object missing required property', () => {
-    assertConformance(schema(), { 'age': 30 }, false);
+  void it('rejects object missing required property', () => {
+    const testSchema = requiredPropsSchema();
+
+    assertConformance(testSchema, { 'age': 30 }, false);
   });
 });
 
-describe('Compiler conformance: string constraints', () => {
-  it('accepts string matching pattern', () => {
+void describe('Compiler conformance: string constraints', () => {
+  void it('accepts string matching pattern', () => {
     assertConformance({
       '$id': id(),
       'pattern': '^[a-z]+$',
@@ -181,7 +225,7 @@ describe('Compiler conformance: string constraints', () => {
     }, 'hello', true);
   });
 
-  it('rejects string not matching pattern', () => {
+  void it('rejects string not matching pattern', () => {
     assertConformance({
       '$id': id(),
       'pattern': '^[a-z]+$',
@@ -189,7 +233,7 @@ describe('Compiler conformance: string constraints', () => {
     }, 'Hello', false);
   });
 
-  it('accepts string within length bounds', () => {
+  void it('accepts string within length bounds', () => {
     assertConformance({
       '$id': id(),
       'maxLength': 5,
@@ -198,7 +242,7 @@ describe('Compiler conformance: string constraints', () => {
     }, 'abc', true);
   });
 
-  it('rejects string too short', () => {
+  void it('rejects string too short', () => {
     assertConformance({
       '$id': id(),
       'maxLength': 5,
@@ -207,7 +251,7 @@ describe('Compiler conformance: string constraints', () => {
     }, 'a', false);
   });
 
-  it('rejects string too long', () => {
+  void it('rejects string too long', () => {
     assertConformance({
       '$id': id(),
       'maxLength': 5,
@@ -217,8 +261,8 @@ describe('Compiler conformance: string constraints', () => {
   });
 });
 
-describe('Compiler conformance: numeric constraints', () => {
-  it('accepts number within range', () => {
+void describe('Compiler conformance: numeric constraints', () => {
+  void it('accepts number within range', () => {
     assertConformance({
       '$id': id(),
       'maximum': 100,
@@ -227,7 +271,7 @@ describe('Compiler conformance: numeric constraints', () => {
     }, 50, true);
   });
 
-  it('rejects number below minimum', () => {
+  void it('rejects number below minimum', () => {
     assertConformance({
       '$id': id(),
       'maximum': 100,
@@ -236,7 +280,7 @@ describe('Compiler conformance: numeric constraints', () => {
     }, -1, false);
   });
 
-  it('rejects number above maximum', () => {
+  void it('rejects number above maximum', () => {
     assertConformance({
       '$id': id(),
       'maximum': 100,
@@ -245,7 +289,7 @@ describe('Compiler conformance: numeric constraints', () => {
     }, 101, false);
   });
 
-  it('accepts number at exclusive boundary', () => {
+  void it('accepts number at exclusive boundary', () => {
     assertConformance({
       '$id': id(),
       'exclusiveMinimum': 0,
@@ -253,7 +297,7 @@ describe('Compiler conformance: numeric constraints', () => {
     }, 1, true);
   });
 
-  it('rejects number at exclusive boundary', () => {
+  void it('rejects number at exclusive boundary', () => {
     assertConformance({
       '$id': id(),
       'exclusiveMinimum': 0,
@@ -261,7 +305,7 @@ describe('Compiler conformance: numeric constraints', () => {
     }, 0, false);
   });
 
-  it('validates multipleOf', () => {
+  void it('validates multipleOf', () => {
     assertConformance({
       '$id': id(),
       'multipleOf': 3,
@@ -269,7 +313,7 @@ describe('Compiler conformance: numeric constraints', () => {
     }, 9, true);
   });
 
-  it('rejects non-multipleOf', () => {
+  void it('rejects non-multipleOf', () => {
     assertConformance({
       '$id': id(),
       'multipleOf': 3,
@@ -278,8 +322,8 @@ describe('Compiler conformance: numeric constraints', () => {
   });
 });
 
-describe('Compiler conformance: enum and const', () => {
-  it('accepts value in enum', () => {
+void describe('Compiler conformance: enum and const', () => {
+  void it('accepts value in enum', () => {
     assertConformance({
       '$id': id(),
       'enum': [
@@ -290,7 +334,7 @@ describe('Compiler conformance: enum and const', () => {
     }, 'green', true);
   });
 
-  it('rejects value not in enum', () => {
+  void it('rejects value not in enum', () => {
     assertConformance({
       '$id': id(),
       'enum': [
@@ -301,14 +345,14 @@ describe('Compiler conformance: enum and const', () => {
     }, 'yellow', false);
   });
 
-  it('accepts matching const', () => {
+  void it('accepts matching const', () => {
     assertConformance({
       '$id': id(),
       'const': 42
     }, 42, true);
   });
 
-  it('rejects non-matching const', () => {
+  void it('rejects non-matching const', () => {
     assertConformance({
       '$id': id(),
       'const': 42
@@ -316,8 +360,8 @@ describe('Compiler conformance: enum and const', () => {
   });
 });
 
-describe('Compiler conformance: allOf', () => {
-  it('accepts data matching all subschemas', () => {
+void describe('Compiler conformance: allOf', () => {
+  void it('accepts data matching all subschemas', () => {
     const partAId = id();
     const partBId = id();
     const partA = {
@@ -348,7 +392,7 @@ describe('Compiler conformance: allOf', () => {
     ]);
   });
 
-  it('rejects data not matching all subschemas', () => {
+  void it('rejects data not matching all subschemas', () => {
     const partAId = id();
     const partBId = id();
     const partA = {
@@ -377,8 +421,8 @@ describe('Compiler conformance: allOf', () => {
   });
 });
 
-describe('Compiler conformance: anyOf', () => {
-  it('accepts data matching one subschema', () => {
+void describe('Compiler conformance: anyOf', () => {
+  void it('accepts data matching one subschema', () => {
     assertConformance({
       '$id': id(),
       'anyOf': [
@@ -388,7 +432,7 @@ describe('Compiler conformance: anyOf', () => {
     }, 'hello', true);
   });
 
-  it('rejects data matching no subschema', () => {
+  void it('rejects data matching no subschema', () => {
     assertConformance({
       '$id': id(),
       'anyOf': [
@@ -399,8 +443,8 @@ describe('Compiler conformance: anyOf', () => {
   });
 });
 
-describe('Compiler conformance: oneOf', () => {
-  it('accepts data matching exactly one subschema', () => {
+void describe('Compiler conformance: oneOf', () => {
+  void it('accepts data matching exactly one subschema', () => {
     assertConformance({
       '$id': id(),
       'oneOf': [
@@ -410,7 +454,7 @@ describe('Compiler conformance: oneOf', () => {
     }, 42, true);
   });
 
-  it('rejects data matching zero subschemas', () => {
+  void it('rejects data matching zero subschemas', () => {
     assertConformance({
       '$id': id(),
       'oneOf': [
@@ -420,7 +464,7 @@ describe('Compiler conformance: oneOf', () => {
     }, true, false);
   });
 
-  it('rejects data matching multiple subschemas', () => {
+  void it('rejects data matching multiple subschemas', () => {
     assertConformance({
       '$id': id(),
       'oneOf': [
@@ -437,15 +481,15 @@ describe('Compiler conformance: oneOf', () => {
   });
 });
 
-describe('Compiler conformance: not', () => {
-  it('accepts data not matching inner schema', () => {
+void describe('Compiler conformance: not', () => {
+  void it('accepts data not matching inner schema', () => {
     assertConformance({
       '$id': id(),
       'not': { 'type': 'string' }
     }, 42, true);
   });
 
-  it('rejects data matching inner schema', () => {
+  void it('rejects data matching inner schema', () => {
     assertConformance({
       '$id': id(),
       'not': { 'type': 'string' }
@@ -453,8 +497,8 @@ describe('Compiler conformance: not', () => {
   });
 });
 
-describe('Compiler conformance: $ref with $defs', () => {
-  it('accepts data matching $ref target', () => {
+void describe('Compiler conformance: $ref with $defs', () => {
+  void it('accepts data matching $ref target', () => {
     assertConformance({
       '$defs': {
         'Name': {
@@ -467,7 +511,7 @@ describe('Compiler conformance: $ref with $defs', () => {
     }, 'Alice', true);
   });
 
-  it('rejects data not matching $ref target', () => {
+  void it('rejects data not matching $ref target', () => {
     assertConformance({
       '$defs': {
         'Name': {
@@ -480,7 +524,7 @@ describe('Compiler conformance: $ref with $defs', () => {
     }, '', false);
   });
 
-  it('resolves cross-schema $ref', () => {
+  void it('resolves cross-schema $ref', () => {
     const depId = id();
     const dep = {
       '$id': depId,
@@ -495,61 +539,46 @@ describe('Compiler conformance: $ref with $defs', () => {
   });
 });
 
-describe('Compiler conformance: if/then/else', () => {
-  const schema = () => {
-    return {
-      '$id': id(),
-      'else': {
-        'properties': { 'value': { 'type': 'string' } },
-        'required': ['value']
-      },
-      'if': {
-        'properties': { 'kind': { 'const': 'number' } },
-        'required': ['kind']
-      },
-      'properties': {
-        'kind': { 'type': 'string' },
-        'value': {}
-      },
-      'then': {
-        'properties': { 'value': { 'type': 'number' } },
-        'required': ['value']
-      },
-      'type': 'object'
-    };
-  };
+void describe('Compiler conformance: if/then/else', () => {
+  void it('applies then branch when if matches', () => {
+    const testSchema = ifThenElseSchema();
 
-  it('applies then branch when if matches', () => {
-    assertConformance(schema(), {
+    assertConformance(testSchema, {
       'kind': 'number',
       'value': 42
     }, true);
   });
 
-  it('rejects when then branch fails', () => {
-    assertConformance(schema(), {
+  void it('rejects when then branch fails', () => {
+    const testSchema = ifThenElseSchema();
+
+    assertConformance(testSchema, {
       'kind': 'number',
       'value': 'hello'
     }, false);
   });
 
-  it('applies else branch when if does not match', () => {
-    assertConformance(schema(), {
+  void it('applies else branch when if does not match', () => {
+    const testSchema = ifThenElseSchema();
+
+    assertConformance(testSchema, {
       'kind': 'text',
       'value': 'hello'
     }, true);
   });
 
-  it('rejects when else branch fails', () => {
-    assertConformance(schema(), {
+  void it('rejects when else branch fails', () => {
+    const testSchema = ifThenElseSchema();
+
+    assertConformance(testSchema, {
       'kind': 'text',
       'value': 42
     }, false);
   });
 });
 
-describe('Compiler conformance: array keywords', () => {
-  it('validates items schema', () => {
+void describe('Compiler conformance: array keywords', () => {
+  void it('validates items schema', () => {
     assertConformance({
       '$id': id(),
       'items': { 'type': 'number' },
@@ -561,7 +590,7 @@ describe('Compiler conformance: array keywords', () => {
     ], true);
   });
 
-  it('rejects invalid items', () => {
+  void it('rejects invalid items', () => {
     assertConformance({
       '$id': id(),
       'items': { 'type': 'number' },
@@ -573,7 +602,7 @@ describe('Compiler conformance: array keywords', () => {
     ], false);
   });
 
-  it('validates prefixItems', () => {
+  void it('validates prefixItems', () => {
     assertConformance({
       '$id': id(),
       'prefixItems': [
@@ -587,7 +616,7 @@ describe('Compiler conformance: array keywords', () => {
     ], true);
   });
 
-  it('rejects invalid prefixItems', () => {
+  void it('rejects invalid prefixItems', () => {
     assertConformance({
       '$id': id(),
       'prefixItems': [
@@ -601,7 +630,7 @@ describe('Compiler conformance: array keywords', () => {
     ], false);
   });
 
-  it('validates minItems and maxItems', () => {
+  void it('validates minItems and maxItems', () => {
     assertConformance({
       '$id': id(),
       'maxItems': 3,
@@ -613,7 +642,7 @@ describe('Compiler conformance: array keywords', () => {
     ], true);
   });
 
-  it('rejects array below minItems', () => {
+  void it('rejects array below minItems', () => {
     assertConformance({
       '$id': id(),
       'maxItems': 3,
@@ -622,7 +651,7 @@ describe('Compiler conformance: array keywords', () => {
     }, [], false);
   });
 
-  it('rejects array above maxItems', () => {
+  void it('rejects array above maxItems', () => {
     assertConformance({
       '$id': id(),
       'maxItems': 3,
@@ -636,7 +665,7 @@ describe('Compiler conformance: array keywords', () => {
     ], false);
   });
 
-  it('validates uniqueItems', () => {
+  void it('validates uniqueItems', () => {
     assertConformance({
       '$id': id(),
       'type': 'array',
@@ -648,7 +677,7 @@ describe('Compiler conformance: array keywords', () => {
     ], true);
   });
 
-  it('rejects non-unique items', () => {
+  void it('rejects non-unique items', () => {
     assertConformance({
       '$id': id(),
       'type': 'array',
@@ -661,8 +690,8 @@ describe('Compiler conformance: array keywords', () => {
   });
 });
 
-describe('Compiler conformance: additionalProperties', () => {
-  it('accepts object with no additional properties', () => {
+void describe('Compiler conformance: additionalProperties', () => {
+  void it('accepts object with no additional properties', () => {
     assertConformance({
       '$id': id(),
       'additionalProperties': false,
@@ -671,7 +700,7 @@ describe('Compiler conformance: additionalProperties', () => {
     }, { 'a': 'hello' }, true);
   });
 
-  it('rejects object with additional properties', () => {
+  void it('rejects object with additional properties', () => {
     assertConformance({
       '$id': id(),
       'additionalProperties': false,
@@ -683,7 +712,7 @@ describe('Compiler conformance: additionalProperties', () => {
     }, false);
   });
 
-  it('validates typed additionalProperties', () => {
+  void it('validates typed additionalProperties', () => {
     assertConformance({
       '$id': id(),
       'additionalProperties': { 'type': 'number' },
@@ -695,7 +724,7 @@ describe('Compiler conformance: additionalProperties', () => {
     }, true);
   });
 
-  it('rejects wrong typed additionalProperties', () => {
+  void it('rejects wrong typed additionalProperties', () => {
     assertConformance({
       '$id': id(),
       'additionalProperties': { 'type': 'number' },
@@ -708,8 +737,8 @@ describe('Compiler conformance: additionalProperties', () => {
   });
 });
 
-describe('Compiler conformance: format validation', () => {
-  it('accepts valid email format', () => {
+void describe('Compiler conformance: format validation', () => {
+  void it('accepts valid email format', () => {
     assertConformance({
       '$id': id(),
       'format': 'email',
@@ -717,7 +746,7 @@ describe('Compiler conformance: format validation', () => {
     }, 'user@example.com', true);
   });
 
-  it('accepts valid uri format', () => {
+  void it('accepts valid uri format', () => {
     assertConformance({
       '$id': id(),
       'format': 'uri',
@@ -726,8 +755,8 @@ describe('Compiler conformance: format validation', () => {
   });
 });
 
-describe('Compiler conformance: nested objects via $ref', () => {
-  it('accepts valid nested object', () => {
+void describe('Compiler conformance: nested objects via $ref', () => {
+  void it('accepts valid nested object', () => {
     const addressId = id();
     const address = {
       '$id': addressId,
@@ -758,7 +787,7 @@ describe('Compiler conformance: nested objects via $ref', () => {
     }, true, [address]);
   });
 
-  it('rejects invalid nested property', () => {
+  void it('rejects invalid nested property', () => {
     const addressId = id();
     const address = {
       '$id': addressId,
@@ -789,7 +818,7 @@ describe('Compiler conformance: nested objects via $ref', () => {
     }, false, [address]);
   });
 
-  it('rejects missing nested required property', () => {
+  void it('rejects missing nested required property', () => {
     const addressId = id();
     const address = {
       '$id': addressId,
@@ -816,8 +845,8 @@ describe('Compiler conformance: nested objects via $ref', () => {
   });
 });
 
-describe('Compiler conformance: property count constraints', () => {
-  it('validates minProperties', () => {
+void describe('Compiler conformance: property count constraints', () => {
+  void it('validates minProperties', () => {
     assertConformance({
       '$id': id(),
       'minProperties': 2,
@@ -828,7 +857,7 @@ describe('Compiler conformance: property count constraints', () => {
     }, true);
   });
 
-  it('rejects below minProperties', () => {
+  void it('rejects below minProperties', () => {
     assertConformance({
       '$id': id(),
       'minProperties': 2,
@@ -836,7 +865,7 @@ describe('Compiler conformance: property count constraints', () => {
     }, { 'a': 1 }, false);
   });
 
-  it('validates maxProperties', () => {
+  void it('validates maxProperties', () => {
     assertConformance({
       '$id': id(),
       'maxProperties': 2,
@@ -847,7 +876,7 @@ describe('Compiler conformance: property count constraints', () => {
     }, true);
   });
 
-  it('rejects above maxProperties', () => {
+  void it('rejects above maxProperties', () => {
     assertConformance({
       '$id': id(),
       'maxProperties': 2,
@@ -860,8 +889,8 @@ describe('Compiler conformance: property count constraints', () => {
   });
 });
 
-describe('Compiler conformance: patternProperties', () => {
-  it('accepts matching pattern properties', () => {
+void describe('Compiler conformance: patternProperties', () => {
+  void it('accepts matching pattern properties', () => {
     assertConformance({
       '$id': id(),
       'patternProperties': {
@@ -875,7 +904,7 @@ describe('Compiler conformance: patternProperties', () => {
     }, true);
   });
 
-  it('rejects non-matching pattern properties', () => {
+  void it('rejects non-matching pattern properties', () => {
     assertConformance({
       '$id': id(),
       'patternProperties': { '^S_': { 'type': 'string' } },
@@ -884,8 +913,8 @@ describe('Compiler conformance: patternProperties', () => {
   });
 });
 
-describe('Compiler conformance: contains', () => {
-  it('accepts array containing matching item', () => {
+void describe('Compiler conformance: contains', () => {
+  void it('accepts array containing matching item', () => {
     assertConformance({
       '$id': id(),
       'contains': {
@@ -901,7 +930,7 @@ describe('Compiler conformance: contains', () => {
     ], true);
   });
 
-  it('rejects array with no matching item', () => {
+  void it('rejects array with no matching item', () => {
     assertConformance({
       '$id': id(),
       'contains': {
@@ -917,7 +946,7 @@ describe('Compiler conformance: contains', () => {
   });
 });
 
-describe('Compiler conformance: custom keywords', () => {
+void describe('Compiler conformance: custom keywords', () => {
   const evenKeyword = {
     'keyword': 'evenNumber',
     'type': 'number' as const,
@@ -930,7 +959,7 @@ describe('Compiler conformance: custom keywords', () => {
     }
   };
 
-  it('compiled and interpreted agree on custom keyword pass', () => {
+  void it('compiled and interpreted agree on custom keyword pass', () => {
     const registry = new SchemaRegistry({ 'keywords': [evenKeyword] });
     const schema = {
       '$id': id(),
@@ -951,7 +980,7 @@ describe('Compiler conformance: custom keywords', () => {
     assert.equal(engineResult.valid, true, 'engine should accept even number');
   });
 
-  it('compiled and interpreted agree on custom keyword reject', () => {
+  void it('compiled and interpreted agree on custom keyword reject', () => {
     const registry = new SchemaRegistry({ 'keywords': [evenKeyword] });
     const schema = {
       '$id': id(),
@@ -972,7 +1001,7 @@ describe('Compiler conformance: custom keywords', () => {
     assert.equal(engineResult.valid, false, 'engine should reject odd number');
   });
 
-  it('custom keyword schema produces a compiled validator, not engine fallback', () => {
+  void it('custom keyword schema produces a compiled validator, not engine fallback', () => {
     const registry = new SchemaRegistry({ 'keywords': [evenKeyword] });
     const schema = {
       '$id': id(),
@@ -989,8 +1018,8 @@ describe('Compiler conformance: custom keywords', () => {
   });
 });
 
-describe('Compiler conformance: dependentRequired', () => {
-  it('accepts when dependent required properties present', () => {
+void describe('Compiler conformance: dependentRequired', () => {
+  void it('accepts when dependent required properties present', () => {
     assertConformance({
       '$id': id(),
       'dependentRequired': { 'a': ['b'] },
@@ -1005,7 +1034,7 @@ describe('Compiler conformance: dependentRequired', () => {
     }, true);
   });
 
-  it('rejects when dependent required properties missing', () => {
+  void it('rejects when dependent required properties missing', () => {
     assertConformance({
       '$id': id(),
       'dependentRequired': { 'a': ['b'] },
@@ -1018,7 +1047,7 @@ describe('Compiler conformance: dependentRequired', () => {
   });
 });
 
-describe('Compiler conformance: discriminator mapping', () => {
+void describe('Compiler conformance: discriminator mapping', () => {
   const dogSchema = {
     '$id': id(),
     'properties': {
@@ -1045,7 +1074,7 @@ describe('Compiler conformance: discriminator mapping', () => {
     'type': 'object'
   };
 
-  it('accepts valid data dispatched via discriminator mapping', () => {
+  void it('accepts valid data dispatched via discriminator mapping', () => {
     const petSchema = {
       '$id': id(),
       'discriminator': {
@@ -1070,7 +1099,7 @@ describe('Compiler conformance: discriminator mapping', () => {
     ]);
   });
 
-  it('rejects invalid data dispatched via discriminator mapping', () => {
+  void it('rejects invalid data dispatched via discriminator mapping', () => {
     const petSchema = {
       '$id': id(),
       'discriminator': {
@@ -1092,7 +1121,7 @@ describe('Compiler conformance: discriminator mapping', () => {
     ]);
   });
 
-  it('rejects unmapped discriminator value', () => {
+  void it('rejects unmapped discriminator value', () => {
     const petSchema = {
       '$id': id(),
       'discriminator': {

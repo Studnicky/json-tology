@@ -13,8 +13,8 @@ import { Value } from '../../src/modules/data/Value.js';
 // create
 // ---------------------------------------------------------------------------
 
-describe('Value.create()', () => {
-  it('creates primitive type defaults', () => {
+void describe('Value.create()', () => {
+  void it('creates primitive type defaults', () => {
     const registry = new SchemaRegistry();
 
     registry.register({
@@ -52,7 +52,7 @@ describe('Value.create()', () => {
     assert.deepEqual(value.create('urn:test:array'), []);
   });
 
-  it('creates object with nested defaults', () => {
+  void it('creates object with nested defaults', () => {
     const registry = new SchemaRegistry();
 
     registry.register({
@@ -89,7 +89,7 @@ describe('Value.create()', () => {
     assert.deepEqual(result.nested, { 'flag': true });
   });
 
-  it('honors explicit defaults, const, and enum values', () => {
+  void it('honors explicit defaults, const, and enum values', () => {
     const registry = new SchemaRegistry();
 
     registry.register({
@@ -122,7 +122,7 @@ describe('Value.create()', () => {
     assert.equal(value.create('urn:test:enum'), 'a');
   });
 
-  it('creates required properties even without defaults, returns null for no-type schemas', () => {
+  void it('creates required properties even without defaults, returns null for no-type schemas', () => {
     const registry = new SchemaRegistry();
 
     registry.register({
@@ -149,8 +149,8 @@ describe('Value.create()', () => {
 // clone + hash
 // ---------------------------------------------------------------------------
 
-describe('Value.clone() and Value.hash()', () => {
-  it('clone produces deep copies of objects and arrays', () => {
+void describe('Value.clone() and Value.hash()', () => {
+  void it('clone produces deep copies of objects and arrays', () => {
     const obj = {
       'a': 1,
       'b': { 'c': 2 }
@@ -174,7 +174,7 @@ describe('Value.clone() and Value.hash()', () => {
     assert.notEqual(arrCopy, arr);
   });
 
-  it('hash is deterministic, order-independent, and type-sensitive', () => {
+  void it('hash is deterministic, order-independent, and type-sensitive', () => {
     assert.equal(typeof Value.hash({ 'a': 1 }), 'string');
     assert.equal(Value.hash({
       'a': 1,
@@ -193,8 +193,8 @@ describe('Value.clone() and Value.hash()', () => {
 // diff / patch
 // ---------------------------------------------------------------------------
 
-describe('Value.diff() → Changeset', () => {
-  it('detects set, delete, and add operations', () => {
+void describe('Value.diff() -> Changeset', () => {
+  void it('detects set, delete, and add operations', () => {
     // isEmpty
     assert.equal(Value.diff({ 'a': 1 }, { 'a': 1 }).isEmpty, true);
     assert.equal(Value.diff({ 'a': 1 }, { 'a': 1 }).length, 0);
@@ -232,36 +232,53 @@ describe('Value.diff() → Changeset', () => {
     assert.equal(csNested.operations[0].path, '/user/name');
   });
 
-  it('apply() transforms a into b without mutation, round-trips correctly', () => {
-    const a = {
+  void it('changeset transforms a into b without mutation, round-trips correctly', () => {
+    const source = {
       'name': 'Alice',
       'role': 'user'
     };
-    const b = { 'name': 'Bob' };
+    const target = { 'name': 'Bob' };
+    const changeset = Value.diff(source, target);
+    let patched: unknown = Value.clone(source);
 
-    assert.deepEqual(Value.diff(a, b).apply(a), b);
+    for (const operation of changeset.operations) {
+      patched = Value.applyOp(patched, operation);
+    }
+
+    assert.deepEqual(patched, target);
 
     // does not mutate original
     const orig = { 'x': 1 };
+    const origChangeset = Value.diff(orig, { 'x': 2 });
+    let origPatched: unknown = Value.clone(orig);
 
-    Value.diff(orig, { 'x': 2 }).apply(orig);
+    for (const operation of origChangeset.operations) {
+      origPatched = Value.applyOp(origPatched, operation);
+    }
+
     assert.equal(orig.x, 1);
 
     // round-trip with nested changes
-    const c = {
+    const before = {
       'x': 1,
       'y': 2,
       'z': { 'w': 3 }
     };
-    const d = {
+    const after = {
       'x': 10,
       'z': {
         'q': 4,
         'w': 99
       }
     };
+    const nestedChangeset = Value.diff(before, after);
+    let nestedPatched: unknown = Value.clone(before);
 
-    assert.deepEqual(Value.diff(c, d).apply(c), d);
+    for (const operation of nestedChangeset.operations) {
+      nestedPatched = Value.applyOp(nestedPatched, operation);
+    }
+
+    assert.deepEqual(nestedPatched, after);
   });
 });
 
@@ -269,7 +286,7 @@ describe('Value.diff() → Changeset', () => {
 // cast
 // ---------------------------------------------------------------------------
 
-describe('Value.cast()', () => {
+void describe('Value.cast()', () => {
   const registry = new SchemaRegistry();
 
   registry.register({
@@ -315,29 +332,29 @@ describe('Value.cast()', () => {
   } as const);
   const value = new Value(registry);
 
-  it('coerces primitives and fills object defaults', () => {
+  void it('coerces primitives and fills object defaults', () => {
     assert.equal(value.cast('urn:test:number', '42'), 42);
     assert.equal(value.cast('urn:test:string', 123), '123');
     assert.equal(value.cast('urn:test:boolean', 'true'), true);
 
-    const r = value.cast('urn:test:item', { 'name': 'Widget' }) as Record<string, unknown>;
+    const castResult = value.cast('urn:test:item', { 'name': 'Widget' }) as Record<string, unknown>;
 
-    assert.equal(r.score, 0);
+    assert.equal(castResult.score, 0);
 
-    const r2 = value.cast('urn:test:item', {
+    const castResult2 = value.cast('urn:test:item', {
       'count': '5',
       'name': 'Widget'
     }) as Record<string, unknown>;
 
-    assert.equal(r2.count, 5);
+    assert.equal(castResult2.count, 5);
 
     assert.ok(typeof value.cast('urn:test:item', null) === 'object');
   });
 
-  it('uses graph-engine ref resolution for nested defaults and coercion', () => {
-    const r = value.cast('urn:test:ref-metrics', { 'metrics': { 'count': '5' } }) as Record<string, Record<string, unknown>>;
+  void it('uses graph-engine ref resolution for nested defaults and coercion', () => {
+    const castResult = value.cast('urn:test:ref-metrics', { 'metrics': { 'count': '5' } }) as Record<string, Record<string, unknown>>;
 
-    assert.equal(r.metrics.count, 5);
+    assert.equal(castResult.metrics.count, 5);
     assert.deepEqual(value.cast('urn:test:ref-metrics', {}) as Record<string, unknown>, { 'metrics': { 'count': 0 } });
   });
 });
@@ -346,7 +363,7 @@ describe('Value.cast()', () => {
 // clean
 // ---------------------------------------------------------------------------
 
-describe('Value.clean()', () => {
+void describe('Value.clean()', () => {
   const registry = new SchemaRegistry();
 
   registry.register({
@@ -365,18 +382,18 @@ describe('Value.clean()', () => {
   } as const);
   const value = new Value(registry);
 
-  it('removes undeclared properties, preserves declared, recurses, and does not mutate', () => {
-    const r = value.clean('urn:test:user', {
+  void it('removes undeclared properties, preserves declared, recurses, and does not mutate', () => {
+    const cleanResult = value.clean('urn:test:user', {
       'email': 'a@b.com',
       'name': 'Alice',
       'secret': 'x'
     }) as Record<string, unknown>;
 
-    assert.ok(!('secret' in r));
-    assert.equal(r.name, 'Alice');
-    assert.equal(r.email, 'a@b.com');
+    assert.ok(!('secret' in cleanResult));
+    assert.equal(cleanResult.name, 'Alice');
+    assert.equal(cleanResult.email, 'a@b.com');
 
-    const r2 = value.clean('urn:test:user', {
+    const cleanResult2 = value.clean('urn:test:user', {
       'address': {
         'hack': 'x',
         'street': '1 Main St'
@@ -384,8 +401,8 @@ describe('Value.clean()', () => {
       'name': 'Alice'
     }) as Record<string, Record<string, unknown>>;
 
-    assert.ok(!('hack' in r2.address));
-    assert.equal(r2.address.street, '1 Main St');
+    assert.ok(!('hack' in cleanResult2.address));
+    assert.equal(cleanResult2.address.street, '1 Main St');
 
     const input = {
       'name': 'Alice',

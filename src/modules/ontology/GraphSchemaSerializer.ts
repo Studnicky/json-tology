@@ -1,15 +1,16 @@
-import type { SchemaGraph } from '../graph/SchemaGraph.js';
+import type { SchemaGraphInterface } from '../../interfaces/schema-graph-impl.js';
 import type {
   SchemaGraphNodeInterface, SchemaGraphSemanticsInterface
 } from '../../interfaces/schema-graph.js';
+import type { GraphSchemaSerializerInterface } from '../../interfaces/serializer.js';
 
 
-export class GraphSchemaSerializer {
-  public serialize(graph: SchemaGraph): Record<string, unknown> {
+export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
+  public serialize(graph: SchemaGraphInterface): Record<string, unknown> {
     return this.serializeNode(graph, graph.rootNode) as Record<string, unknown>;
   }
 
-  private serializeNode(graph: SchemaGraph, node: SchemaGraphNodeInterface): boolean | Record<string, unknown> {
+  private serializeNode(graph: SchemaGraphInterface, node: SchemaGraphNodeInterface): boolean | Record<string, unknown> {
     const semantics: SchemaGraphSemanticsInterface = graph.semantics(node);
 
     // Boolean schemas

@@ -5,7 +5,7 @@
 import {
   describe, it
 } from 'node:test';
-import * as assert from 'node:assert';
+import assert from 'node:assert/strict';
 import { Compose } from '../../src/modules/composition/Compose.js';
 
 const PersonSchema = {
@@ -37,42 +37,42 @@ const AddressSchema = {
 // extend
 // ---------------------------------------------------------------------------
 
-describe('Compose.extend()', () => {
-  it('merges new properties into schema', () => {
-    const s = Compose.extend(
+void describe('Compose.extend()', () => {
+  void it('merges new properties into schema', () => {
+    const schema = Compose.extend(
       PersonSchema,
       { 'role': { 'type': 'string' } } as const,
       'https://example.io/person-with-role'
     );
 
-    assert.ok('name' in s.properties);
-    assert.ok('role' in s.properties);
+    assert.ok('name' in schema.properties);
+    assert.ok('role' in schema.properties);
   });
 
-  it('inherits required array unchanged', () => {
-    const s = Compose.extend(
+  void it('inherits required array unchanged', () => {
+    const schema = Compose.extend(
       PersonSchema,
       { 'role': { 'type': 'string' } } as const,
       'https://example.io/person-with-role'
     );
 
-    assert.deepStrictEqual([...s.required].sort(), [
+    assert.deepStrictEqual([...schema.required].sort(), [
       'age',
       'name'
     ]);
   });
 
-  it('sets the new $id', () => {
-    const s = Compose.extend(
+  void it('sets the new $id', () => {
+    const schema = Compose.extend(
       PersonSchema,
       { 'role': { 'type': 'string' } } as const,
       'https://example.io/person-with-role'
     );
 
-    assert.strictEqual(s.$id, 'https://example.io/person-with-role');
+    assert.strictEqual(schema.$id, 'https://example.io/person-with-role');
   });
 
-  it('does not mutate source schema properties', () => {
+  void it('does not mutate source schema properties', () => {
     Compose.extend(
       PersonSchema,
       { 'role': { 'type': 'string' } } as const,
@@ -86,8 +86,8 @@ describe('Compose.extend()', () => {
 // intersection
 // ---------------------------------------------------------------------------
 
-describe('Compose.intersection()', () => {
-  it('wraps schemas in allOf', () => {
+void describe('Compose.intersection()', () => {
+  void it('wraps schemas in allOf', () => {
     const result = Compose.intersection([
       PersonSchema,
       AddressSchema
@@ -97,7 +97,7 @@ describe('Compose.intersection()', () => {
     assert.strictEqual(result.allOf.length, 2);
   });
 
-  it('sets the new $id', () => {
+  void it('sets the new $id', () => {
     const result = Compose.intersection([
       PersonSchema,
       AddressSchema
@@ -106,7 +106,7 @@ describe('Compose.intersection()', () => {
     assert.strictEqual(result.$id, 'https://example.io/Combined');
   });
 
-  it('preserves constituent schemas in allOf', () => {
+  void it('preserves constituent schemas in allOf', () => {
     const result = Compose.intersection([
       PersonSchema,
       AddressSchema
@@ -116,7 +116,7 @@ describe('Compose.intersection()', () => {
     assert.deepStrictEqual(result.allOf[1], AddressSchema);
   });
 
-  it('does not mutate the source schemas', () => {
+  void it('does not mutate the source schemas', () => {
     const before = { ...PersonSchema };
 
     Compose.intersection([
@@ -131,7 +131,7 @@ describe('Compose.intersection()', () => {
 // discriminatedUnion
 // ---------------------------------------------------------------------------
 
-describe('Compose.discriminatedUnion()', () => {
+void describe('Compose.discriminatedUnion()', () => {
   const CircleSchema = {
     '$id': 'https://example.io/circle',
     'properties': {
@@ -152,7 +152,7 @@ describe('Compose.discriminatedUnion()', () => {
     'type': 'object'
   } as const;
 
-  it('wraps variants in oneOf', () => {
+  void it('wraps variants in oneOf', () => {
     const result = Compose.discriminatedUnion('kind', [
       CircleSchema,
       RectSchema
@@ -162,7 +162,7 @@ describe('Compose.discriminatedUnion()', () => {
     assert.strictEqual(result.oneOf.length, 2);
   });
 
-  it('sets the discriminator propertyName', () => {
+  void it('sets the discriminator propertyName', () => {
     const result = Compose.discriminatedUnion('kind', [
       CircleSchema,
       RectSchema
@@ -171,7 +171,7 @@ describe('Compose.discriminatedUnion()', () => {
     assert.deepStrictEqual(result.discriminator, { 'propertyName': 'kind' });
   });
 
-  it('sets the new $id', () => {
+  void it('sets the new $id', () => {
     const result = Compose.discriminatedUnion('kind', [
       CircleSchema,
       RectSchema
@@ -180,7 +180,7 @@ describe('Compose.discriminatedUnion()', () => {
     assert.strictEqual(result.$id, 'https://example.io/Shape');
   });
 
-  it('preserves variant schemas in oneOf', () => {
+  void it('preserves variant schemas in oneOf', () => {
     const result = Compose.discriminatedUnion('kind', [
       CircleSchema,
       RectSchema

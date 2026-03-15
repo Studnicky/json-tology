@@ -6,16 +6,16 @@ import { GraphSchemaSerializer } from '../../src/modules/ontology/GraphSchemaSer
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 
 function roundtrip(input: Record<string, unknown>): Record<string, unknown> {
-  const s = new GraphSchemaSerializer();
+  const serializer = new GraphSchemaSerializer();
   const graph = new SchemaGraph(input);
 
-  return s.serialize(graph);
+  return serializer.serialize(graph);
 }
 
-describe('GraphSchemaSerializer', () => {
+void describe('GraphSchemaSerializer', () => {
   const serializer = new GraphSchemaSerializer();
 
-  it('roundtrips a basic object schema', () => {
+  void it('roundtrips a basic object schema', () => {
     const schema = {
       '$id': 'https://example.com/Basic',
       'properties': {
@@ -29,11 +29,13 @@ describe('GraphSchemaSerializer', () => {
 
     assert.equal(result.$id, 'https://example.com/Basic');
     assert.equal(result.type, 'object');
-    assert.deepEqual((result.properties as any).name, { 'type': 'string' });
-    assert.deepEqual((result.properties as any).count, { 'type': 'number' });
+    const props = result.properties as Record<string, Record<string, unknown>>;
+
+    assert.deepEqual(props.name, { 'type': 'string' });
+    assert.deepEqual(props.count, { 'type': 'number' });
   });
 
-  it('preserves $defs, $anchor, required, array items', () => {
+  void it('preserves $defs, $anchor, required, array items', () => {
     const defsSchema = {
       '$defs': {
         'Address': {
@@ -48,10 +50,12 @@ describe('GraphSchemaSerializer', () => {
     const defsResult = serializer.serialize(new SchemaGraph(defsSchema));
 
     assert.ok(defsResult.$defs !== undefined);
-    const defs = defsResult.$defs as Record<string, any>;
+    const defs = defsResult.$defs as Record<string, Record<string, unknown>>;
 
     assert.equal(defs.Address.type, 'object');
-    assert.deepEqual(defs.Address.properties.street, { 'type': 'string' });
+    const addrProps = defs.Address.properties as Record<string, Record<string, unknown>>;
+
+    assert.deepEqual(addrProps.street, { 'type': 'string' });
 
     const anchorSchema = {
       '$id': 'https://example.com/Anchored',
@@ -64,8 +68,9 @@ describe('GraphSchemaSerializer', () => {
       'type': 'object'
     };
     const anchorResult = serializer.serialize(new SchemaGraph(anchorSchema));
+    const anchorProps = anchorResult.properties as Record<string, Record<string, unknown>>;
 
-    assert.equal((anchorResult.properties as any).tag.$anchor, 'tag-node');
+    assert.equal(anchorProps.tag.$anchor, 'tag-node');
 
     const reqSchema = {
       '$id': 'https://example.com/Required',
@@ -96,7 +101,7 @@ describe('GraphSchemaSerializer', () => {
     assert.deepEqual(arrResult.items, { 'type': 'string' });
   });
 
-  it('preserves allOf, anyOf, oneOf composition', () => {
+  void it('preserves allOf, anyOf, oneOf composition', () => {
     for (const keyword of [
       'allOf',
       'anyOf',
@@ -116,7 +121,7 @@ describe('GraphSchemaSerializer', () => {
     }
   });
 
-  it('preserves pattern, format, numeric constraints, enum, const, title, description', () => {
+  void it('preserves pattern, format, numeric constraints, enum, const, title, description', () => {
     const constrained = serializer.serialize(new SchemaGraph({
       '$id': 'https://example.com/Constrained',
       'format': 'email',
@@ -173,7 +178,7 @@ describe('GraphSchemaSerializer', () => {
     assert.equal(meta.description, 'A description');
   });
 
-  it('roundtrips graph identity: stable output, preserves $id, $defs, anchors, refs, pointers', () => {
+  void it('roundtrips graph identity: stable output, preserves $id, $defs, anchors, refs, pointers', () => {
     const schema = {
       '$defs': {
         'Bar': {
@@ -208,23 +213,27 @@ describe('GraphSchemaSerializer', () => {
 
     assert.equal(first.$id, 'https://example.com/Roundtrip');
 
-    const defs = first.$defs as Record<string, any>;
+    const defs = first.$defs as Record<string, Record<string, unknown>>;
 
-    assert.ok(defs.Foo && defs.Bar);
+    assert.ok('Foo' in defs && 'Bar' in defs);
     assert.equal(defs.Foo.$anchor, 'MyAnchor');
     assert.equal(defs.Bar.$dynamicAnchor, 'DynBar');
-    assert.deepEqual(defs.Foo.properties.label, { 'type': 'string' });
+    const fooProps = defs.Foo.properties as Record<string, Record<string, unknown>>;
+
+    assert.deepEqual(fooProps.label, { 'type': 'string' });
     assert.deepEqual(defs.Foo.required, ['label']);
 
-    const props = first.properties as Record<string, any>;
+    const props = first.properties as Record<string, Record<string, unknown>>;
 
     assert.equal(props.localRef.$ref, '#/$defs/Foo');
     assert.equal(props.anchorRef.$ref, '#MyAnchor');
     assert.equal(props.nested.type, 'object');
-    assert.deepEqual(props.nested.properties.deep, { 'type': 'integer' });
+    const nestedProps = props.nested.properties as Record<string, Record<string, unknown>>;
+
+    assert.deepEqual(nestedProps.deep, { 'type': 'integer' });
   });
 
-  it('preserves $comment on root and nested schemas, and custom keywords through two passes', () => {
+  void it('preserves $comment on root and nested schemas, and custom keywords through two passes', () => {
     const commented = serializer.serialize(new SchemaGraph({
       '$comment': 'Root comment',
       '$id': 'https://example.com/NestedComment',
@@ -238,7 +247,9 @@ describe('GraphSchemaSerializer', () => {
     }));
 
     assert.equal(commented.$comment, 'Root comment');
-    assert.equal((commented.properties as any).name.$comment, 'Name field comment');
+    const commentedProps = commented.properties as Record<string, Record<string, unknown>>;
+
+    assert.equal(commentedProps.name.$comment, 'Name field comment');
 
     const customSchema = {
       '$id': 'https://example.com/Custom',
@@ -270,10 +281,12 @@ describe('GraphSchemaSerializer', () => {
 
     assert.deepEqual(first, second);
     assert.equal(first['x-table'], 'products');
-    assert.equal((first.properties as any).price['x-currency'], 'USD');
+    const priceProps = first.properties as Record<string, Record<string, unknown>>;
+
+    assert.equal(priceProps.price['x-currency'], 'USD');
   });
 
-  it('roundtrips custom keywords through JsonTology.toSchema()', async () => {
+  void it('roundtrips custom keywords through JsonTology.toSchema()', async () => {
     const { JsonTology } = await import('../../src/JsonTology.js');
     const schema = {
       '$comment': 'End-to-end comment',
@@ -297,12 +310,14 @@ describe('GraphSchemaSerializer', () => {
     assert.ok(result !== undefined);
     assert.equal(result.$comment, 'End-to-end comment');
     assert.equal(result['x-api-version'], 2);
-    assert.equal((result.properties as any).score['x-widget'], 'gauge');
+    const scoreProps = result.properties as Record<string, Record<string, unknown>>;
+
+    assert.equal(scoreProps.score['x-widget'], 'gauge');
     assert.equal(result.type, 'object');
     assert.deepEqual(result.required, ['score']);
   });
 
-  it('preserves examples on root and nested schemas', () => {
+  void it('preserves examples on root and nested schemas', () => {
     const schema = {
       '$id': 'https://example.com/WithExamples',
       'examples': [
@@ -334,14 +349,15 @@ describe('GraphSchemaSerializer', () => {
       'type': 'object'
     };
     const objResult = serializer.serialize(new SchemaGraph(objSchema));
+    const objProps = objResult.properties as Record<string, Record<string, unknown>>;
 
-    assert.deepEqual((objResult.properties as any).name.examples, [
+    assert.deepEqual(objProps.name.examples, [
       'Alice',
       'Bob'
     ]);
   });
 
-  it('preserves definitions (draft-07 alias) or maps to $defs', () => {
+  void it('preserves definitions (draft-07 alias) or maps to $defs', () => {
     const schema = {
       '$id': 'https://example.com/WithDefinitions',
       'definitions': {
@@ -355,14 +371,16 @@ describe('GraphSchemaSerializer', () => {
     const graph = new SchemaGraph(schema);
     const result = serializer.serialize(graph);
     // Must roundtrip definitions — either as definitions or $defs
-    const defs = (result.definitions ?? result.$defs) as Record<string, any>;
+    const defs = (result.definitions ?? result.$defs) as Record<string, Record<string, unknown>> | undefined;
 
-    assert.ok(defs);
+    assert.ok(defs !== undefined);
     assert.equal(defs.Addr.type, 'object');
-    assert.deepEqual(defs.Addr.properties.street, { 'type': 'string' });
+    const addrProps = defs.Addr.properties as Record<string, Record<string, unknown>>;
+
+    assert.deepEqual(addrProps.street, { 'type': 'string' });
   });
 
-  it('preserves additionalItems', () => {
+  void it('preserves additionalItems', () => {
     const schema = {
       '$id': 'https://example.com/WithAdditionalItems',
       'additionalItems': { 'type': 'boolean' },
@@ -378,7 +396,7 @@ describe('GraphSchemaSerializer', () => {
     assert.deepEqual(result.additionalItems, { 'type': 'boolean' });
   });
 
-  it('preserves $recursiveAnchor and $recursiveRef', () => {
+  void it('preserves $recursiveAnchor and $recursiveRef', () => {
     const schema = {
       '$id': 'https://example.com/Recursive',
       '$recursiveAnchor': true,
@@ -394,10 +412,12 @@ describe('GraphSchemaSerializer', () => {
     const result = serializer.serialize(graph);
 
     assert.equal(result.$recursiveAnchor, true);
-    assert.equal((result.properties as any).children.items.$recursiveRef, '#');
+    const recProps = result.properties as Record<string, Record<string, Record<string, unknown>>>;
+
+    assert.equal(recProps.children.items.$recursiveRef, '#');
   });
 
-  it('roundtrips discriminator with mapping', () => {
+  void it('roundtrips discriminator with mapping', () => {
     const schema = {
       '$id': 'https://example.com/Disc',
       'discriminator': {
@@ -421,7 +441,7 @@ describe('GraphSchemaSerializer', () => {
     const result = roundtrip(schema);
     const disc = result.discriminator as Record<string, unknown>;
 
-    assert.ok(disc);
+    assert.ok(typeof disc === 'object');
     assert.equal(disc.propertyName, 'kind');
     assert.deepEqual(disc.mapping, {
       'cat': '#/$defs/Cat',
@@ -434,7 +454,7 @@ describe('GraphSchemaSerializer', () => {
     assert.deepEqual(result, second);
   });
 
-  it('roundtrips discriminator without mapping', () => {
+  void it('roundtrips discriminator without mapping', () => {
     const schema = {
       '$id': 'https://example.com/DiscNoMap',
       'discriminator': { 'propertyName': 'kind' },
@@ -446,12 +466,12 @@ describe('GraphSchemaSerializer', () => {
     const result = roundtrip(schema);
     const disc = result.discriminator as Record<string, unknown>;
 
-    assert.ok(disc);
+    assert.ok(typeof disc === 'object');
     assert.equal(disc.propertyName, 'kind');
     assert.equal(disc.mapping, undefined);
   });
 
-  it('roundtrips examples and definitions through JsonTology.toSchema()', async () => {
+  void it('roundtrips examples and definitions through JsonTology.toSchema()', async () => {
     const { JsonTology } = await import('../../src/JsonTology.js');
     const schema = {
       '$id': 'https://example.com/E2E-Examples',

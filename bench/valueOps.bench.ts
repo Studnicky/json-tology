@@ -6,11 +6,11 @@ import { Value as TBValue } from '@sinclair/typebox/value';
 import { FormatRegistry } from '@sinclair/typebox';
 
 // Register formats for TypeBox
-FormatRegistry.Set('email', (v) => {
-  return /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/u.test(v);
+FormatRegistry.Set('email', (value) => {
+  return /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/u.test(value);
 });
-FormatRegistry.Set('date-time', (v) => {
-  return !isNaN(Date.parse(v));
+FormatRegistry.Set('date-time', (value) => {
+  return !Number.isNaN(Date.parse(value));
 });
 import { Value } from '../src/modules/data/Value.js';
 import { SchemaRegistry } from '../src/modules/registry/SchemaRegistry.js';
@@ -61,43 +61,59 @@ export function runValueOpsBench(): BenchResult[] {
   // ---------------------------------------------------------------------------
   section('clean — strip unknown properties');
 
-  results.push(bench('clean simple', 'json-tology', () => {
+  const cleanSimpleResult = bench('clean simple', 'json-tology', () => {
     registry.clean(SimpleSchema.$id, dirtySimple);
-  }));
+  });
 
-  results.push(bench('clean simple', 'typebox', () => {
+  results.push(cleanSimpleResult);
+
+  const cleanSimpleTbResult = bench('clean simple', 'typebox', () => {
     TBValue.Clean(SimpleSchemaTypebox, structuredClone(dirtySimple));
-  }));
+  });
 
-  results.push(bench('clean nested', 'json-tology', () => {
+  results.push(cleanSimpleTbResult);
+
+  const cleanNestedResult = bench('clean nested', 'json-tology', () => {
     registry.clean(NestedSchema.$id, dirtyNested);
-  }));
+  });
 
-  results.push(bench('clean nested', 'typebox', () => {
+  results.push(cleanNestedResult);
+
+  const cleanNestedTbResult = bench('clean nested', 'typebox', () => {
     TBValue.Clean(NestedSchemaTypebox, structuredClone(dirtyNested));
-  }));
+  });
+
+  results.push(cleanNestedTbResult);
 
   // ---------------------------------------------------------------------------
   section('convert — type coercion (no defaults)');
 
-  results.push(bench('convert simple', 'json-tology', () => {
+  const convertSimpleResult = bench('convert simple', 'json-tology', () => {
     registry.convert(SimpleSchema.$id, simpleCoercible);
-  }));
+  });
 
-  results.push(bench('convert simple', 'typebox', () => {
+  results.push(convertSimpleResult);
+
+  const convertSimpleTbResult = bench('convert simple', 'typebox', () => {
     TBValue.Convert(SimpleSchemaTypebox, simpleCoercible);
-  }));
+  });
+
+  results.push(convertSimpleTbResult);
 
   // ---------------------------------------------------------------------------
   section('clone — deep clone');
 
-  results.push(bench('clone nested', 'json-tology', () => {
+  const cloneNestedResult = bench('clone nested', 'json-tology', () => {
     Value.clone(nestedValid);
-  }));
+  });
 
-  results.push(bench('clone nested', 'structuredClone', () => {
+  results.push(cloneNestedResult);
+
+  const cloneStructuredResult = bench('clone nested', 'structuredClone', () => {
     structuredClone(nestedValid);
-  }));
+  });
+
+  results.push(cloneStructuredResult);
 
   // ---------------------------------------------------------------------------
   section('diff — structural diff');
@@ -112,13 +128,17 @@ export function runValueOpsBench(): BenchResult[] {
     'total': 50
   };
 
-  results.push(bench('diff nested', 'json-tology', () => {
+  const diffNestedResult = bench('diff nested', 'json-tology', () => {
     Value.diff(nestedValid, nestedModified);
-  }));
+  });
 
-  results.push(bench('diff nested', 'typebox', () => {
-    [...TBValue.Diff(nestedValid, nestedModified)];
-  }));
+  results.push(diffNestedResult);
+
+  const diffNestedTbResult = bench('diff nested', 'typebox', () => {
+    void [...TBValue.Diff(nestedValid, nestedModified)];
+  });
+
+  results.push(diffNestedTbResult);
 
   return results;
 }

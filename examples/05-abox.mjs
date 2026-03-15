@@ -1,0 +1,88 @@
+/**
+ * 05-abox.mjs — ABox instance projection
+ *
+ * Demonstrates: projecting validated data to RDF instance quads (ABox).
+ * Each instance becomes a JSON-LD node linked by class-scoped property IRIs.
+ *
+ * Run: npm run build && node examples/05-abox.mjs
+ */
+
+import { JsonTology } from '../dist/index.js';
+
+// ---------------------------------------------------------------------------
+// Schema with nested object
+// ---------------------------------------------------------------------------
+
+const EventSchema = {
+  $id: 'https://example.com/Event',
+  title: 'Event',
+  type: 'object',
+  $defs: {
+    Location: {
+      type: 'object',
+      properties: {
+        city:    { type: 'string' },
+        country: { type: 'string' },
+      },
+      required: ['city', 'country'],
+    },
+  },
+  properties: {
+    title: { type: 'string' },
+    date:  { type: 'string', format: 'date-time' },
+    location: { $ref: '#/$defs/Location' },
+  },
+  required: ['title', 'date'],
+};
+
+// ---------------------------------------------------------------------------
+// Instance data
+// ---------------------------------------------------------------------------
+
+const event = {
+  title: 'JSON-LD Workshop',
+  date: '2026-06-15T09:00:00Z',
+  location: {
+    city: 'Berlin',
+    country: 'DE',
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Project to ABox
+// ---------------------------------------------------------------------------
+
+const jt = JsonTology.create({
+  baseIRI: 'https://example.com',
+  schemas: [EventSchema],
+});
+
+const abox = jt.abox(EventSchema, event);
+
+console.log('--- ABox Instance (JSON-LD) ---');
+console.log(JSON.stringify(abox.jsonLdObject(), null, 2));
+console.log();
+
+// ---------------------------------------------------------------------------
+// Inspect individual nodes
+// ---------------------------------------------------------------------------
+
+const nodes = abox.raw();
+
+console.log('--- Instance nodes ---');
+for (const node of nodes) {
+  const id = node['@id'];
+  const type = node['@type'];
+  const typeId = typeof type === 'object' && type !== null ? type['@id'] : type;
+  console.log(`  Node: ${id}`);
+  console.log(`  Type: ${typeId}`);
+
+  for (const [key, value] of Object.entries(node)) {
+    if (key === '@id' || key === '@type') continue;
+    const display = typeof value === 'object' && value !== null
+      ? JSON.stringify(value)
+      : value;
+    console.log(`    ${key}: ${display}`);
+  }
+  console.log();
+}

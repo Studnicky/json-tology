@@ -12,11 +12,13 @@ import type { InferSchemaType } from '../../src/types/infer.js';
 // ---------------------------------------------------------------------------
 // Helper: bidirectional assignability check
 // ---------------------------------------------------------------------------
-type AssertEqual<A, B>
-  = [A] extends [B] ? [B] extends [A] ? true : false : false;
+type AssertEqual<TA, TB>
+  = [TA] extends [TB] ? [TB] extends [TA] ? true : false : false;
 
 // compile-time assertion — produces an error if T is not true
-function assert<T extends true>(): void {}
+function assertType<T extends true>(): void {
+  void (undefined as unknown as T);
+}
 
 // ---------------------------------------------------------------------------
 // 1. Primitive string
@@ -25,7 +27,7 @@ const StringSchema = { 'type': 'string' } as const;
 
 type OursString = InferSchemaType<typeof StringSchema>;
 type TheirsString = FromSchema<typeof StringSchema>;
-assert<AssertEqual<OursString, TheirsString>>();
+assertType<AssertEqual<OursString, TheirsString>>();
 
 // ---------------------------------------------------------------------------
 // 2. Primitive number
@@ -34,7 +36,7 @@ const NumberSchema = { 'type': 'number' } as const;
 
 type OursNumber = InferSchemaType<typeof NumberSchema>;
 type TheirsNumber = FromSchema<typeof NumberSchema>;
-assert<AssertEqual<OursNumber, TheirsNumber>>();
+assertType<AssertEqual<OursNumber, TheirsNumber>>();
 
 // ---------------------------------------------------------------------------
 // 3. Primitive integer (both should infer number)
@@ -43,7 +45,7 @@ const IntegerSchema = { 'type': 'integer' } as const;
 
 type OursInteger = InferSchemaType<typeof IntegerSchema>;
 type TheirsInteger = FromSchema<typeof IntegerSchema>;
-assert<AssertEqual<OursInteger, TheirsInteger>>();
+assertType<AssertEqual<OursInteger, TheirsInteger>>();
 
 // ---------------------------------------------------------------------------
 // 4. Primitive boolean
@@ -52,7 +54,7 @@ const BoolSchema = { 'type': 'boolean' } as const;
 
 type OursBool = InferSchemaType<typeof BoolSchema>;
 type TheirsBool = FromSchema<typeof BoolSchema>;
-assert<AssertEqual<OursBool, TheirsBool>>();
+assertType<AssertEqual<OursBool, TheirsBool>>();
 
 // ---------------------------------------------------------------------------
 // 5. Null
@@ -61,7 +63,7 @@ const NullSchema = { 'type': 'null' } as const;
 
 type OursNull = InferSchemaType<typeof NullSchema>;
 type TheirsNull = FromSchema<typeof NullSchema>;
-assert<AssertEqual<OursNull, TheirsNull>>();
+assertType<AssertEqual<OursNull, TheirsNull>>();
 
 // ---------------------------------------------------------------------------
 // 6. Const literal
@@ -70,7 +72,7 @@ const ConstSchema = { 'const': 'hello' } as const;
 
 type OursConst = InferSchemaType<typeof ConstSchema>;
 type TheirsConst = FromSchema<typeof ConstSchema>;
-assert<AssertEqual<OursConst, TheirsConst>>();
+assertType<AssertEqual<OursConst, TheirsConst>>();
 
 // ---------------------------------------------------------------------------
 // 7. Enum
@@ -85,7 +87,7 @@ const EnumSchema = {
 
 type OursEnum = InferSchemaType<typeof EnumSchema>;
 type TheirsEnum = FromSchema<typeof EnumSchema>;
-assert<AssertEqual<OursEnum, TheirsEnum>>();
+assertType<AssertEqual<OursEnum, TheirsEnum>>();
 
 // ---------------------------------------------------------------------------
 // 8. Simple array
@@ -98,9 +100,9 @@ const ArraySchema = {
 type OursArray = InferSchemaType<typeof ArraySchema>;
 type TheirsArray = FromSchema<typeof ArraySchema>;
 // Both produce readonly arrays — verify element type matches
-type _ArrayElementOurs = OursArray extends ReadonlyArray<infer E> ? E : never;
-type _ArrayElementTheirs = TheirsArray extends ReadonlyArray<infer E> ? E : never;
-assert<AssertEqual<_ArrayElementOurs, _ArrayElementTheirs>>();
+type ArrayElementOurs = OursArray extends ReadonlyArray<infer TE> ? TE : never;
+type ArrayElementTheirs = TheirsArray extends ReadonlyArray<infer TE> ? TE : never;
+assertType<AssertEqual<ArrayElementOurs, ArrayElementTheirs>>();
 
 // ---------------------------------------------------------------------------
 // 9. Simple object with required
@@ -119,8 +121,8 @@ type TheirsObject = FromSchema<typeof ObjectSchema>;
 // Both should have { name: string; age?: number }
 // Note: FromSchema may add [k: string]: unknown for open objects
 // We check our type is assignable to theirs (our type is a subtype)
-type _OursToTheirs = OursObject extends TheirsObject ? true : false;
-assert<_OursToTheirs>();
+type OursToTheirs = OursObject extends TheirsObject ? true : false;
+assertType<OursToTheirs>();
 
 // ---------------------------------------------------------------------------
 // 10. Nullable type array
@@ -134,7 +136,7 @@ const NullableSchema = {
 
 type OursNullable = InferSchemaType<typeof NullableSchema>;
 type TheirsNullable = FromSchema<typeof NullableSchema>;
-assert<AssertEqual<OursNullable, TheirsNullable>>();
+assertType<AssertEqual<OursNullable, TheirsNullable>>();
 
 // ---------------------------------------------------------------------------
 // 11. anyOf union
@@ -148,7 +150,7 @@ const AnyOfSchema = {
 
 type OursAnyOf = InferSchemaType<typeof AnyOfSchema>;
 type TheirsAnyOf = FromSchema<typeof AnyOfSchema>;
-assert<AssertEqual<OursAnyOf, TheirsAnyOf>>();
+assertType<AssertEqual<OursAnyOf, TheirsAnyOf>>();
 
 // ---------------------------------------------------------------------------
 // 12. $ref / $defs
@@ -168,9 +170,10 @@ const RefSchema = {
 
 type OursRef = InferSchemaType<typeof RefSchema>;
 type TheirsRef = FromSchema<typeof RefSchema>;
+void (undefined as unknown as TheirsRef);
 // Check our child.name is string
-type _RefCheck = OursRef extends { 'child': { 'name': string } } ? true : false;
-assert<_RefCheck>();
+type RefCheck = OursRef extends { 'child': { 'name': string } } ? true : false;
+assertType<RefCheck>();
 
 // ---------------------------------------------------------------------------
 // 13. allOf intersection
@@ -192,9 +195,9 @@ const AllOfSchema = {
 
 type OursAllOf = InferSchemaType<typeof AllOfSchema>;
 // Should have both a: string and b: number
-type _AllOfCheck = OursAllOf extends { 'a': string;
+type AllOfCheck = OursAllOf extends { 'a': string;
   'b': number } ? true : false;
-assert<_AllOfCheck>();
+assertType<AllOfCheck>();
 
 // ---------------------------------------------------------------------------
 // 14. additionalProperties: false
@@ -208,7 +211,7 @@ const ClosedSchema = {
 
 type OursClosed = InferSchemaType<typeof ClosedSchema>;
 type TheirsClosed = FromSchema<typeof ClosedSchema>;
-assert<AssertEqual<OursClosed, TheirsClosed>>();
+assertType<AssertEqual<OursClosed, TheirsClosed>>();
 
 // Prevent unused variable warnings
 void [

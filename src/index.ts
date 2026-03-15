@@ -6,9 +6,9 @@
  * @example
  * import { JsonTology, InferType } from 'json-tology';
  *
- * const jt = new JsonTology({
+ * const jt = JsonTology.create({
  *   baseIRI: 'https://myapp.io',
- *   schemas: [UserSchema, OrderSchema],
+ *   schemas: [UserSchema, OrderSchema] as const,
  * });
  *
  * type User = InferType<typeof UserSchema>;
@@ -19,14 +19,16 @@
  * jt.abox(UserSchema, data).jsonLd();
  */
 
-// Errors — canonical location
-export {
-  BaseError, GraphError, LoadError, MaterializationError, ParseError, SchemaError
-} from './errors/index.js';
-export type {
-  ErrorJsonInterface, GraphErrorCodeType, LoadErrorCodeType, SchemaErrorCodeType
-} from './errors/index.js';
+// Errors — canonical locations
+export { BaseError } from './errors/BaseError.js';
+export { GraphError } from './errors/GraphError.js';
+export { LoadError } from './errors/LoadError.js';
+export { MaterializationError } from './errors/MaterializationError.js';
+export { ParseError } from './errors/ParseError.js';
+export { SchemaError } from './errors/SchemaError.js';
 export { ValidationErrors } from './errors/ValidationErrors.js';
+export type { ErrorJsonInterface } from './interfaces/error.js';
+export type { GraphErrorCodeType, LoadErrorCodeType, SchemaErrorCodeType } from './types/error-codes.js';
 export type { JsonTologyOptionsInterface } from './interfaces/config.js';
 export type {
   GraphEngineOptionsInterface, GraphExecutionResultInterface
@@ -60,12 +62,14 @@ export type {
 } from './types/brand.js';
 export type {
   DiscriminatedUnionSchemaInterface,
-  ExtendSchemaType,
-  ExtractRequiredType,
   IntersectionSchemaInterface,
   OmitSchemaInterface,
+  PickSchemaInterface
+} from './interfaces/compose.js';
+export type {
+  ExtendSchemaType,
+  ExtractRequiredType,
   PartialSchemaType,
-  PickSchemaInterface,
   RequiredSchemaType
 } from './types/compose.js';
 export type {

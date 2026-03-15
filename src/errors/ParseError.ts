@@ -13,8 +13,9 @@ export class ParseError extends BaseError {
 
   public constructor(errors: ValidationErrors | ValidationErrorType[], options?: { 'cause'?: Error }) {
     const validationErrors = errors instanceof ValidationErrors ? errors : new ValidationErrors(errors);
+    const joinedMessages = validationErrors.messages().join('; ');
 
-    super('PARSE_FAILED', validationErrors.messages().join('; '), false, options);
+    super('PARSE_FAILED', joinedMessages, false, options);
     this.name = 'ParseError';
     this.errors = validationErrors;
   }

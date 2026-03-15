@@ -7,9 +7,8 @@ import {
   projectAbox, projectGraph, quadsToJsonLdNodes
 } from '../../src/modules/rdf/Projection.js';
 import { resetBnodeCounter } from '../../src/modules/rdf/Projection.js';
-import type {
-  QuadInterface, QuadObjectType
-} from '../../src/modules/rdf/Quad.js';
+import type { QuadInterface } from '../../src/interfaces/quad.js';
+import type { QuadObjectType } from '../../src/types/quad.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -32,9 +31,9 @@ function hasQuad(quads: QuadInterface[], subject: string, predicate: string, obj
     return q.subject === subject
     && q.predicate === predicate
     && (
-      (q.object.type === 'iri' && q.object.value === objectValue)
-      || (q.object.type === 'literal' && String(q.object.value) === objectValue)
-      || (q.object.type === 'bnode' && q.object.id === objectValue)
+      (q.object.termType === 'NamedNode' && q.object.value === objectValue)
+      || (q.object.termType === 'Literal' && String(q.object.value) === objectValue)
+      || (q.object.termType === 'BlankNode' && q.object.value === objectValue)
     );
   });
 }
@@ -43,7 +42,7 @@ function hasIriQuad(quads: QuadInterface[], subject: string, predicate: string, 
   return quads.some((q) => {
     return q.subject === subject
     && q.predicate === predicate
-    && q.object.type === 'iri'
+    && q.object.termType === 'NamedNode'
     && q.object.value === objectIri;
   });
 }
@@ -52,9 +51,9 @@ function hasLiteralQuad(quads: QuadInterface[], subject: string, predicate: stri
   return quads.some((q) => {
     return q.subject === subject
     && q.predicate === predicate
-    && q.object.type === 'literal'
+    && q.object.termType === 'Literal'
     && q.object.value === value
-    && (datatype === undefined || q.object.datatype === datatype);
+    && (datatype === undefined || q.object.datatype.value === datatype);
   });
 }
 
@@ -62,13 +61,13 @@ function hasBnodeQuad(quads: QuadInterface[], subject: string, predicate: string
   return quads.find((q) => {
     return q.subject === subject
     && q.predicate === predicate
-    && q.object.type === 'bnode';
+    && q.object.termType === 'BlankNode';
   });
 }
 
 function bnodeId(q: QuadInterface): string {
-  if (q.object.type === 'bnode') {
-    return q.object.id;
+  if (q.object.termType === 'BlankNode') {
+    return q.object.value;
   }
   throw new Error('Expected bnode object');
 }
@@ -447,8 +446,8 @@ describe('projectGraph — TBox projection', () => {
     });
   });
 
-  describe('15. readOnly/writeOnly produce rdf:type annotation quads', () => {
-    it('emits rdf:type jt:ReadOnly', () => {
+  describe('15. readOnly/writeOnly produce dash: predicate quads', () => {
+    it('emits dash:readOnly true', () => {
       const quads = tboxQuads({
         '$id': 'https://example.com/RO',
         'properties': {
@@ -460,15 +459,16 @@ describe('projectGraph — TBox projection', () => {
         'type': 'object'
       });
 
-      assert.ok(hasIriQuad(
+      assert.ok(hasLiteralQuad(
         quads,
         'https://example.com/RO#/properties/id',
-        'rdf:type',
-        'jt:ReadOnly'
+        'dash:readOnly',
+        true,
+        'xsd:boolean'
       ));
     });
 
-    it('emits rdf:type jt:WriteOnly', () => {
+    it('emits dash:writeOnly true', () => {
       const quads = tboxQuads({
         '$id': 'https://example.com/WO',
         'properties': {
@@ -480,11 +480,12 @@ describe('projectGraph — TBox projection', () => {
         'type': 'object'
       });
 
-      assert.ok(hasIriQuad(
+      assert.ok(hasLiteralQuad(
         quads,
         'https://example.com/WO#/properties/password',
-        'rdf:type',
-        'jt:WriteOnly'
+        'dash:writeOnly',
+        true,
+        'xsd:boolean'
       ));
     });
   });
@@ -542,18 +543,18 @@ describe('projectGraph — TBox projection', () => {
       assert.ok(unionQuads.length > 0, 'should have unionOf quad');
 
       const listQuad = unionQuads.find((q) => {
-        return q.object.type === 'list';
+        return q.object.termType === 'List';
       });
 
       assert.ok(listQuad, 'should have list-type object');
 
-      if (listQuad.object.type === 'list') {
+      if (listQuad.object.termType === 'List') {
         const items = listQuad.object.items;
 
         assert.equal(items.length, 2);
-        assert.equal(items[0].type, 'iri');
-        assert.equal(items[1].type, 'iri');
-        if (items[0].type === 'iri' && items[1].type === 'iri') {
+        assert.equal(items[0].termType, 'NamedNode');
+        assert.equal(items[1].termType, 'NamedNode');
+        if (items[0].termType === 'NamedNode' && items[1].termType === 'NamedNode') {
           assert.equal(items[0].value, 'xsd:string');
           assert.equal(items[1].value, 'xsd:decimal');
         }
@@ -649,15 +650,15 @@ describe('quadsToJsonLdNodes', () => {
     const quads: QuadInterface[] = [
       {
         'object': {
-          'id': '_:b1',
-          'type': 'bnode'
+          'termType': 'BlankNode' as const,
+          'value': '_:b1'
         },
         'predicate': 'ex:child',
         'subject': 'https://example.com/Thing'
       },
       {
         'object': {
-          'type': 'iri',
+          'termType': 'NamedNode' as const,
           'value': 'ex:Nested'
         },
         'predicate': 'rdf:type',
@@ -665,8 +666,9 @@ describe('quadsToJsonLdNodes', () => {
       },
       {
         'object': {
-          'datatype': 'xsd:string',
-          'type': 'literal',
+          'datatype': { 'termType': 'NamedNode' as const, 'value': 'xsd:string' },
+          'language': '',
+          'termType': 'Literal' as const,
           'value': 'nested'
         },
         'predicate': 'ex:value',
@@ -763,7 +765,7 @@ describe('projectAbox — ABox projection', () => {
       // Parent instance
       const parentTypeQuads = quads.filter((q) => {
         return q.predicate === 'rdf:type'
-        && q.object.type === 'iri'
+        && q.object.termType === 'NamedNode'
         && q.object.value === 'https://example.com/Parent';
       });
 
@@ -774,10 +776,10 @@ describe('projectAbox — ABox projection', () => {
       const addrQuads = findQuadsForSubject(quads, parentIRI, 'https://example.com/Parent#address');
 
       assert.equal(addrQuads.length, 1);
-      assert.equal(addrQuads[0].object.type, 'iri');
+      assert.equal(addrQuads[0].object.termType, 'NamedNode');
 
       // Nested instance should have its own quads
-      const nestedIRI = addrQuads[0].object.type === 'iri' ? addrQuads[0].object.value : '';
+      const nestedIRI = addrQuads[0].object.termType === 'NamedNode' ? addrQuads[0].object.value : '';
 
       assert.ok(
         hasLiteralQuad(quads, nestedIRI, 'https://example.com/Parent#/properties/address#street', 'Springfield', 'xsd:string')
@@ -785,7 +787,7 @@ describe('projectAbox — ABox projection', () => {
         || quads.some((q) => {
           return q.subject === nestedIRI
           && q.predicate.includes('city')
-          && q.object.type === 'literal'
+          && q.object.termType === 'Literal'
           && q.object.value === 'Springfield';
         }),
         'nested instance should have city property'
@@ -825,10 +827,10 @@ describe('projectAbox — ABox projection', () => {
 
       const tagValues = new Set(tagQuads
         .filter((q) => {
-          return q.object.type === 'literal';
+          return q.object.termType === 'Literal';
         })
         .map((q) => {
-          return q.object.type === 'literal' ? q.object.value : null;
+          return q.object.termType === 'Literal' ? q.object.value : null;
         }));
 
       assert.ok(tagValues.has('red'));
@@ -891,7 +893,7 @@ describe('projectAbox — ABox projection', () => {
       // Collect TBox class IRIs
       const tboxClasses = new Set(tbox
         .filter((q) => {
-          return q.predicate === 'rdf:type' && q.object.type === 'iri' && q.object.value === 'owl:Class';
+          return q.predicate === 'rdf:type' && q.object.termType === 'NamedNode' && q.object.value === 'owl:Class';
         })
         .map((q) => {
           return q.subject;
@@ -900,10 +902,10 @@ describe('projectAbox — ABox projection', () => {
       // ABox rdf:type targets should be in TBox classes
       const aboxTypes = abox
         .filter((q) => {
-          return q.predicate === 'rdf:type' && q.object.type === 'iri';
+          return q.predicate === 'rdf:type' && q.object.termType === 'NamedNode';
         })
         .map((q) => {
-          return q.object.type === 'iri' ? q.object.value : '';
+          return q.object.termType === 'NamedNode' ? q.object.value : '';
         });
 
       for (const aboxType of aboxTypes) {
@@ -917,7 +919,7 @@ describe('projectAbox — ABox projection', () => {
       const tboxProperties = tbox
         .filter((q) => {
           return q.predicate === 'rdf:type'
-          && q.object.type === 'iri'
+          && q.object.termType === 'NamedNode'
           && (q.object.value === 'owl:DatatypeProperty' || q.object.value === 'owl:ObjectProperty');
         })
         .map((q) => {

@@ -1,8 +1,7 @@
+import type { TransformBrandInterface } from '../interfaces/transform-brand.js';
 import type { InferSchemaType } from './infer.js';
 
-declare const TRANSFORM_OUT: unique symbol;
-
-export interface TransformBrandInterface<TOut> { readonly [TRANSFORM_OUT]: TOut }
+export type { TransformBrandInterface } from '../interfaces/transform-brand.js';
 
 /**
  * A schema annotated with a transform.

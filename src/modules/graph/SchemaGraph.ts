@@ -3,6 +3,7 @@ import type {
   SchemaGraphNodeInterface, SchemaGraphRelationInterface,
   SchemaGraphSemanticsInterface, StructureWarningInterface
 } from '../../interfaces/schema-graph.js';
+import type { SchemaGraphInterface } from '../../interfaces/schema-graph-impl.js';
 import {
   isRecord as isObject, propertyIri, resolveSingleXsdType, resolveXsdType
 } from '../data/DataTypes.js';
@@ -91,7 +92,7 @@ function unescapeJsonPointer(segment: string): string {
   return segment.replaceAll('~1', '/').replaceAll('~0', '~');
 }
 
-export class SchemaGraph {
+export class SchemaGraph implements SchemaGraphInterface {
   public static buildNormIR(rootSchema: JsonSchemaType): NormIRInterface {
     const graph = new SchemaGraph(rootSchema);
 
@@ -438,7 +439,7 @@ export class SchemaGraph {
   }
 
   /**
-   * format → jt:formatPattern for formats that map to SHACL patterns.
+   * format → sh:pattern for formats that map to SHACL patterns.
    * Only emitted for formats that don't produce a specific XSD type
    * (i.e., the format maps to base xsd:string).
    */
@@ -473,7 +474,8 @@ export class SchemaGraph {
 
     if (pattern !== undefined) {
       relations.push({
-        'predicate': 'jt:formatPattern',
+        'metadata': { 'fromFormat': true },
+        'predicate': 'sh:pattern',
         'source': node,
         'target': pattern
       });
@@ -723,20 +725,19 @@ export class SchemaGraph {
       });
     }
 
-    // Structural: readOnly → rdf:type annotation
+    // Structural: readOnly / writeOnly as direct predicates
     if (sem.readOnly) {
       relations.push({
-        'predicate': 'rdf:type',
+        'predicate': 'dash:readOnly',
         'source': node,
-        'target': 'jt:ReadOnly'
+        'target': 'true'
       });
     }
-    // Structural: writeOnly → rdf:type annotation
     if (sem.writeOnly) {
       relations.push({
-        'predicate': 'rdf:type',
+        'predicate': 'dash:writeOnly',
         'source': node,
-        'target': 'jt:WriteOnly'
+        'target': 'true'
       });
     }
 
@@ -882,6 +883,27 @@ export class SchemaGraph {
         'predicate': 'sh:maxExclusive',
         'source': node,
         'target': String(sem.exclusiveMaximum)
+      });
+    }
+    if (sem.multipleOf !== undefined) {
+      relations.push({
+        'predicate': 'jt:multipleOf',
+        'source': node,
+        'target': String(sem.multipleOf)
+      });
+    }
+    if (sem.minItems !== undefined) {
+      relations.push({
+        'predicate': 'sh:minCount',
+        'source': node,
+        'target': String(sem.minItems)
+      });
+    }
+    if (sem.maxItems !== undefined) {
+      relations.push({
+        'predicate': 'sh:maxCount',
+        'source': node,
+        'target': String(sem.maxItems)
       });
     }
 

@@ -5,7 +5,7 @@
 import {
   after, before, describe, it
 } from 'node:test';
-import * as assert from 'node:assert';
+import assert from 'node:assert/strict';
 import {
   mkdirSync, rmSync, writeFileSync
 } from 'node:fs';
@@ -13,17 +13,22 @@ import { resolve } from 'node:path';
 import { SchemaLoader } from '../../src/modules/registry/SchemaLoader.js';
 import { Logger } from '../../src/modules/logger/Logger.js';
 
-const testDir = resolve(import.meta.dirname ?? '.', 'fixtures', 'schemas');
+const testDir = resolve(import.meta.dirname, 'fixtures', 'schemas');
+const validDir = resolve(testDir, 'valid');
+const invalidDir = resolve(testDir, 'invalid');
+const nestedDir = resolve(validDir, 'nested');
 
-describe('SchemaLoader', () => {
+void describe('SchemaLoader', () => {
   before(() => {
     // Create test schema files
-    mkdirSync(resolve(testDir, 'valid', 'nested'), { 'recursive': true });
-    mkdirSync(resolve(testDir, 'invalid'), { 'recursive': true });
+    mkdirSync(nestedDir, { 'recursive': true });
+    mkdirSync(invalidDir, { 'recursive': true });
 
     // Valid schemas
+    const userPath = resolve(validDir, 'user.json');
+
     writeFileSync(
-      resolve(testDir, 'valid', 'user.json'),
+      userPath,
       JSON.stringify({
         '$id': 'https://example.io/user',
         'properties': {
@@ -38,8 +43,10 @@ describe('SchemaLoader', () => {
       })
     );
 
+    const productPath = resolve(nestedDir, 'product.json');
+
     writeFileSync(
-      resolve(testDir, 'valid', 'nested', 'product.json'),
+      productPath,
       JSON.stringify({
         '$id': 'https://example.io/product',
         'properties': {
@@ -52,11 +59,17 @@ describe('SchemaLoader', () => {
     );
 
     // Invalid schemas
-    writeFileSync(resolve(testDir, 'invalid', 'no-id.json'), JSON.stringify({ 'type': 'object' }));
+    const noIdPath = resolve(invalidDir, 'no-id.json');
 
-    writeFileSync(resolve(testDir, 'invalid', 'bad-json.json'), '{ invalid json }');
+    writeFileSync(noIdPath, JSON.stringify({ 'type': 'object' }));
 
-    writeFileSync(resolve(testDir, 'invalid', 'not-object.json'), JSON.stringify([
+    const badJsonPath = resolve(invalidDir, 'bad-json.json');
+
+    writeFileSync(badJsonPath, '{ invalid json }');
+
+    const notObjectPath = resolve(invalidDir, 'not-object.json');
+
+    writeFileSync(notObjectPath, JSON.stringify([
       1,
       2,
       3
@@ -70,54 +83,58 @@ describe('SchemaLoader', () => {
     });
   });
 
-  it('should load a single schema from file', () => {
+  void it('should load a single schema from file', () => {
     const loader = new SchemaLoader(new Logger());
-    const schema = loader.loadSchema(resolve(testDir, 'valid', 'user.json'));
+    const userPath = resolve(validDir, 'user.json');
+    const schema = loader.loadSchema(userPath);
 
     assert.ok(schema);
-    assert.strictEqual(schema?.$id, 'https://example.io/user');
+    assert.strictEqual(schema.$id, 'https://example.io/user');
   });
 
-  it('should return null for invalid JSON file', () => {
+  void it('should return null for invalid JSON file', () => {
     const loader = new SchemaLoader(new Logger());
-    const schema = loader.loadSchema(resolve(testDir, 'invalid', 'bad-json.json'));
+    const badJsonPath = resolve(invalidDir, 'bad-json.json');
+    const schema = loader.loadSchema(badJsonPath);
 
     assert.strictEqual(schema, null);
   });
 
-  it('should return null for schema without $id', () => {
+  void it('should return null for schema without $id', () => {
     const loader = new SchemaLoader(new Logger());
-    const schema = loader.loadSchema(resolve(testDir, 'invalid', 'no-id.json'));
+    const noIdPath = resolve(invalidDir, 'no-id.json');
+    const schema = loader.loadSchema(noIdPath);
 
     assert.strictEqual(schema, null);
   });
 
-  it('should return null for non-object schema', () => {
+  void it('should return null for non-object schema', () => {
     const loader = new SchemaLoader(new Logger());
-    const schema = loader.loadSchema(resolve(testDir, 'invalid', 'not-object.json'));
+    const notObjectPath = resolve(invalidDir, 'not-object.json');
+    const schema = loader.loadSchema(notObjectPath);
 
     assert.strictEqual(schema, null);
   });
 
-  it('should load all schemas from a directory recursively', () => {
+  void it('should load all schemas from a directory recursively', () => {
     const loader = new SchemaLoader(new Logger());
     const [
-      schemas,
+      loadedSchemas,
       result
-    ] = loader.loadDirectory(resolve(testDir, 'valid'));
+    ] = loader.loadDirectory(validDir);
 
-    assert.strictEqual(schemas.length, 2);
+    assert.strictEqual(loadedSchemas.length, 2);
     assert.strictEqual(result.successful, 2);
     assert.strictEqual(result.failed, 0);
     assert.strictEqual(result.skipped, 0);
   });
 
-  it('should report loading errors', () => {
+  void it('should report loading errors', () => {
     const loader = new SchemaLoader(new Logger());
     const [
-      schemas,
+      _loadedSchemas,
       result
-    ] = loader.loadDirectory(resolve(testDir, 'invalid'));
+    ] = loader.loadDirectory(invalidDir);
 
     assert.ok(result.failed > 0);
     assert.ok(result.errors.length > 0);
@@ -129,7 +146,7 @@ describe('SchemaLoader', () => {
     }));
   });
 
-  it('should log with custom logger', () => {
+  void it('should log with custom logger', () => {
     const logs: string[] = [];
     const mockLogger = {
       'debug': (msg: string) => {
@@ -154,7 +171,7 @@ describe('SchemaLoader', () => {
 
     const loader = new SchemaLoader(mockLogger);
 
-    loader.loadDirectory(resolve(testDir, 'valid'));
+    loader.loadDirectory(validDir);
 
     assert.ok(logs.some((log) => {
       return log.includes('Loading schemas from');
@@ -164,7 +181,7 @@ describe('SchemaLoader', () => {
     }));
   });
 
-  it('should detect duplicate schema IDs', () => {
+  void it('should detect duplicate schema IDs', () => {
     // Create directory with duplicate IDs
     const dupDir = resolve(testDir, 'duplicates');
 
@@ -175,17 +192,19 @@ describe('SchemaLoader', () => {
       'properties': { 'name': { 'type': 'string' } },
       'type': 'object'
     };
+    const file1Path = resolve(dupDir, 'file1.json');
+    const file2Path = resolve(dupDir, 'file2.json');
 
-    writeFileSync(resolve(dupDir, 'file1.json'), JSON.stringify(schema));
-    writeFileSync(resolve(dupDir, 'file2.json'), JSON.stringify(schema));
+    writeFileSync(file1Path, JSON.stringify(schema));
+    writeFileSync(file2Path, JSON.stringify(schema));
 
     const loader = new SchemaLoader(new Logger());
     const [
-      schemas,
+      _loadedSchemas,
       result
     ] = loader.loadDirectory(dupDir);
 
-    assert.strictEqual(schemas.length, 1);
+    assert.strictEqual(_loadedSchemas.length, 1);
     assert.strictEqual(result.failed, 1);
     assert.ok(result.errors.some((err) => {
       return err.reason === 'duplicate-id';
@@ -194,30 +213,30 @@ describe('SchemaLoader', () => {
     rmSync(dupDir, { 'recursive': true });
   });
 
-  it('should filter by file pattern', () => {
-    const validDir = resolve(testDir, 'valid');
-
+  void it('should filter by file pattern', () => {
     mkdirSync(validDir, { 'recursive': true });
 
     // Create a non-JSON file
-    writeFileSync(resolve(validDir, 'readme.txt'), 'This is not JSON');
+    const readmePath = resolve(validDir, 'readme.txt');
+
+    writeFileSync(readmePath, 'This is not JSON');
 
     const loader = new SchemaLoader(new Logger());
     const [
-      schemas,
+      _loadedSchemas,
       result
-    ] = loader.loadDirectory(validDir, { 'filePattern': /\.json$/i });
+    ] = loader.loadDirectory(validDir, { 'filePattern': /\.json$/iu });
 
     // Should skip the .txt file
     assert.strictEqual(result.skipped, 1);
   });
 
-  it('should stop on error if stopOnError is true', () => {
+  void it('should stop on error if stopOnError is true', () => {
     const loader = new SchemaLoader(new Logger());
     const [
-      schemas,
+      _loadedSchemas,
       result
-    ] = loader.loadDirectory(resolve(testDir, 'invalid'), { 'stopOnError': true });
+    ] = loader.loadDirectory(invalidDir, { 'stopOnError': true });
 
     // Should have stopped early
     assert.ok(result.failed > 0);

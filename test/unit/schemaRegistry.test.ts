@@ -5,7 +5,7 @@
 import {
   describe, it
 } from 'node:test';
-import * as assert from 'node:assert';
+import assert from 'node:assert/strict';
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 import { Logger } from '../../src/modules/logger/Logger.js';
 
@@ -43,8 +43,30 @@ const DuplicateSchema = {
   'type': 'object'
 };
 
-describe('SchemaRegistry', () => {
-  it('should register a single schema by $id', () => {
+const InvalidInlineSchema = {
+  '$id': 'https://example.io/invalid-inline',
+  'properties': {
+    'nested': {
+      'properties': { 'name': { 'type': 'string' } },
+      'type': 'object'
+    }
+  },
+  'type': 'object'
+} as const;
+
+const InvalidOverwriteSchema = {
+  '$id': TestSchema.$id,
+  'properties': {
+    'nested': {
+      'properties': { 'name': { 'type': 'string' } },
+      'type': 'object'
+    }
+  },
+  'type': 'object'
+} as const;
+
+void describe('SchemaRegistry', () => {
+  void it('should register a single schema by $id', () => {
     const registry = new SchemaRegistry({ 'logger': new Logger() });
 
     registry.register(TestSchema);
@@ -55,9 +77,9 @@ describe('SchemaRegistry', () => {
     assert.deepStrictEqual(retrieved, TestSchema);
   });
 
-  it('should throw if schema has no $id', () => {
+  void it('should throw if schema has no $id', () => {
     const registry = new SchemaRegistry({ 'logger': new Logger() });
-    const schemaNoId = { 'type': 'object' } as Record<string, unknown>;
+    const schemaNoId: Record<string, unknown> = { 'type': 'object' };
 
     assert.throws(
       () => {
@@ -69,7 +91,7 @@ describe('SchemaRegistry', () => {
     );
   });
 
-  it('should register multiple schemas at once (array)', () => {
+  void it('should register multiple schemas at once (array)', () => {
     const registry = new SchemaRegistry({ 'logger': new Logger() });
     const schemas = [
       TestSchema,
@@ -82,18 +104,19 @@ describe('SchemaRegistry', () => {
     assert.ok(registry.get('https://example.io/schema-with-defs'));
   });
 
-  it('should be idempotent when registering identical schema twice', () => {
+  void it('should be idempotent when registering identical schema twice', () => {
     const registry = new SchemaRegistry({ 'logger': new Logger() });
 
     registry.register(TestSchema);
-    registry.register(TestSchema); // Should not throw
+    // Should not throw
+    registry.register(TestSchema);
 
     const retrieved = registry.get('https://example.io/test-schema');
 
     assert.ok(retrieved);
   });
 
-  it('should detect identical schemas and skip registration idempotently', () => {
+  void it('should detect identical schemas and skip registration idempotently', () => {
     const logs: string[] = [];
     const mockLogger = {
       'debug': (msg: string) => {
@@ -119,7 +142,8 @@ describe('SchemaRegistry', () => {
     const registry = new SchemaRegistry({ 'logger': mockLogger });
 
     registry.register(TestSchema);
-    registry.register({ ...TestSchema }); // Register different object with same content
+    // Register different object with same content
+    registry.register({ ...TestSchema });
 
     // Should have a trace message about identical schema
     assert.ok(logs.some((log) => {
@@ -127,7 +151,7 @@ describe('SchemaRegistry', () => {
     }));
   });
 
-  it('should warn when registering duplicate schema with different ID', () => {
+  void it('should warn when registering duplicate schema with different ID', () => {
     const logs: string[] = [];
     const mockLogger = {
       'debug': (msg: string) => {
@@ -167,7 +191,7 @@ describe('SchemaRegistry', () => {
     }));
   });
 
-  it('should validate data against a schema', () => {
+  void it('should validate data against a schema', () => {
     const registry = new SchemaRegistry({ 'logger': new Logger() });
 
     registry.register(TestSchema);
@@ -178,12 +202,13 @@ describe('SchemaRegistry', () => {
     assert.strictEqual(errors.length, 0);
   });
 
-  it('should return errors for invalid data', () => {
+  void it('should return errors for invalid data', () => {
     const registry = new SchemaRegistry({ 'logger': new Logger() });
 
     registry.register(TestSchema);
 
-    const invalidData = { 'age': 'not a number' }; // Missing required 'name'
+    // Missing required 'name'
+    const invalidData = { 'age': 'not a number' };
     const errors = registry.validate('https://example.io/test-schema', invalidData);
 
     assert.ok(errors.length > 0);
@@ -192,7 +217,7 @@ describe('SchemaRegistry', () => {
     }));
   });
 
-  it('should validate data at a JSON Pointer', () => {
+  void it('should validate data at a JSON Pointer', () => {
     const registry = new SchemaRegistry({ 'logger': new Logger() });
 
     registry.register(TestSchemaWithDefs);
@@ -210,7 +235,7 @@ describe('SchemaRegistry', () => {
     assert.strictEqual(errors.length, 0);
   });
 
-  it('should return error for unregistered schema', () => {
+  void it('should return error for unregistered schema', () => {
     const registry = new SchemaRegistry({ 'logger': new Logger() });
 
     const errors = registry.validate('https://example.io/nonexistent', {});
@@ -219,13 +244,13 @@ describe('SchemaRegistry', () => {
     assert.ok(errors[0].includes('No validator registered'));
   });
 
-  it('should accept coerce option in constructor', () => {
+  void it('should accept coerce option in constructor', () => {
     const registry = new SchemaRegistry({ 'coerce': true });
 
     assert.strictEqual(registry.coerce, true);
   });
 
-  it('should accept logger in constructor', () => {
+  void it('should accept logger in constructor', () => {
     const logs: string[] = [];
     const registry = new SchemaRegistry({
       'logger': {
@@ -255,7 +280,7 @@ describe('SchemaRegistry', () => {
     assert.ok(logs.length > 0);
   });
 
-  it('should handle mixed single and array registrations', () => {
+  void it('should handle mixed single and array registrations', () => {
     const registry = new SchemaRegistry({ 'logger': new Logger() });
 
     registry.register(TestSchema);
@@ -265,7 +290,7 @@ describe('SchemaRegistry', () => {
     assert.ok(registry.get('https://example.io/schema-with-defs'));
   });
 
-  it('caches canonical graphs per registered schema', () => {
+  void it('caches canonical graphs per registered schema', () => {
     const registry = new SchemaRegistry({ 'logger': new Logger() });
 
     registry.register([
@@ -280,6 +305,48 @@ describe('SchemaRegistry', () => {
     assert.ok(first);
     assert.strictEqual(first, second);
     assert.ok(listed.includes(first));
+  });
+
+  void it('failed registration is a no-op for empty registry state', () => {
+    const registry = new SchemaRegistry({ 'logger': new Logger() });
+
+    assert.throws(() => {
+      registry.register(InvalidInlineSchema);
+    }, /SCHEMA_STRUCTURE_INVALID|Structure validation failed/u);
+
+    assert.equal(registry.get(InvalidInlineSchema.$id), undefined);
+    assert.equal(registry.graph(InvalidInlineSchema.$id), undefined);
+    assert.deepEqual(registry.list(), []);
+    assert.deepEqual(registry.listGraphs(), []);
+    assert.ok(registry.validate(InvalidInlineSchema.$id, {}).some((message) => {
+      return message.includes('No validator registered');
+    }));
+    assert.throws(() => {
+      registry.parse(InvalidInlineSchema.$id, {});
+    }, /SCHEMA_NOT_REGISTERED|Schema not registered/u);
+  });
+
+  void it('failed overwrite preserves the previously registered valid schema and caches', () => {
+    const registry = new SchemaRegistry({ 'logger': new Logger() });
+
+    registry.register(TestSchema);
+    const originalGraph = registry.graph(TestSchema.$id);
+
+    assert.ok(originalGraph !== undefined);
+    assert.throws(() => {
+      registry.register(InvalidOverwriteSchema);
+    }, /SCHEMA_STRUCTURE_INVALID|Structure validation failed/u);
+
+    const retrieved = registry.get(TestSchema.$id);
+
+    assert.deepEqual(retrieved, TestSchema);
+    assert.strictEqual(registry.graph(TestSchema.$id), originalGraph);
+    assert.equal(registry.list().length, 1);
+    assert.equal(registry.listGraphs().length, 1);
+    assert.deepEqual(registry.validate(TestSchema.$id, { 'name': 'Alice' }), []);
+    const parsed = registry.parse(TestSchema.$id, { 'name': 'Alice' }) as Record<string, unknown>;
+
+    assert.equal(parsed.name, 'Alice');
   });
 });
 
@@ -298,18 +365,18 @@ const ParseTestSchema = {
   'type': 'object'
 } as const;
 
-describe('parse / is / errors', () => {
-  it('parse() returns data with defaults applied', () => {
+void describe('parse / is / errors', () => {
+  void it('parse() returns data with defaults applied', () => {
     const registry = new SchemaRegistry({ 'logger': new Logger() });
 
     registry.register(ParseTestSchema);
-    const result = registry.parse(ParseTestSchema, { 'name': 'Alice' }) as any;
+    const result = registry.parse(ParseTestSchema, { 'name': 'Alice' }) as Record<string, unknown>;
 
     assert.strictEqual(result.name, 'Alice');
     assert.strictEqual(result.count, 0);
   });
 
-  it('parse() does not mutate the original object', () => {
+  void it('parse() does not mutate the original object', () => {
     const registry = new SchemaRegistry({ 'logger': new Logger() });
 
     registry.register(ParseTestSchema);
@@ -319,7 +386,7 @@ describe('parse / is / errors', () => {
     assert.strictEqual('count' in original, false);
   });
 
-  it('parse() throws ParseError on invalid data', () => {
+  void it('parse() throws ParseError on invalid data', () => {
     const registry = new SchemaRegistry({ 'logger': new Logger() });
 
     registry.register(ParseTestSchema);
@@ -333,7 +400,7 @@ describe('parse / is / errors', () => {
     );
   });
 
-  it('parse() ParseError has structured errors array', () => {
+  void it('parse() ParseError has structured errors array', () => {
     const registry = new SchemaRegistry({ 'logger': new Logger() });
 
     registry.register(ParseTestSchema);
@@ -349,21 +416,21 @@ describe('parse / is / errors', () => {
     }
   });
 
-  it('is() returns true for valid data', () => {
+  void it('is() returns true for valid data', () => {
     const registry = new SchemaRegistry({ 'logger': new Logger() });
 
     registry.register(ParseTestSchema);
     assert.strictEqual(registry.is(ParseTestSchema, { 'name': 'Dave' }), true);
   });
 
-  it('is() returns false for invalid data', () => {
+  void it('is() returns false for invalid data', () => {
     const registry = new SchemaRegistry({ 'logger': new Logger() });
 
     registry.register(ParseTestSchema);
     assert.strictEqual(registry.is(ParseTestSchema, { 'count': 1 }), false);
   });
 
-  it('errors() returns ValidationErrors with items for invalid data', () => {
+  void it('errors() returns ValidationErrors with items for invalid data', () => {
     const registry = new SchemaRegistry({ 'logger': new Logger() });
 
     registry.register(ParseTestSchema);
@@ -375,14 +442,14 @@ describe('parse / is / errors', () => {
     assert.ok(typeof errs.items[0].params === 'object');
   });
 
-  it('errors() returns empty ValidationErrors for valid data', () => {
+  void it('errors() returns empty ValidationErrors for valid data', () => {
     const registry = new SchemaRegistry({ 'logger': new Logger() });
 
     registry.register(ParseTestSchema);
     assert.equal(registry.errors(ParseTestSchema.$id, { 'name': 'Eve' }).length, 0);
   });
 
-  it('parse() / is() require explicit register() call', () => {
+  void it('parse() / is() require explicit register() call', () => {
     const registry = new SchemaRegistry({ 'logger': new Logger() });
 
     registry.register(ParseTestSchema);

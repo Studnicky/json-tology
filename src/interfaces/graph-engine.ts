@@ -1,5 +1,5 @@
-import type { SchemaGraph } from '../modules/graph/SchemaGraph.js';
-import type { FormatRegistry } from '../modules/format/FormatRegistry.js';
+import type { FormatRegistryInterface } from './format-registry.js';
+import type { SchemaGraphInterface } from './schema-graph-impl.js';
 import type { ValidationErrorType } from '../types/validation.js';
 import type { SchemaGraphNodeInterface } from './schema-graph.js';
 
@@ -20,7 +20,7 @@ export interface GraphEngineOptionsInterface {
   'applyDefaults'?: boolean;
   'coerce'?: boolean;
   'collectErrors'?: boolean;
-  'formatRegistry'?: FormatRegistry;
+  'formatRegistry'?: FormatRegistryInterface;
   'ignoreAdditionalProperties'?: boolean;
   'keywords'?: KeywordDefinitionInterface[];
   'lookupSchema'?: (schemaId: string) => Record<string, unknown> | undefined;
@@ -35,7 +35,7 @@ export interface GraphExecutionResultInterface {
   'errors': ValidationErrorType[];
   'evaluatedItems': Set<number>;
   'evaluatedProperties': Set<string>;
-  'graph': SchemaGraph;
+  'graph': SchemaGraphInterface;
   'valid': boolean;
   'value': unknown;
 }

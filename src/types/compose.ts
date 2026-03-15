@@ -17,24 +17,6 @@ export type ExtendSchemaType<
   readonly 'properties': ExtractPropertiesType<TSchema> & { readonly [K in keyof TAdditional]: TAdditional[K] };
 };
 
-export interface IntersectionSchemaInterface<
-  TSchemas extends ReadonlyArray<Record<string, unknown>>,
-  TId extends string
-> {
-  readonly '$id': TId;
-  readonly 'allOf': TSchemas;
-}
-
-export interface DiscriminatedUnionSchemaInterface<
-  TDiscriminator extends string,
-  TVariants extends ReadonlyArray<Record<string, unknown>>,
-  TId extends string
-> {
-  readonly '$id': TId;
-  readonly 'discriminator': { readonly 'propertyName': TDiscriminator };
-  readonly 'oneOf': TVariants;
-}
-
 export type PartialSchemaType<TSchema, TId extends string>
   = Omit<TSchema, '$id' | 'required'> & { readonly '$id': TId };
 
@@ -43,25 +25,3 @@ export type RequiredSchemaType<TSchema, TId extends string>
     readonly '$id': TId;
     readonly 'required': ReadonlyArray<keyof ExtractPropertiesType<TSchema>>;
   };
-
-export interface PickSchemaInterface<
-  TSchema,
-  TKeys extends string,
-  TId extends string
-> {
-  readonly '$id': TId;
-  readonly 'properties': Pick<ExtractPropertiesType<TSchema>, keyof ExtractPropertiesType<TSchema> & TKeys>;
-  readonly 'required': ReadonlyArray<ExtractRequiredType<TSchema> & TKeys>;
-  readonly 'type': 'object';
-}
-
-export interface OmitSchemaInterface<
-  TSchema,
-  TKeys extends string,
-  TId extends string
-> {
-  readonly '$id': TId;
-  readonly 'properties': Omit<ExtractPropertiesType<TSchema>, TKeys>;
-  readonly 'required': ReadonlyArray<Exclude<ExtractRequiredType<TSchema>, TKeys>>;
-  readonly 'type': 'object';
-}

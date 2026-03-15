@@ -7,12 +7,12 @@
 
 import { SchemaRegistry } from '../src/modules/registry/SchemaRegistry.js';
 import { GraphEngine } from '../src/modules/graph/GraphEngine.js';
-import { SchemaGraph } from '../src/modules/graph/SchemaGraph.js';
 import {
   bench, type BenchResult, section
 } from './harness.js';
 import {
-  NestedSchema, nestedValid, simpleInvalid, SimpleSchema, simpleValid
+  AddressSchema, CustomerSchema, NestedSchema,
+  nestedValid, OrderItemSchema, simpleInvalid, SimpleSchema, simpleValid
 } from './fixtures.js';
 
 export function runCompiledBench(): BenchResult[] {
@@ -22,6 +22,9 @@ export function runCompiledBench(): BenchResult[] {
   const registry = new SchemaRegistry();
 
   registry.register(SimpleSchema);
+  registry.register(AddressSchema);
+  registry.register(CustomerSchema);
+  registry.register(OrderItemSchema);
   registry.register(NestedSchema);
 
   // Force compilation
@@ -42,33 +45,45 @@ export function runCompiledBench(): BenchResult[] {
 
   section('Compiled vs Interpreted — simple schema (valid)');
 
-  results.push(bench('compiled simple valid', 'compiled', () => {
+  const compiledSimpleValid = bench('compiled simple valid', 'compiled', () => {
     registry.validate(SimpleSchema.$id, simpleValid);
-  }));
+  });
 
-  results.push(bench('compiled simple valid', 'interpreted', () => {
+  results.push(compiledSimpleValid);
+
+  const interpretedSimpleValid = bench('compiled simple valid', 'interpreted', () => {
     simpleEngine.execute(simpleValid);
-  }));
+  });
+
+  results.push(interpretedSimpleValid);
 
   section('Compiled vs Interpreted — simple schema (invalid)');
 
-  results.push(bench('compiled simple invalid', 'compiled', () => {
+  const compiledSimpleInvalid = bench('compiled simple invalid', 'compiled', () => {
     registry.validate(SimpleSchema.$id, simpleInvalid);
-  }));
+  });
 
-  results.push(bench('compiled simple invalid', 'interpreted', () => {
+  results.push(compiledSimpleInvalid);
+
+  const interpretedSimpleInvalid = bench('compiled simple invalid', 'interpreted', () => {
     simpleEngine.execute(simpleInvalid);
-  }));
+  });
+
+  results.push(interpretedSimpleInvalid);
 
   section('Compiled vs Interpreted — nested schema (valid)');
 
-  results.push(bench('compiled nested valid', 'compiled', () => {
+  const compiledNestedValid = bench('compiled nested valid', 'compiled', () => {
     registry.validate(NestedSchema.$id, nestedValid);
-  }));
+  });
 
-  results.push(bench('compiled nested valid', 'interpreted', () => {
+  results.push(compiledNestedValid);
+
+  const interpretedNestedValid = bench('compiled nested valid', 'interpreted', () => {
     nestedEngine.execute(nestedValid);
-  }));
+  });
+
+  results.push(interpretedNestedValid);
 
   return results;
 }

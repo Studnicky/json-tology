@@ -26,11 +26,12 @@ const jt = new JsonTology({
 
 console.log('=== JSON-LD - MultiType ===');
 const jsonld = jt.ontology().jsonLdObject();
-const multiType = jsonld['@graph'].find((n) => {
+const _multiType = jsonld['@graph'].find((n) => {
   return n['@id'] === 'https://myapp.io/MultiType';
 });
+const graphJson = JSON.stringify(jsonld['@graph'], null, 2);
 
-console.log(JSON.stringify(jsonld['@graph'], null, 2));
+console.log(graphJson);
 
 console.log('\n=== FULL JSON-LD OUTPUT ===');
 console.log(jt.ontology().jsonLd());

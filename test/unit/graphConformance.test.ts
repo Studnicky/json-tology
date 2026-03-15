@@ -4,9 +4,9 @@ import {
 import assert from 'node:assert/strict';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 
-describe('Graph conformance', () => {
-  describe('semantics completeness', () => {
-    it('exposes all validation-relevant fields from graph semantics', () => {
+void describe('Graph conformance', () => {
+  void describe('semantics completeness', () => {
+    void it('exposes all validation-relevant fields from graph semantics', () => {
       const schema = {
         '$id': 'https://example.com/Person',
         'additionalProperties': false,
@@ -47,24 +47,32 @@ describe('Graph conformance', () => {
       ]);
       assert.equal(sem.properties.size, 4);
 
-      const nameNode = sem.properties.get('name')!;
+      const nameNode = sem.properties.get('name');
+
+      assert.ok(nameNode !== undefined, 'name property node should exist');
       const nameSem = graph.semantics(nameNode);
 
       assert.deepEqual(nameSem.schemaTypes, ['string']);
       assert.equal(nameSem.minLength, 1);
 
-      const ageNode = sem.properties.get('age')!;
+      const ageNode = sem.properties.get('age');
+
+      assert.ok(ageNode !== undefined, 'age property node should exist');
       const ageSem = graph.semantics(ageNode);
 
       assert.deepEqual(ageSem.schemaTypes, ['integer']);
       assert.equal(ageSem.minimum, 0);
 
-      const emailNode = sem.properties.get('email')!;
+      const emailNode = sem.properties.get('email');
+
+      assert.ok(emailNode !== undefined, 'email property node should exist');
       const emailSem = graph.semantics(emailNode);
 
       assert.equal(emailSem.format, 'email');
 
-      const tagsNode = sem.properties.get('tags')!;
+      const tagsNode = sem.properties.get('tags');
+
+      assert.ok(tagsNode !== undefined, 'tags property node should exist');
       const tagsSem = graph.semantics(tagsNode);
 
       assert.deepEqual(tagsSem.schemaTypes, ['array']);
@@ -75,7 +83,7 @@ describe('Graph conformance', () => {
       assert.equal(sem.additionalPropertiesNode, false);
     });
 
-    it('exposes numeric constraints through semantics', () => {
+    void it('exposes numeric constraints through semantics', () => {
       const schema = {
         'exclusiveMaximum': 101,
         'exclusiveMinimum': -1,
@@ -95,7 +103,7 @@ describe('Graph conformance', () => {
       assert.equal(sem.multipleOf, 5);
     });
 
-    it('exposes string constraints through semantics', () => {
+    void it('exposes string constraints through semantics', () => {
       const schema = {
         'maxLength': 50,
         'minLength': 2,
@@ -111,7 +119,7 @@ describe('Graph conformance', () => {
       assert.equal(sem.pattern, '^[a-z]+$');
     });
 
-    it('exposes enum and const through semantics', () => {
+    void it('exposes enum and const through semantics', () => {
       const schema = {
         'enum': [
           'red',
@@ -138,7 +146,7 @@ describe('Graph conformance', () => {
       assert.equal(constSem.hasConst, true);
     });
 
-    it('exposes default value through semantics', () => {
+    void it('exposes default value through semantics', () => {
       const schema = {
         'default': 'hello',
         'type': 'string'
@@ -151,7 +159,7 @@ describe('Graph conformance', () => {
       assert.equal(sem.hasDefault, true);
     });
 
-    it('exposes metadata annotations through semantics', () => {
+    void it('exposes metadata annotations through semantics', () => {
       const schema = {
         'deprecated': true,
         'description': 'A widget thing',
@@ -170,8 +178,8 @@ describe('Graph conformance', () => {
     });
   });
 
-  describe('graph identity', () => {
-    it('nodes with $id use the $id as their id', () => {
+  void describe('graph identity', () => {
+    void it('nodes with $id use the $id as their id', () => {
       const schema = {
         '$id': 'https://example.com/Foo',
         'type': 'object'
@@ -181,19 +189,20 @@ describe('Graph conformance', () => {
       assert.equal(graph.rootNode.id, 'https://example.com/Foo');
     });
 
-    it('nodes without $id use pointer-based ids', () => {
+    void it('nodes without $id use pointer-based ids', () => {
       const schema = {
         '$id': 'https://example.com/Root',
         'properties': { 'x': { 'type': 'string' } },
         'type': 'object'
       } as const;
       const graph = new SchemaGraph(schema);
-      const xNode = graph.semantics(graph.rootNode).properties.get('x')!;
+      const xNode = graph.semantics(graph.rootNode).properties.get('x');
 
+      assert.ok(xNode !== undefined, 'x property node should exist');
       assert.equal(xNode.id, 'https://example.com/Root#/properties/x');
     });
 
-    it('$defs children get pointer-based ids when no $id', () => {
+    void it('$defs children get pointer-based ids when no $id', () => {
       const schema = {
         '$defs': { 'Helper': { 'type': 'string' } },
         '$id': 'https://example.com/Base',
@@ -205,7 +214,7 @@ describe('Graph conformance', () => {
       assert.equal(helperNode.id, 'https://example.com/Base#/$defs/Helper');
     });
 
-    it('$defs children with $id use their own $id', () => {
+    void it('$defs children with $id use their own $id', () => {
       const schema = {
         '$defs': {
           'Helper': {
@@ -223,8 +232,8 @@ describe('Graph conformance', () => {
     });
   });
 
-  describe('anchor resolution', () => {
-    it('resolves $anchor through the graph', () => {
+  void describe('anchor resolution', () => {
+    void it('resolves $anchor through the graph', () => {
       const schema = {
         '$defs': {
           'Foo': {
@@ -241,7 +250,7 @@ describe('Graph conformance', () => {
       assert.deepEqual(graph.semantics(resolved).schemaTypes, ['string']);
     });
 
-    it('resolves $dynamicAnchor through the graph', () => {
+    void it('resolves $dynamicAnchor through the graph', () => {
       const schema = {
         '$defs': {
           'Bar': {
@@ -259,8 +268,8 @@ describe('Graph conformance', () => {
     });
   });
 
-  describe('composition nodes', () => {
-    it('allOf children are graph nodes with semantics', () => {
+  void describe('composition nodes', () => {
+    void it('allOf children are graph nodes with semantics', () => {
       const schema = {
         'allOf': [
           {
@@ -288,7 +297,7 @@ describe('Graph conformance', () => {
       assert.deepEqual(second.required, ['b']);
     });
 
-    it('anyOf children are graph nodes with semantics', () => {
+    void it('anyOf children are graph nodes with semantics', () => {
       const schema = {
         'anyOf': [
           { 'type': 'string' },
@@ -303,7 +312,7 @@ describe('Graph conformance', () => {
       assert.deepEqual(graph.semantics(sem.anyOf[1]).schemaTypes, ['number']);
     });
 
-    it('oneOf children are graph nodes with semantics', () => {
+    void it('oneOf children are graph nodes with semantics', () => {
       const schema = {
         'oneOf': [
           { 'type': 'string' },
@@ -318,7 +327,7 @@ describe('Graph conformance', () => {
       assert.deepEqual(graph.semantics(sem.oneOf[1]).schemaTypes, ['integer']);
     });
 
-    it('not child is a graph node with semantics', () => {
+    void it('not child is a graph node with semantics', () => {
       const schema = { 'not': { 'type': 'string' } } as const;
       const graph = new SchemaGraph(schema);
       const sem = graph.semantics(graph.rootNode);
@@ -327,12 +336,8 @@ describe('Graph conformance', () => {
       assert.deepEqual(graph.semantics(sem.notNode).schemaTypes, ['string']);
     });
 
-    it('if/then/else children are graph nodes', () => {
-      const schema = {
-        'else': { 'type': 'number' },
-        'if': { 'type': 'string' },
-        'then': { 'minLength': 1 }
-      } as const;
+    void it('if/then/else children are graph nodes', () => {
+      const schema = JSON.parse('{"if":{"type":"string"},"then":{"minLength":1},"else":{"type":"number"}}') as Record<string, unknown>;
       const graph = new SchemaGraph(schema);
       const sem = graph.semantics(graph.rootNode);
 
@@ -345,23 +350,23 @@ describe('Graph conformance', () => {
     });
   });
 
-  describe('relations', () => {
-    it('produces rdfs:subClassOf for allOf with refs', () => {
+  void describe('relations', () => {
+    void it('produces rdfs:subClassOf for allOf with refs', () => {
       const schema = {
         '$id': 'https://example.com/Child',
         'allOf': [{ '$ref': 'https://example.com/Parent' }]
       } as const;
       const graph = new SchemaGraph(schema);
       const rels = graph.relations(graph.rootNode);
-      const subClass = rels.find((r) => {
-        return r.predicate === 'rdfs:subClassOf';
+      const subClass = rels.find((rel) => {
+        return rel.predicate === 'rdfs:subClassOf';
       });
 
       assert.ok(subClass);
       assert.equal(subClass.target, 'https://example.com/Parent');
     });
 
-    it('produces owl:Restriction for required properties', () => {
+    void it('produces owl:Restriction for required properties', () => {
       const schema = {
         '$id': 'https://example.com/WithReq',
         'properties': { 'x': { 'type': 'string' } },
@@ -370,8 +375,8 @@ describe('Graph conformance', () => {
       } as const;
       const graph = new SchemaGraph(schema);
       const rels = graph.relations(graph.rootNode);
-      const restriction = rels.find((r) => {
-        return r.predicate === 'owl:Restriction';
+      const restriction = rels.find((rel) => {
+        return rel.predicate === 'owl:Restriction';
       });
 
       assert.ok(restriction);
@@ -381,7 +386,7 @@ describe('Graph conformance', () => {
       });
     });
 
-    it('produces owl:equivalentClass for anyOf members', () => {
+    void it('produces owl:equivalentClass for anyOf members', () => {
       const schema = {
         '$id': 'https://example.com/Union',
         'anyOf': [
@@ -391,28 +396,28 @@ describe('Graph conformance', () => {
       } as const;
       const graph = new SchemaGraph(schema);
       const rels = graph.relations(graph.rootNode);
-      const equivRels = rels.filter((r) => {
-        return r.predicate === 'owl:equivalentClass';
+      const equivRels = rels.filter((rel) => {
+        return rel.predicate === 'owl:equivalentClass';
       });
 
       assert.equal(equivRels.length, 2);
     });
 
-    it('produces owl:complementOf for not', () => {
+    void it('produces owl:complementOf for not', () => {
       const schema = {
         '$id': 'https://example.com/Negated',
         'not': { 'type': 'string' }
       } as const;
       const graph = new SchemaGraph(schema);
       const rels = graph.relations(graph.rootNode);
-      const complement = rels.find((r) => {
-        return r.predicate === 'owl:complementOf';
+      const complement = rels.find((rel) => {
+        return rel.predicate === 'owl:complementOf';
       });
 
       assert.ok(complement);
     });
 
-    it('produces owl:oneOf for enum values', () => {
+    void it('produces owl:oneOf for enum values', () => {
       const schema = {
         '$id': 'https://example.com/Color',
         'enum': [
@@ -424,8 +429,8 @@ describe('Graph conformance', () => {
       } as const;
       const graph = new SchemaGraph(schema);
       const rels = graph.relations(graph.rootNode);
-      const oneOfRels = rels.filter((r) => {
-        return r.predicate === 'owl:oneOf';
+      const oneOfRels = rels.filter((rel) => {
+        return rel.predicate === 'owl:oneOf';
       });
 
       assert.equal(oneOfRels.length, 3);
@@ -434,7 +439,7 @@ describe('Graph conformance', () => {
       assert.equal(oneOfRels[2].target, 'blue');
     });
 
-    it('produces rdfs:label and rdfs:comment from title and description', () => {
+    void it('produces rdfs:label and rdfs:comment from title and description', () => {
       const schema = {
         '$id': 'https://example.com/Labeled',
         'description': 'A labeled schema',
@@ -443,21 +448,21 @@ describe('Graph conformance', () => {
       } as const;
       const graph = new SchemaGraph(schema);
       const rels = graph.relations(graph.rootNode);
-      const label = rels.find((r) => {
-        return r.predicate === 'rdfs:label';
+      const label = rels.find((rel) => {
+        return rel.predicate === 'rdfs:label';
       });
 
       assert.ok(label);
       assert.equal(label.target, 'Labeled');
-      const comment = rels.find((r) => {
-        return r.predicate === 'rdfs:comment';
+      const comment = rels.find((rel) => {
+        return rel.predicate === 'rdfs:comment';
       });
 
       assert.ok(comment);
       assert.equal(comment.target, 'A labeled schema');
     });
 
-    it('produces owl:deprecated for deprecated schemas', () => {
+    void it('produces owl:deprecated for deprecated schemas', () => {
       const schema = {
         '$id': 'https://example.com/Old',
         'deprecated': true,
@@ -465,8 +470,8 @@ describe('Graph conformance', () => {
       } as const;
       const graph = new SchemaGraph(schema);
       const rels = graph.relations(graph.rootNode);
-      const dep = rels.find((r) => {
-        return r.predicate === 'owl:deprecated';
+      const dep = rels.find((rel) => {
+        return rel.predicate === 'owl:deprecated';
       });
 
       assert.ok(dep);
@@ -474,8 +479,8 @@ describe('Graph conformance', () => {
     });
   });
 
-  describe('semantics consistency', () => {
-    it('produces consistent semantics for equivalent schemas', () => {
+  void describe('semantics consistency', () => {
+    void it('produces consistent semantics for equivalent schemas', () => {
       const schema1 = {
         'properties': { 'name': { 'type': 'string' } },
         'required': ['name'],
@@ -499,7 +504,7 @@ describe('Graph conformance', () => {
       assert.deepEqual([...sem1.properties.keys()], [...sem2.properties.keys()]);
     });
 
-    it('caches semantics on repeated access', () => {
+    void it('caches semantics on repeated access', () => {
       const schema = { 'type': 'string' } as const;
       const graph = new SchemaGraph(schema);
       const sem1 = graph.semantics(graph.rootNode);

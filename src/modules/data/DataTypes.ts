@@ -6,6 +6,7 @@
  */
 
 import type { SchemaGraphSemanticsInterface } from '../../interfaces/schema-graph.js';
+import { BASE_TYPE_MAP, NUMBER_FORMAT_MAP, STRING_FORMAT_MAP } from '../../constants/xsd-maps.js';
 
 // ---------------------------------------------------------------------------
 // Type guards
@@ -19,50 +20,6 @@ export function isPlainObject(value: unknown): boolean {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
     && (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null);
 }
-
-// ---------------------------------------------------------------------------
-// XSD type maps
-// ---------------------------------------------------------------------------
-
-export const BASE_TYPE_MAP: Readonly<Record<string, string>> = {
-  'boolean': 'xsd:boolean',
-  'integer': 'xsd:integer',
-  'null': 'owl:Nothing',
-  'number': 'xsd:decimal',
-  'string': 'xsd:string'
-};
-
-export const STRING_FORMAT_MAP: Readonly<Record<string, string>> = {
-  'binary': 'xsd:hexBinary',
-  'byte': 'xsd:base64Binary',
-  'date': 'xsd:date',
-  'date-time': 'xsd:dateTime',
-  'duration': 'xsd:duration',
-  'email': 'xsd:string',
-  'hostname': 'xsd:string',
-  'idn-email': 'xsd:string',
-  'idn-hostname': 'xsd:string',
-  'ipv4': 'xsd:string',
-  'ipv6': 'xsd:string',
-  'iri': 'xsd:anyURI',
-  'iri-reference': 'xsd:anyURI',
-  'json-pointer': 'xsd:string',
-  'password': 'xsd:string',
-  'regex': 'xsd:string',
-  'relative-json-pointer': 'xsd:string',
-  'time': 'xsd:time',
-  'uri': 'xsd:anyURI',
-  'uri-reference': 'xsd:anyURI',
-  'uri-template': 'xsd:anyURI',
-  'uuid': 'xsd:string'
-};
-
-export const NUMBER_FORMAT_MAP: Readonly<Record<string, string>> = {
-  'double': 'xsd:double',
-  'float': 'xsd:float',
-  'int32': 'xsd:int',
-  'int64': 'xsd:long'
-};
 
 // ---------------------------------------------------------------------------
 // XSD type resolution

@@ -11,17 +11,17 @@
 import type {
   InferSchemaType, InferType
 } from '../../src/types/schema.js';
-import type { ParseOutputType } from '../../src/types/transform.js';
+import type { ParseOutputType as _ParseOutputType } from '../../src/types/transform.js';
 
 // ---------------------------------------------------------------------------
 // Bidirectional assignability helper
 // ---------------------------------------------------------------------------
 
-type AssertEqual<A, B>
-  = [A] extends [B] ? [B] extends [A] ? true : false : false;
+type AssertEqual<TLeft, TRight>
+  = [TLeft] extends [TRight] ? [TRight] extends [TLeft] ? true : false : false;
 
-type AssertAssignable<A, B>
-  = [A] extends [B] ? true : false;
+type AssertAssignable<TSource, TTarget>
+  = [TSource] extends [TTarget] ? true : false;
 
 // compile-time assertion — produces an error if T is not true
 function assert<T extends true>(): void {
@@ -116,9 +116,10 @@ const _arr: InferType<typeof StringArraySchema> = [
   'a',
   'b'
 ];
-// @ts-expect-error — number[] not assignable to string[]
 const _bad5: InferType<typeof StringArraySchema> = [
+  // @ts-expect-error — number[] not assignable to string[]
   1,
+  // @ts-expect-error — number[] not assignable to string[]
   2
 ];
 
@@ -516,28 +517,42 @@ assert<AssertEqual<PropertyNamesResult, Record<string, unknown>>>();
  */
 
 /**
- * `if/then/else` — Conditional narrowing requires runtime evaluation.
- * TypeScript cannot branch on data-dependent predicates.
- * Falls back to unknown.
+ * `if/then/else` — We use a sound over-approximation rather than falling all
+ * the way back to unknown. The inferred type is the union of the possible
+ * branch outputs merged with the non-conditional base schema.
  */
-const IfThenElseSchema = {
-  'else': {
-    'properties': { 'value': { 'type': 'number' } },
-    'type': 'object'
-  },
-  'if': {
-    'properties': { 'kind': { 'const': 'a' } },
-    'type': 'object'
-  },
-  'then': {
-    'properties': { 'value': { 'type': 'string' } },
-    'type': 'object'
-  }
-} as const;
+// JSON Schema conditional — 'then' keyword requires JSON.parse for unicorn/no-thenable
+interface IfThenElseType {
+  readonly 'else': { readonly 'properties': {
+    readonly 'kind': { readonly 'const': 'b' };
+    readonly 'value': { readonly 'type': 'number' } };
+    readonly 'required': readonly ['kind', 'value'];
+    readonly 'type': 'object' };
+  readonly 'if': { readonly 'properties': { readonly 'kind': { readonly 'const': 'a' } };
+    readonly 'type': 'object' };
+  readonly 'properties': { readonly 'shared': { readonly 'type': 'boolean' } };
+  readonly 'required': readonly ['shared'];
+  readonly 'then': { readonly 'properties': {
+    readonly 'kind': { readonly 'const': 'a' };
+    readonly 'value': { readonly 'type': 'string' } };
+    readonly 'required': readonly ['kind', 'value'];
+    readonly 'type': 'object' };
+  readonly 'type': 'object';
+}
+const _iteIf = '{"properties":{"kind":{"const":"a"}},"type":"object"}';
+const _iteThen = '{"properties":{"kind":{"const":"a"},"value":{"type":"string"}},"required":["kind","value"],"type":"object"}';
+const _iteElse = '{"properties":{"kind":{"const":"b"},"value":{"type":"number"}},"required":["kind","value"],"type":"object"}';
+const IfThenElseSchema = JSON.parse(`{"properties":{"shared":{"type":"boolean"}},"required":["shared"],"type":"object","if":${_iteIf},"then":${_iteThen},"else":${_iteElse}}`) as IfThenElseType;
 
 type IfThenElseResult = InferType<typeof IfThenElseSchema>;
-// Falls back to unknown — conditional narrowing is runtime-only
-assert<AssertEqual<IfThenElseResult, unknown>>();
+assert<AssertAssignable<IfThenElseResult,
+  | { readonly 'kind': 'a';
+    readonly 'shared': boolean;
+    readonly 'value': string; }
+  | { readonly 'kind': 'b';
+    readonly 'shared': boolean;
+    readonly 'value': number }
+>>();
 
 // ---------------------------------------------------------------------------
 // 14. Nested object with deep required
@@ -641,7 +656,7 @@ type DeepRef = InferType<typeof DeepRefSchema>;
 assert<AssertAssignable<DeepRef, { readonly 'wrapper': { readonly 'inner': { readonly 'value': number } } }>>();
 
 // ---------------------------------------------------------------------------
-// 18. External fragment refs fall back to unknown
+// 18. External fragment refs fall back to unknown without references
 // ---------------------------------------------------------------------------
 
 /**
@@ -677,6 +692,57 @@ const ExternalDeepPointerRefSchema = {
 
 type ExternalDeepPointerRefResult = InferType<typeof ExternalDeepPointerRefSchema>;
 assert<AssertAssignable<ExternalDeepPointerRefResult, { readonly 'ext'?: unknown }>>();
+
+// With an explicit references map, external refs resolve at compile time
+type ReferenceMap = {
+  readonly 'https://example.com/Other': {
+    readonly '$anchor': 'someAnchor';
+    readonly '$defs': {
+      readonly 'Foo': {
+        readonly '$anchor': 'fooAnchor';
+        readonly 'properties': { readonly 'name': { readonly 'type': 'string' } };
+        readonly 'required': readonly ['name'];
+        readonly 'type': 'object'
+      }
+    };
+    readonly 'properties': {
+      readonly 'child': { readonly '$ref': '#/$defs/Foo' };
+      readonly 'name': { readonly 'type': 'string' }
+    };
+    readonly 'required': readonly ['name'];
+    readonly 'type': 'object'
+  };
+};
+
+type ExternalWholeDocResolved = InferSchemaType<typeof ExternalRefSchema, typeof ExternalRefSchema, ReferenceMap>;
+assert<AssertAssignable<ExternalWholeDocResolved, {
+  readonly 'ext'?: {
+    readonly 'child'?: { readonly 'name': string };
+    readonly 'name': string
+  };
+}>>();
+
+type ExternalWholeDocResolvedViaAlias = InferType<typeof ExternalRefSchema, ReferenceMap>;
+assert<AssertAssignable<ExternalWholeDocResolvedViaAlias, {
+  readonly 'ext'?: {
+    readonly 'child'?: { readonly 'name': string };
+    readonly 'name': string
+  };
+}>>();
+
+type ExternalAnchorResolved = InferSchemaType<typeof ExternalAnchorRefSchema, typeof ExternalAnchorRefSchema, ReferenceMap>;
+assert<AssertAssignable<ExternalAnchorResolved, {
+  readonly 'ext'?: {
+    readonly 'child'?: { readonly 'name': string };
+    readonly 'name': string
+  };
+}>>();
+
+type ExternalPointerResolved = InferSchemaType<typeof ExternalPointerRefSchema, typeof ExternalPointerRefSchema, ReferenceMap>;
+assert<AssertAssignable<ExternalPointerResolved, { readonly 'ext'?: { readonly 'name': string } }>>();
+
+type ExternalDeepPointerResolved = InferSchemaType<typeof ExternalDeepPointerRefSchema, typeof ExternalDeepPointerRefSchema, ReferenceMap>;
+assert<AssertAssignable<ExternalDeepPointerResolved, { readonly 'ext'?: string }>>();
 
 /**
  * Internal fragment refs still resolve correctly — regression guard.
@@ -741,5 +807,29 @@ assert<AssertEqual<NoIdRef, unknown>>();
 // Suppress unused variable warnings
 // ---------------------------------------------------------------------------
 
-void _s, _n, _i, _b, _nl, _bad1, _bad2, _bad3, _bad4, _bad5, _bad6, _bad7, _bad8;
-void _c, _e, _e2, _arr, _u, _u2, _nullable1, _nullable2, _anyOf, _anyOf2, _oneOf, _oneOf2, _ref;
+void _s;
+void _n;
+void _i;
+void _b;
+void _nl;
+void _bad1;
+void _bad2;
+void _bad3;
+void _bad4;
+void _bad5;
+void _bad6;
+void _bad7;
+void _bad8;
+void _c;
+void _e;
+void _e2;
+void _arr;
+void _u;
+void _u2;
+void _nullable1;
+void _nullable2;
+void _anyOf;
+void _anyOf2;
+void _oneOf;
+void _oneOf2;
+void _ref;

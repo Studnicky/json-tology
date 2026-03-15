@@ -1,4 +1,4 @@
-import type { QuadInterface } from '../modules/rdf/Quad.js';
+import type { QuadInterface } from './quad.js';
 
 export interface MaterializationResultInterface {
   'abox': QuadInterface[];

@@ -40,9 +40,11 @@ The project contract is:
 - **`src/modules/ontology/`** — serialization and graph-facing ontology utilities
   - ontology output must be a serialization of the canonical graph, not a separate semantic derivation path
 
-- **`src/modules/data/`** — shared data utilities (DataTypes, Value, Changeset)
+- **`src/modules/data/`** — shared data utilities (DataTypes, Value, Changeset, operations)
 - **`src/errors/`** — all error classes (see Code Organization Patterns)
-- **`src/types/`** — reusable schema/type building blocks
+- **`src/constants/`** — shared constants (error codes, XSD maps, dialect config, keywords, format validators, prefixes, schema literals)
+- **`src/types/`** — type aliases and branded types
+- **`src/interfaces/`** — all interfaces (see Code Organization Patterns)
 
 ### Architectural Rules
 
@@ -50,15 +52,24 @@ The project contract is:
 - Do not add features that require validation to bypass the canonical graph.
 - Domain and range must be explicit graph relations produced during translation from authored schema into the canonical graph.
 - `$ref`, `$defs`, anchors, pointers, composition, and conditionals must all be representable in the canonical graph.
-- When code and docs disagree, prefer the graph-native architecture described here and in `docs/validation-engine-plan.md`.
+- When code and docs disagree, prefer the graph-native architecture described here and in `docs/architecture-plan.md`.
 
 ### Code Organization Patterns
 
 **Canonical locations — no re-exports**
 Every definition lives in exactly one file and is imported from that file directly. Never create re-export shims or barrel files that proxy to the real location. If something moves, update every import.
 
+**Interfaces over classes**
+Every public class has a corresponding interface in `src/interfaces/`. Consumers depend on the interface, not the class. Use `FooInterface` for type annotations (parameters, fields, return types). Use the class only for `new Foo()` or static methods. Classes carry `implements FooInterface` clauses.
+
+**Constants live in `src/constants/`**
+Error codes, XSD maps, dialect configuration, known keywords, format validators, default prefixes, and schema literals all live here. Import constants from `src/constants/`, not from the module that originally defined them.
+
+**Types live in `src/types/`, interfaces in `src/interfaces/`**
+Type aliases (`FooType`) go in `src/types/`. Interface declarations (`FooInterface`) go in `src/interfaces/`. Do not define types or interfaces inline in module files — extract them to the canonical location.
+
 **Errors live in `src/errors/`**
-All error classes and ValidationErrors are defined in `src/errors/`. Every error extends `BaseError`, which carries `code` (machine-readable string), `message`, `retryable` flag, optional `cause` chain, `toJson()`, and `flatten()`. Never throw bare `new Error()` — use the appropriate subclass:
+All error classes and ValidationErrors are defined in `src/errors/`. Import each error directly from its file (e.g. `from '../errors/SchemaError.js'`), not from a barrel. Every error extends `BaseError`, which carries `code` (machine-readable string), `message`, `retryable` flag, optional `cause` chain, `toJson()`, and `flatten()`. Never throw bare `new Error()` — use the appropriate subclass:
 - `SchemaError` — registration, missing $id, structure validation
 - `GraphError` — pointer resolution, anchor lookup, ref resolution, dialect issues
 - `LoadError` — file loading failures

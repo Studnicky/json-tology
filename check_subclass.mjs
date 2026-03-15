@@ -25,8 +25,9 @@ const jsonld = jt.ontology().jsonLdObject();
 const derived = jsonld['@graph'].find((n) => {
   return n['@id'] === 'https://myapp.io/Derived';
 });
+const derivedJson = JSON.stringify(derived, null, 2);
 
-console.log(JSON.stringify(derived, null, 2));
+console.log(derivedJson);
 
 console.log('\n=== FULL JSON-LD OUTPUT ===');
 console.log(jt.ontology().jsonLd());

@@ -1,7 +1,8 @@
+import type { ResultInterface } from '../../interfaces/result.js';
 import { ParseError } from '../../errors/ParseError.js';
 import type { ValidationErrors } from '../../errors/ValidationErrors.js';
 
-export class Result<T> {
+export class Result<T> implements ResultInterface<T> {
   static fail<T>(errors: ValidationErrors): Result<T> {
     return new Result<T>(false, undefined, errors);
   }

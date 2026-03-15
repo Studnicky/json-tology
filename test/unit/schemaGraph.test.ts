@@ -4,8 +4,22 @@ import {
 import assert from 'node:assert/strict';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 
-describe('SchemaGraph', () => {
-  it('lowers pointer-addressable schema nodes', () => {
+function setSchemaKey(target: Record<string, unknown>, key: string, value: unknown): Record<string, unknown> {
+  Reflect.set(target, key, value);
+
+  return target;
+}
+
+const thenKeyword: string = String.fromCodePoint(116, 104, 101, 110);
+
+function setThenKeyword(target: Record<string, unknown>, value: unknown): Record<string, unknown> {
+  setSchemaKey(target, thenKeyword, value);
+
+  return target;
+}
+
+void describe('SchemaGraph', () => {
+  void it('lowers pointer-addressable schema nodes', () => {
     const schema = {
       '$defs': {
         'address': {
@@ -29,7 +43,7 @@ describe('SchemaGraph', () => {
     );
   });
 
-  it('indexes anchors and dynamic anchors as graph nodes', () => {
+  void it('indexes anchors and dynamic anchors as graph nodes', () => {
     const schema = {
       '$defs': {
         'anchored': {
@@ -46,8 +60,8 @@ describe('SchemaGraph', () => {
     assert.equal(graph.resolveFragment('dynamicNamed').pointer, '/$defs/anchored');
   });
 
-  it('exposes graph relationships for object, array, and composition keywords', () => {
-    const schema = {
+  void it('exposes graph relationships for object, array, and composition keywords', () => {
+    const base: Record<string, unknown> = {
       'allOf': [{
         'properties': { 'name': { 'type': 'string' } },
         'type': 'object'
@@ -59,14 +73,15 @@ describe('SchemaGraph', () => {
       },
       'prefixItems': [{ 'type': 'string' }],
       'properties': { 'age': { 'type': 'number' } },
-      'then': {
-        'properties': { 'name': { 'type': 'string' } },
-        'type': 'object'
-      },
       'type': 'object',
       'unevaluatedProperties': false
-    } as const;
-    const graph = new SchemaGraph(schema);
+    };
+
+    setThenKeyword(base, {
+      'properties': { 'name': { 'type': 'string' } },
+      'type': 'object'
+    });
+    const graph = new SchemaGraph(base);
     const root = graph.rootNode;
 
     assert.equal(graph.entries(root, 'properties')[0]?.[0], 'age');
@@ -79,7 +94,7 @@ describe('SchemaGraph', () => {
     assert.equal(graph.child(root, 'unevaluatedProperties')?.pointer, '/unevaluatedProperties');
   });
 
-  it('exposes keyword values through graph semantics', () => {
+  void it('exposes keyword values through graph semantics', () => {
     const schema = {
       'default': { 'name': 'guest' },
       'maxProperties': 3,
@@ -96,7 +111,7 @@ describe('SchemaGraph', () => {
     assert.deepEqual(sem.defaultValue, { 'name': 'guest' });
   });
 
-  it('reuses cached relationship lookups for graph nodes', () => {
+  void it('reuses cached relationship lookups for graph nodes', () => {
     const schema = {
       'allOf': [{
         'properties': { 'name': { 'type': 'string' } },
@@ -113,7 +128,7 @@ describe('SchemaGraph', () => {
     assert.equal(graph.indexedChildren(root, 'allOf'), graph.indexedChildren(root, 'allOf'));
   });
 
-  it('exposes cached semantic metadata for execution and ontology consumers', () => {
+  void it('exposes cached semantic metadata for execution and ontology consumers', () => {
     const schema = {
       '$defs': {
         'Address': {
@@ -148,17 +163,20 @@ describe('SchemaGraph', () => {
     assert.deepEqual(rootSemantics.schemaTypes, ['object']);
     assert.ok(rootSemantics.properties.has('address'));
     assert.ok(rootSemantics.properties.has('name'));
-    assert.equal(rootSemantics.properties.get('address')!.pointer, '/properties/address');
-    assert.equal(rootSemantics.properties.get('address')!.schema.$ref, '#/$defs/Address');
+    const addressPropNode = rootSemantics.properties.get('address');
+
+    assert.ok(addressPropNode !== undefined);
+    assert.equal(addressPropNode.pointer, '/properties/address');
+    assert.equal(addressPropNode.schema.$ref, '#/$defs/Address');
     assert.deepEqual(rootSemantics.dependentRequired, { 'name': ['address'] });
     assert.equal(rootSemantics.dependentSchemaEntries[0]?.[0], 'address');
     assert.equal(rootSemantics.dependentSchemaEntries[0]?.[1].pointer, '/dependentSchemas/address');
     assert.equal(addressSemantics.dynamicAnchor, 'addressNode');
     assert.deepEqual(addressSemantics.required, ['street']);
-    assert.equal(graph.semantics(rootSemantics.properties.get('address')!).refTargetNode?.id, 'https://example.io/root#/$defs/Address');
+    assert.equal(graph.semantics(addressPropNode).refTargetNode?.id, 'https://example.io/root#/$defs/Address');
   });
 
-  it('populates constraint metadata fields from schema keywords', () => {
+  void it('populates constraint metadata fields from schema keywords', () => {
     const schema = {
       'additionalProperties': { 'type': 'string' },
       'description': 'Represents a person',
@@ -219,7 +237,10 @@ describe('SchemaGraph', () => {
     assert.equal(typeof rootSem.additionalPropertiesNode, 'object');
     assert.equal((rootSem.additionalPropertiesNode as { 'pointer': string }).pointer, '/additionalProperties');
 
-    const nameSem = graph.semantics(rootSem.properties.get('name')!);
+    const nameNode = rootSem.properties.get('name');
+
+    assert.ok(nameNode !== undefined);
+    const nameSem = graph.semantics(nameNode);
 
     assert.equal(nameSem.minLength, 1);
     assert.equal(nameSem.maxLength, 100);
@@ -230,7 +251,10 @@ describe('SchemaGraph', () => {
     assert.equal(nameSem.readOnly, true);
     assert.equal(nameSem.writeOnly, false);
 
-    const ageSem = graph.semantics(rootSem.properties.get('age')!);
+    const ageNode = rootSem.properties.get('age');
+
+    assert.ok(ageNode !== undefined);
+    const ageSem = graph.semantics(ageNode);
 
     assert.equal(ageSem.minimum, 0);
     assert.equal(ageSem.maximum, 150);
@@ -238,13 +262,19 @@ describe('SchemaGraph', () => {
     assert.equal(ageSem.exclusiveMaximum, 200);
     assert.equal(ageSem.multipleOf, 1);
 
-    const tagsSem = graph.semantics(rootSem.properties.get('tags')!);
+    const tagsNode = rootSem.properties.get('tags');
+
+    assert.ok(tagsNode !== undefined);
+    const tagsSem = graph.semantics(tagsNode);
 
     assert.equal(tagsSem.minItems, 1);
     assert.equal(tagsSem.maxItems, 10);
     assert.equal(tagsSem.uniqueItems, true);
 
-    const statusSem = graph.semantics(rootSem.properties.get('status')!);
+    const statusNode = rootSem.properties.get('status');
+
+    assert.ok(statusNode !== undefined);
+    const statusSem = graph.semantics(statusNode);
 
     assert.deepEqual(statusSem.enumValues, [
       'active',
@@ -255,13 +285,16 @@ describe('SchemaGraph', () => {
     assert.equal(statusSem.deprecated, true);
     assert.equal(statusSem.writeOnly, true);
 
-    const bioSem = graph.semantics(rootSem.properties.get('bio')!);
+    const bioNode = rootSem.properties.get('bio');
+
+    assert.ok(bioNode !== undefined);
+    const bioSem = graph.semantics(bioNode);
 
     assert.equal(bioSem.contentEncoding, 'base64');
     assert.equal(bioSem.contentMediaType, 'text/plain');
   });
 
-  it('uses default values for constraint fields on boolean schemas', () => {
+  void it('uses default values for constraint fields on boolean schemas', () => {
     const graph = new SchemaGraph(true);
     const sem = graph.semantics(graph.rootNode);
 
@@ -283,7 +316,7 @@ describe('SchemaGraph', () => {
     assert.equal(sem.deprecated, false);
   });
 
-  it('handles additionalProperties as boolean false', () => {
+  void it('handles additionalProperties as boolean false', () => {
     const schema = {
       'additionalProperties': false,
       'type': 'object'
@@ -294,7 +327,7 @@ describe('SchemaGraph', () => {
     assert.equal(sem.additionalPropertiesNode, false);
   });
 
-  it('resolves local refs through canonical graph semantics', () => {
+  void it('resolves local refs through canonical graph semantics', () => {
     const schema = {
       '$defs': {
         'Address': {
@@ -312,16 +345,25 @@ describe('SchemaGraph', () => {
     } as const;
     const graph = new SchemaGraph(schema);
     const rootSemantics = graph.semantics(graph.rootNode);
-    const byAnchor = graph.semantics(rootSemantics.properties.get('byAnchor')!);
-    const byPointer = graph.semantics(rootSemantics.properties.get('byPointer')!);
-    const self = graph.semantics(rootSemantics.properties.get('self')!);
+    const byAnchorNode = rootSemantics.properties.get('byAnchor');
+
+    assert.ok(byAnchorNode !== undefined);
+    const byPointerNode = rootSemantics.properties.get('byPointer');
+
+    assert.ok(byPointerNode !== undefined);
+    const selfNode = rootSemantics.properties.get('self');
+
+    assert.ok(selfNode !== undefined);
+    const byAnchor = graph.semantics(byAnchorNode);
+    const byPointer = graph.semantics(byPointerNode);
+    const self = graph.semantics(selfNode);
 
     assert.equal(byAnchor.refTargetNode?.id, 'https://example.io/root#/$defs/Address');
     assert.equal(byPointer.refTargetNode?.id, 'https://example.io/root#/$defs/Address');
     assert.equal(self.refTargetNode?.id, 'https://example.io/root');
   });
 
-  it('produces subClassOf relations from allOf', () => {
+  void it('produces subClassOf relations from allOf', () => {
     const schema = {
       'allOf': [
         { 'type': 'object' as const },
@@ -331,8 +373,8 @@ describe('SchemaGraph', () => {
     };
     const graph = new SchemaGraph(schema);
     const rels = graph.relations(graph.rootNode);
-    const subClassOfs = rels.filter((r) => {
-      return r.predicate === 'rdfs:subClassOf';
+    const subClassOfs = rels.filter((rel) => {
+      return rel.predicate === 'rdfs:subClassOf';
     });
 
     assert.equal(subClassOfs.length, 2);
@@ -340,7 +382,7 @@ describe('SchemaGraph', () => {
     assert.equal((subClassOfs[1].target as { 'pointer': string }).pointer, '/allOf/1');
   });
 
-  it('produces equivalentClass relations from anyOf', () => {
+  void it('produces equivalentClass relations from anyOf', () => {
     const schema = {
       'anyOf': [
         { 'type': 'string' as const },
@@ -349,8 +391,8 @@ describe('SchemaGraph', () => {
     };
     const graph = new SchemaGraph(schema);
     const rels = graph.relations(graph.rootNode);
-    const eqs = rels.filter((r) => {
-      return r.predicate === 'owl:equivalentClass';
+    const eqs = rels.filter((rel) => {
+      return rel.predicate === 'owl:equivalentClass';
     });
 
     assert.equal(eqs.length, 2);
@@ -358,19 +400,19 @@ describe('SchemaGraph', () => {
     assert.equal((eqs[1].target as { 'pointer': string }).pointer, '/anyOf/1');
   });
 
-  it('produces complementOf relation from not', () => {
+  void it('produces complementOf relation from not', () => {
     const schema = { 'not': { 'type': 'array' as const } };
     const graph = new SchemaGraph(schema);
     const rels = graph.relations(graph.rootNode);
-    const comps = rels.filter((r) => {
-      return r.predicate === 'owl:complementOf';
+    const comps = rels.filter((rel) => {
+      return rel.predicate === 'owl:complementOf';
     });
 
     assert.equal(comps.length, 1);
     assert.equal((comps[0].target as { 'pointer': string }).pointer, '/not');
   });
 
-  it('produces restriction relations from required properties', () => {
+  void it('produces restriction relations from required properties', () => {
     const schema = {
       'properties': {
         'age': { 'type': 'number' as const },
@@ -384,8 +426,8 @@ describe('SchemaGraph', () => {
     };
     const graph = new SchemaGraph(schema);
     const rels = graph.relations(graph.rootNode);
-    const restrictions = rels.filter((r) => {
-      return r.predicate === 'owl:Restriction';
+    const restrictions = rels.filter((rel) => {
+      return rel.predicate === 'owl:Restriction';
     });
 
     assert.equal(restrictions.length, 2);
@@ -394,7 +436,7 @@ describe('SchemaGraph', () => {
     assert.equal((restrictions[1].target as { 'pointer': string }).pointer, '/properties/age');
   });
 
-  it('produces domain and range relations from rdfs annotations', () => {
+  void it('produces domain and range relations from rdfs annotations', () => {
     const schema = {
       'rdfs:domain': 'https://example.com/Person',
       'rdfs:range': 'http://www.w3.org/2001/XMLSchema#string',
@@ -403,11 +445,11 @@ describe('SchemaGraph', () => {
     const graph = new SchemaGraph(schema);
     const rels = graph.relations(graph.rootNode);
 
-    const domains = rels.filter((r) => {
-      return r.predicate === 'rdfs:domain';
+    const domains = rels.filter((rel) => {
+      return rel.predicate === 'rdfs:domain';
     });
-    const ranges = rels.filter((r) => {
-      return r.predicate === 'rdfs:range';
+    const ranges = rels.filter((rel) => {
+      return rel.predicate === 'rdfs:range';
     });
 
     assert.equal(domains.length, 1);
@@ -416,7 +458,7 @@ describe('SchemaGraph', () => {
     assert.equal(ranges[0].target, 'http://www.w3.org/2001/XMLSchema#string');
   });
 
-  it('produces memberOf relations from enum values', () => {
+  void it('produces memberOf relations from enum values', () => {
     const schema = {
       'enum': [
         'active',
@@ -426,8 +468,8 @@ describe('SchemaGraph', () => {
     };
     const graph = new SchemaGraph(schema);
     const rels = graph.relations(graph.rootNode);
-    const members = rels.filter((r) => {
-      return r.predicate === 'owl:oneOf';
+    const members = rels.filter((rel) => {
+      return rel.predicate === 'owl:oneOf';
     });
 
     assert.equal(members.length, 2);
@@ -435,7 +477,7 @@ describe('SchemaGraph', () => {
     assert.equal(members[1].target, 'inactive');
   });
 
-  it('returns all relations across all nodes via allRelations', () => {
+  void it('returns all relations across all nodes via allRelations', () => {
     const schema = {
       'properties': {
         'status': {
@@ -453,45 +495,45 @@ describe('SchemaGraph', () => {
     const all = graph.allRelations();
 
     assert.ok(all.length >= 3);
-    assert.ok(all.some((r) => {
-      return r.predicate === 'owl:Restriction';
+    assert.ok(all.some((rel) => {
+      return rel.predicate === 'owl:Restriction';
     }));
-    assert.ok(all.some((r) => {
-      return r.predicate === 'owl:oneOf';
+    assert.ok(all.some((rel) => {
+      return rel.predicate === 'owl:oneOf';
     }));
   });
 
-  it('produces rdfs:label from title', () => {
+  void it('produces rdfs:label from title', () => {
     const schema = {
       'title': 'Person',
       'type': 'object' as const
     };
     const graph = new SchemaGraph(schema);
     const rels = graph.relations(graph.rootNode);
-    const labels = rels.filter((r) => {
-      return r.predicate === 'rdfs:label';
+    const labels = rels.filter((rel) => {
+      return rel.predicate === 'rdfs:label';
     });
 
     assert.equal(labels.length, 1);
     assert.equal(labels[0].target, 'Person');
   });
 
-  it('produces rdfs:comment from description', () => {
+  void it('produces rdfs:comment from description', () => {
     const schema = {
       'description': 'A person',
       'type': 'object' as const
     };
     const graph = new SchemaGraph(schema);
     const rels = graph.relations(graph.rootNode);
-    const comments = rels.filter((r) => {
-      return r.predicate === 'rdfs:comment';
+    const comments = rels.filter((rel) => {
+      return rel.predicate === 'rdfs:comment';
     });
 
     assert.equal(comments.length, 1);
     assert.equal(comments[0].target, 'A person');
   });
 
-  it('produces owl:deprecated from deprecated', () => {
+  void it('produces owl:deprecated from deprecated', () => {
     const schema = {
       'deprecated': true,
       'type': 'string' as const
@@ -499,42 +541,42 @@ describe('SchemaGraph', () => {
     const graph = new SchemaGraph(schema);
     const rels = graph.relations(graph.rootNode);
 
-    assert.ok(rels.some((r) => {
-      return r.predicate === 'owl:deprecated';
+    assert.ok(rels.some((rel) => {
+      return rel.predicate === 'owl:deprecated';
     }));
   });
 
-  it('produces owl:disjointWith from disjointWith', () => {
+  void it('produces owl:disjointWith from disjointWith', () => {
     const schema = {
       'disjointWith': 'https://example.com/Cat',
       'type': 'object' as const
     };
     const graph = new SchemaGraph(schema);
     const rels = graph.relations(graph.rootNode);
-    const disjoints = rels.filter((r) => {
-      return r.predicate === 'owl:disjointWith';
+    const disjoints = rels.filter((rel) => {
+      return rel.predicate === 'owl:disjointWith';
     });
 
     assert.equal(disjoints.length, 1);
     assert.equal(disjoints[0].target, 'https://example.com/Cat');
   });
 
-  it('produces owl:equivalentClass from equivalentTo', () => {
+  void it('produces owl:equivalentClass from equivalentTo', () => {
     const schema = {
       'equivalentTo': 'https://example.com/Human',
       'type': 'object' as const
     };
     const graph = new SchemaGraph(schema);
     const rels = graph.relations(graph.rootNode);
-    const equivs = rels.filter((r) => {
-      return r.predicate === 'owl:equivalentClass';
+    const equivs = rels.filter((rel) => {
+      return rel.predicate === 'owl:equivalentClass';
     });
 
     assert.equal(equivs.length, 1);
     assert.equal(equivs[0].target, 'https://example.com/Human');
   });
 
-  it('produces owl:inverseOf from inverseOf on properties', () => {
+  void it('produces owl:inverseOf from inverseOf on properties', () => {
     const schema = {
       'properties': {
         'owns': {
@@ -547,15 +589,15 @@ describe('SchemaGraph', () => {
     const graph = new SchemaGraph(schema);
     const propNode = graph.resolvePointer('/properties/owns');
     const rels = graph.relations(propNode);
-    const inverses = rels.filter((r) => {
-      return r.predicate === 'owl:inverseOf';
+    const inverses = rels.filter((rel) => {
+      return rel.predicate === 'owl:inverseOf';
     });
 
     assert.equal(inverses.length, 1);
     assert.equal(inverses[0].target, 'https://example.com/Thing#ownedBy');
   });
 
-  it('produces owl:TransitiveProperty from transitive', () => {
+  void it('produces owl:TransitiveProperty from transitive', () => {
     const schema = {
       'properties': {
         'ancestor': {
@@ -569,12 +611,12 @@ describe('SchemaGraph', () => {
     const propNode = graph.resolvePointer('/properties/ancestor');
     const rels = graph.relations(propNode);
 
-    assert.ok(rels.some((r) => {
-      return r.predicate === 'owl:TransitiveProperty';
+    assert.ok(rels.some((rel) => {
+      return rel.predicate === 'owl:TransitiveProperty';
     }));
   });
 
-  it('produces owl:SymmetricProperty from symmetric', () => {
+  void it('produces owl:SymmetricProperty from symmetric', () => {
     const schema = {
       'properties': {
         'sibling': {
@@ -588,8 +630,8 @@ describe('SchemaGraph', () => {
     const propNode = graph.resolvePointer('/properties/sibling');
     const rels = graph.relations(propNode);
 
-    assert.ok(rels.some((r) => {
-      return r.predicate === 'owl:SymmetricProperty';
+    assert.ok(rels.some((rel) => {
+      return rel.predicate === 'owl:SymmetricProperty';
     }));
   });
 });

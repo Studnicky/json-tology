@@ -4,7 +4,8 @@
  */
 
 export interface BenchResult {
-  'avgUs': number; // microseconds per op
+  // microseconds per op
+  'avgUs': number;
   'iterations': number;
   'library': string;
   'name': string;
@@ -48,54 +49,54 @@ export function bench(
 }
 
 export function printResults(results: BenchResult[]): void {
-  const maxName = Math.max(...results.map((r) => {
-    return r.name.length;
+  const maxName = Math.max(...results.map((result) => {
+    return result.name.length;
   }));
-  const maxLib = Math.max(...results.map((r) => {
-    return r.library.length;
+  const maxLib = Math.max(...results.map((result) => {
+    return result.library.length;
   }));
 
   console.log('');
   console.log('─'.repeat(90));
 
-  const rows = results.map((r) => {
+  const rows = results.map((result) => {
     return {
-      ...r,
-      'opsStr': r.opsPerSec.toLocaleString(),
-      'usStr': r.avgUs.toFixed(3)
+      ...result,
+      'opsStr': result.opsPerSec.toLocaleString(),
+      'usStr': result.avgUs.toFixed(3)
     };
   });
 
-  const maxOps = Math.max(...rows.map((r) => {
-    return r.opsStr.length;
+  const maxOps = Math.max(...rows.map((row) => {
+    return row.opsStr.length;
   }));
 
   // Group by test name and compare
   const groups = new Map<string, typeof rows>();
 
-  for (const r of rows) {
-    const group = groups.get(r.name) ?? [];
+  for (const row of rows) {
+    const group = groups.get(row.name) ?? [];
 
-    group.push(r);
-    groups.set(r.name, group);
+    group.push(row);
+    groups.set(row.name, group);
   }
 
   for (const [
     , group
   ] of groups) {
-    const best = Math.max(...group.map((r) => {
-      return r.opsPerSec;
+    const best = Math.max(...group.map((row) => {
+      return row.opsPerSec;
     }));
 
-    for (const r of group) {
-      const namePad = r.name.padEnd(maxName + 2);
-      const libPad = r.library.padEnd(maxLib + 2);
-      const opsPad = r.opsStr.padStart(maxOps);
-      const isBest = r.opsPerSec === best;
-      const marker = isBest ? '✓' : ' ';
-      const ratio = isBest ? '' : `  (${(best / r.opsPerSec).toFixed(2)}x slower)`;
+    for (const row of group) {
+      const namePad = row.name.padEnd(maxName + 2);
+      const libPad = row.library.padEnd(maxLib + 2);
+      const opsPad = row.opsStr.padStart(maxOps);
+      const isBest = row.opsPerSec === best;
+      const marker = isBest ? '+' : ' ';
+      const ratio = isBest ? '' : `  (${(best / row.opsPerSec).toFixed(2)}x slower)`;
 
-      console.log(`  ${marker} ${libPad}  ${namePad}  ${opsPad} ops/s  (${r.usStr}µs/op)${ratio}`);
+      console.log(`  ${marker} ${libPad}  ${namePad}  ${opsPad} ops/s  (${row.usStr}us/op)${ratio}`);
     }
     console.log('');
   }
@@ -105,5 +106,5 @@ export function printResults(results: BenchResult[]): void {
 
 export function section(title: string): void {
   console.log('');
-  console.log(`▶ ${title}`);
+  console.log(`> ${title}`);
 }

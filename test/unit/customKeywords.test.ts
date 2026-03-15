@@ -8,7 +8,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 import { JsonTology } from '../../src/JsonTology.js';
 import type { ValidationErrorType } from '../../src/types/validation.js';
 
-describe('Custom keyword extensions', () => {
+void describe('Custom keyword extensions', () => {
   const evenNumberKeyword: KeywordDefinitionInterface = {
     'keyword': 'evenNumber',
     'validate': (schema, data) => {
@@ -23,7 +23,7 @@ describe('Custom keyword extensions', () => {
     }
   };
 
-  it('validates a custom keyword constraint (evenNumber)', () => {
+  void it('validates a custom keyword constraint (evenNumber)', () => {
     const schema = {
       '$id': 'https://test.com/Even',
       'evenNumber': true,
@@ -36,7 +36,7 @@ describe('Custom keyword extensions', () => {
     assert.equal(engine.check(0), true);
   });
 
-  it('custom keyword scoped to specific type', () => {
+  void it('custom keyword scoped to specific type', () => {
     const numberOnlyKeyword: KeywordDefinitionInterface = {
       'keyword': 'evenNumber',
       'type': 'number',
@@ -63,7 +63,7 @@ describe('Custom keyword extensions', () => {
     assert.equal(engine.check('hello'), true);
   });
 
-  it('custom keyword returning ValidationErrorType[]', () => {
+  void it('custom keyword returning ValidationErrorType[]', () => {
     const rangeKeyword: KeywordDefinitionInterface = {
       'keyword': 'customRange',
       'type': 'number',
@@ -114,7 +114,7 @@ describe('Custom keyword extensions', () => {
     assert.equal(errors[0].message, 'must be >= 10');
   });
 
-  it('schema without custom keywords is unchanged', () => {
+  void it('schema without custom keywords is unchanged', () => {
     const schema = {
       '$id': 'https://test.com/Plain',
       'minLength': 1,
@@ -126,7 +126,7 @@ describe('Custom keyword extensions', () => {
     assert.equal(engine.check(''), false);
   });
 
-  it('threads keywords through SchemaRegistry', () => {
+  void it('threads keywords through SchemaRegistry', () => {
     const registry = new SchemaRegistry({ 'keywords': [evenNumberKeyword] });
     const schema = {
       '$id': 'https://test.com/RegEven',
@@ -142,7 +142,7 @@ describe('Custom keyword extensions', () => {
     assert.equal(registry.validate('https://test.com/RegEven', 4).length, 0);
   });
 
-  it('reads custom keyword values from graph semantics, not raw schema', () => {
+  void it('reads custom keyword values from graph semantics, not raw schema', () => {
     const registry = new SchemaRegistry();
     const schema = {
       '$id': 'urn:test:graph-kw',
@@ -163,7 +163,7 @@ describe('Custom keyword extensions', () => {
     assert.equal(engine.execute(3).valid, false);
   });
 
-  it('threads keywords through JsonTology', () => {
+  void it('threads keywords through JsonTology', () => {
     const jt = JsonTology.create({
       'baseIRI': 'https://test.com',
       'keywords': [evenNumberKeyword],

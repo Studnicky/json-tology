@@ -24,7 +24,7 @@ import type { JSONSchema7Definition as JSONSchemaType } from 'json-schema';
 import type { InferSchemaType } from './types/infer.js';
 import type {
   SchemaEntryType, SchemaMapFromTupleType
-} from './interfaces/registry.js';
+} from './types/registry.js';
 import { FormatRegistry } from './modules/format/FormatRegistry.js';
 import type { RegistryOptionsInterface } from './interfaces/registry.js';
 import type {
@@ -38,15 +38,7 @@ import { GraphOntologySerializer } from './modules/ontology/GraphOntologySeriali
 import { GraphShaclSerializer } from './modules/ontology/GraphShaclSerializer.js';
 import { Transform } from './modules/transform/Transform.js';
 import type { JsonTologyOptionsInterface } from './interfaces/config.js';
-
-
-const DEFAULT_PREFIXES: Record<string, string> = {
-  'jt': 'https://json-tology.dev/vocab#',
-  'owl': 'http://www.w3.org/2002/07/owl#',
-  'rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
-  'rdfs': 'http://www.w3.org/2000/01/rdf-schema#',
-  'xsd': 'http://www.w3.org/2001/XMLSchema#'
-};
+import { DEFAULT_PREFIXES } from './constants/prefixes.js';
 
 /**
  * JsonTology — unified type system, validation, materialization, and ontology.
@@ -54,6 +46,7 @@ const DEFAULT_PREFIXES: Record<string, string> = {
  * @typeParam TMap — accumulated schema type map. Built automatically via
  * `create()` or chained `register()` calls.
  */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- {} is intentional for generic default
 export class JsonTology<TMap = {}> {
   /**
    * Create a JsonTology instance with constructor-time schemas and full type inference.
@@ -160,8 +153,8 @@ export class JsonTology<TMap = {}> {
   // Validation
   // ---------------------------------------------------------------------------
   public errors(schema: Record<string, unknown> & { '$id': string; }, data: unknown): ValidationErrors;
-  public errors(schema: (Record<string, unknown> & { '$id': string; }) | string, data: unknown): ValidationErrors {
-    return this.registry.errors(schema as string, data);
+  public errors(schema: (keyof TMap & string) | (Record<string, unknown> & { '$id': string; }), data: unknown): ValidationErrors {
+    return this.registry.errors(typeof schema === 'string' ? schema : schema.$id, data);
   }
   /**
    * Get a registered schema by its $id.
@@ -181,15 +174,15 @@ export class JsonTology<TMap = {}> {
    */
   public is<K extends keyof TMap & string>(schemaId: K, data: unknown): data is TMap[K];
   public is(schema: Record<string, unknown> & { '$id': string; }, data: unknown): boolean;
-  public is(schema: (Record<string, unknown> & { '$id': string; }) | string, data: unknown): boolean {
-    return this.registry.is(schema as string, data);
+  public is(schema: (keyof TMap & string) | (Record<string, unknown> & { '$id': string; }), data: unknown): boolean {
+    return this.registry.is(typeof schema === 'string' ? schema : schema.$id, data);
   }
   /**
    * List all registered schema $id strings.
    */
   public list(): string[] {
-    return this.registry.list().map((s) => {
-      return s.$id as string;
+    return this.registry.list().map((schema) => {
+      return schema.$id as string;
     })
       .filter((id) => {
         return typeof id === 'string';
@@ -234,8 +227,8 @@ export class JsonTology<TMap = {}> {
   public parse<TSchema extends JSONSchemaType & { readonly '$id': string; }>(
     schema: TSchema, data: unknown
   ): ParseOutputType<TSchema>;
-  public parse(schema: (Record<string, unknown> & { '$id': string; }) | string, data: unknown): unknown {
-    return this.registry.parse(schema as string, data);
+  public parse(schema: (keyof TMap & string) | (Record<string, unknown> & { '$id': string; }), data: unknown): unknown {
+    return this.registry.parse(typeof schema === 'string' ? schema : schema.$id, data);
   }
   /**
    * Register one or more schemas. Returns `this` with schema types accumulated.
@@ -288,8 +281,8 @@ export class JsonTology<TMap = {}> {
    */
   public validate<K extends keyof TMap & string>(schemaId: K, data: unknown): string[];
   public validate(schema: Record<string, unknown> & { '$id': string; }, data: unknown): string[];
-  public validate(schema: (Record<string, unknown> & { '$id': string; }) | string, data: unknown): string[] {
-    return this.registry.validate(schema as string, data);
+  public validate(schema: (keyof TMap & string) | (Record<string, unknown> & { '$id': string; }), data: unknown): string[] {
+    return this.registry.validate(typeof schema === 'string' ? schema : schema.$id, data);
   }
 
   /**
@@ -297,7 +290,10 @@ export class JsonTology<TMap = {}> {
    */
   public validateAt<K extends keyof TMap & string>(schemaId: K, pointer: string, data: unknown): string[];
   public validateAt(schema: Record<string, unknown> & { '$id': string; }, pointer: string, data: unknown): string[];
-  public validateAt(schema: (Record<string, unknown> & { '$id': string; }) | string, pointer: string, data: unknown): string[] {
-    return this.registry.validateAt(schema as string, pointer, data);
+  public validateAt(schema: (keyof TMap & string) | (Record<string, unknown> & { '$id': string; }), pointer: string, data: unknown): string[] {
+    const schemaId = typeof schema === 'string' ? schema : schema.$id;
+    const validationResult = this.registry.validateAt(schemaId, pointer, data);
+
+    return validationResult;
   }
 }

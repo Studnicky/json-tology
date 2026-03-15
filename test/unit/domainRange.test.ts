@@ -63,9 +63,9 @@ function makeRegistry(): SchemaRegistry {
   return reg;
 }
 
-describe('rdfs:domain and rdfs:range', () => {
-  describe('validation', () => {
-    it('rdfs:range on object property validates value against range schema', () => {
+void describe('rdfs:domain and rdfs:range', () => {
+  void describe('validation', () => {
+    void it('rdfs:range on object property validates value against range schema', () => {
       const reg = makeRegistry();
       const errors = reg.validate('https://example.io/Person', {
         'address': {
@@ -78,20 +78,21 @@ describe('rdfs:domain and rdfs:range', () => {
       assert.deepEqual(errors, []);
     });
 
-    it('rdfs:range on object property rejects invalid value', () => {
+    void it('rdfs:range on object property rejects invalid value', () => {
       const reg = makeRegistry();
       const errors = reg.validate('https://example.io/Person', {
-        'address': { 'street': '123 Main' }, // missing city
+        // missing city
+        'address': { 'street': '123 Main' },
         'name': 'Alice'
       });
 
       assert.ok(errors.length > 0, 'should have validation errors');
-      assert.ok(errors.some((e) => {
-        return e.includes('city') || e.includes('required');
+      assert.ok(errors.some((err) => {
+        return err.includes('city') || err.includes('required');
       }));
     });
 
-    it('rdfs:range on array property validates each item against range schema', () => {
+    void it('rdfs:range on array property validates each item against range schema', () => {
       const reg = makeRegistry();
       // friends items should be validated against Person schema
       const errors = reg.validate('https://example.io/Person', {
@@ -105,12 +106,13 @@ describe('rdfs:domain and rdfs:range', () => {
       assert.deepEqual(errors, []);
     });
 
-    it('rdfs:range on array property rejects invalid items', () => {
+    void it('rdfs:range on array property rejects invalid items', () => {
       const reg = makeRegistry();
       const errors = reg.validate('https://example.io/Person', {
         'friends': [
           { 'name': 'Bob' },
-          { 'notName': 'missing name field' } // missing required 'name'
+          // missing required 'name'
+          { 'notName': 'missing name field' }
         ],
         'name': 'Alice'
       });
@@ -118,7 +120,7 @@ describe('rdfs:domain and rdfs:range', () => {
       assert.ok(errors.length > 0, 'should have validation errors for invalid item');
     });
 
-    it('rdfs:range with unregistered schema is annotation-only (no error)', () => {
+    void it('rdfs:range with unregistered schema is annotation-only (no error)', () => {
       const UnknownRangeSchema = {
         '$id': 'https://example.io/WithUnknownRange',
         'properties': {
@@ -137,7 +139,7 @@ describe('rdfs:domain and rdfs:range', () => {
       assert.deepEqual(errors, []);
     });
 
-    it('rdfs:domain is annotation-only (no validation effect)', () => {
+    void it('rdfs:domain is annotation-only (no validation effect)', () => {
       const reg = makeRegistry();
       // tag has rdfs:domain but it should not affect validation
       const errors = reg.validate('https://example.io/Person', {
@@ -148,7 +150,7 @@ describe('rdfs:domain and rdfs:range', () => {
       assert.deepEqual(errors, []);
     });
 
-    it('combined: schema with both $ref and rdfs:range — both constraints enforced', () => {
+    void it('combined: schema with both $ref and rdfs:range — both constraints enforced', () => {
       const reg = makeRegistry();
       // address has both $ref (to inline $defs/Address) and rdfs:range (to registered Address)
       // Both require street+city
@@ -171,84 +173,90 @@ describe('rdfs:domain and rdfs:range', () => {
     });
   });
 
-  describe('OWL output', () => {
-    it('uses explicit domain/range when declared', () => {
+  void describe('OWL output', () => {
+    void it('uses explicit domain/range when declared', () => {
       const reg = makeRegistry();
       const serializer = new GraphOntologySerializer();
-      const nodes = serializer.serialize(reg.listGraphs());
+      const nodes = serializer.serialize(reg.listGraphs()) as Array<Record<string, unknown>>;
 
       // Find the address property node
-      const addressProp = nodes.find((n: any) => {
-        return n['@id'] === 'https://example.io/Person#address';
-      }) as any;
+      const addressProp = nodes.find((node) => {
+        return node['@id'] === 'https://example.io/Person#address';
+      });
 
-      assert.ok(addressProp, 'address property should exist');
+      assert.ok(addressProp !== undefined, 'address property should exist');
       assert.deepEqual(addressProp['rdfs:range'], { '@id': 'https://example.io/Address' });
 
       // Find the tag property with explicit domain
-      const tagProp = nodes.find((n: any) => {
-        return n['@id'] === 'https://example.io/Person#tag';
-      }) as any;
+      const tagProp = nodes.find((node) => {
+        return node['@id'] === 'https://example.io/Person#tag';
+      });
 
-      assert.ok(tagProp, 'tag property should exist');
+      assert.ok(tagProp !== undefined, 'tag property should exist');
       assert.deepEqual(tagProp['rdfs:domain'], { '@id': 'https://example.io/Taggable' });
 
       // Friends array: owl:allValuesFrom restriction on the class
-      const personClass = nodes.find((n: any) => {
-        return n['@id'] === 'https://example.io/Person' && n['@type'] === 'owl:Class';
-      }) as any;
-
-      assert.ok(personClass, 'Person class should exist');
-      const subs = personClass['rdfs:subClassOf'] as any[];
-
-      assert.ok(Array.isArray(subs), 'rdfs:subClassOf must exist');
-      const avf = subs.find((r: any) => {
-        return r['owl:onProperty']?.['@id'] === 'https://example.io/Person#friends'
-        && r['owl:allValuesFrom'] !== undefined;
+      const personClass = nodes.find((node) => {
+        return node['@id'] === 'https://example.io/Person' && node['@type'] === 'owl:Class';
       });
 
-      assert.ok(avf, 'owl:allValuesFrom restriction on friends must exist');
+      assert.ok(personClass !== undefined, 'Person class should exist');
+      const subs = personClass['rdfs:subClassOf'] as Array<Record<string, unknown>>;
+
+      assert.ok(Array.isArray(subs), 'rdfs:subClassOf must exist');
+      const avf = subs.find((restriction) => {
+        const onPropId = restriction['owl:onProperty'] as Record<string, unknown> | undefined;
+
+        return onPropId?.['@id'] === 'https://example.io/Person#friends'
+        && restriction['owl:allValuesFrom'] !== undefined;
+      });
+
+      assert.ok(avf !== undefined, 'owl:allValuesFrom restriction on friends must exist');
       assert.deepEqual(avf['owl:allValuesFrom'], { '@id': 'https://example.io/Person' });
     });
   });
 
-  describe('SHACL output', () => {
-    it('uses explicit range for sh:class', () => {
+  void describe('SHACL output', () => {
+    void it('uses explicit range for sh:class', () => {
       const reg = makeRegistry();
       const serializer = new GraphShaclSerializer();
-      const shapes = serializer.serialize(reg.listGraphs());
+      const shapes = serializer.serialize(reg.listGraphs()) as Array<Record<string, unknown>>;
 
       // Find the Person NodeShape
-      const personShape = shapes.find((s: any) => {
-        return s['@id'] === 'https://example.io/Person';
-      }) as any;
-
-      assert.ok(personShape, 'Person shape should exist');
-
-      const propShapes = personShape['sh:property'] as any[];
-
-      assert.ok(propShapes, 'should have property shapes');
-
-      // address property should have sh:class from rdfsRange
-      const addressPS = propShapes.find((ps: any) => {
-        return ps['sh:path']?.['@id'] === 'https://example.io/Person#address';
+      const personShape = shapes.find((shape) => {
+        return shape['@id'] === 'https://example.io/Person';
       });
 
-      assert.ok(addressPS, 'address property shape should exist');
+      assert.ok(personShape !== undefined, 'Person shape should exist');
+
+      const propShapes = personShape['sh:property'] as Array<Record<string, unknown>>;
+
+      assert.ok(Array.isArray(propShapes), 'should have property shapes');
+
+      // address property should have sh:class from rdfsRange
+      const addressPS = propShapes.find((ps) => {
+        const pathId = ps['sh:path'] as Record<string, unknown> | undefined;
+
+        return pathId?.['@id'] === 'https://example.io/Person#address';
+      });
+
+      assert.ok(addressPS !== undefined, 'address property shape should exist');
       assert.deepEqual(addressPS['sh:class'], { '@id': 'https://example.io/Address' });
       assert.equal(addressPS['sh:node'], undefined, 'sh:node should not be set when sh:class is');
 
       // tag property should use domain in path
-      const tagPS = propShapes.find((ps: any) => {
-        return ps['sh:path']?.['@id'] === 'https://example.io/Taggable#tag';
+      const tagPS = propShapes.find((ps) => {
+        const pathId = ps['sh:path'] as Record<string, unknown> | undefined;
+
+        return pathId?.['@id'] === 'https://example.io/Taggable#tag';
       });
 
-      assert.ok(tagPS, 'tag property shape with domain-based path should exist');
+      assert.ok(tagPS !== undefined, 'tag property shape with domain-based path should exist');
     });
   });
 
-  describe('extended predicates in ontology output', () => {
-    it('serializes disjointWith as owl:disjointWith', () => {
+  void describe('extended predicates in ontology output', () => {
+    void it('serializes disjointWith as owl:disjointWith', () => {
       const DogSchema = {
         '$id': 'https://example.io/Dog',
         'disjointWith': 'https://example.io/Cat',
@@ -268,15 +276,15 @@ describe('rdfs:domain and rdfs:range', () => {
       const owlSerializer = new GraphOntologySerializer();
       const graphs = registry.listGraphs();
       const output = owlSerializer.serialize(graphs) as Array<Record<string, unknown>>;
-      const dogClass = output.find((n) => {
-        return n['@id'] === 'https://example.io/Dog';
+      const dogClass = output.find((node) => {
+        return node['@id'] === 'https://example.io/Dog';
       });
 
       assert.ok(dogClass);
       assert.deepEqual(dogClass['owl:disjointWith'], { '@id': 'https://example.io/Cat' });
     });
 
-    it('serializes inverseOf as owl:inverseOf on properties', () => {
+    void it('serializes inverseOf as owl:inverseOf on properties', () => {
       const OwnerSchema = {
         '$id': 'https://example.io/Owner',
         'properties': {
@@ -301,15 +309,15 @@ describe('rdfs:domain and rdfs:range', () => {
       const owlSerializer = new GraphOntologySerializer();
       const graphs = registry.listGraphs();
       const output = owlSerializer.serialize(graphs) as Array<Record<string, unknown>>;
-      const petsProp = output.find((n) => {
-        return n['@id'] === 'https://example.io/Owner#pets';
+      const petsProp = output.find((node) => {
+        return node['@id'] === 'https://example.io/Owner#pets';
       });
 
       assert.ok(petsProp);
       assert.deepEqual(petsProp['owl:inverseOf'], { '@id': 'https://example.io/Pet#owner' });
     });
 
-    it('serializes transitive and symmetric as rdf:type annotations', () => {
+    void it('serializes transitive and symmetric as rdf:type annotations', () => {
       const GraphSchema = {
         '$id': 'https://example.io/GraphNode',
         'properties': {
@@ -332,8 +340,8 @@ describe('rdfs:domain and rdfs:range', () => {
       const graphs = registry.listGraphs();
       const output = owlSerializer.serialize(graphs) as Array<Record<string, unknown>>;
 
-      const ancestorProp = output.find((n) => {
-        return n['@id'] === 'https://example.io/GraphNode#ancestor';
+      const ancestorProp = output.find((node) => {
+        return node['@id'] === 'https://example.io/GraphNode#ancestor';
       });
 
       assert.ok(ancestorProp);
@@ -342,8 +350,8 @@ describe('rdfs:domain and rdfs:range', () => {
       assert.ok(Array.isArray(ancestorTypes));
       assert.ok(ancestorTypes.includes('owl:TransitiveProperty'));
 
-      const siblingProp = output.find((n) => {
-        return n['@id'] === 'https://example.io/GraphNode#sibling';
+      const siblingProp = output.find((node) => {
+        return node['@id'] === 'https://example.io/GraphNode#sibling';
       });
 
       assert.ok(siblingProp);

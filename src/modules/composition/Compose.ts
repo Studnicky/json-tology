@@ -8,11 +8,13 @@
 
 import type {
   DiscriminatedUnionSchemaInterface,
-  ExtendSchemaType,
   IntersectionSchemaInterface,
   OmitSchemaInterface,
+  PickSchemaInterface
+} from '../../interfaces/compose.js';
+import type {
+  ExtendSchemaType,
   PartialSchemaType,
-  PickSchemaInterface,
   RequiredSchemaType
 } from '../../types/compose.js';
 

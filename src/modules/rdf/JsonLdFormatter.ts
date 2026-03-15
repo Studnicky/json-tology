@@ -8,9 +8,8 @@
  * Pure function, no graph/schema access.
  */
 
-import type {
-  QuadInterface, QuadObjectType
-} from './Quad.js';
+import type { QuadInterface } from '../../interfaces/quad.js';
+import type { QuadObjectType } from '../../types/quad.js';
 
 export function quadsToJsonLd(quads: QuadInterface[]): Array<Record<string, unknown>> {
   // Phase 1: group quads by subject
@@ -26,7 +25,7 @@ export function quadsToJsonLd(quads: QuadInterface[]): Array<Record<string, unkn
 
     if (q.predicate === 'rdf:type') {
       // @type values are plain strings, not { '@id': ... } wrappers
-      const typeValue = q.object.type === 'iri' ? q.object.value : objectToJsonLd(q.object);
+      const typeValue = q.object.termType === 'NamedNode' ? q.object.value : objectToJsonLd(q.object);
       const existing = node['@type'];
 
       if (existing === undefined) {
@@ -96,22 +95,22 @@ export function quadsToJsonLd(quads: QuadInterface[]): Array<Record<string, unkn
 }
 
 function objectToJsonLd(obj: QuadObjectType): unknown {
-  switch (obj.type) {
-    case 'bnode':
-      return { '@id': obj.id };
-    case 'iri':
+  switch (obj.termType) {
+    case 'BlankNode':
       return { '@id': obj.value };
-    case 'list':
+    case 'NamedNode':
+      return { '@id': obj.value };
+    case 'List':
       return { '@list': obj.items.map(objectToJsonLd) };
-    case 'literal':
+    case 'Literal':
       return obj.value;
   }
 }
 
 function countBnodeRefs(obj: QuadObjectType, counts: Map<string, number>): void {
-  if (obj.type === 'bnode') {
-    counts.set(obj.id, (counts.get(obj.id) ?? 0) + 1);
-  } else if (obj.type === 'list') {
+  if (obj.termType === 'BlankNode') {
+    counts.set(obj.value, (counts.get(obj.value) ?? 0) + 1);
+  } else if (obj.termType === 'List') {
     for (const item of obj.items) {
       countBnodeRefs(item, counts);
     }

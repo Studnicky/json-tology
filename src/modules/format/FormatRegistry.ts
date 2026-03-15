@@ -1,5 +1,6 @@
 import { isIP } from 'node:net';
 import { domainToASCII } from 'node:url';
+import type { FormatRegistryInterface } from '../../interfaces/format-registry.js';
 
 /**
  * Pluggable registry for JSON Schema `format` validators.
@@ -8,7 +9,7 @@ import { domainToASCII } from 'node:url';
  * formats in one map.  Built-in validators are registered by
  * `FormatRegistry.builtin()`.
  */
-export class FormatRegistry {
+export class FormatRegistry implements FormatRegistryInterface {
   /**
    * Create a `FormatRegistry` pre-loaded with all built-in JSON Schema format
    * validators (string formats like `date`, `email`, `uri`, etc. and number

@@ -9,10 +9,9 @@
  * it maps validated instance data to quads, not schema structure.
  */
 
-import type {
-  QuadInterface, QuadObjectType
-} from './Quad.js';
-import type { SchemaGraph } from '../graph/SchemaGraph.js';
+import type { QuadInterface } from '../../interfaces/quad.js';
+import type { QuadObjectType } from '../../types/quad.js';
+import type { SchemaGraphInterface } from '../../interfaces/schema-graph-impl.js';
 import type {
   SchemaGraphNodeInterface,
   SchemaGraphRelationInterface
@@ -40,32 +39,24 @@ export function resetBnodeCounter(): void {
 // ---------------------------------------------------------------------------
 
 export function iri(value: string): QuadObjectType {
-  return {
-    'type': 'iri',
-    value
-  };
+  return { 'termType': 'NamedNode', value };
 }
 
 export function literal(value: unknown, datatype: string): QuadObjectType {
   return {
-    datatype,
-    'type': 'literal',
+    'datatype': { 'termType': 'NamedNode' as const, 'value': datatype },
+    'language': '',
+    'termType': 'Literal',
     value
   };
 }
 
 export function bnode(id: string): QuadObjectType {
-  return {
-    id,
-    'type': 'bnode'
-  };
+  return { 'termType': 'BlankNode', 'value': id };
 }
 
 export function rdfList(items: QuadObjectType[]): QuadObjectType {
-  return {
-    items,
-    'type': 'list'
-  };
+  return { items, 'termType': 'List' };
 }
 
 export function quad(subject: string, predicate: string, object: QuadObjectType): QuadInterface {
@@ -80,7 +71,7 @@ export function quad(subject: string, predicate: string, object: QuadObjectType)
 // TBox projection — purely relation-driven
 // ---------------------------------------------------------------------------
 
-export function projectGraph(graph: SchemaGraph): QuadInterface[] {
+export function projectGraph(graph: SchemaGraphInterface): QuadInterface[] {
   resetBnodeCounter();
   const quads: QuadInterface[] = [];
 
@@ -113,6 +104,10 @@ function projectRelation(
   const targetId = typeof rel.target === 'string' ? rel.target : rel.target.id;
 
   switch (predicate) {
+    case 'dash:readOnly':
+    case 'dash:writeOnly':
+      quads.push(quad(subject, predicate, literal(targetId === 'true', 'xsd:boolean')));
+      break;
     case 'dct:format':
       quads.push(quad(subject, predicate, literal(targetId, 'xsd:string')));
       break;
@@ -130,8 +125,8 @@ function projectRelation(
       )));
       break;
     }
-    case 'jt:formatPattern':
-      quads.push(quad(subject, 'jt:formatPattern', literal(targetId, 'xsd:string')));
+    case 'jt:multipleOf':
+      quads.push(quad(subject, predicate, literal(Number(targetId), 'xsd:decimal')));
       break;
     case 'owl:deprecated':
       quads.push(quad(subject, predicate, literal(targetId, 'xsd:boolean')));
@@ -249,7 +244,7 @@ function projectStructuredRelation(
  *   Defaults to `graph.rootNode`.
  */
 export function projectAbox(
-  graph: SchemaGraph,
+  graph: SchemaGraphInterface,
   data: unknown,
   baseIRI: string,
   entryNode?: SchemaGraphNodeInterface
@@ -282,7 +277,7 @@ function instanceIRI(baseIRI: string, classId: string, data: unknown): string {
  * Resolve local refs within the graph. For nodes with a `$ref` that starts
  * with `#`, resolves to the target node. External refs return the node as-is.
  */
-function resolveNode(graph: SchemaGraph, node: SchemaGraphNodeInterface): SchemaGraphNodeInterface {
+function resolveNode(graph: SchemaGraphInterface, node: SchemaGraphNodeInterface): SchemaGraphNodeInterface {
   const sem = graph.semantics(node);
 
   if (sem.ref === undefined) {
@@ -298,7 +293,7 @@ function resolveNode(graph: SchemaGraph, node: SchemaGraphNodeInterface): Schema
 }
 
 function projectInstance(
-  graph: SchemaGraph,
+  graph: SchemaGraphInterface,
   node: SchemaGraphNodeInterface,
   data: Record<string, unknown>,
   baseIRI: string,
@@ -330,7 +325,7 @@ function projectInstance(
 }
 
 function projectPropertyValue(
-  graph: SchemaGraph,
+  graph: SchemaGraphInterface,
   propIRI: string,
   propSem: { 'format': string | undefined;
     'itemsNode': SchemaGraphNodeInterface | undefined },
@@ -352,7 +347,7 @@ function projectPropertyValue(
 }
 
 function projectSingleValue(
-  graph: SchemaGraph,
+  graph: SchemaGraphInterface,
   propIRI: string,
   propSem: { 'format': string | undefined;
     'itemsNode': SchemaGraphNodeInterface | undefined },
@@ -449,14 +444,14 @@ export function quadsToJsonLdNodes(quads: QuadInterface[]): Array<Record<string,
 }
 
 function quadObjectToJsonLd(obj: QuadObjectType): unknown {
-  switch (obj.type) {
-    case 'bnode':
-      return { '@id': obj.id };
-    case 'iri':
+  switch (obj.termType) {
+    case 'BlankNode':
       return { '@id': obj.value };
-    case 'list':
+    case 'NamedNode':
+      return { '@id': obj.value };
+    case 'List':
       return { '@list': obj.items.map(quadObjectToJsonLd) };
-    case 'literal':
+    case 'Literal':
       return obj.value;
   }
 }

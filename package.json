@@ -8,6 +8,11 @@
   "bin": {
     "json-tology": "./dist/cli.js"
   },
+  "files": [
+    "dist/",
+    "README.md",
+    "CHANGELOG.md"
+  ],
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -67,9 +72,11 @@
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "npm run clean && tsc",
     "type-check": "tsc --noEmit",
     "test": "tsx --test 'test/unit/**/*.test.ts'",
+    "test:coverage": "tsx --test --experimental-test-coverage 'test/unit/**/*.test.ts'",
+    "pack:check": "node ./scripts/check-pack.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "clean": "rm -rf dist",
@@ -89,27 +96,25 @@
   "license": "MIT",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@rdfjs/types": "^2.0.1",
+    "@sinclair/typebox": "^0.34.48",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@types/json-schema": "^7.0.15",
     "@typescript-eslint/eslint-plugin": "^8.57.0",
     "@typescript-eslint/parser": "^8.57.0",
     "0x": "^6.0.0",
+    "ajv": "^8.18.0",
+    "ajv-formats": "^3.0.1",
     "eslint": "^10.0.3",
     "eslint-plugin-perfectionist": "^5.6.0",
     "eslint-plugin-regexp": "^3.1.0",
     "eslint-plugin-unicorn": "^63.0.0",
     "eslint-plugin-yml": "^3.3.1",
     "globals": "^17.4.0",
-    "husky": "^9.1.7",
     "license-checker": "^25.0.1",
     "madge": "^8.0.0",
     "tsx": "^4.21.0",
-    "typescript": "^5.8.2"
-  },
-  "optionalDependencies": {
-    "@sinclair/typebox": "^0.34.48",
-    "ajv": "^8.18.0",
-    "ajv-formats": "^3.0.1",
+    "typescript": "^5.8.2",
     "zod": "^4.3.6"
   },
   "engines": {

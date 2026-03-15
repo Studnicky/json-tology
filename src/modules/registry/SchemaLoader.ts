@@ -15,6 +15,7 @@ import type {
   SchemaLoadErrorType, SchemaLoadResultType
 } from '../../types/loader.js';
 import type { LoggerInterface } from '../../interfaces/logger.js';
+import type { SchemaLoaderInterface } from '../../interfaces/schema-loader-impl.js';
 import { LoadError } from '../../errors/LoadError.js';
 import { Logger } from '../logger/Logger.js';
 
@@ -24,7 +25,7 @@ import { Logger } from '../logger/Logger.js';
  *
  * Loads and validates schemas from the file system.
  */
-export class SchemaLoader {
+export class SchemaLoader implements SchemaLoaderInterface {
   /**
    * Create a new SchemaLoader with optional logger.
    *

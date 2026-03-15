@@ -7,7 +7,7 @@ import {
 
 const results: BenchResult[] = [];
 
-const obj = {
+const obj: Record<string, boolean | number | string> = {
   'active': true,
   'age': 30,
   'email': 'alice@example.com',
@@ -22,46 +22,58 @@ let sink = 0;
 
 section('Object iteration patterns');
 
-results.push(bench('for...in', 'native', () => {
-  for (const k in obj) {
-    sink += (obj as any)[k] ? 1 : 0;
+const forInResult = bench('for...in', 'native', () => {
+  for (const key in obj) {
+    sink += String(obj[key]).length > 0 ? 1 : 0;
   }
-}));
+});
 
-results.push(bench('for...of Object.entries() (fresh)', 'native', () => {
+results.push(forInResult);
+
+const freshEntriesResult = bench('for...of Object.entries() (fresh)', 'native', () => {
   for (const [
-    k,
-    v
+    _key,
+    value
   ] of Object.entries(obj)) {
-    sink += v ? 1 : 0;
+    sink += String(value).length > 0 ? 1 : 0;
   }
-}));
+});
 
-results.push(bench('for...of Object.keys() (fresh)', 'native', () => {
-  for (const k of Object.keys(obj)) {
-    sink += (obj as any)[k] ? 1 : 0;
+results.push(freshEntriesResult);
+
+const freshKeysResult = bench('for...of Object.keys() (fresh)', 'native', () => {
+  for (const key of Object.keys(obj)) {
+    sink += String(obj[key]).length > 0 ? 1 : 0;
   }
-}));
+});
 
-results.push(bench('indexed Object.entries() (fresh)', 'native', () => {
-  const e = Object.entries(obj);
+results.push(freshKeysResult);
 
-  for (const element of e) {
-    sink += element[1] ? 1 : 0;
+const indexedFreshResult = bench('indexed Object.entries() (fresh)', 'native', () => {
+  const freshEntries = Object.entries(obj);
+
+  for (const element of freshEntries) {
+    sink += String(element[1]).length > 0 ? 1 : 0;
   }
-}));
+});
 
-results.push(bench('indexed Object.entries() (cached)', 'native', () => {
+results.push(indexedFreshResult);
+
+const cachedEntriesResult = bench('indexed Object.entries() (cached)', 'native', () => {
   for (const entry of entries) {
-    sink += entry[1] ? 1 : 0;
+    sink += String(entry[1]).length > 0 ? 1 : 0;
   }
-}));
+});
 
-results.push(bench('indexed Object.keys() (cached)', 'native', () => {
+results.push(cachedEntriesResult);
+
+const cachedKeysResult = bench('indexed Object.keys() (cached)', 'native', () => {
   for (const key of keys) {
-    sink += (obj as any)[key] ? 1 : 0;
+    sink += String(obj[key]).length > 0 ? 1 : 0;
   }
-}));
+});
+
+results.push(cachedKeysResult);
 
 printResults(results);
-console.log(`(sink=${sink} — prevents dead-code elimination)`);
+console.log(`(sink=${String(sink)} — prevents dead-code elimination)`);

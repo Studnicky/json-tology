@@ -10,11 +10,10 @@
  * The output quads can be passed directly to JsonLdFormatter.quadsToJsonLd().
  */
 
-import type {
-  QuadInterface, QuadObjectType
-} from './Quad.js';
+import type { QuadInterface } from '../../interfaces/quad.js';
+import type { QuadObjectType } from '../../types/quad.js';
 import type { SchemaGraphRelationInterface } from '../../interfaces/schema-graph.js';
-import type { SchemaGraph } from '../graph/SchemaGraph.js';
+import type { SchemaGraphInterface } from '../../interfaces/schema-graph-impl.js';
 import {
   propertyIri, resolveSingleXsdType
 } from '../data/DataTypes.js';
@@ -106,7 +105,7 @@ function lastSegment(subject: string): string {
   const fragment = subject.slice(hashIdx + 1);
   const segments = fragment.split('/');
 
-  return segments.at(-1);
+  return segments.at(-1) ?? '';
 }
 
 function canonicalPropertyIri(subject: string): string {
@@ -135,7 +134,7 @@ function canonicalPropertyIri(subject: string): string {
 // Public API
 // ---------------------------------------------------------------------------
 
-export function projectOwlGraph(graph: SchemaGraph): QuadInterface[] {
+export function projectOwlGraph(graph: SchemaGraphInterface): QuadInterface[] {
   const quads: QuadInterface[] = [];
   const allRelations = graph.allRelations();
   const index = buildIndex(allRelations);
@@ -399,11 +398,11 @@ function emitPropertyQuads(
   }
 
   // readOnly / writeOnly
-  if (entry.types.includes('jt:ReadOnly')) {
+  if (entry.byPredicate.has('dash:readOnly')) {
     quads.push(quad(canonicalId, 'jsonschema:readOnly', literal(true, 'xsd:boolean')));
   }
 
-  if (entry.types.includes('jt:WriteOnly')) {
+  if (entry.byPredicate.has('dash:writeOnly')) {
     quads.push(quad(canonicalId, 'jsonschema:writeOnly', literal(true, 'xsd:boolean')));
   }
 

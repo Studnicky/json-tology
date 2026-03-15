@@ -18,8 +18,8 @@ import type { InferSchemaType } from '../../src/types/schema.js';
 // ============================================================================
 
 type Expect<T extends true> = T;
-type Equal<A, B>
-  = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2)
+type Equal<TA, TB>
+  = (<TVal>() => TVal extends TA ? 1 : 2) extends (<TVal>() => TVal extends TB ? 1 : 2)
     ? true
     : false;
 
@@ -32,7 +32,8 @@ type Equal<A, B>
 // types, so excluding a literal from a wide type is a no-op.
 
 type Case1 = Exclude<string, 'admin'>;
-type _1 = Expect<Equal<Case1, string>>; // string, not "string minus admin"
+// string, not "string minus admin"
+type ConstExclusionCheck = Expect<Equal<Case1, string>>;
 
 // This means: for WIDE types, `not` exclusion has no type-level effect.
 // TypeScript cannot represent "all strings except 'admin'".
@@ -44,7 +45,7 @@ type _1 = Expect<Equal<Case1, string>>; // string, not "string minus admin"
 // If the base type is a union (from enum), Exclude removes matching members.
 type Roles = 'admin' | 'editor' | 'viewer';
 type NonAdminRoles = Exclude<Roles, 'admin'>;
-type _2 = Expect<Equal<NonAdminRoles, 'editor' | 'viewer'>>;
+type EnumExclusionCheck = Expect<Equal<NonAdminRoles, 'editor' | 'viewer'>>;
 
 // This is the sweet spot: `not` with `const` against an `enum` base.
 
@@ -62,7 +63,7 @@ type _2 = Expect<Equal<NonAdminRoles, 'editor' | 'viewer'>>;
 // So even if we build the machinery, the result is identical to no `not`.
 // UNLESS the base property is an enum:
 
-const SchemaWithEnumAndNot = {
+const _SchemaWithEnumAndNot = {
   'not': {
     'properties': { 'role': { 'const': 'admin' } },
     'required': ['role']
@@ -81,6 +82,7 @@ const SchemaWithEnumAndNot = {
 
 // Here's the type we WANT to produce:
 interface DesiredResult { readonly 'role'?: 'editor' | 'viewer' }
+void (undefined as unknown as DesiredResult);
 
 // ============================================================================
 // 4. InferNotType — experimental recursive narrowing
@@ -94,25 +96,26 @@ interface DesiredResult { readonly 'role'?: 'editor' | 'viewer' }
  */
 
 // Step 1: Extract the "negative" property types from a `not` sub-schema
-type NegatedPropertyTypes<NotSchema, Root>
-  = NotSchema extends { readonly 'properties': infer NP }
-    ? { [K in keyof NP]: InferSchemaType<NP[K], Root> }
-    : {};
+type NegatedPropertyTypes<TNotSchema, TRoot>
+  = TNotSchema extends { readonly 'properties': infer TNP }
+    ? { [K in keyof TNP]: InferSchemaType<TNP[K], TRoot> }
+    : Record<string, never>;
+void (undefined as unknown as NegatedPropertyTypes<unknown, unknown>);
 
 // Step 2: For each property in the base, if the `not` schema constrains it,
 // Exclude the negated type from the base type.
-type ApplyPropertyNotType<BaseProps, NegatedProps> = {
-  [K in keyof BaseProps]:
-  K extends keyof NegatedProps
-    ? Exclude<BaseProps[K], NegatedProps[K]>
-    : BaseProps[K];
+type ApplyPropertyNotType<TBaseProps, TNegatedProps> = {
+  [K in keyof TBaseProps]:
+  K extends keyof TNegatedProps
+    ? Exclude<TBaseProps[K], TNegatedProps[K]>
+    : TBaseProps[K];
 };
 
 // Proof of concept with concrete types:
 interface BaseRoleProps { 'role': 'admin' | 'editor' | 'viewer' }
 interface NegatedRoleProps { 'role': 'admin' }
 type NarrowedRole = ApplyPropertyNotType<BaseRoleProps, NegatedRoleProps>;
-type _3 = Expect<Equal<NarrowedRole, { 'role': 'editor' | 'viewer' }>>;
+type PropertyNarrowCheck = Expect<Equal<NarrowedRole, { 'role': 'editor' | 'viewer' }>>;
 // YES — this works when the base is a union.
 
 // ============================================================================
@@ -129,31 +132,31 @@ type _3 = Expect<Equal<NarrowedRole, { 'role': 'editor' | 'viewer' }>>;
  * For wide types (string, number), the exclusion is a no-op at the type level
  * even though it matters at runtime validation.
  */
-type InferWithNotType<T, Root>
-  = T extends { readonly 'not': infer N }
-    ? T extends { readonly 'properties': infer P;
+type InferWithNotType<T, TRoot>
+  = T extends { readonly 'not': infer TN }
+    ? T extends { readonly 'properties': infer TP;
       readonly 'type': 'object'; }
-      ? N extends { readonly 'properties': infer NP }
+      ? TN extends { readonly 'properties': infer TNP }
         ? SimplifyNotType<{
-          readonly [K in keyof P]:
-          K extends keyof NP
-            ? Exclude<InferSchemaType<P[K], Root>, InferSchemaType<NP[K], Root>>
-            : InferSchemaType<P[K], Root>;
+          readonly [K in keyof TP]:
+          K extends keyof TNP
+            ? Exclude<InferSchemaType<TP[K], TRoot>, InferSchemaType<TNP[K], TRoot>>
+            : InferSchemaType<TP[K], TRoot>;
         }>
         // `not` without properties (e.g., `not: { type: 'null' }`) — no property narrowing
-        : InferSchemaType<Omit<T, 'not'>, Root>
+        : InferSchemaType<Omit<T, 'not'>, TRoot>
       // Non-object `not` — only useful for primitive exclusion
-      : Exclude<InferSchemaType<Omit<T, 'not'>, Root>, InferSchemaType<N, Root>>
-    : InferSchemaType<T, Root>;
+      : Exclude<InferSchemaType<Omit<T, 'not'>, TRoot>, InferSchemaType<TN, TRoot>>
+    : InferSchemaType<T, TRoot>;
 
 type SimplifyNotType<T> = { [K in keyof T]: T[K] } & {};
 
 // Test: enum base + const negation on object property
-type TestEnumNot = InferWithNotType<typeof SchemaWithEnumAndNot, typeof SchemaWithEnumAndNot>;
-type _4 = Expect<Equal<TestEnumNot, { readonly 'role': 'editor' | 'viewer' }>>;
+type TestEnumNot = InferWithNotType<typeof _SchemaWithEnumAndNot, typeof _SchemaWithEnumAndNot>;
+type EnumNotCheck = Expect<Equal<TestEnumNot, { readonly 'role': 'editor' | 'viewer' }>>;
 
 // Test: wide string base + const negation — no-op (expected)
-const SchemaWithStringAndNot = {
+const _SchemaWithStringAndNot = {
   'not': {
     'properties': { 'role': { 'const': 'admin' } },
     'required': ['role']
@@ -162,8 +165,8 @@ const SchemaWithStringAndNot = {
   'type': 'object'
 } as const;
 
-type TestStringNot = InferWithNotType<typeof SchemaWithStringAndNot, typeof SchemaWithStringAndNot>;
-type _5 = Expect<Equal<TestStringNot, { readonly 'role': string }>>;
+type TestStringNot = InferWithNotType<typeof _SchemaWithStringAndNot, typeof _SchemaWithStringAndNot>;
+type StringNotCheck = Expect<Equal<TestStringNot, { readonly 'role': string }>>;
 // Collapse: Exclude<string, 'admin'> = string. Correct — no narrowing possible.
 
 // ============================================================================
@@ -173,13 +176,13 @@ type _5 = Expect<Equal<TestStringNot, { readonly 'role': string }>>;
 // `not: { type: 'null' }` on a nullable type
 type NullableString = null | string;
 type NonNullString = Exclude<NullableString, null>;
-type _6 = Expect<Equal<NonNullString, string>>;
+type NullExclusionCheck = Expect<Equal<NonNullString, string>>;
 
 // This works naturally — `not: { type: 'null' }` removes null from type unions.
 // A type-array schema like `type: ['string', 'null']` with `not: { type: 'null' }`
 // would correctly narrow to `string`.
 
-const NullableWithNot = {
+const _NullableWithNot = {
   'not': { 'type': 'null' },
   'type': [
     'string',
@@ -205,7 +208,7 @@ type Shape = Circle | Square | Triangle;
 
 // "not a circle" — Exclude works on discriminated unions
 type NonCircle = Exclude<Shape, { 'kind': 'circle' }>;
-type _7 = Expect<Equal<NonCircle, Square | Triangle>>;
+type OneOfExclusionCheck = Expect<Equal<NonCircle, Square | Triangle>>;
 
 // This works because Exclude removes union members that extend the exclusion type.
 // For oneOf schemas where each branch has a discriminant const, `not` can remove branches.
@@ -239,11 +242,22 @@ type _7 = Expect<Equal<NonCircle, Square | Triangle>>;
 // primitives/unions. The key constraint: Exclude only narrows finite unions.
 //
 // Worth implementing for:
-//   - enum + not const  →  removes union members  ✓
-//   - type array + not type  →  removes null etc.  ✓
-//   - oneOf + not (discriminated branch)  →  removes branches  ✓
+//   - enum + not const  ->  removes union members
+//   - type array + not type  ->  removes null etc.
+//   - oneOf + not (discriminated branch)  ->  removes branches
 //
 // NOT worth implementing for:
-//   - string + not const  →  still string (no-op)
-//   - deeply nested not/anyOf/allOf  →  explosion risk
-//   - not with arbitrary structural schemas  →  no negation types in TS
+//   - string + not const  ->  still string (no-op)
+//   - deeply nested not/anyOf/allOf  ->  explosion risk
+//   - not with arbitrary structural schemas  ->  no negation types in TS
+
+// Suppress unused type warnings
+void [
+  undefined as unknown as ConstExclusionCheck,
+  undefined as unknown as EnumExclusionCheck,
+  undefined as unknown as PropertyNarrowCheck,
+  undefined as unknown as EnumNotCheck,
+  undefined as unknown as StringNotCheck,
+  undefined as unknown as NullExclusionCheck,
+  undefined as unknown as OneOfExclusionCheck
+];

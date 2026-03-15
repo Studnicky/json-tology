@@ -1,9 +1,10 @@
 import type { SchemaGraph } from '../graph/SchemaGraph.js';
+import type { GraphSerializerInterface } from '../../interfaces/serializer.js';
 import { projectOwlGraph } from '../rdf/OwlProjection.js';
 import { quadsToJsonLd } from '../rdf/JsonLdFormatter.js';
 import { resetBnodeCounter } from '../rdf/Projection.js';
 
-export class GraphOntologySerializer {
+export class GraphOntologySerializer implements GraphSerializerInterface {
   public serialize(graphs: readonly SchemaGraph[]): unknown[] {
     resetBnodeCounter();
     const allQuads = graphs.flatMap((g) => {

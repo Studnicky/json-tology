@@ -46,22 +46,25 @@ const jsonld = jt.ontology().jsonLdObject();
 const status = jsonld['@graph'].find((n) => {
   return n['@id'] === 'https://myapp.io/Status';
 });
+const statusJson = JSON.stringify(status, null, 2);
 
-console.log(JSON.stringify(status, null, 2));
+console.log(statusJson);
 
 console.log('\n=== JSON-LD - Pet with oneOf ===');
 const pet = jsonld['@graph'].find((n) => {
   return n['@id'] === 'https://myapp.io/Pet';
 });
+const petJson = JSON.stringify(pet, null, 2);
 
-console.log(JSON.stringify(pet, null, 2));
+console.log(petJson);
 
 console.log('\n=== JSON-LD - Config with const ===');
 const config = jsonld['@graph'].find((n) => {
   return n['@id'] === 'https://myapp.io/Config';
 });
+const configJson = JSON.stringify(config, null, 2);
 
-console.log(JSON.stringify(config, null, 2));
+console.log(configJson);
 
 console.log('\n=== FULL JSON-LD OUTPUT ===');
 console.log(jt.ontology().jsonLd());

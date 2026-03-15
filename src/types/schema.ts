@@ -9,7 +9,7 @@ export type { JSONSchema7Definition as JSONSchemaType } from 'json-schema';
  * @example
  * type User = Infer<typeof UserSchema>;
  */
-export type InferType<TSchema> = InferSchemaType<TSchema>;
+export type InferType<TSchema, TReferences = {}> = InferSchemaType<TSchema, TSchema, TReferences>;
 
 /** Alias kept for backward compatibility with BaseTypes and older code. */
-export type Infer<TSchema> = InferSchemaType<TSchema>;
+export type Infer<TSchema, TReferences = {}> = InferSchemaType<TSchema, TSchema, TReferences>;

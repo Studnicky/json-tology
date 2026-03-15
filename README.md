@@ -52,7 +52,11 @@ const UserSchema = {
 } as const;
 ```
 
-TypeScript types are still derived from authored schemas with `json-schema-to-ts`.
+TypeScript types are derived from authored schemas by json-tology's own type inference.
+
+Compile-time inference supports explicit reference maps for external `$ref`
+resolution, and conditional schemas use a sound branch-union approximation
+instead of silently collapsing to `unknown`.
 
 ### Canonical Graph Construction
 
@@ -86,13 +90,29 @@ That serialization supports:
 
 Consumers that need Turtle, N-Quads, or other RDF serializations should translate from the emitted JSON-LD with downstream tooling.
 
+SHACL JSON-LD output uses standard SHACL predicates where possible
+(`sh:minCount`/`sh:maxCount` for array cardinality, `dash:readOnly`/`dash:writeOnly`
+for access modifiers). Only `jt:multipleOf` requires a custom predicate — SHACL
+and XSD have no divisibility constraint.
+
 ## Public Surface
 
 The repository currently exposes:
 
 - `json-tology` for the high-level entry point
-- `json-tology/schema` for lower-level schema and validation primitives
-- `json-tology/ontology` for ontology serialization utilities
+- `json-tology/types` for public type helpers
+- `json-tology/interfaces` for public interfaces
+- `json-tology/modules/graph`
+- `json-tology/modules/validation`
+- `json-tology/modules/data`
+- `json-tology/modules/registry`
+- `json-tology/modules/composition`
+- `json-tology/modules/format`
+- `json-tology/modules/hash`
+- `json-tology/modules/materialization`
+- `json-tology/modules/ontology`
+- `json-tology/modules/transform`
+- `json-tology/modules/logger`
 
 The docs in this repository describe the target architecture and product contract first. When code and docs diverge, the graph-native contract is the intended direction.
 
@@ -107,7 +127,7 @@ The docs in this repository describe the target architecture and product contrac
 
 ## Coverage Goal
 
-The long-term coverage target is the shared semantic surface spanned by TypeBox, `json-schema-to-ts`, TypeScript typing, JSON-LD, SHACL, and AJV.
+The long-term coverage target is the shared semantic surface spanned by TypeBox, TypeScript typing, JSON-LD, SHACL, and AJV, while matching the authoring and inference cases users reach for in `json-schema-to-ts`.
 
 `json-tology` should model those common cases once in its canonical graph and expose the corresponding authoring, inference, execution, and serialization behavior from that one backbone.
 
@@ -118,12 +138,93 @@ The long-term coverage target is the shared semantic surface spanned by TypeBox,
 - preserving convenience APIs that obscure the canonical graph boundary
 - competing with validator libraries on validation alone while ignoring semantics
 
+## Quick Start
+
+```typescript
+import { JsonTology, InferType } from 'json-tology';
+
+const UserSchema = {
+  $id: 'https://example.com/User',
+  type: 'object',
+  properties: {
+    name:  { type: 'string' },
+    email: { type: 'string', format: 'email' },
+    role:  { type: 'string', default: 'viewer' },
+  },
+  required: ['name', 'email'],
+} as const;
+
+type User = InferType<typeof UserSchema>;
+
+const jt = JsonTology.create({
+  baseIRI: 'https://example.com',
+  schemas: [UserSchema] as const,
+});
+
+// Validate
+const errors = jt.validate(UserSchema.$id, { name: 'Alice', email: 'alice@co.io' });
+// → []
+
+// Parse (validate + apply defaults, throws on invalid)
+const user = jt.parse(UserSchema.$id, { name: 'Alice', email: 'alice@co.io' });
+// → { name: 'Alice', email: 'alice@co.io', role: 'viewer' }
+
+// Materialize (build from partial with defaults)
+const blank = jt.materialize(UserSchema, {});
+// → { role: 'viewer' }
+
+// OWL ontology (JSON-LD)
+console.log(jt.ontology().jsonLd());
+
+// SHACL shapes (JSON-LD)
+console.log(jt.ontology().shaclJsonLd());
+
+// ABox — project validated instance data to RDF
+console.log(jt.abox(UserSchema, user).jsonLd());
+```
+
+## Examples
+
+Runnable examples live in `examples/`. Each file is self-contained and prints output to stdout.
+
+```bash
+npm run build
+node examples/01-validation.mjs
+node examples/02-parse-and-materialize.mjs
+node examples/03-ontology.mjs
+node examples/04-shacl.mjs
+node examples/05-abox.mjs
+node examples/06-composition.mjs
+```
+
+See [`examples/README.md`](./examples/README.md) for descriptions.
+
+## CLI
+
+```bash
+# Build JSON-LD ontology from schema files
+json-tology build --schema 'schemas/*.json' --output out/ --format ontology
+
+# Build SHACL shapes
+json-tology build --schema 'schemas/*.json' --output out/ --format shacl
+
+# Build graph artifacts (one per schema)
+json-tology build --schema 'schemas/*.json' --output out/ --format artifact
+
+# Reconstruct JSON Schema from graph
+json-tology build --schema 'schemas/*.json' --output out/ --format schema
+```
+
 ## Repository Notes
 
 - Build: `npm run build`
 - Type check: `npm run type-check`
 - Test: `npm run test`
+- Pack surface check: `npm run pack:check`
 - Benchmarks: `npm run bench`
+
+Performance comparisons are intentionally not hardcoded into the docs. Use the
+committed benchmark runner to evaluate the current build on your machine.
 
 ## License
 

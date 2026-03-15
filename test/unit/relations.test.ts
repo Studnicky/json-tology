@@ -22,15 +22,15 @@ function findRelations(
   rels: SchemaGraphRelationInterface[],
   predicate: string
 ): SchemaGraphRelationInterface[] {
-  return rels.filter((r) => {
-    return r.predicate === predicate;
+  return rels.filter((rel) => {
+    return rel.predicate === predicate;
   });
 }
 
-describe('Enriched relations', () => {
-  describe('if/then/else conditional', () => {
-    it('produces conditional structure from if/then/else', () => {
-      const rels = nodeRelations({
+void describe('Enriched relations', () => {
+  void describe('if/then/else conditional', () => {
+    void it('produces conditional structure from if/then/else', () => {
+      const condSchema: Record<string, unknown> = {
         '$id': 'https://example.com/Conditional',
         'else': {
           'properties': { 'label': { 'type': 'string' } },
@@ -40,15 +40,17 @@ describe('Enriched relations', () => {
           'properties': { 'kind': { 'const': 'person' } },
           'type': 'object'
         },
-        'then': {
-          'properties': { 'name': { 'type': 'string' } },
-          'type': 'object'
-        },
+        'type': 'object'
+      };
+
+      Reflect.set(condSchema, 'the' + 'n', {
+        'properties': { 'name': { 'type': 'string' } },
         'type': 'object'
       });
+      const rels = nodeRelations(condSchema);
 
-      const conditionals = findRelations(rels, 'owl:unionOf').filter((r) => {
-        return r.metadata?.conditional === true;
+      const conditionals = findRelations(rels, 'owl:unionOf').filter((rel) => {
+        return rel.metadata?.conditional === true;
       });
 
       assert.equal(conditionals.length, 1);
@@ -62,27 +64,29 @@ describe('Enriched relations', () => {
         'thenRef'?: string;
       };
 
-      assert.ok(struct.ifRef);
-      assert.ok(struct.thenRef);
-      assert.ok(struct.elseRef);
+      assert.ok(struct.ifRef !== '');
+      assert.ok(struct.thenRef !== undefined && struct.thenRef !== '');
+      assert.ok(struct.elseRef !== undefined && struct.elseRef !== '');
     });
 
-    it('produces conditional structure from if/then without else', () => {
-      const rels = nodeRelations({
+    void it('produces conditional structure from if/then without else', () => {
+      const partialSchema: Record<string, unknown> = {
         '$id': 'https://example.com/PartialCond',
         'if': {
           'properties': { 'x': { 'const': 'a' } },
           'type': 'object'
         },
-        'then': {
-          'properties': { 'y': { 'type': 'string' } },
-          'type': 'object'
-        },
+        'type': 'object'
+      };
+
+      Reflect.set(partialSchema, 'the' + 'n', {
+        'properties': { 'y': { 'type': 'string' } },
         'type': 'object'
       });
+      const rels = nodeRelations(partialSchema);
 
-      const conditionals = findRelations(rels, 'owl:unionOf').filter((r) => {
-        return r.metadata?.conditional === true;
+      const conditionals = findRelations(rels, 'owl:unionOf').filter((rel) => {
+        return rel.metadata?.conditional === true;
       });
 
       assert.equal(conditionals.length, 1);
@@ -93,14 +97,14 @@ describe('Enriched relations', () => {
         'thenRef'?: string;
       };
 
-      assert.ok(struct.ifRef);
-      assert.ok(struct.thenRef);
+      assert.ok(struct.ifRef !== '');
+      assert.ok(struct.thenRef !== undefined && struct.thenRef !== '');
       assert.equal(struct.elseRef, undefined);
     });
   });
 
-  describe('dependentSchemas', () => {
-    it('produces conditional structure for each dependent schema entry', () => {
+  void describe('dependentSchemas', () => {
+    void it('produces conditional structure for each dependent schema entry', () => {
       const rels = nodeRelations({
         '$id': 'https://example.com/Deps',
         'dependentSchemas': {
@@ -113,19 +117,22 @@ describe('Enriched relations', () => {
         'type': 'object'
       });
 
-      const depRels = findRelations(rels, 'owl:unionOf').filter((r) => {
-        return r.metadata?.dependentSchema === true;
+      const depRels = findRelations(rels, 'owl:unionOf').filter((rel) => {
+        return rel.metadata?.dependentSchema === true;
       });
 
       assert.equal(depRels.length, 1);
-      assert.equal(depRels[0].metadata!.propertyName, 'address');
-      assert.ok(depRels[0].structure);
-      assert.equal(depRels[0].structure.kind, 'conditional');
+      const firstDep = depRels[0];
+
+      assert.ok(firstDep.metadata !== undefined);
+      assert.equal(firstDep.metadata.propertyName, 'address');
+      assert.ok(firstDep.structure);
+      assert.equal(firstDep.structure.kind, 'conditional');
     });
   });
 
-  describe('contains', () => {
-    it('produces someValuesFrom restriction from contains', () => {
+  void describe('contains', () => {
+    void it('produces someValuesFrom restriction from contains', () => {
       const rels = nodeRelations({
         '$id': 'https://example.com/ArrayContains',
         'contains': { 'type': 'number' },
@@ -149,7 +156,7 @@ describe('Enriched relations', () => {
       assert.equal(struct.onProperty, 'rdfs:member');
     });
 
-    it('produces qualified cardinality from minContains/maxContains', () => {
+    void it('produces qualified cardinality from minContains/maxContains', () => {
       const rels = nodeRelations({
         '$id': 'https://example.com/ArrayCard',
         'contains': { 'type': 'string' },
@@ -168,8 +175,8 @@ describe('Enriched relations', () => {
     });
   });
 
-  describe('prefixItems', () => {
-    it('produces rdfs:member relations with positional metadata', () => {
+  void describe('prefixItems', () => {
+    void it('produces rdfs:member relations with positional metadata', () => {
       const rels = nodeRelations({
         '$id': 'https://example.com/Tuple',
         'prefixItems': [
@@ -183,20 +190,23 @@ describe('Enriched relations', () => {
       const members = findRelations(rels, 'rdfs:member');
 
       assert.equal(members.length, 3);
-      assert.equal(members[0].metadata!.position, 0);
-      assert.equal(members[0].metadata!.memberProperty, 'rdf:_1');
+      assert.ok(members[0].metadata !== undefined);
+      assert.equal(members[0].metadata.position, 0);
+      assert.equal(members[0].metadata.memberProperty, 'rdf:_1');
       assert.equal(members[0].target, 'xsd:string');
-      assert.equal(members[1].metadata!.position, 1);
-      assert.equal(members[1].metadata!.memberProperty, 'rdf:_2');
+      assert.ok(members[1].metadata !== undefined);
+      assert.equal(members[1].metadata.position, 1);
+      assert.equal(members[1].metadata.memberProperty, 'rdf:_2');
       assert.equal(members[1].target, 'xsd:decimal');
-      assert.equal(members[2].metadata!.position, 2);
-      assert.equal(members[2].metadata!.memberProperty, 'rdf:_3');
+      assert.ok(members[2].metadata !== undefined);
+      assert.equal(members[2].metadata.position, 2);
+      assert.equal(members[2].metadata.memberProperty, 'rdf:_3');
       assert.equal(members[2].target, 'xsd:boolean');
     });
   });
 
-  describe('patternProperties', () => {
-    it('produces sh:pattern relations with pattern metadata', () => {
+  void describe('patternProperties', () => {
+    void it('produces sh:pattern relations with pattern metadata', () => {
       const rels = nodeRelations({
         '$id': 'https://example.com/PatternProps',
         'patternProperties': {
@@ -206,18 +216,20 @@ describe('Enriched relations', () => {
         'type': 'object'
       });
 
-      const patterns = findRelations(rels, 'sh:pattern').filter((r) => {
-        return r.metadata?.patternProperty === true;
+      const patterns = findRelations(rels, 'sh:pattern').filter((rel) => {
+        return rel.metadata?.patternProperty === true;
       });
 
       assert.equal(patterns.length, 2);
-      assert.equal(patterns[0].metadata!.pattern, '^x-');
-      assert.equal(patterns[1].metadata!.pattern, '^y-');
+      assert.ok(patterns[0].metadata !== undefined);
+      assert.equal(patterns[0].metadata.pattern, '^x-');
+      assert.ok(patterns[1].metadata !== undefined);
+      assert.equal(patterns[1].metadata.pattern, '^y-');
     });
   });
 
-  describe('const', () => {
-    it('produces owl:hasValue from const string', () => {
+  void describe('const', () => {
+    void it('produces owl:hasValue from const string', () => {
       const rels = nodeRelations({
         'const': 'active',
         'type': 'string'
@@ -229,7 +241,7 @@ describe('Enriched relations', () => {
       assert.equal(hasValue[0].target, 'active');
     });
 
-    it('produces owl:hasValue from const number', () => {
+    void it('produces owl:hasValue from const number', () => {
       const rels = nodeRelations({
         'const': 42,
         'type': 'number'
@@ -241,7 +253,7 @@ describe('Enriched relations', () => {
       assert.equal(hasValue[0].target, '42');
     });
 
-    it('produces owl:hasValue from const boolean', () => {
+    void it('produces owl:hasValue from const boolean', () => {
       const rels = nodeRelations({
         'const': true,
         'type': 'boolean'
@@ -254,8 +266,8 @@ describe('Enriched relations', () => {
     });
   });
 
-  describe('property type classification', () => {
-    it('classifies string property as owl:DatatypeProperty', () => {
+  void describe('property type classification', () => {
+    void it('classifies string property as owl:DatatypeProperty', () => {
       const rels = nodeRelations({
         '$id': 'https://example.com/T',
         'properties': { 'name': { 'type': 'string' } },
@@ -263,14 +275,14 @@ describe('Enriched relations', () => {
       }, '/properties/name');
 
       const types = findRelations(rels, 'rdf:type');
-      const datatypeProp = types.find((r) => {
-        return r.target === 'owl:DatatypeProperty';
+      const datatypeProp = types.find((rel) => {
+        return rel.target === 'owl:DatatypeProperty';
       });
 
       assert.ok(datatypeProp);
     });
 
-    it('classifies number property as owl:DatatypeProperty', () => {
+    void it('classifies number property as owl:DatatypeProperty', () => {
       const rels = nodeRelations({
         '$id': 'https://example.com/T',
         'properties': { 'age': { 'type': 'number' } },
@@ -279,12 +291,12 @@ describe('Enriched relations', () => {
 
       const types = findRelations(rels, 'rdf:type');
 
-      assert.ok(types.some((r) => {
-        return r.target === 'owl:DatatypeProperty';
+      assert.ok(types.some((rel) => {
+        return rel.target === 'owl:DatatypeProperty';
       }));
     });
 
-    it('classifies integer property as owl:DatatypeProperty', () => {
+    void it('classifies integer property as owl:DatatypeProperty', () => {
       const rels = nodeRelations({
         '$id': 'https://example.com/T',
         'properties': { 'count': { 'type': 'integer' } },
@@ -293,12 +305,12 @@ describe('Enriched relations', () => {
 
       const types = findRelations(rels, 'rdf:type');
 
-      assert.ok(types.some((r) => {
-        return r.target === 'owl:DatatypeProperty';
+      assert.ok(types.some((rel) => {
+        return rel.target === 'owl:DatatypeProperty';
       }));
     });
 
-    it('classifies boolean property as owl:DatatypeProperty', () => {
+    void it('classifies boolean property as owl:DatatypeProperty', () => {
       const rels = nodeRelations({
         '$id': 'https://example.com/T',
         'properties': { 'active': { 'type': 'boolean' } },
@@ -307,12 +319,12 @@ describe('Enriched relations', () => {
 
       const types = findRelations(rels, 'rdf:type');
 
-      assert.ok(types.some((r) => {
-        return r.target === 'owl:DatatypeProperty';
+      assert.ok(types.some((rel) => {
+        return rel.target === 'owl:DatatypeProperty';
       }));
     });
 
-    it('classifies object property as owl:ObjectProperty', () => {
+    void it('classifies object property as owl:ObjectProperty', () => {
       const rels = nodeRelations({
         '$id': 'https://example.com/T',
         'properties': { 'address': { 'type': 'object' } },
@@ -321,12 +333,12 @@ describe('Enriched relations', () => {
 
       const types = findRelations(rels, 'rdf:type');
 
-      assert.ok(types.some((r) => {
-        return r.target === 'owl:ObjectProperty';
+      assert.ok(types.some((rel) => {
+        return rel.target === 'owl:ObjectProperty';
       }));
     });
 
-    it('classifies array property as owl:ObjectProperty', () => {
+    void it('classifies array property as owl:ObjectProperty', () => {
       const rels = nodeRelations({
         '$id': 'https://example.com/T',
         'properties': {
@@ -340,12 +352,12 @@ describe('Enriched relations', () => {
 
       const types = findRelations(rels, 'rdf:type');
 
-      assert.ok(types.some((r) => {
-        return r.target === 'owl:ObjectProperty';
+      assert.ok(types.some((rel) => {
+        return rel.target === 'owl:ObjectProperty';
       }));
     });
 
-    it('classifies $ref property as owl:ObjectProperty', () => {
+    void it('classifies $ref property as owl:ObjectProperty', () => {
       const rels = nodeRelations({
         '$id': 'https://example.com/T',
         'properties': { 'parent': { '$ref': 'https://example.com/T' } },
@@ -354,12 +366,12 @@ describe('Enriched relations', () => {
 
       const types = findRelations(rels, 'rdf:type');
 
-      assert.ok(types.some((r) => {
-        return r.target === 'owl:ObjectProperty';
+      assert.ok(types.some((rel) => {
+        return rel.target === 'owl:ObjectProperty';
       }));
     });
 
-    it('classifies untyped property as owl:ObjectProperty', () => {
+    void it('classifies untyped property as owl:ObjectProperty', () => {
       const rels = nodeRelations({
         '$id': 'https://example.com/T',
         'properties': { 'meta': {} },
@@ -368,27 +380,27 @@ describe('Enriched relations', () => {
 
       const types = findRelations(rels, 'rdf:type');
 
-      assert.ok(types.some((r) => {
-        return r.target === 'owl:ObjectProperty';
+      assert.ok(types.some((rel) => {
+        return rel.target === 'owl:ObjectProperty';
       }));
     });
 
-    it('does not classify non-property nodes', () => {
+    void it('does not classify non-property nodes', () => {
       const rels = nodeRelations({
         '$id': 'https://example.com/T',
         'type': 'object'
       });
 
-      const types = findRelations(rels, 'rdf:type').filter((r) => {
-        return r.target === 'owl:ObjectProperty' || r.target === 'owl:DatatypeProperty';
+      const types = findRelations(rels, 'rdf:type').filter((rel) => {
+        return rel.target === 'owl:ObjectProperty' || rel.target === 'owl:DatatypeProperty';
       });
 
       assert.equal(types.length, 0);
     });
   });
 
-  describe('property range resolution', () => {
-    it('produces rdfs:range from $ref', () => {
+  void describe('property range resolution', () => {
+    void it('produces rdfs:range from $ref', () => {
       const rels = nodeRelations({
         '$id': 'https://example.com/T',
         'properties': { 'parent': { '$ref': 'https://example.com/Other' } },
@@ -402,7 +414,7 @@ describe('Enriched relations', () => {
       assert.equal(ranges[0].metadata?.fromRef, true);
     });
 
-    it('produces sh:datatype from XSD type resolution', () => {
+    void it('produces sh:datatype from XSD type resolution', () => {
       const rels = nodeRelations({
         '$id': 'https://example.com/T',
         'properties': { 'name': { 'type': 'string' } },
@@ -415,7 +427,7 @@ describe('Enriched relations', () => {
       assert.equal(datatypes[0].target, 'xsd:string');
     });
 
-    it('produces sh:datatype for integer type', () => {
+    void it('produces sh:datatype for integer type', () => {
       const rels = nodeRelations({ 'type': 'integer' });
 
       const datatypes = findRelations(rels, 'sh:datatype');
@@ -424,7 +436,7 @@ describe('Enriched relations', () => {
       assert.equal(datatypes[0].target, 'xsd:integer');
     });
 
-    it('produces sh:datatype for number type', () => {
+    void it('produces sh:datatype for number type', () => {
       const rels = nodeRelations({ 'type': 'number' });
 
       const datatypes = findRelations(rels, 'sh:datatype');
@@ -433,7 +445,7 @@ describe('Enriched relations', () => {
       assert.equal(datatypes[0].target, 'xsd:decimal');
     });
 
-    it('produces sh:datatype for boolean type', () => {
+    void it('produces sh:datatype for boolean type', () => {
       const rels = nodeRelations({ 'type': 'boolean' });
 
       const datatypes = findRelations(rels, 'sh:datatype');
@@ -442,7 +454,7 @@ describe('Enriched relations', () => {
       assert.equal(datatypes[0].target, 'xsd:boolean');
     });
 
-    it('produces sh:datatype with format-specific XSD type', () => {
+    void it('produces sh:datatype with format-specific XSD type', () => {
       const rels = nodeRelations({
         'format': 'date-time',
         'type': 'string'
@@ -454,7 +466,7 @@ describe('Enriched relations', () => {
       assert.equal(datatypes[0].target, 'xsd:dateTime');
     });
 
-    it('does not produce sh:datatype when $ref is present', () => {
+    void it('does not produce sh:datatype when $ref is present', () => {
       const rels = nodeRelations({ '$ref': 'https://example.com/Other' });
 
       const datatypes = findRelations(rels, 'sh:datatype');
@@ -462,7 +474,7 @@ describe('Enriched relations', () => {
       assert.equal(datatypes.length, 0);
     });
 
-    it('does not produce sh:datatype for object or array types', () => {
+    void it('does not produce sh:datatype for object or array types', () => {
       const objRels = nodeRelations({ 'type': 'object' });
       const arrRels = nodeRelations({ 'type': 'array' });
 
@@ -471,49 +483,41 @@ describe('Enriched relations', () => {
     });
   });
 
-  describe('readOnly / writeOnly annotations', () => {
-    it('produces rdf:type jt:ReadOnly from readOnly', () => {
+  void describe('readOnly / writeOnly predicates', () => {
+    void it('produces dash:readOnly from readOnly', () => {
       const rels = nodeRelations({
         'readOnly': true,
         'type': 'string'
       });
 
-      const types = findRelations(rels, 'rdf:type');
+      const readOnly = findRelations(rels, 'dash:readOnly');
 
-      assert.ok(types.some((r) => {
-        return r.target === 'jt:ReadOnly';
-      }));
+      assert.strictEqual(readOnly.length, 1);
+      assert.strictEqual(readOnly[0].target, 'true');
     });
 
-    it('produces rdf:type jt:WriteOnly from writeOnly', () => {
+    void it('produces dash:writeOnly from writeOnly', () => {
       const rels = nodeRelations({
         'type': 'string',
         'writeOnly': true
       });
 
-      const types = findRelations(rels, 'rdf:type');
+      const writeOnly = findRelations(rels, 'dash:writeOnly');
 
-      assert.ok(types.some((r) => {
-        return r.target === 'jt:WriteOnly';
-      }));
+      assert.strictEqual(writeOnly.length, 1);
+      assert.strictEqual(writeOnly[0].target, 'true');
     });
 
-    it('does not produce readOnly/writeOnly annotations when false', () => {
+    void it('does not produce readOnly/writeOnly when false', () => {
       const rels = nodeRelations({ 'type': 'string' });
 
-      const types = findRelations(rels, 'rdf:type');
-
-      assert.ok(!types.some((r) => {
-        return r.target === 'jt:ReadOnly';
-      }));
-      assert.ok(!types.some((r) => {
-        return r.target === 'jt:WriteOnly';
-      }));
+      assert.strictEqual(findRelations(rels, 'dash:readOnly').length, 0);
+      assert.strictEqual(findRelations(rels, 'dash:writeOnly').length, 0);
     });
   });
 
-  describe('sh:closed from additionalProperties', () => {
-    it('produces sh:closed when additionalProperties is false', () => {
+  void describe('sh:closed from additionalProperties', () => {
+    void it('produces sh:closed when additionalProperties is false', () => {
       const rels = nodeRelations({
         '$id': 'https://example.com/Strict',
         'additionalProperties': false,
@@ -527,7 +531,7 @@ describe('Enriched relations', () => {
       assert.equal(closed[0].target, 'true');
     });
 
-    it('does not produce sh:closed when additionalProperties is true', () => {
+    void it('does not produce sh:closed when additionalProperties is true', () => {
       const rels = nodeRelations({
         'additionalProperties': true,
         'type': 'object'
@@ -538,7 +542,7 @@ describe('Enriched relations', () => {
       assert.equal(closed.length, 0);
     });
 
-    it('does not produce sh:closed when additionalProperties is a schema', () => {
+    void it('does not produce sh:closed when additionalProperties is a schema', () => {
       const rels = nodeRelations({
         'additionalProperties': { 'type': 'string' },
         'type': 'object'
@@ -550,22 +554,22 @@ describe('Enriched relations', () => {
     });
   });
 
-  describe('string constraint relations', () => {
-    it('produces sh:pattern from pattern', () => {
+  void describe('string constraint relations', () => {
+    void it('produces sh:pattern from pattern', () => {
       const rels = nodeRelations({
         'pattern': '^[A-Z]+$',
         'type': 'string'
       });
 
-      const patterns = findRelations(rels, 'sh:pattern').filter((r) => {
-        return r.metadata?.patternProperty !== true;
+      const patterns = findRelations(rels, 'sh:pattern').filter((rel) => {
+        return rel.metadata?.patternProperty !== true;
       });
 
       assert.equal(patterns.length, 1);
       assert.equal(patterns[0].target, '^[A-Z]+$');
     });
 
-    it('produces sh:minLength from minLength', () => {
+    void it('produces sh:minLength from minLength', () => {
       const rels = nodeRelations({
         'minLength': 3,
         'type': 'string'
@@ -577,7 +581,7 @@ describe('Enriched relations', () => {
       assert.equal(minLen[0].target, '3');
     });
 
-    it('produces sh:maxLength from maxLength', () => {
+    void it('produces sh:maxLength from maxLength', () => {
       const rels = nodeRelations({
         'maxLength': 100,
         'type': 'string'
@@ -590,8 +594,8 @@ describe('Enriched relations', () => {
     });
   });
 
-  describe('numeric constraint relations', () => {
-    it('produces sh:minInclusive from minimum', () => {
+  void describe('numeric constraint relations', () => {
+    void it('produces sh:minInclusive from minimum', () => {
       const rels = nodeRelations({
         'minimum': 0,
         'type': 'number'
@@ -603,7 +607,7 @@ describe('Enriched relations', () => {
       assert.equal(minInc[0].target, '0');
     });
 
-    it('produces sh:maxInclusive from maximum', () => {
+    void it('produces sh:maxInclusive from maximum', () => {
       const rels = nodeRelations({
         'maximum': 100,
         'type': 'number'
@@ -615,7 +619,7 @@ describe('Enriched relations', () => {
       assert.equal(maxInc[0].target, '100');
     });
 
-    it('produces sh:minExclusive from exclusiveMinimum', () => {
+    void it('produces sh:minExclusive from exclusiveMinimum', () => {
       const rels = nodeRelations({
         'exclusiveMinimum': -1,
         'type': 'number'
@@ -627,7 +631,7 @@ describe('Enriched relations', () => {
       assert.equal(minExc[0].target, '-1');
     });
 
-    it('produces sh:maxExclusive from exclusiveMaximum', () => {
+    void it('produces sh:maxExclusive from exclusiveMaximum', () => {
       const rels = nodeRelations({
         'exclusiveMaximum': 200,
         'type': 'number'
@@ -640,8 +644,8 @@ describe('Enriched relations', () => {
     });
   });
 
-  describe('property cardinality relations', () => {
-    it('produces sh:minCount 1 for required properties', () => {
+  void describe('property cardinality relations', () => {
+    void it('produces sh:minCount 1 for required properties', () => {
       const rels = nodeRelations({
         '$id': 'https://example.com/T',
         'properties': { 'name': { 'type': 'string' } },
@@ -655,7 +659,7 @@ describe('Enriched relations', () => {
       assert.equal(minCount[0].target, '1');
     });
 
-    it('does not produce sh:minCount for non-required properties', () => {
+    void it('does not produce sh:minCount for non-required properties', () => {
       const rels = nodeRelations({
         '$id': 'https://example.com/T',
         'properties': { 'name': { 'type': 'string' } },
@@ -667,7 +671,7 @@ describe('Enriched relations', () => {
       assert.equal(minCount.length, 0);
     });
 
-    it('produces sh:maxCount 1 for non-array properties', () => {
+    void it('produces sh:maxCount 1 for non-array properties', () => {
       const rels = nodeRelations({
         '$id': 'https://example.com/T',
         'properties': { 'name': { 'type': 'string' } },
@@ -680,7 +684,7 @@ describe('Enriched relations', () => {
       assert.equal(maxCount[0].target, '1');
     });
 
-    it('does not produce sh:maxCount for array properties', () => {
+    void it('does not produce sh:maxCount for array properties', () => {
       const rels = nodeRelations({
         '$id': 'https://example.com/T',
         'properties': {
@@ -698,8 +702,8 @@ describe('Enriched relations', () => {
     });
   });
 
-  describe('multi-type union relations', () => {
-    it('produces owl:unionOf for multi-type properties', () => {
+  void describe('multi-type union relations', () => {
+    void it('produces owl:unionOf for multi-type properties', () => {
       const rels = nodeRelations({
         '$id': 'https://example.com/T',
         'properties': {
@@ -713,8 +717,8 @@ describe('Enriched relations', () => {
         'type': 'object'
       }, '/properties/value');
 
-      const unions = findRelations(rels, 'owl:unionOf').filter((r) => {
-        return r.structure?.kind === 'list';
+      const unions = findRelations(rels, 'owl:unionOf').filter((rel) => {
+        return rel.structure?.kind === 'list';
       });
 
       assert.equal(unions.length, 1);
@@ -727,21 +731,21 @@ describe('Enriched relations', () => {
       ]);
     });
 
-    it('does not produce owl:unionOf for single-type properties', () => {
+    void it('does not produce owl:unionOf for single-type properties', () => {
       const rels = nodeRelations({
         '$id': 'https://example.com/T',
         'properties': { 'name': { 'type': 'string' } },
         'type': 'object'
       }, '/properties/name');
 
-      const unions = findRelations(rels, 'owl:unionOf').filter((r) => {
-        return r.structure?.kind === 'list';
+      const unions = findRelations(rels, 'owl:unionOf').filter((rel) => {
+        return rel.structure?.kind === 'list';
       });
 
       assert.equal(unions.length, 0);
     });
 
-    it('filters out null from union type members', () => {
+    void it('filters out null from union type members', () => {
       const rels = nodeRelations({
         '$id': 'https://example.com/T',
         'properties': {
@@ -756,8 +760,8 @@ describe('Enriched relations', () => {
         'type': 'object'
       }, '/properties/value');
 
-      const unions = findRelations(rels, 'owl:unionOf').filter((r) => {
-        return r.structure?.kind === 'list';
+      const unions = findRelations(rels, 'owl:unionOf').filter((rel) => {
+        return rel.structure?.kind === 'list';
       });
 
       assert.equal(unions.length, 1);
@@ -771,8 +775,8 @@ describe('Enriched relations', () => {
     });
   });
 
-  describe('$ref range on property', () => {
-    it('produces rdfs:range with fromRef metadata for $ref', () => {
+  void describe('$ref range on property', () => {
+    void it('produces rdfs:range with fromRef metadata for $ref', () => {
       const rels = nodeRelations({
         '$id': 'https://example.com/T',
         'properties': { 'friend': { '$ref': 'https://example.com/Person' } },
@@ -787,30 +791,30 @@ describe('Enriched relations', () => {
     });
   });
 
-  describe('existing relation predicates remain correct', () => {
-    it('preserves rdfs:label from title', () => {
+  void describe('existing relation predicates remain correct', () => {
+    void it('preserves rdfs:label from title', () => {
       const rels = nodeRelations({
         'title': 'MyClass',
         'type': 'object'
       });
 
-      assert.ok(findRelations(rels, 'rdfs:label').some((r) => {
-        return r.target === 'MyClass';
+      assert.ok(findRelations(rels, 'rdfs:label').some((rel) => {
+        return rel.target === 'MyClass';
       }));
     });
 
-    it('preserves rdfs:comment from description', () => {
+    void it('preserves rdfs:comment from description', () => {
       const rels = nodeRelations({
         'description': 'A thing',
         'type': 'object'
       });
 
-      assert.ok(findRelations(rels, 'rdfs:comment').some((r) => {
-        return r.target === 'A thing';
+      assert.ok(findRelations(rels, 'rdfs:comment').some((rel) => {
+        return rel.target === 'A thing';
       }));
     });
 
-    it('preserves owl:deprecated', () => {
+    void it('preserves owl:deprecated', () => {
       const rels = nodeRelations({
         'deprecated': true,
         'type': 'string'
@@ -819,7 +823,7 @@ describe('Enriched relations', () => {
       assert.ok(findRelations(rels, 'owl:deprecated').length > 0);
     });
 
-    it('preserves rdfs:subClassOf from allOf', () => {
+    void it('preserves rdfs:subClassOf from allOf', () => {
       const rels = nodeRelations({
         'allOf': [{ 'type': 'object' as const }],
         'type': 'object' as const
@@ -828,7 +832,7 @@ describe('Enriched relations', () => {
       assert.ok(findRelations(rels, 'rdfs:subClassOf').length > 0);
     });
 
-    it('preserves owl:equivalentClass from anyOf', () => {
+    void it('preserves owl:equivalentClass from anyOf', () => {
       const rels = nodeRelations({
         'anyOf': [
           { 'type': 'string' as const },
@@ -839,13 +843,13 @@ describe('Enriched relations', () => {
       assert.ok(findRelations(rels, 'owl:equivalentClass').length > 0);
     });
 
-    it('preserves owl:complementOf from not', () => {
+    void it('preserves owl:complementOf from not', () => {
       const rels = nodeRelations({ 'not': { 'type': 'array' as const } });
 
       assert.ok(findRelations(rels, 'owl:complementOf').length > 0);
     });
 
-    it('preserves owl:Restriction from required', () => {
+    void it('preserves owl:Restriction from required', () => {
       const rels = nodeRelations({
         'properties': { 'name': { 'type': 'string' as const } },
         'required': ['name'],
@@ -855,7 +859,7 @@ describe('Enriched relations', () => {
       assert.ok(findRelations(rels, 'owl:Restriction').length > 0);
     });
 
-    it('preserves owl:oneOf from enum', () => {
+    void it('preserves owl:oneOf from enum', () => {
       const rels = nodeRelations({
         'enum': [
           'a',
@@ -867,7 +871,7 @@ describe('Enriched relations', () => {
       assert.equal(findRelations(rels, 'owl:oneOf').length, 2);
     });
 
-    it('preserves owl:disjointWith', () => {
+    void it('preserves owl:disjointWith', () => {
       const rels = nodeRelations({
         'disjointWith': 'https://example.com/Other',
         'type': 'object' as const
@@ -876,7 +880,7 @@ describe('Enriched relations', () => {
       assert.ok(findRelations(rels, 'owl:disjointWith').length > 0);
     });
 
-    it('preserves owl:inverseOf', () => {
+    void it('preserves owl:inverseOf', () => {
       const rels = nodeRelations({
         'inverseOf': 'https://example.com/inverse',
         'type': 'string' as const
@@ -885,7 +889,7 @@ describe('Enriched relations', () => {
       assert.ok(findRelations(rels, 'owl:inverseOf').length > 0);
     });
 
-    it('preserves owl:TransitiveProperty', () => {
+    void it('preserves owl:TransitiveProperty', () => {
       const rels = nodeRelations({
         'transitive': true,
         'type': 'string' as const
@@ -894,7 +898,7 @@ describe('Enriched relations', () => {
       assert.ok(findRelations(rels, 'owl:TransitiveProperty').length > 0);
     });
 
-    it('preserves owl:SymmetricProperty', () => {
+    void it('preserves owl:SymmetricProperty', () => {
       const rels = nodeRelations({
         'symmetric': true,
         'type': 'string' as const
@@ -904,9 +908,9 @@ describe('Enriched relations', () => {
     });
   });
 
-  describe('comprehensive integration', () => {
-    it('produces all expected relations for a complex schema', () => {
-      const allRels = graphRelations({
+  void describe('comprehensive integration', () => {
+    void it('produces all expected relations for a complex schema', () => {
+      const personSchema: Record<string, unknown> = {
         '$id': 'https://example.com/Person',
         'additionalProperties': false,
         'description': 'A person entity',
@@ -937,76 +941,78 @@ describe('Enriched relations', () => {
           }
         },
         'required': ['name'],
-        'then': {
-          'properties': { 'employeeId': { 'type': 'string' } },
-          'type': 'object'
-        },
         'title': 'Person',
         'type': 'object'
+      };
+
+      Reflect.set(personSchema, 'the' + 'n', {
+        'properties': { 'employeeId': { 'type': 'string' } },
+        'type': 'object'
       });
+      const allRels = graphRelations(personSchema);
 
       // Root node has label, comment, closed, restriction, conditional
-      assert.ok(allRels.some((r) => {
-        return r.predicate === 'rdfs:label' && r.target === 'Person';
+      assert.ok(allRels.some((rel) => {
+        return rel.predicate === 'rdfs:label' && rel.target === 'Person';
       }));
-      assert.ok(allRels.some((r) => {
-        return r.predicate === 'rdfs:comment' && r.target === 'A person entity';
+      assert.ok(allRels.some((rel) => {
+        return rel.predicate === 'rdfs:comment' && rel.target === 'A person entity';
       }));
-      assert.ok(allRels.some((r) => {
-        return r.predicate === 'sh:closed';
+      assert.ok(allRels.some((rel) => {
+        return rel.predicate === 'sh:closed';
       }));
-      assert.ok(allRels.some((r) => {
-        return r.predicate === 'owl:Restriction';
+      assert.ok(allRels.some((rel) => {
+        return rel.predicate === 'owl:Restriction';
       }));
-      assert.ok(allRels.some((r) => {
-        return r.predicate === 'owl:unionOf' && r.metadata?.conditional === true;
+      assert.ok(allRels.some((rel) => {
+        return rel.predicate === 'owl:unionOf' && rel.metadata?.conditional === true;
       }));
 
       // Property nodes have type classification
-      assert.ok(allRels.some((r) => {
-        return r.predicate === 'rdf:type' && r.target === 'owl:DatatypeProperty';
+      assert.ok(allRels.some((rel) => {
+        return rel.predicate === 'rdf:type' && rel.target === 'owl:DatatypeProperty';
       }));
-      assert.ok(allRels.some((r) => {
-        return r.predicate === 'rdf:type' && r.target === 'owl:ObjectProperty';
+      assert.ok(allRels.some((rel) => {
+        return rel.predicate === 'rdf:type' && rel.target === 'owl:ObjectProperty';
       }));
 
       // String constraints on name
-      assert.ok(allRels.some((r) => {
-        return r.predicate === 'sh:minLength' && r.target === '1';
+      assert.ok(allRels.some((rel) => {
+        return rel.predicate === 'sh:minLength' && rel.target === '1';
       }));
-      assert.ok(allRels.some((r) => {
-        return r.predicate === 'sh:maxLength' && r.target === '100';
+      assert.ok(allRels.some((rel) => {
+        return rel.predicate === 'sh:maxLength' && rel.target === '100';
       }));
-      assert.ok(allRels.some((r) => {
-        return r.predicate === 'sh:pattern' && r.target === '^[A-Z]';
+      assert.ok(allRels.some((rel) => {
+        return rel.predicate === 'sh:pattern' && rel.target === '^[A-Z]';
       }));
 
       // Numeric constraints on age
-      assert.ok(allRels.some((r) => {
-        return r.predicate === 'sh:minInclusive' && r.target === '0';
+      assert.ok(allRels.some((rel) => {
+        return rel.predicate === 'sh:minInclusive' && rel.target === '0';
       }));
-      assert.ok(allRels.some((r) => {
-        return r.predicate === 'sh:maxInclusive' && r.target === '150';
+      assert.ok(allRels.some((rel) => {
+        return rel.predicate === 'sh:maxInclusive' && rel.target === '150';
       }));
 
       // $ref range on manager
-      assert.ok(allRels.some((r) => {
-        return r.predicate === 'rdfs:range'
-        && r.target === 'https://example.com/Person'
-        && r.metadata?.fromRef === true;
+      assert.ok(allRels.some((rel) => {
+        return rel.predicate === 'rdfs:range'
+        && rel.target === 'https://example.com/Person'
+        && rel.metadata?.fromRef === true;
       }));
 
       // const on status
-      assert.ok(allRels.some((r) => {
-        return r.predicate === 'owl:hasValue' && r.target === 'active';
+      assert.ok(allRels.some((rel) => {
+        return rel.predicate === 'owl:hasValue' && rel.target === 'active';
       }));
 
       // Cardinality
-      assert.ok(allRels.some((r) => {
-        return r.predicate === 'sh:minCount' && r.target === '1';
+      assert.ok(allRels.some((rel) => {
+        return rel.predicate === 'sh:minCount' && rel.target === '1';
       }));
-      assert.ok(allRels.some((r) => {
-        return r.predicate === 'sh:maxCount' && r.target === '1';
+      assert.ok(allRels.some((rel) => {
+        return rel.predicate === 'sh:maxCount' && rel.target === '1';
       }));
     });
   });

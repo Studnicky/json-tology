@@ -22,17 +22,14 @@ import { GraphOntologySerializer } from './modules/ontology/GraphOntologySeriali
 import { GraphShaclSerializer } from './modules/ontology/GraphShaclSerializer.js';
 import { OntologyBuilder } from './modules/ontology/OntologyBuilder.js';
 import type { SchemaGraph } from './modules/graph/SchemaGraph.js';
+import { DEFAULT_PREFIXES as BASE_PREFIXES } from './constants/prefixes.js';
 
 const DEFAULT_PREFIXES: Record<string, string> = {
+  ...BASE_PREFIXES,
   'dash': 'http://datashapes.org/dash#',
   'dct': 'http://purl.org/dc/terms/',
   'jsonschema': 'https://json-schema.org/ontology#',
-  'jt': 'https://json-tology.dev/vocab#',
-  'owl': 'http://www.w3.org/2002/07/owl#',
-  'rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
-  'rdfs': 'http://www.w3.org/2000/01/rdf-schema#',
-  'sh': 'http://www.w3.org/ns/shacl#',
-  'xsd': 'http://www.w3.org/2001/XMLSchema#'
+  'sh': 'http://www.w3.org/ns/shacl#'
 };
 
 function usage(): never {

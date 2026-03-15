@@ -15,13 +15,15 @@ import { Compose } from '../../src/modules/composition/Compose.js';
 // Bidirectional assignability helper
 // ---------------------------------------------------------------------------
 
-type AssertAssignable<A, B>
-  = [A] extends [B] ? true : false;
+type AssertAssignable<TA, TB>
+  = [TA] extends [TB] ? true : false;
 
-type AssertEqual<A, B>
-  = [A] extends [B] ? [B] extends [A] ? true : false : false;
+type AssertEqual<TA, TB>
+  = [TA] extends [TB] ? [TB] extends [TA] ? true : false : false;
 
-function assert<T extends true>(): void {
+void (undefined as unknown as AssertEqual<true, true>);
+
+function assertType<T extends true>(): void {
   void 0 as unknown as T;
 }
 
@@ -106,7 +108,7 @@ const AdminSchema = Compose.extend(
 type Admin = InferType<typeof AdminSchema>;
 
 // Should have all User properties plus role
-assert<AssertAssignable<Admin, {
+assertType<AssertAssignable<Admin, {
   readonly 'age'?: number;
   readonly 'email': string;
   readonly 'name': string;
@@ -114,7 +116,7 @@ assert<AssertAssignable<Admin, {
 }>>();
 
 // Extended schema has a new $id
-assert<AssertAssignable<typeof AdminSchema, { readonly '$id': 'https://example.io/Admin' }>>();
+assertType<AssertAssignable<typeof AdminSchema, { readonly '$id': 'https://example.io/Admin' }>>();
 
 // ---------------------------------------------------------------------------
 // 2. Compose.partial — all properties become optional
@@ -125,14 +127,14 @@ const PatchUserSchema = Compose.partial(UserSchema, 'https://example.io/PatchUse
 type PatchUser = InferType<typeof PatchUserSchema>;
 
 // All properties optional (required array removed)
-assert<AssertAssignable<PatchUser, {
+assertType<AssertAssignable<PatchUser, {
   readonly 'age'?: number;
   readonly 'email'?: string;
   readonly 'name'?: string;
 }>>();
 
 // $id is updated
-assert<AssertAssignable<typeof PatchUserSchema, { readonly '$id': 'https://example.io/PatchUser' }>>();
+assertType<AssertAssignable<typeof PatchUserSchema, { readonly '$id': 'https://example.io/PatchUser' }>>();
 
 // ---------------------------------------------------------------------------
 // 3. Compose.required — all properties become required
@@ -143,7 +145,7 @@ const StrictUserSchema = Compose.required(UserSchema, 'https://example.io/Strict
 type StrictUser = InferType<typeof StrictUserSchema>;
 
 // All declared properties become required
-assert<AssertAssignable<StrictUser, {
+assertType<AssertAssignable<StrictUser, {
   readonly 'age': number;
   readonly 'email': string;
   readonly 'name': string;
@@ -162,7 +164,7 @@ const UserNameSchema = Compose.pick(
 type UserName = InferType<typeof UserNameSchema>;
 
 // Only name property, still required
-assert<AssertAssignable<UserName, { readonly 'name': string }>>();
+assertType<AssertAssignable<UserName, { readonly 'name': string }>>();
 
 // Multiple picks preserving required
 const UserContactSchema = Compose.pick(
@@ -175,7 +177,7 @@ const UserContactSchema = Compose.pick(
 );
 
 type UserContact = InferType<typeof UserContactSchema>;
-assert<AssertAssignable<UserContact, { readonly 'email': string;
+assertType<AssertAssignable<UserContact, { readonly 'email': string;
   readonly 'name': string; }>>();
 
 // ---------------------------------------------------------------------------
@@ -191,7 +193,7 @@ const UserWithoutAgeSchema = Compose.omit(
 type UserWithoutAge = InferType<typeof UserWithoutAgeSchema>;
 
 // name and email remain, age is gone
-assert<AssertAssignable<UserWithoutAge, { readonly 'email': string;
+assertType<AssertAssignable<UserWithoutAge, { readonly 'email': string;
   readonly 'name': string; }>>();
 
 // ---------------------------------------------------------------------------
@@ -209,7 +211,7 @@ const PersonWithAddressSchema = Compose.intersection(
 type PersonWithAddress = InferType<typeof PersonWithAddressSchema>;
 
 // Intersection of User and Address
-assert<AssertAssignable<PersonWithAddress, {
+assertType<AssertAssignable<PersonWithAddress, {
   readonly 'city': string;
   readonly 'email': string;
   readonly 'name': string;
@@ -232,12 +234,12 @@ const ShapeSchema = Compose.discriminatedUnion(
 type Shape = InferType<typeof ShapeSchema>;
 
 // Union of Circle and Rect
-assert<AssertAssignable<
+assertType<AssertAssignable<
   { readonly 'kind': 'circle';
     readonly 'radius': number },
   Shape
 >>();
-assert<AssertAssignable<
+assertType<AssertAssignable<
   { readonly 'height': number;
     readonly 'kind': 'rect';
     readonly 'width': number; },
@@ -245,7 +247,7 @@ assert<AssertAssignable<
 >>();
 
 // discriminator metadata is preserved on the schema
-assert<AssertAssignable<
+assertType<AssertAssignable<
   typeof ShapeSchema,
   { readonly 'discriminator': { readonly 'propertyName': 'kind' } }
 >>();
@@ -277,12 +279,13 @@ void testNarrow;
 // 9. Combination: extend then pick
 // ---------------------------------------------------------------------------
 
+const extendedAdmin = Compose.extend(
+  UserSchema,
+  { 'role': { 'type': 'string' } } as const,
+  'https://example.io/AdminFull'
+);
 const AdminNameSchema = Compose.pick(
-  Compose.extend(
-    UserSchema,
-    { 'role': { 'type': 'string' } } as const,
-    'https://example.io/AdminFull'
-  ),
+  extendedAdmin,
   [
     'name',
     'role'
@@ -291,7 +294,7 @@ const AdminNameSchema = Compose.pick(
 );
 
 type AdminName = InferType<typeof AdminNameSchema>;
-assert<AssertAssignable<AdminName, { readonly 'name': string }>>();
+assertType<AssertAssignable<AdminName, { readonly 'name': string }>>();
 
 // ---------------------------------------------------------------------------
 // Suppress unused variable warnings

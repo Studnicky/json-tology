@@ -7,10 +7,10 @@ import {
 } from '../../src/types/BaseTypes.js';
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
-describe('BaseTypes.Schema', () => {
-  it('has $id, $defs with all expected types', () => {
-    assert.ok(BaseTypes.Schema.$id);
-    assert.ok(BaseTypes.Schema.$defs);
+void describe('BaseTypes.Schema', () => {
+  void it('has $id, $defs with all expected types', () => {
+    assert.equal(typeof BaseTypes.Schema.$id, 'string');
+    assert.equal(typeof BaseTypes.Schema.$defs, 'object');
     const defs = BaseTypes.Schema.$defs;
 
     assert.ok('Pagination' in defs);
@@ -21,8 +21,8 @@ describe('BaseTypes.Schema', () => {
   });
 });
 
-describe('BaseTypes standalone schemas', () => {
-  it('all standalone schemas have $id', () => {
+void describe('BaseTypes standalone schemas', () => {
+  void it('all standalone schemas have $id', () => {
     assert.ok(BaseTypes.ResponseSchema.$id);
     assert.ok(BaseTypes.ResultSchema.$id);
     assert.ok(BaseTypes.PaginationSchema.$id);
@@ -31,16 +31,16 @@ describe('BaseTypes standalone schemas', () => {
   });
 });
 
-describe('BaseTypes schema validation', () => {
+void describe('BaseTypes schema validation', () => {
   const registry = new SchemaRegistry();
 
-  it('validates ResponseSchema and rejects invalid', () => {
+  void it('validates ResponseSchema and rejects invalid', () => {
     registry.register(BaseTypes.ResponseSchema);
     assert.equal(registry.validate(BaseTypes.ResponseSchema.$id, { 'success': true }).length, 0);
     assert.ok(registry.validate(BaseTypes.ResponseSchema.$id, { 'success': 'yes' }).length > 0);
   });
 
-  it('validates ResultSchema', () => {
+  void it('validates ResultSchema', () => {
     registry.register(BaseTypes.ResultSchema);
     const errors = registry.validate(BaseTypes.ResultSchema.$id, {
       'errorCode': 'ERR_001',
@@ -50,7 +50,7 @@ describe('BaseTypes schema validation', () => {
     assert.equal(errors.length, 0);
   });
 
-  it('validates PaginationSchema and rejects invalid pageSize', () => {
+  void it('validates PaginationSchema and rejects invalid pageSize', () => {
     registry.register(BaseTypes.PaginationSchema);
     assert.equal(registry.validate(BaseTypes.PaginationSchema.$id, {
       'page': 2,
@@ -59,7 +59,7 @@ describe('BaseTypes schema validation', () => {
     assert.ok(registry.validate(BaseTypes.PaginationSchema.$id, { 'pageSize': 0 }).length > 0);
   });
 
-  it('validates FilterSchema and rejects missing required fields', () => {
+  void it('validates FilterSchema and rejects missing required fields', () => {
     registry.register(BaseTypes.FilterSchema);
     assert.equal(registry.validate(BaseTypes.FilterSchema.$id, {
       'field': 'name',
@@ -69,7 +69,7 @@ describe('BaseTypes schema validation', () => {
     assert.ok(registry.validate(BaseTypes.FilterSchema.$id, { 'value': 'Alice' }).length > 0);
   });
 
-  it('validates PageSchema', () => {
+  void it('validates PageSchema', () => {
     registry.register(BaseTypes.PageSchema);
     const errors = registry.validate(BaseTypes.PageSchema.$id, {
       'items': [],
@@ -82,8 +82,8 @@ describe('BaseTypes schema validation', () => {
   });
 });
 
-describe('makeResponseSchema()', () => {
-  it('creates schema with correct $id and wraps body', () => {
+void describe('makeResponseSchema()', () => {
+  void it('creates schema with correct $id and wraps body', () => {
     const schema = makeResponseSchema({ 'type': 'object' } as const, 'https://test.io/MyResponse');
 
     assert.equal(schema.$id, 'https://test.io/MyResponse');
@@ -97,7 +97,7 @@ describe('makeResponseSchema()', () => {
     assert.deepEqual(schema2.properties.body, bodySchema);
   });
 
-  it('validates via registry with $ref body', () => {
+  void it('validates via registry with $ref body', () => {
     const registry = new SchemaRegistry();
     const IdBodySchema = {
       '$id': 'https://test.io/IdBody',
@@ -122,8 +122,8 @@ describe('makeResponseSchema()', () => {
   });
 });
 
-describe('makeResultSchema()', () => {
-  it('creates schema with correct $id and wraps data', () => {
+void describe('makeResultSchema()', () => {
+  void it('creates schema with correct $id and wraps data', () => {
     const schema = makeResultSchema({ 'type': 'object' } as const, 'https://test.io/MyResult');
 
     assert.equal(schema.$id, 'https://test.io/MyResult');
@@ -138,8 +138,8 @@ describe('makeResultSchema()', () => {
   });
 });
 
-describe('makePageSchema()', () => {
-  it('creates schema with correct $id and uses item schema', () => {
+void describe('makePageSchema()', () => {
+  void it('creates schema with correct $id and uses item schema', () => {
     const schema = makePageSchema({ 'type': 'object' } as const, 'https://test.io/MyPage');
 
     assert.equal(schema.$id, 'https://test.io/MyPage');
@@ -153,7 +153,7 @@ describe('makePageSchema()', () => {
     assert.deepEqual(schema2.properties.items.items, itemSchema);
   });
 
-  it('validates via registry with $ref items', () => {
+  void it('validates via registry with $ref items', () => {
     const registry = new SchemaRegistry();
     const NameItemSchema = {
       '$id': 'https://test.io/NameItem',
@@ -179,7 +179,7 @@ describe('makePageSchema()', () => {
     assert.equal(errors.length, 0);
   });
 
-  it('rejects page missing required fields', () => {
+  void it('rejects page missing required fields', () => {
     const registry = new SchemaRegistry();
     const schema = makePageSchema({ 'type': 'object' } as const, 'https://test.io/APage');
 

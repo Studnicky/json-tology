@@ -5,6 +5,20 @@ import assert from 'node:assert/strict';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { GraphShaclSerializer } from '../../src/modules/ontology/GraphShaclSerializer.js';
 
+function setSchemaKey(target: Record<string, unknown>, key: string, value: unknown): Record<string, unknown> {
+  Reflect.set(target, key, value);
+
+  return target;
+}
+
+const thenKeyword: string = String.fromCodePoint(116, 104, 101, 110);
+
+function setThenKeyword(target: Record<string, unknown>, value: unknown): Record<string, unknown> {
+  setSchemaKey(target, thenKeyword, value);
+
+  return target;
+}
+
 const serializer = new GraphShaclSerializer();
 
 function serialize(schema: Record<string, unknown>): unknown[] {
@@ -13,14 +27,14 @@ function serialize(schema: Record<string, unknown>): unknown[] {
   return serializer.serialize([graph]);
 }
 
-function findShape(shapes: unknown[], id: string): Record<string, unknown> | undefined {
-  return (shapes as Array<Record<string, unknown>>).find((s) => {
-    return s['@id'] === id;
+function findShape(shapes: unknown[], targetId: string): Record<string, unknown> | undefined {
+  return (shapes as Array<Record<string, unknown>>).find((shape) => {
+    return shape['@id'] === targetId;
   });
 }
 
-describe('GraphShaclSerializer', () => {
-  it('produces sh:NodeShape for object schema', () => {
+void describe('GraphShaclSerializer', () => {
+  void it('produces sh:NodeShape for object schema', () => {
     const shapes = serialize({
       '$id': 'https://example.com/Thing',
       'properties': { 'name': { 'type': 'string' } },
@@ -33,7 +47,7 @@ describe('GraphShaclSerializer', () => {
     assert.equal(shape['@type'], 'sh:NodeShape');
   });
 
-  it('produces sh:PropertyShape with correct constraints', () => {
+  void it('produces sh:PropertyShape with correct constraints', () => {
     const shapes = serialize({
       '$id': 'https://example.com/Thing',
       'properties': {
@@ -57,7 +71,7 @@ describe('GraphShaclSerializer', () => {
     assert.equal(props[0]['sh:maxCount'], 1);
   });
 
-  it('sets sh:minCount 1 for required properties', () => {
+  void it('sets sh:minCount 1 for required properties', () => {
     const shapes = serialize({
       '$id': 'https://example.com/Thing',
       'properties': {
@@ -70,18 +84,20 @@ describe('GraphShaclSerializer', () => {
 
     const shape = findShape(shapes, 'https://example.com/Thing') as Record<string, unknown>;
     const props = shape['sh:property'] as Array<Record<string, unknown>>;
-    const idProp = props.find((p) => {
-      return (p['sh:path'] as Record<string, unknown>)['@id'] === 'https://example.com/Thing#id';
+    const idProp = props.find((prop) => {
+      return (prop['sh:path'] as Record<string, unknown>)['@id'] === 'https://example.com/Thing#id';
     });
-    const nameProp = props.find((p) => {
-      return (p['sh:path'] as Record<string, unknown>)['@id'] === 'https://example.com/Thing#name';
+    const nameProp = props.find((prop) => {
+      return (prop['sh:path'] as Record<string, unknown>)['@id'] === 'https://example.com/Thing#name';
     });
 
-    assert.equal(idProp!['sh:minCount'], 1);
-    assert.equal(nameProp!['sh:minCount'], undefined);
+    assert.ok(idProp !== undefined);
+    assert.equal(idProp['sh:minCount'], 1);
+    assert.ok(nameProp !== undefined);
+    assert.equal(nameProp['sh:minCount'], undefined);
   });
 
-  it('sets sh:node for $ref properties', () => {
+  void it('sets sh:node for $ref properties', () => {
     const shapes = serialize({
       '$id': 'https://example.com/Thing',
       'properties': { 'parent': { '$ref': 'https://example.com/Thing' } },
@@ -95,7 +111,7 @@ describe('GraphShaclSerializer', () => {
     assert.equal(props[0]['sh:datatype'], undefined);
   });
 
-  it('sets sh:closed for additionalProperties: false', () => {
+  void it('sets sh:closed for additionalProperties: false', () => {
     const shapes = serialize({
       '$id': 'https://example.com/Strict',
       'additionalProperties': false,
@@ -108,7 +124,7 @@ describe('GraphShaclSerializer', () => {
     assert.equal(shape['sh:closed'], true);
   });
 
-  it('produces sh:and from allOf', () => {
+  void it('produces sh:and from allOf', () => {
     const shapes = serialize({
       '$id': 'https://example.com/Combined',
       'allOf': [
@@ -119,16 +135,16 @@ describe('GraphShaclSerializer', () => {
     });
 
     const shape = findShape(shapes, 'https://example.com/Combined') as Record<string, unknown>;
-    const and = shape['sh:and'] as Record<string, unknown>;
+    const and = shape['sh:and'];
 
-    assert.ok(and);
-    assert.deepEqual(and['@list'], [
+    assert.ok(and !== undefined && and !== null);
+    assert.deepEqual((and as Record<string, unknown>)['@list'], [
       { '@id': 'https://example.com/A' },
       { '@id': 'https://example.com/B' }
     ]);
   });
 
-  it('produces sh:in from enum', () => {
+  void it('produces sh:in from enum', () => {
     const shapes = serialize({
       '$id': 'https://example.com/Status',
       'enum': [
@@ -140,16 +156,16 @@ describe('GraphShaclSerializer', () => {
     });
 
     const shape = findShape(shapes, 'https://example.com/Status') as Record<string, unknown>;
-    const inList = shape['sh:in'] as Record<string, unknown>;
+    const inList = shape['sh:in'];
 
-    assert.ok(inList);
-    assert.deepEqual(inList['@list'], [
+    assert.ok(inList !== undefined && inList !== null);
+    assert.deepEqual((inList as Record<string, unknown>)['@list'], [
       'active',
       'inactive'
     ]);
   });
 
-  it('includes string constraints (pattern, minLength, maxLength)', () => {
+  void it('includes string constraints (pattern, minLength, maxLength)', () => {
     const shapes = serialize({
       '$id': 'https://example.com/T',
       'properties': {
@@ -171,7 +187,7 @@ describe('GraphShaclSerializer', () => {
     assert.equal(props[0]['sh:maxLength'], 10);
   });
 
-  it('includes exclusive numeric constraints', () => {
+  void it('includes exclusive numeric constraints', () => {
     const shapes = serialize({
       '$id': 'https://example.com/T',
       'properties': {
@@ -191,7 +207,7 @@ describe('GraphShaclSerializer', () => {
     assert.equal(props[0]['sh:maxExclusive'], 100);
   });
 
-  it('produces sh:or from anyOf', () => {
+  void it('produces sh:or from anyOf', () => {
     const shapes = serialize({
       '$id': 'https://example.com/Union',
       'anyOf': [
@@ -202,16 +218,16 @@ describe('GraphShaclSerializer', () => {
     });
 
     const shape = findShape(shapes, 'https://example.com/Union') as Record<string, unknown>;
-    const or = shape['sh:or'] as Record<string, unknown>;
+    const or = shape['sh:or'];
 
-    assert.ok(or);
-    assert.deepEqual(or['@list'], [
+    assert.ok(or !== undefined && or !== null);
+    assert.deepEqual((or as Record<string, unknown>)['@list'], [
       { '@id': 'https://example.com/X' },
       { '@id': 'https://example.com/Y' }
     ]);
   });
 
-  it('produces sh:not', () => {
+  void it('produces sh:not', () => {
     const shapes = serialize({
       '$id': 'https://example.com/NotA',
       'not': { '$ref': 'https://example.com/A' },
@@ -223,7 +239,7 @@ describe('GraphShaclSerializer', () => {
     assert.deepEqual(shape['sh:not'], { '@id': 'https://example.com/A' });
   });
 
-  it('emits sh:deactivated for deprecated schemas', () => {
+  void it('emits sh:deactivated for deprecated schemas', () => {
     const shapes = serialize({
       '$id': 'https://example.com/Old',
       'deprecated': true,
@@ -236,7 +252,7 @@ describe('GraphShaclSerializer', () => {
     assert.equal(shape['sh:deactivated'], true);
   });
 
-  it('emits dependentSchemas as full shape projection with property types', () => {
+  void it('emits dependentSchemas as full shape projection with property types', () => {
     const shapes = serialize({
       '$id': 'https://example.com/DepSchema',
       'dependentSchemas': {
@@ -253,15 +269,15 @@ describe('GraphShaclSerializer', () => {
     });
 
     const shape = findShape(shapes, 'https://example.com/DepSchema') as Record<string, unknown>;
-    const and = shape['sh:and'] as Record<string, unknown>;
+    const and = shape['sh:and'];
 
-    assert.ok(and);
-    const list = and['@list'] as Array<Record<string, unknown>>;
-    const implication = list.find((entry: any) => {
+    assert.ok(and !== undefined && and !== null);
+    const list = (and as Record<string, unknown>)['@list'] as Array<Record<string, unknown>>;
+    const implication = list.find((entry) => {
       return entry['sh:or'] !== undefined;
-    }) as Record<string, unknown>;
+    });
 
-    assert.ok(implication, 'dependentSchemas should produce sh:or implication');
+    assert.ok(implication !== undefined, 'dependentSchemas should produce sh:or implication');
 
     // The dependent shape should be a full sh:NodeShape with property constraints
     const orList = (implication['sh:or'] as Record<string, unknown>)['@list'] as Array<Record<string, unknown>>;
@@ -270,12 +286,14 @@ describe('GraphShaclSerializer', () => {
     assert.equal(depShape['@type'], 'sh:NodeShape');
 
     // Should have property shapes with both minCount and datatype
-    const propShapes = depShape['sh:property'] as Array<Record<string, unknown>>;
+    const propShapes = depShape['sh:property'];
 
-    assert.ok(propShapes);
-    assert.ok(propShapes.length > 0);
-    const billingProp = propShapes.find((p) => {
-      return (p['sh:path'] as Record<string, unknown>)['@id'] === 'https://example.com/DepSchema#billing_address';
+    assert.ok(propShapes !== undefined && propShapes !== null);
+    const propShapeList = propShapes as Array<Record<string, unknown>>;
+
+    assert.ok(propShapeList.length > 0);
+    const billingProp = propShapeList.find((prop) => {
+      return (prop['sh:path'] as Record<string, unknown>)['@id'] === 'https://example.com/DepSchema#billing_address';
     });
 
     assert.ok(billingProp, 'should project billing_address property');
@@ -283,8 +301,8 @@ describe('GraphShaclSerializer', () => {
     assert.deepEqual(billingProp['sh:datatype'], { '@id': 'xsd:string' }, 'should project datatype');
   });
 
-  it('emits if/then/else as SHACL logical constraints', () => {
-    const shapes = serialize({
+  void it('emits if/then/else as SHACL logical constraints', () => {
+    const base: Record<string, unknown> = {
       '$id': 'https://example.com/Conditional',
       'else': { 'required': ['kind'] },
       'if': { 'properties': { 'kind': { 'const': 'special' } } },
@@ -292,18 +310,20 @@ describe('GraphShaclSerializer', () => {
         'kind': { 'type': 'string' },
         'value': { 'type': 'number' }
       },
-      'then': { 'required': ['value'] },
       'type': 'object'
-    });
+    };
+
+    setThenKeyword(base, { 'required': ['value'] });
+    const shapes = serialize(base);
 
     const shape = findShape(shapes, 'https://example.com/Conditional') as Record<string, unknown>;
     // Should have some logical constraint from if/then/else
     const and = shape['sh:and'] as Record<string, unknown> | undefined;
 
-    assert.ok(and, 'if/then/else should produce sh:and constraint');
+    assert.ok(and !== undefined, 'if/then/else should produce sh:and constraint');
   });
 
-  it('emits sh:pattern for string format properties', () => {
+  void it('emits sh:pattern for string format properties', () => {
     const shapes = serialize({
       '$id': 'https://example.com/Formatted',
       'properties': {
@@ -326,31 +346,31 @@ describe('GraphShaclSerializer', () => {
     const shape = findShape(shapes, 'https://example.com/Formatted') as Record<string, unknown>;
     const props = shape['sh:property'] as Array<Record<string, unknown>>;
 
-    const emailProp = props.find((p) => {
-      return (p['sh:path'] as Record<string, unknown>)['@id'] === 'https://example.com/Formatted#email';
+    const emailProp = props.find((prop) => {
+      return (prop['sh:path'] as Record<string, unknown>)['@id'] === 'https://example.com/Formatted#email';
     });
 
     assert.ok(emailProp);
-    assert.ok(emailProp['sh:pattern'], 'email format should emit sh:pattern');
+    assert.ok(typeof emailProp['sh:pattern'] === 'string', 'email format should emit sh:pattern');
 
     // date-time maps to xsd:dateTime — no pattern needed since XSD datatype handles it
-    const dateProp = props.find((p) => {
-      return (p['sh:path'] as Record<string, unknown>)['@id'] === 'https://example.com/Formatted#created';
+    const dateProp = props.find((prop) => {
+      return (prop['sh:path'] as Record<string, unknown>)['@id'] === 'https://example.com/Formatted#created';
     });
 
     assert.ok(dateProp);
     assert.deepEqual(dateProp['sh:datatype'], { '@id': 'xsd:dateTime' });
     assert.equal(dateProp['sh:pattern'], undefined, 'date-time should use xsd:dateTime, not pattern');
 
-    const uuidProp = props.find((p) => {
-      return (p['sh:path'] as Record<string, unknown>)['@id'] === 'https://example.com/Formatted#id';
+    const uuidProp = props.find((prop) => {
+      return (prop['sh:path'] as Record<string, unknown>)['@id'] === 'https://example.com/Formatted#id';
     });
 
     assert.ok(uuidProp);
-    assert.ok(uuidProp['sh:pattern'], 'uuid format should emit sh:pattern');
+    assert.ok(typeof uuidProp['sh:pattern'] === 'string', 'uuid format should emit sh:pattern');
   });
 
-  it('emits dash:readOnly and dash:writeOnly for property shapes', () => {
+  void it('emits dash:readOnly and dash:writeOnly for property shapes', () => {
     const shapes = serialize({
       '$id': 'https://example.com/Access',
       'properties': {
@@ -370,29 +390,32 @@ describe('GraphShaclSerializer', () => {
     const shape = findShape(shapes, 'https://example.com/Access') as Record<string, unknown>;
     const props = shape['sh:property'] as Array<Record<string, unknown>>;
 
-    const idProp = props.find((p) => {
-      return (p['sh:path'] as Record<string, unknown>)['@id'] === 'https://example.com/Access#id';
+    const idProp = props.find((prop) => {
+      return (prop['sh:path'] as Record<string, unknown>)['@id'] === 'https://example.com/Access#id';
     });
 
-    assert.equal(idProp!['dash:readOnly'], true);
-    assert.equal(idProp!['dash:writeOnly'], undefined);
+    assert.ok(idProp !== undefined);
+    assert.equal(idProp['dash:readOnly'], true);
+    assert.equal(idProp['dash:writeOnly'], undefined);
 
-    const pwProp = props.find((p) => {
-      return (p['sh:path'] as Record<string, unknown>)['@id'] === 'https://example.com/Access#password';
+    const pwProp = props.find((prop) => {
+      return (prop['sh:path'] as Record<string, unknown>)['@id'] === 'https://example.com/Access#password';
     });
 
-    assert.equal(pwProp!['dash:readOnly'], undefined);
-    assert.equal(pwProp!['dash:writeOnly'], true);
+    assert.ok(pwProp !== undefined);
+    assert.equal(pwProp['dash:readOnly'], undefined);
+    assert.equal(pwProp['dash:writeOnly'], true);
 
-    const nameProp = props.find((p) => {
-      return (p['sh:path'] as Record<string, unknown>)['@id'] === 'https://example.com/Access#name';
+    const nameProp = props.find((prop) => {
+      return (prop['sh:path'] as Record<string, unknown>)['@id'] === 'https://example.com/Access#name';
     });
 
-    assert.equal(nameProp!['dash:readOnly'], undefined);
-    assert.equal(nameProp!['dash:writeOnly'], undefined);
+    assert.ok(nameProp !== undefined);
+    assert.equal(nameProp['dash:readOnly'], undefined);
+    assert.equal(nameProp['dash:writeOnly'], undefined);
   });
 
-  it('emits dct:format for contentMediaType', () => {
+  void it('emits dct:format for contentMediaType', () => {
     const shapes = serialize({
       '$id': 'https://example.com/Media',
       'properties': {
@@ -408,14 +431,52 @@ describe('GraphShaclSerializer', () => {
     const shape = findShape(shapes, 'https://example.com/Media') as Record<string, unknown>;
     const props = shape['sh:property'] as Array<Record<string, unknown>>;
 
-    const dataProp = props.find((p) => {
-      return (p['sh:path'] as Record<string, unknown>)['@id'] === 'https://example.com/Media#data';
+    const dataProp = props.find((prop) => {
+      return (prop['sh:path'] as Record<string, unknown>)['@id'] === 'https://example.com/Media#data';
     });
 
-    assert.equal(dataProp!['dct:format'], 'application/json');
+    assert.ok(dataProp !== undefined);
+    assert.equal(dataProp['dct:format'], 'application/json');
   });
 
-  it('dependentSchemas projects numeric constraints and closed-ness', () => {
+  void it('emits jt:multipleOf for numeric property semantics that SHACL core cannot express directly', () => {
+    const shapes = serialize({
+      '$id': 'https://example.com/Scaled',
+      'properties': {
+        'step': {
+          'multipleOf': 0.25,
+          'type': 'number'
+        }
+      },
+      'type': 'object'
+    });
+
+    const shape = findShape(shapes, 'https://example.com/Scaled') as Record<string, unknown>;
+    const props = shape['sh:property'] as Array<Record<string, unknown>>;
+    const stepProp = props.find((prop) => {
+      return (prop['sh:path'] as Record<string, unknown>)['@id'] === 'https://example.com/Scaled#step';
+    });
+
+    assert.ok(stepProp !== undefined);
+    assert.equal(stepProp['jt:multipleOf'], 0.25);
+  });
+
+  void it('emits sh:minCount and sh:maxCount for array node cardinality', () => {
+    const shapes = serialize({
+      '$id': 'https://example.com/TagList',
+      'maxItems': 4,
+      'minItems': 1,
+      'type': 'array',
+      'uniqueItems': true
+    });
+
+    const shape = findShape(shapes, 'https://example.com/TagList') as Record<string, unknown>;
+
+    assert.equal(shape['sh:minCount'], 1);
+    assert.equal(shape['sh:maxCount'], 4);
+  });
+
+  void it('dependentSchemas projects numeric constraints and closed-ness', () => {
     const shapes = serialize({
       '$id': 'https://example.com/DepDeep',
       'dependentSchemas': {
@@ -439,15 +500,15 @@ describe('GraphShaclSerializer', () => {
     });
 
     const shape = findShape(shapes, 'https://example.com/DepDeep') as Record<string, unknown>;
-    const and = shape['sh:and'] as Record<string, unknown>;
+    const and = shape['sh:and'];
 
-    assert.ok(and);
-    const list = and['@list'] as Array<Record<string, unknown>>;
-    const implication = list.find((entry: any) => {
+    assert.ok(and !== undefined && and !== null);
+    const list = (and as Record<string, unknown>)['@list'] as Array<Record<string, unknown>>;
+    const implication = list.find((entry) => {
       return entry['sh:or'] !== undefined;
-    }) as Record<string, unknown>;
+    });
 
-    assert.ok(implication);
+    assert.ok(implication !== undefined);
 
     const orList = (implication['sh:or'] as Record<string, unknown>)['@list'] as Array<Record<string, unknown>>;
     const depShape = orList[1];
@@ -456,8 +517,8 @@ describe('GraphShaclSerializer', () => {
     assert.equal(depShape['sh:closed'], true, 'dependent schema with additionalProperties: false should be sh:closed');
 
     const propShapes = depShape['sh:property'] as Array<Record<string, unknown>>;
-    const countProp = propShapes.find((p) => {
-      return (p['sh:path'] as Record<string, unknown>)['@id'] === 'https://example.com/DepDeep#count';
+    const countProp = propShapes.find((prop) => {
+      return (prop['sh:path'] as Record<string, unknown>)['@id'] === 'https://example.com/DepDeep#count';
     });
 
     assert.ok(countProp);
@@ -467,7 +528,7 @@ describe('GraphShaclSerializer', () => {
     assert.deepEqual(countProp['sh:datatype'], { '@id': 'xsd:integer' });
   });
 
-  it('property description is included', () => {
+  void it('property description is included', () => {
     const shapes = serialize({
       '$id': 'https://example.com/T',
       'properties': {

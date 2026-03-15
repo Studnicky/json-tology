@@ -1,4 +1,8 @@
-# Architecture Plan: json-tology
+# Architecture And Implementation Plan
+
+This is the single live plan document for the repository.
+
+All still-incomplete workstreams are tracked here. Older sidecar plan documents have been removed so there is one source of truth for architecture, remediation, and expansion work.
 
 ## Contract
 
@@ -6,171 +10,111 @@ json-tology has one authored source and three first-class consumers:
 
 1. TypeScript compile-time inference from `as const` JSON Schema.
 2. Runtime validation and materialization over the canonical graph.
-3. RDF serialization of both schema structure (TBox) and validated instances (ABox).
+3. JSON-LD serialization of both schema structure (TBox) and validated instances (ABox).
 
-JSON Schema is the authored form. The canonical graph is the runtime artifact. RDF output is projected from the graph. The implementation must not drift into separate semantic engines for typing, validation, ontology, or instance projection.
-
-## Current Status
-
-Reviewed against the code on 2026-03-13.
-
-The prototype architecture is implemented and verified:
-
-- `npm run type-check` passes
-- `npm run test` passes
-- `npx tsc --noEmit --project tsconfig.test-types.json` passes
-
-Current suite status: 630 passing tests.
-
-The earlier phase-by-phase migration is complete enough that it should no longer be tracked as active work. This document is now the live architectural contract and the guide for future expansion.
-
-Detailed execution roadmap:
-- [`expansion-hardening-plan.md`](/Users/studs/Workspace/json-tology/docs/expansion-hardening-plan.md)
-
-## Implemented Architecture
-
-### Authored Schema
-
-- Source language: JSON Schema 2020-12 plus explicitly recognized extension keywords.
-- Standards typing dependency kept intentionally: `json-schema` types.
-- Unknown keywords are preserved for schema round-trip via graph semantics extensions.
-
-### Compile-Time Typing
-
-- Implemented in [`src/types/infer.ts`](/Users/studs/Workspace/json-tology/src/types/infer.ts).
-- Reads schema object types directly.
-- Covers the current project surface for refs, composition, conditionals, `not`, `contains`, transforms, and compose helpers.
-- Fallback behavior is explicit where TypeScript cannot model runtime semantics precisely.
-
-### Canonical Graph
-
-- Implemented in [`src/modules/graph/SchemaGraph.ts`](/Users/studs/Workspace/json-tology/src/modules/graph/SchemaGraph.ts).
-- Owns normalized nodes, semantic caches, anchors, refs, and relation extraction.
-- Supports NormIR serialization and rehydration via [`src/modules/graph/GraphArtifact.ts`](/Users/studs/Workspace/json-tology/src/modules/graph/GraphArtifact.ts).
-
-### Validation and Materialization
-
-- Runtime execution lives in [`src/modules/graph/GraphEngine.ts`](/Users/studs/Workspace/json-tology/src/modules/graph/GraphEngine.ts).
-- Compiled validation lives in [`src/modules/validation/SchemaCompiler.ts`](/Users/studs/Workspace/json-tology/src/modules/validation/SchemaCompiler.ts).
-- Materialization and ABox projection live in [`src/modules/materialization/Materializer.ts`](/Users/studs/Workspace/json-tology/src/modules/materialization/Materializer.ts).
-- ABox projection already uses the shared quad path.
-
-### RDF Projection
-
-- Shared quad model lives in [`src/modules/rdf/Quad.ts`](/Users/studs/Workspace/json-tology/src/modules/rdf/Quad.ts).
-- Generic helpers and ABox projection live in [`src/modules/rdf/Projection.ts`](/Users/studs/Workspace/json-tology/src/modules/rdf/Projection.ts).
-- OWL and SHACL quad projections live in:
-  - [`src/modules/rdf/OwlProjection.ts`](/Users/studs/Workspace/json-tology/src/modules/rdf/OwlProjection.ts)
-  - [`src/modules/rdf/ShaclProjection.ts`](/Users/studs/Workspace/json-tology/src/modules/rdf/ShaclProjection.ts)
-- JSON-LD formatting lives in [`src/modules/rdf/JsonLdFormatter.ts`](/Users/studs/Workspace/json-tology/src/modules/rdf/JsonLdFormatter.ts).
-
-### Public Serialization Surface
-
-- OWL JSON-LD adapter:
-  [`src/modules/ontology/GraphOntologySerializer.ts`](/Users/studs/Workspace/json-tology/src/modules/ontology/GraphOntologySerializer.ts)
-- SHACL JSON-LD adapter:
-  [`src/modules/ontology/GraphShaclSerializer.ts`](/Users/studs/Workspace/json-tology/src/modules/ontology/GraphShaclSerializer.ts)
-- Schema round-trip serializer:
-  [`src/modules/ontology/GraphSchemaSerializer.ts`](/Users/studs/Workspace/json-tology/src/modules/ontology/GraphSchemaSerializer.ts)
-- User-facing API:
-  [`src/JsonTology.ts`](/Users/studs/Workspace/json-tology/src/JsonTology.ts)
-
-These serializers are now thin wrappers over projection + formatting. They should stay that way.
-JSON-LD is the only supported RDF serialization target in-core. Consumers who need Turtle, N-Quads, or other RDF serializations should translate from the emitted JSON-LD with downstream tooling.
+JSON Schema is the authored form. The canonical graph is the runtime artifact. JSON-LD output is projected from that graph. The implementation must not drift into separate semantic engines for typing, validation, ontology, or instance projection.
 
 ## Non-Negotiable Invariants
 
-These are the rules future work must preserve.
+These rules govern every remaining workstream:
 
 1. JSON Schema remains the authored source language.
-2. The graph remains the shared runtime artifact.
-3. Validation semantics come from graph semantics, not serializer-specific logic.
-4. RDF output is projected from graph-owned semantics and relations, not handwritten document assembly in public API layers.
-5. `materialize()`, `parse()`, `create()`, and `abox()` must remain views over the same runtime execution model.
-6. Schema round-trip must stay lossless for the supported keyword surface.
-7. Type inference must either model behavior correctly or fall back explicitly; it must not silently misresolve.
+2. `@types/json-schema` remains the intentional standards dependency for authoring types.
+3. The graph remains the shared runtime artifact.
+4. Validation semantics come from graph semantics, not serializer-specific logic.
+5. RDF semantics are emitted as JSON-LD only in-core.
+6. `materialize()`, `parse()`, `create()`, and `abox()` remain views over one runtime execution model.
+7. Schema round-trip must stay lossless for the supported keyword surface.
+8. Type inference must either model behavior correctly or fall back explicitly. Silent misresolution is not acceptable.
+9. Versioning happens in git and releases, not in production runtime code.
+10. Do not preserve backward compatibility via dual implementations, legacy loaders, or version branches inside active codepaths.
+11. Completion claims must reflect the code that exists now, not the intended direction.
 
-## What Is No Longer Active Work
+## Verified Current State
 
-The following migration items should not be tracked as open work anymore:
+The architectural migration, production-readiness hardening, and current
+expansion slice are complete.
 
-- introducing the quad model
-- moving ABox projection onto the quad path
-- replacing the old semantic serializers with quad-backed adapters
-- NormIR-based graph artifact support
-- discriminator mapping execution
-- schema round-trip as a regression gate
+Completed and verified:
 
-Those changes are already in the codebase and covered by tests.
+1. Legacy compatibility paths were removed from graph artifacts. There is one canonical artifact shape, one load path, and legacy artifacts fail loudly with regeneration guidance.
+2. The publish surface is controlled. Builds clean `dist`, `package.json` uses an explicit `files` allowlist, and a committed pack-surface regression script validates the tarball.
+3. Schema registration is atomic. Failed registration is a no-op and failed overwrite attempts preserve the prior valid entry and caches.
+4. Transform contracts are aligned. `parse()` is decoded, while `materialize()` and `encode()` are typed and implemented as wire-form.
+5. Public docs and exported surfaces were aligned. README examples use supported APIs, stale `json-schema-to-ts` claims were removed, and public API smoke coverage exists in `test/types`.
+6. The shipped CLI is the CLI that is tested. Integration coverage runs the built `dist/cli.js`, verifies the published bin path, and locks the supported schema-path behavior in place.
+7. Logger and loader posture is intentional. Routine trace logging no longer emits stack traces, and `SchemaLoader` is explicitly documented and tested as a lightweight filesystem loader rather than a standards validator.
+8. Compile-time inference was expanded where the improvement is materially useful. External `$ref` resolution now supports explicit references maps, and `if/then/else` uses a documented sound branch-union approximation instead of collapsing to `unknown`.
+9. SHACL JSON-LD coverage was expanded for graph semantics that SHACL Core cannot express directly. The serializer now emits explicit `jt:*` annotations for `multipleOf`, `minItems`, `maxItems`, and `uniqueItems`.
+10. Artifact hardening expanded beyond the original corpus. Round-trip coverage now includes richer graphs with anchors, dynamic anchors, `contains`, `patternProperties`, and conditionals.
+11. Benchmark reproducibility is verified. `npm run bench` completes cleanly, and the compiled-vs-interpreted benchmark path is locked down by a smoke test so nested-ref regressions fail in CI.
 
-## Active Expansion Tracks
+Latest verified commands:
 
-The remaining work is no longer architectural cleanup. It is capability expansion.
+- `npm run build`
+- `npm run type-check`
+- `npm run test`
+- `node ./node_modules/typescript/bin/tsc --noEmit --project tsconfig.test-types.json`
+- `npm run pack:check`
+- `npm run bench`
 
-### 1. Standards Coverage Expansion
+Latest verified result:
 
-Goal: continue closing the capability envelope against TypeBox, `json-schema-to-ts`, TypeScript, JSON-LD, SHACL, and AJV.
+- runtime suite: 631 passing tests
+- compile-time type suite: clean
+- publish-surface check: clean
+- benchmark command: clean
 
-Priority areas:
+## Current Status
 
-- broader type-inference precision for difficult JSON Schema constructs
-- more exhaustive SHACL and OWL projection coverage
-- stronger external-ref and multi-schema compile-time ergonomics
-- more formal behavior parity tests against supported JSON Schema features
+There is no open migration or hardening workstream in the repository right now.
 
-Acceptance criteria:
+Future work should be opened as new scoped efforts when the project chooses to
+expand standards coverage, DX evidence, or interoperability beyond the current
+surface. Those future efforts must keep the same invariants and TDD discipline
+defined below.
 
-- every newly claimed capability is backed by runtime tests and type tests
-- unsupported constructs are documented as explicit fallbacks, not implied support
+## Compatibility Policy
 
-### 2. Interop and Artifact Hardening
+This repository does not preserve backwards compatibility inside the codebase through versioned interfaces, fallback loaders, or dual implementations.
 
-Goal: make exported graph/schema/ontology artifacts safer for downstream tooling.
+When a representation changes:
 
-Priority areas:
-
-- richer artifact versioning and compatibility guarantees
-- build/CLI polish for ontology, SHACL, schema, and artifact export
-- stronger round-trip and rehydration assertions across more schema corpora
-
-Acceptance criteria:
-
-- exported artifacts are reproducible
-- artifact compatibility rules are documented
-- CLI export formats stay covered by tests
-
-### 3. Performance and DX Hardening
-
-Goal: improve confidence that graph-native execution remains competitive and usable at scale.
-
-Priority areas:
-
-- benchmark coverage for compiled vs interpreted paths
-- larger-schema registry behavior
-- authoring ergonomics and compose/type helper polish
-
-Acceptance criteria:
-
-- performance claims are backed by reproducible benchmarks
-- DX claims are backed by type tests and public API tests, not only internals
+1. keep one current implementation in code
+2. reject old representations loudly
+3. document the break
+4. rely on git history and release versioning for historical access
 
 ## Required TDD Workflow
 
-All future work must follow strict TDD:
+Every workstream in this plan must follow strict TDD:
 
-1. Add or update the failing test first.
-2. Run the focused test and confirm it fails for the intended reason.
-3. Implement the smallest change that makes it pass.
-4. Run the touched focused suite again.
-5. Run the full verification set before marking the work complete.
+1. Write or update the failing test first.
+2. Run the focused test and confirm the failure is the intended one.
+3. Implement the smallest change that makes the test pass.
+4. Rerun the focused suite.
+5. Run the full verification set.
 6. Update docs only after code and tests match the new claim.
 
-Required verification commands:
+## Required Verification Commands
 
+These are mandatory before claiming any future workstream is complete:
+
+- `npm run build`
 - `npm run type-check`
 - `npm run test`
-- `npx tsc --noEmit --project tsconfig.test-types.json`
+- `node ./node_modules/typescript/bin/tsc --noEmit --project tsconfig.test-types.json`
+- `npm run pack:check`
+- `npm run bench` for any work that touches benchmarked paths or introduces
+  performance / ergonomics claims
 
-## Review Rule
+## Completion Rule
 
-Completion claims must be tied to the code that exists now, not to the intended direction. If a feature is only partially covered, describe it as partial. If a fallback exists, name it as a fallback. If a serializer or adapter is thin, keep it thin.
+Do not mark any new workstream “done” because the current suite is green.
+
+It is only acceptable to claim completion for a workstream when:
+
+- the code change exists
+- the focused regression tests exist
+- the full verification commands pass
+- the docs describe the implemented state accurately

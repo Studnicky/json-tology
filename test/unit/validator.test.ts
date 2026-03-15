@@ -5,7 +5,7 @@
 import {
   describe, it
 } from 'node:test';
-import * as assert from 'node:assert';
+import assert from 'node:assert/strict';
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
 const UserSchema = {
@@ -26,8 +26,8 @@ const UserSchema = {
   'type': 'object'
 } as const;
 
-describe('Validator', () => {
-  it('should validate data against a schema', () => {
+void describe('Validator', () => {
+  void it('should validate data against a schema', () => {
     const registry = new SchemaRegistry();
 
     registry.register(UserSchema);
@@ -42,7 +42,7 @@ describe('Validator', () => {
     assert.strictEqual(errors.length, 0);
   });
 
-  it('should return errors for invalid data', () => {
+  void it('should return errors for invalid data', () => {
     const registry = new SchemaRegistry();
 
     registry.register(UserSchema);
@@ -59,7 +59,7 @@ describe('Validator', () => {
     }));
   });
 
-  it('should return errors for missing required properties', () => {
+  void it('should return errors for missing required properties', () => {
     const registry = new SchemaRegistry();
 
     registry.register(UserSchema);
@@ -73,7 +73,7 @@ describe('Validator', () => {
     }));
   });
 
-  it('should validate typed and return data on success', () => {
+  void it('should validate typed and return data on success', () => {
     const registry = new SchemaRegistry();
 
     registry.register(UserSchema);
@@ -100,7 +100,7 @@ describe('Validator', () => {
     assert.strictEqual(result.errors, undefined);
   });
 
-  it('should validate typed and return errors on failure', () => {
+  void it('should validate typed and return errors on failure', () => {
     const registry = new SchemaRegistry();
 
     registry.register(UserSchema);
@@ -121,10 +121,11 @@ describe('Validator', () => {
 
     assert.strictEqual(result.valid, false);
     assert.strictEqual(result.data, undefined);
-    assert.ok(result.errors && result.errors.length > 0);
+    assert.equal(typeof result.errors, 'object');
+    assert.ok(result.errors.length > 0);
   });
 
-  it('should check if data is valid (boolean)', () => {
+  void it('should check if data is valid (boolean)', () => {
     const registry = new SchemaRegistry();
 
     registry.register(UserSchema);
@@ -138,7 +139,7 @@ describe('Validator', () => {
     assert.strictEqual(registry.is(UserSchema.$id, invalidUser), false);
   });
 
-  it('should assert valid data passes', () => {
+  void it('should assert valid data passes', () => {
     const registry = new SchemaRegistry();
 
     registry.register(UserSchema);
@@ -152,7 +153,7 @@ describe('Validator', () => {
     assert.strictEqual(errors.length, 0);
   });
 
-  it('should assert invalid data throws', () => {
+  void it('should assert invalid data throws', () => {
     const registry = new SchemaRegistry();
 
     registry.register(UserSchema);
@@ -166,7 +167,7 @@ describe('Validator', () => {
     }));
   });
 
-  it('should assert with context message', () => {
+  void it('should assert with context message', () => {
     const registry = new SchemaRegistry();
 
     registry.register(UserSchema);
@@ -180,7 +181,7 @@ describe('Validator', () => {
     assert.ok(message.includes('User validation failed'));
   });
 
-  it('should cache compiled schemas for efficiency', () => {
+  void it('should cache compiled schemas for efficiency', () => {
     const registry = new SchemaRegistry();
 
     registry.register(UserSchema);
@@ -201,7 +202,7 @@ describe('Validator', () => {
     assert.strictEqual(errors2.length, 0);
   });
 
-  it('should work with schemas without $id', () => {
+  void it('should work with schemas without $id', () => {
     const registry = new SchemaRegistry();
     const anonSchema = {
       '$id': 'urn:test:anon-value-object',

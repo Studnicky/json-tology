@@ -12,8 +12,8 @@ import { z } from 'zod';
 // AJV instance (shared)
 // ---------------------------------------------------------------------------
 
-export const ajv = new Ajv({ 'allErrors': true });
-addFormats(ajv);
+export const ajvInstance = new Ajv({ 'allErrors': true });
+addFormats(ajvInstance);
 
 // ---------------------------------------------------------------------------
 // Simple flat schema
@@ -67,7 +67,7 @@ export const SimpleSchemaZod = z.object({
   'name': z.string()
 }).strict();
 
-export const ajvValidateSimple = ajv.compile(SimpleSchema);
+export const ajvValidateSimple = ajvInstance.compile(SimpleSchema);
 
 export const simpleValid = {
   'active': true,
@@ -363,7 +363,7 @@ export const NestedSchemaZod = z.object({
   'total': z.number().min(0)
 });
 
-export const ajvValidateNested = ajv.compile(NestedSchemaAjv);
+export const ajvValidateNested = ajvInstance.compile(NestedSchemaAjv);
 
 export const nestedValid = {
   'createdAt': '2024-01-15T10:30:00.000Z',

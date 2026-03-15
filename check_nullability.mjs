@@ -26,8 +26,9 @@ const jt = new JsonTology({
 
 console.log('=== JSON-LD ===');
 const jsonld = jt.ontology().jsonLdObject();
+const jsonldStr = JSON.stringify(jsonld, null, 2);
 
-console.log(JSON.stringify(jsonld, null, 2));
+console.log(jsonldStr);
 
 console.log('\n=== FULL JSON-LD OUTPUT ===');
 console.log(jt.ontology().jsonLd());

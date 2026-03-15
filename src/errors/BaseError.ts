@@ -6,21 +6,32 @@
  * and flatten() for structured consumption.
  */
 
+import type { ErrorJsonInterface } from '../interfaces/error.js';
 import type { ValidationErrorType } from '../types/validation.js';
 
-export interface ErrorJsonInterface {
-  'cause'?: ErrorJsonInterface;
-  'code': string;
-  'message': string;
-  'retryable': boolean;
-}
-
 export class BaseError extends Error {
+  private static errorToJson(error: Error): ErrorJsonInterface {
+    if (error instanceof BaseError) {
+      return {
+        'code': error.code,
+        'message': error.message,
+        'retryable': error.retryable
+      };
+    }
+
+    return {
+      'code': 'UNKNOWN',
+      'message': error.message,
+      'retryable': false
+    };
+  }
   /**
    * Format an array of validation errors into path-prefixed strings.
    */
   static formatErrors(errors: readonly ValidationErrorType[]): string[] {
-    return errors.map(BaseError.formatPath);
+    return errors.map((error) => {
+      return BaseError.formatPath(error);
+    });
   }
   /**
    * Format a validation error as "path: message", using "root" when the path is empty.
@@ -48,25 +59,12 @@ export class BaseError extends Error {
    * root-first.
    */
   public flatten(): ErrorJsonInterface[] {
-    const chain: ErrorJsonInterface[] = [];
-    let current: Error | undefined = this;
+    const chain: ErrorJsonInterface[] = [BaseError.errorToJson(this)];
+    let cursor: Error | undefined = this.cause instanceof Error ? this.cause : undefined;
 
-    while (current !== undefined) {
-      if (current instanceof BaseError) {
-        chain.push({
-          'code': current.code,
-          'message': current.message,
-          'retryable': current.retryable
-        });
-      } else {
-        chain.push({
-          'code': 'UNKNOWN',
-          'message': current.message,
-          'retryable': false
-        });
-      }
-
-      current = current.cause instanceof Error ? current.cause : undefined;
+    while (cursor !== undefined) {
+      chain.push(BaseError.errorToJson(cursor));
+      cursor = cursor.cause instanceof Error ? cursor.cause : undefined;
     }
 
     return chain;

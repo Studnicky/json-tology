@@ -5,7 +5,7 @@
 import {
   describe, it
 } from 'node:test';
-import * as assert from 'node:assert';
+import assert from 'node:assert/strict';
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 import { Materializer } from '../../src/modules/materialization/Materializer.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
@@ -59,8 +59,19 @@ const StrictSchema = {
   'type': 'object'
 } as const;
 
-describe('Materializer', () => {
-  it('should materialize an entity with schema defaults', () => {
+interface QuadObject {
+  'type': string;
+  'value'?: unknown;
+}
+
+interface Quad {
+  'object': QuadObject;
+  'predicate': string;
+  'subject': string;
+}
+
+void describe('Materializer', () => {
+  void it('should materialize an entity with schema defaults', () => {
     const registry = new SchemaRegistry();
     const materializer = new Materializer(registry);
 
@@ -71,7 +82,7 @@ describe('Materializer', () => {
     assert.strictEqual(config.timeout, 5000);
   });
 
-  it('should merge partial values with defaults', () => {
+  void it('should merge partial values with defaults', () => {
     const registry = new SchemaRegistry();
     const materializer = new Materializer(registry);
 
@@ -85,7 +96,7 @@ describe('Materializer', () => {
     assert.strictEqual(config.debug, false);
   });
 
-  it('should handle nested defaults via $ref', () => {
+  void it('should handle nested defaults via $ref', () => {
     const registry = new SchemaRegistry();
     const materializer = new Materializer(registry);
 
@@ -94,7 +105,7 @@ describe('Materializer', () => {
     assert.strictEqual(nested.inner.value, 42);
   });
 
-  it('should validate and throw on invalid data', () => {
+  void it('should validate and throw on invalid data', () => {
     const registry = new SchemaRegistry();
     const materializer = new Materializer(registry);
 
@@ -108,7 +119,7 @@ describe('Materializer', () => {
     );
   });
 
-  it('should throw if required property is missing', () => {
+  void it('should throw if required property is missing', () => {
     const registry = new SchemaRegistry();
     const materializer = new Materializer(registry);
 
@@ -122,7 +133,7 @@ describe('Materializer', () => {
     );
   });
 
-  it('should build from partial without all required properties if they have defaults', () => {
+  void it('should build from partial without all required properties if they have defaults', () => {
     const SchemaWithDefaults = {
       '$id': 'https://example.io/all-defaults',
       '$schema': 'https://json-schema.org/draft/2020-12/schema',
@@ -144,7 +155,7 @@ describe('Materializer', () => {
     assert.strictEqual(result.field, 'default-value');
   });
 
-  it('should set non-required properties without defaults to undefined (never omit keys)', () => {
+  void it('should set non-required properties without defaults to undefined (never omit keys)', () => {
     const registry = new SchemaRegistry();
     const materializer = new Materializer(registry);
 
@@ -155,7 +166,7 @@ describe('Materializer', () => {
     assert.ok('timeout' in config, 'timeout must be present');
   });
 
-  it('should set non-required property with no default to undefined', () => {
+  void it('should set non-required property with no default to undefined', () => {
     const SchemaWithOptional = {
       '$id': 'https://example.io/optional',
       '$schema': 'https://json-schema.org/draft/2020-12/schema',
@@ -176,7 +187,7 @@ describe('Materializer', () => {
     assert.strictEqual(result.optional, undefined);
   });
 
-  it('should auto-register the schema with no prior registry.register()', () => {
+  void it('should auto-register the schema with no prior registry.register()', () => {
     const registry = new SchemaRegistry();
     const materializer = new Materializer(registry);
 
@@ -188,7 +199,7 @@ describe('Materializer', () => {
     assert.ok(registry.get(ConfigSchema.$id) !== undefined);
   });
 
-  it('should coerce types when registry coerce: true', () => {
+  void it('should coerce types when registry coerce: true', () => {
     const registry = new SchemaRegistry({ 'coerce': true });
     const materializer = new Materializer(registry);
 
@@ -201,7 +212,7 @@ describe('Materializer', () => {
     assert.strictEqual(typeof config.timeout, 'number');
   });
 
-  it('should reject type mismatch without coerce option', () => {
+  void it('should reject type mismatch without coerce option', () => {
     const registry = new SchemaRegistry();
     const materializer = new Materializer(registry);
 
@@ -218,7 +229,7 @@ describe('Materializer', () => {
     );
   });
 
-  it('should allow extra keys when passAdditionalProperties: true', () => {
+  void it('should allow extra keys when passAdditionalProperties: true', () => {
     const registry = new SchemaRegistry();
     const materializer = new Materializer(registry, { 'passAdditionalProperties': true });
 
@@ -231,7 +242,7 @@ describe('Materializer', () => {
     assert.strictEqual((result as Record<string, unknown>).extra, 'allowed');
   });
 
-  it('should throw on extra keys when passAdditionalProperties is not set', () => {
+  void it('should throw on extra keys when passAdditionalProperties is not set', () => {
     const registry = new SchemaRegistry();
     const materializer = new Materializer(registry);
 
@@ -253,9 +264,9 @@ describe('Materializer', () => {
 // Runtime Projection Contract (Task 02)
 // ---------------------------------------------------------------------------
 
-describe('Runtime projection contract', () => {
-  describe('createDefault()', () => {
-    it('creates a default instance from schema with defaults and required properties', () => {
+void describe('Runtime projection contract', () => {
+  void describe('createDefault()', () => {
+    void it('creates a default instance from schema with defaults and required properties', () => {
       const registry = new SchemaRegistry();
       const materializer = new Materializer(registry);
 
@@ -268,7 +279,7 @@ describe('Runtime projection contract', () => {
       });
     });
 
-    it('resolves local $defs refs in create()', () => {
+    void it('resolves local $defs refs in create()', () => {
       const RefSchema = {
         '$defs': {
           'Inner': {
@@ -295,7 +306,7 @@ describe('Runtime projection contract', () => {
       assert.deepStrictEqual(result.inner, { 'value': 42 });
     });
 
-    it('creates defaults for schemas with $anchor refs', () => {
+    void it('creates defaults for schemas with $anchor refs', () => {
       const AnchorSchema = {
         '$defs': {
           'Item': {
@@ -323,7 +334,7 @@ describe('Runtime projection contract', () => {
       assert.deepStrictEqual(result.item, { 'label': 'untitled' });
     });
 
-    it('creates defaults for schemas with external $ref', () => {
+    void it('creates defaults for schemas with external $ref', () => {
       const PartSchema = {
         '$id': 'https://example.io/part',
         'properties': {
@@ -351,7 +362,7 @@ describe('Runtime projection contract', () => {
       assert.deepStrictEqual(result.part, { 'value': 99 });
     });
 
-    it('handles recursive refs without infinite loop', () => {
+    void it('handles recursive refs without infinite loop', () => {
       const RecursiveSchema = {
         '$id': 'https://example.io/recursive',
         'properties': {
@@ -370,7 +381,7 @@ describe('Runtime projection contract', () => {
       // child is not required, so it should not be in the default
     });
 
-    it('uses const value as default', () => {
+    void it('uses const value as default', () => {
       const ConstSchema = {
         '$id': 'https://example.io/const-create',
         'properties': { 'kind': { 'const': 'fixed' } },
@@ -385,7 +396,7 @@ describe('Runtime projection contract', () => {
       assert.strictEqual(result.kind, 'fixed');
     });
 
-    it('uses first enum value as default', () => {
+    void it('uses first enum value as default', () => {
       const EnumSchema = {
         '$id': 'https://example.io/enum-create',
         'properties': {
@@ -409,8 +420,8 @@ describe('Runtime projection contract', () => {
     });
   });
 
-  describe('execute → materialize → abox projection contract', () => {
-    it('materialize is a projection over validation execution output', () => {
+  void describe('execute -> materialize -> abox projection contract', () => {
+    void it('materialize is a projection over validation execution output', () => {
       const registry = new SchemaRegistry();
       const materializer = new Materializer(registry);
 
@@ -422,7 +433,7 @@ describe('Runtime projection contract', () => {
       assert.strictEqual(result.name, 'test');
     });
 
-    it('projectAbox returns Quad[] from shared RDF projection path', () => {
+    void it('projectAbox returns Quad[] from shared RDF projection path', () => {
       const registry = new SchemaRegistry();
       const materializer = new Materializer(registry);
 
@@ -432,83 +443,77 @@ describe('Runtime projection contract', () => {
       assert.ok(abox.length > 0);
 
       // Quads have subject, predicate, object structure
-      const first = abox[0] as { 'object': { 'type': string }
-        'predicate': string;
-        'subject': string; };
+      const first = abox[0] as Quad;
 
       assert.ok(typeof first.subject === 'string', 'quad must have string subject');
       assert.ok(typeof first.predicate === 'string', 'quad must have string predicate');
       assert.ok(typeof first.object === 'object', 'quad must have object');
-      assert.ok(typeof first.object.type === 'string', 'quad object must have type');
+      assert.ok(typeof first.object.termType === 'string', 'quad object must have termType');
     });
 
-    it('ABox quads include rdf:type pointing to schema $id', () => {
+    void it('ABox quads include rdf:type pointing to schema $id', () => {
       const registry = new SchemaRegistry();
       const materializer = new Materializer(registry);
 
       const abox = materializer.projectAbox(ConfigSchema, { 'name': 'test' }, 'https://example.io');
 
-      const typeQuad = abox.find((q: { 'object': { 'type': string;
-        'value'?: unknown }
-      'predicate': string; }) => {
-        return q.predicate === 'rdf:type' && q.object.type === 'iri' && q.object.value === ConfigSchema.$id;
+      const typeQuad = abox.find((quad: Quad) => {
+        return quad.predicate === 'rdf:type' && quad.object.termType === 'NamedNode' && quad.object.value === ConfigSchema.$id;
       });
 
       assert.ok(typeQuad, 'ABox must contain rdf:type quad referencing schema $id');
     });
 
-    it('ABox quads include property values with correct literals', () => {
+    void it('ABox quads include property values with correct literals', () => {
       const registry = new SchemaRegistry();
       const materializer = new Materializer(registry);
 
       const abox = materializer.projectAbox(ConfigSchema, { 'name': 'test' }, 'https://example.io');
 
-      const nameQuad = abox.find((q: { 'object': { 'type': string;
-        'value'?: unknown }
-      'predicate': string; }) => {
-        return q.predicate.endsWith('#name') && q.object.type === 'literal' && q.object.value === 'test';
+      const nameQuad = abox.find((quad: Quad) => {
+        return quad.predicate.endsWith('#name') && quad.object.termType === 'Literal' && quad.object.value === 'test';
       });
 
       assert.ok(nameQuad, 'ABox must contain name property quad');
     });
 
-    it('deterministic instance identity: same data produces same subject IRI', () => {
+    void it('deterministic instance identity: same data produces same subject IRI', () => {
       const registry = new SchemaRegistry();
       const materializer = new Materializer(registry);
 
       const abox1 = materializer.projectAbox(ConfigSchema, { 'name': 'test' }, 'https://example.io');
       const abox2 = materializer.projectAbox(ConfigSchema, { 'name': 'test' }, 'https://example.io');
 
-      const subj1 = abox1.find((q: { 'predicate': string }) => {
-        return q.predicate === 'rdf:type';
+      const subj1 = abox1.find((quad: Quad) => {
+        return quad.predicate === 'rdf:type';
       })?.subject;
-      const subj2 = abox2.find((q: { 'predicate': string }) => {
-        return q.predicate === 'rdf:type';
+      const subj2 = abox2.find((quad: Quad) => {
+        return quad.predicate === 'rdf:type';
       })?.subject;
 
       assert.strictEqual(subj1, subj2, 'same data must produce same instance IRI');
     });
 
-    it('different data produces different subject IRI', () => {
+    void it('different data produces different subject IRI', () => {
       const registry = new SchemaRegistry();
       const materializer = new Materializer(registry);
 
       const abox1 = materializer.projectAbox(ConfigSchema, { 'name': 'alice' }, 'https://example.io');
       const abox2 = materializer.projectAbox(ConfigSchema, { 'name': 'bob' }, 'https://example.io');
 
-      const subj1 = abox1.find((q: { 'predicate': string }) => {
-        return q.predicate === 'rdf:type';
+      const subj1 = abox1.find((quad: Quad) => {
+        return quad.predicate === 'rdf:type';
       })?.subject;
-      const subj2 = abox2.find((q: { 'predicate': string }) => {
-        return q.predicate === 'rdf:type';
+      const subj2 = abox2.find((quad: Quad) => {
+        return quad.predicate === 'rdf:type';
       })?.subject;
 
       assert.notStrictEqual(subj1, subj2, 'different data must produce different instance IRI');
     });
   });
 
-  describe('TBox + ABox coherence through Materializer', () => {
-    it('ABox instance types reference TBox classes', () => {
+  void describe('TBox + ABox coherence through Materializer', () => {
+    void it('ABox instance types reference TBox classes', () => {
       const registry = new SchemaRegistry();
       const materializer = new Materializer(registry);
 
@@ -519,35 +524,32 @@ describe('Runtime projection contract', () => {
       const abox = materializer.projectAbox(ConfigSchema, { 'name': 'test' }, 'https://example.io');
 
       const tboxClasses = new Set(tbox
-        .filter((q: { 'object': { 'type': string;
-          'value': unknown }
-        'predicate': string; }) => {
-          return q.predicate === 'rdf:type' && q.object.type === 'iri' && q.object.value === 'owl:Class';
+        .filter((quad: Quad) => {
+          return quad.predicate === 'rdf:type' && quad.object.termType === 'NamedNode' && quad.object.value === 'owl:Class';
         })
-        .map((q: { 'subject': string }) => {
-          return q.subject;
+        .map((quad: Quad) => {
+          return quad.subject;
         }));
 
       const aboxTypes = abox
-        .filter((q: { 'object': { 'type': string }
-          'predicate': string; }) => {
-          return q.predicate === 'rdf:type' && q.object.type === 'iri';
+        .filter((quad: Quad) => {
+          return quad.predicate === 'rdf:type' && quad.object.termType === 'NamedNode';
         })
-        .map((q: { 'object': { 'value': unknown } }) => {
-          return q.object.value;
+        .map((quad: Quad) => {
+          return quad.object.value;
         });
 
       for (const aboxType of aboxTypes) {
         assert.ok(
           tboxClasses.has(aboxType),
-          `ABox type ${aboxType} should be declared as owl:Class in TBox`
+          `ABox type ${String(aboxType)} should be declared as owl:Class in TBox`
         );
       }
     });
   });
 
-  describe('registry.create()', () => {
-    it('creates a default instance via registry', () => {
+  void describe('registry.create()', () => {
+    void it('creates a default instance via registry', () => {
       const registry = new SchemaRegistry();
 
       registry.register(ConfigSchema);

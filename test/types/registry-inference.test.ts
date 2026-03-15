@@ -167,6 +167,21 @@ jt.validateAt('https://example.io/NotRegistered', '/properties/name', {});
 // Suppress unused variable warnings
 // ---------------------------------------------------------------------------
 
-void _userName, _userAge, _orderId, _orderTotal, _bad1;
-void _u2, _o2, _tagLabel;
-void _nameCheck, _ageCheck, _orderIdCheck, _totalCheck;
+void [
+  _userName,
+  _userAge,
+  _orderId,
+  _orderTotal,
+  _bad1
+];
+void [
+  _u2,
+  _o2,
+  _tagLabel
+];
+void [
+  _nameCheck,
+  _ageCheck,
+  _orderIdCheck,
+  _totalCheck
+];

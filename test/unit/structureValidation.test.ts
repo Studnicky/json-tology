@@ -5,8 +5,8 @@ import assert from 'node:assert/strict';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
-describe('Structure Validation', () => {
-  it('detects inline nested object', () => {
+void describe('Structure Validation', () => {
+  void it('detects inline nested object', () => {
     const schema = {
       '$id': 'https://example.io/User',
       'properties': {
@@ -26,7 +26,7 @@ describe('Structure Validation', () => {
     assert.equal(warnings[0].path, '/properties/address');
   });
 
-  it('$ref is clean — no warnings', () => {
+  void it('$ref is clean — no warnings', () => {
     const schema = {
       '$id': 'https://example.io/User',
       'properties': {
@@ -41,7 +41,7 @@ describe('Structure Validation', () => {
     assert.equal(warnings.length, 0);
   });
 
-  it('$defs entries are exempt', () => {
+  void it('$defs entries are exempt', () => {
     const schema = {
       '$defs': {
         'Address': {
@@ -59,7 +59,7 @@ describe('Structure Validation', () => {
     assert.equal(warnings.length, 0);
   });
 
-  it('bare object without properties is exempt', () => {
+  void it('bare object without properties is exempt', () => {
     const schema = {
       '$id': 'https://example.io/User',
       'properties': { 'metadata': { 'type': 'object' } },
@@ -71,7 +71,7 @@ describe('Structure Validation', () => {
     assert.equal(warnings.length, 0);
   });
 
-  it('always throws on inline objects during registration', () => {
+  void it('always throws on inline objects during registration', () => {
     const registry = new SchemaRegistry();
 
     assert.throws(() => {
@@ -88,7 +88,7 @@ describe('Structure Validation', () => {
     }, /Structure validation failed/u);
   });
 
-  it('registration succeeds with proper $ref patterns', () => {
+  void it('registration succeeds with proper $ref patterns', () => {
     const registry = new SchemaRegistry();
     const AddressSchema = {
       '$id': 'https://example.io/Address',
@@ -109,7 +109,7 @@ describe('Structure Validation', () => {
     });
   });
 
-  it('deeply nested inline objects produce multiple warnings', () => {
+  void it('deeply nested inline objects produce multiple warnings', () => {
     const schema = {
       '$id': 'https://example.io/User',
       'properties': {
@@ -129,15 +129,15 @@ describe('Structure Validation', () => {
     const warnings = graph.validateStructure();
 
     assert.equal(warnings.length, 2);
-    assert.ok(warnings.some((w) => {
-      return w.path === '/properties/address';
+    assert.ok(warnings.some((warning) => {
+      return warning.path === '/properties/address';
     }));
-    assert.ok(warnings.some((w) => {
-      return w.path === '/properties/address/properties/city';
+    assert.ok(warnings.some((warning) => {
+      return warning.path === '/properties/address/properties/city';
     }));
   });
 
-  it('array items with inline object produces warning', () => {
+  void it('array items with inline object produces warning', () => {
     const schema = {
       '$id': 'https://example.io/UserList',
       'properties': {
@@ -158,7 +158,7 @@ describe('Structure Validation', () => {
     assert.equal(warnings[0].path, '/properties/users/items');
   });
 
-  it('inline object with its own $id is exempt', () => {
+  void it('inline object with its own $id is exempt', () => {
     const schema = {
       '$id': 'https://example.io/User',
       'properties': {

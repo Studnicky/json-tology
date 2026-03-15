@@ -37,8 +37,9 @@ const jt = new JsonTology({
 
 console.log('=== JSON-LD ===');
 const jsonld = jt.ontology().jsonLdObject();
+const graphJson = JSON.stringify(jsonld['@graph'], null, 2);
 
-console.log(JSON.stringify(jsonld['@graph'], null, 2));
+console.log(graphJson);
 
 console.log('\n=== FULL JSON-LD OUTPUT ===');
 console.log(jt.ontology().jsonLd());

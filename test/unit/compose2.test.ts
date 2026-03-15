@@ -31,32 +31,32 @@ const UserSchema = {
 // partial
 // ---------------------------------------------------------------------------
 
-describe('Compose.partial()', () => {
-  it('produces a schema with no required array', () => {
-    const s = Compose.partial(UserSchema, 'https://myapp.io/PartialUser');
+void describe('Compose.partial()', () => {
+  void it('produces a schema with no required array', () => {
+    const schema = Compose.partial(UserSchema, 'https://myapp.io/PartialUser');
 
-    assert.ok(!('required' in s));
+    assert.ok(!('required' in schema));
   });
 
-  it('preserves all properties', () => {
-    const s = Compose.partial(UserSchema, 'https://myapp.io/PartialUser');
+  void it('preserves all properties', () => {
+    const schema = Compose.partial(UserSchema, 'https://myapp.io/PartialUser');
 
-    assert.ok('id' in s.properties);
-    assert.ok('name' in s.properties);
+    assert.ok('id' in schema.properties);
+    assert.ok('name' in schema.properties);
   });
 
-  it('new $id is set', () => {
-    const s = Compose.partial(UserSchema, 'https://myapp.io/PartialUser');
+  void it('new $id is set', () => {
+    const schema = Compose.partial(UserSchema, 'https://myapp.io/PartialUser');
 
-    assert.equal(s.$id, 'https://myapp.io/PartialUser');
+    assert.equal(schema.$id, 'https://myapp.io/PartialUser');
   });
 
-  it('validates: formerly required fields are now optional', () => {
+  void it('validates: formerly required fields are now optional', () => {
     const reg = new SchemaRegistry();
-    const s = Compose.partial(UserSchema, 'https://myapp.io/PartialUser2');
+    const schema = Compose.partial(UserSchema, 'https://myapp.io/PartialUser2');
 
-    reg.register(s);
-    assert.equal(reg.validate(s.$id, {}).length, 0);
+    reg.register(schema);
+    assert.equal(reg.validate(schema.$id, {}).length, 0);
   });
 });
 
@@ -64,11 +64,11 @@ describe('Compose.partial()', () => {
 // required
 // ---------------------------------------------------------------------------
 
-describe('Compose.required()', () => {
-  it('makes every property required', () => {
-    const s = Compose.required(UserSchema, 'https://myapp.io/StrictUser');
+void describe('Compose.required()', () => {
+  void it('makes every property required', () => {
+    const schema = Compose.required(UserSchema, 'https://myapp.io/StrictUser');
 
-    assert.deepEqual([...s.required].sort(), [
+    assert.deepEqual([...schema.required].sort(), [
       'email',
       'id',
       'name',
@@ -76,20 +76,20 @@ describe('Compose.required()', () => {
     ].sort());
   });
 
-  it('validates: all fields required', () => {
+  void it('validates: all fields required', () => {
     const reg = new SchemaRegistry();
-    const s = Compose.required(UserSchema, 'https://myapp.io/StrictUser2');
+    const schema = Compose.required(UserSchema, 'https://myapp.io/StrictUser2');
 
-    reg.register(s);
+    reg.register(schema);
     // Missing email and role
-    const errs = reg.validate(s.$id, {
+    const errs = reg.validate(schema.$id, {
       'id': '1',
       'name': 'Alice'
     });
 
     assert.ok(errs.length > 0);
     // All present
-    const ok = reg.validate(s.$id, {
+    const ok = reg.validate(schema.$id, {
       'email': 'a@b.com',
       'id': '1',
       'name': 'Alice',
@@ -104,49 +104,50 @@ describe('Compose.required()', () => {
 // pick
 // ---------------------------------------------------------------------------
 
-describe('Compose.pick()', () => {
-  it('retains only picked properties', () => {
-    const s = Compose.pick(UserSchema, [
+void describe('Compose.pick()', () => {
+  void it('retains only picked properties', () => {
+    const schema = Compose.pick(UserSchema, [
       'id',
       'name'
     ] as const, 'https://myapp.io/UserSummary');
 
-    assert.ok('id' in s.properties);
-    assert.ok('name' in s.properties);
-    assert.ok(!('email' in s.properties));
+    assert.ok('id' in schema.properties);
+    assert.ok('name' in schema.properties);
+    assert.ok(!('email' in schema.properties));
   });
 
-  it('preserves required status of picked fields', () => {
-    const s = Compose.pick(UserSchema, [
+  void it('preserves required status of picked fields', () => {
+    const schema = Compose.pick(UserSchema, [
       'id',
       'name'
     ] as const, 'https://myapp.io/UserSummary2');
 
-    assert.deepEqual([...s.required].sort(), [
+    assert.deepEqual([...schema.required].sort(), [
       'id',
       'name'
     ].sort());
   });
 
-  it('does not include required for non-required picked fields', () => {
-    const s = Compose.pick(UserSchema, ['email'] as const, 'https://myapp.io/EmailOnly');
+  void it('does not include required for non-required picked fields', () => {
+    const schema = Compose.pick(UserSchema, ['email'] as const, 'https://myapp.io/EmailOnly');
 
-    assert.ok(!('required' in s) || s.required.length === 0);
+    assert.ok(!('required' in schema) || schema.required.length === 0);
   });
 
-  it('validates correctly', () => {
+  void it('validates correctly', () => {
     const reg = new SchemaRegistry();
-    const s = Compose.pick(UserSchema, [
+    const schema = Compose.pick(UserSchema, [
       'id',
       'name'
     ] as const, 'https://myapp.io/UserSummary3');
 
-    reg.register(s);
-    assert.equal(reg.validate(s.$id, {
+    reg.register(schema);
+    assert.equal(reg.validate(schema.$id, {
       'id': '1',
       'name': 'Alice'
     }).length, 0);
-    assert.ok(reg.validate(s.$id, { 'name': 'Alice' }).length > 0); // id missing
+    // id missing
+    assert.ok(reg.validate(schema.$id, { 'name': 'Alice' }).length > 0);
   });
 });
 
@@ -154,34 +155,34 @@ describe('Compose.pick()', () => {
 // omit
 // ---------------------------------------------------------------------------
 
-describe('Compose.omit()', () => {
-  it('removes omitted properties', () => {
-    const s = Compose.omit(UserSchema, [
+void describe('Compose.omit()', () => {
+  void it('removes omitted properties', () => {
+    const schema = Compose.omit(UserSchema, [
       'email',
       'role'
     ] as const, 'https://myapp.io/PublicUser');
 
-    assert.ok(!('email' in s.properties));
-    assert.ok(!('role' in s.properties));
-    assert.ok('id' in s.properties);
+    assert.ok(!('email' in schema.properties));
+    assert.ok(!('role' in schema.properties));
+    assert.ok('id' in schema.properties);
   });
 
-  it('removes omitted required fields', () => {
-    const s = Compose.omit(UserSchema, ['id'] as const, 'https://myapp.io/NoId');
+  void it('removes omitted required fields', () => {
+    const schema = Compose.omit(UserSchema, ['id'] as const, 'https://myapp.io/NoId');
 
-    assert.ok(!s.required.includes('id'));
-    assert.ok(s.required.includes('name'));
+    assert.ok(!schema.required.includes('id'));
+    assert.ok(schema.required.includes('name'));
   });
 
-  it('validates correctly', () => {
+  void it('validates correctly', () => {
     const reg = new SchemaRegistry();
-    const s = Compose.omit(UserSchema, [
+    const schema = Compose.omit(UserSchema, [
       'email',
       'role'
     ] as const, 'https://myapp.io/PublicUser2');
 
-    reg.register(s);
-    assert.equal(reg.validate(s.$id, {
+    reg.register(schema);
+    assert.equal(reg.validate(schema.$id, {
       'id': '1',
       'name': 'Alice'
     }).length, 0);
@@ -192,7 +193,7 @@ describe('Compose.omit()', () => {
 // narrow
 // ---------------------------------------------------------------------------
 
-const CircleSchema = {
+const _CircleSchema = {
   '$id': 'Circle',
   'properties': {
     'kind': { 'const': 'circle' },
@@ -200,7 +201,7 @@ const CircleSchema = {
   },
   'type': 'object'
 } as const;
-const RectSchema = {
+const _RectSchema = {
   '$id': 'Rect',
   'properties': {
     'kind': { 'const': 'rect' },
@@ -215,29 +216,35 @@ interface Rect { 'kind': 'rect';
   'width': number }
 type Shape = Circle | Rect;
 
-describe('Compose.narrow()', () => {
-  it('returns true when discriminant matches', () => {
+void describe('Compose.narrow()', () => {
+  void it('returns true when discriminant matches', () => {
     const shape: Shape = {
       'kind': 'circle',
       'radius': 5
     };
+    const matched = Compose.narrow(shape, 'kind', 'circle');
 
-    assert.equal(Compose.narrow(shape, 'kind', 'circle'), true);
+    assert.equal(matched, true);
   });
 
-  it('returns false when discriminant does not match', () => {
+  void it('returns false when discriminant does not match', () => {
     const shape: Shape = {
       'kind': 'rect',
       'width': 10
     };
+    const matched = Compose.narrow(shape, 'kind', 'circle');
 
-    assert.equal(Compose.narrow(shape, 'kind', 'circle'), false);
+    assert.equal(matched, false);
   });
 
-  it('returns false for non-objects', () => {
-    assert.equal(Compose.narrow(null, 'kind', 'circle'), false);
-    assert.equal(Compose.narrow(undefined, 'kind', 'circle'), false);
-    assert.equal(Compose.narrow('string', 'kind', 'circle'), false);
+  void it('returns false for non-objects', () => {
+    const nullResult = Compose.narrow(null, 'kind', 'circle');
+    const undefinedResult = Compose.narrow(undefined, 'kind', 'circle');
+    const stringResult = Compose.narrow('string', 'kind', 'circle');
+
+    assert.equal(nullResult, false);
+    assert.equal(undefinedResult, false);
+    assert.equal(stringResult, false);
   });
 });
 
@@ -247,8 +254,8 @@ describe('Compose.narrow()', () => {
 
 import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
-describe('ValidationErrors.format()', () => {
-  it('groups errors by path', () => {
+void describe('ValidationErrors.format()', () => {
+  void it('groups errors by path', () => {
     const errs = new ValidationErrors([
       {
         'keyword': 'type',
@@ -278,7 +285,7 @@ describe('ValidationErrors.format()', () => {
     assert.deepEqual(fmt['/email'], ['invalid format']);
   });
 
-  it('keys root-level errors as _root', () => {
+  void it('keys root-level errors as _root', () => {
     const errs = new ValidationErrors([{
       'keyword': 'type',
       'message': 'must be object',
@@ -290,8 +297,8 @@ describe('ValidationErrors.format()', () => {
   });
 });
 
-describe('ValidationErrors.flatten()', () => {
-  it('separates field errors from form errors', () => {
+void describe('ValidationErrors.flatten()', () => {
+  void it('separates field errors from form errors', () => {
     const errs = new ValidationErrors([
       {
         'keyword': 'type',
@@ -315,12 +322,12 @@ describe('ValidationErrors.flatten()', () => {
   });
 });
 
-describe('ValidationErrors misc', () => {
-  it('.ok is true when empty', () => {
+void describe('ValidationErrors misc', () => {
+  void it('.ok is true when empty', () => {
     assert.equal(new ValidationErrors([]).ok, true);
   });
 
-  it('.ok is false when errors present', () => {
+  void it('.ok is false when errors present', () => {
     assert.equal(new ValidationErrors([{
       'keyword': 'k',
       'message': 'x',
@@ -329,7 +336,7 @@ describe('ValidationErrors misc', () => {
     }]).ok, false);
   });
 
-  it('is iterable', () => {
+  void it('is iterable', () => {
     const items = [{
       'keyword': 'k',
       'message': 'x',
@@ -342,7 +349,7 @@ describe('ValidationErrors misc', () => {
     assert.deepEqual(collected, items);
   });
 
-  it('.messages() returns prefixed strings', () => {
+  void it('.messages() returns prefixed strings', () => {
     const errs = new ValidationErrors([
       {
         'keyword': 'type',

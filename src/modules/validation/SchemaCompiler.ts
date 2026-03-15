@@ -12,8 +12,10 @@ import type { ValidationErrorType } from '../../types/validation.js';
 import type {
   CompiledValidateOptionsInterface, CompiledValidationResultInterface, CompiledValidatorInterface
 } from '../../interfaces/compiler.js';
-import type { GraphEngine } from '../graph/GraphEngine.js';
-import type { FormatRegistry } from '../format/FormatRegistry.js';
+import type { SchemaCompilerInterface } from '../../interfaces/schema-compiler-impl.js';
+import type { FormatRegistryInterface } from '../../interfaces/format-registry.js';
+import type { GraphEngineInterface } from '../../interfaces/graph-engine-impl.js';
+import type { SchemaGraphInterface } from '../../interfaces/schema-graph-impl.js';
 import type {
   KeywordContextInterface, KeywordDefinitionInterface
 } from '../../interfaces/graph-engine.js';
@@ -137,7 +139,7 @@ function coerceValue(types: string[], value: unknown): unknown {
 // SchemaCompiler
 // ---------------------------------------------------------------------------
 
-export class SchemaCompiler {
+export class SchemaCompiler implements SchemaCompilerInterface {
   private activeCustomKeywords: KeywordDefinitionInterface[] = [];
   private readonly compilingNodes = new Set<SchemaGraphNodeInterface>();
   public readonly lookupCompiled: ((schemaId: string) => CompiledValidatorInterface | undefined) | undefined;
@@ -148,7 +150,7 @@ export class SchemaCompiler {
     this.lookupCompiled = options?.lookupCompiled;
   }
 
-  public compile(engine: GraphEngine): CompiledValidatorInterface {
+  public compile(engine: GraphEngineInterface): CompiledValidatorInterface {
     const rootSchema = engine.rootSchema;
 
     if (typeof rootSchema === 'boolean') {
@@ -208,7 +210,7 @@ export class SchemaCompiler {
     }
   }
 
-  private compileBooleanSchema(schema: boolean, _engine: GraphEngine): CompiledValidatorInterface {
+  private compileBooleanSchema(schema: boolean, _engine: GraphEngineInterface): CompiledValidatorInterface {
     if (schema) {
       return {
         'check': () => {
@@ -246,8 +248,8 @@ export class SchemaCompiler {
    */
   private compileCheck(
     schema: Record<string, unknown>,
-    formatRegistry: FormatRegistry,
-    graph: SchemaGraph,
+    formatRegistry: FormatRegistryInterface,
+    graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
   ): CheckFnType {
     const graphNode = graph.node(schema);
@@ -267,8 +269,8 @@ export class SchemaCompiler {
 
   private compileNodeArrayCheck(
     graphNode: SchemaGraphNodeInterface,
-    formatRegistry: FormatRegistry,
-    graph: SchemaGraph,
+    formatRegistry: FormatRegistryInterface,
+    graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
   ): CheckFnType | undefined {
     const sem = graph.semantics(graphNode);
@@ -382,8 +384,8 @@ export class SchemaCompiler {
    */
   private compileNodeCheck(
     graphNode: SchemaGraphNodeInterface,
-    formatRegistry: FormatRegistry,
-    graph: SchemaGraph,
+    formatRegistry: FormatRegistryInterface,
+    graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
   ): CheckFnType {
     this.compilingNodes.add(graphNode);
@@ -401,8 +403,8 @@ export class SchemaCompiler {
 
   private compileNodeCheckInner(
     graphNode: SchemaGraphNodeInterface,
-    formatRegistry: FormatRegistry,
-    graph: SchemaGraph,
+    formatRegistry: FormatRegistryInterface,
+    graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
   ): CheckFnType {
     // Try fast-path for simple typed objects
@@ -775,8 +777,8 @@ export class SchemaCompiler {
 
   private compileNodeObjectCheck(
     graphNode: SchemaGraphNodeInterface,
-    formatRegistry: FormatRegistry,
-    graph: SchemaGraph,
+    formatRegistry: FormatRegistryInterface,
+    graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
   ): CheckFnType | undefined {
     const sem = graph.semantics(graphNode);
@@ -907,8 +909,8 @@ export class SchemaCompiler {
 
   private compileNodeOrBooleanCheck(
     node: SchemaGraphNodeInterface,
-    formatRegistry: FormatRegistry,
-    graph: SchemaGraph,
+    formatRegistry: FormatRegistryInterface,
+    graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
   ): CheckFnType {
     if (typeof node.schema === 'boolean') {
@@ -926,8 +928,8 @@ export class SchemaCompiler {
 
   private compileNodeOrBooleanValidateWithErrors(
     node: SchemaGraphNodeInterface,
-    formatRegistry: FormatRegistry,
-    graph: SchemaGraph,
+    formatRegistry: FormatRegistryInterface,
+    graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
   ): ValidateWithErrorsFnType {
     if (typeof node.schema === 'boolean') {
@@ -958,8 +960,8 @@ export class SchemaCompiler {
    */
   private compileNodeValidateWithErrors(
     graphNode: SchemaGraphNodeInterface,
-    formatRegistry: FormatRegistry,
-    graph: SchemaGraph,
+    formatRegistry: FormatRegistryInterface,
+    graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
   ): ValidateWithErrorsFnType {
     const sem = graph.semantics(graphNode);
@@ -2198,8 +2200,8 @@ export class SchemaCompiler {
 
   private compileRefCheck(
     ref: string,
-    formatRegistry: FormatRegistry,
-    graph: SchemaGraph,
+    formatRegistry: FormatRegistryInterface,
+    graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
   ): CheckFnType | undefined {
     // Local fragment refs — resolve via graph
@@ -2299,7 +2301,7 @@ export class SchemaCompiler {
     maxLength: number | undefined,
     pattern: string | undefined,
     format: string | undefined,
-    formatRegistry: FormatRegistry,
+    formatRegistry: FormatRegistryInterface,
     sem: SchemaGraphSemanticsInterface
   ): CheckFnType | undefined {
     const checks: Array<(v: string) => boolean> = [];
@@ -2421,8 +2423,8 @@ export class SchemaCompiler {
 
   private compileValidate(
     schema: Record<string, unknown>,
-    formatRegistry: FormatRegistry,
-    graph: SchemaGraph,
+    formatRegistry: FormatRegistryInterface,
+    graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
   ): (data: unknown, options?: CompiledValidateOptionsInterface) => CompiledValidationResultInterface {
     const validateWithErrors = this.compileValidateWithErrors(schema, formatRegistry, graph, lookupSchema);
@@ -2486,8 +2488,8 @@ export class SchemaCompiler {
    */
   private compileValidateWithErrors(
     schema: Record<string, unknown>,
-    formatRegistry: FormatRegistry,
-    graph: SchemaGraph,
+    formatRegistry: FormatRegistryInterface,
+    graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
   ): ValidateWithErrorsFnType {
     const graphNode = graph.node(schema);
@@ -2504,7 +2506,7 @@ export class SchemaCompiler {
     return this.compileNodeValidateWithErrors(graphNode, formatRegistry, graph, lookupSchema);
   }
 
-  private engineFallback(engine: GraphEngine): CompiledValidatorInterface {
+  private engineFallback(engine: GraphEngineInterface): CompiledValidatorInterface {
     return {
       'check': (data: unknown): boolean => {
         return engine.execute(data, '', { 'collectErrors': false }).valid;
@@ -2552,14 +2554,14 @@ export class SchemaCompiler {
   }
 
   private needsEngineFallback(
-    graph: SchemaGraph,
+    graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
   ): boolean {
     return this.nodeHasUnsupported(graph, graph.rootNode, lookupSchema, new Set());
   }
 
   private nodeHasUnsupported(
-    graph: SchemaGraph,
+    graph: SchemaGraphInterface,
     node: SchemaGraphNodeInterface,
     lookupSchema: ((id: string) => Record<string, unknown> | undefined) | undefined,
     visited: Set<SchemaGraphNodeInterface>
@@ -2662,7 +2664,7 @@ export class SchemaCompiler {
    */
   private resolveImplicitDefault(
     node: SchemaGraphNodeInterface,
-    graph: SchemaGraph,
+    graph: SchemaGraphInterface,
     lookupSchema: ((id: string) => Record<string, unknown> | undefined) | undefined,
     visited: Set<unknown>
   ): unknown {
@@ -2767,8 +2769,8 @@ export class SchemaCompiler {
    */
   private tryCompileNodeFlatObjectCheck(
     graphNode: SchemaGraphNodeInterface,
-    formatRegistry: FormatRegistry,
-    graph: SchemaGraph,
+    formatRegistry: FormatRegistryInterface,
+    graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
   ): CheckFnType | undefined {
     const sem = graph.semantics(graphNode);

@@ -51,8 +51,8 @@ function nextType(): SchemaType {
   return TYPES[typeIdx++ % TYPES.length];
 }
 
-function nextValue(t: SchemaType): unknown {
-  return VALUES[t];
+function nextValue(schemaType: SchemaType): unknown {
+  return VALUES[schemaType];
 }
 
 // ---------------------------------------------------------------------------
@@ -106,34 +106,38 @@ function dispatchSwitch(type: string, value: unknown): string {
 // 3. Object dispatch table (pre-defined functions, stable references)
 // ---------------------------------------------------------------------------
 
-const TYPE_CHECK: Record<string, (v: unknown) => boolean> = {
-  'array': (v) => {
-    return Array.isArray(v);
-  },
-  'boolean': (v) => {
-    return typeof v === 'boolean';
-  },
-  'integer': (v) => {
-    return typeof v === 'number' && Number.isInteger(v);
-  },
-  'null': (v) => {
-    return v === null;
-  },
-  'number': (v) => {
-    return typeof v === 'number';
-  },
-  'object': (v) => {
-    return typeof v === 'object' && v !== null && !Array.isArray(v);
-  },
-  'string': (v) => {
-    return typeof v === 'string';
-  }
-};
+const TYPE_CHECK = new Map<string, (val: unknown) => boolean>();
+
+TYPE_CHECK.set('array', (val) => {
+  return Array.isArray(val);
+});
+TYPE_CHECK.set('boolean', (val) => {
+  return typeof val === 'boolean';
+});
+TYPE_CHECK.set('integer', (val) => {
+  return typeof val === 'number' && Number.isInteger(val);
+});
+TYPE_CHECK.set('null', (val) => {
+  return val === null;
+});
+TYPE_CHECK.set('number', (val) => {
+  return typeof val === 'number';
+});
+TYPE_CHECK.set('object', (val) => {
+  return typeof val === 'object' && val !== null && !Array.isArray(val);
+});
+TYPE_CHECK.set('string', (val) => {
+  return typeof val === 'string';
+});
 
 function dispatchTable(type: string, value: unknown): string {
-  const fn = TYPE_CHECK[type];
+  const fn = TYPE_CHECK.get(type);
 
-  return fn ? (fn(value) ? 'ok' : 'fail') : 'unknown';
+  if (fn === undefined) {
+    return 'unknown';
+  }
+
+  return fn(value) ? 'ok' : 'fail';
 }
 
 // ---------------------------------------------------------------------------
@@ -149,20 +153,20 @@ const sampleObj = {
 };
 
 // Simulates the current generated JIT check style (sequential per-prop ifs)
-function checkSequential(v: Record<string, unknown>): boolean {
-  if (typeof v.id !== 'number' || !Number.isInteger(v.id)) {
+function checkSequential(obj: Record<string, unknown>): boolean {
+  if (typeof obj.id !== 'number' || !Number.isInteger(obj.id)) {
     return false;
   }
-  if (typeof v.name !== 'string') {
+  if (typeof obj.name !== 'string') {
     return false;
   }
-  if (typeof v.email !== 'string') {
+  if (typeof obj.email !== 'string') {
     return false;
   }
-  if (typeof v.age !== 'number' || !Number.isInteger(v.age)) {
+  if (typeof obj.age !== 'number' || !Number.isInteger(obj.age)) {
     return false;
   }
-  if (typeof v.active !== 'boolean') {
+  if (typeof obj.active !== 'boolean') {
     return false;
   }
 
@@ -170,23 +174,23 @@ function checkSequential(v: Record<string, unknown>): boolean {
 }
 
 // Dispatch table approach: property handlers pre-compiled, loop over props
-const PROP_CHECKS: Record<string, (v: unknown) => boolean> = {
-  'active': (v) => {
-    return typeof v === 'boolean';
-  },
-  'age': (v) => {
-    return typeof v === 'number' && Number.isInteger(v);
-  },
-  'email': (v) => {
-    return typeof v === 'string';
-  },
-  'id': (v) => {
-    return typeof v === 'number' && Number.isInteger(v);
-  },
-  'name': (v) => {
-    return typeof v === 'string';
-  }
-};
+const PROP_CHECKS = new Map<string, (val: unknown) => boolean>();
+
+PROP_CHECKS.set('active', (val) => {
+  return typeof val === 'boolean';
+});
+PROP_CHECKS.set('age', (val) => {
+  return typeof val === 'number' && Number.isInteger(val);
+});
+PROP_CHECKS.set('email', (val) => {
+  return typeof val === 'string';
+});
+PROP_CHECKS.set('id', (val) => {
+  return typeof val === 'number' && Number.isInteger(val);
+});
+PROP_CHECKS.set('name', (val) => {
+  return typeof val === 'string';
+});
 const REQUIRED_KEYS = [
   'id',
   'name',
@@ -195,19 +199,20 @@ const REQUIRED_KEYS = [
   'active'
 ];
 
-function checkDispatch(v: Record<string, unknown>): boolean {
-  for (const k in v) {
-    const fn = PROP_CHECKS[k];
+function checkDispatch(obj: Record<string, unknown>): boolean {
+  for (const key in obj) {
+    const fn = PROP_CHECKS.get(key);
 
-    if (!fn) {
+    // additionalProperties: false
+    if (fn === undefined) {
       return false;
-    } // additionalProperties: false
-    if (!fn(v[k])) {
+    }
+    if (!fn(obj[key])) {
       return false;
     }
   }
   for (const REQUIRED_KEY of REQUIRED_KEYS) {
-    if (v[REQUIRED_KEY] === undefined) {
+    if (obj[REQUIRED_KEY] === undefined) {
       return false;
     }
   }
@@ -221,60 +226,74 @@ function checkDispatch(v: Record<string, unknown>): boolean {
 
 section('Type dispatch: if/else vs switch vs table  (cycling all 7 types)');
 
-results.push(bench('if/else chain', 'pattern', () => {
-  const t = nextType();
+const ifelseResult = bench('if/else chain', 'pattern', () => {
+  const schemaType = nextType();
 
-  dispatchIfElse(t, nextValue(t));
-}));
+  dispatchIfElse(schemaType, nextValue(schemaType));
+});
 
-results.push(bench('switch stmt  ', 'pattern', () => {
-  const t = nextType();
+results.push(ifelseResult);
 
-  dispatchSwitch(t, nextValue(t));
-}));
+const switchResult = bench('switch stmt  ', 'pattern', () => {
+  const schemaType = nextType();
 
-results.push(bench('dispatch table', 'pattern', () => {
-  const t = nextType();
+  dispatchSwitch(schemaType, nextValue(schemaType));
+});
 
-  dispatchTable(t, nextValue(t));
-}));
+results.push(switchResult);
+
+const tableResult = bench('dispatch table', 'pattern', () => {
+  const schemaType = nextType();
+
+  dispatchTable(schemaType, nextValue(schemaType));
+});
+
+results.push(tableResult);
 
 section('Property checking: sequential ifs vs for-in + dispatch table');
 
-results.push(bench('sequential ifs', 'pattern', () => {
+const seqResult = bench('sequential ifs', 'pattern', () => {
   checkSequential(sampleObj);
-}));
-results.push(bench('dispatch table ', 'pattern', () => {
+});
+
+results.push(seqResult);
+
+const dispResult = bench('dispatch table ', 'pattern', () => {
   checkDispatch(sampleObj);
-}));
+});
+
+results.push(dispResult);
 
 // Monomorphic case — always same type (best case for V8 specialization)
 section('Monomorphic dispatch (always "number") — best case for each approach');
 
-results.push(bench('if/else mono  ', 'pattern', () => {
+const monoIfelseResult = bench('if/else mono  ', 'pattern', () => {
   dispatchIfElse('number', 42);
-}));
-results.push(bench('switch mono   ', 'pattern', () => {
+});
+
+results.push(monoIfelseResult);
+
+const monoSwitchResult = bench('switch mono   ', 'pattern', () => {
   dispatchSwitch('number', 42);
-}));
-results.push(bench('table  mono   ', 'pattern', () => {
+});
+
+results.push(monoSwitchResult);
+
+const monoTableResult = bench('table  mono   ', 'pattern', () => {
   dispatchTable('number', 42);
-}));
+});
+
+results.push(monoTableResult);
 
 printResults(results);
 
 console.log('Winner:');
-const [
-  ifelse,
-  sw,
-  table
-] = results;
 const fastest = [
-  ifelse,
-  sw,
-  table
-].sort((a, b) => {
-  return b.opsPerSec - a.opsPerSec;
+  ifelseResult,
+  switchResult,
+  tableResult
+].sort((first, second) => {
+  return second.opsPerSec - first.opsPerSec;
 })[0];
 
 console.log(`  Polymorphic: ${fastest.name.trim()} wins`);

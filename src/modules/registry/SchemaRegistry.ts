@@ -5,14 +5,14 @@
  * pointer-based sub-schema execution.
  */
 
-import {
-  BaseError, ParseError, SchemaError
-} from '../../errors/index.js';
+import { BaseError } from '../../errors/BaseError.js';
+import { ParseError } from '../../errors/ParseError.js';
+import { SchemaError } from '../../errors/SchemaError.js';
 import { ValidationErrors } from '../../errors/ValidationErrors.js';
 import { Transform } from '../transform/Transform.js';
 import type { CompiledValidatorInterface } from '../../interfaces/compiler.js';
 import type { KeywordDefinitionInterface } from '../../interfaces/graph-engine.js';
-import type { FormatRegistry } from '../format/FormatRegistry.js';
+import type { FormatRegistryInterface } from '../../interfaces/format-registry.js';
 import { GraphEngine } from '../graph/GraphEngine.js';
 import { Hash } from '../hash/Hash.js';
 import { Materializer } from '../materialization/Materializer.js';
@@ -20,6 +20,7 @@ import { SchemaGraph } from '../graph/SchemaGraph.js';
 import { SchemaCompiler } from '../validation/SchemaCompiler.js';
 import type { LoggerInterface } from '../../interfaces/logger.js';
 import type { RegistryOptionsInterface } from '../../interfaces/registry.js';
+import type { SchemaRegistryInterface } from '../../interfaces/schema-registry.js';
 import { Logger } from '../logger/Logger.js';
 
 
@@ -34,11 +35,11 @@ interface SchemaRegistryEntryInterface {
   'schema': Record<string, unknown>;
 }
 
-export class SchemaRegistry {
+export class SchemaRegistry implements SchemaRegistryInterface {
   public readonly coerce: boolean;
 
   private readonly compiler: SchemaCompiler;
-  private readonly formatRegistry: FormatRegistry | undefined;
+  private readonly formatRegistry: FormatRegistryInterface | undefined;
   private readonly keywords: KeywordDefinitionInterface[] | undefined;
   private readonly logger: LoggerInterface;
   private readonly schemaHashes = new Map<string, string>();
@@ -363,14 +364,9 @@ export class SchemaRegistry {
       this.logger.warn(`Schema content already registered under different ID: existing="${existingId}" new="${schemaId}"`);
     }
 
-    this.schemas.set(schemaId, {
-      hash,
-      schema
-    });
-    this.schemaHashes.set(hash, schemaId);
-    this.logger.trace(`Schema registered: ${schemaId}`);
-
-    const graph = this.graphOf(this.schemas.get(schemaId) as SchemaRegistryEntryInterface);
+    // Validate structure BEFORE committing to maps — failed registration must be a no-op
+    const entry: SchemaRegistryEntryInterface = { hash, schema };
+    const graph = this.graphOf(entry);
     const warnings = graph.validateStructure();
 
     if (warnings.length > 0) {
@@ -382,6 +378,10 @@ export class SchemaRegistry {
         schemaId
       );
     }
+
+    this.schemas.set(schemaId, entry);
+    this.schemaHashes.set(hash, schemaId);
+    this.logger.trace(`Schema registered: ${schemaId}`);
   }
 
   private resolveSchemaId(schemaOrId: (Record<string, unknown> & { '$id': string; }) | string): string {

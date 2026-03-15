@@ -2,18 +2,19 @@ import type { GraphExecutionResultInterface } from '../../interfaces/graph-engin
 import type {
   MaterializationResultInterface, MaterializerOptionsInterface
 } from '../../interfaces/materializer.js';
+import type { MaterializerInterface } from '../../interfaces/materializer-impl.js';
 import type { SchemaGraphNodeInterface } from '../../interfaces/schema-graph.js';
-import type { QuadInterface } from '../rdf/Quad.js';
+import type { QuadInterface } from '../../interfaces/quad.js';
+import type { SchemaGraphInterface } from '../../interfaces/schema-graph-impl.js';
+import type { SchemaRegistryInterface } from '../../interfaces/schema-registry.js';
 import type { InferSchemaType } from '../../types/infer.js';
 import type { JSONSchema7Definition as JSONSchemaType } from 'json-schema';
-import {
-  BaseError, MaterializationError
-} from '../../errors/index.js';
+import { BaseError } from '../../errors/BaseError.js';
+import { MaterializationError } from '../../errors/MaterializationError.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { isRecord } from '../data/DataTypes.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
 import { projectAbox as projectAboxQuads } from '../rdf/Projection.js';
-import type { SchemaRegistry } from '../registry/SchemaRegistry.js';
 
 const isObject = isRecord;
 
@@ -36,11 +37,11 @@ const isObject = isRecord;
  * which generates zero values for required properties without explicit defaults
  * instead of reporting validation errors. This is `materialize(schema)` with no args.
  */
-export class Materializer {
+export class Materializer implements MaterializerInterface {
   private readonly graphCache = new WeakMap<object, SchemaGraph>();
 
   public constructor(
-    private readonly registry: SchemaRegistry,
+    private readonly registry: SchemaRegistryInterface,
     private readonly options: MaterializerOptionsInterface = {}
   ) {}
 
@@ -60,10 +61,14 @@ export class Materializer {
     options?: { 'baseIRI'?: string;
       'synthesizeDefaults'?: boolean }
   ): MaterializationResultInterface {
-    return this.run(schema, data, options?.baseIRI, options?.synthesizeDefaults === true);
+    const baseIRI = options?.baseIRI;
+    const synthesize = options?.synthesizeDefaults === true;
+    const runResult = this.run(schema, data, baseIRI, synthesize);
+
+    return runResult;
   }
   private fillImplicitProperties(
-    graph: SchemaGraph,
+    graph: SchemaGraphInterface,
     node: SchemaGraphNodeInterface,
     value: unknown
   ): void {
@@ -164,12 +169,18 @@ export class Materializer {
     return result.abox;
   }
 
-  private projectAboxFromExecution(execution: GraphExecutionResultInterface, materialized: unknown, baseIRI: string): QuadInterface[] {
-    return projectAboxQuads(execution.graph, materialized, baseIRI, execution.entryNode);
+  private projectAboxFromExecution(
+    execution: GraphExecutionResultInterface,
+    materialized: unknown,
+    baseIRI: string
+  ): QuadInterface[] {
+    const quads = projectAboxQuads(execution.graph, materialized, baseIRI, execution.entryNode);
+
+    return quads;
   }
 
   private resolveGraphTargetNode(
-    graph: SchemaGraph,
+    graph: SchemaGraphInterface,
     schemaNode: SchemaGraphNodeInterface
   ): SchemaGraphNodeInterface {
     const semantics = graph.semantics(schemaNode);
@@ -226,8 +237,12 @@ export class Materializer {
       ? structuredClone(execution.value)
       : this.materializeResult(execution);
 
+    const abox = baseIRI === undefined
+      ? []
+      : this.projectAboxFromExecution(execution, materialized, baseIRI);
+
     return {
-      'abox': baseIRI === undefined ? [] : this.projectAboxFromExecution(execution, materialized, baseIRI),
+      abox,
       'errors': this.formatErrors(execution),
       'valid': execution.valid,
       'value': materialized

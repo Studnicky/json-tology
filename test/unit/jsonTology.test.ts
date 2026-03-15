@@ -1,5 +1,5 @@
 /**
- * JsonTology — integration tests
+ * JsonTology -- integration tests
  */
 
 import {
@@ -69,32 +69,32 @@ const DirectorySchema = {
 // Construction + Registration
 // ---------------------------------------------------------------------------
 
-describe('JsonTology construction and registration', () => {
-  it('constructs with and without schemas, exposes registry and materializer', () => {
+void describe('JsonTology construction and registration', () => {
+  void it('constructs with and without schemas, exposes registry and materializer', () => {
     const jt = JsonTology.create({
       'baseIRI': 'https://myapp.io',
       'schemas': [UserSchema]
     });
 
     assert.ok(jt instanceof JsonTology);
-    assert.ok(jt.registry);
-    assert.ok(jt.materializer);
-    assert.ok(jt.get(UserSchema.$id));
+    assert.ok(typeof jt.registry === 'object');
+    assert.ok(typeof jt.materializer === 'object');
+    assert.ok(jt.get(UserSchema.$id) !== undefined);
 
     const empty = JsonTology.create({ 'baseIRI': 'https://myapp.io' });
 
     assert.ok(empty instanceof JsonTology);
   });
 
-  it('registers single schemas, arrays, and is fluent', () => {
+  void it('registers single schemas, arrays, and is fluent', () => {
     const jt = JsonTology.create({ 'baseIRI': 'https://myapp.io' });
     const result = jt.register(UserSchema);
 
     assert.strictEqual(result, jt);
-    assert.ok(jt.get(UserSchema.$id));
+    assert.ok(jt.get(UserSchema.$id) !== undefined);
 
     jt.register([RoleSchema]);
-    assert.ok(jt.get(RoleSchema.$id));
+    assert.ok(jt.get(RoleSchema.$id) !== undefined);
   });
 });
 
@@ -102,8 +102,8 @@ describe('JsonTology construction and registration', () => {
 // Validation
 // ---------------------------------------------------------------------------
 
-describe('JsonTology.validate(), errors(), parse(), is()', () => {
-  it('validate returns empty for valid, errors for invalid/missing required', () => {
+void describe('JsonTology.validate(), errors(), parse(), is()', () => {
+  void it('validate returns empty for valid, errors for invalid/missing required', () => {
     const jt = JsonTology.create({
       'baseIRI': 'https://myapp.io',
       'schemas': [UserSchema]
@@ -120,7 +120,7 @@ describe('JsonTology.validate(), errors(), parse(), is()', () => {
     assert.ok(jt.validate(UserSchema.$id, { 'name': 'Alice' }).length > 0);
   });
 
-  it('errors() returns ValidationErrors with items or empty', () => {
+  void it('errors() returns ValidationErrors with items or empty', () => {
     const jt = JsonTology.create({
       'baseIRI': 'https://myapp.io',
       'schemas': [UserSchema]
@@ -141,7 +141,7 @@ describe('JsonTology.validate(), errors(), parse(), is()', () => {
     assert.equal(ok.ok, true);
   });
 
-  it('parse() returns data with defaults, throws on invalid', () => {
+  void it('parse() returns data with defaults, throws on invalid', () => {
     const jt = JsonTology.create({
       'baseIRI': 'https://myapp.io',
       'schemas': [UserSchema]
@@ -158,7 +158,7 @@ describe('JsonTology.validate(), errors(), parse(), is()', () => {
     });
   });
 
-  it('is() returns true/false for valid/invalid', () => {
+  void it('is() returns true/false for valid/invalid', () => {
     const jt = JsonTology.create({
       'baseIRI': 'https://myapp.io',
       'schemas': [UserSchema]
@@ -176,8 +176,8 @@ describe('JsonTology.validate(), errors(), parse(), is()', () => {
 // Materialization
 // ---------------------------------------------------------------------------
 
-describe('JsonTology.materialize()', () => {
-  it('materializes with defaults and merges provided values', () => {
+void describe('JsonTology.materialize()', () => {
+  void it('materializes with defaults and merges provided values', () => {
     const jt = JsonTology.create({ 'baseIRI': 'https://myapp.io' });
 
     const user1 = jt.materialize(UserSchema, { 'email': 'a@b.com' });
@@ -198,20 +198,20 @@ describe('JsonTology.materialize()', () => {
 // Ontology
 // ---------------------------------------------------------------------------
 
-describe('JsonTology.ontology()', () => {
-  it('returns OntologyBuilder with jsonLd, jsonLdObject, and raw methods', () => {
+void describe('JsonTology.ontology()', () => {
+  void it('returns OntologyBuilder with jsonLd, jsonLdObject, and raw methods', () => {
     const jt = JsonTology.create({
       'baseIRI': 'https://myapp.io',
       'schemas': [UserSchema]
     });
-    const o = jt.ontology();
+    const onto = jt.ontology();
 
-    assert.ok(typeof o.jsonLd === 'function');
-    assert.ok(typeof o.jsonLdObject === 'function');
-    assert.ok(typeof o.raw === 'function');
+    assert.ok(typeof onto.jsonLd === 'function');
+    assert.ok(typeof onto.jsonLdObject === 'function');
+    assert.ok(typeof onto.raw === 'function');
   });
 
-  it('jsonLdObject includes standard prefixes in context, merges custom prefixes', () => {
+  void it('jsonLdObject includes standard prefixes in context, merges custom prefixes', () => {
     const jt = JsonTology.create({
       'baseIRI': 'https://myapp.io',
       'prefixes': { 'myns': 'https://myapp.io/ns#' },
@@ -225,7 +225,7 @@ describe('JsonTology.ontology()', () => {
     assert.ok('myns' in ctx);
   });
 
-  it('raw graph includes class nodes with rdfs:label, rdfs:comment, restrictions, and property IRIs', () => {
+  void it('raw graph includes class nodes with rdfs:label, rdfs:comment, restrictions, and property IRIs', () => {
     const jt = JsonTology.create({
       'baseIRI': 'https://myapp.io',
       'schemas': [
@@ -236,46 +236,47 @@ describe('JsonTology.ontology()', () => {
     const graph = jt.ontology().raw() as Array<Record<string, unknown>>;
 
     // Class nodes for each schema
-    const classNodes = graph.filter((n) => {
-      return n['@type'] === 'owl:Class';
+    const classNodes = graph.filter((node) => {
+      return node['@type'] === 'owl:Class';
     });
-    const ids = new Set(classNodes.map((n) => {
-      return n['@id'];
+    const ids = new Set(classNodes.map((node) => {
+      return node['@id'];
     }));
 
     assert.ok(ids.has(UserSchema.$id));
     assert.ok(ids.has(RoleSchema.$id));
 
     // rdfs:label and rdfs:comment from title/description
-    const userClass = graph.find((n) => {
-      return n['@id'] === UserSchema.$id;
+    const userClass = graph.find((node) => {
+      return node['@id'] === UserSchema.$id;
     });
 
-    assert.equal(userClass?.['rdfs:label'], 'User');
-    assert.equal(userClass?.['rdfs:comment'], 'An application user');
+    assert.ok(userClass !== undefined, 'userClass should exist');
+    assert.equal(userClass['rdfs:label'], 'User');
+    assert.equal(userClass['rdfs:comment'], 'An application user');
 
     // owl:Restriction for required fields
-    const subClassOf = userClass?.['rdfs:subClassOf'] as Array<Record<string, unknown>>;
+    const subClassOf = userClass['rdfs:subClassOf'] as Array<Record<string, unknown>>;
 
     assert.ok(Array.isArray(subClassOf));
-    const emailRestriction = subClassOf.find((r) => {
-      return r['@type'] === 'owl:Restriction'
-             && (r['owl:onProperty'] as Record<string, unknown>)?.['@id'] === 'https://myapp.io/User#email';
+    const emailRestriction = subClassOf.find((restriction) => {
+      return restriction['@type'] === 'owl:Restriction'
+             && (restriction['owl:onProperty'] as Record<string, unknown>)['@id'] === 'https://myapp.io/User#email';
     });
 
-    assert.ok(emailRestriction, 'email restriction should exist');
-    assert.equal(emailRestriction?.['owl:minCardinality'], 1);
+    assert.ok(emailRestriction !== undefined, 'email restriction should exist');
+    assert.equal(emailRestriction['owl:minCardinality'], 1);
 
     // Property nodes with class-scoped IRIs
-    const emailProp = graph.find((n) => {
-      return n['@id'] === 'https://myapp.io/User#email';
+    const emailProp = graph.find((node) => {
+      return node['@id'] === 'https://myapp.io/User#email';
     });
 
-    assert.ok(emailProp);
-    assert.equal(emailProp?.['@type'], 'owl:DatatypeProperty');
+    assert.ok(emailProp !== undefined, 'emailProp should exist');
+    assert.equal(emailProp['@type'], 'owl:DatatypeProperty');
   });
 
-  it('reflects newly registered schemas on each ontology() call', () => {
+  void it('reflects newly registered schemas on each ontology() call', () => {
     const jt = JsonTology.create({
       'baseIRI': 'https://myapp.io',
       'schemas': [UserSchema]
@@ -283,16 +284,16 @@ describe('JsonTology.ontology()', () => {
 
     jt.register(RoleSchema);
     const graph = jt.ontology().raw() as Array<Record<string, unknown>>;
-    const ids = graph.filter((n) => {
-      return n['@type'] === 'owl:Class';
-    }).map((n) => {
-      return n['@id'];
+    const ids = graph.filter((node) => {
+      return node['@type'] === 'owl:Class';
+    }).map((node) => {
+      return node['@id'];
     });
 
     assert.ok(ids.includes(RoleSchema.$id));
   });
 
-  it('serializes $defs as class nodes, resolves $ref ranges and array item refs', () => {
+  void it('serializes $defs as class nodes, resolves $ref ranges and array item refs', () => {
     const jt = JsonTology.create({
       'baseIRI': 'https://myapp.io',
       'schemas': [DirectorySchema]
@@ -300,42 +301,43 @@ describe('JsonTology.ontology()', () => {
     const graph = jt.ontology().raw() as Array<Record<string, unknown>>;
 
     // $defs Employee class
-    const employeeClass = graph.find((n) => {
-      return n['@id'] === 'https://myapp.io/Directory#/$defs/Employee' && n['@type'] === 'owl:Class';
+    const employeeClass = graph.find((node) => {
+      return node['@id'] === 'https://myapp.io/Directory#/$defs/Employee' && node['@type'] === 'owl:Class';
     });
 
-    assert.ok(employeeClass);
-    assert.equal(employeeClass?.['rdfs:label'], 'Employee');
+    assert.ok(employeeClass !== undefined, 'employeeClass should exist');
+    assert.equal(employeeClass['rdfs:label'], 'Employee');
 
     // $ref range on primaryEmployee property
-    const employeeProp = graph.find((n) => {
-      return n['@id'] === 'https://myapp.io/Directory#primaryEmployee';
+    const employeeProp = graph.find((node) => {
+      return node['@id'] === 'https://myapp.io/Directory#primaryEmployee';
     });
 
-    assert.deepEqual(employeeProp?.['rdfs:range'], { '@id': 'https://myapp.io/Directory#/$defs/Employee' });
+    assert.ok(employeeProp !== undefined, 'employeeProp should exist');
+    assert.deepEqual(employeeProp['rdfs:range'], { '@id': 'https://myapp.io/Directory#/$defs/Employee' });
 
     // owl:allValuesFrom restriction for array item refs
-    const classNode = graph.find((n) => {
-      return n['@id'] === 'https://myapp.io/Directory' && n['@type'] === 'owl:Class';
+    const classNode = graph.find((node) => {
+      return node['@id'] === 'https://myapp.io/Directory' && node['@type'] === 'owl:Class';
     });
 
-    assert.ok(classNode);
-    const subs = classNode['rdfs:subClassOf'] as any[];
+    assert.ok(classNode !== undefined, 'classNode should exist');
+    const subs = classNode['rdfs:subClassOf'] as Array<Record<string, unknown>>;
 
     assert.ok(Array.isArray(subs));
-    const avf = subs.find((r: any) => {
-      return r['@type'] === 'owl:Restriction'
-      && r['owl:onProperty']?.['@id'] === 'https://myapp.io/Directory#employees'
-      && r['owl:allValuesFrom'] !== undefined;
+    const avf = subs.find((restriction: Record<string, unknown>) => {
+      return restriction['@type'] === 'owl:Restriction'
+      && (restriction['owl:onProperty'] as Record<string, unknown>)['@id'] === 'https://myapp.io/Directory#employees'
+      && restriction['owl:allValuesFrom'] !== undefined;
     });
 
-    assert.ok(avf);
+    assert.ok(avf !== undefined, 'allValuesFrom restriction should exist');
     assert.deepEqual(avf['owl:allValuesFrom'], { '@id': 'https://myapp.io/Directory#/$defs/Employee' });
   });
 });
 
-describe('JsonTology.abox()', () => {
-  it('projects validated instance data into ABox nodes typed by the schema graph', () => {
+void describe('JsonTology.abox()', () => {
+  void it('projects validated instance data into ABox nodes typed by the schema graph', () => {
     const jt = JsonTology.create({
       'baseIRI': 'https://myapp.io',
       'schemas': [UserSchema]
@@ -349,13 +351,13 @@ describe('JsonTology.abox()', () => {
       return typeof node['@id'] === 'string' && String(node['@id']).includes('/instances/');
     });
 
-    assert.ok(root);
-    assert.deepEqual(root?.['@type'], { '@id': UserSchema.$id });
-    assert.equal(root?.['https://myapp.io/User#name'], 'Alice');
-    assert.equal(root?.['https://myapp.io/User#email'], 'alice@example.com');
+    assert.ok(root !== undefined, 'root ABox node should exist');
+    assert.deepEqual(root['@type'], { '@id': UserSchema.$id });
+    assert.equal(root['https://myapp.io/User#name'], 'Alice');
+    assert.equal(root['https://myapp.io/User#email'], 'alice@example.com');
   });
 
-  it('reuses canonical property and class identifiers for nested object references', () => {
+  void it('reuses canonical property and class identifiers for nested object references', () => {
     const schema = {
       '$defs': {
         'Person': {
@@ -384,16 +386,18 @@ describe('JsonTology.abox()', () => {
       'name': 'Platform'
     }).raw() as Array<Record<string, unknown>>;
     const team = graph.find((node) => {
-      return (node['@type'] as Record<string, unknown>)?.['@id'] === schema.$id;
-    });
-    const leadRef = team['https://myapp.io/Team#lead'] as Record<string, unknown>;
-    const lead = graph.find((node) => {
-      return node['@id'] === leadRef?.['@id'];
+      return (node['@type'] as Record<string, unknown>)['@id'] === schema.$id;
     });
 
-    assert.ok(team);
+    assert.ok(team !== undefined, 'team ABox node should exist');
+    const leadRef = team['https://myapp.io/Team#lead'] as Record<string, unknown>;
+    const lead = graph.find((node) => {
+      return node['@id'] === leadRef['@id'];
+    });
+
     assert.deepEqual(team['@type'], { '@id': schema.$id });
-    assert.deepEqual(lead?.['@type'], { '@id': 'https://myapp.io/Team#/$defs/Person' });
-    assert.equal(lead?.['https://myapp.io/Team#/$defs/Person#name'], 'Dana');
+    assert.ok(lead !== undefined, 'lead ABox node should exist');
+    assert.deepEqual(lead['@type'], { '@id': 'https://myapp.io/Team#/$defs/Person' });
+    assert.equal(lead['https://myapp.io/Team#/$defs/Person#name'], 'Dana');
   });
 });

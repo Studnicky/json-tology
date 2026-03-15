@@ -33,66 +33,89 @@ export function runValidateBench(): BenchResult[] {
   registry.validate(SimpleSchema.$id, simpleValid);
   registry.validate(NestedSchema.$id, nestedValid);
 
-  // ── Simple valid ──────────────────────────────────────────────────────────
+  // -- Simple valid --
 
   section('Validation — simple flat schema (valid data)');
 
-  results.push(bench('simple valid', 'json-tology', () => {
+  const simpleValidJt = bench('simple valid', 'json-tology', () => {
     registry.validate(SimpleSchema.$id, simpleValid);
-  }));
+  });
 
+  results.push(simpleValidJt);
 
-  results.push(bench('simple valid', 'typebox', () => {
+  const simpleValidTb = bench('simple valid', 'typebox', () => {
     tbSimple.Check(simpleValid);
-  }));
+  });
 
-  results.push(bench('simple valid', 'ajv', () => {
+  results.push(simpleValidTb);
+
+  const simpleValidAjv = bench('simple valid', 'ajv', () => {
     ajvValidateSimple(simpleValid);
-  }));
+  });
 
-  results.push(bench('simple valid', 'zod', () => {
+  results.push(simpleValidAjv);
+
+  const simpleValidZod = bench('simple valid', 'zod', () => {
     SimpleSchemaZod.safeParse(simpleValid);
-  }));
+  });
 
-  // ── Simple invalid ────────────────────────────────────────────────────────
+  results.push(simpleValidZod);
+
+  // -- Simple invalid --
 
   section('Validation — simple flat schema (invalid data, error collection)');
 
-  results.push(bench('simple invalid', 'json-tology', () => {
+  const simpleInvalidJt = bench('simple invalid', 'json-tology', () => {
     registry.validate(SimpleSchema.$id, simpleInvalid);
-  }));
+  });
 
-  results.push(bench('simple invalid', 'typebox', () => {
-    [...tbSimple.Errors(simpleInvalid)];
-  }));
+  results.push(simpleInvalidJt);
 
-  results.push(bench('simple invalid', 'ajv', () => {
+  const simpleInvalidTb = bench('simple invalid', 'typebox', () => {
+    void [...tbSimple.Errors(simpleInvalid)];
+  });
+
+  results.push(simpleInvalidTb);
+
+  const simpleInvalidAjv = bench('simple invalid', 'ajv', () => {
     ajvValidateSimple(simpleInvalid);
-  }));
+  });
 
-  results.push(bench('simple invalid', 'zod', () => {
+  results.push(simpleInvalidAjv);
+
+  const simpleInvalidZod = bench('simple invalid', 'zod', () => {
     SimpleSchemaZod.safeParse(simpleInvalid);
-  }));
+  });
 
-  // ── Nested valid ──────────────────────────────────────────────────────────
+  results.push(simpleInvalidZod);
+
+  // -- Nested valid --
 
   section('Validation — nested schema (valid data)');
 
-  results.push(bench('nested valid', 'json-tology', () => {
+  const nestedValidJt = bench('nested valid', 'json-tology', () => {
     registry.validate(NestedSchema.$id, nestedValid);
-  }));
+  });
 
-  results.push(bench('nested valid', 'typebox', () => {
+  results.push(nestedValidJt);
+
+  const nestedValidTb = bench('nested valid', 'typebox', () => {
     tbNested.Check(nestedValid);
-  }));
+  });
 
-  results.push(bench('nested valid', 'ajv', () => {
+  results.push(nestedValidTb);
+
+  const nestedValidAjv = bench('nested valid', 'ajv', () => {
     ajvValidateNested(nestedValid);
-  }));
+  });
 
-  results.push(bench('nested valid', 'zod', () => {
+  results.push(nestedValidAjv);
+
+  const nestedValidZod = bench('nested valid', 'zod', () => {
     NestedSchemaZod.safeParse(nestedValid);
-  }));
+  });
+
+  results.push(nestedValidZod);
 
   return results;
 }

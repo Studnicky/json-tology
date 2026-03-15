@@ -9,11 +9,10 @@
  * The output quads can be passed directly to JsonLdFormatter.quadsToJsonLd().
  */
 
-import type {
-  QuadInterface, QuadObjectType
-} from './Quad.js';
+import type { QuadInterface } from '../../interfaces/quad.js';
+import type { QuadObjectType } from '../../types/quad.js';
 import type { SchemaGraphRelationInterface } from '../../interfaces/schema-graph.js';
-import type { SchemaGraph } from '../graph/SchemaGraph.js';
+import type { SchemaGraphInterface } from '../../interfaces/schema-graph-impl.js';
 import { propertyIri } from '../data/DataTypes.js';
 import {
   bnode, iri, literal, nextBnode, quad, rdfList
@@ -103,7 +102,7 @@ function lastSegment(subject: string): string {
 
   const segments = subject.slice(hashIdx + 1).split('/');
 
-  return segments.at(-1);
+  return segments.at(-1) ?? '';
 }
 
 function structuralParent(subject: string): string {
@@ -214,7 +213,7 @@ function isSerializationCandidate(
 // Public API
 // ---------------------------------------------------------------------------
 
-export function projectShaclGraph(graph: SchemaGraph): QuadInterface[] {
+export function projectShaclGraph(graph: SchemaGraphInterface): QuadInterface[] {
   const quads: QuadInterface[] = [];
   const allRelations = graph.allRelations();
   const index = buildIndex(allRelations);
@@ -289,6 +288,10 @@ function emitNodeShape(
   if (entry.byPredicate.has('sh:closed')) {
     quads.push(quad(subject, 'sh:closed', literal(true, 'xsd:boolean')));
   }
+
+  // Array cardinality on node shapes (minItems/maxItems → sh:minCount/sh:maxCount)
+  emitConstraintLiteral(subject, entry, 'sh:minCount', 'xsd:integer', quads);
+  emitConstraintLiteral(subject, entry, 'sh:maxCount', 'xsd:integer', quads);
 
   // sh:property — regular properties
   const propSubjects = propertyIndex.get(subject) ?? [];
@@ -410,13 +413,6 @@ function emitPropertyShape(
     quads.push(quad(bnodeId, 'sh:datatype', iri(relTargetId(datatypeRels[0]))));
   }
 
-  // sh:pattern from jt:formatPattern
-  const formatPatternRels = entry.byPredicate.get('jt:formatPattern') ?? [];
-
-  if (formatPatternRels.length > 0) {
-    quads.push(quad(bnodeId, 'sh:pattern', literal(relTargetId(formatPatternRels[0]), 'xsd:string')));
-  }
-
   // sh:minCount
   const minCountRels = entry.byPredicate.get('sh:minCount') ?? [];
 
@@ -465,6 +461,7 @@ function emitPropertyShape(
   emitConstraintLiteral(bnodeId, entry, 'sh:maxInclusive', 'xsd:decimal', quads);
   emitConstraintLiteral(bnodeId, entry, 'sh:minExclusive', 'xsd:decimal', quads);
   emitConstraintLiteral(bnodeId, entry, 'sh:maxExclusive', 'xsd:decimal', quads);
+  emitConstraintLiteral(bnodeId, entry, 'jt:multipleOf', 'xsd:decimal', quads);
 
   // sh:description from rdfs:comment
   const commentRels = entry.byPredicate.get('rdfs:comment') ?? [];
@@ -474,11 +471,11 @@ function emitPropertyShape(
   }
 
   // dash:readOnly / dash:writeOnly
-  if (entry.types.includes('jt:ReadOnly')) {
+  if (entry.byPredicate.has('dash:readOnly')) {
     quads.push(quad(bnodeId, 'dash:readOnly', literal(true, 'xsd:boolean')));
   }
 
-  if (entry.types.includes('jt:WriteOnly')) {
+  if (entry.byPredicate.has('dash:writeOnly')) {
     quads.push(quad(bnodeId, 'dash:writeOnly', literal(true, 'xsd:boolean')));
   }
 

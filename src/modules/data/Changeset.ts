@@ -4,8 +4,9 @@
  * Returned by Value.diff(). Apply with .apply().
  */
 
+import type { ChangesetInterface } from '../../interfaces/changeset.js';
 import type { DiffOpType } from '../../types/diff.js';
-import { Value } from './Value.js';
+import { applyOp, clone } from './operations.js';
 
 
 /**
@@ -19,7 +20,7 @@ import { Value } from './Value.js';
  * changes.operations  // ReadonlyArray<DiffOpType>
  * changes.apply(a)    // produce b from a without mutating a
  */
-export class Changeset {
+export class Changeset implements ChangesetInterface {
   public readonly operations: readonly DiffOpType[];
 
   public constructor(operations: readonly DiffOpType[]) {
@@ -31,10 +32,10 @@ export class Changeset {
    * The original value is never mutated.
    */
   public apply<T>(value: T): T {
-    let result: unknown = Value.clone(value);
+    let result: unknown = clone(value);
 
     for (const operation of this.operations) {
-      result = Value.applyOp(result, operation);
+      result = applyOp(result, operation);
     }
 
     return result as T;
