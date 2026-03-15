@@ -51,7 +51,9 @@ const parsed = jt.parse(ConfigSchema, incoming);
 
 console.log('--- Parse with defaults ---');
 console.log('Input:', JSON.stringify(incoming));
-console.log('Parsed:', JSON.stringify(parsed, null, 2));
+const parsedJson = JSON.stringify(parsed, null, 2);
+
+console.log('Parsed:', parsedJson);
 console.log();
 
 // ---------------------------------------------------------------------------
@@ -73,7 +75,9 @@ console.log();
 const fromEmpty = jt.materialize(ConfigSchema);
 
 console.log('--- Materialize from empty ---');
-console.log('Result:', JSON.stringify(fromEmpty, null, 2));
+const fromEmptyJson = JSON.stringify(fromEmpty, null, 2);
+
+console.log('Result:', fromEmptyJson);
 console.log();
 
 // ---------------------------------------------------------------------------
@@ -90,4 +94,6 @@ console.log('Input:', JSON.stringify({
   'debug': true,
   'locale': 'fr'
 }));
-console.log('Result:', JSON.stringify(fromPartial, null, 2));
+const fromPartialJson = JSON.stringify(fromPartial, null, 2);
+
+console.log('Result:', fromPartialJson);

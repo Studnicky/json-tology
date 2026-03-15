@@ -247,6 +247,7 @@ void describe('quadsToJsonLd()', () => {
       'subject': 'ex:Shape'
     }];
     const result = quadsToJsonLd(quads);
+    // eslint-disable-next-line @typescript-eslint/naming-convention -- JSON-LD '@list' keyword
     const orValue = result[0]['sh:or'] as { '@list': unknown[] };
 
     assert.ok('@list' in orValue);

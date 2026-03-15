@@ -69,7 +69,10 @@ const jt = JsonTology.create({
 const abox = jt.abox(EventSchema, event);
 
 console.log('--- ABox Instance (JSON-LD) ---');
-console.log(JSON.stringify(abox.jsonLdObject(), null, 2));
+const aboxJsonLdObj = abox.jsonLdObject();
+const aboxJsonLd = JSON.stringify(aboxJsonLdObj, null, 2);
+
+console.log(aboxJsonLd);
 console.log();
 
 // ---------------------------------------------------------------------------

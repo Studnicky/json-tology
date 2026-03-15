@@ -6,6 +6,7 @@ const ROOT = new URL('../', import.meta.url);
 const ROOT_PATH = fileURLToPath(ROOT);
 const REQUIRED_PATHS = [
   'CHANGELOG.md',
+  'LICENSE',
   'README.md',
   'dist/cli.js',
   'dist/index.d.ts',
@@ -22,7 +23,9 @@ const FORBIDDEN_PREFIXES = [
   'bench/',
   'check_',
   'docs/',
+  'examples/',
   'node_modules/',
+  'scripts/',
   'src/',
   'test/',
   'vendor/'
@@ -79,6 +82,7 @@ for (const filePath of packedPaths) {
     filePath === 'package.json'
       || filePath === 'README.md'
       || filePath === 'CHANGELOG.md'
+      || filePath === 'LICENSE'
       || filePath.startsWith('dist/'),
     `unexpected file in published tarball: ${filePath}`
   );

@@ -57,7 +57,9 @@ const jt = JsonTology.create({
 const shacl = jt.ontology().shaclObject();
 
 console.log('--- SHACL Shapes (JSON-LD) ---');
-console.log(JSON.stringify(shacl, null, 2));
+const shaclStr = JSON.stringify(shacl, null, 2);
+
+console.log(shaclStr);
 console.log();
 
 // ---------------------------------------------------------------------------

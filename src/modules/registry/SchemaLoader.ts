@@ -355,7 +355,8 @@ export class SchemaLoader implements SchemaLoaderInterface {
     if (typeof schema.$id !== 'string' || schema.$id === '') {
       failures.push('$id must be a non-empty string');
 
-      return failures; // can't continue without $id
+      // can't continue without $id
+      return failures;
     }
 
     // $id should look like a URI
@@ -400,9 +401,9 @@ export class SchemaLoader implements SchemaLoaderInterface {
           failures.push(`Invalid type: "${schema.type}"`);
         }
       } else if (Array.isArray(schema.type)) {
-        for (const t of schema.type) {
-          if (typeof t !== 'string' || !validTypes.has(t)) {
-            failures.push(`Invalid type in type array: ${JSON.stringify(t)}`);
+        for (const typeValue of schema.type) {
+          if (typeof typeValue !== 'string' || !validTypes.has(typeValue)) {
+            failures.push(`Invalid type in type array: ${JSON.stringify(typeValue)}`);
           }
         }
       } else {
@@ -440,8 +441,8 @@ export class SchemaLoader implements SchemaLoaderInterface {
     if ('required' in schema) {
       if (!Array.isArray(schema.required)) {
         failures.push('required must be an array');
-      } else if (schema.required.some((r: unknown) => {
-        return typeof r !== 'string';
+      } else if (schema.required.some((item: unknown) => {
+        return typeof item !== 'string';
       })) {
         failures.push('required entries must be strings');
       }

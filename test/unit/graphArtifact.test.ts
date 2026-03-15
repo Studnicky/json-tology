@@ -170,6 +170,7 @@ void describe('GraphArtifact', () => {
           'kind',
           'primary'
         ],
+        // eslint-disable-next-line unicorn/no-thenable -- JSON Schema 'then' keyword
         'then': {
           'properties': { 'flag': { 'type': 'boolean' } },
           'type': 'object'

@@ -128,7 +128,7 @@ function resolveBaseIRI(graphs: readonly SchemaGraph[], configuredBaseIRI?: stri
   }
 
   const firstRootSchema = graphs[0]?.rootSchema;
-  const firstSchemaId = typeof firstRootSchema === 'object' && firstRootSchema !== null
+  const firstSchemaId = typeof firstRootSchema === 'object'
     ? (firstRootSchema).$id
     : undefined;
 
@@ -179,7 +179,7 @@ async function main(): Promise<void> {
   const schemas: Array<Record<string, unknown>> = [];
 
   for (const filePath of files) {
-    const content = readFileSync(resolve(filePath), 'utf-8');
+    const content = readFileSync(resolve(filePath), 'utf8');
     const schema = JSON.parse(content) as Record<string, unknown>;
 
     schemas.push(schema);
@@ -230,7 +230,7 @@ async function main(): Promise<void> {
   for (const graph of graphs) {
     const rootSchema = graph.rootSchema as Record<string, unknown>;
     const schemaId = rootSchema.$id as string;
-    const safeName = basename(schemaId).replaceAll(/[^\w-]/g, '_');
+    const safeName = basename(schemaId).replaceAll(/[^\w-]/gu, '_');
 
     switch (format) {
       case 'artifact': {
@@ -255,7 +255,8 @@ async function main(): Promise<void> {
   console.log(`Built ${graphs.length} graph(s) → ${output}/`);
 }
 
-main().catch((error) => {
+// eslint-disable-next-line unicorn/prefer-top-level-await
+void main().catch((error) => {
   console.error(error);
   process.exit(1);
 });

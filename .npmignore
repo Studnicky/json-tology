@@ -1,28 +1,41 @@
-# Source files (dist is published)
+# Source files (dist/ is published)
 src/
 
 # Tests
+test/
 __tests__/
 *.spec.js
 *.spec.ts
 *.test.js
 *.test.ts
-tests/
+
+# Benchmarks
+bench/
+
+# Examples (users can find these in the repo)
+examples/
+
+# Scripts
+scripts/
+check_*.mjs
 
 # Test coverage
 coverage/
 
 # Development config
+.claude/
 .eslintrc*
 .github/
 .idea/
 .prettierrc*
 .vscode/
+eslint.config.mjs
 api-extractor.json
 dev-tools.json
 jest.config.*
 tsconfig.json
 vitest.config.*
+CLAUDE.md
 
 # API extraction
 .api/

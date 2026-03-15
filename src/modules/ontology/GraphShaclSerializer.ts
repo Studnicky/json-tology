@@ -7,8 +7,8 @@ import { resetBnodeCounter } from '../rdf/Projection.js';
 export class GraphShaclSerializer implements GraphSerializerInterface {
   public serialize(graphs: readonly SchemaGraph[]): unknown[] {
     resetBnodeCounter();
-    const allQuads = graphs.flatMap((g) => {
-      return projectShaclGraph(g);
+    const allQuads = graphs.flatMap((graph) => {
+      return projectShaclGraph(graph);
     });
     const nodes = quadsToJsonLd(allQuads);
 

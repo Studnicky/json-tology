@@ -32,41 +32,41 @@ function assert<T extends true>(): void {
 // 1. Primitives
 // ---------------------------------------------------------------------------
 
-const StringSchema = { 'type': 'string' } as const;
-const NumberSchema = { 'type': 'number' } as const;
-const IntegerSchema = { 'type': 'integer' } as const;
-const BooleanSchema = { 'type': 'boolean' } as const;
-const NullSchema = { 'type': 'null' } as const;
+const _StringSchema = { 'type': 'string' } as const;
+const _NumberSchema = { 'type': 'number' } as const;
+const _IntegerSchema = { 'type': 'integer' } as const;
+const _BooleanSchema = { 'type': 'boolean' } as const;
+const _NullSchema = { 'type': 'null' } as const;
 
-const _s: InferType<typeof StringSchema> = 'hello';
-const _n: InferType<typeof NumberSchema> = 42;
-const _i: InferType<typeof IntegerSchema> = 7;
-const _b: InferType<typeof BooleanSchema> = true;
-const _nl: InferType<typeof NullSchema> = null;
+const _s: InferType<typeof _StringSchema> = 'hello';
+const _n: InferType<typeof _NumberSchema> = 42;
+const _i: InferType<typeof _IntegerSchema> = 7;
+const _b: InferType<typeof _BooleanSchema> = true;
+const _nl: InferType<typeof _NullSchema> = null;
 
 // @ts-expect-error — number is not string
-const _bad1: InferType<typeof StringSchema> = 42;
+const _bad1: InferType<typeof _StringSchema> = 42;
 // @ts-expect-error — string is not number
-const _bad2: InferType<typeof NumberSchema> = 'hello';
+const _bad2: InferType<typeof _NumberSchema> = 'hello';
 
-assert<AssertEqual<InferType<typeof StringSchema>, string>>();
-assert<AssertEqual<InferType<typeof NumberSchema>, number>>();
-assert<AssertEqual<InferType<typeof IntegerSchema>, number>>();
-assert<AssertEqual<InferType<typeof BooleanSchema>, boolean>>();
-assert<AssertEqual<InferType<typeof NullSchema>, null>>();
+assert<AssertEqual<InferType<typeof _StringSchema>, string>>();
+assert<AssertEqual<InferType<typeof _NumberSchema>, number>>();
+assert<AssertEqual<InferType<typeof _IntegerSchema>, number>>();
+assert<AssertEqual<InferType<typeof _BooleanSchema>, boolean>>();
+assert<AssertEqual<InferType<typeof _NullSchema>, null>>();
 
 // ---------------------------------------------------------------------------
 // 2. Const / Enum
 // ---------------------------------------------------------------------------
 
-const ConstSchema = { 'const': 'circle' } as const;
-const EnumSchema = {
+const _ConstSchema = { 'const': 'circle' } as const;
+const _EnumSchema = {
   'enum': [
     'asc',
     'desc'
   ]
 } as const;
-const NumericEnumSchema = {
+const _NumericEnumSchema = {
   'enum': [
     1,
     2,
@@ -74,29 +74,29 @@ const NumericEnumSchema = {
   ]
 } as const;
 
-const _c: InferType<typeof ConstSchema> = 'circle';
+const _c: InferType<typeof _ConstSchema> = 'circle';
 // @ts-expect-error — 'square' is not 'circle'
-const _bad3: InferType<typeof ConstSchema> = 'square';
+const _bad3: InferType<typeof _ConstSchema> = 'square';
 
-const _e: InferType<typeof EnumSchema> = 'asc';
-const _e2: InferType<typeof EnumSchema> = 'desc';
+const _e: InferType<typeof _EnumSchema> = 'asc';
+const _e2: InferType<typeof _EnumSchema> = 'desc';
 // @ts-expect-error — 'random' is not in enum
-const _bad4: InferType<typeof EnumSchema> = 'random';
+const _bad4: InferType<typeof _EnumSchema> = 'random';
 
-assert<AssertEqual<InferType<typeof ConstSchema>, 'circle'>>();
-assert<AssertEqual<InferType<typeof EnumSchema>, 'asc' | 'desc'>>();
-assert<AssertEqual<InferType<typeof NumericEnumSchema>, 1 | 2 | 3>>();
+assert<AssertEqual<InferType<typeof _ConstSchema>, 'circle'>>();
+assert<AssertEqual<InferType<typeof _EnumSchema>, 'asc' | 'desc'>>();
+assert<AssertEqual<InferType<typeof _NumericEnumSchema>, 1 | 2 | 3>>();
 
 // ---------------------------------------------------------------------------
 // 3. Arrays
 // ---------------------------------------------------------------------------
 
-const StringArraySchema = {
+const _StringArraySchema = {
   'items': { 'type': 'string' },
   'type': 'array'
 } as const;
-const PlainArraySchema = { 'type': 'array' } as const;
-const TupleSchema = {
+const _PlainArraySchema = { 'type': 'array' } as const;
+const _TupleSchema = {
   'prefixItems': [
     { 'type': 'string' },
     { 'type': 'number' }
@@ -104,7 +104,7 @@ const TupleSchema = {
   'type': 'array'
 } as const;
 
-const NestedArraySchema = {
+const _NestedArraySchema = {
   'items': {
     'items': { 'type': 'number' },
     'type': 'array'
@@ -112,11 +112,11 @@ const NestedArraySchema = {
   'type': 'array'
 } as const;
 
-const _arr: InferType<typeof StringArraySchema> = [
+const _arr: InferType<typeof _StringArraySchema> = [
   'a',
   'b'
 ];
-const _bad5: InferType<typeof StringArraySchema> = [
+const _bad5: InferType<typeof _StringArraySchema> = [
   // @ts-expect-error — number[] not assignable to string[]
   1,
   // @ts-expect-error — number[] not assignable to string[]
@@ -124,18 +124,18 @@ const _bad5: InferType<typeof StringArraySchema> = [
 ];
 
 // Tuple inference
-type TupleInferred = InferType<typeof TupleSchema>;
+type TupleInferred = InferType<typeof _TupleSchema>;
 assert<AssertAssignable<TupleInferred, readonly [string, number]>>();
 
 // Nested arrays
-type NestedArr = InferType<typeof NestedArraySchema>;
+type NestedArr = InferType<typeof _NestedArraySchema>;
 assert<AssertAssignable<NestedArr, ReadonlyArray<readonly number[]>>>();
 
 // ---------------------------------------------------------------------------
 // 4. Objects (required/optional split)
 // ---------------------------------------------------------------------------
 
-const UserSchema = {
+const _UserSchema = {
   'properties': {
     'age': { 'type': 'number' },
     'email': { 'type': 'string' },
@@ -148,26 +148,26 @@ const UserSchema = {
   'type': 'object'
 } as const;
 
-const _u: InferType<typeof UserSchema> = {
+const _u: InferType<typeof _UserSchema> = {
   'email': 'a@b.c',
   'name': 'Alice'
 };
-const _u2: InferType<typeof UserSchema> = {
+const _u2: InferType<typeof _UserSchema> = {
   'age': 30,
   'email': 'a@b.c',
   'name': 'Alice'
 };
 // @ts-expect-error — missing required 'email'
-const _bad6: InferType<typeof UserSchema> = { 'name': 'Alice' };
+const _bad6: InferType<typeof _UserSchema> = { 'name': 'Alice' };
 
 // Object with no properties
-const EmptyObjectSchema = { 'type': 'object' } as const;
+const _EmptyObjectSchema = { 'type': 'object' } as const;
 
-type EmptyObj = InferType<typeof EmptyObjectSchema>;
+type EmptyObj = InferType<typeof _EmptyObjectSchema>;
 assert<AssertEqual<EmptyObj, Record<string, unknown>>>();
 
 // additionalProperties: false — closed object
-const ClosedSchema = {
+const _ClosedSchema = {
   'additionalProperties': false,
   'properties': { 'x': { 'type': 'number' } },
   'required': ['x'],
@@ -175,14 +175,14 @@ const ClosedSchema = {
 } as const;
 
 // additionalProperties: schema — typed extra keys
-const TypedAdditionalSchema = {
+const _TypedAdditionalSchema = {
   'additionalProperties': { 'type': 'number' },
   'properties': { 'name': { 'type': 'string' } },
   'required': ['name'],
   'type': 'object'
 } as const;
 
-type TypedAdditional = InferType<typeof TypedAdditionalSchema>;
+type TypedAdditional = InferType<typeof _TypedAdditionalSchema>;
 // TS intersection of index sig {[k:string]:number} with named prop {name:string} collapses
 // name to string & number = never. This is a known TS limitation with index signatures.
 // Just verify the type resolves (runtime validation enforces the constraint).
@@ -192,25 +192,25 @@ void (undefined as unknown as TypedAdditional);
 // 5. Nullable (type arrays)
 // ---------------------------------------------------------------------------
 
-const NullableSchema = {
+const _NullableSchema = {
   'type': [
     'string',
     'null'
   ]
 } as const;
 
-const _nullable1: InferType<typeof NullableSchema> = 'hello';
-const _nullable2: InferType<typeof NullableSchema> = null;
+const _nullable1: InferType<typeof _NullableSchema> = 'hello';
+const _nullable2: InferType<typeof _NullableSchema> = null;
 // @ts-expect-error — number not assignable to string | null
-const _bad7: InferType<typeof NullableSchema> = 42;
+const _bad7: InferType<typeof _NullableSchema> = 42;
 
-assert<AssertEqual<InferType<typeof NullableSchema>, null | string>>();
+assert<AssertEqual<InferType<typeof _NullableSchema>, null | string>>();
 
 // ---------------------------------------------------------------------------
 // 6. Composition — allOf / anyOf / oneOf
 // ---------------------------------------------------------------------------
 
-const AllOfSchema = {
+const _AllOfSchema = {
   'allOf': [
     {
       'properties': { 'a': { 'type': 'string' } },
@@ -225,39 +225,39 @@ const AllOfSchema = {
   ]
 } as const;
 
-const AnyOfSchema = {
+const _AnyOfSchema = {
   'anyOf': [
     { 'type': 'string' },
     { 'type': 'number' }
   ]
 } as const;
 
-const OneOfSchema = {
+const _OneOfSchema = {
   'oneOf': [
     { 'type': 'string' },
     { 'type': 'number' }
   ]
 } as const;
 
-const _anyOf: InferType<typeof AnyOfSchema> = 'hello';
-const _anyOf2: InferType<typeof AnyOfSchema> = 42;
+const _anyOf: InferType<typeof _AnyOfSchema> = 'hello';
+const _anyOf2: InferType<typeof _AnyOfSchema> = 42;
 
-const _oneOf: InferType<typeof OneOfSchema> = 'hello';
-const _oneOf2: InferType<typeof OneOfSchema> = 42;
+const _oneOf: InferType<typeof _OneOfSchema> = 'hello';
+const _oneOf2: InferType<typeof _OneOfSchema> = 42;
 
 // allOf produces intersection
-type AllOfResult = InferType<typeof AllOfSchema>;
+type AllOfResult = InferType<typeof _AllOfSchema>;
 assert<AssertAssignable<AllOfResult, { readonly 'a': string;
   readonly 'b': number }>>();
 
-assert<AssertEqual<InferType<typeof AnyOfSchema>, number | string>>();
-assert<AssertEqual<InferType<typeof OneOfSchema>, number | string>>();
+assert<AssertEqual<InferType<typeof _AnyOfSchema>, number | string>>();
+assert<AssertEqual<InferType<typeof _OneOfSchema>, number | string>>();
 
 // ---------------------------------------------------------------------------
 // 7. $ref / $defs
 // ---------------------------------------------------------------------------
 
-const RefSchema = {
+const _RefSchema = {
   '$defs': {
     'Child': {
       'properties': { 'name': { 'type': 'string' } },
@@ -270,12 +270,12 @@ const RefSchema = {
   'type': 'object'
 } as const;
 
-const _ref: InferType<typeof RefSchema> = { 'child': { 'name': 'Bob' } };
+const _ref: InferType<typeof _RefSchema> = { 'child': { 'name': 'Bob' } };
 // @ts-expect-error — child.name is required
-const _bad8: InferType<typeof RefSchema> = { 'child': {} };
+const _bad8: InferType<typeof _RefSchema> = { 'child': {} };
 
 // Self-referential $ref: '#'
-const SelfRefSchema = {
+const _SelfRefSchema = {
   'properties': {
     'children': {
       'items': { '$ref': '#' },
@@ -287,14 +287,14 @@ const SelfRefSchema = {
   'type': 'object'
 } as const;
 
-type SelfRefResult = InferType<typeof SelfRefSchema>;
+type SelfRefResult = InferType<typeof _SelfRefSchema>;
 assert<AssertAssignable<SelfRefResult, { readonly 'name': string }>>();
 
 // ---------------------------------------------------------------------------
 // 8. $anchor refs (root-level and $defs-level)
 // ---------------------------------------------------------------------------
 
-const AnchorSchema = {
+const _AnchorSchema = {
   '$defs': {
     'Item': {
       '$anchor': 'itemDef',
@@ -308,17 +308,17 @@ const AnchorSchema = {
   'type': 'object'
 } as const;
 
-type AnchorResult = InferType<typeof AnchorSchema>;
+type AnchorResult = InferType<typeof _AnchorSchema>;
 assert<AssertAssignable<AnchorResult, { readonly 'item': { readonly 'label': string } }>>();
 
 // Root-level $anchor
-const RootAnchorSchema = {
+const _RootAnchorSchema = {
   '$anchor': 'root',
   'properties': { 'self': { '$ref': '#root' } },
   'type': 'object'
 } as const;
 
-type RootAnchorResult = InferType<typeof RootAnchorSchema>;
+type RootAnchorResult = InferType<typeof _RootAnchorSchema>;
 // self references the root schema itself — should be assignable to an object with self
 assert<AssertAssignable<RootAnchorResult, { readonly 'self'?: unknown }>>();
 
@@ -326,7 +326,7 @@ assert<AssertAssignable<RootAnchorResult, { readonly 'self'?: unknown }>>();
 // 9. JSON Pointer fragment refs (#/properties/foo)
 // ---------------------------------------------------------------------------
 
-const PointerRefSchema = {
+const _PointerRefSchema = {
   'properties': {
     'alias': { '$ref': '#/properties/name' },
     'name': { 'type': 'string' }
@@ -338,12 +338,12 @@ const PointerRefSchema = {
   'type': 'object'
 } as const;
 
-type PointerRefResult = InferType<typeof PointerRefSchema>;
+type PointerRefResult = InferType<typeof _PointerRefSchema>;
 assert<AssertAssignable<PointerRefResult, { readonly 'alias': string;
   readonly 'name': string; }>>();
 
 // Deep path navigation: #/$defs/Outer/properties/inner
-const DeepPathSchema = {
+const _DeepPathSchema = {
   '$defs': {
     'Outer': {
       'properties': { 'inner': { 'type': 'number' } },
@@ -355,7 +355,7 @@ const DeepPathSchema = {
   'type': 'object'
 } as const;
 
-type DeepPathResult = InferType<typeof DeepPathSchema>;
+type DeepPathResult = InferType<typeof _DeepPathSchema>;
 assert<AssertAssignable<DeepPathResult, { readonly 'target': number }>>();
 
 // ---------------------------------------------------------------------------
@@ -368,7 +368,7 @@ assert<AssertAssignable<DeepPathResult, { readonly 'target': number }>>();
  * (where $dynamicAnchor is overridden by an outer schema) cannot be modeled
  * at compile time and falls back to unknown.
  */
-const DynamicRefSchema = {
+const _DynamicRefSchema = {
   '$defs': {
     'ItemDef': {
       '$anchor': 'listItem',
@@ -383,7 +383,7 @@ const DynamicRefSchema = {
   'type': 'object'
 } as const;
 
-type DynamicRefResult = InferType<typeof DynamicRefSchema>;
+type DynamicRefResult = InferType<typeof _DynamicRefSchema>;
 assert<AssertAssignable<DynamicRefResult, { readonly 'item': { readonly 'value': string } }>>();
 
 // ---------------------------------------------------------------------------
@@ -398,7 +398,7 @@ assert<AssertAssignable<DynamicRefResult, { readonly 'item': { readonly 'value':
  * Cross-schema $recursiveRef (where an outer schema overrides the anchor)
  * falls back to unknown — same limitation as $dynamicRef.
  */
-const RecursiveSchema = {
+const _RecursiveSchema = {
   '$recursiveAnchor': true,
   'properties': {
     'children': {
@@ -411,16 +411,16 @@ const RecursiveSchema = {
   'type': 'object'
 } as const;
 
-type RecursiveResult = InferType<typeof RecursiveSchema>;
+type RecursiveResult = InferType<typeof _RecursiveSchema>;
 assert<AssertAssignable<RecursiveResult, { readonly 'name': string }>>();
 
 // Without $recursiveAnchor: true, $recursiveRef resolves to unknown
-const NoAnchorRecursiveSchema = {
+const _NoAnchorRecursiveSchema = {
   'properties': { 'child': { '$recursiveRef': '#' } },
   'type': 'object'
 } as const;
 
-type NoAnchorResult = InferType<typeof NoAnchorRecursiveSchema>;
+type NoAnchorResult = InferType<typeof _NoAnchorRecursiveSchema>;
 // child should be unknown because $recursiveAnchor is not set
 assert<AssertAssignable<NoAnchorResult, { readonly 'child'?: unknown }>>();
 
@@ -429,28 +429,28 @@ assert<AssertAssignable<NoAnchorResult, { readonly 'child'?: unknown }>>();
 // ---------------------------------------------------------------------------
 
 // Missing `type` — produces unknown
-const NoTypeSchema = {} as const;
+const _NoTypeSchema = {} as const;
 
-type NoTypeResult = InferType<typeof NoTypeSchema>;
+type NoTypeResult = InferType<typeof _NoTypeSchema>;
 assert<AssertEqual<NoTypeResult, unknown>>();
 
 // Invalid $ref target — produces unknown
-const BadRefSchema = {
+const _BadRefSchema = {
   'properties': { 'x': { '$ref': '#/$defs/DoesNotExist' } },
   'type': 'object'
 } as const;
 
-type BadRefResult = InferType<typeof BadRefSchema>;
+type BadRefResult = InferType<typeof _BadRefSchema>;
 // x resolves to unknown
 assert<AssertAssignable<BadRefResult, { readonly 'x'?: unknown }>>();
 
 // External $ref (absolute URI without fragment) — produces unknown
-const ExternalRefSchema = {
+const _ExternalRefSchema = {
   'properties': { 'ext': { '$ref': 'https://example.com/Other' } },
   'type': 'object'
 } as const;
 
-type ExternalRefResult = InferType<typeof ExternalRefSchema>;
+type ExternalRefResult = InferType<typeof _ExternalRefSchema>;
 assert<AssertAssignable<ExternalRefResult, { readonly 'ext'?: unknown }>>();
 
 // Boolean schema (true/false) — produces unknown
@@ -460,12 +460,12 @@ type FalseSchemaResult = InferSchemaType<false>;
 assert<AssertEqual<FalseSchemaResult, unknown>>();
 
 // Schema with only validation keywords, no type — produces unknown
-const ValidationOnlySchema = {
+const _ValidationOnlySchema = {
   'maxLength': 10,
   'minLength': 5
 } as const;
 
-type ValidationOnlyResult = InferType<typeof ValidationOnlySchema>;
+type ValidationOnlyResult = InferType<typeof _ValidationOnlySchema>;
 assert<AssertEqual<ValidationOnlyResult, unknown>>();
 
 // ---------------------------------------------------------------------------
@@ -478,9 +478,9 @@ assert<AssertEqual<ValidationOnlyResult, unknown>>();
  * The schema below would exclude strings at runtime, but at the type level
  * it produces unknown (the base type without narrowing).
  */
-const NotSchema = { 'not': { 'type': 'string' } } as const;
+const _NotSchema = { 'not': { 'type': 'string' } } as const;
 
-type NotResult = InferType<typeof NotSchema>;
+type NotResult = InferType<typeof _NotSchema>;
 // Falls back to unknown — runtime enforces the exclusion
 assert<AssertEqual<NotResult, unknown>>();
 
@@ -489,12 +489,12 @@ assert<AssertEqual<NotResult, unknown>>();
  * TypeScript cannot express "array with at least one element of type T",
  * so it falls back to the array's base item type (or unknown[]).
  */
-const ContainsSchema = {
+const _ContainsSchema = {
   'contains': { 'type': 'number' },
   'type': 'array'
 } as const;
 
-type ContainsResult = InferType<typeof ContainsSchema>;
+type ContainsResult = InferType<typeof _ContainsSchema>;
 // Falls back to unknown[] — no items schema, contains is runtime-only
 assert<AssertEqual<ContainsResult, readonly unknown[]>>();
 
@@ -502,12 +502,12 @@ assert<AssertEqual<ContainsResult, readonly unknown[]>>();
  * `propertyNames` — Constrains object keys at runtime. TypeScript cannot
  * dynamically constrain key patterns, so it falls back to Record<string, unknown>.
  */
-const PropertyNamesSchema = {
+const _PropertyNamesSchema = {
   'propertyNames': { 'pattern': '^x-' },
   'type': 'object'
 } as const;
 
-type PropertyNamesResult = InferType<typeof PropertyNamesSchema>;
+type PropertyNamesResult = InferType<typeof _PropertyNamesSchema>;
 // Falls back to Record<string, unknown>
 assert<AssertEqual<PropertyNamesResult, Record<string, unknown>>>();
 
@@ -540,9 +540,9 @@ interface IfThenElseType {
 const _iteIf = '{"properties":{"kind":{"const":"a"}},"type":"object"}';
 const _iteThen = '{"properties":{"kind":{"const":"a"},"value":{"type":"string"}},"required":["kind","value"],"type":"object"}';
 const _iteElse = '{"properties":{"kind":{"const":"b"},"value":{"type":"number"}},"required":["kind","value"],"type":"object"}';
-const IfThenElseSchema = JSON.parse(`{"properties":{"shared":{"type":"boolean"}},"required":["shared"],"type":"object","if":${_iteIf},"then":${_iteThen},"else":${_iteElse}}`) as IfThenElseType;
+const _IfThenElseSchema = JSON.parse(`{"properties":{"shared":{"type":"boolean"}},"required":["shared"],"type":"object","if":${_iteIf},"then":${_iteThen},"else":${_iteElse}}`) as IfThenElseType;
 
-type IfThenElseResult = InferType<typeof IfThenElseSchema>;
+type IfThenElseResult = InferType<typeof _IfThenElseSchema>;
 assert<AssertAssignable<IfThenElseResult,
   | { readonly 'kind': 'a';
     readonly 'shared': boolean;
@@ -556,7 +556,7 @@ assert<AssertAssignable<IfThenElseResult,
 // 14. Nested object with deep required
 // ---------------------------------------------------------------------------
 
-const NestedObjectSchema = {
+const _NestedObjectSchema = {
   'properties': {
     'address': {
       'properties': {
@@ -575,7 +575,7 @@ const NestedObjectSchema = {
   'type': 'object'
 } as const;
 
-type NestedObj = InferType<typeof NestedObjectSchema>;
+type NestedObj = InferType<typeof _NestedObjectSchema>;
 assert<AssertAssignable<NestedObj, {
   readonly 'address': { readonly 'city': string;
     readonly 'street': string;
@@ -586,7 +586,7 @@ assert<AssertAssignable<NestedObj, {
 // 15. allOf with three+ schemas
 // ---------------------------------------------------------------------------
 
-const TripleAllOfSchema = {
+const _TripleAllOfSchema = {
   'allOf': [
     {
       'properties': { 'a': { 'type': 'string' } },
@@ -606,7 +606,7 @@ const TripleAllOfSchema = {
   ]
 } as const;
 
-type TripleAllOf = InferType<typeof TripleAllOfSchema>;
+type TripleAllOf = InferType<typeof _TripleAllOfSchema>;
 assert<AssertAssignable<TripleAllOf, { readonly 'a': string;
   readonly 'b': number;
   readonly 'c': boolean }>>();
@@ -615,7 +615,7 @@ assert<AssertAssignable<TripleAllOf, { readonly 'a': string;
 // 16. Mixed enum types
 // ---------------------------------------------------------------------------
 
-const MixedEnumSchema = {
+const _MixedEnumSchema = {
   'enum': [
     'a',
     1,
@@ -624,14 +624,14 @@ const MixedEnumSchema = {
   ]
 } as const;
 
-type MixedEnum = InferType<typeof MixedEnumSchema>;
+type MixedEnum = InferType<typeof _MixedEnumSchema>;
 assert<AssertEqual<MixedEnum, 1 | 'a' | null | true>>();
 
 // ---------------------------------------------------------------------------
 // 17. Deeply nested $ref
 // ---------------------------------------------------------------------------
 
-const DeepRefSchema = {
+const _DeepRefSchema = {
   '$defs': {
     'Inner': {
       'properties': { 'value': { 'type': 'number' } },
@@ -650,7 +650,7 @@ const DeepRefSchema = {
   'type': 'object'
 } as const;
 
-type DeepRef = InferType<typeof DeepRefSchema>;
+type DeepRef = InferType<typeof _DeepRefSchema>;
 assert<AssertAssignable<DeepRef, { readonly 'wrapper': { readonly 'inner': { readonly 'value': number } } }>>();
 
 // ---------------------------------------------------------------------------
@@ -661,38 +661,39 @@ assert<AssertAssignable<DeepRef, { readonly 'wrapper': { readonly 'inner': { rea
  * External $ref with anchor fragment — cannot resolve cross-schema at compile
  * time because we don't have access to the external schema's type.
  */
-const ExternalAnchorRefSchema = {
+const _ExternalAnchorRefSchema = {
   'properties': { 'ext': { '$ref': 'https://example.com/Other#someAnchor' } },
   'type': 'object'
 } as const;
 
-type ExternalAnchorRefResult = InferType<typeof ExternalAnchorRefSchema>;
+type ExternalAnchorRefResult = InferType<typeof _ExternalAnchorRefSchema>;
 assert<AssertAssignable<ExternalAnchorRefResult, { readonly 'ext'?: unknown }>>();
 
 /**
  * External $ref with JSON Pointer fragment — cannot resolve cross-schema.
  */
-const ExternalPointerRefSchema = {
+const _ExternalPointerRefSchema = {
   'properties': { 'ext': { '$ref': 'https://example.com/Other#/$defs/Foo' } },
   'type': 'object'
 } as const;
 
-type ExternalPointerRefResult = InferType<typeof ExternalPointerRefSchema>;
+type ExternalPointerRefResult = InferType<typeof _ExternalPointerRefSchema>;
 assert<AssertAssignable<ExternalPointerRefResult, { readonly 'ext'?: unknown }>>();
 
 /**
  * External $ref with deep JSON Pointer — cannot resolve cross-schema.
  */
-const ExternalDeepPointerRefSchema = {
+const _ExternalDeepPointerRefSchema = {
   'properties': { 'ext': { '$ref': 'https://example.com/Other#/properties/name' } },
   'type': 'object'
 } as const;
 
-type ExternalDeepPointerRefResult = InferType<typeof ExternalDeepPointerRefSchema>;
+type ExternalDeepPointerRefResult = InferType<typeof _ExternalDeepPointerRefSchema>;
 assert<AssertAssignable<ExternalDeepPointerRefResult, { readonly 'ext'?: unknown }>>();
 
 // With an explicit references map, external refs resolve at compile time
 interface ReferenceMap {
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   readonly 'https://example.com/Other': {
     readonly '$anchor': 'someAnchor';
     readonly '$defs': {
@@ -712,7 +713,7 @@ interface ReferenceMap {
   };
 }
 
-type ExternalWholeDocResolved = InferSchemaType<typeof ExternalRefSchema, typeof ExternalRefSchema, ReferenceMap>;
+type ExternalWholeDocResolved = InferSchemaType<typeof _ExternalRefSchema, typeof _ExternalRefSchema, ReferenceMap>;
 assert<AssertAssignable<ExternalWholeDocResolved, {
   readonly 'ext'?: {
     readonly 'child'?: { readonly 'name': string };
@@ -720,7 +721,7 @@ assert<AssertAssignable<ExternalWholeDocResolved, {
   };
 }>>();
 
-type ExternalWholeDocResolvedViaAlias = InferType<typeof ExternalRefSchema, ReferenceMap>;
+type ExternalWholeDocResolvedViaAlias = InferType<typeof _ExternalRefSchema, ReferenceMap>;
 assert<AssertAssignable<ExternalWholeDocResolvedViaAlias, {
   readonly 'ext'?: {
     readonly 'child'?: { readonly 'name': string };
@@ -728,7 +729,8 @@ assert<AssertAssignable<ExternalWholeDocResolvedViaAlias, {
   };
 }>>();
 
-type ExternalAnchorResolved = InferSchemaType<typeof ExternalAnchorRefSchema, typeof ExternalAnchorRefSchema, ReferenceMap>;
+type ExternalAnchorResolved
+  = InferSchemaType<typeof _ExternalAnchorRefSchema, typeof _ExternalAnchorRefSchema, ReferenceMap>;
 assert<AssertAssignable<ExternalAnchorResolved, {
   readonly 'ext'?: {
     readonly 'child'?: { readonly 'name': string };
@@ -736,17 +738,19 @@ assert<AssertAssignable<ExternalAnchorResolved, {
   };
 }>>();
 
-type ExternalPointerResolved = InferSchemaType<typeof ExternalPointerRefSchema, typeof ExternalPointerRefSchema, ReferenceMap>;
+type ExternalPointerResolved
+  = InferSchemaType<typeof _ExternalPointerRefSchema, typeof _ExternalPointerRefSchema, ReferenceMap>;
 assert<AssertAssignable<ExternalPointerResolved, { readonly 'ext'?: { readonly 'name': string } }>>();
 
-type ExternalDeepPointerResolved = InferSchemaType<typeof ExternalDeepPointerRefSchema, typeof ExternalDeepPointerRefSchema, ReferenceMap>;
+type ExternalDeepPointerResolved
+  = InferSchemaType<typeof _ExternalDeepPointerRefSchema, typeof _ExternalDeepPointerRefSchema, ReferenceMap>;
 assert<AssertAssignable<ExternalDeepPointerResolved, { readonly 'ext'?: string }>>();
 
 /**
  * Internal fragment refs still resolve correctly — regression guard.
  * Ensures the external fallback didn't break internal resolution.
  */
-const InternalFragmentRefSchema = {
+const _InternalFragmentRefSchema = {
   '$defs': {
     'Named': {
       '$anchor': 'named',
@@ -766,7 +770,7 @@ const InternalFragmentRefSchema = {
   'type': 'object'
 } as const;
 
-type InternalFragmentResult = InferType<typeof InternalFragmentRefSchema>;
+type InternalFragmentResult = InferType<typeof _InternalFragmentRefSchema>;
 assert<AssertAssignable<InternalFragmentResult, {
   readonly 'a': { readonly 'label': string };
   readonly 'b': { readonly 'label': string };
@@ -778,27 +782,27 @@ assert<AssertAssignable<InternalFragmentResult, {
 
 import type { SplitFragmentRefType } from '../../src/types/infer.js';
 
-const LocalSchemaWithId = {
+const _LocalSchemaWithId = {
   '$defs': { 'Bar': { 'type': 'string' } },
   '$id': 'https://local.com/Foo',
   'type': 'object'
 } as const;
 
 // Cross-schema ref must resolve to unknown (base URI mismatch)
-type CrossSchemaRef = SplitFragmentRefType<'https://other.com/X#/$defs/Bar', typeof LocalSchemaWithId>;
+type CrossSchemaRef = SplitFragmentRefType<'https://other.com/X#/$defs/Bar', typeof _LocalSchemaWithId>;
 assert<AssertEqual<CrossSchemaRef, unknown>>();
 
 // Same-schema ref resolves correctly (base URI matches $id)
-type SameSchemaRef = SplitFragmentRefType<'https://local.com/Foo#/$defs/Bar', typeof LocalSchemaWithId>;
+type SameSchemaRef = SplitFragmentRefType<'https://local.com/Foo#/$defs/Bar', typeof _LocalSchemaWithId>;
 assert<AssertEqual<SameSchemaRef, { readonly 'type': 'string' }>>();
 
 // Schema without $id → unknown (cannot verify base)
-const SchemaWithoutId = {
+const _SchemaWithoutId = {
   '$defs': { 'X': { 'type': 'number' } },
   'type': 'object'
 } as const;
 
-type NoIdRef = SplitFragmentRefType<'https://any.com#/$defs/X', typeof SchemaWithoutId>;
+type NoIdRef = SplitFragmentRefType<'https://any.com#/$defs/X', typeof _SchemaWithoutId>;
 assert<AssertEqual<NoIdRef, unknown>>();
 
 // ---------------------------------------------------------------------------

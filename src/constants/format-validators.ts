@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/prefer-code-point -- ASCII-range byte comparisons; charCodeAt is intentional */
 import { isIP } from 'node:net';
 import { domainToASCII } from 'node:url';
 
@@ -22,16 +23,16 @@ function hasBalancedBraces(value: string): boolean {
   return depth === 0;
 }
 
-function isAlphanumeric(c: number): boolean {
-  return (c >= 0x30 && c <= 0x39) || (c >= 0x41 && c <= 0x5A) || (c >= 0x61 && c <= 0x7A);
+function isAlphanumeric(code: number): boolean {
+  return (code >= 0x30 && code <= 0x39) || (code >= 0x41 && code <= 0x5A) || (code >= 0x61 && code <= 0x7A);
 }
 
-function isHexChar(c: number): boolean {
-  return (c >= 0x30 && c <= 0x39) || (c >= 0x41 && c <= 0x46) || (c >= 0x61 && c <= 0x66);
+function isHexChar(code: number): boolean {
+  return (code >= 0x30 && code <= 0x39) || (code >= 0x41 && code <= 0x46) || (code >= 0x61 && code <= 0x66);
 }
 
-function isDigit(c: number): boolean {
-  return c >= 0x30 && c <= 0x39;
+function isDigit(code: number): boolean {
+  return code >= 0x30 && code <= 0x39;
 }
 
 function isAsciiHostname(value: string): boolean {
@@ -41,9 +42,10 @@ function isAsciiHostname(value: string): boolean {
   let labelLen = 0;
 
   for (let i = 0; i < value.length; i++) {
-    const c = value.charCodeAt(i);
+    const charCode = value.charCodeAt(i);
 
-    if (c === 0x2E) { // '.'
+    // '.'
+    if (charCode === 0x2E) {
       if (labelLen === 0) {
         return false;
       }
@@ -53,12 +55,13 @@ function isAsciiHostname(value: string): boolean {
       labelLen = 0;
       continue;
     }
-    if (labelLen === 0 && !isAlphanumeric(c)) {
+    if (labelLen === 0 && !isAlphanumeric(charCode)) {
       return false;
     }
-    if (!isAlphanumeric(c) && c !== 0x2D) {
+    // not alphanumeric or '-'
+    if (!isAlphanumeric(charCode) && charCode !== 0x2D) {
       return false;
-    } // not alphanumeric or '-'
+    }
     labelLen++;
     if (labelLen > 63) {
       return false;
@@ -102,8 +105,9 @@ function isUriReference(value: string): boolean {
 // Built-in string format validators
 // ---------------------------------------------------------------------------
 
-function isBase64Char(c: number): boolean {
-  return isAlphanumeric(c) || c === 0x2B || c === 0x2F; // '+' or '/'
+// '+' or '/'
+function isBase64Char(code: number): boolean {
+  return isAlphanumeric(code) || code === 0x2B || code === 0x2F;
 }
 
 function validateDate(value: string, offset: number): boolean {
@@ -115,9 +119,10 @@ function validateDate(value: string, offset: number): boolean {
       return false;
     }
   }
+  // '-'
   if (value.charCodeAt(offset + 4) !== 0x2D) {
     return false;
-  } // '-'
+  }
   if (!isDigit(value.charCodeAt(offset + 5)) || !isDigit(value.charCodeAt(offset + 6))) {
     return false;
   }
@@ -148,9 +153,10 @@ function validateTime(value: string, offset: number): boolean {
   if (hour > 23) {
     return false;
   }
+  // ':'
   if (value.charCodeAt(offset + 2) !== 0x3A) {
     return false;
-  } // ':'
+  }
   const m1 = value.charCodeAt(offset + 3); const
     m2 = value.charCodeAt(offset + 4);
 
@@ -169,9 +175,10 @@ function validateTime(value: string, offset: number): boolean {
   if (!isDigit(s1) || !isDigit(s2)) {
     return false;
   }
+  // 60 for leap second
   if ((s1 - 0x30) * 10 + (s2 - 0x30) > 60) {
     return false;
-  } // 60 for leap second
+  }
   let pos = offset + 8;
 
   // fractional seconds
@@ -185,7 +192,8 @@ function validateTime(value: string, offset: number): boolean {
     }
   }
 
-  return pos === value.length; // no timezone required for bare time check
+  // no timezone required for bare time check
+  return pos === value.length;
 }
 
 export const STRING_FORMAT_VALIDATORS: Record<string, (value: string) => boolean> = {
@@ -224,9 +232,10 @@ export const STRING_FORMAT_VALIDATORS: Record<string, (value: string) => boolean
         return false;
       }
       for (let i = padStart; i < value.length; i++) {
+        // '='
         if (value.charCodeAt(i) !== 0x3D) {
           return false;
-        } // '='
+        }
       }
     }
 
@@ -243,26 +252,29 @@ export const STRING_FORMAT_VALIDATORS: Record<string, (value: string) => boolean
 
     return !Number.isNaN(candidate.getTime()) && candidate.toISOString().startsWith(value);
   },
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   'date-time': (value) => {
     return value.length > 15 && value.includes('T') && !Number.isNaN(Date.parse(value));
   },
   'duration': (value) => {
+    // 'P'
     if (value.length < 2 || value.charCodeAt(0) !== 0x50) {
       return false;
-    } // 'P'
+    }
     let pos = 1;
     let hasContent = false;
     let inTime = false;
 
     while (pos < value.length) {
-      const c = value.charCodeAt(pos);
+      const charCode = value.charCodeAt(pos);
 
-      if (c === 0x54 && !inTime) { // 'T'
+      // 'T'
+      if (charCode === 0x54 && !inTime) {
         inTime = true;
         pos++;
         continue;
       }
-      if (!isDigit(c)) {
+      if (!isDigit(charCode)) {
         return false;
       }
       while (pos < value.length && isDigit(value.charCodeAt(pos))) {
@@ -273,7 +285,8 @@ export const STRING_FORMAT_VALIDATORS: Record<string, (value: string) => boolean
       }
       const unit = value.charCodeAt(pos);
 
-      if (unit === 0x2E && inTime) { // '.' for fractional seconds
+      // '.' for fractional seconds
+      if (unit === 0x2E && inTime) {
         pos++;
         if (pos >= value.length || !isDigit(value.charCodeAt(pos))) {
           return false;
@@ -281,9 +294,10 @@ export const STRING_FORMAT_VALIDATORS: Record<string, (value: string) => boolean
         while (pos < value.length && isDigit(value.charCodeAt(pos))) {
           pos++;
         }
+        // 'S'
         if (pos >= value.length || value.charCodeAt(pos) !== 0x53) {
           return false;
-        } // 'S'
+        }
       }
       pos++;
       hasContent = true;
@@ -313,6 +327,7 @@ export const STRING_FORMAT_VALIDATORS: Record<string, (value: string) => boolean
   'hostname': (value) => {
     return isAsciiHostname(value);
   },
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   'idn-email': (value) => {
     const at = value.lastIndexOf('@');
 
@@ -320,16 +335,18 @@ export const STRING_FORMAT_VALIDATORS: Record<string, (value: string) => boolean
       return false;
     }
     for (let i = 0; i < value.length; i++) {
-      const c = value.charCodeAt(i);
+      const charCode = value.charCodeAt(i);
 
-      if (c <= 0x20 || (c === 0x40 && i !== at)) {
+      // whitespace or duplicate @
+      if (charCode <= 0x20 || (charCode === 0x40 && i !== at)) {
         return false;
-      } // whitespace or duplicate @
+      }
     }
     const domain = value.slice(at + 1);
 
     return domainToASCII(domain).length > 0;
   },
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   'idn-hostname': (value) => {
     return domainToASCII(value).length > 0;
   },
@@ -342,28 +359,33 @@ export const STRING_FORMAT_VALIDATORS: Record<string, (value: string) => boolean
   'iri': (value) => {
     return isUriLike(value);
   },
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   'iri-reference': (value) => {
     return isUriReference(value);
   },
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   'json-pointer': (value) => {
     if (value.length === 0) {
       return true;
     }
+    // '/'
     if (value.charCodeAt(0) !== 0x2F) {
       return false;
-    } // '/'
+    }
 
     for (let i = 1; i < value.length; i++) {
-      if (value.charCodeAt(i) === 0x7E) { // '~'
+      // '~'
+      if (value.charCodeAt(i) === 0x7E) {
         i++;
         if (i >= value.length) {
           return false;
         }
         const next = value.charCodeAt(i);
 
+        // must be '0' or '1'
         if (next !== 0x30 && next !== 0x31) {
           return false;
-        } // must be '0' or '1'
+        }
       }
     }
 
@@ -395,17 +417,20 @@ export const STRING_FORMAT_VALIDATORS: Record<string, (value: string) => boolean
         pos++;
       }
     }
+    // no timezone is valid
     if (pos === value.length) {
       return true;
-    } // no timezone is valid
+    }
     const tzChar = value.charCodeAt(pos);
 
+    // 'Z'
     if (tzChar === 0x5A) {
       return pos + 1 === value.length;
-    } // 'Z'
+    }
+    // '+' or '-'
     if (tzChar !== 0x2B && tzChar !== 0x2D) {
       return false;
-    } // '+' or '-'
+    }
     // +HH:MM
     if (pos + 6 !== value.length) {
       return false;
@@ -425,9 +450,11 @@ export const STRING_FORMAT_VALIDATORS: Record<string, (value: string) => boolean
   'uri': (value) => {
     return isUriLike(value);
   },
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   'uri-reference': (value) => {
     return isUriReference(value);
   },
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   'uri-template': (value) => {
     return isUriReference(value) && hasBalancedBraces(value);
   },

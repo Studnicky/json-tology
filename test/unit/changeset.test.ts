@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 import { Changeset } from '../../src/modules/data/Changeset.js';
 import type { DiffOpType } from '../../src/types/diff.js';
 
+/* eslint-disable no-restricted-syntax -- Changeset.apply() is not Function.prototype.apply() */
 void describe('Changeset', () => {
   void it('isEmpty is true for empty operations', () => {
     const cs = new Changeset([]);

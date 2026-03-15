@@ -65,7 +65,9 @@ const ontology = jt.ontology();
 const jsonLd = ontology.jsonLdObject();
 
 console.log('--- OWL Ontology (JSON-LD) ---');
-console.log(JSON.stringify(jsonLd, null, 2));
+const jsonLdStr = JSON.stringify(jsonLd, null, 2);
+
+console.log(jsonLdStr);
 console.log();
 
 // ---------------------------------------------------------------------------

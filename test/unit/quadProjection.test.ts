@@ -6,68 +6,55 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import {
   projectAbox, projectGraph, quadsToJsonLdNodes
 } from '../../src/modules/rdf/Projection.js';
-import { resetBnodeCounter } from '../../src/modules/rdf/Projection.js';
 import type { QuadInterface } from '../../src/interfaces/quad.js';
-import type { QuadObjectType } from '../../src/types/quad.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 function findQuads(quads: QuadInterface[], predicate: string): QuadInterface[] {
-  return quads.filter((q) => {
-    return q.predicate === predicate;
+  return quads.filter((quad) => {
+    return quad.predicate === predicate;
   });
 }
 
 function findQuadsForSubject(quads: QuadInterface[], subject: string, predicate: string): QuadInterface[] {
-  return quads.filter((q) => {
-    return q.subject === subject && q.predicate === predicate;
-  });
-}
-
-function hasQuad(quads: QuadInterface[], subject: string, predicate: string, objectValue: string): boolean {
-  return quads.some((q) => {
-    return q.subject === subject
-    && q.predicate === predicate
-    && (
-      (q.object.termType === 'NamedNode' && q.object.value === objectValue)
-      || (q.object.termType === 'Literal' && String(q.object.value) === objectValue)
-      || (q.object.termType === 'BlankNode' && q.object.value === objectValue)
-    );
+  return quads.filter((quad) => {
+    return quad.subject === subject && quad.predicate === predicate;
   });
 }
 
 function hasIriQuad(quads: QuadInterface[], subject: string, predicate: string, objectIri: string): boolean {
-  return quads.some((q) => {
-    return q.subject === subject
-    && q.predicate === predicate
-    && q.object.termType === 'NamedNode'
-    && q.object.value === objectIri;
+  return quads.some((quad) => {
+    return quad.subject === subject
+    && quad.predicate === predicate
+    && quad.object.termType === 'NamedNode'
+    && quad.object.value === objectIri;
   });
 }
 
+// eslint-disable-next-line @stylistic/max-len
 function hasLiteralQuad(quads: QuadInterface[], subject: string, predicate: string, value: unknown, datatype?: string): boolean {
-  return quads.some((q) => {
-    return q.subject === subject
-    && q.predicate === predicate
-    && q.object.termType === 'Literal'
-    && q.object.value === value
-    && (datatype === undefined || q.object.datatype.value === datatype);
+  return quads.some((quad) => {
+    return quad.subject === subject
+    && quad.predicate === predicate
+    && quad.object.termType === 'Literal'
+    && quad.object.value === value
+    && (datatype === undefined || quad.object.datatype.value === datatype);
   });
 }
 
 function hasBnodeQuad(quads: QuadInterface[], subject: string, predicate: string): QuadInterface | undefined {
-  return quads.find((q) => {
-    return q.subject === subject
-    && q.predicate === predicate
-    && q.object.termType === 'BlankNode';
+  return quads.find((quad) => {
+    return quad.subject === subject
+    && quad.predicate === predicate
+    && quad.object.termType === 'BlankNode';
   });
 }
 
-function bnodeId(q: QuadInterface): string {
-  if (q.object.termType === 'BlankNode') {
-    return q.object.value;
+function bnodeId(quad: QuadInterface): string {
+  if (quad.object.termType === 'BlankNode') {
+    return quad.object.value;
   }
   throw new Error('Expected bnode object');
 }
@@ -82,9 +69,9 @@ function tboxQuads(schema: Record<string, unknown>): QuadInterface[] {
 // TBox tests
 // ---------------------------------------------------------------------------
 
-describe('projectGraph — TBox projection', () => {
-  describe('1. Simple class with properties', () => {
-    it('emits owl:Class, property type, and domain quads', () => {
+void describe('projectGraph — TBox projection', () => {
+  void describe('1. Simple class with properties', () => {
+    void it('emits owl:Class, property type, and domain quads', () => {
       const quads = tboxQuads({
         '$id': 'https://example.com/Person',
         'properties': {
@@ -121,8 +108,8 @@ describe('projectGraph — TBox projection', () => {
     });
   });
 
-  describe('2. Required properties produce owl:Restriction', () => {
-    it('emits restriction blank node with minCardinality', () => {
+  void describe('2. Required properties produce owl:Restriction', () => {
+    void it('emits restriction blank node with minCardinality', () => {
       const quads = tboxQuads({
         '$id': 'https://example.com/Person',
         'properties': { 'name': { 'type': 'string' } },
@@ -155,8 +142,8 @@ describe('projectGraph — TBox projection', () => {
     });
   });
 
-  describe('3. String constraints', () => {
-    it('emits sh:minLength, sh:maxLength, sh:pattern', () => {
+  void describe('3. String constraints', () => {
+    void it('emits sh:minLength, sh:maxLength, sh:pattern', () => {
       const quads = tboxQuads({
         '$id': 'https://example.com/T',
         'properties': {
@@ -178,8 +165,8 @@ describe('projectGraph — TBox projection', () => {
     });
   });
 
-  describe('4. Numeric constraints', () => {
-    it('emits sh:minInclusive, sh:maxInclusive, sh:minExclusive, sh:maxExclusive', () => {
+  void describe('4. Numeric constraints', () => {
+    void it('emits sh:minInclusive, sh:maxInclusive, sh:minExclusive, sh:maxExclusive', () => {
       const quads = tboxQuads({
         '$id': 'https://example.com/T',
         'properties': {
@@ -207,8 +194,8 @@ describe('projectGraph — TBox projection', () => {
     });
   });
 
-  describe('5. Enum produces owl:oneOf', () => {
-    it('emits owl:oneOf literal for each enum value', () => {
+  void describe('5. Enum produces owl:oneOf', () => {
+    void it('emits owl:oneOf literal for each enum value', () => {
       const quads = tboxQuads({
         '$id': 'https://example.com/Status',
         'enum': [
@@ -228,8 +215,8 @@ describe('projectGraph — TBox projection', () => {
     });
   });
 
-  describe('6. Const produces owl:hasValue', () => {
-    it('emits owl:hasValue literal', () => {
+  void describe('6. Const produces owl:hasValue', () => {
+    void it('emits owl:hasValue literal', () => {
       const quads = tboxQuads({
         '$id': 'https://example.com/Const',
         'const': 'fixed',
@@ -240,8 +227,8 @@ describe('projectGraph — TBox projection', () => {
     });
   });
 
-  describe('7. allOf produces rdfs:subClassOf', () => {
-    it('emits rdfs:subClassOf for each allOf branch', () => {
+  void describe('7. allOf produces rdfs:subClassOf', () => {
+    void it('emits rdfs:subClassOf for each allOf branch', () => {
       const quads = tboxQuads({
         '$id': 'https://example.com/Child',
         'allOf': [{ '$ref': 'https://example.com/Parent' }],
@@ -252,8 +239,8 @@ describe('projectGraph — TBox projection', () => {
     });
   });
 
-  describe('8. anyOf/oneOf produce owl:equivalentClass', () => {
-    it('emits owl:equivalentClass for anyOf branches', () => {
+  void describe('8. anyOf/oneOf produce owl:equivalentClass', () => {
+    void it('emits owl:equivalentClass for anyOf branches', () => {
       const quads = tboxQuads({
         '$id': 'https://example.com/Union',
         'anyOf': [
@@ -267,7 +254,7 @@ describe('projectGraph — TBox projection', () => {
       assert.ok(eqQuads.length >= 2);
     });
 
-    it('emits owl:equivalentClass for oneOf branches', () => {
+    void it('emits owl:equivalentClass for oneOf branches', () => {
       const quads = tboxQuads({
         '$id': 'https://example.com/Exclusive',
         'oneOf': [
@@ -282,8 +269,8 @@ describe('projectGraph — TBox projection', () => {
     });
   });
 
-  describe('9. not produces owl:complementOf', () => {
-    it('emits owl:complementOf for not', () => {
+  void describe('9. not produces owl:complementOf', () => {
+    void it('emits owl:complementOf for not', () => {
       const quads = tboxQuads({
         '$id': 'https://example.com/NotArray',
         'not': { 'type': 'array' }
@@ -295,8 +282,8 @@ describe('projectGraph — TBox projection', () => {
     });
   });
 
-  describe('10. if/then/else produces conditional structure', () => {
-    it('emits owl:unionOf bnode with jt:if/jt:then/jt:else', () => {
+  void describe('10. if/then/else produces conditional structure', () => {
+    void it('emits owl:unionOf bnode with jt:if/jt:then/jt:else', () => {
       const quads = tboxQuads({
         '$id': 'https://example.com/Conditional',
         'else': {
@@ -307,6 +294,7 @@ describe('projectGraph — TBox projection', () => {
           'properties': { 'kind': { 'const': 'person' } },
           'type': 'object'
         },
+        // eslint-disable-next-line unicorn/no-thenable -- JSON Schema 'then' keyword
         'then': {
           'properties': { 'name': { 'type': 'string' } },
           'type': 'object'
@@ -335,8 +323,8 @@ describe('projectGraph — TBox projection', () => {
     });
   });
 
-  describe('11. contains produces owl:someValuesFrom restriction', () => {
-    it('emits restriction bnode with owl:someValuesFrom', () => {
+  void describe('11. contains produces owl:someValuesFrom restriction', () => {
+    void it('emits restriction bnode with owl:someValuesFrom', () => {
       const quads = tboxQuads({
         '$id': 'https://example.com/ArrayContains',
         'contains': { 'type': 'number' },
@@ -354,7 +342,7 @@ describe('projectGraph — TBox projection', () => {
       assert.ok(hasIriQuad(quads, bId, 'owl:someValuesFrom', 'xsd:decimal'));
     });
 
-    it('emits qualified cardinality from minContains/maxContains', () => {
+    void it('emits qualified cardinality from minContains/maxContains', () => {
       const quads = tboxQuads({
         '$id': 'https://example.com/ArrayCard',
         'contains': { 'type': 'string' },
@@ -380,8 +368,8 @@ describe('projectGraph — TBox projection', () => {
     });
   });
 
-  describe('12. prefixItems produce rdfs:member positional quads', () => {
-    it('emits rdfs:member for each positional item', () => {
+  void describe('12. prefixItems produce rdfs:member positional quads', () => {
+    void it('emits rdfs:member for each positional item', () => {
       const quads = tboxQuads({
         '$id': 'https://example.com/Tuple',
         'prefixItems': [
@@ -402,8 +390,8 @@ describe('projectGraph — TBox projection', () => {
     });
   });
 
-  describe('13. patternProperties produce sh:pattern quads', () => {
-    it('emits sh:pattern for each pattern property', () => {
+  void describe('13. patternProperties produce sh:pattern quads', () => {
+    void it('emits sh:pattern for each pattern property', () => {
       const quads = tboxQuads({
         '$id': 'https://example.com/PatternProps',
         'patternProperties': {
@@ -421,8 +409,8 @@ describe('projectGraph — TBox projection', () => {
     });
   });
 
-  describe('14. additionalProperties: false produces sh:closed', () => {
-    it('emits sh:closed true', () => {
+  void describe('14. additionalProperties: false produces sh:closed', () => {
+    void it('emits sh:closed true', () => {
       const quads = tboxQuads({
         '$id': 'https://example.com/Strict',
         'additionalProperties': false,
@@ -433,7 +421,7 @@ describe('projectGraph — TBox projection', () => {
       assert.ok(hasLiteralQuad(quads, 'https://example.com/Strict', 'sh:closed', 'true', 'xsd:boolean'));
     });
 
-    it('does not emit sh:closed when additionalProperties is true', () => {
+    void it('does not emit sh:closed when additionalProperties is true', () => {
       const quads = tboxQuads({
         '$id': 'https://example.com/Open',
         'additionalProperties': true,
@@ -446,8 +434,8 @@ describe('projectGraph — TBox projection', () => {
     });
   });
 
-  describe('15. readOnly/writeOnly produce dash: predicate quads', () => {
-    it('emits dash:readOnly true', () => {
+  void describe('15. readOnly/writeOnly produce dash: predicate quads', () => {
+    void it('emits dash:readOnly true', () => {
       const quads = tboxQuads({
         '$id': 'https://example.com/RO',
         'properties': {
@@ -468,7 +456,7 @@ describe('projectGraph — TBox projection', () => {
       ));
     });
 
-    it('emits dash:writeOnly true', () => {
+    void it('emits dash:writeOnly true', () => {
       const quads = tboxQuads({
         '$id': 'https://example.com/WO',
         'properties': {
@@ -490,8 +478,8 @@ describe('projectGraph — TBox projection', () => {
     });
   });
 
-  describe('16. deprecated produces owl:deprecated', () => {
-    it('emits owl:deprecated literal', () => {
+  void describe('16. deprecated produces owl:deprecated', () => {
+    void it('emits owl:deprecated literal', () => {
       const quads = tboxQuads({
         '$id': 'https://example.com/Old',
         'deprecated': true,
@@ -502,8 +490,8 @@ describe('projectGraph — TBox projection', () => {
     });
   });
 
-  describe('17. $ref produces rdfs:range', () => {
-    it('emits rdfs:range IRI from $ref property', () => {
+  void describe('17. $ref produces rdfs:range', () => {
+    void it('emits rdfs:range IRI from $ref property', () => {
       const quads = tboxQuads({
         '$id': 'https://example.com/T',
         'properties': { 'friend': { '$ref': 'https://example.com/Person' } },
@@ -519,8 +507,8 @@ describe('projectGraph — TBox projection', () => {
     });
   });
 
-  describe('18. Multi-type produces owl:unionOf list', () => {
-    it('emits owl:unionOf with RDF list object', () => {
+  void describe('18. Multi-type produces owl:unionOf list', () => {
+    void it('emits owl:unionOf with RDF list object', () => {
       const quads = tboxQuads({
         '$id': 'https://example.com/T',
         'properties': {
@@ -542,8 +530,8 @@ describe('projectGraph — TBox projection', () => {
 
       assert.ok(unionQuads.length > 0, 'should have unionOf quad');
 
-      const listQuad = unionQuads.find((q) => {
-        return q.object.termType === 'List';
+      const listQuad = unionQuads.find((quad) => {
+        return quad.object.termType === 'List';
       });
 
       assert.ok(listQuad, 'should have list-type object');
@@ -554,16 +542,14 @@ describe('projectGraph — TBox projection', () => {
         assert.equal(items.length, 2);
         assert.equal(items[0].termType, 'NamedNode');
         assert.equal(items[1].termType, 'NamedNode');
-        if (items[0].termType === 'NamedNode' && items[1].termType === 'NamedNode') {
-          assert.equal(items[0].value, 'xsd:string');
-          assert.equal(items[1].value, 'xsd:decimal');
-        }
+        assert.equal(items[0].value, 'xsd:string');
+        assert.equal(items[1].value, 'xsd:decimal');
       }
     });
   });
 
-  describe('19. XSD datatype resolution produces sh:datatype', () => {
-    it('emits sh:datatype for string', () => {
+  void describe('19. XSD datatype resolution produces sh:datatype', () => {
+    void it('emits sh:datatype for string', () => {
       const quads = tboxQuads({
         '$id': 'https://example.com/T',
         'properties': { 'name': { 'type': 'string' } },
@@ -578,7 +564,7 @@ describe('projectGraph — TBox projection', () => {
       ));
     });
 
-    it('emits sh:datatype for date-time format', () => {
+    void it('emits sh:datatype for date-time format', () => {
       const quads = tboxQuads({
         '$id': 'https://example.com/T',
         'properties': {
@@ -598,7 +584,7 @@ describe('projectGraph — TBox projection', () => {
       ));
     });
 
-    it('does not emit sh:datatype for object type', () => {
+    void it('does not emit sh:datatype for object type', () => {
       const quads = tboxQuads({
         '$id': 'https://example.com/T',
         'properties': { 'meta': { 'type': 'object' } },
@@ -615,8 +601,8 @@ describe('projectGraph — TBox projection', () => {
     });
   });
 
-  describe('20. dependentSchemas produce conditional quads', () => {
-    it('emits conditional bnode for each dependent schema', () => {
+  void describe('20. dependentSchemas produce conditional quads', () => {
+    void it('emits conditional bnode for each dependent schema', () => {
       const quads = tboxQuads({
         '$id': 'https://example.com/Deps',
         'dependentSchemas': {
@@ -645,8 +631,8 @@ describe('projectGraph — TBox projection', () => {
   });
 });
 
-describe('quadsToJsonLdNodes', () => {
-  it('preserves stable blank node identifiers without double-prefixing them', () => {
+void describe('quadsToJsonLdNodes', () => {
+  void it('preserves stable blank node identifiers without double-prefixing them', () => {
     const quads: QuadInterface[] = [
       {
         'object': {
@@ -698,10 +684,10 @@ describe('quadsToJsonLdNodes', () => {
 // ABox tests
 // ---------------------------------------------------------------------------
 
-describe('projectAbox — ABox projection', () => {
-  describe('21. Simple instance produces rdf:type and property literals', () => {
-    it('emits rdf:type and string/number/boolean property quads', () => {
-      const schema = {
+void describe('projectAbox — ABox projection', () => {
+  void describe('21. Simple instance produces rdf:type and property literals', () => {
+    void it('emits rdf:type and string/number/boolean property quads', () => {
+      const schema: Record<string, unknown> = {
         '$id': 'https://example.com/User',
         'properties': {
           'active': { 'type': 'boolean' },
@@ -709,7 +695,7 @@ describe('projectAbox — ABox projection', () => {
           'name': { 'type': 'string' }
         },
         'type': 'object'
-      } as Record<string, unknown>;
+      };
 
       const graph = new SchemaGraph(schema);
       const data = {
@@ -738,9 +724,9 @@ describe('projectAbox — ABox projection', () => {
     });
   });
 
-  describe('22. Nested object produces linked instance quads', () => {
-    it('emits separate instances linked by IRI', () => {
-      const schema = {
+  void describe('22. Nested object produces linked instance quads', () => {
+    void it('emits separate instances linked by IRI', () => {
+      const schema: Record<string, unknown> = {
         '$id': 'https://example.com/Parent',
         'properties': {
           'address': {
@@ -753,7 +739,7 @@ describe('projectAbox — ABox projection', () => {
           'name': { 'type': 'string' }
         },
         'type': 'object'
-      } as Record<string, unknown>;
+      };
 
       const graph = new SchemaGraph(schema);
       const data = {
@@ -766,10 +752,10 @@ describe('projectAbox — ABox projection', () => {
       const quads = projectAbox(graph, data, 'https://data.example.com');
 
       // Parent instance
-      const parentTypeQuads = quads.filter((q) => {
-        return q.predicate === 'rdf:type'
-        && q.object.termType === 'NamedNode'
-        && q.object.value === 'https://example.com/Parent';
+      const parentTypeQuads = quads.filter((quad) => {
+        return quad.predicate === 'rdf:type'
+        && quad.object.termType === 'NamedNode'
+        && quad.object.value === 'https://example.com/Parent';
       });
 
       assert.equal(parentTypeQuads.length, 1);
@@ -782,25 +768,25 @@ describe('projectAbox — ABox projection', () => {
       assert.equal(addrQuads[0].object.termType, 'NamedNode');
 
       // Nested instance should have its own quads
-      const nestedIRI = addrQuads[0].object.termType === 'NamedNode' ? addrQuads[0].object.value : '';
+      const nestedIRI = addrQuads[0].object.value;
 
       assert.ok(
         hasLiteralQuad(quads, nestedIRI, 'https://example.com/Parent#/properties/address#street', 'Springfield', 'xsd:string')
         || hasLiteralQuad(quads, nestedIRI, 'https://example.com/Parent#/properties/address#city', 'Springfield', 'xsd:string')
-        || quads.some((q) => {
-          return q.subject === nestedIRI
-          && q.predicate.includes('city')
-          && q.object.termType === 'Literal'
-          && q.object.value === 'Springfield';
+        || quads.some((quad) => {
+          return quad.subject === nestedIRI
+          && quad.predicate.includes('city')
+          && quad.object.termType === 'Literal'
+          && quad.object.value === 'Springfield';
         }),
         'nested instance should have city property'
       );
     });
   });
 
-  describe('23. Array values produce multiple quads', () => {
-    it('emits one quad per array element', () => {
-      const schema = {
+  void describe('23. Array values produce multiple quads', () => {
+    void it('emits one quad per array element', () => {
+      const schema: Record<string, unknown> = {
         '$id': 'https://example.com/Tags',
         'properties': {
           'tags': {
@@ -809,7 +795,7 @@ describe('projectAbox — ABox projection', () => {
           }
         },
         'type': 'object'
-      } as Record<string, unknown>;
+      };
 
       const graph = new SchemaGraph(schema);
       const data = {
@@ -821,19 +807,22 @@ describe('projectAbox — ABox projection', () => {
       };
       const quads = projectAbox(graph, data, 'https://data.example.com');
 
-      const instIRI = quads.find((q) => {
-        return q.predicate === 'rdf:type';
-      })!.subject;
+      const typeQuad = quads.find((quad) => {
+        return quad.predicate === 'rdf:type';
+      });
+
+      assert.ok(typeQuad, 'should have rdf:type quad');
+      const instIRI = typeQuad.subject;
       const tagQuads = findQuadsForSubject(quads, instIRI, 'https://example.com/Tags#tags');
 
       assert.equal(tagQuads.length, 3);
 
       const tagValues = new Set(tagQuads
-        .filter((q) => {
-          return q.object.termType === 'Literal';
+        .filter((quad) => {
+          return quad.object.termType === 'Literal';
         })
-        .map((q) => {
-          return q.object.termType === 'Literal' ? q.object.value : null;
+        .map((quad) => {
+          return quad.object.termType === 'Literal' ? quad.object.value : null;
         }));
 
       assert.ok(tagValues.has('red'));
@@ -842,16 +831,16 @@ describe('projectAbox — ABox projection', () => {
     });
   });
 
-  describe('24. Null values are omitted', () => {
-    it('does not emit quads for null property values', () => {
-      const schema = {
+  void describe('24. Null values are omitted', () => {
+    void it('does not emit quads for null property values', () => {
+      const schema: Record<string, unknown> = {
         '$id': 'https://example.com/Nullable',
         'properties': {
           'name': { 'type': 'string' },
           'nickname': { 'type': 'string' }
         },
         'type': 'object'
-      } as Record<string, unknown>;
+      };
 
       const graph = new SchemaGraph(schema);
       const data = {
@@ -860,9 +849,12 @@ describe('projectAbox — ABox projection', () => {
       };
       const quads = projectAbox(graph, data, 'https://data.example.com');
 
-      const instIRI = quads.find((q) => {
-        return q.predicate === 'rdf:type';
-      })!.subject;
+      const typeQuad = quads.find((quad) => {
+        return quad.predicate === 'rdf:type';
+      });
+
+      assert.ok(typeQuad, 'should have rdf:type quad');
+      const instIRI = typeQuad.subject;
 
       // name should be present
       assert.ok(hasLiteralQuad(quads, instIRI, 'https://example.com/Nullable#name', 'Alice'));
@@ -874,9 +866,9 @@ describe('projectAbox — ABox projection', () => {
     });
   });
 
-  describe('25. TBox + ABox coherence', () => {
-    it('instance types reference declared classes, properties reference declared properties', () => {
-      const schema = {
+  void describe('25. TBox + ABox coherence', () => {
+    void it('instance types reference declared classes, properties reference declared properties', () => {
+      const schema: Record<string, unknown> = {
         '$id': 'https://example.com/Item',
         'properties': {
           'count': { 'type': 'integer' },
@@ -884,7 +876,7 @@ describe('projectAbox — ABox projection', () => {
         },
         'required': ['label'],
         'type': 'object'
-      } as Record<string, unknown>;
+      };
 
       const graph = new SchemaGraph(schema);
       const tbox = projectGraph(graph);
@@ -895,20 +887,20 @@ describe('projectAbox — ABox projection', () => {
 
       // Collect TBox class IRIs
       const tboxClasses = new Set(tbox
-        .filter((q) => {
-          return q.predicate === 'rdf:type' && q.object.termType === 'NamedNode' && q.object.value === 'owl:Class';
+        .filter((quad) => {
+          return quad.predicate === 'rdf:type' && quad.object.termType === 'NamedNode' && quad.object.value === 'owl:Class';
         })
-        .map((q) => {
-          return q.subject;
+        .map((quad) => {
+          return quad.subject;
         }));
 
       // ABox rdf:type targets should be in TBox classes
       const aboxTypes = abox
-        .filter((q) => {
-          return q.predicate === 'rdf:type' && q.object.termType === 'NamedNode';
+        .filter((quad) => {
+          return quad.predicate === 'rdf:type' && quad.object.termType === 'NamedNode';
         })
-        .map((q) => {
-          return q.object.termType === 'NamedNode' ? q.object.value : '';
+        .map((quad) => {
+          return quad.object.termType === 'NamedNode' ? quad.object.value : '';
         });
 
       for (const aboxType of aboxTypes) {
@@ -918,24 +910,13 @@ describe('projectAbox — ABox projection', () => {
         );
       }
 
-      // Collect TBox property IRIs (owl:DatatypeProperty or owl:ObjectProperty)
-      const tboxProperties = tbox
-        .filter((q) => {
-          return q.predicate === 'rdf:type'
-          && q.object.termType === 'NamedNode'
-          && (q.object.value === 'owl:DatatypeProperty' || q.object.value === 'owl:ObjectProperty');
-        })
-        .map((q) => {
-          return q.subject;
-        });
-
       // ABox property predicates should reference TBox property IDs (by derivation)
       const aboxPropPredicates = abox
-        .filter((q) => {
-          return q.predicate !== 'rdf:type';
+        .filter((quad) => {
+          return quad.predicate !== 'rdf:type';
         })
-        .map((q) => {
-          return q.predicate;
+        .map((quad) => {
+          return quad.predicate;
         });
 
       // All ABox property predicates should start with the class IRI

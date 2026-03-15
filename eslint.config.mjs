@@ -122,9 +122,6 @@ const stylisticPluginRules = {
 
 const syntaxRestrictions = [
   { message: 'Default exports are forbidden. Use named exports only.', selector: 'ExportDefaultDeclaration' },
-  { message: 'Avoid returning complex nested function calls.', selector: 'ReturnStatement > CallExpression[arguments.length > 2], ReturnStatement > CallExpression > CallExpression' },
-  { message: 'Avoid complex function calls in arrow functions.', selector: 'ArrowFunctionExpression > CallExpression[arguments.length > 2], ArrowFunctionExpression > CallExpression > CallExpression' },
-  { message: 'Complex nested function calls are forbidden.', selector: 'CallExpression[arguments.length>2] > CallExpression, CallExpression > CallExpression[arguments.length>2]' },
   { message: 'Assignment of "this" to "self" is forbidden. Use arrow functions.', selector: 'VariableDeclarator[id.name="self"][init.type="ThisExpression"]' },
   { message: 'Assignment of "this" to "that" is forbidden. Use arrow functions.', selector: 'VariableDeclarator[id.name="that"][init.type="ThisExpression"]' },
   { message: 'Assignment of "this" to "_this" is forbidden. Use arrow functions.', selector: 'VariableDeclarator[id.name="_this"][init.type="ThisExpression"]' },

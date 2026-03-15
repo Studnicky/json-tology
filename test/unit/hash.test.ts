@@ -30,16 +30,16 @@ void describe('Hash.value()', () => {
   });
 
   void it('is key-order insensitive', () => {
-    const a = {
+    const first = {
       'a': 1,
       'b': 2
     };
-    const b = {
+    const second = {
       'a': 1,
       'b': 2
     };
 
-    assert.equal(Hash.value(a), Hash.value(b));
+    assert.equal(Hash.value(first), Hash.value(second));
   });
 
   void it('produces different hashes for different values', () => {
@@ -50,14 +50,14 @@ void describe('Hash.value()', () => {
   });
 
   void it('handles nested objects with key-order insensitivity', () => {
-    const a = {
+    const first = {
       'outer': {
         'x': 1,
         'y': 2
       },
       'z': 3
     };
-    const b = {
+    const second = {
       'outer': {
         'x': 1,
         'y': 2
@@ -65,7 +65,7 @@ void describe('Hash.value()', () => {
       'z': 3
     };
 
-    assert.equal(Hash.value(a), Hash.value(b));
+    assert.equal(Hash.value(first), Hash.value(second));
   });
 
   void it('handles arrays (order matters)', () => {

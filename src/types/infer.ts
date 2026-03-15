@@ -79,19 +79,23 @@ type ExtractRequiredKeysType<T>
   = T extends { readonly 'required': ReadonlyArray<infer K extends string> } ? K : never;
 
 type InferObjectTypePropsType<TProps, TRequired extends string, TRoot, TReferences> = SimplifyType<
-  { readonly [K in keyof TProps & string as K extends TRequired ? K : never]: InferSchemaType<TProps[K], TRoot, TReferences> }
-  & { readonly [K in keyof TProps & string as K extends TRequired ? never : K]?: InferSchemaType<TProps[K], TRoot, TReferences> }
+  { readonly [K in keyof TProps & string as K extends TRequired ? K : never]:
+    InferSchemaType<TProps[K], TRoot, TReferences> }
+  & { readonly [K in keyof TProps & string as K extends TRequired ? never : K]?:
+    InferSchemaType<TProps[K], TRoot, TReferences> }
 >;
 
 type InferAdditionalType<T, TRoot, TReferences>
   = T extends { readonly 'additionalProperties': false } ? unknown
-    : T extends { readonly 'additionalProperties': infer A } ? { readonly [key: string]: InferSchemaType<A, TRoot, TReferences> }
+    : T extends { readonly 'additionalProperties': infer A }
+      ? { readonly [key: string]: InferSchemaType<A, TRoot, TReferences> }
       : unknown;
 
 type InferObjectType<T, TRoot, TReferences>
   = T extends { readonly 'properties': infer TProps;
     readonly 'type': 'object'; }
-    ? InferAdditionalType<T, TRoot, TReferences> & InferObjectTypePropsType<TProps, ExtractRequiredKeysType<T>, TRoot, TReferences>
+    ? InferAdditionalType<T, TRoot, TReferences>
+      & InferObjectTypePropsType<TProps, ExtractRequiredKeysType<T>, TRoot, TReferences>
     : T extends { readonly 'type': 'object' }
       ? Record<string, unknown>
       : never;
@@ -163,6 +167,7 @@ type ResolveRefBaseSchemaType<TBase extends string, TRoot, TReferences>
  * `unknown` because compile-time resolution requires a schema registry
  * (which is a runtime concept).
  */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 type SplitFragmentRefType<TRef extends string, TRoot, TReferences = {}>
   = TRef extends `${infer Base}#${infer Fragment}`
     ? ResolveRefBaseSchemaType<Base, TRoot, TReferences> extends infer TBaseSchema
@@ -309,6 +314,7 @@ type InferConditionalType<T, TRoot, TReferences>
  * @typeParam T - The schema type (should be `as const`).
  * @typeParam Root - The root schema for $ref resolution (defaults to T).
  */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export type InferSchemaType<T, TRoot = T, TReferences = {}>
   // Bail out for boolean schemas and broad types
   = [T] extends [boolean] ? unknown
