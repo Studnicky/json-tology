@@ -1,0 +1,232 @@
+#!/bin/sh
+set -e
+
+# ============================================================================
+# Branch Naming Validation (via Node.js)
+# ============================================================================
+# Delegates to Node.js for deterministic cross-platform behavior.
+# See: npx @noocodex/dev-tools hooks --help
+
+npx @noocodex/dev-tools hooks branch-validate || exit 1
+
+# ============================================================================
+# .dev-tools/ Configuration Tracking Validation
+# ============================================================================
+# Ensures .dev-tools/security.json is tracked in git (not ignored).
+# This is critical for security allowlist auditing.
+
+if [ -f ".dev-tools/security.json" ]; then
+    if git check-ignore --quiet ".dev-tools/security.json" 2>/dev/null; then
+        echo ""
+        echo "======================================================================="
+        echo "  .dev-tools/ DIRECTORY IS GIT IGNORED"
+        echo "======================================================================="
+        echo ""
+        echo "  The .dev-tools/ directory must be committed to version control."
+        echo "  This ensures security allowlists and configuration are tracked."
+        echo ""
+        echo "  How to fix:"
+        echo "    1. Remove .dev-tools from .gitignore"
+        echo "    2. git add .dev-tools/"
+        echo "    3. git commit -m \"chore: track .dev-tools configuration\""
+        echo ""
+        echo "======================================================================="
+        echo ""
+        exit 1
+    fi
+fi
+
+# ============================================================================
+# Version Bump Validation (for master branch)
+# ============================================================================
+
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+
+# Git passes the remote name and URL as arguments to pre-push hooks
+push_remote="${1:-origin}"
+
+exec 3<&0
+
+while read local_ref local_sha remote_ref remote_sha <&3; do
+  [ -z "$local_ref" ] && continue
+
+  remote_branch=$(echo "$remote_ref" | sed 's/refs\/heads\///')
+
+  if [ "$remote_branch" = "master" ]; then
+    echo "Validating version bump for push to $remote_branch..."
+
+    current_version=$(node -p "require('./package.json').version" 2>/dev/null)
+    remote_version=$(git show "$push_remote/$remote_branch:package.json" 2>/dev/null | node -p "JSON.parse(require('fs').readFileSync('/dev/stdin', 'utf8')).version" 2>/dev/null || true)
+
+    if [ -z "$current_version" ]; then
+      echo "Error: Could not read current version from package.json"
+      exit 1
+    fi
+
+    if [ -z "$remote_version" ]; then
+      echo "Warning: Could not read version from $remote_branch branch, skipping validation"
+    else
+      if [ "$current_version" = "$remote_version" ]; then
+        echo "ERROR: Version must be bumped when pushing to $remote_branch!"
+        echo "Current version: $current_version"
+        echo "Remote version:  $remote_version"
+        exit 1
+      fi
+      echo "Version bump detected: $remote_version -> $current_version"
+    fi
+  fi
+done
+
+# ============================================================================
+# Changelog Modification Check
+# ============================================================================
+# Validates CHANGELOG.md was modified in commits being pushed.
+# Version entry validation is handled by 'dev-tools ci' below.
+# Skips for chore/ci/docs/deps/build commits (same as CI workflow).
+# Find comparison base: remote tracking branch, or develop, or master
+compare_base=""
+if git rev-parse --verify "$push_remote/$current_branch" >/dev/null 2>&1; then
+    compare_base="$push_remote/$current_branch"
+elif git rev-parse --verify "$push_remote/develop" >/dev/null 2>&1; then
+    compare_base="$push_remote/develop"
+elif git rev-parse --verify "$push_remote/master" >/dev/null 2>&1; then
+    compare_base="$push_remote/master"
+fi
+
+# Determine target branch for changelog validation
+# Release and hotfix branches always target master
+current_branch=$(git branch --show-current 2>/dev/null || echo "")
+targets_master=false
+
+case "$current_branch" in
+    release/*|hotfix/*|master|main) targets_master=true ;;
+esac
+
+echo ""
+echo "Validating changelog matches semver (branch: ${current_branch:-detached})..."
+
+# Get current version from package.json
+current_version=$(node -p "require('./package.json').version" 2>/dev/null || echo "")
+
+if [ -z "$current_version" ]; then
+    echo "Warning: Could not read version from package.json, skipping changelog validation"
+elif [ ! -f "CHANGELOG.md" ]; then
+    echo ""
+    echo "═══════════════════════════════════════════════════════════════"
+    echo "ERROR: CHANGELOG.md not found"
+    echo "═══════════════════════════════════════════════════════════════"
+    echo ""
+    echo "Create CHANGELOG.md following https://keepachangelog.com format"
+    exit 1
+elif [ "$targets_master" = "true" ]; then
+    # PRs to master: must have versioned entry matching package.json
+    if grep -qE "^## \[${current_version}\]" CHANGELOG.md; then
+        echo "Changelog has entry for version ${current_version} ✓"
+    else
+        echo ""
+        echo "═══════════════════════════════════════════════════════════════"
+        echo "ERROR: CHANGELOG.md missing entry for version ${current_version}"
+        echo "═══════════════════════════════════════════════════════════════"
+        echo ""
+        echo "For releases to master, CHANGELOG.md must have:"
+        echo "  ## [${current_version}] - YYYY-MM-DD"
+        echo ""
+        echo "Convert [Unreleased] section to versioned entry before merging."
+        exit 1
+    fi
+else
+    # PRs to develop: must have [Unreleased] section with content
+    if grep -qE "^## \[Unreleased\]" CHANGELOG.md; then
+        # Check for content under Unreleased (Added, Changed, Fixed, etc.)
+        unreleased_content=$(sed -n '/^## \[Unreleased\]/,/^## \[/p' CHANGELOG.md | grep -cE "^### (Added|Changed|Fixed|Removed|Deprecated|Security)" || true)
+        if [ "$unreleased_content" -gt 0 ]; then
+            echo "Changelog has [Unreleased] section with content ✓"
+        else
+            echo ""
+            echo "═══════════════════════════════════════════════════════════════"
+            echo "ERROR: CHANGELOG.md [Unreleased] section is empty"
+            echo "═══════════════════════════════════════════════════════════════"
+            echo ""
+            echo "Add your changes under [Unreleased] with subsections:"
+            echo "  ### Added - new features"
+            echo "  ### Changed - changes to existing functionality"
+            echo "  ### Fixed - bug fixes"
+            echo "  ### Removed - removed features"
+            exit 1
+        fi
+    else
+        echo ""
+        echo "═══════════════════════════════════════════════════════════════"
+        echo "ERROR: CHANGELOG.md missing [Unreleased] section"
+        echo "═══════════════════════════════════════════════════════════════"
+        echo ""
+        echo "Add an [Unreleased] section at the top of CHANGELOG.md:"
+        echo "  ## [Unreleased]"
+        echo "  ### Added"
+        echo "  - Your new feature"
+        exit 1
+    fi
+fi
+
+# ============================================================================
+# CI Validation
+# ============================================================================
+
+echo "Running CI validation..."
+npx @noocodex/dev-tools ci
+
+# ============================================================================
+# Documentation Generation (protected branches only)
+# ============================================================================
+
+should_generate_docs=false
+case "$current_branch" in
+    master|main|develop)
+        should_generate_docs=true
+        ;;
+    release/*)
+        should_generate_docs=true
+        ;;
+esac
+
+if [ "$should_generate_docs" = true ]; then
+    echo ""
+    echo "Generating documentation..."
+    npx @noocodex/dev-tools docs
+    echo "Documentation generated"
+
+    # Stage and amend commit with fresh docs if they changed
+    has_changes=false
+
+    if [ -d docs/api ] && ! git diff --quiet -- docs/api/ 2>/dev/null; then
+        has_changes=true
+    fi
+
+    if [ -d docs/api ] && [ -n "$(git ls-files --others --exclude-standard docs/api/ 2>/dev/null)" ]; then
+        has_changes=true
+    fi
+
+    if [ -d docs/architecture ] && ! git diff --quiet -- docs/architecture/ 2>/dev/null; then
+        has_changes=true
+    fi
+
+    if [ -d docs/architecture ] && [ -n "$(git ls-files --others --exclude-standard docs/architecture/ 2>/dev/null)" ]; then
+        has_changes=true
+    fi
+
+    if [ "$has_changes" = true ]; then
+        echo ""
+        echo "Amending commit with fresh documentation..."
+        git add docs/api/ docs/architecture/ 2>/dev/null || git add docs/api/
+        git commit --amend --no-edit --no-verify
+        echo "Documentation attached to commit"
+    else
+        echo "Documentation unchanged"
+    fi
+else
+    echo ""
+    echo "Skipping doc generation for feature branch '$current_branch'"
+    echo "(Docs will be generated when merging to develop/master)"
+fi
+
+exit 0

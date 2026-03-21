@@ -14,6 +14,7 @@
 import type {
   NormIRInterface, SchemaGraphNodeInterface
 } from '../../interfaces/schema-graph.js';
+import type { SchemaGraphInterface } from '../../interfaces/schema-graph-impl.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { Hash } from '../hash/Hash.js';
 import { SchemaGraph } from './SchemaGraph.js';
@@ -33,7 +34,7 @@ export class GraphArtifact {
    * Rehydrates directly from NormIR without re-lowering, then verifies
    * per-node semantics hashes for staleness.
    */
-  public static fromArtifact(artifact: GraphArtifactInterface): SchemaGraph {
+  public static fromArtifact(artifact: GraphArtifactInterface): SchemaGraphInterface {
     if (!this.isRecord(artifact)) {
       throw new GraphError(
         'ARTIFACT_INVALID',
@@ -95,7 +96,7 @@ export class GraphArtifact {
    * Excludes node references (which are structural, not semantic)
    * to produce a stable, deterministic hash.
    */
-  private static hashSemantics(graph: SchemaGraph, node: SchemaGraphNodeInterface): string {
+  private static hashSemantics(graph: SchemaGraphInterface, node: SchemaGraphNodeInterface): string {
     const sem = graph.semantics(node);
 
     // Hash only scalar/primitive semantic fields — node references are structural
@@ -171,9 +172,12 @@ export class GraphArtifact {
   }
 
   /**
-   * Serialize a SchemaGraph into a JSON-serializable artifact.
+   * Serialize a SchemaGraph into a JSON-serializable artifact with per-node semantics hashes.
+   *
+   * @param graph - Schema graph to serialize
+   * @returns Artifact containing NormIR, schema hash, and per-node semantics hashes
    */
-  public static toArtifact(graph: SchemaGraph): GraphArtifactInterface {
+  public static toArtifact(graph: SchemaGraphInterface): GraphArtifactInterface {
     const normIR = graph.getNormIR();
     const semanticsHashes: Record<string, string> = {};
 

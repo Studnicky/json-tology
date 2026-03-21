@@ -60,6 +60,7 @@ const StrictSchema = {
 } as const;
 
 interface QuadObject {
+  'termType': string;
   'type': string;
   'value'?: unknown;
 }
@@ -71,192 +72,230 @@ interface Quad {
 }
 
 void describe('Materializer', () => {
-  void it('should materialize an entity with schema defaults', () => {
-    const registry = new SchemaRegistry();
-    const materializer = new Materializer(registry);
-
-    const config = materializer.materialize(ConfigSchema, { 'name': 'test' });
-
-    assert.strictEqual(config.name, 'test');
-    assert.strictEqual(config.debug, false);
-    assert.strictEqual(config.timeout, 5000);
-  });
-
-  void it('should merge partial values with defaults', () => {
-    const registry = new SchemaRegistry();
-    const materializer = new Materializer(registry);
-
-    const config = materializer.materialize(ConfigSchema, {
-      'name': 'custom',
-      'timeout': 10_000
-    });
-
-    assert.strictEqual(config.name, 'custom');
-    assert.strictEqual(config.timeout, 10_000);
-    assert.strictEqual(config.debug, false);
-  });
-
-  void it('should handle nested defaults via $ref', () => {
-    const registry = new SchemaRegistry();
-    const materializer = new Materializer(registry);
-
-    const nested = materializer.materialize(NestedSchema, {});
-
-    assert.strictEqual(nested.inner.value, 42);
-  });
-
-  void it('should validate and throw on invalid data', () => {
-    const registry = new SchemaRegistry();
-    const materializer = new Materializer(registry);
-
-    assert.throws(
-      () => {
-        return materializer.materialize(ConfigSchema, { 'name': 123 as unknown as string });
+  void it('should materialize defaults, partial overrides, nested refs, and declared properties', () => {
+    // --- defaults, partial overrides, and execution projection ---
+    const scenarios = [
+      {
+        'expected': {
+          'debug': false,
+          'name': 'test',
+          'timeout': 5000
+        },
+        'input': { 'name': 'test' },
+        'label': 'schema defaults'
       },
-      (err: Error) => {
-        return err.message.includes('Invalid');
-      }
-    );
-  });
-
-  void it('should throw if required property is missing', () => {
-    const registry = new SchemaRegistry();
-    const materializer = new Materializer(registry);
-
-    assert.throws(
-      () => {
-        return materializer.materialize(ConfigSchema, {});
+      {
+        'expected': {
+          'debug': false,
+          'name': 'custom',
+          'timeout': 10_000
+        },
+        'input': {
+          'name': 'custom',
+          'timeout': 10_000
+        },
+        'label': 'partial overrides'
       },
-      (err: Error) => {
-        return err.message.includes('Invalid');
+      {
+        'expected': {
+          'debug': false,
+          'name': 'test',
+          'timeout': 5000
+        },
+        'input': { 'name': 'test' },
+        'label': 'execution projection'
       }
-    );
-  });
+    ] as const;
 
-  void it('should build from partial without all required properties if they have defaults', () => {
-    const SchemaWithDefaults = {
-      '$id': 'https://example.io/all-defaults',
-      '$schema': 'https://json-schema.org/draft/2020-12/schema',
-      'properties': {
-        'field': {
-          'default': 'default-value',
-          'type': 'string'
+    for (const scenario of scenarios) {
+      const registry = new SchemaRegistry();
+      const materializer = new Materializer(registry);
+
+      const config = materializer.materialize(ConfigSchema, scenario.input);
+
+      assert.strictEqual(config.name, scenario.expected.name, `${scenario.label}: name`);
+      assert.strictEqual(config.debug, scenario.expected.debug, `${scenario.label}: debug`);
+      assert.strictEqual(config.timeout, scenario.expected.timeout, `${scenario.label}: timeout`);
+    }
+
+    // --- nested defaults via $ref ---
+    {
+      const registry = new SchemaRegistry();
+      const materializer = new Materializer(registry);
+
+      const nested = materializer.materialize(NestedSchema, {});
+
+      assert.strictEqual(nested.inner.value, 42);
+    }
+
+    // --- build from partial when required properties have defaults ---
+    {
+      const SchemaWithDefaults = {
+        '$id': 'https://example.io/all-defaults',
+        '$schema': 'https://json-schema.org/draft/2020-12/schema',
+        'properties': {
+          'field': {
+            'default': 'default-value',
+            'type': 'string'
+          }
+        },
+        'required': ['field'],
+        'type': 'object'
+      } as const;
+
+      const registry = new SchemaRegistry();
+      const materializer = new Materializer(registry);
+
+      const result = materializer.materialize(SchemaWithDefaults, {});
+
+      assert.strictEqual(result.field, 'default-value');
+    }
+
+    // --- all declared properties appear on output ---
+    {
+      const propertyScenarios = [
+        {
+          'expectedKeys': [
+            'name',
+            'debug',
+            'timeout'
+          ],
+          'input': { 'name': 'test' },
+          'label': 'non-required properties with defaults present',
+          'schema': ConfigSchema
+        },
+        {
+          'expectedKeys': [
+            'required',
+            'optional'
+          ],
+          'input': { 'required': 'yes' },
+          'label': 'non-required property with no default is undefined',
+          'schema': {
+            '$id': 'https://example.io/optional',
+            '$schema': 'https://json-schema.org/draft/2020-12/schema',
+            'properties': {
+              'optional': { 'type': 'string' },
+              'required': { 'type': 'string' }
+            },
+            'required': ['required'],
+            'type': 'object'
+          }
         }
+      ] as const;
+
+      for (const scenario of propertyScenarios) {
+        const registry = new SchemaRegistry();
+        const materializer = new Materializer(registry);
+
+        const result = materializer.materialize(scenario.schema, scenario.input) as Record<string, unknown>;
+
+        for (const key of scenario.expectedKeys) {
+          assert.ok(key in result, `${scenario.label}: ${key} must be present`);
+        }
+      }
+
+      // Additional assertion: optional property without default is undefined
+      const registry = new SchemaRegistry();
+      const materializer = new Materializer(registry);
+
+      const result = materializer.materialize(propertyScenarios[1].schema, { 'required': 'yes' }) as Record<string, unknown>;
+
+      assert.strictEqual(result.optional, undefined);
+    }
+  });
+
+  void it('should throw on invalid data across scenarios', () => {
+    const scenarios = [
+      {
+        'input': { 'name': 123 as unknown as string },
+        'label': 'type mismatch on required property',
+        'schema': ConfigSchema,
+        'strictRegistry': false
       },
-      'required': ['field'],
-      'type': 'object'
-    } as const;
-
-    const registry = new SchemaRegistry();
-    const materializer = new Materializer(registry);
-
-    const result = materializer.materialize(SchemaWithDefaults, {});
-
-    assert.strictEqual(result.field, 'default-value');
-  });
-
-  void it('should set non-required properties without defaults to undefined (never omit keys)', () => {
-    const registry = new SchemaRegistry();
-    const materializer = new Materializer(registry);
-
-    const config = materializer.materialize(ConfigSchema, { 'name': 'test' });
-
-    assert.ok('name' in config, 'name must be present');
-    assert.ok('debug' in config, 'debug must be present');
-    assert.ok('timeout' in config, 'timeout must be present');
-  });
-
-  void it('should set non-required property with no default to undefined', () => {
-    const SchemaWithOptional = {
-      '$id': 'https://example.io/optional',
-      '$schema': 'https://json-schema.org/draft/2020-12/schema',
-      'properties': {
-        'optional': { 'type': 'string' },
-        'required': { 'type': 'string' }
+      {
+        'input': {},
+        'label': 'missing required property',
+        'schema': ConfigSchema,
+        'strictRegistry': false
       },
-      'required': ['required'],
-      'type': 'object'
-    } as const;
-
-    const registry = new SchemaRegistry();
-    const materializer = new Materializer(registry);
-
-    const result = materializer.materialize(SchemaWithOptional, { 'required': 'yes' });
-
-    assert.ok('optional' in result, 'optional key must be present on output');
-    assert.strictEqual(result.optional, undefined);
-  });
-
-  void it('should auto-register the schema with no prior registry.register()', () => {
-    const registry = new SchemaRegistry();
-    const materializer = new Materializer(registry);
-
-    const config = materializer.materialize(ConfigSchema, { 'name': 'auto' });
-
-    assert.strictEqual(config.name, 'auto');
-
-    // Schema should now be accessible from the registry
-    assert.ok(registry.get(ConfigSchema.$id) !== undefined);
-  });
-
-  void it('should coerce types when registry coerce: true', () => {
-    const registry = new SchemaRegistry({ 'coerce': true });
-    const materializer = new Materializer(registry);
-
-    const config = materializer.materialize(ConfigSchema, {
-      'name': 'test',
-      'timeout': '10000' as unknown as number
-    });
-
-    assert.strictEqual(config.timeout, 10_000);
-    assert.strictEqual(typeof config.timeout, 'number');
-  });
-
-  void it('should reject type mismatch without coerce option', () => {
-    const registry = new SchemaRegistry();
-    const materializer = new Materializer(registry);
-
-    assert.throws(
-      () => {
-        return materializer.materialize(ConfigSchema, {
+      {
+        'input': {
           'name': 'test',
           'timeout': '10000' as unknown as number
-        });
+        },
+        'label': 'type mismatch without coerce',
+        'schema': ConfigSchema,
+        'strictRegistry': false
       },
-      (err: Error) => {
-        return err.message.includes('Invalid');
-      }
-    );
-  });
-
-  void it('should allow extra keys when passAdditionalProperties: true', () => {
-    const registry = new SchemaRegistry();
-    const materializer = new Materializer(registry, { 'passAdditionalProperties': true });
-
-    const result = materializer.materialize(StrictSchema, {
-      'extra': 'allowed' as unknown as never,
-      'name': 'test'
-    });
-
-    assert.strictEqual(result.name, 'test');
-    assert.strictEqual((result as Record<string, unknown>).extra, 'allowed');
-  });
-
-  void it('should throw on extra keys when passAdditionalProperties is not set', () => {
-    const registry = new SchemaRegistry();
-    const materializer = new Materializer(registry);
-
-    assert.throws(
-      () => {
-        return materializer.materialize(StrictSchema, {
+      {
+        'input': {
           'extra': 'not allowed' as unknown as never,
           'name': 'test'
-        });
-      },
-      (err: Error) => {
-        return err.message.includes('Invalid');
+        },
+        'label': 'extra keys without passAdditionalProperties',
+        'schema': StrictSchema,
+        'strictRegistry': false
       }
-    );
+    ] as const;
+
+    for (const scenario of scenarios) {
+      const registry = new SchemaRegistry();
+      const materializer = new Materializer(registry);
+
+      assert.throws(
+        () => {
+          return materializer.materialize(scenario.schema, scenario.input);
+        },
+        (err: Error) => {
+          return err.message.includes('Invalid');
+        },
+        scenario.label
+      );
+    }
+  });
+
+  void it('should auto-register, coerce types, and pass additional properties via options', () => {
+    // --- auto-register the schema with no prior registry.register() ---
+    {
+      const registry = new SchemaRegistry();
+      const materializer = new Materializer(registry);
+
+      const config = materializer.materialize(ConfigSchema, { 'name': 'auto' });
+
+      assert.strictEqual(config.name, 'auto');
+
+      // Schema should now be accessible from the registry
+      assert.ok(registry.get(ConfigSchema.$id) !== undefined);
+    }
+
+    // --- coerce types when registry coerce: true ---
+    {
+      const registry = new SchemaRegistry({ 'castTypes': true });
+      const materializer = new Materializer(registry);
+
+      const config = materializer.materialize(ConfigSchema, {
+        'name': 'test',
+        'timeout': '10000' as unknown as number
+      });
+
+      assert.strictEqual(config.timeout, 10_000);
+      assert.strictEqual(typeof config.timeout, 'number');
+    }
+
+    // --- allow extra keys when passAdditionalProperties: true ---
+    {
+      const registry = new SchemaRegistry();
+      const materializer = new Materializer(registry, { 'passAdditionalProperties': true });
+
+      const result = materializer.materialize(StrictSchema, {
+        'extra': 'allowed' as unknown as never,
+        'name': 'test'
+      });
+
+      assert.strictEqual(result.name, 'test');
+      assert.strictEqual((result as Record<string, unknown>).extra, 'allowed');
+    }
   });
 });
 
@@ -266,209 +305,235 @@ void describe('Materializer', () => {
 
 void describe('Runtime projection contract', () => {
   void describe('createDefault()', () => {
-    void it('creates a default instance from schema with defaults and required properties', () => {
-      const registry = new SchemaRegistry();
-      const materializer = new Materializer(registry);
+    void it('creates defaults from schema with defaults, required properties, and registry.create()', () => {
+      // --- basic createDefault ---
+      {
+        const registry = new SchemaRegistry();
+        const materializer = new Materializer(registry);
 
-      const result = materializer.createDefault(ConfigSchema);
+        const result = materializer.createDefault(ConfigSchema);
 
-      assert.deepStrictEqual(result, {
-        'debug': false,
-        'name': '',
-        'timeout': 5000
-      });
+        assert.deepStrictEqual(result, {
+          'debug': false,
+          'name': '',
+          'timeout': 5000
+        });
+      }
+
+      // --- registry.create() ---
+      {
+        const registry = new SchemaRegistry();
+
+        registry.register(ConfigSchema);
+        const result = registry.create(ConfigSchema.$id) as Record<string, unknown>;
+
+        assert.strictEqual(result.name, '');
+        assert.strictEqual(result.debug, false);
+        assert.strictEqual(result.timeout, 5000);
+      }
     });
 
-    void it('resolves local $defs refs in create()', () => {
-      const RefSchema = {
-        '$defs': {
-          'Inner': {
-            'properties': {
-              'value': {
-                'default': 42,
-                'type': 'number'
-              }
-            },
+    void it('resolves $ref variations, external refs, and recursive refs in createDefault()', () => {
+      // --- local $defs ref and $anchor ref ---
+      {
+        const scenarios = [
+          {
+            'expected': { 'value': 42 },
+            'label': 'local $defs ref',
+            'property': 'inner',
+            'schema': {
+              '$defs': {
+                'Inner': {
+                  'properties': {
+                    'value': {
+                      'default': 42,
+                      'type': 'number'
+                    }
+                  },
+                  'type': 'object'
+                }
+              },
+              '$id': 'https://example.io/ref-create',
+              'properties': { 'inner': { '$ref': '#/$defs/Inner' } },
+              'required': ['inner'],
+              'type': 'object'
+            }
+          },
+          {
+            'expected': { 'label': 'untitled' },
+            'label': '$anchor ref',
+            'property': 'item',
+            'schema': {
+              '$defs': {
+                'Item': {
+                  '$anchor': 'item-def',
+                  'properties': {
+                    'label': {
+                      'default': 'untitled',
+                      'type': 'string'
+                    }
+                  },
+                  'required': ['label'],
+                  'type': 'object'
+                }
+              },
+              '$id': 'https://example.io/anchor-create',
+              'properties': { 'item': { '$ref': '#item-def' } },
+              'required': ['item'],
+              'type': 'object'
+            }
+          }
+        ] as const;
+
+        for (const scenario of scenarios) {
+          const registry = new SchemaRegistry();
+          const materializer = new Materializer(registry);
+
+          const result = materializer.createDefault(scenario.schema) as Record<string, unknown>;
+
+          assert.deepStrictEqual(result[scenario.property], scenario.expected, scenario.label);
+        }
+      }
+
+      // --- external $ref ---
+      {
+        const PartSchema = {
+          '$id': 'https://example.io/part',
+          'properties': {
+            'value': {
+              'default': 99,
+              'type': 'number'
+            }
+          },
+          'required': ['value'],
+          'type': 'object'
+        };
+        const WholeSchema = {
+          '$id': 'https://example.io/whole',
+          'properties': { 'part': { '$ref': 'https://example.io/part' } },
+          'required': ['part'],
+          'type': 'object'
+        };
+
+        const registry = new SchemaRegistry();
+
+        registry.register(PartSchema);
+        const materializer = new Materializer(registry);
+        const result = materializer.createDefault(WholeSchema) as Record<string, unknown>;
+
+        assert.deepStrictEqual(result.part, { 'value': 99 });
+      }
+
+      // --- recursive refs without infinite loop ---
+      {
+        const RecursiveSchema = {
+          '$id': 'https://example.io/recursive',
+          'properties': {
+            'child': { '$ref': 'https://example.io/recursive' },
+            'name': { 'type': 'string' }
+          },
+          'required': ['name'],
+          'type': 'object'
+        };
+
+        const registry = new SchemaRegistry();
+        const materializer = new Materializer(registry);
+        const result = materializer.createDefault(RecursiveSchema) as Record<string, unknown>;
+
+        assert.strictEqual(result.name, '');
+        // child is not required, so it should not be in the default
+      }
+    });
+
+    void it('uses const and first-enum values as defaults', () => {
+      const scenarios = [
+        {
+          'expected': 'fixed',
+          'label': 'const value',
+          'property': 'kind',
+          'schema': {
+            '$id': 'https://example.io/const-create',
+            'properties': { 'kind': { 'const': 'fixed' } },
+            'required': ['kind'],
             'type': 'object'
           }
         },
-        '$id': 'https://example.io/ref-create',
-        'properties': { 'inner': { '$ref': '#/$defs/Inner' } },
-        'required': ['inner'],
-        'type': 'object'
-      };
-
-      const registry = new SchemaRegistry();
-      const materializer = new Materializer(registry);
-
-      const result = materializer.createDefault(RefSchema) as Record<string, unknown>;
-
-      assert.deepStrictEqual(result.inner, { 'value': 42 });
-    });
-
-    void it('creates defaults for schemas with $anchor refs', () => {
-      const AnchorSchema = {
-        '$defs': {
-          'Item': {
-            '$anchor': 'item-def',
+        {
+          'expected': 'active',
+          'label': 'first enum value',
+          'property': 'status',
+          'schema': {
+            '$id': 'https://example.io/enum-create',
             'properties': {
-              'label': {
-                'default': 'untitled',
+              'status': {
+                'enum': [
+                  'active',
+                  'inactive'
+                ],
                 'type': 'string'
               }
             },
-            'required': ['label'],
+            'required': ['status'],
             'type': 'object'
           }
-        },
-        '$id': 'https://example.io/anchor-create',
-        'properties': { 'item': { '$ref': '#item-def' } },
-        'required': ['item'],
-        'type': 'object'
-      };
+        }
+      ] as const;
 
-      const registry = new SchemaRegistry();
-      const materializer = new Materializer(registry);
-      const result = materializer.createDefault(AnchorSchema) as Record<string, unknown>;
+      for (const scenario of scenarios) {
+        const registry = new SchemaRegistry();
+        const materializer = new Materializer(registry);
+        const result = materializer.createDefault(scenario.schema) as Record<string, unknown>;
 
-      assert.deepStrictEqual(result.item, { 'label': 'untitled' });
+        assert.strictEqual(result[scenario.property], scenario.expected, scenario.label);
+      }
     });
+  });
 
-    void it('creates defaults for schemas with external $ref', () => {
-      const PartSchema = {
-        '$id': 'https://example.io/part',
-        'properties': {
-          'value': {
-            'default': 99,
-            'type': 'number'
-          }
-        },
-        'required': ['value'],
-        'type': 'object'
-      };
-      const WholeSchema = {
-        '$id': 'https://example.io/whole',
-        'properties': { 'part': { '$ref': 'https://example.io/part' } },
-        'required': ['part'],
-        'type': 'object'
-      };
-
-      const registry = new SchemaRegistry();
-
-      registry.register(PartSchema);
-      const materializer = new Materializer(registry);
-      const result = materializer.createDefault(WholeSchema) as Record<string, unknown>;
-
-      assert.deepStrictEqual(result.part, { 'value': 99 });
-    });
-
-    void it('handles recursive refs without infinite loop', () => {
-      const RecursiveSchema = {
-        '$id': 'https://example.io/recursive',
-        'properties': {
-          'child': { '$ref': 'https://example.io/recursive' },
-          'name': { 'type': 'string' }
-        },
-        'required': ['name'],
-        'type': 'object'
-      };
-
+  void describe('execute() non-throwing API', () => {
+    void it('returns valid/errors/value/abox without throwing on invalid data', () => {
       const registry = new SchemaRegistry();
       const materializer = new Materializer(registry);
-      const result = materializer.createDefault(RecursiveSchema) as Record<string, unknown>;
 
-      assert.strictEqual(result.name, '');
-      // child is not required, so it should not be in the default
-    });
+      // valid data
+      const ok = materializer.execute(ConfigSchema, { 'name': 'test' }, { 'baseIRI': 'https://example.io' });
 
-    void it('uses const value as default', () => {
-      const ConstSchema = {
-        '$id': 'https://example.io/const-create',
-        'properties': { 'kind': { 'const': 'fixed' } },
-        'required': ['kind'],
-        'type': 'object'
-      };
+      assert.equal(ok.valid, true);
+      assert.equal(ok.errors.length, 0);
+      assert.equal((ok.value as Record<string, unknown>).name, 'test');
+      assert.ok(Array.isArray(ok.abox));
 
-      const registry = new SchemaRegistry();
-      const materializer = new Materializer(registry);
-      const result = materializer.createDefault(ConstSchema) as Record<string, unknown>;
+      // invalid data — does not throw, reports errors
+      const bad = materializer.execute(ConfigSchema, { 'name': 123 });
 
-      assert.strictEqual(result.kind, 'fixed');
-    });
-
-    void it('uses first enum value as default', () => {
-      const EnumSchema = {
-        '$id': 'https://example.io/enum-create',
-        'properties': {
-          'status': {
-            'enum': [
-              'active',
-              'inactive'
-            ],
-            'type': 'string'
-          }
-        },
-        'required': ['status'],
-        'type': 'object'
-      };
-
-      const registry = new SchemaRegistry();
-      const materializer = new Materializer(registry);
-      const result = materializer.createDefault(EnumSchema) as Record<string, unknown>;
-
-      assert.strictEqual(result.status, 'active');
+      assert.equal(bad.valid, false);
+      assert.ok(bad.errors.length > 0);
     });
   });
 
   void describe('execute -> materialize -> abox projection contract', () => {
-    void it('materialize is a projection over validation execution output', () => {
-      const registry = new SchemaRegistry();
-      const materializer = new Materializer(registry);
-
-      // materialize() calls execute() internally and projects defaults
-      const result = materializer.materialize(ConfigSchema, { 'name': 'test' });
-
-      assert.strictEqual(result.debug, false);
-      assert.strictEqual(result.timeout, 5000);
-      assert.strictEqual(result.name, 'test');
-    });
-
-    void it('projectAbox returns Quad[] from shared RDF projection path', () => {
+    void it('projectAbox returns well-formed quads with rdf:type and property literals', () => {
       const registry = new SchemaRegistry();
       const materializer = new Materializer(registry);
 
       const abox = materializer.projectAbox(ConfigSchema, { 'name': 'test' }, 'https://example.io');
 
+      // --- quad structure ---
       assert.ok(Array.isArray(abox));
       assert.ok(abox.length > 0);
 
-      // Quads have subject, predicate, object structure
       const first = abox[0] as Quad;
 
       assert.ok(typeof first.subject === 'string', 'quad must have string subject');
       assert.ok(typeof first.predicate === 'string', 'quad must have string predicate');
       assert.ok(typeof first.object === 'object', 'quad must have object');
       assert.ok(typeof first.object.termType === 'string', 'quad object must have termType');
-    });
 
-    void it('ABox quads include rdf:type pointing to schema $id', () => {
-      const registry = new SchemaRegistry();
-      const materializer = new Materializer(registry);
-
-      const abox = materializer.projectAbox(ConfigSchema, { 'name': 'test' }, 'https://example.io');
-
+      // --- rdf:type and property literals ---
       const typeQuad = abox.find((quad: Quad) => {
         return quad.predicate === 'rdf:type' && quad.object.termType === 'NamedNode' && quad.object.value === ConfigSchema.$id;
       });
 
       assert.ok(typeQuad, 'ABox must contain rdf:type quad referencing schema $id');
-    });
-
-    void it('ABox quads include property values with correct literals', () => {
-      const registry = new SchemaRegistry();
-      const materializer = new Materializer(registry);
-
-      const abox = materializer.projectAbox(ConfigSchema, { 'name': 'test' }, 'https://example.io');
 
       const nameQuad = abox.find((quad: Quad) => {
         return quad.predicate.endsWith('#name') && quad.object.termType === 'Literal' && quad.object.value === 'test';
@@ -477,46 +542,29 @@ void describe('Runtime projection contract', () => {
       assert.ok(nameQuad, 'ABox must contain name property quad');
     });
 
-    void it('deterministic instance identity: same data produces same subject IRI', () => {
+    void it('deterministic identity and TBox coherence', () => {
       const registry = new SchemaRegistry();
       const materializer = new Materializer(registry);
 
+      // --- deterministic and distinct instance identity ---
       const abox1 = materializer.projectAbox(ConfigSchema, { 'name': 'test' }, 'https://example.io');
       const abox2 = materializer.projectAbox(ConfigSchema, { 'name': 'test' }, 'https://example.io');
+      const abox3 = materializer.projectAbox(ConfigSchema, { 'name': 'bob' }, 'https://example.io');
 
       const subj1 = abox1.find((quad: Quad) => {
         return quad.predicate === 'rdf:type';
       })?.subject;
       const subj2 = abox2.find((quad: Quad) => {
+        return quad.predicate === 'rdf:type';
+      })?.subject;
+      const subj3 = abox3.find((quad: Quad) => {
         return quad.predicate === 'rdf:type';
       })?.subject;
 
       assert.strictEqual(subj1, subj2, 'same data must produce same instance IRI');
-    });
+      assert.notStrictEqual(subj1, subj3, 'different data must produce different instance IRI');
 
-    void it('different data produces different subject IRI', () => {
-      const registry = new SchemaRegistry();
-      const materializer = new Materializer(registry);
-
-      const abox1 = materializer.projectAbox(ConfigSchema, { 'name': 'alice' }, 'https://example.io');
-      const abox2 = materializer.projectAbox(ConfigSchema, { 'name': 'bob' }, 'https://example.io');
-
-      const subj1 = abox1.find((quad: Quad) => {
-        return quad.predicate === 'rdf:type';
-      })?.subject;
-      const subj2 = abox2.find((quad: Quad) => {
-        return quad.predicate === 'rdf:type';
-      })?.subject;
-
-      assert.notStrictEqual(subj1, subj2, 'different data must produce different instance IRI');
-    });
-  });
-
-  void describe('TBox + ABox coherence through Materializer', () => {
-    void it('ABox instance types reference TBox classes', () => {
-      const registry = new SchemaRegistry();
-      const materializer = new Materializer(registry);
-
+      // --- ABox instance types reference TBox classes ---
       registry.register(ConfigSchema);
 
       const graph = new SchemaGraph(ConfigSchema);
@@ -545,19 +593,6 @@ void describe('Runtime projection contract', () => {
           `ABox type ${String(aboxType)} should be declared as owl:Class in TBox`
         );
       }
-    });
-  });
-
-  void describe('registry.create()', () => {
-    void it('creates a default instance via registry', () => {
-      const registry = new SchemaRegistry();
-
-      registry.register(ConfigSchema);
-      const result = registry.create(ConfigSchema.$id) as Record<string, unknown>;
-
-      assert.strictEqual(result.name, '');
-      assert.strictEqual(result.debug, false);
-      assert.strictEqual(result.timeout, 5000);
     });
   });
 });

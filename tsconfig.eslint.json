@@ -6,6 +6,6 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false
   },
-  "include": ["src/**/*", "test/**/*", "bench/**/*"],
+  "include": ["src/**/*", "test/**/*", "bench/**/*", "examples/**/*"],
   "exclude": ["node_modules", "dist"]
 }

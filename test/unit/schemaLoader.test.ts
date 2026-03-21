@@ -11,7 +11,7 @@ import {
 } from 'node:fs';
 import { resolve } from 'node:path';
 import { SchemaLoader } from '../../src/modules/registry/SchemaLoader.js';
-import { Logger } from '../../src/modules/logger/Logger.js';
+import { Logger } from '../utils/Logger.js';
 
 const testDir = resolve(import.meta.dirname, 'fixtures', 'schemas');
 const validDir = resolve(testDir, 'valid');
@@ -59,9 +59,9 @@ void describe('SchemaLoader', () => {
     );
 
     // Invalid schemas
-    const noIdPath = resolve(invalidDir, 'no-id.json');
+    const missingIdPath = resolve(invalidDir, 'no-id.json');
 
-    writeFileSync(noIdPath, JSON.stringify({ 'type': 'object' }));
+    writeFileSync(missingIdPath, JSON.stringify({ 'type': 'object' }));
 
     const badJsonPath = resolve(invalidDir, 'bad-json.json');
 
@@ -102,8 +102,8 @@ void describe('SchemaLoader', () => {
 
   void it('should return null for schema without $id', () => {
     const loader = new SchemaLoader(new Logger());
-    const noIdPath = resolve(invalidDir, 'no-id.json');
-    const schema = loader.loadSchema(noIdPath);
+    const missingIdPath = resolve(invalidDir, 'no-id.json');
+    const schema = loader.loadSchema(missingIdPath);
 
     assert.strictEqual(schema, null);
   });
@@ -132,7 +132,7 @@ void describe('SchemaLoader', () => {
   void it('should report loading errors', () => {
     const loader = new SchemaLoader(new Logger());
     const [
-      _loadedSchemas,
+      _,
       result
     ] = loader.loadDirectory(invalidDir);
 
@@ -142,7 +142,7 @@ void describe('SchemaLoader', () => {
       return err.reason === 'invalid-json';
     }));
     assert.ok(result.errors.some((err) => {
-      return err.reason === 'no-id';
+      return err.reason === 'missing-id';
     }));
   });
 
@@ -200,11 +200,11 @@ void describe('SchemaLoader', () => {
 
     const loader = new SchemaLoader(new Logger());
     const [
-      _loadedSchemas,
+      loadedSchemas,
       result
     ] = loader.loadDirectory(dupDir);
 
-    assert.strictEqual(_loadedSchemas.length, 1);
+    assert.strictEqual(loadedSchemas.length, 1);
     assert.strictEqual(result.failed, 1);
     assert.ok(result.errors.some((err) => {
       return err.reason === 'duplicate-id';
@@ -223,7 +223,7 @@ void describe('SchemaLoader', () => {
 
     const loader = new SchemaLoader(new Logger());
     const [
-      _loadedSchemas,
+      _,
       result
     ] = loader.loadDirectory(validDir, { 'filePattern': /\.json$/iu });
 
@@ -234,7 +234,7 @@ void describe('SchemaLoader', () => {
   void it('should stop on error if stopOnError is true', () => {
     const loader = new SchemaLoader(new Logger());
     const [
-      _loadedSchemas,
+      _,
       result
     ] = loader.loadDirectory(invalidDir, { 'stopOnError': true });
 

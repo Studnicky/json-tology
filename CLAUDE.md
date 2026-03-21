@@ -74,7 +74,7 @@ All error classes and ValidationErrors are defined in `src/errors/`. Import each
 - `GraphError` — pointer resolution, anchor lookup, ref resolution, dialect issues
 - `LoadError` — file loading failures
 - `MaterializationError` — materialization/ABox validation failures
-- `ParseError` — parse validation failures (carries `ValidationErrors` collection)
+- `CoercionError` — coercion validation failures (carries `ValidationErrors` collection)
 
 **Shared utilities in `src/modules/data/DataTypes.ts`**
 Type guards (`isRecord`, `isPlainObject`), `deepEqual`, XSD type maps/resolvers, and `propertyIri` live here. Do not duplicate these — import from DataTypes.

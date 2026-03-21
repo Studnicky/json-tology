@@ -4,6 +4,7 @@ import type {
 } from '../../interfaces/schema-graph.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { isRecord } from '../data/DataTypes.js';
+import type { JsonSchemaType } from '../../types/schema.js';
 
 export interface GraphAccessor {
   child(node: SchemaGraphNodeInterface, key: string): SchemaGraphNodeInterface | undefined;
@@ -12,8 +13,6 @@ export interface GraphAccessor {
   resolveRefId(ref: string): string;
   semantics(node: SchemaGraphNodeInterface): SchemaGraphSemanticsInterface;
 }
-
-type JsonSchemaType = boolean | Record<string, unknown>;
 
 export const KNOWN_SCHEMA_KEYWORDS = new Set([
   '$anchor',
@@ -105,8 +104,8 @@ export function resolveSchemaAtPointer(rootSchema: JsonSchemaType, pointer: stri
   let current: unknown = rootSchema;
 
   const segments = pointer.slice(1).split('/')
-    .map((seg) => {
-      return unescapeJsonPointerSegment(seg);
+    .map((segment) => {
+      return unescapeJsonPointerSegment(segment);
     });
 
   for (const segment of segments) {
@@ -129,6 +128,7 @@ export function emptySchemaGraphSemantics(): SchemaGraphSemanticsInterface {
     'allOf': [],
     'anyOf': [],
     'comment': undefined,
+    'complementNode': undefined,
     'constValue': undefined,
     'containsNode': undefined,
     'contentEncoding': undefined,
@@ -168,7 +168,6 @@ export function emptySchemaGraphSemantics(): SchemaGraphSemanticsInterface {
     'minLength': undefined,
     'minProperties': undefined,
     'multipleOf': undefined,
-    'notNode': undefined,
     'oneOf': [],
     'pattern': undefined,
     'patternPropertyEntries': [],
@@ -341,8 +340,6 @@ export function resolveAdditionalSchemaNode(
   return child(node, key);
 }
 
-export { extractRelations } from './SchemaGraph.relations.js';
-
 export function extractSemantics(
   graph: GraphAccessor,
   node: SchemaGraphNodeInterface,
@@ -360,11 +357,16 @@ export function extractSemantics(
   const extensions = collectSchemaExtensions(node.schema);
 
   return {
-    'additionalItemsNode': resolveAdditionalSchemaNode(node, graph.child.bind(graph), 'additionalItems'),
-    'additionalPropertiesNode': resolveAdditionalSchemaNode(node, graph.child.bind(graph), 'additionalProperties'),
+    'additionalItemsNode': resolveAdditionalSchemaNode(node, (parent, key) => {
+      return graph.child(parent, key);
+    }, 'additionalItems'),
+    'additionalPropertiesNode': resolveAdditionalSchemaNode(node, (parent, key) => {
+      return graph.child(parent, key);
+    }, 'additionalProperties'),
     'allOf': graph.indexedChildren(node, 'allOf'),
     'anyOf': graph.indexedChildren(node, 'anyOf'),
     'comment': typeof node.schema.$comment === 'string' ? node.schema.$comment : undefined,
+    'complementNode': graph.child(node, 'not'),
     'constValue': 'const' in node.schema ? node.schema.const : undefined,
     'containsNode': graph.child(node, 'contains'),
     'contentEncoding': typeof node.schema.contentEncoding === 'string' ? node.schema.contentEncoding : undefined,
@@ -404,20 +406,19 @@ export function extractSemantics(
     'minLength': typeof node.schema.minLength === 'number' ? node.schema.minLength : undefined,
     'minProperties': typeof node.schema.minProperties === 'number' ? node.schema.minProperties : undefined,
     'multipleOf': typeof node.schema.multipleOf === 'number' ? node.schema.multipleOf : undefined,
-    'notNode': graph.child(node, 'not'),
     'oneOf': graph.indexedChildren(node, 'oneOf'),
     'pattern': typeof node.schema.pattern === 'string' ? node.schema.pattern : undefined,
     'patternPropertyEntries': graph.entries(node, 'patternProperties'),
     'prefixItems': graph.indexedChildren(node, 'prefixItems'),
     'properties': new Map(graph.entries(node, 'properties')),
     'propertyNamesNode': graph.child(node, 'propertyNames'),
-    'rdfsDomain': typeof node.schema['rdfs:domain'] === 'string' ? node.schema['rdfs:domain'] : undefined,
-    'rdfsRange': typeof node.schema['rdfs:range'] === 'string' ? node.schema['rdfs:range'] : undefined,
+    'rdfsDomain': (typeof node.schema['rdfs:domain'] === 'string' ? node.schema['rdfs:domain'] : undefined) ?? (typeof node.schema['http://www.w3.org/2000/01/rdf-schema#domain'] === 'string' ? node.schema['http://www.w3.org/2000/01/rdf-schema#domain'] : undefined),
+    'rdfsRange': (typeof node.schema['rdfs:range'] === 'string' ? node.schema['rdfs:range'] : undefined) ?? (typeof node.schema['http://www.w3.org/2000/01/rdf-schema#range'] === 'string' ? node.schema['http://www.w3.org/2000/01/rdf-schema#range'] : undefined),
     'readOnly': node.schema.readOnly === true,
     'recursiveAnchor': node.schema.$recursiveAnchor === true,
     'recursiveRef': typeof node.schema.$recursiveRef === 'string' ? node.schema.$recursiveRef : undefined,
     ref,
-    'refTargetNode': ref?.startsWith('#') ? resolveLocalRef(ref) : undefined,
+    'refTargetNode': ref?.startsWith('#') === true ? resolveLocalRef(ref) : undefined,
     'required': Array.isArray(node.schema.required)
       ? node.schema.required.filter((entry): entry is string => {
         return typeof entry === 'string';
@@ -439,9 +440,7 @@ export function extractSemantics(
   };
 }
 
-export function validateGraphStructure(
-  nodeMap: Map<string, SchemaGraphNodeInterface>
-): StructureWarningInterface[] {
+export function validateGraphStructure(nodeMap: Map<string, SchemaGraphNodeInterface>): StructureWarningInterface[] {
   const warnings: StructureWarningInterface[] = [];
 
   for (const node of nodeMap.values()) {

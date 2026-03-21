@@ -2,7 +2,7 @@ import {
   afterEach, describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { Logger } from '../../src/modules/logger/Logger.js';
+import { Logger } from '../utils/Logger.js';
 
 const originalDebug = console.debug;
 const originalTrace = console.trace;

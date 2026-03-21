@@ -23,7 +23,8 @@ void describe('Custom keyword extensions', () => {
     }
   };
 
-  void it('validates a custom keyword constraint (evenNumber)', () => {
+  void it('validates custom keyword, type-scoped keyword, and error-returning keyword', () => {
+    // Basic custom keyword
     const schema = {
       '$id': 'https://test.com/Even',
       'evenNumber': true,
@@ -34,41 +35,34 @@ void describe('Custom keyword extensions', () => {
     assert.equal(engine.check(4), true);
     assert.equal(engine.check(3), false);
     assert.equal(engine.check(0), true);
-  });
 
-  void it('custom keyword scoped to specific type', () => {
+    // Type-scoped keyword (only applies to numbers)
     const numberOnlyKeyword: KeywordDefinitionInterface = {
       'keyword': 'evenNumber',
       'type': 'number',
-      'validate': (schema, data) => {
-        if (schema !== true) {
-          return true;
-        }
-
-        return (data as number) % 2 === 0;
+      'validate': (schemaValue, data) => {
+        return schemaValue !== true || (data as number) % 2 === 0;
       }
     };
+    const scopedEngine = new GraphEngine(
+      {
+        '$id': 'https://test.com/Scoped',
+        'evenNumber': true
+      },
+      { 'keywords': [numberOnlyKeyword] }
+    );
 
-    const schema = {
-      '$id': 'https://test.com/Scoped',
-      'evenNumber': true
-    };
-    const engine = new GraphEngine(schema, { 'keywords': [numberOnlyKeyword] });
+    assert.equal(scopedEngine.check(4), true);
+    assert.equal(scopedEngine.check(3), false);
+    // type mismatch, keyword skips
+    assert.equal(scopedEngine.check('hello'), true);
 
-    // Number type: keyword applies
-    assert.equal(engine.check(4), true);
-    assert.equal(engine.check(3), false);
-
-    // String type: keyword does not apply (type mismatch)
-    assert.equal(engine.check('hello'), true);
-  });
-
-  void it('custom keyword returning ValidationErrorType[]', () => {
+    // Error-returning keyword
     const rangeKeyword: KeywordDefinitionInterface = {
       'keyword': 'customRange',
       'type': 'number',
-      'validate': (schema, data, context): ValidationErrorType[] => {
-        const spec = schema as { 'max': number;
+      'validate': (schemaValue, data, context): ValidationErrorType[] => {
+        const spec = schemaValue as { 'max': number;
           'min': number };
         const value = data as number;
         const errors: ValidationErrorType[] = [];
@@ -93,77 +87,72 @@ void describe('Custom keyword extensions', () => {
         return errors;
       }
     };
-
-    const schema = {
-      '$id': 'https://test.com/Range',
-      'customRange': {
-        'max': 100,
-        'min': 10
+    const rangeEngine = new GraphEngine(
+      {
+        '$id': 'https://test.com/Range',
+        'customRange': {
+          'max': 100,
+          'min': 10
+        },
+        'type': 'number'
       },
-      'type': 'number'
-    };
-    const engine = new GraphEngine(schema, { 'keywords': [rangeKeyword] });
+      { 'keywords': [rangeKeyword] }
+    );
 
-    assert.equal(engine.check(50), true);
-    assert.equal(engine.check(5), false);
-    assert.equal(engine.check(200), false);
-
-    const errors = engine.errors(5);
-
-    assert.equal(errors.length, 1);
-    assert.equal(errors[0].message, 'must be >= 10');
+    assert.equal(rangeEngine.check(50), true);
+    assert.equal(rangeEngine.check(5), false);
+    assert.equal(rangeEngine.check(200), false);
+    assert.equal(rangeEngine.errors(5)[0].message, 'must be >= 10');
   });
 
   void it('schema without custom keywords is unchanged', () => {
-    const schema = {
+    const engine = new GraphEngine({
       '$id': 'https://test.com/Plain',
       'minLength': 1,
       'type': 'string'
-    };
-    const engine = new GraphEngine(schema);
+    });
 
     assert.equal(engine.check('hello'), true);
     assert.equal(engine.check(''), false);
   });
 
-  void it('threads keywords through SchemaRegistry', () => {
+  void it('threads keywords through SchemaRegistry, graph semantics, and JsonTology', () => {
+    // SchemaRegistry
     const registry = new SchemaRegistry({ 'keywords': [evenNumberKeyword] });
-    const schema = {
+
+    registry.register({
       '$id': 'https://test.com/RegEven',
       'evenNumber': true,
       'type': 'number'
-    };
-
-    registry.register(schema);
-
-    const errors = registry.validate('https://test.com/RegEven', 3);
-
-    assert.ok(errors.length > 0);
+    });
+    assert.ok(registry.validate('https://test.com/RegEven', 3).length > 0);
     assert.equal(registry.validate('https://test.com/RegEven', 4).length, 0);
-  });
 
-  void it('reads custom keyword values from graph semantics, not raw schema', () => {
-    const registry = new SchemaRegistry();
-    const schema = {
+    // Graph semantics
+    const reg2 = new SchemaRegistry();
+
+    reg2.register({
       '$id': 'urn:test:graph-kw',
       'evenNumber': true,
       'type': 'number'
-    } as const;
-
-    registry.register(schema);
-    const graph = registry.graph('urn:test:graph-kw');
+    } as const);
+    const graph = reg2.graph('urn:test:graph-kw');
     const sem = graph.semantics(graph.rootNode);
 
-    // The custom keyword must appear in extensions (graph-owned), not be absent
     assert.equal(sem.extensions.evenNumber, true);
-    // And execution must use that value from extensions
-    const engine = new GraphEngine(schema, { 'keywords': [evenNumberKeyword] });
+    const engine = new GraphEngine(
+      {
+        '$id': 'urn:test:graph-kw-2',
+        'evenNumber': true,
+        'type': 'number'
+      },
+      { 'keywords': [evenNumberKeyword] }
+    );
 
     assert.equal(engine.execute(4).valid, true);
     assert.equal(engine.execute(3).valid, false);
-  });
 
-  void it('threads keywords through JsonTology', () => {
+    // JsonTology
     const jt = JsonTology.create({
       'baseIRI': 'https://test.com',
       'keywords': [evenNumberKeyword],

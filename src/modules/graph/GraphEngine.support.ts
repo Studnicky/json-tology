@@ -1,11 +1,18 @@
-import type { GraphEngineOptionsInterface } from '../../interfaces/graph-engine.js';
 import type { SchemaGraphNodeInterface } from '../../interfaces/schema-graph.js';
 import type { SchemaGraphInterface } from '../../interfaces/schema-graph-impl.js';
 import type { ValidationErrorType } from '../../types/validation.js';
+import {
+  CURRENT_DIALECT_PREFIX,
+  DEFAULT_DIALECT_URI,
+
+  SUPPORTED_VOCABULARIES,
+  VOCABULARY_FORMAT_ASSERTION
+} from '../../constants/dialect.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { isRecord } from '../data/DataTypes.js';
 
-import type { JSONSchema7Definition as JsonSchemaType } from 'json-schema';
+import type { JSONSchema7Definition } from 'json-schema';
+
 
 export interface DynamicScopeEntryInterface {
   'anchor': string;
@@ -30,39 +37,7 @@ export interface RootDialectPlanInterface {
   'formatAssertions': boolean;
 }
 
-export const DEFAULT_GRAPH_ENGINE_OPTIONS: Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>> = {
-  'applyDefaults': false,
-  'coerce': false,
-  'collectErrors': true,
-  'ignoreAdditionalProperties': false,
-  'materializeContainers': false,
-  'removeAdditional': false,
-  'stripUnknownProperties': false,
-  'synthesizeDefaults': false
-};
-
-const CURRENT_DIALECT_PREFIX = 'https://json-schema.org/draft/2020-12/';
-const DEFAULT_DIALECT_URI = 'https://json-schema.org/draft/2020-12/schema';
-const VOCABULARY_APPLICATOR = 'https://json-schema.org/draft/2020-12/vocab/applicator';
-const VOCABULARY_CONTENT = 'https://json-schema.org/draft/2020-12/vocab/content';
-const VOCABULARY_CORE = 'https://json-schema.org/draft/2020-12/vocab/core';
-const VOCABULARY_FORMAT_ANNOTATION = 'https://json-schema.org/draft/2020-12/vocab/format-annotation';
-const VOCABULARY_FORMAT_ASSERTION = 'https://json-schema.org/draft/2020-12/vocab/format-assertion';
-const VOCABULARY_METADATA = 'https://json-schema.org/draft/2020-12/vocab/meta-data';
-const VOCABULARY_UNEVALUATED = 'https://json-schema.org/draft/2020-12/vocab/unevaluated';
-const VOCABULARY_VALIDATION = 'https://json-schema.org/draft/2020-12/vocab/validation';
-const SUPPORTED_VOCABULARIES = new Set([
-  VOCABULARY_APPLICATOR,
-  VOCABULARY_CONTENT,
-  VOCABULARY_CORE,
-  VOCABULARY_FORMAT_ANNOTATION,
-  VOCABULARY_FORMAT_ASSERTION,
-  VOCABULARY_METADATA,
-  VOCABULARY_UNEVALUATED,
-  VOCABULARY_VALIDATION
-]);
-
-export function buildRootDialectPlan(rootSchema: JsonSchemaType): RootDialectPlanInterface {
+export function buildRootDialectPlan(rootSchema: JSONSchema7Definition): RootDialectPlanInterface {
   if (!isRecord(rootSchema)) {
     return { 'formatAssertions': true };
   }
@@ -178,7 +153,7 @@ export function isIntegerValue(value: unknown): boolean {
   return typeof value === 'number' && Number.isInteger(value);
 }
 
-export function schemaId(schema: JsonSchemaType): string | undefined {
+export function schemaId(schema: JSONSchema7Definition): string | undefined {
   if (!isRecord(schema)) {
     return undefined;
   }

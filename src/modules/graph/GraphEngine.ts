@@ -16,11 +16,11 @@ import { FormatRegistry } from '../format/FormatRegistry.js';
 import { Hash } from '../hash/Hash.js';
 import { SchemaGraph } from './SchemaGraph.js';
 import { GraphError } from '../../errors/GraphError.js';
+import { DEFAULT_OPTIONS as DEFAULT_GRAPH_ENGINE_OPTIONS } from '../../constants/dialect.js';
 import {
   buildRootDialectPlan,
   cloneCandidate,
   deepEqual,
-  DEFAULT_GRAPH_ENGINE_OPTIONS,
   escapeJsonPointerSegment,
   extractNamedFragment,
   schemaId
@@ -46,19 +46,38 @@ import type { DefaultResolutionContextInterface } from './GraphEngine.defaults.j
 import { visitNode } from './GraphEngine.visit.js';
 import type { VisitContextInterface } from './GraphEngine.visit.js';
 
-import type { JSONSchema7Definition as JsonSchemaType } from 'json-schema';
+import type { JSONSchema7Definition } from 'json-schema';
 
 const isObject = isRecord;
 
 export class GraphEngine implements GraphEngineInterface {
+  /**
+   * Encodes a string for use as a URI path segment, preserving forward slashes.
+   *
+   * @param value - The raw string to escape.
+   * @returns The percent-encoded string with `/` characters preserved.
+   */
   static escapeSegment(value: string): string {
     return encodeURIComponent(value).replaceAll('%2F', '/');
   }
 
+  /**
+   * Produces a deterministic hash string for an arbitrary value.
+   *
+   * @param value - The value to hash.
+   * @returns A stable hash string.
+   */
   static hash(value: unknown): string {
     return Hash.value(value);
   }
 
+  /**
+   * Constructs an IRI for a property relative to a class identifier.
+   *
+   * @param classId - The IRI of the owning class.
+   * @param propertyName - The local property name.
+   * @returns The fully-qualified property IRI.
+   */
   static propertyIri(classId: string, propertyName: string): string {
     return propertyIri(classId, propertyName);
   }
@@ -71,7 +90,13 @@ export class GraphEngine implements GraphEngineInterface {
   private readonly refCache = new Map<string, RefTargetInterface>();
   private readonly regexCache = new Map<string, RegExp>();
 
-  public constructor(public readonly rootSchema: JsonSchemaType, options: GraphEngineOptionsInterface = {}) {
+  /**
+   * Creates a new graph engine for the given root schema.
+   *
+   * @param rootSchema - The JSON Schema definition used as the root of this engine.
+   * @param options - Engine configuration including format registry, custom keywords, and lookup function.
+   */
+  public constructor(public readonly rootSchema: JSONSchema7Definition, options: GraphEngineOptionsInterface = {}) {
     const {
       formatRegistry, keywords, ...rest
     } = options;
@@ -86,7 +111,7 @@ export class GraphEngine implements GraphEngineInterface {
   }
 
   private applyUnevaluatedItems(
-    _node: SchemaGraphNodeInterface,
+    node: SchemaGraphNodeInterface,
     graph: SchemaGraphInterface,
     value: unknown[],
     path: string,
@@ -98,7 +123,7 @@ export class GraphEngine implements GraphEngineInterface {
     const errors: ValidationErrorType[] = [];
     const evaluatedItems = new Set<number>();
     const workingValue = value;
-    const sem = graph.semantics(_node);
+    const sem = graph.semantics(node);
     const unevaluatedItemsNode = sem.unevaluatedItemsNode;
 
     for (let index = 0; index < workingValue.length; index++) {
@@ -136,7 +161,7 @@ export class GraphEngine implements GraphEngineInterface {
   }
 
   private applyUnevaluatedProperties(
-    _node: SchemaGraphNodeInterface,
+    node: SchemaGraphNodeInterface,
     graph: SchemaGraphInterface,
     value: Record<string, unknown>,
     path: string,
@@ -148,7 +173,7 @@ export class GraphEngine implements GraphEngineInterface {
     const errors: ValidationErrorType[] = [];
     const evaluatedProperties = new Set<string>();
     const workingValue = value;
-    const sem = graph.semantics(_node);
+    const sem = graph.semantics(node);
     const unevaluatedPropertiesNode = sem.unevaluatedPropertiesNode;
 
     for (const key of Object.keys(workingValue)) {
@@ -185,6 +210,13 @@ export class GraphEngine implements GraphEngineInterface {
     };
   }
 
+  /**
+   * Returns whether a value is valid against the schema at the given pointer.
+   *
+   * @param value - The value to validate.
+   * @param pointer - JSON Pointer into the root schema (defaults to root).
+   * @returns `true` if the value passes validation, `false` otherwise.
+   */
   public check(value: unknown, pointer = ''): boolean {
     return this.execute(value, pointer, { 'collectErrors': false }).valid;
   }
@@ -205,8 +237,6 @@ export class GraphEngine implements GraphEngineInterface {
   private createImplicitDefault(
     node: SchemaGraphNodeInterface,
     graph: SchemaGraphInterface,
-    _options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>>,
-    _refStack: Set<string>,
     dynamicScope: DynamicScopeEntryInterface[],
     visited = new Set<string>()
   ): unknown {
@@ -224,10 +254,26 @@ export class GraphEngine implements GraphEngineInterface {
     };
   }
 
+  /**
+   * Collects all validation errors for a value against the schema at the given pointer.
+   *
+   * @param value - The value to validate.
+   * @param pointer - JSON Pointer into the root schema (defaults to root).
+   * @returns An array of validation errors, empty when the value is valid.
+   */
   public errors(value: unknown, pointer = ''): ValidationErrorType[] {
     return this.execute(value, pointer, { 'collectErrors': true }).errors;
   }
 
+  /**
+   * Executes the full graph-based validation and normalization pipeline for a value.
+   *
+   * @param value - The value to validate and normalize.
+   * @param pointer - JSON Pointer into the root schema (defaults to root).
+   * @param overrides - Per-call option overrides merged on top of the engine defaults.
+   * @returns The execution result containing validity, errors, normalized value, and graph metadata.
+   * @throws {@link GraphError} If the pointer cannot be resolved in the graph.
+   */
   public execute(
     value: unknown,
     pointer = '',
@@ -253,7 +299,7 @@ export class GraphEngine implements GraphEngineInterface {
     };
   }
 
-  private graphFor(rootSchema: JsonSchemaType): SchemaGraphInterface {
+  private graphFor(rootSchema: JSONSchema7Definition): SchemaGraphInterface {
     if (!isObject(rootSchema)) {
       return new SchemaGraph(rootSchema as boolean);
     }
@@ -271,10 +317,20 @@ export class GraphEngine implements GraphEngineInterface {
     return graph;
   }
 
-  public hasCustomKeywords(): boolean {
+  /**
+   * Indicates whether the engine was configured with custom keyword definitions.
+   *
+   * @returns `true` if at least one custom keyword is registered.
+   */
+  public hasRegisteredCustomKeywords(): boolean {
     return this.customKeywords.length > 0;
   }
 
+  /**
+   * Returns the list of custom keyword definitions registered with this engine.
+   *
+   * @returns The custom keyword definitions array.
+   */
   public keywords(): KeywordDefinitionInterface[] {
     return this.customKeywords;
   }
@@ -344,7 +400,7 @@ export class GraphEngine implements GraphEngineInterface {
     }
 
     let graph = currentGraph;
-    let fragment = '';
+    let fragment: string;
 
     if (ref.startsWith('#')) {
       fragment = ref.slice(1);
@@ -373,10 +429,20 @@ export class GraphEngine implements GraphEngineInterface {
     return target;
   }
 
+  /**
+   * Returns the `$id` of the root schema, if one is declared.
+   *
+   * @returns The root schema's `$id` string, or `undefined` when absent.
+   */
   public rootSchemaId(): string | undefined {
     return schemaId(this.rootSchema);
   }
 
+  /**
+   * Returns the schema lookup function provided at construction, if any.
+   *
+   * @returns The lookup callback, or `undefined` when none was configured.
+   */
   public schemaLookup(): ((schemaId: string) => Record<string, unknown> | undefined) | undefined {
     return this.options.lookupSchema;
   }
@@ -384,12 +450,9 @@ export class GraphEngine implements GraphEngineInterface {
   private synthesizeZeroValue(
     node: SchemaGraphNodeInterface,
     graph: SchemaGraphInterface,
-    _options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>>,
-    _refStack: Set<string>,
-    dynamicScope: DynamicScopeEntryInterface[],
-    visited = new Set<string>()
+    dynamicScope: DynamicScopeEntryInterface[]
   ): unknown {
-    return synthesizeZeroValue(this.defaultResolutionContext(), node, graph, dynamicScope, visited);
+    return synthesizeZeroValue(this.defaultResolutionContext(), node, graph, dynamicScope, new Set());
   }
 
   private validateArray(
@@ -559,6 +622,7 @@ export class GraphEngine implements GraphEngineInterface {
     const dependentSchemaEntries = sem.dependentSchemaEntries;
     const workingValue = value;
     const {
+      additionalPropertiesNode,
       maxProperties,
       minProperties
     } = sem;
@@ -579,7 +643,7 @@ export class GraphEngine implements GraphEngineInterface {
         if (key in workingValue) {
           continue;
         }
-        const prepared = this.createImplicitDefault(propNode, graph, options, refStack, dynamicScope);
+        const prepared = this.createImplicitDefault(propNode, graph, dynamicScope);
 
         if (prepared !== undefined) {
           workingValue[key] = prepared;
@@ -592,7 +656,7 @@ export class GraphEngine implements GraphEngineInterface {
         const propNode = propertyNodeMap.get(key);
 
         if (options.applyDefaults && propNode !== undefined) {
-          const prepared = this.createImplicitDefault(propNode, graph, options, refStack, dynamicScope);
+          const prepared = this.createImplicitDefault(propNode, graph, dynamicScope);
 
           if (prepared !== undefined) {
             workingValue[key] = prepared;
@@ -604,7 +668,7 @@ export class GraphEngine implements GraphEngineInterface {
           const propNode = propertyNodeMap.get(key);
           const zeroValue = propNode === undefined
             ? null
-            : this.synthesizeZeroValue(propNode, graph, options, refStack, dynamicScope);
+            : this.synthesizeZeroValue(propNode, graph, dynamicScope);
 
           workingValue[key] = zeroValue;
         } else {
@@ -618,7 +682,7 @@ export class GraphEngine implements GraphEngineInterface {
         const propertyNameResult = this.visit(propertyNamesNode, graph, key, path, {
           ...options,
           'applyDefaults': false,
-          'removeAdditional': false
+          'removeAdditionalProperties': false
         }, refStack, dynamicScope);
 
         if (!propertyNameResult.valid && !options.collectErrors) {
@@ -633,7 +697,8 @@ export class GraphEngine implements GraphEngineInterface {
       }
 
       if (propertyNodeMap.has(key)) {
-        const child = this.visit(propertyNodeMap.get(key)!, graph, workingValue[key], `${path}/${escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope);
+        const propNode = propertyNodeMap.get(key) as SchemaGraphNodeInterface;
+        const child = this.visit(propNode, graph, workingValue[key], `${path}/${escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope);
 
         if (!child.valid && !options.collectErrors) {
           return child;
@@ -697,14 +762,14 @@ export class GraphEngine implements GraphEngineInterface {
     }
 
     const applyAdditional = (key: string): void => {
-      if (options.ignoreAdditionalProperties) {
+      if (options.allowAdditionalProperties) {
         return;
       }
 
-      const additionalProperties = sem.additionalPropertiesNode;
+      const additionalProperties = additionalPropertiesNode;
 
       if (additionalProperties === false) {
-        if (options.removeAdditional) {
+        if (options.removeAdditionalProperties) {
           delete workingValue[key];
         } else {
           errors.push(this.createError(`${path}/${escapeJsonPointerSegment(key)}`, 'additionalProperties', 'must NOT have additional properties', { 'additionalProperty': key }));
@@ -714,7 +779,7 @@ export class GraphEngine implements GraphEngineInterface {
       }
 
       if (additionalProperties === undefined || additionalProperties === true) {
-        if (options.stripUnknownProperties) {
+        if (options.enforceSchemaProperties) {
           delete workingValue[key];
         }
 
@@ -755,7 +820,9 @@ export class GraphEngine implements GraphEngineInterface {
       path,
       value,
       sem,
-      (pattern) => { return this.regexFor(pattern); },
+      (pattern) => {
+        return this.regexFor(pattern);
+      },
       this.formatRegistry,
       this.dialectPlan.formatAssertions
     );
@@ -778,8 +845,8 @@ export class GraphEngine implements GraphEngineInterface {
       'applyUnevaluatedItems': (node, graph, value, path, options, refStack, dynamicScope, alreadyEvaluated) => {
         return this.applyUnevaluatedItems(node, graph, value, path, options, refStack, dynamicScope, alreadyEvaluated);
       },
-      'applyUnevaluatedProperties': (node, graph, value, path, options, refStack, dynamicScope, alreadyEvaluated) => {
-        return this.applyUnevaluatedProperties(node, graph, value, path, options, refStack, dynamicScope, alreadyEvaluated);
+      'applyUnevaluatedProperties': (node, graph, value, path, opts, refStack, dynScope, evaluated) => {
+        return this.applyUnevaluatedProperties(node, graph, value, path, opts, refStack, dynScope, evaluated);
       },
       'coerceValue': (schemaTypes, value, materializeContainers) => {
         return this.coerceValue(schemaTypes, value, materializeContainers);
@@ -800,8 +867,8 @@ export class GraphEngine implements GraphEngineInterface {
       'resolveRef': (ref, currentGraph) => {
         return this.resolveRef(ref, currentGraph);
       },
-      'synthesizeZeroValue': (node, graph, options, refStack, dynamicScope) => {
-        return this.synthesizeZeroValue(node, graph, options, refStack, dynamicScope);
+      'synthesizeZeroValue': (node, graph, dynamicScope) => {
+        return this.synthesizeZeroValue(node, graph, dynamicScope);
       },
       'validateArray': (graph, value, path, options, refStack, dynamicScope, sem) => {
         return this.validateArray(graph, value, path, options, refStack, dynamicScope, sem);

@@ -19,41 +19,33 @@ void describe('GraphArtifact', () => {
   } as const;
 
   void describe('toArtifact', () => {
-    void it('serializes the canonical artifact shape with normIR', () => {
+    void it('serializes canonical artifact shape with normIR, metadata, pointers, hashes, and structural data', () => {
       const graph = new SchemaGraph(TestSchema);
       const artifact = GraphArtifact.toArtifact(graph);
 
+      // Shape and metadata
       assert.equal(typeof artifact.normIR, 'object');
       assert.equal(typeof artifact.semanticsHashes, 'object');
       assert.deepEqual(artifact.normIR.rootSchema, TestSchema);
-    });
+      const meta = (artifact as unknown as { 'metadata': { 'schemaHash': string } }).metadata;
 
-    void it('stores NormIR nodes with pointers', () => {
-      const graph = new SchemaGraph(TestSchema);
-      const artifact = GraphArtifact.toArtifact(graph);
+      assert.equal(typeof meta, 'object');
+      assert.ok(typeof meta.schemaHash === 'string' && meta.schemaHash.length > 0);
+
+      // NormIR nodes with pointers
       const pointers = new Set(artifact.normIR.nodes.map((node) => {
         return node.pointer;
       }));
 
-      // root
       assert.ok(pointers.has(''));
       assert.ok(pointers.has('/properties'));
       assert.ok(pointers.has('/properties/name'));
-    });
 
-    void it('stores semantics hashes per node', () => {
-      const graph = new SchemaGraph(TestSchema);
-      const artifact = GraphArtifact.toArtifact(graph);
-
-      // root
+      // Semantics hashes per node
       assert.ok('' in artifact.semanticsHashes);
       assert.ok('/properties/name' in artifact.semanticsHashes);
-    });
 
-    void it('stores NormIR structural data', () => {
-      const graph = new SchemaGraph(TestSchema);
-      const artifact = GraphArtifact.toArtifact(graph);
-
+      // NormIR structural data
       assert.ok('' in artifact.normIR.children);
       assert.ok('' in artifact.normIR.entries);
       assert.ok('properties' in artifact.normIR.entries['']);
@@ -61,60 +53,80 @@ void describe('GraphArtifact', () => {
   });
 
   void describe('fromArtifact', () => {
-    void it('roundtrips through serialization', () => {
+    void it('roundtrips through serialization preserving nodes, relations, ids, rootSchema, and semantics', () => {
       const graph = new SchemaGraph(TestSchema);
       const artifact = GraphArtifact.toArtifact(graph);
       const rebuilt = GraphArtifact.fromArtifact(artifact);
 
+      // Node and relation counts
       assert.equal(rebuilt.nodes().length, graph.nodes().length);
       assert.equal(rebuilt.allRelations().length, graph.allRelations().length);
-    });
 
-    void it('rehydrates from NormIR without re-lowering', () => {
-      const graph = new SchemaGraph(TestSchema);
-      const artifact = GraphArtifact.toArtifact(graph);
-      const rebuilt = GraphArtifact.fromArtifact(artifact);
+      // Node ids preserved
+      assert.deepEqual(
+        rebuilt.nodes().map((node) => {
+          return node.id;
+        }),
+        graph.nodes().map((node) => {
+          return node.id;
+        })
+      );
 
-      // Verify the rebuilt graph has correct node ids
-      const rebuiltIds = rebuilt.nodes().map((node) => {
-        return node.id;
-      });
-      const originalIds = graph.nodes().map((node) => {
-        return node.id;
-      });
-
-      assert.deepEqual(rebuiltIds, originalIds);
-    });
-
-    void it('detects stale artifacts by semantics hash', () => {
-      const graph = new SchemaGraph(TestSchema);
-      const artifact = GraphArtifact.toArtifact(graph);
-
-      // Corrupt a semantics hash
-      artifact.semanticsHashes[''] = 'corrupted';
-      assert.throws(() => {
-        return GraphArtifact.fromArtifact(artifact);
-      }, /Semantics hash mismatch/u);
-    });
-
-    void it('rejects legacy artifact shapes and instructs regeneration', () => {
-      const corruptedArtifact = {
-        'nodes': [],
-        'relations': [],
-        'rootSchema': TestSchema
-      };
-
-      assert.throws(() => {
-        return GraphArtifact.fromArtifact(corruptedArtifact as unknown as GraphArtifactInterface);
-      }, /legacy artifact|metadata|regenerate/u);
-    });
-
-    void it('preserves rootSchema identity', () => {
-      const graph = new SchemaGraph(TestSchema);
-      const artifact = GraphArtifact.toArtifact(graph);
-      const rebuilt = GraphArtifact.fromArtifact(artifact);
-
+      // rootSchema identity
       assert.deepEqual(rebuilt.rootSchema, TestSchema);
+
+      // Semantics preserved
+      const originalSem = graph.semantics(graph.rootNode);
+      const rebuiltSem = rebuilt.semantics(rebuilt.rootNode);
+
+      assert.deepEqual(originalSem.schemaTypes, rebuiltSem.schemaTypes);
+      assert.deepEqual(originalSem.required, rebuiltSem.required);
+      assert.equal(originalSem.properties.size, rebuiltSem.properties.size);
+    });
+
+    void it('rejects stale, corrupted, and legacy artifacts', () => {
+      const graph = new SchemaGraph(TestSchema);
+
+      // Corrupted semantics hash
+      const a1 = GraphArtifact.toArtifact(graph);
+
+      a1.semanticsHashes[''] = 'corrupted';
+      assert.throws(() => {
+        return GraphArtifact.fromArtifact(a1);
+      }, /Semantics hash mismatch/u);
+
+      // Corrupted schema hash → ARTIFACT_STALE
+      const a2 = GraphArtifact.toArtifact(graph);
+
+      (a2 as unknown as { 'metadata': { 'schemaHash': string } }).metadata.schemaHash = 'wrong-hash';
+      assert.throws(() => {
+        return GraphArtifact.fromArtifact(a2);
+      }, (err: unknown) => {
+        return (err as { 'code': string }).code === 'ARTIFACT_STALE';
+      });
+
+      // Missing metadata → ARTIFACT_INVALID
+      const a3 = GraphArtifact.toArtifact(graph);
+      const a3Record = a3 as unknown as Record<string, unknown>;
+
+      delete a3Record.metadata;
+      assert.throws(() => {
+        return GraphArtifact.fromArtifact(a3Record as unknown as GraphArtifactInterface);
+      }, (err: unknown) => {
+        const typed = err as { 'code': string;
+          'message': string };
+
+        return typed.code === 'ARTIFACT_INVALID' && typed.message.includes('metadata');
+      });
+
+      // Legacy artifact shape
+      assert.throws(() => {
+        return GraphArtifact.fromArtifact({
+          'nodes': [],
+          'relations': [],
+          'rootSchema': TestSchema
+        } as unknown as GraphArtifactInterface);
+      }, /legacy artifact|metadata|regenerate/u);
     });
 
     void it('roundtrips through JSON serialization (portable artifact)', () => {
@@ -126,19 +138,6 @@ void describe('GraphArtifact', () => {
 
       assert.equal(rebuilt.nodes().length, graph.nodes().length);
       assert.equal(rebuilt.allRelations().length, graph.allRelations().length);
-    });
-
-    void it('preserves semantics through NormIR rehydration', () => {
-      const graph = new SchemaGraph(TestSchema);
-      const artifact = GraphArtifact.toArtifact(graph);
-      const rebuilt = GraphArtifact.fromArtifact(artifact);
-
-      const originalSem = graph.semantics(graph.rootNode);
-      const rebuiltSem = rebuilt.semantics(rebuilt.rootNode);
-
-      assert.deepEqual(originalSem.schemaTypes, rebuiltSem.schemaTypes);
-      assert.deepEqual(originalSem.required, rebuiltSem.required);
-      assert.equal(originalSem.properties.size, rebuiltSem.properties.size);
     });
 
     void it('roundtrips richer graph semantics including anchors, conditionals, and contains', () => {
@@ -197,35 +196,33 @@ void describe('GraphArtifact', () => {
   });
 
   void describe('NormIR', () => {
-    void it('buildNormIR produces same graph as constructor', () => {
+    void it('buildNormIR produces same graph as constructor with JSON-serializable output', () => {
       const normIR = SchemaGraph.buildNormIR(TestSchema);
       const fromConstructor = new SchemaGraph(TestSchema);
       const fromNormIR = SchemaGraph.fromNormIR(normIR);
 
       assert.equal(fromNormIR.nodes().length, fromConstructor.nodes().length);
       assert.equal(fromNormIR.allRelations().length, fromConstructor.allRelations().length);
+      assert.deepEqual(
+        fromNormIR.nodes().map((node) => {
+          return node.id;
+        }),
+        fromConstructor.nodes().map((node) => {
+          return node.id;
+        })
+      );
 
-      const constructorIds = fromConstructor.nodes().map((node) => {
-        return node.id;
-      });
-      const normIRIds = fromNormIR.nodes().map((node) => {
-        return node.id;
-      });
-
-      assert.deepEqual(normIRIds, constructorIds);
-    });
-
-    void it('NormIR is JSON-serializable', () => {
-      const normIR = SchemaGraph.buildNormIR(TestSchema);
+      // JSON-serializable
       const json = JSON.stringify(normIR);
       const deserialized = JSON.parse(json) as NormIRInterface;
       const graph = SchemaGraph.fromNormIR(deserialized);
 
-      assert.equal(graph.nodes().length, new SchemaGraph(TestSchema).nodes().length);
+      assert.equal(graph.nodes().length, fromConstructor.nodes().length);
     });
 
-    void it('fromNormIR preserves anchors', () => {
-      const schema = {
+    void it('fromNormIR preserves anchors, children, entries, and getNormIR returns construction data', () => {
+      // Anchors
+      const anchorSchema = {
         '$defs': {
           'Foo': {
             '$anchor': 'foo',
@@ -235,31 +232,25 @@ void describe('GraphArtifact', () => {
         '$id': 'https://example.com/Anchored',
         'type': 'object'
       } as const;
-      const normIR = SchemaGraph.buildNormIR(schema);
-      const graph = SchemaGraph.fromNormIR(normIR);
-      const resolved = graph.resolveFragment('foo');
+      const anchorNormIR = SchemaGraph.buildNormIR(anchorSchema);
+      const anchorGraph = SchemaGraph.fromNormIR(anchorNormIR);
 
-      assert.deepEqual(graph.semantics(resolved).schemaTypes, ['string']);
-    });
+      assert.deepEqual(anchorGraph.semantics(anchorGraph.resolveFragment('foo')).schemaTypes, ['string']);
 
-    void it('fromNormIR preserves children and entries', () => {
+      // Children and entries
       const normIR = SchemaGraph.buildNormIR(TestSchema);
       const graph = SchemaGraph.fromNormIR(normIR);
       const root = graph.rootNode;
-      const propNode = graph.child(root, 'properties');
 
-      assert.ok(propNode !== undefined);
-      const propEntries = graph.entries(root, 'properties');
+      assert.ok(graph.child(root, 'properties') !== undefined);
+      assert.equal(graph.entries(root, 'properties').length, 2);
 
-      assert.equal(propEntries.length, 2);
-    });
+      // getNormIR
+      const directGraph = new SchemaGraph(TestSchema);
+      const directNormIR = directGraph.getNormIR();
 
-    void it('getNormIR returns the NormIR used for construction', () => {
-      const graph = new SchemaGraph(TestSchema);
-      const normIR = graph.getNormIR();
-
-      assert.ok(normIR.nodes.length > 0);
-      assert.deepEqual(normIR.rootSchema, TestSchema);
+      assert.ok(directNormIR.nodes.length > 0);
+      assert.deepEqual(directNormIR.rootSchema, TestSchema);
     });
   });
 });

@@ -18,6 +18,11 @@ export class OntologyBuilder {
   private readonly prefixes: Record<string, string>;
   private shaclSource: (() => readonly unknown[]) | readonly unknown[] | undefined;
 
+  /**
+   * Create an OntologyBuilder from a configuration with base IRI, prefixes, and graph sources.
+   *
+   * @param config - Builder configuration with baseIRI, prefixes, and graphSources
+   */
   public constructor(config: Readonly<OntologyBuilderOptionsInterface>) {
     this.baseIRI = config.baseIRI;
     this.prefixes = config.prefixes;

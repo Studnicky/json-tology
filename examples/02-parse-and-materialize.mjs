@@ -47,7 +47,7 @@ const jt = JsonTology.create({
 // ---------------------------------------------------------------------------
 
 const incoming = { 'theme': 'dark' };
-const parsed = jt.parse(ConfigSchema, incoming);
+const parsed = jt.coerce(ConfigSchema, incoming);
 
 console.log('--- Parse with defaults ---');
 console.log('Input:', JSON.stringify(incoming));
@@ -57,12 +57,12 @@ console.log('Parsed:', parsedJson);
 console.log();
 
 // ---------------------------------------------------------------------------
-// 2. Parse invalid data — throws ParseError
+// 2. Parse invalid data — throws CoercionError
 // ---------------------------------------------------------------------------
 
 console.log('--- Parse invalid data ---');
 try {
-  jt.parse(ConfigSchema, { 'pageSize': 'many' });
+  jt.coerce(ConfigSchema, { 'pageSize': 'many' });
 } catch (err) {
   console.log('Caught error:', err.message);
 }

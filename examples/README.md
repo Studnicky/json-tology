@@ -14,21 +14,33 @@ npm run build
 
 | File | Description |
 |------|-------------|
-| `01-validation.mjs` | Register schemas and validate data with `validate()`, `is()`, and `errors()` |
-| `02-parse-and-materialize.mjs` | Parse with defaults applied, materialize full objects from partials |
-| `03-ontology.mjs` | Generate an OWL ontology (JSON-LD) from schemas with `$ref` relationships |
-| `04-shacl.mjs` | Generate SHACL shapes with constraint predicates from schema keywords |
-| `05-abox.mjs` | Project validated instance data to ABox RDF quads (JSON-LD) |
-| `06-composition.mjs` | Extend, pick, and partial schemas with the `Compose` utility |
+| `01-validation.mjs` | Registers schemas and validates data with `validate()`, `is()`, and `errors()` |
+| `02-parse-and-materialize.mjs` | Coerces with defaults applied, materializes full objects from partials |
+| `03-ontology.mjs` | Generates an OWL ontology (JSON-LD) from schemas with `$ref` relationships |
+| `04-shacl.mjs` | Generates SHACL shapes with constraint predicates from schema keywords |
+| `05-abox.mjs` | Projects validated instance data to ABox RDF quads (JSON-LD) |
+| `06-composition.mjs` | Extends, picks, and partials schemas with the `Compose` utility |
+
+### End-to-end walkthroughs
+
+These TypeScript examples use a shared FOAF (Friend of a Friend) domain fixture (`test/fixtures/foaf.ts`) and cover the full value chain.
+
+| File | Description |
+|------|-------------|
+| `e2e-types.ts` | Compile-time type inference, branded IDs, transforms, composition |
+| `e2e-validation.ts` | Runtime validation pipeline: validate, coerce, value ops, sub-schema checks |
+| `e2e-reasoning.ts` | TBox/ABox extraction → N3 serialization → EYE reasoner → social network inference |
 
 ## Run a single example
 
 ```bash
 node examples/01-validation.mjs
+tsx examples/e2e-types.ts
 ```
 
 ## Run all examples
 
 ```bash
 for f in examples/*.mjs; do echo "=== $f ==="; node "$f"; echo; done
+for f in examples/e2e-*.ts; do echo "=== $f ==="; tsx "$f"; echo; done
 ```

@@ -4,41 +4,53 @@ import type {
   SchemaGraphSemanticsInterface, StructureWarningInterface
 } from '../../interfaces/schema-graph.js';
 import type { SchemaGraphInterface } from '../../interfaces/schema-graph-impl.js';
+import type { VocabularyPluginInterface } from '../../interfaces/vocabulary-plugin.js';
 import { isRecord } from '../data/DataTypes.js';
 import { GraphError } from '../../errors/GraphError.js';
+import { extractRelations } from './SchemaGraph.relations.js';
 import {
   escapeJsonPointerSegment,
-  extractRelations,
   extractSemantics,
   nodeIdFromPointer,
   resolveSchemaAtPointer,
   validateGraphStructure
 } from './SchemaGraph.support.js';
-
-
-type JsonSchemaType = boolean | Record<string, unknown>;
+import type { JsonSchemaType } from '../../types/schema.js';
 
 export class SchemaGraph implements SchemaGraphInterface {
+  /**
+   * Builds a normalized intermediate representation from a root schema.
+   *
+   * @param rootSchema - The JSON Schema to lower into a NormIR.
+   * @returns The serializable normalized intermediate representation.
+   */
   public static buildNormIR(rootSchema: JsonSchemaType): NormIRInterface {
     const graph = new SchemaGraph(rootSchema);
 
     return graph.getNormIR();
   }
+  /**
+   * Reconstructs a SchemaGraph from a previously serialized NormIR.
+   *
+   * @param normIR - The normalized intermediate representation to restore.
+   * @returns A fully hydrated SchemaGraph instance.
+   */
   public static fromNormIR(normIR: NormIRInterface): SchemaGraph {
     const graph = Object.create(SchemaGraph.prototype) as SchemaGraph;
 
     // Initialize private maps via reflection (bypass constructor)
-    const g = graph as unknown as Record<string, unknown>;
+    const fields = graph as unknown as Record<string, unknown>;
 
-    g.anchorMap = new Map<string, SchemaGraphNodeInterface>();
-    g.childMap = new WeakMap<SchemaGraphNodeInterface, Map<string, SchemaGraphNodeInterface>>();
-    g.entryMap = new WeakMap<SchemaGraphNodeInterface, Map<string, Array<[string, SchemaGraphNodeInterface]>>>();
-    g.identityMap = new WeakMap<object, SchemaGraphNodeInterface>();
-    g.indexedChildMap = new WeakMap<SchemaGraphNodeInterface, Map<string, SchemaGraphNodeInterface[]>>();
-    g.nodeMap = new Map<string, SchemaGraphNodeInterface>();
-    g.relationMap = new WeakMap<SchemaGraphNodeInterface, SchemaGraphRelationInterface[]>();
-    g.semanticMap = new WeakMap<SchemaGraphNodeInterface, SchemaGraphSemanticsInterface>();
-    g.rootSchema = normIR.rootSchema;
+    fields.anchorMap = new Map<string, SchemaGraphNodeInterface>();
+    fields.childMap = new WeakMap<SchemaGraphNodeInterface, Map<string, SchemaGraphNodeInterface>>();
+    fields.entryMap = new WeakMap<SchemaGraphNodeInterface, Map<string, Array<[string, SchemaGraphNodeInterface]>>>();
+    fields.identityMap = new WeakMap<object, SchemaGraphNodeInterface>();
+    fields.indexedChildMap = new WeakMap<SchemaGraphNodeInterface, Map<string, SchemaGraphNodeInterface[]>>();
+    fields.nodeMap = new Map<string, SchemaGraphNodeInterface>();
+    fields.relationMap = new WeakMap<SchemaGraphNodeInterface, SchemaGraphRelationInterface[]>();
+    fields.semanticMap = new WeakMap<SchemaGraphNodeInterface, SchemaGraphSemanticsInterface>();
+    fields.vocabularies = [];
+    fields.rootSchema = normIR.rootSchema;
 
     // Rebuild nodes from NormIR
     for (const normNode of normIR.nodes) {
@@ -68,7 +80,11 @@ export class SchemaGraph implements SchemaGraphInterface {
       if (parentNode === undefined) {
         continue;
       }
-      const childMap = graph.childMap.get(parentNode)!;
+      const childMap = graph.childMap.get(parentNode);
+
+      if (childMap === undefined) {
+        continue;
+      }
 
       for (const [
         key,
@@ -92,7 +108,11 @@ export class SchemaGraph implements SchemaGraphInterface {
       if (parentNode === undefined) {
         continue;
       }
-      const entryMap = graph.entryMap.get(parentNode)!;
+      const entryMap = graph.entryMap.get(parentNode);
+
+      if (entryMap === undefined) {
+        continue;
+      }
 
       for (const [
         key,
@@ -127,7 +147,11 @@ export class SchemaGraph implements SchemaGraphInterface {
       if (parentNode === undefined) {
         continue;
       }
-      const indexedMap = graph.indexedChildMap.get(parentNode)!;
+      const indexedMap = graph.indexedChildMap.get(parentNode);
+
+      if (indexedMap === undefined) {
+        continue;
+      }
 
       for (const [
         key,
@@ -160,12 +184,21 @@ export class SchemaGraph implements SchemaGraphInterface {
 
     return graph;
   }
+  /**
+   * Resolves a JSON Pointer against a raw schema object without constructing a full graph.
+   *
+   * @param rootSchema - The root schema to traverse.
+   * @param pointer - The JSON Pointer path to resolve.
+   * @returns The sub-schema at the given pointer location.
+   */
   static resolvePointer(rootSchema: JsonSchemaType, pointer: string): JsonSchemaType {
     return resolveSchemaAtPointer(rootSchema, pointer);
   }
   private readonly anchorMap = new Map<string, SchemaGraphNodeInterface>();
   private readonly childMap = new WeakMap<SchemaGraphNodeInterface, Map<string, SchemaGraphNodeInterface>>();
-  private readonly entryMap = new WeakMap<SchemaGraphNodeInterface, Map<string, Array<[string, SchemaGraphNodeInterface]>>>();
+  private readonly entryMap = new WeakMap<
+    SchemaGraphNodeInterface, Map<string, Array<[string, SchemaGraphNodeInterface]>>
+  >();
   private readonly identityMap = new WeakMap<object, SchemaGraphNodeInterface>();
   private readonly indexedChildMap = new WeakMap<SchemaGraphNodeInterface, Map<string, SchemaGraphNodeInterface[]>>();
 
@@ -175,28 +208,71 @@ export class SchemaGraph implements SchemaGraphInterface {
 
   private readonly semanticMap = new WeakMap<SchemaGraphNodeInterface, SchemaGraphSemanticsInterface>();
 
-  public constructor(public readonly rootSchema: JsonSchemaType) {
+  private readonly vocabularies: readonly VocabularyPluginInterface[];
+
+  /**
+   * Creates a new schema graph by lowering a root schema into graph nodes.
+   *
+   * @param rootSchema - The JSON Schema (object or boolean) to represent as a graph.
+   * @param vocabularies - Optional vocabulary plugins for custom relation extraction.
+   */
+  public constructor(public readonly rootSchema: JsonSchemaType, vocabularies?: readonly VocabularyPluginInterface[]) {
+    this.vocabularies = vocabularies ?? [];
     this.lower(rootSchema, '');
   }
 
+  /**
+   * Collects every relation across all nodes in the graph.
+   *
+   * @returns A flat array of all relations from every graph node.
+   */
   public allRelations(): SchemaGraphRelationInterface[] {
     const result: SchemaGraphRelationInterface[] = [];
 
     for (const node of this.nodeMap.values()) {
+      // Core relations
       result.push(...this.relations(node));
+
+      // Plugin-extracted relations
+      const semantics = this.semantics(node);
+
+      for (const plugin of this.vocabularies) {
+        if (plugin.extractRelations) {
+          result.push(...plugin.extractRelations(node, semantics, this));
+        }
+      }
     }
 
     return result;
   }
 
+  /**
+   * Retrieves a named child node of a parent node.
+   *
+   * @param node - The parent graph node.
+   * @param key - The child key (schema keyword or property name).
+   * @returns The child node, or `undefined` if no child exists for that key.
+   */
   public child(node: SchemaGraphNodeInterface, key: string): SchemaGraphNodeInterface | undefined {
     return this.childMap.get(node)?.get(key);
   }
 
+  /**
+   * Returns the named entry pairs for a keyword on a given node.
+   *
+   * @param node - The parent graph node.
+   * @param key - The keyword whose entries to retrieve (e.g. `"properties"`).
+   * @returns An array of `[entryName, entryNode]` pairs, empty when none exist.
+   */
   public entries(node: SchemaGraphNodeInterface, key: string): Array<[string, SchemaGraphNodeInterface]> {
     return this.entryMap.get(node)?.get(key) ?? [];
   }
 
+  /**
+   * Serializes the current graph state into a normalized intermediate representation.
+   *
+   * @returns The NormIR snapshot of all nodes, children, entries, indexed children, and anchors.
+   */
   public getNormIR(): NormIRInterface {
     const nodes: Array<{ 'id': string;
       'pointer': string }> = [];
@@ -256,8 +332,8 @@ export class SchemaGraph implements SchemaGraphInterface {
           key,
           indexedList
         ] of nodeIndexed) {
-          indexedRecord[key] = indexedList.map((n) => {
-            return n.pointer;
+          indexedRecord[key] = indexedList.map((indexedNode) => {
+            return indexedNode.pointer;
           });
         }
         indexedChildren[node.pointer] = indexedRecord;
@@ -281,10 +357,24 @@ export class SchemaGraph implements SchemaGraphInterface {
     };
   }
 
+  /**
+   * Returns the ordered list of indexed child nodes for a keyword on a given node.
+   *
+   * @param node - The parent graph node.
+   * @param key - The keyword whose indexed children to retrieve (e.g. `"allOf"`).
+   * @returns An array of child nodes, empty when none exist.
+   */
   public indexedChildren(node: SchemaGraphNodeInterface, key: string): SchemaGraphNodeInterface[] {
     return this.indexedChildMap.get(node)?.get(key) ?? [];
   }
 
+  /**
+   * Reads a raw keyword value from a node's underlying schema object.
+   *
+   * @param node - The graph node to inspect.
+   * @param key - The JSON Schema keyword name.
+   * @returns The keyword's value, or `undefined` if the node is boolean or the keyword is absent.
+   */
   public keywordValue(node: SchemaGraphNodeInterface, key: string): unknown {
     if (!isRecord(node.schema)) {
       return undefined;
@@ -378,14 +468,31 @@ export class SchemaGraph implements SchemaGraphInterface {
     }
   }
 
+  /**
+   * Looks up the graph node for a schema object by identity reference.
+   *
+   * @param schema - The schema object to look up (matched by reference, not by value).
+   * @returns The corresponding graph node, or `undefined` if not found.
+   */
   public node(schema: Record<string, unknown>): SchemaGraphNodeInterface | undefined {
     return this.identityMap.get(schema);
   }
 
+  /**
+   * Returns all graph nodes in pointer-insertion order.
+   *
+   * @returns An array of every node in the graph.
+   */
   public nodes(): SchemaGraphNodeInterface[] {
     return [...this.nodeMap.values()];
   }
 
+  /**
+   * Extracts the semantic relations for a node, caching the result for subsequent calls.
+   *
+   * @param node - The graph node whose relations to extract.
+   * @returns An array of relations originating from the node.
+   */
   public relations(node: SchemaGraphNodeInterface): SchemaGraphRelationInterface[] {
     const cached = this.relationMap.get(node);
 
@@ -400,6 +507,13 @@ export class SchemaGraph implements SchemaGraphInterface {
     return relations;
   }
 
+  /**
+   * Resolves a JSON Pointer fragment or anchor name to a graph node.
+   *
+   * @param fragment - JSON Pointer or anchor name (without leading `#`).
+   * @returns The resolved graph node.
+   * @throws {@link GraphError} If the fragment is an anchor that cannot be found.
+   */
   public resolveFragment(fragment: string): SchemaGraphNodeInterface {
     if (fragment === '') {
       return this.rootNode;
@@ -428,6 +542,13 @@ export class SchemaGraph implements SchemaGraphInterface {
     return this.resolveFragment(ref.slice(1));
   }
 
+  /**
+   * Resolves a JSON Pointer to a graph node.
+   *
+   * @param pointer - An absolute JSON Pointer (e.g. `/properties/name`), or empty string for root.
+   * @returns The graph node at the given pointer.
+   * @throws {@link GraphError} If the pointer is malformed or points to a non-existent node.
+   */
   public resolvePointer(pointer: string): SchemaGraphNodeInterface {
     if (pointer === '') {
       return this.rootNode;
@@ -445,6 +566,12 @@ export class SchemaGraph implements SchemaGraphInterface {
     return resolved;
   }
 
+  /**
+   * Resolves a `$ref` string to the target node's canonical identifier.
+   *
+   * @param ref - The `$ref` value (local fragment like `#/defs/Foo` or an absolute URI).
+   * @returns The resolved node's `id` for local refs, or the `ref` string itself for external refs.
+   */
   public resolveRefId(ref: string): string {
     if (!ref.startsWith('#')) {
       return ref;
@@ -453,10 +580,21 @@ export class SchemaGraph implements SchemaGraphInterface {
     return this.resolveLocalRef(ref).id;
   }
 
+  /**
+   * Returns the root node of the graph (the node at the empty pointer).
+   *
+   * @returns The root graph node.
+   */
   public get rootNode(): SchemaGraphNodeInterface {
     return this.nodeMap.get('') as SchemaGraphNodeInterface;
   }
 
+  /**
+   * Extracts the semantic facets for a node, caching the result for subsequent calls.
+   *
+   * @param node - The graph node whose semantics to extract.
+   * @returns The computed semantics (types, constraints, composition nodes, etc.).
+   */
   public semantics(node: SchemaGraphNodeInterface): SchemaGraphSemanticsInterface {
     const cached = this.semanticMap.get(node);
 
@@ -464,13 +602,20 @@ export class SchemaGraph implements SchemaGraphInterface {
       return cached;
     }
 
-    const sem = extractSemantics(this, node, this.resolveLocalRef.bind(this));
+    const sem = extractSemantics(this, node, (ref) => {
+      return this.resolveLocalRef(ref);
+    });
 
     this.semanticMap.set(node, sem);
 
     return sem;
   }
 
+  /**
+   * Validates the structural integrity of the graph, returning any warnings found.
+   *
+   * @returns An array of structure warnings, empty when the graph is well-formed.
+   */
   public validateStructure(): StructureWarningInterface[] {
     return validateGraphStructure(this.nodeMap);
   }

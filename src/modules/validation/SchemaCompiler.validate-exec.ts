@@ -4,7 +4,7 @@ import {
   deepEqual, isRecord
 } from '../data/DataTypes.js';
 import {
-  coerceCompiledValue, jsonSortedKeys, makeValidationError
+  codePointLength, coerceCompiledValue, jsonSortedKeys, makeValidationError
 } from './SchemaCompiler.support.js';
 import type {
   CompiledNodeValidationPlanInterface, ValidateWithErrorsFnType
@@ -17,6 +17,7 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
     allOfValidators,
     allowedKeys,
     anyOfChecks,
+    complementCheck,
     constVal,
     containsCheck,
     customKeywordEntries,
@@ -45,7 +46,6 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
     minLength,
     minProperties,
     multipleOf,
-    notCheck,
     oneOfChecks,
     pattern,
     patternPropValidators,
@@ -127,15 +127,13 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
         }
       }
       if (!typeValid) {
-        if (collectErrors) {
-          errors.push(makeValidationError(path, 'type', types.length === 1 ? `must be ${types[0]}` : `must be one of: ${types.join(', ')}`, { 'type': types }));
-        }
         if (!collectErrors) {
           return {
             'valid': false,
             'value': workingValue
           };
         }
+        errors.push(makeValidationError(path, 'type', types.length === 1 ? `must be ${types[0]}` : `must be one of: ${types.join(', ')}`, { 'type': types }));
         valid = false;
       }
     }
@@ -148,145 +146,125 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
         : enumSet.has(workingValue as boolean | null | number | string);
 
       if (!matched) {
-        if (collectErrors) {
-          errors.push(makeValidationError(path, 'enum', 'must be one of the allowed values'));
-        }
         if (!collectErrors) {
           return {
             'valid': false,
             'value': workingValue
           };
         }
+        errors.push(makeValidationError(path, 'enum', 'must be one of the allowed values'));
         valid = false;
       }
     }
 
     if (hasConst && !deepEqual(constVal, workingValue)) {
-      if (collectErrors) {
-        errors.push(makeValidationError(path, 'const', `must be ${JSON.stringify(constVal)}`));
-      }
       if (!collectErrors) {
         return {
           'valid': false,
           'value': workingValue
         };
       }
+      errors.push(makeValidationError(path, 'const', `must be ${JSON.stringify(constVal)}`));
       valid = false;
     }
 
     if (typeof workingValue === 'string') {
-      const codePointLen = minLength !== undefined || maxLength !== undefined ? [...workingValue].length : 0;
+      if (minLength !== undefined || maxLength !== undefined) {
+        const cpLen = codePointLength(workingValue);
 
-      if (minLength !== undefined && codePointLen < minLength) {
-        if (collectErrors) {
+        if (minLength !== undefined && cpLen < minLength) {
+          if (!collectErrors) {
+            return {
+              'valid': false,
+              'value': workingValue
+            };
+          }
           errors.push(makeValidationError(path, 'minLength', `must be at least ${minLength} characters`));
+          valid = false;
         }
-        if (!collectErrors) {
-          return {
-            'valid': false,
-            'value': workingValue
-          };
-        }
-        valid = false;
-      }
-      if (maxLength !== undefined && codePointLen > maxLength) {
-        if (collectErrors) {
+        if (maxLength !== undefined && cpLen > maxLength) {
+          if (!collectErrors) {
+            return {
+              'valid': false,
+              'value': workingValue
+            };
+          }
           errors.push(makeValidationError(path, 'maxLength', `must be at most ${maxLength} characters`));
+          valid = false;
         }
-        if (!collectErrors) {
-          return {
-            'valid': false,
-            'value': workingValue
-          };
-        }
-        valid = false;
       }
       if (patternRegex !== undefined && !patternRegex.test(workingValue)) {
-        if (collectErrors) {
-          errors.push(makeValidationError(path, 'pattern', `must match pattern "${pattern}"`));
-        }
         if (!collectErrors) {
           return {
             'valid': false,
             'value': workingValue
           };
         }
+        errors.push(makeValidationError(path, 'pattern', `must match pattern "${pattern}"`));
         valid = false;
       }
     }
 
     if (formatValidator !== undefined && !formatValidator(workingValue)) {
-      if (collectErrors) {
-        errors.push(makeValidationError(path, 'format', `must match format "${format}"`));
-      }
       if (!collectErrors) {
         return {
           'valid': false,
           'value': workingValue
         };
       }
+      errors.push(makeValidationError(path, 'format', `must match format "${format}"`));
       valid = false;
     }
 
     if (typeof workingValue === 'number') {
       if (minimum !== undefined && workingValue < minimum) {
-        if (collectErrors) {
-          errors.push(makeValidationError(path, 'minimum', `must be >= ${minimum}`));
-        }
         if (!collectErrors) {
           return {
             'valid': false,
             'value': workingValue
           };
         }
+        errors.push(makeValidationError(path, 'minimum', `must be >= ${minimum}`));
         valid = false;
       }
       if (maximum !== undefined && workingValue > maximum) {
-        if (collectErrors) {
-          errors.push(makeValidationError(path, 'maximum', `must be <= ${maximum}`));
-        }
         if (!collectErrors) {
           return {
             'valid': false,
             'value': workingValue
           };
         }
+        errors.push(makeValidationError(path, 'maximum', `must be <= ${maximum}`));
         valid = false;
       }
       if (exclusiveMinimum !== undefined && workingValue <= exclusiveMinimum) {
-        if (collectErrors) {
-          errors.push(makeValidationError(path, 'exclusiveMinimum', `must be > ${exclusiveMinimum}`));
-        }
         if (!collectErrors) {
           return {
             'valid': false,
             'value': workingValue
           };
         }
+        errors.push(makeValidationError(path, 'exclusiveMinimum', `must be > ${exclusiveMinimum}`));
         valid = false;
       }
       if (exclusiveMaximum !== undefined && workingValue >= exclusiveMaximum) {
-        if (collectErrors) {
-          errors.push(makeValidationError(path, 'exclusiveMaximum', `must be < ${exclusiveMaximum}`));
-        }
         if (!collectErrors) {
           return {
             'valid': false,
             'value': workingValue
           };
         }
+        errors.push(makeValidationError(path, 'exclusiveMaximum', `must be < ${exclusiveMaximum}`));
         valid = false;
       }
       if (multipleOf !== undefined && workingValue % multipleOf !== 0) {
-        if (collectErrors) {
-          errors.push(makeValidationError(path, 'multipleOf', `must be a multiple of ${multipleOf}`));
-        }
         if (!collectErrors) {
           return {
             'valid': false,
             'value': workingValue
           };
         }
+        errors.push(makeValidationError(path, 'multipleOf', `must be a multiple of ${multipleOf}`));
         valid = false;
       }
     }
@@ -308,15 +286,13 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
       if (required !== undefined) {
         for (const key of required) {
           if (!(key in obj)) {
-            if (collectErrors) {
-              errors.push(makeValidationError(path, 'required', `must have required property '${key}'`, { 'missingProperty': key }));
-            }
             if (!collectErrors) {
               return {
                 'valid': false,
                 'value': workingValue
               };
             }
+            errors.push(makeValidationError(path, 'required', `must have required property '${key}'`, { 'missingProperty': key }));
             valid = false;
           }
         }
@@ -355,16 +331,14 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
           if (!matchedPattern) {
             if (stripUnknown && allowedKeys !== undefined && !allowedKeys.has(key)) {
               delete obj[key];
-            } else if (additionalIsFalse && allowedKeys !== undefined && !allowedKeys.has(key)) {
-              if (collectErrors) {
-                errors.push(makeValidationError(childPath, 'additionalProperties', `must NOT have additional property '${key}'`));
-              }
+            } else if (additionalIsFalse && allowedKeys?.has(key) !== true) {
               if (!collectErrors) {
                 return {
                   'valid': false,
                   'value': workingValue
                 };
               }
+              errors.push(makeValidationError(childPath, 'additionalProperties', `must NOT have additional property '${key}'`));
               valid = false;
             } else if (additionalValidator !== undefined) {
               // eslint-disable-next-line @stylistic/max-len
@@ -419,27 +393,23 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
         const count = Object.keys(obj).length;
 
         if (minProperties !== undefined && count < minProperties) {
-          if (collectErrors) {
-            errors.push(makeValidationError(path, 'minProperties', `must have at least ${minProperties} properties`));
-          }
           if (!collectErrors) {
             return {
               'valid': false,
               'value': workingValue
             };
           }
+          errors.push(makeValidationError(path, 'minProperties', `must have at least ${minProperties} properties`));
           valid = false;
         }
         if (maxProperties !== undefined && count > maxProperties) {
-          if (collectErrors) {
-            errors.push(makeValidationError(path, 'maxProperties', `must have at most ${maxProperties} properties`));
-          }
           if (!collectErrors) {
             return {
               'valid': false,
               'value': workingValue
             };
           }
+          errors.push(makeValidationError(path, 'maxProperties', `must have at most ${maxProperties} properties`));
           valid = false;
         }
       }
@@ -449,27 +419,23 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
       const arr = workingValue;
 
       if (minItems !== undefined && arr.length < minItems) {
-        if (collectErrors) {
-          errors.push(makeValidationError(path, 'minItems', `must have at least ${minItems} items`));
-        }
         if (!collectErrors) {
           return {
             'valid': false,
             'value': workingValue
           };
         }
+        errors.push(makeValidationError(path, 'minItems', `must have at least ${minItems} items`));
         valid = false;
       }
       if (maxItems !== undefined && arr.length > maxItems) {
-        if (collectErrors) {
-          errors.push(makeValidationError(path, 'maxItems', `must have at most ${maxItems} items`));
-        }
         if (!collectErrors) {
           return {
             'valid': false,
             'value': workingValue
           };
         }
+        errors.push(makeValidationError(path, 'maxItems', `must have at most ${maxItems} items`));
         valid = false;
       }
       if (uniqueItems) {
@@ -487,15 +453,13 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
           seen.add(key);
         }
         if (hasDup) {
-          if (collectErrors) {
-            errors.push(makeValidationError(path, 'uniqueItems', 'must have unique items'));
-          }
           if (!collectErrors) {
             return {
               'valid': false,
               'value': workingValue
             };
           }
+          errors.push(makeValidationError(path, 'uniqueItems', 'must have unique items'));
           valid = false;
         }
       }
@@ -553,37 +517,31 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
           }
         }
         if (minContains !== undefined && count < minContains) {
-          if (collectErrors) {
-            errors.push(makeValidationError(path, 'contains', `must contain at least ${minContains} matching items`));
-          }
           if (!collectErrors) {
             return {
               'valid': false,
               'value': workingValue
             };
           }
+          errors.push(makeValidationError(path, 'contains', `must contain at least ${minContains} matching items`));
           valid = false;
         } else if (maxContains !== undefined && count > maxContains) {
-          if (collectErrors) {
-            errors.push(makeValidationError(path, 'contains', `must contain at most ${maxContains} matching items`));
-          }
           if (!collectErrors) {
             return {
               'valid': false,
               'value': workingValue
             };
           }
+          errors.push(makeValidationError(path, 'contains', `must contain at most ${maxContains} matching items`));
           valid = false;
         } else if (minContains === undefined && maxContains === undefined && count === 0) {
-          if (collectErrors) {
-            errors.push(makeValidationError(path, 'contains', 'must contain at least one matching item'));
-          }
           if (!collectErrors) {
             return {
               'valid': false,
               'value': workingValue
             };
           }
+          errors.push(makeValidationError(path, 'contains', 'must contain at least one matching item'));
           valid = false;
         }
       }
@@ -613,15 +571,13 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
       });
 
       if (!matched) {
-        if (collectErrors) {
-          errors.push(makeValidationError(path, 'anyOf', 'must match at least one schema in anyOf'));
-        }
         if (!collectErrors) {
           return {
             'valid': false,
             'value': workingValue
           };
         }
+        errors.push(makeValidationError(path, 'anyOf', 'must match at least one schema in anyOf'));
         valid = false;
       }
     }
@@ -639,34 +595,30 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
       }
 
       if (count !== 1) {
-        if (collectErrors) {
-          const msg = count === 0
-            ? 'must match exactly one schema in oneOf (matched none)'
-            : 'must match exactly one schema in oneOf (matched multiple)';
-
-          errors.push(makeValidationError(path, 'oneOf', msg, { 'matchCount': count }));
-        }
         if (!collectErrors) {
           return {
             'valid': false,
             'value': workingValue
           };
         }
+        const msg = count === 0
+          ? 'must match exactly one schema in oneOf (matched none)'
+          : 'must match exactly one schema in oneOf (matched multiple)';
+
+        errors.push(makeValidationError(path, 'oneOf', msg, { 'matchCount': count }));
         valid = false;
       }
     }
 
     // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
-    if (notCheck !== undefined && notCheck(workingValue)) {
-      if (collectErrors) {
-        errors.push(makeValidationError(path, 'not', 'must not match schema'));
-      }
+    if (complementCheck !== undefined && complementCheck(workingValue)) {
       if (!collectErrors) {
         return {
           'valid': false,
           'value': workingValue
         };
       }
+      errors.push(makeValidationError(path, 'not', 'must not match schema'));
       valid = false;
     }
 
@@ -714,18 +666,16 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
         if (trigger in obj) {
           for (const dep of deps) {
             if (!(dep in obj)) {
-              if (collectErrors) {
-                errors.push(makeValidationError(path, 'dependentRequired', `property '${trigger}' requires property '${dep}'`, {
-                  'missingProperty': dep,
-                  'property': trigger
-                }));
-              }
               if (!collectErrors) {
                 return {
                   'valid': false,
                   'value': workingValue
                 };
               }
+              errors.push(makeValidationError(path, 'dependentRequired', `property '${trigger}' requires property '${dep}'`, {
+                'missingProperty': dep,
+                'property': trigger
+              }));
               valid = false;
             }
           }
@@ -796,26 +746,22 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
         const kwResult = entry.validate(entry.schemaValue, workingValue, ctx);
 
         if (kwResult === false) {
-          if (collectErrors) {
-            errors.push(makeValidationError(path, entry.keyword, `must pass "${entry.keyword}" validation`));
-          }
           if (!collectErrors) {
             return {
               'valid': false,
               'value': workingValue
             };
           }
+          errors.push(makeValidationError(path, entry.keyword, `must pass "${entry.keyword}" validation`));
           valid = false;
         } else if (Array.isArray(kwResult) && kwResult.length > 0) {
-          if (collectErrors) {
-            errors.push(...kwResult);
-          }
           if (!collectErrors) {
             return {
               'valid': false,
               'value': workingValue
             };
           }
+          errors.push(...kwResult);
           valid = false;
         }
       }

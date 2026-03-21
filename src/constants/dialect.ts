@@ -22,12 +22,12 @@ export const SUPPORTED_VOCABULARIES = new Set([
 ]);
 
 export const DEFAULT_OPTIONS: Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>> = {
+  'allowAdditionalProperties': false,
   'applyDefaults': false,
-  'coerce': false,
+  'castTypes': false,
   'collectErrors': true,
-  'ignoreAdditionalProperties': false,
+  'enforceSchemaProperties': false,
   'materializeContainers': false,
-  'removeAdditional': false,
-  'stripUnknownProperties': false,
+  'removeAdditionalProperties': false,
   'synthesizeDefaults': false
 };

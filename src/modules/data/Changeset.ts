@@ -25,6 +25,11 @@ import {
 export class Changeset implements ChangesetInterface {
   public readonly operations: readonly DiffOpType[];
 
+  /**
+   * Create a Changeset from an ordered list of diff operations.
+   *
+   * @param operations - Ordered diff operations (set or delete)
+   */
   public constructor(operations: readonly DiffOpType[]) {
     this.operations = operations;
   }

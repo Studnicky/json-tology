@@ -10,22 +10,23 @@
 
 import type { QuadInterface } from '../../interfaces/quad.js';
 import type { QuadObjectType } from '../../types/quad.js';
+import { RDF_TYPE_IRI } from '../../constants/prefixes.js';
 
 export function quadsToJsonLd(quads: QuadInterface[]): Array<Record<string, unknown>> {
   // Phase 1: group quads by subject
   const subjects = new Map<string, Record<string, unknown>>();
 
-  for (const q of quads) {
-    let node = subjects.get(q.subject);
+  for (const entry of quads) {
+    let node = subjects.get(entry.subject);
 
     if (node === undefined) {
-      node = { '@id': q.subject };
-      subjects.set(q.subject, node);
+      node = { '@id': entry.subject };
+      subjects.set(entry.subject, node);
     }
 
-    if (q.predicate === 'rdf:type') {
+    if (entry.predicate === 'rdf:type' || entry.predicate === RDF_TYPE_IRI) {
       // @type values are plain strings, not { '@id': ... } wrappers
-      const typeValue = q.object.termType === 'NamedNode' ? q.object.value : objectToJsonLd(q.object);
+      const typeValue = entry.object.termType === 'NamedNode' ? entry.object.value : objectToJsonLd(entry.object);
       const existing = node['@type'];
 
       if (existing === undefined) {
@@ -39,15 +40,15 @@ export function quadsToJsonLd(quads: QuadInterface[]): Array<Record<string, unkn
         ];
       }
     } else {
-      const value = objectToJsonLd(q.object);
-      const existing = node[q.predicate];
+      const value = objectToJsonLd(entry.object);
+      const existing = node[entry.predicate];
 
       if (existing === undefined) {
-        node[q.predicate] = value;
+        node[entry.predicate] = value;
       } else if (Array.isArray(existing)) {
         (existing as unknown[]).push(value);
       } else {
-        node[q.predicate] = [
+        node[entry.predicate] = [
           existing,
           value
         ];
@@ -58,8 +59,8 @@ export function quadsToJsonLd(quads: QuadInterface[]): Array<Record<string, unkn
   // Phase 2: count bnode references for inlining
   const bnodeRefCount = new Map<string, number>();
 
-  for (const q of quads) {
-    countBnodeRefs(q.object, bnodeRefCount);
+  for (const entry of quads) {
+    countBnodeRefs(entry.object, bnodeRefCount);
   }
 
   // Phase 3: inline singly-referenced bnodes (bottom-up)
@@ -99,12 +100,18 @@ function objectToJsonLd(obj: QuadObjectType): unknown {
     case 'BlankNode':
       return { '@id': obj.value };
     case 'List':
-      return { '@list': obj.items.map(objectToJsonLd) };
+      return {
+        '@list': obj.items.map((item) => {
+          return objectToJsonLd(item);
+        })
+      };
     case 'Literal':
       return obj.value;
     case 'NamedNode':
       return { '@id': obj.value };
   }
+
+  return undefined;
 }
 
 function countBnodeRefs(obj: QuadObjectType, counts: Map<string, number>): void {
@@ -140,8 +147,8 @@ function resolveValue(
   inlinedIds: Set<string>
 ): unknown {
   if (Array.isArray(value)) {
-    return value.map((v) => {
-      return resolveValue(v, subjects, inlinedIds);
+    return value.map((element) => {
+      return resolveValue(element, subjects, inlinedIds);
     });
   }
 
@@ -171,8 +178,8 @@ function resolveValue(
     // Recurse into @list
     if ('@list' in obj && Array.isArray(obj['@list'])) {
       return {
-        '@list': (obj['@list'] as unknown[]).map((v) => {
-          return resolveValue(v, subjects, inlinedIds);
+        '@list': (obj['@list'] as unknown[]).map((element) => {
+          return resolveValue(element, subjects, inlinedIds);
         })
       };
     }

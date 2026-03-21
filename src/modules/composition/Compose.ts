@@ -25,7 +25,7 @@ export class Compose {
    * Each variant schema should include the discriminator property with a const value.
    * The discriminator hint allows validators and OpenAPI tools to optimise validation.
    *
-   * Infer<typeof result> produces a TypeScript union of all variant types.
+   * InferType<typeof result> produces a TypeScript union of all variant types.
    *
    * @example
    * const ShapeSchema = Compose.discriminatedUnion(
@@ -33,7 +33,7 @@ export class Compose {
    *   [CircleSchema, RectSchema] as const,
    *   'https://example.io/Shape'
    * );
-   * type Shape = Infer<typeof ShapeSchema>;
+   * type Shape = InferType<typeof ShapeSchema>;
    */
   public static discriminatedUnion<
     TDiscriminator extends string,
@@ -144,7 +144,7 @@ export class Compose {
   /**
    * Combine multiple schemas using allOf (TypeScript intersection semantics).
    *
-   * Infer<typeof result> will produce the intersection of all constituent types.
+   * InferType<typeof result> will produce the intersection of all constituent types.
    * Runtime validation checks all schemas against the data.
    *
    * @example
@@ -152,7 +152,7 @@ export class Compose {
    *   [PersonSchema, AddressSchema] as const,
    *   'https://example.io/PersonWithAddress'
    * );
-   * type PersonWithAddress = Infer<typeof PersonWithAddress>;
+   * type PersonWithAddress = InferType<typeof PersonWithAddress>;
    */
   public static intersection<
     TSchemas extends ReadonlyArray<Record<string, unknown>>,
@@ -193,7 +193,7 @@ export class Compose {
   /**
    * Derive a schema with specified properties removed.
    * Removed required fields are also dropped from `required`.
-   * Produces a valid JSON Schema; `Infer<typeof result>` excludes the omitted props.
+   * Produces a valid JSON Schema; `InferType<typeof result>` excludes the omitted props.
    *
    * @example
    * const PublicUserSchema = Compose.omit(UserSchema, ['passwordHash'] as const, 'https://myapp.io/PublicUser');
@@ -210,11 +210,13 @@ export class Compose {
       : {};
     const sourceRequired = Array.isArray(source.required) ? (source.required as string[]) : [];
 
+    const keysToOmit = new Set(keys as readonly string[]);
+
     for (const key of keys) {
       delete sourceProps[key];
     }
     const remainingRequired = sourceRequired.filter((requiredKey) => {
-      return !(keys as readonly string[]).includes(requiredKey);
+      return !keysToOmit.has(requiredKey);
     });
 
     const result: Record<string, unknown> = {
@@ -232,11 +234,11 @@ export class Compose {
 
   /**
    * Derive a schema where all properties are optional (no `required` array).
-   * Produces a valid JSON Schema; `Infer<typeof result>` gives all-optional props.
+   * Produces a valid JSON Schema; `InferType<typeof result>` gives all-optional props.
    *
    * @example
    * const PatchUserSchema = Compose.partial(UserSchema, 'https://myapp.io/PatchUser');
-   * type PatchUser = Infer<typeof PatchUserSchema>; // { name?: string; email?: string }
+   * type PatchUser = InferType<typeof PatchUserSchema>; // { name?: string; email?: string }
    */
   public static partial<
     TSchema extends Record<string, unknown> & { readonly '$id': string; },
@@ -253,7 +255,7 @@ export class Compose {
   /**
    * Derive a schema with only the specified property keys.
    * Non-picked required fields are dropped from `required`.
-   * Produces a valid JSON Schema; `Infer<typeof result>` gives only the picked props.
+   * Produces a valid JSON Schema; `InferType<typeof result>` gives only the picked props.
    *
    * @example
    * const UserSummarySchema = Compose.pick(UserSchema, ['id', 'name'] as const, 'https://myapp.io/UserSummary');
@@ -297,7 +299,7 @@ export class Compose {
 
   /**
    * Derive a schema where every declared property is required.
-   * Produces a valid JSON Schema; `Infer<typeof result>` gives all-required props.
+   * Produces a valid JSON Schema; `InferType<typeof result>` gives all-required props.
    *
    * @example
    * const StrictUserSchema = Compose.required(UserSchema, 'https://myapp.io/StrictUser');

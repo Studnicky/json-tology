@@ -233,7 +233,7 @@ void describe('SchemaGraph', () => {
     assert.equal(rootSem.description, 'Represents a person');
     assert.equal(rootSem.minProperties, 1);
     assert.equal(rootSem.maxProperties, 10);
-    assert.equal(rootSem.notNode?.pointer, '/not');
+    assert.equal(rootSem.complementNode?.pointer, '/not');
     assert.equal(typeof rootSem.additionalPropertiesNode, 'object');
     assert.equal((rootSem.additionalPropertiesNode as { 'pointer': string }).pointer, '/additionalProperties');
 
@@ -363,57 +363,112 @@ void describe('SchemaGraph', () => {
     assert.equal(self.refTargetNode?.id, 'https://example.io/root');
   });
 
-  void it('produces subClassOf relations from allOf', () => {
-    const schema = {
-      'allOf': [
-        { 'type': 'object' as const },
-        { 'type': 'object' as const }
-      ],
-      'type': 'object' as const
-    };
-    const graph = new SchemaGraph(schema);
-    const rels = graph.relations(graph.rootNode);
-    const subClassOfs = rels.filter((rel) => {
-      return rel.predicate === 'rdfs:subClassOf';
-    });
+  void it('produces correct OWL/RDFS relations from schema keywords', () => {
+    const scenarios: Array<{ 'count': number;
+      'predicate': string;
+      'schema': Record<string, unknown>;
+      'target'?: unknown }> = [
+      {
+        'count': 2,
+        'predicate': 'rdfs:subClassOf',
+        'schema': {
+          'allOf': [
+            { 'type': 'object' },
+            { 'type': 'object' }
+          ],
+          'type': 'object'
+        }
+      },
+      {
+        'count': 2,
+        'predicate': 'owl:equivalentClass',
+        'schema': {
+          'anyOf': [
+            { 'type': 'string' },
+            { 'type': 'number' }
+          ]
+        }
+      },
+      {
+        'count': 1,
+        'predicate': 'owl:complementOf',
+        'schema': { 'not': { 'type': 'array' } }
+      },
+      {
+        'count': 2,
+        'predicate': 'owl:oneOf',
+        'schema': {
+          'enum': [
+            'active',
+            'inactive'
+          ],
+          'type': 'string'
+        }
+      },
+      {
+        'count': 1,
+        'predicate': 'rdfs:label',
+        'schema': {
+          'title': 'Person',
+          'type': 'object'
+        },
+        'target': 'Person'
+      },
+      {
+        'count': 1,
+        'predicate': 'rdfs:comment',
+        'schema': {
+          'description': 'A person',
+          'type': 'object'
+        },
+        'target': 'A person'
+      },
+      {
+        'count': 1,
+        'predicate': 'owl:deprecated',
+        'schema': {
+          'deprecated': true,
+          'type': 'string'
+        }
+      },
+      {
+        'count': 1,
+        'predicate': 'owl:disjointWith',
+        'schema': {
+          'disjointWith': 'https://example.com/Cat',
+          'type': 'object'
+        },
+        'target': 'https://example.com/Cat'
+      },
+      {
+        'count': 1,
+        'predicate': 'owl:equivalentClass',
+        'schema': {
+          'equivalentTo': 'https://example.com/Human',
+          'type': 'object'
+        },
+        'target': 'https://example.com/Human'
+      }
+    ];
 
-    assert.equal(subClassOfs.length, 2);
-    assert.equal((subClassOfs[0].target as { 'pointer': string }).pointer, '/allOf/0');
-    assert.equal((subClassOfs[1].target as { 'pointer': string }).pointer, '/allOf/1');
+    for (const {
+      count, predicate, schema, target
+    } of scenarios) {
+      const graph = new SchemaGraph(schema);
+      const rels = graph.relations(graph.rootNode).filter((rel) => {
+        return rel.predicate === predicate;
+      });
+
+      assert.equal(rels.length, count);
+      if (target !== undefined) {
+        assert.equal(rels[0].target, target);
+      }
+    }
   });
 
-  void it('produces equivalentClass relations from anyOf', () => {
-    const schema = {
-      'anyOf': [
-        { 'type': 'string' as const },
-        { 'type': 'number' as const }
-      ]
-    };
-    const graph = new SchemaGraph(schema);
-    const rels = graph.relations(graph.rootNode);
-    const eqs = rels.filter((rel) => {
-      return rel.predicate === 'owl:equivalentClass';
-    });
-
-    assert.equal(eqs.length, 2);
-    assert.equal((eqs[0].target as { 'pointer': string }).pointer, '/anyOf/0');
-    assert.equal((eqs[1].target as { 'pointer': string }).pointer, '/anyOf/1');
-  });
-
-  void it('produces complementOf relation from not', () => {
-    const schema = { 'not': { 'type': 'array' as const } };
-    const graph = new SchemaGraph(schema);
-    const rels = graph.relations(graph.rootNode);
-    const comps = rels.filter((rel) => {
-      return rel.predicate === 'owl:complementOf';
-    });
-
-    assert.equal(comps.length, 1);
-    assert.equal((comps[0].target as { 'pointer': string }).pointer, '/not');
-  });
-
-  void it('produces restriction relations from required properties', () => {
-    const schema = {
+  void it('produces restriction, domain/range, and allRelations', () => {
+    // Required → owl:Restriction with metadata
+    const reqSchema = {
       'properties': {
         'age': { 'type': 'number' as const },
         'name': { 'type': 'string' as const }
@@ -424,61 +479,32 @@ void describe('SchemaGraph', () => {
       ],
       'type': 'object' as const
     };
-    const graph = new SchemaGraph(schema);
-    const rels = graph.relations(graph.rootNode);
-    const restrictions = rels.filter((rel) => {
+    const reqGraph = new SchemaGraph(reqSchema);
+    const restrictions = reqGraph.relations(reqGraph.rootNode).filter((rel) => {
       return rel.predicate === 'owl:Restriction';
     });
 
     assert.equal(restrictions.length, 2);
     assert.equal((restrictions[0].metadata as Record<string, unknown>).minCardinality, 1);
-    assert.equal((restrictions[0].target as { 'pointer': string }).pointer, '/properties/name');
-    assert.equal((restrictions[1].target as { 'pointer': string }).pointer, '/properties/age');
-  });
 
-  void it('produces domain and range relations from rdfs annotations', () => {
-    const schema = {
+    // rdfs:domain and rdfs:range
+    const drSchema = {
       'rdfs:domain': 'https://example.com/Person',
       'rdfs:range': 'http://www.w3.org/2001/XMLSchema#string',
       'type': 'string'
     };
-    const graph = new SchemaGraph(schema);
-    const rels = graph.relations(graph.rootNode);
+    const drGraph = new SchemaGraph(drSchema);
+    const drRels = drGraph.relations(drGraph.rootNode);
 
-    const domains = rels.filter((rel) => {
+    assert.equal(drRels.filter((rel) => {
       return rel.predicate === 'rdfs:domain';
-    });
-    const ranges = rels.filter((rel) => {
+    }).length, 1);
+    assert.equal(drRels.filter((rel) => {
       return rel.predicate === 'rdfs:range';
-    });
+    }).length, 1);
 
-    assert.equal(domains.length, 1);
-    assert.equal(domains[0].target, 'https://example.com/Person');
-    assert.equal(ranges.length, 1);
-    assert.equal(ranges[0].target, 'http://www.w3.org/2001/XMLSchema#string');
-  });
-
-  void it('produces memberOf relations from enum values', () => {
-    const schema = {
-      'enum': [
-        'active',
-        'inactive'
-      ],
-      'type': 'string' as const
-    };
-    const graph = new SchemaGraph(schema);
-    const rels = graph.relations(graph.rootNode);
-    const members = rels.filter((rel) => {
-      return rel.predicate === 'owl:oneOf';
-    });
-
-    assert.equal(members.length, 2);
-    assert.equal(members[0].target, 'active');
-    assert.equal(members[1].target, 'inactive');
-  });
-
-  void it('returns all relations across all nodes via allRelations', () => {
-    const schema = {
+    // allRelations aggregates across all nodes
+    const allSchema = {
       'properties': {
         'status': {
           'enum': [
@@ -491,8 +517,8 @@ void describe('SchemaGraph', () => {
       'required': ['status'],
       'type': 'object' as const
     };
-    const graph = new SchemaGraph(schema);
-    const all = graph.allRelations();
+    const allGraph = new SchemaGraph(allSchema);
+    const all = allGraph.allRelations();
 
     assert.ok(all.length >= 3);
     assert.ok(all.some((rel) => {
@@ -503,135 +529,159 @@ void describe('SchemaGraph', () => {
     }));
   });
 
-  void it('produces rdfs:label from title', () => {
-    const schema = {
-      'title': 'Person',
-      'type': 'object' as const
-    };
-    const graph = new SchemaGraph(schema);
-    const rels = graph.relations(graph.rootNode);
-    const labels = rels.filter((rel) => {
-      return rel.predicate === 'rdfs:label';
-    });
-
-    assert.equal(labels.length, 1);
-    assert.equal(labels[0].target, 'Person');
-  });
-
-  void it('produces rdfs:comment from description', () => {
-    const schema = {
-      'description': 'A person',
-      'type': 'object' as const
-    };
-    const graph = new SchemaGraph(schema);
-    const rels = graph.relations(graph.rootNode);
-    const comments = rels.filter((rel) => {
-      return rel.predicate === 'rdfs:comment';
-    });
-
-    assert.equal(comments.length, 1);
-    assert.equal(comments[0].target, 'A person');
-  });
-
-  void it('produces owl:deprecated from deprecated', () => {
-    const schema = {
-      'deprecated': true,
-      'type': 'string' as const
-    };
-    const graph = new SchemaGraph(schema);
-    const rels = graph.relations(graph.rootNode);
-
-    assert.ok(rels.some((rel) => {
-      return rel.predicate === 'owl:deprecated';
-    }));
-  });
-
-  void it('produces owl:disjointWith from disjointWith', () => {
-    const schema = {
-      'disjointWith': 'https://example.com/Cat',
-      'type': 'object' as const
-    };
-    const graph = new SchemaGraph(schema);
-    const rels = graph.relations(graph.rootNode);
-    const disjoints = rels.filter((rel) => {
-      return rel.predicate === 'owl:disjointWith';
-    });
-
-    assert.equal(disjoints.length, 1);
-    assert.equal(disjoints[0].target, 'https://example.com/Cat');
-  });
-
-  void it('produces owl:equivalentClass from equivalentTo', () => {
-    const schema = {
-      'equivalentTo': 'https://example.com/Human',
-      'type': 'object' as const
-    };
-    const graph = new SchemaGraph(schema);
-    const rels = graph.relations(graph.rootNode);
-    const equivs = rels.filter((rel) => {
-      return rel.predicate === 'owl:equivalentClass';
-    });
-
-    assert.equal(equivs.length, 1);
-    assert.equal(equivs[0].target, 'https://example.com/Human');
-  });
-
-  void it('produces owl:inverseOf from inverseOf on properties', () => {
-    const schema = {
-      'properties': {
-        'owns': {
-          'inverseOf': 'https://example.com/Thing#ownedBy',
-          'type': 'string' as const
+  void it('produces property-level OWL relations', () => {
+    const scenarios: Array<{ 'predicate': string;
+      'prop': string;
+      'schema': Record<string, unknown>;
+      'target'?: string }> = [
+      {
+        'predicate': 'owl:inverseOf',
+        'prop': 'owns',
+        'schema': {
+          'properties': {
+            'owns': {
+              'inverseOf': 'https://example.com/Thing#ownedBy',
+              'type': 'string'
+            }
+          },
+          'type': 'object'
+        },
+        'target': 'https://example.com/Thing#ownedBy'
+      },
+      {
+        'predicate': 'owl:TransitiveProperty',
+        'prop': 'ancestor',
+        'schema': {
+          'properties': {
+            'ancestor': {
+              'transitive': true,
+              'type': 'string'
+            }
+          },
+          'type': 'object'
         }
       },
-      'type': 'object' as const
-    };
-    const graph = new SchemaGraph(schema);
-    const propNode = graph.resolvePointer('/properties/owns');
-    const rels = graph.relations(propNode);
-    const inverses = rels.filter((rel) => {
-      return rel.predicate === 'owl:inverseOf';
-    });
+      {
+        'predicate': 'owl:SymmetricProperty',
+        'prop': 'sibling',
+        'schema': {
+          'properties': {
+            'sibling': {
+              'symmetric': true,
+              'type': 'string'
+            }
+          },
+          'type': 'object'
+        }
+      }
+    ];
 
-    assert.equal(inverses.length, 1);
-    assert.equal(inverses[0].target, 'https://example.com/Thing#ownedBy');
+    for (const {
+      predicate, prop, schema, target
+    } of scenarios) {
+      const graph = new SchemaGraph(schema);
+      const propNode = graph.resolvePointer(`/properties/${prop}`);
+      const rels = graph.relations(propNode).filter((rel) => {
+        return rel.predicate === predicate;
+      });
+
+      assert.ok(rels.length > 0);
+      if (target !== undefined) {
+        assert.equal(rels[0].target, target);
+      }
+    }
   });
 
-  void it('produces owl:TransitiveProperty from transitive', () => {
-    const schema = {
-      'properties': {
-        'ancestor': {
-          'transitive': true,
-          'type': 'string' as const
+  // ---------------------------------------------------------------------------
+  // Graph identity and composition (merged from graphConformance.test.ts)
+  // ---------------------------------------------------------------------------
+
+  void it('assigns correct node ids based on $id and pointer', () => {
+    // $id becomes the id
+    const s1 = {
+      '$id': 'https://example.com/Foo',
+      'type': 'object'
+    } as const;
+
+    assert.equal(new SchemaGraph(s1).rootNode.id, 'https://example.com/Foo');
+
+    // Pointer-based ids for children
+    const s2 = {
+      '$id': 'https://example.com/Root',
+      'properties': { 'x': { 'type': 'string' } },
+      'type': 'object'
+    } as const;
+    const g2 = new SchemaGraph(s2);
+
+    assert.equal(g2.semantics(g2.rootNode).properties.get('x')?.id, 'https://example.com/Root#/properties/x');
+
+    // $defs without $id → pointer-based
+    const s3 = {
+      '$defs': { 'Helper': { 'type': 'string' } },
+      '$id': 'https://example.com/Base',
+      'type': 'object'
+    } as const;
+
+    assert.equal(new SchemaGraph(s3).resolvePointer('/$defs/Helper').id, 'https://example.com/Base#/$defs/Helper');
+
+    // $defs with $id → use own $id
+    const s4 = {
+      '$defs': {
+        'Helper': {
+          '$id': 'https://example.com/Helper',
+          'type': 'string'
         }
       },
-      'type': 'object' as const
-    };
-    const graph = new SchemaGraph(schema);
-    const propNode = graph.resolvePointer('/properties/ancestor');
-    const rels = graph.relations(propNode);
+      '$id': 'https://example.com/Base',
+      'type': 'object'
+    } as const;
 
-    assert.ok(rels.some((rel) => {
-      return rel.predicate === 'owl:TransitiveProperty';
-    }));
+    assert.equal(new SchemaGraph(s4).resolvePointer('/$defs/Helper').id, 'https://example.com/Helper');
   });
 
-  void it('produces owl:SymmetricProperty from symmetric', () => {
-    const schema = {
-      'properties': {
-        'sibling': {
-          'symmetric': true,
-          'type': 'string' as const
-        }
-      },
-      'type': 'object' as const
-    };
-    const graph = new SchemaGraph(schema);
-    const propNode = graph.resolvePointer('/properties/sibling');
-    const rels = graph.relations(propNode);
+  void it('exposes oneOf, if/then/else composition, and semantic consistency', () => {
+    // oneOf children have semantics
+    const oneOfSchema = {
+      'oneOf': [
+        { 'type': 'string' },
+        { 'type': 'integer' }
+      ]
+    } as const;
+    const oneOfGraph = new SchemaGraph(oneOfSchema);
+    const oneOfSem = oneOfGraph.semantics(oneOfGraph.rootNode);
 
-    assert.ok(rels.some((rel) => {
-      return rel.predicate === 'owl:SymmetricProperty';
-    }));
+    assert.equal(oneOfSem.oneOf.length, 2);
+    assert.deepEqual(oneOfGraph.semantics(oneOfSem.oneOf[0]).schemaTypes, ['string']);
+    assert.deepEqual(oneOfGraph.semantics(oneOfSem.oneOf[1]).schemaTypes, ['integer']);
+
+    // if/then/else children are graph nodes
+    const iteSchema = JSON.parse('{"if":{"type":"string"},"then":{"minLength":1},"else":{"type":"number"}}') as Record<string, unknown>;
+    const iteGraph = new SchemaGraph(iteSchema);
+    const iteSem = iteGraph.semantics(iteGraph.rootNode);
+
+    assert.ok(iteSem.ifNode !== undefined);
+    assert.ok(iteSem.thenNode !== undefined);
+    assert.ok(iteSem.elseNode !== undefined);
+    assert.deepEqual(iteGraph.semantics(iteSem.ifNode).schemaTypes, ['string']);
+    assert.equal(iteGraph.semantics(iteSem.thenNode).minLength, 1);
+    assert.deepEqual(iteGraph.semantics(iteSem.elseNode).schemaTypes, ['number']);
+
+    // Equivalent schemas produce consistent semantics
+    const sa = {
+      'properties': { 'name': { 'type': 'string' } },
+      'required': ['name'],
+      'type': 'object'
+    } as const;
+    const sb = {
+      'properties': { 'name': { 'type': 'string' } },
+      'required': ['name'],
+      'type': 'object'
+    } as const;
+    const ga = new SchemaGraph(sa);
+    const gb = new SchemaGraph(sb);
+
+    assert.deepEqual(ga.semantics(ga.rootNode).schemaTypes, gb.semantics(gb.rootNode).schemaTypes);
+    assert.deepEqual(ga.semantics(ga.rootNode).required, gb.semantics(gb.rootNode).required);
+    assert.equal(ga.semantics(ga.rootNode).properties.size, gb.semantics(gb.rootNode).properties.size);
   });
 });

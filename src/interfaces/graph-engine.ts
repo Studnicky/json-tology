@@ -17,16 +17,16 @@ export interface KeywordDefinitionInterface {
 }
 
 export interface GraphEngineOptionsInterface {
+  'allowAdditionalProperties'?: boolean;
   'applyDefaults'?: boolean;
-  'coerce'?: boolean;
+  'castTypes'?: boolean;
   'collectErrors'?: boolean;
+  'enforceSchemaProperties'?: boolean;
   'formatRegistry'?: FormatRegistryInterface;
-  'ignoreAdditionalProperties'?: boolean;
   'keywords'?: KeywordDefinitionInterface[];
   'lookupSchema'?: (schemaId: string) => Record<string, unknown> | undefined;
   'materializeContainers'?: boolean;
-  'removeAdditional'?: boolean;
-  'stripUnknownProperties'?: boolean;
+  'removeAdditionalProperties'?: boolean;
   'synthesizeDefaults'?: boolean;
 }
 

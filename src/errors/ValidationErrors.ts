@@ -7,7 +7,7 @@ import type { ValidationErrorType } from '../types/validation.js';
 /**
  * An ordered collection of ValidationErrorType items.
  *
- * Returned by jt.errors(), registry.errors(), and carried on ParseError.
+ * Returned by jt.errors(), registry.errors(), and carried on CoercionError.
  * Iterable so it works in for-of loops.
  *
  * @example
@@ -21,6 +21,12 @@ import type { ValidationErrorType } from '../types/validation.js';
 export class ValidationErrors implements Iterable<ValidationErrorType> {
   /**
    * Map external validator errors to a ValidationErrors instance.
+   */
+  /**
+   * Map external validator error objects into a ValidationErrors instance.
+   *
+   * @param rawErrors - Raw error array from an external validator, or null/undefined
+   * @returns ValidationErrors wrapping the mapped items, falling back to a single unknown error
    */
   public static fromValidatorErrors(rawErrors:
     | Array<{
@@ -53,6 +59,11 @@ export class ValidationErrors implements Iterable<ValidationErrorType> {
   /** The raw list of validation errors. */
   public readonly items: readonly ValidationErrorType[];
 
+  /**
+   * Create a ValidationErrors collection from an array of validation error items.
+   *
+   * @param items - Ordered list of validation errors
+   */
   public constructor(items: readonly ValidationErrorType[]) {
     this.items = items;
   }
@@ -123,6 +134,11 @@ export class ValidationErrors implements Iterable<ValidationErrorType> {
     return this.items.length === 0;
   }
 
+  /**
+   * Return an iterator over the validation error items.
+   *
+   * @returns Iterator yielding each ValidationErrorType in order
+   */
   public [Symbol.iterator](): Iterator<ValidationErrorType> {
     return this.items[Symbol.iterator]();
   }

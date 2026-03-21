@@ -11,7 +11,7 @@
 import type {
   InferSchemaType, InferType
 } from '../../src/types/schema.js';
-import type { ParseOutputType as _ParseOutputType } from '../../src/types/transform.js';
+
 
 // ---------------------------------------------------------------------------
 // Bidirectional assignability helper
@@ -33,10 +33,20 @@ function assert<T extends true>(): void {
 // ---------------------------------------------------------------------------
 
 const _StringSchema = { 'type': 'string' } as const;
+
+void _StringSchema;
 const _NumberSchema = { 'type': 'number' } as const;
+
+void _NumberSchema;
 const _IntegerSchema = { 'type': 'integer' } as const;
+
+void _IntegerSchema;
 const _BooleanSchema = { 'type': 'boolean' } as const;
+
+void _BooleanSchema;
 const _NullSchema = { 'type': 'null' } as const;
+
+void _NullSchema;
 
 const _s: InferType<typeof _StringSchema> = 'hello';
 const _n: InferType<typeof _NumberSchema> = 42;
@@ -60,12 +70,16 @@ assert<AssertEqual<InferType<typeof _NullSchema>, null>>();
 // ---------------------------------------------------------------------------
 
 const _ConstSchema = { 'const': 'circle' } as const;
+
+void _ConstSchema;
 const _EnumSchema = {
   'enum': [
     'asc',
     'desc'
   ]
 } as const;
+
+void _EnumSchema;
 const _NumericEnumSchema = {
   'enum': [
     1,
@@ -73,6 +87,8 @@ const _NumericEnumSchema = {
     3
   ]
 } as const;
+
+void _NumericEnumSchema;
 
 const _c: InferType<typeof _ConstSchema> = 'circle';
 // @ts-expect-error — 'square' is not 'circle'
@@ -95,7 +111,12 @@ const _StringArraySchema = {
   'items': { 'type': 'string' },
   'type': 'array'
 } as const;
+
+void _StringArraySchema;
 const _PlainArraySchema = { 'type': 'array' } as const;
+
+void _PlainArraySchema;
+
 const _TupleSchema = {
   'prefixItems': [
     { 'type': 'string' },
@@ -104,6 +125,8 @@ const _TupleSchema = {
   'type': 'array'
 } as const;
 
+void _TupleSchema;
+
 const _NestedArraySchema = {
   'items': {
     'items': { 'type': 'number' },
@@ -111,6 +134,8 @@ const _NestedArraySchema = {
   },
   'type': 'array'
 } as const;
+
+void _NestedArraySchema;
 
 const _arr: InferType<typeof _StringArraySchema> = [
   'a',
@@ -148,6 +173,8 @@ const _UserSchema = {
   'type': 'object'
 } as const;
 
+void _UserSchema;
+
 const _u: InferType<typeof _UserSchema> = {
   'email': 'a@b.c',
   'name': 'Alice'
@@ -163,6 +190,8 @@ const _bad6: InferType<typeof _UserSchema> = { 'name': 'Alice' };
 // Object with no properties
 const _EmptyObjectSchema = { 'type': 'object' } as const;
 
+void _EmptyObjectSchema;
+
 type EmptyObj = InferType<typeof _EmptyObjectSchema>;
 assert<AssertEqual<EmptyObj, Record<string, unknown>>>();
 
@@ -174,6 +203,8 @@ const _ClosedSchema = {
   'type': 'object'
 } as const;
 
+void _ClosedSchema;
+
 // additionalProperties: schema — typed extra keys
 const _TypedAdditionalSchema = {
   'additionalProperties': { 'type': 'number' },
@@ -181,6 +212,8 @@ const _TypedAdditionalSchema = {
   'required': ['name'],
   'type': 'object'
 } as const;
+
+void _TypedAdditionalSchema;
 
 type TypedAdditional = InferType<typeof _TypedAdditionalSchema>;
 // TS intersection of index sig {[k:string]:number} with named prop {name:string} collapses
@@ -198,6 +231,8 @@ const _NullableSchema = {
     'null'
   ]
 } as const;
+
+void _NullableSchema;
 
 const _nullable1: InferType<typeof _NullableSchema> = 'hello';
 const _nullable2: InferType<typeof _NullableSchema> = null;
@@ -225,6 +260,8 @@ const _AllOfSchema = {
   ]
 } as const;
 
+void _AllOfSchema;
+
 const _AnyOfSchema = {
   'anyOf': [
     { 'type': 'string' },
@@ -232,12 +269,16 @@ const _AnyOfSchema = {
   ]
 } as const;
 
+void _AnyOfSchema;
+
 const _OneOfSchema = {
   'oneOf': [
     { 'type': 'string' },
     { 'type': 'number' }
   ]
 } as const;
+
+void _OneOfSchema;
 
 const _anyOf: InferType<typeof _AnyOfSchema> = 'hello';
 const _anyOf2: InferType<typeof _AnyOfSchema> = 42;
@@ -270,6 +311,8 @@ const _RefSchema = {
   'type': 'object'
 } as const;
 
+void _RefSchema;
+
 const _ref: InferType<typeof _RefSchema> = { 'child': { 'name': 'Bob' } };
 // @ts-expect-error — child.name is required
 const _bad8: InferType<typeof _RefSchema> = { 'child': {} };
@@ -286,6 +329,8 @@ const _SelfRefSchema = {
   'required': ['name'],
   'type': 'object'
 } as const;
+
+void _SelfRefSchema;
 
 type SelfRefResult = InferType<typeof _SelfRefSchema>;
 assert<AssertAssignable<SelfRefResult, { readonly 'name': string }>>();
@@ -308,6 +353,8 @@ const _AnchorSchema = {
   'type': 'object'
 } as const;
 
+void _AnchorSchema;
+
 type AnchorResult = InferType<typeof _AnchorSchema>;
 assert<AssertAssignable<AnchorResult, { readonly 'item': { readonly 'label': string } }>>();
 
@@ -317,6 +364,8 @@ const _RootAnchorSchema = {
   'properties': { 'self': { '$ref': '#root' } },
   'type': 'object'
 } as const;
+
+void _RootAnchorSchema;
 
 type RootAnchorResult = InferType<typeof _RootAnchorSchema>;
 // self references the root schema itself — should be assignable to an object with self
@@ -338,6 +387,8 @@ const _PointerRefSchema = {
   'type': 'object'
 } as const;
 
+void _PointerRefSchema;
+
 type PointerRefResult = InferType<typeof _PointerRefSchema>;
 assert<AssertAssignable<PointerRefResult, { readonly 'alias': string;
   readonly 'name': string; }>>();
@@ -354,6 +405,8 @@ const _DeepPathSchema = {
   'required': ['target'],
   'type': 'object'
 } as const;
+
+void _DeepPathSchema;
 
 type DeepPathResult = InferType<typeof _DeepPathSchema>;
 assert<AssertAssignable<DeepPathResult, { readonly 'target': number }>>();
@@ -383,6 +436,8 @@ const _DynamicRefSchema = {
   'type': 'object'
 } as const;
 
+void _DynamicRefSchema;
+
 type DynamicRefResult = InferType<typeof _DynamicRefSchema>;
 assert<AssertAssignable<DynamicRefResult, { readonly 'item': { readonly 'value': string } }>>();
 
@@ -411,6 +466,8 @@ const _RecursiveSchema = {
   'type': 'object'
 } as const;
 
+void _RecursiveSchema;
+
 type RecursiveResult = InferType<typeof _RecursiveSchema>;
 assert<AssertAssignable<RecursiveResult, { readonly 'name': string }>>();
 
@@ -419,6 +476,8 @@ const _NoAnchorRecursiveSchema = {
   'properties': { 'child': { '$recursiveRef': '#' } },
   'type': 'object'
 } as const;
+
+void _NoAnchorRecursiveSchema;
 
 type NoAnchorResult = InferType<typeof _NoAnchorRecursiveSchema>;
 // child should be unknown because $recursiveAnchor is not set
@@ -431,6 +490,8 @@ assert<AssertAssignable<NoAnchorResult, { readonly 'child'?: unknown }>>();
 // Missing `type` — produces unknown
 const _NoTypeSchema = {} as const;
 
+void _NoTypeSchema;
+
 type NoTypeResult = InferType<typeof _NoTypeSchema>;
 assert<AssertEqual<NoTypeResult, unknown>>();
 
@@ -439,6 +500,8 @@ const _BadRefSchema = {
   'properties': { 'x': { '$ref': '#/$defs/DoesNotExist' } },
   'type': 'object'
 } as const;
+
+void _BadRefSchema;
 
 type BadRefResult = InferType<typeof _BadRefSchema>;
 // x resolves to unknown
@@ -449,6 +512,8 @@ const _ExternalRefSchema = {
   'properties': { 'ext': { '$ref': 'https://example.com/Other' } },
   'type': 'object'
 } as const;
+
+void _ExternalRefSchema;
 
 type ExternalRefResult = InferType<typeof _ExternalRefSchema>;
 assert<AssertAssignable<ExternalRefResult, { readonly 'ext'?: unknown }>>();
@@ -465,6 +530,8 @@ const _ValidationOnlySchema = {
   'minLength': 5
 } as const;
 
+void _ValidationOnlySchema;
+
 type ValidationOnlyResult = InferType<typeof _ValidationOnlySchema>;
 assert<AssertEqual<ValidationOnlyResult, unknown>>();
 
@@ -480,6 +547,8 @@ assert<AssertEqual<ValidationOnlyResult, unknown>>();
  */
 const _NotSchema = { 'not': { 'type': 'string' } } as const;
 
+void _NotSchema;
+
 type NotResult = InferType<typeof _NotSchema>;
 // Falls back to unknown — runtime enforces the exclusion
 assert<AssertEqual<NotResult, unknown>>();
@@ -494,6 +563,8 @@ const _ContainsSchema = {
   'type': 'array'
 } as const;
 
+void _ContainsSchema;
+
 type ContainsResult = InferType<typeof _ContainsSchema>;
 // Falls back to unknown[] — no items schema, contains is runtime-only
 assert<AssertEqual<ContainsResult, readonly unknown[]>>();
@@ -506,6 +577,8 @@ const _PropertyNamesSchema = {
   'propertyNames': { 'pattern': '^x-' },
   'type': 'object'
 } as const;
+
+void _PropertyNamesSchema;
 
 type PropertyNamesResult = InferType<typeof _PropertyNamesSchema>;
 // Falls back to Record<string, unknown>
@@ -542,6 +615,8 @@ const _iteThen = '{"properties":{"kind":{"const":"a"},"value":{"type":"string"}}
 const _iteElse = '{"properties":{"kind":{"const":"b"},"value":{"type":"number"}},"required":["kind","value"],"type":"object"}';
 const _IfThenElseSchema = JSON.parse(`{"properties":{"shared":{"type":"boolean"}},"required":["shared"],"type":"object","if":${_iteIf},"then":${_iteThen},"else":${_iteElse}}`) as IfThenElseType;
 
+void _IfThenElseSchema;
+
 type IfThenElseResult = InferType<typeof _IfThenElseSchema>;
 assert<AssertAssignable<IfThenElseResult,
   | { readonly 'kind': 'a';
@@ -575,6 +650,8 @@ const _NestedObjectSchema = {
   'type': 'object'
 } as const;
 
+void _NestedObjectSchema;
+
 type NestedObj = InferType<typeof _NestedObjectSchema>;
 assert<AssertAssignable<NestedObj, {
   readonly 'address': { readonly 'city': string;
@@ -606,6 +683,8 @@ const _TripleAllOfSchema = {
   ]
 } as const;
 
+void _TripleAllOfSchema;
+
 type TripleAllOf = InferType<typeof _TripleAllOfSchema>;
 assert<AssertAssignable<TripleAllOf, { readonly 'a': string;
   readonly 'b': number;
@@ -623,6 +702,8 @@ const _MixedEnumSchema = {
     null
   ]
 } as const;
+
+void _MixedEnumSchema;
 
 type MixedEnum = InferType<typeof _MixedEnumSchema>;
 assert<AssertEqual<MixedEnum, 1 | 'a' | null | true>>();
@@ -650,6 +731,8 @@ const _DeepRefSchema = {
   'type': 'object'
 } as const;
 
+void _DeepRefSchema;
+
 type DeepRef = InferType<typeof _DeepRefSchema>;
 assert<AssertAssignable<DeepRef, { readonly 'wrapper': { readonly 'inner': { readonly 'value': number } } }>>();
 
@@ -666,6 +749,8 @@ const _ExternalAnchorRefSchema = {
   'type': 'object'
 } as const;
 
+void _ExternalAnchorRefSchema;
+
 type ExternalAnchorRefResult = InferType<typeof _ExternalAnchorRefSchema>;
 assert<AssertAssignable<ExternalAnchorRefResult, { readonly 'ext'?: unknown }>>();
 
@@ -677,6 +762,8 @@ const _ExternalPointerRefSchema = {
   'type': 'object'
 } as const;
 
+void _ExternalPointerRefSchema;
+
 type ExternalPointerRefResult = InferType<typeof _ExternalPointerRefSchema>;
 assert<AssertAssignable<ExternalPointerRefResult, { readonly 'ext'?: unknown }>>();
 
@@ -687,6 +774,8 @@ const _ExternalDeepPointerRefSchema = {
   'properties': { 'ext': { '$ref': 'https://example.com/Other#/properties/name' } },
   'type': 'object'
 } as const;
+
+void _ExternalDeepPointerRefSchema;
 
 type ExternalDeepPointerRefResult = InferType<typeof _ExternalDeepPointerRefSchema>;
 assert<AssertAssignable<ExternalDeepPointerRefResult, { readonly 'ext'?: unknown }>>();
@@ -770,6 +859,8 @@ const _InternalFragmentRefSchema = {
   'type': 'object'
 } as const;
 
+void _InternalFragmentRefSchema;
+
 type InternalFragmentResult = InferType<typeof _InternalFragmentRefSchema>;
 assert<AssertAssignable<InternalFragmentResult, {
   readonly 'a': { readonly 'label': string };
@@ -788,6 +879,8 @@ const _LocalSchemaWithId = {
   'type': 'object'
 } as const;
 
+void _LocalSchemaWithId;
+
 // Cross-schema ref must resolve to unknown (base URI mismatch)
 type CrossSchemaRef = SplitFragmentRefType<'https://other.com/X#/$defs/Bar', typeof _LocalSchemaWithId>;
 assert<AssertEqual<CrossSchemaRef, unknown>>();
@@ -801,6 +894,8 @@ const _SchemaWithoutId = {
   '$defs': { 'X': { 'type': 'number' } },
   'type': 'object'
 } as const;
+
+void _SchemaWithoutId;
 
 type NoIdRef = SplitFragmentRefType<'https://any.com#/$defs/X', typeof _SchemaWithoutId>;
 assert<AssertEqual<NoIdRef, unknown>>();

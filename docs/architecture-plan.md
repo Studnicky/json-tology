@@ -23,12 +23,13 @@ These rules govern every remaining workstream:
 3. The graph remains the shared runtime artifact.
 4. Validation semantics come from graph semantics, not serializer-specific logic.
 5. RDF semantics are emitted as JSON-LD only in-core.
-6. `materialize()`, `parse()`, `create()`, and `abox()` remain views over one runtime execution model.
+6. `materialize()`, `parse()`, `create()`, and `toQuads()` remain views over one runtime execution model.
 7. Schema round-trip must stay lossless for the supported keyword surface.
 8. Type inference must either model behavior correctly or fall back explicitly. Silent misresolution is not acceptable.
 9. Versioning happens in git and releases, not in production runtime code.
 10. Do not preserve backward compatibility via dual implementations, legacy loaders, or version branches inside active codepaths.
 11. Completion claims must reflect the code that exists now, not the intended direction.
+12. Vocabulary plugins extend ontology output without modifying core projection logic. Plugin prefixes merge into the active `Curie` instance; plugin relations are extracted after core extraction; plugin projection runs for non-core predicates.
 
 ## Verified Current State
 
@@ -60,7 +61,7 @@ Latest verified commands:
 
 Latest verified result:
 
-- runtime suite: 631 passing tests
+- runtime suite: 292 unit tests + 21 e2e tests passing
 - compile-time type suite: clean
 - publish-surface check: clean
 - benchmark command: clean

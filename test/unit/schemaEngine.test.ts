@@ -6,52 +6,97 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 import { GraphEngine } from '../../src/modules/graph/GraphEngine.js';
 
 void describe('Graph engine advanced keywords', () => {
-  void it('supports patternProperties', () => {
+  void it('supports propertyNames with pattern and length constraints', () => {
     const registry = new SchemaRegistry();
-    const schema = {
-      '$id': 'urn:test:pattern-properties',
-      'patternProperties': { '^x-': { 'type': 'string' } },
-      'type': 'object'
-    } as const;
+    const scenarios: Array<[Record<string, unknown>, Record<string, unknown>, boolean]> = [
+      [
+        {
+          '$id': 'urn:test:pn-1',
+          'propertyNames': {
+            'pattern': '^[a-z]+$',
+            'type': 'string'
+          },
+          'type': 'object'
+        },
+        { 'good': 1 },
+        true
+      ],
+      [
+        {
+          '$id': 'urn:test:pn-2',
+          'propertyNames': {
+            'pattern': '^[a-z]+$',
+            'type': 'string'
+          },
+          'type': 'object'
+        },
+        { 'Bad-Key': 1 },
+        false
+      ],
+      [
+        {
+          '$id': 'urn:test:pn-3',
+          'propertyNames': {
+            'maxLength': 10,
+            'minLength': 3
+          },
+          'type': 'object'
+        },
+        {
+          'barbaz': 2,
+          'foo': 1
+        },
+        true
+      ],
+      [
+        {
+          '$id': 'urn:test:pn-4',
+          'propertyNames': {
+            'maxLength': 10,
+            'minLength': 3
+          },
+          'type': 'object'
+        },
+        { 'ab': 1 },
+        false
+      ],
+      [
+        {
+          '$id': 'urn:test:pn-5',
+          'propertyNames': {
+            'maxLength': 10,
+            'minLength': 3
+          },
+          'type': 'object'
+        },
+        { 'thisnameiswaytoolong': 1 },
+        false
+      ],
+      [
+        {
+          '$id': 'urn:test:pn-6',
+          'propertyNames': {
+            'maxLength': 10,
+            'minLength': 3
+          },
+          'type': 'object'
+        },
+        {},
+        true
+      ]
+    ];
 
-    registry.register(schema);
-    assert.equal(registry.is(schema.$id, { 'x-name': 'ok' }), true);
-    assert.equal(registry.is(schema.$id, { 'x-name': 1 }), false);
+    for (const [
+      schema,
+      data,
+      expected
+    ] of scenarios) {
+      registry.register(schema);
+      assert.equal(registry.is(schema.$id as string, data), expected);
+    }
   });
 
-  void it('supports propertyNames', () => {
-    const registry = new SchemaRegistry();
-    const schema = {
-      '$id': 'urn:test:property-names',
-      'propertyNames': {
-        'pattern': '^[a-z]+$',
-        'type': 'string'
-      },
-      'type': 'object'
-    } as const;
-
-    registry.register(schema);
-    assert.equal(registry.is(schema.$id, { 'good': 1 }), true);
-    assert.equal(registry.is(schema.$id, { 'Bad-Key': 1 }), false);
-  });
-
-  void it('supports dependentRequired', () => {
-    const registry = new SchemaRegistry();
-    const schema = {
-      '$id': 'urn:test:dependent-required',
-      'dependentRequired': { 'creditCard': ['billingAddress'] },
-      'type': 'object'
-    } as const;
-
-    registry.register(schema);
-    assert.equal(registry.is(schema.$id, {
-      'billingAddress': 'x',
-      'creditCard': '4111'
-    }), true);
-    assert.equal(registry.is(schema.$id, { 'creditCard': '4111' }), false);
-  });
-
-  void it('supports dependentSchemas', () => {
+  void it('supports dependentSchemas with $ref', () => {
     const registry = new SchemaRegistry();
     const kindDepSchema = {
       '$id': 'urn:test:dependent-schemas-kind-dep',
@@ -79,7 +124,7 @@ void describe('Graph engine advanced keywords', () => {
     assert.equal(registry.is(schema.$id, { 'kind': 'business' }), false);
   });
 
-  void it('supports prefixItems with 2020-12 items tail constraints', () => {
+  void it('supports prefixItems with items:false tail constraint', () => {
     const registry = new SchemaRegistry();
     const schema = {
       '$id': 'urn:test:prefix-items',
@@ -103,9 +148,9 @@ void describe('Graph engine advanced keywords', () => {
     ]), false);
   });
 
-  void it('supports contains with minContains and maxContains', () => {
+  void it('supports contains with minContains/maxContains edge cases', () => {
     const registry = new SchemaRegistry();
-    const schema = {
+    const schema1 = {
       '$id': 'urn:test:contains-min-max',
       'contains': { 'type': 'number' },
       'maxContains': 3,
@@ -113,25 +158,41 @@ void describe('Graph engine advanced keywords', () => {
       'type': 'array'
     } as const;
 
-    registry.register(schema);
-    assert.equal(registry.is(schema.$id, [
+    registry.register(schema1);
+    assert.equal(registry.is(schema1.$id, [
       1,
       2,
       'x'
     ]), true);
-    assert.equal(registry.is(schema.$id, [
+    assert.equal(registry.is(schema1.$id, [
       1,
       'x'
     ]), false);
-    assert.equal(registry.is(schema.$id, [
+    assert.equal(registry.is(schema1.$id, [
       1,
       2,
       3,
       4
     ]), false);
+
+    // minContains: 0 always passes
+    const schema2 = {
+      '$id': 'urn:test:contains-min-zero',
+      'contains': { 'type': 'string' },
+      'minContains': 0,
+      'type': 'array'
+    };
+
+    registry.register(schema2);
+    assert.equal(registry.is(schema2.$id, []), true);
+    assert.equal(registry.is(schema2.$id, [
+      1,
+      2,
+      3
+    ]), true);
   });
 
-  void it('supports uniqueItems with semantic equality', () => {
+  void it('supports uniqueItems with semantic object equality', () => {
     const registry = new SchemaRegistry();
     const schema = {
       '$id': 'urn:test:unique-items',
@@ -162,8 +223,10 @@ void describe('Graph engine advanced keywords', () => {
     ]), false);
   });
 
-  void it('supports if/then/else', () => {
+  void it('supports if/then/else with $ref and unevaluatedProperties interaction', () => {
     const registry = new SchemaRegistry();
+
+    // $ref-based if/then/else
     const ifSchema = {
       '$id': 'urn:test:ite-if',
       'properties': { 'kind': { 'const': 'business' } },
@@ -206,110 +269,228 @@ void describe('Graph engine advanced keywords', () => {
       'ssn': '999'
     }), true);
     assert.equal(registry.is(schema.$id, { 'kind': 'person' }), false);
+
+    // if/then/else with unevaluatedProperties
+    const unevalSchema = {
+      '$id': 'urn:test:if-then-unevaluated',
+      'if': { 'properties': { 'type': { 'const': 'admin' } } },
+      'properties': { 'type': { 'type': 'string' } },
+      'required': ['type'],
+      // eslint-disable-next-line unicorn/no-thenable
+      'then': {
+        'properties': { 'level': { 'type': 'number' } },
+        'required': ['level']
+      },
+      'type': 'object',
+      'unevaluatedProperties': false
+    } as const;
+
+    registry.register(unevalSchema);
+    assert.equal(registry.is(unevalSchema.$id, {
+      'level': 5,
+      'type': 'admin'
+    }), true);
+    assert.equal(registry.is(unevalSchema.$id, { 'type': 'user' }), true);
+    assert.equal(registry.is(unevalSchema.$id, {
+      'extra': 1,
+      'level': 5,
+      'type': 'admin'
+    }), false);
   });
 
-  void it('supports extended string format assertions', () => {
+  void it('supports extended format assertions (string and numeric)', () => {
     const registry = new SchemaRegistry();
+    const scenarios: Array<[Record<string, unknown>, unknown, boolean]> = [
+      [
+        {
+          '$id': 'urn:test:fmt-dur',
+          'format': 'duration',
+          'type': 'string'
+        },
+        'P3DT4H',
+        true
+      ],
+      [
+        {
+          '$id': 'urn:test:fmt-dur2',
+          'format': 'duration',
+          'type': 'string'
+        },
+        'three days',
+        false
+      ],
+      [
+        {
+          '$id': 'urn:test:fmt-ipv6',
+          'format': 'ipv6',
+          'type': 'string'
+        },
+        '2001:db8::1',
+        true
+      ],
+      [
+        {
+          '$id': 'urn:test:fmt-ipv6-2',
+          'format': 'ipv6',
+          'type': 'string'
+        },
+        '999.1.1.1',
+        false
+      ],
+      [
+        {
+          '$id': 'urn:test:fmt-uriref',
+          'format': 'uri-reference',
+          'type': 'string'
+        },
+        '/users/123?draft=true',
+        true
+      ],
+      [
+        {
+          '$id': 'urn:test:fmt-uritpl',
+          'format': 'uri-template',
+          'type': 'string'
+        },
+        '/users/{id}',
+        true
+      ],
+      [
+        {
+          '$id': 'urn:test:fmt-uritpl2',
+          'format': 'uri-template',
+          'type': 'string'
+        },
+        '/users/{id',
+        false
+      ],
+      [
+        {
+          '$id': 'urn:test:fmt-jptr',
+          'format': 'json-pointer',
+          'type': 'string'
+        },
+        '/items/0/name',
+        true
+      ],
+      [
+        {
+          '$id': 'urn:test:fmt-jptr2',
+          'format': 'json-pointer',
+          'type': 'string'
+        },
+        'items/0/name',
+        false
+      ],
+      [
+        {
+          '$id': 'urn:test:fmt-regex',
+          'format': 'regex',
+          'type': 'string'
+        },
+        '^[a-z]+$',
+        true
+      ],
+      [
+        {
+          '$id': 'urn:test:fmt-regex2',
+          'format': 'regex',
+          'type': 'string'
+        },
+        '[',
+        false
+      ],
+      [
+        {
+          '$id': 'urn:test:fmt-byte',
+          'format': 'byte',
+          'type': 'string'
+        },
+        'SGVsbG8=',
+        true
+      ],
+      [
+        {
+          '$id': 'urn:test:fmt-bin',
+          'format': 'binary',
+          'type': 'string'
+        },
+        '0aff',
+        true
+      ],
+      [
+        {
+          '$id': 'urn:test:fmt-bin2',
+          'format': 'binary',
+          'type': 'string'
+        },
+        'xyz',
+        false
+      ],
+      [
+        {
+          '$id': 'urn:test:fmt-i32',
+          'format': 'int32',
+          'type': 'integer'
+        },
+        2_147_483_647,
+        true
+      ],
+      [
+        {
+          '$id': 'urn:test:fmt-i32-2',
+          'format': 'int32',
+          'type': 'integer'
+        },
+        2_147_483_648,
+        false
+      ],
+      [
+        {
+          '$id': 'urn:test:fmt-i64',
+          'format': 'int64',
+          'type': 'integer'
+        },
+        Number.MAX_SAFE_INTEGER,
+        true
+      ],
+      [
+        {
+          '$id': 'urn:test:fmt-i64-2',
+          'format': 'int64',
+          'type': 'integer'
+        },
+        Number.MAX_SAFE_INTEGER + 1,
+        false
+      ],
+      [
+        {
+          '$id': 'urn:test:fmt-f',
+          'format': 'float',
+          'type': 'number'
+        },
+        Math.fround(1.5),
+        true
+      ],
+      [
+        {
+          '$id': 'urn:test:fmt-f2',
+          'format': 'float',
+          'type': 'number'
+        },
+        1e40,
+        false
+      ]
+    ];
 
-    const durSchema = {
-      '$id': 'urn:test:fmt-duration',
-      'format': 'duration',
-      'type': 'string'
-    } as const;
-    const ipv6Schema = {
-      '$id': 'urn:test:fmt-ipv6',
-      'format': 'ipv6',
-      'type': 'string'
-    } as const;
-    const uriRefSchema = {
-      '$id': 'urn:test:fmt-uri-ref',
-      'format': 'uri-reference',
-      'type': 'string'
-    } as const;
-    const uriTplSchema = {
-      '$id': 'urn:test:fmt-uri-tpl',
-      'format': 'uri-template',
-      'type': 'string'
-    } as const;
-    const jptrSchema = {
-      '$id': 'urn:test:fmt-json-pointer',
-      'format': 'json-pointer',
-      'type': 'string'
-    } as const;
-    const regexSchema = {
-      '$id': 'urn:test:fmt-regex',
-      'format': 'regex',
-      'type': 'string'
-    } as const;
-    const byteSchema = {
-      '$id': 'urn:test:fmt-byte',
-      'format': 'byte',
-      'type': 'string'
-    } as const;
-    const binarySchema = {
-      '$id': 'urn:test:fmt-binary',
-      'format': 'binary',
-      'type': 'string'
-    } as const;
-
-    registry.register([
-      durSchema,
-      ipv6Schema,
-      uriRefSchema,
-      uriTplSchema,
-      jptrSchema,
-      regexSchema,
-      byteSchema,
-      binarySchema
-    ]);
-
-    assert.equal(registry.is(durSchema.$id, 'P3DT4H'), true);
-    assert.equal(registry.is(durSchema.$id, 'three days'), false);
-    assert.equal(registry.is(ipv6Schema.$id, '2001:db8::1'), true);
-    assert.equal(registry.is(ipv6Schema.$id, '999.1.1.1'), false);
-    assert.equal(registry.is(uriRefSchema.$id, '/users/123?draft=true'), true);
-    assert.equal(registry.is(uriTplSchema.$id, '/users/{id}'), true);
-    assert.equal(registry.is(uriTplSchema.$id, '/users/{id'), false);
-    assert.equal(registry.is(jptrSchema.$id, '/items/0/name'), true);
-    assert.equal(registry.is(jptrSchema.$id, 'items/0/name'), false);
-    assert.equal(registry.is(regexSchema.$id, '^[a-z]+$'), true);
-    assert.equal(registry.is(regexSchema.$id, '['), false);
-    assert.equal(registry.is(byteSchema.$id, 'SGVsbG8='), true);
-    assert.equal(registry.is(binarySchema.$id, '0aff'), true);
-    assert.equal(registry.is(binarySchema.$id, 'xyz'), false);
-  });
-
-  void it('supports numeric format assertions', () => {
-    const registry = new SchemaRegistry();
-
-    const int32Schema = {
-      '$id': 'urn:test:fmt-int32',
-      'format': 'int32',
-      'type': 'integer'
-    } as const;
-    const int64Schema = {
-      '$id': 'urn:test:fmt-int64',
-      'format': 'int64',
-      'type': 'integer'
-    } as const;
-    const floatSchema = {
-      '$id': 'urn:test:fmt-float',
-      'format': 'float',
-      'type': 'number'
-    } as const;
-
-    registry.register([
-      int32Schema,
-      int64Schema,
-      floatSchema
-    ]);
-
-    assert.equal(registry.is(int32Schema.$id, 2_147_483_647), true);
-    assert.equal(registry.is(int32Schema.$id, 2_147_483_648), false);
-    assert.equal(registry.is(int64Schema.$id, Number.MAX_SAFE_INTEGER), true);
-    assert.equal(registry.is(int64Schema.$id, Number.MAX_SAFE_INTEGER + 1), false);
-    assert.equal(registry.is(floatSchema.$id, Math.fround(1.5)), true);
-    assert.equal(registry.is(floatSchema.$id, 1e40), false);
+    for (const [
+      schema,
+      data,
+      expected
+    ] of scenarios) {
+      registry.register(schema);
+      assert.equal(registry.is(schema.$id as string, data), expected);
+    }
   });
 
   void it('rejects unsupported dialects and unknown required vocabularies', () => {
@@ -329,7 +510,7 @@ void describe('Graph engine advanced keywords', () => {
     }, /Unsupported required JSON Schema vocabulary/u);
   });
 
-  void it('format as annotation vs assertion based on 2020-12 vocabulary', () => {
+  void it('handles format annotation vs assertion and content annotations per 2020-12 vocabulary', () => {
     const registry = new SchemaRegistry();
 
     // Without format-assertion: format is annotation-only
@@ -364,18 +545,15 @@ void describe('Graph engine advanced keywords', () => {
     registry.register(assertionSchema);
     assert.equal(registry.is(assertionSchema.$id, 'alice@example.io'), true);
     assert.equal(registry.is(assertionSchema.$id, 'not-an-email'), false);
-  });
 
-  void it('treats 2020-12 content keywords as annotations rather than assertions', () => {
-    const registry = new SchemaRegistry();
+    // Content keywords are annotations, not assertions
     const contentInnerSchema = {
       '$id': 'urn:test:content-inner',
       'properties': { 'name': { 'type': 'string' } },
       'required': ['name'],
       'type': 'object'
     } as const;
-    const schema = {
-      '$comment': 'content metadata only',
+    const contentSchema = {
       '$id': 'urn:test:content-annotations',
       '$schema': 'https://json-schema.org/draft/2020-12/schema',
       'contentEncoding': 'base64',
@@ -386,14 +564,15 @@ void describe('Graph engine advanced keywords', () => {
 
     registry.register([
       contentInnerSchema,
-      schema
+      contentSchema
     ]);
-    assert.equal(registry.is(schema.$id, 'definitely not base64 or json'), true);
+    assert.equal(registry.is(contentSchema.$id, 'definitely not base64 or json'), true);
   });
 
-  void it('supports unevaluatedProperties and unevaluatedItems', () => {
+  void it('supports unevaluatedProperties/Items with allOf, anyOf, and conditional tracking', () => {
     const registry = new SchemaRegistry();
 
+    // Basic unevaluatedProperties
     const propsSchema = {
       '$id': 'urn:test:unevaluated-props',
       'properties': { 'name': { 'type': 'string' } },
@@ -408,6 +587,7 @@ void describe('Graph engine advanced keywords', () => {
       'name': 'Alice'
     }), false);
 
+    // Basic unevaluatedItems
     const itemsSchema = {
       '$id': 'urn:test:unevaluated-items',
       'contains': { 'type': 'number' },
@@ -421,11 +601,8 @@ void describe('Graph engine advanced keywords', () => {
       1,
       'x'
     ]), false);
-  });
 
-  void it('tracks evaluated properties across allOf/anyOf before applying unevaluatedProperties', () => {
-    const registry = new SchemaRegistry();
-
+    // allOf tracking
     const allOfSchema = {
       '$id': 'urn:test:unevaluated-allof',
       'allOf': [{
@@ -443,6 +620,7 @@ void describe('Graph engine advanced keywords', () => {
       'name': 'Alice'
     }), false);
 
+    // anyOf tracking
     const anyOfSchema = {
       '$id': 'urn:test:unevaluated-anyof',
       'anyOf': [
@@ -467,6 +645,7 @@ void describe('Graph engine advanced keywords', () => {
       'extra': 1
     }), false);
 
+    // anyOf multi-branch
     const anyOfMultiSchema = {
       '$id': 'urn:test:unevaluated-anyof-multi',
       'anyOf': [
@@ -487,28 +666,24 @@ void describe('Graph engine advanced keywords', () => {
       'b': 1,
       'c': true
     }), false);
-  });
 
-  void it('tracks evaluated items across allOf before applying unevaluatedItems', () => {
-    const registry = new SchemaRegistry();
-    const schema = {
+    // allOf items tracking
+    const allOfItemsSchema = {
       '$id': 'urn:test:unevaluated-items-allof',
       'allOf': [{ 'prefixItems': [{ 'type': 'string' }] }],
       'type': 'array',
       'unevaluatedItems': false
     } as const;
 
-    registry.register(schema);
-    assert.equal(registry.is(schema.$id, ['hello']), true);
-    assert.equal(registry.is(schema.$id, [
+    registry.register(allOfItemsSchema);
+    assert.equal(registry.is(allOfItemsSchema.$id, ['hello']), true);
+    assert.equal(registry.is(allOfItemsSchema.$id, [
       'hello',
       42
     ]), false);
-  });
 
-  void it('tracks evaluated properties from conditional branches before applying unevaluatedProperties', () => {
-    const registry = new SchemaRegistry();
-    const schema = {
+    // Conditional tracking
+    const condSchema = {
       '$id': 'urn:test:unevaluated-conditional',
       'else': { 'properties': { 'bValue': { 'type': 'string' } } },
       'if': { 'properties': { 'kind': { 'const': 'a' } } },
@@ -520,46 +695,23 @@ void describe('Graph engine advanced keywords', () => {
       'unevaluatedProperties': false
     } as const;
 
-    registry.register(schema);
-    assert.equal(registry.is(schema.$id, {
+    registry.register(condSchema);
+    assert.equal(registry.is(condSchema.$id, {
       'aValue': 1,
       'kind': 'a'
     }), true);
-    assert.equal(registry.is(schema.$id, {
+    assert.equal(registry.is(condSchema.$id, {
       'bValue': 'x',
       'kind': 'b'
     }), true);
-    assert.equal(registry.is(schema.$id, {
+    assert.equal(registry.is(condSchema.$id, {
       'aValue': 1,
       'extra': true,
       'kind': 'a'
     }), false);
   });
 
-  void it('supports external schema refs through the registry', () => {
-    const registry = new SchemaRegistry();
-    const addressSchema = {
-      '$id': 'https://example.io/Address',
-      'properties': { 'street': { 'type': 'string' } },
-      'required': ['street'],
-      'type': 'object'
-    } as const;
-    const userSchema = {
-      '$id': 'https://example.io/UserWithAddress',
-      'properties': { 'address': { '$ref': 'https://example.io/Address' } },
-      'required': ['address'],
-      'type': 'object'
-    } as const;
-
-    registry.register([
-      addressSchema,
-      userSchema
-    ]);
-    assert.deepEqual(registry.validate(userSchema.$id, { 'address': { 'street': '1 Main' } }), []);
-    assert.notDeepEqual(registry.validate(userSchema.$id, { 'address': {} }), []);
-  });
-
-  void it('supports local and external anchor refs', () => {
+  void it('supports local/external anchor and dynamic refs with scope override', () => {
     const registry = new SchemaRegistry();
 
     // Local anchor
@@ -603,10 +755,6 @@ void describe('Graph engine advanced keywords', () => {
     ]);
     assert.deepEqual(registry.validate(userSchema.$id, { 'address': { 'street': '1 Main' } }), []);
     assert.notDeepEqual(registry.validate(userSchema.$id, { 'address': {} }), []);
-  });
-
-  void it('supports local and external dynamic refs with scope override', () => {
-    const registry = new SchemaRegistry();
 
     // Local dynamic ref
     const localDynSchema = {
@@ -680,14 +828,14 @@ void describe('Graph engine advanced keywords', () => {
     }), []);
 
     // External dynamic ref
-    const addressSchema = {
+    const dynAddressSchema = {
       '$dynamicAnchor': 'addressNode',
       '$id': 'https://example.io/dynamic-address',
       'properties': { 'street': { 'type': 'string' } },
       'required': ['street'],
       'type': 'object'
     } as const;
-    const userSchema = {
+    const dynUserSchema = {
       '$id': 'https://example.io/dynamic-user',
       'properties': { 'address': { '$dynamicRef': 'https://example.io/dynamic-address#addressNode' } },
       'required': ['address'],
@@ -695,16 +843,17 @@ void describe('Graph engine advanced keywords', () => {
     } as const;
 
     registry.register([
-      addressSchema,
-      userSchema
+      dynAddressSchema,
+      dynUserSchema
     ]);
-    assert.deepEqual(registry.validate(userSchema.$id, { 'address': { 'street': '1 Main' } }), []);
-    assert.notDeepEqual(registry.validate(userSchema.$id, { 'address': {} }), []);
+    assert.deepEqual(registry.validate(dynUserSchema.$id, { 'address': { 'street': '1 Main' } }), []);
+    assert.notDeepEqual(registry.validate(dynUserSchema.$id, { 'address': {} }), []);
   });
 
-  void it('supports boolean schemas and Unicode code-point length', () => {
+  void it('supports boolean schemas, Unicode code-point length, and composition boundaries', () => {
     const registry = new SchemaRegistry();
 
+    // Boolean schemas
     const trueSchema = { '$id': 'urn:test:bool-true' } as const;
     const falseSchema = {
       '$id': 'urn:test:bool-false',
@@ -718,6 +867,7 @@ void describe('Graph engine advanced keywords', () => {
     assert.equal(registry.is(trueSchema.$id, { 'anything': true }), true);
     assert.equal(registry.is(falseSchema.$id, { 'anything': true }), false);
 
+    // Unicode code-point length
     const unicodeSchema = {
       '$id': 'urn:test:unicode-length',
       'maxLength': 1,
@@ -727,22 +877,17 @@ void describe('Graph engine advanced keywords', () => {
     registry.register(unicodeSchema);
     assert.equal(registry.is(unicodeSchema.$id, '\u{1F600}'), true);
     assert.equal(registry.is(unicodeSchema.$id, '\u{1F600}a'), false);
-  });
-});
 
-void describe('Phase 2.4 — edge case hardening', () => {
-  void it('boolean schemas at composition boundaries', () => {
-    const registry = new SchemaRegistry();
-
-    const trueSchema = {
+    // Boolean schemas at composition boundaries
+    const allOfTrue = {
       '$id': 'urn:test:allof-true',
       'allOf': [true]
     } as const;
-    const falseSchema = {
+    const allOfFalse = {
       '$id': 'urn:test:allof-false',
       'allOf': [false]
     } as const;
-    const tfSchema = {
+    const allOfTF = {
       '$id': 'urn:test:allof-true-false',
       'allOf': [
         true,
@@ -751,94 +896,20 @@ void describe('Phase 2.4 — edge case hardening', () => {
     } as const;
 
     registry.register([
-      trueSchema,
-      falseSchema,
-      tfSchema
+      allOfTrue,
+      allOfFalse,
+      allOfTF
     ]);
-
-    assert.equal(registry.is(trueSchema.$id, 'hello'), true);
-    assert.equal(registry.is(trueSchema.$id, 42), true);
-    assert.equal(registry.is(trueSchema.$id, null), true);
-    assert.equal(registry.is(falseSchema.$id, 'hello'), false);
-    assert.equal(registry.is(falseSchema.$id, 42), false);
-    assert.equal(registry.is(tfSchema.$id, 'hello'), false);
-    assert.equal(registry.is(tfSchema.$id, null), false);
+    assert.equal(registry.is(allOfTrue.$id, 'hello'), true);
+    assert.equal(registry.is(allOfTrue.$id, null), true);
+    assert.equal(registry.is(allOfFalse.$id, 'hello'), false);
+    assert.equal(registry.is(allOfTF.$id, 'hello'), false);
   });
 
-  void it('contains with minContains: 0 always passes', () => {
+  void it('handles nested $ref chains and additionalProperties with allOf', () => {
     const registry = new SchemaRegistry();
-    const schema = {
-      '$id': 'urn:test:contains-min-zero',
-      'contains': { 'type': 'string' },
-      'minContains': 0,
-      'type': 'array'
-    };
 
-    registry.register(schema);
-    assert.equal(registry.is(schema.$id, []), true);
-    assert.equal(registry.is(schema.$id, [
-      1,
-      2,
-      3
-    ]), true);
-    assert.equal(registry.is(schema.$id, [
-      'a',
-      'b'
-    ]), true);
-  });
-
-  void it('if/then/else interaction with unevaluatedProperties', () => {
-    const registry = new SchemaRegistry();
-    const schema = {
-      '$id': 'urn:test:if-then-unevaluated',
-      'if': { 'properties': { 'type': { 'const': 'admin' } } },
-      'properties': { 'type': { 'type': 'string' } },
-      'required': ['type'],
-      // eslint-disable-next-line unicorn/no-thenable
-      'then': {
-        'properties': { 'level': { 'type': 'number' } },
-        'required': ['level']
-      },
-      'type': 'object',
-      'unevaluatedProperties': false
-    } as const;
-
-    registry.register(schema);
-    assert.equal(registry.is(schema.$id, {
-      'level': 5,
-      'type': 'admin'
-    }), true);
-    assert.equal(registry.is(schema.$id, { 'type': 'user' }), true);
-    assert.equal(registry.is(schema.$id, {
-      'extra': 1,
-      'level': 5,
-      'type': 'admin'
-    }), false);
-  });
-
-  void it('propertyNames with complex schemas (minLength + maxLength)', () => {
-    const registry = new SchemaRegistry();
-    const schema = {
-      '$id': 'urn:test:property-names-complex',
-      'propertyNames': {
-        'maxLength': 10,
-        'minLength': 3
-      },
-      'type': 'object'
-    };
-
-    registry.register(schema);
-    assert.equal(registry.is(schema.$id, {
-      'barbaz': 2,
-      'foo': 1
-    }), true);
-    assert.equal(registry.is(schema.$id, { 'ab': 1 }), false);
-    assert.equal(registry.is(schema.$id, { 'thisnameiswaytoolong': 1 }), false);
-    assert.equal(registry.is(schema.$id, {}), true);
-  });
-
-  void it('nested $ref chains: A refs B which refs C', () => {
-    const registry = new SchemaRegistry();
+    // A → B → C chain
     const schemaC = {
       '$id': 'https://example.io/C',
       'properties': { 'value': { 'type': 'number' } },
@@ -866,11 +937,9 @@ void describe('Phase 2.4 — edge case hardening', () => {
     assert.deepEqual(registry.validate('https://example.io/A', { 'inner': { 'nested': { 'value': 42 } } }), []);
     assert.notDeepEqual(registry.validate('https://example.io/A', { 'inner': { 'nested': { 'value': 'not a number' } } }), []);
     assert.notDeepEqual(registry.validate('https://example.io/A', { 'inner': {} }), []);
-  });
 
-  void it('additionalProperties: false with allOf only considers local properties', () => {
-    const registry = new SchemaRegistry();
-    const schema = {
+    // additionalProperties: false with allOf considers only local properties
+    const addlSchema = {
       '$id': 'urn:test:additional-allof',
       'additionalProperties': false,
       'allOf': [{ 'properties': { 'b': { 'type': 'number' } } }],
@@ -878,9 +947,9 @@ void describe('Phase 2.4 — edge case hardening', () => {
       'type': 'object'
     } as const;
 
-    registry.register(schema);
-    assert.equal(registry.is(schema.$id, { 'a': 'hello' }), true);
-    assert.equal(registry.is(schema.$id, {
+    registry.register(addlSchema);
+    assert.equal(registry.is(addlSchema.$id, { 'a': 'hello' }), true);
+    assert.equal(registry.is(addlSchema.$id, {
       'a': 'hello',
       'b': 1
     }), false);
@@ -948,12 +1017,12 @@ void describe('Discriminator-based oneOf optimization', () => {
     ]);
   }
 
-  void it('validates, rejects, and falls back correctly with discriminator', () => {
+  void it('validates, rejects, falls back, and works without discriminator', () => {
     const registry = new SchemaRegistry();
 
     registerAll(registry);
 
-    // Valid variants
+    // Discriminated: valid variants
     assert.equal(registry.is(discriminatedSchema.$id, {
       'kind': 'circle',
       'radius': 5
@@ -963,29 +1032,16 @@ void describe('Discriminator-based oneOf optimization', () => {
       'kind': 'rect',
       'width': 10
     }), true);
-
-    // Missing required field for variant
+    // Missing required, unknown discriminator, missing discriminator, non-object
     assert.equal(registry.is(discriminatedSchema.$id, { 'kind': 'circle' }), false);
-
-    // Unknown discriminator value
     assert.equal(registry.is(discriminatedSchema.$id, {
       'kind': 'triangle',
       'sides': 3
     }), false);
-
-    // Missing discriminator property — falls back to normal oneOf
     assert.equal(registry.is(discriminatedSchema.$id, { 'radius': 5 }), false);
-
-    // Non-object data
     assert.equal(registry.is(discriminatedSchema.$id, 'hello'), false);
-    assert.equal(registry.is(discriminatedSchema.$id, 42), false);
-  });
 
-  void it('schemas without discriminator behave identically', () => {
-    const registry = new SchemaRegistry();
-
-    registerAll(registry);
-
+    // Plain oneOf behaves identically for valid cases
     assert.equal(registry.is(plainOneOfSchema.$id, {
       'kind': 'circle',
       'radius': 5
@@ -1000,7 +1056,6 @@ void describe('Discriminator-based oneOf optimization', () => {
 
   void it('discriminator.mapping dispatches by mapped $ref target', () => {
     const registry = new SchemaRegistry();
-
     const DogSchema = {
       '$id': 'urn:test:dog',
       'properties': {
@@ -1013,7 +1068,6 @@ void describe('Discriminator-based oneOf optimization', () => {
       ],
       'type': 'object'
     };
-
     const CatSchema = {
       '$id': 'urn:test:cat',
       'properties': {
@@ -1026,7 +1080,6 @@ void describe('Discriminator-based oneOf optimization', () => {
       ],
       'type': 'object'
     };
-
     const PetSchema = {
       '$id': 'urn:test:pet-mapped',
       'discriminator': {
@@ -1047,8 +1100,6 @@ void describe('Discriminator-based oneOf optimization', () => {
       CatSchema,
       PetSchema
     ]);
-
-    // Valid via mapping dispatch
     assert.equal(registry.is(PetSchema.$id, {
       'breed': 'poodle',
       'petType': 'dog'
@@ -1057,11 +1108,7 @@ void describe('Discriminator-based oneOf optimization', () => {
       'color': 'black',
       'petType': 'cat'
     }), true);
-
-    // Missing required field
     assert.equal(registry.is(PetSchema.$id, { 'petType': 'dog' }), false);
-
-    // Unknown mapping value — falls back to const scan, then to normal oneOf
     assert.equal(registry.is(PetSchema.$id, {
       'fins': 2,
       'petType': 'fish'

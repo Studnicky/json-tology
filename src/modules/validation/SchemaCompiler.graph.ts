@@ -10,8 +10,7 @@ import {
 } from '../data/DataTypes.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
 import { jsonSortedKeys } from './SchemaCompiler.support.js';
-
-type CheckFnType = (value: unknown) => boolean;
+import type { CheckFnType } from '../../types/validation.js';
 
 interface PropCheckInterface {
   readonly 'check': CheckFnType;
@@ -127,44 +126,50 @@ export function compileRefCheck(
   return undefined;
 }
 
-export function nodeHasUnsupportedFeatures(
+export function nodeSupportsCompilation(
   node: SchemaGraphNodeInterface,
   graph: SchemaGraphInterface,
   lookupSchema: ((id: string) => Record<string, unknown> | undefined) | undefined,
-  visited: Set<SchemaGraphNodeInterface>
+  visited: Set<SchemaGraphNodeInterface | string>
 ): boolean {
   if (visited.has(node)) {
-    return false;
+    return true;
   }
   visited.add(node);
 
   const sem = graph.semantics(node);
 
   if (sem.dynamicRef !== undefined || sem.dynamicAnchor !== undefined) {
-    return true;
+    return false;
   }
   if (sem.unevaluatedPropertiesNode !== undefined || sem.unevaluatedItemsNode !== undefined) {
-    return true;
+    return false;
   }
   if (sem.rdfsRange !== undefined || sem.rdfsDomain !== undefined) {
-    return true;
+    return false;
   }
 
   if (sem.ref !== undefined) {
     if (sem.refTargetNode !== undefined) {
-      if (nodeHasUnsupportedFeatures(sem.refTargetNode, graph, lookupSchema, visited)) {
-        return true;
+      if (!nodeSupportsCompilation(sem.refTargetNode, graph, lookupSchema, visited)) {
+        return false;
       }
     } else if (lookupSchema !== undefined) {
       const hashIndex = sem.ref.indexOf('#');
       const schemaId = hashIndex === -1 ? sem.ref : sem.ref.slice(0, hashIndex);
+
+      if (visited.has(schemaId)) {
+        return true;
+      }
+      visited.add(schemaId);
+
       const refSchema = lookupSchema(schemaId);
 
       if (refSchema !== undefined) {
         const refGraph = new SchemaGraph(refSchema);
 
-        if (nodeHasUnsupportedFeatures(refGraph.rootNode, refGraph, lookupSchema, visited)) {
-          return true;
+        if (!nodeSupportsCompilation(refGraph.rootNode, refGraph, lookupSchema, visited)) {
+          return false;
         }
       }
     }
@@ -175,19 +180,19 @@ export function nodeHasUnsupportedFeatures(
     ...sem.anyOf,
     ...sem.oneOf
   ]) {
-    if (nodeHasUnsupportedFeatures(branch, graph, lookupSchema, visited)) {
-      return true;
+    if (!nodeSupportsCompilation(branch, graph, lookupSchema, visited)) {
+      return false;
     }
   }
 
   for (const child of [
-    sem.notNode,
+    sem.complementNode,
     sem.ifNode,
     sem.thenNode,
     sem.elseNode
   ]) {
-    if (child !== undefined && nodeHasUnsupportedFeatures(child, graph, lookupSchema, visited)) {
-      return true;
+    if (child !== undefined && !nodeSupportsCompilation(child, graph, lookupSchema, visited)) {
+      return false;
     }
   }
 
@@ -195,22 +200,22 @@ export function nodeHasUnsupportedFeatures(
     ,
     propNode
   ] of sem.properties) {
-    if (nodeHasUnsupportedFeatures(propNode, graph, lookupSchema, visited)) {
-      return true;
+    if (!nodeSupportsCompilation(propNode, graph, lookupSchema, visited)) {
+      return false;
     }
   }
 
-  if (sem.itemsNode !== undefined && nodeHasUnsupportedFeatures(sem.itemsNode, graph, lookupSchema, visited)) {
-    return true;
+  if (sem.itemsNode !== undefined && !nodeSupportsCompilation(sem.itemsNode, graph, lookupSchema, visited)) {
+    return false;
   }
 
   if (sem.additionalPropertiesNode !== undefined
     && typeof sem.additionalPropertiesNode !== 'boolean'
-    && nodeHasUnsupportedFeatures(sem.additionalPropertiesNode, graph, lookupSchema, visited)) {
-    return true;
+    && !nodeSupportsCompilation(sem.additionalPropertiesNode, graph, lookupSchema, visited)) {
+    return false;
   }
 
-  return false;
+  return true;
 }
 
 function canUseFlatObjectFastPath(
@@ -221,7 +226,7 @@ function canUseFlatObjectFastPath(
     return false;
   }
   // eslint-disable-next-line @stylistic/max-len
-  if (sem.allOf.length > 0 || sem.anyOf.length > 0 || sem.oneOf.length > 0 || sem.notNode !== undefined || sem.ifNode !== undefined) {
+  if (sem.allOf.length > 0 || sem.anyOf.length > 0 || sem.oneOf.length > 0 || sem.complementNode !== undefined || sem.ifNode !== undefined) {
     return false;
   }
   if (sem.ref !== undefined) {
@@ -241,6 +246,9 @@ function canUseFlatObjectFastPath(
     return false;
   }
   if (Object.keys(sem.dependentRequired).length > 0) {
+    return false;
+  }
+  if (sem.dependentSchemaEntries.length > 0) {
     return false;
   }
   if (context.activeCustomKeywords.length > 0 && Object.keys(sem.extensions).length > 0) {
@@ -288,7 +296,7 @@ export function tryCompileFlatObjectCheck(
   }
 
   const propChecks = buildFlatObjectPropertyChecks(context, sem, formatRegistry, graph, lookupSchema);
-  const noAdditional = sem.additionalPropertiesNode === false;
+  const rejectsAdditional = sem.additionalPropertiesNode === false;
   const propNameSet = new Set(sem.properties.keys());
 
   return (value: unknown): boolean => {
@@ -311,7 +319,7 @@ export function tryCompileFlatObjectCheck(
       }
     }
 
-    if (noAdditional) {
+    if (rejectsAdditional) {
       for (const key of Object.keys(obj)) {
         if (!propNameSet.has(key)) {
           return false;
@@ -539,7 +547,7 @@ export function compileObjectCheck(
       }
 
       if (additionalIsFalse) {
-        if (allowedKeys !== undefined && !allowedKeys.has(key)) {
+        if (allowedKeys?.has(key) !== true) {
           return false;
         }
       } else if (additionalCheck !== undefined && !additionalCheck(value[key])) {

@@ -10,7 +10,7 @@ import {
   type BenchResult, printResults
 } from './harness.js';
 import { runValidateBench } from './validate.bench.js';
-import { runValueParseBench } from './valueParse.bench.js';
+import { runCoerceBench } from './coerce.bench.js';
 import { runValueOpsBench } from './valueOps.bench.js';
 import { runCompiledBench } from './compiled.bench.js';
 
@@ -26,8 +26,8 @@ const validateResults = runValidateBench();
 printResults(validateResults);
 allResults.push(...validateResults);
 
-// --- Value.parse pipeline ---
-const parseResults = runValueParseBench();
+// --- Coerce pipeline ---
+const parseResults = runCoerceBench();
 
 printResults(parseResults);
 allResults.push(...parseResults);
@@ -64,7 +64,7 @@ const scorecard: Record<string, { 'losses': number;
   'wins': number; }> = {};
 
 for (const [
-  _testName,
+  testName,
   group
 ] of testGroups) {
   const ours = group.find((result) => {
@@ -105,7 +105,7 @@ for (const [
       scorecard[other.library].ties++;
     }
 
-    console.log(`  ${_testName.padEnd(25)} vs ${other.library.padEnd(15)} ${label}`);
+    console.log(`  ${testName.padEnd(25)} vs ${other.library.padEnd(15)} ${label}`);
   }
 }
 

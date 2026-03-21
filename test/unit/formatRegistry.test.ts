@@ -10,125 +10,111 @@ import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
 import { GraphEngine } from '../../src/modules/graph/GraphEngine.js';
 
 void describe('FormatRegistry', () => {
-  void describe('FormatRegistry.builtin', () => {
-    void it('has built-in string formats', () => {
-      const registry = FormatRegistry.builtin();
+  void it('has built-in string and number formats with correct validation', () => {
+    const registry = FormatRegistry.builtin();
 
-      assert.ok(registry.has('email'));
-      assert.ok(registry.has('uri'));
-      assert.ok(registry.has('date'));
-      assert.ok(registry.has('date-time'));
-      assert.ok(registry.has('uuid'));
-      assert.ok(registry.has('ipv4'));
-      assert.ok(registry.has('ipv6'));
-      assert.ok(registry.has('hostname'));
-    });
+    // String formats exist
+    for (const fmt of [
+      'email',
+      'uri',
+      'date',
+      'date-time',
+      'uuid',
+      'ipv4',
+      'ipv6',
+      'hostname'
+    ]) {
+      assert.ok(registry.has(fmt));
+    }
 
-    void it('has built-in number formats', () => {
-      const registry = FormatRegistry.builtin();
+    // Number formats exist
+    for (const fmt of [
+      'int32',
+      'int64',
+      'float',
+      'double'
+    ]) {
+      assert.ok(registry.has(fmt));
+    }
 
-      assert.ok(registry.has('int32'));
-      assert.ok(registry.has('int64'));
-      assert.ok(registry.has('float'));
-      assert.ok(registry.has('double'));
-    });
+    // Email validation
+    const email = registry.get('email');
 
-    void it('validates email format correctly', () => {
-      const registry = FormatRegistry.builtin();
-      const validator = registry.get('email');
+    assert.ok(email !== undefined);
+    assert.ok(email('user@example.com'));
+    assert.ok(!email('not-an-email'));
+    assert.ok(!email(42));
 
-      assert.ok(validator !== undefined);
-      assert.ok(validator('user@example.com'));
-      assert.ok(!validator('not-an-email'));
-      assert.ok(!validator(42));
-    });
+    // int32 validation
+    const int32 = registry.get('int32');
 
-    void it('validates int32 format correctly', () => {
-      const registry = FormatRegistry.builtin();
-      const validator = registry.get('int32');
-
-      assert.ok(validator !== undefined);
-      assert.ok(validator(42));
-      assert.ok(!validator(2_147_483_648));
-      assert.ok(!validator('42'));
-    });
+    assert.ok(int32 !== undefined);
+    assert.ok(int32(42));
+    assert.ok(!int32(2_147_483_648));
+    assert.ok(!int32('42'));
   });
 
-  void describe('custom format registration', () => {
-    void it('registers and retrieves a custom format', () => {
-      const registry = new FormatRegistry();
+  void it('registers custom formats and returns undefined for unknown', () => {
+    const registry = new FormatRegistry();
 
-      registry.register('phone', (value) => {
-        return typeof value === 'string' && /^\+\d{10,15}$/u.test(value);
-      });
-
-      assert.ok(registry.has('phone'));
-
-      const validator = registry.get('phone');
-
-      assert.ok(validator !== undefined);
-      assert.ok(validator('+1234567890'));
-      assert.ok(!validator('not-a-phone'));
+    registry.register('phone', (value) => {
+      return typeof value === 'string' && /^\+\d{10,15}$/u.test(value);
     });
+    assert.ok(registry.has('phone'));
 
-    void it('returns undefined for unknown format', () => {
-      const registry = new FormatRegistry();
+    const validator = registry.get('phone');
 
-      assert.strictEqual(registry.get('nonexistent'), undefined);
-      assert.ok(!registry.has('nonexistent'));
-    });
+    assert.ok(validator !== undefined);
+    assert.ok(validator('+1234567890'));
+    assert.ok(!validator('not-a-phone'));
+
+    // Unknown format
+    assert.strictEqual(registry.get('nonexistent'), undefined);
+    assert.ok(!registry.has('nonexistent'));
   });
 
-  void describe('custom format used during validation', () => {
-    void it('validates with a custom format via GraphEngine', () => {
-      const registry = FormatRegistry.builtin();
+  void it('validates with custom format via GraphEngine and supports override', () => {
+    const registry = FormatRegistry.builtin();
 
-      registry.register('hex-color', (value) => {
-        return typeof value === 'string' && /^#[\da-f]{6}$/iu.test(value);
-      });
-
-      const schema = {
-        '$schema': 'https://json-schema.org/draft/2020-12/schema',
-        '$vocabulary': {
-          'https://json-schema.org/draft/2020-12/vocab/core': true,
-          'https://json-schema.org/draft/2020-12/vocab/format-assertion': true,
-          'https://json-schema.org/draft/2020-12/vocab/validation': true
-        },
-        'format': 'hex-color',
-        'type': 'string'
-      };
-
-      const engine = new GraphEngine(schema, { 'formatRegistry': registry });
-
-      assert.ok(engine.check('#ff00aa'));
-      assert.ok(!engine.check('not-a-color'));
+    // Custom format
+    registry.register('hex-color', (value) => {
+      return typeof value === 'string' && /^#[\da-f]{6}$/iu.test(value);
     });
-  });
 
-  void describe('override built-in format', () => {
-    void it('overrides the email format validator', () => {
-      const registry = FormatRegistry.builtin();
+    const schema = {
+      '$schema': 'https://json-schema.org/draft/2020-12/schema',
+      '$vocabulary': {
+        'https://json-schema.org/draft/2020-12/vocab/core': true,
+        'https://json-schema.org/draft/2020-12/vocab/format-assertion': true,
+        'https://json-schema.org/draft/2020-12/vocab/validation': true
+      },
+      'format': 'hex-color',
+      'type': 'string'
+    };
 
-      // Override email to reject everything
-      registry.register('email', () => {
-        return false;
-      });
+    const engine = new GraphEngine(schema, { 'formatRegistry': registry });
 
-      const schema = {
-        '$schema': 'https://json-schema.org/draft/2020-12/schema',
-        '$vocabulary': {
-          'https://json-schema.org/draft/2020-12/vocab/core': true,
-          'https://json-schema.org/draft/2020-12/vocab/format-assertion': true,
-          'https://json-schema.org/draft/2020-12/vocab/validation': true
-        },
-        'format': 'email',
-        'type': 'string'
-      };
+    assert.ok(engine.check('#ff00aa'));
+    assert.ok(!engine.check('not-a-color'));
 
-      const engine = new GraphEngine(schema, { 'formatRegistry': registry });
-
-      // Even valid emails should fail with overridden validator
-      assert.ok(!engine.check('user@example.com'));
+    // Override built-in
+    registry.register('email', () => {
+      return false;
     });
+
+    const emailSchema = {
+      '$schema': 'https://json-schema.org/draft/2020-12/schema',
+      '$vocabulary': {
+        'https://json-schema.org/draft/2020-12/vocab/core': true,
+        'https://json-schema.org/draft/2020-12/vocab/format-assertion': true,
+        'https://json-schema.org/draft/2020-12/vocab/validation': true
+      },
+      'format': 'email',
+      'type': 'string'
+    };
+
+    const emailEngine = new GraphEngine(emailSchema, { 'formatRegistry': registry });
+
+    assert.ok(!emailEngine.check('user@example.com'));
   });
 });

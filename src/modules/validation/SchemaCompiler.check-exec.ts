@@ -9,8 +9,7 @@ import {
   compileConstCheck,
   compileEnumCheck
 } from './SchemaCompiler.graph.js';
-
-type CheckFnType = (value: unknown) => boolean;
+import type { CheckFnType } from '../../types/validation.js';
 
 export interface SchemaCompilerCheckExecutionContextInterface {
   readonly 'activeCustomKeywords': KeywordDefinitionInterface[];
@@ -280,11 +279,11 @@ export function buildNodeCheckExecution(
     });
   }
 
-  if (sem.notNode !== undefined) {
-    const notCheck = context.compileNodeOrBooleanCheck(sem.notNode, formatRegistry, graph, lookupSchema);
+  if (sem.complementNode !== undefined) {
+    const complementCheck = context.compileNodeOrBooleanCheck(sem.complementNode, formatRegistry, graph, lookupSchema);
 
     checks.push((value) => {
-      return !notCheck(value);
+      return !complementCheck(value);
     });
   }
 

@@ -49,7 +49,7 @@ export const SchemaLoadErrorSchema = {
         'duplicate-id',
         'invalid-json',
         'invalid-schema',
-        'no-id',
+        'missing-id',
         'not-json',
         'unknown'
       ],

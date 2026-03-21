@@ -66,7 +66,7 @@ const jt = JsonTology.create({
   'schemas': [EventSchema]
 });
 
-const abox = jt.abox(EventSchema, event);
+const abox = jt.toQuads(EventSchema, event);
 
 console.log('--- ABox Instance (JSON-LD) ---');
 const aboxJsonLdObj = abox.jsonLdObject();

@@ -189,7 +189,7 @@ function pushFormatPatternRelations(
     return;
   }
 
-  const pattern = FORMAT_PATTERNS[sem.format];
+  const pattern = FORMAT_PATTERNS[sem.format] as string | undefined;
 
   if (pattern !== undefined) {
     relations.push({
@@ -297,8 +297,8 @@ function pushPropertyTypeRelations(
     return;
   }
 
-  const nonNullTypes = sem.schemaTypes.filter((t) => {
-    return t !== 'null';
+  const nonNullTypes = sem.schemaTypes.filter((schemaType) => {
+    return schemaType !== 'null';
   });
   const primaryType = nonNullTypes.length > 0 ? nonNullTypes[0] : null;
   const isObjectProperty = primaryType === 'array'
@@ -322,8 +322,8 @@ function pushUnionTypeRelations(
     return;
   }
 
-  const nonNullTypes = sem.schemaTypes.filter((t) => {
-    return t !== 'null';
+  const nonNullTypes = sem.schemaTypes.filter((schemaType) => {
+    return schemaType !== 'null';
   });
 
   if (nonNullTypes.length <= 1) {
@@ -332,8 +332,8 @@ function pushUnionTypeRelations(
 
   const resolved: string[] = [];
 
-  for (const t of nonNullTypes) {
-    const xsd = resolveSingleXsdType(t, sem.format);
+  for (const typeName of nonNullTypes) {
+    const xsd = resolveSingleXsdType(typeName, sem.format);
 
     if (xsd !== null) {
       resolved.push(xsd);
@@ -517,11 +517,11 @@ export function extractRelations(
     });
   }
 
-  if (sem.notNode !== undefined) {
+  if (sem.complementNode !== undefined) {
     relations.push({
       'predicate': 'owl:complementOf',
       'source': node,
-      'target': sem.notNode
+      'target': sem.complementNode
     });
   }
 
@@ -536,7 +536,7 @@ export function extractRelations(
       },
       'predicate': 'owl:Restriction',
       'source': node,
-      'target': propNode === undefined ? propIRI : propNode
+      'target': propNode ?? propIRI
     });
   }
 

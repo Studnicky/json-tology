@@ -396,7 +396,7 @@ export const nestedValid = {
 };
 
 // ---------------------------------------------------------------------------
-// Schema with defaults (for Value.parse benchmarks)
+// Schema with defaults (for coerce pipeline benchmarks)
 // ---------------------------------------------------------------------------
 
 export const DefaultsSchema = {

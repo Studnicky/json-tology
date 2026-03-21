@@ -6,7 +6,9 @@ import type {
 import type { SchemaGraphInterface } from '../../interfaces/schema-graph-impl.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
 import { isRecord } from '../data/DataTypes.js';
-import type { ValidationErrorType } from '../../types/validation.js';
+import type {
+  CheckFnType, ValidationErrorType
+} from '../../types/validation.js';
 import { makeValidationError } from './SchemaCompiler.support.js';
 
 export type ValidateWithErrorsFnType = (
@@ -19,8 +21,6 @@ export type ValidateWithErrorsFnType = (
   stripUnknown: boolean
 ) => { 'valid': boolean;
   'value': unknown; };
-
-type CheckFnType = (value: unknown) => boolean;
 
 export interface CustomKeywordEntryInterface {
   readonly 'allowedTypes': string[] | undefined;
@@ -35,6 +35,7 @@ export interface CompiledNodeValidationPlanInterface {
   readonly 'allOfValidators': undefined | ValidateWithErrorsFnType[];
   readonly 'allowedKeys': Set<string> | undefined;
   readonly 'anyOfChecks': CheckFnType[] | undefined;
+  readonly 'complementCheck': CheckFnType | undefined;
   readonly 'constVal': unknown;
   readonly 'containsCheck': CheckFnType | undefined;
   readonly 'customKeywordEntries': CustomKeywordEntryInterface[] | undefined;
@@ -64,7 +65,6 @@ export interface CompiledNodeValidationPlanInterface {
   readonly 'minLength': number | undefined;
   readonly 'minProperties': number | undefined;
   readonly 'multipleOf': number | undefined;
-  readonly 'notCheck': CheckFnType | undefined;
   readonly 'oneOfChecks': CheckFnType[] | undefined;
   readonly 'pattern': string | undefined;
   readonly 'patternPropValidators': Array<{ 'regex': RegExp;
@@ -84,6 +84,7 @@ export interface CompiledNodeValidationPlanInterface {
 
 export interface SchemaCompilerValidatePlanContextInterface {
   readonly 'activeCustomKeywords': KeywordDefinitionInterface[];
+  readonly 'appliesFormatAssertions': (sem: SchemaGraphSemanticsInterface) => boolean;
   readonly 'compileNodeCheck': (
     graphNode: SchemaGraphNodeInterface,
     formatRegistry: FormatRegistryInterface,
@@ -108,7 +109,6 @@ export interface SchemaCompilerValidatePlanContextInterface {
     graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
   ) => ValidateWithErrorsFnType;
-  readonly 'hasFormatAssertions': (sem: SchemaGraphSemanticsInterface) => boolean;
   readonly 'resolveImplicitDefault': (
     node: SchemaGraphNodeInterface,
     graph: SchemaGraphInterface,
@@ -119,7 +119,7 @@ export interface SchemaCompilerValidatePlanContextInterface {
 
 function booleanValidateWithErrors(schema: boolean): ValidateWithErrorsFnType {
   return schema
-    ? (value, _path, _errors, _collect, _applyDef, _doCoerce, _stripUnk) => {
+    ? (value) => {
       return {
         'valid': true,
         'value': value
@@ -331,7 +331,7 @@ export function buildNodeValidationPlan(
   const sem = graph.semantics(graphNode);
   const propertyEntries = sem.properties;
   const patternRegex = sem.pattern === undefined ? undefined : new RegExp(sem.pattern, 'u');
-  const formatValidator = (sem.format !== undefined && context.hasFormatAssertions(sem))
+  const formatValidator = (sem.format !== undefined && context.appliesFormatAssertions(sem))
     ? formatRegistry.get(sem.format)
     : undefined;
   const additionalValidator = sem.additionalPropertiesNode !== undefined
@@ -384,9 +384,9 @@ export function buildNodeValidationPlan(
     })
     : undefined;
 
-  const notCheck = sem.notNode === undefined
+  const complementCheck = sem.complementNode === undefined
     ? undefined
-    : context.compileNodeOrBooleanCheck(sem.notNode, formatRegistry, graph, lookupSchema);
+    : context.compileNodeOrBooleanCheck(sem.complementNode, formatRegistry, graph, lookupSchema);
 
   const ifCheck = sem.ifNode === undefined
     ? undefined
@@ -434,6 +434,7 @@ export function buildNodeValidationPlan(
     allOfValidators,
     'allowedKeys': propertyEntries.size > 0 ? new Set(propertyEntries.keys()) : undefined,
     anyOfChecks,
+    complementCheck,
     'constVal': sem.constValue,
     containsCheck,
     'customKeywordEntries': buildCustomKeywordEntries(context.activeCustomKeywords, sem),
@@ -462,7 +463,6 @@ export function buildNodeValidationPlan(
     'minLength': sem.minLength,
     'minProperties': sem.minProperties,
     'multipleOf': sem.multipleOf,
-    notCheck,
     oneOfChecks,
     'pattern': sem.pattern,
     patternPropValidators,

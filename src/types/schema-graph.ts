@@ -35,7 +35,8 @@ export type RelationPredicateType
   | 'sh:minExclusive'
   | 'sh:minInclusive'
   | 'sh:minLength'
-  | 'sh:pattern';
+  | 'sh:pattern'
+  | (string & {});
 
 /**
  * Structure variants for complex RDF patterns that cannot be expressed

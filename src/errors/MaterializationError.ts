@@ -8,6 +8,13 @@ export class MaterializationError extends BaseError {
   public readonly schemaId: string;
   public readonly validationErrors: string[];
 
+  /**
+   * Create a MaterializationError for materialization or ABox projection failures.
+   *
+   * @param schemaId - The $id of the schema that failed materialization
+   * @param validationErrors - Formatted validation error strings
+   * @param options - Optional cause for error chaining
+   */
   public constructor(schemaId: string, validationErrors: string[], options?: { 'cause'?: Error }) {
     super('MATERIALIZATION_FAILED', `Invalid ${schemaId}: ${validationErrors.join('; ')}`, false, options);
     this.name = 'MaterializationError';
@@ -15,6 +22,11 @@ export class MaterializationError extends BaseError {
     this.validationErrors = validationErrors;
   }
 
+  /**
+   * Serialize to a JSON-safe object, including the schema ID and validation errors.
+   *
+   * @returns Plain object with code, message, retryable, schemaId, and validationErrors
+   */
   public override toJson() {
     return {
       ...super.toJson(),

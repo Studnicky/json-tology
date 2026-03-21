@@ -32,7 +32,7 @@ results.push(forInResult);
 
 const freshEntriesResult = bench('for...of Object.entries() (fresh)', 'native', () => {
   for (const [
-    _key,
+    _,
     value
   ] of Object.entries(obj)) {
     sink += String(value).length > 0 ? 1 : 0;

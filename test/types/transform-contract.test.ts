@@ -29,7 +29,7 @@ type ParsedDate = ParseOutputType<typeof TransformedDateSchema>;
 const _wireTypeCheck: WireDate = '2024-01-01T00:00:00.000Z';
 const _parsedTypeCheck: ParsedDate = new Date('2024-01-01T00:00:00.000Z');
 
-const parsed = jt.parse(TransformedDateSchema, '2024-01-01T00:00:00.000Z');
+const parsed = jt.coerce(TransformedDateSchema, '2024-01-01T00:00:00.000Z');
 const materialized = jt.materialize(TransformedDateSchema, '2024-01-01T00:00:00.000Z');
 const encoded = jt.encode(TransformedDateSchema, new Date('2024-01-01T00:00:00.000Z'));
 
@@ -37,17 +37,20 @@ const _parsedDate: Date = parsed;
 const _materializedWire: string = materialized;
 const _encodedWire: string = encoded;
 
-// @ts-expect-error parse() returns decoded output, not wire-form string
+// @ts-expect-error coerce() returns decoded output, not wire-form string
 const _badParsed: string = parsed;
 // @ts-expect-error materialize() returns wire-form output, not decoded Date
 const _badMaterialized: Date = materialized;
 // @ts-expect-error encode() returns wire-form output, not decoded Date
 const _badEncoded: Date = encoded;
 
-// @ts-expect-error materialize() expects wire-form input for transformed schemas
-jt.materialize(TransformedDateSchema, new Date('2024-01-01T00:00:00.000Z'));
-// @ts-expect-error encode() expects decoded input for transformed schemas
-jt.encode(TransformedDateSchema, '2024-01-01T00:00:00.000Z');
+// Runtime-unsafe type assertions — guarded to prevent execution
+if (false as boolean) {
+  // @ts-expect-error materialize() expects wire-form input for transformed schemas
+  jt.materialize(TransformedDateSchema, new Date('2024-01-01T00:00:00.000Z'));
+  // @ts-expect-error encode() expects decoded input for transformed schemas
+  jt.encode(TransformedDateSchema, '2024-01-01T00:00:00.000Z');
+}
 
 void [
   _wireTypeCheck,

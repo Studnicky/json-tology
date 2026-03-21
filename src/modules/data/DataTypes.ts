@@ -49,8 +49,8 @@ export function resolveXsdType(semantics: SchemaGraphSemanticsInterface): null |
   const types = semantics.schemaTypes;
   const format = semantics.format;
 
-  const nonNull = types.filter((entry) => {
-    return entry !== 'null';
+  const nonNull = types.filter((schemaType) => {
+    return schemaType !== 'null';
   });
 
   if (nonNull.length === 0) {
@@ -75,24 +75,27 @@ export function propertyIri(classId: string, propertyName: string): string {
 // Deep equality
 // ---------------------------------------------------------------------------
 
-export function deepEqual(a: unknown, b: unknown): boolean {
-  if (a === b) {
+export function deepEqual(left: unknown, right: unknown): boolean {
+  if (left === right) {
     return true;
   }
-  if (a === null || b === null) {
+  if (left === null || right === null) {
     return false;
   }
-  if (typeof a !== typeof b) {
+  if (typeof left !== typeof right) {
     return false;
   }
 
-  if (Array.isArray(a)) {
-    if (!Array.isArray(b) || a.length !== b.length) {
+  if (Array.isArray(left)) {
+    if (!Array.isArray(right) || left.length !== right.length) {
       return false;
     }
 
-    for (let i = 0; i < a.length; i++) {
-      if (!deepEqual(a[i], b[i])) {
+    for (const [
+      index,
+      element
+    ] of left.entries()) {
+      if (!deepEqual(element, right[index])) {
         return false;
       }
     }
@@ -100,21 +103,21 @@ export function deepEqual(a: unknown, b: unknown): boolean {
     return true;
   }
 
-  if (typeof a === 'object') {
-    const aObj = a as Record<string, unknown>;
-    const bObj = b as Record<string, unknown>;
-    const aKeys = Object.keys(aObj);
-    const bKeys = Object.keys(bObj);
+  if (typeof left === 'object') {
+    const leftObj = left as Record<string, unknown>;
+    const rightObj = right as Record<string, unknown>;
+    const leftKeys = Object.keys(leftObj);
+    const rightKeys = Object.keys(rightObj);
 
-    if (aKeys.length !== bKeys.length) {
+    if (leftKeys.length !== rightKeys.length) {
       return false;
     }
 
-    for (const key of aKeys) {
-      if (!Object.prototype.hasOwnProperty.call(bObj, key)) {
+    for (const key of leftKeys) {
+      if (!(key in rightObj)) {
         return false;
       }
-      if (!deepEqual(aObj[key], bObj[key])) {
+      if (!deepEqual(leftObj[key], rightObj[key])) {
         return false;
       }
     }

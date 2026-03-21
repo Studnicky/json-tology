@@ -1,8 +1,7 @@
 import type {
   RelationPredicateType, RelationStructure
 } from '../types/schema-graph.js';
-
-type JsonSchemaType = boolean | Record<string, unknown>;
+import type { JsonSchemaType } from '../types/schema.js';
 
 export interface NormIRNodeInterface {
   readonly 'id': string;
@@ -30,6 +29,7 @@ export interface SchemaGraphSemanticsInterface {
   'allOf': SchemaGraphNodeInterface[];
   'anyOf': SchemaGraphNodeInterface[];
   'comment': string | undefined;
+  'complementNode': SchemaGraphNodeInterface | undefined;
   'constValue': unknown;
   'containsNode': SchemaGraphNodeInterface | undefined;
   'contentEncoding': string | undefined;
@@ -69,7 +69,6 @@ export interface SchemaGraphSemanticsInterface {
   'minLength': number | undefined;
   'minProperties': number | undefined;
   'multipleOf': number | undefined;
-  'notNode': SchemaGraphNodeInterface | undefined;
   'oneOf': SchemaGraphNodeInterface[];
   'pattern': string | undefined;
   'patternPropertyEntries': Array<[string, SchemaGraphNodeInterface]>;

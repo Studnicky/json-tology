@@ -2,7 +2,7 @@
  * Value operation benchmarks: clean, convert, diff, clone vs TypeBox equivalents.
  */
 
-import { Value as TBValue } from '@sinclair/typebox/value';
+import { TypeBoxValue } from './typebox.js';
 import { FormatRegistry } from '@sinclair/typebox';
 
 // Register formats for TypeBox
@@ -46,7 +46,7 @@ const dirtyNested = {
 export function runValueOpsBench(): BenchResult[] {
   const results: BenchResult[] = [];
 
-  const registry = new SchemaRegistry({ 'coerce': true });
+  const registry = new SchemaRegistry({ 'castTypes': true });
 
   registry.register(SimpleSchema);
   registry.register(AddressSchema);
@@ -68,7 +68,7 @@ export function runValueOpsBench(): BenchResult[] {
   results.push(cleanSimpleResult);
 
   const cleanSimpleTbResult = bench('clean simple', 'typebox', () => {
-    TBValue.Clean(SimpleSchemaTypebox, structuredClone(dirtySimple));
+    void TypeBoxValue.clean(SimpleSchemaTypebox, structuredClone(dirtySimple));
   });
 
   results.push(cleanSimpleTbResult);
@@ -80,7 +80,7 @@ export function runValueOpsBench(): BenchResult[] {
   results.push(cleanNestedResult);
 
   const cleanNestedTbResult = bench('clean nested', 'typebox', () => {
-    TBValue.Clean(NestedSchemaTypebox, structuredClone(dirtyNested));
+    void TypeBoxValue.clean(NestedSchemaTypebox, structuredClone(dirtyNested));
   });
 
   results.push(cleanNestedTbResult);
@@ -95,7 +95,7 @@ export function runValueOpsBench(): BenchResult[] {
   results.push(convertSimpleResult);
 
   const convertSimpleTbResult = bench('convert simple', 'typebox', () => {
-    TBValue.Convert(SimpleSchemaTypebox, simpleCoercible);
+    void TypeBoxValue.convert(SimpleSchemaTypebox, simpleCoercible);
   });
 
   results.push(convertSimpleTbResult);
@@ -135,7 +135,7 @@ export function runValueOpsBench(): BenchResult[] {
   results.push(diffNestedResult);
 
   const diffNestedTbResult = bench('diff nested', 'typebox', () => {
-    void [...TBValue.Diff(nestedValid, nestedModified)];
+    void [...TypeBoxValue.diff(nestedValid, nestedModified)];
   });
 
   results.push(diffNestedTbResult);

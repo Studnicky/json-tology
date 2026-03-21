@@ -16,152 +16,231 @@ void describe('Hash.value()', () => {
     assert.match(result, /^[0-9a-f]+$/u);
   });
 
-  void it('is deterministic: same input produces same hash', () => {
-    const input = {
-      'age': 30,
-      'name': 'Alice'
-    };
-
-    assert.equal(Hash.value(input), Hash.value(input));
-    assert.equal(Hash.value(input), Hash.value({
-      'age': 30,
-      'name': 'Alice'
-    }));
-  });
-
-  void it('is key-order insensitive', () => {
-    const first = {
-      'a': 1,
-      'b': 2
-    };
-    const second = {
-      'a': 1,
-      'b': 2
-    };
-
-    assert.equal(Hash.value(first), Hash.value(second));
-  });
-
-  void it('produces different hashes for different values', () => {
-    assert.notEqual(Hash.value({ 'a': 1 }), Hash.value({ 'a': 2 }));
-    assert.notEqual(Hash.value('hello'), Hash.value('world'));
-    assert.notEqual(Hash.value(1), Hash.value(2));
-    assert.notEqual(Hash.value(true), Hash.value(false));
-  });
-
-  void it('handles nested objects with key-order insensitivity', () => {
-    const first = {
-      'outer': {
-        'x': 1,
-        'y': 2
-      },
-      'z': 3
-    };
-    const second = {
-      'outer': {
-        'x': 1,
-        'y': 2
-      },
-      'z': 3
-    };
-
-    assert.equal(Hash.value(first), Hash.value(second));
-  });
-
-  void it('handles arrays (order matters)', () => {
-    assert.equal(Hash.value([
-      1,
-      2,
-      3
-    ]), Hash.value([
-      1,
-      2,
-      3
-    ]));
-    assert.notEqual(Hash.value([
-      1,
-      2,
-      3
-    ]), Hash.value([
-      3,
-      2,
-      1
-    ]));
-  });
-
-  void it('handles null', () => {
-    assert.equal(Hash.value(null), Hash.value(null));
-    assert.notEqual(Hash.value(null), Hash.value(0));
-    assert.notEqual(Hash.value(null), Hash.value(''));
-  });
-
   void it('throws on undefined (not JSON-serializable)', () => {
     assert.throws(() => {
       Hash.value();
     });
   });
 
-  void it('handles numbers', () => {
-    assert.equal(Hash.value(42), Hash.value(42));
-    assert.equal(Hash.value(0), Hash.value(0));
-    assert.equal(Hash.value(-1), Hash.value(-1));
-    assert.notEqual(Hash.value(42), Hash.value(43));
-  });
-
-  void it('handles booleans', () => {
-    assert.equal(Hash.value(true), Hash.value(true));
-    assert.equal(Hash.value(false), Hash.value(false));
-    assert.notEqual(Hash.value(true), Hash.value(false));
-  });
-
-  void it('handles strings', () => {
-    assert.equal(Hash.value('hello'), Hash.value('hello'));
-    assert.notEqual(Hash.value('hello'), Hash.value('HELLO'));
-  });
-
-  void it('distinguishes types: number vs string representation', () => {
-    assert.notEqual(Hash.value(42), Hash.value('42'));
-    assert.notEqual(Hash.value(true), Hash.value('true'));
-    assert.notEqual(Hash.value(null), Hash.value('null'));
-  });
-
-  void it('handles deeply nested structures', () => {
-    const deep = {
-      'a': {
-        'b': {
-          'c': {
-            'd': [
-              1,
-              { 'e': 'f' }
-            ]
+  void it('produces equal hashes for equivalent inputs', () => {
+    const scenarios: Array<[unknown, unknown]> = [
+      // Deterministic
+      [
+        {
+          'age': 30,
+          'name': 'Alice'
+        },
+        {
+          'age': 30,
+          'name': 'Alice'
+        }
+      ],
+      // Key-order insensitive
+      [
+        {
+          'a': 1,
+          'b': 2
+        },
+        {
+          'a': 1,
+          'b': 2
+        }
+      ],
+      // Nested objects
+      [
+        {
+          'outer': {
+            'x': 1,
+            'y': 2
+          },
+          'z': 3
+        },
+        {
+          'outer': {
+            'x': 1,
+            'y': 2
+          },
+          'z': 3
+        }
+      ],
+      // Numbers
+      [
+        42,
+        42
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        -1,
+        -1
+      ],
+      // Booleans
+      [
+        true,
+        true
+      ],
+      [
+        false,
+        false
+      ],
+      // Strings
+      [
+        'hello',
+        'hello'
+      ],
+      // Null
+      [
+        null,
+        null
+      ],
+      // Arrays (order matters — same order = equal)
+      [
+        [
+          1,
+          2,
+          3
+        ],
+        [
+          1,
+          2,
+          3
+        ]
+      ],
+      // Deeply nested
+      [
+        {
+          'a': {
+            'b': {
+              'c': {
+                'd': [
+                  1,
+                  { 'e': 'f' }
+                ]
+              }
+            }
+          }
+        },
+        {
+          'a': {
+            'b': {
+              'c': {
+                'd': [
+                  1,
+                  { 'e': 'f' }
+                ]
+              }
+            }
           }
         }
-      }
-    };
+      ]
+    ];
 
-    assert.equal(Hash.value(deep), Hash.value({
-      'a': {
-        'b': {
-          'c': {
-            'd': [
-              1,
-              { 'e': 'f' }
-            ]
+    for (const [
+      left,
+      right
+    ] of scenarios) {
+      assert.equal(Hash.value(left), Hash.value(right));
+    }
+  });
+
+  void it('produces different hashes for different inputs', () => {
+    const scenarios: Array<[unknown, unknown]> = [
+      // Different values
+      [
+        { 'a': 1 },
+        { 'a': 2 }
+      ],
+      [
+        'hello',
+        'world'
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        true,
+        false
+      ],
+      [
+        42,
+        43
+      ],
+      [
+        'hello',
+        'HELLO'
+      ],
+      // Null vs other types
+      [
+        null,
+        0
+      ],
+      [
+        null,
+        ''
+      ],
+      // Type distinction
+      [
+        42,
+        '42'
+      ],
+      [
+        true,
+        'true'
+      ],
+      [
+        null,
+        'null'
+      ],
+      // Array order matters
+      [
+        [
+          1,
+          2,
+          3
+        ],
+        [
+          3,
+          2,
+          1
+        ]
+      ],
+      // Deep nested difference
+      [
+        {
+          'a': {
+            'b': {
+              'c': {
+                'd': [
+                  1,
+                  { 'e': 'f' }
+                ]
+              }
+            }
+          }
+        },
+        {
+          'a': {
+            'b': {
+              'c': {
+                'd': [
+                  1,
+                  { 'e': 'g' }
+                ]
+              }
+            }
           }
         }
-      }
-    }));
-    assert.notEqual(Hash.value(deep), Hash.value({
-      'a': {
-        'b': {
-          'c': {
-            'd': [
-              1,
-              { 'e': 'g' }
-            ]
-          }
-        }
-      }
-    }));
+      ]
+    ];
+
+    for (const [
+      left,
+      right
+    ] of scenarios) {
+      assert.notEqual(Hash.value(left), Hash.value(right));
+    }
   });
 });

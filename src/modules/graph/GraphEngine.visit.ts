@@ -56,8 +56,6 @@ export interface VisitContextInterface {
   'synthesizeZeroValue': (
     node: SchemaGraphNodeInterface,
     graph: SchemaGraphInterface,
-    options: EffectiveOptionsType,
-    refStack: Set<string>,
     dynamicScope: DynamicScopeEntryInterface[]
   ) => unknown;
   'validateArray': (
@@ -114,22 +112,39 @@ export function visitNode(
 
   const sem = graph.semantics(node);
   const {
+    allOf,
+    anyOf,
+    'complementNode': complementNode,
+    'constValue': rawConstValue,
+    'defaultValue': rawDefaultValue,
+    discriminatorMapping,
+    discriminatorPropertyName,
     dynamicAnchor,
     dynamicRef,
+    elseNode,
     enumValues,
+    extensions,
+    hasConst,
+    hasDefault,
+    ifNode,
+    oneOf,
+    rdfsRange,
     ref,
-    schemaTypes
+    schemaTypes,
+    thenNode,
+    unevaluatedItemsNode,
+    unevaluatedPropertiesNode
   } = sem;
-  const constValue = sem.hasConst ? sem.constValue : undefined;
-  const defaultValue = sem.hasDefault ? sem.defaultValue : undefined;
+  const constValue = hasConst ? rawConstValue : undefined;
+  const defaultValue = hasDefault ? rawDefaultValue : undefined;
 
   if (workingValue === undefined && options.applyDefaults && defaultValue !== undefined) {
     workingValue = cloneDefault(defaultValue);
   }
   if (workingValue === undefined && options.synthesizeDefaults) {
-    workingValue = context.synthesizeZeroValue(node, graph, options, refStack, dynamicScope);
+    workingValue = context.synthesizeZeroValue(node, graph, dynamicScope);
   }
-  if (options.coerce) {
+  if (options.castTypes) {
     workingValue = context.coerceValue(schemaTypes, workingValue, options.materializeContainers);
   }
 
@@ -314,8 +329,8 @@ export function visitNode(
     }
   }
 
-  if (sem.allOf.length > 0) {
-    for (const childNode of sem.allOf) {
+  if (allOf.length > 0) {
+    for (const childNode of allOf) {
       const branch = visitNode(context, childNode, graph, workingValue, path, options, refStack, nextDynamicScope);
 
       if (!branch.valid && !options.collectErrors) {
@@ -332,10 +347,10 @@ export function visitNode(
     }
   }
 
-  if (sem.anyOf.length > 0) {
+  if (anyOf.length > 0) {
     const successfulResults: InternalExecutionResultInterface[] = [];
 
-    for (const childNode of sem.anyOf) {
+    for (const childNode of anyOf) {
       const candidate = visitNode(context, childNode, graph, cloneCandidate(workingValue), path, {
         ...options,
         'collectErrors': true
@@ -352,26 +367,24 @@ export function visitNode(
 
     const matchedResult = successfulResults[0];
 
-    if (matchedResult !== undefined) {
-      workingValue = matchedResult.value;
-      for (const successful of successfulResults) {
-        for (const key of successful.evaluatedProperties) {
-          evaluatedProperties.add(key);
-        }
-        for (const index of successful.evaluatedItems) {
-          evaluatedItems.add(index);
-        }
+    workingValue = matchedResult.value;
+    for (const successful of successfulResults) {
+      for (const key of successful.evaluatedProperties) {
+        evaluatedProperties.add(key);
+      }
+      for (const index of successful.evaluatedItems) {
+        evaluatedItems.add(index);
       }
     }
   }
 
-  if (sem.oneOf.length > 0) {
+  if (oneOf.length > 0) {
     let matches = 0;
     let matchedResult: InternalExecutionResultInterface | undefined;
 
     // Discriminator optimization: if the schema has a discriminator property,
     // check the discriminator value first and only validate against the matching variant.
-    const discProp = sem.discriminatorPropertyName;
+    const discProp = discriminatorPropertyName;
     let discriminatorHandled = false;
 
     if (
@@ -385,7 +398,7 @@ export function visitNode(
 
       if (discValue !== undefined && typeof discValue === 'string') {
         // Pre-cache variant semantics to avoid redundant WeakMap lookups
-        const variantCache = sem.oneOf.map((child) => {
+        const variantCache = oneOf.map((child) => {
           return {
             'node': child,
             'sem': graph.semantics(child)
@@ -393,7 +406,7 @@ export function visitNode(
         });
 
         // Mapping-based dispatch: discriminator.mapping maps discriminator values to $ref targets.
-        const mapping = sem.discriminatorMapping;
+        const mapping = discriminatorMapping;
 
         if (mapping !== undefined && discValue in mapping) {
           const targetRef = mapping[discValue];
@@ -443,7 +456,7 @@ export function visitNode(
     }
 
     if (!discriminatorHandled) {
-      for (const oneOfChild of sem.oneOf) {
+      for (const oneOfChild of oneOf) {
         const candidate = visitNode(context, oneOfChild, graph, cloneCandidate(workingValue), path, {
           ...options,
           'collectErrors': true
@@ -470,10 +483,8 @@ export function visitNode(
     }
   }
 
-  const notNode = sem.notNode;
-
-  if (notNode !== undefined) {
-    const notResult = visitNode(context, notNode, graph, cloneCandidate(workingValue), path, {
+  if (complementNode !== undefined) {
+    const notResult = visitNode(context, complementNode, graph, cloneCandidate(workingValue), path, {
       ...options,
       'collectErrors': true
     }, refStack, nextDynamicScope);
@@ -483,14 +494,12 @@ export function visitNode(
     }
   }
 
-  const ifNode = sem.ifNode;
-
   if (ifNode !== undefined) {
     const condition = visitNode(context, ifNode, graph, cloneCandidate(workingValue), path, {
       ...options,
       'collectErrors': true
     }, refStack, nextDynamicScope);
-    const branchNode = condition.valid ? sem.thenNode : sem.elseNode;
+    const branchNode = condition.valid ? thenNode : elseNode;
 
     // Properties evaluated by the if condition count as evaluated (JSON Schema 2020-12 §10.2.2.1)
     for (const key of condition.evaluatedProperties) {
@@ -517,7 +526,7 @@ export function visitNode(
     }
   }
 
-  if (Array.isArray(workingValue) && sem.unevaluatedItemsNode !== undefined) {
+  if (Array.isArray(workingValue) && unevaluatedItemsNode !== undefined) {
     const unevaluatedResult = context.applyUnevaluatedItems(
       node,
       graph,
@@ -539,7 +548,7 @@ export function visitNode(
     }
   }
 
-  if (isObject(workingValue) && sem.unevaluatedPropertiesNode !== undefined) {
+  if (isObject(workingValue) && unevaluatedPropertiesNode !== undefined) {
     const unevaluatedResult = context.applyUnevaluatedProperties(
       node,
       graph,
@@ -566,7 +575,7 @@ export function visitNode(
     const dataType = inferValueType(workingValue);
 
     for (const kw of context.customKeywords) {
-      if (!(kw.keyword in sem.extensions)) {
+      if (!(kw.keyword in extensions)) {
         continue;
       }
       if (kw.type !== undefined) {
@@ -583,7 +592,7 @@ export function visitNode(
         'rootData': workingValue
       };
       const kwResult = kw.validate(
-        sem.extensions[kw.keyword],
+        extensions[kw.keyword],
         workingValue,
         kwContext
       );
@@ -619,8 +628,6 @@ export function visitNode(
   }
 
   // rdfs:range validation — enforce range schema on object/array values
-  const rdfsRange = sem.rdfsRange;
-
   if (typeof rdfsRange === 'string' && options.lookupSchema !== undefined) {
     const rangeSchema = options.lookupSchema(rdfsRange);
 
@@ -632,13 +639,15 @@ export function visitNode(
 
         if (isObject(workingValue)) {
           const rangeGraph = context.graphFor(rangeSchema);
-          const rangeResult = visitNode(context, rangeGraph.rootNode, rangeGraph, workingValue, path, options, refStack, []);
+          const rangeRoot = rangeGraph.rootNode;
+          const rangeResult = visitNode(context, rangeRoot, rangeGraph, workingValue, path, options, refStack, []);
 
           if (!rangeResult.valid) {
             pushErrors(rangeResult.errors);
           }
         } else if (Array.isArray(workingValue)) {
           const rangeGraph = context.graphFor(rangeSchema);
+          const rangeRoot = rangeGraph.rootNode;
 
           for (const [
             i,
@@ -646,7 +655,7 @@ export function visitNode(
           ] of workingValue.entries()) {
             if (isObject(item) || Array.isArray(item)) {
               const itemPath = `${path}/${i}`;
-              const itemResult = visitNode(context, rangeGraph.rootNode, rangeGraph, item, itemPath, options, refStack, []);
+              const itemResult = visitNode(context, rangeRoot, rangeGraph, item, itemPath, options, refStack, []);
 
               if (!itemResult.valid) {
                 pushErrors(itemResult.errors);

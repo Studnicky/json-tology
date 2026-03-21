@@ -57,7 +57,7 @@ export function jsonSortedKeys(value: unknown): string {
       sorted[key] = (value as Record<string, unknown>)[key];
     }
 
-    return JSON.stringify(sorted, (_key, nested) => {
+    return JSON.stringify(sorted, (_, nested) => {
       if (nested !== null && typeof nested === 'object' && !Array.isArray(nested)) {
         const nestedSorted: Record<string, unknown> = {};
 
@@ -78,16 +78,38 @@ export function jsonSortedKeys(value: unknown): string {
   return JSON.stringify(value);
 }
 
+const EMPTY_PARAMS: Record<string, unknown> = Object.freeze({});
+
 export function makeValidationError(
   path: string,
   keyword: string,
   message: string,
-  params: Record<string, unknown> = {}
+  params?: Record<string, unknown>
 ): ValidationErrorType {
   return {
     keyword,
     message,
-    params,
+    'params': params ?? EMPTY_PARAMS,
     path
   };
+}
+
+/**
+ * Count Unicode code points in a string without allocating an intermediate array.
+ * Equivalent to `[...str].length` but allocation-free.
+ */
+export function codePointLength(str: string): number {
+  let length = 0;
+
+  for (let index = 0; index < str.length; index++) {
+    length++;
+    // Skip low surrogate of a surrogate pair (code point above BMP uses two UTF-16 units)
+    const code = str.codePointAt(index);
+
+    if (code !== undefined && code > 0xFF_FF) {
+      index++;
+    }
+  }
+
+  return length;
 }

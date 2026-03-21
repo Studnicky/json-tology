@@ -1,9 +1,9 @@
-import type { SchemaGraph } from '../modules/graph/SchemaGraph.js';
+import type { SchemaGraphInterface } from './schema-graph-impl.js';
 
 export interface GraphSerializerInterface {
-  serialize(graphs: readonly SchemaGraph[]): unknown[];
+  serialize(graphs: readonly SchemaGraphInterface[]): unknown[];
 }
 
 export interface GraphSchemaSerializerInterface {
-  serialize(graph: SchemaGraph): Record<string, unknown>;
+  serialize(graph: SchemaGraphInterface): Record<string, unknown>;
 }

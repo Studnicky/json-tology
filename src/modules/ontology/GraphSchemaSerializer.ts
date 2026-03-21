@@ -6,10 +6,17 @@ import type { GraphSchemaSerializerInterface } from '../../interfaces/serializer
 
 
 export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
+  /**
+   * Serialize a schema graph back into a JSON Schema document.
+   *
+   * @param graph - Schema graph to serialize
+   * @returns JSON Schema object reconstructed from the graph
+   */
   public serialize(graph: SchemaGraphInterface): Record<string, unknown> {
     return this.serializeNode(graph, graph.rootNode) as Record<string, unknown>;
   }
 
+  // eslint-disable-next-line @stylistic/max-len
   private serializeNode(graph: SchemaGraphInterface, node: SchemaGraphNodeInterface): boolean | Record<string, unknown> {
     const semantics: SchemaGraphSemanticsInterface = graph.semantics(node);
 
@@ -107,8 +114,8 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
         return this.serializeNode(graph, n);
       });
     }
-    if (semantics.notNode) {
-      result.not = this.serializeNode(graph, semantics.notNode);
+    if (semantics.complementNode) {
+      result.not = this.serializeNode(graph, semantics.complementNode);
     }
 
     // conditionals
@@ -116,7 +123,7 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
       result.if = this.serializeNode(graph, semantics.ifNode);
     }
     if (semantics.thenNode) {
-      result.then = this.serializeNode(graph, semantics.thenNode);
+      Reflect.set(result, 'then', this.serializeNode(graph, semantics.thenNode));
     }
     if (semantics.elseNode) {
       result.else = this.serializeNode(graph, semantics.elseNode);
@@ -226,13 +233,13 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
     }
 
     // metadata
-    if (semantics.title) {
+    if (semantics.title !== undefined && semantics.title !== '') {
       result.title = semantics.title;
     }
-    if (semantics.description) {
+    if (semantics.description !== undefined && semantics.description !== '') {
       result.description = semantics.description;
     }
-    if (semantics.format) {
+    if (semantics.format !== undefined && semantics.format !== '') {
       result.format = semantics.format;
     }
     if (semantics.deprecated) {
@@ -244,15 +251,15 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
     if (semantics.writeOnly) {
       result.writeOnly = true;
     }
-    if (semantics.contentEncoding) {
+    if (semantics.contentEncoding !== undefined && semantics.contentEncoding !== '') {
       result.contentEncoding = semantics.contentEncoding;
     }
-    if (semantics.contentMediaType) {
+    if (semantics.contentMediaType !== undefined && semantics.contentMediaType !== '') {
       result.contentMediaType = semantics.contentMediaType;
     }
 
     // discriminator
-    if (semantics.discriminatorPropertyName) {
+    if (semantics.discriminatorPropertyName !== undefined && semantics.discriminatorPropertyName !== '') {
       const disc: Record<string, unknown> = { 'propertyName': semantics.discriminatorPropertyName };
 
       if (semantics.discriminatorMapping !== undefined) {
@@ -263,10 +270,10 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
     }
 
     // dynamic
-    if (semantics.dynamicAnchor) {
+    if (semantics.dynamicAnchor !== undefined && semantics.dynamicAnchor !== '') {
       result.$dynamicAnchor = semantics.dynamicAnchor;
     }
-    if (semantics.dynamicRef) {
+    if (semantics.dynamicRef !== undefined && semantics.dynamicRef !== '') {
       result.$dynamicRef = semantics.dynamicRef;
     }
 
@@ -311,12 +318,12 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
     if (semantics.recursiveAnchor) {
       result.$recursiveAnchor = true;
     }
-    if (semantics.recursiveRef) {
+    if (semantics.recursiveRef !== undefined && semantics.recursiveRef !== '') {
       result.$recursiveRef = semantics.recursiveRef;
     }
 
     // $comment
-    if (semantics.comment) {
+    if (semantics.comment !== undefined && semantics.comment !== '') {
       result.$comment = semantics.comment;
     }
 
@@ -334,19 +341,19 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
     }
 
     // Ontology extension keywords
-    if (semantics.rdfsDomain) {
+    if (semantics.rdfsDomain !== undefined && semantics.rdfsDomain !== '') {
       result['rdfs:domain'] = semantics.rdfsDomain;
     }
-    if (semantics.rdfsRange) {
+    if (semantics.rdfsRange !== undefined && semantics.rdfsRange !== '') {
       result['rdfs:range'] = semantics.rdfsRange;
     }
-    if (semantics.disjointWith) {
+    if (semantics.disjointWith !== undefined && semantics.disjointWith !== '') {
       result.disjointWith = semantics.disjointWith;
     }
-    if (semantics.equivalentTo) {
+    if (semantics.equivalentTo !== undefined && semantics.equivalentTo !== '') {
       result.equivalentTo = semantics.equivalentTo;
     }
-    if (semantics.inverseOf) {
+    if (semantics.inverseOf !== undefined && semantics.inverseOf !== '') {
       result.inverseOf = semantics.inverseOf;
     }
     if (semantics.transitive) {

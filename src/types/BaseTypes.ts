@@ -4,8 +4,8 @@
  * Core container types and patterns used across multiple domains.
  */
 
-import type { JSONSchema7Definition as JSONSchema } from 'json-schema';
-import type { Infer } from './schema.js';
+import type { JSONSchema7Definition } from 'json-schema';
+import type { InferType } from './schema.js';
 
 export namespace BaseTypes {
   /* ── Schema definitions ── */
@@ -271,15 +271,15 @@ export namespace BaseTypes {
 
   /* ── Schema-derived types ── */
 
-  export type Duration = Infer<typeof DurationDef>;
-  export type ErrorDetails = Infer<typeof ErrorDetailsDef>;
-  export type Progress = Infer<typeof ProgressDef>;
-  export type Timed = Infer<typeof TimedDef>;
-  export type Timestamped = Infer<typeof TimestampedDef>;
-  export type SortOrder = Infer<typeof SortOrderDef>;
+  export type Duration = InferType<typeof DurationDef>;
+  export type ErrorDetails = InferType<typeof ErrorDetailsDef>;
+  export type Progress = InferType<typeof ProgressDef>;
+  export type Timed = InferType<typeof TimedDef>;
+  export type Timestamped = InferType<typeof TimestampedDef>;
+  export type SortOrder = InferType<typeof SortOrderDef>;
   export type Cursor = string;
-  export type Pagination = Infer<typeof PaginationDef>;
-  export type Filter = Infer<typeof FilterDef>;
+  export type Pagination = InferType<typeof PaginationDef>;
+  export type Filter = InferType<typeof FilterDef>;
 
   /**
    * Generic response container.
@@ -342,9 +342,9 @@ export namespace BaseTypes {
  *   UserSchema,
  *   'https://myapp.io/UserResponse'
  * );
- * type UserResponse = Infer<typeof UserResponseSchema>;
+ * type UserResponse = InferType<typeof UserResponseSchema>;
  */
-export function makeResponseSchema<TBody extends JSONSchema, TId extends string>(
+export function makeResponseSchema<TBody extends JSONSchema7Definition, TId extends string>(
   bodySchema: TBody,
   id: TId
 ) {
@@ -371,9 +371,9 @@ export function makeResponseSchema<TBody extends JSONSchema, TId extends string>
  *   UserSchema,
  *   'https://myapp.io/UserResult'
  * );
- * type UserResult = Infer<typeof UserResultSchema>;
+ * type UserResult = InferType<typeof UserResultSchema>;
  */
-export function makeResultSchema<TData extends JSONSchema, TId extends string>(
+export function makeResultSchema<TData extends JSONSchema7Definition, TId extends string>(
   dataSchema: TData,
   id: TId
 ) {
@@ -403,10 +403,10 @@ export function makeResultSchema<TData extends JSONSchema, TId extends string>(
  *   UserSchema,
  *   'https://myapp.io/UserPage'
  * );
- * type UserPage = Infer<typeof UserPageSchema>;
+ * type UserPage = InferType<typeof UserPageSchema>;
  * // { items: User[]; total: number; page: number; pageSize: number; ... }
  */
-export function makePageSchema<TItem extends JSONSchema, TId extends string>(
+export function makePageSchema<TItem extends JSONSchema7Definition, TId extends string>(
   itemSchema: TItem,
   id: TId
 ) {

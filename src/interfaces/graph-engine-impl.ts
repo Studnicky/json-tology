@@ -4,7 +4,7 @@ import type {
   KeywordDefinitionInterface
 } from './graph-engine.js';
 import type { FormatRegistryInterface } from './format-registry.js';
-import type { JSONSchema7Definition as JsonSchemaType } from 'json-schema';
+import type { JSONSchema7Definition } from 'json-schema';
 
 export interface GraphEngineInterface {
   check(value: unknown, pointer?: string): boolean;
@@ -15,9 +15,9 @@ export interface GraphEngineInterface {
     overrides?: Partial<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'lookupSchema'>>
   ): GraphExecutionResultInterface;
   readonly 'formatRegistry': FormatRegistryInterface;
-  hasCustomKeywords(): boolean;
+  hasRegisteredCustomKeywords(): boolean;
   keywords(): KeywordDefinitionInterface[];
-  readonly 'rootSchema': JsonSchemaType;
+  readonly 'rootSchema': JSONSchema7Definition;
   rootSchemaId(): string | undefined;
   schemaLookup(): ((schemaId: string) => Record<string, unknown> | undefined) | undefined;
 }

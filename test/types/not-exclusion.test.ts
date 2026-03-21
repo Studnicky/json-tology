@@ -154,6 +154,7 @@ type SimplifyNotType<T> = { [K in keyof T]: T[K] } & {};
 // Test: enum base + const negation on object property
 type TestEnumNot = InferWithNotType<typeof _SchemaWithEnumAndNot, typeof _SchemaWithEnumAndNot>;
 type EnumNotCheck = Expect<Equal<TestEnumNot, { readonly 'role': 'editor' | 'viewer' }>>;
+void _SchemaWithEnumAndNot;
 
 // Test: wide string base + const negation — no-op (expected)
 const _SchemaWithStringAndNot = {
@@ -167,6 +168,8 @@ const _SchemaWithStringAndNot = {
 
 type TestStringNot = InferWithNotType<typeof _SchemaWithStringAndNot, typeof _SchemaWithStringAndNot>;
 type StringNotCheck = Expect<Equal<TestStringNot, { readonly 'role': string }>>;
+void _SchemaWithStringAndNot;
+
 // Collapse: Exclude<string, 'admin'> = string. Correct — no narrowing possible.
 
 // ============================================================================
@@ -189,6 +192,8 @@ const _NullableWithNot = {
     'null'
   ]
 } as const;
+
+void _NullableWithNot;
 
 // With InferWithNotType, this would produce: Exclude<string | null, null> = string
 

@@ -44,14 +44,32 @@ export class FormatRegistry implements FormatRegistryInterface {
 
   private readonly validators = new Map<string, (value: unknown) => boolean>();
 
+  /**
+   * Look up a format validator by name.
+   *
+   * @param name - Format name (e.g. "email", "uri", "int32")
+   * @returns Validator function, or undefined if the format is not registered
+   */
   get(name: string): ((value: unknown) => boolean) | undefined {
     return this.validators.get(name);
   }
 
+  /**
+   * Check whether a format validator is registered under the given name.
+   *
+   * @param name - Format name to check
+   * @returns True if the format is registered
+   */
   has(name: string): boolean {
     return this.validators.has(name);
   }
 
+  /**
+   * Register a format validator under the given name, replacing any previous validator.
+   *
+   * @param name - Format name to register
+   * @param validator - Validation function that returns true when the value matches the format
+   */
   register(name: string, validator: (value: unknown) => boolean): void {
     this.validators.set(name, validator);
   }

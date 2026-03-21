@@ -121,16 +121,8 @@ function ifThenElseSchema(): Record<string, unknown> {
 // Test suites
 // ---------------------------------------------------------------------------
 
-void describe('Compiler conformance: basic types', () => {
-  for (const type of [
-    'string',
-    'number',
-    'integer',
-    'boolean',
-    'null',
-    'array',
-    'object'
-  ] as const) {
+void describe('Compiler conformance: basic types and multiple type unions', () => {
+  void it('validates all basic types and [string, null] union', () => {
     const validValues: Record<string, unknown> = {
       'array': [
         1,
@@ -154,377 +146,769 @@ void describe('Compiler conformance: basic types', () => {
       'string': 123
     };
 
-    void it(`accepts valid ${type}`, () => {
+    for (const type of [
+      'string',
+      'number',
+      'integer',
+      'boolean',
+      'null',
+      'array',
+      'object'
+    ] as const) {
       assertConformance({
         '$id': id(),
         'type': type
       }, validValues[type], true);
-    });
 
-    void it(`rejects invalid ${type}`, () => {
       assertConformance({
         '$id': id(),
         'type': type
       }, invalidValues[type], false);
-    });
-  }
-});
+    }
 
-void describe('Compiler conformance: multiple types', () => {
-  void it('accepts string for [string, null]', () => {
-    assertConformance({
-      '$id': id(),
-      'type': [
-        'string',
-        'null'
-      ]
-    }, 'hello', true);
-  });
-
-  void it('accepts null for [string, null]', () => {
-    assertConformance({
-      '$id': id(),
-      'type': [
-        'string',
-        'null'
-      ]
-    }, null, true);
-  });
-
-  void it('rejects number for [string, null]', () => {
-    assertConformance({
-      '$id': id(),
-      'type': [
-        'string',
-        'null'
-      ]
-    }, 42, false);
+    // multiple types: [string, null] union
+    for (const [
+      data,
+      valid
+    ] of [
+        [
+          'hello',
+          true
+        ],
+        [
+          null,
+          true
+        ],
+        [
+          42,
+          false
+        ]
+      ] as Array<[unknown, boolean]>) {
+      assertConformance({
+        '$id': id(),
+        'type': [
+          'string',
+          'null'
+        ]
+      }, data, valid);
+    }
   });
 });
 
-void describe('Compiler conformance: required properties', () => {
-  void it('accepts object with required property', () => {
-    const testSchema = requiredPropsSchema();
+void describe('Compiler conformance: object constraints', () => {
+  void it('validates required, additionalProperties, property count, and patternProperties', () => {
+    // required properties
+    for (const [
+      data,
+      valid
+    ] of [
+        [
+          { 'name': 'Alice' },
+          true
+        ],
+        [
+          { 'age': 30 },
+          false
+        ]
+      ] as Array<[unknown, boolean]>) {
+      assertConformance(requiredPropsSchema(), data, valid);
+    }
 
-    assertConformance(testSchema, { 'name': 'Alice' }, true);
-  });
-
-  void it('rejects object missing required property', () => {
-    const testSchema = requiredPropsSchema();
-
-    assertConformance(testSchema, { 'age': 30 }, false);
-  });
-});
-
-void describe('Compiler conformance: string constraints', () => {
-  void it('accepts string matching pattern', () => {
-    assertConformance({
-      '$id': id(),
-      'pattern': '^[a-z]+$',
-      'type': 'string'
-    }, 'hello', true);
-  });
-
-  void it('rejects string not matching pattern', () => {
-    assertConformance({
-      '$id': id(),
-      'pattern': '^[a-z]+$',
-      'type': 'string'
-    }, 'Hello', false);
-  });
-
-  void it('accepts string within length bounds', () => {
-    assertConformance({
-      '$id': id(),
-      'maxLength': 5,
-      'minLength': 2,
-      'type': 'string'
-    }, 'abc', true);
-  });
-
-  void it('rejects string too short', () => {
-    assertConformance({
-      '$id': id(),
-      'maxLength': 5,
-      'minLength': 2,
-      'type': 'string'
-    }, 'a', false);
-  });
-
-  void it('rejects string too long', () => {
-    assertConformance({
-      '$id': id(),
-      'maxLength': 5,
-      'minLength': 2,
-      'type': 'string'
-    }, 'abcdef', false);
-  });
-});
-
-void describe('Compiler conformance: numeric constraints', () => {
-  void it('accepts number within range', () => {
-    assertConformance({
-      '$id': id(),
-      'maximum': 100,
-      'minimum': 0,
-      'type': 'number'
-    }, 50, true);
-  });
-
-  void it('rejects number below minimum', () => {
-    assertConformance({
-      '$id': id(),
-      'maximum': 100,
-      'minimum': 0,
-      'type': 'number'
-    }, -1, false);
-  });
-
-  void it('rejects number above maximum', () => {
-    assertConformance({
-      '$id': id(),
-      'maximum': 100,
-      'minimum': 0,
-      'type': 'number'
-    }, 101, false);
-  });
-
-  void it('accepts number at exclusive boundary', () => {
-    assertConformance({
-      '$id': id(),
-      'exclusiveMinimum': 0,
-      'type': 'number'
-    }, 1, true);
-  });
-
-  void it('rejects number at exclusive boundary', () => {
-    assertConformance({
-      '$id': id(),
-      'exclusiveMinimum': 0,
-      'type': 'number'
-    }, 0, false);
-  });
-
-  void it('validates multipleOf', () => {
-    assertConformance({
-      '$id': id(),
-      'multipleOf': 3,
-      'type': 'number'
-    }, 9, true);
-  });
-
-  void it('rejects non-multipleOf', () => {
-    assertConformance({
-      '$id': id(),
-      'multipleOf': 3,
-      'type': 'number'
-    }, 10, false);
-  });
-});
-
-void describe('Compiler conformance: enum and const', () => {
-  void it('accepts value in enum', () => {
-    assertConformance({
-      '$id': id(),
-      'enum': [
-        'red',
-        'green',
-        'blue'
-      ]
-    }, 'green', true);
-  });
-
-  void it('rejects value not in enum', () => {
-    assertConformance({
-      '$id': id(),
-      'enum': [
-        'red',
-        'green',
-        'blue'
-      ]
-    }, 'yellow', false);
-  });
-
-  void it('accepts matching const', () => {
-    assertConformance({
-      '$id': id(),
-      'const': 42
-    }, 42, true);
-  });
-
-  void it('rejects non-matching const', () => {
-    assertConformance({
-      '$id': id(),
-      'const': 42
-    }, 43, false);
-  });
-});
-
-void describe('Compiler conformance: allOf', () => {
-  void it('accepts data matching all subschemas', () => {
-    const partAId = id();
-    const partBId = id();
-    const partA = {
-      '$id': partAId,
-      'properties': { 'a': { 'type': 'string' } },
-      'required': ['a'],
-      'type': 'object'
-    };
-    const partB = {
-      '$id': partBId,
-      'properties': { 'b': { 'type': 'number' } },
-      'required': ['b'],
-      'type': 'object'
-    };
-
-    assertConformance({
-      '$id': id(),
-      'allOf': [
-        { '$ref': partAId },
-        { '$ref': partBId }
-      ]
-    }, {
-      'a': 'hello',
-      'b': 42
-    }, true, [
-      partA,
-      partB
-    ]);
-  });
-
-  void it('rejects data not matching all subschemas', () => {
-    const partAId = id();
-    const partBId = id();
-    const partA = {
-      '$id': partAId,
-      'properties': { 'a': { 'type': 'string' } },
-      'required': ['a'],
-      'type': 'object'
-    };
-    const partB = {
-      '$id': partBId,
-      'properties': { 'b': { 'type': 'number' } },
-      'required': ['b'],
-      'type': 'object'
-    };
-
-    assertConformance({
-      '$id': id(),
-      'allOf': [
-        { '$ref': partAId },
-        { '$ref': partBId }
-      ]
-    }, { 'a': 'hello' }, false, [
-      partA,
-      partB
-    ]);
-  });
-});
-
-void describe('Compiler conformance: anyOf', () => {
-  void it('accepts data matching one subschema', () => {
-    assertConformance({
-      '$id': id(),
-      'anyOf': [
-        { 'type': 'string' },
-        { 'type': 'number' }
-      ]
-    }, 'hello', true);
-  });
-
-  void it('rejects data matching no subschema', () => {
-    assertConformance({
-      '$id': id(),
-      'anyOf': [
-        { 'type': 'string' },
-        { 'type': 'number' }
-      ]
-    }, true, false);
-  });
-});
-
-void describe('Compiler conformance: oneOf', () => {
-  void it('accepts data matching exactly one subschema', () => {
-    assertConformance({
-      '$id': id(),
-      'oneOf': [
-        { 'type': 'string' },
-        { 'type': 'number' }
-      ]
-    }, 42, true);
-  });
-
-  void it('rejects data matching zero subschemas', () => {
-    assertConformance({
-      '$id': id(),
-      'oneOf': [
-        { 'type': 'string' },
-        { 'type': 'number' }
-      ]
-    }, true, false);
-  });
-
-  void it('rejects data matching multiple subschemas', () => {
-    assertConformance({
-      '$id': id(),
-      'oneOf': [
+    // additionalProperties
+    const additionalPropsScenarios: Array<[Record<string, unknown>, unknown, boolean]> = [
+      [
         {
+          '$id': id(),
+          'additionalProperties': false,
+          'properties': { 'a': { 'type': 'string' } },
+          'type': 'object'
+        },
+        { 'a': 'hello' },
+        true
+      ],
+      [
+        {
+          '$id': id(),
+          'additionalProperties': false,
+          'properties': { 'a': { 'type': 'string' } },
+          'type': 'object'
+        },
+        {
+          'a': 'hello',
+          'b': 'extra'
+        },
+        false
+      ],
+      [
+        {
+          '$id': id(),
+          'additionalProperties': { 'type': 'number' },
+          'properties': { 'a': { 'type': 'string' } },
+          'type': 'object'
+        },
+        {
+          'a': 'hello',
+          'b': 42
+        },
+        true
+      ],
+      [
+        {
+          '$id': id(),
+          'additionalProperties': { 'type': 'number' },
+          'properties': { 'a': { 'type': 'string' } },
+          'type': 'object'
+        },
+        {
+          'a': 'hello',
+          'b': 'not a number'
+        },
+        false
+      ]
+    ];
+
+    for (const [
+      schema,
+      data,
+      valid
+    ] of additionalPropsScenarios) {
+      assertConformance(schema, data, valid);
+    }
+
+    // property count constraints
+    const propCountScenarios: Array<[Record<string, unknown>, unknown, boolean]> = [
+      [
+        {
+          '$id': id(),
+          'minProperties': 2,
+          'type': 'object'
+        },
+        {
+          'a': 1,
+          'b': 2
+        },
+        true
+      ],
+      [
+        {
+          '$id': id(),
+          'minProperties': 2,
+          'type': 'object'
+        },
+        { 'a': 1 },
+        false
+      ],
+      [
+        {
+          '$id': id(),
+          'maxProperties': 2,
+          'type': 'object'
+        },
+        {
+          'a': 1,
+          'b': 2
+        },
+        true
+      ],
+      [
+        {
+          '$id': id(),
+          'maxProperties': 2,
+          'type': 'object'
+        },
+        {
+          'a': 1,
+          'b': 2,
+          'c': 3
+        },
+        false
+      ]
+    ];
+
+    for (const [
+      schema,
+      data,
+      valid
+    ] of propCountScenarios) {
+      assertConformance(schema, data, valid);
+    }
+
+    // patternProperties
+    const patternPropsScenarios: Array<[Record<string, unknown>, unknown, boolean]> = [
+      [
+        {
+          '$id': id(),
+          'patternProperties': {
+            '^N_': { 'type': 'number' },
+            '^S_': { 'type': 'string' }
+          },
+          'type': 'object'
+        },
+        {
+          'N_age': 30,
+          'S_name': 'Alice'
+        },
+        true
+      ],
+      [
+        {
+          '$id': id(),
+          'patternProperties': { '^S_': { 'type': 'string' } },
+          'type': 'object'
+        },
+        { 'S_name': 42 },
+        false
+      ]
+    ];
+
+    for (const [
+      schema,
+      data,
+      valid
+    ] of patternPropsScenarios) {
+      assertConformance(schema, data, valid);
+    }
+  });
+});
+
+void describe('Compiler conformance: string and numeric constraints', () => {
+  void it('validates pattern, length, range, exclusive, and multipleOf', () => {
+    // string constraints
+    const stringScenarios: Array<[Record<string, unknown>, unknown, boolean]> = [
+      [
+        {
+          '$id': id(),
+          'pattern': '^[a-z]+$',
+          'type': 'string'
+        },
+        'hello',
+        true
+      ],
+      [
+        {
+          '$id': id(),
+          'pattern': '^[a-z]+$',
+          'type': 'string'
+        },
+        'Hello',
+        false
+      ],
+      [
+        {
+          '$id': id(),
+          'maxLength': 5,
+          'minLength': 2,
+          'type': 'string'
+        },
+        'abc',
+        true
+      ],
+      [
+        {
+          '$id': id(),
+          'maxLength': 5,
+          'minLength': 2,
+          'type': 'string'
+        },
+        'a',
+        false
+      ],
+      [
+        {
+          '$id': id(),
+          'maxLength': 5,
+          'minLength': 2,
+          'type': 'string'
+        },
+        'abcdef',
+        false
+      ]
+    ];
+
+    for (const [
+      schema,
+      data,
+      valid
+    ] of stringScenarios) {
+      assertConformance(schema, data, valid);
+    }
+
+    // numeric constraints
+    const numericScenarios: Array<[Record<string, unknown>, unknown, boolean]> = [
+      [
+        {
+          '$id': id(),
+          'maximum': 100,
           'minimum': 0,
           'type': 'number'
         },
+        50,
+        true
+      ],
+      [
         {
+          '$id': id(),
           'maximum': 100,
+          'minimum': 0,
           'type': 'number'
-        }
+        },
+        -1,
+        false
+      ],
+      [
+        {
+          '$id': id(),
+          'maximum': 100,
+          'minimum': 0,
+          'type': 'number'
+        },
+        101,
+        false
+      ],
+      [
+        {
+          '$id': id(),
+          'exclusiveMinimum': 0,
+          'type': 'number'
+        },
+        1,
+        true
+      ],
+      [
+        {
+          '$id': id(),
+          'exclusiveMinimum': 0,
+          'type': 'number'
+        },
+        0,
+        false
+      ],
+      [
+        {
+          '$id': id(),
+          'multipleOf': 3,
+          'type': 'number'
+        },
+        9,
+        true
+      ],
+      [
+        {
+          '$id': id(),
+          'multipleOf': 3,
+          'type': 'number'
+        },
+        10,
+        false
       ]
-    }, 50, false);
+    ];
+
+    for (const [
+      schema,
+      data,
+      valid
+    ] of numericScenarios) {
+      assertConformance(schema, data, valid);
+    }
   });
 });
 
-void describe('Compiler conformance: not', () => {
-  void it('accepts data not matching inner schema', () => {
-    assertConformance({
-      '$id': id(),
-      'not': { 'type': 'string' }
-    }, 42, true);
-  });
+void describe('Compiler conformance: enum, const, and composition keywords', () => {
+  void it('validates enum, const, allOf, anyOf, oneOf, and not', () => {
+    // enum and const
+    const enumConstScenarios: Array<[Record<string, unknown>, unknown, boolean]> = [
+      [
+        {
+          '$id': id(),
+          'enum': [
+            'red',
+            'green',
+            'blue'
+          ]
+        },
+        'green',
+        true
+      ],
+      [
+        {
+          '$id': id(),
+          'enum': [
+            'red',
+            'green',
+            'blue'
+          ]
+        },
+        'yellow',
+        false
+      ],
+      [
+        {
+          '$id': id(),
+          'const': 42
+        },
+        42,
+        true
+      ],
+      [
+        {
+          '$id': id(),
+          'const': 42
+        },
+        43,
+        false
+      ]
+    ];
 
-  void it('rejects data matching inner schema', () => {
-    assertConformance({
-      '$id': id(),
-      'not': { 'type': 'string' }
-    }, 'hello', false);
+    for (const [
+      schema,
+      data,
+      valid
+    ] of enumConstScenarios) {
+      assertConformance(schema, data, valid);
+    }
+
+    // allOf
+    for (const [
+      data,
+      valid
+    ] of [
+        [
+          {
+            'a': 'hello',
+            'b': 42
+          },
+          true
+        ],
+        [
+          { 'a': 'hello' },
+          false
+        ]
+      ] as Array<[unknown, boolean]>) {
+      const partAId = id();
+      const partBId = id();
+      const partA = {
+        '$id': partAId,
+        'properties': { 'a': { 'type': 'string' } },
+        'required': ['a'],
+        'type': 'object'
+      };
+      const partB = {
+        '$id': partBId,
+        'properties': { 'b': { 'type': 'number' } },
+        'required': ['b'],
+        'type': 'object'
+      };
+
+      assertConformance({
+        '$id': id(),
+        'allOf': [
+          { '$ref': partAId },
+          { '$ref': partBId }
+        ]
+      }, data, valid, [
+        partA,
+        partB
+      ]);
+    }
+
+    // anyOf
+    for (const [
+      data,
+      valid
+    ] of [
+        [
+          'hello',
+          true
+        ],
+        [
+          true,
+          false
+        ]
+      ] as Array<[unknown, boolean]>) {
+      assertConformance({
+        '$id': id(),
+        'anyOf': [
+          { 'type': 'string' },
+          { 'type': 'number' }
+        ]
+      }, data, valid);
+    }
+
+    // oneOf
+    const oneOfScenarios: Array<[Record<string, unknown>, unknown, boolean]> = [
+      [
+        {
+          '$id': id(),
+          'oneOf': [
+            { 'type': 'string' },
+            { 'type': 'number' }
+          ]
+        },
+        42,
+        true
+      ],
+      [
+        {
+          '$id': id(),
+          'oneOf': [
+            { 'type': 'string' },
+            { 'type': 'number' }
+          ]
+        },
+        true,
+        false
+      ],
+      [
+        {
+          '$id': id(),
+          'oneOf': [
+            {
+              'minimum': 0,
+              'type': 'number'
+            },
+            {
+              'maximum': 100,
+              'type': 'number'
+            }
+          ]
+        },
+        50,
+        false
+      ]
+    ];
+
+    for (const [
+      schema,
+      data,
+      valid
+    ] of oneOfScenarios) {
+      assertConformance(schema, data, valid);
+    }
+
+    // not
+    for (const [
+      data,
+      valid
+    ] of [
+        [
+          42,
+          true
+        ],
+        [
+          'hello',
+          false
+        ]
+      ] as Array<[unknown, boolean]>) {
+      assertConformance({
+        '$id': id(),
+        'not': { 'type': 'string' }
+      }, data, valid);
+    }
   });
 });
 
-void describe('Compiler conformance: $ref with $defs', () => {
-  void it('accepts data matching $ref target', () => {
-    assertConformance({
-      '$defs': {
-        'Name': {
-          'minLength': 1,
-          'type': 'string'
-        }
-      },
-      '$id': id(),
-      '$ref': '#/$defs/Name'
-    }, 'Alice', true);
-  });
+void describe('Compiler conformance: array keywords and contains', () => {
+  void it('validates array constraints and contains', () => {
+    // array keywords
+    const arrayScenarios: Array<[Record<string, unknown>, unknown, boolean]> = [
+      // items schema
+      [
+        {
+          '$id': id(),
+          'items': { 'type': 'number' },
+          'type': 'array'
+        },
+        [
+          1,
+          2,
+          3
+        ],
+        true
+      ],
+      [
+        {
+          '$id': id(),
+          'items': { 'type': 'number' },
+          'type': 'array'
+        },
+        [
+          1,
+          'two',
+          3
+        ],
+        false
+      ],
+      // prefixItems
+      [
+        {
+          '$id': id(),
+          'prefixItems': [
+            { 'type': 'string' },
+            { 'type': 'number' }
+          ],
+          'type': 'array'
+        },
+        [
+          'hello',
+          42
+        ],
+        true
+      ],
+      [
+        {
+          '$id': id(),
+          'prefixItems': [
+            { 'type': 'string' },
+            { 'type': 'number' }
+          ],
+          'type': 'array'
+        },
+        [
+          42,
+          'hello'
+        ],
+        false
+      ],
+      // minItems / maxItems
+      [
+        {
+          '$id': id(),
+          'maxItems': 3,
+          'minItems': 1,
+          'type': 'array'
+        },
+        [
+          1,
+          2
+        ],
+        true
+      ],
+      [
+        {
+          '$id': id(),
+          'maxItems': 3,
+          'minItems': 1,
+          'type': 'array'
+        },
+        [],
+        false
+      ],
+      [
+        {
+          '$id': id(),
+          'maxItems': 3,
+          'minItems': 1,
+          'type': 'array'
+        },
+        [
+          1,
+          2,
+          3,
+          4
+        ],
+        false
+      ],
+      // uniqueItems
+      [
+        {
+          '$id': id(),
+          'type': 'array',
+          'uniqueItems': true
+        },
+        [
+          1,
+          2,
+          3
+        ],
+        true
+      ],
+      [
+        {
+          '$id': id(),
+          'type': 'array',
+          'uniqueItems': true
+        },
+        [
+          1,
+          2,
+          2
+        ],
+        false
+      ]
+    ];
 
-  void it('rejects data not matching $ref target', () => {
-    assertConformance({
-      '$defs': {
-        'Name': {
-          'minLength': 1,
-          'type': 'string'
-        }
-      },
-      '$id': id(),
-      '$ref': '#/$defs/Name'
-    }, '', false);
-  });
+    for (const [
+      schema,
+      data,
+      valid
+    ] of arrayScenarios) {
+      assertConformance(schema, data, valid);
+    }
 
-  void it('resolves cross-schema $ref', () => {
+    // contains
+    for (const [
+      data,
+      valid
+    ] of [
+        [
+          [
+            1,
+            2,
+            15,
+            3
+          ],
+          true
+        ],
+        [
+          [
+            1,
+            2,
+            3
+          ],
+          false
+        ]
+      ] as Array<[unknown, boolean]>) {
+      assertConformance({
+        '$id': id(),
+        'contains': {
+          'minimum': 10,
+          'type': 'number'
+        },
+        'type': 'array'
+      }, data, valid);
+    }
+  });
+});
+
+void describe('Compiler conformance: $ref, if/then/else, and dependentRequired', () => {
+  void it('validates $ref, conditionals, dependentRequired, and nested objects', () => {
+    // $ref with $defs (local)
+    for (const [
+      data,
+      valid
+    ] of [
+        [
+          'Alice',
+          true
+        ],
+        [
+          '',
+          false
+        ]
+      ] as Array<[unknown, boolean]>) {
+      assertConformance({
+        '$defs': {
+          'Name': {
+            'minLength': 1,
+            'type': 'string'
+          }
+        },
+        '$id': id(),
+        '$ref': '#/$defs/Name'
+      }, data, valid);
+    }
+
+    // $ref cross-schema
     const depId = id();
     const dep = {
       '$id': depId,
@@ -536,613 +920,300 @@ void describe('Compiler conformance: $ref with $defs', () => {
       '$id': id(),
       '$ref': depId
     }, 'ok', true, [dep]);
-  });
-});
 
-void describe('Compiler conformance: if/then/else', () => {
-  void it('applies then branch when if matches', () => {
-    const testSchema = ifThenElseSchema();
-
-    assertConformance(testSchema, {
-      'kind': 'number',
-      'value': 42
-    }, true);
-  });
-
-  void it('rejects when then branch fails', () => {
-    const testSchema = ifThenElseSchema();
-
-    assertConformance(testSchema, {
-      'kind': 'number',
-      'value': 'hello'
-    }, false);
-  });
-
-  void it('applies else branch when if does not match', () => {
-    const testSchema = ifThenElseSchema();
-
-    assertConformance(testSchema, {
-      'kind': 'text',
-      'value': 'hello'
-    }, true);
-  });
-
-  void it('rejects when else branch fails', () => {
-    const testSchema = ifThenElseSchema();
-
-    assertConformance(testSchema, {
-      'kind': 'text',
-      'value': 42
-    }, false);
-  });
-});
-
-void describe('Compiler conformance: array keywords', () => {
-  void it('validates items schema', () => {
-    assertConformance({
-      '$id': id(),
-      'items': { 'type': 'number' },
-      'type': 'array'
-    }, [
-      1,
-      2,
-      3
-    ], true);
-  });
-
-  void it('rejects invalid items', () => {
-    assertConformance({
-      '$id': id(),
-      'items': { 'type': 'number' },
-      'type': 'array'
-    }, [
-      1,
-      'two',
-      3
-    ], false);
-  });
-
-  void it('validates prefixItems', () => {
-    assertConformance({
-      '$id': id(),
-      'prefixItems': [
-        { 'type': 'string' },
-        { 'type': 'number' }
+    // if/then/else
+    const ifThenElseScenarios: Array<[unknown, boolean]> = [
+      [
+        {
+          'kind': 'number',
+          'value': 42
+        },
+        true
       ],
-      'type': 'array'
-    }, [
-      'hello',
-      42
-    ], true);
-  });
-
-  void it('rejects invalid prefixItems', () => {
-    assertConformance({
-      '$id': id(),
-      'prefixItems': [
-        { 'type': 'string' },
-        { 'type': 'number' }
+      [
+        {
+          'kind': 'number',
+          'value': 'hello'
+        },
+        false
       ],
-      'type': 'array'
-    }, [
-      42,
-      'hello'
-    ], false);
-  });
-
-  void it('validates minItems and maxItems', () => {
-    assertConformance({
-      '$id': id(),
-      'maxItems': 3,
-      'minItems': 1,
-      'type': 'array'
-    }, [
-      1,
-      2
-    ], true);
-  });
-
-  void it('rejects array below minItems', () => {
-    assertConformance({
-      '$id': id(),
-      'maxItems': 3,
-      'minItems': 1,
-      'type': 'array'
-    }, [], false);
-  });
-
-  void it('rejects array above maxItems', () => {
-    assertConformance({
-      '$id': id(),
-      'maxItems': 3,
-      'minItems': 1,
-      'type': 'array'
-    }, [
-      1,
-      2,
-      3,
-      4
-    ], false);
-  });
-
-  void it('validates uniqueItems', () => {
-    assertConformance({
-      '$id': id(),
-      'type': 'array',
-      'uniqueItems': true
-    }, [
-      1,
-      2,
-      3
-    ], true);
-  });
-
-  void it('rejects non-unique items', () => {
-    assertConformance({
-      '$id': id(),
-      'type': 'array',
-      'uniqueItems': true
-    }, [
-      1,
-      2,
-      2
-    ], false);
-  });
-});
-
-void describe('Compiler conformance: additionalProperties', () => {
-  void it('accepts object with no additional properties', () => {
-    assertConformance({
-      '$id': id(),
-      'additionalProperties': false,
-      'properties': { 'a': { 'type': 'string' } },
-      'type': 'object'
-    }, { 'a': 'hello' }, true);
-  });
-
-  void it('rejects object with additional properties', () => {
-    assertConformance({
-      '$id': id(),
-      'additionalProperties': false,
-      'properties': { 'a': { 'type': 'string' } },
-      'type': 'object'
-    }, {
-      'a': 'hello',
-      'b': 'extra'
-    }, false);
-  });
-
-  void it('validates typed additionalProperties', () => {
-    assertConformance({
-      '$id': id(),
-      'additionalProperties': { 'type': 'number' },
-      'properties': { 'a': { 'type': 'string' } },
-      'type': 'object'
-    }, {
-      'a': 'hello',
-      'b': 42
-    }, true);
-  });
-
-  void it('rejects wrong typed additionalProperties', () => {
-    assertConformance({
-      '$id': id(),
-      'additionalProperties': { 'type': 'number' },
-      'properties': { 'a': { 'type': 'string' } },
-      'type': 'object'
-    }, {
-      'a': 'hello',
-      'b': 'not a number'
-    }, false);
-  });
-});
-
-void describe('Compiler conformance: format validation', () => {
-  void it('accepts valid email format', () => {
-    assertConformance({
-      '$id': id(),
-      'format': 'email',
-      'type': 'string'
-    }, 'user@example.com', true);
-  });
-
-  void it('accepts valid uri format', () => {
-    assertConformance({
-      '$id': id(),
-      'format': 'uri',
-      'type': 'string'
-    }, 'https://example.com', true);
-  });
-});
-
-void describe('Compiler conformance: nested objects via $ref', () => {
-  void it('accepts valid nested object', () => {
-    const addressId = id();
-    const address = {
-      '$id': addressId,
-      'properties': {
-        'street': { 'type': 'string' },
-        'zip': {
-          'pattern': '^\\d{5}$',
-          'type': 'string'
-        }
-      },
-      'required': [
-        'street',
-        'zip'
+      [
+        {
+          'kind': 'text',
+          'value': 'hello'
+        },
+        true
       ],
-      'type': 'object'
-    };
+      [
+        {
+          'kind': 'text',
+          'value': 42
+        },
+        false
+      ]
+    ];
 
-    assertConformance({
-      '$id': id(),
-      'properties': { 'address': { '$ref': addressId } },
-      'required': ['address'],
-      'type': 'object'
-    }, {
-      'address': {
-        'street': '123 Main St',
-        'zip': '12345'
-      }
-    }, true, [address]);
-  });
-
-  void it('rejects invalid nested property', () => {
-    const addressId = id();
-    const address = {
-      '$id': addressId,
-      'properties': {
-        'street': { 'type': 'string' },
-        'zip': {
-          'pattern': '^\\d{5}$',
-          'type': 'string'
-        }
-      },
-      'required': [
-        'street',
-        'zip'
-      ],
-      'type': 'object'
-    };
-
-    assertConformance({
-      '$id': id(),
-      'properties': { 'address': { '$ref': addressId } },
-      'required': ['address'],
-      'type': 'object'
-    }, {
-      'address': {
-        'street': '123 Main St',
-        'zip': 'bad'
-      }
-    }, false, [address]);
-  });
-
-  void it('rejects missing nested required property', () => {
-    const addressId = id();
-    const address = {
-      '$id': addressId,
-      'properties': {
-        'street': { 'type': 'string' },
-        'zip': {
-          'pattern': '^\\d{5}$',
-          'type': 'string'
-        }
-      },
-      'required': [
-        'street',
-        'zip'
-      ],
-      'type': 'object'
-    };
-
-    assertConformance({
-      '$id': id(),
-      'properties': { 'address': { '$ref': addressId } },
-      'required': ['address'],
-      'type': 'object'
-    }, { 'address': { 'street': '123 Main St' } }, false, [address]);
-  });
-});
-
-void describe('Compiler conformance: property count constraints', () => {
-  void it('validates minProperties', () => {
-    assertConformance({
-      '$id': id(),
-      'minProperties': 2,
-      'type': 'object'
-    }, {
-      'a': 1,
-      'b': 2
-    }, true);
-  });
-
-  void it('rejects below minProperties', () => {
-    assertConformance({
-      '$id': id(),
-      'minProperties': 2,
-      'type': 'object'
-    }, { 'a': 1 }, false);
-  });
-
-  void it('validates maxProperties', () => {
-    assertConformance({
-      '$id': id(),
-      'maxProperties': 2,
-      'type': 'object'
-    }, {
-      'a': 1,
-      'b': 2
-    }, true);
-  });
-
-  void it('rejects above maxProperties', () => {
-    assertConformance({
-      '$id': id(),
-      'maxProperties': 2,
-      'type': 'object'
-    }, {
-      'a': 1,
-      'b': 2,
-      'c': 3
-    }, false);
-  });
-});
-
-void describe('Compiler conformance: patternProperties', () => {
-  void it('accepts matching pattern properties', () => {
-    assertConformance({
-      '$id': id(),
-      'patternProperties': {
-        '^N_': { 'type': 'number' },
-        '^S_': { 'type': 'string' }
-      },
-      'type': 'object'
-    }, {
-      'N_age': 30,
-      'S_name': 'Alice'
-    }, true);
-  });
-
-  void it('rejects non-matching pattern properties', () => {
-    assertConformance({
-      '$id': id(),
-      'patternProperties': { '^S_': { 'type': 'string' } },
-      'type': 'object'
-    }, { 'S_name': 42 }, false);
-  });
-});
-
-void describe('Compiler conformance: contains', () => {
-  void it('accepts array containing matching item', () => {
-    assertConformance({
-      '$id': id(),
-      'contains': {
-        'minimum': 10,
-        'type': 'number'
-      },
-      'type': 'array'
-    }, [
-      1,
-      2,
-      15,
-      3
-    ], true);
-  });
-
-  void it('rejects array with no matching item', () => {
-    assertConformance({
-      '$id': id(),
-      'contains': {
-        'minimum': 10,
-        'type': 'number'
-      },
-      'type': 'array'
-    }, [
-      1,
-      2,
-      3
-    ], false);
-  });
-});
-
-void describe('Compiler conformance: custom keywords', () => {
-  const evenKeyword = {
-    'keyword': 'evenNumber',
-    'type': 'number' as const,
-    'validate': (schemaValue: unknown, data: unknown) => {
-      if (schemaValue !== true) {
-        return true;
-      }
-
-      return typeof data === 'number' && data % 2 === 0;
+    for (const [
+      data,
+      valid
+    ] of ifThenElseScenarios) {
+      assertConformance(ifThenElseSchema(), data, valid);
     }
-  };
 
-  void it('compiled and interpreted agree on custom keyword pass', () => {
-    const registry = new SchemaRegistry({ 'keywords': [evenKeyword] });
-    const schema = {
-      '$id': id(),
-      'evenNumber': true,
-      'type': 'integer'
-    };
+    // dependentRequired
+    for (const [
+      data,
+      valid
+    ] of [
+        [
+          {
+            'a': 'hello',
+            'b': 'world'
+          },
+          true
+        ],
+        [
+          { 'a': 'hello' },
+          false
+        ]
+      ] as Array<[unknown, boolean]>) {
+      assertConformance({
+        '$id': id(),
+        'dependentRequired': { 'a': ['b'] },
+        'properties': {
+          'a': { 'type': 'string' },
+          'b': { 'type': 'string' }
+        },
+        'type': 'object'
+      }, data, valid);
+    }
 
-    registry.register(schema);
-    const schemaId = schema.$id;
+    // nested objects via $ref
+    const nestedScenarios: Array<[unknown, boolean]> = [
+      [
+        {
+          'address': {
+            'street': '123 Main St',
+            'zip': '12345'
+          }
+        },
+        true
+      ],
+      [
+        {
+          'address': {
+            'street': '123 Main St',
+            'zip': 'bad'
+          }
+        },
+        false
+      ],
+      [
+        { 'address': { 'street': '123 Main St' } },
+        false
+      ]
+    ];
 
-    const compiledErrors = registry.validate(schemaId, 4);
+    for (const [
+      data,
+      valid
+    ] of nestedScenarios) {
+      const addressId = id();
+      const address = {
+        '$id': addressId,
+        'properties': {
+          'street': { 'type': 'string' },
+          'zip': {
+            'pattern': '^\\d{5}$',
+            'type': 'string'
+          }
+        },
+        'required': [
+          'street',
+          'zip'
+        ],
+        'type': 'object'
+      };
 
-    assert.equal(compiledErrors.length, 0, 'compiled should accept even number');
-
-    const engine = registry.engine(schema);
-    const engineResult = engine.execute(4, '', { 'collectErrors': true });
-
-    assert.equal(engineResult.valid, true, 'engine should accept even number');
-  });
-
-  void it('compiled and interpreted agree on custom keyword reject', () => {
-    const registry = new SchemaRegistry({ 'keywords': [evenKeyword] });
-    const schema = {
-      '$id': id(),
-      'evenNumber': true,
-      'type': 'integer'
-    };
-
-    registry.register(schema);
-    const schemaId = schema.$id;
-
-    const compiledErrors = registry.validate(schemaId, 3);
-
-    assert.ok(compiledErrors.length > 0, 'compiled should reject odd number');
-
-    const engine = registry.engine(schema);
-    const engineResult = engine.execute(3, '', { 'collectErrors': true });
-
-    assert.equal(engineResult.valid, false, 'engine should reject odd number');
-  });
-
-  void it('custom keyword schema produces a compiled validator, not engine fallback', () => {
-    const registry = new SchemaRegistry({ 'keywords': [evenKeyword] });
-    const schema = {
-      '$id': id(),
-      'evenNumber': true,
-      'type': 'integer'
-    };
-
-    registry.register(schema);
-
-    // Access the compiled validator and assert it is truly compiled
-    const validator = registry.validator(schema.$id);
-
-    assert.equal(validator.compiled, true, 'custom keyword schema must be compiled, not engine fallback');
+      assertConformance({
+        '$id': id(),
+        'properties': { 'address': { '$ref': addressId } },
+        'required': ['address'],
+        'type': 'object'
+      }, data, valid, [address]);
+    }
   });
 });
 
-void describe('Compiler conformance: dependentRequired', () => {
-  void it('accepts when dependent required properties present', () => {
-    assertConformance({
-      '$id': id(),
-      'dependentRequired': { 'a': ['b'] },
-      'properties': {
-        'a': { 'type': 'string' },
-        'b': { 'type': 'string' }
-      },
-      'type': 'object'
-    }, {
-      'a': 'hello',
-      'b': 'world'
-    }, true);
-  });
-
-  void it('rejects when dependent required properties missing', () => {
-    assertConformance({
-      '$id': id(),
-      'dependentRequired': { 'a': ['b'] },
-      'properties': {
-        'a': { 'type': 'string' },
-        'b': { 'type': 'string' }
-      },
-      'type': 'object'
-    }, { 'a': 'hello' }, false);
-  });
-});
-
-void describe('Compiler conformance: discriminator mapping', () => {
-  const dogSchema = {
-    '$id': id(),
-    'properties': {
-      'breed': { 'type': 'string' },
-      'petType': { 'type': 'string' }
-    },
-    'required': [
-      'petType',
-      'breed'
-    ],
-    'type': 'object'
-  };
-
-  const catSchema = {
-    '$id': id(),
-    'properties': {
-      'color': { 'type': 'string' },
-      'petType': { 'type': 'string' }
-    },
-    'required': [
-      'petType',
-      'color'
-    ],
-    'type': 'object'
-  };
-
-  void it('accepts valid data dispatched via discriminator mapping', () => {
-    const petSchema = {
-      '$id': id(),
-      'discriminator': {
-        'mapping': {
-          'cat': catSchema.$id,
-          'dog': dogSchema.$id
+void describe('Compiler conformance: format and custom keywords', () => {
+  void it('validates format, custom keywords, and discriminator mapping', () => {
+    // format validation
+    const formatScenarios: Array<[Record<string, unknown>, unknown, boolean]> = [
+      [
+        {
+          '$id': id(),
+          'format': 'email',
+          'type': 'string'
         },
-        'propertyName': 'petType'
-      },
-      'oneOf': [
-        { '$ref': dogSchema.$id },
-        { '$ref': catSchema.$id }
+        'user@example.com',
+        true
+      ],
+      [
+        {
+          '$id': id(),
+          'format': 'uri',
+          'type': 'string'
+        },
+        'https://example.com',
+        true
       ]
+    ];
+
+    for (const [
+      schema,
+      data,
+      valid
+    ] of formatScenarios) {
+      assertConformance(schema, data, valid);
+    }
+
+    // custom keywords: compiled and interpreted agree
+    const evenKeyword = {
+      'keyword': 'evenNumber',
+      'type': 'number' as const,
+      'validate': (schemaValue: unknown, data: unknown) => {
+        if (schemaValue !== true) {
+          return true;
+        }
+
+        return typeof data === 'number' && data % 2 === 0;
+      }
     };
 
-    assertConformance(petSchema, {
-      'breed': 'poodle',
-      'petType': 'dog'
-    }, true, [
-      dogSchema,
-      catSchema
-    ]);
-  });
+    for (const [
+      data,
+      shouldPass
+    ] of [
+        [
+          4,
+          true
+        ],
+        [
+          3,
+          false
+        ]
+      ] as Array<[number, boolean]>) {
+      const registry = new SchemaRegistry({ 'keywords': [evenKeyword] });
+      const schema = {
+        '$id': id(),
+        'evenNumber': true,
+        'type': 'integer'
+      };
 
-  void it('rejects invalid data dispatched via discriminator mapping', () => {
-    const petSchema = {
-      '$id': id(),
-      'discriminator': {
-        'mapping': {
-          'cat': catSchema.$id,
-          'dog': dogSchema.$id
+      registry.register(schema);
+      const schemaId = schema.$id;
+
+      const compiledErrors = registry.validate(schemaId, data);
+
+      if (shouldPass) {
+        assert.equal(compiledErrors.length, 0, `compiled should accept ${data}`);
+      } else {
+        assert.ok(compiledErrors.length > 0, `compiled should reject ${data}`);
+      }
+
+      const engine = registry.engine(schema);
+      const engineResult = engine.execute(data, '', { 'collectErrors': true });
+
+      assert.equal(engineResult.valid, shouldPass, `engine should ${shouldPass ? 'accept' : 'reject'} ${data}`);
+    }
+
+    // custom keyword produces compiled validator, not engine fallback
+    {
+      const registry = new SchemaRegistry({ 'keywords': [evenKeyword] });
+      const schema = {
+        '$id': id(),
+        'evenNumber': true,
+        'type': 'integer'
+      };
+
+      registry.register(schema);
+
+      const validator = registry.validator(schema.$id);
+
+      assert.equal(validator.compiled, true, 'custom keyword schema must be compiled, not engine fallback');
+    }
+
+    // discriminator mapping
+    const discriminatorScenarios: Array<[unknown, boolean]> = [
+      [
+        {
+          'breed': 'poodle',
+          'petType': 'dog'
         },
-        'propertyName': 'petType'
-      },
-      'oneOf': [
-        { '$ref': dogSchema.$id },
-        { '$ref': catSchema.$id }
-      ]
-    };
-
-    assertConformance(petSchema, { 'petType': 'dog' }, false, [
-      dogSchema,
-      catSchema
-    ]);
-  });
-
-  void it('rejects unmapped discriminator value', () => {
-    const petSchema = {
-      '$id': id(),
-      'discriminator': {
-        'mapping': {
-          'cat': catSchema.$id,
-          'dog': dogSchema.$id
+        true
+      ],
+      [
+        { 'petType': 'dog' },
+        false
+      ],
+      [
+        {
+          'fins': 2,
+          'petType': 'fish'
         },
-        'propertyName': 'petType'
-      },
-      'oneOf': [
-        { '$ref': dogSchema.$id },
-        { '$ref': catSchema.$id }
+        false
       ]
-    };
+    ];
 
-    assertConformance(petSchema, {
-      'fins': 2,
-      'petType': 'fish'
-    }, false, [
-      dogSchema,
-      catSchema
-    ]);
+    for (const [
+      data,
+      valid
+    ] of discriminatorScenarios) {
+      const dogSchema = {
+        '$id': id(),
+        'properties': {
+          'breed': { 'type': 'string' },
+          'petType': { 'type': 'string' }
+        },
+        'required': [
+          'petType',
+          'breed'
+        ],
+        'type': 'object'
+      };
+
+      const catSchema = {
+        '$id': id(),
+        'properties': {
+          'color': { 'type': 'string' },
+          'petType': { 'type': 'string' }
+        },
+        'required': [
+          'petType',
+          'color'
+        ],
+        'type': 'object'
+      };
+
+      const petSchema = {
+        '$id': id(),
+        'discriminator': {
+          'mapping': {
+            'cat': catSchema.$id,
+            'dog': dogSchema.$id
+          },
+          'propertyName': 'petType'
+        },
+        'oneOf': [
+          { '$ref': dogSchema.$id },
+          { '$ref': catSchema.$id }
+        ]
+      };
+
+      assertConformance(petSchema, data, valid, [
+        dogSchema,
+        catSchema
+      ]);
+    }
   });
 });

@@ -8,6 +8,7 @@ import {
 import assert from 'node:assert/strict';
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 import { Value } from '../../src/modules/data/Value.js';
+import { Changeset } from '../../src/modules/data/Changeset.js';
 
 // ---------------------------------------------------------------------------
 // create
@@ -172,6 +173,12 @@ void describe('Value.clone() and Value.hash()', () => {
 
     assert.deepEqual(arrCopy, arr);
     assert.notEqual(arrCopy, arr);
+
+    // Primitives pass through
+    assert.equal(Value.clone(42), 42);
+    assert.equal(Value.clone('hello'), 'hello');
+    assert.equal(Value.clone(true), true);
+    assert.equal(Value.clone(null), null);
   });
 
   void it('hash is deterministic, order-independent, and type-sensitive', () => {
@@ -411,5 +418,239 @@ void describe('Value.clean()', () => {
 
     value.clean('urn:test:user', input);
     assert.ok('secret' in input);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// applyOp edge cases (folded from operations.test.ts)
+// ---------------------------------------------------------------------------
+
+void describe('Value.applyOp() edge cases', () => {
+  void it('handles root-level set/delete and array splice', () => {
+    // set at root replaces the whole value
+    assert.deepEqual(Value.applyOp({ 'a': 1 }, {
+      'op': 'set',
+      'path': '/',
+      'value': { 'b': 2 }
+    }), { 'b': 2 });
+
+    // delete at root returns undefined
+    assert.equal(Value.applyOp({ 'a': 1 }, {
+      'op': 'delete',
+      'path': '/'
+    }), undefined);
+
+    // delete with array path splices elements
+    const spliced = Value.applyOp({
+      'items': [
+        'a',
+        'b',
+        'c'
+      ]
+    }, {
+      'op': 'delete',
+      'path': '/items/1'
+    }) as { 'items': string[] };
+
+    assert.deepEqual(spliced.items, [
+      'a',
+      'c'
+    ]);
+
+    // does not mutate original array
+    const original = {
+      'items': [
+        1,
+        2,
+        3
+      ]
+    };
+
+    Value.applyOp(original, {
+      'op': 'delete',
+      'path': '/items/0'
+    });
+    assert.deepEqual(original.items, [
+      1,
+      2,
+      3
+    ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Changeset (folded from changeset.test.ts)
+// ---------------------------------------------------------------------------
+
+/* eslint-disable no-restricted-syntax -- Changeset.apply() is not Function.prototype.apply() */
+void describe('Changeset', () => {
+  void it('apply() modifies, deletes, and chains operations without mutation', () => {
+    const cs = new Changeset([
+      {
+        'op': 'set',
+        'path': '/name',
+        'value': 'Bob'
+      },
+      {
+        'op': 'delete',
+        'path': '/age'
+      }
+    ]);
+    const original = {
+      'age': 30,
+      'name': 'Alice'
+    };
+    const result = cs.apply(original) as Record<string, unknown>;
+
+    assert.equal(result.name, 'Bob');
+    assert.equal('age' in result, false);
+    assert.equal(original.name, 'Alice');
+    assert.equal(original.age, 30);
+
+    // Nested paths
+    const cs2 = new Changeset([{
+      'op': 'set',
+      'path': '/address/city',
+      'value': 'Portland'
+    }]);
+    const result2 = cs2.apply({
+      'address': {
+        'city': 'Seattle',
+        'zip': '98101'
+      }
+    }) as { 'address': Record<string, unknown> };
+
+    assert.equal(result2.address.city, 'Portland');
+    assert.equal(result2.address.zip, '98101');
+
+    // Chaining multiple operations
+    const cs3 = new Changeset([
+      {
+        'op': 'set',
+        'path': '/x',
+        'value': 10
+      },
+      {
+        'op': 'set',
+        'path': '/y',
+        'value': 20
+      },
+      {
+        'op': 'delete',
+        'path': '/z'
+      }
+    ]);
+    const result3 = cs3.apply({
+      'x': 1,
+      'y': 2,
+      'z': 3
+    }) as Record<string, unknown>;
+
+    assert.equal(result3.x, 10);
+    assert.equal(result3.y, 20);
+    assert.equal('z' in result3, false);
+  });
+
+  void it('isEmpty, length, and operations are correct', () => {
+    assert.equal(new Changeset([]).isEmpty, true);
+    assert.equal(new Changeset([]).length, 0);
+
+    const cs = new Changeset([
+      {
+        'op': 'set',
+        'path': '/a',
+        'value': 1
+      },
+      {
+        'op': 'delete',
+        'path': '/b'
+      }
+    ]);
+
+    assert.equal(cs.isEmpty, false);
+    assert.equal(cs.length, 2);
+    assert.equal(cs.operations[0].op, 'set');
+    assert.equal(cs.operations[1].op, 'delete');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Value.diff() with arrays
+// ---------------------------------------------------------------------------
+
+void describe('Value.diff() -> Changeset (arrays)', () => {
+  void it('detects added, removed, and modified array items', () => {
+    // Modified items
+    const cs1 = Value.diff({
+      'items': [
+        1,
+        2,
+        3
+      ]
+    }, {
+      'items': [
+        1,
+        99,
+        3
+      ]
+    });
+
+    assert.equal(cs1.isEmpty, false);
+    assert.equal(cs1.operations.some((op) => {
+      return op.path === '/items/1' && op.op === 'set' && op.value === 99;
+    }), true);
+
+    // Added items (array grew)
+    const cs2 = Value.diff({ 'items': ['a'] }, {
+      'items': [
+        'a',
+        'b',
+        'c'
+      ]
+    });
+    const setOps = cs2.operations.filter((op) => {
+      return op.op === 'set';
+    });
+
+    assert.ok(setOps.some((op) => {
+      return op.path === '/items/1' && op.value === 'b';
+    }));
+    assert.ok(setOps.some((op) => {
+      return op.path === '/items/2' && op.value === 'c';
+    }));
+
+    // Removed items (array shrank)
+    const cs3 = Value.diff({
+      'items': [
+        1,
+        2,
+        3
+      ]
+    }, { 'items': [1] });
+    const delOps = cs3.operations.filter((op) => {
+      return op.op === 'delete';
+    });
+
+    assert.ok(delOps.some((op) => {
+      return op.path === '/items/1';
+    }));
+    assert.ok(delOps.some((op) => {
+      return op.path === '/items/2';
+    }));
+
+    // Identical arrays produce empty changeset
+    const cs4 = Value.diff({
+      'items': [
+        1,
+        2
+      ]
+    }, {
+      'items': [
+        1,
+        2
+      ]
+    });
+
+    assert.equal(cs4.isEmpty, true);
   });
 });

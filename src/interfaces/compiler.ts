@@ -15,8 +15,8 @@ export interface CompiledValidatorInterface {
 
 export interface CompiledValidateOptionsInterface {
   'applyDefaults'?: boolean;
-  'coerce'?: boolean;
+  'castTypes'?: boolean;
   'collectErrors'?: boolean;
-  'removeAdditional'?: boolean;
-  'stripUnknownProperties'?: boolean;
+  'enforceSchemaProperties'?: boolean;
+  'removeAdditionalProperties'?: boolean;
 }

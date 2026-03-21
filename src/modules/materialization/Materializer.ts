@@ -8,13 +8,13 @@ import type { QuadInterface } from '../../interfaces/quad.js';
 import type { SchemaGraphInterface } from '../../interfaces/schema-graph-impl.js';
 import type { SchemaRegistryInterface } from '../../interfaces/schema-registry.js';
 import type { InferSchemaType } from '../../types/infer.js';
-import type { JSONSchema7Definition as JSONSchemaType } from 'json-schema';
+import type { JSONSchema7Definition } from 'json-schema';
 import { BaseError } from '../../errors/BaseError.js';
 import { MaterializationError } from '../../errors/MaterializationError.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { isRecord } from '../data/DataTypes.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
-import { projectAbox as projectAboxQuads } from '../rdf/Projection.js';
+import { projectAbox } from '../rdf/Projection.js';
 
 const isObject = isRecord;
 
@@ -38,13 +38,25 @@ const isObject = isRecord;
  * instead of reporting validation errors. This is `materialize(schema)` with no args.
  */
 export class Materializer implements MaterializerInterface {
-  private readonly graphCache = new WeakMap<object, SchemaGraph>();
+  private readonly graphCache = new WeakMap<object, SchemaGraphInterface>();
 
+  /**
+   * Create a Materializer bound to a schema registry.
+   *
+   * @param registry - Schema registry for engine and schema lookups
+   * @param options - Materializer options (e.g. passAdditionalProperties)
+   */
   public constructor(
     private readonly registry: SchemaRegistryInterface,
     private readonly options: MaterializerOptionsInterface = {}
   ) {}
 
+  /**
+   * Create a default instance of a schema by synthesizing zero values for required properties.
+   *
+   * @param schema - Schema object with $id
+   * @returns Default value with all required properties filled
+   */
   public createDefault(schema: Record<string, unknown> & { '$id': string }): unknown {
     const result = this.run(schema, undefined, undefined, true);
 
@@ -112,7 +124,7 @@ export class Materializer implements MaterializerInterface {
     return BaseError.formatErrors(result.errors);
   }
 
-  private graphFor(rootSchema: JSONSchemaType): SchemaGraph {
+  private graphFor(rootSchema: JSONSchema7Definition): SchemaGraphInterface {
     if (!isObject(rootSchema)) {
       return new SchemaGraph(rootSchema as boolean);
     }
@@ -130,7 +142,15 @@ export class Materializer implements MaterializerInterface {
     return graph;
   }
 
-  public materialize<TSchema extends JSONSchemaType & { readonly '$id': string; }>(
+  /**
+   * Materialize partial data against a schema, filling implicit properties and validating.
+   *
+   * @param schema - Schema object with $id
+   * @param partial - Partial data to materialize
+   * @returns Fully materialized value matching the schema
+   * @throws {@link MaterializationError} When the data fails validation
+   */
+  public materialize<TSchema extends JSONSchema7Definition & { readonly '$id': string; }>(
     schema: TSchema,
     partial?: Partial<InferSchemaType<TSchema>>,
   ): InferSchemaType<TSchema>;
@@ -155,6 +175,15 @@ export class Materializer implements MaterializerInterface {
     return value;
   }
 
+  /**
+   * Project validated data into ABox RDF quads for ontology serialization.
+   *
+   * @param schema - Schema object with $id
+   * @param data - Data to project
+   * @param baseIRI - Base IRI for generated quad subjects
+   * @returns Array of RDF quads representing the ABox projection
+   * @throws {@link MaterializationError} When the data fails validation
+   */
   public projectAbox(
     schema: Record<string, unknown> & { '$id': string; },
     data: unknown,
@@ -174,7 +203,7 @@ export class Materializer implements MaterializerInterface {
     materialized: unknown,
     baseIRI: string
   ): QuadInterface[] {
-    const quads = projectAboxQuads(execution.graph, materialized, baseIRI, execution.entryNode);
+    const quads = projectAbox(execution.graph, materialized, baseIRI, execution.entryNode);
 
     return quads;
   }
@@ -201,7 +230,7 @@ export class Materializer implements MaterializerInterface {
     const schemaId = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
     const fragment = hashIndex === -1 ? '' : ref.slice(hashIndex + 1);
 
-    const lookedUp = this.registry.get(schemaId) as JSONSchemaType | undefined;
+    const lookedUp = this.registry.get(schemaId) as JSONSchema7Definition | undefined;
 
     if (lookedUp === undefined) {
       throw new GraphError('REF_UNRESOLVED', `Unresolved schema reference: ${ref}`, ref);
@@ -226,11 +255,11 @@ export class Materializer implements MaterializerInterface {
 
     const engine = this.registry.engine(schema);
     const execution = engine.execute(data, '', {
+      'allowAdditionalProperties': this.options.passAdditionalProperties === true,
       'applyDefaults': true,
-      'coerce': this.registry.coerce,
+      'castTypes': this.registry.castTypes,
       'collectErrors': true,
-      'ignoreAdditionalProperties': this.options.passAdditionalProperties === true,
-      'removeAdditional': false,
+      'removeAdditionalProperties': false,
       'synthesizeDefaults': synthesizeDefaults
     });
     const materialized = synthesizeDefaults

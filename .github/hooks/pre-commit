@@ -1,0 +1,90 @@
+#!/bin/sh
+set -e
+
+echo "Running pre-commit checks..."
+
+# Check for CRLF line endings in staged files
+CRLF_FILES=$(git diff --cached --name-only -z | xargs -0 -I {} sh -c 'file -b "{}" 2>/dev/null | grep -q "CRLF" && echo "{}"' 2>/dev/null || true)
+if [ -n "$CRLF_FILES" ]; then
+    echo "ERROR: Found files with CRLF line endings:"
+    echo "$CRLF_FILES"
+    echo ""
+    echo "Fix: Run 'git add --renormalize .' to normalize line endings"
+    echo "Or ensure .gitattributes contains '* text=auto eol=lf'"
+    exit 1
+fi
+
+# Regenerate documentation from templates
+# This ensures README.md and reference docs stay in sync with code changes
+echo ""
+echo "Regenerating documentation..."
+
+# Check if template exists before generating
+if [ -f "docs/README.template.md" ]; then
+    npx @noocodex/dev-tools docs readme 2>/dev/null || echo "Warning: Could not generate README.md"
+fi
+
+# Generate validator reference docs
+npx @noocodex/dev-tools docs reference 2>/dev/null || echo "Warning: Could not generate validator reference"
+
+# Extract API surface for tracking
+# This must be committed for semver validation to work against git tags
+echo ""
+echo "Extracting API surface..."
+npx @noocodex/dev-tools api extract 2>/dev/null || echo "Warning: Could not extract API surface"
+
+# Auto-stage generated artifacts if they changed
+artifacts_changed=false
+
+# Check README.md
+if [ -f "README.md" ]; then
+    if ! git diff --quiet -- README.md 2>/dev/null; then
+        artifacts_changed=true
+        git add README.md
+        echo "  - Staged updated README.md"
+    fi
+fi
+
+# Check docs/reference/validators.md
+if [ -f "docs/reference/validators.md" ]; then
+    if ! git diff --quiet -- docs/reference/validators.md 2>/dev/null; then
+        artifacts_changed=true
+        git add docs/reference/validators.md
+        echo "  - Staged updated docs/reference/validators.md"
+    fi
+    # Also stage if it's a new untracked file
+    if git ls-files --others --exclude-standard -- docs/reference/validators.md 2>/dev/null | grep -q .; then
+        artifacts_changed=true
+        git add docs/reference/validators.md
+        echo "  - Staged new docs/reference/validators.md"
+    fi
+fi
+
+# Check .dev-tools/*.api.json (API surface snapshots)
+for api_file in .dev-tools/*.api.json; do
+    if [ -f "$api_file" ]; then
+        if ! git diff --quiet -- "$api_file" 2>/dev/null; then
+            artifacts_changed=true
+            git add "$api_file"
+            echo "  - Staged updated $api_file"
+        fi
+        # Also stage if it's a new untracked file
+        if git ls-files --others --exclude-standard -- "$api_file" 2>/dev/null | grep -q .; then
+            artifacts_changed=true
+            git add "$api_file"
+            echo "  - Staged new $api_file"
+        fi
+    fi
+done
+
+if [ "$artifacts_changed" = true ]; then
+    echo "Generated artifacts updated and staged"
+else
+    echo "Generated artifacts are up to date"
+fi
+
+echo ""
+npx @noocodex/dev-tools check
+echo "Pre-commit checks passed"
+
+exit 0

@@ -16,6 +16,7 @@ import type {
   SchemaGraphNodeInterface,
   SchemaGraphRelationInterface
 } from '../../interfaces/schema-graph.js';
+import type { CurieInterface } from '../../interfaces/curie.js';
 import { resolveSingleXsdType } from '../data/DataTypes.js';
 import { Hash } from '../hash/Hash.js';
 import { isRecord } from '../data/DataTypes.js';
@@ -35,21 +36,51 @@ export function resetBnodeCounter(): void {
 }
 
 // ---------------------------------------------------------------------------
-// Quad construction helpers
+// CURIE expansion helper
 // ---------------------------------------------------------------------------
 
-export function iri(value: string): QuadObjectType {
+/**
+ * Safely expand CURIE strings (prefix:local) to full IRIs.
+ * Passes through full IRIs unchanged. Blank nodes unchanged.
+ */
+function expandCurieIfNeeded(value: string, curie: CurieInterface): string {
+  // Blank nodes pass through unchanged
+  if (value.startsWith('_:')) {
+    return value;
+  }
+  // Full IRIs pass through unchanged
+  if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('urn:')) {
+    return value;
+  }
+  // Try to expand as CURIE (prefix:local format)
+  try {
+    return curie.expand(value);
+  } catch {
+    // If expansion fails, return the value as-is (may be a fragment or local reference)
+    return value;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Quad construction helpers (context-aware versions)
+// ---------------------------------------------------------------------------
+
+export function iri(value: string, curie?: CurieInterface): QuadObjectType {
+  const expandedValue = curie ? expandCurieIfNeeded(value, curie) : value;
+
   return {
     'termType': 'NamedNode',
-    value
+    'value': expandedValue
   };
 }
 
-export function literal(value: unknown, datatype: string): QuadObjectType {
+export function literal(value: unknown, datatype: string, curie?: CurieInterface): QuadObjectType {
+  const expandedDatatype = curie ? expandCurieIfNeeded(datatype, curie) : datatype;
+
   return {
     'datatype': {
       'termType': 'NamedNode' as const,
-      'value': datatype
+      'value': expandedDatatype
     },
     'language': '',
     'termType': 'Literal',
@@ -64,17 +95,20 @@ export function bnode(id: string): QuadObjectType {
   };
 }
 
-export function rdfList(items: QuadObjectType[]): QuadObjectType {
+export function rdfList(items: QuadObjectType[], _?: CurieInterface): QuadObjectType {
   return {
     items,
     'termType': 'List'
   };
 }
 
-export function quad(subject: string, predicate: string, object: QuadObjectType): QuadInterface {
+// eslint-disable-next-line @stylistic/max-len
+export function quad(subject: string, predicate: string, object: QuadObjectType, curie?: CurieInterface): QuadInterface {
+  const expandedPredicate = curie ? expandCurieIfNeeded(predicate, curie) : predicate;
+
   return {
     object,
-    predicate,
+    'predicate': expandedPredicate,
     subject
   };
 }
@@ -83,14 +117,14 @@ export function quad(subject: string, predicate: string, object: QuadObjectType)
 // TBox projection — purely relation-driven
 // ---------------------------------------------------------------------------
 
-export function projectGraph(graph: SchemaGraphInterface): QuadInterface[] {
+export function projectGraph(graph: SchemaGraphInterface, curie?: CurieInterface): QuadInterface[] {
   resetBnodeCounter();
   const quads: QuadInterface[] = [];
 
   const allRelations = graph.allRelations();
 
-  for (const rel of allRelations) {
-    projectRelation(rel, quads);
+  for (const relation of allRelations) {
+    projectRelation(relation, quads, curie);
   }
 
   return quads;
@@ -101,101 +135,115 @@ export function projectGraph(graph: SchemaGraphInterface): QuadInterface[] {
 // ---------------------------------------------------------------------------
 
 function projectRelation(
-  rel: SchemaGraphRelationInterface,
-  quads: QuadInterface[]
+  relation: SchemaGraphRelationInterface,
+  quads: QuadInterface[],
+  curie?: CurieInterface
 ): void {
   // Structured relations produce multi-quad patterns
-  if (rel.structure !== undefined) {
-    projectStructuredRelation(rel, quads);
+  if (relation.structure !== undefined) {
+    projectStructuredRelation(relation, quads, curie);
 
     return;
   }
 
-  const subject = rel.source.id;
-  const predicate = rel.predicate;
-  const targetId = typeof rel.target === 'string' ? rel.target : rel.target.id;
+  const subject = relation.source.id;
+  const predicate = relation.predicate;
+  const targetId = typeof relation.target === 'string' ? relation.target : relation.target.id;
 
   switch (predicate) {
     case 'dash:readOnly':
     case 'dash:writeOnly':
-      quads.push(quad(subject, predicate, literal(targetId === 'true', 'xsd:boolean')));
+      quads.push(quad(subject, predicate, literal(targetId === 'true', 'xsd:boolean', curie), curie));
       break;
     case 'dct:format':
-      quads.push(quad(subject, predicate, literal(targetId, 'xsd:string')));
+      quads.push(quad(subject, predicate, literal(targetId, 'xsd:string', curie), curie));
       break;
     case 'jt:dependentRequired': {
-      const meta = rel.metadata ?? {};
-      const trigger = typeof meta.trigger === 'string' ? meta.trigger : '';
-      const required = Array.isArray(meta.required) ? meta.required as string[] : [];
+      const metadata = relation.metadata ?? {};
+      const trigger = typeof metadata.trigger === 'string' ? metadata.trigger : '';
+      const required = Array.isArray(metadata.required) ? metadata.required as string[] : [];
 
       quads.push(quad(subject, 'jt:dependentRequired', literal(
         JSON.stringify({
           required,
           trigger
         }),
-        'xsd:string'
-      )));
+        'xsd:string',
+        curie
+      ), curie));
       break;
     }
     case 'jt:multipleOf':
-      quads.push(quad(subject, predicate, literal(Number(targetId), 'xsd:decimal')));
+      quads.push(quad(subject, predicate, literal(Number(targetId), 'xsd:decimal', curie), curie));
+      break;
+    case 'owl:complementOf':
+    case 'owl:disjointWith':
+    case 'owl:equivalentClass':
+    case 'owl:inverseOf':
+      quads.push(quad(subject, predicate, iri(targetId, curie), curie));
       break;
     case 'owl:deprecated':
-      quads.push(quad(subject, predicate, literal(targetId, 'xsd:boolean')));
+      quads.push(quad(subject, predicate, literal(targetId, 'xsd:boolean', curie), curie));
       break;
     case 'owl:hasValue':
-      quads.push(quad(subject, predicate, literal(targetId, 'xsd:string')));
+      quads.push(quad(subject, predicate, literal(targetId, 'xsd:string', curie), curie));
       break;
     case 'owl:maxQualifiedCardinality':
     case 'owl:minQualifiedCardinality':
-      quads.push(quad(subject, predicate, literal(Number(targetId), 'xsd:nonNegativeInteger')));
+      quads.push(quad(subject, predicate, literal(Number(targetId), 'xsd:nonNegativeInteger', curie), curie));
       break;
     case 'owl:oneOf':
-      quads.push(quad(subject, 'owl:oneOf', literal(targetId, 'xsd:string')));
+      quads.push(quad(subject, 'owl:oneOf', literal(targetId, 'xsd:string', curie), curie));
       break;
     case 'owl:Restriction': {
       const rBnode = nextBnode();
-      const meta = rel.metadata ?? {};
-      const onProperty = typeof meta.onProperty === 'string' ? meta.onProperty : '';
-      const minCard = typeof meta.minCardinality === 'number' ? meta.minCardinality : 1;
+      const metadata = relation.metadata ?? {};
+      const onProperty = typeof metadata.onProperty === 'string' ? metadata.onProperty : '';
+      const minCard = typeof metadata.minCardinality === 'number' ? metadata.minCardinality : 1;
 
-      quads.push(quad(subject, 'rdfs:subClassOf', bnode(rBnode)));
-      quads.push(quad(rBnode, 'rdf:type', iri('owl:Restriction')));
-      quads.push(quad(rBnode, 'owl:onProperty', iri(onProperty)));
-      quads.push(quad(rBnode, 'owl:minCardinality', literal(minCard, 'xsd:nonNegativeInteger')));
+      quads.push(quad(subject, 'rdfs:subClassOf', bnode(rBnode), curie));
+      quads.push(quad(rBnode, 'rdf:type', iri('owl:Restriction', curie), curie));
+      quads.push(quad(rBnode, 'owl:onProperty', iri(onProperty, curie), curie));
+      quads.push(quad(rBnode, 'owl:minCardinality', literal(minCard, 'xsd:nonNegativeInteger', curie), curie));
       break;
     }
+    case 'owl:someValuesFrom':
+    case 'owl:SymmetricProperty':
+    case 'owl:TransitiveProperty':
+    case 'owl:unionOf':
+    case 'rdf:type':
+    case 'rdfs:domain':
+    case 'rdfs:member':
+    case 'rdfs:range':
+    case 'rdfs:subClassOf':
+    case 'sh:datatype':
+      quads.push(quad(subject, predicate, iri(targetId, curie), curie));
+      break;
     case 'rdfs:comment':
     case 'rdfs:label':
-      quads.push(quad(subject, predicate, literal(targetId, 'xsd:string')));
+      quads.push(quad(subject, predicate, literal(targetId, 'xsd:string', curie), curie));
       break;
     case 'sh:closed':
-      quads.push(quad(subject, predicate, literal(targetId, 'xsd:boolean')));
-      break;
-    case 'sh:datatype':
-      quads.push(quad(subject, predicate, iri(targetId)));
+      quads.push(quad(subject, predicate, literal(targetId, 'xsd:boolean', curie), curie));
       break;
     case 'sh:maxCount':
     case 'sh:maxLength':
     case 'sh:minCount':
     case 'sh:minLength':
-      quads.push(quad(subject, predicate, literal(Number(targetId), 'xsd:integer')));
+      quads.push(quad(subject, predicate, literal(Number(targetId), 'xsd:integer', curie), curie));
       break;
     case 'sh:maxExclusive':
     case 'sh:maxInclusive':
     case 'sh:minExclusive':
     case 'sh:minInclusive':
-      quads.push(quad(subject, predicate, literal(Number(targetId), 'xsd:decimal')));
+      quads.push(quad(subject, predicate, literal(Number(targetId), 'xsd:decimal', curie), curie));
       break;
     case 'sh:pattern':
-      if (rel.metadata?.patternProperty === true && typeof rel.metadata?.pattern === 'string') {
-        quads.push(quad(subject, 'sh:pattern', literal(rel.metadata.pattern, 'xsd:string')));
+      if (relation.metadata?.patternProperty === true && typeof relation.metadata.pattern === 'string') {
+        quads.push(quad(subject, 'sh:pattern', literal(relation.metadata.pattern, 'xsd:string', curie), curie));
       } else {
-        quads.push(quad(subject, predicate, literal(targetId, 'xsd:string')));
+        quads.push(quad(subject, predicate, literal(targetId, 'xsd:string', curie), curie));
       }
-      break;
-    default:
-      quads.push(quad(subject, predicate, iri(targetId)));
       break;
   }
 }
@@ -204,42 +252,47 @@ function projectRelation(
  * Project relations with structured metadata into multi-quad patterns.
  */
 function projectStructuredRelation(
-  rel: SchemaGraphRelationInterface,
-  quads: QuadInterface[]
+  relation: SchemaGraphRelationInterface,
+  quads: QuadInterface[],
+  curie?: CurieInterface
 ): void {
-  const subject = rel.source.id;
-  const structure = rel.structure!;
+  const subject = relation.source.id;
+  const structure = relation.structure;
+
+  if (structure === undefined) {
+    return;
+  }
 
   switch (structure.kind) {
     case 'conditional': {
       const condBnode = nextBnode();
 
-      quads.push(quad(subject, 'owl:unionOf', bnode(condBnode)));
-      quads.push(quad(condBnode, 'rdf:type', iri('owl:Class')));
-      quads.push(quad(condBnode, 'jt:if', iri(structure.ifRef)));
+      quads.push(quad(subject, 'owl:unionOf', bnode(condBnode), curie));
+      quads.push(quad(condBnode, 'rdf:type', iri('owl:Class', curie), curie));
+      quads.push(quad(condBnode, 'jt:if', iri(structure.ifRef, curie), curie));
       if (structure.thenRef !== undefined) {
-        quads.push(quad(condBnode, 'jt:then', iri(structure.thenRef)));
+        quads.push(quad(condBnode, 'jt:then', iri(structure.thenRef, curie), curie));
       }
       if (structure.elseRef !== undefined) {
-        quads.push(quad(condBnode, 'jt:else', iri(structure.elseRef)));
+        quads.push(quad(condBnode, 'jt:else', iri(structure.elseRef, curie), curie));
       }
       break;
     }
     case 'list': {
-      const items = structure.members.map((m) => {
-        return iri(m);
+      const items = structure.members.map((member) => {
+        return iri(member, curie);
       });
 
-      quads.push(quad(subject, rel.predicate, rdfList(items)));
+      quads.push(quad(subject, relation.predicate, rdfList(items), curie));
       break;
     }
     case 'restriction': {
-      const rBnode = nextBnode();
+      const restrictionBnode = nextBnode();
 
-      quads.push(quad(subject, rel.predicate, bnode(rBnode)));
-      quads.push(quad(rBnode, 'rdf:type', iri('owl:Restriction')));
-      quads.push(quad(rBnode, 'owl:onProperty', iri(structure.onProperty)));
-      quads.push(quad(rBnode, String(structure.constraint), iri(String(structure.value))));
+      quads.push(quad(subject, relation.predicate, bnode(restrictionBnode), curie));
+      quads.push(quad(restrictionBnode, 'rdf:type', iri('owl:Restriction', curie), curie));
+      quads.push(quad(restrictionBnode, 'owl:onProperty', iri(structure.onProperty, curie), curie));
+      quads.push(quad(restrictionBnode, String(structure.constraint), iri(String(structure.value), curie), curie));
       break;
     }
   }
@@ -254,12 +307,14 @@ function projectStructuredRelation(
  *
  * @param entryNode - Optional entry node (for schemas with root-level $ref).
  *   Defaults to `graph.rootNode`.
+ * @param curie - Optional CURIE expansion context for expanding predicates and IRIs.
  */
 export function projectAbox(
   graph: SchemaGraphInterface,
   data: unknown,
   baseIRI: string,
-  entryNode?: SchemaGraphNodeInterface
+  entryNode?: SchemaGraphNodeInterface,
+  curie?: CurieInterface
 ): QuadInterface[] {
   resetBnodeCounter();
   const quads: QuadInterface[] = [];
@@ -270,7 +325,7 @@ export function projectAbox(
     return quads;
   }
 
-  projectInstance(graph, resolved, data, baseIRI, quads);
+  projectInstance(graph, resolved, data, baseIRI, quads, curie);
 
   return quads;
 }
@@ -290,13 +345,13 @@ function instanceIRI(baseIRI: string, classId: string, data: unknown): string {
  * with `#`, resolves to the target node. External refs return the node as-is.
  */
 function resolveNode(graph: SchemaGraphInterface, node: SchemaGraphNodeInterface): SchemaGraphNodeInterface {
-  const sem = graph.semantics(node);
+  const nodeSemantics = graph.semantics(node);
 
-  if (sem.ref === undefined) {
+  if (nodeSemantics.ref === undefined) {
     return node;
   }
-  if (sem.ref.startsWith('#')) {
-    const fragment = sem.ref.slice(1);
+  if (nodeSemantics.ref.startsWith('#')) {
+    const fragment = nodeSemantics.ref.slice(1);
 
     return graph.resolveFragment(fragment);
   }
@@ -309,28 +364,29 @@ function projectInstance(
   node: SchemaGraphNodeInterface,
   data: Record<string, unknown>,
   baseIRI: string,
-  quads: QuadInterface[]
+  quads: QuadInterface[],
+  curie?: CurieInterface
 ): string {
   const instIRI = instanceIRI(baseIRI, node.id, data);
-  const sem = graph.semantics(node);
+  const nodeSemantics = graph.semantics(node);
 
-  quads.push(quad(instIRI, 'rdf:type', iri(node.id)));
+  quads.push(quad(instIRI, 'rdf:type', iri(node.id, curie), curie));
 
   for (const [
-    propName,
-    propNode
-  ] of sem.properties) {
-    const value = data[propName];
+    propertyName,
+    propertyNode
+  ] of nodeSemantics.properties) {
+    const value = data[propertyName];
 
     if (value === undefined || value === null) {
       continue;
     }
 
-    const propIRI = `${node.id}#${propName}`;
-    const resolved = resolveNode(graph, propNode);
-    const propSem = graph.semantics(resolved);
+    const propertyIRI = `${node.id}#${propertyName}`;
+    const resolved = resolveNode(graph, propertyNode);
+    const propertySemantics = graph.semantics(resolved);
 
-    projectPropertyValue(graph, propIRI, propSem, resolved, value, baseIRI, instIRI, quads);
+    projectPropertyValue(graph, propertyIRI, propertySemantics, resolved, value, baseIRI, instIRI, quads, curie);
   }
 
   return instIRI;
@@ -338,79 +394,82 @@ function projectInstance(
 
 function projectPropertyValue(
   graph: SchemaGraphInterface,
-  propIRI: string,
-  propSem: { 'format': string | undefined;
+  propertyIRI: string,
+  propertySemantics: { 'format': string | undefined;
     'itemsNode': SchemaGraphNodeInterface | undefined },
-  propNode: SchemaGraphNodeInterface,
+  propertyNode: SchemaGraphNodeInterface,
   value: unknown,
   baseIRI: string,
-  instIRI: string,
-  quads: QuadInterface[]
+  instanceIri: string,
+  quads: QuadInterface[],
+  curie?: CurieInterface
 ): void {
   if (Array.isArray(value)) {
     for (const element of value) {
-      projectSingleValue(graph, propIRI, propSem, propNode, element, baseIRI, instIRI, quads);
+      // eslint-disable-next-line @stylistic/max-len
+      projectSingleValue(graph, propertyIRI, propertySemantics, propertyNode, element, baseIRI, instanceIri, quads, curie);
     }
 
     return;
   }
 
-  projectSingleValue(graph, propIRI, propSem, propNode, value, baseIRI, instIRI, quads);
+  projectSingleValue(graph, propertyIRI, propertySemantics, propertyNode, value, baseIRI, instanceIri, quads, curie);
 }
 
 function projectSingleValue(
   graph: SchemaGraphInterface,
-  propIRI: string,
-  propSem: { 'format': string | undefined;
+  propertyIRI: string,
+  propertySemantics: { 'format': string | undefined;
     'itemsNode': SchemaGraphNodeInterface | undefined },
-  propNode: SchemaGraphNodeInterface,
+  propertyNode: SchemaGraphNodeInterface,
   value: unknown,
   baseIRI: string,
-  instIRI: string,
-  quads: QuadInterface[]
+  instanceIri: string,
+  quads: QuadInterface[],
+  curie?: CurieInterface
 ): void {
   if (value === null || value === undefined) {
     return;
   }
 
   if (typeof value === 'string') {
-    const xsd = resolveSingleXsdType('string', propSem.format ?? undefined) ?? 'xsd:string';
+    const xsdDatatype = resolveSingleXsdType('string', propertySemantics.format ?? undefined) ?? 'xsd:string';
 
-    quads.push(quad(instIRI, propIRI, literal(value, xsd)));
+    quads.push(quad(instanceIri, propertyIRI, literal(value, xsdDatatype, curie), curie));
 
     return;
   }
 
   if (typeof value === 'number') {
-    const dt = Number.isInteger(value) ? 'xsd:integer' : 'xsd:double';
+    const datatype = Number.isInteger(value) ? 'xsd:integer' : 'xsd:double';
 
-    quads.push(quad(instIRI, propIRI, literal(value, dt)));
+    quads.push(quad(instanceIri, propertyIRI, literal(value, datatype, curie), curie));
 
     return;
   }
 
   if (typeof value === 'boolean') {
-    quads.push(quad(instIRI, propIRI, literal(value, 'xsd:boolean')));
+    quads.push(quad(instanceIri, propertyIRI, literal(value, 'xsd:boolean', curie), curie));
 
     return;
   }
 
   if (isRecord(value)) {
-    let targetNode = propNode;
+    let targetNode = propertyNode;
 
-    if (propSem.itemsNode !== undefined) {
-      targetNode = resolveNode(graph, propSem.itemsNode);
+    if (propertySemantics.itemsNode !== undefined) {
+      targetNode = resolveNode(graph, propertySemantics.itemsNode);
     }
 
-    const sem = graph.semantics(targetNode);
+    const targetSemantics = graph.semantics(targetNode);
 
-    if (sem.properties.size === 0 && !sem.schemaTypes.includes('object')) {
+    if (targetSemantics.properties.size === 0 && !targetSemantics.schemaTypes.includes('object')) {
       return;
     }
 
-    const nestedIRI = projectInstance(graph, targetNode, value, baseIRI, quads);
+    const nestedIRI = projectInstance(graph, targetNode, value, baseIRI, quads, curie);
 
-    quads.push(quad(instIRI, propIRI, iri(nestedIRI)));
+    quads.push(quad(instanceIri, propertyIRI, iri(nestedIRI, curie), curie));
   }
 }
 
@@ -426,26 +485,26 @@ function projectSingleValue(
 export function quadsToJsonLdNodes(quads: QuadInterface[]): Array<Record<string, unknown>> {
   const subjects = new Map<string, Record<string, unknown>>();
 
-  for (const q of quads) {
-    let node = subjects.get(q.subject);
+  for (const entry of quads) {
+    let node = subjects.get(entry.subject);
 
     if (!node) {
-      node = { '@id': q.subject };
-      subjects.set(q.subject, node);
+      node = { '@id': entry.subject };
+      subjects.set(entry.subject, node);
     }
 
-    const value = quadObjectToJsonLd(q.object);
+    const value = quadObjectToJsonLd(entry.object);
 
-    if (q.predicate === 'rdf:type') {
+    if (entry.predicate === 'rdf:type') {
       node['@type'] = value;
-    } else if (node[q.predicate] === undefined) {
-      node[q.predicate] = value;
+    } else if (node[entry.predicate] === undefined) {
+      node[entry.predicate] = value;
     } else {
-      if (Array.isArray(node[q.predicate])) {
-        (node[q.predicate] as unknown[]).push(value);
+      if (Array.isArray(node[entry.predicate])) {
+        (node[entry.predicate] as unknown[]).push(value);
       } else {
-        node[q.predicate] = [
-          node[q.predicate],
+        node[entry.predicate] = [
+          node[entry.predicate],
           value
         ];
       }
@@ -455,15 +514,21 @@ export function quadsToJsonLdNodes(quads: QuadInterface[]): Array<Record<string,
   return [...subjects.values()];
 }
 
-function quadObjectToJsonLd(obj: QuadObjectType): unknown {
-  switch (obj.termType) {
+function quadObjectToJsonLd(quadObject: QuadObjectType): unknown {
+  switch (quadObject.termType) {
     case 'BlankNode':
-      return { '@id': obj.value };
+      return { '@id': quadObject.value };
     case 'List':
-      return { '@list': obj.items.map(quadObjectToJsonLd) };
+      return {
+        '@list': quadObject.items.map((item) => {
+          return quadObjectToJsonLd(item);
+        })
+      };
     case 'Literal':
-      return obj.value;
+      return quadObject.value;
     case 'NamedNode':
-      return { '@id': obj.value };
+      return { '@id': quadObject.value };
   }
+
+  return undefined;
 }

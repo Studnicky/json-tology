@@ -1,6 +1,8 @@
 import type { KeywordDefinitionInterface } from './graph-engine.js';
 import type { LoggerInterface } from './logger.js';
 import type { MaterializerOptionsInterface } from './materializer.js';
+import type { VocabularyPluginInterface } from './vocabulary-plugin.js';
+import type { BuiltinFormatNameType } from '../types/format.js';
 
 export interface JsonTologyOptionsInterface<TSchemas extends readonly unknown[] = readonly unknown[]> {
   /**
@@ -12,17 +14,17 @@ export interface JsonTologyOptionsInterface<TSchemas extends readonly unknown[] 
   'baseIRI': string;
 
   /**
-   * When true, the graph engine coerces types during parsing and materialization
+   * When true, the graph engine casts types during validation and materialization
    * (e.g. 123 accepted where "123" is expected, and vice versa).
    */
-  'coerce'?: boolean;
+  'castTypes'?: boolean;
 
   /**
    * Custom format validators to register in addition to (or overriding) the
    * built-in set.  Keys are format names (e.g. `"phone"`), values are
    * validator functions that return `true` when the value is valid.
    */
-  'formats'?: Record<string, (value: unknown) => boolean>;
+  'formats'?: Record<BuiltinFormatNameType | (Record<never, never> & string), (value: unknown) => boolean>;
 
   /** Custom keyword definitions passed to the graph engine. */
   'keywords'?: KeywordDefinitionInterface[];
@@ -49,4 +51,10 @@ export interface JsonTologyOptionsInterface<TSchemas extends readonly unknown[] 
    * When true, enforces draft 2020-12 dialect declarations and rejects unknown dialects at registration time.
    */
   'strict'?: boolean;
+
+  /**
+   * Vocabulary plugins for custom relation extraction and RDF quad projection.
+   * Each plugin can extend the ontology with domain-specific predicates and constraints.
+   */
+  'vocabularies'?: readonly VocabularyPluginInterface[];
 }

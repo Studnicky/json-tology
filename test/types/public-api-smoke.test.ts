@@ -28,12 +28,15 @@ const input: User = {
   'name': 'Ada'
 };
 
-const parsed: User = jt.parse(UserSchema, input);
-const materialized: User = jt.materialize(UserSchema, { 'id': 'user-1' });
+const parsed: User = jt.coerce(UserSchema, input);
+const materialized: User = jt.materialize(UserSchema, {
+  'id': 'user-1',
+  'name': 'Ada'
+});
 const ontology = jt.ontology().jsonLd();
-const abox = jt.abox(UserSchema, input).jsonLd();
+const quads = jt.toQuads(UserSchema, input).jsonLd();
 
 void parsed;
 void materialized;
 void ontology;
-void abox;
+void quads;

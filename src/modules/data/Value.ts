@@ -1,7 +1,7 @@
 /**
  * Value utilities
  *
- * Instance methods (cast, clean, convert, parse, create) delegate to a
+ * Instance methods (cast, clean, coerce, convert, create) delegate to a
  * SchemaRegistry for schema-aware operations.
  *
  * Static methods (clone, hash, diff, applyOp) operate on plain values
@@ -23,14 +23,34 @@ export class Value implements ValueInterface {
   // Static — pure value operations (no schema/registry)
   // ---------------------------------------------------------------------------
 
+  /**
+   * Apply a single diff operation to a value and return the result.
+   *
+   * @param root - Value to apply the operation to
+   * @param operation - Diff operation (set or delete)
+   * @returns Modified value after applying the operation
+   */
   static applyOp(root: unknown, operation: DiffOpType): unknown {
     return applyOpFn(root, operation);
   }
 
+  /**
+   * Deep-clone a value using structured cloning.
+   *
+   * @param value - Value to clone
+   * @returns Independent deep copy of the value
+   */
   public static clone<T>(value: T): T {
     return cloneFn(value);
   }
 
+  /**
+   * Compute the structural diff between two values as a Changeset.
+   *
+   * @param before - Original value
+   * @param after - Modified value
+   * @returns Changeset containing the operations needed to transform before into after
+   */
   public static diff(before: unknown, after: unknown): Changeset {
     const operations: DiffOpType[] = [];
 
@@ -39,6 +59,12 @@ export class Value implements ValueInterface {
     return new Changeset(operations);
   }
 
+  /**
+   * Compute a deterministic FNV-1a hash of a JSON-serializable value.
+   *
+   * @param value - Value to hash
+   * @returns Hex string hash
+   */
   public static hash(value: unknown): string {
     return Hash.value(value);
   }
@@ -47,26 +73,70 @@ export class Value implements ValueInterface {
   // Constructor + instance — schema-aware operations (delegate to registry)
   // ---------------------------------------------------------------------------
 
+  /**
+   * Create a Value instance bound to a schema registry for schema-aware operations.
+   *
+   * @param registry - Schema registry to delegate operations to
+   */
   constructor(private readonly registry: SchemaRegistryInterface) {}
 
+  /**
+   * Cast data to match the schema, applying coercion rules.
+   *
+   * @param schemaId - The $id of the schema to cast against
+   * @param data - Data to cast
+   * @returns Coerced value
+   * @throws {@link CoercionError} When data cannot be cast to the schema
+   */
   public cast(schemaId: string, data: unknown): unknown {
     return this.registry.cast(schemaId, data);
   }
 
+  /**
+   * Strip unknown properties from data according to the schema.
+   *
+   * @param schemaId - The $id of the schema to clean against
+   * @param data - Data to clean
+   * @returns Data with unknown properties removed
+   * @throws {@link CoercionError} When data fails validation after cleaning
+   */
   public clean(schemaId: string, data: unknown): unknown {
     return this.registry.clean(schemaId, data);
   }
 
+  /**
+   * Coerce data against the schema, applying defaults and validating.
+   *
+   * @param schemaId - The $id of the schema to coerce against
+   * @param data - Data to coerce
+   * @returns Coerced and validated value
+   * @throws {@link CoercionError} When data fails validation
+   */
+  public coerce(schemaId: string, data: unknown): unknown {
+    return this.registry.coerce(schemaId, data);
+  }
+
+  /**
+   * Convert data by applying coercion and defaults according to the schema.
+   *
+   * @param schemaId - The $id of the schema to convert against
+   * @param data - Data to convert
+   * @returns Converted value with coercion and defaults applied
+   * @throws {@link CoercionError} When data cannot be converted to the schema
+   */
   public convert(schemaId: string, data: unknown): unknown {
     return this.registry.convert(schemaId, data);
   }
 
+  /**
+   * Create a default instance of a schema by synthesizing zero values for required properties.
+   *
+   * @param schemaId - The $id of the schema to create a default for
+   * @returns Default value matching the schema
+   * @throws {@link SchemaError} When the schema is not registered
+   */
   public create(schemaId: string): unknown {
     return this.registry.create(schemaId);
-  }
-
-  public parse(schemaId: string, data: unknown): unknown {
-    return this.registry.parse(schemaId, data);
   }
 }
 

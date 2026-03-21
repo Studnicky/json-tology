@@ -6,6 +6,12 @@
  */
 
 export class Hash {
+  /**
+   * Compute a deterministic FNV-1a hash of a JSON-serializable value with sorted keys.
+   *
+   * @param input - Value to hash (must be JSON-serializable)
+   * @returns Hex string of the 32-bit FNV-1a hash
+   */
   static value(input: unknown): string {
     const serialized = JSON.stringify(input, keySortReplacer);
     let hash = 2_166_136_261;
@@ -20,7 +26,7 @@ export class Hash {
   }
 }
 
-function keySortReplacer(_key: string, value: unknown): unknown {
+function keySortReplacer(_: string, value: unknown): unknown {
   if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
     const sorted: Record<string, unknown> = {};
     const sortedKeys = Object.keys(value).sort();

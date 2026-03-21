@@ -2,7 +2,7 @@
 
 An ontology-native type system for TypeScript projects with declarative JSON Schema authoring.
 
-`json-tology` is being built around one canonical graph that drives:
+`json-tology` is built around one canonical graph that drives:
 
 - runtime validation and normalization
 - JSON-LD ontology export
@@ -14,24 +14,24 @@ JSON Schema is the authoring surface. The canonical runtime artifact is the grap
 
 ## Objectives
 
-- Use declarative JSON Schema as the input language for types and constraints.
-- Translate authored JSON Schema into one canonical graph that is lossless execution data.
-- Make validation consume that graph directly instead of re-interpreting JSON Schema ad hoc.
-- Emit ontology output from the same graph used by validation.
-- Support JSON-LD graphs as the semantic backbone for ontological tooling, reasoning, and exploration.
-- Deliver a developer experience that exceeds TypeBox + AJV by unifying type authoring, validation, and semantics in one model.
+- Declarative JSON Schema serves as the input language for types and constraints.
+- Authored JSON Schema translates into one canonical graph that is lossless execution data.
+- Validation consumes that graph directly instead of re-interpreting JSON Schema ad hoc.
+- Ontology output reads from the same graph used by validation.
+- JSON-LD graphs provide the semantic backbone for ontological tooling, reasoning, and exploration.
+- A unified model for type authoring, validation, and semantics delivers a developer experience that exceeds TypeBox + AJV.
 
 ## Design Contract
 
-The project is now defined by these architectural constraints:
+The project is defined by these architectural constraints:
 
 - The canonical internal representation is a graph, not raw JSON Schema objects.
-- Validation uses the graph natively.
+- Validation reads the graph natively.
 - Ontology generation consumes the same canonical graph as validation.
 - The ontology is not a heuristic documentation layer. It is lossless execution data.
-- JSON Schema keywords such as object properties, `$ref`, `$defs`, anchors, composition, and conditional structure must lower into explicit graph entities and relationships.
+- JSON Schema keywords such as object properties, `$ref`, `$defs`, anchors, composition, and conditional structure lower into explicit graph entities and relationships.
 - Domain and range are first-class graph relations, not a post-processing guess.
-- TBox and ABox exports must preserve the identifiers and semantic relationships used at runtime.
+- TBox and ABox exports preserve the identifiers and semantic relationships used at runtime.
 
 ## Architecture
 
@@ -95,48 +95,23 @@ SHACL JSON-LD output uses standard SHACL predicates where possible
 for access modifiers). Only `jt:multipleOf` requires a custom predicate — SHACL
 and XSD have no divisibility constraint.
 
-## Public Surface
+All RDF projections emit full IRIs (e.g. `http://www.w3.org/ns/shacl#property`)
+instead of CURIE shortcuts (`sh:property`). The `Curie` class handles compact URI
+expansion and compaction for interoperability with external RDF tools.
 
-The repository currently exposes:
+## Package Exports
 
-- `json-tology` for the high-level entry point
-- `json-tology/types` for public type helpers
-- `json-tology/interfaces` for public interfaces
-- `json-tology/modules/graph`
-- `json-tology/modules/validation`
-- `json-tology/modules/data`
-- `json-tology/modules/registry`
-- `json-tology/modules/composition`
-- `json-tology/modules/format`
-- `json-tology/modules/hash`
-- `json-tology/modules/materialization`
-- `json-tology/modules/ontology`
-- `json-tology/modules/transform`
-- `json-tology/modules/logger`
+| Import | Contents |
+|--------|----------|
+| `json-tology` | Everything — JsonTology facade, all classes, types, errors |
+| `json-tology/value` | Value, Changeset, Hash |
+| `json-tology/schema` | SchemaRegistry, SchemaLoader, FormatRegistry, Compose, Transform |
+| `json-tology/ontology` | OntologyBuilder, GraphOntologySerializer, GraphShaclSerializer, GraphSchemaSerializer |
+| `json-tology/types` | Type aliases (InferType, DiffOpType, etc.) |
+| `json-tology/interfaces` | Interface contracts (LoggerInterface, RegistryOptionsInterface, etc.) |
+| `json-tology/viz` | HtmlRenderer, TypeStringEmitter, VizDataCollector, visualization types |
 
-The docs in this repository describe the target architecture and product contract first. When code and docs diverge, the graph-native contract is the intended direction.
-
-## High-Level Objectives
-
-- one graph-native semantic backbone
-- declarative JSON Schema authoring
-- TypeScript-compatible typing from the same semantics used at runtime
-- compile-time, build-time, and runtime use of one canonical graph
-- faithful serialization to JSON-LD / RDF, JSON Schema, and TypeScript types
-- TBox and ABox support from the same identifiers and relations
-
-## Coverage Goal
-
-The long-term coverage target is the shared semantic surface spanned by TypeBox, TypeScript typing, JSON-LD, SHACL, and AJV, while matching the authoring and inference cases users reach for in `json-schema-to-ts`.
-
-`json-tology` should model those common cases once in its canonical graph and expose the corresponding authoring, inference, execution, and serialization behavior from that one backbone.
-
-## Non-Goals
-
-- maintaining a separate ontology derivation path
-- treating ontology output as best-effort documentation only
-- preserving convenience APIs that obscure the canonical graph boundary
-- competing with validator libraries on validation alone while ignoring semantics
+Sub-path imports enable tree-shaking. Use `json-tology/value` to pull only value operations without validation or ontology code.
 
 ## Quick Start
 
@@ -159,14 +134,16 @@ type User = InferType<typeof UserSchema>;
 const jt = JsonTology.create({
   baseIRI: 'https://example.com',
   schemas: [UserSchema] as const,
+  // Optional: vocabulary plugins for custom RDF vocabularies
+  // vocabularies: [myVocabularyPlugin],
 });
 
 // Validate
 const errors = jt.validate(UserSchema.$id, { name: 'Alice', email: 'alice@co.io' });
 // → []
 
-// Parse (validate + apply defaults, throws on invalid)
-const user = jt.parse(UserSchema.$id, { name: 'Alice', email: 'alice@co.io' });
+// Coerce (validate + apply defaults, throws on invalid)
+const user = jt.coerce(UserSchema.$id, { name: 'Alice', email: 'alice@co.io' });
 // → { name: 'Alice', email: 'alice@co.io', role: 'viewer' }
 
 // Materialize (build from partial with defaults)
@@ -180,7 +157,7 @@ console.log(jt.ontology().jsonLd());
 console.log(jt.ontology().shaclJsonLd());
 
 // ABox — project validated instance data to RDF
-console.log(jt.abox(UserSchema, user).jsonLd());
+console.log(jt.toQuads(UserSchema, user).jsonLd());
 ```
 
 ## Examples
@@ -198,6 +175,21 @@ node examples/06-composition.mjs
 ```
 
 See [`examples/README.md`](./examples/README.md) for descriptions.
+
+## Documentation
+
+| Guide | Covers |
+|-------|--------|
+| [Getting Started](./docs/getting-started.md) | Install, create instance, first validation |
+| [Validation](./docs/validation.md) | validate, errors, is, coerce, validateAt |
+| [Value Operations](./docs/value.md) | clone, hash, diff, cast, clean, convert, create |
+| [Schema Management](./docs/schemas.md) | register, load, format validators, introspection |
+| [Schema Composition](./docs/composition.md) | extend, pick, omit, partial, required, intersection, discriminatedUnion |
+| [Transforms](./docs/transforms.md) | decode/encode, brand, pipe |
+| [Materialization](./docs/materialization.md) | materialize, createDefault, ABox projection |
+| [Ontology](./docs/ontology.md) | OWL, SHACL, JSON-LD, custom prefixes, vocabulary plugins, CURIE expansion |
+| [Type Inference](./docs/types.md) | InferType, type-safe coerce, reference maps |
+| [CLI](./docs/cli.md) | build command, output formats |
 
 ## CLI
 

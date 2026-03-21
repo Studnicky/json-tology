@@ -1,7 +1,7 @@
 import type { MaterializationResultInterface } from './materializer.js';
 import type { QuadInterface } from './quad.js';
 import type { InferSchemaType } from '../types/infer.js';
-import type { JSONSchema7Definition as JSONSchemaType } from 'json-schema';
+import type { JSONSchema7Definition } from 'json-schema';
 
 export interface MaterializerInterface {
   createDefault(schema: Record<string, unknown> & { '$id': string }): unknown;
@@ -11,7 +11,7 @@ export interface MaterializerInterface {
     options?: { 'baseIRI'?: string;
       'synthesizeDefaults'?: boolean }
   ): MaterializationResultInterface;
-  materialize<TSchema extends JSONSchemaType & { readonly '$id': string }>(
+  materialize<TSchema extends JSONSchema7Definition & { readonly '$id': string }>(
     schema: TSchema,
     partial?: Partial<InferSchemaType<TSchema>>,
   ): InferSchemaType<TSchema>;

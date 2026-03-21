@@ -17,7 +17,7 @@ import type {
 import type { LoggerInterface } from '../../interfaces/logger.js';
 import type { SchemaLoaderInterface } from '../../interfaces/schema-loader-impl.js';
 import { LoadError } from '../../errors/LoadError.js';
-import { Logger } from '../logger/Logger.js';
+import { SILENT_LOGGER } from '../../constants/logger.js';
 
 
 /**
@@ -31,7 +31,7 @@ export class SchemaLoader implements SchemaLoaderInterface {
    *
    * @param logger - Optional logger (defaults to silent)
    */
-  public constructor(private readonly logger: LoggerInterface = new Logger({ 'silent': true })) {}
+  public constructor(private readonly logger: LoggerInterface = SILENT_LOGGER) {}
 
   /**
    * Collect all $anchor values in a schema and return duplicates.
@@ -154,7 +154,7 @@ export class SchemaLoader implements SchemaLoaderInterface {
             errors.push({
               'file': relativePath,
               'message': 'Schema must have $id property',
-              'reason': 'no-id'
+              'reason': 'missing-id'
             });
             failed++;
             if (stopOnError) {

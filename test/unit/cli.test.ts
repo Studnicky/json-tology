@@ -104,198 +104,170 @@ void describe('CLI', () => {
     });
   });
 
-  void describe('argument parsing', () => {
-    void it('runs the built CLI from the published bin path', () => {
-      const packageJson = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as {
-        'bin': Record<string, string>;
-      };
+  void it('runs from published bin path and rejects invalid arguments', () => {
+    // Bin path exists
+    const packageJson = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as {
+      'bin': Record<string, string>;
+    };
 
-      assert.equal(packageJson.bin['json-tology'], './dist/cli.js');
-      assert.ok(existsSync(CLI));
-    });
+    assert.equal(packageJson.bin['json-tology'], './dist/cli.js');
+    assert.ok(existsSync(CLI));
 
-    void it('exits with usage when no arguments given', () => {
-      const result = run('');
+    // Table-driven argument rejection scenarios
+    const scenarios: Array<[string, RegExp]> = [
+      [
+        '',
+        /Usage/u
+      ],
+      [
+        'validate',
+        /Usage/u
+      ],
+      [
+        `build --output ${outputDir}`,
+        /Usage/u
+      ],
+      [
+        `build --schema ${join(schemasDir, '*.json')}`,
+        /Usage/u
+      ],
+      [
+        `build --schema ${join(schemasDir, '*.json')} --output ${outputDir} --verbose`,
+        /Unknown option/u
+      ]
+    ];
 
-      assert.notEqual(result.status, 0);
-      assert.match(result.stderr, /Usage/u);
-    });
-
-    void it('exits with usage when command is not build', () => {
-      const result = run('validate');
-
-      assert.notEqual(result.status, 0);
-      assert.match(result.stderr, /Usage/u);
-    });
-
-    void it('exits with usage when --schema is missing', () => {
-      const result = run(`build --output ${outputDir}`);
-
-      assert.notEqual(result.status, 0);
-      assert.match(result.stderr, /Usage/u);
-    });
-
-    void it('exits with usage when --output is missing', () => {
-      const result = run(`build --schema ${join(schemasDir, '*.json')}`);
-
-      assert.notEqual(result.status, 0);
-      assert.match(result.stderr, /Usage/u);
-    });
-
-    void it('exits with error on unknown option', () => {
-      const result = run(`build --schema ${join(schemasDir, '*.json')} --output ${outputDir} --verbose`);
+    for (const [
+      args,
+      pattern
+    ] of scenarios) {
+      const result = run(args);
 
       assert.notEqual(result.status, 0);
-      assert.match(result.stderr, /Unknown option/u);
-    });
+      assert.match(result.stderr, pattern);
+    }
   });
 
-  void describe('build --format artifact (default)', () => {
-    void it('produces artifact JSON files for each schema', () => {
-      const result = run(`build --schema "${join(schemasDir, '*.json')}" --output ${outputDir}`);
+  void it('builds artifact format (default) with normIR and metadata', () => {
+    const result = run(`build --schema "${join(schemasDir, '*.json')}" --output ${outputDir}`);
 
-      assert.equal(result.status, 0);
-      assert.match(result.stdout, /Built 2 graph/u);
+    assert.equal(result.status, 0);
+    assert.match(result.stdout, /Built 2 graph/u);
 
-      const files = execSync(`ls ${outputDir}`).toString()
-        .trim()
-        .split('\n')
-        .sort();
+    const files = execSync(`ls ${outputDir}`).toString()
+      .trim()
+      .split('\n')
+      .sort();
 
-      assert.equal(files.length, 2);
-      assert.ok(files.some((file) => {
-        return file.includes('artifact.json');
-      }));
+    assert.equal(files.length, 2);
+    assert.ok(files.some((file) => {
+      return file.includes('artifact.json');
+    }));
 
-      // Verify artifact structure
-      const artifactFile = files.find((file) => {
-        return file.includes('Person');
-      });
-
-      assert.ok(artifactFile !== undefined, 'Person artifact file should exist');
-      const artifact = JSON.parse(readFileSync(join(outputDir, artifactFile), 'utf8')) as Record<string, unknown>;
-
-      const normIR = artifact.normIR as Record<string, unknown> | undefined;
-
-      assert.ok(normIR !== undefined);
-      assert.ok(normIR.rootSchema !== undefined);
-      assert.ok(typeof artifact.semanticsHashes === 'object');
+    const artifactFile = files.find((file) => {
+      return file.includes('Person');
     });
+
+    assert.ok(artifactFile !== undefined);
+    const artifact = JSON.parse(readFileSync(join(outputDir, artifactFile), 'utf8')) as Record<string, unknown>;
+    const normIR = artifact.normIR as Record<string, unknown> | undefined;
+
+    assert.ok(normIR !== undefined);
+    assert.ok(normIR.rootSchema !== undefined);
+    assert.ok(typeof artifact.semanticsHashes === 'object');
   });
 
-  void describe('build --format schema', () => {
-    void it('produces schema JSON files', () => {
-      const result = run(`build --schema "${join(schemasDir, '*.json')}" --output ${outputDir} --format schema`);
+  void it('builds schema format', () => {
+    const result = run(`build --schema "${join(schemasDir, '*.json')}" --output ${outputDir} --format schema`);
 
-      assert.equal(result.status, 0);
+    assert.equal(result.status, 0);
 
-      const files = execSync(`ls ${outputDir}`).toString()
-        .trim()
-        .split('\n')
-        .sort();
+    const files = execSync(`ls ${outputDir}`).toString()
+      .trim()
+      .split('\n')
+      .sort();
 
-      assert.equal(files.length, 2);
-      assert.ok(files.every((file) => {
-        return file.includes('schema.json');
-      }));
+    assert.equal(files.length, 2);
+    assert.ok(files.every((file) => {
+      return file.includes('schema.json');
+    }));
 
-      const schemaFile = files.find((file) => {
-        return file.includes('Person');
-      });
-
-      assert.ok(schemaFile !== undefined, 'Person schema file should exist');
-      const content = JSON.parse(readFileSync(join(outputDir, schemaFile), 'utf8')) as unknown;
-
-      assert.ok(content !== undefined);
+    const schemaFile = files.find((file) => {
+      return file.includes('Person');
     });
+
+    assert.ok(schemaFile !== undefined);
+    assert.ok(JSON.parse(readFileSync(join(outputDir, schemaFile), 'utf8')) !== undefined);
   });
 
-  void describe('build --format ontology', () => {
-    void it('produces a single ontology.jsonld file', () => {
-      const result = run(`build --schema "${join(schemasDir, '*.json')}" --output ${outputDir} --format ontology`);
+  void it('builds ontology format with base-iri and output-file options', () => {
+    // Default ontology output
+    const result = run(`build --schema "${join(schemasDir, '*.json')}" --output ${outputDir} --format ontology`);
 
-      assert.equal(result.status, 0);
+    assert.equal(result.status, 0);
+    assert.ok(existsSync(join(outputDir, 'ontology.jsonld')));
+    const content = JSON.parse(readFileSync(join(outputDir, 'ontology.jsonld'), 'utf8')) as unknown;
 
-      const outFile = join(outputDir, 'ontology.jsonld');
+    assert.ok(typeof content === 'object' && content !== null);
 
-      assert.ok(existsSync(outFile));
+    // --base-iri
+    const outputDir2 = join(tmp, 'out2');
+    const result2 = run(`build --schema "${join(schemasDir, '*.json')}" --output ${outputDir2} --format ontology --base-iri https://consumer.example/base`);
 
-      const content = JSON.parse(readFileSync(outFile, 'utf8')) as unknown;
+    assert.equal(result2.status, 0);
+    const content2 = JSON.parse(readFileSync(join(outputDir2, 'ontology.jsonld'), 'utf8')) as Record<string, unknown>;
 
-      assert.ok(typeof content === 'object' && content !== null, 'ontology output should be a JSON object');
-    });
+    assert.equal(content2['@id'], 'https://consumer.example/base/ontology/');
 
-    void it('uses --base-iri for the ontology document id', () => {
-      const result = run(`build --schema "${join(schemasDir, '*.json')}" --output ${outputDir} --format ontology --base-iri https://consumer.example/base`);
+    // --output-file
+    const outputDir3 = join(tmp, 'out3');
+    const result3 = run(`build --schema "${join(schemasDir, '*.json')}" --output ${outputDir3} --format ontology --output-file custom-ontology.jsonld --base-iri https://consumer.example/base`);
 
-      assert.equal(result.status, 0);
-
-      const outFile = join(outputDir, 'ontology.jsonld');
-      const content = JSON.parse(readFileSync(outFile, 'utf8')) as Record<string, unknown>;
-
-      assert.equal(content['@id'], 'https://consumer.example/base/ontology/');
-    });
-
-    void it('uses --output-file to override the default ontology filename', () => {
-      const result = run(`build --schema "${join(schemasDir, '*.json')}" --output ${outputDir} --format ontology --output-file custom-ontology.jsonld --base-iri https://consumer.example/base`);
-
-      assert.equal(result.status, 0);
-      assert.ok(existsSync(join(outputDir, 'custom-ontology.jsonld')));
-      assert.equal(existsSync(join(outputDir, 'ontology.jsonld')), false);
-    });
+    assert.equal(result3.status, 0);
+    assert.ok(existsSync(join(outputDir3, 'custom-ontology.jsonld')));
+    assert.equal(existsSync(join(outputDir3, 'ontology.jsonld')), false);
   });
 
-  void describe('build --format shacl', () => {
-    void it('produces a single shacl.jsonld file', () => {
-      const result = run(`build --schema "${join(schemasDir, '*.json')}" --output ${outputDir} --format shacl`);
+  void it('builds shacl format', () => {
+    const result = run(`build --schema "${join(schemasDir, '*.json')}" --output ${outputDir} --format shacl`);
 
-      assert.equal(result.status, 0);
+    assert.equal(result.status, 0);
+    assert.ok(existsSync(join(outputDir, 'shacl.jsonld')));
+    const content = JSON.parse(readFileSync(join(outputDir, 'shacl.jsonld'), 'utf8')) as unknown;
 
-      const outFile = join(outputDir, 'shacl.jsonld');
-
-      assert.ok(existsSync(outFile));
-
-      const content = JSON.parse(readFileSync(outFile, 'utf8')) as unknown;
-
-      assert.ok(typeof content === 'object' && content !== null, 'SHACL output should be a JSON object');
-    });
+    assert.ok(typeof content === 'object' && content !== null);
   });
 
-  void describe('build with single file path (no glob)', () => {
-    void it('handles a direct file path without wildcards', () => {
-      const result = run(`build --schema "${join(schemasDir, 'person.json')}" --output ${outputDir}`);
+  void it('handles single file path and rejects unknown formats', () => {
+    // Single file (no glob)
+    const result = run(`build --schema "${join(schemasDir, 'person.json')}" --output ${outputDir}`);
 
-      assert.equal(result.status, 0);
-      assert.match(result.stdout, /Built 1 graph/u);
-    });
+    assert.equal(result.status, 0);
+    assert.match(result.stdout, /Built 1 graph/u);
+
+    // Unknown format
+    const csvResult = run(`build --schema "${join(schemasDir, '*.json')}" --output ${outputDir} --format csv`);
+
+    assert.notEqual(csvResult.status, 0);
+    assert.match(csvResult.stderr, /Unknown format/u);
+
+    // Turtle formats rejected
+    for (const fmt of [
+      'turtle',
+      'shacl-turtle'
+    ]) {
+      const fmtResult = run(`build --schema "${join(schemasDir, '*.json')}" --output ${outputDir} --format ${fmt}`);
+
+      assert.notEqual(fmtResult.status, 0);
+      assert.match(fmtResult.stderr, /Unknown format/u);
+    }
   });
 
-  void describe('build --format unknown', () => {
-    void it('exits with error for unknown format', () => {
-      const result = run(`build --schema "${join(schemasDir, '*.json')}" --output ${outputDir} --format csv`);
+  void it('creates the output directory if it does not exist', () => {
+    const nested = join(outputDir, 'deep', 'nested');
+    const result = run(`build --schema "${join(schemasDir, 'person.json')}" --output ${nested}`);
 
-      assert.notEqual(result.status, 0);
-      assert.match(result.stderr, /Unknown format/u);
-    });
-
-    void it('rejects turtle output formats because JSON-LD is the supported serialization target', () => {
-      const turtleResult = run(`build --schema "${join(schemasDir, '*.json')}" --output ${outputDir} --format turtle`);
-      const shaclTurtleResult = run(`build --schema "${join(schemasDir, '*.json')}" --output ${outputDir} --format shacl-turtle`);
-
-      assert.notEqual(turtleResult.status, 0);
-      assert.match(turtleResult.stderr, /Unknown format/u);
-      assert.notEqual(shaclTurtleResult.status, 0);
-      assert.match(shaclTurtleResult.stderr, /Unknown format/u);
-    });
-  });
-
-  void describe('output directory creation', () => {
-    void it('creates the output directory if it does not exist', () => {
-      const nested = join(outputDir, 'deep', 'nested');
-      const result = run(`build --schema "${join(schemasDir, 'person.json')}" --output ${nested}`);
-
-      assert.equal(result.status, 0);
-      assert.ok(existsSync(nested));
-    });
+    assert.equal(result.status, 0);
+    assert.ok(existsSync(nested));
   });
 });

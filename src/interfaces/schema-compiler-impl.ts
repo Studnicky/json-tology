@@ -1,7 +1,7 @@
 import type { CompiledValidatorInterface } from './compiler.js';
-import type { GraphEngine } from '../modules/graph/GraphEngine.js';
+import type { GraphEngineInterface } from './graph-engine-impl.js';
 
 export interface SchemaCompilerInterface {
-  compile(engine: GraphEngine): CompiledValidatorInterface;
+  compile(engine: GraphEngineInterface): CompiledValidatorInterface;
   readonly 'lookupCompiled': ((schemaId: string) => CompiledValidatorInterface | undefined) | undefined;
 }

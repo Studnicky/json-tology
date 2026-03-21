@@ -46,6 +46,14 @@ export class BaseError extends Error {
 
   public readonly retryable: boolean;
 
+  /**
+   * Create a BaseError with a machine-readable code, human message, retry flag, and optional cause.
+   *
+   * @param code - Machine-readable error code string
+   * @param message - Human-readable error description
+   * @param retryable - Whether the operation that caused this error can be retried
+   * @param options - Optional cause for error chaining
+   */
   public constructor(code: string, message: string, retryable = false, options?: { 'cause'?: Error }) {
     super(message, options);
     this.code = code;

@@ -15,12 +15,13 @@
  *     encode: (d: Date) => d.toISOString(),
  *   },
  * );
- * type Decoded = ParseOutputType<typeof DateSchema>; // Date
+ * const date = jt.parse(DateSchema.$id, '2026-01-01'); // typed as Date
  */
 
-import type { JSONSchema7Definition as JSONSchemaType } from 'json-schema';
+import type { JSONSchema7Definition } from 'json-schema';
 import type { TransformedType } from '../../types/transform.js';
 import type { BrandedType } from '../../types/brand.js';
+import type { InferSchemaType } from '../../types/infer.js';
 
 
 // ---------------------------------------------------------------------------
@@ -46,9 +47,9 @@ export class Transform {
    * Use `BrandOutputType<typeof schema>` to obtain the branded TypeScript type.
    */
   public static brand<
-    TSchema extends JSONSchemaType,
+    TSchema extends JSONSchema7Definition,
     TBrand extends string
-  >(schema: TSchema, _brandName: TBrand): BrandedType<TSchema, TBrand> {
+  >(schema: TSchema, _: TBrand): BrandedType<TSchema, TBrand> {
     return schema as unknown as BrandedType<TSchema, TBrand>;
   }
 
@@ -59,18 +60,16 @@ export class Transform {
    * - `encode` converts a decoded value back to the wire representation.
    *
    * The schema object is returned unchanged at runtime; only the TypeScript
-   * return type is widened to carry `ParseOutputType<T>` information.
+   * return type is widened so `parse()` returns the decoded type.
    */
   public static create<
-    TSchema extends JSONSchemaType & { readonly '$id': string; },
+    TSchema extends JSONSchema7Definition & { readonly '$id': string; },
     TOut
   >(
     schema: TSchema,
     fns: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      'decode': (input: any) => TOut;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      'encode': (output: TOut) => any;
+      'decode': (input: InferSchemaType<TSchema>) => TOut;
+      'encode': (output: TOut) => InferSchemaType<TSchema>;
     }
   ): TransformedType<TSchema, TOut> {
     transformRegistry.set(schema, fns as TransformFnsInterface);
@@ -90,7 +89,7 @@ export class Transform {
    * Encode runs right-to-left: … → T2.encode → T1.encode
    */
   public static pipe<
-    TSchema extends JSONSchemaType & { readonly '$id': string; },
+    TSchema extends JSONSchema7Definition & { readonly '$id': string; },
     TOut
   >(
     schema: TSchema,

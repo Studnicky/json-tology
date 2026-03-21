@@ -8,11 +8,11 @@ Verification status should be taken from the latest implementation run, not from
 
 The graph-native implementation is operational.
 
-As of 2026-03-14, the latest full verification pass is clean:
+As of 2026-03-21, the latest full verification pass is clean:
 
 - `npm run build`
 - `npm run type-check`
-- `npm run test` -> 631 passing
+- `npm run test` -> 292 unit tests passing, 21 e2e tests passing
 - `node ./node_modules/typescript/bin/tsc --noEmit --project tsconfig.test-types.json`
 - `npm run pack:check`
 - `npm run bench`
@@ -32,6 +32,14 @@ What is implemented:
 - broader artifact round-trip coverage for anchors, conditionals, `contains`, and pattern properties
 - production-hardened package surface, CLI path coverage, and registration rollback integrity
 - reproducible benchmark command with smoke coverage for the compiled benchmark path
+- vocabulary plugin system (`VocabularyPluginInterface`) for extensible custom RDF vocabularies
+- CURIE expansion pipeline -- all RDF projections emit full IRIs instead of CURIE shortcuts
+- `Curie` class and `CurieInterface` for compact URI expansion and compaction
+- `fromQuads()` method for reconstructing typed JS objects from RDF quads
+- `encode()` method for encoding decoded values to wire representation
+- `json-tology/viz` package export with `HtmlRenderer`, `TypeStringEmitter`, `VizDataCollector`
+- extended semantic predicates: `disjointWith`, `equivalentTo`, `inverseOf`, `transitive`, `symmetric`
+- DCAT-AP 3.0.0 e2e test coverage with property-by-property graph comparison against official W3C SHACL and OWL
 
 ## Source of Truth
 
