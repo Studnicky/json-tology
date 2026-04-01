@@ -1542,8 +1542,7 @@ void _MinItemsArraySchema;
 
 type MinItemsArr = InferType<typeof _MinItemsArraySchema>;
 
-declare const minItemsArr: MinItemsArr;
-const _mia: MinItemsBrandInterface<2> = minItemsArr;
+const _mia: MinItemsBrandInterface<2> = null as unknown as MinItemsArr;
 
 void _mia;
 
@@ -1561,8 +1560,7 @@ void _MaxItemsArraySchema;
 
 type MaxItemsArr = InferType<typeof _MaxItemsArraySchema>;
 
-declare const maxItemsArr: MaxItemsArr;
-const _mxa: MaxItemsBrandInterface<5> = maxItemsArr;
+const _mxa: MaxItemsBrandInterface<5> = null as unknown as MaxItemsArr;
 
 void _mxa;
 
@@ -1576,9 +1574,8 @@ void _OtherMaxItemsSchema;
 
 type OtherMaxArr = InferType<typeof _OtherMaxItemsSchema>;
 
-declare const otherMaxArr: OtherMaxArr;
 // @ts-expect-error — maxItems: 5 vs maxItems: 10 are incompatible brands
-const _mxBad: MaxItemsBrandInterface<5> = otherMaxArr;
+const _mxBad: MaxItemsBrandInterface<5> = null as unknown as OtherMaxArr;
 
 void _mxBad;
 
@@ -1717,8 +1714,7 @@ const _sk: StrictKeys = {
 void _sk;
 
 // Access a valid key
-declare const strictKeysVal: StrictKeys;
-const _skv: number | undefined = strictKeysVal.x;
+const _skv: number | undefined = ({} as unknown as StrictKeys).x;
 
 void _skv;
 

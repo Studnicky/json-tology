@@ -5,13 +5,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm run build        # Compile TypeScript to dist/
-npm run type-check   # Type check without emit
-npm run test         # Run all unit tests
-npm run clean        # Remove dist/
+npm run build            # Compile TypeScript to dist/
+npm run type-check       # Type check without emit
+npm run test             # Run smoke + unit tests (pre-commit default)
+npm run test:smoke       # Existence and sanity checks
+npm run test:unit        # Isolated module tests
+npm run test:integration # Cross-module tests
+npm run test:e2e         # Real-world scenario tests
+npm run test:types       # Compile-time type assertion tests
+npm run test:all         # All tiers
+npm run clean            # Remove dist/
 
 # Run a single test file
-tsx --test 'test/unit/schemaRegistry.test.ts'
+npx tsx --test 'test/unit/schemaRegistry.test.ts'
 ```
 
 ## Architecture
