@@ -2,7 +2,17 @@
  * Renders visualization payloads to HTML documents.
  */
 
-import type { VizPayloadInterface } from '../../interfaces/viz.js';
+import type { VizPayloadInterface } from '../../interfaces/Viz.js';
+
+const HTML_CHARSET = 'utf8';
+const VIEWPORT_SCALE = '1.0';
+const CSS_COLOR_DARK = '#333';
+const CSS_FONT_WEIGHT_SEMIBOLD = 600;
+const CSS_TRANSITION_DURATION = '0.2';
+const CSS_FONT_WEIGHT_MEDIUM = 500;
+const CSS_OPACITY_MUTED = 0.8;
+const CSS_COLOR_MID = '#666';
+const CSS_COLOR_LIGHT = '#999';
 
 /**
  * Renders schema graph visualizations as interactive HTML.
@@ -26,8 +36,8 @@ export class HtmlRenderer {
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="${HTML_CHARSET}">
+  <meta name="viewport" content="width=device-width, initial-scale=${VIEWPORT_SCALE}">
   <title>Schema Graph Visualization</title>
   <style>
     * {
@@ -39,7 +49,7 @@ export class HtmlRenderer {
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
       background: #f5f5f5;
-      color: #333;
+      color: ${CSS_COLOR_DARK};
     }
 
     .container {
@@ -57,7 +67,7 @@ export class HtmlRenderer {
 
     h1 {
       font-size: 28px;
-      font-weight: 600;
+      font-weight: ${CSS_FONT_WEIGHT_SEMIBOLD};
     }
 
     .content {
@@ -91,7 +101,7 @@ export class HtmlRenderer {
       border: 1px solid #eee;
       border-radius: 4px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all ${CSS_TRANSITION_DURATION}s;
     }
 
     .schema-item:hover {
@@ -101,14 +111,14 @@ export class HtmlRenderer {
     }
 
     .schema-id {
-      font-weight: 500;
+      font-weight: ${CSS_FONT_WEIGHT_MEDIUM};
       font-size: 14px;
     }
 
     .schema-info {
       font-size: 12px;
       margin-top: 4px;
-      opacity: 0.8;
+      opacity: ${CSS_OPACITY_MUTED};
     }
 
     .details-panel {
@@ -138,8 +148,8 @@ export class HtmlRenderer {
       cursor: pointer;
       font-size: 14px;
       border-bottom: 3px solid transparent;
-      color: #666;
-      transition: all 0.2s;
+      color: ${CSS_COLOR_MID};
+      transition: all ${CSS_TRANSITION_DURATION}s;
     }
 
     .tab.active {
@@ -170,7 +180,7 @@ export class HtmlRenderer {
     footer {
       text-align: center;
       padding: 20px;
-      color: #999;
+      color: ${CSS_COLOR_LIGHT};
       font-size: 12px;
       margin-top: 40px;
     }

@@ -1,6 +1,6 @@
 import type {
   ExtractPropertiesType, ExtractRequiredType
-} from '../types/compose.js';
+} from '../types/Compose.js';
 
 export interface IntersectionSchemaInterface<
   TSchemas extends ReadonlyArray<Record<string, unknown>>,

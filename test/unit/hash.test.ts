@@ -6,7 +6,7 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { Hash } from '../../src/modules/hash/Hash.js';
+import { Hash } from '../../src/modules/hash/hash.js';
 
 void describe('Hash.value()', () => {
   void it('returns a hex string', () => {

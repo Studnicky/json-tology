@@ -2,7 +2,7 @@
  * Generates TypeScript type definitions from schema graphs.
  */
 
-import type { SchemaGraphInterface } from '../../interfaces/schema-graph-impl.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 
 /**
  * Emits TypeScript type definitions derived from a schema graph.

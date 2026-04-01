@@ -5,221 +5,242 @@
  */
 
 import type { JSONSchema7Definition } from 'json-schema';
-import type { InferType } from './schema.js';
+import { DEFAULT_DIALECT_URI } from '../constants/DIALECT.js';
 
-export namespace BaseTypes {
-  /* ── Schema definitions ── */
+const DEFAULT_PAGE_SIZE = 20;
+const MAX_PAGE_SIZE = 1000;
 
-  const DurationDef = {
-    'description': 'Duration information',
-    'properties': {
-      'duration': { 'type': 'number' },
-      'unit': {
-        'enum': [
-          'ms',
-          's',
-          'm',
-          'h'
-        ],
-        'type': 'string'
-      }
+const DurationDef = {
+  'description': 'Duration information',
+  'properties': {
+    'duration': { 'type': 'number' },
+    'unit': {
+      'enum': [
+        'ms',
+        's',
+        'm',
+        'h'
+      ],
+      'type': 'string'
+    }
+  },
+  'required': ['duration'],
+  'type': 'object'
+} as const;
+
+const ErrorDetailsDef = {
+  'description': 'Core error information',
+  'properties': {
+    'code': { 'type': 'string' },
+    'details': { 'type': 'object' },
+    'message': { 'type': 'string' }
+  },
+  'required': ['message'],
+  'type': 'object'
+} as const;
+
+const ProgressDef = {
+  'description': 'Progress/lifecycle state',
+  'properties': {
+    'phase': { 'type': 'string' },
+    'progress': {
+      'maximum': 1,
+      'minimum': 0,
+      'type': 'number'
     },
-    'required': ['duration'],
-    'type': 'object'
-  } as const;
+    'timeRemaining': { 'type': 'number' }
+  },
+  'required': ['progress'],
+  'type': 'object'
+} as const;
 
-  const ErrorDetailsDef = {
-    'description': 'Core error information',
-    'properties': {
-      'code': { 'type': 'string' },
-      'details': { 'type': 'object' },
-      'message': { 'type': 'string' }
+const TimedDef = {
+  'description': 'Basic timestamp wrapper',
+  'properties': { 'timestamp': { 'type': 'number' } },
+  'required': ['timestamp'],
+  'type': 'object'
+} as const;
+
+const TimestampedDef = {
+  'description': 'Timestamped with duration',
+  'properties': {
+    'duration': { 'type': 'number' },
+    'endTime': { 'type': 'number' },
+    'startTime': { 'type': 'number' }
+  },
+  'required': [
+    'startTime',
+    'endTime',
+    'duration'
+  ],
+  'type': 'object'
+} as const;
+
+const ResponseDef = {
+  'description': 'Generic response container',
+  'properties': {
+    'body': { 'type': 'object' },
+    'message': { 'type': 'string' },
+    'statusCode': { 'type': 'number' },
+    'success': { 'type': 'boolean' },
+    'timestamp': { 'type': 'number' }
+  },
+  'required': ['success'],
+  'type': 'object'
+} as const;
+
+const ResultDef = {
+  'description': 'Generic result container',
+  'properties': {
+    'data': { 'type': 'object' },
+    'errorCode': { 'type': 'string' },
+    'errors': {
+      'items': { 'type': 'string' },
+      'type': 'array'
     },
-    'required': ['message'],
-    'type': 'object'
-  } as const;
+    'success': { 'type': 'boolean' },
+    'timestamp': { 'type': 'number' }
+  },
+  'required': ['success'],
+  'type': 'object'
+} as const;
 
-  const ProgressDef = {
-    'description': 'Progress/lifecycle state',
-    'properties': {
-      'phase': { 'type': 'string' },
-      'progress': {
-        'maximum': 1,
-        'minimum': 0,
-        'type': 'number'
-      },
-      'timeRemaining': { 'type': 'number' }
+const StateSnapshotDef = {
+  'description': 'State snapshot container with metadata',
+  'properties': {
+    'count': { 'type': 'number' },
+    'items': { 'type': 'array' },
+    'metadata': { 'type': 'object' },
+    'timestamp': { 'type': 'number' }
+  },
+  'required': ['items'],
+  'type': 'object'
+} as const;
+
+const SortOrderDef = {
+  'description': 'Sort direction for ordered results',
+  'enum': [
+    'asc',
+    'desc'
+  ],
+  'type': 'string'
+} as const;
+
+const CursorDef = {
+  'description': 'Opaque pagination cursor',
+  'type': 'string'
+} as const;
+
+const PaginationDef = {
+  'description': 'Pagination request parameters',
+  'properties': {
+    'cursor': { 'type': 'string' },
+    'page': {
+      'default': 1,
+      'minimum': 1,
+      'type': 'number'
     },
-    'required': ['progress'],
-    'type': 'object'
-  } as const;
-
-  const TimedDef = {
-    'description': 'Basic timestamp wrapper',
-    'properties': { 'timestamp': { 'type': 'number' } },
-    'required': ['timestamp'],
-    'type': 'object'
-  } as const;
-
-  const TimestampedDef = {
-    'description': 'Timestamped with duration',
-    'properties': {
-      'duration': { 'type': 'number' },
-      'endTime': { 'type': 'number' },
-      'startTime': { 'type': 'number' }
+    'pageSize': {
+      'default': DEFAULT_PAGE_SIZE,
+      'maximum': MAX_PAGE_SIZE,
+      'minimum': 1,
+      'type': 'number'
     },
-    'required': [
-      'startTime',
-      'endTime',
-      'duration'
-    ],
-    'type': 'object'
-  } as const;
+    'sortBy': { 'type': 'string' },
+    'sortOrder': SortOrderDef
+  },
+  'required': [] as const,
+  'type': 'object'
+} as const;
 
-  const ResponseDef = {
-    'description': 'Generic response container',
-    'properties': {
-      'body': { 'type': 'object' },
-      'message': { 'type': 'string' },
-      'statusCode': { 'type': 'number' },
-      'success': { 'type': 'boolean' },
-      'timestamp': { 'type': 'number' }
+const FilterDef = {
+  'description': 'Generic filter specification',
+  'properties': {
+    'field': { 'type': 'string' },
+    'operator': {
+      'enum': [
+        'eq',
+        'neq',
+        'gt',
+        'gte',
+        'lt',
+        'lte',
+        'in',
+        'nin',
+        'contains',
+        'startsWith',
+        'endsWith'
+      ],
+      'type': 'string'
     },
-    'required': ['success'],
-    'type': 'object'
-  } as const;
+    'value': {}
+  },
+  'required': [
+    'field',
+    'operator'
+  ],
+  'type': 'object'
+} as const;
 
-  const ResultDef = {
-    'description': 'Generic result container',
-    'properties': {
-      'data': { 'type': 'object' },
-      'errorCode': { 'type': 'string' },
-      'errors': {
-        'items': { 'type': 'string' },
-        'type': 'array'
-      },
-      'success': { 'type': 'boolean' },
-      'timestamp': { 'type': 'number' }
+const PageDef = {
+  'description': 'A page of results with pagination metadata',
+  'properties': {
+    'hasNext': { 'type': 'boolean' },
+    'hasPrev': { 'type': 'boolean' },
+    'items': {
+      'items': { 'type': 'object' },
+      'type': 'array'
     },
-    'required': ['success'],
-    'type': 'object'
-  } as const;
-
-  const StateSnapshotDef = {
-    'description': 'State snapshot container with metadata',
-    'properties': {
-      'count': { 'type': 'number' },
-      'items': { 'type': 'array' },
-      'metadata': { 'type': 'object' },
-      'timestamp': { 'type': 'number' }
+    'nextCursor': { 'type': 'string' },
+    'page': {
+      'minimum': 1,
+      'type': 'number'
     },
-    'required': ['items'],
-    'type': 'object'
-  } as const;
-
-  const SortOrderDef = {
-    'description': 'Sort direction for ordered results',
-    'enum': [
-      'asc',
-      'desc'
-    ],
-    'type': 'string'
-  } as const;
-
-  const CursorDef = {
-    'description': 'Opaque pagination cursor',
-    'type': 'string'
-  } as const;
-
-  const PaginationDef = {
-    'description': 'Pagination request parameters',
-    'properties': {
-      'cursor': { 'type': 'string' },
-      'page': {
-        'default': 1,
-        'minimum': 1,
-        'type': 'number'
-      },
-      'pageSize': {
-        'default': 20,
-        'maximum': 1000,
-        'minimum': 1,
-        'type': 'number'
-      },
-      'sortBy': { 'type': 'string' },
-      'sortOrder': SortOrderDef
+    'pageSize': {
+      'minimum': 1,
+      'type': 'number'
     },
-    'required': [] as const,
-    'type': 'object'
-  } as const;
-
-  const FilterDef = {
-    'description': 'Generic filter specification',
-    'properties': {
-      'field': { 'type': 'string' },
-      'operator': {
-        'enum': [
-          'eq',
-          'neq',
-          'gt',
-          'gte',
-          'lt',
-          'lte',
-          'in',
-          'nin',
-          'contains',
-          'startsWith',
-          'endsWith'
-        ],
-        'type': 'string'
-      },
-      'value': {}
+    'prevCursor': { 'type': 'string' },
+    'total': {
+      'minimum': 0,
+      'type': 'number'
     },
-    'required': [
-      'field',
-      'operator'
-    ],
-    'type': 'object'
-  } as const;
+    'totalPages': {
+      'minimum': 0,
+      'type': 'number'
+    }
+  },
+  'required': [
+    'items',
+    'total',
+    'page',
+    'pageSize'
+  ],
+  'type': 'object'
+} as const;
 
-  const PageDef = {
-    'description': 'A page of results with pagination metadata',
-    'properties': {
-      'hasNext': { 'type': 'boolean' },
-      'hasPrev': { 'type': 'boolean' },
-      'items': {
-        'items': { 'type': 'object' },
-        'type': 'array'
-      },
-      'nextCursor': { 'type': 'string' },
-      'page': {
-        'minimum': 1,
-        'type': 'number'
-      },
-      'pageSize': {
-        'minimum': 1,
-        'type': 'number'
-      },
-      'prevCursor': { 'type': 'string' },
-      'total': {
-        'minimum': 0,
-        'type': 'number'
-      },
-      'totalPages': {
-        'minimum': 0,
-        'type': 'number'
-      }
-    },
-    'required': [
-      'items',
-      'total',
-      'page',
-      'pageSize'
-    ],
-    'type': 'object'
-  } as const;
-
-  export const Schema = {
+export const BaseTypes = {
+  'FilterSchema': {
+    ...FilterDef,
+    '$id': 'https://json-tology.dev/schemas/base-types/filter.schema.json'
+  } as const,
+  'PageSchema': {
+    ...PageDef,
+    '$id': 'https://json-tology.dev/schemas/base-types/page.schema.json'
+  } as const,
+  'PaginationSchema': {
+    ...PaginationDef,
+    '$id': 'https://json-tology.dev/schemas/base-types/pagination.schema.json'
+  } as const,
+  'ResponseSchema': {
+    ...ResponseDef,
+    '$id': 'https://json-tology.dev/schemas/base-types/response.schema.json'
+  } as const,
+  'ResultSchema': {
+    ...ResultDef,
+    '$id': 'https://json-tology.dev/schemas/base-types/result.schema.json'
+  } as const,
+  'Schema': {
     '$defs': {
       'Cursor': CursorDef,
       'Duration': DurationDef,
@@ -236,101 +257,12 @@ export namespace BaseTypes {
       'Timestamped': TimestampedDef
     },
     '$id': 'https://json-tology.dev/schemas/base-types.schema.json',
-    '$schema': 'https://json-schema.org/draft/2020-12/schema',
+    '$schema': DEFAULT_DIALECT_URI,
     'description': 'Core container types and patterns used across multiple domains',
     'title': 'Base Types',
     'type': 'object'
-  } as const;
-
-  /* ── Individual standalone schemas (for direct registration and validation) ── */
-
-  export const ResponseSchema = {
-    ...ResponseDef,
-    '$id': 'https://json-tology.dev/schemas/base-types/response.schema.json'
-  } as const;
-
-  export const ResultSchema = {
-    ...ResultDef,
-    '$id': 'https://json-tology.dev/schemas/base-types/result.schema.json'
-  } as const;
-
-  export const PaginationSchema = {
-    ...PaginationDef,
-    '$id': 'https://json-tology.dev/schemas/base-types/pagination.schema.json'
-  } as const;
-
-  export const FilterSchema = {
-    ...FilterDef,
-    '$id': 'https://json-tology.dev/schemas/base-types/filter.schema.json'
-  } as const;
-
-  export const PageSchema = {
-    ...PageDef,
-    '$id': 'https://json-tology.dev/schemas/base-types/page.schema.json'
-  } as const;
-
-  /* ── Schema-derived types ── */
-
-  export type Duration = InferType<typeof DurationDef>;
-  export type ErrorDetails = InferType<typeof ErrorDetailsDef>;
-  export type Progress = InferType<typeof ProgressDef>;
-  export type Timed = InferType<typeof TimedDef>;
-  export type Timestamped = InferType<typeof TimestampedDef>;
-  export type SortOrder = InferType<typeof SortOrderDef>;
-  export type Cursor = string;
-  export type Pagination = InferType<typeof PaginationDef>;
-  export type Filter = InferType<typeof FilterDef>;
-
-  /**
-   * Generic response container.
-   * Use makeResponseSchema() to get a validatable schema for a concrete body type.
-   */
-  export interface Response<T> {
-    'body'?: T;
-    'message'?: string;
-    'statusCode'?: number;
-    'success': boolean;
-    'timestamp'?: number;
-  }
-
-  /**
-   * Generic result container.
-   * Use makeResultSchema() to get a validatable schema for a concrete data type.
-   */
-  export interface Result<T> {
-    'data'?: T;
-    'errorCode'?: string;
-    'errors'?: string[];
-    'success': boolean;
-    'timestamp'?: number;
-  }
-
-  /**
-   * State snapshot container with metadata.
-   */
-  export interface StateSnapshot<T> {
-    'count'?: number;
-    'items': T[];
-    'metadata'?: Record<string, unknown>;
-    'timestamp'?: number;
-  }
-
-  /**
-   * A page of results with pagination metadata.
-   * Use makePageSchema() to get a validatable schema for a concrete item type.
-   */
-  export interface Page<T> {
-    'hasNext'?: boolean;
-    'hasPrev'?: boolean;
-    'items': T[];
-    'nextCursor'?: string;
-    'page': number;
-    'pageSize': number;
-    'prevCursor'?: string;
-    'total': number;
-    'totalPages'?: number;
-  }
-}
+  } as const
+} as const;
 
 /* ── Schema factory functions ── */
 

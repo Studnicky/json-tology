@@ -11,21 +11,13 @@
  * from the schema objects. If any hash diverges, the artifact is stale.
  */
 
-import type {
-  NormIRInterface, SchemaGraphNodeInterface
-} from '../../interfaces/schema-graph.js';
-import type { SchemaGraphInterface } from '../../interfaces/schema-graph-impl.js';
+import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraph.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { GraphArtifactInterface } from '../../interfaces/GraphArtifact.js';
 import { GraphError } from '../../errors/GraphError.js';
-import { Hash } from '../hash/Hash.js';
-import { SchemaGraph } from './SchemaGraph.js';
+import { Hash } from '../hash/hash.js';
+import { SchemaGraph } from './schemaGraph.js';
 
-export interface GraphArtifactInterface {
-  'metadata': {
-    'schemaHash': string;
-  };
-  'normIR': NormIRInterface;
-  'semanticsHashes': Record<string, string>;
-}
 
 export class GraphArtifact {
   /**
@@ -34,7 +26,7 @@ export class GraphArtifact {
    * Rehydrates directly from NormIR without re-lowering, then verifies
    * per-node semantics hashes for staleness.
    */
-  public static fromArtifact(artifact: GraphArtifactInterface): SchemaGraphInterface {
+  public static fromArtifact(artifact: unknown): SchemaGraphInterface {
     if (!this.isRecord(artifact)) {
       throw new GraphError(
         'ARTIFACT_INVALID',

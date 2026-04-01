@@ -1,4 +1,4 @@
-import type { DiffOpType } from '../types/diff.js';
+import type { DiffOpType } from '../types/Diff.js';
 
 export interface ChangesetInterface {
   apply<T>(value: T): T;

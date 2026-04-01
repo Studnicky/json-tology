@@ -2,20 +2,20 @@ import type {
   NormIRInterface,
   SchemaGraphNodeInterface, SchemaGraphRelationInterface,
   SchemaGraphSemanticsInterface, StructureWarningInterface
-} from '../../interfaces/schema-graph.js';
-import type { SchemaGraphInterface } from '../../interfaces/schema-graph-impl.js';
-import type { VocabularyPluginInterface } from '../../interfaces/vocabulary-plugin.js';
-import { isRecord } from '../data/DataTypes.js';
+} from '../../interfaces/SchemaGraph.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugin.js';
+import { isRecord } from '../data/dataTypes.js';
 import { GraphError } from '../../errors/GraphError.js';
-import { extractRelations } from './SchemaGraph.relations.js';
+import { extractRelations } from './schemaGraphRelations.js';
 import {
   escapeJsonPointerSegment,
   extractSemantics,
   nodeIdFromPointer,
   resolveSchemaAtPointer,
   validateGraphStructure
-} from './SchemaGraph.support.js';
-import type { JsonSchemaType } from '../../types/schema.js';
+} from './schemaGraphSupport.js';
+import type { JsonSchemaType } from '../../types/Schema.js';
 
 export class SchemaGraph implements SchemaGraphInterface {
   /**

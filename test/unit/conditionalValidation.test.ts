@@ -9,7 +9,7 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
+import { SchemaRegistry } from '../../src/modules/registry/schemaRegistry.js';
 
 function setSchemaKey(target: Record<string, unknown>, key: string, value: unknown): Record<string, unknown> {
   Reflect.set(target, key, value);

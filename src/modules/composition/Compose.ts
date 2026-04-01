@@ -11,12 +11,12 @@ import type {
   IntersectionSchemaInterface,
   OmitSchemaInterface,
   PickSchemaInterface
-} from '../../interfaces/compose.js';
+} from '../../interfaces/Compose.js';
 import type {
   ExtendSchemaType,
   PartialSchemaType,
   RequiredSchemaType
-} from '../../types/compose.js';
+} from '../../types/Compose.js';
 
 export class Compose {
   /**
@@ -175,7 +175,7 @@ export class Compose {
    * }
    */
   public static narrow<
-    TUnion,
+    TUnion extends unknown,
     TDiscriminant extends string,
     TValue extends string
   >(

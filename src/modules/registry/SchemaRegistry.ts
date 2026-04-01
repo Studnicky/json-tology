@@ -9,26 +9,29 @@ import { BaseError } from '../../errors/BaseError.js';
 import { CoercionError } from '../../errors/CoercionError.js';
 import { SchemaError } from '../../errors/SchemaError.js';
 import { ValidationErrors } from '../../errors/ValidationErrors.js';
-import { Transform } from '../transform/Transform.js';
-import type { CompiledValidatorInterface } from '../../interfaces/compiler.js';
-import type { FormatRegistryInterface } from '../../interfaces/format-registry.js';
-import type { KeywordDefinitionInterface } from '../../interfaces/graph-engine.js';
-import type { GraphEngineInterface } from '../../interfaces/graph-engine-impl.js';
-import type { SchemaCompilerInterface } from '../../interfaces/schema-compiler-impl.js';
-import type { SchemaGraphInterface } from '../../interfaces/schema-graph-impl.js';
-import { GraphEngine } from '../graph/GraphEngine.js';
-import { Hash } from '../hash/Hash.js';
-import { Materializer } from '../materialization/Materializer.js';
-import { SchemaGraph } from '../graph/SchemaGraph.js';
-import { SchemaCompiler } from '../validation/SchemaCompiler.js';
-import type { LoggerInterface } from '../../interfaces/logger.js';
-import type { CurieInterface } from '../../interfaces/curie.js';
-import type { VocabularyPluginInterface } from '../../interfaces/vocabulary-plugin.js';
-import type { RegistryOptionsInterface } from '../../interfaces/registry.js';
-import type { SchemaRegistryInterface } from '../../interfaces/schema-registry.js';
-import { Curie } from '../rdf/Curie.js';
-import { DEFAULT_PREFIXES } from '../../constants/prefixes.js';
-import { SILENT_LOGGER } from '../../constants/logger.js';
+import { Transform } from '../transform/transform.js';
+import type { CompiledValidatorInterface } from '../../interfaces/Compiler.js';
+import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
+import type { KeywordDefinitionInterface } from '../../interfaces/GraphEngine.js';
+import type { GraphEngineInterface } from '../../interfaces/GraphEngineImpl.js';
+import type { SchemaCompilerInterface } from '../../interfaces/SchemaCompilerImpl.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import { GraphEngine } from '../graph/graphEngine.js';
+import { Hash } from '../hash/hash.js';
+import { Materializer } from '../materialization/materializer.js';
+import { SchemaGraph } from '../graph/schemaGraph.js';
+import { SchemaCompiler } from '../validation/schemaCompiler.js';
+import type { LoggerInterface } from '../../interfaces/Logger.js';
+import type { CurieInterface } from '../../interfaces/Curie.js';
+import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugin.js';
+import type { RegistryOptionsInterface } from '../../interfaces/Registry.js';
+import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
+import { Curie } from '../rdf/curie.js';
+import { DEFAULT_PREFIXES } from '../../constants/PREFIXES.js';
+import { SILENT_LOGGER } from '../../constants/LOGGER.js';
+import {
+  CURRENT_DIALECT_PREFIX, DRAFT_NAME
+} from '../../constants/DIALECT.js';
 
 
 const EMPTY_ERROR_LIST: string[] = Object.freeze([]) as unknown as string[];
@@ -49,13 +52,7 @@ const CONVERT_OPTIONS = Object.freeze({
 });
 const COLLECT_ERRORS_OPTIONS = Object.freeze({ 'collectErrors': true });
 
-interface SchemaRegistryEntryInterface {
-  'compiled'?: CompiledValidatorInterface;
-  'engine'?: GraphEngineInterface;
-  'graph'?: SchemaGraphInterface;
-  'hash': string;
-  'schema': Record<string, unknown>;
-}
+import type { SchemaRegistryEntryInterface } from '../../interfaces/SchemaRegistryEntry.js';
 
 export class SchemaRegistry implements SchemaRegistryInterface {
   public readonly castTypes: boolean;
@@ -466,10 +463,10 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       throw new SchemaError('SCHEMA_MISSING_ID', 'Schema must have a $id property');
     }
 
-    if (this.strict && typeof schema.$schema === 'string' && !schema.$schema.startsWith('https://json-schema.org/draft/2020-12/')) {
+    if (this.strict && typeof schema.$schema === 'string' && !schema.$schema.startsWith(CURRENT_DIALECT_PREFIX)) {
       throw new SchemaError(
         'SCHEMA_DIALECT_UNSUPPORTED',
-        `Strict mode requires draft 2020-12 but schema "${schemaId}" declares "${schema.$schema}"`,
+        `Strict mode requires draft ${DRAFT_NAME} but schema "${schemaId}" declares "${schema.$schema}"`,
         schemaId
       );
     }

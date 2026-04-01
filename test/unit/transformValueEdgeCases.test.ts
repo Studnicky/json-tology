@@ -6,8 +6,8 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { Transform } from '../../src/modules/transform/Transform.js';
-import { Value } from '../../src/modules/data/Value.js';
+import { Transform } from '../../src/modules/transform/transform.js';
+import { Value } from '../../src/modules/data/value.js';
 
 // ---------------------------------------------------------------------------
 // Transform edge cases

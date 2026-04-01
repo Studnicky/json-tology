@@ -9,17 +9,17 @@
  * it maps validated instance data to quads, not schema structure.
  */
 
-import type { QuadInterface } from '../../interfaces/quad.js';
-import type { QuadObjectType } from '../../types/quad.js';
-import type { SchemaGraphInterface } from '../../interfaces/schema-graph-impl.js';
+import type { QuadInterface } from '../../interfaces/Quad.js';
+import type { QuadObjectType } from '../../types/Quad.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type {
   SchemaGraphNodeInterface,
   SchemaGraphRelationInterface
-} from '../../interfaces/schema-graph.js';
-import type { CurieInterface } from '../../interfaces/curie.js';
-import { resolveSingleXsdType } from '../data/DataTypes.js';
-import { Hash } from '../hash/Hash.js';
-import { isRecord } from '../data/DataTypes.js';
+} from '../../interfaces/SchemaGraph.js';
+import type { CurieInterface } from '../../interfaces/Curie.js';
+import { resolveSingleXsdType } from '../data/dataTypes.js';
+import { Hash } from '../hash/hash.js';
+import { isRecord } from '../data/dataTypes.js';
 
 // ---------------------------------------------------------------------------
 // Blank node counter
@@ -102,8 +102,12 @@ export function rdfList(items: QuadObjectType[], _?: CurieInterface): QuadObject
   };
 }
 
-// eslint-disable-next-line @stylistic/max-len
-export function quad(subject: string, predicate: string, object: QuadObjectType, curie?: CurieInterface): QuadInterface {
+export function quad(
+  subject: string,
+  predicate: string,
+  object: QuadObjectType,
+  curie?: CurieInterface
+): QuadInterface {
   const expandedPredicate = curie ? expandCurieIfNeeded(predicate, curie) : predicate;
 
   return {
@@ -406,14 +410,33 @@ function projectPropertyValue(
 ): void {
   if (Array.isArray(value)) {
     for (const element of value) {
-      // eslint-disable-next-line @stylistic/max-len
-      projectSingleValue(graph, propertyIRI, propertySemantics, propertyNode, element, baseIRI, instanceIri, quads, curie);
+      projectSingleValue(
+        graph,
+        propertyIRI,
+        propertySemantics,
+        propertyNode,
+        element,
+        baseIRI,
+        instanceIri,
+        quads,
+        curie
+      );
     }
 
     return;
   }
 
-  projectSingleValue(graph, propertyIRI, propertySemantics, propertyNode, value, baseIRI, instanceIri, quads, curie);
+  projectSingleValue(
+    graph,
+    propertyIRI,
+    propertySemantics,
+    propertyNode,
+    value,
+    baseIRI,
+    instanceIri,
+    quads,
+    curie
+  );
 }
 
 function projectSingleValue(

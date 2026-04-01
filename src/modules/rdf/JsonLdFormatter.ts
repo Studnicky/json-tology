@@ -8,9 +8,9 @@
  * Pure function, no graph/schema access.
  */
 
-import type { QuadInterface } from '../../interfaces/quad.js';
-import type { QuadObjectType } from '../../types/quad.js';
-import { RDF_TYPE_IRI } from '../../constants/prefixes.js';
+import type { QuadInterface } from '../../interfaces/Quad.js';
+import type { QuadObjectType } from '../../types/Quad.js';
+import { RDF_TYPE_IRI } from '../../constants/PREFIXES.js';
 
 export function quadsToJsonLd(quads: QuadInterface[]): Array<Record<string, unknown>> {
   // Phase 1: group quads by subject

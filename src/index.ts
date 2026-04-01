@@ -20,108 +20,50 @@
  * jt.toQuads(UserSchema, data).jsonLd();
  */
 
-// Errors — canonical locations
-export { BaseError } from './errors/BaseError.js';
-export { CoercionError } from './errors/CoercionError.js';
-export { GraphError } from './errors/GraphError.js';
-export { LoadError } from './errors/LoadError.js';
-export { MaterializationError } from './errors/MaterializationError.js';
-export { SchemaError } from './errors/SchemaError.js';
-export { ValidationErrors } from './errors/ValidationErrors.js';
-export type {
-  DiscriminatedUnionSchemaInterface,
-  IntersectionSchemaInterface,
-  OmitSchemaInterface,
-  PickSchemaInterface
-} from './interfaces/compose.js';
-export type { JsonTologyOptionsInterface } from './interfaces/config.js';
-export type { CurieInterface } from './interfaces/curie.js';
-export type { ErrorJsonInterface } from './interfaces/error.js';
-export type {
-  GraphEngineOptionsInterface, GraphExecutionResultInterface
-} from './interfaces/graph-engine.js';
-// Types from canonical locations
-export type { LoggerInterface } from './interfaces/logger.js';
-export type { MaterializerOptionsInterface } from './interfaces/materializer.js';
-export type { OntologyBuilderOptionsInterface } from './interfaces/ontology.js';
-export type { QuadInterface } from './interfaces/quad.js';
-export { JsonTology } from './JsonTology.js';
-export { Compose } from './modules/composition/Compose.js';
+// Errors
+export * from './errors/BaseError.js';
+export * from './errors/CoercionError.js';
+export * from './errors/GraphError.js';
+export * from './errors/LoadError.js';
+export * from './errors/MaterializationError.js';
+export * from './errors/SchemaError.js';
+export * from './errors/ValidationErrors.js';
 
-export { Changeset } from './modules/data/Changeset.js';
-export { Value } from './modules/data/Value.js';
-export { GraphEngine } from './modules/graph/GraphEngine.js';
-export { Hash } from './modules/hash/Hash.js';
-// Runtime exports
-export { Materializer } from './modules/materialization/Materializer.js';
-export { GraphOntologySerializer } from './modules/ontology/GraphOntologySerializer.js';
-export { OntologyBuilder } from './modules/ontology/OntologyBuilder.js';
-export { Curie } from './modules/rdf/Curie.js';
-export {
-  fromRdfQuad, liftInstances
-} from './modules/rdf/Lift.js';
-export type { RdfJsQuadInterface } from './modules/rdf/Lift.js';
-export {
-  projectAbox, projectGraph
-} from './modules/rdf/Projection.js';
-export { Transform } from './modules/transform/Transform.js';
-export type {
-  BrandedType, BrandOutputType
-} from './types/brand.js';
-export type {
-  ExtendSchemaType,
-  ExtractRequiredType,
-  PartialSchemaType,
-  RequiredSchemaType
-} from './types/compose.js';
-export type {
-  ContainsBrandInterface,
-  ContentEncodingBrandInterface,
-  ContentMediaTypeBrandInterface,
-  DialectBrandInterface,
-  ExclusiveMaximumBrandInterface,
-  ExclusiveMinimumBrandInterface,
-  FormatBrandInterface,
-  MaximumBrandInterface,
-  MaxItemsBrandInterface,
-  MaxLengthBrandInterface,
-  MaxPropertiesBrandInterface,
-  MinimumBrandInterface,
-  MinItemsBrandInterface,
-  MinLengthBrandInterface,
-  MinPropertiesBrandInterface,
-  MultipleOfBrandInterface,
-  PatternBrandInterface,
-  SchemaIdBrandInterface,
-  UniqueItemsBrandInterface
-} from './types/constraint-brands.js';
-export type {
-  DelOpType, DiffOpType, SetOpType
-} from './types/diff.js';
-export type {
-  GraphErrorCodeType, LoadErrorCodeType, SchemaErrorCodeType
-} from './types/error-codes.js';
-export type {
-  DefaultAlignedType,
-  DeprecatedKeysType,
-  DiscriminatorPropertyType,
-  EnumValuesType,
-  ExhaustiveType,
-  InferSchemaType,
-  IntegerRangeType,
-  LooseInputType,
-  MultipleOfRangeType,
-  NominalSchemaType,
-  NonDeprecatedSchemaType
-} from './types/infer.js';
-export type { QuadObjectType } from './types/quad.js';
-export type { InferType } from './types/schema.js';
+// Interfaces
+export type * from './interfaces/Compose.js';
+export type * from './interfaces/Config.js';
+export type * from './interfaces/Curie.js';
+export type * from './interfaces/Error.js';
+export type * from './interfaces/GraphEngine.js';
+export type * from './interfaces/Logger.js';
+export type * from './interfaces/Materializer.js';
+export type * from './interfaces/Ontology.js';
+export type * from './interfaces/Quad.js';
 
-export type {
-  TransformedType
-} from './types/transform.js';
-export type {
-  IsEnabledType,
-  JsonTologyTypeConfigInterface
-} from './types/type-config.js';
-export type { ValidationErrorType } from './types/validation.js';
+// Runtime classes
+export * from './JsonTology.js';
+export * from './modules/composition/compose.js';
+export * from './modules/data/changeset.js';
+export * from './modules/data/value.js';
+export * from './modules/graph/graphEngine.js';
+export * from './modules/hash/hash.js';
+export * from './modules/materialization/materializer.js';
+export * from './modules/ontology/graphOntologySerializer.js';
+export * from './modules/ontology/ontologyBuilder.js';
+export * from './modules/rdf/curie.js';
+export * from './modules/rdf/lift.js';
+export * from './modules/rdf/projection.js';
+export * from './modules/transform/transform.js';
+
+// Types
+export type * from './types/Brand.js';
+export type * from './types/Compose.js';
+export type * from './types/ConstraintBrands.js';
+export type * from './types/Diff.js';
+export type * from './types/ErrorCodes.js';
+export type * from './types/Infer.js';
+export type * from './types/Quad.js';
+export type * from './types/Schema.js';
+export type * from './types/Transform.js';
+export type * from './types/TypeConfig.js';
+export type * from './types/Validation.js';

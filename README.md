@@ -154,7 +154,7 @@ const blank = jt.materialize(UserSchema, {});
 console.log(jt.ontology().jsonLd());
 
 // SHACL shapes (JSON-LD)
-console.log(jt.ontology().shaclJsonLd());
+console.log(jt.ontology().shaclObject());
 
 // ABox — project validated instance data to RDF
 console.log(jt.toQuads(UserSchema, user).jsonLd());

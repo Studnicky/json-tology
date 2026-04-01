@@ -6,8 +6,8 @@
  * and flatten() for structured consumption.
  */
 
-import type { ErrorJsonInterface } from '../interfaces/error.js';
-import type { ValidationErrorType } from '../types/validation.js';
+import type { ErrorJsonInterface } from '../interfaces/Error.js';
+import type { ValidationErrorType } from '../types/Validation.js';
 
 export class BaseError extends Error {
   private static errorToJson(error: Error): ErrorJsonInterface {

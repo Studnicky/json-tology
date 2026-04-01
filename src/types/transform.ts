@@ -1,5 +1,5 @@
-import type { TransformBrandInterface } from '../interfaces/transform-brand.js';
-import type { InferSchemaType } from './infer.js';
+import type { TransformBrandInterface } from '../interfaces/TransformBrand.js';
+import type { InferSchemaType } from './Infer.js';
 
 /**
  * A schema annotated with a transform.
@@ -14,6 +14,5 @@ export type TransformedType<TSchema, TOut> = TransformBrandInterface<TOut> & TSc
  *
  * @typeParam TReferences - Cross-schema references map for $ref resolution.
  */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export type ParseOutputType<TSchema, TReferences = {}>
+export type ParseOutputType<TSchema, TReferences = Record<never, never>>
   = TSchema extends TransformBrandInterface<infer Out> ? Out : InferSchemaType<TSchema, TSchema, TReferences>;

@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import {
   BaseTypes, makePageSchema, makeResponseSchema, makeResultSchema
 } from '../../src/types/BaseTypes.js';
-import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
+import { SchemaRegistry } from '../../src/modules/registry/schemaRegistry.js';
 
 void describe('BaseTypes', () => {
   void it('Schema has $id and $defs with all expected types, standalone schemas have $id', () => {

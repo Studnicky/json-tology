@@ -1,5 +1,5 @@
 /**
- * CURIE (Compact URI) namespace handler for prefix expansion and compaction.
+ * CURIE (Compact URI) prefix handler for IRI expansion and compaction.
  *
  * Maps between compact notation (e.g., `ex:name`) and full IRIs (e.g., `https://example.com/name`).
  */

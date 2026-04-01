@@ -1,7 +1,7 @@
 import { JsonTology } from '../../src/JsonTology.js';
-import { Transform } from '../../src/modules/transform/Transform.js';
-import type { InferType } from '../../src/types/schema.js';
-import type { ParseOutputType } from '../../src/types/transform.js';
+import { Transform } from '../../src/modules/transform/transform.js';
+import type { InferType } from '../../src/types/Schema.js';
+import type { ParseOutputType } from '../../src/types/Transform.js';
 
 const DateTimeSchema = {
   '$id': 'https://example.io/DateTime',

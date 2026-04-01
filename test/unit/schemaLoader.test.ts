@@ -10,7 +10,7 @@ import {
   mkdirSync, rmSync, writeFileSync
 } from 'node:fs';
 import { resolve } from 'node:path';
-import { SchemaLoader } from '../../src/modules/registry/SchemaLoader.js';
+import { SchemaLoader } from '../../src/modules/registry/schemaLoader.js';
 import { Logger } from '../utils/Logger.js';
 
 const testDir = resolve(import.meta.dirname, 'fixtures', 'schemas');

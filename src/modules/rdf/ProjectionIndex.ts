@@ -6,18 +6,15 @@
  * classification helpers for subject IRIs.
  */
 
-import type { SchemaGraphRelationInterface } from '../../interfaces/schema-graph.js';
-import type { RelationStructure } from '../../types/schema-graph.js';
+import type { SchemaGraphRelationInterface } from '../../interfaces/SchemaGraph.js';
+import type { RelationStructure } from '../../types/SchemaGraph.js';
+import type { RelationIndexInterface } from '../../interfaces/RelationIndex.js';
+
+export type { RelationIndexInterface } from '../../interfaces/RelationIndex.js';
 
 // ---------------------------------------------------------------------------
 // Relation index
 // ---------------------------------------------------------------------------
-
-export interface RelationIndexInterface {
-  'all': SchemaGraphRelationInterface[];
-  'byPredicate': Map<string, SchemaGraphRelationInterface[]>;
-  'types': string[];
-}
 
 export function buildIndex(allRelations: SchemaGraphRelationInterface[]): Map<string, RelationIndexInterface> {
   const index = new Map<string, RelationIndexInterface>();

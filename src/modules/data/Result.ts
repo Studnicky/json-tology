@@ -1,4 +1,4 @@
-import type { ResultInterface } from '../../interfaces/result.js';
+import type { ResultInterface } from '../../interfaces/Result.js';
 import { CoercionError } from '../../errors/CoercionError.js';
 import type { ValidationErrors } from '../../errors/ValidationErrors.js';
 
@@ -9,7 +9,7 @@ export class Result<T> implements ResultInterface<T> {
    * @param errors - Validation errors explaining the failure
    * @returns Failed Result with no data
    */
-  static fail<T>(errors: ValidationErrors): Result<T> {
+  static fail<T extends unknown>(errors: ValidationErrors): Result<T> {
     return new Result<T>(false, undefined, errors);
   }
 
@@ -19,7 +19,7 @@ export class Result<T> implements ResultInterface<T> {
    * @param data - Validated data
    * @returns Successful Result with data
    */
-  static pass<T>(data: T): Result<T> {
+  static pass<T extends unknown>(data: T): Result<T> {
     return new Result<T>(true, data, undefined);
   }
 
@@ -35,7 +35,7 @@ export class Result<T> implements ResultInterface<T> {
    * @param transform - Function to apply to the contained data
    * @returns New Result with the transformed data, or the original failure
    */
-  map<U>(transform: (data: T) => U): Result<U> {
+  map<U extends unknown>(transform: (data: T) => U): Result<U> {
     return this.success
       ? Result.pass(transform(this.data as T))
       : Result.fail<U>(this.errors as ValidationErrors);

@@ -1,0 +1,481 @@
+import type {
+  SchemaGraphNodeInterface,
+  SchemaGraphSemanticsInterface, StructureWarningInterface
+} from '../../interfaces/SchemaGraph.js';
+import { GraphError } from '../../errors/GraphError.js';
+import {
+  RDFS_DOMAIN_IRI, RDFS_RANGE_IRI
+} from '../../constants/PREFIXES.js';
+import { isRecord } from '../data/dataTypes.js';
+import type { JsonSchemaType } from '../../types/Schema.js';
+import type { GraphAccessor } from '../../interfaces/GraphAccessor.js';
+
+export type { GraphAccessor } from '../../interfaces/GraphAccessor.js';
+
+const DEFS_POINTER_PARTS_LENGTH = 3;
+const MIN_PROPERTY_POINTER_PARTS = 3;
+
+export const KNOWN_SCHEMA_KEYWORDS = new Set([
+  '$anchor',
+  '$comment',
+  '$defs',
+  '$dynamicAnchor',
+  '$dynamicRef',
+  '$id',
+  '$recursiveAnchor',
+  '$recursiveRef',
+  '$ref',
+  '$schema',
+  '$vocabulary',
+  'additionalItems',
+  'additionalProperties',
+  'allOf',
+  'anyOf',
+  'const',
+  'contains',
+  'contentEncoding',
+  'contentMediaType',
+  'default',
+  'definitions',
+  'dependentRequired',
+  'dependentSchemas',
+  'deprecated',
+  'description',
+  'discriminator',
+  'disjointWith',
+  'else',
+  'enum',
+  'equivalentTo',
+  'examples',
+  'exclusiveMaximum',
+  'exclusiveMinimum',
+  'format',
+  'if',
+  'inverseOf',
+  'items',
+  'maxContains',
+  'maximum',
+  'maxItems',
+  'maxLength',
+  'maxProperties',
+  'minContains',
+  'minimum',
+  'minItems',
+  'minLength',
+  'minProperties',
+  'multipleOf',
+  'not',
+  'oneOf',
+  'pattern',
+  'patternProperties',
+  'prefixItems',
+  'properties',
+  'propertyNames',
+  'rdfs:domain',
+  'rdfs:range',
+  'readOnly',
+  'required',
+  'symmetric',
+  'then',
+  'title',
+  'transitive',
+  'type',
+  'unevaluatedItems',
+  'unevaluatedProperties',
+  'uniqueItems',
+  'writeOnly'
+]);
+
+export function escapeJsonPointerSegment(segment: string): string {
+  return segment.replaceAll('~', '~0').replaceAll('/', '~1');
+}
+
+export function unescapeJsonPointerSegment(segment: string): string {
+  return segment.replaceAll('~1', '/').replaceAll('~0', '~');
+}
+
+export function resolveSchemaAtPointer(rootSchema: JsonSchemaType, pointer: string): JsonSchemaType {
+  if (pointer === '') {
+    return rootSchema;
+  }
+  if (!pointer.startsWith('/')) {
+    throw new GraphError('POINTER_INVALID', `Invalid JSON Pointer: ${pointer}`, pointer);
+  }
+
+  let current: unknown = rootSchema;
+
+  const segments = pointer.slice(1).split('/')
+    .map((segment) => {
+      return unescapeJsonPointerSegment(segment);
+    });
+
+  for (const segment of segments) {
+    if (!isRecord(current) && !Array.isArray(current)) {
+      throw new GraphError('POINTER_NOT_FOUND', `Pointer not found: ${pointer}`, pointer);
+    }
+    current = (current as Record<string, unknown>)[segment];
+  }
+  if (typeof current !== 'boolean' && !isRecord(current)) {
+    throw new GraphError('POINTER_NOT_SCHEMA', `Pointer does not resolve to a schema: ${pointer}`, pointer);
+  }
+
+  return current;
+}
+
+export function emptySchemaGraphSemantics(): SchemaGraphSemanticsInterface {
+  return {
+    'additionalItemsNode': undefined,
+    'additionalPropertiesNode': undefined,
+    'allOf': [],
+    'anyOf': [],
+    'comment': undefined,
+    'complementNode': undefined,
+    'constValue': undefined,
+    'containsNode': undefined,
+    'contentEncoding': undefined,
+    'contentMediaType': undefined,
+    'defaultValue': undefined,
+    'definitions': [],
+    'dependentRequired': {},
+    'dependentSchemaEntries': [],
+    'deprecated': false,
+    'description': undefined,
+    'discriminatorMapping': undefined,
+    'discriminatorPropertyName': undefined,
+    'disjointWith': undefined,
+    'dynamicAnchor': undefined,
+    'dynamicRef': undefined,
+    'elseNode': undefined,
+    'enumValues': undefined,
+    'equivalentTo': undefined,
+    'examples': undefined,
+    'exclusiveMaximum': undefined,
+    'exclusiveMinimum': undefined,
+    'extensions': {},
+    'format': undefined,
+    'hasConst': false,
+    'hasDefault': false,
+    'ifNode': undefined,
+    'inverseOf': undefined,
+    'itemsNode': undefined,
+    'maxContains': undefined,
+    'maximum': undefined,
+    'maxItems': undefined,
+    'maxLength': undefined,
+    'maxProperties': undefined,
+    'minContains': undefined,
+    'minimum': undefined,
+    'minItems': undefined,
+    'minLength': undefined,
+    'minProperties': undefined,
+    'multipleOf': undefined,
+    'oneOf': [],
+    'pattern': undefined,
+    'patternPropertyEntries': [],
+    'prefixItems': [],
+    'properties': new Map(),
+    'propertyNamesNode': undefined,
+    'rdfsDomain': undefined,
+    'rdfsRange': undefined,
+    'readOnly': false,
+    'recursiveAnchor': false,
+    'recursiveRef': undefined,
+    'ref': undefined,
+    'refTargetNode': undefined,
+    'required': [],
+    'schemaAnchor': undefined,
+    'schemaDialect': undefined,
+    'schemaId': undefined,
+    'schemaTypes': [],
+    'schemaVocabulary': undefined,
+    'symmetric': false,
+    'thenNode': undefined,
+    'title': undefined,
+    'transitive': false,
+    'unevaluatedItemsNode': undefined,
+    'unevaluatedPropertiesNode': undefined,
+    'uniqueItems': false,
+    'writeOnly': false
+  };
+}
+
+export function isDefsEntryPointer(pointer: string): boolean {
+  const parts = pointer.split('/');
+
+  return parts.length === DEFS_POINTER_PARTS_LENGTH && parts[1] === '$defs';
+}
+
+export function isPropertyPointer(pointer: string): boolean {
+  const parts = pointer.split('/');
+
+  return parts.length >= MIN_PROPERTY_POINTER_PARTS && parts.at(-2) === 'properties';
+}
+
+export function parentPropertiesPointer(pointer: string): string | undefined {
+  const idx = pointer.lastIndexOf('/properties/');
+
+  if (idx === -1) {
+    return undefined;
+  }
+
+  return pointer.slice(0, idx) || '';
+}
+
+export function propertyNameFromPointer(pointer: string): string | undefined {
+  const parts = pointer.split('/');
+
+  if (parts.length < MIN_PROPERTY_POINTER_PARTS || parts.at(-2) !== 'properties') {
+    return undefined;
+  }
+
+  return parts.at(-1);
+}
+
+export function pointerId(rootSchema: JsonSchemaType, pointer: string): string {
+  if (pointer === '') {
+    return typeof rootSchema === 'object'
+      && !Array.isArray(rootSchema)
+      && typeof rootSchema.$id === 'string'
+      ? rootSchema.$id
+      : '#root';
+  }
+
+  if (typeof rootSchema === 'object'
+    && !Array.isArray(rootSchema)
+    && typeof rootSchema.$id === 'string') {
+    return `${rootSchema.$id}#${pointer}`;
+  }
+
+  return `#${pointer}`;
+}
+
+export function nodeIdFromPointer(rootSchema: JsonSchemaType, pointer: string, schema: JsonSchemaType): string {
+  if (!isRecord(schema)) {
+    return pointerId(rootSchema, pointer);
+  }
+
+  if (typeof schema.$id === 'string') {
+    return schema.$id;
+  }
+
+  return pointerId(rootSchema, pointer);
+}
+
+export function normalizeSchemaTypes(schema: Record<string, unknown>): string[] {
+  const rawType = schema.type;
+
+  if (typeof rawType === 'string') {
+    return [rawType];
+  }
+
+  if (Array.isArray(rawType)) {
+    return rawType.filter((entry): entry is string => {
+      return typeof entry === 'string';
+    });
+  }
+
+  return [];
+}
+
+export function normalizeDynamicAnchor(schema: Record<string, unknown>): string | undefined {
+  if (typeof schema.$dynamicAnchor === 'string') {
+    return schema.$dynamicAnchor;
+  }
+
+  if (schema.$recursiveAnchor === true) {
+    return '';
+  }
+
+  return undefined;
+}
+
+export function normalizeDependentRequired(schema: Record<string, unknown>): Record<string, string[]> {
+  return isRecord(schema.dependentRequired)
+    ? Object.fromEntries(Object.entries(schema.dependentRequired).flatMap(([
+      key,
+      value
+    ]) => {
+      if (!Array.isArray(value)) {
+        return [];
+      }
+
+      const entries = value.filter((entry): entry is string => {
+        return typeof entry === 'string';
+      });
+
+      return [[
+        key,
+        entries
+      ] as [string, string[]]];
+    }))
+    : {};
+}
+
+export function collectSchemaExtensions(schema: Record<string, unknown>): Record<string, unknown> {
+  const extensions: Record<string, unknown> = {};
+
+  for (const key of Object.keys(schema)) {
+    if (!KNOWN_SCHEMA_KEYWORDS.has(key)) {
+      extensions[key] = schema[key];
+    }
+  }
+
+  return extensions;
+}
+
+export function resolveAdditionalSchemaNode(
+  node: SchemaGraphNodeInterface,
+  child: (node: SchemaGraphNodeInterface, key: string) => SchemaGraphNodeInterface | undefined,
+  key: 'additionalItems' | 'additionalProperties'
+): boolean | SchemaGraphNodeInterface | undefined {
+  if (!isRecord(node.schema) || !(key in node.schema)) {
+    return undefined;
+  }
+
+  const rawValue = node.schema[key];
+
+  if (typeof rawValue === 'boolean') {
+    return rawValue;
+  }
+
+  return child(node, key);
+}
+
+export function extractSemantics(
+  graph: GraphAccessor,
+  node: SchemaGraphNodeInterface,
+  resolveLocalRef: (ref: string) => SchemaGraphNodeInterface
+): SchemaGraphSemanticsInterface {
+  if (!isRecord(node.schema)) {
+    return emptySchemaGraphSemantics();
+  }
+
+  const schemaTypes = normalizeSchemaTypes(node.schema);
+  const dynamicAnchor = normalizeDynamicAnchor(node.schema);
+  const dependentRequired = normalizeDependentRequired(node.schema);
+  const ref = typeof node.schema.$ref === 'string' ? node.schema.$ref : undefined;
+  const discriminator = isRecord(node.schema.discriminator) ? node.schema.discriminator : undefined;
+  const extensions = collectSchemaExtensions(node.schema);
+
+  return {
+    'additionalItemsNode': resolveAdditionalSchemaNode(node, (parent, key) => {
+      return graph.child(parent, key);
+    }, 'additionalItems'),
+    'additionalPropertiesNode': resolveAdditionalSchemaNode(node, (parent, key) => {
+      return graph.child(parent, key);
+    }, 'additionalProperties'),
+    'allOf': graph.indexedChildren(node, 'allOf'),
+    'anyOf': graph.indexedChildren(node, 'anyOf'),
+    'comment': typeof node.schema.$comment === 'string' ? node.schema.$comment : undefined,
+    'complementNode': graph.child(node, 'not'),
+    'constValue': 'const' in node.schema ? node.schema.const : undefined,
+    'containsNode': graph.child(node, 'contains'),
+    'contentEncoding': typeof node.schema.contentEncoding === 'string' ? node.schema.contentEncoding : undefined,
+    'contentMediaType': typeof node.schema.contentMediaType === 'string' ? node.schema.contentMediaType : undefined,
+    'defaultValue': 'default' in node.schema ? node.schema.default : undefined,
+    'definitions': graph.entries(node, 'definitions'),
+    dependentRequired,
+    'dependentSchemaEntries': graph.entries(node, 'dependentSchemas'),
+    'deprecated': node.schema.deprecated === true,
+    'description': typeof node.schema.description === 'string' ? node.schema.description : undefined,
+    'discriminatorMapping': discriminator !== undefined && isRecord(discriminator.mapping) ? discriminator.mapping as Record<string, string> : undefined,
+    'discriminatorPropertyName': discriminator !== undefined && typeof discriminator.propertyName === 'string' ? discriminator.propertyName : undefined,
+    'disjointWith': typeof node.schema.disjointWith === 'string' ? node.schema.disjointWith : undefined,
+    dynamicAnchor,
+    'dynamicRef': typeof node.schema.$dynamicRef === 'string' ? node.schema.$dynamicRef : undefined,
+    'elseNode': graph.child(node, 'else'),
+    'enumValues': Array.isArray(node.schema.enum) ? node.schema.enum as unknown[] : undefined,
+    'equivalentTo': typeof node.schema.equivalentTo === 'string' ? node.schema.equivalentTo : undefined,
+    'examples': Array.isArray(node.schema.examples) ? node.schema.examples as unknown[] : undefined,
+    'exclusiveMaximum': typeof node.schema.exclusiveMaximum === 'number' ? node.schema.exclusiveMaximum : undefined,
+    'exclusiveMinimum': typeof node.schema.exclusiveMinimum === 'number' ? node.schema.exclusiveMinimum : undefined,
+    extensions,
+    'format': typeof node.schema.format === 'string' ? node.schema.format : undefined,
+    'hasConst': 'const' in node.schema,
+    'hasDefault': 'default' in node.schema,
+    'ifNode': graph.child(node, 'if'),
+    'inverseOf': typeof node.schema.inverseOf === 'string' ? node.schema.inverseOf : undefined,
+    'itemsNode': graph.child(node, 'items'),
+    'maxContains': typeof node.schema.maxContains === 'number' ? node.schema.maxContains : undefined,
+    'maximum': typeof node.schema.maximum === 'number' ? node.schema.maximum : undefined,
+    'maxItems': typeof node.schema.maxItems === 'number' ? node.schema.maxItems : undefined,
+    'maxLength': typeof node.schema.maxLength === 'number' ? node.schema.maxLength : undefined,
+    'maxProperties': typeof node.schema.maxProperties === 'number' ? node.schema.maxProperties : undefined,
+    'minContains': typeof node.schema.minContains === 'number' ? node.schema.minContains : undefined,
+    'minimum': typeof node.schema.minimum === 'number' ? node.schema.minimum : undefined,
+    'minItems': typeof node.schema.minItems === 'number' ? node.schema.minItems : undefined,
+    'minLength': typeof node.schema.minLength === 'number' ? node.schema.minLength : undefined,
+    'minProperties': typeof node.schema.minProperties === 'number' ? node.schema.minProperties : undefined,
+    'multipleOf': typeof node.schema.multipleOf === 'number' ? node.schema.multipleOf : undefined,
+    'oneOf': graph.indexedChildren(node, 'oneOf'),
+    'pattern': typeof node.schema.pattern === 'string' ? node.schema.pattern : undefined,
+    'patternPropertyEntries': graph.entries(node, 'patternProperties'),
+    'prefixItems': graph.indexedChildren(node, 'prefixItems'),
+    'properties': new Map(graph.entries(node, 'properties')),
+    'propertyNamesNode': graph.child(node, 'propertyNames'),
+    'rdfsDomain': (typeof node.schema['rdfs:domain'] === 'string' ? node.schema['rdfs:domain'] : undefined) ?? (typeof node.schema[RDFS_DOMAIN_IRI] === 'string' ? node.schema[RDFS_DOMAIN_IRI] : undefined),
+    'rdfsRange': (typeof node.schema['rdfs:range'] === 'string' ? node.schema['rdfs:range'] : undefined) ?? (typeof node.schema[RDFS_RANGE_IRI] === 'string' ? node.schema[RDFS_RANGE_IRI] : undefined),
+    'readOnly': node.schema.readOnly === true,
+    'recursiveAnchor': node.schema.$recursiveAnchor === true,
+    'recursiveRef': typeof node.schema.$recursiveRef === 'string' ? node.schema.$recursiveRef : undefined,
+    ref,
+    'refTargetNode': ref?.startsWith('#') === true ? resolveLocalRef(ref) : undefined,
+    'required': Array.isArray(node.schema.required)
+      ? node.schema.required.filter((entry): entry is string => {
+        return typeof entry === 'string';
+      })
+      : [],
+    'schemaAnchor': typeof node.schema.$anchor === 'string' ? node.schema.$anchor : undefined,
+    'schemaDialect': typeof node.schema.$schema === 'string' ? node.schema.$schema : undefined,
+    'schemaId': typeof node.schema.$id === 'string' ? node.schema.$id : undefined,
+    schemaTypes,
+    'schemaVocabulary': node.schema.$vocabulary,
+    'symmetric': node.schema.symmetric === true,
+    'thenNode': graph.child(node, 'then'),
+    'title': typeof node.schema.title === 'string' ? node.schema.title : undefined,
+    'transitive': node.schema.transitive === true,
+    'unevaluatedItemsNode': graph.child(node, 'unevaluatedItems'),
+    'unevaluatedPropertiesNode': graph.child(node, 'unevaluatedProperties'),
+    'uniqueItems': node.schema.uniqueItems === true,
+    'writeOnly': node.schema.writeOnly === true
+  };
+}
+
+export function validateGraphStructure(nodeMap: Map<string, SchemaGraphNodeInterface>): StructureWarningInterface[] {
+  const warnings: StructureWarningInterface[] = [];
+
+  for (const node of nodeMap.values()) {
+    if (node.pointer === '') {
+      continue;
+    }
+    if (!isRecord(node.schema)) {
+      continue;
+    }
+    const schema = node.schema;
+
+    if (!('properties' in schema)) {
+      continue;
+    }
+    const rawType = schema.type;
+    const hasObjectType = rawType === 'object'
+      || (Array.isArray(rawType) && rawType.includes('object'));
+
+    if (!hasObjectType) {
+      continue;
+    }
+    if (typeof schema.$id === 'string') {
+      continue;
+    }
+    if (node.pointer.includes('/$defs/')) {
+      continue;
+    }
+
+    warnings.push({
+      'message': `Inline nested object at "${node.pointer}" must be extracted to its own schema with a $id and referenced via $ref.`,
+      'path': node.pointer,
+      'rule': 'inline-object'
+    });
+  }
+
+  return warnings;
+}

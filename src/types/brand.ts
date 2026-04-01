@@ -1,4 +1,4 @@
-import type { ParseOutputType } from './transform.js';
+import type { ParseOutputType } from './Transform.js';
 
 declare const BRAND: unique symbol;
 

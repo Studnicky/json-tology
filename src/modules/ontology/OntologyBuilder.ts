@@ -5,7 +5,7 @@
  * Accepts custom base IRIs, prefix maps, and graph node sources.
  */
 
-import type { OntologyBuilderOptionsInterface } from '../../interfaces/ontology.js';
+import type { OntologyBuilderOptionsInterface } from '../../interfaces/Ontology.js';
 
 /**
  * Ontology Builder

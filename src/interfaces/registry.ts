@@ -1,7 +1,7 @@
-import type { FormatRegistryInterface } from './format-registry.js';
-import type { KeywordDefinitionInterface } from './graph-engine.js';
-import type { LoggerInterface } from './logger.js';
-import type { VocabularyPluginInterface } from './vocabulary-plugin.js';
+import type { FormatRegistryInterface } from './FormatRegistry.js';
+import type { KeywordDefinitionInterface } from './GraphEngine.js';
+import type { LoggerInterface } from './Logger.js';
+import type { VocabularyPluginInterface } from './VocabularyPlugin.js';
 
 export interface RegistryOptionsInterface {
   /**
@@ -14,7 +14,7 @@ export interface RegistryOptionsInterface {
   /** Custom keyword definitions passed to the graph engine. */
   'keywords'?: KeywordDefinitionInterface[];
   'logger'?: LoggerInterface;
-  /** Prefix-to-namespace map for CURIE expansion/compaction (e.g. `{ acl: 'https://acl.io/' }`). */
+  /** Prefix-to-IRI map for CURIE expansion/compaction (e.g. `{ acl: 'https://acl.io/' }`). */
   'prefixes'?: Record<string, string>;
   /** When true, validate that $schema references draft 2020-12. */
   'strict'?: boolean;

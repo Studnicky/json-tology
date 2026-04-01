@@ -10,7 +10,7 @@
 
 import type {
   InferSchemaType, InferType
-} from '../../src/types/schema.js';
+} from '../../src/types/Schema.js';
 
 
 // ---------------------------------------------------------------------------
@@ -871,7 +871,7 @@ assert<AssertAssignable<InternalFragmentResult, {
 // 19. SplitFragmentRefType base-URI guard
 // ---------------------------------------------------------------------------
 
-import type { SplitFragmentRefType } from '../../src/types/infer.js';
+import type { SplitFragmentRefType } from '../../src/types/Infer.js';
 
 const _LocalSchemaWithId = {
   '$defs': { 'Bar': { 'type': 'string' } },

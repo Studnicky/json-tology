@@ -13,12 +13,13 @@ import {
 } from 'node:path';
 import type {
   SchemaLoadErrorType, SchemaLoadResultType
-} from '../../types/loader.js';
-import type { LoggerInterface } from '../../interfaces/logger.js';
-import type { SchemaLoaderInterface } from '../../interfaces/schema-loader-impl.js';
+} from '../../types/Loader.js';
+import type { LoggerInterface } from '../../interfaces/Logger.js';
+import type { SchemaLoaderInterface } from '../../interfaces/SchemaLoaderImpl.js';
 import { LoadError } from '../../errors/LoadError.js';
-import { SILENT_LOGGER } from '../../constants/logger.js';
+import { SILENT_LOGGER } from '../../constants/LOGGER.js';
 
+const URI_SCHEME_PATTERN = /^[a-z][a-z0-9+.-]*:/iu;
 
 /**
  * Schema Loader
@@ -360,7 +361,7 @@ export class SchemaLoader implements SchemaLoaderInterface {
     }
 
     // $id should look like a URI
-    if (!/^[a-z][a-z0-9+.-]*:/iu.test(schema.$id)) {
+    if (!URI_SCHEME_PATTERN.test(schema.$id)) {
       failures.push(`$id must be a valid URI: "${schema.$id}"`);
     }
 

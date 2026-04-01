@@ -49,3 +49,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 ### Security
+
+[Unreleased]: https://github.com/Studnicky/json-tology/compare/v0.1.0...HEAD

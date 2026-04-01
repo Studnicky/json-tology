@@ -6,9 +6,9 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
-import { Value } from '../../src/modules/data/Value.js';
-import { Changeset } from '../../src/modules/data/Changeset.js';
+import { SchemaRegistry } from '../../src/modules/registry/schemaRegistry.js';
+import { Value } from '../../src/modules/data/value.js';
+import { Changeset } from '../../src/modules/data/changeset.js';
 
 // ---------------------------------------------------------------------------
 // create

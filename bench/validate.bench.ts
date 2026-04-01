@@ -3,7 +3,7 @@
  */
 
 import { TypeCompiler } from '@sinclair/typebox/compiler';
-import { SchemaRegistry } from '../src/modules/registry/SchemaRegistry.js';
+import { SchemaRegistry } from '../src/modules/registry/schemaRegistry.js';
 import {
   bench, type BenchResult, section
 } from './harness.js';

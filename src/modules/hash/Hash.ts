@@ -5,6 +5,8 @@
  * and Materializer.
  */
 
+const HEX_RADIX = 16;
+
 export class Hash {
   /**
    * Compute a deterministic FNV-1a hash of a JSON-serializable value with sorted keys.
@@ -22,7 +24,7 @@ export class Hash {
       hash = (hash * fnvPrime) >>> 0;
     }
 
-    return hash.toString(16);
+    return hash.toString(HEX_RADIX);
   }
 }
 

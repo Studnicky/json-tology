@@ -1,0 +1,57 @@
+import type { CustomKeywordEntryInterface } from './CustomKeywordEntry.js';
+import type {
+  CheckFnType, ValidateWithErrorsFnType
+} from '../types/Validation.js';
+
+export interface CompiledNodeValidationPlanInterface {
+  readonly 'additionalIsFalse': boolean;
+  readonly 'additionalValidator': undefined | ValidateWithErrorsFnType;
+  readonly 'allOfValidators': undefined | ValidateWithErrorsFnType[];
+  readonly 'allowedKeys': Set<string> | undefined;
+  readonly 'anyOfChecks': CheckFnType[] | undefined;
+  readonly 'complementCheck': CheckFnType | undefined;
+  readonly 'constVal': unknown;
+  readonly 'containsCheck': CheckFnType | undefined;
+  readonly 'customKeywordEntries': CustomKeywordEntryInterface[] | undefined;
+  readonly 'defaultValue': unknown;
+  readonly 'depRequiredEntries': Array<[string, string[]]>;
+  readonly 'depSchemaValidators': Array<{ 'trigger': string;
+    'validator': ValidateWithErrorsFnType; }> | undefined;
+  readonly 'elseValidator': undefined | ValidateWithErrorsFnType;
+  readonly 'enumSet': Set<boolean | null | number | string> | undefined;
+  readonly 'enumValues': undefined | unknown[];
+  readonly 'exclusiveMaximum': number | undefined;
+  readonly 'exclusiveMinimum': number | undefined;
+  readonly 'format': string | undefined;
+  readonly 'formatValidator': ((value: unknown) => boolean) | undefined;
+  readonly 'hasConst': boolean;
+  readonly 'hasDefault': boolean;
+  readonly 'ifCheck': CheckFnType | undefined;
+  readonly 'itemValidator': undefined | ValidateWithErrorsFnType;
+  readonly 'maxContains': number | undefined;
+  readonly 'maximum': number | undefined;
+  readonly 'maxItems': number | undefined;
+  readonly 'maxLength': number | undefined;
+  readonly 'maxProperties': number | undefined;
+  readonly 'minContains': number | undefined;
+  readonly 'minimum': number | undefined;
+  readonly 'minItems': number | undefined;
+  readonly 'minLength': number | undefined;
+  readonly 'minProperties': number | undefined;
+  readonly 'multipleOf': number | undefined;
+  readonly 'oneOfChecks': CheckFnType[] | undefined;
+  readonly 'pattern': string | undefined;
+  readonly 'patternPropValidators': Array<{ 'regex': RegExp;
+    'validator': ValidateWithErrorsFnType; }> | undefined;
+  readonly 'patternRegex': RegExp | undefined;
+  readonly 'prefixValidators': undefined | ValidateWithErrorsFnType[];
+  readonly 'propertyDefaults': Map<string, { 'defaultValue': unknown;
+    'hasDefault': boolean; }>;
+  readonly 'propertyNamesValidator': undefined | ValidateWithErrorsFnType;
+  readonly 'propValidators': Map<string, ValidateWithErrorsFnType>;
+  readonly 'refValidator': undefined | ValidateWithErrorsFnType;
+  readonly 'required': string[] | undefined;
+  readonly 'thenValidator': undefined | ValidateWithErrorsFnType;
+  readonly 'types': string[];
+  readonly 'uniqueItems': boolean;
+}

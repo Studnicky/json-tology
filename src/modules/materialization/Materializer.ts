@@ -1,20 +1,20 @@
-import type { GraphExecutionResultInterface } from '../../interfaces/graph-engine.js';
+import type { GraphExecutionResultInterface } from '../../interfaces/GraphEngine.js';
 import type {
   MaterializationResultInterface, MaterializerOptionsInterface
-} from '../../interfaces/materializer.js';
-import type { MaterializerInterface } from '../../interfaces/materializer-impl.js';
-import type { SchemaGraphNodeInterface } from '../../interfaces/schema-graph.js';
-import type { QuadInterface } from '../../interfaces/quad.js';
-import type { SchemaGraphInterface } from '../../interfaces/schema-graph-impl.js';
-import type { SchemaRegistryInterface } from '../../interfaces/schema-registry.js';
-import type { InferSchemaType } from '../../types/infer.js';
+} from '../../interfaces/Materializer.js';
+import type { MaterializerInterface } from '../../interfaces/MaterializerImpl.js';
+import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraph.js';
+import type { QuadInterface } from '../../interfaces/Quad.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
+import type { InferSchemaType } from '../../types/Infer.js';
 import type { JSONSchema7Definition } from 'json-schema';
 import { BaseError } from '../../errors/BaseError.js';
 import { MaterializationError } from '../../errors/MaterializationError.js';
 import { GraphError } from '../../errors/GraphError.js';
-import { isRecord } from '../data/DataTypes.js';
-import { SchemaGraph } from '../graph/SchemaGraph.js';
-import { projectAbox } from '../rdf/Projection.js';
+import { isRecord } from '../data/dataTypes.js';
+import { SchemaGraph } from '../graph/schemaGraph.js';
+import { projectAbox } from '../rdf/projection.js';
 
 const isObject = isRecord;
 

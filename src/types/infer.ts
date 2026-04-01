@@ -52,9 +52,18 @@ import type {
   PatternBrandInterface,
   SchemaIdBrandInterface,
   UniqueItemsBrandInterface
-} from './constraint-brands.js';
-import type { IsEnabledType } from './type-config.js';
-import type { TransformBrandInterface } from '../interfaces/transform-brand.js';
+} from './ConstraintBrands.js';
+import type { IsEnabledType } from './TypeConfig.js';
+import type { TransformBrandInterface } from '../interfaces/TransformBrand.js';
+
+// ---------------------------------------------------------------------------
+// Recursion limits (type-level caps to prevent infinite expansion)
+// ---------------------------------------------------------------------------
+
+type TupleRecursionCap = 10;
+type SchemaPointerDepthCap = 5;
+type DeepPropertyDepthCap = 4;
+type IntegerRangeCap = 50;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -244,14 +253,14 @@ type InferEnumType<T>
 type BuildFixedTupleType<TItem, TLen extends number, TAccum extends unknown[] = []>
   = number extends TLen ? readonly TItem[]
     : TAccum['length'] extends TLen ? readonly [...TAccum]
-      : TAccum['length'] extends 10 ? readonly [...TAccum]
+      : TAccum['length'] extends TupleRecursionCap ? readonly [...TAccum]
         : BuildFixedTupleType<TItem, TLen, [...TAccum, TItem]>;
 
 /** Build a readonly tuple with at least `TMin` elements of type `TItem`, then rest. Caps at 10. */
 type BuildMinTupleType<TItem, TMin extends number, TAccum extends unknown[] = []>
   = number extends TMin ? readonly TItem[]
     : TAccum['length'] extends TMin ? readonly [...TAccum, ...TItem[]]
-      : TAccum['length'] extends 10 ? readonly [...TAccum, ...TItem[]]
+      : TAccum['length'] extends TupleRecursionCap ? readonly [...TAccum, ...TItem[]]
         : BuildMinTupleType<TItem, TMin, [...TAccum, TItem]>;
 
 // ---------------------------------------------------------------------------
@@ -314,8 +323,7 @@ type InferAdditionalType<T, TRoot, TReferences>
     readonly 'properties': infer P;
   }
     ? IsEnabledType<'objectBrands'> extends true
-      // eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style -- excess-property mapped type, not index signature
-      ? { readonly [K in Exclude<string, keyof P & string>]?: never }
+      ? Readonly<Partial<Record<Exclude<string, keyof P & string>, never>>>
       : unknown
     : T extends { readonly 'additionalProperties': false } ? unknown
       : T extends { readonly 'additionalProperties': infer A }
@@ -359,10 +367,8 @@ type InferDependentRequiredType<T>
   = T extends { readonly 'dependentRequired': infer DR extends Record<string, readonly string[]> }
     ? IntersectMappedValuesType<{
       [K in keyof DR & string]:
-        // eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style -- mapped type, not index signature
-        { readonly [_ in K]?: never }
-        // eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style -- mapped type, not index signature
-        | { readonly [D in DR[K][number] & string]: unknown }
+        Readonly<Partial<Record<K, never>>>
+        | Readonly<Record<DR[K][number] & string, unknown>>
     }>
     : unknown;
 
@@ -463,8 +469,7 @@ type ResolveRefBaseSchemaType<TBase extends string, TRoot, TReferences>
  * `unknown` because compile-time resolution requires a schema registry
  * (which is a runtime concept).
  */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-type SplitFragmentRefType<TRef extends string, TRoot, TReferences = {}>
+type SplitFragmentRefType<TRef extends string, TRoot, TReferences = Record<never, never>>
   = TRef extends `${infer Base}#${infer Fragment}`
     ? ResolveRefBaseSchemaType<Base, TRoot, TReferences> extends infer TBaseSchema
       ? Fragment extends `/$defs/${infer K}`
@@ -606,8 +611,7 @@ type ExtractIfConstDiscriminatorType<TIf>
   }
     ? keyof P & string extends infer K extends string
       ? [K] extends [TReq]
-        // eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style -- mapped type, not index signature
-        ? P extends { readonly [_ in K]: { readonly 'const': infer V } }
+        ? P extends Readonly<Record<K, { readonly 'const': infer V }>>
           ? {
             'key': K;
             'value': V;
@@ -655,8 +659,7 @@ type InferConditionalType<T, TRoot, TReferences>
 // ---------------------------------------------------------------------------
 
 /** Core dispatcher — structural inference without `not` narrowing. */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-type InferSchemaTypeCoreType<T, TRoot = T, TReferences = {}>
+type InferSchemaTypeCoreType<T, TRoot = T, TReferences = Record<never, never>>
   // Bail out for boolean schemas and broad types
   = [T] extends [boolean] ? unknown
   // Phase 1: Transform brands do not change the wire-form schema type.
@@ -689,8 +692,7 @@ type InferSchemaTypeCoreType<T, TRoot = T, TReferences = {}>
  * @typeParam T - The schema type (should be `as const`).
  * @typeParam TRoot - The root schema for $ref resolution (defaults to T).
  */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export type InferSchemaType<T, TRoot = T, TReferences = {}>
+export type InferSchemaType<T, TRoot = T, TReferences = Record<never, never>>
   = ApplyNotExclusionType<T, InferSchemaTypeCoreType<T, TRoot, TReferences>>;
 
 /**
@@ -701,8 +703,7 @@ export type InferSchemaType<T, TRoot = T, TReferences = {}>
  * structurally identical. Use this for top-level schemas that need nominal
  * distinction; sub-schemas without `$id` remain structural.
  */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export type NominalSchemaType<T, TRoot = T, TReferences = {}>
+export type NominalSchemaType<T, TRoot = T, TReferences = Record<never, never>>
   = InferSchemaType<T, TRoot, TReferences>
     & (IsEnabledType<'nominalBrands'> extends true
       ? (T extends { readonly '$id': infer TId extends string }
@@ -730,7 +731,7 @@ type PrefixPointerType<TPrefix extends string, TSuffix>
  * @typeParam TDepth - Internal recursion limiter (do not set manually).
  */
 export type SchemaPointerPathsType<T, TDepth extends unknown[] = []>
-  = TDepth['length'] extends 5 ? never
+  = TDepth['length'] extends SchemaPointerDepthCap ? never
     : (T extends { readonly '$defs': infer D }
       ? { [K in keyof D & string]:
         | `/$defs/${K}`
@@ -820,8 +821,7 @@ type PropertiesWithDefaultType<TProps>
  * Type returned by `materialize()` — required fields and fields with defaults
  * are non-optional, all others remain optional.
  */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export type MaterializedSchemaType<T, TRoot = T, TReferences = {}>
+export type MaterializedSchemaType<T, TRoot = T, TReferences = Record<never, never>>
   = T extends { readonly 'properties': infer TProps;
     readonly 'type': 'object' }
     ? SimplifyType<
@@ -846,7 +846,7 @@ export type PropertyPathsType<T>
 
 /** Extract nested property paths (dot-notation) from a schema, depth-limited. */
 export type DeepPropertyPathsType<T, TDepth extends unknown[] = []>
-  = TDepth['length'] extends 4 ? never
+  = TDepth['length'] extends DeepPropertyDepthCap ? never
     : T extends { readonly 'properties': infer P }
       ? { [K in keyof P & string]:
         | (DeepPropertyPathsType<P[K], [...TDepth, unknown]> extends infer TChild extends string
@@ -875,16 +875,14 @@ export type WriteOnlyKeysType<T>
     : never;
 
 /** Schema type for API input — excludes readOnly properties (server-generated). */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export type InputSchemaType<T, TRoot = T, TReferences = {}>
+export type InputSchemaType<T, TRoot = T, TReferences = Record<never, never>>
   = T extends { readonly 'properties': unknown;
     readonly 'type': 'object' }
     ? SimplifyType<Omit<InferSchemaType<T, TRoot, TReferences>, ReadOnlyKeysType<T>>>
     : InferSchemaType<T, TRoot, TReferences>;
 
 /** Schema type for API output — excludes writeOnly properties (client-only input). */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export type OutputSchemaType<T, TRoot = T, TReferences = {}>
+export type OutputSchemaType<T, TRoot = T, TReferences = Record<never, never>>
   = T extends { readonly 'properties': unknown;
     readonly 'type': 'object' }
     ? SimplifyType<Omit<InferSchemaType<T, TRoot, TReferences>, WriteOnlyKeysType<T>>>
@@ -902,8 +900,7 @@ export type DeprecatedKeysType<T>
     : never;
 
 /** Schema type excluding deprecated properties. */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export type NonDeprecatedSchemaType<T, TRoot = T, TReferences = {}>
+export type NonDeprecatedSchemaType<T, TRoot = T, TReferences = Record<never, never>>
   = T extends { readonly 'properties': unknown;
     readonly 'type': 'object' }
     ? SimplifyType<Omit<InferSchemaType<T, TRoot, TReferences>, DeprecatedKeysType<T>>>
@@ -925,7 +922,7 @@ export type DiscriminatorPropertyType<T>
 /** Tuple of length TN (capped at 50). Used for type-level arithmetic. */
 type BuildTupleType<TN extends number, T extends unknown[] = []>
   = T['length'] extends TN ? T
-    : T['length'] extends 50 ? T
+    : T['length'] extends IntegerRangeCap ? T
       : BuildTupleType<TN, [...T, unknown]>;
 
 /** Increment a non-negative integer literal by 1. */
@@ -941,7 +938,7 @@ type BuildIntegerRangeType<
   TMin extends number, TMax extends number,
   TAccum extends unknown[] = [], TStarted extends boolean = false
 >
-  = TAccum['length'] extends 50 ? number
+  = TAccum['length'] extends IntegerRangeCap ? number
     : TAccum['length'] extends TMax
       ? TStarted extends true ? TMax
         : TAccum['length'] extends TMin ? TMax
@@ -977,7 +974,7 @@ type BuildMultipleOfRangeType<
   TCurrent extends unknown[] = [], TResult = never,
   TDepth extends unknown[] = []
 >
-  = TDepth['length'] extends 50 ? number
+  = TDepth['length'] extends IntegerRangeCap ? number
     : BuildTupleType<TMax> extends [...TCurrent, ...unknown[]]
       ? BuildMultipleOfRangeType<
         TMin, TMax, TStep,

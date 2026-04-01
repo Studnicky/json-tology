@@ -17,37 +17,37 @@
  * jt.ontology().jsonLd();
  */
 
-import { GraphSchemaSerializer } from './modules/ontology/GraphSchemaSerializer.js';
-import { quadsToJsonLdNodes } from './modules/rdf/Projection.js';
-import { liftInstances } from './modules/rdf/Lift.js';
-import type { QuadInterface } from './interfaces/quad.js';
+import { GraphSchemaSerializer } from './modules/ontology/graphSchemaSerializer.js';
+import { quadsToJsonLdNodes } from './modules/rdf/projection.js';
+import { liftInstances } from './modules/rdf/lift.js';
+import type { QuadInterface } from './interfaces/Quad.js';
 
 import type { JSONSchema7Definition } from 'json-schema';
 import type {
   InferSchemaType, MaterializedSchemaType, SchemaPointerPathsType
-} from './types/infer.js';
+} from './types/Infer.js';
 import type {
   SchemaEntryType, SchemaMapFromTupleType, UniqueSchemaIdsType
-} from './types/registry.js';
-import { FormatRegistry } from './modules/format/FormatRegistry.js';
-import type { MaterializerInterface } from './interfaces/materializer-impl.js';
-import type { RegistryOptionsInterface } from './interfaces/registry.js';
-import type { SchemaRegistryInterface } from './interfaces/schema-registry.js';
+} from './types/Registry.js';
+import { FormatRegistry } from './modules/format/formatRegistry.js';
+import type { MaterializerInterface } from './interfaces/MaterializerImpl.js';
+import type { RegistryOptionsInterface } from './interfaces/Registry.js';
+import type { SchemaRegistryInterface } from './interfaces/SchemaRegistry.js';
 import type {
   ParseOutputType, TransformedType
-} from './types/transform.js';
+} from './types/Transform.js';
 import type { ValidationErrors } from './errors/ValidationErrors.js';
-import type { ValueInterface } from './interfaces/value-impl.js';
-import { SchemaRegistry } from './modules/registry/SchemaRegistry.js';
-import { Materializer } from './modules/materialization/Materializer.js';
-import { Value } from './modules/data/Value.js';
-import { OntologyBuilder } from './modules/ontology/OntologyBuilder.js';
-import { GraphOntologySerializer } from './modules/ontology/GraphOntologySerializer.js';
-import { GraphShaclSerializer } from './modules/ontology/GraphShaclSerializer.js';
-import { Transform } from './modules/transform/Transform.js';
-import type { JsonTologyOptionsInterface } from './interfaces/config.js';
-import { DEFAULT_PREFIXES } from './constants/prefixes.js';
-import { Curie } from './modules/rdf/Curie.js';
+import type { ValueInterface } from './interfaces/ValueImpl.js';
+import { SchemaRegistry } from './modules/registry/schemaRegistry.js';
+import { Materializer } from './modules/materialization/materializer.js';
+import { Value } from './modules/data/value.js';
+import { OntologyBuilder } from './modules/ontology/ontologyBuilder.js';
+import { GraphOntologySerializer } from './modules/ontology/graphOntologySerializer.js';
+import { GraphShaclSerializer } from './modules/ontology/graphShaclSerializer.js';
+import { Transform } from './modules/transform/transform.js';
+import type { JsonTologyOptionsInterface } from './interfaces/Config.js';
+import { DEFAULT_PREFIXES } from './constants/PREFIXES.js';
+import { Curie } from './modules/rdf/curie.js';
 
 /**
  * JsonTology — unified type system, validation, materialization, and ontology.
@@ -55,8 +55,7 @@ import { Curie } from './modules/rdf/Curie.js';
  * @typeParam TMap — accumulated schema type map. Built automatically via
  * `create()` or chained `register()` calls.
  */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- {} is intentional for generic default
-export class JsonTology<TMap = {}> {
+export class JsonTology<TMap = Record<never, never>> {
   /**
    * Creates a {@link JsonTology} instance with constructor-time schemas and full type inference.
    *
@@ -166,7 +165,7 @@ export class JsonTology<TMap = {}> {
    * @param value - The decoded value to encode.
    * @returns The wire-format representation inferred from the schema.
    */
-  public encode<TSchema extends JSONSchema7Definition & { readonly '$id': string; }, TOut>(
+  public encode<TSchema extends JSONSchema7Definition & { readonly '$id': string; }, TOut extends unknown>(
     schema: TransformedType<TSchema, TOut>,
     value: TOut
   ): InferSchemaType<TSchema> {

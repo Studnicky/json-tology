@@ -3,8 +3,8 @@ import {
 } from 'node:test';
 import assert from 'node:assert/strict';
 import { JsonTology } from '../../src/JsonTology.js';
-import { GraphSchemaSerializer } from '../../src/modules/ontology/GraphSchemaSerializer.js';
-import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
+import { GraphSchemaSerializer } from '../../src/modules/ontology/graphSchemaSerializer.js';
+import { SchemaGraph } from '../../src/modules/graph/schemaGraph.js';
 
 function roundtrip(input: Record<string, unknown>): Record<string, unknown> {
   const serializer = new GraphSchemaSerializer();

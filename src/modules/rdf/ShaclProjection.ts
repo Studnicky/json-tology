@@ -9,18 +9,18 @@
  * The output quads can be passed directly to JsonLdFormatter.quadsToJsonLd().
  */
 
-import type { QuadInterface } from '../../interfaces/quad.js';
-import type { QuadObjectType } from '../../types/quad.js';
-import type { SchemaGraphInterface } from '../../interfaces/schema-graph-impl.js';
-import type { CurieInterface } from '../../interfaces/curie.js';
-import { propertyIri } from '../data/DataTypes.js';
+import type { QuadInterface } from '../../interfaces/Quad.js';
+import type { QuadObjectType } from '../../types/Quad.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { CurieInterface } from '../../interfaces/Curie.js';
+import { propertyIri } from '../data/dataTypes.js';
 import {
   bnode, iri, literal, nextBnode, quad, rdfList
-} from './Projection.js';
+} from './projection.js';
 import {
   buildIndex, isPropertySubject, isRestrictionStructure, lastSegment, relationTargetId
-} from './ProjectionIndex.js';
-import type { RelationIndexInterface } from './ProjectionIndex.js';
+} from './projectionIndex.js';
+import type { RelationIndexInterface } from './projectionIndex.js';
 
 // ---------------------------------------------------------------------------
 // Subject helpers (SHACL-specific)

@@ -1,11 +1,11 @@
 /**
  * Changeset — ordered set of diff operations
  *
- * Returned by Value.diff(). Apply with .apply().
+ * Returned by Value.diff(). Call the apply() method to produce a new value.
  */
 
-import type { ChangesetInterface } from '../../interfaces/changeset.js';
-import type { DiffOpType } from '../../types/diff.js';
+import type { ChangesetInterface } from '../../interfaces/Changeset.js';
+import type { DiffOpType } from '../../types/Diff.js';
 import {
   applyOp, clone
 } from './operations.js';
@@ -13,14 +13,14 @@ import {
 
 /**
  * An ordered set of diff operations that transforms one value into another.
- * Returned by Value.diff(). Apply with .apply().
+ * Returned by Value.diff(). Call the apply() method to produce a new value.
  *
  * @example
  * const changes = Value.diff(a, b);
  * changes.length      // number of operations
  * changes.isEmpty     // true when a and b are structurally equal
  * changes.operations  // ReadonlyArray<DiffOpType>
- * changes.apply(a)    // produce b from a without mutating a
+ * const b = apply(changes, a)    // produce b from a without mutating a
  */
 export class Changeset implements ChangesetInterface {
   public readonly operations: readonly DiffOpType[];
@@ -38,7 +38,7 @@ export class Changeset implements ChangesetInterface {
    * Apply this changeset to `value` and return the result.
    * The original value is never mutated.
    */
-  public apply<T>(value: T): T {
+  public apply<T extends unknown>(value: T): T {
     let result: unknown = clone(value);
 
     for (const operation of this.operations) {

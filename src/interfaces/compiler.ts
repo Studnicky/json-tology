@@ -1,4 +1,4 @@
-import type { ValidationErrorType } from '../types/validation.js';
+import type { ValidationErrorType } from '../types/Validation.js';
 
 export interface CompiledValidationResultInterface {
   'errors': ValidationErrorType[];

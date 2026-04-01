@@ -1,12 +1,12 @@
 /** Collects visualization data from a schema registry. */
-import type { SchemaRegistryInterface } from '../../interfaces/schema-registry.js';
+import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
 import type {
   VizEdgeInterface, VizNodeInterface, VizPayloadInterface, VizSchemaDataInterface
-} from '../../interfaces/viz.js';
-import { GraphOntologySerializer } from '../ontology/GraphOntologySerializer.js';
-import { GraphSchemaSerializer } from '../ontology/GraphSchemaSerializer.js';
-import { GraphShaclSerializer } from '../ontology/GraphShaclSerializer.js';
-import { TypeStringEmitter } from './TypeStringEmitter.js';
+} from '../../interfaces/Viz.js';
+import { GraphOntologySerializer } from '../ontology/graphOntologySerializer.js';
+import { GraphSchemaSerializer } from '../ontology/graphSchemaSerializer.js';
+import { GraphShaclSerializer } from '../ontology/graphShaclSerializer.js';
+import { TypeStringEmitter } from './typeStringEmitter.js';
 
 export class VizDataCollector {
   private readonly registry: SchemaRegistryInterface;

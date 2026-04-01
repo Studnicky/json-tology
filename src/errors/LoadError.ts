@@ -2,7 +2,7 @@
  * LoadError — thrown when schema file loading fails and stopOnError is set
  */
 
-import type { LoadErrorCodeType } from '../types/error-codes.js';
+import type { LoadErrorCodeType } from '../types/ErrorCodes.js';
 import { BaseError } from './BaseError.js';
 
 export class LoadError extends BaseError {

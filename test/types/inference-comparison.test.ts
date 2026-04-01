@@ -7,7 +7,7 @@
  */
 
 import type { FromSchema } from 'json-schema-to-ts';
-import type { InferSchemaType } from '../../src/types/infer.js';
+import type { InferSchemaType } from '../../src/types/Infer.js';
 
 // ---------------------------------------------------------------------------
 // Helper: bidirectional assignability check

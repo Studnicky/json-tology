@@ -19,19 +19,15 @@
  */
 
 import type { JSONSchema7Definition } from 'json-schema';
-import type { TransformedType } from '../../types/transform.js';
-import type { BrandedType } from '../../types/brand.js';
-import type { InferSchemaType } from '../../types/infer.js';
+import type { TransformedType } from '../../types/Transform.js';
+import type { BrandedType } from '../../types/Brand.js';
+import type { InferSchemaType } from '../../types/Infer.js';
+import type { TransformFnsInterface } from '../../interfaces/TransformFns.js';
 
 
 // ---------------------------------------------------------------------------
 // Internal registry — never mutates schema objects
 // ---------------------------------------------------------------------------
-
-interface TransformFnsInterface {
-  'decode': (input: unknown) => unknown;
-  'encode': (output: unknown) => unknown;
-}
 
 const transformRegistry = new WeakMap<object, TransformFnsInterface>();
 
@@ -64,7 +60,7 @@ export class Transform {
    */
   public static create<
     TSchema extends JSONSchema7Definition & { readonly '$id': string; },
-    TOut
+    TOut extends unknown
   >(
     schema: TSchema,
     fns: {
@@ -90,15 +86,13 @@ export class Transform {
    */
   public static pipe<
     TSchema extends JSONSchema7Definition & { readonly '$id': string; },
-    TOut
+    TOut extends unknown
   >(
     schema: TSchema,
 
     transforms: Array<{
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      'decode': (value: any) => any;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      'encode': (value: any) => any;
+      'decode': (value: unknown) => unknown;
+      'encode': (value: unknown) => unknown;
     }>
   ): TransformedType<TSchema, TOut> {
     const composed: TransformFnsInterface = {

@@ -1,4 +1,4 @@
-import type { QuadObjectType } from '../types/quad.js';
+import type { QuadObjectType } from '../types/Quad.js';
 
 export interface QuadInterface {
   'graph'?: string;

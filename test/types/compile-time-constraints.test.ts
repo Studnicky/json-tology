@@ -18,7 +18,7 @@
  */
 
 import { JsonTology } from '../../src/JsonTology.js';
-import { Transform } from '../../src/modules/transform/Transform.js';
+import { Transform } from '../../src/modules/transform/transform.js';
 import type {
   ContainsBrandInterface,
   ContentEncodingBrandInterface,
@@ -35,7 +35,7 @@ import type {
   MultipleOfBrandInterface,
   SchemaIdBrandInterface,
   UniqueItemsBrandInterface
-} from '../../src/types/constraint-brands.js';
+} from '../../src/types/ConstraintBrands.js';
 import type {
   DeepPropertyPathsType,
   DefaultAlignedType,
@@ -54,8 +54,8 @@ import type {
   ReadOnlyKeysType,
   SchemaPointerPathsType,
   WriteOnlyKeysType
-} from '../../src/types/infer.js';
-import type { InferType } from '../../src/types/schema.js';
+} from '../../src/types/Infer.js';
+import type { InferType } from '../../src/types/Schema.js';
 
 // ---------------------------------------------------------------------------
 // Test schemas

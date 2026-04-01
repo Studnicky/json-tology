@@ -1,4 +1,4 @@
-import type { ParseOutputType } from './transform.js';
+import type { ParseOutputType } from './Transform.js';
 
 /** Build a cross-schema references map: `{ [$id]: SchemaType }` for $ref resolution. */
 
@@ -7,20 +7,17 @@ export type SchemaReferencesMapType<T extends readonly unknown[]>
     ? First extends { readonly '$id': infer Id extends string }
       ? Record<Id, First> & SchemaReferencesMapType<Rest>
       : SchemaReferencesMapType<Rest>
-    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-    : {};
+    : Record<never, never>;
 
 /** Extract `{ [$id]: ParseOutputType<T> }` from a single schema.
  *  Uses ParseOutputType so that transformed schemas map to the decoded type
  *  (matching parse() behavior), while plain schemas map to the wire shape.
  *
  *  @typeParam TReferences - Cross-schema references map for $ref resolution. */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export type SchemaEntryType<T, TReferences = {}>
+export type SchemaEntryType<T, TReferences = Record<never, never>>
   = T extends { readonly '$id': infer Id extends string }
     ? Record<Id, ParseOutputType<T, TReferences>>
-    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-    : {};
+    : Record<never, never>;
 
 /** Build a type map from a readonly tuple of schemas.
  *  Automatically threads cross-schema references so $ref between schemas resolves. */
@@ -28,8 +25,7 @@ export type SchemaMapFromTupleType<T extends readonly unknown[]>
   = T extends readonly [infer First, ...infer Rest]
     ? SchemaEntryType<First, SchemaReferencesMapType<T>>
       & SchemaMapFromTupleType<Rest>
-    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-    : {};
+    : Record<never, never>;
 
 /** True when a tuple contains two or more schemas with the same `$id`. */
 type HasDuplicateIdsType<T extends readonly unknown[], TSeen = never>

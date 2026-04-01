@@ -47,12 +47,14 @@
   "scripts": {
     "build": "npm run clean && tsc",
     "type-check": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "test": "tsx --test 'test/unit/**/*.test.ts'",
     "test:coverage": "tsx --test --experimental-test-coverage 'test/unit/**/*.test.ts'",
     "pack:check": "node ./scripts/check-pack.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "clean": "rm -rf dist",
+    "postinstall": "echo 'json-tology installed'",
     "bench": "tsx bench/run.ts",
     "bench:flame": "0x --output-dir .flame -- node --import tsx/esm bench/run.ts"
   },
@@ -93,6 +95,7 @@
     "zod": "^4.3.6"
   },
   "engines": {
-    "node": ">=18.0.0"
-  }
+    "node": ">=24.0.0"
+  },
+  "sideEffects": false
 }

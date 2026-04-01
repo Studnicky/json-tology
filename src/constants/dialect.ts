@@ -1,5 +1,6 @@
-import type { GraphEngineOptionsInterface } from '../interfaces/graph-engine.js';
+import type { GraphEngineOptionsInterface } from '../interfaces/GraphEngine.js';
 
+export const DRAFT_NAME = '2020-12';
 export const CURRENT_DIALECT_PREFIX = 'https://json-schema.org/draft/2020-12/';
 export const DEFAULT_DIALECT_URI = 'https://json-schema.org/draft/2020-12/schema';
 export const VOCABULARY_CORE = 'https://json-schema.org/draft/2020-12/vocab/core';

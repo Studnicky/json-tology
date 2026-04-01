@@ -4,7 +4,7 @@
  * Carries a ValidationErrors collection with the full structured error list.
  */
 
-import type { ValidationErrorType } from '../types/validation.js';
+import type { ValidationErrorType } from '../types/Validation.js';
 import { ValidationErrors } from './ValidationErrors.js';
 import { BaseError } from './BaseError.js';
 

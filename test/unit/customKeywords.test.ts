@@ -2,11 +2,11 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import type { KeywordDefinitionInterface } from '../../src/interfaces/graph-engine.js';
-import { GraphEngine } from '../../src/modules/graph/GraphEngine.js';
-import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
+import type { KeywordDefinitionInterface } from '../../src/interfaces/GraphEngine.js';
+import { GraphEngine } from '../../src/modules/graph/graphEngine.js';
+import { SchemaRegistry } from '../../src/modules/registry/schemaRegistry.js';
 import { JsonTology } from '../../src/JsonTology.js';
-import type { ValidationErrorType } from '../../src/types/validation.js';
+import type { ValidationErrorType } from '../../src/types/Validation.js';
 
 void describe('Custom keyword extensions', () => {
   const evenNumberKeyword: KeywordDefinitionInterface = {

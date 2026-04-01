@@ -1,8 +1,8 @@
-import type { KeywordDefinitionInterface } from './graph-engine.js';
-import type { LoggerInterface } from './logger.js';
-import type { MaterializerOptionsInterface } from './materializer.js';
-import type { VocabularyPluginInterface } from './vocabulary-plugin.js';
-import type { BuiltinFormatNameType } from '../types/format.js';
+import type { KeywordDefinitionInterface } from './GraphEngine.js';
+import type { LoggerInterface } from './Logger.js';
+import type { MaterializerOptionsInterface } from './Materializer.js';
+import type { VocabularyPluginInterface } from './VocabularyPlugin.js';
+import type { BuiltinFormatNameType } from '../types/Format.js';
 
 export interface JsonTologyOptionsInterface<TSchemas extends readonly unknown[] = readonly unknown[]> {
   /**

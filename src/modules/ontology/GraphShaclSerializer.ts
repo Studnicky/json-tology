@@ -1,12 +1,12 @@
-import type { SchemaGraphInterface } from '../../interfaces/schema-graph-impl.js';
-import type { GraphSerializerInterface } from '../../interfaces/serializer.js';
-import type { CurieInterface } from '../../interfaces/curie.js';
-import type { VocabularyPluginInterface } from '../../interfaces/vocabulary-plugin.js';
-import { projectShaclGraph } from '../rdf/ShaclProjection.js';
-import { quadsToJsonLd } from '../rdf/JsonLdFormatter.js';
-import { resetBnodeCounter } from '../rdf/Projection.js';
-import { Curie } from '../rdf/Curie.js';
-import { DEFAULT_PREFIXES } from '../../constants/prefixes.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { GraphSerializerInterface } from '../../interfaces/Serializer.js';
+import type { CurieInterface } from '../../interfaces/Curie.js';
+import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugin.js';
+import { projectShaclGraph } from '../rdf/shaclProjection.js';
+import { quadsToJsonLd } from '../rdf/jsonLdFormatter.js';
+import { resetBnodeCounter } from '../rdf/projection.js';
+import { Curie } from '../rdf/curie.js';
+import { DEFAULT_PREFIXES } from '../../constants/PREFIXES.js';
 
 export class GraphShaclSerializer implements GraphSerializerInterface {
   private readonly curie: CurieInterface;

@@ -6,9 +6,9 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
+import { SchemaRegistry } from '../../src/modules/registry/schemaRegistry.js';
 import { Logger } from '../utils/Logger.js';
-import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
+import { SchemaGraph } from '../../src/modules/graph/schemaGraph.js';
 
 const TestSchema = {
   '$id': 'https://example.io/test-schema',

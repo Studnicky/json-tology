@@ -1,50 +1,49 @@
-import type { ValidationErrorType } from '../../types/validation.js';
+import type { ValidationErrorType } from '../../types/Validation.js';
 import type {
   GraphEngineOptionsInterface, GraphExecutionResultInterface,
   KeywordDefinitionInterface
-} from '../../interfaces/graph-engine.js';
-import type { GraphEngineInterface } from '../../interfaces/graph-engine-impl.js';
+} from '../../interfaces/GraphEngine.js';
+import type { GraphEngineInterface } from '../../interfaces/GraphEngineImpl.js';
 import type {
   SchemaGraphNodeInterface, SchemaGraphSemanticsInterface
-} from '../../interfaces/schema-graph.js';
-import type { FormatRegistryInterface } from '../../interfaces/format-registry.js';
-import type { SchemaGraphInterface } from '../../interfaces/schema-graph-impl.js';
+} from '../../interfaces/SchemaGraph.js';
+import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import {
-  isRecord, propertyIri
-} from '../data/DataTypes.js';
-import { FormatRegistry } from '../format/FormatRegistry.js';
-import { Hash } from '../hash/Hash.js';
-import { SchemaGraph } from './SchemaGraph.js';
+  deepEqual, isRecord, propertyIri
+} from '../data/dataTypes.js';
+import { FormatRegistry } from '../format/formatRegistry.js';
+import { Hash } from '../hash/hash.js';
+import { SchemaGraph } from './schemaGraph.js';
 import { GraphError } from '../../errors/GraphError.js';
-import { DEFAULT_OPTIONS as DEFAULT_GRAPH_ENGINE_OPTIONS } from '../../constants/dialect.js';
+import { DEFAULT_OPTIONS } from '../../constants/DIALECT.js';
 import {
   buildRootDialectPlan,
   cloneCandidate,
-  deepEqual,
-  escapeJsonPointerSegment,
   extractNamedFragment,
   schemaId
-} from './GraphEngine.support.js';
+} from './graphEngineSupport.js';
+import { escapeJsonPointerSegment } from './schemaGraphSupport.js';
 import type {
   DynamicScopeEntryInterface,
   InternalExecutionResultInterface,
   RefTargetInterface,
   RootDialectPlanInterface
-} from './GraphEngine.support.js';
+} from './graphEngineSupport.js';
 import {
   coerceGraphValue,
   createValidationError,
   matchesSchemaTypes,
   validateNumberConstraints,
   validateStringConstraints
-} from './GraphEngine.scalars.js';
+} from './graphEngineScalars.js';
 import {
   createImplicitDefaultValue,
   synthesizeZeroValue
-} from './GraphEngine.defaults.js';
-import type { DefaultResolutionContextInterface } from './GraphEngine.defaults.js';
-import { visitNode } from './GraphEngine.visit.js';
-import type { VisitContextInterface } from './GraphEngine.visit.js';
+} from './graphEngineDefaults.js';
+import type { DefaultResolutionContextInterface } from './graphEngineDefaults.js';
+import { visitNode } from './graphEngineVisit.js';
+import type { VisitContextInterface } from './graphEngineVisit.js';
 
 import type { JSONSchema7Definition } from 'json-schema';
 
@@ -104,7 +103,7 @@ export class GraphEngine implements GraphEngineInterface {
     this.formatRegistry = formatRegistry ?? FormatRegistry.builtin();
     this.customKeywords = keywords ?? [];
     this.options = {
-      ...DEFAULT_GRAPH_ENGINE_OPTIONS,
+      ...DEFAULT_OPTIONS,
       ...rest
     };
     this.dialectPlan = buildRootDialectPlan(rootSchema);

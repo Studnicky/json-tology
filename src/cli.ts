@@ -17,17 +17,20 @@ import {
 import {
   basename, dirname, resolve
 } from 'node:path';
-import { SchemaRegistry } from './modules/registry/SchemaRegistry.js';
-import { GraphArtifact } from './modules/graph/GraphArtifact.js';
-import { GraphSchemaSerializer } from './modules/ontology/GraphSchemaSerializer.js';
-import { GraphOntologySerializer } from './modules/ontology/GraphOntologySerializer.js';
-import { GraphShaclSerializer } from './modules/ontology/GraphShaclSerializer.js';
-import { OntologyBuilder } from './modules/ontology/OntologyBuilder.js';
-import { VizDataCollector } from './modules/viz/VizDataCollector.js';
-import { HtmlRenderer } from './modules/viz/HtmlRenderer.js';
-import type { SchemaGraphInterface } from './interfaces/schema-graph-impl.js';
-import { DEFAULT_PREFIXES } from './constants/prefixes.js';
+import { SchemaRegistry } from './modules/registry/schemaRegistry.js';
+import { GraphArtifact } from './modules/graph/graphArtifact.js';
+import { GraphSchemaSerializer } from './modules/ontology/graphSchemaSerializer.js';
+import { GraphOntologySerializer } from './modules/ontology/graphOntologySerializer.js';
+import { GraphShaclSerializer } from './modules/ontology/graphShaclSerializer.js';
+import { OntologyBuilder } from './modules/ontology/ontologyBuilder.js';
+import { VizDataCollector } from './modules/viz/vizDataCollector.js';
+import { HtmlRenderer } from './modules/viz/htmlRenderer.js';
+import type { SchemaGraphInterface } from './interfaces/SchemaGraphImpl.js';
+import { DEFAULT_PREFIXES } from './constants/PREFIXES.js';
 import { SchemaError } from './errors/SchemaError.js';
+import type {
+  BuildArgsInterface, CliArgsType, VizArgsInterface
+} from './types/CliArgs.js';
 
 const CLI_PREFIXES: Record<string, string> = {
   ...DEFAULT_PREFIXES,
@@ -44,23 +47,6 @@ function usage(): never {
   process.exit(1);
 }
 
-interface BuildArgsInterface {
-  'baseIRI': string | undefined;
-  'command': 'build';
-  'format': string;
-  'output': string;
-  'outputFile': string | undefined;
-  'schema': string;
-}
-
-interface VizArgsInterface {
-  'command': 'viz';
-  'noOpen': boolean;
-  'output': string;
-  'schema': string;
-}
-
-type CliArgsType = BuildArgsInterface | VizArgsInterface;
 
 function parseArgs(argv: string[]): CliArgsType {
   const args = argv.slice(2);
@@ -439,8 +425,9 @@ async function main(): Promise<void> {
   return mainBuild(args);
 }
 
-// eslint-disable-next-line unicorn/prefer-top-level-await
-void main().catch((error) => {
+try {
+  await main();
+} catch (error) {
   console.error(error);
   process.exit(1);
-});
+}

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "codeStandards": {
+    "licensePolicy": {
+      "public": true
+    },
+    "depcheckIgnore": [
+      "license-checker",
+      "madge"
+    ]
+  },
+  "validators": {
+    "secretsScanValidator": {
+      "enableSecretsScanValidator": false
+    },
+    "dependencyUsageValidator": {
+      "enableDependencyUsageValidator": false
+    }
+  }
+}

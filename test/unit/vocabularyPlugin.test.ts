@@ -2,16 +2,16 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
-import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import { GraphOntologySerializer } from '../../src/modules/ontology/GraphOntologySerializer.js';
-import { GraphShaclSerializer } from '../../src/modules/ontology/GraphShaclSerializer.js';
-import { Curie } from '../../src/modules/rdf/Curie.js';
-import { DEFAULT_PREFIXES } from '../../src/constants/prefixes.js';
+import { SchemaRegistry } from '../../src/modules/registry/schemaRegistry.js';
+import { SchemaGraph } from '../../src/modules/graph/schemaGraph.js';
+import { GraphOntologySerializer } from '../../src/modules/ontology/graphOntologySerializer.js';
+import { GraphShaclSerializer } from '../../src/modules/ontology/graphShaclSerializer.js';
+import { Curie } from '../../src/modules/rdf/curie.js';
+import { DEFAULT_PREFIXES } from '../../src/constants/PREFIXES.js';
 import { JsonTology } from '../../src/JsonTology.js';
-import type { VocabularyPluginInterface } from '../../src/interfaces/vocabulary-plugin.js';
-import type { SchemaGraphRelationInterface } from '../../src/interfaces/schema-graph.js';
-import type { QuadInterface } from '../../src/interfaces/quad.js';
+import type { VocabularyPluginInterface } from '../../src/interfaces/VocabularyPlugin.js';
+import type { SchemaGraphRelationInterface } from '../../src/interfaces/SchemaGraph.js';
+import type { QuadInterface } from '../../src/interfaces/Quad.js';
 
 const ACME_NS = 'https://acme.org/vocab#';
 

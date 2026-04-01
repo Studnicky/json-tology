@@ -8,14 +8,14 @@
  * without requiring a schema or registry.
  */
 
-import type { DiffOpType } from '../../types/diff.js';
-import type { ValueInterface } from '../../interfaces/value-impl.js';
-import type { SchemaRegistryInterface } from '../../interfaces/schema-registry.js';
-import { isPlainObject } from './DataTypes.js';
-import { Hash } from '../hash/Hash.js';
-import { Changeset } from './Changeset.js';
+import type { DiffOpType } from '../../types/Diff.js';
+import type { ValueInterface } from '../../interfaces/ValueImpl.js';
+import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
+import { isPlainObject } from './dataTypes.js';
+import { Hash } from '../hash/hash.js';
+import { Changeset } from './changeset.js';
 import {
-  applyOp as applyOpFn, clone as cloneFn
+  applyOp, clone
 } from './operations.js';
 
 export class Value implements ValueInterface {
@@ -31,7 +31,7 @@ export class Value implements ValueInterface {
    * @returns Modified value after applying the operation
    */
   static applyOp(root: unknown, operation: DiffOpType): unknown {
-    return applyOpFn(root, operation);
+    return applyOp(root, operation);
   }
 
   /**
@@ -40,8 +40,8 @@ export class Value implements ValueInterface {
    * @param value - Value to clone
    * @returns Independent deep copy of the value
    */
-  public static clone<T>(value: T): T {
-    return cloneFn(value);
+  public static clone<T extends unknown>(value: T): T {
+    return clone(value);
   }
 
   /**

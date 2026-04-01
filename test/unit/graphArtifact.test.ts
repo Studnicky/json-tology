@@ -2,10 +2,10 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import type { GraphArtifactInterface } from '../../src/modules/graph/GraphArtifact.js';
-import { GraphArtifact } from '../../src/modules/graph/GraphArtifact.js';
-import type { NormIRInterface } from '../../src/interfaces/schema-graph.js';
-import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
+import type { GraphArtifactInterface } from '../../src/modules/graph/graphArtifact.js';
+import { GraphArtifact } from '../../src/modules/graph/graphArtifact.js';
+import type { NormIRInterface } from '../../src/interfaces/SchemaGraph.js';
+import { SchemaGraph } from '../../src/modules/graph/schemaGraph.js';
 
 void describe('GraphArtifact', () => {
   const TestSchema = {
@@ -133,7 +133,7 @@ void describe('GraphArtifact', () => {
       const graph = new SchemaGraph(TestSchema);
       const artifact = GraphArtifact.toArtifact(graph);
       const json = JSON.stringify(artifact);
-      const deserialized = JSON.parse(json) as GraphArtifactInterface;
+      const deserialized: unknown = JSON.parse(json);
       const rebuilt = GraphArtifact.fromArtifact(deserialized);
 
       assert.equal(rebuilt.nodes().length, graph.nodes().length);

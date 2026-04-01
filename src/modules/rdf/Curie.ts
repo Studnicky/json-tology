@@ -1,18 +1,18 @@
 /**
- * CURIE (Compact URI) namespace handler.
+ * CURIE (Compact URI) prefix handler.
  *
  * Expands compact notation (e.g., `ex:name`) to full IRIs and compacts full IRIs to compact form using a prefix map.
  */
 
-import type { CurieInterface } from '../../interfaces/curie.js';
+import type { CurieInterface } from '../../interfaces/Curie.js';
 
 export class Curie implements CurieInterface {
   private readonly prefixes: Record<string, string>;
 
   /**
-   * Creates a new CURIE namespace handler.
+   * Creates a new CURIE prefix handler.
    *
-   * @param prefixes - Map of prefix names to namespace IRIs (e.g., `{ ex: 'https://example.com/' }`)
+   * @param prefixes - Map of prefix names to base IRIs (e.g., `{ ex: 'https://example.com/' }`)
    */
   public constructor(prefixes: Record<string, string>) {
     this.prefixes = prefixes;

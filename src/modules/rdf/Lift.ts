@@ -12,33 +12,26 @@
  * - Structural subtyping (Compose.extend child → parent lift)
  */
 
-import type { QuadInterface } from '../../interfaces/quad.js';
-import type { SchemaGraphInterface } from '../../interfaces/schema-graph-impl.js';
-import type { SchemaGraphNodeInterface } from '../../interfaces/schema-graph.js';
-import type { QuadObjectType } from '../../types/quad.js';
-import type { SchemaRegistryInterface } from '../../interfaces/schema-registry.js';
+import type { QuadInterface } from '../../interfaces/Quad.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraph.js';
+import type { QuadObjectType } from '../../types/Quad.js';
+import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
+import type { SubjectGroupType } from '../../types/SubjectGroup.js';
+
+const DECIMAL_RADIX = 10;
+
 import {
   RDF_TYPE_IRI, XSD_IRI_PREFIX
-} from '../../constants/prefixes.js';
+} from '../../constants/PREFIXES.js';
+
+import type { RdfJsQuadInterface } from '../../interfaces/RdfJsQuad.js';
+
+export type { RdfJsQuadInterface } from '../../interfaces/RdfJsQuad.js';
 
 // ---------------------------------------------------------------------------
 // RDF/JS interop
 // ---------------------------------------------------------------------------
-
-/**
- * Minimal RDF/JS quad shape (compatible with `n3`, `@rdfjs/types`, etc.).
- * Used to convert external quads into the module's `QuadInterface`.
- */
-export interface RdfJsQuadInterface {
-  'object': {
-    'datatype'?: { 'value': string };
-    'language'?: string;
-    'termType': string;
-    'value': string;
-  };
-  'predicate': { 'value': string };
-  'subject': { 'value': string };
-}
 
 /**
  * Normalize a predicate IRI to the module's internal convention.
@@ -113,7 +106,7 @@ function coerceLiteralValue(raw: string, datatype: string): unknown {
     case 'integer':
     case 'long':
     case 'short':
-      return Number.parseInt(raw, 10);
+      return Number.parseInt(raw, DECIMAL_RADIX);
     default:
       return raw;
   }
@@ -123,7 +116,6 @@ function coerceLiteralValue(raw: string, datatype: string): unknown {
 // Lift internals
 // ---------------------------------------------------------------------------
 
-type SubjectGroupType = Map<string, QuadInterface[]>;
 
 function groupBySubject(quads: QuadInterface[]): SubjectGroupType {
   const groups: SubjectGroupType = new Map();

@@ -2,11 +2,11 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
+import { SchemaGraph } from '../../src/modules/graph/schemaGraph.js';
 import {
   projectAbox, projectGraph, quadsToJsonLdNodes
-} from '../../src/modules/rdf/Projection.js';
-import type { QuadInterface } from '../../src/interfaces/quad.js';
+} from '../../src/modules/rdf/projection.js';
+import type { QuadInterface } from '../../src/interfaces/Quad.js';
 
 // ---------------------------------------------------------------------------
 // Helpers

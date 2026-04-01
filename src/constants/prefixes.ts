@@ -18,3 +18,7 @@ export const DEFAULT_PREFIXES: Record<string, string> = {
 
 export const RDF_TYPE_IRI = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
 export const XSD_IRI_PREFIX = 'http://www.w3.org/2001/XMLSchema#';
+export const RDFS_IRI_PREFIX = 'http://www.w3.org/2000/01/rdf-schema#';
+export const RDFS_DOMAIN_IRI = 'http://www.w3.org/2000/01/rdf-schema#domain';
+export const RDFS_RANGE_IRI = 'http://www.w3.org/2000/01/rdf-schema#range';
+export const RDFS_SUB_CLASS_OF_IRI = 'http://www.w3.org/2000/01/rdf-schema#subClassOf';

@@ -5,10 +5,10 @@
  * used across graph, ontology, validation, and data modules.
  */
 
-import type { SchemaGraphSemanticsInterface } from '../../interfaces/schema-graph.js';
+import type { SchemaGraphSemanticsInterface } from '../../interfaces/SchemaGraph.js';
 import {
   BASE_TYPE_MAP, NUMBER_FORMAT_MAP, STRING_FORMAT_MAP
-} from '../../constants/xsd-maps.js';
+} from '../../constants/XSD_MAPS.js';
 
 // ---------------------------------------------------------------------------
 // Type guards

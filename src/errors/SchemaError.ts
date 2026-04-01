@@ -2,7 +2,7 @@
  * SchemaError — thrown for schema registration and structure issues
  */
 
-import type { SchemaErrorCodeType } from '../types/error-codes.js';
+import type { SchemaErrorCodeType } from '../types/ErrorCodes.js';
 import { BaseError } from './BaseError.js';
 
 export class SchemaError extends BaseError {

@@ -100,7 +100,7 @@ const changes = Value.diff(user, { ...user, role: 'admin' });
 
 ```typescript
 console.log(jt.ontology().jsonLd());      // OWL JSON-LD
-console.log(jt.ontology().shaclJsonLd()); // SHACL JSON-LD
+console.log(jt.ontology().shaclObject()); // SHACL JSON-LD
 ```
 
 ## Imports

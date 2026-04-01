@@ -14,8 +14,8 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import { GraphSchemaSerializer } from '../../src/modules/ontology/GraphSchemaSerializer.js';
+import { SchemaGraph } from '../../src/modules/graph/schemaGraph.js';
+import { GraphSchemaSerializer } from '../../src/modules/ontology/graphSchemaSerializer.js';
 
 // ---------------------------------------------------------------------------
 // Helpers

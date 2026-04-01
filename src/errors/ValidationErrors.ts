@@ -2,7 +2,7 @@
  * ValidationErrors — collection class with rich query methods
  */
 
-import type { ValidationErrorType } from '../types/validation.js';
+import type { ValidationErrorType } from '../types/Validation.js';
 
 /**
  * An ordered collection of ValidationErrorType items.

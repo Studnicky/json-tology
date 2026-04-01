@@ -1,12 +1,14 @@
-import type { SchemaGraphInterface } from '../../interfaces/schema-graph-impl.js';
-import type { GraphSerializerInterface } from '../../interfaces/serializer.js';
-import type { CurieInterface } from '../../interfaces/curie.js';
-import type { VocabularyPluginInterface } from '../../interfaces/vocabulary-plugin.js';
-import { projectOwlGraph } from '../rdf/OwlProjection.js';
-import { quadsToJsonLd } from '../rdf/JsonLdFormatter.js';
-import { resetBnodeCounter } from '../rdf/Projection.js';
-import { Curie } from '../rdf/Curie.js';
-import { DEFAULT_PREFIXES } from '../../constants/prefixes.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { GraphSerializerInterface } from '../../interfaces/Serializer.js';
+import type { CurieInterface } from '../../interfaces/Curie.js';
+import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugin.js';
+import { projectOwlGraph } from '../rdf/owlProjection.js';
+import { quadsToJsonLd } from '../rdf/jsonLdFormatter.js';
+import { resetBnodeCounter } from '../rdf/projection.js';
+import { Curie } from '../rdf/curie.js';
+import {
+  DEFAULT_PREFIXES, RDFS_SUB_CLASS_OF_IRI
+} from '../../constants/PREFIXES.js';
 
 export class GraphOntologySerializer implements GraphSerializerInterface {
   private readonly curie: CurieInterface;
@@ -94,7 +96,7 @@ export class GraphOntologySerializer implements GraphSerializerInterface {
     const nodes = quadsToJsonLd(allQuads);
 
     for (const node of nodes) {
-      ensureArray(node, 'http://www.w3.org/2000/01/rdf-schema#subClassOf');
+      ensureArray(node, RDFS_SUB_CLASS_OF_IRI);
     }
 
     return nodes;

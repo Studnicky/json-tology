@@ -4,7 +4,7 @@
  * Covers pointer resolution, anchor lookup, ref resolution, and dialect issues.
  */
 
-import type { GraphErrorCodeType } from '../types/error-codes.js';
+import type { GraphErrorCodeType } from '../types/ErrorCodes.js';
 import { BaseError } from './BaseError.js';
 
 export class GraphError extends BaseError {

@@ -11,7 +11,7 @@
  * - oneOf branch exclusion: YES, Exclude naturally removes matching union members
  */
 
-import type { InferSchemaType } from '../../src/types/schema.js';
+import type { InferSchemaType } from '../../src/types/Schema.js';
 
 // ============================================================================
 // Utility: type-level equality check

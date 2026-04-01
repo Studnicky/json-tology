@@ -6,10 +6,10 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
-import { Materializer } from '../../src/modules/materialization/Materializer.js';
-import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import { projectGraph } from '../../src/modules/rdf/Projection.js';
+import { SchemaRegistry } from '../../src/modules/registry/schemaRegistry.js';
+import { Materializer } from '../../src/modules/materialization/materializer.js';
+import { SchemaGraph } from '../../src/modules/graph/schemaGraph.js';
+import { projectGraph } from '../../src/modules/rdf/projection.js';
 
 const ConfigSchema = {
   '$id': 'https://example.io/config',

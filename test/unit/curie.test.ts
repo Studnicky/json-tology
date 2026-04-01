@@ -2,7 +2,7 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { Curie } from '../../src/modules/rdf/Curie.js';
+import { Curie } from '../../src/modules/rdf/curie.js';
 
 const standardPrefixes: Record<string, string> = {
   'dc': 'http://purl.org/dc/elements/1.1/',

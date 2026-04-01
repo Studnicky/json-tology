@@ -56,11 +56,11 @@ The project contract is:
 
 ### Code Organization Patterns
 
-**Canonical locations — no re-exports**
-Every definition lives in exactly one file and is imported from that file directly. Never create re-export shims or barrel files that proxy to the real location. If something moves, update every import.
+**Canonical locations — single source of truth**
+Every definition lives in exactly one file. Package entry points (`src/index.ts`, `src/schema.ts`, etc.) re-export the public API for consumer convenience, but definitions themselves are never duplicated. Internal imports should reference the defining file directly, not a barrel.
 
 **Interfaces over classes**
-Every public class has a corresponding interface in `src/interfaces/`. Consumers depend on the interface, not the class. Use `FooInterface` for type annotations (parameters, fields, return types). Use the class only for `new Foo()` or static methods. Classes carry `implements FooInterface` clauses.
+Core runtime classes with complex contracts have corresponding interfaces in `src/interfaces/` (e.g. `GraphEngine` → `GraphEngineInterface`, `SchemaRegistry` → `SchemaRegistryInterface`, `Materializer` → `MaterializerInterface`, `Value` → `ValueInterface`, `Curie` → `CurieInterface`). For these, consumers depend on the interface, not the class. Use `FooInterface` for type annotations (parameters, fields, return types). Use the class only for `new Foo()` or static methods. Classes carry `implements FooInterface` clauses. Static-method-only classes (Compose, Transform, Hash) and the top-level facade (JsonTology) do not require separate interfaces.
 
 **Constants live in `src/constants/`**
 Error codes, XSD maps, dialect configuration, known keywords, format validators, default prefixes, and schema literals all live here. Import constants from `src/constants/`, not from the module that originally defined them.
@@ -99,7 +99,7 @@ const UserSchema = {
 
 **Type derivation still comes from authored schema**
 ```ts
-type User = FromSchema<typeof UserSchema>;
+type User = InferType<typeof UserSchema>;
 ```
 
 **Execution semantics come from the canonical graph**
@@ -109,7 +109,7 @@ Validation, parsing, materialization, and ontology serialization should all read
 ### Package Exports
 
 ```json
-{ ".": "high-level entry", "./schema": "schema/runtime internals", "./ontology": "ontology utilities", "./types": "reusable type/schema building blocks" }
+{ ".": "high-level entry", "./value": "Value, Changeset, Hash", "./schema": "schema/runtime internals", "./ontology": "ontology utilities", "./types": "type aliases and branded types", "./interfaces": "interface contracts", "./viz": "HTML renderer and visualization" }
 ```
 
-Output goes to `dist/` (ESNext modules, ES2020 target, declaration maps + source maps).
+Output goes to `dist/` (NodeNext modules, ES2022 target, declaration maps + source maps).

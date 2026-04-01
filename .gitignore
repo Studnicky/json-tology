@@ -4,9 +4,11 @@
 *.js.map
 *.map
 dist
-git -C /Users/studs/Workspace/json-tology rm --cached vendor/dev-tools git -C /Users/studs/Workspace/json-tology add .gitignore
 node_modules
 vendor
+.claude/worktrees/
+.claude/*.json
+!.claude/settings.local.json
 
 # Added by dev-tools init
 .cache/

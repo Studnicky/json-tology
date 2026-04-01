@@ -8,8 +8,8 @@
  * Compile with: tsc --noEmit --project tsconfig.test-types.json
  */
 
-import type { InferType } from '../../src/types/schema.js';
-import { Compose } from '../../src/modules/composition/Compose.js';
+import type { InferType } from '../../src/types/Schema.js';
+import { Compose } from '../../src/modules/composition/compose.js';
 
 // ---------------------------------------------------------------------------
 // Bidirectional assignability helper

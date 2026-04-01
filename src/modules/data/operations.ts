@@ -1,5 +1,5 @@
-import type { DiffOpType } from '../../types/diff.js';
-import { isPlainObject } from './DataTypes.js';
+import type { DiffOpType } from '../../types/Diff.js';
+import { isPlainObject } from './dataTypes.js';
 
 export function applyOp(root: unknown, operation: DiffOpType): unknown {
   const path = operation.path === '/' ? '' : operation.path;
@@ -52,6 +52,6 @@ export function applyOp(root: unknown, operation: DiffOpType): unknown {
   return result;
 }
 
-export function clone<T>(value: T): T {
+export function clone<T extends unknown>(value: T): T {
   return structuredClone(value);
 }

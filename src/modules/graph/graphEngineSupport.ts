@@ -1,0 +1,105 @@
+import {
+  CURRENT_DIALECT_PREFIX,
+  DEFAULT_DIALECT_URI,
+
+  SUPPORTED_VOCABULARIES,
+  VOCABULARY_FORMAT_ASSERTION
+} from '../../constants/DIALECT.js';
+import { GraphError } from '../../errors/GraphError.js';
+import { isRecord } from '../data/dataTypes.js';
+
+import type { JSONSchema7Definition } from 'json-schema';
+import type { RootDialectPlanInterface } from '../../interfaces/RootDialectPlan.js';
+
+export type { DynamicScopeEntryInterface } from '../../interfaces/DynamicScopeEntry.js';
+export type { InternalExecutionResultInterface } from '../../interfaces/InternalExecutionResult.js';
+export type { RefTargetInterface } from '../../interfaces/RefTarget.js';
+export type { RootDialectPlanInterface } from '../../interfaces/RootDialectPlan.js';
+
+export function buildRootDialectPlan(rootSchema: JSONSchema7Definition): RootDialectPlanInterface {
+  if (!isRecord(rootSchema)) {
+    return { 'formatAssertions': true };
+  }
+
+  const schemaUri = typeof rootSchema.$schema === 'string' ? rootSchema.$schema : undefined;
+
+  if (schemaUri !== undefined && !schemaUri.startsWith(CURRENT_DIALECT_PREFIX)) {
+    throw new GraphError('DIALECT_UNSUPPORTED', `Unsupported JSON Schema dialect: ${schemaUri}`);
+  }
+
+  const rawVocabulary = isRecord(rootSchema.$vocabulary)
+    ? rootSchema.$vocabulary
+    : undefined;
+  let formatAssertions = schemaUri === undefined;
+
+  if (rawVocabulary !== undefined) {
+    for (const [
+      uri,
+      enabled
+    ] of Object.entries(rawVocabulary)) {
+      if (enabled === true && !SUPPORTED_VOCABULARIES.has(uri)) {
+        throw new GraphError('VOCABULARY_UNSUPPORTED', `Unsupported required JSON Schema vocabulary: ${uri}`);
+      }
+    }
+
+    if (typeof rawVocabulary[VOCABULARY_FORMAT_ASSERTION] === 'boolean') {
+      formatAssertions = rawVocabulary[VOCABULARY_FORMAT_ASSERTION];
+    }
+  } else if (schemaUri === DEFAULT_DIALECT_URI) {
+    formatAssertions = false;
+  }
+
+  return { 'formatAssertions': formatAssertions };
+}
+
+export function cloneCandidate<T extends unknown>(value: T): T {
+  if (value === null || value === undefined) {
+    return value;
+  }
+  if (typeof value === 'object') {
+    return structuredClone(value);
+  }
+
+  return value;
+}
+
+export function cloneDefault<T extends unknown>(value: T): T {
+  return structuredClone(value);
+}
+
+export function extractNamedFragment(ref: string): string | undefined {
+  if (!ref.includes('#')) {
+    return undefined;
+  }
+
+  const fragment = ref.slice(ref.indexOf('#') + 1);
+
+  if (fragment === '' || fragment.startsWith('/')) {
+    return undefined;
+  }
+
+  return fragment;
+}
+
+export function inferValueType(value: unknown): string {
+  if (value === null) {
+    return 'null';
+  }
+  if (Array.isArray(value)) {
+    return 'array';
+  }
+
+  return typeof value;
+}
+
+export function isIntegerValue(value: unknown): boolean {
+  return typeof value === 'number' && Number.isInteger(value);
+}
+
+export function schemaId(schema: JSONSchema7Definition): string | undefined {
+  if (!isRecord(schema)) {
+    return undefined;
+  }
+
+  return typeof schema.$id === 'string' ? schema.$id : undefined;
+}
