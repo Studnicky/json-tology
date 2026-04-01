@@ -87,6 +87,67 @@ void describe('compiled/interpreted parity', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // edge/unhappy: null, empty, undefined, and special values
+  // ---------------------------------------------------------------------------
+
+  void it('edge: null data, empty object, empty array, undefined properties, NaN/Infinity', () => {
+    const registry = new SchemaRegistry();
+
+    registry.register({
+      '$id': 'https://parity.test/basic-object',
+      'properties': {
+        'name': { 'type': 'string' },
+        'tags': {
+          'items': { 'type': 'string' },
+          'type': 'array'
+        },
+        'value': { 'type': 'number' }
+      },
+      'required': ['name'],
+      'type': 'object'
+    });
+
+    const scenarios: Scenario[] = [
+      {
+        'data': null,
+        'name': 'edge: null data rejects (not an object)',
+        'valid': false
+      },
+      {
+        'data': {},
+        'name': 'unhappy: empty object missing required name',
+        'valid': false
+      },
+      {
+        'data': {
+          'name': 'Alice',
+          'tags': []
+        },
+        'name': 'edge: empty array is valid when no minItems',
+        'valid': true
+      },
+      {
+        'data': {
+          'name': 'Alice',
+          'value': 0
+        },
+        'name': 'edge: falsy zero value is valid number',
+        'valid': true
+      },
+      {
+        'data': {
+          'name': '',
+          'tags': ['a']
+        },
+        'name': 'edge: empty string satisfies type:string (no minLength)',
+        'valid': true
+      }
+    ];
+
+    assertParityScenarios(registry, 'https://parity.test/basic-object', scenarios);
+  });
+
+  // ---------------------------------------------------------------------------
   // 2. dependentRequired
   // ---------------------------------------------------------------------------
 
@@ -809,5 +870,159 @@ void describe('compiled/interpreted parity', () => {
     ];
 
     assertParityScenarios(registry, 'https://parity.test/const-null', scenarios);
+  });
+
+  // ---------------------------------------------------------------------------
+  // 14. Infinity, NaN, and non-finite number rejection
+  // ---------------------------------------------------------------------------
+
+  void it('keyword: Infinity/NaN rejection for type number', () => {
+    const registry = new SchemaRegistry();
+
+    registry.register({
+      '$id': 'https://parity.test/number',
+      'type': 'number'
+    });
+    registry.register({
+      '$id': 'https://parity.test/integer',
+      'type': 'integer'
+    });
+
+    assertParityScenarios(registry, 'https://parity.test/number', [
+      {
+        'data': 42,
+        'name': 'normal number accepted',
+        'valid': true
+      },
+      {
+        'data': 0,
+        'name': 'zero accepted',
+        'valid': true
+      },
+      {
+        'data': -3.14,
+        'name': 'negative float accepted',
+        'valid': true
+      },
+      {
+        'data': Infinity,
+        'name': 'Infinity rejected',
+        'valid': false
+      },
+      {
+        'data': -Infinity,
+        'name': '-Infinity rejected',
+        'valid': false
+      },
+      {
+        'data': Number.NaN,
+        'name': 'NaN rejected',
+        'valid': false
+      }
+    ]);
+
+    assertParityScenarios(registry, 'https://parity.test/integer', [
+      {
+        'data': Infinity,
+        'name': 'Infinity rejected as integer',
+        'valid': false
+      },
+      {
+        'data': Number.NaN,
+        'name': 'NaN rejected as integer',
+        'valid': false
+      }
+    ]);
+  });
+
+  // ---------------------------------------------------------------------------
+  // 15. multipleOf parity (floating-point and zero)
+  // ---------------------------------------------------------------------------
+
+  void it('keyword: multipleOf with floating-point and zero', () => {
+    const registry = new SchemaRegistry();
+
+    registry.register({
+      '$id': 'https://parity.test/multiple-three',
+      'multipleOf': 3,
+      'type': 'number'
+    });
+    registry.register({
+      '$id': 'https://parity.test/multiple-tenth',
+      'multipleOf': 0.1,
+      'type': 'number'
+    });
+    registry.register({
+      '$id': 'https://parity.test/multiple-hundredth',
+      'multipleOf': 0.01,
+      'type': 'number'
+    });
+    registry.register({
+      '$id': 'https://parity.test/multiple-zero',
+      'multipleOf': 0,
+      'type': 'number'
+    });
+
+    assertParityScenarios(registry, 'https://parity.test/multiple-three', [
+      {
+        'data': 9,
+        'name': '9 is multiple of 3',
+        'valid': true
+      },
+      {
+        'data': 10,
+        'name': '10 is not multiple of 3',
+        'valid': false
+      },
+      {
+        'data': 0,
+        'name': '0 is multiple of 3',
+        'valid': true
+      }
+    ]);
+
+    assertParityScenarios(registry, 'https://parity.test/multiple-tenth', [
+      {
+        'data': 0.3,
+        'name': '0.3 is multiple of 0.1 (floating-point)',
+        'valid': true
+      },
+      {
+        'data': 0.5,
+        'name': '0.5 is multiple of 0.1',
+        'valid': true
+      },
+      {
+        'data': 0.15,
+        'name': '0.15 is not multiple of 0.1',
+        'valid': false
+      }
+    ]);
+
+    assertParityScenarios(registry, 'https://parity.test/multiple-hundredth', [
+      {
+        'data': 0.14,
+        'name': '0.14 is multiple of 0.01',
+        'valid': true
+      },
+      {
+        'data': 1.005,
+        'name': '1.005 is not multiple of 0.01',
+        'valid': false
+      }
+    ]);
+
+    assertParityScenarios(registry, 'https://parity.test/multiple-zero', [
+      {
+        'data': 5,
+        'name': 'multipleOf 0 always fails',
+        'valid': false
+      },
+      {
+        'data': 0,
+        'name': 'multipleOf 0 fails even for zero',
+        'valid': false
+      }
+    ]);
   });
 });

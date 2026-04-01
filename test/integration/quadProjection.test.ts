@@ -70,85 +70,141 @@ function tboxQuads(schema: Record<string, unknown>): QuadInterface[] {
 // ---------------------------------------------------------------------------
 
 void describe('projectGraph — TBox projection', () => {
-  void it('emits class, property, domain, and required-restriction quads', () => {
-    const quads = tboxQuads({
-      '$id': 'https://example.com/Person',
-      'properties': {
-        'age': { 'type': 'integer' },
-        'name': { 'type': 'string' }
+  void describe('class, property, domain, and required-restriction quads', () => {
+    const scenarios: Array<{ 'check': (quads: QuadInterface[]) => void;
+      'name': string;
+      'schema': Record<string, unknown>; }> = [
+      {
+        'check': (quads) => {
+          assert.ok(hasIriQuad(quads, 'https://example.com/Person', 'rdf:type', 'owl:Class'));
+          assert.ok(hasIriQuad(
+            quads,
+            'https://example.com/Person#/properties/name',
+            'rdf:type',
+            'owl:DatatypeProperty'
+          ));
+          assert.ok(hasIriQuad(
+            quads,
+            'https://example.com/Person#/properties/age',
+            'rdf:type',
+            'owl:DatatypeProperty'
+          ));
+          assert.ok(hasIriQuad(
+            quads,
+            'https://example.com/Person#/properties/name',
+            'rdfs:domain',
+            'https://example.com/Person'
+          ));
+        },
+        'name': 'emits owl:Class for object schema',
+        'schema': {
+          '$id': 'https://example.com/Person',
+          'properties': {
+            'age': { 'type': 'integer' },
+            'name': { 'type': 'string' }
+          },
+          'type': 'object'
+        }
       },
-      'type': 'object'
-    });
+      {
+        'check': (quads) => {
+          const restrictionLink = hasBnodeQuad(quads, 'https://example.com/Person', 'rdfs:subClassOf');
 
-    assert.ok(hasIriQuad(quads, 'https://example.com/Person', 'rdf:type', 'owl:Class'));
-    assert.ok(hasIriQuad(
-      quads,
-      'https://example.com/Person#/properties/name',
-      'rdf:type',
-      'owl:DatatypeProperty'
-    ));
-    assert.ok(hasIriQuad(
-      quads,
-      'https://example.com/Person#/properties/age',
-      'rdf:type',
-      'owl:DatatypeProperty'
-    ));
-    assert.ok(hasIriQuad(
-      quads,
-      'https://example.com/Person#/properties/name',
-      'rdfs:domain',
-      'https://example.com/Person'
-    ));
+          assert.ok(restrictionLink, 'should have restriction bnode');
 
-    // required properties produce owl:Restriction with minCardinality
-    const reqQuads = tboxQuads({
-      '$id': 'https://example.com/Person',
-      'properties': { 'name': { 'type': 'string' } },
-      'required': ['name'],
-      'type': 'object'
-    });
+          const bId = bnodeId(restrictionLink);
 
-    const restrictionLink = hasBnodeQuad(reqQuads, 'https://example.com/Person', 'rdfs:subClassOf');
+          assert.ok(hasIriQuad(quads, bId, 'rdf:type', 'owl:Restriction'));
+          assert.ok(hasIriQuad(quads, bId, 'owl:onProperty', 'https://example.com/Person#name'));
+          assert.ok(hasLiteralQuad(quads, bId, 'owl:minCardinality', 1, 'xsd:nonNegativeInteger'));
+          assert.ok(hasLiteralQuad(
+            quads,
+            'https://example.com/Person#/properties/name',
+            'sh:minCount',
+            1,
+            'xsd:integer'
+          ));
+        },
+        'name': 'required property produces owl:Restriction with minCardinality',
+        'schema': {
+          '$id': 'https://example.com/Person',
+          'properties': { 'name': { 'type': 'string' } },
+          'required': ['name'],
+          'type': 'object'
+        }
+      },
+      // Edge cases
+      {
+        'check': (quads) => {
+          assert.ok(
+            hasIriQuad(quads, 'https://example.com/Bare', 'rdf:type', 'owl:Class'),
+            'bare schema with $id should still emit owl:Class'
+          );
 
-    assert.ok(restrictionLink, 'should have restriction bnode');
+          const propQuads = quads.filter((quad) => {
+            return quad.predicate === 'rdf:type'
+              && quad.object.termType === 'NamedNode'
+              && (quad.object.value === 'owl:DatatypeProperty' || quad.object.value === 'owl:ObjectProperty');
+          });
 
-    const bId = bnodeId(restrictionLink);
+          assert.equal(propQuads.length, 0, 'bare schema should not emit property type quads');
+        },
+        'name': 'schema with $id but no type still emits owl:Class',
+        'schema': { '$id': 'https://example.com/Bare' }
+      },
+      {
+        'check': (quads) => {
+          assert.ok(hasIriQuad(quads, 'https://example.com/NoProps', 'rdf:type', 'owl:Class'));
 
-    assert.ok(hasIriQuad(reqQuads, bId, 'rdf:type', 'owl:Restriction'));
-    assert.ok(hasIriQuad(reqQuads, bId, 'owl:onProperty', 'https://example.com/Person#name'));
-    assert.ok(hasLiteralQuad(reqQuads, bId, 'owl:minCardinality', 1, 'xsd:nonNegativeInteger'));
-    assert.ok(hasLiteralQuad(
-      reqQuads,
-      'https://example.com/Person#/properties/name',
-      'sh:minCount',
-      1,
-      'xsd:integer'
-    ));
+          const propQuads = quads.filter((quad) => {
+            return quad.predicate === 'rdf:type'
+              && quad.object.termType === 'NamedNode'
+              && (quad.object.value === 'owl:DatatypeProperty' || quad.object.value === 'owl:ObjectProperty');
+          });
+
+          assert.equal(propQuads.length, 0, 'no-properties schema should not emit property type quads');
+        },
+        'name': 'schema with no properties emits class but no property quads',
+        'schema': {
+          '$id': 'https://example.com/NoProps',
+          'type': 'object'
+        }
+      }
+    ];
+
+    for (const {
+      check, name, schema
+    } of scenarios) {
+      void it(name, () => {
+        const quads = tboxQuads(schema);
+
+        check(quads);
+      });
+    }
   });
 
-  void it('string and numeric constraint quads', () => {
-    const scenarios = [
+  void describe('string and numeric constraint quads', () => {
+    const scenarios: Array<{
+      'check': (quads: QuadInterface[]) => void;
+      'name': string;
+      'schema': Record<string, unknown>;
+    }> = [
       {
-        'assertions': [
-          {
-            'datatype': 'xsd:integer',
-            'predicate': 'sh:minLength',
-            'subject': 'https://example.com/T#/properties/code',
-            'value': 2
-          },
-          {
-            'datatype': 'xsd:integer',
-            'predicate': 'sh:maxLength',
-            'subject': 'https://example.com/T#/properties/code',
-            'value': 10
-          },
-          {
-            'datatype': 'xsd:string',
-            'predicate': 'sh:pattern',
-            'subject': 'https://example.com/T#/properties/code',
-            'value': '^[A-Z]+$'
-          }
-        ],
+        'check': (quads) => {
+          assert.ok(
+            hasLiteralQuad(quads, 'https://example.com/T#/properties/code', 'sh:minLength', 2, 'xsd:integer'),
+            'expected sh:minLength = 2'
+          );
+          assert.ok(
+            hasLiteralQuad(quads, 'https://example.com/T#/properties/code', 'sh:maxLength', 10, 'xsd:integer'),
+            'expected sh:maxLength = 10'
+          );
+          assert.ok(
+            hasLiteralQuad(quads, 'https://example.com/T#/properties/code', 'sh:pattern', '^[A-Z]+$', 'xsd:string'),
+            'expected sh:pattern = ^[A-Z]+$'
+          );
+        },
+        'name': 'string constraints: minLength, maxLength, pattern',
         'schema': {
           '$id': 'https://example.com/T',
           'properties': {
@@ -163,32 +219,25 @@ void describe('projectGraph — TBox projection', () => {
         }
       },
       {
-        'assertions': [
-          {
-            'datatype': 'xsd:decimal',
-            'predicate': 'sh:minInclusive',
-            'subject': 'https://example.com/T#/properties/score',
-            'value': 0
-          },
-          {
-            'datatype': 'xsd:decimal',
-            'predicate': 'sh:maxInclusive',
-            'subject': 'https://example.com/T#/properties/score',
-            'value': 100
-          },
-          {
-            'datatype': 'xsd:decimal',
-            'predicate': 'sh:minExclusive',
-            'subject': 'https://example.com/T#/properties/delta',
-            'value': -1
-          },
-          {
-            'datatype': 'xsd:decimal',
-            'predicate': 'sh:maxExclusive',
-            'subject': 'https://example.com/T#/properties/delta',
-            'value': 200
-          }
-        ],
+        'check': (quads) => {
+          assert.ok(
+            hasLiteralQuad(quads, 'https://example.com/T#/properties/score', 'sh:minInclusive', 0, 'xsd:decimal'),
+            'expected sh:minInclusive = 0'
+          );
+          assert.ok(
+            hasLiteralQuad(quads, 'https://example.com/T#/properties/score', 'sh:maxInclusive', 100, 'xsd:decimal'),
+            'expected sh:maxInclusive = 100'
+          );
+          assert.ok(
+            hasLiteralQuad(quads, 'https://example.com/T#/properties/delta', 'sh:minExclusive', -1, 'xsd:decimal'),
+            'expected sh:minExclusive = -1'
+          );
+          assert.ok(
+            hasLiteralQuad(quads, 'https://example.com/T#/properties/delta', 'sh:maxExclusive', 200, 'xsd:decimal'),
+            'expected sh:maxExclusive = 200'
+          );
+        },
+        'name': 'numeric constraints: min/maxInclusive, min/maxExclusive',
         'schema': {
           '$id': 'https://example.com/T',
           'properties': {
@@ -206,293 +255,395 @@ void describe('projectGraph — TBox projection', () => {
           'type': 'object'
         }
       }
-    ] as const;
+    ];
 
-    for (const scenario of scenarios) {
-      const quads = tboxQuads(scenario.schema as Record<string, unknown>);
+    for (const {
+      check, name, schema
+    } of scenarios) {
+      void it(name, () => {
+        const quads = tboxQuads(schema);
 
-      for (const assertion of scenario.assertions) {
-        assert.ok(
-          hasLiteralQuad(quads, assertion.subject, assertion.predicate, assertion.value, assertion.datatype),
-          `expected ${assertion.predicate} = ${assertion.value} on ${assertion.subject}`
-        );
-      }
+        check(quads);
+      });
     }
   });
 
-  void it('enum produces owl:oneOf, const produces owl:hasValue', () => {
-    // enum
-    const enumQuads = tboxQuads({
-      '$id': 'https://example.com/Status',
-      'enum': [
-        'active',
-        'inactive',
-        'pending'
-      ],
-      'type': 'string'
-    });
+  void describe('enum and const quads', () => {
+    const scenarios: Array<{
+      'check': (quads: QuadInterface[]) => void;
+      'name': string;
+      'schema': Record<string, unknown>;
+    }> = [
+      {
+        'check': (quads) => {
+          const oneOfQuads = findQuadsForSubject(quads, 'https://example.com/Status', 'owl:oneOf');
 
-    const oneOfQuads = findQuadsForSubject(enumQuads, 'https://example.com/Status', 'owl:oneOf');
+          assert.equal(oneOfQuads.length, 3);
+          assert.ok(hasLiteralQuad(quads, 'https://example.com/Status', 'owl:oneOf', 'active', 'xsd:string'));
+          assert.ok(hasLiteralQuad(quads, 'https://example.com/Status', 'owl:oneOf', 'inactive', 'xsd:string'));
+          assert.ok(hasLiteralQuad(quads, 'https://example.com/Status', 'owl:oneOf', 'pending', 'xsd:string'));
+        },
+        'name': 'enum produces owl:oneOf',
+        'schema': {
+          '$id': 'https://example.com/Status',
+          'enum': [
+            'active',
+            'inactive',
+            'pending'
+          ],
+          'type': 'string'
+        }
+      },
+      {
+        'check': (quads) => {
+          assert.ok(hasLiteralQuad(quads, 'https://example.com/Const', 'owl:hasValue', 'fixed', 'xsd:string'));
+        },
+        'name': 'const produces owl:hasValue',
+        'schema': {
+          '$id': 'https://example.com/Const',
+          'const': 'fixed',
+          'type': 'string'
+        }
+      }
+    ];
 
-    assert.equal(oneOfQuads.length, 3);
-    assert.ok(hasLiteralQuad(enumQuads, 'https://example.com/Status', 'owl:oneOf', 'active', 'xsd:string'));
-    assert.ok(hasLiteralQuad(enumQuads, 'https://example.com/Status', 'owl:oneOf', 'inactive', 'xsd:string'));
-    assert.ok(hasLiteralQuad(enumQuads, 'https://example.com/Status', 'owl:oneOf', 'pending', 'xsd:string'));
+    for (const {
+      check, name, schema
+    } of scenarios) {
+      void it(name, () => {
+        const quads = tboxQuads(schema);
 
-    // const
-    const constQuads = tboxQuads({
-      '$id': 'https://example.com/Const',
-      'const': 'fixed',
-      'type': 'string'
-    });
-
-    assert.ok(hasLiteralQuad(constQuads, 'https://example.com/Const', 'owl:hasValue', 'fixed', 'xsd:string'));
+        check(quads);
+      });
+    }
   });
 
-  void it('composition keywords: allOf, anyOf, oneOf, not', () => {
-    // allOf -> rdfs:subClassOf
-    const allOfQuads = tboxQuads({
-      '$id': 'https://example.com/Child',
-      'allOf': [{ '$ref': 'https://example.com/Parent' }],
-      'type': 'object'
-    });
-
-    assert.ok(hasIriQuad(allOfQuads, 'https://example.com/Child', 'rdfs:subClassOf', 'https://example.com/Parent'));
-
-    // anyOf/oneOf -> owl:equivalentClass
-    const eqScenarios = [
+  void describe('composition keywords', () => {
+    const scenarios: Array<{
+      'check': (quads: QuadInterface[]) => void;
+      'name': string;
+      'schema': Record<string, unknown>;
+    }> = [
       {
+        'check': (quads) => {
+          assert.ok(hasIriQuad(quads, 'https://example.com/Child', 'rdfs:subClassOf', 'https://example.com/Parent'));
+        },
+        'name': 'allOf produces rdfs:subClassOf',
+        'schema': {
+          '$id': 'https://example.com/Child',
+          'allOf': [{ '$ref': 'https://example.com/Parent' }],
+          'type': 'object'
+        }
+      },
+      {
+        'check': (quads) => {
+          const eqQuads = findQuadsForSubject(quads, 'https://example.com/Union', 'owl:equivalentClass');
+
+          assert.ok(eqQuads.length >= 2, 'expected >= 2 owl:equivalentClass quads for anyOf');
+        },
+        'name': 'anyOf produces owl:equivalentClass',
         'schema': {
           '$id': 'https://example.com/Union',
           'anyOf': [
             { 'type': 'string' },
             { 'type': 'number' }
           ]
-        },
-        'subject': 'https://example.com/Union'
+        }
       },
       {
+        'check': (quads) => {
+          const eqQuads = findQuadsForSubject(quads, 'https://example.com/Exclusive', 'owl:equivalentClass');
+
+          assert.ok(eqQuads.length >= 2, 'expected >= 2 owl:equivalentClass quads for oneOf');
+        },
+        'name': 'oneOf produces owl:equivalentClass',
         'schema': {
           '$id': 'https://example.com/Exclusive',
           'oneOf': [
             { 'type': 'string' },
             { 'type': 'boolean' }
           ]
+        }
+      },
+      {
+        'check': (quads) => {
+          const compQuads = findQuadsForSubject(quads, 'https://example.com/NotArray', 'owl:complementOf');
+
+          assert.ok(compQuads.length > 0);
         },
-        'subject': 'https://example.com/Exclusive'
+        'name': 'not produces owl:complementOf',
+        'schema': {
+          '$id': 'https://example.com/NotArray',
+          'not': { 'type': 'array' }
+        }
       }
-    ] as const;
+    ];
 
-    for (const scenario of eqScenarios) {
-      const quads = tboxQuads(scenario.schema as Record<string, unknown>);
-      const eqQuads = findQuadsForSubject(quads, scenario.subject, 'owl:equivalentClass');
+    for (const {
+      check, name, schema
+    } of scenarios) {
+      void it(name, () => {
+        const quads = tboxQuads(schema);
 
-      assert.ok(eqQuads.length >= 2, `expected >= 2 owl:equivalentClass quads for ${scenario.subject}`);
+        check(quads);
+      });
     }
-
-    // not -> owl:complementOf
-    const notQuads = tboxQuads({
-      '$id': 'https://example.com/NotArray',
-      'not': { 'type': 'array' }
-    });
-
-    const compQuads = findQuadsForSubject(notQuads, 'https://example.com/NotArray', 'owl:complementOf');
-
-    assert.ok(compQuads.length > 0);
   });
 
-  void it('conditionals: if/then/else and dependentSchemas produce bnodes', () => {
-    // if/then/else produces owl:unionOf bnode with jt: predicates
-    const quads = tboxQuads({
-      '$id': 'https://example.com/Conditional',
-      'else': {
-        'properties': { 'label': { 'type': 'string' } },
-        'type': 'object'
-      },
-      'if': {
-        'properties': { 'kind': { 'const': 'person' } },
-        'type': 'object'
-      },
-      // eslint-disable-next-line unicorn/no-thenable -- JSON Schema 'then' keyword
-      'then': {
-        'properties': { 'name': { 'type': 'string' } },
-        'type': 'object'
-      },
-      'type': 'object'
-    });
+  void describe('conditionals and dependentSchemas', () => {
+    const scenarios: Array<{
+      'check': (quads: QuadInterface[]) => void;
+      'name': string;
+      'schema': Record<string, unknown>;
+    }> = [
+      {
+        'check': (quads) => {
+          const unionQuad = hasBnodeQuad(quads, 'https://example.com/Conditional', 'owl:unionOf');
 
-    const unionQuad = hasBnodeQuad(quads, 'https://example.com/Conditional', 'owl:unionOf');
+          assert.ok(unionQuad, 'should have conditional bnode');
 
-    assert.ok(unionQuad, 'should have conditional bnode');
+          const bId = bnodeId(unionQuad);
 
-    const bId = bnodeId(unionQuad);
+          assert.ok(hasIriQuad(quads, bId, 'rdf:type', 'owl:Class'));
 
-    assert.ok(hasIriQuad(quads, bId, 'rdf:type', 'owl:Class'));
+          for (const pred of [
+            'jt:if',
+            'jt:then',
+            'jt:else'
+          ] as const) {
+            const found = findQuadsForSubject(quads, bId, pred);
 
-    for (const pred of [
-      'jt:if',
-      'jt:then',
-      'jt:else'
-    ] as const) {
-      const found = findQuadsForSubject(quads, bId, pred);
-
-      assert.ok(found.length > 0, `should have ${pred}`);
-    }
-
-    // dependentSchemas produce conditional bnode with jt:if
-    const depQuads = tboxQuads({
-      '$id': 'https://example.com/Deps',
-      'dependentSchemas': {
-        'address': {
-          'properties': { 'zip': { 'type': 'string' } },
+            assert.ok(found.length > 0, `should have ${pred}`);
+          }
+        },
+        'name': 'if/then/else produces owl:unionOf bnode with jt: predicates',
+        'schema': {
+          '$id': 'https://example.com/Conditional',
+          'else': {
+            'properties': { 'label': { 'type': 'string' } },
+            'type': 'object'
+          },
+          'if': {
+            'properties': { 'kind': { 'const': 'person' } },
+            'type': 'object'
+          },
+          // eslint-disable-next-line unicorn/no-thenable -- JSON Schema 'then' keyword
+          'then': {
+            'properties': { 'name': { 'type': 'string' } },
+            'type': 'object'
+          },
           'type': 'object'
         }
       },
-      'properties': { 'address': { 'type': 'string' } },
-      'type': 'object'
-    });
-
-    const depUnionQuad = hasBnodeQuad(depQuads, 'https://example.com/Deps', 'owl:unionOf');
-
-    assert.ok(depUnionQuad, 'should have conditional bnode');
-
-    const depBId = bnodeId(depUnionQuad);
-
-    assert.ok(hasIriQuad(depQuads, depBId, 'rdf:type', 'owl:Class'));
-
-    const ifQuads = findQuadsForSubject(depQuads, depBId, 'jt:if');
-
-    assert.ok(ifQuads.length > 0, 'should have jt:if');
-  });
-
-  void it('contains, prefixItems, and patternProperties emit array/pattern quads', () => {
-    // someValuesFrom restriction
-    const containsQuads = tboxQuads({
-      '$id': 'https://example.com/ArrayContains',
-      'contains': { 'type': 'number' },
-      'type': 'array'
-    });
-
-    const svfQuad = hasBnodeQuad(containsQuads, 'https://example.com/ArrayContains', 'owl:someValuesFrom');
-
-    assert.ok(svfQuad, 'should have someValuesFrom bnode');
-
-    const bId = bnodeId(svfQuad);
-
-    assert.ok(hasIriQuad(containsQuads, bId, 'rdf:type', 'owl:Restriction'));
-    assert.ok(hasIriQuad(containsQuads, bId, 'owl:onProperty', 'rdfs:member'));
-    assert.ok(hasIriQuad(containsQuads, bId, 'owl:someValuesFrom', 'xsd:decimal'));
-
-    // qualified cardinality from minContains/maxContains
-    const cardQuads = tboxQuads({
-      '$id': 'https://example.com/ArrayCard',
-      'contains': { 'type': 'string' },
-      'maxContains': 5,
-      'minContains': 2,
-      'type': 'array'
-    });
-
-    assert.ok(hasLiteralQuad(
-      cardQuads,
-      'https://example.com/ArrayCard',
-      'owl:minQualifiedCardinality',
-      2,
-      'xsd:nonNegativeInteger'
-    ));
-    assert.ok(hasLiteralQuad(
-      cardQuads,
-      'https://example.com/ArrayCard',
-      'owl:maxQualifiedCardinality',
-      5,
-      'xsd:nonNegativeInteger'
-    ));
-
-    // prefixItems -> rdfs:member
-    const tupleQuads = tboxQuads({
-      '$id': 'https://example.com/Tuple',
-      'prefixItems': [
-        { 'type': 'string' },
-        { 'type': 'number' },
-        { 'type': 'boolean' }
-      ],
-      'type': 'array'
-    });
-
-    const memberQuads = findQuadsForSubject(tupleQuads, 'https://example.com/Tuple', 'rdfs:member');
-
-    assert.equal(memberQuads.length, 3);
-    assert.ok(hasIriQuad(tupleQuads, 'https://example.com/Tuple', 'rdfs:member', 'xsd:string'));
-    assert.ok(hasIriQuad(tupleQuads, 'https://example.com/Tuple', 'rdfs:member', 'xsd:decimal'));
-    assert.ok(hasIriQuad(tupleQuads, 'https://example.com/Tuple', 'rdfs:member', 'xsd:boolean'));
-
-    // patternProperties -> sh:pattern
-    const patternQuads = tboxQuads({
-      '$id': 'https://example.com/PatternProps',
-      'patternProperties': {
-        '^x-': { 'type': 'string' },
-        '^y-': { 'type': 'number' }
-      },
-      'type': 'object'
-    });
-
-    const shPatternQuads = findQuadsForSubject(patternQuads, 'https://example.com/PatternProps', 'sh:pattern');
-
-    assert.ok(shPatternQuads.length >= 2, `expected at least 2 sh:pattern quads, got ${shPatternQuads.length}`);
-    assert.ok(hasLiteralQuad(patternQuads, 'https://example.com/PatternProps', 'sh:pattern', '^x-', 'xsd:string'));
-    assert.ok(hasLiteralQuad(patternQuads, 'https://example.com/PatternProps', 'sh:pattern', '^y-', 'xsd:string'));
-  });
-
-  void it('additionalProperties controls sh:closed', () => {
-    const scenarios = [
       {
-        'expectedCount': 1,
-        'expectedLiteral': {
-          'datatype': 'xsd:boolean',
-          'value': 'true'
+        'check': (quads) => {
+          const depUnionQuad = hasBnodeQuad(quads, 'https://example.com/Deps', 'owl:unionOf');
+
+          assert.ok(depUnionQuad, 'should have conditional bnode');
+
+          const depBId = bnodeId(depUnionQuad);
+
+          assert.ok(hasIriQuad(quads, depBId, 'rdf:type', 'owl:Class'));
+
+          const ifQuads = findQuadsForSubject(quads, depBId, 'jt:if');
+
+          assert.ok(ifQuads.length > 0, 'should have jt:if');
         },
+        'name': 'dependentSchemas produces conditional bnode with jt:if',
+        'schema': {
+          '$id': 'https://example.com/Deps',
+          'dependentSchemas': {
+            'address': {
+              'properties': { 'zip': { 'type': 'string' } },
+              'type': 'object'
+            }
+          },
+          'properties': { 'address': { 'type': 'string' } },
+          'type': 'object'
+        }
+      }
+    ];
+
+    for (const {
+      check, name, schema
+    } of scenarios) {
+      void it(name, () => {
+        const quads = tboxQuads(schema);
+
+        check(quads);
+      });
+    }
+  });
+
+  void describe('contains, prefixItems, and patternProperties', () => {
+    const scenarios: Array<{
+      'check': (quads: QuadInterface[]) => void;
+      'name': string;
+      'schema': Record<string, unknown>;
+    }> = [
+      {
+        'check': (quads) => {
+          const svfQuad = hasBnodeQuad(quads, 'https://example.com/ArrayContains', 'owl:someValuesFrom');
+
+          assert.ok(svfQuad, 'should have someValuesFrom bnode');
+
+          const bId = bnodeId(svfQuad);
+
+          assert.ok(hasIriQuad(quads, bId, 'rdf:type', 'owl:Restriction'));
+          assert.ok(hasIriQuad(quads, bId, 'owl:onProperty', 'rdfs:member'));
+          assert.ok(hasIriQuad(quads, bId, 'owl:someValuesFrom', 'xsd:decimal'));
+        },
+        'name': 'contains emits someValuesFrom restriction',
+        'schema': {
+          '$id': 'https://example.com/ArrayContains',
+          'contains': { 'type': 'number' },
+          'type': 'array'
+        }
+      },
+      {
+        'check': (quads) => {
+          assert.ok(hasLiteralQuad(
+            quads,
+            'https://example.com/ArrayCard',
+            'owl:minQualifiedCardinality',
+            2,
+            'xsd:nonNegativeInteger'
+          ));
+          assert.ok(hasLiteralQuad(
+            quads,
+            'https://example.com/ArrayCard',
+            'owl:maxQualifiedCardinality',
+            5,
+            'xsd:nonNegativeInteger'
+          ));
+        },
+        'name': 'minContains/maxContains emit qualified cardinality',
+        'schema': {
+          '$id': 'https://example.com/ArrayCard',
+          'contains': { 'type': 'string' },
+          'maxContains': 5,
+          'minContains': 2,
+          'type': 'array'
+        }
+      },
+      {
+        'check': (quads) => {
+          const memberQuads = findQuadsForSubject(quads, 'https://example.com/Tuple', 'rdfs:member');
+
+          assert.equal(memberQuads.length, 3);
+          assert.ok(hasIriQuad(quads, 'https://example.com/Tuple', 'rdfs:member', 'xsd:string'));
+          assert.ok(hasIriQuad(quads, 'https://example.com/Tuple', 'rdfs:member', 'xsd:decimal'));
+          assert.ok(hasIriQuad(quads, 'https://example.com/Tuple', 'rdfs:member', 'xsd:boolean'));
+        },
+        'name': 'prefixItems produce rdfs:member quads',
+        'schema': {
+          '$id': 'https://example.com/Tuple',
+          'prefixItems': [
+            { 'type': 'string' },
+            { 'type': 'number' },
+            { 'type': 'boolean' }
+          ],
+          'type': 'array'
+        }
+      },
+      {
+        'check': (quads) => {
+          const shPatternQuads = findQuadsForSubject(quads, 'https://example.com/PatternProps', 'sh:pattern');
+
+          assert.ok(shPatternQuads.length >= 2, `expected at least 2 sh:pattern quads, got ${shPatternQuads.length}`);
+          assert.ok(hasLiteralQuad(quads, 'https://example.com/PatternProps', 'sh:pattern', '^x-', 'xsd:string'));
+          assert.ok(hasLiteralQuad(quads, 'https://example.com/PatternProps', 'sh:pattern', '^y-', 'xsd:string'));
+        },
+        'name': 'patternProperties emit sh:pattern quads',
+        'schema': {
+          '$id': 'https://example.com/PatternProps',
+          'patternProperties': {
+            '^x-': { 'type': 'string' },
+            '^y-': { 'type': 'number' }
+          },
+          'type': 'object'
+        }
+      }
+    ];
+
+    for (const {
+      check, name, schema
+    } of scenarios) {
+      void it(name, () => {
+        const quads = tboxQuads(schema);
+
+        check(quads);
+      });
+    }
+  });
+
+  void describe('additionalProperties controls sh:closed', () => {
+    const scenarios: Array<{
+      'check': (quads: QuadInterface[]) => void;
+      'name': string;
+      'schema': Record<string, unknown>;
+    }> = [
+      {
+        'check': (quads) => {
+          const closedQuads = findQuadsForSubject(quads, 'https://example.com/Strict', 'sh:closed');
+
+          assert.equal(closedQuads.length, 1, 'sh:closed count for strict');
+          assert.ok(hasLiteralQuad(
+            quads,
+            'https://example.com/Strict',
+            'sh:closed',
+            'true',
+            'xsd:boolean'
+          ));
+        },
+        'name': 'additionalProperties: false emits sh:closed true',
         'schema': {
           '$id': 'https://example.com/Strict',
           'additionalProperties': false,
           'properties': { 'a': { 'type': 'string' } },
           'type': 'object'
-        },
-        'subject': 'https://example.com/Strict'
+        }
       },
       {
-        'expectedCount': 0,
-        'expectedLiteral': null,
+        'check': (quads) => {
+          const closedQuads = findQuadsForSubject(quads, 'https://example.com/Open', 'sh:closed');
+
+          assert.equal(closedQuads.length, 0, 'sh:closed count for open');
+        },
+        'name': 'additionalProperties: true does not emit sh:closed',
         'schema': {
           '$id': 'https://example.com/Open',
           'additionalProperties': true,
           'type': 'object'
-        },
-        'subject': 'https://example.com/Open'
+        }
       }
-    ] as const;
+    ];
 
-    for (const scenario of scenarios) {
-      const quads = tboxQuads(scenario.schema as Record<string, unknown>);
-      const closedQuads = findQuadsForSubject(quads, scenario.subject, 'sh:closed');
+    for (const {
+      check, name, schema
+    } of scenarios) {
+      void it(name, () => {
+        const quads = tboxQuads(schema);
 
-      assert.equal(closedQuads.length, scenario.expectedCount, `sh:closed count for ${scenario.subject}`);
-
-      if (scenario.expectedLiteral) {
-        assert.ok(hasLiteralQuad(
-          quads,
-          scenario.subject,
-          'sh:closed',
-          scenario.expectedLiteral.value,
-          scenario.expectedLiteral.datatype
-        ));
-      }
+        check(quads);
+      });
     }
   });
 
-  void it('annotation predicates: readOnly, writeOnly, deprecated', () => {
-    const scenarios = [
+  void describe('annotation predicates', () => {
+    const scenarios: Array<{
+      'check': (quads: QuadInterface[]) => void;
+      'name': string;
+      'schema': Record<string, unknown>;
+    }> = [
       {
-        'datatype': 'xsd:boolean',
-        'predicate': 'dash:readOnly',
+        'check': (quads) => {
+          assert.ok(
+            hasLiteralQuad(quads, 'https://example.com/RO#/properties/id', 'dash:readOnly', true, 'xsd:boolean'),
+            'expected dash:readOnly = true'
+          );
+        },
+        'name': 'readOnly emits dash:readOnly',
         'schema': {
           '$id': 'https://example.com/RO',
           'properties': {
@@ -502,13 +653,16 @@ void describe('projectGraph — TBox projection', () => {
             }
           },
           'type': 'object'
-        },
-        'subject': 'https://example.com/RO#/properties/id',
-        'value': true
+        }
       },
       {
-        'datatype': 'xsd:boolean',
-        'predicate': 'dash:writeOnly',
+        'check': (quads) => {
+          assert.ok(
+            hasLiteralQuad(quads, 'https://example.com/WO#/properties/password', 'dash:writeOnly', true, 'xsd:boolean'),
+            'expected dash:writeOnly = true'
+          );
+        },
+        'name': 'writeOnly emits dash:writeOnly',
         'schema': {
           '$id': 'https://example.com/WO',
           'properties': {
@@ -518,99 +672,119 @@ void describe('projectGraph — TBox projection', () => {
             }
           },
           'type': 'object'
-        },
-        'subject': 'https://example.com/WO#/properties/password',
-        'value': true
+        }
       },
       {
-        'datatype': 'xsd:boolean',
-        'predicate': 'owl:deprecated',
+        'check': (quads) => {
+          assert.ok(
+            hasLiteralQuad(quads, 'https://example.com/Old', 'owl:deprecated', 'true', 'xsd:boolean'),
+            'expected owl:deprecated = true'
+          );
+        },
+        'name': 'deprecated emits owl:deprecated',
         'schema': {
           '$id': 'https://example.com/Old',
           'deprecated': true,
           'type': 'string'
-        },
-        'subject': 'https://example.com/Old',
-        'value': 'true'
+        }
       }
-    ] as const;
+    ];
 
-    for (const scenario of scenarios) {
-      const quads = tboxQuads(scenario.schema as Record<string, unknown>);
+    for (const {
+      check, name, schema
+    } of scenarios) {
+      void it(name, () => {
+        const quads = tboxQuads(schema);
 
-      assert.ok(
-        hasLiteralQuad(quads, scenario.subject, scenario.predicate, scenario.value, scenario.datatype),
-        `expected ${scenario.predicate} = ${String(scenario.value)} on ${scenario.subject}`
-      );
+        check(quads);
+      });
     }
   });
 
-  void it('$ref, multi-type, and XSD datatype resolution', () => {
-    // $ref produces rdfs:range IRI
-    const refQuads = tboxQuads({
-      '$id': 'https://example.com/T',
-      'properties': { 'friend': { '$ref': 'https://example.com/Person' } },
-      'type': 'object'
-    });
-
-    assert.ok(hasIriQuad(
-      refQuads,
-      'https://example.com/T#/properties/friend',
-      'rdfs:range',
-      'https://example.com/Person'
-    ));
-
-    // multi-type produces owl:unionOf with RDF list
-    const unionQuads = tboxQuads({
-      '$id': 'https://example.com/T',
-      'properties': {
-        'value': {
-          'type': [
-            'string',
-            'number'
-          ]
+  void describe('$ref, multi-type, and XSD datatype resolution', () => {
+    const scenarios: Array<{
+      'check': (quads: QuadInterface[]) => void;
+      'name': string;
+      'schema': Record<string, unknown>;
+    }> = [
+      {
+        'check': (quads) => {
+          assert.ok(hasIriQuad(
+            quads,
+            'https://example.com/T#/properties/friend',
+            'rdfs:range',
+            'https://example.com/Person'
+          ));
+        },
+        'name': '$ref produces rdfs:range IRI',
+        'schema': {
+          '$id': 'https://example.com/T',
+          'properties': { 'friend': { '$ref': 'https://example.com/Person' } },
+          'type': 'object'
         }
       },
-      'type': 'object'
-    });
-
-    const unionOfQuads = findQuadsForSubject(
-      unionQuads,
-      'https://example.com/T#/properties/value',
-      'owl:unionOf'
-    );
-
-    assert.ok(unionOfQuads.length > 0, 'should have unionOf quad');
-
-    const listQuad = unionOfQuads.find((quad) => {
-      return quad.object.termType === 'List';
-    });
-
-    assert.ok(listQuad, 'should have list-type object');
-
-    if (listQuad.object.termType === 'List') {
-      const items = listQuad.object.items;
-
-      assert.equal(items.length, 2);
-      assert.equal(items[0].termType, 'NamedNode');
-      assert.equal(items[1].termType, 'NamedNode');
-      assert.equal(items[0].value, 'xsd:string');
-      assert.equal(items[1].value, 'xsd:decimal');
-    }
-
-    // XSD datatype resolution: sh:datatype for primitives
-    const positiveScenarios = [
       {
-        'expectedIri': 'xsd:string',
+        'check': (quads) => {
+          const unionOfQuads = findQuadsForSubject(
+            quads,
+            'https://example.com/T#/properties/value',
+            'owl:unionOf'
+          );
+
+          assert.ok(unionOfQuads.length > 0, 'should have unionOf quad');
+
+          const listQuad = unionOfQuads.find((quad) => {
+            return quad.object.termType === 'List';
+          });
+
+          assert.ok(listQuad, 'should have list-type object');
+
+          if (listQuad.object.termType === 'List') {
+            const items = listQuad.object.items;
+
+            assert.equal(items.length, 2);
+            assert.equal(items[0].termType, 'NamedNode');
+            assert.equal(items[1].termType, 'NamedNode');
+            assert.equal(items[0].value, 'xsd:string');
+            assert.equal(items[1].value, 'xsd:decimal');
+          }
+        },
+        'name': 'multi-type produces owl:unionOf with RDF list',
+        'schema': {
+          '$id': 'https://example.com/T',
+          'properties': {
+            'value': {
+              'type': [
+                'string',
+                'number'
+              ]
+            }
+          },
+          'type': 'object'
+        }
+      },
+      {
+        'check': (quads) => {
+          assert.ok(
+            hasIriQuad(quads, 'https://example.com/T#/properties/name', 'sh:datatype', 'xsd:string'),
+            'expected sh:datatype = xsd:string'
+          );
+        },
+        'name': 'sh:datatype for string property',
         'schema': {
           '$id': 'https://example.com/T',
           'properties': { 'name': { 'type': 'string' } },
           'type': 'object'
-        },
-        'subject': 'https://example.com/T#/properties/name'
+        }
       },
       {
-        'expectedIri': 'xsd:dateTime',
+        'check': (quads) => {
+          assert.ok(
+            hasIriQuad(quads, 'https://example.com/T#/properties/created', 'sh:datatype', 'xsd:dateTime'),
+            'expected sh:datatype = xsd:dateTime'
+          );
+        },
+        'name': 'sh:datatype for date-time format resolves to xsd:dateTime',
         'schema': {
           '$id': 'https://example.com/T',
           'properties': {
@@ -620,40 +794,64 @@ void describe('projectGraph — TBox projection', () => {
             }
           },
           'type': 'object'
+        }
+      },
+      {
+        'check': (quads) => {
+          const dtQuads = findQuadsForSubject(
+            quads,
+            'https://example.com/T#/properties/meta',
+            'sh:datatype'
+          );
+
+          assert.equal(dtQuads.length, 0);
         },
-        'subject': 'https://example.com/T#/properties/created'
+        'name': 'object type does not emit sh:datatype',
+        'schema': {
+          '$id': 'https://example.com/T',
+          'properties': { 'meta': { 'type': 'object' } },
+          'type': 'object'
+        }
       }
-    ] as const;
+    ];
 
-    for (const scenario of positiveScenarios) {
-      const quads = tboxQuads(scenario.schema as Record<string, unknown>);
+    for (const {
+      check, name, schema
+    } of scenarios) {
+      void it(name, () => {
+        const quads = tboxQuads(schema);
 
-      assert.ok(
-        hasIriQuad(quads, scenario.subject, 'sh:datatype', scenario.expectedIri),
-        `expected sh:datatype = ${scenario.expectedIri} on ${scenario.subject}`
-      );
+        check(quads);
+      });
     }
-
-    // Negative: object type should not emit sh:datatype
-    const objectQuads = tboxQuads({
-      '$id': 'https://example.com/T',
-      'properties': { 'meta': { 'type': 'object' } },
-      'type': 'object'
-    });
-
-    const dtQuads = findQuadsForSubject(
-      objectQuads,
-      'https://example.com/T#/properties/meta',
-      'sh:datatype'
-    );
-
-    assert.equal(dtQuads.length, 0);
   });
 });
 
+// ---------------------------------------------------------------------------
+// quadsToJsonLdNodes
+// ---------------------------------------------------------------------------
+
 void describe('quadsToJsonLdNodes', () => {
-  void it('preserves stable blank node identifiers without double-prefixing', () => {
-    const quads: QuadInterface[] = [
+  const scenarios: Array<{
+    'check': (nodes: Array<Record<string, unknown>>) => void;
+    'name': string;
+    'quads': QuadInterface[];
+  }> = [{
+    'check': (nodes) => {
+      const root = nodes.find((node) => {
+        return node['@id'] === 'https://example.com/Thing';
+      });
+      const nested = nodes.find((node) => {
+        return node['@id'] === '_:b1';
+      });
+
+      assert.ok(root);
+      assert.ok(nested);
+      assert.deepEqual(root['ex:child'], { '@id': '_:b1' });
+      assert.equal(JSON.stringify(nodes).includes('_:_:b1'), false);
+    },
+    'name': 'preserves stable blank node identifiers without double-prefixing',
+    'quads': [
       {
         'object': {
           'termType': 'BlankNode' as const,
@@ -683,21 +881,18 @@ void describe('quadsToJsonLdNodes', () => {
         'predicate': 'ex:value',
         'subject': '_:b1'
       }
-    ];
+    ]
+  }];
 
-    const nodes = quadsToJsonLdNodes(quads);
-    const root = nodes.find((node) => {
-      return node['@id'] === 'https://example.com/Thing';
-    });
-    const nested = nodes.find((node) => {
-      return node['@id'] === '_:b1';
-    });
+  for (const {
+    check, name, quads
+  } of scenarios) {
+    void it(name, () => {
+      const nodes = quadsToJsonLdNodes(quads);
 
-    assert.ok(root);
-    assert.ok(nested);
-    assert.deepEqual(root['ex:child'], { '@id': '_:b1' });
-    assert.equal(JSON.stringify(nodes).includes('_:_:b1'), false);
-  });
+      check(nodes);
+    });
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -705,222 +900,302 @@ void describe('quadsToJsonLdNodes', () => {
 // ---------------------------------------------------------------------------
 
 void describe('projectAbox — ABox projection', () => {
-  void it('simple instance produces typed quads, arrays expand, nulls are omitted', () => {
-    // simple instance produces rdf:type and property literals
-    const schema: Record<string, unknown> = {
-      '$id': 'https://example.com/User',
-      'properties': {
-        'active': { 'type': 'boolean' },
-        'age': { 'type': 'integer' },
-        'name': { 'type': 'string' }
-      },
-      'type': 'object'
-    };
+  void describe('simple instance projection', () => {
+    const scenarios: Array<{
+      'check': (quads: QuadInterface[]) => void;
+      'instance': Record<string, unknown>;
+      'name': string;
+      'schema': Record<string, unknown>;
+    }> = [
+      {
+        'check': (quads) => {
+          const typeQuads = findQuads(quads, 'rdf:type');
 
-    const graph = new SchemaGraph(schema);
-    const data = {
-      'active': true,
-      'age': 30,
-      'name': 'Alice'
-    };
-    const quads = projectAbox(graph, data, 'https://data.example.com');
+          assert.ok(typeQuads.length > 0, 'should have at least one rdf:type quad');
 
-    const typeQuads = findQuads(quads, 'rdf:type');
+          const instIRI = typeQuads[0].subject;
 
-    assert.ok(typeQuads.length > 0, 'should have at least one rdf:type quad');
-
-    const instIRI = typeQuads[0].subject;
-
-    assert.ok(instIRI.startsWith('https://data.example.com/'));
-    assert.ok(hasIriQuad(quads, instIRI, 'rdf:type', 'https://example.com/User'));
-    assert.ok(hasLiteralQuad(quads, instIRI, 'https://example.com/User#name', 'Alice', 'xsd:string'));
-    assert.ok(hasLiteralQuad(quads, instIRI, 'https://example.com/User#age', 30, 'xsd:integer'));
-    assert.ok(hasLiteralQuad(quads, instIRI, 'https://example.com/User#active', true, 'xsd:boolean'));
-
-    // array values produce one quad per element
-    const arrSchema: Record<string, unknown> = {
-      '$id': 'https://example.com/Tags',
-      'properties': {
-        'tags': {
-          'items': { 'type': 'string' },
-          'type': 'array'
-        }
-      },
-      'type': 'object'
-    };
-
-    const arrGraph = new SchemaGraph(arrSchema);
-    const arrData = {
-      'tags': [
-        'red',
-        'green',
-        'blue'
-      ]
-    };
-    const arrQuads = projectAbox(arrGraph, arrData, 'https://data.example.com');
-
-    const arrTypeQuad = arrQuads.find((quad) => {
-      return quad.predicate === 'rdf:type';
-    });
-
-    assert.ok(arrTypeQuad, 'should have rdf:type quad');
-    const arrInstIRI = arrTypeQuad.subject;
-    const tagQuads = findQuadsForSubject(arrQuads, arrInstIRI, 'https://example.com/Tags#tags');
-
-    assert.equal(tagQuads.length, 3);
-
-    const tagValues = new Set(tagQuads
-      .filter((quad) => {
-        return quad.object.termType === 'Literal';
-      })
-      .map((quad) => {
-        return quad.object.termType === 'Literal' ? quad.object.value : null;
-      }));
-
-    assert.ok(tagValues.has('red'));
-    assert.ok(tagValues.has('green'));
-    assert.ok(tagValues.has('blue'));
-
-    // null values are omitted from quads
-    const nullSchema: Record<string, unknown> = {
-      '$id': 'https://example.com/Nullable',
-      'properties': {
-        'name': { 'type': 'string' },
-        'nickname': { 'type': 'string' }
-      },
-      'type': 'object'
-    };
-
-    const nullGraph = new SchemaGraph(nullSchema);
-    const nullData = {
-      'name': 'Alice',
-      'nickname': null
-    };
-    const nullQuads = projectAbox(nullGraph, nullData, 'https://data.example.com');
-
-    const nullTypeQuad = nullQuads.find((quad) => {
-      return quad.predicate === 'rdf:type';
-    });
-
-    assert.ok(nullTypeQuad, 'should have rdf:type quad');
-    const nullInstIRI = nullTypeQuad.subject;
-
-    assert.ok(hasLiteralQuad(nullQuads, nullInstIRI, 'https://example.com/Nullable#name', 'Alice'));
-
-    const nickQuads = findQuadsForSubject(nullQuads, nullInstIRI, 'https://example.com/Nullable#nickname');
-
-    assert.equal(nickQuads.length, 0);
-  });
-
-  void it('nested object produces linked instance quads', () => {
-    const schema: Record<string, unknown> = {
-      '$id': 'https://example.com/Parent',
-      'properties': {
-        'address': {
+          assert.ok(instIRI.startsWith('https://data.example.com/'));
+          assert.ok(hasIriQuad(quads, instIRI, 'rdf:type', 'https://example.com/User'));
+          assert.ok(hasLiteralQuad(quads, instIRI, 'https://example.com/User#name', 'Alice', 'xsd:string'));
+          assert.ok(hasLiteralQuad(quads, instIRI, 'https://example.com/User#age', 30, 'xsd:integer'));
+          assert.ok(hasLiteralQuad(quads, instIRI, 'https://example.com/User#active', true, 'xsd:boolean'));
+        },
+        'instance': {
+          'active': true,
+          'age': 30,
+          'name': 'Alice'
+        },
+        'name': 'simple instance produces typed quads with rdf:type and property literals',
+        'schema': {
+          '$id': 'https://example.com/User',
           'properties': {
-            'city': { 'type': 'string' },
-            'street': { 'type': 'string' }
+            'active': { 'type': 'boolean' },
+            'age': { 'type': 'integer' },
+            'name': { 'type': 'string' }
           },
           'type': 'object'
+        }
+      },
+      {
+        'check': (quads) => {
+          const arrTypeQuad = quads.find((quad) => {
+            return quad.predicate === 'rdf:type';
+          });
+
+          assert.ok(arrTypeQuad, 'should have rdf:type quad');
+          const arrInstIRI = arrTypeQuad.subject;
+          const tagQuads = findQuadsForSubject(quads, arrInstIRI, 'https://example.com/Tags#tags');
+
+          assert.equal(tagQuads.length, 3);
+
+          const tagValues = new Set(tagQuads
+            .filter((quad) => {
+              return quad.object.termType === 'Literal';
+            })
+            .map((quad) => {
+              return quad.object.termType === 'Literal' ? quad.object.value : null;
+            }));
+
+          assert.ok(tagValues.has('red'));
+          assert.ok(tagValues.has('green'));
+          assert.ok(tagValues.has('blue'));
         },
-        'name': { 'type': 'string' }
+        'instance': {
+          'tags': [
+            'red',
+            'green',
+            'blue'
+          ]
+        },
+        'name': 'array values produce one quad per element',
+        'schema': {
+          '$id': 'https://example.com/Tags',
+          'properties': {
+            'tags': {
+              'items': { 'type': 'string' },
+              'type': 'array'
+            }
+          },
+          'type': 'object'
+        }
       },
-      'type': 'object'
-    };
+      {
+        'check': (quads) => {
+          const nullTypeQuad = quads.find((quad) => {
+            return quad.predicate === 'rdf:type';
+          });
 
-    const graph = new SchemaGraph(schema);
-    const data = {
-      'address': {
-        'city': 'Springfield',
-        'street': '123 Main St'
+          assert.ok(nullTypeQuad, 'should have rdf:type quad');
+          const nullInstIRI = nullTypeQuad.subject;
+
+          assert.ok(hasLiteralQuad(quads, nullInstIRI, 'https://example.com/Nullable#name', 'Alice'));
+
+          const nickQuads = findQuadsForSubject(quads, nullInstIRI, 'https://example.com/Nullable#nickname');
+
+          assert.equal(nickQuads.length, 0);
+        },
+        'instance': {
+          'name': 'Alice',
+          'nickname': null
+        },
+        'name': 'null values are omitted from quads',
+        'schema': {
+          '$id': 'https://example.com/Nullable',
+          'properties': {
+            'name': { 'type': 'string' },
+            'nickname': { 'type': 'string' }
+          },
+          'type': 'object'
+        }
       },
-      'name': 'Bob'
-    };
-    const quads = projectAbox(graph, data, 'https://data.example.com');
+      // Edge cases
+      {
+        'check': (quads) => {
+          const nonTypeQuads = quads.filter((quad) => {
+            return quad.predicate !== 'rdf:type';
+          });
 
-    const parentTypeQuads = quads.filter((quad) => {
-      return quad.predicate === 'rdf:type'
-      && quad.object.termType === 'NamedNode'
-      && quad.object.value === 'https://example.com/Parent';
-    });
+          assert.equal(nonTypeQuads.length, 0, 'empty instance should produce no property quads');
+        },
+        'instance': {},
+        'name': 'empty schema projection produces no property quads',
+        'schema': {
+          '$id': 'https://example.com/EmptyProjection',
+          'type': 'object'
+        }
+      },
+      {
+        'check': (quads) => {
+          const typeQuads = findQuads(quads, 'rdf:type');
 
-    assert.equal(parentTypeQuads.length, 1);
-    const parentIRI = parentTypeQuads[0].subject;
+          assert.ok(typeQuads.length > 0, 'should still produce rdf:type quad');
+        },
+        'instance': { 'undeclared': 'value' },
+        'name': 'schema with no properties produces only type quad for instance with extra keys',
+        'schema': {
+          '$id': 'https://example.com/NoPropsSchema',
+          'type': 'object'
+        }
+      }
+    ];
 
-    const addrQuads = findQuadsForSubject(quads, parentIRI, 'https://example.com/Parent#address');
+    for (const {
+      check, instance, name, schema
+    } of scenarios) {
+      void it(name, () => {
+        const graph = new SchemaGraph(schema);
+        const quads = projectAbox(graph, instance, 'https://data.example.com');
 
-    assert.equal(addrQuads.length, 1);
-    assert.equal(addrQuads[0].object.termType, 'NamedNode');
-
-    const nestedIRI = addrQuads[0].object.value;
-
-    assert.ok(
-      hasLiteralQuad(quads, nestedIRI, 'https://example.com/Parent#/properties/address#street', 'Springfield', 'xsd:string')
-      || hasLiteralQuad(quads, nestedIRI, 'https://example.com/Parent#/properties/address#city', 'Springfield', 'xsd:string')
-      || quads.some((quad) => {
-        return quad.subject === nestedIRI
-        && quad.predicate.includes('city')
-        && quad.object.termType === 'Literal'
-        && quad.object.value === 'Springfield';
-      }),
-      'nested instance should have city property'
-    );
+        check(quads);
+      });
+    }
   });
 
-  void it('TBox + ABox coherence: instance types match declared classes', () => {
-    const schema: Record<string, unknown> = {
-      '$id': 'https://example.com/Item',
-      'properties': {
-        'count': { 'type': 'integer' },
-        'label': { 'type': 'string' }
+  void describe('nested object projection', () => {
+    const scenarios: Array<{
+      'check': (quads: QuadInterface[]) => void;
+      'instance': Record<string, unknown>;
+      'name': string;
+      'schema': Record<string, unknown>;
+    }> = [{
+      'check': (quads) => {
+        const parentTypeQuads = quads.filter((quad) => {
+          return quad.predicate === 'rdf:type'
+            && quad.object.termType === 'NamedNode'
+            && quad.object.value === 'https://example.com/Parent';
+        });
+
+        assert.equal(parentTypeQuads.length, 1);
+        const parentIRI = parentTypeQuads[0].subject;
+
+        const addrQuads = findQuadsForSubject(quads, parentIRI, 'https://example.com/Parent#address');
+
+        assert.equal(addrQuads.length, 1);
+        assert.equal(addrQuads[0].object.termType, 'NamedNode');
+
+        const nestedIRI = addrQuads[0].object.value;
+
+        assert.ok(
+          hasLiteralQuad(quads, nestedIRI, 'https://example.com/Parent#/properties/address#street', 'Springfield', 'xsd:string')
+            || hasLiteralQuad(quads, nestedIRI, 'https://example.com/Parent#/properties/address#city', 'Springfield', 'xsd:string')
+            || quads.some((quad) => {
+              return quad.subject === nestedIRI
+              && quad.predicate.includes('city')
+              && quad.object.termType === 'Literal'
+              && quad.object.value === 'Springfield';
+            }),
+          'nested instance should have city property'
+        );
       },
-      'required': ['label'],
-      'type': 'object'
-    };
+      'instance': {
+        'address': {
+          'city': 'Springfield',
+          'street': '123 Main St'
+        },
+        'name': 'Bob'
+      },
+      'name': 'nested object produces linked instance quads',
+      'schema': {
+        '$id': 'https://example.com/Parent',
+        'properties': {
+          'address': {
+            'properties': {
+              'city': { 'type': 'string' },
+              'street': { 'type': 'string' }
+            },
+            'type': 'object'
+          },
+          'name': { 'type': 'string' }
+        },
+        'type': 'object'
+      }
+    }];
 
-    const graph = new SchemaGraph(schema);
-    const tbox = projectGraph(graph);
-    const abox = projectAbox(graph, {
-      'count': 5,
-      'label': 'Widget'
-    }, 'https://data.example.com');
+    for (const {
+      check, instance, name, schema
+    } of scenarios) {
+      void it(name, () => {
+        const graph = new SchemaGraph(schema);
+        const quads = projectAbox(graph, instance, 'https://data.example.com');
 
-    const tboxClasses = new Set(tbox
-      .filter((quad) => {
-        return quad.predicate === 'rdf:type' && quad.object.termType === 'NamedNode' && quad.object.value === 'owl:Class';
-      })
-      .map((quad) => {
-        return quad.subject;
-      }));
-
-    const aboxTypes = abox
-      .filter((quad) => {
-        return quad.predicate === 'rdf:type' && quad.object.termType === 'NamedNode';
-      })
-      .map((quad) => {
-        return quad.object.termType === 'NamedNode' ? quad.object.value : '';
+        check(quads);
       });
-
-    for (const aboxType of aboxTypes) {
-      assert.ok(
-        tboxClasses.has(aboxType),
-        `ABox type ${aboxType} should be declared as owl:Class in TBox`
-      );
     }
+  });
 
-    const aboxPropPredicates = abox
-      .filter((quad) => {
-        return quad.predicate !== 'rdf:type';
-      })
-      .map((quad) => {
-        return quad.predicate;
+  void describe('TBox + ABox coherence', () => {
+    const scenarios: Array<{
+      'check': (tbox: QuadInterface[], abox: QuadInterface[]) => void;
+      'instance': Record<string, unknown>;
+      'name': string;
+      'schema': Record<string, unknown>;
+    }> = [{
+      'check': (tbox, abox) => {
+        const tboxClasses = new Set(tbox
+          .filter((quad) => {
+            return quad.predicate === 'rdf:type' && quad.object.termType === 'NamedNode' && quad.object.value === 'owl:Class';
+          })
+          .map((quad) => {
+            return quad.subject;
+          }));
+
+        const aboxTypes = abox
+          .filter((quad) => {
+            return quad.predicate === 'rdf:type' && quad.object.termType === 'NamedNode';
+          })
+          .map((quad) => {
+            return quad.object.termType === 'NamedNode' ? quad.object.value : '';
+          });
+
+        for (const aboxType of aboxTypes) {
+          assert.ok(
+            tboxClasses.has(aboxType),
+            `ABox type ${aboxType} should be declared as owl:Class in TBox`
+          );
+        }
+
+        const aboxPropPredicates = abox
+          .filter((quad) => {
+            return quad.predicate !== 'rdf:type';
+          })
+          .map((quad) => {
+            return quad.predicate;
+          });
+
+        for (const pred of aboxPropPredicates) {
+          assert.ok(
+            pred.startsWith('https://example.com/Item'),
+            `ABox property predicate ${pred} should reference the schema class`
+          );
+        }
+      },
+      'instance': {
+        'count': 5,
+        'label': 'Widget'
+      },
+      'name': 'instance types match declared classes',
+      'schema': {
+        '$id': 'https://example.com/Item',
+        'properties': {
+          'count': { 'type': 'integer' },
+          'label': { 'type': 'string' }
+        },
+        'required': ['label'],
+        'type': 'object'
+      }
+    }];
+
+    for (const {
+      check, instance, name, schema
+    } of scenarios) {
+      void it(name, () => {
+        const graph = new SchemaGraph(schema);
+        const tbox = projectGraph(graph);
+        const abox = projectAbox(graph, instance, 'https://data.example.com');
+
+        check(tbox, abox);
       });
-
-    for (const pred of aboxPropPredicates) {
-      assert.ok(
-        pred.startsWith('https://example.com/Item'),
-        `ABox property predicate ${pred} should reference the schema class`
-      );
     }
   });
 });

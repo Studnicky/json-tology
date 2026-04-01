@@ -117,7 +117,8 @@ export class GraphEngine implements GraphEngineInterface {
     options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>>,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntryInterface[],
-    alreadyEvaluated: Set<number>
+    alreadyEvaluated: Set<number>,
+    depth: number
   ): InternalExecutionResultInterface {
     const errors: ValidationErrorType[] = [];
     const evaluatedItems = new Set<number>();
@@ -140,7 +141,7 @@ export class GraphEngine implements GraphEngineInterface {
         }
         continue;
       }
-      const child = this.visit(unevaluatedItemsNode, graph, workingValue[index], `${path}/${index}`, options, refStack, dynamicScope);
+      const child = this.visit(unevaluatedItemsNode, graph, workingValue[index], `${path}/${index}`, options, refStack, dynamicScope, depth + 1);
 
       if (!child.valid && !options.collectErrors) {
         return child;
@@ -167,7 +168,8 @@ export class GraphEngine implements GraphEngineInterface {
     options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>>,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntryInterface[],
-    alreadyEvaluated: Set<string>
+    alreadyEvaluated: Set<string>,
+    depth: number
   ): InternalExecutionResultInterface {
     const errors: ValidationErrorType[] = [];
     const evaluatedProperties = new Set<string>();
@@ -190,7 +192,7 @@ export class GraphEngine implements GraphEngineInterface {
         }
         continue;
       }
-      const child = this.visit(unevaluatedPropertiesNode, graph, workingValue[key], `${path}/${escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope);
+      const child = this.visit(unevaluatedPropertiesNode, graph, workingValue[key], `${path}/${escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope, depth + 1);
 
       if (!child.valid && !options.collectErrors) {
         return child;
@@ -461,7 +463,8 @@ export class GraphEngine implements GraphEngineInterface {
     options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>>,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntryInterface[],
-    sem: SchemaGraphSemanticsInterface
+    sem: SchemaGraphSemanticsInterface,
+    depth: number
   ): InternalExecutionResultInterface {
     const errors: ValidationErrorType[] = [];
     const evaluatedItems = new Set<number>();
@@ -505,7 +508,7 @@ export class GraphEngine implements GraphEngineInterface {
         if (index >= workingValue.length) {
           break;
         }
-        const child = this.visit(itemNode, graph, workingValue[index], `${path}/${index}`, options, refStack, dynamicScope);
+        const child = this.visit(itemNode, graph, workingValue[index], `${path}/${index}`, options, refStack, dynamicScope, depth + 1);
 
         if (!child.valid && !options.collectErrors) {
           return child;
@@ -521,7 +524,7 @@ export class GraphEngine implements GraphEngineInterface {
         errors.push(this.createError(path, 'items', 'must NOT have items beyond prefixItems'));
       } else if (itemsNode !== undefined && itemsNode.schema !== true && itemsNode.schema !== false) {
         for (let index = extraStart; index < workingValue.length; index++) {
-          const child = this.visit(itemsNode, graph, workingValue[index], `${path}/${index}`, options, refStack, dynamicScope);
+          const child = this.visit(itemsNode, graph, workingValue[index], `${path}/${index}`, options, refStack, dynamicScope, depth + 1);
 
           if (!child.valid && !options.collectErrors) {
             return child;
@@ -534,7 +537,7 @@ export class GraphEngine implements GraphEngineInterface {
     } else {
       if (itemsNode !== undefined) {
         for (let index = 0; index < workingValue.length; index++) {
-          const child = this.visit(itemsNode, graph, workingValue[index], `${path}/${index}`, options, refStack, dynamicScope);
+          const child = this.visit(itemsNode, graph, workingValue[index], `${path}/${index}`, options, refStack, dynamicScope, depth + 1);
 
           if (!child.valid && !options.collectErrors) {
             return child;
@@ -556,7 +559,7 @@ export class GraphEngine implements GraphEngineInterface {
         const candidate = this.visit(containsNode, graph, cloneCandidate(element), `${path}/${index}`, {
           ...options,
           'collectErrors': true
-        }, refStack, dynamicScope);
+        }, refStack, dynamicScope, depth + 1);
 
         if (candidate.valid) {
           matches++;
@@ -599,7 +602,8 @@ export class GraphEngine implements GraphEngineInterface {
     path: string,
     options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>>,
     refStack: Set<string>,
-    dynamicScope: DynamicScopeEntryInterface[]
+    dynamicScope: DynamicScopeEntryInterface[],
+    depth: number
   ): InternalExecutionResultInterface {
     const errors: ValidationErrorType[] = [];
     const evaluatedProperties = new Set<string>();
@@ -682,7 +686,7 @@ export class GraphEngine implements GraphEngineInterface {
           ...options,
           'applyDefaults': false,
           'removeAdditionalProperties': false
-        }, refStack, dynamicScope);
+        }, refStack, dynamicScope, depth + 1);
 
         if (!propertyNameResult.valid && !options.collectErrors) {
           return propertyNameResult;
@@ -697,7 +701,7 @@ export class GraphEngine implements GraphEngineInterface {
 
       if (propertyNodeMap.has(key)) {
         const propNode = propertyNodeMap.get(key) as SchemaGraphNodeInterface;
-        const child = this.visit(propNode, graph, workingValue[key], `${path}/${escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope);
+        const child = this.visit(propNode, graph, workingValue[key], `${path}/${escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope, depth + 1);
 
         if (!child.valid && !options.collectErrors) {
           return child;
@@ -709,7 +713,7 @@ export class GraphEngine implements GraphEngineInterface {
 
       for (const patternEntry of patternPropertyEntries) {
         if (patternEntry.regex.test(key)) {
-          const child = this.visit(patternEntry.node, graph, workingValue[key], `${path}/${escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope);
+          const child = this.visit(patternEntry.node, graph, workingValue[key], `${path}/${escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope, depth + 1);
 
           if (!child.valid && !options.collectErrors) {
             return child;
@@ -748,7 +752,7 @@ export class GraphEngine implements GraphEngineInterface {
         if (!(key in workingValue)) {
           continue;
         }
-        const child = this.visit(dependencyNode, graph, workingValue, path, options, refStack, dynamicScope);
+        const child = this.visit(dependencyNode, graph, workingValue, path, options, refStack, dynamicScope, depth + 1);
 
         if (!child.valid && !options.collectErrors) {
           return child;
@@ -785,7 +789,7 @@ export class GraphEngine implements GraphEngineInterface {
         return;
       }
 
-      const child = this.visit(additionalProperties, graph, workingValue[key], `${path}/${escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope);
+      const child = this.visit(additionalProperties, graph, workingValue[key], `${path}/${escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope, depth + 1);
 
       if (child.valid) {
         workingValue[key] = child.value;
@@ -834,18 +838,19 @@ export class GraphEngine implements GraphEngineInterface {
     path: string,
     options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>>,
     refStack: Set<string>,
-    dynamicScope: DynamicScopeEntryInterface[]
+    dynamicScope: DynamicScopeEntryInterface[],
+    depth = 0
   ): InternalExecutionResultInterface {
-    return visitNode(this.visitContext(), node, graph, value, path, options, refStack, dynamicScope);
+    return visitNode(this.visitContext(), node, graph, value, path, options, refStack, dynamicScope, depth);
   }
 
   private visitContext(): VisitContextInterface {
     return {
-      'applyUnevaluatedItems': (node, graph, value, path, options, refStack, dynamicScope, alreadyEvaluated) => {
-        return this.applyUnevaluatedItems(node, graph, value, path, options, refStack, dynamicScope, alreadyEvaluated);
+      'applyUnevaluatedItems': (...args) => {
+        return this.applyUnevaluatedItems(...args);
       },
-      'applyUnevaluatedProperties': (node, graph, value, path, opts, refStack, dynScope, evaluated) => {
-        return this.applyUnevaluatedProperties(node, graph, value, path, opts, refStack, dynScope, evaluated);
+      'applyUnevaluatedProperties': (node, graph, value, path, opts, refStack, dynScope, evaluated, depth) => {
+        return this.applyUnevaluatedProperties(node, graph, value, path, opts, refStack, dynScope, evaluated, depth);
       },
       'coerceValue': (schemaTypes, value, materializeContainers) => {
         return this.coerceValue(schemaTypes, value, materializeContainers);
@@ -869,14 +874,14 @@ export class GraphEngine implements GraphEngineInterface {
       'synthesizeZeroValue': (node, graph, dynamicScope) => {
         return this.synthesizeZeroValue(node, graph, dynamicScope);
       },
-      'validateArray': (graph, value, path, options, refStack, dynamicScope, sem) => {
-        return this.validateArray(graph, value, path, options, refStack, dynamicScope, sem);
+      'validateArray': (graph, value, path, options, refStack, dynamicScope, sem, depth) => {
+        return this.validateArray(graph, value, path, options, refStack, dynamicScope, sem, depth);
       },
       'validateNumber': (path, value, sem) => {
         return this.validateNumber(path, value, sem);
       },
-      'validateObject': (node, graph, value, path, options, refStack, dynamicScope) => {
-        return this.validateObject(node, graph, value, path, options, refStack, dynamicScope);
+      'validateObject': (node, graph, value, path, options, refStack, dynamicScope, depth) => {
+        return this.validateObject(node, graph, value, path, options, refStack, dynamicScope, depth);
       },
       'validateString': (path, value, sem) => {
         return this.validateString(path, value, sem);

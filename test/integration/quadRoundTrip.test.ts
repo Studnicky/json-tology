@@ -150,6 +150,16 @@ const EnumSchema = {
   'type': 'object'
 } as const;
 
+const AllOptionalSchema = {
+  '$id': 'https://example.com/AllOptional',
+  'properties': {
+    'bio': { 'type': 'string' },
+    'email': { 'type': 'string' },
+    'name': { 'type': 'string' }
+  },
+  'type': 'object'
+} as const;
+
 const BASE_IRI = 'https://example.com';
 
 // ---------------------------------------------------------------------------
@@ -171,7 +181,7 @@ function projectAndLift(
 // ---------------------------------------------------------------------------
 
 interface SimpleRoundTripScenario {
-  'assertions': (output: Record<string, unknown>) => void;
+  'check': (original: Record<string, unknown>, roundTripped: Record<string, unknown>) => void;
   'input': Record<string, unknown>;
   'name': string;
   'schema': Record<string, unknown> & { readonly '$id': string };
@@ -180,7 +190,7 @@ interface SimpleRoundTripScenario {
 
 const simpleRoundTripScenarios: SimpleRoundTripScenario[] = [
   {
-    'assertions': (output) => {
+    'check': (_original, output) => {
       assert.equal(output.label, 'hello', 'simple object — label');
     },
     'input': { 'label': 'hello' },
@@ -189,7 +199,7 @@ const simpleRoundTripScenarios: SimpleRoundTripScenario[] = [
     'schemas': [SimpleSchema]
   },
   {
-    'assertions': (output) => {
+    'check': (_original, output) => {
       assert.equal(output.label, 'test', 'all scalars — label');
       assert.equal(output.count, 42, 'all scalars — count');
       assert.equal(typeof output.count, 'number', 'all scalars — count type');
@@ -211,18 +221,20 @@ const simpleRoundTripScenarios: SimpleRoundTripScenario[] = [
 ];
 
 void describe('quad round-trip: simple scenarios', () => {
-  for (const scenario of simpleRoundTripScenarios) {
-    void it(scenario.name, () => {
+  for (const {
+    check, input, name, schema, schemas
+  } of simpleRoundTripScenarios) {
+    void it(name, () => {
       const jt = JsonTology.create({
         'baseIRI': BASE_IRI,
-        'schemas': scenario.schemas
+        'schemas': schemas
       });
-      const results = projectAndLift(jt, scenario.schema, scenario.input);
+      const results = projectAndLift(jt, schema, input);
 
-      assert.equal(results.length, 1, `${scenario.name} — result count`);
+      assert.equal(results.length, 1, `${name} — result count`);
       const output = results[0] as Record<string, unknown>;
 
-      scenario.assertions(output);
+      check(input, output);
     });
   }
 });
@@ -232,7 +244,7 @@ void describe('quad round-trip: simple scenarios', () => {
 // ---------------------------------------------------------------------------
 
 interface NestedRoundTripScenario {
-  'assertions': (output: Record<string, unknown>) => void;
+  'check': (original: Record<string, unknown>, roundTripped: Record<string, unknown>) => void;
   'input': Record<string, unknown>;
   'name': string;
   'schema': Record<string, unknown> & { readonly '$id': string };
@@ -241,7 +253,7 @@ interface NestedRoundTripScenario {
 
 const nestedRoundTripScenarios: NestedRoundTripScenario[] = [
   {
-    'assertions': (output) => {
+    'check': (_original, output) => {
       assert.equal(output.name, 'Alice', 'nested $ref — name');
       const addr = output.address as Record<string, unknown>;
 
@@ -260,7 +272,7 @@ const nestedRoundTripScenarios: NestedRoundTripScenario[] = [
     'schemas': [PersonSchema]
   },
   {
-    'assertions': (output) => {
+    'check': (_original, output) => {
       assert.equal(output.title, 'Sample', 'array property — title');
       assert.ok(Array.isArray(output.tags), 'array property — tags is array');
       assert.deepEqual((output.tags as string[]).sort(), [
@@ -282,7 +294,7 @@ const nestedRoundTripScenarios: NestedRoundTripScenario[] = [
     'schemas': [TagListSchema]
   },
   {
-    'assertions': (output) => {
+    'check': (_original, output) => {
       const middle = output.middle as Record<string, unknown>;
       const inner = middle.inner as Record<string, unknown>;
 
@@ -296,18 +308,20 @@ const nestedRoundTripScenarios: NestedRoundTripScenario[] = [
 ];
 
 void describe('quad round-trip: nested/structured scenarios', () => {
-  for (const scenario of nestedRoundTripScenarios) {
-    void it(scenario.name, () => {
+  for (const {
+    check, input, name, schema, schemas
+  } of nestedRoundTripScenarios) {
+    void it(name, () => {
       const jt = JsonTology.create({
         'baseIRI': BASE_IRI,
-        'schemas': scenario.schemas
+        'schemas': schemas
       });
-      const results = projectAndLift(jt, scenario.schema, scenario.input);
+      const results = projectAndLift(jt, schema, input);
 
-      assert.equal(results.length, 1, `${scenario.name} — result count`);
+      assert.equal(results.length, 1, `${name} — result count`);
       const output = results[0] as Record<string, unknown>;
 
-      scenario.assertions(output);
+      check(input, output);
     });
   }
 });
@@ -317,7 +331,7 @@ void describe('quad round-trip: nested/structured scenarios', () => {
 // ---------------------------------------------------------------------------
 
 interface SpecialRoundTripScenario {
-  'assertions': (results: unknown[], jt: JsonTology) => void;
+  'check': (original: Record<string, unknown>, results: unknown[], jt: JsonTology) => void;
   'input': Record<string, unknown>;
   'name': string;
   'schema': Record<string, unknown> & { readonly '$id': string };
@@ -327,7 +341,7 @@ interface SpecialRoundTripScenario {
 
 const specialRoundTripScenarios: SpecialRoundTripScenario[] = [
   {
-    'assertions': (results) => {
+    'check': (_original, results) => {
       assert.equal(results.length, 1, 'defaults — result count');
       const output = results[0] as Record<string, unknown>;
 
@@ -342,7 +356,7 @@ const specialRoundTripScenarios: SpecialRoundTripScenario[] = [
     'useMaterialize': true
   },
   {
-    'assertions': (results) => {
+    'check': (_original, results) => {
       assert.equal(results.length, 1, 'optional omitted — result count');
       const output = results[0] as Record<string, unknown>;
 
@@ -356,7 +370,7 @@ const specialRoundTripScenarios: SpecialRoundTripScenario[] = [
     'schemas': [OptionalPropsSchema]
   },
   {
-    'assertions': (results) => {
+    'check': (_original, results) => {
       assert.equal(results.length, 1, 'empty object — result count');
       const output = results[0] as Record<string, unknown>;
 
@@ -366,24 +380,55 @@ const specialRoundTripScenarios: SpecialRoundTripScenario[] = [
     'name': 'round-trips an empty object with no required properties',
     'schema': EmptyObjectSchema as unknown as Record<string, unknown> & { '$id': string },
     'schemas': [EmptyObjectSchema]
+  },
+  // Edge cases
+  {
+    'check': (_original, results) => {
+      assert.equal(results.length, 1, 'all-optional empty — result count');
+      const output = results[0] as Record<string, unknown>;
+
+      assert.equal('name' in output, false, 'all-optional empty — name absent');
+      assert.equal('email' in output, false, 'all-optional empty — email absent');
+      assert.equal('bio' in output, false, 'all-optional empty — bio absent');
+    },
+    'input': {},
+    'name': 'all-optional properties with missing values round-trip as empty',
+    'schema': AllOptionalSchema as unknown as Record<string, unknown> & { '$id': string },
+    'schemas': [AllOptionalSchema]
+  },
+  {
+    'check': (_original, results) => {
+      assert.equal(results.length, 1, 'all-optional partial — result count');
+      const output = results[0] as Record<string, unknown>;
+
+      assert.equal(output.name, 'Bob', 'all-optional partial — name');
+      assert.equal('email' in output, false, 'all-optional partial — email absent');
+      assert.equal('bio' in output, false, 'all-optional partial — bio absent');
+    },
+    'input': { 'name': 'Bob' },
+    'name': 'all-optional properties with partial values',
+    'schema': AllOptionalSchema as unknown as Record<string, unknown> & { '$id': string },
+    'schemas': [AllOptionalSchema]
   }
 ];
 
 void describe('quad round-trip: special cases', () => {
-  for (const scenario of specialRoundTripScenarios) {
-    void it(scenario.name, () => {
+  for (const {
+    check, input, name, schema, schemas, useMaterialize
+  } of specialRoundTripScenarios) {
+    void it(name, () => {
       const jt = JsonTology.create({
         'baseIRI': BASE_IRI,
-        'schemas': scenario.schemas
+        'schemas': schemas
       });
 
-      const data = scenario.useMaterialize === true
-        ? jt.materialize(scenario.schema, scenario.input)
-        : scenario.input;
+      const data = useMaterialize === true
+        ? jt.materialize(schema, input)
+        : input;
 
-      const results = projectAndLift(jt, scenario.schema, data);
+      const results = projectAndLift(jt, schema, data);
 
-      scenario.assertions(results, jt);
+      check(input, results, jt);
     });
   }
 });
@@ -393,14 +438,14 @@ void describe('quad round-trip: special cases', () => {
 // ---------------------------------------------------------------------------
 
 interface MultiEnumScenario {
-  'assertions': (jt: JsonTology) => void;
+  'check': (jt: JsonTology) => void;
   'name': string;
   'schemas': ReadonlyArray<Record<string, unknown>>;
 }
 
 const multiEnumScenarios: MultiEnumScenario[] = [
   {
-    'assertions': (jt) => {
+    'check': (jt) => {
       const schemaRef = SimpleSchema as unknown as Record<string, unknown> & { '$id': string };
       const quads1 = jt.materializer.projectAbox(schemaRef, { 'label': 'first' }, BASE_IRI);
       const quads2 = jt.materializer.projectAbox(schemaRef, { 'label': 'second' }, BASE_IRI);
@@ -431,7 +476,7 @@ const multiEnumScenarios: MultiEnumScenario[] = [
     'schemas': [SimpleSchema]
   },
   {
-    'assertions': (jt) => {
+    'check': (jt) => {
       const enumValues = [
         'active',
         'inactive',
@@ -454,18 +499,34 @@ const multiEnumScenarios: MultiEnumScenario[] = [
     },
     'name': 'round-trips an object with an enum property',
     'schemas': [EnumSchema]
+  },
+  // Edge case
+  {
+    'check': (jt) => {
+      const schemaRef = EmptyObjectSchema as unknown as Record<string, unknown> & { '$id': string };
+      const results = projectAndLift(jt, schemaRef, {});
+
+      assert.equal(results.length, 1, 'empty object multi — result count');
+      const output = results[0] as Record<string, unknown>;
+
+      assert.equal('note' in output, false, 'empty object multi — note absent');
+    },
+    'name': 'empty object round-trip produces valid lift result',
+    'schemas': [EmptyObjectSchema]
   }
 ];
 
 void describe('quad round-trip: multi-instance and enum', () => {
-  for (const scenario of multiEnumScenarios) {
-    void it(scenario.name, () => {
+  for (const {
+    check, name, schemas
+  } of multiEnumScenarios) {
+    void it(name, () => {
       const jt = JsonTology.create({
         'baseIRI': BASE_IRI,
-        'schemas': scenario.schemas
+        'schemas': schemas
       });
 
-      scenario.assertions(jt);
+      check(jt);
     });
   }
 });

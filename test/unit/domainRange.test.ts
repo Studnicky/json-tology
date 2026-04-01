@@ -64,85 +64,108 @@ function makeRegistry(): SchemaRegistry {
 }
 
 void describe('rdfs:domain and rdfs:range', () => {
-  void it('validates range constraints on object and array properties', () => {
-    const reg = makeRegistry();
-    const scenarios: Array<[unknown, boolean]> = [
-      // Valid object with range
-      [
-        {
-          'address': {
-            'city': 'Springfield',
-            'street': '123 Main'
-          },
-          'name': 'Alice'
-        },
-        true
-      ],
-      // Invalid object (missing city)
-      [
-        {
-          'address': { 'street': '123 Main' },
-          'name': 'Alice'
-        },
-        false
-      ],
-      // Valid array items with range
-      [
-        {
-          'friends': [
-            { 'name': 'Bob' },
-            { 'name': 'Charlie' }
-          ],
-          'name': 'Alice'
-        },
-        true
-      ],
-      // Invalid array item (missing required name)
-      [
-        {
-          'friends': [
-            { 'name': 'Bob' },
-            { 'notName': 'missing' }
-          ],
-          'name': 'Alice'
-        },
-        false
-      ],
-      // Domain is annotation-only (no validation effect)
-      [
-        {
-          'name': 'Alice',
-          'tag': 'hello'
-        },
-        true
-      ],
-      // Combined $ref + rdfs:range — both constraints enforced
-      [
-        {
-          'address': {
-            'city': 'Springfield',
-            'street': '123 Main'
-          },
-          'name': 'Alice'
-        },
-        true
-      ]
-    ];
+  const reg = makeRegistry();
 
-    for (const [
-      data,
-      expectedValid
-    ] of scenarios) {
+  const rangeScenarios: Array<{ 'data': unknown;
+    'name': string;
+    'valid': boolean }> = [
+    {
+      'data': {
+        'address': {
+          'city': 'Springfield',
+          'street': '123 Main'
+        },
+        'name': 'Alice'
+      },
+      'name': 'valid object with range-constrained $ref property',
+      'valid': true
+    },
+    {
+      'data': {
+        'address': { 'street': '123 Main' },
+        'name': 'Alice'
+      },
+      'name': 'unhappy: address missing required city',
+      'valid': false
+    },
+    {
+      'data': {
+        'friends': [
+          { 'name': 'Bob' },
+          { 'name': 'Charlie' }
+        ],
+        'name': 'Alice'
+      },
+      'name': 'valid array items with range',
+      'valid': true
+    },
+    {
+      'data': {
+        'friends': [
+          { 'name': 'Bob' },
+          { 'notName': 'missing' }
+        ],
+        'name': 'Alice'
+      },
+      'name': 'unhappy: array item missing required name',
+      'valid': false
+    },
+    {
+      'data': {
+        'name': 'Alice',
+        'tag': 'hello'
+      },
+      'name': 'domain is annotation-only (no validation effect)',
+      'valid': true
+    },
+    {
+      'data': {
+        'address': {
+          'city': 'Springfield',
+          'street': '123 Main'
+        },
+        'name': 'Alice'
+      },
+      'name': 'combined $ref + rdfs:range — both constraints enforced',
+      'valid': true
+    },
+    {
+      'data': { 'name': 'Alice' },
+      'name': 'edge: no range-annotated properties provided',
+      'valid': true
+    },
+    {
+      'data': {
+        'friends': [],
+        'name': 'Alice'
+      },
+      'name': 'edge: empty friends array — valid when no items to constrain',
+      'valid': true
+    },
+    {
+      'data': {
+        'name': 'Alice',
+        'tag': 42
+      },
+      'name': 'unhappy: wrong type for domain-annotated string field',
+      'valid': false
+    }
+  ];
+
+  for (const {
+    data, name, valid
+  } of rangeScenarios) {
+    void it(name, () => {
       const errors = reg.validate('https://example.io/Person', data);
 
-      assert.equal(errors.length === 0, expectedValid);
-    }
-  });
+      assert.equal(errors.length === 0, valid, name);
+    });
+  }
 
   void it('treats unregistered range schema as annotation-only', () => {
-    const reg = new SchemaRegistry();
+    const localReg = new SchemaRegistry();
 
-    reg.register({
+    localReg.register({
       '$id': 'https://example.io/WithUnknownRange',
       'properties': {
         'data': {
@@ -152,13 +175,13 @@ void describe('rdfs:domain and rdfs:range', () => {
       },
       'type': 'object'
     });
-    assert.deepEqual(reg.validate('https://example.io/WithUnknownRange', { 'data': { 'anything': 'goes' } }), []);
+    assert.deepEqual(localReg.validate('https://example.io/WithUnknownRange', { 'data': { 'anything': 'goes' } }), []);
   });
 
   void it('uses explicit domain/range in OWL output', () => {
-    const reg = makeRegistry();
+    const owlReg = makeRegistry();
     const serializer = new GraphOntologySerializer();
-    const nodes = serializer.serialize(reg.listGraphs()) as Array<Record<string, unknown>>;
+    const nodes = serializer.serialize(owlReg.listGraphs()) as Array<Record<string, unknown>>;
 
     const addressProp = nodes.find((node) => {
       return node['@id'] === 'https://example.io/Person#address';
@@ -194,9 +217,9 @@ void describe('rdfs:domain and rdfs:range', () => {
   });
 
   void it('uses explicit range for sh:class in SHACL output', () => {
-    const reg = makeRegistry();
+    const shaclReg = makeRegistry();
     const serializer = new GraphShaclSerializer();
-    const shapes = serializer.serialize(reg.listGraphs()) as Array<Record<string, unknown>>;
+    const shapes = serializer.serialize(shaclReg.listGraphs()) as Array<Record<string, unknown>>;
 
     const personShape = shapes.find((shape) => {
       return shape['@id'] === 'https://example.io/Person';

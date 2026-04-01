@@ -69,6 +69,21 @@ void describe('Curie', () => {
         'expected': 'https://example.com/',
         'input': 'ex:',
         'name': 'expands prefix with empty local part'
+      },
+      {
+        'expected': `https://example.com/${'a'.repeat(500)}`,
+        'input': `ex:${'a'.repeat(500)}`,
+        'name': 'edge: very long local part expands correctly'
+      },
+      {
+        'expected': 'https://example.com/with spaces',
+        'input': 'ex:with spaces',
+        'name': 'edge: local part with spaces'
+      },
+      {
+        'expected': 'https://example.com/$special!chars',
+        'input': 'ex:$special!chars',
+        'name': 'edge: local part with special characters'
       }
     ];
 
@@ -113,6 +128,21 @@ void describe('Curie', () => {
         'expected': '',
         'input': '',
         'name': 'empty string unchanged'
+      },
+      {
+        'expected': ':',
+        'input': ':',
+        'name': 'edge: string with only colon — empty prefix not registered'
+      },
+      {
+        'expected': ':value',
+        'input': ':value',
+        'name': 'edge: colon at start — empty prefix not registered'
+      },
+      {
+        'expected': 'a:b:c:d',
+        'input': 'a:b:c:d',
+        'name': 'edge: multiple colons with unknown prefix a'
       }
     ];
 
@@ -226,6 +256,16 @@ void describe('Curie', () => {
         'expected': '',
         'input': '',
         'name': 'empty string unchanged'
+      },
+      {
+        'expected': `ex:${'a'.repeat(500)}`,
+        'input': `https://example.com/${'a'.repeat(500)}`,
+        'name': 'edge: very long IRI compacts correctly'
+      },
+      {
+        'expected': ':',
+        'input': ':',
+        'name': 'edge: string with only colon — not a valid IRI'
       }
     ];
 

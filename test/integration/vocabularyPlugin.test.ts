@@ -295,6 +295,82 @@ void describe('VocabularyPlugin', () => {
     }
   });
 
+  void describe('edge cases', () => {
+    const edgeScenarios: Array<{
+      'assertions': () => void;
+      'name': string;
+    }> = [
+      {
+        assertions() {
+          const plugin: VocabularyPluginInterface = {
+            extractRelations() {
+              return [];
+            },
+            'prefixes': {}
+          };
+
+          const registry = new SchemaRegistry({ 'vocabularies': [plugin] });
+
+          registry.register(AcmeSchema as unknown as Record<string, unknown>);
+
+          const allRelations = registry.listGraphs()[0]?.allRelations() ?? [];
+          const acmeRelations = allRelations.filter((rel) => {
+            return rel.predicate.startsWith(ACME_NS);
+          });
+
+          assert.equal(acmeRelations.length, 0, 'edge: empty extractRelations — no custom relations');
+          assert.ok(allRelations.length > 0, 'edge: empty extractRelations — core relations still present');
+        },
+        'name': 'edge: plugin with empty extractRelations produces no custom relations'
+      },
+      {
+        assertions() {
+          const plugin: VocabularyPluginInterface = { 'prefixes': {} };
+
+          const registry = new SchemaRegistry({ 'vocabularies': [plugin] });
+
+          assert.ok(registry.curie !== undefined, 'edge: empty prefixes — curie exists');
+          assert.equal(registry.curie.expand('owl:Class'), 'http://www.w3.org/2002/07/owl#Class', 'edge: empty prefixes — defaults still work');
+        },
+        'name': 'edge: plugin with empty prefixes does not break default prefix resolution'
+      },
+      {
+        assertions() {
+          const ns1 = 'https://plugin-one.org/vocab#';
+          const ns2 = 'https://plugin-two.org/vocab#';
+
+          const plugin1: VocabularyPluginInterface = { 'prefixes': { 'shared': ns1 } };
+
+          const plugin2: VocabularyPluginInterface = { 'prefixes': { 'shared': ns2 } };
+
+          const registry = new SchemaRegistry({
+            'vocabularies': [
+              plugin1,
+              plugin2
+            ]
+          });
+
+          assert.ok(registry.curie !== undefined, 'edge: conflicting prefixes — curie exists');
+          const expanded = registry.curie.expand('shared:Thing');
+
+          assert.ok(
+            expanded === `${ns1}Thing` || expanded === `${ns2}Thing`,
+            'edge: conflicting prefixes — one of the two namespaces wins'
+          );
+        },
+        'name': 'edge: multiple plugins with conflicting prefixes resolves without error'
+      }
+    ];
+
+    for (const {
+      assertions, name
+    } of edgeScenarios) {
+      void it(name, () => {
+        assertions();
+      });
+    }
+  });
+
   void describe('integration', () => {
     const scenarios: Array<{
       'assertions': () => void;

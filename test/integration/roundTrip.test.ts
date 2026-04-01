@@ -85,38 +85,68 @@ function assertRoundTrip(schema: Record<string, unknown>, label?: string): void 
 }
 
 // ---------------------------------------------------------------------------
-// Tests
+// Scenario types
+// ---------------------------------------------------------------------------
+
+interface RoundTripScenario {
+  'check': (schema: Record<string, unknown>) => void;
+  'name': string;
+  'schema': Record<string, unknown>;
+}
+
+// ---------------------------------------------------------------------------
+// Tests: primitive types
 // ---------------------------------------------------------------------------
 
 void describe('Round-trip: primitive types', () => {
-  void it('round-trips primitive, multi-type, value, and scalar constraint schemas', () => {
-    const schemas: Array<Record<string, unknown>> = [
-      // Primitive types
-      ...[
-        'string',
-        'number',
-        'integer',
-        'boolean',
-        'null'
-      ].map((typeName) => {
-        return {
+  const scenarios: RoundTripScenario[] = [
+    ...[
+      'string',
+      'number',
+      'integer',
+      'boolean',
+      'null'
+    ].map((typeName): RoundTripScenario => {
+      return {
+        'check': (schema) => {
+          assertRoundTrip(schema);
+        },
+        'name': `primitive type: ${typeName}`,
+        'schema': {
           '$id': `https://rt.test/${typeName}`,
           'type': typeName
-        };
-      }),
-      {
+        }
+      };
+    }),
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
+      },
+      'name': 'multi-type [string, null]',
+      'schema': {
         '$id': 'https://rt.test/multi-type',
         'type': [
           'string',
           'null'
         ]
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      // Values
-      {
+      'name': 'const string value',
+      'schema': {
         '$id': 'https://rt.test/Const',
         'const': 'fixed'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'enum with type',
+      'schema': {
         '$id': 'https://rt.test/Enum',
         'enum': [
           'red',
@@ -124,27 +154,57 @@ void describe('Round-trip: primitive types', () => {
           'blue'
         ],
         'type': 'string'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'default numeric value',
+      'schema': {
         '$id': 'https://rt.test/Default',
         'default': 42,
         'type': 'number'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'const null',
+      'schema': {
         '$id': 'https://rt.test/ConstNull',
         'const': null
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'default false',
+      'schema': {
         '$id': 'https://rt.test/DefaultFalse',
         'default': false,
         'type': 'boolean'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'default zero',
+      'schema': {
         '$id': 'https://rt.test/DefaultZero',
         'default': 0,
         'type': 'number'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'enum with mixed types',
+      'schema': {
         '$id': 'https://rt.test/EnumMixed',
         'enum': [
           'active',
@@ -152,46 +212,103 @@ void describe('Round-trip: primitive types', () => {
           null,
           true
         ]
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      // Scalar constraints
-      {
+      'name': 'string constraints (minLength, maxLength, pattern)',
+      'schema': {
         '$id': 'https://rt.test/StringConstraints',
         'maxLength': 100,
         'minLength': 1,
         'pattern': '^[A-Z]',
         'type': 'string'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'format constraint',
+      'schema': {
         '$id': 'https://rt.test/Format',
         'format': 'email',
         'type': 'string'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'numeric constraints (min, max, multipleOf)',
+      'schema': {
         '$id': 'https://rt.test/NumericConstraints',
         'maximum': 100,
         'minimum': 0,
         'multipleOf': 5,
         'type': 'number'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'exclusive numeric constraints',
+      'schema': {
         '$id': 'https://rt.test/ExclusiveNumeric',
         'exclusiveMaximum': 200,
         'exclusiveMinimum': -1,
         'type': 'number'
       }
-    ];
-
-    for (const schema of schemas) {
-      assertRoundTrip(schema);
+    },
+    // Edge cases
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
+      },
+      'name': 'empty enum array',
+      'schema': {
+        '$id': 'https://rt.test/EmptyEnum',
+        'enum': [],
+        'type': 'string'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
+      },
+      'name': 'default empty string',
+      'schema': {
+        '$id': 'https://rt.test/DefaultEmptyStr',
+        'default': '',
+        'type': 'string'
+      }
     }
-  });
+  ];
+
+  for (const {
+    check, name, schema
+  } of scenarios) {
+    void it(name, () => {
+      check(schema);
+    });
+  }
 });
 
+// ---------------------------------------------------------------------------
+// Tests: objects and arrays
+// ---------------------------------------------------------------------------
+
 void describe('Round-trip: objects', () => {
-  void it('round-trips object and array schemas', () => {
-    const schemas: Array<Record<string, unknown>> = [
-      // Objects
-      {
+  const scenarios: RoundTripScenario[] = [
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
+      },
+      'name': 'simple object with required',
+      'schema': {
         '$id': 'https://rt.test/Object',
         'properties': {
           'age': { 'type': 'number' },
@@ -199,48 +316,89 @@ void describe('Round-trip: objects', () => {
         },
         'required': ['name'],
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'strict object (additionalProperties: false)',
+      'schema': {
         '$id': 'https://rt.test/Strict',
         'additionalProperties': false,
         'properties': { 'a': { 'type': 'string' } },
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'additionalProperties as schema',
+      'schema': {
         '$id': 'https://rt.test/AdditionalSchema',
         'additionalProperties': { 'type': 'string' },
         'properties': { 'name': { 'type': 'string' } },
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'object constraints (min/maxProperties)',
+      'schema': {
         '$id': 'https://rt.test/ObjConstraints',
         'maxProperties': 10,
         'minProperties': 1,
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'propertyNames constraint',
+      'schema': {
         '$id': 'https://rt.test/PropertyNames',
         'propertyNames': {
           'pattern': '^[a-z]+$',
           'type': 'string'
         },
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'patternProperties',
+      'schema': {
         '$id': 'https://rt.test/PatternProps',
         'patternProperties': {
           '^I_': { 'type': 'integer' },
           '^S_': { 'type': 'string' }
         },
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      // Arrays
-      {
+      'name': 'array with items',
+      'schema': {
         '$id': 'https://rt.test/Array',
         'items': { 'type': 'string' },
         'type': 'array'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'tuple with prefixItems',
+      'schema': {
         '$id': 'https://rt.test/Tuple',
         'prefixItems': [
           { 'type': 'string' },
@@ -248,34 +406,64 @@ void describe('Round-trip: objects', () => {
           { 'type': 'boolean' }
         ],
         'type': 'array'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'contains with cardinality',
+      'schema': {
         '$id': 'https://rt.test/Contains',
         'contains': { 'type': 'string' },
         'maxContains': 5,
         'minContains': 2,
         'type': 'array'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'array constraints (min/maxItems, uniqueItems)',
+      'schema': {
         '$id': 'https://rt.test/ArrayConstraints',
         'items': { 'type': 'number' },
         'maxItems': 100,
         'minItems': 1,
         'type': 'array',
         'uniqueItems': true
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'unevaluatedItems: false',
+      'schema': {
         '$id': 'https://rt.test/UnevaluatedItems',
         'prefixItems': [{ 'type': 'string' }],
         'type': 'array',
         'unevaluatedItems': false
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'additionalItems as schema',
+      'schema': {
         '$id': 'https://rt.test/AdditionalItems',
         'additionalItems': { 'type': 'boolean' },
         'type': 'array'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'additionalItems: false with prefixItems',
+      'schema': {
         '$id': 'https://rt.test/AdditionalItemsFalse',
         'additionalItems': false,
         'prefixItems': [
@@ -284,19 +472,51 @@ void describe('Round-trip: objects', () => {
         ],
         'type': 'array'
       }
-    ];
-
-    for (const schema of schemas) {
-      assertRoundTrip(schema);
+    },
+    // Edge cases
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
+      },
+      'name': 'object with no properties',
+      'schema': {
+        '$id': 'https://rt.test/EmptyObj',
+        'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
+      },
+      'name': 'empty array schema with no items',
+      'schema': {
+        '$id': 'https://rt.test/EmptyArray',
+        'type': 'array'
+      }
     }
-  });
+  ];
+
+  for (const {
+    check, name, schema
+  } of scenarios) {
+    void it(name, () => {
+      check(schema);
+    });
+  }
 });
 
+// ---------------------------------------------------------------------------
+// Tests: composition
+// ---------------------------------------------------------------------------
+
 void describe('Round-trip: composition', () => {
-  void it('round-trips composition, conditional, dependency, and discriminator schemas', () => {
-    const schemas: Array<Record<string, unknown>> = [
-      // allOf, anyOf, oneOf, not
-      {
+  const scenarios: RoundTripScenario[] = [
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
+      },
+      'name': 'allOf composition',
+      'schema': {
         '$id': 'https://rt.test/AllOf',
         'allOf': [
           {
@@ -310,27 +530,50 @@ void describe('Round-trip: composition', () => {
             'type': 'object'
           }
         ]
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'anyOf composition',
+      'schema': {
         '$id': 'https://rt.test/AnyOf',
         'anyOf': [
           { 'type': 'string' },
           { 'type': 'number' }
         ]
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'oneOf composition',
+      'schema': {
         '$id': 'https://rt.test/OneOf',
         'oneOf': [
           { 'type': 'string' },
           { 'type': 'number' }
         ]
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'not composition',
+      'schema': {
         '$id': 'https://rt.test/Not',
         'not': { 'type': 'array' }
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      // Conditionals
-      setThenKeyword({
+      'name': 'if/then/else conditional',
+      'schema': setThenKeyword({
         '$id': 'https://rt.test/Conditional',
         'else': { 'required': ['kind'] },
         'if': { 'properties': { 'kind': { 'const': 'special' } } },
@@ -339,14 +582,25 @@ void describe('Round-trip: composition', () => {
           'value': { 'type': 'number' }
         },
         'type': 'object'
-      }, { 'required': ['value'] }),
-      setThenKeyword({
+      }, { 'required': ['value'] })
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
+      },
+      'name': 'if/then without else',
+      'schema': setThenKeyword({
         '$id': 'https://rt.test/IfThen',
         'if': { 'properties': { 'kind': { 'const': 'a' } } },
         'type': 'object'
-      }, { 'properties': { 'aValue': { 'type': 'number' } } }),
-      // Dependencies
-      {
+      }, { 'properties': { 'aValue': { 'type': 'number' } } })
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
+      },
+      'name': 'dependentRequired',
+      'schema': {
         '$id': 'https://rt.test/DepRequired',
         'dependentRequired': { 'creditCard': ['billingAddress'] },
         'properties': {
@@ -354,8 +608,14 @@ void describe('Round-trip: composition', () => {
           'creditCard': { 'type': 'string' }
         },
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'dependentSchemas',
+      'schema': {
         '$id': 'https://rt.test/DepSchemas',
         'dependentSchemas': {
           'credit_card': {
@@ -368,9 +628,14 @@ void describe('Round-trip: composition', () => {
           'credit_card': { 'type': 'string' }
         },
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      // Discriminator
-      {
+      'name': 'discriminator with mapping',
+      'schema': {
         '$id': 'https://rt.test/DiscMap',
         'discriminator': {
           'mapping': {
@@ -389,8 +654,14 @@ void describe('Round-trip: composition', () => {
             'type': 'object'
           }
         ]
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'discriminator without mapping',
+      'schema': {
         '$id': 'https://rt.test/DiscNoMap',
         'discriminator': { 'propertyName': 'kind' },
         'oneOf': [{
@@ -398,18 +669,51 @@ void describe('Round-trip: composition', () => {
           'type': 'object'
         }]
       }
-    ];
-
-    for (const schema of schemas) {
-      assertRoundTrip(schema);
+    },
+    // Edge cases
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
+      },
+      'name': 'allOf with single subschema',
+      'schema': {
+        '$id': 'https://rt.test/AllOfSingle',
+        'allOf': [{ 'type': 'string' }]
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
+      },
+      'name': 'not wrapping a not (double negation)',
+      'schema': {
+        '$id': 'https://rt.test/NotNot',
+        'not': { 'not': { 'type': 'string' } }
+      }
     }
-  });
+  ];
+
+  for (const {
+    check, name, schema
+  } of scenarios) {
+    void it(name, () => {
+      check(schema);
+    });
+  }
 });
 
+// ---------------------------------------------------------------------------
+// Tests: refs and anchors
+// ---------------------------------------------------------------------------
+
 void describe('Round-trip: refs and anchors', () => {
-  void it('round-trips ref, anchor, dynamic, and recursive schemas', () => {
-    const schemas: Array<Record<string, unknown>> = [
-      {
+  const scenarios: RoundTripScenario[] = [
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
+      },
+      'name': 'local $ref to $defs',
+      'schema': {
         '$defs': {
           'Child': {
             'properties': { 'name': { 'type': 'string' } },
@@ -420,13 +724,25 @@ void describe('Round-trip: refs and anchors', () => {
         '$id': 'https://rt.test/LocalRef',
         'properties': { 'child': { '$ref': '#/$defs/Child' } },
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'external $ref',
+      'schema': {
         '$id': 'https://rt.test/ExternalRef',
         'properties': { 'parent': { '$ref': 'https://example.com/Parent' } },
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': '$anchor',
+      'schema': {
         '$id': 'https://rt.test/Anchor',
         'properties': {
           'tag': {
@@ -435,8 +751,14 @@ void describe('Round-trip: refs and anchors', () => {
           }
         },
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': '$dynamicAnchor and $dynamicRef',
+      'schema': {
         '$dynamicAnchor': 'node',
         '$id': 'https://rt.test/Dynamic',
         'properties': {
@@ -445,8 +767,14 @@ void describe('Round-trip: refs and anchors', () => {
         },
         'required': ['value'],
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'multiple $defs with anchors and dynamic anchors',
+      'schema': {
         '$defs': {
           'Bar': {
             '$dynamicAnchor': 'DynBar',
@@ -467,8 +795,14 @@ void describe('Round-trip: refs and anchors', () => {
         },
         'required': ['localRef'],
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'legacy definitions keyword',
+      'schema': {
         '$id': 'https://rt.test/Definitions',
         'definitions': {
           'Addr': {
@@ -477,8 +811,14 @@ void describe('Round-trip: refs and anchors', () => {
           }
         },
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': '$recursiveAnchor and $recursiveRef',
+      'schema': {
         '$id': 'https://rt.test/Recursive',
         '$recursiveAnchor': true,
         'properties': {
@@ -489,30 +829,77 @@ void describe('Round-trip: refs and anchors', () => {
         },
         'type': 'object'
       }
-    ];
-
-    for (const schema of schemas) {
-      assertRoundTrip(schema);
+    },
+    // Edge cases
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
+      },
+      'name': '$defs with no references to them',
+      'schema': {
+        '$defs': { 'Unused': { 'type': 'string' } },
+        '$id': 'https://rt.test/UnusedDefs',
+        'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
+      },
+      'name': 'self-referencing $ref to root',
+      'schema': {
+        '$id': 'https://rt.test/SelfRef',
+        'properties': { 'child': { '$ref': 'https://rt.test/SelfRef' } },
+        'type': 'object'
+      }
     }
-  });
+  ];
+
+  for (const {
+    check, name, schema
+  } of scenarios) {
+    void it(name, () => {
+      check(schema);
+    });
+  }
 });
 
+// ---------------------------------------------------------------------------
+// Tests: metadata
+// ---------------------------------------------------------------------------
+
 void describe('Round-trip: metadata', () => {
-  void it('round-trips metadata, dialect, and vocabulary schemas', () => {
-    const schemas: Array<Record<string, unknown>> = [
-      {
+  const scenarios: RoundTripScenario[] = [
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
+      },
+      'name': 'title and description',
+      'schema': {
         '$id': 'https://rt.test/Metadata',
         'description': 'Represents a person',
         'properties': { 'name': { 'type': 'string' } },
         'title': 'A Person',
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'deprecated flag',
+      'schema': {
         '$id': 'https://rt.test/Deprecated',
         'deprecated': true,
         'type': 'string'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'readOnly and writeOnly',
+      'schema': {
         '$id': 'https://rt.test/ReadWrite',
         'properties': {
           'id': {
@@ -525,14 +912,26 @@ void describe('Round-trip: metadata', () => {
           }
         },
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'contentEncoding and contentMediaType',
+      'schema': {
         '$id': 'https://rt.test/Content',
         'contentEncoding': 'base64',
         'contentMediaType': 'text/plain',
         'type': 'string'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': '$comment on root and nested',
+      'schema': {
         '$comment': 'Root comment',
         '$id': 'https://rt.test/Comment',
         'properties': {
@@ -542,16 +941,28 @@ void describe('Round-trip: metadata', () => {
           }
         },
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'examples on root',
+      'schema': {
         '$id': 'https://rt.test/Examples',
         'examples': [
           'alpha',
           'beta'
         ],
         'type': 'string'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'examples on nested properties',
+      'schema': {
         '$id': 'https://rt.test/NestedExamples',
         'properties': {
           'name': {
@@ -563,14 +974,26 @@ void describe('Round-trip: metadata', () => {
           }
         },
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': '$schema dialect',
+      'schema': {
         '$id': 'https://rt.test/Dialect',
         '$schema': 'https://json-schema.org/draft/2020-12/schema',
         'properties': { 'name': { 'type': 'string' } },
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': '$vocabulary',
+      'schema': {
         '$id': 'https://rt.test/Vocabulary',
         '$schema': 'https://json-schema.org/draft/2020-12/schema',
         '$vocabulary': {
@@ -580,29 +1003,73 @@ void describe('Round-trip: metadata', () => {
         },
         'type': 'string'
       }
-    ];
-
-    for (const schema of schemas) {
-      assertRoundTrip(schema);
+    },
+    // Edge cases
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
+      },
+      'name': 'multiple metadata fields combined',
+      'schema': {
+        '$comment': 'top-level comment',
+        '$id': 'https://rt.test/MultiMeta',
+        'description': 'A description',
+        'title': 'Multi Meta',
+        'type': 'string'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
+      },
+      'name': 'deprecated with readOnly on same property',
+      'schema': {
+        '$id': 'https://rt.test/DeprecatedReadOnly',
+        'properties': {
+          'legacy': {
+            'deprecated': true,
+            'readOnly': true,
+            'type': 'string'
+          }
+        },
+        'type': 'object'
+      }
     }
-  });
+  ];
+
+  for (const {
+    check, name, schema
+  } of scenarios) {
+    void it(name, () => {
+      check(schema);
+    });
+  }
 });
 
+// ---------------------------------------------------------------------------
+// Tests: boolean schemas
+// ---------------------------------------------------------------------------
+
 void describe('Round-trip: boolean schemas', () => {
-  void it('round-trips boolean true/false as nested schemas and boolean keywords', () => {
-    for (const [
-      id,
-      allOfValue
-    ] of [
-        [
-          'https://rt.test/BoolTrue',
-          [true]
-        ],
-        [
-          'https://rt.test/BoolFalse',
-          [false]
-        ]
-      ] as Array<[string, unknown[]]>) {
+  const boolAllOfScenarios: Array<{ 'allOfValue': unknown[];
+    'id': string;
+    'name': string; }> = [
+    {
+      'allOfValue': [true],
+      'id': 'https://rt.test/BoolTrue',
+      'name': 'boolean true in allOf'
+    },
+    {
+      'allOfValue': [false],
+      'id': 'https://rt.test/BoolFalse',
+      'name': 'boolean false in allOf'
+    }
+  ];
+
+  for (const {
+    allOfValue, id, name
+  } of boolAllOfScenarios) {
+    void it(name, () => {
       const schema: Record<string, unknown> = {
         '$id': id,
         'allOf': allOfValue
@@ -611,16 +1078,28 @@ void describe('Round-trip: boolean schemas', () => {
       const rt = serializer.serialize(graph);
 
       assert.deepEqual(rt.allOf, allOfValue);
-    }
+    });
+  }
 
-    const boolSchemas: Array<Record<string, unknown>> = [
-      {
+  const boolKeywordScenarios: RoundTripScenario[] = [
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
+      },
+      'name': 'unevaluatedProperties: false',
+      'schema': {
         '$id': 'https://rt.test/UnevalPropsFalse',
         'properties': { 'name': { 'type': 'string' } },
         'type': 'object',
         'unevaluatedProperties': false
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'items: false with prefixItems',
+      'schema': {
         '$id': 'https://rt.test/ItemsFalse',
         'items': false,
         'prefixItems': [
@@ -629,35 +1108,65 @@ void describe('Round-trip: boolean schemas', () => {
         ],
         'type': 'array'
       }
-    ];
-
-    for (const schema of boolSchemas) {
-      assertRoundTrip(schema);
     }
-  });
+  ];
+
+  for (const {
+    check, name, schema
+  } of boolKeywordScenarios) {
+    void it(name, () => {
+      check(schema);
+    });
+  }
 });
 
+// ---------------------------------------------------------------------------
+// Tests: extension and custom keywords
+// ---------------------------------------------------------------------------
+
 void describe('Round-trip: extension and custom keywords', () => {
-  void it('round-trips ontology extensions and custom x-* keywords', () => {
-    const schemas: Array<Record<string, unknown>> = [
-      {
+  const scenarios: RoundTripScenario[] = [
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
+      },
+      'name': 'rdfs:domain and rdfs:range',
+      'schema': {
         '$id': 'https://rt.test/DomainRange',
         'rdfs:domain': 'https://example.com/Person',
         'rdfs:range': 'http://www.w3.org/2001/XMLSchema#string',
         'type': 'string'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'disjointWith',
+      'schema': {
         '$id': 'https://rt.test/Disjoint',
         'disjointWith': 'https://example.com/Cat',
         'properties': { 'name': { 'type': 'string' } },
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'equivalentTo',
+      'schema': {
         '$id': 'https://rt.test/Equivalent',
         'equivalentTo': 'https://example.com/Human',
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'inverseOf on property',
+      'schema': {
         '$id': 'https://rt.test/InverseOf',
         'properties': {
           'owns': {
@@ -666,8 +1175,14 @@ void describe('Round-trip: extension and custom keywords', () => {
           }
         },
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'transitive property',
+      'schema': {
         '$id': 'https://rt.test/Transitive',
         'properties': {
           'ancestor': {
@@ -676,8 +1191,14 @@ void describe('Round-trip: extension and custom keywords', () => {
           }
         },
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'symmetric property',
+      'schema': {
         '$id': 'https://rt.test/Symmetric',
         'properties': {
           'sibling': {
@@ -686,15 +1207,27 @@ void describe('Round-trip: extension and custom keywords', () => {
           }
         },
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'custom x-* keywords on root',
+      'schema': {
         '$id': 'https://rt.test/CustomRoot',
         'evenNumber': true,
         'type': 'integer',
         'x-ui-widget': 'slider',
         'x-validation-group': 'pricing'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'custom x-* keywords on properties',
+      'schema': {
         '$id': 'https://rt.test/CustomProps',
         'properties': {
           'price': {
@@ -706,18 +1239,43 @@ void describe('Round-trip: extension and custom keywords', () => {
         'type': 'object',
         'x-table': 'products'
       }
-    ];
-
-    for (const schema of schemas) {
-      assertRoundTrip(schema);
+    },
+    // Edge cases
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
+      },
+      'name': 'multiple x-* keywords without standard constraints',
+      'schema': {
+        '$id': 'https://rt.test/CustomOnly',
+        'x-custom-a': 'alpha',
+        'x-custom-b': 123,
+        'x-custom-c': true
+      }
     }
-  });
+  ];
+
+  for (const {
+    check, name, schema
+  } of scenarios) {
+    void it(name, () => {
+      check(schema);
+    });
+  }
 });
 
+// ---------------------------------------------------------------------------
+// Tests: schemas from existing tests
+// ---------------------------------------------------------------------------
+
 void describe('Round-trip: schemas from existing tests', () => {
-  void it('round-trips schemas used across the test suite', () => {
-    const schemas: Array<Record<string, unknown>> = [
-      {
+  const scenarios: RoundTripScenario[] = [
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
+      },
+      'name': 'person schema with additionalProperties: false',
+      'schema': {
         '$id': 'https://example.io/person',
         'additionalProperties': false,
         'properties': {
@@ -730,8 +1288,14 @@ void describe('Round-trip: schemas from existing tests', () => {
           'age'
         ],
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'address schema',
+      'schema': {
         '$id': 'https://example.io/address',
         'properties': {
           'city': { 'type': 'string' },
@@ -739,8 +1303,14 @@ void describe('Round-trip: schemas from existing tests', () => {
         },
         'required': ['street'],
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'config schema with dialect and defaults',
+      'schema': {
         '$id': 'https://example.io/config',
         '$schema': 'https://json-schema.org/draft/2020-12/schema',
         'properties': {
@@ -756,8 +1326,14 @@ void describe('Round-trip: schemas from existing tests', () => {
         },
         'required': ['name'],
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'nested schema with $ref and default',
+      'schema': {
         '$defs': {
           'Inner': {
             'properties': {
@@ -773,8 +1349,14 @@ void describe('Round-trip: schemas from existing tests', () => {
         '$schema': 'https://json-schema.org/draft/2020-12/schema',
         'properties': { 'inner': { '$ref': '#/$defs/Inner' } },
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'strict schema with additionalProperties: false',
+      'schema': {
         '$id': 'https://example.io/strict',
         '$schema': 'https://json-schema.org/draft/2020-12/schema',
         'additionalProperties': false,
@@ -784,8 +1366,14 @@ void describe('Round-trip: schemas from existing tests', () => {
         },
         'required': ['name'],
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'User schema with metadata and defaults',
+      'schema': {
         '$id': 'https://myapp.io/User',
         'description': 'An application user',
         'properties': {
@@ -806,8 +1394,14 @@ void describe('Round-trip: schemas from existing tests', () => {
         ],
         'title': 'User',
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'Directory with $anchor and array $ref',
+      'schema': {
         '$defs': {
           'Employee': {
             '$anchor': 'employee',
@@ -827,13 +1421,25 @@ void describe('Round-trip: schemas from existing tests', () => {
         },
         'required': ['primaryEmployee'],
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'DateTime with format',
+      'schema': {
         '$id': 'https://myapp.io/DateTime',
         'format': 'date-time',
         'type': 'string'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'Person with domain/range and ontology extensions',
+      'schema': {
         '$defs': {
           'Address': {
             'properties': {
@@ -866,8 +1472,14 @@ void describe('Round-trip: schemas from existing tests', () => {
         },
         'required': ['name'],
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'GraphNode with transitive and symmetric properties',
+      'schema': {
         '$id': 'https://example.io/GraphNode',
         'properties': {
           'ancestor': {
@@ -880,8 +1492,14 @@ void describe('Round-trip: schemas from existing tests', () => {
           }
         },
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      {
+      'name': 'escaped JSON pointer in $ref',
+      'schema': {
         '$defs': {
           'address': {
             'properties': { 'street/name': { 'type': 'string' } },
@@ -892,18 +1510,30 @@ void describe('Round-trip: schemas from existing tests', () => {
         'properties': { 'address': { '$ref': '#/$defs/address' } },
         'type': 'object'
       }
-    ];
-
-    for (const schema of schemas) {
-      assertRoundTrip(schema);
     }
-  });
+  ];
+
+  for (const {
+    check, name, schema
+  } of scenarios) {
+    void it(name, () => {
+      check(schema);
+    });
+  }
 });
 
+// ---------------------------------------------------------------------------
+// Tests: complex combined schemas
+// ---------------------------------------------------------------------------
+
 void describe('Round-trip: complex combined schemas', () => {
-  void it('round-trips complex combined schemas and verifies idempotency', () => {
-    const schemas: Array<Record<string, unknown>> = [
-      {
+  const scenarios: RoundTripScenario[] = [
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
+      },
+      'name': 'all constraints combined on object',
+      'schema': {
         '$id': 'https://rt.test/AllConstraints',
         'additionalProperties': { 'type': 'string' },
         'description': 'Represents a person',
@@ -952,8 +1582,14 @@ void describe('Round-trip: complex combined schemas', () => {
         },
         'title': 'A Person',
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      setThenKeyword({
+      'name': 'complex composition with allOf, anyOf, if/then, $ref',
+      'schema': setThenKeyword({
         '$defs': {
           'Address': {
             'properties': { 'street': { 'type': 'string' } },
@@ -983,8 +1619,14 @@ void describe('Round-trip: complex combined schemas', () => {
           'kind': { 'type': 'string' }
         },
         'type': 'object'
-      }, { 'required': ['base'] }),
-      {
+      }, { 'required': ['base'] })
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
+      },
+      'name': 'dependentRequired + dependentSchemas + patternProperties',
+      'schema': {
         '$id': 'https://rt.test/DepsCombined',
         'dependentRequired': {
           'email': [
@@ -1006,8 +1648,14 @@ void describe('Round-trip: complex combined schemas', () => {
           'phone': { 'type': 'string' }
         },
         'type': 'object'
+      }
+    },
+    {
+      'check': (schema) => {
+        assertRoundTrip(schema);
       },
-      setThenKeyword({
+      'name': 'unevaluatedProperties with conditional',
+      'schema': setThenKeyword({
         '$id': 'https://rt.test/UnevalConditional',
         'else': { 'properties': { 'bValue': { 'type': 'string' } } },
         'if': { 'properties': { 'kind': { 'const': 'a' } } },
@@ -1016,13 +1664,18 @@ void describe('Round-trip: complex combined schemas', () => {
         'type': 'object',
         'unevaluatedProperties': false
       }, { 'properties': { 'aValue': { 'type': 'number' } } })
-    ];
-
-    for (const schema of schemas) {
-      assertRoundTrip(schema);
     }
+  ];
 
-    // Idempotency: three consecutive round-trips
+  for (const {
+    check, name, schema
+  } of scenarios) {
+    void it(name, () => {
+      check(schema);
+    });
+  }
+
+  void it('triple round-trip idempotency', () => {
     const idempotentSchema: Record<string, unknown> = {
       '$defs': {
         'Foo': {

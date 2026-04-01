@@ -16,7 +16,8 @@ import type { KeywordDefinitionInterface } from '../../interfaces/GraphEngine.js
 import type { GraphEngineInterface } from '../../interfaces/GraphEngineImpl.js';
 import type { SchemaCompilerInterface } from '../../interfaces/SchemaCompilerImpl.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import { GraphEngine } from '../graph/graphEngine.js';
+import { GraphEngine } from '../graph/GraphEngine.js';
+import { deepFreeze } from '../data/dataTypes.js';
 import { Hash } from '../hash/hash.js';
 import { Materializer } from '../materialization/materializer.js';
 import { SchemaGraph } from '../graph/schemaGraph.js';
@@ -63,6 +64,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   private readonly formatRegistry: FormatRegistryInterface | undefined;
   private readonly keywords: KeywordDefinitionInterface[] | undefined;
   private readonly logger: LoggerInterface;
+  private readonly maxDepth: number | undefined;
   private readonly schemaHashes = new Map<string, string>();
   private readonly schemas = new Map<string, SchemaRegistryEntryInterface>();
   private readonly strict: boolean;
@@ -82,6 +84,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       'collectErrors': true,
       'removeAdditionalProperties': true
     });
+    this.maxDepth = options?.maxDepth;
     this.strict = options?.strict ?? false;
     this.vocabularies = options?.vocabularies ?? [];
 
@@ -99,6 +102,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     this.formatRegistry = options?.formatRegistry;
     this.keywords = options?.keywords;
     this.compiler = new SchemaCompiler({
+      'logger': this.logger,
       'lookupCompiled': (schemaId) => {
         return this.schemas.has(schemaId)
           ? this.compiled(schemaId)
@@ -277,13 +281,18 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     if (entry === undefined) {
       throw new SchemaError('SCHEMA_VALIDATOR_MISSING', `No validator registered for schema: ${schemaId}`, schemaId);
     }
-    entry.engine ??= new GraphEngine(entry.schema, {
+    const engineOptions: Record<string, unknown> = {
       ...(this.formatRegistry ? { 'formatRegistry': this.formatRegistry } : {}),
       ...(this.keywords && this.keywords.length > 0 ? { 'keywords': this.keywords } : {}),
-      'lookupSchema': (lookupSchemaId) => {
+      'lookupSchema': (lookupSchemaId: string) => {
         return this.schemas.get(lookupSchemaId)?.schema;
       }
-    });
+    };
+
+    if (this.maxDepth !== undefined) {
+      engineOptions.maxDepth = this.maxDepth;
+    }
+    entry.engine ??= new GraphEngine(entry.schema, engineOptions);
 
     return entry.engine;
   }
@@ -423,9 +432,19 @@ export class SchemaRegistry implements SchemaRegistryInterface {
    * @throws {@link SchemaError} when a schema lacks `$id`, has duplicate anchors, or fails structure validation.
    */
   public register(schemas: ReadonlyArray<Record<string, unknown>> | Record<string, unknown>): void {
+    if ((schemas as unknown) === null || (schemas as unknown) === undefined) {
+      throw new SchemaError('SCHEMA_INVALID_INPUT', 'register() requires a non-null schema object or array');
+    }
+
     const list: ReadonlyArray<Record<string, unknown>> = Array.isArray(schemas) ? schemas : [schemas];
 
     for (const element of list) {
+      if ((element as unknown) === null || typeof element !== 'object' || Array.isArray(element)) {
+        throw new SchemaError(
+          'SCHEMA_INVALID_INPUT',
+          `register() requires plain objects, received ${(element as unknown) === null ? 'null' : typeof element}`
+        );
+      }
       this.registerSingle(element);
     }
   }
@@ -510,6 +529,11 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     if (existingId !== undefined && existingId !== schemaId) {
       this.logger.warn(`Schema content already registered under different ID: existing="${existingId}" new="${schemaId}"`);
+    }
+
+    // Freeze the schema to prevent mutation after registration
+    if (!Object.isFrozen(schema)) {
+      deepFreeze(schema);
     }
 
     // Validate structure BEFORE committing to maps — failed registration must be a no-op

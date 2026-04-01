@@ -39,6 +39,8 @@ import {
 import {
   DEFAULT_DIALECT_URI, VOCABULARY_FORMAT_ASSERTION
 } from '../../constants/DIALECT.js';
+import type { LoggerInterface } from '../../interfaces/Logger.js';
+import { SILENT_LOGGER } from '../../constants/LOGGER.js';
 
 // ---------------------------------------------------------------------------
 // Internal types
@@ -53,17 +55,20 @@ import type { CheckFnType } from '../../types/Validation.js';
 export class SchemaCompiler implements SchemaCompilerInterface {
   private activeCustomKeywords: KeywordDefinitionInterface[] = [];
   private readonly compilingNodes = new Set<SchemaGraphNodeInterface>();
+  private readonly logger: LoggerInterface;
   public readonly lookupCompiled: ((schemaId: string) => CompiledValidatorInterface | undefined) | undefined;
 
   /**
    * Create a SchemaCompiler with an optional cross-schema lookup for compiled validators.
    *
-   * @param options - Optional lookup function for resolving already-compiled validators by schema ID
+   * @param options - Optional lookup function and logger for resolving already-compiled validators by schema ID
    */
   public constructor(options?: {
+    'logger'?: LoggerInterface;
     'lookupCompiled'?: (schemaId: string) => CompiledValidatorInterface | undefined;
   }) {
     this.lookupCompiled = options?.lookupCompiled;
+    this.logger = options?.logger ?? SILENT_LOGGER;
   }
 
   private appliesFormatAssertions(sem: SchemaGraphSemanticsInterface): boolean {
@@ -143,8 +148,12 @@ export class SchemaCompiler implements SchemaCompilerInterface {
           };
         }
       };
-    } catch {
-      // Fallback to engine if compilation fails
+    } catch (error: unknown) {
+      this.logger.warn(
+        'SchemaCompiler',
+        `compilation failed, falling back to interpreter: ${error instanceof Error ? error.message : String(error)}`
+      );
+
       return this.engineFallback(engine);
     }
   }
@@ -438,7 +447,12 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     }
     if (multipleOf !== undefined) {
       checks.push((num) => {
-        return num % multipleOf === 0;
+        if (multipleOf === 0) {
+          return false;
+        }
+        const quotient = num / multipleOf;
+
+        return Math.abs(quotient - Math.round(quotient)) <= Number.EPSILON * 10;
       });
     }
 
@@ -499,7 +513,11 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
         if (formatValidator !== undefined) {
           formatCheck = (value) => {
-            return formatValidator(value);
+            try {
+              return formatValidator(value);
+            } catch {
+              return false;
+            }
           };
         }
       }
@@ -552,7 +570,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
           return value === null;
         };
         case 'number': return (value) => {
-          return typeof value === 'number';
+          return typeof value === 'number' && Number.isFinite(value);
         };
         case 'object': return (value) => {
           return typeof value === 'object' && value !== null && !Array.isArray(value);

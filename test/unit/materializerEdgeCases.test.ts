@@ -261,6 +261,48 @@ const structuredScenarios: StructuredScenario[] = [
   },
   {
     'assertions': (result) => {
+      const l1 = result.a as Record<string, unknown>;
+      const l2 = l1.b as Record<string, unknown>;
+      const l3 = l2.c as Record<string, unknown>;
+
+      assert.strictEqual(l3.d, 'deep-default', 'edge: deeply nested defaults — 3+ levels');
+    },
+    'extraSchemas': [
+      {
+        '$id': 'https://edge.io/level-c',
+        '$schema': 'https://json-schema.org/draft/2020-12/schema',
+        'properties': {
+          'd': {
+            'default': 'deep-default',
+            'type': 'string'
+          }
+        },
+        'type': 'object'
+      },
+      {
+        '$id': 'https://edge.io/level-b',
+        '$schema': 'https://json-schema.org/draft/2020-12/schema',
+        'properties': { 'c': { '$ref': 'https://edge.io/level-c' } },
+        'type': 'object'
+      },
+      {
+        '$id': 'https://edge.io/level-a',
+        '$schema': 'https://json-schema.org/draft/2020-12/schema',
+        'properties': { 'b': { '$ref': 'https://edge.io/level-b' } },
+        'type': 'object'
+      }
+    ],
+    'input': { 'a': { 'b': { 'c': {} } } },
+    'name': 'edge: schema with deeply nested defaults (3+ levels via $ref) applies all defaults',
+    'schema': {
+      '$id': 'https://edge.io/deep-3plus',
+      '$schema': 'https://json-schema.org/draft/2020-12/schema',
+      'properties': { 'a': { '$ref': 'https://edge.io/level-a' } },
+      'type': 'object'
+    }
+  },
+  {
+    'assertions': (result) => {
       const level1 = result.level1 as Record<string, unknown>;
       const level3 = level1.level3 as Record<string, unknown>;
 
@@ -381,6 +423,17 @@ const rejectionScenarios: RejectionScenario[] = [
       '$schema': 'https://json-schema.org/draft/2020-12/schema',
       'properties': { 'label': { 'type': 'string' } },
       'required': ['label'],
+      'type': 'object'
+    }
+  },
+  {
+    'input': null as unknown as Record<string, unknown>,
+    'name': 'unhappy: materialize with null input rejects',
+    'schema': {
+      '$id': 'https://edge.io/null-input',
+      '$schema': 'https://json-schema.org/draft/2020-12/schema',
+      'properties': { 'x': { 'type': 'string' } },
+      'required': ['x'],
       'type': 'object'
     }
   }

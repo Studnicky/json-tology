@@ -103,6 +103,64 @@ void describe('SchemaError on registration', () => {
 });
 
 // ---------------------------------------------------------------------------
+// BaseError cause chain and flatten edge cases
+// ---------------------------------------------------------------------------
+
+void describe('BaseError cause chain edge cases', () => {
+  void it('handles error edge cases for cause and flatten', () => {
+    const scenarios: Array<{
+      'assertions': () => void;
+      'name': string;
+    }> = [
+      {
+        'assertions': () => {
+          const error = new SchemaError('TEST_CODE', 'no cause');
+
+          assert.equal(error.cause, undefined, 'edge: undefined cause — cause is undefined');
+          const json = error.toJson();
+
+          assert.equal(json.cause, undefined, 'edge: undefined cause — toJson().cause is undefined');
+        },
+        'name': 'edge: error with undefined cause serializes without cause field'
+      },
+      {
+        'assertions': () => {
+          const root = new SchemaError('ROOT', 'root error');
+          const mid = new SchemaError('MID', 'mid error', false, { 'cause': root });
+          const top = new SchemaError('TOP', 'top error', false, { 'cause': mid });
+
+          const chain = top.flatten();
+
+          assert.equal(chain.length, 3, 'edge: nested cause chain — 3 deep');
+          assert.equal(chain[0].code, 'TOP', 'edge: nested cause chain — first is top');
+          assert.equal(chain[1].code, 'MID', 'edge: nested cause chain — second is mid');
+          assert.equal(chain[2].code, 'ROOT', 'edge: nested cause chain — third is root');
+        },
+        'name': 'edge: error with nested cause chain (3 deep) flattens correctly'
+      },
+      {
+        'assertions': () => {
+          const single = new SchemaError('SINGLE', 'single error');
+          const chain = single.flatten();
+
+          assert.equal(chain.length, 1, 'edge: single error flatten — length 1');
+          assert.equal(chain[0].code, 'SINGLE', 'edge: single error flatten — code matches');
+          assert.equal(chain[0].message, 'single error', 'edge: single error flatten — message matches');
+        },
+        'name': 'edge: error flatten with single error returns one-element array'
+      }
+    ];
+
+    for (const {
+      assertions, name
+    } of scenarios) {
+      assertions();
+      assert.ok(true, name);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // CoercionError -- validation failures during coerce
 // ---------------------------------------------------------------------------
 

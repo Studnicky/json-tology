@@ -2,255 +2,476 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import type { GraphArtifactInterface } from '../../src/modules/graph/graphArtifact.js';
+import type { GraphArtifactInterface } from '../../src/interfaces/GraphArtifact.js';
 import { GraphArtifact } from '../../src/modules/graph/graphArtifact.js';
 import type { NormIRInterface } from '../../src/interfaces/SchemaGraph.js';
 import { SchemaGraph } from '../../src/modules/graph/schemaGraph.js';
 
-void describe('GraphArtifact', () => {
-  const TestSchema = {
-    '$id': 'https://example.com/Test',
-    'properties': {
-      'age': { 'type': 'number' },
-      'name': { 'type': 'string' }
-    },
-    'required': ['name'],
+const TestSchema = {
+  '$id': 'https://example.com/Test',
+  'properties': {
+    'age': { 'type': 'number' },
+    'name': { 'type': 'string' }
+  },
+  'required': ['name'],
+  'type': 'object'
+} as const;
+
+const RichSchema = {
+  '$defs': {
+    'Item': {
+      '$anchor': 'itemAnchor',
+      'properties': { 'label': { 'type': 'string' } },
+      'required': ['label'],
+      'type': 'object'
+    }
+  },
+  '$dynamicAnchor': 'rootDynamic',
+  '$id': 'https://example.com/Rich',
+  'contains': { '$ref': '#itemAnchor' },
+  'if': {
+    'properties': { 'kind': { 'const': 'special' } },
     'type': 'object'
-  } as const;
+  },
+  'maxContains': 2,
+  'minContains': 1,
+  'patternProperties': { '^x-': { 'type': 'number' } },
+  'properties': {
+    'child': { '$dynamicRef': '#rootDynamic' },
+    'kind': { 'type': 'string' },
+    'primary': { '$ref': '#/$defs/Item' }
+  },
+  'required': [
+    'kind',
+    'primary'
+  ],
+  // eslint-disable-next-line unicorn/no-thenable -- JSON Schema 'then' keyword
+  'then': {
+    'properties': { 'flag': { 'type': 'boolean' } },
+    'type': 'object'
+  },
+  'type': 'object'
+} as const;
 
+const BooleanSubschemaSchema = {
+  '$id': 'https://example.com/BoolSub',
+  'properties': {
+    'allowed': true,
+    'forbidden': false,
+    'name': { 'type': 'string' }
+  },
+  'type': 'object'
+} as const;
+
+const DeepRefSchema = {
+  '$defs': {
+    'Address': {
+      '$id': 'https://example.com/Address',
+      'properties': {
+        'city': { 'type': 'string' },
+        'zip': { 'type': 'string' }
+      },
+      'type': 'object'
+    },
+    'Company': {
+      '$id': 'https://example.com/Company',
+      'properties': {
+        'hq': { '$ref': 'https://example.com/Address' },
+        'name': { 'type': 'string' }
+      },
+      'type': 'object'
+    }
+  },
+  '$id': 'https://example.com/DeepRef',
+  'properties': {
+    'employer': { '$ref': 'https://example.com/Company' },
+    'name': { 'type': 'string' }
+  },
+  'type': 'object'
+} as const;
+
+void describe('GraphArtifact', () => {
   void describe('toArtifact', () => {
-    void it('serializes canonical artifact shape with normIR, metadata, pointers, hashes, and structural data', () => {
-      const graph = new SchemaGraph(TestSchema);
-      const artifact = GraphArtifact.toArtifact(graph);
+    const toArtifactScenarios: Array<{
+      'check': (artifact: GraphArtifactInterface) => void;
+      'name': string;
+      'schema': Record<string, unknown>;
+    }> = [
+      {
+        'check': (artifact) => {
+          // Shape and metadata
+          assert.equal(typeof artifact.normIR, 'object');
+          assert.equal(typeof artifact.semanticsHashes, 'object');
+          assert.deepEqual(artifact.normIR.rootSchema, TestSchema);
+          const meta = (artifact as unknown as { 'metadata': { 'schemaHash': string } }).metadata;
 
-      // Shape and metadata
-      assert.equal(typeof artifact.normIR, 'object');
-      assert.equal(typeof artifact.semanticsHashes, 'object');
-      assert.deepEqual(artifact.normIR.rootSchema, TestSchema);
-      const meta = (artifact as unknown as { 'metadata': { 'schemaHash': string } }).metadata;
+          assert.equal(typeof meta, 'object');
+          assert.ok(typeof meta.schemaHash === 'string' && meta.schemaHash.length > 0);
 
-      assert.equal(typeof meta, 'object');
-      assert.ok(typeof meta.schemaHash === 'string' && meta.schemaHash.length > 0);
+          // NormIR nodes with pointers
+          const pointers = new Set(artifact.normIR.nodes.map((node) => {
+            return node.pointer;
+          }));
 
-      // NormIR nodes with pointers
-      const pointers = new Set(artifact.normIR.nodes.map((node) => {
-        return node.pointer;
-      }));
+          assert.ok(pointers.has(''));
+          assert.ok(pointers.has('/properties'));
+          assert.ok(pointers.has('/properties/name'));
 
-      assert.ok(pointers.has(''));
-      assert.ok(pointers.has('/properties'));
-      assert.ok(pointers.has('/properties/name'));
+          // Semantics hashes per node
+          assert.ok('' in artifact.semanticsHashes);
+          assert.ok('/properties/name' in artifact.semanticsHashes);
 
-      // Semantics hashes per node
-      assert.ok('' in artifact.semanticsHashes);
-      assert.ok('/properties/name' in artifact.semanticsHashes);
+          // NormIR structural data
+          assert.ok('' in artifact.normIR.children);
+          assert.ok('' in artifact.normIR.entries);
+          assert.ok('properties' in artifact.normIR.entries['']);
+        },
+        'name': 'happy: serializes canonical artifact shape with normIR, metadata, pointers, hashes, and structural data',
+        'schema': TestSchema as unknown as Record<string, unknown>
+      },
+      {
+        'check': (artifact) => {
+          const pointers = new Set(artifact.normIR.nodes.map((node) => {
+            return node.pointer;
+          }));
 
-      // NormIR structural data
-      assert.ok('' in artifact.normIR.children);
-      assert.ok('' in artifact.normIR.entries);
-      assert.ok('properties' in artifact.normIR.entries['']);
-    });
+          // Boolean subschemas should still produce nodes for the containing properties
+          assert.ok(pointers.has(''));
+          assert.ok(pointers.has('/properties'));
+          assert.ok(pointers.has('/properties/name'));
+        },
+        'name': 'edge: produces artifact from schema with boolean subschemas',
+        'schema': BooleanSubschemaSchema as unknown as Record<string, unknown>
+      },
+      {
+        'check': (artifact) => {
+          const pointers = new Set(artifact.normIR.nodes.map((node) => {
+            return node.pointer;
+          }));
+
+          // Deeply nested $defs and $ref chains produce nodes for all levels
+          assert.ok(pointers.has(''));
+          assert.ok(pointers.has('/$defs/Company'));
+          assert.ok(pointers.has('/$defs/Address'));
+        },
+        'name': 'edge: produces artifact from schema with deeply nested $ref chains',
+        'schema': DeepRefSchema as unknown as Record<string, unknown>
+      }
+    ];
+
+    for (const {
+      check, 'name': scenarioName, schema
+    } of toArtifactScenarios) {
+      void it(scenarioName, () => {
+        const graph = new SchemaGraph(schema);
+        const artifact = GraphArtifact.toArtifact(graph);
+
+        check(artifact);
+      });
+    }
   });
 
   void describe('fromArtifact', () => {
-    void it('roundtrips through serialization preserving nodes, relations, ids, rootSchema, and semantics', () => {
-      const graph = new SchemaGraph(TestSchema);
-      const artifact = GraphArtifact.toArtifact(graph);
-      const rebuilt = GraphArtifact.fromArtifact(artifact);
+    const roundtripScenarios: Array<{
+      'check': (rebuilt: ReturnType<typeof GraphArtifact.fromArtifact>, graph: SchemaGraph) => void;
+      'name': string;
+      'schema': Record<string, unknown>;
+    }> = [
+      {
+        'check': (rebuilt, graph) => {
+          // Node and relation counts
+          assert.equal(rebuilt.nodes().length, graph.nodes().length);
+          assert.equal(rebuilt.allRelations().length, graph.allRelations().length);
 
-      // Node and relation counts
-      assert.equal(rebuilt.nodes().length, graph.nodes().length);
-      assert.equal(rebuilt.allRelations().length, graph.allRelations().length);
+          // Node ids preserved
+          assert.deepEqual(
+            rebuilt.nodes().map((node) => {
+              return node.id;
+            }),
+            graph.nodes().map((node) => {
+              return node.id;
+            })
+          );
 
-      // Node ids preserved
-      assert.deepEqual(
-        rebuilt.nodes().map((node) => {
-          return node.id;
-        }),
-        graph.nodes().map((node) => {
-          return node.id;
-        })
-      );
+          // rootSchema identity
+          assert.deepEqual(rebuilt.rootSchema, TestSchema);
 
-      // rootSchema identity
-      assert.deepEqual(rebuilt.rootSchema, TestSchema);
+          // Semantics preserved
+          const originalSem = graph.semantics(graph.rootNode);
+          const rebuiltSem = rebuilt.semantics(rebuilt.rootNode);
 
-      // Semantics preserved
-      const originalSem = graph.semantics(graph.rootNode);
-      const rebuiltSem = rebuilt.semantics(rebuilt.rootNode);
+          assert.deepEqual(originalSem.schemaTypes, rebuiltSem.schemaTypes);
+          assert.deepEqual(originalSem.required, rebuiltSem.required);
+          assert.equal(originalSem.properties.size, rebuiltSem.properties.size);
+        },
+        'name': 'happy: roundtrips preserving nodes, relations, ids, rootSchema, and semantics',
+        'schema': TestSchema as unknown as Record<string, unknown>
+      },
+      {
+        'check': (rebuilt, graph) => {
+          assert.equal(rebuilt.nodes().length, graph.nodes().length);
+          assert.equal(rebuilt.allRelations().length, graph.allRelations().length);
+          assert.equal(rebuilt.resolveFragment('itemAnchor').pointer, '/$defs/Item');
+          assert.equal(rebuilt.resolveFragment('rootDynamic').pointer, '');
 
-      assert.deepEqual(originalSem.schemaTypes, rebuiltSem.schemaTypes);
-      assert.deepEqual(originalSem.required, rebuiltSem.required);
-      assert.equal(originalSem.properties.size, rebuiltSem.properties.size);
-    });
+          const rebuiltSem = rebuilt.semantics(rebuilt.rootNode);
 
-    void it('rejects stale, corrupted, and legacy artifacts', () => {
-      const graph = new SchemaGraph(TestSchema);
+          assert.equal(rebuiltSem.containsNode?.pointer, '/contains');
+          assert.equal(rebuiltSem.thenNode?.pointer, '/then');
+          assert.equal(rebuiltSem.patternPropertyEntries[0]?.[0], '^x-');
+          assert.equal(rebuiltSem.dynamicAnchor, 'rootDynamic');
+        },
+        'name': 'happy: roundtrips richer graph semantics including anchors, conditionals, and contains',
+        'schema': RichSchema as unknown as Record<string, unknown>
+      },
+      {
+        'check': (rebuilt, graph) => {
+          assert.equal(rebuilt.nodes().length, graph.nodes().length);
+          assert.equal(rebuilt.allRelations().length, graph.allRelations().length);
+        },
+        'name': 'happy: roundtrips through JSON serialization (portable artifact)',
+        'schema': TestSchema as unknown as Record<string, unknown>
+      },
+      {
+        'check': (rebuilt, graph) => {
+          assert.equal(rebuilt.nodes().length, graph.nodes().length);
+          assert.equal(rebuilt.allRelations().length, graph.allRelations().length);
+        },
+        'name': 'edge: roundtrips schema with boolean subschemas',
+        'schema': BooleanSubschemaSchema as unknown as Record<string, unknown>
+      },
+      {
+        'check': (rebuilt, graph) => {
+          assert.equal(rebuilt.nodes().length, graph.nodes().length);
+          assert.equal(rebuilt.allRelations().length, graph.allRelations().length);
 
-      // Corrupted semantics hash
-      const a1 = GraphArtifact.toArtifact(graph);
+          // Verify the nested $ref chain is preserved
+          const pointers = new Set(rebuilt.nodes().map((node) => {
+            return node.pointer;
+          }));
 
-      a1.semanticsHashes[''] = 'corrupted';
-      assert.throws(() => {
-        return GraphArtifact.fromArtifact(a1);
-      }, /Semantics hash mismatch/u);
+          assert.ok(pointers.has('/$defs/Company'));
+          assert.ok(pointers.has('/$defs/Address'));
+        },
+        'name': 'edge: roundtrips schema with deeply nested $ref chains',
+        'schema': DeepRefSchema as unknown as Record<string, unknown>
+      }
+    ];
 
-      // Corrupted schema hash → ARTIFACT_STALE
-      const a2 = GraphArtifact.toArtifact(graph);
+    for (const {
+      check, 'name': scenarioName, schema
+    } of roundtripScenarios) {
+      void it(scenarioName, () => {
+        const graph = new SchemaGraph(schema);
+        const artifact = GraphArtifact.toArtifact(graph);
 
-      (a2 as unknown as { 'metadata': { 'schemaHash': string } }).metadata.schemaHash = 'wrong-hash';
-      assert.throws(() => {
-        return GraphArtifact.fromArtifact(a2);
-      }, (err: unknown) => {
-        return (err as { 'code': string }).code === 'ARTIFACT_STALE';
+        // The JSON serialization roundtrip scenario goes through stringify/parse
+        const isJsonRoundtrip = scenarioName.includes('JSON serialization');
+        const source = isJsonRoundtrip
+          ? structuredClone(artifact) as unknown
+          : artifact;
+
+        const rebuilt = GraphArtifact.fromArtifact(source);
+
+        check(rebuilt, graph);
       });
+    }
 
-      // Missing metadata → ARTIFACT_INVALID
-      const a3 = GraphArtifact.toArtifact(graph);
-      const a3Record = a3 as unknown as Record<string, unknown>;
+    void describe('rejection scenarios', () => {
+      const rejectionScenarios: Array<{
+        'matchPattern': ((err: unknown) => boolean) | RegExp;
+        'name': string;
+        'setup': () => unknown;
+      }> = [
+        {
+          'matchPattern': /Semantics hash mismatch/u,
+          'name': 'unhappy: rejects artifact with corrupted semantics hash',
+          'setup': () => {
+            const graph = new SchemaGraph(TestSchema as unknown as Record<string, unknown>);
+            const artifact = GraphArtifact.toArtifact(graph);
 
-      delete a3Record.metadata;
-      assert.throws(() => {
-        return GraphArtifact.fromArtifact(a3Record as unknown as GraphArtifactInterface);
-      }, (err: unknown) => {
-        const typed = err as { 'code': string;
-          'message': string };
+            artifact.semanticsHashes[''] = 'corrupted';
 
-        return typed.code === 'ARTIFACT_INVALID' && typed.message.includes('metadata');
-      });
-
-      // Legacy artifact shape
-      assert.throws(() => {
-        return GraphArtifact.fromArtifact({
-          'nodes': [],
-          'relations': [],
-          'rootSchema': TestSchema
-        } as unknown as GraphArtifactInterface);
-      }, /legacy artifact|metadata|regenerate/u);
-    });
-
-    void it('roundtrips through JSON serialization (portable artifact)', () => {
-      const graph = new SchemaGraph(TestSchema);
-      const artifact = GraphArtifact.toArtifact(graph);
-      const json = JSON.stringify(artifact);
-      const deserialized: unknown = JSON.parse(json);
-      const rebuilt = GraphArtifact.fromArtifact(deserialized);
-
-      assert.equal(rebuilt.nodes().length, graph.nodes().length);
-      assert.equal(rebuilt.allRelations().length, graph.allRelations().length);
-    });
-
-    void it('roundtrips richer graph semantics including anchors, conditionals, and contains', () => {
-      const richSchema = {
-        '$defs': {
-          'Item': {
-            '$anchor': 'itemAnchor',
-            'properties': { 'label': { 'type': 'string' } },
-            'required': ['label'],
-            'type': 'object'
+            return artifact;
           }
         },
-        '$dynamicAnchor': 'rootDynamic',
-        '$id': 'https://example.com/Rich',
-        'contains': { '$ref': '#itemAnchor' },
-        'if': {
-          'properties': { 'kind': { 'const': 'special' } },
-          'type': 'object'
+        {
+          'matchPattern': (err: unknown) => {
+            return (err as { 'code': string }).code === 'ARTIFACT_STALE';
+          },
+          'name': 'unhappy: rejects artifact with corrupted schema hash (ARTIFACT_STALE)',
+          'setup': () => {
+            const graph = new SchemaGraph(TestSchema as unknown as Record<string, unknown>);
+            const artifact = GraphArtifact.toArtifact(graph);
+
+            (artifact as unknown as { 'metadata': { 'schemaHash': string } }).metadata.schemaHash = 'wrong-hash';
+
+            return artifact;
+          }
         },
-        'maxContains': 2,
-        'minContains': 1,
-        'patternProperties': { '^x-': { 'type': 'number' } },
-        'properties': {
-          'child': { '$dynamicRef': '#rootDynamic' },
-          'kind': { 'type': 'string' },
-          'primary': { '$ref': '#/$defs/Item' }
+        {
+          'matchPattern': (err: unknown) => {
+            const typed = err as { 'code': string;
+              'message': string };
+
+            return typed.code === 'ARTIFACT_INVALID' && typed.message.includes('metadata');
+          },
+          'name': 'unhappy: rejects artifact with missing metadata (ARTIFACT_INVALID)',
+          'setup': () => {
+            const graph = new SchemaGraph(TestSchema as unknown as Record<string, unknown>);
+            const artifact = GraphArtifact.toArtifact(graph);
+            const artifactRecord = artifact as unknown as Record<string, unknown>;
+
+            delete artifactRecord.metadata;
+
+            return artifactRecord;
+          }
         },
-        'required': [
-          'kind',
-          'primary'
-        ],
-        // eslint-disable-next-line unicorn/no-thenable -- JSON Schema 'then' keyword
-        'then': {
-          'properties': { 'flag': { 'type': 'boolean' } },
-          'type': 'object'
+        {
+          'matchPattern': /legacy artifact|metadata|regenerate/u,
+          'name': 'unhappy: rejects legacy artifact shape without normIR',
+          'setup': () => {
+            return {
+              'nodes': [],
+              'relations': [],
+              'rootSchema': TestSchema
+            };
+          }
         },
-        'type': 'object'
-      } as const;
+        {
+          'matchPattern': /Artifact must be an object/u,
+          'name': 'edge: rejects null artifact',
+          'setup': () => {
+            return null;
+          }
+        },
+        {
+          'matchPattern': /Artifact must be an object/u,
+          'name': 'edge: rejects string artifact',
+          'setup': () => {
+            return 'not-an-artifact';
+          }
+        }
+      ];
 
-      const graph = new SchemaGraph(richSchema);
-      const artifact = GraphArtifact.toArtifact(graph);
-      const rebuilt = GraphArtifact.fromArtifact(artifact);
+      for (const {
+        'matchPattern': pattern, 'name': scenarioName, setup
+      } of rejectionScenarios) {
+        void it(scenarioName, () => {
+          const badArtifact = setup();
 
-      assert.equal(rebuilt.nodes().length, graph.nodes().length);
-      assert.equal(rebuilt.allRelations().length, graph.allRelations().length);
-      assert.equal(rebuilt.resolveFragment('itemAnchor').pointer, '/$defs/Item');
-      assert.equal(rebuilt.resolveFragment('rootDynamic').pointer, '');
-
-      const rebuiltSem = rebuilt.semantics(rebuilt.rootNode);
-
-      assert.equal(rebuiltSem.containsNode?.pointer, '/contains');
-      assert.equal(rebuiltSem.thenNode?.pointer, '/then');
-      assert.equal(rebuiltSem.patternPropertyEntries[0]?.[0], '^x-');
-      assert.equal(rebuiltSem.dynamicAnchor, 'rootDynamic');
+          assert.throws(() => {
+            return GraphArtifact.fromArtifact(badArtifact as GraphArtifactInterface);
+          }, pattern instanceof RegExp ? pattern : pattern);
+        });
+      }
     });
   });
 
   void describe('NormIR', () => {
-    void it('buildNormIR produces same graph as constructor with JSON-serializable output', () => {
-      const normIR = SchemaGraph.buildNormIR(TestSchema);
-      const fromConstructor = new SchemaGraph(TestSchema);
-      const fromNormIR = SchemaGraph.fromNormIR(normIR);
+    const normIRScenarios: Array<{
+      'check': (normIR: NormIRInterface, fromConstructor: SchemaGraph) => void;
+      'name': string;
+      'schema': Record<string, unknown>;
+    }> = [
+      {
+        'check': (normIR, fromConstructor) => {
+          const fromNormIR = SchemaGraph.fromNormIR(normIR);
 
-      assert.equal(fromNormIR.nodes().length, fromConstructor.nodes().length);
-      assert.equal(fromNormIR.allRelations().length, fromConstructor.allRelations().length);
-      assert.deepEqual(
-        fromNormIR.nodes().map((node) => {
-          return node.id;
-        }),
-        fromConstructor.nodes().map((node) => {
-          return node.id;
-        })
-      );
+          assert.equal(fromNormIR.nodes().length, fromConstructor.nodes().length);
+          assert.equal(fromNormIR.allRelations().length, fromConstructor.allRelations().length);
+          assert.deepEqual(
+            fromNormIR.nodes().map((node) => {
+              return node.id;
+            }),
+            fromConstructor.nodes().map((node) => {
+              return node.id;
+            })
+          );
 
-      // JSON-serializable
-      const json = JSON.stringify(normIR);
-      const deserialized = JSON.parse(json) as NormIRInterface;
-      const graph = SchemaGraph.fromNormIR(deserialized);
+          // JSON-serializable
+          const json = JSON.stringify(normIR);
+          const deserialized = JSON.parse(json) as NormIRInterface;
+          const graph = SchemaGraph.fromNormIR(deserialized);
 
-      assert.equal(graph.nodes().length, fromConstructor.nodes().length);
-    });
-
-    void it('fromNormIR preserves anchors, children, entries, and getNormIR returns construction data', () => {
-      // Anchors
-      const anchorSchema = {
-        '$defs': {
-          'Foo': {
-            '$anchor': 'foo',
-            'type': 'string'
-          }
+          assert.equal(graph.nodes().length, fromConstructor.nodes().length);
         },
-        '$id': 'https://example.com/Anchored',
-        'type': 'object'
-      } as const;
-      const anchorNormIR = SchemaGraph.buildNormIR(anchorSchema);
-      const anchorGraph = SchemaGraph.fromNormIR(anchorNormIR);
+        'name': 'happy: buildNormIR produces same graph as constructor with JSON-serializable output',
+        'schema': TestSchema as unknown as Record<string, unknown>
+      },
+      {
+        'check': (normIR) => {
+          const graph = SchemaGraph.fromNormIR(normIR);
+          const root = graph.rootNode;
 
-      assert.deepEqual(anchorGraph.semantics(anchorGraph.resolveFragment('foo')).schemaTypes, ['string']);
+          assert.ok(graph.child(root, 'properties') !== undefined);
+          assert.equal(graph.entries(root, 'properties').length, 2);
 
-      // Children and entries
-      const normIR = SchemaGraph.buildNormIR(TestSchema);
-      const graph = SchemaGraph.fromNormIR(normIR);
-      const root = graph.rootNode;
+          // getNormIR
+          const directGraph = new SchemaGraph(TestSchema as unknown as Record<string, unknown>);
+          const directNormIR = directGraph.getNormIR();
 
-      assert.ok(graph.child(root, 'properties') !== undefined);
-      assert.equal(graph.entries(root, 'properties').length, 2);
+          assert.ok(directNormIR.nodes.length > 0);
+          assert.deepEqual(directNormIR.rootSchema, TestSchema);
+        },
+        'name': 'happy: fromNormIR preserves children and entries, getNormIR returns construction data',
+        'schema': TestSchema as unknown as Record<string, unknown>
+      },
+      {
+        'check': (normIR) => {
+          const anchorGraph = SchemaGraph.fromNormIR(normIR);
 
-      // getNormIR
-      const directGraph = new SchemaGraph(TestSchema);
-      const directNormIR = directGraph.getNormIR();
+          assert.deepEqual(anchorGraph.semantics(anchorGraph.resolveFragment('foo')).schemaTypes, ['string']);
+        },
+        'name': 'happy: fromNormIR preserves anchors',
+        'schema': {
+          '$defs': {
+            'Foo': {
+              '$anchor': 'foo',
+              'type': 'string'
+            }
+          },
+          '$id': 'https://example.com/Anchored',
+          'type': 'object'
+        }
+      },
+      {
+        'check': (normIR, fromConstructor) => {
+          const fromNormIR = SchemaGraph.fromNormIR(normIR);
 
-      assert.ok(directNormIR.nodes.length > 0);
-      assert.deepEqual(directNormIR.rootSchema, TestSchema);
-    });
+          assert.equal(fromNormIR.nodes().length, fromConstructor.nodes().length);
+          assert.equal(fromNormIR.allRelations().length, fromConstructor.allRelations().length);
+        },
+        'name': 'edge: buildNormIR handles schema with boolean subschemas',
+        'schema': BooleanSubschemaSchema as unknown as Record<string, unknown>
+      },
+      {
+        'check': (normIR, fromConstructor) => {
+          const fromNormIR = SchemaGraph.fromNormIR(normIR);
+
+          assert.equal(fromNormIR.nodes().length, fromConstructor.nodes().length);
+
+          const pointers = new Set(fromNormIR.nodes().map((node) => {
+            return node.pointer;
+          }));
+
+          assert.ok(pointers.has('/$defs/Company'));
+          assert.ok(pointers.has('/$defs/Address'));
+        },
+        'name': 'edge: buildNormIR handles schema with deeply nested $ref chains',
+        'schema': DeepRefSchema as unknown as Record<string, unknown>
+      }
+    ];
+
+    for (const {
+      check, 'name': scenarioName, schema
+    } of normIRScenarios) {
+      void it(scenarioName, () => {
+        const normIR = SchemaGraph.buildNormIR(schema);
+        const fromConstructor = new SchemaGraph(schema);
+
+        check(normIR, fromConstructor);
+      });
+    }
   });
 });

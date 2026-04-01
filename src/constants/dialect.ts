@@ -29,6 +29,7 @@ export const DEFAULT_OPTIONS: Required<Omit<GraphEngineOptionsInterface, 'format
   'collectErrors': true,
   'enforceSchemaProperties': false,
   'materializeContainers': false,
+  'maxDepth': Infinity,
   'removeAdditionalProperties': false,
   'synthesizeDefaults': false
 };

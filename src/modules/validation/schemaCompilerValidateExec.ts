@@ -116,7 +116,7 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
           case 'null': if (workingValue === null) {
             typeValid = true;
           } break;
-          case 'number': if (typeof workingValue === 'number') {
+          case 'number': if (typeof workingValue === 'number' && Number.isFinite(workingValue)) {
             typeValid = true;
           } break;
           case 'object': if (typeof workingValue === 'object' && workingValue !== null && !Array.isArray(workingValue)) {
@@ -206,15 +206,24 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
       }
     }
 
-    if (formatValidator !== undefined && !formatValidator(workingValue)) {
-      if (!collectErrors) {
-        return {
-          'valid': false,
-          'value': workingValue
-        };
+    if (formatValidator !== undefined) {
+      let formatPassed: boolean;
+
+      try {
+        formatPassed = formatValidator(workingValue);
+      } catch {
+        formatPassed = false;
       }
-      errors.push(makeValidationError(path, 'format', `must match format "${format}"`));
-      valid = false;
+      if (!formatPassed) {
+        if (!collectErrors) {
+          return {
+            'valid': false,
+            'value': workingValue
+          };
+        }
+        errors.push(makeValidationError(path, 'format', `must match format "${format}"`));
+        valid = false;
+      }
     }
 
     if (typeof workingValue === 'number') {
@@ -258,7 +267,11 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
         errors.push(makeValidationError(path, 'exclusiveMaximum', `must be < ${exclusiveMaximum}`));
         valid = false;
       }
-      if (multipleOf !== undefined && workingValue % multipleOf !== 0) {
+      if (
+        multipleOf !== undefined
+        && (multipleOf === 0
+          || Math.abs(workingValue / multipleOf - Math.round(workingValue / multipleOf)) > Number.EPSILON * 10)
+      ) {
         if (!collectErrors) {
           return {
             'valid': false,

@@ -1,5 +1,5 @@
 /**
- * Schema Loader Tests
+ * Schema Loader Tests — table-driven scenarios
  */
 
 import {
@@ -17,18 +17,21 @@ const testDir = resolve(import.meta.dirname, 'fixtures', 'schemas');
 const validDir = resolve(testDir, 'valid');
 const invalidDir = resolve(testDir, 'invalid');
 const nestedDir = resolve(validDir, 'nested');
+const emptyDir = resolve(testDir, 'empty');
+const nonJsonDir = resolve(testDir, 'non-json-only');
+const dupDir = resolve(testDir, 'duplicates');
 
 void describe('SchemaLoader', () => {
   before(() => {
-    // Create test schema files
     mkdirSync(nestedDir, { 'recursive': true });
     mkdirSync(invalidDir, { 'recursive': true });
+    mkdirSync(emptyDir, { 'recursive': true });
+    mkdirSync(nonJsonDir, { 'recursive': true });
+    mkdirSync(dupDir, { 'recursive': true });
 
     // Valid schemas
-    const userPath = resolve(validDir, 'user.json');
-
     writeFileSync(
-      userPath,
+      resolve(validDir, 'user.json'),
       JSON.stringify({
         '$id': 'https://example.io/user',
         'properties': {
@@ -43,10 +46,8 @@ void describe('SchemaLoader', () => {
       })
     );
 
-    const productPath = resolve(nestedDir, 'product.json');
-
     writeFileSync(
-      productPath,
+      resolve(nestedDir, 'product.json'),
       JSON.stringify({
         '$id': 'https://example.io/product',
         'properties': {
@@ -59,21 +60,30 @@ void describe('SchemaLoader', () => {
     );
 
     // Invalid schemas
-    const missingIdPath = resolve(invalidDir, 'no-id.json');
-
-    writeFileSync(missingIdPath, JSON.stringify({ 'type': 'object' }));
-
-    const badJsonPath = resolve(invalidDir, 'bad-json.json');
-
-    writeFileSync(badJsonPath, '{ invalid json }');
-
-    const notObjectPath = resolve(invalidDir, 'not-object.json');
-
-    writeFileSync(notObjectPath, JSON.stringify([
+    writeFileSync(resolve(invalidDir, 'no-id.json'), JSON.stringify({ 'type': 'object' }));
+    writeFileSync(resolve(invalidDir, 'bad-json.json'), '{ invalid json }');
+    writeFileSync(resolve(invalidDir, 'not-object.json'), JSON.stringify([
       1,
       2,
       3
     ]));
+
+    // Non-JSON files only
+    writeFileSync(resolve(nonJsonDir, 'readme.txt'), 'This is not JSON');
+    writeFileSync(resolve(nonJsonDir, 'notes.md'), '# Notes');
+
+    // Duplicates
+    const dupSchema = {
+      '$id': 'https://example.io/duplicate',
+      'properties': { 'name': { 'type': 'string' } },
+      'type': 'object'
+    };
+
+    writeFileSync(resolve(dupDir, 'file1.json'), JSON.stringify(dupSchema));
+    writeFileSync(resolve(dupDir, 'file2.json'), JSON.stringify(dupSchema));
+
+    // readme.txt in valid dir for filter test
+    writeFileSync(resolve(validDir, 'readme.txt'), 'This is not JSON');
   });
 
   after(() => {
@@ -83,162 +93,200 @@ void describe('SchemaLoader', () => {
     });
   });
 
-  void it('should load a single schema from file', () => {
-    const loader = new SchemaLoader(new Logger());
-    const userPath = resolve(validDir, 'user.json');
-    const schema = loader.loadSchema(userPath);
-
-    assert.ok(schema);
-    assert.strictEqual(schema.$id, 'https://example.io/user');
-  });
-
-  void it('should return null for invalid JSON file', () => {
-    const loader = new SchemaLoader(new Logger());
-    const badJsonPath = resolve(invalidDir, 'bad-json.json');
-    const schema = loader.loadSchema(badJsonPath);
-
-    assert.strictEqual(schema, null);
-  });
-
-  void it('should return null for schema without $id', () => {
-    const loader = new SchemaLoader(new Logger());
-    const missingIdPath = resolve(invalidDir, 'no-id.json');
-    const schema = loader.loadSchema(missingIdPath);
-
-    assert.strictEqual(schema, null);
-  });
-
-  void it('should return null for non-object schema', () => {
-    const loader = new SchemaLoader(new Logger());
-    const notObjectPath = resolve(invalidDir, 'not-object.json');
-    const schema = loader.loadSchema(notObjectPath);
-
-    assert.strictEqual(schema, null);
-  });
-
-  void it('should load all schemas from a directory recursively', () => {
-    const loader = new SchemaLoader(new Logger());
-    const [
-      loadedSchemas,
-      result
-    ] = loader.loadDirectory(validDir);
-
-    assert.strictEqual(loadedSchemas.length, 2);
-    assert.strictEqual(result.successful, 2);
-    assert.strictEqual(result.failed, 0);
-    assert.strictEqual(result.skipped, 0);
-  });
-
-  void it('should report loading errors', () => {
-    const loader = new SchemaLoader(new Logger());
-    const [
-      _,
-      result
-    ] = loader.loadDirectory(invalidDir);
-
-    assert.ok(result.failed > 0);
-    assert.ok(result.errors.length > 0);
-    assert.ok(result.errors.some((err) => {
-      return err.reason === 'invalid-json';
-    }));
-    assert.ok(result.errors.some((err) => {
-      return err.reason === 'missing-id';
-    }));
-  });
-
-  void it('should log with custom logger', () => {
-    const logs: string[] = [];
-    const mockLogger = {
-      'debug': (msg: string) => {
-        return logs.push(`DEBUG: ${msg}`);
+  void describe('loadSchema', () => {
+    const loadFileScenarios: Array<{
+      'expectedId'?: string;
+      'expectNull'?: boolean;
+      'name': string;
+      'path': string;
+    }> = [
+      {
+        'expectedId': 'https://example.io/user',
+        'name': 'happy: loads a valid schema with $id',
+        'path': resolve(validDir, 'user.json')
       },
-      'error': (msg: string) => {
-        return logs.push(`ERROR: ${msg}`);
+      {
+        'expectNull': true,
+        'name': 'unhappy: returns null for invalid JSON',
+        'path': resolve(invalidDir, 'bad-json.json')
       },
-      'fatal': (msg: string) => {
-        return logs.push(`FATAL: ${msg}`);
+      {
+        'expectNull': true,
+        'name': 'unhappy: returns null for schema without $id',
+        'path': resolve(invalidDir, 'no-id.json')
       },
-      'info': (msg: string) => {
-        return logs.push(`INFO: ${msg}`);
+      {
+        'expectNull': true,
+        'name': 'unhappy: returns null for non-object schema (array)',
+        'path': resolve(invalidDir, 'not-object.json')
       },
-      'trace': (msg: string) => {
-        return logs.push(`TRACE: ${msg}`);
-      },
-      'warn': (msg: string) => {
-        return logs.push(`WARN: ${msg}`);
+      {
+        'expectNull': true,
+        'name': 'edge: returns null for nonexistent file path',
+        'path': resolve(testDir, 'does-not-exist.json')
       }
-    };
+    ];
 
-    const loader = new SchemaLoader(mockLogger);
+    for (const {
+      'expectedId': id, 'expectNull': isNull, 'name': scenarioName, 'path': filePath
+    } of loadFileScenarios) {
+      void it(scenarioName, () => {
+        const loader = new SchemaLoader(new Logger({ 'silent': true }));
+        const schema = loader.loadSchema(filePath);
 
-    loader.loadDirectory(validDir);
-
-    assert.ok(logs.some((log) => {
-      return log.includes('Loading schemas from');
-    }));
-    assert.ok(logs.some((log) => {
-      return log.includes('Load complete');
-    }));
+        if (isNull === true) {
+          assert.strictEqual(schema, null);
+        } else {
+          assert.ok(schema);
+          assert.strictEqual(schema.$id, id);
+        }
+      });
+    }
   });
 
-  void it('should detect duplicate schema IDs', () => {
-    // Create directory with duplicate IDs
-    const dupDir = resolve(testDir, 'duplicates');
+  void describe('loadDirectory', () => {
+    const loadDirScenarios: Array<{
+      'checkErrors'?: (errors: ReadonlyArray<{ 'reason': string }>) => void;
+      'dir': string;
+      'expectedFailed': number;
+      'expectedLoaded': number;
+      'name': string;
+      'options'?: {
+        'filePattern'?: RegExp;
+        'stopOnError'?: boolean;
+      };
+    }> = [
+      {
+        'dir': validDir,
+        'expectedFailed': 0,
+        'expectedLoaded': 2,
+        'name': 'happy: loads all schemas recursively from valid directory'
+      },
+      {
+        'checkErrors': (errors) => {
+          assert.ok(errors.some((err) => {
+            return err.reason === 'invalid-json';
+          }));
+          assert.ok(errors.some((err) => {
+            return err.reason === 'missing-id';
+          }));
+        },
+        'dir': invalidDir,
+        'expectedFailed': 3,
+        'expectedLoaded': 0,
+        'name': 'unhappy: reports loading errors with reasons'
+      },
+      {
+        'checkErrors': (errors) => {
+          assert.ok(errors.some((err) => {
+            return err.reason === 'duplicate-id';
+          }));
+        },
+        'dir': dupDir,
+        'expectedFailed': 1,
+        'expectedLoaded': 1,
+        'name': 'unhappy: detects duplicate schema IDs'
+      },
+      {
+        'dir': emptyDir,
+        'expectedFailed': 0,
+        'expectedLoaded': 0,
+        'name': 'edge: handles empty directory with zero loaded and zero failed'
+      },
+      {
+        'dir': nonJsonDir,
+        'expectedFailed': 0,
+        'expectedLoaded': 0,
+        'name': 'edge: directory with only non-JSON files loads nothing'
+      }
+    ];
 
-    mkdirSync(dupDir, { 'recursive': true });
+    for (const {
+      'checkErrors': errorCheck, 'dir': dirPath, 'expectedFailed': failed, 'expectedLoaded': loaded, 'name': scenarioName, options
+    } of loadDirScenarios) {
+      void it(scenarioName, () => {
+        const loader = new SchemaLoader(new Logger({ 'silent': true }));
+        const [
+          loadedSchemas,
+          result
+        ] = loader.loadDirectory(dirPath, options);
 
-    const schema = {
-      '$id': 'https://example.io/duplicate',
-      'properties': { 'name': { 'type': 'string' } },
-      'type': 'object'
-    };
-    const file1Path = resolve(dupDir, 'file1.json');
-    const file2Path = resolve(dupDir, 'file2.json');
+        assert.strictEqual(loadedSchemas.length, loaded);
+        assert.strictEqual(result.failed, failed);
 
-    writeFileSync(file1Path, JSON.stringify(schema));
-    writeFileSync(file2Path, JSON.stringify(schema));
+        if (errorCheck) {
+          errorCheck(result.errors);
+        }
+      });
+    }
 
-    const loader = new SchemaLoader(new Logger());
-    const [
-      loadedSchemas,
-      result
-    ] = loader.loadDirectory(dupDir);
+    void it('happy: filters by file pattern and counts skipped files', () => {
+      const loader = new SchemaLoader(new Logger({ 'silent': true }));
+      const [
+        _,
+        result
+      ] = loader.loadDirectory(validDir, { 'filePattern': /\.json$/iu });
 
-    assert.strictEqual(loadedSchemas.length, 1);
-    assert.strictEqual(result.failed, 1);
-    assert.ok(result.errors.some((err) => {
-      return err.reason === 'duplicate-id';
-    }));
+      assert.strictEqual(result.skipped, 1);
+    });
 
-    rmSync(dupDir, { 'recursive': true });
+    void it('unhappy: stops on first error when stopOnError is true', () => {
+      const loader = new SchemaLoader(new Logger({ 'silent': true }));
+      const [
+        _,
+        result
+      ] = loader.loadDirectory(invalidDir, { 'stopOnError': true });
+
+      assert.ok(result.failed > 0);
+    });
+
+    void it('edge: nonexistent directory produces zero results', () => {
+      const loader = new SchemaLoader(new Logger({ 'silent': true }));
+      const [
+        loadedSchemas,
+        result
+      ] = loader.loadDirectory(resolve(testDir, 'does-not-exist'));
+
+      assert.strictEqual(loadedSchemas.length, 0);
+      assert.strictEqual(result.failed, 0);
+      assert.strictEqual(result.successful, 0);
+    });
   });
 
-  void it('should filter by file pattern', () => {
-    mkdirSync(validDir, { 'recursive': true });
+  void describe('logging', () => {
+    void it('happy: invokes custom logger during directory loading', () => {
+      const logs: string[] = [];
+      const mockLogger = {
+        'debug': (msg: string) => {
+          return logs.push(`DEBUG: ${msg}`);
+        },
+        'error': (msg: string) => {
+          return logs.push(`ERROR: ${msg}`);
+        },
+        'fatal': (msg: string) => {
+          return logs.push(`FATAL: ${msg}`);
+        },
+        'info': (msg: string) => {
+          return logs.push(`INFO: ${msg}`);
+        },
+        'trace': (msg: string) => {
+          return logs.push(`TRACE: ${msg}`);
+        },
+        'warn': (msg: string) => {
+          return logs.push(`WARN: ${msg}`);
+        }
+      };
 
-    // Create a non-JSON file
-    const readmePath = resolve(validDir, 'readme.txt');
+      const loader = new SchemaLoader(mockLogger);
 
-    writeFileSync(readmePath, 'This is not JSON');
+      loader.loadDirectory(validDir);
 
-    const loader = new SchemaLoader(new Logger());
-    const [
-      _,
-      result
-    ] = loader.loadDirectory(validDir, { 'filePattern': /\.json$/iu });
-
-    // Should skip the .txt file
-    assert.strictEqual(result.skipped, 1);
-  });
-
-  void it('should stop on error if stopOnError is true', () => {
-    const loader = new SchemaLoader(new Logger());
-    const [
-      _,
-      result
-    ] = loader.loadDirectory(invalidDir, { 'stopOnError': true });
-
-    // Should have stopped early
-    assert.ok(result.failed > 0);
+      assert.ok(logs.some((log) => {
+        return log.includes('Loading schemas from');
+      }));
+      assert.ok(logs.some((log) => {
+        return log.includes('Load complete');
+      }));
+    });
   });
 });

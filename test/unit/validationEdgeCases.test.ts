@@ -18,70 +18,84 @@ import { JsonTology } from '../../src/JsonTology.js';
 // ---------------------------------------------------------------------------
 
 void describe('Registration edge cases', () => {
-  void it('rejects schema with empty string $id', () => {
-    const registry = new SchemaRegistry();
+  const rejectScenarios: Array<{
+    'name': string;
+    'schema': Record<string, unknown>;
+  }> = [{
+    'name': 'rejects schema with empty string $id',
+    'schema': {
+      '$id': '',
+      'properties': { 'x': { 'type': 'string' } },
+      'type': 'object'
+    }
+  }];
 
-    assert.throws(
-      () => {
-        registry.register({
-          '$id': '',
-          'properties': { 'x': { 'type': 'string' } },
-          'type': 'object'
-        });
-      },
-      'empty string $id should throw'
-    );
-  });
+  for (const {
+    'name': n, 'schema': sch
+  } of rejectScenarios) {
+    void it(n, () => {
+      const registry = new SchemaRegistry();
 
-  void it('accepts minimal and $defs-only schemas', () => {
-    const scenarios: Array<{ 'data': Record<string, unknown>;
-      'expected': string[];
-      'name': string;
-      'schema': Record<string, unknown> }> = [
-      {
-        'data': {},
-        'expected': [],
-        'name': 'schema with only $id and type validates empty object',
-        'schema': {
-          '$id': 'https://edge.test/EmptyObj',
-          'type': 'object'
-        }
-      },
-      {
-        'data': { 'anything': true },
-        'expected': [],
-        'name': 'schema with only $id and type allows extra properties',
-        'schema': {
-          '$id': 'https://edge.test/EmptyObj2',
-          'type': 'object'
-        }
-      },
-      {
-        'data': {},
-        'expected': [],
-        'name': 'schema with $defs but no properties validates empty object',
-        'schema': {
-          '$defs': {
-            'Inner': {
-              'properties': { 'x': { 'type': 'number' } },
-              'type': 'object'
-            }
-          },
-          '$id': 'https://edge.test/DefsOnly',
-          'type': 'object'
-        }
+      assert.throws(
+        () => {
+          registry.register(sch);
+        },
+        `${n} should throw`
+      );
+    });
+  }
+
+  const acceptScenarios: Array<{
+    'data': Record<string, unknown>;
+    'expected': string[];
+    'name': string;
+    'schema': Record<string, unknown>;
+  }> = [
+    {
+      'data': {},
+      'expected': [],
+      'name': 'schema with only $id and type validates empty object',
+      'schema': {
+        '$id': 'https://edge.test/EmptyObj',
+        'type': 'object'
       }
-    ];
+    },
+    {
+      'data': { 'anything': true },
+      'expected': [],
+      'name': 'schema with only $id and type allows extra properties',
+      'schema': {
+        '$id': 'https://edge.test/EmptyObj2',
+        'type': 'object'
+      }
+    },
+    {
+      'data': {},
+      'expected': [],
+      'name': 'schema with $defs but no properties validates empty object',
+      'schema': {
+        '$defs': {
+          'Inner': {
+            'properties': { 'x': { 'type': 'number' } },
+            'type': 'object'
+          }
+        },
+        '$id': 'https://edge.test/DefsOnly',
+        'type': 'object'
+      }
+    }
+  ];
 
-    for (const {
-      data, expected, name, schema
-    } of scenarios) {
+  for (const {
+    data, expected, name, schema
+  } of acceptScenarios) {
+    void it(name, () => {
       const registry = new SchemaRegistry();
 
       registry.register(schema);
-      assert.deepEqual(registry.validate(schema.$id as string, data), expected, name);
-    }
-  });
+      assert.deepEqual(registry.validate(schema.$id as string, data), expected);
+    });
+  }
 
   void it('handles registerAnonymous and validates against synthetic ID', () => {
     const registry = new SchemaRegistry();
@@ -102,25 +116,12 @@ void describe('Registration edge cases', () => {
 // ---------------------------------------------------------------------------
 
 void describe('Numeric boundary validation', () => {
-  void it('validates minimum/maximum at exact boundaries', () => {
-    const registry = new SchemaRegistry();
-
-    registry.register({
-      '$id': 'https://edge.test/NumBounds',
-      'properties': {
-        'score': {
-          'maximum': 100,
-          'minimum': 0,
-          'type': 'number'
-        }
-      },
-      'required': ['score'],
-      'type': 'object'
-    });
-
-    const scenarios: Array<{ 'data': Record<string, unknown>;
+  void describe('minimum/maximum at exact boundaries', () => {
+    const scenarios: Array<{
+      'data': Record<string, unknown>;
       'name': string;
-      'valid': boolean }> = [
+      'valid': boolean;
+    }> = [
       {
         'data': { 'score': 0 },
         'name': 'minimum boundary (0) passes',
@@ -140,41 +141,55 @@ void describe('Numeric boundary validation', () => {
         'data': { 'score': 101 },
         'name': 'above maximum (101) fails',
         'valid': false
+      },
+      {
+        'data': { 'score': 50.5 },
+        'name': 'fractional value within bounds passes',
+        'valid': true
+      },
+      {
+        'data': { 'score': -0.001 },
+        'name': 'value just below minimum fails',
+        'valid': false
       }
     ];
+
+    const registry = new SchemaRegistry();
+
+    registry.register({
+      '$id': 'https://edge.test/NumBounds',
+      'properties': {
+        'score': {
+          'maximum': 100,
+          'minimum': 0,
+          'type': 'number'
+        }
+      },
+      'required': ['score'],
+      'type': 'object'
+    });
 
     for (const {
       data, name, valid
     } of scenarios) {
-      const errors = registry.validate('https://edge.test/NumBounds', data);
+      void it(name, () => {
+        const errors = registry.validate('https://edge.test/NumBounds', data);
 
-      if (valid) {
-        assert.deepEqual(errors, [], name);
-      } else {
-        assert.ok(errors.length > 0, name);
-      }
+        if (valid) {
+          assert.deepEqual(errors, []);
+        } else {
+          assert.ok(errors.length > 0);
+        }
+      });
     }
   });
 
-  void it('validates exclusiveMinimum and exclusiveMaximum', () => {
-    const registry = new SchemaRegistry();
-
-    registry.register({
-      '$id': 'https://edge.test/ExclBounds',
-      'properties': {
-        'val': {
-          'exclusiveMaximum': 10,
-          'exclusiveMinimum': 0,
-          'type': 'number'
-        }
-      },
-      'required': ['val'],
-      'type': 'object'
-    });
-
-    const scenarios: Array<{ 'data': Record<string, unknown>;
+  void describe('exclusiveMinimum and exclusiveMaximum', () => {
+    const scenarios: Array<{
+      'data': Record<string, unknown>;
       'name': string;
-      'valid': boolean }> = [
+      'valid': boolean;
+    }> = [
       {
         'data': { 'val': 5 },
         'name': 'middle value (5) passes',
@@ -192,37 +207,42 @@ void describe('Numeric boundary validation', () => {
       }
     ];
 
-    for (const {
-      data, name, valid
-    } of scenarios) {
-      const errors = registry.validate('https://edge.test/ExclBounds', data);
-
-      if (valid) {
-        assert.deepEqual(errors, [], name);
-      } else {
-        assert.ok(errors.length > 0, name);
-      }
-    }
-  });
-
-  void it('validates multipleOf with integers', () => {
     const registry = new SchemaRegistry();
 
     registry.register({
-      '$id': 'https://edge.test/MultOf',
+      '$id': 'https://edge.test/ExclBounds',
       'properties': {
-        'count': {
-          'multipleOf': 3,
-          'type': 'integer'
+        'val': {
+          'exclusiveMaximum': 10,
+          'exclusiveMinimum': 0,
+          'type': 'number'
         }
       },
-      'required': ['count'],
+      'required': ['val'],
       'type': 'object'
     });
 
-    const scenarios: Array<{ 'data': Record<string, unknown>;
+    for (const {
+      data, name, valid
+    } of scenarios) {
+      void it(name, () => {
+        const errors = registry.validate('https://edge.test/ExclBounds', data);
+
+        if (valid) {
+          assert.deepEqual(errors, []);
+        } else {
+          assert.ok(errors.length > 0);
+        }
+      });
+    }
+  });
+
+  void describe('multipleOf with integers', () => {
+    const scenarios: Array<{
+      'data': Record<string, unknown>;
       'name': string;
-      'valid': boolean }> = [
+      'valid': boolean;
+    }> = [
       {
         'data': { 'count': 0 },
         'name': 'zero is multipleOf 3',
@@ -240,16 +260,32 @@ void describe('Numeric boundary validation', () => {
       }
     ];
 
+    const registry = new SchemaRegistry();
+
+    registry.register({
+      '$id': 'https://edge.test/MultOf',
+      'properties': {
+        'count': {
+          'multipleOf': 3,
+          'type': 'integer'
+        }
+      },
+      'required': ['count'],
+      'type': 'object'
+    });
+
     for (const {
       data, name, valid
     } of scenarios) {
-      const errors = registry.validate('https://edge.test/MultOf', data);
+      void it(name, () => {
+        const errors = registry.validate('https://edge.test/MultOf', data);
 
-      if (valid) {
-        assert.deepEqual(errors, [], name);
-      } else {
-        assert.ok(errors.length > 0, name);
-      }
+        if (valid) {
+          assert.deepEqual(errors, []);
+        } else {
+          assert.ok(errors.length > 0);
+        }
+      });
     }
   });
 });
@@ -259,25 +295,12 @@ void describe('Numeric boundary validation', () => {
 // ---------------------------------------------------------------------------
 
 void describe('String constraint validation', () => {
-  void it('validates string length constraints at boundaries', () => {
-    const registry = new SchemaRegistry();
-
-    registry.register({
-      '$id': 'https://edge.test/StrLen',
-      'properties': {
-        'code': {
-          'maxLength': 5,
-          'minLength': 2,
-          'type': 'string'
-        }
-      },
-      'required': ['code'],
-      'type': 'object'
-    });
-
-    const scenarios: Array<{ 'data': Record<string, unknown>;
+  void describe('string length constraints at boundaries', () => {
+    const scenarios: Array<{
+      'data': Record<string, unknown>;
       'name': string;
-      'valid': boolean }> = [
+      'valid': boolean;
+    }> = [
       {
         'data': { 'code': 'ab' },
         'name': 'minLength boundary (2 chars) passes',
@@ -300,37 +323,42 @@ void describe('String constraint validation', () => {
       }
     ];
 
-    for (const {
-      data, name, valid
-    } of scenarios) {
-      const errors = registry.validate('https://edge.test/StrLen', data);
-
-      if (valid) {
-        assert.deepEqual(errors, [], name);
-      } else {
-        assert.ok(errors.length > 0, name);
-      }
-    }
-  });
-
-  void it('validates pattern constraint', () => {
     const registry = new SchemaRegistry();
 
     registry.register({
-      '$id': 'https://edge.test/Pattern',
+      '$id': 'https://edge.test/StrLen',
       'properties': {
-        'zip': {
-          'pattern': '^\\d{5}$',
+        'code': {
+          'maxLength': 5,
+          'minLength': 2,
           'type': 'string'
         }
       },
-      'required': ['zip'],
+      'required': ['code'],
       'type': 'object'
     });
 
-    const scenarios: Array<{ 'data': Record<string, unknown>;
+    for (const {
+      data, name, valid
+    } of scenarios) {
+      void it(name, () => {
+        const errors = registry.validate('https://edge.test/StrLen', data);
+
+        if (valid) {
+          assert.deepEqual(errors, []);
+        } else {
+          assert.ok(errors.length > 0);
+        }
+      });
+    }
+  });
+
+  void describe('pattern constraint', () => {
+    const scenarios: Array<{
+      'data': Record<string, unknown>;
       'name': string;
-      'valid': boolean }> = [
+      'valid': boolean;
+    }> = [
       {
         'data': { 'zip': '12345' },
         'name': 'valid 5-digit zip passes',
@@ -353,16 +381,32 @@ void describe('String constraint validation', () => {
       }
     ];
 
+    const registry = new SchemaRegistry();
+
+    registry.register({
+      '$id': 'https://edge.test/Pattern',
+      'properties': {
+        'zip': {
+          'pattern': '^\\d{5}$',
+          'type': 'string'
+        }
+      },
+      'required': ['zip'],
+      'type': 'object'
+    });
+
     for (const {
       data, name, valid
     } of scenarios) {
-      const errors = registry.validate('https://edge.test/Pattern', data);
+      void it(name, () => {
+        const errors = registry.validate('https://edge.test/Pattern', data);
 
-      if (valid) {
-        assert.deepEqual(errors, [], name);
-      } else {
-        assert.ok(errors.length > 0, name);
-      }
+        if (valid) {
+          assert.deepEqual(errors, []);
+        } else {
+          assert.ok(errors.length > 0);
+        }
+      });
     }
   });
 });
@@ -372,78 +416,80 @@ void describe('String constraint validation', () => {
 // ---------------------------------------------------------------------------
 
 void describe('Array constraint validation', () => {
-  void it('validates array item constraints', () => {
-    const registry = new SchemaRegistry();
+  const scenarios: Array<{
+    'data': Record<string, unknown>;
+    'name': string;
+    'valid': boolean;
+  }> = [
+    {
+      'data': { 'tags': ['a'] },
+      'name': 'minItems boundary (1 item) passes',
+      'valid': true
+    },
+    {
+      'data': {
+        'tags': [
+          'a',
+          'b',
+          'c'
+        ]
+      },
+      'name': 'maxItems boundary (3 items) passes',
+      'valid': true
+    },
+    {
+      'data': { 'tags': [] },
+      'name': 'empty array (below minItems) fails',
+      'valid': false
+    },
+    {
+      'data': {
+        'tags': [
+          'a',
+          'b',
+          'c',
+          'd'
+        ]
+      },
+      'name': 'above maxItems (4 items) fails',
+      'valid': false
+    },
+    {
+      'data': { 'tags': [1] },
+      'name': 'wrong item type (number) fails',
+      'valid': false
+    }
+  ];
 
-    registry.register({
-      '$id': 'https://edge.test/ArrayItems',
-      'properties': {
-        'tags': {
-          'items': { 'type': 'string' },
-          'maxItems': 3,
-          'minItems': 1,
-          'type': 'array'
-        }
-      },
-      'required': ['tags'],
-      'type': 'object'
-    });
+  const registry = new SchemaRegistry();
 
-    const scenarios: Array<{ 'data': Record<string, unknown>;
-      'name': string;
-      'valid': boolean }> = [
-      {
-        'data': { 'tags': ['a'] },
-        'name': 'minItems boundary (1 item) passes',
-        'valid': true
-      },
-      {
-        'data': {
-          'tags': [
-            'a',
-            'b',
-            'c'
-          ]
-        },
-        'name': 'maxItems boundary (3 items) passes',
-        'valid': true
-      },
-      {
-        'data': { 'tags': [] },
-        'name': 'empty array (below minItems) fails',
-        'valid': false
-      },
-      {
-        'data': {
-          'tags': [
-            'a',
-            'b',
-            'c',
-            'd'
-          ]
-        },
-        'name': 'above maxItems (4 items) fails',
-        'valid': false
-      },
-      {
-        'data': { 'tags': [1] },
-        'name': 'wrong item type (number) fails',
-        'valid': false
+  registry.register({
+    '$id': 'https://edge.test/ArrayItems',
+    'properties': {
+      'tags': {
+        'items': { 'type': 'string' },
+        'maxItems': 3,
+        'minItems': 1,
+        'type': 'array'
       }
-    ];
+    },
+    'required': ['tags'],
+    'type': 'object'
+  });
 
-    for (const {
-      data, name, valid
-    } of scenarios) {
+  for (const {
+    data, name, valid
+  } of scenarios) {
+    void it(name, () => {
       const errors = registry.validate('https://edge.test/ArrayItems', data);
 
       if (valid) {
-        assert.deepEqual(errors, [], name);
+        assert.deepEqual(errors, []);
       } else {
-        assert.ok(errors.length > 0, name);
+        assert.ok(errors.length > 0);
       }
-    }
-  });
+    });
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -451,7 +497,24 @@ void describe('Array constraint validation', () => {
 // ---------------------------------------------------------------------------
 
 void describe('Enum and const validation', () => {
-  void it('validates enum constraints', () => {
+  void describe('enum constraints', () => {
+    const scenarios: Array<{
+      'data': Record<string, unknown>;
+      'name': string;
+      'valid': boolean;
+    }> = [
+      {
+        'data': { 'status': 'active' },
+        'name': 'valid enum value passes',
+        'valid': true
+      },
+      {
+        'data': { 'status': 'unknown' },
+        'name': 'invalid enum value fails',
+        'valid': false
+      }
+    ];
+
     const registry = new SchemaRegistry();
 
     registry.register({
@@ -470,52 +533,27 @@ void describe('Enum and const validation', () => {
       'type': 'object'
     });
 
-    const scenarios: Array<{ 'data': Record<string, unknown>;
-      'name': string;
-      'valid': boolean }> = [
-      {
-        'data': { 'status': 'active' },
-        'name': 'valid enum value passes',
-        'valid': true
-      },
-      {
-        'data': { 'status': 'unknown' },
-        'name': 'invalid enum value fails',
-        'valid': false
-      }
-    ];
-
     for (const {
       data, name, valid
     } of scenarios) {
-      const errors = registry.validate('https://edge.test/Enum', data);
+      void it(name, () => {
+        const errors = registry.validate('https://edge.test/Enum', data);
 
-      if (valid) {
-        assert.deepEqual(errors, [], name);
-      } else {
-        assert.ok(errors.length > 0, name);
-      }
+        if (valid) {
+          assert.deepEqual(errors, []);
+        } else {
+          assert.ok(errors.length > 0);
+        }
+      });
     }
   });
 
-  void it('validates const constraints', () => {
-    const registry = new SchemaRegistry();
-
-    registry.register({
-      '$id': 'https://edge.test/Const',
-      'properties': {
-        'version': {
-          'const': 2,
-          'type': 'number'
-        }
-      },
-      'required': ['version'],
-      'type': 'object'
-    });
-
-    const scenarios: Array<{ 'data': Record<string, unknown>;
+  void describe('const constraints', () => {
+    const scenarios: Array<{
+      'data': Record<string, unknown>;
       'name': string;
-      'valid': boolean }> = [
+      'valid': boolean;
+    }> = [
       {
         'data': { 'version': 2 },
         'name': 'exact const value passes',
@@ -533,16 +571,32 @@ void describe('Enum and const validation', () => {
       }
     ];
 
+    const registry = new SchemaRegistry();
+
+    registry.register({
+      '$id': 'https://edge.test/Const',
+      'properties': {
+        'version': {
+          'const': 2,
+          'type': 'number'
+        }
+      },
+      'required': ['version'],
+      'type': 'object'
+    });
+
     for (const {
       data, name, valid
     } of scenarios) {
-      const errors = registry.validate('https://edge.test/Const', data);
+      void it(name, () => {
+        const errors = registry.validate('https://edge.test/Const', data);
 
-      if (valid) {
-        assert.deepEqual(errors, [], name);
-      } else {
-        assert.ok(errors.length > 0, name);
-      }
+        if (valid) {
+          assert.deepEqual(errors, []);
+        } else {
+          assert.ok(errors.length > 0);
+        }
+      });
     }
   });
 });
@@ -552,71 +606,79 @@ void describe('Enum and const validation', () => {
 // ---------------------------------------------------------------------------
 
 void describe('Top-level type validation', () => {
-  void it('validates empty object and rejects wrong top-level types', () => {
-    const registry = new SchemaRegistry();
+  const scenarios: Array<{
+    'data': unknown;
+    'name': string;
+    'schemaId': string;
+    'valid': boolean;
+  }> = [
+    {
+      'data': {},
+      'name': 'empty object against schema with no required fields',
+      'schemaId': 'https://edge.test/NoReq',
+      'valid': true
+    },
+    {
+      'data': 'a string',
+      'name': 'string rejected for object schema',
+      'schemaId': 'https://edge.test/ObjOnly',
+      'valid': false
+    },
+    {
+      'data': 42,
+      'name': 'number rejected for object schema',
+      'schemaId': 'https://edge.test/ObjOnly',
+      'valid': false
+    },
+    {
+      'data': null,
+      'name': 'null rejected for object schema',
+      'schemaId': 'https://edge.test/ObjOnly',
+      'valid': false
+    },
+    {
+      'data': [],
+      'name': 'array rejected for object schema',
+      'schemaId': 'https://edge.test/ObjOnly',
+      'valid': false
+    },
+    {
+      'data': undefined,
+      'name': 'undefined rejected for object schema',
+      'schemaId': 'https://edge.test/ObjOnly',
+      'valid': false
+    }
+  ];
 
-    registry.register({
-      '$id': 'https://edge.test/NoReq',
-      'properties': {
-        'a': { 'type': 'string' },
-        'b': { 'type': 'number' }
-      },
-      'type': 'object'
-    });
+  const registry = new SchemaRegistry();
 
-    registry.register({
-      '$id': 'https://edge.test/ObjOnly',
-      'type': 'object'
-    });
+  registry.register({
+    '$id': 'https://edge.test/NoReq',
+    'properties': {
+      'a': { 'type': 'string' },
+      'b': { 'type': 'number' }
+    },
+    'type': 'object'
+  });
 
-    const scenarios: Array<{ 'data': unknown;
-      'name': string;
-      'schemaId': string;
-      'valid': boolean }> = [
-      {
-        'data': {},
-        'name': 'empty object against schema with no required fields',
-        'schemaId': 'https://edge.test/NoReq',
-        'valid': true
-      },
-      {
-        'data': 'a string',
-        'name': 'string rejected for object schema',
-        'schemaId': 'https://edge.test/ObjOnly',
-        'valid': false
-      },
-      {
-        'data': 42,
-        'name': 'number rejected for object schema',
-        'schemaId': 'https://edge.test/ObjOnly',
-        'valid': false
-      },
-      {
-        'data': null,
-        'name': 'null rejected for object schema',
-        'schemaId': 'https://edge.test/ObjOnly',
-        'valid': false
-      },
-      {
-        'data': [],
-        'name': 'array rejected for object schema',
-        'schemaId': 'https://edge.test/ObjOnly',
-        'valid': false
-      }
-    ];
+  registry.register({
+    '$id': 'https://edge.test/ObjOnly',
+    'type': 'object'
+  });
 
-    for (const {
-      data, name, schemaId, valid
-    } of scenarios) {
+  for (const {
+    data, name, schemaId, valid
+  } of scenarios) {
+    void it(name, () => {
       const errors = registry.validate(schemaId, data);
 
       if (valid) {
-        assert.deepEqual(errors, [], name);
+        assert.deepEqual(errors, []);
       } else {
-        assert.ok(errors.length > 0, name);
+        assert.ok(errors.length > 0);
       }
-    }
-  });
+    });
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -624,7 +686,29 @@ void describe('Top-level type validation', () => {
 // ---------------------------------------------------------------------------
 
 void describe('Coercion edge cases', () => {
-  void it('coerce applies nested defaults', () => {
+  void describe('coerce applies nested defaults', () => {
+    const scenarios: Array<{
+      'expected': unknown;
+      'name': string;
+      'value': unknown;
+    }> = [
+      {
+        'expected': 'Alice',
+        'name': 'name preserved',
+        'value': 'name'
+      },
+      {
+        'expected': 'light',
+        'name': 'theme default applied',
+        'value': 'settings.theme'
+      },
+      {
+        'expected': 50,
+        'name': 'volume default applied',
+        'value': 'settings.volume'
+      }
+    ];
+
     const registry = new SchemaRegistry();
 
     registry.register({
@@ -657,30 +741,19 @@ void describe('Coercion edge cases', () => {
       'settings': {}
     }) as Record<string, Record<string, unknown>>;
 
-    const scenarios: Array<{ 'expected': unknown;
-      'name': string;
-      'value': unknown }> = [
-      {
-        'expected': 'Alice',
-        'name': 'name preserved',
-        'value': result.name
-      },
-      {
-        'expected': 'light',
-        'name': 'theme default applied',
-        'value': result.settings.theme
-      },
-      {
-        'expected': 50,
-        'name': 'volume default applied',
-        'value': result.settings.volume
-      }
-    ];
-
     for (const {
-      expected, name, value
+      'expected': exp, 'name': n, 'value': path
     } of scenarios) {
-      assert.equal(value, expected, name);
+      void it(n, () => {
+        const parts = (path as string).split('.');
+        let current: unknown = result;
+
+        for (const part of parts) {
+          current = (current as Record<string, unknown>)[part];
+        }
+
+        assert.equal(current, exp);
+      });
     }
   });
 
@@ -751,29 +824,47 @@ void describe('Coercion edge cases', () => {
     }
   });
 
-  void it('castTypes coerces string number to number', () => {
-    const registry = new SchemaRegistry({ 'castTypes': true });
-
-    registry.register({
-      '$id': 'https://edge.test/CastNum',
-      'properties': {
-        'age': { 'type': 'number' },
-        'name': { 'type': 'string' }
+  void describe('castTypes coercion', () => {
+    const scenarios: Array<{
+      'expectedType': string;
+      'expectedValue': unknown;
+      'input': Record<string, unknown>;
+      'name': string;
+    }> = [{
+      'expectedType': 'number',
+      'expectedValue': 25,
+      'input': {
+        'age': '25',
+        'name': 'Alice'
       },
-      'required': [
-        'name',
-        'age'
-      ],
-      'type': 'object'
-    });
+      'name': 'coerces string number to number'
+    }];
 
-    const result = registry.coerce('https://edge.test/CastNum', {
-      'age': '25',
-      'name': 'Alice'
-    }) as Record<string, unknown>;
+    for (const {
+      'expectedType': expType, 'expectedValue': expVal, 'input': inp, 'name': n
+    } of scenarios) {
+      void it(n, () => {
+        const registry = new SchemaRegistry({ 'castTypes': true });
 
-    assert.equal(result.age, 25, 'string "25" coerced to number 25');
-    assert.equal(typeof result.age, 'number', 'coerced value is typeof number');
+        registry.register({
+          '$id': 'https://edge.test/CastNum',
+          'properties': {
+            'age': { 'type': 'number' },
+            'name': { 'type': 'string' }
+          },
+          'required': [
+            'name',
+            'age'
+          ],
+          'type': 'object'
+        });
+
+        const result = registry.coerce('https://edge.test/CastNum', inp) as Record<string, unknown>;
+
+        assert.equal(result.age, expVal);
+        assert.equal(typeof result.age, expType);
+      });
+    }
   });
 });
 
@@ -782,7 +873,41 @@ void describe('Coercion edge cases', () => {
 // ---------------------------------------------------------------------------
 
 void describe('Cross-schema $ref validation', () => {
-  void it('validates data against cross-schema refs', () => {
+  void describe('validates data against cross-schema refs', () => {
+    const scenarios: Array<{
+      'data': unknown;
+      'name': string;
+      'valid': boolean;
+    }> = [
+      {
+        'data': {
+          'country': {
+            'code': 'US',
+            'name': 'United States'
+          },
+          'name': 'Springfield'
+        },
+        'name': 'valid City with valid Country ref',
+        'valid': true
+      },
+      {
+        'data': {
+          'country': {
+            'code': 'USA',
+            'name': 'United States'
+          },
+          'name': 'Springfield'
+        },
+        'name': 'invalid country code (too long)',
+        'valid': false
+      },
+      {
+        'data': { 'name': 'Springfield' },
+        'name': 'missing required country ref',
+        'valid': false
+      }
+    ];
+
     const registry = new SchemaRegistry();
 
     registry.register([
@@ -816,52 +941,39 @@ void describe('Cross-schema $ref validation', () => {
       }
     ]);
 
-    const scenarios: Array<{ 'data': unknown;
+    for (const {
+      data, name, valid
+    } of scenarios) {
+      void it(name, () => {
+        const errors = registry.validate('https://edge.test/City', data);
+
+        if (valid) {
+          assert.deepEqual(errors, []);
+        } else {
+          assert.ok(errors.length > 0);
+        }
+      });
+    }
+  });
+
+  void describe('deeply chained refs (A -> B -> C)', () => {
+    const scenarios: Array<{
+      'data': unknown;
       'name': string;
-      'valid': boolean }> = [
+      'valid': boolean;
+    }> = [
       {
-        'data': {
-          'country': {
-            'code': 'US',
-            'name': 'United States'
-          },
-          'name': 'Springfield'
-        },
-        'name': 'valid City with valid Country ref',
+        'data': { 'b': { 'c': { 'value': 42 } } },
+        'name': 'valid deeply chained ref data',
         'valid': true
       },
       {
-        'data': {
-          'country': {
-            'code': 'USA',
-            'name': 'United States'
-          },
-          'name': 'Springfield'
-        },
-        'name': 'invalid country code (too long)',
-        'valid': false
-      },
-      {
-        'data': { 'name': 'Springfield' },
-        'name': 'missing required country ref',
+        'data': { 'b': { 'c': { 'value': 'not-a-number' } } },
+        'name': 'invalid at deepest level (string instead of number)',
         'valid': false
       }
     ];
 
-    for (const {
-      data, name, valid
-    } of scenarios) {
-      const errors = registry.validate('https://edge.test/City', data);
-
-      if (valid) {
-        assert.deepEqual(errors, [], name);
-      } else {
-        assert.ok(errors.length > 0, name);
-      }
-    }
-  });
-
-  void it('validates deeply chained refs (A -> B -> C)', () => {
     const registry = new SchemaRegistry();
 
     registry.register([
@@ -885,31 +997,18 @@ void describe('Cross-schema $ref validation', () => {
       }
     ]);
 
-    const scenarios: Array<{ 'data': unknown;
-      'name': string;
-      'valid': boolean }> = [
-      {
-        'data': { 'b': { 'c': { 'value': 42 } } },
-        'name': 'valid deeply chained ref data',
-        'valid': true
-      },
-      {
-        'data': { 'b': { 'c': { 'value': 'not-a-number' } } },
-        'name': 'invalid at deepest level (string instead of number)',
-        'valid': false
-      }
-    ];
-
     for (const {
       data, name, valid
     } of scenarios) {
-      const errors = registry.validate('https://edge.test/A', data);
+      void it(name, () => {
+        const errors = registry.validate('https://edge.test/A', data);
 
-      if (valid) {
-        assert.deepEqual(errors, [], name);
-      } else {
-        assert.ok(errors.length > 0, name);
-      }
+        if (valid) {
+          assert.deepEqual(errors, []);
+        } else {
+          assert.ok(errors.length > 0);
+        }
+      });
     }
   });
 });
@@ -919,29 +1018,37 @@ void describe('Cross-schema $ref validation', () => {
 // ---------------------------------------------------------------------------
 
 void describe('Serialization edge cases', () => {
-  void it('serializes schema with no properties to valid OWL class', () => {
-    const jt = JsonTology.create({
-      'baseIRI': 'https://edge.test',
+  const scenarios: Array<{
+    'check': (jt: ReturnType<typeof JsonTology.create>) => void;
+    'name': string;
+    'schemas': ReadonlyArray<Record<string, unknown>>;
+  }> = [
+    {
+      'check': (jt) => {
+        const owl = jt.ontology().jsonLdObject();
+
+        assert.ok(owl['@graph'] !== undefined, 'OWL output has @graph');
+        const graph = owl['@graph'] as Array<Record<string, unknown>>;
+        const markerClass = graph.find((node) => {
+          return node['@id'] === 'https://edge.test/Marker';
+        });
+
+        assert.ok(markerClass !== undefined, 'Marker class present in OWL graph');
+      },
+      'name': 'serializes schema with no properties to valid OWL class',
       'schemas': [{
         '$id': 'https://edge.test/Marker',
         'type': 'object'
-      }] as const
-    });
+      }]
+    },
+    {
+      'check': (jt) => {
+        const shacl = jt.ontology().shaclObject();
+        const graph = shacl['@graph'] as Array<Record<string, unknown>>;
 
-    const owl = jt.ontology().jsonLdObject();
-
-    assert.ok(owl['@graph'] !== undefined, 'OWL output has @graph');
-    const graph = owl['@graph'] as Array<Record<string, unknown>>;
-    const markerClass = graph.find((node) => {
-      return node['@id'] === 'https://edge.test/Marker';
-    });
-
-    assert.ok(markerClass !== undefined, 'Marker class present in OWL graph');
-  });
-
-  void it('serializes schema with all scalar types', () => {
-    const jt = JsonTology.create({
-      'baseIRI': 'https://edge.test',
+        assert.ok(graph.length > 0, 'SHACL graph has nodes');
+      },
+      'name': 'serializes schema with all scalar types',
       'schemas': [{
         '$id': 'https://edge.test/AllScalars',
         'properties': {
@@ -951,18 +1058,23 @@ void describe('Serialization edge cases', () => {
           'score': { 'type': 'number' }
         },
         'type': 'object'
-      }] as const
-    });
+      }]
+    },
+    {
+      'check': (jt) => {
+        assert.deepEqual(jt.validate('https://edge.test/Tree', {
+          'children': [{
+            'children': [],
+            'label': 'child'
+          }],
+          'label': 'root'
+        }), [], 'recursive data validates');
 
-    const shacl = jt.ontology().shaclObject();
-    const graph = shacl['@graph'] as Array<Record<string, unknown>>;
+        const owl = jt.ontology().jsonLdObject();
 
-    assert.ok(graph.length > 0, 'SHACL graph has nodes');
-  });
-
-  void it('handles schema with self-referencing $ref', () => {
-    const jt = JsonTology.create({
-      'baseIRI': 'https://edge.test',
+        assert.ok(owl['@graph'] !== undefined, 'recursive schema serializes without infinite loop');
+      },
+      'name': 'handles schema with self-referencing $ref',
       'schemas': [{
         '$id': 'https://edge.test/Tree',
         'properties': {
@@ -974,21 +1086,22 @@ void describe('Serialization edge cases', () => {
         },
         'required': ['label'],
         'type': 'object'
-      }] as const
+      }]
+    }
+  ];
+
+  for (const {
+    'check': chk, 'name': n, 'schemas': schs
+  } of scenarios) {
+    void it(n, () => {
+      const jt = JsonTology.create({
+        'baseIRI': 'https://edge.test',
+        'schemas': schs
+      });
+
+      chk(jt);
     });
-
-    assert.deepEqual(jt.validate('https://edge.test/Tree', {
-      'children': [{
-        'children': [],
-        'label': 'child'
-      }],
-      'label': 'root'
-    }), [], 'recursive data validates');
-
-    const owl = jt.ontology().jsonLdObject();
-
-    assert.ok(owl['@graph'] !== undefined, 'recursive schema serializes without infinite loop');
-  });
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -996,31 +1109,31 @@ void describe('Serialization edge cases', () => {
 // ---------------------------------------------------------------------------
 
 void describe('JsonTology facade edge cases', () => {
-  void it('returns expected values for unregistered schema lookups', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'https://edge.test' });
-
-    const scenarios: Array<{ 'check': () => void;
-      'name': string }> = [
+  void describe('unregistered schema lookups', () => {
+    const scenarios: Array<{
+      'check': (jt: ReturnType<typeof JsonTology.create>) => void;
+      'name': string;
+    }> = [
       {
-        'check': () => {
+        'check': (jt) => {
           assert.deepEqual(jt.list(), []);
         },
         'name': 'list() returns empty array when no schemas registered'
       },
       {
-        'check': () => {
+        'check': (jt) => {
           assert.equal(jt.has('https://edge.test/Nonexistent'), false);
         },
         'name': 'has() returns false for unknown schema'
       },
       {
-        'check': () => {
+        'check': (jt) => {
           assert.equal(jt.get('https://edge.test/Nonexistent'), undefined);
         },
         'name': 'get() returns undefined for unknown schema'
       },
       {
-        'check': () => {
+        'check': (jt) => {
           assert.equal(jt.toSchema('https://edge.test/Nonexistent'), undefined);
         },
         'name': 'toSchema() returns undefined for unregistered schema'
@@ -1030,8 +1143,11 @@ void describe('JsonTology facade edge cases', () => {
     for (const {
       check, name
     } of scenarios) {
-      check();
-      assert.ok(true, name);
+      void it(name, () => {
+        const jt = JsonTology.create({ 'baseIRI': 'https://edge.test' });
+
+        check(jt);
+      });
     }
   });
 

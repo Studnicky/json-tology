@@ -20,7 +20,8 @@ export interface VisitContextInterface {
     options: EffectiveOptionsType,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntryInterface[],
-    alreadyEvaluated: Set<number>
+    alreadyEvaluated: Set<number>,
+    depth: number
   ) => InternalExecutionResultInterface;
   'applyUnevaluatedProperties': (
     node: SchemaGraphNodeInterface,
@@ -30,7 +31,8 @@ export interface VisitContextInterface {
     options: EffectiveOptionsType,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntryInterface[],
-    alreadyEvaluated: Set<string>
+    alreadyEvaluated: Set<string>,
+    depth: number
   ) => InternalExecutionResultInterface;
   'coerceValue': (schemaTypes: string[], value: unknown, materializeContainers: boolean) => unknown;
   'createError': (path: string, keyword: string, message: string, params?: Record<string, unknown>) => ValidationErrorType;
@@ -51,7 +53,8 @@ export interface VisitContextInterface {
     options: EffectiveOptionsType,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntryInterface[],
-    sem: SchemaGraphSemanticsInterface
+    sem: SchemaGraphSemanticsInterface,
+    depth: number
   ) => InternalExecutionResultInterface;
   'validateNumber': (path: string, value: number, sem: SchemaGraphSemanticsInterface) => ValidationErrorType[];
   'validateObject': (
@@ -61,7 +64,8 @@ export interface VisitContextInterface {
     path: string,
     options: EffectiveOptionsType,
     refStack: Set<string>,
-    dynamicScope: DynamicScopeEntryInterface[]
+    dynamicScope: DynamicScopeEntryInterface[],
+    depth: number
   ) => InternalExecutionResultInterface;
   'validateString': (path: string, value: string, sem: SchemaGraphSemanticsInterface) => ValidationErrorType[];
 }

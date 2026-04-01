@@ -36,6 +36,13 @@ export interface JsonTologyOptionsInterface<TSchemas extends readonly unknown[] 
   'materializer'?: MaterializerOptionsInterface;
 
   /**
+   * Maximum recursion depth for schema traversal during validation.
+   * Defaults to no limit (`Infinity`). Set a finite value to protect against
+   * stack overflow from deeply nested or recursive schemas on deep data.
+   */
+  'maxDepth'?: number;
+
+  /**
    * Additional prefix declarations for ontology output.
    * owl, rdf, rdfs, and xsd are always included.
    */

@@ -82,6 +82,35 @@ void describe('Self-referencing schemas', () => {
         },
         'name': 'nested child missing required value',
         'valid': false
+      },
+      {
+        'data': null,
+        'name': 'edge: null at root level',
+        'valid': false
+      },
+      {
+        'data': {
+          'children': [null],
+          'value': 'root'
+        },
+        'name': 'edge: null inside children array at ref position',
+        'valid': false
+      },
+      {
+        'data': {
+          'children': [],
+          'value': 'root'
+        },
+        'name': 'edge: empty children array is valid',
+        'valid': true
+      },
+      {
+        'data': {
+          'children': [{}],
+          'value': 'root'
+        },
+        'name': 'unhappy: empty object at ref position — missing required value',
+        'valid': false
       }
     ];
 
@@ -287,6 +316,30 @@ void describe('Cross-schema references', () => {
         },
         'name': 'deepest schema missing required code',
         'valid': false
+      },
+      {
+        'data': {
+          'child': {
+            'detail': null,
+            'level': 2
+          },
+          'name': 'top'
+        },
+        'name': 'edge: null at deeply nested ref position (detail)',
+        'valid': false
+      },
+      {
+        'data': {
+          'child': null,
+          'name': 'top'
+        },
+        'name': 'edge: null at intermediate ref position (child)',
+        'valid': false
+      },
+      {
+        'data': { 'name': 'top' },
+        'name': 'edge: missing optional child ref — valid (not required)',
+        'valid': true
       }
     ];
 

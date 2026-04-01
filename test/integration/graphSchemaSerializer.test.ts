@@ -13,180 +13,321 @@ function roundtrip(input: Record<string, unknown>): Record<string, unknown> {
   return serializer.serialize(graph);
 }
 
-void describe('GraphSchemaSerializer', () => {
+// ---------------------------------------------------------------------------
+// Basic roundtrip scenarios
+// ---------------------------------------------------------------------------
+
+void describe('GraphSchemaSerializer basic roundtrip', () => {
   const serializer = new GraphSchemaSerializer();
 
-  void it('roundtrips basic object schema, $defs, $anchor, required, and array items', () => {
-    const schema = {
-      '$id': 'https://example.com/Basic',
-      'properties': {
-        'count': { 'type': 'number' },
-        'name': { 'type': 'string' }
+  const basicScenarios: Array<{
+    'check': (result: Record<string, unknown>) => void;
+    'name': string;
+    'schema': Record<string, unknown>;
+  }> = [
+    {
+      'check': (result) => {
+        assert.equal(result.$id, 'https://example.com/Basic');
+        assert.equal(result.type, 'object');
+        const props = result.properties as Record<string, Record<string, unknown>>;
+
+        assert.deepEqual(props.name, { 'type': 'string' });
+        assert.deepEqual(props.count, { 'type': 'number' });
       },
-      'type': 'object'
-    };
-    const graph = new SchemaGraph(schema);
-    const result = serializer.serialize(graph);
+      'name': 'roundtrips basic object schema with properties',
+      'schema': {
+        '$id': 'https://example.com/Basic',
+        'properties': {
+          'count': { 'type': 'number' },
+          'name': { 'type': 'string' }
+        },
+        'type': 'object'
+      }
+    },
+    {
+      'check': (result) => {
+        assert.ok(result.$defs !== undefined);
+        const defs = result.$defs as Record<string, Record<string, unknown>>;
 
-    assert.equal(result.$id, 'https://example.com/Basic');
-    assert.equal(result.type, 'object');
-    const props = result.properties as Record<string, Record<string, unknown>>;
+        assert.equal(defs.Address.type, 'object');
+        const addrProps = defs.Address.properties as Record<string, Record<string, unknown>>;
 
-    assert.deepEqual(props.name, { 'type': 'string' });
-    assert.deepEqual(props.count, { 'type': 'number' });
-
-    // $defs
-    const defsSchema = {
-      '$defs': {
-        'Address': {
-          'properties': { 'street': { 'type': 'string' } },
-          'type': 'object'
-        }
+        assert.deepEqual(addrProps.street, { 'type': 'string' });
       },
-      '$id': 'https://example.com/WithDefs',
-      'properties': { 'home': { '$ref': '#/$defs/Address' } },
-      'type': 'object'
-    };
-    const defsResult = serializer.serialize(new SchemaGraph(defsSchema));
+      'name': 'roundtrips $defs with internal $ref',
+      'schema': {
+        '$defs': {
+          'Address': {
+            'properties': { 'street': { 'type': 'string' } },
+            'type': 'object'
+          }
+        },
+        '$id': 'https://example.com/WithDefs',
+        'properties': { 'home': { '$ref': '#/$defs/Address' } },
+        'type': 'object'
+      }
+    },
+    {
+      'check': (result) => {
+        const anchorProps = result.properties as Record<string, Record<string, unknown>>;
 
-    assert.ok(defsResult.$defs !== undefined);
-    const defs = defsResult.$defs as Record<string, Record<string, unknown>>;
-
-    assert.equal(defs.Address.type, 'object');
-    const addrProps = defs.Address.properties as Record<string, Record<string, unknown>>;
-
-    assert.deepEqual(addrProps.street, { 'type': 'string' });
-
-    // $anchor
-    const anchorSchema = {
-      '$id': 'https://example.com/Anchored',
-      'properties': {
-        'tag': {
-          '$anchor': 'tag-node',
-          'type': 'string'
-        }
+        assert.equal(anchorProps.tag.$anchor, 'tag-node');
       },
-      'type': 'object'
-    };
-    const anchorResult = serializer.serialize(new SchemaGraph(anchorSchema));
-    const anchorProps = anchorResult.properties as Record<string, Record<string, unknown>>;
-
-    assert.equal(anchorProps.tag.$anchor, 'tag-node');
-
-    // required
-    const reqSchema = {
-      '$id': 'https://example.com/Required',
-      'properties': {
-        'id': { 'type': 'string' },
-        'name': { 'type': 'string' }
+      'name': 'roundtrips $anchor on properties',
+      'schema': {
+        '$id': 'https://example.com/Anchored',
+        'properties': {
+          'tag': {
+            '$anchor': 'tag-node',
+            'type': 'string'
+          }
+        },
+        'type': 'object'
+      }
+    },
+    {
+      'check': (result) => {
+        assert.deepEqual(result.required, [
+          'id',
+          'name'
+        ]);
       },
-      'required': [
-        'id',
-        'name'
-      ],
-      'type': 'object'
-    };
+      'name': 'roundtrips required array',
+      'schema': {
+        '$id': 'https://example.com/Required',
+        'properties': {
+          'id': { 'type': 'string' },
+          'name': { 'type': 'string' }
+        },
+        'required': [
+          'id',
+          'name'
+        ],
+        'type': 'object'
+      }
+    },
+    {
+      'check': (result) => {
+        assert.equal(result.type, 'array');
+        assert.deepEqual(result.items, { 'type': 'string' });
+      },
+      'name': 'roundtrips array items',
+      'schema': {
+        '$id': 'https://example.com/Arr',
+        'items': { 'type': 'string' },
+        'type': 'array'
+      }
+    },
+    {
+      'check': (result) => {
+        const props = result.properties as Record<string, unknown> | undefined;
 
-    assert.deepEqual(serializer.serialize(new SchemaGraph(reqSchema)).required, [
-      'id',
-      'name'
-    ]);
+        assert.ok(props !== undefined, 'properties must exist');
+      },
+      'name': 'roundtrips boolean true schema (permissive)',
+      'schema': {
+        '$id': 'https://example.com/BoolTrue',
+        'properties': { 'anything': true as unknown as Record<string, unknown> },
+        'type': 'object'
+      }
+    },
+    {
+      'check': (result) => {
+        assert.equal(result.type, 'object');
+      },
+      'name': 'roundtrips schema with empty properties object',
+      'schema': {
+        '$id': 'https://example.com/EmptyProps',
+        'properties': {},
+        'type': 'object'
+      }
+    }
+  ];
 
-    // array items
-    const arrSchema = {
-      '$id': 'https://example.com/Arr',
-      'items': { 'type': 'string' },
-      'type': 'array'
-    };
-    const arrResult = serializer.serialize(new SchemaGraph(arrSchema));
+  for (const {
+    check, 'name': scenarioName, schema
+  } of basicScenarios) {
+    void it(scenarioName, () => {
+      const result = serializer.serialize(new SchemaGraph(schema));
 
-    assert.equal(arrResult.type, 'array');
-    assert.deepEqual(arrResult.items, { 'type': 'string' });
-  });
+      check(result);
+    });
+  }
+});
 
-  void it('preserves allOf/anyOf/oneOf composition, pattern, format, numeric constraints, enum, const, title, description', () => {
-    // composition
-    for (const keyword of [
-      'allOf',
-      'anyOf',
-      'oneOf'
-    ] as const) {
-      const schema = {
-        '$id': `https://example.com/${keyword}`,
-        [keyword]: [
+// ---------------------------------------------------------------------------
+// Composition and constraints
+// ---------------------------------------------------------------------------
+
+void describe('GraphSchemaSerializer composition and constraints', () => {
+  const serializer = new GraphSchemaSerializer();
+
+  const compositionScenarios: Array<{
+    'check': (result: Record<string, unknown>) => void;
+    'name': string;
+    'schema': Record<string, unknown>;
+  }> = [
+    {
+      'check': (result) => {
+        assert.ok(Array.isArray(result.allOf));
+        assert.equal((result.allOf as unknown[]).length, 2);
+      },
+      'name': 'preserves allOf composition',
+      'schema': {
+        '$id': 'https://example.com/allOf',
+        'allOf': [
           { 'type': 'string' },
           { 'type': 'number' }
         ]
-      };
+      }
+    },
+    {
+      'check': (result) => {
+        assert.ok(Array.isArray(result.anyOf));
+        assert.equal((result.anyOf as unknown[]).length, 2);
+      },
+      'name': 'preserves anyOf composition',
+      'schema': {
+        '$id': 'https://example.com/anyOf',
+        'anyOf': [
+          { 'type': 'string' },
+          { 'type': 'number' }
+        ]
+      }
+    },
+    {
+      'check': (result) => {
+        assert.ok(Array.isArray(result.oneOf));
+        assert.equal((result.oneOf as unknown[]).length, 2);
+      },
+      'name': 'preserves oneOf composition',
+      'schema': {
+        '$id': 'https://example.com/oneOf',
+        'oneOf': [
+          { 'type': 'string' },
+          { 'type': 'number' }
+        ]
+      }
+    },
+    {
+      'check': (result) => {
+        assert.equal(result.pattern, '^[a-z]+$');
+        assert.equal(result.format, 'email');
+      },
+      'name': 'preserves pattern and format',
+      'schema': {
+        '$id': 'https://example.com/Constrained',
+        'format': 'email',
+        'pattern': '^[a-z]+$',
+        'type': 'string'
+      }
+    },
+    {
+      'check': (result) => {
+        assert.equal(result.minimum, 0);
+        assert.equal(result.maximum, 100);
+        assert.equal(result.multipleOf, 5);
+      },
+      'name': 'preserves numeric constraints',
+      'schema': {
+        '$id': 'https://example.com/Numeric',
+        'maximum': 100,
+        'minimum': 0,
+        'multipleOf': 5,
+        'type': 'number'
+      }
+    },
+    {
+      'check': (result) => {
+        assert.deepEqual(result.enum, [
+          'red',
+          'green',
+          'blue'
+        ]);
+      },
+      'name': 'preserves enum',
+      'schema': {
+        '$id': 'https://example.com/Enum',
+        'enum': [
+          'red',
+          'green',
+          'blue'
+        ],
+        'type': 'string'
+      }
+    },
+    {
+      'check': (result) => {
+        assert.equal(result.const, 'fixed');
+      },
+      'name': 'preserves const',
+      'schema': {
+        '$id': 'https://example.com/Const',
+        'const': 'fixed'
+      }
+    },
+    {
+      'check': (result) => {
+        assert.equal(result.title, 'A title');
+        assert.equal(result.description, 'A description');
+      },
+      'name': 'preserves title and description',
+      'schema': {
+        '$id': 'https://example.com/Meta',
+        'description': 'A description',
+        'title': 'A title',
+        'type': 'string'
+      }
+    }
+  ];
+
+  for (const {
+    check, 'name': scenarioName, schema
+  } of compositionScenarios) {
+    void it(scenarioName, () => {
       const result = serializer.serialize(new SchemaGraph(schema));
 
-      assert.ok(Array.isArray(result[keyword]));
-      assert.equal((result[keyword]).length, 2);
-    }
+      check(result);
+    });
+  }
+});
 
-    // pattern, format
-    const constrained = serializer.serialize(new SchemaGraph({
-      '$id': 'https://example.com/Constrained',
-      'format': 'email',
-      'pattern': '^[a-z]+$',
-      'type': 'string'
-    }));
+// ---------------------------------------------------------------------------
+// Graph identity roundtrip
+// ---------------------------------------------------------------------------
 
-    assert.equal(constrained.pattern, '^[a-z]+$');
-    assert.equal(constrained.format, 'email');
+void describe('GraphSchemaSerializer graph identity', () => {
+  const identityScenarios: Array<{
+    'check': (first: Record<string, unknown>, second: Record<string, unknown>) => void;
+    'name': string;
+    'schema': Record<string, unknown>;
+  }> = [{
+    'check': (first, second) => {
+      assert.deepEqual(first, second);
 
-    // numeric constraints
-    const numeric = serializer.serialize(new SchemaGraph({
-      '$id': 'https://example.com/Numeric',
-      'maximum': 100,
-      'minimum': 0,
-      'multipleOf': 5,
-      'type': 'number'
-    }));
+      assert.equal(first.$id, 'https://example.com/Roundtrip');
 
-    assert.equal(numeric.minimum, 0);
-    assert.equal(numeric.maximum, 100);
-    assert.equal(numeric.multipleOf, 5);
+      const defs = first.$defs as Record<string, Record<string, unknown>>;
 
-    // enum
-    const enumResult = serializer.serialize(new SchemaGraph({
-      '$id': 'https://example.com/Enum',
-      'enum': [
-        'red',
-        'green',
-        'blue'
-      ],
-      'type': 'string'
-    }));
+      assert.ok('Foo' in defs && 'Bar' in defs);
+      assert.equal(defs.Foo.$anchor, 'MyAnchor');
+      assert.equal(defs.Bar.$dynamicAnchor, 'DynBar');
+      const fooProps = defs.Foo.properties as Record<string, Record<string, unknown>>;
 
-    assert.deepEqual(enumResult.enum, [
-      'red',
-      'green',
-      'blue'
-    ]);
+      assert.deepEqual(fooProps.label, { 'type': 'string' });
+      assert.deepEqual(defs.Foo.required, ['label']);
 
-    // const
-    const constResult = serializer.serialize(new SchemaGraph({
-      '$id': 'https://example.com/Const',
-      'const': 'fixed'
-    }));
+      const props = first.properties as Record<string, Record<string, unknown>>;
 
-    assert.equal(constResult.const, 'fixed');
+      assert.equal(props.localRef.$ref, '#/$defs/Foo');
+      assert.equal(props.anchorRef.$ref, '#MyAnchor');
+      assert.equal(props.nested.type, 'object');
+      const nestedProps = props.nested.properties as Record<string, Record<string, unknown>>;
 
-    // title, description
-    const meta = serializer.serialize(new SchemaGraph({
-      '$id': 'https://example.com/Meta',
-      'description': 'A description',
-      'title': 'A title',
-      'type': 'string'
-    }));
-
-    assert.equal(meta.title, 'A title');
-    assert.equal(meta.description, 'A description');
-  });
-
-  void it('roundtrips graph identity: stable output, preserves $id, $defs, anchors, refs, pointers', () => {
-    const schema = {
+      assert.deepEqual(nestedProps.deep, { 'type': 'integer' });
+    },
+    'name': 'stable output: first pass equals second pass',
+    'schema': {
       '$defs': {
         'Bar': {
           '$dynamicAnchor': 'DynBar',
@@ -211,296 +352,370 @@ void describe('GraphSchemaSerializer', () => {
       },
       'required': ['localRef'],
       'type': 'object'
-    };
+    }
+  }];
 
-    const first = roundtrip(schema);
-    const second = roundtrip(first);
+  for (const {
+    check, 'name': scenarioName, schema
+  } of identityScenarios) {
+    void it(scenarioName, () => {
+      const first = roundtrip(schema);
+      const second = roundtrip(first);
 
-    assert.deepEqual(first, second);
+      check(first, second);
+    });
+  }
+});
 
-    assert.equal(first.$id, 'https://example.com/Roundtrip');
+// ---------------------------------------------------------------------------
+// Metadata, custom keywords, and extensions
+// ---------------------------------------------------------------------------
 
-    const defs = first.$defs as Record<string, Record<string, unknown>>;
+void describe('GraphSchemaSerializer metadata and extensions', () => {
+  const serializer = new GraphSchemaSerializer();
 
-    assert.ok('Foo' in defs && 'Bar' in defs);
-    assert.equal(defs.Foo.$anchor, 'MyAnchor');
-    assert.equal(defs.Bar.$dynamicAnchor, 'DynBar');
-    const fooProps = defs.Foo.properties as Record<string, Record<string, unknown>>;
+  const extensionScenarios: Array<{
+    'check': () => void;
+    'name': string;
+  }> = [
+    {
+      'check': () => {
+        const commented = serializer.serialize(new SchemaGraph({
+          '$comment': 'Root comment',
+          '$id': 'https://example.com/NestedComment',
+          'properties': {
+            'name': {
+              '$comment': 'Name field comment',
+              'type': 'string'
+            }
+          },
+          'type': 'object'
+        }));
 
-    assert.deepEqual(fooProps.label, { 'type': 'string' });
-    assert.deepEqual(defs.Foo.required, ['label']);
+        assert.equal(commented.$comment, 'Root comment');
+        const commentedProps = commented.properties as Record<string, Record<string, unknown>>;
 
-    const props = first.properties as Record<string, Record<string, unknown>>;
-
-    assert.equal(props.localRef.$ref, '#/$defs/Foo');
-    assert.equal(props.anchorRef.$ref, '#MyAnchor');
-    assert.equal(props.nested.type, 'object');
-    const nestedProps = props.nested.properties as Record<string, Record<string, unknown>>;
-
-    assert.deepEqual(nestedProps.deep, { 'type': 'integer' });
-  });
-
-  void it('preserves $comment, custom keywords, examples, definitions, additionalItems, $recursiveAnchor/$recursiveRef', () => {
-    // $comment on root and nested
-    const commented = serializer.serialize(new SchemaGraph({
-      '$comment': 'Root comment',
-      '$id': 'https://example.com/NestedComment',
-      'properties': {
-        'name': {
-          '$comment': 'Name field comment',
-          'type': 'string'
-        }
+        assert.equal(commentedProps.name.$comment, 'Name field comment');
       },
-      'type': 'object'
-    }));
+      'name': 'preserves $comment on root and nested'
+    },
+    {
+      'check': () => {
+        const customSchema = {
+          '$id': 'https://example.com/Custom',
+          'evenNumber': true,
+          'type': 'integer',
+          'x-ui-widget': 'slider',
+          'x-validation-group': 'pricing'
+        };
+        const customResult = serializer.serialize(new SchemaGraph(customSchema));
 
-    assert.equal(commented.$comment, 'Root comment');
-    const commentedProps = commented.properties as Record<string, Record<string, unknown>>;
-
-    assert.equal(commentedProps.name.$comment, 'Name field comment');
-
-    // custom keywords
-    const customSchema = {
-      '$id': 'https://example.com/Custom',
-      'evenNumber': true,
-      'type': 'integer',
-      'x-ui-widget': 'slider',
-      'x-validation-group': 'pricing'
-    };
-    const customResult = serializer.serialize(new SchemaGraph(customSchema));
-
-    assert.equal(customResult['x-ui-widget'], 'slider');
-    assert.equal(customResult['x-validation-group'], 'pricing');
-    assert.equal(customResult.evenNumber, true);
-
-    // custom keywords roundtrip through two passes
-    const customRt = {
-      '$id': 'https://example.com/CustomRoundtrip',
-      'properties': {
-        'price': {
-          'minimum': 0,
-          'type': 'number',
-          'x-currency': 'USD'
-        }
+        assert.equal(customResult['x-ui-widget'], 'slider');
+        assert.equal(customResult['x-validation-group'], 'pricing');
+        assert.equal(customResult.evenNumber, true);
       },
-      'type': 'object',
-      'x-table': 'products'
-    };
-    const first = roundtrip(customRt);
-    const second = roundtrip(first);
+      'name': 'preserves custom keywords (x-* and arbitrary)'
+    },
+    {
+      'check': () => {
+        const customRt = {
+          '$id': 'https://example.com/CustomRoundtrip',
+          'properties': {
+            'price': {
+              'minimum': 0,
+              'type': 'number',
+              'x-currency': 'USD'
+            }
+          },
+          'type': 'object',
+          'x-table': 'products'
+        };
+        const first = roundtrip(customRt);
+        const second = roundtrip(first);
 
-    assert.deepEqual(first, second);
-    assert.equal(first['x-table'], 'products');
-    const priceProps = first.properties as Record<string, Record<string, unknown>>;
+        assert.deepEqual(first, second);
+        assert.equal(first['x-table'], 'products');
+        const priceProps = first.properties as Record<string, Record<string, unknown>>;
 
-    assert.equal(priceProps.price['x-currency'], 'USD');
-
-    // examples on root and nested
-    const exSchema = {
-      '$id': 'https://example.com/WithExamples',
-      'examples': [
-        'alpha',
-        'beta'
-      ],
-      'type': 'string'
-    };
-    const exResult = serializer.serialize(new SchemaGraph(exSchema));
-
-    assert.deepEqual(exResult.examples, [
-      'alpha',
-      'beta'
-    ]);
-
-    const objSchema = {
-      '$id': 'https://example.com/ObjExamples',
-      'properties': {
-        'name': {
+        assert.equal(priceProps.price['x-currency'], 'USD');
+      },
+      'name': 'custom keywords roundtrip through two passes'
+    },
+    {
+      'check': () => {
+        const exSchema = {
+          '$id': 'https://example.com/WithExamples',
           'examples': [
-            'Alice',
-            'Bob'
+            'alpha',
+            'beta'
           ],
           'type': 'string'
-        }
-      },
-      'type': 'object'
-    };
-    const objResult = serializer.serialize(new SchemaGraph(objSchema));
-    const objProps = objResult.properties as Record<string, Record<string, unknown>>;
+        };
+        const exResult = serializer.serialize(new SchemaGraph(exSchema));
 
-    assert.deepEqual(objProps.name.examples, [
-      'Alice',
-      'Bob'
-    ]);
+        assert.deepEqual(exResult.examples, [
+          'alpha',
+          'beta'
+        ]);
 
-    // definitions (draft-07 alias)
-    const defSchema = {
-      '$id': 'https://example.com/WithDefinitions',
-      'definitions': {
-        'Addr': {
-          'properties': { 'street': { 'type': 'string' } },
+        const objSchema = {
+          '$id': 'https://example.com/ObjExamples',
+          'properties': {
+            'name': {
+              'examples': [
+                'Alice',
+                'Bob'
+              ],
+              'type': 'string'
+            }
+          },
           'type': 'object'
-        }
+        };
+        const objResult = serializer.serialize(new SchemaGraph(objSchema));
+        const objProps = objResult.properties as Record<string, Record<string, unknown>>;
+
+        assert.deepEqual(objProps.name.examples, [
+          'Alice',
+          'Bob'
+        ]);
       },
-      'type': 'object'
-    };
-    const defResult = serializer.serialize(new SchemaGraph(defSchema));
-    const defDefs = (defResult.definitions ?? defResult.$defs) as Record<string, Record<string, unknown>> | undefined;
+      'name': 'preserves examples on root and nested'
+    },
+    {
+      'check': () => {
+        const defSchema = {
+          '$id': 'https://example.com/WithDefinitions',
+          'definitions': {
+            'Addr': {
+              'properties': { 'street': { 'type': 'string' } },
+              'type': 'object'
+            }
+          },
+          'type': 'object'
+        };
+        const defResult = serializer.serialize(new SchemaGraph(defSchema));
+        const defDefs = (defResult.definitions ?? defResult.$defs) as
+          Record<string, Record<string, unknown>> | undefined;
 
-    assert.ok(defDefs !== undefined);
-    assert.equal(defDefs.Addr.type, 'object');
-    const defAddrProps = defDefs.Addr.properties as Record<string, Record<string, unknown>>;
+        assert.ok(defDefs !== undefined);
+        assert.equal(defDefs.Addr.type, 'object');
+        const defAddrProps = defDefs.Addr.properties as Record<string, Record<string, unknown>>;
 
-    assert.deepEqual(defAddrProps.street, { 'type': 'string' });
-
-    // additionalItems
-    const aiSchema = {
-      '$id': 'https://example.com/WithAdditionalItems',
-      'additionalItems': { 'type': 'boolean' },
-      'items': [
-        { 'type': 'string' },
-        { 'type': 'number' }
-      ],
-      'type': 'array'
-    };
-    const aiResult = serializer.serialize(new SchemaGraph(aiSchema));
-
-    assert.deepEqual(aiResult.additionalItems, { 'type': 'boolean' });
-
-    // $recursiveAnchor and $recursiveRef
-    const recSchema = {
-      '$id': 'https://example.com/Recursive',
-      '$recursiveAnchor': true,
-      'properties': {
-        'children': {
-          'items': { '$recursiveRef': '#' },
+        assert.deepEqual(defAddrProps.street, { 'type': 'string' });
+      },
+      'name': 'preserves definitions (draft-07 alias)'
+    },
+    {
+      'check': () => {
+        const aiSchema = {
+          '$id': 'https://example.com/WithAdditionalItems',
+          'additionalItems': { 'type': 'boolean' },
+          'items': [
+            { 'type': 'string' },
+            { 'type': 'number' }
+          ],
           'type': 'array'
-        }
+        };
+        const aiResult = serializer.serialize(new SchemaGraph(aiSchema));
+
+        assert.deepEqual(aiResult.additionalItems, { 'type': 'boolean' });
       },
-      'type': 'object'
-    };
-    const recResult = serializer.serialize(new SchemaGraph(recSchema));
+      'name': 'preserves additionalItems'
+    },
+    {
+      'check': () => {
+        const recSchema = {
+          '$id': 'https://example.com/Recursive',
+          '$recursiveAnchor': true,
+          'properties': {
+            'children': {
+              'items': { '$recursiveRef': '#' },
+              'type': 'array'
+            }
+          },
+          'type': 'object'
+        };
+        const recResult = serializer.serialize(new SchemaGraph(recSchema));
 
-    assert.equal(recResult.$recursiveAnchor, true);
-    const recProps = recResult.properties as Record<string, Record<string, Record<string, unknown>>>;
+        assert.equal(recResult.$recursiveAnchor, true);
+        const recProps = recResult.properties as Record<string, Record<string, Record<string, unknown>>>;
 
-    assert.equal(recProps.children.items.$recursiveRef, '#');
-  });
+        assert.equal(recProps.children.items.$recursiveRef, '#');
+      },
+      'name': 'preserves $recursiveAnchor and $recursiveRef'
+    }
+  ];
 
-  void it('roundtrips discriminator with and without mapping', () => {
-    const scenarios = [
-      {
-        'expected': {
+  for (const {
+    check, 'name': scenarioName
+  } of extensionScenarios) {
+    void it(scenarioName, () => {
+      check();
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Discriminator roundtrip
+// ---------------------------------------------------------------------------
+
+void describe('GraphSchemaSerializer discriminator roundtrip', () => {
+  const discriminatorScenarios: Array<{
+    'expectedMapping': Record<string, string> | undefined;
+    'expectedPropertyName': string;
+    'name': string;
+    'schema': Record<string, unknown>;
+    'stableAcrossTwoPasses': boolean;
+  }> = [
+    {
+      'expectedMapping': {
+        'cat': '#/$defs/Cat',
+        'dog': '#/$defs/Dog'
+      },
+      'expectedPropertyName': 'kind',
+      'name': 'with mapping',
+      'schema': {
+        '$id': 'https://example.com/Disc',
+        'discriminator': {
           'mapping': {
             'cat': '#/$defs/Cat',
             'dog': '#/$defs/Dog'
           },
           'propertyName': 'kind'
         },
-        'name': 'with mapping',
-        'schema': {
-          '$id': 'https://example.com/Disc',
-          'discriminator': {
-            'mapping': {
-              'cat': '#/$defs/Cat',
-              'dog': '#/$defs/Dog'
-            },
-            'propertyName': 'kind'
-          },
-          'oneOf': [
-            {
-              'properties': { 'kind': { 'const': 'cat' } },
-              'type': 'object'
-            },
-            {
-              'properties': { 'kind': { 'const': 'dog' } },
-              'type': 'object'
-            }
-          ]
-        }
-      },
-      {
-        'expected': {
-          'mapping': undefined,
-          'propertyName': 'kind'
-        },
-        'name': 'without mapping',
-        'schema': {
-          '$id': 'https://example.com/DiscNoMap',
-          'discriminator': { 'propertyName': 'kind' },
-          'oneOf': [{
-            'properties': { 'kind': { 'const': 'a' } },
+        'oneOf': [
+          {
+            'properties': { 'kind': { 'const': 'cat' } },
             'type': 'object'
-          }]
-        }
-      }
-    ] as const;
+          },
+          {
+            'properties': { 'kind': { 'const': 'dog' } },
+            'type': 'object'
+          }
+        ]
+      },
+      'stableAcrossTwoPasses': true
+    },
+    {
+      'expectedMapping': undefined,
+      'expectedPropertyName': 'kind',
+      'name': 'without mapping',
+      'schema': {
+        '$id': 'https://example.com/DiscNoMap',
+        'discriminator': { 'propertyName': 'kind' },
+        'oneOf': [{
+          'properties': { 'kind': { 'const': 'a' } },
+          'type': 'object'
+        }]
+      },
+      'stableAcrossTwoPasses': false
+    }
+  ];
 
-    for (const scenario of scenarios) {
-      const result = roundtrip(scenario.schema as unknown as Record<string, unknown>);
+  for (const {
+    expectedMapping, expectedPropertyName, 'name': scenarioName, schema, stableAcrossTwoPasses
+  } of discriminatorScenarios) {
+    void it(scenarioName, () => {
+      const result = roundtrip(schema);
       const disc = result.discriminator as Record<string, unknown>;
 
-      assert.ok(typeof disc === 'object', `${scenario.name}: discriminator must be object`);
-      assert.equal(disc.propertyName, scenario.expected.propertyName, `${scenario.name}: propertyName`);
-      assert.deepEqual(disc.mapping, scenario.expected.mapping, `${scenario.name}: mapping`);
+      assert.ok(typeof disc === 'object', `${scenarioName}: discriminator must be object`);
+      assert.equal(disc.propertyName, expectedPropertyName, `${scenarioName}: propertyName`);
+      assert.deepEqual(disc.mapping, expectedMapping, `${scenarioName}: mapping`);
 
-      // Stable across two passes (with mapping)
-      if (scenario.expected.mapping !== undefined) {
+      if (stableAcrossTwoPasses) {
         const second = roundtrip(result);
 
         assert.deepEqual(result, second);
       }
-    }
-  });
+    });
+  }
+});
 
-  void it('roundtrips custom keywords and examples through JsonTology.toSchema()', () => {
-    // custom keywords
-    const schema = {
-      '$comment': 'End-to-end comment',
-      '$id': 'https://example.com/E2E',
-      'properties': {
-        'score': {
-          'type': 'number',
-          'x-widget': 'gauge'
-        }
+// ---------------------------------------------------------------------------
+// JsonTology.toSchema() end-to-end
+// ---------------------------------------------------------------------------
+
+void describe('GraphSchemaSerializer via JsonTology.toSchema()', () => {
+  const e2eScenarios: Array<{
+    'check': () => void;
+    'name': string;
+  }> = [
+    {
+      'check': () => {
+        const schema = {
+          '$comment': 'End-to-end comment',
+          '$id': 'https://example.com/E2E',
+          'properties': {
+            'score': {
+              'type': 'number',
+              'x-widget': 'gauge'
+            }
+          },
+          'required': ['score'],
+          'type': 'object',
+          'x-api-version': 2
+        };
+        const jt = JsonTology.create({
+          'baseIRI': 'https://example.com',
+          'schemas': [schema] as const
+        });
+        const result = jt.toSchema(schema.$id);
+
+        assert.ok(result !== undefined);
+        assert.equal(result.$comment, 'End-to-end comment');
+        assert.equal(result['x-api-version'], 2);
+        const scoreProps = result.properties as Record<string, Record<string, unknown>>;
+
+        assert.equal(scoreProps.score['x-widget'], 'gauge');
+        assert.equal(result.type, 'object');
+        assert.deepEqual(result.required, ['score']);
       },
-      'required': ['score'],
-      'type': 'object',
-      'x-api-version': 2
-    };
-    const jt = JsonTology.create({
-      'baseIRI': 'https://example.com',
-      'schemas': [schema] as const
+      'name': 'roundtrips custom keywords through JsonTology.toSchema()'
+    },
+    {
+      'check': () => {
+        const exSchema = {
+          '$id': 'https://example.com/E2E-Examples',
+          'examples': [
+            'hello',
+            'world'
+          ],
+          'type': 'string'
+        };
+        const jt = JsonTology.create({
+          'baseIRI': 'https://example.com',
+          'schemas': [exSchema] as const
+        });
+        const exResult = jt.toSchema(exSchema.$id);
+
+        assert.ok(exResult !== undefined);
+        assert.deepEqual(exResult.examples, [
+          'hello',
+          'world'
+        ]);
+      },
+      'name': 'roundtrips examples through JsonTology.toSchema()'
+    },
+    {
+      'check': () => {
+        const jt = JsonTology.create({
+          'baseIRI': 'https://example.com',
+          'schemas': []
+        });
+        const result = jt.toSchema('https://example.com/nonexistent');
+
+        assert.equal(result, undefined);
+      },
+      'name': 'toSchema() returns undefined for unregistered $id'
+    }
+  ];
+
+  for (const {
+    check, 'name': scenarioName
+  } of e2eScenarios) {
+    void it(scenarioName, () => {
+      check();
     });
-    const result = jt.toSchema(schema.$id);
-
-    assert.ok(result !== undefined);
-    assert.equal(result.$comment, 'End-to-end comment');
-    assert.equal(result['x-api-version'], 2);
-    const scoreProps = result.properties as Record<string, Record<string, unknown>>;
-
-    assert.equal(scoreProps.score['x-widget'], 'gauge');
-    assert.equal(result.type, 'object');
-    assert.deepEqual(result.required, ['score']);
-
-    // examples
-    const exSchema = {
-      '$id': 'https://example.com/E2E-Examples',
-      'examples': [
-        'hello',
-        'world'
-      ],
-      'type': 'string'
-    };
-    const jt2 = JsonTology.create({
-      'baseIRI': 'https://example.com',
-      'schemas': [exSchema] as const
-    });
-    const exResult = jt2.toSchema(exSchema.$id);
-
-    assert.ok(exResult !== undefined);
-    assert.deepEqual(exResult.examples, [
-      'hello',
-      'world'
-    ]);
-  });
+  }
 });

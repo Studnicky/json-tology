@@ -946,6 +946,112 @@ void describe('SHACL serialization: required vs optional minCount', () => {
 // -------------------------------------------------------------------------
 
 void describe('cross-cutting serialization edge cases', () => {
+  void it('edge: schema with only $defs and no properties produces class but no property nodes', () => {
+    const reg = new SchemaRegistry();
+
+    reg.register({
+      '$defs': {
+        'Inner': {
+          'properties': { 'x': { 'type': 'string' } },
+          'type': 'object'
+        }
+      },
+      '$id': 'https://example.com/DefsOnly',
+      'type': 'object'
+    });
+
+    const owlOutput = owlNodes(reg);
+
+    const classNode = owlOutput.find((node) => {
+      return node['@id'] === 'https://example.com/DefsOnly'
+        && node['@type'] === 'http://www.w3.org/2002/07/owl#Class';
+    });
+
+    assert.ok(classNode !== undefined, 'edge: $defs only — OWL class exists');
+
+    const propNodes = owlOutput.filter((node) => {
+      const domain = node['http://www.w3.org/2000/01/rdf-schema#domain'] as JsonLdNode | undefined;
+
+      return domain?.['@id'] === 'https://example.com/DefsOnly';
+    });
+
+    assert.strictEqual(propNodes.length, 0, 'edge: $defs only — no direct property nodes');
+  });
+
+  void it('edge: readOnly and writeOnly on same property emits both annotations', () => {
+    const reg = new SchemaRegistry();
+
+    reg.register({
+      '$id': 'https://example.com/BothAccess',
+      'properties': {
+        'token': {
+          'readOnly': true,
+          'type': 'string',
+          'writeOnly': true
+        }
+      },
+      'type': 'object'
+    });
+
+    const nodes = owlNodes(reg);
+
+    const tokenProp = nodes.find((node) => {
+      return node['@id'] === 'https://example.com/BothAccess#token';
+    });
+
+    assert.ok(tokenProp !== undefined, 'edge: both access — token prop exists');
+    assert.strictEqual(tokenProp['http://datashapes.org/dash#readOnly'], true, 'edge: both access — readOnly');
+    assert.strictEqual(tokenProp['http://datashapes.org/dash#writeOnly'], true, 'edge: both access — writeOnly');
+  });
+
+  void it('edge: schema with all constraint types combined serializes without error', () => {
+    const reg = new SchemaRegistry();
+
+    reg.register({
+      '$id': 'https://example.com/AllConstraints',
+      'additionalProperties': false,
+      'enum': [
+        'a',
+        'b'
+      ],
+      'properties': {
+        'count': {
+          'exclusiveMaximum': 100,
+          'exclusiveMinimum': 0,
+          'multipleOf': 5,
+          'type': 'integer'
+        },
+        'name': {
+          'maxLength': 50,
+          'minLength': 1,
+          'pattern': '^[A-Z]',
+          'type': 'string'
+        }
+      },
+      'required': ['name'],
+      'type': 'object'
+    });
+
+    const owlOutput = owlNodes(reg);
+    const shaclOutput = shaclNodes(reg);
+
+    assert.ok(owlOutput.length > 0, 'edge: all constraints — OWL output non-empty');
+    assert.ok(shaclOutput.length > 0, 'edge: all constraints — SHACL output non-empty');
+
+    const owlClass = owlOutput.find((node) => {
+      return node['@id'] === 'https://example.com/AllConstraints'
+        && node['@type'] === 'http://www.w3.org/2002/07/owl#Class';
+    });
+
+    assert.ok(owlClass !== undefined, 'edge: all constraints — OWL class exists');
+
+    const shaclShape = shaclOutput.find((shape) => {
+      return shape['@id'] === 'https://example.com/AllConstraints';
+    });
+
+    assert.ok(shaclShape !== undefined, 'edge: all constraints — SHACL shape exists');
+  });
+
   void it('produces valid class/shape with no property shapes for empty schema', () => {
     const reg = new SchemaRegistry();
 

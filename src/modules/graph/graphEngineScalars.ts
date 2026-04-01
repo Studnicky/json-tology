@@ -26,7 +26,7 @@ export function coerceGraphValue(schemaTypes: string[], value: unknown, material
   if ((schemaTypes.includes('number') || schemaTypes.includes('integer')) && typeof value === 'string') {
     const coerced = Number(value);
 
-    if (!Number.isNaN(coerced)) {
+    if (Number.isFinite(coerced)) {
       return schemaTypes.includes('integer') ? Math.trunc(coerced) : coerced;
     }
   }
@@ -84,7 +84,7 @@ export function matchesSchemaTypes(schemaTypes: string[], value: unknown): boole
       case 'null':
         return value === null;
       case 'number':
-        return typeof value === 'number' && !Number.isNaN(value);
+        return typeof value === 'number' && Number.isFinite(value);
       case 'object':
         return inferValueType(value) === 'object';
       default:
@@ -123,17 +123,30 @@ export function validateNumberConstraints(
     errors.push(createValidationError(path, 'exclusiveMaximum', `must be < ${exclusiveMaximum}`, { 'limit': exclusiveMaximum }));
   }
   if (multipleOf !== undefined) {
-    const quotient = value / multipleOf;
+    if (multipleOf === 0) {
+      errors.push(createValidationError(path, 'multipleOf', 'multipleOf must be a positive number', { multipleOf }));
+    } else {
+      const quotient = value / multipleOf;
 
-    if (Math.abs(quotient - Math.round(quotient)) > Number.EPSILON * MULTIPLE_OF_EPSILON_FACTOR) {
-      errors.push(createValidationError(path, 'multipleOf', `must be multiple of ${multipleOf}`, { multipleOf }));
+      if (Math.abs(quotient - Math.round(quotient)) > Number.EPSILON * MULTIPLE_OF_EPSILON_FACTOR) {
+        errors.push(createValidationError(path, 'multipleOf', `must be multiple of ${multipleOf}`, { multipleOf }));
+      }
     }
   }
   if (format !== undefined) {
     const validator = formatRegistry.get(format);
 
-    if (validator !== undefined && formatAssertions && !validator(value)) {
-      errors.push(createValidationError(path, 'format', `must match format "${format}"`, { format }));
+    if (validator !== undefined && formatAssertions) {
+      let passed: boolean;
+
+      try {
+        passed = validator(value);
+      } catch {
+        passed = false;
+      }
+      if (!passed) {
+        errors.push(createValidationError(path, 'format', `must match format "${format}"`, { format }));
+      }
     }
   }
 
@@ -169,8 +182,17 @@ export function validateStringConstraints(
   if (format !== undefined) {
     const validator = formatRegistry.get(format);
 
-    if (validator !== undefined && formatAssertions && !validator(value)) {
-      errors.push(createValidationError(path, 'format', `must match format "${format}"`, { format }));
+    if (validator !== undefined && formatAssertions) {
+      let passed: boolean;
+
+      try {
+        passed = validator(value);
+      } catch {
+        passed = false;
+      }
+      if (!passed) {
+        errors.push(createValidationError(path, 'format', `must match format "${format}"`, { format }));
+      }
     }
   }
 

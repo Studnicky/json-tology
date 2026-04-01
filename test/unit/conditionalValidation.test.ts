@@ -66,6 +66,24 @@ void describe('if/then/else validation', () => {
         'data': { 'kind': 'person' },
         'name': 'if matches (kind=person) but then not satisfied — missing name',
         'valid': false
+      },
+      {
+        'data': null,
+        'name': 'edge: null data for if/then schema',
+        'valid': false
+      },
+      {
+        'data': {},
+        'name': 'edge: empty object — if properties vacuously pass so then enforced — fails',
+        'valid': false
+      },
+      {
+        'data': {
+          'kind': 'person',
+          'name': ''
+        },
+        'name': 'edge: empty string satisfies type string in then branch',
+        'valid': true
       }
     ];
 
@@ -110,6 +128,27 @@ void describe('if/then/else validation', () => {
         'data': { 'kind': 'person' },
         'name': 'if does not match — else requires label — missing',
         'valid': false
+      },
+      {
+        'data': null,
+        'name': 'edge: null data for if/then/else schema',
+        'valid': false
+      },
+      {
+        'data': {
+          'kind': 'other',
+          'label': ''
+        },
+        'name': 'edge: empty string label satisfies else branch required string',
+        'valid': true
+      },
+      {
+        'data': {
+          'kind': 'org',
+          'orgName': 'Acme'
+        },
+        'name': 'edge: data matching if branch with then satisfied',
+        'valid': true
       }
     ];
 
@@ -137,11 +176,23 @@ void describe('if/then/else validation', () => {
 
     const scenarios: Array<{ 'data': unknown;
       'name': string;
-      'valid': boolean }> = [{
-      'data': { 'kind': 'normal' },
-      'name': 'if does not match, no else — passes',
-      'valid': true
-    }];
+      'valid': boolean }> = [
+      {
+        'data': { 'kind': 'normal' },
+        'name': 'if does not match, no else — passes',
+        'valid': true
+      },
+      {
+        'data': null,
+        'name': 'edge: null data with no else branch',
+        'valid': false
+      },
+      {
+        'data': {},
+        'name': 'edge: empty object — if properties vacuously pass, then requires code — fails',
+        'valid': false
+      }
+    ];
 
     for (const {
       data, name, valid

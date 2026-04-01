@@ -14,6 +14,11 @@ export interface RegistryOptionsInterface {
   /** Custom keyword definitions passed to the graph engine. */
   'keywords'?: KeywordDefinitionInterface[];
   'logger'?: LoggerInterface;
+  /**
+   * Maximum recursion depth for schema traversal during validation.
+   * Defaults to no limit. Set a finite value to protect against stack overflow.
+   */
+  'maxDepth'?: number;
   /** Prefix-to-IRI map for CURIE expansion/compaction (e.g. `{ acl: 'https://acl.io/' }`). */
   'prefixes'?: Record<string, string>;
   /** When true, validate that $schema references draft 2020-12. */

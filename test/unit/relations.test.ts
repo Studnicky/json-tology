@@ -692,6 +692,67 @@ void describe('Enriched relations', () => {
     }
   });
 
+  void it('handles edge-case schemas with no properties, boolean subschema, and empty oneOf', () => {
+    const edgeScenarios: Array<{
+      'assertions': (rels: SchemaGraphRelationInterface[]) => void;
+      'name': string;
+      'schema': Record<string, unknown>;
+    }> = [
+      {
+        'assertions': (rels) => {
+          const propTypes = rels.filter((rel) => {
+            return rel.target === 'owl:ObjectProperty' || rel.target === 'owl:DatatypeProperty';
+          });
+
+          assert.equal(propTypes.length, 0, 'edge: no properties — no property-type relations');
+        },
+        'name': 'edge: schema with no properties produces no property-type relations',
+        'schema': {
+          '$id': 'https://example.com/NoProps',
+          'type': 'object'
+        }
+      },
+      {
+        'assertions': (rels) => {
+          const subClassRels = findRelations(rels, 'rdfs:subClassOf');
+
+          assert.ok(subClassRels.length > 0, 'edge: boolean true subschema — produces subClassOf');
+        },
+        'name': 'edge: boolean true subschema in allOf produces relations',
+        'schema': {
+          '$id': 'https://example.com/BoolAllOf',
+          'allOf': [
+            true as unknown as Record<string, unknown>,
+            { 'type': 'object' }
+          ],
+          'type': 'object'
+        }
+      },
+      {
+        'assertions': (rels) => {
+          const equivRels = findRelations(rels, 'owl:equivalentClass');
+
+          assert.equal(equivRels.length, 0, 'edge: empty oneOf — no equivalentClass relations');
+        },
+        'name': 'edge: empty oneOf array produces no equivalentClass relations',
+        'schema': {
+          '$id': 'https://example.com/EmptyOneOf',
+          'oneOf': [],
+          'type': 'object'
+        }
+      }
+    ];
+
+    for (const {
+      assertions, name, schema
+    } of edgeScenarios) {
+      const rels = nodeRelations(schema);
+
+      assertions(rels);
+      assert.ok(true, name);
+    }
+  });
+
   void it('preserves OWL and RDFS relation predicates', () => {
     const scenarios: Array<{ 'count'?: number;
       'predicate': string;

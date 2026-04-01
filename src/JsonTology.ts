@@ -48,6 +48,7 @@ import { Transform } from './modules/transform/transform.js';
 import type { JsonTologyOptionsInterface } from './interfaces/Config.js';
 import { DEFAULT_PREFIXES } from './constants/PREFIXES.js';
 import { Curie } from './modules/rdf/curie.js';
+import { SchemaError } from './errors/SchemaError.js';
 
 /**
  * JsonTology — unified type system, validation, materialization, and ontology.
@@ -123,7 +124,8 @@ export class JsonTology<TMap = Record<never, never>> {
       ...(options.castTypes === undefined ? {} : { 'castTypes': options.castTypes }),
       ...(options.keywords === undefined ? {} : { 'keywords': options.keywords }),
       ...(options.strict === undefined ? {} : { 'strict': options.strict }),
-      ...(options.vocabularies === undefined ? {} : { 'vocabularies': options.vocabularies })
+      ...(options.vocabularies === undefined ? {} : { 'vocabularies': options.vocabularies }),
+      ...(options.maxDepth === undefined ? {} : { 'maxDepth': options.maxDepth })
     };
 
     this.registry = new SchemaRegistry(registryOptions);
@@ -156,6 +158,10 @@ export class JsonTology<TMap = Record<never, never>> {
     schema: TSchema, data: unknown
   ): ParseOutputType<TSchema>;
   public coerce(schema: (keyof TMap & string) | (Record<string, unknown> & { '$id': string; }), data: unknown): unknown {
+    if ((schema as unknown) === null || (schema as unknown) === undefined) {
+      throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
+    }
+
     return this.registry.coerce(typeof schema === 'string' ? schema : schema.$id, data);
   }
   /**
@@ -184,6 +190,10 @@ export class JsonTology<TMap = Record<never, never>> {
   // ---------------------------------------------------------------------------
   public errors(schema: Record<string, unknown> & { '$id': string; }, data: unknown): ValidationErrors;
   public errors(schema: (keyof TMap & string) | (Record<string, unknown> & { '$id': string; }), data: unknown): ValidationErrors {
+    if ((schema as unknown) === null || (schema as unknown) === undefined) {
+      throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
+    }
+
     return this.registry.errors(typeof schema === 'string' ? schema : schema.$id, data);
   }
   /**
@@ -237,6 +247,10 @@ export class JsonTology<TMap = Record<never, never>> {
   public is<K extends keyof TMap & string>(schemaId: K, data: unknown): data is TMap[K];
   public is(schema: Record<string, unknown> & { '$id': string; }, data: unknown): boolean;
   public is(schema: (keyof TMap & string) | (Record<string, unknown> & { '$id': string; }), data: unknown): boolean {
+    if ((schema as unknown) === null || (schema as unknown) === undefined) {
+      throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
+    }
+
     return this.registry.is(typeof schema === 'string' ? schema : schema.$id, data);
   }
   /**
@@ -384,6 +398,10 @@ export class JsonTology<TMap = Record<never, never>> {
   public validate<K extends keyof TMap & string>(schemaId: K, data: unknown): string[];
   public validate(schema: Record<string, unknown> & { '$id': string; }, data: unknown): string[];
   public validate(schema: (keyof TMap & string) | (Record<string, unknown> & { '$id': string; }), data: unknown): string[] {
+    if ((schema as unknown) === null || (schema as unknown) === undefined) {
+      throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
+    }
+
     return this.registry.validate(typeof schema === 'string' ? schema : schema.$id, data);
   }
 
@@ -403,6 +421,10 @@ export class JsonTology<TMap = Record<never, never>> {
   ): string[];
   public validateAt(schema: Record<string, unknown> & { '$id': string; }, pointer: string, data: unknown): string[];
   public validateAt(schema: (keyof TMap & string) | (Record<string, unknown> & { '$id': string; }), pointer: string, data: unknown): string[] {
+    if ((schema as unknown) === null || (schema as unknown) === undefined) {
+      throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
+    }
+
     const schemaId = typeof schema === 'string' ? schema : schema.$id;
     const validationResult = this.registry.validateAt(schemaId, pointer, data);
 

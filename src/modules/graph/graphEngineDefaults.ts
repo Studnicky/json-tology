@@ -15,13 +15,20 @@ function propertiesFromSemantics(sem: SchemaGraphSemanticsInterface): Map<string
   return sem.properties;
 }
 
+const MAX_DEFAULT_DEPTH = 256;
+
 export function createImplicitDefaultValue(
   context: DefaultResolutionContextInterface,
   node: SchemaGraphNodeInterface,
   graph: SchemaGraphInterface,
   dynamicScope: DynamicScopeEntryInterface[],
-  visited = new Set<string>()
+  visited = new Set<string>(),
+  depth = 0
 ): unknown {
+  if (depth > MAX_DEFAULT_DEPTH) {
+    return undefined;
+  }
+
   if (typeof node.schema === 'boolean') {
     return undefined;
   }
@@ -42,12 +49,12 @@ export function createImplicitDefaultValue(
   if (typeof ref === 'string') {
     const resolved = context.resolveRef(ref, graph);
 
-    return createImplicitDefaultValue(context, resolved.node, resolved.graph, dynamicScope, visited);
+    return createImplicitDefaultValue(context, resolved.node, resolved.graph, dynamicScope, visited, depth + 1);
   }
   if (typeof dynamicRef === 'string') {
     const resolved = context.resolveDynamicRef(dynamicRef, graph, dynamicScope);
 
-    return createImplicitDefaultValue(context, resolved.node, resolved.graph, dynamicScope, visited);
+    return createImplicitDefaultValue(context, resolved.node, resolved.graph, dynamicScope, visited, depth + 1);
   }
 
   const hasProperties = sem.properties.size > 0;
@@ -60,7 +67,7 @@ export function createImplicitDefaultValue(
       key,
       childNode
     ] of propertiesFromSemantics(sem)) {
-      const childValue = createImplicitDefaultValue(context, childNode, graph, dynamicScope, visited);
+      const childValue = createImplicitDefaultValue(context, childNode, graph, dynamicScope, visited, depth + 1);
 
       if (childValue !== undefined) {
         result[key] = childValue;
@@ -79,8 +86,13 @@ export function synthesizeZeroValue(
   node: SchemaGraphNodeInterface,
   graph: SchemaGraphInterface,
   dynamicScope: DynamicScopeEntryInterface[],
-  visited = new Set<string>()
+  visited = new Set<string>(),
+  depth = 0
 ): unknown {
+  if (depth > MAX_DEFAULT_DEPTH) {
+    return undefined;
+  }
+
   if (typeof node.schema === 'boolean') {
     return null;
   }
@@ -105,12 +117,12 @@ export function synthesizeZeroValue(
   if (typeof sem.ref === 'string') {
     const resolved = context.resolveRef(sem.ref, graph);
 
-    return synthesizeZeroValue(context, resolved.node, resolved.graph, dynamicScope, visited);
+    return synthesizeZeroValue(context, resolved.node, resolved.graph, dynamicScope, visited, depth + 1);
   }
   if (typeof sem.dynamicRef === 'string') {
     const resolved = context.resolveDynamicRef(sem.dynamicRef, graph, dynamicScope);
 
-    return synthesizeZeroValue(context, resolved.node, resolved.graph, dynamicScope, visited);
+    return synthesizeZeroValue(context, resolved.node, resolved.graph, dynamicScope, visited, depth + 1);
   }
 
   const types = sem.schemaTypes;

@@ -72,6 +72,38 @@ void describe('contains validation', () => {
         'data': { 'values': [] },
         'name': 'empty array has no items to match',
         'valid': false
+      },
+      {
+        'data': {
+          'values': [
+            null,
+            null,
+            null
+          ]
+        },
+        'name': 'edge: array of nulls — none match type number',
+        'valid': false
+      },
+      {
+        'data': { 'values': [42] },
+        'name': 'edge: single-element array with matching item',
+        'valid': true
+      },
+      {
+        'data': { 'values': ['only'] },
+        'name': 'edge: single-element array with non-matching item',
+        'valid': false
+      },
+      {
+        'data': {
+          'values': [
+            undefined,
+            Number.NaN,
+            Infinity
+          ]
+        },
+        'name': 'unhappy: array with undefined, NaN, Infinity — none are finite numbers',
+        'valid': false
       }
     ];
 

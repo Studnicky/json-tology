@@ -60,6 +60,16 @@ const extendScenarios: ExtendScenario[] = [
     'newId': 'https://example.io/extended-empty'
   },
   {
+    'additionalProps': { 'flag': { 'type': 'boolean' } },
+    'assertions': (result) => {
+      assert.strictEqual(result.$id, '', 'edge: extend empty $id — $id is empty string');
+      assert.ok('name' in result.properties, 'edge: extend empty $id — name present');
+      assert.ok('flag' in result.properties, 'edge: extend empty $id — flag present');
+    },
+    'name': 'edge: extend with empty $id produces schema with empty string $id',
+    'newId': ''
+  },
+  {
     'additionalProps': { 'role': { 'type': 'string' } },
     'assertions': (result) => {
       assert.strictEqual(result.$id, 'https://example.io/base', 'extend same $id — $id preserved');
@@ -130,6 +140,15 @@ const pickScenarios: PickScenario[] = [
     ],
     'name': 'ignores properties that do not exist on source',
     'newId': 'https://example.io/pick-missing'
+  },
+  {
+    'assertions': (result) => {
+      assert.strictEqual(result.$id, 'https://example.io/pick-ghost', 'edge: pick non-existent single — $id');
+      assert.deepStrictEqual(result.properties, {}, 'edge: pick non-existent single — empty properties');
+    },
+    'keys': ['ghost'],
+    'name': 'edge: pick with single non-existent property returns empty schema',
+    'newId': 'https://example.io/pick-ghost'
   }
 ];
 
@@ -311,6 +330,15 @@ const intersectionScenarios: IntersectionScenario[] = [
         'type': 'object'
       }
     ]
+  },
+  {
+    'assertions': (result) => {
+      assert.strictEqual(result.$id, 'https://example.io/empty-allof', 'edge: empty allOf — $id');
+      assert.strictEqual(result.allOf.length, 0, 'edge: empty allOf — allOf is empty');
+    },
+    'name': 'edge: intersection with empty schemas array produces empty allOf',
+    'newId': 'https://example.io/empty-allof',
+    'schemas': []
   },
   {
     'assertions': (result) => {

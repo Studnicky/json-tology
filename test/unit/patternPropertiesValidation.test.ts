@@ -45,6 +45,26 @@ void describe('patternProperties basic matching', () => {
         'data': { 'S_count': 42 },
         'name': 'matching key with wrong type',
         'valid': false
+      },
+      {
+        'data': {},
+        'name': 'edge: empty object — no keys to match patterns',
+        'valid': true
+      },
+      {
+        'data': { '': 'value' },
+        'name': 'edge: empty string key — does not match ^S_ pattern',
+        'valid': true
+      },
+      {
+        'data': { 'S_': 'val' },
+        'name': 'edge: key is exactly the pattern prefix with empty suffix',
+        'valid': true
+      },
+      {
+        'data': { 'S_name': null },
+        'name': 'unhappy: matching key with null value — not a string',
+        'valid': false
       }
     ];
 
@@ -399,6 +419,16 @@ void describe('patternProperties with complex regex patterns', () => {
         'data': { '123': 42 },
         'name': 'digit key with wrong type (number instead of string)',
         'valid': false
+      },
+      {
+        'data': { 'abc': 'text' },
+        'name': 'edge: non-digit key does not match ^\\d+$ pattern — passes',
+        'valid': true
+      },
+      {
+        'data': { '': 'empty-key' },
+        'name': 'edge: empty string key does not match ^\\d+$ pattern',
+        'valid': true
       }
     ];
 

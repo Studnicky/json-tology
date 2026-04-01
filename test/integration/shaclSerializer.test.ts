@@ -317,6 +317,95 @@ void describe('GraphShaclSerializer', () => {
     }
   });
 
+  void it('edge-case property and schema handling', () => {
+    const edgeScenarios = [
+      {
+        'assertions': (shapes: unknown[]) => {
+          const shape = findShape(shapes, 'https://example.com/NoRequired');
+
+          if (shape === undefined) {
+            assert.fail('edge: no required — shape exists');
+          }
+          const props = shape['http://www.w3.org/ns/shacl#property'] as Array<Record<string, unknown>>;
+
+          assert.ok(Array.isArray(props), 'edge: no required — properties exist');
+          for (const prop of props) {
+            assert.equal(prop['http://www.w3.org/ns/shacl#minCount'], undefined, 'edge: no required — no minCount');
+          }
+        },
+        'name': 'edge: schema with no required properties emits no sh:minCount',
+        'schema': {
+          '$id': 'https://example.com/NoRequired',
+          'properties': {
+            'a': { 'type': 'string' },
+            'b': { 'type': 'number' }
+          },
+          'type': 'object'
+        } as const
+      },
+      {
+        'assertions': (shapes: unknown[]) => {
+          const shape = findShape(shapes, 'https://example.com/MultiType');
+
+          if (shape === undefined) {
+            assert.fail('edge: multiple types — shape exists');
+          }
+          const props = shape['http://www.w3.org/ns/shacl#property'] as Array<Record<string, unknown>>;
+
+          assert.ok(Array.isArray(props) && props.length > 0, 'edge: multiple types — has properties');
+        },
+        'name': 'edge: property with multiple types produces a property shape',
+        'schema': {
+          '$id': 'https://example.com/MultiType',
+          'properties': {
+            'value': {
+              'type': [
+                'string',
+                'number'
+              ]
+            }
+          },
+          'type': 'object'
+        } as const
+      },
+      {
+        'assertions': (shapes: unknown[]) => {
+          const shape = findShape(shapes, 'https://example.com/PatternNum');
+
+          if (shape === undefined) {
+            assert.fail('edge: pattern on non-string — shape exists');
+          }
+          const props = shape['http://www.w3.org/ns/shacl#property'] as Array<Record<string, unknown>>;
+
+          assert.ok(Array.isArray(props) && props.length > 0, 'edge: pattern on non-string — has properties');
+          const numProp = findProp(shape, 'https://example.com/PatternNum#count');
+
+          assert.ok(numProp !== undefined, 'edge: pattern on non-string — prop exists');
+        },
+        'name': 'edge: pattern on non-string property does not crash serializer',
+        'schema': {
+          '$id': 'https://example.com/PatternNum',
+          'properties': {
+            'count': {
+              'pattern': '^\\d+$',
+              'type': 'integer'
+            }
+          },
+          'type': 'object'
+        } as const
+      }
+    ] as const;
+
+    for (const {
+      assertions, name, schema
+    } of edgeScenarios) {
+      const shapes = serialize(schema as unknown as Record<string, unknown>);
+
+      assertions(shapes);
+      assert.ok(true, name);
+    }
+  });
+
   void it('sets sh:minCount 1 for required properties', () => {
     const shapes = serialize({
       '$id': 'https://example.com/Thing',

@@ -17,6 +17,7 @@ import type {
   InternalExecutionResultInterface
 } from './graphEngineSupport.js';
 import type { VisitContextInterface } from '../../interfaces/VisitContext.js';
+import { GraphError } from '../../errors/GraphError.js';
 
 export type { VisitContextInterface } from '../../interfaces/VisitContext.js';
 
@@ -30,8 +31,13 @@ export function visitNode(
   path: string,
   options: EffectiveOptionsType,
   refStack: Set<string>,
-  dynamicScope: DynamicScopeEntryInterface[]
+  dynamicScope: DynamicScopeEntryInterface[],
+  depth = 0
 ): InternalExecutionResultInterface {
+  if (depth > options.maxDepth) {
+    throw new GraphError('RECURSION_LIMIT', `Maximum schema recursion depth (${options.maxDepth}) exceeded at path: ${path}`, path);
+  }
+
   if (typeof node.schema === 'boolean') {
     return node.schema
       ? {
@@ -90,7 +96,7 @@ export function visitNode(
     workingValue = context.coerceValue(schemaTypes, workingValue, options.materializeContainers);
   }
 
-  const nextDynamicScope = typeof dynamicAnchor === 'string'
+  const dynScope = typeof dynamicAnchor === 'string'
     ? [
       ...dynamicScope,
       {
@@ -123,7 +129,8 @@ export function visitNode(
       path,
       options,
       refStack,
-      nextDynamicScope
+      dynScope,
+      depth + 1
     );
 
     refStack.delete(refKey);
@@ -146,7 +153,7 @@ export function visitNode(
       };
     }
     refStack.add(refKey);
-    const resolved = context.resolveDynamicRef(dynamicRef, graph, nextDynamicScope);
+    const resolved = context.resolveDynamicRef(dynamicRef, graph, dynScope);
     const resolvedResult = visitNode(
       context,
       resolved.node,
@@ -155,7 +162,8 @@ export function visitNode(
       path,
       options,
       refStack,
-      nextDynamicScope
+      dynScope,
+      depth + 1
     );
 
     refStack.delete(refKey);
@@ -246,7 +254,7 @@ export function visitNode(
   }
 
   if (Array.isArray(workingValue)) {
-    const arrayResult = context.validateArray(graph, workingValue, path, options, refStack, nextDynamicScope, sem);
+    const arrayResult = context.validateArray(graph, workingValue, path, options, refStack, dynScope, sem, depth);
 
     if (!arrayResult.valid && !options.collectErrors) {
       return arrayResult;
@@ -259,7 +267,7 @@ export function visitNode(
   }
 
   if (isObject(workingValue)) {
-    const objectResult = context.validateObject(node, graph, workingValue, path, options, refStack, nextDynamicScope);
+    const objectResult = context.validateObject(node, graph, workingValue, path, options, refStack, dynScope, depth);
 
     if (!objectResult.valid && !options.collectErrors) {
       return objectResult;
@@ -273,7 +281,7 @@ export function visitNode(
 
   if (allOf.length > 0) {
     for (const childNode of allOf) {
-      const branch = visitNode(context, childNode, graph, workingValue, path, options, refStack, nextDynamicScope);
+      const branch = visitNode(context, childNode, graph, workingValue, path, options, refStack, dynScope, depth + 1);
 
       if (!branch.valid && !options.collectErrors) {
         return branch;
@@ -296,7 +304,7 @@ export function visitNode(
       const candidate = visitNode(context, childNode, graph, cloneCandidate(workingValue), path, {
         ...options,
         'collectErrors': true
-      }, refStack, nextDynamicScope);
+      }, refStack, dynScope, depth + 1);
 
       if (candidate.valid) {
         successfulResults.push(candidate);
@@ -358,7 +366,7 @@ export function visitNode(
               const candidate = visitNode(context, variant.node, graph, cloneCandidate(workingValue), path, {
                 ...options,
                 'collectErrors': true
-              }, refStack, nextDynamicScope);
+              }, refStack, dynScope, depth + 1);
 
               if (candidate.valid) {
                 matches = 1;
@@ -382,7 +390,7 @@ export function visitNode(
                 const candidate = visitNode(context, variant.node, graph, cloneCandidate(workingValue), path, {
                   ...options,
                   'collectErrors': true
-                }, refStack, nextDynamicScope);
+                }, refStack, dynScope, depth + 1);
 
                 if (candidate.valid) {
                   matches = 1;
@@ -402,7 +410,7 @@ export function visitNode(
         const candidate = visitNode(context, oneOfChild, graph, cloneCandidate(workingValue), path, {
           ...options,
           'collectErrors': true
-        }, refStack, nextDynamicScope);
+        }, refStack, dynScope, depth + 1);
 
         if (candidate.valid) {
           matches++;
@@ -429,7 +437,7 @@ export function visitNode(
     const notResult = visitNode(context, complementNode, graph, cloneCandidate(workingValue), path, {
       ...options,
       'collectErrors': true
-    }, refStack, nextDynamicScope);
+    }, refStack, dynScope, depth + 1);
 
     if (notResult.valid) {
       return invalid(context.createError(path, 'not', 'must not match schema'));
@@ -440,7 +448,7 @@ export function visitNode(
     const condition = visitNode(context, ifNode, graph, cloneCandidate(workingValue), path, {
       ...options,
       'collectErrors': true
-    }, refStack, nextDynamicScope);
+    }, refStack, dynScope, depth + 1);
     const branchNode = condition.valid ? thenNode : elseNode;
 
     // Properties evaluated by the if condition count as evaluated (JSON Schema 2020-12 §10.2.2.1)
@@ -452,7 +460,7 @@ export function visitNode(
     }
 
     if (branchNode !== undefined) {
-      const branch = visitNode(context, branchNode, graph, workingValue, path, options, refStack, nextDynamicScope);
+      const branch = visitNode(context, branchNode, graph, workingValue, path, options, refStack, dynScope, depth + 1);
 
       if (!branch.valid && !options.collectErrors) {
         return branch;
@@ -476,8 +484,9 @@ export function visitNode(
       path,
       options,
       refStack,
-      nextDynamicScope,
-      evaluatedItems
+      dynScope,
+      evaluatedItems,
+      depth
     );
 
     if (!unevaluatedResult.valid && !options.collectErrors) {
@@ -498,8 +507,9 @@ export function visitNode(
       path,
       options,
       refStack,
-      nextDynamicScope,
-      evaluatedProperties
+      dynScope,
+      evaluatedProperties,
+      depth
     );
 
     if (!unevaluatedResult.valid && !options.collectErrors) {
@@ -582,10 +592,10 @@ export function visitNode(
         if (isObject(workingValue)) {
           const rangeGraph = context.graphFor(rangeSchema);
           const rangeRoot = rangeGraph.rootNode;
-          const rangeResult = visitNode(context, rangeRoot, rangeGraph, workingValue, path, options, refStack, []);
+          const res = visitNode(context, rangeRoot, rangeGraph, workingValue, path, options, refStack, [], depth + 1);
 
-          if (!rangeResult.valid) {
-            pushErrors(rangeResult.errors);
+          if (!res.valid) {
+            pushErrors(res.errors);
           }
         } else if (Array.isArray(workingValue)) {
           const rangeGraph = context.graphFor(rangeSchema);
@@ -597,10 +607,10 @@ export function visitNode(
           ] of workingValue.entries()) {
             if (isObject(item) || Array.isArray(item)) {
               const itemPath = `${path}/${i}`;
-              const itemResult = visitNode(context, rangeRoot, rangeGraph, item, itemPath, options, refStack, []);
+              const res = visitNode(context, rangeRoot, rangeGraph, item, itemPath, options, refStack, [], depth + 1);
 
-              if (!itemResult.valid) {
-                pushErrors(itemResult.errors);
+              if (!res.valid) {
+                pushErrors(res.errors);
               }
             }
           }
