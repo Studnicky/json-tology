@@ -10,8 +10,11 @@ import type {
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import {
-  deepEqual, escapeSegment as escapeUriSegment, isRecord, propertyIri
+  deepEqual, isRecord
 } from '../data/DataTypes.js';
+import {
+  escapeSegment as escapeUriSegment, propertyIri
+} from './SchemaIri.js';
 import { FormatRegistry } from '../format/FormatRegistry.js';
 import { Hash } from '../hash/Hash.js';
 import { SchemaGraph } from './SchemaGraph.js';

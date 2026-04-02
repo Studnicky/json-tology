@@ -1,9 +1,9 @@
 /**
- * ProjectionIndex — shared relation indexing and subject helpers
+ * ProjectionIndex — shared relation indexing and structure type guards
  * for OwlProjection and ShaclProjection.
  *
- * Groups relations by source ID and predicate, and provides
- * classification helpers for subject IRIs.
+ * Groups relations by source ID and predicate.
+ * Subject IRI classification helpers live in `src/modules/graph/SchemaIri.ts`.
  */
 
 import type { SchemaGraphRelationInterface } from '../../interfaces/SchemaGraph.js';
@@ -59,20 +59,6 @@ export function relationTargetId(relation: SchemaGraphRelationInterface): string
 }
 
 // ---------------------------------------------------------------------------
-// Subject classification helpers
-// ---------------------------------------------------------------------------
-
-export function isPropertySubject(subject: string): boolean {
-  const parts = splitSubject(subject);
-
-  if (parts.fragment === null) {
-    return false;
-  }
-
-  return parts.fragment.includes('/properties/');
-}
-
-// ---------------------------------------------------------------------------
 // Structure type guards
 // ---------------------------------------------------------------------------
 
@@ -82,65 +68,4 @@ export function isRestrictionStructure(structure: RelationStructure | undefined)
 
 export function isListStructure(structure: RelationStructure | undefined): structure is Extract<RelationStructure, { 'kind': 'list' }> {
   return structure?.kind === 'list';
-}
-
-// ---------------------------------------------------------------------------
-// Hash fragment parsing
-// ---------------------------------------------------------------------------
-
-export function splitSubject(subject: string): { 'base': string;
-  'fragment': null | string } {
-  const hashIdx = subject.indexOf('#');
-
-  if (hashIdx === -1) {
-    return {
-      'base': subject,
-      'fragment': null
-    };
-  }
-
-  return {
-    'base': subject.slice(0, hashIdx),
-    'fragment': subject.slice(hashIdx + 1)
-  };
-}
-
-export function fragmentContains(subject: string, segment: string): boolean {
-  const parts = splitSubject(subject);
-
-  if (parts.fragment === null) {
-    return false;
-  }
-
-  return parts.fragment.includes(segment);
-}
-
-export function structuralParent(subject: string): string {
-  const parts = splitSubject(subject);
-
-  if (parts.fragment === null) {
-    return subject;
-  }
-
-  const propsIdx = parts.fragment.lastIndexOf('/properties/');
-
-  if (propsIdx === -1) {
-    return parts.base;
-  }
-
-  const parentPointer = parts.fragment.slice(0, propsIdx);
-
-  return parentPointer === '' ? parts.base : `${parts.base}#${parentPointer}`;
-}
-
-export function lastSegment(subject: string): string {
-  const hashIdx = subject.indexOf('#');
-
-  if (hashIdx === -1) {
-    return subject;
-  }
-
-  const segments = subject.slice(hashIdx + 1).split('/');
-
-  return segments.at(-1) ?? '';
 }

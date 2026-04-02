@@ -17,15 +17,17 @@ import type { CurieInterface } from '../../interfaces/Curie.js';
 import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
+import { resolveSingleXsdType } from '../../constants/XSD_MAPS.js';
 import {
-  propertyIri, resolveSingleXsdType
-} from '../data/DataTypes.js';
+  fragmentContains, isPropertySubject, lastSegment,
+  propertyIri, splitSubject, structuralParent
+} from '../graph/SchemaIri.js';
 import {
   bnode, emitLiterals, iri, literal, nextBnode, quad, rdfList
-} from './Projection.js';
+} from './QuadFactory.js';
 import {
-  buildIndex, fragmentContains, isListStructure, isPropertySubject, isRestrictionStructure,
-  lastSegment, relationTargetId, splitSubject, structuralParent
+  buildIndex, isListStructure, isRestrictionStructure,
+  relationTargetId
 } from './ProjectionIndex.js';
 import type { RelationIndexInterface } from '../../interfaces/RelationIndex.js';
 

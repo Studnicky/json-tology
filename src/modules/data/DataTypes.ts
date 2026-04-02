@@ -1,14 +1,11 @@
 /**
- * DataTypes — shared type guards and XSD type resolution
+ * DataTypes — shared type guards and deep equality
  *
- * Consolidates type checking predicates and JSON Schema → XSD type mappings
- * used across graph, ontology, validation, and data modules.
+ * Consolidates type checking predicates used across
+ * graph, ontology, validation, and data modules.
+ * IRI helpers live in `src/modules/graph/SchemaIri.ts`.
+ * XSD type resolution lives in `src/constants/XSD_MAPS.ts`.
  */
-
-import type { SchemaGraphSemanticsInterface } from '../../interfaces/SchemaGraph.js';
-import {
-  BASE_TYPE_MAP, NUMBER_FORMAT_MAP, STRING_FORMAT_MAP
-} from '../../constants/XSD_MAPS.js';
 
 // ---------------------------------------------------------------------------
 // Type guards
@@ -35,84 +32,6 @@ export function deepFreeze<T extends object>(obj: T): T {
   }
 
   return obj;
-}
-
-// ---------------------------------------------------------------------------
-// XSD type resolution
-// ---------------------------------------------------------------------------
-
-/**
- * Resolve a single JSON Schema `type` (and optional `format`) to an XSD datatype IRI.
- *
- * @param type - JSON Schema type (`string`, `number`, `integer`, `boolean`, `null`).
- * @param format - Optional format hint (e.g. `date-time`, `int32`).
- * @returns The XSD type string, or `null` for composite types (`object`, `array`) or unknown mappings.
- */
-export function resolveSingleXsdType(type: string, format?: string): null | string {
-  if (type === 'object' || type === 'array') {
-    return null;
-  }
-  if (type === 'string') {
-    return format !== undefined && format in STRING_FORMAT_MAP
-      ? STRING_FORMAT_MAP[format]
-      : 'xsd:string';
-  }
-  if (type === 'number' || type === 'integer') {
-    return format !== undefined && format in NUMBER_FORMAT_MAP
-      ? NUMBER_FORMAT_MAP[format]
-      : (BASE_TYPE_MAP[type] ?? null);
-  }
-
-  return BASE_TYPE_MAP[type] ?? null;
-}
-
-/**
- * Resolve the XSD type from a schema node's semantics (types array + format).
- *
- * @param semantics - The schema graph semantics containing `schemaTypes` and `format`.
- * @returns The XSD type string, `owl:Nothing` for null-only types, or `null` for ambiguous/composite types.
- */
-export function resolveXsdType(semantics: SchemaGraphSemanticsInterface): null | string {
-  const types = semantics.schemaTypes;
-  const format = semantics.format;
-
-  const nonNull = types.filter((schemaType) => {
-    return schemaType !== 'null';
-  });
-
-  if (nonNull.length === 0) {
-    return types.length > 0 ? 'owl:Nothing' : null;
-  }
-  if (nonNull.length === 1) {
-    return resolveSingleXsdType(nonNull[0], format);
-  }
-
-  return null;
-}
-
-// ---------------------------------------------------------------------------
-// IRI helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Encodes a string for use as a URI path segment, preserving forward slashes.
- *
- * @param value - The raw string to escape.
- * @returns The percent-encoded string with `/` characters preserved.
- */
-export function escapeSegment(value: string): string {
-  return encodeURIComponent(value).replaceAll('%2F', '/');
-}
-
-/**
- * Generate a property IRI by appending a fragment to a class IRI.
- *
- * @param classId - The class `$id` (e.g. `https://example.io/User`).
- * @param propertyName - The property name (e.g. `email`).
- * @returns The property IRI (e.g. `https://example.io/User#email`).
- */
-export function propertyIri(classId: string, propertyName: string): string {
-  return `${classId}#${propertyName}`;
 }
 
 // ---------------------------------------------------------------------------
