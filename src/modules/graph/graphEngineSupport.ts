@@ -6,7 +6,7 @@ import {
   VOCABULARY_FORMAT_ASSERTION
 } from '../../constants/DIALECT.js';
 import { GraphError } from '../../errors/GraphError.js';
-import { isRecord } from '../data/dataTypes.js';
+import { isRecord } from '../data/DataTypes.js';
 
 import type { JSONSchema7Definition } from 'json-schema';
 import type { RootDialectPlanInterface } from '../../interfaces/RootDialectPlan.js';

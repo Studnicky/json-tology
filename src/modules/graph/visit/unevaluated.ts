@@ -8,7 +8,7 @@ import type { VisitContextInterface } from '../../../interfaces/VisitContext.js'
 import type { InternalExecutionResultInterface } from '../../../interfaces/InternalExecutionResult.js';
 import {
   isRecord
-} from '../../data/dataTypes.js';
+} from '../../data/DataTypes.js';
 import { Predicates } from '../../validation/predicates.js';
 
 export class Unevaluated {

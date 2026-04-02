@@ -3,7 +3,7 @@ import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import {
   isRecord
-} from '../data/dataTypes.js';
+} from '../data/DataTypes.js';
 import { Predicates } from '../validation/predicates.js';
 import {
   cloneDefault

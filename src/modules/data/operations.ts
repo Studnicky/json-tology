@@ -1,5 +1,5 @@
 import type { DiffOpType } from '../../types/Diff.js';
-import { isPlainObject } from './dataTypes.js';
+import { isPlainObject } from './DataTypes.js';
 
 /**
  * Apply a single diff operation (`set` or `delete`) to a value at the specified path.

@@ -10,11 +10,11 @@ import type {
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import {
-  deepEqual, isRecord, propertyIri
-} from '../data/dataTypes.js';
+  deepEqual, escapeSegment as escapeUriSegment, isRecord, propertyIri
+} from '../data/DataTypes.js';
 import { FormatRegistry } from '../format/FormatRegistry.js';
 import { Hash } from '../hash/Hash.js';
-import { SchemaGraph } from './schemaGraph.js';
+import { SchemaGraph } from './SchemaGraph.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { DEFAULT_OPTIONS } from '../../constants/DIALECT.js';
 import {
@@ -54,7 +54,7 @@ export class GraphEngine implements GraphEngineInterface {
    * @returns The percent-encoded string with `/` characters preserved.
    */
   static escapeSegment(value: string): string {
-    return encodeURIComponent(value).replaceAll('%2F', '/');
+    return escapeUriSegment(value);
   }
 
   /**

@@ -6,7 +6,7 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { quadsToJsonLd } from '../../src/modules/rdf/jsonLdFormatter.js';
+import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
 import type { QuadInterface } from '../../src/interfaces/Quad.js';
 
 function literal(value: unknown, datatype = 'xsd:string'): QuadInterface['object'] {

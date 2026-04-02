@@ -1,6 +1,6 @@
 import type { ResolvedRefInterface } from '../../interfaces/ResolvedRef.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import { SchemaGraph } from '../graph/schemaGraph.js';
+import { SchemaGraph } from '../graph/SchemaGraph.js';
 
 export class RefResolver {
   static resolve(

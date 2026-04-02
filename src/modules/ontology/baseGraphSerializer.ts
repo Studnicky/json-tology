@@ -3,9 +3,9 @@ import type { GraphSerializerInterface } from '../../interfaces/Serializer.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
 import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugin.js';
 import type { QuadInterface } from '../../interfaces/Quad.js';
-import { quadsToJsonLd } from '../rdf/jsonLdFormatter.js';
+import { quadsToJsonLd } from '../rdf/JsonLdFormatter.js';
 import { resetBnodeCounter } from '../rdf/Projection.js';
-import { Curie } from '../rdf/curie.js';
+import { Curie } from '../rdf/Curie.js';
 import { DEFAULT_PREFIXES } from '../../constants/PREFIXES.js';
 
 export abstract class BaseGraphSerializer implements GraphSerializerInterface {

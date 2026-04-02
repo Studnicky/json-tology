@@ -5,46 +5,45 @@
  * pointer-based sub-schema execution.
  */
 
-import { BaseError } from '../../errors/BaseError.js';
-import { CoercionError } from '../../errors/CoercionError.js';
-import { SchemaError } from '../../errors/SchemaError.js';
-import { ValidationErrors } from '../../errors/ValidationErrors.js';
-import { Transform } from '../transform/transform.js';
 import type { CompiledValidatorInterface } from '../../interfaces/Compiler.js';
+import type { CurieInterface } from '../../interfaces/Curie.js';
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
 import type { KeywordDefinitionInterface } from '../../interfaces/GraphEngine.js';
 import type { GraphEngineInterface } from '../../interfaces/GraphEngineImpl.js';
+import type { LoggerInterface } from '../../interfaces/Logger.js';
+import type { RegistryOptionsInterface } from '../../interfaces/Registry.js';
 import type { SchemaCompilerInterface } from '../../interfaces/SchemaCompilerImpl.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import { GraphEngine } from '../graph/graphEngine.js';
+import type { SchemaRegistryEntryInterface } from '../../interfaces/SchemaRegistryEntry.js';
+import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
+import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugin.js';
+
+import { BaseError } from '../../errors/BaseError.js';
+import { CoercionError } from '../../errors/CoercionError.js';
+import { Curie } from '../rdf/Curie.js';
 import {
   deepFreeze, isRecord
-} from '../data/dataTypes.js';
+} from '../data/DataTypes.js';
+import { GraphEngine } from '../graph/graphEngine.js';
 import { Hash } from '../hash/Hash.js';
-import { Materializer } from '../materialization/materializer.js';
-import { SchemaGraph } from '../graph/schemaGraph.js';
+import { Materializer } from '../materialization/Materializer.js';
 import { SchemaCompiler } from '../validation/schemaCompiler.js';
-import type { LoggerInterface } from '../../interfaces/Logger.js';
-import type { CurieInterface } from '../../interfaces/Curie.js';
-import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugin.js';
-import type { RegistryOptionsInterface } from '../../interfaces/Registry.js';
-import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
-import { Curie } from '../rdf/curie.js';
-import { DEFAULT_PREFIXES } from '../../constants/PREFIXES.js';
-import { SILENT_LOGGER } from '../../constants/LOGGER.js';
-import {
-  CURRENT_DIALECT_PREFIX, DRAFT_NAME
-} from '../../constants/DIALECT.js';
-
+import { SchemaError } from '../../errors/SchemaError.js';
+import { SchemaGraph } from '../graph/SchemaGraph.js';
+import { Transform } from '../transform/Transform.js';
+import { ValidationErrors } from '../../errors/ValidationErrors.js';
 
 import {
   CAST_OPTIONS, CLEAN_OPTIONS, COLLECT_ERRORS_OPTIONS,
   CONVERT_OPTIONS, EMPTY_ERROR_LIST
 } from '../../constants/EXECUTION_OPTIONS.js';
+import {
+  CURRENT_DIALECT_PREFIX, DRAFT_NAME
+} from '../../constants/DIALECT.js';
+import { DEFAULT_PREFIXES } from '../../constants/PREFIXES.js';
+import { SILENT_LOGGER } from '../../constants/LOGGER.js';
 
 const EMPTY_VALIDATION_ERRORS = new ValidationErrors([]);
-
-import type { SchemaRegistryEntryInterface } from '../../interfaces/SchemaRegistryEntry.js';
 
 export class SchemaRegistry implements SchemaRegistryInterface {
   public readonly castTypes: boolean;

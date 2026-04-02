@@ -2,7 +2,7 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { SchemaGraph } from '../../src/modules/graph/schemaGraph.js';
+import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import type { SchemaGraphRelationInterface } from '../../src/interfaces/SchemaGraph.js';
 
 function graphRelations(schema: Record<string, unknown>): SchemaGraphRelationInterface[] {

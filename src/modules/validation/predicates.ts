@@ -6,7 +6,7 @@
  * paths use identical logic for type matching, constraint checking, and coercion.
  */
 
-import { deepEqual } from '../data/dataTypes.js';
+import { deepEqual } from '../data/DataTypes.js';
 import { MULTIPLE_OF_EPSILON_FACTOR } from '../../constants/NUMERIC.js';
 
 export class Predicates {

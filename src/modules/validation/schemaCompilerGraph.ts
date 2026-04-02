@@ -1,17 +1,17 @@
+import type { CheckFnType } from '../../types/Validation.js';
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
+import type { PropCheckInterface } from '../../interfaces/PropCheck.js';
+import type { SchemaCompilerGraphContextInterface } from '../../interfaces/SchemaCompilerGraphContext.js';
 import type {
   SchemaGraphNodeInterface, SchemaGraphSemanticsInterface
 } from '../../interfaces/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import {
   deepEqual, isRecord
-} from '../data/dataTypes.js';
-import { SchemaGraph } from '../graph/schemaGraph.js';
+} from '../data/DataTypes.js';
+import { SchemaGraph } from '../graph/SchemaGraph.js';
 import { Predicates } from './predicates.js';
 import { RefResolver } from './refResolver.js';
-import type { CheckFnType } from '../../types/Validation.js';
-import type { PropCheckInterface } from '../../interfaces/PropCheck.js';
-import type { SchemaCompilerGraphContextInterface } from '../../interfaces/SchemaCompilerGraphContext.js';
 
 export function compileRefCheck(
   context: SchemaCompilerGraphContextInterface,

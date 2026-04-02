@@ -22,8 +22,10 @@ import type { SubjectGroupType } from '../../types/SubjectGroup.js';
 import { DECIMAL_RADIX } from '../../constants/FORMAT_VALIDATION.js';
 
 import {
-  RDF_TYPE_IRI, XSD_IRI_PREFIX
+  RDF_TYPE_IRI, XSD_IRI_PREFIX, XSD_PREFIX
 } from '../../constants/PREFIXES.js';
+
+import { RDF } from '../../constants/IRI.js';
 
 import type { RdfJsQuadInterface } from '../../interfaces/RdfJsQuad.js';
 
@@ -36,7 +38,7 @@ import type { RdfJsQuadInterface } from '../../interfaces/RdfJsQuad.js';
  * Maps the full `rdf:type` IRI to the prefixed string used internally.
  */
 function normalizePredicate(iri: string): string {
-  return iri === RDF_TYPE_IRI ? 'rdf:type' : iri;
+  return iri === RDF_TYPE_IRI ? RDF.type : iri;
 }
 
 /**
@@ -141,7 +143,7 @@ const XSD_COERCERS = new Map<string, (raw: string) => unknown>([
 ]);
 
 function coerceLiteralValue(raw: string, datatype: string): unknown {
-  const local = datatype.startsWith('xsd:') ? datatype.slice(4) : datatype;
+  const local = datatype.startsWith(XSD_PREFIX) ? datatype.slice(XSD_PREFIX.length) : datatype;
   const coercer = XSD_COERCERS.get(local);
 
   return coercer === undefined ? raw : coercer(raw);
@@ -170,7 +172,7 @@ function groupBySubject(quads: QuadInterface[]): SubjectGroupType {
 
 function typeOf(quads: QuadInterface[]): string | undefined {
   for (const quad of quads) {
-    if (quad.predicate === 'rdf:type' && quad.object.termType === 'NamedNode') {
+    if (quad.predicate === RDF.type && quad.object.termType === 'NamedNode') {
       return quad.object.value;
     }
   }

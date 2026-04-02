@@ -12,9 +12,9 @@ import type { JSONSchema7Definition } from 'json-schema';
 import { BaseError } from '../../errors/BaseError.js';
 import { MaterializationError } from '../../errors/MaterializationError.js';
 import { GraphError } from '../../errors/GraphError.js';
-import { isRecord } from '../data/dataTypes.js';
+import { isRecord } from '../data/DataTypes.js';
 import { parseRef } from '../graph/graphEngineSupport.js';
-import { SchemaGraph } from '../graph/schemaGraph.js';
+import { SchemaGraph } from '../graph/SchemaGraph.js';
 import { projectAbox } from '../rdf/Projection.js';
 
 

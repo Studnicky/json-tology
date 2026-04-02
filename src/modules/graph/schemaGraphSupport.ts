@@ -10,7 +10,7 @@ import {
   DEFS_POINTER_PARTS_LENGTH, KNOWN_SCHEMA_KEYWORDS,
   MIN_PROPERTY_POINTER_PARTS
 } from '../../constants/SCHEMA_KEYWORDS.js';
-import { isRecord } from '../data/dataTypes.js';
+import { isRecord } from '../data/DataTypes.js';
 import type { JsonSchemaType } from '../../types/Schema.js';
 import type { GraphAccessor } from '../../interfaces/GraphAccessor.js';
 

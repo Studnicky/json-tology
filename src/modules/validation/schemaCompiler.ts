@@ -17,7 +17,7 @@ import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js
 import type { GraphEngineInterface } from '../../interfaces/GraphEngineImpl.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { KeywordDefinitionInterface } from '../../interfaces/GraphEngine.js';
-import { SchemaGraph } from '../graph/schemaGraph.js';
+import { SchemaGraph } from '../graph/SchemaGraph.js';
 import type {
   SchemaGraphNodeInterface, SchemaGraphSemanticsInterface
 } from '../../interfaces/SchemaGraph.js';

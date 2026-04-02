@@ -4,7 +4,7 @@ import type {
   SchemaGraphNodeInterface, SchemaGraphSemanticsInterface
 } from '../../interfaces/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import { isRecord } from '../data/dataTypes.js';
+import { isRecord } from '../data/DataTypes.js';
 import type { ValidateWithErrorsFnType } from '../../types/Validation.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { normalizeKeywordTypes } from './schemaCompilerSupport.js';

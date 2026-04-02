@@ -11,6 +11,8 @@
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import { RDF_TYPE_IRI } from '../../constants/PREFIXES.js';
+import { RDF } from '../../constants/IRI.js';
+import { JSONLD } from '../../constants/JSONLD.js';
 
 export function quadsToJsonLd(quads: QuadInterface[]): Array<Record<string, unknown>> {
   // Phase 1: group quads by subject
@@ -20,21 +22,21 @@ export function quadsToJsonLd(quads: QuadInterface[]): Array<Record<string, unkn
     let node = subjects.get(entry.subject);
 
     if (node === undefined) {
-      node = { '@id': entry.subject };
+      node = { [JSONLD.id]: entry.subject };
       subjects.set(entry.subject, node);
     }
 
-    if (entry.predicate === 'rdf:type' || entry.predicate === RDF_TYPE_IRI) {
-      // @type values are plain strings, not { '@id': ... } wrappers
+    if (entry.predicate === RDF.type || entry.predicate === RDF_TYPE_IRI) {
+      // @type values are plain strings, not { @id: ... } wrappers
       const typeValue = entry.object.termType === 'NamedNode' ? entry.object.value : objectToJsonLd(entry.object);
-      const existing = node['@type'];
+      const existing = node[JSONLD.type];
 
       if (existing === undefined) {
-        node['@type'] = typeValue;
+        node[JSONLD.type] = typeValue;
       } else if (Array.isArray(existing)) {
         (existing as unknown[]).push(typeValue);
       } else {
-        node['@type'] = [
+        node[JSONLD.type] = [
           existing,
           typeValue
         ];
@@ -98,17 +100,17 @@ export function quadsToJsonLd(quads: QuadInterface[]): Array<Record<string, unkn
 function objectToJsonLd(obj: QuadObjectType): unknown {
   switch (obj.termType) {
     case 'BlankNode':
-      return { '@id': obj.value };
+      return { [JSONLD.id]: obj.value };
     case 'List':
       return {
-        '@list': obj.items.map((item) => {
+        [JSONLD.list]: obj.items.map((item) => {
           return objectToJsonLd(item);
         })
       };
     case 'Literal':
       return obj.value;
     case 'NamedNode':
-      return { '@id': obj.value };
+      return { [JSONLD.id]: obj.value };
   }
 
   return undefined;
@@ -133,7 +135,7 @@ function inlineBnodes(
     key,
     value
   ] of Object.entries(node)) {
-    if (key === '@id') {
+    if (key === JSONLD.id) {
       continue;
     }
 
@@ -156,8 +158,8 @@ function resolveValue(
     const obj = value as Record<string, unknown>;
 
     // Check if this is a bnode reference that should be inlined
-    if ('@id' in obj && typeof obj['@id'] === 'string' && Object.keys(obj).length === 1) {
-      const refId = obj['@id'];
+    if (JSONLD.id in obj && typeof obj[JSONLD.id] === 'string' && Object.keys(obj).length === 1) {
+      const refId = obj[JSONLD.id] as string;
 
       if (inlinedIds.has(refId)) {
         const inlined = subjects.get(refId);
@@ -168,7 +170,7 @@ function resolveValue(
           // Remove @id from inlined blank nodes
           const copy = { ...inlined };
 
-          delete copy['@id'];
+          delete copy[JSONLD.id];
 
           return copy;
         }
@@ -176,9 +178,9 @@ function resolveValue(
     }
 
     // Recurse into @list
-    if ('@list' in obj && Array.isArray(obj['@list'])) {
+    if (JSONLD.list in obj && Array.isArray(obj[JSONLD.list])) {
       return {
-        '@list': (obj['@list'] as unknown[]).map((element) => {
+        [JSONLD.list]: (obj[JSONLD.list] as unknown[]).map((element) => {
           return resolveValue(element, subjects, inlinedIds);
         })
       };

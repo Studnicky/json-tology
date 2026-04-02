@@ -18,7 +18,7 @@
  */
 
 import { JsonTology } from '../../src/JsonTology.js';
-import { Transform } from '../../src/modules/transform/transform.js';
+import { Transform } from '../../src/modules/transform/Transform.js';
 import type {
   ContainsBrandInterface,
   ContentEncodingBrandInterface,

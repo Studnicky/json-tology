@@ -7,7 +7,7 @@ import type { CustomKeywordEntryInterface } from '../../../interfaces/CustomKeyw
 import { BaseError } from '../../../errors/BaseError.js';
 import {
   isRecord
-} from '../../data/dataTypes.js';
+} from '../../data/DataTypes.js';
 import { Predicates } from '../predicates.js';
 
 export class Composition {

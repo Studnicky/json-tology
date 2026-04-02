@@ -2,7 +2,7 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { SchemaGraph } from '../../src/modules/graph/schemaGraph.js';
+import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { GraphShaclSerializer } from '../../src/modules/ontology/GraphShaclSerializer.js';
 
 function setSchemaKey(target: Record<string, unknown>, key: string, value: unknown): Record<string, unknown> {

@@ -3,9 +3,9 @@ import {
 } from 'node:test';
 import assert from 'node:assert/strict';
 import type { GraphArtifactInterface } from '../../src/interfaces/GraphArtifact.js';
-import { GraphArtifact } from '../../src/modules/graph/graphArtifact.js';
+import { GraphArtifact } from '../../src/modules/graph/GraphArtifact.js';
 import type { NormIRInterface } from '../../src/interfaces/SchemaGraph.js';
-import { SchemaGraph } from '../../src/modules/graph/schemaGraph.js';
+import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 
 const TestSchema = {
   '$id': 'https://example.com/Test',
