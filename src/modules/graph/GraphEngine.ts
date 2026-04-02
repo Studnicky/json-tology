@@ -12,9 +12,7 @@ import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import {
   deepEqual, isRecord
 } from '../data/DataTypes.js';
-import {
-  escapeSegment as escapeUriSegment, propertyIri
-} from './SchemaIri.js';
+import { SchemaIri } from './SchemaIri.js';
 import { FormatRegistry } from '../format/FormatRegistry.js';
 import { Hash } from '../hash/Hash.js';
 import { SchemaGraph } from './SchemaGraph.js';
@@ -57,7 +55,7 @@ export class GraphEngine implements GraphEngineInterface {
    * @returns The percent-encoded string with `/` characters preserved.
    */
   static escapeSegment(value: string): string {
-    return escapeUriSegment(value);
+    return SchemaIri.escapeSegment(value);
   }
 
   /**
@@ -78,7 +76,7 @@ export class GraphEngine implements GraphEngineInterface {
    * @returns The fully-qualified property IRI.
    */
   static propertyIri(classId: string, propertyName: string): string {
-    return propertyIri(classId, propertyName);
+    return SchemaIri.propertyIri(classId, propertyName);
   }
 
   private readonly customKeywords: KeywordDefinitionInterface[];

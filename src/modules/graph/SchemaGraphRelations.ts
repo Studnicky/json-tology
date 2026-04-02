@@ -2,7 +2,7 @@ import type {
   SchemaGraphNodeInterface, SchemaGraphRelationInterface,
   SchemaGraphSemanticsInterface
 } from '../../interfaces/SchemaGraph.js';
-import { propertyIri } from './SchemaIri.js';
+import { SchemaIri } from './SchemaIri.js';
 import {
   resolveSingleXsdType, resolveXsdType
 } from '../../constants/XSD_MAPS.js';
@@ -159,7 +159,7 @@ function pushDependentSchemaRelations(
       'predicate': OWL.unionOf,
       'source': node,
       'structure': {
-        'ifRef': propertyIri(node.id, propName),
+        'ifRef': SchemaIri.propertyIri(node.id, propName),
         'kind': 'conditional',
         'thenRef': schemaRef
       },

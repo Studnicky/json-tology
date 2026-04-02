@@ -18,27 +18,23 @@ import type {
 } from '../../interfaces/SchemaGraph.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
 import { isRecord } from '../data/DataTypes.js';
-import { escapeSegment } from '../graph/SchemaIri.js';
+import { SchemaIri } from '../graph/SchemaIri.js';
 import { resolveSingleXsdType } from '../../constants/XSD_MAPS.js';
 import { Hash } from '../hash/Hash.js';
 import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
 import { JSONLD } from '../../constants/JSONLD.js';
-import {
-  bnode, iri, literal, nextBnode, quad, rdfList, resetBnodeCounter
-} from './QuadFactory.js';
+import { QuadFactory } from './QuadFactory.js';
 
-export {
-  bnode, emitLiterals, iri, literal, nextBnode, quad, rdfList, resetBnodeCounter
-} from './QuadFactory.js';
+export { QuadFactory } from './QuadFactory.js';
 
 // ---------------------------------------------------------------------------
 // TBox projection — purely relation-driven
 // ---------------------------------------------------------------------------
 
 export function projectGraph(graph: SchemaGraphInterface, curie?: CurieInterface): QuadInterface[] {
-  resetBnodeCounter();
+  QuadFactory.resetBnodeCounter();
   const quads: QuadInterface[] = [];
 
   const allRelations = graph.allRelations();
@@ -62,7 +58,7 @@ function handleIri(
   quads: QuadInterface[],
   curie?: CurieInterface
 ): void {
-  quads.push(quad(subject, predicate, iri(targetId, curie), curie));
+  quads.push(QuadFactory.quad(subject, predicate, QuadFactory.iri(targetId, curie), curie));
 }
 
 function handleStringLiteral(
@@ -73,7 +69,7 @@ function handleStringLiteral(
   quads: QuadInterface[],
   curie?: CurieInterface
 ): void {
-  quads.push(quad(subject, predicate, literal(targetId, XSD.string, curie), curie));
+  quads.push(QuadFactory.quad(subject, predicate, QuadFactory.literal(targetId, XSD.string, curie), curie));
 }
 
 function handleBooleanCoerce(
@@ -84,7 +80,7 @@ function handleBooleanCoerce(
   quads: QuadInterface[],
   curie?: CurieInterface
 ): void {
-  quads.push(quad(subject, predicate, literal(targetId === 'true', XSD.boolean, curie), curie));
+  quads.push(QuadFactory.quad(subject, predicate, QuadFactory.literal(targetId === 'true', XSD.boolean, curie), curie));
 }
 
 function handleBooleanLiteral(
@@ -95,7 +91,7 @@ function handleBooleanLiteral(
   quads: QuadInterface[],
   curie?: CurieInterface
 ): void {
-  quads.push(quad(subject, predicate, literal(targetId, XSD.boolean, curie), curie));
+  quads.push(QuadFactory.quad(subject, predicate, QuadFactory.literal(targetId, XSD.boolean, curie), curie));
 }
 
 function handleIntegerLiteral(
@@ -106,7 +102,7 @@ function handleIntegerLiteral(
   quads: QuadInterface[],
   curie?: CurieInterface
 ): void {
-  quads.push(quad(subject, predicate, literal(Number(targetId), XSD.integer, curie), curie));
+  quads.push(QuadFactory.quad(subject, predicate, QuadFactory.literal(Number(targetId), XSD.integer, curie), curie));
 }
 
 function handleDecimalLiteral(
@@ -117,7 +113,7 @@ function handleDecimalLiteral(
   quads: QuadInterface[],
   curie?: CurieInterface
 ): void {
-  quads.push(quad(subject, predicate, literal(Number(targetId), XSD.decimal, curie), curie));
+  quads.push(QuadFactory.quad(subject, predicate, QuadFactory.literal(Number(targetId), XSD.decimal, curie), curie));
 }
 
 function handleNonNegativeInteger(
@@ -128,7 +124,9 @@ function handleNonNegativeInteger(
   quads: QuadInterface[],
   curie?: CurieInterface
 ): void {
-  quads.push(quad(subject, predicate, literal(Number(targetId), XSD.nonNegativeInteger, curie), curie));
+  const cardLit = QuadFactory.literal(Number(targetId), XSD.nonNegativeInteger, curie);
+
+  quads.push(QuadFactory.quad(subject, predicate, cardLit, curie));
 }
 
 function handleDependentRequired(
@@ -143,7 +141,7 @@ function handleDependentRequired(
   const trigger = typeof metadata.trigger === 'string' ? metadata.trigger : '';
   const required = Array.isArray(metadata.required) ? metadata.required as string[] : [];
 
-  quads.push(quad(subject, JT.dependentRequired, literal(
+  quads.push(QuadFactory.quad(subject, JT.dependentRequired, QuadFactory.literal(
     JSON.stringify({
       required,
       trigger
@@ -161,15 +159,17 @@ function handleRestriction(
   quads: QuadInterface[],
   curie?: CurieInterface
 ): void {
-  const rBnode = nextBnode();
+  const rBnode = QuadFactory.nextBnode();
   const metadata = relation.metadata ?? {};
   const onProperty = typeof metadata.onProperty === 'string' ? metadata.onProperty : '';
   const minCard = typeof metadata.minCardinality === 'number' ? metadata.minCardinality : 1;
 
-  quads.push(quad(subject, RDFS.subClassOf, bnode(rBnode), curie));
-  quads.push(quad(rBnode, RDF.type, iri(OWL.Restriction, curie), curie));
-  quads.push(quad(rBnode, OWL.onProperty, iri(onProperty, curie), curie));
-  quads.push(quad(rBnode, OWL.minCardinality, literal(minCard, XSD.nonNegativeInteger, curie), curie));
+  quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(rBnode), curie));
+  quads.push(QuadFactory.quad(rBnode, RDF.type, QuadFactory.iri(OWL.Restriction, curie), curie));
+  quads.push(QuadFactory.quad(rBnode, OWL.onProperty, QuadFactory.iri(onProperty, curie), curie));
+  const minCardLit = QuadFactory.literal(minCard, XSD.nonNegativeInteger, curie);
+
+  quads.push(QuadFactory.quad(rBnode, OWL.minCardinality, minCardLit, curie));
 }
 
 function handlePattern(
@@ -181,9 +181,13 @@ function handlePattern(
   curie?: CurieInterface
 ): void {
   if (relation.metadata?.patternProperty === true && typeof relation.metadata.pattern === 'string') {
-    quads.push(quad(subject, SH.pattern, literal(relation.metadata.pattern, XSD.string, curie), curie));
+    const patternLit = QuadFactory.literal(relation.metadata.pattern, XSD.string, curie);
+
+    quads.push(QuadFactory.quad(subject, SH.pattern, patternLit, curie));
   } else {
-    quads.push(quad(subject, predicate, literal(targetId, XSD.string, curie), curie));
+    const targetLit = QuadFactory.literal(targetId, XSD.string, curie);
+
+    quads.push(QuadFactory.quad(subject, predicate, targetLit, curie));
   }
 }
 
@@ -358,7 +362,6 @@ function projectRelation(
   quads: QuadInterface[],
   curie?: CurieInterface
 ): void {
-  // Structured relations produce multi-quad patterns
   if (relation.structure !== undefined) {
     projectStructuredRelation(relation, quads, curie);
 
@@ -376,9 +379,6 @@ function projectRelation(
   }
 }
 
-/**
- * Project relations with structured metadata into multi-quad patterns.
- */
 function projectStructuredRelation(
   relation: SchemaGraphRelationInterface,
   quads: QuadInterface[],
@@ -393,34 +393,38 @@ function projectStructuredRelation(
 
   switch (structure.kind) {
     case 'conditional': {
-      const condBnode = nextBnode();
+      const condBnode = QuadFactory.nextBnode();
 
-      quads.push(quad(subject, OWL.unionOf, bnode(condBnode), curie));
-      quads.push(quad(condBnode, RDF.type, iri(OWL.Class, curie), curie));
-      quads.push(quad(condBnode, JT.if, iri(structure.ifRef, curie), curie));
+      quads.push(QuadFactory.quad(subject, OWL.unionOf, QuadFactory.bnode(condBnode), curie));
+      quads.push(QuadFactory.quad(condBnode, RDF.type, QuadFactory.iri(OWL.Class, curie), curie));
+      quads.push(QuadFactory.quad(condBnode, JT.if, QuadFactory.iri(structure.ifRef, curie), curie));
       if (structure.thenRef !== undefined) {
-        quads.push(quad(condBnode, JT.thenBranch, iri(structure.thenRef, curie), curie));
+        quads.push(QuadFactory.quad(condBnode, JT.thenBranch, QuadFactory.iri(structure.thenRef, curie), curie));
       }
       if (structure.elseRef !== undefined) {
-        quads.push(quad(condBnode, JT.else, iri(structure.elseRef, curie), curie));
+        quads.push(QuadFactory.quad(condBnode, JT.else, QuadFactory.iri(structure.elseRef, curie), curie));
       }
       break;
     }
     case 'list': {
       const items = structure.members.map((member) => {
-        return iri(member, curie);
+        return QuadFactory.iri(member, curie);
       });
 
-      quads.push(quad(subject, relation.predicate, rdfList(items), curie));
+      quads.push(QuadFactory.quad(subject, relation.predicate, QuadFactory.rdfList(items), curie));
       break;
     }
     case 'restriction': {
-      const restrictionBnode = nextBnode();
+      const restrictionBnode = QuadFactory.nextBnode();
 
-      quads.push(quad(subject, relation.predicate, bnode(restrictionBnode), curie));
-      quads.push(quad(restrictionBnode, RDF.type, iri(OWL.Restriction, curie), curie));
-      quads.push(quad(restrictionBnode, OWL.onProperty, iri(structure.onProperty, curie), curie));
-      quads.push(quad(restrictionBnode, String(structure.constraint), iri(String(structure.value), curie), curie));
+      quads.push(QuadFactory.quad(subject, relation.predicate, QuadFactory.bnode(restrictionBnode), curie));
+      quads.push(QuadFactory.quad(restrictionBnode, RDF.type, QuadFactory.iri(OWL.Restriction, curie), curie));
+      const onPropIri = QuadFactory.iri(structure.onProperty, curie);
+
+      quads.push(QuadFactory.quad(restrictionBnode, OWL.onProperty, onPropIri, curie));
+      const constraintVal = QuadFactory.iri(String(structure.value), curie);
+
+      quads.push(QuadFactory.quad(restrictionBnode, String(structure.constraint), constraintVal, curie));
       break;
     }
   }
@@ -430,13 +434,6 @@ function projectStructuredRelation(
 // ABox projection
 // ---------------------------------------------------------------------------
 
-/**
- * Project validated instance data into ABox quads.
- *
- * @param entryNode - Optional entry node (for schemas with root-level $ref).
- *   Defaults to `graph.rootNode`.
- * @param curie - Optional CURIE expansion context for expanding predicates and IRIs.
- */
 export function projectAbox(
   graph: SchemaGraphInterface,
   data: unknown,
@@ -444,7 +441,7 @@ export function projectAbox(
   entryNode?: SchemaGraphNodeInterface,
   curie?: CurieInterface
 ): QuadInterface[] {
-  resetBnodeCounter();
+  QuadFactory.resetBnodeCounter();
   const quads: QuadInterface[] = [];
   const rootNode = entryNode ?? graph.rootNode;
   const resolved = resolveNode(graph, rootNode);
@@ -461,13 +458,9 @@ export function projectAbox(
 function instanceIRI(baseIRI: string, classId: string, data: unknown): string {
   const contentHash = Hash.value(data);
 
-  return `${baseIRI}/instances/${escapeSegment(classId)}-${contentHash}`;
+  return `${baseIRI}/instances/${SchemaIri.escapeSegment(classId)}-${contentHash}`;
 }
 
-/**
- * Resolve local refs within the graph. For nodes with a `$ref` that starts
- * with `#`, resolves to the target node. External refs return the node as-is.
- */
 function resolveNode(graph: SchemaGraphInterface, node: SchemaGraphNodeInterface): SchemaGraphNodeInterface {
   const nodeSemantics = graph.semantics(node);
 
@@ -494,7 +487,7 @@ function projectInstance(
   const instIRI = instanceIRI(baseIRI, node.id, data);
   const nodeSemantics = graph.semantics(node);
 
-  quads.push(quad(instIRI, RDF.type, iri(node.id, curie), curie));
+  quads.push(QuadFactory.quad(instIRI, RDF.type, QuadFactory.iri(node.id, curie), curie));
 
   for (const [
     propertyName,
@@ -528,35 +521,19 @@ function projectPropertyValue(
   quads: QuadInterface[],
   curie?: CurieInterface
 ): void {
+  const emit = (val: unknown): void => {
+    projectSingleValue(graph, propertyIRI, propertySemantics, propertyNode, val, baseIRI, instanceIri, quads, curie);
+  };
+
   if (Array.isArray(value)) {
     for (const element of value) {
-      projectSingleValue(
-        graph,
-        propertyIRI,
-        propertySemantics,
-        propertyNode,
-        element,
-        baseIRI,
-        instanceIri,
-        quads,
-        curie
-      );
+      emit(element);
     }
 
     return;
   }
 
-  projectSingleValue(
-    graph,
-    propertyIRI,
-    propertySemantics,
-    propertyNode,
-    value,
-    baseIRI,
-    instanceIri,
-    quads,
-    curie
-  );
+  emit(value);
 }
 
 function projectSingleValue(
@@ -578,7 +555,7 @@ function projectSingleValue(
   if (typeof value === 'string') {
     const xsdDatatype = resolveSingleXsdType('string', propertySemantics.format ?? undefined) ?? XSD.string;
 
-    quads.push(quad(instanceIri, propertyIRI, literal(value, xsdDatatype, curie), curie));
+    quads.push(QuadFactory.quad(instanceIri, propertyIRI, QuadFactory.literal(value, xsdDatatype, curie), curie));
 
     return;
   }
@@ -586,13 +563,13 @@ function projectSingleValue(
   if (typeof value === 'number') {
     const datatype = Number.isInteger(value) ? XSD.integer : XSD.double;
 
-    quads.push(quad(instanceIri, propertyIRI, literal(value, datatype, curie), curie));
+    quads.push(QuadFactory.quad(instanceIri, propertyIRI, QuadFactory.literal(value, datatype, curie), curie));
 
     return;
   }
 
   if (typeof value === 'boolean') {
-    quads.push(quad(instanceIri, propertyIRI, literal(value, XSD.boolean, curie), curie));
+    quads.push(QuadFactory.quad(instanceIri, propertyIRI, QuadFactory.literal(value, XSD.boolean, curie), curie));
 
     return;
   }
@@ -612,7 +589,7 @@ function projectSingleValue(
 
     const nestedIRI = projectInstance(graph, targetNode, value, baseIRI, quads, curie);
 
-    quads.push(quad(instanceIri, propertyIRI, iri(nestedIRI, curie), curie));
+    quads.push(QuadFactory.quad(instanceIri, propertyIRI, QuadFactory.iri(nestedIRI, curie), curie));
   }
 }
 
@@ -620,11 +597,6 @@ function projectSingleValue(
 // Quad → JSON-LD node conversion
 // ---------------------------------------------------------------------------
 
-/**
- * Convert ABox quads into JSON-LD node objects grouped by subject.
- * This preserves the public ABox node shape while keeping blank-node
- * identifiers stable.
- */
 export function quadsToJsonLdNodes(quads: QuadInterface[]): Array<Record<string, unknown>> {
   const subjects = new Map<string, Record<string, unknown>>();
 

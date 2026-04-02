@@ -17,13 +17,8 @@ import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
 import { XSD_PREFIX } from '../../constants/PREFIXES.js';
-import {
-  fragmentContains, isPropertySubject, lastSegment,
-  propertyIri, splitSubject, structuralParent
-} from '../graph/SchemaIri.js';
-import {
-  bnode, emitLiterals, iri, literal, nextBnode, quad, rdfList
-} from './QuadFactory.js';
+import { SchemaIri } from '../graph/SchemaIri.js';
+import { QuadFactory } from './QuadFactory.js';
 import {
   buildIndex, isRestrictionStructure,
   relationTargetId
@@ -46,20 +41,16 @@ function resolveTargetRef(targetNodeId: string, index: Map<string, RelationIndex
   return targetNodeId;
 }
 
-// ---------------------------------------------------------------------------
-// Serialization candidacy
-// ---------------------------------------------------------------------------
-
 function isSerializationCandidate(
   subject: string,
   entry: RelationIndexInterface,
   propertyIndex: Map<string, string[]>
 ): boolean {
-  if (isPropertySubject(subject)) {
+  if (SchemaIri.isPropertySubject(subject)) {
     return false;
   }
 
-  const parts = splitSubject(subject);
+  const parts = SchemaIri.splitSubject(subject);
 
   if (parts.fragment !== null) {
     if (parts.fragment.includes('/items') || parts.fragment.includes('/contains')
@@ -93,7 +84,6 @@ function isSerializationCandidate(
     return true;
   }
 
-  // Check for conditional structured relations
   for (const rel of entry.all) {
     if (rel.structure?.kind === 'conditional') {
       return true;
@@ -112,31 +102,25 @@ function isSerializationCandidate(
   return false;
 }
 
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
-
 export function projectShaclGraph(graph: SchemaGraphInterface, curie?: CurieInterface): QuadInterface[] {
   const quads: QuadInterface[] = [];
   const allRelations = graph.allRelations();
   const index = buildIndex(allRelations);
 
-  // Build property index: structural parent → property subjects
   const propertyIndex = new Map<string, string[]>();
 
   for (const [subject] of index) {
-    if (subject.startsWith('_:') || !isPropertySubject(subject)) {
+    if (subject.startsWith('_:') || !SchemaIri.isPropertySubject(subject)) {
       continue;
     }
 
-    const parentId = structuralParent(subject);
+    const parentId = SchemaIri.structuralParent(subject);
     const list = propertyIndex.get(parentId) ?? [];
 
     list.push(subject);
     propertyIndex.set(parentId, list);
   }
 
-  // Emit shapes for candidate subjects
   for (const [
     subject,
     entry
@@ -155,10 +139,6 @@ export function projectShaclGraph(graph: SchemaGraphInterface, curie?: CurieInte
   return quads;
 }
 
-// ---------------------------------------------------------------------------
-// NodeShape emission
-// ---------------------------------------------------------------------------
-
 function emitNodeShape(
   subject: string,
   entry: RelationIndexInterface,
@@ -167,33 +147,26 @@ function emitNodeShape(
   quads: QuadInterface[],
   curie?: CurieInterface
 ): void {
-  quads.push(quad(subject, RDF.type, iri(SH.NodeShape, curie), curie));
+  quads.push(QuadFactory.quad(subject, RDF.type, QuadFactory.iri(SH.NodeShape, curie), curie));
 
-  // sh:name from rdfs:label
-  emitLiterals(subject, entry, RDFS.label, SH.name, quads, curie);
+  QuadFactory.emitLiterals(subject, entry, RDFS.label, SH.name, quads, curie);
+  QuadFactory.emitLiterals(subject, entry, RDFS.comment, SH.description, quads, curie);
 
-  // sh:description from rdfs:comment
-  emitLiterals(subject, entry, RDFS.comment, SH.description, quads, curie);
-
-  // sh:deactivated from owl:deprecated
   if (entry.byPredicate.has(OWL.deprecated)) {
-    quads.push(quad(subject, SH.deactivated, literal(true, XSD.boolean, curie), curie));
+    quads.push(QuadFactory.quad(subject, SH.deactivated, QuadFactory.literal(true, XSD.boolean, curie), curie));
   }
 
-  // sh:closed
   if (entry.byPredicate.has(SH.closed)) {
-    quads.push(quad(subject, SH.closed, literal(true, XSD.boolean, curie), curie));
+    quads.push(QuadFactory.quad(subject, SH.closed, QuadFactory.literal(true, XSD.boolean, curie), curie));
   }
 
-  // Array cardinality on node shapes (minItems/maxItems → sh:minCount/sh:maxCount)
   emitConstraintLiteral(subject, entry, SH.minCount, XSD.integer, quads, curie);
   emitConstraintLiteral(subject, entry, SH.maxCount, XSD.integer, quads, curie);
 
-  // sh:property — regular properties
   const propSubjects = propertyIndex.get(subject) ?? [];
 
   for (const propSubject of propSubjects) {
-    if (fragmentContains(propSubject, '/dependentSchemas/')) {
+    if (SchemaIri.fragmentContains(propSubject, '/dependentSchemas/')) {
       continue;
     }
 
@@ -203,78 +176,66 @@ function emitNodeShape(
       continue;
     }
 
-    const psBnode = nextBnode();
+    const psBnode = QuadFactory.nextBnode();
 
     emitPropertyShape(psBnode, propSubject, propEntry, subject, undefined, quads, curie);
-    quads.push(quad(subject, SH.property, bnode(psBnode), curie));
+    quads.push(QuadFactory.quad(subject, SH.property, QuadFactory.bnode(psBnode), curie));
   }
 
-  // sh:property — contains (sh:qualifiedValueShape)
   emitContainsPropertyShape(subject, entry, quads, curie);
 
-  // sh:and entries
   const andItems: QuadObjectType[] = [];
 
-  // rdfs:subClassOf → sh:and
   const subClassRels = entry.byPredicate.get(RDFS.subClassOf) ?? [];
 
   for (const rel of subClassRels) {
-    andItems.push(iri(relationTargetId(rel), curie));
+    andItems.push(QuadFactory.iri(relationTargetId(rel), curie));
   }
 
-  // dependentRequired → sh:or implications
   emitDependentRequiredAndItems(subject, entry, andItems, quads, curie);
-
-  // dependentSchemas → sh:or implications
   emitDependentSchemaAndItems(subject, entry, index, andItems, quads, curie);
-
-  // if/then/else → material conditional
   emitConditionalAndItems(entry, andItems, quads, curie);
 
   if (andItems.length > 0) {
-    quads.push(quad(subject, SH.and, rdfList(andItems), curie));
+    quads.push(QuadFactory.quad(subject, SH.and, QuadFactory.rdfList(andItems), curie));
   }
 
-  // sh:or from owl:equivalentClass
   const equivRels = entry.byPredicate.get(OWL.equivalentClass) ?? [];
 
   if (equivRels.length > 0) {
     const orItems = equivRels.map((rel) => {
-      return iri(resolveTargetRef(relationTargetId(rel), index), curie);
+      return QuadFactory.iri(resolveTargetRef(relationTargetId(rel), index), curie);
     });
 
-    quads.push(quad(subject, SH.or, rdfList(orItems), curie));
+    quads.push(QuadFactory.quad(subject, SH.or, QuadFactory.rdfList(orItems), curie));
   }
 
-  // sh:not from owl:complementOf
   const complementRels = entry.byPredicate.get(OWL.complementOf) ?? [];
 
   if (complementRels.length > 0) {
-    quads.push(quad(subject, SH.not, iri(resolveTargetRef(relationTargetId(complementRels[0]), index), curie), curie));
+    const compRef = resolveTargetRef(relationTargetId(complementRels[0]), index);
+
+    quads.push(QuadFactory.quad(subject, SH.not, QuadFactory.iri(compRef, curie), curie));
   }
 
-  // sh:not from owl:disjointWith (fallback)
   const disjointRels = entry.byPredicate.get(OWL.disjointWith) ?? [];
 
   if (complementRels.length === 0 && disjointRels.length > 0) {
-    quads.push(quad(subject, SH.not, iri(resolveTargetRef(relationTargetId(disjointRels[0]), index), curie), curie));
+    const disjRef = resolveTargetRef(relationTargetId(disjointRels[0]), index);
+
+    quads.push(QuadFactory.quad(subject, SH.not, QuadFactory.iri(disjRef, curie), curie));
   }
 
-  // sh:in from owl:oneOf
   const oneOfRels = entry.byPredicate.get(OWL.oneOf) ?? [];
 
   if (oneOfRels.length > 0) {
     const values = oneOfRels.map((rel) => {
-      return literal(relationTargetId(rel), XSD.string, curie);
+      return QuadFactory.literal(relationTargetId(rel), XSD.string, curie);
     });
 
-    quads.push(quad(subject, SH.in, rdfList(values), curie));
+    quads.push(QuadFactory.quad(subject, SH.in, QuadFactory.rdfList(values), curie));
   }
 }
-
-// ---------------------------------------------------------------------------
-// PropertyShape emission
-// ---------------------------------------------------------------------------
 
 function emitPropertyShape(
   bnodeId: string,
@@ -285,62 +246,58 @@ function emitPropertyShape(
   quads: QuadInterface[],
   curie?: CurieInterface
 ): void {
-  quads.push(quad(bnodeId, RDF.type, iri(SH.PropertyShape, curie), curie));
+  quads.push(QuadFactory.quad(bnodeId, RDF.type, QuadFactory.iri(SH.PropertyShape, curie), curie));
 
-  // sh:path — use rdfs:domain for path class, unless overridden
   const domainRels = entry.byPredicate.get(RDFS.domain) ?? [];
   const pathClassId = overridePathClassId ?? (domainRels.length > 0 ? relationTargetId(domainRels[0]) : classId);
-  const propName = lastSegment(subject);
-  const canonicalId = propertyIri(pathClassId, propName);
+  const propName = SchemaIri.lastSegment(subject);
+  const canonicalId = SchemaIri.propertyIri(pathClassId, propName);
 
-  quads.push(quad(bnodeId, SH.path, iri(canonicalId, curie), curie));
+  quads.push(QuadFactory.quad(bnodeId, SH.path, QuadFactory.iri(canonicalId, curie), curie));
 
-  // sh:name from rdfs:label
-  emitLiterals(bnodeId, entry, RDFS.label, SH.name, quads, curie);
+  QuadFactory.emitLiterals(bnodeId, entry, RDFS.label, SH.name, quads, curie);
 
-  // sh:datatype
   const datatypeRels = entry.byPredicate.get(SH.datatype) ?? [];
   const rangeRels = entry.byPredicate.get(RDFS.range) ?? [];
 
   if (datatypeRels.length > 0 && rangeRels.length === 0) {
-    quads.push(quad(bnodeId, SH.datatype, iri(relationTargetId(datatypeRels[0]), curie), curie));
+    const dtIri = QuadFactory.iri(relationTargetId(datatypeRels[0]), curie);
+
+    quads.push(QuadFactory.quad(bnodeId, SH.datatype, dtIri, curie));
   }
 
-  // sh:minCount
   const minCountRels = entry.byPredicate.get(SH.minCount) ?? [];
 
   if (minCountRels.length > 0) {
     const minVal = Number(relationTargetId(minCountRels[0]));
 
-    quads.push(quad(bnodeId, SH.minCount, literal(minVal, XSD.integer, curie), curie));
+    quads.push(QuadFactory.quad(bnodeId, SH.minCount, QuadFactory.literal(minVal, XSD.integer, curie), curie));
   }
 
-  // sh:maxCount
   const maxCountRels = entry.byPredicate.get(SH.maxCount) ?? [];
 
   if (maxCountRels.length > 0) {
     const maxVal = Number(relationTargetId(maxCountRels[0]));
 
-    quads.push(quad(bnodeId, SH.maxCount, literal(maxVal, XSD.integer, curie), curie));
+    quads.push(QuadFactory.quad(bnodeId, SH.maxCount, QuadFactory.literal(maxVal, XSD.integer, curie), curie));
   }
 
-  // sh:node or sh:class from rdfs:range
   if (rangeRels.length > 0) {
     if (datatypeRels.length > 0 || rangeRels.length > 1) {
-      quads.push(quad(bnodeId, SH.class, iri(relationTargetId(rangeRels[0]), curie), curie));
+      quads.push(QuadFactory.quad(bnodeId, SH.class, QuadFactory.iri(relationTargetId(rangeRels[0]), curie), curie));
     } else {
-      quads.push(quad(bnodeId, SH.node, iri(relationTargetId(rangeRels[0]), curie), curie));
+      quads.push(QuadFactory.quad(bnodeId, SH.node, QuadFactory.iri(relationTargetId(rangeRels[0]), curie), curie));
     }
   }
 
-  // sh:hasValue from owl:hasValue
   const hasValueRels = entry.byPredicate.get(OWL.hasValue) ?? [];
 
   if (hasValueRels.length > 0) {
-    quads.push(quad(bnodeId, SH.hasValue, literal(relationTargetId(hasValueRels[0]), XSD.string, curie), curie));
+    const hasValLit = QuadFactory.literal(relationTargetId(hasValueRels[0]), XSD.string, curie);
+
+    quads.push(QuadFactory.quad(bnodeId, SH.hasValue, hasValLit, curie));
   }
 
-  // sh:pattern from sh:pattern (overrides format pattern)
   const patternRels = entry.byPredicate.get(SH.pattern) ?? [];
 
   for (const rel of patternRels) {
@@ -348,10 +305,11 @@ function emitPropertyShape(
       continue;
     }
 
-    quads.push(quad(bnodeId, SH.pattern, literal(relationTargetId(rel), XSD.string, curie), curie));
+    const patternLit = QuadFactory.literal(relationTargetId(rel), XSD.string, curie);
+
+    quads.push(QuadFactory.quad(bnodeId, SH.pattern, patternLit, curie));
   }
 
-  // Numeric/string constraints
   emitConstraintLiteral(bnodeId, entry, SH.minLength, XSD.integer, quads, curie);
   emitConstraintLiteral(bnodeId, entry, SH.maxLength, XSD.integer, quads, curie);
   emitConstraintLiteral(bnodeId, entry, SH.minInclusive, XSD.decimal, quads, curie);
@@ -360,20 +318,17 @@ function emitPropertyShape(
   emitConstraintLiteral(bnodeId, entry, SH.maxExclusive, XSD.decimal, quads, curie);
   emitConstraintLiteral(bnodeId, entry, JT.multipleOf, XSD.decimal, quads, curie);
 
-  // sh:description from rdfs:comment
-  emitLiterals(bnodeId, entry, RDFS.comment, SH.description, quads, curie);
+  QuadFactory.emitLiterals(bnodeId, entry, RDFS.comment, SH.description, quads, curie);
 
-  // dash:readOnly / dash:writeOnly
   if (entry.byPredicate.has(DASH.readOnly)) {
-    quads.push(quad(bnodeId, DASH.readOnly, literal(true, XSD.boolean, curie), curie));
+    quads.push(QuadFactory.quad(bnodeId, DASH.readOnly, QuadFactory.literal(true, XSD.boolean, curie), curie));
   }
 
   if (entry.byPredicate.has(DASH.writeOnly)) {
-    quads.push(quad(bnodeId, DASH.writeOnly, literal(true, XSD.boolean, curie), curie));
+    quads.push(QuadFactory.quad(bnodeId, DASH.writeOnly, QuadFactory.literal(true, XSD.boolean, curie), curie));
   }
 
-  // dct:format
-  emitLiterals(bnodeId, entry, DCT.format, DCT.format, quads, curie);
+  QuadFactory.emitLiterals(bnodeId, entry, DCT.format, DCT.format, quads, curie);
 }
 
 function emitConstraintLiteral(
@@ -387,13 +342,11 @@ function emitConstraintLiteral(
   const rels = entry.byPredicate.get(predicate) ?? [];
 
   if (rels.length > 0) {
-    quads.push(quad(bnodeId, predicate, literal(Number(relationTargetId(rels[0])), datatype, curie), curie));
+    const numLit = QuadFactory.literal(Number(relationTargetId(rels[0])), datatype, curie);
+
+    quads.push(QuadFactory.quad(bnodeId, predicate, numLit, curie));
   }
 }
-
-// ---------------------------------------------------------------------------
-// Contains → sh:qualifiedValueShape
-// ---------------------------------------------------------------------------
 
 function emitContainsPropertyShape(
   subject: string,
@@ -418,42 +371,39 @@ function emitContainsPropertyShape(
 
   const containsTypeId = String(structure.value);
 
-  const psBnode = nextBnode();
+  const psBnode = QuadFactory.nextBnode();
 
-  // sh:qualifiedValueShape
   if (containsTypeId.startsWith(XSD_PREFIX)) {
-    const qvsBnode = nextBnode();
+    const qvsBnode = QuadFactory.nextBnode();
 
-    quads.push(quad(qvsBnode, SH.datatype, iri(containsTypeId, curie), curie));
-    quads.push(quad(psBnode, SH.qualifiedValueShape, bnode(qvsBnode), curie));
+    quads.push(QuadFactory.quad(qvsBnode, SH.datatype, QuadFactory.iri(containsTypeId, curie), curie));
+    quads.push(QuadFactory.quad(psBnode, SH.qualifiedValueShape, QuadFactory.bnode(qvsBnode), curie));
   } else {
-    quads.push(quad(psBnode, SH.qualifiedValueShape, iri(containsTypeId, curie), curie));
+    quads.push(QuadFactory.quad(psBnode, SH.qualifiedValueShape, QuadFactory.iri(containsTypeId, curie), curie));
   }
 
-  // sh:qualifiedMinCount
   const minQualRels = entry.byPredicate.get(OWL.minQualifiedCardinality) ?? [];
 
   if (minQualRels.length > 0) {
     const minQualVal = Number(relationTargetId(minQualRels[0]));
 
-    quads.push(quad(psBnode, SH.qualifiedMinCount, literal(minQualVal, XSD.integer, curie), curie));
+    const minQLit = QuadFactory.literal(minQualVal, XSD.integer, curie);
+
+    quads.push(QuadFactory.quad(psBnode, SH.qualifiedMinCount, minQLit, curie));
   }
 
-  // sh:qualifiedMaxCount
   const maxQualRels = entry.byPredicate.get(OWL.maxQualifiedCardinality) ?? [];
 
   if (maxQualRels.length > 0) {
     const maxQualVal = Number(relationTargetId(maxQualRels[0]));
 
-    quads.push(quad(psBnode, SH.qualifiedMaxCount, literal(maxQualVal, XSD.integer, curie), curie));
+    const maxQLit = QuadFactory.literal(maxQualVal, XSD.integer, curie);
+
+    quads.push(QuadFactory.quad(psBnode, SH.qualifiedMaxCount, maxQLit, curie));
   }
 
-  quads.push(quad(subject, SH.property, bnode(psBnode), curie));
+  quads.push(QuadFactory.quad(subject, SH.property, QuadFactory.bnode(psBnode), curie));
 }
-
-// ---------------------------------------------------------------------------
-// DependentRequired → sh:or implication
-// ---------------------------------------------------------------------------
 
 function emitDependentRequiredAndItems(
   subject: string,
@@ -469,56 +419,49 @@ function emitDependentRequiredAndItems(
     const trigger = typeof meta.trigger === 'string' ? meta.trigger : '';
     const required = Array.isArray(meta.required) ? meta.required as string[] : [];
 
-    const triggerPropIri = propertyIri(subject, trigger);
+    const triggerPropIri = SchemaIri.propertyIri(subject, trigger);
 
-    // sh:not branch: sh:not { sh:property [sh:path triggerProp, sh:minCount 1] }
-    const withoutPsBnode = nextBnode();
+    const withoutPsBnode = QuadFactory.nextBnode();
 
-    quads.push(quad(withoutPsBnode, RDF.type, iri(SH.PropertyShape, curie), curie));
-    quads.push(quad(withoutPsBnode, SH.path, iri(triggerPropIri, curie), curie));
-    quads.push(quad(withoutPsBnode, SH.minCount, literal(1, XSD.integer, curie), curie));
+    quads.push(QuadFactory.quad(withoutPsBnode, RDF.type, QuadFactory.iri(SH.PropertyShape, curie), curie));
+    quads.push(QuadFactory.quad(withoutPsBnode, SH.path, QuadFactory.iri(triggerPropIri, curie), curie));
+    quads.push(QuadFactory.quad(withoutPsBnode, SH.minCount, QuadFactory.literal(1, XSD.integer, curie), curie));
 
-    const complementBnode = nextBnode();
+    const complementBnode = QuadFactory.nextBnode();
 
-    // placeholder — sh:not needs a node with sh:property
-    quads.push(quad(complementBnode, SH.not, bnode(nextBnode()), curie));
+    quads.push(QuadFactory.quad(complementBnode, SH.not, QuadFactory.bnode(QuadFactory.nextBnode()), curie));
 
-    // Build: { sh:not: { sh:property: [{ sh:path, sh:minCount }] } }
-    const withoutContainerBnode = nextBnode();
+    const withoutContainerBnode = QuadFactory.nextBnode();
 
-    quads.push(quad(withoutContainerBnode, SH.property, bnode(withoutPsBnode), curie));
+    quads.push(QuadFactory.quad(withoutContainerBnode, SH.property, QuadFactory.bnode(withoutPsBnode), curie));
 
-    const withoutWrapperBnode = nextBnode();
+    const withoutWrapperBnode = QuadFactory.nextBnode();
 
-    quads.push(quad(withoutWrapperBnode, SH.not, bnode(withoutContainerBnode), curie));
+    quads.push(QuadFactory.quad(withoutWrapperBnode, SH.not, QuadFactory.bnode(withoutContainerBnode), curie));
 
-    // Required branch: { sh:property: [{ sh:path, sh:minCount }...] }
-    const reqBnode = nextBnode();
+    const reqBnode = QuadFactory.nextBnode();
 
     for (const reqProp of required) {
-      const reqPsBnode = nextBnode();
+      const reqPsBnode = QuadFactory.nextBnode();
 
-      quads.push(quad(reqPsBnode, RDF.type, iri(SH.PropertyShape, curie), curie));
-      quads.push(quad(reqPsBnode, SH.path, iri(propertyIri(subject, reqProp), curie), curie));
-      quads.push(quad(reqPsBnode, SH.minCount, literal(1, XSD.integer, curie), curie));
-      quads.push(quad(reqBnode, SH.property, bnode(reqPsBnode), curie));
+      quads.push(QuadFactory.quad(reqPsBnode, RDF.type, QuadFactory.iri(SH.PropertyShape, curie), curie));
+      const reqPathIri = QuadFactory.iri(SchemaIri.propertyIri(subject, reqProp), curie);
+
+      quads.push(QuadFactory.quad(reqPsBnode, SH.path, reqPathIri, curie));
+      quads.push(QuadFactory.quad(reqPsBnode, SH.minCount, QuadFactory.literal(1, XSD.integer, curie), curie));
+      quads.push(QuadFactory.quad(reqBnode, SH.property, QuadFactory.bnode(reqPsBnode), curie));
     }
 
-    // sh:or: [notWrapper, reqBnode]
-    const orBnode = nextBnode();
+    const orBnode = QuadFactory.nextBnode();
 
-    quads.push(quad(orBnode, SH.or, rdfList([
-      bnode(withoutWrapperBnode),
-      bnode(reqBnode)
+    quads.push(QuadFactory.quad(orBnode, SH.or, QuadFactory.rdfList([
+      QuadFactory.bnode(withoutWrapperBnode),
+      QuadFactory.bnode(reqBnode)
     ], curie), curie));
 
-    andItems.push(bnode(orBnode));
+    andItems.push(QuadFactory.bnode(orBnode));
   }
 }
-
-// ---------------------------------------------------------------------------
-// DependentSchemas → sh:or implication
-// ---------------------------------------------------------------------------
 
 function emitDependentSchemaAndItems(
   subject: string,
@@ -541,39 +484,35 @@ function emitDependentSchemaAndItems(
       continue;
     }
 
-    // sh:not branch
-    const withoutPsBnode = nextBnode();
+    const withoutPsBnode = QuadFactory.nextBnode();
 
-    quads.push(quad(withoutPsBnode, RDF.type, iri(SH.PropertyShape, curie), curie));
-    quads.push(quad(withoutPsBnode, SH.path, iri(ifRef, curie), curie));
-    quads.push(quad(withoutPsBnode, SH.minCount, literal(1, XSD.integer, curie), curie));
+    quads.push(QuadFactory.quad(withoutPsBnode, RDF.type, QuadFactory.iri(SH.PropertyShape, curie), curie));
+    quads.push(QuadFactory.quad(withoutPsBnode, SH.path, QuadFactory.iri(ifRef, curie), curie));
+    quads.push(QuadFactory.quad(withoutPsBnode, SH.minCount, QuadFactory.literal(1, XSD.integer, curie), curie));
 
-    const withoutContainerBnode = nextBnode();
+    const withoutContainerBnode = QuadFactory.nextBnode();
 
-    quads.push(quad(withoutContainerBnode, SH.property, bnode(withoutPsBnode), curie));
+    quads.push(QuadFactory.quad(withoutContainerBnode, SH.property, QuadFactory.bnode(withoutPsBnode), curie));
 
-    const withoutWrapperBnode = nextBnode();
+    const withoutWrapperBnode = QuadFactory.nextBnode();
 
-    quads.push(quad(withoutWrapperBnode, SH.not, bnode(withoutContainerBnode), curie));
+    quads.push(QuadFactory.quad(withoutWrapperBnode, SH.not, QuadFactory.bnode(withoutContainerBnode), curie));
 
-    // Dependent NodeShape
-    const depShapeBnode = nextBnode();
+    const depShapeBnode = QuadFactory.nextBnode();
 
-    quads.push(quad(depShapeBnode, RDF.type, iri(SH.NodeShape, curie), curie));
+    quads.push(QuadFactory.quad(depShapeBnode, RDF.type, QuadFactory.iri(SH.NodeShape, curie), curie));
 
-    // sh:closed on dependent schema
     const depEntry = index.get(thenRef);
 
     if (depEntry?.byPredicate.has(SH.closed) === true) {
-      quads.push(quad(depShapeBnode, SH.closed, literal(true, XSD.boolean, curie), curie));
+      quads.push(QuadFactory.quad(depShapeBnode, SH.closed, QuadFactory.literal(true, XSD.boolean, curie), curie));
     }
 
-    // Properties belonging to dependent schema (by rdfs:domain match)
     for (const [
       propSubject,
       propEntry
     ] of index) {
-      if (!isPropertySubject(propSubject)) {
+      if (!SchemaIri.isPropertySubject(propSubject)) {
         continue;
       }
 
@@ -583,27 +522,22 @@ function emitDependentSchemaAndItems(
         continue;
       }
 
-      const psBnode = nextBnode();
+      const psBnode = QuadFactory.nextBnode();
 
       emitPropertyShape(psBnode, propSubject, propEntry, subject, subject, quads, curie);
-      quads.push(quad(depShapeBnode, SH.property, bnode(psBnode), curie));
+      quads.push(QuadFactory.quad(depShapeBnode, SH.property, QuadFactory.bnode(psBnode), curie));
     }
 
-    // sh:or: [notWrapper, depShape]
-    const orBnode = nextBnode();
+    const orBnode = QuadFactory.nextBnode();
 
-    quads.push(quad(orBnode, SH.or, rdfList([
-      bnode(withoutWrapperBnode),
-      bnode(depShapeBnode)
+    quads.push(QuadFactory.quad(orBnode, SH.or, QuadFactory.rdfList([
+      QuadFactory.bnode(withoutWrapperBnode),
+      QuadFactory.bnode(depShapeBnode)
     ], curie), curie));
 
-    andItems.push(bnode(orBnode));
+    andItems.push(QuadFactory.bnode(orBnode));
   }
 }
-
-// ---------------------------------------------------------------------------
-// if/then/else → material conditional
-// ---------------------------------------------------------------------------
 
 function emitConditionalAndItems(
   entry: RelationIndexInterface,
@@ -620,35 +554,32 @@ function emitConditionalAndItems(
       elseRef, ifRef, thenRef
     } = rel.structure;
 
-    // Skip dependentSchemas conditionals
     if (thenRef?.includes('/dependentSchemas/') === true) {
       continue;
     }
 
-    // then branch: sh:or [ sh:not(if), then ]
     if (thenRef !== undefined) {
-      const complementBnode = nextBnode();
+      const complementBnode = QuadFactory.nextBnode();
 
-      quads.push(quad(complementBnode, SH.not, iri(ifRef, curie), curie));
+      quads.push(QuadFactory.quad(complementBnode, SH.not, QuadFactory.iri(ifRef, curie), curie));
 
-      const orBnode = nextBnode();
+      const orBnode = QuadFactory.nextBnode();
 
-      quads.push(quad(orBnode, SH.or, rdfList([
-        bnode(complementBnode),
-        iri(thenRef, curie)
+      quads.push(QuadFactory.quad(orBnode, SH.or, QuadFactory.rdfList([
+        QuadFactory.bnode(complementBnode),
+        QuadFactory.iri(thenRef, curie)
       ], curie), curie));
-      andItems.push(bnode(orBnode));
+      andItems.push(QuadFactory.bnode(orBnode));
     }
 
-    // else branch: sh:or [ if, else ]
     if (elseRef !== undefined) {
-      const orBnode = nextBnode();
+      const orBnode = QuadFactory.nextBnode();
 
-      quads.push(quad(orBnode, SH.or, rdfList([
-        iri(ifRef, curie),
-        iri(elseRef, curie)
+      quads.push(QuadFactory.quad(orBnode, SH.or, QuadFactory.rdfList([
+        QuadFactory.iri(ifRef, curie),
+        QuadFactory.iri(elseRef, curie)
       ], curie), curie));
-      andItems.push(bnode(orBnode));
+      andItems.push(QuadFactory.bnode(orBnode));
     }
   }
 }

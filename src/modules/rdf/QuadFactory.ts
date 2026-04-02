@@ -19,14 +19,6 @@ import { XSD } from '../../constants/IRI.js';
 
 let bnodeCounter = 0;
 
-export function nextBnode(): string {
-  return `_:b${bnodeCounter++}`;
-}
-
-export function resetBnodeCounter(): void {
-  bnodeCounter = 0;
-}
-
 // ---------------------------------------------------------------------------
 // CURIE expansion helper
 // ---------------------------------------------------------------------------
@@ -54,84 +46,92 @@ function expandCurieIfNeeded(value: string, curie: CurieInterface): string {
 }
 
 // ---------------------------------------------------------------------------
-// Quad construction helpers (context-aware versions)
+// QuadFactory — static-only class
 // ---------------------------------------------------------------------------
 
-export function iri(value: string, curie?: CurieInterface): QuadObjectType {
-  const expandedValue = curie ? expandCurieIfNeeded(value, curie) : value;
+export class QuadFactory {
+  static bnode(id: string): QuadObjectType {
+    return {
+      'termType': 'BlankNode',
+      'value': id
+    };
+  }
 
-  return {
-    'termType': 'NamedNode',
-    'value': expandedValue
-  };
-}
+  /**
+   * Emit string literal quads for all relations matching a predicate.
+   *
+   * Iterates `entry.byPredicate.get(predicate)` and pushes one quad per
+   * relation with the target value as an xsd:string literal.
+   */
+  static emitLiterals(
+    subject: string,
+    entry: RelationIndexInterface,
+    predicate: string,
+    outputPredicate: string,
+    quads: QuadInterface[],
+    curie?: CurieInterface
+  ): void {
+    const rels = entry.byPredicate.get(predicate);
 
-export function literal(value: unknown, datatype: string, curie?: CurieInterface): QuadObjectType {
-  const expandedDatatype = curie ? expandCurieIfNeeded(datatype, curie) : datatype;
+    if (rels !== undefined) {
+      for (const rel of rels) {
+        const litVal = QuadFactory.literal(relationTargetId(rel), XSD.string, curie);
 
-  return {
-    'datatype': {
-      'termType': 'NamedNode' as const,
-      'value': expandedDatatype
-    },
-    'language': '',
-    'termType': 'Literal',
-    value
-  };
-}
-
-export function bnode(id: string): QuadObjectType {
-  return {
-    'termType': 'BlankNode',
-    'value': id
-  };
-}
-
-export function rdfList(items: QuadObjectType[], _?: CurieInterface): QuadObjectType {
-  return {
-    items,
-    'termType': 'List'
-  };
-}
-
-export function quad(
-  subject: string,
-  predicate: string,
-  object: QuadObjectType,
-  curie?: CurieInterface
-): QuadInterface {
-  const expandedPredicate = curie ? expandCurieIfNeeded(predicate, curie) : predicate;
-
-  return {
-    object,
-    'predicate': expandedPredicate,
-    subject
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Shared literal emission helper
-// ---------------------------------------------------------------------------
-
-/**
- * Emit string literal quads for all relations matching a predicate.
- *
- * Iterates `entry.byPredicate.get(predicate)` and pushes one quad per
- * relation with the target value as an xsd:string literal.
- */
-export function emitLiterals(
-  subject: string,
-  entry: RelationIndexInterface,
-  predicate: string,
-  outputPredicate: string,
-  quads: QuadInterface[],
-  curie?: CurieInterface
-): void {
-  const rels = entry.byPredicate.get(predicate);
-
-  if (rels !== undefined) {
-    for (const rel of rels) {
-      quads.push(quad(subject, outputPredicate, literal(relationTargetId(rel), XSD.string, curie), curie));
+        quads.push(QuadFactory.quad(subject, outputPredicate, litVal, curie));
+      }
     }
+  }
+
+  static iri(value: string, curie?: CurieInterface): QuadObjectType {
+    const expandedValue = curie ? expandCurieIfNeeded(value, curie) : value;
+
+    return {
+      'termType': 'NamedNode',
+      'value': expandedValue
+    };
+  }
+
+  static literal(value: unknown, datatype: string, curie?: CurieInterface): QuadObjectType {
+    const expandedDatatype = curie ? expandCurieIfNeeded(datatype, curie) : datatype;
+
+    return {
+      'datatype': {
+        'termType': 'NamedNode' as const,
+        'value': expandedDatatype
+      },
+      'language': '',
+      'termType': 'Literal',
+      value
+    };
+  }
+
+  static nextBnode(): string {
+    return `_:b${bnodeCounter++}`;
+  }
+
+  static quad(
+    subject: string,
+    predicate: string,
+    object: QuadObjectType,
+    curie?: CurieInterface
+  ): QuadInterface {
+    const expandedPredicate = curie ? expandCurieIfNeeded(predicate, curie) : predicate;
+
+    return {
+      object,
+      'predicate': expandedPredicate,
+      subject
+    };
+  }
+
+  static rdfList(items: QuadObjectType[], _?: CurieInterface): QuadObjectType {
+    return {
+      items,
+      'termType': 'List'
+    };
+  }
+
+  static resetBnodeCounter(): void {
+    bnodeCounter = 0;
   }
 }
