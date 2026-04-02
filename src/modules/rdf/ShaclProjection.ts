@@ -13,17 +13,20 @@ import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
-import { propertyIri } from '../data/DataTypes.js';
 import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
 import { XSD_PREFIX } from '../../constants/PREFIXES.js';
 import {
-  bnode, emitLiterals, iri, literal, nextBnode, quad, rdfList
-} from './Projection.js';
+  fragmentContains, isPropertySubject, lastSegment,
+  propertyIri, splitSubject, structuralParent
+} from '../graph/SchemaIri.js';
 import {
-  buildIndex, fragmentContains, isPropertySubject, isRestrictionStructure, lastSegment,
-  relationTargetId, splitSubject, structuralParent
+  bnode, emitLiterals, iri, literal, nextBnode, quad, rdfList
+} from './QuadFactory.js';
+import {
+  buildIndex, isRestrictionStructure,
+  relationTargetId
 } from './ProjectionIndex.js';
 import type { RelationIndexInterface } from '../../interfaces/RelationIndex.js';
 

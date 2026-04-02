@@ -5,13 +5,17 @@ import assert from 'node:assert/strict';
 import {
   deepEqual,
   deepFreeze,
-  escapeSegment,
   isPlainObject,
-  isRecord,
-  propertyIri,
+  isRecord
+} from '../../src/modules/data/DataTypes.js';
+import {
+  escapeSegment,
+  propertyIri
+} from '../../src/modules/graph/SchemaIri.js';
+import {
   resolveSingleXsdType,
   resolveXsdType
-} from '../../src/modules/data/DataTypes.js';
+} from '../../src/constants/XSD_MAPS.js';
 import type { SchemaGraphSemanticsInterface } from '../../src/interfaces/SchemaGraph.js';
 
 function semantics(schemaTypes: string[], format?: string): SchemaGraphSemanticsInterface {

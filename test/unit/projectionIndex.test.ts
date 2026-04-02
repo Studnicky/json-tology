@@ -4,14 +4,16 @@ import {
 import assert from 'node:assert/strict';
 import {
   buildIndex,
-  fragmentContains,
   isListStructure,
-  isPropertySubject,
   isRestrictionStructure,
-  lastSegment,
-  relationTargetId,
-  structuralParent
+  relationTargetId
 } from '../../src/modules/rdf/ProjectionIndex.js';
+import {
+  fragmentContains,
+  isPropertySubject,
+  lastSegment,
+  structuralParent
+} from '../../src/modules/graph/SchemaIri.js';
 import type { SchemaGraphRelationInterface } from '../../src/interfaces/SchemaGraph.js';
 import type { RelationStructure } from '../../src/types/SchemaGraph.js';
 

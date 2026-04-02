@@ -2,9 +2,10 @@ import type {
   SchemaGraphNodeInterface, SchemaGraphRelationInterface,
   SchemaGraphSemanticsInterface
 } from '../../interfaces/SchemaGraph.js';
+import { propertyIri } from './SchemaIri.js';
 import {
-  propertyIri, resolveSingleXsdType, resolveXsdType
-} from '../data/DataTypes.js';
+  resolveSingleXsdType, resolveXsdType
+} from '../../constants/XSD_MAPS.js';
 import type { GraphAccessorInterface } from '../../interfaces/GraphAccessor.js';
 import {
   isDefsEntryPointer, isPropertyPointer,
