@@ -17,6 +17,7 @@ import type {
   PartialSchemaType,
   RequiredSchemaType
 } from '../../types/Compose.js';
+import { isRecord } from '../data/dataTypes.js';
 
 export class Compose {
   /**
@@ -74,8 +75,8 @@ export class Compose {
   ): ExtendSchemaType<TSchema, TAdditional, TId> {
     const source = schema as unknown as Record<string, unknown>;
     const rawProps = source.properties;
-    const sourceProps = (typeof rawProps === 'object' && rawProps !== null)
-      ? rawProps as Record<string, unknown>
+    const sourceProps = isRecord(rawProps)
+      ? rawProps
       : {};
 
     return {
@@ -205,8 +206,8 @@ export class Compose {
   >(schema: TSchema, keys: readonly TKeys[], newId: TId): OmitSchemaInterface<TSchema, TKeys, TId> {
     const source = schema as unknown as Record<string, unknown>;
     const rawOmitProps = source.properties;
-    const sourceProps = (typeof rawOmitProps === 'object' && rawOmitProps !== null)
-      ? { ...rawOmitProps as Record<string, unknown> }
+    const sourceProps = isRecord(rawOmitProps)
+      ? { ...rawOmitProps }
       : {};
     const sourceRequired = Array.isArray(source.required) ? (source.required as string[]) : [];
 
@@ -267,8 +268,8 @@ export class Compose {
   >(schema: TSchema, keys: readonly TKeys[], newId: TId): PickSchemaInterface<TSchema, TKeys, TId> {
     const source = schema as unknown as Record<string, unknown>;
     const rawPickProps = source.properties;
-    const sourceProps = (typeof rawPickProps === 'object' && rawPickProps !== null)
-      ? rawPickProps as Record<string, unknown>
+    const sourceProps = isRecord(rawPickProps)
+      ? rawPickProps
       : {};
     const sourceRequired = Array.isArray(source.required) ? (source.required as string[]) : [];
 
@@ -310,8 +311,8 @@ export class Compose {
   >(schema: TSchema, newId: TId): RequiredSchemaType<TSchema, TId> {
     const source = schema as unknown as Record<string, unknown>;
     const rawRequiredProps = source.properties;
-    const props = (typeof rawRequiredProps === 'object' && rawRequiredProps !== null)
-      ? rawRequiredProps as Record<string, unknown>
+    const props = isRecord(rawRequiredProps)
+      ? rawRequiredProps
       : {};
 
     return {

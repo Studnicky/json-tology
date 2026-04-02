@@ -16,11 +16,11 @@ import type { CurieInterface } from '../../interfaces/Curie.js';
 import { propertyIri } from '../data/dataTypes.js';
 import {
   bnode, iri, literal, nextBnode, quad, rdfList
-} from './projection.js';
+} from './Projection.js';
 import {
   buildIndex, fragmentContains, isPropertySubject, isRestrictionStructure, lastSegment,
   relationTargetId, structuralParent
-} from './projectionIndex.js';
+} from './ProjectionIndex.js';
 import type { RelationIndexInterface } from '../../interfaces/RelationIndex.js';
 
 function resolveTargetRef(targetNodeId: string, index: Map<string, RelationIndexInterface>): string {
@@ -548,13 +548,11 @@ function emitDependentSchemaAndItems(
       continue;
     }
 
-    const triggerPropIri = ifRef;
-
     // sh:not branch
     const withoutPsBnode = nextBnode();
 
     quads.push(quad(withoutPsBnode, 'rdf:type', iri('sh:PropertyShape', curie), curie));
-    quads.push(quad(withoutPsBnode, 'sh:path', iri(triggerPropIri, curie), curie));
+    quads.push(quad(withoutPsBnode, 'sh:path', iri(ifRef, curie), curie));
     quads.push(quad(withoutPsBnode, 'sh:minCount', literal(1, 'xsd:integer', curie), curie));
 
     const withoutContainerBnode = nextBnode();

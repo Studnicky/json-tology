@@ -20,7 +20,7 @@ import { GraphEngine } from '../graph/graphEngine.js';
 import {
   deepFreeze, isRecord
 } from '../data/dataTypes.js';
-import { Hash } from '../hash/hash.js';
+import { Hash } from '../hash/Hash.js';
 import { Materializer } from '../materialization/materializer.js';
 import { SchemaGraph } from '../graph/schemaGraph.js';
 import { SchemaCompiler } from '../validation/schemaCompiler.js';

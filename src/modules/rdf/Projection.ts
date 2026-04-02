@@ -18,7 +18,7 @@ import type {
 } from '../../interfaces/SchemaGraph.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
 import { resolveSingleXsdType } from '../data/dataTypes.js';
-import { Hash } from '../hash/hash.js';
+import { Hash } from '../hash/Hash.js';
 import { isRecord } from '../data/dataTypes.js';
 
 // ---------------------------------------------------------------------------

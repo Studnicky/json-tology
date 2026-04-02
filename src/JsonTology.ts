@@ -18,8 +18,8 @@
  */
 
 import { GraphSchemaSerializer } from './modules/ontology/graphSchemaSerializer.js';
-import { quadsToJsonLdNodes } from './modules/rdf/projection.js';
-import { liftInstances } from './modules/rdf/lift.js';
+import { quadsToJsonLdNodes } from './modules/rdf/Projection.js';
+import { liftInstances } from './modules/rdf/Lift.js';
 import type { QuadInterface } from './interfaces/Quad.js';
 
 import type { JSONSchema7Definition } from 'json-schema';
@@ -29,7 +29,7 @@ import type {
 import type {
   SchemaEntryType, SchemaMapFromTupleType, UniqueSchemaIdsType
 } from './types/Registry.js';
-import { FormatRegistry } from './modules/format/formatRegistry.js';
+import { FormatRegistry } from './modules/format/FormatRegistry.js';
 import type { MaterializerInterface } from './interfaces/MaterializerImpl.js';
 import type { RegistryOptionsInterface } from './interfaces/Registry.js';
 import type { SchemaRegistryInterface } from './interfaces/SchemaRegistry.js';
@@ -38,12 +38,12 @@ import type {
 } from './types/Transform.js';
 import type { ValidationErrors } from './errors/ValidationErrors.js';
 import type { ValueInterface } from './interfaces/ValueImpl.js';
-import { SchemaRegistry } from './modules/registry/schemaRegistry.js';
+import { SchemaRegistry } from './modules/registry/SchemaRegistry.js';
 import { Materializer } from './modules/materialization/materializer.js';
 import { Value } from './modules/data/value.js';
 import { OntologyBuilder } from './modules/ontology/ontologyBuilder.js';
-import { GraphOntologySerializer } from './modules/ontology/graphOntologySerializer.js';
-import { GraphShaclSerializer } from './modules/ontology/graphShaclSerializer.js';
+import { GraphOntologySerializer } from './modules/ontology/GraphOntologySerializer.js';
+import { GraphShaclSerializer } from './modules/ontology/GraphShaclSerializer.js';
 import { Transform } from './modules/transform/transform.js';
 import type { JsonTologyOptionsInterface } from './interfaces/Config.js';
 import { DEFAULT_PREFIXES } from './constants/PREFIXES.js';

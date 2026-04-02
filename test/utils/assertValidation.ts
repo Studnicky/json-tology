@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import type { SchemaRegistry } from '../../src/modules/registry/schemaRegistry.js';
+import type { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
 interface ValidationScenario {
   'data': unknown;

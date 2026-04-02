@@ -13,10 +13,9 @@ import { BaseError } from '../../errors/BaseError.js';
 import { MaterializationError } from '../../errors/MaterializationError.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { isRecord } from '../data/dataTypes.js';
+import { parseRef } from '../graph/graphEngineSupport.js';
 import { SchemaGraph } from '../graph/schemaGraph.js';
-import { projectAbox } from '../rdf/projection.js';
-
-const isObject = isRecord;
+import { projectAbox } from '../rdf/Projection.js';
 
 
 /**
@@ -125,7 +124,7 @@ export class Materializer implements MaterializerInterface {
   }
 
   private graphFor(rootSchema: JSONSchema7Definition): SchemaGraphInterface {
-    if (!isObject(rootSchema)) {
+    if (!isRecord(rootSchema)) {
       return new SchemaGraph(rootSchema as boolean);
     }
 
@@ -226,23 +225,21 @@ export class Materializer implements MaterializerInterface {
       return graph.resolveFragment(fragment);
     }
 
-    const hashIndex = ref.indexOf('#');
-    const schemaId = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
-    const fragment = hashIndex === -1 ? '' : ref.slice(hashIndex + 1);
+    const parsed = parseRef(ref);
 
-    const lookedUp = this.registry.get(schemaId) as JSONSchema7Definition | undefined;
+    const lookedUp = this.registry.get(parsed.id) as JSONSchema7Definition | undefined;
 
     if (lookedUp === undefined) {
       throw new GraphError('REF_UNRESOLVED', `Unresolved schema reference: ${ref}`, ref);
     }
 
-    if (!isObject(lookedUp)) {
+    if (!isRecord(lookedUp)) {
       return schemaNode;
     }
 
     const targetGraph = this.graphFor(lookedUp);
 
-    return targetGraph.resolveFragment(fragment);
+    return targetGraph.resolveFragment(parsed.fragment);
   }
 
   private run(

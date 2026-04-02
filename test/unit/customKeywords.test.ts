@@ -4,7 +4,7 @@ import {
 import assert from 'node:assert/strict';
 import type { KeywordDefinitionInterface } from '../../src/interfaces/GraphEngine.js';
 import { GraphEngine } from '../../src/modules/graph/graphEngine.js';
-import { SchemaRegistry } from '../../src/modules/registry/schemaRegistry.js';
+import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 import { JsonTology } from '../../src/JsonTology.js';
 import type { ValidationErrorType } from '../../src/types/Validation.js';
 

@@ -3,9 +3,9 @@ import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js
 import type {
   VizEdgeInterface, VizNodeInterface, VizPayloadInterface, VizSchemaDataInterface
 } from '../../interfaces/Viz.js';
-import { GraphOntologySerializer } from '../ontology/graphOntologySerializer.js';
+import { GraphOntologySerializer } from '../ontology/GraphOntologySerializer.js';
 import { GraphSchemaSerializer } from '../ontology/graphSchemaSerializer.js';
-import { GraphShaclSerializer } from '../ontology/graphShaclSerializer.js';
+import { GraphShaclSerializer } from '../ontology/GraphShaclSerializer.js';
 import { TypeStringEmitter } from './typeStringEmitter.js';
 
 export class VizDataCollector {
@@ -88,8 +88,7 @@ function labelFromId(schemaId: string): string {
     const segments = url.pathname.split('/').filter(Boolean);
 
     return segments.at(-1) ?? schemaId;
-  } catch (error) {
-    console.error(`VizDataCollector.labelFromId: failed to parse schema ID as URL: ${error instanceof Error ? error.message : String(error)}`);
+  } catch {
     const segments = schemaId.split('/').filter(Boolean);
 
     return segments.at(-1) ?? schemaId;

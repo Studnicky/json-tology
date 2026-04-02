@@ -10,6 +10,8 @@ vendor
 .claude/*.json
 !.claude/settings.local.json
 
+isolate-*.log
+
 # Added by dev-tools init
 .cache/
 .dev-tools/.previous.api.json

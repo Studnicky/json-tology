@@ -46,13 +46,13 @@ export * from './modules/composition/compose.js';
 export * from './modules/data/changeset.js';
 export * from './modules/data/value.js';
 export * from './modules/graph/graphEngine.js';
-export * from './modules/hash/hash.js';
+export * from './modules/hash/Hash.js';
 export * from './modules/materialization/materializer.js';
-export * from './modules/ontology/graphOntologySerializer.js';
+export * from './modules/ontology/GraphOntologySerializer.js';
 export * from './modules/ontology/ontologyBuilder.js';
 export * from './modules/rdf/curie.js';
-export * from './modules/rdf/lift.js';
-export * from './modules/rdf/projection.js';
+export * from './modules/rdf/Lift.js';
+export * from './modules/rdf/Projection.js';
 export * from './modules/transform/transform.js';
 
 // Types

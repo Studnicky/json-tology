@@ -16,7 +16,7 @@ import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { GraphArtifactInterface } from '../../interfaces/GraphArtifact.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { isRecord } from '../data/dataTypes.js';
-import { Hash } from '../hash/hash.js';
+import { Hash } from '../hash/Hash.js';
 import { SchemaGraph } from './schemaGraph.js';
 
 

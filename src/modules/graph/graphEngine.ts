@@ -12,8 +12,8 @@ import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import {
   deepEqual, isRecord, propertyIri
 } from '../data/dataTypes.js';
-import { FormatRegistry } from '../format/formatRegistry.js';
-import { Hash } from '../hash/hash.js';
+import { FormatRegistry } from '../format/FormatRegistry.js';
+import { Hash } from '../hash/Hash.js';
 import { SchemaGraph } from './schemaGraph.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { DEFAULT_OPTIONS } from '../../constants/DIALECT.js';
@@ -21,6 +21,7 @@ import {
   buildRootDialectPlan,
   cloneCandidate,
   extractNamedFragment,
+  parseRef,
   schemaId
 } from './graphEngineSupport.js';
 import { escapeJsonPointerSegment } from './schemaGraphSupport.js';
@@ -44,8 +45,6 @@ import { visitNode } from './graphEngineVisit.js';
 import type { VisitContextInterface } from '../../interfaces/VisitContext.js';
 
 import type { JSONSchema7Definition } from 'json-schema';
-
-const isObject = isRecord;
 
 export class GraphEngine implements GraphEngineInterface {
   /**
@@ -299,7 +298,7 @@ export class GraphEngine implements GraphEngineInterface {
   }
 
   private graphFor(rootSchema: JSONSchema7Definition): SchemaGraphInterface {
-    if (!isObject(rootSchema)) {
+    if (!isRecord(rootSchema)) {
       return new SchemaGraph(rootSchema as boolean);
     }
 
@@ -404,12 +403,11 @@ export class GraphEngine implements GraphEngineInterface {
     if (ref.startsWith('#')) {
       fragment = ref.slice(1);
     } else {
-      const hashIndex = ref.indexOf('#');
-      const refSchemaId = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
+      const parsed = parseRef(ref);
 
-      fragment = hashIndex === -1 ? '' : ref.slice(hashIndex + 1);
+      fragment = parsed.fragment;
 
-      const lookedUp = this.options.lookupSchema?.(refSchemaId);
+      const lookedUp = this.options.lookupSchema?.(parsed.id);
 
       if (lookedUp === undefined) {
         throw new GraphError('REF_UNRESOLVED', `Unresolved schema reference: ${ref}`, ref);

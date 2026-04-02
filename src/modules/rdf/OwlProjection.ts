@@ -19,11 +19,11 @@ import {
 } from '../data/dataTypes.js';
 import {
   bnode, iri, literal, nextBnode, quad, rdfList
-} from './projection.js';
+} from './Projection.js';
 import {
   buildIndex, fragmentContains, isListStructure, isPropertySubject, isRestrictionStructure,
   lastSegment, relationTargetId, structuralParent
-} from './projectionIndex.js';
+} from './ProjectionIndex.js';
 import type { RelationIndexInterface } from '../../interfaces/RelationIndex.js';
 
 function canonicalPropertyIri(subject: string): string {

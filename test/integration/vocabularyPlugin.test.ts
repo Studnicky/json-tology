@@ -2,10 +2,10 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { SchemaRegistry } from '../../src/modules/registry/schemaRegistry.js';
+import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 import { SchemaGraph } from '../../src/modules/graph/schemaGraph.js';
-import { GraphOntologySerializer } from '../../src/modules/ontology/graphOntologySerializer.js';
-import { GraphShaclSerializer } from '../../src/modules/ontology/graphShaclSerializer.js';
+import { GraphOntologySerializer } from '../../src/modules/ontology/GraphOntologySerializer.js';
+import { GraphShaclSerializer } from '../../src/modules/ontology/GraphShaclSerializer.js';
 import { Curie } from '../../src/modules/rdf/curie.js';
 import { DEFAULT_PREFIXES } from '../../src/constants/PREFIXES.js';
 import { JsonTology } from '../../src/JsonTology.js';

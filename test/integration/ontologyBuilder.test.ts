@@ -7,8 +7,8 @@ import {
 } from 'node:test';
 import assert from 'node:assert/strict';
 import { OntologyBuilder } from '../../src/modules/ontology/ontologyBuilder.js';
-import { GraphOntologySerializer } from '../../src/modules/ontology/graphOntologySerializer.js';
-import { GraphShaclSerializer } from '../../src/modules/ontology/graphShaclSerializer.js';
+import { GraphOntologySerializer } from '../../src/modules/ontology/GraphOntologySerializer.js';
+import { GraphShaclSerializer } from '../../src/modules/ontology/GraphShaclSerializer.js';
 import { SchemaGraph } from '../../src/modules/graph/schemaGraph.js';
 
 type JsonLdNode = Record<string, unknown>;

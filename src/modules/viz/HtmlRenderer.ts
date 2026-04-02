@@ -266,20 +266,20 @@ export class HtmlRenderer {
 
       tabs.forEach((tab, index) => {
         const btn = document.createElement('button');
-        btn.className = 'tab' + (index === 0 ? ' active' : '');
+        btn.className = \`tab\${index === 0 ? ' active' : ''}\`;
         btn.textContent = tab.name;
         btn.addEventListener('click', () => {
           document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
           document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
           btn.classList.add('active');
-          document.getElementById('tab-' + index).classList.add('active');
+          document.getElementById(\`tab-\${index}\`).classList.add('active');
         });
         tabsContainer.appendChild(btn);
 
         const content = document.createElement('div');
-        content.id = 'tab-' + index;
-        content.className = 'tab-content' + (index === 0 ? ' active' : '');
-        content.innerHTML = '<div class="json-content">' + escapeHtml(tab.content) + '</div>';
+        content.id = \`tab-\${index}\`;
+        content.className = \`tab-content\${index === 0 ? ' active' : ''}\`;
+        content.innerHTML = \`<div class="json-content">\${escapeHtml(tab.content)}</div>\`;
         container.appendChild(content);
       });
     }

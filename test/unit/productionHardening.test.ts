@@ -7,11 +7,11 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { SchemaRegistry } from '../../src/modules/registry/schemaRegistry.js';
+import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 import { JsonTology } from '../../src/JsonTology.js';
 import { SchemaError } from '../../src/errors/SchemaError.js';
 import { GraphError } from '../../src/errors/GraphError.js';
-import { FormatRegistry } from '../../src/modules/format/formatRegistry.js';
+import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
 import { GraphEngine } from '../../src/modules/graph/graphEngine.js';
 
 // ---------------------------------------------------------------------------

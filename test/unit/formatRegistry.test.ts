@@ -6,7 +6,7 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { FormatRegistry } from '../../src/modules/format/formatRegistry.js';
+import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
 import { GraphEngine } from '../../src/modules/graph/graphEngine.js';
 
 void describe('FormatRegistry', () => {

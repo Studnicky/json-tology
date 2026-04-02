@@ -17,14 +17,14 @@ import {
 import {
   basename, dirname, resolve
 } from 'node:path';
-import { SchemaRegistry } from './modules/registry/schemaRegistry.js';
+import { SchemaRegistry } from './modules/registry/SchemaRegistry.js';
 import { GraphArtifact } from './modules/graph/graphArtifact.js';
 import { GraphSchemaSerializer } from './modules/ontology/graphSchemaSerializer.js';
-import { GraphOntologySerializer } from './modules/ontology/graphOntologySerializer.js';
-import { GraphShaclSerializer } from './modules/ontology/graphShaclSerializer.js';
+import { GraphOntologySerializer } from './modules/ontology/GraphOntologySerializer.js';
+import { GraphShaclSerializer } from './modules/ontology/GraphShaclSerializer.js';
 import { OntologyBuilder } from './modules/ontology/ontologyBuilder.js';
 import { VizDataCollector } from './modules/viz/vizDataCollector.js';
-import { HtmlRenderer } from './modules/viz/htmlRenderer.js';
+import { HtmlRenderer } from './modules/viz/HtmlRenderer.js';
 import type { SchemaGraphInterface } from './interfaces/SchemaGraphImpl.js';
 import { DEFAULT_PREFIXES } from './constants/PREFIXES.js';
 import { SchemaError } from './errors/SchemaError.js';

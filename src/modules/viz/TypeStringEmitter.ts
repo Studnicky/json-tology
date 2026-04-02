@@ -31,7 +31,7 @@ export class TypeStringEmitter {
     const base = lastSegment.split('.')[0] ?? 'Root';
     const capitalized = base.charAt(0).toUpperCase() + base.slice(1).toLowerCase();
 
-    return capitalized || 'Root';
+    return capitalized;
   }
 
   /**

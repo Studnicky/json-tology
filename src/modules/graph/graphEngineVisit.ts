@@ -17,8 +17,6 @@ import { Refs } from './visit/refs.js';
 import { VisitComposition } from './visit/composition.js';
 import { Unevaluated } from './visit/unevaluated.js';
 
-const isObject = isRecord;
-
 export function visitNode(
   context: VisitContextInterface,
   node: SchemaGraphNodeInterface,
@@ -239,7 +237,7 @@ export function visitNode(
   }
 
   // --- Object validation ---
-  if (isObject(workingValue)) {
+  if (isRecord(workingValue)) {
     const objectResult = context.validateObject(node, graph, workingValue, path, options, refStack, dynScope, depth);
 
     if (!objectResult.valid && !options.collectErrors) {
@@ -397,7 +395,7 @@ export function visitNode(
   }
 
   // --- Unevaluated properties ---
-  if (isObject(workingValue) && unevaluatedPropertiesNode !== undefined) {
+  if (isRecord(workingValue) && unevaluatedPropertiesNode !== undefined) {
     const unevaluatedResult = context.applyUnevaluatedProperties(
       node,
       graph,

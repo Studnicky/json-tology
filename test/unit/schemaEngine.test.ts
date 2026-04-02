@@ -2,7 +2,7 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { SchemaRegistry } from '../../src/modules/registry/schemaRegistry.js';
+import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 import { GraphEngine } from '../../src/modules/graph/graphEngine.js';
 
 void describe('Graph engine advanced keywords', () => {

@@ -11,7 +11,7 @@ import { BaseError } from '../../src/errors/BaseError.js';
 import { CoercionError } from '../../src/errors/CoercionError.js';
 import { Compose } from '../../src/modules/composition/compose.js';
 import { Result } from '../../src/modules/data/result.js';
-import { SchemaRegistry } from '../../src/modules/registry/schemaRegistry.js';
+import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
 const PersonSchema = {

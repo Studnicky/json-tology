@@ -9,8 +9,8 @@ import {
 } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { JsonTology } from '../../src/JsonTology.js';
-import { GraphShaclSerializer } from '../../src/modules/ontology/graphShaclSerializer.js';
-import { GraphOntologySerializer } from '../../src/modules/ontology/graphOntologySerializer.js';
+import { GraphShaclSerializer } from '../../src/modules/ontology/GraphShaclSerializer.js';
+import { GraphOntologySerializer } from '../../src/modules/ontology/GraphOntologySerializer.js';
 import {
   AllSchemas
 } from '../fixtures/dcat-ap.js';

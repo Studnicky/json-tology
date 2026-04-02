@@ -10,9 +10,9 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { SchemaRegistry } from '../../src/modules/registry/schemaRegistry.js';
-import { GraphOntologySerializer } from '../../src/modules/ontology/graphOntologySerializer.js';
-import { GraphShaclSerializer } from '../../src/modules/ontology/graphShaclSerializer.js';
+import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
+import { GraphOntologySerializer } from '../../src/modules/ontology/GraphOntologySerializer.js';
+import { GraphShaclSerializer } from '../../src/modules/ontology/GraphShaclSerializer.js';
 
 type JsonLdNode = Record<string, unknown>;
 
