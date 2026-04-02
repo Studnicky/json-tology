@@ -32,11 +32,11 @@ import type {
 } from './graphEngineSupport.js';
 import {
   coerceGraphValue,
-  createValidationError,
   matchesSchemaTypes,
   validateNumberConstraints,
   validateStringConstraints
 } from './graphEngineScalars.js';
+import { BaseError } from '../../errors/BaseError.js';
 import {
   createImplicitDefaultValue,
   synthesizeZeroValue
@@ -232,7 +232,7 @@ export class GraphEngine implements GraphEngineInterface {
     message: string,
     params: Record<string, unknown> = {}
   ): ValidationErrorType {
-    return createValidationError(path, keyword, message, params);
+    return BaseError.validationError(path, keyword, message, params);
   }
 
   private createImplicitDefault(

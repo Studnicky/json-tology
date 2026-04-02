@@ -15,6 +15,7 @@ import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { GraphArtifactInterface } from '../../interfaces/GraphArtifact.js';
 import { GraphError } from '../../errors/GraphError.js';
+import { isRecord } from '../data/dataTypes.js';
 import { Hash } from '../hash/hash.js';
 import { SchemaGraph } from './schemaGraph.js';
 
@@ -27,7 +28,7 @@ export class GraphArtifact {
    * per-node semantics hashes for staleness.
    */
   public static fromArtifact(artifact: unknown): SchemaGraphInterface {
-    if (!this.isRecord(artifact)) {
+    if (!isRecord(artifact)) {
       throw new GraphError(
         'ARTIFACT_INVALID',
         'Artifact must be an object. Regenerate the artifact.'
@@ -140,7 +141,7 @@ export class GraphArtifact {
   }
 
   private static isArtifact(value: unknown): value is GraphArtifactInterface {
-    if (!this.isRecord(value)) {
+    if (!isRecord(value)) {
       return false;
     }
 
@@ -157,10 +158,6 @@ export class GraphArtifact {
       && typeof artifact.semanticsHashes === 'object'
       && artifact.semanticsHashes !== null
       && !Array.isArray(artifact.semanticsHashes);
-  }
-
-  private static isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
   }
 
   /**

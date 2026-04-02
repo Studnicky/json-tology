@@ -1,11 +1,13 @@
 import type { ValidationErrorType } from '../../types/Validation.js';
 import type { KeywordContextInterface } from '../../interfaces/GraphEngine.js';
 import {
-  deepEqual, isRecord
+  isRecord
 } from '../data/dataTypes.js';
 import {
-  codePointLength, coerceCompiledValue, jsonSortedKeys, makeValidationError
+  coerceCompiledValue
 } from './schemaCompilerSupport.js';
+import { BaseError } from '../../errors/BaseError.js';
+import { Predicates } from './predicates.js';
 import type {
   CompiledNodeValidationPlanInterface
 } from './schemaCompilerValidatePlan.js';
@@ -103,28 +105,9 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
       let typeValid = false;
 
       for (const typeName of types) {
-        switch (typeName) {
-          case 'array': if (Array.isArray(workingValue)) {
-            typeValid = true;
-          } break;
-          case 'boolean': if (typeof workingValue === 'boolean') {
-            typeValid = true;
-          } break;
-          case 'integer': if (typeof workingValue === 'number' && Number.isInteger(workingValue)) {
-            typeValid = true;
-          } break;
-          case 'null': if (workingValue === null) {
-            typeValid = true;
-          } break;
-          case 'number': if (typeof workingValue === 'number' && Number.isFinite(workingValue)) {
-            typeValid = true;
-          } break;
-          case 'object': if (typeof workingValue === 'object' && workingValue !== null && !Array.isArray(workingValue)) {
-            typeValid = true;
-          } break;
-          case 'string': if (typeof workingValue === 'string') {
-            typeValid = true;
-          } break;
+        if (Predicates.matchesType(typeName, workingValue)) {
+          typeValid = true;
+          break;
         }
       }
       if (!typeValid) {
@@ -134,16 +117,14 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
             'value': workingValue
           };
         }
-        errors.push(makeValidationError(path, 'type', types.length === 1 ? `must be ${types[0]}` : `must be one of: ${types.join(', ')}`, { 'type': types }));
+        errors.push(BaseError.validationError(path, 'type', types.length === 1 ? `must be ${types[0]}` : `must be one of: ${types.join(', ')}`, { 'type': types }));
         valid = false;
       }
     }
 
     if (enumValues !== undefined) {
       const matched = enumSet === undefined
-        ? enumValues.some((ev) => {
-          return deepEqual(ev, workingValue);
-        })
+        ? Predicates.satisfiesEnum(workingValue, enumValues)
         : enumSet.has(workingValue as boolean | null | number | string);
 
       if (!matched) {
@@ -153,132 +134,115 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
             'value': workingValue
           };
         }
-        errors.push(makeValidationError(path, 'enum', 'must be one of the allowed values'));
+        errors.push(BaseError.validationError(path, 'enum', 'must be one of the allowed values'));
         valid = false;
       }
     }
 
-    if (hasConst && !deepEqual(constVal, workingValue)) {
+    if (hasConst && !Predicates.satisfiesConst(workingValue, constVal)) {
       if (!collectErrors) {
         return {
           'valid': false,
           'value': workingValue
         };
       }
-      errors.push(makeValidationError(path, 'const', `must be ${JSON.stringify(constVal)}`));
+      errors.push(BaseError.validationError(path, 'const', `must be ${JSON.stringify(constVal)}`));
       valid = false;
     }
 
     if (typeof workingValue === 'string') {
-      if (minLength !== undefined || maxLength !== undefined) {
-        const cpLen = codePointLength(workingValue);
-
-        if (minLength !== undefined && cpLen < minLength) {
-          if (!collectErrors) {
-            return {
-              'valid': false,
-              'value': workingValue
-            };
-          }
-          errors.push(makeValidationError(path, 'minLength', `must be at least ${minLength} characters`));
-          valid = false;
-        }
-        if (maxLength !== undefined && cpLen > maxLength) {
-          if (!collectErrors) {
-            return {
-              'valid': false,
-              'value': workingValue
-            };
-          }
-          errors.push(makeValidationError(path, 'maxLength', `must be at most ${maxLength} characters`));
-          valid = false;
-        }
-      }
-      if (patternRegex !== undefined && !patternRegex.test(workingValue)) {
+      if (minLength !== undefined && !Predicates.satisfiesMinLength(workingValue, minLength)) {
         if (!collectErrors) {
           return {
             'valid': false,
             'value': workingValue
           };
         }
-        errors.push(makeValidationError(path, 'pattern', `must match pattern "${pattern}"`));
+        errors.push(BaseError.validationError(path, 'minLength', `must be at least ${minLength} characters`));
+        valid = false;
+      }
+      if (maxLength !== undefined && !Predicates.satisfiesMaxLength(workingValue, maxLength)) {
+        if (!collectErrors) {
+          return {
+            'valid': false,
+            'value': workingValue
+          };
+        }
+        errors.push(BaseError.validationError(path, 'maxLength', `must be at most ${maxLength} characters`));
+        valid = false;
+      }
+      if (patternRegex !== undefined && !Predicates.satisfiesPattern(workingValue, patternRegex)) {
+        if (!collectErrors) {
+          return {
+            'valid': false,
+            'value': workingValue
+          };
+        }
+        errors.push(BaseError.validationError(path, 'pattern', `must match pattern "${pattern}"`));
         valid = false;
       }
     }
 
-    if (formatValidator !== undefined) {
-      let formatPassed: boolean;
-
-      try {
-        formatPassed = formatValidator(workingValue);
-      } catch {
-        formatPassed = false;
+    if (formatValidator !== undefined && !Predicates.satisfiesFormat(workingValue, formatValidator)) {
+      if (!collectErrors) {
+        return {
+          'valid': false,
+          'value': workingValue
+        };
       }
-      if (!formatPassed) {
-        if (!collectErrors) {
-          return {
-            'valid': false,
-            'value': workingValue
-          };
-        }
-        errors.push(makeValidationError(path, 'format', `must match format "${format}"`));
-        valid = false;
-      }
+      errors.push(BaseError.validationError(path, 'format', `must match format "${format}"`));
+      valid = false;
     }
 
     if (typeof workingValue === 'number') {
-      if (minimum !== undefined && workingValue < minimum) {
+      if (minimum !== undefined && !Predicates.satisfiesMinimum(workingValue, minimum)) {
         if (!collectErrors) {
           return {
             'valid': false,
             'value': workingValue
           };
         }
-        errors.push(makeValidationError(path, 'minimum', `must be >= ${minimum}`));
+        errors.push(BaseError.validationError(path, 'minimum', `must be >= ${minimum}`));
         valid = false;
       }
-      if (maximum !== undefined && workingValue > maximum) {
+      if (maximum !== undefined && !Predicates.satisfiesMaximum(workingValue, maximum)) {
         if (!collectErrors) {
           return {
             'valid': false,
             'value': workingValue
           };
         }
-        errors.push(makeValidationError(path, 'maximum', `must be <= ${maximum}`));
+        errors.push(BaseError.validationError(path, 'maximum', `must be <= ${maximum}`));
         valid = false;
       }
-      if (exclusiveMinimum !== undefined && workingValue <= exclusiveMinimum) {
+      if (exclusiveMinimum !== undefined && !Predicates.satisfiesExclusiveMinimum(workingValue, exclusiveMinimum)) {
         if (!collectErrors) {
           return {
             'valid': false,
             'value': workingValue
           };
         }
-        errors.push(makeValidationError(path, 'exclusiveMinimum', `must be > ${exclusiveMinimum}`));
+        errors.push(BaseError.validationError(path, 'exclusiveMinimum', `must be > ${exclusiveMinimum}`));
         valid = false;
       }
-      if (exclusiveMaximum !== undefined && workingValue >= exclusiveMaximum) {
+      if (exclusiveMaximum !== undefined && !Predicates.satisfiesExclusiveMaximum(workingValue, exclusiveMaximum)) {
         if (!collectErrors) {
           return {
             'valid': false,
             'value': workingValue
           };
         }
-        errors.push(makeValidationError(path, 'exclusiveMaximum', `must be < ${exclusiveMaximum}`));
+        errors.push(BaseError.validationError(path, 'exclusiveMaximum', `must be < ${exclusiveMaximum}`));
         valid = false;
       }
-      if (
-        multipleOf !== undefined
-        && (multipleOf === 0
-          || Math.abs(workingValue / multipleOf - Math.round(workingValue / multipleOf)) > Number.EPSILON * 10)
-      ) {
+      if (multipleOf !== undefined && !Predicates.satisfiesMultipleOf(workingValue, multipleOf)) {
         if (!collectErrors) {
           return {
             'valid': false,
             'value': workingValue
           };
         }
-        errors.push(makeValidationError(path, 'multipleOf', `must be a multiple of ${multipleOf}`));
+        errors.push(BaseError.validationError(path, 'multipleOf', `must be a multiple of ${multipleOf}`));
         valid = false;
       }
     }
@@ -306,7 +270,7 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
                 'value': workingValue
               };
             }
-            errors.push(makeValidationError(path, 'required', `must have required property '${key}'`, { 'missingProperty': key }));
+            errors.push(BaseError.validationError(path, 'required', `must have required property '${key}'`, { 'missingProperty': key }));
             valid = false;
           }
         }
@@ -359,7 +323,7 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
                   'value': workingValue
                 };
               }
-              errors.push(makeValidationError(childPath, 'additionalProperties', `must NOT have additional property '${key}'`));
+              errors.push(BaseError.validationError(childPath, 'additionalProperties', `must NOT have additional property '${key}'`));
               valid = false;
             } else if (additionalValidator !== undefined) {
               const addResult = additionalValidator(
@@ -433,7 +397,7 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
               'value': workingValue
             };
           }
-          errors.push(makeValidationError(path, 'minProperties', `must have at least ${minProperties} properties`));
+          errors.push(BaseError.validationError(path, 'minProperties', `must have at least ${minProperties} properties`));
           valid = false;
         }
         if (maxProperties !== undefined && count > maxProperties) {
@@ -443,7 +407,7 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
               'value': workingValue
             };
           }
-          errors.push(makeValidationError(path, 'maxProperties', `must have at most ${maxProperties} properties`));
+          errors.push(BaseError.validationError(path, 'maxProperties', `must have at most ${maxProperties} properties`));
           valid = false;
         }
       }
@@ -459,7 +423,7 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
             'value': workingValue
           };
         }
-        errors.push(makeValidationError(path, 'minItems', `must have at least ${minItems} items`));
+        errors.push(BaseError.validationError(path, 'minItems', `must have at least ${minItems} items`));
         valid = false;
       }
       if (maxItems !== undefined && arr.length > maxItems) {
@@ -469,34 +433,18 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
             'value': workingValue
           };
         }
-        errors.push(makeValidationError(path, 'maxItems', `must have at most ${maxItems} items`));
+        errors.push(BaseError.validationError(path, 'maxItems', `must have at most ${maxItems} items`));
         valid = false;
       }
-      if (uniqueItems) {
-        const seen = new Set<unknown>();
-        let hasDup = false;
-
-        for (const item of arr) {
-          const key: string | unknown = typeof item === 'object' && item !== null
-            ? jsonSortedKeys(item)
-            : item;
-
-          if (seen.has(key)) {
-            hasDup = true;
-            break;
-          }
-          seen.add(key);
+      if (uniqueItems && !Predicates.satisfiesUniqueItems(arr)) {
+        if (!collectErrors) {
+          return {
+            'valid': false,
+            'value': workingValue
+          };
         }
-        if (hasDup) {
-          if (!collectErrors) {
-            return {
-              'valid': false,
-              'value': workingValue
-            };
-          }
-          errors.push(makeValidationError(path, 'uniqueItems', 'must have unique items'));
-          valid = false;
-        }
+        errors.push(BaseError.validationError(path, 'uniqueItems', 'must have unique items'));
+        valid = false;
       }
 
       if (prefixValidators !== undefined) {
@@ -572,7 +520,7 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
               'value': workingValue
             };
           }
-          errors.push(makeValidationError(path, 'contains', `must contain at least ${minContains} matching items`));
+          errors.push(BaseError.validationError(path, 'contains', `must contain at least ${minContains} matching items`));
           valid = false;
         } else if (maxContains !== undefined && count > maxContains) {
           if (!collectErrors) {
@@ -581,7 +529,7 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
               'value': workingValue
             };
           }
-          errors.push(makeValidationError(path, 'contains', `must contain at most ${maxContains} matching items`));
+          errors.push(BaseError.validationError(path, 'contains', `must contain at most ${maxContains} matching items`));
           valid = false;
         } else if (minContains === undefined && maxContains === undefined && count === 0) {
           if (!collectErrors) {
@@ -590,7 +538,7 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
               'value': workingValue
             };
           }
-          errors.push(makeValidationError(path, 'contains', 'must contain at least one matching item'));
+          errors.push(BaseError.validationError(path, 'contains', 'must contain at least one matching item'));
           valid = false;
         }
       }
@@ -633,7 +581,7 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
             'value': workingValue
           };
         }
-        errors.push(makeValidationError(path, 'anyOf', 'must match at least one schema in anyOf'));
+        errors.push(BaseError.validationError(path, 'anyOf', 'must match at least one schema in anyOf'));
         valid = false;
       }
     }
@@ -661,7 +609,7 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
           ? 'must match exactly one schema in oneOf (matched none)'
           : 'must match exactly one schema in oneOf (matched multiple)';
 
-        errors.push(makeValidationError(path, 'oneOf', msg, { 'matchCount': count }));
+        errors.push(BaseError.validationError(path, 'oneOf', msg, { 'matchCount': count }));
         valid = false;
       }
     }
@@ -673,7 +621,7 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
           'value': workingValue
         };
       }
-      errors.push(makeValidationError(path, 'not', 'must not match schema'));
+      errors.push(BaseError.validationError(path, 'not', 'must not match schema'));
       valid = false;
     }
 
@@ -741,7 +689,7 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
                   'value': workingValue
                 };
               }
-              errors.push(makeValidationError(path, 'dependentRequired', `property '${trigger}' requires property '${dep}'`, {
+              errors.push(BaseError.validationError(path, 'dependentRequired', `property '${trigger}' requires property '${dep}'`, {
                 'missingProperty': dep,
                 'property': trigger
               }));
@@ -798,15 +746,7 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
     }
 
     if (customKeywordEntries !== undefined) {
-      let dataType: string;
-
-      if (workingValue === null) {
-        dataType = 'null';
-      } else if (Array.isArray(workingValue)) {
-        dataType = 'array';
-      } else {
-        dataType = typeof workingValue;
-      }
+      const dataType = Predicates.inferValueType(workingValue);
 
       for (const entry of customKeywordEntries) {
         if (entry.allowedTypes !== undefined && !entry.allowedTypes.includes(dataType)) {
@@ -828,7 +768,7 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
               'value': workingValue
             };
           }
-          errors.push(makeValidationError(path, entry.keyword, `must pass "${entry.keyword}" validation`));
+          errors.push(BaseError.validationError(path, entry.keyword, `must pass "${entry.keyword}" validation`));
           valid = false;
         } else if (Array.isArray(kwResult) && kwResult.length > 0) {
           if (!collectErrors) {

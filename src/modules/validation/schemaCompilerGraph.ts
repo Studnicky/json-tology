@@ -7,7 +7,8 @@ import {
   deepEqual, isRecord
 } from '../data/dataTypes.js';
 import { SchemaGraph } from '../graph/schemaGraph.js';
-import { jsonSortedKeys } from './schemaCompilerSupport.js';
+import { Predicates } from './predicates.js';
+import { RefResolver } from './refResolver.js';
 import type { CheckFnType } from '../../types/Validation.js';
 import type { PropCheckInterface } from '../../interfaces/PropCheck.js';
 import type { SchemaCompilerGraphContextInterface } from '../../interfaces/SchemaCompilerGraphContext.js';
@@ -21,88 +22,54 @@ export function compileRefCheck(
   graph: SchemaGraphInterface,
   lookupSchema?: (id: string) => Record<string, unknown> | undefined
 ): CheckFnType | undefined {
-  if (ref.startsWith('#')) {
-    const fragment = ref.slice(1);
-    let targetNode: SchemaGraphNodeInterface;
+  // Fast path: cross-schema root ref with a pre-compiled entry
+  if (!ref.startsWith('#')) {
+    const hashIndex = ref.indexOf('#');
+    const schemaId = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
+    const fragment = hashIndex === -1 ? '' : ref.slice(hashIndex + 1);
 
-    try {
-      targetNode = graph.resolveFragment(fragment);
-    } catch {
-      return undefined;
-    }
-
-    if (typeof targetNode.schema === 'boolean') {
-      return targetNode.schema
-        ? () => {
-          return true;
-        }
-        : () => {
-          return false;
-        };
-    }
-
-    if (context.compilingNodes.has(targetNode)) {
-      let cachedCheck: CheckFnType | undefined;
+    if ((fragment === '' || fragment === '/') && context.lookupCompiled !== undefined) {
+      const { lookupCompiled } = context;
 
       return (value) => {
-        cachedCheck ??= context.compileNodeCheck(targetNode, formatRegistry, graph, lookupSchema);
+        const compiled = lookupCompiled(schemaId);
 
-        return cachedCheck(value);
+        return compiled === undefined ? true : compiled.check(value);
       };
     }
-
-    return context.compileNodeCheck(targetNode, formatRegistry, graph, lookupSchema);
   }
 
-  const hashIndex = ref.indexOf('#');
-  const schemaId = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
-  const fragment = hashIndex === -1 ? '' : ref.slice(hashIndex + 1);
+  const resolved = RefResolver.resolve(ref, graph, lookupSchema);
 
-  if ((fragment === '' || fragment === '/') && context.lookupCompiled !== undefined) {
-    const { lookupCompiled } = context;
+  if (resolved === undefined) {
+    return undefined;
+  }
+
+  const {
+    'graph': targetGraph, 'node': targetNode
+  } = resolved;
+
+  if (typeof targetNode.schema === 'boolean') {
+    return targetNode.schema
+      ? () => {
+        return true;
+      }
+      : () => {
+        return false;
+      };
+  }
+
+  if (targetGraph === graph && context.compilingNodes.has(targetNode)) {
+    let cachedCheck: CheckFnType | undefined;
 
     return (value) => {
-      const compiled = lookupCompiled(schemaId);
+      cachedCheck ??= context.compileNodeCheck(targetNode, formatRegistry, targetGraph, lookupSchema);
 
-      return compiled === undefined ? true : compiled.check(value);
+      return cachedCheck(value);
     };
   }
 
-  if (lookupSchema !== undefined) {
-    const refSchema = lookupSchema(schemaId);
-
-    if (refSchema !== undefined) {
-      const refGraph = new SchemaGraph(refSchema);
-
-      if (fragment !== '' && fragment !== '/') {
-        let targetNode: SchemaGraphNodeInterface | undefined;
-
-        try {
-          targetNode = refGraph.resolveFragment(fragment);
-        } catch {
-          // Fall through
-        }
-
-        if (targetNode !== undefined) {
-          if (typeof targetNode.schema === 'boolean') {
-            return targetNode.schema
-              ? () => {
-                return true;
-              }
-              : () => {
-                return false;
-              };
-          }
-
-          return context.compileNodeCheck(targetNode, formatRegistry, refGraph, lookupSchema);
-        }
-      } else {
-        return context.compileNodeCheck(refGraph.rootNode, formatRegistry, refGraph, lookupSchema);
-      }
-    }
-  }
-
-  return undefined;
+  return context.compileNodeCheck(targetNode, formatRegistry, targetGraph, lookupSchema);
 }
 
 export function nodeSupportsCompilation(
@@ -364,19 +331,8 @@ export function compileArrayCheck(
       return false;
     }
 
-    if (uniqueItems) {
-      const seen = new Set<string | unknown>();
-
-      for (const item of value) {
-        const key: string | unknown = typeof item === 'object' && item !== null
-          ? jsonSortedKeys(item)
-          : item;
-
-        if (seen.has(key)) {
-          return false;
-        }
-        seen.add(key);
-      }
+    if (uniqueItems && !Predicates.satisfiesUniqueItems(value)) {
+      return false;
     }
 
     if (prefixChecks !== undefined) {

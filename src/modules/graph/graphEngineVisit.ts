@@ -3,12 +3,12 @@ import type { KeywordContextInterface } from '../../interfaces/GraphEngine.js';
 import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import {
-  deepEqual, isRecord
+  isRecord
 } from '../data/dataTypes.js';
+import { Predicates } from '../validation/predicates.js';
 import {
   cloneCandidate,
   cloneDefault,
-  inferValueType,
   schemaId
 } from './graphEngineSupport.js';
 import type { EffectiveOptionsType } from '../../types/EffectiveOptions.js';
@@ -209,13 +209,11 @@ export function visitNode(
     ));
   }
 
-  if (enumValues !== undefined && !enumValues.some((enumValue) => {
-    return deepEqual(enumValue, workingValue);
-  })) {
+  if (enumValues !== undefined && !Predicates.satisfiesEnum(workingValue, enumValues)) {
     return invalid(context.createError(path, 'enum', 'must be one of the allowed values'));
   }
 
-  if (constValue !== undefined && !deepEqual(constValue, workingValue)) {
+  if (constValue !== undefined && !Predicates.satisfiesConst(workingValue, constValue)) {
     return invalid(context.createError(path, 'const', `must be ${JSON.stringify(constValue)}`));
   }
 
@@ -524,7 +522,7 @@ export function visitNode(
 
   // Custom keywords read from graph-owned extensions, not raw schema objects.
   if (context.customKeywords.length > 0) {
-    const dataType = inferValueType(workingValue);
+    const dataType = Predicates.inferValueType(workingValue);
 
     for (const kw of context.customKeywords) {
       if (!(kw.keyword in extensions)) {

@@ -4,10 +4,11 @@ import type {
   SchemaGraphNodeInterface, SchemaGraphSemanticsInterface
 } from '../../interfaces/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import { SchemaGraph } from '../graph/schemaGraph.js';
 import { isRecord } from '../data/dataTypes.js';
 import type { ValidateWithErrorsFnType } from '../../types/Validation.js';
-import { makeValidationError } from './schemaCompilerSupport.js';
+import { BaseError } from '../../errors/BaseError.js';
+import { normalizeKeywordTypes } from './schemaCompilerSupport.js';
+import { RefResolver } from './refResolver.js';
 import type { CustomKeywordEntryInterface } from '../../interfaces/CustomKeywordEntry.js';
 import type { CompiledNodeValidationPlanInterface } from '../../interfaces/CompiledNodeValidationPlan.js';
 import type { SchemaCompilerValidatePlanContextInterface } from '../../interfaces/SchemaCompilerValidatePlanContext.js';
@@ -26,7 +27,7 @@ function booleanValidateWithErrors(schema: boolean): ValidateWithErrorsFnType {
     }
     : (value, path, errors, collectErrors) => {
       if (collectErrors) {
-        errors.push(makeValidationError(path, 'falseSchema', 'must not match false schema'));
+        errors.push(BaseError.validationError(path, 'falseSchema', 'must not match false schema'));
       }
 
       return {
@@ -71,79 +72,24 @@ function compileRefValidator(
     return undefined;
   }
 
-  if (ref.startsWith('#')) {
-    const fragment = ref.slice(1);
-    let targetNode: SchemaGraphNodeInterface | undefined;
+  const resolved = RefResolver.resolve(ref, graph, lookupSchema);
 
-    try {
-      targetNode = graph.resolveFragment(fragment);
-    } catch {
-      // Fall through
-    }
-
-    if (targetNode !== undefined) {
-      if (typeof targetNode.schema === 'boolean') {
-        return booleanValidateWithErrors(targetNode.schema);
-      }
-
-      let cached: undefined | ValidateWithErrorsFnType;
-
-      return (value, path, errors, collectErrors, applyDef, doCoerce, stripUnk) => {
-        cached ??= context.compileNodeValidateWithErrors(targetNode, formatRegistry, graph, lookupSchema);
-
-        return cached(value, path, errors, collectErrors, applyDef, doCoerce, stripUnk);
-      };
-    }
-
+  if (resolved === undefined) {
     return undefined;
   }
 
-  if (lookupSchema === undefined) {
-    return undefined;
-  }
+  const {
+    'graph': targetGraph, 'node': targetNode
+  } = resolved;
 
-  const hashIndex = ref.indexOf('#');
-  const schemaId = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
-  const fragment = hashIndex === -1 ? '' : ref.slice(hashIndex + 1);
-  const refSchema = lookupSchema(schemaId);
-
-  if (refSchema === undefined) {
-    return undefined;
-  }
-
-  const refGraph = new SchemaGraph(refSchema);
-
-  if (fragment !== '' && fragment !== '/') {
-    let targetNode: SchemaGraphNodeInterface | undefined;
-
-    try {
-      targetNode = refGraph.resolveFragment(fragment);
-    } catch {
-      // Fall through
-    }
-
-    if (targetNode !== undefined) {
-      if (typeof targetNode.schema === 'boolean') {
-        return booleanValidateWithErrors(targetNode.schema);
-      }
-
-      let cached: undefined | ValidateWithErrorsFnType;
-
-      return (value, path, errors, collectErrors, applyDef, doCoerce, stripUnk) => {
-        cached ??= context.compileNodeValidateWithErrors(targetNode, formatRegistry, refGraph, lookupSchema);
-
-        return cached(value, path, errors, collectErrors, applyDef, doCoerce, stripUnk);
-      };
-    }
-
-    return undefined;
+  if (typeof targetNode.schema === 'boolean') {
+    return booleanValidateWithErrors(targetNode.schema);
   }
 
   let cached: undefined | ValidateWithErrorsFnType;
-  const rootNode = refGraph.rootNode;
 
   return (value, path, errors, collectErrors, applyDef, doCoerce, stripUnk) => {
-    cached ??= context.compileNodeValidateWithErrors(rootNode, formatRegistry, refGraph, lookupSchema);
+    cached ??= context.compileNodeValidateWithErrors(targetNode, formatRegistry, targetGraph, lookupSchema);
 
     return cached(value, path, errors, collectErrors, applyDef, doCoerce, stripUnk);
   };
@@ -201,15 +147,8 @@ function buildCustomKeywordEntries(
 
   for (const kw of activeCustomKeywords) {
     if (kw.keyword in sem.extensions) {
-      let allowedTypes: string[] | undefined;
-
-      if (kw.type === undefined) {
-        allowedTypes = undefined;
-      } else {
-        allowedTypes = Array.isArray(kw.type) ? kw.type : [kw.type];
-      }
       entries.push({
-        allowedTypes,
+        'allowedTypes': normalizeKeywordTypes(kw.type),
         'keyword': kw.keyword,
         'schemaValue': sem.extensions[kw.keyword],
         'validate': kw.validate

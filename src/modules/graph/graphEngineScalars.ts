@@ -1,96 +1,35 @@
 import type { ValidationErrorType } from '../../types/Validation.js';
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
 import type { SchemaGraphSemanticsInterface } from '../../interfaces/SchemaGraph.js';
-import {
-  inferValueType,
-  isIntegerValue
-} from './graphEngineSupport.js';
-
-const MULTIPLE_OF_EPSILON_FACTOR = 10;
+import { Predicates } from '../validation/predicates.js';
+import { BaseError } from '../../errors/BaseError.js';
 
 export function coerceGraphValue(schemaTypes: string[], value: unknown, materializeContainers: boolean): unknown {
-  if (value === undefined || value === null || schemaTypes.length === 0) {
-    if (!materializeContainers || value !== null) {
-      return value;
-    }
+  if (value === null && materializeContainers && schemaTypes.length > 0) {
     if (schemaTypes.includes('object')) {
       return {};
     }
     if (schemaTypes.includes('array')) {
       return [];
     }
-
-    return value;
   }
 
-  if ((schemaTypes.includes('number') || schemaTypes.includes('integer')) && typeof value === 'string') {
-    const coerced = Number(value);
-
-    if (Number.isFinite(coerced)) {
-      return schemaTypes.includes('integer') ? Math.trunc(coerced) : coerced;
-    }
-  }
-
-  if (schemaTypes.includes('boolean') && typeof value === 'string') {
-    if (value === 'true' || value === '1') {
-      return true;
-    }
-    if (value === 'false' || value === '0') {
-      return false;
-    }
-  }
-
-  if (schemaTypes.includes('null') && value === 'null') {
-    return null;
-  }
-
-  if (schemaTypes.includes('string') && typeof value !== 'string') {
-    return String(value);
-  }
+  const coerced = Predicates.coerceValue(schemaTypes, value);
 
   if (materializeContainers) {
-    if (schemaTypes.includes('object') && inferValueType(value) !== 'object') {
+    if (schemaTypes.includes('object') && Predicates.inferValueType(coerced) !== 'object') {
       return {};
     }
-    if (schemaTypes.includes('array') && !Array.isArray(value)) {
+    if (schemaTypes.includes('array') && !Array.isArray(coerced)) {
       return [];
     }
   }
 
-  return value;
-}
-
-export function createValidationError(
-  path: string,
-  keyword: string,
-  message: string,
-  params: Record<string, unknown> = {}
-): ValidationErrorType {
-  return {
-    keyword,
-    message,
-    params,
-    path
-  };
+  return coerced;
 }
 
 export function matchesSchemaTypes(schemaTypes: string[], value: unknown): boolean {
-  return schemaTypes.some((schemaType) => {
-    switch (schemaType) {
-      case 'array':
-        return Array.isArray(value);
-      case 'integer':
-        return isIntegerValue(value);
-      case 'null':
-        return value === null;
-      case 'number':
-        return typeof value === 'number' && Number.isFinite(value);
-      case 'object':
-        return inferValueType(value) === 'object';
-      default:
-        return inferValueType(value) === schemaType;
-    }
-  });
+  return Predicates.matchesAnyType(schemaTypes, value);
 }
 
 export function validateNumberConstraints(
@@ -110,43 +49,26 @@ export function validateNumberConstraints(
     multipleOf
   } = sem;
 
-  if (minimum !== undefined && value < minimum) {
-    errors.push(createValidationError(path, 'minimum', `must be >= ${minimum}`, { 'limit': minimum }));
+  if (minimum !== undefined && !Predicates.satisfiesMinimum(value, minimum)) {
+    errors.push(BaseError.validationError(path, 'minimum', `must be >= ${minimum}`, { 'limit': minimum }));
   }
-  if (maximum !== undefined && value > maximum) {
-    errors.push(createValidationError(path, 'maximum', `must be <= ${maximum}`, { 'limit': maximum }));
+  if (maximum !== undefined && !Predicates.satisfiesMaximum(value, maximum)) {
+    errors.push(BaseError.validationError(path, 'maximum', `must be <= ${maximum}`, { 'limit': maximum }));
   }
-  if (exclusiveMinimum !== undefined && value <= exclusiveMinimum) {
-    errors.push(createValidationError(path, 'exclusiveMinimum', `must be > ${exclusiveMinimum}`, { 'limit': exclusiveMinimum }));
+  if (exclusiveMinimum !== undefined && !Predicates.satisfiesExclusiveMinimum(value, exclusiveMinimum)) {
+    errors.push(BaseError.validationError(path, 'exclusiveMinimum', `must be > ${exclusiveMinimum}`, { 'limit': exclusiveMinimum }));
   }
-  if (exclusiveMaximum !== undefined && value >= exclusiveMaximum) {
-    errors.push(createValidationError(path, 'exclusiveMaximum', `must be < ${exclusiveMaximum}`, { 'limit': exclusiveMaximum }));
+  if (exclusiveMaximum !== undefined && !Predicates.satisfiesExclusiveMaximum(value, exclusiveMaximum)) {
+    errors.push(BaseError.validationError(path, 'exclusiveMaximum', `must be < ${exclusiveMaximum}`, { 'limit': exclusiveMaximum }));
   }
-  if (multipleOf !== undefined) {
-    if (multipleOf === 0) {
-      errors.push(createValidationError(path, 'multipleOf', 'multipleOf must be a positive number', { multipleOf }));
-    } else {
-      const quotient = value / multipleOf;
-
-      if (Math.abs(quotient - Math.round(quotient)) > Number.EPSILON * MULTIPLE_OF_EPSILON_FACTOR) {
-        errors.push(createValidationError(path, 'multipleOf', `must be multiple of ${multipleOf}`, { multipleOf }));
-      }
-    }
+  if (multipleOf !== undefined && !Predicates.satisfiesMultipleOf(value, multipleOf)) {
+    errors.push(BaseError.validationError(path, 'multipleOf', `must be multiple of ${multipleOf}`, { multipleOf }));
   }
   if (format !== undefined) {
     const validator = formatRegistry.get(format);
 
-    if (validator !== undefined && formatAssertions) {
-      let passed: boolean;
-
-      try {
-        passed = validator(value);
-      } catch {
-        passed = false;
-      }
-      if (!passed) {
-        errors.push(createValidationError(path, 'format', `must match format "${format}"`, { format }));
-      }
+    if (validator !== undefined && formatAssertions && !Predicates.satisfiesFormat(value, validator)) {
+      errors.push(BaseError.validationError(path, 'format', `must match format "${format}"`, { format }));
     }
   }
 
@@ -168,31 +90,21 @@ export function validateStringConstraints(
     'minLength': minimum,
     pattern
   } = sem;
-  const valueLength = [...value].length;
 
-  if (minimum !== undefined && valueLength < minimum) {
-    errors.push(createValidationError(path, 'minLength', `must NOT have fewer than ${minimum} characters`, { 'limit': minimum }));
+  if (minimum !== undefined && !Predicates.satisfiesMinLength(value, minimum)) {
+    errors.push(BaseError.validationError(path, 'minLength', `must NOT have fewer than ${minimum} characters`, { 'limit': minimum }));
   }
-  if (maximum !== undefined && valueLength > maximum) {
-    errors.push(createValidationError(path, 'maxLength', `must NOT have more than ${maximum} characters`, { 'limit': maximum }));
+  if (maximum !== undefined && !Predicates.satisfiesMaxLength(value, maximum)) {
+    errors.push(BaseError.validationError(path, 'maxLength', `must NOT have more than ${maximum} characters`, { 'limit': maximum }));
   }
-  if (pattern !== undefined && !regexFor(pattern).test(value)) {
-    errors.push(createValidationError(path, 'pattern', 'must match pattern', { pattern }));
+  if (pattern !== undefined && !Predicates.satisfiesPattern(value, regexFor(pattern))) {
+    errors.push(BaseError.validationError(path, 'pattern', 'must match pattern', { pattern }));
   }
   if (format !== undefined) {
     const validator = formatRegistry.get(format);
 
-    if (validator !== undefined && formatAssertions) {
-      let passed: boolean;
-
-      try {
-        passed = validator(value);
-      } catch {
-        passed = false;
-      }
-      if (!passed) {
-        errors.push(createValidationError(path, 'format', `must match format "${format}"`, { format }));
-      }
+    if (validator !== undefined && formatAssertions && !Predicates.satisfiesFormat(value, validator)) {
+      errors.push(BaseError.validationError(path, 'format', `must match format "${format}"`, { format }));
     }
   }
 

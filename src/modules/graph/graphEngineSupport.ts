@@ -81,21 +81,6 @@ export function extractNamedFragment(ref: string): string | undefined {
   return fragment;
 }
 
-export function inferValueType(value: unknown): string {
-  if (value === null) {
-    return 'null';
-  }
-  if (Array.isArray(value)) {
-    return 'array';
-  }
-
-  return typeof value;
-}
-
-export function isIntegerValue(value: unknown): boolean {
-  return typeof value === 'number' && Number.isInteger(value);
-}
-
 export function schemaId(schema: JSONSchema7Definition): string | undefined {
   if (!isRecord(schema)) {
     return undefined;

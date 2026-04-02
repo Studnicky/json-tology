@@ -9,6 +9,7 @@ import {
   compileConstCheck,
   compileEnumCheck
 } from './schemaCompilerGraph.js';
+import { normalizeKeywordTypes } from './schemaCompilerSupport.js';
 import type { CheckFnType } from '../../types/Validation.js';
 import type { SchemaCompilerCheckExecutionContextInterface } from '../../interfaces/SchemaCompilerCheckExecutionContext.js';
 
@@ -266,15 +267,8 @@ export function buildNodeCheckExecution(
 
     for (const kw of context.activeCustomKeywords) {
       if (kw.keyword in sem.extensions) {
-        let allowedTypes: string[] | undefined;
-
-        if (kw.type === undefined) {
-          allowedTypes = undefined;
-        } else {
-          allowedTypes = Array.isArray(kw.type) ? kw.type : [kw.type];
-        }
         extensionEntries.push({
-          allowedTypes,
+          'allowedTypes': normalizeKeywordTypes(kw.type),
           'keyword': kw.keyword,
           'schemaValue': sem.extensions[kw.keyword],
           'validate': kw.validate

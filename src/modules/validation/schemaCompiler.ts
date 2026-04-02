@@ -23,8 +23,10 @@ import type {
 } from '../../interfaces/SchemaGraph.js';
 // isRecord and deepEqual are used by executor modules, imported from DataTypes directly there
 import {
-  codePointLength, coerceCompiledValue, makeValidationError
+  coerceCompiledValue
 } from './schemaCompilerSupport.js';
+import { BaseError } from '../../errors/BaseError.js';
+import { Predicates } from './predicates.js';
 import { resolveImplicitDefaultValue } from './schemaCompilerDefaults.js';
 import { buildNodeCheckExecution } from './schemaCompilerCheckExec.js';
 import { buildValidateWithErrorsExecution } from './schemaCompilerValidateExec.js';
@@ -57,6 +59,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   private readonly compilingNodes = new Set<SchemaGraphNodeInterface>();
   private readonly logger: LoggerInterface;
   public readonly lookupCompiled: ((schemaId: string) => CompiledValidatorInterface | undefined) | undefined;
+  private readonly regexCache = new Map<string, RegExp>();
 
   /**
    * Create a SchemaCompiler with an optional cross-schema lookup for compiled validators.
@@ -182,7 +185,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       'compiled': true,
       'validate': (data) => {
         return {
-          'errors': [makeValidationError('', 'falseSchema', 'must not match false schema')],
+          'errors': [BaseError.validationError('', 'falseSchema', 'must not match false schema')],
           'valid': false,
           'value': data
         };
@@ -363,7 +366,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         }
         : (value, path, errors, collect) => {
           if (collect) {
-            errors.push(makeValidationError(path, 'falseSchema', 'must not match false schema'));
+            errors.push(BaseError.validationError(path, 'falseSchema', 'must not match false schema'));
           }
 
           return {
@@ -427,32 +430,27 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
     if (minimum !== undefined) {
       checks.push((num) => {
-        return num >= minimum;
+        return Predicates.satisfiesMinimum(num, minimum);
       });
     }
     if (maximum !== undefined) {
       checks.push((num) => {
-        return num <= maximum;
+        return Predicates.satisfiesMaximum(num, maximum);
       });
     }
     if (exclusiveMinimum !== undefined) {
       checks.push((num) => {
-        return num > exclusiveMinimum;
+        return Predicates.satisfiesExclusiveMinimum(num, exclusiveMinimum);
       });
     }
     if (exclusiveMaximum !== undefined) {
       checks.push((num) => {
-        return num < exclusiveMaximum;
+        return Predicates.satisfiesExclusiveMaximum(num, exclusiveMaximum);
       });
     }
     if (multipleOf !== undefined) {
       checks.push((num) => {
-        if (multipleOf === 0) {
-          return false;
-        }
-        const quotient = num / multipleOf;
-
-        return Math.abs(quotient - Math.round(quotient)) <= Number.EPSILON * 10;
+        return Predicates.satisfiesMultipleOf(num, multipleOf);
       });
     }
 
@@ -487,19 +485,19 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
     if (minLength !== undefined) {
       checks.push((str) => {
-        return codePointLength(str) >= minLength;
+        return Predicates.satisfiesMinLength(str, minLength);
       });
     }
     if (maxLength !== undefined) {
       checks.push((str) => {
-        return codePointLength(str) <= maxLength;
+        return Predicates.satisfiesMaxLength(str, maxLength);
       });
     }
     if (pattern !== undefined) {
-      const regex = new RegExp(pattern, 'u');
+      const regex = this.regexFor(pattern);
 
       checks.push((str) => {
-        return regex.test(str);
+        return Predicates.satisfiesPattern(str, regex);
       });
     }
     // Format check is separate — it may apply to non-string types (e.g. int32, float)
@@ -513,11 +511,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
         if (formatValidator !== undefined) {
           formatCheck = (value) => {
-            try {
-              return formatValidator(value);
-            } catch {
-              return false;
-            }
+            return Predicates.satisfiesFormat(value, formatValidator);
           };
         }
       }
@@ -550,57 +544,23 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     };
   }
 
+  private compileTypeCheck(types: string[]): CheckFnType {
+    if (types.length === 1) {
+      const singleType = types[0];
+
+      return (value) => {
+        return Predicates.matchesType(singleType, value);
+      };
+    }
+
+    return (value) => {
+      return Predicates.matchesAnyType(types, value);
+    };
+  }
+
   // ---------------------------------------------------------------------------
   // validate() compilation — with errors and mutation support
   // ---------------------------------------------------------------------------
-
-  private compileTypeCheck(types: string[]): CheckFnType {
-    if (types.length === 1) {
-      switch (types[0]) {
-        case 'array': return (value) => {
-          return Array.isArray(value);
-        };
-        case 'boolean': return (value) => {
-          return typeof value === 'boolean';
-        };
-        case 'integer': return (value) => {
-          return typeof value === 'number' && Number.isInteger(value);
-        };
-        case 'null': return (value) => {
-          return value === null;
-        };
-        case 'number': return (value) => {
-          return typeof value === 'number' && Number.isFinite(value);
-        };
-        case 'object': return (value) => {
-          return typeof value === 'object' && value !== null && !Array.isArray(value);
-        };
-        case 'string': return (value) => {
-          return typeof value === 'string';
-        };
-      }
-    }
-
-    const typeSet = new Set(types);
-    const hasNull = typeSet.has('null');
-    const hasInteger = typeSet.has('integer');
-
-    return (value) => {
-      if (value === null) {
-        return hasNull;
-      }
-      if (Array.isArray(value)) {
-        return typeSet.has('array');
-      }
-      const jsType = typeof value;
-
-      if (jsType === 'number') {
-        return typeSet.has('number') || (hasInteger && Number.isInteger(value));
-      }
-
-      return typeSet.has(jsType);
-    };
-  }
 
   private compileValidateMutating(
     schema: Record<string, unknown>,
@@ -686,11 +646,6 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     return this.compileNodeValidateWithErrors(graphNode, formatRegistry, graph, lookupSchema);
   }
 
-
-  // ---------------------------------------------------------------------------
-  // Helpers
-  // ---------------------------------------------------------------------------
-
   private engineFallback(engine: GraphEngineInterface): CompiledValidatorInterface {
     return {
       'check': (data: unknown): boolean => {
@@ -713,6 +668,22 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         };
       }
     };
+  }
+
+
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
+
+  private regexFor(pattern: string): RegExp {
+    let cached = this.regexCache.get(pattern);
+
+    if (cached === undefined) {
+      cached = new RegExp(pattern, 'u');
+      this.regexCache.set(pattern, cached);
+    }
+
+    return cached;
   }
 
   private supportsCompilationPath(

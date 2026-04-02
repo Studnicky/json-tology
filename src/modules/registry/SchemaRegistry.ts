@@ -17,7 +17,9 @@ import type { GraphEngineInterface } from '../../interfaces/GraphEngineImpl.js';
 import type { SchemaCompilerInterface } from '../../interfaces/SchemaCompilerImpl.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import { GraphEngine } from '../graph/GraphEngine.js';
-import { deepFreeze } from '../data/dataTypes.js';
+import {
+  deepFreeze, isRecord
+} from '../data/dataTypes.js';
 import { Hash } from '../hash/hash.js';
 import { Materializer } from '../materialization/materializer.js';
 import { SchemaGraph } from '../graph/schemaGraph.js';
@@ -204,8 +206,8 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
 
     for (const value of Object.values(schema)) {
-      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-        this.collectAnchors(value as Record<string, unknown>, seen, schemaId);
+      if (isRecord(value)) {
+        this.collectAnchors(value, seen, schemaId);
       }
     }
   }

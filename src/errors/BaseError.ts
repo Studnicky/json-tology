@@ -10,6 +10,8 @@ import type { ErrorJsonInterface } from '../interfaces/Error.js';
 import type { ValidationErrorType } from '../types/Validation.js';
 
 export class BaseError extends Error {
+  private static readonly EMPTY_PARAMS: Record<string, unknown> = Object.freeze({});
+
   private static errorToJson(error: Error): ErrorJsonInterface {
     if (error instanceof BaseError) {
       return {
@@ -25,6 +27,7 @@ export class BaseError extends Error {
       'retryable': false
     };
   }
+
   /**
    * Format an array of validation errors into path-prefixed strings.
    */
@@ -38,6 +41,19 @@ export class BaseError extends Error {
    */
   static formatPath(error: ValidationErrorType): string {
     return `${error.path === '' ? 'root' : error.path}: ${error.message}`;
+  }
+  static validationError(
+    path: string,
+    keyword: string,
+    message: string,
+    params?: Record<string, unknown>
+  ): ValidationErrorType {
+    return {
+      keyword,
+      message,
+      'params': params ?? BaseError.EMPTY_PARAMS,
+      path
+    };
   }
   public override readonly cause?: Error | undefined;
   public readonly code: string;
