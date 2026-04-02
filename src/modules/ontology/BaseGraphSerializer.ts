@@ -4,7 +4,7 @@ import type { CurieInterface } from '../../interfaces/Curie.js';
 import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugin.js';
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import { quadsToJsonLd } from '../rdf/JsonLdFormatter.js';
-import { resetBnodeCounter } from '../rdf/QuadFactory.js';
+import { QuadFactory } from '../rdf/QuadFactory.js';
 import { Curie } from '../rdf/Curie.js';
 import { DEFAULT_PREFIXES } from '../../constants/PREFIXES.js';
 
@@ -41,7 +41,7 @@ export abstract class BaseGraphSerializer implements GraphSerializerInterface {
   protected abstract projectGraph(graph: SchemaGraphInterface): QuadInterface[];
 
   public serialize(graphs: readonly SchemaGraphInterface[]): unknown[] {
-    resetBnodeCounter();
+    QuadFactory.resetBnodeCounter();
     const allQuads = graphs.flatMap((graph) => {
       return this.projectGraph(graph);
     });
@@ -54,8 +54,8 @@ export abstract class BaseGraphSerializer implements GraphSerializerInterface {
         const plugin = this.findPluginForPredicate(relation.predicate);
 
         if (plugin?.project) {
-          plugin.project(relation, (quad) => {
-            allQuads.push(quad);
+          plugin.project(relation, (emittedQuad) => {
+            allQuads.push(emittedQuad);
           });
         }
       }

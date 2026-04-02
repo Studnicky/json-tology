@@ -8,12 +8,7 @@ import {
   isRestrictionStructure,
   relationTargetId
 } from '../../src/modules/rdf/ProjectionIndex.js';
-import {
-  fragmentContains,
-  isPropertySubject,
-  lastSegment,
-  structuralParent
-} from '../../src/modules/graph/SchemaIri.js';
+import { SchemaIri } from '../../src/modules/graph/SchemaIri.js';
 import type { SchemaGraphRelationInterface } from '../../src/interfaces/SchemaGraph.js';
 import type { RelationStructure } from '../../src/types/SchemaGraph.js';
 
@@ -111,19 +106,19 @@ void describe('relationTargetId', () => {
 
 void describe('isPropertySubject', () => {
   void it('returns true for subject with hash and /properties/ fragment', () => {
-    assert.equal(isPropertySubject('http://example.com/User#/properties/name'), true);
+    assert.equal(SchemaIri.isPropertySubject('http://example.com/User#/properties/name'), true);
   });
 
   void it('returns true for deeply nested property subject', () => {
-    assert.equal(isPropertySubject('http://example.com/User#/properties/address/properties/street'), true);
+    assert.equal(SchemaIri.isPropertySubject('http://example.com/User#/properties/address/properties/street'), true);
   });
 
   void it('returns false for subject without hash', () => {
-    assert.equal(isPropertySubject('http://example.com/User'), false);
+    assert.equal(SchemaIri.isPropertySubject('http://example.com/User'), false);
   });
 
   void it('returns false for subject with hash but no /properties/ fragment', () => {
-    assert.equal(isPropertySubject('http://example.com/User#/$defs/Address'), false);
+    assert.equal(SchemaIri.isPropertySubject('http://example.com/User#/$defs/Address'), false);
   });
 });
 
@@ -187,34 +182,34 @@ void describe('isListStructure', () => {
 
 void describe('fragmentContains', () => {
   void it('returns true when fragment contains the segment', () => {
-    assert.equal(fragmentContains('http://example.com/User#/properties/name', 'properties'), true);
+    assert.equal(SchemaIri.fragmentContains('http://example.com/User#/properties/name', 'properties'), true);
   });
 
   void it('returns false when fragment does not contain the segment', () => {
-    assert.equal(fragmentContains('http://example.com/User#/$defs/Address', 'properties'), false);
+    assert.equal(SchemaIri.fragmentContains('http://example.com/User#/$defs/Address', 'properties'), false);
   });
 
   void it('returns false when subject has no hash', () => {
-    assert.equal(fragmentContains('http://example.com/User', 'properties'), false);
+    assert.equal(SchemaIri.fragmentContains('http://example.com/User', 'properties'), false);
   });
 });
 
 void describe('structuralParent', () => {
   void it('returns subject unchanged when no hash present', () => {
-    assert.equal(structuralParent('http://example.com/User'), 'http://example.com/User');
+    assert.equal(SchemaIri.structuralParent('http://example.com/User'), 'http://example.com/User');
   });
 
   void it('returns base when fragment has no /properties/', () => {
-    assert.equal(structuralParent('http://example.com/User#/$defs/Address'), 'http://example.com/User');
+    assert.equal(SchemaIri.structuralParent('http://example.com/User#/$defs/Address'), 'http://example.com/User');
   });
 
   void it('returns base for root-level property', () => {
-    assert.equal(structuralParent('http://example.com/User#/properties/name'), 'http://example.com/User');
+    assert.equal(SchemaIri.structuralParent('http://example.com/User#/properties/name'), 'http://example.com/User');
   });
 
   void it('returns parent pointer for nested property', () => {
     assert.equal(
-      structuralParent('http://example.com/User#/properties/address/properties/street'),
+      SchemaIri.structuralParent('http://example.com/User#/properties/address/properties/street'),
       'http://example.com/User#/properties/address'
     );
   });
@@ -222,18 +217,18 @@ void describe('structuralParent', () => {
 
 void describe('lastSegment', () => {
   void it('returns full subject when no hash present', () => {
-    assert.equal(lastSegment('http://example.com/User'), 'http://example.com/User');
+    assert.equal(SchemaIri.lastSegment('http://example.com/User'), 'http://example.com/User');
   });
 
   void it('returns last path segment from fragment', () => {
-    assert.equal(lastSegment('http://example.com/User#/properties/name'), 'name');
+    assert.equal(SchemaIri.lastSegment('http://example.com/User#/properties/name'), 'name');
   });
 
   void it('returns last segment from deeply nested fragment', () => {
-    assert.equal(lastSegment('http://example.com/User#/properties/address/properties/street'), 'street');
+    assert.equal(SchemaIri.lastSegment('http://example.com/User#/properties/address/properties/street'), 'street');
   });
 
   void it('returns empty string for trailing slash', () => {
-    assert.equal(lastSegment('http://example.com/User#/properties/'), '');
+    assert.equal(SchemaIri.lastSegment('http://example.com/User#/properties/'), '');
   });
 });

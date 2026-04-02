@@ -8,10 +8,7 @@ import {
   isPlainObject,
   isRecord
 } from '../../src/modules/data/DataTypes.js';
-import {
-  escapeSegment,
-  propertyIri
-} from '../../src/modules/graph/SchemaIri.js';
+import { SchemaIri } from '../../src/modules/graph/SchemaIri.js';
 import {
   resolveSingleXsdType,
   resolveXsdType
@@ -296,14 +293,14 @@ void describe('resolveXsdType', () => {
 void describe('propertyIri', () => {
   void it('appends property name as fragment', () => {
     assert.equal(
-      propertyIri('https://example.io/User', 'email'),
+      SchemaIri.propertyIri('https://example.io/User', 'email'),
       'https://example.io/User#email'
     );
   });
 
   void it('handles property names with special characters', () => {
     assert.equal(
-      propertyIri('https://example.io/Schema', 'my-prop'),
+      SchemaIri.propertyIri('https://example.io/Schema', 'my-prop'),
       'https://example.io/Schema#my-prop'
     );
   });
@@ -311,22 +308,22 @@ void describe('propertyIri', () => {
 
 void describe('escapeSegment', () => {
   void it('encodes special characters', () => {
-    assert.equal(escapeSegment('hello world'), 'hello%20world');
+    assert.equal(SchemaIri.escapeSegment('hello world'), 'hello%20world');
   });
 
   void it('encodes hash character', () => {
-    assert.equal(escapeSegment('a#b'), 'a%23b');
+    assert.equal(SchemaIri.escapeSegment('a#b'), 'a%23b');
   });
 
   void it('preserves forward slashes', () => {
-    assert.equal(escapeSegment('a/b/c'), 'a/b/c');
+    assert.equal(SchemaIri.escapeSegment('a/b/c'), 'a/b/c');
   });
 
   void it('returns empty string for empty input', () => {
-    assert.equal(escapeSegment(''), '');
+    assert.equal(SchemaIri.escapeSegment(''), '');
   });
 
   void it('leaves alphanumeric characters unchanged', () => {
-    assert.equal(escapeSegment('abc123'), 'abc123');
+    assert.equal(SchemaIri.escapeSegment('abc123'), 'abc123');
   });
 });
