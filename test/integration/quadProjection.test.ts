@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import {
   projectAbox, projectGraph, quadsToJsonLdNodes
-} from '../../src/modules/rdf/projection.js';
+} from '../../src/modules/rdf/Projection.js';
 import type { QuadInterface } from '../../src/interfaces/Quad.js';
 
 // ---------------------------------------------------------------------------

@@ -5,7 +5,7 @@ import type {
 import {
   propertyIri, resolveSingleXsdType, resolveXsdType
 } from '../data/DataTypes.js';
-import type { GraphAccessor } from '../../interfaces/GraphAccessor.js';
+import type { GraphAccessorInterface } from '../../interfaces/GraphAccessor.js';
 import {
   isDefsEntryPointer, isPropertyPointer,
   parentPropertiesPointer, propertyNameFromPointer
@@ -16,7 +16,7 @@ import {
 } from '../../constants/IRI.js';
 
 function resolveNodeRef(
-  graph: GraphAccessor,
+  graph: GraphAccessorInterface,
   node: SchemaGraphNodeInterface
 ): string {
   const nodeSem = graph.semantics(node);
@@ -35,7 +35,7 @@ function resolveNodeRef(
 }
 
 function pushConditionalRelations(
-  graph: GraphAccessor,
+  graph: GraphAccessorInterface,
   node: SchemaGraphNodeInterface,
   sem: SchemaGraphSemanticsInterface,
   relations: SchemaGraphRelationInterface[]
@@ -70,7 +70,7 @@ function pushConditionalRelations(
 }
 
 function pushContainsRelations(
-  graph: GraphAccessor,
+  graph: GraphAccessorInterface,
   node: SchemaGraphNodeInterface,
   sem: SchemaGraphSemanticsInterface,
   relations: SchemaGraphRelationInterface[]
@@ -139,7 +139,7 @@ function pushDependentRequiredRelations(
 }
 
 function pushDependentSchemaRelations(
-  graph: GraphAccessor,
+  graph: GraphAccessorInterface,
   node: SchemaGraphNodeInterface,
   sem: SchemaGraphSemanticsInterface,
   relations: SchemaGraphRelationInterface[]
@@ -195,7 +195,7 @@ function pushFormatPatternRelations(
 }
 
 function pushPatternPropertyRelations(
-  graph: GraphAccessor,
+  graph: GraphAccessorInterface,
   node: SchemaGraphNodeInterface,
   sem: SchemaGraphSemanticsInterface,
   relations: SchemaGraphRelationInterface[]
@@ -219,7 +219,7 @@ function pushPatternPropertyRelations(
 }
 
 function pushPrefixItemRelations(
-  graph: GraphAccessor,
+  graph: GraphAccessorInterface,
   node: SchemaGraphNodeInterface,
   sem: SchemaGraphSemanticsInterface,
   relations: SchemaGraphRelationInterface[]
@@ -243,7 +243,7 @@ function pushPrefixItemRelations(
 }
 
 function pushPropertyCardinalityRelations(
-  graph: GraphAccessor,
+  graph: GraphAccessorInterface,
   node: SchemaGraphNodeInterface,
   sem: SchemaGraphSemanticsInterface,
   relations: SchemaGraphRelationInterface[],
@@ -347,7 +347,7 @@ function pushUnionTypeRelations(
 }
 
 export function extractRelations(
-  graph: GraphAccessor,
+  graph: GraphAccessorInterface,
   node: SchemaGraphNodeInterface,
   nodeMap: Map<string, SchemaGraphNodeInterface>
 ): SchemaGraphRelationInterface[] {

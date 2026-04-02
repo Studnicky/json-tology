@@ -12,7 +12,7 @@ import {
 } from '../../constants/SCHEMA_KEYWORDS.js';
 import { isRecord } from '../data/DataTypes.js';
 import type { JsonSchemaType } from '../../types/Schema.js';
-import type { GraphAccessor } from '../../interfaces/GraphAccessor.js';
+import type { GraphAccessorInterface } from '../../interfaces/GraphAccessor.js';
 
 export function escapeJsonPointerSegment(segment: string): string {
   return segment.replaceAll('~', '~0').replaceAll('/', '~1');
@@ -270,7 +270,7 @@ function resolveAdditionalSchemaNode(
 }
 
 export function extractSemantics(
-  graph: GraphAccessor,
+  graph: GraphAccessorInterface,
   node: SchemaGraphNodeInterface,
   resolveLocalRef: (ref: string) => SchemaGraphNodeInterface
 ): SchemaGraphSemanticsInterface {
