@@ -17,9 +17,11 @@ import type {
   SchemaGraphRelationInterface
 } from '../../interfaces/SchemaGraph.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
+import type { RelationIndexInterface } from '../../interfaces/RelationIndex.js';
 import {
   escapeSegment, isRecord, resolveSingleXsdType
 } from '../data/DataTypes.js';
+import { relationTargetId } from './ProjectionIndex.js';
 import { Hash } from '../hash/Hash.js';
 import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
@@ -120,6 +122,33 @@ export function quad(
     'predicate': expandedPredicate,
     subject
   };
+}
+
+// ---------------------------------------------------------------------------
+// Shared literal emission helper
+// ---------------------------------------------------------------------------
+
+/**
+ * Emit string literal quads for all relations matching a predicate.
+ *
+ * Iterates `entry.byPredicate.get(predicate)` and pushes one quad per
+ * relation with the target value as an xsd:string literal.
+ */
+export function emitLiterals(
+  subject: string,
+  entry: RelationIndexInterface,
+  predicate: string,
+  outputPredicate: string,
+  quads: QuadInterface[],
+  curie?: CurieInterface
+): void {
+  const rels = entry.byPredicate.get(predicate);
+
+  if (rels !== undefined) {
+    for (const rel of rels) {
+      quads.push(quad(subject, outputPredicate, literal(relationTargetId(rel), XSD.string, curie), curie));
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------

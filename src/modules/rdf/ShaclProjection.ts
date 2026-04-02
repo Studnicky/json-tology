@@ -19,11 +19,11 @@ import {
 } from '../../constants/IRI.js';
 import { XSD_PREFIX } from '../../constants/PREFIXES.js';
 import {
-  bnode, iri, literal, nextBnode, quad, rdfList
+  bnode, emitLiterals, iri, literal, nextBnode, quad, rdfList
 } from './Projection.js';
 import {
   buildIndex, fragmentContains, isPropertySubject, isRestrictionStructure, lastSegment,
-  relationTargetId, structuralParent
+  relationTargetId, splitSubject, structuralParent
 } from './ProjectionIndex.js';
 import type { RelationIndexInterface } from '../../interfaces/RelationIndex.js';
 
@@ -56,21 +56,19 @@ function isSerializationCandidate(
     return false;
   }
 
-  const hashIdx = subject.indexOf('#');
+  const parts = splitSubject(subject);
 
-  if (hashIdx !== -1) {
-    const fragment = subject.slice(hashIdx + 1);
-
-    if (fragment.includes('/items') || fragment.includes('/contains')
-      || fragment.includes('/prefixItems/') || fragment.includes('/patternProperties/')) {
+  if (parts.fragment !== null) {
+    if (parts.fragment.includes('/items') || parts.fragment.includes('/contains')
+      || parts.fragment.includes('/prefixItems/') || parts.fragment.includes('/patternProperties/')) {
       return false;
     }
 
-    if (fragment.includes('/dependentSchemas/')) {
+    if (parts.fragment.includes('/dependentSchemas/')) {
       return false;
     }
 
-    if (fragment === '/if' || fragment === '/then' || fragment === '/else') {
+    if (parts.fragment === '/if' || parts.fragment === '/then' || parts.fragment === '/else') {
       return false;
     }
   }
@@ -104,7 +102,7 @@ function isSerializationCandidate(
     }
   }
 
-  if (hashIdx === -1 || subject.slice(hashIdx + 1) === '') {
+  if (parts.fragment === null || parts.fragment === '') {
     return true;
   }
 
@@ -169,18 +167,10 @@ function emitNodeShape(
   quads.push(quad(subject, RDF.type, iri(SH.NodeShape, curie), curie));
 
   // sh:name from rdfs:label
-  const labelRels = entry.byPredicate.get(RDFS.label) ?? [];
-
-  for (const rel of labelRels) {
-    quads.push(quad(subject, SH.name, literal(relationTargetId(rel), XSD.string, curie), curie));
-  }
+  emitLiterals(subject, entry, RDFS.label, SH.name, quads, curie);
 
   // sh:description from rdfs:comment
-  const commentRels = entry.byPredicate.get(RDFS.comment) ?? [];
-
-  for (const rel of commentRels) {
-    quads.push(quad(subject, SH.description, literal(relationTargetId(rel), XSD.string, curie), curie));
-  }
+  emitLiterals(subject, entry, RDFS.comment, SH.description, quads, curie);
 
   // sh:deactivated from owl:deprecated
   if (entry.byPredicate.has(OWL.deprecated)) {
@@ -303,11 +293,7 @@ function emitPropertyShape(
   quads.push(quad(bnodeId, SH.path, iri(canonicalId, curie), curie));
 
   // sh:name from rdfs:label
-  const labelRels = entry.byPredicate.get(RDFS.label) ?? [];
-
-  for (const rel of labelRels) {
-    quads.push(quad(bnodeId, SH.name, literal(relationTargetId(rel), XSD.string, curie), curie));
-  }
+  emitLiterals(bnodeId, entry, RDFS.label, SH.name, quads, curie);
 
   // sh:datatype
   const datatypeRels = entry.byPredicate.get(SH.datatype) ?? [];
@@ -372,11 +358,7 @@ function emitPropertyShape(
   emitConstraintLiteral(bnodeId, entry, JT.multipleOf, XSD.decimal, quads, curie);
 
   // sh:description from rdfs:comment
-  const commentRels = entry.byPredicate.get(RDFS.comment) ?? [];
-
-  for (const rel of commentRels) {
-    quads.push(quad(bnodeId, SH.description, literal(relationTargetId(rel), XSD.string, curie), curie));
-  }
+  emitLiterals(bnodeId, entry, RDFS.comment, SH.description, quads, curie);
 
   // dash:readOnly / dash:writeOnly
   if (entry.byPredicate.has(DASH.readOnly)) {
@@ -388,11 +370,7 @@ function emitPropertyShape(
   }
 
   // dct:format
-  const formatRels = entry.byPredicate.get(DCT.format) ?? [];
-
-  for (const rel of formatRels) {
-    quads.push(quad(bnodeId, DCT.format, literal(relationTargetId(rel), XSD.string, curie), curie));
-  }
+  emitLiterals(bnodeId, entry, DCT.format, DCT.format, quads, curie);
 }
 
 function emitConstraintLiteral(

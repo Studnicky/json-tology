@@ -63,15 +63,13 @@ export function relationTargetId(relation: SchemaGraphRelationInterface): string
 // ---------------------------------------------------------------------------
 
 export function isPropertySubject(subject: string): boolean {
-  const hashIdx = subject.indexOf('#');
+  const parts = splitSubject(subject);
 
-  if (hashIdx === -1) {
+  if (parts.fragment === null) {
     return false;
   }
 
-  const fragment = subject.slice(hashIdx + 1);
-
-  return fragment.includes('/properties/');
+  return parts.fragment.includes('/properties/');
 }
 
 // ---------------------------------------------------------------------------
@@ -86,34 +84,53 @@ export function isListStructure(structure: RelationStructure | undefined): struc
   return structure?.kind === 'list';
 }
 
-export function fragmentContains(subject: string, segment: string): boolean {
+// ---------------------------------------------------------------------------
+// Hash fragment parsing
+// ---------------------------------------------------------------------------
+
+export function splitSubject(subject: string): { 'base': string;
+  'fragment': null | string } {
   const hashIdx = subject.indexOf('#');
 
   if (hashIdx === -1) {
+    return {
+      'base': subject,
+      'fragment': null
+    };
+  }
+
+  return {
+    'base': subject.slice(0, hashIdx),
+    'fragment': subject.slice(hashIdx + 1)
+  };
+}
+
+export function fragmentContains(subject: string, segment: string): boolean {
+  const parts = splitSubject(subject);
+
+  if (parts.fragment === null) {
     return false;
   }
 
-  return subject.slice(hashIdx + 1).includes(segment);
+  return parts.fragment.includes(segment);
 }
 
 export function structuralParent(subject: string): string {
-  const hashIdx = subject.indexOf('#');
+  const parts = splitSubject(subject);
 
-  if (hashIdx === -1) {
+  if (parts.fragment === null) {
     return subject;
   }
 
-  const base = subject.slice(0, hashIdx);
-  const fragment = subject.slice(hashIdx + 1);
-  const propsIdx = fragment.lastIndexOf('/properties/');
+  const propsIdx = parts.fragment.lastIndexOf('/properties/');
 
   if (propsIdx === -1) {
-    return base;
+    return parts.base;
   }
 
-  const parentPointer = fragment.slice(0, propsIdx);
+  const parentPointer = parts.fragment.slice(0, propsIdx);
 
-  return parentPointer === '' ? base : `${base}#${parentPointer}`;
+  return parentPointer === '' ? parts.base : `${parts.base}#${parentPointer}`;
 }
 
 export function lastSegment(subject: string): string {
