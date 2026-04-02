@@ -119,6 +119,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
    * @param schemaOrId - Schema object with `$id` or the schema ID string.
    * @param data - The data to cast (deep-cloned before mutation).
    * @returns The coerced and default-applied value.
+   * @throws {@link SchemaError} when no schema is registered for the given ID.
    */
   public cast(schemaOrId: (Record<string, unknown> & { '$id': string; }) | string, data: unknown): unknown {
     const schemaId = this.resolveSchemaId(schemaOrId);
@@ -137,6 +138,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
    * @param schemaOrId - Schema object with `$id` or the schema ID string.
    * @param data - The data to clean (deep-cloned before mutation).
    * @returns The value with unknown properties removed.
+   * @throws {@link SchemaError} when no schema is registered for the given ID.
    */
   public clean(schemaOrId: (Record<string, unknown> & { '$id': string; }) | string, data: unknown): unknown {
     const schemaId = this.resolveSchemaId(schemaOrId);
@@ -238,6 +240,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
    * @param schemaOrId - Schema object with `$id` or the schema ID string.
    * @param data - The data to convert (deep-cloned before mutation).
    * @returns The coerced value.
+   * @throws {@link SchemaError} when no schema is registered for the given ID.
    */
   public convert(schemaOrId: (Record<string, unknown> & { '$id': string; }) | string, data: unknown): unknown {
     const schemaId = this.resolveSchemaId(schemaOrId);
@@ -305,6 +308,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
    * @param schema - Schema object with `$id` or the schema ID string.
    * @param data - The data to validate.
    * @returns A {@link ValidationErrors} instance (empty when data is valid).
+   * @throws {@link SchemaError} when no schema is registered for the given ID.
    */
   public errors(
     schema: (Record<string, unknown> & { '$id': string; }) | string,
@@ -314,12 +318,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const compiled = this.compiled(schemaId);
 
     if (compiled === undefined) {
-      return new ValidationErrors([{
-        'keyword': 'unknown',
-        'message': `No validator registered for schema: ${schemaId}`,
-        'params': {},
-        'path': ''
-      }]);
+      throw new SchemaError('SCHEMA_NOT_REGISTERED', `No validator registered for schema: ${schemaId}`, schemaId);
     }
 
     const result = compiled.validate(data, COLLECT_ERRORS_OPTIONS);
@@ -581,6 +580,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
    * @param schema - Schema object with `$id` or the schema ID string.
    * @param data - The data to validate.
    * @returns Array of human-readable error strings, empty if valid.
+   * @throws {@link SchemaError} when no schema is registered for the given ID.
    */
   public validate(
     schema: (Record<string, unknown> & { '$id': string; }) | string,
@@ -590,7 +590,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const compiled = this.compiled(schemaId);
 
     if (compiled === undefined) {
-      return [`No validator registered for schema: ${schemaId}`];
+      throw new SchemaError('SCHEMA_NOT_REGISTERED', `No validator registered for schema: ${schemaId}`, schemaId);
     }
 
     if (compiled.compiled && compiled.check(data)) {

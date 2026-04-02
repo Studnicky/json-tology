@@ -88,7 +88,8 @@ function labelFromId(schemaId: string): string {
     const segments = url.pathname.split('/').filter(Boolean);
 
     return segments.at(-1) ?? schemaId;
-  } catch {
+  } catch (error) {
+    console.error(`VizDataCollector.labelFromId: failed to parse schema ID as URL: ${error instanceof Error ? error.message : String(error)}`);
     const segments = schemaId.split('/').filter(Boolean);
 
     return segments.at(-1) ?? schemaId;

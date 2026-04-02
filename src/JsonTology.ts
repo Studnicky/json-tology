@@ -67,9 +67,11 @@ export class JsonTology<TMap = Record<never, never>> {
     const jt = new JsonTology(options);
 
     if (options.schemas && options.schemas.length > 0) {
+      // Cast needed: const generic TSchemas preserves literal types that don't widen to Record<string, unknown>
       jt.registry.register(options.schemas as unknown as Array<Record<string, unknown>>);
     }
 
+    // Cast needed: narrows default TMap to the inferred schema map computed from TSchemas
     return jt as unknown as JsonTology<SchemaMapFromTupleType<TSchemas>>;
   }
   private readonly baseIRI: string;
@@ -129,6 +131,7 @@ export class JsonTology<TMap = Record<never, never>> {
     };
 
     this.registry = new SchemaRegistry(registryOptions);
+    // Cast needed: Value is unparameterized at runtime; aligns with compile-time generic TMap
     this.value = new Value(this.registry) as unknown as ValueInterface<TMap>;
     this.materializer = new Materializer(this.registry, options.materializer);
 
@@ -325,9 +328,11 @@ export class JsonTology<TMap = Record<never, never>> {
   public register(schemaOrSchemas: ReadonlyArray<{ readonly '$id': string; }> | { readonly '$id': string; }): JsonTology<TMap> {
     const list = Array.isArray(schemaOrSchemas) ? schemaOrSchemas : [schemaOrSchemas];
 
+    // Cast needed: const generic preserves literal types that don't widen to Record<string, unknown>
     this.registry.register(list as unknown as Array<Record<string, unknown>>);
     this.ontologyCache = null;
 
+    // Cast needed: TypeScript cannot track that register() accumulates into the TMap type parameter
     return this as unknown as JsonTology<TMap>;
   }
   /**
@@ -355,6 +360,7 @@ export class JsonTology<TMap = Record<never, never>> {
     data: InferSchemaType<TSchema>
   ): OntologyBuilder {
     const quads = this.materializer.projectAbox(
+      // Cast needed: JSONSchema7Definition includes boolean; runtime guarantees object with $id
       schema as unknown as Record<string, unknown> & { '$id': string; },
       data,
       this.baseIRI

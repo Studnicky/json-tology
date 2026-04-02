@@ -213,9 +213,9 @@ void describe('SchemaRegistry registration', () => {
         assert.equal(registry.graph(InvalidInlineSchema.$id), undefined);
         assert.deepEqual(registry.list(), []);
         assert.deepEqual(registry.listGraphs(), []);
-        assert.ok(registry.validate(InvalidInlineSchema.$id, {}).some((message) => {
-          return message.includes('No validator registered');
-        }));
+        assert.throws(() => {
+          registry.validate(InvalidInlineSchema.$id, {});
+        }, /No validator registered|SCHEMA_NOT_REGISTERED/u);
         assert.throws(() => {
           registry.coerce(InvalidInlineSchema.$id, {});
         }, /SCHEMA_NOT_REGISTERED|Schema not registered/u);
@@ -348,13 +348,6 @@ void describe('SchemaRegistry validation', () => {
       'valid': false
     },
     {
-      'data': {},
-      'errorSubstring': 'No validator registered',
-      'name': 'unregistered schema returns "No validator registered"',
-      'schemaId': 'https://example.io/nonexistent',
-      'valid': false
-    },
-    {
       'data': {
         'age': 30,
         'name': 'Bob'
@@ -397,6 +390,22 @@ void describe('SchemaRegistry validation', () => {
       }
     });
   }
+
+  void it('unregistered schema throws SchemaError from validate()', () => {
+    const registry = new SchemaRegistry({ 'logger': new Logger() });
+
+    assert.throws(() => {
+      registry.validate('https://example.io/nonexistent', {});
+    }, /No validator registered|SCHEMA_NOT_REGISTERED/u);
+  });
+
+  void it('unregistered schema throws SchemaError from errors()', () => {
+    const registry = new SchemaRegistry({ 'logger': new Logger() });
+
+    assert.throws(() => {
+      registry.errors('https://example.io/nonexistent', {});
+    }, /No validator registered|SCHEMA_NOT_REGISTERED/u);
+  });
 
   void it('validates at JSON Pointer', () => {
     const registry = new SchemaRegistry({ 'logger': new Logger() });

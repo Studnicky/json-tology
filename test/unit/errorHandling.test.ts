@@ -348,12 +348,11 @@ void describe('JsonTology error handling', () => {
       'name': string }> = [
       {
         'check': () => {
-          const errors = jt.validate('https://err.test/Missing' as never, {});
-
-          assert.ok(errors.length > 0, 'validate returns errors');
-          assert.ok(errors[0].includes('No validator'), 'validate mentions No validator');
+          assert.throws(() => {
+            jt.validate('https://err.test/Missing' as never, {});
+          }, /No validator registered|SCHEMA_NOT_REGISTERED/u);
         },
-        'name': 'validate returns errors for unregistered schema ID'
+        'name': 'validate throws for unregistered schema ID'
       },
       {
         'check': () => {
@@ -373,11 +372,11 @@ void describe('JsonTology error handling', () => {
       },
       {
         'check': () => {
-          const errs = jt.errors('https://err.test/Missing' as never, {});
-
-          assert.ok(errs.length > 0, 'errors returns non-empty');
+          assert.throws(() => {
+            jt.errors('https://err.test/Missing' as never, {});
+          }, /No validator registered|SCHEMA_NOT_REGISTERED/u);
         },
-        'name': 'errors returns non-empty ValidationErrors for unregistered schema'
+        'name': 'errors throws for unregistered schema'
       }
     ];
 

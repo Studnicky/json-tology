@@ -303,8 +303,8 @@ function openBrowser(filePath: string): void {
 
   try {
     exec(`${cmd} "${filePath}"`);
-  } catch {
-    // Silently ignore — opening the browser is best-effort
+  } catch (error) {
+    console.error(`Failed to open browser: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 

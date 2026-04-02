@@ -1,6 +1,16 @@
 import type { DiffOpType } from '../../types/Diff.js';
 import { isPlainObject } from './dataTypes.js';
 
+/**
+ * Apply a single diff operation (`set` or `delete`) to a value at the specified path.
+ *
+ * Returns a shallow-cloned copy of `root` with the operation applied.
+ * Path segments are slash-delimited (e.g. `/address/city`).
+ *
+ * @param root - The value to patch.
+ * @param operation - The diff operation containing `op`, `path`, and optionally `value`.
+ * @returns The patched value.
+ */
 export function applyOp(root: unknown, operation: DiffOpType): unknown {
   const path = operation.path === '/' ? '' : operation.path;
   const segments = path.split('/').filter(Boolean);
@@ -52,6 +62,7 @@ export function applyOp(root: unknown, operation: DiffOpType): unknown {
   return result;
 }
 
+/** Deep clone a value using `structuredClone`. */
 export function clone<T extends unknown>(value: T): T {
   return structuredClone(value);
 }
