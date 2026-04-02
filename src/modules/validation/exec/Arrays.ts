@@ -4,7 +4,7 @@ import type {
   CheckFnType, ValidateWithErrorsFnType
 } from '../../../types/Validation.js';
 import { BaseError } from '../../../errors/BaseError.js';
-import { Predicates } from '../predicates.js';
+import { Predicates } from '../Predicates.js';
 
 export class Arrays {
   static validateBounds(

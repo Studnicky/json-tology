@@ -3,19 +3,19 @@ import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import {
   isRecord
-} from '../data/dataTypes.js';
-import { Predicates } from '../validation/predicates.js';
+} from '../data/DataTypes.js';
+import { Predicates } from '../validation/Predicates.js';
 import {
   cloneDefault
-} from './graphEngineSupport.js';
+} from './GraphEngineSupport.js';
 import type { EffectiveOptionsType } from '../../types/EffectiveOptions.js';
 import type { DynamicScopeEntryInterface } from '../../interfaces/DynamicScopeEntry.js';
 import type { InternalExecutionResultInterface } from '../../interfaces/InternalExecutionResult.js';
 import type { VisitContextInterface } from '../../interfaces/VisitContext.js';
 import { GraphError } from '../../errors/GraphError.js';
-import { Refs } from './visit/refs.js';
-import { VisitComposition } from './visit/composition.js';
-import { Unevaluated } from './visit/unevaluated.js';
+import { Refs } from './visit/Refs.js';
+import { VisitComposition } from './visit/VisitComposition.js';
+import { Unevaluated } from './visit/Unevaluated.js';
 
 export function visitNode(
   context: VisitContextInterface,

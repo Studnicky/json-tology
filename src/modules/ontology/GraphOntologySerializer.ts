@@ -3,7 +3,8 @@ import type { QuadInterface } from '../../interfaces/Quad.js';
 import { projectOwlGraph } from '../rdf/OwlProjection.js';
 import { RDFS_SUB_CLASS_OF_IRI } from '../../constants/PREFIXES.js';
 import { OWL_CORE_PREDICATES } from '../../constants/ONTOLOGY_PREDICATES.js';
-import { BaseGraphSerializer } from './baseGraphSerializer.js';
+import { BaseGraphSerializer } from './BaseGraphSerializer.js';
+import { ensureArray } from './SerializerUtils.js';
 
 export class GraphOntologySerializer extends BaseGraphSerializer {
   protected corePredicates(): ReadonlySet<string> {
@@ -18,13 +19,5 @@ export class GraphOntologySerializer extends BaseGraphSerializer {
 
   protected projectGraph(graph: SchemaGraphInterface): QuadInterface[] {
     return projectOwlGraph(graph, this.curie);
-  }
-}
-
-function ensureArray(node: Record<string, unknown>, key: string): void {
-  const value = node[key];
-
-  if (value !== undefined && !Array.isArray(value)) {
-    node[key] = [value];
   }
 }

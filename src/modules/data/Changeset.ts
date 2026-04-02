@@ -8,7 +8,7 @@ import type { ChangesetInterface } from '../../interfaces/Changeset.js';
 import type { DiffOpType } from '../../types/Diff.js';
 import {
   applyOp, clone
-} from './operations.js';
+} from './Operations.js';
 
 
 /**

@@ -1,17 +1,14 @@
-import type { ValidationErrorType } from '../../types/Validation.js';
-import {
-  isRecord
-} from '../data/dataTypes.js';
-import {
-  coerceCompiledValue
-} from './schemaCompilerSupport.js';
-import { cloneDefault } from '../graph/graphEngineSupport.js';
 import type { CompiledNodeValidationPlanInterface } from '../../interfaces/CompiledNodeValidationPlan.js';
-import type { ValidateWithErrorsFnType } from '../../types/Validation.js';
-import { Scalars } from './exec/scalars.js';
-import { Arrays } from './exec/arrays.js';
-import { Objects } from './exec/objects.js';
-import { Composition } from './exec/composition.js';
+import type {
+  ValidateWithErrorsFnType, ValidationErrorType
+} from '../../types/Validation.js';
+import { isRecord } from '../data/DataTypes.js';
+import { cloneDefault } from '../graph/GraphEngineSupport.js';
+import { coerceCompiledValue } from './SchemaCompilerSupport.js';
+import { Arrays } from './exec/Arrays.js';
+import { Composition } from './exec/Composition.js';
+import { Objects } from './exec/Objects.js';
+import { Scalars } from './exec/Scalars.js';
 
 function fail(workingValue: unknown): {
   'valid': false;

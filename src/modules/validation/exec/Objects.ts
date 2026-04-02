@@ -4,8 +4,8 @@ import type { ValidateWithErrorsFnType } from '../../../types/Validation.js';
 import { BaseError } from '../../../errors/BaseError.js';
 import {
   isRecord
-} from '../../data/dataTypes.js';
-import { cloneDefault } from '../../graph/graphEngineSupport.js';
+} from '../../data/DataTypes.js';
+import { cloneDefault } from '../../graph/GraphEngineSupport.js';
 
 export class Objects {
   static applyDefaults(

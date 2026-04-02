@@ -17,28 +17,28 @@ import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js
 import type { GraphEngineInterface } from '../../interfaces/GraphEngineImpl.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { KeywordDefinitionInterface } from '../../interfaces/GraphEngine.js';
-import { SchemaGraph } from '../graph/schemaGraph.js';
+import { SchemaGraph } from '../graph/SchemaGraph.js';
 import type {
   SchemaGraphNodeInterface, SchemaGraphSemanticsInterface
 } from '../../interfaces/SchemaGraph.js';
 // isRecord and deepEqual are used by executor modules, imported from DataTypes directly there
 import {
   coerceCompiledValue
-} from './schemaCompilerSupport.js';
+} from './SchemaCompilerSupport.js';
 import { BaseError } from '../../errors/BaseError.js';
-import { Predicates } from './predicates.js';
-import { resolveImplicitDefaultValue } from './schemaCompilerDefaults.js';
-import { cloneDefault } from '../graph/graphEngineSupport.js';
-import { buildNodeCheckExecution } from './schemaCompilerCheckExec.js';
-import { buildValidateWithErrorsExecution } from './schemaCompilerValidateExec.js';
+import { Predicates } from './Predicates.js';
+import { resolveImplicitDefaultValue } from './SchemaCompilerDefaults.js';
+import { cloneDefault } from '../graph/GraphEngineSupport.js';
+import { buildNodeCheckExecution } from './SchemaCompilerCheckExec.js';
+import { buildValidateWithErrorsExecution } from './SchemaCompilerValidateExec.js';
 import {
   buildNodeValidationPlan
-} from './schemaCompilerValidatePlan.js';
+} from './SchemaCompilerValidatePlan.js';
 import type { ValidateWithErrorsFnType } from '../../types/Validation.js';
 import {
   compileArrayCheck, compileObjectCheck, compileRefCheck,
   nodeSupportsCompilation, tryCompileFlatObjectCheck
-} from './schemaCompilerGraph.js';
+} from './SchemaCompilerGraph.js';
 import {
   DEFAULT_DIALECT_URI, VOCABULARY_FORMAT_ASSERTION
 } from '../../constants/DIALECT.js';

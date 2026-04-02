@@ -5,7 +5,7 @@ import type {
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import {
   cloneDefault
-} from './graphEngineSupport.js';
+} from './GraphEngineSupport.js';
 import type { DynamicScopeEntryInterface } from '../../interfaces/DynamicScopeEntry.js';
 import type { DefaultResolutionContextInterface } from '../../interfaces/DefaultResolutionContext.js';
 import { MAX_DEFAULT_DEPTH } from '../../constants/LIMITS.js';

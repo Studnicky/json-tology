@@ -2,7 +2,11 @@ import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import { projectShaclGraph } from '../rdf/ShaclProjection.js';
 import { SHACL_CORE_PREDICATES } from '../../constants/ONTOLOGY_PREDICATES.js';
-import { BaseGraphSerializer } from './baseGraphSerializer.js';
+import { BaseGraphSerializer } from './BaseGraphSerializer.js';
+import { SH } from '../../constants/IRI.js';
+import { normalizeArrays } from './SerializerUtils.js';
+
+const SHACL_ARRAY_KEYS = [SH.PROPERTY_IRI] as const;
 
 export class GraphShaclSerializer extends BaseGraphSerializer {
   protected corePredicates(): ReadonlySet<string> {
@@ -11,39 +15,11 @@ export class GraphShaclSerializer extends BaseGraphSerializer {
 
   protected postProcessNodes(nodes: Array<Record<string, unknown>>): void {
     for (const node of nodes) {
-      normalizeArrays(node);
+      normalizeArrays(node, SHACL_ARRAY_KEYS);
     }
   }
 
   protected projectGraph(graph: SchemaGraphInterface): QuadInterface[] {
     return projectShaclGraph(graph, this.curie);
-  }
-}
-
-function normalizeArrays(node: unknown): void {
-  if (typeof node !== 'object' || node === null) {
-    return;
-  }
-
-  if (Array.isArray(node)) {
-    for (const item of node) {
-      normalizeArrays(item);
-    }
-
-    return;
-  }
-
-  const obj = node as Record<string, unknown>;
-
-  // sh:property must always be an array
-  // Check both CURIE form and expanded IRI form
-  const propKey = 'http://www.w3.org/ns/shacl#property';
-
-  if (obj[propKey] !== undefined && !Array.isArray(obj[propKey])) {
-    obj[propKey] = [obj[propKey]];
-  }
-
-  for (const value of Object.values(obj)) {
-    normalizeArrays(value);
   }
 }

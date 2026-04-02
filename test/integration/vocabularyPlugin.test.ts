@@ -3,10 +3,10 @@ import {
 } from 'node:test';
 import assert from 'node:assert/strict';
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
-import { SchemaGraph } from '../../src/modules/graph/schemaGraph.js';
+import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { GraphOntologySerializer } from '../../src/modules/ontology/GraphOntologySerializer.js';
 import { GraphShaclSerializer } from '../../src/modules/ontology/GraphShaclSerializer.js';
-import { Curie } from '../../src/modules/rdf/curie.js';
+import { Curie } from '../../src/modules/rdf/Curie.js';
 import { DEFAULT_PREFIXES } from '../../src/constants/PREFIXES.js';
 import { JsonTology } from '../../src/JsonTology.js';
 import type { VocabularyPluginInterface } from '../../src/interfaces/VocabularyPlugin.js';

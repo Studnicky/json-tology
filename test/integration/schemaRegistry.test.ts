@@ -8,7 +8,7 @@ import {
 import assert from 'node:assert/strict';
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 import { Logger } from '../utils/Logger.js';
-import { SchemaGraph } from '../../src/modules/graph/schemaGraph.js';
+import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { CoercionError } from '../../src/errors/CoercionError.js';
 
 const TestSchema = {

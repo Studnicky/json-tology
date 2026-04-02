@@ -9,7 +9,7 @@ import type { InternalExecutionResultInterface } from '../../../interfaces/Inter
 import type { VisitContextInterface } from '../../../interfaces/VisitContext.js';
 import {
   cloneCandidate
-} from '../graphEngineSupport.js';
+} from '../GraphEngineSupport.js';
 
 export class VisitComposition {
   static allOf(

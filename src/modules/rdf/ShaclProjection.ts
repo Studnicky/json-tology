@@ -13,7 +13,11 @@ import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
-import { propertyIri } from '../data/dataTypes.js';
+import { propertyIri } from '../data/DataTypes.js';
+import {
+  DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
+} from '../../constants/IRI.js';
+import { XSD_PREFIX } from '../../constants/PREFIXES.js';
 import {
   bnode, iri, literal, nextBnode, quad, rdfList
 } from './Projection.js';
@@ -30,7 +34,7 @@ function resolveTargetRef(targetNodeId: string, index: Map<string, RelationIndex
     return targetNodeId;
   }
 
-  const rangeRels = targetEntry.byPredicate.get('rdfs:range') ?? [];
+  const rangeRels = targetEntry.byPredicate.get(RDFS.range) ?? [];
 
   if (rangeRels.length > 0) {
     return relationTargetId(rangeRels[0]);
@@ -71,7 +75,7 @@ function isSerializationCandidate(
     }
   }
 
-  if (entry.types.includes('owl:Class')) {
+  if (entry.types.includes(OWL.Class)) {
     return true;
   }
 
@@ -81,10 +85,10 @@ function isSerializationCandidate(
     return true;
   }
 
-  if (entry.byPredicate.has('rdfs:subClassOf') || entry.byPredicate.has('owl:equivalentClass')
-    || entry.byPredicate.has('owl:complementOf') || entry.byPredicate.has('owl:disjointWith')
-    || entry.byPredicate.has('owl:oneOf') || entry.byPredicate.has('rdfs:member')
-    || entry.byPredicate.has('sh:pattern') || entry.byPredicate.has('jt:dependentRequired')) {
+  if (entry.byPredicate.has(RDFS.subClassOf) || entry.byPredicate.has(OWL.equivalentClass)
+    || entry.byPredicate.has(OWL.complementOf) || entry.byPredicate.has(OWL.disjointWith)
+    || entry.byPredicate.has(OWL.oneOf) || entry.byPredicate.has(RDFS.member)
+    || entry.byPredicate.has(SH.pattern) || entry.byPredicate.has(JT.dependentRequired)) {
     return true;
   }
 
@@ -95,7 +99,7 @@ function isSerializationCandidate(
     }
 
     if (isRestrictionStructure(rel.structure)
-      && rel.structure.constraint === 'owl:someValuesFrom') {
+      && rel.structure.constraint === OWL.someValuesFrom) {
       return true;
     }
   }
@@ -162,35 +166,35 @@ function emitNodeShape(
   quads: QuadInterface[],
   curie?: CurieInterface
 ): void {
-  quads.push(quad(subject, 'rdf:type', iri('sh:NodeShape', curie), curie));
+  quads.push(quad(subject, RDF.type, iri(SH.NodeShape, curie), curie));
 
   // sh:name from rdfs:label
-  const labelRels = entry.byPredicate.get('rdfs:label') ?? [];
+  const labelRels = entry.byPredicate.get(RDFS.label) ?? [];
 
   for (const rel of labelRels) {
-    quads.push(quad(subject, 'sh:name', literal(relationTargetId(rel), 'xsd:string', curie), curie));
+    quads.push(quad(subject, SH.name, literal(relationTargetId(rel), XSD.string, curie), curie));
   }
 
   // sh:description from rdfs:comment
-  const commentRels = entry.byPredicate.get('rdfs:comment') ?? [];
+  const commentRels = entry.byPredicate.get(RDFS.comment) ?? [];
 
   for (const rel of commentRels) {
-    quads.push(quad(subject, 'sh:description', literal(relationTargetId(rel), 'xsd:string', curie), curie));
+    quads.push(quad(subject, SH.description, literal(relationTargetId(rel), XSD.string, curie), curie));
   }
 
   // sh:deactivated from owl:deprecated
-  if (entry.byPredicate.has('owl:deprecated')) {
-    quads.push(quad(subject, 'sh:deactivated', literal(true, 'xsd:boolean', curie), curie));
+  if (entry.byPredicate.has(OWL.deprecated)) {
+    quads.push(quad(subject, SH.deactivated, literal(true, XSD.boolean, curie), curie));
   }
 
   // sh:closed
-  if (entry.byPredicate.has('sh:closed')) {
-    quads.push(quad(subject, 'sh:closed', literal(true, 'xsd:boolean', curie), curie));
+  if (entry.byPredicate.has(SH.closed)) {
+    quads.push(quad(subject, SH.closed, literal(true, XSD.boolean, curie), curie));
   }
 
   // Array cardinality on node shapes (minItems/maxItems → sh:minCount/sh:maxCount)
-  emitConstraintLiteral(subject, entry, 'sh:minCount', 'xsd:integer', quads, curie);
-  emitConstraintLiteral(subject, entry, 'sh:maxCount', 'xsd:integer', quads, curie);
+  emitConstraintLiteral(subject, entry, SH.minCount, XSD.integer, quads, curie);
+  emitConstraintLiteral(subject, entry, SH.maxCount, XSD.integer, quads, curie);
 
   // sh:property — regular properties
   const propSubjects = propertyIndex.get(subject) ?? [];
@@ -209,7 +213,7 @@ function emitNodeShape(
     const psBnode = nextBnode();
 
     emitPropertyShape(psBnode, propSubject, propEntry, subject, undefined, quads, curie);
-    quads.push(quad(subject, 'sh:property', bnode(psBnode), curie));
+    quads.push(quad(subject, SH.property, bnode(psBnode), curie));
   }
 
   // sh:property — contains (sh:qualifiedValueShape)
@@ -219,7 +223,7 @@ function emitNodeShape(
   const andItems: QuadObjectType[] = [];
 
   // rdfs:subClassOf → sh:and
-  const subClassRels = entry.byPredicate.get('rdfs:subClassOf') ?? [];
+  const subClassRels = entry.byPredicate.get(RDFS.subClassOf) ?? [];
 
   for (const rel of subClassRels) {
     andItems.push(iri(relationTargetId(rel), curie));
@@ -235,43 +239,43 @@ function emitNodeShape(
   emitConditionalAndItems(entry, andItems, quads, curie);
 
   if (andItems.length > 0) {
-    quads.push(quad(subject, 'sh:and', rdfList(andItems), curie));
+    quads.push(quad(subject, SH.and, rdfList(andItems), curie));
   }
 
   // sh:or from owl:equivalentClass
-  const equivRels = entry.byPredicate.get('owl:equivalentClass') ?? [];
+  const equivRels = entry.byPredicate.get(OWL.equivalentClass) ?? [];
 
   if (equivRels.length > 0) {
     const orItems = equivRels.map((rel) => {
       return iri(resolveTargetRef(relationTargetId(rel), index), curie);
     });
 
-    quads.push(quad(subject, 'sh:or', rdfList(orItems), curie));
+    quads.push(quad(subject, SH.or, rdfList(orItems), curie));
   }
 
   // sh:not from owl:complementOf
-  const complementRels = entry.byPredicate.get('owl:complementOf') ?? [];
+  const complementRels = entry.byPredicate.get(OWL.complementOf) ?? [];
 
   if (complementRels.length > 0) {
-    quads.push(quad(subject, 'sh:not', iri(resolveTargetRef(relationTargetId(complementRels[0]), index), curie), curie));
+    quads.push(quad(subject, SH.not, iri(resolveTargetRef(relationTargetId(complementRels[0]), index), curie), curie));
   }
 
   // sh:not from owl:disjointWith (fallback)
-  const disjointRels = entry.byPredicate.get('owl:disjointWith') ?? [];
+  const disjointRels = entry.byPredicate.get(OWL.disjointWith) ?? [];
 
   if (complementRels.length === 0 && disjointRels.length > 0) {
-    quads.push(quad(subject, 'sh:not', iri(resolveTargetRef(relationTargetId(disjointRels[0]), index), curie), curie));
+    quads.push(quad(subject, SH.not, iri(resolveTargetRef(relationTargetId(disjointRels[0]), index), curie), curie));
   }
 
   // sh:in from owl:oneOf
-  const oneOfRels = entry.byPredicate.get('owl:oneOf') ?? [];
+  const oneOfRels = entry.byPredicate.get(OWL.oneOf) ?? [];
 
   if (oneOfRels.length > 0) {
     const values = oneOfRels.map((rel) => {
-      return literal(relationTargetId(rel), 'xsd:string', curie);
+      return literal(relationTargetId(rel), XSD.string, curie);
     });
 
-    quads.push(quad(subject, 'sh:in', rdfList(values), curie));
+    quads.push(quad(subject, SH.in, rdfList(values), curie));
   }
 }
 
@@ -288,102 +292,106 @@ function emitPropertyShape(
   quads: QuadInterface[],
   curie?: CurieInterface
 ): void {
-  quads.push(quad(bnodeId, 'rdf:type', iri('sh:PropertyShape', curie), curie));
+  quads.push(quad(bnodeId, RDF.type, iri(SH.PropertyShape, curie), curie));
 
   // sh:path — use rdfs:domain for path class, unless overridden
-  const domainRels = entry.byPredicate.get('rdfs:domain') ?? [];
+  const domainRels = entry.byPredicate.get(RDFS.domain) ?? [];
   const pathClassId = overridePathClassId ?? (domainRels.length > 0 ? relationTargetId(domainRels[0]) : classId);
   const propName = lastSegment(subject);
   const canonicalId = propertyIri(pathClassId, propName);
 
-  quads.push(quad(bnodeId, 'sh:path', iri(canonicalId, curie), curie));
+  quads.push(quad(bnodeId, SH.path, iri(canonicalId, curie), curie));
 
   // sh:name from rdfs:label
-  const labelRels = entry.byPredicate.get('rdfs:label') ?? [];
+  const labelRels = entry.byPredicate.get(RDFS.label) ?? [];
 
   for (const rel of labelRels) {
-    quads.push(quad(bnodeId, 'sh:name', literal(relationTargetId(rel), 'xsd:string', curie), curie));
+    quads.push(quad(bnodeId, SH.name, literal(relationTargetId(rel), XSD.string, curie), curie));
   }
 
   // sh:datatype
-  const datatypeRels = entry.byPredicate.get('sh:datatype') ?? [];
-  const rangeRels = entry.byPredicate.get('rdfs:range') ?? [];
+  const datatypeRels = entry.byPredicate.get(SH.datatype) ?? [];
+  const rangeRels = entry.byPredicate.get(RDFS.range) ?? [];
 
   if (datatypeRels.length > 0 && rangeRels.length === 0) {
-    quads.push(quad(bnodeId, 'sh:datatype', iri(relationTargetId(datatypeRels[0]), curie), curie));
+    quads.push(quad(bnodeId, SH.datatype, iri(relationTargetId(datatypeRels[0]), curie), curie));
   }
 
   // sh:minCount
-  const minCountRels = entry.byPredicate.get('sh:minCount') ?? [];
+  const minCountRels = entry.byPredicate.get(SH.minCount) ?? [];
 
   if (minCountRels.length > 0) {
-    quads.push(quad(bnodeId, 'sh:minCount', literal(Number(relationTargetId(minCountRels[0])), 'xsd:integer', curie), curie));
+    const minVal = Number(relationTargetId(minCountRels[0]));
+
+    quads.push(quad(bnodeId, SH.minCount, literal(minVal, XSD.integer, curie), curie));
   }
 
   // sh:maxCount
-  const maxCountRels = entry.byPredicate.get('sh:maxCount') ?? [];
+  const maxCountRels = entry.byPredicate.get(SH.maxCount) ?? [];
 
   if (maxCountRels.length > 0) {
-    quads.push(quad(bnodeId, 'sh:maxCount', literal(Number(relationTargetId(maxCountRels[0])), 'xsd:integer', curie), curie));
+    const maxVal = Number(relationTargetId(maxCountRels[0]));
+
+    quads.push(quad(bnodeId, SH.maxCount, literal(maxVal, XSD.integer, curie), curie));
   }
 
   // sh:node or sh:class from rdfs:range
   if (rangeRels.length > 0) {
     if (datatypeRels.length > 0 || rangeRels.length > 1) {
-      quads.push(quad(bnodeId, 'sh:class', iri(relationTargetId(rangeRels[0]), curie), curie));
+      quads.push(quad(bnodeId, SH.class, iri(relationTargetId(rangeRels[0]), curie), curie));
     } else {
-      quads.push(quad(bnodeId, 'sh:node', iri(relationTargetId(rangeRels[0]), curie), curie));
+      quads.push(quad(bnodeId, SH.node, iri(relationTargetId(rangeRels[0]), curie), curie));
     }
   }
 
   // sh:hasValue from owl:hasValue
-  const hasValueRels = entry.byPredicate.get('owl:hasValue') ?? [];
+  const hasValueRels = entry.byPredicate.get(OWL.hasValue) ?? [];
 
   if (hasValueRels.length > 0) {
-    quads.push(quad(bnodeId, 'sh:hasValue', literal(relationTargetId(hasValueRels[0]), 'xsd:string', curie), curie));
+    quads.push(quad(bnodeId, SH.hasValue, literal(relationTargetId(hasValueRels[0]), XSD.string, curie), curie));
   }
 
   // sh:pattern from sh:pattern (overrides format pattern)
-  const patternRels = entry.byPredicate.get('sh:pattern') ?? [];
+  const patternRels = entry.byPredicate.get(SH.pattern) ?? [];
 
   for (const rel of patternRels) {
     if (rel.metadata?.patternProperty === true) {
       continue;
     }
 
-    quads.push(quad(bnodeId, 'sh:pattern', literal(relationTargetId(rel), 'xsd:string', curie), curie));
+    quads.push(quad(bnodeId, SH.pattern, literal(relationTargetId(rel), XSD.string, curie), curie));
   }
 
   // Numeric/string constraints
-  emitConstraintLiteral(bnodeId, entry, 'sh:minLength', 'xsd:integer', quads, curie);
-  emitConstraintLiteral(bnodeId, entry, 'sh:maxLength', 'xsd:integer', quads, curie);
-  emitConstraintLiteral(bnodeId, entry, 'sh:minInclusive', 'xsd:decimal', quads, curie);
-  emitConstraintLiteral(bnodeId, entry, 'sh:maxInclusive', 'xsd:decimal', quads, curie);
-  emitConstraintLiteral(bnodeId, entry, 'sh:minExclusive', 'xsd:decimal', quads, curie);
-  emitConstraintLiteral(bnodeId, entry, 'sh:maxExclusive', 'xsd:decimal', quads, curie);
-  emitConstraintLiteral(bnodeId, entry, 'jt:multipleOf', 'xsd:decimal', quads, curie);
+  emitConstraintLiteral(bnodeId, entry, SH.minLength, XSD.integer, quads, curie);
+  emitConstraintLiteral(bnodeId, entry, SH.maxLength, XSD.integer, quads, curie);
+  emitConstraintLiteral(bnodeId, entry, SH.minInclusive, XSD.decimal, quads, curie);
+  emitConstraintLiteral(bnodeId, entry, SH.maxInclusive, XSD.decimal, quads, curie);
+  emitConstraintLiteral(bnodeId, entry, SH.minExclusive, XSD.decimal, quads, curie);
+  emitConstraintLiteral(bnodeId, entry, SH.maxExclusive, XSD.decimal, quads, curie);
+  emitConstraintLiteral(bnodeId, entry, JT.multipleOf, XSD.decimal, quads, curie);
 
   // sh:description from rdfs:comment
-  const commentRels = entry.byPredicate.get('rdfs:comment') ?? [];
+  const commentRels = entry.byPredicate.get(RDFS.comment) ?? [];
 
   for (const rel of commentRels) {
-    quads.push(quad(bnodeId, 'sh:description', literal(relationTargetId(rel), 'xsd:string', curie), curie));
+    quads.push(quad(bnodeId, SH.description, literal(relationTargetId(rel), XSD.string, curie), curie));
   }
 
   // dash:readOnly / dash:writeOnly
-  if (entry.byPredicate.has('dash:readOnly')) {
-    quads.push(quad(bnodeId, 'dash:readOnly', literal(true, 'xsd:boolean', curie), curie));
+  if (entry.byPredicate.has(DASH.readOnly)) {
+    quads.push(quad(bnodeId, DASH.readOnly, literal(true, XSD.boolean, curie), curie));
   }
 
-  if (entry.byPredicate.has('dash:writeOnly')) {
-    quads.push(quad(bnodeId, 'dash:writeOnly', literal(true, 'xsd:boolean', curie), curie));
+  if (entry.byPredicate.has(DASH.writeOnly)) {
+    quads.push(quad(bnodeId, DASH.writeOnly, literal(true, XSD.boolean, curie), curie));
   }
 
   // dct:format
-  const formatRels = entry.byPredicate.get('dct:format') ?? [];
+  const formatRels = entry.byPredicate.get(DCT.format) ?? [];
 
   for (const rel of formatRels) {
-    quads.push(quad(bnodeId, 'dct:format', literal(relationTargetId(rel), 'xsd:string', curie), curie));
+    quads.push(quad(bnodeId, DCT.format, literal(relationTargetId(rel), XSD.string, curie), curie));
   }
 }
 
@@ -414,7 +422,7 @@ function emitContainsPropertyShape(
 ): void {
   const containsRels = entry.all.filter((rel) => {
     return isRestrictionStructure(rel.structure)
-    && rel.structure.constraint === 'owl:someValuesFrom';
+    && rel.structure.constraint === OWL.someValuesFrom;
   });
 
   if (containsRels.length === 0) {
@@ -432,30 +440,34 @@ function emitContainsPropertyShape(
   const psBnode = nextBnode();
 
   // sh:qualifiedValueShape
-  if (containsTypeId.startsWith('xsd:')) {
+  if (containsTypeId.startsWith(XSD_PREFIX)) {
     const qvsBnode = nextBnode();
 
-    quads.push(quad(qvsBnode, 'sh:datatype', iri(containsTypeId, curie), curie));
-    quads.push(quad(psBnode, 'sh:qualifiedValueShape', bnode(qvsBnode), curie));
+    quads.push(quad(qvsBnode, SH.datatype, iri(containsTypeId, curie), curie));
+    quads.push(quad(psBnode, SH.qualifiedValueShape, bnode(qvsBnode), curie));
   } else {
-    quads.push(quad(psBnode, 'sh:qualifiedValueShape', iri(containsTypeId, curie), curie));
+    quads.push(quad(psBnode, SH.qualifiedValueShape, iri(containsTypeId, curie), curie));
   }
 
   // sh:qualifiedMinCount
-  const minQualRels = entry.byPredicate.get('owl:minQualifiedCardinality') ?? [];
+  const minQualRels = entry.byPredicate.get(OWL.minQualifiedCardinality) ?? [];
 
   if (minQualRels.length > 0) {
-    quads.push(quad(psBnode, 'sh:qualifiedMinCount', literal(Number(relationTargetId(minQualRels[0])), 'xsd:integer', curie), curie));
+    const minQualVal = Number(relationTargetId(minQualRels[0]));
+
+    quads.push(quad(psBnode, SH.qualifiedMinCount, literal(minQualVal, XSD.integer, curie), curie));
   }
 
   // sh:qualifiedMaxCount
-  const maxQualRels = entry.byPredicate.get('owl:maxQualifiedCardinality') ?? [];
+  const maxQualRels = entry.byPredicate.get(OWL.maxQualifiedCardinality) ?? [];
 
   if (maxQualRels.length > 0) {
-    quads.push(quad(psBnode, 'sh:qualifiedMaxCount', literal(Number(relationTargetId(maxQualRels[0])), 'xsd:integer', curie), curie));
+    const maxQualVal = Number(relationTargetId(maxQualRels[0]));
+
+    quads.push(quad(psBnode, SH.qualifiedMaxCount, literal(maxQualVal, XSD.integer, curie), curie));
   }
 
-  quads.push(quad(subject, 'sh:property', bnode(psBnode), curie));
+  quads.push(quad(subject, SH.property, bnode(psBnode), curie));
 }
 
 // ---------------------------------------------------------------------------
@@ -469,7 +481,7 @@ function emitDependentRequiredAndItems(
   quads: QuadInterface[],
   curie?: CurieInterface
 ): void {
-  const depReqRels = entry.byPredicate.get('jt:dependentRequired') ?? [];
+  const depReqRels = entry.byPredicate.get(JT.dependentRequired) ?? [];
 
   for (const rel of depReqRels) {
     const meta = rel.metadata ?? {};
@@ -481,23 +493,23 @@ function emitDependentRequiredAndItems(
     // sh:not branch: sh:not { sh:property [sh:path triggerProp, sh:minCount 1] }
     const withoutPsBnode = nextBnode();
 
-    quads.push(quad(withoutPsBnode, 'rdf:type', iri('sh:PropertyShape', curie), curie));
-    quads.push(quad(withoutPsBnode, 'sh:path', iri(triggerPropIri, curie), curie));
-    quads.push(quad(withoutPsBnode, 'sh:minCount', literal(1, 'xsd:integer', curie), curie));
+    quads.push(quad(withoutPsBnode, RDF.type, iri(SH.PropertyShape, curie), curie));
+    quads.push(quad(withoutPsBnode, SH.path, iri(triggerPropIri, curie), curie));
+    quads.push(quad(withoutPsBnode, SH.minCount, literal(1, XSD.integer, curie), curie));
 
     const complementBnode = nextBnode();
 
     // placeholder — sh:not needs a node with sh:property
-    quads.push(quad(complementBnode, 'sh:not', bnode(nextBnode()), curie));
+    quads.push(quad(complementBnode, SH.not, bnode(nextBnode()), curie));
 
     // Build: { sh:not: { sh:property: [{ sh:path, sh:minCount }] } }
     const withoutContainerBnode = nextBnode();
 
-    quads.push(quad(withoutContainerBnode, 'sh:property', bnode(withoutPsBnode), curie));
+    quads.push(quad(withoutContainerBnode, SH.property, bnode(withoutPsBnode), curie));
 
     const withoutWrapperBnode = nextBnode();
 
-    quads.push(quad(withoutWrapperBnode, 'sh:not', bnode(withoutContainerBnode), curie));
+    quads.push(quad(withoutWrapperBnode, SH.not, bnode(withoutContainerBnode), curie));
 
     // Required branch: { sh:property: [{ sh:path, sh:minCount }...] }
     const reqBnode = nextBnode();
@@ -505,16 +517,16 @@ function emitDependentRequiredAndItems(
     for (const reqProp of required) {
       const reqPsBnode = nextBnode();
 
-      quads.push(quad(reqPsBnode, 'rdf:type', iri('sh:PropertyShape', curie), curie));
-      quads.push(quad(reqPsBnode, 'sh:path', iri(propertyIri(subject, reqProp), curie), curie));
-      quads.push(quad(reqPsBnode, 'sh:minCount', literal(1, 'xsd:integer', curie), curie));
-      quads.push(quad(reqBnode, 'sh:property', bnode(reqPsBnode), curie));
+      quads.push(quad(reqPsBnode, RDF.type, iri(SH.PropertyShape, curie), curie));
+      quads.push(quad(reqPsBnode, SH.path, iri(propertyIri(subject, reqProp), curie), curie));
+      quads.push(quad(reqPsBnode, SH.minCount, literal(1, XSD.integer, curie), curie));
+      quads.push(quad(reqBnode, SH.property, bnode(reqPsBnode), curie));
     }
 
     // sh:or: [notWrapper, reqBnode]
     const orBnode = nextBnode();
 
-    quads.push(quad(orBnode, 'sh:or', rdfList([
+    quads.push(quad(orBnode, SH.or, rdfList([
       bnode(withoutWrapperBnode),
       bnode(reqBnode)
     ], curie), curie));
@@ -551,28 +563,28 @@ function emitDependentSchemaAndItems(
     // sh:not branch
     const withoutPsBnode = nextBnode();
 
-    quads.push(quad(withoutPsBnode, 'rdf:type', iri('sh:PropertyShape', curie), curie));
-    quads.push(quad(withoutPsBnode, 'sh:path', iri(ifRef, curie), curie));
-    quads.push(quad(withoutPsBnode, 'sh:minCount', literal(1, 'xsd:integer', curie), curie));
+    quads.push(quad(withoutPsBnode, RDF.type, iri(SH.PropertyShape, curie), curie));
+    quads.push(quad(withoutPsBnode, SH.path, iri(ifRef, curie), curie));
+    quads.push(quad(withoutPsBnode, SH.minCount, literal(1, XSD.integer, curie), curie));
 
     const withoutContainerBnode = nextBnode();
 
-    quads.push(quad(withoutContainerBnode, 'sh:property', bnode(withoutPsBnode), curie));
+    quads.push(quad(withoutContainerBnode, SH.property, bnode(withoutPsBnode), curie));
 
     const withoutWrapperBnode = nextBnode();
 
-    quads.push(quad(withoutWrapperBnode, 'sh:not', bnode(withoutContainerBnode), curie));
+    quads.push(quad(withoutWrapperBnode, SH.not, bnode(withoutContainerBnode), curie));
 
     // Dependent NodeShape
     const depShapeBnode = nextBnode();
 
-    quads.push(quad(depShapeBnode, 'rdf:type', iri('sh:NodeShape', curie), curie));
+    quads.push(quad(depShapeBnode, RDF.type, iri(SH.NodeShape, curie), curie));
 
     // sh:closed on dependent schema
     const depEntry = index.get(thenRef);
 
-    if (depEntry?.byPredicate.has('sh:closed') === true) {
-      quads.push(quad(depShapeBnode, 'sh:closed', literal(true, 'xsd:boolean', curie), curie));
+    if (depEntry?.byPredicate.has(SH.closed) === true) {
+      quads.push(quad(depShapeBnode, SH.closed, literal(true, XSD.boolean, curie), curie));
     }
 
     // Properties belonging to dependent schema (by rdfs:domain match)
@@ -584,7 +596,7 @@ function emitDependentSchemaAndItems(
         continue;
       }
 
-      const domainRels = propEntry.byPredicate.get('rdfs:domain') ?? [];
+      const domainRels = propEntry.byPredicate.get(RDFS.domain) ?? [];
 
       if (domainRels.length === 0 || relationTargetId(domainRels[0]) !== thenRef) {
         continue;
@@ -593,13 +605,13 @@ function emitDependentSchemaAndItems(
       const psBnode = nextBnode();
 
       emitPropertyShape(psBnode, propSubject, propEntry, subject, subject, quads, curie);
-      quads.push(quad(depShapeBnode, 'sh:property', bnode(psBnode), curie));
+      quads.push(quad(depShapeBnode, SH.property, bnode(psBnode), curie));
     }
 
     // sh:or: [notWrapper, depShape]
     const orBnode = nextBnode();
 
-    quads.push(quad(orBnode, 'sh:or', rdfList([
+    quads.push(quad(orBnode, SH.or, rdfList([
       bnode(withoutWrapperBnode),
       bnode(depShapeBnode)
     ], curie), curie));
@@ -636,11 +648,11 @@ function emitConditionalAndItems(
     if (thenRef !== undefined) {
       const complementBnode = nextBnode();
 
-      quads.push(quad(complementBnode, 'sh:not', iri(ifRef, curie), curie));
+      quads.push(quad(complementBnode, SH.not, iri(ifRef, curie), curie));
 
       const orBnode = nextBnode();
 
-      quads.push(quad(orBnode, 'sh:or', rdfList([
+      quads.push(quad(orBnode, SH.or, rdfList([
         bnode(complementBnode),
         iri(thenRef, curie)
       ], curie), curie));
@@ -651,7 +663,7 @@ function emitConditionalAndItems(
     if (elseRef !== undefined) {
       const orBnode = nextBnode();
 
-      quads.push(quad(orBnode, 'sh:or', rdfList([
+      quads.push(quad(orBnode, SH.or, rdfList([
         iri(ifRef, curie),
         iri(elseRef, curie)
       ], curie), curie));

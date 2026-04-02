@@ -17,9 +17,14 @@ import type {
   SchemaGraphRelationInterface
 } from '../../interfaces/SchemaGraph.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
-import { resolveSingleXsdType } from '../data/dataTypes.js';
+import {
+  escapeSegment, isRecord, resolveSingleXsdType
+} from '../data/DataTypes.js';
 import { Hash } from '../hash/Hash.js';
-import { isRecord } from '../data/dataTypes.js';
+import {
+  DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
+} from '../../constants/IRI.js';
+import { JSONLD } from '../../constants/JSONLD.js';
 
 // ---------------------------------------------------------------------------
 // Blank node counter
@@ -157,7 +162,7 @@ function handleStringLiteral(
   quads: QuadInterface[],
   curie?: CurieInterface
 ): void {
-  quads.push(quad(subject, predicate, literal(targetId, 'xsd:string', curie), curie));
+  quads.push(quad(subject, predicate, literal(targetId, XSD.string, curie), curie));
 }
 
 function handleBooleanCoerce(
@@ -168,7 +173,7 @@ function handleBooleanCoerce(
   quads: QuadInterface[],
   curie?: CurieInterface
 ): void {
-  quads.push(quad(subject, predicate, literal(targetId === 'true', 'xsd:boolean', curie), curie));
+  quads.push(quad(subject, predicate, literal(targetId === 'true', XSD.boolean, curie), curie));
 }
 
 function handleBooleanLiteral(
@@ -179,7 +184,7 @@ function handleBooleanLiteral(
   quads: QuadInterface[],
   curie?: CurieInterface
 ): void {
-  quads.push(quad(subject, predicate, literal(targetId, 'xsd:boolean', curie), curie));
+  quads.push(quad(subject, predicate, literal(targetId, XSD.boolean, curie), curie));
 }
 
 function handleIntegerLiteral(
@@ -190,7 +195,7 @@ function handleIntegerLiteral(
   quads: QuadInterface[],
   curie?: CurieInterface
 ): void {
-  quads.push(quad(subject, predicate, literal(Number(targetId), 'xsd:integer', curie), curie));
+  quads.push(quad(subject, predicate, literal(Number(targetId), XSD.integer, curie), curie));
 }
 
 function handleDecimalLiteral(
@@ -201,7 +206,7 @@ function handleDecimalLiteral(
   quads: QuadInterface[],
   curie?: CurieInterface
 ): void {
-  quads.push(quad(subject, predicate, literal(Number(targetId), 'xsd:decimal', curie), curie));
+  quads.push(quad(subject, predicate, literal(Number(targetId), XSD.decimal, curie), curie));
 }
 
 function handleNonNegativeInteger(
@@ -212,7 +217,7 @@ function handleNonNegativeInteger(
   quads: QuadInterface[],
   curie?: CurieInterface
 ): void {
-  quads.push(quad(subject, predicate, literal(Number(targetId), 'xsd:nonNegativeInteger', curie), curie));
+  quads.push(quad(subject, predicate, literal(Number(targetId), XSD.nonNegativeInteger, curie), curie));
 }
 
 function handleDependentRequired(
@@ -227,12 +232,12 @@ function handleDependentRequired(
   const trigger = typeof metadata.trigger === 'string' ? metadata.trigger : '';
   const required = Array.isArray(metadata.required) ? metadata.required as string[] : [];
 
-  quads.push(quad(subject, 'jt:dependentRequired', literal(
+  quads.push(quad(subject, JT.dependentRequired, literal(
     JSON.stringify({
       required,
       trigger
     }),
-    'xsd:string',
+    XSD.string,
     curie
   ), curie));
 }
@@ -250,10 +255,10 @@ function handleRestriction(
   const onProperty = typeof metadata.onProperty === 'string' ? metadata.onProperty : '';
   const minCard = typeof metadata.minCardinality === 'number' ? metadata.minCardinality : 1;
 
-  quads.push(quad(subject, 'rdfs:subClassOf', bnode(rBnode), curie));
-  quads.push(quad(rBnode, 'rdf:type', iri('owl:Restriction', curie), curie));
-  quads.push(quad(rBnode, 'owl:onProperty', iri(onProperty, curie), curie));
-  quads.push(quad(rBnode, 'owl:minCardinality', literal(minCard, 'xsd:nonNegativeInteger', curie), curie));
+  quads.push(quad(subject, RDFS.subClassOf, bnode(rBnode), curie));
+  quads.push(quad(rBnode, RDF.type, iri(OWL.Restriction, curie), curie));
+  quads.push(quad(rBnode, OWL.onProperty, iri(onProperty, curie), curie));
+  quads.push(quad(rBnode, OWL.minCardinality, literal(minCard, XSD.nonNegativeInteger, curie), curie));
 }
 
 function handlePattern(
@@ -265,9 +270,9 @@ function handlePattern(
   curie?: CurieInterface
 ): void {
   if (relation.metadata?.patternProperty === true && typeof relation.metadata.pattern === 'string') {
-    quads.push(quad(subject, 'sh:pattern', literal(relation.metadata.pattern, 'xsd:string', curie), curie));
+    quads.push(quad(subject, SH.pattern, literal(relation.metadata.pattern, XSD.string, curie), curie));
   } else {
-    quads.push(quad(subject, predicate, literal(targetId, 'xsd:string', curie), curie));
+    quads.push(quad(subject, predicate, literal(targetId, XSD.string, curie), curie));
   }
 }
 
@@ -284,151 +289,151 @@ const PREDICATE_HANDLERS = new Map<string, (
   curie?: CurieInterface
 ) => void>([
   [
-    'dash:readOnly',
+    DASH.readOnly,
     handleBooleanCoerce
   ],
   [
-    'dash:writeOnly',
+    DASH.writeOnly,
     handleBooleanCoerce
   ],
   [
-    'dct:format',
+    DCT.format,
     handleStringLiteral
   ],
   [
-    'jt:dependentRequired',
+    JT.dependentRequired,
     handleDependentRequired
   ],
   [
-    'jt:multipleOf',
+    JT.multipleOf,
     handleDecimalLiteral
   ],
   [
-    'owl:complementOf',
+    OWL.complementOf,
     handleIri
   ],
   [
-    'owl:deprecated',
+    OWL.deprecated,
     handleBooleanLiteral
   ],
   [
-    'owl:disjointWith',
+    OWL.disjointWith,
     handleIri
   ],
   [
-    'owl:equivalentClass',
+    OWL.equivalentClass,
     handleIri
   ],
   [
-    'owl:hasValue',
+    OWL.hasValue,
     handleStringLiteral
   ],
   [
-    'owl:inverseOf',
+    OWL.inverseOf,
     handleIri
   ],
   [
-    'owl:maxQualifiedCardinality',
+    OWL.maxQualifiedCardinality,
     handleNonNegativeInteger
   ],
   [
-    'owl:minQualifiedCardinality',
+    OWL.minQualifiedCardinality,
     handleNonNegativeInteger
   ],
   [
-    'owl:oneOf',
+    OWL.oneOf,
     handleStringLiteral
   ],
   [
-    'owl:Restriction',
+    OWL.Restriction,
     handleRestriction
   ],
   [
-    'owl:someValuesFrom',
+    OWL.someValuesFrom,
     handleIri
   ],
   [
-    'owl:SymmetricProperty',
+    OWL.SymmetricProperty,
     handleIri
   ],
   [
-    'owl:TransitiveProperty',
+    OWL.TransitiveProperty,
     handleIri
   ],
   [
-    'owl:unionOf',
+    OWL.unionOf,
     handleIri
   ],
   [
-    'rdf:type',
+    RDF.type,
     handleIri
   ],
   [
-    'rdfs:comment',
+    RDFS.comment,
     handleStringLiteral
   ],
   [
-    'rdfs:domain',
+    RDFS.domain,
     handleIri
   ],
   [
-    'rdfs:label',
+    RDFS.label,
     handleStringLiteral
   ],
   [
-    'rdfs:member',
+    RDFS.member,
     handleIri
   ],
   [
-    'rdfs:range',
+    RDFS.range,
     handleIri
   ],
   [
-    'rdfs:subClassOf',
+    RDFS.subClassOf,
     handleIri
   ],
   [
-    'sh:closed',
+    SH.closed,
     handleBooleanLiteral
   ],
   [
-    'sh:datatype',
+    SH.datatype,
     handleIri
   ],
   [
-    'sh:maxCount',
+    SH.maxCount,
     handleIntegerLiteral
   ],
   [
-    'sh:maxExclusive',
+    SH.maxExclusive,
     handleDecimalLiteral
   ],
   [
-    'sh:maxInclusive',
+    SH.maxInclusive,
     handleDecimalLiteral
   ],
   [
-    'sh:maxLength',
+    SH.maxLength,
     handleIntegerLiteral
   ],
   [
-    'sh:minCount',
+    SH.minCount,
     handleIntegerLiteral
   ],
   [
-    'sh:minExclusive',
+    SH.minExclusive,
     handleDecimalLiteral
   ],
   [
-    'sh:minInclusive',
+    SH.minInclusive,
     handleDecimalLiteral
   ],
   [
-    'sh:minLength',
+    SH.minLength,
     handleIntegerLiteral
   ],
   [
-    'sh:pattern',
+    SH.pattern,
     handlePattern
   ]
 ]);
@@ -479,14 +484,14 @@ function projectStructuredRelation(
     case 'conditional': {
       const condBnode = nextBnode();
 
-      quads.push(quad(subject, 'owl:unionOf', bnode(condBnode), curie));
-      quads.push(quad(condBnode, 'rdf:type', iri('owl:Class', curie), curie));
-      quads.push(quad(condBnode, 'jt:if', iri(structure.ifRef, curie), curie));
+      quads.push(quad(subject, OWL.unionOf, bnode(condBnode), curie));
+      quads.push(quad(condBnode, RDF.type, iri(OWL.Class, curie), curie));
+      quads.push(quad(condBnode, JT.if, iri(structure.ifRef, curie), curie));
       if (structure.thenRef !== undefined) {
-        quads.push(quad(condBnode, 'jt:then', iri(structure.thenRef, curie), curie));
+        quads.push(quad(condBnode, JT.thenBranch, iri(structure.thenRef, curie), curie));
       }
       if (structure.elseRef !== undefined) {
-        quads.push(quad(condBnode, 'jt:else', iri(structure.elseRef, curie), curie));
+        quads.push(quad(condBnode, JT.else, iri(structure.elseRef, curie), curie));
       }
       break;
     }
@@ -502,8 +507,8 @@ function projectStructuredRelation(
       const restrictionBnode = nextBnode();
 
       quads.push(quad(subject, relation.predicate, bnode(restrictionBnode), curie));
-      quads.push(quad(restrictionBnode, 'rdf:type', iri('owl:Restriction', curie), curie));
-      quads.push(quad(restrictionBnode, 'owl:onProperty', iri(structure.onProperty, curie), curie));
+      quads.push(quad(restrictionBnode, RDF.type, iri(OWL.Restriction, curie), curie));
+      quads.push(quad(restrictionBnode, OWL.onProperty, iri(structure.onProperty, curie), curie));
       quads.push(quad(restrictionBnode, String(structure.constraint), iri(String(structure.value), curie), curie));
       break;
     }
@@ -542,10 +547,6 @@ export function projectAbox(
   return quads;
 }
 
-function escapeSegment(value: string): string {
-  return encodeURIComponent(value).replaceAll('%2F', '/');
-}
-
 function instanceIRI(baseIRI: string, classId: string, data: unknown): string {
   const contentHash = Hash.value(data);
 
@@ -582,7 +583,7 @@ function projectInstance(
   const instIRI = instanceIRI(baseIRI, node.id, data);
   const nodeSemantics = graph.semantics(node);
 
-  quads.push(quad(instIRI, 'rdf:type', iri(node.id, curie), curie));
+  quads.push(quad(instIRI, RDF.type, iri(node.id, curie), curie));
 
   for (const [
     propertyName,
@@ -664,7 +665,7 @@ function projectSingleValue(
   }
 
   if (typeof value === 'string') {
-    const xsdDatatype = resolveSingleXsdType('string', propertySemantics.format ?? undefined) ?? 'xsd:string';
+    const xsdDatatype = resolveSingleXsdType('string', propertySemantics.format ?? undefined) ?? XSD.string;
 
     quads.push(quad(instanceIri, propertyIRI, literal(value, xsdDatatype, curie), curie));
 
@@ -672,7 +673,7 @@ function projectSingleValue(
   }
 
   if (typeof value === 'number') {
-    const datatype = Number.isInteger(value) ? 'xsd:integer' : 'xsd:double';
+    const datatype = Number.isInteger(value) ? XSD.integer : XSD.double;
 
     quads.push(quad(instanceIri, propertyIRI, literal(value, datatype, curie), curie));
 
@@ -680,7 +681,7 @@ function projectSingleValue(
   }
 
   if (typeof value === 'boolean') {
-    quads.push(quad(instanceIri, propertyIRI, literal(value, 'xsd:boolean', curie), curie));
+    quads.push(quad(instanceIri, propertyIRI, literal(value, XSD.boolean, curie), curie));
 
     return;
   }
@@ -720,14 +721,14 @@ export function quadsToJsonLdNodes(quads: QuadInterface[]): Array<Record<string,
     let node = subjects.get(entry.subject);
 
     if (!node) {
-      node = { '@id': entry.subject };
+      node = { [JSONLD.id]: entry.subject };
       subjects.set(entry.subject, node);
     }
 
     const value = quadObjectToJsonLd(entry.object);
 
-    if (entry.predicate === 'rdf:type') {
-      node['@type'] = value;
+    if (entry.predicate === RDF.type) {
+      node[JSONLD.type] = value;
     } else if (node[entry.predicate] === undefined) {
       node[entry.predicate] = value;
     } else {
@@ -748,17 +749,17 @@ export function quadsToJsonLdNodes(quads: QuadInterface[]): Array<Record<string,
 function quadObjectToJsonLd(quadObject: QuadObjectType): unknown {
   switch (quadObject.termType) {
     case 'BlankNode':
-      return { '@id': quadObject.value };
+      return { [JSONLD.id]: quadObject.value };
     case 'List':
       return {
-        '@list': quadObject.items.map((item) => {
+        [JSONLD.list]: quadObject.items.map((item) => {
           return quadObjectToJsonLd(item);
         })
       };
     case 'Literal':
       return quadObject.value;
     case 'NamedNode':
-      return { '@id': quadObject.value };
+      return { [JSONLD.id]: quadObject.value };
   }
 
   return undefined;

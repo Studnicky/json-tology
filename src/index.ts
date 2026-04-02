@@ -42,18 +42,18 @@ export type * from './interfaces/Quad.js';
 
 // Runtime classes
 export * from './JsonTology.js';
-export * from './modules/composition/compose.js';
-export * from './modules/data/changeset.js';
-export * from './modules/data/value.js';
-export * from './modules/graph/graphEngine.js';
+export * from './modules/composition/Compose.js';
+export * from './modules/data/Changeset.js';
+export * from './modules/data/Value.js';
+export * from './modules/graph/GraphEngine.js';
 export * from './modules/hash/Hash.js';
-export * from './modules/materialization/materializer.js';
+export * from './modules/materialization/Materializer.js';
 export * from './modules/ontology/GraphOntologySerializer.js';
-export * from './modules/ontology/ontologyBuilder.js';
-export * from './modules/rdf/curie.js';
+export * from './modules/ontology/OntologyBuilder.js';
+export * from './modules/rdf/Curie.js';
 export * from './modules/rdf/Lift.js';
 export * from './modules/rdf/Projection.js';
-export * from './modules/transform/transform.js';
+export * from './modules/transform/Transform.js';
 
 // Types
 export type * from './types/Brand.js';

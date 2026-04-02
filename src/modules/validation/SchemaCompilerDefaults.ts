@@ -2,8 +2,8 @@ import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { DefaultResolutionContextInterface } from '../../interfaces/DefaultResolutionContext.js';
 import type { RefTargetInterface } from '../../interfaces/RefTarget.js';
-import { createImplicitDefaultValue } from '../graph/graphEngineDefaults.js';
-import { RefResolver } from './refResolver.js';
+import { createImplicitDefaultValue } from '../graph/GraphEngineDefaults.js';
+import { RefResolver } from './RefResolver.js';
 
 import type { LookupSchemaFnType } from '../../types/LookupSchema.js';
 

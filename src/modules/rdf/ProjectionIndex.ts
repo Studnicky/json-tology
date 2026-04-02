@@ -10,6 +10,8 @@ import type { SchemaGraphRelationInterface } from '../../interfaces/SchemaGraph.
 import type { RelationStructure } from '../../types/SchemaGraph.js';
 import type { RelationIndexInterface } from '../../interfaces/RelationIndex.js';
 
+import { RDF } from '../../constants/IRI.js';
+
 // ---------------------------------------------------------------------------
 // Relation index
 // ---------------------------------------------------------------------------
@@ -40,7 +42,7 @@ export function buildIndex(allRelations: SchemaGraphRelationInterface[]): Map<st
       predicateGroup.push(relation);
     }
 
-    if (relation.predicate === 'rdf:type') {
+    if (relation.predicate === RDF.type) {
       entry.types.push(relationTargetId(relation));
     }
   }

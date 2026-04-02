@@ -4,13 +4,16 @@ import type {
 } from '../../interfaces/SchemaGraph.js';
 import {
   propertyIri, resolveSingleXsdType, resolveXsdType
-} from '../data/dataTypes.js';
+} from '../data/DataTypes.js';
 import type { GraphAccessor } from '../../interfaces/GraphAccessor.js';
 import {
   isDefsEntryPointer, isPropertyPointer,
   parentPropertiesPointer, propertyNameFromPointer
-} from './schemaGraphSupport.js';
+} from './SchemaGraphSupport.js';
 import { FORMAT_PATTERNS } from '../../constants/FORMAT_PATTERNS.js';
+import {
+  DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
+} from '../../constants/IRI.js';
 
 function resolveNodeRef(
   graph: GraphAccessor,
@@ -59,7 +62,7 @@ function pushConditionalRelations(
 
   relations.push({
     'metadata': { 'conditional': true },
-    'predicate': 'owl:unionOf',
+    'predicate': OWL.unionOf,
     'source': node,
     'structure': conditionalStructure,
     'target': node.id
@@ -79,12 +82,12 @@ function pushContainsRelations(
   const containsRef = resolveNodeRef(graph, sem.containsNode);
 
   relations.push({
-    'predicate': 'owl:someValuesFrom',
+    'predicate': OWL.someValuesFrom,
     'source': node,
     'structure': {
-      'constraint': 'owl:someValuesFrom',
+      'constraint': OWL.someValuesFrom,
       'kind': 'restriction',
-      'onProperty': 'rdfs:member',
+      'onProperty': RDFS.member,
       'value': containsRef
     },
     'target': containsRef
@@ -93,7 +96,7 @@ function pushContainsRelations(
   if (sem.minContains !== undefined) {
     relations.push({
       'metadata': { 'onClass': containsRef },
-      'predicate': 'owl:minQualifiedCardinality',
+      'predicate': OWL.minQualifiedCardinality,
       'source': node,
       'target': String(sem.minContains)
     });
@@ -101,7 +104,7 @@ function pushContainsRelations(
   if (sem.maxContains !== undefined) {
     relations.push({
       'metadata': { 'onClass': containsRef },
-      'predicate': 'owl:maxQualifiedCardinality',
+      'predicate': OWL.maxQualifiedCardinality,
       'source': node,
       'target': String(sem.maxContains)
     });
@@ -128,7 +131,7 @@ function pushDependentRequiredRelations(
         required,
         trigger
       },
-      'predicate': 'jt:dependentRequired',
+      'predicate': JT.dependentRequired,
       'source': node,
       'target': node.id
     });
@@ -152,7 +155,7 @@ function pushDependentSchemaRelations(
         'dependentSchema': true,
         'propertyName': propName
       },
-      'predicate': 'owl:unionOf',
+      'predicate': OWL.unionOf,
       'source': node,
       'structure': {
         'ifRef': propertyIri(node.id, propName),
@@ -175,7 +178,7 @@ function pushFormatPatternRelations(
 
   const xsd = resolveXsdType(sem);
 
-  if (xsd !== null && xsd !== 'xsd:string') {
+  if (xsd !== null && xsd !== XSD.string) {
     return;
   }
 
@@ -184,7 +187,7 @@ function pushFormatPatternRelations(
   if (pattern !== undefined) {
     relations.push({
       'metadata': { 'fromFormat': true },
-      'predicate': 'sh:pattern',
+      'predicate': SH.pattern,
       'source': node,
       'target': pattern
     });
@@ -208,7 +211,7 @@ function pushPatternPropertyRelations(
         pattern,
         'patternProperty': true
       },
-      'predicate': 'sh:pattern',
+      'predicate': SH.pattern,
       'source': node,
       'target': schemaRef
     });
@@ -232,7 +235,7 @@ function pushPrefixItemRelations(
         'memberProperty': `rdf:_${index + 1}`,
         'position': index
       },
-      'predicate': 'rdfs:member',
+      'predicate': RDFS.member,
       'source': node,
       'target': itemRef
     });
@@ -252,7 +255,7 @@ function pushPropertyCardinalityRelations(
 
   if (!sem.schemaTypes.includes('array')) {
     relations.push({
-      'predicate': 'sh:maxCount',
+      'predicate': SH.maxCount,
       'source': node,
       'target': '1'
     });
@@ -269,7 +272,7 @@ function pushPropertyCardinalityRelations(
 
       if (propName !== undefined && parentSem.required.includes(propName)) {
         relations.push({
-          'predicate': 'sh:minCount',
+          'predicate': SH.minCount,
           'source': node,
           'target': '1'
         });
@@ -297,9 +300,9 @@ function pushPropertyTypeRelations(
     || primaryType === null;
 
   relations.push({
-    'predicate': 'rdf:type',
+    'predicate': RDF.type,
     'source': node,
-    'target': isObjectProperty ? 'owl:ObjectProperty' : 'owl:DatatypeProperty'
+    'target': isObjectProperty ? OWL.ObjectProperty : OWL.DatatypeProperty
   });
 }
 
@@ -332,7 +335,7 @@ function pushUnionTypeRelations(
 
   if (resolved.length > 1) {
     relations.push({
-      'predicate': 'owl:unionOf',
+      'predicate': OWL.unionOf,
       'source': node,
       'structure': {
         'kind': 'list',
@@ -353,17 +356,17 @@ export function extractRelations(
 
   if (sem.schemaId !== undefined) {
     relations.push({
-      'predicate': 'rdf:type',
+      'predicate': RDF.type,
       'source': node,
-      'target': 'owl:Class'
+      'target': OWL.Class
     });
   }
 
   if (sem.schemaId === undefined && isDefsEntryPointer(node.pointer) && sem.schemaTypes.includes('object')) {
     relations.push({
-      'predicate': 'rdf:type',
+      'predicate': RDF.type,
       'source': node,
-      'target': 'owl:Class'
+      'target': OWL.Class
     });
   }
 
@@ -375,7 +378,7 @@ export function extractRelations(
 
       if (parentNode !== undefined) {
         relations.push({
-          'predicate': 'rdfs:domain',
+          'predicate': RDFS.domain,
           'source': node,
           'target': parentNode
         });
@@ -385,49 +388,49 @@ export function extractRelations(
 
   if (sem.rdfsDomain !== undefined) {
     relations.push({
-      'predicate': 'rdfs:domain',
+      'predicate': RDFS.domain,
       'source': node,
       'target': sem.rdfsDomain
     });
   }
   if (sem.rdfsRange !== undefined) {
     relations.push({
-      'predicate': 'rdfs:range',
+      'predicate': RDFS.range,
       'source': node,
       'target': sem.rdfsRange
     });
   }
   if (sem.disjointWith !== undefined) {
     relations.push({
-      'predicate': 'owl:disjointWith',
+      'predicate': OWL.disjointWith,
       'source': node,
       'target': sem.disjointWith
     });
   }
   if (sem.equivalentTo !== undefined) {
     relations.push({
-      'predicate': 'owl:equivalentClass',
+      'predicate': OWL.equivalentClass,
       'source': node,
       'target': sem.equivalentTo
     });
   }
   if (sem.inverseOf !== undefined) {
     relations.push({
-      'predicate': 'owl:inverseOf',
+      'predicate': OWL.inverseOf,
       'source': node,
       'target': sem.inverseOf
     });
   }
   if (sem.transitive) {
     relations.push({
-      'predicate': 'owl:TransitiveProperty',
+      'predicate': OWL.TransitiveProperty,
       'source': node,
       'target': node.id
     });
   }
   if (sem.symmetric) {
     relations.push({
-      'predicate': 'owl:SymmetricProperty',
+      'predicate': OWL.SymmetricProperty,
       'source': node,
       'target': node.id
     });
@@ -435,21 +438,21 @@ export function extractRelations(
 
   if (sem.title !== undefined) {
     relations.push({
-      'predicate': 'rdfs:label',
+      'predicate': RDFS.label,
       'source': node,
       'target': sem.title
     });
   }
   if (sem.description !== undefined) {
     relations.push({
-      'predicate': 'rdfs:comment',
+      'predicate': RDFS.comment,
       'source': node,
       'target': sem.description
     });
   }
   if (sem.deprecated) {
     relations.push({
-      'predicate': 'owl:deprecated',
+      'predicate': OWL.deprecated,
       'source': node,
       'target': 'true'
     });
@@ -457,14 +460,14 @@ export function extractRelations(
 
   if (sem.readOnly) {
     relations.push({
-      'predicate': 'dash:readOnly',
+      'predicate': DASH.readOnly,
       'source': node,
       'target': 'true'
     });
   }
   if (sem.writeOnly) {
     relations.push({
-      'predicate': 'dash:writeOnly',
+      'predicate': DASH.writeOnly,
       'source': node,
       'target': 'true'
     });
@@ -472,7 +475,7 @@ export function extractRelations(
 
   if (sem.contentMediaType !== undefined) {
     relations.push({
-      'predicate': 'dct:format',
+      'predicate': DCT.format,
       'source': node,
       'target': sem.contentMediaType
     });
@@ -483,13 +486,13 @@ export function extractRelations(
 
     if (parentSem.ref === undefined) {
       relations.push({
-        'predicate': 'rdfs:subClassOf',
+        'predicate': RDFS.subClassOf,
         'source': node,
         'target': parent
       });
     } else {
       relations.push({
-        'predicate': 'rdfs:subClassOf',
+        'predicate': RDFS.subClassOf,
         'source': node,
         'target': graph.resolveRefId(parentSem.ref)
       });
@@ -501,7 +504,7 @@ export function extractRelations(
     ...sem.oneOf
   ]) {
     relations.push({
-      'predicate': 'owl:equivalentClass',
+      'predicate': OWL.equivalentClass,
       'source': node,
       'target': branch
     });
@@ -509,7 +512,7 @@ export function extractRelations(
 
   if (sem.complementNode !== undefined) {
     relations.push({
-      'predicate': 'owl:complementOf',
+      'predicate': OWL.complementOf,
       'source': node,
       'target': sem.complementNode
     });
@@ -524,7 +527,7 @@ export function extractRelations(
         'minCardinality': 1,
         'onProperty': propIRI
       },
-      'predicate': 'owl:Restriction',
+      'predicate': OWL.Restriction,
       'source': node,
       'target': propNode ?? propIRI
     });
@@ -533,7 +536,7 @@ export function extractRelations(
   if (sem.enumValues !== undefined) {
     for (const value of sem.enumValues) {
       relations.push({
-        'predicate': 'owl:oneOf',
+        'predicate': OWL.oneOf,
         'source': node,
         'target': typeof value === 'string' ? value : JSON.stringify(value)
       });
@@ -542,7 +545,7 @@ export function extractRelations(
 
   if (sem.hasConst) {
     relations.push({
-      'predicate': 'owl:hasValue',
+      'predicate': OWL.hasValue,
       'source': node,
       'target': typeof sem.constValue === 'string' ? sem.constValue : JSON.stringify(sem.constValue)
     });
@@ -550,7 +553,7 @@ export function extractRelations(
 
   if (sem.additionalPropertiesNode === false) {
     relations.push({
-      'predicate': 'sh:closed',
+      'predicate': SH.closed,
       'source': node,
       'target': 'true'
     });
@@ -558,70 +561,70 @@ export function extractRelations(
 
   if (sem.pattern !== undefined) {
     relations.push({
-      'predicate': 'sh:pattern',
+      'predicate': SH.pattern,
       'source': node,
       'target': sem.pattern
     });
   }
   if (sem.minLength !== undefined) {
     relations.push({
-      'predicate': 'sh:minLength',
+      'predicate': SH.minLength,
       'source': node,
       'target': String(sem.minLength)
     });
   }
   if (sem.maxLength !== undefined) {
     relations.push({
-      'predicate': 'sh:maxLength',
+      'predicate': SH.maxLength,
       'source': node,
       'target': String(sem.maxLength)
     });
   }
   if (sem.minimum !== undefined) {
     relations.push({
-      'predicate': 'sh:minInclusive',
+      'predicate': SH.minInclusive,
       'source': node,
       'target': String(sem.minimum)
     });
   }
   if (sem.maximum !== undefined) {
     relations.push({
-      'predicate': 'sh:maxInclusive',
+      'predicate': SH.maxInclusive,
       'source': node,
       'target': String(sem.maximum)
     });
   }
   if (sem.exclusiveMinimum !== undefined) {
     relations.push({
-      'predicate': 'sh:minExclusive',
+      'predicate': SH.minExclusive,
       'source': node,
       'target': String(sem.exclusiveMinimum)
     });
   }
   if (sem.exclusiveMaximum !== undefined) {
     relations.push({
-      'predicate': 'sh:maxExclusive',
+      'predicate': SH.maxExclusive,
       'source': node,
       'target': String(sem.exclusiveMaximum)
     });
   }
   if (sem.multipleOf !== undefined) {
     relations.push({
-      'predicate': 'jt:multipleOf',
+      'predicate': JT.multipleOf,
       'source': node,
       'target': String(sem.multipleOf)
     });
   }
   if (sem.minItems !== undefined) {
     relations.push({
-      'predicate': 'sh:minCount',
+      'predicate': SH.minCount,
       'source': node,
       'target': String(sem.minItems)
     });
   }
   if (sem.maxItems !== undefined) {
     relations.push({
-      'predicate': 'sh:maxCount',
+      'predicate': SH.maxCount,
       'source': node,
       'target': String(sem.maxItems)
     });
@@ -632,7 +635,7 @@ export function extractRelations(
 
     if (xsd !== null) {
       relations.push({
-        'predicate': 'sh:datatype',
+        'predicate': SH.datatype,
         'source': node,
         'target': xsd
       });
@@ -642,7 +645,7 @@ export function extractRelations(
   if (sem.ref !== undefined) {
     relations.push({
       'metadata': { 'fromRef': true },
-      'predicate': 'rdfs:range',
+      'predicate': RDFS.range,
       'source': node,
       'target': graph.resolveRefId(sem.ref)
     });

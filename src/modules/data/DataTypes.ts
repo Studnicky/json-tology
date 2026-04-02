@@ -95,6 +95,16 @@ export function resolveXsdType(semantics: SchemaGraphSemanticsInterface): null |
 // ---------------------------------------------------------------------------
 
 /**
+ * Encodes a string for use as a URI path segment, preserving forward slashes.
+ *
+ * @param value - The raw string to escape.
+ * @returns The percent-encoded string with `/` characters preserved.
+ */
+export function escapeSegment(value: string): string {
+  return encodeURIComponent(value).replaceAll('%2F', '/');
+}
+
+/**
  * Generate a property IRI by appending a fragment to a class IRI.
  *
  * @param classId - The class `$id` (e.g. `https://example.io/User`).

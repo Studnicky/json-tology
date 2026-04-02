@@ -10,11 +10,11 @@ import type {
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import {
-  deepEqual, isRecord, propertyIri
-} from '../data/dataTypes.js';
+  deepEqual, escapeSegment as escapeUriSegment, isRecord, propertyIri
+} from '../data/DataTypes.js';
 import { FormatRegistry } from '../format/FormatRegistry.js';
 import { Hash } from '../hash/Hash.js';
-import { SchemaGraph } from './schemaGraph.js';
+import { SchemaGraph } from './SchemaGraph.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { DEFAULT_OPTIONS } from '../../constants/DIALECT.js';
 import {
@@ -23,8 +23,8 @@ import {
   extractNamedFragment,
   parseRef,
   schemaId
-} from './graphEngineSupport.js';
-import { escapeJsonPointerSegment } from './schemaGraphSupport.js';
+} from './GraphEngineSupport.js';
+import { escapeJsonPointerSegment } from './SchemaGraphSupport.js';
 import type { DynamicScopeEntryInterface } from '../../interfaces/DynamicScopeEntry.js';
 import type { InternalExecutionResultInterface } from '../../interfaces/InternalExecutionResult.js';
 import type { RefTargetInterface } from '../../interfaces/RefTarget.js';
@@ -34,14 +34,14 @@ import {
   matchesSchemaTypes,
   validateNumberConstraints,
   validateStringConstraints
-} from './graphEngineScalars.js';
+} from './GraphEngineScalars.js';
 import { BaseError } from '../../errors/BaseError.js';
 import {
   createImplicitDefaultValue,
   synthesizeZeroValue
-} from './graphEngineDefaults.js';
+} from './GraphEngineDefaults.js';
 import type { DefaultResolutionContextInterface } from '../../interfaces/DefaultResolutionContext.js';
-import { visitNode } from './graphEngineVisit.js';
+import { visitNode } from './GraphEngineVisit.js';
 import type { VisitContextInterface } from '../../interfaces/VisitContext.js';
 
 import type { JSONSchema7Definition } from 'json-schema';
@@ -54,7 +54,7 @@ export class GraphEngine implements GraphEngineInterface {
    * @returns The percent-encoded string with `/` characters preserved.
    */
   static escapeSegment(value: string): string {
-    return encodeURIComponent(value).replaceAll('%2F', '/');
+    return escapeUriSegment(value);
   }
 
   /**

@@ -4,11 +4,11 @@ import type {
   SchemaGraphNodeInterface, SchemaGraphSemanticsInterface
 } from '../../interfaces/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import { isRecord } from '../data/dataTypes.js';
+import { isRecord } from '../data/DataTypes.js';
 import type { ValidateWithErrorsFnType } from '../../types/Validation.js';
 import { BaseError } from '../../errors/BaseError.js';
-import { normalizeKeywordTypes } from './schemaCompilerSupport.js';
-import { RefResolver } from './refResolver.js';
+import { normalizeKeywordTypes } from './SchemaCompilerSupport.js';
+import { RefResolver } from './RefResolver.js';
 import type { CustomKeywordEntryInterface } from '../../interfaces/CustomKeywordEntry.js';
 import type { CompiledNodeValidationPlanInterface } from '../../interfaces/CompiledNodeValidationPlan.js';
 import type { SchemaCompilerValidatePlanContextInterface } from '../../interfaces/SchemaCompilerValidatePlanContext.js';

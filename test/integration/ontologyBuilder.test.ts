@@ -6,10 +6,10 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { OntologyBuilder } from '../../src/modules/ontology/ontologyBuilder.js';
+import { OntologyBuilder } from '../../src/modules/ontology/OntologyBuilder.js';
 import { GraphOntologySerializer } from '../../src/modules/ontology/GraphOntologySerializer.js';
 import { GraphShaclSerializer } from '../../src/modules/ontology/GraphShaclSerializer.js';
-import { SchemaGraph } from '../../src/modules/graph/schemaGraph.js';
+import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 
 type JsonLdNode = Record<string, unknown>;
 

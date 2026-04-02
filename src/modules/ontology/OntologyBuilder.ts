@@ -6,6 +6,7 @@
  */
 
 import type { OntologyBuilderOptionsInterface } from '../../interfaces/Ontology.js';
+import { JSONLD } from '../../constants/JSONLD.js';
 
 /**
  * Ontology Builder
@@ -70,10 +71,10 @@ export class OntologyBuilder {
    */
   public jsonLdObject(): Record<string, unknown> {
     return {
-      '@context': this.prefixes,
-      '@graph': this.raw(),
-      '@id': `${this.baseIRI}/ontology/`,
-      '@type': 'owl:Ontology',
+      [JSONLD.context]: this.prefixes,
+      [JSONLD.graph]: this.raw(),
+      [JSONLD.id]: `${this.baseIRI}/ontology/`,
+      [JSONLD.type]: 'owl:Ontology',
       'rdfs:label': 'Generated Ontology'
     };
   }
@@ -107,8 +108,8 @@ export class OntologyBuilder {
     };
 
     return {
-      '@context': shaclPrefixes,
-      '@graph': this.rawShacl()
+      [JSONLD.context]: shaclPrefixes,
+      [JSONLD.graph]: this.rawShacl()
     };
   }
 }

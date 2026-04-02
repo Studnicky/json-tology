@@ -18,12 +18,12 @@ import {
   basename, dirname, resolve
 } from 'node:path';
 import { SchemaRegistry } from './modules/registry/SchemaRegistry.js';
-import { GraphArtifact } from './modules/graph/graphArtifact.js';
-import { GraphSchemaSerializer } from './modules/ontology/graphSchemaSerializer.js';
+import { GraphArtifact } from './modules/graph/GraphArtifact.js';
+import { GraphSchemaSerializer } from './modules/ontology/GraphSchemaSerializer.js';
 import { GraphOntologySerializer } from './modules/ontology/GraphOntologySerializer.js';
 import { GraphShaclSerializer } from './modules/ontology/GraphShaclSerializer.js';
-import { OntologyBuilder } from './modules/ontology/ontologyBuilder.js';
-import { VizDataCollector } from './modules/viz/vizDataCollector.js';
+import { OntologyBuilder } from './modules/ontology/OntologyBuilder.js';
+import { VizDataCollector } from './modules/viz/VizDataCollector.js';
 import { HtmlRenderer } from './modules/viz/HtmlRenderer.js';
 import type { SchemaGraphInterface } from './interfaces/SchemaGraphImpl.js';
 import { DEFAULT_PREFIXES } from './constants/PREFIXES.js';
@@ -36,10 +36,7 @@ import type { VizParseStateInterface } from './interfaces/VizParseState.js';
 
 const CLI_PREFIXES: Record<string, string> = {
   ...DEFAULT_PREFIXES,
-  'dash': 'http://datashapes.org/dash#',
-  'dct': 'http://purl.org/dc/terms/',
-  'jsonschema': 'https://json-schema.org/ontology#',
-  'sh': 'http://www.w3.org/ns/shacl#'
+  'jsonschema': 'https://json-schema.org/ontology#'
 };
 
 function usage(): never {

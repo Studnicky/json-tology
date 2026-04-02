@@ -11,12 +11,12 @@
 import type { DiffOpType } from '../../types/Diff.js';
 import type { ValueInterface } from '../../interfaces/ValueImpl.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
-import { isPlainObject } from './dataTypes.js';
+import { isPlainObject } from './DataTypes.js';
 import { Hash } from '../hash/Hash.js';
-import { Changeset } from './changeset.js';
+import { Changeset } from './Changeset.js';
 import {
   applyOp, clone
-} from './operations.js';
+} from './Operations.js';
 
 export class Value implements ValueInterface {
   // ---------------------------------------------------------------------------

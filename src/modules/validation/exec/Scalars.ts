@@ -1,7 +1,7 @@
 import type { ScalarResultInterface } from '../../../interfaces/ScalarResult.js';
 import type { ValidationErrorType } from '../../../types/Validation.js';
 import { BaseError } from '../../../errors/BaseError.js';
-import { Predicates } from '../predicates.js';
+import { Predicates } from '../Predicates.js';
 
 export class Scalars {
   static validateConst(

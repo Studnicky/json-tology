@@ -17,7 +17,7 @@ import type {
   PartialSchemaType,
   RequiredSchemaType
 } from '../../types/Compose.js';
-import { isRecord } from '../data/dataTypes.js';
+import { isRecord } from '../data/DataTypes.js';
 
 export class Compose {
   /**

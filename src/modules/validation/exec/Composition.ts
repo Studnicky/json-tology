@@ -7,8 +7,8 @@ import type { CustomKeywordEntryInterface } from '../../../interfaces/CustomKeyw
 import { BaseError } from '../../../errors/BaseError.js';
 import {
   isRecord
-} from '../../data/dataTypes.js';
-import { Predicates } from '../predicates.js';
+} from '../../data/DataTypes.js';
+import { Predicates } from '../Predicates.js';
 
 export class Composition {
   static validateAllOf(

@@ -7,7 +7,7 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { Compose } from '../../src/modules/composition/compose.js';
+import { Compose } from '../../src/modules/composition/Compose.js';
 
 const BaseSchema = {
   '$id': 'https://example.io/base',

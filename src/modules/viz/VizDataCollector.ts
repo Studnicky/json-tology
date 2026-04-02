@@ -4,9 +4,10 @@ import type {
   VizEdgeInterface, VizNodeInterface, VizPayloadInterface, VizSchemaDataInterface
 } from '../../interfaces/Viz.js';
 import { GraphOntologySerializer } from '../ontology/GraphOntologySerializer.js';
-import { GraphSchemaSerializer } from '../ontology/graphSchemaSerializer.js';
+import { GraphSchemaSerializer } from '../ontology/GraphSchemaSerializer.js';
 import { GraphShaclSerializer } from '../ontology/GraphShaclSerializer.js';
-import { TypeStringEmitter } from './typeStringEmitter.js';
+import { RDFS } from '../../constants/IRI.js';
+import { TypeStringEmitter } from './TypeStringEmitter.js';
 
 export class VizDataCollector {
   private readonly registry: SchemaRegistryInterface;
@@ -41,7 +42,7 @@ export class VizDataCollector {
       });
 
       for (const rel of graph.allRelations()) {
-        if (rel.predicate === 'rdfs:range'
+        if (rel.predicate === RDFS.range
           && rel.metadata?.fromRef === true
           && typeof rel.target === 'string'
           && registeredIds.has(rel.target)) {

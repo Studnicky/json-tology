@@ -1,17 +1,17 @@
+import type { CheckFnType } from '../../types/Validation.js';
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
 import type {
   KeywordContextInterface, KeywordDefinitionInterface
 } from '../../interfaces/GraphEngine.js';
+import type { SchemaCompilerCheckExecutionContextInterface } from '../../interfaces/SchemaCompilerCheckExecutionContext.js';
 import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import { isRecord } from '../data/dataTypes.js';
+import { isRecord } from '../data/DataTypes.js';
 import {
   compileConstCheck,
   compileEnumCheck
-} from './schemaCompilerGraph.js';
-import { normalizeKeywordTypes } from './schemaCompilerSupport.js';
-import type { CheckFnType } from '../../types/Validation.js';
-import type { SchemaCompilerCheckExecutionContextInterface } from '../../interfaces/SchemaCompilerCheckExecutionContext.js';
+} from './SchemaCompilerGraph.js';
+import { normalizeKeywordTypes } from './SchemaCompilerSupport.js';
 
 export function buildNodeCheckExecution(
   context: SchemaCompilerCheckExecutionContextInterface,
