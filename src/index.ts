@@ -45,7 +45,7 @@ export * from './JsonTology.js';
 export * from './modules/composition/compose.js';
 export * from './modules/data/changeset.js';
 export * from './modules/data/value.js';
-export * from './modules/graph/GraphEngine.js';
+export * from './modules/graph/graphEngine.js';
 export * from './modules/hash/hash.js';
 export * from './modules/materialization/materializer.js';
 export * from './modules/ontology/graphOntologySerializer.js';

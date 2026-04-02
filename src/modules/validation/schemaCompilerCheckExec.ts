@@ -13,8 +13,6 @@ import { normalizeKeywordTypes } from './schemaCompilerSupport.js';
 import type { CheckFnType } from '../../types/Validation.js';
 import type { SchemaCompilerCheckExecutionContextInterface } from '../../interfaces/SchemaCompilerCheckExecutionContext.js';
 
-export type { SchemaCompilerCheckExecutionContextInterface } from '../../interfaces/SchemaCompilerCheckExecutionContext.js';
-
 export function buildNodeCheckExecution(
   context: SchemaCompilerCheckExecutionContextInterface,
   graphNode: SchemaGraphNodeInterface,

@@ -19,15 +19,13 @@ import type { QuadObjectType } from '../../types/Quad.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
 import type { SubjectGroupType } from '../../types/SubjectGroup.js';
 
-const DECIMAL_RADIX = 10;
+import { DECIMAL_RADIX } from '../../constants/FORMAT_VALIDATION.js';
 
 import {
   RDF_TYPE_IRI, XSD_IRI_PREFIX
 } from '../../constants/PREFIXES.js';
 
 import type { RdfJsQuadInterface } from '../../interfaces/RdfJsQuad.js';
-
-export type { RdfJsQuadInterface } from '../../interfaces/RdfJsQuad.js';
 
 // ---------------------------------------------------------------------------
 // RDF/JS interop
@@ -91,25 +89,62 @@ function rdfTermToQuadObject(term: RdfJsQuadInterface['object']): QuadObjectType
   };
 }
 
-function coerceLiteralValue(raw: string, datatype: string): unknown {
-  // Strip prefix — datatype is already normalized to xsd:xxx
-  const local = datatype.startsWith('xsd:') ? datatype.slice(4) : datatype;
-
-  switch (local) {
-    case 'boolean':
+const XSD_COERCERS = new Map<string, (raw: string) => unknown>([
+  [
+    'boolean',
+    (raw) => {
       return raw === 'true';
-    case 'decimal':
-    case 'double':
-    case 'float':
+    }
+  ],
+  [
+    'decimal',
+    (raw) => {
       return Number.parseFloat(raw);
-    case 'int':
-    case 'integer':
-    case 'long':
-    case 'short':
+    }
+  ],
+  [
+    'double',
+    (raw) => {
+      return Number.parseFloat(raw);
+    }
+  ],
+  [
+    'float',
+    (raw) => {
+      return Number.parseFloat(raw);
+    }
+  ],
+  [
+    'int',
+    (raw) => {
       return Number.parseInt(raw, DECIMAL_RADIX);
-    default:
-      return raw;
-  }
+    }
+  ],
+  [
+    'integer',
+    (raw) => {
+      return Number.parseInt(raw, DECIMAL_RADIX);
+    }
+  ],
+  [
+    'long',
+    (raw) => {
+      return Number.parseInt(raw, DECIMAL_RADIX);
+    }
+  ],
+  [
+    'short',
+    (raw) => {
+      return Number.parseInt(raw, DECIMAL_RADIX);
+    }
+  ]
+]);
+
+function coerceLiteralValue(raw: string, datatype: string): unknown {
+  const local = datatype.startsWith('xsd:') ? datatype.slice(4) : datatype;
+  const coercer = XSD_COERCERS.get(local);
+
+  return coercer === undefined ? raw : coercer(raw);
 }
 
 // ---------------------------------------------------------------------------

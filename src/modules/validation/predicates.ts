@@ -7,10 +7,107 @@
  */
 
 import { deepEqual } from '../data/dataTypes.js';
-
-const MULTIPLE_OF_EPSILON_FACTOR = 10;
+import { MULTIPLE_OF_EPSILON_FACTOR } from '../../constants/NUMERIC.js';
 
 export class Predicates {
+  private static readonly coercionHandlers = new Map<string, (value: unknown) => unknown>([
+    [
+      'array',
+      (value) => {
+        return !Array.isArray(value) && typeof value !== 'object' ? [value] : value;
+      }
+    ],
+    [
+      'boolean',
+      (value) => {
+        if (typeof value === 'string') {
+          return Predicates.coerceToBoolean(value) ?? value;
+        }
+        if (value === 1) {
+          return true;
+        }
+        if (value === 0) {
+          return false;
+        }
+
+        return value;
+      }
+    ],
+    [
+      'integer',
+      (value) => {
+        if (typeof value === 'string') {
+          const coerced = Predicates.coerceToNumber(value);
+
+          return coerced === undefined ? value : Math.trunc(coerced);
+        }
+        if (typeof value === 'boolean') {
+          return value ? 1 : 0;
+        }
+
+        return value;
+      }
+    ],
+    [
+      'null',
+      (value) => {
+        return value === '' || value === 'null' ? null : value;
+      }
+    ],
+    [
+      'number',
+      (value) => {
+        if (typeof value === 'string') {
+          return Predicates.coerceToNumber(value) ?? value;
+        }
+        if (typeof value === 'boolean') {
+          return value ? 1 : 0;
+        }
+
+        return value;
+      }
+    ],
+    [
+      'string',
+      (value) => {
+        return typeof value === 'string' ? value : String(value);
+      }
+    ]
+  ]);
+
+  private static readonly typeMatchers = new Map<string, (value: unknown) => boolean>([
+    [
+      'array',
+      (value) => {
+        return Array.isArray(value);
+      }
+    ],
+    [
+      'integer',
+      (value) => {
+        return Predicates.isIntegerValue(value);
+      }
+    ],
+    [
+      'null',
+      (value) => {
+        return value === null;
+      }
+    ],
+    [
+      'number',
+      (value) => {
+        return Predicates.isFiniteNumber(value);
+      }
+    ],
+    [
+      'object',
+      (value) => {
+        return Predicates.inferValueType(value) === 'object';
+      }
+    ]
+  ]);
+
   /**
    * Count Unicode code points without allocating an intermediate array.
    * Equivalent to `[...str].length` but allocation-free.
@@ -60,57 +157,14 @@ export class Predicates {
     }
 
     for (const type of schemaTypes) {
-      switch (type) {
-        case 'array':
-          if (!Array.isArray(value) && typeof value !== 'object') {
-            return [value];
-          }
-          break;
+      const coercer = Predicates.coercionHandlers.get(type);
 
-        case 'boolean':
-          if (typeof value === 'string') {
-            const coerced = Predicates.coerceToBoolean(value);
+      if (coercer !== undefined) {
+        const result = coercer(value);
 
-            if (coerced !== undefined) {
-              return coerced;
-            }
-          }
-          if (value === 1) {
-            return true;
-          }
-          if (value === 0) {
-            return false;
-          }
-          break;
-
-        case 'integer':
-        case 'number':
-          if (typeof value === 'string') {
-            const coerced = Predicates.coerceToNumber(value);
-
-            if (coerced !== undefined) {
-              return type === 'integer' ? Math.trunc(coerced) : coerced;
-            }
-          }
-          if (typeof value === 'boolean') {
-            return value ? 1 : 0;
-          }
-          break;
-
-        case 'null':
-          if (value === '' || value === 'null') {
-            return null;
-          }
-          break;
-
-        case 'string':
-          if (typeof value !== 'string') {
-            return String(value);
-          }
-          break;
-
-        default:
-          break;
+        if (result !== value) {
+          return result;
+        }
       }
     }
 
@@ -156,20 +210,9 @@ export class Predicates {
   }
 
   static matchesType(schemaType: string, value: unknown): boolean {
-    switch (schemaType) {
-      case 'array':
-        return Array.isArray(value);
-      case 'integer':
-        return Predicates.isIntegerValue(value);
-      case 'null':
-        return value === null;
-      case 'number':
-        return Predicates.isFiniteNumber(value);
-      case 'object':
-        return Predicates.inferValueType(value) === 'object';
-      default:
-        return Predicates.inferValueType(value) === schemaType;
-    }
+    const matcher = Predicates.typeMatchers.get(schemaType);
+
+    return matcher === undefined ? Predicates.inferValueType(value) === schemaType : matcher(value);
   }
 
   static satisfiesConst(value: unknown, constValue: unknown): boolean {

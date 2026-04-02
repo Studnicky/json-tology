@@ -18,8 +18,7 @@ import type { LoggerInterface } from '../../interfaces/Logger.js';
 import type { SchemaLoaderInterface } from '../../interfaces/SchemaLoaderImpl.js';
 import { LoadError } from '../../errors/LoadError.js';
 import { SILENT_LOGGER } from '../../constants/LOGGER.js';
-
-const URI_SCHEME_PATTERN = /^[a-z][a-z0-9+.-]*:/iu;
+import { URI_SCHEME_PATTERN } from '../../constants/FORMAT_PATTERNS.js';
 
 /**
  * Schema Loader

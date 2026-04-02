@@ -1,3 +1,4 @@
+import type { ObjectResultInterface } from '../../../interfaces/ObjectResult.js';
 import type { ValidationErrorType } from '../../../types/Validation.js';
 import type { ValidateWithErrorsFnType } from '../../../types/Validation.js';
 import { BaseError } from '../../../errors/BaseError.js';
@@ -5,12 +6,6 @@ import {
   isRecord
 } from '../../data/dataTypes.js';
 import { cloneDefault } from '../../graph/graphEngineSupport.js';
-
-export interface ObjectResultInterface {
-  readonly 'errors': ValidationErrorType[];
-  readonly 'valid': boolean;
-  readonly 'value': Record<string, unknown>;
-}
 
 export class Objects {
   static applyDefaults(

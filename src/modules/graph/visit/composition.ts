@@ -1,33 +1,15 @@
 import type { ValidationErrorType } from '../../../types/Validation.js';
+import type { VisitFnType } from '../../../types/VisitFn.js';
+import type { EffectiveOptionsType } from '../../../types/EffectiveOptions.js';
 import type { SchemaGraphNodeInterface } from '../../../interfaces/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphImpl.js';
-import type { EffectiveOptionsType } from '../../../types/EffectiveOptions.js';
-import type {
-  DynamicScopeEntryInterface,
-  InternalExecutionResultInterface
-} from '../graphEngineSupport.js';
+import type { CompositionAccumulatorInterface } from '../../../interfaces/CompositionAccumulator.js';
+import type { DynamicScopeEntryInterface } from '../../../interfaces/DynamicScopeEntry.js';
+import type { InternalExecutionResultInterface } from '../../../interfaces/InternalExecutionResult.js';
 import type { VisitContextInterface } from '../../../interfaces/VisitContext.js';
 import {
   cloneCandidate
 } from '../graphEngineSupport.js';
-
-type VisitFnType = (
-  context: VisitContextInterface,
-  node: SchemaGraphNodeInterface,
-  graph: SchemaGraphInterface,
-  value: unknown,
-  path: string,
-  options: EffectiveOptionsType,
-  refStack: Set<string>,
-  dynamicScope: DynamicScopeEntryInterface[],
-  depth: number
-) => InternalExecutionResultInterface;
-
-interface CompositionAccumulatorInterface {
-  readonly 'evaluatedItems': Set<number>;
-  readonly 'evaluatedProperties': Set<string>;
-  'value': unknown;
-}
 
 export class VisitComposition {
   static allOf(

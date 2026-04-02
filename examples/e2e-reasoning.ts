@@ -21,10 +21,9 @@ import {
 import type {
   InferType, QuadInterface
 } from '../dist/index.js';
-import type { RdfJsQuadInterface } from '../dist/modules/rdf/Lift.js';
+import type { RdfJsQuadInterface } from '../dist/interfaces/RdfJsQuad.js';
 import { n3reasoner } from 'eyereasoner';
 import { Parser } from 'n3';
-import type { Quad } from 'n3';
 import {
   allSchemas, foafOrganizations, foafPersons,
   OrganizationSchema, PersonSchema
@@ -218,12 +217,16 @@ async function reason() {
 
   console.log('\n=== Running EYE reasoner ===');
   const resultN3 = await n3reasoner(dataN3, queryN3());
-  const N3Parser = Parser as unknown as new (opts: Record<string, string>) => { 'parse': (input: string) => Quad[] };
-  const parser = new N3Parser({ 'format': 'text/n3' });
-  const resultQuads: Quad[] = parser.parse(resultN3);
 
-  const moduleQuads = resultQuads.map((quad) => {
-    return fromRdfQuad(quad as unknown as RdfJsQuadInterface);
+  function parseN3Quads(n3Text: string): RdfJsQuadInterface[] {
+    const N3Parser = Parser as unknown as new (opts: Record<string, string>) => { 'parse': (input: string) => unknown[] };
+    const parser = new N3Parser({ 'format': 'text/n3' });
+
+    return parser.parse(n3Text) as RdfJsQuadInterface[];
+  }
+
+  const moduleQuads = parseN3Quads(resultN3).map((rdfQuad) => {
+    return fromRdfQuad(rdfQuad);
   });
 
   const bySubject = new Map<string, QuadInterface[]>();

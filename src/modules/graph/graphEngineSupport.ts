@@ -11,11 +11,6 @@ import { isRecord } from '../data/dataTypes.js';
 import type { JSONSchema7Definition } from 'json-schema';
 import type { RootDialectPlanInterface } from '../../interfaces/RootDialectPlan.js';
 
-export type { DynamicScopeEntryInterface } from '../../interfaces/DynamicScopeEntry.js';
-export type { InternalExecutionResultInterface } from '../../interfaces/InternalExecutionResult.js';
-export type { RefTargetInterface } from '../../interfaces/RefTarget.js';
-export type { RootDialectPlanInterface } from '../../interfaces/RootDialectPlan.js';
-
 export function buildRootDialectPlan(rootSchema: JSONSchema7Definition): RootDialectPlanInterface {
   if (!isRecord(rootSchema)) {
     return { 'formatAssertions': true };

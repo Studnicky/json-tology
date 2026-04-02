@@ -13,10 +13,6 @@ import type { CustomKeywordEntryInterface } from '../../interfaces/CustomKeyword
 import type { CompiledNodeValidationPlanInterface } from '../../interfaces/CompiledNodeValidationPlan.js';
 import type { SchemaCompilerValidatePlanContextInterface } from '../../interfaces/SchemaCompilerValidatePlanContext.js';
 
-export type { CompiledNodeValidationPlanInterface } from '../../interfaces/CompiledNodeValidationPlan.js';
-export type { CustomKeywordEntryInterface } from '../../interfaces/CustomKeywordEntry.js';
-export type { SchemaCompilerValidatePlanContextInterface } from '../../interfaces/SchemaCompilerValidatePlanContext.js';
-
 function booleanValidateWithErrors(schema: boolean): ValidateWithErrorsFnType {
   return schema
     ? (value) => {

@@ -135,6 +135,305 @@ export function projectGraph(graph: SchemaGraphInterface, curie?: CurieInterface
 }
 
 // ---------------------------------------------------------------------------
+// Predicate dispatch handlers
+// ---------------------------------------------------------------------------
+
+function handleIri(
+  subject: string,
+  predicate: string,
+  targetId: string,
+  _relation: SchemaGraphRelationInterface,
+  quads: QuadInterface[],
+  curie?: CurieInterface
+): void {
+  quads.push(quad(subject, predicate, iri(targetId, curie), curie));
+}
+
+function handleStringLiteral(
+  subject: string,
+  predicate: string,
+  targetId: string,
+  _relation: SchemaGraphRelationInterface,
+  quads: QuadInterface[],
+  curie?: CurieInterface
+): void {
+  quads.push(quad(subject, predicate, literal(targetId, 'xsd:string', curie), curie));
+}
+
+function handleBooleanCoerce(
+  subject: string,
+  predicate: string,
+  targetId: string,
+  _relation: SchemaGraphRelationInterface,
+  quads: QuadInterface[],
+  curie?: CurieInterface
+): void {
+  quads.push(quad(subject, predicate, literal(targetId === 'true', 'xsd:boolean', curie), curie));
+}
+
+function handleBooleanLiteral(
+  subject: string,
+  predicate: string,
+  targetId: string,
+  _relation: SchemaGraphRelationInterface,
+  quads: QuadInterface[],
+  curie?: CurieInterface
+): void {
+  quads.push(quad(subject, predicate, literal(targetId, 'xsd:boolean', curie), curie));
+}
+
+function handleIntegerLiteral(
+  subject: string,
+  predicate: string,
+  targetId: string,
+  _relation: SchemaGraphRelationInterface,
+  quads: QuadInterface[],
+  curie?: CurieInterface
+): void {
+  quads.push(quad(subject, predicate, literal(Number(targetId), 'xsd:integer', curie), curie));
+}
+
+function handleDecimalLiteral(
+  subject: string,
+  predicate: string,
+  targetId: string,
+  _relation: SchemaGraphRelationInterface,
+  quads: QuadInterface[],
+  curie?: CurieInterface
+): void {
+  quads.push(quad(subject, predicate, literal(Number(targetId), 'xsd:decimal', curie), curie));
+}
+
+function handleNonNegativeInteger(
+  subject: string,
+  predicate: string,
+  targetId: string,
+  _relation: SchemaGraphRelationInterface,
+  quads: QuadInterface[],
+  curie?: CurieInterface
+): void {
+  quads.push(quad(subject, predicate, literal(Number(targetId), 'xsd:nonNegativeInteger', curie), curie));
+}
+
+function handleDependentRequired(
+  subject: string,
+  _predicate: string,
+  _targetId: string,
+  relation: SchemaGraphRelationInterface,
+  quads: QuadInterface[],
+  curie?: CurieInterface
+): void {
+  const metadata = relation.metadata ?? {};
+  const trigger = typeof metadata.trigger === 'string' ? metadata.trigger : '';
+  const required = Array.isArray(metadata.required) ? metadata.required as string[] : [];
+
+  quads.push(quad(subject, 'jt:dependentRequired', literal(
+    JSON.stringify({
+      required,
+      trigger
+    }),
+    'xsd:string',
+    curie
+  ), curie));
+}
+
+function handleRestriction(
+  subject: string,
+  _predicate: string,
+  _targetId: string,
+  relation: SchemaGraphRelationInterface,
+  quads: QuadInterface[],
+  curie?: CurieInterface
+): void {
+  const rBnode = nextBnode();
+  const metadata = relation.metadata ?? {};
+  const onProperty = typeof metadata.onProperty === 'string' ? metadata.onProperty : '';
+  const minCard = typeof metadata.minCardinality === 'number' ? metadata.minCardinality : 1;
+
+  quads.push(quad(subject, 'rdfs:subClassOf', bnode(rBnode), curie));
+  quads.push(quad(rBnode, 'rdf:type', iri('owl:Restriction', curie), curie));
+  quads.push(quad(rBnode, 'owl:onProperty', iri(onProperty, curie), curie));
+  quads.push(quad(rBnode, 'owl:minCardinality', literal(minCard, 'xsd:nonNegativeInteger', curie), curie));
+}
+
+function handlePattern(
+  subject: string,
+  predicate: string,
+  targetId: string,
+  relation: SchemaGraphRelationInterface,
+  quads: QuadInterface[],
+  curie?: CurieInterface
+): void {
+  if (relation.metadata?.patternProperty === true && typeof relation.metadata.pattern === 'string') {
+    quads.push(quad(subject, 'sh:pattern', literal(relation.metadata.pattern, 'xsd:string', curie), curie));
+  } else {
+    quads.push(quad(subject, predicate, literal(targetId, 'xsd:string', curie), curie));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Predicate dispatch map
+// ---------------------------------------------------------------------------
+
+const PREDICATE_HANDLERS = new Map<string, (
+  subject: string,
+  predicate: string,
+  targetId: string,
+  relation: SchemaGraphRelationInterface,
+  quads: QuadInterface[],
+  curie?: CurieInterface
+) => void>([
+  [
+    'dash:readOnly',
+    handleBooleanCoerce
+  ],
+  [
+    'dash:writeOnly',
+    handleBooleanCoerce
+  ],
+  [
+    'dct:format',
+    handleStringLiteral
+  ],
+  [
+    'jt:dependentRequired',
+    handleDependentRequired
+  ],
+  [
+    'jt:multipleOf',
+    handleDecimalLiteral
+  ],
+  [
+    'owl:complementOf',
+    handleIri
+  ],
+  [
+    'owl:deprecated',
+    handleBooleanLiteral
+  ],
+  [
+    'owl:disjointWith',
+    handleIri
+  ],
+  [
+    'owl:equivalentClass',
+    handleIri
+  ],
+  [
+    'owl:hasValue',
+    handleStringLiteral
+  ],
+  [
+    'owl:inverseOf',
+    handleIri
+  ],
+  [
+    'owl:maxQualifiedCardinality',
+    handleNonNegativeInteger
+  ],
+  [
+    'owl:minQualifiedCardinality',
+    handleNonNegativeInteger
+  ],
+  [
+    'owl:oneOf',
+    handleStringLiteral
+  ],
+  [
+    'owl:Restriction',
+    handleRestriction
+  ],
+  [
+    'owl:someValuesFrom',
+    handleIri
+  ],
+  [
+    'owl:SymmetricProperty',
+    handleIri
+  ],
+  [
+    'owl:TransitiveProperty',
+    handleIri
+  ],
+  [
+    'owl:unionOf',
+    handleIri
+  ],
+  [
+    'rdf:type',
+    handleIri
+  ],
+  [
+    'rdfs:comment',
+    handleStringLiteral
+  ],
+  [
+    'rdfs:domain',
+    handleIri
+  ],
+  [
+    'rdfs:label',
+    handleStringLiteral
+  ],
+  [
+    'rdfs:member',
+    handleIri
+  ],
+  [
+    'rdfs:range',
+    handleIri
+  ],
+  [
+    'rdfs:subClassOf',
+    handleIri
+  ],
+  [
+    'sh:closed',
+    handleBooleanLiteral
+  ],
+  [
+    'sh:datatype',
+    handleIri
+  ],
+  [
+    'sh:maxCount',
+    handleIntegerLiteral
+  ],
+  [
+    'sh:maxExclusive',
+    handleDecimalLiteral
+  ],
+  [
+    'sh:maxInclusive',
+    handleDecimalLiteral
+  ],
+  [
+    'sh:maxLength',
+    handleIntegerLiteral
+  ],
+  [
+    'sh:minCount',
+    handleIntegerLiteral
+  ],
+  [
+    'sh:minExclusive',
+    handleDecimalLiteral
+  ],
+  [
+    'sh:minInclusive',
+    handleDecimalLiteral
+  ],
+  [
+    'sh:minLength',
+    handleIntegerLiteral
+  ],
+  [
+    'sh:pattern',
+    handlePattern
+  ]
+]);
+
+// ---------------------------------------------------------------------------
 // Relation → quad mapping
 // ---------------------------------------------------------------------------
 
@@ -154,101 +453,10 @@ function projectRelation(
   const predicate = relation.predicate;
   const targetId = typeof relation.target === 'string' ? relation.target : relation.target.id;
 
-  switch (predicate) {
-    case 'dash:readOnly':
-    case 'dash:writeOnly':
-      quads.push(quad(subject, predicate, literal(targetId === 'true', 'xsd:boolean', curie), curie));
-      break;
-    case 'dct:format':
-      quads.push(quad(subject, predicate, literal(targetId, 'xsd:string', curie), curie));
-      break;
-    case 'jt:dependentRequired': {
-      const metadata = relation.metadata ?? {};
-      const trigger = typeof metadata.trigger === 'string' ? metadata.trigger : '';
-      const required = Array.isArray(metadata.required) ? metadata.required as string[] : [];
+  const handler = PREDICATE_HANDLERS.get(predicate);
 
-      quads.push(quad(subject, 'jt:dependentRequired', literal(
-        JSON.stringify({
-          required,
-          trigger
-        }),
-        'xsd:string',
-        curie
-      ), curie));
-      break;
-    }
-    case 'jt:multipleOf':
-      quads.push(quad(subject, predicate, literal(Number(targetId), 'xsd:decimal', curie), curie));
-      break;
-    case 'owl:complementOf':
-    case 'owl:disjointWith':
-    case 'owl:equivalentClass':
-    case 'owl:inverseOf':
-      quads.push(quad(subject, predicate, iri(targetId, curie), curie));
-      break;
-    case 'owl:deprecated':
-      quads.push(quad(subject, predicate, literal(targetId, 'xsd:boolean', curie), curie));
-      break;
-    case 'owl:hasValue':
-      quads.push(quad(subject, predicate, literal(targetId, 'xsd:string', curie), curie));
-      break;
-    case 'owl:maxQualifiedCardinality':
-    case 'owl:minQualifiedCardinality':
-      quads.push(quad(subject, predicate, literal(Number(targetId), 'xsd:nonNegativeInteger', curie), curie));
-      break;
-    case 'owl:oneOf':
-      quads.push(quad(subject, 'owl:oneOf', literal(targetId, 'xsd:string', curie), curie));
-      break;
-    case 'owl:Restriction': {
-      const rBnode = nextBnode();
-      const metadata = relation.metadata ?? {};
-      const onProperty = typeof metadata.onProperty === 'string' ? metadata.onProperty : '';
-      const minCard = typeof metadata.minCardinality === 'number' ? metadata.minCardinality : 1;
-
-      quads.push(quad(subject, 'rdfs:subClassOf', bnode(rBnode), curie));
-      quads.push(quad(rBnode, 'rdf:type', iri('owl:Restriction', curie), curie));
-      quads.push(quad(rBnode, 'owl:onProperty', iri(onProperty, curie), curie));
-      quads.push(quad(rBnode, 'owl:minCardinality', literal(minCard, 'xsd:nonNegativeInteger', curie), curie));
-      break;
-    }
-    case 'owl:someValuesFrom':
-    case 'owl:SymmetricProperty':
-    case 'owl:TransitiveProperty':
-    case 'owl:unionOf':
-    case 'rdf:type':
-    case 'rdfs:domain':
-    case 'rdfs:member':
-    case 'rdfs:range':
-    case 'rdfs:subClassOf':
-    case 'sh:datatype':
-      quads.push(quad(subject, predicate, iri(targetId, curie), curie));
-      break;
-    case 'rdfs:comment':
-    case 'rdfs:label':
-      quads.push(quad(subject, predicate, literal(targetId, 'xsd:string', curie), curie));
-      break;
-    case 'sh:closed':
-      quads.push(quad(subject, predicate, literal(targetId, 'xsd:boolean', curie), curie));
-      break;
-    case 'sh:maxCount':
-    case 'sh:maxLength':
-    case 'sh:minCount':
-    case 'sh:minLength':
-      quads.push(quad(subject, predicate, literal(Number(targetId), 'xsd:integer', curie), curie));
-      break;
-    case 'sh:maxExclusive':
-    case 'sh:maxInclusive':
-    case 'sh:minExclusive':
-    case 'sh:minInclusive':
-      quads.push(quad(subject, predicate, literal(Number(targetId), 'xsd:decimal', curie), curie));
-      break;
-    case 'sh:pattern':
-      if (relation.metadata?.patternProperty === true && typeof relation.metadata.pattern === 'string') {
-        quads.push(quad(subject, 'sh:pattern', literal(relation.metadata.pattern, 'xsd:string', curie), curie));
-      } else {
-        quads.push(quad(subject, predicate, literal(targetId, 'xsd:string', curie), curie));
-      }
-      break;
+  if (handler !== undefined) {
+    handler(subject, predicate, targetId, relation, quads, curie);
   }
 }
 

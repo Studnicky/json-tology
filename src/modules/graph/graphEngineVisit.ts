@@ -9,17 +9,13 @@ import {
   cloneDefault
 } from './graphEngineSupport.js';
 import type { EffectiveOptionsType } from '../../types/EffectiveOptions.js';
-import type {
-  DynamicScopeEntryInterface,
-  InternalExecutionResultInterface
-} from './graphEngineSupport.js';
+import type { DynamicScopeEntryInterface } from '../../interfaces/DynamicScopeEntry.js';
+import type { InternalExecutionResultInterface } from '../../interfaces/InternalExecutionResult.js';
 import type { VisitContextInterface } from '../../interfaces/VisitContext.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { Refs } from './visit/refs.js';
 import { VisitComposition } from './visit/composition.js';
 import { Unevaluated } from './visit/unevaluated.js';
-
-export type { VisitContextInterface } from '../../interfaces/VisitContext.js';
 
 const isObject = isRecord;
 

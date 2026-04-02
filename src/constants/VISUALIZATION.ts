@@ -1,0 +1,9 @@
+export const HTML_CHARSET = 'utf8';
+export const VIEWPORT_SCALE = '1.0';
+export const CSS_COLOR_DARK = '#333';
+export const CSS_FONT_WEIGHT_SEMIBOLD = 600;
+export const CSS_TRANSITION_DURATION = '0.2';
+export const CSS_FONT_WEIGHT_MEDIUM = 500;
+export const CSS_OPACITY_MUTED = 0.8;
+export const CSS_COLOR_MID = '#666';
+export const CSS_COLOR_LIGHT = '#999';

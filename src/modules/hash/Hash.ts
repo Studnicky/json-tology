@@ -5,7 +5,7 @@
  * and Materializer.
  */
 
-const HEX_RADIX = 16;
+import { HEX_RADIX } from '../../constants/NUMERIC.js';
 
 export class Hash {
   /**

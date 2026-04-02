@@ -13,8 +13,6 @@ import type { CheckFnType } from '../../types/Validation.js';
 import type { PropCheckInterface } from '../../interfaces/PropCheck.js';
 import type { SchemaCompilerGraphContextInterface } from '../../interfaces/SchemaCompilerGraphContext.js';
 
-export type { SchemaCompilerGraphContextInterface } from '../../interfaces/SchemaCompilerGraphContext.js';
-
 export function compileRefCheck(
   context: SchemaCompilerGraphContextInterface,
   ref: string,
