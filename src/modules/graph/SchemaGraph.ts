@@ -194,12 +194,14 @@ export class SchemaGraph implements SchemaGraphInterface {
   static resolvePointer(rootSchema: JsonSchemaType, pointer: string): JsonSchemaType {
     return resolveSchemaAtPointer(rootSchema, pointer);
   }
+  private allRelationsCache: SchemaGraphRelationInterface[] | undefined = undefined;
   private readonly anchorMap = new Map<string, SchemaGraphNodeInterface>();
   private readonly childMap = new WeakMap<SchemaGraphNodeInterface, Map<string, SchemaGraphNodeInterface>>();
   private readonly entryMap = new WeakMap<
     SchemaGraphNodeInterface, Map<string, Array<[string, SchemaGraphNodeInterface]>>
   >();
   private readonly identityMap = new WeakMap<object, SchemaGraphNodeInterface>();
+
   private readonly indexedChildMap = new WeakMap<SchemaGraphNodeInterface, Map<string, SchemaGraphNodeInterface[]>>();
 
   private readonly nodeMap = new Map<string, SchemaGraphNodeInterface>();
@@ -227,6 +229,10 @@ export class SchemaGraph implements SchemaGraphInterface {
    * @returns A flat array of all relations from every graph node.
    */
   public allRelations(): SchemaGraphRelationInterface[] {
+    if (this.allRelationsCache !== undefined) {
+      return this.allRelationsCache;
+    }
+
     const result: SchemaGraphRelationInterface[] = [];
 
     for (const node of this.nodeMap.values()) {
@@ -242,6 +248,8 @@ export class SchemaGraph implements SchemaGraphInterface {
         }
       }
     }
+
+    this.allRelationsCache = result;
 
     return result;
   }

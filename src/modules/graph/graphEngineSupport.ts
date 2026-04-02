@@ -64,6 +64,10 @@ export function cloneCandidate<T extends unknown>(value: T): T {
 }
 
 export function cloneDefault<T extends unknown>(value: T): T {
+  if (value === null || typeof value !== 'object') {
+    return value;
+  }
+
   return structuredClone(value);
 }
 

@@ -1,5 +1,4 @@
 import type { ValidationErrorType } from '../../types/Validation.js';
-import type { KeywordContextInterface } from '../../interfaces/GraphEngine.js';
 import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import {
@@ -7,9 +6,7 @@ import {
 } from '../data/dataTypes.js';
 import { Predicates } from '../validation/predicates.js';
 import {
-  cloneCandidate,
-  cloneDefault,
-  schemaId
+  cloneDefault
 } from './graphEngineSupport.js';
 import type { EffectiveOptionsType } from '../../types/EffectiveOptions.js';
 import type {
@@ -18,6 +15,9 @@ import type {
 } from './graphEngineSupport.js';
 import type { VisitContextInterface } from '../../interfaces/VisitContext.js';
 import { GraphError } from '../../errors/GraphError.js';
+import { Refs } from './visit/refs.js';
+import { VisitComposition } from './visit/composition.js';
+import { Unevaluated } from './visit/unevaluated.js';
 
 export type { VisitContextInterface } from '../../interfaces/VisitContext.js';
 
@@ -107,70 +107,46 @@ export function visitNode(
     ]
     : dynamicScope;
 
+  // --- $ref resolution ---
   if (typeof ref === 'string') {
-    const refKey = `${schemaId(graph.rootSchema) ?? '<anonymous>'}::${ref}`;
-
-    if (refStack.has(refKey)) {
-      return {
-        'errors': [],
-        'evaluatedItems': new Set(),
-        'evaluatedProperties': new Set(),
-        'valid': true,
-        'value': workingValue
-      };
-    }
-    refStack.add(refKey);
-    const resolved = context.resolveRef(ref, graph);
-    const resolvedResult = visitNode(
+    const refResult = Refs.resolveRef(
       context,
-      resolved.node,
-      resolved.graph,
+      ref,
+      graph,
       workingValue,
       path,
       options,
       refStack,
       dynScope,
-      depth + 1
+      depth,
+      visitNode
     );
 
-    refStack.delete(refKey);
-    if (!resolvedResult.valid) {
-      return resolvedResult;
+    if (!refResult.valid) {
+      return refResult;
     }
-    workingValue = resolvedResult.value;
+    workingValue = refResult.value;
   }
 
+  // --- $dynamicRef resolution ---
   if (typeof dynamicRef === 'string') {
-    const refKey = `${schemaId(graph.rootSchema) ?? '<anonymous>'}::dynamic::${dynamicRef}`;
-
-    if (refStack.has(refKey)) {
-      return {
-        'errors': [],
-        'evaluatedItems': new Set(),
-        'evaluatedProperties': new Set(),
-        'valid': true,
-        'value': workingValue
-      };
-    }
-    refStack.add(refKey);
-    const resolved = context.resolveDynamicRef(dynamicRef, graph, dynScope);
-    const resolvedResult = visitNode(
+    const dynResult = Refs.resolveDynamicRef(
       context,
-      resolved.node,
-      resolved.graph,
+      dynamicRef,
+      graph,
       workingValue,
       path,
       options,
       refStack,
       dynScope,
-      depth + 1
+      depth,
+      visitNode
     );
 
-    refStack.delete(refKey);
-    if (!resolvedResult.valid) {
-      return resolvedResult;
+    if (!dynResult.valid) {
+      return dynResult;
     }
-    workingValue = resolvedResult.value;
+    workingValue = dynResult.value;
   }
 
   const errors: ValidationErrorType[] = [];
@@ -200,6 +176,7 @@ export function visitNode(
     };
   };
 
+  // --- Scalar validation ---
   if (schemaTypes.length > 0 && !context.matchesType(schemaTypes, workingValue)) {
     return invalid(context.createError(
       path,
@@ -251,6 +228,7 @@ export function visitNode(
     }
   }
 
+  // --- Array validation ---
   if (Array.isArray(workingValue)) {
     const arrayResult = context.validateArray(graph, workingValue, path, options, refStack, dynScope, sem, depth);
 
@@ -264,6 +242,7 @@ export function visitNode(
     }
   }
 
+  // --- Object validation ---
   if (isObject(workingValue)) {
     const objectResult = context.validateObject(node, graph, workingValue, path, options, refStack, dynScope, depth);
 
@@ -277,203 +256,127 @@ export function visitNode(
     }
   }
 
+  // --- Composition accumulator ---
+  const acc = {
+    evaluatedItems,
+    evaluatedProperties,
+    'value': workingValue
+  };
+
+  // --- allOf ---
   if (allOf.length > 0) {
-    for (const childNode of allOf) {
-      const branch = visitNode(context, childNode, graph, workingValue, path, options, refStack, dynScope, depth + 1);
+    const earlyExit = VisitComposition.allOf(
+      context,
+      allOf,
+      graph,
+      acc,
+      path,
+      options,
+      refStack,
+      dynScope,
+      depth,
+      visitNode,
+      pushErrors
+    );
 
-      if (!branch.valid && !options.collectErrors) {
-        return branch;
-      }
-      pushErrors(branch.errors);
-      workingValue = branch.value;
-      for (const key of branch.evaluatedProperties) {
-        evaluatedProperties.add(key);
-      }
-      for (const index of branch.evaluatedItems) {
-        evaluatedItems.add(index);
-      }
+    if (earlyExit !== undefined) {
+      return earlyExit;
     }
+    workingValue = acc.value;
   }
 
+  // --- anyOf ---
   if (anyOf.length > 0) {
-    const successfulResults: InternalExecutionResultInterface[] = [];
+    const earlyExit = VisitComposition.anyOf(
+      context,
+      anyOf,
+      graph,
+      acc,
+      path,
+      options,
+      refStack,
+      dynScope,
+      depth,
+      visitNode,
+      invalid
+    );
 
-    for (const childNode of anyOf) {
-      const candidate = visitNode(context, childNode, graph, cloneCandidate(workingValue), path, {
-        ...options,
-        'collectErrors': true
-      }, refStack, dynScope, depth + 1);
-
-      if (candidate.valid) {
-        successfulResults.push(candidate);
-      }
+    if (earlyExit !== undefined) {
+      return earlyExit;
     }
-
-    if (successfulResults.length === 0) {
-      return invalid(context.createError(path, 'anyOf', 'must match at least one schema'));
-    }
-
-    const matchedResult = successfulResults[0];
-
-    workingValue = matchedResult.value;
-    for (const successful of successfulResults) {
-      for (const key of successful.evaluatedProperties) {
-        evaluatedProperties.add(key);
-      }
-      for (const index of successful.evaluatedItems) {
-        evaluatedItems.add(index);
-      }
-    }
+    workingValue = acc.value;
   }
 
+  // --- oneOf ---
   if (oneOf.length > 0) {
-    let matches = 0;
-    let matchedResult: InternalExecutionResultInterface | undefined;
+    const earlyExit = VisitComposition.oneOf(
+      context,
+      oneOf,
+      graph,
+      acc,
+      path,
+      options,
+      refStack,
+      dynScope,
+      depth,
+      visitNode,
+      invalid,
+      discriminatorPropertyName,
+      discriminatorMapping
+    );
 
-    // Discriminator optimization: if the schema has a discriminator property,
-    // check the discriminator value first and only validate against the matching variant.
-    const discProp = discriminatorPropertyName;
-    let discriminatorHandled = false;
-
-    if (
-      discProp !== undefined
-      && typeof workingValue === 'object'
-      && workingValue !== null
-      && !Array.isArray(workingValue)
-    ) {
-      const dataObj = workingValue as Record<string, unknown>;
-      const discValue = dataObj[discProp];
-
-      if (discValue !== undefined && typeof discValue === 'string') {
-        // Pre-cache variant semantics to avoid redundant WeakMap lookups
-        const variantCache = oneOf.map((child) => {
-          return {
-            'node': child,
-            'sem': graph.semantics(child)
-          };
-        });
-
-        // Mapping-based dispatch: discriminator.mapping maps discriminator values to $ref targets.
-        const mapping = discriminatorMapping;
-
-        if (mapping !== undefined && discValue in mapping) {
-          const targetRef = mapping[discValue];
-
-          for (const variant of variantCache) {
-            if (variant.sem.ref === targetRef) {
-              const candidate = visitNode(context, variant.node, graph, cloneCandidate(workingValue), path, {
-                ...options,
-                'collectErrors': true
-              }, refStack, dynScope, depth + 1);
-
-              if (candidate.valid) {
-                matches = 1;
-                matchedResult = candidate;
-              }
-              discriminatorHandled = true;
-              break;
-            }
-          }
-        }
-
-        // Const-based dispatch: find the variant whose discriminator property has a matching const value.
-        if (!discriminatorHandled) {
-          for (const variant of variantCache) {
-            const discPropNode = variant.sem.properties.get(discProp);
-
-            if (discPropNode !== undefined) {
-              const discPropSemantics = graph.semantics(discPropNode);
-
-              if (discPropSemantics.hasConst && discPropSemantics.constValue === discValue) {
-                const candidate = visitNode(context, variant.node, graph, cloneCandidate(workingValue), path, {
-                  ...options,
-                  'collectErrors': true
-                }, refStack, dynScope, depth + 1);
-
-                if (candidate.valid) {
-                  matches = 1;
-                  matchedResult = candidate;
-                }
-                discriminatorHandled = true;
-                break;
-              }
-            }
-          }
-        }
-      }
+    if (earlyExit !== undefined) {
+      return earlyExit;
     }
-
-    if (!discriminatorHandled) {
-      for (const oneOfChild of oneOf) {
-        const candidate = visitNode(context, oneOfChild, graph, cloneCandidate(workingValue), path, {
-          ...options,
-          'collectErrors': true
-        }, refStack, dynScope, depth + 1);
-
-        if (candidate.valid) {
-          matches++;
-          matchedResult = candidate;
-        }
-      }
-    }
-
-    if (matches !== 1) {
-      return invalid(context.createError(path, 'oneOf', 'must match exactly one schema'));
-    }
-    if (matchedResult !== undefined) {
-      workingValue = matchedResult.value;
-      for (const key of matchedResult.evaluatedProperties) {
-        evaluatedProperties.add(key);
-      }
-      for (const index of matchedResult.evaluatedItems) {
-        evaluatedItems.add(index);
-      }
-    }
+    workingValue = acc.value;
   }
 
+  // --- not ---
   if (complementNode !== undefined) {
-    const notResult = visitNode(context, complementNode, graph, cloneCandidate(workingValue), path, {
-      ...options,
-      'collectErrors': true
-    }, refStack, dynScope, depth + 1);
+    const earlyExit = VisitComposition.not(
+      context,
+      complementNode,
+      graph,
+      workingValue,
+      path,
+      options,
+      refStack,
+      dynScope,
+      depth,
+      visitNode,
+      invalid
+    );
 
-    if (notResult.valid) {
-      return invalid(context.createError(path, 'not', 'must not match schema'));
+    if (earlyExit !== undefined) {
+      return earlyExit;
     }
   }
 
+  // --- if/then/else ---
   if (ifNode !== undefined) {
-    const condition = visitNode(context, ifNode, graph, cloneCandidate(workingValue), path, {
-      ...options,
-      'collectErrors': true
-    }, refStack, dynScope, depth + 1);
-    const branchNode = condition.valid ? thenNode : elseNode;
+    const earlyExit = VisitComposition.ifThenElse(
+      context,
+      ifNode,
+      thenNode,
+      elseNode,
+      graph,
+      acc,
+      path,
+      options,
+      refStack,
+      dynScope,
+      depth,
+      visitNode,
+      pushErrors
+    );
 
-    // Properties evaluated by the if condition count as evaluated (JSON Schema 2020-12 §10.2.2.1)
-    for (const key of condition.evaluatedProperties) {
-      evaluatedProperties.add(key);
+    if (earlyExit !== undefined) {
+      return earlyExit;
     }
-    for (const index of condition.evaluatedItems) {
-      evaluatedItems.add(index);
-    }
-
-    if (branchNode !== undefined) {
-      const branch = visitNode(context, branchNode, graph, workingValue, path, options, refStack, dynScope, depth + 1);
-
-      if (!branch.valid && !options.collectErrors) {
-        return branch;
-      }
-      pushErrors(branch.errors);
-      workingValue = branch.value;
-      for (const key of branch.evaluatedProperties) {
-        evaluatedProperties.add(key);
-      }
-      for (const index of branch.evaluatedItems) {
-        evaluatedItems.add(index);
-      }
-    }
+    workingValue = acc.value;
   }
 
+  // --- Unevaluated items ---
   if (Array.isArray(workingValue) && unevaluatedItemsNode !== undefined) {
     const unevaluatedResult = context.applyUnevaluatedItems(
       node,
@@ -497,6 +400,7 @@ export function visitNode(
     }
   }
 
+  // --- Unevaluated properties ---
   if (isObject(workingValue) && unevaluatedPropertiesNode !== undefined) {
     const unevaluatedResult = context.applyUnevaluatedProperties(
       node,
@@ -520,103 +424,26 @@ export function visitNode(
     }
   }
 
-  // Custom keywords read from graph-owned extensions, not raw schema objects.
-  if (context.customKeywords.length > 0) {
-    const dataType = Predicates.inferValueType(workingValue);
+  // --- Custom keywords ---
+  const kwEarlyExit = Unevaluated.customKeywords(
+    context,
+    context.customKeywords,
+    extensions,
+    workingValue,
+    path,
+    options,
+    errors,
+    evaluatedItems,
+    evaluatedProperties
+  );
 
-    for (const kw of context.customKeywords) {
-      if (!(kw.keyword in extensions)) {
-        continue;
-      }
-      if (kw.type !== undefined) {
-        const allowedTypes = Array.isArray(kw.type) ? kw.type : [kw.type];
-
-        if (!allowedTypes.includes(dataType)) {
-          continue;
-        }
-      }
-      const kwContext: KeywordContextInterface = {
-        'parentData': undefined,
-        'parentKey': '',
-        'path': path,
-        'rootData': workingValue
-      };
-      const kwResult = kw.validate(
-        extensions[kw.keyword],
-        workingValue,
-        kwContext
-      );
-
-      if (kwResult === false) {
-        const kwError = context.createError(path, kw.keyword, `must pass "${kw.keyword}" validation`);
-
-        if (options.collectErrors) {
-          errors.push(kwError);
-        } else {
-          return {
-            'errors': [kwError],
-            evaluatedItems,
-            evaluatedProperties,
-            'valid': false,
-            'value': workingValue
-          };
-        }
-      } else if (Array.isArray(kwResult) && kwResult.length > 0) {
-        if (options.collectErrors) {
-          errors.push(...kwResult);
-        } else {
-          return {
-            'errors': kwResult,
-            evaluatedItems,
-            evaluatedProperties,
-            'valid': false,
-            'value': workingValue
-          };
-        }
-      }
-    }
+  if (kwEarlyExit !== undefined) {
+    return kwEarlyExit;
   }
 
-  // rdfs:range validation — enforce range schema on object/array values
-  if (typeof rdfsRange === 'string' && options.lookupSchema !== undefined) {
-    const rangeSchema = options.lookupSchema(rdfsRange);
-
-    if (rangeSchema !== undefined) {
-      const rangeRefKey = `rdfs:range::${rdfsRange}`;
-
-      if (!refStack.has(rangeRefKey)) {
-        refStack.add(rangeRefKey);
-
-        if (isObject(workingValue)) {
-          const rangeGraph = context.graphFor(rangeSchema);
-          const rangeRoot = rangeGraph.rootNode;
-          const res = visitNode(context, rangeRoot, rangeGraph, workingValue, path, options, refStack, [], depth + 1);
-
-          if (!res.valid) {
-            pushErrors(res.errors);
-          }
-        } else if (Array.isArray(workingValue)) {
-          const rangeGraph = context.graphFor(rangeSchema);
-          const rangeRoot = rangeGraph.rootNode;
-
-          for (const [
-            i,
-            item
-          ] of workingValue.entries()) {
-            if (isObject(item) || Array.isArray(item)) {
-              const itemPath = `${path}/${i}`;
-              const res = visitNode(context, rangeRoot, rangeGraph, item, itemPath, options, refStack, [], depth + 1);
-
-              if (!res.valid) {
-                pushErrors(res.errors);
-              }
-            }
-          }
-        }
-
-        refStack.delete(rangeRefKey);
-      }
-    }
+  // --- rdfs:range validation ---
+  if (typeof rdfsRange === 'string') {
+    Unevaluated.rdfsRange(context, rdfsRange, workingValue, path, options, refStack, depth, visitNode, pushErrors);
   }
 
   return {

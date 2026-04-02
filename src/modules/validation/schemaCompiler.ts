@@ -28,6 +28,7 @@ import {
 import { BaseError } from '../../errors/BaseError.js';
 import { Predicates } from './predicates.js';
 import { resolveImplicitDefaultValue } from './schemaCompilerDefaults.js';
+import { cloneDefault } from '../graph/graphEngineSupport.js';
 import { buildNodeCheckExecution } from './schemaCompilerCheckExec.js';
 import { buildValidateWithErrorsExecution } from './schemaCompilerValidateExec.js';
 import {
@@ -585,7 +586,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
       // Apply defaults at root level
       if (options?.applyDefaults === true && workingValue === undefined && rootHasDefault) {
-        workingValue = structuredClone(rootDefaultValue);
+        workingValue = cloneDefault(rootDefaultValue);
       }
 
       // For full mutation modes, delegate to validateWithErrors

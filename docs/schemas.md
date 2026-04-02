@@ -195,3 +195,14 @@ console.log(errors); // []
 const parsed = registry.coerce('https://example.com/Item', { name: 'Bolt', count: '10' });
 console.log(parsed); // { name: 'Bolt', count: 10 }
 ```
+
+### Advanced: Direct Registry Access
+
+`jt.registry` exposes the underlying `SchemaRegistry` for advanced use cases:
+
+- `jt.registry.engine(schema)` — direct GraphEngine with per-call options
+- `jt.registry.graph(schemaId)` — schema graph for introspection
+- `jt.registry.validator(schemaId)` — compiled validator for middleware embedding
+- `jt.registry.listGraphs()` — all schema graphs for custom ontology tooling
+
+Most consumers should use the facade methods instead.

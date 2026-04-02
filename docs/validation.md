@@ -155,3 +155,15 @@ const { fieldErrors, formErrors } = errs.flatten();
 // fieldErrors: { "/id": [...], "/items": [...] }
 // formErrors: ["must have required property 'id'"]
 ```
+
+### Pattern Safety
+
+The `pattern` keyword and `patternProperties` keys compile user-authored regular expressions
+via `new RegExp()`. If schemas come from untrusted sources, malicious patterns with
+catastrophic backtracking (e.g. `(a+)+b`) can cause CPU exhaustion.
+
+**Mitigation:**
+- Only register schemas from trusted sources
+- Review regex patterns for exponential backtracking before registration
+- Use anchored patterns (`^...$`) to limit match scope
+- Consider validating patterns against a safe-regex library before schema registration

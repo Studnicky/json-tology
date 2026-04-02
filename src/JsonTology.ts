@@ -80,6 +80,16 @@ export class JsonTology<TMap = Record<never, never>> {
   private ontologyCache: null | OntologyBuilder = null;
   private readonly ontologySerializer: GraphOntologySerializer;
   private readonly prefixes: Record<string, string>;
+  /**
+   * Direct access to the underlying schema registry for advanced use cases.
+   *
+   * Provides access to `engine()` for direct GraphEngine execution with custom
+   * options, `graph()` for schema graph introspection, `validator()` for embedding
+   * compiled validators in middleware, and `listGraphs()` for custom ontology tooling.
+   *
+   * Most consumers should use the facade methods (validate, coerce, errors, etc.)
+   * instead of accessing the registry directly.
+   */
   public readonly registry: SchemaRegistryInterface;
 
   private readonly shaclSerializer: GraphShaclSerializer;
