@@ -10,8 +10,8 @@ import {
   deepEqual, isRecord
 } from '../data/DataTypes.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
-import { Predicates } from './predicates.js';
-import { RefResolver } from './refResolver.js';
+import { Predicates } from './Predicates.js';
+import { RefResolver } from './RefResolver.js';
 
 export function compileRefCheck(
   context: SchemaCompilerGraphContextInterface,

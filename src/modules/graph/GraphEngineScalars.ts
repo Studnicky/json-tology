@@ -1,7 +1,7 @@
 import type { ValidationErrorType } from '../../types/Validation.js';
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
 import type { SchemaGraphSemanticsInterface } from '../../interfaces/SchemaGraph.js';
-import { Predicates } from '../validation/predicates.js';
+import { Predicates } from '../validation/Predicates.js';
 import { BaseError } from '../../errors/BaseError.js';
 
 export function coerceGraphValue(schemaTypes: string[], value: unknown, materializeContainers: boolean): unknown {

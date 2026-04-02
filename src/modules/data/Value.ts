@@ -16,7 +16,7 @@ import { Hash } from '../hash/Hash.js';
 import { Changeset } from './Changeset.js';
 import {
   applyOp, clone
-} from './operations.js';
+} from './Operations.js';
 
 export class Value implements ValueInterface {
   // ---------------------------------------------------------------------------

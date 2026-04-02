@@ -7,7 +7,7 @@ import {
 } from 'node:test';
 import assert from 'node:assert/strict';
 import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
-import { GraphEngine } from '../../src/modules/graph/graphEngine.js';
+import { GraphEngine } from '../../src/modules/graph/GraphEngine.js';
 
 void describe('FormatRegistry', () => {
   void describe('built-in format validation', () => {

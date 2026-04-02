@@ -36,10 +36,7 @@ import type { VizParseStateInterface } from './interfaces/VizParseState.js';
 
 const CLI_PREFIXES: Record<string, string> = {
   ...DEFAULT_PREFIXES,
-  'dash': 'http://datashapes.org/dash#',
-  'dct': 'http://purl.org/dc/terms/',
-  'jsonschema': 'https://json-schema.org/ontology#',
-  'sh': 'http://www.w3.org/ns/shacl#'
+  'jsonschema': 'https://json-schema.org/ontology#'
 };
 
 function usage(): never {

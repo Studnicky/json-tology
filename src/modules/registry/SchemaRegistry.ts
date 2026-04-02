@@ -24,10 +24,10 @@ import { Curie } from '../rdf/Curie.js';
 import {
   deepFreeze, isRecord
 } from '../data/DataTypes.js';
-import { GraphEngine } from '../graph/graphEngine.js';
+import { GraphEngine } from '../graph/GraphEngine.js';
 import { Hash } from '../hash/Hash.js';
 import { Materializer } from '../materialization/Materializer.js';
-import { SchemaCompiler } from '../validation/schemaCompiler.js';
+import { SchemaCompiler } from '../validation/SchemaCompiler.js';
 import { SchemaError } from '../../errors/SchemaError.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
 import { Transform } from '../transform/Transform.js';

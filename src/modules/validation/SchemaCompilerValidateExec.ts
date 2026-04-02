@@ -3,12 +3,12 @@ import type {
   ValidateWithErrorsFnType, ValidationErrorType
 } from '../../types/Validation.js';
 import { isRecord } from '../data/DataTypes.js';
-import { cloneDefault } from '../graph/graphEngineSupport.js';
-import { coerceCompiledValue } from './schemaCompilerSupport.js';
-import { Arrays } from './exec/arrays.js';
-import { Composition } from './exec/composition.js';
-import { Objects } from './exec/objects.js';
-import { Scalars } from './exec/scalars.js';
+import { cloneDefault } from '../graph/GraphEngineSupport.js';
+import { coerceCompiledValue } from './SchemaCompilerSupport.js';
+import { Arrays } from './exec/Arrays.js';
+import { Composition } from './exec/Composition.js';
+import { Objects } from './exec/Objects.js';
+import { Scalars } from './exec/Scalars.js';
 
 function fail(workingValue: unknown): {
   'valid': false;

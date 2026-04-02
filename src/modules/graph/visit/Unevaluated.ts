@@ -9,7 +9,7 @@ import type { InternalExecutionResultInterface } from '../../../interfaces/Inter
 import {
   isRecord
 } from '../../data/DataTypes.js';
-import { Predicates } from '../../validation/predicates.js';
+import { Predicates } from '../../validation/Predicates.js';
 
 export class Unevaluated {
   static customKeywords(

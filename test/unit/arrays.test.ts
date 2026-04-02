@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import type {
   CheckFnType, ValidateWithErrorsFnType, ValidationErrorType
 } from '../../src/types/Validation.js';
-import { Arrays } from '../../src/modules/validation/exec/arrays.js';
+import { Arrays } from '../../src/modules/validation/exec/Arrays.js';
 import { BaseError } from '../../src/errors/BaseError.js';
 
 const passing: ValidateWithErrorsFnType = ((value: unknown) => {

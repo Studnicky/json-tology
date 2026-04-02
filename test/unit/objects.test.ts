@@ -2,7 +2,7 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { Objects } from '../../src/modules/validation/exec/objects.js';
+import { Objects } from '../../src/modules/validation/exec/Objects.js';
 import type { ValidationErrorType } from '../../src/types/Validation.js';
 import type { ValidateWithErrorsFnType } from '../../src/types/Validation.js';
 

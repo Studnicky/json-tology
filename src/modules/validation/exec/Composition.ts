@@ -8,7 +8,7 @@ import { BaseError } from '../../../errors/BaseError.js';
 import {
   isRecord
 } from '../../data/DataTypes.js';
-import { Predicates } from '../predicates.js';
+import { Predicates } from '../Predicates.js';
 
 export class Composition {
   static validateAllOf(

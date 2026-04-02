@@ -4,7 +4,7 @@ import {
 import assert from 'node:assert/strict';
 import {
   applyOp, clone
-} from '../../src/modules/data/operations.js';
+} from '../../src/modules/data/Operations.js';
 
 void describe('clone', () => {
   void it('deep clones an object', () => {

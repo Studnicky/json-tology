@@ -9,7 +9,7 @@ import type { GraphAccessor } from '../../interfaces/GraphAccessor.js';
 import {
   isDefsEntryPointer, isPropertyPointer,
   parentPropertiesPointer, propertyNameFromPointer
-} from './schemaGraphSupport.js';
+} from './SchemaGraphSupport.js';
 import { FORMAT_PATTERNS } from '../../constants/FORMAT_PATTERNS.js';
 import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD

@@ -7,14 +7,14 @@ import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugin.js';
 import { isRecord } from '../data/DataTypes.js';
 import { GraphError } from '../../errors/GraphError.js';
-import { extractRelations } from './schemaGraphRelations.js';
+import { extractRelations } from './SchemaGraphRelations.js';
 import {
   escapeJsonPointerSegment,
   extractSemantics,
   nodeIdFromPointer,
   resolveSchemaAtPointer,
   validateGraphStructure
-} from './schemaGraphSupport.js';
+} from './SchemaGraphSupport.js';
 import type { JsonSchemaType } from '../../types/Schema.js';
 
 export class SchemaGraph implements SchemaGraphInterface {

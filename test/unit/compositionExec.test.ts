@@ -2,7 +2,7 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { Composition } from '../../src/modules/validation/exec/composition.js';
+import { Composition } from '../../src/modules/validation/exec/Composition.js';
 import type { ValidationErrorType } from '../../src/types/Validation.js';
 import type { ValidateWithErrorsFnType } from '../../src/types/Validation.js';
 import type { CheckFnType } from '../../src/types/Validation.js';

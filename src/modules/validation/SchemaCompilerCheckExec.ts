@@ -10,8 +10,8 @@ import { isRecord } from '../data/DataTypes.js';
 import {
   compileConstCheck,
   compileEnumCheck
-} from './schemaCompilerGraph.js';
-import { normalizeKeywordTypes } from './schemaCompilerSupport.js';
+} from './SchemaCompilerGraph.js';
+import { normalizeKeywordTypes } from './SchemaCompilerSupport.js';
 
 export function buildNodeCheckExecution(
   context: SchemaCompilerCheckExecutionContextInterface,

@@ -8,7 +8,7 @@ import {
 import assert from 'node:assert/strict';
 import {
   ensureArray, normalizeArrays
-} from '../../src/modules/ontology/serializerUtils.js';
+} from '../../src/modules/ontology/SerializerUtils.js';
 
 // ---------------------------------------------------------------------------
 // ensureArray()

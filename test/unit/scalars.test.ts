@@ -2,7 +2,7 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { Scalars } from '../../src/modules/validation/exec/scalars.js';
+import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 
 function emailValidator(value: unknown): boolean {
   return typeof value === 'string' && value.includes('@');

@@ -1,4 +1,4 @@
-import { Predicates } from './predicates.js';
+import { Predicates } from './Predicates.js';
 
 export function coerceCompiledValue(types: string[], value: unknown): unknown {
   return Predicates.coerceValue(types, value);
