@@ -6,9 +6,7 @@ import {
   coerceCompiledValue
 } from './schemaCompilerSupport.js';
 import { cloneDefault } from '../graph/graphEngineSupport.js';
-import type {
-  CompiledNodeValidationPlanInterface
-} from './schemaCompilerValidatePlan.js';
+import type { CompiledNodeValidationPlanInterface } from '../../interfaces/CompiledNodeValidationPlan.js';
 import type { ValidateWithErrorsFnType } from '../../types/Validation.js';
 import { Scalars } from './exec/scalars.js';
 import { Arrays } from './exec/arrays.js';

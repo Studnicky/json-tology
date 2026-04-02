@@ -21,23 +21,10 @@ import {
   bnode, iri, literal, nextBnode, quad, rdfList
 } from './projection.js';
 import {
-  buildIndex, isListStructure, isPropertySubject, isRestrictionStructure, lastSegment, relationTargetId
+  buildIndex, fragmentContains, isListStructure, isPropertySubject, isRestrictionStructure,
+  lastSegment, relationTargetId, structuralParent
 } from './projectionIndex.js';
-import type { RelationIndexInterface } from './projectionIndex.js';
-
-// ---------------------------------------------------------------------------
-// Subject classification helpers (OWL-specific)
-// ---------------------------------------------------------------------------
-
-function isPatternPropertySubject(subject: string): boolean {
-  const hashIdx = subject.indexOf('#');
-
-  if (hashIdx === -1) {
-    return false;
-  }
-
-  return subject.slice(hashIdx + 1).includes('/patternProperties/');
-}
+import type { RelationIndexInterface } from '../../interfaces/RelationIndex.js';
 
 function canonicalPropertyIri(subject: string): string {
   const hashIdx = subject.indexOf('#');
@@ -258,7 +245,7 @@ function emitPropertyQuads(
   quads: QuadInterface[],
   curie?: CurieInterface
 ): void {
-  if (isPatternPropertySubject(subject)) {
+  if (fragmentContains(subject, '/patternProperties/')) {
     return;
   }
 
@@ -613,7 +600,7 @@ function emitArrayItemQuads(
     propSubject,
     propEntry
   ] of index) {
-    if (!isPropertySubject(propSubject) || isPatternPropertySubject(propSubject)) {
+    if (!isPropertySubject(propSubject) || fragmentContains(propSubject, '/patternProperties/')) {
       continue;
     }
 
@@ -627,24 +614,7 @@ function emitArrayItemQuads(
     }
 
     // Must belong to this class — structural parent check
-    const hashIdx = propSubject.indexOf('#');
-
-    if (hashIdx === -1) {
-      continue;
-    }
-
-    const base = propSubject.slice(0, hashIdx);
-    const fragment = propSubject.slice(hashIdx + 1);
-    const propsIdx = fragment.lastIndexOf('/properties/');
-
-    if (propsIdx === -1) {
-      continue;
-    }
-
-    const parentPointer = fragment.slice(0, propsIdx);
-    const structuralParent = parentPointer === '' ? base : `${base}#${parentPointer}`;
-
-    if (structuralParent !== subject) {
+    if (structuralParent(propSubject) !== subject) {
       continue;
     }
 

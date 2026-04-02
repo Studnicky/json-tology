@@ -1,31 +1,15 @@
 import type { ValidationErrorType } from '../../../types/Validation.js';
+import type { VisitFnType } from '../../../types/VisitFn.js';
+import type { EffectiveOptionsType } from '../../../types/EffectiveOptions.js';
 import type {
   KeywordContextInterface, KeywordDefinitionInterface
 } from '../../../interfaces/GraphEngine.js';
-import type { SchemaGraphNodeInterface } from '../../../interfaces/SchemaGraph.js';
-import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphImpl.js';
-import type { EffectiveOptionsType } from '../../../types/EffectiveOptions.js';
 import type { VisitContextInterface } from '../../../interfaces/VisitContext.js';
-import type {
-  DynamicScopeEntryInterface,
-  InternalExecutionResultInterface
-} from '../graphEngineSupport.js';
+import type { InternalExecutionResultInterface } from '../../../interfaces/InternalExecutionResult.js';
 import {
   isRecord
 } from '../../data/dataTypes.js';
 import { Predicates } from '../../validation/predicates.js';
-
-type VisitFnType = (
-  context: VisitContextInterface,
-  node: SchemaGraphNodeInterface,
-  graph: SchemaGraphInterface,
-  value: unknown,
-  path: string,
-  options: EffectiveOptionsType,
-  refStack: Set<string>,
-  dynamicScope: DynamicScopeEntryInterface[],
-  depth: number
-) => InternalExecutionResultInterface;
 
 export class Unevaluated {
   static customKeywords(

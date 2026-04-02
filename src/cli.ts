@@ -31,6 +31,8 @@ import { SchemaError } from './errors/SchemaError.js';
 import type {
   BuildArgsInterface, CliArgsType, VizArgsInterface
 } from './types/CliArgs.js';
+import type { BuildParseStateInterface } from './interfaces/BuildParseState.js';
+import type { VizParseStateInterface } from './interfaces/VizParseState.js';
 
 const CLI_PREFIXES: Record<string, string> = {
   ...DEFAULT_PREFIXES,
@@ -68,81 +70,143 @@ function parseArgs(argv: string[]): CliArgsType {
   return usage();
 }
 
+const BUILD_ARG_HANDLERS = new Map<
+  string,
+  (args: readonly string[], i: number, state: BuildParseStateInterface) => number
+>([
+  [
+    '--base-iri',
+    (args, i, state) => {
+      state.baseIRI = args[i + 1] ?? '';
+
+      return i + 1;
+    }
+  ],
+  [
+    '--format',
+    (args, i, state) => {
+      state.format = args[i + 1] ?? 'artifact';
+
+      return i + 1;
+    }
+  ],
+  [
+    '--output',
+    (args, i, state) => {
+      state.output = args[i + 1] ?? '';
+
+      return i + 1;
+    }
+  ],
+  [
+    '--output-file',
+    (args, i, state) => {
+      state.outputFile = args[i + 1] ?? '';
+
+      return i + 1;
+    }
+  ],
+  [
+    '--schema',
+    (args, i, state) => {
+      state.schema = args[i + 1] ?? '';
+
+      return i + 1;
+    }
+  ]
+]);
+
 function parseBuildArgs(args: string[]): BuildArgsInterface {
-  let schema = '';
-  let output = '';
-  let format = 'artifact';
-  let baseIRI: string | undefined;
-  let outputFile: string | undefined;
+  const state: BuildParseStateInterface = {
+    'baseIRI': undefined,
+    'format': 'artifact',
+    'output': '',
+    'outputFile': undefined,
+    'schema': ''
+  };
 
   for (let i = 1; i < args.length; i++) {
-    switch (args[i]) {
-      case '--base-iri':
-        baseIRI = args[++i] ?? '';
-        break;
-      case '--format':
-        format = args[++i] ?? 'artifact';
-        break;
-      case '--output':
-        output = args[++i] ?? '';
-        break;
-      case '--output-file':
-        outputFile = args[++i] ?? '';
-        break;
-      case '--schema':
-        schema = args[++i] ?? '';
-        break;
-      default:
-        console.error(`Unknown option: ${args[i]}`);
-        usage();
+    const handler = BUILD_ARG_HANDLERS.get(args[i]);
+
+    if (handler === undefined) {
+      console.error(`Unknown option: ${args[i]}`);
+      usage();
+    } else {
+      i = handler(args, i, state);
     }
   }
 
-  if (schema === '' || output === '') {
+  if (state.schema === '' || state.output === '') {
     usage();
   }
 
   return {
-    baseIRI,
+    'baseIRI': state.baseIRI,
     'command': 'build',
-    format,
-    output,
-    outputFile,
-    schema
+    'format': state.format,
+    'output': state.output,
+    'outputFile': state.outputFile,
+    'schema': state.schema
   };
 }
 
+const VIZ_ARG_HANDLERS = new Map<
+  string,
+  (args: readonly string[], i: number, state: VizParseStateInterface) => number
+>([
+  [
+    '--no-open',
+    (_args, i, state) => {
+      state.noOpen = true;
+
+      return i;
+    }
+  ],
+  [
+    '--output',
+    (args, i, state) => {
+      state.output = args[i + 1] ?? 'schema-graph.html';
+
+      return i + 1;
+    }
+  ],
+  [
+    '--schema',
+    (args, i, state) => {
+      state.schema = args[i + 1] ?? '';
+
+      return i + 1;
+    }
+  ]
+]);
+
 function parseVizArgs(args: string[]): VizArgsInterface {
-  let schema = '';
-  let output = 'schema-graph.html';
-  let noOpen = false;
+  const state: VizParseStateInterface = {
+    'noOpen': false,
+    'output': 'schema-graph.html',
+    'schema': ''
+  };
 
   for (let i = 1; i < args.length; i++) {
-    switch (args[i]) {
-      case '--no-open':
-        noOpen = true;
-        break;
-      case '--output':
-        output = args[++i] ?? 'schema-graph.html';
-        break;
-      case '--schema':
-        schema = args[++i] ?? '';
-        break;
-      default:
-        console.error(`Unknown option: ${args[i]}`);
-        usage();
+    const handler = VIZ_ARG_HANDLERS.get(args[i]);
+
+    if (handler === undefined) {
+      console.error(`Unknown option: ${args[i]}`);
+      usage();
+    } else {
+      i = handler(args, i, state);
     }
   }
 
-  if (schema === '') {
+  if (state.schema === '') {
     usage();
   }
 
   return {
     'command': 'viz',
-    noOpen,
-    output,
-    schema
+    'noOpen': state.noOpen,
+    'output': state.output,
+    'schema': state.schema
   };
 }
 

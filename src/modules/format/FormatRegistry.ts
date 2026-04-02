@@ -1,47 +1,20 @@
 import { isIP } from 'node:net';
 import { domainToASCII } from 'node:url';
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
-
-// ---------------------------------------------------------------------------
-// Format validation constants
-// ---------------------------------------------------------------------------
-
-const HOSTNAME_LABEL_MAX_LENGTH = 63;
-const DATE_STRING_LENGTH = 10;
-const DATE_YEAR_DIGIT_COUNT = 4;
-const DATE_MONTH_MAX = 12;
-const DATE_DAY_MAX = 31;
-const TIME_HOUR_MAX = 23;
-const TIME_MINUTE_MAX = 59;
-const TIME_SECOND_MAX = 60;
-const TIME_BASE_LENGTH = 8;
-const TIME_OFFSET_HOUR1 = 1;
-const TIME_OFFSET_HOUR2 = 2;
-const TIME_OFFSET_COLON = 3;
-const TIME_OFFSET_MIN1 = 4;
-const TIME_OFFSET_MIN2 = 5;
-const TIME_ZONE_OFFSET_LENGTH = 6;
-const DATE_MONTH_OFFSET_1 = 5;
-const DATE_MONTH_OFFSET_2 = 6;
-const DATE_DAY_SEPARATOR_OFFSET = 7;
-const DATE_DAY_OFFSET_1 = 8;
-const DATE_DAY_OFFSET_2 = 9;
-const TIME_SECONDS_COLON_OFFSET = 5;
-const TIME_SECONDS_DIGIT_1_OFFSET = 6;
-const TIME_SECONDS_DIGIT_2_OFFSET = 7;
-const IP_VERSION_4 = 4;
-const IP_VERSION_6 = 6;
-const BASE64_CHUNK_SIZE = 4;
-const BASE64_MAX_PADDING = 2;
-const DATETIME_MIN_LENGTH = 15;
-const DECIMAL_RADIX = 10;
-const UUID_STRING_LENGTH = 36;
-const UUID_DASH_POS_1 = 8;
-const UUID_DASH_POS_2 = 13;
-const UUID_DASH_POS_3 = 18;
-const UUID_DASH_POS_4 = 23;
-const UUID_VERSION_POS = 14;
-const UUID_VARIANT_POS = 19;
+import {
+  BASE64_CHUNK_SIZE, BASE64_MAX_PADDING, DATE_DAY_MAX,
+  DATE_DAY_OFFSET_1, DATE_DAY_OFFSET_2, DATE_DAY_SEPARATOR_OFFSET,
+  DATE_MONTH_MAX, DATE_MONTH_OFFSET_1, DATE_MONTH_OFFSET_2,
+  DATE_STRING_LENGTH, DATE_YEAR_DIGIT_COUNT, DATETIME_MIN_LENGTH,
+  DECIMAL_RADIX, HOSTNAME_LABEL_MAX_LENGTH, IP_VERSION_4, IP_VERSION_6,
+  TIME_BASE_LENGTH, TIME_HOUR_MAX, TIME_MINUTE_MAX,
+  TIME_OFFSET_COLON, TIME_OFFSET_HOUR1, TIME_OFFSET_HOUR2,
+  TIME_OFFSET_MIN1, TIME_OFFSET_MIN2, TIME_SECOND_MAX,
+  TIME_SECONDS_COLON_OFFSET, TIME_SECONDS_DIGIT_1_OFFSET,
+  TIME_SECONDS_DIGIT_2_OFFSET, TIME_ZONE_OFFSET_LENGTH,
+  UUID_DASH_POS_1, UUID_DASH_POS_2, UUID_DASH_POS_3, UUID_DASH_POS_4,
+  UUID_STRING_LENGTH, UUID_VARIANT_POS, UUID_VERSION_POS
+} from '../../constants/FORMAT_VALIDATION.js';
 
 // ---------------------------------------------------------------------------
 // Helper functions (moved from GraphEngine.ts)

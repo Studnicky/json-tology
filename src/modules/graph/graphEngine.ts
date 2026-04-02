@@ -24,12 +24,10 @@ import {
   schemaId
 } from './graphEngineSupport.js';
 import { escapeJsonPointerSegment } from './schemaGraphSupport.js';
-import type {
-  DynamicScopeEntryInterface,
-  InternalExecutionResultInterface,
-  RefTargetInterface,
-  RootDialectPlanInterface
-} from './graphEngineSupport.js';
+import type { DynamicScopeEntryInterface } from '../../interfaces/DynamicScopeEntry.js';
+import type { InternalExecutionResultInterface } from '../../interfaces/InternalExecutionResult.js';
+import type { RefTargetInterface } from '../../interfaces/RefTarget.js';
+import type { RootDialectPlanInterface } from '../../interfaces/RootDialectPlan.js';
 import {
   coerceGraphValue,
   matchesSchemaTypes,
@@ -41,9 +39,9 @@ import {
   createImplicitDefaultValue,
   synthesizeZeroValue
 } from './graphEngineDefaults.js';
-import type { DefaultResolutionContextInterface } from './graphEngineDefaults.js';
+import type { DefaultResolutionContextInterface } from '../../interfaces/DefaultResolutionContext.js';
 import { visitNode } from './graphEngineVisit.js';
-import type { VisitContextInterface } from './graphEngineVisit.js';
+import type { VisitContextInterface } from '../../interfaces/VisitContext.js';
 
 import type { JSONSchema7Definition } from 'json-schema';
 

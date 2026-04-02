@@ -6,91 +6,19 @@ import { GraphError } from '../../errors/GraphError.js';
 import {
   RDFS_DOMAIN_IRI, RDFS_RANGE_IRI
 } from '../../constants/PREFIXES.js';
+import {
+  DEFS_POINTER_PARTS_LENGTH, KNOWN_SCHEMA_KEYWORDS,
+  MIN_PROPERTY_POINTER_PARTS
+} from '../../constants/SCHEMA_KEYWORDS.js';
 import { isRecord } from '../data/dataTypes.js';
 import type { JsonSchemaType } from '../../types/Schema.js';
 import type { GraphAccessor } from '../../interfaces/GraphAccessor.js';
-
-export type { GraphAccessor } from '../../interfaces/GraphAccessor.js';
-
-const DEFS_POINTER_PARTS_LENGTH = 3;
-const MIN_PROPERTY_POINTER_PARTS = 3;
-
-export const KNOWN_SCHEMA_KEYWORDS = new Set([
-  '$anchor',
-  '$comment',
-  '$defs',
-  '$dynamicAnchor',
-  '$dynamicRef',
-  '$id',
-  '$recursiveAnchor',
-  '$recursiveRef',
-  '$ref',
-  '$schema',
-  '$vocabulary',
-  'additionalItems',
-  'additionalProperties',
-  'allOf',
-  'anyOf',
-  'const',
-  'contains',
-  'contentEncoding',
-  'contentMediaType',
-  'default',
-  'definitions',
-  'dependentRequired',
-  'dependentSchemas',
-  'deprecated',
-  'description',
-  'discriminator',
-  'disjointWith',
-  'else',
-  'enum',
-  'equivalentTo',
-  'examples',
-  'exclusiveMaximum',
-  'exclusiveMinimum',
-  'format',
-  'if',
-  'inverseOf',
-  'items',
-  'maxContains',
-  'maximum',
-  'maxItems',
-  'maxLength',
-  'maxProperties',
-  'minContains',
-  'minimum',
-  'minItems',
-  'minLength',
-  'minProperties',
-  'multipleOf',
-  'not',
-  'oneOf',
-  'pattern',
-  'patternProperties',
-  'prefixItems',
-  'properties',
-  'propertyNames',
-  'rdfs:domain',
-  'rdfs:range',
-  'readOnly',
-  'required',
-  'symmetric',
-  'then',
-  'title',
-  'transitive',
-  'type',
-  'unevaluatedItems',
-  'unevaluatedProperties',
-  'uniqueItems',
-  'writeOnly'
-]);
 
 export function escapeJsonPointerSegment(segment: string): string {
   return segment.replaceAll('~', '~0').replaceAll('/', '~1');
 }
 
-export function unescapeJsonPointerSegment(segment: string): string {
+function unescapeJsonPointerSegment(segment: string): string {
   return segment.replaceAll('~1', '/').replaceAll('~0', '~');
 }
 
@@ -122,7 +50,7 @@ export function resolveSchemaAtPointer(rootSchema: JsonSchemaType, pointer: stri
   return current;
 }
 
-export function emptySchemaGraphSemantics(): SchemaGraphSemanticsInterface {
+function emptySchemaGraphSemantics(): SchemaGraphSemanticsInterface {
   return {
     'additionalItemsNode': undefined,
     'additionalPropertiesNode': undefined,
@@ -231,7 +159,7 @@ export function propertyNameFromPointer(pointer: string): string | undefined {
   return parts.at(-1);
 }
 
-export function pointerId(rootSchema: JsonSchemaType, pointer: string): string {
+function pointerId(rootSchema: JsonSchemaType, pointer: string): string {
   if (pointer === '') {
     return typeof rootSchema === 'object'
       && !Array.isArray(rootSchema)
@@ -261,7 +189,7 @@ export function nodeIdFromPointer(rootSchema: JsonSchemaType, pointer: string, s
   return pointerId(rootSchema, pointer);
 }
 
-export function normalizeSchemaTypes(schema: Record<string, unknown>): string[] {
+function normalizeSchemaTypes(schema: Record<string, unknown>): string[] {
   const rawType = schema.type;
 
   if (typeof rawType === 'string') {
@@ -277,7 +205,7 @@ export function normalizeSchemaTypes(schema: Record<string, unknown>): string[] 
   return [];
 }
 
-export function normalizeDynamicAnchor(schema: Record<string, unknown>): string | undefined {
+function normalizeDynamicAnchor(schema: Record<string, unknown>): string | undefined {
   if (typeof schema.$dynamicAnchor === 'string') {
     return schema.$dynamicAnchor;
   }
@@ -289,7 +217,7 @@ export function normalizeDynamicAnchor(schema: Record<string, unknown>): string 
   return undefined;
 }
 
-export function normalizeDependentRequired(schema: Record<string, unknown>): Record<string, string[]> {
+function normalizeDependentRequired(schema: Record<string, unknown>): Record<string, string[]> {
   return isRecord(schema.dependentRequired)
     ? Object.fromEntries(Object.entries(schema.dependentRequired).flatMap(([
       key,
@@ -311,7 +239,7 @@ export function normalizeDependentRequired(schema: Record<string, unknown>): Rec
     : {};
 }
 
-export function collectSchemaExtensions(schema: Record<string, unknown>): Record<string, unknown> {
+function collectSchemaExtensions(schema: Record<string, unknown>): Record<string, unknown> {
   const extensions: Record<string, unknown> = {};
 
   for (const key of Object.keys(schema)) {
@@ -323,7 +251,7 @@ export function collectSchemaExtensions(schema: Record<string, unknown>): Record
   return extensions;
 }
 
-export function resolveAdditionalSchemaNode(
+function resolveAdditionalSchemaNode(
   node: SchemaGraphNodeInterface,
   child: (node: SchemaGraphNodeInterface, key: string) => SchemaGraphNodeInterface | undefined,
   key: 'additionalItems' | 'additionalProperties'

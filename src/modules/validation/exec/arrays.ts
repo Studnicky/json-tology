@@ -1,15 +1,10 @@
+import type { ArrayResultInterface } from '../../../interfaces/ArrayResult.js';
 import type { ValidationErrorType } from '../../../types/Validation.js';
 import type {
   CheckFnType, ValidateWithErrorsFnType
 } from '../../../types/Validation.js';
 import { BaseError } from '../../../errors/BaseError.js';
 import { Predicates } from '../predicates.js';
-
-export interface ArrayResultInterface {
-  readonly 'errors': ValidationErrorType[];
-  readonly 'valid': boolean;
-  readonly 'value': unknown[];
-}
 
 export class Arrays {
   static validateBounds(

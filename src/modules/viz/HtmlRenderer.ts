@@ -3,16 +3,12 @@
  */
 
 import type { VizPayloadInterface } from '../../interfaces/Viz.js';
-
-const HTML_CHARSET = 'utf8';
-const VIEWPORT_SCALE = '1.0';
-const CSS_COLOR_DARK = '#333';
-const CSS_FONT_WEIGHT_SEMIBOLD = 600;
-const CSS_TRANSITION_DURATION = '0.2';
-const CSS_FONT_WEIGHT_MEDIUM = 500;
-const CSS_OPACITY_MUTED = 0.8;
-const CSS_COLOR_MID = '#666';
-const CSS_COLOR_LIGHT = '#999';
+import {
+  CSS_COLOR_DARK, CSS_COLOR_LIGHT, CSS_COLOR_MID,
+  CSS_FONT_WEIGHT_MEDIUM, CSS_FONT_WEIGHT_SEMIBOLD,
+  CSS_OPACITY_MUTED, CSS_TRANSITION_DURATION,
+  HTML_CHARSET, VIEWPORT_SCALE
+} from '../../constants/VISUALIZATION.js';
 
 /**
  * Renders schema graph visualizations as interactive HTML.

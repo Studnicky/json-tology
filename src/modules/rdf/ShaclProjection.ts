@@ -18,43 +18,10 @@ import {
   bnode, iri, literal, nextBnode, quad, rdfList
 } from './projection.js';
 import {
-  buildIndex, isPropertySubject, isRestrictionStructure, lastSegment, relationTargetId
+  buildIndex, fragmentContains, isPropertySubject, isRestrictionStructure, lastSegment,
+  relationTargetId, structuralParent
 } from './projectionIndex.js';
-import type { RelationIndexInterface } from './projectionIndex.js';
-
-// ---------------------------------------------------------------------------
-// Subject helpers (SHACL-specific)
-// ---------------------------------------------------------------------------
-
-function isDependentSchemaSubject(subject: string): boolean {
-  const hashIdx = subject.indexOf('#');
-
-  if (hashIdx === -1) {
-    return false;
-  }
-
-  return subject.slice(hashIdx + 1).includes('/dependentSchemas/');
-}
-
-function structuralParent(subject: string): string {
-  const hashIdx = subject.indexOf('#');
-
-  if (hashIdx === -1) {
-    return subject;
-  }
-
-  const base = subject.slice(0, hashIdx);
-  const fragment = subject.slice(hashIdx + 1);
-  const propsIdx = fragment.lastIndexOf('/properties/');
-
-  if (propsIdx === -1) {
-    return base;
-  }
-
-  const parentPointer = fragment.slice(0, propsIdx);
-
-  return parentPointer === '' ? base : `${base}#${parentPointer}`;
-}
+import type { RelationIndexInterface } from '../../interfaces/RelationIndex.js';
 
 function resolveTargetRef(targetNodeId: string, index: Map<string, RelationIndexInterface>): string {
   const targetEntry = index.get(targetNodeId);
@@ -229,7 +196,7 @@ function emitNodeShape(
   const propSubjects = propertyIndex.get(subject) ?? [];
 
   for (const propSubject of propSubjects) {
-    if (isDependentSchemaSubject(propSubject)) {
+    if (fragmentContains(propSubject, '/dependentSchemas/')) {
       continue;
     }
 

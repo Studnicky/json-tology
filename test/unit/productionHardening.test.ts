@@ -12,7 +12,7 @@ import { JsonTology } from '../../src/JsonTology.js';
 import { SchemaError } from '../../src/errors/SchemaError.js';
 import { GraphError } from '../../src/errors/GraphError.js';
 import { FormatRegistry } from '../../src/modules/format/formatRegistry.js';
-import { GraphEngine } from '../../src/modules/graph/GraphEngine.js';
+import { GraphEngine } from '../../src/modules/graph/graphEngine.js';
 
 // ---------------------------------------------------------------------------
 // Finding 1: Infinity bypass

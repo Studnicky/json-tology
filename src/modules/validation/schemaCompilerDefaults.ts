@@ -5,9 +5,9 @@ import type { RefTargetInterface } from '../../interfaces/RefTarget.js';
 import { createImplicitDefaultValue } from '../graph/graphEngineDefaults.js';
 import { RefResolver } from './refResolver.js';
 
-type LookupSchemaFn = (id: string) => Record<string, unknown> | undefined;
+import type { LookupSchemaFnType } from '../../types/LookupSchema.js';
 
-function buildCompilerDefaultContext(lookupSchema: LookupSchemaFn | undefined): DefaultResolutionContextInterface {
+function buildCompilerDefaultContext(lookupSchema: LookupSchemaFnType | undefined): DefaultResolutionContextInterface {
   return {
     resolveDynamicRef(
       _: string,

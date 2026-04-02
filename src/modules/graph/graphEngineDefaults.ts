@@ -4,18 +4,15 @@ import type {
 } from '../../interfaces/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import {
-  cloneDefault,
-  type DynamicScopeEntryInterface
+  cloneDefault
 } from './graphEngineSupport.js';
+import type { DynamicScopeEntryInterface } from '../../interfaces/DynamicScopeEntry.js';
 import type { DefaultResolutionContextInterface } from '../../interfaces/DefaultResolutionContext.js';
-
-export type { DefaultResolutionContextInterface } from '../../interfaces/DefaultResolutionContext.js';
+import { MAX_DEFAULT_DEPTH } from '../../constants/LIMITS.js';
 
 function propertiesFromSemantics(sem: SchemaGraphSemanticsInterface): Map<string, SchemaGraphNodeInterface> {
   return sem.properties;
 }
-
-const MAX_DEFAULT_DEPTH = 256;
 
 export function createImplicitDefaultValue(
   context: DefaultResolutionContextInterface,

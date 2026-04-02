@@ -16,7 +16,7 @@ import type { KeywordDefinitionInterface } from '../../interfaces/GraphEngine.js
 import type { GraphEngineInterface } from '../../interfaces/GraphEngineImpl.js';
 import type { SchemaCompilerInterface } from '../../interfaces/SchemaCompilerImpl.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
-import { GraphEngine } from '../graph/GraphEngine.js';
+import { GraphEngine } from '../graph/graphEngine.js';
 import {
   deepFreeze, isRecord
 } from '../data/dataTypes.js';
@@ -37,23 +37,12 @@ import {
 } from '../../constants/DIALECT.js';
 
 
-const EMPTY_ERROR_LIST: string[] = Object.freeze([]) as unknown as string[];
-const EMPTY_VALIDATION_ERRORS = new ValidationErrors([]);
+import {
+  CAST_OPTIONS, CLEAN_OPTIONS, COLLECT_ERRORS_OPTIONS,
+  CONVERT_OPTIONS, EMPTY_ERROR_LIST
+} from '../../constants/EXECUTION_OPTIONS.js';
 
-const CAST_OPTIONS = Object.freeze({
-  'applyDefaults': true,
-  'castTypes': true,
-  'collectErrors': false
-});
-const CLEAN_OPTIONS = Object.freeze({
-  'collectErrors': false,
-  'enforceSchemaProperties': true
-});
-const CONVERT_OPTIONS = Object.freeze({
-  'castTypes': true,
-  'collectErrors': false
-});
-const COLLECT_ERRORS_OPTIONS = Object.freeze({ 'collectErrors': true });
+const EMPTY_VALIDATION_ERRORS = new ValidationErrors([]);
 
 import type { SchemaRegistryEntryInterface } from '../../interfaces/SchemaRegistryEntry.js';
 
