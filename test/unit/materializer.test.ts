@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 import { Materializer } from '../../src/modules/materialization/Materializer.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import { projectGraph } from '../../src/modules/rdf/projection.js';
+import { projectGraph } from '../../src/modules/rdf/Projection.js';
 
 const ConfigSchema = {
   '$id': 'https://example.io/config',
