@@ -1,5 +1,4 @@
 export type * from './ArrayResult.js';
-export type * from './BuildParseState.js';
 export type * from './Changeset.js';
 export type * from './CompiledNodeValidationPlan.js';
 export type * from './Compiler.js';
@@ -47,5 +46,4 @@ export type * from './TransformFns.js';
 export type * from './ValueImpl.js';
 export type * from './VisitContext.js';
 export type * from './Viz.js';
-export type * from './VizParseState.js';
 export type * from './VocabularyPlugin.js';
