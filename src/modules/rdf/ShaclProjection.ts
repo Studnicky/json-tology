@@ -161,8 +161,8 @@ function emitNodeShape(
     quads.push(QuadFactory.quad(subject, SH.closed, QuadFactory.literal(true, XSD.boolean, { curie }), { curie }));
   }
 
-  emitConstraintLiteral(subject, entry, SH.minCount, XSD.integer, quads, curie);
-  emitConstraintLiteral(subject, entry, SH.maxCount, XSD.integer, quads, curie);
+  QuadFactory.emitConstraintLiteral(subject, entry, SH.minCount, XSD.integer, quads, { curie });
+  QuadFactory.emitConstraintLiteral(subject, entry, SH.maxCount, XSD.integer, quads, { curie });
 
   const propSubjects = propertyIndex.get(subject) ?? [];
 
@@ -315,13 +315,13 @@ function emitPropertyShape(
     quads.push(QuadFactory.quad(bnodeId, SH.pattern, patternLit, { curie }));
   }
 
-  emitConstraintLiteral(bnodeId, entry, SH.minLength, XSD.integer, quads, curie);
-  emitConstraintLiteral(bnodeId, entry, SH.maxLength, XSD.integer, quads, curie);
-  emitConstraintLiteral(bnodeId, entry, SH.minInclusive, XSD.decimal, quads, curie);
-  emitConstraintLiteral(bnodeId, entry, SH.maxInclusive, XSD.decimal, quads, curie);
-  emitConstraintLiteral(bnodeId, entry, SH.minExclusive, XSD.decimal, quads, curie);
-  emitConstraintLiteral(bnodeId, entry, SH.maxExclusive, XSD.decimal, quads, curie);
-  emitConstraintLiteral(bnodeId, entry, JT.multipleOf, XSD.decimal, quads, curie);
+  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.minLength, XSD.integer, quads, { curie });
+  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.maxLength, XSD.integer, quads, { curie });
+  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.minInclusive, XSD.decimal, quads, { curie });
+  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.maxInclusive, XSD.decimal, quads, { curie });
+  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.minExclusive, XSD.decimal, quads, { curie });
+  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.maxExclusive, XSD.decimal, quads, { curie });
+  QuadFactory.emitConstraintLiteral(bnodeId, entry, JT.multipleOf, XSD.decimal, quads, { curie });
 
   QuadFactory.emitLiterals(bnodeId, entry, RDFS.comment, SH.description, quads, { curie });
 
@@ -336,22 +336,6 @@ function emitPropertyShape(
   QuadFactory.emitLiterals(bnodeId, entry, DCT.format, DCT.format, quads, { curie });
 }
 
-function emitConstraintLiteral(
-  bnodeId: string,
-  entry: RelationIndexInterface,
-  predicate: string,
-  datatype: string,
-  quads: QuadInterface[],
-  curie: CurieInterface | undefined
-): void {
-  const rels = entry.byPredicate.get(predicate) ?? [];
-
-  if (rels.length > 0) {
-    const numLit = QuadFactory.literal(Number(relationTargetId(rels[0])), datatype, { curie });
-
-    quads.push(QuadFactory.quad(bnodeId, predicate, numLit, { curie }));
-  }
-}
 
 function emitContainsPropertyShape(
   subject: string,
