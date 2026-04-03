@@ -1,0 +1,207 @@
+/**
+ * VocabProjection -- abstract base class for vocabulary-specific quad emission.
+ *
+ * Owns the shared iteration and metadata extraction for dependentRequired,
+ * dependentSchemas, and conditionals. Subclasses override abstract hooks
+ * for OWL or SHACL quad patterns.
+ *
+ * Template methods return QuadObjectType[] -- the caller decides how to
+ * attach them (OWL: rdfs:subClassOf, SHACL: push to andItems).
+ */
+
+import type { QuadInterface } from '../../interfaces/Quad.js';
+import type { QuadObjectType } from '../../types/Quad.js';
+import type { CurieInterface } from '../../interfaces/Curie.js';
+import type { RelationIndexInterface } from '../../interfaces/RelationIndex.js';
+import { JT } from '../../constants/IRI.js';
+import { SchemaIri } from '../graph/SchemaIri.js';
+
+export abstract class VocabProjection {
+  /**
+   * Combine the "without trigger" branch with required-property restrictions.
+   * OWL: union of [withoutTrigger, intersection-of-restrictions] or single.
+   * SHACL: sh:or of [withoutWrapper, reqBnode].
+   */
+  abstract combineUnionBranches(
+    withoutTrigger: QuadObjectType,
+    reqRestrictions: QuadObjectType[],
+    quads: QuadInterface[],
+    curie: CurieInterface | undefined
+  ): QuadObjectType;
+
+  /**
+   * Emit the "else" branch of a conditional (if/else).
+   * OWL: owl:intersectionOf(complementOf(if), else) wrapped in a Class bnode.
+   * SHACL: sh:or([if, else]) bnode.
+   */
+  abstract emitConditionalElseBranch(
+    ifRef: string,
+    elseRef: string,
+    quads: QuadInterface[],
+    curie: CurieInterface | undefined
+  ): QuadObjectType;
+
+  /**
+   * Emit the "then" branch of a conditional (if/then).
+   * OWL: owl:intersectionOf(if, then) wrapped in a Class bnode.
+   * SHACL: sh:or([sh:not(if), then]) bnode.
+   */
+  abstract emitConditionalThenBranch(
+    ifRef: string,
+    thenRef: string,
+    quads: QuadInterface[],
+    curie: CurieInterface | undefined
+  ): QuadObjectType;
+
+  /**
+   * Emit a dependent-schema implication (triggerProp present => schema applies).
+   * OWL: union of complement-of-restriction and schema ref.
+   * SHACL: sh:or of not-property-present and node shape with properties.
+   */
+  abstract emitDependentSchemaBranch(
+    subject: string,
+    ifRef: string,
+    thenRef: string,
+    quads: QuadInterface[],
+    curie: CurieInterface | undefined
+  ): QuadObjectType;
+
+  /**
+   * Emit the "trigger property absent" branch for dependentRequired / dependentSchemas.
+   * OWL: owl:complementOf on an owl:Restriction with minCardinality 1.
+   * SHACL: sh:not wrapping a PropertyShape with minCount 1.
+   */
+  abstract emitNotTriggerBranch(
+    triggerPropIri: string,
+    quads: QuadInterface[],
+    curie: CurieInterface | undefined
+  ): QuadObjectType;
+
+  /**
+   * Emit a single required-property restriction.
+   * OWL: owl:Restriction with minCardinality 1.
+   * SHACL: sh:PropertyShape with minCount 1.
+   */
+  abstract emitRequiredPropertyBranch(
+    propIri: string,
+    quads: QuadInterface[],
+    curie: CurieInterface | undefined
+  ): QuadObjectType;
+
+  processConditionals(
+    entry: RelationIndexInterface,
+    quads: QuadInterface[],
+    curie: CurieInterface | undefined
+  ): QuadObjectType[] {
+    const results: QuadObjectType[] = [];
+
+    for (const rel of entry.all) {
+      if (rel.structure?.kind !== 'conditional') {
+        continue;
+      }
+
+      const {
+        elseRef, ifRef, thenRef
+      } = rel.structure;
+
+      if (thenRef?.includes('/dependentSchemas/') === true) {
+        continue;
+      }
+
+      const branches: QuadObjectType[] = [];
+
+      if (thenRef !== undefined) {
+        branches.push(this.emitConditionalThenBranch(ifRef, thenRef, quads, curie));
+      }
+
+      if (elseRef !== undefined) {
+        branches.push(this.emitConditionalElseBranch(ifRef, elseRef, quads, curie));
+      }
+
+      if (branches.length > 0) {
+        results.push(...this.wrapConditionalBranches(branches, quads, curie));
+      }
+    }
+
+    return results;
+  }
+
+  // -------------------------------------------------------------------------
+  // Template: processDependentRequired
+  // -------------------------------------------------------------------------
+
+  processDependentRequired(
+    subject: string,
+    entry: RelationIndexInterface,
+    quads: QuadInterface[],
+    curie: CurieInterface | undefined
+  ): QuadObjectType[] {
+    const results: QuadObjectType[] = [];
+    const depReqRels = entry.byPredicate.get(JT.dependentRequired) ?? [];
+
+    for (const rel of depReqRels) {
+      const meta = rel.metadata ?? {};
+      const trigger = typeof meta.trigger === 'string' ? meta.trigger : '';
+      const required = Array.isArray(meta.required) ? meta.required as string[] : [];
+
+      const triggerPropIri = SchemaIri.propertyIri(subject, trigger);
+      const withoutTrigger = this.emitNotTriggerBranch(triggerPropIri, quads, curie);
+
+      const reqRestrictions: QuadObjectType[] = required.map((reqProp) => {
+        const reqPropIri = SchemaIri.propertyIri(subject, reqProp);
+
+        return this.emitRequiredPropertyBranch(reqPropIri, quads, curie);
+      });
+
+      results.push(this.combineUnionBranches(withoutTrigger, reqRestrictions, quads, curie));
+    }
+
+    return results;
+  }
+
+  // -------------------------------------------------------------------------
+  // Template: processDependentSchemas
+  // -------------------------------------------------------------------------
+
+  processDependentSchemas(
+    subject: string,
+    entry: RelationIndexInterface,
+    quads: QuadInterface[],
+    curie: CurieInterface | undefined
+  ): QuadObjectType[] {
+    const results: QuadObjectType[] = [];
+
+    for (const rel of entry.all) {
+      if (rel.structure?.kind !== 'conditional') {
+        continue;
+      }
+
+      const {
+        ifRef, thenRef
+      } = rel.structure;
+
+      if (thenRef?.includes('/dependentSchemas/') !== true) {
+        continue;
+      }
+
+      results.push(this.emitDependentSchemaBranch(subject, ifRef, thenRef, quads, curie));
+    }
+
+    return results;
+  }
+
+  // -------------------------------------------------------------------------
+  // Template: processConditionals
+  // -------------------------------------------------------------------------
+
+  /**
+   * Wrap collected then+else branches for a single conditional.
+   * OWL: wraps in owl:unionOf (returns 1 item).
+   * SHACL: returns branches as-is (multiple items).
+   */
+  abstract wrapConditionalBranches(
+    branches: QuadObjectType[],
+    quads: QuadInterface[],
+    curie: CurieInterface | undefined
+  ): QuadObjectType[];
+}
