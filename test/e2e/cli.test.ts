@@ -121,19 +121,19 @@ void describe('CLI', () => {
       ],
       [
         'validate',
-        /Usage/u
+        /unknown command/u
       ],
       [
         `build --output ${outputDir}`,
-        /Usage/u
+        /required option/u
       ],
       [
         `build --schema ${join(schemasDir, '*.json')}`,
-        /Usage/u
+        /required option/u
       ],
       [
         `build --schema ${join(schemasDir, '*.json')} --output ${outputDir} --verbose`,
-        /Unknown option/u
+        /unknown option/u
       ]
     ];
 

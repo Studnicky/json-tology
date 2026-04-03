@@ -24,6 +24,7 @@ import {
   relationTargetId
 } from './ProjectionIndex.js';
 import type { RelationIndexInterface } from '../../interfaces/RelationIndex.js';
+import { VocabProjection } from './VocabProjection.js';
 
 function resolveTargetRef(targetNodeId: string, index: Map<string, RelationIndexInterface>): string {
   const targetEntry = index.get(targetNodeId);
@@ -102,6 +103,194 @@ function isSerializationCandidate(
   return false;
 }
 
+// ---------------------------------------------------------------------------
+// SHACL vocabulary projection
+// ---------------------------------------------------------------------------
+
+class ShaclVocabProjection extends VocabProjection {
+  private readonly index: Map<string, RelationIndexInterface>;
+
+  constructor(index: Map<string, RelationIndexInterface>) {
+    super();
+    this.index = index;
+  }
+
+  combineUnionBranches(
+    withoutTrigger: QuadObjectType,
+    reqRestrictions: QuadObjectType[],
+    quads: QuadInterface[],
+    curie: CurieInterface | undefined
+  ): QuadObjectType {
+    const reqBnode = QuadFactory.nextBnode();
+
+    for (const reqItem of reqRestrictions) {
+      quads.push(QuadFactory.quad(reqBnode, SH.property, reqItem, { curie }));
+    }
+
+    const orBnode = QuadFactory.nextBnode();
+
+    quads.push(QuadFactory.quad(orBnode, SH.or, QuadFactory.rdfList([
+      withoutTrigger,
+      QuadFactory.bnode(reqBnode)
+    ]), { curie }));
+
+    return QuadFactory.bnode(orBnode);
+  }
+
+  emitConditionalElseBranch(
+    ifRef: string,
+    elseRef: string,
+    quads: QuadInterface[],
+    curie: CurieInterface | undefined
+  ): QuadObjectType {
+    const orBnode = QuadFactory.nextBnode();
+
+    quads.push(QuadFactory.quad(orBnode, SH.or, QuadFactory.rdfList([
+      QuadFactory.iri(ifRef, { curie }),
+      QuadFactory.iri(elseRef, { curie })
+    ]), { curie }));
+
+    return QuadFactory.bnode(orBnode);
+  }
+
+  emitConditionalThenBranch(
+    ifRef: string,
+    thenRef: string,
+    quads: QuadInterface[],
+    curie: CurieInterface | undefined
+  ): QuadObjectType {
+    const complementBnode = QuadFactory.nextBnode();
+
+    quads.push(QuadFactory.quad(complementBnode, SH.not, QuadFactory.iri(ifRef, { curie }), { curie }));
+
+    const orBnode = QuadFactory.nextBnode();
+
+    quads.push(QuadFactory.quad(orBnode, SH.or, QuadFactory.rdfList([
+      QuadFactory.bnode(complementBnode),
+      QuadFactory.iri(thenRef, { curie })
+    ]), { curie }));
+
+    return QuadFactory.bnode(orBnode);
+  }
+
+  emitDependentSchemaBranch(
+    subject: string,
+    ifRef: string,
+    thenRef: string,
+    quads: QuadInterface[],
+    curie: CurieInterface | undefined
+  ): QuadObjectType {
+    const withoutPsBnode = QuadFactory.nextBnode();
+
+    quads.push(QuadFactory.quad(withoutPsBnode, RDF.type, QuadFactory.iri(SH.PropertyShape, { curie }), { curie }));
+    quads.push(QuadFactory.quad(withoutPsBnode, SH.path, QuadFactory.iri(ifRef, { curie }), { curie }));
+    const minCountLit = QuadFactory.literal(1, XSD.integer, { curie });
+
+    quads.push(QuadFactory.quad(withoutPsBnode, SH.minCount, minCountLit, { curie }));
+
+    const withoutContainerBnode = QuadFactory.nextBnode();
+
+    quads.push(QuadFactory.quad(withoutContainerBnode, SH.property, QuadFactory.bnode(withoutPsBnode), { curie }));
+
+    const withoutWrapperBnode = QuadFactory.nextBnode();
+
+    quads.push(QuadFactory.quad(withoutWrapperBnode, SH.not, QuadFactory.bnode(withoutContainerBnode), { curie }));
+
+    const depShapeBnode = QuadFactory.nextBnode();
+
+    quads.push(QuadFactory.quad(depShapeBnode, RDF.type, QuadFactory.iri(SH.NodeShape, { curie }), { curie }));
+
+    const depEntry = this.index.get(thenRef);
+
+    if (depEntry?.byPredicate.has(SH.closed) === true) {
+      const trueLit = QuadFactory.literal(true, XSD.boolean, { curie });
+
+      quads.push(QuadFactory.quad(depShapeBnode, SH.closed, trueLit, { curie }));
+    }
+
+    for (const [
+      propSubject,
+      propEntry
+    ] of this.index) {
+      if (!SchemaIri.isPropertySubject(propSubject)) {
+        continue;
+      }
+
+      const domainRels = propEntry.byPredicate.get(RDFS.domain) ?? [];
+
+      if (domainRels.length === 0 || relationTargetId(domainRels[0]) !== thenRef) {
+        continue;
+      }
+
+      const psBnode = QuadFactory.nextBnode();
+
+      emitPropertyShape(psBnode, propSubject, propEntry, subject, subject, quads, curie);
+      quads.push(QuadFactory.quad(depShapeBnode, SH.property, QuadFactory.bnode(psBnode), { curie }));
+    }
+
+    const orBnode = QuadFactory.nextBnode();
+
+    quads.push(QuadFactory.quad(orBnode, SH.or, QuadFactory.rdfList([
+      QuadFactory.bnode(withoutWrapperBnode),
+      QuadFactory.bnode(depShapeBnode)
+    ]), { curie }));
+
+    return QuadFactory.bnode(orBnode);
+  }
+
+  emitNotTriggerBranch(
+    triggerPropIri: string,
+    quads: QuadInterface[],
+    curie: CurieInterface | undefined
+  ): QuadObjectType {
+    const withoutPsBnode = QuadFactory.nextBnode();
+
+    quads.push(QuadFactory.quad(withoutPsBnode, RDF.type, QuadFactory.iri(SH.PropertyShape, { curie }), { curie }));
+    quads.push(QuadFactory.quad(withoutPsBnode, SH.path, QuadFactory.iri(triggerPropIri, { curie }), { curie }));
+    const minCountLit = QuadFactory.literal(1, XSD.integer, { curie });
+
+    quads.push(QuadFactory.quad(withoutPsBnode, SH.minCount, minCountLit, { curie }));
+
+    const complementBnode = QuadFactory.nextBnode();
+
+    quads.push(QuadFactory.quad(complementBnode, SH.not, QuadFactory.bnode(QuadFactory.nextBnode()), { curie }));
+
+    const withoutContainerBnode = QuadFactory.nextBnode();
+
+    quads.push(QuadFactory.quad(withoutContainerBnode, SH.property, QuadFactory.bnode(withoutPsBnode), { curie }));
+
+    const withoutWrapperBnode = QuadFactory.nextBnode();
+
+    quads.push(QuadFactory.quad(withoutWrapperBnode, SH.not, QuadFactory.bnode(withoutContainerBnode), { curie }));
+
+    return QuadFactory.bnode(withoutWrapperBnode);
+  }
+
+  emitRequiredPropertyBranch(
+    propIri: string,
+    quads: QuadInterface[],
+    curie: CurieInterface | undefined
+  ): QuadObjectType {
+    const reqPsBnode = QuadFactory.nextBnode();
+
+    quads.push(QuadFactory.quad(reqPsBnode, RDF.type, QuadFactory.iri(SH.PropertyShape, { curie }), { curie }));
+    const reqPathIri = QuadFactory.iri(propIri, { curie });
+
+    quads.push(QuadFactory.quad(reqPsBnode, SH.path, reqPathIri, { curie }));
+    quads.push(QuadFactory.quad(reqPsBnode, SH.minCount, QuadFactory.literal(1, XSD.integer, { curie }), { curie }));
+
+    return QuadFactory.bnode(reqPsBnode);
+  }
+
+  wrapConditionalBranches(branches: QuadObjectType[]): QuadObjectType[] {
+    return branches;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
 export function projectShaclGraph(graph: SchemaGraphInterface, options?: { 'curie'?: CurieInterface | undefined }): QuadInterface[] {
   const { curie } = options ?? {};
   const quads: QuadInterface[] = [];
@@ -122,6 +311,8 @@ export function projectShaclGraph(graph: SchemaGraphInterface, options?: { 'curi
     propertyIndex.set(parentId, list);
   }
 
+  const shaclVocab = new ShaclVocabProjection(index);
+
   for (const [
     subject,
     entry
@@ -134,7 +325,7 @@ export function projectShaclGraph(graph: SchemaGraphInterface, options?: { 'curi
       continue;
     }
 
-    emitNodeShape(subject, entry, index, propertyIndex, quads, curie);
+    emitNodeShape(subject, entry, index, propertyIndex, shaclVocab, quads, curie);
   }
 
   return quads;
@@ -145,6 +336,7 @@ function emitNodeShape(
   entry: RelationIndexInterface,
   index: Map<string, RelationIndexInterface>,
   propertyIndex: Map<string, string[]>,
+  shaclVocab: ShaclVocabProjection,
   quads: QuadInterface[],
   curie: CurieInterface | undefined
 ): void {
@@ -193,9 +385,11 @@ function emitNodeShape(
     andItems.push(QuadFactory.iri(relationTargetId(rel), { curie }));
   }
 
-  emitDependentRequiredAndItems(subject, entry, andItems, quads, curie);
-  emitDependentSchemaAndItems(subject, entry, index, andItems, quads, curie);
-  emitConditionalAndItems(entry, andItems, quads, curie);
+  const depReqItems = shaclVocab.processDependentRequired(subject, entry, quads, curie);
+  const depSchemaItems = shaclVocab.processDependentSchemas(subject, entry, quads, curie);
+  const conditionalItems = shaclVocab.processConditionals(entry, quads, curie);
+
+  andItems.push(...depReqItems, ...depSchemaItems, ...conditionalItems);
 
   if (andItems.length > 0) {
     quads.push(QuadFactory.quad(subject, SH.and, QuadFactory.rdfList(andItems), { curie }));
@@ -396,187 +590,3 @@ function emitContainsPropertyShape(
   quads.push(QuadFactory.quad(subject, SH.property, QuadFactory.bnode(psBnode), { curie }));
 }
 
-function emitDependentRequiredAndItems(
-  subject: string,
-  entry: RelationIndexInterface,
-  andItems: QuadObjectType[],
-  quads: QuadInterface[],
-  curie: CurieInterface | undefined
-): void {
-  const depReqRels = entry.byPredicate.get(JT.dependentRequired) ?? [];
-
-  for (const rel of depReqRels) {
-    const meta = rel.metadata ?? {};
-    const trigger = typeof meta.trigger === 'string' ? meta.trigger : '';
-    const required = Array.isArray(meta.required) ? meta.required as string[] : [];
-
-    const triggerPropIri = SchemaIri.propertyIri(subject, trigger);
-
-    const withoutPsBnode = QuadFactory.nextBnode();
-
-    quads.push(QuadFactory.quad(withoutPsBnode, RDF.type, QuadFactory.iri(SH.PropertyShape, { curie }), { curie }));
-    quads.push(QuadFactory.quad(withoutPsBnode, SH.path, QuadFactory.iri(triggerPropIri, { curie }), { curie }));
-    const minCountLit = QuadFactory.literal(1, XSD.integer, { curie });
-
-    quads.push(QuadFactory.quad(withoutPsBnode, SH.minCount, minCountLit, { curie }));
-
-    const complementBnode = QuadFactory.nextBnode();
-
-    quads.push(QuadFactory.quad(complementBnode, SH.not, QuadFactory.bnode(QuadFactory.nextBnode()), { curie }));
-
-    const withoutContainerBnode = QuadFactory.nextBnode();
-
-    quads.push(QuadFactory.quad(withoutContainerBnode, SH.property, QuadFactory.bnode(withoutPsBnode), { curie }));
-
-    const withoutWrapperBnode = QuadFactory.nextBnode();
-
-    quads.push(QuadFactory.quad(withoutWrapperBnode, SH.not, QuadFactory.bnode(withoutContainerBnode), { curie }));
-
-    const reqBnode = QuadFactory.nextBnode();
-
-    for (const reqProp of required) {
-      const reqPsBnode = QuadFactory.nextBnode();
-
-      quads.push(QuadFactory.quad(reqPsBnode, RDF.type, QuadFactory.iri(SH.PropertyShape, { curie }), { curie }));
-      const reqPathIri = QuadFactory.iri(SchemaIri.propertyIri(subject, reqProp), { curie });
-
-      quads.push(QuadFactory.quad(reqPsBnode, SH.path, reqPathIri, { curie }));
-      quads.push(QuadFactory.quad(reqPsBnode, SH.minCount, QuadFactory.literal(1, XSD.integer, { curie }), { curie }));
-      quads.push(QuadFactory.quad(reqBnode, SH.property, QuadFactory.bnode(reqPsBnode), { curie }));
-    }
-
-    const orBnode = QuadFactory.nextBnode();
-
-    quads.push(QuadFactory.quad(orBnode, SH.or, QuadFactory.rdfList([
-      QuadFactory.bnode(withoutWrapperBnode),
-      QuadFactory.bnode(reqBnode)
-    ]), { curie }));
-
-    andItems.push(QuadFactory.bnode(orBnode));
-  }
-}
-
-function emitDependentSchemaAndItems(
-  subject: string,
-  entry: RelationIndexInterface,
-  index: Map<string, RelationIndexInterface>,
-  andItems: QuadObjectType[],
-  quads: QuadInterface[],
-  curie: CurieInterface | undefined
-): void {
-  for (const rel of entry.all) {
-    if (rel.structure?.kind !== 'conditional') {
-      continue;
-    }
-
-    const {
-      ifRef, thenRef
-    } = rel.structure;
-
-    if (thenRef?.includes('/dependentSchemas/') !== true) {
-      continue;
-    }
-
-    const withoutPsBnode = QuadFactory.nextBnode();
-
-    quads.push(QuadFactory.quad(withoutPsBnode, RDF.type, QuadFactory.iri(SH.PropertyShape, { curie }), { curie }));
-    quads.push(QuadFactory.quad(withoutPsBnode, SH.path, QuadFactory.iri(ifRef, { curie }), { curie }));
-    const minCountLit = QuadFactory.literal(1, XSD.integer, { curie });
-
-    quads.push(QuadFactory.quad(withoutPsBnode, SH.minCount, minCountLit, { curie }));
-
-    const withoutContainerBnode = QuadFactory.nextBnode();
-
-    quads.push(QuadFactory.quad(withoutContainerBnode, SH.property, QuadFactory.bnode(withoutPsBnode), { curie }));
-
-    const withoutWrapperBnode = QuadFactory.nextBnode();
-
-    quads.push(QuadFactory.quad(withoutWrapperBnode, SH.not, QuadFactory.bnode(withoutContainerBnode), { curie }));
-
-    const depShapeBnode = QuadFactory.nextBnode();
-
-    quads.push(QuadFactory.quad(depShapeBnode, RDF.type, QuadFactory.iri(SH.NodeShape, { curie }), { curie }));
-
-    const depEntry = index.get(thenRef);
-
-    if (depEntry?.byPredicate.has(SH.closed) === true) {
-      const trueLit = QuadFactory.literal(true, XSD.boolean, { curie });
-
-      quads.push(QuadFactory.quad(depShapeBnode, SH.closed, trueLit, { curie }));
-    }
-
-    for (const [
-      propSubject,
-      propEntry
-    ] of index) {
-      if (!SchemaIri.isPropertySubject(propSubject)) {
-        continue;
-      }
-
-      const domainRels = propEntry.byPredicate.get(RDFS.domain) ?? [];
-
-      if (domainRels.length === 0 || relationTargetId(domainRels[0]) !== thenRef) {
-        continue;
-      }
-
-      const psBnode = QuadFactory.nextBnode();
-
-      emitPropertyShape(psBnode, propSubject, propEntry, subject, subject, quads, curie);
-      quads.push(QuadFactory.quad(depShapeBnode, SH.property, QuadFactory.bnode(psBnode), { curie }));
-    }
-
-    const orBnode = QuadFactory.nextBnode();
-
-    quads.push(QuadFactory.quad(orBnode, SH.or, QuadFactory.rdfList([
-      QuadFactory.bnode(withoutWrapperBnode),
-      QuadFactory.bnode(depShapeBnode)
-    ]), { curie }));
-
-    andItems.push(QuadFactory.bnode(orBnode));
-  }
-}
-
-function emitConditionalAndItems(
-  entry: RelationIndexInterface,
-  andItems: QuadObjectType[],
-  quads: QuadInterface[],
-  curie: CurieInterface | undefined
-): void {
-  for (const rel of entry.all) {
-    if (rel.structure?.kind !== 'conditional') {
-      continue;
-    }
-
-    const {
-      elseRef, ifRef, thenRef
-    } = rel.structure;
-
-    if (thenRef?.includes('/dependentSchemas/') === true) {
-      continue;
-    }
-
-    if (thenRef !== undefined) {
-      const complementBnode = QuadFactory.nextBnode();
-
-      quads.push(QuadFactory.quad(complementBnode, SH.not, QuadFactory.iri(ifRef, { curie }), { curie }));
-
-      const orBnode = QuadFactory.nextBnode();
-
-      quads.push(QuadFactory.quad(orBnode, SH.or, QuadFactory.rdfList([
-        QuadFactory.bnode(complementBnode),
-        QuadFactory.iri(thenRef, { curie })
-      ]), { curie }));
-      andItems.push(QuadFactory.bnode(orBnode));
-    }
-
-    if (elseRef !== undefined) {
-      const orBnode = QuadFactory.nextBnode();
-
-      quads.push(QuadFactory.quad(orBnode, SH.or, QuadFactory.rdfList([
-        QuadFactory.iri(ifRef, { curie }),
-        QuadFactory.iri(elseRef, { curie })
-      ]), { curie }));
-      andItems.push(QuadFactory.bnode(orBnode));
-    }
-  }
-}
