@@ -51,7 +51,9 @@ export const NUMBER_FORMAT_MAP: Readonly<Record<string, string>> = {
  * @param format - Optional format hint (e.g. `date-time`, `int32`).
  * @returns The XSD type string, or `null` for composite types (`object`, `array`) or unknown mappings.
  */
-export function resolveSingleXsdType(type: string, format?: string): null | string {
+export function resolveSingleXsdType(type: string, options?: { 'format'?: string }): null | string {
+  const format = options?.format;
+
   if (type === 'object' || type === 'array') {
     return null;
   }
@@ -87,7 +89,7 @@ export function resolveXsdType(semantics: SchemaGraphSemanticsInterface): null |
     return types.length > 0 ? 'owl:Nothing' : null;
   }
   if (nonNull.length === 1) {
-    return resolveSingleXsdType(nonNull[0], format);
+    return resolveSingleXsdType(nonNull[0], format === undefined ? undefined : { format });
   }
 
   return null;

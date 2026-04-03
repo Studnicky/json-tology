@@ -151,8 +151,14 @@ export class JsonTology<TMap = Record<never, never>> {
     const curie = this.registry.curie ?? new Curie(this.prefixes);
     const vocabularies = options.vocabularies ?? [];
 
-    this.ontologySerializer = new GraphOntologySerializer(curie, vocabularies);
-    this.shaclSerializer = new GraphShaclSerializer(curie, vocabularies);
+    this.ontologySerializer = new GraphOntologySerializer({
+      curie,
+      vocabularies
+    });
+    this.shaclSerializer = new GraphShaclSerializer({
+      curie,
+      vocabularies
+    });
   }
 
   // ---------------------------------------------------------------------------

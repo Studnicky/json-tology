@@ -327,7 +327,7 @@ function pushUnionTypeRelations(
   const resolved: string[] = [];
 
   for (const typeName of nonNullTypes) {
-    const xsd = resolveSingleXsdType(typeName, sem.format);
+    const xsd = resolveSingleXsdType(typeName, sem.format === undefined ? undefined : { 'format': sem.format });
 
     if (xsd !== null) {
       resolved.push(xsd);

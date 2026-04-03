@@ -650,16 +650,18 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   private engineFallback(engine: GraphEngineInterface): CompiledValidatorInterface {
     return {
       'check': (data: unknown): boolean => {
-        return engine.execute(data, '', { 'collectErrors': false }).valid;
+        return engine.execute(data, { 'overrides': { 'collectErrors': false } }).valid;
       },
       'compiled': false,
       'validate': (data: unknown, options?: CompiledValidateOptionsInterface): CompiledValidationResultInterface => {
-        const result = engine.execute(data, '', {
-          'applyDefaults': options?.applyDefaults ?? false,
-          'castTypes': options?.castTypes ?? false,
-          'collectErrors': options?.collectErrors ?? true,
-          'enforceSchemaProperties': options?.enforceSchemaProperties ?? false,
-          'removeAdditionalProperties': options?.removeAdditionalProperties ?? false
+        const result = engine.execute(data, {
+          'overrides': {
+            'applyDefaults': options?.applyDefaults ?? false,
+            'castTypes': options?.castTypes ?? false,
+            'collectErrors': options?.collectErrors ?? true,
+            'enforceSchemaProperties': options?.enforceSchemaProperties ?? false,
+            'removeAdditionalProperties': options?.removeAdditionalProperties ?? false
+          }
         });
 
         return {

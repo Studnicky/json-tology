@@ -27,13 +27,13 @@ import {
 import { JSONLD } from '../../constants/JSONLD.js';
 import { QuadFactory } from './QuadFactory.js';
 
-export { QuadFactory } from './QuadFactory.js';
-
 // ---------------------------------------------------------------------------
 // TBox projection — purely relation-driven
 // ---------------------------------------------------------------------------
 
-export function projectGraph(graph: SchemaGraphInterface, curie?: CurieInterface): QuadInterface[] {
+export function projectGraph(graph: SchemaGraphInterface, options?: { 'curie'?: CurieInterface | undefined }): QuadInterface[] {
+  const { curie } = options ?? {};
+
   QuadFactory.resetBnodeCounter();
   const quads: QuadInterface[] = [];
 
@@ -56,9 +56,9 @@ function handleIri(
   targetId: string,
   _relation: SchemaGraphRelationInterface,
   quads: QuadInterface[],
-  curie?: CurieInterface
+  curie: CurieInterface | undefined
 ): void {
-  quads.push(QuadFactory.quad(subject, predicate, QuadFactory.iri(targetId, curie), curie));
+  quads.push(QuadFactory.quad(subject, predicate, QuadFactory.iri(targetId, { curie }), { curie }));
 }
 
 function handleStringLiteral(
@@ -67,9 +67,9 @@ function handleStringLiteral(
   targetId: string,
   _relation: SchemaGraphRelationInterface,
   quads: QuadInterface[],
-  curie?: CurieInterface
+  curie: CurieInterface | undefined
 ): void {
-  quads.push(QuadFactory.quad(subject, predicate, QuadFactory.literal(targetId, XSD.string, curie), curie));
+  quads.push(QuadFactory.quad(subject, predicate, QuadFactory.literal(targetId, XSD.string, { curie }), { curie }));
 }
 
 function handleBooleanCoerce(
@@ -78,9 +78,9 @@ function handleBooleanCoerce(
   targetId: string,
   _relation: SchemaGraphRelationInterface,
   quads: QuadInterface[],
-  curie?: CurieInterface
+  curie: CurieInterface | undefined
 ): void {
-  quads.push(QuadFactory.quad(subject, predicate, QuadFactory.literal(targetId === 'true', XSD.boolean, curie), curie));
+  quads.push(QuadFactory.quad(subject, predicate, QuadFactory.literal(targetId === 'true', XSD.boolean, { curie }), { curie }));
 }
 
 function handleBooleanLiteral(
@@ -89,9 +89,9 @@ function handleBooleanLiteral(
   targetId: string,
   _relation: SchemaGraphRelationInterface,
   quads: QuadInterface[],
-  curie?: CurieInterface
+  curie: CurieInterface | undefined
 ): void {
-  quads.push(QuadFactory.quad(subject, predicate, QuadFactory.literal(targetId, XSD.boolean, curie), curie));
+  quads.push(QuadFactory.quad(subject, predicate, QuadFactory.literal(targetId, XSD.boolean, { curie }), { curie }));
 }
 
 function handleIntegerLiteral(
@@ -100,9 +100,11 @@ function handleIntegerLiteral(
   targetId: string,
   _relation: SchemaGraphRelationInterface,
   quads: QuadInterface[],
-  curie?: CurieInterface
+  curie: CurieInterface | undefined
 ): void {
-  quads.push(QuadFactory.quad(subject, predicate, QuadFactory.literal(Number(targetId), XSD.integer, curie), curie));
+  const intLit = QuadFactory.literal(Number(targetId), XSD.integer, { curie });
+
+  quads.push(QuadFactory.quad(subject, predicate, intLit, { curie }));
 }
 
 function handleDecimalLiteral(
@@ -111,9 +113,11 @@ function handleDecimalLiteral(
   targetId: string,
   _relation: SchemaGraphRelationInterface,
   quads: QuadInterface[],
-  curie?: CurieInterface
+  curie: CurieInterface | undefined
 ): void {
-  quads.push(QuadFactory.quad(subject, predicate, QuadFactory.literal(Number(targetId), XSD.decimal, curie), curie));
+  const decLit = QuadFactory.literal(Number(targetId), XSD.decimal, { curie });
+
+  quads.push(QuadFactory.quad(subject, predicate, decLit, { curie }));
 }
 
 function handleNonNegativeInteger(
@@ -122,11 +126,11 @@ function handleNonNegativeInteger(
   targetId: string,
   _relation: SchemaGraphRelationInterface,
   quads: QuadInterface[],
-  curie?: CurieInterface
+  curie: CurieInterface | undefined
 ): void {
-  const cardLit = QuadFactory.literal(Number(targetId), XSD.nonNegativeInteger, curie);
+  const cardLit = QuadFactory.literal(Number(targetId), XSD.nonNegativeInteger, { curie });
 
-  quads.push(QuadFactory.quad(subject, predicate, cardLit, curie));
+  quads.push(QuadFactory.quad(subject, predicate, cardLit, { curie }));
 }
 
 function handleDependentRequired(
@@ -135,7 +139,7 @@ function handleDependentRequired(
   _targetId: string,
   relation: SchemaGraphRelationInterface,
   quads: QuadInterface[],
-  curie?: CurieInterface
+  curie: CurieInterface | undefined
 ): void {
   const metadata = relation.metadata ?? {};
   const trigger = typeof metadata.trigger === 'string' ? metadata.trigger : '';
@@ -147,8 +151,8 @@ function handleDependentRequired(
       trigger
     }),
     XSD.string,
-    curie
-  ), curie));
+    { curie }
+  ), { curie }));
 }
 
 function handleRestriction(
@@ -157,19 +161,19 @@ function handleRestriction(
   _targetId: string,
   relation: SchemaGraphRelationInterface,
   quads: QuadInterface[],
-  curie?: CurieInterface
+  curie: CurieInterface | undefined
 ): void {
   const rBnode = QuadFactory.nextBnode();
   const metadata = relation.metadata ?? {};
   const onProperty = typeof metadata.onProperty === 'string' ? metadata.onProperty : '';
   const minCard = typeof metadata.minCardinality === 'number' ? metadata.minCardinality : 1;
 
-  quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(rBnode), curie));
-  quads.push(QuadFactory.quad(rBnode, RDF.type, QuadFactory.iri(OWL.Restriction, curie), curie));
-  quads.push(QuadFactory.quad(rBnode, OWL.onProperty, QuadFactory.iri(onProperty, curie), curie));
-  const minCardLit = QuadFactory.literal(minCard, XSD.nonNegativeInteger, curie);
+  quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(rBnode), { curie }));
+  quads.push(QuadFactory.quad(rBnode, RDF.type, QuadFactory.iri(OWL.Restriction, { curie }), { curie }));
+  quads.push(QuadFactory.quad(rBnode, OWL.onProperty, QuadFactory.iri(onProperty, { curie }), { curie }));
+  const minCardLit = QuadFactory.literal(minCard, XSD.nonNegativeInteger, { curie });
 
-  quads.push(QuadFactory.quad(rBnode, OWL.minCardinality, minCardLit, curie));
+  quads.push(QuadFactory.quad(rBnode, OWL.minCardinality, minCardLit, { curie }));
 }
 
 function handlePattern(
@@ -178,16 +182,16 @@ function handlePattern(
   targetId: string,
   relation: SchemaGraphRelationInterface,
   quads: QuadInterface[],
-  curie?: CurieInterface
+  curie: CurieInterface | undefined
 ): void {
   if (relation.metadata?.patternProperty === true && typeof relation.metadata.pattern === 'string') {
-    const patternLit = QuadFactory.literal(relation.metadata.pattern, XSD.string, curie);
+    const patternLit = QuadFactory.literal(relation.metadata.pattern, XSD.string, { curie });
 
-    quads.push(QuadFactory.quad(subject, SH.pattern, patternLit, curie));
+    quads.push(QuadFactory.quad(subject, SH.pattern, patternLit, { curie }));
   } else {
-    const targetLit = QuadFactory.literal(targetId, XSD.string, curie);
+    const targetLit = QuadFactory.literal(targetId, XSD.string, { curie });
 
-    quads.push(QuadFactory.quad(subject, predicate, targetLit, curie));
+    quads.push(QuadFactory.quad(subject, predicate, targetLit, { curie }));
   }
 }
 
@@ -201,7 +205,7 @@ const PREDICATE_HANDLERS = new Map<string, (
   targetId: string,
   relation: SchemaGraphRelationInterface,
   quads: QuadInterface[],
-  curie?: CurieInterface
+  curie: CurieInterface | undefined
 ) => void>([
   [
     DASH.readOnly,
@@ -360,7 +364,7 @@ const PREDICATE_HANDLERS = new Map<string, (
 function projectRelation(
   relation: SchemaGraphRelationInterface,
   quads: QuadInterface[],
-  curie?: CurieInterface
+  curie: CurieInterface | undefined
 ): void {
   if (relation.structure !== undefined) {
     projectStructuredRelation(relation, quads, curie);
@@ -382,7 +386,7 @@ function projectRelation(
 function projectStructuredRelation(
   relation: SchemaGraphRelationInterface,
   quads: QuadInterface[],
-  curie?: CurieInterface
+  curie: CurieInterface | undefined
 ): void {
   const subject = relation.source.id;
   const structure = relation.structure;
@@ -395,36 +399,38 @@ function projectStructuredRelation(
     case 'conditional': {
       const condBnode = QuadFactory.nextBnode();
 
-      quads.push(QuadFactory.quad(subject, OWL.unionOf, QuadFactory.bnode(condBnode), curie));
-      quads.push(QuadFactory.quad(condBnode, RDF.type, QuadFactory.iri(OWL.Class, curie), curie));
-      quads.push(QuadFactory.quad(condBnode, JT.if, QuadFactory.iri(structure.ifRef, curie), curie));
+      quads.push(QuadFactory.quad(subject, OWL.unionOf, QuadFactory.bnode(condBnode), { curie }));
+      quads.push(QuadFactory.quad(condBnode, RDF.type, QuadFactory.iri(OWL.Class, { curie }), { curie }));
+      quads.push(QuadFactory.quad(condBnode, JT.if, QuadFactory.iri(structure.ifRef, { curie }), { curie }));
       if (structure.thenRef !== undefined) {
-        quads.push(QuadFactory.quad(condBnode, JT.thenBranch, QuadFactory.iri(structure.thenRef, curie), curie));
+        const thenIri = QuadFactory.iri(structure.thenRef, { curie });
+
+        quads.push(QuadFactory.quad(condBnode, JT.thenBranch, thenIri, { curie }));
       }
       if (structure.elseRef !== undefined) {
-        quads.push(QuadFactory.quad(condBnode, JT.else, QuadFactory.iri(structure.elseRef, curie), curie));
+        quads.push(QuadFactory.quad(condBnode, JT.else, QuadFactory.iri(structure.elseRef, { curie }), { curie }));
       }
       break;
     }
     case 'list': {
       const items = structure.members.map((member) => {
-        return QuadFactory.iri(member, curie);
+        return QuadFactory.iri(member, { curie });
       });
 
-      quads.push(QuadFactory.quad(subject, relation.predicate, QuadFactory.rdfList(items), curie));
+      quads.push(QuadFactory.quad(subject, relation.predicate, QuadFactory.rdfList(items), { curie }));
       break;
     }
     case 'restriction': {
       const restrictionBnode = QuadFactory.nextBnode();
 
-      quads.push(QuadFactory.quad(subject, relation.predicate, QuadFactory.bnode(restrictionBnode), curie));
-      quads.push(QuadFactory.quad(restrictionBnode, RDF.type, QuadFactory.iri(OWL.Restriction, curie), curie));
-      const onPropIri = QuadFactory.iri(structure.onProperty, curie);
+      quads.push(QuadFactory.quad(subject, relation.predicate, QuadFactory.bnode(restrictionBnode), { curie }));
+      quads.push(QuadFactory.quad(restrictionBnode, RDF.type, QuadFactory.iri(OWL.Restriction, { curie }), { curie }));
+      const onPropIri = QuadFactory.iri(structure.onProperty, { curie });
 
-      quads.push(QuadFactory.quad(restrictionBnode, OWL.onProperty, onPropIri, curie));
-      const constraintVal = QuadFactory.iri(String(structure.value), curie);
+      quads.push(QuadFactory.quad(restrictionBnode, OWL.onProperty, onPropIri, { curie }));
+      const constraintVal = QuadFactory.iri(String(structure.value), { curie });
 
-      quads.push(QuadFactory.quad(restrictionBnode, String(structure.constraint), constraintVal, curie));
+      quads.push(QuadFactory.quad(restrictionBnode, String(structure.constraint), constraintVal, { curie }));
       break;
     }
   }
@@ -438,9 +444,13 @@ export function projectAbox(
   graph: SchemaGraphInterface,
   data: unknown,
   baseIRI: string,
-  entryNode?: SchemaGraphNodeInterface,
-  curie?: CurieInterface
+  options?: { 'curie'?: CurieInterface | undefined;
+    'entryNode'?: SchemaGraphNodeInterface | undefined }
 ): QuadInterface[] {
+  const {
+    curie, entryNode
+  } = options ?? {};
+
   QuadFactory.resetBnodeCounter();
   const quads: QuadInterface[] = [];
   const rootNode = entryNode ?? graph.rootNode;
@@ -482,12 +492,12 @@ function projectInstance(
   data: Record<string, unknown>,
   baseIRI: string,
   quads: QuadInterface[],
-  curie?: CurieInterface
+  curie: CurieInterface | undefined
 ): string {
   const instIRI = instanceIRI(baseIRI, node.id, data);
   const nodeSemantics = graph.semantics(node);
 
-  quads.push(QuadFactory.quad(instIRI, RDF.type, QuadFactory.iri(node.id, curie), curie));
+  quads.push(QuadFactory.quad(instIRI, RDF.type, QuadFactory.iri(node.id, { curie }), { curie }));
 
   for (const [
     propertyName,
@@ -519,7 +529,7 @@ function projectPropertyValue(
   baseIRI: string,
   instanceIri: string,
   quads: QuadInterface[],
-  curie?: CurieInterface
+  curie: CurieInterface | undefined
 ): void {
   const emit = (val: unknown): void => {
     projectSingleValue(graph, propertyIRI, propertySemantics, propertyNode, val, baseIRI, instanceIri, quads, curie);
@@ -546,16 +556,18 @@ function projectSingleValue(
   baseIRI: string,
   instanceIri: string,
   quads: QuadInterface[],
-  curie?: CurieInterface
+  curie: CurieInterface | undefined
 ): void {
   if (value === null || value === undefined) {
     return;
   }
 
   if (typeof value === 'string') {
-    const xsdDatatype = resolveSingleXsdType('string', propertySemantics.format ?? undefined) ?? XSD.string;
+    const xsdDatatype = resolveSingleXsdType('string', propertySemantics.format === undefined ? undefined : { 'format': propertySemantics.format }) ?? XSD.string;
 
-    quads.push(QuadFactory.quad(instanceIri, propertyIRI, QuadFactory.literal(value, xsdDatatype, curie), curie));
+    const strLit = QuadFactory.literal(value, xsdDatatype, { curie });
+
+    quads.push(QuadFactory.quad(instanceIri, propertyIRI, strLit, { curie }));
 
     return;
   }
@@ -563,13 +575,17 @@ function projectSingleValue(
   if (typeof value === 'number') {
     const datatype = Number.isInteger(value) ? XSD.integer : XSD.double;
 
-    quads.push(QuadFactory.quad(instanceIri, propertyIRI, QuadFactory.literal(value, datatype, curie), curie));
+    const numLit = QuadFactory.literal(value, datatype, { curie });
+
+    quads.push(QuadFactory.quad(instanceIri, propertyIRI, numLit, { curie }));
 
     return;
   }
 
   if (typeof value === 'boolean') {
-    quads.push(QuadFactory.quad(instanceIri, propertyIRI, QuadFactory.literal(value, XSD.boolean, curie), curie));
+    const boolLit = QuadFactory.literal(value, XSD.boolean, { curie });
+
+    quads.push(QuadFactory.quad(instanceIri, propertyIRI, boolLit, { curie }));
 
     return;
   }
@@ -589,7 +605,7 @@ function projectSingleValue(
 
     const nestedIRI = projectInstance(graph, targetNode, value, baseIRI, quads, curie);
 
-    quads.push(QuadFactory.quad(instanceIri, propertyIRI, QuadFactory.iri(nestedIRI, curie), curie));
+    quads.push(QuadFactory.quad(instanceIri, propertyIRI, QuadFactory.iri(nestedIRI, { curie }), { curie }));
   }
 }
 

@@ -31,13 +31,13 @@ function emitRestriction(
   constraint: string,
   constraintValue: QuadObjectType,
   quads: QuadInterface[],
-  curie?: CurieInterface
+  curie: CurieInterface | undefined
 ): string {
   const rBnode = QuadFactory.nextBnode();
 
-  quads.push(QuadFactory.quad(rBnode, RDF.type, QuadFactory.iri(OWL.Restriction, curie), curie));
-  quads.push(QuadFactory.quad(rBnode, OWL.onProperty, QuadFactory.iri(onProperty, curie), curie));
-  quads.push(QuadFactory.quad(rBnode, constraint, constraintValue, curie));
+  quads.push(QuadFactory.quad(rBnode, RDF.type, QuadFactory.iri(OWL.Restriction, { curie }), { curie }));
+  quads.push(QuadFactory.quad(rBnode, OWL.onProperty, QuadFactory.iri(onProperty, { curie }), { curie }));
+  quads.push(QuadFactory.quad(rBnode, constraint, constraintValue, { curie }));
 
   return rBnode;
 }
@@ -66,7 +66,8 @@ function canonicalPropertyIri(subject: string): string {
 // Public API
 // ---------------------------------------------------------------------------
 
-export function projectOwlGraph(graph: SchemaGraphInterface, curie?: CurieInterface): QuadInterface[] {
+export function projectOwlGraph(graph: SchemaGraphInterface, options?: { 'curie'?: CurieInterface | undefined }): QuadInterface[] {
+  const { curie } = options ?? {};
   const quads: QuadInterface[] = [];
   const allRelations = graph.allRelations();
   const index = buildIndex(allRelations);
@@ -100,23 +101,25 @@ function emitClassQuads(
   entry: RelationIndexInterface,
   index: Map<string, RelationIndexInterface>,
   quads: QuadInterface[],
-  curie?: CurieInterface
+  curie: CurieInterface | undefined
 ): void {
-  quads.push(QuadFactory.quad(subject, RDF.type, QuadFactory.iri(OWL.Class, curie), curie));
+  quads.push(QuadFactory.quad(subject, RDF.type, QuadFactory.iri(OWL.Class, { curie }), { curie }));
 
-  QuadFactory.emitLiterals(subject, entry, RDFS.label, RDFS.label, quads, curie);
-  QuadFactory.emitLiterals(subject, entry, RDFS.comment, RDFS.comment, quads, curie);
+  QuadFactory.emitLiterals(subject, entry, RDFS.label, RDFS.label, quads, { curie });
+  QuadFactory.emitLiterals(subject, entry, RDFS.comment, RDFS.comment, quads, { curie });
 
   const deprecated = entry.byPredicate.get(OWL.deprecated);
 
   if (deprecated !== undefined) {
-    quads.push(QuadFactory.quad(subject, OWL.deprecated, QuadFactory.literal(true, XSD.boolean, curie), curie));
+    quads.push(QuadFactory.quad(subject, OWL.deprecated, QuadFactory.literal(true, XSD.boolean, { curie }), { curie }));
   }
 
   const subClassRels = entry.byPredicate.get(RDFS.subClassOf) ?? [];
 
   for (const rel of subClassRels) {
-    quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.iri(relationTargetId(rel), curie), curie));
+    const target = QuadFactory.iri(relationTargetId(rel), { curie });
+
+    quads.push(QuadFactory.quad(subject, RDFS.subClassOf, target, { curie }));
   }
 
   const restrictionRels = entry.byPredicate.get(OWL.Restriction) ?? [];
@@ -126,10 +129,10 @@ function emitClassQuads(
     const onProperty = typeof meta.onProperty === 'string' ? meta.onProperty : '';
     const minCard = typeof meta.minCardinality === 'number' ? meta.minCardinality : 1;
 
-    const minCardLit = QuadFactory.literal(minCard, XSD.nonNegativeInteger, curie);
+    const minCardLit = QuadFactory.literal(minCard, XSD.nonNegativeInteger, { curie });
     const rBnode = emitRestriction(onProperty, OWL.minCardinality, minCardLit, quads, curie);
 
-    quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(rBnode), curie));
+    quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(rBnode), { curie }));
   }
 
   const equivRels = entry.byPredicate.get(OWL.equivalentClass) ?? [];
@@ -137,27 +140,27 @@ function emitClassQuads(
   if (equivRels.length > 0) {
     const eqBnode = QuadFactory.nextBnode();
 
-    quads.push(QuadFactory.quad(subject, OWL.equivalentClass, QuadFactory.bnode(eqBnode), curie));
-    quads.push(QuadFactory.quad(eqBnode, RDF.type, QuadFactory.iri(OWL.Class, curie), curie));
+    quads.push(QuadFactory.quad(subject, OWL.equivalentClass, QuadFactory.bnode(eqBnode), { curie }));
+    quads.push(QuadFactory.quad(eqBnode, RDF.type, QuadFactory.iri(OWL.Class, { curie }), { curie }));
     quads.push(QuadFactory.quad(eqBnode, OWL.unionOf, QuadFactory.rdfList(equivRels.map((rel) => {
-      return QuadFactory.iri(relationTargetId(rel), curie);
-    }), curie), curie));
+      return QuadFactory.iri(relationTargetId(rel), { curie });
+    })), { curie }));
   }
 
   const complementRels = entry.byPredicate.get(OWL.complementOf) ?? [];
 
   if (complementRels.length > 0) {
-    const complementTarget = QuadFactory.iri(relationTargetId(complementRels[0]), curie);
+    const complementTarget = QuadFactory.iri(relationTargetId(complementRels[0]), { curie });
 
-    quads.push(QuadFactory.quad(subject, OWL.complementOf, complementTarget, curie));
+    quads.push(QuadFactory.quad(subject, OWL.complementOf, complementTarget, { curie }));
   }
 
   const disjointRels = entry.byPredicate.get(OWL.disjointWith) ?? [];
 
   if (disjointRels.length > 0) {
-    const disjointTarget = QuadFactory.iri(relationTargetId(disjointRels[0]), curie);
+    const disjointTarget = QuadFactory.iri(relationTargetId(disjointRels[0]), { curie });
 
-    quads.push(QuadFactory.quad(subject, OWL.disjointWith, disjointTarget, curie));
+    quads.push(QuadFactory.quad(subject, OWL.disjointWith, disjointTarget, { curie }));
   }
 
   const oneOfRels = entry.byPredicate.get(OWL.oneOf) ?? [];
@@ -166,10 +169,10 @@ function emitClassQuads(
     const typedLiterals = oneOfRels.map((rel) => {
       const val = relationTargetId(rel);
 
-      return QuadFactory.literal(typedLiteralObject(val), RDF.JSON, curie);
+      return QuadFactory.literal(typedLiteralObject(val), RDF.JSON, { curie });
     });
 
-    quads.push(QuadFactory.quad(subject, OWL.oneOf, QuadFactory.rdfList(typedLiterals, curie), curie));
+    quads.push(QuadFactory.quad(subject, OWL.oneOf, QuadFactory.rdfList(typedLiterals), { curie }));
   }
 
   if (oneOfRels.length === 0) {
@@ -178,10 +181,10 @@ function emitClassQuads(
     if (hasValueRels.length > 0) {
       const val = relationTargetId(hasValueRels[0]);
 
-      const valueLit = QuadFactory.literal(typedLiteralObject(val), RDF.JSON, curie);
-      const valueList = QuadFactory.rdfList([valueLit], curie);
+      const valueLit = QuadFactory.literal(typedLiteralObject(val), RDF.JSON, { curie });
+      const valueList = QuadFactory.rdfList([valueLit]);
 
-      quads.push(QuadFactory.quad(subject, OWL.oneOf, valueList, curie));
+      quads.push(QuadFactory.quad(subject, OWL.oneOf, valueList, { curie }));
     }
   }
 
@@ -223,7 +226,7 @@ function emitPropertyQuads(
   subject: string,
   entry: RelationIndexInterface,
   quads: QuadInterface[],
-  curie?: CurieInterface
+  curie: CurieInterface | undefined
 ): void {
   if (SchemaIri.fragmentContains(subject, '/patternProperties/')) {
     return;
@@ -236,40 +239,40 @@ function emitPropertyQuads(
   const canonicalId = canonicalPropertyIri(subject);
 
   if (entry.types.includes(OWL.ObjectProperty)) {
-    quads.push(QuadFactory.quad(canonicalId, RDF.type, QuadFactory.iri(OWL.ObjectProperty, curie), curie));
+    quads.push(QuadFactory.quad(canonicalId, RDF.type, QuadFactory.iri(OWL.ObjectProperty, { curie }), { curie }));
   } else if (entry.types.includes(OWL.DatatypeProperty)) {
-    quads.push(QuadFactory.quad(canonicalId, RDF.type, QuadFactory.iri(OWL.DatatypeProperty, curie), curie));
+    quads.push(QuadFactory.quad(canonicalId, RDF.type, QuadFactory.iri(OWL.DatatypeProperty, { curie }), { curie }));
   }
 
   if (entry.byPredicate.has(OWL.TransitiveProperty)) {
-    quads.push(QuadFactory.quad(canonicalId, RDF.type, QuadFactory.iri(OWL.TransitiveProperty, curie), curie));
+    quads.push(QuadFactory.quad(canonicalId, RDF.type, QuadFactory.iri(OWL.TransitiveProperty, { curie }), { curie }));
   }
 
   if (entry.byPredicate.has(OWL.SymmetricProperty)) {
-    quads.push(QuadFactory.quad(canonicalId, RDF.type, QuadFactory.iri(OWL.SymmetricProperty, curie), curie));
+    quads.push(QuadFactory.quad(canonicalId, RDF.type, QuadFactory.iri(OWL.SymmetricProperty, { curie }), { curie }));
   }
 
   const domainRels = entry.byPredicate.get(RDFS.domain) ?? [];
   const domainId = domainRels.length > 0 ? relationTargetId(domainRels[0]) : '';
 
-  quads.push(QuadFactory.quad(canonicalId, RDFS.domain, QuadFactory.iri(domainId, curie), curie));
+  quads.push(QuadFactory.quad(canonicalId, RDFS.domain, QuadFactory.iri(domainId, { curie }), { curie }));
 
   const hasMaxCount = entry.byPredicate.has(SH.maxCount);
   const rangeRels = entry.byPredicate.get(RDFS.range) ?? [];
   const datatypeRels = entry.byPredicate.get(SH.datatype) ?? [];
 
   if (!hasMaxCount) {
-    const listIri = QuadFactory.iri(RDF.List, curie);
+    const listIri = QuadFactory.iri(RDF.List, { curie });
 
-    quads.push(QuadFactory.quad(canonicalId, RDFS.range, listIri, curie));
+    quads.push(QuadFactory.quad(canonicalId, RDFS.range, listIri, { curie }));
   } else if (rangeRels.length > 0) {
-    const rangeTarget = QuadFactory.iri(relationTargetId(rangeRels[0]), curie);
+    const rangeTarget = QuadFactory.iri(relationTargetId(rangeRels[0]), { curie });
 
-    quads.push(QuadFactory.quad(canonicalId, RDFS.range, rangeTarget, curie));
+    quads.push(QuadFactory.quad(canonicalId, RDFS.range, rangeTarget, { curie }));
   } else if (datatypeRels.length > 0) {
-    const dtTarget = QuadFactory.iri(relationTargetId(datatypeRels[0]), curie);
+    const dtTarget = QuadFactory.iri(relationTargetId(datatypeRels[0]), { curie });
 
-    quads.push(QuadFactory.quad(canonicalId, RDFS.range, dtTarget, curie));
+    quads.push(QuadFactory.quad(canonicalId, RDFS.range, dtTarget, { curie }));
   }
 
   const unionStructured = entry.all.filter((rel) => {
@@ -283,29 +286,33 @@ function emitPropertyQuads(
       continue;
     }
     quads.push(QuadFactory.quad(canonicalId, OWL.unionOf, QuadFactory.rdfList(structure.members.map((member) => {
-      return QuadFactory.iri(member, curie);
-    }), curie), curie));
+      return QuadFactory.iri(member, { curie });
+    })), { curie }));
   }
 
   const inverseRels = entry.byPredicate.get(OWL.inverseOf) ?? [];
 
   if (inverseRels.length > 0) {
-    const inverseTarget = QuadFactory.iri(relationTargetId(inverseRels[0]), curie);
+    const inverseTarget = QuadFactory.iri(relationTargetId(inverseRels[0]), { curie });
 
-    quads.push(QuadFactory.quad(canonicalId, OWL.inverseOf, inverseTarget, curie));
+    quads.push(QuadFactory.quad(canonicalId, OWL.inverseOf, inverseTarget, { curie }));
   }
 
-  QuadFactory.emitLiterals(canonicalId, entry, RDFS.comment, RDFS.comment, quads, curie);
+  QuadFactory.emitLiterals(canonicalId, entry, RDFS.comment, RDFS.comment, quads, { curie });
 
   if (entry.byPredicate.has(DASH.readOnly)) {
-    quads.push(QuadFactory.quad(canonicalId, DASH.readOnly, QuadFactory.literal(true, XSD.boolean, curie), curie));
+    const trueLit = QuadFactory.literal(true, XSD.boolean, { curie });
+
+    quads.push(QuadFactory.quad(canonicalId, DASH.readOnly, trueLit, { curie }));
   }
 
   if (entry.byPredicate.has(DASH.writeOnly)) {
-    quads.push(QuadFactory.quad(canonicalId, DASH.writeOnly, QuadFactory.literal(true, XSD.boolean, curie), curie));
+    const trueLit = QuadFactory.literal(true, XSD.boolean, { curie });
+
+    quads.push(QuadFactory.quad(canonicalId, DASH.writeOnly, trueLit, { curie }));
   }
 
-  QuadFactory.emitLiterals(canonicalId, entry, DCT.format, DCT.format, quads, curie);
+  QuadFactory.emitLiterals(canonicalId, entry, DCT.format, DCT.format, quads, { curie });
 }
 
 // ---------------------------------------------------------------------------
@@ -316,7 +323,7 @@ function emitConditionalQuads(
   subject: string,
   entry: RelationIndexInterface,
   quads: QuadInterface[],
-  curie?: CurieInterface
+  curie: CurieInterface | undefined
 ): void {
   for (const rel of entry.all) {
     if (rel.structure?.kind !== 'conditional') {
@@ -337,36 +344,36 @@ function emitConditionalQuads(
     if (thenRef !== undefined) {
       const branchBnode = QuadFactory.nextBnode();
 
-      quads.push(QuadFactory.quad(branchBnode, RDF.type, QuadFactory.iri(OWL.Class, curie), curie));
+      quads.push(QuadFactory.quad(branchBnode, RDF.type, QuadFactory.iri(OWL.Class, { curie }), { curie }));
       quads.push(QuadFactory.quad(branchBnode, OWL.intersectionOf, QuadFactory.rdfList([
-        QuadFactory.iri(ifRef, curie),
-        QuadFactory.iri(thenRef, curie)
-      ], curie), curie));
+        QuadFactory.iri(ifRef, { curie }),
+        QuadFactory.iri(thenRef, { curie })
+      ]), { curie }));
       branches.push(QuadFactory.bnode(branchBnode));
     }
 
     if (elseRef !== undefined) {
       const complementBnode = QuadFactory.nextBnode();
 
-      quads.push(QuadFactory.quad(complementBnode, RDF.type, QuadFactory.iri(OWL.Class, curie), curie));
-      quads.push(QuadFactory.quad(complementBnode, OWL.complementOf, QuadFactory.iri(ifRef, curie), curie));
+      quads.push(QuadFactory.quad(complementBnode, RDF.type, QuadFactory.iri(OWL.Class, { curie }), { curie }));
+      quads.push(QuadFactory.quad(complementBnode, OWL.complementOf, QuadFactory.iri(ifRef, { curie }), { curie }));
 
       const branchBnode = QuadFactory.nextBnode();
 
-      quads.push(QuadFactory.quad(branchBnode, RDF.type, QuadFactory.iri(OWL.Class, curie), curie));
+      quads.push(QuadFactory.quad(branchBnode, RDF.type, QuadFactory.iri(OWL.Class, { curie }), { curie }));
       quads.push(QuadFactory.quad(branchBnode, OWL.intersectionOf, QuadFactory.rdfList([
         QuadFactory.bnode(complementBnode),
-        QuadFactory.iri(elseRef, curie)
-      ], curie), curie));
+        QuadFactory.iri(elseRef, { curie })
+      ]), { curie }));
       branches.push(QuadFactory.bnode(branchBnode));
     }
 
     if (branches.length > 0) {
       const unionBnode = QuadFactory.nextBnode();
 
-      quads.push(QuadFactory.quad(unionBnode, RDF.type, QuadFactory.iri(OWL.Class, curie), curie));
-      quads.push(QuadFactory.quad(unionBnode, OWL.unionOf, QuadFactory.rdfList(branches, curie), curie));
-      quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(unionBnode), curie));
+      quads.push(QuadFactory.quad(unionBnode, RDF.type, QuadFactory.iri(OWL.Class, { curie }), { curie }));
+      quads.push(QuadFactory.quad(unionBnode, OWL.unionOf, QuadFactory.rdfList(branches), { curie }));
+      quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(unionBnode), { curie }));
     }
   }
 }
@@ -376,24 +383,24 @@ function emitDependentSchemaImplication(
   triggerPropIri: string,
   schemaRef: string,
   quads: QuadInterface[],
-  curie?: CurieInterface
+  curie: CurieInterface | undefined
 ): void {
-  const minOne = QuadFactory.literal(1, XSD.nonNegativeInteger, curie);
+  const minOne = QuadFactory.literal(1, XSD.nonNegativeInteger, { curie });
   const restrictionBnode = emitRestriction(triggerPropIri, OWL.minCardinality, minOne, quads, curie);
 
   const withoutTriggerBnode = QuadFactory.nextBnode();
 
-  quads.push(QuadFactory.quad(withoutTriggerBnode, RDF.type, QuadFactory.iri(OWL.Class, curie), curie));
-  quads.push(QuadFactory.quad(withoutTriggerBnode, OWL.complementOf, QuadFactory.bnode(restrictionBnode), curie));
+  quads.push(QuadFactory.quad(withoutTriggerBnode, RDF.type, QuadFactory.iri(OWL.Class, { curie }), { curie }));
+  quads.push(QuadFactory.quad(withoutTriggerBnode, OWL.complementOf, QuadFactory.bnode(restrictionBnode), { curie }));
 
   const unionBnode = QuadFactory.nextBnode();
 
-  quads.push(QuadFactory.quad(unionBnode, RDF.type, QuadFactory.iri(OWL.Class, curie), curie));
+  quads.push(QuadFactory.quad(unionBnode, RDF.type, QuadFactory.iri(OWL.Class, { curie }), { curie }));
   quads.push(QuadFactory.quad(unionBnode, OWL.unionOf, QuadFactory.rdfList([
     QuadFactory.bnode(withoutTriggerBnode),
-    QuadFactory.iri(schemaRef, curie)
-  ], curie), curie));
-  quads.push(QuadFactory.quad(classSubject, RDFS.subClassOf, QuadFactory.bnode(unionBnode), curie));
+    QuadFactory.iri(schemaRef, { curie })
+  ]), { curie }));
+  quads.push(QuadFactory.quad(classSubject, RDFS.subClassOf, QuadFactory.bnode(unionBnode), { curie }));
 }
 
 // ---------------------------------------------------------------------------
@@ -404,7 +411,7 @@ function emitDependentRequiredQuads(
   subject: string,
   entry: RelationIndexInterface,
   quads: QuadInterface[],
-  curie?: CurieInterface
+  curie: CurieInterface | undefined
 ): void {
   const depReqRels = entry.byPredicate.get(JT.dependentRequired) ?? [];
 
@@ -415,13 +422,13 @@ function emitDependentRequiredQuads(
 
     const triggerPropIri = SchemaIri.propertyIri(subject, trigger);
 
-    const minOne = QuadFactory.literal(1, XSD.nonNegativeInteger, curie);
+    const minOne = QuadFactory.literal(1, XSD.nonNegativeInteger, { curie });
     const restrictionBnode = emitRestriction(triggerPropIri, OWL.minCardinality, minOne, quads, curie);
 
     const withoutTriggerBnode = QuadFactory.nextBnode();
 
-    quads.push(QuadFactory.quad(withoutTriggerBnode, RDF.type, QuadFactory.iri(OWL.Class, curie), curie));
-    quads.push(QuadFactory.quad(withoutTriggerBnode, OWL.complementOf, QuadFactory.bnode(restrictionBnode), curie));
+    quads.push(QuadFactory.quad(withoutTriggerBnode, RDF.type, QuadFactory.iri(OWL.Class, { curie }), { curie }));
+    quads.push(QuadFactory.quad(withoutTriggerBnode, OWL.complementOf, QuadFactory.bnode(restrictionBnode), { curie }));
 
     const reqRestrictions: QuadObjectType[] = required.map((reqProp) => {
       const reqPropIri = SchemaIri.propertyIri(subject, reqProp);
@@ -437,16 +444,16 @@ function emitDependentRequiredQuads(
     } else {
       const interBnode = QuadFactory.nextBnode();
 
-      quads.push(QuadFactory.quad(interBnode, RDF.type, QuadFactory.iri(OWL.Class, curie), curie));
-      quads.push(QuadFactory.quad(interBnode, OWL.intersectionOf, QuadFactory.rdfList(reqRestrictions, curie), curie));
+      quads.push(QuadFactory.quad(interBnode, RDF.type, QuadFactory.iri(OWL.Class, { curie }), { curie }));
+      quads.push(QuadFactory.quad(interBnode, OWL.intersectionOf, QuadFactory.rdfList(reqRestrictions), { curie }));
       unionMembers.push(QuadFactory.bnode(interBnode));
     }
 
     const unionBnode = QuadFactory.nextBnode();
 
-    quads.push(QuadFactory.quad(unionBnode, RDF.type, QuadFactory.iri(OWL.Class, curie), curie));
-    quads.push(QuadFactory.quad(unionBnode, OWL.unionOf, QuadFactory.rdfList(unionMembers, curie), curie));
-    quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(unionBnode), curie));
+    quads.push(QuadFactory.quad(unionBnode, RDF.type, QuadFactory.iri(OWL.Class, { curie }), { curie }));
+    quads.push(QuadFactory.quad(unionBnode, OWL.unionOf, QuadFactory.rdfList(unionMembers), { curie }));
+    quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(unionBnode), { curie }));
   }
 }
 
@@ -458,7 +465,7 @@ function emitContainsQuads(
   subject: string,
   entry: RelationIndexInterface,
   quads: QuadInterface[],
-  curie?: CurieInterface
+  curie: CurieInterface | undefined
 ): void {
   const containsRels = entry.all.filter((rel) => {
     return isRestrictionStructure(rel.structure)
@@ -473,30 +480,30 @@ function emitContainsQuads(
     }
     const containsTypeRef = String(structure.value);
 
-    const containsIri = QuadFactory.iri(containsTypeRef, curie);
+    const containsIri = QuadFactory.iri(containsTypeRef, { curie });
     const rBnode = emitRestriction(structure.onProperty, OWL.someValuesFrom, containsIri, quads, curie);
 
-    quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(rBnode), curie));
+    quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(rBnode), { curie }));
 
     const minQualRels = entry.byPredicate.get(OWL.minQualifiedCardinality) ?? [];
     const maxQualRels = entry.byPredicate.get(OWL.maxQualifiedCardinality) ?? [];
 
     if (minQualRels.length > 0) {
       const minVal = Number(relationTargetId(minQualRels[0]));
-      const minLit = QuadFactory.literal(minVal, XSD.nonNegativeInteger, curie);
+      const minLit = QuadFactory.literal(minVal, XSD.nonNegativeInteger, { curie });
       const minRBnode = emitRestriction(structure.onProperty, OWL.minQualifiedCardinality, minLit, quads, curie);
 
-      quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(minRBnode), curie));
-      quads.push(QuadFactory.quad(minRBnode, OWL.onDataRange, QuadFactory.iri(containsTypeRef, curie), curie));
+      quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(minRBnode), { curie }));
+      quads.push(QuadFactory.quad(minRBnode, OWL.onDataRange, QuadFactory.iri(containsTypeRef, { curie }), { curie }));
     }
 
     if (maxQualRels.length > 0) {
       const maxVal = Number(relationTargetId(maxQualRels[0]));
-      const maxLit = QuadFactory.literal(maxVal, XSD.nonNegativeInteger, curie);
+      const maxLit = QuadFactory.literal(maxVal, XSD.nonNegativeInteger, { curie });
       const maxRBnode = emitRestriction(structure.onProperty, OWL.maxQualifiedCardinality, maxLit, quads, curie);
 
-      quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(maxRBnode), curie));
-      quads.push(QuadFactory.quad(maxRBnode, OWL.onDataRange, QuadFactory.iri(containsTypeRef, curie), curie));
+      quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(maxRBnode), { curie }));
+      quads.push(QuadFactory.quad(maxRBnode, OWL.onDataRange, QuadFactory.iri(containsTypeRef, { curie }), { curie }));
     }
   }
 }
@@ -509,7 +516,7 @@ function emitPrefixItemQuads(
   subject: string,
   entry: RelationIndexInterface,
   quads: QuadInterface[],
-  curie?: CurieInterface
+  curie: CurieInterface | undefined
 ): void {
   const memberRels = entry.byPredicate.get(RDFS.member) ?? [];
 
@@ -518,9 +525,9 @@ function emitPrefixItemQuads(
     memberRel
   ] of memberRels.entries()) {
     const typeRef = relationTargetId(memberRel);
-    const rBnode = emitRestriction(`rdf:_${i + 1}`, OWL.allValuesFrom, QuadFactory.iri(typeRef, curie), quads, curie);
+    const rBnode = emitRestriction(`rdf:_${i + 1}`, OWL.allValuesFrom, QuadFactory.iri(typeRef, { curie }), quads, curie);
 
-    quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(rBnode), curie));
+    quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(rBnode), { curie }));
   }
 }
 
@@ -532,7 +539,7 @@ function emitArrayItemQuads(
   subject: string,
   index: Map<string, RelationIndexInterface>,
   quads: QuadInterface[],
-  curie?: CurieInterface
+  curie: CurieInterface | undefined
 ): void {
   for (const [
     propSubject,
@@ -585,9 +592,10 @@ function emitArrayItemQuads(
     }
 
     const canonicalId = canonicalPropertyIri(propSubject);
-    const rBnode = emitRestriction(canonicalId, OWL.allValuesFrom, QuadFactory.iri(itemTypeId, curie), quads, curie);
+    const itemTypeIri = QuadFactory.iri(itemTypeId, { curie });
+    const rBnode = emitRestriction(canonicalId, OWL.allValuesFrom, itemTypeIri, quads, curie);
 
-    quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(rBnode), curie));
+    quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(rBnode), { curie }));
   }
 }
 
@@ -600,7 +608,7 @@ function emitPatternPropertyQuads(
   entry: RelationIndexInterface,
   index: Map<string, RelationIndexInterface>,
   quads: QuadInterface[],
-  curie?: CurieInterface
+  curie: CurieInterface | undefined
 ): void {
   const patternRels = entry.byPredicate.get(SH.pattern) ?? [];
 
@@ -622,22 +630,24 @@ function emitPatternPropertyQuads(
 
     const propIri = SchemaIri.propertyIri(subject, pattern);
 
-    quads.push(QuadFactory.quad(propIri, RDF.type, QuadFactory.iri(rdfType, curie), curie));
-    quads.push(QuadFactory.quad(propIri, RDFS.domain, QuadFactory.iri(subject, curie), curie));
-    quads.push(QuadFactory.quad(propIri, SH.pattern, QuadFactory.literal(pattern, XSD.string, curie), curie));
+    quads.push(QuadFactory.quad(propIri, RDF.type, QuadFactory.iri(rdfType, { curie }), { curie }));
+    quads.push(QuadFactory.quad(propIri, RDFS.domain, QuadFactory.iri(subject, { curie }), { curie }));
+    quads.push(QuadFactory.quad(propIri, SH.pattern, QuadFactory.literal(pattern, XSD.string, { curie }), { curie }));
 
     if (hasDatatype) {
-      const dtRange = QuadFactory.iri(relationTargetId(datatypeRels[0]), curie);
+      const dtRange = QuadFactory.iri(relationTargetId(datatypeRels[0]), { curie });
 
-      quads.push(QuadFactory.quad(propIri, RDFS.range, dtRange, curie));
+      quads.push(QuadFactory.quad(propIri, RDFS.range, dtRange, { curie }));
     }
 
     if (hasRange) {
-      quads.push(QuadFactory.quad(propIri, RDFS.range, QuadFactory.iri(relationTargetId(rangeRels[0]), curie), curie));
+      const rangeTarget = QuadFactory.iri(relationTargetId(rangeRels[0]), { curie });
+
+      quads.push(QuadFactory.quad(propIri, RDFS.range, rangeTarget, { curie }));
     }
 
     if (patternEntry !== undefined) {
-      QuadFactory.emitLiterals(propIri, patternEntry, RDFS.comment, RDFS.comment, quads, curie);
+      QuadFactory.emitLiterals(propIri, patternEntry, RDFS.comment, RDFS.comment, quads, { curie });
     }
   }
 }

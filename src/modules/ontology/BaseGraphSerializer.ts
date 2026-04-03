@@ -12,9 +12,10 @@ export abstract class BaseGraphSerializer implements GraphSerializerInterface {
   protected readonly curie: CurieInterface;
   protected readonly vocabularies: readonly VocabularyPluginInterface[];
 
-  public constructor(curie?: CurieInterface, vocabularies?: readonly VocabularyPluginInterface[]) {
-    this.curie = curie ?? new Curie(DEFAULT_PREFIXES);
-    this.vocabularies = vocabularies ?? [];
+  public constructor(options?: { 'curie'?: CurieInterface;
+    'vocabularies'?: readonly VocabularyPluginInterface[] }) {
+    this.curie = options?.curie ?? new Curie(DEFAULT_PREFIXES);
+    this.vocabularies = options?.vocabularies ?? [];
   }
 
   protected abstract corePredicates(): ReadonlySet<string>;

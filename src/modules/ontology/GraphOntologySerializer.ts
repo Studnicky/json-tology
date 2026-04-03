@@ -18,6 +18,6 @@ export class GraphOntologySerializer extends BaseGraphSerializer {
   }
 
   protected projectGraph(graph: SchemaGraphInterface): QuadInterface[] {
-    return projectOwlGraph(graph, this.curie);
+    return projectOwlGraph(graph, { 'curie': this.curie });
   }
 }

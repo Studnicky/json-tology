@@ -7,12 +7,12 @@ import type { FormatRegistryInterface } from './FormatRegistry.js';
 import type { JSONSchema7Definition } from 'json-schema';
 
 export interface GraphEngineInterface {
-  check(value: unknown, pointer?: string): boolean;
-  errors(value: unknown, pointer?: string): ValidationErrorType[];
+  check(value: unknown, options?: { 'pointer'?: string }): boolean;
+  errors(value: unknown, options?: { 'pointer'?: string }): ValidationErrorType[];
   execute(
     value: unknown,
-    pointer?: string,
-    overrides?: Partial<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'lookupSchema'>>
+    options?: { 'overrides'?: Partial<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'lookupSchema'>>
+      'pointer'?: string; }
   ): GraphExecutionResultInterface;
   readonly 'formatRegistry': FormatRegistryInterface;
   hasRegisteredCustomKeywords(): boolean;

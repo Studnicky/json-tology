@@ -218,8 +218,8 @@ export class SchemaGraph implements SchemaGraphInterface {
    * @param rootSchema - The JSON Schema (object or boolean) to represent as a graph.
    * @param vocabularies - Optional vocabulary plugins for custom relation extraction.
    */
-  public constructor(public readonly rootSchema: JsonSchemaType, vocabularies?: readonly VocabularyPluginInterface[]) {
-    this.vocabularies = vocabularies ?? [];
+  public constructor(public readonly rootSchema: JsonSchemaType, options?: { 'vocabularies'?: readonly VocabularyPluginInterface[] }) {
+    this.vocabularies = options?.vocabularies ?? [];
     this.lower(rootSchema, '');
   }
 

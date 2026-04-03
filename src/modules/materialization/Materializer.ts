@@ -202,7 +202,7 @@ export class Materializer implements MaterializerInterface {
     materialized: unknown,
     baseIRI: string
   ): QuadInterface[] {
-    const quads = projectAbox(execution.graph, materialized, baseIRI, execution.entryNode);
+    const quads = projectAbox(execution.graph, materialized, baseIRI, { 'entryNode': execution.entryNode });
 
     return quads;
   }
@@ -251,13 +251,15 @@ export class Materializer implements MaterializerInterface {
     this.registry.register(schema);
 
     const engine = this.registry.engine(schema);
-    const execution = engine.execute(data, '', {
-      'allowAdditionalProperties': this.options.passAdditionalProperties === true,
-      'applyDefaults': true,
-      'castTypes': this.registry.castTypes,
-      'collectErrors': true,
-      'removeAdditionalProperties': false,
-      'synthesizeDefaults': synthesizeDefaults
+    const execution = engine.execute(data, {
+      'overrides': {
+        'allowAdditionalProperties': this.options.passAdditionalProperties === true,
+        'applyDefaults': true,
+        'castTypes': this.registry.castTypes,
+        'collectErrors': true,
+        'removeAdditionalProperties': false,
+        'synthesizeDefaults': synthesizeDefaults
+      }
     });
     const materialized = synthesizeDefaults
       ? structuredClone(execution.value)

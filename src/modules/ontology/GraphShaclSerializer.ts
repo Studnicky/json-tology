@@ -20,6 +20,6 @@ export class GraphShaclSerializer extends BaseGraphSerializer {
   }
 
   protected projectGraph(graph: SchemaGraphInterface): QuadInterface[] {
-    return projectShaclGraph(graph, this.curie);
+    return projectShaclGraph(graph, { 'curie': this.curie });
   }
 }

@@ -61,7 +61,7 @@ function assertConformance(
 
   // Interpreted (engine) path — direct execution
   const engine = registry.engine(schema);
-  const engineResult = engine.execute(data, '', { 'collectErrors': true });
+  const engineResult = engine.execute(data, { 'overrides': { 'collectErrors': true } });
 
   const compiledValid = compiledErrors.length === 0;
   const engineValid = engineResult.valid;
@@ -1692,7 +1692,7 @@ void describe('Compiler conformance: format and custom keywords', () => {
         }
 
         const engine = registry.engine(schema);
-        const engineResult = engine.execute(data, '', { 'collectErrors': true });
+        const engineResult = engine.execute(data, { 'overrides': { 'collectErrors': true } });
 
         assert.equal(engineResult.valid, valid, `engine should ${valid ? 'accept' : 'reject'} ${data}`);
       });
