@@ -58,6 +58,30 @@ export class QuadFactory {
   }
 
   /**
+   * Emit a single numeric constraint literal for the first relation matching a predicate.
+   *
+   * Looks up `entry.byPredicate.get(predicate)`, coerces the first target to
+   * a number, and pushes one quad with the given datatype.
+   */
+  static emitConstraintLiteral(
+    subject: string,
+    entry: RelationIndexInterface,
+    predicate: string,
+    datatype: string,
+    quads: QuadInterface[],
+    options?: { 'curie'?: CurieInterface | undefined }
+  ): void {
+    const { curie } = options ?? {};
+    const rels = entry.byPredicate.get(predicate) ?? [];
+
+    if (rels.length > 0) {
+      const numLit = QuadFactory.literal(Number(relationTargetId(rels[0])), datatype, { curie });
+
+      quads.push(QuadFactory.quad(subject, predicate, numLit, { curie }));
+    }
+  }
+
+  /**
    * Emit string literal quads for all relations matching a predicate.
    *
    * Iterates `entry.byPredicate.get(predicate)` and pushes one quad per

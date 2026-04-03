@@ -47,91 +47,169 @@ export function projectGraph(graph: SchemaGraphInterface, options?: { 'curie'?: 
 }
 
 // ---------------------------------------------------------------------------
-// Predicate dispatch handlers
+// Data-driven predicate dispatch tables
 // ---------------------------------------------------------------------------
 
-function handleIri(
+interface SimplePredicateEntry {
+  readonly 'coerce'?: (value: string) => unknown;
+  readonly 'datatype': string;
+}
+
+const SIMPLE_LITERAL_PREDICATES = new Map<string, SimplePredicateEntry>([
+  [
+    DASH.readOnly,
+    {
+      'coerce': (value) => {
+        return value === 'true';
+      },
+      'datatype': XSD.boolean
+    }
+  ],
+  [
+    DASH.writeOnly,
+    {
+      'coerce': (value) => {
+        return value === 'true';
+      },
+      'datatype': XSD.boolean
+    }
+  ],
+  [
+    DCT.format,
+    { 'datatype': XSD.string }
+  ],
+  [
+    JT.multipleOf,
+    {
+      'coerce': Number,
+      'datatype': XSD.decimal
+    }
+  ],
+  [
+    OWL.deprecated,
+    { 'datatype': XSD.boolean }
+  ],
+  [
+    OWL.hasValue,
+    { 'datatype': XSD.string }
+  ],
+  [
+    OWL.maxQualifiedCardinality,
+    {
+      'coerce': Number,
+      'datatype': XSD.nonNegativeInteger
+    }
+  ],
+  [
+    OWL.minQualifiedCardinality,
+    {
+      'coerce': Number,
+      'datatype': XSD.nonNegativeInteger
+    }
+  ],
+  [
+    OWL.oneOf,
+    { 'datatype': XSD.string }
+  ],
+  [
+    RDFS.comment,
+    { 'datatype': XSD.string }
+  ],
+  [
+    RDFS.label,
+    { 'datatype': XSD.string }
+  ],
+  [
+    SH.closed,
+    { 'datatype': XSD.boolean }
+  ],
+  [
+    SH.maxCount,
+    {
+      'coerce': Number,
+      'datatype': XSD.integer
+    }
+  ],
+  [
+    SH.maxExclusive,
+    {
+      'coerce': Number,
+      'datatype': XSD.decimal
+    }
+  ],
+  [
+    SH.maxInclusive,
+    {
+      'coerce': Number,
+      'datatype': XSD.decimal
+    }
+  ],
+  [
+    SH.maxLength,
+    {
+      'coerce': Number,
+      'datatype': XSD.integer
+    }
+  ],
+  [
+    SH.minCount,
+    {
+      'coerce': Number,
+      'datatype': XSD.integer
+    }
+  ],
+  [
+    SH.minExclusive,
+    {
+      'coerce': Number,
+      'datatype': XSD.decimal
+    }
+  ],
+  [
+    SH.minInclusive,
+    {
+      'coerce': Number,
+      'datatype': XSD.decimal
+    }
+  ],
+  [
+    SH.minLength,
+    {
+      'coerce': Number,
+      'datatype': XSD.integer
+    }
+  ]
+]);
+
+const IRI_PREDICATES = new Set<string>([
+  OWL.complementOf,
+  OWL.disjointWith,
+  OWL.equivalentClass,
+  OWL.inverseOf,
+  OWL.someValuesFrom,
+  OWL.SymmetricProperty,
+  OWL.TransitiveProperty,
+  OWL.unionOf,
+  RDF.type,
+  RDFS.domain,
+  RDFS.member,
+  RDFS.range,
+  RDFS.subClassOf,
+  SH.datatype
+]);
+
+// ---------------------------------------------------------------------------
+// Special predicate handlers (non-trivial emit logic)
+// ---------------------------------------------------------------------------
+
+type SpecialHandlerFn = (
   subject: string,
   predicate: string,
   targetId: string,
-  _relation: SchemaGraphRelationInterface,
+  relation: SchemaGraphRelationInterface,
   quads: QuadInterface[],
   curie: CurieInterface | undefined
-): void {
-  quads.push(QuadFactory.quad(subject, predicate, QuadFactory.iri(targetId, { curie }), { curie }));
-}
-
-function handleStringLiteral(
-  subject: string,
-  predicate: string,
-  targetId: string,
-  _relation: SchemaGraphRelationInterface,
-  quads: QuadInterface[],
-  curie: CurieInterface | undefined
-): void {
-  quads.push(QuadFactory.quad(subject, predicate, QuadFactory.literal(targetId, XSD.string, { curie }), { curie }));
-}
-
-function handleBooleanCoerce(
-  subject: string,
-  predicate: string,
-  targetId: string,
-  _relation: SchemaGraphRelationInterface,
-  quads: QuadInterface[],
-  curie: CurieInterface | undefined
-): void {
-  quads.push(QuadFactory.quad(subject, predicate, QuadFactory.literal(targetId === 'true', XSD.boolean, { curie }), { curie }));
-}
-
-function handleBooleanLiteral(
-  subject: string,
-  predicate: string,
-  targetId: string,
-  _relation: SchemaGraphRelationInterface,
-  quads: QuadInterface[],
-  curie: CurieInterface | undefined
-): void {
-  quads.push(QuadFactory.quad(subject, predicate, QuadFactory.literal(targetId, XSD.boolean, { curie }), { curie }));
-}
-
-function handleIntegerLiteral(
-  subject: string,
-  predicate: string,
-  targetId: string,
-  _relation: SchemaGraphRelationInterface,
-  quads: QuadInterface[],
-  curie: CurieInterface | undefined
-): void {
-  const intLit = QuadFactory.literal(Number(targetId), XSD.integer, { curie });
-
-  quads.push(QuadFactory.quad(subject, predicate, intLit, { curie }));
-}
-
-function handleDecimalLiteral(
-  subject: string,
-  predicate: string,
-  targetId: string,
-  _relation: SchemaGraphRelationInterface,
-  quads: QuadInterface[],
-  curie: CurieInterface | undefined
-): void {
-  const decLit = QuadFactory.literal(Number(targetId), XSD.decimal, { curie });
-
-  quads.push(QuadFactory.quad(subject, predicate, decLit, { curie }));
-}
-
-function handleNonNegativeInteger(
-  subject: string,
-  predicate: string,
-  targetId: string,
-  _relation: SchemaGraphRelationInterface,
-  quads: QuadInterface[],
-  curie: CurieInterface | undefined
-): void {
-  const cardLit = QuadFactory.literal(Number(targetId), XSD.nonNegativeInteger, { curie });
-
-  quads.push(QuadFactory.quad(subject, predicate, cardLit, { curie }));
-}
+) => void;
 
 function handleDependentRequired(
   subject: string,
@@ -195,161 +273,14 @@ function handlePattern(
   }
 }
 
-// ---------------------------------------------------------------------------
-// Predicate dispatch map
-// ---------------------------------------------------------------------------
-
-const PREDICATE_HANDLERS = new Map<string, (
-  subject: string,
-  predicate: string,
-  targetId: string,
-  relation: SchemaGraphRelationInterface,
-  quads: QuadInterface[],
-  curie: CurieInterface | undefined
-) => void>([
-  [
-    DASH.readOnly,
-    handleBooleanCoerce
-  ],
-  [
-    DASH.writeOnly,
-    handleBooleanCoerce
-  ],
-  [
-    DCT.format,
-    handleStringLiteral
-  ],
+const SPECIAL_HANDLERS = new Map<string, SpecialHandlerFn>([
   [
     JT.dependentRequired,
     handleDependentRequired
   ],
   [
-    JT.multipleOf,
-    handleDecimalLiteral
-  ],
-  [
-    OWL.complementOf,
-    handleIri
-  ],
-  [
-    OWL.deprecated,
-    handleBooleanLiteral
-  ],
-  [
-    OWL.disjointWith,
-    handleIri
-  ],
-  [
-    OWL.equivalentClass,
-    handleIri
-  ],
-  [
-    OWL.hasValue,
-    handleStringLiteral
-  ],
-  [
-    OWL.inverseOf,
-    handleIri
-  ],
-  [
-    OWL.maxQualifiedCardinality,
-    handleNonNegativeInteger
-  ],
-  [
-    OWL.minQualifiedCardinality,
-    handleNonNegativeInteger
-  ],
-  [
-    OWL.oneOf,
-    handleStringLiteral
-  ],
-  [
     OWL.Restriction,
     handleRestriction
-  ],
-  [
-    OWL.someValuesFrom,
-    handleIri
-  ],
-  [
-    OWL.SymmetricProperty,
-    handleIri
-  ],
-  [
-    OWL.TransitiveProperty,
-    handleIri
-  ],
-  [
-    OWL.unionOf,
-    handleIri
-  ],
-  [
-    RDF.type,
-    handleIri
-  ],
-  [
-    RDFS.comment,
-    handleStringLiteral
-  ],
-  [
-    RDFS.domain,
-    handleIri
-  ],
-  [
-    RDFS.label,
-    handleStringLiteral
-  ],
-  [
-    RDFS.member,
-    handleIri
-  ],
-  [
-    RDFS.range,
-    handleIri
-  ],
-  [
-    RDFS.subClassOf,
-    handleIri
-  ],
-  [
-    SH.closed,
-    handleBooleanLiteral
-  ],
-  [
-    SH.datatype,
-    handleIri
-  ],
-  [
-    SH.maxCount,
-    handleIntegerLiteral
-  ],
-  [
-    SH.maxExclusive,
-    handleDecimalLiteral
-  ],
-  [
-    SH.maxInclusive,
-    handleDecimalLiteral
-  ],
-  [
-    SH.maxLength,
-    handleIntegerLiteral
-  ],
-  [
-    SH.minCount,
-    handleIntegerLiteral
-  ],
-  [
-    SH.minExclusive,
-    handleDecimalLiteral
-  ],
-  [
-    SH.minInclusive,
-    handleDecimalLiteral
-  ],
-  [
-    SH.minLength,
-    handleIntegerLiteral
   ],
   [
     SH.pattern,
@@ -376,10 +307,28 @@ function projectRelation(
   const predicate = relation.predicate;
   const targetId = typeof relation.target === 'string' ? relation.target : relation.target.id;
 
-  const handler = PREDICATE_HANDLERS.get(predicate);
+  const special = SPECIAL_HANDLERS.get(predicate);
 
-  if (handler !== undefined) {
-    handler(subject, predicate, targetId, relation, quads, curie);
+  if (special !== undefined) {
+    special(subject, predicate, targetId, relation, quads, curie);
+
+    return;
+  }
+
+  if (IRI_PREDICATES.has(predicate)) {
+    quads.push(QuadFactory.quad(subject, predicate, QuadFactory.iri(targetId, { curie }), { curie }));
+
+    return;
+  }
+
+  const literalEntry = SIMPLE_LITERAL_PREDICATES.get(predicate);
+
+  if (literalEntry !== undefined) {
+    const value = literalEntry.coerce === undefined ? targetId : literalEntry.coerce(targetId);
+
+    const litObj = QuadFactory.literal(value, literalEntry.datatype, { curie });
+
+    quads.push(QuadFactory.quad(subject, predicate, litObj, { curie }));
   }
 }
 
