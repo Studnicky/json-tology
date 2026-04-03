@@ -118,7 +118,7 @@ void describe('VocabularyPlugin', () => {
             'type': 'object' as const
           };
 
-          const graph = new SchemaGraph(schema, [plugin]);
+          const graph = new SchemaGraph(schema, { 'vocabularies': [plugin] });
           const allRelations = graph.allRelations();
           const acmeRelations = allRelations.filter((rel) => {
             return rel.predicate === `${ACME_NS}priority`;
@@ -144,7 +144,7 @@ void describe('VocabularyPlugin', () => {
             'type': 'object' as const
           };
 
-          const graph = new SchemaGraph(schema, [plugin]);
+          const graph = new SchemaGraph(schema, { 'vocabularies': [plugin] });
           const allRelations = graph.allRelations();
           const acmeRelations = allRelations.filter((rel) => {
             return rel.predicate.startsWith(ACME_NS);
@@ -218,7 +218,10 @@ void describe('VocabularyPlugin', () => {
             ...DEFAULT_PREFIXES,
             'acme': ACME_NS
           });
-          const serializer = new GraphOntologySerializer(curie, [plugin]);
+          const serializer = new GraphOntologySerializer({
+            curie,
+            'vocabularies': [plugin]
+          });
           const nodes = serializer.serialize(registry.listGraphs()) as Array<Record<string, unknown>>;
 
           assert.ok(emittedQuads.length > 0);
@@ -276,7 +279,10 @@ void describe('VocabularyPlugin', () => {
             ...DEFAULT_PREFIXES,
             'acme': ACME_NS
           });
-          const serializer = new GraphShaclSerializer(curie, [plugin]);
+          const serializer = new GraphShaclSerializer({
+            curie,
+            'vocabularies': [plugin]
+          });
 
           serializer.serialize(registry.listGraphs());
 
@@ -388,7 +394,10 @@ void describe('VocabularyPlugin', () => {
 
           assert.ok(graphs.length > 0);
 
-          const serializer = new GraphOntologySerializer(registry.curie, [plugin]);
+          const serializer = new GraphOntologySerializer({
+            'curie': registry.curie,
+            'vocabularies': [plugin]
+          });
           const nodes = serializer.serialize(graphs);
 
           assert.ok(Array.isArray(nodes));

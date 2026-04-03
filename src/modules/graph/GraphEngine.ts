@@ -12,9 +12,7 @@ import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import {
   deepEqual, isRecord
 } from '../data/DataTypes.js';
-import { SchemaIri } from './SchemaIri.js';
 import { FormatRegistry } from '../format/FormatRegistry.js';
-import { Hash } from '../hash/Hash.js';
 import { SchemaGraph } from './SchemaGraph.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { DEFAULT_OPTIONS } from '../../constants/DIALECT.js';
@@ -48,37 +46,6 @@ import type { VisitContextInterface } from '../../interfaces/VisitContext.js';
 import type { JSONSchema7Definition } from 'json-schema';
 
 export class GraphEngine implements GraphEngineInterface {
-  /**
-   * Encodes a string for use as a URI path segment, preserving forward slashes.
-   *
-   * @param value - The raw string to escape.
-   * @returns The percent-encoded string with `/` characters preserved.
-   */
-  static escapeSegment(value: string): string {
-    return SchemaIri.escapeSegment(value);
-  }
-
-  /**
-   * Produces a deterministic hash string for an arbitrary value.
-   *
-   * @param value - The value to hash.
-   * @returns A stable hash string.
-   */
-  static hash(value: unknown): string {
-    return Hash.value(value);
-  }
-
-  /**
-   * Constructs an IRI for a property relative to a class identifier.
-   *
-   * @param classId - The IRI of the owning class.
-   * @param propertyName - The local property name.
-   * @returns The fully-qualified property IRI.
-   */
-  static propertyIri(classId: string, propertyName: string): string {
-    return SchemaIri.propertyIri(classId, propertyName);
-  }
-
   private readonly customKeywords: KeywordDefinitionInterface[];
   private readonly dialectPlan: RootDialectPlanInterface;
   public readonly formatRegistry: FormatRegistryInterface;
@@ -213,11 +180,14 @@ export class GraphEngine implements GraphEngineInterface {
    * Returns whether a value is valid against the schema at the given pointer.
    *
    * @param value - The value to validate.
-   * @param pointer - JSON Pointer into the root schema (defaults to root).
+   * @param options - Optional settings including a JSON Pointer into the root schema.
    * @returns `true` if the value passes validation, `false` otherwise.
    */
-  public check(value: unknown, pointer = ''): boolean {
-    return this.execute(value, pointer, { 'collectErrors': false }).valid;
+  public check(value: unknown, options?: { 'pointer'?: string }): boolean {
+    return this.execute(value, {
+      'overrides': { 'collectErrors': false },
+      'pointer': options?.pointer ?? ''
+    }).valid;
   }
 
   private coerceValue(schemaTypes: string[], value: unknown, materializeContainers: boolean): unknown {
@@ -257,29 +227,34 @@ export class GraphEngine implements GraphEngineInterface {
    * Collects all validation errors for a value against the schema at the given pointer.
    *
    * @param value - The value to validate.
-   * @param pointer - JSON Pointer into the root schema (defaults to root).
+   * @param options - Optional settings including a JSON Pointer into the root schema.
    * @returns An array of validation errors, empty when the value is valid.
    */
-  public errors(value: unknown, pointer = ''): ValidationErrorType[] {
-    return this.execute(value, pointer, { 'collectErrors': true }).errors;
+  public errors(value: unknown, options?: { 'pointer'?: string }): ValidationErrorType[] {
+    return this.execute(value, {
+      'overrides': { 'collectErrors': true },
+      'pointer': options?.pointer ?? ''
+    }).errors;
   }
 
   /**
    * Executes the full graph-based validation and normalization pipeline for a value.
    *
    * @param value - The value to validate and normalize.
-   * @param pointer - JSON Pointer into the root schema (defaults to root).
-   * @param overrides - Per-call option overrides merged on top of the engine defaults.
+   * @param options - Optional pointer and per-call option overrides merged on top of the engine defaults.
    * @returns The execution result containing validity, errors, normalized value, and graph metadata.
    * @throws {@link GraphError} If the pointer cannot be resolved in the graph.
    */
   public execute(
     value: unknown,
-    pointer = '',
-    overrides: Partial<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'lookupSchema'>> = {}
+    options?: { 'overrides'?: Partial<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'lookupSchema'>>
+      'pointer'?: string; }
   ): GraphExecutionResultInterface {
+    const {
+      overrides, pointer
+    } = options ?? {};
     const graph = this.graphFor(this.rootSchema);
-    const entryNode = graph.resolvePointer(pointer);
+    const entryNode = graph.resolvePointer(pointer ?? '');
     const effective = {
       ...this.options,
       ...overrides

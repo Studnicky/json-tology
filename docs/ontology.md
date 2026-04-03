@@ -31,8 +31,8 @@ import { Curie } from 'json-tology';
 import { GraphOntologySerializer, GraphShaclSerializer } from 'json-tology/ontology';
 
 const curie = new Curie({ ex: 'https://example.com/' });
-const owlSerializer = new GraphOntologySerializer(curie, [myPlugin]);
-const shaclSerializer = new GraphShaclSerializer(curie, [myPlugin]);
+const owlSerializer = new GraphOntologySerializer({ curie, vocabularies: [myPlugin] });
+const shaclSerializer = new GraphShaclSerializer({ curie, vocabularies: [myPlugin] });
 ```
 
 **CURIE expansion:**

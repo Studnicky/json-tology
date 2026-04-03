@@ -327,7 +327,10 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   ) {
     const engine = this.engine(schema);
 
-    return engine.execute(data, pointer, options);
+    return engine.execute(data, {
+      'overrides': options,
+      'pointer': pointer
+    });
   }
 
   /**
@@ -357,7 +360,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   }
 
   private graphOf(entry: SchemaRegistryEntryInterface): SchemaGraphInterface {
-    entry.graph ??= new SchemaGraph(entry.schema, this.vocabularies);
+    entry.graph ??= new SchemaGraph(entry.schema, { 'vocabularies': this.vocabularies });
 
     return entry.graph;
   }

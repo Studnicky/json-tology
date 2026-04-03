@@ -237,7 +237,9 @@ function deriveBaseIRIFromSchemaId(schemaId: string): string {
   }
 }
 
-function resolveBaseIRI(graphs: readonly SchemaGraphInterface[], configuredBaseIRI?: string): string {
+function resolveBaseIRI(graphs: readonly SchemaGraphInterface[], options?: { 'configuredBaseIRI'?: string }): string {
+  const configuredBaseIRI = options?.configuredBaseIRI;
+
   if (configuredBaseIRI !== undefined && configuredBaseIRI !== '') {
     return normalizeBaseIRI(configuredBaseIRI);
   }
@@ -380,7 +382,7 @@ async function mainBuild(buildArgs: BuildArgsInterface): Promise<void> {
   }
 
   const graphs = registry.listGraphs();
-  const baseIRI = resolveBaseIRI(graphs, configuredBaseIRI);
+  const baseIRI = resolveBaseIRI(graphs, configuredBaseIRI === undefined ? undefined : { configuredBaseIRI });
 
   if (format === 'ontology' || format === 'shacl') {
     if (format === 'ontology') {

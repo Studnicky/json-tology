@@ -69,20 +69,22 @@ export class QuadFactory {
     predicate: string,
     outputPredicate: string,
     quads: QuadInterface[],
-    curie?: CurieInterface
+    options?: { 'curie'?: CurieInterface | undefined }
   ): void {
+    const { curie } = options ?? {};
     const rels = entry.byPredicate.get(predicate);
 
     if (rels !== undefined) {
       for (const rel of rels) {
-        const litVal = QuadFactory.literal(relationTargetId(rel), XSD.string, curie);
+        const litVal = QuadFactory.literal(relationTargetId(rel), XSD.string, { curie });
 
-        quads.push(QuadFactory.quad(subject, outputPredicate, litVal, curie));
+        quads.push(QuadFactory.quad(subject, outputPredicate, litVal, { curie }));
       }
     }
   }
 
-  static iri(value: string, curie?: CurieInterface): QuadObjectType {
+  static iri(value: string, options?: { 'curie'?: CurieInterface | undefined }): QuadObjectType {
+    const { curie } = options ?? {};
     const expandedValue = curie ? expandCurieIfNeeded(value, curie) : value;
 
     return {
@@ -91,7 +93,8 @@ export class QuadFactory {
     };
   }
 
-  static literal(value: unknown, datatype: string, curie?: CurieInterface): QuadObjectType {
+  static literal(value: unknown, datatype: string, options?: { 'curie'?: CurieInterface | undefined }): QuadObjectType {
+    const { curie } = options ?? {};
     const expandedDatatype = curie ? expandCurieIfNeeded(datatype, curie) : datatype;
 
     return {
@@ -113,8 +116,9 @@ export class QuadFactory {
     subject: string,
     predicate: string,
     object: QuadObjectType,
-    curie?: CurieInterface
+    options?: { 'curie'?: CurieInterface | undefined }
   ): QuadInterface {
+    const { curie } = options ?? {};
     const expandedPredicate = curie ? expandCurieIfNeeded(predicate, curie) : predicate;
 
     return {
@@ -124,7 +128,7 @@ export class QuadFactory {
     };
   }
 
-  static rdfList(items: QuadObjectType[], _?: CurieInterface): QuadObjectType {
+  static rdfList(items: QuadObjectType[]): QuadObjectType {
     return {
       items,
       'termType': 'List'

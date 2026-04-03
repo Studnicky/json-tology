@@ -21,15 +21,15 @@ void describe('resolveSingleXsdType', () => {
   });
 
   void it('maps string with date-time format to xsd:dateTime', () => {
-    assert.equal(resolveSingleXsdType('string', 'date-time'), 'xsd:dateTime');
+    assert.equal(resolveSingleXsdType('string', { 'format': 'date-time' }), 'xsd:dateTime');
   });
 
   void it('maps string with uri format to xsd:anyURI', () => {
-    assert.equal(resolveSingleXsdType('string', 'uri'), 'xsd:anyURI');
+    assert.equal(resolveSingleXsdType('string', { 'format': 'uri' }), 'xsd:anyURI');
   });
 
   void it('maps string with unknown format to xsd:string', () => {
-    assert.equal(resolveSingleXsdType('string', 'unknown-format'), 'xsd:string');
+    assert.equal(resolveSingleXsdType('string', { 'format': 'unknown-format' }), 'xsd:string');
   });
 
   void it('maps number to xsd:decimal', () => {
@@ -37,7 +37,7 @@ void describe('resolveSingleXsdType', () => {
   });
 
   void it('maps number with float format to xsd:float', () => {
-    assert.equal(resolveSingleXsdType('number', 'float'), 'xsd:float');
+    assert.equal(resolveSingleXsdType('number', { 'format': 'float' }), 'xsd:float');
   });
 
   void it('maps integer to xsd:integer', () => {
@@ -45,7 +45,7 @@ void describe('resolveSingleXsdType', () => {
   });
 
   void it('maps integer with int32 format to xsd:int', () => {
-    assert.equal(resolveSingleXsdType('integer', 'int32'), 'xsd:int');
+    assert.equal(resolveSingleXsdType('integer', { 'format': 'int32' }), 'xsd:int');
   });
 
   void it('maps boolean to xsd:boolean', () => {
