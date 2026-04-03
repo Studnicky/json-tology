@@ -7,7 +7,6 @@
 
 export type * from './BaseTypes.js';
 export type * from './Brand.js';
-export type * from './CliArgs.js';
 export type * from './Compose.js';
 export type * from './ConstraintBrands.js';
 export type * from './Diff.js';

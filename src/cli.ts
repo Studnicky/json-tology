@@ -17,6 +17,7 @@ import {
 import {
   basename, dirname, resolve
 } from 'node:path';
+import { Command } from 'commander';
 import { SchemaRegistry } from './modules/registry/SchemaRegistry.js';
 import { GraphArtifact } from './modules/graph/GraphArtifact.js';
 import { GraphSchemaSerializer } from './modules/ontology/GraphSchemaSerializer.js';
@@ -28,237 +29,15 @@ import { HtmlRenderer } from './modules/viz/HtmlRenderer.js';
 import type { SchemaGraphInterface } from './interfaces/SchemaGraphImpl.js';
 import { DEFAULT_PREFIXES } from './constants/PREFIXES.js';
 import { SchemaError } from './errors/SchemaError.js';
-import type {
-  BuildArgsInterface, CliArgsType, VizArgsInterface
-} from './types/CliArgs.js';
-import type { BuildParseStateInterface } from './interfaces/BuildParseState.js';
-import type { VizParseStateInterface } from './interfaces/VizParseState.js';
 
 const CLI_PREFIXES: Record<string, string> = {
   ...DEFAULT_PREFIXES,
   'jsonschema': 'https://json-schema.org/ontology#'
 };
 
-function usage(): never {
-  console.error(`Usage:
-  json-tology build --schema <glob> --output <dir> [--format artifact|schema|ontology|shacl] [--base-iri <iri>] [--output-file <filename>]
-  json-tology viz  --schema <glob> [--output <file>] [--no-open]`);
-  process.exit(1);
-}
-
-
-function parseArgs(argv: string[]): CliArgsType {
-  const args = argv.slice(2);
-
-  if (args.length === 0) {
-    usage();
-  }
-
-  const command = args[0];
-
-  if (command === 'build') {
-    return parseBuildArgs(args);
-  }
-
-  if (command === 'viz') {
-    return parseVizArgs(args);
-  }
-
-  return usage();
-}
-
-const BUILD_ARG_HANDLERS = new Map<
-  string,
-  (args: readonly string[], i: number, state: BuildParseStateInterface) => number
->([
-  [
-    '--base-iri',
-    (args, i, state) => {
-      state.baseIRI = args[i + 1] ?? '';
-
-      return i + 1;
-    }
-  ],
-  [
-    '--format',
-    (args, i, state) => {
-      state.format = args[i + 1] ?? 'artifact';
-
-      return i + 1;
-    }
-  ],
-  [
-    '--output',
-    (args, i, state) => {
-      state.output = args[i + 1] ?? '';
-
-      return i + 1;
-    }
-  ],
-  [
-    '--output-file',
-    (args, i, state) => {
-      state.outputFile = args[i + 1] ?? '';
-
-      return i + 1;
-    }
-  ],
-  [
-    '--schema',
-    (args, i, state) => {
-      state.schema = args[i + 1] ?? '';
-
-      return i + 1;
-    }
-  ]
-]);
-
-function parseBuildArgs(args: string[]): BuildArgsInterface {
-  const state: BuildParseStateInterface = {
-    'baseIRI': undefined,
-    'format': 'artifact',
-    'output': '',
-    'outputFile': undefined,
-    'schema': ''
-  };
-
-  for (let i = 1; i < args.length; i++) {
-    const handler = BUILD_ARG_HANDLERS.get(args[i]);
-
-    if (handler === undefined) {
-      console.error(`Unknown option: ${args[i]}`);
-      usage();
-    } else {
-      i = handler(args, i, state);
-    }
-  }
-
-  if (state.schema === '' || state.output === '') {
-    usage();
-  }
-
-  return {
-    'baseIRI': state.baseIRI,
-    'command': 'build',
-    'format': state.format,
-    'output': state.output,
-    'outputFile': state.outputFile,
-    'schema': state.schema
-  };
-}
-
-const VIZ_ARG_HANDLERS = new Map<
-  string,
-  (args: readonly string[], i: number, state: VizParseStateInterface) => number
->([
-  [
-    '--no-open',
-    (_args, i, state) => {
-      state.noOpen = true;
-
-      return i;
-    }
-  ],
-  [
-    '--output',
-    (args, i, state) => {
-      state.output = args[i + 1] ?? 'schema-graph.html';
-
-      return i + 1;
-    }
-  ],
-  [
-    '--schema',
-    (args, i, state) => {
-      state.schema = args[i + 1] ?? '';
-
-      return i + 1;
-    }
-  ]
-]);
-
-function parseVizArgs(args: string[]): VizArgsInterface {
-  const state: VizParseStateInterface = {
-    'noOpen': false,
-    'output': 'schema-graph.html',
-    'schema': ''
-  };
-
-  for (let i = 1; i < args.length; i++) {
-    const handler = VIZ_ARG_HANDLERS.get(args[i]);
-
-    if (handler === undefined) {
-      console.error(`Unknown option: ${args[i]}`);
-      usage();
-    } else {
-      i = handler(args, i, state);
-    }
-  }
-
-  if (state.schema === '') {
-    usage();
-  }
-
-  return {
-    'command': 'viz',
-    'noOpen': state.noOpen,
-    'output': state.output,
-    'schema': state.schema
-  };
-}
-
-function normalizeBaseIRI(value: string): string {
-  let baseIRI = value;
-
-  while (baseIRI.endsWith('/')) {
-    baseIRI = baseIRI.slice(0, -1);
-  }
-
-  return baseIRI;
-}
-
-function deriveBaseIRIFromSchemaId(schemaId: string): string {
-  const withoutHash = schemaId.split('#')[0] ?? schemaId;
-
-  try {
-    const parsed = new URL(withoutHash);
-    const pathname = parsed.pathname.replace(/\/$/u, '');
-    const lastSlash = pathname.lastIndexOf('/');
-
-    parsed.hash = '';
-    parsed.search = '';
-    parsed.pathname = lastSlash <= 0 ? '/' : pathname.slice(0, lastSlash);
-
-    return normalizeBaseIRI(parsed.toString());
-  } catch {
-    const lastSlash = withoutHash.lastIndexOf('/');
-
-    return normalizeBaseIRI(lastSlash <= 0 ? withoutHash : withoutHash.slice(0, lastSlash));
-  }
-}
-
-function resolveBaseIRI(graphs: readonly SchemaGraphInterface[], options?: { 'configuredBaseIRI'?: string }): string {
-  const configuredBaseIRI = options?.configuredBaseIRI;
-
-  if (configuredBaseIRI !== undefined && configuredBaseIRI !== '') {
-    return normalizeBaseIRI(configuredBaseIRI);
-  }
-
-  const firstRootSchema = graphs[0]?.rootSchema;
-  const firstSchemaId = typeof firstRootSchema === 'object'
-    ? (firstRootSchema).$id
-    : undefined;
-
-  if (typeof firstSchemaId !== 'string' || firstSchemaId === '') {
-    throw new SchemaError('SCHEMA_MISSING_ID', 'Unable to derive base IRI from registered schemas. Pass --base-iri explicitly.');
-  }
-
-  return deriveBaseIRIFromSchemaId(firstSchemaId);
-}
-
-function resolveSingleOutputPath(outputDir: string, outputFile: string | undefined, defaultFileName: string): string {
-  return resolve(outputDir, outputFile === undefined || outputFile === '' ? defaultFileName : outputFile);
-}
+// ---------------------------------------------------------------------------
+// File and schema loading
+// ---------------------------------------------------------------------------
 
 function findFiles(pattern: string): string[] {
   if (pattern.includes('*')) {
@@ -304,6 +83,78 @@ function loadSchemas(schemaGlob: string): SchemaRegistry {
 
   return registry;
 }
+
+// ---------------------------------------------------------------------------
+// IRI resolution
+// ---------------------------------------------------------------------------
+
+function normalizeBaseIRI(value: string): string {
+  let baseIRI = value;
+
+  while (baseIRI.endsWith('/')) {
+    baseIRI = baseIRI.slice(0, -1);
+  }
+
+  return baseIRI;
+}
+
+function deriveBaseIRIFromSchemaId(schemaId: string): string {
+  const withoutHash = schemaId.split('#')[0] ?? schemaId;
+
+  try {
+    const parsed = new URL(withoutHash);
+    const pathname = parsed.pathname.replace(/\/$/u, '');
+    const lastSlash = pathname.lastIndexOf('/');
+
+    parsed.hash = '';
+    parsed.search = '';
+    parsed.pathname = lastSlash <= 0 ? '/' : pathname.slice(0, lastSlash);
+
+    return normalizeBaseIRI(parsed.toString());
+  } catch {
+    const lastSlash = withoutHash.lastIndexOf('/');
+
+    return normalizeBaseIRI(lastSlash <= 0 ? withoutHash : withoutHash.slice(0, lastSlash));
+  }
+}
+
+function resolveBaseIRI(
+  graphs: readonly SchemaGraphInterface[],
+  configuredBaseIRI: string | undefined
+): string {
+  if (configuredBaseIRI !== undefined && configuredBaseIRI !== '') {
+    return normalizeBaseIRI(configuredBaseIRI);
+  }
+
+  const firstRootSchema = graphs[0]?.rootSchema;
+  const firstSchemaId = typeof firstRootSchema === 'object'
+    ? (firstRootSchema).$id
+    : undefined;
+
+  if (typeof firstSchemaId !== 'string' || firstSchemaId === '') {
+    throw new SchemaError(
+      'SCHEMA_MISSING_ID',
+      'Unable to derive base IRI from registered schemas. Pass --base-iri explicitly.'
+    );
+  }
+
+  return deriveBaseIRIFromSchemaId(firstSchemaId);
+}
+
+function resolveSingleOutputPath(
+  outputDir: string,
+  outputFile: string | undefined,
+  defaultFileName: string
+): string {
+  return resolve(
+    outputDir,
+    outputFile === undefined || outputFile === '' ? defaultFileName : outputFile
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Prefix derivation
+// ---------------------------------------------------------------------------
 
 function derivePrefixFromIRI(iri: URL): string {
   const segments = iri.pathname.split('/').filter(Boolean);
@@ -354,6 +205,10 @@ function derivePrefixesFromSchemas(schemas: ReadonlyArray<Record<string, unknown
   return prefixes;
 }
 
+// ---------------------------------------------------------------------------
+// Browser
+// ---------------------------------------------------------------------------
+
 function openBrowser(filePath: string): void {
   const { platform } = process;
   let cmd = 'xdg-open';
@@ -371,10 +226,22 @@ function openBrowser(filePath: string): void {
   }
 }
 
-async function mainBuild(buildArgs: BuildArgsInterface): Promise<void> {
+// ---------------------------------------------------------------------------
+// Build command
+// ---------------------------------------------------------------------------
+
+interface BuildOptionsInterface {
+  'baseIri'?: string;
+  'format': string;
+  'output': string;
+  'outputFile'?: string;
+  'schema': string;
+}
+
+async function runBuild(options: BuildOptionsInterface): Promise<void> {
   const {
-    'baseIRI': configuredBaseIRI, format, output, outputFile, 'schema': schemaGlob
-  } = buildArgs;
+    'baseIri': configuredBaseIRI, format, output, outputFile, 'schema': schemaGlob
+  } = options;
   const registry = loadSchemas(schemaGlob);
 
   if (!existsSync(output)) {
@@ -382,7 +249,7 @@ async function mainBuild(buildArgs: BuildArgsInterface): Promise<void> {
   }
 
   const graphs = registry.listGraphs();
-  const baseIRI = resolveBaseIRI(graphs, configuredBaseIRI === undefined ? undefined : { configuredBaseIRI });
+  const baseIRI = resolveBaseIRI(graphs, configuredBaseIRI);
 
   if (format === 'ontology' || format === 'shacl') {
     if (format === 'ontology') {
@@ -393,9 +260,9 @@ async function mainBuild(buildArgs: BuildArgsInterface): Promise<void> {
         'graphSources': [result],
         'prefixes': CLI_PREFIXES
       });
+      const outPath = resolveSingleOutputPath(output, outputFile, 'ontology.jsonld');
 
-      writeFileSync(resolveSingleOutputPath(output, outputFile, 'ontology.jsonld'), JSON.stringify(builder.jsonLdObject(), null, 2));
-
+      writeFileSync(outPath, JSON.stringify(builder.jsonLdObject(), null, 2));
       console.log(`Built ${graphs.length} graph(s) → ${output}/`);
 
       return;
@@ -411,8 +278,9 @@ async function mainBuild(buildArgs: BuildArgsInterface): Promise<void> {
 
     builder.addShacl(result);
 
-    writeFileSync(resolveSingleOutputPath(output, outputFile, 'shacl.jsonld'), JSON.stringify(builder.shaclObject(), null, 2));
+    const outPath = resolveSingleOutputPath(output, outputFile, 'shacl.jsonld');
 
+    writeFileSync(outPath, JSON.stringify(builder.shaclObject(), null, 2));
     console.log(`Built ${graphs.length} graph(s) → ${output}/`);
 
     return;
@@ -427,14 +295,20 @@ async function mainBuild(buildArgs: BuildArgsInterface): Promise<void> {
       case 'artifact': {
         const artifact = GraphArtifact.toArtifact(graph);
 
-        writeFileSync(resolve(output, `${safeName}.artifact.json`), JSON.stringify(artifact, null, 2));
+        writeFileSync(
+          resolve(output, `${safeName}.artifact.json`),
+          JSON.stringify(artifact, null, 2)
+        );
         break;
       }
       case 'schema': {
         const serializer = new GraphSchemaSerializer();
         const result = serializer.serialize(graph);
 
-        writeFileSync(resolve(output, `${safeName}.schema.json`), JSON.stringify(result, null, 2));
+        writeFileSync(
+          resolve(output, `${safeName}.schema.json`),
+          JSON.stringify(result, null, 2)
+        );
         break;
       }
       default:
@@ -446,10 +320,20 @@ async function mainBuild(buildArgs: BuildArgsInterface): Promise<void> {
   console.log(`Built ${graphs.length} graph(s) → ${output}/`);
 }
 
-async function mainViz(vizArgs: VizArgsInterface): Promise<void> {
+// ---------------------------------------------------------------------------
+// Viz command
+// ---------------------------------------------------------------------------
+
+interface VizOptionsInterface {
+  'noOpen': boolean;
+  'output': string;
+  'schema': string;
+}
+
+async function runViz(options: VizOptionsInterface): Promise<void> {
   const {
     noOpen, output, 'schema': schemaGlob
-  } = vizArgs;
+  } = options;
   const schemas = loadSchemaFiles(schemaGlob);
   const prefixes = derivePrefixesFromSchemas(schemas);
   const registry = new SchemaRegistry(Object.keys(prefixes).length > 0 ? { prefixes } : undefined);
@@ -478,18 +362,47 @@ async function mainViz(vizArgs: VizArgsInterface): Promise<void> {
   }
 }
 
-async function main(): Promise<void> {
-  const args = parseArgs(process.argv);
+// ---------------------------------------------------------------------------
+// Commander program
+// ---------------------------------------------------------------------------
 
-  if (args.command === 'viz') {
-    return mainViz(args);
-  }
+const program = new Command();
 
-  return mainBuild(args);
-}
+program
+  .name('json-tology')
+  .description('Ontology-native type system with declarative JSON Schema authoring')
+  .version('0.1.0');
+
+program
+  .command('build')
+  .description('Generate graph artifacts, ontology, or SHACL from JSON Schema files')
+  .requiredOption('--schema <glob>', 'Schema file glob pattern')
+  .requiredOption('--output <dir>', 'Output directory')
+  .option('--format <type>', 'Output format: artifact, schema, ontology, shacl', 'artifact')
+  .option('--base-iri <iri>', 'Base IRI for ontology output')
+  .option('--output-file <filename>', 'Override output filename (for single-file formats)')
+  .action(async (opts: { 'baseIri'?: string;
+    'format': string;
+    'output': string;
+    'outputFile'?: string;
+    'schema': string }) => {
+    await runBuild(opts);
+  });
+
+program
+  .command('viz')
+  .description('Generate interactive schema graph visualization')
+  .requiredOption('--schema <glob>', 'Schema file glob pattern')
+  .option('--output <file>', 'Output HTML file', 'schema-graph.html')
+  .option('--no-open', 'Do not open browser automatically')
+  .action(async (opts: { 'noOpen': boolean;
+    'output': string;
+    'schema': string }) => {
+    await runViz(opts);
+  });
 
 try {
-  await main();
+  await program.parseAsync(process.argv);
 } catch (error) {
   console.error(error);
   process.exit(1);
