@@ -17,6 +17,7 @@ export type * from './GraphArtifact.js';
 export type * from './GraphEngine.js';
 export type * from './GraphEngineImpl.js';
 export type * from './InternalExecutionResult.js';
+export type * from './Invariant.js';
 export type * from './Logger.js';
 export type * from './Materializer.js';
 export type * from './MaterializerImpl.js';

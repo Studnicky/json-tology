@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `dump(schemaId, value, options?)` on `JsonTology` — Pydantic-equivalent serializer that walks the canonical graph, applies `Transform` encoders, and supports `exclude`, `include`, `excludeUnset`, `excludeDefaults`, and `mode` ('wire' | 'json') options
 - `dumpJson(schemaId, value, options?)` on `JsonTology` — convenience wrapper around `dump()` with `mode: 'json'` that returns a `JSON.stringify`-ready string
 - `DumpOptionsInterface` in `src/interfaces/Dump.ts`, re-exported from `json-tology/interfaces`
+- Cross-field invariant support (InvariantInterface, InvariantFnType) — register imperative post-validation checks via JsonTology.create({ invariants }), jt.addInvariant(), and jt.removeInvariant(). Invariants run after structural validation succeeds and append jt:invariant-keyed errors to errors(), throw CoercionError from coerce(), and return false from is().
 
 ## [0.2.0] - 2026-05-03
 

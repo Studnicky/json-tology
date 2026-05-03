@@ -199,6 +199,7 @@ See [`examples/README.md`](./examples/README.md) for descriptions.
 | [Ontology](./docs/ontology.md) | OWL, SHACL, JSON-LD, custom prefixes, vocabulary plugins, CURIE expansion |
 | [Type Inference](./docs/types.md) | InferType, type-safe coerce, reference maps |
 | [CLI](./docs/cli.md) | build command, output formats |
+| [Invariants](./docs/invariants.md) | cross-field validation, addInvariant, removeInvariant |
 
 ## CLI
 
