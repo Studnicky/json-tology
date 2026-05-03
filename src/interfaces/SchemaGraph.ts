@@ -30,6 +30,7 @@ export interface SchemaGraphSemanticsInterface {
   'anyOf': SchemaGraphNodeInterface[];
   'comment': string | undefined;
   'complementNode': SchemaGraphNodeInterface | undefined;
+  'computed': boolean;
   'constValue': unknown;
   'containsNode': SchemaGraphNodeInterface | undefined;
   'contentEncoding': string | undefined;

@@ -4,6 +4,7 @@ import type { GraphEngineInterface } from './GraphEngineImpl.js';
 import type { InvariantInterface } from './Invariant.js';
 import type { SchemaGraphInterface } from './SchemaGraphImpl.js';
 import type { ValidationErrors } from '../errors/ValidationErrors.js';
+import type { ComputedStore } from '../modules/registry/ComputedStore.js';
 
 export interface SchemaRegistryInterface {
   addInvariant(schemaId: string, invariant: InvariantInterface): void;
@@ -11,6 +12,7 @@ export interface SchemaRegistryInterface {
   readonly 'castTypes': boolean;
   clean(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown): unknown;
   coerce(schema: (Record<string, unknown> & { '$id': string }) | string, data: unknown): unknown;
+  readonly 'computedStore': ComputedStore;
   convert(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown): unknown;
   create(schemaId: string): unknown;
   readonly 'curie': CurieInterface | undefined;

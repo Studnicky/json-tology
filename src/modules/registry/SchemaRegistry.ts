@@ -21,6 +21,7 @@ import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugi
 
 import { BaseError } from '../../errors/BaseError.js';
 import { CoercionError } from '../../errors/CoercionError.js';
+import { ComputedStore } from './ComputedStore.js';
 import { Curie } from '../rdf/Curie.js';
 import {
   deepFreeze, isRecord
@@ -51,6 +52,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   public readonly castTypes: boolean;
   private readonly coerceOptions: Readonly<Record<string, boolean>>;
   private readonly compiler: SchemaCompilerInterface;
+  public readonly computedStore: ComputedStore;
 
   public readonly curie: CurieInterface | undefined;
   private readonly formatRegistry: FormatRegistryInterface | undefined;
@@ -92,6 +94,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
 
     this.curie = Object.keys(mergedPrefixes).length > 0 ? new Curie(mergedPrefixes) : undefined;
+    this.computedStore = new ComputedStore();
     this.formatRegistry = options?.formatRegistry;
     this.keywords = options?.keywords;
     this.invariants = new InvariantStore(options?.invariants);
@@ -160,12 +163,34 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     schema: (Record<string, unknown> & { '$id': string; }) | string,
     data: unknown
   ): unknown {
-    const entry = typeof schema === 'string'
-      ? this.schemas.get(this.resolve(schema))
-      : this.schemas.get(schema.$id);
+    const schemaId = typeof schema === 'string' ? this.resolve(schema) : schema.$id;
+    const entry = this.schemas.get(schemaId);
 
     if (entry === undefined) {
-      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${String(typeof schema === 'string' ? schema : schema.$id)}. Call register() first.`);
+      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`);
+    }
+
+    // Check that no computed-property keys appear in the input
+    const computedMap = this.computedStore.getMap(schemaId);
+    const computedNames = Object.keys(computedMap);
+
+    if (computedNames.length > 0 && isRecord(data)) {
+      const forbidden = computedNames.filter((name) => {
+        return name in (data);
+      });
+
+      if (forbidden.length > 0) {
+        const errors = forbidden.map((name) => {
+          return {
+            'keyword': 'COMPUTED_INPUT_FORBIDDEN',
+            'message': `"${name}" is a computed field and must not be supplied in input`,
+            'params': {},
+            'path': `/${name}`
+          };
+        });
+
+        throw new CoercionError(new ValidationErrors(errors));
+      }
     }
 
     const compiled = this.compiledFromEntry(entry);
@@ -175,7 +200,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       throw new CoercionError(new ValidationErrors(result.errors));
     }
 
-    const schemaId = typeof schema === 'string' ? this.resolve(schema) : schema.$id;
     const invariantErrors = this.invariants.runAll(schemaId, result.value);
 
     if (invariantErrors.length > 0) {
@@ -185,10 +209,36 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       ]));
     }
 
+    const coerced = result.value;
+
+    // Apply computed fields after successful validation
+    if (computedNames.length > 0 && isRecord(coerced)) {
+      for (const [
+        name,
+        fn
+      ] of Object.entries(computedMap)) {
+        try {
+          coerced[name] = fn(coerced);
+        } catch (error) {
+          const causeError = error instanceof Error ? error : new Error(String(error));
+
+          throw new CoercionError(
+            new ValidationErrors([{
+              'keyword': 'COMPUTED_FN_MISSING',
+              'message': `Compute function for "${name}" threw: ${causeError.message}`,
+              'params': {},
+              'path': `/${name}`
+            }]),
+            { 'cause': causeError }
+          );
+        }
+      }
+    }
+
     const schemaObj = typeof schema === 'string' ? entry.schema : schema;
     const decoder = Transform.getDecoder(schemaObj);
 
-    return decoder === undefined ? result.value : decoder.decode(result.value);
+    return decoder === undefined ? coerced : decoder.decode(coerced);
   }
 
   private collectAnchors(schema: Record<string, unknown>, seen: Set<string>, schemaId: string): void {
@@ -579,6 +629,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     this.schemas.set(schemaId, entry);
     this.schemaHashes.set(hash, schemaId);
+    this.computedStore.validateAgainstGraph(graph);
     this.logger.trace(`Schema registered: ${schemaId}`);
   }
 

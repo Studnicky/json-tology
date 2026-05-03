@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `dumpJson(schemaId, value, options?)` on `JsonTology` — convenience wrapper around `dump()` with `mode: 'json'` that returns a `JSON.stringify`-ready string
 - `DumpOptionsInterface` in `src/interfaces/Dump.ts`, re-exported from `json-tology/interfaces`
 - Cross-field invariant support (InvariantInterface, InvariantFnType) — register imperative post-validation checks via JsonTology.create({ invariants }), jt.addInvariant(), and jt.removeInvariant(). Invariants run after structural validation succeeds and append jt:invariant-keyed errors to errors(), throw CoercionError from coerce(), and return false from is().
+- `jt:computed` keyword for Pydantic-parity computed fields: properties derived at coerce/materialize time from registered compute functions
+- `ComputedStore` in `src/modules/registry/ComputedStore.ts` — mutable store for per-schema compute functions
+- `computeds` option on `JsonTology.create()` and `JsonTologyOptionsInterface` for construction-time function registration
+- `JsonTology.addComputed()` and `JsonTology.removeComputed()` for runtime compute function management
+- `ComputedFnType` in `src/types/Computed.ts`
+- `COMPUTED_INPUT_FORBIDDEN` and `COMPUTED_FN_MISSING` error codes
+- Computed property `computed: boolean` flag on `SchemaGraphSemanticsInterface` for serializer and visualization use
 
 ## [0.2.0] - 2026-05-03
 

@@ -16,6 +16,8 @@ import { isRecord } from '../data/DataTypes.js';
 import { parseRef } from '../graph/GraphEngineSupport.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
 import { projectAbox } from '../rdf/Projection.js';
+import { ValidationErrors } from '../../errors/ValidationErrors.js';
+import { CoercionError } from '../../errors/CoercionError.js';
 
 
 /**
@@ -50,6 +52,31 @@ export class Materializer implements MaterializerInterface {
     private readonly options: MaterializerOptionsInterface = {}
   ) {}
 
+  private applyComputedFields(schemaId: string, value: Record<string, unknown>): void {
+    const computedMap = this.registry.computedStore.getMap(schemaId);
+
+    for (const [
+      name,
+      fn
+    ] of Object.entries(computedMap)) {
+      try {
+        value[name] = fn(value);
+      } catch (error) {
+        const causeError = error instanceof Error ? error : new Error(String(error));
+
+        throw new CoercionError(
+          new ValidationErrors([{
+            'keyword': 'COMPUTED_FN_MISSING',
+            'message': `Compute function for "${name}" threw: ${causeError.message}`,
+            'params': {},
+            'path': `/${name}`
+          }]),
+          { 'cause': causeError }
+        );
+      }
+    }
+  }
+
   /**
    * Create a default instance of a schema by synthesizing zero values for required properties.
    *
@@ -61,7 +88,6 @@ export class Materializer implements MaterializerInterface {
 
     return result.value;
   }
-
   /**
    * Execute materialization and return the full result without throwing.
    * The caller decides what to use from the output.
@@ -78,6 +104,7 @@ export class Materializer implements MaterializerInterface {
 
     return runResult;
   }
+
   private fillImplicitProperties(
     graph: SchemaGraphInterface,
     node: SchemaGraphNodeInterface,
@@ -163,7 +190,13 @@ export class Materializer implements MaterializerInterface {
       throw new MaterializationError(schema.$id, result.errors);
     }
 
-    return result.value;
+    const value = result.value;
+
+    if (isRecord(value)) {
+      this.applyComputedFields(schema.$id, value);
+    }
+
+    return value;
   }
 
   private materializeResult(result: GraphExecutionResultInterface): unknown {

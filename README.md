@@ -200,6 +200,7 @@ See [`examples/README.md`](./examples/README.md) for descriptions.
 | [Type Inference](./docs/types.md) | InferType, type-safe coerce, reference maps |
 | [CLI](./docs/cli.md) | build command, output formats |
 | [Invariants](./docs/invariants.md) | cross-field validation, addInvariant, removeInvariant |
+| [Computed Fields](./docs/computed.md) | jt:computed, addComputed, removeComputed |
 
 ## CLI
 

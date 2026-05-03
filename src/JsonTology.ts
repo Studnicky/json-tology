@@ -21,6 +21,7 @@ import type { JSONSchema7Definition } from 'json-schema';
 
 import type { DumpOptionsInterface } from './interfaces/Dump.js';
 import type { InvariantInterface } from './interfaces/Invariant.js';
+import type { ComputedFnType } from './types/Computed.js';
 import type { JsonTologyOptionsInterface } from './interfaces/Config.js';
 import type { MaterializerInterface } from './interfaces/MaterializerImpl.js';
 import type { QuadInterface } from './interfaces/Quad.js';
@@ -147,6 +148,22 @@ export class JsonTology<TMap = Record<never, never>> {
     };
 
     this.registry = new SchemaRegistry(registryOptions);
+
+    // Wire pre-registered compute functions
+    if (options.computeds) {
+      for (const [
+        schemaId,
+        propMap
+      ] of Object.entries(options.computeds)) {
+        for (const [
+          propName,
+          fn
+        ] of Object.entries(propMap)) {
+          this.registry.computedStore.add(schemaId, propName, fn);
+        }
+      }
+    }
+
     // Cast needed: Value is unparameterized at runtime; aligns with compile-time generic TMap
     this.value = new Value(this.registry) as unknown as ValueInterface<TMap>;
     this.materializer = new Materializer(this.registry, options.materializer);
@@ -169,6 +186,19 @@ export class JsonTology<TMap = Record<never, never>> {
   // Invariants
   // ---------------------------------------------------------------------------
 
+  /**
+   * Registers a compute function for a property marked `jt:computed: true`.
+   *
+   * @param schemaId - The `$id` of the schema owning the computed property.
+   * @param name - The property name.
+   * @param fn - Function receiving the coerced/materialized object and returning the computed value.
+   */
+  public addComputed<T = Record<string, unknown>>(
+    schemaId: string, name: keyof T & string, fn: (data: T) => unknown
+  ): void;
+  public addComputed(schemaId: string, name: string, fn: ComputedFnType): void {
+    this.registry.computedStore.add(schemaId, name, fn);
+  }
   /**
    * Registers a cross-field invariant for a schema.
    *
@@ -437,6 +467,15 @@ export class JsonTology<TMap = Record<never, never>> {
    */
   public registerAnonymous(schema: Record<string, unknown>): string {
     return this.registry.registerAnonymous(schema);
+  }
+  /**
+   * Removes a previously registered compute function.
+   *
+   * @param schemaId - The `$id` of the schema owning the computed property.
+   * @param name - The property name to deregister.
+   */
+  public removeComputed(schemaId: string, name: string): void {
+    this.registry.computedStore.remove(schemaId, name);
   }
   /**
    * Removes a previously registered invariant by name.

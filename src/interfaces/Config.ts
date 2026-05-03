@@ -4,6 +4,7 @@ import type { LoggerInterface } from './Logger.js';
 import type { MaterializerOptionsInterface } from './Materializer.js';
 import type { VocabularyPluginInterface } from './VocabularyPlugin.js';
 import type { BuiltinFormatNameType } from '../types/Format.js';
+import type { ComputedFnType } from '../types/Computed.js';
 
 export interface JsonTologyOptionsInterface<TSchemas extends readonly unknown[] = readonly unknown[]> {
   /**
@@ -19,6 +20,12 @@ export interface JsonTologyOptionsInterface<TSchemas extends readonly unknown[] 
    * (e.g. 123 accepted where "123" is expected, and vice versa).
    */
   'castTypes'?: boolean;
+
+  /**
+   * Pre-registered compute functions, keyed by schemaId then property name.
+   * Equivalent to calling addComputed() for each entry after construction.
+   */
+  'computeds'?: Record<string, Record<string, ComputedFnType>>;
 
   /**
    * Custom format validators to register in addition to (or overriding) the

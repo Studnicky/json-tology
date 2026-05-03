@@ -39,6 +39,7 @@ export const KNOWN_SCHEMA_KEYWORDS = new Set([
   'if',
   'inverseOf',
   'items',
+  'jt:computed',
   'maxContains',
   'maximum',
   'maxItems',
