@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `COMPUTED_INPUT_FORBIDDEN` and `COMPUTED_FN_MISSING` error codes
 - Computed property `computed: boolean` flag on `SchemaGraphSemanticsInterface` for serializer and visualization use
 - `jt:alias` keyword for Pydantic-equivalent field aliases — a schema property may declare a single alias string or a list of alias strings; `coerce()` maps alias input keys to the canonical key before validation and normalization
+- `ValidationErrors.aggregate()` — compact rollup `{ count, paths, keywords }` for structured logging and metric labels (deduplicated, sorted, no unbounded `params` values)
+- `ValidationErrors.report()` — RFC 7807 Problem Details payload for HTTP `422` error response bodies; accepts partial overrides for `instance`, `status`, `title`, and `type`
+- `ProblemDetailsType` exported from `json-tology/types`
 
 ## [0.2.0] - 2026-05-03
 

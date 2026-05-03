@@ -2,7 +2,10 @@
  * ValidationErrors — collection class with rich query methods
  */
 
-import type { ValidationErrorType } from '../types/Validation.js';
+import type {
+  ProblemDetailsType,
+  ValidationErrorType
+} from '../types/Validation.js';
 
 /**
  * An ordered collection of ValidationErrorType items.
@@ -10,13 +13,22 @@ import type { ValidationErrorType } from '../types/Validation.js';
  * Returned by jt.errors(), registry.errors(), and carried on CoercionError.
  * Iterable so it works in for-of loops.
  *
+ * Five views over the same error data:
+ * - `messages()` — `string[]` of `"path: message"` strings, one per error
+ * - `format()` — `Record<string, string[]>` grouped by JSON Pointer path
+ * - `flatten()` — `{ fieldErrors, formErrors }` split by whether a path exists
+ * - `aggregate()` — `{ count, paths, keywords }` compact rollup for logging and metrics
+ * - `report()` — RFC 7807 Problem Details payload for HTTP error response bodies
+ *
  * @example
  * const errs = jt.errors(UserSchema.$id, data);
- * errors.length;                   // number of errors
- * errors.messages();               // string[] — one per error
- * errors.format();                 // { "/name": ["must be string"], ... }
- * errors.flatten();                // { fieldErrors: { ... }, formErrors: [...] }
- * for (const error of errors) { ... } // iterate ValidationErrorType items
+ * errs.length;                     // number of errors
+ * errs.messages();                 // string[] — one per error
+ * errs.format();                   // { "/name": ["must be string"], ... }
+ * errs.flatten();                  // { fieldErrors: { ... }, formErrors: [...] }
+ * errs.aggregate();                // { count: 2, paths: ["/name"], keywords: ["type"] }
+ * errs.report();                   // RFC 7807 Problem Details payload
+ * for (const err of errs) { ... } // iterate ValidationErrorType items
  */
 export class ValidationErrors implements Iterable<ValidationErrorType> {
   /**
@@ -66,6 +78,33 @@ export class ValidationErrors implements Iterable<ValidationErrorType> {
    */
   public constructor(items: readonly ValidationErrorType[]) {
     this.items = items;
+  }
+
+  /**
+   * Compact rollup suitable for structured logging and metric labels.
+   *
+   * Returns deduplicated, sorted paths and keywords with a total count.
+   * Safe to use as metric label values — bounded cardinality, no per-instance
+   * `params` data.
+   */
+  public aggregate(): {
+    'count': number;
+    'keywords': string[];
+    'paths': string[];
+  } {
+    const pathSet = new Set<string>();
+    const keywordSet = new Set<string>();
+
+    for (const item of this.items) {
+      pathSet.add(item.path);
+      keywordSet.add(item.keyword);
+    }
+
+    return {
+      'count': this.items.length,
+      'keywords': [...keywordSet].sort(),
+      'paths': [...pathSet].sort()
+    };
   }
 
   /**
@@ -132,6 +171,42 @@ export class ValidationErrors implements Iterable<ValidationErrorType> {
   /** True when there are no errors. */
   public get ok(): boolean {
     return this.items.length === 0;
+  }
+
+  /**
+   * RFC 7807 Problem Details payload for HTTP error response bodies.
+   *
+   * Defaults: type 'https://json-tology.dev/problems/validation',
+   * title 'Validation failed', status 422.
+   * Pass `overrides` to attach `instance`, retarget `status`, or customize `title`.
+   *
+   * @param overrides - Partial overrides merged over the default payload
+   */
+  public report(overrides?: Partial<ProblemDetailsType>): ProblemDetailsType {
+    const count = this.items.length;
+    const detail = count === 1
+      ? '1 validation error'
+      : `${count} validation errors`;
+
+    const defaultPayload: ProblemDetailsType = {
+      'detail': detail,
+      'errors': this.items.map((item) => {
+        return {
+          'keyword': item.keyword,
+          'message': item.message,
+          'params': item.params,
+          'path': item.path
+        };
+      }),
+      'status': 422,
+      'title': 'Validation failed',
+      'type': 'https://json-tology.dev/problems/validation'
+    };
+
+    return {
+      ...defaultPayload,
+      ...overrides
+    };
   }
 
   /**

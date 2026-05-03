@@ -154,7 +154,106 @@ const grouped = errs.format();
 const { fieldErrors, formErrors } = errs.flatten();
 // fieldErrors: { "/id": [...], "/items": [...] }
 // formErrors: ["must have required property 'id'"]
+
+// aggregate() — compact rollup for logging and metrics
+const rollup = errs.aggregate();
+// { count: 3, paths: ["/id", "/items", "/total"], keywords: ["exclusiveMinimum", "format", "minItems"] }
+
+// report() — RFC 7807 Problem Details payload for HTTP error responses
+const problem = errs.report({ instance: '/orders/new' });
+// {
+//   type: 'https://json-tology.dev/problems/validation',
+//   title: 'Validation failed',
+//   status: 422,
+//   detail: '3 validation errors',
+//   instance: '/orders/new',
+//   errors: [
+//     { path: '/id', keyword: 'format', message: 'must match format "uuid"', params: { format: 'uuid' } },
+//     ...
+//   ]
+// }
 ```
+
+### Picking the right view
+
+| Method | Returns | Use when |
+|---|---|---|
+| `messages()` | `string[]` — `"path: message"` per error | Quick console output, simple error display |
+| `format()` | `Record<string, string[]>` grouped by path | Form field highlighting, client-side display |
+| `flatten()` | `{ fieldErrors, formErrors }` | Zod-compatible form libraries, per-field UI |
+| `aggregate()` | `{ count, paths, keywords }` | Structured logs, metrics labels, telemetry |
+| `report()` | RFC 7807 `ProblemDetailsType` object | HTTP `422` error response bodies |
+
+#### Logging and metrics — `aggregate()`
+
+`aggregate()` returns a compact summary with deduplicated, sorted paths and keywords. Because it omits per-instance `params` values (which can be unbounded), it is safe to use as structured log fields or metric label values without risk of cardinality explosion.
+
+```ts
+import { JsonTology } from 'json-tology';
+
+// Somewhere in a request handler or service:
+const errs = jt.errors(OrderSchema.$id, body);
+
+if (!errs.ok) {
+  const rollup = errs.aggregate();
+
+  logger.warn('validation failed', {
+    count: rollup.count,
+    keywords: rollup.keywords,
+    paths: rollup.paths,
+    schema: OrderSchema.$id,
+  });
+
+  // rollup.keywords and rollup.paths are bounded sets — safe as metric labels
+  metrics.increment('validation.failure', {
+    keywords: rollup.keywords.join(','),
+    schema: 'Order',
+  });
+}
+```
+
+The payload is a plain object — no class instances, no functions — safe for `JSON.stringify`, message queues, and log files.
+
+#### HTTP responses — `report()`
+
+`report()` produces an [RFC 7807](https://datatracker.ietf.org/doc/html/rfc7807) Problem Details object. Attach it directly to a `422 Unprocessable Entity` response.
+
+```ts
+import { JsonTology } from 'json-tology';
+
+// Express / Fastify / Hono — any framework that accepts a plain object body
+app.post('/orders', (req, res) => {
+  const errs = jt.errors(OrderSchema.$id, req.body);
+
+  if (!errs.ok) {
+    return res
+      .status(422)
+      .type('application/problem+json')
+      .send(errs.report({ instance: req.url }));
+  }
+
+  // ... handle valid order
+});
+```
+
+Example response body:
+
+```json
+{
+  "type": "https://json-tology.dev/problems/validation",
+  "title": "Validation failed",
+  "status": 422,
+  "detail": "3 validation errors",
+  "instance": "/orders",
+  "errors": [
+    { "path": "/id",    "keyword": "format",           "message": "must match format \"uuid\"",        "params": { "format": "uuid" } },
+    { "path": "/items", "keyword": "minItems",          "message": "must NOT have fewer than 1 items", "params": { "limit": 1 } },
+    { "path": "/total", "keyword": "exclusiveMinimum",  "message": "must be > 0",                     "params": { "limit": 0 } }
+  ]
+}
+```
+
+The payload is a plain JSON object — no class instances, no functions — safe for `JSON.stringify`, message queues, log aggregators, and files.
 
 ### Pattern Safety
 

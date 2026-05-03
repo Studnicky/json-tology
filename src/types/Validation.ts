@@ -5,10 +5,25 @@
 import type { InferType } from './Schema.js';
 import type { ValidationErrorSchema } from '../constants/SCHEMAS.js';
 
-export type ValidationErrorType = InferType<typeof ValidationErrorSchema>;
-
 export type CheckFnType = (value: unknown) => boolean;
 
+export interface ProblemDetailsErrorEntryType {
+  'keyword': string;
+  'message': string;
+  'params': Record<string, unknown>;
+  'path': string;
+}
+
+export interface ProblemDetailsType {
+  'detail': string;
+  'errors': ProblemDetailsErrorEntryType[];
+  'instance'?: string;
+  'status': number;
+  'title': string;
+  'type': string;
+}
+
+export type ValidationErrorType = InferType<typeof ValidationErrorSchema>;
 
 export type ValidateWithErrorsFnType = (
   value: unknown,
