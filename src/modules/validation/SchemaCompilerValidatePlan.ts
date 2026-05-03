@@ -261,11 +261,32 @@ export function buildNodeValidationPlan(
     ? new Set<boolean | null | number | string>(sem.enumValues)
     : undefined;
 
+  const propertyAliases = new Map<string, string>();
+
+  for (const [
+    canonicalKey,
+    propNode
+  ] of propertyEntries) {
+    const propSem = graph.semantics(propNode);
+
+    for (const alias of propSem.aliases) {
+      propertyAliases.set(alias, canonicalKey);
+    }
+  }
+
+  const allowedKeys = propertyEntries.size > 0 ? new Set(propertyEntries.keys()) : undefined;
+
+  if (allowedKeys !== undefined) {
+    for (const alias of propertyAliases.keys()) {
+      allowedKeys.add(alias);
+    }
+  }
+
   return {
     'additionalIsFalse': sem.additionalPropertiesNode === false,
     additionalValidator,
     allOfValidators,
-    'allowedKeys': propertyEntries.size > 0 ? new Set(propertyEntries.keys()) : undefined,
+    allowedKeys,
     anyOfChecks,
     complementCheck,
     'constVal': sem.constValue,
@@ -301,6 +322,7 @@ export function buildNodeValidationPlan(
     patternPropValidators,
     patternRegex,
     prefixValidators,
+    propertyAliases,
     'propertyDefaults': buildPropertyDefaults(context, propertyEntries, graph, lookupSchema),
     propertyNamesValidator,
     'propValidators': compilePropertyValidators(context, propertyEntries, formatRegistry, graph, lookupSchema),

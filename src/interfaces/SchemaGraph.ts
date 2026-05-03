@@ -26,6 +26,7 @@ export interface SchemaGraphNodeInterface {
 export interface SchemaGraphSemanticsInterface {
   'additionalItemsNode': boolean | SchemaGraphNodeInterface | undefined;
   'additionalPropertiesNode': boolean | SchemaGraphNodeInterface | undefined;
+  'aliases': readonly string[];
   'allOf': SchemaGraphNodeInterface[];
   'anyOf': SchemaGraphNodeInterface[];
   'comment': string | undefined;

@@ -167,3 +167,29 @@ catastrophic backtracking (e.g. `(a+)+b`) can cause CPU exhaustion.
 - Review regex patterns for exponential backtracking before registration
 - Use anchored patterns (`^...$`) to limit match scope
 - Consider validating patterns against a safe-regex library before schema registration
+
+## Field Aliases (`jt:alias`)
+
+A schema property may declare `jt:alias` to accept alternate input key names. During `coerce()`, if the canonical key is absent and an alias key is present on the input object, the value is copied to the canonical key and the alias key is removed. The canonical key always wins when both are supplied.
+
+```ts
+const OrderSchema = {
+  $id: 'https://example.com/Order',
+  type: 'object',
+  properties: {
+    orderId: { type: 'string', 'jt:alias': 'order_id' },
+    lineItems: { type: 'array', 'jt:alias': ['line_items', 'items_legacy'] },
+  },
+} as const;
+
+const jt = JsonTology.create({ baseIRI: 'https://example.com', schemas: [OrderSchema] as const });
+
+jt.coerce(OrderSchema.$id, { order_id: 'ORD-1', line_items: [] });
+// => { orderId: 'ORD-1', lineItems: [] }
+
+jt.coerce(OrderSchema.$id, { orderId: 'ORD-1', lineItems: [] });
+// => { orderId: 'ORD-1', lineItems: [] }  (canonical keys pass through unchanged)
+```
+
+Alias normalization is applied before required-property validation, so an alias satisfies a `required` constraint. Multi-alias form lists are tried in declaration order; the first matching alias wins.
+

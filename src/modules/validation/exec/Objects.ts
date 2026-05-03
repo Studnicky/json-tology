@@ -8,6 +8,23 @@ import {
 import { cloneDefault } from '../../graph/GraphEngineSupport.js';
 
 export class Objects {
+  static applyAliases(
+    obj: Record<string, unknown>,
+    propertyAliases: Map<string, string>
+  ): void {
+    for (const [
+      alias,
+      canonicalKey
+    ] of propertyAliases) {
+      if (alias in obj) {
+        if (!(canonicalKey in obj)) {
+          obj[canonicalKey] = obj[alias];
+        }
+        delete obj[alias];
+      }
+    }
+  }
+
   static applyDefaults(
     obj: Record<string, unknown>,
     propertyDefaults: Map<string, { 'defaultValue': unknown;

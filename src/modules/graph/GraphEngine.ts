@@ -596,6 +596,23 @@ export class GraphEngine implements GraphEngineInterface {
     const dependentRequired = sem.dependentRequired;
     const dependentSchemaEntries = sem.dependentSchemaEntries;
     const workingValue = value;
+
+    for (const [
+      canonicalKey,
+      propNode
+    ] of propertyEntries) {
+      const propSem = graph.semantics(propNode);
+
+      for (const alias of propSem.aliases) {
+        if (alias in workingValue) {
+          if (!(canonicalKey in workingValue)) {
+            workingValue[canonicalKey] = workingValue[alias];
+          }
+          delete workingValue[alias];
+          break;
+        }
+      }
+    }
     const {
       additionalPropertiesNode,
       maxProperties,

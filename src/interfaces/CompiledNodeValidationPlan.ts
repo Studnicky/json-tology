@@ -45,6 +45,7 @@ export interface CompiledNodeValidationPlanInterface {
     'validator': ValidateWithErrorsFnType; }> | undefined;
   readonly 'patternRegex': RegExp | undefined;
   readonly 'prefixValidators': undefined | ValidateWithErrorsFnType[];
+  readonly 'propertyAliases': Map<string, string>;
   readonly 'propertyDefaults': Map<string, { 'defaultValue': unknown;
     'hasDefault': boolean; }>;
   readonly 'propertyNamesValidator': undefined | ValidateWithErrorsFnType;

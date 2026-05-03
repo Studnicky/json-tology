@@ -61,6 +61,7 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
     patternPropValidators,
     patternRegex,
     prefixValidators,
+    propertyAliases,
     propertyDefaults,
     propertyNamesValidator,
     propValidators,
@@ -185,6 +186,10 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
     // --- Object validation ---
     if (isRecord(workingValue)) {
       const obj = workingValue;
+
+      if (propertyAliases.size > 0) {
+        Objects.applyAliases(obj, propertyAliases);
+      }
 
       if (applyDefaults) {
         Objects.applyDefaults(obj, propertyDefaults);

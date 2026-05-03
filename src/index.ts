@@ -2,22 +2,6 @@
  * json-tology
  *
  * Declare your schemas once. Get types, validation, ontology, and ABox projection from one graph-native model.
- *
- * @example
- * import { JsonTology } from 'json-tology';
- * import type { InferType } from 'json-tology';
- *
- * const jt = JsonTology.create({
- *   baseIRI: 'https://myapp.io',
- *   schemas: [UserSchema, OrderSchema] as const,
- * });
- *
- * type User = InferType<typeof UserSchema>;
- *
- * jt.validate(UserSchema.$id, data);
- * jt.materialize(UserSchema, { name: 'Alice' });
- * jt.ontology().jsonLd();
- * jt.toQuads(UserSchema, data).jsonLd();
  */
 
 // Errors

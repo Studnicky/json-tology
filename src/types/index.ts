@@ -1,8 +1,5 @@
 /**
  * Types Module
- *
- * Exports base types, container interfaces, schema factory functions,
- * and all type aliases used across the library.
  */
 
 export type * from './BaseTypes.js';

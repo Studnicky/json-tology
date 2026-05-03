@@ -50,10 +50,26 @@ export function resolveSchemaAtPointer(rootSchema: JsonSchemaType, pointer: stri
   return current;
 }
 
+function normalizeAliases(schema: Record<string, unknown>): readonly string[] {
+  const raw = schema['jt:alias'];
+
+  if (typeof raw === 'string') {
+    return [raw];
+  }
+  if (Array.isArray(raw)) {
+    return raw.filter((entry): entry is string => {
+      return typeof entry === 'string';
+    });
+  }
+
+  return [];
+}
+
 function emptySchemaGraphSemantics(): SchemaGraphSemanticsInterface {
   return {
     'additionalItemsNode': undefined,
     'additionalPropertiesNode': undefined,
+    'aliases': [],
     'allOf': [],
     'anyOf': [],
     'comment': undefined,
@@ -285,6 +301,7 @@ export function extractSemantics(
   const ref = typeof node.schema.$ref === 'string' ? node.schema.$ref : undefined;
   const discriminator = isRecord(node.schema.discriminator) ? node.schema.discriminator : undefined;
   const extensions = collectSchemaExtensions(node.schema);
+  const aliases = normalizeAliases(node.schema);
 
   return {
     'additionalItemsNode': resolveAdditionalSchemaNode(node, (parent, key) => {
@@ -293,6 +310,7 @@ export function extractSemantics(
     'additionalPropertiesNode': resolveAdditionalSchemaNode(node, (parent, key) => {
       return graph.child(parent, key);
     }, 'additionalProperties'),
+    aliases,
     'allOf': graph.indexedChildren(node, 'allOf'),
     'anyOf': graph.indexedChildren(node, 'anyOf'),
     'comment': typeof node.schema.$comment === 'string' ? node.schema.$comment : undefined,
