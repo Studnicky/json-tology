@@ -19,6 +19,7 @@
 
 import type { JSONSchema7Definition } from 'json-schema';
 
+import type { DumpOptionsInterface } from './interfaces/Dump.js';
 import type { JsonTologyOptionsInterface } from './interfaces/Config.js';
 import type { MaterializerInterface } from './interfaces/MaterializerImpl.js';
 import type { QuadInterface } from './interfaces/Quad.js';
@@ -37,6 +38,7 @@ import type {
 } from './types/Registry.js';
 
 import { Curie } from './modules/rdf/Curie.js';
+import { Dumper } from './modules/data/Dumper.js';
 import { FormatRegistry } from './modules/format/FormatRegistry.js';
 import { GraphOntologySerializer } from './modules/ontology/GraphOntologySerializer.js';
 import { GraphSchemaSerializer } from './modules/ontology/GraphSchemaSerializer.js';
@@ -186,6 +188,66 @@ export class JsonTology<TMap = Record<never, never>> {
     return this.registry.coerce(typeof schema === 'string' ? schema : schema.$id, data);
   }
   /**
+   * Serialize a value to its wire representation.
+   *
+   * Walks the canonical graph for the schema and projects each property back to
+   * wire form — applying any registered {@link Transform} encoder along the way.
+   *
+   * @param schemaId - The `$id` of a registered schema, or a schema object with `$id`.
+   * @param value - The value to serialize (typically the output of `coerce()`).
+   * @param options - Filtering and mode options.
+   * @returns Wire-form representation of the value.
+   */
+  public dump<K extends keyof TMap & string>(schemaId: K, value: TMap[K], options?: DumpOptionsInterface): unknown;
+  public dump<TSchema extends JSONSchema7Definition & { readonly '$id': string; }>(
+    schema: TSchema,
+    value: InferSchemaType<TSchema>,
+    options?: DumpOptionsInterface
+  ): unknown;
+  public dump(
+    schema: (keyof TMap & string) | (Record<string, unknown> & { '$id': string; }),
+    value: unknown,
+    options?: DumpOptionsInterface
+  ): unknown {
+    if ((schema as unknown) === null || (schema as unknown) === undefined) {
+      throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
+    }
+
+    const schemaId = typeof schema === 'string' ? schema : schema.$id;
+
+    if (typeof schema !== 'string') {
+      this.registry.register(schema as Record<string, unknown>);
+    }
+
+    return Dumper.dump(this.registry, schemaId, value, options);
+  }
+  /**
+   * Serialize a value to a JSON string.
+   *
+   * Convenience wrapper: `JSON.stringify(jt.dump(..., { mode: 'json', ...options }))`.
+   *
+   * @param schemaId - The `$id` of a registered schema, or a schema object with `$id`.
+   * @param value - The value to serialize.
+   * @param options - Filtering and mode options (mode is forced to `'json'`).
+   * @returns JSON string.
+   */
+  public dumpJson<K extends keyof TMap & string>(schemaId: K, value: TMap[K], options?: Omit<DumpOptionsInterface, 'mode'>): string;
+  public dumpJson<TSchema extends JSONSchema7Definition & { readonly '$id': string; }>(
+    schema: TSchema,
+    value: InferSchemaType<TSchema>,
+    options?: Omit<DumpOptionsInterface, 'mode'>
+  ): string;
+  public dumpJson(
+    schema: (keyof TMap & string) | (Record<string, unknown> & { '$id': string; }),
+    value: unknown,
+    options?: Omit<DumpOptionsInterface, 'mode'>
+  ): string {
+    return JSON.stringify(this.dump(schema as (keyof TMap & string), value as TMap[keyof TMap & string], {
+      ...options,
+      'mode': 'json'
+    }));
+  }
+  /**
    * Encodes a decoded value back to its wire representation using the schema's registered {@link Transform}.
    *
    * @param schema - The schema with an associated transform decoder.
@@ -198,6 +260,7 @@ export class JsonTology<TMap = Record<never, never>> {
   ): InferSchemaType<TSchema> {
     return (Transform.getDecoder(schema as object)?.encode(value) ?? value) as InferSchemaType<TSchema>;
   }
+
   /**
    * Validates data and returns structured {@link ValidationErrors}.
    *

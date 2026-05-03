@@ -8,6 +8,7 @@ export type * from './Config.js';
 export type * from './Curie.js';
 export type * from './CustomKeywordEntry.js';
 export type * from './DefaultResolutionContext.js';
+export type * from './Dump.js';
 export type * from './DynamicScopeEntry.js';
 export type * from './Error.js';
 export type * from './FormatRegistry.js';
