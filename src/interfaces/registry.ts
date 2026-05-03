@@ -1,4 +1,5 @@
 import type { FormatRegistryInterface } from './FormatRegistry.js';
+import type { InvariantInterface } from './Invariant.js';
 import type { KeywordDefinitionInterface } from './GraphEngine.js';
 import type { LoggerInterface } from './Logger.js';
 import type { VocabularyPluginInterface } from './VocabularyPlugin.js';
@@ -11,6 +12,8 @@ export interface RegistryOptionsInterface {
   'castTypes'?: boolean;
   /** Optional format registry to pass to the graph engine. */
   'formatRegistry'?: FormatRegistryInterface;
+  /** Cross-field invariants keyed by schema $id. */
+  'invariants'?: Record<string, readonly InvariantInterface[]>;
   /** Custom keyword definitions passed to the graph engine. */
   'keywords'?: KeywordDefinitionInterface[];
   'logger'?: LoggerInterface;

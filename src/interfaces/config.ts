@@ -1,3 +1,4 @@
+import type { InvariantInterface } from './Invariant.js';
 import type { KeywordDefinitionInterface } from './GraphEngine.js';
 import type { LoggerInterface } from './Logger.js';
 import type { MaterializerOptionsInterface } from './Materializer.js';
@@ -25,6 +26,12 @@ export interface JsonTologyOptionsInterface<TSchemas extends readonly unknown[] 
    * validator functions that return `true` when the value is valid.
    */
   'formats'?: Record<BuiltinFormatNameType | (Record<never, never> & string), (value: unknown) => boolean>;
+
+  /**
+   * Cross-field invariants to register at construction time.
+   * Keyed by schema `$id`. Each invariant runs after field validation succeeds.
+   */
+  'invariants'?: Record<string, readonly InvariantInterface[]>;
 
   /** Custom keyword definitions passed to the graph engine. */
   'keywords'?: KeywordDefinitionInterface[];

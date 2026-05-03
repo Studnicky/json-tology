@@ -14,6 +14,7 @@ export type * from './EffectiveOptions.js';
 export type * from './ErrorCodes.js';
 export type * from './Format.js';
 export type * from './Infer.js';
+export type * from './Invariant.js';
 export type * from './Loader.js';
 export type * from './LookupSchema.js';
 export type * from './Quad.js';

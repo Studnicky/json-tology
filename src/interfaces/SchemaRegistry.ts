@@ -1,10 +1,12 @@
 import type { CompiledValidatorInterface } from './Compiler.js';
 import type { CurieInterface } from './Curie.js';
 import type { GraphEngineInterface } from './GraphEngineImpl.js';
+import type { InvariantInterface } from './Invariant.js';
 import type { SchemaGraphInterface } from './SchemaGraphImpl.js';
 import type { ValidationErrors } from '../errors/ValidationErrors.js';
 
 export interface SchemaRegistryInterface {
+  addInvariant(schemaId: string, invariant: InvariantInterface): void;
   cast(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown): unknown;
   readonly 'castTypes': boolean;
   clean(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown): unknown;
@@ -21,6 +23,7 @@ export interface SchemaRegistryInterface {
   listGraphs(): readonly SchemaGraphInterface[];
   register(schemas: ReadonlyArray<Record<string, unknown>> | Record<string, unknown>): void;
   registerAnonymous(schema: Record<string, unknown>): string;
+  removeInvariant(schemaId: string, name: string): void;
   validate(schema: (Record<string, unknown> & { '$id': string }) | string, data: unknown): string[];
   validateAt(schema: (Record<string, unknown> & { '$id': string }) | string, pointer: string, data: unknown): string[];
   validator(schemaId: string): CompiledValidatorInterface;

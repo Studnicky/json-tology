@@ -10,6 +10,7 @@ import type { CurieInterface } from '../../interfaces/Curie.js';
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
 import type { KeywordDefinitionInterface } from '../../interfaces/GraphEngine.js';
 import type { GraphEngineInterface } from '../../interfaces/GraphEngineImpl.js';
+import type { InvariantInterface } from '../../interfaces/Invariant.js';
 import type { LoggerInterface } from '../../interfaces/Logger.js';
 import type { RegistryOptionsInterface } from '../../interfaces/Registry.js';
 import type { SchemaCompilerInterface } from '../../interfaces/SchemaCompilerImpl.js';
@@ -26,6 +27,7 @@ import {
 } from '../data/DataTypes.js';
 import { GraphEngine } from '../graph/GraphEngine.js';
 import { Hash } from '../hash/Hash.js';
+import { InvariantStore } from './InvariantStore.js';
 import { Materializer } from '../materialization/Materializer.js';
 import { SchemaCompiler } from '../validation/SchemaCompiler.js';
 import { SchemaError } from '../../errors/SchemaError.js';
@@ -52,6 +54,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
   public readonly curie: CurieInterface | undefined;
   private readonly formatRegistry: FormatRegistryInterface | undefined;
+  private readonly invariants: InvariantStore;
   private readonly keywords: KeywordDefinitionInterface[] | undefined;
   private readonly logger: LoggerInterface;
   private readonly maxDepth: number | undefined;
@@ -91,6 +94,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     this.curie = Object.keys(mergedPrefixes).length > 0 ? new Curie(mergedPrefixes) : undefined;
     this.formatRegistry = options?.formatRegistry;
     this.keywords = options?.keywords;
+    this.invariants = new InvariantStore(options?.invariants);
     this.compiler = new SchemaCompiler({
       'logger': this.logger,
       'lookupCompiled': (schemaId) => {
@@ -99,6 +103,10 @@ export class SchemaRegistry implements SchemaRegistryInterface {
           : undefined;
       }
     });
+  }
+
+  public addInvariant(schemaId: string, invariant: InvariantInterface): void {
+    this.invariants.add(schemaId, invariant);
   }
 
   /**
@@ -165,6 +173,16 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     if (!result.valid) {
       throw new CoercionError(new ValidationErrors(result.errors));
+    }
+
+    const schemaId = typeof schema === 'string' ? this.resolve(schema) : schema.$id;
+    const invariantErrors = this.invariants.runAll(schemaId, result.value);
+
+    if (invariantErrors.length > 0) {
+      throw new CoercionError(new ValidationErrors([
+        ...result.errors,
+        ...invariantErrors
+      ]));
     }
 
     const schemaObj = typeof schema === 'string' ? entry.schema : schema;
@@ -311,7 +329,17 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     const result = compiled.validate(data, COLLECT_ERRORS_OPTIONS);
 
-    return result.errors.length === 0 ? EMPTY_VALIDATION_ERRORS : new ValidationErrors(result.errors);
+    if (result.errors.length > 0) {
+      return new ValidationErrors(result.errors);
+    }
+
+    const invariantErrors = this.invariants.runAll(schemaId, data);
+
+    if (invariantErrors.length === 0) {
+      return EMPTY_VALIDATION_ERRORS;
+    }
+
+    return new ValidationErrors(invariantErrors);
   }
 
   private execute(
@@ -392,7 +420,11 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`, schemaId);
     }
 
-    return compiled.check(data);
+    if (!compiled.check(data)) {
+      return false;
+    }
+
+    return this.invariants.runAll(schemaId, data).length === 0;
   }
 
   /**
@@ -465,7 +497,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     return syntheticId;
   }
-
 
   private registerSingle(schema: Record<string, unknown>): void {
     const schemaId = schema.$id as string | undefined;
@@ -551,6 +582,11 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     this.logger.trace(`Schema registered: ${schemaId}`);
   }
 
+
+  public removeInvariant(schemaId: string, name: string): void {
+    this.invariants.remove(schemaId, name);
+  }
+
   private resolve(schemaId: string): string {
     if (this.curie === undefined) {
       return schemaId;
@@ -585,16 +621,28 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
 
     if (compiled.compiled && compiled.check(data)) {
-      return EMPTY_ERROR_LIST;
+      const invariantErrors = this.invariants.runAll(schemaId, data);
+
+      if (invariantErrors.length === 0) {
+        return EMPTY_ERROR_LIST;
+      }
+
+      return BaseError.formatErrors(invariantErrors);
     }
 
     const result = compiled.validate(data, COLLECT_ERRORS_OPTIONS);
 
-    if (result.errors.length === 0) {
+    if (result.errors.length > 0) {
+      return BaseError.formatErrors(result.errors);
+    }
+
+    const invariantErrors = this.invariants.runAll(schemaId, data);
+
+    if (invariantErrors.length === 0) {
       return EMPTY_ERROR_LIST;
     }
 
-    return BaseError.formatErrors(result.errors);
+    return BaseError.formatErrors(invariantErrors);
   }
 
   /**

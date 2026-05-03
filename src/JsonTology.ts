@@ -20,6 +20,7 @@
 import type { JSONSchema7Definition } from 'json-schema';
 
 import type { DumpOptionsInterface } from './interfaces/Dump.js';
+import type { InvariantInterface } from './interfaces/Invariant.js';
 import type { JsonTologyOptionsInterface } from './interfaces/Config.js';
 import type { MaterializerInterface } from './interfaces/MaterializerImpl.js';
 import type { QuadInterface } from './interfaces/Quad.js';
@@ -141,7 +142,8 @@ export class JsonTology<TMap = Record<never, never>> {
       ...(options.keywords === undefined ? {} : { 'keywords': options.keywords }),
       ...(options.strict === undefined ? {} : { 'strict': options.strict }),
       ...(options.vocabularies === undefined ? {} : { 'vocabularies': options.vocabularies }),
-      ...(options.maxDepth === undefined ? {} : { 'maxDepth': options.maxDepth })
+      ...(options.maxDepth === undefined ? {} : { 'maxDepth': options.maxDepth }),
+      ...(options.invariants === undefined ? {} : { 'invariants': options.invariants })
     };
 
     this.registry = new SchemaRegistry(registryOptions);
@@ -164,8 +166,18 @@ export class JsonTology<TMap = Record<never, never>> {
   }
 
   // ---------------------------------------------------------------------------
-  // Registration
+  // Invariants
   // ---------------------------------------------------------------------------
+
+  /**
+   * Registers a cross-field invariant for a schema.
+   *
+   * @param schemaId - The `$id` of the target schema.
+   * @param invariant - The invariant to add. Runs after structural validation succeeds.
+   */
+  public addInvariant<T = unknown>(schemaId: string, invariant: InvariantInterface<T>): void {
+    this.registry.addInvariant(schemaId, invariant as InvariantInterface);
+  }
 
   /**
    * Validates data against a registered schema, applying defaults and stripping unknown properties.
@@ -177,6 +189,9 @@ export class JsonTology<TMap = Record<never, never>> {
    * @throws {@link SchemaError} when no schema is registered for the given ID.
    */
   public coerce<K extends keyof TMap & string>(schemaId: K, data: unknown): TMap[K];
+  // ---------------------------------------------------------------------------
+  // Registration
+  // ---------------------------------------------------------------------------
   public coerce<TSchema extends JSONSchema7Definition & { readonly '$id': string; }>(
     schema: TSchema, data: unknown
   ): ParseOutputType<TSchema>;
@@ -319,7 +334,6 @@ export class JsonTology<TMap = Record<never, never>> {
   public has(schemaId: string): boolean {
     return this.registry.get(schemaId) !== undefined;
   }
-
   /**
    * Type guard that returns `true` if data satisfies the schema.
    *
@@ -389,7 +403,6 @@ export class JsonTology<TMap = Record<never, never>> {
 
     return this.ontologyCache;
   }
-
   /**
    * Registers one or more schemas and returns `this` with the schema types accumulated.
    *
@@ -424,6 +437,15 @@ export class JsonTology<TMap = Record<never, never>> {
    */
   public registerAnonymous(schema: Record<string, unknown>): string {
     return this.registry.registerAnonymous(schema);
+  }
+  /**
+   * Removes a previously registered invariant by name.
+   *
+   * @param schemaId - The `$id` of the target schema.
+   * @param name - The invariant name to remove.
+   */
+  public removeInvariant(schemaId: string, name: string): void {
+    this.registry.removeInvariant(schemaId, name);
   }
 
   /**
