@@ -1,6 +1,6 @@
 {
   "name": "json-tology",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Graph-native JSON Schema type system with JSON-LD ontology support",
   "type": "module",
   "main": "./dist/index.js",

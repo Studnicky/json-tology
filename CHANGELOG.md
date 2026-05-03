@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-05-03
+
 ### Added
 
 - Vocabulary plugin system (`VocabularyPluginInterface`) for extensible custom RDF vocabularies
@@ -20,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `json-tology/viz` package export — `HtmlRenderer`, `TypeStringEmitter`, visualization types
 - `rdfs:domain` and `rdfs:range` annotations accepted in both CURIE and full IRI forms in authored schemas
 - Extended semantic predicates: `disjointWith`, `equivalentTo`, `inverseOf`, `transitive`, `symmetric`
+- `commander`-based CLI replacing the hand-rolled parser
+- `VocabProjection` base class consolidating shared conditional projection logic
 
 ### Changed
 
@@ -27,6 +31,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `dash:readOnly`/`dash:writeOnly` replace `jsonschema:readOnly`/`jsonschema:writeOnly` in OWL output
 - Default prefixes expanded to include `sh`, `dct`, `dcat`, `foaf`, `skos`, `dash`, `prov`, `vann`, `schema`
 - `abox()` renamed to `toQuads()` — symmetric with `fromQuads()`
+- All module files renamed to PascalCase for consistency
+- Test files realigned 1:1 with source modules
+- Predicate dispatch consolidated to data-driven tables; `emitConstraintLiteral` extracted
+- Canonical imports enforced; dead code removed; options-object call style normalized
+- `SchemaIri` and `QuadFactory` converted to idiomatic static-method classes
+- Logic relocated to domain modules that own the concepts
 
 ## [0.1.0] - 2026-03-10
 
@@ -50,4 +60,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-[Unreleased]: https://github.com/Studnicky/json-tology/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Studnicky/json-tology/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Studnicky/json-tology/compare/v0.1.0...v0.2.0
