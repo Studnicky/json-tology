@@ -1,324 +1,383 @@
 # Type Inference
 
-json-tology derives TypeScript types from `as const` JSON Schema literals at compile time. The same types flow through `coerce()`, `is()`, and the registry's type map.
+> This guide covers `InferType`, `InferSchemaType`, `Transform.brand`, constraint brands, and utility types. All examples use the [bookstore domain](/bookstore-domain). See [Schemas](/schemas) for how schemas are registered.
 
-## Simple
+json-tology derives TypeScript types from `as const` JSON Schema literals at compile time. No code generation. No separate type declarations. The types flow through `coerce()`, `is()`, and the registry type map automatically.
 
-`InferType` derives a TypeScript type from an `as const` JSON Schema literal.
+---
+
+## InferType
+
+Derives a TypeScript type from an `as const` JSON Schema literal.
+
+### Signature
 
 ```ts
-import type { InferType } from 'json-tology';
-
-const UserSchema = {
-  $id: 'https://example.com/User',
-  type: 'object',
-  properties: {
-    name: { type: 'string' },
-    age: { type: 'integer' },
-    active: { type: 'boolean' },
-  },
-  required: ['name', 'age'],
-} as const;
-
-// Derive the type from the schema literal
-type User = InferType<typeof UserSchema>;
-// { readonly name: string; readonly age: number; readonly active?: boolean }
-
-const user: User = { name: 'Alice', age: 30 };
+type MyType = InferType<typeof MySchema>
+// Equivalent to: InferSchemaType<typeof MySchema, typeof MySchema, {}>
 ```
 
-Primitives, arrays, enums, and const values all infer correctly.
+### When to use
+
+Use `InferType<T>` everywhere you need the TypeScript type corresponding to a schema. It handles objects, arrays, enums, `const`, `$ref`, `oneOf`, `allOf`, `if/then/else`, and composition. Use `InferSchemaType<T, Root, Refs>` directly only when you need to specify a different root schema for `$ref` resolution within a sub-schema.
+
+### Examples
+
+#### Example 1: Object schema with required and optional fields
 
 ```ts
 import type { InferType } from 'json-tology';
 
-const StatusSchema = {
-  $id: 'https://example.com/Status',
+// From the bookstore domain (see /bookstore-domain)
+type Customer = InferType<typeof CustomerSchema>;
+// {
+//   readonly id: string & FormatBrand<'uuid'>;
+//   readonly email: string & FormatBrand<'email'>;
+//   readonly name: string;
+//   readonly addresses?: readonly (Address)[];
+// }
+
+type Address = InferType<typeof AddressSchema>;
+// {
+//   readonly street: string;
+//   readonly city: string;
+//   readonly postalCode: string;
+//   readonly country?: string;
+// }
+```
+
+The `addresses` array has `default: []` in the schema — at the type level it remains optional because `default` is a runtime concept; at runtime `coerce()` always fills it in.
+
+#### Example 2: Integer range, enum, and const
+
+```ts
+import type { InferType } from 'json-tology';
+
+// rating: minimum 1, maximum 5 — auto-generates literal union
+type Rating = InferType<typeof ReviewSchema>['rating'];
+// 1 | 2 | 3 | 4 | 5
+
+const CurrencySchema = {
+  $id: 'https://bookstore.example/Currency',
   type: 'string',
-  enum: ['active', 'inactive', 'pending'],
+  enum: ['USD', 'EUR', 'GBP', 'JPY'],
 } as const;
 
-type Status = InferType<typeof StatusSchema>;
-// 'active' | 'inactive' | 'pending'
-
-const TagsSchema = {
-  $id: 'https://example.com/Tags',
-  type: 'array',
-  items: { type: 'string' },
-} as const;
-
-type Tags = InferType<typeof TagsSchema>;
-// readonly string[]
+type Currency = InferType<typeof CurrencySchema>;
+// 'USD' | 'EUR' | 'GBP' | 'JPY'
 ```
 
-## Typical
+Bounded `integer` schemas with both bounds in the 0–50 range automatically produce literal unions. See [Constraint Brands](/constraint-brands#structural-narrowing) for details on integer ranges and multipleOf ranges.
 
-`JsonTology.create()` registers schemas at construction time and builds the type map automatically. `coerce()` and `is()` return types from that map.
+#### Example 3: Cross-schema `$ref` resolution
 
-```ts
-import { JsonTology } from 'json-tology';
-import type { InferType } from 'json-tology';
-
-const AddressSchema = {
-  $id: 'https://example.com/Address',
-  type: 'object',
-  properties: {
-    street: { type: 'string' },
-    city: { type: 'string' },
-  },
-  required: ['street', 'city'],
-} as const;
-
-const PersonSchema = {
-  $id: 'https://example.com/Person',
-  type: 'object',
-  properties: {
-    name: { type: 'string' },
-    address: { $ref: 'https://example.com/Address' },
-  },
-  required: ['name'],
-} as const;
-
-// Constructor-time inference: schemas tuple builds TMap
-const jt = JsonTology.create({
-  baseIRI: 'https://example.com',
-  schemas: [AddressSchema, PersonSchema] as const,
-});
-
-// coerce() return type comes from TMap
-const person = jt.coerce('https://example.com/Person', data);
-// person is typed from the schema map
-
-// is() narrows the type in conditionals
-if (jt.is('https://example.com/Person', input)) {
-  console.log(input.name); // string — narrowed by is()
-}
-
-// Chained register() accumulates types into the map
-const EventSchema = {
-  $id: 'https://example.com/Event',
-  type: 'object',
-  properties: {
-    title: { type: 'string' },
-    date: { type: 'string', format: 'date' },
-  },
-  required: ['title', 'date'],
-} as const;
-
-const jt2 = jt.register(EventSchema);
-const event = jt2.coerce('https://example.com/Event', eventData);
-// event is typed as { readonly title: string; readonly date: string }
-```
-
-Schemas with `$ref` to local `$defs` resolve at the type level.
+When a schema references another by absolute IRI, pass a reference map as the second type argument.
 
 ```ts
 import type { InferType } from 'json-tology';
 
-const TreeSchema = {
-  $id: 'https://example.com/Tree',
-  type: 'object',
-  properties: {
-    value: { type: 'string' },
-    children: {
-      type: 'array',
-      items: { $ref: '#/$defs/Node' },
-    },
-  },
-  required: ['value'],
-  $defs: {
-    Node: {
-      type: 'object',
-      properties: {
-        value: { type: 'string' },
-        children: {
-          type: 'array',
-          items: { $ref: '#/$defs/Node' },
-        },
-      },
-      required: ['value'],
-    },
-  },
-} as const;
-
-type Tree = InferType<typeof TreeSchema>;
-// { readonly value: string; readonly children?: readonly Node[] }
-```
-
-## Advanced
-
-Reference maps resolve cross-schema `$ref` at the type level. `Transform.brand()` adds nominal types. `InferSchemaType` gives lower-level inference with explicit root and reference parameters.
-
-### Reference maps for cross-schema `$ref`
-
-By default, `InferType` resolves `$ref` within the same schema. For external references, pass a reference map as the second type parameter.
-
-```ts
-import type { InferType } from 'json-tology';
-
-const CompanySchema = {
-  $id: 'https://example.com/Company',
-  type: 'object',
-  properties: {
-    name: { type: 'string' },
-  },
-  required: ['name'],
-} as const;
-
-const EmployeeSchema = {
-  $id: 'https://example.com/Employee',
-  type: 'object',
-  properties: {
-    name: { type: 'string' },
-    company: { $ref: 'https://example.com/Company' },
-  },
-  required: ['name', 'company'],
-} as const;
-
-// Without a reference map, $ref to external schemas resolves to unknown.
-// Pass a map of $id -> schema type to resolve cross-schema refs.
-type Employee = InferType<typeof EmployeeSchema, {
-  'https://example.com/Company': typeof CompanySchema;
+type Order = InferType<typeof OrderSchema, {
+  'https://bookstore.example/OrderLine': typeof OrderLineSchema;
 }>;
-// { readonly name: string; readonly company: { readonly name: string } }
+// {
+//   readonly id: string & FormatBrand<'uuid'>;
+//   readonly customerId: string & FormatBrand<'uuid'>;
+//   readonly items: readonly OrderLine[];   ← resolved from the ref map
+//   readonly total: number;
+//   readonly currency?: string;
+//   readonly placedAt: string & FormatBrand<'date-time'>;
+// }
 ```
 
-### Branded types with `Transform.brand()`
+Without the reference map, `items` would resolve to `unknown` at the element level.
 
-Attach a nominal brand to a schema's inferred type. The schema is unchanged at runtime.
+### Comparison
 
-```ts
-import { Transform } from 'json-tology';
-import type { BrandOutputType } from 'json-tology';
+::: code-group
 
-const UserIdSchema = Transform.brand(
-  {
-    $id: 'https://example.com/UserId',
-    type: 'string',
-    format: 'uuid',
-  } as const,
-  'UserId',
-);
+```ts [json-tology]
+import type { InferType } from 'json-tology';
 
-type UserId = BrandOutputType<typeof UserIdSchema>;
-// string & { readonly brand: 'UserId' }
-
-// Prevents accidental assignment of plain strings
-function getUser(id: UserId) { /* ... */ }
+const CustomerSchema = { ... } as const;
+type Customer = InferType<typeof CustomerSchema>;
 ```
 
-### Transforms with `coerce()` integration
+```ts [Zod]
+import { z } from 'zod';
 
-Attach decode/encode functions to a schema. `coerce()` automatically applies the decoder after validation.
-
-```ts
-import { JsonTology, Transform } from 'json-tology';
-const DateSchema = Transform.create(
-  {
-    $id: 'https://example.com/ISODate',
-    type: 'string',
-    format: 'date-time',
-  } as const,
-  {
-    decode: (s: string) => new Date(s),
-    encode: (d: Date) => d.toISOString(),
-  },
-);
-
-const jt = JsonTology.create({
-  baseIRI: 'https://example.com',
-  schemas: [DateSchema] as const,
+const CustomerSchema = z.object({
+  id:    z.string().uuid(),
+  email: z.string().email(),
+  name:  z.string(),
 });
-
-const date = jt.coerce('https://example.com/ISODate', '2025-01-15T10:30:00Z');
-// date is Date at runtime, typed as Date at compile time
-console.log(date.getFullYear()); // 2025
+type Customer = z.infer<typeof CustomerSchema>;
 ```
 
-### `InferSchemaType` for explicit root and reference control
+```ts [TypeBox]
+import { Type } from '@sinclair/typebox';
 
-`InferType<T, Refs>` is shorthand for `InferSchemaType<T, T, Refs>`. Use `InferSchemaType` directly when you need to specify a different root schema for `$ref` resolution (e.g., inferring a sub-schema within a larger root).
+const CustomerSchema = Type.Object({
+  id:    Type.String({ format: 'uuid' }),
+  email: Type.String({ format: 'email' }),
+  name:  Type.String(),
+});
+// TypeBox exposes Static<T> for type inference:
+import type { Static } from '@sinclair/typebox';
+type Customer = Static<typeof CustomerSchema>;
+```
+
+```ts [AJV]
+// AJV validates at runtime but provides no compile-time type inference.
+// Types must be declared separately and kept in sync manually.
+interface Customer {
+  id: string;
+  email: string;
+  name: string;
+}
+```
+
+```py [Pydantic]
+from pydantic import BaseModel, Field
+
+class Customer(BaseModel):
+    id: str
+    email: str
+    name: str
+
+# Python type annotations ARE the schema — no separate inference step.
+```
+
+:::
+
+### Related
+
+- [Constraint Brands](/constraint-brands) — format, string, numeric, array brands
+- `InferSchemaType` — explicit root control for sub-schema inference
+- [Schemas](/schemas) — how schemas are registered
+
+---
+
+## InferSchemaType
+
+Lower-level inference with explicit `Root` and `Refs` parameters. Resolves `$ref` against the specified root schema.
+
+### Signature
+
+```ts
+type MySubType = InferSchemaType<
+  typeof SubSchema,    // The sub-schema to infer
+  typeof RootSchema,   // Root schema providing $defs for $ref resolution
+  RefMap               // Optional cross-schema reference map
+>
+```
+
+### When to use
+
+Use when you need to infer the type of a sub-schema that uses `$ref: '#/$defs/...'` pointing into a larger parent schema. `InferType<T>` calls `InferSchemaType<T, T>` automatically — explicit use is only needed when the sub-schema and the root are different objects.
+
+### Examples
+
+#### Example 1: Infer a sub-schema type from $defs
 
 ```ts
 import type { InferSchemaType } from 'json-tology';
 
 const CatalogSchema = {
-  $id: 'https://example.com/Catalog',
+  $id: 'https://bookstore.example/Catalog',
   type: 'object',
   properties: {
-    featured: { $ref: '#/$defs/Product' },
+    featured: { $ref: '#/$defs/FeaturedBook' },
   },
   $defs: {
-    Product: {
+    FeaturedBook: {
       type: 'object',
       properties: {
-        name: { type: 'string' },
-        price: { type: 'number' },
+        isbn:  { type: 'string' },
+        badge: { type: 'string', enum: ['bestseller', 'new', 'staff-pick'] },
       },
-      required: ['name', 'price'],
+      required: ['isbn', 'badge'],
     },
   },
 } as const;
 
-// Infer a sub-schema type, using the parent as root for $ref resolution
-type Product = InferSchemaType<
-  typeof CatalogSchema['$defs']['Product'],
+type FeaturedBook = InferSchemaType<
+  typeof CatalogSchema['$defs']['FeaturedBook'],
   typeof CatalogSchema
 >;
-// { readonly name: string; readonly price: number }
+// { readonly isbn: string; readonly badge: 'bestseller' | 'new' | 'staff-pick' }
 ```
 
-## Constraint Brands
+### Comparison
 
-JSON Schema constraint keywords are surfaced as compile-time phantom brands. Two values with different constraints produce incompatible TypeScript types.
+::: code-group
+
+```ts [json-tology]
+type Sub = InferSchemaType<typeof SubSchema, typeof RootSchema>;
+```
+
+```ts [Zod]
+// Not applicable — Zod types are derived per-schema, not from a root.
+// Nested types are inferred via z.infer<typeof SubSchema>.
+```
+
+```ts [TypeBox]
+// TypeBox infers from the sub-object directly using Static<T>.
+// No explicit root concept.
+```
+
+```ts [AJV]
+// Not applicable — AJV provides no TypeScript inference.
+```
+
+```py [Pydantic]
+# Not applicable — Python uses class-based types, not JSON Pointer sub-schemas.
+```
+
+:::
+
+---
+
+## Constraint brands
+
+json-tology surfaces JSON Schema constraint keywords as compile-time phantom brands. Two values with different constraints produce structurally incompatible TypeScript types.
+
+The only way to obtain a branded value is through the validation API (`coerce`, `is`, `materialize`, etc.), which enforces that data has passed runtime checks before being treated as a constrained type.
+
+See [Constraint Brands](/constraint-brands) for the full reference, configuration flags, and structural narrowing features.
+
+### Examples
+
+#### Example 1: Format brands prevent mixing email and UUID strings
 
 ```ts
 import type { InferType } from 'json-tology';
 
-const EmailSchema = { type: 'string', format: 'email' } as const;
-const UriSchema   = { type: 'string', format: 'uri' } as const;
+type Customer = InferType<typeof CustomerSchema>;
 
-type Email = InferType<typeof EmailSchema>;
-type Uri   = InferType<typeof UriSchema>;
+// customer.id has type: string & FormatBrand<'uuid'>
+// customer.email has type: string & FormatBrand<'email'>
 
-// Email and Uri are structurally incompatible — different FormatBrand values.
-// Both require runtime validation (coerce, is, materialize) to obtain.
+// TypeScript rejects this at compile time:
+// const id: typeof customer.id = customer.email; // error — incompatible brands
+
+// The only way to produce a branded value:
+const customer = jt.coerce(CustomerSchema.$id, rawData); // typed + validated
 ```
 
-Brands cover 8 categories controlled by config flags:
+#### Example 2: Integer range as literal union
 
-| Category | Keywords | Flag |
-|----------|----------|------|
-| Format | `format` | `formatBrands` |
-| String | `minLength`, `maxLength`, `pattern` | `stringBrands` |
-| Numeric | `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`, `multipleOf` | `numericBrands` |
-| Array | `uniqueItems`, `contains`, `minItems`, `maxItems` | `arrayBrands` |
-| Content | `contentMediaType`, `contentEncoding` | `contentBrands` |
-| Object | `minProperties`, `maxProperties`, `additionalProperties: false` excess flagging | `objectBrands` |
-| Nominal | `$id` identity, `$schema` dialect | `nominalBrands` |
-| Master | All categories | `brands` |
+```ts
+// ReviewSchema has: rating: { type: 'integer', minimum: 1, maximum: 5 }
+type Review = InferType<typeof ReviewSchema>;
+type Rating = Review['rating']; // 1 | 2 | 3 | 4 | 5
 
-Beyond brands, the type system performs structural narrowing:
+const r: Rating = 3;   // OK
+// const bad: Rating = 0;  // compile error — 0 is not in 1..5
+```
 
-- **Auto integer ranges** — bounded `integer` schemas produce literal unions (e.g. `minimum: 1, maximum: 5` infers `1 | 2 | 3 | 4 | 5`)
-- **`multipleOf` stepped ranges** — `multipleOf: 2, minimum: 0, maximum: 8` infers `0 | 2 | 4 | 6 | 8`
-- **`not` exclusion** — `not: { type }`, `not: { const }`, `not: { enum }` narrow via `Exclude`
-- **`propertyNames: { enum }` strict keys** — narrows object keys to the enum union
-- **`patternProperties` template literals** — simple anchored patterns become typed keys (e.g. `^data_` becomes `` `data_${string}` ``)
-- **`if/then/else` narrowing** — const-discriminated `if` clauses narrow the then branch
-- **`dependentRequired` conditional typing** — trigger-key presence makes dependents required
+#### Example 3: Disable brands for a project
 
-Utility types for working with schemas:
+Create a `.d.ts` anywhere in your `tsconfig include` path:
+
+```ts
+// json-tology.d.ts
+declare module 'json-tology/types' {
+  interface JsonTologyTypeConfigInterface {
+    brands: false; // disables all phantom brands
+  }
+}
+```
+
+All `InferType` results revert to plain TypeScript primitives. Runtime validation is unaffected.
+
+### Comparison
+
+::: code-group
+
+```ts [json-tology]
+// Brands are on by default.
+// string & FormatBrand<'email'> is incompatible with string & FormatBrand<'uuid'>.
+type Email = InferType<typeof EmailSchema>; // string & FormatBrand<'email'>
+```
+
+```ts [Zod]
+// Zod supports .brand<'Email'>() for nominal typing.
+const EmailSchema = z.string().email().brand<'Email'>();
+type Email = z.infer<typeof EmailSchema>; // string & z.BRAND<'Email'>
+// Must be applied manually per schema — not automatic from JSON Schema keywords.
+```
+
+```ts [TypeBox]
+// TypeBox does not generate phantom brands from JSON Schema constraints.
+// All string schemas infer as string.
+type Email = Static<typeof EmailSchema>; // string
+```
+
+```ts [AJV]
+// AJV provides no type inference — no brands possible.
+```
+
+```py [Pydantic]
+# Pydantic v2 supports Annotated types for similar constraint propagation:
+from pydantic import EmailStr
+from typing import Annotated
+
+class Customer(BaseModel):
+    email: EmailStr  # validated as email at runtime, typed as str
+```
+
+:::
+
+### Related
+
+- [Constraint Brands](/constraint-brands) — full brand reference and configuration
+- `Transform.brand` — explicit nominal brands on schema `$id`
+
+---
+
+## Utility types
+
+json-tology exports utility types for working with schema-derived types.
 
 | Type | Purpose |
 |------|---------|
 | `DeprecatedKeysType<T>` | Extract keys marked `deprecated: true` |
 | `NonDeprecatedSchemaType<T>` | Omit deprecated properties from inferred type |
-| `LooseInputType<T>` | Strip brands to base primitive (for pre-validation input) |
-| `EnumValuesType<T>` | Extract enum values as a union type |
-| `ExhaustiveType<T>` | Enforce exhaustive switch/case handling |
-| `DefaultAlignedType<T>` | Resolves to `never` when defaults mismatch declared types |
+| `LooseInputType<T>` | Strip brands to base primitive |
+| `EnumValuesType<T>` | Extract enum values as a union |
+| `ExhaustiveType<T>` | Enforce exhaustive switch/case |
+| `DefaultAlignedType<T>` | `never` when defaults mismatch declared types |
 | `IntegerRangeType<Min, Max>` | Manual literal union for integer ranges |
 | `MultipleOfRangeType<Min, Max, Step>` | Stepped literal union for multiples |
 
-See [constraint-brands.md](./constraint-brands.md) for the full reference, configuration, and examples.
+```ts
+import type {
+  EnumValuesType,
+  ExhaustiveType,
+  LooseInputType,
+  InferType,
+} from 'json-tology';
+
+const CurrencySchema = {
+  $id: 'https://bookstore.example/Currency',
+  type: 'string',
+  enum: ['USD', 'EUR', 'GBP'],
+} as const;
+
+type Currency = EnumValuesType<typeof CurrencySchema>; // 'USD' | 'EUR' | 'GBP'
+
+function formatPrice(amount: number, currency: Currency): string {
+  switch (currency) {
+    case 'USD': return `$${amount}`;
+    case 'EUR': return `€${amount}`;
+    case 'GBP': return `£${amount}`;
+    default:    return currency satisfies ExhaustiveType<typeof currency>;
+  }
+}
+
+// LooseInputType strips brands for function parameters
+type BookInput = LooseInputType<InferType<typeof BookSchema>>;
+// All branded string/number fields revert to plain string/number
+```
+
+See [Constraint Brands](/constraint-brands) for complete documentation on each utility type.

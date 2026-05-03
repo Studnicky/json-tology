@@ -4,34 +4,100 @@ import { themeConfig } from './theme.config.js';
 const sidebar = [
   {
     text: 'Introduction',
-    items: [{ link: '/getting-started', text: 'Getting Started' }]
-  },
-  {
-    text: 'Guides',
     items: [
-      { link: '/validation', text: 'Validation' },
-      { link: '/value', text: 'Value Operations' },
-      { link: '/schemas', text: 'Schema Management' },
-      { link: '/composition', text: 'Schema Composition' },
-      { link: '/transforms', text: 'Transforms' },
-      { link: '/materialization', text: 'Materialization' },
-      { link: '/types', text: 'Type Inference' },
-      { link: '/constraint-brands', text: 'Constraint Brands' },
-      { link: '/cli', text: 'CLI' },
-      { link: '/dump', text: 'Serialization (dump)' },
-      { link: '/computed', text: 'Computed Fields' },
-      { link: '/invariants', text: 'Cross-field Invariants' }
+      { link: '/getting-started', text: 'Getting Started' },
+      { link: '/bookstore-domain', text: 'The Bookstore Domain' }
     ]
   },
   {
-    text: 'Advanced',
-    items: [{ link: '/ontology', text: 'Ontology and Graphs' }]
+    text: 'Core',
+    items: [
+      { link: '/schemas', text: 'Schemas' },
+      { link: '/types', text: 'Type Inference' },
+      {
+        text: 'Validation',
+        items: [
+          { link: '/validation/coerce', text: 'coerce' },
+          { link: '/validation/validate', text: 'validate' },
+          { link: '/validation/is', text: 'is' },
+          { link: '/validation/errors', text: 'errors' },
+          { link: '/validation/validateAt', text: 'validateAt' }
+        ]
+      },
+      {
+        text: 'Error Views',
+        items: [
+          { link: '/errors/views#validationerrors-messages', text: 'messages' },
+          { link: '/errors/views#validationerrors-format', text: 'format' },
+          { link: '/errors/views#validationerrors-flatten', text: 'flatten' },
+          { link: '/errors/views#validationerrors-aggregate', text: 'aggregate' },
+          { link: '/errors/views#validationerrors-report', text: 'report' }
+        ]
+      }
+    ]
+  },
+  {
+    text: 'Composing Schemas',
+    items: [
+      { link: '/composition/extend', text: 'extend' },
+      { link: '/composition/pick-omit', text: 'pick / omit' },
+      { link: '/composition/partial-required', text: 'partial / required' },
+      { link: '/composition/intersection', text: 'intersection' },
+      { link: '/composition/discriminated-union', text: 'discriminatedUnion / narrow' },
+      { link: '/composition/get-defaults', text: 'getDefaults' }
+    ]
+  },
+  {
+    text: 'Working with Values',
+    items: [
+      {
+        text: 'Value Operations',
+        items: [
+          { link: '/value/clone-hash', text: 'clone / hash' },
+          { link: '/value/diff', text: 'diff / applyOp' },
+          { link: '/value/cast-clean-convert', text: 'cast / clean / convert' },
+          { link: '/value/create', text: 'create' }
+        ]
+      },
+      {
+        text: 'Transforms',
+        items: [
+          { link: '/transforms/decode-encode', text: 'Transform.create / encode' },
+          { link: '/transforms/brand', text: 'brand' },
+          { link: '/transforms/pipe', text: 'pipe' }
+        ]
+      },
+      {
+        text: 'Serialization',
+        items: [
+          { link: '/serialization/dump', text: 'dump / dumpJson' },
+          { link: '/serialization/toSchema', text: 'toSchema' }
+        ]
+      }
+    ]
+  },
+  {
+    text: 'Registry',
+    items: [
+      { link: '/registry/register', text: 'register / has / get / list' },
+      { link: '/registry/materialize', text: 'materialize' },
+      { link: '/registry/computed', text: 'addComputed / removeComputed' },
+      { link: '/registry/invariants', text: 'addInvariant / removeInvariant' }
+    ]
+  },
+  {
+    text: 'Advanced (opt-in)',
+    items: [
+      { link: '/advanced/ontology', text: 'Ontology and Graphs' }
+    ]
   },
   {
     text: 'Reference',
     items: [
       { link: '/architecture-plan', text: 'Architecture Plan' },
-      { link: '/current-state', text: 'Current State' }
+      { link: '/current-state', text: 'Current State' },
+      { link: '/cli', text: 'CLI' },
+      { link: '/constraint-brands', text: 'Constraint Brands' }
     ]
   }
 ];

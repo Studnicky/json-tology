@@ -19,7 +19,8 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "declarationMap": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "typeRoots": ["./node_modules/@types"]
   },
   "include": ["src/**/*", "json-tology.d.ts"],
   "exclude": ["node_modules", "dist", "test"]

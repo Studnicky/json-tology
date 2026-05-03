@@ -36,27 +36,32 @@ If you're coming from Pydantic, Zod, or TypeBox, json-tology gives you the same 
 import { JsonTology } from 'json-tology';
 import type { InferType } from 'json-tology';
 
-const UserSchema = {
-  $id: 'https://example.com/User',
+const CustomerSchema = {
+  $id: 'https://bookstore.example/Customer',
   type: 'object',
   properties: {
-    name:  { type: 'string' },
-    email: { type: 'string', format: 'email' },
-    role:  { type: 'string', default: 'viewer' },
+    id:        { type: 'string', format: 'uuid' },
+    email:     { type: 'string', format: 'email' },
+    name:      { type: 'string' },
+    addresses: { type: 'array', items: { type: 'object' }, default: [] },
   },
-  required: ['name', 'email'],
+  required: ['id', 'email', 'name'],
 } as const;
 
-type User = InferType<typeof UserSchema>;
-//   ^? { readonly name: string; readonly email: string; readonly role?: string }
+type Customer = InferType<typeof CustomerSchema>;
+//   ^? { readonly id: string; readonly email: string; readonly name: string; readonly addresses?: readonly object[] }
 
 const jt = JsonTology.create({
-  baseIRI: 'https://example.com',
-  schemas: [UserSchema] as const,
+  baseIRI: 'https://bookstore.example',
+  schemas: [CustomerSchema] as const,
 });
 
-const user = jt.coerce(UserSchema.$id, { name: 'Alice', email: 'alice@co.io' });
-//    ^? User — typed, validated, defaults applied
+const customer = jt.coerce(CustomerSchema.$id, {
+  id: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
+  email: 'alice@bookstore.example',
+  name: 'Alice Chen',
+});
+//    ^? Customer — typed, validated, defaults applied
 ```
 
 That's the entire core. Validation, type inference, coercion, defaults — all from one schema literal.
@@ -79,8 +84,10 @@ If you also need RDF/OWL/SHACL output, that's available as **opt-in advanced fea
 ## Quick links
 
 - **[Getting Started](/getting-started)** — install, define a schema, validate, coerce
-- **[Validation](/validation)** — `validate`, `errors`, `is`, error views (`messages`, `format`, `flatten`, `aggregate`, `report`)
+- **[Bookstore Domain](/bookstore-domain)** — the running example domain used throughout the docs
+- **[Validation](/validation/coerce)** — `coerce`, `validate`, `errors`, `is`, `validateAt`
+- **[Error Views](/errors/views)** — `messages`, `format`, `flatten`, `aggregate`, `report` (RFC 7807)
 - **[Type Inference](/types)** — how `InferType` works, reference maps, branded types
-- **[Composition](/composition)** — derive schemas from other schemas
-- **[Serialization](/dump)** — `dump`, `dumpJson`, RFC 7807 error bodies
-- **[Ontology and Graphs](/ontology)** — *advanced:* OWL TBox, SHACL shapes, JSON-LD, ABox projection
+- **[Composition](/composition/extend)** — derive schemas from other schemas
+- **[Serialization](/serialization/dump)** — `dump`, `dumpJson`, Transform encoders
+- **[Ontology and Graphs](/advanced/ontology)** — *advanced:* OWL TBox, SHACL shapes, JSON-LD, ABox projection

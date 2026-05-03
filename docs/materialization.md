@@ -1,178 +1,161 @@
 # Materialization
 
-Materialization builds fully-populated instances from schemas by applying defaults and filling implicit properties. ABox projection converts validated instances into RDF quads for ontology serialization.
+> This guide covers `jt.materialize`. All examples use the [bookstore domain](/bookstore-domain). See [Value Operations](/value#jtvaluecreate) for `value.create`, which produces zero-value instances; see [Validation](/validation#coerce) for `coerce`, which validates and fills defaults in one pass.
 
-## Simple
+`materialize()` builds a fully-populated instance by merging partial input with schema defaults. It is the right tool for constructing entity instances from known partial data — such as form state — where some fields have defaults and others are supplied.
 
-`materialize()` populates an empty object with all schema defaults.
+---
+
+## materialize
+
+Materializes an entity instance with schema defaults applied, optionally merging partial input.
+
+### Signature
 
 ```ts
-import { JsonTology, type InferType } from 'json-tology';
-
-const ConfigSchema = {
-  $id: 'https://app.io/Config',
-  type: 'object',
-  properties: {
-    theme:    { type: 'string', default: 'dark' },
-    locale:   { type: 'string', default: 'en-US' },
-    pageSize: { type: 'integer', default: 25 },
-    debug:    { type: 'boolean', default: false },
-  },
-  required: ['theme', 'locale', 'pageSize', 'debug'],
-} as const;
-
-const jt = JsonTology.create({
-  baseIRI: 'https://app.io',
-  schemas: [ConfigSchema] as const,
-});
-
-type Config = InferType<typeof ConfigSchema>;
-
-// Materialize with no partial input — all defaults applied
-const config = jt.materialize(ConfigSchema);
-console.log(config);
-// => { theme: 'dark', locale: 'en-US', pageSize: 25, debug: false }
+public materialize<TSchema>(
+  schema: TSchema,
+  partial?: Partial<InferSchemaType<TSchema>>
+): MaterializedSchemaType<TSchema>
 ```
 
-## Typical
+### When to use
 
-`materialize()` fills gaps in partial input with schema defaults. Unlike `value.create()`, which synthesizes zero values for required properties that lack defaults, `materialize()` validates the partial and merges with declared defaults.
+Use `materialize` when you have partial data and want defaults filled in — for example, creating a new `Book` from admin input where `currency` and `inStock` default to `'USD'` and `true`. Contrast with:
 
-```ts
-import { JsonTology, type InferType } from 'json-tology';
+- `coerce(schemaId, data)` — validates arbitrary data, strips unknowns, applies defaults, throws on failure. Best for ingesting untrusted input.
+- `value.create(schemaId)` — synthesizes zero-values for required fields that have no default. Best for blank form initialization.
+- `materialize(schema, partial)` — merges trusted partial with defaults. Best for constructing known entities.
 
-const UserSchema = {
-  $id: 'https://app.io/User',
-  type: 'object',
-  properties: {
-    name:    { type: 'string' },
-    email:   { type: 'string', format: 'email' },
-    role:    { type: 'string', default: 'viewer' },
-    active:  { type: 'boolean', default: true },
-  },
-  required: ['name', 'email', 'role', 'active'],
-} as const;
+### Examples
 
-const jt = JsonTology.create({
-  baseIRI: 'https://app.io',
-  schemas: [UserSchema] as const,
-});
+#### Example 1: Materialize a new book with only required fields
 
-type User = InferType<typeof UserSchema>;
-
-// materialize — merge partial data with schema defaults
-const user = jt.materialize(UserSchema, {
-  name: 'Alice',
-  email: 'alice@example.com',
-});
-console.log(user);
-// => { name: 'Alice', email: 'alice@example.com', role: 'viewer', active: true }
-
-// value.create — synthesize zero-value defaults for ALL required properties
-// Properties with explicit defaults get those defaults.
-// Properties without defaults get zero values ('' for string, 0 for number, false for boolean).
-const blank = jt.value.create(UserSchema.$id);
-console.log(blank);
-// => { name: '', email: '', role: 'viewer', active: true }
-
-// Key difference:
-// - materialize(schema, partial) validates the partial and merges with defaults
-// - value.create(schemaId) builds a zero-value skeleton without validation input
-```
-
-## Advanced
-
-`toQuads()` validates data against a schema and projects it into RDF quads, returning an `OntologyBuilder` for JSON-LD output. Schemas with `$ref` relationships produce linked ABox nodes.
+Schema defaults (`currency: 'USD'`, `inStock: true`) are applied automatically.
 
 ```ts
-import { JsonTology, type InferType } from 'json-tology';
+import { JsonTology } from 'json-tology';
 
-const AddressSchema = {
-  $id: 'https://app.io/Address',
-  type: 'object',
-  properties: {
-    street: { type: 'string' },
-    city:   { type: 'string' },
-    zip:    { type: 'string' },
-  },
-  required: ['street', 'city', 'zip'],
-} as const;
+// jt is pre-built with BookSchema registered (see /bookstore-domain)
 
-const PersonSchema = {
-  $id: 'https://app.io/Person',
-  type: 'object',
-  properties: {
-    name:    { type: 'string' },
-    age:     { type: 'integer' },
-    address: { $ref: 'https://app.io/Address' },
-  },
-  required: ['name'],
-} as const;
-
-const jt = JsonTology.create({
-  baseIRI: 'https://app.io',
-  schemas: [AddressSchema, PersonSchema] as const,
+const book = jt.materialize(BookSchema, {
+  isbn:    '9780140449136',
+  title:   'Crime and Punishment',
+  authors: ['Fyodor Dostoevsky'],
+  price:   14.99,
 });
-
-// ABox projection — validate data, project to RDF, get JSON-LD
-const personData = {
-  name: 'Alice',
-  age: 30,
-  address: {
-    street: '123 Main St',
-    city: 'Springfield',
-    zip: '62701',
-  },
-};
-
-const abox = jt.toQuads(PersonSchema, personData);
-const jsonLd = abox.jsonLdObject();
-console.log(JSON.stringify(jsonLd, null, 2));
+console.log(book);
 // {
-//   "@context": { ... prefixes ... },
-//   "@graph": [
-//     ... ABox individuals for Person and nested Address ...
-//   ],
-//   "@id": "https://app.io/ontology/",
-//   "@type": "owl:Ontology",
-//   "rdfs:label": "Generated Ontology"
+//   isbn:     '9780140449136',
+//   title:    'Crime and Punishment',
+//   authors:  ['Fyodor Dostoevsky'],
+//   price:    14.99,
+//   currency: 'USD',     ← from default
+//   inStock:  true,      ← from default
 // }
-
-// Multiple schemas projected to ABox independently
-const OrderSchema = {
-  $id: 'https://app.io/Order',
-  type: 'object',
-  properties: {
-    orderId:  { type: 'string' },
-    total:    { type: 'number' },
-    customer: { $ref: 'https://app.io/Person' },
-  },
-  required: ['orderId', 'total'],
-} as const;
-
-jt.register(OrderSchema);
-
-const orderData = {
-  orderId: 'ORD-001',
-  total: 99.50,
-  customer: {
-    name: 'Bob',
-    address: {
-      street: '456 Oak Ave',
-      city: 'Shelbyville',
-      zip: '62702',
-    },
-  },
-};
-
-const orderAbox = jt.toQuads(OrderSchema, orderData);
-const orderJsonLd = orderAbox.jsonLd(); // JSON string
-console.log(orderJsonLd);
-
-// Combine TBox ontology with ABox data
-const tbox = jt.ontology();
-const tboxJsonLd = tbox.jsonLdObject();
-console.log(tboxJsonLd);
-// TBox contains class definitions (owl:Class) and property shapes
-// ABox contains individual instances projected from validated data
 ```
+
+#### Example 2: Materialize a customer with an empty address list
+
+`addresses` has `default: []` in `CustomerSchema`. Materializing without supplying addresses fills it in.
+
+```ts
+const customer = jt.materialize(CustomerSchema, {
+  id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
+  email: 'alice@bookstore.example',
+  name:  'Alice Chen',
+});
+console.log(customer.addresses); // []
+```
+
+#### Example 3: Materialize with no partial input
+
+When called with no second argument, `materialize` produces a value populated entirely from defaults. Fields with no default and no zero-value may be absent.
+
+```ts
+const partial = jt.materialize(BookSchema);
+console.log(partial);
+// { currency: 'USD', inStock: true }
+// isbn, title, authors, price are absent — they have no declared defaults
+```
+
+#### Example 4: Compare materialize vs value.create vs coerce
+
+```ts
+// materialize — merges partial with defaults
+const fromPartial = jt.materialize(BookSchema, { isbn: '9780140449136', title: 'Crime...', authors: ['Dostoevsky'], price: 14.99 });
+// → { isbn: '...', title: '...', authors: [...], price: 14.99, currency: 'USD', inStock: true }
+
+// value.create — zero-values for ALL required fields + explicit defaults
+const fromCreate = jt.value.create(BookSchema.$id);
+// → { isbn: '', title: '', authors: [], price: 0, currency: 'USD', inStock: true }
+
+// coerce — validates untrusted input, applies defaults, strips extras, throws on failure
+const fromCoerce = jt.coerce(BookSchema.$id, { isbn: '9780140449136', title: 'Crime...', authors: ['Dostoevsky'], price: 14.99, extra: 'gone' });
+// → { isbn: '...', title: '...', authors: [...], price: 14.99, currency: 'USD', inStock: true }
+// (same shape, but extra was stripped and validation ran)
+```
+
+### Comparison
+
+::: code-group
+
+```ts [json-tology]
+const book = jt.materialize(BookSchema, {
+  isbn:    '9780140449136',
+  title:   'Crime and Punishment',
+  authors: ['Fyodor Dostoevsky'],
+  price:   14.99,
+});
+// → currency: 'USD', inStock: true applied from defaults
+```
+
+```ts [Zod]
+// Zod applies defaults during parse():
+const book = BookSchema.parse({
+  isbn:    '9780140449136',
+  title:   'Crime and Punishment',
+  authors: ['Fyodor Dostoevsky'],
+  price:   14.99,
+});
+// Requires .default() on each field in the schema definition.
+```
+
+```ts [TypeBox]
+import { Value } from '@sinclair/typebox/value';
+// Value.Default fills defaults; Value.Create synthesizes zero-values.
+const book = Value.Default(BookSchema, {
+  isbn:    '9780140449136',
+  title:   'Crime and Punishment',
+  authors: ['Fyodor Dostoevsky'],
+  price:   14.99,
+});
+```
+
+```ts [AJV]
+// AJV applies defaults during validation with { useDefaults: true }:
+const ajv = new Ajv({ useDefaults: true });
+const data = { isbn: '9780140449136', title: '...', authors: [...], price: 14.99 };
+ajv.validate(bookSchema, data); // mutates data in place with defaults
+// data.currency === 'USD', data.inStock === true
+```
+
+```py [Pydantic]
+# Pydantic applies defaults at model construction time:
+book = Book(
+    isbn='9780140449136',
+    title='Crime and Punishment',
+    authors=['Fyodor Dostoevsky'],
+    price=14.99,
+    # currency and in_stock use defaults
+)
+```
+
+:::
+
+### Related
+
+- [Value Operations](/value#jtvaluecreate) — `value.create` for zero-value skeleton instances
+- [Validation](/validation#coerce) — `coerce` for validating + materializing untrusted input
+- [Computed Fields](/computed) — computed properties run after materialization
+- [Invariants](/invariants) — cross-field rules that run after materialization

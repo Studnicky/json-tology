@@ -1,6 +1,6 @@
 # Getting Started
 
-json-tology is an ontology-native type system for TypeScript. Declare schemas once in JSON Schema, get types, validation, materialization, and ontology output from one canonical graph.
+json-tology is an ontology-native type system for TypeScript. Declare schemas once in JSON Schema, get TypeScript types, runtime validation, defaults, transforms, and serialization from one canonical graph.
 
 ## Install
 
@@ -8,151 +8,192 @@ json-tology is an ontology-native type system for TypeScript. Declare schemas on
 npm install json-tology
 ```
 
-## Define a Schema
+## Define a schema
 
-Schemas are plain JSON Schema objects with `$id` and `as const` for type inference.
+Schemas are plain JSON Schema objects with `$id` and `as const`. The bookstore domain used in all examples starts here. See the [Bookstore Domain](/bookstore-domain) page for all six schemas defined in full.
 
-```typescript
-const UserSchema = {
-  $id: 'https://example.com/User',
+```ts
+const CustomerSchema = {
+  $id: 'https://bookstore.example/Customer',
   type: 'object',
   properties: {
-    name:  { type: 'string' },
+    id:    { type: 'string', format: 'uuid' },
     email: { type: 'string', format: 'email' },
-    role:  { type: 'string', default: 'viewer' },
+    name:  { type: 'string' },
   },
-  required: ['name', 'email'],
+  required: ['id', 'email', 'name'],
 } as const;
 ```
 
-## Create an Instance
+`as const` is required. Without it TypeScript widens every string literal and `InferType<T>` cannot produce the right type.
 
-```typescript
-import { JsonTology, InferType } from 'json-tology';
+## Derive the TypeScript type
 
-type User = InferType<typeof UserSchema>;
+```ts
+import type { InferType } from 'json-tology';
+
+type Customer = InferType<typeof CustomerSchema>;
+// {
+//   readonly id: string & FormatBrand<'uuid'>;
+//   readonly email: string & FormatBrand<'email'>;
+//   readonly name: string;
+// }
+```
+
+No code generation. No separate type declaration file. The type comes directly from the schema literal at compile time. See [Type Inference](/types) for how `$ref`, enums, brands, and cross-schema references work.
+
+## Create an instance and register schemas
+
+```ts
+import { JsonTology } from 'json-tology';
 
 const jt = JsonTology.create({
-  baseIRI: 'https://example.com',
-  schemas: [UserSchema] as const,
+  baseIRI: 'https://bookstore.example',
+  schemas: [CustomerSchema] as const,
 });
 ```
 
-`JsonTology.create()` registers all schemas at construction and infers their types into a type map. Every method that accepts a schema ID returns typed results.
+`JsonTology.create()` registers all schemas, compiles the validation graph, and builds the type map. Every method that accepts a schema `$id` returns typed results from that map.
 
 ## Validate
 
-```typescript
-const errors = jt.validate(UserSchema.$id, { name: 'Alice', email: 'alice@co.io' });
-// []
+`validate()` returns error strings. An empty array means valid.
 
-const bad = jt.validate(UserSchema.$id, { name: 42 });
-// ['At /name: must be string']
+```ts
+// Valid customer
+const errors = jt.validate(CustomerSchema.$id, {
+  id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
+  email: 'alice@bookstore.example',
+  name:  'Alice Chen',
+});
+console.log(errors); // []
+
+// Missing required field
+const bad = jt.validate(CustomerSchema.$id, { email: 'alice@bookstore.example' });
+console.log(bad); // ["root: must have required property 'id'", "root: must have required property 'name'"]
 ```
+
+See [Validation](/validation) for `is()`, `errors()`, `validateAt()`, and the five error views.
 
 ## Coerce
 
-`coerce()` validates, applies defaults, and strips unknown properties. Throws `CoercionError` on failure.
+`coerce()` validates, applies defaults, strips unknown properties, and returns a typed value. Throws `CoercionError` on failure.
 
-```typescript
-const user = jt.coerce(UserSchema.$id, {
-  name: 'Alice',
-  email: 'alice@co.io',
-  extra: true,
+```ts
+import { CoercionError } from 'json-tology';
+
+const AddressSchema = {
+  $id: 'https://bookstore.example/Address',
+  type: 'object',
+  properties: {
+    street:     { type: 'string' },
+    city:       { type: 'string' },
+    postalCode: { type: 'string' },
+    country:    { type: 'string', default: 'US' },
+  },
+  required: ['street', 'city', 'postalCode'],
+} as const;
+
+const jt2 = jt.register(AddressSchema);
+
+const address = jt2.coerce(AddressSchema.$id, {
+  street:     '12 Elm Lane',
+  city:       'Bookham',
+  postalCode: '94107',
+  extra:      'ignored',       // stripped
+  // country omitted — default 'US' applied
 });
-// { name: 'Alice', email: 'alice@co.io', role: 'viewer' }
-// `extra` stripped, `role` filled from default
+// { street: '12 Elm Lane', city: 'Bookham', postalCode: '94107', country: 'US' }
 ```
 
-## Materialize
+## Compose schemas
 
-`materialize()` builds instances from partial data with schema defaults.
+`Compose` derives new schemas from existing ones. All composition runs at compile time and produces correct JSON Schema objects.
 
-```typescript
-const blank = jt.materialize(UserSchema, {});
-// { role: 'viewer' }
+```ts
+import { Compose } from 'json-tology';
 
-const partial = jt.materialize(UserSchema, { name: 'Bob' });
-// { name: 'Bob', role: 'viewer' }
+// A PATCH-body schema where every field is optional
+const PatchCustomerSchema = Compose.partial(
+  CustomerSchema,
+  'https://bookstore.example/PatchCustomer',
+);
+
+// A read-only summary for list views
+const CustomerSummarySchema = Compose.pick(
+  CustomerSchema,
+  ['id', 'name'] as const,
+  'https://bookstore.example/CustomerSummary',
+);
 ```
 
-## Value Operations
+See [Composition](/composition) for `extend`, `omit`, `required`, `intersection`, and `discriminatedUnion`.
 
-Value operations are available through `jt.value` or as static methods on `Value`.
+## Serialize back to wire form
 
-```typescript
-// Schema-aware (through facade)
-const cleaned = jt.value.clean(UserSchema.$id, { name: 'Alice', email: 'a@b.co', unknown: true });
-// { name: 'Alice', email: 'a@b.co' }
+`dump()` walks the validation graph and applies any registered `Transform` encoders. It is the Pydantic `model_dump()` equivalent.
 
-// Pure operations (no registry needed)
-import { Value } from 'json-tology';
+```ts
+const customer = jt.coerce(CustomerSchema.$id, {
+  id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
+  email: 'alice@bookstore.example',
+  name:  'Alice Chen',
+});
 
-const copy = Value.clone(user);
-const hash = Value.hash(user);
-const changes = Value.diff(user, { ...user, role: 'admin' });
-// changes.isEmpty === false, changes.length === 1
+const wire = jt.dumpJson(CustomerSchema.$id, customer);
+// '{"id":"c1a2b3d4-e5f6-7890-abcd-ef1234567890","email":"alice@bookstore.example","name":"Alice Chen","addresses":[]}'
 ```
 
-## Ontology
+See [Serialization](/dump) for filtering options (`exclude`, `include`, `excludeDefaults`).
 
-`ontology()` generates OWL and SHACL from the same graph used for validation.
+## Sub-path imports
 
-```typescript
-console.log(jt.ontology().jsonLd());      // OWL JSON-LD
-console.log(jt.ontology().shaclObject()); // SHACL JSON-LD
-```
+Import only what you need. Every sub-path is tree-shakable.
 
-## Imports
-
-Import what you need from sub-path exports:
-
-```typescript
+```ts
 // Everything
-import { JsonTology, Value, SchemaRegistry, Curie } from 'json-tology';
+import { JsonTology, Compose, Transform, Value } from 'json-tology';
 
-// Just value operations (tree-shakes out validation, ontology, etc.)
+// Value operations only (no validation graph or ontology)
 import { Value, Hash, Changeset } from 'json-tology/value';
 
-// Just schema management
-import { SchemaRegistry, SchemaLoader, FormatRegistry } from 'json-tology/schema';
+// Schema registry and format validators
+import { SchemaRegistry, FormatRegistry } from 'json-tology/schema';
 
-// Just ontology output
-import { OntologyBuilder, GraphOntologySerializer } from 'json-tology/ontology';
-
-// Visualization
-import { HtmlRenderer, TypeStringEmitter, VizDataCollector } from 'json-tology/viz';
-
-// Types and interfaces
-import type { InferType, InferSchemaType } from 'json-tology/types';
-import type { LoggerInterface, RegistryOptionsInterface, VocabularyPluginInterface } from 'json-tology/interfaces';
+// Types and interfaces only (compile-time, no runtime cost)
+import type { InferType } from 'json-tology/types';
+import type { LoggerInterface } from 'json-tology/interfaces';
 ```
 
-## End-to-end examples
+## What's in the box
 
-Three runnable walkthroughs cover the full value chain using a shared access-control domain:
+| Feature | Method(s) |
+|---------|-----------|
+| Type inference | `InferType<T>`, `InferSchemaType<T, Root>` |
+| Validation | `validate`, `is`, `errors`, `validateAt` |
+| Coercion + defaults | `coerce` |
+| Error views | `messages`, `format`, `flatten`, `aggregate`, `report` |
+| Composition | `Compose.extend`, `pick`, `omit`, `partial`, `required`, `intersection`, `discriminatedUnion` |
+| Value utilities | `Value.clone`, `hash`, `diff`, `value.cast`, `clean`, `convert`, `create` |
+| Transforms | `Transform.create`, `brand`, `pipe`, `jt.encode` |
+| Serialization | `dump`, `dumpJson` |
+| Computed fields | `addComputed`, `removeComputed` |
+| Cross-field invariants | `addInvariant`, `removeInvariant` |
+| Materialization | `materialize` |
+| RDF/Ontology _(advanced, opt-in)_ | `ontology`, `toQuads`, `fromQuads`, `toSchema` |
 
-| Example | Focus |
-|---------|-------|
-| [`examples/e2e-types.ts`](../examples/e2e-types.ts) | Compile-time inference, branded IDs, transforms, composition |
-| [`examples/e2e-validation.ts`](../examples/e2e-validation.ts) | Runtime pipeline: validate, coerce, value ops, sub-schema checks |
-| [`examples/e2e-reasoning.ts`](../examples/e2e-reasoning.ts) | TBox/ABox → N3 → EYE reasoner → derived access decisions |
-
-```bash
-npm run build && tsx examples/e2e-types.ts
-```
-
-## Next Steps
+## Next steps
 
 | Topic | Guide |
 |-------|-------|
-| Validation and coercion | [validation.md](./validation.md) |
-| Value operations | [value.md](./value.md) |
-| Schema management | [schemas.md](./schemas.md) |
-| Schema composition | [composition.md](./composition.md) |
-| Transforms | [transforms.md](./transforms.md) |
-| Materialization | [materialization.md](./materialization.md) |
-| Ontology output | [ontology.md](./ontology.md) |
-| Type inference | [types.md](./types.md) |
-| Constraint brands | [constraint-brands.md](./constraint-brands.md) |
-| CLI tool | [cli.md](./cli.md) |
+| The running example domain | [Bookstore Domain](/bookstore-domain) |
+| Schemas and registration | [Schemas](/schemas) |
+| TypeScript type inference | [Type Inference](/types) |
+| Validation and coercion | [Validation](/validation) |
+| Composing schemas | [Composition](/composition) |
+| Value operations | [Value Operations](/value) |
+| Transforms and brands | [Transforms](/transforms) |
+| Serialization | [Serialization](/dump) |
+| Computed fields | [Computed Fields](/computed) |
+| Cross-field invariants | [Invariants](/invariants) |
+| RDF/OWL (advanced) | [Ontology and Graphs](/ontology) |
