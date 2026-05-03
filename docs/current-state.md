@@ -8,13 +8,16 @@ Verification status should be taken from the latest implementation run, not from
 
 The graph-native implementation is operational.
 
-As of 2026-03-21, the latest full verification pass is clean:
+As of 2026-05-03, the latest full verification pass is clean:
 
 - `npm run build`
 - `npm run type-check`
-- `npm run test` -> 292 unit tests passing, 21 e2e tests passing
-- `node ./node_modules/typescript/bin/tsc --noEmit --project tsconfig.test-types.json`
-- `npm run pack:check`
+- `npm run lint`
+- `npm run test` -> 1006 smoke + unit tests passing
+- `npm run test:integration` -> 372 integration tests passing
+- `npm run test:e2e` -> 58 e2e tests passing
+- `npm run test:types` -> 8 compile-time type-assertion suites passing
+- `npm run pack:check` -> clean (628 files, 1.36 MB unpacked)
 - `npm run bench`
 
 What is implemented:
