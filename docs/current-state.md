@@ -53,4 +53,4 @@ What is implemented:
 There is no open migration or hardening workstream at the moment.
 
 Future changes should be opened as new scoped efforts and must follow the TDD
-and verification rules in [`architecture-plan.md`](/Users/studs/Workspace/json-tology/docs/architecture-plan.md).
+and verification rules in [`architecture-plan.md`](./architecture-plan.md).

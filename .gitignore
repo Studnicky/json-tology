@@ -32,6 +32,8 @@ isolate-*.log
 *~
 build/
 coverage/
+docs/.vitepress/cache/
+docs/.vitepress/dist/
 npm-debug.log*
 out/
 Thumbs.db

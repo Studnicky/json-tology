@@ -503,6 +503,8 @@ export default [
       '**/*.d.ts',
       '**/vendor/**',
       '.claude/**',
+      'docs/.vitepress/cache/**',
+      'docs/.vitepress/dist/**',
       'eslint.config.mjs'
     ]
   },

@@ -56,6 +56,9 @@
     "test:all": "tsx --test 'test/smoke/**/*.test.ts' 'test/unit/**/*.test.ts' 'test/integration/**/*.test.ts' 'test/e2e/**/*.test.ts' 'test/types/**/*.test.ts'",
     "test:coverage": "tsx --test --experimental-test-coverage 'test/smoke/**/*.test.ts' 'test/unit/**/*.test.ts'",
     "pack:check": "node ./scripts/check-pack.mjs",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "clean": "rm -rf dist",
@@ -96,6 +99,8 @@
     "n3": "^2.0.3",
     "tsx": "^4.21.0",
     "typescript": "^5.8.2",
+    "vitepress": "^1.6.4",
+    "vitepress-sidebar": "^1.33.1",
     "zod": "^4.3.6"
   },
   "engines": {
