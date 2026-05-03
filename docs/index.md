@@ -79,7 +79,7 @@ That's the entire core. Validation, type inference, coercion, defaults — all f
 | Serialization (`dump`, `dumpJson`) | A separate serializer |
 | Composition (`extend`, `pick`, `omit`, `partial`, `required`) | Hand-written derived schemas |
 
-If you also need RDF/OWL/SHACL output, that's available as **opt-in advanced features** under the [Ontology and Graphs](/ontology) section. The core type-system path doesn't pay for any of it — `json-tology/value`, `json-tology/schema`, and `json-tology/types` exclude the graph and ontology modules entirely.
+If you also need RDF/OWL/SHACL output, that's available as **opt-in advanced features** under the [Ontology and Graphs](/advanced/ontology) section. The core type-system path doesn't pay for any of it — `json-tology/value`, `json-tology/schema`, and `json-tology/types` exclude the graph and ontology modules entirely.
 
 ## Quick links
 

@@ -61,7 +61,7 @@ const jt3 = jt.register([AddressSchema, CustomerSchema, BookSchema] as const);
 
 #### Example 3: Registering a dynamically built schema
 
-Composed schemas (see [Composition](/composition)) are valid schemas that can be registered immediately after creation.
+Composed schemas (see [Composition](/composition/extend)) are valid schemas that can be registered immediately after creation.
 
 ```ts
 import { Compose } from 'json-tology';
@@ -134,7 +134,7 @@ class Customer(BaseModel):
 
 - `registerAnonymous` — for schemas without a `$id`
 - `has` / `get` / `list` — registry inspection
-- [Composition](/composition) — build schemas from existing ones before registering
+- [Composition](/composition/extend) — build schemas from existing ones before registering
 
 ---
 
@@ -336,7 +336,7 @@ console.log(book?.properties?.['price']); // { type: 'number', exclusiveMinimum:
 
 #### Example 2: Retrieve to derive a new schema
 
-Build a narrowed schema from one already in the registry. This pattern ties into [Composition](/composition).
+Build a narrowed schema from one already in the registry. This pattern ties into [Composition](/composition/extend).
 
 ```ts
 const raw = jt.get('https://bookstore.example/Book');
@@ -535,5 +535,5 @@ Customer.model_json_schema()  # Exports JSON Schema from the model class
 
 ### Related
 
-- [Ontology and Graphs](/ontology) — advanced: `toQuads`, `fromQuads`, graph serialization
+- [Ontology and Graphs](/advanced/ontology) — advanced: `toQuads`, `fromQuads`, graph serialization
 - `get` — retrieve the original registered schema (before graph normalization)

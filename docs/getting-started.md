@@ -73,7 +73,7 @@ const bad = jt.validate(CustomerSchema.$id, { email: 'alice@bookstore.example' }
 console.log(bad); // ["root: must have required property 'id'", "root: must have required property 'name'"]
 ```
 
-See [Validation](/validation) for `is()`, `errors()`, `validateAt()`, and the five error views.
+See [Validation](/validation/coerce) for `is()`, `errors()`, `validateAt()`, and the five error views.
 
 ## Coerce
 
@@ -127,7 +127,7 @@ const CustomerSummarySchema = Compose.pick(
 );
 ```
 
-See [Composition](/composition) for `extend`, `omit`, `required`, `intersection`, and `discriminatedUnion`.
+See [Composition](/composition/extend) for `extend`, `omit`, `required`, `intersection`, and `discriminatedUnion`.
 
 ## Serialize back to wire form
 
@@ -144,7 +144,7 @@ const wire = jt.dumpJson(CustomerSchema.$id, customer);
 // '{"id":"c1a2b3d4-e5f6-7890-abcd-ef1234567890","email":"alice@bookstore.example","name":"Alice Chen","addresses":[]}'
 ```
 
-See [Serialization](/dump) for filtering options (`exclude`, `include`, `excludeDefaults`).
+See [Serialization](/serialization/dump) for filtering options (`exclude`, `include`, `excludeDefaults`).
 
 ## Sub-path imports
 
@@ -189,11 +189,11 @@ import type { LoggerInterface } from 'json-tology/interfaces';
 | The running example domain | [Bookstore Domain](/bookstore-domain) |
 | Schemas and registration | [Schemas](/schemas) |
 | TypeScript type inference | [Type Inference](/types) |
-| Validation and coercion | [Validation](/validation) |
-| Composing schemas | [Composition](/composition) |
-| Value operations | [Value Operations](/value) |
-| Transforms and brands | [Transforms](/transforms) |
-| Serialization | [Serialization](/dump) |
-| Computed fields | [Computed Fields](/computed) |
-| Cross-field invariants | [Invariants](/invariants) |
-| RDF/OWL (advanced) | [Ontology and Graphs](/ontology) |
+| Validation and coercion | [Validation](/validation/coerce) |
+| Composing schemas | [Composition](/composition/extend) |
+| Value operations | [Value Operations](/value/clone-hash) |
+| Transforms and brands | [Transforms](/transforms/decode-encode) |
+| Serialization | [Serialization](/serialization/dump) |
+| Computed fields | [Computed Fields](/registry/computed) |
+| Cross-field invariants | [Invariants](/registry/invariants) |
+| RDF/OWL (advanced) | [Ontology and Graphs](/advanced/ontology) |

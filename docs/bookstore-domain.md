@@ -170,7 +170,7 @@ const jt = JsonTology.create({
 });
 ```
 
-`as const` is required so TypeScript preserves the literal types needed for `InferType<T>` inference. The `baseIRI` becomes the base for any ontology output (see the [Ontology and Graphs](/ontology) advanced guide if you need that).
+`as const` is required so TypeScript preserves the literal types needed for `InferType<T>` inference. The `baseIRI` becomes the base for any ontology output (see the [Ontology and Graphs](/advanced/ontology) advanced guide if you need that).
 
 ## What comes next
 
@@ -180,10 +180,10 @@ The guides that follow build concepts one at a time, each adding to what came be
 |-------|-------------|
 | [Schemas](/schemas) | How `register`, `has`, `get`, `list` work with these definitions |
 | [Type Inference](/types) | How `InferType<typeof CustomerSchema>` resolves at compile time |
-| [Validation](/validation) | `validate`, `is`, `errors` — checking incoming data against these schemas |
-| [Coercion](/validation#coerce) | `coerce` — validated + defaults applied, typed result |
-| [Error Views](/validation#error-views) | `messages`, `format`, `flatten`, `aggregate`, `report` |
-| [Composition](/composition) | Derive `CustomerWithDiscount`, `BookSummary`, `PatchOrder` |
-| [Value Operations](/value) | `clone`, `hash`, `diff` on a coerced `Order` |
-| [Serialization](/dump) | `dump`, `dumpJson` — serialize an `Order` back to wire form |
-| [Ontology](/ontology) | Advanced: RDF/OWL/SHACL from these schemas |
+| [Validation](/validation/coerce) | `validate`, `is`, `errors` — checking incoming data against these schemas |
+| [Coercion](/validation/coerce) | `coerce` — validated + defaults applied, typed result |
+| [Error Views](/errors/views) | `messages`, `format`, `flatten`, `aggregate`, `report` |
+| [Composition](/composition/extend) | Derive `CustomerWithDiscount`, `BookSummary`, `PatchOrder` |
+| [Value Operations](/value/clone-hash) | `clone`, `hash`, `diff` on a coerced `Order` |
+| [Serialization](/serialization/dump) | `dump`, `dumpJson` — serialize an `Order` back to wire form |
+| [Ontology](/advanced/ontology) | Advanced: RDF/OWL/SHACL from these schemas |
