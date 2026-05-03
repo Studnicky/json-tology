@@ -33,11 +33,18 @@ function booleanValidateWithErrors(schema: boolean): ValidateWithErrorsFnType {
     };
 }
 
+function wrapStrictValidator(inner: ValidateWithErrorsFnType): ValidateWithErrorsFnType {
+  return (value, path, errors, collectErrors, applyDefaults, _doCoerce, stripUnknown) => {
+    return inner(value, path, errors, collectErrors, applyDefaults, false, stripUnknown);
+  };
+}
+
 function compilePropertyValidators(
   context: SchemaCompilerValidatePlanContextInterface,
   propertyEntries: Map<string, SchemaGraphNodeInterface>,
   formatRegistry: FormatRegistryInterface,
   graph: SchemaGraphInterface,
+  configStrict: boolean | undefined,
   lookupSchema?: (id: string) => Record<string, unknown> | undefined
 ): Map<string, ValidateWithErrorsFnType> {
   const propValidators = new Map<string, ValidateWithErrorsFnType>();
@@ -46,11 +53,16 @@ function compilePropertyValidators(
     key,
     propNode
   ] of propertyEntries) {
+    const compiled = typeof propNode.schema === 'boolean'
+      ? booleanValidateWithErrors(propNode.schema)
+      : context.compileNodeValidateWithErrors(propNode, formatRegistry, graph, lookupSchema);
+
+    const propSem = typeof propNode.schema === 'boolean' ? undefined : graph.semantics(propNode);
+    const fieldStrict = propSem?.jtStrict ?? configStrict;
+
     propValidators.set(
       key,
-      typeof propNode.schema === 'boolean'
-        ? booleanValidateWithErrors(propNode.schema)
-        : context.compileNodeValidateWithErrors(propNode, formatRegistry, graph, lookupSchema)
+      fieldStrict === true ? wrapStrictValidator(compiled) : compiled
     );
   }
 
@@ -155,6 +167,26 @@ function buildCustomKeywordEntries(
   return entries.length > 0 ? entries : undefined;
 }
 
+function buildJtStrictPerField(
+  propertyEntries: Map<string, SchemaGraphNodeInterface>,
+  graph: SchemaGraphInterface
+): Map<string, boolean> | undefined {
+  const result = new Map<string, boolean>();
+
+  for (const [
+    key,
+    propNode
+  ] of propertyEntries) {
+    const propSem = graph.semantics(propNode);
+
+    if (propSem.jtStrict !== undefined) {
+      result.set(key, propSem.jtStrict);
+    }
+  }
+
+  return result.size > 0 ? result : undefined;
+}
+
 export function buildNodeValidationPlan(
   context: SchemaCompilerValidatePlanContextInterface,
   graphNode: SchemaGraphNodeInterface,
@@ -234,9 +266,9 @@ export function buildNodeValidationPlan(
 
   const depRequiredEntries = Object.entries(sem.dependentRequired).filter(([
     ,
-    v
+    values
   ]) => {
-    return Array.isArray(v) && v.length > 0;
+    return Array.isArray(values) && values.length > 0;
   });
 
   const depSchemaValidators = sem.dependentSchemaEntries.length > 0
@@ -282,6 +314,9 @@ export function buildNodeValidationPlan(
     }
   }
 
+  const jtExtra = sem.jtConfig?.extra;
+  const jtStrictPerField = buildJtStrictPerField(propertyEntries, graph);
+
   return {
     'additionalIsFalse': sem.additionalPropertiesNode === false,
     additionalValidator,
@@ -306,6 +341,8 @@ export function buildNodeValidationPlan(
     'hasDefault': sem.hasDefault,
     ifCheck,
     itemValidator,
+    'jtExtra': jtExtra,
+    'jtStrictPerField': jtStrictPerField,
     'maxContains': sem.maxContains,
     'maximum': sem.maximum,
     'maxItems': sem.maxItems,
@@ -325,7 +362,7 @@ export function buildNodeValidationPlan(
     propertyAliases,
     'propertyDefaults': buildPropertyDefaults(context, propertyEntries, graph, lookupSchema),
     propertyNamesValidator,
-    'propValidators': compilePropertyValidators(context, propertyEntries, formatRegistry, graph, lookupSchema),
+    'propValidators': compilePropertyValidators(context, propertyEntries, formatRegistry, graph, sem.jtConfig?.strict, lookupSchema),
     'refValidator': compileRefValidator(context, sem.ref, formatRegistry, graph, lookupSchema),
     'required': sem.required.length > 0 ? sem.required : undefined,
     thenValidator,

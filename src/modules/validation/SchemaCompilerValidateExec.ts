@@ -2,6 +2,7 @@ import type { CompiledNodeValidationPlanInterface } from '../../interfaces/Compi
 import type {
   ValidateWithErrorsFnType, ValidationErrorType
 } from '../../types/Validation.js';
+import { BaseError } from '../../errors/BaseError.js';
 import { isRecord } from '../data/DataTypes.js';
 import { cloneDefault } from '../graph/GraphEngineSupport.js';
 import { coerceCompiledValue } from './SchemaCompilerSupport.js';
@@ -45,6 +46,7 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
     hasDefault,
     ifCheck,
     itemValidator,
+    jtExtra,
     maxContains,
     maximum,
     maxItems,
@@ -205,6 +207,9 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
         valid = false;
       }
 
+      // jt:config extra: 'allow' keeps unknowns; 'forbid' defers stripping to post-check
+      const effectiveStrip = jtExtra === 'allow' || jtExtra === 'forbid' ? false : stripUnknown;
+
       const propsResult = Objects.validateProperties(
         path,
         obj,
@@ -213,7 +218,7 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
         additionalIsFalse,
         additionalValidator,
         allowedKeys,
-        stripUnknown,
+        effectiveStrip,
         propertyDefaults,
         errors,
         collectErrors,
@@ -226,6 +231,21 @@ export function buildValidateWithErrorsExecution(plan: CompiledNodeValidationPla
       }
       if (!propsResult.valid) {
         valid = false;
+      }
+
+      // jt:config extra: 'forbid' — error on unknown properties
+      if (jtExtra === 'forbid' && allowedKeys !== undefined) {
+        for (const key of Object.keys(obj)) {
+          if (!allowedKeys.has(key)) {
+            const childPath = path === '' ? `/${key}` : `${path}/${key}`;
+
+            if (!collectErrors) {
+              return fail(workingValue);
+            }
+            errors.push(BaseError.validationError(childPath, 'EXTRA_FORBIDDEN', `must NOT have additional property '${key}'`));
+            valid = false;
+          }
+        }
       }
 
       const countResult = Objects.validatePropertyCount(path, obj, minProperties, maxProperties);

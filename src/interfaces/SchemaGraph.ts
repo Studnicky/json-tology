@@ -2,6 +2,7 @@ import type {
   RelationPredicateType, RelationStructure
 } from '../types/SchemaGraph.js';
 import type { JsonSchemaType } from '../types/Schema.js';
+import type { JtConfigType } from '../types/JtConfig.js';
 
 export interface NormIRNodeInterface {
   readonly 'id': string;
@@ -60,6 +61,9 @@ export interface SchemaGraphSemanticsInterface {
   'ifNode': SchemaGraphNodeInterface | undefined;
   'inverseOf': string | undefined;
   'itemsNode': SchemaGraphNodeInterface | undefined;
+  'jtConfig': JtConfigType | undefined;
+  'jtFrozen': boolean;
+  'jtStrict': boolean | undefined;
   'maxContains': number | undefined;
   'maximum': number | undefined;
   'maxItems': number | undefined;

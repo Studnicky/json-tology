@@ -12,6 +12,7 @@ import type { JSONSchema7Definition } from 'json-schema';
 import { BaseError } from '../../errors/BaseError.js';
 import { MaterializationError } from '../../errors/MaterializationError.js';
 import { GraphError } from '../../errors/GraphError.js';
+import { Frozen } from '../data/Frozen.js';
 import { isRecord } from '../data/DataTypes.js';
 import { parseRef } from '../graph/GraphEngineSupport.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
@@ -39,6 +40,19 @@ import { CoercionError } from '../../errors/CoercionError.js';
  * instead of reporting validation errors. This is `materialize(schema)` with no args.
  */
 export class Materializer implements MaterializerInterface {
+  private static isEffectivelyFrozen(schema: Record<string, unknown>): boolean {
+    if (schema['jt:frozen'] === true) {
+      return true;
+    }
+    const config = schema['jt:config'];
+
+    if (isRecord(config) && config.frozen === true) {
+      return true;
+    }
+
+    return false;
+  }
+
   private readonly graphCache = new WeakMap<object, SchemaGraphInterface>();
 
   /**
@@ -88,6 +102,7 @@ export class Materializer implements MaterializerInterface {
 
     return result.value;
   }
+
   /**
    * Execute materialization and return the full result without throwing.
    * The caller decides what to use from the output.
@@ -194,6 +209,10 @@ export class Materializer implements MaterializerInterface {
 
     if (isRecord(value)) {
       this.applyComputedFields(schema.$id, value);
+    }
+
+    if (Materializer.isEffectivelyFrozen(schema)) {
+      return Frozen.deepFreeze(value);
     }
 
     return value;

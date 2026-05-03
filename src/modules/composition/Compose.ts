@@ -56,6 +56,7 @@ export class Compose {
    * Derive a schema with additional properties merged in.
    * The `required` array is inherited unchanged; list new required fields
    * explicitly or use intersection() to combine with a schema that requires them.
+   * When both parent and child carry `jt:config`, child keys win per-key.
    *
    * @example
    * const AdminSchema = Compose.extend(
@@ -79,14 +80,26 @@ export class Compose {
       ? rawProps
       : {};
 
-    return {
+    const base: Record<string, unknown> = {
       ...source,
       '$id': newId,
       'properties': {
         ...sourceProps,
         ...(additionalProperties as Record<string, unknown>)
       }
-    } as unknown as ExtendSchemaType<TSchema, TAdditional, TId>;
+    };
+
+    const parentConfig = source['jt:config'];
+    const childConfig = (additionalProperties as Record<string, unknown>)['jt:config'];
+
+    if (isRecord(parentConfig) || isRecord(childConfig)) {
+      base['jt:config'] = {
+        ...(isRecord(parentConfig) ? parentConfig : {}),
+        ...(isRecord(childConfig) ? childConfig : {})
+      };
+    }
+
+    return base as unknown as ExtendSchemaType<TSchema, TAdditional, TId>;
   }
 
   /**
@@ -195,6 +208,7 @@ export class Compose {
    * Derive a schema with specified properties removed.
    * Removed required fields are also dropped from `required`.
    * Produces a valid JSON Schema; `InferType<typeof result>` excludes the omitted props.
+   * `jt:config` is carried from the source schema unchanged.
    *
    * @example
    * const PublicUserSchema = Compose.omit(UserSchema, ['passwordHash'] as const, 'https://myapp.io/PublicUser');
@@ -230,6 +244,10 @@ export class Compose {
       result.required = remainingRequired;
     }
 
+    if (source['jt:config'] !== undefined) {
+      result['jt:config'] = source['jt:config'];
+    }
+
     return result as unknown as OmitSchemaInterface<TSchema, TKeys, TId>;
   }
 
@@ -257,6 +275,7 @@ export class Compose {
    * Derive a schema with only the specified property keys.
    * Non-picked required fields are dropped from `required`.
    * Produces a valid JSON Schema; `InferType<typeof result>` gives only the picked props.
+   * `jt:config` is carried from the source schema unchanged.
    *
    * @example
    * const UserSummarySchema = Compose.pick(UserSchema, ['id', 'name'] as const, 'https://myapp.io/UserSummary');
@@ -293,6 +312,10 @@ export class Compose {
 
     if (pickedRequired.length > 0) {
       result.required = pickedRequired;
+    }
+
+    if (source['jt:config'] !== undefined) {
+      result['jt:config'] = source['jt:config'];
     }
 
     return result as unknown as PickSchemaInterface<TSchema, TKeys, TId>;

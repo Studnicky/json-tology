@@ -1,5 +1,5 @@
 import type {
-  GraphErrorCodeType, LoadErrorCodeType, SchemaErrorCodeType
+  CoercionErrorCodeType, GraphErrorCodeType, LoadErrorCodeType, SchemaErrorCodeType
 } from '../types/ErrorCodes.js';
 
 export const SchemaErrorCode = {
@@ -36,3 +36,5 @@ export const LoadErrorCode = {
   'IO_FAILURE': 'LOAD_IO_FAILURE',
   'MISSING_ID': 'LOAD_MISSING_ID'
 } as const satisfies Record<string, LoadErrorCodeType>;
+
+export const CoercionErrorCode = { 'EXTRA_FORBIDDEN': 'EXTRA_FORBIDDEN' } as const satisfies Record<string, CoercionErrorCodeType>;

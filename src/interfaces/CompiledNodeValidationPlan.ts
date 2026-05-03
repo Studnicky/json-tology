@@ -2,6 +2,7 @@ import type { CustomKeywordEntryInterface } from './CustomKeywordEntry.js';
 import type {
   CheckFnType, ValidateWithErrorsFnType
 } from '../types/Validation.js';
+import type { JtExtraType } from '../types/JtConfig.js';
 
 export interface CompiledNodeValidationPlanInterface {
   readonly 'additionalIsFalse': boolean;
@@ -28,6 +29,8 @@ export interface CompiledNodeValidationPlanInterface {
   readonly 'hasDefault': boolean;
   readonly 'ifCheck': CheckFnType | undefined;
   readonly 'itemValidator': undefined | ValidateWithErrorsFnType;
+  readonly 'jtExtra': JtExtraType | undefined;
+  readonly 'jtStrictPerField': Map<string, boolean> | undefined;
   readonly 'maxContains': number | undefined;
   readonly 'maximum': number | undefined;
   readonly 'maxItems': number | undefined;

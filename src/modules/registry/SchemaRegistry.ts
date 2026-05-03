@@ -26,6 +26,7 @@ import { Curie } from '../rdf/Curie.js';
 import {
   deepFreeze, isRecord
 } from '../data/DataTypes.js';
+import { Frozen } from '../data/Frozen.js';
 import { GraphEngine } from '../graph/GraphEngine.js';
 import { Hash } from '../hash/Hash.js';
 import { InvariantStore } from './InvariantStore.js';
@@ -237,8 +238,12 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     const schemaObj = typeof schema === 'string' ? entry.schema : schema;
     const decoder = Transform.getDecoder(schemaObj);
+    const decoded = decoder === undefined ? coerced : decoder.decode(coerced);
+    const isFrozen = isRecord(schemaObj)
+      && (schemaObj['jt:frozen'] === true
+        || (isRecord(schemaObj['jt:config']) && schemaObj['jt:config'].frozen === true));
 
-    return decoder === undefined ? coerced : decoder.decode(coerced);
+    return isFrozen ? Frozen.deepFreeze(decoded) : decoded;
   }
 
   private collectAnchors(schema: Record<string, unknown>, seen: Set<string>, schemaId: string): void {

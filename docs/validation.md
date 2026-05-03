@@ -292,3 +292,89 @@ jt.coerce(OrderSchema.$id, { orderId: 'ORD-1', lineItems: [] });
 
 Alias normalization is applied before required-property validation, so an alias satisfies a `required` constraint. Multi-alias form lists are tried in declaration order; the first matching alias wins.
 
+## Strict mode and config
+
+### Per-field strict (`jt:strict`)
+
+Add `jt:strict: true` on a property schema to prevent type coercion for that field. When set, the field rejects values whose JS type does not exactly match the declared JSON Schema type — no string→number coercion, no truthy→boolean, no array-of-one unwrapping. Use `jt:strict: false` to opt a single field out of strict mode when the parent schema uses `jt:config.strict: true`.
+
+```ts
+const OrderSchema = {
+  $id: 'https://example.com/Order',
+  type: 'object',
+  properties: {
+    id:    { type: 'string' },
+    total: { type: 'number', 'jt:strict': true },  // rejects "42", accepts 42
+  },
+  required: ['id', 'total'],
+} as const;
+
+const jt = JsonTology.create({ baseIRI: 'https://example.com', schemas: [OrderSchema] as const });
+
+jt.coerce(OrderSchema.$id, { id: 'x', total: 42 });    // ok
+jt.coerce(OrderSchema.$id, { id: 'x', total: '42' });   // throws CoercionError — strict field
+```
+
+### Frozen output (`jt:frozen`)
+
+Add `jt:frozen: true` on an object schema to make `coerce()` and `materialize()` return a deeply-frozen value. All nested objects and arrays on the result are also frozen. Schemas without `jt:frozen` continue to return mutable values.
+
+```ts
+const ConfigSchema = {
+  $id: 'https://example.com/Config',
+  type: 'object',
+  'jt:frozen': true,
+  properties: {
+    host: { type: 'string', default: 'localhost' },
+    port: { type: 'integer', default: 3000 },
+  },
+} as const;
+
+const config = jt.coerce(ConfigSchema.$id, { port: 8080 });
+Object.isFrozen(config);  // true — mutation throws in strict mode (all ESM modules)
+```
+
+### Schema-level config (`jt:config`)
+
+`jt:config` sets schema-level defaults that apply to all fields without individual overrides. It accepts three keys:
+
+| Key | Values | Effect |
+|-----|--------|--------|
+| `strict` | `boolean` | Default strict mode for all fields (per-field `jt:strict` overrides this) |
+| `frozen` | `boolean` | Shorthand for `jt:frozen: true` on the same schema |
+| `extra` | `'ignore'` \| `'allow'` \| `'forbid'` | How to handle unknown input properties |
+
+`extra: 'ignore'` (default) strips unknown properties from `coerce()` output. `extra: 'allow'` passes them through unchanged. `extra: 'forbid'` raises a `CoercionError` with `EXTRA_FORBIDDEN` errors for each unknown property.
+
+```ts
+const ApiInputSchema = {
+  $id: 'https://example.com/ApiInput',
+  type: 'object',
+  'jt:config': {
+    strict: true,        // all fields strict by default
+    extra: 'forbid',     // reject unknown properties
+  },
+  properties: {
+    name:  { type: 'string' },
+    score: { type: 'number', 'jt:strict': false },  // opt out of config-level strict
+  },
+  required: ['name'],
+} as const;
+```
+
+### Config merge with `Compose.extend()`
+
+When `Compose.extend()` is called with a parent that has `jt:config`, the child's `jt:config` keys are merged over the parent's — child wins per-key. `Compose.pick()` and `Compose.omit()` carry `jt:config` from the source schema unchanged.
+
+```ts
+const Base = {
+  $id: 'https://example.com/Base',
+  type: 'object',
+  'jt:config': { extra: 'allow', strict: false },
+  properties: { name: { type: 'string' } },
+} as const;
+
+// Child overrides 'extra' but inherits 'strict'
+const Child = Compose.extend(Base, { 'jt:config': { extra: 'forbid' } } as const, 'https://example.com/Child');
+// Child['jt:config'] => { extra: 'forbid', strict: false }
+```

@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `jt:strict` keyword for per-field strict type enforcement — prevents coercion (string→number, truthy→boolean, etc.) on individual properties; `jt:strict: false` opts a field out when `jt:config.strict` is `true`
+- `jt:frozen` keyword on object schemas — `coerce()` and `materialize()` return deeply-frozen values (all nested objects and arrays frozen); mutation throws in strict-mode ESM modules
+- `jt:config` keyword for schema-level defaults — `strict` (default strict for all fields), `frozen` (shorthand for jt:frozen), and `extra` (`'ignore'` | `'allow'` | `'forbid'`) for unknown property handling
+- `EXTRA_FORBIDDEN` error code for `jt:config.extra: 'forbid'` validation errors
+- `JtConfigType` and `JtExtraType` exported from `json-tology/types`
+- `Compose.extend()` merges `jt:config` keys — child wins per key; `pick()`/`omit()` carry `jt:config` unchanged
+- `jtConfig`, `jtFrozen`, `jtStrict` fields on `SchemaGraphSemanticsInterface` for serializer and visualization use
+
 
 - `dump(schemaId, value, options?)` on `JsonTology` — Pydantic-equivalent serializer that walks the canonical graph, applies `Transform` encoders, and supports `exclude`, `include`, `excludeUnset`, `excludeDefaults`, and `mode` ('wire' | 'json') options
 - `dumpJson(schemaId, value, options?)` on `JsonTology` — convenience wrapper around `dump()` with `mode: 'json'` that returns a `JSON.stringify`-ready string
@@ -28,6 +36,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.0] - 2026-05-03
 
 ### Added
+- `jt:strict` keyword for per-field strict type enforcement — prevents coercion (string→number, truthy→boolean, etc.) on individual properties; `jt:strict: false` opts a field out when `jt:config.strict` is `true`
+- `jt:frozen` keyword on object schemas — `coerce()` and `materialize()` return deeply-frozen values (all nested objects and arrays frozen); mutation throws in strict-mode ESM modules
+- `jt:config` keyword for schema-level defaults — `strict` (default strict for all fields), `frozen` (shorthand for jt:frozen), and `extra` (`'ignore'` | `'allow'` | `'forbid'`) for unknown property handling
+- `EXTRA_FORBIDDEN` error code for `jt:config.extra: 'forbid'` validation errors
+- `JtConfigType` and `JtExtraType` exported from `json-tology/types`
+- `Compose.extend()` merges `jt:config` keys — child wins per key; `pick()`/`omit()` carry `jt:config` unchanged
+- `jtConfig`, `jtFrozen`, `jtStrict` fields on `SchemaGraphSemanticsInterface` for serializer and visualization use
+
 
 - Vocabulary plugin system (`VocabularyPluginInterface`) for extensible custom RDF vocabularies
 - `vocabularies` option on `JsonTology.create()`, `SchemaRegistry`, and serializer constructors
@@ -59,6 +75,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2026-03-10
 
 ### Added
+- `jt:strict` keyword for per-field strict type enforcement — prevents coercion (string→number, truthy→boolean, etc.) on individual properties; `jt:strict: false` opts a field out when `jt:config.strict` is `true`
+- `jt:frozen` keyword on object schemas — `coerce()` and `materialize()` return deeply-frozen values (all nested objects and arrays frozen); mutation throws in strict-mode ESM modules
+- `jt:config` keyword for schema-level defaults — `strict` (default strict for all fields), `frozen` (shorthand for jt:frozen), and `extra` (`'ignore'` | `'allow'` | `'forbid'`) for unknown property handling
+- `EXTRA_FORBIDDEN` error code for `jt:config.extra: 'forbid'` validation errors
+- `JtConfigType` and `JtExtraType` exported from `json-tology/types`
+- `Compose.extend()` merges `jt:config` keys — child wins per key; `pick()`/`omit()` carry `jt:config` unchanged
+- `jtConfig`, `jtFrozen`, `jtStrict` fields on `SchemaGraphSemanticsInterface` for serializer and visualization use
+
 
 - JIT schema compiler (`Compiler`) generating inlined per-schema check/errors/normalize/normalizeAndCheck functions
 - `Value.parse` single-pass normalize+validate pipeline via `normalizeAndCheck`

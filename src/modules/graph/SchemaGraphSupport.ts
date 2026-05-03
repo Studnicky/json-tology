@@ -13,6 +13,7 @@ import {
 import { isRecord } from '../data/DataTypes.js';
 import type { JsonSchemaType } from '../../types/Schema.js';
 import type { GraphAccessorInterface } from '../../interfaces/GraphAccessor.js';
+import type { JtConfigType } from '../../types/JtConfig.js';
 
 export function escapeJsonPointerSegment(segment: string): string {
   return segment.replaceAll('~', '~0').replaceAll('/', '~1');
@@ -65,6 +66,28 @@ function normalizeAliases(schema: Record<string, unknown>): readonly string[] {
   return [];
 }
 
+function extractJtConfig(schema: Record<string, unknown>): JtConfigType | undefined {
+  const raw = schema['jt:config'];
+
+  if (!isRecord(raw)) {
+    return undefined;
+  }
+
+  const config: JtConfigType = {};
+
+  if (typeof raw.strict === 'boolean') {
+    config.strict = raw.strict;
+  }
+  if (typeof raw.frozen === 'boolean') {
+    config.frozen = raw.frozen;
+  }
+  if (raw.extra === 'allow' || raw.extra === 'forbid' || raw.extra === 'ignore') {
+    config.extra = raw.extra;
+  }
+
+  return Object.keys(config).length > 0 ? config : undefined;
+}
+
 function emptySchemaGraphSemantics(): SchemaGraphSemanticsInterface {
   return {
     'additionalItemsNode': undefined,
@@ -103,6 +126,9 @@ function emptySchemaGraphSemantics(): SchemaGraphSemanticsInterface {
     'ifNode': undefined,
     'inverseOf': undefined,
     'itemsNode': undefined,
+    'jtConfig': undefined,
+    'jtFrozen': false,
+    'jtStrict': undefined,
     'maxContains': undefined,
     'maximum': undefined,
     'maxItems': undefined,
@@ -302,6 +328,9 @@ export function extractSemantics(
   const discriminator = isRecord(node.schema.discriminator) ? node.schema.discriminator : undefined;
   const extensions = collectSchemaExtensions(node.schema);
   const aliases = normalizeAliases(node.schema);
+  const jtConfig = extractJtConfig(node.schema);
+  const jtFrozen = node.schema['jt:frozen'] === true || jtConfig?.frozen === true;
+  const jtStrict = typeof node.schema['jt:strict'] === 'boolean' ? node.schema['jt:strict'] : undefined;
 
   return {
     'additionalItemsNode': resolveAdditionalSchemaNode(node, (parent, key) => {
@@ -344,6 +373,9 @@ export function extractSemantics(
     'ifNode': graph.child(node, 'if'),
     'inverseOf': typeof node.schema.inverseOf === 'string' ? node.schema.inverseOf : undefined,
     'itemsNode': graph.child(node, 'items'),
+    jtConfig,
+    'jtFrozen': jtFrozen,
+    'jtStrict': jtStrict,
     'maxContains': typeof node.schema.maxContains === 'number' ? node.schema.maxContains : undefined,
     'maximum': typeof node.schema.maximum === 'number' ? node.schema.maximum : undefined,
     'maxItems': typeof node.schema.maxItems === 'number' ? node.schema.maxItems : undefined,

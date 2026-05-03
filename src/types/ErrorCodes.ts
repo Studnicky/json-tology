@@ -30,3 +30,5 @@ export type LoadErrorCodeType
   | 'LOAD_INVALID_SCHEMA'
   | 'LOAD_IO_FAILURE'
   | 'LOAD_MISSING_ID';
+
+export type CoercionErrorCodeType = 'EXTRA_FORBIDDEN';
