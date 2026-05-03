@@ -158,6 +158,14 @@ console.log(jt.ontology().shaclObject());
 
 // ABox — project validated instance data to RDF
 console.log(jt.toQuads(UserSchema, user).jsonLd());
+
+// Dump — serialize back to wire form (Pydantic model_dump equivalent)
+const wire = jt.dump(UserSchema.$id, user, { excludeDefaults: true });
+// → { name: 'Alice', email: 'alice@co.io' }
+
+// DumpJson — wire form as a JSON string
+const json = jt.dumpJson(UserSchema.$id, user);
+// → '{"name":"Alice","email":"alice@co.io","role":"viewer"}'
 ```
 
 ## Examples
@@ -186,6 +194,7 @@ See [`examples/README.md`](./examples/README.md) for descriptions.
 | [Schema Management](./docs/schemas.md) | register, load, format validators, introspection |
 | [Schema Composition](./docs/composition.md) | extend, pick, omit, partial, required, intersection, discriminatedUnion |
 | [Transforms](./docs/transforms.md) | decode/encode, brand, pipe |
+| [Dump](./docs/dump.md) | dump, dumpJson, exclude/include, excludeUnset, excludeDefaults, mode |
 | [Materialization](./docs/materialization.md) | materialize, createDefault, ABox projection |
 | [Ontology](./docs/ontology.md) | OWL, SHACL, JSON-LD, custom prefixes, vocabulary plugins, CURIE expansion |
 | [Type Inference](./docs/types.md) | InferType, type-safe coerce, reference maps |

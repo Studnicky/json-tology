@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `dump(schemaId, value, options?)` on `JsonTology` — Pydantic-equivalent serializer that walks the canonical graph, applies `Transform` encoders, and supports `exclude`, `include`, `excludeUnset`, `excludeDefaults`, and `mode` ('wire' | 'json') options
+- `dumpJson(schemaId, value, options?)` on `JsonTology` — convenience wrapper around `dump()` with `mode: 'json'` that returns a `JSON.stringify`-ready string
+- `DumpOptionsInterface` in `src/interfaces/Dump.ts`, re-exported from `json-tology/interfaces`
+
 ## [0.2.0] - 2026-05-03
 
 ### Added
