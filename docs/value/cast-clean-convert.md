@@ -8,7 +8,7 @@ Schema-aware instance methods on `jt.value`. All three operate against the regis
 
 **Declaration.** Coerces types (e.g. `"9.99"` → `9.99`, `"true"` → `true`) and applies schema `default` values. Requires `enableTypeCast: true`. Throws `InstantiationError` when the coerced data fails validation.
 
-**Use this when** ingesting data from sources that serialize numbers and booleans as strings — CSV imports, URL query parameters, HTML form submissions, `application/x-www-form-urlencoded` bodies.
+**Use this when** ingesting data from sources that serialize numbers and booleans as strings - CSV imports, URL query parameters, HTML form submissions, `application/x-www-form-urlencoded` bodies.
 
 **Don't use this when** the source data is already properly typed (use [`instantiate`](/validation/instantiate) instead). Don't use `cast` when you want type coercion but not defaults (use [`convert`](#value-convert)).
 
@@ -93,7 +93,7 @@ book = Book.model_validate(raw_data)  # '14.99' → 14.99
 
 **Declaration.** Strips properties not declared in the schema from the data. Throws `InstantiationError` when the cleaned data fails validation.
 
-**Use this when** you need to sanitize data that may carry extra properties not in the schema — for example, third-party API responses, database rows with extra columns, or enriched records that need to be reduced before forwarding.
+**Use this when** you need to sanitize data that may carry extra properties not in the schema - for example, third-party API responses, database rows with extra columns, or enriched records that need to be reduced before forwarding.
 
 **Don't use this when** you want defaults to be applied too (use [`instantiate`](/validation/instantiate) which does both). Use `clean` when you specifically want only stripping, no defaults.
 
@@ -174,9 +174,9 @@ console.log(converted.rating); // 5 (number)
 
 ## Related
 
-- [`JsonTology.coerce`](/validation/instantiate) — validate + apply defaults + strip unknowns + run transforms
-- [`value.create`](/value/create) — synthesize a zero-value blank instance
+- [`JsonTology.coerce`](/validation/instantiate) - validate + apply defaults + strip unknowns + run transforms
+- [`value.create`](/value/create) - synthesize a zero-value blank instance
 
 ## See also
 
-- [Bookstore domain](/bookstore-domain) — where `Book`, `Review` are defined
+- [Bookstore domain](/bookstore-domain) - where `Book`, `Review` are defined

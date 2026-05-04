@@ -1,22 +1,22 @@
 # Graph Concepts
 
 json-tology represents every schema as a node in a directed graph. This page explains the key
-concepts of that graph model — what lives where, how relationships work, and how standard semantic
+concepts of that graph model - what lives where, how relationships work, and how standard semantic
 web vocabulary maps onto JSON Schema constructs.
 
 ## TBox vs ABox
 
 The semantic web distinguishes two kinds of knowledge:
 
-- **TBox** (Terminological Box) — the schema layer: class declarations, property declarations,
+- **TBox** (Terminological Box) - the schema layer: class declarations, property declarations,
   domain and range constraints. Describes the *shape* of the world.
-- **ABox** (Assertional Box) — the data layer: typed individuals, property assertions.
+- **ABox** (Assertional Box) - the data layer: typed individuals, property assertions.
   Describes *instances* of that shape.
 
 In json-tology:
 
 ```ts
-// TBox — what a Book looks like
+// TBox  - what a Book looks like
 import { IsbnSchema } from './entities/Isbn.js';
 import { TitleSchema } from './entities/Title.js';
 
@@ -29,13 +29,13 @@ const BookSchema = {
   }
 } as const;
 
-// TBox output — OWL class + property declarations
+// TBox output  - OWL class + property declarations
 const tbox = entities.toTbox();
 
-// ABox — a specific book
+// ABox  - a specific book
 const book = { isbn: '9780140449136', title: 'The Odyssey', ... };
 
-// ABox output — RDF quads about that instance
+// ABox output  - RDF quads about that instance
 const abox = entities.toQuads(BookSchema, book);
 ```
 
@@ -44,7 +44,7 @@ const abox = entities.toQuads(BookSchema, book);
 `entities.fromQuads(schemaId, quads)` lifts ABox quads back to typed objects.
 
 **Bookstore example:**
-- `BookSchema` lives in the TBox — it describes the class `urn:bookstore:Book`.
+- `BookSchema` lives in the TBox - it describes the class `urn:bookstore:Book`.
 - `{ isbn: '9780140449136', title: 'The Odyssey', authors: [...], ... }` is an ABox assertion
   about a specific individual of that class.
 
@@ -90,7 +90,7 @@ Whether additional properties are permitted depends on `additionalProperties` (J
 **Contrast with closed-world (Pydantic-style):**
 A Pydantic model lists all fields and rejects extras unless `extra='allow'` is set. Pydantic's
 default is closed-world for extras. JSON Schema's default is open-world. json-tology follows
-JSON Schema's convention — the OWA is the default unless you explicitly restrict it.
+JSON Schema's convention - the OWA is the default unless you explicitly restrict it.
 
 ---
 
@@ -121,7 +121,7 @@ urn:bookstore:PremiumCustomer rdfs:subClassOf urn:bookstore:Customer .
 the additions live in a second `allOf` member. This preserves the merged type at compile time
 and maps cleanly to `rdfs:subClassOf` in the graph.
 
-**Design pattern — "author the most common ancestor first":**
+**Design pattern - "author the most common ancestor first":**
 Define the base schema first, then layer specializations with `Compose.extend()`. This keeps
 the subclass hierarchy explicit and the TBox traversable.
 
@@ -147,7 +147,7 @@ urn:bookstore:PrimaryIsbn owl:equivalentClass urn:bookstore:Isbn .
 ```
 
 `Compose.equivalent()` creates a thin `$ref` alias. Instances that satisfy `Isbn` also satisfy
-`PrimaryIsbn` and vice versa — they are logically interchangeable.
+`PrimaryIsbn` and vice versa - they are logically interchangeable.
 
 **Use case:** when a domain concept needs a distinct name for clarity but shares an existing
 structure. For example, `OrderId` and `ReturnOrderId` might share the same string pattern but
@@ -160,9 +160,9 @@ names meaningful.
 
 Every node in the schema graph has a stable identifier derived from JSON Pointer syntax.
 
-**Schema-level IRI:** `$id` directly — `urn:bookstore:Book`.
+**Schema-level IRI:** `$id` directly - `urn:bookstore:Book`.
 
-**Sub-schema IRI:** `$id` + fragment — `urn:bookstore:Book#/properties/isbn`.
+**Sub-schema IRI:** `$id` + fragment - `urn:bookstore:Book#/properties/isbn`.
 
 These stable pointers are used internally for:
 - `$ref` resolution: `{ $ref: 'urn:bookstore:Isbn' }` resolves via the registry to the schema
@@ -266,7 +266,7 @@ const OrderSchema = {
 } as const;
 ```
 
-Here `LineItem` is accessible as `urn:bookstore:Order#/$defs/LineItem` — a node in the graph
+Here `LineItem` is accessible as `urn:bookstore:Order#/$defs/LineItem` - a node in the graph
 whose parent is `urn:bookstore:Order`.
 
 Cross-schema `$ref` values resolve through the registry. A `$ref` is looked up by its IRI
@@ -285,10 +285,10 @@ json-tology exposes three serialization entry points:
 | `jt.ontology()` | OWL TBox + SHACL combined | Generating a complete ontology document |
 
 ```ts
-// OWL only — class declarations, domain/range, subClassOf
+// OWL only  - class declarations, domain/range, subClassOf
 const tbox  = entities.toTbox();
 
-// SHACL only — node shapes, property shapes, cardinality
+// SHACL only  - node shapes, property shapes, cardinality
 const shacl = entities.toShacl();
 
 // Both combined
@@ -347,7 +347,7 @@ The round-trip is symmetric: `fromQuads(id, toQuads(schema, obj))` recovers the 
 | `urn:` | Project-local schemas not published to the web |
 | `https://` | Web-resolvable schemas |
 
-The bookstore example uses `urn:bookstore:{PascalCase}` — e.g. `urn:bookstore:Isbn`,
+The bookstore example uses `urn:bookstore:{PascalCase}` - e.g. `urn:bookstore:Isbn`,
 `urn:bookstore:Book`.
 
 ```ts
@@ -358,7 +358,7 @@ const jt = JsonTology.create({
 ```
 
 `baseIRI` is used by the serializers to expand CURIE prefixes and anchor relative IRIs. It does
-not need to match the `$id` prefixes of the registered schemas — it is the base for the
+not need to match the `$id` prefixes of the registered schemas - it is the base for the
 ontology document itself.
 
 ---
@@ -411,15 +411,26 @@ concepts has no standard counterpart and is represented using the `jt:` prefix:
 
 | Keyword | Why `jt:` is needed |
 |---|---|
-| `jt:multipleOf` | Divisibility constraint — XSD and SHACL have no modulo predicate |
-| `jt:if`, `jt:then`, `jt:else` | JSON Schema conditionals — SHACL Core lacks native if/then/else (SHACL 1.2 draft adds them; not yet finalized) |
-| `jt:dependentRequired` | Same SHACL gap — no standard property for co-required fields |
-| `jt:alias` | Input-key normalization — a runtime concern for coercion, not an ontology property |
-| `jt:computed` | Runtime-derived property — no standard predicate for "computed at materialize time" |
-| `jt:strict` | Per-field validation behavior — a runtime coercion control, not an ontology property |
-| `jt:frozen` | `Object.freeze` output — a runtime effect, not an ontology concern |
-| `jt:config` | Config bag — a composite of the above runtime concerns |
+| `jt:multipleOf` | Divisibility constraint - XSD and SHACL have no modulo predicate |
+| `jt:if`, `jt:then`, `jt:else` | JSON Schema conditionals - SHACL Core lacks native if/then/else (SHACL 1.2 draft adds them; not yet finalized) |
+| `jt:dependentRequired` | Same SHACL gap - no standard property for co-required fields |
+| `jt:alias` | Input-key normalization - a runtime concern for coercion, not an ontology property |
+| `jt:computed` | Runtime-derived property - no standard predicate for "computed at materialize time" |
+| `jt:strict` | Per-field validation behavior - a runtime coercion control, not an ontology property |
+| `jt:frozen` | `Object.freeze` output - a runtime effect, not an ontology concern |
+| `jt:config` | Config bag - a composite of the above runtime concerns |
 
 Whenever a JSON Schema concept can be expressed in standard RDFS, OWL, SHACL, or XSD
 vocabulary, json-tology emits it that way. The `jt:*` predicates are reserved for the
 irreducibles.
+
+## Related
+
+- [Graph-native authoring](/advanced/graph-native-authoring) - how to write schemas that produce clean graphs
+- [Ontology and Graphs](/advanced/ontology) - `toTbox`, `toShacl`, `ontology`, `toQuads`, `fromQuads`
+- [WebVOWL viewer](/advanced/graph-vowl) - visualize the TBox in the W3C ontology viewer
+
+## See also
+
+- [Bookstore domain](/bookstore-domain) - the running example domain for all graph examples
+- [Your types are already a graph](/your-types-are-a-graph) - conceptual introduction

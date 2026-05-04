@@ -2,7 +2,7 @@
 
 **Declaration.** Extracts declared `default` values from a schema's `properties`, returning a plain object containing only the properties that have a `default` keyword declared. Properties without defaults are omitted. Nested object properties with their own `default`-bearing children are recursively traversed.
 
-**Use this when** you want to pre-populate form fields with schema defaults before the user has provided any input — without running a full coerce that would fail on missing required fields. This is the lightweight alternative to `jt.materialize(schema)` when you only want explicit defaults and not zero-value synthesis.
+**Use this when** you want to pre-populate form fields with schema defaults before the user has provided any input - without running a full coerce that would fail on missing required fields. This is the lightweight alternative to `jt.materialize(schema)` when you only want explicit defaults and not zero-value synthesis.
 
 **Don't use this when** you want zero-values for all required fields (use [`jt.value.create`](/value/create)). Don't use it when you want a full materialized instance (use [`jt.materialize`](/registry/materialize)).
 
@@ -10,7 +10,7 @@
 
 ### Example 1: Pre-populate a new Book form
 
-`BookSchema` has `currency: 'USD'` and `inStock: true`. `isbn`, `title`, `authors`, and `price` have no declared defaults — they are omitted from the result.
+`BookSchema` has `currency: 'USD'` and `inStock: true`. `isbn`, `title`, `authors`, and `price` have no declared defaults - they are omitted from the result.
 
 ```ts
 import { Compose } from 'json-tology';
@@ -39,7 +39,7 @@ import { OrderSchema } from './bookstore/index.js';
 const defaults = Compose.getDefaults(OrderSchema);
 console.log(defaults);
 // { currency: 'USD' }
-// id, customerId, items, total, placedAt have no defaults — absent from result
+// id, customerId, items, total, placedAt have no defaults  - absent from result
 ```
 
 ### Example 3: Nested defaults are traversed
@@ -66,14 +66,14 @@ const defaults = Compose.getDefaults(SettingsSchema);
 // { theme: 'light', notifications: { email: true, push: false } }
 ```
 
-## Bad examples — what NOT to do
+## Bad examples - what NOT to do
 
 ### Anti-pattern 1: Using getDefaults as a substitute for coerce/materialize
 
 ```ts
-// ⊥ Don't do this — getDefaults returns only declared defaults, not all fields
+// ⊥ Don't do this  - getDefaults returns only declared defaults, not all fields
 const partial = Compose.getDefaults(CustomerSchema);
-// partial === {} — Customer has no declared defaults (addresses has default [])
+// partial === {}  - Customer has no declared defaults (addresses has default [])
 // This is NOT a valid Customer object
 
 // ✓ Do this for a blank Customer form:
@@ -92,10 +92,12 @@ Compose.getDefaults(BookSchema)
 ```
 
 ```ts [Zod]
-// Not directly supported — Zod doesn't expose a getDefaults utility.
-// Workaround: schema.parse({}) — but fails on missing required fields.
-// Manual extraction:
+// Zod has no built-in getDefaults. Closest workaround:
+// schema.parse({}) fails on missing required fields.
+// Manual extraction hardcodes default values:
 const defaults = { currency: 'USD', inStock: true };
+// Limitation: hardcoded, not derived from the schema. Must be updated manually
+// every time a default changes. No recursive traversal of nested objects.
 ```
 
 ```ts [TypeBox + Value]
@@ -107,8 +109,14 @@ Value.Default(BookSchema, {})
 ```
 
 ```ts [AJV]
-// Not directly supported.
-// AJV applies defaults during validation but doesn't expose a standalone getter.
+// AJV has no built-in getDefaults utility.
+// Closest workaround: validate an empty object with { useDefaults: true }:
+const ajv = new Ajv({ useDefaults: true });
+const draft = {};
+ajv.validate(bookSchema, draft);
+// draft now has defaults injected into it.
+// Limitation: modifies the input object in place; requires a full validate call;
+// does not return only the declared defaults - fills them into an existing object.
 ```
 
 ```py [Pydantic]
@@ -127,10 +135,10 @@ defaults = {
 
 ## Related
 
-- [`jt.materialize`](/registry/materialize) — build a full instance from partial data + defaults
-- [`jt.value.create`](/value/create) — synthesize zero-values for all required fields + explicit defaults
+- [`jt.materialize`](/registry/materialize) - build a full instance from partial data + defaults
+- [`jt.value.create`](/value/create) - synthesize zero-values for all required fields + explicit defaults
 
 ## See also
 
-- [Bookstore domain](/bookstore-domain) — `BookSchema` and `OrderSchema` defaults
-- [Composition index](/composition/) — overview of all composition operations
+- [Bookstore domain](/bookstore-domain) - `BookSchema` and `OrderSchema` defaults
+- [Composition index](/composition/) - overview of all composition operations

@@ -24,7 +24,7 @@ export const CustomerIdSchema = {
 } as const;
 ```
 
-Entities compose primitives via `$ref: SourceSchema.$id` — never bare string literals:
+Entities compose primitives via `$ref: SourceSchema.$id` - never bare string literals:
 
 ```ts
 // entities/Customer.ts
@@ -120,7 +120,7 @@ const address = jt2.instantiate(AddressSchema.$id, {
   city:       'Bookham',
   postalCode: '94107',
   extra:      'ignored',       // stripped
-  // country omitted — default 'US' applied
+  // country omitted  - default 'US' applied
 });
 // { street: '12 Elm Lane', city: 'Bookham', postalCode: '94107', country: 'US' }
 ```
@@ -222,7 +222,7 @@ import type { LoggerInterface } from 'json-tology/interfaces';
 | Option | Type | Default | Purpose |
 |--------|------|---------|---------|
 | `baseIRI` | `string` | _(required)_ | Base URI for the canonical graph and ontology output. |
-| `schemas` | `readonly Schema[]` | `[]` | Schemas to register at construction. Order matters when using `$ref` — register referenced schemas before referencing schemas. |
+| `schemas` | `readonly Schema[]` | `[]` | Schemas to register at construction. Order matters when using `$ref` - register referenced schemas before referencing schemas. |
 | `prefixes` | `Record<string, string>` | `DEFAULT_PREFIXES` | Vocabulary prefix → IRI mappings, merged with built-in defaults. |
 | `formats` | `Record<string, FormatValidatorFn>` | `{}` | Custom format validators. Keys are format names (`'isbn'`), values are `(value: unknown) => boolean`. |
 | `enableTypeCast` | `boolean` | `false` | Enable string→number/boolean coercion at validation time. |
@@ -238,3 +238,15 @@ import type { LoggerInterface } from 'json-tology/interfaces';
 | `logger` | `LoggerInterface` | `SILENT_LOGGER` | Logger for warnings (`enableInlineWarnings`, `enableDuplicateDetection`). Must be set for warnings to surface. |
 | `invariants` | `Record<string, InvariantInterface[]>` | `{}` | Cross-field invariant functions, keyed by schema `$id`. |
 | `computeds` | `Record<string, Record<string, ComputedFnType>>` | `{}` | Computed-field functions, keyed by schema `$id` then property name. |
+
+## Related
+
+- [Bookstore domain](/bookstore-domain) - the running example domain used throughout these docs
+- [Schemas](/schemas) - `register`, `has`, `get`, `list`, `toSchema`
+- [Picking a method](/picking-a-method) - decision guide for `instantiate`, `validate`, `is`, `materialize`
+
+## See also
+
+- [Argument conventions](/argument-conventions) - universal `SchemaRef`, static counterparts
+- [Type Inference](/types) - how `InferType` resolves `$ref`, enums, brands
+- [Composition](/composition/extend) - derive schemas with `extend`, `pick`, `omit`

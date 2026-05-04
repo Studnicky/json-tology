@@ -6,7 +6,7 @@
 
 **Declaration.** Creates a `oneOf` schema with a discriminator hint. The discriminator indicates which property uniquely identifies the variant. TypeScript infers the union of all variant types. The `$id` is set to `newId`. Each variant schema should have the discriminator property with a `const` value.
 
-**Use this when** you have a set of mutually exclusive shapes identified by a single discriminator property — for example, payment methods (`credit_card` / `invoice` / `gift_card`), event types (`placed` / `shipped` / `cancelled`), or document types (`book` / `periodical` / `ebook`). The discriminator hint improves validator performance and is recognized by OpenAPI tooling.
+**Use this when** you have a set of mutually exclusive shapes identified by a single discriminator property - for example, payment methods (`credit_card` / `invoice` / `gift_card`), event types (`placed` / `shipped` / `cancelled`), or document types (`book` / `periodical` / `ebook`). The discriminator hint improves validator performance and is recognized by OpenAPI tooling.
 
 **Don't use this when** you need all variants to share properties without a discriminator (use [`intersection`](/composition/intersection)). Don't use it when variants don't have a constant distinguishing property (use a plain `anyOf` schema literal instead).
 
@@ -57,13 +57,13 @@ const jt = JsonTology.create({
 ### Example 2: Validate each variant
 
 ```ts
-// Credit card — valid
+// Credit card  - valid
 const cc = jt.validate(PaymentSchema.$id, {
   method: 'credit_card', cardLast4: '4242', expiry: '12/28',
 });
 console.log(cc.length === 0); // true
 
-// Invoice — valid
+// Invoice  - valid
 const inv = jt.validate(PaymentSchema.$id, {
   method: 'invoice', purchaseOrder: 'PO-001',
 });
@@ -91,7 +91,7 @@ const OrderWithPaymentSchema = Compose.extend(
 
 **Declaration.** Type guard that narrows a discriminated union value to the variant whose discriminant property equals `expected`. Returns `Extract<TUnion, Record<TDiscriminant, TValue>>` inside the truthy branch. No runtime effect beyond the property comparison.
 
-**Use this when** you have a union value and need TypeScript to narrow it to a specific variant for type-safe field access. Pairs naturally with `discriminatedUnion` — same discriminant property, same value.
+**Use this when** you have a union value and need TypeScript to narrow it to a specific variant for type-safe field access. Pairs naturally with `discriminatedUnion` - same discriminant property, same value.
 
 **Don't use this when** your variants don't have a single discriminant property (use manual `typeof` / `instanceof` checks instead).
 
@@ -152,7 +152,7 @@ type Payment = z.infer<typeof PaymentSchema>;
 
 ```ts [TypeBox + Value]
 import { Type } from '@sinclair/typebox';
-// TypeBox uses Type.Union — no built-in discriminator support:
+// TypeBox uses Type.Union  - no built-in discriminator support:
 const PaymentSchema = Type.Union([CreditCardPaymentSchema, InvoicePaymentSchema]);
 // discriminator hint must be added manually for OpenAPI
 ```
@@ -185,11 +185,11 @@ Payment = Annotated[CreditCardPayment | InvoicePayment, Discriminator('method')]
 
 ## Related
 
-- [`intersection`](/composition/intersection) — combine schemas that must ALL be satisfied
-- [`extend`](/composition/extend) — add properties without creating a union
-- [Type Inference](/types) — how the TypeScript union type is inferred
+- [`intersection`](/composition/intersection) - combine schemas that must ALL be satisfied
+- [`extend`](/composition/extend) - add properties without creating a union
+- [Type Inference](/types) - how the TypeScript union type is inferred
 
 ## See also
 
-- [Bookstore domain](/bookstore-domain) — where base schemas are defined
-- [Composition index](/composition/) — overview of all composition operations
+- [Bookstore domain](/bookstore-domain) - where base schemas are defined
+- [Composition index](/composition/) - overview of all composition operations

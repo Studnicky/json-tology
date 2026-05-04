@@ -1,6 +1,6 @@
 # Serialization
 
-Serialization converts domain objects back to wire form — the outgoing direction complementary to `instantiate`.
+Serialization converts domain objects back to wire form - the outgoing direction complementary to `instantiate`.
 
 ## Methods
 
@@ -11,3 +11,14 @@ Serialization converts domain objects back to wire form — the outgoing directi
 | [`toSchema`](./toSchema) | `Record<string, unknown> \| undefined` | Reconstruct JSON Schema from the canonical graph |
 
 All examples use the [bookstore domain](/bookstore-domain). See [`instantiate`](/validation/instantiate) for the incoming direction.
+
+## Related
+
+- [`instantiate`](/validation/instantiate) - the incoming direction (wire to domain)
+- [`Transform.create`](/transforms/decode-encode) - register encode/decode pairs used by `dump`
+- [`jt.encode`](/transforms/decode-encode#jtencode) - single-schema encode
+
+## See also
+
+- [Bookstore domain](/bookstore-domain) - schemas used throughout serialization examples
+- [Transforms](/transforms/decode-encode) - how Transform encoders apply during `dump`

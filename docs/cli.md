@@ -190,3 +190,13 @@ Edges connect schemas linked by `$ref`. Clicking a node opens a side panel with 
 ### Standalone output
 
 The HTML file is fully self-contained. It loads Cytoscape.js from CDN and embeds all graph data inline -- no local server or additional assets required. Share the file directly or host it on any static file server.
+
+## Related
+
+- [Ontology and Graphs](/advanced/ontology) - the same `toTbox`, `toShacl`, `ontology` methods the CLI calls
+- [Schemas](/schemas) - schema registration used by the CLI loader
+
+## See also
+
+- [Graph-native authoring](/advanced/graph-native-authoring) - authoring conventions that produce correct CLI output
+- [Bookstore domain](/bookstore-domain) - example schema set for CLI experimentation

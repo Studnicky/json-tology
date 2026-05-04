@@ -1,12 +1,12 @@
 # `JsonTology.instantiate`
 
-**Trust boundary.** Use `instantiate` when data crosses into your system from outside — HTTP request bodies, queue messages, file imports, IPC payloads. Failure means the caller sent invalid data; `InstantiationError` carries the full structured error list for your error response.
+**Trust boundary.** Use `instantiate` when data crosses into your system from outside - HTTP request bodies, queue messages, file imports, IPC payloads. Failure means the caller sent invalid data; `InstantiationError` carries the full structured error list for your error response.
 
-**Declaration.** Validates input data against a registered schema, applies `default` values declared on schema properties, runs any registered `Transform` decoders, strips unknown properties, and returns a fully typed result. Throws `InstantiationError` on validation failure. The input is deep-cloned before mutation — the original is never modified.
+**Declaration.** Validates input data against a registered schema, applies `default` values declared on schema properties, runs any registered `Transform` decoders, strips unknown properties, and returns a fully typed result. Throws `InstantiationError` on validation failure. The input is deep-cloned before mutation - the original is never modified.
 
-**Use this when** you have an unknown-shape input (a request body, a queue message, a config blob, a database row) and you want a typed, validated, defaults-applied domain object — or a typed exception. This is the right method 80% of the time when data enters your application boundary. Prefer this over calling `validate` and then mapping fields manually.
+**Use this when** you have an unknown-shape input (a request body, a queue message, a config blob, a database row) and you want a typed, validated, defaults-applied domain object - or a typed exception. This is the right method 80% of the time when data enters your application boundary. Prefer this over calling `validate` and then mapping fields manually.
 
-**Don't use this when** you need just a yes/no answer without a throw (use [`is`](/validation/is) instead). Don't use it when you want the structured error list without the exception (use [`errors`](/validation/errors) instead). Don't call `instantiate` on already-coerced values — the result of `instantiate` is already clean and typed. Don't use `instantiate` inside a tight inner loop over millions of calls with a fixed schema — pull `jt.registry.validator(schemaId)` once and reuse the compiled validator.
+**Don't use this when** you need just a yes/no answer without a throw (use [`is`](/validation/is) instead). Don't use it when you want the structured error list without the exception (use [`errors`](/validation/errors) instead). Don't call `instantiate` on already-coerced values - the result of `instantiate` is already clean and typed. Don't use `instantiate` inside a tight inner loop over millions of calls with a fixed schema - pull `jt.registry.validator(schemaId)` once and reuse the compiled validator.
 
 ## Examples
 
@@ -21,8 +21,8 @@ const customer = jt.instantiate(CustomerSchema.$id, {
   id:            'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   email:         'alice@bookstore.example',
   name:          'Alice Chen',
-  internalNotes: 'vip',   // ← stripped — not in schema
-  // addresses omitted — default [] applied
+  internalNotes: 'vip',   // ← stripped  - not in schema
+  // addresses omitted  - default [] applied
 });
 // customer is typed as Customer
 // customer.addresses === []
@@ -76,19 +76,19 @@ const order = jt.instantiate(OrderSchema.$id, {
 // order.unexpectedField gone (stripped from Order)
 ```
 
-## Bad examples — what NOT to do
+## Bad examples - what NOT to do
 
 ### Anti-pattern 1: Catching InstantiationError silently
 
 ```ts
-// ⊥ Don't do this — you lose the structured ValidationErrors
+// ⊥ Don't do this  - you lose the structured ValidationErrors
 try {
   jt.instantiate(CustomerSchema.$id, data);
 } catch {
   /* swallowed */
 }
 
-// ✓ Do this — surface the error list
+// ✓ Do this  - surface the error list
 const errs = entities.validate(CustomerSchema.$id, data);
 if (!errs.ok) {
   console.log(errs.items.map(e => `${e.path}: ${e.message}`));
@@ -98,7 +98,7 @@ if (!errs.ok) {
 ### Anti-pattern 2: Coercing already-coerced values
 
 ```ts
-// ⊥ Don't do this — wasted work; coerce already returned a typed, clean value
+// ⊥ Don't do this  - wasted work; coerce already returned a typed, clean value
 const validated = jt.instantiate(CustomerSchema.$id, body);
 const again     = jt.instantiate(CustomerSchema.$id, validated);
 
@@ -111,11 +111,11 @@ const customer = jt.instantiate(CustomerSchema.$id, body);
 ```ts
 import { Compose } from 'json-tology';
 
-// ⊥ Don't do this — build a sub-schema with Compose instead
+// ⊥ Don't do this  - build a sub-schema with Compose instead
 const partial = { name: body.name, email: body.email };
 jt.instantiate(CustomerSchema.$id, partial);
 
-// ✓ Do this — pick the sub-schema, coerce cleanly
+// ✓ Do this  - pick the sub-schema, coerce cleanly
 const SignupSchema = Compose.pick(
   CustomerSchema,
   ['name', 'email'] as const,
@@ -172,7 +172,7 @@ import addFormats from 'ajv-formats';
 const ajv = new Ajv({ useDefaults: true, removeAdditional: true });
 addFormats(ajv);
 const valid = ajv.validate(customerSchema, rawData);
-// rawData mutated in place — no typed return value
+// rawData mutated in place  - no typed return value
 if (!valid) throw new Error(ajv.errorsText());
 // No TypeScript type narrowing; errors are ajv's ErrorObject[]
 ```
@@ -197,17 +197,17 @@ except ValidationError as e:
 
 ## Related
 
-- [`JsonTology.validate`](/validation/validate) — when you only need the human-readable error strings without a throw
-- [`JsonTology.errors`](/validation/errors) — when you need structured `ValidationErrors` without an exception
-- [`JsonTology.is`](/validation/is) — when you only need a boolean type guard
-- [`JsonTology.materialize`](/registry/materialize) — when you want to build from partial trusted data + defaults without validation throwing
-- [`Compose.pick`](/composition/pick-omit) / [`omit`](/composition/pick-omit) — build sub-schemas before passing to `instantiate`
+- [`JsonTology.validate`](/validation/validate) - when you only need the human-readable error strings without a throw
+- [`JsonTology.errors`](/validation/errors) - when you need structured `ValidationErrors` without an exception
+- [`JsonTology.is`](/validation/is) - when you only need a boolean type guard
+- [`JsonTology.materialize`](/registry/materialize) - when you want to build from partial trusted data + defaults without validation throwing
+- [`Compose.pick`](/composition/pick-omit) / [`omit`](/composition/pick-omit) - build sub-schemas before passing to `instantiate`
 
 ## See also
 
-- [Bookstore domain](/bookstore-domain) — where `Customer`, `Order`, and `OrderLine` are defined
-- [Error views](/errors/views) — what to do with the `ValidationErrors` when coerce throws
-- [Transforms](/transforms/decode-encode) — how Transform decoders integrate with `instantiate`
+- [Bookstore domain](/bookstore-domain) - where `Customer`, `Order`, and `OrderLine` are defined
+- [Error views](/errors/views) - what to do with the `ValidationErrors` when coerce throws
+- [Transforms](/transforms/decode-encode) - how Transform decoders integrate with `instantiate`
 
 ## Per-call options
 

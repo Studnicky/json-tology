@@ -1,6 +1,6 @@
 # `Compose.extend`
 
-**Declaration.** Creates a new schema by merging additional property definitions into the base schema's `properties` object. The base schema's `required` array is inherited unchanged. The `$id` is replaced with the new `newId` argument. Input schemas are never mutated — a new object is returned. TypeScript infers the merged type automatically.
+**Declaration.** Creates a new schema by merging additional property definitions into the base schema's `properties` object. The base schema's `required` array is inherited unchanged. The `$id` is replaced with the new `newId` argument. Input schemas are never mutated - a new object is returned. TypeScript infers the merged type automatically.
 
 **Use this when** you need to add fields to an existing schema while inheriting its existing properties and required constraints. Classic use: adding tier-specific fields to `Customer`, adding audit fields to `Order`, adding a display badge to `Book`.
 
@@ -74,18 +74,18 @@ const PremiumBookSchema = Compose.extend(
 );
 ```
 
-## Bad examples — what NOT to do
+## Bad examples - what NOT to do
 
 ### Anti-pattern 1: Using extend when you need required on the new fields
 
 ```ts
 import { Compose } from 'json-tology';
 
-// ⊥ Don't do this — extend inherits required from base; new fields are NOT required
+// ⊥ Don't do this  - extend inherits required from base; new fields are NOT required
 const Extended = Compose.extend(CustomerSchema, { tier: { type: 'string' } } as const, '...');
-// tier is optional — extend only merges properties, required comes from base
+// tier is optional  - extend only merges properties, required comes from base
 
-// ✓ Do this — use intersection if the added schema needs its own required array
+// ✓ Do this  - use intersection if the added schema needs its own required array
 const WithRequiredTier = {
   $id: 'https://bookstore.example/TierSchema',
   type: 'object',
@@ -98,11 +98,11 @@ const Extended2 = Compose.intersection([CustomerSchema, WithRequiredTier] as con
 ### Anti-pattern 2: Chaining extend to build a history of derivations without registering intermediates
 
 ```ts
-// ⊥ Don't do this — extends don't need to be registered to be extended further,
+// ⊥ Don't do this  - extends don't need to be registered to be extended further,
 // but intermediates used in coerce/validate must be registered
 const A = Compose.extend(CustomerSchema, { x: { type: 'string' } } as const, '...a');
 const B = Compose.extend(A, { y: { type: 'number' } } as const, '...b');
-jt.instantiate(B.$id, data); // fails — B is not registered
+jt.instantiate(B.$id, data); // fails  - B is not registered
 
 // ✓ Register before use
 jt.register(B);
@@ -157,12 +157,12 @@ class CustomerWithDiscount(Customer):
 
 ## Related
 
-- [`intersection`](/composition/intersection) — when all schemas' `required` constraints must apply
-- [`partial`](/composition/partial-required) — make all fields optional after extension
-- [`pick`](/composition/pick-omit) — keep only a subset of properties
-- [`Schemas`](/schemas#register) — registering extended schemas before use
+- [`intersection`](/composition/intersection) - when all schemas' `required` constraints must apply
+- [`partial`](/composition/partial-required) - make all fields optional after extension
+- [`pick`](/composition/pick-omit) - keep only a subset of properties
+- [`Schemas`](/schemas#register) - registering extended schemas before use
 
 ## See also
 
-- [Bookstore domain](/bookstore-domain) — where `CustomerSchema` and `BookSchema` are defined
-- [Composition index](/composition/) — overview of all composition operations
+- [Bookstore domain](/bookstore-domain) - where `CustomerSchema` and `BookSchema` are defined
+- [Composition index](/composition/) - overview of all composition operations

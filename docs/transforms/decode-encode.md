@@ -8,13 +8,13 @@
 
 **Declaration.** Attaches `decode` and `encode` functions to a schema using a `WeakMap` (the schema object is never mutated). Returns the same schema object with a widened TypeScript type `TransformedType<TSchema, TOut>`. After `Transform.create`, any call to `jt.instantiate(schema.$id, raw)` automatically applies the `decode` function after validation. The TypeScript return type changes from `InferSchemaType<TSchema>` to `TOut`.
 
-**Use this when** a wire-format value needs automatic conversion to a richer domain type — ISO date strings → `Date`, cents integers → floats, raw enums → branded enums, base64 strings → `Buffer`.
+**Use this when** a wire-format value needs automatic conversion to a richer domain type - ISO date strings → `Date`, cents integers → floats, raw enums → branded enums, base64 strings → `Buffer`.
 
 **Don't use this when** you want multiple sequential transformations (use [`pipe`](/transforms/pipe) instead). Don't use it for nominal typing without runtime conversion (use [`brand`](/transforms/brand)).
 
 ### Examples
 
-#### Example 1: ISO datetime to Date — full round-trip
+#### Example 1: ISO datetime to Date - full round-trip
 
 ```ts
 import { Transform, JsonTology, InstantiationError } from 'json-tology';
@@ -78,17 +78,17 @@ const wire2 = jt2.encode(PriceCentsSchema, price as number);
 console.log(wire2); // 1499
 ```
 
-### Bad examples — what NOT to do
+### Bad examples - what NOT to do
 
 #### Anti-pattern 1: Applying transform after the schema was registered
 
 ```ts
-// ⊥ Don't do this — Transform.create must be called BEFORE register
+// ⊥ Don't do this  - Transform.create must be called BEFORE register
 const RawSchema = { $id: '...', type: 'string' } as const;
 jt.register(RawSchema);
 // Then applying brand/transform to RawSchema affects a different object reference
 
-// ✓ Do this — transform first, then register
+// ✓ Do this  - transform first, then register
 const Transformed = Transform.create(
   { $id: '...', type: 'string' } as const,
   { decode: (s: string) => new Date(s), encode: (d: Date) => d.toISOString() },
@@ -112,11 +112,11 @@ const DateSchema = Transform.create(
 ```ts [Zod]
 const DateSchema = z.string().datetime().transform(s => new Date(s));
 DateSchema.parse('2026-01-15T10:30:00Z'); // → Date
-// No built-in encode step — call .toISOString() manually for the reverse.
+// No built-in encode step  - call .toISOString() manually for the reverse.
 ```
 
 ```ts [TypeBox + Value]
-// TypeBox validates only — no decode/encode transform mechanism.
+// TypeBox validates only  - no decode/encode transform mechanism.
 // Apply manually after validation:
 const C = TypeCompiler.Compile(Type.String({ format: 'date-time' }));
 if (C.Check(raw)) {
@@ -125,7 +125,7 @@ if (C.Check(raw)) {
 ```
 
 ```ts [AJV]
-// AJV validates only — no decode/encode.
+// AJV validates only  - no decode/encode.
 if (ajv.validate({ type: 'string', format: 'date-time' }, raw)) {
   const date = new Date(raw); // manual
 }
@@ -143,10 +143,10 @@ class Order(BaseModel):
 
 ### Related
 
-- [`jt.encode`](#jtencode) — apply the encode function (domain → wire)
-- [`pipe`](/transforms/pipe) — chain multiple transformation steps
-- [`brand`](/transforms/brand) — compile-time nominal typing without runtime decode
-- [`dump`](/serialization/dump) — applies `encode` during schema graph traversal
+- [`jt.encode`](#jtencode) - apply the encode function (domain → wire)
+- [`pipe`](/transforms/pipe) - chain multiple transformation steps
+- [`brand`](/transforms/brand) - compile-time nominal typing without runtime decode
+- [`dump`](/serialization/dump) - applies `encode` during schema graph traversal
 
 ---
 
@@ -156,7 +156,7 @@ class Order(BaseModel):
 
 **Use this when** you have a decoded domain value (e.g. a `Date` object) and need the wire form (e.g. ISO string) for storage, HTTP response, or queue message.
 
-**Don't use this when** you want to serialize a whole object graph — use [`dump`](/serialization/dump) which walks the schema graph and applies encode to each transformed property.
+**Don't use this when** you want to serialize a whole object graph - use [`dump`](/serialization/dump) which walks the schema graph and applies encode to each transformed property.
 
 ### Examples
 
@@ -193,16 +193,25 @@ const wire = jt.encode(PlacedAtSchema, date); // Date → string
 ```
 
 ```ts [Zod]
-// Not built in — call manually:
+// Zod has no built-in encode step; call manually:
 const wire = date.toISOString();
+// Limitation: encode is decoupled from schema - the reverse transformation
+// is not registered anywhere; callers must remember which function to call per type.
 ```
 
 ```ts [TypeBox + Value]
-// Not built in.
+// TypeBox has no built-in encode mechanism.
+// Apply the encode transformation manually:
+const wire = (date as Date).toISOString();
+// Limitation: encode step is not schema-associated; every call site must know
+// which encode function applies. No round-trip guarantee without discipline.
 ```
 
 ```ts [AJV]
-// Not built in.
+// AJV has no built-in encode mechanism. Apply manually:
+const wire = (date as Date).toISOString();
+// Limitation: same as TypeBox - encode is not schema-registered;
+// no symmetric round-trip guarantee.
 ```
 
 ```py [Pydantic]
@@ -214,9 +223,9 @@ wire = order.model_dump(mode='json')['placed_at']  # str
 
 ### Related
 
-- [`Transform.create`](#transform-create) — where the encode function is registered
-- [`dump`](/serialization/dump) — applies `encode` while walking the full schema graph
+- [`Transform.create`](#transform-create) - where the encode function is registered
+- [`dump`](/serialization/dump) - applies `encode` while walking the full schema graph
 
 ## See also
 
-- [Bookstore domain](/bookstore-domain) — schemas referenced in examples
+- [Bookstore domain](/bookstore-domain) - schemas referenced in examples

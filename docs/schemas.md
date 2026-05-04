@@ -19,7 +19,7 @@ public register<const T extends ReadonlyArray<{ readonly '$id': string }>>(schem
 
 ### When to use
 
-Use `register` when you need to add schemas after construction — for example when schemas are loaded from files or built dynamically at startup. Prefer `JsonTology.create({ schemas })` when you know all schemas up front, because it builds the type map in one pass and TypeScript infers the full type map at compile time.
+Use `register` when you need to add schemas after construction - for example when schemas are loaded from files or built dynamically at startup. Prefer `JsonTology.create({ schemas })` when you know all schemas up front, because it builds the type map in one pass and TypeScript infers the full type map at compile time.
 
 ### Examples
 
@@ -90,7 +90,7 @@ jt.register(ReviewSchema);
 ```
 
 ```ts [Zod]
-// Zod schemas are registered in module scope — no central registry.
+// Zod schemas are registered in module scope  - no central registry.
 // You import the schema object directly wherever needed.
 const CustomerSchema = z.object({
   id:    z.string().uuid(),
@@ -106,7 +106,7 @@ const CustomerSchema = z.object({
 import Ajv from 'ajv';
 const ajv = new Ajv();
 ajv.addSchema(CustomerSchema, 'Customer');
-// The `ajv` instance is the "registry" — typed only at call sites via generics.
+// The `ajv` instance is the "registry"  - typed only at call sites via generics.
 ```
 
 ```ts [AJV]
@@ -114,12 +114,12 @@ import Ajv from 'ajv';
 const ajv = new Ajv();
 ajv.addSchema(customerJsonSchema);
 ajv.addSchema(bookJsonSchema);
-// No TypeScript type map — types must be maintained separately.
+// No TypeScript type map  - types must be maintained separately.
 ```
 
 ```py [Pydantic]
 # Pydantic models are registered by the Python class system.
-# No explicit registry — you import the model class directly.
+# No explicit registry  - you import the model class directly.
 from pydantic import BaseModel
 
 class Customer(BaseModel):
@@ -132,9 +132,9 @@ class Customer(BaseModel):
 
 ### Related
 
-- `registerAnonymous` — for schemas without a `$id`
-- `has` / `get` / `list` — registry inspection
-- [Composition](/composition/extend) — build schemas from existing ones before registering
+- `registerAnonymous` - for schemas without a `$id`
+- `has` / `get` / `list` - registry inspection
+- [Composition](/composition/extend) - build schemas from existing ones before registering
 
 ---
 
@@ -179,7 +179,7 @@ If the schema already has a `$id`, `registerAnonymous` behaves identically to `r
 
 ```ts
 const id = jt.registerAnonymous(BookSchema);
-console.log(id); // 'https://bookstore.example/Book' — unchanged
+console.log(id); // 'https://bookstore.example/Book'  - unchanged
 ```
 
 ### Comparison
@@ -192,7 +192,7 @@ jt.validate(id, { discount: 0.15 });
 ```
 
 ```ts [Zod]
-// Not directly supported — Zod schemas are typed at declaration site.
+// Not directly supported  - Zod schemas are typed at declaration site.
 // An inline z.object() can be used without a name but has no registry ID.
 const CouponSchema = z.object({ discount: z.number() });
 CouponSchema.parse({ discount: 0.15 });
@@ -215,7 +215,7 @@ ajv.validate(schema, { discount: 0.15 });
 ```
 
 ```py [Pydantic]
-# Not directly supported — all models must be declared as named classes.
+# Not directly supported  - all models must be declared as named classes.
 # Dynamic models can be created with `create_model`.
 from pydantic import create_model
 Coupon = create_model('Coupon', discount=(float, ...))
@@ -226,8 +226,8 @@ Coupon(discount=0.15)
 
 ### Related
 
-- `register` — for schemas with a stable `$id`
-- `has` / `get` — verify a schema is present after registration
+- `register` - for schemas with a stable `$id`
+- `has` / `get` - verify a schema is present after registration
 
 ---
 
@@ -243,7 +243,7 @@ public has(schemaId: string): boolean
 
 ### When to use
 
-Use before calling `instantiate` or `validate` when you cannot guarantee a schema is registered (e.g., loading schemas from optional plugin modules). Most application code that calls `JsonTology.create({ schemas })` doesn't need this — all schemas are known registered.
+Use before calling `instantiate` or `validate` when you cannot guarantee a schema is registered (e.g., loading schemas from optional plugin modules). Most application code that calls `JsonTology.create({ schemas })` doesn't need this - all schemas are known registered.
 
 ### Examples
 
@@ -279,12 +279,12 @@ jt.has('https://bookstore.example/Customer') // true | false
 ```
 
 ```ts [Zod]
-// Not applicable — Zod has no central registry.
+// Not applicable  - Zod has no central registry.
 // Schema objects are present if the module importing them has loaded.
 ```
 
 ```ts [TypeBox]
-// Not applicable — TypeBox schemas are plain JS objects; no registry.
+// Not applicable  - TypeBox schemas are plain JS objects; no registry.
 ```
 
 ```ts [AJV]
@@ -297,15 +297,15 @@ console.log(compiled !== undefined); // true if schema was added
 ```py [Pydantic]
 # Python class introspection:
 'Customer' in [cls.__name__ for cls in BaseModel.__subclasses__()]
-# Not idiomatic — normally you just import the class.
+# Not idiomatic  - normally you just import the class.
 ```
 
 :::
 
 ### Related
 
-- `get` — retrieve the schema object itself
-- `list` — enumerate all registered IDs
+- `get` - retrieve the schema object itself
+- `list` - enumerate all registered IDs
 
 ---
 
@@ -323,7 +323,7 @@ Returns `undefined` when the schema is not registered.
 
 ### When to use
 
-Use when you need to inspect the raw schema document — for example to feed into `Compose` methods, display in developer tooling, or log for debugging. This returns the plain JSON Schema object, not the compiled graph.
+Use when you need to inspect the raw schema document - for example to feed into `Compose` methods, display in developer tooling, or log for debugging. This returns the plain JSON Schema object, not the compiled graph.
 
 ### Examples
 
@@ -359,13 +359,13 @@ const schema = jt.get('https://bookstore.example/Book');
 ```
 
 ```ts [Zod]
-// Not directly supported — Zod schemas are module-scope variables.
+// Not directly supported  - Zod schemas are module-scope variables.
 // Access them via direct import.
 import { BookSchema } from './schemas';
 ```
 
 ```ts [TypeBox]
-// TypeBox schemas are plain objects — access via import or variable reference.
+// TypeBox schemas are plain objects  - access via import or variable reference.
 ```
 
 ```ts [AJV]
@@ -381,8 +381,8 @@ Customer.model_json_schema()  # Returns the JSON Schema for a model class
 
 ### Related
 
-- `has` — existence check
-- `toSchema` — round-trip via canonical graph (advanced)
+- `has` - existence check
+- `toSchema` - round-trip via canonical graph (advanced)
 
 ---
 
@@ -398,7 +398,7 @@ public list(): string[]
 
 ### When to use
 
-Use for developer tooling — building a schema browser, logging the registry state, or producing an index of available schemas at startup. Not typically needed in application hot paths.
+Use for developer tooling - building a schema browser, logging the registry state, or producing an index of available schemas at startup. Not typically needed in application hot paths.
 
 ### Examples
 
@@ -437,15 +437,15 @@ jt.list() // string[]
 ```
 
 ```ts [Zod]
-// Not applicable — no registry.
+// Not applicable  - no registry.
 ```
 
 ```ts [TypeBox]
-// Not applicable — no registry.
+// Not applicable  - no registry.
 ```
 
 ```ts [AJV]
-// Not directly supported — AJV does not expose a list of added schema IDs.
+// Not directly supported  - AJV does not expose a list of added schema IDs.
 ```
 
 ```py [Pydantic]
@@ -458,7 +458,7 @@ jt.list() // string[]
 
 ### Related
 
-- `has` / `get` — single-schema lookup
+- `has` / `get` - single-schema lookup
 
 ---
 
@@ -476,7 +476,7 @@ Returns `undefined` when the schema is not registered.
 
 ### When to use
 
-Use to verify round-trip fidelity — that the canonical graph preserves all structural semantics from the authored schema. Also useful when you want a clean, normalized version of the schema (redundant keywords removed, structure canonicalized). Not needed for typical validation or coercion workflows.
+Use to verify round-trip fidelity - that the canonical graph preserves all structural semantics from the authored schema. Also useful when you want a clean, normalized version of the schema (redundant keywords removed, structure canonicalized). Not needed for typical validation or coercion workflows.
 
 ### Examples
 
@@ -519,12 +519,12 @@ jt.toSchema('https://bookstore.example/Book')
 ```
 
 ```ts [TypeBox]
-// TypeBox schemas ARE plain JSON Schema — no round-trip needed.
+// TypeBox schemas ARE plain JSON Schema  - no round-trip needed.
 // JSON.stringify(schema) gives the wire form directly.
 ```
 
 ```ts [AJV]
-// Not directly supported — AJV stores compiled validators, not schemas.
+// Not directly supported  - AJV stores compiled validators, not schemas.
 ```
 
 ```py [Pydantic]
@@ -535,5 +535,11 @@ Customer.model_json_schema()  # Exports JSON Schema from the model class
 
 ### Related
 
-- [Ontology and Graphs](/advanced/ontology) — advanced: `toQuads`, `fromQuads`, graph serialization
-- `get` — retrieve the original registered schema (before graph normalization)
+- [Ontology and Graphs](/advanced/ontology) - advanced: `toQuads`, `fromQuads`, graph serialization
+- `get` - retrieve the original registered schema (before graph normalization)
+
+## See also
+
+- [Bookstore domain](/bookstore-domain) - where all six schemas are registered
+- [Composition](/composition/extend) - derive new schemas to register
+- [Argument conventions](/argument-conventions) - how registered schemas work as `SchemaRef`

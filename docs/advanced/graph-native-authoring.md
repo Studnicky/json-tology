@@ -1,6 +1,6 @@
 # Graph-native authoring
 
-json-tology's canonical representation is a graph. Every schema you register becomes a node; every property reference, composition, or inheritance chain becomes an edge. Getting the most from the ontology output — correct OWL TBox classes, sound SHACL shapes, and stable graph traversal — requires authoring schemas that map one-to-one with the concepts they describe.
+json-tology's canonical representation is a graph. Every schema you register becomes a node; every property reference, composition, or inheritance chain becomes an edge. Getting the most from the ontology output - correct OWL TBox classes, sound SHACL shapes, and stable graph traversal - requires authoring schemas that map one-to-one with the concepts they describe.
 
 This page explains what "graph-native" authoring means, how to detect and fix violations, and which strict-mode tools enforce it automatically.
 
@@ -11,7 +11,7 @@ This page explains what "graph-native" authoring means, how to detect and fix vi
 When you write the same constrained shape inline in two different schemas, the graph sees them as two separate, unrelated nodes:
 
 ```ts
-// BAD — three separate ISBN nodes in the graph
+// BAD  - three separate ISBN nodes in the graph
 const BookSchema = {
   $id: 'urn:bookstore:Book',
   type: 'object',
@@ -24,17 +24,17 @@ const OrderSchema = {
   $id: 'urn:bookstore:Order',
   type: 'object',
   properties: {
-    isbn: { type: 'string', pattern: '^\\d{13}$' }  // node 2 — structurally identical but unrelated
+    isbn: { type: 'string', pattern: '^\\d{13}$' }  // node 2  - structurally identical but unrelated
   }
 } as const;
 ```
 
-The OWL output produces two anonymous DatatypeProperty ranges. Fix the ISBN regex once, and you have to find and update every copy. SHACL constraint propagation and rdfs:range reasoning work per-node — the two "isbn" properties have no declared relationship.
+The OWL output produces two anonymous DatatypeProperty ranges. Fix the ISBN regex once, and you have to find and update every copy. SHACL constraint propagation and rdfs:range reasoning work per-node - the two "isbn" properties have no declared relationship.
 
 ### The named-entity solution
 
 ```ts
-// GOOD — one ISBN node, two references
+// GOOD  - one ISBN node, two references
 export const IsbnSchema = {
   $id: 'urn:bookstore:Isbn',
   type: 'string',
@@ -59,7 +59,7 @@ const OrderSchema = {
 ```
 
 Now:
-- Change the ISBN pattern in one place — both schemas update.
+- Change the ISBN pattern in one place - both schemas update.
 - OWL output emits `urn:bookstore:Isbn` as a named `rdfs:Datatype`.
 - SHACL output links `sh:datatype` through the named type.
 - `findDuplicates()` returns an empty array.
@@ -95,9 +95,9 @@ export const BookSchema = {
 } as const;
 ```
 
-Always show the import that defines the referenced shape — never use a bare string `$ref` pointing to an undocumented IRI.
+Always show the import that defines the referenced shape - never use a bare string `$ref` pointing to an undocumented IRI.
 
-## `Compose.equivalent` — domain-term distinction {#compose-equivalent}
+## `Compose.equivalent` - domain-term distinction {#compose-equivalent}
 
 ### Declaration
 
@@ -107,7 +107,7 @@ Compose.equivalent(source, options): { $id, $ref, description?, title?, examples
 
 ### Use this when
 
-You want to give a domain-distinct name to an existing schema without duplicating its structure. The two schemas are structurally identical — they validate the same data.
+You want to give a domain-distinct name to an existing schema without duplicating its structure. The two schemas are structurally identical - they validate the same data.
 
 ```ts
 import { Compose } from 'json-tology';
@@ -129,22 +129,22 @@ In the OWL TBox, `PrimaryIsbn owl:equivalentClass Isbn` is emitted automatically
 
 ### Don't use this when
 
-The two schemas have _different structure_. If `PrimaryIsbn` had an extra constraint (e.g. must start with `978`), it is NOT equivalent to `Isbn` — use `Compose.extend` or a new standalone schema instead.
+The two schemas have _different structure_. If `PrimaryIsbn` had an extra constraint (e.g. must start with `978`), it is NOT equivalent to `Isbn` - use `Compose.extend` or a new standalone schema instead.
 
 ### Bad example
 
 ```ts
-// BAD — extend, not equivalent, because it adds a constraint
+// BAD  - extend, not equivalent, because it adds a constraint
 const Isbn978Schema = Compose.equivalent(IsbnSchema, {
   $id: 'urn:bookstore:Isbn978',
-  pattern: '^978'  // NOT allowed — adds constraint, changes structure
+  pattern: '^978'  // NOT allowed  - adds constraint, changes structure
 });
 ```
 
 ### Good example
 
 ```ts
-// GOOD — structurally identical, different domain role
+// GOOD  - structurally identical, different domain role
 const CatalogIsbn = Compose.equivalent(IsbnSchema, {
   $id: 'urn:bookstore:CatalogIsbn',
   description: 'ISBN as used in the public catalog feed.'
@@ -159,7 +159,7 @@ const CatalogIsbn = Compose.equivalent(IsbnSchema, {
 
 - [OWL TBox output](/advanced/ontology#jt-totbox)
 - [SHACL output](/advanced/ontology#jt-toshacl)
-- `Compose.extend` — structural extension (produces allOf+$ref, maps to `rdfs:subClassOf`)
+- `Compose.extend` - structural extension (produces allOf+$ref, maps to `rdfs:subClassOf`)
 
 ## `Compose.extend` produces allOf+$ref {#compose-extend}
 
@@ -187,7 +187,7 @@ For more detail, see the [Compose.extend reference](/composition/extend).
 
 ## Detection and enforcement {#detection-and-enforcement}
 
-### `SchemaRegistry.findDuplicates()` — on-demand check {#schemaregistry-findduplicates}
+### `SchemaRegistry.findDuplicates()` - on-demand check {#schemaregistry-findduplicates}
 
 Call after registering your schemas to get a report of inline shapes that structurally match a registered top-level schema:
 
@@ -210,7 +210,7 @@ ReadonlyArray<{
 }>
 ```
 
-### `enableInlineWarnings: true` — gentle nudges
+### `enableInlineWarnings: true` - gentle nudges
 
 Emits `logger.warn` at registration when inline-object or inline-primitive shapes are found. No throws. Requires a logger to be set.
 
@@ -222,7 +222,7 @@ const jt = JsonTology.create({
 });
 ```
 
-### `enableDuplicateDetection: true` — auto-run at registration
+### `enableDuplicateDetection: true` - auto-run at registration
 
 Runs `findDuplicates()` after each schema is registered and emits `logger.warn` if duplicates are found.
 
@@ -234,14 +234,14 @@ const jt = JsonTology.create({
 });
 ```
 
-### `enableStrictGraph: true` — CI enforcement {#enablestrictgraph}
+### `enableStrictGraph: true` - CI enforcement {#enablestrictgraph}
 
 Promotes warnings to `SchemaError` throws. Every sub-schema must be either:
 1. A `{ $ref: registeredSchemaId }` reference
 2. A bare base type with no constraint keywords: `{ type: 'string' }`, `{ type: 'integer' }`, `{ type: 'boolean' }`, `{ type: 'array', items: <allowed> }`
 3. Declared in the schema's own `$defs` namespace (the schema's internal ontology)
 
-Inline constrained shapes — objects with `properties`, primitives with `pattern`/`format`/`minimum`/etc., array items with constraints — are all forbidden.
+Inline constrained shapes - objects with `properties`, primitives with `pattern`/`format`/`minimum`/etc., array items with constraints - are all forbidden.
 
 ```ts
 const jt = JsonTology.create({
@@ -252,12 +252,12 @@ const jt = JsonTology.create({
 ```
 
 **What's allowed inline in strict mode:**
-- `{ type: 'string' }` — no constraints
-- `{ type: 'integer' }` — no constraints
-- `{ type: 'boolean' }` — no constraints
-- `{ type: 'array', items: { $ref: '...' } }` — array of named schemas
-- `{ type: 'array', items: { type: 'string' } }` — array of base types
-- `$defs` entries — the schema's own internal named types
+- `{ type: 'string' }` - no constraints
+- `{ type: 'integer' }` - no constraints
+- `{ type: 'boolean' }` - no constraints
+- `{ type: 'array', items: { $ref: '...' } }` - array of named schemas
+- `{ type: 'array', items: { type: 'string' } }` - array of base types
+- `$defs` entries - the schema's own internal named types
 
 **Migration path:**
 
@@ -299,3 +299,9 @@ The cost of inline shapes is borne only by graph users: OWL/SHACL output is less
 ---
 
 *Cross-references: [Ontology output](/advanced/ontology#jt-ontology) · [toQuads](/advanced/ontology#jt-toquads) · [toTbox](/advanced/ontology#jt-totbox) · [toShacl](/advanced/ontology#jt-toshacl)*
+
+## See also
+
+- [Bookstore domain](/bookstore-domain) - the running example domain
+- [Your types are already a graph](/your-types-are-a-graph) - conceptual introduction to the graph model
+- [Graph concepts](/advanced/graph-concepts) - TBox/ABox, OWA, equivalentClass

@@ -1,10 +1,10 @@
 # The Bookstore Domain
 
-Every example throughout this documentation uses a single running domain — an eCommerce bookstore. This page defines the folder structure and the schemas that appear in all subsequent guides. Later guides build on this foundation, and examples reference these types by name without re-defining them.
+Every example throughout this documentation uses a single running domain - an eCommerce bookstore. This page defines the folder structure and the schemas that appear in all subsequent guides. Later guides build on this foundation, and examples reference these types by name without re-defining them.
 
 ## Why a shared domain
 
-Reading scattered docs is hard when every page introduces fresh data types. By anchoring everything to one domain you can see how concepts compose — `instantiate` in the Validation guide operates on the same `Customer` you defined here; `extend` in Composition derives `CustomerWithDiscount` from that same `Customer`; `dump` in Serialization serializes the order produced by Coercion.
+Reading scattered docs is hard when every page introduces fresh data types. By anchoring everything to one domain you can see how concepts compose - `instantiate` in the Validation guide operates on the same `Customer` you defined here; `extend` in Composition derives `CustomerWithDiscount` from that same `Customer`; `dump` in Serialization serializes the order produced by Coercion.
 
 ## Folder layout
 
@@ -13,7 +13,7 @@ examples/docs/bookstore/
 ├── index.ts                      # JsonTology.create + re-exports
 └── entities/
     ├── AuthorName.ts             # primitive: string, minLength 1
-    ├── CityName.ts               # primitive: string, 1–100 chars
+    ├── CityName.ts               # primitive: string, 1-100 chars
     ├── CountryCode.ts            # primitive: string, pattern ^[A-Z]{2}$
     ├── CurrencyCode.ts           # primitive: string, enum of 6 codes
     ├── CustomerId.ts             # primitive: string, format uuid
@@ -22,13 +22,13 @@ examples/docs/bookstore/
     ├── Iso8601.ts                # primitive: string, format date-time
     ├── Money.ts                  # primitive: number, minimum 0
     ├── OrderId.ts                # primitive: string, format uuid
-    ├── PersonName.ts             # primitive: string, 1–200 chars
-    ├── PostalCode.ts             # primitive: string, 3–12 chars
+    ├── PersonName.ts             # primitive: string, 1-200 chars
+    ├── PostalCode.ts             # primitive: string, 3-12 chars
     ├── Quantity.ts               # primitive: integer, minimum 1
-    ├── RatingScore.ts            # primitive: integer, 1–5
+    ├── RatingScore.ts            # primitive: integer, 1-5
     ├── ReviewId.ts               # primitive: string, format uuid
-    ├── StreetLine.ts             # primitive: string, 1–200 chars
-    ├── Title.ts                  # primitive: string, 1–500 chars
+    ├── StreetLine.ts             # primitive: string, 1-200 chars
+    ├── Title.ts                  # primitive: string, 1-500 chars
     ├── Address.ts                # entity: composes StreetLine + CityName + PostalCode + CountryCode
     ├── Book.ts                   # entity: composes Isbn + Title + AuthorName + Money + CurrencyCode
     ├── Customer.ts               # entity: composes CustomerId + Email + PersonName + Address
@@ -37,7 +37,7 @@ examples/docs/bookstore/
     └── Review.ts                 # entity: composes ReviewId + Isbn + CustomerId + RatingScore + ...
 ```
 
-Each primitive file exports a single schema constant with a stable `$id` using the `urn:bookstore:` IRI pattern. Entity files import only the primitives they reference — every `$ref` is `{ $ref: SourceSchema.$id }` with an explicit named import at the top of the file.
+Each primitive file exports a single schema constant with a stable `$id` using the `urn:bookstore:` IRI pattern. Entity files import only the primitives they reference - every `$ref` is `{ $ref: SourceSchema.$id }` with an explicit named import at the top of the file.
 
 ## The IRI pattern
 
@@ -293,10 +293,21 @@ The guides that follow build concepts one at a time, each adding to what came be
 |-------|-------------|
 | [Schemas](/schemas) | How `register`, `has`, `get`, `list` work with these definitions |
 | [Type Inference](/types) | How `InferType<typeof CustomerSchema>` resolves at compile time |
-| [Validation](/validation/instantiate) | `validate`, `is`, `errors` — checking incoming data against these schemas |
-| [Coercion](/validation/instantiate) | `instantiate` — validated + defaults applied, typed result |
+| [Validation](/validation/instantiate) | `validate`, `is`, `errors` - checking incoming data against these schemas |
+| [Coercion](/validation/instantiate) | `instantiate` - validated + defaults applied, typed result |
 | [Error Views](/errors/views) | `messages`, `format`, `flatten`, `aggregate`, `report` |
 | [Composition](/composition/extend) | Derive `CustomerWithDiscount`, `BookSummary`, `PatchOrder` |
 | [Value Operations](/value/clone-hash) | `clone`, `hash`, `diff` on a coerced `Order` |
-| [Serialization](/serialization/dump) | `dump`, `dumpJson` — serialize an `Order` back to wire form |
+| [Serialization](/serialization/dump) | `dump`, `dumpJson` - serialize an `Order` back to wire form |
 | [Ontology](/advanced/ontology) | Advanced: RDF/OWL/SHACL from these schemas |
+
+## Related
+
+- [Schemas](/schemas) - how `register`, `has`, `get` work with these definitions
+- [Type Inference](/types) - how `InferType<typeof CustomerSchema>` resolves
+- [Validation](/validation/instantiate) - coercing incoming data against these schemas
+
+## See also
+
+- [Graph concepts](/advanced/graph-concepts) - TBox/ABox from these schemas
+- [Graph-native authoring](/advanced/graph-native-authoring) - named primitives and `$ref`

@@ -1,8 +1,8 @@
 # `value.create`
 
-**Declaration.** Synthesizes a zero-value default instance for a schema by filling every declared property with its `default` value if present, or with a type-based zero value if no default is declared (`''` for string, `0` for number/integer, `false` for boolean, `[]` for array, `{}` for object). Returns `unknown` — cast to the schema type for type-safe access.
+**Declaration.** Synthesizes a zero-value default instance for a schema by filling every declared property with its `default` value if present, or with a type-based zero value if no default is declared (`''` for string, `0` for number/integer, `false` for boolean, `[]` for array, `{}` for object). Returns `unknown` - cast to the schema type for type-safe access.
 
-**Use this when** you need a blank structural skeleton for a schema — for example, pre-populating a form's initial state where every field should have a zero value. Contrast with `materialize(schema)` which only fills declared defaults (leaves undeclared fields absent) and throws if required fields without defaults are missing.
+**Use this when** you need a blank structural skeleton for a schema - for example, pre-populating a form's initial state where every field should have a zero value. Contrast with `materialize(schema)` which only fills declared defaults (leaves undeclared fields absent) and throws if required fields without defaults are missing.
 
 **Don't use this when** you want a validated, coerced value from real input (use [`instantiate`](/validation/instantiate)). Don't use it when you only want declared defaults without zero-values (use [`Compose.getDefaults`](/composition/get-defaults)).
 
@@ -39,32 +39,32 @@ const blankCustomer = jt.value.create(CustomerSchema.$id);
 ### Example 3: Contrast with materialize and Compose.getDefaults
 
 ```ts
-// value.create — zero-values + explicit defaults, ALL required fields present
+// value.create  - zero-values + explicit defaults, ALL required fields present
 const fromCreate = jt.value.create(BookSchema.$id);
 // { isbn: '', title: '', authors: [], price: 0, currency: 'USD', inStock: true }
 
-// Compose.getDefaults — only declared defaults (no zero-values)
+// Compose.getDefaults  - only declared defaults (no zero-values)
 const defaults = Compose.getDefaults(BookSchema);
 // { currency: 'USD', inStock: true }
-// isbn, title, authors, price absent — they have no declared defaults
+// isbn, title, authors, price absent  - they have no declared defaults
 
-// materialize — fill declared defaults, partial is trusted, throws if required missing
+// materialize  - fill declared defaults, partial is trusted, throws if required missing
 const m = jt.materialize(BookSchema, {
   isbn: '9780140449136', title: 'Crime and Punishment', authors: ['Dostoevsky'], price: 14.99,
 });
 // { isbn: '...', ..., currency: 'USD', inStock: true }
 ```
 
-## Bad examples — what NOT to do
+## Bad examples - what NOT to do
 
 ### Anti-pattern 1: Using value.create to generate valid instances for tests
 
 ```ts
-// ⊥ Don't do this — zero-values may not pass validation (empty strings, 0 price)
+// ⊥ Don't do this  - zero-values may not pass validation (empty strings, 0 price)
 const blank = jt.value.create(BookSchema.$id);
 jt.validate(BookSchema.$id, blank); // may have errors: isbn pattern fails, price ≤ 0
 
-// ✓ Do this — use actual test data
+// ✓ Do this  - use actual test data
 const testBook = jt.instantiate(BookSchema.$id, {
   isbn:    '9780140449136',
   title:   'Test Book',
@@ -84,7 +84,7 @@ const blank = jt.value.create(BookSchema.$id);
 
 ```ts [Zod]
 // Zod doesn't provide a zero-value creator.
-// Closest: schema.parse({}) — fails for required fields without defaults.
+// Closest: schema.parse({})  - fails for required fields without defaults.
 // Use z.object({ ... }).optional()... with explicit defaults, or build manually.
 ```
 
@@ -95,11 +95,17 @@ const blank = Value.Create(BookSchema);
 ```
 
 ```ts [AJV]
-// Not supported — AJV doesn't generate default instances.
+// AJV has no built-in zero-value creator.
+// Workaround: validate an empty object with { useDefaults: true }:
+const ajv = new Ajv({ useDefaults: true });
+const blank = {};
+ajv.validate(bookSchema, blank);
+// Limitation: mutates the object in place; only fills declared defaults (not zero-values);
+// missing required fields stay absent; no TypeScript type narrowing.
 ```
 
 ```py [Pydantic]
-# Pydantic requires values for required fields — no zero-value creation.
+# Pydantic requires values for required fields  - no zero-value creation.
 # Use Optional fields with None defaults or supply explicit test values:
 Book(isbn='', title='', authors=[], price=0)
 ```
@@ -108,10 +114,10 @@ Book(isbn='', title='', authors=[], price=0)
 
 ## Related
 
-- [`JsonTology.materialize`](/registry/materialize) — fill from partial trusted data + declared defaults
-- [`Compose.getDefaults`](/composition/get-defaults) — extract only declared defaults (no zero-values)
-- [`JsonTology.coerce`](/validation/instantiate) — validate + fill defaults + strip unknowns (for real data)
+- [`JsonTology.materialize`](/registry/materialize) - fill from partial trusted data + declared defaults
+- [`Compose.getDefaults`](/composition/get-defaults) - extract only declared defaults (no zero-values)
+- [`JsonTology.coerce`](/validation/instantiate) - validate + fill defaults + strip unknowns (for real data)
 
 ## See also
 
-- [Bookstore domain](/bookstore-domain) — where `BookSchema` and `CustomerSchema` are defined
+- [Bookstore domain](/bookstore-domain) - where `BookSchema` and `CustomerSchema` are defined

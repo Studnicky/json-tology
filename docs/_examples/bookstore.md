@@ -1,4 +1,4 @@
-# Bookstore Domain — Shared Schemas
+# Bookstore Domain - Shared Schemas
 
 This page defines every schema used across all documentation examples. All code blocks in the docs reference these schemas by name. Later examples build on earlier ones.
 

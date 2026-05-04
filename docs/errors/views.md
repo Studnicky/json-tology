@@ -4,7 +4,7 @@
 
 | Surface | Returns | Best for |
 |---------|---------|----------|
-| `.items` | `readonly ValidationErrorType[]` | Raw access — path, keyword, message, params |
+| `.items` | `readonly ValidationErrorType[]` | Raw access - path, keyword, message, params |
 | [`aggregate()`](#validationerrors-aggregate) | `{ count, paths, keywords }` | Structured logs, metric labels |
 | [`report()`](#validationerrors-report) | `ProblemDetailsType` | HTTP 422 response bodies (RFC 7807) |
 
@@ -55,9 +55,9 @@ for (const err of errs) {
 
 ## `ValidationErrors.aggregate` {#validationerrors-aggregate}
 
-**Declaration.** Returns `{ count: number; paths: string[]; keywords: string[] }` — a compact rollup with the total error count, deduplicated sorted paths (in **access form**: `items[0].quantity` not `/items/0/quantity`), and deduplicated sorted keyword names. No per-instance `params` values.
+**Declaration.** Returns `{ count: number; paths: string[]; keywords: string[] }` - a compact rollup with the total error count, deduplicated sorted paths (in **access form**: `items[0].quantity` not `/items/0/quantity`), and deduplicated sorted keyword names. No per-instance `params` values.
 
-**Use this when** logging validation failures as structured data or recording metric labels. Because `paths` and `keywords` are deduplicated and sorted with no unbounded `params` values, the output has bounded cardinality — safe to use as a metric label value without risk of cardinality explosion.
+**Use this when** logging validation failures as structured data or recording metric labels. Because `paths` and `keywords` are deduplicated and sorted with no unbounded `params` values, the output has bounded cardinality - safe to use as a metric label value without risk of cardinality explosion.
 
 **Don't use this when** you need JSON Pointer paths (use `errs.items.map(e => e.path)`) or individual messages (iterate `errs.items`). Don't use it for user-facing error display.
 
@@ -98,7 +98,7 @@ if (!errs.ok) {
 
 ```ts
 const rollup = errs.aggregate();
-// paths and keywords are bounded sets — safe as metric labels
+// paths and keywords are bounded sets  - safe as metric labels
 metrics.increment('validation.failure', {
   keywords: rollup.keywords.join(','),
   schema:   'Order',
@@ -108,7 +108,7 @@ metrics.increment('validation.failure', {
 #### Example 3: JSON Pointer paths (use items, not aggregate)
 
 ```ts
-// aggregate().paths is access form — use items for JSON Pointer
+// aggregate().paths is access form  - use items for JSON Pointer
 const jsonPointerPaths = errs.items.map(err => err.path);
 // ['/total', '/items/0/quantity']
 ```
@@ -158,7 +158,7 @@ keywords = sorted(set(e['type'] for e in errors))
 
 ### Related
 
-- [`report`](#validationerrors-report) — when you need the full RFC 7807 payload for HTTP responses
+- [`report`](#validationerrors-report) - when you need the full RFC 7807 payload for HTTP responses
 - Use `.items` to access full error objects with JSON Pointer paths
 
 ---
@@ -169,7 +169,7 @@ keywords = sorted(set(e['type'] for e in errors))
 
 **Use this when** returning HTTP `422 Unprocessable Entity` responses from an API. Set `Content-Type: application/problem+json`. Pass `instance: req.url` to include the request path in the problem details.
 
-**Don't use this when** you need internal logging — the `errors` array can grow large; use [`aggregate`](#validationerrors-aggregate) for metrics.
+**Don't use this when** you need internal logging - the `errors` array can grow large; use [`aggregate`](#validationerrors-aggregate) for metrics.
 
 ### Return type
 
@@ -238,19 +238,19 @@ const problem = errs.report({
 });
 ```
 
-### Bad examples — what NOT to do
+### Bad examples - what NOT to do
 
 #### Anti-pattern: Constructing RFC 7807 manually
 
 ```ts
-// ⊥ Don't do this — roll-your-own is fragile and inconsistent
+// ⊥ Don't do this  - roll-your-own is fragile and inconsistent
 const problem = {
   type:   'validation-error',
   status: 422,
   errors: errs.items.map(err => ({ field: err.path, error: err.message })),
 };
 
-// ✓ Do this — use report() for RFC 7807 compliance
+// ✓ Do this  - use report() for RFC 7807 compliance
 const problem = errs.report({ instance: req.url });
 ```
 
@@ -260,11 +260,11 @@ const problem = errs.report({ instance: req.url });
 
 ```ts [json-tology]
 errs.report({ instance: '/reviews' })
-// ProblemDetailsType — RFC 7807 compliant, ready to send as 422 body
+// ProblemDetailsType  - RFC 7807 compliant, ready to send as 422 body
 ```
 
 ```ts [Zod]
-// Manual RFC 7807 construction — not built in:
+// Manual RFC 7807 construction  - not built in:
 const problem = {
   type:   'https://example.com/problems/validation',
   status: 422,
@@ -274,7 +274,7 @@ const problem = {
 ```
 
 ```ts [TypeBox + Value]
-// Not built in — manual construction required.
+// Not built in  - manual construction required.
 const errs = [...Value.Errors(schema, value)];
 const problem = {
   type: 'https://example.com/problems/validation',
@@ -284,7 +284,7 @@ const problem = {
 ```
 
 ```ts [AJV]
-// Not built in — manual construction required.
+// Not built in  - manual construction required.
 const problem = {
   type: 'https://example.com/problems/validation',
   status: 422,
@@ -304,10 +304,10 @@ const problem = {
 
 ### Related
 
-- [`aggregate`](#validationerrors-aggregate) — compact rollup for logging/metrics (not for HTTP responses)
+- [`aggregate`](#validationerrors-aggregate) - compact rollup for logging/metrics (not for HTTP responses)
 
 ## See also
 
-- [`entities.validate()`](/validation/validate) — how to obtain the `ValidationErrors` collection
-- [`entities.instantiate()`](/validation/instantiate) — `InstantiationError.errors` carries the same collection
-- [Bookstore domain](/bookstore-domain) — schema definitions used in examples
+- [`entities.validate()`](/validation/validate) - how to obtain the `ValidationErrors` collection
+- [`entities.instantiate()`](/validation/instantiate) - `InstantiationError.errors` carries the same collection
+- [Bookstore domain](/bookstore-domain) - schema definitions used in examples

@@ -92,7 +92,7 @@ Consumers that need Turtle, N-Quads, or other RDF serializations should translat
 
 SHACL JSON-LD output uses standard SHACL predicates where possible
 (`sh:minCount`/`sh:maxCount` for array cardinality, `dash:readOnly`/`dash:writeOnly`
-for access modifiers). Only `jt:multipleOf` requires a custom predicate — SHACL
+for access modifiers). Only `jt:multipleOf` requires a custom predicate - SHACL
 and XSD have no divisibility constraint.
 
 All RDF projections emit full IRIs (e.g. `http://www.w3.org/ns/shacl#property`)
@@ -103,7 +103,7 @@ expansion and compaction for interoperability with external RDF tools.
 
 | Import | Contents |
 |--------|----------|
-| `json-tology` | Everything — JsonTology facade, all classes, types, errors |
+| `json-tology` | Everything - JsonTology facade, all classes, types, errors |
 | `json-tology/value` | Value, Changeset, Hash |
 | `json-tology/schema` | SchemaRegistry, SchemaLoader, FormatRegistry, Compose, Transform |
 | `json-tology/ontology` | OntologyBuilder, GraphOntologySerializer, GraphShaclSerializer, GraphSchemaSerializer |
@@ -156,14 +156,14 @@ console.log(jt.ontology().jsonLd());
 // SHACL shapes (JSON-LD)
 console.log(jt.ontology().shaclObject());
 
-// ABox — project validated instance data to RDF
+// ABox  - project validated instance data to RDF
 console.log(jt.toQuads(UserSchema, user).jsonLd());
 
-// Dump — serialize back to wire form (Pydantic model_dump equivalent)
+// Dump  - serialize back to wire form (Pydantic model_dump equivalent)
 const wire = jt.dump(UserSchema.$id, user, { excludeDefaults: true });
 // → { name: 'Alice', email: 'alice@co.io' }
 
-// DumpJson — wire form as a JSON string
+// DumpJson  - wire form as a JSON string
 const json = jt.dumpJson(UserSchema.$id, user);
 // → '{"name":"Alice","email":"alice@co.io","role":"viewer"}'
 ```

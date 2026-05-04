@@ -1,6 +1,6 @@
 # `register`, `registerAnonymous`, `has`, `get`, `list`
 
-Schema management — registering, inspecting, and introspecting the schema registry.
+Schema management - registering, inspecting, and introspecting the schema registry.
 
 ---
 
@@ -61,11 +61,11 @@ jt.register(BookSchema);
 ```
 
 ```ts [Zod]
-// Zod schemas are module-scope — no registry. Import the schema object directly.
+// Zod schemas are module-scope  - no registry. Import the schema object directly.
 ```
 
 ```ts [TypeBox + Value]
-// TypeBox schemas are plain objects — no registry concept.
+// TypeBox schemas are plain objects  - no registry concept.
 ```
 
 ```ts [AJV]
@@ -110,7 +110,7 @@ jt.validate(syntheticId, { couponCode: 'SAVE10', discount: 0.1 });
 
 **Declaration.** Returns `true` if a schema with the given `$id` is registered. `O(1)` lookup.
 
-**Use this when** you need to guard before calling `instantiate` or `validate` on a schema that might not be registered — for example, when plugin schemas are conditionally loaded.
+**Use this when** you need to guard before calling `instantiate` or `validate` on a schema that might not be registered - for example, when plugin schemas are conditionally loaded.
 
 ### Examples
 
@@ -129,9 +129,9 @@ function validateIfPresent(schemaId: string, data: unknown): string[] {
 
 ## `JsonTology.get` {#registry-get}
 
-**Declaration.** Retrieves the original schema object by `$id`. Returns `Record<string, unknown> | undefined` — `undefined` when not registered.
+**Declaration.** Retrieves the original schema object by `$id`. Returns `Record<string, unknown> | undefined` - `undefined` when not registered.
 
-**Use this when** you need the raw schema object — to feed into `Compose` methods, display in a schema browser, or log for debugging.
+**Use this when** you need the raw schema object - to feed into `Compose` methods, display in a schema browser, or log for debugging.
 
 ### Examples
 
@@ -151,7 +151,7 @@ if (book) {
 
 **Declaration.** Returns an array of `$id` strings for all registered schemas. Array order is not guaranteed.
 
-**Use this when** building developer tooling — schema browsers, startup logs, API documentation generators.
+**Use this when** building developer tooling - schema browsers, startup logs, API documentation generators.
 
 ### Examples
 
@@ -165,10 +165,10 @@ const bookstoreSchemas = jt.list().filter(id => id.startsWith('https://bookstore
 
 ## Related
 
-- [`JsonTology.materialize`](/registry/materialize) — build instances from schemas
-- [`Compose` methods](/composition/extend) — derive new schemas to register
-- [`jt.toSchema`](/serialization/toSchema) — reconstruct schema from the canonical graph
+- [`JsonTology.materialize`](/registry/materialize) - build instances from schemas
+- [`Compose` methods](/composition/extend) - derive new schemas to register
+- [`jt.toSchema`](/serialization/toSchema) - reconstruct schema from the canonical graph
 
 ## See also
 
-- [Bookstore domain](/bookstore-domain) — where all six schemas are registered
+- [Bookstore domain](/bookstore-domain) - where all six schemas are registered

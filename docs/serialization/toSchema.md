@@ -1,8 +1,8 @@
 # `jt.toSchema`
 
-**Declaration.** Reconstructs a JSON Schema document from the canonical graph for a registered schema. Returns `Record<string, unknown> | undefined` — `undefined` when the schema is not registered. The reconstructed schema reflects the normalized canonical representation, which may differ slightly from the original authored schema.
+**Declaration.** Reconstructs a JSON Schema document from the canonical graph for a registered schema. Returns `Record<string, unknown> | undefined` - `undefined` when the schema is not registered. The reconstructed schema reflects the normalized canonical representation, which may differ slightly from the original authored schema.
 
-**Use this when** you want to verify round-trip fidelity — that the canonical graph preserves all structural semantics from the authored schema. Also useful for producing normalized/canonical versions of schemas for display, debugging, or downstream tooling.
+**Use this when** you want to verify round-trip fidelity - that the canonical graph preserves all structural semantics from the authored schema. Also useful for producing normalized/canonical versions of schemas for display, debugging, or downstream tooling.
 
 **Don't use this when** you need the original schema object as-authored (use [`jt.get`](/registry/#registry-get) instead). `get` returns the original object reference; `toSchema` returns a new object reconstructed from the internal graph.
 
@@ -54,17 +54,17 @@ jt.toSchema('https://bookstore.example/Book')
 ```
 
 ```ts [Zod]
-// Not directly supported — no JSON Schema reconstruction from Zod's runtime representation.
+// Not directly supported  - no JSON Schema reconstruction from Zod's runtime representation.
 // Use zodToJsonSchema (third-party) to export JSON Schema.
 ```
 
 ```ts [TypeBox + Value]
-// TypeBox schemas ARE plain JSON Schema — no reconstruction needed.
+// TypeBox schemas ARE plain JSON Schema  - no reconstruction needed.
 // JSON.stringify(BookSchema) gives the schema directly.
 ```
 
 ```ts [AJV]
-// Not directly supported — AJV stores compiled validators, not schemas.
+// Not directly supported  - AJV stores compiled validators, not schemas.
 // Pass schema directly: JSON.stringify(bookSchema)
 ```
 
@@ -76,10 +76,10 @@ Book.model_json_schema()  # Exports JSON Schema from the model class
 
 ## Related
 
-- [`jt.get`](/registry/#registry-get) — retrieve the original schema object (not reconstructed)
-- [Ontology and Graphs](/advanced/ontology) — `toQuads` and `fromQuads` for the advanced graph API
+- [`jt.get`](/registry/#registry-get) - retrieve the original schema object (not reconstructed)
+- [Ontology and Graphs](/advanced/ontology) - `toQuads` and `fromQuads` for the advanced graph API
 
 ## See also
 
-- [Bookstore domain](/bookstore-domain) — where all schemas are defined
-- [Schemas guide](/schemas) — schema registration and management
+- [Bookstore domain](/bookstore-domain) - where all schemas are defined
+- [Schemas guide](/schemas) - schema registration and management

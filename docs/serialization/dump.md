@@ -13,14 +13,14 @@
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `mode` | `'wire' \| 'json'` | `'wire'` | `'json'` converts `Date` values to ISO strings for `JSON.stringify` safety |
-| `exclude` | `readonly string[]` | — | Property names to drop (ignored when `include` is set) |
-| `include` | `readonly string[]` | — | Property names to keep (takes precedence over `exclude`) |
+| `exclude` | `readonly string[]` | - | Property names to drop (ignored when `include` is set) |
+| `include` | `readonly string[]` | - | Property names to keep (takes precedence over `exclude`) |
 | `excludeUnset` | `boolean` | `false` | Drop properties whose runtime value is `undefined` |
 | `excludeDefaults` | `boolean` | `false` | Drop properties whose value strictly equals the schema `default` |
 
-**Use this when** you need to serialize a domain object back to wire form — before storing in a database, before sending over HTTP, before publishing to a queue. Use the filtering options to produce compact payloads or specific projections. Use `dumpJson` when you need a JSON string directly.
+**Use this when** you need to serialize a domain object back to wire form - before storing in a database, before sending over HTTP, before publishing to a queue. Use the filtering options to produce compact payloads or specific projections. Use `dumpJson` when you need a JSON string directly.
 
-**Don't use this when** you want a complete validated object (use `instantiate` instead — it goes the other direction). Don't call it on raw unvalidated input — `dump` expects a value that has already been through `instantiate` or `materialize`.
+**Don't use this when** you want a complete validated object (use `instantiate` instead - it goes the other direction). Don't call it on raw unvalidated input - `dump` expects a value that has already been through `instantiate` or `materialize`.
 
 ### Examples
 
@@ -37,12 +37,12 @@ const book = jt.instantiate(BookSchema.$id, {
   // currency defaults to 'USD', inStock defaults to true
 });
 
-// Wire-form output — all fields including defaults
+// Wire-form output  - all fields including defaults
 const wire = jt.dump(BookSchema.$id, book);
 // { isbn: '...', title: '...', authors: [...], price: 14.99, currency: 'USD', inStock: true }
 ```
 
-#### Example 2: Compact payload — exclude default-valued fields
+#### Example 2: Compact payload - exclude default-valued fields
 
 ```ts
 const compact = jt.dump(BookSchema.$id, book, { excludeDefaults: true });
@@ -57,7 +57,7 @@ const listing = jt.dump(BookSchema.$id, book, { include: ['isbn', 'title', 'pric
 // { isbn: '9780140449136', title: 'Crime and Punishment', price: 14.99 }
 ```
 
-#### Example 4: Transform integration — `encode` applied automatically
+#### Example 4: Transform integration - `encode` applied automatically
 
 If the schema has a `Transform` encoder registered (see [Transforms](/transforms/decode-encode)), `dump` applies the `encode` function at each transformed node. A `instantiate` → `dump` round-trip recovers the original wire value.
 
@@ -71,20 +71,20 @@ const PlacedAtSchema = Transform.create(
 
 const date = jt.instantiate(PlacedAtSchema.$id, '2026-01-15T10:30:00.000Z');
 const wire = jt.dump(PlacedAtSchema.$id, date as Date);
-// '2026-01-15T10:30:00.000Z' — encode applied automatically
+// '2026-01-15T10:30:00.000Z'  - encode applied automatically
 ```
 
-### Bad examples — what NOT to do
+### Bad examples - what NOT to do
 
 #### Anti-pattern 1: Calling dump on raw (uncoerced) input
 
 ```ts
-// ⊥ Don't do this — dump expects a coerced domain value, not raw input
+// ⊥ Don't do this  - dump expects a coerced domain value, not raw input
 const raw = { isbn: '9780140449136', title: 'Crime...', authors: ['Dostoevsky'], price: '14.99' };
 const wire = jt.dump(BookSchema.$id, raw as Book);
-// price is still '14.99' string — not coerced; dump just applies encode, not type coercion
+// price is still '14.99' string  - not coerced; dump just applies encode, not type coercion
 
-// ✓ Do this — coerce first, then dump
+// ✓ Do this  - coerce first, then dump
 const book = jt.instantiate(BookSchema.$id, raw);
 const wireBook = jt.dump(BookSchema.$id, book);
 ```
@@ -112,7 +112,7 @@ const json = JSON.stringify(book);
 ```
 
 ```ts [AJV]
-// AJV validates — no serialize step.
+// AJV validates  - no serialize step.
 const json = JSON.stringify(book);
 ```
 
@@ -132,9 +132,9 @@ book.model_dump(exclude_none=True)
 
 ## `jt.dumpJson` {#jt-dumpjson}
 
-**Declaration.** Convenience wrapper around `dump()` with `mode: 'json'` forced. Equivalent to `JSON.stringify(jt.dump(schemaId, value, { mode: 'json', ...options }))`. Returns a JSON string. The `mode` option is not available on `dumpJson` — it is always `'json'`.
+**Declaration.** Convenience wrapper around `dump()` with `mode: 'json'` forced. Equivalent to `JSON.stringify(jt.dump(schemaId, value, { mode: 'json', ...options }))`. Returns a JSON string. The `mode` option is not available on `dumpJson` - it is always `'json'`.
 
-**Use this when** you need a JSON string directly — HTTP response bodies, log records, message queue payloads.
+**Use this when** you need a JSON string directly - HTTP response bodies, log records, message queue payloads.
 
 ### Examples
 
@@ -192,10 +192,10 @@ json_str = customer.model_dump_json()
 
 ## Related
 
-- [`JsonTology.coerce`](/validation/instantiate) — the incoming direction (wire → domain)
-- [`jt.encode`](/transforms/decode-encode#jtencode) — apply a single Transform encoder
-- [Transforms](/transforms/decode-encode) — how Transform encoders are registered and applied
+- [`JsonTology.coerce`](/validation/instantiate) - the incoming direction (wire → domain)
+- [`jt.encode`](/transforms/decode-encode#jtencode) - apply a single Transform encoder
+- [Transforms](/transforms/decode-encode) - how Transform encoders are registered and applied
 
 ## See also
 
-- [Bookstore domain](/bookstore-domain) — where `Book`, `Customer`, `Order` are defined
+- [Bookstore domain](/bookstore-domain) - where `Book`, `Customer`, `Order` are defined

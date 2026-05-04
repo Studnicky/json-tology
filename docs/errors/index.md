@@ -21,13 +21,13 @@ These patterns replace the removed `messages()`, `format()`, and `flatten()` met
 // was messages()
 errs.items.map(err => `${err.path}: ${err.message}`)
 
-// was format() — group by path
+// was format()  - group by path
 const grouped: Record<string, ValidationErrorType[]> = {};
 for (const err of errs) {
   (grouped[err.path || '_root'] ??= []).push(err);
 }
 
-// was flatten() — field vs form errors
+// was flatten()  - field vs form errors
 const fieldErrors: ValidationErrorType[] = [];
 const formErrors: ValidationErrorType[] = [];
 for (const err of errs) {
@@ -36,3 +36,14 @@ for (const err of errs) {
 ```
 
 All examples use the [bookstore domain](/bookstore-domain). See [`entities.validate()`](/validation/validate) for how to obtain the collection.
+
+## Related
+
+- [`validate`](/validation/validate) - returns the `ValidationErrors` collection
+- [`instantiate`](/validation/instantiate) - `InstantiationError.errors` carries the same collection
+- [`ValidationErrors` views](/errors/views) - `aggregate`, `report`
+
+## See also
+
+- [Bookstore domain](/bookstore-domain) - schema definitions used in examples
+- [Picking a method](/picking-a-method) - when to use `validate` vs `instantiate` vs `is`

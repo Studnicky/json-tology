@@ -19,3 +19,14 @@ npm run build:bookstore-graph
 ```
 
 The build script writes `docs/public/data/bookstore-tbox.jsonld` from `bookstoreEntities.toTbox().jsonLd()`. The deployed Pages site serves it at a public URL; WebVOWL fetches and converts to its visual format server-side.
+
+## Related
+
+- [Your types are already a graph](/your-types-are-a-graph) - Cytoscape visualization of the same TBox
+- [Graph concepts](/advanced/graph-concepts) - TBox/ABox concepts behind the ontology
+- [Ontology and Graphs](/advanced/ontology) - `toTbox` and `ontology` that produce the JSON-LD feed
+
+## See also
+
+- [Bookstore domain](/bookstore-domain) - the schema set visualized in this page
+- [Graph-native authoring](/advanced/graph-native-authoring) - author schemas that render cleanly in WebVOWL

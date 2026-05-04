@@ -1,50 +1,27 @@
 ---
-layout: home
-
-hero:
-  name: json-tology
-  text: TypeScript types from JSON Schema.
-  tagline: Author once with JSON Schema. Get typed validation, parsing, defaults, transforms, and serialization. Pydantic-style ergonomics for TypeScript.
-  actions:
-    - theme: brand
-      text: Get Started
-      link: /getting-started
-    - theme: alt
-      text: View on GitHub
-      link: https://github.com/Studnicky/json-tology
-
-features:
-  - title: Compile-time Types
-    details: InferType<typeof Schema> derives the TypeScript type from your as-const schema literal. No code generation, no separate type definition.
-  - title: Runtime Validation
-    details: validate(), is(), errors() check data against a registered schema and return structured ValidationErrors with JSON Pointer paths.
-  - title: Coercion with Defaults
-    details: coerce() validates, applies defaults, runs Transform decoders, and strips unknown properties in one pass. Throws a typed InstantiationError on failure.
-  - title: Composition
-    details: extend, pick, omit, partial, required, intersection, discriminatedUnion — Pydantic-style derivations from base schemas, all type-safe.
-  - title: Transforms and Brands
-    details: Per-field decode/encode pipelines via Transform, plus brand types for nominal typing. Round-trip wire format ↔ decoded values with type safety.
-  - title: Tree-Shakable
-    details: Sub-path exports — json-tology/value, json-tology/schema, json-tology/types — let users opt into only what they need. Graph and ontology are fully tree-shakable.
+layout: doc
+title: json-tology
 ---
+
+<HomeFeaturesHero />
 
 ## Advanced usages
 
 ### Your types are already a graph
 
-Every TypeScript type system has a graph hiding in it. Below is the bookstore domain — six entities, eighteen primitives, every property a typed edge. Nodes are classes; edges are properties; arrowheads point from the domain entity to the range type.
+Every TypeScript type system has a graph hiding in it. Below is the bookstore domain - six entities, eighteen primitives, every property a typed edge. Nodes are classes; edges are properties; arrowheads point from the domain entity to the range type.
 
 <BookstoreGraph />
 
-[Read the full guide →](/your-types-are-a-graph)
+[Read the full guide](/your-types-are-a-graph)
 
-[See it in WebVOWL →](/advanced/graph-vowl)
+[See it in WebVOWL](/advanced/graph-vowl)
 
 ---
 
 ## Why json-tology
 
-If you're coming from Pydantic, Zod, or TypeBox, json-tology gives you the same authoring ergonomics with **JSON Schema as the source of truth** — your schema works in TypeScript, in JSON Schema validators, in OpenAPI, in IDE auto-complete, and as a wire-format contract, all from one declaration.
+If you're coming from Pydantic, Zod, or TypeBox, json-tology gives you the same authoring ergonomics with **JSON Schema as the source of truth** - your schema works in TypeScript, in JSON Schema validators, in OpenAPI, in IDE auto-complete, and as a wire-format contract, all from one declaration.
 
 ```ts
 import { JsonTology } from 'json-tology';
@@ -75,10 +52,10 @@ const customer = jt.instantiate(CustomerSchema.$id, {
   email: 'alice@bookstore.example',
   name: 'Alice Chen',
 });
-//    ^? Customer — typed, validated, defaults applied
+//    ^? Customer - typed, validated, defaults applied
 ```
 
-That's the entire core. Validation, type inference, coercion, defaults — all from one schema literal.
+That's the entire core. Validation, type inference, coercion, defaults - all from one schema literal.
 
 ## What's in the box
 
@@ -93,15 +70,27 @@ That's the entire core. Validation, type inference, coercion, defaults — all f
 | Serialization (`dump`, `dumpJson`) | A separate serializer |
 | Composition (`extend`, `pick`, `omit`, `partial`, `required`) | Hand-written derived schemas |
 
-If you also need RDF/OWL/SHACL output, that's available as **opt-in advanced features** under the [Ontology and Graphs](/advanced/ontology) section. The core type-system path doesn't pay for any of it — `json-tology/value`, `json-tology/schema`, and `json-tology/types` exclude the graph and ontology modules entirely.
+If you also need RDF/OWL/SHACL output, that's available as **opt-in advanced features** under the [Ontology and Graphs](/advanced/ontology) section. The core type-system path doesn't pay for any of it - `json-tology/value`, `json-tology/schema`, and `json-tology/types` exclude the graph and ontology modules entirely.
 
 ## Quick links
 
-- **[Getting Started](/getting-started)** — install, define a schema, validate, coerce
-- **[Bookstore Domain](/bookstore-domain)** — the running example domain used throughout the docs
-- **[Validation](/validation/instantiate)** — `instantiate`, `validate`, `errors`, `is`, `subschemaAt`
-- **[Error Views](/errors/views)** — `messages`, `format`, `flatten`, `aggregate`, `report` (RFC 7807)
-- **[Type Inference](/types)** — how `InferType` works, reference maps, branded types
-- **[Composition](/composition/extend)** — derive schemas from other schemas
-- **[Serialization](/serialization/dump)** — `dump`, `dumpJson`, Transform encoders
-- **[Ontology and Graphs](/advanced/ontology)** — *advanced:* OWL TBox, SHACL shapes, JSON-LD, ABox projection
+- **[Getting Started](/getting-started)** - install, define a schema, validate, coerce
+- **[Bookstore Domain](/bookstore-domain)** - the running example domain used throughout the docs
+- **[Validation](/validation/instantiate)** - `instantiate`, `validate`, `errors`, `is`, `subschemaAt`
+- **[Error Views](/errors/views)** - `messages`, `format`, `flatten`, `aggregate`, `report` (RFC 7807)
+- **[Type Inference](/types)** - how `InferType` works, reference maps, branded types
+- **[Composition](/composition/extend)** - derive schemas from other schemas
+- **[Serialization](/serialization/dump)** - `dump`, `dumpJson`, Transform encoders
+- **[Ontology and Graphs](/advanced/ontology)** - *advanced:* OWL TBox, SHACL shapes, JSON-LD, ABox projection
+
+## Related
+
+- [Getting Started](/getting-started) - install, validate, coerce in 5 minutes
+- [Bookstore domain](/bookstore-domain) - the running example domain used throughout
+- [Picking a method](/picking-a-method) - instantiate vs validate vs is vs materialize
+
+## See also
+
+- [Argument conventions](/argument-conventions) - universal SchemaRef, static counterparts
+- [Composition](/composition/extend) - derive schemas with extend, pick, omit
+- [Ontology and Graphs](/advanced/ontology) - advanced: OWL TBox, SHACL shapes, JSON-LD

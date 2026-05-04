@@ -4,11 +4,11 @@
 
 ## `Value.diff` {#value-diff}
 
-**Declaration.** Computes the structural diff between two values and returns a `Changeset`. The changeset contains an ordered list of JSON Pointer–based operations (`set` / `delete`) that transform `before` into `after`. Returns `Changeset` with `.isEmpty`, `.length`, `.operations` (readonly array of `DiffOpType`). Does not mutate either input.
+**Declaration.** Computes the structural diff between two values and returns a `Changeset`. The changeset contains an ordered list of JSON Pointer-based operations (`set` / `delete`) that transform `before` into `after`. Returns `Changeset` with `.isEmpty`, `.length`, `.operations` (readonly array of `DiffOpType`). Does not mutate either input.
 
 **Use this when** you need event sourcing, audit logs, optimistic concurrency checks, undo/redo, or detecting whether two values differ without a full deep-equal check.
 
-**Don't use this when** you only need a boolean "are these equal?" check — `Value.hash(a) === Value.hash(b)` is faster for equality. Don't use it inside tight inner loops — it walks both objects recursively.
+**Don't use this when** you only need a boolean "are these equal?" check - `Value.hash(a) === Value.hash(b)` is faster for equality. Don't use it inside tight inner loops - it walks both objects recursively.
 
 ### Examples
 
@@ -84,21 +84,29 @@ function auditUpdate(schemaId: string, before: unknown, after: unknown) {
 
 ```ts [json-tology]
 const changes = Value.diff(before, after);
-// Changeset — .isEmpty, .length, .operations (JSON Pointer paths)
+// Changeset  - .isEmpty, .length, .operations (JSON Pointer paths)
 ```
 
 ```ts [Zod]
-// Not built in — use a third-party library like microdiff, deep-diff, etc.
+// Zod has no built-in diff. Use a third-party library:
 import { diff } from 'microdiff';
 const changes = diff(before, after);
+// Limitation: microdiff paths use bracket notation, not JSON Pointer; no typed Changeset;
+// no built-in `applyOp` - you need fast-json-patch or manual object mutation.
 ```
 
 ```ts [TypeBox + Value]
-// Not built in.
+// TypeBox has no built-in diff.
+// Closest: implement manually over Value.Errors or with a deep-diff library.
+// Limitation: no standard diff API; output format is library-specific;
+// no composable `applyOp` complement.
+
 ```
 
 ```ts [AJV]
-// Not built in.
+// AJV has no built-in diff.
+// Use a third-party library (microdiff, deep-diff) applied after validation.
+// Limitation: same as TypeBox - no Changeset, no JSON Pointer paths, no applyOp.
 ```
 
 ```py [Pydantic]
@@ -115,11 +123,11 @@ changes = {k: v for k, v in after_dict.items() if before_dict.get(k) != v}
 
 ## `Value.applyOp` {#value-applyop}
 
-**Declaration.** Applies a single `DiffOpType` operation (`{ op: 'set', path: string, value: unknown }` or `{ op: 'delete', path: string }`) to a value and returns the result. The path is a JSON Pointer string. Does not mutate the input — clone it first if you need the original.
+**Declaration.** Applies a single `DiffOpType` operation (`{ op: 'set', path: string, value: unknown }` or `{ op: 'delete', path: string }`) to a value and returns the result. The path is a JSON Pointer string. Does not mutate the input - clone it first if you need the original.
 
-**Use this when** you want to apply specific operations from a changeset rather than all of them — for example, rolling back one field change in an undo system, or applying real-time patch updates one at a time.
+**Use this when** you want to apply specific operations from a changeset rather than all of them - for example, rolling back one field change in an undo system, or applying real-time patch updates one at a time.
 
-**Don't use this when** you want to apply all operations at once — use `changeset.apply(value)` (or loop over `changeset.operations` and call `Value.applyOp` yourself — see the note about `Changeset.apply` below).
+**Don't use this when** you want to apply all operations at once - use `changeset.apply(value)` (or loop over `changeset.operations` and call `Value.applyOp` yourself - see the note about `Changeset.apply` below).
 
 ::: tip Note on Changeset.apply
 
@@ -154,7 +162,7 @@ const updated = Value.applyOp(Value.clone(book), {
   value: 12.99,
 });
 console.log((updated as typeof book).price); // 12.99
-console.log(book.price);                      // 14.99 — original unchanged
+console.log(book.price);                      // 14.99  - original unchanged
 ```
 
 ### Comparison
@@ -166,17 +174,25 @@ const result = Value.applyOp(Value.clone(book), { op: 'set', path: '/price', val
 ```
 
 ```ts [Zod]
-// Not built in — use fast-json-patch for JSON Patch operations:
+// Zod has no built-in applyOp. Use fast-json-patch:
 import { applyOperation } from 'fast-json-patch';
 const result = applyOperation(clone, { op: 'replace', path: '/price', value: 12.99 }).newDocument;
+// Limitation: fast-json-patch uses JSON Patch format (op: 'replace'), not the
+// json-tology DiffOpType (op: 'set'). Requires an extra dependency; no type narrowing.
 ```
 
 ```ts [TypeBox + Value]
-// Not built in.
+// TypeBox has no built-in diff.
+// Closest: implement manually over Value.Errors or with a deep-diff library.
+// Limitation: no standard diff API; output format is library-specific;
+// no composable `applyOp` complement.
+
 ```
 
 ```ts [AJV]
-// Not built in.
+// AJV has no built-in diff.
+// Use a third-party library (microdiff, deep-diff) applied after validation.
+// Limitation: same as TypeBox - no Changeset, no JSON Pointer paths, no applyOp.
 ```
 
 ```py [Pydantic]
@@ -187,9 +203,9 @@ updated = book.model_copy(update={'price': 12.99})
 
 ## Related
 
-- [`Value.clone`](/value/clone-hash#value-clone) — clone before applying to preserve original
-- [`Value.diff`](#value-diff) — produce the operations to apply
+- [`Value.clone`](/value/clone-hash#value-clone) - clone before applying to preserve original
+- [`Value.diff`](#value-diff) - produce the operations to apply
 
 ## See also
 
-- [Bookstore domain](/bookstore-domain) — where `Book`, `Customer`, `Order` are defined
+- [Bookstore domain](/bookstore-domain) - where `Book`, `Customer`, `Order` are defined

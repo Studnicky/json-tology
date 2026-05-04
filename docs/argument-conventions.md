@@ -7,10 +7,10 @@ Every method that accepts a schema reference accepts **both** a string ID and a 
 ```ts
 import type { SchemaRefType } from 'json-tology/types';
 
-// String ID — looks up in registry
+// String ID  - looks up in registry
 entities.instantiate(UserSchema.$id, data);
 
-// Schema object — registers on first use, then runs
+// Schema object  - registers on first use, then runs
 entities.instantiate(UserSchema, data);
 
 // Same for validate, is, materialize, subschemaAt, dump, dumpJson, fromQuads, toSchema
@@ -27,7 +27,7 @@ Every instance method has a static counterpart on `JsonTology` that creates an e
 ```ts
 import { JsonTology } from 'json-tology';
 
-// One-shot instantiate — no setup
+// One-shot instantiate  - no setup
 const user = JsonTology.instantiate(UserSchema, rawData);
 
 // One-shot validate
@@ -68,10 +68,10 @@ that reference each other, or when you need to register invariants and computeds
 
 ## Argument order rules
 
-- **One source, minting a new ID**: `(source, newId, extras?)` — e.g. `Compose.extend(UserSchema, additions, 'NewId')`
-- **Many sources**: `(newId, sources, extras?)` — e.g. `Compose.intersection([A, B] as const, 'NewId')`
+- **One source, minting a new ID**: `(source, newId, extras?)` - e.g. `Compose.extend(UserSchema, additions, 'NewId')`
+- **Many sources**: `(newId, sources, extras?)` - e.g. `Compose.intersection([A, B] as const, 'NewId')`
 
-## `subschemaAt` — composable pointer resolution
+## `subschemaAt` - composable pointer resolution
 
 `subschemaAt` resolves a JSON Pointer within a parent schema and returns the sub-schema as
 a registerable schema object. The result can be passed directly to any of the four core methods:
@@ -87,3 +87,14 @@ entities.materialize(itemSchema, partialLine);
 
 The returned schema has a synthesized `$id` of the form `<parent.$id>#<pointer>` and is
 automatically registered in the calling registry so subsequent operations work directly.
+
+## Related
+
+- [`instantiate`](/validation/instantiate) - primary consumer of `SchemaRef`
+- [`validate`](/validation/validate) - also accepts string or object
+- [`subschemaAt`](/validation/subschemaAt) - returns a composable sub-schema `SchemaRef`
+
+## See also
+
+- [Picking a method](/picking-a-method) - which method to call given your data source
+- [Bookstore domain](/bookstore-domain) - schemas used in examples

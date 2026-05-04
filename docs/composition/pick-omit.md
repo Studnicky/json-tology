@@ -1,6 +1,6 @@
 # `Compose.pick` and `Compose.omit`
 
-`pick` and `omit` are inverse operations for creating schema projections. Both return new schema objects — input schemas are never mutated.
+`pick` and `omit` are inverse operations for creating schema projections. Both return new schema objects - input schemas are never mutated.
 
 ---
 
@@ -8,13 +8,13 @@
 
 **Declaration.** Creates a new schema containing only the specified property keys. The `required` array is filtered to include only keys that were in the original `required` and appear in the `keys` argument. Non-picked `required` fields are dropped. TypeScript infers a type with only the picked properties.
 
-**Use this when** you need a schema that exposes only a subset of fields — for API projections, list-view summaries, or public interfaces that should not expose all internal fields. This is the runtime equivalent of TypeScript's `Pick<T, K>`.
+**Use this when** you need a schema that exposes only a subset of fields - for API projections, list-view summaries, or public interfaces that should not expose all internal fields. This is the runtime equivalent of TypeScript's `Pick<T, K>`.
 
 **Don't use this when** you need to remove specific fields while keeping the rest (use [`omit`](#compose-omit)). Don't use it when you want to add fields (use [`extend`](/composition/extend)).
 
 ### Examples
 
-#### Example 1: Book catalog summary — only display fields
+#### Example 1: Book catalog summary - only display fields
 
 ```ts
 import { Compose, JsonTology } from 'json-tology';
@@ -40,7 +40,7 @@ const summary = jt.instantiate(BookSummarySchema.$id, {
   title:   'Crime and Punishment',
   price:   14.99,
   inStock: true,
-  authors: ['Dostoevsky'],  // not picked — stripped during coerce
+  authors: ['Dostoevsky'],  // not picked  - stripped during coerce
 });
 // { isbn: '...', title: '...', price: 14.99, inStock: true }
 // authors is gone
@@ -82,12 +82,12 @@ const errors = jt2.validate(ReviewRatingSchema.$id, { rating: 6 });
 // ['/rating: must be <= 5']
 ```
 
-### Bad examples — what NOT to do
+### Bad examples - what NOT to do
 
 #### Anti-pattern 1: Forgetting `as const` on the keys array
 
 ```ts
-// ⊥ Don't do this — without as const, keys array widens to string[] and TypeScript loses the literal types
+// ⊥ Don't do this  - without as const, keys array widens to string[] and TypeScript loses the literal types
 const schema = Compose.pick(BookSchema, ['isbn', 'title'], '...');
 
 // ✓ Do this
@@ -135,9 +135,9 @@ class BookSummary(BaseModel):
 
 ### Related
 
-- [`omit`](#compose-omit) — inverse: keep everything except specified keys
-- [`extend`](/composition/extend) — add new properties
-- [`partial`](/composition/partial-required) — make all properties optional
+- [`omit`](#compose-omit) - inverse: keep everything except specified keys
+- [`extend`](/composition/extend) - add new properties
+- [`partial`](/composition/partial-required) - make all properties optional
 
 ---
 
@@ -145,7 +145,7 @@ class BookSummary(BaseModel):
 
 **Declaration.** Creates a new schema with the specified property keys removed from `properties`. Removed keys are also dropped from `required`. TypeScript infers a type without the omitted properties.
 
-**Use this when** you need to remove specific fields while keeping the rest — for example, stripping `currency` from `Book` for a region-normalized API, or removing `addresses` from `Customer` for a public profile endpoint. This is the runtime equivalent of TypeScript's `Omit<T, K>`.
+**Use this when** you need to remove specific fields while keeping the rest - for example, stripping `currency` from `Book` for a region-normalized API, or removing `addresses` from `Customer` for a public profile endpoint. This is the runtime equivalent of TypeScript's `Omit<T, K>`.
 
 **Don't use this when** you need to keep only specific fields (use [`pick`](#compose-pick)). Don't use it when you want to add fields (use [`extend`](/composition/extend)).
 
@@ -179,7 +179,7 @@ const OrderSummarySchema = Compose.omit(
 );
 
 type OrderSummary = InferType<typeof OrderSummarySchema>;
-// { id, customerId, total, currency?, placedAt } — no items array
+// { id, customerId, total, currency?, placedAt }  - no items array
 ```
 
 #### Example 3: Build a derived schema from a retrieved schema (builds on get)
@@ -218,7 +218,7 @@ Type.Omit(CustomerSchema, ['addresses'])
 ```
 
 ```ts [AJV]
-// Manual — copy schema, delete key from properties and required:
+// Manual  - copy schema, delete key from properties and required:
 const { addresses: _, ...props } = CustomerSchema.properties;
 const req = CustomerSchema.required?.filter(k => k !== 'addresses') ?? [];
 const CustomerPublic = { ...CustomerSchema, properties: props, required: req };
@@ -237,11 +237,11 @@ class CustomerPublic(BaseModel):
 
 ### Related
 
-- [`pick`](#compose-pick) — keep only specified fields
-- [`partial`](/composition/partial-required) — make remaining fields optional after omit
-- [`extend`](/composition/extend) — add new properties
+- [`pick`](#compose-pick) - keep only specified fields
+- [`partial`](/composition/partial-required) - make remaining fields optional after omit
+- [`extend`](/composition/extend) - add new properties
 
 ## See also
 
-- [Bookstore domain](/bookstore-domain) — where `BookSchema`, `CustomerSchema`, `OrderSchema` are defined
-- [Composition index](/composition/) — overview of all composition operations
+- [Bookstore domain](/bookstore-domain) - where `BookSchema`, `CustomerSchema`, `OrderSchema` are defined
+- [Composition index](/composition/) - overview of all composition operations

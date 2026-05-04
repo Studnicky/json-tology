@@ -2,9 +2,9 @@
 
 **Declaration.** Creates a new `allOf` schema that combines multiple schemas. Data must satisfy every constituent schema simultaneously. TypeScript infers the intersection of all constituent types. The `$id` is set to `newId`.
 
-**Use this when** data must satisfy multiple independent schemas — for example, an `AuditedOrder` must satisfy both `Order` constraints and `Audit` constraints including their respective `required` arrays. This is stronger than [`extend`](/composition/extend), which only merges properties into one flat object.
+**Use this when** data must satisfy multiple independent schemas - for example, an `AuditedOrder` must satisfy both `Order` constraints and `Audit` constraints including their respective `required` arrays. This is stronger than [`extend`](/composition/extend), which only merges properties into one flat object.
 
-**Don't use this when** you only need to merge property definitions without additional required constraints (use [`extend`](/composition/extend) — simpler, more predictable). Don't use it for union types (use [`discriminatedUnion`](/composition/discriminated-union)).
+**Don't use this when** you only need to merge property definitions without additional required constraints (use [`extend`](/composition/extend) - simpler, more predictable). Don't use it for union types (use [`discriminatedUnion`](/composition/discriminated-union)).
 
 ## Examples
 
@@ -59,7 +59,7 @@ console.log(errors.length > 0); // true
 
 ### Example 3: getDefaults on an intersection schema
 
-Build on [`Compose.getDefaults`](/composition/get-defaults) — extracting defaults from an intersection walks each constituent.
+Build on [`Compose.getDefaults`](/composition/get-defaults) - extracting defaults from an intersection walks each constituent.
 
 ```ts
 import { Compose } from 'json-tology';
@@ -69,20 +69,20 @@ const defaults = Compose.getDefaults(OrderSchema);
 // Combined schemas' defaults are merged at validation time
 ```
 
-## Bad examples — what NOT to do
+## Bad examples - what NOT to do
 
 ### Anti-pattern 1: Using intersection when extend is simpler
 
 ```ts
 import { Compose } from 'json-tology';
 
-// ⊥ Don't do this for simple property merging — allOf is heavier than needed
+// ⊥ Don't do this for simple property merging  - allOf is heavier than needed
 const ExtendedSchema = Compose.intersection(
   [BookSchema, { type: 'object', properties: { badge: { type: 'string' } } }] as const,
   'https://bookstore.example/ExtendedBook',
 );
 
-// ✓ Do this — extend is designed for this
+// ✓ Do this  - extend is designed for this
 const ExtendedSchema2 = Compose.extend(
   BookSchema,
   { badge: { type: 'string' } } as const,
@@ -127,11 +127,11 @@ class AuditedOrder(Order, Audit):
 
 ## Related
 
-- [`extend`](/composition/extend) — simpler for just adding properties without separate required constraints
-- [`discriminatedUnion`](/composition/discriminated-union) — for oneOf with type discriminator
-- [`partial`](/composition/partial-required) — make the intersected result partially optional
+- [`extend`](/composition/extend) - simpler for just adding properties without separate required constraints
+- [`discriminatedUnion`](/composition/discriminated-union) - for oneOf with type discriminator
+- [`partial`](/composition/partial-required) - make the intersected result partially optional
 
 ## See also
 
-- [Bookstore domain](/bookstore-domain) — where `OrderSchema` is defined
-- [Composition index](/composition/) — overview of all composition operations
+- [Bookstore domain](/bookstore-domain) - where `OrderSchema` is defined
+- [Composition index](/composition/) - overview of all composition operations

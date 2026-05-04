@@ -1,6 +1,6 @@
 # `addInvariant` and `removeInvariant`
 
-Invariants are cross-field validation rules that run after structural validation succeeds — the json-tology equivalent of Pydantic's `@model_validator(mode='after')`. They integrate with `errors()`, `coerce()`, `is()`, and `validate()`.
+Invariants are cross-field validation rules that run after structural validation succeeds - the json-tology equivalent of Pydantic's `@model_validator(mode='after')`. They integrate with `errors()`, `coerce()`, `is()`, and `validate()`.
 
 ---
 
@@ -10,7 +10,7 @@ Invariants are cross-field validation rules that run after structural validation
 
 **Use this when** a business rule involves two or more fields and cannot be expressed as a single-field JSON Schema keyword. Examples: `total` must equal `sum(items[].unitPrice * quantity)`, a date range must have `start <= end`, a 5-star review requires a long body.
 
-**Don't use this when** the constraint can be expressed as a single JSON Schema keyword (`minimum`, `maxLength`, `pattern`, etc.) — structural constraints are faster and run first. Don't confuse with computed fields — invariants *validate*, computed fields *derive*.
+**Don't use this when** the constraint can be expressed as a single JSON Schema keyword (`minimum`, `maxLength`, `pattern`, etc.) - structural constraints are faster and run first. Don't confuse with computed fields - invariants *validate*, computed fields *derive*.
 
 ### Examples
 
@@ -52,19 +52,19 @@ const badOrder = {
   id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   placedAt:   '2026-01-15T10:30:00Z',
-  total:      99.00,   // wrong — items sum to 14.99
+  total:      99.00,   // wrong  - items sum to 14.99
   items:      [{ bookIsbn: '9780140449136', quantity: 1, unitPrice: 14.99 }],
 };
 
-// errors() — invariant failure as ValidationErrorType with keyword: 'jt:invariant'
+// errors()  - invariant failure as ValidationErrorType with keyword: 'jt:invariant'
 const errs = entities.validate(OrderSchema.$id, badOrder);
 console.log(errs.ok);                                  // false
 console.log(errs.items.some(e => e.keyword === 'jt:invariant')); // true
 
-// is() — returns false when invariant fails
+// is()  - returns false when invariant fails
 console.log(jt.is(OrderSchema.$id, badOrder));  // false
 
-// validate() — error message in the string array
+// validate()  - error message in the string array
 console.log(jt.validate(OrderSchema.$id, badOrder).some(m => m.includes('total must equal')));
 ```
 
@@ -97,21 +97,21 @@ jt.addInvariant<Review>('https://bookstore.example/Review', {
 | `is()` | Returns `false` when any invariant fails |
 | `validate()` | Includes invariant failure messages in the string array |
 
-Invariants do not run when structural validation already failed — this prevents noise from cascading errors.
+Invariants do not run when structural validation already failed - this prevents noise from cascading errors.
 
-### Bad examples — what NOT to do
+### Bad examples - what NOT to do
 
 #### Anti-pattern 1: Using an invariant for a constraint that JSON Schema can express
 
 ```ts
-// ⊥ Don't do this — JSON Schema already has minimum/maximum
+// ⊥ Don't do this  - JSON Schema already has minimum/maximum
 jt.addInvariant(ReviewSchema.$id, {
   name: 'ratingRange',
   fn: (r) => (r as { rating: number }).rating >= 1 && (r as { rating: number }).rating <= 5
     ? null : 'rating out of range',
 });
 
-// ✓ Do this — express the constraint in the schema itself
+// ✓ Do this  - express the constraint in the schema itself
 const ReviewSchema = {
   // ...
   properties: {
@@ -144,14 +144,14 @@ const OrderSchema = baseOrderSchema.refine(
 ```
 
 ```ts [TypeBox + Value]
-// Not a first-class concept — apply manually after Type validation:
+// Not a first-class concept  - apply manually after Type validation:
 if (!Check(OrderSchema, data)) throw new Error('invalid structure');
 const computed = data.items.reduce((s, l) => s + l.unitPrice * l.quantity, 0);
 if (Math.abs(data.total - computed) >= 0.01) throw new Error('total mismatch');
 ```
 
 ```ts [AJV]
-// Not built in — manual cross-field check after ajv.validate().
+// Not built in  - manual cross-field check after ajv.validate().
 ```
 
 ```py [Pydantic]
@@ -173,9 +173,9 @@ class Order(BaseModel):
 
 ### Related
 
-- [`removeInvariant`](#jsonntology-removeinvariant) — deregister by name
-- [Computed fields](/registry/computed) — derive values (not validate)
-- [`JsonTology.errors`](/validation/errors) — how invariant failures appear as `ValidationErrors`
+- [`removeInvariant`](#jsonntology-removeinvariant) - deregister by name
+- [Computed fields](/registry/computed) - derive values (not validate)
+- [`JsonTology.errors`](/validation/errors) - how invariant failures appear as `ValidationErrors`
 
 ---
 
@@ -183,7 +183,7 @@ class Order(BaseModel):
 
 **Declaration.** Removes the invariant with the given `name` from the schema identified by `schemaId`. After removal, subsequent calls to `coerce()`, `errors()`, `is()`, and `validate()` will not run that invariant.
 
-**Use this when** business rules change at runtime — promotional periods relaxing constraints, feature flags switching validation levels, or A/B testing different rule sets.
+**Use this when** business rules change at runtime - promotional periods relaxing constraints, feature flags switching validation levels, or A/B testing different rule sets.
 
 ### Examples
 
@@ -207,8 +207,8 @@ jt.removeInvariant('https://bookstore.example/Review', 'highRatingRequiresDetail
 
 ### Related
 
-- [`addInvariant`](#jsonntology-addinvariant) — register the invariant
+- [`addInvariant`](#jsonntology-addinvariant) - register the invariant
 
 ## See also
 
-- [Bookstore domain](/bookstore-domain) — where `OrderSchema` and `ReviewSchema` are defined
+- [Bookstore domain](/bookstore-domain) - where `OrderSchema` and `ReviewSchema` are defined

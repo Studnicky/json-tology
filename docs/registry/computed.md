@@ -1,6 +1,6 @@
 # `addComputed` and `removeComputed`
 
-Computed fields are properties derived from other fields at coerce/materialize time — the json-tology equivalent of Pydantic's `@computed_field`. Mark a property with `"jt:computed": true` in the schema and register a compute function. The function runs automatically during `coerce()` and `materialize()`.
+Computed fields are properties derived from other fields at coerce/materialize time - the json-tology equivalent of Pydantic's `@computed_field`. Mark a property with `"jt:computed": true` in the schema and register a compute function. The function runs automatically during `coerce()` and `materialize()`.
 
 ---
 
@@ -8,7 +8,7 @@ Computed fields are properties derived from other fields at coerce/materialize t
 
 **Declaration.** Registers a compute function for a property marked `"jt:computed": true`. The function receives the fully structural-validated, coerced object and returns the computed value. Can be registered at construction time via `computeds` option or imperatively after construction. The compute function runs after structural validation and before the result is returned from `coerce()` or `materialize()`.
 
-**Use this when** a property value is mechanically derivable from other fields — `total` from `sum(items[].unitPrice * quantity)`, a `displayTitle` concatenating `title` and `authors[0]`, a `slug` from `title`. Mark the property `jt:computed: true` in the schema to prevent callers from supplying it on input.
+**Use this when** a property value is mechanically derivable from other fields - `total` from `sum(items[].unitPrice * quantity)`, a `displayTitle` concatenating `title` and `authors[0]`, a `slug` from `title`. Mark the property `jt:computed: true` in the schema to prevent callers from supplying it on input.
 
 **Don't use this when** the rule is a cross-field *validation* constraint (use [`addInvariant`](/registry/invariants) instead). Don't confuse: computed fields *derive* values, invariants *validate* constraints.
 
@@ -40,7 +40,7 @@ const ComputedOrderSchema = {
     },
   },
   required: ['id', 'customerId', 'items', 'placedAt'],
-  // total NOT in required — it's always supplied by the compute fn
+  // total NOT in required  - it's always supplied by the compute fn
 } as const;
 
 type ComputedOrder = InferType<typeof ComputedOrderSchema>;
@@ -71,7 +71,7 @@ const order = jt.instantiate(ComputedOrderSchema.$id, {
     { bookIsbn: '9780140449136', quantity: 2, unitPrice: 12.99 },
     { bookIsbn: '9780062316110', quantity: 1, unitPrice:  9.99 },
   ],
-  // total omitted — computed from items
+  // total omitted  - computed from items
 });
 
 const expectedTotal = 2 * 12.99 + 1 * 9.99;
@@ -98,18 +98,18 @@ jt.addComputed<ComputedOrder>(
 | Compute function throws | `InstantiationError` wrapping the original error |
 | Schema registered with `jt:computed` but no function | `SchemaError` with `COMPUTED_FN_MISSING` at registration |
 
-### Bad examples — what NOT to do
+### Bad examples - what NOT to do
 
 #### Anti-pattern 1: Using computed for validation logic
 
 ```ts
-// ⊥ Don't do this — computed functions derive values, not validate them
+// ⊥ Don't do this  - computed functions derive values, not validate them
 jt.addComputed(OrderSchema.$id, 'total', (order) => {
   if ((order as Order).total < 0) throw new Error('invalid total');
   return (order as Order).total;
 });
 
-// ✓ Do this — use addInvariant for validation
+// ✓ Do this  - use addInvariant for validation
 jt.addInvariant(OrderSchema.$id, {
   name: 'totalPositive',
   fn: (order) => (order as Order).total > 0 ? null : 'total must be positive',
@@ -146,13 +146,13 @@ const OrderSchema = z.object({ items: z.array(OrderLineSchema) })
 ```
 
 ```ts [TypeBox + Value]
-// Not a first-class concept — compute manually after validation:
+// Not a first-class concept  - compute manually after validation:
 const validated = Value.Check(OrderSchema, data);
 const order = { ...data, total: data.items.reduce((s, l) => s + l.unitPrice * l.quantity, 0) };
 ```
 
 ```ts [AJV]
-// Not built in — apply after validation:
+// Not built in  - apply after validation:
 ajv.validate(orderSchema, data);
 data.total = data.items.reduce((s, l) => s + l.unitPrice * l.quantity, 0);
 ```
@@ -173,9 +173,9 @@ class Order(BaseModel):
 
 ### Related
 
-- [`removeComputed`](#jsonntology-removecomputed) — deregister a compute function
-- [Invariants](/registry/invariants) — cross-field *validation* rules (complements computed)
-- [`JsonTology.coerce`](/validation/instantiate) — the primary trigger for compute function evaluation
+- [`removeComputed`](#jsonntology-removecomputed) - deregister a compute function
+- [Invariants](/registry/invariants) - cross-field *validation* rules (complements computed)
+- [`JsonTology.coerce`](/validation/instantiate) - the primary trigger for compute function evaluation
 
 ---
 
@@ -183,7 +183,7 @@ class Order(BaseModel):
 
 **Declaration.** Deregisters the compute function for the property `name` on schema `schemaId`. After removal, that property is no longer automatically computed. If the property remains in the schema with `jt:computed: true`, subsequent registrations or coerce calls may produce a `SchemaError`.
 
-**Use this when** schema configuration changes at runtime — replacing one computation strategy with another (discount tiers, promotional pricing), or toggling computed fields via feature flags.
+**Use this when** schema configuration changes at runtime - replacing one computation strategy with another (discount tiers, promotional pricing), or toggling computed fields via feature flags.
 
 ### Examples
 
@@ -203,8 +203,8 @@ jt.addComputed<ComputedOrder>(ComputedOrderSchema.$id, 'total', (order) => {
 
 ### Related
 
-- [`addComputed`](#jsonntology-addcomputed) — register the compute function
+- [`addComputed`](#jsonntology-addcomputed) - register the compute function
 
 ## See also
 
-- [Bookstore domain](/bookstore-domain) — where `OrderLineSchema` is defined
+- [Bookstore domain](/bookstore-domain) - where `OrderLineSchema` is defined

@@ -33,7 +33,7 @@ type Uri   = InferType<typeof UriSchema>;
 | `const x: Email = '' as Uri` | compile error | compiles |
 | `const x: Email = jt.instantiate(id, data)` | compiles | compiles |
 
-The only way to obtain a branded value is through the validation API (`instantiate`, `materialize`, `is`, `value.coerce`, etc.). This is intentional — it enforces that data passes runtime validation before being treated as a constrained type.
+The only way to obtain a branded value is through the validation API (`instantiate`, `materialize`, `is`, `value.coerce`, etc.). This is intentional - it enforces that data passes runtime validation before being treated as a constrained type.
 
 ## Branded keywords
 
@@ -60,7 +60,7 @@ type Password = InferType<typeof PasswordSchema>;
 // string & MinLengthBrand<8> & MaxLengthBrand<128> & PatternBrand<'^(?=.*[A-Z])(?=.*[0-9])'>
 
 const raw: string = 'hello';
-const pw: Password = raw;  // compile error — must go through validation
+const pw: Password = raw;  // compile error  - must go through validation
 ```
 
 ### Number constraints
@@ -92,7 +92,7 @@ type Temperature = InferType<typeof TemperatureSchema>;
 // Percent:     number & MinimumBrand<0> & MaximumBrand<100>
 // Temperature: number & MinimumBrand<-273>
 
-// These are incompatible — different MinimumBrand values
+// These are incompatible  - different MinimumBrand values
 const temp: Temperature = {} as Percent;  // compile error
 ```
 
@@ -148,7 +148,7 @@ const ClosedSchema = {
 type Closed = InferType<typeof ClosedSchema>;
 
 const ok: Closed = { name: 'Alice', age: 30 };      // compiles
-const bad: Closed = { name: 'Bob', extra: true };    // compile error — 'extra' is never
+const bad: Closed = { name: 'Bob', extra: true };    // compile error  - 'extra' is never
 ```
 
 ### Nominal constraints
@@ -178,7 +178,7 @@ const EmployeeSchema = {
 type User = NominalSchemaType<typeof UserSchema>;
 type Employee = NominalSchemaType<typeof EmployeeSchema>;
 
-// Structurally identical but nominally distinct — cannot assign one to the other
+// Structurally identical but nominally distinct  - cannot assign one to the other
 ```
 
 ## Structural narrowing
@@ -200,7 +200,7 @@ type Rating = InferType<typeof RatingSchema>;
 // 1 | 2 | 3 | 4 | 5
 
 const r: Rating = 3;   // compiles
-const bad: Rating = 0;  // compile error — 0 is not in 1..5
+const bad: Rating = 0;  // compile error  - 0 is not in 1..5
 ```
 
 Exclusive bounds are normalized automatically: `exclusiveMinimum: 0` becomes inclusive minimum `1`, `exclusiveMaximum: 6` becomes inclusive maximum `5`.
@@ -228,7 +228,7 @@ Use `MultipleOfRangeType<Min, Max, Step>` as a standalone utility for arbitrary 
 Simple `not` clauses narrow the inferred type:
 
 ```ts
-// not: { type } — removes primitives from unions
+// not: { type }  - removes primitives from unions
 const NonStringSchema = {
   type: ['string', 'number', 'boolean'],
   not: { type: 'string' },
@@ -237,7 +237,7 @@ const NonStringSchema = {
 type NonString = InferType<typeof NonStringSchema>;
 // boolean | number
 
-// not: { const } — removes specific values
+// not: { const }  - removes specific values
 const NonNullStatusSchema = {
   enum: ['active', 'inactive', null],
   not: { const: null },
@@ -246,7 +246,7 @@ const NonNullStatusSchema = {
 type NonNullStatus = InferType<typeof NonNullStatusSchema>;
 // 'active' | 'inactive'
 
-// not: { enum } — removes a set of values
+// not: { enum }  - removes a set of values
 const RestrictedSchema = {
   enum: ['a', 'b', 'c', 'd'],
   not: { enum: ['b', 'c'] },
@@ -280,7 +280,7 @@ Simple anchored regex patterns (without metacharacters) are converted to TypeScr
 | `^data_` | `` `data_${string}` `` |
 | `_id$` | `` `${string}_id` `` |
 | `^exact$` | `'exact'` (literal) |
-| `^[a-z]+_` | `string` (fallback — contains metacharacters) |
+| `^[a-z]+_` | `string` (fallback - contains metacharacters) |
 
 ```ts
 const MetadataSchema = {
@@ -294,7 +294,7 @@ const MetadataSchema = {
 type Metadata = InferType<typeof MetadataSchema>;
 
 const ok: Metadata = { data_name: 'Alice', meta_version: 1 };     // compiles
-const bad: Metadata = { data_age: 99 };                            // compile error — must be string
+const bad: Metadata = { data_age: 99 };                            // compile error  - must be string
 ```
 
 Multiple `patternProperties` entries are intersected so each pattern enforces its own value type.
@@ -317,8 +317,8 @@ const ShapeSchema = {
 
 type Shape = InferType<typeof ShapeSchema>;
 // Union of:
-//   { kind: 'circle'; radius: number; ... }    — then branch, kind narrowed to 'circle'
-// | { kind: string; width: number; ... }        — else branch
+//   { kind: 'circle'; radius: number; ... }     - then branch, kind narrowed to 'circle'
+// | { kind: string; width: number; ... }         - else branch
 ```
 
 ### `dependentRequired` conditional typing
@@ -339,8 +339,8 @@ const PaymentSchema = {
 
 type Payment = InferType<typeof PaymentSchema>;
 // Either:
-//   { credit_card?: never; billing_address?: string }   — no credit card, address optional
-// | { billing_address: unknown; ... }                    — credit card present → address required
+//   { credit_card?: never; billing_address?: string }    - no credit card, address optional
+// | { billing_address: unknown; ... }                     - credit card present → address required
 ```
 
 ## Composition
@@ -399,7 +399,7 @@ const UserSchema = {
 } as const;
 
 type DepKeys = DeprecatedKeysType<typeof UserSchema>;  // 'legacyId'
-type User = NonDeprecatedSchemaType<typeof UserSchema>; // { name: string } — no legacyId
+type User = NonDeprecatedSchemaType<typeof UserSchema>; // { name: string }  - no legacyId
 ```
 
 ### `LooseInputType<T>`
@@ -414,7 +414,7 @@ type Email = InferType<typeof EmailSchema>;  // string & FormatBrand<'email'>
 type Input = LooseInputType<Email>;          // string
 ```
 
-`LooseInputType` is a standalone utility — it is not applied to library method signatures.
+`LooseInputType` is a standalone utility - it is not applied to library method signatures.
 
 ### `EnumValuesType<T>` / `ExhaustiveType<T>`
 
@@ -526,7 +526,7 @@ type Email = InferType<typeof EmailSchema>;
 
 | `formatBrands` | `Email` resolves to | Plain `string` assignable? |
 |---|---|---|
-| `true` (default) | `string & FormatBrand<'email'>` | No — compile error |
+| `true` (default) | `string & FormatBrand<'email'>` | No - compile error |
 | `false` | `string` | Yes |
 
 ### Before and after: numeric brands
@@ -538,7 +538,7 @@ type Score = InferType<typeof ScoreSchema>;
 
 | `numericBrands` | `Score` resolves to | Plain `number` assignable? |
 |---|---|---|
-| `true` (default) | `number & MinimumBrand<0> & MaximumBrand<100>` | No — compile error |
+| `true` (default) | `number & MinimumBrand<0> & MaximumBrand<100>` | No - compile error |
 | `false` | `number` | Yes |
 
 ### Before and after: string brands
@@ -550,7 +550,7 @@ type Code = InferType<typeof CodeSchema>;
 
 | `stringBrands` | `Code` resolves to | Plain `string` assignable? |
 |---|---|---|
-| `true` (default) | `string & MinLengthBrand<3> & MaxLengthBrand<10>` | No — compile error |
+| `true` (default) | `string & MinLengthBrand<3> & MaxLengthBrand<10>` | No - compile error |
 | `false` | `string` | Yes |
 
 ### Before and after: array brands
@@ -562,7 +562,7 @@ type Set = InferType<typeof SetSchema>;
 
 | `arrayBrands` | `Set` resolves to | `readonly string[]` assignable? |
 |---|---|---|
-| `true` (default) | `readonly string[] & UniqueItemsBrand` | No — compile error |
+| `true` (default) | `readonly string[] & UniqueItemsBrand` | No - compile error |
 | `false` | `readonly string[]` | Yes |
 
 ### Before and after: object brands
@@ -578,13 +578,13 @@ type Closed = InferType<typeof ClosedSchema>;
 
 | `objectBrands` | Excess property `{ name: 'x', extra: 1 }` | Plain object assignable? |
 |---|---|---|
-| `true` (default) | compile error — `extra` is `never` | No |
+| `true` (default) | compile error - `extra` is `never` | No |
 | `false` | compiles (no excess check) | Yes |
 
 ### Before and after: all brands off
 
 ```ts
-// json-tology.d.ts — disable everything
+// json-tology.d.ts  - disable everything
 declare module 'json-tology/types' {
   interface JsonTologyTypeConfigInterface {
     brands: false;
@@ -601,7 +601,7 @@ The augmented interface is type-checked. A typo in a flag name produces a compil
 ```ts
 declare module 'json-tology/types' {
   interface JsonTologyTypeConfigInterface {
-    formattBrands: false;  // compile error — property does not exist
+    formattBrands: false;  // compile error  - property does not exist
   }
 }
 ```
@@ -632,3 +632,14 @@ if (jt.is('https://example.com/Email', input)) {
   input; // narrowed to branded type
 }
 ```
+
+## Related
+
+- [`Transform.brand`](/transforms/brand) - explicit nominal branding via `BrandOutputType`
+- [Type Inference](/types) - how `InferType` resolves brand intersections
+- [`instantiate`](/validation/instantiate) - the only source of branded values at runtime
+
+## See also
+
+- [Bookstore domain](/bookstore-domain) - branded primitives (`CustomerId`, `Email`, `Isbn`)
+- [Picking a method](/picking-a-method) - the trust boundary that produces validated, branded values

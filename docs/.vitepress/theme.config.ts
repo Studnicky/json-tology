@@ -4,7 +4,7 @@ export const themeConfig = {
   appearance: 'light' as const,
   outline: { label: 'On this page', level: [2, 3] as [number, number] },
   search: { provider: 'local' as const },
-  footer: { copyright: 'MIT License — © Andrew Studnicky', message: 'Released under the MIT License.' },
+  footer: { copyright: 'MIT License, © Andrew Studnicky', message: 'Released under the MIT License.' },
   editLink: {
     pattern: 'https://github.com/Studnicky/json-tology/edit/main/:path',
     text: 'Edit this page on GitHub'

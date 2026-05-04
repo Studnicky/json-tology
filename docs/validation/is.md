@@ -2,9 +2,9 @@
 
 **Declaration.** Validates data against a registered schema and returns a boolean. When the schema is registered via `JsonTology.create({ schemas })`, the return type is a TypeScript type predicate (`data is TMap[K]`), which narrows the type of `data` to the schema's inferred type inside the `if` block. Does not mutate input. Does not throw on validation failure.
 
-**Use this when** you need a boolean check and you want TypeScript to narrow the type inside the truthy branch — for example, in union-narrowing guards, array filters, middleware checks. This is the idiomatic pattern when you need "is this data the right shape?" without wanting errors or a coerced value.
+**Use this when** you need a boolean check and you want TypeScript to narrow the type inside the truthy branch - for example, in union-narrowing guards, array filters, middleware checks. This is the idiomatic pattern when you need "is this data the right shape?" without wanting errors or a coerced value.
 
-**Don't use this when** you need error details (use [`errors`](/validation/errors) or [`validate`](/validation/validate) instead). Don't use it when you need the coerced, defaults-filled value (use [`instantiate`](/validation/instantiate) instead). Note that invariants also run — `is` returns `false` when any registered invariant fails, not just when structural validation fails.
+**Don't use this when** you need error details (use [`errors`](/validation/errors) or [`validate`](/validation/validate) instead). Don't use it when you need the coerced, defaults-filled value (use [`instantiate`](/validation/instantiate) instead). Invariants also run: `is` returns `false` when any registered invariant fails, not just when structural validation fails.
 
 ## Examples
 
@@ -43,24 +43,24 @@ function processOrder(data: unknown): void {
   if (!jt.is(OrderSchema.$id, data)) {
     throw new TypeError('Expected an Order');
   }
-  // data is Order from here — no explicit cast needed
+  // data is Order from here  - no explicit cast needed
   console.log(`Processing order ${data.id} for customer ${data.customerId}`);
 }
 ```
 
-## Bad examples — what NOT to do
+## Bad examples - what NOT to do
 
 ### Anti-pattern 1: Using `is` when you need the coerced (defaults-filled) value
 
 ```ts
-// ⊥ Don't do this — is() only checks, it doesn't apply defaults
+// ⊥ Don't do this  - is() only checks, it doesn't apply defaults
 if (jt.is(CustomerSchema.$id, data)) {
   // data.addresses might be undefined if the input didn't include it
   // is() doesn't apply the default: []
   data.addresses.forEach(/* ... */);  // potential runtime error
 }
 
-// ✓ Do this — coerce to get defaults applied
+// ✓ Do this  - coerce to get defaults applied
 const customer = jt.instantiate(CustomerSchema.$id, data);
 customer.addresses.forEach(/* ... */);  // addresses always present (default [])
 ```
@@ -68,12 +68,12 @@ customer.addresses.forEach(/* ... */);  // addresses always present (default [])
 ### Anti-pattern 2: Checking `is` and then immediately coercing
 
 ```ts
-// ⊥ Don't do this — double validation
+// ⊥ Don't do this  - double validation
 if (jt.is(CustomerSchema.$id, data)) {
   const customer = jt.instantiate(CustomerSchema.$id, data); // validates again
 }
 
-// ✓ Do this — coerce directly; catch the error if invalid
+// ✓ Do this  - coerce directly; catch the error if invalid
 try {
   const customer = jt.instantiate(CustomerSchema.$id, data);
 } catch (err) { /* handle */ }
@@ -85,14 +85,14 @@ try {
 
 ```ts [json-tology]
 if (jt.is(CustomerSchema.$id, data)) {
-  data.name; // typed as string — narrowed by is()
+  data.name; // typed as string  - narrowed by is()
 }
 ```
 
 ```ts [Zod]
 const result = CustomerSchema.safeParse(data);
 if (result.success) {
-  result.data.name; // typed via result.data — data itself is not narrowed
+  result.data.name; // typed via result.data  - data itself is not narrowed
 }
 // Or write a wrapper type predicate:
 function isCustomer(d: unknown): d is Customer {
@@ -132,12 +132,12 @@ except ValidationError:
 
 ## Related
 
-- [`JsonTology.validate`](/validation/validate) — returns error strings when you need to display failures
-- [`JsonTology.errors`](/validation/errors) — returns structured `ValidationErrors`
-- [`JsonTology.coerce`](/validation/instantiate) — returns typed value with defaults applied
-- [Invariants](/registry/invariants) — cross-field rules that also affect `is` return value
+- [`JsonTology.validate`](/validation/validate) - returns error strings when you need to display failures
+- [`JsonTology.errors`](/validation/errors) - returns structured `ValidationErrors`
+- [`JsonTology.coerce`](/validation/instantiate) - returns typed value with defaults applied
+- [Invariants](/registry/invariants) - cross-field rules that also affect `is` return value
 
 ## See also
 
-- [Type Inference](/types) — how the type predicate works with `TMap`
-- [Bookstore domain](/bookstore-domain) — schema definitions used in examples
+- [Type Inference](/types) - how the type predicate works with `TMap`
+- [Bookstore domain](/bookstore-domain) - schema definitions used in examples

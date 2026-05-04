@@ -1,12 +1,12 @@
 # `Compose.partial` and `Compose.required`
 
-`partial` and `required` are inverse operations for adjusting the required-ness of all properties. Both return new schema objects — inputs are never mutated.
+`partial` and `required` are inverse operations for adjusting the required-ness of all properties. Both return new schema objects - inputs are never mutated.
 
 ---
 
 ## `Compose.partial` {#compose-partial}
 
-**Declaration.** Creates a new schema by removing the `required` array entirely. All properties become optional. TypeScript infers a type with all properties optional — the equivalent of `Partial<T>`. The `$id` is replaced with `newId`.
+**Declaration.** Creates a new schema by removing the `required` array entirely. All properties become optional. TypeScript infers a type with all properties optional - the equivalent of `Partial<T>`. The `$id` is replaced with `newId`.
 
 **Use this when** you need a PATCH-body schema where any combination of fields may be provided. Also useful for form state where all fields start empty and become required only on submit.
 
@@ -34,7 +34,7 @@ const jt = JsonTology.create({
   schemas: [PatchCustomerSchema] as const,
 });
 
-// PATCH body — only name provided
+// PATCH body  - only name provided
 const patch = jt.instantiate(PatchCustomerSchema.$id, { name: 'Alice P. Chen' });
 // { name: 'Alice P. Chen' }
 ```
@@ -50,7 +50,7 @@ const DraftReviewSchema = Compose.partial(
   'https://bookstore.example/DraftReview',
 );
 
-// Valid even with nothing filled in — all optional
+// Valid even with nothing filled in  - all optional
 const jt2 = JsonTology.create({
   baseIRI: 'https://bookstore.example',
   schemas: [DraftReviewSchema] as const,
@@ -77,7 +77,7 @@ Type.Partial(CustomerSchema)
 ```
 
 ```ts [AJV]
-// Manual — copy schema, remove required:
+// Manual  - copy schema, remove required:
 const { required: _, ...PatchCustomer } = CustomerSchema;
 PatchCustomer.$id = 'https://bookstore.example/PatchCustomer';
 ```
@@ -94,15 +94,15 @@ class PatchCustomer(BaseModel):
 
 ### Related
 
-- [`required`](#compose-required) — inverse: make all fields required
-- [`pick`](/composition/pick-omit) — subset of fields, combined with partial for partial sub-schemas
-- [`extend`](/composition/extend) — add fields before making partial
+- [`required`](#compose-required) - inverse: make all fields required
+- [`pick`](/composition/pick-omit) - subset of fields, combined with partial for partial sub-schemas
+- [`extend`](/composition/extend) - add fields before making partial
 
 ---
 
 ## `Compose.required` {#compose-required}
 
-**Declaration.** Creates a new schema where every declared property in `properties` is listed in `required`. The resulting `required` array is `Object.keys(schema.properties)`. TypeScript infers a type with all properties required — the equivalent of `Required<T>`. The `$id` is replaced with `newId`.
+**Declaration.** Creates a new schema where every declared property in `properties` is listed in `required`. The resulting `required` array is `Object.keys(schema.properties)`. TypeScript infers a type with all properties required - the equivalent of `Required<T>`. The `$id` is replaced with `newId`.
 
 **Use this when** you need a strict create-body schema that demands all fields, even those that have defaults. Useful for internal service calls where missing defaults should be caught, or for admin APIs that require full objects.
 
@@ -140,7 +140,7 @@ const errors = jt.validate(CreateBookSchema.$id, {
   authors: ['Fyodor Dostoevsky'],
   price:   14.99,
 });
-console.log(errors.length > 0); // true — currency and inStock are now required
+console.log(errors.length > 0); // true  - currency and inStock are now required
 ```
 
 ### Comparison
@@ -161,7 +161,7 @@ Type.Required(BookSchema)
 ```
 
 ```ts [AJV]
-// Manual — set required = all property keys:
+// Manual  - set required = all property keys:
 const CreateBook = {
   ...BookSchema,
   $id: 'https://bookstore.example/CreateBook',
@@ -178,11 +178,11 @@ const CreateBook = {
 
 ### Related
 
-- [`partial`](#compose-partial) — inverse: make all fields optional
-- [`intersection`](/composition/intersection) — when some fields must be required from a second schema
-- [`extend`](/composition/extend) — add fields before making required
+- [`partial`](#compose-partial) - inverse: make all fields optional
+- [`intersection`](/composition/intersection) - when some fields must be required from a second schema
+- [`extend`](/composition/extend) - add fields before making required
 
 ## See also
 
-- [Bookstore domain](/bookstore-domain) — where `CustomerSchema`, `BookSchema`, `ReviewSchema` are defined
-- [Composition index](/composition/) — overview of all composition operations
+- [Bookstore domain](/bookstore-domain) - where `CustomerSchema`, `BookSchema`, `ReviewSchema` are defined
+- [Composition index](/composition/) - overview of all composition operations

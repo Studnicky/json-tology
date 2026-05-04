@@ -1,10 +1,10 @@
 # `Transform.pipe`
 
-**Declaration.** Composes multiple decode/encode function pairs into a single transform pipeline attached to a schema. Decode runs left-to-right through the array; encode runs right-to-left. The schema object is never mutated — the pipeline is stored in a WeakMap keyed by the schema object. Returns `TransformedType<TSchema, TOut>`.
+**Declaration.** Composes multiple decode/encode function pairs into a single transform pipeline attached to a schema. Decode runs left-to-right through the array; encode runs right-to-left. The schema object is never mutated - the pipeline is stored in a WeakMap keyed by the schema object. Returns `TransformedType<TSchema, TOut>`.
 
-**Use this when** a single wire value requires sequential transformation steps — for example, stripping formatting characters from a price string, then parsing the result to a float. Or decoding a compressed/encoded field in two passes.
+**Use this when** a single wire value requires sequential transformation steps - for example, stripping formatting characters from a price string, then parsing the result to a float. Or decoding a compressed/encoded field in two passes.
 
-**Don't use this when** a single decode/encode pair is sufficient (use [`Transform.create`](/transforms/decode-encode) instead — simpler, clearer intent). Don't use it for nominal typing without conversion (use [`Transform.brand`](/transforms/brand)).
+**Don't use this when** a single decode/encode pair is sufficient (use [`Transform.create`](/transforms/decode-encode) instead - simpler, clearer intent). Don't use it for nominal typing without conversion (use [`Transform.brand`](/transforms/brand)).
 
 ## Examples
 
@@ -57,17 +57,17 @@ console.log(wire);  // '14.99'
 // encode: C.encode(domain) → B.encode(result) → A.encode(result) = wire
 ```
 
-## Bad examples — what NOT to do
+## Bad examples - what NOT to do
 
 ### Anti-pattern 1: Using pipe for a single transformation step
 
 ```ts
-// ⊥ Don't do this — pipe with one step is unnecessarily complex
+// ⊥ Don't do this  - pipe with one step is unnecessarily complex
 Transform.pipe<typeof Schema, Date>(schema, [
   { decode: (s: unknown) => new Date(s as string), encode: (d: unknown) => (d as Date).toISOString() },
 ]);
 
-// ✓ Do this — Transform.create is designed for one-step transforms
+// ✓ Do this  - Transform.create is designed for one-step transforms
 Transform.create(schema, {
   decode: (s: string) => new Date(s),
   encode: (d: Date) => d.toISOString(),
@@ -95,11 +95,18 @@ const schema = z.string()
 ```
 
 ```ts [TypeBox + Value]
-// Not built in — apply transformations manually after validation.
+// TypeBox has no pipeline mechanism. Apply manually after validation:
+const validated = Value.Check(schema, raw);
+const stripped = (raw as string).replace(/[$,]/g, '');
+const price = parseFloat(stripped);
+// Limitation: no schema-bound pipeline; encode direction must be implemented
+// separately; callers must manage step ordering manually.
 ```
 
 ```ts [AJV]
-// Not built in.
+// AJV has no pipeline mechanism. Apply transformations manually after validation.
+// Limitation: no schema-bound pipeline; encode reversal is not automatic;
+// step order is the caller's responsibility.
 ```
 
 ```py [Pydantic]
@@ -121,10 +128,10 @@ class PricedItem(BaseModel):
 
 ## Related
 
-- [`Transform.create`](/transforms/decode-encode) — single decode/encode pair (simpler)
-- [`jt.encode`](/transforms/decode-encode#jtencode) — apply the encode pipeline to convert domain → wire
-- [Serialization](/serialization/dump) — `dump()` applies `encode` during schema graph traversal
+- [`Transform.create`](/transforms/decode-encode) - single decode/encode pair (simpler)
+- [`jt.encode`](/transforms/decode-encode#jtencode) - apply the encode pipeline to convert domain → wire
+- [Serialization](/serialization/dump) - `dump()` applies `encode` during schema graph traversal
 
 ## See also
 
-- [Bookstore domain](/bookstore-domain) — where price schemas are used
+- [Bookstore domain](/bookstore-domain) - where price schemas are used
