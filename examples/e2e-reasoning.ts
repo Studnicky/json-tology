@@ -46,7 +46,9 @@ for (const person of foafPersons) {
   if (errs.length > 0) {
     const givenName = typeof person.givenName === 'string' ? person.givenName : 'unknown';
 
-    throw new Error(`Invalid person ${givenName}: ${errs.join(', ')}`);
+    throw new Error(`Invalid person ${givenName}: ${errs.items.map((error) => {
+      return error.message;
+    }).join(', ')}`);
   }
 }
 for (const org of foafOrganizations) {
@@ -55,7 +57,9 @@ for (const org of foafOrganizations) {
   if (errs.length > 0) {
     const name = typeof org.name === 'string' ? org.name : 'unknown';
 
-    throw new Error(`Invalid organization ${name}: ${errs.join(', ')}`);
+    throw new Error(`Invalid organization ${name}: ${errs.items.map((error) => {
+      return error.message;
+    }).join(', ')}`);
   }
 }
 
