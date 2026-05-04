@@ -88,7 +88,9 @@ const sidebar = [
   {
     text: 'Advanced (opt-in)',
     items: [
-      { link: '/advanced/ontology', text: 'Ontology and Graphs' }
+      { link: '/advanced/ontology#jt-totbox', text: 'toTbox' },
+      { link: '/advanced/ontology#jt-toshacl', text: 'toShacl' },
+      { link: '/advanced/ontology#jt-ontology', text: 'ontology' }
     ]
   },
   {

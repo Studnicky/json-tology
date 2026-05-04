@@ -6,11 +6,163 @@ The bookstore schemas defined in the [Bookstore Domain](/bookstore-domain) are u
 
 ---
 
+## `jt.toTbox` {#jt-totbox}
+
+**Declaration.** Returns a fresh `OntologyBuilder` containing only the OWL TBox derived from all registered schemas — class declarations, property declarations, domain and range assertions, and cardinality constraints. No SHACL shapes are included. Not cached — every call builds a new `OntologyBuilder`.
+
+**Use this when** you need only the OWL TBox (class/property vocabulary) without SHACL structural constraints — for example, when loading class definitions into an OWL reasoner, publishing a schema as Linked Data vocabulary, or merging TBox quads into an existing knowledge graph without overwriting separately managed shape constraints.
+
+**Don't use this when** you want both TBox and SHACL in a single document — use [`ontology()`](#jt-ontology) for that. Don't use it when you only want structural validation shapes — use [`toShacl()`](#jt-toshacl).
+
+### Examples
+
+#### Example 1: Generate OWL TBox JSON-LD from bookstore schemas
+
+```ts
+import { bookstoreJt } from './bookstore/schemas.js';
+
+const tbox = bookstoreJt.toTbox();
+
+// Full OWL JSON-LD string
+console.log(tbox.jsonLd());
+
+// OWL JSON-LD as a JS object
+const owl = tbox.jsonLdObject();
+
+// Raw graph nodes (OWL quads only — no SHACL)
+const raw = tbox.raw();
+```
+
+#### Example 2: Merge TBox with separately sourced ABox
+
+```ts
+import { bookstoreJt, CustomerSchema } from './bookstore/schemas.js';
+
+const tbox = bookstoreJt.toTbox();
+const abox = bookstoreJt.toQuads(CustomerSchema, customerData);
+
+const merged = {
+  '@context': tbox.context(),
+  '@graph': [
+    ...tbox.raw(),    // OWL class/property declarations
+    ...abox.raw(),    // ABox individual assertions
+  ],
+};
+```
+
+### Bad examples
+
+```ts
+// WRONG: toTbox() is not cached — don't call it in a hot path expecting reference equality
+const first  = jt.toTbox();
+const second = jt.toTbox();
+first === second; // false — each call is fresh
+
+// RIGHT for hot paths: use ontology() which is cached
+const cached = jt.ontology();
+```
+
+### Comparison
+
+| Tool | OWL TBox generation |
+|------|---------------------|
+| json-tology `toTbox()` | Full OWL vocabulary from registered JSON Schemas |
+| TypeBox | No ontology output |
+| Zod | No ontology output |
+| AJV | No ontology output |
+| Pydantic `model_json_schema()` | JSON Schema only — no OWL/SHACL |
+
+### Related
+
+- [`toShacl()`](#jt-toshacl) — SHACL shapes only
+- [`ontology()`](#jt-ontology) — combined TBox + SHACL (cached)
+- [`toQuads()`](#jt-toquads) — ABox individual data
+
+### See also
+
+- [Bookstore domain](/bookstore-domain) — schemas used in examples
+- [Architecture Plan](/architecture-plan) — canonical graph design
+
+---
+
+## `jt.toShacl` {#jt-toshacl}
+
+**Declaration.** Returns a fresh `OntologyBuilder` containing only the SHACL shapes derived from all registered schemas — node shapes and property shapes encoding structural constraints. No OWL class or property declarations are included. Not cached — every call builds a new `OntologyBuilder`.
+
+**Use this when** you need only the SHACL shapes — for example, when validating RDF data in a SHACL processor, publishing shapes for a shared API contract, or loading shapes into a triplestore that manages its own TBox separately.
+
+**Don't use this when** you want both TBox and SHACL — use [`ontology()`](#jt-ontology). Don't use it when you only need OWL class vocabulary — use [`toTbox()`](#jt-totbox).
+
+### Examples
+
+#### Example 1: Generate SHACL shapes JSON-LD from bookstore schemas
+
+```ts
+import { bookstoreJt } from './bookstore/schemas.js';
+
+const shaclBuilder = bookstoreJt.toShacl();
+
+// SHACL shapes JSON-LD object (includes sh: prefix in context)
+const shacl = shaclBuilder.shaclObject();
+
+// Prefix map
+const ctx = shaclBuilder.context();
+```
+
+#### Example 2: SHACL-only export for a validation pipeline
+
+```ts
+import { JsonTology } from 'json-tology';
+import { BookSchema, CustomerSchema } from './bookstore/schemas.js';
+
+const localJt = JsonTology.create({
+  baseIRI: 'https://bookstore.example',
+  schemas: [BookSchema, CustomerSchema] as const,
+});
+
+// Ship SHACL to a downstream SHACL processor — no OWL leakage
+const shapes = localJt.toShacl().shaclObject();
+```
+
+### Bad examples
+
+```ts
+// WRONG: toShacl() raw() is empty — SHACL lives in shaclObject(), not raw()
+const builder = jt.toShacl();
+builder.raw(); // [] — always empty for toShacl()
+
+// RIGHT: use shaclObject() to access SHACL content
+const shacl = builder.shaclObject();
+```
+
+### Comparison
+
+| Tool | SHACL shapes generation |
+|------|-------------------------|
+| json-tology `toShacl()` | Full SHACL node/property shapes from JSON Schemas |
+| TypeBox | No SHACL output |
+| Zod | No SHACL output |
+| AJV | No SHACL output |
+| Pydantic `model_json_schema()` | JSON Schema only — no OWL/SHACL |
+
+### Related
+
+- [`toTbox()`](#jt-totbox) — OWL TBox only
+- [`ontology()`](#jt-ontology) — combined TBox + SHACL (cached)
+
+### See also
+
+- [Bookstore domain](/bookstore-domain) — schemas used in examples
+
+---
+
 ## `jt.ontology` {#jt-ontology}
 
-**Declaration.** Returns an `OntologyBuilder` derived from all registered schemas. The result is cached — subsequent calls return the same builder until a new schema is registered. The `OntologyBuilder` exposes methods for JSON-LD, SHACL, raw quads, and the prefix context.
+**Declaration.** Returns an `OntologyBuilder` derived from all registered schemas containing both the OWL TBox and SHACL shapes. The result is cached — subsequent calls return the same builder until a new schema is registered. The `OntologyBuilder` exposes methods for JSON-LD, SHACL, raw quads, and the prefix context.
 
-**Use this when** you need TBox output (class definitions, property declarations, domain/range assertions) from your schemas for use in an OWL reasoner, a semantic knowledge graph, or an API that consumes JSON-LD.
+**Use this when** you need both TBox output (class definitions, property declarations, domain/range assertions) and SHACL shapes from your schemas in a single artifact — for use in an OWL reasoner, a semantic knowledge graph, or an API that consumes JSON-LD.
+
+**Don't use this when** you need only one vocabulary — use [`toTbox()`](#jt-totbox) for OWL only or [`toShacl()`](#jt-toshacl) for SHACL only. The separation avoids coupling two concerns when a consumer only needs one.
 
 ### Examples
 
