@@ -12,7 +12,7 @@
  *
  * type User = InferType<typeof UserSchema>;
  *
- * const user = jt.coerce(UserSchema.$id, data); // typed as User
+ * const user = jt.instantiate(UserSchema.$id, data); // typed as User
  * jt.validate(UserSchema.$id, data);
  * jt.ontology().jsonLd();
  */
@@ -38,6 +38,7 @@ import type {
 import type {
   SchemaEntryType, SchemaMapFromTupleType, UniqueSchemaIdsType
 } from './types/Registry.js';
+import type { SchemaRefType } from './types/SchemaRef.js';
 
 import { Curie } from './modules/rdf/Curie.js';
 import { Dumper } from './modules/data/Dumper.js';
@@ -55,6 +56,8 @@ import { Transform } from './modules/transform/Transform.js';
 import { Value } from './modules/data/Value.js';
 
 import { DEFAULT_PREFIXES } from './constants/PREFIXES.js';
+
+const STATIC_BASE_IRI = 'http://json-tology.dev/_/static';
 
 /**
  * JsonTology — unified type system, validation, materialization, and ontology.
@@ -80,6 +83,218 @@ export class JsonTology<TMap = Record<never, never>> {
     // Cast needed: narrows default TMap to the inferred schema map computed from TSchemas
     return jt as unknown as JsonTology<SchemaMapFromTupleType<TSchemas>>;
   }
+
+  // ---------------------------------------------------------------------------
+  // Static counterparts — ephemeral registry, one-shot execution
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Dump — ephemeral registry variant. No instance required.
+   *
+   * @param schema - A schema object with `$id`.
+   * @param value - The value to serialize.
+   * @param options - Filtering and mode options.
+   * @returns Wire-form representation.
+   */
+  public static dump(
+    schema: Record<string, unknown> & { readonly '$id': string },
+    value: unknown,
+    options?: DumpOptionsInterface
+  ): unknown {
+    const jt = JsonTology.ephemeral(schema);
+
+    return jt.dump(schema as JSONSchema7Definition & { readonly '$id': string }, value, options);
+  }
+
+  /**
+   * DumpJson — ephemeral registry variant. No instance required.
+   *
+   * @param schema - A schema object with `$id`.
+   * @param value - The value to serialize.
+   * @param options - Filtering and mode options.
+   * @returns JSON string.
+   */
+  public static dumpJson(
+    schema: Record<string, unknown> & { readonly '$id': string },
+    value: unknown,
+    options?: Omit<DumpOptionsInterface, 'mode'>
+  ): string {
+    const jt = JsonTology.ephemeral(schema);
+
+    return jt.dumpJson(schema as JSONSchema7Definition & { readonly '$id': string }, value, options);
+  }
+
+  private static ephemeral(schema: Record<string, unknown> & { readonly '$id': string }): JsonTology {
+    return JsonTology.create({
+      'baseIRI': STATIC_BASE_IRI,
+      'schemas': [schema] as const
+    });
+  }
+
+  /**
+   * FromQuads — ephemeral registry variant. No instance required.
+   *
+   * @param schema - A schema object with `$id`.
+   * @param quads - RDF quads to lift.
+   * @returns Array of validated, typed objects.
+   */
+  public static fromQuads(
+    schema: Record<string, unknown> & { readonly '$id': string },
+    quads: QuadInterface[]
+  ): unknown[] {
+    const jt = JsonTology.ephemeral(schema);
+
+    return jt.fromQuads(schema, quads);
+  }
+
+  /**
+   * Instantiate — ephemeral registry variant. No instance required.
+   *
+   * @param schema - A schema object with `$id`.
+   * @param data - The data to instantiate.
+   * @param options - Per-call options.
+   * @returns The validated and normalized value.
+   */
+  public static instantiate(
+    schema: Record<string, unknown> & { readonly '$id': string },
+    data: unknown,
+    options?: { 'enableDefaults'?: boolean }
+  ): unknown {
+    const jt = JsonTology.ephemeral(schema);
+
+    return jt.instantiate(schema, data, options);
+  }
+
+  /**
+   * Type guard — ephemeral registry variant. No instance required.
+   *
+   * @param schema - A schema object with `$id`.
+   * @param data - The data to check.
+   * @returns Whether the data conforms to the schema.
+   */
+  public static is(schema: Record<string, unknown> & { readonly '$id': string }, data: unknown): boolean {
+    const jt = JsonTology.ephemeral(schema);
+
+    return jt.is(schema, data);
+  }
+
+  /**
+   * Materialize — ephemeral registry variant. No instance required.
+   *
+   * @param schema - A schema object with `$id`.
+   * @param data - Optional partial data.
+   * @param options - Materialization options.
+   * @returns A fully materialized instance.
+   */
+  public static materialize(
+    schema: Record<string, unknown> & { readonly '$id': string },
+    data?: Record<string, unknown>,
+    options?: { 'enablePartial'?: boolean }
+  ): unknown {
+    const jt = JsonTology.ephemeral(schema);
+
+    return jt.materialize(schema as JSONSchema7Definition & { readonly '$id': string }, data, options);
+  }
+
+  /**
+   * Ontology — ephemeral registry variant. No instance required.
+   *
+   * @param schemas - Array of schema objects with `$id`.
+   * @returns An {@link OntologyBuilder} containing OWL + SHACL output.
+   */
+  public static ontology(schemas: ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>): OntologyBuilder {
+    const jt = JsonTology.create({ 'baseIRI': STATIC_BASE_IRI });
+
+    jt.registry.register(schemas as unknown as Array<Record<string, unknown>>);
+
+    return jt.ontology();
+  }
+
+  /**
+   * SubschemaAt — ephemeral registry variant. No instance required.
+   *
+   * @param schema - A schema object with `$id`.
+   * @param pointer - JSON Pointer into the schema.
+   * @returns The resolved sub-schema object.
+   */
+  public static subschemaAt(
+    schema: Record<string, unknown> & { readonly '$id': string },
+    pointer: string
+  ): Record<string, unknown> & { '$id': string } {
+    const jt = JsonTology.ephemeral(schema);
+
+    return jt.subschemaAt(schema, pointer);
+  }
+
+  /**
+   * ToQuads — ephemeral registry variant. No instance required.
+   *
+   * @param schema - A schema object with `$id`.
+   * @param data - Instance data to project.
+   * @returns An {@link OntologyBuilder} containing the projected nodes.
+   */
+  public static toQuads(
+    schema: Record<string, unknown> & { readonly '$id': string },
+    data: unknown
+  ): OntologyBuilder {
+    const jt = JsonTology.ephemeral(schema);
+
+    return jt.toQuads(schema as JSONSchema7Definition & { readonly '$id': string }, data);
+  }
+
+  /**
+   * ToSchema — ephemeral registry variant. No instance required.
+   *
+   * @param schema - A schema object with `$id`.
+   * @returns The reconstructed schema object.
+   */
+  public static toSchema(schema: Record<string, unknown> & { readonly '$id': string }): Record<string, unknown> | undefined {
+    const jt = JsonTology.ephemeral(schema);
+
+    return jt.toSchema(schema);
+  }
+
+  /**
+   * ToShacl — ephemeral registry variant. No instance required.
+   *
+   * @param schemas - Array of schema objects with `$id`.
+   * @returns An {@link OntologyBuilder} containing SHACL shape quads.
+   */
+  public static toShacl(schemas: ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>): OntologyBuilder {
+    const jt = JsonTology.create({ 'baseIRI': STATIC_BASE_IRI });
+
+    jt.registry.register(schemas as unknown as Array<Record<string, unknown>>);
+
+    return jt.toShacl();
+  }
+
+  /**
+   * ToTbox — ephemeral registry variant. No instance required.
+   *
+   * @param schemas - Array of schema objects with `$id`.
+   * @returns An {@link OntologyBuilder} containing OWL TBox quads.
+   */
+  public static toTbox(schemas: ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>): OntologyBuilder {
+    const jt = JsonTology.create({ 'baseIRI': STATIC_BASE_IRI });
+
+    jt.registry.register(schemas as unknown as Array<Record<string, unknown>>);
+
+    return jt.toTbox();
+  }
+
+  /**
+   * Validate — ephemeral registry variant. No instance required.
+   *
+   * @param schema - A schema object with `$id`.
+   * @param data - The data to validate.
+   * @returns A {@link ValidationErrors} instance.
+   */
+  public static validate(schema: Record<string, unknown> & { readonly '$id': string }, data: unknown): ValidationErrors {
+    const jt = JsonTology.ephemeral(schema);
+
+    return jt.validate(schema, data);
+  }
+
   private readonly baseIRI: string;
 
   public readonly materializer: MaterializerInterface;
@@ -93,7 +308,7 @@ export class JsonTology<TMap = Record<never, never>> {
    * options, `graph()` for schema graph introspection, `validator()` for embedding
    * compiled validators in middleware, and `listGraphs()` for custom ontology tooling.
    *
-   * Most consumers should use the facade methods (validate, coerce, errors, etc.)
+   * Most consumers should use the facade methods (validate, instantiate, errors, etc.)
    * instead of accessing the registry directly.
    */
   public readonly registry: SchemaRegistryInterface;
@@ -101,7 +316,7 @@ export class JsonTology<TMap = Record<never, never>> {
   private readonly shaclSerializer: GraphShaclSerializer;
 
   /**
-   * Value operations — schema-aware (instance: cast, clean, coerce, convert, create)
+   * Value operations — schema-aware (instance: cast, clean, convert, create)
    * and pure (static: clone, diff, hash, applyOp).
    */
   public readonly value: ValueInterface<TMap>;
@@ -195,7 +410,7 @@ export class JsonTology<TMap = Record<never, never>> {
    *
    * @param schemaId - The `$id` of the schema owning the computed property.
    * @param name - The property name.
-   * @param fn - Function receiving the coerced/materialized object and returning the computed value.
+   * @param fn - Function receiving the instantiated/materialized object and returning the computed value.
    */
   public addComputed<T = Record<string, unknown>>(
     schemaId: string, name: keyof T & string, fn: (data: T) => unknown
@@ -214,36 +429,13 @@ export class JsonTology<TMap = Record<never, never>> {
   }
 
   /**
-   * Validates data against a registered schema, applying defaults and stripping unknown properties.
-   *
-   * @param schemaId - The `$id` of a registered schema, or a schema object with `$id`.
-   * @param data - The data to coerce (deep-cloned before mutation).
-   * @returns The validated and normalized value.
-   * @throws {@link CoercionError} when the data fails validation.
-   * @throws {@link SchemaError} when no schema is registered for the given ID.
-   */
-  public coerce<K extends keyof TMap & string>(schemaId: K, data: unknown, callOptions?: { 'enableDefaults'?: boolean }): TMap[K];
-  // ---------------------------------------------------------------------------
-  // Registration
-  // ---------------------------------------------------------------------------
-  public coerce<TSchema extends JSONSchema7Definition & { readonly '$id': string; }>(
-    schema: TSchema, data: unknown, callOptions?: { 'enableDefaults'?: boolean }
-  ): ParseOutputType<TSchema>;
-  public coerce(schema: (keyof TMap & string) | (Record<string, unknown> & { '$id': string; }), data: unknown, callOptions?: { 'enableDefaults'?: boolean }): unknown {
-    if ((schema as unknown) === null || (schema as unknown) === undefined) {
-      throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
-    }
-
-    return this.registry.coerce(typeof schema === 'string' ? schema : schema.$id, data, callOptions);
-  }
-  /**
    * Serialize a value to its wire representation.
    *
    * Walks the canonical graph for the schema and projects each property back to
    * wire form — applying any registered {@link Transform} encoder along the way.
    *
    * @param schemaId - The `$id` of a registered schema, or a schema object with `$id`.
-   * @param value - The value to serialize (typically the output of `coerce()`).
+   * @param value - The value to serialize (typically the output of `instantiate()`).
    * @param options - Filtering and mode options.
    * @returns Wire-form representation of the value.
    */
@@ -270,6 +462,7 @@ export class JsonTology<TMap = Record<never, never>> {
 
     return Dumper.dump(this.registry, schemaId, value, options);
   }
+
   /**
    * Serialize a value to a JSON string.
    *
@@ -309,7 +502,6 @@ export class JsonTology<TMap = Record<never, never>> {
   ): InferSchemaType<TSchema> {
     return (Transform.getDecoder(schema as object)?.encode(value) ?? value) as InferSchemaType<TSchema>;
   }
-
   // ---------------------------------------------------------------------------
   // Validation
   // ---------------------------------------------------------------------------
@@ -318,22 +510,29 @@ export class JsonTology<TMap = Record<never, never>> {
    *
    * Inverse of {@link toQuads}: given quads produced by projection, a reasoning
    * engine, or any RDF source, recovers plain JS objects matching the target schema.
-   * Each returned object is validated through {@link coerce} to apply defaults,
+   * Each returned object is validated through {@link instantiate} to apply defaults,
    * transforms, and type safety.
    *
-   * @param schemaId - The `$id` of a registered schema to reconstruct.
+   * @param schemaRef - The `$id` of a registered schema, or a schema object with `$id`.
    * @param quads - RDF quads in the module's internal format.
    * @returns Array of validated, typed objects.
    */
   public fromQuads<K extends keyof TMap & string>(schemaId: K, quads: QuadInterface[]): Array<TMap[K]>;
-  public fromQuads(schemaId: string, quads: QuadInterface[]): unknown[];
-  public fromQuads(schemaId: string, quads: QuadInterface[]): unknown[] {
+  public fromQuads(schemaRef: SchemaRefType<TMap>, quads: QuadInterface[]): unknown[];
+  public fromQuads(schemaRef: SchemaRefType<TMap>, quads: QuadInterface[]): unknown[] {
+    const schemaId = typeof schemaRef === 'string' ? schemaRef : (schemaRef as Record<string, unknown> & { '$id': string }).$id;
+
+    if (typeof schemaRef !== 'string') {
+      this.registry.register(schemaRef as Record<string, unknown>);
+    }
+
     const raw = liftInstances(schemaId, quads, this.registry);
 
     return raw.map((instance) => {
-      return this.registry.coerce(schemaId, instance);
+      return this.registry.instantiate(schemaId, instance);
     });
   }
+
   /**
    * Retrieves a registered schema by its `$id`.
    *
@@ -353,6 +552,38 @@ export class JsonTology<TMap = Record<never, never>> {
     return this.registry.get(schemaId) !== undefined;
   }
   /**
+   * Validates data against a registered schema, applying defaults and stripping unknown properties.
+   *
+   * Use `instantiate` when data crosses a trust boundary — HTTP request bodies, queue messages,
+   * file imports, IPC payloads. Trust boundary: failure is the caller's contract violation.
+   *
+   * @param schemaId - The `$id` of a registered schema, or a schema object with `$id`.
+   * @param data - The data to instantiate (deep-cloned before mutation).
+   * @returns The validated and normalized value.
+   * @throws {@link InstantiationError} when the data fails validation.
+   * @throws {@link SchemaError} when no schema is registered for the given ID.
+   */
+  public instantiate<K extends keyof TMap & string>(schemaId: K, data: unknown, callOptions?: { 'enableDefaults'?: boolean }): TMap[K];
+  // ---------------------------------------------------------------------------
+  // Registration
+  // ---------------------------------------------------------------------------
+  public instantiate<TSchema extends JSONSchema7Definition & { readonly '$id': string; }>(
+    schema: TSchema, data: unknown, callOptions?: { 'enableDefaults'?: boolean }
+  ): ParseOutputType<TSchema>;
+  public instantiate(schema: SchemaRefType<TMap>, data: unknown, callOptions?: { 'enableDefaults'?: boolean }): unknown {
+    if ((schema as unknown) === null || (schema as unknown) === undefined) {
+      throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
+    }
+
+    const schemaId = typeof schema === 'string' ? schema : (schema as Record<string, unknown> & { '$id': string }).$id;
+
+    if (typeof schema !== 'string') {
+      this.registry.register(schema as Record<string, unknown>);
+    }
+
+    return this.registry.instantiate(schemaId, data, callOptions);
+  }
+  /**
    * Type guard that returns `true` if data satisfies the schema.
    *
    * @param schemaId - The `$id` of a registered schema, or a schema object with `$id`.
@@ -362,12 +593,18 @@ export class JsonTology<TMap = Record<never, never>> {
    */
   public is<K extends keyof TMap & string>(schemaId: K, data: unknown): data is TMap[K];
   public is(schema: Record<string, unknown> & { '$id': string; }, data: unknown): boolean;
-  public is(schema: (keyof TMap & string) | (Record<string, unknown> & { '$id': string; }), data: unknown): boolean {
+  public is(schema: SchemaRefType<TMap>, data: unknown): boolean {
     if ((schema as unknown) === null || (schema as unknown) === undefined) {
       throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
     }
 
-    return this.registry.is(typeof schema === 'string' ? schema : schema.$id, data);
+    const schemaId = typeof schema === 'string' ? schema : (schema as Record<string, unknown> & { '$id': string }).$id;
+
+    if (typeof schema !== 'string') {
+      this.registry.register(schema as Record<string, unknown>);
+    }
+
+    return this.registry.is(schemaId, data);
   }
   /**
    * Lists the `$id` of every registered schema.
@@ -386,19 +623,49 @@ export class JsonTology<TMap = Record<never, never>> {
   /**
    * Materializes an entity instance with schema defaults applied, optionally merging partial input.
    *
+   * Use `materialize` when you produce the data yourself — test fixtures, form scaffolding,
+   * default-filled instances. Construction helper: failure is your own bug.
+   *
+   * By default, validates the result and throws {@link MaterializationError} on failure.
+   * Pass `{ enablePartial: true }` to allow missing required-without-default properties
+   * (lenient construction for partial objects).
+   *
    * @param schema - The schema describing the target shape.
    * @param partial - Optional partial data to merge with schema defaults.
+   * @param options - Options; `enablePartial: true` disables validation throw on missing required fields.
    * @returns A fully materialized instance with all defaults populated.
    */
   public materialize<TSchema extends JSONSchema7Definition & { readonly '$id': string; }>(
     schema: TSchema,
-    partial?: Partial<InferSchemaType<TSchema>>
-  ): MaterializedSchemaType<TSchema> {
-    return (this.materializer.materialize as (s: typeof schema, p?: typeof partial) => MaterializedSchemaType<TSchema>)(
+    partial?: Partial<InferSchemaType<TSchema>>,
+    options?: { 'enablePartial'?: boolean }
+  ): MaterializedSchemaType<TSchema>;
+  public materialize(
+    schema: Record<string, unknown> & { '$id': string; },
+    partial?: Record<string, unknown>,
+    options?: { 'enablePartial'?: boolean }
+  ): unknown;
+  public materialize(
+    schema: (JSONSchema7Definition & { readonly '$id': string }) | (Record<string, unknown> & { '$id': string }),
+    partial?: Record<string, unknown>,
+    options?: { 'enablePartial'?: boolean }
+  ): unknown {
+    if (options?.enablePartial === true) {
+      const result = this.materializer.execute(
+        schema as Record<string, unknown> & { '$id': string },
+        partial,
+        { 'synthesizeDefaults': true }
+      );
+
+      return result.value;
+    }
+
+    return (this.materializer.materialize as (s: typeof schema, p?: typeof partial) => unknown)(
       schema,
       partial
     );
   }
+
   /**
    * Generates ontology output (OWL + SHACL) derived from all registered schemas.
    *
@@ -475,6 +742,50 @@ export class JsonTology<TMap = Record<never, never>> {
   public removeInvariant(schemaId: string, name: string): void {
     this.registry.removeInvariant(schemaId, name);
   }
+
+  /**
+   * Resolves a sub-schema at a JSON Pointer path within a registered schema.
+   *
+   * Returns the sub-schema as a registerable schema object with a synthesized `$id`
+   * of the form `<parent.$id>#<pointer>`. The result can be passed directly to
+   * `is`, `validate`, `instantiate`, or `materialize`.
+   *
+   * @example
+   * const itemSchema = entities.subschemaAt(OrderSchema.$id, '/properties/items/items');
+   * entities.validate(itemSchema, orderLineData);
+   * entities.instantiate(itemSchema, orderLineData);
+   *
+   * @param schemaRef - The `$id` of a registered schema, or a schema object with `$id`.
+   * @param pointer - JSON Pointer path (e.g. `/properties/name`) into the schema.
+   * @returns The resolved sub-schema with a synthesized `$id`.
+   * @throws {@link SchemaError} when no schema is registered for the given ID.
+   * @throws {@link GraphError} when the pointer cannot be resolved.
+   */
+  public subschemaAt<K extends keyof TMap & string>(
+    schemaId: K,
+    pointer: (Record<never, never> & string) | SchemaPointerPathsType<TMap[K]>
+  ): Record<string, unknown> & { '$id': string };
+  public subschemaAt<TSchema extends JSONSchema7Definition & { readonly '$id': string; }>(
+    schema: TSchema,
+    pointer: (Record<never, never> & string) | SchemaPointerPathsType<TSchema>
+  ): Record<string, unknown> & { '$id': string };
+  public subschemaAt(
+    schemaRef: SchemaRefType<TMap>,
+    pointer: string
+  ): Record<string, unknown> & { '$id': string } {
+    if ((schemaRef as unknown) === null || (schemaRef as unknown) === undefined) {
+      throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
+    }
+
+    const parentId = typeof schemaRef === 'string' ? schemaRef : (schemaRef as Record<string, unknown> & { '$id': string }).$id;
+
+    if (typeof schemaRef !== 'string') {
+      this.registry.register(schemaRef as Record<string, unknown>);
+    }
+
+    return this.registry.subschemaAt(parentId, pointer);
+  }
+
   /**
    * Projects instance data to RDF quads and returns an {@link OntologyBuilder} for serialization.
    *
@@ -506,10 +817,16 @@ export class JsonTology<TMap = Record<never, never>> {
   /**
    * Reconstructs a JSON Schema document from the canonical graph for a registered schema.
    *
-   * @param schemaId - The `$id` of the schema.
+   * @param schemaRef - The `$id` of the schema, or a schema object with `$id`.
    * @returns The reconstructed schema object, or `undefined` if not registered.
    */
-  public toSchema(schemaId: string): Record<string, unknown> | undefined {
+  public toSchema(schemaRef: SchemaRefType<TMap>): Record<string, unknown> | undefined {
+    const schemaId = typeof schemaRef === 'string' ? schemaRef : (schemaRef as Record<string, unknown> & { '$id': string }).$id;
+
+    if (typeof schemaRef !== 'string') {
+      this.registry.register(schemaRef as Record<string, unknown>);
+    }
+
     const graph = this.registry.graph(schemaId);
 
     if (graph === undefined) {
@@ -562,8 +879,6 @@ export class JsonTology<TMap = Record<never, never>> {
    * Returns an empty collection (`.ok === true`) when the data is valid.
    * Does not mutate input. Does not throw on validation failure.
    *
-   * Equivalent to `materialize(idOrSchema, data, { enableValidation: true, enableThrow: false, enableDefaults: false }).errors`.
-   *
    * @param schemaId - The `$id` of a registered schema, or a schema object with `$id`.
    * @param data - The data to validate.
    * @param callOptions - Per-call option overrides.
@@ -571,37 +886,17 @@ export class JsonTology<TMap = Record<never, never>> {
    */
   public validate<K extends keyof TMap & string>(schemaId: K, data: unknown, callOptions?: { 'enableDefaults'?: boolean }): ValidationErrors;
   public validate(schema: Record<string, unknown> & { '$id': string; }, data: unknown, callOptions?: { 'enableDefaults'?: boolean }): ValidationErrors;
-  public validate(schema: (keyof TMap & string) | (Record<string, unknown> & { '$id': string; }), data: unknown): ValidationErrors {
+  public validate(schema: SchemaRefType<TMap>, data: unknown): ValidationErrors {
     if ((schema as unknown) === null || (schema as unknown) === undefined) {
       throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
     }
 
-    return this.registry.validate(typeof schema === 'string' ? schema : schema.$id, data);
-  }
+    const schemaId = typeof schema === 'string' ? schema : (schema as Record<string, unknown> & { '$id': string }).$id;
 
-  /**
-   * Validates data against a sub-schema identified by a JSON Pointer within a registered schema.
-   *
-   * @param schemaId - The `$id` of a registered schema, or a schema object with `$id`.
-   * @param pointer - JSON Pointer path (e.g. `/properties/name`) into the schema.
-   * @param data - The data to validate against the sub-schema.
-   * @returns Array of human-readable error strings, empty if valid.
-   */
-  public validateAt<K extends keyof TMap & string>(schemaId: K, pointer: string, data: unknown): string[];
-  public validateAt<TSchema extends JSONSchema7Definition & { readonly '$id': string; }>(
-    schema: TSchema,
-    pointer: (Record<never, never> & string) | SchemaPointerPathsType<TSchema>,
-    data: unknown
-  ): string[];
-  public validateAt(schema: Record<string, unknown> & { '$id': string; }, pointer: string, data: unknown): string[];
-  public validateAt(schema: (keyof TMap & string) | (Record<string, unknown> & { '$id': string; }), pointer: string, data: unknown): string[] {
-    if ((schema as unknown) === null || (schema as unknown) === undefined) {
-      throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
+    if (typeof schema !== 'string') {
+      this.registry.register(schema as Record<string, unknown>);
     }
 
-    const schemaId = typeof schema === 'string' ? schema : schema.$id;
-    const validationResult = this.registry.validateAt(schemaId, pointer, data);
-
-    return validationResult;
+    return this.registry.validate(schemaId, data);
   }
 }

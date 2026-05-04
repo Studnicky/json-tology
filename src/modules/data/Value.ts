@@ -1,7 +1,7 @@
 /**
  * Value utilities
  *
- * Instance methods (cast, clean, coerce, convert, create) delegate to a
+ * Instance methods (cast, clean, instantiate, convert, create) delegate to a
  * SchemaRegistry for schema-aware operations.
  *
  * Static methods (clone, hash, diff, applyOp) operate on plain values
@@ -105,18 +105,6 @@ export class Value implements ValueInterface {
   }
 
   /**
-   * Coerce data against the schema, applying defaults and validating.
-   *
-   * @param schemaId - The $id of the schema to coerce against
-   * @param data - Data to coerce
-   * @returns Coerced and validated value
-   * @throws {@link CoercionError} When data fails validation
-   */
-  public coerce(schemaId: string, data: unknown): unknown {
-    return this.registry.coerce(schemaId, data);
-  }
-
-  /**
    * Convert data by applying coercion and defaults according to the schema.
    *
    * @param schemaId - The $id of the schema to convert against
@@ -137,6 +125,18 @@ export class Value implements ValueInterface {
    */
   public create(schemaId: string): unknown {
     return this.registry.create(schemaId);
+  }
+
+  /**
+   * Coerce data against the schema, applying defaults and validating.
+   *
+   * @param schemaId - The $id of the schema to coerce against
+   * @param data - Data to coerce
+   * @returns Coerced and validated value
+   * @throws {@link CoercionError} When data fails validation
+   */
+  public instantiate(schemaId: string, data: unknown): unknown {
+    return this.registry.instantiate(schemaId, data);
   }
 }
 

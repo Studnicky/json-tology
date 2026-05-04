@@ -41,7 +41,7 @@ const localJt = JsonTology.create({
   'schemas': [PricedSchema] as const
 });
 
-const price = localJt.coerce(PricedSchema.$id, '$14.99');
+const price = localJt.instantiate(PricedSchema.$id, '$14.99');
 
 console.assert(price === 14.99);
 

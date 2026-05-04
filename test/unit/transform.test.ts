@@ -66,7 +66,7 @@ void describe('Transform.create()', () => {
     },
     {
       'check': (jt) => {
-        const result = jt.coerce(TransformedDateSchema.$id, '2024-06-01T00:00:00.000Z');
+        const result = jt.instantiate(TransformedDateSchema.$id, '2024-06-01T00:00:00.000Z');
 
         assert.ok(result instanceof Date);
         assert.equal((result as Date).getFullYear(), 2024);
@@ -83,10 +83,10 @@ void describe('Transform.create()', () => {
       'check': (jt) => {
         assert.throws(
           () => {
-            return jt.coerce(TransformedDateSchema.$id, 'not-a-date');
+            return jt.instantiate(TransformedDateSchema.$id, 'not-a-date');
           },
           (err: unknown) => {
-            return (err as Error).constructor.name === 'CoercionError';
+            return (err as Error).constructor.name === 'InstantiationError';
           }
         );
       },
@@ -138,7 +138,7 @@ void describe('Transform.create()', () => {
     },
     {
       'check': (jt) => {
-        const parsed = jt.coerce('https://myapp.io/Identity', 'unchanged');
+        const parsed = jt.instantiate('https://myapp.io/Identity', 'unchanged');
 
         assert.equal(parsed, 'unchanged');
       },
@@ -259,7 +259,7 @@ void describe('Transform contract alignment', () => {
   }> = [
     {
       'check': (jt) => {
-        const parsed = jt.coerce(TransformedDateSchema.$id, '2024-06-01T00:00:00.000Z');
+        const parsed = jt.instantiate(TransformedDateSchema.$id, '2024-06-01T00:00:00.000Z');
 
         assert.ok(parsed instanceof Date);
         assert.equal((parsed as Date).toISOString(), '2024-06-01T00:00:00.000Z');
@@ -409,7 +409,7 @@ void describe('Transform.pipe()', () => {
         'schemas': [piped] as const
       });
 
-      const parsed = jt.coerce(piped.$id, input);
+      const parsed = jt.instantiate(piped.$id, input);
 
       assert.equal(parsed, expectedDecode);
 

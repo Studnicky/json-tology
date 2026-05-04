@@ -39,8 +39,8 @@ registry.register(DefaultsSchema);
 // Warm up all paths
 registry.validate(SimpleSchema.$id, simpleValid);
 registry.validate(NestedSchema.$id, nestedValid);
-registry.coerce(SimpleSchema, simpleValid);
-registry.coerce(DefaultsSchema, defaultsInput);
+registry.instantiate(SimpleSchema, simpleValid);
+registry.instantiate(DefaultsSchema, defaultsInput);
 
 const invalidData = {
   'age': 'not-a-number',
@@ -64,7 +64,7 @@ function validateInvalidFn(): void {
 }
 
 function coerceFn(): void {
-  registry.coerce(SimpleSchema, simpleValid);
+  registry.instantiate(SimpleSchema, simpleValid);
 }
 
 function convertFn(): void {

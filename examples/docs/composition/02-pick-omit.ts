@@ -48,7 +48,7 @@ const entities = JsonTology.create({
 });
 
 // BookSummary — only picked fields survive
-const summary = entities.coerce(BookSummarySchema.$id, {
+const summary = entities.instantiate(BookSummarySchema.$id, {
   'authors': ['Dostoevsky'],
   'inStock': true,
   'isbn': '9780140449136',

@@ -11,7 +11,7 @@ import {
 import assert from 'node:assert/strict';
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 import { JsonTology } from '../../src/JsonTology.js';
-import { CoercionError } from '../../src/errors/CoercionError.js';
+import { InstantiationError } from '../../src/errors/InstantiationError.js';
 import { SchemaError } from '../../src/errors/SchemaError.js';
 
 // ---------------------------------------------------------------------------
@@ -161,10 +161,10 @@ void describe('BaseError cause chain edge cases', () => {
 });
 
 // ---------------------------------------------------------------------------
-// CoercionError -- validation failures during coerce
+// InstantiationError -- validation failures during coerce
 // ---------------------------------------------------------------------------
 
-void describe('CoercionError structure', () => {
+void describe('InstantiationError structure', () => {
   void it('carries structured ValidationErrors with items', () => {
     const registry = new SchemaRegistry();
 
@@ -185,10 +185,10 @@ void describe('CoercionError structure', () => {
     });
 
     try {
-      registry.coerce('https://err.test/Person', { 'age': -5 });
+      registry.instantiate('https://err.test/Person', { 'age': -5 });
       assert.fail('should throw');
     } catch (error) {
-      assert.ok(error instanceof CoercionError, 'instanceof CoercionError');
+      assert.ok(error instanceof InstantiationError, 'instanceof InstantiationError');
       assert.ok(error.errors.length > 0, 'has errors');
 
       const items = error.errors.items;
@@ -225,15 +225,15 @@ void describe('CoercionError structure', () => {
     });
 
     try {
-      registry.coerce('https://err.test/Multi', {});
+      registry.instantiate('https://err.test/Multi', {});
       assert.fail('should throw');
     } catch (error) {
-      assert.ok(error instanceof CoercionError, 'instanceof CoercionError');
+      assert.ok(error instanceof InstantiationError, 'instanceof InstantiationError');
       assert.ok(error.errors.length >= 2, 'reports both missing required fields');
     }
   });
 
-  void it('CoercionError.toJson() serializes cleanly', () => {
+  void it('InstantiationError.toJson() serializes cleanly', () => {
     const registry = new SchemaRegistry();
 
     registry.register({
@@ -244,10 +244,10 @@ void describe('CoercionError structure', () => {
     });
 
     try {
-      registry.coerce('https://err.test/Serial', {});
+      registry.instantiate('https://err.test/Serial', {});
       assert.fail('should throw');
     } catch (error) {
-      assert.ok(error instanceof CoercionError, 'instanceof CoercionError');
+      assert.ok(error instanceof InstantiationError, 'instanceof InstantiationError');
       const json = error.toJson();
 
       assert.ok(typeof json.code === 'string', 'toJson().code is string');
@@ -317,7 +317,7 @@ void describe('Registry recovery', () => {
     }
   });
 
-  void it('remains usable after CoercionError', () => {
+  void it('remains usable after InstantiationError', () => {
     const registry = new SchemaRegistry();
 
     registry.register({
@@ -328,12 +328,12 @@ void describe('Registry recovery', () => {
     });
 
     assert.throws(() => {
-      registry.coerce('https://err.test/Recover', {});
+      registry.instantiate('https://err.test/Recover', {});
     });
 
-    const result = registry.coerce('https://err.test/Recover', { 'x': 42 }) as Record<string, unknown>;
+    const result = registry.instantiate('https://err.test/Recover', { 'x': 42 }) as Record<string, unknown>;
 
-    assert.equal(result.x, 42, 'registry works for valid data after CoercionError');
+    assert.equal(result.x, 42, 'registry works for valid data after InstantiationError');
   });
 });
 
@@ -358,7 +358,7 @@ void describe('JsonTology error handling', () => {
       {
         'check': () => {
           assert.throws(() => {
-            jt.coerce('https://err.test/Missing' as never, {});
+            jt.instantiate('https://err.test/Missing' as never, {});
           });
         },
         'name': 'coerce throws for unregistered schema'

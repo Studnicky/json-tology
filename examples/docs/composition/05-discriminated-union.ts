@@ -91,7 +91,7 @@ function describePayment(payment: Payment): string {
   return 'unknown';
 }
 
-const cc = localJt.coerce(PaymentSchema.$id, {
+const cc = localJt.instantiate(PaymentSchema.$id, {
   'cardLast4': '4242',
   'expiry': '12/28',
   'method': 'credit_card'

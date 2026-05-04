@@ -261,7 +261,7 @@ void describe('dump — Transform encoder', () => {
   void it('happy: round-trip decode then dump returns original wire value', () => {
     const jt = makeJt();
     const isoString = '2026-06-15T12:00:00.000Z';
-    const decoded = jt.coerce(TransformedDateSchema.$id, isoString);
+    const decoded = jt.instantiate(TransformedDateSchema.$id, isoString);
     const wire = jt.dump(TransformedDateSchema.$id, decoded);
 
     assert.equal(wire, isoString);
@@ -382,7 +382,7 @@ void describe('dumpJson', () => {
   void it('happy: Date values are serialized as ISO strings (round-trip via JSON.parse)', () => {
     const jt = makeJt();
     const isoString = '2026-01-01T00:00:00.000Z';
-    const decoded = jt.coerce(TransformedDateSchema.$id, isoString);
+    const decoded = jt.instantiate(TransformedDateSchema.$id, isoString);
     const json = jt.dumpJson(TransformedDateSchema.$id, decoded);
     const parsed = JSON.parse(json) as string;
 

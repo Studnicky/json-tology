@@ -8,6 +8,7 @@
 export * from './errors/BaseError.js';
 export * from './errors/CoercionError.js';
 export * from './errors/GraphError.js';
+export * from './errors/InstantiationError.js';
 export * from './errors/LoadError.js';
 export * from './errors/MaterializationError.js';
 export * from './errors/SchemaError.js';
@@ -52,6 +53,7 @@ export type * from './types/Infer.js';
 export type * from './types/Invariant.js';
 export type * from './types/Quad.js';
 export type * from './types/Schema.js';
+export type * from './types/SchemaRef.js';
 export type * from './types/Transform.js';
 export type * from './types/TypeConfig.js';
 export type * from './types/Validation.js';

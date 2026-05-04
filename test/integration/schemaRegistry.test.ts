@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 import { Logger } from '../utils/Logger.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import { CoercionError } from '../../src/errors/CoercionError.js';
+import { InstantiationError } from '../../src/errors/InstantiationError.js';
 
 const TestSchema = {
   '$id': 'https://example.io/test-schema',
@@ -238,7 +238,7 @@ void describe('SchemaRegistry registration', () => {
           strictRegistry.validate(InvalidInlineSchema.$id, {});
         }, /No validator registered|SCHEMA_NOT_REGISTERED/u);
         assert.throws(() => {
-          strictRegistry.coerce(InvalidInlineSchema.$id, {});
+          strictRegistry.instantiate(InvalidInlineSchema.$id, {});
         }, /SCHEMA_NOT_REGISTERED|Schema not registered/u);
       },
       'name': 'inline schema: silent by default, throws with enableStrictGraph',
@@ -262,7 +262,7 @@ void describe('SchemaRegistry registration', () => {
         assert.equal(registry.list().length, 1);
         assert.equal(registry.listGraphs().length, 1);
         assert.ok(registry.validate(TestSchema.$id, { 'name': 'Alice' }).ok);
-        const parsed = registry.coerce(TestSchema.$id, { 'name': 'Alice' }) as Record<string, unknown>;
+        const parsed = registry.instantiate(TestSchema.$id, { 'name': 'Alice' }) as Record<string, unknown>;
 
         assert.equal(parsed.name, 'Alice');
       },
@@ -433,16 +433,16 @@ void describe('SchemaRegistry validation', () => {
 
     registry.register(TestSchemaWithDefs);
 
-    const pointerErrors = registry.validateAt(
+    const subSchema = registry.subschemaAt(
       'https://example.io/schema-with-defs',
-      '/$defs/Person',
-      {
-        'email': 'bob@example.io',
-        'name': 'Bob'
-      }
+      '/$defs/Person'
     );
+    const person = registry.validate(subSchema, {
+      'email': 'bob@example.io',
+      'name': 'Bob'
+    });
 
-    assert.strictEqual(pointerErrors.length, 0);
+    assert.strictEqual(person.items.length, 0);
   });
 });
 
@@ -547,7 +547,7 @@ void describe('coerce / is / errors', () => {
   }> = [
     {
       'check': (registry) => {
-        const result = registry.coerce(ParseTestSchema, { 'name': 'Alice' }) as Record<string, unknown>;
+        const result = registry.instantiate(ParseTestSchema, { 'name': 'Alice' }) as Record<string, unknown>;
 
         assert.strictEqual(result.name, 'Alice');
         assert.strictEqual(result.count, 0);
@@ -559,7 +559,7 @@ void describe('coerce / is / errors', () => {
       'check': (registry) => {
         const original = { 'name': 'Bob' };
 
-        registry.coerce(ParseTestSchema, original);
+        registry.instantiate(ParseTestSchema, original);
         assert.strictEqual('count' in original, false);
       },
       'data': { 'name': 'Bob' },
@@ -577,23 +577,23 @@ void describe('coerce / is / errors', () => {
       'check': (registry) => {
         assert.throws(
           () => {
-            return registry.coerce(ParseTestSchema, { 'count': 5 });
+            return registry.instantiate(ParseTestSchema, { 'count': 5 });
           },
           (err: unknown) => {
-            return err instanceof CoercionError;
+            return err instanceof InstantiationError;
           }
         );
       },
       'data': { 'count': 5 },
-      'name': 'coerce() throws CoercionError on invalid data'
+      'name': 'coerce() throws InstantiationError on invalid data'
     },
     {
       'check': (registry) => {
         try {
-          registry.coerce(ParseTestSchema, {});
+          registry.instantiate(ParseTestSchema, {});
           assert.fail('should have thrown');
         } catch (error) {
-          assert.ok(error instanceof CoercionError);
+          assert.ok(error instanceof InstantiationError);
           assert.ok(error.errors.length > 0);
           assert.ok(typeof error.errors.items[0].path === 'string');
           assert.ok(typeof error.errors.items[0].keyword === 'string');
@@ -601,21 +601,21 @@ void describe('coerce / is / errors', () => {
         }
       },
       'data': {},
-      'name': 'CoercionError has structured errors array with path, keyword, message'
+      'name': 'InstantiationError has structured errors array with path, keyword, message'
     },
     {
       'check': (registry) => {
         assert.throws(
           () => {
-            return registry.coerce(ParseTestSchema, 'not-an-object');
+            return registry.instantiate(ParseTestSchema, 'not-an-object');
           },
           (err: unknown) => {
-            return err instanceof CoercionError;
+            return err instanceof InstantiationError;
           }
         );
       },
       'data': 'not-an-object',
-      'name': 'coerce() with completely wrong type throws CoercionError'
+      'name': 'coerce() with completely wrong type throws InstantiationError'
     }
   ];
 

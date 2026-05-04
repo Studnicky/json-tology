@@ -218,7 +218,7 @@ void describe('JsonTology.validate(), coerce(), is()', () => {
     },
     {
       'check': (jt) => {
-        const user = jt.coerce(UserSchema, {
+        const user = jt.instantiate(UserSchema, {
           'email': 'a@b.com',
           'name': 'Alice'
         });
@@ -235,7 +235,7 @@ void describe('JsonTology.validate(), coerce(), is()', () => {
     {
       'check': (jt) => {
         assert.throws(() => {
-          return jt.coerce(UserSchema, { 'name': 'Alice' });
+          return jt.instantiate(UserSchema, { 'name': 'Alice' });
         });
       },
       'data': { 'name': 'Alice' },
@@ -707,11 +707,12 @@ void describe('JsonTology utility methods', () => {
           'baseIRI': 'https://myapp.io',
           'schemas': [UserSchema] as const
         });
-        const errs = jt.validateAt(UserSchema.$id, '/properties/name', 'Alice');
+        const sub = jt.subschemaAt(UserSchema.$id, '/properties/name');
+        const errs = jt.validate(sub, 'Alice');
 
-        assert.equal(errs.length, 0);
+        assert.equal(errs.items.length, 0);
       },
-      'name': 'validateAt() validates data against a sub-schema pointer (valid)'
+      'name': 'subschemaAt() validates data against a sub-schema pointer (valid)'
     },
     {
       'check': () => {
@@ -719,11 +720,12 @@ void describe('JsonTology utility methods', () => {
           'baseIRI': 'https://myapp.io',
           'schemas': [UserSchema] as const
         });
-        const errs = jt.validateAt(UserSchema.$id, '/properties/name', 123);
+        const sub = jt.subschemaAt(UserSchema.$id, '/properties/name');
+        const errs = jt.validate(sub, 123);
 
-        assert.ok(errs.length > 0);
+        assert.ok(errs.items.length > 0);
       },
-      'name': 'validateAt() returns errors for wrong type at sub-schema pointer'
+      'name': 'subschemaAt() returns errors for wrong type at sub-schema pointer'
     },
     {
       'check': () => {

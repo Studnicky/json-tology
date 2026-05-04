@@ -27,7 +27,7 @@ void describe('enableDefaults option', () => {
 
     registry.register(WithDefaultSchema as unknown as Record<string, unknown>);
 
-    const result = registry.coerce(WithDefaultSchema.$id, { 'name': 'Alice' }) as Record<string, unknown>;
+    const result = registry.instantiate(WithDefaultSchema.$id, { 'name': 'Alice' }) as Record<string, unknown>;
 
     assert.strictEqual(result.role, 'user', 'default should be filled');
   });
@@ -37,7 +37,7 @@ void describe('enableDefaults option', () => {
 
     registry.register(WithDefaultSchema as unknown as Record<string, unknown>);
 
-    const result = registry.coerce(WithDefaultSchema.$id, { 'name': 'Alice' }) as Record<string, unknown>;
+    const result = registry.instantiate(WithDefaultSchema.$id, { 'name': 'Alice' }) as Record<string, unknown>;
 
     assert.strictEqual(result.role, undefined, 'default should NOT be filled');
   });
@@ -47,7 +47,7 @@ void describe('enableDefaults option', () => {
 
     registry.register(WithDefaultSchema as unknown as Record<string, unknown>);
 
-    const result = registry.coerce(
+    const result = registry.instantiate(
       WithDefaultSchema.$id,
       { 'name': 'Alice' },
       { 'enableDefaults': false }
@@ -61,7 +61,7 @@ void describe('enableDefaults option', () => {
 
     registry.register(WithDefaultSchema as unknown as Record<string, unknown>);
 
-    const result = registry.coerce(
+    const result = registry.instantiate(
       WithDefaultSchema.$id,
       { 'name': 'Alice' },
       { 'enableDefaults': true }
@@ -75,9 +75,9 @@ void describe('enableDefaults option', () => {
 
     registry.register(WithDefaultSchema as unknown as Record<string, unknown>);
 
-    registry.coerce(WithDefaultSchema.$id, { 'name': 'Alice' }, { 'enableDefaults': false });
+    registry.instantiate(WithDefaultSchema.$id, { 'name': 'Alice' }, { 'enableDefaults': false });
 
-    const result2 = registry.coerce(WithDefaultSchema.$id, { 'name': 'Bob' }) as Record<string, unknown>;
+    const result2 = registry.instantiate(WithDefaultSchema.$id, { 'name': 'Bob' }) as Record<string, unknown>;
 
     assert.strictEqual(result2.role, 'user', 'subsequent call uses global default (true)');
   });

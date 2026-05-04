@@ -1,10 +1,10 @@
 /**
  * Transform.create / localJt.encode — Example 1: ISO datetime ↔ Date round-trip
- * Demonstrates: decode on coerce, encode reversal, CoercionError on invalid input
+ * Demonstrates: decode on coerce, encode reversal, InstantiationError on invalid input
  */
 
 import {
-  CoercionError, JsonTology, Transform
+  InstantiationError, JsonTology, Transform
 } from '../../../src/index.js';
 
 const PlacedAtSchema = Transform.create(
@@ -30,7 +30,7 @@ const localJt = JsonTology.create({
 
 // Wire → Domain
 const raw = '2026-01-15T10:30:00.000Z';
-const date = localJt.coerce(PlacedAtSchema.$id, raw);
+const date = localJt.instantiate(PlacedAtSchema.$id, raw);
 
 console.assert(date instanceof Date);
 console.assert((date).getFullYear() === 2026);
@@ -40,12 +40,12 @@ const wire = localJt.encode(PlacedAtSchema, date);
 
 console.assert(wire === raw);
 
-// Invalid input still throws CoercionError
+// Invalid input still throws InstantiationError
 let threw = false;
 
 try {
-  localJt.coerce(PlacedAtSchema.$id, 'not-a-date');
+  localJt.instantiate(PlacedAtSchema.$id, 'not-a-date');
 } catch (error) {
-  threw = error instanceof CoercionError;
+  threw = error instanceof InstantiationError;
 }
 console.assert(threw);

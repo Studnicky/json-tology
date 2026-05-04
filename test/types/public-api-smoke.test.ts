@@ -28,7 +28,7 @@ const input: User = {
   'name': 'Ada'
 };
 
-const parsed: User = jt.coerce(UserSchema, input);
+const parsed: User = jt.instantiate(UserSchema, input);
 const materialized: User = jt.materialize(UserSchema, {
   'id': 'user-1',
   'name': 'Ada'

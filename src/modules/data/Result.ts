@@ -1,5 +1,5 @@
 import type { ResultInterface } from '../../interfaces/Result.js';
-import { CoercionError } from '../../errors/CoercionError.js';
+import { InstantiationError } from '../../errors/InstantiationError.js';
 import type { ValidationErrors } from '../../errors/ValidationErrors.js';
 
 export class Result<T> implements ResultInterface<T> {
@@ -52,14 +52,14 @@ export class Result<T> implements ResultInterface<T> {
   }
 
   /**
-   * Extract the data from a successful Result, or throw a CoercionError on failure.
+   * Extract the data from a successful Result, or throw a InstantiationError on failure.
    *
    * @returns The contained data
-   * @throws {@link CoercionError} When the Result represents a failure
+   * @throws {@link InstantiationError} When the Result represents a failure
    */
   unwrap(): T {
     if (!this.success) {
-      throw new CoercionError(this.errors as ValidationErrors);
+      throw new InstantiationError(this.errors as ValidationErrors);
     }
 
     return this.data as T;

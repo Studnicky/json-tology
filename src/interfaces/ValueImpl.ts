@@ -3,10 +3,10 @@ export interface ValueInterface<TMap = Record<never, never>> {
   cast(schemaId: string, data: unknown): unknown;
   clean<K extends keyof TMap & string>(schemaId: K, data: unknown): TMap[K];
   clean(schemaId: string, data: unknown): unknown;
-  coerce<K extends keyof TMap & string>(schemaId: K, data: unknown): TMap[K];
-  coerce(schemaId: string, data: unknown): unknown;
   convert<K extends keyof TMap & string>(schemaId: K, data: unknown): TMap[K];
   convert(schemaId: string, data: unknown): unknown;
   create<K extends keyof TMap & string>(schemaId: K): TMap[K];
   create(schemaId: string): unknown;
+  instantiate<K extends keyof TMap & string>(schemaId: K, data: unknown): TMap[K];
+  instantiate(schemaId: string, data: unknown): unknown;
 }

@@ -57,7 +57,7 @@ const entities = JsonTology.create({
   ] as const
 });
 
-const coercedCustomer = entities.coerce(CustomerWithDiscountSchema.$id, {
+const coercedCustomer = entities.instantiate(CustomerWithDiscountSchema.$id, {
   'discountRate': 0.15,
   'email': 'alice@bookstore.example',
   'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',

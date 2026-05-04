@@ -116,7 +116,7 @@ const jt = JsonTology.create({
   ] as const
 });
 
-const order = jt.coerce('https://example.io/Order', {
+const order = jt.instantiate('https://example.io/Order', {
   'buyer': {
     'address': { 'street': '123 Main St' },
     'name': 'Ada'
@@ -149,7 +149,7 @@ void _orderId;
 void _total;
 
 // ---------------------------------------------------------------------------
-// 2. JSON Pointer path validation for validateAt
+// 2. JSON Pointer path validation for subschemaAt
 // ---------------------------------------------------------------------------
 
 type UserPointerPaths = SchemaPointerPathsType<typeof UserSchema>;
@@ -167,9 +167,9 @@ const _ppBad: UserPointerPaths = '/properties/missing';
 
 void _ppBad;
 
-// validateAt with schema object provides pointer validation
-jt.validateAt(UserSchema, '/properties/name', 'Ada');
-jt.validateAt(UserSchema, '/properties/age', 42);
+// subschemaAt with schema object provides pointer validation
+jt.subschemaAt(UserSchema, '/properties/name');
+jt.subschemaAt(UserSchema, '/properties/age');
 
 // ---------------------------------------------------------------------------
 // 3. Materialized type precision
@@ -339,7 +339,7 @@ void jt.toQuads(AddressSchema, { 'street': '123 Main' });
 // 9. Cross-schema $ref chain (Order -> User -> Address)
 // ---------------------------------------------------------------------------
 
-const chainOrder = jt.coerce('https://example.io/Order', {
+const chainOrder = jt.instantiate('https://example.io/Order', {
   'buyer': {
     'address': { 'street': '456 Oak' },
     'name': 'Ada'
@@ -630,7 +630,7 @@ const jtBrand = JsonTology.create({
   'schemas': [_EmailSchema] as const
 });
 
-const _emailGood: Email = jtBrand.coerce('https://example.io/Email', 'a@b.com');
+const _emailGood: Email = jtBrand.instantiate('https://example.io/Email', 'a@b.com');
 
 void _emailGood;
 
@@ -877,7 +877,7 @@ const _rBad2: Rating = 6;
 void _rBad2;
 
 // ---------------------------------------------------------------------------
-// 24. Generic ValueInterface — typed value.coerce()
+// 24. Generic ValueInterface — typed value.instantiate()
 // ---------------------------------------------------------------------------
 
 const _ValJt = JsonTology.create({
@@ -885,7 +885,7 @@ const _ValJt = JsonTology.create({
   'schemas': [AddressSchema] as const
 });
 
-const _valAddr = _ValJt.value.coerce('https://example.io/Address', { 'street': '1st' });
+const _valAddr = _ValJt.value.instantiate('https://example.io/Address', { 'street': '1st' });
 const _valStreet: string | undefined = _valAddr.street;
 
 void _valStreet;

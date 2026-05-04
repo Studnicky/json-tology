@@ -542,7 +542,7 @@ void describe('Deep nesting', () => {
     });
 
     // coerce should apply defaults at each level
-    const result = registry.coerce(
+    const result = registry.instantiate(
       'https://ref.test/DeepDefaults',
       { 'outer': { 'inner': {} } }
     ) as Record<string, unknown>;

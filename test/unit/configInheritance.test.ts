@@ -8,7 +8,7 @@ import {
 import assert from 'node:assert/strict';
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 import { Compose } from '../../src/modules/composition/Compose.js';
-import { CoercionError } from '../../src/errors/CoercionError.js';
+import { InstantiationError } from '../../src/errors/InstantiationError.js';
 import type { ValidationErrorType } from '../../src/types/Validation.js';
 
 const BaseSchema = {
@@ -62,7 +62,7 @@ void describe('jt:config inheritance', () => {
     registry.register(ConfigStrictSchema);
 
     assert.throws(() => {
-      registry.coerce(ConfigStrictSchema.$id, {
+      registry.instantiate(ConfigStrictSchema.$id, {
         'age': '30',
         'name': 'Alice'
       });
@@ -73,7 +73,7 @@ void describe('jt:config inheritance', () => {
     const registry = new SchemaRegistry();
 
     registry.register(AllowExtraSchema);
-    const result = registry.coerce(AllowExtraSchema.$id, {
+    const result = registry.instantiate(AllowExtraSchema.$id, {
       'extra': 'keep-me',
       'name': 'Alice'
     }) as Record<string, unknown>;
@@ -87,12 +87,12 @@ void describe('jt:config inheritance', () => {
     registry.register(ForbidExtraSchema);
 
     assert.throws(() => {
-      registry.coerce(ForbidExtraSchema.$id, {
+      registry.instantiate(ForbidExtraSchema.$id, {
         'name': 'Alice',
         'unexpected': 'value'
       });
     }, (error: unknown) => {
-      return error instanceof CoercionError;
+      return error instanceof InstantiationError;
     });
   });
 
@@ -100,7 +100,7 @@ void describe('jt:config inheritance', () => {
     const registry = new SchemaRegistry();
 
     registry.register(ForbidExtraSchema);
-    const result = registry.coerce(ForbidExtraSchema.$id, { 'name': 'Alice' });
+    const result = registry.instantiate(ForbidExtraSchema.$id, { 'name': 'Alice' });
 
     assert.deepEqual(result, { 'name': 'Alice' });
   });

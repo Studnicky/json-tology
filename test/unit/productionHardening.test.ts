@@ -142,13 +142,13 @@ void describe('Infinity coercion rejection', () => {
         'type': 'number'
       });
       if (shouldCoerce) {
-        const result = registry.coerce('urn:hardening:cast-number', input);
+        const result = registry.instantiate('urn:hardening:cast-number', input);
 
         assert.equal(typeof result, 'number', name);
         assert.ok(Number.isFinite(result as number), name);
       } else {
         assert.throws(() => {
-          registry.coerce('urn:hardening:cast-number', input);
+          registry.instantiate('urn:hardening:cast-number', input);
         }, name);
       }
     });
@@ -312,7 +312,7 @@ void describe('null/undefined schema guard on public API', () => {
     },
     {
       'fn': () => {
-        jt.coerce(null as unknown as string, {});
+        jt.instantiate(null as unknown as string, {});
       },
       'name': 'coerce() throws SchemaError for null'
     },
@@ -330,7 +330,7 @@ void describe('null/undefined schema guard on public API', () => {
     },
     {
       'fn': () => {
-        jt.validateAt(null as unknown as string, '/properties/x', {});
+        jt.subschemaAt(null as unknown as string, '/properties/x');
       },
       'name': 'validateAt() throws SchemaError for null'
     }

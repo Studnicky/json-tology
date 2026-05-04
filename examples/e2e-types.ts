@@ -56,7 +56,7 @@ jt.register(PersonName).register(PatchPerson);
 // Type-safe parse — return type is Person, not unknown
 // ---------------------------------------------------------------------------
 
-const alice = jt.coerce(PersonSchema.$id, foafPersons[0]) as Person;
+const alice = jt.instantiate(PersonSchema.$id, foafPersons[0]) as Person;
 
 console.log('--- Type-safe parse ---');
 const givenName = typeof alice.givenName === 'string' ? alice.givenName : 'Unknown';
@@ -83,7 +83,7 @@ if (jt.is(PersonSchema.$id, incoming)) {
 // Branded types — Mbox is branded, not a plain string
 // ---------------------------------------------------------------------------
 
-const mbox = jt.coerce(MboxSchema.$id, 'alice@example.org') as Mbox;
+const mbox = jt.instantiate(MboxSchema.$id, 'alice@example.org') as Mbox;
 
 console.log('\n--- Branded Mbox ---');
 console.log('Mbox:', mbox);
@@ -92,7 +92,7 @@ console.log('Mbox:', mbox);
 // Transform roundtrip — parse yields Date, encode yields string
 // ---------------------------------------------------------------------------
 
-const date = jt.coerce(DateTimeSchema.$id, '2026-03-15T12:00:00.000Z') as unknown;
+const date = jt.instantiate(DateTimeSchema.$id, '2026-03-15T12:00:00.000Z') as unknown;
 const wire = jt.encode(DateTimeSchema, date);
 
 console.log('\n--- Transform roundtrip ---');
@@ -107,11 +107,11 @@ console.log('Encoded back:', wire);
 // Composed schemas
 // ---------------------------------------------------------------------------
 
-const personName = jt.coerce(PersonName.$id, {
+const personName = jt.instantiate(PersonName.$id, {
   'familyName': 'Jones',
   'givenName': 'Bob'
 });
-const patch = jt.coerce(PatchPerson.$id, { 'givenName': 'Robert' });
+const patch = jt.instantiate(PatchPerson.$id, { 'givenName': 'Robert' });
 
 console.log('\n--- Composed schemas ---');
 console.log('PersonName:', personName);
@@ -173,7 +173,7 @@ console.log('LooseMbox type: string (brands stripped)');
 
 // Register and validate with integer range
 const jt2 = jt.register(RatingSchema);
-const rating = jt2.coerce(RatingSchema.$id, 3);
+const rating = jt2.instantiate(RatingSchema.$id, 3);
 
 console.log('Validated rating:', rating);
 

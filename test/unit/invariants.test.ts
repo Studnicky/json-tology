@@ -7,7 +7,7 @@ import {
 } from 'node:test';
 import assert from 'node:assert/strict';
 import { JsonTology } from '../../src/JsonTology.js';
-import { CoercionError } from '../../src/errors/CoercionError.js';
+import { InstantiationError } from '../../src/errors/InstantiationError.js';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -148,7 +148,7 @@ void describe('invariants', () => {
     assert.equal(errors.items[0].keyword, 'jt:invariant');
   });
 
-  void it('failing invariant causes coerce() to throw CoercionError', () => {
+  void it('failing invariant causes coerce() to throw InstantiationError', () => {
     const jt = JsonTology.create({
       'baseIRI': 'https://test.dev',
       'invariants': {
@@ -176,10 +176,10 @@ void describe('invariants', () => {
 
     assert.throws(
       () => {
-        jt.coerce(OrderSchema.$id, data);
+        jt.instantiate(OrderSchema.$id, data);
       },
       (err: unknown) => {
-        assert.ok(err instanceof CoercionError, 'is CoercionError');
+        assert.ok(err instanceof InstantiationError, 'is InstantiationError');
         assert.equal(err.errors.items[0].message, 'total mismatch');
 
         return true;

@@ -19,8 +19,7 @@ import type { SchemaRegistryEntryInterface } from '../../interfaces/SchemaRegist
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
 import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugin.js';
 
-import { BaseError } from '../../errors/BaseError.js';
-import { CoercionError } from '../../errors/CoercionError.js';
+import { InstantiationError } from '../../errors/InstantiationError.js';
 import { ComputedStore } from './ComputedStore.js';
 import { Curie } from '../rdf/Curie.js';
 import {
@@ -40,7 +39,7 @@ import { ValidationErrors } from '../../errors/ValidationErrors.js';
 
 import {
   CAST_OPTIONS, CLEAN_OPTIONS, COLLECT_ERRORS_OPTIONS,
-  CONVERT_OPTIONS, EMPTY_ERROR_LIST
+  CONVERT_OPTIONS
 } from '../../constants/EXECUTION_OPTIONS.js';
 import {
   CURRENT_DIALECT_PREFIX, DRAFT_NAME
@@ -59,16 +58,16 @@ export interface DuplicateReportEntryType {
 
 export class SchemaRegistry implements SchemaRegistryInterface {
   public readonly castTypes: boolean;
-  private readonly coerceOptions: Readonly<Record<string, boolean>>;
   private readonly compiler: SchemaCompilerInterface;
   public readonly computedStore: ComputedStore;
-
   public readonly curie: CurieInterface | undefined;
+
   private readonly enableDuplicateDetection: boolean;
   private readonly enableInlineWarnings: boolean;
   private readonly enableStrictGraph: boolean;
   private readonly enableStrictTypes: boolean;
   private readonly formatRegistry: FormatRegistryInterface | undefined;
+  private readonly instantiateOptions: Readonly<Record<string, boolean>>;
   private readonly invariants: InvariantStore;
   private readonly keywords: KeywordDefinitionInterface[] | undefined;
   private readonly logger: LoggerInterface;
@@ -80,7 +79,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   public constructor(options?: RegistryOptionsInterface) {
     this.logger = options?.logger ?? SILENT_LOGGER;
     this.castTypes = options?.enableTypeCast ?? false;
-    this.coerceOptions = Object.freeze({
+    this.instantiateOptions = Object.freeze({
       'applyDefaults': options?.enableDefaults ?? true,
       'castTypes': this.castTypes,
       'collectErrors': true,
@@ -141,97 +140,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
 
     return compiled.validate(structuredClone(data), CLEAN_OPTIONS).value;
-  }
-
-  public coerce(
-    schema: (Record<string, unknown> & { '$id': string; }) | string,
-    data: unknown,
-    callOptions?: { 'enableDefaults'?: boolean }
-  ): unknown {
-    const schemaId = typeof schema === 'string' ? this.resolve(schema) : schema.$id;
-    const entry = this.schemas.get(schemaId);
-
-    if (entry === undefined) {
-      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`);
-    }
-
-    const computedMap = this.computedStore.getMap(schemaId);
-    const computedNames = Object.keys(computedMap);
-
-    if (computedNames.length > 0 && isRecord(data)) {
-      const forbidden = computedNames.filter((name) => {
-        return name in (data);
-      });
-
-      if (forbidden.length > 0) {
-        const errors = forbidden.map((name) => {
-          return {
-            'keyword': 'COMPUTED_INPUT_FORBIDDEN',
-            'message': `"${name}" is a computed field and must not be supplied in input`,
-            'params': {},
-            'path': `/${name}`
-          };
-        });
-
-        throw new CoercionError(new ValidationErrors(errors));
-      }
-    }
-
-    const compiled = this.compiledFromEntry(entry);
-    const resolvedOptions = callOptions?.enableDefaults === undefined
-      ? this.coerceOptions
-      : {
-        ...this.coerceOptions,
-        'applyDefaults': callOptions.enableDefaults
-      };
-    const result = compiled.validate(structuredClone(data), resolvedOptions);
-
-    if (!result.valid) {
-      throw new CoercionError(new ValidationErrors(result.errors));
-    }
-
-    const invariantErrors = this.invariants.runAll(schemaId, result.value);
-
-    if (invariantErrors.length > 0) {
-      throw new CoercionError(new ValidationErrors([
-        ...result.errors,
-        ...invariantErrors
-      ]));
-    }
-
-    const coerced = result.value;
-
-    if (computedNames.length > 0 && isRecord(coerced)) {
-      for (const [
-        name,
-        fn
-      ] of Object.entries(computedMap)) {
-        try {
-          coerced[name] = fn(coerced);
-        } catch (error) {
-          const causeError = error instanceof Error ? error : new Error(String(error));
-
-          throw new CoercionError(
-            new ValidationErrors([{
-              'keyword': 'COMPUTED_FN_MISSING',
-              'message': `Compute function for "${name}" threw: ${causeError.message}`,
-              'params': {},
-              'path': `/${name}`
-            }]),
-            { 'cause': causeError }
-          );
-        }
-      }
-    }
-
-    const schemaObj = typeof schema === 'string' ? entry.schema : schema;
-    const decoder = Transform.getDecoder(schemaObj);
-    const decoded = decoder === undefined ? coerced : decoder.decode(coerced);
-    const isFrozen = isRecord(schemaObj)
-      && (schemaObj['jt:frozen'] === true
-        || (isRecord(schemaObj['jt:config']) && schemaObj['jt:config'].frozen === true));
-
-    return isFrozen ? Frozen.deepFreeze(decoded) : decoded;
   }
 
   private collectAnchors(schema: Record<string, unknown>, seen: Set<string>, schemaId: string): void {
@@ -329,24 +237,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return entry.engine;
   }
 
-  private execute(
-    schema: Record<string, unknown>,
-    data: unknown,
-    options: {
-      'applyDefaults': boolean;
-      'castTypes': boolean;
-      'collectErrors': boolean;
-      'removeAdditionalProperties': boolean;
-    },
-    pointer = ''
-  ) {
-    const engine = this.engine(schema);
-
-    return engine.execute(data, {
-      'overrides': options,
-      'pointer': pointer
-    });
-  }
 
   public findDuplicates(): readonly DuplicateReportEntryType[] {
     const topLevelHashes = new Map<string, string>();
@@ -398,6 +288,97 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     } = schema;
 
     return Hash.value(rest);
+  }
+
+  public instantiate(
+    schema: (Record<string, unknown> & { '$id': string; }) | string,
+    data: unknown,
+    callOptions?: { 'enableDefaults'?: boolean }
+  ): unknown {
+    const schemaId = typeof schema === 'string' ? this.resolve(schema) : schema.$id;
+    const entry = this.schemas.get(schemaId);
+
+    if (entry === undefined) {
+      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`);
+    }
+
+    const computedMap = this.computedStore.getMap(schemaId);
+    const computedNames = Object.keys(computedMap);
+
+    if (computedNames.length > 0 && isRecord(data)) {
+      const forbidden = computedNames.filter((name) => {
+        return name in (data);
+      });
+
+      if (forbidden.length > 0) {
+        const errors = forbidden.map((name) => {
+          return {
+            'keyword': 'COMPUTED_INPUT_FORBIDDEN',
+            'message': `"${name}" is a computed field and must not be supplied in input`,
+            'params': {},
+            'path': `/${name}`
+          };
+        });
+
+        throw new InstantiationError(new ValidationErrors(errors));
+      }
+    }
+
+    const compiled = this.compiledFromEntry(entry);
+    const resolvedOptions = callOptions?.enableDefaults === undefined
+      ? this.instantiateOptions
+      : {
+        ...this.instantiateOptions,
+        'applyDefaults': callOptions.enableDefaults
+      };
+    const result = compiled.validate(structuredClone(data), resolvedOptions);
+
+    if (!result.valid) {
+      throw new InstantiationError(new ValidationErrors(result.errors));
+    }
+
+    const invariantErrors = this.invariants.runAll(schemaId, result.value);
+
+    if (invariantErrors.length > 0) {
+      throw new InstantiationError(new ValidationErrors([
+        ...result.errors,
+        ...invariantErrors
+      ]));
+    }
+
+    const coerced = result.value;
+
+    if (computedNames.length > 0 && isRecord(coerced)) {
+      for (const [
+        name,
+        fn
+      ] of Object.entries(computedMap)) {
+        try {
+          coerced[name] = fn(coerced);
+        } catch (error) {
+          const causeError = error instanceof Error ? error : new Error(String(error));
+
+          throw new InstantiationError(
+            new ValidationErrors([{
+              'keyword': 'COMPUTED_FN_MISSING',
+              'message': `Compute function for "${name}" threw: ${causeError.message}`,
+              'params': {},
+              'path': `/${name}`
+            }]),
+            { 'cause': causeError }
+          );
+        }
+      }
+    }
+
+    const schemaObj = typeof schema === 'string' ? entry.schema : schema;
+    const decoder = Transform.getDecoder(schemaObj);
+    const decoded = decoder === undefined ? coerced : decoder.decode(coerced);
+    const isFrozen = isRecord(schemaObj)
+      && (schemaObj['jt:frozen'] === true
+        || (isRecord(schemaObj['jt:config']) && schemaObj['jt:config'].frozen === true));
+
+    return isFrozen ? Frozen.deepFreeze(decoded) : decoded;
   }
 
   public is(
@@ -588,6 +569,35 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return this.resolve(raw);
   }
 
+  public subschemaAt(
+    schema: (Record<string, unknown> & { '$id': string; }) | string,
+    pointer: string
+  ): Record<string, unknown> & { '$id': string } {
+    const schemaId = typeof schema === 'string' ? this.resolve(schema) : schema.$id;
+    const entry = this.schemas.get(schemaId);
+
+    if (!entry) {
+      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`, schemaId);
+    }
+
+    const graph = new SchemaGraph(entry.schema);
+    const node = graph.resolvePointer(pointer);
+    const subSchema = node.schema;
+    const synthesizedId = `${schemaId}#${pointer}`;
+    const subSchemaRecord = typeof subSchema === 'boolean' ? {} : subSchema;
+    const result: Record<string, unknown> & { '$id': string } = {
+      ...subSchemaRecord,
+      '$id': synthesizedId
+    };
+
+    // Register so the result can be passed to validate/instantiate/is directly
+    if (!this.schemas.has(synthesizedId)) {
+      this.register(result);
+    }
+
+    return result;
+  }
+
   public validate(
     schema: (Record<string, unknown> & { '$id': string; }) | string,
     data: unknown
@@ -612,38 +622,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
 
     return new ValidationErrors(invariantErrors);
-  }
-
-  public validateAt(
-    schema: (Record<string, unknown> & { '$id': string; }) | string,
-    pointer: string,
-    data: unknown
-  ): string[] {
-    const schemaId = typeof schema === 'string' ? this.resolve(schema) : schema.$id;
-    const entry = this.schemas.get(schemaId);
-
-    if (!entry) {
-      return [`No schema registered for: ${schemaId}`];
-    }
-
-    try {
-      const errors = this.execute(entry.schema, data, {
-        'applyDefaults': false,
-        'castTypes': false,
-        'collectErrors': true,
-        'removeAdditionalProperties': false
-      }, pointer).errors;
-
-      if (errors.length === 0) {
-        return EMPTY_ERROR_LIST;
-      }
-
-      return BaseError.formatErrors(errors);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-
-      return [`Failed to compile validator for ${schemaId}#${pointer}: ${errorMessage}`];
-    }
   }
 
   public validator(schemaId: string): CompiledValidatorInterface {

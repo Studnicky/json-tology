@@ -60,11 +60,11 @@ const jt = JsonTology.create({
 });
 
 // coerce() returns inferred type
-const user = jt.coerce('https://example.io/User', { 'name': 'Ada' });
+const user = jt.instantiate('https://example.io/User', { 'name': 'Ada' });
 const _userName: string = user.name;
 const _userAge: number | undefined = user.age;
 
-const order = jt.coerce('https://example.io/Order', {
+const order = jt.instantiate('https://example.io/Order', {
   'orderId': 'o-1',
   'total': 42
 });
@@ -88,7 +88,7 @@ jt.validate('https://example.io/Order', {});
 // Runtime-unsafe type assertions — guarded to prevent execution
 if (false as boolean) {
   // @ts-expect-error — schema ID not registered
-  jt.coerce('https://example.io/NotRegistered', {});
+  jt.instantiate('https://example.io/NotRegistered', {});
   // @ts-expect-error — schema ID not registered
   jt.is('https://example.io/NotRegistered', {});
   // @ts-expect-error — schema ID not registered
@@ -107,29 +107,29 @@ const jt2 = JsonTology.create({
 }).register(OrderSchema);
 
 // Both schemas accessible
-const _u2 = jt2.coerce('https://example.io/User', { 'name': 'Ada' });
-const _o2 = jt2.coerce('https://example.io/Order', {
+const _u2 = jt2.instantiate('https://example.io/User', { 'name': 'Ada' });
+const _o2 = jt2.instantiate('https://example.io/Order', {
   'orderId': 'o-1',
   'total': 42
 });
 
 if (false as boolean) {
   // @ts-expect-error — Tag not registered yet
-  jt2.coerce('https://example.io/Tag', {});
+  jt2.instantiate('https://example.io/Tag', {});
 }
 
 // Chain another register
 const jt3 = jt2.register(TagSchema);
-const tag = jt3.coerce('https://example.io/Tag', { 'label': 'foo' });
+const tag = jt3.instantiate('https://example.io/Tag', { 'label': 'foo' });
 const _tagLabel: string = tag.label;
 
 // All three work on jt3
-jt3.coerce('https://example.io/User', { 'name': 'Ada' });
-jt3.coerce('https://example.io/Order', {
+jt3.instantiate('https://example.io/User', { 'name': 'Ada' });
+jt3.instantiate('https://example.io/Order', {
   'orderId': 'o-1',
   'total': 42
 });
-jt3.coerce('https://example.io/Tag', { 'label': 'bar' });
+jt3.instantiate('https://example.io/Tag', { 'label': 'bar' });
 
 // ---------------------------------------------------------------------------
 // 3. Empty registry — nothing should be parseable
@@ -142,15 +142,15 @@ const empty = JsonTology.create({
 
 if (false as boolean) {
   // @ts-expect-error — no schemas registered
-  empty.coerce('https://example.io/User', {});
+  empty.instantiate('https://example.io/User', {});
 }
 
 // ---------------------------------------------------------------------------
 // 4. Schema ID union type is accumulative
 // ---------------------------------------------------------------------------
 
-// Verified above: jt.coerce('https://example.io/User', {}) compiles,
-// jt.coerce('https://example.io/NotRegistered', {}) fails.
+// Verified above: jt.instantiate('https://example.io/User', {}) compiles,
+// jt.instantiate('https://example.io/NotRegistered', {}) fails.
 // Direct string calls (not Parameters extraction) are the reliable way
 // to test key accumulation with overloaded methods.
 
@@ -159,11 +159,11 @@ if (false as boolean) {
 // ---------------------------------------------------------------------------
 
 // Verify parse output types flow correctly through the generic
-const parsedUser = jt.coerce('https://example.io/User', { 'name': 'Ada' });
+const parsedUser = jt.instantiate('https://example.io/User', { 'name': 'Ada' });
 const _nameCheck: string = parsedUser.name;
 const _ageCheck: number | undefined = parsedUser.age;
 
-const parsedOrder = jt.coerce('https://example.io/Order', {
+const parsedOrder = jt.instantiate('https://example.io/Order', {
   'orderId': 'o-1',
   'total': 42
 });
@@ -171,14 +171,14 @@ const _orderIdCheck: string = parsedOrder.orderId;
 const _totalCheck: number = parsedOrder.total;
 
 // ---------------------------------------------------------------------------
-// 6. validateAt constrains to registered IDs
+// 6. subschemaAt constrains to registered IDs
 // ---------------------------------------------------------------------------
 
-jt.validateAt('https://example.io/User', '/properties/name', {});
+jt.subschemaAt('https://example.io/User', '/properties/name');
 
 if (false as boolean) {
   // @ts-expect-error — unregistered schema
-  jt.validateAt('https://example.io/NotRegistered', '/properties/name', {});
+  jt.subschemaAt('https://example.io/NotRegistered', '/properties/name');
 }
 
 // ---------------------------------------------------------------------------

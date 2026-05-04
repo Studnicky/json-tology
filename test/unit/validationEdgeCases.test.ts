@@ -10,7 +10,7 @@ import {
 } from 'node:test';
 import assert from 'node:assert/strict';
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
-import { CoercionError } from '../../src/errors/CoercionError.js';
+import { InstantiationError } from '../../src/errors/InstantiationError.js';
 import { JsonTology } from '../../src/JsonTology.js';
 
 // ---------------------------------------------------------------------------
@@ -736,7 +736,7 @@ void describe('Coercion edge cases', () => {
       'type': 'object'
     });
 
-    const result = registry.coerce('https://edge.test/WithDefaults', {
+    const result = registry.instantiate('https://edge.test/WithDefaults', {
       'name': 'Alice',
       'settings': {}
     }) as Record<string, Record<string, unknown>>;
@@ -773,11 +773,11 @@ void describe('Coercion edge cases', () => {
 
     const input = {};
 
-    registry.coerce('https://edge.test/NoMutate', input);
+    registry.instantiate('https://edge.test/NoMutate', input);
     assert.equal(Object.keys(input).length, 0, 'input object not mutated');
   });
 
-  void it('coerce throws CoercionError with path info on nested failure', () => {
+  void it('coerce throws InstantiationError with path info on nested failure', () => {
     const registry = new SchemaRegistry();
 
     registry.register({
@@ -810,7 +810,7 @@ void describe('Coercion edge cases', () => {
     });
 
     try {
-      registry.coerce('https://edge.test/NestedErr', {
+      registry.instantiate('https://edge.test/NestedErr', {
         'address': {
           'city': 'Springfield',
           'zip': 'bad'
@@ -819,7 +819,7 @@ void describe('Coercion edge cases', () => {
       });
       assert.fail('should have thrown');
     } catch (error) {
-      assert.ok(error instanceof CoercionError, 'nested failure: instanceof CoercionError');
+      assert.ok(error instanceof InstantiationError, 'nested failure: instanceof InstantiationError');
       assert.ok(error.errors.length > 0, 'nested failure: has errors');
     }
   });
@@ -859,7 +859,7 @@ void describe('Coercion edge cases', () => {
           'type': 'object'
         });
 
-        const result = registry.coerce('https://edge.test/CastNum', inp) as Record<string, unknown>;
+        const result = registry.instantiate('https://edge.test/CastNum', inp) as Record<string, unknown>;
 
         assert.equal(result.age, expVal);
         assert.equal(typeof result.age, expType);

@@ -2,7 +2,7 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { CoercionError } from '../../src/errors/CoercionError.js';
+import { InstantiationError } from '../../src/errors/InstantiationError.js';
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
 const SingleAliasSchema = {
@@ -84,7 +84,7 @@ void describe('jt:alias coercion', () => {
       const registry = new SchemaRegistry();
 
       registry.register(SingleAliasSchema);
-      const result = registry.coerce(SingleAliasSchema.$id, { 'foo_bar': 'hello' });
+      const result = registry.instantiate(SingleAliasSchema.$id, { 'foo_bar': 'hello' });
 
       assert.deepStrictEqual(result, { 'fooBar': 'hello' });
     });
@@ -93,7 +93,7 @@ void describe('jt:alias coercion', () => {
       const registry = new SchemaRegistry();
 
       registry.register(SingleAliasSchema);
-      const result = registry.coerce(SingleAliasSchema.$id, { 'fooBar': 'hello' });
+      const result = registry.instantiate(SingleAliasSchema.$id, { 'fooBar': 'hello' });
 
       assert.deepStrictEqual(result, { 'fooBar': 'hello' });
     });
@@ -102,7 +102,7 @@ void describe('jt:alias coercion', () => {
       const registry = new SchemaRegistry();
 
       registry.register(SingleAliasSchema);
-      const result = registry.coerce(SingleAliasSchema.$id, {
+      const result = registry.instantiate(SingleAliasSchema.$id, {
         'foo_bar': 'alias-value',
         'fooBar': 'canonical-value'
       });
@@ -116,7 +116,7 @@ void describe('jt:alias coercion', () => {
       registry.register(SingleAliasSchema);
       const input = { 'foo_bar': 'hello' };
 
-      registry.coerce(SingleAliasSchema.$id, input);
+      registry.instantiate(SingleAliasSchema.$id, input);
       assert.deepStrictEqual(input, { 'foo_bar': 'hello' });
     });
   });
@@ -126,7 +126,7 @@ void describe('jt:alias coercion', () => {
       const registry = new SchemaRegistry();
 
       registry.register(MultiAliasSchema);
-      const result = registry.coerce(MultiAliasSchema.$id, { 'foo_bar': 'value1' });
+      const result = registry.instantiate(MultiAliasSchema.$id, { 'foo_bar': 'value1' });
 
       assert.deepStrictEqual(result, { 'fooBar': 'value1' });
     });
@@ -135,7 +135,7 @@ void describe('jt:alias coercion', () => {
       const registry = new SchemaRegistry();
 
       registry.register(MultiAliasSchema);
-      const result = registry.coerce(MultiAliasSchema.$id, { 'fooBarLegacy': 'legacy' });
+      const result = registry.instantiate(MultiAliasSchema.$id, { 'fooBarLegacy': 'legacy' });
 
       assert.deepStrictEqual(result, { 'fooBar': 'legacy' });
     });
@@ -144,7 +144,7 @@ void describe('jt:alias coercion', () => {
       const registry = new SchemaRegistry();
 
       registry.register(MultiAliasSchema);
-      const result = registry.coerce(MultiAliasSchema.$id, {
+      const result = registry.instantiate(MultiAliasSchema.$id, {
         'foo_bar': 'alias1',
         'fooBar': 'canonical',
         'fooBarLegacy': 'alias2'
@@ -160,7 +160,7 @@ void describe('jt:alias coercion', () => {
 
       registry.register(RequiredAliasSchema);
       assert.doesNotThrow(() => {
-        registry.coerce(RequiredAliasSchema.$id, { 'foo_bar': 'value' });
+        registry.instantiate(RequiredAliasSchema.$id, { 'foo_bar': 'value' });
       });
     });
 
@@ -169,7 +169,7 @@ void describe('jt:alias coercion', () => {
 
       registry.register(RequiredAliasSchema);
       assert.throws(() => {
-        registry.coerce(RequiredAliasSchema.$id, {});
+        registry.instantiate(RequiredAliasSchema.$id, {});
       });
     });
   });
@@ -179,7 +179,7 @@ void describe('jt:alias coercion', () => {
       const registry = new SchemaRegistry();
 
       registry.register(NestedAliasSchema);
-      const result = registry.coerce(NestedAliasSchema.$id, { 'inner': { 'my_prop': 'nested-value' } });
+      const result = registry.instantiate(NestedAliasSchema.$id, { 'inner': { 'my_prop': 'nested-value' } });
 
       assert.deepStrictEqual(result, { 'inner': { 'myProp': 'nested-value' } });
     });
@@ -190,7 +190,7 @@ void describe('jt:alias coercion', () => {
       const registry = new SchemaRegistry();
 
       registry.register(ArrayItemAliasSchema);
-      const result = registry.coerce(ArrayItemAliasSchema.$id, [
+      const result = registry.instantiate(ArrayItemAliasSchema.$id, [
         { 'lbl': 'first' },
         { 'lbl': 'second' }
       ]);
@@ -222,9 +222,9 @@ void describe('jt:alias coercion', () => {
       let coercionPaths: string[] = [];
 
       try {
-        registry.coerce(WrongTypeSchema.$id, { 'cnt': 'not-a-number' });
+        registry.instantiate(WrongTypeSchema.$id, { 'cnt': 'not-a-number' });
       } catch (error: unknown) {
-        if (error instanceof CoercionError) {
+        if (error instanceof InstantiationError) {
           coercionPaths = error.errors.items.map((item) => {
             return item.path;
           });

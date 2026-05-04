@@ -18,7 +18,7 @@ import { parseRef } from '../graph/GraphEngineSupport.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
 import { projectAbox } from '../rdf/Projection.js';
 import { ValidationErrors } from '../../errors/ValidationErrors.js';
-import { CoercionError } from '../../errors/CoercionError.js';
+import { InstantiationError } from '../../errors/InstantiationError.js';
 
 
 /**
@@ -78,7 +78,7 @@ export class Materializer implements MaterializerInterface {
       } catch (error) {
         const causeError = error instanceof Error ? error : new Error(String(error));
 
-        throw new CoercionError(
+        throw new InstantiationError(
           new ValidationErrors([{
             'keyword': 'COMPUTED_FN_MISSING',
             'message': `Compute function for "${name}" threw: ${causeError.message}`,

@@ -1,18 +1,18 @@
 /**
- * coerce — Example 2: CoercionError handling in a request handler
+ * coerce — Example 2: InstantiationError handling in a request handler
  * Demonstrates: catch pattern, error views, RFC 7807 report
  */
 
-import { CoercionError } from '../../../src/index.js';
+import { InstantiationError } from '../../../src/index.js';
 import {
   CustomerSchema, bookstoreEntities as entities
 } from '../bookstore/index.js';
 
 function createCustomer(body: unknown) {
   try {
-    return entities.coerce(CustomerSchema.$id, body);
+    return entities.instantiate(CustomerSchema.$id, body);
   } catch (error) {
-    if (error instanceof CoercionError) {
+    if (error instanceof InstantiationError) {
       const problem = error.errors.report({ 'instance': '/customers' });
 
       // In a real handler: res.status(422).json(problem)

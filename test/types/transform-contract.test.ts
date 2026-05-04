@@ -29,7 +29,7 @@ type ParsedDate = ParseOutputType<typeof TransformedDateSchema>;
 const _wireTypeCheck: WireDate = '2024-01-01T00:00:00.000Z';
 const _parsedTypeCheck: ParsedDate = new Date('2024-01-01T00:00:00.000Z');
 
-const parsed = jt.coerce(TransformedDateSchema, '2024-01-01T00:00:00.000Z');
+const parsed = jt.instantiate(TransformedDateSchema, '2024-01-01T00:00:00.000Z');
 const materialized = jt.materialize(TransformedDateSchema, '2024-01-01T00:00:00.000Z');
 const encoded = jt.encode(TransformedDateSchema, new Date('2024-01-01T00:00:00.000Z'));
 

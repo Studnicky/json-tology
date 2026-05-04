@@ -9,7 +9,7 @@
  */
 
 import {
-  CoercionError, JsonTology, Value
+  InstantiationError, JsonTology, Value
 } from '../dist/index.js';
 import {
   allSchemas, DateTimeSchema, foafPersons,
@@ -58,7 +58,7 @@ for (const err of errs) {
 // ===== 3. coerce() — validate + defaults + strip unknowns ==================
 
 console.log('\n=== 3. coerce() ===');
-const parsed = jt.coerce(PersonSchema.$id, {
+const parsed = jt.instantiate(PersonSchema.$id, {
   ...foafPersons[0],
   // unknown property — stripped by coerce
   '_csrf': 'token123'
@@ -66,11 +66,11 @@ const parsed = jt.coerce(PersonSchema.$id, {
 
 console.log('Parsed person:', JSON.stringify(parsed, null, 2));
 
-console.log('\nCatching CoercionError:');
+console.log('\nCatching InstantiationError:');
 try {
-  jt.coerce(PersonSchema.$id, bad);
+  jt.instantiate(PersonSchema.$id, bad);
 } catch (error) {
-  if (error instanceof CoercionError) {
+  if (error instanceof InstantiationError) {
     console.log('  code:', error.code);
     console.log('  message:', error.message);
   }
@@ -152,7 +152,7 @@ console.log('Equal:', h1 === h2);
 // ===== 9. Transform roundtrip =============================================
 
 console.log('\n=== 9. Transform roundtrip ===');
-const date = jt.coerce(DateTimeSchema.$id, '2026-03-15T10:30:00.000Z') as unknown;
+const date = jt.instantiate(DateTimeSchema.$id, '2026-03-15T10:30:00.000Z') as unknown;
 
 if (date instanceof Date) {
   console.log('Decoded:', date.constructor.name, date.toISOString());
@@ -163,19 +163,21 @@ const wire = jt.encode(DateTimeSchema, date);
 
 console.log('Encoded:', wire);
 
-// ===== 10. validateAt() — validate nested sub-schema ======================
+// ===== 10. subschemaAt() — resolve nested sub-schema ======================
 
-console.log('\n=== 10. validateAt() ===');
-const knowsOk = jt.validateAt(PersonSchema.$id, '/properties/knows', [
+console.log('\n=== 10. subschemaAt() ===');
+const knowsSub = jt.subschemaAt(PersonSchema.$id, '/properties/knows');
+
+const knowsOkErrs = jt.validate(knowsSub, [
   'alice',
   'bob'
 ]);
 
-console.log('Valid knows at pointer:', knowsOk);
+console.log('Valid knows at pointer errors:', knowsOkErrs.items.length);
 
-const knowsBad = jt.validateAt(PersonSchema.$id, '/properties/knows', 'not-an-array');
+const knowsBadErrs = jt.validate(knowsSub, 'not-an-array');
 
 console.log('Invalid knows at pointer:');
-for (const msg of knowsBad) {
-  console.log(' ', msg);
+for (const err of knowsBadErrs.items) {
+  console.log(' ', err.path || 'root', ':', err.message);
 }

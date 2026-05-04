@@ -13,6 +13,8 @@ const sidebar = [
   {
     text: 'Core',
     items: [
+      { link: '/picking-a-method', text: 'Picking a method' },
+      { link: '/argument-conventions', text: 'Argument conventions' },
       { link: '/schemas', text: 'Schemas' },
       {
         text: 'Type Inference',
@@ -32,11 +34,11 @@ const sidebar = [
       {
         text: 'Validation',
         items: [
-          { link: '/validation/coerce', text: 'coerce' },
+          { link: '/validation/instantiate', text: 'instantiate' },
           { link: '/validation/validate', text: 'validate' },
           { link: '/validation/is', text: 'is' },
           { link: '/validation/errors', text: 'errors' },
-          { link: '/validation/validateAt', text: 'validateAt' }
+          { link: '/validation/subschemaAt', text: 'subschemaAt' }
         ]
       },
       {

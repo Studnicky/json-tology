@@ -8,7 +8,7 @@ import {
 } from 'node:test';
 import assert from 'node:assert/strict';
 import { BaseError } from '../../src/errors/BaseError.js';
-import { CoercionError } from '../../src/errors/CoercionError.js';
+import { InstantiationError } from '../../src/errors/InstantiationError.js';
 import { Compose } from '../../src/modules/composition/Compose.js';
 import { Result } from '../../src/modules/data/Result.js';
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
@@ -1107,11 +1107,11 @@ void describe('Result', () => {
             return fail.unwrap();
           },
           (err: unknown) => {
-            return err instanceof CoercionError;
+            return err instanceof InstantiationError;
           }
         );
       },
-      'name': 'unwrap throws CoercionError on failure'
+      'name': 'unwrap throws InstantiationError on failure'
     }
   ];
 
@@ -1208,11 +1208,11 @@ void describe('Error classes', () => {
             'path': '/age'
           }
         ];
-        const err = new CoercionError(items);
+        const err = new InstantiationError(items);
         const flat = err.flatten();
 
         assert.equal(flat.length, 3);
-        assert.equal(flat[0].code, 'COERCION_FAILED');
+        assert.equal(flat[0].code, 'INSTANTIATION_FAILED');
         assert.equal(flat[1].code, 'required');
         assert.ok(flat[1].message.includes('missing name'));
         assert.equal(flat[2].code, 'type');
@@ -1235,10 +1235,10 @@ void describe('Error classes', () => {
             'path': '/age'
           }
         ];
-        const err = new CoercionError(items);
+        const err = new InstantiationError(items);
         const json = err.toJson();
 
-        assert.equal(json.code, 'COERCION_FAILED');
+        assert.equal(json.code, 'INSTANTIATION_FAILED');
         assert.ok('errors' in json);
         const errors = (json as Record<string, unknown>).errors as Array<Record<string, unknown>>;
 

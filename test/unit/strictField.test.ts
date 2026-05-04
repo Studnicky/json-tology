@@ -46,7 +46,7 @@ void describe('jt:strict per-field', () => {
     const registry = new SchemaRegistry({ 'enableTypeCast': true });
 
     registry.register(StrictFieldSchema);
-    const result = registry.coerce(StrictFieldSchema.$id, {
+    const result = registry.instantiate(StrictFieldSchema.$id, {
       'age': 30,
       'name': 'Alice'
     });
@@ -63,7 +63,7 @@ void describe('jt:strict per-field', () => {
     registry.register(StrictFieldSchema);
 
     assert.throws(() => {
-      registry.coerce(StrictFieldSchema.$id, {
+      registry.instantiate(StrictFieldSchema.$id, {
         'age': '30',
         'name': 'Alice'
       });
@@ -74,7 +74,7 @@ void describe('jt:strict per-field', () => {
     const registry = new SchemaRegistry({ 'enableTypeCast': true });
 
     registry.register(StrictFieldSchema);
-    const result = registry.coerce(StrictFieldSchema.$id, {
+    const result = registry.instantiate(StrictFieldSchema.$id, {
       'age': 30,
       'name': 42
     }) as Record<string, unknown>;
@@ -88,7 +88,7 @@ void describe('jt:strict per-field', () => {
     registry.register(StrictFieldSchema);
 
     assert.throws(() => {
-      registry.coerce(StrictFieldSchema.$id, {
+      registry.instantiate(StrictFieldSchema.$id, {
         'age': true,
         'name': 'Alice'
       });
@@ -99,7 +99,7 @@ void describe('jt:strict per-field', () => {
     const registry = new SchemaRegistry();
 
     registry.register(StrictFieldSchema);
-    const result = registry.coerce(StrictFieldSchema.$id, {
+    const result = registry.instantiate(StrictFieldSchema.$id, {
       'age': 5,
       'name': 'Bob'
     });
@@ -116,7 +116,7 @@ void describe('jt:strict per-field', () => {
     registry.register(GlobalStrictConfigSchema);
 
     assert.throws(() => {
-      registry.coerce(GlobalStrictConfigSchema.$id, {
+      registry.instantiate(GlobalStrictConfigSchema.$id, {
         'count': '5',
         'label': 'hello'
       });
@@ -127,7 +127,7 @@ void describe('jt:strict per-field', () => {
     const registry = new SchemaRegistry({ 'enableTypeCast': true });
 
     registry.register(GlobalStrictConfigSchema);
-    const result = registry.coerce(GlobalStrictConfigSchema.$id, {
+    const result = registry.instantiate(GlobalStrictConfigSchema.$id, {
       'count': 5,
       'label': 99
     }) as Record<string, unknown>;

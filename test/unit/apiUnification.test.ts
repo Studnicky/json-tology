@@ -111,7 +111,7 @@ void describe('Item 2: ValidationErrors trimmed API', () => {
   });
 
   void it('flatten() is not a function on ValidationErrors', () => {
-    // Note: CoercionError/BaseError still have flatten() — this tests ValidationErrors only
+    // Note: InstantiationError/BaseError still have flatten() — this tests ValidationErrors only
     assert.equal(typeof (errs as unknown as Record<string, unknown>).flatten, 'undefined');
   });
 

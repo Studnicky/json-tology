@@ -7,7 +7,7 @@ import {
   BookSchema, bookstoreEntities as entities
 } from '../bookstore/index.js';
 
-const book = entities.coerce(BookSchema.$id, {
+const book = entities.instantiate(BookSchema.$id, {
   'authors': ['Fyodor Dostoevsky'],
   'isbn': '9780140449136',
   'price': {

@@ -33,13 +33,13 @@ export function runCoerceBench(): BenchResult[] {
   registry.register(DefaultsSchema);
 
   // Warm up
-  registry.coerce(SimpleSchema, simpleValid);
-  registry.coerce(DefaultsSchema, defaultsInput);
+  registry.instantiate(SimpleSchema, simpleValid);
+  registry.instantiate(DefaultsSchema, defaultsInput);
 
   section('coerce — already-valid data (no coercion needed)');
 
   const coerceValidJt = bench('coerce valid', 'json-tology', () => {
-    registry.coerce(SimpleSchema, simpleValid);
+    registry.instantiate(SimpleSchema, simpleValid);
   });
 
   results.push(coerceValidJt);
@@ -59,7 +59,7 @@ export function runCoerceBench(): BenchResult[] {
   section('coerce — defaults application');
 
   const coerceDefaultsJt = bench('coerce defaults', 'json-tology', () => {
-    registry.coerce(DefaultsSchema, defaultsInput);
+    registry.instantiate(DefaultsSchema, defaultsInput);
   });
 
   results.push(coerceDefaultsJt);

@@ -7,7 +7,7 @@ import {
 } from 'node:test';
 import assert from 'node:assert/strict';
 import { JsonTology } from '../../src/JsonTology.js';
-import { CoercionError } from '../../src/errors/CoercionError.js';
+import { InstantiationError } from '../../src/errors/InstantiationError.js';
 import { SchemaError } from '../../src/errors/SchemaError.js';
 
 // ---------------------------------------------------------------------------
@@ -103,7 +103,7 @@ function makeJt() {
 void describe('computed fields', () => {
   void it('coerce() fills computed field absent from input', () => {
     const jt = makeJt();
-    const result = jt.coerce('https://ex.io/Order', {
+    const result = jt.instantiate('https://ex.io/Order', {
       'items': [
         { 'price': 10 },
         { 'price': 5 }
@@ -138,13 +138,13 @@ void describe('computed fields', () => {
 
     assert.throws(
       () => {
-        jt.coerce('https://ex.io/Order', {
+        jt.instantiate('https://ex.io/Order', {
           'items': [{ 'price': 10 }],
           'total': 999
         });
       },
       (err: unknown) => {
-        assert.ok(err instanceof CoercionError, 'CoercionError thrown');
+        assert.ok(err instanceof InstantiationError, 'InstantiationError thrown');
         const messages = (err).errors.items.map((item) => {
           return `${item.path || 'root'}: ${item.message}`;
         });
@@ -168,9 +168,9 @@ void describe('computed fields', () => {
   void it('computed total reflects items passed', () => {
     const jt = makeJt();
 
-    const first = jt.coerce('https://ex.io/Order', { 'items': [{ 'price': 1 }] }) as Record<string, unknown>;
+    const first = jt.instantiate('https://ex.io/Order', { 'items': [{ 'price': 1 }] }) as Record<string, unknown>;
 
-    const second = jt.coerce('https://ex.io/Order', {
+    const second = jt.instantiate('https://ex.io/Order', {
       'items': [
         { 'price': 1 },
         { 'price': 2 },
@@ -204,7 +204,7 @@ void describe('computed fields', () => {
       ] as const
     });
 
-    const result = jt.coerce('https://ex.io/NestedOrder', {
+    const result = jt.instantiate('https://ex.io/NestedOrder', {
       'customer': { 'name': 'Alice' },
       'qty': 3
     }) as Record<string, unknown>;
@@ -213,10 +213,10 @@ void describe('computed fields', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // computed field that throws — error wrapped in CoercionError
+  // computed field that throws — error wrapped in InstantiationError
   // ---------------------------------------------------------------------------
 
-  void it('compute function that throws is wrapped in CoercionError', () => {
+  void it('compute function that throws is wrapped in InstantiationError', () => {
     const jt = JsonTology.create({
       'baseIRI': 'https://ex.io',
       'computeds': {
@@ -231,10 +231,10 @@ void describe('computed fields', () => {
 
     assert.throws(
       () => {
-        jt.coerce('https://ex.io/Throwing', { 'name': 'test' });
+        jt.instantiate('https://ex.io/Throwing', { 'name': 'test' });
       },
       (err: unknown) => {
-        assert.ok(err instanceof CoercionError, 'CoercionError thrown');
+        assert.ok(err instanceof InstantiationError, 'InstantiationError thrown');
         const messages = (err).errors.items.map((item) => {
           return `${item.path || 'root'}: ${item.message}`;
         });
@@ -257,7 +257,7 @@ void describe('computed fields', () => {
 
   void it('coerce() output contains computed field', () => {
     const jt = makeJt();
-    const result = jt.coerce('https://ex.io/Order', { 'items': [{ 'price': 50 }] }) as Record<string, unknown>;
+    const result = jt.instantiate('https://ex.io/Order', { 'items': [{ 'price': 50 }] }) as Record<string, unknown>;
 
     assert.ok('total' in result, 'total key present on output');
     assert.equal(result.total, 50);
@@ -272,7 +272,7 @@ void describe('computed fields', () => {
 
     jt.removeComputed('https://ex.io/Order', 'total');
 
-    const result = jt.coerce('https://ex.io/Order', { 'items': [{ 'price': 10 }] }) as Record<string, unknown>;
+    const result = jt.instantiate('https://ex.io/Order', { 'items': [{ 'price': 10 }] }) as Record<string, unknown>;
 
     assert.ok(!('total' in result) || result.total === undefined, 'total not computed after removeComputed');
   });

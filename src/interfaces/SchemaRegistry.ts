@@ -12,7 +12,6 @@ export interface SchemaRegistryInterface {
   cast(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown): unknown;
   readonly 'castTypes': boolean;
   clean(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown): unknown;
-  coerce(schema: (Record<string, unknown> & { '$id': string }) | string, data: unknown, callOptions?: { 'enableDefaults'?: boolean }): unknown;
   readonly 'computedStore': ComputedStore;
   convert(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown): unknown;
   create(schemaId: string): unknown;
@@ -21,13 +20,14 @@ export interface SchemaRegistryInterface {
   findDuplicates(): readonly DuplicateReportEntryType[];
   get(schemaId: string): Record<string, unknown> | undefined;
   graph(schemaId: string): SchemaGraphInterface | undefined;
+  instantiate(schema: (Record<string, unknown> & { '$id': string }) | string, data: unknown, callOptions?: { 'enableDefaults'?: boolean }): unknown;
   is(schema: (Record<string, unknown> & { '$id': string }) | string, data: unknown): boolean;
   list(): ReadonlyArray<Record<string, unknown>>;
   listGraphs(): readonly SchemaGraphInterface[];
   register(schemas: ReadonlyArray<Record<string, unknown>> | Record<string, unknown>): void;
   registerAnonymous(schema: Record<string, unknown>): string;
   removeInvariant(schemaId: string, name: string): void;
+  subschemaAt(schema: (Record<string, unknown> & { '$id': string }) | string, pointer: string): Record<string, unknown> & { '$id': string };
   validate(schema: (Record<string, unknown> & { '$id': string }) | string, data: unknown): ValidationErrors;
-  validateAt(schema: (Record<string, unknown> & { '$id': string }) | string, pointer: string, data: unknown): string[];
   validator(schemaId: string): CompiledValidatorInterface;
 }

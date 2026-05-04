@@ -60,7 +60,7 @@ void describe('jt:frozen output', () => {
 
     registry.register(FrozenSchema);
     registry.register(MetaSchema);
-    const result = registry.coerce(FrozenSchema.$id, { 'name': 'Alice' });
+    const result = registry.instantiate(FrozenSchema.$id, { 'name': 'Alice' });
 
     assert.ok(Object.isFrozen(result));
   });
@@ -69,7 +69,7 @@ void describe('jt:frozen output', () => {
     const registry = new SchemaRegistry();
 
     registry.register(MutableSchema);
-    const result = registry.coerce(MutableSchema.$id, { 'value': 'hello' }) as Record<string, unknown>;
+    const result = registry.instantiate(MutableSchema.$id, { 'value': 'hello' }) as Record<string, unknown>;
 
     assert.ok(!Object.isFrozen(result));
     result.value = 'mutated';
@@ -81,7 +81,7 @@ void describe('jt:frozen output', () => {
 
     registry.register(FrozenSchema);
     registry.register(MetaSchema);
-    const result = registry.coerce(FrozenSchema.$id, { 'name': 'Bob' }) as Record<string, unknown>;
+    const result = registry.instantiate(FrozenSchema.$id, { 'name': 'Bob' }) as Record<string, unknown>;
 
     assert.throws(() => {
       result.name = 'Charlie';
@@ -93,7 +93,7 @@ void describe('jt:frozen output', () => {
 
     registry.register(MetaSchema);
     registry.register(FrozenSchema);
-    const result = registry.coerce(FrozenSchema.$id, {
+    const result = registry.instantiate(FrozenSchema.$id, {
       'meta': { 'tag': 'test' },
       'name': 'Alice'
     }) as Record<string, unknown>;
@@ -106,7 +106,7 @@ void describe('jt:frozen output', () => {
     const registry = new SchemaRegistry();
 
     registry.register(FrozenArraySchema);
-    const result = registry.coerce(FrozenArraySchema.$id, {
+    const result = registry.instantiate(FrozenArraySchema.$id, {
       'items': [
         'a',
         'b'
@@ -121,7 +121,7 @@ void describe('jt:frozen output', () => {
     const registry = new SchemaRegistry();
 
     registry.register(FrozenViaConfigSchema);
-    const result = registry.coerce(FrozenViaConfigSchema.$id, { 'value': 42 });
+    const result = registry.instantiate(FrozenViaConfigSchema.$id, { 'value': 42 });
 
     assert.ok(Object.isFrozen(result));
   });
@@ -156,7 +156,7 @@ void describe('jt:frozen output', () => {
     registry.register(MetaSchema);
 
     assert.doesNotThrow(() => {
-      registry.coerce(FrozenSchema.$id, { 'name': 'safe' });
+      registry.instantiate(FrozenSchema.$id, { 'name': 'safe' });
     });
   });
 });

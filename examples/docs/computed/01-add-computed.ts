@@ -75,7 +75,7 @@ const entities = JsonTology.create({
   ] as const
 });
 
-const order = entities.coerce(ComputedOrderSchema.$id, {
+const order = entities.instantiate(ComputedOrderSchema.$id, {
   'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'id': 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   'items': [

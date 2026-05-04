@@ -32,4 +32,7 @@ export type LoadErrorCodeType
   | 'LOAD_IO_FAILURE'
   | 'LOAD_MISSING_ID';
 
+/** @deprecated Use InstantiationErrorCodeType */
 export type CoercionErrorCodeType = 'EXTRA_FORBIDDEN';
+
+export type InstantiationErrorCodeType = 'EXTRA_FORBIDDEN' | 'INSTANTIATION_FAILED';

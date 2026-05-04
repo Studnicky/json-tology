@@ -18,7 +18,7 @@ const jt = JsonTology.create({
 });
 
 // Full coerce — fills defaults including addresses: []
-const full = jt.coerce(CustomerSchema.$id, {
+const full = jt.instantiate(CustomerSchema.$id, {
   'email': 'alice@bookstore.example',
   'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'name': 'Alice Chen'
@@ -27,7 +27,7 @@ const full = jt.coerce(CustomerSchema.$id, {
 console.log('Full coerce (addresses default filled):', Array.isArray(full.addresses) && full.addresses.length === 0);
 
 // Patch coerce — missing fields stay missing (no defaults filled)
-const patch = jt.coerce(CustomerSchema.$id, {
+const patch = jt.instantiate(CustomerSchema.$id, {
   'email': 'alice@bookstore.example',
   'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'name': 'Alice Chen'
