@@ -30,6 +30,7 @@ import { GraphEngine } from '../graph/GraphEngine.js';
 import { Hash } from '../hash/Hash.js';
 import { InvariantStore } from './InvariantStore.js';
 import { Materializer } from '../materialization/Materializer.js';
+import { Resolver } from '../data/Resolver.js';
 import { SchemaCompiler } from '../validation/SchemaCompiler.js';
 import { SchemaError } from '../../errors/SchemaError.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
@@ -325,12 +326,12 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
 
     const compiled = this.compiledFromEntry(entry);
-    const resolvedOptions = callOptions?.enableDefaults === undefined
-      ? this.instantiateOptions
-      : {
-        ...this.instantiateOptions,
-        'applyDefaults': callOptions.enableDefaults
-      };
+    const resolvedOptions = Resolver.merge(
+      { ...this.instantiateOptions },
+      callOptions?.enableDefaults === undefined
+        ? undefined
+        : { 'applyDefaults': callOptions.enableDefaults }
+    );
     const result = compiled.validate(structuredClone(data), resolvedOptions);
 
     if (!result.valid) {

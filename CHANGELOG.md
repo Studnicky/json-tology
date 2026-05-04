@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `SchemaRefType` — universal schema reference type: every method now accepts both a string `$id` and a schema object with `$id`.
 - Static counterparts for all 13 instance methods: `JsonTology.is`, `JsonTology.validate`, `JsonTology.instantiate`, `JsonTology.materialize`, `JsonTology.subschemaAt`, `JsonTology.dump`, `JsonTology.dumpJson`, `JsonTology.toQuads`, `JsonTology.fromQuads`, `JsonTology.toSchema`, `JsonTology.toTbox`, `JsonTology.toShacl`, `JsonTology.ontology`. Each creates an ephemeral registry for one-shot execution with no shared state.
 - `InstantiationErrorCode` constant exported from `json-tology/constants`.
+- `AggregateViewType` named export from `json-tology/types` — typed return value of `ValidationErrors.aggregate()`.
 - New doc pages: `docs/picking-a-method.md`, `docs/argument-conventions.md`.
 
 ### BREAKING

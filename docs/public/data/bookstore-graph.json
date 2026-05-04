@@ -2,11 +2,20 @@
   "edges": [
     {
       "data": {
-        "id": "urn:bookstore:AuthorName__equivalentClass__urn:bookstore:CustomerName",
+        "id": "urn:bookstore:AuthorName__equivalentClass__urn:bookstore:PersonName",
         "kind": "equivalentClass",
         "label": "equivalentClass",
         "source": "urn:bookstore:AuthorName",
-        "target": "urn:bookstore:CustomerName"
+        "target": "urn:bookstore:PersonName"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:CustomerName__equivalentClass__urn:bookstore:PersonName",
+        "kind": "equivalentClass",
+        "label": "equivalentClass",
+        "source": "urn:bookstore:CustomerName",
+        "target": "urn:bookstore:PersonName"
       }
     },
     {
@@ -300,13 +309,6 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:CustomerName",
-        "kind": "primitive",
-        "label": "CustomerName"
-      }
-    },
-    {
-      "data": {
         "id": "urn:bookstore:Email",
         "kind": "primitive",
         "label": "Email"
@@ -331,6 +333,13 @@
         "id": "urn:bookstore:OrderId",
         "kind": "primitive",
         "label": "OrderId"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:PersonName",
+        "kind": "primitive",
+        "label": "PersonName"
       }
     },
     {
@@ -380,6 +389,13 @@
         "id": "urn:bookstore:AuthorName",
         "kind": "primitive",
         "label": "AuthorName"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:CustomerName",
+        "kind": "primitive",
+        "label": "CustomerName"
       }
     },
     {

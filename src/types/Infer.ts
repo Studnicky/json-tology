@@ -725,7 +725,7 @@ type PrefixPointerType<TPrefix extends string, TSuffix>
 
 /**
  * Derive valid JSON Pointer paths from a schema type.
- * Provides IDE autocomplete for `validateAt()` pointer arguments.
+ * Provides IDE autocomplete for `subschemaAt()` pointer arguments.
  *
  * @typeParam T - The schema type (should be `as const`).
  * @typeParam TDepth - Internal recursion limiter (do not set manually).

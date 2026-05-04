@@ -332,7 +332,7 @@ void describe('null/undefined schema guard on public API', () => {
       'fn': () => {
         jt.subschemaAt(null as unknown as string, '/properties/x');
       },
-      'name': 'validateAt() throws SchemaError for null'
+      'name': 'subschemaAt() throws SchemaError for null'
     }
   ];
 

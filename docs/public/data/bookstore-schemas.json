@@ -32,12 +32,6 @@
     "format": "uuid",
     "type": "string"
   },
-  "urn:bookstore:CustomerName": {
-    "$id": "urn:bookstore:CustomerName",
-    "maxLength": 200,
-    "minLength": 1,
-    "type": "string"
-  },
   "urn:bookstore:Email": {
     "$id": "urn:bookstore:Email",
     "format": "email",
@@ -56,6 +50,12 @@
   "urn:bookstore:OrderId": {
     "$id": "urn:bookstore:OrderId",
     "format": "uuid",
+    "type": "string"
+  },
+  "urn:bookstore:PersonName": {
+    "$id": "urn:bookstore:PersonName",
+    "maxLength": 200,
+    "minLength": 1,
     "type": "string"
   },
   "urn:bookstore:PostalCode": {
@@ -94,8 +94,13 @@
   },
   "urn:bookstore:AuthorName": {
     "$id": "urn:bookstore:AuthorName",
-    "$ref": "urn:bookstore:CustomerName",
-    "description": "Same validation as CustomerName; semantically a distinct domain concept (book authorship, not customer identity)."
+    "$ref": "urn:bookstore:PersonName",
+    "description": "A person’s name in the book-authorship context. Validation is owned by PersonName; this is a domain-specific brand."
+  },
+  "urn:bookstore:CustomerName": {
+    "$id": "urn:bookstore:CustomerName",
+    "$ref": "urn:bookstore:PersonName",
+    "description": "A person’s name in the customer-identity context. Validation is owned by PersonName; this is a domain-specific brand."
   },
   "urn:bookstore:Money": {
     "$id": "urn:bookstore:Money",

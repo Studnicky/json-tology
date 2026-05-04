@@ -3,6 +3,7 @@
  */
 
 import type {
+  AggregateViewType,
   ProblemDetailsType,
   ValidationErrorType
 } from '../types/Validation.js';
@@ -100,11 +101,7 @@ export class ValidationErrors implements Iterable<ValidationErrorType> {
    * Paths are returned in access form (`items[0].quantity`) not JSON Pointer (`/items/0/quantity`).
    * Use `errs.items.map(e => e.path)` for JSON Pointer paths.
    */
-  public aggregate(): {
-    'count': number;
-    'keywords': string[];
-    'paths': string[];
-  } {
+  public aggregate(): AggregateViewType {
     const pathSet = new Set<string>();
     const keywordSet = new Set<string>();
 

@@ -7,11 +7,11 @@ import { CityNameSchema } from './entities/CityName.js';
 import { CountryCodeSchema } from './entities/CountryCode.js';
 import { CurrencyCodeSchema } from './entities/CurrencyCode.js';
 import { CustomerIdSchema } from './entities/CustomerId.js';
-import { CustomerNameSchema } from './entities/CustomerName.js';
 import { EmailSchema } from './entities/Email.js';
 import { IsbnSchema } from './entities/Isbn.js';
 import { Iso8601Schema } from './entities/Iso8601.js';
 import { OrderIdSchema } from './entities/OrderId.js';
+import { PersonNameSchema } from './entities/PersonName.js';
 import { PostalCodeSchema } from './entities/PostalCode.js';
 import { QuantitySchema } from './entities/Quantity.js';
 import { RatingScoreSchema } from './entities/RatingScore.js';
@@ -19,8 +19,9 @@ import { ReviewIdSchema } from './entities/ReviewId.js';
 import { StreetLineSchema } from './entities/StreetLine.js';
 import { TitleSchema } from './entities/Title.js';
 
-// AuthorName depends on CustomerName — must import after
+// CustomerName + AuthorName are sibling extensions of PersonName — must import after
 import { AuthorNameSchema } from './entities/AuthorName.js';
+import { CustomerNameSchema } from './entities/CustomerName.js';
 
 // Money depends on Amount + CurrencyCode — must import after
 import { MoneySchema } from './entities/Money.js';
@@ -40,19 +41,20 @@ const allSchemas = [
   CountryCodeSchema,
   CurrencyCodeSchema,
   CustomerIdSchema,
-  CustomerNameSchema,
   EmailSchema,
   IsbnSchema,
   Iso8601Schema,
   OrderIdSchema,
+  PersonNameSchema,
   PostalCodeSchema,
   QuantitySchema,
   RatingScoreSchema,
   ReviewIdSchema,
   StreetLineSchema,
   TitleSchema,
-  // AuthorName depends on CustomerName
+  // CustomerName + AuthorName are sibling extensions of PersonName
   AuthorNameSchema,
+  CustomerNameSchema,
   // Money depends on Amount + CurrencyCode
   MoneySchema,
   // Entities
@@ -96,6 +98,7 @@ export { MoneySchema } from './entities/Money.js';
 export { OrderSchema } from './entities/Order.js';
 export { OrderIdSchema } from './entities/OrderId.js';
 export { OrderLineSchema } from './entities/OrderLine.js';
+export { PersonNameSchema } from './entities/PersonName.js';
 export { PostalCodeSchema } from './entities/PostalCode.js';
 
 export { QuantitySchema } from './entities/Quantity.js';

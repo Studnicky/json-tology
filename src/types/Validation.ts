@@ -14,6 +14,12 @@ export interface ProblemDetailsErrorEntryType {
   'path': string;
 }
 
+export interface AggregateViewType {
+  'count': number;
+  'keywords': string[];
+  'paths': string[];
+}
+
 export interface ProblemDetailsType {
   'detail': string;
   'errors': ProblemDetailsErrorEntryType[];

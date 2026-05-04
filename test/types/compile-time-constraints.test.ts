@@ -3,7 +3,7 @@
  *
  * Verifies that json-tology catches errors at compile time:
  * - Cross-schema $ref resolution
- * - JSON Pointer path validation for validateAt
+ * - JSON Pointer path validation for subschemaAt
  * - Materialized type precision (defaults become non-optional)
  * - Transform decode/encode type safety
  * - Property path helpers
