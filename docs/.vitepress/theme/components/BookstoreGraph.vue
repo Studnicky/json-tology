@@ -215,13 +215,17 @@ onMounted(async () => {
       }
     ],
     layout: {
-      name: 'fcose',
+      name: 'cose',
       animate: false,
-      randomize: true,
-      idealEdgeLength: 120,
-      nodeRepulsion: 8000,
-      gravity: 0.4,
-      numIter: 4000
+      fit: true,
+      padding: 80,
+      nodeRepulsion: () => 7000,
+      idealEdgeLength: () => 75,
+      gravity: 90,
+      numIter: 1500,
+      randomize: false,
+      componentSpacing: 50,
+      boundingBox: { x1: 60, y1: 40, w: 940, h: 640 }
     } as Record<string, unknown>
   });
 
@@ -313,7 +317,7 @@ function schemaText(schema: unknown): string {
 .bookstore-graph-container {
   position: relative;
   width: 100%;
-  min-height: 520px;
+  min-height: 720px;
   border: 1px solid var(--vp-c-divider);
   border-radius: 8px;
   overflow: hidden;
@@ -322,14 +326,14 @@ function schemaText(schema: unknown): string {
 
 .cy-container {
   width: 100%;
-  height: 520px;
+  height: 720px;
 }
 
 .graph-loading {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 520px;
+  height: 720px;
   color: var(--vp-c-text-2);
   font-size: 14px;
 }

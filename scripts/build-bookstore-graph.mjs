@@ -4,8 +4,8 @@
  * Generates Cytoscape-format graph data from the bookstore ontology TBox.
  *
  * Reads entities.toTbox().raw() and transforms OWL quads into:
- *   docs/.vitepress/data/bookstore-graph.json  — Cytoscape elements
- *   docs/.vitepress/data/bookstore-schemas.json — schema literals by $id
+ *   docs/public/data/bookstore-graph.json  — Cytoscape elements
+ *   docs/public/data/bookstore-schemas.json — schema literals by $id
  *
  * Run via: npm run build:bookstore-graph
  */
@@ -20,7 +20,7 @@ import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
-const DATA_DIR = join(ROOT, 'docs', '.vitepress', 'data');
+const DATA_DIR = join(ROOT, 'docs', 'public', 'data');
 const BOOKSTORE_INDEX = join(ROOT, 'examples', 'docs', 'bookstore', 'index.js');
 
 // ---------------------------------------------------------------------------
