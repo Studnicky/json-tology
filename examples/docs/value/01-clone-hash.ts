@@ -6,7 +6,7 @@
 import { Value } from '../../../src/index.js';
 import {
   bookstoreJt, OrderSchema
-} from '../bookstore/schemas.js';
+} from '../bookstore/index.js';
 
 const order = bookstoreJt.coerce(OrderSchema.$id, {
   'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',

@@ -76,7 +76,7 @@ Extend `OrderSchema` with a `payment` field typed as the union.
 
 ```ts
 import { Compose } from 'json-tology';
-import { OrderSchema } from './bookstore/schemas.js';
+import { OrderSchema } from './bookstore/index.js';
 
 const OrderWithPaymentSchema = Compose.extend(
   OrderSchema,

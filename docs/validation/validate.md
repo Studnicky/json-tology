@@ -11,7 +11,7 @@
 ### Example 1: Basic valid and invalid cases
 
 ```ts
-import { jt, CustomerSchema } from './bookstore/schemas.js';
+import { bookstoreJt, CustomerSchema } from './bookstore/index.js';
 
 // Valid — empty array
 const ok = jt.validate(CustomerSchema.$id, {
@@ -34,7 +34,7 @@ console.log(bad);
 `OrderSchema` contains `items: [OrderLine]` via `$ref`. Errors on nested fields include the full JSON Pointer path.
 
 ```ts
-import { jt, OrderSchema } from './bookstore/schemas.js';
+import { bookstoreJt, OrderSchema } from './bookstore/index.js';
 
 const errors = jt.validate(OrderSchema.$id, {
   id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
@@ -53,7 +53,7 @@ const errors = jt.validate(OrderSchema.$id, {
 Validate on blur before attempting a full coerce.
 
 ```ts
-import { jt, ReviewSchema } from './bookstore/schemas.js';
+import { bookstoreJt, ReviewSchema } from './bookstore/index.js';
 
 function validateReviewForm(formData: Record<string, unknown>): string[] {
   return jt.validate(ReviewSchema.$id, formData);

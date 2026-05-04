@@ -5,7 +5,10 @@
 
 import { JsonTology } from '../../../src/index.js';
 import type { InferType } from '../../../src/index.js';
-import { OrderLineSchema } from '../bookstore/schemas.js';
+import {
+  IsbnSchema, MoneySchema, OrderLineSchema,
+  QuantitySchema
+} from '../bookstore/index.js';
 
 const ComputedOrderSchema = {
   '$id': 'https://bookstore.example/ComputedOrder',
@@ -23,7 +26,7 @@ const ComputedOrderSchema = {
       'type': 'string'
     },
     'items': {
-      'items': { '$ref': 'https://bookstore.example/OrderLine' },
+      'items': { '$ref': 'urn:bookstore:OrderLine' },
       'minItems': 1,
       'type': 'array'
     },
@@ -63,6 +66,9 @@ const bookstoreJt = JsonTology.create({
     }
   },
   'schemas': [
+    IsbnSchema,
+    MoneySchema,
+    QuantitySchema,
     OrderLineSchema,
     ComputedOrderSchema
   ] as const

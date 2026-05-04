@@ -19,7 +19,7 @@ Computed fields are properties derived from other fields at coerce/materialize t
 ```ts
 import { JsonTology } from 'json-tology';
 import type { InferType } from 'json-tology';
-import { OrderLineSchema } from './bookstore/schemas.js';
+import { OrderLineSchema } from './bookstore/index.js';
 
 const ComputedOrderSchema = {
   $id: 'https://bookstore.example/ComputedOrder',

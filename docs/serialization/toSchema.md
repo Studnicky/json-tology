@@ -11,7 +11,7 @@
 ### Example 1: Round-trip an Order schema
 
 ```ts
-import { jt } from './bookstore/schemas.js';
+import { bookstoreJt } from './bookstore/index.js';
 
 const reconstructed = jt.toSchema('https://bookstore.example/Order');
 console.log(JSON.stringify(reconstructed, null, 2));
@@ -22,7 +22,7 @@ console.log(JSON.stringify(reconstructed, null, 2));
 
 ```ts
 import { Compose } from 'json-tology';
-import { jt, BookSchema } from './bookstore/schemas.js';
+import { bookstoreJt, BookSchema } from './bookstore/index.js';
 
 const BookSummarySchema = Compose.pick(
   BookSchema,

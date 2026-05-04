@@ -6,7 +6,10 @@
 import {
   Compose, JsonTology
 } from '../../../src/index.js';
-import { BookSchema } from '../bookstore/schemas.js';
+import {
+  AuthorNameSchema, BookSchema, CurrencyCodeSchema, IsbnSchema, MoneySchema,
+  TitleSchema
+} from '../bookstore/index.js';
 
 // pick — keep only catalog display fields
 const BookSummarySchema = Compose.pick(
@@ -31,6 +34,12 @@ const PublicBookSchema = Compose.omit(
 const bookstoreJt = JsonTology.create({
   'baseIRI': 'https://bookstore.example',
   'schemas': [
+    AuthorNameSchema,
+    CurrencyCodeSchema,
+    IsbnSchema,
+    MoneySchema,
+    TitleSchema,
+    BookSchema,
     BookSummarySchema,
     PublicBookSchema
   ] as const

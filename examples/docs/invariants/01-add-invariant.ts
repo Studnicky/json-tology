@@ -6,15 +6,17 @@
 import { JsonTology } from '../../../src/index.js';
 import type { InferType } from '../../../src/index.js';
 import {
-  OrderLineSchema, OrderSchema
-} from '../bookstore/schemas.js';
+  CurrencyCodeSchema, CustomerIdSchema, IsbnSchema, Iso8601Schema,
+  MoneySchema, OrderIdSchema, OrderLineSchema,
+  OrderSchema, QuantitySchema
+} from '../bookstore/index.js';
 
 type Order = InferType<typeof OrderSchema>;
 
 const localJt = JsonTology.create({
   'baseIRI': 'https://bookstore.example',
   'invariants': {
-    'https://bookstore.example/Order': [{
+    [OrderSchema.$id]: [{
       'fn': (order) => {
         const typed = order as Order;
         const computed = (typed.items as Array<{
@@ -26,13 +28,20 @@ const localJt = JsonTology.create({
 
         return Math.abs(typed.total - computed) < 0.01
           ? null
-          : `total must equal sum of items (expected ${computed.toFixed(2)}, got ${typed.total})`;
+          : `total must equal sum of items (expected ${computed.toFixed(2)}, got ${String(typed.total)})`;
       },
       'name': 'totalMatchesItems',
       'pointer': '/total'
     }]
   },
   'schemas': [
+    CurrencyCodeSchema,
+    CustomerIdSchema,
+    Iso8601Schema,
+    IsbnSchema,
+    MoneySchema,
+    OrderIdSchema,
+    QuantitySchema,
     OrderLineSchema,
     OrderSchema
   ] as const
@@ -62,7 +71,7 @@ console.assert(errs.items.some((errItem) => {
 console.assert(!localJt.is(OrderSchema.$id, invalidOrder));
 
 // removeInvariant works
-localJt.removeInvariant('https://bookstore.example/Order', 'totalMatchesItems');
+localJt.removeInvariant(OrderSchema.$id, 'totalMatchesItems');
 
 // After removal, invariant no longer fires
 const errs2 = localJt.errors(OrderSchema.$id, invalidOrder);

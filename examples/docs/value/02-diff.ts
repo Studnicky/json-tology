@@ -4,10 +4,10 @@
  */
 
 import { Value } from '../../../src/index.js';
-import type { Customer } from '../bookstore/schemas.js';
+import type { Customer } from '../bookstore/index.js';
 import {
   bookstoreJt, CustomerSchema
-} from '../bookstore/schemas.js';
+} from '../bookstore/index.js';
 
 const before = bookstoreJt.coerce(CustomerSchema.$id, {
   'email': 'alice@bookstore.example',

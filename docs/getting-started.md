@@ -10,16 +10,35 @@ npm install json-tology
 
 ## Define a schema
 
-Schemas are plain JSON Schema objects with `$id` and `as const`. The bookstore domain used in all examples starts here. See the [Bookstore Domain](/bookstore-domain) page for all six schemas defined in full.
+Schemas are plain JSON Schema objects with `$id` and `as const`. The bookstore domain used in all examples follows the one-file-per-concept pattern. See the [Bookstore Domain](/bookstore-domain) page for the full folder layout and all schemas.
+
+Primitives are named, reusable schemas with a `urn:` IRI:
 
 ```ts
+// entities/CustomerId.ts
+import { CustomerIdSchema } from './entities/CustomerId.js';
+export const CustomerIdSchema = {
+  $id: 'urn:bookstore:CustomerId',
+  type: 'string',
+  format: 'uuid',
+} as const;
+```
+
+Entities compose primitives via `$ref: SourceSchema.$id` — never bare string literals:
+
+```ts
+// entities/Customer.ts
+import { CustomerIdSchema } from './CustomerId.js';
+import { EmailSchema } from './Email.js';
+import { PersonNameSchema } from './PersonName.js';
+
 const CustomerSchema = {
-  $id: 'https://bookstore.example/Customer',
+  $id: 'urn:bookstore:Customer',
   type: 'object',
   properties: {
-    id:    { type: 'string', format: 'uuid' },
-    email: { type: 'string', format: 'email' },
-    name:  { type: 'string' },
+    id:    { $ref: CustomerIdSchema.$id },
+    email: { $ref: EmailSchema.$id },
+    name:  { $ref: PersonNameSchema.$id },
   },
   required: ['id', 'email', 'name'],
 } as const;

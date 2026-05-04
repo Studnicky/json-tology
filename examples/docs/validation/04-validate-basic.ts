@@ -5,7 +5,7 @@
 
 import {
   bookstoreJt, CustomerSchema
-} from '../bookstore/schemas.js';
+} from '../bookstore/index.js';
 
 // Valid input
 const ok = bookstoreJt.validate(CustomerSchema.$id, {

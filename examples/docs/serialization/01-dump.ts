@@ -5,7 +5,7 @@
 
 import {
   BookSchema, bookstoreJt
-} from '../bookstore/schemas.js';
+} from '../bookstore/index.js';
 
 const book = bookstoreJt.coerce(BookSchema.$id, {
   'authors': ['Fyodor Dostoevsky'],

@@ -5,7 +5,7 @@
 
 import {
   bookstoreJt, ReviewSchema
-} from '../bookstore/schemas.js';
+} from '../bookstore/index.js';
 
 const errs = bookstoreJt.errors(ReviewSchema.$id, {
   'body': 'short',

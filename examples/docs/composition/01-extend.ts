@@ -6,7 +6,13 @@
 import {
   Compose, JsonTology
 } from '../../../src/index.js';
-import { CustomerSchema } from '../bookstore/schemas.js';
+import {
+  AddressSchema, AuthorNameSchema, CityNameSchema, CountryCodeSchema,
+  CurrencyCodeSchema, CustomerIdSchema, CustomerSchema, EmailSchema, IsbnSchema,
+  Iso8601Schema, MoneySchema, OrderIdSchema, PersonNameSchema,
+  PostalCodeSchema, QuantitySchema, RatingScoreSchema, ReviewIdSchema,
+  StreetLineSchema, TitleSchema
+} from '../bookstore/index.js';
 
 const CustomerWithDiscountSchema = Compose.extend(
   CustomerSchema,
@@ -32,7 +38,28 @@ const CustomerWithDiscountSchema = Compose.extend(
 
 const bookstoreJt = JsonTology.create({
   'baseIRI': 'https://bookstore.example',
-  'schemas': [CustomerWithDiscountSchema] as const
+  'schemas': [
+    AuthorNameSchema,
+    CityNameSchema,
+    CountryCodeSchema,
+    CurrencyCodeSchema,
+    CustomerIdSchema,
+    EmailSchema,
+    IsbnSchema,
+    Iso8601Schema,
+    MoneySchema,
+    OrderIdSchema,
+    PersonNameSchema,
+    PostalCodeSchema,
+    QuantitySchema,
+    RatingScoreSchema,
+    ReviewIdSchema,
+    StreetLineSchema,
+    TitleSchema,
+    AddressSchema,
+    CustomerSchema,
+    CustomerWithDiscountSchema
+  ] as const
 });
 
 const coercedCustomer = bookstoreJt.coerce(CustomerWithDiscountSchema.$id, {

@@ -15,7 +15,7 @@ Both `Order` and `Audit` required arrays must be satisfied.
 ```ts
 import { Compose, JsonTology } from 'json-tology';
 import type { InferType } from 'json-tology';
-import { OrderLineSchema, OrderSchema } from './bookstore/schemas.js';
+import { OrderLineSchema, OrderSchema } from './bookstore/index.js';
 
 const AuditSchema = {
   $id: 'https://bookstore.example/Audit',

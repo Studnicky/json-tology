@@ -1,176 +1,289 @@
 # The Bookstore Domain
 
-Every example throughout this documentation uses a single running domain — an eCommerce bookstore. This page defines the six schemas that appear in all subsequent guides. Later guides build on this foundation, and examples reference these types by name without re-defining them.
+Every example throughout this documentation uses a single running domain — an eCommerce bookstore. This page defines the folder structure and the schemas that appear in all subsequent guides. Later guides build on this foundation, and examples reference these types by name without re-defining them.
 
 ## Why a shared domain
 
 Reading scattered docs is hard when every page introduces fresh data types. By anchoring everything to one domain you can see how concepts compose — `coerce` in the Validation guide operates on the same `Customer` you defined here; `extend` in Composition derives `CustomerWithDiscount` from that same `Customer`; `dump` in Serialization serializes the order produced by Coercion.
 
-## The six schemas
+## Folder layout
+
+```
+examples/docs/bookstore/
+├── index.ts                      # JsonTology.create + re-exports
+└── entities/
+    ├── AuthorName.ts             # primitive: string, minLength 1
+    ├── CityName.ts               # primitive: string, 1–100 chars
+    ├── CountryCode.ts            # primitive: string, pattern ^[A-Z]{2}$
+    ├── CurrencyCode.ts           # primitive: string, enum of 6 codes
+    ├── CustomerId.ts             # primitive: string, format uuid
+    ├── Email.ts                  # primitive: string, format email
+    ├── Isbn.ts                   # primitive: string, pattern ^\d{13}$
+    ├── Iso8601.ts                # primitive: string, format date-time
+    ├── Money.ts                  # primitive: number, minimum 0
+    ├── OrderId.ts                # primitive: string, format uuid
+    ├── PersonName.ts             # primitive: string, 1–200 chars
+    ├── PostalCode.ts             # primitive: string, 3–12 chars
+    ├── Quantity.ts               # primitive: integer, minimum 1
+    ├── RatingScore.ts            # primitive: integer, 1–5
+    ├── ReviewId.ts               # primitive: string, format uuid
+    ├── StreetLine.ts             # primitive: string, 1–200 chars
+    ├── Title.ts                  # primitive: string, 1–500 chars
+    ├── Address.ts                # entity: composes StreetLine + CityName + PostalCode + CountryCode
+    ├── Book.ts                   # entity: composes Isbn + Title + AuthorName + Money + CurrencyCode
+    ├── Customer.ts               # entity: composes CustomerId + Email + PersonName + Address
+    ├── OrderLine.ts              # entity: composes Isbn + Quantity + Money
+    ├── Order.ts                  # entity: composes OrderId + CustomerId + OrderLine + Money + ...
+    └── Review.ts                 # entity: composes ReviewId + Isbn + CustomerId + RatingScore + ...
+```
+
+Each primitive file exports a single schema constant with a stable `$id` using the `urn:bookstore:` IRI pattern. Entity files import only the primitives they reference — every `$ref` is `{ $ref: SourceSchema.$id }` with an explicit named import at the top of the file.
+
+## The IRI pattern
+
+All bookstore schemas use URN-style identifiers:
+
+```
+urn:bookstore:{PascalCaseName}
+```
+
+Examples: `urn:bookstore:Isbn`, `urn:bookstore:Customer`, `urn:bookstore:Order`.
+
+## Primitives (named, single source of truth)
+
+### Isbn
+
+```ts
+// entities/Isbn.ts
+export const IsbnSchema = {
+  $id: 'urn:bookstore:Isbn',
+  type: 'string',
+  pattern: '^\\d{13}$',
+} as const;
+```
+
+### CustomerId / OrderId / ReviewId
+
+```ts
+// entities/CustomerId.ts
+import { CustomerIdSchema } from './entities/CustomerId.js';
+
+export const CustomerIdSchema = {
+  $id: 'urn:bookstore:CustomerId',
+  type: 'string',
+  format: 'uuid',
+} as const;
+```
+
+### Email
+
+```ts
+// entities/Email.ts
+export const EmailSchema = {
+  $id: 'urn:bookstore:Email',
+  type: 'string',
+  format: 'email',
+} as const;
+```
+
+### Money
+
+```ts
+// entities/Money.ts
+export const MoneySchema = {
+  $id: 'urn:bookstore:Money',
+  type: 'number',
+  minimum: 0,
+} as const;
+```
+
+## Entities (composed of named primitives)
 
 ### Address
 
-An Address is a re-usable embedded object. It appears on `Customer` (as `addresses`) and is used as a sub-schema via `$ref`.
-
 ```ts
-import { JsonTology } from 'json-tology';
-import type { InferType } from 'json-tology';
+// entities/Address.ts
+import { CityNameSchema } from './CityName.js';
+import { CountryCodeSchema } from './CountryCode.js';
+import { PostalCodeSchema } from './PostalCode.js';
+import { StreetLineSchema } from './StreetLine.js';
 
-const AddressSchema = {
-  $id: 'https://bookstore.example/Address',
+export const AddressSchema = {
+  $id: 'urn:bookstore:Address',
   type: 'object',
   properties: {
-    street:     { type: 'string' },
-    city:       { type: 'string' },
-    postalCode: { type: 'string' },
-    country:    { type: 'string', default: 'US' },
+    street:     { $ref: StreetLineSchema.$id },
+    city:       { $ref: CityNameSchema.$id },
+    postalCode: { $ref: PostalCodeSchema.$id },
+    country:    { $ref: CountryCodeSchema.$id },
   },
   required: ['street', 'city', 'postalCode'],
 } as const;
-
-type Address = InferType<typeof AddressSchema>;
-// {
-//   readonly street: string;
-//   readonly city: string;
-//   readonly postalCode: string;
-//   readonly country?: string;
-// }
 ```
 
 ### Customer
 
-A Customer has identity fields (`id`, `email`, `name`) and a list of delivery addresses. The `addresses` array defaults to empty so `coerce()` never returns `undefined` for it.
-
 ```ts
-const CustomerSchema = {
-  $id: 'https://bookstore.example/Customer',
+// entities/Customer.ts
+import { CustomerIdSchema } from './CustomerId.js';
+import { EmailSchema } from './Email.js';
+import { PersonNameSchema } from './PersonName.js';
+// see entities/Address.ts for AddressSchema
+export const CustomerSchema = {
+  $id: 'urn:bookstore:Customer',
   type: 'object',
   properties: {
-    id:        { type: 'string', format: 'uuid' },
-    email:     { type: 'string', format: 'email' },
-    name:      { type: 'string' },
+    id:        { $ref: CustomerIdSchema.$id },
+    email:     { $ref: EmailSchema.$id },
+    name:      { $ref: PersonNameSchema.$id },
     addresses: {
       type: 'array',
-      items: { $ref: 'https://bookstore.example/Address' },
+      items: { $ref: 'urn:bookstore:Address' },
       default: [],
     },
   },
   required: ['id', 'email', 'name'],
 } as const;
-
-type Customer = InferType<typeof CustomerSchema>;
 ```
 
 ### Book
 
-A Book is the product being sold. `isbn` is a 13-digit string, `price` must be strictly positive, and `inStock` defaults to `true`.
-
 ```ts
-const BookSchema = {
-  $id: 'https://bookstore.example/Book',
+// entities/Book.ts
+import { AuthorNameSchema } from './AuthorName.js';
+import { CurrencyCodeSchema } from './CurrencyCode.js';
+import { IsbnSchema } from './Isbn.js';
+import { MoneySchema } from './Money.js';
+import { TitleSchema } from './Title.js';
+
+export const BookSchema = {
+  $id: 'urn:bookstore:Book',
   type: 'object',
   properties: {
-    isbn:     { type: 'string', pattern: '^\\d{13}$' },
-    title:    { type: 'string' },
-    authors:  { type: 'array', items: { type: 'string' }, minItems: 1 },
-    price:    { type: 'number', exclusiveMinimum: 0 },
-    currency: { type: 'string', default: 'USD' },
+    isbn:     { $ref: IsbnSchema.$id },
+    title:    { $ref: TitleSchema.$id },
+    authors:  { type: 'array', items: { $ref: AuthorNameSchema.$id }, minItems: 1 },
+    price:    { $ref: MoneySchema.$id },
+    currency: { $ref: CurrencyCodeSchema.$id, default: 'USD' },
     inStock:  { type: 'boolean', default: true },
   },
-  required: ['isbn', 'title', 'authors', 'price'],
+  required: ['isbn', 'title', 'authors', 'price', 'currency'],
 } as const;
-
-type Book = InferType<typeof BookSchema>;
 ```
 
 ### OrderLine
 
-An OrderLine ties a specific ISBN to a quantity and unit price at time of purchase.
-
 ```ts
-const OrderLineSchema = {
-  $id: 'https://bookstore.example/OrderLine',
+// entities/OrderLine.ts
+import { IsbnSchema } from './Isbn.js';
+import { MoneySchema } from './Money.js';
+import { QuantitySchema } from './Quantity.js';
+
+export const OrderLineSchema = {
+  $id: 'urn:bookstore:OrderLine',
   type: 'object',
   properties: {
-    bookIsbn:  { type: 'string', pattern: '^\\d{13}$' },
-    quantity:  { type: 'integer', minimum: 1 },
-    unitPrice: { type: 'number', exclusiveMinimum: 0 },
+    bookIsbn:  { $ref: IsbnSchema.$id },
+    quantity:  { $ref: QuantitySchema.$id },
+    unitPrice: { $ref: MoneySchema.$id },
   },
   required: ['bookIsbn', 'quantity', 'unitPrice'],
 } as const;
-
-type OrderLine = InferType<typeof OrderLineSchema>;
 ```
 
 ### Order
 
-An Order belongs to a Customer, contains one or more `OrderLine` items, and records the total at time of placement.
-
 ```ts
-const OrderSchema = {
-  $id: 'https://bookstore.example/Order',
+// entities/Order.ts
+import { CustomerIdSchema } from './CustomerId.js';
+import { CurrencyCodeSchema } from './CurrencyCode.js';
+import { Iso8601Schema } from './Iso8601.js';
+import { MoneySchema } from './Money.js';
+import { OrderIdSchema } from './OrderId.js';
+// see entities/OrderLine.ts for OrderLineSchema
+
+export const OrderSchema = {
+  $id: 'urn:bookstore:Order',
   type: 'object',
   properties: {
-    id:         { type: 'string', format: 'uuid' },
-    customerId: { type: 'string', format: 'uuid' },
-    items: {
-      type: 'array',
-      items: { $ref: 'https://bookstore.example/OrderLine' },
-      minItems: 1,
-    },
-    total:    { type: 'number', exclusiveMinimum: 0 },
-    currency: { type: 'string', default: 'USD' },
-    placedAt: { type: 'string', format: 'date-time' },
+    id:         { $ref: OrderIdSchema.$id },
+    customerId: { $ref: CustomerIdSchema.$id },
+    items:      { type: 'array', items: { $ref: 'urn:bookstore:OrderLine' }, minItems: 1 },
+    total:      { $ref: MoneySchema.$id },
+    currency:   { $ref: CurrencyCodeSchema.$id, default: 'USD' },
+    placedAt:   { $ref: Iso8601Schema.$id },
   },
   required: ['id', 'customerId', 'items', 'total', 'placedAt'],
 } as const;
-
-type Order = InferType<typeof OrderSchema>;
 ```
 
 ### Review
 
-A Review links a Customer to a Book with a 1–5 star rating and a minimum-length body.
-
 ```ts
-const ReviewSchema = {
-  $id: 'https://bookstore.example/Review',
+// entities/Review.ts
+import { CustomerIdSchema } from './CustomerId.js';
+import { IsbnSchema } from './Isbn.js';
+import { Iso8601Schema } from './Iso8601.js';
+import { RatingScoreSchema } from './RatingScore.js';
+import { ReviewIdSchema } from './ReviewId.js';
+
+export const ReviewSchema = {
+  $id: 'urn:bookstore:Review',
   type: 'object',
   properties: {
-    id:         { type: 'string', format: 'uuid' },
-    bookIsbn:   { type: 'string', pattern: '^\\d{13}$' },
-    customerId: { type: 'string', format: 'uuid' },
-    rating:     { type: 'integer', minimum: 1, maximum: 5 },
+    id:         { $ref: ReviewIdSchema.$id },
+    bookIsbn:   { $ref: IsbnSchema.$id },
+    customerId: { $ref: CustomerIdSchema.$id },
+    rating:     { $ref: RatingScoreSchema.$id },
     body:       { type: 'string', minLength: 10 },
-    postedAt:   { type: 'string', format: 'date-time' },
+    postedAt:   { $ref: Iso8601Schema.$id },
   },
   required: ['id', 'bookIsbn', 'customerId', 'rating', 'body', 'postedAt'],
 } as const;
-
-type Review = InferType<typeof ReviewSchema>;
 ```
 
 ## Registering everything at once
 
-All subsequent guide pages use a single `jt` instance with all six schemas pre-registered. This is how you set it up in a real application:
+The orchestrator `examples/docs/bookstore/index.ts` creates the shared `jt` instance with all 23 schemas pre-registered. Primitives register first (required by `$ref` resolution):
 
 ```ts
 import { JsonTology } from 'json-tology';
+import { AuthorNameSchema } from './entities/AuthorName.js';
+import { IsbnSchema } from './entities/Isbn.js';
+import { MoneySchema } from './entities/Money.js';
+// ... all primitives
+import { BookSchema } from './entities/Book.js';
+import { CustomerSchema } from './entities/Customer.js';
+// ... all entities
 
-const jt = JsonTology.create({
+export const jt = JsonTology.create({
   baseIRI: 'https://bookstore.example',
   schemas: [
-    AddressSchema,
-    CustomerSchema,
-    BookSchema,
-    OrderLineSchema,
-    OrderSchema,
-    ReviewSchema,
+    // Primitives first
+    AuthorNameSchema, /* ... */
+    // Entities after
+    AddressSchema, BookSchema, CustomerSchema, OrderLineSchema, OrderSchema, ReviewSchema,
   ] as const,
 });
+
+export { IsbnSchema, BookSchema, CustomerSchema /* ... all schemas */ };
 ```
 
-`as const` is required so TypeScript preserves the literal types needed for `InferType<T>` inference. The `baseIRI` becomes the base for any ontology output (see the [Ontology and Graphs](/advanced/ontology) advanced guide if you need that).
+`as const` is required so TypeScript preserves the literal types needed for `InferType<T>` inference.
+
+## Importing in your examples
+
+All subsequent guide pages import from the shared orchestrator:
+
+```ts
+import { bookstoreJt, CustomerSchema } from '../bookstore/index.js';
+```
+
+Or import directly from the specific entity file when only one is needed:
+
+```ts
+import { IsbnSchema } from '../bookstore/entities/Isbn.js';
+```
 
 ## What comes next
 

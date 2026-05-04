@@ -5,7 +5,7 @@
 
 import {
   BookSchema, bookstoreJt
-} from '../bookstore/schemas.js';
+} from '../bookstore/index.js';
 
 // Materialize with required fields supplied — defaults filled automatically
 const book = bookstoreJt.materialize(BookSchema, {

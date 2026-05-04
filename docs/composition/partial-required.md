@@ -19,7 +19,7 @@
 ```ts
 import { Compose, JsonTology } from 'json-tology';
 import type { InferType } from 'json-tology';
-import { CustomerSchema } from './bookstore/schemas.js';
+import { CustomerSchema } from './bookstore/index.js';
 
 const PatchCustomerSchema = Compose.partial(
   CustomerSchema,
@@ -43,7 +43,7 @@ const patch = jt.coerce(PatchCustomerSchema.$id, { name: 'Alice P. Chen' });
 
 ```ts
 import { Compose, JsonTology } from 'json-tology';
-import { ReviewSchema } from './bookstore/schemas.js';
+import { ReviewSchema } from './bookstore/index.js';
 
 const DraftReviewSchema = Compose.partial(
   ReviewSchema,
@@ -117,7 +117,7 @@ class PatchCustomer(BaseModel):
 ```ts
 import { Compose, JsonTology } from 'json-tology';
 import type { InferType } from 'json-tology';
-import { BookSchema } from './bookstore/schemas.js';
+import { BookSchema } from './bookstore/index.js';
 
 const CreateBookSchema = Compose.required(
   BookSchema,

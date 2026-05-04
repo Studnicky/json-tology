@@ -7,8 +7,9 @@ import {
   Compose, JsonTology
 } from '../../../src/index.js';
 import {
+  CurrencyCodeSchema, CustomerIdSchema, Iso8601Schema, MoneySchema, OrderIdSchema,
   OrderLineSchema, OrderSchema
-} from '../bookstore/schemas.js';
+} from '../bookstore/index.js';
 
 const AuditSchema = {
   '$id': 'https://bookstore.example/Audit',
@@ -41,6 +42,11 @@ const AuditedOrderSchema = Compose.intersection(
 const bookstoreJt = JsonTology.create({
   'baseIRI': 'https://bookstore.example',
   'schemas': [
+    CurrencyCodeSchema,
+    CustomerIdSchema,
+    Iso8601Schema,
+    MoneySchema,
+    OrderIdSchema,
     OrderLineSchema,
     OrderSchema,
     AuditSchema,

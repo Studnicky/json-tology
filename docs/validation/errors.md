@@ -11,7 +11,7 @@
 ### Example 1: Check validity, iterate errors
 
 ```ts
-import { jt, OrderSchema } from './bookstore/schemas.js';
+import { bookstoreJt, OrderSchema } from './bookstore/index.js';
 
 const errs = jt.errors(OrderSchema.$id, {
   id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
@@ -35,7 +35,7 @@ for (const err of errs) {
 ### Example 2: Valid data returns empty collection
 
 ```ts
-import { jt, BookSchema } from './bookstore/schemas.js';
+import { bookstoreJt, BookSchema } from './bookstore/index.js';
 
 const errs = jt.errors(BookSchema.$id, {
   isbn:    '9780140449136',
@@ -52,7 +52,7 @@ console.log(errs.length); // 0
 See [`Error views`](/errors/views) for full documentation of each view.
 
 ```ts
-import { jt, ReviewSchema } from './bookstore/schemas.js';
+import { bookstoreJt, ReviewSchema } from './bookstore/index.js';
 
 const errs = jt.errors(ReviewSchema.$id, badReview);
 

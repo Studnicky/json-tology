@@ -40,7 +40,7 @@ jt.register([AddressSchema, CustomerSchema] as const);
 
 ```ts
 import { Compose } from 'json-tology';
-import { jt, BookSchema } from './bookstore/schemas.js';
+import { bookstoreJt, BookSchema } from './bookstore/index.js';
 
 const BookSummarySchema = Compose.pick(
   BookSchema,

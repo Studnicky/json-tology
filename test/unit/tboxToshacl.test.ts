@@ -10,7 +10,7 @@ import {
 } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { bookstoreJt } from '../../examples/docs/bookstore/schemas.js';
+import { bookstoreJt } from '../../examples/docs/bookstore/index.js';
 
 // IRIs used as discriminators
 const OWL_CLASS_IRI = 'http://www.w3.org/2002/07/owl#Class';

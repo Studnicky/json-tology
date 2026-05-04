@@ -169,7 +169,7 @@ const shacl = builder.shaclObject();
 #### Example 1: Generate OWL JSON-LD for all bookstore schemas
 
 ```ts
-import { jt } from './bookstore/schemas.js';
+import { bookstoreJt } from './bookstore/index.js';
 
 const builder = jt.ontology();
 
@@ -193,7 +193,7 @@ console.log(ctx.owl); // 'http://www.w3.org/2002/07/owl#'
 
 ```ts
 import { JsonTology } from 'json-tology';
-import { AddressSchema, CustomerSchema } from './bookstore/schemas.js';
+import { AddressSchema, CustomerSchema } from './bookstore/index.js';
 
 const localJt = JsonTology.create({
   baseIRI: 'https://bookstore.example',
@@ -219,7 +219,7 @@ const shacl  = localJt.ontology().shaclObject();
 
 ```ts
 import { JsonTology } from 'json-tology';
-import { AddressSchema, CustomerSchema } from './bookstore/schemas.js';
+import { AddressSchema, CustomerSchema } from './bookstore/index.js';
 
 const localJt = JsonTology.create({
   baseIRI: 'https://bookstore.example',

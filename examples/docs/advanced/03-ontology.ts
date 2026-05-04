@@ -6,7 +6,7 @@
  * you need only one vocabulary. Use ontology() when you need both.
  */
 
-import { bookstoreJt } from '../bookstore/schemas.js';
+import { bookstoreJt } from '../bookstore/index.js';
 
 const builder = bookstoreJt.ontology();
 

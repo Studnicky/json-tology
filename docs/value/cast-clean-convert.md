@@ -18,7 +18,7 @@ Schema-aware instance methods on `jt.value`. All three operate against the regis
 
 ```ts
 import { JsonTology } from 'json-tology';
-import { BookSchema } from './bookstore/schemas.js';
+import { BookSchema } from './bookstore/index.js';
 
 const jt = JsonTology.create({
   baseIRI:   'https://bookstore.example',

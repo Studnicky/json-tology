@@ -19,7 +19,7 @@
 ```ts
 import { Compose, JsonTology } from 'json-tology';
 import type { InferType } from 'json-tology';
-import { BookSchema } from './bookstore/schemas.js';
+import { BookSchema } from './bookstore/index.js';
 
 const BookSummarySchema = Compose.pick(
   BookSchema,
@@ -50,7 +50,7 @@ const summary = jt.coerce(BookSummarySchema.$id, {
 
 ```ts
 import { Compose } from 'json-tology';
-import { CustomerSchema } from './bookstore/schemas.js';
+import { CustomerSchema } from './bookstore/index.js';
 
 const CustomerCardSchema = Compose.pick(
   CustomerSchema,
@@ -64,7 +64,7 @@ const CustomerCardSchema = Compose.pick(
 
 ```ts
 import { Compose, JsonTology } from 'json-tology';
-import { ReviewSchema } from './bookstore/schemas.js';
+import { ReviewSchema } from './bookstore/index.js';
 
 const ReviewRatingSchema = Compose.pick(
   ReviewSchema,
@@ -155,7 +155,7 @@ class BookSummary(BaseModel):
 
 ```ts
 import { Compose } from 'json-tology';
-import { BookSchema } from './bookstore/schemas.js';
+import { BookSchema } from './bookstore/index.js';
 
 const PublicBookSchema = Compose.omit(
   BookSchema,
@@ -170,7 +170,7 @@ const PublicBookSchema = Compose.omit(
 
 ```ts
 import { Compose } from 'json-tology';
-import { OrderSchema } from './bookstore/schemas.js';
+import { OrderSchema } from './bookstore/index.js';
 
 const OrderSummarySchema = Compose.omit(
   OrderSchema,
@@ -186,7 +186,7 @@ type OrderSummary = InferType<typeof OrderSummarySchema>;
 
 ```ts
 import { Compose } from 'json-tology';
-import { jt, BookSchema } from './bookstore/schemas.js';
+import { bookstoreJt, BookSchema } from './bookstore/index.js';
 
 // Retrieve and narrow dynamically
 const raw = jt.get(BookSchema.$id);

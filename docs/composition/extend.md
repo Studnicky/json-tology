@@ -15,7 +15,7 @@ Building on `CustomerSchema` from the [bookstore domain](/bookstore-domain):
 ```ts
 import { Compose } from 'json-tology';
 import type { InferType } from 'json-tology';
-import { CustomerSchema } from './bookstore/schemas.js';
+import { CustomerSchema } from './bookstore/index.js';
 
 const CustomerWithDiscountSchema = Compose.extend(
   CustomerSchema,
@@ -34,7 +34,7 @@ type CustomerWithDiscount = InferType<typeof CustomerWithDiscountSchema>;
 
 ```ts
 import { Compose, JsonTology } from 'json-tology';
-import { BookSchema } from './bookstore/schemas.js';
+import { BookSchema } from './bookstore/index.js';
 
 const FeaturedBookSchema = Compose.extend(
   BookSchema,

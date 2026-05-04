@@ -27,7 +27,7 @@ All examples use the [bookstore domain](/bookstore-domain). Start with [errors()
 #### Example 1: Console output
 
 ```ts
-import { jt, ReviewSchema } from './bookstore/schemas.js';
+import { bookstoreJt, ReviewSchema } from './bookstore/index.js';
 
 const errs = jt.errors(ReviewSchema.$id, {
   id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
@@ -109,7 +109,7 @@ result.error.issues.map(i => `${i.path.join('/')}: ${i.message}`)
 #### Example 1: Map to form field errors
 
 ```ts
-import { jt, ReviewSchema } from './bookstore/schemas.js';
+import { bookstoreJt, ReviewSchema } from './bookstore/index.js';
 
 const errs = jt.errors(ReviewSchema.$id, badReview);
 const grouped = errs.format();
@@ -196,7 +196,7 @@ for e in exc.errors():
 #### Example 1: Zod-compatible form library integration
 
 ```ts
-import { jt, ReviewSchema } from './bookstore/schemas.js';
+import { bookstoreJt, ReviewSchema } from './bookstore/index.js';
 
 const errs = jt.errors(ReviewSchema.$id, badReview);
 const { fieldErrors, formErrors } = errs.flatten();
@@ -278,7 +278,7 @@ form_errors = [e['msg'] for e in exc.errors() if not e['loc']]
 #### Example 1: Structured log
 
 ```ts
-import { jt, OrderSchema } from './bookstore/schemas.js';
+import { bookstoreJt, OrderSchema } from './bookstore/index.js';
 
 const errs = jt.errors(OrderSchema.$id, badOrder);
 
@@ -361,7 +361,7 @@ keywords = sorted(set(e['type'] for e in errors))
 #### Example 1: Express/Fastify/Hono request handler
 
 ```ts
-import { jt, ReviewSchema } from './bookstore/schemas.js';
+import { bookstoreJt, ReviewSchema } from './bookstore/index.js';
 
 // Any framework with plain object response body:
 app.post('/reviews', (req, res) => {

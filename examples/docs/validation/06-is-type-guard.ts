@@ -5,12 +5,12 @@
 
 import {
   bookstoreJt, type Customer, CustomerSchema
-} from '../bookstore/schemas.js';
+} from '../bookstore/index.js';
 
 function describeCustomer(data: unknown): string {
   if (bookstoreJt.is(CustomerSchema.$id, data)) {
     // data is narrowed to Customer here
-    return `${data.name} <${data.email}>`;
+    return `${String(data.name)} <${String(data.email)}>`;
   }
 
   return 'not a customer';

@@ -6,7 +6,7 @@
 import { CoercionError } from '../../../src/index.js';
 import {
   bookstoreJt, CustomerSchema
-} from '../bookstore/schemas.js';
+} from '../bookstore/index.js';
 
 function createCustomer(body: unknown) {
   try {

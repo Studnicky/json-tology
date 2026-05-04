@@ -5,7 +5,7 @@
 
 import {
   bookstoreJt, CustomerSchema
-} from '../bookstore/schemas.js';
+} from '../bookstore/index.js';
 
 const customer = bookstoreJt.coerce(CustomerSchema.$id, {
   'email': 'alice@bookstore.example',

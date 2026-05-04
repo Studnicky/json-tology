@@ -6,7 +6,11 @@
 import {
   Compose, JsonTology
 } from '../../../src/index.js';
-import { CustomerSchema } from '../bookstore/schemas.js';
+import {
+  AddressSchema, CityNameSchema, CountryCodeSchema, CustomerIdSchema,
+  CustomerSchema, EmailSchema, PersonNameSchema,
+  PostalCodeSchema, StreetLineSchema
+} from '../bookstore/index.js';
 
 // partial — PATCH body (all fields optional)
 const PatchCustomerSchema = Compose.partial(
@@ -24,6 +28,15 @@ const StrictCustomerSchema = Compose.required(
 const bookstoreJt = JsonTology.create({
   'baseIRI': 'https://bookstore.example',
   'schemas': [
+    CityNameSchema,
+    CountryCodeSchema,
+    CustomerIdSchema,
+    EmailSchema,
+    PersonNameSchema,
+    PostalCodeSchema,
+    StreetLineSchema,
+    AddressSchema,
+    CustomerSchema,
     PatchCustomerSchema,
     StrictCustomerSchema
   ] as const

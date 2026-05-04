@@ -4,12 +4,22 @@
  */
 
 import { JsonTology } from '../../../src/index.js';
-import { BookSchema } from '../bookstore/schemas.js';
+import {
+  AuthorNameSchema, BookSchema, CurrencyCodeSchema, IsbnSchema, MoneySchema,
+  TitleSchema
+} from '../bookstore/index.js';
 
 const localJt = JsonTology.create({
   'baseIRI': 'https://bookstore.example',
   'castTypes': true,
-  'schemas': [BookSchema] as const
+  'schemas': [
+    AuthorNameSchema,
+    CurrencyCodeSchema,
+    IsbnSchema,
+    MoneySchema,
+    TitleSchema,
+    BookSchema
+  ] as const
 });
 
 // cast coerces types and fills defaults

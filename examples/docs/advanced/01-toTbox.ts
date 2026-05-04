@@ -5,7 +5,7 @@
  * declarations derived from the registered schemas. No SHACL shapes.
  */
 
-import { bookstoreJt } from '../bookstore/schemas.js';
+import { bookstoreJt } from '../bookstore/index.js';
 
 const tbox = bookstoreJt.toTbox();
 

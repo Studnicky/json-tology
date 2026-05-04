@@ -9,7 +9,7 @@ import {
 } from '../../../src/index.js';
 import {
   BookSchema, CustomerSchema
-} from '../bookstore/schemas.js';
+} from '../bookstore/index.js';
 
 // Construction-time registration
 const bookstoreJt = JsonTology.create({
@@ -17,15 +17,15 @@ const bookstoreJt = JsonTology.create({
   'schemas': [CustomerSchema] as const
 });
 
-console.assert(bookstoreJt.has('https://bookstore.example/Customer'));
-console.assert(!bookstoreJt.has('https://bookstore.example/Book'));
+console.assert(bookstoreJt.has(CustomerSchema.$id));
+console.assert(!bookstoreJt.has(BookSchema.$id));
 
 // Post-construction register
 bookstoreJt.register(BookSchema);
-console.assert(bookstoreJt.has('https://bookstore.example/Book'));
+console.assert(bookstoreJt.has(BookSchema.$id));
 
 // Retrieve schema object
-const raw = bookstoreJt.get('https://bookstore.example/Book');
+const raw = bookstoreJt.get(BookSchema.$id);
 
 console.assert(raw !== undefined);
 
@@ -33,8 +33,8 @@ console.assert(raw !== undefined);
 // List all registered IDs
 const ids = bookstoreJt.list();
 
-console.assert(ids.includes('https://bookstore.example/Customer'));
-console.assert(ids.includes('https://bookstore.example/Book'));
+console.assert(ids.includes(CustomerSchema.$id));
+console.assert(ids.includes(BookSchema.$id));
 
 // registerAnonymous — no $id needed
 const syntheticId = bookstoreJt.registerAnonymous({

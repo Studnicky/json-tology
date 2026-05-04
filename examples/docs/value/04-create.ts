@@ -5,7 +5,7 @@
 
 import {
   BookSchema, bookstoreJt
-} from '../bookstore/schemas.js';
+} from '../bookstore/index.js';
 
 const blank = bookstoreJt.value.create(BookSchema.$id);
 

@@ -11,7 +11,7 @@
 ### Example 1: Blank Book form state
 
 ```ts
-import { jt, BookSchema } from './bookstore/schemas.js';
+import { bookstoreJt, BookSchema } from './bookstore/index.js';
 
 const blank = jt.value.create(BookSchema.$id);
 // {

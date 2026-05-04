@@ -14,7 +14,7 @@
 
 ```ts
 import { Compose } from 'json-tology';
-import { BookSchema } from './bookstore/schemas.js';
+import { BookSchema } from './bookstore/index.js';
 
 const defaults = Compose.getDefaults(BookSchema);
 console.log(defaults);
@@ -34,7 +34,7 @@ const formState = {
 
 ```ts
 import { Compose } from 'json-tology';
-import { OrderSchema } from './bookstore/schemas.js';
+import { OrderSchema } from './bookstore/index.js';
 
 const defaults = Compose.getDefaults(OrderSchema);
 console.log(defaults);

@@ -11,7 +11,7 @@
 ### Example 1: Type narrowing in a conditional branch
 
 ```ts
-import { jt, CustomerSchema } from './bookstore/schemas.js';
+import { bookstoreJt, CustomerSchema } from './bookstore/index.js';
 
 function describeCustomer(data: unknown): string {
   if (jt.is(CustomerSchema.$id, data)) {
@@ -25,7 +25,7 @@ function describeCustomer(data: unknown): string {
 ### Example 2: Filtering an array of unknowns
 
 ```ts
-import { jt, CustomerSchema, type Customer } from './bookstore/schemas.js';
+import { bookstoreJt, CustomerSchema, type Customer } from './bookstore/index.js';
 
 const mixed: unknown[] = fetchFromApi();
 const customers = mixed.filter(
@@ -37,7 +37,7 @@ const customers = mixed.filter(
 ### Example 3: Guards at a service boundary
 
 ```ts
-import { jt, OrderSchema, type Order } from './bookstore/schemas.js';
+import { bookstoreJt, OrderSchema, type Order } from './bookstore/index.js';
 
 function processOrder(data: unknown): void {
   if (!jt.is(OrderSchema.$id, data)) {
