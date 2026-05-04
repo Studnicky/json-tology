@@ -17,12 +17,15 @@ In json-tology:
 
 ```ts
 // TBox — what a Book looks like
+import { IsbnSchema } from './entities/Isbn.js';
+import { TitleSchema } from './entities/Title.js';
+
 const BookSchema = {
   $id: 'urn:bookstore:Book',
   type: 'object',
   properties: {
-    isbn:   { $ref: 'urn:bookstore:Isbn' },
-    title:  { $ref: 'urn:bookstore:Title' }
+    isbn:   { $ref: IsbnSchema.$id },
+    title:  { $ref: TitleSchema.$id }
   }
 } as const;
 
@@ -54,13 +57,17 @@ This is the **open-world assumption (OWA)**: a schema does not claim to enumerat
 that may ever exist on an instance.
 
 ```ts
+import { CustomerIdSchema } from './entities/CustomerId.js';
+import { CustomerNameSchema } from './entities/CustomerName.js';
+import { EmailSchema } from './entities/Email.js';
+
 const CustomerSchema = {
   $id: 'urn:bookstore:Customer',
   type: 'object',
   properties: {
-    id:    { $ref: 'urn:bookstore:CustomerId' },
-    email: { $ref: 'urn:bookstore:Email' },
-    name:  { $ref: 'urn:bookstore:PersonName' }
+    id:    { $ref: CustomerIdSchema.$id },
+    email: { $ref: EmailSchema.$id },
+    name:  { $ref: CustomerNameSchema.$id }
   },
   required: ['id', 'email', 'name']
 } as const;
@@ -188,7 +195,7 @@ json-tology derives these from the schema graph:
 const BookSchema = {
   $id: 'urn:bookstore:Book',
   properties: {
-    isbn: { $ref: 'urn:bookstore:Isbn' }
+    isbn: { $ref: IsbnSchema.$id }
   }
 } as const;
 ```
@@ -231,10 +238,12 @@ The schema graph is a **directed graph**, not a tree. `$ref` creates edges betwe
 
 ```ts
 // Book → isbn → Isbn (cross-schema $ref)
+import { IsbnSchema } from './entities/Isbn.js';
+
 const BookSchema = {
   $id: 'urn:bookstore:Book',
   properties: {
-    isbn: { $ref: 'urn:bookstore:Isbn' }
+    isbn: { $ref: IsbnSchema.$id }
   }
 } as const;
 ```

@@ -502,7 +502,7 @@ export default [
       '**/*.min.js',
       '**/*.d.ts',
       '**/vendor/**',
-      '.claude/**',
+      '.claude',
       'docs/.vitepress/cache/**',
       'docs/.vitepress/dist/**',
       'eslint.config.mjs'

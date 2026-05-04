@@ -22,7 +22,7 @@ const ComputedOrderSchema = {
       'type': 'string'
     },
     'items': {
-      'items': { '$ref': 'urn:bookstore:OrderLine' },
+      'items': { '$ref': OrderLineSchema.$id },
       'minItems': 1,
       'type': 'array'
     },

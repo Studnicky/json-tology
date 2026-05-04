@@ -14,6 +14,7 @@ export interface ProblemDetailsErrorEntryType {
   'path': string;
 }
 
+
 export interface AggregateViewType {
   'count': number;
   'keywords': string[];

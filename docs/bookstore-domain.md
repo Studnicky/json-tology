@@ -138,7 +138,7 @@ export const CustomerSchema = {
     name:      { $ref: PersonNameSchema.$id },
     addresses: {
       type: 'array',
-      items: { $ref: 'urn:bookstore:Address' },
+      items: { $ref: AddressSchema.$id },
       default: [],
     },
   },
@@ -195,25 +195,25 @@ export const OrderLineSchema = {
 
 ```ts
 // entities/Order.ts
+import { AddressSchema } from './Address.js';
 import { CustomerIdSchema } from './CustomerId.js';
-import { CurrencyCodeSchema } from './CurrencyCode.js';
 import { Iso8601Schema } from './Iso8601.js';
 import { MoneySchema } from './Money.js';
 import { OrderIdSchema } from './OrderId.js';
-// see entities/OrderLine.ts for OrderLineSchema
+import { OrderLineSchema } from './OrderLine.js';
 
 export const OrderSchema = {
   $id: 'urn:bookstore:Order',
   type: 'object',
   properties: {
-    id:         { $ref: OrderIdSchema.$id },
-    customerId: { $ref: CustomerIdSchema.$id },
-    items:      { type: 'array', items: { $ref: 'urn:bookstore:OrderLine' }, minItems: 1 },
-    total:      { $ref: MoneySchema.$id },
-    currency:   { $ref: CurrencyCodeSchema.$id, default: 'USD' },
-    placedAt:   { $ref: Iso8601Schema.$id },
+    id:              { $ref: OrderIdSchema.$id },
+    customerId:      { $ref: CustomerIdSchema.$id },
+    items:           { type: 'array', items: { $ref: OrderLineSchema.$id }, minItems: 1 },
+    total:           { $ref: MoneySchema.$id },
+    shippingAddress: { $ref: AddressSchema.$id },
+    placedAt:        { $ref: Iso8601Schema.$id },
   },
-  required: ['id', 'customerId', 'items', 'total', 'placedAt'],
+  required: ['id', 'customerId', 'items', 'total', 'placedAt', 'shippingAddress'],
 } as const;
 ```
 

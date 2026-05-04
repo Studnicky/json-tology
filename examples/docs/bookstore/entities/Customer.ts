@@ -1,3 +1,4 @@
+import { AddressSchema } from './Address.js';
 import { CustomerIdSchema } from './CustomerId.js';
 import { CustomerNameSchema } from './CustomerName.js';
 import { EmailSchema } from './Email.js';
@@ -7,7 +8,7 @@ export const CustomerSchema = {
   'properties': {
     'addresses': {
       'default': [],
-      'items': { '$ref': 'urn:bookstore:Address' },
+      'items': { '$ref': AddressSchema.$id },
       'type': 'array'
     },
     'email': { '$ref': EmailSchema.$id },
