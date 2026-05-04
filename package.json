@@ -1,6 +1,6 @@
 {
   "name": "json-tology",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "One source of truth for TypeScript types, runtime validation, coercion, and OWL ontology output. Author in JSON Schema; share with any backend; reason over the graph.",
   "type": "module",
   "main": "./dist/index.js",
