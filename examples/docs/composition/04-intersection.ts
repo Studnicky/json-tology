@@ -7,8 +7,11 @@ import {
   Compose, JsonTology
 } from '../../../src/index.js';
 import {
-  CurrencyCodeSchema, CustomerIdSchema, Iso8601Schema, MoneySchema, OrderIdSchema,
-  OrderLineSchema, OrderSchema
+  AddressSchema, AmountSchema, CityNameSchema, CountryCodeSchema,
+  CurrencyCodeSchema, CustomerIdSchema, CustomerNameSchema, EmailSchema,
+  IsbnSchema, Iso8601Schema, MoneySchema, OrderIdSchema,
+  OrderLineSchema, OrderSchema, PostalCodeSchema, QuantitySchema,
+  StreetLineSchema
 } from '../bookstore/index.js';
 
 const AuditSchema = {
@@ -42,11 +45,21 @@ const AuditedOrderSchema = Compose.intersection(
 const entities = JsonTology.create({
   'baseIRI': 'https://bookstore.example',
   'schemas': [
+    AmountSchema,
+    CityNameSchema,
+    CountryCodeSchema,
     CurrencyCodeSchema,
     CustomerIdSchema,
+    CustomerNameSchema,
+    EmailSchema,
+    IsbnSchema,
     Iso8601Schema,
     MoneySchema,
     OrderIdSchema,
+    PostalCodeSchema,
+    QuantitySchema,
+    StreetLineSchema,
+    AddressSchema,
     OrderLineSchema,
     OrderSchema,
     AuditSchema,
@@ -61,10 +74,22 @@ const errors = entities.validate(AuditedOrderSchema.$id, {
   'items': [{
     'bookIsbn': '9780140449136',
     'quantity': 1,
-    'unitPrice': 14.99
+    'unitPrice': {
+      'amount': 14.99,
+      'currency': 'USD'
+    }
   }],
   'placedAt': '2026-01-15T10:30:00Z',
-  'total': 14.99
+  'shippingAddress': {
+    'city': 'New York',
+    'country': 'US',
+    'postalCode': '10001',
+    'street': '123 Main St'
+  },
+  'total': {
+    'amount': 14.99,
+    'currency': 'USD'
+  }
   // createdAt and updatedAt missing
 });
 
@@ -78,10 +103,22 @@ const valid = entities.validate(AuditedOrderSchema.$id, {
   'items': [{
     'bookIsbn': '9780140449136',
     'quantity': 1,
-    'unitPrice': 14.99
+    'unitPrice': {
+      'amount': 14.99,
+      'currency': 'USD'
+    }
   }],
   'placedAt': '2026-01-15T10:30:00Z',
-  'total': 14.99,
+  'shippingAddress': {
+    'city': 'New York',
+    'country': 'US',
+    'postalCode': '10001',
+    'street': '123 Main St'
+  },
+  'total': {
+    'amount': 14.99,
+    'currency': 'USD'
+  },
   'updatedAt': '2026-01-15T10:30:00Z'
 });
 

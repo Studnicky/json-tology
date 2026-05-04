@@ -2,9 +2,9 @@ import {
   Compose, JsonTology
 } from '../../../src/index.js';
 import {
-  AddressSchema, AuthorNameSchema, CityNameSchema, CountryCodeSchema,
-  CurrencyCodeSchema, CustomerIdSchema, CustomerSchema, EmailSchema, IsbnSchema,
-  Iso8601Schema, MoneySchema, OrderIdSchema, PersonNameSchema,
+  AddressSchema, AmountSchema, AuthorNameSchema, CityNameSchema, CountryCodeSchema,
+  CurrencyCodeSchema, CustomerIdSchema, CustomerNameSchema, CustomerSchema,
+  EmailSchema, IsbnSchema, Iso8601Schema, MoneySchema, OrderIdSchema,
   PostalCodeSchema, QuantitySchema, RatingScoreSchema, ReviewIdSchema,
   StreetLineSchema, TitleSchema
 } from '../bookstore/index.js';
@@ -33,17 +33,18 @@ const CustomerWithDiscountSchema = Compose.extend(
 const entities = JsonTology.create({
   'baseIRI': 'https://bookstore.example',
   'schemas': [
+    AmountSchema,
     AuthorNameSchema,
     CityNameSchema,
     CountryCodeSchema,
     CurrencyCodeSchema,
     CustomerIdSchema,
+    CustomerNameSchema,
     EmailSchema,
     IsbnSchema,
     Iso8601Schema,
     MoneySchema,
     OrderIdSchema,
-    PersonNameSchema,
     PostalCodeSchema,
     QuantitySchema,
     RatingScoreSchema,

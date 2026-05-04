@@ -28,6 +28,20 @@ features:
     details: Sub-path exports — json-tology/value, json-tology/schema, json-tology/types — let users opt into only what they need. Graph and ontology are fully tree-shakable.
 ---
 
+## Advanced usages
+
+### Your types are already a graph
+
+Every TypeScript type system has a graph hiding in it. Below is the bookstore domain — six entities, eighteen primitives, every property a typed edge. Nodes are classes; edges are properties; arrowheads point from the domain entity to the range type.
+
+<BookstoreGraph />
+
+[Read the full guide →](/your-types-are-a-graph)
+
+[See it in WebVOWL →](/advanced/graph-vowl)
+
+---
+
 ## Why json-tology
 
 If you're coming from Pydantic, Zod, or TypeBox, json-tology gives you the same authoring ergonomics with **JSON Schema as the source of truth** — your schema works in TypeScript, in JSON Schema validators, in OpenAPI, in IDE auto-complete, and as a wire-format contract, all from one declaration.

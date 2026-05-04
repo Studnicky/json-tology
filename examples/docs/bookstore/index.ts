@@ -2,23 +2,28 @@ import { JsonTology } from '../../../src/index.js';
 import type { InferType } from '../../../src/index.js';
 
 // Primitives — named, single source of truth per concept
-import { AuthorNameSchema } from './entities/AuthorName.js';
+import { AmountSchema } from './entities/Amount.js';
 import { CityNameSchema } from './entities/CityName.js';
 import { CountryCodeSchema } from './entities/CountryCode.js';
 import { CurrencyCodeSchema } from './entities/CurrencyCode.js';
 import { CustomerIdSchema } from './entities/CustomerId.js';
+import { CustomerNameSchema } from './entities/CustomerName.js';
 import { EmailSchema } from './entities/Email.js';
 import { IsbnSchema } from './entities/Isbn.js';
 import { Iso8601Schema } from './entities/Iso8601.js';
-import { MoneySchema } from './entities/Money.js';
 import { OrderIdSchema } from './entities/OrderId.js';
-import { PersonNameSchema } from './entities/PersonName.js';
 import { PostalCodeSchema } from './entities/PostalCode.js';
 import { QuantitySchema } from './entities/Quantity.js';
 import { RatingScoreSchema } from './entities/RatingScore.js';
 import { ReviewIdSchema } from './entities/ReviewId.js';
 import { StreetLineSchema } from './entities/StreetLine.js';
 import { TitleSchema } from './entities/Title.js';
+
+// AuthorName depends on CustomerName — must import after
+import { AuthorNameSchema } from './entities/AuthorName.js';
+
+// Money depends on Amount + CurrencyCode — must import after
+import { MoneySchema } from './entities/Money.js';
 
 // Entities — composed of named primitives via $ref
 import { AddressSchema } from './entities/Address.js';
@@ -30,23 +35,26 @@ import { ReviewSchema } from './entities/Review.js';
 
 const allSchemas = [
   // Primitives must register before entities that $ref them
-  AuthorNameSchema,
+  AmountSchema,
   CityNameSchema,
   CountryCodeSchema,
   CurrencyCodeSchema,
   CustomerIdSchema,
+  CustomerNameSchema,
   EmailSchema,
   IsbnSchema,
   Iso8601Schema,
-  MoneySchema,
   OrderIdSchema,
-  PersonNameSchema,
   PostalCodeSchema,
   QuantitySchema,
   RatingScoreSchema,
   ReviewIdSchema,
   StreetLineSchema,
   TitleSchema,
+  // AuthorName depends on CustomerName
+  AuthorNameSchema,
+  // Money depends on Amount + CurrencyCode
+  MoneySchema,
   // Entities
   AddressSchema,
   BookSchema,
@@ -72,6 +80,7 @@ export type Review = InferType<typeof ReviewSchema>;
 // Re-export entities
 export { AddressSchema } from './entities/Address.js';
 // Re-export primitives
+export { AmountSchema } from './entities/Amount.js';
 export { AuthorNameSchema } from './entities/AuthorName.js';
 export { BookSchema } from './entities/Book.js';
 export { CityNameSchema } from './entities/CityName.js';
@@ -79,6 +88,7 @@ export { CountryCodeSchema } from './entities/CountryCode.js';
 export { CurrencyCodeSchema } from './entities/CurrencyCode.js';
 export { CustomerSchema } from './entities/Customer.js';
 export { CustomerIdSchema } from './entities/CustomerId.js';
+export { CustomerNameSchema } from './entities/CustomerName.js';
 export { EmailSchema } from './entities/Email.js';
 export { IsbnSchema } from './entities/Isbn.js';
 export { Iso8601Schema } from './entities/Iso8601.js';
@@ -86,7 +96,6 @@ export { MoneySchema } from './entities/Money.js';
 export { OrderSchema } from './entities/Order.js';
 export { OrderIdSchema } from './entities/OrderId.js';
 export { OrderLineSchema } from './entities/OrderLine.js';
-export { PersonNameSchema } from './entities/PersonName.js';
 export { PostalCodeSchema } from './entities/PostalCode.js';
 
 export { QuantitySchema } from './entities/Quantity.js';

@@ -82,7 +82,8 @@
       "Bash(grep -r \"rdfList\\(\" src/modules/rdf/*.ts | wc -l)",
       "Bash(ls -la /Users/studs/Workspace/json-tology/docs/*.md)",
       "Bash(wc -l /Users/studs/Workspace/json-tology/test/unit/*.test.ts | sort -n | tail -20)",
-      "Bash(python3 -)"
+      "Bash(python3 -)",
+      "Bash(python3 -c ' *)"
     ]
   }
 }

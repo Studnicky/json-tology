@@ -13,10 +13,6 @@ import {
 const ComputedOrderSchema = {
   '$id': 'https://bookstore.example/ComputedOrder',
   'properties': {
-    'currency': {
-      'default': 'USD',
-      'type': 'string'
-    },
     'customerId': {
       'format': 'uuid',
       'type': 'string'
@@ -57,10 +53,15 @@ const entities = JsonTology.create({
       'total': (order) => {
         const typed = order as ComputedOrder;
 
-        return (typed.items as Array<{ 'quantity': number
-          'unitPrice': number; }>)
+        return (typed.items as Array<{
+          'quantity': number;
+          'unitPrice': {
+            'amount': number;
+            'currency': string;
+          };
+        }>)
           .reduce((sum, line) => {
-            return sum + line.unitPrice * line.quantity;
+            return sum + line.unitPrice.amount * line.quantity;
           }, 0);
       }
     }
@@ -81,12 +82,18 @@ const order = entities.coerce(ComputedOrderSchema.$id, {
     {
       'bookIsbn': '9780140449136',
       'quantity': 2,
-      'unitPrice': 12.99
+      'unitPrice': {
+        'amount': 12.99,
+        'currency': 'USD'
+      }
     },
     {
       'bookIsbn': '9780062316110',
       'quantity': 1,
-      'unitPrice': 9.99
+      'unitPrice': {
+        'amount': 9.99,
+        'currency': 'USD'
+      }
     }
   ],
   'placedAt': '2026-01-15T10:30:00Z'

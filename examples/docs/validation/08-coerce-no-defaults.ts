@@ -5,13 +5,14 @@
 
 import { JsonTology } from '../../../src/index.js';
 import {
-  AddressSchema, CustomerSchema
+  AddressSchema, CustomerNameSchema, CustomerSchema
 } from '../bookstore/index.js';
 
 const jt = JsonTology.create({
   'baseIRI': 'https://bookstore.example',
   'schemas': [
     AddressSchema,
+    CustomerNameSchema,
     CustomerSchema
   ] as const
 });

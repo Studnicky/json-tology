@@ -1,5 +1,4 @@
 import { AuthorNameSchema } from './AuthorName.js';
-import { CurrencyCodeSchema } from './CurrencyCode.js';
 import { IsbnSchema } from './Isbn.js';
 import { MoneySchema } from './Money.js';
 import { TitleSchema } from './Title.js';
@@ -11,10 +10,6 @@ export const BookSchema = {
       'items': { '$ref': AuthorNameSchema.$id },
       'minItems': 1,
       'type': 'array'
-    },
-    'currency': {
-      '$ref': CurrencyCodeSchema.$id,
-      'default': 'USD'
     },
     'inStock': {
       'default': true,
@@ -28,8 +23,7 @@ export const BookSchema = {
     'isbn',
     'title',
     'authors',
-    'price',
-    'currency'
+    'price'
   ],
   'type': 'object'
 } as const;

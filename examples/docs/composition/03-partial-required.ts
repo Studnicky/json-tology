@@ -8,7 +8,7 @@ import {
 } from '../../../src/index.js';
 import {
   AddressSchema, CityNameSchema, CountryCodeSchema, CustomerIdSchema,
-  CustomerSchema, EmailSchema, PersonNameSchema,
+  CustomerNameSchema, CustomerSchema, EmailSchema,
   PostalCodeSchema, StreetLineSchema
 } from '../bookstore/index.js';
 
@@ -31,8 +31,8 @@ const entities = JsonTology.create({
     CityNameSchema,
     CountryCodeSchema,
     CustomerIdSchema,
+    CustomerNameSchema,
     EmailSchema,
-    PersonNameSchema,
     PostalCodeSchema,
     StreetLineSchema,
     AddressSchema,

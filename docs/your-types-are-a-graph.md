@@ -16,6 +16,26 @@ Below is the bookstore TBox rendered with [Cytoscape](https://js.cytoscape.org/)
 
 ---
 
+## Branding: same validation, different concepts
+
+Look at the green dashed edge between `AuthorName` and `CustomerName`. Both validate to `{ type: 'string', minLength: 1, maxLength: 200 }` — they share the same rule. But they are domain-distinct: one belongs to book authorship, the other to customer identity. Mixing them in code would be a type error.
+
+`Compose.equivalent` creates `AuthorName` as a thin `$ref` over `CustomerName`:
+
+```ts
+export const AuthorNameSchema = Compose.equivalent(
+  CustomerNameSchema,
+  {
+    $id: 'urn:bookstore:AuthorName',
+    description: 'Same validation as CustomerName; semantically a distinct domain concept.'
+  }
+);
+```
+
+The result: one compiled validator (no duplication), two separate class IRIs, and an `owl:equivalentClass` arc in the TBox linking them — visible as the green dashed edge in the graph above. Ontology-aware tools can infer that any `AuthorName` is also a valid `CustomerName` and vice versa, while your TypeScript types keep the two concepts nominally distinct.
+
+---
+
 ## What this means
 
 **You don't have to use the graph features to use json-tology.** Most consumers will use `validate()` and `coerce()` and never look at the TBox. That's fine — the graph is metadata, not the runtime.

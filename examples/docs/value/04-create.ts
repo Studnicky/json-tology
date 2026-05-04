@@ -15,5 +15,4 @@ console.assert((blank as { 'title': string }).title === '');
 console.assert(Array.isArray((blank as { 'authors': string[] }).authors));
 
 // Explicit defaults are preserved
-console.assert((blank as { 'currency': string }).currency === 'USD');
 console.assert((blank as { 'inStock': boolean }).inStock);

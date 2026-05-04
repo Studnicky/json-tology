@@ -10,22 +10,23 @@ import {
 const book = entities.coerce(BookSchema.$id, {
   'authors': ['Fyodor Dostoevsky'],
   'isbn': '9780140449136',
-  'price': 14.99,
+  'price': {
+    'amount': 14.99,
+    'currency': 'USD'
+  },
   'title': 'Crime and Punishment'
-  // currency defaults to 'USD', inStock defaults to true
+  // inStock defaults to true
 });
 
 // Basic dump — all fields including defaults
 const wire = entities.dump(BookSchema.$id, book);
 
 console.assert(typeof wire === 'object' && wire !== null);
-console.assert((wire as { 'currency': string }).currency === 'USD');
 console.assert((wire as { 'inStock': boolean }).inStock);
 
-// excludeDefaults — drops currency:'USD' and inStock:true
+// excludeDefaults — drops inStock:true
 const compact = entities.dump(BookSchema.$id, book, { 'excludeDefaults': true });
 
-console.assert(!('currency' in (compact as object)));
 console.assert(!('inStock' in (compact as object)));
 
 // include — projection to specific fields

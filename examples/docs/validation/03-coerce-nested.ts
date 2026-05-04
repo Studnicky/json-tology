@@ -15,18 +15,33 @@ const order = entities.coerce(OrderSchema.$id, {
       'bookIsbn': '9780140449136',
       'extra': 'gone',
       'quantity': 2,
-      'unitPrice': 12.99
+      'unitPrice': {
+        'amount': 12.99,
+        'currency': 'USD'
+      }
     },
     {
       'bookIsbn': '9780062316110',
       'quantity': 1,
-      'unitPrice': 1
+      'unitPrice': {
+        'amount': 1,
+        'currency': 'USD'
+      }
     }
   ],
   'placedAt': '2026-01-15T10:30:00Z',
-  'total': 27.98,
+  'shippingAddress': {
+    'city': 'New York',
+    'country': 'US',
+    'postalCode': '10001',
+    'street': '123 Main St'
+  },
+  'total': {
+    'amount': 27.98,
+    'currency': 'USD'
+  },
   'unexpectedField': 'stripped'
 });
 
-console.assert(order.currency === 'USD'); console.assert(order.items.length === 2);
+console.assert(order.items.length === 2);
 console.assert(!('extra' in order.items[0])); console.assert(!('unexpectedField' in order));

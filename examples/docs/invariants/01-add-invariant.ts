@@ -6,9 +6,10 @@
 import { JsonTology } from '../../../src/index.js';
 import type { InferType } from '../../../src/index.js';
 import {
-  CurrencyCodeSchema, CustomerIdSchema, IsbnSchema, Iso8601Schema,
-  MoneySchema, OrderIdSchema, OrderLineSchema,
-  OrderSchema, QuantitySchema
+  AddressSchema, AmountSchema, CityNameSchema, CountryCodeSchema,
+  CurrencyCodeSchema, CustomerIdSchema, CustomerNameSchema, EmailSchema,
+  IsbnSchema, Iso8601Schema, MoneySchema, OrderIdSchema, OrderLineSchema,
+  OrderSchema, PostalCodeSchema, QuantitySchema, StreetLineSchema
 } from '../bookstore/index.js';
 
 type Order = InferType<typeof OrderSchema>;
@@ -21,27 +22,38 @@ const localJt = JsonTology.create({
         const typed = order as Order;
         const computed = (typed.items as Array<{
           'quantity': number;
-          'unitPrice': number;
+          'unitPrice': {
+            'amount': number;
+            'currency': string;
+          };
         }>).reduce((sum, line) => {
-          return sum + line.unitPrice * line.quantity;
+          return sum + line.unitPrice.amount * line.quantity;
         }, 0);
 
-        return Math.abs(typed.total - computed) < 0.01
+        return Math.abs((typed.total as { 'amount': number }).amount - computed) < 0.01
           ? null
-          : `total must equal sum of items (expected ${computed.toFixed(2)}, got ${String(typed.total)})`;
+          : `total must equal sum of items (expected ${computed.toFixed(2)}, got ${String((typed.total as { 'amount': number }).amount)})`;
       },
       'name': 'totalMatchesItems',
       'pointer': '/total'
     }]
   },
   'schemas': [
+    AmountSchema,
+    CityNameSchema,
+    CountryCodeSchema,
     CurrencyCodeSchema,
     CustomerIdSchema,
+    CustomerNameSchema,
+    EmailSchema,
     Iso8601Schema,
     IsbnSchema,
     MoneySchema,
     OrderIdSchema,
+    PostalCodeSchema,
     QuantitySchema,
+    StreetLineSchema,
+    AddressSchema,
     OrderLineSchema,
     OrderSchema
   ] as const
@@ -53,10 +65,22 @@ const invalidOrder = {
   'items': [{
     'bookIsbn': '9780140449136',
     'quantity': 1,
-    'unitPrice': 14.99
+    'unitPrice': {
+      'amount': 14.99,
+      'currency': 'USD'
+    }
   }],
   'placedAt': '2026-01-15T10:30:00Z',
-  'total': 99
+  'shippingAddress': {
+    'city': 'New York',
+    'country': 'US',
+    'postalCode': '10001',
+    'street': '123 Main St'
+  },
+  'total': {
+    'amount': 99,
+    'currency': 'USD'
+  }
 };
 
 // validate() surfaces invariant failure

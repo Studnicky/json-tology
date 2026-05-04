@@ -13,10 +13,22 @@ const errors = entities.validate(OrderSchema.$id, {
   'items': [{
     'bookIsbn': '9780140449136',
     'quantity': 0,
-    'unitPrice': 12.99
+    'unitPrice': {
+      'amount': 12.99,
+      'currency': 'USD'
+    }
   }],
   'placedAt': '2026-01-15T10:30:00Z',
-  'total': -5
+  'shippingAddress': {
+    'city': 'New York',
+    'country': 'US',
+    'postalCode': '10001',
+    'street': '123 Main St'
+  },
+  'total': {
+    'amount': -5,
+    'currency': 'USD'
+  }
 });
 
 console.assert(errors.length > 0);

@@ -14,10 +14,22 @@ const order = entities.coerce(OrderSchema.$id, {
   'items': [{
     'bookIsbn': '9780140449136',
     'quantity': 1,
-    'unitPrice': 14.99
+    'unitPrice': {
+      'amount': 14.99,
+      'currency': 'USD'
+    }
   }],
   'placedAt': '2026-01-15T10:30:00Z',
-  'total': 14.99
+  'shippingAddress': {
+    'city': 'New York',
+    'country': 'US',
+    'postalCode': '10001',
+    'street': '123 Main St'
+  },
+  'total': {
+    'amount': 14.99,
+    'currency': 'USD'
+  }
 });
 
 // clone — deep copy; mutations don't affect original
@@ -26,11 +38,17 @@ const copy = Value.clone(order);
 (copy.items as Array<{
   'bookIsbn': string;
   'quantity': number;
-  'unitPrice': number;
+  'unitPrice': {
+    'amount': number;
+    'currency': string;
+  };
 }>).push({
   'bookIsbn': '9780062316110',
   'quantity': 1,
-  'unitPrice': 9.99
+  'unitPrice': {
+    'amount': 9.99,
+    'currency': 'USD'
+  }
 });
 console.assert(order.items.length === 1);
 console.assert(copy.items.length === 2);

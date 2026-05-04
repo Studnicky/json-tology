@@ -1,30 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-interface NodeData {
-  id: string;
-  label: string;
-  kind: 'entity' | 'primitive';
-}
-
-interface EdgeData {
-  id: string;
-  source: string;
-  target: string;
-  label: string;
-  kind: 'subClassOf' | 'domain' | 'range' | 'equivalentClass';
-}
-
-interface GraphData {
-  nodes: { data: NodeData }[];
-  edges: { data: EdgeData }[];
-}
-
-type SchemaMap = Record<string, unknown>;
+import type { EdgeData, NodeData } from '../utils/bookstoreGraphData.js';
 
 // ---------------------------------------------------------------------------
 // State
@@ -34,7 +10,6 @@ const containerRef = ref<HTMLDivElement | null>(null);
 const loadError = ref<string | null>(null);
 const loading = ref(true);
 const selectedNode = ref<{ id: string; schema: unknown; edges: EdgeData[] } | null>(null);
-const fallbackJson = ref<string | null>(null);
 
 // Keep a reference to destroy on unmount
 let cyInstance: { destroy(): void } | null = null;
@@ -44,28 +19,18 @@ let cyInstance: { destroy(): void } | null = null;
 // ---------------------------------------------------------------------------
 
 onMounted(async () => {
-  // Load data files in parallel
-  let graphData: GraphData;
-  let schemaMap: SchemaMap;
+  // Import graph utilities (client-only — never runs during SSR)
+  let graphData: { nodes: Array<{ data: NodeData }>; edges: Array<{ data: EdgeData }> };
+  let schemaMap: Record<string, unknown>;
 
   try {
-    const [graphResp, schemaResp] = await Promise.all([
-      fetch('/data/bookstore-graph.json'),
-      fetch('/data/bookstore-schemas.json')
-    ]);
-
-    if (!graphResp.ok) throw new Error(`Could not load graph data: ${graphResp.status}`);
-    if (!schemaResp.ok) throw new Error(`Could not load schema data: ${schemaResp.status}`);
-
-    [graphData, schemaMap] = await Promise.all([
-      graphResp.json() as Promise<GraphData>,
-      schemaResp.json() as Promise<SchemaMap>
-    ]);
+    const { toCytoscapeElements, toSchemaMap } = await import('../utils/bookstoreGraphData.js');
+    graphData = toCytoscapeElements();
+    schemaMap = toSchemaMap();
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    loadError.value = msg;
+    loadError.value = `Could not load graph data: ${msg}`;
     loading.value = false;
-    fallbackJson.value = msg;
     return;
   }
 
@@ -84,8 +49,6 @@ onMounted(async () => {
     const msg = err instanceof Error ? err.message : String(err);
     loadError.value = `Cytoscape failed to load: ${msg}`;
     loading.value = false;
-    // Show JSON fallback
-    fallbackJson.value = JSON.stringify(graphData, null, 2);
     return;
   }
 
@@ -271,11 +234,9 @@ function schemaText(schema: unknown): string {
       Loading graph data...
     </div>
 
-    <!-- Error + JSON fallback -->
+    <!-- Error -->
     <div v-if="loadError" class="graph-error">
       <p><strong>Graph failed to load:</strong> {{ loadError }}</p>
-      <p>Showing raw graph JSON instead:</p>
-      <pre v-if="fallbackJson" class="graph-fallback-json">{{ fallbackJson }}</pre>
     </div>
 
     <!-- Cytoscape container -->
@@ -341,15 +302,6 @@ function schemaText(schema: unknown): string {
 .graph-error {
   padding: 16px;
   color: var(--vp-c-danger-1, #cc0000);
-}
-
-.graph-fallback-json {
-  font-size: 11px;
-  max-height: 400px;
-  overflow: auto;
-  background: var(--vp-c-bg);
-  padding: 8px;
-  border-radius: 4px;
 }
 
 .graph-panel {

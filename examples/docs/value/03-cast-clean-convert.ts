@@ -5,14 +5,16 @@
 
 import { JsonTology } from '../../../src/index.js';
 import {
-  AuthorNameSchema, BookSchema, CurrencyCodeSchema, IsbnSchema, MoneySchema,
-  TitleSchema
+  AmountSchema, AuthorNameSchema, BookSchema, CurrencyCodeSchema, CustomerNameSchema,
+  IsbnSchema, MoneySchema, TitleSchema
 } from '../bookstore/index.js';
 
 const localJt = JsonTology.create({
   'baseIRI': 'https://bookstore.example',
   'castTypes': true,
   'schemas': [
+    AmountSchema,
+    CustomerNameSchema,
     AuthorNameSchema,
     CurrencyCodeSchema,
     IsbnSchema,
@@ -27,12 +29,14 @@ const casted = localJt.value.cast(BookSchema.$id, {
   'authors': ['Fyodor Dostoevsky'],
   'inStock': 'true',
   'isbn': '9780140449136',
-  'price': '14.99',
+  'price': {
+    'amount': 14.99,
+    'currency': 'USD'
+  },
   'title': 'Crime and Punishment'
 });
 
-console.assert(typeof (casted as { 'price': number }).price === 'number');
-console.assert((casted as { 'currency': string }).currency === 'USD');
+console.assert((casted as { 'price': { 'amount': number } }).price.amount === 14.99);
 
 // clean strips unknown properties
 const dirty = {
@@ -40,7 +44,10 @@ const dirty = {
   '_internalId': 'int-001',
   'authors': ['Fyodor Dostoevsky'],
   'isbn': '9780140449136',
-  'price': 14.99,
+  'price': {
+    'amount': 14.99,
+    'currency': 'USD'
+  },
   'title': 'Crime and Punishment'
 };
 const cleaned = localJt.value.clean(BookSchema.$id, dirty);
@@ -52,8 +59,11 @@ console.assert(!('_cacheKey' in (cleaned as object)));
 const converted = localJt.value.convert(BookSchema.$id, {
   'authors': ['Fyodor Dostoevsky'],
   'isbn': '9780140449136',
-  'price': '14.99',
+  'price': {
+    'amount': 14.99,
+    'currency': 'USD'
+  },
   'title': 'Crime and Punishment'
 });
 
-console.assert(typeof (converted as { 'price': number }).price === 'number');
+console.assert(typeof (converted as { 'price': { 'amount': number } }).price.amount === 'number');

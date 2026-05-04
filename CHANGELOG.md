@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Bookstore example: `PersonName` renamed to `CustomerName` — `urn:bookstore:CustomerName` is the canonical name/string primitive used by `Customer`. Callers importing `PersonNameSchema` must update to `CustomerNameSchema`.
+- Bookstore example: `AuthorName` refactored to `Compose.equivalent(CustomerNameSchema, ...)` — same compiled validator, separate domain concept, `owl:equivalentClass` arc in the TBox.
+- Bookstore example: `Money` restored as a composite object schema (`{ amount: Amount, currency: CurrencyCode }`) instead of a bare number; `Book.price` and `OrderLine.unitPrice` now accept `{ amount, currency }` objects. Callers passing a plain number must update to `{ amount: <number>, currency: '<code>' }`.
+- Bookstore example: `Order` gains required `shippingAddress` property (`$ref: Address`); `currency` property removed from both `Book` and `Order` (currency is now carried inside each `Money` value).
+- Docs: BookstoreGraph component now generates Cytoscape elements at runtime from the live bookstore registry — no `fetch()` calls, no static JSON files. `docs/public/data/bookstore-graph.json` and `docs/public/data/bookstore-schemas.json` deleted.
+- Docs: `docs/.vitepress/theme/utils/bookstoreGraphData.ts` added as single source for graph derivation — exports `toCytoscapeElements()`, `toJsonLd()`, `toSchemaMap()`; both the Vue component and the WebVOWL build script consume it.
+- Docs: `scripts/build-bookstore-graph.mjs` replaced by `scripts/build-bookstore-tbox.mjs` (narrower scope: writes only `docs/public/data/bookstore-tbox.jsonld` for WebVOWL).
+- Docs: `npm run build:bookstore-graph` replaced by `npm run build:bookstore-tbox`; `docs:build` updated accordingly.
+- Docs homepage (`docs/index.md`): "Advanced usages" section added below the hero features, embedding `<BookstoreGraph />` as a live teaser with links to the full guide and WebVOWL page.
+
 ### BREAKING
 
 - `JsonTology.validate()` return type changed from `string[]` to `ValidationErrors`. Update call sites that compared to `[]` (use `.ok` or `.length === 0`), iterated as strings (use `.items.map(e => e.message)`), or called array methods like `.slice()` (use `.items.slice()`).

@@ -11,11 +11,13 @@ import {
 const book = entities.materialize(BookSchema, {
   'authors': ['Fyodor Dostoevsky'],
   'isbn': '9780140449136',
-  'price': 14.99,
+  'price': {
+    'amount': 14.99,
+    'currency': 'USD'
+  },
   'title': 'Crime and Punishment'
 });
 
-console.assert(book.currency === 'USD');
 console.assert(book.inStock === true);
 console.assert(book.isbn === '9780140449136');
 
@@ -23,4 +25,3 @@ console.assert(book.isbn === '9780140449136');
 const blank = entities.value.create(BookSchema.$id);
 
 console.assert((blank as { 'isbn': string }).isbn === '');
-console.assert((blank as { 'currency': string }).currency === 'USD');

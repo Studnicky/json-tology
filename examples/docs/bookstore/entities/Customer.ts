@@ -1,6 +1,6 @@
 import { CustomerIdSchema } from './CustomerId.js';
+import { CustomerNameSchema } from './CustomerName.js';
 import { EmailSchema } from './Email.js';
-import { PersonNameSchema } from './PersonName.js';
 
 export const CustomerSchema = {
   '$id': 'urn:bookstore:Customer',
@@ -12,7 +12,7 @@ export const CustomerSchema = {
     },
     'email': { '$ref': EmailSchema.$id },
     'id': { '$ref': CustomerIdSchema.$id },
-    'name': { '$ref': PersonNameSchema.$id }
+    'name': { '$ref': CustomerNameSchema.$id }
   },
   'required': [
     'id',
