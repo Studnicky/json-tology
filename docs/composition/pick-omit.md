@@ -186,7 +186,7 @@ type OrderSummary = InferType<typeof OrderSummarySchema>;
 
 ```ts
 import { Compose } from 'json-tology';
-import { bookstoreJt, BookSchema } from './bookstore/index.js';
+import { bookstoreEntities as entities, BookSchema } from './bookstore/index.js';
 
 // Retrieve and narrow dynamically
 const raw = jt.get(BookSchema.$id);

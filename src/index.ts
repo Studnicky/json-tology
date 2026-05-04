@@ -29,6 +29,8 @@ export type * from './interfaces/Quad.js';
 export * from './JsonTology.js';
 export * from './modules/composition/Compose.js';
 export * from './modules/data/Changeset.js';
+export * from './modules/data/Path.js';
+export * from './modules/data/Resolver.js';
 export * from './modules/data/Value.js';
 export * from './modules/graph/GraphEngine.js';
 export * from './modules/hash/Hash.js';

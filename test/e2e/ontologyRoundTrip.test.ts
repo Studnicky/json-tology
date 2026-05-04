@@ -633,7 +633,7 @@ describe('ontology round-trip: multi-schema HR domain', () => {
         'street': 'Unter den Linden 1'
       });
 
-      assert.deepEqual(errors, [], 'valid address produces no errors');
+      assert.equal(errors.ok, true, 'valid address produces no errors');
     });
 
     it('rejects Address missing required field', () => {
@@ -649,7 +649,7 @@ describe('ontology round-trip: multi-schema HR domain', () => {
         'name': 'Alice'
       });
 
-      assert.deepEqual(errors, [], 'valid employee produces no errors');
+      assert.equal(errors.ok, true, 'valid employee produces no errors');
     });
 
     it('validates Employee with nested Address and Skills', () => {
@@ -672,7 +672,7 @@ describe('ontology round-trip: multi-schema HR domain', () => {
         ]
       });
 
-      assert.deepEqual(errors, [], 'valid employee with nested objects produces no errors');
+      assert.equal(errors.ok, true, 'valid employee with nested objects produces no errors');
     });
 
     it('validates valid Organization data', () => {
@@ -686,7 +686,7 @@ describe('ontology round-trip: multi-schema HR domain', () => {
         'name': 'Acme Corp'
       });
 
-      assert.deepEqual(errors, [], 'valid organization produces no errors');
+      assert.equal(errors.ok, true, 'valid organization produces no errors');
     });
 
     it('rejects Organization missing required name', () => {
@@ -893,8 +893,8 @@ describe('ontology round-trip: multi-schema HR domain', () => {
       const origErrors = jt.validate(AddressSchema.$id, data);
       const reconErrors = jt.validate(altId, data);
 
-      assert.deepEqual(origErrors, [], 'original validates');
-      assert.deepEqual(reconErrors, [], 'reconstructed validates same data');
+      assert.equal(origErrors.ok, true, 'original validates');
+      assert.equal(reconErrors.ok, true, 'reconstructed validates same data');
     });
 
     it('reconstructs Employee schema preserving required fields', () => {

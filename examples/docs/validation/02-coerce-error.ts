@@ -5,12 +5,12 @@
 
 import { CoercionError } from '../../../src/index.js';
 import {
-  bookstoreJt, CustomerSchema
+  CustomerSchema, bookstoreEntities as entities
 } from '../bookstore/index.js';
 
 function createCustomer(body: unknown) {
   try {
-    return bookstoreJt.coerce(CustomerSchema.$id, body);
+    return entities.coerce(CustomerSchema.$id, body);
   } catch (error) {
     if (error instanceof CoercionError) {
       const problem = error.errors.report({ 'instance': '/customers' });

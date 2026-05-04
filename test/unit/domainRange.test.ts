@@ -175,7 +175,7 @@ void describe('rdfs:domain and rdfs:range', () => {
       },
       'type': 'object'
     });
-    assert.deepEqual(localReg.validate('https://example.io/WithUnknownRange', { 'data': { 'anything': 'goes' } }), []);
+    assert.ok(localReg.validate('https://example.io/WithUnknownRange', { 'data': { 'anything': 'goes' } }).ok);
   });
 
   void it('uses explicit domain/range in OWL output', () => {

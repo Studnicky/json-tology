@@ -4,10 +4,10 @@
  */
 
 import {
-  bookstoreJt, CustomerSchema
+  CustomerSchema, bookstoreEntities as entities
 } from '../bookstore/index.js';
 
-const customer = bookstoreJt.coerce(CustomerSchema.$id, {
+const customer = entities.coerce(CustomerSchema.$id, {
   'email': 'alice@bookstore.example',
   'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'internalNotes': 'vip',

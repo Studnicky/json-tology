@@ -7,7 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### BREAKING
+
+- `JsonTology.validate()` return type changed from `string[]` to `ValidationErrors`. Update call sites that compared to `[]` (use `.ok` or `.length === 0`), iterated as strings (use `.items.map(e => e.message)`), or called array methods like `.slice()` (use `.items.slice()`).
+- `JsonTology.errors()` removed — replaced by `JsonTology.validate()` which now returns `ValidationErrors`. Rename all `jt.errors(schema, data)` calls to `jt.validate(schema, data)`.
+- `ValidationErrors.messages()` removed — recipe: `errs.items.map(e => \`${e.path || 'root'}: ${e.message}\`)`
+- `ValidationErrors.format()` removed — recipe: build a `Record<string, ValidationErrorType[]>` by iterating `errs.items` and grouping by `err.path || '_root'`
+- `ValidationErrors.flatten()` removed — recipe: split `errs.items` into `fieldErrors` (items where `err.path` is non-empty) and `formErrors` (items where `err.path` is empty)
+- `ValidationErrors.aggregate().paths` now returns access form (`items[0].quantity`) instead of JSON Pointer (`/items/0/quantity`). Use `errs.items.map(e => e.path)` for JSON Pointer paths.
+- `JsonTologyOptionsInterface.castTypes` renamed to `enableTypeCast`. Update `JsonTology.create({ castTypes: true })` to `JsonTology.create({ enableTypeCast: true })`.
+- `JsonTologyOptionsInterface.strict` renamed to `enableStrictTypes`. Update `JsonTology.create({ strict: true })` to `JsonTology.create({ enableStrictTypes: true })`.
+- `RegistryOptionsInterface.castTypes` renamed to `enableTypeCast`.
+- `RegistryOptionsInterface.strict` renamed to `enableStrictTypes`.
+- `bookstoreJt` export from `examples/docs/bookstore/index.ts` renamed to `bookstoreEntities`. Import with `import { bookstoreEntities as entities } from ...` to use the `entities` variable convention.
+- `docs/current-state.md` removed — stale snapshot page; use CHANGELOG and CI for current status.
+- `docs/architecture-plan.md` moved to `ARCHITECTURE.md` at project root — contributor reference, not user-facing docs. Sidebar entry dropped.
+
 ### Added
+
+- `Resolver` static class (`src/modules/data/Resolver.ts`) — `Resolver.merge(base, override)` for per-call option merging; defined values in `override` win over `base`
+- `Path` static class (`src/modules/data/Path.ts`) — `Path.toAccess(jsonPointer)` converts JSON Pointer to access form (`/items/0/qty` → `items[0].qty`)
+- `enableDebug` option on `JsonTologyOptionsInterface` — schema trace in error messages, `schemaTrace` field on `ValidationErrorType` items, `CoercionError.cause.input` preservation, `logger.debug` events, and cycle-detection diagnostics
+- `ARCHITECTURE.md` at project root — internal development plan for contributors
+
 - Docs: new page `docs/advanced/graph-concepts.md` — conceptual coverage of the graph model including TBox vs ABox, open-world assumption, subClassOf/equivalentClass semantics, JSON Pointer identifiers, domain/range, $ref resolution, the serializer trio, ABox projection, $id IRI conventions, SPARQL query patterns, and the irreducible `jt:*` predicate set
 - Docs: new page `docs/advanced/graph-demo.md` — interactive Cytoscape force-directed graph of the bookstore TBox with node click-to-inspect panel; graceful JSON-LD fallback if Cytoscape fails to load
 - `scripts/build-bookstore-graph.mjs` — build-time data generator that runs `bookstoreJt.toTbox().raw()` and writes `docs/.vitepress/data/bookstore-graph.json` (Cytoscape elements) and `docs/.vitepress/data/bookstore-schemas.json` (schema literals); integrated as `npm run build:bookstore-graph` and as a pre-step in `npm run docs:build`

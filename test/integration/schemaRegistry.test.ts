@@ -261,7 +261,7 @@ void describe('SchemaRegistry registration', () => {
         assert.strictEqual(registry.graph(TestSchema.$id), originalGraph);
         assert.equal(registry.list().length, 1);
         assert.equal(registry.listGraphs().length, 1);
-        assert.deepEqual(registry.validate(TestSchema.$id, { 'name': 'Alice' }), []);
+        assert.ok(registry.validate(TestSchema.$id, { 'name': 'Alice' }).ok);
         const parsed = registry.coerce(TestSchema.$id, { 'name': 'Alice' }) as Record<string, unknown>;
 
         assert.equal(parsed.name, 'Alice');
@@ -404,8 +404,8 @@ void describe('SchemaRegistry validation', () => {
       } else {
         assert.ok(errors.length > 0);
         if (errorSubstring !== undefined) {
-          assert.ok(errors.some((err) => {
-            return err.includes(errorSubstring);
+          assert.ok(errors.items.some((err) => {
+            return err.message.includes(errorSubstring);
           }));
         }
       }
@@ -420,11 +420,11 @@ void describe('SchemaRegistry validation', () => {
     }, /No validator registered|SCHEMA_NOT_REGISTERED/u);
   });
 
-  void it('unregistered schema throws SchemaError from errors()', () => {
+  void it('unregistered schema throws SchemaError from validate() (renamed)', () => {
     const registry = new SchemaRegistry({ 'logger': new Logger() });
 
     assert.throws(() => {
-      registry.errors('https://example.io/nonexistent', {});
+      registry.validate('https://example.io/nonexistent', {});
     }, /No validator registered|SCHEMA_NOT_REGISTERED/u);
   });
 
@@ -460,8 +460,8 @@ void describe('SchemaRegistry options', () => {
       'check': (registry) => {
         assert.strictEqual(registry.castTypes, true);
       },
-      'name': 'castTypes option sets castTypes property',
-      'options': { 'castTypes': true }
+      'name': 'enableTypeCast option sets castTypes property',
+      'options': { 'enableTypeCast': true }
     },
     {
       'check': (registry, logs) => {
@@ -487,7 +487,7 @@ void describe('SchemaRegistry options', () => {
         );
       },
       'name': 'strict mode rejects non-2020-12 dialect',
-      'options': { 'strict': true }
+      'options': { 'enableStrictTypes': true }
     },
     {
       'check': (registry) => {
@@ -496,13 +496,13 @@ void describe('SchemaRegistry options', () => {
         });
       },
       'name': 'strict mode accepts 2020-12 schema',
-      'options': { 'strict': true }
+      'options': { 'enableStrictTypes': true }
     },
     {
       'check': (registry) => {
         assert.ok(!registry.castTypes);
       },
-      'name': 'default options leave castTypes falsy',
+      'name': 'default options leave castTypes false',
       'options': {}
     }
   ];
@@ -693,7 +693,7 @@ void describe('coerce / is / errors', () => {
 
       registry.register(ParseTestSchema);
 
-      const errs = registry.errors(ParseTestSchema.$id, data);
+      const errs = registry.validate(ParseTestSchema.$id, data);
 
       if (valid) {
         assert.equal(errs.length, 0);
@@ -853,7 +853,7 @@ void describe('Structure Validation', () => {
     {
       'check': () => {
         const registry = new SchemaRegistry({
-          'castTypes': true,
+          'enableTypeCast': true,
           'logger': new Logger()
         });
 

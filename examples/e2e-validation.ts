@@ -22,16 +22,16 @@ import {
 
 const jt = JsonTology.create({
   'baseIRI': 'http://xmlns.com/foaf',
-  'castTypes': true,
+  'enableTypeCast': true,
   'schemas': allSchemas
 });
 
 // ===== 1. validate() — quick error strings ================================
 
-console.log('=== 1. validate() ===');
+console.log('=== 1. validate() — ValidationErrors ===');
 const good = jt.validate(PersonSchema.$id, foafPersons[0]);
 
-console.log('Valid person errors:', good);
+console.log('Valid person (ok):', good.ok);
 
 const bad = {
   'familyName': 42,
@@ -41,18 +41,19 @@ const bad = {
 const badErrors = jt.validate(PersonSchema.$id, bad);
 
 console.log('Invalid person errors:');
-for (const msg of badErrors) {
-  console.log(' ', msg);
+for (const errItem of badErrors) {
+  console.log(' ', errItem.path, ':', errItem.message);
 }
 
 // ===== 2. errors() — structured ValidationErrors ==========================
 
-console.log('\n=== 2. errors() — structured ===');
-const errs = jt.errors(PersonSchema.$id, bad);
+console.log('\n=== 2. validate() — structured items ===');
+const errs = jt.validate(PersonSchema.$id, bad);
 
 console.log('Count:', errs.length);
-console.log('Formatted:\n', errs.format());
-console.log('Flat array:', errs.flatten());
+for (const err of errs) {
+  console.log(' ', err.path || 'root', ':', err.message);
+}
 
 // ===== 3. coerce() — validate + defaults + strip unknowns ==================
 

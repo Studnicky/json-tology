@@ -4,7 +4,7 @@
  * This file validates that:
  * 1. JsonTology.create() infers types from constructor schemas
  * 2. .register() accumulates types via chaining
- * 3. coerce(), is(), errors(), validate() constrain schemaId to registered keys
+ * 3. coerce(), is(), validate() constrain schemaId to registered keys
  * 4. coerce() returns the correct inferred type
  * 5. Incorrect schema IDs and type mismatches are caught at compile time
  *
@@ -82,8 +82,8 @@ if (jt.is('https://example.io/User', {})) {
 // validate() constrains to registered IDs
 jt.validate('https://example.io/User', {});
 
-// errors() constrains to registered IDs
-jt.errors('https://example.io/Order', {});
+// validate() constrains to registered IDs
+jt.validate('https://example.io/Order', {});
 
 // Runtime-unsafe type assertions — guarded to prevent execution
 if (false as boolean) {
@@ -94,7 +94,7 @@ if (false as boolean) {
   // @ts-expect-error — schema ID not registered
   jt.validate('https://example.io/NotRegistered', {});
   // @ts-expect-error — schema ID not registered
-  jt.errors('https://example.io/NotRegistered', {});
+  jt.validate('https://example.io/NotRegistered', {});
 }
 
 // ---------------------------------------------------------------------------

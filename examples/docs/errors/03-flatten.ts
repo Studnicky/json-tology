@@ -1,13 +1,15 @@
 /**
- * ValidationErrors.flatten — Example 1: fieldErrors / formErrors split
- * Demonstrates: Zod-compatible flatten() for form libraries
+ * ValidationErrors — flatten recipe
+ * Demonstrates: fieldErrors / formErrors split — cookbook recipe for the removed flatten() method.
+ * Use this when you need to separate field-level errors from form-level errors.
  */
 
+import type { ValidationErrorType } from '../../../src/index.js';
 import {
-  bookstoreJt, ReviewSchema
+  bookstoreEntities as entities, ReviewSchema
 } from '../bookstore/index.js';
 
-const errs = bookstoreJt.errors(ReviewSchema.$id, {
+const errs = entities.validate(ReviewSchema.$id, {
   'body': 'short',
   'bookIsbn': '9780140449136',
   'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
@@ -16,12 +18,24 @@ const errs = bookstoreJt.errors(ReviewSchema.$id, {
   'rating': 6
 });
 
-const {
-  fieldErrors, formErrors
-} = errs.flatten();
+// Recipe: field vs form errors (equivalent to removed flatten())
+const fieldErrors: ValidationErrorType[] = [];
+const formErrors: ValidationErrorType[] = [];
+
+for (const err of errs) {
+  if (err.path) {
+    fieldErrors.push(err);
+  } else {
+    formErrors.push(err);
+  }
+}
 
 console.assert(typeof fieldErrors === 'object');
 console.assert(Array.isArray(formErrors));
-// Field errors: keyed by JSON Pointer path
-console.assert(Array.isArray(fieldErrors['/rating']));
-console.assert(Array.isArray(fieldErrors['/body']));
+// Field errors: items with non-empty paths
+console.assert(fieldErrors.some((err) => {
+  return err.path === '/rating';
+}));
+console.assert(fieldErrors.some((err) => {
+  return err.path === '/body';
+}));

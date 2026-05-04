@@ -87,13 +87,13 @@ void describe('Registration edge cases', () => {
   ];
 
   for (const {
-    data, expected, name, schema
+    data, name, schema
   } of acceptScenarios) {
     void it(name, () => {
       const registry = new SchemaRegistry();
 
       registry.register(schema);
-      assert.deepEqual(registry.validate(schema.$id as string, data), expected);
+      assert.ok(registry.validate(schema.$id as string, data).ok, `expected valid: ${name}`);
     });
   }
 
@@ -106,7 +106,7 @@ void describe('Registration edge cases', () => {
     });
 
     assert.ok(syntheticId.startsWith('urn:json-tology:'), 'synthetic ID has expected prefix');
-    assert.deepEqual(registry.validate(syntheticId, { 'value': 42 }), [], 'valid data passes');
+    assert.ok(registry.validate(syntheticId, { 'value': 42 }).ok, 'valid data passes');
     assert.ok(registry.validate(syntheticId, { 'value': 'not-a-number' }).length > 0, 'invalid data fails');
   });
 });
@@ -176,7 +176,7 @@ void describe('Numeric boundary validation', () => {
         const errors = registry.validate('https://edge.test/NumBounds', data);
 
         if (valid) {
-          assert.deepEqual(errors, []);
+          assert.ok(errors.ok);
         } else {
           assert.ok(errors.length > 0);
         }
@@ -229,7 +229,7 @@ void describe('Numeric boundary validation', () => {
         const errors = registry.validate('https://edge.test/ExclBounds', data);
 
         if (valid) {
-          assert.deepEqual(errors, []);
+          assert.ok(errors.ok);
         } else {
           assert.ok(errors.length > 0);
         }
@@ -281,7 +281,7 @@ void describe('Numeric boundary validation', () => {
         const errors = registry.validate('https://edge.test/MultOf', data);
 
         if (valid) {
-          assert.deepEqual(errors, []);
+          assert.ok(errors.ok);
         } else {
           assert.ok(errors.length > 0);
         }
@@ -345,7 +345,7 @@ void describe('String constraint validation', () => {
         const errors = registry.validate('https://edge.test/StrLen', data);
 
         if (valid) {
-          assert.deepEqual(errors, []);
+          assert.ok(errors.ok);
         } else {
           assert.ok(errors.length > 0);
         }
@@ -402,7 +402,7 @@ void describe('String constraint validation', () => {
         const errors = registry.validate('https://edge.test/Pattern', data);
 
         if (valid) {
-          assert.deepEqual(errors, []);
+          assert.ok(errors.ok);
         } else {
           assert.ok(errors.length > 0);
         }
@@ -484,7 +484,7 @@ void describe('Array constraint validation', () => {
       const errors = registry.validate('https://edge.test/ArrayItems', data);
 
       if (valid) {
-        assert.deepEqual(errors, []);
+        assert.ok(errors.ok);
       } else {
         assert.ok(errors.length > 0);
       }
@@ -540,7 +540,7 @@ void describe('Enum and const validation', () => {
         const errors = registry.validate('https://edge.test/Enum', data);
 
         if (valid) {
-          assert.deepEqual(errors, []);
+          assert.ok(errors.ok);
         } else {
           assert.ok(errors.length > 0);
         }
@@ -592,7 +592,7 @@ void describe('Enum and const validation', () => {
         const errors = registry.validate('https://edge.test/Const', data);
 
         if (valid) {
-          assert.deepEqual(errors, []);
+          assert.ok(errors.ok);
         } else {
           assert.ok(errors.length > 0);
         }
@@ -673,7 +673,7 @@ void describe('Top-level type validation', () => {
       const errors = registry.validate(schemaId, data);
 
       if (valid) {
-        assert.deepEqual(errors, []);
+        assert.ok(errors.ok);
       } else {
         assert.ok(errors.length > 0);
       }
@@ -844,7 +844,7 @@ void describe('Coercion edge cases', () => {
       'expectedType': expType, 'expectedValue': expVal, 'input': inp, 'name': n
     } of scenarios) {
       void it(n, () => {
-        const registry = new SchemaRegistry({ 'castTypes': true });
+        const registry = new SchemaRegistry({ 'enableTypeCast': true });
 
         registry.register({
           '$id': 'https://edge.test/CastNum',
@@ -948,7 +948,7 @@ void describe('Cross-schema $ref validation', () => {
         const errors = registry.validate('https://edge.test/City', data);
 
         if (valid) {
-          assert.deepEqual(errors, []);
+          assert.ok(errors.ok);
         } else {
           assert.ok(errors.length > 0);
         }
@@ -1004,7 +1004,7 @@ void describe('Cross-schema $ref validation', () => {
         const errors = registry.validate('https://edge.test/A', data);
 
         if (valid) {
-          assert.deepEqual(errors, []);
+          assert.ok(errors.ok);
         } else {
           assert.ok(errors.length > 0);
         }
@@ -1062,13 +1062,13 @@ void describe('Serialization edge cases', () => {
     },
     {
       'check': (jt) => {
-        assert.deepEqual(jt.validate('https://edge.test/Tree', {
+        assert.ok(jt.validate('https://edge.test/Tree', {
           'children': [{
             'children': [],
             'label': 'child'
           }],
           'label': 'root'
-        }), [], 'recursive data validates');
+        }).ok, 'recursive data validates');
 
         const owl = jt.ontology().jsonLdObject();
 

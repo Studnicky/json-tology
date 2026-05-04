@@ -1,17 +1,19 @@
 # `JsonTology.validate`
 
-**Declaration.** Validates data against a registered schema and returns an array of human-readable error message strings. Returns an empty array when the data is valid. Does not mutate the input. Does not throw on validation failure.
+**Declaration.** Validates data against a registered schema and returns a `ValidationErrors` collection. The collection is empty (`.ok === true`) when the data is valid. Does not mutate the input. Does not throw on validation failure.
 
-**Use this when** you want a quick list of error strings for display, logging, or passing to a legacy error reporter — and you don't need structured error objects with path/keyword/params. Use this in CLI tools, developer feedback, or situations where a flat string list is the right output.
+Equivalent to `materialize(idOrSchema, data, { enableValidation: true, enableThrow: false, enableDefaults: false }).errors`.
 
-**Don't use this when** you need structured access to error paths, keywords, or params (use [`errors`](/validation/errors) instead). Don't use it when you want a boolean check (use [`is`](/validation/is) instead). Don't use it when you want the coerced typed value on success (use [`coerce`](/validation/coerce) instead).
+**Use this when** you need programmatic access to the structured error list — paths, keywords, params — without wanting an exception. This is the right method for API validation where you collect errors, then decide what to do with them (return a 422, log, display in a form). The collection is iterable with `for...of`.
+
+**Don't use this when** you only need a boolean (use [`is`](/validation/is)). Don't use it when you want the coerced typed value on success (use [`coerce`](/validation/coerce)).
 
 ## Examples
 
 ### Example 1: Basic valid and invalid cases
 
 ```ts
-import { bookstoreJt, CustomerSchema } from './bookstore/index.js';
+import { bookstoreEntities as entities, CustomerSchema } from './bookstore/index.js';
 
 // Valid — empty array
 const ok = jt.validate(CustomerSchema.$id, {
@@ -34,7 +36,7 @@ console.log(bad);
 `OrderSchema` contains `items: [OrderLine]` via `$ref`. Errors on nested fields include the full JSON Pointer path.
 
 ```ts
-import { bookstoreJt, OrderSchema } from './bookstore/index.js';
+import { bookstoreEntities as entities, OrderSchema } from './bookstore/index.js';
 
 const errors = jt.validate(OrderSchema.$id, {
   id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
@@ -53,7 +55,7 @@ const errors = jt.validate(OrderSchema.$id, {
 Validate on blur before attempting a full coerce.
 
 ```ts
-import { bookstoreJt, ReviewSchema } from './bookstore/index.js';
+import { bookstoreEntities as entities, ReviewSchema } from './bookstore/index.js';
 
 function validateReviewForm(formData: Record<string, unknown>): string[] {
   return jt.validate(ReviewSchema.$id, formData);
@@ -93,7 +95,7 @@ const msg = jt.validate(CustomerSchema.$id, data)[0];
 const path = msg.split(':')[0]; // fragile string parsing
 
 // ✓ Do this — use errors() for structured access
-const errs = jt.errors(CustomerSchema.$id, data);
+const errs = entities.validate(CustomerSchema.$id, data);
 for (const err of errs) {
   console.log(err.path, err.keyword, err.message);
 }

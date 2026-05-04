@@ -18,7 +18,7 @@ Pure static utilities that work on any value without a schema.
 
 ```ts
 import { Value } from 'json-tology';
-import { bookstoreJt, OrderSchema } from './bookstore/index.js';
+import { bookstoreEntities as entities, OrderSchema } from './bookstore/index.js';
 
 const order = jt.coerce(OrderSchema.$id, {
   id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',

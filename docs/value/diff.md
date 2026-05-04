@@ -16,7 +16,7 @@
 
 ```ts
 import { Value } from 'json-tology';
-import { bookstoreJt, CustomerSchema } from './bookstore/index.js';
+import { bookstoreEntities as entities, CustomerSchema } from './bookstore/index.js';
 
 const before = jt.coerce(CustomerSchema.$id, {
   id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',

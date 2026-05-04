@@ -27,7 +27,7 @@
 #### Example 1: Basic serialization of a coerced book
 
 ```ts
-import { bookstoreJt, BookSchema } from './bookstore/index.js';
+import { bookstoreEntities as entities, BookSchema } from './bookstore/index.js';
 
 const book = jt.coerce(BookSchema.$id, {
   isbn:    '9780140449136',

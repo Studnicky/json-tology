@@ -291,7 +291,7 @@ void describe('Registry recovery', () => {
       'name': string }> = [
       {
         'check': () => {
-          assert.deepEqual(registry.validate('https://err.test/Good', { 'x': 'hello' }), []);
+          assert.ok(registry.validate('https://err.test/Good', { 'x': 'hello' }).ok);
         },
         'name': 'original schema still validates'
       },
@@ -374,10 +374,10 @@ void describe('JsonTology error handling', () => {
       {
         'check': () => {
           assert.throws(() => {
-            jt.errors('https://err.test/Missing' as never, {});
+            jt.validate('https://err.test/Missing' as never, {});
           }, /No validator registered|SCHEMA_NOT_REGISTERED/u);
         },
-        'name': 'errors throws for unregistered schema'
+        'name': 'validate throws for unregistered schema'
       }
     ];
 

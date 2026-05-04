@@ -1,19 +1,19 @@
-# `JsonTology.errors`
+# `JsonTology.validate` — ValidationErrors
 
-**Declaration.** Validates data against a registered schema and returns a `ValidationErrors` collection. The collection is empty (`.ok === true`) when the data is valid. Provides five views over the error data: `messages()`, `format()`, `flatten()`, `aggregate()`, `report()`. Does not mutate input. Does not throw.
+**Declaration.** `validate()` now returns `ValidationErrors` (not `string[]`). See [`validate()`](/validation/validate) for the full reference. This page covers the `ValidationErrors` collection shape and usage patterns.
 
 **Use this when** you need programmatic access to the structured error list — paths, keywords, params — without wanting an exception. This is the right method for API validation where you collect errors, then decide what to do with them (return a 422, log, display in a form). The collection is iterable with `for...of`.
 
-**Don't use this when** you only need a boolean (use [`is`](/validation/is)). Don't use it when you want the coerced typed value on success (use [`coerce`](/validation/coerce)). Don't use it when all you need is a quick string array (use [`validate`](/validation/validate)).
+**Don't use this when** you only need a boolean (use [`is`](/validation/is)). Don't use it when you want the coerced typed value on success (use [`coerce`](/validation/coerce)).
 
 ## Examples
 
 ### Example 1: Check validity, iterate errors
 
 ```ts
-import { bookstoreJt, OrderSchema } from './bookstore/index.js';
+import { bookstoreEntities as entities, OrderSchema } from './bookstore/index.js';
 
-const errs = jt.errors(OrderSchema.$id, {
+const errs = entities.validate(OrderSchema.$id, {
   id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   placedAt:   '2026-01-15T10:30:00Z',
@@ -35,9 +35,9 @@ for (const err of errs) {
 ### Example 2: Valid data returns empty collection
 
 ```ts
-import { bookstoreJt, BookSchema } from './bookstore/index.js';
+import { bookstoreEntities as entities, BookSchema } from './bookstore/index.js';
 
-const errs = jt.errors(BookSchema.$id, {
+const errs = entities.validate(BookSchema.$id, {
   isbn:    '9780140449136',
   title:   'Crime and Punishment',
   authors: ['Fyodor Dostoevsky'],
@@ -52,14 +52,14 @@ console.log(errs.length); // 0
 See [`Error views`](/errors/views) for full documentation of each view.
 
 ```ts
-import { bookstoreJt, ReviewSchema } from './bookstore/index.js';
+import { bookstoreEntities as entities, ReviewSchema } from './bookstore/index.js';
 
-const errs = jt.errors(ReviewSchema.$id, badReview);
+const errs = entities.validate(ReviewSchema.$id, badReview);
 
 // Choose the view that matches your output target:
-console.log(errs.messages());   // string[] — one per error
-console.log(errs.format());     // Record<string, string[]> — grouped by path
-console.log(errs.flatten());    // { fieldErrors, formErrors }
+console.log(errs.items.map(e => `${e.path}: ${e.message}`));   // string[] — one per error
+console.log(Object.groupBy(errs.items, err => err.path || "_root"));     // Record<string, string[]> — grouped by path
+console.log(Object.groupBy(errs.items, err => err.path ? "fieldErrors" : "formErrors"));    // { fieldErrors, formErrors }
 console.log(errs.aggregate());  // { count, paths, keywords }
 console.log(errs.report());     // RFC 7807 ProblemDetailsType
 ```
@@ -70,7 +70,7 @@ console.log(errs.report());     // RFC 7807 ProblemDetailsType
 
 ```ts
 // ⊥ Don't do this — double validation; if errors is empty just use coerce
-const errs = jt.errors(CustomerSchema.$id, data);
+const errs = entities.validate(CustomerSchema.$id, data);
 if (errs.ok) {
   const customer = jt.coerce(CustomerSchema.$id, data); // validates again
 }
@@ -95,7 +95,7 @@ for (const item of errs.items) {
 }
 
 // ✓ Do this — use format() which does exactly this
-const grouped = errs.format();
+const grouped = Object.groupBy(errs.items, err => err.path || "_root");
 ```
 
 ## Comparison
@@ -103,8 +103,8 @@ const grouped = errs.format();
 ::: code-group
 
 ```ts [json-tology]
-const errs = jt.errors(OrderSchema.$id, data);
-// ValidationErrors — .ok, .length, iterable, .messages(), .format(), .flatten(), .aggregate(), .report()
+const errs = entities.validate(OrderSchema.$id, data);
+// ValidationErrors — .ok, .length, iterable, .items.map(e => `${e.path}: ${e.message}`), .format(), .flatten(), .aggregate(), .report()
 ```
 
 ```ts [Zod]

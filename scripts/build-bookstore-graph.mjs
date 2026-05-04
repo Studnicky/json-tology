@@ -3,7 +3,7 @@
  *
  * Generates Cytoscape-format graph data from the bookstore ontology TBox.
  *
- * Reads bookstoreJt.toTbox().raw() and transforms OWL quads into:
+ * Reads entities.toTbox().raw() and transforms OWL quads into:
  *   docs/.vitepress/data/bookstore-graph.json  — Cytoscape elements
  *   docs/.vitepress/data/bookstore-schemas.json — schema literals by $id
  *
@@ -30,10 +30,10 @@ const BOOKSTORE_INDEX = join(ROOT, 'examples', 'docs', 'bookstore', 'index.js');
 
 const tmpFile = join(tmpdir(), `bookstore-extract-${randomUUID()}.ts`);
 const extractorContent = `
-import { bookstoreJt } from ${JSON.stringify(BOOKSTORE_INDEX)};
+import { bookstoreEntities as entities } from ${JSON.stringify(BOOKSTORE_INDEX)};
 
-const tboxRaw = bookstoreJt.toTbox().raw();
-const registeredSchemas = bookstoreJt.registry.list();
+const tboxRaw = entities.toTbox().raw();
+const registeredSchemas = entities.registry.list();
 
 process.stdout.write(JSON.stringify({ tboxRaw, registeredSchemas }));
 `;

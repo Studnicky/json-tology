@@ -6,6 +6,7 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
+import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 import { Logger } from '../utils/Logger.js';
 
@@ -360,7 +361,7 @@ void describe('Cross-schema references', () => {
 
     // the registry produces a result without crashing — the unresolved $ref
     // is either silently accepted or flagged; either way no exception is thrown
-    assert.ok(Array.isArray(errors));
+    assert.ok(errors instanceof ValidationErrors || Array.isArray(errors.items));
   });
 });
 

@@ -276,7 +276,7 @@ export { IsbnSchema, BookSchema, CustomerSchema /* ... all schemas */ };
 All subsequent guide pages import from the shared orchestrator:
 
 ```ts
-import { bookstoreJt, CustomerSchema } from '../bookstore/index.js';
+import { bookstoreEntities as entities, CustomerSchema } from '../bookstore/index.js';
 ```
 
 Or import directly from the specific entity file when only one is needed:

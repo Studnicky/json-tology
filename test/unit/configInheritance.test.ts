@@ -57,7 +57,7 @@ void describe('jt:config inheritance', () => {
       'type': 'object'
     } as const;
 
-    const registry = new SchemaRegistry({ 'castTypes': true });
+    const registry = new SchemaRegistry({ 'enableTypeCast': true });
 
     registry.register(ConfigStrictSchema);
 
@@ -166,7 +166,7 @@ void describe('jt:config inheritance', () => {
     const registry = new SchemaRegistry();
 
     registry.register(ForbidExtraSchema);
-    const errs = registry.errors(ForbidExtraSchema.$id, {
+    const errs = registry.validate(ForbidExtraSchema.$id, {
       'name': 'Alice',
       'unexpected': 'value'
     });

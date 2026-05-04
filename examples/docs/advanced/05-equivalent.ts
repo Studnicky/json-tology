@@ -29,11 +29,15 @@ const invalidIsbn = 'not-an-isbn';
 
 console.log('Validating against IsbnSchema:');
 console.log('  valid:', registry.validate(IsbnSchema.$id, validIsbn));
-console.log('  invalid:', registry.validate(IsbnSchema.$id, invalidIsbn).slice(0, 1));
+console.log('  invalid:', registry.validate(IsbnSchema.$id, invalidIsbn).items.slice(0, 1).map((errItem) => {
+  return errItem.message;
+}));
 
 console.log('Validating against PrimaryIsbnSchema:');
 console.log('  valid:', registry.validate(PrimaryIsbnSchema.$id, validIsbn));
-console.log('  invalid:', registry.validate(PrimaryIsbnSchema.$id, invalidIsbn).slice(0, 1));
+console.log('  invalid:', registry.validate(PrimaryIsbnSchema.$id, invalidIsbn).items.slice(0, 1).map((errItem) => {
+  return errItem.message;
+}));
 
 // PrimaryIsbn output shape: thin $ref alias
 console.log('\nPrimaryIsbnSchema shape:', JSON.stringify(PrimaryIsbnSchema, null, 2));

@@ -30,7 +30,7 @@ const CustomerWithDiscountSchema = Compose.extend(
   'https://bookstore.example/CustomerWithDiscount'
 );
 
-const bookstoreJt = JsonTology.create({
+const entities = JsonTology.create({
   'baseIRI': 'https://bookstore.example',
   'schemas': [
     AuthorNameSchema,
@@ -56,7 +56,7 @@ const bookstoreJt = JsonTology.create({
   ] as const
 });
 
-const coercedCustomer = bookstoreJt.coerce(CustomerWithDiscountSchema.$id, {
+const coercedCustomer = entities.coerce(CustomerWithDiscountSchema.$id, {
   'discountRate': 0.15,
   'email': 'alice@bookstore.example',
   'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',

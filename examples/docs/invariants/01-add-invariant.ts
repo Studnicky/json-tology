@@ -1,6 +1,6 @@
 /**
  * addInvariant / removeInvariant — Example 1: Order total must match items
- * Demonstrates: invariant failure in errors(), coerce(), is()
+ * Demonstrates: invariant failure in validate(), coerce(), is()
  */
 
 import { JsonTology } from '../../../src/index.js';
@@ -59,8 +59,8 @@ const invalidOrder = {
   'total': 99
 };
 
-// errors() surfaces invariant failure
-const errs = localJt.errors(OrderSchema.$id, invalidOrder);
+// validate() surfaces invariant failure
+const errs = localJt.validate(OrderSchema.$id, invalidOrder);
 
 console.assert(!errs.ok);
 console.assert(errs.items.some((errItem) => {
@@ -74,7 +74,7 @@ console.assert(!localJt.is(OrderSchema.$id, invalidOrder));
 localJt.removeInvariant(OrderSchema.$id, 'totalMatchesItems');
 
 // After removal, invariant no longer fires
-const errs2 = localJt.errors(OrderSchema.$id, invalidOrder);
+const errs2 = localJt.validate(OrderSchema.$id, invalidOrder);
 
 console.assert(errs2.items.every((errItem) => {
   return errItem.keyword !== 'jt:invariant';

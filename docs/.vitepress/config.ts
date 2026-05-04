@@ -39,11 +39,9 @@ const sidebar = [
         ]
       },
       {
-        text: 'Error Views',
+        text: 'ValidationErrors',
         items: [
-          { link: '/errors/views#validationerrors-messages', text: 'messages' },
-          { link: '/errors/views#validationerrors-format', text: 'format' },
-          { link: '/errors/views#validationerrors-flatten', text: 'flatten' },
+          { link: '/errors', text: 'Overview / cookbook recipes' },
           { link: '/errors/views#validationerrors-aggregate', text: 'aggregate' },
           { link: '/errors/views#validationerrors-report', text: 'report' }
         ]
@@ -115,8 +113,6 @@ const sidebar = [
   {
     text: 'Reference',
     items: [
-      { link: '/architecture-plan', text: 'Architecture Plan' },
-      { link: '/current-state', text: 'Current State' },
       { link: '/cli', text: 'CLI' },
       { link: '/constraint-brands', text: 'Constraint Brands' }
     ]
@@ -124,6 +120,13 @@ const sidebar = [
 ];
 
 export default defineConfig({
+  vite: {
+    build: {
+      rollupOptions: {
+        external: ['cytoscape', 'cytoscape-fcose']
+      }
+    }
+  },
   appearance: themeConfig.appearance,
   description: 'TypeScript type system with declarative JSON Schema authoring.',
   srcDir: '.',
@@ -131,7 +134,6 @@ export default defineConfig({
     ...themeConfig,
     nav: [
       { link: '/getting-started', text: 'Docs' },
-      { link: '/architecture-plan', text: 'Reference' },
       { link: 'https://github.com/Studnicky/json-tology', text: 'GitHub' }
     ],
     sidebar,

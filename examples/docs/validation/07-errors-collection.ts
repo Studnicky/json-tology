@@ -1,13 +1,13 @@
 /**
- * errors — Example 1: Structured ValidationErrors collection
+ * validate — Example 3: Structured ValidationErrors collection
  * Demonstrates: .ok, .length, iteration, path/keyword/message/params
  */
 
 import {
-  bookstoreJt, ReviewSchema
+  bookstoreEntities as entities, ReviewSchema
 } from '../bookstore/index.js';
 
-const errs = bookstoreJt.errors(ReviewSchema.$id, {
+const errs = entities.validate(ReviewSchema.$id, {
   'body': 'short',
   'bookIsbn': '9780140449136',
   'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',

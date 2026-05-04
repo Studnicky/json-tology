@@ -13,6 +13,7 @@ import { Compose } from '../../src/modules/composition/Compose.js';
 import { Result } from '../../src/modules/data/Result.js';
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
+import type { ValidationErrorType } from '../../src/types/Validation.js';
 
 const PersonSchema = {
   '$id': 'https://example.io/person',
@@ -728,13 +729,22 @@ void describe('ValidationErrors', () => {
   }> = [
     {
       'check': (errs) => {
-        const fmt = errs.format();
+        // Recipe: group by path (replaces removed format())
+        const grouped: Record<string, ValidationErrorType[]> = {};
 
-        assert.deepEqual(fmt['/name'], [
+        for (const err of errs) {
+          (grouped[err.path || '_root'] ??= []).push(err);
+        }
+
+        assert.deepEqual((grouped['/name'] ?? []).map((err) => {
+          return err.message;
+        }), [
           'must be string',
           'min length'
         ]);
-        assert.deepEqual(fmt['/email'], ['invalid format']);
+        assert.deepEqual((grouped['/email'] ?? []).map((err) => {
+          return err.message;
+        }), ['invalid format']);
       },
       'items': [
         {
@@ -756,11 +766,20 @@ void describe('ValidationErrors', () => {
           'path': '/email'
         }
       ],
-      'name': 'format() groups errors by path'
+      'name': 'items grouped by path (recipe for removed format())'
     },
     {
       'check': (errs) => {
-        assert.deepEqual(errs.format()._root, ['must be object']);
+        // Recipe: group by path (replaces removed format())
+        const grouped: Record<string, ValidationErrorType[]> = {};
+
+        for (const err of errs) {
+          (grouped[err.path || '_root'] ??= []).push(err);
+        }
+
+        assert.deepEqual(grouped._root.map((err) => {
+          return err.message;
+        }), ['must be object']);
       },
       'items': [{
         'keyword': 'type',
@@ -768,16 +787,33 @@ void describe('ValidationErrors', () => {
         'params': {},
         'path': ''
       }],
-      'name': 'format() uses _root for root-level errors'
+      'name': 'items grouped — root keyed as _root (recipe for removed format())'
     },
     {
       'check': (errs) => {
-        const {
-          fieldErrors, formErrors
-        } = errs.flatten();
+        // Recipe: field vs form errors (replaces removed flatten())
+        const fieldErrors: ValidationErrorType[] = [];
+        const formErrors: ValidationErrorType[] = [];
 
-        assert.deepEqual(fieldErrors['/name'], ['must be string']);
-        assert.deepEqual(formErrors, ['must be object']);
+        for (const err of errs) {
+          if (err.path) {
+            fieldErrors.push(err);
+          } else {
+            formErrors.push(err);
+          }
+        }
+
+        assert.deepEqual(
+          fieldErrors.filter((err) => {
+            return err.path === '/name';
+          }).map((err) => {
+            return err.message;
+          }),
+          ['must be string']
+        );
+        assert.deepEqual(formErrors.map((err) => {
+          return err.message;
+        }), ['must be object']);
       },
       'items': [
         {
@@ -793,7 +829,7 @@ void describe('ValidationErrors', () => {
           'path': ''
         }
       ],
-      'name': 'flatten() separates field and form errors'
+      'name': 'items split into field and form errors (recipe for removed flatten())'
     }
   ];
 
@@ -855,7 +891,12 @@ void describe('ValidationErrors', () => {
     },
     {
       'check': (errs) => {
-        assert.deepEqual(errs.messages(), [
+        // Recipe: path-prefixed messages (replaces removed messages())
+        const msgs = errs.items.map((err) => {
+          return `${err.path || 'root'}: ${err.message}`;
+        });
+
+        assert.deepEqual(msgs, [
           '/name: bad',
           'root: root error'
         ]);
@@ -874,7 +915,7 @@ void describe('ValidationErrors', () => {
           'path': ''
         }
       ],
-      'name': 'messages() formats with path prefix and root label'
+      'name': 'items mapped to path-prefixed strings (recipe for removed messages())'
     }
   ];
 

@@ -1,14 +1,14 @@
 /**
  * validate — Example 1: Basic valid and invalid cases
- * Demonstrates: empty array on success, error strings on failure
+ * Demonstrates: empty collection on success (.ok, .length), ValidationErrors on failure
  */
 
 import {
-  bookstoreJt, CustomerSchema
+  CustomerSchema, bookstoreEntities as entities
 } from '../bookstore/index.js';
 
 // Valid input
-const ok = bookstoreJt.validate(CustomerSchema.$id, {
+const ok = entities.validate(CustomerSchema.$id, {
   'email': 'alice@bookstore.example',
   'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'name': 'Alice Chen'
@@ -17,12 +17,12 @@ const ok = bookstoreJt.validate(CustomerSchema.$id, {
 console.assert(ok.length === 0);
 
 // Missing required fields
-const bad = bookstoreJt.validate(CustomerSchema.$id, {
+const bad = entities.validate(CustomerSchema.$id, {
   'email': 'alice@bookstore.example'
   // id and name missing
 });
 
 console.assert(bad.length > 0);
-console.assert(bad.some((msg) => {
-  return msg.includes('id');
+console.assert(bad.items.some((err) => {
+  return err.message.includes('id') || err.path.includes('id');
 }));

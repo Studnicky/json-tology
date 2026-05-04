@@ -7,26 +7,36 @@ import type {
   ValidationErrorType
 } from '../types/Validation.js';
 
+import { Path } from '../modules/data/Path.js';
+
 /**
  * An ordered collection of ValidationErrorType items.
  *
- * Returned by jt.errors(), registry.errors(), and carried on CoercionError.
+ * Returned by `entities.validate()` and carried on `CoercionError`.
  * Iterable so it works in for-of loops.
  *
- * Five views over the same error data:
- * - `messages()` — `string[]` of `"path: message"` strings, one per error
- * - `format()` — `Record<string, string[]>` grouped by JSON Pointer path
- * - `flatten()` — `{ fieldErrors, formErrors }` split by whether a path exists
- * - `aggregate()` — `{ count, paths, keywords }` compact rollup for logging and metrics
+ * Three views over the same error data:
+ * - `items` — raw `ValidationErrorType[]` with JSON Pointer paths
+ * - `aggregate()` — `{ count, paths, keywords }` compact rollup for logging and metrics (paths in access form)
  * - `report()` — RFC 7807 Problem Details payload for HTTP error response bodies
  *
+ * Cookbook recipes for removed methods:
+ * ```ts
+ * // was messages()
+ * errs.items.map(e => `${e.path}: ${e.message}`)
+ *
+ * // was format() — group by path
+ * Object.groupBy(errs.items, e => e.path || '_root')
+ *
+ * // was flatten() — field vs form errors
+ * Object.groupBy(errs.items, e => e.path ? 'fieldErrors' : 'formErrors')
+ * ```
+ *
  * @example
- * const errs = jt.errors(UserSchema.$id, data);
+ * const errs = entities.validate(UserSchema.$id, data);
  * errs.length;                     // number of errors
- * errs.messages();                 // string[] — one per error
- * errs.format();                   // { "/name": ["must be string"], ... }
- * errs.flatten();                  // { fieldErrors: { ... }, formErrors: [...] }
- * errs.aggregate();                // { count: 2, paths: ["/name"], keywords: ["type"] }
+ * errs.items;                      // ValidationErrorType[] — raw items
+ * errs.aggregate();                // { count: 2, paths: ['name'], keywords: ['type'] }
  * errs.report();                   // RFC 7807 Problem Details payload
  * for (const err of errs) { ... } // iterate ValidationErrorType items
  */
@@ -68,7 +78,7 @@ export class ValidationErrors implements Iterable<ValidationErrorType> {
     }));
   }
 
-  /** The raw list of validation errors. */
+  /** The raw list of validation errors (JSON Pointer paths). */
   public readonly items: readonly ValidationErrorType[];
 
   /**
@@ -83,9 +93,12 @@ export class ValidationErrors implements Iterable<ValidationErrorType> {
   /**
    * Compact rollup suitable for structured logging and metric labels.
    *
-   * Returns deduplicated, sorted paths and keywords with a total count.
+   * Returns deduplicated, sorted paths (in access form) and keywords with a total count.
    * Safe to use as metric label values — bounded cardinality, no per-instance
    * `params` data.
+   *
+   * Paths are returned in access form (`items[0].quantity`) not JSON Pointer (`/items/0/quantity`).
+   * Use `errs.items.map(e => e.path)` for JSON Pointer paths.
    */
   public aggregate(): {
     'count': number;
@@ -96,7 +109,7 @@ export class ValidationErrors implements Iterable<ValidationErrorType> {
     const keywordSet = new Set<string>();
 
     for (const item of this.items) {
-      pathSet.add(item.path);
+      pathSet.add(Path.toAccess(item.path));
       keywordSet.add(item.keyword);
     }
 
@@ -107,65 +120,9 @@ export class ValidationErrors implements Iterable<ValidationErrorType> {
     };
   }
 
-  /**
-   * Separate errors into field errors (keyed by path) and form-level errors (no path).
-   *
-   * @example
-   * const { fieldErrors, formErrors } = errs.flatten();
-   * // fieldErrors: { "/email": ["invalid format"] }
-   * // formErrors:  ["must have required property 'email'"]
-   */
-  public flatten(): {
-    'fieldErrors': Record<string, string[]>;
-    'formErrors': string[];
-  } {
-    const fieldErrors: Record<string, string[]> = {};
-    const formErrors: string[] = [];
-
-    for (const error of this.items) {
-      if (error.path) {
-        (fieldErrors[error.path] ??= []).push(error.message);
-      } else {
-        formErrors.push(error.message);
-      }
-    }
-
-    return {
-      fieldErrors,
-      formErrors
-    };
-  }
-
-  /**
-   * Group errors by JSON Pointer path.
-   * Root-level errors (no path) are keyed as `"_root"`.
-   *
-   * @example
-   * errs.format();
-   * // { "/name": ["must be string"], "_root": ["must have required property 'email'"] }
-   */
-  public format(): Record<string, string[]> {
-    const result: Record<string, string[]> = {};
-
-    for (const error of this.items) {
-      const key = error.path || '_root';
-
-      (result[key] ??= []).push(error.message);
-    }
-
-    return result;
-  }
-
   /** Number of errors. */
   public get length(): number {
     return this.items.length;
-  }
-
-  /** All error messages as plain strings (path prefix included). */
-  public messages(): string[] {
-    return this.items.map((error) => {
-      return `${error.path || 'root'}: ${error.message}`;
-    });
   }
 
   /** True when there are no errors. */

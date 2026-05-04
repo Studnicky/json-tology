@@ -5,17 +5,18 @@ import type { LoggerInterface } from './Logger.js';
 import type { VocabularyPluginInterface } from './VocabularyPlugin.js';
 
 export interface RegistryOptionsInterface {
-  'castTypes'?: boolean;
+  'enableDebug'?: boolean;
   'enableDefaults'?: boolean;
   'enableDuplicateDetection'?: boolean;
   'enableInlineWarnings'?: boolean;
   'enableStrictGraph'?: boolean;
+  'enableStrictTypes'?: boolean;
+  'enableTypeCast'?: boolean;
   'formatRegistry'?: FormatRegistryInterface;
   'invariants'?: Record<string, readonly InvariantInterface[]>;
   'keywords'?: KeywordDefinitionInterface[];
   'logger'?: LoggerInterface;
   'maxDepth'?: number;
   'prefixes'?: Record<string, string>;
-  'strict'?: boolean;
   'vocabularies'?: readonly VocabularyPluginInterface[];
 }

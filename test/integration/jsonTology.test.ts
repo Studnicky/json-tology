@@ -144,19 +144,19 @@ void describe('JsonTology construction and registration', () => {
 // Validation
 // ---------------------------------------------------------------------------
 
-void describe('JsonTology.validate(), errors(), coerce(), is()', () => {
+void describe('JsonTology.validate(), coerce(), is()', () => {
   const validateScenarios: Array<{
     'check': (jt: JsonTology) => void;
     'data': unknown;
-    'method': 'coerce' | 'errors' | 'is' | 'validate';
+    'method': 'coerce' | 'is' | 'validate';
     'name': string;
   }> = [
     {
       'check': (jt) => {
-        assert.deepEqual(jt.validate(UserSchema.$id, {
+        assert.ok(jt.validate(UserSchema.$id, {
           'email': 'a@b.com',
           'name': 'Alice'
-        }), []);
+        }).ok);
       },
       'data': {
         'email': 'a@b.com',
@@ -189,19 +189,19 @@ void describe('JsonTology.validate(), errors(), coerce(), is()', () => {
     },
     {
       'check': (jt) => {
-        const errs = jt.errors(UserSchema.$id, { 'name': 'Alice' });
+        const errs = jt.validate(UserSchema.$id, { 'name': 'Alice' });
 
         assert.ok(errs.length > 0);
         assert.ok(typeof errs.items[0].path === 'string');
         assert.ok(typeof errs.items[0].message === 'string');
       },
       'data': { 'name': 'Alice' },
-      'method': 'errors',
-      'name': 'errors() returns ValidationErrors with items for invalid data'
+      'method': 'validate',
+      'name': 'validate() returns ValidationErrors with items for invalid data'
     },
     {
       'check': (jt) => {
-        const ok = jt.errors(UserSchema.$id, {
+        const ok = jt.validate(UserSchema.$id, {
           'email': 'a@b.com',
           'name': 'Alice'
         });
@@ -213,8 +213,8 @@ void describe('JsonTology.validate(), errors(), coerce(), is()', () => {
         'email': 'a@b.com',
         'name': 'Alice'
       },
-      'method': 'errors',
-      'name': 'errors() returns ok=true and length=0 for valid data'
+      'method': 'validate',
+      'name': 'validate() returns ok=true and length=0 for valid data'
     },
     {
       'check': (jt) => {

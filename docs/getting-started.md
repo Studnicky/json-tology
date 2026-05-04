@@ -225,8 +225,8 @@ import type { LoggerInterface } from 'json-tology/interfaces';
 | `schemas` | `readonly Schema[]` | `[]` | Schemas to register at construction. Order matters when using `$ref` — register referenced schemas before referencing schemas. |
 | `prefixes` | `Record<string, string>` | `DEFAULT_PREFIXES` | Vocabulary prefix → IRI mappings, merged with built-in defaults. |
 | `formats` | `Record<string, FormatValidatorFn>` | `{}` | Custom format validators. Keys are format names (`'isbn'`), values are `(value: unknown) => boolean`. |
-| `castTypes` | `boolean` | `false` | Enable string→number/boolean coercion at validation time. |
-| `strict` | `boolean` | `false` | Reject implicit coercions globally. Per-field `jt:strict` overrides. Different from `enableStrictGraph`. |
+| `enableTypeCast` | `boolean` | `false` | Enable string→number/boolean coercion at validation time. |
+| `enableStrictTypes` | `boolean` | `false` | Reject implicit coercions globally. Per-field `jt:strict` overrides. Different from `enableStrictGraph`. |
 | `enableDefaults` | `boolean` | `true` | Fill schema `default` values during `coerce`. Set `false` to validate without mutating missing fields. |
 | `enableInlineWarnings` | `boolean` | `false` | Surface inline-object, inline-primitive, and inline-array-items warnings via `logger.warn` at registration. Implied by `enableStrictGraph`. See [graph-native authoring](/advanced/graph-native-authoring). |
 | `enableDuplicateDetection` | `boolean` | `false` | Run `findDuplicates()` at registration and warn on structural duplicates. Implied by `enableStrictGraph`. |

@@ -135,7 +135,7 @@ void describe('Infinity coercion rejection', () => {
     input, name, shouldCoerce
   } of scenarios) {
     void it(name, () => {
-      const registry = new SchemaRegistry({ 'castTypes': true });
+      const registry = new SchemaRegistry({ 'enableTypeCast': true });
 
       registry.register({
         '$id': 'urn:hardening:cast-number',
@@ -229,7 +229,7 @@ void describe('compilation fallback produces working validator', () => {
       'type': 'object'
     });
 
-    assert.deepEqual(registry.validate('urn:hardening:fallback', { 'name': 'Alice' }), []);
+    assert.ok(registry.validate('urn:hardening:fallback', { 'name': 'Alice' }).ok);
     assert.notEqual(registry.validate('urn:hardening:fallback', {}).length, 0);
   });
 });
@@ -318,9 +318,9 @@ void describe('null/undefined schema guard on public API', () => {
     },
     {
       'fn': () => {
-        jt.errors(null as unknown as string, {});
+        jt.validate(null as unknown as string, {});
       },
-      'name': 'errors() throws SchemaError for null'
+      'name': 'validate() throws SchemaError for null'
     },
     {
       'fn': () => {

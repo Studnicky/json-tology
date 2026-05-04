@@ -19,7 +19,9 @@ export class CoercionError extends BaseError {
    */
   public constructor(errors: ValidationErrors | ValidationErrorType[], options?: { 'cause'?: Error }) {
     const validationErrors = errors instanceof ValidationErrors ? errors : new ValidationErrors(errors);
-    const joinedMessages = validationErrors.messages().join('; ');
+    const joinedMessages = validationErrors.items.map((err) => {
+      return `${err.path || 'root'}: ${err.message}`;
+    }).join('; ');
 
     super('COERCION_FAILED', joinedMessages, false, options);
     this.name = 'CoercionError';

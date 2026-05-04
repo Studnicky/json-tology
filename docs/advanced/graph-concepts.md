@@ -27,13 +27,13 @@ const BookSchema = {
 } as const;
 
 // TBox output — OWL class + property declarations
-const tbox = bookstoreJt.toTbox();
+const tbox = entities.toTbox();
 
 // ABox — a specific book
 const book = { isbn: '9780140449136', title: 'The Odyssey', ... };
 
 // ABox output — RDF quads about that instance
-const abox = bookstoreJt.toQuads(BookSchema, book);
+const abox = entities.toQuads(BookSchema, book);
 ```
 
 `entities.toTbox()` emits the TBox.
@@ -277,13 +277,13 @@ json-tology exposes three serialization entry points:
 
 ```ts
 // OWL only — class declarations, domain/range, subClassOf
-const tbox  = bookstoreJt.toTbox();
+const tbox  = entities.toTbox();
 
 // SHACL only — node shapes, property shapes, cardinality
-const shacl = bookstoreJt.toShacl();
+const shacl = entities.toShacl();
 
 // Both combined
-const ont   = bookstoreJt.ontology();
+const ont   = entities.ontology();
 
 // Render to JSON-LD string
 console.log(ont.jsonLd());
@@ -316,10 +316,10 @@ const book: Book = {
 };
 
 // Typed object → RDF quads (ABox)
-const quads = bookstoreJt.toQuads(BookSchema, book);
+const quads = entities.toQuads(BookSchema, book);
 
 // RDF quads → typed object (round-trip)
-const [restored] = bookstoreJt.fromQuads('urn:bookstore:Book', quads);
+const [restored] = entities.fromQuads('urn:bookstore:Book', quads);
 ```
 
 `toQuads` produces one quad per property, typed according to the schema's XSD/IRI mappings.
@@ -385,7 +385,7 @@ import { Store, Parser } from 'n3';
 const store = new Store();
 const parser = new Parser({ format: 'application/ld+json' });
 
-parser.parse(bookstoreJt.toTbox().jsonLd(), (error, quad) => {
+parser.parse(entities.toTbox().jsonLd(), (error, quad) => {
   if (quad) store.addQuad(quad);
 });
 

@@ -26,7 +26,7 @@ function assertParityScenarios(
     data, name, valid
   } of scenarios) {
     const validateResult = registry.validate(schemaId, data);
-    const errorsResult = registry.errors(schemaId, data);
+    const errorsResult = registry.validate(schemaId, data);
 
     assert.equal(validateResult.length === 0, valid, `validate: ${name}`);
     assert.equal(errorsResult.length === 0, valid, `errors: ${name}`);

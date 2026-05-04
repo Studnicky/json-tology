@@ -13,7 +13,7 @@
 `currency` and `inStock` have declared defaults — they are filled in automatically.
 
 ```ts
-import { bookstoreJt, BookSchema } from './bookstore/index.js';
+import { bookstoreEntities as entities, BookSchema } from './bookstore/index.js';
 
 const book = jt.materialize(BookSchema, {
   isbn:    '9780140449136',
@@ -29,7 +29,7 @@ console.log(book.inStock);  // true   ← from default
 ### Example 2: Materialize a Customer — addresses default is empty array
 
 ```ts
-import { bookstoreJt, CustomerSchema } from './bookstore/index.js';
+import { bookstoreEntities as entities, CustomerSchema } from './bookstore/index.js';
 
 const customer = jt.materialize(CustomerSchema, {
   id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',

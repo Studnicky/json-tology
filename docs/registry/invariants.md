@@ -57,7 +57,7 @@ const badOrder = {
 };
 
 // errors() — invariant failure as ValidationErrorType with keyword: 'jt:invariant'
-const errs = jt.errors(OrderSchema.$id, badOrder);
+const errs = entities.validate(OrderSchema.$id, badOrder);
 console.log(errs.ok);                                  // false
 console.log(errs.items.some(e => e.keyword === 'jt:invariant')); // true
 

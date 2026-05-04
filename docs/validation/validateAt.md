@@ -11,7 +11,7 @@
 ### Example 1: Validate a single Book field on blur
 
 ```ts
-import { bookstoreJt, BookSchema } from './bookstore/index.js';
+import { bookstoreEntities as entities, BookSchema } from './bookstore/index.js';
 
 // isbn must match ^\d{13}$
 const errors = jt.validateAt(
@@ -26,7 +26,7 @@ console.log(errors);
 ### Example 2: Validate an array item sub-schema
 
 ```ts
-import { bookstoreJt, OrderSchema } from './bookstore/index.js';
+import { bookstoreEntities as entities, OrderSchema } from './bookstore/index.js';
 
 const errors = jt.validateAt(
   OrderSchema.$id,
@@ -40,7 +40,7 @@ console.log(errors);
 ### Example 3: Validate a nested address field
 
 ```ts
-import { bookstoreJt, CustomerSchema } from './bookstore/index.js';
+import { bookstoreEntities as entities, CustomerSchema } from './bookstore/index.js';
 
 // Validate a postalCode sub-field
 const errors = jt.validateAt(

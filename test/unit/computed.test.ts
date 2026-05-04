@@ -145,7 +145,9 @@ void describe('computed fields', () => {
       },
       (err: unknown) => {
         assert.ok(err instanceof CoercionError, 'CoercionError thrown');
-        const messages = (err).errors.messages();
+        const messages = (err).errors.items.map((item) => {
+          return `${item.path || 'root'}: ${item.message}`;
+        });
 
         assert.ok(
           messages.some((m) => {
@@ -233,7 +235,9 @@ void describe('computed fields', () => {
       },
       (err: unknown) => {
         assert.ok(err instanceof CoercionError, 'CoercionError thrown');
-        const messages = (err).errors.messages();
+        const messages = (err).errors.items.map((item) => {
+          return `${item.path || 'root'}: ${item.message}`;
+        });
 
         assert.ok(
           messages.some((m) => {

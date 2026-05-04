@@ -25,7 +25,7 @@ const StrictCustomerSchema = Compose.required(
 );
 
 
-const bookstoreJt = JsonTology.create({
+const entities = JsonTology.create({
   'baseIRI': 'https://bookstore.example',
   'schemas': [
     CityNameSchema,
@@ -43,12 +43,12 @@ const bookstoreJt = JsonTology.create({
 });
 
 // PatchCustomer accepts empty (all optional)
-const patchErrors = bookstoreJt.validate(PatchCustomerSchema.$id, { 'name': 'Alice P. Chen' });
+const patchErrors = entities.validate(PatchCustomerSchema.$id, { 'name': 'Alice P. Chen' });
 
 console.assert(patchErrors.length === 0);
 
 // StrictCustomer requires addresses too
-const strictErrors = bookstoreJt.validate(StrictCustomerSchema.$id, {
+const strictErrors = entities.validate(StrictCustomerSchema.$id, {
   'email': 'alice@bookstore.example',
   'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'name': 'Alice Chen'

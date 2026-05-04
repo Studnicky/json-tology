@@ -6,16 +6,16 @@
 import { Value } from '../../../src/index.js';
 import type { Customer } from '../bookstore/index.js';
 import {
-  bookstoreJt, CustomerSchema
+  CustomerSchema, bookstoreEntities as entities
 } from '../bookstore/index.js';
 
-const before = bookstoreJt.coerce(CustomerSchema.$id, {
+const before = entities.coerce(CustomerSchema.$id, {
   'email': 'alice@bookstore.example',
   'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'name': 'Alice Chen'
 });
 
-const after = bookstoreJt.coerce(CustomerSchema.$id, {
+const after = entities.coerce(CustomerSchema.$id, {
   'email': 'alice.chen@bookstore.example',
   'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'name': 'Alice Chen'

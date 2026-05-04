@@ -56,7 +56,7 @@ const allSchemas = [
   ReviewSchema
 ] as const;
 
-export const bookstoreJt = JsonTology.create({
+export const bookstoreEntities = JsonTology.create({
   'baseIRI': 'https://bookstore.example',
   'schemas': allSchemas
 });

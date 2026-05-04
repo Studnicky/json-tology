@@ -8,12 +8,14 @@ import type { ComputedFnType } from '../types/Computed.js';
 
 export interface JsonTologyOptionsInterface<TSchemas extends readonly unknown[] = readonly unknown[]> {
   'baseIRI': string;
-  'castTypes'?: boolean;
   'computeds'?: Record<string, Record<string, ComputedFnType>>;
+  'enableDebug'?: boolean;
   'enableDefaults'?: boolean;
   'enableDuplicateDetection'?: boolean;
   'enableInlineWarnings'?: boolean;
   'enableStrictGraph'?: boolean;
+  'enableStrictTypes'?: boolean;
+  'enableTypeCast'?: boolean;
   'formats'?: Record<BuiltinFormatNameType | (Record<never, never> & string), (value: unknown) => boolean>;
   'invariants'?: Record<string, readonly InvariantInterface[]>;
   'keywords'?: KeywordDefinitionInterface[];
@@ -22,6 +24,5 @@ export interface JsonTologyOptionsInterface<TSchemas extends readonly unknown[] 
   'maxDepth'?: number;
   'prefixes'?: Record<string, string>;
   'schemas'?: TSchemas;
-  'strict'?: boolean;
   'vocabularies'?: readonly VocabularyPluginInterface[];
 }

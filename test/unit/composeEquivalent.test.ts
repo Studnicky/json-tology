@@ -53,8 +53,8 @@ void describe('Compose.equivalent()', () => {
     const validIsbn = '9780306406157';
     const invalidIsbn = 'not-an-isbn';
 
-    assert.deepStrictEqual(registry.validate(IsbnSchema.$id, validIsbn), []);
-    assert.deepStrictEqual(registry.validate('urn:bookstore:PrimaryIsbn', validIsbn), []);
+    assert.ok(registry.validate(IsbnSchema.$id, validIsbn).ok);
+    assert.ok(registry.validate('urn:bookstore:PrimaryIsbn', validIsbn).ok);
     assert.ok(registry.validate(IsbnSchema.$id, invalidIsbn).length > 0);
     assert.ok(registry.validate('urn:bookstore:PrimaryIsbn', invalidIsbn).length > 0);
   });

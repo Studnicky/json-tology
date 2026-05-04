@@ -1,7 +1,7 @@
 # Graph demo (live)
 
 This page renders the bookstore TBox as an interactive graph. The data is generated at build time
-from `bookstoreJt.toTbox().raw()` — the same OWL quads that feed the serialization pipeline.
+from `entities.toTbox().raw()` — the same OWL quads that feed the serialization pipeline.
 
 <BookstoreGraph />
 
@@ -29,7 +29,7 @@ Click any node to inspect its schema and graph relations in the side panel.
 
 ### How the graph is built
 
-The build script at `scripts/build-bookstore-graph.mjs` runs `bookstoreJt.toTbox().raw()` and
+The build script at `scripts/build-bookstore-graph.mjs` runs `entities.toTbox().raw()` and
 transforms the raw JSON-LD nodes into Cytoscape elements. Class nodes become graph nodes;
 property nodes (identified by their `#` fragment) become edges between the class nodes at their
 `rdfs:domain` and `rdfs:range`.
@@ -50,10 +50,10 @@ The graph JSON is also auto-regenerated as part of `npm run docs:build`.
 ### Querying the same TBox in SPARQL
 
 ```ts
-import { bookstoreJt } from './examples/docs/bookstore/index.js';
+import { bookstoreEntities as entities } from './examples/docs/bookstore/index.js';
 
 // Render TBox to JSON-LD string — load into any RDF store
-const tboxJsonLd = bookstoreJt.toTbox().jsonLd();
+const tboxJsonLd = entities.toTbox().jsonLd();
 ```
 
 ```sparql

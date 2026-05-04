@@ -4,10 +4,10 @@
  */
 
 import {
-  bookstoreJt, ReviewSchema
+  bookstoreEntities as entities, ReviewSchema
 } from '../bookstore/index.js';
 
-const errs = bookstoreJt.errors(ReviewSchema.$id, {
+const errs = entities.validate(ReviewSchema.$id, {
   'body': 'short',
   'bookIsbn': '9780140449136',
   'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
@@ -23,9 +23,7 @@ console.assert(problem.type === 'https://json-tology.dev/problems/validation');
 console.assert(problem.title === 'Validation failed');
 console.assert(problem.instance === '/reviews');
 console.assert(Array.isArray(problem.errors));
-console.assert(problem.errors.every((errEntry: { 'keyword': string;
-  'message': string;
-  'path': string }) => {
+console.assert(problem.errors.every((errEntry) => {
   return typeof errEntry.path === 'string'
     && typeof errEntry.keyword === 'string'
     && typeof errEntry.message === 'string';

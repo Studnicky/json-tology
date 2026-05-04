@@ -1,13 +1,15 @@
 /**
- * ValidationErrors.format — Example 1: Group errors by JSON Pointer path
- * Demonstrates: format() for form field highlighting
+ * ValidationErrors — format recipe
+ * Demonstrates: grouping errors by JSON Pointer path — cookbook recipe for the removed format() method.
+ * Use this when you need to map errors to specific form fields.
  */
 
+import type { ValidationErrorType } from '../../../src/index.js';
 import {
-  bookstoreJt, ReviewSchema
+  bookstoreEntities as entities, ReviewSchema
 } from '../bookstore/index.js';
 
-const errs = bookstoreJt.errors(ReviewSchema.$id, {
+const errs = entities.validate(ReviewSchema.$id, {
   'body': 'short',
   'bookIsbn': '9780140449136',
   'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
@@ -16,11 +18,18 @@ const errs = bookstoreJt.errors(ReviewSchema.$id, {
   'rating': 6
 });
 
-const grouped = errs.format();
+// Recipe: group by path (equivalent to removed format())
+const grouped: Record<string, ValidationErrorType[]> = {};
+
+for (const err of errs) {
+  const key = err.path || '_root';
+
+  (grouped[key] ??= []).push(err);
+}
 
 console.assert(typeof grouped === 'object');
 console.assert(Array.isArray(grouped['/rating']));
 console.assert(Array.isArray(grouped['/body']));
-console.assert(grouped['/rating'].every((m: string) => {
-  return typeof m === 'string';
+console.assert((grouped['/rating'] ?? []).every((err) => {
+  return typeof err.message === 'string';
 }));

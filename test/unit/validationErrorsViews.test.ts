@@ -69,9 +69,9 @@ void describe('ValidationErrors.aggregate()', () => {
 
     assert.equal(rollup.count, 3, 'count is 3 (no dedup on count)');
     assert.deepEqual(rollup.paths, [
-      '/age',
-      '/name'
-    ], 'paths deduped and sorted');
+      'age',
+      'name'
+    ], 'paths deduped and sorted (access form)');
     assert.deepEqual(rollup.keywords, [
       'minLength',
       'type'
@@ -103,10 +103,10 @@ void describe('ValidationErrors.aggregate()', () => {
     const rollup = errs.aggregate();
 
     assert.deepEqual(rollup.paths, [
-      '/a',
-      '/m',
-      '/z'
-    ], 'paths are sorted');
+      'a',
+      'm',
+      'z'
+    ], 'paths are sorted (access form)');
     assert.deepEqual(rollup.keywords, [
       'format',
       'minLength',
@@ -143,7 +143,7 @@ void describe('ValidationErrors.aggregate()', () => {
     };
 
     assert.equal(logLine.count, 1, 'spread count');
-    assert.deepEqual(logLine.paths, ['/name'], 'spread paths');
+    assert.deepEqual(logLine.paths, ['name'], 'spread paths (access form)');
     assert.deepEqual(logLine.keywords, ['type'], 'spread keywords');
     assert.equal(logLine.schema, 'https://example.com/User', 'additional field preserved');
   });

@@ -1,13 +1,13 @@
 /**
- * bookstoreJt.dump — Example 1: Wire-form serialization with options
+ * entities.dump — Example 1: Wire-form serialization with options
  * Demonstrates: excludeDefaults, include, basic dump
  */
 
 import {
-  BookSchema, bookstoreJt
+  BookSchema, bookstoreEntities as entities
 } from '../bookstore/index.js';
 
-const book = bookstoreJt.coerce(BookSchema.$id, {
+const book = entities.coerce(BookSchema.$id, {
   'authors': ['Fyodor Dostoevsky'],
   'isbn': '9780140449136',
   'price': 14.99,
@@ -16,20 +16,20 @@ const book = bookstoreJt.coerce(BookSchema.$id, {
 });
 
 // Basic dump — all fields including defaults
-const wire = bookstoreJt.dump(BookSchema.$id, book);
+const wire = entities.dump(BookSchema.$id, book);
 
 console.assert(typeof wire === 'object' && wire !== null);
 console.assert((wire as { 'currency': string }).currency === 'USD');
 console.assert((wire as { 'inStock': boolean }).inStock);
 
 // excludeDefaults — drops currency:'USD' and inStock:true
-const compact = bookstoreJt.dump(BookSchema.$id, book, { 'excludeDefaults': true });
+const compact = entities.dump(BookSchema.$id, book, { 'excludeDefaults': true });
 
 console.assert(!('currency' in (compact as object)));
 console.assert(!('inStock' in (compact as object)));
 
 // include — projection to specific fields
-const projected = bookstoreJt.dump(BookSchema.$id, book, {
+const projected = entities.dump(BookSchema.$id, book, {
   'include': [
     'isbn',
     'title',

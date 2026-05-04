@@ -341,7 +341,7 @@ void describe('Materializer', () => {
           'timeout': '10000' as unknown as number
         },
         'name': 'coerces types when registry castTypes: true',
-        'registryOpts': { 'castTypes': true },
+        'registryOpts': { 'enableTypeCast': true },
         'schema': ConfigSchema
       },
       {

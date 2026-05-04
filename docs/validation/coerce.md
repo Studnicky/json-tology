@@ -13,7 +13,7 @@
 Valid input: unknown properties are stripped, defaults are filled, the return type is `Customer`.
 
 ```ts
-import { bookstoreJt, CustomerSchema } from './bookstore/index.js';
+import { bookstoreEntities as entities, CustomerSchema } from './bookstore/index.js';
 
 const customer = jt.coerce(CustomerSchema.$id, {
   id:            'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
@@ -33,7 +33,7 @@ Catch `CoercionError` and convert to an RFC 7807 Problem Details response (built
 
 ```ts
 import { CoercionError } from 'json-tology';
-import { bookstoreJt, CustomerSchema } from './bookstore/index.js';
+import { bookstoreEntities as entities, CustomerSchema } from './bookstore/index.js';
 
 function createCustomer(body: unknown) {
   try {
@@ -56,7 +56,7 @@ function createCustomer(body: unknown) {
 `OrderSchema` contains `items: [OrderLine]` via `$ref`. Each `OrderLine` is coerced independently. See the [bookstore domain](/bookstore-domain) for schema definitions.
 
 ```ts
-import { bookstoreJt, OrderSchema } from './bookstore/index.js';
+import { bookstoreEntities as entities, OrderSchema } from './bookstore/index.js';
 
 const order = jt.coerce(OrderSchema.$id, {
   id:              'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
@@ -87,9 +87,9 @@ try {
 }
 
 // ✓ Do this — surface the error list
-const errs = jt.errors(CustomerSchema.$id, data);
+const errs = entities.validate(CustomerSchema.$id, data);
 if (!errs.ok) {
-  console.log(errs.messages());
+  console.log(errs.items.map(e => `${e.path}: ${e.message}`));
 }
 ```
 

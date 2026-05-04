@@ -1,12 +1,12 @@
 # `value.cast`, `value.clean`, and `value.convert`
 
-Schema-aware instance methods on `jt.value`. All three operate against the registry and require `castTypes: true` in `JsonTology.create` options for type coercion to work.
+Schema-aware instance methods on `jt.value`. All three operate against the registry and require `enableTypeCast: true` in `JsonTology.create` options for type coercion to work.
 
 ---
 
 ## `value.cast` {#value-cast}
 
-**Declaration.** Coerces types (e.g. `"9.99"` → `9.99`, `"true"` → `true`) and applies schema `default` values. Requires `castTypes: true`. Throws `CoercionError` when the coerced data fails validation.
+**Declaration.** Coerces types (e.g. `"9.99"` → `9.99`, `"true"` → `true`) and applies schema `default` values. Requires `enableTypeCast: true`. Throws `CoercionError` when the coerced data fails validation.
 
 **Use this when** ingesting data from sources that serialize numbers and booleans as strings — CSV imports, URL query parameters, HTML form submissions, `application/x-www-form-urlencoded` bodies.
 
@@ -23,7 +23,7 @@ import { BookSchema } from './bookstore/index.js';
 const jt = JsonTology.create({
   baseIRI:   'https://bookstore.example',
   schemas:   [BookSchema] as const,
-  castTypes: true,
+  enableTypeCast: true,
 });
 
 const book = jt.value.cast(BookSchema.$id, {
@@ -56,7 +56,7 @@ console.log(params.rating); // 4 (number)
 ::: code-group
 
 ```ts [json-tology]
-const jt = JsonTology.create({ ..., castTypes: true });
+const jt = JsonTology.create({ ..., enableTypeCast: true });
 const book = jt.value.cast(BookSchema.$id, rawData); // strings coerced
 ```
 
@@ -152,7 +152,7 @@ cleaned = Book.model_validate(data)
 
 ## `value.convert` {#value-convert}
 
-**Declaration.** Coerces types without applying schema `default` values. Requires `castTypes: true`. Throws `CoercionError` when the data fails validation after type conversion.
+**Declaration.** Coerces types without applying schema `default` values. Requires `enableTypeCast: true`. Throws `CoercionError` when the data fails validation after type conversion.
 
 **Use this when** you want type coercion but explicitly want to control which defaults are applied. Contrast: `cast` = coerce types + fill defaults; `convert` = coerce types only; `coerce` = coerce types + fill defaults + strip unknowns + run transforms.
 

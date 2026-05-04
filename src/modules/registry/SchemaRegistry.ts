@@ -67,6 +67,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   private readonly enableDuplicateDetection: boolean;
   private readonly enableInlineWarnings: boolean;
   private readonly enableStrictGraph: boolean;
+  private readonly enableStrictTypes: boolean;
   private readonly formatRegistry: FormatRegistryInterface | undefined;
   private readonly invariants: InvariantStore;
   private readonly keywords: KeywordDefinitionInterface[] | undefined;
@@ -74,12 +75,11 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   private readonly maxDepth: number | undefined;
   private readonly schemaHashes = new Map<string, string>();
   private readonly schemas = new Map<string, SchemaRegistryEntryInterface>();
-  private readonly strict: boolean;
   private readonly vocabularies: readonly VocabularyPluginInterface[];
 
   public constructor(options?: RegistryOptionsInterface) {
     this.logger = options?.logger ?? SILENT_LOGGER;
-    this.castTypes = options?.castTypes ?? false;
+    this.castTypes = options?.enableTypeCast ?? false;
     this.coerceOptions = Object.freeze({
       'applyDefaults': options?.enableDefaults ?? true,
       'castTypes': this.castTypes,
@@ -87,7 +87,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       'removeAdditionalProperties': true
     });
     this.maxDepth = options?.maxDepth;
-    this.strict = options?.strict ?? false;
+    this.enableStrictTypes = options?.enableStrictTypes ?? false;
     this.enableStrictGraph = options?.enableStrictGraph ?? false;
     this.enableInlineWarnings = this.enableStrictGraph || (options?.enableInlineWarnings ?? false);
     this.enableDuplicateDetection = this.enableStrictGraph || (options?.enableDuplicateDetection ?? false);
@@ -329,32 +329,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return entry.engine;
   }
 
-  public errors(
-    schema: (Record<string, unknown> & { '$id': string; }) | string,
-    data: unknown
-  ): ValidationErrors {
-    const schemaId = typeof schema === 'string' ? this.resolve(schema) : schema.$id;
-    const compiled = this.compiled(schemaId);
-
-    if (compiled === undefined) {
-      throw new SchemaError('SCHEMA_NOT_REGISTERED', `No validator registered for schema: ${schemaId}`, schemaId);
-    }
-
-    const result = compiled.validate(data, COLLECT_ERRORS_OPTIONS);
-
-    if (result.errors.length > 0) {
-      return new ValidationErrors(result.errors);
-    }
-
-    const invariantErrors = this.invariants.runAll(schemaId, data);
-
-    if (invariantErrors.length === 0) {
-      return EMPTY_VALIDATION_ERRORS;
-    }
-
-    return new ValidationErrors(invariantErrors);
-  }
-
   private execute(
     schema: Record<string, unknown>,
     data: unknown,
@@ -500,7 +474,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       throw new SchemaError('SCHEMA_MISSING_ID', 'Schema must have a $id property');
     }
 
-    if (this.strict && typeof schema.$schema === 'string' && !schema.$schema.startsWith(CURRENT_DIALECT_PREFIX)) {
+    if (this.enableStrictTypes && typeof schema.$schema === 'string' && !schema.$schema.startsWith(CURRENT_DIALECT_PREFIX)) {
       throw new SchemaError(
         'SCHEMA_DIALECT_UNSUPPORTED',
         `Strict mode requires draft ${DRAFT_NAME} but schema "${schemaId}" declares "${schema.$schema}"`,
@@ -617,7 +591,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   public validate(
     schema: (Record<string, unknown> & { '$id': string; }) | string,
     data: unknown
-  ): string[] {
+  ): ValidationErrors {
     const schemaId = typeof schema === 'string' ? this.resolve(schema) : schema.$id;
     const compiled = this.compiled(schemaId);
 
@@ -625,29 +599,19 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       throw new SchemaError('SCHEMA_NOT_REGISTERED', `No validator registered for schema: ${schemaId}`, schemaId);
     }
 
-    if (compiled.compiled && compiled.check(data)) {
-      const invariantErrors = this.invariants.runAll(schemaId, data);
-
-      if (invariantErrors.length === 0) {
-        return EMPTY_ERROR_LIST;
-      }
-
-      return BaseError.formatErrors(invariantErrors);
-    }
-
     const result = compiled.validate(data, COLLECT_ERRORS_OPTIONS);
 
     if (result.errors.length > 0) {
-      return BaseError.formatErrors(result.errors);
+      return new ValidationErrors(result.errors);
     }
 
     const invariantErrors = this.invariants.runAll(schemaId, data);
 
     if (invariantErrors.length === 0) {
-      return EMPTY_ERROR_LIST;
+      return EMPTY_VALIDATION_ERRORS;
     }
 
-    return BaseError.formatErrors(invariantErrors);
+    return new ValidationErrors(invariantErrors);
   }
 
   public validateAt(

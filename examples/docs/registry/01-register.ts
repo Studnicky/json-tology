@@ -12,32 +12,32 @@ import {
 } from '../bookstore/index.js';
 
 // Construction-time registration
-const bookstoreJt = JsonTology.create({
+const entities = JsonTology.create({
   'baseIRI': 'https://bookstore.example',
   'schemas': [CustomerSchema] as const
 });
 
-console.assert(bookstoreJt.has(CustomerSchema.$id));
-console.assert(!bookstoreJt.has(BookSchema.$id));
+console.assert(entities.has(CustomerSchema.$id));
+console.assert(!entities.has(BookSchema.$id));
 
 // Post-construction register
-bookstoreJt.register(BookSchema);
-console.assert(bookstoreJt.has(BookSchema.$id));
+entities.register(BookSchema);
+console.assert(entities.has(BookSchema.$id));
 
 // Retrieve schema object
-const raw = bookstoreJt.get(BookSchema.$id);
+const raw = entities.get(BookSchema.$id);
 
 console.assert(raw !== undefined);
 
 
 // List all registered IDs
-const ids = bookstoreJt.list();
+const ids = entities.list();
 
 console.assert(ids.includes(CustomerSchema.$id));
 console.assert(ids.includes(BookSchema.$id));
 
 // registerAnonymous — no $id needed
-const syntheticId = bookstoreJt.registerAnonymous({
+const syntheticId = entities.registerAnonymous({
   'properties': {
     'couponCode': { 'type': 'string' },
     'discount': { 'type': 'number' }
@@ -50,4 +50,4 @@ const syntheticId = bookstoreJt.registerAnonymous({
 });
 
 console.assert(typeof syntheticId === 'string' && syntheticId.length > 0);
-console.assert(bookstoreJt.has(syntheticId));
+console.assert(entities.has(syntheticId));

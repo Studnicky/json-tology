@@ -1,13 +1,14 @@
 /**
  * ValidationErrors.aggregate — Example 1: Compact rollup for structured logging
- * Demonstrates: count/paths/keywords, bounded cardinality for metrics
+ * Demonstrates: count/paths/keywords, bounded cardinality for metrics.
+ * Paths are returned in access form (items[0].quantity), not JSON Pointer (/items/0/quantity).
  */
 
 import {
-  bookstoreJt, ReviewSchema
+  bookstoreEntities as entities, ReviewSchema
 } from '../bookstore/index.js';
 
-const errs = bookstoreJt.errors(ReviewSchema.$id, {
+const errs = entities.validate(ReviewSchema.$id, {
   'body': 'short',
   'bookIsbn': '9780140449136',
   'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
@@ -21,9 +22,18 @@ const rollup = errs.aggregate();
 console.assert(typeof rollup.count === 'number' && rollup.count >= 2);
 console.assert(Array.isArray(rollup.paths));
 console.assert(Array.isArray(rollup.keywords));
+// Paths are in access form, not JSON Pointer
 console.assert(rollup.paths.every((pathStr) => {
   return typeof pathStr === 'string';
 }));
 console.assert(rollup.keywords.every((keywordStr) => {
   return typeof keywordStr === 'string';
+}));
+// Use items for JSON Pointer paths
+const jsonPointerPaths = errs.items.map((err) => {
+  return err.path;
+});
+
+console.assert(jsonPointerPaths.some((pathStr) => {
+  return pathStr === '/rating';
 }));

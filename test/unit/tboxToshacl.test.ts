@@ -10,7 +10,7 @@ import {
 } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { bookstoreJt } from '../../examples/docs/bookstore/index.js';
+import { bookstoreEntities as entities } from '../../examples/docs/bookstore/index.js';
 
 // IRIs used as discriminators
 const OWL_CLASS_IRI = 'http://www.w3.org/2002/07/owl#Class';
@@ -50,14 +50,14 @@ function hasPredicate(nodes: unknown[], predicateIRI: string): boolean {
 
 await describe('JsonTology.toTbox()', async () => {
   await it('returns an OntologyBuilder with non-empty raw quads', () => {
-    const builder = bookstoreJt.toTbox();
+    const builder = entities.toTbox();
     const raw = builder.raw();
 
     assert.ok(raw.length > 0, 'toTbox() raw quads must be non-empty');
   });
 
   await it('raw output contains owl:Class declarations', () => {
-    const builder = bookstoreJt.toTbox();
+    const builder = entities.toTbox();
     const raw = builder.raw();
 
     assert.ok(
@@ -67,7 +67,7 @@ await describe('JsonTology.toTbox()', async () => {
   });
 
   await it('raw output contains OWL property declarations (DatatypeProperty or ObjectProperty)', () => {
-    const builder = bookstoreJt.toTbox();
+    const builder = entities.toTbox();
     const raw = builder.raw();
 
     const hasDatatype = hasType(raw, OWL_DATATYPE_PROPERTY_IRI);
@@ -80,7 +80,7 @@ await describe('JsonTology.toTbox()', async () => {
   });
 
   await it('raw output contains rdfs:domain triples', () => {
-    const builder = bookstoreJt.toTbox();
+    const builder = entities.toTbox();
     const raw = builder.raw();
 
     assert.ok(
@@ -90,7 +90,7 @@ await describe('JsonTology.toTbox()', async () => {
   });
 
   await it('raw output does NOT contain sh:NodeShape triples (no SHACL)', () => {
-    const builder = bookstoreJt.toTbox();
+    const builder = entities.toTbox();
     const raw = builder.raw();
 
     assert.ok(
@@ -100,7 +100,7 @@ await describe('JsonTology.toTbox()', async () => {
   });
 
   await it('raw output does NOT contain sh:property triples (no SHACL)', () => {
-    const builder = bookstoreJt.toTbox();
+    const builder = entities.toTbox();
     const raw = builder.raw();
 
     assert.ok(
@@ -110,8 +110,8 @@ await describe('JsonTology.toTbox()', async () => {
   });
 
   await it('two calls return different OntologyBuilder instances (not cached)', () => {
-    const first = bookstoreJt.toTbox();
-    const second = bookstoreJt.toTbox();
+    const first = entities.toTbox();
+    const second = entities.toTbox();
 
     assert.notEqual(first, second, 'toTbox() must return a fresh OntologyBuilder on each call');
   });
@@ -119,7 +119,7 @@ await describe('JsonTology.toTbox()', async () => {
 
 await describe('JsonTology.toShacl()', async () => {
   await it('returns an OntologyBuilder with non-empty SHACL quads', () => {
-    const builder = bookstoreJt.toShacl();
+    const builder = entities.toShacl();
     const shaclObj = builder.shaclObject();
     const graph = shaclObj['@graph'];
 
@@ -127,7 +127,7 @@ await describe('JsonTology.toShacl()', async () => {
   });
 
   await it('SHACL output contains sh:NodeShape triples', () => {
-    const builder = bookstoreJt.toShacl();
+    const builder = entities.toShacl();
     const shaclObj = builder.shaclObject();
     const graph = shaclObj['@graph'] as unknown[];
 
@@ -138,7 +138,7 @@ await describe('JsonTology.toShacl()', async () => {
   });
 
   await it('SHACL output contains sh:property triples', () => {
-    const builder = bookstoreJt.toShacl();
+    const builder = entities.toShacl();
     const shaclObj = builder.shaclObject();
     const graph = shaclObj['@graph'] as unknown[];
 
@@ -149,7 +149,7 @@ await describe('JsonTology.toShacl()', async () => {
   });
 
   await it('raw OWL output is empty — no owl:Class triples', () => {
-    const builder = bookstoreJt.toShacl();
+    const builder = entities.toShacl();
     const raw = builder.raw();
 
     assert.ok(
@@ -159,7 +159,7 @@ await describe('JsonTology.toShacl()', async () => {
   });
 
   await it('raw OWL output is empty — no rdfs:domain triples', () => {
-    const builder = bookstoreJt.toShacl();
+    const builder = entities.toShacl();
     const raw = builder.raw();
 
     assert.ok(
@@ -169,8 +169,8 @@ await describe('JsonTology.toShacl()', async () => {
   });
 
   await it('two calls return different OntologyBuilder instances (not cached)', () => {
-    const first = bookstoreJt.toShacl();
-    const second = bookstoreJt.toShacl();
+    const first = entities.toShacl();
+    const second = entities.toShacl();
 
     assert.notEqual(first, second, 'toShacl() must return a fresh OntologyBuilder on each call');
   });
@@ -178,7 +178,7 @@ await describe('JsonTology.toShacl()', async () => {
 
 await describe('JsonTology.ontology() regression', async () => {
   await it('returns an OntologyBuilder with owl:Class in raw output', () => {
-    const builder = bookstoreJt.ontology();
+    const builder = entities.ontology();
     const raw = builder.raw();
 
     assert.ok(
@@ -188,7 +188,7 @@ await describe('JsonTology.ontology() regression', async () => {
   });
 
   await it('returns an OntologyBuilder with sh:NodeShape in SHACL output', () => {
-    const builder = bookstoreJt.ontology();
+    const builder = entities.ontology();
     const shaclObj = builder.shaclObject();
     const graph = shaclObj['@graph'] as unknown[];
 
@@ -199,8 +199,8 @@ await describe('JsonTology.ontology() regression', async () => {
   });
 
   await it('is cached — two calls return the same OntologyBuilder reference', () => {
-    const first = bookstoreJt.ontology();
-    const second = bookstoreJt.ontology();
+    const first = entities.ontology();
+    const second = entities.ontology();
 
     assert.equal(first, second, 'ontology() must return the same cached OntologyBuilder instance');
   });

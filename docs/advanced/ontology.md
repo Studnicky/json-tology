@@ -19,9 +19,9 @@ The bookstore schemas defined in the [Bookstore Domain](/bookstore-domain) are u
 #### Example 1: Generate OWL TBox JSON-LD from bookstore schemas
 
 ```ts
-import { bookstoreJt } from './bookstore/schemas.js';
+import { bookstoreEntities as entities } from './bookstore/schemas.js';
 
-const tbox = bookstoreJt.toTbox();
+const tbox = entities.toTbox();
 
 // Full OWL JSON-LD string
 console.log(tbox.jsonLd());
@@ -36,10 +36,10 @@ const raw = tbox.raw();
 #### Example 2: Merge TBox with separately sourced ABox
 
 ```ts
-import { bookstoreJt, CustomerSchema } from './bookstore/schemas.js';
+import { bookstoreEntities as entities, CustomerSchema } from './bookstore/schemas.js';
 
-const tbox = bookstoreJt.toTbox();
-const abox = bookstoreJt.toQuads(CustomerSchema, customerData);
+const tbox = entities.toTbox();
+const abox = entities.toQuads(CustomerSchema, customerData);
 
 const merged = {
   '@context': tbox.context(),
@@ -81,7 +81,6 @@ const cached = jt.ontology();
 ### See also
 
 - [Bookstore domain](/bookstore-domain) — schemas used in examples
-- [Architecture Plan](/architecture-plan) — canonical graph design
 
 ---
 
@@ -98,9 +97,9 @@ const cached = jt.ontology();
 #### Example 1: Generate SHACL shapes JSON-LD from bookstore schemas
 
 ```ts
-import { bookstoreJt } from './bookstore/schemas.js';
+import { bookstoreEntities as entities } from './bookstore/schemas.js';
 
-const shaclBuilder = bookstoreJt.toShacl();
+const shaclBuilder = entities.toShacl();
 
 // SHACL shapes JSON-LD object (includes sh: prefix in context)
 const shacl = shaclBuilder.shaclObject();
@@ -169,7 +168,7 @@ const shacl = builder.shaclObject();
 #### Example 1: Generate OWL JSON-LD for all bookstore schemas
 
 ```ts
-import { bookstoreJt } from './bookstore/index.js';
+import { bookstoreEntities as entities } from './bookstore/index.js';
 
 const builder = jt.ontology();
 
@@ -358,4 +357,3 @@ const jt = JsonTology.create({
 
 ## See also
 
-- [Architecture Plan](/architecture-plan) — internal design of the canonical graph

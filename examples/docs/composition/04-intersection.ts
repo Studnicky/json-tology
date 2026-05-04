@@ -39,7 +39,7 @@ const AuditedOrderSchema = Compose.intersection(
 );
 
 
-const bookstoreJt = JsonTology.create({
+const entities = JsonTology.create({
   'baseIRI': 'https://bookstore.example',
   'schemas': [
     CurrencyCodeSchema,
@@ -55,7 +55,7 @@ const bookstoreJt = JsonTology.create({
 });
 
 // Missing createdAt/updatedAt — AuditSchema required fields not met
-const errors = bookstoreJt.validate(AuditedOrderSchema.$id, {
+const errors = entities.validate(AuditedOrderSchema.$id, {
   'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'id': 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   'items': [{
@@ -71,7 +71,7 @@ const errors = bookstoreJt.validate(AuditedOrderSchema.$id, {
 console.assert(errors.length > 0);
 
 // All fields present — passes
-const valid = bookstoreJt.validate(AuditedOrderSchema.$id, {
+const valid = entities.validate(AuditedOrderSchema.$id, {
   'createdAt': '2026-01-15T10:30:00Z',
   'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'id': 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',

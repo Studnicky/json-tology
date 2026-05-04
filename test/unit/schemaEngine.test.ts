@@ -1170,7 +1170,7 @@ void describe('Graph engine advanced keywords', () => {
         const errors = registry.validate(sid, d);
 
         if (v) {
-          assert.deepEqual(errors, []);
+          assert.ok(errors.ok);
         } else {
           assert.ok(errors.length > 0);
         }
@@ -1246,7 +1246,7 @@ void describe('Graph engine advanced keywords', () => {
           const errors = innerRegistry.validate('https://example.io/strict-tree', d);
 
           if (v) {
-            assert.deepEqual(errors, []);
+            assert.ok(errors.ok);
           } else {
             assert.ok(errors.length > 0);
           }
@@ -1450,7 +1450,7 @@ void describe('Graph engine advanced keywords', () => {
         const errors = registry.validate(sid, d);
 
         if (v) {
-          assert.deepEqual(errors, []);
+          assert.ok(errors.ok);
         } else {
           assert.ok(errors.length > 0);
         }

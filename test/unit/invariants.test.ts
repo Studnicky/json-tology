@@ -111,7 +111,7 @@ void describe('invariants', () => {
       ],
       'total': 25
     };
-    const errors = jt.errors(OrderSchema.$id, data);
+    const errors = jt.validate(OrderSchema.$id, data);
 
     assert.equal(errors.length, 0);
   });
@@ -141,7 +141,7 @@ void describe('invariants', () => {
       }],
       'total': 999
     };
-    const errors = jt.errors(OrderSchema.$id, data);
+    const errors = jt.validate(OrderSchema.$id, data);
 
     assert.equal(errors.length, 1);
     assert.equal(errors.items[0].message, 'total must equal sum of items');
@@ -260,7 +260,7 @@ void describe('invariants', () => {
       'items': [],
       'total': 999
     };
-    const errors = jt.errors(OrderSchema.$id, data);
+    const errors = jt.validate(OrderSchema.$id, data);
 
     assert.equal(errors.length, 2);
 
@@ -293,7 +293,7 @@ void describe('invariants', () => {
     });
 
     // Missing required 'total' field
-    const errors = jt.errors(OrderSchema.$id, { 'items': [] });
+    const errors = jt.validate(OrderSchema.$id, { 'items': [] });
 
     assert.ok(!invariantRan, 'invariant must not run when structure fails');
     assert.ok(errors.length > 0, 'structural error returned');
@@ -322,7 +322,7 @@ void describe('invariants', () => {
       'total': 999
     };
 
-    assert.equal(jt.errors(OrderSchema.$id, data).length, 0, 'no invariant yet');
+    assert.equal(jt.validate(OrderSchema.$id, data).length, 0, 'no invariant yet');
 
     jt.addInvariant<Order>(
       OrderSchema.$id,
@@ -334,7 +334,7 @@ void describe('invariants', () => {
       }
     );
 
-    assert.equal(jt.errors(OrderSchema.$id, data).length, 1, 'invariant fires after addInvariant');
+    assert.equal(jt.validate(OrderSchema.$id, data).length, 1, 'invariant fires after addInvariant');
   });
 
   void it('removeInvariant by name removes the invariant', () => {
@@ -364,11 +364,11 @@ void describe('invariants', () => {
       'total': 999
     };
 
-    assert.equal(jt.errors(OrderSchema.$id, data).length, 1, 'fires before remove');
+    assert.equal(jt.validate(OrderSchema.$id, data).length, 1, 'fires before remove');
 
     jt.removeInvariant(OrderSchema.$id, 'totalMatchesItems');
 
-    assert.equal(jt.errors(OrderSchema.$id, data).length, 0, 'gone after remove');
+    assert.equal(jt.validate(OrderSchema.$id, data).length, 0, 'gone after remove');
   });
 
   void it('invariant on Parent fires once for the parent value (not duplicated per-field)', () => {
@@ -390,7 +390,7 @@ void describe('invariants', () => {
       'name': 'counter'
     });
 
-    jt.errors(ParentSchema.$id, {
+    jt.validate(ParentSchema.$id, {
       'child': { 'value': 1 },
       'label': 'test'
     });
@@ -415,7 +415,7 @@ void describe('invariants', () => {
       'pointer': '/total'
     });
 
-    const errors = jt.errors(OrderSchema.$id, {
+    const errors = jt.validate(OrderSchema.$id, {
       'items': [{
         'price': 1,
         'qty': 1

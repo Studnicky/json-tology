@@ -58,7 +58,7 @@ void describe('Compose.extend() allOf+$ref shape', () => {
       'role': 'engineer'
     };
 
-    assert.deepStrictEqual(registry.validate('https://example.io/Employee2', validEmployee), []);
+    assert.ok(registry.validate('https://example.io/Employee2', validEmployee).ok);
   });
 
   void it('chain extend: grandchild gets all ancestor properties at runtime', () => {

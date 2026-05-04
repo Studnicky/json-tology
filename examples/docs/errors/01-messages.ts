@@ -1,13 +1,14 @@
 /**
- * ValidationErrors.messages — Example 1: String array of errors
- * Demonstrates: messages() format "path: message", suitable for console/logging
+ * ValidationErrors — messages recipe
+ * Demonstrates: path-prefixed string array — cookbook recipe for the removed messages() method.
+ * Use this when you want a flat list of strings for console output or logging.
  */
 
 import {
-  bookstoreJt, ReviewSchema
+  bookstoreEntities as entities, ReviewSchema
 } from '../bookstore/index.js';
 
-const errs = bookstoreJt.errors(ReviewSchema.$id, {
+const errs = entities.validate(ReviewSchema.$id, {
   'body': 'short',
   'bookIsbn': '9780140449136',
   'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
@@ -16,7 +17,10 @@ const errs = bookstoreJt.errors(ReviewSchema.$id, {
   'rating': 6
 });
 
-const messages = errs.messages();
+// Recipe: path-prefixed messages (equivalent to removed messages())
+const messages = errs.items.map((err) => {
+  return `${err.path || 'root'}: ${err.message}`;
+});
 
 console.assert(Array.isArray(messages));
 console.assert(messages.every((msgStr) => {

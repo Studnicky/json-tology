@@ -1,6 +1,6 @@
 /**
  * addComputed / removeComputed — Example 1: Order total computed from lines
- * Demonstrates: bookstoreJt:computed marker, computeds at construction, coerce triggers fn
+ * Demonstrates: entities:computed marker, computeds at construction, coerce triggers fn
  */
 
 import { JsonTology } from '../../../src/index.js';
@@ -35,7 +35,7 @@ const ComputedOrderSchema = {
       'type': 'string'
     },
     'total': {
-      'bookstoreJt:computed': true,
+      'entities:computed': true,
       'type': 'number'
     }
   },
@@ -50,7 +50,7 @@ const ComputedOrderSchema = {
 
 type ComputedOrder = InferType<typeof ComputedOrderSchema>;
 
-const bookstoreJt = JsonTology.create({
+const entities = JsonTology.create({
   'baseIRI': 'https://bookstore.example',
   'computeds': {
     'https://bookstore.example/ComputedOrder': {
@@ -74,7 +74,7 @@ const bookstoreJt = JsonTology.create({
   ] as const
 });
 
-const order = bookstoreJt.coerce(ComputedOrderSchema.$id, {
+const order = entities.coerce(ComputedOrderSchema.$id, {
   'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'id': 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   'items': [

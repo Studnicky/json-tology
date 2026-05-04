@@ -18,7 +18,6 @@ export interface SchemaRegistryInterface {
   create(schemaId: string): unknown;
   readonly 'curie': CurieInterface | undefined;
   engine(schema: Record<string, unknown>): GraphEngineInterface;
-  errors(schema: (Record<string, unknown> & { '$id': string }) | string, data: unknown): ValidationErrors;
   findDuplicates(): readonly DuplicateReportEntryType[];
   get(schemaId: string): Record<string, unknown> | undefined;
   graph(schemaId: string): SchemaGraphInterface | undefined;
@@ -28,7 +27,7 @@ export interface SchemaRegistryInterface {
   register(schemas: ReadonlyArray<Record<string, unknown>> | Record<string, unknown>): void;
   registerAnonymous(schema: Record<string, unknown>): string;
   removeInvariant(schemaId: string, name: string): void;
-  validate(schema: (Record<string, unknown> & { '$id': string }) | string, data: unknown): string[];
+  validate(schema: (Record<string, unknown> & { '$id': string }) | string, data: unknown): ValidationErrors;
   validateAt(schema: (Record<string, unknown> & { '$id': string }) | string, pointer: string, data: unknown): string[];
   validator(schemaId: string): CompiledValidatorInterface;
 }

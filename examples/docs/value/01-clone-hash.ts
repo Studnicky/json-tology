@@ -5,10 +5,10 @@
 
 import { Value } from '../../../src/index.js';
 import {
-  bookstoreJt, OrderSchema
+  bookstoreEntities as entities, OrderSchema
 } from '../bookstore/index.js';
 
-const order = bookstoreJt.coerce(OrderSchema.$id, {
+const order = entities.coerce(OrderSchema.$id, {
   'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'id': 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   'items': [{

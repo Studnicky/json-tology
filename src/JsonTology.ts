@@ -109,7 +109,7 @@ export class JsonTology<TMap = Record<never, never>> {
   /**
    * Constructs a new {@link JsonTology} instance (use {@link JsonTology.create} for the public API).
    *
-   * @param options - Configuration including `baseIRI`, prefixes, format validators, castTypes, strict, and logger.
+   * @param options - Configuration including `baseIRI`, prefixes, format validators, `enableTypeCast`, `enableStrictTypes`, and logger.
    */
   private constructor(options: JsonTologyOptionsInterface) {
     let baseIRI = options.baseIRI;
@@ -139,9 +139,9 @@ export class JsonTology<TMap = Record<never, never>> {
       'formatRegistry': formatRegistry,
       'prefixes': this.prefixes,
       ...(options.logger === undefined ? {} : { 'logger': options.logger }),
-      ...(options.castTypes === undefined ? {} : { 'castTypes': options.castTypes }),
+      ...(options.enableTypeCast === undefined ? {} : { 'enableTypeCast': options.enableTypeCast }),
       ...(options.keywords === undefined ? {} : { 'keywords': options.keywords }),
-      ...(options.strict === undefined ? {} : { 'strict': options.strict }),
+      ...(options.enableStrictTypes === undefined ? {} : { 'enableStrictTypes': options.enableStrictTypes }),
       ...(options.enableDefaults === undefined ? {} : { 'enableDefaults': options.enableDefaults }),
       ...(options.enableInlineWarnings === undefined ? {} : { 'enableInlineWarnings': options.enableInlineWarnings }),
       ...(options.enableDuplicateDetection === undefined ? {} : { 'enableDuplicateDetection': options.enableDuplicateDetection }),
@@ -310,25 +310,9 @@ export class JsonTology<TMap = Record<never, never>> {
     return (Transform.getDecoder(schema as object)?.encode(value) ?? value) as InferSchemaType<TSchema>;
   }
 
-  /**
-   * Validates data and returns structured {@link ValidationErrors}.
-   *
-   * @param schemaId - The `$id` of a registered schema, or a schema object with `$id`.
-   * @param data - The data to validate.
-   * @returns A {@link ValidationErrors} instance (empty when data is valid).
-   */
-  public errors<K extends keyof TMap & string>(schemaId: K, data: unknown): ValidationErrors;
   // ---------------------------------------------------------------------------
   // Validation
   // ---------------------------------------------------------------------------
-  public errors(schema: Record<string, unknown> & { '$id': string; }, data: unknown): ValidationErrors;
-  public errors(schema: (keyof TMap & string) | (Record<string, unknown> & { '$id': string; }), data: unknown): ValidationErrors {
-    if ((schema as unknown) === null || (schema as unknown) === undefined) {
-      throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
-    }
-
-    return this.registry.errors(typeof schema === 'string' ? schema : schema.$id, data);
-  }
   /**
    * Lifts RDF quads back into typed JS objects.
    *
@@ -573,15 +557,21 @@ export class JsonTology<TMap = Record<never, never>> {
   }
 
   /**
-   * Validates data against a registered schema and returns human-readable error messages.
+   * Validates data against a registered schema and returns structured {@link ValidationErrors}.
+   *
+   * Returns an empty collection (`.ok === true`) when the data is valid.
+   * Does not mutate input. Does not throw on validation failure.
+   *
+   * Equivalent to `materialize(idOrSchema, data, { enableValidation: true, enableThrow: false, enableDefaults: false }).errors`.
    *
    * @param schemaId - The `$id` of a registered schema, or a schema object with `$id`.
    * @param data - The data to validate.
-   * @returns Array of human-readable error strings, empty if valid.
+   * @param callOptions - Per-call option overrides.
+   * @returns A {@link ValidationErrors} instance (empty when data is valid).
    */
-  public validate<K extends keyof TMap & string>(schemaId: K, data: unknown): string[];
-  public validate(schema: Record<string, unknown> & { '$id': string; }, data: unknown): string[];
-  public validate(schema: (keyof TMap & string) | (Record<string, unknown> & { '$id': string; }), data: unknown): string[] {
+  public validate<K extends keyof TMap & string>(schemaId: K, data: unknown, callOptions?: { 'enableDefaults'?: boolean }): ValidationErrors;
+  public validate(schema: Record<string, unknown> & { '$id': string; }, data: unknown, callOptions?: { 'enableDefaults'?: boolean }): ValidationErrors;
+  public validate(schema: (keyof TMap & string) | (Record<string, unknown> & { '$id': string; }), data: unknown): ValidationErrors {
     if ((schema as unknown) === null || (schema as unknown) === undefined) {
       throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
     }

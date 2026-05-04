@@ -43,7 +43,7 @@ const GlobalStrictConfigSchema = {
 
 void describe('jt:strict per-field', () => {
   void it('accepts correct JS type for strict field', () => {
-    const registry = new SchemaRegistry({ 'castTypes': true });
+    const registry = new SchemaRegistry({ 'enableTypeCast': true });
 
     registry.register(StrictFieldSchema);
     const result = registry.coerce(StrictFieldSchema.$id, {
@@ -58,7 +58,7 @@ void describe('jt:strict per-field', () => {
   });
 
   void it('rejects string-as-integer for strict field even when global castTypes is on', () => {
-    const registry = new SchemaRegistry({ 'castTypes': true });
+    const registry = new SchemaRegistry({ 'enableTypeCast': true });
 
     registry.register(StrictFieldSchema);
 
@@ -71,7 +71,7 @@ void describe('jt:strict per-field', () => {
   });
 
   void it('coerces non-strict field normally when global castTypes is on', () => {
-    const registry = new SchemaRegistry({ 'castTypes': true });
+    const registry = new SchemaRegistry({ 'enableTypeCast': true });
 
     registry.register(StrictFieldSchema);
     const result = registry.coerce(StrictFieldSchema.$id, {
@@ -83,7 +83,7 @@ void describe('jt:strict per-field', () => {
   });
 
   void it('rejects boolean-as-integer for strict field', () => {
-    const registry = new SchemaRegistry({ 'castTypes': true });
+    const registry = new SchemaRegistry({ 'enableTypeCast': true });
 
     registry.register(StrictFieldSchema);
 
@@ -111,7 +111,7 @@ void describe('jt:strict per-field', () => {
   });
 
   void it('jt:config.strict applies to all fields when set', () => {
-    const registry = new SchemaRegistry({ 'castTypes': true });
+    const registry = new SchemaRegistry({ 'enableTypeCast': true });
 
     registry.register(GlobalStrictConfigSchema);
 
@@ -124,7 +124,7 @@ void describe('jt:strict per-field', () => {
   });
 
   void it('jt:strict: false opts out field when jt:config.strict is true', () => {
-    const registry = new SchemaRegistry({ 'castTypes': true });
+    const registry = new SchemaRegistry({ 'enableTypeCast': true });
 
     registry.register(GlobalStrictConfigSchema);
     const result = registry.coerce(GlobalStrictConfigSchema.$id, {
@@ -136,7 +136,7 @@ void describe('jt:strict per-field', () => {
   });
 
   void it('validate() reflects strict type failures', () => {
-    const registry = new SchemaRegistry({ 'castTypes': true });
+    const registry = new SchemaRegistry({ 'enableTypeCast': true });
 
     registry.register(StrictFieldSchema);
     const errors = registry.validate(StrictFieldSchema.$id, {
@@ -148,7 +148,7 @@ void describe('jt:strict per-field', () => {
   });
 
   void it('is() returns false for strict field type mismatch', () => {
-    const registry = new SchemaRegistry({ 'castTypes': true });
+    const registry = new SchemaRegistry({ 'enableTypeCast': true });
 
     registry.register(StrictFieldSchema);
 
@@ -159,7 +159,7 @@ void describe('jt:strict per-field', () => {
   });
 
   void it('is() returns true for correct types even with jt:strict', () => {
-    const registry = new SchemaRegistry({ 'castTypes': true });
+    const registry = new SchemaRegistry({ 'enableTypeCast': true });
 
     registry.register(StrictFieldSchema);
 

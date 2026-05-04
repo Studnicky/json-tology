@@ -31,7 +31,7 @@ const PublicBookSchema = Compose.omit(
 );
 
 
-const bookstoreJt = JsonTology.create({
+const entities = JsonTology.create({
   'baseIRI': 'https://bookstore.example',
   'schemas': [
     AuthorNameSchema,
@@ -46,7 +46,7 @@ const bookstoreJt = JsonTology.create({
 });
 
 // BookSummary — only picked fields survive
-const summary = bookstoreJt.coerce(BookSummarySchema.$id, {
+const summary = entities.coerce(BookSummarySchema.$id, {
   'authors': ['Dostoevsky'],
   'inStock': true,
   'isbn': '9780140449136',
@@ -58,7 +58,7 @@ console.assert(!('authors' in summary));
 console.assert(summary.isbn === '9780140449136');
 
 // PublicBook — currency removed
-const pub = bookstoreJt.validate(PublicBookSchema.$id, {
+const pub = entities.validate(PublicBookSchema.$id, {
   'authors': ['Dostoevsky'],
   'isbn': '9780140449136',
   'price': 14.99,

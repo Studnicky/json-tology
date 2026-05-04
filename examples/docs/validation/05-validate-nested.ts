@@ -4,10 +4,10 @@
  */
 
 import {
-  bookstoreJt, OrderSchema
+  bookstoreEntities as entities, OrderSchema
 } from '../bookstore/index.js';
 
-const errors = bookstoreJt.validate(OrderSchema.$id, {
+const errors = entities.validate(OrderSchema.$id, {
   'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'id': 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   'items': [{
@@ -20,9 +20,9 @@ const errors = bookstoreJt.validate(OrderSchema.$id, {
 });
 
 console.assert(errors.length > 0);
-console.assert(errors.some((errMsg) => {
-  return errMsg.includes('total');
+console.assert(errors.items.some((err) => {
+  return err.path.includes('total') || err.message.includes('total');
 }));
-console.assert(errors.some((errMsg) => {
-  return errMsg.includes('quantity');
+console.assert(errors.items.some((err) => {
+  return err.path.includes('quantity') || err.message.includes('quantity');
 }));
