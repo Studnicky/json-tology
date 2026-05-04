@@ -12,7 +12,16 @@ const loading = ref(true);
 const selectedNode = ref<{ id: string; schema: unknown; edges: EdgeData[] } | null>(null);
 
 // Keep a reference to destroy on unmount
-let cyInstance: { destroy(): void } | null = null;
+interface CyHandle {
+  destroy(): void;
+  fit(elements?: unknown, padding?: number): void;
+  zoom(): number;
+  minZoom(level: number): void;
+  maxZoom(level: number): void;
+  userZoomingEnabled(enabled: boolean): void;
+  on(event: string, selector: string | ((event: unknown) => void), handler?: (event: unknown) => void): void;
+}
+let cyInstance: CyHandle | null = null;
 
 // ---------------------------------------------------------------------------
 // Lifecycle
@@ -199,7 +208,21 @@ onMounted(async () => {
     } as Record<string, unknown>
   });
 
-  // Click handler — open side panel
+  // Bound zoom. After the layout's initial fit, the current zoom is the
+  // "everything visible" level. That becomes the floor (no zoom-out past
+  // full-graph) and we cap zoom-in at 3x for legibility on hover.
+  cyInstance.fit(undefined, 60);
+  const fitZoom = cyInstance.zoom();
+  cyInstance.minZoom(fitZoom);
+  cyInstance.maxZoom(fitZoom * 3);
+
+  // After a user drags a node and releases, refit so the full graph stays
+  // in frame. Keeps nodes from getting pushed off-screen.
+  cyInstance.on('dragfree', 'node', () => {
+    cyInstance?.fit(undefined, 60);
+  });
+
+  // Click handler: open side panel
   const allEdges = graphData.edges.map(e => e.data);
 
   cyInstance.on('tap', 'node', (event: { target: { data(): NodeData } }) => {

@@ -428,7 +428,6 @@ irreducibles.
 
 - [Graph-native authoring](/advanced/graph-native-authoring) - how to write schemas that produce clean graphs
 - [Ontology and Graphs](/advanced/ontology) - `toTbox`, `toShacl`, `ontology`, `toQuads`, `fromQuads`
-- [WebVOWL viewer](/advanced/graph-vowl) - visualize the TBox in the W3C ontology viewer
 
 ## See also
 

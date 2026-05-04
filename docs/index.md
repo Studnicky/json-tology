@@ -59,8 +59,6 @@ Every TypeScript type system has a graph hiding in it. Below is the bookstore do
 
 [Read the full guide](/your-types-are-a-graph)
 
-[Visualize the ontology in any OWL tool](/advanced/graph-vowl)
-
 ---
 
 ## Why json-tology
