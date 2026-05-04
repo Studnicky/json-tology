@@ -1,7 +1,7 @@
 {
   "name": "json-tology",
   "version": "0.2.0",
-  "description": "Graph-native JSON Schema type system with JSON-LD ontology support",
+  "description": "One source of truth for TypeScript types, runtime validation, coercion, and OWL ontology output. Author in JSON Schema; share with any backend; reason over the graph.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

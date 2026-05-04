@@ -130,7 +130,7 @@ export default defineConfig({
     }
   },
   appearance: themeConfig.appearance,
-  description: 'TypeScript type system with declarative JSON Schema authoring.',
+  description: 'One source of truth for TypeScript types, runtime validation, coercion, and OWL ontology output. Author in JSON Schema; share with any backend; reason over the graph.',
   srcDir: '.',
   themeConfig: {
     ...themeConfig,

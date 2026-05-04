@@ -7,10 +7,11 @@
   <div class="home-hero-features">
     <div class="hero-section">
       <h1 class="hero-name">json-tology</h1>
-      <p class="hero-text">TypeScript types from JSON Schema.</p>
+      <p class="hero-text">
+        One source of truth for TypeScript types, runtime validation, coercion, and OWL ontology output.
+      </p>
       <p class="hero-tagline">
-        Author once with JSON Schema. Get typed validation, parsing, defaults,
-        transforms, and serialization. Pydantic-style ergonomics for TypeScript.
+        Author in JSON Schema. Share with any backend. Reason over the graph.
       </p>
       <div class="hero-actions">
         <a href="/getting-started" class="action-brand">Get Started</a>

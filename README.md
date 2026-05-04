@@ -1,5 +1,7 @@
 # json-tology
 
+> One source of truth for TypeScript types, runtime validation, coercion, and OWL ontology output. Author in JSON Schema; share with any backend; reason over the graph.
+
 A TypeScript type system that uses JSON Schema as the source of truth, not as an output.
 
 `json-tology` is built around one canonical graph that drives:
