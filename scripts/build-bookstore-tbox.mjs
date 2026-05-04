@@ -1,8 +1,16 @@
 /**
  * build-bookstore-tbox.mjs
  *
- * Generates docs/public/data/bookstore-tbox.jsonld from the live bookstore
- * registry. Required by the WebVOWL iframe which fetches it at a public URL.
+ * Runs the single-source-of-truth utility (bookstoreGraphData.ts) at build
+ * time in Node and writes the three outputs the docs site needs:
+ *
+ *   docs/public/data/bookstore-tbox.jsonld   — for the WebVOWL iframe
+ *   docs/public/data/bookstore-graph.json    — for the Cytoscape <BookstoreGraph /> component
+ *   docs/public/data/bookstore-schemas.json  — schema literals for the click-to-inspect panel
+ *
+ * Why build-time and not browser-runtime: json-tology imports `node:net` for
+ * IP-format validation, which Vite cannot bundle into a browser build. The
+ * utility module runs in Node here; the browser fetches the resulting JSON.
  *
  * Run via: npm run build:bookstore-tbox
  */
@@ -20,16 +28,19 @@ const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const DATA_DIR = join(ROOT, 'docs', 'public', 'data');
 const UTILS_PATH = join(ROOT, 'docs', '.vitepress', 'theme', 'utils', 'bookstoreGraphData.ts');
 
-// Use tsx to run a small extractor that imports the TS utility module
-const tmpFile = join(tmpdir(), `bookstore-tbox-extract-${randomUUID()}.ts`);
+const tmpFile = join(tmpdir(), `bookstore-extract-${randomUUID()}.ts`);
 const extractorContent = `
-import { toJsonLd } from ${JSON.stringify(UTILS_PATH)};
-process.stdout.write(JSON.stringify(toJsonLd()));
+import { toCytoscapeElements, toJsonLd, toSchemaMap } from ${JSON.stringify(UTILS_PATH)};
+process.stdout.write(JSON.stringify({
+  cytoscape: toCytoscapeElements(),
+  jsonLd: toJsonLd(),
+  schemaMap: toSchemaMap()
+}));
 `;
 
 writeFileSync(tmpFile, extractorContent, 'utf8');
 
-let jsonLdContent;
+let payload;
 
 try {
   const result = execFileSync(
@@ -49,7 +60,7 @@ try {
     }
   );
 
-  jsonLdContent = JSON.parse(result);
+  payload = JSON.parse(result);
 } finally {
   try {
     unlinkSync(tmpFile);
@@ -59,8 +70,14 @@ try {
 }
 
 mkdirSync(DATA_DIR, { 'recursive': true });
-writeFileSync(join(DATA_DIR, 'bookstore-tbox.jsonld'), JSON.stringify(jsonLdContent, null, 2));
+writeFileSync(join(DATA_DIR, 'bookstore-tbox.jsonld'), JSON.stringify(payload.jsonLd, null, 2));
+writeFileSync(join(DATA_DIR, 'bookstore-graph.json'), JSON.stringify(payload.cytoscape, null, 2));
+writeFileSync(join(DATA_DIR, 'bookstore-schemas.json'), JSON.stringify(payload.schemaMap, null, 2));
 
-const nodeCount = Array.isArray(jsonLdContent) ? jsonLdContent.length : Object.keys(jsonLdContent).length;
+const nodeCount = payload.cytoscape.nodes.length;
+const edgeCount = payload.cytoscape.edges.length;
+const schemaCount = Object.keys(payload.schemaMap).length;
 
-console.log(`bookstore-tbox.jsonld: ${nodeCount} nodes written`);
+console.log(`bookstore-graph.json:   ${nodeCount} nodes, ${edgeCount} edges`);
+console.log(`bookstore-schemas.json: ${schemaCount} schemas`);
+console.log('bookstore-tbox.jsonld:  written for WebVOWL');

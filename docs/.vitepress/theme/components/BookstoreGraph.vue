@@ -24,12 +24,19 @@ onMounted(async () => {
   let schemaMap: Record<string, unknown>;
 
   try {
-    const { toCytoscapeElements, toSchemaMap } = await import('../utils/bookstoreGraphData.js');
-    graphData = toCytoscapeElements();
-    schemaMap = toSchemaMap();
+    const [graphResp, schemaResp] = await Promise.all([
+      fetch('/data/bookstore-graph.json'),
+      fetch('/data/bookstore-schemas.json')
+    ]);
+    if (!graphResp.ok) throw new Error(`graph fetch ${graphResp.status}`);
+    if (!schemaResp.ok) throw new Error(`schema fetch ${schemaResp.status}`);
+    [graphData, schemaMap] = await Promise.all([
+      graphResp.json() as Promise<typeof graphData>,
+      schemaResp.json() as Promise<typeof schemaMap>
+    ]);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    loadError.value = `Could not load graph data: ${msg}`;
+    loadError.value = `Could not load graph data: ${msg}. Did you run \`npm run build:bookstore-tbox\` (or \`docs:build\`)?`;
     loading.value = false;
     return;
   }
