@@ -204,23 +204,44 @@ void describe('SchemaRegistry registration', () => {
       }
     },
     {
-      'check': (registry) => {
-        assert.throws(() => {
-          registry.register(InvalidInlineSchema);
-        }, /SCHEMA_STRUCTURE_INVALID|Structure validation failed/u);
+      'check': () => {
+        // Default mode: inline schemas register silently (no throw)
+        const defaultRegistry = new SchemaRegistry({ 'logger': new Logger() });
 
-        assert.equal(registry.get(InvalidInlineSchema.$id), undefined);
-        assert.equal(registry.graph(InvalidInlineSchema.$id), undefined);
-        assert.deepEqual(registry.list(), []);
-        assert.deepEqual(registry.listGraphs(), []);
+        assert.doesNotThrow(() => {
+          defaultRegistry.register(InvalidInlineSchema);
+        });
+        assert.ok(defaultRegistry.get(InvalidInlineSchema.$id) !== undefined);
+
+        // enableStrictGraph mode: inline schemas throw SchemaError
+        const strictRegistry = new SchemaRegistry({
+          'enableStrictGraph': true,
+          'logger': new Logger()
+        });
+
+        assert.throws(
+          () => {
+            strictRegistry.register(InvalidInlineSchema);
+          },
+          (err: unknown) => {
+            const schemaErr = err as { 'code'?: string };
+
+            return typeof schemaErr.code === 'string' && schemaErr.code === 'SCHEMA_STRUCTURE_INVALID';
+          }
+        );
+
+        assert.equal(strictRegistry.get(InvalidInlineSchema.$id), undefined);
+        assert.equal(strictRegistry.graph(InvalidInlineSchema.$id), undefined);
+        assert.deepEqual(strictRegistry.list(), []);
+        assert.deepEqual(strictRegistry.listGraphs(), []);
         assert.throws(() => {
-          registry.validate(InvalidInlineSchema.$id, {});
+          strictRegistry.validate(InvalidInlineSchema.$id, {});
         }, /No validator registered|SCHEMA_NOT_REGISTERED/u);
         assert.throws(() => {
-          registry.coerce(InvalidInlineSchema.$id, {});
+          strictRegistry.coerce(InvalidInlineSchema.$id, {});
         }, /SCHEMA_NOT_REGISTERED|Schema not registered/u);
       },
-      'name': 'failed registration is a no-op for empty registry state',
+      'name': 'inline schema: silent by default, throws with enableStrictGraph',
       'setup': () => {
         // no setup needed
       }

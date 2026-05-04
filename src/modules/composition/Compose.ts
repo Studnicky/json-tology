@@ -53,9 +53,61 @@ export class Compose {
   }
 
   /**
-   * Derive a schema with additional properties merged in.
-   * The `required` array is inherited unchanged; list new required fields
-   * explicitly or use intersection() to combine with a schema that requires them.
+   * Creates a thin $ref alias giving a domain-distinct name to an existing schema.
+   *
+   * Use to create semantically distinct names for structurally equivalent types
+   * (e.g. `PrimaryIsbn` is-a `Isbn`). In OWL TBox output, the two schemas are linked
+   * via `owl:equivalentClass`.
+   *
+   * @example
+   * const PrimaryIsbn = Compose.equivalent(IsbnSchema, {
+   *   $id: 'urn:bookstore:PrimaryIsbn',
+   *   description: 'The canonical ISBN used for catalog lookup.'
+   * });
+   */
+  public static equivalent<TSource extends { readonly '$id': string }>(
+    source: TSource,
+    options: {
+      readonly '$id': string;
+      readonly 'description'?: string;
+      readonly 'examples'?: readonly unknown[];
+      readonly 'title'?: string;
+    }
+  ): {
+    readonly '$id': string;
+    readonly '$ref': string;
+    readonly 'description'?: string;
+    readonly 'examples'?: readonly unknown[];
+    readonly 'title'?: string;
+  } {
+    const result: Record<string, unknown> = {
+      '$id': options.$id,
+      '$ref': source.$id
+    };
+
+    if (options.description !== undefined) {
+      result.description = options.description;
+    }
+    if (options.title !== undefined) {
+      result.title = options.title;
+    }
+    if (options.examples !== undefined) {
+      result.examples = options.examples;
+    }
+
+    return result as {
+      readonly '$id': string;
+      readonly '$ref': string;
+      readonly 'description'?: string;
+      readonly 'examples'?: readonly unknown[];
+      readonly 'title'?: string;
+    };
+  }
+
+  /**
+   * Derive a schema with additional properties merged in via allOf + $ref.
+   * The parent schema is referenced via $ref in the first allOf entry;
+   * the additions are the second entry with type: 'object' and any new properties.
    * When both parent and child carry `jt:config`, child keys win per-key.
    *
    * @example
@@ -75,31 +127,70 @@ export class Compose {
     newId: TId
   ): ExtendSchemaType<TSchema, TAdditional, TId> {
     const source = schema as unknown as Record<string, unknown>;
-    const rawProps = source.properties;
-    const sourceProps = isRecord(rawProps)
-      ? rawProps
-      : {};
+    const parentId = source.$id as string;
+    const additions = additionalProperties as Record<string, unknown>;
 
-    const base: Record<string, unknown> = {
-      ...source,
-      '$id': newId,
-      'properties': {
-        ...sourceProps,
-        ...(additionalProperties as Record<string, unknown>)
+    // Build the additions sub-schema (the child's own structure declaration)
+    const additionsSchema: Record<string, unknown> = { 'type': 'object' };
+
+    if (isRecord(additions.properties)) {
+      additionsSchema.properties = additions.properties;
+    } else {
+      const propKeys = Object.keys(additions).filter((k) => {
+        return k !== '$id' && k !== 'type' && k !== 'required' && k !== 'jt:config';
+      });
+
+      if (propKeys.length > 0) {
+        const props: Record<string, unknown> = {};
+
+        for (const k of propKeys) {
+          props[k] = additions[k];
+        }
+        additionsSchema.properties = props;
       }
-    };
+    }
+
+    if (Array.isArray(additions.required)) {
+      additionsSchema.required = additions.required;
+    }
 
     const parentConfig = source['jt:config'];
-    const childConfig = (additionalProperties as Record<string, unknown>)['jt:config'];
+    const childConfig = additions['jt:config'];
 
     if (isRecord(parentConfig) || isRecord(childConfig)) {
-      base['jt:config'] = {
+      additionsSchema['jt:config'] = {
         ...(isRecord(parentConfig) ? parentConfig : {}),
         ...(isRecord(childConfig) ? childConfig : {})
       };
     }
 
-    return base as unknown as ExtendSchemaType<TSchema, TAdditional, TId>;
+    const child: Record<string, unknown> = {
+      '$id': newId,
+      'allOf': [
+        { '$ref': parentId },
+        additionsSchema
+      ]
+    };
+
+    // Carry descriptive top-level keywords (title, description, examples, etc.)
+    const SKIP_KEYS = new Set([
+      '$id',
+      'jt:config',
+      'properties',
+      'required',
+      'type'
+    ]);
+
+    for (const [
+      key,
+      val
+    ] of Object.entries(additions)) {
+      if (!SKIP_KEYS.has(key)) {
+        child[key] = val;
+      }
+    }
+
+    return child as unknown as ExtendSchemaType<TSchema, TAdditional, TId>;
   }
 
   /**
@@ -345,3 +436,4 @@ export class Compose {
     } as unknown as RequiredSchemaType<TSchema, TId>;
   }
 }
+

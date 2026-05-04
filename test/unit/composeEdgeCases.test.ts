@@ -24,8 +24,13 @@ const BaseSchema = {
 } as const;
 
 // ---------------------------------------------------------------------------
-// extend
+// extend — allOf+$ref shape
 // ---------------------------------------------------------------------------
+
+type AllOfResult = Record<string, unknown> & {
+  '$id': string;
+  'allOf': readonly [{ '$ref': string }, Record<string, unknown>];
+};
 
 type ComposeResult = Record<string, unknown> & {
   '$id': string;
@@ -35,7 +40,7 @@ type ComposeResult = Record<string, unknown> & {
 
 interface ExtendScenario {
   'additionalProps': Record<string, { readonly 'type': string }>;
-  'assertions': (result: ComposeResult) => void;
+  'assertions': (result: AllOfResult) => void;
   'name': string;
   'newId': string;
 }
@@ -44,27 +49,18 @@ const extendScenarios: ExtendScenario[] = [
   {
     'additionalProps': {},
     'assertions': (result) => {
-      assert.strictEqual(result.$id, 'https://example.io/extended-empty', 'extend empty properties — $id');
-      assert.ok('name' in result.properties, 'extend empty properties — name present');
-      assert.ok('age' in result.properties, 'extend empty properties — age present');
-      assert.ok('email' in result.properties, 'extend empty properties — email present');
-      assert.strictEqual(Object.keys(result.properties).length, 3, 'extend empty properties — count');
-      assert.deepStrictEqual([...result.required].sort((left, right) => {
-        return left.localeCompare(right);
-      }), [
-        'age',
-        'name'
-      ], 'extend empty properties — required');
+      assert.strictEqual(result.$id, 'https://example.io/extended-empty', 'extend empty — $id');
+      assert.ok(Array.isArray(result.allOf), 'extend empty — has allOf');
+      assert.strictEqual((result.allOf[0] as Record<string, unknown>).$ref, 'https://example.io/base', 'extend empty — $ref points to parent');
     },
-    'name': 'returns base schema unchanged when additional properties is empty',
+    'name': 'returns allOf+$ref when additional properties is empty',
     'newId': 'https://example.io/extended-empty'
   },
   {
     'additionalProps': { 'flag': { 'type': 'boolean' } },
     'assertions': (result) => {
       assert.strictEqual(result.$id, '', 'edge: extend empty $id — $id is empty string');
-      assert.ok('name' in result.properties, 'edge: extend empty $id — name present');
-      assert.ok('flag' in result.properties, 'edge: extend empty $id — flag present');
+      assert.ok(Array.isArray(result.allOf), 'edge: extend empty $id — has allOf');
     },
     'name': 'edge: extend with empty $id produces schema with empty string $id',
     'newId': ''
@@ -73,8 +69,10 @@ const extendScenarios: ExtendScenario[] = [
     'additionalProps': { 'role': { 'type': 'string' } },
     'assertions': (result) => {
       assert.strictEqual(result.$id, 'https://example.io/base', 'extend same $id — $id preserved');
-      assert.ok('role' in result.properties, 'extend same $id — role present');
-      assert.ok('name' in result.properties, 'extend same $id — name present');
+      assert.ok(Array.isArray(result.allOf), 'extend same $id — has allOf');
+      const additionsProps = (result.allOf[1].properties ?? {}) as Record<string, unknown>;
+
+      assert.ok('role' in additionsProps, 'extend same $id — role in additions');
     },
     'name': 'preserves $id from base when newId matches original — but newId always wins',
     'newId': 'https://example.io/base'
@@ -83,8 +81,7 @@ const extendScenarios: ExtendScenario[] = [
     'additionalProps': { 'extra': { 'type': 'boolean' } },
     'assertions': (result) => {
       assert.strictEqual(result.$id, 'https://example.io/base', 'extend $id handling — $id preserved');
-      assert.ok('extra' in result.properties, 'extend $id handling — extra present');
-      assert.ok('name' in result.properties, 'extend $id handling — name present');
+      assert.ok(Array.isArray(result.allOf), 'extend $id handling — has allOf');
     },
     'name': 'preserves base $id when newId matches original',
     'newId': 'https://example.io/base'
@@ -98,7 +95,7 @@ void describe('Compose.extend() edge cases', () => {
         BaseSchema,
         scenario.additionalProps as Record<string, never>,
         scenario.newId
-      ) as unknown as ComposeResult;
+      ) as unknown as AllOfResult;
 
       scenario.assertions(result);
     });

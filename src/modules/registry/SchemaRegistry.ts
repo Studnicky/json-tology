@@ -34,6 +34,7 @@ import { Materializer } from '../materialization/Materializer.js';
 import { SchemaCompiler } from '../validation/SchemaCompiler.js';
 import { SchemaError } from '../../errors/SchemaError.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
+import { StructuralHash } from '../data/StructuralHash.js';
 import { Transform } from '../transform/Transform.js';
 import { ValidationErrors } from '../../errors/ValidationErrors.js';
 
@@ -49,6 +50,13 @@ import { SILENT_LOGGER } from '../../constants/LOGGER.js';
 
 const EMPTY_VALIDATION_ERRORS = new ValidationErrors([]);
 
+export interface DuplicateReportEntryType {
+  readonly 'equivalentTo': string;
+  readonly 'pointer': string;
+  readonly 'schemaId': string;
+  readonly 'shape': Record<string, unknown>;
+}
+
 export class SchemaRegistry implements SchemaRegistryInterface {
   public readonly castTypes: boolean;
   private readonly coerceOptions: Readonly<Record<string, boolean>>;
@@ -56,6 +64,9 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   public readonly computedStore: ComputedStore;
 
   public readonly curie: CurieInterface | undefined;
+  private readonly enableDuplicateDetection: boolean;
+  private readonly enableInlineWarnings: boolean;
+  private readonly enableStrictGraph: boolean;
   private readonly formatRegistry: FormatRegistryInterface | undefined;
   private readonly invariants: InvariantStore;
   private readonly keywords: KeywordDefinitionInterface[] | undefined;
@@ -66,25 +77,22 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   private readonly strict: boolean;
   private readonly vocabularies: readonly VocabularyPluginInterface[];
 
-  /**
-   * Constructs a new {@link SchemaRegistry} with optional configuration.
-   *
-   * @param options - Registry configuration including castTypes, strict, format registry, keywords, logger, and vocabularies.
-   */
   public constructor(options?: RegistryOptionsInterface) {
     this.logger = options?.logger ?? SILENT_LOGGER;
     this.castTypes = options?.castTypes ?? false;
     this.coerceOptions = Object.freeze({
-      'applyDefaults': true,
+      'applyDefaults': options?.enableDefaults ?? true,
       'castTypes': this.castTypes,
       'collectErrors': true,
       'removeAdditionalProperties': true
     });
     this.maxDepth = options?.maxDepth;
     this.strict = options?.strict ?? false;
+    this.enableStrictGraph = options?.enableStrictGraph ?? false;
+    this.enableInlineWarnings = this.enableStrictGraph || (options?.enableInlineWarnings ?? false);
+    this.enableDuplicateDetection = this.enableStrictGraph || (options?.enableDuplicateDetection ?? false);
     this.vocabularies = options?.vocabularies ?? [];
 
-    // Merge plugin prefixes with user prefixes
     const mergedPrefixes = { ...DEFAULT_PREFIXES };
 
     for (const plugin of this.vocabularies) {
@@ -113,14 +121,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     this.invariants.add(schemaId, invariant);
   }
 
-  /**
-   * Validates data with type coercion and default application, returning the coerced value.
-   *
-   * @param schemaOrId - Schema object with `$id` or the schema ID string.
-   * @param data - The data to cast (deep-cloned before mutation).
-   * @returns The coerced and default-applied value.
-   * @throws {@link SchemaError} when no schema is registered for the given ID.
-   */
   public cast(schemaOrId: (Record<string, unknown> & { '$id': string; }) | string, data: unknown): unknown {
     const schemaId = this.resolveSchemaId(schemaOrId);
     const compiled = this.compiled(schemaId);
@@ -132,14 +132,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return compiled.validate(structuredClone(data), CAST_OPTIONS).value;
   }
 
-  /**
-   * Validates data and strips unknown properties, returning the cleaned value.
-   *
-   * @param schemaOrId - Schema object with `$id` or the schema ID string.
-   * @param data - The data to clean (deep-cloned before mutation).
-   * @returns The value with unknown properties removed.
-   * @throws {@link SchemaError} when no schema is registered for the given ID.
-   */
   public clean(schemaOrId: (Record<string, unknown> & { '$id': string; }) | string, data: unknown): unknown {
     const schemaId = this.resolveSchemaId(schemaOrId);
     const compiled = this.compiled(schemaId);
@@ -151,18 +143,10 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return compiled.validate(structuredClone(data), CLEAN_OPTIONS).value;
   }
 
-  /**
-   * Coerces and validates data against a registered schema, applying defaults and stripping unknown properties.
-   *
-   * @param schema - Schema object with `$id` or the schema ID string.
-   * @param data - The data to coerce (deep-cloned before mutation).
-   * @returns The validated and normalized value, optionally decoded by a registered {@link Transform}.
-   * @throws {@link SchemaError} when no schema is registered for the given ID.
-   * @throws {@link CoercionError} when the data fails validation.
-   */
   public coerce(
     schema: (Record<string, unknown> & { '$id': string; }) | string,
-    data: unknown
+    data: unknown,
+    callOptions?: { 'enableDefaults'?: boolean }
   ): unknown {
     const schemaId = typeof schema === 'string' ? this.resolve(schema) : schema.$id;
     const entry = this.schemas.get(schemaId);
@@ -171,7 +155,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`);
     }
 
-    // Check that no computed-property keys appear in the input
     const computedMap = this.computedStore.getMap(schemaId);
     const computedNames = Object.keys(computedMap);
 
@@ -195,7 +178,13 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
 
     const compiled = this.compiledFromEntry(entry);
-    const result = compiled.validate(structuredClone(data), this.coerceOptions);
+    const resolvedOptions = callOptions?.enableDefaults === undefined
+      ? this.coerceOptions
+      : {
+        ...this.coerceOptions,
+        'applyDefaults': callOptions.enableDefaults
+      };
+    const result = compiled.validate(structuredClone(data), resolvedOptions);
 
     if (!result.valid) {
       throw new CoercionError(new ValidationErrors(result.errors));
@@ -212,7 +201,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     const coerced = result.value;
 
-    // Apply computed fields after successful validation
     if (computedNames.length > 0 && isRecord(coerced)) {
       for (const [
         name,
@@ -295,14 +283,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return entry.compiled;
   }
 
-  /**
-   * Validates data with type coercion only (no defaults), returning the coerced value.
-   *
-   * @param schemaOrId - Schema object with `$id` or the schema ID string.
-   * @param data - The data to convert (deep-cloned before mutation).
-   * @returns The coerced value.
-   * @throws {@link SchemaError} when no schema is registered for the given ID.
-   */
   public convert(schemaOrId: (Record<string, unknown> & { '$id': string; }) | string, data: unknown): unknown {
     const schemaId = this.resolveSchemaId(schemaOrId);
     const compiled = this.compiled(schemaId);
@@ -314,13 +294,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return compiled.validate(structuredClone(data), CONVERT_OPTIONS).value;
   }
 
-  /**
-   * Creates a default instance of the schema by materializing all declared defaults.
-   *
-   * @param schemaId - The `$id` of a registered schema.
-   * @returns A new object populated with schema defaults.
-   * @throws {@link SchemaError} when no schema is registered for the given ID.
-   */
   public create(schemaId: string): unknown {
     const entry = this.schemas.get(this.resolve(schemaId));
 
@@ -333,13 +306,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return materializer.createDefault(entry.schema as Record<string, unknown> & { '$id': string });
   }
 
-  /**
-   * Returns the {@link GraphEngine} for a registered schema, creating it on first access.
-   *
-   * @param schema - Schema object whose `$id` identifies the registered entry.
-   * @returns The lazily-initialized graph engine for the schema.
-   * @throws {@link SchemaError} when no schema is registered for the given `$id`.
-   */
   public engine(schema: Record<string, unknown>): GraphEngineInterface {
     const schemaId = schema.$id as string;
     const entry = this.schemas.get(schemaId);
@@ -363,14 +329,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return entry.engine;
   }
 
-  /**
-   * Validates data and returns structured {@link ValidationErrors}.
-   *
-   * @param schema - Schema object with `$id` or the schema ID string.
-   * @param data - The data to validate.
-   * @returns A {@link ValidationErrors} instance (empty when data is valid).
-   * @throws {@link SchemaError} when no schema is registered for the given ID.
-   */
   public errors(
     schema: (Record<string, unknown> & { '$id': string; }) | string,
     data: unknown
@@ -416,22 +374,34 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     });
   }
 
-  /**
-   * Retrieves a registered schema by its `$id`.
-   *
-   * @param schemaId - The `$id` of the schema to look up.
-   * @returns The schema object, or `undefined` if not registered.
-   */
+  public findDuplicates(): readonly DuplicateReportEntryType[] {
+    const topLevelHashes = new Map<string, string>();
+
+    for (const [
+      schemaId,
+      entry
+    ] of this.schemas) {
+      const topHash = StructuralHash.of(entry.schema);
+
+      topLevelHashes.set(topHash, schemaId);
+    }
+
+    const results: DuplicateReportEntryType[] = [];
+
+    for (const [
+      schemaId,
+      entry
+    ] of this.schemas) {
+      this.walkForDuplicates(schemaId, entry.schema, '', topLevelHashes, results);
+    }
+
+    return results;
+  }
+
   public get(schemaId: string): Record<string, unknown> | undefined {
     return this.schemas.get(this.resolve(schemaId))?.schema;
   }
 
-  /**
-   * Returns the canonical {@link SchemaGraph} for a registered schema.
-   *
-   * @param schemaId - The `$id` of the schema.
-   * @returns The schema graph, or `undefined` if the schema is not registered.
-   */
   public graph(schemaId: string): SchemaGraphInterface | undefined {
     const entry = this.schemas.get(this.resolve(schemaId));
 
@@ -456,14 +426,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return Hash.value(rest);
   }
 
-  /**
-   * Returns `true` if data satisfies the schema, `false` otherwise.
-   *
-   * @param schema - Schema object with `$id` or the schema ID string.
-   * @param data - The data to check.
-   * @returns Whether the data conforms to the schema.
-   * @throws {@link SchemaError} when no schema is registered for the given ID.
-   */
   public is(
     schema: (Record<string, unknown> & { '$id': string; }) | string,
     data: unknown
@@ -482,34 +444,18 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return this.invariants.runAll(schemaId, data).length === 0;
   }
 
-  /**
-   * Lists all registered schema objects.
-   *
-   * @returns An array of all registered schema objects.
-   */
   public list(): ReadonlyArray<Record<string, unknown>> {
     return [...this.schemas.values()].map((entry) => {
       return entry.schema;
     });
   }
 
-  /**
-   * Lists the canonical {@link SchemaGraph} for every registered schema.
-   *
-   * @returns An array of schema graphs, one per registered schema.
-   */
   public listGraphs(): readonly SchemaGraphInterface[] {
     return [...this.schemas.values()].map((entry) => {
       return this.graphOf(entry);
     });
   }
 
-  /**
-   * Registers one or more schemas, validating structure and anchor uniqueness.
-   *
-   * @param schemas - A single schema object or an array of schema objects, each requiring a `$id`.
-   * @throws {@link SchemaError} when a schema lacks `$id`, has duplicate anchors, or fails structure validation.
-   */
   public register(schemas: ReadonlyArray<Record<string, unknown>> | Record<string, unknown>): void {
     if ((schemas as unknown) === null || (schemas as unknown) === undefined) {
       throw new SchemaError('SCHEMA_INVALID_INPUT', 'register() requires a non-null schema object or array');
@@ -528,12 +474,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
   }
 
-  /**
-   * Registers a schema that may lack a `$id`, assigning a content-hash-based synthetic ID if needed.
-   *
-   * @param schema - The schema object; if it already has a `$id`, delegates to {@link register}.
-   * @returns The `$id` used for registration (original or synthetic).
-   */
   public registerAnonymous(schema: Record<string, unknown>): string {
     if (typeof schema.$id === 'string' && schema.$id !== '') {
       this.register(schema);
@@ -568,7 +508,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       );
     }
 
-    // Validate anchor uniqueness within the schema
     if (typeof schema === 'object') {
       const anchors = new Set<string>();
 
@@ -585,7 +524,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       }
 
       if (existing.hash === hash) {
-        // Same content — preserve any transform decoder from the new object
         const hasNewDecoder = Transform.getDecoder(schema) !== undefined;
         const lacksExistingDecoder = Transform.getDecoder(existing.schema) === undefined;
 
@@ -609,39 +547,58 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       this.logger.warn(`Schema content already registered under different ID: existing="${existingId}" new="${schemaId}"`);
     }
 
-    // Freeze the schema to prevent mutation after registration
     if (!Object.isFrozen(schema)) {
       deepFreeze(schema);
     }
 
-    // Validate structure BEFORE committing to maps — failed registration must be a no-op
     const entry: SchemaRegistryEntryInterface = {
       hash,
       schema
     };
     const graph = this.graphOf(entry);
-    const warnings = graph.validateStructure();
 
-    if (warnings.length > 0) {
-      throw new SchemaError(
-        'SCHEMA_STRUCTURE_INVALID',
-        `Structure validation failed for schema "${schemaId}": ${warnings.map((warning) => {
+    if (this.enableInlineWarnings) {
+      const warnings = graph.validateStructure();
+
+      if (warnings.length > 0) {
+        const message = `Schema "${schemaId}" contains inline shapes: ${warnings.map((warning) => {
           return warning.message;
-        }).join('; ')}`,
-        schemaId
-      );
+        }).join('; ')}`;
+
+        if (this.enableStrictGraph) {
+          throw new SchemaError('SCHEMA_STRUCTURE_INVALID', message, schemaId);
+        }
+        this.logger.warn(message);
+      }
     }
 
     this.schemas.set(schemaId, entry);
     this.schemaHashes.set(hash, schemaId);
     this.computedStore.validateAgainstGraph(graph);
+
+    if (this.enableDuplicateDetection) {
+      const duplicates = this.findDuplicates();
+
+      if (duplicates.length > 0) {
+        const dupMsg = duplicates.map((dup) => {
+          return `"${dup.schemaId}#${dup.pointer}" duplicates "${dup.equivalentTo}"`;
+        }).join('; ');
+        const message = `Duplicate schema shapes detected: ${dupMsg}`;
+
+        if (this.enableStrictGraph) {
+          throw new SchemaError('SCHEMA_DUPLICATE_SHAPE', message, schemaId);
+        }
+        this.logger.warn(message);
+      }
+    }
+
     this.logger.trace(`Schema registered: ${schemaId}`);
   }
-
 
   public removeInvariant(schemaId: string, name: string): void {
     this.invariants.remove(schemaId, name);
   }
+
 
   private resolve(schemaId: string): string {
     if (this.curie === undefined) {
@@ -657,14 +614,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return this.resolve(raw);
   }
 
-  /**
-   * Validates data against a registered schema and returns human-readable error messages.
-   *
-   * @param schema - Schema object with `$id` or the schema ID string.
-   * @param data - The data to validate.
-   * @returns Array of human-readable error strings, empty if valid.
-   * @throws {@link SchemaError} when no schema is registered for the given ID.
-   */
   public validate(
     schema: (Record<string, unknown> & { '$id': string; }) | string,
     data: unknown
@@ -701,14 +650,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return BaseError.formatErrors(invariantErrors);
   }
 
-  /**
-   * Validates data against a sub-schema identified by a JSON Pointer within a registered schema.
-   *
-   * @param schema - Schema object with `$id` or the schema ID string.
-   * @param pointer - JSON Pointer path (e.g. `/properties/name`) into the schema.
-   * @param data - The data to validate against the sub-schema.
-   * @returns Array of human-readable error strings, empty if valid.
-   */
   public validateAt(
     schema: (Record<string, unknown> & { '$id': string; }) | string,
     pointer: string,
@@ -741,13 +682,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
   }
 
-  /**
-   * Returns the compiled validator for a registered schema.
-   *
-   * @param schemaId - The `$id` of the schema.
-   * @returns The {@link CompiledValidatorInterface} for the schema.
-   * @throws {@link SchemaError} when no schema is registered for the given ID.
-   */
   public validator(schemaId: string): CompiledValidatorInterface {
     const compiled = this.compiled(schemaId);
 
@@ -756,5 +690,73 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
 
     return compiled;
+  }
+
+  private walkForDuplicates(
+    schemaId: string,
+    schema: Record<string, unknown>,
+    pointer: string,
+    topLevelHashes: Map<string, string>,
+    results: DuplicateReportEntryType[]
+  ): void {
+    if (isRecord(schema.properties)) {
+      for (const [
+        propName,
+        propSchema
+      ] of Object.entries(schema.properties)) {
+        if (!isRecord(propSchema)) {
+          continue;
+        }
+        const propPointer = `${pointer}/properties/${propName}`;
+
+        if (typeof propSchema.$id !== 'string' && !('$ref' in propSchema)) {
+          const leafHash = StructuralHash.of(propSchema);
+          const matchId = topLevelHashes.get(leafHash);
+
+          if (matchId !== undefined && matchId !== schemaId) {
+            results.push({
+              'equivalentTo': matchId,
+              'pointer': propPointer,
+              'schemaId': schemaId,
+              'shape': propSchema
+            });
+          }
+        }
+
+        this.walkForDuplicates(schemaId, propSchema, propPointer, topLevelHashes, results);
+      }
+    }
+
+    for (const compositionKey of [
+      'allOf',
+      'anyOf',
+      'oneOf'
+    ]) {
+      const compositionArr = schema[compositionKey];
+
+      if (Array.isArray(compositionArr)) {
+        for (const [
+          idx,
+          subSchema
+        ] of compositionArr.entries()) {
+          if (!isRecord(subSchema)) {
+            continue;
+          }
+          this.walkForDuplicates(schemaId, subSchema, `${pointer}/${compositionKey}/${idx}`, topLevelHashes, results);
+        }
+      }
+    }
+
+    if (isRecord(schema.$defs)) {
+      for (const [
+        defName,
+        defSchema
+      ] of Object.entries(schema.$defs)) {
+        if (!isRecord(defSchema)) {
+          continue;
+        }
+        this.walkForDuplicates(schemaId, defSchema, `${pointer}/$defs/${defName}`, topLevelHashes, results);
+      }
+    }
   }
 }

@@ -115,7 +115,9 @@ void describe('jt:config inheritance', () => {
       'https://ex.io/Child'
     ) as Record<string, unknown>;
 
-    const config = ChildSchema['jt:config'] as Record<string, unknown>;
+    // jt:config is on the additions block (allOf[1]) in the allOf+$ref shape
+    const allOf = ChildSchema.allOf as Array<Record<string, unknown>>;
+    const config = allOf[1]['jt:config'] as Record<string, unknown>;
 
     assert.equal(config.extra, 'forbid');
     assert.equal(config.strict, false);
@@ -128,7 +130,9 @@ void describe('jt:config inheritance', () => {
       'https://ex.io/ChildNoConfig'
     ) as Record<string, unknown>;
 
-    const config = ChildNoConfig['jt:config'] as Record<string, unknown>;
+    // jt:config from parent is carried into the additions block (allOf[1])
+    const allOf = ChildNoConfig.allOf as Array<Record<string, unknown>>;
+    const config = allOf[1]['jt:config'] as Record<string, unknown>;
 
     assert.equal(config.extra, 'allow');
     assert.equal(config.strict, false);

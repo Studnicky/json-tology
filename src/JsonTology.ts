@@ -142,6 +142,10 @@ export class JsonTology<TMap = Record<never, never>> {
       ...(options.castTypes === undefined ? {} : { 'castTypes': options.castTypes }),
       ...(options.keywords === undefined ? {} : { 'keywords': options.keywords }),
       ...(options.strict === undefined ? {} : { 'strict': options.strict }),
+      ...(options.enableDefaults === undefined ? {} : { 'enableDefaults': options.enableDefaults }),
+      ...(options.enableInlineWarnings === undefined ? {} : { 'enableInlineWarnings': options.enableInlineWarnings }),
+      ...(options.enableDuplicateDetection === undefined ? {} : { 'enableDuplicateDetection': options.enableDuplicateDetection }),
+      ...(options.enableStrictGraph === undefined ? {} : { 'enableStrictGraph': options.enableStrictGraph }),
       ...(options.vocabularies === undefined ? {} : { 'vocabularies': options.vocabularies }),
       ...(options.maxDepth === undefined ? {} : { 'maxDepth': options.maxDepth }),
       ...(options.invariants === undefined ? {} : { 'invariants': options.invariants })
@@ -218,19 +222,19 @@ export class JsonTology<TMap = Record<never, never>> {
    * @throws {@link CoercionError} when the data fails validation.
    * @throws {@link SchemaError} when no schema is registered for the given ID.
    */
-  public coerce<K extends keyof TMap & string>(schemaId: K, data: unknown): TMap[K];
+  public coerce<K extends keyof TMap & string>(schemaId: K, data: unknown, callOptions?: { 'enableDefaults'?: boolean }): TMap[K];
   // ---------------------------------------------------------------------------
   // Registration
   // ---------------------------------------------------------------------------
   public coerce<TSchema extends JSONSchema7Definition & { readonly '$id': string; }>(
-    schema: TSchema, data: unknown
+    schema: TSchema, data: unknown, callOptions?: { 'enableDefaults'?: boolean }
   ): ParseOutputType<TSchema>;
-  public coerce(schema: (keyof TMap & string) | (Record<string, unknown> & { '$id': string; }), data: unknown): unknown {
+  public coerce(schema: (keyof TMap & string) | (Record<string, unknown> & { '$id': string; }), data: unknown, callOptions?: { 'enableDefaults'?: boolean }): unknown {
     if ((schema as unknown) === null || (schema as unknown) === undefined) {
       throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
     }
 
-    return this.registry.coerce(typeof schema === 'string' ? schema : schema.$id, data);
+    return this.registry.coerce(typeof schema === 'string' ? schema : schema.$id, data, callOptions);
   }
   /**
    * Serialize a value to its wire representation.

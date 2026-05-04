@@ -415,6 +415,15 @@ export function extractRelations(
       'target': sem.equivalentTo
     });
   }
+
+  // Compose.equivalent shape: root-level schema whose only structural content is a $ref
+  if (sem.schemaId !== undefined && sem.ref !== undefined && node.pointer === '') {
+    relations.push({
+      'predicate': OWL.equivalentClass,
+      'source': node,
+      'target': graph.resolveRefId(sem.ref)
+    });
+  }
   if (sem.inverseOf !== undefined) {
     relations.push({
       'predicate': OWL.inverseOf,

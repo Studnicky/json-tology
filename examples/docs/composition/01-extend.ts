@@ -1,8 +1,3 @@
-/**
- * Compose.extend — Example 1: Add a discount rate to Customer
- * Demonstrates: extend adds properties, required inherited
- */
-
 import {
   Compose, JsonTology
 } from '../../../src/index.js';
@@ -34,7 +29,6 @@ const CustomerWithDiscountSchema = Compose.extend(
   } as const,
   'https://bookstore.example/CustomerWithDiscount'
 );
-
 
 const bookstoreJt = JsonTology.create({
   'baseIRI': 'https://bookstore.example',
@@ -68,7 +62,7 @@ const coercedCustomer = bookstoreJt.coerce(CustomerWithDiscountSchema.$id, {
   'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'name': 'Alice Chen',
   'tier': 'silver'
-});
+}) as Record<string, unknown>;
 
 console.assert(coercedCustomer.discountRate === 0.15);
 console.assert(coercedCustomer.tier === 'silver');

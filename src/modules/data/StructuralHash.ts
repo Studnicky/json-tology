@@ -1,0 +1,49 @@
+/**
+ * StructuralHash — canonical structural equivalence hashing for JSON Schema shapes.
+ *
+ * Strips metadata-only fields (title, description, $id) before hashing so that
+ * two schemas that differ only in descriptive annotations still compare as equal.
+ */
+
+import { Hash } from '../hash/Hash.js';
+
+const METADATA_KEYS = new Set([
+  '$comment',
+  '$id',
+  'description',
+  'examples',
+  'title'
+]);
+
+export class StructuralHash {
+  public static of(schema: Record<string, unknown>): string {
+    return Hash.value(StructuralHash.strip(schema));
+  }
+
+  private static strip(value: unknown): unknown {
+    if (value === null || typeof value !== 'object') {
+      return value;
+    }
+
+    if (Array.isArray(value)) {
+      return value.map((item) => {
+        return StructuralHash.strip(item);
+      });
+    }
+
+    const record = value as Record<string, unknown>;
+    const result: Record<string, unknown> = {};
+
+    for (const [
+      key,
+      val
+    ] of Object.entries(record)) {
+      if (METADATA_KEYS.has(key)) {
+        continue;
+      }
+      result[key] = StructuralHash.strip(val);
+    }
+
+    return result;
+  }
+}

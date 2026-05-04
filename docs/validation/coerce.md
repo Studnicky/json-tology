@@ -206,3 +206,25 @@ except ValidationError as e:
 - [Bookstore domain](/bookstore-domain) — where `Customer`, `Order`, and `OrderLine` are defined
 - [Error views](/errors/views) — what to do with the `ValidationErrors` when coerce throws
 - [Transforms](/transforms/decode-encode) — how Transform decoders integrate with `coerce`
+
+## Per-call options
+
+`coerce` accepts an optional third argument to override behavior for a single call:
+
+| Option | Type | Default | Purpose |
+|--------|------|---------|---------|
+| `enableDefaults` | `boolean` | inherits from `JsonTology.create` | Override default-filling for this call only. |
+
+### Example: validate without filling defaults
+
+Useful for PATCH endpoints where missing fields mean "no change" rather than "use default":
+
+```ts
+const patched = jt.coerce(
+  CustomerSchema.$id,
+  incomingPatchBody,
+  { enableDefaults: false }  // missing fields stay missing
+);
+```
+
+The registry's global `enableDefaults` setting is unchanged by per-call options.

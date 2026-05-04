@@ -216,3 +216,25 @@ import type { LoggerInterface } from 'json-tology/interfaces';
 | Computed fields | [Computed Fields](/registry/computed) |
 | Cross-field invariants | [Invariants](/registry/invariants) |
 | RDF/OWL (advanced) | [Ontology and Graphs](/advanced/ontology) |
+
+## All `JsonTology.create` options
+
+| Option | Type | Default | Purpose |
+|--------|------|---------|---------|
+| `baseIRI` | `string` | _(required)_ | Base URI for the canonical graph and ontology output. |
+| `schemas` | `readonly Schema[]` | `[]` | Schemas to register at construction. Order matters when using `$ref` — register referenced schemas before referencing schemas. |
+| `prefixes` | `Record<string, string>` | `DEFAULT_PREFIXES` | Vocabulary prefix → IRI mappings, merged with built-in defaults. |
+| `formats` | `Record<string, FormatValidatorFn>` | `{}` | Custom format validators. Keys are format names (`'isbn'`), values are `(value: unknown) => boolean`. |
+| `castTypes` | `boolean` | `false` | Enable string→number/boolean coercion at validation time. |
+| `strict` | `boolean` | `false` | Reject implicit coercions globally. Per-field `jt:strict` overrides. Different from `enableStrictGraph`. |
+| `enableDefaults` | `boolean` | `true` | Fill schema `default` values during `coerce`. Set `false` to validate without mutating missing fields. |
+| `enableInlineWarnings` | `boolean` | `false` | Surface inline-object, inline-primitive, and inline-array-items warnings via `logger.warn` at registration. Implied by `enableStrictGraph`. See [graph-native authoring](/advanced/graph-native-authoring). |
+| `enableDuplicateDetection` | `boolean` | `false` | Run `findDuplicates()` at registration and warn on structural duplicates. Implied by `enableStrictGraph`. |
+| `enableStrictGraph` | `boolean` | `false` | Promote inline warnings and duplicate detection to `SchemaError` throws. Requires all sub-schemas to be standalone `$id` schemas or `$defs` entries. See [graph-native authoring](/advanced/graph-native-authoring#enablestrictgraph). |
+| `keywords` | `KeywordDefinitionInterface[]` | `[]` | Custom keyword handlers for unrecognized JSON Schema vocabulary. |
+| `vocabularies` | `VocabularyPluginInterface[]` | `[]` | Vocabulary plugins for custom RDF output (DCAT, FOAF, etc.). |
+| `materializer` | `MaterializerInterface` | _(built-in)_ | Override the default materializer (rare). |
+| `maxDepth` | `number` | _(no limit)_ | Maximum schema-graph traversal depth. Protects against pathological schemas. |
+| `logger` | `LoggerInterface` | `SILENT_LOGGER` | Logger for warnings (`enableInlineWarnings`, `enableDuplicateDetection`). Must be set for warnings to surface. |
+| `invariants` | `Record<string, InvariantInterface[]>` | `{}` | Cross-field invariant functions, keyed by schema `$id`. |
+| `computeds` | `Record<string, Record<string, ComputedFnType>>` | `{}` | Computed-field functions, keyed by schema `$id` then property name. |

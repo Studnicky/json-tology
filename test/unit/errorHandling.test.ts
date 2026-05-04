@@ -265,7 +265,8 @@ void describe('CoercionError structure', () => {
 
 void describe('Registry recovery', () => {
   void it('remains usable after failed registration', () => {
-    const registry = new SchemaRegistry();
+    // Use enableStrictGraph to trigger inline-object error (default mode is silent)
+    const registry = new SchemaRegistry({ 'enableStrictGraph': true });
 
     registry.register({
       '$id': 'https://err.test/Good',

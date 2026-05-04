@@ -82,6 +82,11 @@ const RectSchema = {
 // ---------------------------------------------------------------------------
 
 void describe('Compose.extend()', () => {
+  type ExtResult = Record<string, unknown> & {
+    '$id': string;
+    'allOf': readonly [{ '$ref': string }, Record<string, unknown>];
+  };
+
   const extendScenarios: Array<{
     'check': () => void;
     'name': string;
@@ -92,17 +97,17 @@ void describe('Compose.extend()', () => {
           PersonSchema,
           { 'role': { 'type': 'string' } } as const,
           'https://example.io/person-with-role'
-        );
+        ) as unknown as ExtResult;
 
-        assert.ok('name' in schema.properties);
-        assert.ok('role' in schema.properties);
-        assert.deepStrictEqual([...schema.required].sort(), [
-          'age',
-          'name'
-        ]);
+        assert.ok(Array.isArray(schema.allOf), 'has allOf');
+        assert.strictEqual(schema.allOf[0].$ref, 'https://example.io/person', '$ref to parent');
+        const additions = schema.allOf[1];
+        const props = additions.properties as Record<string, unknown>;
+
+        assert.ok('role' in props);
         assert.strictEqual(schema.$id, 'https://example.io/person-with-role');
       },
-      'name': 'merges properties and preserves required'
+      'name': 'emits allOf+$ref shape with additions as second allOf member'
     },
     {
       'check': () => {
@@ -121,13 +126,12 @@ void describe('Compose.extend()', () => {
           PersonSchema,
           {} as const,
           'https://example.io/person-empty-extend'
-        );
+        ) as unknown as ExtResult;
 
-        assert.ok('name' in schema.properties);
-        assert.ok('age' in schema.properties);
-        assert.ok('email' in schema.properties);
+        assert.ok(Array.isArray(schema.allOf), 'empty extend — has allOf');
+        assert.strictEqual(schema.allOf[0].$ref, 'https://example.io/person', 'empty extend — $ref to parent');
       },
-      'name': 'extends with empty properties produces identical properties'
+      'name': 'extends with empty properties still emits allOf+$ref shape'
     },
     {
       'check': () => {
@@ -135,15 +139,15 @@ void describe('Compose.extend()', () => {
           UserSchema,
           { 'phone': { 'type': 'string' } } as const,
           'https://example.io/user-phone'
-        );
+        ) as unknown as ExtResult;
 
-        assert.deepStrictEqual([...schema.required].sort(), [
-          'id',
-          'name'
-        ]);
-        assert.ok('phone' in schema.properties);
+        assert.ok(Array.isArray(schema.allOf), 'user phone — has allOf');
+        assert.strictEqual(schema.allOf[0].$ref, 'https://myapp.io/User', 'user phone — $ref to parent');
+        const addProps = schema.allOf[1].properties as Record<string, unknown>;
+
+        assert.ok('phone' in addProps, 'user phone — phone in additions');
       },
-      'name': 'extends with conflicting required arrays preserves base required'
+      'name': 'extensions block contains additional properties'
     }
   ];
 

@@ -421,6 +421,45 @@ export function extractSemantics(
   };
 }
 
+const PRIMITIVE_CONSTRAINT_KEYWORDS = new Set([
+  'const',
+  'enum',
+  'exclusiveMaximum',
+  'exclusiveMinimum',
+  'format',
+  'maximum',
+  'maxLength',
+  'minimum',
+  'minLength',
+  'multipleOf',
+  'pattern'
+]);
+
+const PRIMITIVE_TYPES = new Set([
+  'boolean',
+  'integer',
+  'number',
+  'string'
+]);
+
+function constraintKeywordsOf(schema: Record<string, unknown>): string[] {
+  return Object.keys(schema).filter((key) => {
+    return PRIMITIVE_CONSTRAINT_KEYWORDS.has(key);
+  });
+}
+
+function isInDefs(pointer: string): boolean {
+  return pointer.includes('/$defs/');
+}
+
+const ALLOF_EXTENSION_RE = /\/allOf\/\d+/u;
+
+function isInAllOfExtensionBlock(pointer: string): boolean {
+  // Skip direct allOf members (/allOf/0, /allOf/1, etc.) and their properties
+  // These are produced by Compose.extend and are structural, not inline definitions
+  return ALLOF_EXTENSION_RE.test(pointer);
+}
+
 export function validateGraphStructure(nodeMap: Map<string, SchemaGraphNodeInterface>): StructureWarningInterface[] {
   const warnings: StructureWarningInterface[] = [];
 
@@ -432,29 +471,66 @@ export function validateGraphStructure(nodeMap: Map<string, SchemaGraphNodeInter
       continue;
     }
     const schema = node.schema;
+    const pointer = node.pointer;
+
+    if (isInDefs(pointer)) {
+      continue;
+    }
+
+    if ('$ref' in schema) {
+      continue;
+    }
+
+    if (isInAllOfExtensionBlock(pointer)) {
+      continue;
+    }
+
+    if ('properties' in schema) {
+      const rawType = schema.type;
+      const hasObjectType = rawType === 'object'
+        || (Array.isArray(rawType) && rawType.includes('object'));
+
+      if (hasObjectType && typeof schema.$id !== 'string') {
+        warnings.push({
+          'message': `Inline nested object at "${pointer}" must be extracted to its own schema with a $id and referenced via $ref.`,
+          'path': pointer,
+          'rule': 'inline-object'
+        });
+      }
+    }
 
     if (!('properties' in schema)) {
-      continue;
-    }
-    const rawType = schema.type;
-    const hasObjectType = rawType === 'object'
-      || (Array.isArray(rawType) && rawType.includes('object'));
+      const rawType = schema.type;
+      const isPrimitive = typeof rawType === 'string' && PRIMITIVE_TYPES.has(rawType);
 
-    if (!hasObjectType) {
-      continue;
-    }
-    if (typeof schema.$id === 'string') {
-      continue;
-    }
-    if (node.pointer.includes('/$defs/')) {
-      continue;
+      if (isPrimitive && typeof schema.$id !== 'string') {
+        const constraintKeywords = constraintKeywordsOf(schema);
+
+        if (constraintKeywords.length > 0) {
+          warnings.push({
+            'message': `Inline primitive at "${pointer}" with constraints ${constraintKeywords.join(', ')} should be extracted to its own schema with a $id and referenced via $ref. Defining the same shape inline in multiple places creates divergent type entities in the canonical graph.`,
+            'path': pointer,
+            'rule': 'inline-primitive'
+          });
+        }
+      }
     }
 
-    warnings.push({
-      'message': `Inline nested object at "${node.pointer}" must be extracted to its own schema with a $id and referenced via $ref.`,
-      'path': node.pointer,
-      'rule': 'inline-object'
-    });
+    if (schema.type === 'array' && isRecord(schema.items)) {
+      const items = schema.items;
+
+      if (typeof items.$id !== 'string' && !('$ref' in items)) {
+        const itemConstraints = constraintKeywordsOf(items);
+
+        if (itemConstraints.length > 0) {
+          warnings.push({
+            'message': `Inline array items at "${pointer}/items" with constraints ${itemConstraints.join(', ')} should be extracted to their own schema with a $id and referenced via $ref.`,
+            'path': `${pointer}/items`,
+            'rule': 'inline-array-items'
+          });
+        }
+      }
+    }
   }
 
   return warnings;

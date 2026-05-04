@@ -13,7 +13,21 @@ const sidebar = [
     text: 'Core',
     items: [
       { link: '/schemas', text: 'Schemas' },
-      { link: '/types', text: 'Type Inference' },
+      {
+        text: 'Type Inference',
+        items: [
+          { link: '/types#infertype', text: 'InferType' },
+          { link: '/types#inferschematype', text: 'InferSchemaType' },
+          { link: '/types#deprecatedkeystype-t', text: 'DeprecatedKeysType' },
+          { link: '/types#nondeprecatedschematype-t', text: 'NonDeprecatedSchemaType' },
+          { link: '/types#looseinputtype-t', text: 'LooseInputType' },
+          { link: '/types#enumvaluestype-t', text: 'EnumValuesType' },
+          { link: '/types#exhaustivetype-t', text: 'ExhaustiveType' },
+          { link: '/types#defaultalignedtype-t', text: 'DefaultAlignedType' },
+          { link: '/types#integerrangetype-min-max', text: 'IntegerRangeType' },
+          { link: '/types#multipleofrangetype-min-max-step', text: 'MultipleOfRangeType' }
+        ]
+      },
       {
         text: 'Validation',
         items: [
@@ -91,6 +105,10 @@ const sidebar = [
       { link: '/advanced/ontology#jt-totbox', text: 'toTbox' },
       { link: '/advanced/ontology#jt-toshacl', text: 'toShacl' },
       { link: '/advanced/ontology#jt-ontology', text: 'ontology' }
+      { link: '/advanced/ontology#jt-ontology', text: 'ontology' },
+      { link: '/advanced/graph-native-authoring', text: 'Graph-native authoring' },
+      { link: '/advanced/graph-native-authoring#compose-equivalent', text: 'Compose.equivalent' },
+      { link: '/advanced/graph-native-authoring#schemaregistry-findduplicates', text: 'findDuplicates' }
     ]
   },
   {
