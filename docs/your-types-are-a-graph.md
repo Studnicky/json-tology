@@ -42,7 +42,7 @@ The result: one compiled validator (no duplication), two separate class IRIs, an
 
 But the graph is *there* either way. When you decide to query it (with `entities.toTbox()`), or visualize it in a different tool (with `entities.toTbox().jsonLd()`), or reason over it with an OWL inferrer, the same model that drives validation drives those workflows too. You don't get a second model. There's just one.
 
-[See the same graph in WebVOWL →](/advanced/graph-vowl) - the W3C-style ontology viewer used by ontology engineers. Same data, different visual language.
+[Visualize the same TBox in any OWL tool →](/advanced/graph-vowl) - the W3C-style ontology viewer used by ontology engineers. Same data, different visual language.
 
 [Read the graph concepts guide →](/advanced/graph-concepts) - TBox/ABox, OWA, subClassOf, equivalentClass, the full conceptual coverage.
 
@@ -75,4 +75,4 @@ But the graph is *there* either way. When you decide to query it (with `entities
 ## See also
 
 - [Bookstore domain](/bookstore-domain) - the domain rendered in the graph above
-- [WebVOWL viewer](/advanced/graph-vowl) - the same TBox in the W3C-aligned ontology visualizer
+- [Visualize the TBox](/advanced/graph-vowl) - the same TBox in the W3C-aligned ontology visualizer

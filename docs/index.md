@@ -5,6 +5,50 @@ title: json-tology
 
 <HomeFeaturesHero />
 
+## JSON Schema is the source, not an output
+
+Most TypeScript validation libraries treat JSON Schema as a side-effect. You write Zod or TypeBox or Valibot, and `toJSONSchema(...)` is a one-way export. The exported schema is a snapshot, not a contract: regenerate it on every refactor, hope your back-end picks up the change, hope no one edits the JSON copy by hand.
+
+json-tology inverts this. The JSON Schema literal **is** the schema. Type inference is derived from it. Validation reads it. Coercion reads it. The OWL TBox reads it. The same `as const` object you authored in TypeScript is also a wire-format-compatible JSON Schema document, ready to ship to any consumer in any language.
+
+```ts
+const CustomerSchema = {
+  $id: 'urn:bookstore:Customer',
+  type: 'object',
+  properties: {
+    id:    { $ref: 'urn:bookstore:CustomerId' },
+    email: { $ref: 'urn:bookstore:Email' },
+    name:  { $ref: 'urn:bookstore:CustomerName' }
+  },
+  required: ['id', 'email', 'name']
+} as const;
+```
+
+That literal is:
+
+- A TypeScript type via `InferType<typeof CustomerSchema>`
+- A runtime validator via `entities.validate(CustomerSchema, data)`
+- An OpenAPI 3.1 component (paste it into `components.schemas.Customer`)
+- A draft-2020-12 JSON Schema (Ajv, FastValidator, fastify-json-schema, any conforming validator reads it directly)
+- An OWL class (via `entities.toTbox()`)
+- A SHACL shape (via `entities.toShacl()`)
+- A documentation source for tools like `@apidevtools/json-schema-ref-parser`, `redoc`, `swagger-ui`
+
+### Cross-language interop, no codegen
+
+Sharing a contract with a Python back-end, a Go service, a Rust validator, or a Java reasoner is `JSON.stringify(CustomerSchema)`. There is no generator step. There is no regeneration on every refactor. The TS type and the wire schema can't drift because they are the same object.
+
+| Library | TS type | Runtime validator | Wire-format JSON Schema | OWL/SHACL output |
+|---|---|---|---|---|
+| Zod | source | yes | export-only via `zod-to-json-schema` (lossy) | no |
+| TypeBox | source (via `Static<>`) | yes (Value.Check) | yes (TypeBox schemas ARE JSON Schema) | no |
+| Valibot | source | yes | export-only via `@valibot/to-json-schema` | no |
+| Pydantic | source | yes | export-only via `model_json_schema()` | no |
+| Ajv | no TS inference | yes | source (raw JSON Schema author) | no |
+| **json-tology** | **derived from source** | **yes** | **source** | **yes (TBox + SHACL)** |
+
+TypeBox is the closest comparator: TypeBox schemas are also JSON-Schema-compatible objects. The differences: TypeBox doesn't ship runtime registration, cross-schema `$ref` resolution, ABox projection, OWL/SHACL output, or graph-native authoring tools.
+
 ## Advanced usages
 
 ### Your types are already a graph
@@ -15,7 +59,7 @@ Every TypeScript type system has a graph hiding in it. Below is the bookstore do
 
 [Read the full guide](/your-types-are-a-graph)
 
-[See it in WebVOWL](/advanced/graph-vowl)
+[Visualize the ontology in any OWL tool](/advanced/graph-vowl)
 
 ---
 

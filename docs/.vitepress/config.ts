@@ -106,7 +106,7 @@ const sidebar = [
       { link: '/advanced/ontology#entities-totbox', text: 'toTbox' },
       { link: '/advanced/ontology#entities-toshacl', text: 'toShacl' },
       { link: '/advanced/ontology#entities-ontology', text: 'ontology' },
-      { link: '/advanced/graph-vowl', text: 'WebVOWL viewer' },
+      { link: '/advanced/graph-vowl', text: 'Visualize the ontology' },
       { link: '/advanced/graph-native-authoring', text: 'Graph-native authoring' },
       { link: '/advanced/graph-native-authoring#compose-equivalent', text: 'Compose.equivalent' },
       { link: '/advanced/graph-native-authoring#schemaregistry-findduplicates', text: 'findDuplicates' },

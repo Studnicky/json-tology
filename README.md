@@ -1,16 +1,29 @@
 # json-tology
 
-An ontology-native type system for TypeScript projects with declarative JSON Schema authoring.
+A TypeScript type system that uses JSON Schema as the source of truth, not as an output.
 
 `json-tology` is built around one canonical graph that drives:
 
-- runtime validation and normalization
-- JSON-LD ontology export
-- TBox reasoning over type structure
-- ABox reasoning over instance data
+- compile-time TypeScript type inference from `as const` schema literals
+- runtime validation, coercion, and materialization
+- a wire-format-compatible JSON Schema document for cross-language interop
+- JSON-LD OWL TBox and SHACL shape export for ontology tools and reasoners
+- TBox reasoning over type structure and ABox projection of instance data
 - visual exploration of schema and data relationships
 
-JSON Schema is the authoring surface. The canonical runtime artifact is the graph.
+## Why this is different
+
+Most TypeScript validation libraries (Zod, Valibot, ArkType) treat JSON Schema as a one-way export: you author in their DSL, you call `toJSONSchema(...)`, and the exported schema is a snapshot that can drift from your source the moment you refactor. Sharing contracts with non-TypeScript consumers (a Python backend, a Go service, OpenAPI tooling) means regenerating on every change and hoping nothing got out of sync.
+
+json-tology's source format **is** JSON Schema. The same `as const` object you author in TypeScript is, byte for byte, a draft-2020-12 JSON Schema document. Type inference reads it. Validation reads it. The OWL TBox emitter reads it. Sharing it with a back-end is `JSON.stringify(schema)`; there is no generator step and the TS type can't drift from the wire contract because they are the same object.
+
+| Library | TS inference | Runtime validation | Wire JSON Schema | Cross-schema $ref | OWL/SHACL output |
+|---|---|---|---|---|---|
+| Zod | source DSL | yes | export-only (lossy) | no native registry | no |
+| Valibot | source DSL | yes | export-only | no | no |
+| TypeBox | source DSL (via `Static<>`) | yes (`Value.Check`) | yes (TypeBox schemas are JSON Schema) | manual via `Type.Ref` | no |
+| Pydantic | source DSL (Python) | yes | export-only via `model_json_schema()` | yes (Python-side) | no |
+| **json-tology** | **derived from JSON Schema** | **yes** | **source format** | **registry-resolved** | **yes** |
 
 ## Objectives
 
