@@ -1,10 +1,12 @@
 # `JsonTology.materialize`
 
-**Declaration.** Builds a fully-populated instance by merging optional partial input with the schema's declared `default` values. Returns a `MaterializedSchemaType<TSchema>`. Does not throw when partial data is omitted — if partial is provided and structurally invalid, validation failures may surface. Does not strip unknown properties from partial input (partial is trusted); use [`coerce`](/validation/coerce) for untrusted input.
+**Construction helper.** Use `materialize` when you produce the data yourself — test fixtures, form scaffolding, default-filled instances. Validates the result by default and throws `MaterializationError` if validation fails. Pass `{ enablePartial: true }` to allow missing required-without-default fields for lenient construction.
+
+**Declaration.** Builds a fully-populated instance by merging optional partial input with the schema's declared `default` values. Returns a `MaterializedSchemaType<TSchema>`. Validates the merged result; throws `MaterializationError` on failure. Pass `{ enablePartial: true }` for lenient construction that accepts missing required fields. Does not strip unknown properties from partial input (partial is trusted); use [`instantiate`](/validation/instantiate) for untrusted input.
 
 **Use this when** you have trusted partial data (from a factory, a test fixture, an admin form) and want the missing fields filled in from schema defaults. The canonical use case: creating a new entity with some known fields, leaving the rest to defaults.
 
-**Don't use this when** the input is untrusted or may carry unknown properties (use [`coerce`](/validation/coerce) instead — it validates, strips unknowns, and applies defaults). Don't use it when you want a completely blank instance with zero-values (use [`jt.value.create`](/value/create) instead).
+**Don't use this when** the input is untrusted or may carry unknown properties (use [`instantiate`](/validation/instantiate) instead — it validates, strips unknowns, and applies defaults). Don't use it when you want a completely blank instance with zero-values (use [`jt.value.create`](/value/create) instead).
 
 ## Examples
 
@@ -52,7 +54,7 @@ const c = jt.value.create(BookSchema.$id);
 // → { isbn: '', title: '', authors: [], price: 0, currency: 'USD', inStock: true }
 
 // coerce — validates, strips unknowns, applies defaults, throws on failure
-const o = jt.coerce(BookSchema.$id, rawInput);
+const o = jt.instantiate(BookSchema.$id, rawInput);
 // → same shape, but validates and throws CoercionError if rawInput is invalid
 ```
 
@@ -66,7 +68,7 @@ const book = jt.materialize(BookSchema, req.body as Partial<Book>);
 // Unknown fields from req.body will appear in the result unchecked
 
 // ✓ Do this — coerce validates, strips unknowns, applies defaults
-const book2 = jt.coerce(BookSchema.$id, req.body);
+const book2 = jt.instantiate(BookSchema.$id, req.body);
 ```
 
 ## Comparison

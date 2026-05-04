@@ -1,10 +1,12 @@
-# `JsonTology.coerce`
+# `JsonTology.instantiate`
 
-**Declaration.** Validates input data against a registered schema, applies `default` values declared on schema properties, runs any registered `Transform` decoders, strips unknown properties, and returns a fully typed result. Throws `CoercionError` on validation failure. The input is deep-cloned before mutation — the original is never modified.
+**Trust boundary.** Use `instantiate` when data crosses into your system from outside — HTTP request bodies, queue messages, file imports, IPC payloads. Failure means the caller sent invalid data; `InstantiationError` carries the full structured error list for your error response.
+
+**Declaration.** Validates input data against a registered schema, applies `default` values declared on schema properties, runs any registered `Transform` decoders, strips unknown properties, and returns a fully typed result. Throws `InstantiationError` on validation failure. The input is deep-cloned before mutation — the original is never modified.
 
 **Use this when** you have an unknown-shape input (a request body, a queue message, a config blob, a database row) and you want a typed, validated, defaults-applied domain object — or a typed exception. This is the right method 80% of the time when data enters your application boundary. Prefer this over calling `validate` and then mapping fields manually.
 
-**Don't use this when** you need just a yes/no answer without a throw (use [`is`](/validation/is) instead). Don't use it when you want the structured error list without the exception (use [`errors`](/validation/errors) instead). Don't call `coerce` on already-coerced values — the result of `coerce` is already clean and typed. Don't use `coerce` inside a tight inner loop over millions of calls with a fixed schema — pull `jt.registry.validator(schemaId)` once and reuse the compiled validator.
+**Don't use this when** you need just a yes/no answer without a throw (use [`is`](/validation/is) instead). Don't use it when you want the structured error list without the exception (use [`errors`](/validation/errors) instead). Don't call `instantiate` on already-coerced values — the result of `instantiate` is already clean and typed. Don't use `instantiate` inside a tight inner loop over millions of calls with a fixed schema — pull `jt.registry.validator(schemaId)` once and reuse the compiled validator.
 
 ## Examples
 
@@ -15,7 +17,7 @@ Valid input: unknown properties are stripped, defaults are filled, the return ty
 ```ts
 import { bookstoreEntities as entities, CustomerSchema } from './bookstore/index.js';
 
-const customer = jt.coerce(CustomerSchema.$id, {
+const customer = jt.instantiate(CustomerSchema.$id, {
   id:            'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   email:         'alice@bookstore.example',
   name:          'Alice Chen',
@@ -29,17 +31,17 @@ const customer = jt.coerce(CustomerSchema.$id, {
 
 ### Example 2: Coerce as part of a request handler
 
-Catch `CoercionError` and convert to an RFC 7807 Problem Details response (built on [`errors.report`](/errors/views#validationerrors-report)).
+Catch `InstantiationError` and convert to an RFC 7807 Problem Details response (built on [`errors.report`](/errors/views#validationerrors-report)).
 
 ```ts
-import { CoercionError } from 'json-tology';
+import { InstantiationError } from 'json-tology';
 import { bookstoreEntities as entities, CustomerSchema } from './bookstore/index.js';
 
 function createCustomer(body: unknown) {
   try {
-    return jt.coerce(CustomerSchema.$id, body);
+    return jt.instantiate(CustomerSchema.$id, body);
   } catch (err) {
-    if (err instanceof CoercionError) {
+    if (err instanceof InstantiationError) {
       // err.errors is a ValidationErrors collection
       return {
         status: 422,
@@ -58,7 +60,7 @@ function createCustomer(body: unknown) {
 ```ts
 import { bookstoreEntities as entities, OrderSchema } from './bookstore/index.js';
 
-const order = jt.coerce(OrderSchema.$id, {
+const order = jt.instantiate(OrderSchema.$id, {
   id:              'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   customerId:      'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   placedAt:        '2026-01-15T10:30:00Z',
@@ -76,12 +78,12 @@ const order = jt.coerce(OrderSchema.$id, {
 
 ## Bad examples — what NOT to do
 
-### Anti-pattern 1: Catching CoercionError silently
+### Anti-pattern 1: Catching InstantiationError silently
 
 ```ts
 // ⊥ Don't do this — you lose the structured ValidationErrors
 try {
-  jt.coerce(CustomerSchema.$id, data);
+  jt.instantiate(CustomerSchema.$id, data);
 } catch {
   /* swallowed */
 }
@@ -97,11 +99,11 @@ if (!errs.ok) {
 
 ```ts
 // ⊥ Don't do this — wasted work; coerce already returned a typed, clean value
-const validated = jt.coerce(CustomerSchema.$id, body);
-const again     = jt.coerce(CustomerSchema.$id, validated);
+const validated = jt.instantiate(CustomerSchema.$id, body);
+const again     = jt.instantiate(CustomerSchema.$id, validated);
 
 // ✓ Just use the first result
-const customer = jt.coerce(CustomerSchema.$id, body);
+const customer = jt.instantiate(CustomerSchema.$id, body);
 ```
 
 ### Anti-pattern 3: Building partial shapes by hand instead of using derived schemas
@@ -111,7 +113,7 @@ import { Compose } from 'json-tology';
 
 // ⊥ Don't do this — build a sub-schema with Compose instead
 const partial = { name: body.name, email: body.email };
-jt.coerce(CustomerSchema.$id, partial);
+jt.instantiate(CustomerSchema.$id, partial);
 
 // ✓ Do this — pick the sub-schema, coerce cleanly
 const SignupSchema = Compose.pick(
@@ -119,7 +121,7 @@ const SignupSchema = Compose.pick(
   ['name', 'email'] as const,
   'https://bookstore.example/Signup',
 );
-jt.coerce(SignupSchema.$id, body);
+jt.instantiate(SignupSchema.$id, body);
 ```
 
 ## Comparison
@@ -127,10 +129,10 @@ jt.coerce(SignupSchema.$id, body);
 ::: code-group
 
 ```ts [json-tology]
-import { CoercionError } from 'json-tology';
+import { InstantiationError } from 'json-tology';
 
-const customer = jt.coerce(CustomerSchema.$id, rawData);
-// throws CoercionError on failure
+const customer = jt.instantiate(CustomerSchema.$id, rawData);
+// throws InstantiationError on failure
 // typed as Customer
 // defaults applied, unknowns stripped, Transform decoders run
 ```
@@ -160,7 +162,7 @@ if (!C.Check(filled)) {
   throw new Error([...C.Errors(filled)].map(e => e.message).join(', '));
 }
 const customer = Value.Clean(CustomerSchema, filled);
-// No typed CoercionError; manual process; no Transform decoder support
+// No typed InstantiationError; manual process; no Transform decoder support
 ```
 
 ```ts [AJV]
@@ -199,17 +201,17 @@ except ValidationError as e:
 - [`JsonTology.errors`](/validation/errors) — when you need structured `ValidationErrors` without an exception
 - [`JsonTology.is`](/validation/is) — when you only need a boolean type guard
 - [`JsonTology.materialize`](/registry/materialize) — when you want to build from partial trusted data + defaults without validation throwing
-- [`Compose.pick`](/composition/pick-omit) / [`omit`](/composition/pick-omit) — build sub-schemas before passing to `coerce`
+- [`Compose.pick`](/composition/pick-omit) / [`omit`](/composition/pick-omit) — build sub-schemas before passing to `instantiate`
 
 ## See also
 
 - [Bookstore domain](/bookstore-domain) — where `Customer`, `Order`, and `OrderLine` are defined
 - [Error views](/errors/views) — what to do with the `ValidationErrors` when coerce throws
-- [Transforms](/transforms/decode-encode) — how Transform decoders integrate with `coerce`
+- [Transforms](/transforms/decode-encode) — how Transform decoders integrate with `instantiate`
 
 ## Per-call options
 
-`coerce` accepts an optional third argument to override behavior for a single call:
+`instantiate` accepts an optional third argument to override behavior for a single call:
 
 | Option | Type | Default | Purpose |
 |--------|------|---------|---------|
@@ -220,7 +222,7 @@ except ValidationError as e:
 Useful for PATCH endpoints where missing fields mean "no change" rather than "use default":
 
 ```ts
-const patched = jt.coerce(
+const patched = jt.instantiate(
   CustomerSchema.$id,
   incomingPatchBody,
   { enableDefaults: false }  // missing fields stay missing
