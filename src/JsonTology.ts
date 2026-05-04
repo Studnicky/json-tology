@@ -433,6 +433,7 @@ export class JsonTology<TMap = Record<never, never>> {
 
     return this.ontologyCache;
   }
+
   /**
    * Registers one or more schemas and returns `this` with the schema types accumulated.
    *
@@ -486,7 +487,6 @@ export class JsonTology<TMap = Record<never, never>> {
   public removeInvariant(schemaId: string, name: string): void {
     this.registry.removeInvariant(schemaId, name);
   }
-
   /**
    * Projects instance data to RDF quads and returns an {@link OntologyBuilder} for serialization.
    *
@@ -515,11 +515,6 @@ export class JsonTology<TMap = Record<never, never>> {
       'prefixes': this.prefixes
     });
   }
-
-  // ---------------------------------------------------------------------------
-  // Ontology
-  // ---------------------------------------------------------------------------
-
   /**
    * Reconstructs a JSON Schema document from the canonical graph for a registered schema.
    *
@@ -534,6 +529,43 @@ export class JsonTology<TMap = Record<never, never>> {
     }
 
     return new GraphSchemaSerializer().serialize(graph);
+  }
+
+  /**
+   * Generates SHACL shapes — node shapes and property shapes encoding
+   * structural constraints — derived from all registered schemas.
+   *
+   * @returns A fresh {@link OntologyBuilder} containing only SHACL shape quads (no OWL classes/properties).
+   */
+  public toShacl(): OntologyBuilder {
+    const shaclShapes = this.shaclSerializer.serialize(this.registry.listGraphs());
+
+    return new OntologyBuilder({
+      'baseIRI': this.baseIRI,
+      'graphSources': [],
+      'prefixes': this.prefixes
+    }).addShacl(shaclShapes);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Ontology
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Generates the OWL TBox (terminology box) — class declarations, property
+   * declarations, domains, ranges, and cardinality — derived from all registered
+   * schemas. Symmetric with toQuads (which produces ABox from instance data).
+   *
+   * @returns A fresh {@link OntologyBuilder} containing only OWL TBox quads (no SHACL shapes).
+   */
+  public toTbox(): OntologyBuilder {
+    const graph = this.ontologySerializer.serialize(this.registry.listGraphs());
+
+    return new OntologyBuilder({
+      'baseIRI': this.baseIRI,
+      'graphSources': [graph],
+      'prefixes': this.prefixes
+    });
   }
 
   /**
