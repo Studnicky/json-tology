@@ -1,8 +1,23 @@
 # Graph-native authoring
 
-json-tology's canonical representation is a graph. Every schema you register becomes a node; every property reference, composition, or inheritance chain becomes an edge. Getting the most from the ontology output - correct OWL TBox classes, sound SHACL shapes, and stable graph traversal - requires authoring schemas that map one-to-one with the concepts they describe.
+This page is about **schema drift**. The graph framing is one consequence of avoiding drift, not the primary motivation.
 
-This page explains what "graph-native" authoring means, how to detect and fix violations, and which strict-mode tools enforce it automatically.
+## The drift problem
+
+When the same concept is defined in multiple places, every place becomes its own source of truth. An application that defines email validation six times has six versions of "what counts as a valid email." Fix a bug in one, and the other five keep producing the same bug. Tighten the constraint in one, and a value that's valid in five places suddenly fails in the sixth. The bugs that come out of this are hard to trace because the symptom (rejection at one boundary, acceptance at another) doesn't point at the cause (two divergent definitions of the same concept).
+
+This is not a graph problem. It is a duplication problem. Every type system that lets you inline constraints has it: TypeScript, Pydantic, Zod, TypeBox, JSON Schema authored by hand. The mitigation is the same in all of them: define each concept once and reference it everywhere it appears.
+
+json-tology happens to model the consequences of duplication explicitly. When you inline `{ type: 'string', pattern: '^[^@]+@[^@]+$' }` six times, the canonical graph contains six separate, unrelated property nodes. Each carries its own copy of the constraint. The OWL TBox output emits six anonymous DatatypeProperty ranges. The SHACL output emits six unrelated `sh:pattern` constraints. Reasoning queries traversing the graph cannot link them. They are the same fact written six times, and the system treats them as six different facts.
+
+The fix is to extract the concept to a named schema and reference it. This page calls that pattern **graph-native authoring** because the graph makes the cost of duplication visible. The same pattern is good practice in any type system; the graph is the diagnostic, not the reason.
+
+The rest of this page covers:
+
+- How to detect duplicate inline shapes (`SchemaRegistry.findDuplicates`)
+- How to enforce the named-entity pattern at registration time (`enableStrictGraph`)
+- The structural equivalence operator (`Compose.equivalent`) for two domain-distinct concepts that share validation rules
+- What "graph-native" actually means in the OWL TBox / SHACL output
 
 ## Why named primitives matter {#why-named-primitives-matter}
 
