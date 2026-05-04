@@ -1,0 +1,276 @@
+{
+  "urn:bookstore:AuthorName": {
+    "$id": "urn:bookstore:AuthorName",
+    "minLength": 1,
+    "type": "string"
+  },
+  "urn:bookstore:CityName": {
+    "$id": "urn:bookstore:CityName",
+    "maxLength": 100,
+    "minLength": 1,
+    "type": "string"
+  },
+  "urn:bookstore:CountryCode": {
+    "$id": "urn:bookstore:CountryCode",
+    "pattern": "^[A-Z]{2}$",
+    "type": "string"
+  },
+  "urn:bookstore:CurrencyCode": {
+    "$id": "urn:bookstore:CurrencyCode",
+    "enum": [
+      "USD",
+      "EUR",
+      "GBP",
+      "JPY",
+      "CAD",
+      "AUD"
+    ],
+    "type": "string"
+  },
+  "urn:bookstore:CustomerId": {
+    "$id": "urn:bookstore:CustomerId",
+    "format": "uuid",
+    "type": "string"
+  },
+  "urn:bookstore:Email": {
+    "$id": "urn:bookstore:Email",
+    "format": "email",
+    "type": "string"
+  },
+  "urn:bookstore:Isbn": {
+    "$id": "urn:bookstore:Isbn",
+    "pattern": "^\\d{13}$",
+    "type": "string"
+  },
+  "urn:bookstore:Iso8601": {
+    "$id": "urn:bookstore:Iso8601",
+    "format": "date-time",
+    "type": "string"
+  },
+  "urn:bookstore:Money": {
+    "$id": "urn:bookstore:Money",
+    "minimum": 0,
+    "type": "number"
+  },
+  "urn:bookstore:OrderId": {
+    "$id": "urn:bookstore:OrderId",
+    "format": "uuid",
+    "type": "string"
+  },
+  "urn:bookstore:PersonName": {
+    "$id": "urn:bookstore:PersonName",
+    "maxLength": 200,
+    "minLength": 1,
+    "type": "string"
+  },
+  "urn:bookstore:PostalCode": {
+    "$id": "urn:bookstore:PostalCode",
+    "maxLength": 12,
+    "minLength": 3,
+    "type": "string"
+  },
+  "urn:bookstore:Quantity": {
+    "$id": "urn:bookstore:Quantity",
+    "minimum": 1,
+    "type": "integer"
+  },
+  "urn:bookstore:RatingScore": {
+    "$id": "urn:bookstore:RatingScore",
+    "maximum": 5,
+    "minimum": 1,
+    "type": "integer"
+  },
+  "urn:bookstore:ReviewId": {
+    "$id": "urn:bookstore:ReviewId",
+    "format": "uuid",
+    "type": "string"
+  },
+  "urn:bookstore:StreetLine": {
+    "$id": "urn:bookstore:StreetLine",
+    "maxLength": 200,
+    "minLength": 1,
+    "type": "string"
+  },
+  "urn:bookstore:Title": {
+    "$id": "urn:bookstore:Title",
+    "maxLength": 500,
+    "minLength": 1,
+    "type": "string"
+  },
+  "urn:bookstore:Address": {
+    "$id": "urn:bookstore:Address",
+    "properties": {
+      "city": {
+        "$ref": "urn:bookstore:CityName"
+      },
+      "country": {
+        "$ref": "urn:bookstore:CountryCode"
+      },
+      "postalCode": {
+        "$ref": "urn:bookstore:PostalCode"
+      },
+      "street": {
+        "$ref": "urn:bookstore:StreetLine"
+      }
+    },
+    "required": [
+      "street",
+      "city",
+      "postalCode"
+    ],
+    "type": "object"
+  },
+  "urn:bookstore:Book": {
+    "$id": "urn:bookstore:Book",
+    "properties": {
+      "authors": {
+        "items": {
+          "$ref": "urn:bookstore:AuthorName"
+        },
+        "minItems": 1,
+        "type": "array"
+      },
+      "currency": {
+        "$ref": "urn:bookstore:CurrencyCode",
+        "default": "USD"
+      },
+      "inStock": {
+        "default": true,
+        "type": "boolean"
+      },
+      "isbn": {
+        "$ref": "urn:bookstore:Isbn"
+      },
+      "price": {
+        "$ref": "urn:bookstore:Money"
+      },
+      "title": {
+        "$ref": "urn:bookstore:Title"
+      }
+    },
+    "required": [
+      "isbn",
+      "title",
+      "authors",
+      "price",
+      "currency"
+    ],
+    "type": "object"
+  },
+  "urn:bookstore:Customer": {
+    "$id": "urn:bookstore:Customer",
+    "properties": {
+      "addresses": {
+        "default": [],
+        "items": {
+          "$ref": "urn:bookstore:Address"
+        },
+        "type": "array"
+      },
+      "email": {
+        "$ref": "urn:bookstore:Email"
+      },
+      "id": {
+        "$ref": "urn:bookstore:CustomerId"
+      },
+      "name": {
+        "$ref": "urn:bookstore:PersonName"
+      }
+    },
+    "required": [
+      "id",
+      "email",
+      "name"
+    ],
+    "type": "object"
+  },
+  "urn:bookstore:OrderLine": {
+    "$id": "urn:bookstore:OrderLine",
+    "properties": {
+      "bookIsbn": {
+        "$ref": "urn:bookstore:Isbn"
+      },
+      "quantity": {
+        "$ref": "urn:bookstore:Quantity"
+      },
+      "unitPrice": {
+        "$ref": "urn:bookstore:Money"
+      }
+    },
+    "required": [
+      "bookIsbn",
+      "quantity",
+      "unitPrice"
+    ],
+    "type": "object"
+  },
+  "urn:bookstore:Order": {
+    "$id": "urn:bookstore:Order",
+    "properties": {
+      "currency": {
+        "$ref": "urn:bookstore:CurrencyCode",
+        "default": "USD"
+      },
+      "customerId": {
+        "$ref": "urn:bookstore:CustomerId"
+      },
+      "id": {
+        "$ref": "urn:bookstore:OrderId"
+      },
+      "items": {
+        "items": {
+          "$ref": "urn:bookstore:OrderLine"
+        },
+        "minItems": 1,
+        "type": "array"
+      },
+      "placedAt": {
+        "$ref": "urn:bookstore:Iso8601"
+      },
+      "total": {
+        "$ref": "urn:bookstore:Money"
+      }
+    },
+    "required": [
+      "id",
+      "customerId",
+      "items",
+      "total",
+      "placedAt"
+    ],
+    "type": "object"
+  },
+  "urn:bookstore:Review": {
+    "$id": "urn:bookstore:Review",
+    "properties": {
+      "body": {
+        "minLength": 10,
+        "type": "string"
+      },
+      "bookIsbn": {
+        "$ref": "urn:bookstore:Isbn"
+      },
+      "customerId": {
+        "$ref": "urn:bookstore:CustomerId"
+      },
+      "id": {
+        "$ref": "urn:bookstore:ReviewId"
+      },
+      "postedAt": {
+        "$ref": "urn:bookstore:Iso8601"
+      },
+      "rating": {
+        "$ref": "urn:bookstore:RatingScore"
+      }
+    },
+    "required": [
+      "id",
+      "bookIsbn",
+      "customerId",
+      "rating",
+      "body",
+      "postedAt"
+    ],
+    "type": "object"
+  }
+}
