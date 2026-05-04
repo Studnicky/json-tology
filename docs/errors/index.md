@@ -1,6 +1,6 @@
 # ValidationErrors
 
-`ValidationErrors` is the collection returned by [`entities.validate()`](/validation/validate). Obtain it from `validate()` or from `CoercionError.errors`.
+`ValidationErrors` is the collection returned by [`entities.validate()`](/validation/validate). Obtain it from `validate()` or from `InstantiationError.errors`.
 
 ## API
 

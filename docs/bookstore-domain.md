@@ -4,7 +4,7 @@ Every example throughout this documentation uses a single running domain — an 
 
 ## Why a shared domain
 
-Reading scattered docs is hard when every page introduces fresh data types. By anchoring everything to one domain you can see how concepts compose — `coerce` in the Validation guide operates on the same `Customer` you defined here; `extend` in Composition derives `CustomerWithDiscount` from that same `Customer`; `dump` in Serialization serializes the order produced by Coercion.
+Reading scattered docs is hard when every page introduces fresh data types. By anchoring everything to one domain you can see how concepts compose — `instantiate` in the Validation guide operates on the same `Customer` you defined here; `extend` in Composition derives `CustomerWithDiscount` from that same `Customer`; `dump` in Serialization serializes the order produced by Coercion.
 
 ## Folder layout
 
@@ -293,8 +293,8 @@ The guides that follow build concepts one at a time, each adding to what came be
 |-------|-------------|
 | [Schemas](/schemas) | How `register`, `has`, `get`, `list` work with these definitions |
 | [Type Inference](/types) | How `InferType<typeof CustomerSchema>` resolves at compile time |
-| [Validation](/validation/coerce) | `validate`, `is`, `errors` — checking incoming data against these schemas |
-| [Coercion](/validation/coerce) | `coerce` — validated + defaults applied, typed result |
+| [Validation](/validation/instantiate) | `validate`, `is`, `errors` — checking incoming data against these schemas |
+| [Coercion](/validation/instantiate) | `instantiate` — validated + defaults applied, typed result |
 | [Error Views](/errors/views) | `messages`, `format`, `flatten`, `aggregate`, `report` |
 | [Composition](/composition/extend) | Derive `CustomerWithDiscount`, `BookSummary`, `PatchOrder` |
 | [Value Operations](/value/clone-hash) | `clone`, `hash`, `diff` on a coerced `Order` |

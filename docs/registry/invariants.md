@@ -93,7 +93,7 @@ jt.addInvariant<Review>('https://bookstore.example/Review', {
 | Method | Invariant behaviour |
 |--------|---------------------|
 | `errors()` | Returns invariant failures as `ValidationErrorType` items with `keyword: 'jt:invariant'` |
-| `coerce()` | Throws `CoercionError` when any invariant fails |
+| `coerce()` | Throws `InstantiationError` when any invariant fails |
 | `is()` | Returns `false` when any invariant fails |
 | `validate()` | Includes invariant failure messages in the string array |
 

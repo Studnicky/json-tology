@@ -63,7 +63,7 @@ const jt = JsonTology.create({
 #### Example 2: Coerce triggers the compute function
 
 ```ts
-const order = jt.coerce(ComputedOrderSchema.$id, {
+const order = jt.instantiate(ComputedOrderSchema.$id, {
   id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   placedAt:   '2026-01-15T10:30:00Z',
@@ -94,8 +94,8 @@ jt.addComputed<ComputedOrder>(
 | Situation | Result |
 |-----------|--------|
 | Input omits the computed field | Value is derived and injected |
-| Input supplies the computed field | `CoercionError` with `COMPUTED_INPUT_FORBIDDEN` |
-| Compute function throws | `CoercionError` wrapping the original error |
+| Input supplies the computed field | `InstantiationError` with `COMPUTED_INPUT_FORBIDDEN` |
+| Compute function throws | `InstantiationError` wrapping the original error |
 | Schema registered with `jt:computed` but no function | `SchemaError` with `COMPUTED_FN_MISSING` at registration |
 
 ### Bad examples — what NOT to do
@@ -175,7 +175,7 @@ class Order(BaseModel):
 
 - [`removeComputed`](#jsonntology-removecomputed) — deregister a compute function
 - [Invariants](/registry/invariants) — cross-field *validation* rules (complements computed)
-- [`JsonTology.coerce`](/validation/coerce) — the primary trigger for compute function evaluation
+- [`JsonTology.coerce`](/validation/instantiate) — the primary trigger for compute function evaluation
 
 ---
 

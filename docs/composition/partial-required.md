@@ -35,7 +35,7 @@ const jt = JsonTology.create({
 });
 
 // PATCH body — only name provided
-const patch = jt.coerce(PatchCustomerSchema.$id, { name: 'Alice P. Chen' });
+const patch = jt.instantiate(PatchCustomerSchema.$id, { name: 'Alice P. Chen' });
 // { name: 'Alice P. Chen' }
 ```
 

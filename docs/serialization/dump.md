@@ -1,6 +1,6 @@
 # `jt.dump` and `jt.dumpJson`
 
-`dump` and `dumpJson` are a symmetric pair with `coerce`: `coerce` ingests and decodes wire data; `dump` / `dumpJson` encodes domain data back to wire form.
+`dump` and `dumpJson` are a symmetric pair with `instantiate`: `instantiate` ingests and decodes wire data; `dump` / `dumpJson` encodes domain data back to wire form.
 
 ---
 
@@ -20,7 +20,7 @@
 
 **Use this when** you need to serialize a domain object back to wire form — before storing in a database, before sending over HTTP, before publishing to a queue. Use the filtering options to produce compact payloads or specific projections. Use `dumpJson` when you need a JSON string directly.
 
-**Don't use this when** you want a complete validated object (use `coerce` instead — it goes the other direction). Don't call it on raw unvalidated input — `dump` expects a value that has already been through `coerce` or `materialize`.
+**Don't use this when** you want a complete validated object (use `instantiate` instead — it goes the other direction). Don't call it on raw unvalidated input — `dump` expects a value that has already been through `instantiate` or `materialize`.
 
 ### Examples
 
@@ -29,7 +29,7 @@
 ```ts
 import { bookstoreEntities as entities, BookSchema } from './bookstore/index.js';
 
-const book = jt.coerce(BookSchema.$id, {
+const book = jt.instantiate(BookSchema.$id, {
   isbn:    '9780140449136',
   title:   'Crime and Punishment',
   authors: ['Fyodor Dostoevsky'],
@@ -59,7 +59,7 @@ const listing = jt.dump(BookSchema.$id, book, { include: ['isbn', 'title', 'pric
 
 #### Example 4: Transform integration — `encode` applied automatically
 
-If the schema has a `Transform` encoder registered (see [Transforms](/transforms/decode-encode)), `dump` applies the `encode` function at each transformed node. A `coerce` → `dump` round-trip recovers the original wire value.
+If the schema has a `Transform` encoder registered (see [Transforms](/transforms/decode-encode)), `dump` applies the `encode` function at each transformed node. A `instantiate` → `dump` round-trip recovers the original wire value.
 
 ```ts
 import { Transform } from 'json-tology';
@@ -69,7 +69,7 @@ const PlacedAtSchema = Transform.create(
   { decode: (s: string) => new Date(s), encode: (d: Date) => d.toISOString() },
 );
 
-const date = jt.coerce(PlacedAtSchema.$id, '2026-01-15T10:30:00.000Z');
+const date = jt.instantiate(PlacedAtSchema.$id, '2026-01-15T10:30:00.000Z');
 const wire = jt.dump(PlacedAtSchema.$id, date as Date);
 // '2026-01-15T10:30:00.000Z' — encode applied automatically
 ```
@@ -85,7 +85,7 @@ const wire = jt.dump(BookSchema.$id, raw as Book);
 // price is still '14.99' string — not coerced; dump just applies encode, not type coercion
 
 // ✓ Do this — coerce first, then dump
-const book = jt.coerce(BookSchema.$id, raw);
+const book = jt.instantiate(BookSchema.$id, raw);
 const wireBook = jt.dump(BookSchema.$id, book);
 ```
 
@@ -141,7 +141,7 @@ book.model_dump(exclude_none=True)
 #### Example 1: Serialize a customer for an HTTP response
 
 ```ts
-const customer = jt.coerce(CustomerSchema.$id, {
+const customer = jt.instantiate(CustomerSchema.$id, {
   id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   email: 'alice@bookstore.example',
   name:  'Alice Chen',
@@ -192,7 +192,7 @@ json_str = customer.model_dump_json()
 
 ## Related
 
-- [`JsonTology.coerce`](/validation/coerce) — the incoming direction (wire → domain)
+- [`JsonTology.coerce`](/validation/instantiate) — the incoming direction (wire → domain)
 - [`jt.encode`](/transforms/decode-encode#jtencode) — apply a single Transform encoder
 - [Transforms](/transforms/decode-encode) — how Transform encoders are registered and applied
 

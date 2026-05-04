@@ -4,7 +4,7 @@
 
 **Use this when** you need a blank structural skeleton for a schema — for example, pre-populating a form's initial state where every field should have a zero value. Contrast with `materialize(schema)` which only fills declared defaults (leaves undeclared fields absent) and throws if required fields without defaults are missing.
 
-**Don't use this when** you want a validated, coerced value from real input (use [`coerce`](/validation/coerce)). Don't use it when you only want declared defaults without zero-values (use [`Compose.getDefaults`](/composition/get-defaults)).
+**Don't use this when** you want a validated, coerced value from real input (use [`instantiate`](/validation/instantiate)). Don't use it when you only want declared defaults without zero-values (use [`Compose.getDefaults`](/composition/get-defaults)).
 
 ## Examples
 
@@ -65,7 +65,7 @@ const blank = jt.value.create(BookSchema.$id);
 jt.validate(BookSchema.$id, blank); // may have errors: isbn pattern fails, price ≤ 0
 
 // ✓ Do this — use actual test data
-const testBook = jt.coerce(BookSchema.$id, {
+const testBook = jt.instantiate(BookSchema.$id, {
   isbn:    '9780140449136',
   title:   'Test Book',
   authors: ['Test Author'],
@@ -110,7 +110,7 @@ Book(isbn='', title='', authors=[], price=0)
 
 - [`JsonTology.materialize`](/registry/materialize) — fill from partial trusted data + declared defaults
 - [`Compose.getDefaults`](/composition/get-defaults) — extract only declared defaults (no zero-values)
-- [`JsonTology.coerce`](/validation/coerce) — validate + fill defaults + strip unknowns (for real data)
+- [`JsonTology.coerce`](/validation/instantiate) — validate + fill defaults + strip unknowns (for real data)
 
 ## See also
 

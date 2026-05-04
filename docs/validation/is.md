@@ -4,7 +4,7 @@
 
 **Use this when** you need a boolean check and you want TypeScript to narrow the type inside the truthy branch — for example, in union-narrowing guards, array filters, middleware checks. This is the idiomatic pattern when you need "is this data the right shape?" without wanting errors or a coerced value.
 
-**Don't use this when** you need error details (use [`errors`](/validation/errors) or [`validate`](/validation/validate) instead). Don't use it when you need the coerced, defaults-filled value (use [`coerce`](/validation/coerce) instead). Note that invariants also run — `is` returns `false` when any registered invariant fails, not just when structural validation fails.
+**Don't use this when** you need error details (use [`errors`](/validation/errors) or [`validate`](/validation/validate) instead). Don't use it when you need the coerced, defaults-filled value (use [`instantiate`](/validation/instantiate) instead). Note that invariants also run — `is` returns `false` when any registered invariant fails, not just when structural validation fails.
 
 ## Examples
 
@@ -61,7 +61,7 @@ if (jt.is(CustomerSchema.$id, data)) {
 }
 
 // ✓ Do this — coerce to get defaults applied
-const customer = jt.coerce(CustomerSchema.$id, data);
+const customer = jt.instantiate(CustomerSchema.$id, data);
 customer.addresses.forEach(/* ... */);  // addresses always present (default [])
 ```
 
@@ -70,12 +70,12 @@ customer.addresses.forEach(/* ... */);  // addresses always present (default [])
 ```ts
 // ⊥ Don't do this — double validation
 if (jt.is(CustomerSchema.$id, data)) {
-  const customer = jt.coerce(CustomerSchema.$id, data); // validates again
+  const customer = jt.instantiate(CustomerSchema.$id, data); // validates again
 }
 
 // ✓ Do this — coerce directly; catch the error if invalid
 try {
-  const customer = jt.coerce(CustomerSchema.$id, data);
+  const customer = jt.instantiate(CustomerSchema.$id, data);
 } catch (err) { /* handle */ }
 ```
 
@@ -134,7 +134,7 @@ except ValidationError:
 
 - [`JsonTology.validate`](/validation/validate) — returns error strings when you need to display failures
 - [`JsonTology.errors`](/validation/errors) — returns structured `ValidationErrors`
-- [`JsonTology.coerce`](/validation/coerce) — returns typed value with defaults applied
+- [`JsonTology.coerce`](/validation/instantiate) — returns typed value with defaults applied
 - [Invariants](/registry/invariants) — cross-field rules that also affect `is` return value
 
 ## See also

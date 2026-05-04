@@ -241,7 +241,7 @@ type Sub = InferSchemaType<typeof SubSchema, typeof RootSchema>;
 
 json-tology surfaces JSON Schema constraint keywords as compile-time phantom brands. Two values with different constraints produce structurally incompatible TypeScript types.
 
-The only way to obtain a branded value is through the validation API (`coerce`, `is`, `materialize`, etc.), which enforces that data has passed runtime checks before being treated as a constrained type.
+The only way to obtain a branded value is through the validation API (`instantiate`, `is`, `materialize`, etc.), which enforces that data has passed runtime checks before being treated as a constrained type.
 
 See [Constraint Brands](/constraint-brands) for the full reference, configuration flags, and structural narrowing features.
 
@@ -261,7 +261,7 @@ type Customer = InferType<typeof CustomerSchema>;
 // const id: typeof customer.id = customer.email; // error — incompatible brands
 
 // The only way to produce a branded value:
-const customer = jt.coerce(CustomerSchema.$id, rawData); // typed + validated
+const customer = jt.instantiate(CustomerSchema.$id, rawData); // typed + validated
 ```
 
 #### Example 2: Integer range as literal union
@@ -551,7 +551,7 @@ import { BookV1Schema } from '../bookstore/index.js';
 function toBookView(raw: unknown): NonDeprecatedSchemaType<typeof BookV1Schema> {
   // coerce validates and returns the full type; the return type annotation
   // signals that callers should not depend on deprecated fields.
-  const book = jt.coerce(BookV1Schema.$id, raw);
+  const book = jt.instantiate(BookV1Schema.$id, raw);
   const { legacySku: _dropped, ...rest } = book;
   return rest;
 }
@@ -655,7 +655,7 @@ type CustomerInput = LooseInputType<Customer>;
 // Record<string, unknown> — strips all brands for raw-input boundaries
 
 function createCustomerFromForm(raw: CustomerInput): Customer {
-  return jt.coerce(CustomerSchema.$id, raw); // validates and re-brands
+  return jt.instantiate(CustomerSchema.$id, raw); // validates and re-brands
 }
 ```
 
@@ -700,7 +700,7 @@ function orderFixture(overrides: Partial<LooseInputType<Order>> = {}): unknown {
 
 ```ts
 // ⊥ Don't do this
-const customer = jt.coerce(CustomerSchema.$id, raw);
+const customer = jt.instantiate(CustomerSchema.$id, raw);
 const loose: LooseInputType<typeof customer> = customer;
 // You just discarded the validation guarantee — keep the branded type
 ```

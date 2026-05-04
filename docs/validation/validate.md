@@ -6,7 +6,7 @@ Equivalent to `materialize(idOrSchema, data, { enableValidation: true, enableThr
 
 **Use this when** you need programmatic access to the structured error list — paths, keywords, params — without wanting an exception. This is the right method for API validation where you collect errors, then decide what to do with them (return a 422, log, display in a form). The collection is iterable with `for...of`.
 
-**Don't use this when** you only need a boolean (use [`is`](/validation/is)). Don't use it when you want the coerced typed value on success (use [`coerce`](/validation/coerce)).
+**Don't use this when** you only need a boolean (use [`is`](/validation/is)). Don't use it when you want the coerced typed value on success (use [`instantiate`](/validation/instantiate)).
 
 ## Examples
 
@@ -76,14 +76,14 @@ if (fieldErrors.length > 0) {
 // ⊥ Don't do this — double work, data is validated twice
 const errs = jt.validate(CustomerSchema.$id, data);
 if (errs.length === 0) {
-  const customer = jt.coerce(CustomerSchema.$id, data); // validates again
+  const customer = jt.instantiate(CustomerSchema.$id, data); // validates again
 }
 
 // ✓ Do this — coerce directly; it validates + applies defaults in one pass
 try {
-  const customer = jt.coerce(CustomerSchema.$id, data);
+  const customer = jt.instantiate(CustomerSchema.$id, data);
 } catch (err) {
-  // handle CoercionError
+  // handle InstantiationError
 }
 ```
 
@@ -151,8 +151,8 @@ except ValidationError as e:
 
 - [`JsonTology.errors`](/validation/errors) — structured `ValidationErrors` with path/keyword/params
 - [`JsonTology.is`](/validation/is) — boolean type guard, no strings
-- [`JsonTology.coerce`](/validation/coerce) — validate + apply defaults + return typed value
-- [`JsonTology.validateAt`](/validation/validateAt) — validate against a sub-schema by JSON Pointer
+- [`JsonTology.coerce`](/validation/instantiate) — validate + apply defaults + return typed value
+- [`JsonTology.subschemaAt`](/validation/subschemaAt) — validate against a sub-schema by JSON Pointer
 
 ## See also
 

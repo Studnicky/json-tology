@@ -43,7 +43,7 @@ const jt = JsonTology.create({
 });
 ```
 
-All six schemas are registered. Every `jt.coerce(CustomerSchema.$id, data)` call returns `Customer` (typed).
+All six schemas are registered. Every `jt.instantiate(CustomerSchema.$id, data)` call returns `Customer` (typed).
 
 #### Example 2: Chained post-construction registration
 
@@ -152,7 +152,7 @@ Returns the `$id` used for registration (original or synthetic).
 
 ### When to use
 
-Use when you receive schemas from external sources (OpenAPI `$defs`, dynamic form builders, etc.) that may not carry a stable `$id`. The returned synthetic ID can be used in subsequent `coerce` and `validate` calls.
+Use when you receive schemas from external sources (OpenAPI `$defs`, dynamic form builders, etc.) that may not carry a stable `$id`. The returned synthetic ID can be used in subsequent `instantiate` and `validate` calls.
 
 ### Examples
 
@@ -170,7 +170,7 @@ const syntheticId = jt.registerAnonymous({
 
 console.log(syntheticId); // 'urn:json-tology:hash:<hex>'
 
-const coupon = jt.coerce(syntheticId, { couponCode: 'SAVE10', discount: 0.1 });
+const coupon = jt.instantiate(syntheticId, { couponCode: 'SAVE10', discount: 0.1 });
 ```
 
 #### Example 2: Schema with existing $id delegates to register
@@ -243,7 +243,7 @@ public has(schemaId: string): boolean
 
 ### When to use
 
-Use before calling `coerce` or `validate` when you cannot guarantee a schema is registered (e.g., loading schemas from optional plugin modules). Most application code that calls `JsonTology.create({ schemas })` doesn't need this — all schemas are known registered.
+Use before calling `instantiate` or `validate` when you cannot guarantee a schema is registered (e.g., loading schemas from optional plugin modules). Most application code that calls `JsonTology.create({ schemas })` doesn't need this — all schemas are known registered.
 
 ### Examples
 

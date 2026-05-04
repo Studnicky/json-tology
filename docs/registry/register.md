@@ -110,7 +110,7 @@ jt.validate(syntheticId, { couponCode: 'SAVE10', discount: 0.1 });
 
 **Declaration.** Returns `true` if a schema with the given `$id` is registered. `O(1)` lookup.
 
-**Use this when** you need to guard before calling `coerce` or `validate` on a schema that might not be registered — for example, when plugin schemas are conditionally loaded.
+**Use this when** you need to guard before calling `instantiate` or `validate` on a schema that might not be registered — for example, when plugin schemas are conditionally loaded.
 
 ### Examples
 

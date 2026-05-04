@@ -4,7 +4,7 @@
 
 **Use this when** you need programmatic access to the structured error list — paths, keywords, params — without wanting an exception. This is the right method for API validation where you collect errors, then decide what to do with them (return a 422, log, display in a form). The collection is iterable with `for...of`.
 
-**Don't use this when** you only need a boolean (use [`is`](/validation/is)). Don't use it when you want the coerced typed value on success (use [`coerce`](/validation/coerce)).
+**Don't use this when** you only need a boolean (use [`is`](/validation/is)). Don't use it when you want the coerced typed value on success (use [`instantiate`](/validation/instantiate)).
 
 ## Examples
 
@@ -72,15 +72,15 @@ console.log(errs.report());     // RFC 7807 ProblemDetailsType
 // ⊥ Don't do this — double validation; if errors is empty just use coerce
 const errs = entities.validate(CustomerSchema.$id, data);
 if (errs.ok) {
-  const customer = jt.coerce(CustomerSchema.$id, data); // validates again
+  const customer = jt.instantiate(CustomerSchema.$id, data); // validates again
 }
 
-// ✓ Do this — catch CoercionError directly
+// ✓ Do this — catch InstantiationError directly
 try {
-  const customer = jt.coerce(CustomerSchema.$id, data);
+  const customer = jt.instantiate(CustomerSchema.$id, data);
 } catch (err) {
-  if (err instanceof CoercionError) {
-    const problem = err.errors.report();  // same ValidationErrors on CoercionError
+  if (err instanceof InstantiationError) {
+    const problem = err.errors.report();  // same ValidationErrors on InstantiationError
   }
 }
 ```
@@ -145,7 +145,7 @@ except ValidationError as e:
 
 - [`JsonTology.validate`](/validation/validate) — just the string array
 - [`JsonTology.is`](/validation/is) — boolean type guard
-- [`JsonTology.coerce`](/validation/coerce) — throws `CoercionError` which carries the same `ValidationErrors` on `.errors`
+- [`JsonTology.coerce`](/validation/instantiate) — throws `InstantiationError` which carries the same `ValidationErrors` on `.errors`
 - [Error views](/errors/views) — `messages`, `format`, `flatten`, `aggregate`, `report` in full detail
 
 ## See also

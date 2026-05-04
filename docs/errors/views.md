@@ -1,6 +1,6 @@
 # ValidationErrors views
 
-`ValidationErrors` has two structured views (`aggregate()`, `report()`) plus a raw `items` array. Obtain the collection from [`entities.validate()`](/validation/validate) or from `CoercionError.errors`.
+`ValidationErrors` has two structured views (`aggregate()`, `report()`) plus a raw `items` array. Obtain the collection from [`entities.validate()`](/validation/validate) or from `InstantiationError.errors`.
 
 | Surface | Returns | Best for |
 |---------|---------|----------|
@@ -207,7 +207,7 @@ app.post('/reviews', (req, res) => {
       .send(errs.report({ instance: req.url }));
   }
 
-  const review = entities.coerce(ReviewSchema.$id, req.body);
+  const review = entities.instantiate(ReviewSchema.$id, req.body);
   // ... persist and return 201
 });
 ```
@@ -309,5 +309,5 @@ const problem = {
 ## See also
 
 - [`entities.validate()`](/validation/validate) — how to obtain the `ValidationErrors` collection
-- [`entities.coerce()`](/validation/coerce) — `CoercionError.errors` carries the same collection
+- [`entities.instantiate()`](/validation/instantiate) — `InstantiationError.errors` carries the same collection
 - [Bookstore domain](/bookstore-domain) — schema definitions used in examples

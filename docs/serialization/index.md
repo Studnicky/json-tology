@@ -1,6 +1,6 @@
 # Serialization
 
-Serialization converts domain objects back to wire form — the outgoing direction complementary to `coerce`.
+Serialization converts domain objects back to wire form — the outgoing direction complementary to `instantiate`.
 
 ## Methods
 
@@ -10,4 +10,4 @@ Serialization converts domain objects back to wire form — the outgoing directi
 | [`dumpJson`](./dump#jt-dumpjson) | `string` | Same as `dump` but returns a JSON string |
 | [`toSchema`](./toSchema) | `Record<string, unknown> \| undefined` | Reconstruct JSON Schema from the canonical graph |
 
-All examples use the [bookstore domain](/bookstore-domain). See [`coerce`](/validation/coerce) for the incoming direction.
+All examples use the [bookstore domain](/bookstore-domain). See [`instantiate`](/validation/instantiate) for the incoming direction.

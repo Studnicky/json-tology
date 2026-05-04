@@ -39,7 +39,7 @@ const jt = JsonTology.create({
   schemas: [PricedSchema] as const,
 });
 
-const price = jt.coerce(PricedSchema.$id, '$14.99');
+const price = jt.instantiate(PricedSchema.$id, '$14.99');
 console.log(price); // 14.99
 
 const wire = jt.encode(PricedSchema, price as number);

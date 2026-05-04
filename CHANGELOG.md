@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `JsonTology.subschemaAt(schema, pointer)` — resolves a sub-schema at a JSON Pointer path and returns a registerable schema object with a synthesized `$id`. Composes with all four core methods.
+- `SchemaRefType` — universal schema reference type: every method now accepts both a string `$id` and a schema object with `$id`.
+- Static counterparts for all 13 instance methods: `JsonTology.is`, `JsonTology.validate`, `JsonTology.instantiate`, `JsonTology.materialize`, `JsonTology.subschemaAt`, `JsonTology.dump`, `JsonTology.dumpJson`, `JsonTology.toQuads`, `JsonTology.fromQuads`, `JsonTology.toSchema`, `JsonTology.toTbox`, `JsonTology.toShacl`, `JsonTology.ontology`. Each creates an ephemeral registry for one-shot execution with no shared state.
+- `InstantiationErrorCode` constant exported from `json-tology/constants`.
+- New doc pages: `docs/picking-a-method.md`, `docs/argument-conventions.md`.
+
+### BREAKING
+
+- `JsonTology.coerce()` renamed to `JsonTology.instantiate()` — the trust-boundary naming axis. `coerce` → `instantiate` at every call site including `value.coerce()` → `value.instantiate()` and registry-level `registry.coerce()` → `registry.instantiate()`.
+- `CoercionError` renamed to `InstantiationError` — update all `instanceof CoercionError` checks and `import { CoercionError }` imports to `InstantiationError`. Error code changes from `COERCION_FAILED` to `INSTANTIATION_FAILED`.
+- `CoercionErrorCodeType` renamed to `InstantiationErrorCodeType`; `CoercionErrorCode` constant renamed to `InstantiationErrorCode`. Update all constant references.
+- `JsonTology.validateAt()` removed — replaced by `JsonTology.subschemaAt(schema, pointer)` which returns a sub-schema object. Compose with `validate()`, `is()`, `instantiate()`, or `materialize()` as needed.
+- `materialize()` now validates by default and throws `MaterializationError` on validation failure. Pass `{ enablePartial: true }` to restore lenient construction that allows missing required-without-default fields.
+- `SchemaRegistry.validateAt()` removed — replaced by `SchemaRegistry.subschemaAt(schema, pointer)`.
+
 ### Changed
 
 - Bookstore example: `PersonName` renamed to `CustomerName` — `urn:bookstore:CustomerName` is the canonical name/string primitive used by `Customer`. Callers importing `PersonNameSchema` must update to `CustomerNameSchema`.
@@ -19,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Docs: `npm run build:bookstore-graph` replaced by `npm run build:bookstore-tbox`; `docs:build` updated accordingly.
 - Docs homepage (`docs/index.md`): "Advanced usages" section added below the hero features, embedding `<BookstoreGraph />` as a live teaser with links to the full guide and WebVOWL page.
 
-### BREAKING
+### BREAKING (prior)
 
 - `JsonTology.validate()` return type changed from `string[]` to `ValidationErrors`. Update call sites that compared to `[]` (use `.ok` or `.length === 0`), iterated as strings (use `.items.map(e => e.message)`), or called array methods like `.slice()` (use `.items.slice()`).
 - `JsonTology.errors()` removed — replaced by `JsonTology.validate()` which now returns `ValidationErrors`. Rename all `jt.errors(schema, data)` calls to `jt.validate(schema, data)`.

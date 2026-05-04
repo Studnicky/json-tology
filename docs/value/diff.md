@@ -18,13 +18,13 @@
 import { Value } from 'json-tology';
 import { bookstoreEntities as entities, CustomerSchema } from './bookstore/index.js';
 
-const before = jt.coerce(CustomerSchema.$id, {
+const before = jt.instantiate(CustomerSchema.$id, {
   id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   email: 'alice@bookstore.example',
   name:  'Alice Chen',
 });
 
-const after = jt.coerce(CustomerSchema.$id, {
+const after = jt.instantiate(CustomerSchema.$id, {
   id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   email: 'alice.chen@bookstore.example', // changed
   name:  'Alice Chen',
@@ -41,7 +41,7 @@ console.log(changes.operations);
 #### Example 2: Track order line additions
 
 ```ts
-const beforeOrder = jt.coerce(OrderSchema.$id, {
+const beforeOrder = jt.instantiate(OrderSchema.$id, {
   id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   placedAt:   '2026-01-15T10:30:00Z',
@@ -49,7 +49,7 @@ const beforeOrder = jt.coerce(OrderSchema.$id, {
   items:      [{ bookIsbn: '9780140449136', quantity: 1, unitPrice: 14.99 }],
 });
 
-const afterOrder = jt.coerce(OrderSchema.$id, {
+const afterOrder = jt.instantiate(OrderSchema.$id, {
   ...beforeOrder,
   items: [
     ...beforeOrder.items,
@@ -141,7 +141,7 @@ for (const op of changes.operations) {
 ```ts
 import { Value } from 'json-tology';
 
-const book = jt.coerce(BookSchema.$id, {
+const book = jt.instantiate(BookSchema.$id, {
   isbn:    '9780140449136',
   title:   'Crime and Punishment',
   authors: ['Fyodor Dostoevsky'],

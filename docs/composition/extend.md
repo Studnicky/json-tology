@@ -50,7 +50,7 @@ const jt = JsonTology.create({
   schemas: [FeaturedBookSchema] as const,
 });
 
-const featured = jt.coerce(FeaturedBookSchema.$id, {
+const featured = jt.instantiate(FeaturedBookSchema.$id, {
   isbn:     '9780140449136',
   title:    'Crime and Punishment',
   authors:  ['Fyodor Dostoevsky'],
@@ -102,11 +102,11 @@ const Extended2 = Compose.intersection([CustomerSchema, WithRequiredTier] as con
 // but intermediates used in coerce/validate must be registered
 const A = Compose.extend(CustomerSchema, { x: { type: 'string' } } as const, '...a');
 const B = Compose.extend(A, { y: { type: 'number' } } as const, '...b');
-jt.coerce(B.$id, data); // fails — B is not registered
+jt.instantiate(B.$id, data); // fails — B is not registered
 
 // ✓ Register before use
 jt.register(B);
-jt.coerce(B.$id, data); // works
+jt.instantiate(B.$id, data); // works
 ```
 
 ## Comparison

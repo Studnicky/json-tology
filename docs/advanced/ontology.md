@@ -256,7 +256,7 @@ const merged = {
 
 ## `jt.fromQuads` {#jt-fromquads}
 
-**Declaration.** Lifts RDF quads back into typed JS objects. Inverse of `toQuads`. Given quads produced by `toQuads`, a reasoning engine, or any RDF source, recovers plain JS objects matching the target schema. Each returned object is validated through `coerce` to apply defaults, transforms, and type safety. Returns `Array<TMap[K]>`.
+**Declaration.** Lifts RDF quads back into typed JS objects. Inverse of `toQuads`. Given quads produced by `toQuads`, a reasoning engine, or any RDF source, recovers plain JS objects matching the target schema. Each returned object is validated through `instantiate` to apply defaults, transforms, and type safety. Returns `Array<TMap[K]>`.
 
 **Use this when** you have RDF quads from an external source (a triplestore query result, a reasoner output) and need to recover validated domain objects.
 

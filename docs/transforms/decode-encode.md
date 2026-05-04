@@ -6,7 +6,7 @@
 
 ## `Transform.create` {#transform-create}
 
-**Declaration.** Attaches `decode` and `encode` functions to a schema using a `WeakMap` (the schema object is never mutated). Returns the same schema object with a widened TypeScript type `TransformedType<TSchema, TOut>`. After `Transform.create`, any call to `jt.coerce(schema.$id, raw)` automatically applies the `decode` function after validation. The TypeScript return type changes from `InferSchemaType<TSchema>` to `TOut`.
+**Declaration.** Attaches `decode` and `encode` functions to a schema using a `WeakMap` (the schema object is never mutated). Returns the same schema object with a widened TypeScript type `TransformedType<TSchema, TOut>`. After `Transform.create`, any call to `jt.instantiate(schema.$id, raw)` automatically applies the `decode` function after validation. The TypeScript return type changes from `InferSchemaType<TSchema>` to `TOut`.
 
 **Use this when** a wire-format value needs automatic conversion to a richer domain type — ISO date strings → `Date`, cents integers → floats, raw enums → branded enums, base64 strings → `Buffer`.
 
@@ -17,7 +17,7 @@
 #### Example 1: ISO datetime to Date — full round-trip
 
 ```ts
-import { Transform, JsonTology, CoercionError } from 'json-tology';
+import { Transform, JsonTology, InstantiationError } from 'json-tology';
 
 const PlacedAtSchema = Transform.create(
   {
@@ -38,7 +38,7 @@ const jt = JsonTology.create({
 
 // Wire → Domain
 const raw = '2026-01-15T10:30:00.000Z';
-const date = jt.coerce(PlacedAtSchema.$id, raw);
+const date = jt.instantiate(PlacedAtSchema.$id, raw);
 console.log(date instanceof Date);          // true
 console.log((date as Date).getFullYear());  // 2026
 
@@ -46,11 +46,11 @@ console.log((date as Date).getFullYear());  // 2026
 const wire = jt.encode(PlacedAtSchema, date as Date);
 console.log(wire === raw); // true
 
-// Invalid input still throws CoercionError
+// Invalid input still throws InstantiationError
 try {
-  jt.coerce(PlacedAtSchema.$id, 'not-a-date');
+  jt.instantiate(PlacedAtSchema.$id, 'not-a-date');
 } catch (error) {
-  console.log(error instanceof CoercionError); // true
+  console.log(error instanceof InstantiationError); // true
 }
 ```
 
@@ -71,7 +71,7 @@ const PriceCentsSchema = Transform.create(
 
 const jt2 = jt.register(PriceCentsSchema);
 
-const price = jt2.coerce(PriceCentsSchema.$id, 1499);
+const price = jt2.instantiate(PriceCentsSchema.$id, 1499);
 console.log(price); // 14.99
 
 const wire2 = jt2.encode(PriceCentsSchema, price as number);
@@ -105,7 +105,7 @@ const DateSchema = Transform.create(
   { $id: 'https://bookstore.example/PlacedAt', type: 'string', format: 'date-time' } as const,
   { decode: (isoStr: string) => new Date(isoStr), encode: (dateVal: Date) => dateVal.toISOString() },
 );
-// jt.coerce(DateSchema.$id, '2026-01-15T10:30:00Z') → Date
+// jt.instantiate(DateSchema.$id, '2026-01-15T10:30:00Z') → Date
 // jt.encode(DateSchema, date) → '2026-01-15T10:30:00Z'
 ```
 
@@ -164,7 +164,7 @@ class Order(BaseModel):
 
 ```ts
 const raw = '2026-01-15T10:30:00.000Z';
-const date = jt.coerce(PlacedAtSchema.$id, raw);   // wire → domain
+const date = jt.instantiate(PlacedAtSchema.$id, raw);   // wire → domain
 const wire = jt.encode(PlacedAtSchema, date as Date); // domain → wire
 console.log(wire === raw);     // true
 console.log(typeof wire);      // 'string'
@@ -174,7 +174,7 @@ console.log(typeof wire);      // 'string'
 
 ```ts
 // After processing an order:
-const placedDate = jt.coerce(PlacedAtSchema.$id, event.placedAt) as Date;
+const placedDate = jt.instantiate(PlacedAtSchema.$id, event.placedAt) as Date;
 // ... do business logic ...
 
 // Before writing to DB:

@@ -6,11 +6,11 @@ Schema-aware instance methods on `jt.value`. All three operate against the regis
 
 ## `value.cast` {#value-cast}
 
-**Declaration.** Coerces types (e.g. `"9.99"` → `9.99`, `"true"` → `true`) and applies schema `default` values. Requires `enableTypeCast: true`. Throws `CoercionError` when the coerced data fails validation.
+**Declaration.** Coerces types (e.g. `"9.99"` → `9.99`, `"true"` → `true`) and applies schema `default` values. Requires `enableTypeCast: true`. Throws `InstantiationError` when the coerced data fails validation.
 
 **Use this when** ingesting data from sources that serialize numbers and booleans as strings — CSV imports, URL query parameters, HTML form submissions, `application/x-www-form-urlencoded` bodies.
 
-**Don't use this when** the source data is already properly typed (use [`coerce`](/validation/coerce) instead). Don't use `cast` when you want type coercion but not defaults (use [`convert`](#value-convert)).
+**Don't use this when** the source data is already properly typed (use [`instantiate`](/validation/instantiate) instead). Don't use `cast` when you want type coercion but not defaults (use [`convert`](#value-convert)).
 
 ### Examples
 
@@ -61,7 +61,7 @@ const book = jt.value.cast(BookSchema.$id, rawData); // strings coerced
 ```
 
 ```ts [Zod]
-// Zod uses .coerce() wrappers per-field:
+// Zod uses .instantiate() wrappers per-field:
 const BookSchema = z.object({
   price:   z.coerce.number(),
   inStock: z.coerce.boolean(),
@@ -91,11 +91,11 @@ book = Book.model_validate(raw_data)  # '14.99' → 14.99
 
 ## `value.clean` {#value-clean}
 
-**Declaration.** Strips properties not declared in the schema from the data. Throws `CoercionError` when the cleaned data fails validation.
+**Declaration.** Strips properties not declared in the schema from the data. Throws `InstantiationError` when the cleaned data fails validation.
 
 **Use this when** you need to sanitize data that may carry extra properties not in the schema — for example, third-party API responses, database rows with extra columns, or enriched records that need to be reduced before forwarding.
 
-**Don't use this when** you want defaults to be applied too (use [`coerce`](/validation/coerce) which does both). Use `clean` when you specifically want only stripping, no defaults.
+**Don't use this when** you want defaults to be applied too (use [`instantiate`](/validation/instantiate) which does both). Use `clean` when you specifically want only stripping, no defaults.
 
 ### Examples
 
@@ -152,9 +152,9 @@ cleaned = Book.model_validate(data)
 
 ## `value.convert` {#value-convert}
 
-**Declaration.** Coerces types without applying schema `default` values. Requires `enableTypeCast: true`. Throws `CoercionError` when the data fails validation after type conversion.
+**Declaration.** Coerces types without applying schema `default` values. Requires `enableTypeCast: true`. Throws `InstantiationError` when the data fails validation after type conversion.
 
-**Use this when** you want type coercion but explicitly want to control which defaults are applied. Contrast: `cast` = coerce types + fill defaults; `convert` = coerce types only; `coerce` = coerce types + fill defaults + strip unknowns + run transforms.
+**Use this when** you want type coercion but explicitly want to control which defaults are applied. Contrast: `cast` = coerce types + fill defaults; `convert` = coerce types only; `instantiate` = coerce types + fill defaults + strip unknowns + run transforms.
 
 ### Examples
 
@@ -174,7 +174,7 @@ console.log(converted.rating); // 5 (number)
 
 ## Related
 
-- [`JsonTology.coerce`](/validation/coerce) — validate + apply defaults + strip unknowns + run transforms
+- [`JsonTology.coerce`](/validation/instantiate) — validate + apply defaults + strip unknowns + run transforms
 - [`value.create`](/value/create) — synthesize a zero-value blank instance
 
 ## See also

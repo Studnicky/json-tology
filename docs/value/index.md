@@ -3,7 +3,7 @@
 `Value` provides two kinds of operations:
 
 - **Static** — pure functions on any value without a schema: `clone`, `hash`, `diff`, `applyOp`
-- **Instance** — schema-aware operations via `jt.value.*`: `cast`, `clean`, `convert`, `create`, `coerce`
+- **Instance** — schema-aware operations via `jt.value.*`: `cast`, `clean`, `convert`, `create`, `instantiate`
 
 ## Methods
 

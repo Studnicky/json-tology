@@ -35,7 +35,7 @@ const jt = JsonTology.create({
   schemas: [BookSummarySchema] as const,
 });
 
-const summary = jt.coerce(BookSummarySchema.$id, {
+const summary = jt.instantiate(BookSummarySchema.$id, {
   isbn:    '9780140449136',
   title:   'Crime and Punishment',
   price:   14.99,
@@ -60,7 +60,7 @@ const CustomerCardSchema = Compose.pick(
 // Useful for embedding customer info in Order responses without Address data
 ```
 
-#### Example 3: Build sub-schema for partial validation (builds on validateAt)
+#### Example 3: Build sub-schema for partial validation (builds on subschemaAt)
 
 ```ts
 import { Compose, JsonTology } from 'json-tology';

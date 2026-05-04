@@ -55,7 +55,7 @@ const c = jt.value.create(BookSchema.$id);
 
 // coerce — validates, strips unknowns, applies defaults, throws on failure
 const o = jt.instantiate(BookSchema.$id, rawInput);
-// → same shape, but validates and throws CoercionError if rawInput is invalid
+// → same shape, but validates and throws InstantiationError if rawInput is invalid
 ```
 
 ## Bad examples — what NOT to do
@@ -117,7 +117,7 @@ book = Book(isbn='9780140449136', title='Crime and Punishment',
 
 ## Related
 
-- [`JsonTology.coerce`](/validation/coerce) — validate + apply defaults + strip unknowns (for untrusted input)
+- [`JsonTology.coerce`](/validation/instantiate) — validate + apply defaults + strip unknowns (for untrusted input)
 - [`jt.value.create`](/value/create) — zero-value instance for blank form initialization
 - [`Compose.getDefaults`](/composition/get-defaults) — extract declared defaults without building an instance
 - [Computed fields](/registry/computed) — computed properties also run after materialization

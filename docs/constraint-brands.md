@@ -31,9 +31,9 @@ type Uri   = InferType<typeof UriSchema>;
 | `Uri` resolves to | `string & FormatBrand<'uri'>` | `string` |
 | `const x: Email = '' as string` | compile error | compiles |
 | `const x: Email = '' as Uri` | compile error | compiles |
-| `const x: Email = jt.coerce(id, data)` | compiles | compiles |
+| `const x: Email = jt.instantiate(id, data)` | compiles | compiles |
 
-The only way to obtain a branded value is through the validation API (`coerce`, `materialize`, `is`, `value.coerce`, etc.). This is intentional — it enforces that data passes runtime validation before being treated as a constrained type.
+The only way to obtain a branded value is through the validation API (`instantiate`, `materialize`, `is`, `value.coerce`, etc.). This is intentional — it enforces that data passes runtime validation before being treated as a constrained type.
 
 ## Branded keywords
 
@@ -625,8 +625,8 @@ const jt = JsonTology.create({
 });
 
 // All of these return branded types:
-const email = jt.coerce('https://example.com/Email', input);     // string & FormatBrand<'email'>
-const clean = jt.value.coerce('https://example.com/Email', input); // same
+const email = jt.instantiate('https://example.com/Email', input);     // string & FormatBrand<'email'>
+const clean = jt.value.instantiate('https://example.com/Email', input); // same
 
 if (jt.is('https://example.com/Email', input)) {
   input; // narrowed to branded type

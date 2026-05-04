@@ -19,7 +19,7 @@ features:
   - title: Runtime Validation
     details: validate(), is(), errors() check data against a registered schema and return structured ValidationErrors with JSON Pointer paths.
   - title: Coercion with Defaults
-    details: coerce() validates, applies defaults, runs Transform decoders, and strips unknown properties in one pass. Throws a typed CoercionError on failure.
+    details: coerce() validates, applies defaults, runs Transform decoders, and strips unknown properties in one pass. Throws a typed InstantiationError on failure.
   - title: Composition
     details: extend, pick, omit, partial, required, intersection, discriminatedUnion — Pydantic-style derivations from base schemas, all type-safe.
   - title: Transforms and Brands
@@ -70,7 +70,7 @@ const jt = JsonTology.create({
   schemas: [CustomerSchema] as const,
 });
 
-const customer = jt.coerce(CustomerSchema.$id, {
+const customer = jt.instantiate(CustomerSchema.$id, {
   id: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   email: 'alice@bookstore.example',
   name: 'Alice Chen',
@@ -86,7 +86,7 @@ That's the entire core. Validation, type inference, coercion, defaults — all f
 |---------|--------------------|
 | Type inference (`InferType`) | A separate type-definition language |
 | Runtime validation (`validate`, `is`, `errors`) | A second schema for runtime checks |
-| Coercion + defaults (`coerce`) | Manual mapping of input shapes |
+| Coercion + defaults (`instantiate`) | Manual mapping of input shapes |
 | Field aliasing (`jt:alias`) | Custom transform layers for renames |
 | Computed fields (`jt:computed`) | Post-processing pipelines |
 | Cross-field invariants (`addInvariant`) | Custom validation glue |
@@ -99,7 +99,7 @@ If you also need RDF/OWL/SHACL output, that's available as **opt-in advanced fea
 
 - **[Getting Started](/getting-started)** — install, define a schema, validate, coerce
 - **[Bookstore Domain](/bookstore-domain)** — the running example domain used throughout the docs
-- **[Validation](/validation/coerce)** — `coerce`, `validate`, `errors`, `is`, `validateAt`
+- **[Validation](/validation/instantiate)** — `instantiate`, `validate`, `errors`, `is`, `subschemaAt`
 - **[Error Views](/errors/views)** — `messages`, `format`, `flatten`, `aggregate`, `report` (RFC 7807)
 - **[Type Inference](/types)** — how `InferType` works, reference maps, branded types
 - **[Composition](/composition/extend)** — derive schemas from other schemas

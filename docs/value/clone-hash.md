@@ -20,7 +20,7 @@ Pure static utilities that work on any value without a schema.
 import { Value } from 'json-tology';
 import { bookstoreEntities as entities, OrderSchema } from './bookstore/index.js';
 
-const order = jt.coerce(OrderSchema.$id, {
+const order = jt.instantiate(OrderSchema.$id, {
   id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   placedAt:   '2026-01-15T10:30:00Z',
@@ -40,7 +40,7 @@ console.log(copy.items.length);  // 2
 #### Example 2: Clone nested addresses
 
 ```ts
-const customer = jt.coerce(CustomerSchema.$id, {
+const customer = jt.instantiate(CustomerSchema.$id, {
   id:        'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   email:     'alice@bookstore.example',
   name:      'Alice Chen',
@@ -95,7 +95,7 @@ copy = order.model_copy(deep=True)
 #### Example 1: Generate an ETag for a book
 
 ```ts
-const book = jt.coerce(BookSchema.$id, {
+const book = jt.instantiate(BookSchema.$id, {
   isbn:    '9780140449136',
   title:   'Crime and Punishment',
   authors: ['Fyodor Dostoevsky'],
@@ -115,7 +115,7 @@ console.log(h1 === h2); // true — key order doesn't matter
 ```ts
 const prevHash = Value.hash(order);
 // ... order is updated ...
-const newOrder = jt.coerce(OrderSchema.$id, { ...order, total: 27.98 });
+const newOrder = jt.instantiate(OrderSchema.$id, { ...order, total: 27.98 });
 
 if (Value.hash(newOrder) !== prevHash) {
   invalidateCache(order.id);

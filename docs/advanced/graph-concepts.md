@@ -161,7 +161,7 @@ These stable pointers are used internally for:
 - `$ref` resolution: `{ $ref: 'urn:bookstore:Isbn' }` resolves via the registry to the schema
   whose `$id` matches that string.
 - Anchor lookup: `$anchor` values establish named pointer aliases within a schema.
-- `validateAt` sub-schema selection: `jt.validateAt(schema, data, '/properties/isbn')` applies
+- `subschemaAt` sub-schema selection: `jt.subschemaAt(schema, data, '/properties/isbn')` applies
   the `isbn` sub-schema to a value.
 
 **Instance paths vs schema paths:** JSON Pointer appears in two distinct contexts:

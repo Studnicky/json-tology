@@ -92,14 +92,14 @@ const bad = jt.validate(CustomerSchema.$id, { email: 'alice@bookstore.example' }
 console.log(bad); // ["root: must have required property 'id'", "root: must have required property 'name'"]
 ```
 
-See [Validation](/validation/coerce) for `is()`, `errors()`, `validateAt()`, and the five error views.
+See [Validation](/validation/instantiate) for `is()`, `errors()`, `subschemaAt()`, and the five error views.
 
 ## Coerce
 
-`coerce()` validates, applies defaults, strips unknown properties, and returns a typed value. Throws `CoercionError` on failure.
+`coerce()` validates, applies defaults, strips unknown properties, and returns a typed value. Throws `InstantiationError` on failure.
 
 ```ts
-import { CoercionError } from 'json-tology';
+import { InstantiationError } from 'json-tology';
 
 const AddressSchema = {
   $id: 'https://bookstore.example/Address',
@@ -115,7 +115,7 @@ const AddressSchema = {
 
 const jt2 = jt.register(AddressSchema);
 
-const address = jt2.coerce(AddressSchema.$id, {
+const address = jt2.instantiate(AddressSchema.$id, {
   street:     '12 Elm Lane',
   city:       'Bookham',
   postalCode: '94107',
@@ -153,7 +153,7 @@ See [Composition](/composition/extend) for `extend`, `omit`, `required`, `inters
 `dump()` walks the validation graph and applies any registered `Transform` encoders. It is the Pydantic `model_dump()` equivalent.
 
 ```ts
-const customer = jt.coerce(CustomerSchema.$id, {
+const customer = jt.instantiate(CustomerSchema.$id, {
   id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   email: 'alice@bookstore.example',
   name:  'Alice Chen',
@@ -189,8 +189,8 @@ import type { LoggerInterface } from 'json-tology/interfaces';
 | Feature | Method(s) |
 |---------|-----------|
 | Type inference | `InferType<T>`, `InferSchemaType<T, Root>` |
-| Validation | `validate`, `is`, `errors`, `validateAt` |
-| Coercion + defaults | `coerce` |
+| Validation | `validate`, `is`, `errors`, `subschemaAt` |
+| Coercion + defaults | `instantiate` |
 | Error views | `messages`, `format`, `flatten`, `aggregate`, `report` |
 | Composition | `Compose.extend`, `pick`, `omit`, `partial`, `required`, `intersection`, `discriminatedUnion` |
 | Value utilities | `Value.clone`, `hash`, `diff`, `value.cast`, `clean`, `convert`, `create` |
@@ -208,7 +208,7 @@ import type { LoggerInterface } from 'json-tology/interfaces';
 | The running example domain | [Bookstore Domain](/bookstore-domain) |
 | Schemas and registration | [Schemas](/schemas) |
 | TypeScript type inference | [Type Inference](/types) |
-| Validation and coercion | [Validation](/validation/coerce) |
+| Validation and coercion | [Validation](/validation/instantiate) |
 | Composing schemas | [Composition](/composition/extend) |
 | Value operations | [Value Operations](/value/clone-hash) |
 | Transforms and brands | [Transforms](/transforms/decode-encode) |
@@ -227,7 +227,7 @@ import type { LoggerInterface } from 'json-tology/interfaces';
 | `formats` | `Record<string, FormatValidatorFn>` | `{}` | Custom format validators. Keys are format names (`'isbn'`), values are `(value: unknown) => boolean`. |
 | `enableTypeCast` | `boolean` | `false` | Enable string→number/boolean coercion at validation time. |
 | `enableStrictTypes` | `boolean` | `false` | Reject implicit coercions globally. Per-field `jt:strict` overrides. Different from `enableStrictGraph`. |
-| `enableDefaults` | `boolean` | `true` | Fill schema `default` values during `coerce`. Set `false` to validate without mutating missing fields. |
+| `enableDefaults` | `boolean` | `true` | Fill schema `default` values during `instantiate`. Set `false` to validate without mutating missing fields. |
 | `enableInlineWarnings` | `boolean` | `false` | Surface inline-object, inline-primitive, and inline-array-items warnings via `logger.warn` at registration. Implied by `enableStrictGraph`. See [graph-native authoring](/advanced/graph-native-authoring). |
 | `enableDuplicateDetection` | `boolean` | `false` | Run `findDuplicates()` at registration and warn on structural duplicates. Implied by `enableStrictGraph`. |
 | `enableStrictGraph` | `boolean` | `false` | Promote inline warnings and duplicate detection to `SchemaError` throws. Requires all sub-schemas to be standalone `$id` schemas or `$defs` entries. See [graph-native authoring](/advanced/graph-native-authoring#enablestrictgraph). |

@@ -36,7 +36,7 @@ const jt = JsonTology.create({
 });
 
 // The only way to obtain a branded value — go through coerce:
-const cid = jt.coerce(CustomerIdSchema.$id, 'c1a2b3d4-e5f6-7890-abcd-ef1234567890');
+const cid = jt.instantiate(CustomerIdSchema.$id, 'c1a2b3d4-e5f6-7890-abcd-ef1234567890');
 // cid is typed as CustomerId
 
 function lookupCustomer(id: CustomerId) { /* ... */ }
