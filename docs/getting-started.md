@@ -233,7 +233,7 @@ import type { LoggerInterface } from 'json-tology/interfaces';
 | `enableDebug` | `boolean` | `false` | Surface internal debug logging via `logger.debug` (graph construction, validator compilation, materialization steps). Useful when investigating unexpected validation outcomes. |
 | `enableInlineWarnings` | `boolean` | `false` | Surface inline-object, inline-primitive, and inline-array-items warnings via `logger.warn` at registration. Implied by `enableStrictGraph`. See [graph-native authoring](/advanced/graph-native-authoring). |
 | `enableDuplicateDetection` | `boolean` | `false` | Run `findDuplicates()` at registration and warn on structural duplicates. Implied by `enableStrictGraph`. |
-| `enableStrictGraph` | `boolean` | `false` | Promote inline warnings and duplicate detection to `SchemaError` throws. Requires all sub-schemas to be standalone `$id` schemas or `$defs` entries. See [graph-native authoring](/advanced/graph-native-authoring#enablestrictgraph). |
+| `enableStrictGraph` | `boolean` | `false` | Promote inline warnings and duplicate detection to `SchemaError` throws. Requires all sub-schemas to be standalone `$id` schemas or `$defs` entries. See [strict graph mode](/advanced/strict-graph-mode#enablestrictgraph). |
 | `keywords` | `KeywordDefinitionInterface[]` | `[]` | Custom keyword handlers for unrecognized JSON Schema vocabulary. |
 | `vocabularies` | `VocabularyPluginInterface[]` | `[]` | Vocabulary plugins for custom RDF output (DCAT, FOAF, etc.). |
 | `materializer` | `MaterializerOptionsInterface` | _(built-in)_ | Override the default materializer (rare). |

@@ -14,9 +14,9 @@ The fix is to extract the concept to a named schema and reference it. This page 
 
 The rest of this page covers:
 
-- How to detect duplicate inline shapes (`SchemaRegistry.findDuplicates`)
-- How to enforce the named-entity pattern at registration time (`enableStrictGraph`)
-- The structural equivalence operator (`Compose.equivalent`) for two domain-distinct concepts that share validation rules
+- How to detect duplicate inline shapes ([`SchemaRegistry.findDuplicates`](/registry/find-duplicates))
+- How to enforce the named-entity pattern at registration time ([strict graph mode](/advanced/strict-graph-mode))
+- The structural equivalence operator ([`Compose.equivalent`](/composition/equivalent)) for two domain-distinct concepts that share validation rules
 - What "graph-native" actually means in the OWL TBox / SHACL output
 
 ## Why named primitives matter {#why-named-primitives-matter}
@@ -112,194 +112,17 @@ export const BookSchema = {
 
 Always show the import that defines the referenced shape - never use a bare string `$ref` pointing to an undocumented IRI.
 
-## `Compose.equivalent` - domain-term distinction {#compose-equivalent}
+## Structural equivalence
 
-### Declaration
+When two schemas describe the same data but represent distinct domain concepts, use `Compose.equivalent` to give the second a name without duplicating the structure. See [`Compose.equivalent`](/composition/equivalent) for the operator declaration; the relevant fact for graph authoring is that it produces a thin `$ref` alias which the OWL projection emits as `owl:equivalentClass`.
 
-```ts
-Compose.equivalent(source, options): { $id, $ref, description?, title?, examples? }
-```
+## Structural extension
 
-### Use this when
+See [`Compose.extend`](/composition/extend) for the operator declaration; the relevant fact for graph authoring is that `extend` produces `allOf + $ref` rather than flattening properties, which preserves the parent class as a real graph node and emits as `rdfs:subClassOf` in the OWL projection.
 
-You want to give a domain-distinct name to an existing schema without duplicating its structure. The two schemas are structurally identical - they validate the same data.
+## Detection and enforcement
 
-```ts
-import { Compose } from 'json-tology';
-import { IsbnSchema } from './Isbn.js';
-
-export const PrimaryIsbnSchema = Compose.equivalent(IsbnSchema, {
-  $id: 'urn:bookstore:PrimaryIsbn',
-  description: 'The canonical ISBN used for catalog lookup and ordering.'
-});
-```
-
-Output shape:
-
-```json
-{ "$id": "urn:bookstore:PrimaryIsbn", "$ref": "urn:bookstore:Isbn", "description": "..." }
-```
-
-In the OWL TBox, `PrimaryIsbn owl:equivalentClass Isbn` is emitted automatically. In SHACL, `PrimaryIsbn sh:node Isbn`.
-
-### Don't use this when
-
-The two schemas have _different structure_. If `PrimaryIsbn` had an extra constraint (e.g. must start with `978`), it is NOT equivalent to `Isbn` - use `Compose.extend` or a new standalone schema instead.
-
-### Bad example
-
-```ts
-// BAD  - extend, not equivalent, because it adds a constraint
-const Isbn978Schema = Compose.equivalent(IsbnSchema, {
-  $id: 'urn:bookstore:Isbn978',
-  pattern: '^978'  // NOT allowed  - adds constraint, changes structure
-});
-```
-
-### Good example
-
-```ts
-// GOOD  - structurally identical, different domain role
-const CatalogIsbn = Compose.equivalent(IsbnSchema, {
-  $id: 'urn:bookstore:CatalogIsbn',
-  description: 'ISBN as used in the public catalog feed.'
-});
-```
-
-### Comparison to OWL `owl:equivalentClass`
-
-`Compose.equivalent` is the JSON Schema authoring API for `owl:equivalentClass`. The two concepts are isomorphic: equivalent classes have identical extension (the same set of instances satisfies both), but serve different semantic roles in the domain model.
-
-### Related / See also
-
-- [OWL TBox output](/advanced/ontology#jt-totbox)
-- [SHACL output](/advanced/ontology#jt-toshacl)
-- `Compose.extend` - structural extension (produces allOf+$ref, maps to `rdfs:subClassOf`)
-
-## `Compose.extend` produces allOf+$ref {#compose-extend}
-
-`Compose.extend(parent, additions, newId)` emits:
-
-```json
-{
-  "$id": "newId",
-  "allOf": [
-    { "$ref": "parent.$id" },
-    { "type": "object", "properties": { ...additions } }
-  ]
-}
-```
-
-This shape maps cleanly to `rdfs:subClassOf` in the graph: the child IS-A parent plus extra properties. The parent schema must be registered before the child.
-
-```ts
-const AdminSchema = Compose.extend(UserSchema, {
-  role: { type: 'string', enum: ['admin', 'superadmin'] }
-} as const, 'https://myapp.io/Admin');
-```
-
-For more detail, see the [Compose.extend reference](/composition/extend).
-
-## Detection and enforcement {#detection-and-enforcement}
-
-### `SchemaRegistry.findDuplicates()` - on-demand check {#schemaregistry-findduplicates}
-
-Call after registering your schemas to get a report of inline shapes that structurally match a registered top-level schema:
-
-```ts
-const registry = new SchemaRegistry();
-registry.register(IsbnSchema);
-registry.register(BookSchema); // has inline isbn: { type: 'string', pattern: ... }
-
-const dups = registry.findDuplicates();
-// [{ schemaId: 'urn:bookstore:Book', pointer: '/properties/isbn', equivalentTo: 'urn:bookstore:Isbn', shape: {...} }]
-```
-
-Returns:
-```ts
-ReadonlyArray<{
-  schemaId: string;    // the schema containing the duplicate
-  pointer: string;     // JSON pointer to the inline shape
-  equivalentTo: string; // $id of the matching registered schema
-  shape: Record<string, unknown>; // the structurally-equal shape
-}>
-```
-
-### `enableInlineWarnings: true` - gentle nudges
-
-Emits `logger.warn` at registration when inline-object or inline-primitive shapes are found. No throws. Requires a logger to be set.
-
-```ts
-const jt = JsonTology.create({
-  baseIRI: 'https://example.com',
-  enableInlineWarnings: true,
-  logger: myLogger
-});
-```
-
-### `enableDuplicateDetection: true` - auto-run at registration
-
-Runs `findDuplicates()` after each schema is registered and emits `logger.warn` if duplicates are found.
-
-```ts
-const jt = JsonTology.create({
-  baseIRI: 'https://example.com',
-  enableDuplicateDetection: true,
-  logger: myLogger
-});
-```
-
-### `enableStrictGraph: true` - CI enforcement {#enablestrictgraph}
-
-Promotes warnings to `SchemaError` throws. Every sub-schema must be either:
-1. A `{ $ref: registeredSchemaId }` reference
-2. A bare base type with no constraint keywords: `{ type: 'string' }`, `{ type: 'integer' }`, `{ type: 'boolean' }`, `{ type: 'array', items: <allowed> }`
-3. Declared in the schema's own `$defs` namespace (the schema's internal ontology)
-
-Inline constrained shapes - objects with `properties`, primitives with `pattern`/`format`/`minimum`/etc., array items with constraints - are all forbidden.
-
-```ts
-const jt = JsonTology.create({
-  baseIRI: 'https://example.com',
-  enableStrictGraph: true,
-  schemas: [...] as const  // all inline shapes throw SchemaError here
-});
-```
-
-**What's allowed inline in strict mode:**
-- `{ type: 'string' }` - no constraints
-- `{ type: 'integer' }` - no constraints
-- `{ type: 'boolean' }` - no constraints
-- `{ type: 'array', items: { $ref: '...' } }` - array of named schemas
-- `{ type: 'array', items: { type: 'string' } }` - array of base types
-- `$defs` entries - the schema's own internal named types
-
-**Migration path:**
-
-1. Run `registry.findDuplicates()` on your existing schema set.
-2. For each duplicate, extract the shape to a named schema file.
-3. Replace inline occurrences with `{ $ref: newSchema.$id }`.
-4. Enable `enableInlineWarnings: true` first (warn-only) to find stragglers.
-5. Once warnings are clean, upgrade to `enableStrictGraph: true`.
-
-**CI script example:**
-
-```ts
-// scripts/check-graph.ts
-import { JsonTology } from 'json-tology';
-import { schemas } from '../src/schemas.js';
-
-const jt = JsonTology.create({ baseIRI: 'https://example.com', schemas });
-const dups = jt.registry.findDuplicates();
-
-if (dups.length > 0) {
-  console.error('Duplicate inline shapes found:');
-  for (const dup of dups) {
-    console.error(`  ${dup.schemaId}#${dup.pointer} duplicates ${dup.equivalentTo}`);
-  }
-  process.exit(1);
-}
-```
+Detection has on-demand ([`findDuplicates`](/registry/find-duplicates)), warning ([`enableInlineWarnings`](/advanced/strict-graph-mode), [`enableDuplicateDetection`](/advanced/strict-graph-mode)), and enforcement ([`enableStrictGraph`](/advanced/strict-graph-mode)) modes.
 
 ## When inline is OK {#when-inline-is-ok}
 

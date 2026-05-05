@@ -10,7 +10,7 @@
 | [`pick` / `omit`](./pick-omit) | Keep or remove specific properties |
 | [`partial` / `required`](./partial-required) | Make all properties optional or required |
 | [`intersection`](./intersection) | Combine schemas with `allOf` |
-| [`equivalent`](/advanced/graph-native-authoring#compose-equivalent) | Declare two schemas as semantically equivalent (`equivalentClass` / `equivalentProperty`) |
+| [`equivalent`](/composition/equivalent) | Declare two schemas as semantically equivalent (`equivalentClass` / `equivalentProperty`) |
 | [`discriminatedUnion` / `narrow`](./discriminated-union) | `oneOf` with type discriminator |
 | [`getDefaults`](./get-defaults) | Extract declared default values |
 
