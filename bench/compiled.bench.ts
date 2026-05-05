@@ -5,8 +5,8 @@
  * and GraphEngine (interpreted) validation paths.
  */
 
-import { SchemaRegistry } from '../src/modules/registry/schemaRegistry.js';
-import { GraphEngine } from '../src/modules/graph/graphEngine.js';
+import { SchemaRegistry } from '../src/modules/registry/SchemaRegistry.js';
+import { GraphEngine } from '../src/modules/graph/GraphEngine.js';
 import {
   bench, type BenchResult, section
 } from './harness.js';

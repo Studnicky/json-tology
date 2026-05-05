@@ -72,19 +72,43 @@ console.log(inv.length === 0); // true
 
 ### Example 3: Order with a discriminated payment field (builds on extend)
 
-Extend `OrderSchema` with a `payment` field typed as the union.
+Extend `OrderSchema` with a `payment` field typed as the union, register the composite, then validate against it.
 
 ```ts
-import { Compose } from 'json-tology';
+import { Compose, JsonTology } from 'json-tology';
 import { OrderSchema } from './bookstore/index.js';
 
 const OrderWithPaymentSchema = Compose.extend(
   OrderSchema,
   {
-    payment: { $ref: 'https://bookstore.example/Payment' },
+    payment: { $ref: PaymentSchema.$id },
   } as const,
   'https://bookstore.example/OrderWithPayment',
 );
+
+const jt2 = JsonTology.create({
+  baseIRI: 'https://bookstore.example',
+  schemas: [
+    CreditCardPaymentSchema,
+    InvoicePaymentSchema,
+    PaymentSchema,
+    OrderSchema,
+    OrderWithPaymentSchema,
+  ] as const,
+});
+
+// Validate the composite, not its parts. The $ref to PaymentSchema
+// resolves through the registry, so each variant is checked at the
+// payment slot.
+const errs = jt2.validate(OrderWithPaymentSchema.$id, {
+  id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+  customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
+  placedAt:   '2026-01-15T10:30:00Z',
+  total:      14.99,
+  items:      [{ bookIsbn: '9780140449136', quantity: 1, unitPrice: 14.99 }],
+  payment:    { method: 'credit_card', cardLast4: '4242', expiry: '12/28' },
+});
+console.log(errs.items.length === 0); // true
 ```
 
 ## `Compose.narrow` {#compose-narrow}

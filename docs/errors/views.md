@@ -14,16 +14,16 @@ All examples use the [bookstore domain](/bookstore-domain).
 
 ## Cookbook recipes
 
-These one-liners replace the removed `messages()`, `format()`, and `flatten()` methods.
+Common shapes for projecting `errs.items` into the format a caller wants.
 
-### Path-prefixed message strings (was `messages()`)
+### Path-prefixed message strings
 
 ```ts
 errs.items.map(err => `${err.path || 'root'}: ${err.message}`)
 // ["/rating: must be <= 5", "/body: must NOT have fewer than 10 characters"]
 ```
 
-### Group by path (was `format()`)
+### Group by path
 
 ```ts
 import type { ValidationErrorType } from 'json-tology';
@@ -36,7 +36,7 @@ for (const err of errs) {
 // grouped['_root']   → [{ keyword: 'required', ... }]
 ```
 
-### Field vs form errors (was `flatten()`)
+### Field vs form errors
 
 ```ts
 import type { ValidationErrorType } from 'json-tology';

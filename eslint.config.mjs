@@ -501,6 +501,7 @@ export default [
       'dist/**',
       '**/*.min.js',
       '**/*.d.ts',
+      '**/*.md',
       '**/vendor/**',
       '.claude',
       'docs/.vitepress/cache/**',

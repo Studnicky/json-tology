@@ -109,7 +109,8 @@ const sidebar = [
       { link: '/advanced/graph-native-authoring', text: 'Graph-native authoring' },
       { link: '/advanced/graph-native-authoring#compose-equivalent', text: 'Compose.equivalent' },
       { link: '/advanced/graph-native-authoring#schemaregistry-findduplicates', text: 'findDuplicates' },
-      { link: '/advanced/graph-concepts', text: 'Graph concepts' }
+      { link: '/advanced/graph-concepts', text: 'Graph concepts' },
+      { link: '/advanced/sub-schemas', text: 'Sub-schemas and $ref composition' }
     ]
   },
   {

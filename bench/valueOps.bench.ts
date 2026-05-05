@@ -12,8 +12,8 @@ FormatRegistry.Set('email', (value) => {
 FormatRegistry.Set('date-time', (value) => {
   return !Number.isNaN(Date.parse(value));
 });
-import { Value } from '../src/modules/data/value.js';
-import { SchemaRegistry } from '../src/modules/registry/schemaRegistry.js';
+import { Value } from '../src/modules/data/Value.js';
+import { SchemaRegistry } from '../src/modules/registry/SchemaRegistry.js';
 import {
   bench, type BenchResult, section
 } from './harness.js';

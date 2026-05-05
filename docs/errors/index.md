@@ -15,19 +15,19 @@
 
 ## Cookbook recipes
 
-These patterns replace the removed `messages()`, `format()`, and `flatten()` methods:
+Common projections from `errs.items`:
 
 ```ts
-// was messages()
+// Path-prefixed message strings
 errs.items.map(err => `${err.path}: ${err.message}`)
 
-// was format()  - group by path
+// Group by path
 const grouped: Record<string, ValidationErrorType[]> = {};
 for (const err of errs) {
   (grouped[err.path || '_root'] ??= []).push(err);
 }
 
-// was flatten()  - field vs form errors
+// Field vs form errors
 const fieldErrors: ValidationErrorType[] = [];
 const formErrors: ValidationErrorType[] = [];
 for (const err of errs) {

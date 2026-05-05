@@ -10,7 +10,7 @@
 
 import { Session } from 'node:inspector/promises';
 import { writeFileSync } from 'node:fs';
-import { SchemaRegistry } from '../src/modules/registry/schemaRegistry.js';
+import { SchemaRegistry } from '../src/modules/registry/SchemaRegistry.js';
 import {
   AddressSchema, CustomerSchema, defaultsInput,
   DefaultsSchema, NestedSchema, nestedValid, OrderItemSchema,
