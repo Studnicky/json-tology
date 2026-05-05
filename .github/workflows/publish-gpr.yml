@@ -1,0 +1,59 @@
+name: Publish to GitHub Packages
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+jobs:
+  publish-gpr:
+    name: Publish to GitHub Packages
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          cache: npm
+          node-version: '24'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@studnicky'
+
+      - name: Install dependencies
+        run: npm ci --include=dev --include=optional
+
+      - name: Build
+        run: npm run build
+
+      - name: Tests
+        run: npm test
+
+      - name: Rewrite package name to scoped form for GitHub Packages
+        run: |
+          node -e "const fs=require('fs');const p=require('./package.json');p.name='@studnicky/json-tology';p.publishConfig={...(p.publishConfig||{}),registry:'https://npm.pkg.github.com'};fs.writeFileSync('./package.json',JSON.stringify(p,null,2)+'\n');"
+
+      - name: Check if version already published
+        id: check-version
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PKG_NAME=$(node -p "require('./package.json').name")
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          echo "version=${PKG_VERSION}" >> $GITHUB_OUTPUT
+          if npm view "${PKG_NAME}@${PKG_VERSION}" version 2>/dev/null; then
+            echo "already=true" >> $GITHUB_OUTPUT
+          else
+            echo "already=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Publish
+        if: steps.check-version.outputs.already == 'false'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm publish --provenance --access public
