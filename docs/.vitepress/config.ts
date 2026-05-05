@@ -119,7 +119,8 @@ const sidebar = [
   {
     text: 'Cookbook',
     items: [
-      { link: '/cookbook/custom-formats', text: 'Custom format validators' }
+      { link: '/cookbook/custom-formats', text: 'Custom format validators' },
+      { link: '/cookbook/transforms-recipes', text: 'Transform recipes' }
     ]
   },
   {
