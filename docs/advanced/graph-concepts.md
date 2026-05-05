@@ -274,67 +274,15 @@ against all registered schemas. The graph edges connect nodes across schema boun
 
 ---
 
-## The serializer trio
+## Serializers
 
-json-tology exposes three serialization entry points:
-
-| Method | Output | Use when |
-|---|---|---|
-| `jt.toTbox()` | OWL classes and properties only | Feeding a reasoner; querying class hierarchy |
-| `jt.toShacl()` | SHACL shapes only | Validating external data against your schema |
-| `jt.ontology()` | OWL TBox + SHACL combined | Generating a complete ontology document |
-
-```ts
-// OWL only  - class declarations, domain/range, subClassOf
-const tbox  = entities.toTbox();
-
-// SHACL only  - node shapes, property shapes, cardinality
-const shacl = entities.toShacl();
-
-// Both combined
-const ont   = entities.ontology();
-
-// Render to JSON-LD string
-console.log(ont.jsonLd());
-
-// Inspect raw JSON-LD graph
-const nodes = tbox.raw();
-
-// Get SHACL-specific representation
-const shapes = shacl.shaclObject();
-```
-
-**Decision guide:**
-- Integrating with an OWL reasoner (Pellet, EYE, etc.) → `toTbox()`
-- Validating third-party data against your schema in a SHACL processor → `toShacl()`
-- Publishing a complete ontology document → `ontology()`
+The canonical graph backs three serializers - see [Ontology emission](/advanced/ontology) for the operator-level reference.
 
 ---
 
 ## ABox projection
 
-ABox projection converts typed JavaScript objects into RDF quads and back.
-
-```ts
-const book: Book = {
-  isbn: '9780140449136',
-  title: 'The Odyssey',
-  authors: ['Homer'],
-  price: 1299,
-  currency: 'USD'
-};
-
-// Typed object → RDF quads (ABox)
-const quads = entities.toQuads(BookSchema, book);
-
-// RDF quads → typed object (round-trip)
-const [restored] = entities.fromQuads('urn:bookstore:Book', quads);
-```
-
-`toQuads` produces one quad per property, typed according to the schema's XSD/IRI mappings.
-`fromQuads` reconstructs the object by reading quad subjects and predicates.
-
-The round-trip is symmetric: `fromQuads(id, toQuads(schema, obj))` recovers the original object.
+ABox projection round-trips typed data through RDF quads - see [RDF round-trip](/advanced/quads).
 
 ---
 
@@ -363,44 +311,9 @@ ontology document itself.
 
 ---
 
-## Query patterns
+## Querying the TBox
 
-Once you have a TBox, you can query it with SPARQL. The `toTbox().jsonLd()` output is a valid
-JSON-LD document that can be loaded into any RDF store.
-
-```sparql
-# Find all subclasses of urn:bookstore:Customer
-SELECT ?subclass WHERE {
-  ?subclass rdfs:subClassOf <urn:bookstore:Customer> .
-}
-
-# Find all properties whose range is urn:bookstore:Isbn
-SELECT ?property WHERE {
-  ?property rdfs:range <urn:bookstore:Isbn> .
-}
-
-# Find all named primitives (classes that are not object schemas)
-SELECT ?cls WHERE {
-  ?cls a owl:Class .
-  FILTER NOT EXISTS { ?cls rdfs:subClassOf ?parent . }
-}
-```
-
-**Usage with N3.js (example):**
-
-```ts
-import { Store, Parser } from 'n3';
-
-const store = new Store();
-const parser = new Parser({ format: 'application/ld+json' });
-
-parser.parse(entities.toTbox().jsonLd(), (error, quad) => {
-  if (quad) store.addQuad(quad);
-});
-
-// Query: all subclass relations
-const subclasses = store.getQuads(null, 'http://www.w3.org/2000/01/rdf-schema#subClassOf', null, null);
-```
+Once emitted as JSON-LD the TBox loads into any RDF store; standard SPARQL applies. See [SPARQL queries](/usage-examples/sparql-queries) for recipes.
 
 ---
 
@@ -428,6 +341,8 @@ irreducibles.
 
 - [Graph-native authoring](/advanced/graph-native-authoring) - how to write schemas that produce clean graphs
 - [Ontology and Graphs](/advanced/ontology) - `toTbox`, `toShacl`, `ontology`, `toQuads`, `fromQuads`
+- [RDF round-trip](/advanced/quads) - operator-level `toQuads` / `fromQuads` reference
+- [SPARQL queries](/usage-examples/sparql-queries) - querying the TBox
 
 ## See also
 
