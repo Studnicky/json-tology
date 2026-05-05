@@ -940,3 +940,35 @@ The shift to "three first-class paths" closes some open questions and reframes o
 - **Q8 (`JsonTology` class export)** Keep the class. The static counterparts and the `create` cache constructor live on the same name. No renaming needed.
 
 That leaves Q2 (strip vs reject `~jt:*` on `register()`) and Q6 (metadata API naming: `Invariant.attach` vs `attachInvariant`) as the only undecided questions for the alpha.
+
+---
+
+## Locked decisions: Q2 (strip on register) and Q6 (`Invariant.attach`)
+
+### Q2 — Strip vs reject `~jt:*` keys on `register()`. **Resolution: strip silently; opt-in `enableStrictPhantoms` to promote to error.**
+
+#### UX comparison
+
+- **Strip silently** preserves the contract that `register(schema)` accepts any schema literal a user authored, no matter which path produced it (A, B, C, or a `Compose.*`/`Transform.attach`/`Invariant.attach` result that carries phantoms). Users never have to think about phantoms; they pass the schema they built and the registry stores a clean canonical form.
+- **Reject** forces a `stripPhantoms(s)` call (or some equivalent ceremony) at every `register()` site for any schema that touched a phantom-producing builder. That breaks the "just pass me a schema" contract for the typed authoring paths and surfaces an internal-implementation detail (the phantom) as a user-facing error class.
+
+For end-users, strip is the obvious win. For library-author hygiene (catching cases where phantoms accidentally make it into a wire-format JSON document via a code path that shouldn't have them), `enableStrictPhantoms: true` flips strip into reject. That's a per-registry option, defaulting off, intended for CI of consumer applications that ship JSON Schema documents to external consumers.
+
+#### Performance comparison
+
+Both implementations walk the schema tree once.
+
+- **Strip** must walk and clone any node containing a `~jt:*` key (the rest are passed by reference). Clean schemas (no phantoms) pay one O(n) traversal that finds nothing and returns the input unchanged - no allocation. Dirty schemas pay O(n) plus allocation proportional to the number of nodes that contained a phantom.
+- **Reject** walks the same O(n) traversal but short-circuits the moment any `~jt:*` is observed - no clone, no allocation. Marginally cheaper on dirty schemas, identical on clean schemas.
+
+In practice both are dwarfed by validator compilation. `register()` is a one-time per-schema cost paid at boot or first reference; the hot path (validate, instantiate) pays zero phantom-related cost regardless of which choice we make at register-time.
+
+The performance argument is a wash. UX wins. **Strip silently.**
+
+### Q6 — Metadata API naming. **Resolution: `Invariant.attach`, `Computed.attach`, `Transform.attach`. Namespaced.**
+
+Decided. Matches `Compose.extend`, `Compose.equivalent`, and the rest of the existing namespaced surface. Single verb (`attach`) across every metadata axis. Discoverability via `Invariant.` / `Computed.` / `Transform.` IDE auto-complete. `Transform.create` is aliased to `Transform.attach` for the 0.3.x → 0.4 transition; the alias is removed in 0.5.
+
+### Open questions remaining: none.
+
+The design is ready for the alpha spike.
