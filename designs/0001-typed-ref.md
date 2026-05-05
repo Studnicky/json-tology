@@ -259,3 +259,164 @@ Phase 3 (0.4 release):
 - Bare-string `$ref` is removed.
 - The registry is removed. (Runtime IRI resolution still requires it.)
 - The wire format changes.
+
+---
+
+## Addendum: registry-as-cache, not registry-as-requirement
+
+The phantom only solves type inference. The deeper goal is that **users should not have to import or thread a registry to do anything** — including runtime validation, instantiation, materialization, transforms, invariants, computeds, or graph projection. Just import the schema and use it.
+
+### Today's friction
+
+Right now the runtime path looks like:
+
+```ts
+// schemas/User.ts
+export const UserSchema = { $id: '...', ... } as const;
+
+// schemas/Order.ts
+export const OrderSchema = { $id: '...', properties: { buyer: { $ref: UserSchema.$id } } } as const;
+
+// services/order-handler.ts
+import { JsonTology } from 'json-tology';
+import { UserSchema } from '../schemas/User.js';
+import { OrderSchema } from '../schemas/Order.js';
+
+const jt = JsonTology.create({ schemas: [UserSchema, OrderSchema] as const });
+
+export function handleOrder(req: unknown) {
+  return jt.instantiate(OrderSchema.$id, req);   // jt is mandatory
+}
+```
+
+`jt` is a *handle* the caller has to construct, hold, and pass around. In a multi-file codebase you end up with a "schemas registry" module that exports `jt`, and every consumer imports from it. That's the registry-import-everywhere problem.
+
+### The design target
+
+```ts
+// services/order-handler.ts
+import { JsonTology } from 'json-tology';
+import { OrderSchema } from '../schemas/Order.js';
+
+export function handleOrder(req: unknown) {
+  return JsonTology.instantiate(OrderSchema, req);  // no registry; no tuple; types ride the import
+}
+```
+
+`JsonTology.<op>(schema, data)` exists today as the "static counterpart" surface (the 13 statics added in 0.3). 0.4 makes those statics first-class:
+
+- They walk the schema's phantoms to discover every dependent schema.
+- They auto-attach transforms, invariants, and computeds carried by the schema object.
+- They internally cache compiled validators by schema-object identity (WeakMap), so the second call against the same `OrderSchema` is warm.
+
+`JsonTology.create({ schemas: [...] })` becomes a *performance affordance*, not a correctness requirement:
+
+- Pre-compile validators across a known set of schemas at boot.
+- Keep a long-lived handle when you want to reuse the same compiled validator graph.
+- Get an `entities.value.cast(id, data)` style API where `id` is a string lookup.
+
+If the user never calls `create()`, every static helper still works.
+
+### What has to travel with the schema object
+
+For `JsonTology.<op>(SchemaLiteral, data)` to be sufficient, every piece of metadata that's currently attached via the registry must instead travel with the schema literal — either embedded in it or stored against its object identity.
+
+| Today's API | Today's storage | 0.4 design |
+|---|---|---|
+| `Transform.create(S, { decode, encode })` | WeakMap keyed by S | Same. WeakMap survives across files because S is the same object. ✓ already works |
+| `addInvariant(S, fn)` (instance method on `JsonTology`) | Per-registry map | Move to a module-level WeakMap keyed by S. Expose as `Transform.addInvariant(S, fn)` or `Invariant.add(S, fn)`. Same identity model as Transform. |
+| `addComputed(S, key, fn)` | Per-registry map | Same — module-level WeakMap. `Computed.add(S, key, fn)`. |
+| Cross-schema `$ref` resolution | Registry IRI → schema lookup | `~jt:source` phantom + transitive walk; registry only consulted as a fallback for legacy bare-string `$ref`s |
+| Compiled validator cache | Per-registry map | Module-level WeakMap keyed by schema literal; eviction on schema mutation (frozen schemas never evict) |
+
+The pattern is consistent: **everything keyed by `$id` in the registry today moves to a module-level WeakMap keyed by the schema's object identity in 0.4**. Schema literals are typically frozen and exported once, so identity is stable across the program.
+
+### What still requires a registry
+
+Two scenarios genuinely need a long-lived handle:
+
+1. **Lookup by IRI.** `entities.materialize('urn:bookstore:Order', data)` takes a string. There's no schema object in the call site to walk. If this is a desired surface, it needs a place that holds `{ iri → schema }`. Solution: keep `JsonTology.create({ schemas: [...] })` for callers who want this; move the underlying lookup to a process-global IRI map maintained by `Transform.create`/`ref()` (every call to those auto-registers the source schema in the global IRI map by its `$id`). String-IRI lookup then works without an explicit `create()`.
+2. **Mutual-reference `Compose.equivalent` cycles.** Two schemas that reference each other before either has been declared as a TS variable need a forward-reference. Solution: `lazyRef(() => SchemaB)` builder for the cyclic case. (Same pattern Zod uses for `z.lazy(() => Schema)`.)
+
+Everything else falls out of "metadata travels with the schema object."
+
+### Process-global IRI map
+
+A single module-level `Map<string, SchemaLiteral>` populated automatically by `ref()` and `Transform.create` and `Compose.*`. Public API:
+
+```ts
+import { Schemas } from 'json-tology';
+
+Schemas.byId('urn:bookstore:User')  // returns UserSchema or throws
+Schemas.has('urn:bookstore:User')   // boolean
+```
+
+This is the *only* state that's process-global. It's small, monotonic, and reflects "every schema this Node process has seen." `JsonTology.create({ schemas: [...] })` becomes equivalent to "ensure these schemas are in the global IRI map" + "compile validators eagerly" + "return a stateful handle for the cache-reuse case."
+
+For test isolation, expose `Schemas.snapshot()` / `Schemas.restore(snapshot)` / `Schemas.clear()` — the same pattern Zod uses for its global registry of `z.string().describe(...)` metadata.
+
+### What the public surface looks like in 0.4
+
+```ts
+import {
+  ref, lazyRef,                          // type-typed references
+  Transform, Invariant, Computed,        // schema-attached metadata
+  Compose,                               // schema combinators
+  JsonTology,                            // static helpers + optional cache handle
+  Schemas                                // process-global IRI lookup
+} from 'json-tology';
+
+// Authoring (no registry import)
+const UserSchema = {
+  $id: 'urn:bookstore:User', type: 'object',
+  properties: { name: { type: 'string' } }, required: ['name']
+} as const;
+
+Invariant.add(UserSchema, u => u.name.length > 0 ? null : 'name required');
+
+const OrderSchema = {
+  $id: 'urn:bookstore:Order', type: 'object',
+  properties: { buyer: ref(UserSchema), total: { type: 'number' } }
+} as const;
+
+// Use (no registry import, no tuple)
+const order = JsonTology.instantiate(OrderSchema, data);
+const ok = JsonTology.is(OrderSchema, data);
+const tbox = JsonTology.toTbox(OrderSchema);
+
+// Optional cache handle (only when warm-up matters)
+const jt = JsonTology.create({ schemas: [OrderSchema] });
+jt.instantiate(OrderSchema, data);            // hot path; phantom auto-walks UserSchema
+jt.materialize('urn:bookstore:Order', data);  // string-IRI lookup via global map
+```
+
+The mental model: schemas are *values that know how to validate themselves*. The library provides operators (static helpers) that take a schema and produce a result. A registry is one operator's optional cache, not a thing every operator needs.
+
+### Migration story (revised)
+
+| Today | 0.4 |
+|---|---|
+| `const jt = JsonTology.create({ schemas: [A, B, C] })` + import `jt` everywhere | Drop. Use `JsonTology.<op>(SchemaLiteral, data)` directly. |
+| `jt.addInvariant(SchemaA, fn)` | `Invariant.add(SchemaA, fn)` at module scope, runs once at module load. |
+| `jt.addComputed(SchemaA, 'key', fn)` | `Computed.add(SchemaA, 'key', fn)` at module scope. |
+| `jt.materialize('urn:.../A', data)` | Either `JsonTology.materialize(SchemaA, data)` (preferred) or keep the string-IRI form via global map (`Schemas.byId`). |
+| `JsonTology.create` with 50 schemas as a tuple | Optional — only when you want eager compilation. The schemas are in the global IRI map regardless once their modules load. |
+
+### Risks of this expansion
+
+- **Process-global mutable state.** A side-effecting import (`Invariant.add`, `Transform.create`) registers things in module-global WeakMaps. Test isolation requires snapshot/restore. Document it loudly. Provide ESLint rule: prefer module-top-level metadata calls over runtime ones.
+- **WeakMap memory.** Schema literals are typically retained for the program lifetime, so the WeakMaps don't actually allow GC. That's fine — schemas are intentionally long-lived — but document it so users don't expect freeing.
+- **Forward references.** `lazyRef(() => Schema)` works but adds a small runtime cost. Document when it's needed.
+- **"Where do my transforms live?"** discoverability. Today users find them on `jt.*`. Tomorrow they're module-level functions. Doc landing page must surface `Transform`, `Invariant`, `Computed`, `Schemas` as peers of `JsonTology`.
+
+### Open questions added
+
+6. **Module-level metadata APIs.** `Invariant.add(S, fn)` vs `addInvariant(S, fn)` (free function) vs `S.addInvariant(fn)` (method on a frozen schema — requires unfreezing or a Proxy). Lean: `Invariant.add(...)` for symmetry with `Transform.create`.
+7. **Process-global IRI map.** Is the auto-populating `Schemas` map a public API, or an internal implementation detail of `JsonTology.<op>` statics? If public, what's its mutation API (only `add`?), what's its query API (`byId`, `has`, `iter`?), what's the test-isolation contract?
+8. **Should `JsonTology` the class even be exported in 0.4?** If the static helpers are the canonical surface and the cache handle is opt-in, maybe the export is `jsonTology` (an object with the statics) and the constructor surface (`createCache({ schemas })`) is a separate name. Naming-bikeshed; defer until Phase 1 lands.
+
+### Done means (revised)
+
+- A consumer can write `JsonTology.instantiate(OrderSchema, data)` in a fresh file, with only `import { JsonTology } from 'json-tology'` and `import { OrderSchema } from './schemas/Order.js'`, and have validation, defaults, transforms, invariants, computeds, and `$ref` resolution all work — no `JsonTology.create` call anywhere in the program.
+- A consumer who wants warm validators can opt into `JsonTology.create({ schemas: [...] })` and pass the resulting handle to functions that prefer it. Both forms produce identical behaviour; only the perf profile differs.
+- The bookstore example app demonstrates both modes side-by-side.
