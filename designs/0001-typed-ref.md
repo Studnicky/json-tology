@@ -420,3 +420,209 @@ The mental model: schemas are *values that know how to validate themselves*. The
 - A consumer can write `JsonTology.instantiate(OrderSchema, data)` in a fresh file, with only `import { JsonTology } from 'json-tology'` and `import { OrderSchema } from './schemas/Order.js'`, and have validation, defaults, transforms, invariants, computeds, and `$ref` resolution all work — no `JsonTology.create` call anywhere in the program.
 - A consumer who wants warm validators can opt into `JsonTology.create({ schemas: [...] })` and pass the resulting handle to functions that prefer it. Both forms produce identical behaviour; only the perf profile differs.
 - The bookstore example app demonstrates both modes side-by-side.
+
+---
+
+## Addendum: risks deepened, with comparator analysis
+
+The "registry-as-cache" addendum sketched four risks. This section names them concretely, walks the failure mode for each, surveys how Zod, TypeBox, and Pydantic handle the same problem, and proposes a mitigation. One of the surveys (wrap-and-return on metadata) is strong enough to revise the architecture.
+
+### Risk 1: Side-effecting imports register module-global state
+
+**Concrete failure modes:**
+
+- **Import-order coupling.** Module A imports `UserSchema` and calls `Invariant.add(UserSchema, validateName)`. Module B imports `UserSchema` directly without ever loading A. Module B's calls to `JsonTology.validate(UserSchema, ...)` silently skip the invariant. The invariant is "registered" only when A's module evaluation order puts it ahead of the validation call. Bug surfaces only at runtime, often in production where a barrel file masked an import that the dev tree happened to include.
+- **Test pollution.** Test 1 calls `Invariant.add(S, fn)`. Test 2 runs in the same process, re-imports `S`, and observes Test 1's invariant. Test 2 may fail or pass spuriously depending on Test 1's execution.
+- **Hot-reload duplication.** A dev server reloads the module that calls `Transform.create(S, decoderA)`. Because the schema literal `S` is reconstructed on reload as a new object reference, the WeakMap accumulates an entry per reload. Memory grows; old decoders linger keyed against orphaned schema objects. (Survives because the test harness keeps strong refs for assertions; otherwise this would self-clean.)
+- **Race between transitive imports.** `Compose.equivalent(PersonNameSchema, ...)` for `CustomerNameSchema` and `AuthorNameSchema` in two separate modules. Whichever module evaluates first wins the global IRI map; the second observes a mismatch and either silently overrides or throws.
+- **Code-splitting / tree-shaking.** A bundler removes `Invariant.add(S, fn)` because the call has no observable return value. Validator now skips the invariant in production builds only.
+
+**Zod's approach.** No process-global state. `.refine(fn, msg)` returns a NEW schema with the refinement baked into the validator chain. Modules that need the refinement import the refined schema, not the original. Identity is the schema variable, not an IRI. Test isolation is structural - each test imports the schemas it actually exercises. There is no "did A's module load before B's?" question because there is no shared mutable side-channel.
+
+**TypeBox's approach.** Same as Zod. Refinements (`Type.String({ minLength: 1 })`) live inside the schema body. `Type.Transform(...)` returns a new schema. `TypeCompiler.Compile(Schema)` returns a compiled validator function the user holds; no cache. The user manages a Map<schema, compiled> if they want one.
+
+**Pydantic's approach.** Validators live on the class itself via `@validator('field')` decorators. The class definition is the registration site, evaluated exactly once at module-load. Subclasses inherit; runtime mutation of an existing class's validators is not supported. The class IS the storage; there is no side-channel to fall out of sync with.
+
+**The mitigation that follows from the survey: wrap-and-return.**
+
+Replace the side-effecting `Invariant.add(S, fn)` with `Invariant.attach(S, fn)` that returns a new schema with the invariant baked in via a phantom field:
+
+```ts
+// Before (side-effecting, module-global state)
+import { UserSchema } from './schemas/User.js';
+Invariant.add(UserSchema, u => u.name.length > 0 ? null : 'name required');
+// every consumer of UserSchema now indirectly sees this invariant
+
+// After (wrap-and-return, no side-effect)
+import { UserSchema as _UserSchemaBare } from './schemas/User.bare.js';
+import { Invariant } from 'json-tology';
+export const UserSchema = Invariant.attach(_UserSchemaBare,
+  u => u.name.length > 0 ? null : 'name required'
+);
+// consumers import the refined UserSchema; the bare version stays available
+```
+
+The phantom storage is `~jt:invariants?: ReadonlyArray<InvariantFnInterface>`, stripped at every serializer alongside `~jt:source`. `Compose.equivalent`, `Compose.extend`, `Compose.intersection`, and the rest preserve the phantom array on combine.
+
+Every concrete failure mode above evaporates: import order is irrelevant (you import the refined schema directly), tests pass refined schemas as fixtures, hot-reload produces new objects with the same content, code-splitting cannot tree-shake away a pure expression that's exported, and there is no global IRI map for races to hit.
+
+The cost: users have to choose between exporting `UserSchema` (refined) and exporting `UserSchema_bare` (no invariant). For most projects there's only one - the refined version is the canonical export. Same convention Zod uses.
+
+**Recommendation: 0.4 adopts wrap-and-return for `Invariant`, `Computed`, `Transform`. The process-global IRI map stays, but only as an auto-populated index for `JsonTology.materialize('urn:.../X', data)` style string-IRI calls. Snapshot/restore stays for test isolation.**
+
+---
+
+### Risk 2: WeakMap memory and GC behaviour
+
+**Concrete failure modes:**
+
+- **Phantom retention.** A WeakMap keyed by schema objects allows GC when the schema is unreferenced. Schemas are typically frozen module-level constants retained for program lifetime, so the WeakMap entries also live for program lifetime. Not a leak (everything's reachable), but not a feature either.
+- **Per-request schemas.** A user generates schemas dynamically per request (e.g. building variant schemas from query parameters). The WeakMap GC's correctly when the request handler returns - good. But the compiled validator cache is also released, so each request pays the compilation cost.
+- **Heap snapshots show "unreleasable" entries.** A monitoring engineer reviewing a heap snapshot sees a 50-MB WeakMap and panics. The schemas are intentional long-lived state; the WeakMap is doing exactly what it should.
+
+**Zod's approach.** No metadata WeakMap. Schemas are JS objects with methods on them; the schema body holds everything. Each parse interprets the schema. Compilation cache (when used via third-party libraries like `zod-fast-check`) is the user's responsibility.
+
+**TypeBox's approach.** No metadata WeakMap. Schemas are plain JSON Schema objects. `TypeCompiler.Compile` returns a closure - the user decides what to do with it. Heap impact is exactly what the user holds.
+
+**Pydantic's approach.** Validator code lives on the class via the metaclass. Classes are interned in Python's module namespace. Heap impact is exactly the class set.
+
+**Mitigation:**
+
+If the wrap-and-return refactor lands, the only WeakMaps left are:
+
+1. **Compiled validator cache** (purely a performance optimisation; identity-keyed, schemas frozen).
+2. **Process-global IRI map** (intentional state for string-IRI lookup).
+
+Both are documented as "long-lived by design." Provide:
+
+- `Schemas.heapStats()` debug helper returning `{ schemaCount, validatorCount, byteEstimate }` for monitoring.
+- `Schemas.evict(SchemaLiteral)` and `Schemas.clear()` for explicit teardown.
+- Doc page under Reference titled "Process-global state" enumerating exactly what state exists, where, and how to reset it.
+
+---
+
+### Risk 3: Forward references and cycles
+
+**Concrete failure modes:**
+
+- **Mutual recursion.** `EmployeeSchema` references `ManagerSchema` references `EmployeeSchema`. `ref(ManagerSchema)` cannot evaluate at the time `EmployeeSchema` is being defined.
+- **Self-reference at the type level.** `PersonSchema.manager: ref(PersonSchema)` requires `PersonSchema` to exist when its own `properties.manager` is being authored.
+- **Lazy circular imports.** Module A imports B which imports A. ESM breaks the cycle by giving one side a partially-initialised binding; whichever side calls `ref(...)` on the partial wins or loses depending on order.
+
+**Zod's approach.** `z.lazy(() => Schema)` defers resolution to first use. TypeScript handles recursive types fine when the user supplies an explicit type annotation - Zod publishes the pattern in its docs. Internally `z.lazy` stores the thunk and invokes it on first parse.
+
+**TypeBox's approach.** `Type.Recursive((This) => Type.Object({ next: This }))` passes a self-reference as a type parameter to the body. Type-level recursion lives inside the parameter. Cleaner than Zod for self-reference; mutual recursion still wants a thunk.
+
+**Pydantic's approach.** Forward references as string class names: `manager: 'Manager'`. After both classes are defined, `Model.model_rebuild()` resolves the strings. Slightly clunky but explicit.
+
+**Mitigation:**
+
+- **`lazyRef(() => Schema)`** for the mutual-recursion case. Returns `{ $ref: <thunked-id>; '~jt:source-thunk': () => TSchema }`. The phantom is invoked at first use, memoised thereafter.
+- **`Self` builder** for direct self-reference: `{ manager: Self }` resolved against the enclosing schema's `$id` at translation time. Same trick TypeBox uses.
+- **Type-level recursion** already works in `InferType` because TypeScript natively supports it when the schema is a `const`.
+- **ESM cycle handling.** Document that mutual-reference schemas should be defined in the same file (the natural unit). Cross-file mutual references must use `lazyRef`.
+
+---
+
+### Risk 4: Discoverability of the metadata API surface
+
+**Concrete failure modes:**
+
+- A user opens the docs and reads about `JsonTology.validate(schema, data)`. They want to add an invariant. They search the `JsonTology` API and find nothing. They give up or attach the check by hand.
+- A user is mid-IDE auto-complete on a schema literal, types `.`, and gets nothing because schema literals are plain `as const` objects with no methods.
+- A user reads a Zod migration guide and looks for the json-tology equivalent of `.refine`. Without explicit landing-page presence, they don't find it.
+
+**Zod's approach.** Everything is a method on the schema instance. `.refine`, `.transform`, `.default`, `.optional`, `.describe`, `.brand`. IDE auto-complete is the documentation. Tradeoff: Zod is not interoperable with raw JSON Schema; you have to use Zod's DSL throughout.
+
+**TypeBox's approach.** Namespaced builders. `Type.Object`, `Type.Union`, `Type.Transform`, `Type.Recursive`. `Value.Decode`, `Value.Errors`, `Value.Cast`. `TypeCompiler.Compile`. Each namespace covers one axis. Auto-complete on `Type.` surfaces every builder; on `Value.` every runtime op. Easy to discover.
+
+**Pydantic's approach.** Methods on the class plus decorators. `@validator`, `@root_validator`, `@field_serializer`. Documentation is the primary discovery mechanism; auto-complete is partial because decorators are out-of-band.
+
+**Mitigation:**
+
+Adopt TypeBox's namespacing for the wrap-and-return APIs:
+
+```ts
+import { Compose, Invariant, Computed, Transform } from 'json-tology';
+
+const UserSchema = Invariant.attach(_UserSchemaBare, validateName);
+const ProductSchema = Computed.attach(_ProductSchemaBare, 'displayName', deriveDisplayName);
+const TimestampSchema = Transform.attach(_TimestampSchemaBare, { decode: ..., encode: ... });
+const Equiv = Compose.equivalent(...);
+const Extended = Compose.extend(...);
+```
+
+`.attach` is the consistent verb. `.attach` returns a new schema; the old `.add` (side-effecting) is removed. Every namespace has exactly one verb. The doc page "Authoring patterns" lists all six in one table.
+
+**Compose surface stays.** Today's `Compose.extend`, `Compose.intersection`, `Compose.discriminatedUnion`, `Compose.equivalent`, `Compose.pick`, `Compose.omit`, `Compose.partial`, `Compose.required`, `Compose.getDefaults`, `Compose.narrow` are all wrap-and-return already. Pattern is consistent end to end.
+
+---
+
+### Risk 5: Cache invalidation across schema variants
+
+**Concrete failure mode (specific to wrap-and-return).**
+
+- User writes `const S = SchemaBare; const S2 = Invariant.attach(S, fn);` then exports both. A consumer imports `S2` (refined) but a separate consumer imports `S` (bare). Both compile validators. The compiled validator cache is keyed by schema object identity, so two cache entries exist - which is correct, since they're distinct schemas with distinct semantics. Memory cost: 2x. Behaviour: correct.
+- User writes `const S2 = Invariant.attach(S, fn1); const S3 = Invariant.attach(S, fn2);` - two attachments on the SAME bare schema producing two refined schemas. Both compile. Cache holds three entries (S, S2, S3). Behaviour correct; users can reason about the cache by counting the schema objects they created.
+
+**Zod's approach.** Same outcome - `.refine` returns new schema, cache (when used) is keyed by the new schema instance.
+
+**TypeBox's approach.** Same.
+
+**Pydantic's approach.** Each subclass produces its own validator. Same outcome.
+
+**Mitigation: none needed.** Wrap-and-return makes cache identity match semantic identity. The "user accidentally caches twice" scenario reduces to "user wrote two distinct schemas."
+
+---
+
+### Risk 6: Bundler / tree-shaking interactions
+
+**Concrete failure modes (specific to side-effecting design):**
+
+- `Invariant.add(S, fn)` is a no-return-value expression statement at module top level. A naive tree-shaker considers it side-effect-free and elides it. The validator now skips the invariant in production-only.
+- `package.json#sideEffects: false` on json-tology marks the package as side-effect-free, which means consumers' bundlers may drop calls to `Invariant.add`. We can mark only the specific re-export paths as side-effectful, but it's fragile.
+- Webpack and Rollup differ on how they treat `import './side-effect-module.js'` patterns.
+
+**Wrap-and-return eliminates this entire risk class.** `const S2 = Invariant.attach(S, fn)` is an assignment with a return value the rest of the program reads. Tree-shakers can't elide it without breaking the program, because `S2` is observably used downstream.
+
+**Zod / TypeBox / Pydantic.** None have this risk because none use side-effecting registration.
+
+---
+
+### Risk 7: Mental-model fragmentation across the API
+
+If we kept side-effecting metadata for `Invariant` and `Computed` while `Transform.create` already returned a new schema, users would have two patterns:
+
+- `Transform.create(S, ...)` returns a new schema. Use the returned value.
+- `Invariant.add(S, fn)` returns nothing. Use S directly.
+
+Same library, different ergonomics for adjacent operations. Confusing.
+
+**Mitigation: wrap-and-return everywhere.**
+
+```ts
+const A = SchemaBare;
+const B = Transform.attach(A, { decode, encode });   // returns new
+const C = Invariant.attach(B, fn);                    // returns new
+const D = Computed.attach(C, 'derived', fn);          // returns new
+// D carries: bare body + transform + invariant + computed, all via phantom arrays
+```
+
+One verb, one pattern, one mental model. Renames Transform.create to Transform.attach for consistency (alias the old name during 0.3.x → 0.4 transition).
+
+---
+
+## Revised recommendation
+
+The original design described a registry-as-cache architecture with module-level WeakMaps for invariants and computeds. The comparator analysis shows that approach pays a list of avoidable risks (side-effect coupling, tree-shaking interactions, test pollution, mental-model fragmentation) for a small ergonomic win.
+
+**Replace the side-effect path with wrap-and-return for every metadata axis.** Phantoms (`~jt:source`, `~jt:invariants`, `~jt:computeds`) ride on the schema literal. Every operator (`Compose.*`, `Transform.attach`, `Invariant.attach`, `Computed.attach`, `ref`, `lazyRef`) is pure: takes a schema, returns a schema. The only surviving WeakMaps are pure performance caches (compiled validators, structural-hash dedupe) - never correctness-load-bearing.
+
+This costs users one extra `const X = ...` line per metadata addition and no longer offers the `S.addInvariant(...)` ergonomic. In exchange, the library has zero process-global mutable correctness state. That tradeoff matches what every comparator settled on.
+
+Update done-means accordingly:
+
+- A consumer can `import { OrderSchema } from './schemas/Order.js'; const result = JsonTology.instantiate(OrderSchema, data);` and have validation, defaults, transforms, invariants, computeds, and `$ref` resolution all work. (Unchanged.)
+- Every metadata addition is a `const X = Op.attach(S, ...)` returning a new schema. Wrap-and-return is the universal pattern. (New.)
+- The library exports zero side-effecting public functions. (New.)
+- `Schemas.byId(...)` is the only process-global state, populated automatically by `ref()` only when the IRI is observed; offers `snapshot/restore/clear`. (Refined.)
