@@ -1,47 +1,56 @@
 /**
- * palette.css — per-project colour tokens
- * Source: W3C Design System https://design-system.w3.org/settings/
+ * palette.css — JST (json-tology) brand palette
+ *
+ * Source: docs/public/nodes/jst-node.svg gradient
+ *   #7FE7D8 (light teal)  → #24A5B5 (mid teal) → #08717A (dark teal)
+ *   #BDF6F2 circuit accent
  *
  * To swap the accent for another project, change ONLY this file.
  * base.css reads every --vp-c-brand-* and surface variable via var().
  */
 
 :root {
-  --vp-c-brand-1:    #005a9c;
-  --vp-c-brand-2:    #002a56;
-  --vp-c-brand-3:    #005a9c;
-  --vp-c-brand-soft: rgba(0, 90, 156, 0.12);
+  --jst-teal-light:   #7FE7D8;
+  --jst-teal-mid:     #24A5B5;
+  --jst-teal-dark:    #08717A;
+  --jst-teal-darker:  #06535a;
+  --jst-circuit:      #BDF6F2;
 
-  --vp-c-text-1: #111111;
-  --vp-c-text-2: #444444;
-  --vp-c-text-3: #707070;
+  --vp-c-brand-1:    var(--jst-teal-dark);
+  --vp-c-brand-2:    var(--jst-teal-darker);
+  --vp-c-brand-3:    var(--jst-teal-mid);
+  --vp-c-brand-soft: rgba(36, 165, 181, 0.14);
+
+  --vp-c-text-1: #0d1f22;
+  --vp-c-text-2: #455257;
+  --vp-c-text-3: #7a8a8e;
 
   --vp-c-bg:        #ffffff;
-  --vp-c-bg-alt:    #fafafa;
+  --vp-c-bg-alt:    #f6fbfb;
   --vp-c-bg-elv:    #ffffff;
-  --vp-c-bg-soft:   #fafafa;
+  --vp-c-bg-soft:   #f0f8f8;
 
-  --vp-c-divider: #e0e0e0;
-  --vp-c-border:  #e0e0e0;
+  --vp-c-divider: #d8e6e7;
+  --vp-c-border:  #d8e6e7;
 
   --vp-c-purple: #75336c;
 }
 
 .dark {
-  --vp-c-brand-1:    #3aa0ff;
-  --vp-c-brand-2:    #5bb3ff;
-  --vp-c-brand-3:    #3aa0ff;
-  --vp-c-brand-soft: rgba(58, 160, 255, 0.12);
+  --vp-c-brand-1:    var(--jst-teal-light);
+  --vp-c-brand-2:    #aef0e6;
+  --vp-c-brand-3:    var(--jst-teal-light);
+  --vp-c-brand-soft: rgba(127, 231, 216, 0.16);
 
-  --vp-c-text-1: #fafafa;
-  --vp-c-text-2: #c0c0c0;
-  --vp-c-text-3: #808080;
+  --vp-c-text-1: #f0f7f7;
+  --vp-c-text-2: #c2d2d3;
+  --vp-c-text-3: #8a9a9c;
 
-  --vp-c-bg:        #0a0a0a;
-  --vp-c-bg-alt:    #111111;
-  --vp-c-bg-elv:    #1a1a1a;
-  --vp-c-bg-soft:   #111111;
+  --vp-c-bg:        #061013;
+  --vp-c-bg-alt:    #0b181b;
+  --vp-c-bg-elv:    #112024;
+  --vp-c-bg-soft:   #0b181b;
 
-  --vp-c-divider: #2a2a2a;
-  --vp-c-border:  #2a2a2a;
+  --vp-c-divider: #1f3236;
+  --vp-c-border:  #1f3236;
 }
