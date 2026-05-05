@@ -9,16 +9,25 @@ const sidebar = [
     text: 'Introduction',
     items: [
       { link: '/getting-started', text: 'Getting Started' },
-      { link: '/bookstore-domain', text: 'The Bookstore Domain' },
-      { link: '/your-types-are-a-graph', text: 'Your Types Are a Graph' }
+      { link: '/bookstore-domain', text: 'The Bookstore Domain' }
     ]
   },
   {
-    text: 'Core',
+    text: 'Concepts',
     items: [
+      { link: '/your-types-are-a-graph', text: 'Your Types Are a Graph' },
+      { link: '/advanced/graph-concepts', text: 'Graph concepts (TBox / ABox)' },
+      { link: '/advanced/graph-native-authoring', text: 'Graph-native authoring' },
+      { link: '/advanced/sub-schemas', text: 'Sub-schemas and $ref composition' },
       { link: '/picking-a-method', text: 'Picking a method' },
-      { link: '/argument-conventions', text: 'Argument conventions' },
-      { link: '/schemas', text: 'Schemas' },
+      { link: '/argument-conventions', text: 'Argument conventions' }
+    ]
+  },
+  {
+    text: 'Schemas',
+    items: [
+      { link: '/schemas', text: 'Authoring schemas' },
+      { link: '/schemas/jt-keywords', text: 'JT keywords' },
       {
         text: 'Type Inference',
         items: [
@@ -33,66 +42,61 @@ const sidebar = [
           { link: '/types#integerrangetype-min-max', text: 'IntegerRangeType' },
           { link: '/types#multipleofrangetype-min-max-step', text: 'MultipleOfRangeType' }
         ]
-      },
-      {
-        text: 'Validation',
-        items: [
-          { link: '/validation/instantiate', text: 'instantiate' },
-          { link: '/validation/validate', text: 'validate' },
-          { link: '/validation/is', text: 'is' },
-          { link: '/validation/errors', text: 'errors' },
-          { link: '/validation/subschemaAt', text: 'subschemaAt' }
-        ]
-      },
-      {
-        text: 'ValidationErrors',
-        items: [
-          { link: '/errors', text: 'Overview / usage examples' },
-          { link: '/errors/views#validationerrors-aggregate', text: 'aggregate' },
-          { link: '/errors/views#validationerrors-report', text: 'report' },
-          { link: '/errors/classes', text: 'Error classes' }
-        ]
       }
     ]
   },
   {
-    text: 'Composing Schemas',
+    text: 'Validation',
+    items: [
+      { link: '/validation/instantiate', text: 'instantiate' },
+      { link: '/validation/validate', text: 'validate' },
+      { link: '/validation/is', text: 'is' },
+      { link: '/validation/errors', text: 'errors' },
+      { link: '/validation/subschemaAt', text: 'subschemaAt' }
+    ]
+  },
+  {
+    text: 'ValidationErrors',
+    items: [
+      { link: '/errors', text: 'Overview / usage examples' },
+      { link: '/errors/views#validationerrors-aggregate', text: 'aggregate' },
+      { link: '/errors/views#validationerrors-report', text: 'report' }
+    ]
+  },
+  {
+    text: 'Composition',
     items: [
       { link: '/composition/extend', text: 'extend' },
       { link: '/composition/pick-omit', text: 'pick / omit' },
       { link: '/composition/partial-required', text: 'partial / required' },
       { link: '/composition/intersection', text: 'intersection' },
       { link: '/composition/discriminated-union', text: 'discriminatedUnion / narrow' },
-      { link: '/composition/get-defaults', text: 'getDefaults' }
+      { link: '/composition/get-defaults', text: 'getDefaults' },
+      { link: '/advanced/graph-native-authoring#compose-equivalent', text: 'equivalent' }
     ]
   },
   {
-    text: 'Working with Values',
+    text: 'Transforms',
     items: [
-      {
-        text: 'Value Operations',
-        items: [
-          { link: '/value/clone-hash', text: 'clone / hash' },
-          { link: '/value/diff', text: 'diff / applyOp' },
-          { link: '/value/cast-clean-convert', text: 'cast / clean / convert' },
-          { link: '/value/create', text: 'create' }
-        ]
-      },
-      {
-        text: 'Transforms',
-        items: [
-          { link: '/transforms/decode-encode', text: 'Transform.create / encode' },
-          { link: '/transforms/brand', text: 'brand' },
-          { link: '/transforms/pipe', text: 'pipe' }
-        ]
-      },
-      {
-        text: 'Serialization',
-        items: [
-          { link: '/serialization/dump', text: 'dump / dumpJson' },
-          { link: '/serialization/toSchema', text: 'toSchema' }
-        ]
-      }
+      { link: '/transforms/decode-encode', text: 'Transform.create / encode' },
+      { link: '/transforms/brand', text: 'brand' },
+      { link: '/transforms/pipe', text: 'pipe' }
+    ]
+  },
+  {
+    text: 'Value Operations',
+    items: [
+      { link: '/value/clone-hash', text: 'clone / hash' },
+      { link: '/value/diff', text: 'diff / applyOp' },
+      { link: '/value/cast-clean-convert', text: 'cast / clean / convert' },
+      { link: '/value/create', text: 'create' }
+    ]
+  },
+  {
+    text: 'Serialization',
+    items: [
+      { link: '/serialization/dump', text: 'dump / dumpJson' },
+      { link: '/serialization/toSchema', text: 'toSchema' }
     ]
   },
   {
@@ -101,22 +105,17 @@ const sidebar = [
       { link: '/registry/register', text: 'register / has / get / list' },
       { link: '/registry/materialize', text: 'materialize' },
       { link: '/registry/computed', text: 'addComputed / removeComputed' },
-      { link: '/registry/invariants', text: 'addInvariant / removeInvariant' }
+      { link: '/registry/invariants', text: 'addInvariant / removeInvariant' },
+      { link: '/advanced/graph-native-authoring#schemaregistry-findduplicates', text: 'findDuplicates' }
     ]
   },
   {
-    text: 'Advanced (opt-in)',
+    text: 'Ontology emission (opt-in)',
     items: [
       { link: '/advanced/ontology#entities-totbox', text: 'toTbox' },
       { link: '/advanced/ontology#entities-toshacl', text: 'toShacl' },
       { link: '/advanced/ontology#entities-ontology', text: 'ontology' },
-      { link: '/advanced/graph-native-authoring', text: 'Graph-native authoring' },
-      { link: '/advanced/graph-native-authoring#compose-equivalent', text: 'Compose.equivalent' },
-      { link: '/advanced/graph-native-authoring#schemaregistry-findduplicates', text: 'findDuplicates' },
-      { link: '/advanced/graph-concepts', text: 'Graph concepts' },
-      { link: '/advanced/sub-schemas', text: 'Sub-schemas and $ref composition' },
-      { link: '/advanced/quads', text: 'RDF round-trip (toQuads / fromQuads)' },
-      { link: '/advanced/utilities', text: 'Public utility classes' }
+      { link: '/advanced/quads', text: 'RDF round-trip (toQuads / fromQuads)' }
     ]
   },
   {
@@ -129,9 +128,12 @@ const sidebar = [
   {
     text: 'Reference',
     items: [
+      { link: '/static-helpers', text: 'Static helpers' },
+      { link: '/advanced/utilities', text: 'Public utility classes' },
+      { link: '/errors/classes', text: 'Error classes' },
+      { link: '/constraint-brands', text: 'Constraint brands' },
       { link: '/cli', text: 'CLI' },
-      { link: '/constraint-brands', text: 'Constraint Brands' },
-      { link: '/references', text: 'References' }
+      { link: '/references', text: 'External references' }
     ]
   }
 ];
