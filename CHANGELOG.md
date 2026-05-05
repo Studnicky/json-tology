@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-05-05
+
+### Added
+
+- New doc pages covering previously undocumented surface: `docs/advanced/quads.md` (RDF round-trip via `toQuads`/`fromQuads`), `docs/schemas/jt-keywords.md` (`jt:alias`/`jt:computed`/`jt:config`/`jt:frozen`/`jt:strict`), `docs/errors/classes.md` (full error class hierarchy), `docs/static-helpers.md` (the 13 `JsonTology.<op>` static counterparts), `docs/advanced/utilities.md` (`Curie`, `Path`, `Resolver`, `Hash`, `Lift`), `docs/advanced/sub-schemas.md` (`$ref` composition through validation, defaults, coercion, TBox, cycles).
+- New "Usage Examples" sidebar section with `docs/usage-examples/custom-formats.md` (custom format validators) and `docs/usage-examples/transforms-recipes.md` (date-time, money, identifiers, encoded payloads, collections, branded types, round-trip discipline).
+
+### Fixed
+
+- Docs: hallucination sweep against `src/`. `validate()` is now correctly described as returning `ValidationErrors` (not `string[]`) across every consuming page. Removed references to non-existent `entities.errors()` / `JsonTology.coerce`. `Value.cast/clean/convert` correctly documented as throwing `CoercionError`. `materializer` option type corrected to `MaterializerOptionsInterface`. `Compose.intersection` argument-order rule fixed to `(sources, newId, extras?)`. `Compose.extend` Declaration rewritten to describe `allOf + $ref` emission. `enableDebug` row added to the options table. `Compose.equivalent` row added to composition index. Circular self-import in the getting-started bookstore snippet removed.
+- README replaced with a thin link page pointing at the published GitHub Pages docs.
+- CI: every workflow runner bumped to Node 24 to match `engines.node >=24.0.0`. The previous Node 22 runners caused type-aware ESLint plugins to fail to resolve types in `bench/*` files.
+- bench imports case-corrected (`schemaRegistry.js` -> `SchemaRegistry.js` etc.) so the type-aware lint pass succeeds on case-sensitive filesystems.
+- VitePress `base: '/json-tology/'` set; `BookstoreGraph.vue` data fetches base-prefixed via `import.meta.env.BASE_URL` so the live graph loads under the project Pages prefix.
+
+### Changed
+
+- Sidebar section "Cookbook" renamed to "Usage Examples". Routes `/cookbook/*` -> `/usage-examples/*`.
+- `.enginseer/topology/` artifacts (>680K lines) untracked; added to `.gitignore`.
+
 ## [0.3.0] - 2026-05-04
 
 ### Added
@@ -191,6 +211,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-[Unreleased]: https://github.com/Studnicky/json-tology/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/Studnicky/json-tology/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/Studnicky/json-tology/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/Studnicky/json-tology/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Studnicky/json-tology/compare/v0.1.0...v0.2.0
