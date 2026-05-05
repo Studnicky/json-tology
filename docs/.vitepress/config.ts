@@ -1,4 +1,7 @@
 import { defineConfig } from 'vitepress';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+const pkg = JSON.parse(readFileSync(fileURLToPath(new URL('../../package.json', import.meta.url)), 'utf8')) as { version: string };
 import { themeConfig } from './theme.config.js';
 
 const sidebar = [
@@ -133,6 +136,11 @@ const sidebar = [
 ];
 
 export default defineConfig({
+  vite: {
+    define: {
+      __JT_VERSION__: JSON.stringify(pkg.version)
+    }
+  },
   base: '/json-tology/',
   appearance: themeConfig.appearance,
   description: 'One source of truth for TypeScript types, runtime validation, coercion, and OWL ontology output. Author in JSON Schema; share with any backend; reason over the graph.',

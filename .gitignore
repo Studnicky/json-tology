@@ -40,3 +40,9 @@ Thumbs.db
 yarn-debug.log*
 yarn-error.log*
 .enginseer/
+
+# Prototype/iteration artifacts (kept out of repo)
+*.zip
+preview-jst-*.svg
+json-tology-jst-*.svg
+w3c-node-*.zip
