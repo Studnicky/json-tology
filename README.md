@@ -30,6 +30,13 @@ The full documentation is published at **https://studnicky.github.io/json-tology
 npm install json-tology
 ```
 
+or from GitHub Packages (current canonical pre-1.0 distribution):
+
+```bash
+echo '@studnicky:registry=https://npm.pkg.github.com' >> .npmrc
+npm install @studnicky/json-tology
+```
+
 ## License
 
 MIT - see [LICENSE](./LICENSE).
