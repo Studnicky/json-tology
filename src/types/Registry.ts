@@ -20,11 +20,22 @@ export type SchemaEntryType<T, TReferences = Record<never, never>>
     : Record<never, never>;
 
 /** Build a type map from a readonly tuple of schemas.
- *  Automatically threads cross-schema references so $ref between schemas resolves. */
-export type SchemaMapFromTupleType<T extends readonly unknown[]>
+ *  Automatically threads cross-schema references so $ref between schemas resolves.
+ *
+ *  The `TRefs` parameter captures the references map computed from the full
+ *  initial tuple and is threaded through recursion unchanged. Without this,
+ *  the recursive step would recompute references from `Rest` only, so entries
+ *  built later in the tuple would lose access to schemas earlier in the tuple
+ *  (and vice versa, since `Rest` shrinks on each step). The result was that a
+ *  `$ref` between two registered schemas resolved to `unknown` instead of the
+ *  referenced schema's inferred shape. */
+export type SchemaMapFromTupleType<
+  T extends readonly unknown[],
+  TRefs = SchemaReferencesMapType<T>
+>
   = T extends readonly [infer First, ...infer Rest]
-    ? SchemaEntryType<First, SchemaReferencesMapType<T>>
-      & SchemaMapFromTupleType<Rest>
+    ? SchemaEntryType<First, TRefs>
+      & SchemaMapFromTupleType<Rest, TRefs>
     : Record<never, never>;
 
 /** True when a tuple contains two or more schemas with the same `$id`. */
