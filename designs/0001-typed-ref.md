@@ -626,3 +626,106 @@ Update done-means accordingly:
 - Every metadata addition is a `const X = Op.attach(S, ...)` returning a new schema. Wrap-and-return is the universal pattern. (New.)
 - The library exports zero side-effecting public functions. (New.)
 - `Schemas.byId(...)` is the only process-global state, populated automatically by `ref()` only when the IRI is observed; offers `snapshot/restore/clear`. (Refined.)
+
+---
+
+## Addendum: adopt TypeBox-style `recursive((self) => body)` for self-reference
+
+Earlier the doc proposed `lazyRef(() => Schema)` for cycles plus a `Self` builder for direct self-reference. TypeBox's pattern is more graceful and we should match it.
+
+### The pattern
+
+```ts
+import { recursive } from 'json-tology';
+
+const PersonSchema = recursive(
+  { $id: 'urn:bookstore:Person' },
+  (self) => ({
+    type: 'object',
+    properties: {
+      name:    { type: 'string' },
+      manager: self                      // self is RefType<typeof PersonSchema>
+    },
+    required: ['name']
+  } as const)
+);
+
+type Person = InferType<typeof PersonSchema>;
+//   ^? { readonly name: string; readonly manager?: Person }
+```
+
+`self` is the typed reference. The user describes the body once; the closure receives a placeholder that the builder backfills with the assembled schema's `~jt:source` after the body returns. Type inference handles the cycle naturally because TypeScript supports recursive type aliases when they pass through a reference.
+
+### Compared to the alternatives
+
+```ts
+// TypeBox: graceful, single-pass, type-safe
+const Person = Type.Recursive((This) => Type.Object({ manager: Type.Optional(This) }));
+
+// Zod: thunked, explicit lazy boundary, requires a manual type annotation for the recursive type
+type Person = { name: string; manager?: Person };
+const Person: z.ZodType<Person> = z.lazy(() => z.object({ name: z.string(), manager: Person.optional() }));
+
+// Pydantic: forward-reference string + post-hoc rebuild
+class Person(BaseModel):
+    name: str
+    manager: Optional['Person'] = None
+Person.model_rebuild()
+```
+
+TypeBox wins on ergonomics: no thunk, no forward-ref string, no type annotation, no rebuild step. The user sees one expression that reads top-to-bottom.
+
+### Implementation sketch
+
+```ts
+// src/modules/compose/Recursive.ts
+export function recursive<TBody extends JSONSchema7Definition>(
+  meta: { readonly '$id': string },
+  build: (self: RefType<{ readonly '$id': string }>) => TBody
+): TBody & { readonly '$id': string; readonly '~jt:source'?: TBody } {
+  const placeholder = { '$ref': meta.$id } as RefType<{ readonly '$id': string }>;
+  const body = build(placeholder);
+  const assembled = Object.freeze({ ...meta, ...body });
+  // backfill the placeholder so any consumer that grabs it via the closure
+  // capture sees the assembled schema as its phantom source
+  Object.defineProperty(placeholder, '~jt:source', {
+    value: assembled, enumerable: true, writable: false, configurable: false
+  });
+  return assembled as never;
+}
+```
+
+Two subtle points:
+
+1. **Placeholder is shared.** Every `self` in the closure is the same frozen `{ $ref, ~jt:source }` object. Composition operators (`Compose.extend` etc.) preserve identity via spread, so the same `~jt:source` flows through all derived schemas.
+2. **`~jt:source` is set after construction.** `Object.defineProperty` mutates the placeholder once. Callers never observe the unfilled state because `build` finishes before any consumer reads the schema.
+
+### Mutual recursion
+
+For cross-file or mutually recursive schemas a single closure is not enough. Use `lazyRef(() => Schema)` (kept from the previous addendum) - one explicit thunk for the rare case, while the common case uses `recursive`.
+
+```ts
+const Employee = recursive({ $id: 'urn:bookstore:Employee' }, (self) => ({
+  type: 'object',
+  properties: { id: { type: 'string' }, manager: lazyRef(() => Manager) }
+} as const));
+
+const Manager = recursive({ $id: 'urn:bookstore:Manager' }, (self) => ({
+  type: 'object',
+  properties: { id: { type: 'string' }, reports: { type: 'array', items: ref(Employee) } }
+} as const));
+```
+
+### Updates to the design
+
+- Replace the `Self` builder mentioned in earlier addenda with `recursive((self) => body)`.
+- Keep `lazyRef(() => S)` only for genuine cross-file mutual recursion.
+- Update the comparator table risk-3 row to reflect the new pattern.
+- Add a "Recursive schemas" section to the doc landing page; example uses the bookstore manager-chain motif from `compile-time-constraints.test.ts`.
+- Implementation phase 1 grows `recursive` by one file (`src/modules/compose/Recursive.ts`); phantom logic is a one-line `Object.defineProperty`.
+
+### Done means (delta)
+
+- A consumer can author a self-referential schema with `recursive((self) => ({ ..., manager: self }))` and `InferType` produces the recursive type with no manual annotation.
+- Mutual recursion uses `lazyRef(() => OtherSchema)`; documented as the explicit-thunk path for the rare case.
+- TypeBox-comparison block on the docs site shows the recursive case side-by-side and notes `recursive` matches TypeBox's ergonomics.
