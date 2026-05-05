@@ -69,7 +69,7 @@ that reference each other, or when you need to register invariants and computeds
 ## Argument order rules
 
 - **One source, minting a new ID**: `(source, newId, extras?)` - e.g. `Compose.extend(UserSchema, additions, 'NewId')`
-- **Many sources**: `(newId, sources, extras?)` - e.g. `Compose.intersection([A, B] as const, 'NewId')`
+- **Many sources**: `(sources, newId, extras?)` - e.g. `Compose.intersection([A, B] as const, 'NewId')`
 
 ## `subschemaAt` - composable pointer resolution
 

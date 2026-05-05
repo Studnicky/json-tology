@@ -1,10 +1,10 @@
 # `Compose.extend`
 
-**Declaration.** Creates a new schema by merging additional property definitions into the base schema's `properties` object. The base schema's `required` array is inherited unchanged. The `$id` is replaced with the new `newId` argument. Input schemas are never mutated - a new object is returned. TypeScript infers the merged type automatically.
+**Declaration.** Creates a new schema by emitting `{ $id: newId, allOf: [{ $ref: parent.$id }, additionsSchema] }`. The base schema is referenced by its `$id` (not flattened or copied), and the additions become a sibling object schema in the `allOf` array. The base schema's `required` constraints flow through unchanged via the `$ref`. The `$id` is replaced with the new `newId` argument. Input schemas are never mutated. Per-key merge happens for `jt:config` (child wins). TypeScript infers the merged type automatically.
 
 **Use this when** you need to add fields to an existing schema while inheriting its existing properties and required constraints. Classic use: adding tier-specific fields to `Customer`, adding audit fields to `Order`, adding a display badge to `Book`.
 
-**Don't use this when** you need all constituent schemas' required constraints to apply simultaneously (use [`intersection`](/composition/intersection) with `allOf` instead). Don't use it when you want to narrow properties (use [`pick`](/composition/pick-omit)). Don't use it if the added fields should all be optional with default-only filling (use [`materialize`](/registry/materialize) instead).
+**Don't use this when** you need all constituent schemas' required constraints to apply simultaneously and the base must also be inlined rather than referenced (use [`intersection`](/composition/intersection) directly with `allOf` instead). Don't use it when you want to narrow properties (use [`pick`](/composition/pick-omit)). Don't use it if the added fields should all be optional with default-only filling (use [`materialize`](/registry/materialize) instead).
 
 ## Examples
 
@@ -62,9 +62,9 @@ const featured = jt.instantiate(FeaturedBookSchema.$id, {
 // featured.isbn === '9780140449136' (inherited)
 ```
 
-### Example 3: Override a property from the base schema
+### Example 3: Tighten a property in the additions side of the allOf
 
-Properties in `additionalProperties` shadow same-named properties from the base schema. Use this to tighten constraints on a derived type.
+`Compose.extend` does not flatten `properties` over the base. The additions appear as a second `allOf` entry, so a property declared in the additions becomes an *additional* constraint that must hold alongside the base's constraint. Both must be satisfied, which is how `allOf` works in JSON Schema. Use this when you want to add a stricter constraint on top of the base.
 
 ```ts
 const PremiumBookSchema = Compose.extend(

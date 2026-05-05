@@ -119,8 +119,8 @@ console.log(jt.has('https://bookstore.example/Customer')); // true
 console.log(jt.has('https://bookstore.example/NonExistent')); // false
 
 // Guard pattern:
-function validateIfPresent(schemaId: string, data: unknown): string[] {
-  if (!jt.has(schemaId)) return [`Schema '${schemaId}' not registered`];
+function validateIfPresent(schemaId: string, data: unknown): ValidationErrors {
+  if (!jt.has(schemaId)) return new ValidationErrors([{ path: '', keyword: 'unknown', message: `Schema '${schemaId}' not registered`, params: {} }]);
   return jt.validate(schemaId, data);
 }
 ```

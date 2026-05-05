@@ -8,7 +8,7 @@ Pure static utilities that work on any value without a schema.
 
 **Declaration.** Deep-copies a value using `structuredClone`. Returns an independent copy with no shared object references. Type-preserving - `clone<T>(v: T): T`.
 
-**Use this when** you need an independent copy before passing a value to a mutating operation, or before `Value.diff` when you want to keep the original. `coerce()` already clones internally; only call `clone` when doing your own mutation.
+**Use this when** you need an independent copy before passing a value to a mutating operation, or before `Value.diff` when you want to keep the original. `instantiate()` already clones internally; only call `clone` when doing your own mutation.
 
 **Don't use this when** you just need a shallow copy (use `{ ...obj }` instead). Don't use it for non-JSON-serializable values (functions, class instances with methods - `structuredClone` may throw or strip those).
 

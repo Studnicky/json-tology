@@ -1,6 +1,6 @@
 # `addInvariant` and `removeInvariant`
 
-Invariants are cross-field validation rules that run after structural validation succeeds - the json-tology equivalent of Pydantic's `@model_validator(mode='after')`. They integrate with `errors()`, `coerce()`, `is()`, and `validate()`.
+Invariants are cross-field validation rules that run after structural validation succeeds - the json-tology equivalent of Pydantic's `@model_validator(mode='after')`. They integrate with `validate()`, `instantiate()`, and `is()`.
 
 ---
 
@@ -45,7 +45,7 @@ const jt = JsonTology.create({
 });
 ```
 
-#### Example 2: Invariant failure appears in errors(), coerce(), is(), validate()
+#### Example 2: Invariant failure surfaces in validate(), instantiate(), is()
 
 ```ts
 const badOrder = {
@@ -56,16 +56,21 @@ const badOrder = {
   items:      [{ bookIsbn: '9780140449136', quantity: 1, unitPrice: 14.99 }],
 };
 
-// errors()  - invariant failure as ValidationErrorType with keyword: 'jt:invariant'
+// validate()  - invariant failure as ValidationErrorType with keyword: 'jt:invariant'
 const errs = entities.validate(OrderSchema.$id, badOrder);
-console.log(errs.ok);                                  // false
+console.log(errs.ok);                                            // false
 console.log(errs.items.some(e => e.keyword === 'jt:invariant')); // true
+console.log(errs.items.some(e => e.message.includes('total must equal'))); // true
 
 // is()  - returns false when invariant fails
 console.log(jt.is(OrderSchema.$id, badOrder));  // false
 
-// validate()  - error message in the string array
-console.log(jt.validate(OrderSchema.$id, badOrder).some(m => m.includes('total must equal')));
+// instantiate()  - throws InstantiationError carrying the same ValidationErrors
+try {
+  jt.instantiate(OrderSchema.$id, badOrder);
+} catch (err) {
+  // err instanceof InstantiationError; err.errors is the ValidationErrors collection
+}
 ```
 
 #### Example 3: Imperative add after construction
@@ -92,10 +97,10 @@ jt.addInvariant<Review>('https://bookstore.example/Review', {
 
 | Method | Invariant behaviour |
 |--------|---------------------|
-| `errors()` | Returns invariant failures as `ValidationErrorType` items with `keyword: 'jt:invariant'` |
-| `coerce()` | Throws `InstantiationError` when any invariant fails |
+| `validate()` | Returns invariant failures as `ValidationErrorType` items in the `ValidationErrors` collection with `keyword: 'jt:invariant'` |
+| `instantiate()` | Throws `InstantiationError` when any invariant fails (the error carries `ValidationErrors` on `.errors`) |
 | `is()` | Returns `false` when any invariant fails |
-| `validate()` | Includes invariant failure messages in the string array |
+| `aggregate()` / `report()` | Both `ValidationErrors` views include invariant errors alongside structural errors |
 
 Invariants do not run when structural validation already failed - this prevents noise from cascading errors.
 
@@ -138,7 +143,7 @@ jt.addInvariant<Order>('https://bookstore.example/Order', {
 ```ts [Zod]
 // Zod uses .superRefine() or .refine() for cross-field validation:
 const OrderSchema = baseOrderSchema.refine(
-  (order) => Math.abs(order.total - order.items.reduce((s, l) => s + l.unitPrice * l.quantity, 0)) < 0.01,
+  (order) => Math.abs(order.total - order.items.reduce((s, l) => s + l.unit_price * l.quantity, 0)) < 0.01,
   { message: 'total mismatch', path: ['total'] }
 );
 ```
@@ -175,13 +180,13 @@ class Order(BaseModel):
 
 - [`removeInvariant`](#jsonntology-removeinvariant) - deregister by name
 - [Computed fields](/registry/computed) - derive values (not validate)
-- [`JsonTology.errors`](/validation/errors) - how invariant failures appear as `ValidationErrors`
+- [`ValidationErrors`](/validation/errors) - how invariant failures appear in the structured collection
 
 ---
 
 ## `JsonTology.removeInvariant` {#jsonntology-removeinvariant}
 
-**Declaration.** Removes the invariant with the given `name` from the schema identified by `schemaId`. After removal, subsequent calls to `coerce()`, `errors()`, `is()`, and `validate()` will not run that invariant.
+**Declaration.** Removes the invariant with the given `name` from the schema identified by `schemaId`. After removal, subsequent calls to `instantiate()`, `validate()`, and `is()` will not run that invariant.
 
 **Use this when** business rules change at runtime - promotional periods relaxing constraints, feature flags switching validation levels, or A/B testing different rule sets.
 

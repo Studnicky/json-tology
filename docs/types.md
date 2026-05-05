@@ -2,7 +2,7 @@
 
 > This guide covers `InferType`, `InferSchemaType`, `Transform.brand`, constraint brands, and utility types. All examples use the [bookstore domain](/bookstore-domain). See [Schemas](/schemas) for how schemas are registered.
 
-json-tology derives TypeScript types from `as const` JSON Schema literals at compile time. No code generation. No separate type declarations. The types flow through `coerce()`, `is()`, and the registry type map automatically.
+json-tology derives TypeScript types from `as const` JSON Schema literals at compile time. No code generation. No separate type declarations. The types flow through `instantiate()`, `is()`, and the registry type map automatically.
 
 ---
 
@@ -46,7 +46,7 @@ type Address = InferType<typeof AddressSchema>;
 // }
 ```
 
-The `addresses` array has `default: []` in the schema - at the type level it remains optional because `default` is a runtime concept; at runtime `coerce()` always fills it in.
+The `addresses` array has `default: []` in the schema - at the type level it remains optional because `default` is a runtime concept; at runtime `instantiate()` always fills it in.
 
 #### Example 2: Integer range, enum, and const
 
@@ -549,7 +549,7 @@ import type { NonDeprecatedSchemaType } from 'json-tology';
 import { BookV1Schema } from '../bookstore/index.js';
 
 function toBookView(raw: unknown): NonDeprecatedSchemaType<typeof BookV1Schema> {
-  // coerce validates and returns the full type; the return type annotation
+  // instantiate validates and returns the full type; the return type annotation
   // signals that callers should not depend on deprecated fields.
   const book = jt.instantiate(BookV1Schema.$id, raw);
   const { legacySku: _dropped, ...rest } = book;

@@ -116,7 +116,7 @@ Book(isbn='', title='', authors=[], price=0)
 
 - [`JsonTology.materialize`](/registry/materialize) - fill from partial trusted data + declared defaults
 - [`Compose.getDefaults`](/composition/get-defaults) - extract only declared defaults (no zero-values)
-- [`JsonTology.coerce`](/validation/instantiate) - validate + fill defaults + strip unknowns (for real data)
+- [`JsonTology.instantiate`](/validation/instantiate) - validate + fill defaults + strip unknowns (for real data)
 
 ## See also
 

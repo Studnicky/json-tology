@@ -104,7 +104,7 @@ That's the entire core. Validation, type inference, coercion, defaults - all fro
 | You get | Without paying for |
 |---------|--------------------|
 | Type inference (`InferType`) | A separate type-definition language |
-| Runtime validation (`validate`, `is`, `errors`) | A second schema for runtime checks |
+| Runtime validation (`validate`, `is`) | A second schema for runtime checks |
 | Coercion + defaults (`instantiate`) | Manual mapping of input shapes |
 | Field aliasing (`jt:alias`) | Custom transform layers for renames |
 | Computed fields (`jt:computed`) | Post-processing pipelines |
@@ -118,8 +118,8 @@ If you also need RDF/OWL/SHACL output, that's available as **opt-in advanced fea
 
 - **[Getting Started](/getting-started)** - install, define a schema, validate, coerce
 - **[Bookstore Domain](/bookstore-domain)** - the running example domain used throughout the docs
-- **[Validation](/validation/instantiate)** - `instantiate`, `validate`, `errors`, `is`, `subschemaAt`
-- **[Error Views](/errors/views)** - `messages`, `format`, `flatten`, `aggregate`, `report` (RFC 7807)
+- **[Validation](/validation/instantiate)** - `instantiate`, `validate`, `is`, `subschemaAt`
+- **[Error Views](/errors/views)** - `aggregate`, `report` (RFC 7807)
 - **[Type Inference](/types)** - how `InferType` works, reference maps, branded types
 - **[Composition](/composition/extend)** - derive schemas from other schemas
 - **[Serialization](/serialization/dump)** - `dump`, `dumpJson`, Transform encoders

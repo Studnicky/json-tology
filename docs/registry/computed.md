@@ -1,12 +1,12 @@
 # `addComputed` and `removeComputed`
 
-Computed fields are properties derived from other fields at coerce/materialize time - the json-tology equivalent of Pydantic's `@computed_field`. Mark a property with `"jt:computed": true` in the schema and register a compute function. The function runs automatically during `coerce()` and `materialize()`.
+Computed fields are properties derived from other fields at instantiate/materialize time - the json-tology equivalent of Pydantic's `@computed_field`. Mark a property with `"jt:computed": true` in the schema and register a compute function. The function runs automatically during `instantiate()` and `materialize()`.
 
 ---
 
 ## `JsonTology.addComputed` {#jsonntology-addcomputed}
 
-**Declaration.** Registers a compute function for a property marked `"jt:computed": true`. The function receives the fully structural-validated, coerced object and returns the computed value. Can be registered at construction time via `computeds` option or imperatively after construction. The compute function runs after structural validation and before the result is returned from `coerce()` or `materialize()`.
+**Declaration.** Registers a compute function for a property marked `"jt:computed": true`. The function receives the fully structural-validated, coerced object and returns the computed value. Can be registered at construction time via `computeds` option or imperatively after construction. The compute function runs after structural validation and before the result is returned from `instantiate()` or `materialize()`.
 
 **Use this when** a property value is mechanically derivable from other fields - `total` from `sum(items[].unitPrice * quantity)`, a `displayTitle` concatenating `title` and `authors[0]`, a `slug` from `title`. Mark the property `jt:computed: true` in the schema to prevent callers from supplying it on input.
 
@@ -175,13 +175,13 @@ class Order(BaseModel):
 
 - [`removeComputed`](#jsonntology-removecomputed) - deregister a compute function
 - [Invariants](/registry/invariants) - cross-field *validation* rules (complements computed)
-- [`JsonTology.coerce`](/validation/instantiate) - the primary trigger for compute function evaluation
+- [`JsonTology.instantiate`](/validation/instantiate) - the primary trigger for compute function evaluation
 
 ---
 
 ## `JsonTology.removeComputed` {#jsonntology-removecomputed}
 
-**Declaration.** Deregisters the compute function for the property `name` on schema `schemaId`. After removal, that property is no longer automatically computed. If the property remains in the schema with `jt:computed: true`, subsequent registrations or coerce calls may produce a `SchemaError`.
+**Declaration.** Deregisters the compute function for the property `name` on schema `schemaId`. After removal, that property is no longer automatically computed. If the property remains in the schema with `jt:computed: true`, subsequent registrations or instantiate calls may produce a `SchemaError`.
 
 **Use this when** schema configuration changes at runtime - replacing one computation strategy with another (discount tiers, promotional pricing), or toggling computed fields via feature flags.
 

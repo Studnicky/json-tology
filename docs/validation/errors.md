@@ -1,10 +1,34 @@
-# `JsonTology.validate` - ValidationErrors
+# `ValidationErrors`
 
-**Declaration.** `validate()` now returns `ValidationErrors` (not `string[]`). See [`validate()`](/validation/validate) for the full reference. This page covers the `ValidationErrors` collection shape and usage patterns.
+**Declaration.** `validate()` returns `ValidationErrors` (not `string[]`). See [`validate()`](/validation/validate) for the method reference. This page covers the `ValidationErrors` collection shape and usage patterns.
 
-**Use this when** you need programmatic access to the structured error list - paths, keywords, params - without wanting an exception. This is the right method for API validation where you collect errors, then decide what to do with them (return a 422, log, display in a form). The collection is iterable with `for...of`.
+The `ValidationErrors` collection is also carried on `InstantiationError.errors` and `CoercionError.errors`, so the same patterns apply when you catch those exceptions.
+
+**Use this when** you need programmatic access to the structured error list - paths, keywords, params - without wanting an exception. This is the right collection for API validation where you collect errors, then decide what to do with them (return a 422, log, display in a form). The collection is iterable with `for...of`.
 
 **Don't use this when** you only need a boolean (use [`is`](/validation/is)). Don't use it when you want the coerced typed value on success (use [`instantiate`](/validation/instantiate)).
+
+## Public surface
+
+| Member | Type | Purpose |
+|--------|------|---------|
+| `items` | `readonly ValidationErrorType[]` | Raw error list with JSON Pointer paths |
+| `length` | `number` | Number of errors |
+| `ok` | `boolean` | `true` when `length === 0` |
+| `aggregate()` | `AggregateViewType` | `{ count, paths, keywords }` rollup for logs and metrics |
+| `report(overrides?)` | `ProblemDetailsType` | RFC 7807 Problem Details payload |
+| `[Symbol.iterator]()` | `Iterator<ValidationErrorType>` | Enables `for...of` |
+
+Each `ValidationErrorType` carries:
+
+```ts
+type ValidationErrorType = {
+  path:    string;                 // JSON Pointer path
+  keyword: string;                 // e.g. 'required', 'type', 'jt:invariant'
+  message: string;                 // human-readable
+  params:  Record<string, unknown> // keyword-specific params
+};
+```
 
 ## Examples
 
@@ -22,7 +46,7 @@ const errs = entities.validate(OrderSchema.$id, {
 });
 
 console.log(errs.ok);      // false
-console.log(errs.length);  // ≥ 2
+console.log(errs.length);  // >= 2
 
 for (const err of errs) {
   console.log(err.path);    // '/total', '/items'
@@ -47,7 +71,7 @@ console.log(errs.ok);     // true
 console.log(errs.length); // 0
 ```
 
-### Example 3: Combine with one of the five views
+### Example 3: Combine with the structured views
 
 See [`Error views`](/errors/views) for full documentation of each view.
 
@@ -56,9 +80,9 @@ import { bookstoreEntities as entities, ReviewSchema } from './bookstore/index.j
 
 const errs = entities.validate(ReviewSchema.$id, badReview);
 
-// Choose the view that matches your output target:
+// Choose the shape that matches your output target:
 console.log(errs.items.map(e => `${e.path}: ${e.message}`));   // string[]  - one per error
-console.log(Object.groupBy(errs.items, err => err.path || "_root"));     // Record<string, string[]>  - grouped by path
+console.log(Object.groupBy(errs.items, err => err.path || "_root"));     // Record<string, ...>  - grouped by path
 console.log(Object.groupBy(errs.items, err => err.path ? "fieldErrors" : "formErrors"));    // { fieldErrors, formErrors }
 console.log(errs.aggregate());  // { count, paths, keywords }
 console.log(errs.report());     // RFC 7807 ProblemDetailsType
@@ -66,10 +90,10 @@ console.log(errs.report());     // RFC 7807 ProblemDetailsType
 
 ## Bad examples - what NOT to do
 
-### Anti-pattern 1: Calling errors() and then coerce() separately
+### Anti-pattern 1: Calling validate() and then instantiate() separately
 
 ```ts
-// ⊥ Don't do this  - double validation; if errors is empty just use coerce
+// ⊥ Don't do this  - double validation; if errors is empty just call instantiate
 const errs = entities.validate(CustomerSchema.$id, data);
 if (errs.ok) {
   const customer = jt.instantiate(CustomerSchema.$id, data); // validates again
@@ -80,21 +104,21 @@ try {
   const customer = jt.instantiate(CustomerSchema.$id, data);
 } catch (err) {
   if (err instanceof InstantiationError) {
-    const problem = err.errors.report();  // same ValidationErrors on InstantiationError
+    const problem = err.errors.report();  // same ValidationErrors collection on InstantiationError
   }
 }
 ```
 
-### Anti-pattern 2: Accessing .items directly instead of using a view
+### Anti-pattern 2: Re-implementing a built-in view
 
 ```ts
-// ⊥ Don't do this  - accessing raw items and re-implementing a view
+// ⊥ Don't do this  - rolling your own grouping when Object.groupBy + items does it
 const grouped: Record<string, string[]> = {};
 for (const item of errs.items) {
   (grouped[item.path] ??= []).push(item.message);
 }
 
-// ✓ Do this  - use format() which does exactly this
+// ✓ Do this  - use Object.groupBy on .items, or call .aggregate() / .report()
 const grouped = Object.groupBy(errs.items, err => err.path || "_root");
 ```
 
@@ -104,7 +128,7 @@ const grouped = Object.groupBy(errs.items, err => err.path || "_root");
 
 ```ts [json-tology]
 const errs = entities.validate(OrderSchema.$id, data);
-// ValidationErrors  - .ok, .length, iterable, .items.map(e => `${e.path}: ${e.message}`), .format(), .flatten(), .aggregate(), .report()
+// ValidationErrors  - .ok, .length, iterable, .items, .aggregate(), .report()
 ```
 
 ```ts [Zod]
@@ -119,7 +143,7 @@ if (!result.success) {
 import { Value } from '@sinclair/typebox/value';
 const errors = [...Value.Errors(OrderSchema, data)];
 // ValueError[]  - path, message, schema, value per error
-// No built-in views (format, flatten, aggregate, report)
+// No built-in views
 ```
 
 ```ts [AJV]
@@ -143,10 +167,10 @@ except ValidationError as e:
 
 ## Related
 
-- [`JsonTology.validate`](/validation/validate) - just the string array
+- [`JsonTology.validate`](/validation/validate) - method that returns `ValidationErrors`
 - [`JsonTology.is`](/validation/is) - boolean type guard
-- [`JsonTology.coerce`](/validation/instantiate) - throws `InstantiationError` which carries the same `ValidationErrors` on `.errors`
-- [Error views](/errors/views) - `messages`, `format`, `flatten`, `aggregate`, `report` in full detail
+- [`JsonTology.instantiate`](/validation/instantiate) - throws `InstantiationError` which carries the same `ValidationErrors` on `.errors`
+- [Error views](/errors/views) - `aggregate`, `report` in full detail
 
 ## See also
 

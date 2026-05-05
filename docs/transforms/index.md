@@ -1,6 +1,6 @@
 # Transforms
 
-`Transform` attaches decode/encode functions to schemas without mutating them (stored in a WeakMap). After a transform is registered, `coerce()` automatically applies the decoder after validation.
+`Transform` attaches decode/encode functions to schemas without mutating them (stored in a WeakMap). After a transform is registered, `instantiate()` automatically applies the decoder after validation.
 
 ## Methods
 
@@ -14,7 +14,7 @@ All examples use the [bookstore domain](/bookstore-domain).
 
 ## Related
 
-- [`instantiate`](/validation/instantiate) - applies `decode` during coercion
+- [`instantiate`](/validation/instantiate) - applies `decode` during instantiation
 - [`dump`](/serialization/dump) - applies `encode` during serialization
 - [`jt.encode`](/transforms/decode-encode#jtencode) - single-schema encode step
 - [`Constraint brands`](/constraint-brands) - automatic brands from JSON Schema keywords

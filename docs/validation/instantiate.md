@@ -6,7 +6,7 @@
 
 **Use this when** you have an unknown-shape input (a request body, a queue message, a config blob, a database row) and you want a typed, validated, defaults-applied domain object - or a typed exception. This is the right method 80% of the time when data enters your application boundary. Prefer this over calling `validate` and then mapping fields manually.
 
-**Don't use this when** you need just a yes/no answer without a throw (use [`is`](/validation/is) instead). Don't use it when you want the structured error list without the exception (use [`errors`](/validation/errors) instead). Don't call `instantiate` on already-coerced values - the result of `instantiate` is already clean and typed. Don't use `instantiate` inside a tight inner loop over millions of calls with a fixed schema - pull `jt.registry.validator(schemaId)` once and reuse the compiled validator.
+**Don't use this when** you need just a yes/no answer without a throw (use [`is`](/validation/is) instead). Don't use it when you want the structured error list without the exception (use [`validate`](/validation/validate) instead). Don't call `instantiate` on already-coerced values - the result of `instantiate` is already clean and typed. Don't use `instantiate` inside a tight inner loop over millions of calls with a fixed schema - pull `jt.registry.validator(schemaId)` once and reuse the compiled validator.
 
 ## Examples
 
@@ -198,7 +198,7 @@ except ValidationError as e:
 ## Related
 
 - [`JsonTology.validate`](/validation/validate) - when you only need the human-readable error strings without a throw
-- [`JsonTology.errors`](/validation/errors) - when you need structured `ValidationErrors` without an exception
+- [`JsonTology.validate`](/validation/validate) - when you need structured `ValidationErrors` without an exception
 - [`JsonTology.is`](/validation/is) - when you only need a boolean type guard
 - [`JsonTology.materialize`](/registry/materialize) - when you want to build from partial trusted data + defaults without validation throwing
 - [`Compose.pick`](/composition/pick-omit) / [`omit`](/composition/pick-omit) - build sub-schemas before passing to `instantiate`
@@ -206,7 +206,7 @@ except ValidationError as e:
 ## See also
 
 - [Bookstore domain](/bookstore-domain) - where `Customer`, `Order`, and `OrderLine` are defined
-- [Error views](/errors/views) - what to do with the `ValidationErrors` when coerce throws
+- [Error views](/errors/views) - what to do with the `ValidationErrors` when instantiate throws
 - [Transforms](/transforms/decode-encode) - how Transform decoders integrate with `instantiate`
 
 ## Per-call options

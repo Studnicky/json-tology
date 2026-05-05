@@ -16,7 +16,6 @@ Primitives are named, reusable schemas with a `urn:` IRI:
 
 ```ts
 // entities/CustomerId.ts
-import { CustomerIdSchema } from './entities/CustomerId.js';
 export const CustomerIdSchema = {
   $id: 'urn:bookstore:CustomerId',
   type: 'string',
@@ -76,27 +75,30 @@ const jt = JsonTology.create({
 
 ## Validate
 
-`validate()` returns error strings. An empty array means valid.
+`validate()` returns a `ValidationErrors` collection. An empty collection (`errs.ok === true`) means valid.
 
 ```ts
 // Valid customer
-const errors = jt.validate(CustomerSchema.$id, {
+const errs = jt.validate(CustomerSchema.$id, {
   id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   email: 'alice@bookstore.example',
   name:  'Alice Chen',
 });
-console.log(errors); // []
+console.log(errs.ok); // true
 
 // Missing required field
 const bad = jt.validate(CustomerSchema.$id, { email: 'alice@bookstore.example' });
-console.log(bad); // ["root: must have required property 'id'", "root: must have required property 'name'"]
+console.log(bad.length); // 2
+for (const err of bad) {
+  console.log(err.path, err.keyword, err.message);
+}
 ```
 
-See [Validation](/validation/instantiate) for `is()`, `errors()`, `subschemaAt()`, and the five error views.
+See [Validation](/validation/instantiate) for `is()`, `validate()`, `subschemaAt()`, and the structured error views.
 
-## Coerce
+## Instantiate
 
-`coerce()` validates, applies defaults, strips unknown properties, and returns a typed value. Throws `InstantiationError` on failure.
+`instantiate()` validates, applies defaults, strips unknown properties, and returns a typed value. Throws `InstantiationError` on failure.
 
 ```ts
 import { InstantiationError } from 'json-tology';
@@ -189,10 +191,10 @@ import type { LoggerInterface } from 'json-tology/interfaces';
 | Feature | Method(s) |
 |---------|-----------|
 | Type inference | `InferType<T>`, `InferSchemaType<T, Root>` |
-| Validation | `validate`, `is`, `errors`, `subschemaAt` |
+| Validation | `validate`, `is`, `subschemaAt` |
 | Coercion + defaults | `instantiate` |
-| Error views | `messages`, `format`, `flatten`, `aggregate`, `report` |
-| Composition | `Compose.extend`, `pick`, `omit`, `partial`, `required`, `intersection`, `discriminatedUnion` |
+| Error views | `aggregate`, `report` |
+| Composition | `Compose.extend`, `pick`, `omit`, `partial`, `required`, `intersection`, `equivalent`, `discriminatedUnion` |
 | Value utilities | `Value.clone`, `hash`, `diff`, `value.cast`, `clean`, `convert`, `create` |
 | Transforms | `Transform.create`, `brand`, `pipe`, `jt.encode` |
 | Serialization | `dump`, `dumpJson` |
@@ -208,7 +210,7 @@ import type { LoggerInterface } from 'json-tology/interfaces';
 | The running example domain | [Bookstore Domain](/bookstore-domain) |
 | Schemas and registration | [Schemas](/schemas) |
 | TypeScript type inference | [Type Inference](/types) |
-| Validation and coercion | [Validation](/validation/instantiate) |
+| Validation and instantiation | [Validation](/validation/instantiate) |
 | Composing schemas | [Composition](/composition/extend) |
 | Value operations | [Value Operations](/value/clone-hash) |
 | Transforms and brands | [Transforms](/transforms/decode-encode) |
@@ -228,12 +230,13 @@ import type { LoggerInterface } from 'json-tology/interfaces';
 | `enableTypeCast` | `boolean` | `false` | Enable string→number/boolean coercion at validation time. |
 | `enableStrictTypes` | `boolean` | `false` | Reject implicit coercions globally. Per-field `jt:strict` overrides. Different from `enableStrictGraph`. |
 | `enableDefaults` | `boolean` | `true` | Fill schema `default` values during `instantiate`. Set `false` to validate without mutating missing fields. |
+| `enableDebug` | `boolean` | `false` | Surface internal debug logging via `logger.debug` (graph construction, validator compilation, materialization steps). Useful when investigating unexpected validation outcomes. |
 | `enableInlineWarnings` | `boolean` | `false` | Surface inline-object, inline-primitive, and inline-array-items warnings via `logger.warn` at registration. Implied by `enableStrictGraph`. See [graph-native authoring](/advanced/graph-native-authoring). |
 | `enableDuplicateDetection` | `boolean` | `false` | Run `findDuplicates()` at registration and warn on structural duplicates. Implied by `enableStrictGraph`. |
 | `enableStrictGraph` | `boolean` | `false` | Promote inline warnings and duplicate detection to `SchemaError` throws. Requires all sub-schemas to be standalone `$id` schemas or `$defs` entries. See [graph-native authoring](/advanced/graph-native-authoring#enablestrictgraph). |
 | `keywords` | `KeywordDefinitionInterface[]` | `[]` | Custom keyword handlers for unrecognized JSON Schema vocabulary. |
 | `vocabularies` | `VocabularyPluginInterface[]` | `[]` | Vocabulary plugins for custom RDF output (DCAT, FOAF, etc.). |
-| `materializer` | `MaterializerInterface` | _(built-in)_ | Override the default materializer (rare). |
+| `materializer` | `MaterializerOptionsInterface` | _(built-in)_ | Override the default materializer (rare). |
 | `maxDepth` | `number` | _(no limit)_ | Maximum schema-graph traversal depth. Protects against pathological schemas. |
 | `logger` | `LoggerInterface` | `SILENT_LOGGER` | Logger for warnings (`enableInlineWarnings`, `enableDuplicateDetection`). Must be set for warnings to surface. |
 | `invariants` | `Record<string, InvariantInterface[]>` | `{}` | Cross-field invariant functions, keyed by schema `$id`. |

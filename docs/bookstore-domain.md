@@ -295,7 +295,7 @@ The guides that follow build concepts one at a time, each adding to what came be
 | [Type Inference](/types) | How `InferType<typeof CustomerSchema>` resolves at compile time |
 | [Validation](/validation/instantiate) | `validate`, `is`, `errors` - checking incoming data against these schemas |
 | [Coercion](/validation/instantiate) | `instantiate` - validated + defaults applied, typed result |
-| [Error Views](/errors/views) | `messages`, `format`, `flatten`, `aggregate`, `report` |
+| [Error Views](/errors/views) | `aggregate`, `report` |
 | [Composition](/composition/extend) | Derive `CustomerWithDiscount`, `BookSummary`, `PatchOrder` |
 | [Value Operations](/value/clone-hash) | `clone`, `hash`, `diff` on a coerced `Order` |
 | [Serialization](/serialization/dump) | `dump`, `dumpJson` - serialize an `Order` back to wire form |

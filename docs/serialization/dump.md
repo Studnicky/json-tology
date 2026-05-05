@@ -76,15 +76,15 @@ const wire = jt.dump(PlacedAtSchema.$id, date as Date);
 
 ### Bad examples - what NOT to do
 
-#### Anti-pattern 1: Calling dump on raw (uncoerced) input
+#### Anti-pattern 1: Calling dump on raw (uninstantiated) input
 
 ```ts
-// ⊥ Don't do this  - dump expects a coerced domain value, not raw input
+// ⊥ Don't do this  - dump expects an instantiated domain value, not raw input
 const raw = { isbn: '9780140449136', title: 'Crime...', authors: ['Dostoevsky'], price: '14.99' };
 const wire = jt.dump(BookSchema.$id, raw as Book);
 // price is still '14.99' string  - not coerced; dump just applies encode, not type coercion
 
-// ✓ Do this  - coerce first, then dump
+// ✓ Do this  - instantiate first, then dump
 const book = jt.instantiate(BookSchema.$id, raw);
 const wireBook = jt.dump(BookSchema.$id, book);
 ```
@@ -192,7 +192,7 @@ json_str = customer.model_dump_json()
 
 ## Related
 
-- [`JsonTology.coerce`](/validation/instantiate) - the incoming direction (wire → domain)
+- [`JsonTology.instantiate`](/validation/instantiate) - the incoming direction (wire → domain)
 - [`jt.encode`](/transforms/decode-encode#jtencode) - apply a single Transform encoder
 - [Transforms](/transforms/decode-encode) - how Transform encoders are registered and applied
 

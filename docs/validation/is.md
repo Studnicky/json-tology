@@ -4,7 +4,7 @@
 
 **Use this when** you need a boolean check and you want TypeScript to narrow the type inside the truthy branch - for example, in union-narrowing guards, array filters, middleware checks. This is the idiomatic pattern when you need "is this data the right shape?" without wanting errors or a coerced value.
 
-**Don't use this when** you need error details (use [`errors`](/validation/errors) or [`validate`](/validation/validate) instead). Don't use it when you need the coerced, defaults-filled value (use [`instantiate`](/validation/instantiate) instead). Invariants also run: `is` returns `false` when any registered invariant fails, not just when structural validation fails.
+**Don't use this when** you need error details (use [`validate`](/validation/validate) instead). Don't use it when you need the coerced, defaults-filled value (use [`instantiate`](/validation/instantiate) instead). Invariants also run: `is` returns `false` when any registered invariant fails, not just when structural validation fails.
 
 ## Examples
 
@@ -132,9 +132,8 @@ except ValidationError:
 
 ## Related
 
-- [`JsonTology.validate`](/validation/validate) - returns error strings when you need to display failures
-- [`JsonTology.errors`](/validation/errors) - returns structured `ValidationErrors`
-- [`JsonTology.coerce`](/validation/instantiate) - returns typed value with defaults applied
+- [`JsonTology.validate`](/validation/validate) - returns structured `ValidationErrors` when you need to display failures
+- [`JsonTology.instantiate`](/validation/instantiate) - returns typed value with defaults applied
 - [Invariants](/registry/invariants) - cross-field rules that also affect `is` return value
 
 ## See also

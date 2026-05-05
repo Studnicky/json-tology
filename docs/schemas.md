@@ -262,9 +262,9 @@ console.log(jt.has('https://bookstore.example/Review'));   // false
 #### Example 2: Guard before validate
 
 ```ts
-function validateIfRegistered(schemaId: string, data: unknown): string[] {
+function validateIfRegistered(schemaId: string, data: unknown): ValidationErrors {
   if (!jt.has(schemaId)) {
-    return [`Schema '${schemaId}' is not registered`];
+    return new ValidationErrors([{ path: '', keyword: 'unknown', message: `Schema '${schemaId}' is not registered`, params: {} }]);
   }
   return jt.validate(schemaId, data);
 }

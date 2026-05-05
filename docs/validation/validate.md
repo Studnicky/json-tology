@@ -15,20 +15,25 @@ Equivalent to `materialize(idOrSchema, data, { enableValidation: true, enableThr
 ```ts
 import { bookstoreEntities as entities, CustomerSchema } from './bookstore/index.js';
 
-// Valid  - empty array
+// Valid  - empty collection
 const ok = jt.validate(CustomerSchema.$id, {
   id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   email: 'alice@bookstore.example',
   name:  'Alice Chen',
 });
-console.log(ok); // []
+console.log(ok.ok);     // true
+console.log(ok.length); // 0
 
 // Missing required fields
 const bad = jt.validate(CustomerSchema.$id, {
   email: 'alice@bookstore.example',
 });
-console.log(bad);
-// ["root: must have required property 'id'", "root: must have required property 'name'"]
+console.log(bad.length); // 2
+for (const err of bad) {
+  console.log(err.path, err.keyword, err.message);
+}
+// '' 'required' "must have required property 'id'"
+// '' 'required' "must have required property 'name'"
 ```
 
 ### Example 2: Nested schema errors with JSON Pointer paths
@@ -38,7 +43,7 @@ console.log(bad);
 ```ts
 import { bookstoreEntities as entities, OrderSchema } from './bookstore/index.js';
 
-const errors = jt.validate(OrderSchema.$id, {
+const errs = jt.validate(OrderSchema.$id, {
   id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   placedAt:   '2026-01-15T10:30:00Z',
@@ -47,22 +52,24 @@ const errors = jt.validate(OrderSchema.$id, {
     { bookIsbn: '9780140449136', quantity: 0, unitPrice: 12.99 }, // minimum: 1 violated
   ],
 });
+console.log(errs.items.map(e => `${e.path}: ${e.message}`));
 // ["/total: must be > 0", "/items/0/quantity: must be >= 1"]
 ```
 
 ### Example 3: Use as a lightweight form validator
 
-Validate on blur before attempting a full coerce.
+Validate on blur before attempting a full instantiate.
 
 ```ts
+import type { ValidationErrors } from 'json-tology';
 import { bookstoreEntities as entities, ReviewSchema } from './bookstore/index.js';
 
-function validateReviewForm(formData: Record<string, unknown>): string[] {
+function validateReviewForm(formData: Record<string, unknown>): ValidationErrors {
   return jt.validate(ReviewSchema.$id, formData);
 }
 
 const fieldErrors = validateReviewForm({ rating: 6, body: 'hi' });
-// ["/rating: must be <= 5", "/body: must NOT have fewer than 10 characters"]
+// items: [{ path: '/rating', ... }, { path: '/body', ... }]
 if (fieldErrors.length > 0) {
   // display errors in the UI
 }
@@ -70,7 +77,7 @@ if (fieldErrors.length > 0) {
 
 ## Bad examples - what NOT to do
 
-### Anti-pattern 1: Checking the return length and then re-coercing
+### Anti-pattern 1: Checking the return length and then re-instantiating
 
 ```ts
 // ⊥ Don't do this  - double work, data is validated twice
@@ -79,7 +86,7 @@ if (errs.length === 0) {
   const customer = jt.instantiate(CustomerSchema.$id, data); // validates again
 }
 
-// ✓ Do this  - coerce directly; it validates + applies defaults in one pass
+// ✓ Do this  - instantiate directly; it validates + applies defaults in one pass
 try {
   const customer = jt.instantiate(CustomerSchema.$id, data);
 } catch (err) {
@@ -87,16 +94,17 @@ try {
 }
 ```
 
-### Anti-pattern 2: Parsing the error strings to extract field paths
+### Anti-pattern 2: Re-parsing message strings to extract field paths
 
 ```ts
 // ⊥ Don't do this  - parsing formatted strings is fragile
-const msg = jt.validate(CustomerSchema.$id, data)[0];
+const errs = jt.validate(CustomerSchema.$id, data);
+const msg  = errs.items[0]?.message ?? '';
 const path = msg.split(':')[0]; // fragile string parsing
 
-// ✓ Do this  - use errors() for structured access
-const errs = entities.validate(CustomerSchema.$id, data);
-for (const err of errs) {
+// ✓ Do this  - iterate the structured ValidationErrorType objects
+const structured = jt.validate(CustomerSchema.$id, data);
+for (const err of structured) {
   console.log(err.path, err.keyword, err.message);
 }
 ```
@@ -106,8 +114,8 @@ for (const err of errs) {
 ::: code-group
 
 ```ts [json-tology]
-const errors = jt.validate(CustomerSchema.$id, data);
-// string[]  - empty if valid
+const errs = jt.validate(CustomerSchema.$id, data);
+// ValidationErrors  - .ok, .length, iterable, .items, .aggregate(), .report()
 // does not throw, does not coerce
 ```
 
@@ -149,12 +157,12 @@ except ValidationError as e:
 
 ## Related
 
-- [`JsonTology.errors`](/validation/errors) - structured `ValidationErrors` with path/keyword/params
-- [`JsonTology.is`](/validation/is) - boolean type guard, no strings
-- [`JsonTology.coerce`](/validation/instantiate) - validate + apply defaults + return typed value
+- [`JsonTology.is`](/validation/is) - boolean type guard, no error data
+- [`JsonTology.instantiate`](/validation/instantiate) - validate + apply defaults + return typed value
 - [`JsonTology.subschemaAt`](/validation/subschemaAt) - validate against a sub-schema by JSON Pointer
+- [`ValidationErrors`](/validation/errors) - the structured collection shape returned by `validate`
 
 ## See also
 
-- [Error views](/errors/views) - `messages`, `format`, `flatten`, `aggregate`, `report`
+- [Error views](/errors/views) - `aggregate`, `report`, iteration over `ValidationErrors`
 - [Bookstore domain](/bookstore-domain) - schema definitions used in examples
