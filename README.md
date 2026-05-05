@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="public/nodejs-node.svg"      alt="Node.js"     width="36" height="36" style="vertical-align:middle" />
-  <img src="public/json-schema-node.svg" alt="JSON Schema" width="48" height="48" style="vertical-align:middle" />
-  <img src="public/typescript-node.svg"  alt="TypeScript"  width="64" height="64" style="vertical-align:middle" />
-  <img src="public/jst-node.svg"         alt="json-tology" width="112" height="112" style="vertical-align:middle" />
-  <img src="public/rdf-node.svg"         alt="RDF"         width="64" height="64" style="vertical-align:middle" />
-  <img src="public/w3c-node.svg"         alt="W3C"         width="48" height="48" style="vertical-align:middle" />
-  <img src="public/validation-node.svg"  alt="Validation"  width="36" height="36" style="vertical-align:middle" />
+  <img src="https://raw.githubusercontent.com/Studnicky/json-tology/main/public/nodejs-node.svg"      alt="Node.js"     width="36" height="36" style="vertical-align:middle" />
+  <img src="https://raw.githubusercontent.com/Studnicky/json-tology/main/public/json-schema-node.svg" alt="JSON Schema" width="48" height="48" style="vertical-align:middle" />
+  <img src="https://raw.githubusercontent.com/Studnicky/json-tology/main/public/typescript-node.svg"  alt="TypeScript"  width="64" height="64" style="vertical-align:middle" />
+  <img src="https://raw.githubusercontent.com/Studnicky/json-tology/main/public/jst-node.svg"         alt="json-tology" width="112" height="112" style="vertical-align:middle" />
+  <img src="https://raw.githubusercontent.com/Studnicky/json-tology/main/public/rdf-node.svg"         alt="RDF"         width="64" height="64" style="vertical-align:middle" />
+  <img src="https://raw.githubusercontent.com/Studnicky/json-tology/main/public/w3c-node.svg"         alt="W3C"         width="48" height="48" style="vertical-align:middle" />
+  <img src="https://raw.githubusercontent.com/Studnicky/json-tology/main/public/validation-node.svg"  alt="Validation"  width="36" height="36" style="vertical-align:middle" />
 </p>
 
 # json-tology
