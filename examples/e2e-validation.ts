@@ -10,7 +10,7 @@
 
 import {
   InstantiationError, JsonTology, Value
-} from '../dist/index.js';
+} from '../src/index.js';
 import {
   allSchemas, DateTimeSchema, foafPersons,
   PersonSchema

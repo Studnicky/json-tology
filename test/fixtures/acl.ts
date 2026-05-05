@@ -5,7 +5,7 @@
  * Schemas use `as const` so InferType works at compile time.
  */
 
-import { Transform } from '../../dist/index.js';
+import { Transform } from '../../src/index.js';
 
 // ---------------------------------------------------------------------------
 // Schemas
