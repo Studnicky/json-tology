@@ -729,3 +729,214 @@ const Manager = recursive({ $id: 'urn:bookstore:Manager' }, (self) => ({
 - A consumer can author a self-referential schema with `recursive((self) => ({ ..., manager: self }))` and `InferType` produces the recursive type with no manual annotation.
 - Mutual recursion uses `lazyRef(() => OtherSchema)`; documented as the explicit-thunk path for the rare case.
 - TypeBox-comparison block on the docs site shows the recursive case side-by-side and notes `recursive` matches TypeBox's ergonomics.
+
+---
+
+## Addendum: three first-class authoring paths, not one
+
+The earlier addenda implied `ref()` was the recommended path. That overstates it. The library should support, equally and as first-class:
+
+### Path A — single-file with `$defs` (pure JSON Schema)
+
+```ts
+const OrderSchema = {
+  $id: 'urn:bookstore:Order',
+  $defs: {
+    User: {
+      type: 'object',
+      properties: { name: { type: 'string' } },
+      required: ['name']
+    }
+  },
+  type: 'object',
+  properties: {
+    buyer: { $ref: '#/$defs/User' }
+  }
+} as const;
+
+type Order = InferType<typeof OrderSchema>;
+//   ^? { readonly buyer?: { readonly name: string } }
+```
+
+- **Authoring surface:** pure JSON Schema 2020-12. Zero deviation.
+- **Type inference:** works today via the existing `#/$defs/${K}` branch in `InferRefType`. No registry, no tuple.
+- **Runtime:** the registry resolves `$defs` locally during validation. Already implemented.
+- **Use case:** any schema that can express its dependencies inline, plus single-file domain models.
+- **Tradeoff:** no cross-file sharing of `User`. If two schemas both define `User`, they're two distinct classes for ontology purposes. Fine when that's what you want.
+
+### Path B — cross-file with absolute `$ref` and a registration tuple (pure JSON Schema)
+
+```ts
+// schemas/User.ts
+export const UserSchema = {
+  $id: 'urn:bookstore:User',
+  type: 'object',
+  properties: { name: { type: 'string' } },
+  required: ['name']
+} as const;
+
+// schemas/Order.ts
+import { UserSchema } from './User.js';
+export const OrderSchema = {
+  $id: 'urn:bookstore:Order',
+  type: 'object',
+  properties: { buyer: { $ref: UserSchema.$id } }
+} as const;
+
+// app.ts
+import { JsonTology } from 'json-tology';
+import { UserSchema } from './schemas/User.js';
+import { OrderSchema } from './schemas/Order.js';
+
+const jt = JsonTology.create({ schemas: [UserSchema, OrderSchema] as const });
+const order = jt.instantiate(OrderSchema.$id, data);
+//    ^? { readonly buyer?: { readonly name: string } }
+```
+
+- **Authoring surface:** pure JSON Schema. The only TypeScript-flavoured detail is `UserSchema.$id` instead of a hand-typed IRI string - the wire bytes are identical, but typos at the call site become compile errors.
+- **Type inference:** works via `SchemaMapFromTuple` threading references through the registered tuple (the fix that landed in #21).
+- **Runtime:** the registry stores both schemas and resolves `$ref` IRIs across the boundary.
+- **Use case:** any schema you want to share by IRI across files, services, or languages. The wire schema can be `JSON.stringify`'d and shipped to a Python or Go consumer unchanged.
+- **Tradeoff:** the tuple must be enumerated at one `JsonTology.create` call site. Adding a schema means adding it to the tuple.
+
+### Path C — typed `ref()` (TypeScript convenience)
+
+```ts
+// schemas/Order.ts
+import { ref } from 'json-tology';
+import { UserSchema } from './User.js';
+export const OrderSchema = {
+  $id: 'urn:bookstore:Order',
+  type: 'object',
+  properties: { buyer: ref(UserSchema) }
+} as const;
+
+// app.ts
+import { JsonTology } from 'json-tology';
+import { OrderSchema } from './schemas/Order.js';
+
+const order = JsonTology.instantiate(OrderSchema, data);
+//    ^? { readonly buyer?: { readonly name: string } }
+```
+
+- **Authoring surface:** one TypeScript function call. The wire still emits `{ $ref: UserSchema.$id }`; `~jt:source` strips out before serialization.
+- **Type inference:** works without a registration tuple because the phantom carries the source schema.
+- **Runtime:** auto-registers `UserSchema` via the process-global `Schemas` IRI map when first observed.
+- **Use case:** cross-file schema authoring where the developer wants types-without-tuple ergonomics.
+- **Tradeoff:** the only path that deviates from pure JSON Schema syntax in the source. The wire bytes are still pure JSON Schema (phantom stripped).
+
+### All three coexist; users mix freely
+
+A single project can use Path A for tightly-scoped local types, Path B for shared canonical entities, and Path C for the developer-experience convenience on cross-file refs. The runtime treats them identically once the wire schema is in the registry. The only differences are at the authoring keystroke and at type-inference time.
+
+```ts
+// All three in one file - all work, all interoperate:
+const AddressSchema = {
+  $id: 'urn:bookstore:Address',
+  $defs: { Zip: { type: 'string', pattern: '^\\d{5}$' } },
+  type: 'object',
+  properties: {
+    street: { type: 'string' },
+    zip:    { $ref: '#/$defs/Zip' }                  // path A
+  },
+  required: ['street']
+} as const;
+
+const UserSchema = {
+  $id: 'urn:bookstore:User',
+  type: 'object',
+  properties: {
+    name:    { type: 'string' },
+    address: { $ref: AddressSchema.$id }              // path B
+  },
+  required: ['name']
+} as const;
+
+const OrderSchema = {
+  $id: 'urn:bookstore:Order',
+  type: 'object',
+  properties: {
+    buyer: ref(UserSchema)                            // path C
+  }
+} as const;
+
+// Path B requires the tuple; path C does not. Mixing works:
+const jt = JsonTology.create({ schemas: [AddressSchema, UserSchema] as const });
+//                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+//                            UserSchema needs the tuple because it uses bare-string $ref.
+//                            OrderSchema doesn't need the tuple because ref() carries the type.
+//                            Schemas.byId still indexes all three.
+
+const order = JsonTology.instantiate(OrderSchema, data);  // works
+const user  = jt.instantiate(UserSchema.$id, data);       // works
+```
+
+### Self-reference stays pure JSON Schema
+
+For any of the three paths, self-reference is `{ $ref: '#' }` or `{ $ref: SelfSchema.$id }`. No `recursive((self) => ...)` builder. The TypeBox builder addendum was an overreach - it solved a problem JSON Schema already solved.
+
+```ts
+const PersonSchema = {
+  $id: 'urn:bookstore:Person',
+  type: 'object',
+  properties: {
+    name:    { type: 'string' },
+    manager: { $ref: 'urn:bookstore:Person' }     // pure JSON Schema self-ref
+  },
+  required: ['name']
+} as const;
+
+type Person = InferType<typeof PersonSchema>;
+//   ^? { readonly name: string; readonly manager?: Person }
+```
+
+The recursive type alias resolves through `InferRefType`'s self-ref branches. Works today.
+
+### Mutual recursion across files
+
+Genuine cross-file mutual recursion is the one place neither pure JSON Schema nor `ref()` works alone, because the second module's schema isn't a value yet when the first module evaluates. Three options:
+
+1. **Co-locate** - put both schemas in the same file. Most natural fix; mutual recursion is usually one cohesive concept.
+2. **Path B** - register both schemas with `JsonTology.create`. Bare-string `$ref`s resolve at runtime regardless of declaration order.
+3. **`lazyRef(() => OtherSchema)`** - explicit thunk for the rare case where co-location is impossible. The thunk runs on first use; the phantom is memoized.
+
+`recursive()` solved a different problem (single-pass authoring of self-recursive types in a builder DSL); it's not the right fit when the user is writing JSON Schema literals.
+
+### Updated decision table
+
+| What you want | Path | Authoring | Tuple required? | TypeScript-only? |
+|---|---|---|---|---|
+| Single-file domain types | A | Pure JSON Schema (`$defs` + `#/$defs/X`) | No | No |
+| Cross-file canonical entities, wire-shareable | B | Pure JSON Schema (bare `$ref` IRIs) | Yes (one tuple) | No |
+| Cross-file with type inference, no tuple | C | TypeScript builder (`ref(SchemaX)`) | No | Yes |
+| Self-reference | A or B | Pure JSON Schema (`$ref: '#'` or `$ref: '<self-id>'`) | n/a | No |
+| Mutual recursion (same file) | A or B | Pure JSON Schema | n/a | No |
+| Mutual recursion (cross-file) | B or `lazyRef` | Pure JSON Schema or thunked | Either tuple or thunk | Either |
+
+### Implementation impact
+
+- **Path A** is already implemented end to end. No work.
+- **Path B** is already implemented end to end after the `SchemaMapFromTuple` threading fix that landed in #21. No work.
+- **Path C** is the only new code: `ref<T>(source: T): RefType<T>`, the `~jt:source` phantom branch in `InferRefType`, the strip helper in serializers, and the `Schemas.byId` auto-registration. Phase-1 implementation outline already covers it.
+- **`recursive()` and `Self` builders** are dropped from the design.
+- **`lazyRef(() => OtherSchema)`** stays for genuine cross-file mutual recursion that can't be co-located.
+
+### Done means (revised again)
+
+- Pure JSON Schema authoring (paths A and B) is the documented default. Every user-facing example uses one of those two paths.
+- `ref()` and `lazyRef()` are documented as TypeScript-side conveniences in a single page (`/concepts/typed-references` or similar). The doc explicitly says: "if you're authoring portable JSON Schema, ignore this page."
+- Self-reference and same-file mutual recursion are documented under path A's existing pages. No new builder.
+- The wire format never carries `~jt:*` keys regardless of authoring path. Property test enforces.
+
+### Open questions, narrowed
+
+The shift to "three first-class paths" closes some open questions and reframes others:
+
+- **Q1 (`ref()` accepts inline literals?)** Yes. `ref({ $id, type, ... } as const)` is a valid use case: it auto-registers the inline schema in `Schemas.byId` and brands the type. Users who don't want the auto-registration use path A or B.
+- **Q3 (Symbol vs string phantom key)** String wins. `~jt:source` is debuggable in `console.log` and in heap snapshots. Symbol-keyed phantoms hide from devtools, which is actively unhelpful for a library that emphasises graph legibility.
+- **Q4 (Codemod scope)** Narrow further: the codemod is opt-in and only converts `{ $ref: X.$id }` (path B) to `ref(X)` (path C). Path A's `#/$defs/X` is left alone - that's pure JSON Schema and a target ergonomic.
+- **Q5 (Soft-deprecation)** Don't deprecate paths A or B. They remain first-class indefinitely. Path C is additive.
+- **Q7 (`Schemas` map publicness)** Public read API (`byId`, `has`, `iter`), private write API (only `ref()`, `Transform.attach`, etc. populate it). Snapshot/restore/clear for tests.
+- **Q8 (`JsonTology` class export)** Keep the class. The static counterparts and the `create` cache constructor live on the same name. No renaming needed.
+
+That leaves Q2 (strip vs reject `~jt:*` on `register()`) and Q6 (metadata API naming: `Invariant.attach` vs `attachInvariant`) as the only undecided questions for the alpha.
