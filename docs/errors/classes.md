@@ -244,7 +244,7 @@ try {
 
 ## Related
 
-- [ValidationErrors overview](/errors) - the collection embedded inside `InstantiationError` and `CoercionError`
+- [ValidationErrors overview](/errors/) - the collection embedded inside `InstantiationError` and `CoercionError`
 - [ValidationErrors views](/errors/views) - `aggregate()` and `report()` projections
 
 ## See also

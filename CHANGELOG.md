@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-05-05
+
+### Fixed
+
+- Docs site: live Cytoscape graph failed to load on the deployed Pages site with `Failed to resolve module specifier 'cytoscape'`. The VitePress config previously declared `cytoscape` and `cytoscape-fcose` as Rollup externals, leaving them as bare specifiers in the browser bundle. Removed the externals so they bundle into the asset chunks.
+- Docs site: theme defaulted to dark on first load. Set `appearance: false` to make light the default.
+- Docs site: dead link to `/errors` from `docs/errors/classes.md` now points at `/errors/`.
+
 ## [0.3.1] - 2026-05-05
 
 ### Added
@@ -211,7 +219,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-[Unreleased]: https://github.com/Studnicky/json-tology/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/Studnicky/json-tology/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/Studnicky/json-tology/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/Studnicky/json-tology/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/Studnicky/json-tology/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Studnicky/json-tology/compare/v0.1.0...v0.2.0

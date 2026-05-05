@@ -134,13 +134,6 @@ const sidebar = [
 
 export default defineConfig({
   base: '/json-tology/',
-  vite: {
-    build: {
-      rollupOptions: {
-        external: ['cytoscape', 'cytoscape-fcose']
-      }
-    }
-  },
   appearance: themeConfig.appearance,
   description: 'One source of truth for TypeScript types, runtime validation, coercion, and OWL ontology output. Author in JSON Schema; share with any backend; reason over the graph.',
   srcDir: '.',
