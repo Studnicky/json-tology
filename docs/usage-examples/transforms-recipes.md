@@ -166,7 +166,7 @@ const SlugSchema = Transform.create(
 );
 ```
 
-Pair with the [custom `slug` format](/cookbook/custom-formats) if you also want validation.
+Pair with the [custom `slug` format](/usage-examples/custom-formats) if you also want validation.
 
 ---
 
@@ -290,7 +290,7 @@ roundTrip(PlacedAtSchema, ['2026-01-15T10:30:00.000Z']);
 - [`Transform.create` and `jt.encode`](/transforms/decode-encode) - the underlying API
 - [`Transform.pipe`](/transforms/pipe) - multi-stage pipelines, decode/encode direction
 - [`Transform.brand`](/transforms/brand) - nominal typing without runtime conversion
-- [Custom formats](/cookbook/custom-formats) - validate the wire format before decoding
+- [Custom formats](/usage-examples/custom-formats) - validate the wire format before decoding
 
 ## See also
 

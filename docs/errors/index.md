@@ -13,7 +13,7 @@
 | [`aggregate()`](./views#validationerrors-aggregate) | `{ count, paths, keywords }` | Structured logs, metric labels |
 | [`report()`](./views#validationerrors-report) | `ProblemDetailsType` | HTTP 422 response bodies (RFC 7807) |
 
-## Cookbook recipes
+## Usage examples
 
 Common projections from `errs.items`:
 

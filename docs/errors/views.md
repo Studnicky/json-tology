@@ -12,7 +12,7 @@ All examples use the [bookstore domain](/bookstore-domain).
 
 ---
 
-## Cookbook recipes
+## Usage examples
 
 Common shapes for projecting `errs.items` into the format a caller wants.
 

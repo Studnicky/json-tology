@@ -44,7 +44,7 @@ const sidebar = [
       {
         text: 'ValidationErrors',
         items: [
-          { link: '/errors', text: 'Overview / cookbook recipes' },
+          { link: '/errors', text: 'Overview / usage examples' },
           { link: '/errors/views#validationerrors-aggregate', text: 'aggregate' },
           { link: '/errors/views#validationerrors-report', text: 'report' },
           { link: '/errors/classes', text: 'Error classes' }
@@ -117,10 +117,10 @@ const sidebar = [
     ]
   },
   {
-    text: 'Cookbook',
+    text: 'Usage Examples',
     items: [
-      { link: '/cookbook/custom-formats', text: 'Custom format validators' },
-      { link: '/cookbook/transforms-recipes', text: 'Transform recipes' }
+      { link: '/usage-examples/custom-formats', text: 'Custom format validators' },
+      { link: '/usage-examples/transforms-recipes', text: 'Transform recipes' }
     ]
   },
   {
