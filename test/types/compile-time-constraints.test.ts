@@ -132,11 +132,9 @@ const _total: number = order.total;
 // buyer is User type (not unknown) because $ref resolved
 
 if (order.buyer !== undefined) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const _buyerName: string = order.buyer.name;
 
   if (order.buyer.address !== undefined) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const _street: string = order.buyer.address.street;
 
     void _street;
@@ -349,10 +347,8 @@ const chainOrder = jt.instantiate('https://example.io/Order', {
 });
 
 
-if (chainOrder.buyer !== undefined && chainOrder.buyer.address !== undefined) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+if (chainOrder.buyer?.address !== undefined) {
   const _chainStreet: string = chainOrder.buyer.address.street;
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
   const _chainCity: string | undefined = chainOrder.buyer.address.city;
 
   void _chainStreet;
