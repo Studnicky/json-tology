@@ -18,7 +18,7 @@ const CustomerSchema = {
   properties: {
     id:    { $ref: 'urn:bookstore:CustomerId' },
     email: { $ref: 'urn:bookstore:Email' },
-    name:  { $ref: 'urn:bookstore:CustomerName' }
+    name:  { $ref: 'urn:bookstore:PersonName' }
   },
   required: ['id', 'email', 'name']
 } as const;
@@ -118,7 +118,7 @@ If you also need RDF/OWL/SHACL output, that's available as **opt-in advanced fea
 
 ## Quick links
 
-- **[Getting Started](/getting-started)** - install, define a schema, validate, coerce
+- **[Getting Started](/getting-started)** - install, define a schema, validate, instantiate
 - **[Bookstore Domain](/bookstore-domain)** - the running example domain used throughout the docs
 - **[Validation](/validation/instantiate)** - `instantiate`, `validate`, `is`, `subschemaAt`
 - **[Error Views](/errors/views)** - `aggregate`, `report` (RFC 7807)
@@ -129,7 +129,7 @@ If you also need RDF/OWL/SHACL output, that's available as **opt-in advanced fea
 
 ## Related
 
-- [Getting Started](/getting-started) - install, validate, coerce in 5 minutes
+- [Getting Started](/getting-started) - install, validate, instantiate in 5 minutes
 - [Bookstore domain](/bookstore-domain) - the running example domain used throughout
 - [Picking a method](/picking-a-method) - instantiate vs validate vs is vs materialize
 
