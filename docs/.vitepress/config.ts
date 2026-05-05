@@ -130,7 +130,8 @@ const sidebar = [
     text: 'Reference',
     items: [
       { link: '/cli', text: 'CLI' },
-      { link: '/constraint-brands', text: 'Constraint Brands' }
+      { link: '/constraint-brands', text: 'Constraint Brands' },
+      { link: '/references', text: 'References' }
     ]
   }
 ];
