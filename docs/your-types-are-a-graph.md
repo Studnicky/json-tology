@@ -18,21 +18,29 @@ Below is the bookstore TBox rendered with [Cytoscape](https://js.cytoscape.org/)
 
 ## Branding: same validation, different concepts
 
-Look at the green dashed edge between `AuthorName` and `CustomerName`. Both validate to `{ type: 'string', minLength: 1, maxLength: 200 }` - they share the same rule. But they are domain-distinct: one belongs to book authorship, the other to customer identity. Mixing them in code would be a type error.
+`PersonName` is the canonical primitive: `{ type: 'string', minLength: 1, maxLength: 200 }`. `CustomerName` and `AuthorName` are both sibling extensions of `PersonName` - they share the same validation rule, but they are domain-distinct: one belongs to customer identity, the other to book authorship. Mixing them in code would be a type error.
 
-`Compose.equivalent` creates `AuthorName` as a thin `$ref` over `CustomerName`:
+`Compose.equivalent` creates each as a thin `$ref` over `PersonName`:
 
 ```ts
+export const CustomerNameSchema = Compose.equivalent(
+  PersonNameSchema,
+  {
+    $id: 'urn:bookstore:CustomerName',
+    description: 'A person’s name in the customer-identity context. Validation is owned by PersonName; this is a domain-specific brand.'
+  }
+);
+
 export const AuthorNameSchema = Compose.equivalent(
-  CustomerNameSchema,
+  PersonNameSchema,
   {
     $id: 'urn:bookstore:AuthorName',
-    description: 'Same validation as CustomerName; semantically a distinct domain concept.'
+    description: 'A person’s name in the book-authorship context. Validation is owned by PersonName; this is a domain-specific brand.'
   }
 );
 ```
 
-The result: one compiled validator (no duplication), two separate class IRIs, and an `owl:equivalentClass` arc in the TBox linking them - visible as the green dashed edge in the graph above. Ontology-aware tools can infer that any `AuthorName` is also a valid `CustomerName` and vice versa, while your TypeScript types keep the two concepts nominally distinct.
+The result: one compiled validator (no duplication), three class IRIs, and `owl:equivalentClass` arcs in the TBox - visible as the green dashed edges in the graph above. Ontology-aware tools can infer that any `CustomerName` or `AuthorName` is also a valid `PersonName` and vice versa, while your TypeScript types keep the three concepts nominally distinct.
 
 ---
 

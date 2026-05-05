@@ -2,6 +2,7 @@ import type { DefaultTheme } from 'vitepress';
 
 export const themeConfig = {
   appearance: false as const,
+  logo: '/nodes/jst-node.svg',
   outline: { label: 'On this page', level: [2, 3] as [number, number] },
   search: { provider: 'local' as const },
   footer: { copyright: 'MIT License, © Andrew Studnicky', message: 'Released under the MIT License.' },

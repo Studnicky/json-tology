@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitepress';
+import jtBrandPlugin from './plugins/jt-brand.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 const pkg = JSON.parse(readFileSync(fileURLToPath(new URL('../../package.json', import.meta.url)), 'utf8')) as { version: string };
@@ -72,7 +73,7 @@ const sidebar = [
       { link: '/composition/intersection', text: 'intersection' },
       { link: '/composition/discriminated-union', text: 'discriminatedUnion / narrow' },
       { link: '/composition/get-defaults', text: 'getDefaults' },
-      { link: '/advanced/graph-native-authoring#compose-equivalent', text: 'equivalent' }
+      { link: '/composition/equivalent', text: 'equivalent' }
     ]
   },
   {
@@ -106,7 +107,7 @@ const sidebar = [
       { link: '/registry/materialize', text: 'materialize' },
       { link: '/registry/computed', text: 'addComputed / removeComputed' },
       { link: '/registry/invariants', text: 'addInvariant / removeInvariant' },
-      { link: '/advanced/graph-native-authoring#schemaregistry-findduplicates', text: 'findDuplicates' }
+      { link: '/registry/find-duplicates', text: 'findDuplicates' }
     ]
   },
   {
@@ -115,14 +116,17 @@ const sidebar = [
       { link: '/advanced/ontology#entities-totbox', text: 'toTbox' },
       { link: '/advanced/ontology#entities-toshacl', text: 'toShacl' },
       { link: '/advanced/ontology#entities-ontology', text: 'ontology' },
-      { link: '/advanced/quads', text: 'RDF round-trip (toQuads / fromQuads)' }
+      { link: '/advanced/quads', text: 'RDF round-trip (toQuads / fromQuads)' },
+      { link: '/advanced/strict-graph-mode', text: 'Strict graph mode' }
     ]
   },
   {
     text: 'Usage Examples',
     items: [
       { link: '/usage-examples/custom-formats', text: 'Custom format validators' },
-      { link: '/usage-examples/transforms-recipes', text: 'Transform recipes' }
+      { link: '/usage-examples/transforms-recipes', text: 'Transform recipes' },
+      { link: '/usage-examples/sparql-queries', text: 'SPARQL queries' },
+      { link: '/usage-examples/sub-schema-patterns', text: 'Sub-schema patterns' }
     ]
   },
   {
@@ -145,6 +149,12 @@ export default defineConfig({
     }
   },
   base: '/json-tology/',
+  markdown: { config: (md) => { md.use(jtBrandPlugin); } },
+  head: [
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/json-tology/nodes/jst-node.svg' }],
+    ['link', { rel: 'mask-icon', href: '/json-tology/nodes/jst-node.svg', color: '#08717A' }],
+    ['meta', { name: 'theme-color', content: '#08717A' }]
+  ],
   appearance: themeConfig.appearance,
   description: 'One source of truth for TypeScript types, runtime validation, coercion, and OWL ontology output. Author in JSON Schema; share with any backend; reason over the graph.',
   srcDir: '.',
