@@ -122,6 +122,7 @@ const sidebar = [
 ];
 
 export default defineConfig({
+  base: '/json-tology/',
   vite: {
     build: {
       rollupOptions: {
