@@ -1,0 +1,44 @@
+
+body:
+  - attributes:
+      description: One or two sentences. What did you expect, what happened.
+      label: Summary
+    id: summary
+    type: textarea
+    validations:
+      required: true
+  - attributes:
+      description: Smallest schema + call that exhibits the issue. Copy-pasteable TypeScript.
+      label: Minimal reproduction
+      render: ts
+    id: repro
+    type: textarea
+    validations:
+      required: true
+  - attributes:
+      label: json-tology version
+      placeholder: "0.3.2"
+    id: version
+    type: input
+    validations:
+      required: true
+  - attributes:
+      label: Node version
+      placeholder: "v24.x"
+    id: node
+    type: input
+    validations:
+      required: true
+  - attributes:
+      description: What should have happened, with reference to the documented contract if possible.
+      label: Expected behavior
+    id: expected
+    type: textarea
+  - attributes:
+      description: Observed output, including any error message and stack trace.
+      label: Actual behavior
+    id: actual
+    type: textarea
+description: A behavior in json-tology that does not match the documented contract
+labels: ["bug", "triage"]
+name: Bug report

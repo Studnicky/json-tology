@@ -35,6 +35,7 @@ jobs:
 
   publish:
     needs: validate
+    if: ${{ vars.NPM_PUBLISH_ENABLED == 'true' }}
     outputs:
       published: ${{ steps.publish-package.outputs.published }}
       version: ${{ steps.check-version.outputs.version }}

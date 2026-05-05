@@ -1,0 +1,51 @@
+
+body:
+  - attributes:
+      value: |
+        W3C / RDF / OWL / SHACL conformance is aspirational and a work in progress. Please cite the spec section the current output diverges from.
+    type: markdown
+  - attributes:
+      label: Spec section
+      placeholder: "OWL 2 RL: 11.1 Functional Properties"
+    id: spec
+    type: input
+    validations:
+      required: true
+  - attributes:
+      label: Input schema
+      render: ts
+    id: input
+    type: textarea
+    validations:
+      required: true
+  - attributes:
+      description: Quads / Turtle / JSON-LD as produced by json-tology.
+      label: Emitted output
+      render: text
+    id: emitted
+    type: textarea
+    validations:
+      required: true
+  - attributes:
+      description: What a conformant tool should emit, with citation.
+      label: Spec-conformant output
+      render: text
+    id: expected
+    type: textarea
+    validations:
+      required: true
+  - attributes:
+      label: Tool that surfaced the gap
+      options:
+        - Apache Jena
+        - Protege
+        - TopBraid Composer
+        - HermiT / Pellet / FaCT++
+        - SHACL Playground
+        - eyereasoner
+        - Other
+    id: tool
+    type: dropdown
+description: Output from toTbox / toShacl / toQuads that a W3C-conformant tool rejects or interprets incorrectly
+labels: ["conformance", "rdf-owl-shacl"]
+name: Standards conformance gap
