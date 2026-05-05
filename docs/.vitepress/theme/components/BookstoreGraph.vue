@@ -33,9 +33,10 @@ onMounted(async () => {
   let schemaMap: Record<string, unknown>;
 
   try {
+    const base = import.meta.env.BASE_URL;
     const [graphResp, schemaResp] = await Promise.all([
-      fetch('/data/bookstore-graph.json'),
-      fetch('/data/bookstore-schemas.json')
+      fetch(`${base}data/bookstore-graph.json`),
+      fetch(`${base}data/bookstore-schemas.json`)
     ]);
     if (!graphResp.ok) throw new Error(`graph fetch ${graphResp.status}`);
     if (!schemaResp.ok) throw new Error(`schema fetch ${schemaResp.status}`);
