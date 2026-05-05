@@ -9,10 +9,10 @@
 
 import {
   Compose, JsonTology, Value
-} from '../dist/index.js';
+} from '../src/index.js';
 import type {
   EnumValuesType, InferType, LooseInputType
-} from '../dist/index.js';
+} from '../src/index.js';
 import {
   allSchemas, DateTimeSchema, foafPersons, MboxSchema, PersonSchema
 } from '../test/fixtures/foaf.js';

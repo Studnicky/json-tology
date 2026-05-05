@@ -1,0 +1,23 @@
+
+body:
+  - attributes:
+      description: What gap motivates the request? Cite the page or example that surfaced it.
+      label: Problem
+    id: problem
+    type: textarea
+    validations:
+      required: true
+  - attributes:
+      description: Sketch the API. If a new method, include the signature and a usage example.
+      label: Proposed shape
+      render: ts
+    id: proposal
+    type: textarea
+  - attributes:
+      description: Existing operations or workarounds you have already evaluated.
+      label: Alternatives considered
+    id: alternatives
+    type: textarea
+description: Propose a new operation, keyword, option, or doc page
+labels: ["enhancement"]
+name: Feature request
