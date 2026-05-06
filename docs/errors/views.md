@@ -26,7 +26,7 @@ errs.items.map(err => `${err.path || 'root'}: ${err.message}`)
 ### Group by path
 
 ```ts
-import type { ValidationErrorType } from 'json-tology';
+import type { ValidationErrorType } from 'json-tology/types';
 
 const grouped: Record<string, ValidationErrorType[]> = {};
 for (const err of errs) {
@@ -39,7 +39,7 @@ for (const err of errs) {
 ### Field vs form errors
 
 ```ts
-import type { ValidationErrorType } from 'json-tology';
+import type { ValidationErrorType } from 'json-tology/types';
 
 const fieldErrors: ValidationErrorType[] = [];
 const formErrors:  ValidationErrorType[] = [];

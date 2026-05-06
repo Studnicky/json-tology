@@ -7,7 +7,7 @@ json-tology surfaces JSON Schema constraint keywords as compile-time phantom bra
 Without brands, `{ type: 'string', format: 'email' }` and `{ type: 'string', format: 'uri' }` both infer as `string`. Any string can flow between them silently. With brands enabled (the default), each constraint keyword intersects a phantom brand onto the base type. The types become structurally incompatible.
 
 ```ts
-import type { InferType } from 'json-tology';
+import type { InferType } from 'json-tology/types';
 
 const EmailSchema = {
   $id: 'https://example.com/Email',
@@ -161,7 +161,7 @@ const bad: Closed = { name: 'Bob', extra: true };    // compile error  - 'extra'
 Nominal brands make structurally identical schemas produce incompatible types when they have different `$id` values. Use `NominalSchemaType<T>` to access the branded type:
 
 ```ts
-import type { NominalSchemaType } from 'json-tology';
+import type { NominalSchemaType } from 'json-tology/types';
 
 const UserSchema = {
   $id: 'https://example.com/User',
@@ -387,7 +387,7 @@ type Id = InferType<typeof IdSchema>;
 Filter deprecated properties from a schema type:
 
 ```ts
-import type { DeprecatedKeysType, NonDeprecatedSchemaType } from 'json-tology';
+import type { DeprecatedKeysType, NonDeprecatedSchemaType } from 'json-tology/types';
 
 const UserSchema = {
   type: 'object',
@@ -407,7 +407,7 @@ type User = NonDeprecatedSchemaType<typeof UserSchema>; // { name: string }  - n
 Strips brands to the base primitive. Useful for function parameters that accept pre-validation input:
 
 ```ts
-import type { InferType, LooseInputType } from 'json-tology';
+import type { InferType, LooseInputType } from 'json-tology/types';
 
 const EmailSchema = { type: 'string', format: 'email' } as const;
 type Email = InferType<typeof EmailSchema>;  // string & FormatBrand<'email'>
@@ -421,7 +421,7 @@ type Input = LooseInputType<Email>;          // string
 Extract enum values and enforce exhaustive handling:
 
 ```ts
-import type { EnumValuesType, ExhaustiveType } from 'json-tology';
+import type { EnumValuesType, ExhaustiveType } from 'json-tology/types';
 
 const StatusSchema = { enum: ['active', 'inactive', 'pending'] } as const;
 
@@ -443,7 +443,7 @@ function handle(s: Status): string {
 Validates that `default` values match the declared type. Resolves to `never` when a default mismatches:
 
 ```ts
-import type { DefaultAlignedType } from 'json-tology';
+import type { DefaultAlignedType } from 'json-tology/types';
 
 const GoodSchema = {
   type: 'object',
@@ -468,7 +468,7 @@ type Bad = DefaultAlignedType<typeof BadSchema>;     // never
 Manual utilities for generating literal union types from integer ranges:
 
 ```ts
-import type { IntegerRangeType, MultipleOfRangeType } from 'json-tology';
+import type { IntegerRangeType, MultipleOfRangeType } from 'json-tology/types';
 
 type Rating = IntegerRangeType<1, 5>;           // 1 | 2 | 3 | 4 | 5
 type EvenDigit = MultipleOfRangeType<0, 8, 2>;  // 0 | 2 | 4 | 6 | 8

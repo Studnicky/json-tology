@@ -86,7 +86,7 @@ The `Lift` module exposes interop helpers between RDF/JS quads (from libraries l
 
 ```ts
 import { fromRdfQuad } from 'json-tology';
-import type { QuadInterface } from 'json-tology';
+import type { QuadInterface } from 'json-tology/types';
 
 // rdfQuads from an external RDF/JS source (e.g. n3.Parser)
 const internal: QuadInterface[] = rdfQuads.map(fromRdfQuad);

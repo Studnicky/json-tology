@@ -61,7 +61,7 @@ console.log(errs.items.map(e => `${e.path}: ${e.message}`));
 Validate on blur before attempting a full instantiate.
 
 ```ts
-import type { ValidationErrors } from 'json-tology';
+import type { ValidationErrors } from 'json-tology/types';
 import { bookstoreEntities as entities, ReviewSchema } from './bookstore/index.js';
 
 function validateReviewForm(formData: Record<string, unknown>): ValidationErrors {

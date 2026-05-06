@@ -4,7 +4,7 @@
  * Use this when you need to map errors to specific form fields.
  */
 
-import type { ValidationErrorType } from '../../../src/index.js';
+import type { ValidationErrorType } from '../../../src/types/index.js';
 import {
   bookstoreEntities as entities, ReviewSchema
 } from '../bookstore/index.js';

@@ -1,7 +1,6 @@
 import type { JSONSchema7 } from 'json-schema';
-import {
-  type InferType, JsonTology
-} from '../../src/index.js';
+import type { InferType } from '../../src/types/index.js';
+import { JsonTology } from '../../src/index.js';
 
 const UserSchema = {
   '$id': 'https://example.com/User',
@@ -34,7 +33,8 @@ const materialized: User = jt.materialize(UserSchema, {
   'name': 'Ada'
 });
 const ontology = jt.ontology().jsonLd();
-const quads = jt.toQuads(UserSchema, input).jsonLd();
+const quads = jt.ontology().addQuads(jt.toQuads(UserSchema, input))
+  .jsonLd();
 
 void parsed;
 void materialized;

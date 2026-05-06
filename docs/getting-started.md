@@ -48,7 +48,7 @@ const CustomerSchema = {
 ## Derive the TypeScript type
 
 ```ts
-import type { InferType } from 'json-tology';
+import type { InferType } from 'json-tology/types';
 
 type Customer = InferType<typeof CustomerSchema>;
 // {

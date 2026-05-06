@@ -4,7 +4,7 @@ This page defines every schema used across all documentation examples. All code 
 
 ```ts
 import { JsonTology } from 'json-tology';
-import type { InferType } from 'json-tology';
+import type { InferType } from 'json-tology/types';
 
 // ──────────────────────────────────────────────
 // Address

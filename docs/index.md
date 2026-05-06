@@ -67,7 +67,7 @@ If you're coming from Pydantic, Zod, or TypeBox, json-tology gives you the same 
 
 ```ts
 import { JsonTology } from 'json-tology';
-import type { InferType } from 'json-tology';
+import type { InferType } from 'json-tology/types';
 
 const CustomerSchema = {
   $id: 'https://bookstore.example/Customer',

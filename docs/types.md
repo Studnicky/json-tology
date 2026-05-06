@@ -26,7 +26,7 @@ Use `InferType<T>` everywhere you need the TypeScript type corresponding to a sc
 #### Example 1: Object schema with required and optional fields
 
 ```ts
-import type { InferType } from 'json-tology';
+import type { InferType } from 'json-tology/types';
 
 // From the bookstore domain (see /bookstore-domain)
 type Customer = InferType<typeof CustomerSchema>;
@@ -51,7 +51,7 @@ The `addresses` array has `default: []` in the schema - at the type level it rem
 #### Example 2: Integer range, enum, and const
 
 ```ts
-import type { InferType } from 'json-tology';
+import type { InferType } from 'json-tology/types';
 
 // rating: minimum 1, maximum 5  - auto-generates literal union
 type Rating = InferType<typeof ReviewSchema>['rating'];
@@ -74,7 +74,7 @@ Bounded `integer` schemas with both bounds in the 0-50 range automatically produ
 When a schema references another by absolute IRI, pass a reference map as the second type argument.
 
 ```ts
-import type { InferType } from 'json-tology';
+import type { InferType } from 'json-tology/types';
 
 type Order = InferType<typeof OrderSchema, {
   'https://bookstore.example/OrderLine': typeof OrderLineSchema;
@@ -96,7 +96,7 @@ Without the reference map, `items` would resolve to `unknown` at the element lev
 ::: code-group
 
 ```ts [json-tology]
-import type { InferType } from 'json-tology';
+import type { InferType } from 'json-tology/types';
 
 const CustomerSchema = { ... } as const;
 type Customer = InferType<typeof CustomerSchema>;
@@ -180,7 +180,7 @@ Use when you need to infer the type of a sub-schema that uses `$ref: '#/$defs/..
 #### Example 1: Infer a sub-schema type from $defs
 
 ```ts
-import type { InferSchemaType } from 'json-tology';
+import type { InferSchemaType } from 'json-tology/types';
 
 const CatalogSchema = {
   $id: 'https://bookstore.example/Catalog',
@@ -250,7 +250,7 @@ See [Constraint Brands](/constraint-brands) for the full reference, configuratio
 #### Example 1: Format brands prevent mixing email and UUID strings
 
 ```ts
-import type { InferType } from 'json-tology';
+import type { InferType } from 'json-tology/types';
 
 type Customer = InferType<typeof CustomerSchema>;
 
@@ -375,7 +375,7 @@ export type DeprecatedKeysType<T>
 #### Example 1: Extract deprecated keys from a schema
 
 ```ts
-import type { DeprecatedKeysType } from 'json-tology';
+import type { DeprecatedKeysType } from 'json-tology/types';
 import { CustomerSchema } from '../bookstore/index.js';
 
 // Imagine CustomerSchema had a legacy `phone` field:
@@ -394,7 +394,7 @@ type Deprecated = DeprecatedKeysType<typeof LegacyCustomerSchema>;
 #### Example 2: Compile-time assertion that a key is deprecated
 
 ```ts
-import type { DeprecatedKeysType } from 'json-tology';
+import type { DeprecatedKeysType } from 'json-tology/types';
 
 const BookV1Schema = {
   $id: 'https://bookstore.example/BookV1',
@@ -521,7 +521,7 @@ export type NonDeprecatedSchemaType<T, TRoot = T, TReferences = Record<never, ne
 #### Example 1: Schema with a deprecated field
 
 ```ts
-import type { InferType, NonDeprecatedSchemaType } from 'json-tology';
+import type { InferType, NonDeprecatedSchemaType } from 'json-tology/types';
 
 const BookV1Schema = {
   $id: 'https://bookstore.example/BookV1',
@@ -545,7 +545,7 @@ type BookV1Current = NonDeprecatedSchemaType<typeof BookV1Schema>;
 #### Example 2: Using as a return type for a view layer function
 
 ```ts
-import type { NonDeprecatedSchemaType } from 'json-tology';
+import type { NonDeprecatedSchemaType } from 'json-tology/types';
 import { BookV1Schema } from '../bookstore/index.js';
 
 function toBookView(raw: unknown): NonDeprecatedSchemaType<typeof BookV1Schema> {
@@ -645,7 +645,7 @@ export type LooseInputType<T>
 #### Example 1: Accepting unvalidated customer input
 
 ```ts
-import type { InferType, LooseInputType } from 'json-tology';
+import type { InferType, LooseInputType } from 'json-tology/types';
 import { CustomerSchema } from '../bookstore/index.js';
 
 type Customer      = InferType<typeof CustomerSchema>;
@@ -662,7 +662,7 @@ function createCustomerFromForm(raw: CustomerInput): Customer {
 #### Example 2: Stripping brands from a single field type
 
 ```ts
-import type { InferType, LooseInputType } from 'json-tology';
+import type { InferType, LooseInputType } from 'json-tology/types';
 import { ReviewSchema } from '../bookstore/index.js';
 
 type Review       = InferType<typeof ReviewSchema>;
@@ -676,7 +676,7 @@ type LooseBody = LooseInputType<ReviewBody>;
 #### Example 3: Test helpers that produce fixture data
 
 ```ts
-import type { InferType, LooseInputType } from 'json-tology';
+import type { InferType, LooseInputType } from 'json-tology/types';
 import { OrderSchema } from '../bookstore/index.js';
 
 type Order = InferType<typeof OrderSchema>;
@@ -784,7 +784,7 @@ export type EnumValuesType<T>
 #### Example 1: Currency enum from an inline schema
 
 ```ts
-import type { EnumValuesType } from 'json-tology';
+import type { EnumValuesType } from 'json-tology/types';
 
 const CurrencySchema = {
   $id: 'https://bookstore.example/Currency',
@@ -799,7 +799,7 @@ type Currency = EnumValuesType<typeof CurrencySchema>;
 #### Example 2: With `ExhaustiveType` for an exhaustive switch
 
 ```ts
-import type { EnumValuesType, ExhaustiveType } from 'json-tology';
+import type { EnumValuesType, ExhaustiveType } from 'json-tology/types';
 
 const CurrencySchema = {
   type: 'string',
@@ -825,7 +825,7 @@ function currencySymbol(c: Currency): string {
 #### Example 3: As a function parameter type
 
 ```ts
-import type { EnumValuesType } from 'json-tology';
+import type { EnumValuesType } from 'json-tology/types';
 import { BookSchema } from '../bookstore/index.js';
 
 // BookSchema.properties.currency is { type: 'string', default: 'USD' }
@@ -935,7 +935,7 @@ export type ExhaustiveType<T extends never> = T;
 #### Example 1: Exhaustive switch over a Review rating
 
 ```ts
-import type { ExhaustiveType, IntegerRangeType } from 'json-tology';
+import type { ExhaustiveType, IntegerRangeType } from 'json-tology/types';
 
 type Rating = IntegerRangeType<1, 5>; // 1 | 2 | 3 | 4 | 5
 
@@ -957,7 +957,7 @@ function ratingLabel(r: Rating): string {
 #### Example 2: Pairing with `EnumValuesType` for a string enum
 
 ```ts
-import type { EnumValuesType, ExhaustiveType } from 'json-tology';
+import type { EnumValuesType, ExhaustiveType } from 'json-tology/types';
 
 const OrderStatusSchema = {
   type: 'string',
@@ -1098,7 +1098,7 @@ export type DefaultAlignedType<T>
 #### Example 1: A well-aligned schema passes through
 
 ```ts
-import type { DefaultAlignedType } from 'json-tology';
+import type { DefaultAlignedType } from 'json-tology/types';
 
 const BookSchema = {
   $id: 'https://bookstore.example/Book',
@@ -1118,7 +1118,7 @@ type AlignedBook = DefaultAlignedType<typeof BookSchema>;
 #### Example 2: A misaligned default resolves to `never`
 
 ```ts
-import type { DefaultAlignedType } from 'json-tology';
+import type { DefaultAlignedType } from 'json-tology/types';
 
 const BadSchema = {
   type: 'object',
@@ -1134,7 +1134,7 @@ type MisalignedBook = DefaultAlignedType<typeof BadSchema>;
 #### Example 3: Using as a generic constraint on a registration helper
 
 ```ts
-import type { DefaultAlignedType } from 'json-tology';
+import type { DefaultAlignedType } from 'json-tology/types';
 
 function registerChecked<T>(schema: DefaultAlignedType<T>): void {
   // DefaultAlignedType<T> ensures the schema never reaches this function
@@ -1238,7 +1238,7 @@ export type IntegerRangeType<TMin extends number, TMax extends number>
 #### Example 1: Star rating range
 
 ```ts
-import type { IntegerRangeType } from 'json-tology';
+import type { IntegerRangeType } from 'json-tology/types';
 
 type StarRating = IntegerRangeType<1, 5>;
 // 1 | 2 | 3 | 4 | 5
@@ -1251,7 +1251,7 @@ const r: StarRating = 3;   // OK
 #### Example 2: Deriving automatically via `InferType`
 
 ```ts
-import type { InferType } from 'json-tology';
+import type { InferType } from 'json-tology/types';
 import { ReviewSchema } from '../bookstore/index.js';
 
 // ReviewSchema.properties.rating: { type: 'integer', minimum: 1, maximum: 5 }
@@ -1259,14 +1259,14 @@ type Rating = InferType<typeof ReviewSchema>['rating'];
 // 1 | 2 | 3 | 4 | 5  - same result, derived from schema automatically
 
 // Use IntegerRangeType<1,5> only when you need the range without a schema:
-import type { IntegerRangeType } from 'json-tology';
+import type { IntegerRangeType } from 'json-tology/types';
 type RatingManual = IntegerRangeType<1, 5>; // explicit form
 ```
 
 #### Example 3: Small page-size range for a paginated query
 
 ```ts
-import type { IntegerRangeType } from 'json-tology';
+import type { IntegerRangeType } from 'json-tology/types';
 
 type PageSize = IntegerRangeType<1, 50>;
 // 1 | 2 | 3 | ... | 50
@@ -1374,7 +1374,7 @@ export type MultipleOfRangeType<
 #### Example 1: Even numbers in a range
 
 ```ts
-import type { MultipleOfRangeType } from 'json-tology';
+import type { MultipleOfRangeType } from 'json-tology/types';
 
 type EvenQuantity = MultipleOfRangeType<0, 10, 2>;
 // 0 | 2 | 4 | 6 | 8 | 10
@@ -1386,7 +1386,7 @@ const q: EvenQuantity = 6;   // OK
 #### Example 2: Deriving automatically via `InferType`
 
 ```ts
-import type { InferType } from 'json-tology';
+import type { InferType } from 'json-tology/types';
 
 const EvenQuantitySchema = {
   type: 'integer',
@@ -1399,14 +1399,14 @@ type EvenQuantity = InferType<typeof EvenQuantitySchema>;
 // 0 | 2 | 4 | 6 | 8 | 10  - same result, derived from schema automatically
 
 // Use MultipleOfRangeType explicitly only when you need it without a schema:
-import type { MultipleOfRangeType } from 'json-tology';
+import type { MultipleOfRangeType } from 'json-tology/types';
 type EvenQuantityManual = MultipleOfRangeType<0, 10, 2>;
 ```
 
 #### Example 3: Discount tiers in 5% increments
 
 ```ts
-import type { MultipleOfRangeType } from 'json-tology';
+import type { MultipleOfRangeType } from 'json-tology/types';
 
 // Discounts from 0% to 50% in 5% steps
 type DiscountPercent = MultipleOfRangeType<0, 50, 5>;

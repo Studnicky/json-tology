@@ -18,9 +18,8 @@
 import {
   fromRdfQuad, JsonTology
 } from '../src/index.js';
-import type {
-  InferType, QuadInterface
-} from '../src/index.js';
+import type { InferType } from '../src/types/index.js';
+import type { QuadInterface } from '../src/interfaces/index.js';
 import type { RdfJsQuadInterface } from '../src/interfaces/RdfJsQuad.js';
 import { n3reasoner } from 'eyereasoner';
 import { Parser } from 'n3';

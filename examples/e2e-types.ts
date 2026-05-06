@@ -12,7 +12,7 @@ import {
 } from '../src/index.js';
 import type {
   EnumValuesType, InferType, LooseInputType
-} from '../src/index.js';
+} from '../src/types/index.js';
 import {
   allSchemas, DateTimeSchema, foafPersons, MboxSchema, PersonSchema
 } from '../test/fixtures/foaf.js';

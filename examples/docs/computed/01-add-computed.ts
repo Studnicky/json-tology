@@ -4,7 +4,7 @@
  */
 
 import { JsonTology } from '../../../src/index.js';
-import type { InferType } from '../../../src/index.js';
+import type { InferType } from '../../../src/types/index.js';
 import {
   IsbnSchema, MoneySchema, OrderLineSchema,
   QuantitySchema

@@ -18,7 +18,7 @@
 
 ```ts
 import { Compose, JsonTology } from 'json-tology';
-import type { InferType } from 'json-tology';
+import type { InferType } from 'json-tology/types';
 import { BookSchema } from './bookstore/index.js';
 
 const BookSummarySchema = Compose.pick(

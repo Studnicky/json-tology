@@ -229,7 +229,7 @@ If both ends of the wire are an array, prefer a plain `type: 'array'` schema wit
 `Transform.brand` attaches a phantom brand to the inferred type without changing the wire format. Compose it with `Transform.create` when you also need a runtime conversion.
 
 ```ts
-import type { BrandedType } from 'json-tology';
+import type { BrandedType } from 'json-tology/types';
 
 const IsbnSchema = Transform.brand(
   { $id: 'urn:bookstore:Isbn', type: 'string', pattern: '^[0-9X]{10,13}$' } as const,
