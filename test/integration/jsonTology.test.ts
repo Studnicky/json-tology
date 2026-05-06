@@ -539,11 +539,11 @@ void describe('JsonTology.toQuads()', () => {
           'baseIRI': 'https://myapp.io',
           'schemas': [UserSchema]
         });
-        const graph = jt.toQuads(UserSchema, {
+        const graph = jt.ontology().addQuads(jt.toQuads(UserSchema, {
           'active': true,
           'email': 'alice@example.com',
           'name': 'Alice'
-        }).raw() as Array<Record<string, unknown>>;
+        })).raw() as Array<Record<string, unknown>>;
         const root = graph.find((node) => {
           return typeof node['@id'] === 'string' && String(node['@id']).includes('/instances/');
         });
@@ -580,10 +580,10 @@ void describe('JsonTology.toQuads()', () => {
           'baseIRI': 'https://myapp.io',
           'schemas': [schema]
         });
-        const teamGraph = jt.toQuads(schema, {
+        const teamGraph = jt.ontology().addQuads(jt.toQuads(schema, {
           'lead': { 'name': 'Dana' },
           'name': 'Platform'
-        }).raw() as Array<Record<string, unknown>>;
+        })).raw() as Array<Record<string, unknown>>;
         const team = teamGraph.find((node) => {
           return (node['@type'] as Record<string, unknown>)['@id'] === schema.$id;
         });

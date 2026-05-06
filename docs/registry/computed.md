@@ -18,7 +18,7 @@ Computed fields are properties derived from other fields at instantiate/material
 
 ```ts
 import { JsonTology } from 'json-tology';
-import type { InferType } from 'json-tology';
+import type { InferType } from 'json-tology/types';
 import { OrderLineSchema } from './bookstore/index.js';
 
 const ComputedOrderSchema = {

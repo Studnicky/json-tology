@@ -6,7 +6,9 @@
  */
 
 import type { OntologyBuilderOptionsInterface } from '../../interfaces/Ontology.js';
+import type { QuadInterface } from '../../interfaces/Quad.js';
 import { JSONLD } from '../../constants/JSONLD.js';
+import { quadsToJsonLdNodes } from '../rdf/Projection.js';
 
 /**
  * Ontology Builder
@@ -15,7 +17,7 @@ import { JSONLD } from '../../constants/JSONLD.js';
  */
 export class OntologyBuilder {
   private readonly baseIRI: string;
-  private readonly graphSources: ReadonlyArray<() => readonly unknown[]>;
+  private graphSources: Array<() => readonly unknown[]>;
   private readonly prefixes: Record<string, string>;
   private shaclSource: (() => readonly unknown[]) | readonly unknown[] | undefined;
 
@@ -43,6 +45,23 @@ export class OntologyBuilder {
    */
   public addShacl(source: (() => readonly unknown[]) | readonly unknown[]): this {
     this.shaclSource = source;
+
+    return this;
+  }
+
+  /**
+   * Add an array of RDF quads to the builder. The quads are projected
+   * to JSON-LD nodes and appended to the graph sources. Use this when
+   * combining the output of `entities.toQuads(schema, data)` with a
+   * TBox or SHACL document.
+   */
+  public addQuads(quads: QuadInterface[]): this {
+    const nodes = quadsToJsonLdNodes(quads);
+    const source = (): readonly unknown[] => {
+      return nodes;
+    };
+
+    this.graphSources = [...this.graphSources, source];
 
     return this;
   }

@@ -18,7 +18,7 @@ Invariants are cross-field validation rules that run after structural validation
 
 ```ts
 import { JsonTology } from 'json-tology';
-import type { InferType } from 'json-tology';
+import type { InferType } from 'json-tology/types';
 import { OrderLineSchema, OrderSchema } from './bookstore/index.js';
 
 type Order = InferType<typeof OrderSchema>;
@@ -76,7 +76,7 @@ try {
 #### Example 3: Imperative add after construction
 
 ```ts
-import type { InferType } from 'json-tology';
+import type { InferType } from 'json-tology/types';
 import { ReviewSchema } from './bookstore/index.js';
 
 type Review = InferType<typeof ReviewSchema>;

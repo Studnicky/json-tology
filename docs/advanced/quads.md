@@ -34,11 +34,16 @@ const order = entities.instantiate(OrderSchema.$id, {
   ],
 });
 
-const abox = entities.toQuads(OrderSchema, order);
+const quads = entities.toQuads(OrderSchema, order);
 
-console.log(abox.jsonLd());       // JSON-LD string
-console.log(abox.jsonLdObject()); // JSON-LD object
-console.log(abox.raw());          // raw quads
+console.log(quads.length);  // count of RDF quads
+console.log(quads[0]);      // { subject, predicate, object, graph }
+
+// For richer output (JSON-LD, SHACL composition) pass the quads through
+// the ontology builder:
+const ontology = entities.ontology().addQuads(quads);
+console.log(ontology.jsonLd());       // JSON-LD string
+console.log(ontology.jsonLdObject()); // JSON-LD object
 ```
 
 #### Example 2: Merge ABox with TBox in a single document
@@ -53,7 +58,7 @@ const merged = {
   '@context': tbox.context(),
   '@graph': [
     ...tbox.raw(),  // class and property declarations
-    ...abox.raw(),  // individual assertions
+    ...abox,        // individual assertions (Quad[])
   ],
 };
 ```
@@ -85,7 +90,7 @@ const original = entities.instantiate(OrderSchema.$id, {
   ],
 });
 
-const quads = entities.toQuads(OrderSchema, original).raw();
+const quads = entities.toQuads(OrderSchema, original);
 const [restored] = entities.fromQuads(OrderSchema.$id, quads);
 
 assert.deepEqual(restored, original);
@@ -115,9 +120,9 @@ Both methods have static counterparts on `JsonTology` for one-shot use without a
 import { JsonTology } from 'json-tology';
 import { OrderSchema } from './bookstore/index.js';
 
-const abox = JsonTology.toQuads(OrderSchema, order);
+const quads = JsonTology.toQuads(OrderSchema, order);
 
-const restored = JsonTology.fromQuads(OrderSchema, abox.raw());
+const restored = JsonTology.fromQuads(OrderSchema, quads);
 ```
 
 Use the static form when:

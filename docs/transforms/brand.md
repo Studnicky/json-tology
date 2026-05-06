@@ -12,7 +12,7 @@
 
 ```ts
 import { Transform, JsonTology } from 'json-tology';
-import type { BrandOutputType } from 'json-tology';
+import type { BrandOutputType } from 'json-tology/types';
 
 const CustomerIdSchema = Transform.brand(
   { $id: 'https://bookstore.example/CustomerId', type: 'string', format: 'uuid' } as const,

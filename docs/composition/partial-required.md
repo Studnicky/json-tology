@@ -18,7 +18,7 @@
 
 ```ts
 import { Compose, JsonTology } from 'json-tology';
-import type { InferType } from 'json-tology';
+import type { InferType } from 'json-tology/types';
 import { CustomerSchema } from './bookstore/index.js';
 
 const PatchCustomerSchema = Compose.partial(
@@ -116,7 +116,7 @@ class PatchCustomer(BaseModel):
 
 ```ts
 import { Compose, JsonTology } from 'json-tology';
-import type { InferType } from 'json-tology';
+import type { InferType } from 'json-tology/types';
 import { BookSchema } from './bookstore/index.js';
 
 const CreateBookSchema = Compose.required(

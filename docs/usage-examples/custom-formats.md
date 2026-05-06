@@ -14,7 +14,7 @@ Pass a `formats` map to `JsonTology.create`. Keys are format names; values are p
 
 ```ts
 import { JsonTology } from 'json-tology';
-import type { InferType } from 'json-tology';
+import type { InferType } from 'json-tology/types';
 
 function isIsbn10(value: unknown): boolean {
   if (typeof value !== 'string' || value.length !== 10) {

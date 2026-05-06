@@ -16,7 +16,7 @@
 
 ```ts
 import { Compose, JsonTology } from 'json-tology';
-import type { InferType } from 'json-tology';
+import type { InferType } from 'json-tology/types';
 
 const CreditCardPaymentSchema = {
   $id: 'https://bookstore.example/CreditCardPayment',

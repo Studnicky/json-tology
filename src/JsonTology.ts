@@ -49,7 +49,6 @@ import { GraphShaclSerializer } from './modules/ontology/GraphShaclSerializer.js
 import { liftInstances } from './modules/rdf/Lift.js';
 import { Materializer } from './modules/materialization/Materializer.js';
 import { OntologyBuilder } from './modules/ontology/OntologyBuilder.js';
-import { quadsToJsonLdNodes } from './modules/rdf/Projection.js';
 import { SchemaError } from './errors/SchemaError.js';
 import { SchemaRegistry } from './modules/registry/SchemaRegistry.js';
 import { Transform } from './modules/transform/Transform.js';
@@ -231,12 +230,12 @@ export class JsonTology<TMap = Record<never, never>> {
    *
    * @param schema - A schema object with `$id`.
    * @param data - Instance data to project.
-   * @returns An {@link OntologyBuilder} containing the projected nodes.
+   * @returns@returns The projected RDF quads.
    */
   public static toQuads(
     schema: Record<string, unknown> & { readonly '$id': string },
     data: unknown
-  ): OntologyBuilder {
+  ): QuadInterface[] {
     const jt = JsonTology.ephemeral(schema);
 
     return jt.toQuads(schema as JSONSchema7Definition & { readonly '$id': string }, data);
@@ -794,25 +793,23 @@ export class JsonTology<TMap = Record<never, never>> {
    *
    * @param schema - The schema describing the data shape.
    * @param data - The instance data to project into quads.
-   * @returns An {@link OntologyBuilder} containing the projected nodes.
+   * @returns The projected RDF quads.
+   *
+   * If you want a richer wrapper (JSON-LD context, SHACL composition,
+   * raw vs prefixed projection), call {@link ontology} on the registry
+   * and pass the quads through. `toQuads` returns the data, not a
+   * builder, so the name matches the contract.
    */
   public toQuads<TSchema extends JSONSchema7Definition & { readonly '$id': string; }>(
     schema: TSchema,
     data: InferSchemaType<TSchema>
-  ): OntologyBuilder {
-    const quads = this.materializer.projectAbox(
+  ): QuadInterface[] {
+    return this.materializer.projectAbox(
       // Cast needed: JSONSchema7Definition includes boolean; runtime guarantees object with $id
       schema as unknown as Record<string, unknown> & { '$id': string; },
       data,
       this.baseIRI
     );
-    const nodes = quadsToJsonLdNodes(quads);
-
-    return new OntologyBuilder({
-      'baseIRI': this.baseIRI,
-      'graphSources': [nodes],
-      'prefixes': this.prefixes
-    });
   }
   /**
    * Reconstructs a JSON Schema document from the canonical graph for a registered schema.

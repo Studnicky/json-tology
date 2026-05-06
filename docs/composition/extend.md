@@ -14,7 +14,7 @@ Building on `CustomerSchema` from the [bookstore domain](/bookstore-domain):
 
 ```ts
 import { Compose } from 'json-tology';
-import type { InferType } from 'json-tology';
+import type { InferType } from 'json-tology/types';
 import { CustomerSchema } from './bookstore/index.js';
 
 const CustomerWithDiscountSchema = Compose.extend(
