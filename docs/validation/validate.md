@@ -138,6 +138,16 @@ if (!result.success) {
 // { success, output, issues } - parallels ValidationErrors but no .aggregate/.report views.
 ```
 
+```ts [io-ts]
+import { isLeft } from 'fp-ts/Either';
+import { PathReporter } from 'io-ts/PathReporter';
+const result = CustomerCodec.decode(data); // Either<Errors, Customer>
+const messages = isLeft(result) ? PathReporter.report(result) : [];
+// Limitation: Errors are typed io-ts ValidationError nodes; PathReporter
+// flattens them into strings but provides no .aggregate / .report / RFC 7807
+// views.
+```
+
 ```ts [TypeBox + Value]
 import { TypeCompiler } from '@sinclair/typebox/compiler';
 const C = TypeCompiler.Compile(CustomerSchema);

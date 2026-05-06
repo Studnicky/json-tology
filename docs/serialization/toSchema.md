@@ -66,6 +66,13 @@ const jsonSchema = toJsonSchema(BookSchema);
 // no first-class graph reconstruction, and not all Valibot constructs map.
 ```
 
+```ts [io-ts]
+// Limitation: io-ts has no built-in JSON Schema export. Codecs are
+// runtime values without a structural representation that maps cleanly
+// onto JSON Schema; third-party tooling (io-ts-types, io-ts-codegen) can
+// emit specific subsets but full round-trip is not supported.
+```
+
 ```ts [TypeBox + Value]
 // TypeBox schemas ARE plain JSON Schema  - no reconstruction needed.
 // JSON.stringify(BookSchema) gives the schema directly.

@@ -168,6 +168,26 @@ const customer = v.parse(CustomerSchema, rawData);
 // Unknown keys stripped by default; no Transform decoder registry.
 ```
 
+```ts [io-ts]
+import * as t from 'io-ts';
+import { isLeft } from 'fp-ts/Either';
+import { PathReporter } from 'io-ts/PathReporter';
+
+const CustomerCodec = t.exact(t.type({
+  id:    t.string,
+  email: t.string,
+  name:  t.string,
+}));
+const result = CustomerCodec.decode(rawData);
+if (isLeft(result)) {
+  throw new Error(PathReporter.report(result).join('\n'));
+}
+const customer = result.right;
+// Limitation: no native default-fill, no decoder registry, no
+// InstantiationError class. t.exact strips unknown keys; merge defaults by
+// hand before decode.
+```
+
 ```ts [TypeBox + Value]
 import { Value } from '@sinclair/typebox/value';
 import { TypeCompiler } from '@sinclair/typebox/compiler';
