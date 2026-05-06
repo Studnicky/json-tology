@@ -66,14 +66,15 @@ Comparison code-group blocks throughout the docs show the equivalent code in eac
 
 ## Visual identity
 
-The seven hex nodes that flank the JST badge in the README and ring the sidebar are stylized references to:
+The seven hex nodes that flank the JST badge in the README and ring the sidebar are stylized references to. Each links to its canonical home:
 
-- **TypeScript** (`#3178c6` adjacent) - the inference engine
-- **JSON Schema** - the source-of-truth language
-- **Validation** - the runtime checker
-- **RDF** - the canonical graph model
-- **W3C** - standards alignment
-- **Node.js** - the runtime
+- **[TypeScript](https://www.typescriptlang.org/)** (`#3178c6` adjacent) - the inference engine
+- **[JSON Schema](https://json-schema.org/)** - the source-of-truth language
+- **[Validation](https://json-schema.org/draft/2020-12/json-schema-validation)** - the JSON Schema Validation vocabulary spec
+- **[RDF](https://www.w3.org/TR/rdf12-concepts/)** - the canonical graph model (RDF 1.2 Concepts)
+- **[W3C](https://www.w3.org/)** - standards alignment
+- **[Node.js](https://nodejs.org/api/)** - the runtime
+- **[json-tology](https://studnicky.github.io/json-tology/)** - the center JST node, this project
 
 The center JST node uses a teal gradient (`#7FE7D8` -> `#24A5B5` -> `#08717A`) with `#BDF6F2` circuit accents. These are the project's brand colors and drive the doc-site palette.
 
