@@ -126,6 +126,7 @@ const sidebar = [
     items: [
       { link: '/usage-examples/custom-formats', text: 'Custom format validators' },
       { link: '/usage-examples/transforms-recipes', text: 'Transform recipes' },
+      { link: '/usage-examples/class-hydration', text: 'Class hydration' },
       { link: '/usage-examples/sparql-queries', text: 'SPARQL queries' },
       { link: '/usage-examples/sub-schema-patterns', text: 'Sub-schema patterns' }
     ]
