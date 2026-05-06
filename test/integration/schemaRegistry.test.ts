@@ -9,8 +9,10 @@ import assert from 'node:assert/strict';
 import {
   InstantiationError, JsonTology
 } from '../../src/index.js';
+// SchemaRegistryInterface is the registration contract underlying JsonTology; not surfaced publicly.
 import type { SchemaRegistryInterface } from '../../src/interfaces/SchemaRegistry.js';
 import { Logger } from '../utils/Logger.js';
+// SchemaGraph is consumed directly to assert graph-construction details that JsonTology composes internally.
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 
 const TestSchema = {

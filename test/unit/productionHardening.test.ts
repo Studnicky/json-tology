@@ -7,12 +7,16 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
+import {
+  GraphEngine, GraphError, JsonTology, SchemaError
+} from '../../src/index.js';
+// SchemaRegistry direct lifecycle assertions — production-hardening tests reach into the
+// registration boundary that JsonTology composes; the registry exposes hardening-specific
+// behaviour (duplicate $anchor, registration-time validation) not surfaced publicly.
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
-import { JsonTology } from '../../src/JsonTology.js';
-import { SchemaError } from '../../src/errors/SchemaError.js';
-import { GraphError } from '../../src/errors/GraphError.js';
+// FormatRegistry tests its built-in / custom format registration mechanics directly; the
+// public API exposes formats only as a config option, not as the registry instance.
 import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
-import { GraphEngine } from '../../src/modules/graph/GraphEngine.js';
 
 // ---------------------------------------------------------------------------
 // Finding 1: Infinity bypass
