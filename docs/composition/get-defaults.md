@@ -108,6 +108,14 @@ import * as v from 'valibot';
 const defaults = { currency: 'USD', inStock: true }; // hardcoded
 ```
 
+```ts [io-ts]
+// Limitation: io-ts has no native default-value mechanism. Codecs decode
+// inputs as-is; missing properties produce decode errors. Default values
+// must be merged in by hand before calling .decode():
+const defaults = { currency: 'USD', inStock: true };
+const result = BookCodec.decode({ ...defaults, ...input });
+```
+
 ```ts [TypeBox + Value]
 import { Value } from '@sinclair/typebox/value';
 // Value.Default fills ALL fields including zero-values, not just declared defaults:

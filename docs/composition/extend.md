@@ -137,6 +137,16 @@ const CustomerWithDiscount = v.intersect([
 // constraints structurally without preserving a $ref to the base.
 ```
 
+```ts [io-ts]
+import * as t from 'io-ts';
+const CustomerWithDiscount = t.intersection([
+  CustomerCodec,
+  t.partial({ discountRate: t.number }),
+]);
+// Limitation: io-ts has no inheritance/allOf model; intersection composes
+// codecs structurally and there is no native default-value mechanism.
+```
+
 ```ts [TypeBox + Value]
 import { Type } from '@sinclair/typebox';
 const CustomerWithDiscount = Type.Composite([

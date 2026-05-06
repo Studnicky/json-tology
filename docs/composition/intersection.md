@@ -110,6 +110,12 @@ import * as v from 'valibot';
 v.intersect([OrderSchema, AuditSchema])
 ```
 
+```ts [io-ts]
+import * as t from 'io-ts';
+const AuditedOrder = t.intersection([OrderCodec, AuditCodec]);
+// Both codecs must succeed for decode to return Right.
+```
+
 ```ts [TypeBox + Value]
 import { Type } from '@sinclair/typebox';
 Type.Intersect([OrderSchema, AuditSchema])

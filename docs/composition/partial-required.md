@@ -76,6 +76,12 @@ import * as v from 'valibot';
 v.partial(CustomerSchema)
 ```
 
+```ts [io-ts]
+import * as t from 'io-ts';
+// io-ts has t.partial which makes every property optional:
+const PatchCustomer = t.partial(CustomerCodec.props);
+```
+
 ```ts [TypeBox + Value]
 import { Type } from '@sinclair/typebox';
 Type.Partial(CustomerSchema)
@@ -163,6 +169,13 @@ BookSchema.required()
 ```ts [Valibot]
 import * as v from 'valibot';
 v.required(BookSchema)
+```
+
+```ts [io-ts]
+import * as t from 'io-ts';
+// io-ts treats every t.type field as required already. To force a partial
+// codec back to fully required, rebuild with t.type:
+const CreateBook = t.type(BookCodec.props);
 ```
 
 ```ts [TypeBox + Value]
