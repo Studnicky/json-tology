@@ -104,6 +104,26 @@ const schema = v.pipe(
 // Limitation: pipe is decode-direction only; no encode reversal.
 ```
 
+```ts [io-ts]
+import * as t from 'io-ts';
+// Limitation: io-ts has no built-in pipe of multiple decode/encode pairs.
+// Each Type carries one decode + one encode; chain them by hand or build a
+// composite codec class:
+const StripCodec = new t.Type<string, string, string>(
+  'Strip',
+  t.string.is,
+  (input) => t.success(input.replace(/[$,]/g, '')),
+  (output) => `$${output}`,
+);
+const ParseCodec = new t.Type<number, string, string>(
+  'Parse',
+  (u): u is number => typeof u === 'number',
+  (input) => t.success(parseFloat(input)),
+  (output) => output.toFixed(2),
+);
+// Decode by composing manually: ParseCodec.decode(StripCodec.decode(raw).right)
+```
+
 ```ts [TypeBox + Value]
 // TypeBox has no pipeline mechanism. Apply manually after validation:
 const validated = Value.Check(schema, raw);

@@ -161,6 +161,21 @@ const OrderSchema = v.pipe(
 // added or removed against a registered schema by name; rebuild the schema.
 ```
 
+```ts [io-ts]
+import * as t from 'io-ts';
+// io-ts uses t.refinement to attach a predicate to a codec:
+const OrderCodec = t.refinement(
+  baseOrderCodec,
+  (order) => Math.abs(order.total - order.items.reduce(
+    (sum, line) => sum + line.unitPrice * line.quantity, 0,
+  )) < 0.01,
+  'OrderTotalMatchesItems',
+);
+// Limitation: io-ts has no registry, so cross-field rules cannot be added
+// or removed against a registered schema by name; rebuild the codec.
+// Refinement messages are limited to the codec name, not a field-pinned message.
+```
+
 ```ts [TypeBox + Value]
 // Not a first-class concept  - apply manually after Type validation:
 if (!Check(OrderSchema, data)) throw new Error('invalid structure');

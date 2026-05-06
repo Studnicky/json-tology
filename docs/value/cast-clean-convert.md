@@ -80,6 +80,24 @@ const BookSchema = v.object({
 const book = v.parse(BookSchema, rawData);
 ```
 
+```ts [io-ts]
+import * as t from 'io-ts';
+// Limitation: io-ts has no schema-wide coercion. Build a custom codec for
+// each field that needs to coerce string → number/boolean:
+const NumberFromString = new t.Type<number, string, unknown>(
+  'NumberFromString',
+  (input): input is number => typeof input === 'number',
+  (input, ctx) => {
+    const parsed = typeof input === 'string' ? Number(input) : input;
+    return typeof parsed === 'number' && !Number.isNaN(parsed)
+      ? t.success(parsed) : t.failure(input, ctx);
+  },
+  (output) => String(output),
+);
+const BookCodec = t.type({ price: NumberFromString /* ... */ });
+const decoded = BookCodec.decode(rawData);
+```
+
 ```ts [TypeBox + Value]
 import { Value } from '@sinclair/typebox/value';
 const book = Value.Convert(BookSchema, rawData); // type conversion
@@ -146,6 +164,18 @@ import * as v from 'valibot';
 // v.object() strips unknown keys by default during v.parse:
 const cleaned = v.parse(BookSchema, data);
 // Use v.looseObject() to preserve unknowns; v.strictObject() to reject them.
+```
+
+```ts [io-ts]
+import * as t from 'io-ts';
+// t.type accepts unknown extra properties; use t.exact to strip them:
+const StrictBookCodec = t.exact(t.type({
+  isbn:    t.string,
+  title:   t.string,
+  authors: t.array(t.string),
+  price:   t.number,
+}));
+const result = StrictBookCodec.decode(data); // unknown keys removed in result.right
 ```
 
 ```ts [TypeBox + Value]

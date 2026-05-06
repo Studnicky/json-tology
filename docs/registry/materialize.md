@@ -103,6 +103,15 @@ const book = v.parse(BookSchema, {
 // fields are wrapped in v.optional(..., defaultValue).
 ```
 
+```ts [io-ts]
+import * as t from 'io-ts';
+// Limitation: io-ts has no materialize step and no native default-value
+// mechanism. Codecs are values, not registry entries; merge defaults by
+// hand before calling .decode():
+const defaults = { currency: 'USD', inStock: true };
+const result = BookCodec.decode({ ...defaults, ...partial });
+```
+
 ```ts [TypeBox + Value]
 import { Value } from '@sinclair/typebox/value';
 // Value.Default fills defaults:

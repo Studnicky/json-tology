@@ -70,6 +70,13 @@ jt.register(BookSchema);
 import { BookSchema } from './bookstore.js';
 ```
 
+```ts [io-ts]
+// Limitation: io-ts has no registry concept. Codecs are values exported from
+// modules; cross-codec reference is structural via t.intersection / t.union /
+// t.recursion (for self-referential cases). No central $id-keyed lookup.
+import { BookCodec } from './bookstore.js';
+```
+
 ```ts [TypeBox + Value]
 // TypeBox schemas are plain objects  - no registry concept.
 ```

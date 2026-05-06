@@ -159,6 +159,29 @@ const OrderSchema = v.pipe(
 // or removed against a registered schema after construction.
 ```
 
+```ts [io-ts]
+import * as t from 'io-ts';
+import type { Either } from 'fp-ts/Either';
+// io-ts has no computed-field concept. Build a custom codec whose decode
+// derives the field after the structural codec validates:
+const ComputedOrderCodec = new t.Type<Order, OrderInput, unknown>(
+  'ComputedOrder',
+  (input): input is Order => true,
+  (input, ctx): Either<t.Errors, Order> => {
+    const decoded = baseOrderCodec.decode(input);
+    if (decoded._tag === 'Left') return decoded;
+    const order = decoded.right;
+    return t.success({
+      ...order,
+      total: order.items.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0),
+    });
+  },
+  (output) => output as OrderInput,
+);
+// Limitation: no registry of named computeds; derivation is baked into the
+// codec and cannot be added or removed by name after construction.
+```
+
 ```ts [TypeBox + Value]
 // Not a first-class concept  - compute manually after validation:
 const validated = Value.Check(OrderSchema, data);

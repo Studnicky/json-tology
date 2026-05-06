@@ -94,6 +94,12 @@ const blank = jt.value.create(BookSchema.$id);
 // Build the blank object manually for forms.
 ```
 
+```ts [io-ts]
+// Limitation: io-ts has no zero-value creator.
+// BookCodec.decode({}) fails on required fields. Build the blank object
+// manually for form scaffolding.
+```
+
 ```ts [TypeBox + Value]
 import { Value } from '@sinclair/typebox/value';
 // Value.Create fills all fields with type defaults + declared defaults:

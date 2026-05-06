@@ -69,6 +69,11 @@ const copy = structuredClone(order);
 const copy = structuredClone(order);
 ```
 
+```ts [io-ts]
+// Limitation: io-ts has no clone utility - use structuredClone.
+const copy = structuredClone(order);
+```
+
 ```ts [TypeBox + Value]
 import { Value } from '@sinclair/typebox/value';
 const copy = Value.Clone(order);
@@ -144,6 +149,13 @@ const h = hash(book);
 
 ```ts [Valibot]
 // Limitation: Valibot has no hash utility.
+// Use a third-party library: object-hash, stable-hash, etc.
+import hash from 'object-hash';
+const h = hash(book);
+```
+
+```ts [io-ts]
+// Limitation: io-ts has no hash utility.
 // Use a third-party library: object-hash, stable-hash, etc.
 import hash from 'object-hash';
 const h = hash(book);
