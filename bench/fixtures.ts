@@ -1,6 +1,6 @@
 /**
  * Shared fixtures for benchmarks.
- * Schemas declared for json-tology, TypeBox, AJV, and Zod.
+ * Schemas declared for json-tology, TypeBox, AJV, Zod, and Valibot.
  */
 
 import { Type } from '@sinclair/typebox';
@@ -9,6 +9,15 @@ import {
 } from 'ajv';
 import addFormats from 'ajv-formats';
 import { z } from 'zod';
+import {
+  array as vArray, boolean as vBoolean, email as vEmail,
+  integer as vInteger, isoTimestamp as vIsoTimestamp,
+  length as vLength, maxValue as vMaxValue,
+  minLength as vMinLength, minValue as vMinValue, number as vNumber,
+  object as vObject, picklist as vPicklist, pipe as vPipe,
+  regex as vRegex, strictObject as vStrictObject, string as vString
+
+} from 'valibot';
 
 // ---------------------------------------------------------------------------
 // AJV instance (shared)
@@ -68,6 +77,14 @@ export const SimpleSchemaZod = z.object({
   'id': z.number().int(),
   'name': z.string()
 }).strict();
+
+export const SimpleSchemaValibot = vStrictObject({
+  'active': vBoolean(),
+  'age': vPipe(vNumber(), vInteger(), vMinValue(0), vMaxValue(150)),
+  'email': vPipe(vString(), vEmail()),
+  'id': vPipe(vNumber(), vInteger()),
+  'name': vString()
+});
 
 export const ajvValidateSimple: ValidateFunction = ajvInstance.compile(SimpleSchema);
 
@@ -365,6 +382,41 @@ export const NestedSchemaZod = z.object({
   'total': z.number().min(0)
 });
 
+export const NestedSchemaValibot = vObject({
+  'createdAt': vPipe(vString(), vIsoTimestamp()),
+  'customer': vObject({
+    'address': vObject({
+      'city': vString(),
+      'country': vPipe(vString(), vLength(2)),
+      'street': vString(),
+      'zip': vPipe(vString(), vRegex(/^\d{5}$/u))
+    }),
+    'email': vPipe(vString(), vEmail()),
+    'id': vPipe(vNumber(), vInteger()),
+    'name': vString()
+  }),
+  'items': vPipe(
+    vArray(vObject({
+      'price': vPipe(vNumber(), vMinValue(0)),
+      'quantity': vPipe(vNumber(), vInteger(), vMinValue(1)),
+      'sku': vString()
+    })),
+    vMinLength(1)
+  ),
+  'orderId': vString(),
+  'status': vPicklist([
+    'pending',
+    'paid',
+    'shipped',
+    'delivered',
+    'cancelled'
+  ]),
+  'total': vPipe(vNumber(), vMinValue(0))
+});
+
+// Re-export valibot helpers used in other bench files
+
+
 export const ajvValidateNested: ValidateFunction = ajvInstance.compile(NestedSchemaAjv);
 
 export const nestedValid = {
@@ -432,3 +484,25 @@ export const DefaultsSchema = {
 } as const;
 
 export const defaultsInput = { 'role': 'admin' };
+
+export {
+  array as vArray,
+  boolean as vBoolean,
+  email as vEmail,
+  integer as vInteger,
+  isoTimestamp as vIsoTimestamp,
+  length as vLength,
+  literal as vLiteral,
+  maxValue as vMaxValue,
+  minLength as vMinLength,
+  minValue as vMinValue,
+  number as vNumber,
+  object as vObject,
+  picklist as vPicklist,
+  pipe as vPipe,
+  regex as vRegex,
+  safeParse as vSafeParse,
+  strictObject as vStrictObject,
+  string as vString,
+  union as vUnion
+} from 'valibot';

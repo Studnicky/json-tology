@@ -1,0 +1,84 @@
+/**
+ * Instantiate benchmarks: json-tology's primary parse-and-normalize API
+ * vs Zod .parse / TypeBox Value.Parse / Valibot parse.
+ *
+ * Distinct from coerce.bench.ts: this measures the typed entry point
+ * (registry.instantiate / facade .instantiate), with castTypes off (no coercion),
+ * representing the steady-state happy path most users hit.
+ */
+
+import { Value } from '@sinclair/typebox/value';
+import { FormatRegistry } from '@sinclair/typebox';
+import { parse as vParse } from 'valibot';
+import { SchemaRegistry } from '../src/modules/registry/SchemaRegistry.js';
+
+FormatRegistry.Set('email', (value) => {
+  return /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/u.test(value);
+});
+FormatRegistry.Set('date-time', (value) => {
+  return !Number.isNaN(Date.parse(value));
+});
+
+import {
+  bench, type BenchResult, section
+} from './harness.js';
+import {
+  AddressSchema, CustomerSchema, NestedSchema,
+  NestedSchemaTypebox, NestedSchemaValibot, NestedSchemaZod, nestedValid,
+  OrderItemSchema, SimpleSchema, SimpleSchemaTypebox, SimpleSchemaValibot,
+  SimpleSchemaZod, simpleValid
+} from './fixtures.js';
+
+export function runInstantiateBench(): BenchResult[] {
+  const results: BenchResult[] = [];
+
+  const registry = new SchemaRegistry();
+
+  registry.register(SimpleSchema);
+  registry.register(AddressSchema);
+  registry.register(CustomerSchema);
+  registry.register(OrderItemSchema);
+  registry.register(NestedSchema);
+
+  // Warm up
+  registry.instantiate(SimpleSchema, simpleValid);
+  registry.instantiate(NestedSchema, nestedValid);
+
+  section('instantiate — simple flat schema (parse + normalize, no coercion)');
+
+  results.push(bench('instantiate simple', 'json-tology', () => {
+    registry.instantiate(SimpleSchema, simpleValid);
+  }));
+
+  results.push(bench('instantiate simple', 'typebox', () => {
+    Value.Parse(SimpleSchemaTypebox, simpleValid);
+  }));
+
+  results.push(bench('instantiate simple', 'zod', () => {
+    SimpleSchemaZod.parse(simpleValid);
+  }));
+
+  results.push(bench('instantiate simple', 'valibot', () => {
+    vParse(SimpleSchemaValibot, simpleValid);
+  }));
+
+  section('instantiate — nested schema (parse + normalize, no coercion)');
+
+  results.push(bench('instantiate nested', 'json-tology', () => {
+    registry.instantiate(NestedSchema, nestedValid);
+  }));
+
+  results.push(bench('instantiate nested', 'typebox', () => {
+    Value.Parse(NestedSchemaTypebox, nestedValid);
+  }));
+
+  results.push(bench('instantiate nested', 'zod', () => {
+    NestedSchemaZod.parse(nestedValid);
+  }));
+
+  results.push(bench('instantiate nested', 'valibot', () => {
+    vParse(NestedSchemaValibot, nestedValid);
+  }));
+
+  return results;
+}
