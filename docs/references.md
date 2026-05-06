@@ -16,6 +16,8 @@ If you hit a conformance gap, open an issue at [github.com/Studnicky/json-tology
 | [JSON Pointer (RFC 6901)](https://datatracker.ietf.org/doc/html/rfc6901) | Error paths, `subschemaAt`, `$ref` fragments. |
 | [Problem Details (RFC 7807)](https://datatracker.ietf.org/doc/html/rfc7807) | `ValidationErrors.report()` shape. |
 | [RDF 1.2 Concepts](https://www.w3.org/TR/rdf12-concepts/) | Quad model, IRIs, literals. |
+| [RDF 1.1 §3.5 Skolemization](https://www.w3.org/TR/rdf11-concepts/#section-skolemization) | Well-known genid IRI pattern minted by `Skolemize.wellKnownGenid`. |
+| [RDFC-1.0 (RDF Dataset Canonicalization)](https://www.w3.org/TR/rdf-canon/) | Reference for deterministic identification of RDF nodes in the skolemization design. |
 | [RDF Schema 1.1](https://www.w3.org/TR/rdf-schema/) | `rdfs:Class`, `rdfs:domain`, `rdfs:range`, `rdfs:subClassOf` emission. |
 | [OWL 2 Web Ontology Language](https://www.w3.org/TR/owl2-overview/) | TBox emission via `JsonTology.toTbox()` / `entities.ontology()`. |
 | [SHACL Shapes Constraint Language](https://www.w3.org/TR/shacl/) | SHACL shape emission via `JsonTology.toShacl()`. |

@@ -63,6 +63,55 @@ const merged = {
 };
 ```
 
+### Subject minting with `iriFor`
+
+The default minter assigns `<baseIRI>/instances/<classId>-<contentHash>` to every projected object. To override that, pass `iriFor` to `toQuads`:
+
+```ts
+import { Skolemize } from 'json-tology';
+
+// Root-only override (depth 0 wins; nested objects fall through):
+entities.toQuads(OrderSchema, order, {
+  iriFor: 'https://shop.example.com/orders/A-1234'
+});
+
+// Anonymous blank-node subjects for every emitted object:
+entities.toQuads(OrderSchema, order, { iriFor: 'blank-node' });
+
+// Mint from a property of the value:
+entities.toQuads(BookSchema, book, {
+  iriFor: Skolemize.fromProperty('isbn', { baseIRI: 'https://books.example.com/isbn' })
+});
+
+// W3C RDF 1.1 §3.5 well-known genid pattern (reversible by deskolemize):
+entities.toQuads(OrderSchema, order, {
+  iriFor: Skolemize.wellKnownGenid('https://shop.example.com')
+});
+
+// Custom function. Receives { path, value, depth }; return undefined to fall through.
+entities.toQuads(OrderSchema, order, {
+  iriFor: (ctx) => ctx.depth === 0
+    ? `https://shop.example.com/orders/${(ctx.value as { id: string }).id}`
+    : undefined
+});
+```
+
+See [skolemization](/advanced/skolemization) for the strategy reference.
+
+The v1 `subjectIRI: string` option is preserved as a backwards-compatible alias for `iriFor: string`. New code should use `iriFor`.
+
+### Graph IRI
+
+Set the `graph` field on every emitted quad with `graphIRI`:
+
+```ts
+entities.toQuads(OrderSchema, order, {
+  graphIRI: 'https://shop.example.com/graphs/2026-01'
+});
+```
+
+Both options can be paired with registry-level defaults via `JsonTology.create({ iriFor, defaultGraphIRI })` — see [getting started](/getting-started#graph-emission).
+
 ## `jt.fromQuads` {#jt-fromquads}
 
 **Declaration.** Inverse of `toQuads`. Given an array of quads and a target schema reference (`$id` string or schema object with `$id`), returns an array of validated typed objects. Each returned value runs through `instantiate`, so defaults are applied, transforms execute, and validation errors throw `InstantiationError`.
@@ -70,6 +119,20 @@ const merged = {
 **Use this when** quads arrive from an external source - a triple store, a reasoner output, a federated query, an inbound RDF payload - and you want them as typed JS objects. The return is an array because a single subject set can contain multiple instances of the target class.
 
 **Don't use this when** you already have JS objects in hand (use [`instantiate`](/validation/instantiate) directly). Don't use it on quads with no `rdf:type` or no recognizable predicates - lifting needs the property IRIs that match the target schema's graph.
+
+#### Reversible skolemization
+
+Pass `{ deskolemize: true }` to treat IRIs matching the W3C well-known genid pattern (`*/.well-known/genid/<hash>`) as blank nodes during reconstruction. This pairs with `Skolemize.wellKnownGenid` on `toQuads`:
+
+```ts
+const quads = entities.toQuads(OrderSchema, order, {
+  iriFor: Skolemize.wellKnownGenid('https://shop.example.com')
+});
+
+const [restored] = entities.fromQuads(OrderSchema.$id, quads, { deskolemize: true });
+```
+
+The registry-level `defaultDeskolemize: true` flips this on for every `fromQuads` call without per-call overrides.
 
 ### Examples
 
