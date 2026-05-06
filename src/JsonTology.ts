@@ -42,6 +42,7 @@ import type { SchemaRefType } from './types/SchemaRef.js';
 import type { SkolemizeFnType } from './types/Skolemize.js';
 
 import { Curie } from './modules/rdf/Curie.js';
+import { Skolemize } from './modules/rdf/Skolemize.js';
 import { Dumper } from './modules/data/Dumper.js';
 import { FormatRegistry } from './modules/format/FormatRegistry.js';
 import { GraphOntologySerializer } from './modules/ontology/GraphOntologySerializer.js';
@@ -92,6 +93,50 @@ function rootIriOnly(iri: string): SkolemizeFnType {
   return (ctx) => {
     return ctx.depth === 0 ? iri : undefined;
   };
+}
+
+function blankNodeNameFor(iri: string): string {
+  const slash = iri.lastIndexOf('/');
+
+  return slash === -1 ? iri : iri.slice(slash + 1);
+}
+
+/**
+ * Reconstructs blank-node-style references from well-known genid IRIs.
+ * Quads whose subject or object is a NamedNode matching the well-known
+ * genid pattern are rewritten to BlankNode terms so downstream lifting
+ * sees them as anonymous nodes.
+ */
+function deskolemizeQuads(quads: readonly QuadInterface[]): QuadInterface[] {
+  return quads.map((quad) => {
+    const subjectGenid = Skolemize.isWellKnownGenid(quad.subject);
+    const objectGenid = quad.object.termType === 'NamedNode'
+      && Skolemize.isWellKnownGenid(quad.object.value);
+
+    if (!subjectGenid && !objectGenid) {
+      return quad;
+    }
+
+    const subject = subjectGenid ? `_:${blankNodeNameFor(quad.subject)}` : quad.subject;
+    const object = objectGenid && quad.object.termType === 'NamedNode'
+      ? {
+        'termType': 'BlankNode' as const,
+        'value': blankNodeNameFor(quad.object.value)
+      }
+      : quad.object;
+
+    const rewritten: QuadInterface = {
+      object,
+      'predicate': quad.predicate,
+      subject
+    };
+
+    if (quad.graph !== undefined) {
+      rewritten.graph = quad.graph;
+    }
+
+    return rewritten;
+  });
 }
 
 function normalizeToQuadsOptions(options: ToQuadsOptionsType | undefined): NormalizedToQuadsOptionsType {
@@ -200,11 +245,12 @@ export class JsonTology<TMap = Record<never, never>> {
    */
   public static fromQuads(
     schema: Record<string, unknown> & { readonly '$id': string },
-    quads: QuadInterface[]
+    quads: QuadInterface[],
+    options?: { 'deskolemize'?: boolean }
   ): unknown[] {
     const jt = JsonTology.ephemeral(schema);
 
-    return jt.fromQuads(schema, quads);
+    return jt.fromQuads(schema, quads, options);
   }
 
   /**
@@ -358,6 +404,9 @@ export class JsonTology<TMap = Record<never, never>> {
   }
 
   private readonly baseIRI: string;
+  private readonly defaultDeskolemize: boolean;
+  private readonly defaultGraphIRI: string | undefined;
+  private readonly defaultIriFor: SkolemizeFnType | undefined;
 
   public readonly materializer: MaterializerInterface;
   private ontologyCache: null | OntologyBuilder = null;
@@ -395,6 +444,19 @@ export class JsonTology<TMap = Record<never, never>> {
       baseIRI = baseIRI.slice(0, -1);
     }
     this.baseIRI = baseIRI;
+
+    this.defaultGraphIRI = options.defaultGraphIRI;
+    this.defaultDeskolemize = options.defaultDeskolemize === true;
+
+    const rawDefaultIriFor = options.iriFor;
+    let defaultIriFor: SkolemizeFnType | undefined;
+
+    if (typeof rawDefaultIriFor === 'string') {
+      defaultIriFor = rootIriOnly(rawDefaultIriFor);
+    } else if (rawDefaultIriFor !== undefined) {
+      defaultIriFor = rawDefaultIriFor;
+    }
+    this.defaultIriFor = defaultIriFor;
 
     this.prefixes = {
       ...DEFAULT_PREFIXES,
@@ -579,16 +641,30 @@ export class JsonTology<TMap = Record<never, never>> {
    * @param quads - RDF quads in the module's internal format.
    * @returns Array of validated, typed objects.
    */
-  public fromQuads<K extends keyof TMap & string>(schemaId: K, quads: QuadInterface[]): Array<TMap[K]>;
-  public fromQuads(schemaRef: SchemaRefType<TMap>, quads: QuadInterface[]): unknown[];
-  public fromQuads(schemaRef: SchemaRefType<TMap>, quads: QuadInterface[]): unknown[] {
+  public fromQuads<K extends keyof TMap & string>(
+    schemaId: K,
+    quads: QuadInterface[],
+    options?: { 'deskolemize'?: boolean }
+  ): Array<TMap[K]>;
+  public fromQuads(
+    schemaRef: SchemaRefType<TMap>,
+    quads: QuadInterface[],
+    options?: { 'deskolemize'?: boolean }
+  ): unknown[];
+  public fromQuads(
+    schemaRef: SchemaRefType<TMap>,
+    quads: QuadInterface[],
+    options?: { 'deskolemize'?: boolean }
+  ): unknown[] {
     const schemaId = typeof schemaRef === 'string' ? schemaRef : (schemaRef as Record<string, unknown> & { '$id': string }).$id;
 
     if (typeof schemaRef !== 'string') {
       this.registry.register(schemaRef as Record<string, unknown>);
     }
 
-    const raw = liftInstances(schemaId, quads, this.registry);
+    const deskolemize = options?.deskolemize ?? this.defaultDeskolemize;
+    const inputQuads = deskolemize ? deskolemizeQuads(quads) : quads;
+    const raw = liftInstances(schemaId, inputQuads, this.registry);
 
     return raw.map((instance) => {
       return this.registry.instantiate(schemaId, instance);
@@ -868,12 +944,18 @@ export class JsonTology<TMap = Record<never, never>> {
     data: InferSchemaType<TSchema>,
     options?: ToQuadsOptionsType
   ): QuadInterface[] {
+    const normalized = normalizeToQuadsOptions(options);
+    const effective = {
+      'graphIRI': normalized.graphIRI ?? this.defaultGraphIRI,
+      'iriFor': normalized.iriFor ?? this.defaultIriFor
+    };
+
     return this.materializer.projectAbox(
       // Cast needed: JSONSchema7Definition includes boolean; runtime guarantees object with $id
       schema as unknown as Record<string, unknown> & { '$id': string; },
       data,
       this.baseIRI,
-      normalizeToQuadsOptions(options)
+      effective
     );
   }
   /**
