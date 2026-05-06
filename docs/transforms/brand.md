@@ -102,6 +102,19 @@ type CustomerId = v.InferOutput<typeof CustomerIdSchema>;
 // string with brand 'CustomerId'
 ```
 
+```ts [io-ts]
+import * as t from 'io-ts';
+interface CustomerIdBrand { readonly CustomerId: unique symbol }
+const CustomerIdCodec = t.brand(
+  t.string,
+  (input): input is t.Branded<string, CustomerIdBrand> =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(input),
+  'CustomerId',
+);
+type CustomerId = t.TypeOf<typeof CustomerIdCodec>;
+// string & Brand<{ readonly CustomerId: unique symbol }>
+```
+
 ```ts [TypeBox + Value]
 // TypeBox does not have a built-in brand utility.
 // Use TypeScript's type-level branding manually:

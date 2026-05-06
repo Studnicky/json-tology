@@ -102,6 +102,13 @@ const changes = diff(before, after);
 // No typed Changeset, no JSON Pointer paths, no schema awareness.
 ```
 
+```ts [io-ts]
+// Limitation: io-ts has no diff utility. Use a third-party library:
+import { diff } from 'microdiff';
+const changes = diff(before, after);
+// No typed Changeset, no JSON Pointer paths, no schema awareness.
+```
+
 ```ts [TypeBox + Value]
 // TypeBox has no built-in diff.
 // Closest: implement manually over Value.Errors or with a deep-diff library.
@@ -193,6 +200,13 @@ const result = applyOperation(clone, { op: 'replace', path: '/price', value: 12.
 import { applyOperation } from 'fast-json-patch';
 const result = applyOperation(clone, { op: 'replace', path: '/price', value: 12.99 }).newDocument;
 // Same constraints as Zod - JSON Patch format, extra dependency, no schema awareness.
+```
+
+```ts [io-ts]
+// Limitation: io-ts has no applyOp. Use fast-json-patch:
+import { applyOperation } from 'fast-json-patch';
+const result = applyOperation(clone, { op: 'replace', path: '/price', value: 12.99 }).newDocument;
+// JSON Patch format, extra dependency, no schema-aware mutation.
 ```
 
 ```ts [TypeBox + Value]

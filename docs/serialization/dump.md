@@ -113,6 +113,14 @@ const json = JSON.stringify(book);
 const json = JSON.stringify(book);
 ```
 
+```ts [io-ts]
+// Limitation: io-ts has no dump step that walks a graph and applies encoders.
+// Each codec exposes .encode for itself; for a composite, call .encode at
+// the top level then JSON.stringify. No filtering options.
+const wire = BookCodec.encode(book);
+const json = JSON.stringify(wire);
+```
+
 ```ts [TypeBox + Value]
 // TypeBox does not have a built-in dump/serialize utility.
 const json = JSON.stringify(book);
@@ -185,6 +193,11 @@ const json = JSON.stringify(customer);
 ```ts [Valibot]
 // Limitation: no dumpJson; JSON.stringify works only for plain values.
 const json = JSON.stringify(customer);
+```
+
+```ts [io-ts]
+// Limitation: no dumpJson convenience; combine .encode and JSON.stringify.
+const json = JSON.stringify(CustomerCodec.encode(customer));
 ```
 
 ```ts [TypeBox + Value]

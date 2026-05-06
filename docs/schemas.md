@@ -111,6 +111,17 @@ const CustomerSchema = v.object({
 // No multi-schema registry, no $id-based lookup, no type map.
 ```
 
+```ts [io-ts]
+import * as t from 'io-ts';
+// Limitation: io-ts has no central registry; codecs are module-scope values.
+const CustomerCodec = t.type({
+  id:    t.string,
+  email: t.string,
+  name:  t.string,
+});
+// No multi-schema registry, no $id-based lookup, no type map.
+```
+
 ```ts [TypeBox]
 // TypeBox schemas are plain objects; no registry concept.
 // Validation requires passing the schema directly each time.
@@ -216,6 +227,13 @@ const CouponSchema = v.object({ discount: v.number() });
 v.parse(CouponSchema, { discount: 0.15 });
 ```
 
+```ts [io-ts]
+import * as t from 'io-ts';
+// Limitation: no registry; inline codec has no $id and no synthetic key.
+const CouponCodec = t.type({ discount: t.number });
+CouponCodec.decode({ discount: 0.15 });
+```
+
 ```ts [TypeBox]
 // TypeBox schemas are plain objects; pass directly to Ajv.
 import Ajv from 'ajv';
@@ -306,6 +324,11 @@ jt.has('https://bookstore.example/Customer') // true | false
 // that exist if their module has been imported.
 ```
 
+```ts [io-ts]
+// Limitation: not applicable - io-ts has no registry. Codecs are values
+// that exist if their module has been imported.
+```
+
 ```ts [TypeBox]
 // Not applicable  - TypeBox schemas are plain JS objects; no registry.
 ```
@@ -392,6 +415,11 @@ import { BookSchema } from './schemas';
 import { BookSchema } from './schemas';
 ```
 
+```ts [io-ts]
+// Limitation: not directly supported - io-ts codecs are module-scope values.
+import { BookCodec } from './schemas';
+```
+
 ```ts [TypeBox]
 // TypeBox schemas are plain objects  - access via import or variable reference.
 ```
@@ -470,6 +498,10 @@ jt.list() // string[]
 
 ```ts [Valibot]
 // Limitation: not applicable - Valibot has no registry, so no list to enumerate.
+```
+
+```ts [io-ts]
+// Limitation: not applicable - io-ts has no registry, so no list to enumerate.
 ```
 
 ```ts [TypeBox]
@@ -555,6 +587,12 @@ jt.toSchema('https://bookstore.example/Book')
 import { toJsonSchema } from '@valibot/to-json-schema';
 const jsonSchema = toJsonSchema(BookSchema);
 // Limitation: not all Valibot constructs map to JSON Schema; no graph round-trip.
+```
+
+```ts [io-ts]
+// Limitation: io-ts has no built-in JSON Schema export. Codecs lack a
+// structural representation that maps cleanly onto JSON Schema; third-party
+// tooling exists for narrow subsets but full round-trip is not supported.
 ```
 
 ```ts [TypeBox]

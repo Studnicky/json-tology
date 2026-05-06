@@ -149,6 +149,18 @@ if (!result.success) {
 }
 ```
 
+```ts [io-ts]
+import { isLeft } from 'fp-ts/Either';
+import { PathReporter } from 'io-ts/PathReporter';
+const result = OrderCodec.decode(data);
+if (isLeft(result)) {
+  result.left;                       // ValidationError[] - context + value per node
+  PathReporter.report(result);       // string[] - flattened messages
+  // Limitation: no aggregate() or report() RFC 7807 views; project manually
+  // from the ValidationError context array.
+}
+```
+
 ```ts [TypeBox + Value]
 import { Value } from '@sinclair/typebox/value';
 const errors = [...Value.Errors(OrderSchema, data)];

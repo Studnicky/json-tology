@@ -141,6 +141,18 @@ const paths = [...new Set(issues.map(i => i.path?.map(p => p.key).join('.') ?? '
 const keywords = [...new Set(issues.map(i => i.expected ?? i.type))].sort();
 ```
 
+```ts [io-ts]
+import { isLeft } from 'fp-ts/Either';
+// Limitation: no aggregate() built in - derive from result.left:
+const result = codec.decode(data);
+const errors = isLeft(result) ? result.left : [];
+const count = errors.length;
+const paths = [...new Set(errors.map(err =>
+  err.context.map(node => node.key).filter(Boolean).join('.'),
+))].sort();
+const keywords = [...new Set(errors.map(err => err.context.at(-1)?.type.name ?? ''))].sort();
+```
+
 ```ts [TypeBox + Value]
 // Manual derivation from Value.Errors iterator:
 const errs = [...Value.Errors(schema, value)];
@@ -296,6 +308,26 @@ const problem = {
     path:    `/${i.path?.map(p => p.key).join('/') ?? ''}`,
     keyword: i.expected ?? i.type,
     message: i.message,
+    params:  {},
+  })),
+};
+```
+
+```ts [io-ts]
+import { isLeft } from 'fp-ts/Either';
+import { PathReporter } from 'io-ts/PathReporter';
+// Limitation: no report() built in - manual RFC 7807 construction:
+const result = codec.decode(data);
+const errors = isLeft(result) ? result.left : [];
+const messages = isLeft(result) ? PathReporter.report(result) : [];
+const problem = {
+  type:   'https://example.com/problems/validation',
+  status: 422,
+  detail: `${errors.length} validation errors`,
+  errors: errors.map((err, idx) => ({
+    path:    `/${err.context.map(node => node.key).filter(Boolean).join('/')}`,
+    keyword: err.context.at(-1)?.type.name ?? '',
+    message: messages[idx] ?? '',
     params:  {},
   })),
 };

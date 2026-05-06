@@ -111,6 +111,17 @@ import * as v from 'valibot';
 v.pick(BookSchema, ['isbn', 'title', 'price'])
 ```
 
+```ts [io-ts]
+import * as t from 'io-ts';
+// Limitation: io-ts has no built-in pick. Reconstruct the codec from the
+// fields you want, or use t.intersection of a subset codec.
+const BookSummary = t.type({
+  isbn:  BookCodec.props.isbn,
+  title: BookCodec.props.title,
+  price: BookCodec.props.price,
+});
+```
+
 ```ts [TypeBox + Value]
 import { Type } from '@sinclair/typebox';
 // TypeBox has Type.Pick:
@@ -220,6 +231,14 @@ CustomerSchema.omit({ addresses: true })
 ```ts [Valibot]
 import * as v from 'valibot';
 v.omit(CustomerSchema, ['addresses'])
+```
+
+```ts [io-ts]
+import * as t from 'io-ts';
+// Limitation: io-ts has no built-in omit. Rebuild the codec from the fields
+// you want to keep.
+const { addresses: _drop, ...rest } = CustomerCodec.props;
+const CustomerPublic = t.type(rest);
 ```
 
 ```ts [TypeBox + Value]

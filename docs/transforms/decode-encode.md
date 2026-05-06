@@ -127,6 +127,24 @@ v.parse(DateSchema, '2026-01-15T10:30:00Z'); // → Date
 // separate inverse schema or call dateVal.toISOString() manually.
 ```
 
+```ts [io-ts]
+import * as t from 'io-ts';
+import { isLeft } from 'fp-ts/Either';
+const DateCodec = new t.Type<Date, string, unknown>(
+  'DateFromIsoString',
+  (input): input is Date => input instanceof Date,
+  (input, ctx) => typeof input === 'string' && !Number.isNaN(Date.parse(input))
+    ? t.success(new Date(input))
+    : t.failure(input, ctx),
+  (date) => date.toISOString(),
+);
+const decoded = DateCodec.decode('2026-01-15T10:30:00Z'); // Either<Errors, Date>
+if (!isLeft(decoded)) { /* decoded.right is Date */ }
+const wire = DateCodec.encode(new Date()); // Date → ISO string
+// io-ts codecs carry symmetric .decode and .encode; compose with t.union /
+// t.intersection to build larger transforms.
+```
+
 ```ts [TypeBox + Value]
 // TypeBox validates only  - no decode/encode transform mechanism.
 // Apply manually after validation:
@@ -216,6 +234,11 @@ import * as v from 'valibot';
 // Limitation: Valibot has no schema-registered encode step.
 // Apply the inverse transformation manually:
 const wire = (date as Date).toISOString();
+```
+
+```ts [io-ts]
+const wire = DateCodec.encode(date); // domain → wire, schema-registered
+// Symmetric with .decode; no separate facade needed.
 ```
 
 ```ts [TypeBox + Value]

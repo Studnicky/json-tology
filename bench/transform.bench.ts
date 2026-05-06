@@ -4,6 +4,7 @@
  * Compares json-tology's Transform.create attached decoders against:
  *   - Zod's .transform() / .pipe() round-trip
  *   - TypeBox Value.Decode / Value.Encode
+ *   - io-ts custom codec with .decode() / .encode()
  *
  * Valibot has no symmetric decode/encode primitive at this surface, so it is
  * not included for the round-trip case (would be unfair).
@@ -13,6 +14,10 @@ import {
   type Static, Type
 } from '@sinclair/typebox';
 import { Value } from '@sinclair/typebox/value';
+import {
+  Type as IotType,
+  type Validation as IotValidation
+} from 'io-ts';
 import { z } from 'zod';
 import { JsonTology } from '../src/JsonTology.js';
 import { Transform } from '../src/modules/transform/Transform.js';
@@ -54,6 +59,43 @@ const DateSchemaTypebox = Type.Transform(Type.String({ 'format': 'date-time' }))
 
 type DateOut = Static<typeof DateSchemaTypebox>;
 
+const DateSchemaIoTs = new IotType<Date, string, unknown>(
+  'DateFromIsoString',
+  (input): input is Date => {
+    return input instanceof Date;
+  },
+  (input, context): IotValidation<Date> => {
+    if (typeof input !== 'string') {
+      return {
+        '_tag': 'Left',
+        'left': [{
+          'context': context,
+          'value': input
+        }]
+      };
+    }
+    const ms = Date.parse(input);
+
+    if (Number.isNaN(ms)) {
+      return {
+        '_tag': 'Left',
+        'left': [{
+          'context': context,
+          'value': input
+        }]
+      };
+    }
+
+    return {
+      '_tag': 'Right',
+      'right': new Date(ms)
+    };
+  },
+  (output) => {
+    return output.toISOString();
+  }
+);
+
 const wireValue = '2024-01-15T10:30:00.000Z';
 const decodedValue = new Date(wireValue);
 
@@ -69,6 +111,8 @@ export function runTransformBench(): BenchResult[] {
   jt.instantiate(DateSchemaJt, wireValue);
   Value.Decode(DateSchemaTypebox, wireValue);
   DateSchemaZod.parse(wireValue);
+  DateSchemaIoTs.decode(wireValue);
+  DateSchemaIoTs.encode(decodedValue);
 
   section('transform — decode wire → rich (string → Date)');
 
@@ -84,6 +128,10 @@ export function runTransformBench(): BenchResult[] {
     DateSchemaZod.parse(wireValue);
   }));
 
+  results.push(bench('decode date', 'io-ts', () => {
+    DateSchemaIoTs.decode(wireValue);
+  }));
+
   section('transform — encode rich → wire (Date → string)');
 
   results.push(bench('encode date', 'json-tology', () => {
@@ -92,6 +140,10 @@ export function runTransformBench(): BenchResult[] {
 
   results.push(bench('encode date', 'typebox', () => {
     Value.Encode(DateSchemaTypebox, decodedValue as DateOut);
+  }));
+
+  results.push(bench('encode date', 'io-ts', () => {
+    DateSchemaIoTs.encode(decodedValue);
   }));
 
   // Zod 4 supports .pipe back; using zod codec round-trip via toJSON would be

@@ -107,6 +107,14 @@ if (v.is(CustomerSchema, data)) {
 }
 ```
 
+```ts [io-ts]
+// io-ts codecs expose `.is` as a type guard:
+if (CustomerCodec.is(data)) {
+  data.name; // narrowed to t.TypeOf<typeof CustomerCodec>
+}
+// Note: .is checks runtime shape directly without producing decoded output.
+```
+
 ```ts [TypeBox + Value]
 import { TypeCompiler } from '@sinclair/typebox/compiler';
 const C = TypeCompiler.Compile(CustomerSchema);

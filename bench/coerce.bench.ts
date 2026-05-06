@@ -1,5 +1,5 @@
 /**
- * Coerce pipeline benchmarks vs TypeBox Value.Parse vs Zod .parse vs Valibot parse.
+ * Coerce pipeline benchmarks vs TypeBox Value.Parse vs Zod .parse vs Valibot parse vs io-ts decode.
  */
 
 import { Value } from '@sinclair/typebox/value';
@@ -22,7 +22,7 @@ import {
 } from './harness.js';
 import {
   defaultsInput, DefaultsSchema,
-  SimpleSchema,
+  SimpleSchema, SimpleSchemaIoTs,
   SimpleSchemaTypebox, SimpleSchemaValibot, SimpleSchemaZod, simpleValid
 } from './fixtures.js';
 
@@ -54,6 +54,10 @@ export function runCoerceBench(): BenchResult[] {
 
   results.push(bench('coerce valid', 'valibot', () => {
     vParse(SimpleSchemaValibot, simpleValid);
+  }));
+
+  results.push(bench('coerce valid', 'io-ts', () => {
+    SimpleSchemaIoTs.decode(simpleValid);
   }));
 
   section('coerce — defaults application');

@@ -183,6 +183,17 @@ const PaymentSchema = v.variant('method', [
 type Payment = v.InferOutput<typeof PaymentSchema>;
 ```
 
+```ts [io-ts]
+import * as t from 'io-ts';
+const PaymentCodec = t.union([
+  t.type({ method: t.literal('credit_card'), cardLast4: t.string }),
+  t.type({ method: t.literal('invoice'),     purchaseOrder: t.string }),
+]);
+type Payment = t.TypeOf<typeof PaymentCodec>;
+// Limitation: io-ts has no discriminator hint. t.union tries each member in
+// order; tooling like OpenAPI generators cannot recover the discriminant.
+```
+
 ```ts [TypeBox + Value]
 import { Type } from '@sinclair/typebox';
 // TypeBox uses Type.Union  - no built-in discriminator support:

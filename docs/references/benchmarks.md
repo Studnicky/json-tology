@@ -2,9 +2,9 @@
 
 > **json-tology is not yet uniformly faster than its comparators. Where we win, where we lose, and where we have work to do.**
 
-This page is the honest read on json-tology's performance against four comparators: AJV, Zod, TypeBox (interpreted `Value` and compiled `TypeCompiler`), and Valibot. The numbers below come from the bench suite under `bench/`. Run `npm run bench:report` to regenerate.
+This page is the honest read on json-tology's performance against five comparators: AJV, Zod, TypeBox (interpreted `Value` and compiled `TypeCompiler`), Valibot, and io-ts. The numbers below come from the bench suite under `bench/`. Run `npm run bench:report` to regenerate.
 
-The headline: today, json-tology loses most warm validation scenarios to TypeBox compiled, and loses some warm scenarios to AJV / Valibot. It wins at structural diff, transform encode, schema authoring (extend build), and validating invalid simple data with full error collection. Most of the loss surface comes from the canonical-graph-first execution model: every validate goes through the graph, which buys downstream features (ABox projection, OWL/SHACL emission, semantic round-trip) but pays a per-call cost a code-gen-only validator does not.
+The headline: today, json-tology loses most warm validation scenarios to TypeBox compiled, and loses some warm scenarios to AJV / Valibot / io-ts. It wins at structural diff, transform encode, schema authoring (extend build), and validating invalid simple data with full error collection. Most of the loss surface comes from the canonical-graph-first execution model: every validate goes through the graph, which buys downstream features (ABox projection, OWL/SHACL emission, semantic round-trip) but pays a per-call cost a code-gen-only validator does not.
 
 We're publishing the full picture rather than cherry-picking. Where we are slow, we say so.
 
@@ -25,11 +25,11 @@ The bench suite covers the operations json-tology actually exposes:
 
 | Suite | json-tology surface | Comparators |
 | - | - | - |
-| Validation | `registry.validate` | AJV `validate`, TypeBox `TypeCompiler.Check`, Zod `safeParse`, Valibot `safeParse` |
-| Instantiation | `registry.instantiate` (no coercion) | TypeBox `Value.Parse`, Zod `parse`, Valibot `parse` |
-| Coerce | `registry.instantiate` with `castTypes: true`, defaults | TypeBox `Value.Parse`, Zod `parse`, Valibot `parse` |
+| Validation | `registry.validate` | AJV `validate`, TypeBox `TypeCompiler.Check`, Zod `safeParse`, Valibot `safeParse`, io-ts `decode` |
+| Instantiation | `registry.instantiate` (no coercion) | TypeBox `Value.Parse`, Zod `parse`, Valibot `parse`, io-ts `decode` |
+| Coerce | `registry.instantiate` with `castTypes: true`, defaults | TypeBox `Value.Parse`, Zod `parse`, Valibot `parse`, io-ts `decode` |
 | Value operations | `Value.clone`, `Value.diff`, `registry.clean`, `registry.convert` | TypeBox `Value.Clean / Convert / Diff`, `structuredClone` |
-| Transforms | `Transform.create` decode + facade `encode` | TypeBox `Value.Decode / Value.Encode`, Zod `.transform` |
+| Transforms | `Transform.create` decode + facade `encode` | TypeBox `Value.Decode / Value.Encode`, Zod `.transform`, io-ts custom codec `decode`/`encode` |
 | Composition | `Compose.extend / intersection / discriminatedUnion` | TypeBox `Type.Composite / Intersect / Union`, Zod `.extend / intersection / discriminatedUnion`, Valibot `variant` |
 | Serialization | `dump`, `dumpJson`, facade `encode` | `JSON.stringify`, `structuredClone`, TypeBox `Value.Encode` |
 | Registry | cold register + first validate, warm validate | TypeBox `TypeCompiler.Compile + Check`, Zod, Valibot |
