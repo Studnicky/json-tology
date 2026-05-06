@@ -92,6 +92,17 @@ const book = BookSchema.parse({
 // Requires .default() on each field in the schema definition.
 ```
 
+```ts [Valibot]
+import * as v from 'valibot';
+// Valibot applies defaults during v.parse() via v.optional(schema, default):
+const book = v.parse(BookSchema, {
+  isbn: '9780140449136', title: 'Crime and Punishment',
+  authors: ['Dostoevsky'], price: 14.99,
+});
+// Limitation: no separate materialize step; defaults only flow when
+// fields are wrapped in v.optional(..., defaultValue).
+```
+
 ```ts [TypeBox + Value]
 import { Value } from '@sinclair/typebox/value';
 // Value.Default fills defaults:

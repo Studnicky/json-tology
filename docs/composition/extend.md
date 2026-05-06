@@ -127,6 +127,16 @@ const CustomerWithDiscount = CustomerSchema.extend({
 });
 ```
 
+```ts [Valibot]
+import * as v from 'valibot';
+const CustomerWithDiscount = v.intersect([
+  CustomerSchema,
+  v.object({ discountRate: v.optional(v.number(), 0) }),
+]);
+// Limitation: Valibot has no inheritance/allOf model; intersect composes
+// constraints structurally without preserving a $ref to the base.
+```
+
 ```ts [TypeBox + Value]
 import { Type } from '@sinclair/typebox';
 const CustomerWithDiscount = Type.Composite([

@@ -100,6 +100,14 @@ const defaults = { currency: 'USD', inStock: true };
 // every time a default changes. No recursive traversal of nested objects.
 ```
 
+```ts [Valibot]
+import * as v from 'valibot';
+// Limitation: Valibot has no exposed default-extraction helper.
+// Defaults attached via v.optional(schema, defaultValue) are applied
+// during v.parse but are not enumerable by a public API.
+const defaults = { currency: 'USD', inStock: true }; // hardcoded
+```
+
 ```ts [TypeBox + Value]
 import { Value } from '@sinclair/typebox/value';
 // Value.Default fills ALL fields including zero-values, not just declared defaults:

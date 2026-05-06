@@ -174,6 +174,15 @@ const PaymentSchema = z.discriminatedUnion('method', [
 type Payment = z.infer<typeof PaymentSchema>;
 ```
 
+```ts [Valibot]
+import * as v from 'valibot';
+const PaymentSchema = v.variant('method', [
+  v.object({ method: v.literal('credit_card'), cardLast4: v.string() }),
+  v.object({ method: v.literal('invoice'),     purchaseOrder: v.string() }),
+]);
+type Payment = v.InferOutput<typeof PaymentSchema>;
+```
+
 ```ts [TypeBox + Value]
 import { Type } from '@sinclair/typebox';
 // TypeBox uses Type.Union  - no built-in discriminator support:

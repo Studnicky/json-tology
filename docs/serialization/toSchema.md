@@ -58,6 +58,14 @@ jt.toSchema('https://bookstore.example/Book')
 // Use zodToJsonSchema (third-party) to export JSON Schema.
 ```
 
+```ts [Valibot]
+// Use the `@valibot/to-json-schema` companion library:
+import { toJsonSchema } from '@valibot/to-json-schema';
+const jsonSchema = toJsonSchema(BookSchema);
+// Limitation: produces JSON Schema from Valibot's runtime representation;
+// no first-class graph reconstruction, and not all Valibot constructs map.
+```
+
 ```ts [TypeBox + Value]
 // TypeBox schemas ARE plain JSON Schema  - no reconstruction needed.
 // JSON.stringify(BookSchema) gives the schema directly.

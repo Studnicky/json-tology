@@ -131,6 +131,16 @@ const paths = [...new Set(issues.map(i => i.path.join('.')))].sort();
 const keywords = [...new Set(issues.map(i => i.code))].sort();
 ```
 
+```ts [Valibot]
+import * as v from 'valibot';
+// Limitation: no aggregate() built in - derive from result.issues:
+const result = v.safeParse(schema, data);
+const issues = result.success ? [] : result.issues;
+const count = issues.length;
+const paths = [...new Set(issues.map(i => i.path?.map(p => p.key).join('.') ?? ''))].sort();
+const keywords = [...new Set(issues.map(i => i.expected ?? i.type))].sort();
+```
+
 ```ts [TypeBox + Value]
 // Manual derivation from Value.Errors iterator:
 const errs = [...Value.Errors(schema, value)];
@@ -270,6 +280,24 @@ const problem = {
   status: 422,
   detail: `${result.error.issues.length} validation errors`,
   errors: result.error.issues.map(i => ({ path: i.path.join('/'), message: i.message })),
+};
+```
+
+```ts [Valibot]
+import * as v from 'valibot';
+// Limitation: no report() built in - manual RFC 7807 construction:
+const result = v.safeParse(schema, data);
+const issues = result.success ? [] : result.issues;
+const problem = {
+  type:   'https://example.com/problems/validation',
+  status: 422,
+  detail: `${issues.length} validation errors`,
+  errors: issues.map(i => ({
+    path:    `/${i.path?.map(p => p.key).join('/') ?? ''}`,
+    keyword: i.expected ?? i.type,
+    message: i.message,
+    params:  {},
+  })),
 };
 ```
 

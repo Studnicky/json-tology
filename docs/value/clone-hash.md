@@ -64,6 +64,11 @@ const copy = Value.clone(order); // deep copy via structuredClone
 const copy = structuredClone(order);
 ```
 
+```ts [Valibot]
+// Limitation: Valibot has no clone utility - use structuredClone.
+const copy = structuredClone(order);
+```
+
 ```ts [TypeBox + Value]
 import { Value } from '@sinclair/typebox/value';
 const copy = Value.Clone(order);
@@ -132,6 +137,13 @@ Value.hash(book) // deterministic FNV-1a hex, key-order invariant
 
 ```ts [Zod]
 // No built-in hash utility.
+// Use a third-party library: object-hash, stable-hash, etc.
+import hash from 'object-hash';
+const h = hash(book);
+```
+
+```ts [Valibot]
+// Limitation: Valibot has no hash utility.
 // Use a third-party library: object-hash, stable-hash, etc.
 import hash from 'object-hash';
 const h = hash(book);

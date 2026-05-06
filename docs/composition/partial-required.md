@@ -71,6 +71,11 @@ Compose.partial(CustomerSchema, 'https://bookstore.example/PatchCustomer')
 CustomerSchema.partial()
 ```
 
+```ts [Valibot]
+import * as v from 'valibot';
+v.partial(CustomerSchema)
+```
+
 ```ts [TypeBox + Value]
 import { Type } from '@sinclair/typebox';
 Type.Partial(CustomerSchema)
@@ -153,6 +158,11 @@ Compose.required(BookSchema, 'https://bookstore.example/CreateBook')
 
 ```ts [Zod]
 BookSchema.required()
+```
+
+```ts [Valibot]
+import * as v from 'valibot';
+v.required(BookSchema)
 ```
 
 ```ts [TypeBox + Value]

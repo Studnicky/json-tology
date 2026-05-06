@@ -127,6 +127,17 @@ if (!result.success) {
 // safeParse doesn't throw; parse() throws ZodError
 ```
 
+```ts [Valibot]
+import * as v from 'valibot';
+const result = v.safeParse(CustomerSchema, data);
+if (!result.success) {
+  const messages = result.issues.map(i =>
+    `${i.path?.map(p => p.key).join('/') ?? ''}: ${i.message}`,
+  );
+}
+// { success, output, issues } - parallels ValidationErrors but no .aggregate/.report views.
+```
+
 ```ts [TypeBox + Value]
 import { TypeCompiler } from '@sinclair/typebox/compiler';
 const C = TypeCompiler.Compile(CustomerSchema);

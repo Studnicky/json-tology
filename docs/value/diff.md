@@ -95,6 +95,13 @@ const changes = diff(before, after);
 // no built-in `applyOp` - you need fast-json-patch or manual object mutation.
 ```
 
+```ts [Valibot]
+// Limitation: Valibot has no diff utility. Use a third-party library:
+import { diff } from 'microdiff';
+const changes = diff(before, after);
+// No typed Changeset, no JSON Pointer paths, no schema awareness.
+```
+
 ```ts [TypeBox + Value]
 // TypeBox has no built-in diff.
 // Closest: implement manually over Value.Errors or with a deep-diff library.
@@ -179,6 +186,13 @@ import { applyOperation } from 'fast-json-patch';
 const result = applyOperation(clone, { op: 'replace', path: '/price', value: 12.99 }).newDocument;
 // Limitation: fast-json-patch uses JSON Patch format (op: 'replace'), not the
 // json-tology DiffOpType (op: 'set'). Requires an extra dependency; no type narrowing.
+```
+
+```ts [Valibot]
+// Limitation: Valibot has no applyOp. Use fast-json-patch:
+import { applyOperation } from 'fast-json-patch';
+const result = applyOperation(clone, { op: 'replace', path: '/price', value: 12.99 }).newDocument;
+// Same constraints as Zod - JSON Patch format, extra dependency, no schema awareness.
 ```
 
 ```ts [TypeBox + Value]

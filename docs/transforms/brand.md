@@ -95,6 +95,13 @@ type CustomerId = z.infer<typeof CustomerIdSchema>;
 // string & z.BRAND<'CustomerId'>
 ```
 
+```ts [Valibot]
+import * as v from 'valibot';
+const CustomerIdSchema = v.pipe(v.string(), v.uuid(), v.brand('CustomerId'));
+type CustomerId = v.InferOutput<typeof CustomerIdSchema>;
+// string with brand 'CustomerId'
+```
+
 ```ts [TypeBox + Value]
 // TypeBox does not have a built-in brand utility.
 // Use TypeScript's type-level branding manually:

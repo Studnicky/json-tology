@@ -151,6 +151,23 @@ const customer = CustomerSchema.parse(rawData);
 // typed; .default() fields filled; unknown keys stripped by default (.strip() mode)
 ```
 
+```ts [Valibot]
+import * as v from 'valibot';
+
+const CustomerSchema = v.object({
+  id:    v.pipe(v.string(), v.uuid()),
+  email: v.pipe(v.string(), v.email()),
+  name:  v.pipe(v.string(), v.minLength(1)),
+  addresses: v.optional(v.array(v.object({
+    street: v.string(), city: v.string(), postalCode: v.string(),
+  })), []),
+});
+const customer = v.parse(CustomerSchema, rawData);
+// throws ValiError on failure; typed via v.InferOutput
+// Defaults flow through v.optional(schema, defaultValue), not via a registry option.
+// Unknown keys stripped by default; no Transform decoder registry.
+```
+
 ```ts [TypeBox + Value]
 import { Value } from '@sinclair/typebox/value';
 import { TypeCompiler } from '@sinclair/typebox/compiler';

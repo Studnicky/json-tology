@@ -88,6 +88,12 @@ const blank = jt.value.create(BookSchema.$id);
 // Use z.object({ ... }).optional()... with explicit defaults, or build manually.
 ```
 
+```ts [Valibot]
+// Limitation: Valibot has no zero-value creator.
+// v.parse(BookSchema, {}) fails on required fields without v.optional defaults.
+// Build the blank object manually for forms.
+```
+
 ```ts [TypeBox + Value]
 import { Value } from '@sinclair/typebox/value';
 // Value.Create fills all fields with type defaults + declared defaults:

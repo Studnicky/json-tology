@@ -139,6 +139,16 @@ if (!result.success) {
 }
 ```
 
+```ts [Valibot]
+import * as v from 'valibot';
+const result = v.safeParse(OrderSchema, data);
+if (!result.success) {
+  result.issues; // Issue[] - .message, .path, .expected, .received per issue
+  // Limitation: no built-in aggregate() or report() views; project manually.
+  v.flatten(result.issues); // { root, nested } summary
+}
+```
+
 ```ts [TypeBox + Value]
 import { Value } from '@sinclair/typebox/value';
 const errors = [...Value.Errors(OrderSchema, data)];
