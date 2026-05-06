@@ -2,6 +2,7 @@
 // Phase-1 mechanical consolidation per .audits/test-consolidation-2026-05.md
 
 import assert from 'node:assert/strict';
+// ValidationErrorType is the per-error structural type used in composition tests; not re-exported publicly.
 import type { ValidationErrorType } from '../../src/types/Validation.js';
 import {
   describe, it

@@ -2,9 +2,11 @@
 // Phase-1 mechanical consolidation per .audits/test-consolidation-2026-05.md
 
 import assert from 'node:assert/strict';
+// Validation type aliases (CheckFnType, ValidateWithErrorsFnType, ValidationErrorType) are internal contracts for the exec primitives below.
 import type {
   CheckFnType, ValidateWithErrorsFnType, ValidationErrorType
 } from '../../src/types/Validation.js';
+// CustomKeywordEntryInterface is the internal compiled-keyword shape consumed by the validation runtime.
 import type { CustomKeywordEntryInterface } from '../../src/interfaces/CustomKeywordEntry.js';
 import {
   describe, it
