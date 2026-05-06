@@ -1,6 +1,7 @@
 import type { MaterializationResultInterface } from './Materializer.js';
 import type { QuadInterface } from './Quad.js';
 import type { InferSchemaType } from '../types/Infer.js';
+import type { SkolemizeFnType } from '../types/Skolemize.js';
 import type { JSONSchema7Definition } from 'json-schema';
 
 export interface MaterializerInterface {
@@ -24,6 +25,6 @@ export interface MaterializerInterface {
     data: unknown,
     baseIRI: string,
     options?: { 'graphIRI'?: string | undefined;
-      'subjectIRI'?: string | undefined }
+      'iriFor'?: SkolemizeFnType | undefined }
   ): QuadInterface[];
 }

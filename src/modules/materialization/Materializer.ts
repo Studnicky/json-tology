@@ -8,6 +8,7 @@ import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
 import type { InferSchemaType } from '../../types/Infer.js';
+import type { SkolemizeFnType } from '../../types/Skolemize.js';
 import type { JSONSchema7Definition } from 'json-schema';
 import { BaseError } from '../../errors/BaseError.js';
 import { MaterializationError } from '../../errors/MaterializationError.js';
@@ -20,6 +21,10 @@ import { projectAbox } from '../rdf/Projection.js';
 import { ValidationErrors } from '../../errors/ValidationErrors.js';
 import { InstantiationError } from '../../errors/InstantiationError.js';
 
+interface AboxOptionsType {
+  readonly 'graphIRI'?: string | undefined;
+  readonly 'iriFor'?: SkolemizeFnType | undefined;
+}
 
 /**
  * Materializer — runtime projection over validation execution results.
@@ -232,7 +237,8 @@ export class Materializer implements MaterializerInterface {
    * @param schema - Schema object with $id
    * @param data - Data to project
    * @param baseIRI - Base IRI for generated quad subjects
-   * @param options - Optional overrides: subjectIRI overrides the root subject IRI; graphIRI sets the graph field on all quads
+   * @param options - Optional overrides: iriFor mints subject IRIs per object;
+   *                  graphIRI sets the graph field on all quads
    * @returns Array of RDF quads representing the ABox projection
    * @throws {@link MaterializationError} When the data fails validation
    */
@@ -240,8 +246,7 @@ export class Materializer implements MaterializerInterface {
     schema: Record<string, unknown> & { '$id': string; },
     data: unknown,
     baseIRI: string,
-    options?: { 'graphIRI'?: string | undefined;
-      'subjectIRI'?: string | undefined }
+    options?: AboxOptionsType
   ): QuadInterface[] {
     const result = this.run(schema, data, baseIRI, false, options);
 
@@ -256,13 +261,12 @@ export class Materializer implements MaterializerInterface {
     execution: GraphExecutionResultInterface,
     materialized: unknown,
     baseIRI: string,
-    options?: { 'graphIRI'?: string | undefined;
-      'subjectIRI'?: string | undefined }
+    options?: AboxOptionsType
   ): QuadInterface[] {
     const quads = projectAbox(execution.graph, materialized, baseIRI, {
       'entryNode': execution.entryNode,
       'graphIRI': options?.graphIRI,
-      'subjectIRI': options?.subjectIRI
+      'iriFor': options?.iriFor
     });
 
     return quads;
@@ -308,8 +312,7 @@ export class Materializer implements MaterializerInterface {
     data: unknown,
     baseIRI?: string,
     synthesizeDefaults = false,
-    aboxOptions?: { 'graphIRI'?: string | undefined;
-      'subjectIRI'?: string | undefined }
+    aboxOptions?: AboxOptionsType
   ): MaterializationResultInterface {
     this.registry.register(schema);
 

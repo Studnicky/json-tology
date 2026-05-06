@@ -39,6 +39,7 @@ import type {
   SchemaEntryType, SchemaMapFromTupleType, UniqueSchemaIdsType
 } from './types/Registry.js';
 import type { SchemaRefType } from './types/SchemaRef.js';
+import type { SkolemizeFnType } from './types/Skolemize.js';
 
 import { Curie } from './modules/rdf/Curie.js';
 import { Dumper } from './modules/data/Dumper.js';
@@ -57,6 +58,66 @@ import { Value } from './modules/data/Value.js';
 import { DEFAULT_PREFIXES } from './constants/PREFIXES.js';
 
 const STATIC_BASE_IRI = 'http://json-tology.dev/_/static';
+
+/**
+ * Per-call options accepted by `toQuads`.
+ *
+ * `iriFor` — if a string, overrides the root subject IRI (depth 0); nested
+ * objects fall through to the default minter. If a function, called once
+ * per object subject with `{ path, value, depth }` and returns either an
+ * IRI or `undefined` to fall through.
+ *
+ * `graphIRI` — when set, every emitted quad has its `graph` field stamped
+ * with this IRI.
+ *
+ * `subjectIRI` — deprecated v1 alias for `iriFor` when used as a string.
+ * Retained so existing callers continue to work; new code should use
+ * `iriFor` directly.
+ */
+export interface ToQuadsOptionsType {
+  readonly 'graphIRI'?: string | undefined;
+  readonly 'iriFor'?: SkolemizeFnType | string | undefined;
+  /**
+   * @deprecated Use `iriFor` instead. Kept for v1 backwards compatibility.
+   */
+  readonly 'subjectIRI'?: string | undefined;
+}
+
+interface NormalizedToQuadsOptionsType {
+  readonly 'graphIRI'?: string | undefined;
+  readonly 'iriFor'?: SkolemizeFnType | undefined;
+}
+
+function rootIriOnly(iri: string): SkolemizeFnType {
+  return (ctx) => {
+    return ctx.depth === 0 ? iri : undefined;
+  };
+}
+
+function normalizeToQuadsOptions(options: ToQuadsOptionsType | undefined): NormalizedToQuadsOptionsType {
+  if (options === undefined) {
+    return {};
+  }
+
+  const rawIriFor = options.iriFor ?? options.subjectIRI;
+  const graphIRI = options.graphIRI;
+
+  if (rawIriFor === undefined) {
+    return graphIRI === undefined ? {} : { graphIRI };
+  }
+
+  const iriFor: SkolemizeFnType = typeof rawIriFor === 'string'
+    ? rootIriOnly(rawIriFor)
+    : rawIriFor;
+
+  return graphIRI === undefined
+    ? { iriFor }
+    : {
+      graphIRI,
+      iriFor
+    };
+}
+
 
 /**
  * JsonTology — unified type system, validation, materialization, and ontology.
@@ -230,14 +291,13 @@ export class JsonTology<TMap = Record<never, never>> {
    *
    * @param schema - A schema object with `$id`.
    * @param data - Instance data to project.
-   * @param options - Optional overrides: subjectIRI overrides the root subject IRI; graphIRI sets the graph field on all quads.
+   * @param options - Optional overrides: see {@link ToQuadsOptionsType}.
    * @returns The projected RDF quads.
    */
   public static toQuads(
     schema: Record<string, unknown> & { readonly '$id': string },
     data: unknown,
-    options?: { 'graphIRI'?: string;
-      'subjectIRI'?: string }
+    options?: ToQuadsOptionsType
   ): QuadInterface[] {
     const jt = JsonTology.ephemeral(schema);
 
@@ -806,15 +866,14 @@ export class JsonTology<TMap = Record<never, never>> {
   public toQuads<TSchema extends JSONSchema7Definition & { readonly '$id': string; }>(
     schema: TSchema,
     data: InferSchemaType<TSchema>,
-    options?: { 'graphIRI'?: string;
-      'subjectIRI'?: string }
+    options?: ToQuadsOptionsType
   ): QuadInterface[] {
     return this.materializer.projectAbox(
       // Cast needed: JSONSchema7Definition includes boolean; runtime guarantees object with $id
       schema as unknown as Record<string, unknown> & { '$id': string; },
       data,
       this.baseIRI,
-      options
+      normalizeToQuadsOptions(options)
     );
   }
   /**
