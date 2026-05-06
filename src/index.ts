@@ -39,4 +39,5 @@ export * from './modules/ontology/OntologyBuilder.js';
 export * from './modules/rdf/Curie.js';
 export * from './modules/rdf/Lift.js';
 export * from './modules/rdf/Projection.js';
+export * from './modules/rdf/Skolemize.js';
 export * from './modules/transform/Transform.js';
