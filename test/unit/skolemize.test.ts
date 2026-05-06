@@ -8,8 +8,9 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { Skolemize } from '../../src/modules/rdf/Skolemize.js';
-import { Hash } from '../../src/modules/hash/Hash.js';
+import {
+  Hash, Skolemize
+} from '../../src/index.js';
 
 const ROOT_CTX = {
   'depth': 0,

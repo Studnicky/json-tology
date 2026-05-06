@@ -9,7 +9,7 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
+import { JsonTology } from '../../src/index.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -45,7 +45,7 @@ function assertConformance(
   expectedValid: boolean,
   deps?: Array<Record<string, unknown>>
 ): void {
-  const registry = new SchemaRegistry();
+  const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
   if (deps) {
     for (const dep of deps) {
@@ -60,7 +60,7 @@ function assertConformance(
   const compiledErrors = registry.validate(schemaId, data);
 
   // Interpreted (engine) path — direct execution
-  const engine = registry.engine(schema);
+  const engine = registry.registry.engine(schema);
   const engineResult = engine.execute(data, { 'overrides': { 'collectErrors': true } });
 
   const compiledValid = compiledErrors.length === 0;
@@ -1673,7 +1673,10 @@ void describe('Compiler conformance: format and custom keywords', () => {
       data, name, valid
     } of customKeywordScenarios) {
       void it(name, () => {
-        const registry = new SchemaRegistry({ 'keywords': [evenKeyword] });
+        const registry = JsonTology.create({
+          'baseIRI': 'urn:test:',
+          'keywords': [evenKeyword]
+        });
         const schema = {
           '$id': id(),
           'evenNumber': true,
@@ -1691,7 +1694,7 @@ void describe('Compiler conformance: format and custom keywords', () => {
           assert.ok(compiledErrors.length > 0, `compiled should reject ${data}`);
         }
 
-        const engine = registry.engine(schema);
+        const engine = registry.registry.engine(schema);
         const engineResult = engine.execute(data, { 'overrides': { 'collectErrors': true } });
 
         assert.equal(engineResult.valid, valid, `engine should ${valid ? 'accept' : 'reject'} ${data}`);
@@ -1700,7 +1703,10 @@ void describe('Compiler conformance: format and custom keywords', () => {
 
     // custom keyword produces compiled validator, not engine fallback
     void it('custom keyword schema compiles without engine fallback', () => {
-      const registry = new SchemaRegistry({ 'keywords': [evenKeyword] });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'keywords': [evenKeyword]
+      });
       const schema = {
         '$id': id(),
         'evenNumber': true,
@@ -1709,7 +1715,7 @@ void describe('Compiler conformance: format and custom keywords', () => {
 
       registry.register(schema);
 
-      const validator = registry.validator(schema.$id);
+      const validator = registry.registry.validator(schema.$id);
 
       assert.equal(validator.compiled, true, 'custom keyword schema must be compiled, not engine fallback');
     });

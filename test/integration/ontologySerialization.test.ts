@@ -2,6 +2,7 @@
 // Phase-1 mechanical consolidation per .audits/test-consolidation-2026-05.md
 
 import assert from 'node:assert/strict';
+// QuadInterface and SchemaRegistryInterface are graph-level type-only contracts not surfaced by the public API.
 import type { QuadInterface } from '../../src/interfaces/Quad.js';
 import type { SchemaRegistryInterface } from '../../src/interfaces/SchemaRegistry.js';
 import {

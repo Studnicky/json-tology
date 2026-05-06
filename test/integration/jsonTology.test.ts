@@ -5,11 +5,9 @@ import assert from 'node:assert/strict';
 import {
   describe, it
 } from 'node:test';
-import { JsonTology } from '../../src/JsonTology.js';
-import { OntologyBuilder } from '../../src/modules/ontology/OntologyBuilder.js';
-import { Path } from '../../src/modules/data/Path.js';
-import { Resolver } from '../../src/modules/data/Resolver.js';
-import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
+import {
+  JsonTology, OntologyBuilder, Path, Resolver, ValidationErrors
+} from '../../src/index.js';
 
 // ===========================================================================
 // Source: jsonTology-orig.ts

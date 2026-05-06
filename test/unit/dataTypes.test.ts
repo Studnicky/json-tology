@@ -2,7 +2,9 @@
 // Phase-1 mechanical consolidation per .audits/test-consolidation-2026-05.md
 
 import assert from 'node:assert/strict';
+// SchemaGraphSemanticsInterface is graph-internal type structure not surfaced by the public API.
 import type { SchemaGraphSemanticsInterface } from '../../src/interfaces/SchemaGraph.js';
+// DataTypes guards/equality helpers are pure utilities used internally; no public surface.
 import {
   deepEqual,
   deepFreeze,
@@ -12,12 +14,14 @@ import {
 import {
   describe, it
 } from 'node:test';
+// XSD_MAPS resolvers are internal constants powering schema-to-XSD mapping; no public surface.
 import {
   resolveSingleXsdType,
   resolveXsdType
 } from '../../src/constants/XSD_MAPS.js';
-import { Curie } from '../../src/modules/rdf/Curie.js';
-import { JsonTology } from '../../src/index.js';
+import {
+  Curie, JsonTology
+} from '../../src/index.js';
 
 // ===========================================================================
 // Source: curie.test.ts

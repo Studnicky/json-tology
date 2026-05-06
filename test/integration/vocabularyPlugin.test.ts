@@ -2,6 +2,7 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
+// Type-only imports of internal interfaces — required by the SchemaGraph + SchemaRegistry assertions below; not surfaced publicly.
 import type { QuadInterface } from '../../src/interfaces/Quad.js';
 import type { SchemaGraphRelationInterface } from '../../src/interfaces/SchemaGraph.js';
 import type { SchemaRegistryInterface } from '../../src/interfaces/SchemaRegistry.js';
@@ -18,6 +19,7 @@ import {
 import { GraphShaclSerializer } from '../../src/modules/ontology/GraphShaclSerializer.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
+// DEFAULT_PREFIXES is the canonical constant injected by JsonTology when constructing prefix maps; not re-exported.
 import { DEFAULT_PREFIXES } from '../../src/constants/PREFIXES.js';
 
 const ACME_NS = 'https://acme.org/vocab#';

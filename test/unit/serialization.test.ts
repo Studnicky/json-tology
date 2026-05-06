@@ -2,9 +2,12 @@
 // Phase-1 mechanical consolidation per .audits/test-consolidation-2026-05.md
 
 import assert from 'node:assert/strict';
+// QuadInterface is the canonical RDF triple shape; surfaced via toQuads but type-import is internal here.
 import type { QuadInterface } from '../../src/interfaces/Quad.js';
+// RelationStructure/SchemaGraphRelationInterface are graph-internal shapes used by projection tests.
 import type { RelationStructure } from '../../src/types/SchemaGraph.js';
 import type { SchemaGraphRelationInterface } from '../../src/interfaces/SchemaGraph.js';
+// ProjectionIndex helpers (buildIndex, isListStructure, isRestrictionStructure, relationTargetId) are projection internals.
 import {
   buildIndex,
   isListStructure,
@@ -14,12 +17,15 @@ import {
 import {
   describe, it
 } from 'node:test';
+// SerializerUtils ensureArray/normalizeArrays are JSON-LD post-processing internals not surfaced by the public API.
 import {
   ensureArray, normalizeArrays
 } from '../../src/modules/ontology/SerializerUtils.js';
-import { JsonTology } from '../../src/JsonTology.js';
-import { Transform } from '../../src/modules/transform/Transform.js';
+import {
+  JsonTology, Transform
+} from '../../src/index.js';
 import { bookstoreEntities as entities } from '../../examples/docs/bookstore/index.js';
+// quadsToJsonLd is a low-level JSON-LD formatter used by serializers; not surfaced by the public API.
 import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
 
 // ===========================================================================

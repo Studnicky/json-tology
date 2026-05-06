@@ -2,9 +2,11 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import {
+import { Value } from '../../src/index.js';
+
+const {
   applyOp, clone
-} from '../../src/modules/data/Operations.js';
+} = Value;
 
 void describe('clone', () => {
   void it('deep clones an object', () => {

@@ -2,7 +2,9 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
+// fromRdfQuad is the single-quad lifter; the public batch fromQuads/toQuads do not surface the per-quad shape.
 import { fromRdfQuad } from '../../src/modules/rdf/Lift.js';
+// RdfJsQuadInterface is the per-quad RDF/JS DataModel shape consumed by fromRdfQuad; not surfaced via the public API.
 import type { RdfJsQuadInterface } from '../../src/interfaces/RdfJsQuad.js';
 
 void describe('fromRdfQuad', () => {

@@ -2,7 +2,9 @@
 // Phase-1 mechanical consolidation per .audits/test-consolidation-2026-05.md
 
 import assert from 'node:assert/strict';
+// KeywordDefinitionInterface is the contract for custom keyword shapes; not surfaced via the public API.
 import type { KeywordDefinitionInterface } from '../../src/interfaces/GraphEngine.js';
+// ValidationErrorType is the per-error structural type used by ValidationErrors; not re-exported publicly.
 import type { ValidationErrorType } from '../../src/types/Validation.js';
 import {
   after, before, describe, it

@@ -11,14 +11,14 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
+import { JsonTology } from '../../src/index.js';
 
 interface Scenario { 'data': unknown;
   'name': string;
   'valid': boolean }
 
 function assertParityScenarios(
-  registry: SchemaRegistry,
+  registry: JsonTology,
   schemaId: string,
   scenarios: Scenario[]
 ): void {
@@ -40,7 +40,7 @@ function assertParityScenarios(
 
 void describe('compiled/interpreted parity', () => {
   void it('keyword: dependentSchemas', () => {
-    const registry = new SchemaRegistry();
+    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     registry.register({
       '$id': 'https://parity.test/dependent-schemas',
@@ -91,7 +91,7 @@ void describe('compiled/interpreted parity', () => {
   // ---------------------------------------------------------------------------
 
   void it('edge: null data, empty object, empty array, undefined properties, NaN/Infinity', () => {
-    const registry = new SchemaRegistry();
+    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     registry.register({
       '$id': 'https://parity.test/basic-object',
@@ -152,7 +152,7 @@ void describe('compiled/interpreted parity', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: dependentRequired', () => {
-    const registry = new SchemaRegistry();
+    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     registry.register({
       '$id': 'https://parity.test/dependent-required',
@@ -193,7 +193,7 @@ void describe('compiled/interpreted parity', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: if/then/else', () => {
-    const registry = new SchemaRegistry();
+    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     const ifThenElseSchema: Record<string, unknown> = {
       '$id': 'https://parity.test/if-then-else',
@@ -256,7 +256,7 @@ void describe('compiled/interpreted parity', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: allOf with conflicting constraints', () => {
-    const registry = new SchemaRegistry();
+    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     registry.register({
       '$id': 'https://parity.test/allof-conflict',
@@ -313,7 +313,7 @@ void describe('compiled/interpreted parity', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: anyOf with overlapping branches', () => {
-    const registry = new SchemaRegistry();
+    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     registry.register({
       '$id': 'https://parity.test/anyof-overlap',
@@ -366,7 +366,7 @@ void describe('compiled/interpreted parity', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: oneOf with overlapping branches', () => {
-    const registry = new SchemaRegistry();
+    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     registry.register({
       '$id': 'https://parity.test/oneof-overlap',
@@ -426,7 +426,7 @@ void describe('compiled/interpreted parity', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: patternProperties + additionalProperties=false', () => {
-    const registry = new SchemaRegistry();
+    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     registry.register({
       '$id': 'https://parity.test/pattern-props',
@@ -476,7 +476,7 @@ void describe('compiled/interpreted parity', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: $ref to another schema', () => {
-    const registry = new SchemaRegistry();
+    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     registry.register([
       {
@@ -540,7 +540,7 @@ void describe('compiled/interpreted parity', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: self-referencing schema (recursive tree)', () => {
-    const registry = new SchemaRegistry();
+    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     registry.register({
       '$defs': {
@@ -611,7 +611,7 @@ void describe('compiled/interpreted parity', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: nested objects via $defs', () => {
-    const registry = new SchemaRegistry();
+    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     registry.register({
       '$defs': {
@@ -678,7 +678,7 @@ void describe('compiled/interpreted parity', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: array with items + minItems + uniqueItems', () => {
-    const registry = new SchemaRegistry();
+    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     registry.register({
       '$id': 'https://parity.test/array-constraints',
@@ -747,7 +747,7 @@ void describe('compiled/interpreted parity', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: enum with complex objects', () => {
-    const registry = new SchemaRegistry();
+    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     registry.register({
       '$id': 'https://parity.test/enum-complex',
@@ -814,7 +814,7 @@ void describe('compiled/interpreted parity', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: const with null value', () => {
-    const registry = new SchemaRegistry();
+    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     registry.register({
       '$id': 'https://parity.test/const-null',
@@ -877,7 +877,7 @@ void describe('compiled/interpreted parity', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: Infinity/NaN rejection for type number', () => {
-    const registry = new SchemaRegistry();
+    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     registry.register({
       '$id': 'https://parity.test/number',
@@ -940,7 +940,7 @@ void describe('compiled/interpreted parity', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: multipleOf with floating-point and zero', () => {
-    const registry = new SchemaRegistry();
+    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     registry.register({
       '$id': 'https://parity.test/multiple-three',

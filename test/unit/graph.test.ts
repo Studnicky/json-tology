@@ -2,18 +2,23 @@
 // Phase-1 mechanical consolidation per .audits/test-consolidation-2026-05.md
 
 import assert from 'node:assert/strict';
+// Graph-node identity tests are inherently white-box — interfaces and internal classes below
+// are not surfaced by the public API, but the tests need them to assert graph structure.
 import type { GraphArtifactInterface } from '../../src/interfaces/GraphArtifact.js';
 import type { NormIRInterface } from '../../src/interfaces/SchemaGraph.js';
 import type { SchemaGraphRelationInterface } from '../../src/interfaces/SchemaGraph.js';
 import {
   describe, it
 } from 'node:test';
+// GraphArtifact, GraphEngine, SchemaGraph, SchemaIri are graph-construction internals; not public.
 import { GraphArtifact } from '../../src/modules/graph/GraphArtifact.js';
 import { GraphEngine } from '../../src/modules/graph/GraphEngine.js';
+// GraphOntologySerializer/GraphShaclSerializer are projection internals consuming graph nodes directly.
 import { GraphOntologySerializer } from '../../src/modules/ontology/GraphOntologySerializer.js';
 import { GraphShaclSerializer } from '../../src/modules/ontology/GraphShaclSerializer.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { SchemaIri } from '../../src/modules/graph/SchemaIri.js';
+// SchemaRegistry is the registration backbone wired into JsonTology; needed here for raw graph assertions.
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
 // ===========================================================================

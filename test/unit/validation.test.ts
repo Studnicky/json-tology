@@ -2,22 +2,25 @@
 // Phase-1 mechanical consolidation per .audits/test-consolidation-2026-05.md
 
 import assert from 'node:assert/strict';
+// Validation type aliases (CheckFnType, ValidateWithErrorsFnType, ValidationErrorType) are internal contracts for the exec primitives below.
 import type {
   CheckFnType, ValidateWithErrorsFnType, ValidationErrorType
 } from '../../src/types/Validation.js';
+// CustomKeywordEntryInterface is the internal compiled-keyword shape consumed by the validation runtime.
 import type { CustomKeywordEntryInterface } from '../../src/interfaces/CustomKeywordEntry.js';
 import {
   describe, it
 } from 'node:test';
+import {
+  BaseError, InstantiationError, JsonTology, ValidationErrors
+} from '../../src/index.js';
+// Internal exec classes (Arrays/Composition/Objects/Scalars) are validation runtime
+// primitives invoked from the compiler — they have no public surface; the dedicated
+// validateBounds / validateProperties / validateConst tests below exercise them directly.
 import { Arrays } from '../../src/modules/validation/exec/Arrays.js';
-import { BaseError } from '../../src/errors/BaseError.js';
 import { Composition } from '../../src/modules/validation/exec/Composition.js';
-import { InstantiationError } from '../../src/errors/InstantiationError.js';
-import { JsonTology } from '../../src/JsonTology.js';
 import { Objects } from '../../src/modules/validation/exec/Objects.js';
 import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
-import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
-import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
 // ===========================================================================
 // Source: conditionalValidation.test.ts
@@ -51,7 +54,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('if/then/else validation', () => {
     void it('validates then branch when if matches', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
       const schemaId = 'https://cond.test/ITE1';
 
       registry.register(makeThenElseSchema(
@@ -109,7 +112,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('validates else branch when if does not match', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
       const schemaId = 'https://cond.test/ITE2';
 
       registry.register(makeThenElseSchema(
@@ -174,7 +177,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('validates if does not match and no else branch', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
       const schemaId = 'https://cond.test/ITE3';
 
       registry.register(makeThenElseSchema(
@@ -222,7 +225,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('allOf validation', () => {
     void it('validates allOf requiring all subschemas to match', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
       const schemaId = 'https://cond.test/AllOf1';
 
       registry.register({
@@ -273,7 +276,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('validates allOf with overlapping property constraints', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
       const schemaId = 'https://cond.test/AllOfOverlap';
 
       registry.register({
@@ -335,7 +338,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('anyOf validation', () => {
     void it('validates anyOf accepting data matching any branch', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
       const schemaId = 'https://cond.test/AnyOf1';
 
       registry.register({
@@ -388,7 +391,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('oneOf validation', () => {
     void it('validates oneOf accepting data matching exactly one branch', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
       const schemaId = 'https://cond.test/OneOf1';
 
       registry.register({
@@ -447,7 +450,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('not validation', () => {
     void it('validates not rejecting data matching the negated schema', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
       const schemaId = 'https://cond.test/Not1';
 
       registry.register({
@@ -496,7 +499,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('dependentRequired validation', () => {
     void it('validates dependent properties when trigger is present', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
       const schemaId = 'https://cond.test/DepReq1';
 
       registry.register({
@@ -556,7 +559,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('dependentSchemas validation', () => {
     void it('validates dependent schema when trigger property is present', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
       const schemaId = 'https://cond.test/DepSchema1';
 
       const schema: Record<string, unknown> = {
@@ -686,7 +689,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
       for (const {
         data, name, schema, valid
       } of scenarios) {
-        const registry = new SchemaRegistry();
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
         registry.register(schema);
         assert.equal(registry.validate(schema.$id as string, data).length === 0, valid, name);
@@ -704,7 +707,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 // ---------------------------------------------------------------------------
 
   void describe('oneOf edge cases', () => {
-    const registry = new SchemaRegistry();
+    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     registry.register({
       '$id': 'https://disc.test/BranchA',
@@ -807,7 +810,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
   // ---------------------------------------------------------------------------
 
   void describe('anyOf edge cases', () => {
-    const registry = new SchemaRegistry();
+    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     registry.register({
       '$id': 'https://disc.test/AnyBranchX',
@@ -900,7 +903,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
   // ---------------------------------------------------------------------------
 
   void describe('Discriminated union validation', () => {
-    const shapeRegistry = new SchemaRegistry();
+    const shapeRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     shapeRegistry.register({
       '$id': 'https://disc.test/Circle',
@@ -1023,7 +1026,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
       });
     }
 
-    const eventRegistry = new SchemaRegistry();
+    const eventRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     eventRegistry.register({
       '$id': 'https://disc.test/MessageEvent',
@@ -1152,7 +1155,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('contains validation', () => {
     void it('validates basic contains scenarios', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
       const schemaId = 'https://contains.test/Basic';
 
       registry.register({
@@ -1335,7 +1338,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
       for (const {
         data, name, schema, valid
       } of scenarios) {
-        const registry = new SchemaRegistry();
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
         registry.register(schema);
         assert.equal(registry.validate(schema.$id as string, data).length === 0, valid, name);
@@ -1349,7 +1352,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('minContains validation', () => {
     void it('validates minContains 0 scenarios', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
       const schemaId = 'https://contains.test/MinZero';
 
       registry.register({
@@ -1396,7 +1399,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('validates minContains 2 scenarios', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
       const schemaId = 'https://contains.test/MinTwo';
 
       registry.register({
@@ -1471,7 +1474,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('validates minContains greater than array length always fails', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
       const schemaId = 'https://contains.test/MinExceedsLength';
 
       registry.register({
@@ -1529,7 +1532,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('maxContains validation', () => {
     void it('validates maxContains 1 scenarios', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
       const schemaId = 'https://contains.test/MaxOne';
 
       registry.register({
@@ -1582,7 +1585,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('validates maxContains 0 scenarios', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
       const schemaId = 'https://contains.test/MaxZero';
 
       registry.register({
@@ -1642,7 +1645,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('minContains and maxContains range', () => {
     void it('validates matching count within min and max bounds', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
       const schemaId = 'https://contains.test/Range';
 
       registry.register({
@@ -1735,7 +1738,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('validates maxContains less than minContains always fails', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
       const schemaId = 'https://contains.test/Impossible';
 
       registry.register({
@@ -1804,7 +1807,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('patternProperties basic matching', () => {
     void it('validates single pattern against declared schema', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register({
         '$id': 'https://pattern.test/BasicString',
@@ -1865,7 +1868,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('validates multiple distinct patterns independently', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register({
         '$id': 'https://pattern.test/MultiPattern',
@@ -1909,7 +1912,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('allows keys that match no pattern when additionalProperties is not restricted', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register({
         '$id': 'https://pattern.test/Unrestricted',
@@ -1941,7 +1944,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('patternProperties with overlapping patterns', () => {
     void it('applies all matching pattern schemas to a single property', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register({
         '$id': 'https://pattern.test/Overlap',
@@ -1993,7 +1996,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('patternProperties combined with properties on the same key', () => {
     void it('enforces both explicit property and pattern type constraints', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register({
         '$id': 'https://pattern.test/PropAndPattern',
@@ -2043,7 +2046,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('patternProperties with additionalProperties schema', () => {
     void it('applies additionalProperties schema to keys not matching any pattern', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register({
         '$id': 'https://pattern.test/AdditionalSchema',
@@ -2082,7 +2085,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('allows explicit properties alongside pattern-matched properties', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register({
         '$id': 'https://pattern.test/ExplicitAndPattern',
@@ -2137,7 +2140,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('patternProperties with additionalProperties false', () => {
     void it('allows only keys matching patterns when additionalProperties is false', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register({
         '$id': 'https://pattern.test/PatternFalse',
@@ -2183,7 +2186,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('patternProperties with complex regex patterns', () => {
     void it('validates type constraints with anchored digit-only pattern', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register({
         '$id': 'https://pattern.test/DigitKeys',
@@ -2229,7 +2232,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('validates type constraints with dot-separated key pattern', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register({
         '$id': 'https://pattern.test/DotSep',
@@ -2271,7 +2274,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('patternProperties where every key matches the pattern', () => {
     void it('validates when all keys conform to the single pattern schema', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register({
         '$id': 'https://pattern.test/AllMatch',
@@ -2317,7 +2320,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('patternProperties with no matching keys', () => {
     void it('treats unmatched keys per additionalProperties schema constraint', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register({
         '$id': 'https://pattern.test/NoMatch',
@@ -2354,7 +2357,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('accepts empty objects regardless of pattern configuration', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register({
         '$id': 'https://pattern.test/NoMatchEmpty',
@@ -2387,7 +2390,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('patternProperties with nested object schemas', () => {
     void it('validates pattern property values against referenced nested object constraints', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register({
         '$defs': {
@@ -2466,7 +2469,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('patternProperties interaction with required', () => {
     void it('required applies to named keys only, not to patterns', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register({
         '$id': 'https://pattern.test/WithRequired',
@@ -2523,7 +2526,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('patternProperties with exclusive non-overlapping patterns', () => {
     void it('applies each pattern schema only to its own matching keys', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register({
         '$id': 'https://pattern.test/Exclusive',
@@ -2574,7 +2577,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('handles mixed valid and invalid keys across exclusive patterns', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register({
         '$id': 'https://pattern.test/ExclusiveMixed',
@@ -2642,7 +2645,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
       'name': n, 'schema': sch
     } of rejectScenarios) {
       void it(n, () => {
-        const registry = new SchemaRegistry();
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
         assert.throws(
           () => {
@@ -2698,7 +2701,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
       data, name, schema
     } of acceptScenarios) {
       void it(name, () => {
-        const registry = new SchemaRegistry();
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
         registry.register(schema);
         assert.ok(registry.validate(schema.$id as string, data).ok, `expected valid: ${name}`);
@@ -2706,7 +2709,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     }
 
     void it('handles registerAnonymous and validates against synthetic ID', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
       const syntheticId = registry.registerAnonymous({
         'properties': { 'value': { 'type': 'number' } },
         'required': ['value'],
@@ -2762,7 +2765,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
         }
       ];
 
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register({
         '$id': 'https://edge.test/NumBounds',
@@ -2815,7 +2818,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
         }
       ];
 
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register({
         '$id': 'https://edge.test/ExclBounds',
@@ -2868,7 +2871,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
         }
       ];
 
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register({
         '$id': 'https://edge.test/MultOf',
@@ -2931,7 +2934,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
         }
       ];
 
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register({
         '$id': 'https://edge.test/StrLen',
@@ -2989,7 +2992,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
         }
       ];
 
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register({
         '$id': 'https://edge.test/Pattern',
@@ -3069,7 +3072,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
       }
     ];
 
-    const registry = new SchemaRegistry();
+    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     registry.register({
       '$id': 'https://edge.test/ArrayItems',
@@ -3123,7 +3126,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
         }
       ];
 
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register({
         '$id': 'https://edge.test/Enum',
@@ -3179,7 +3182,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
         }
       ];
 
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register({
         '$id': 'https://edge.test/Const',
@@ -3258,7 +3261,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
       }
     ];
 
-    const registry = new SchemaRegistry();
+    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     registry.register({
       '$id': 'https://edge.test/NoReq',
@@ -3317,7 +3320,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
         }
       ];
 
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register({
         '$defs': {
@@ -3366,7 +3369,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('coerce does not mutate the input object', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register({
         '$id': 'https://edge.test/NoMutate',
@@ -3386,7 +3389,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('coerce throws InstantiationError with path info on nested failure', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register({
         '$defs': {
@@ -3452,7 +3455,10 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
         'expectedType': expType, 'expectedValue': expVal, 'input': inp, 'name': n
       } of scenarios) {
         void it(n, () => {
-          const registry = new SchemaRegistry({ 'enableTypeCast': true });
+          const registry = JsonTology.create({
+            'baseIRI': 'urn:test:',
+            'enableTypeCast': true
+          });
 
           registry.register({
             '$id': 'https://edge.test/CastNum',
@@ -3516,7 +3522,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
         }
       ];
 
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register([
         {
@@ -3582,7 +3588,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
         }
       ];
 
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register([
         {

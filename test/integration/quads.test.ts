@@ -15,8 +15,10 @@ import assert from 'node:assert/strict';
 import {
   describe, it
 } from 'node:test';
-import { JsonTology } from '../../src/JsonTology.js';
-import { Skolemize } from '../../src/modules/rdf/Skolemize.js';
+import {
+  JsonTology, Skolemize
+} from '../../src/index.js';
+// SkolemizeFnType is the function-shape contract for IRI minting; consumed via the public iriFor option but the type alias itself is internal.
 import type { SkolemizeFnType } from '../../src/types/Skolemize.js';
 
 const UserSchema = {

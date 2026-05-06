@@ -5,10 +5,11 @@ import assert from 'node:assert/strict';
 import {
   describe, it
 } from 'node:test';
-import { JsonTology } from '../../src/JsonTology.js';
-import { Materializer } from '../../src/modules/materialization/Materializer.js';
+import { JsonTology } from '../../src/index.js';
+// SchemaGraph + projectGraph are graph-projection internals not surfaced via the public API.
+// The cross-reference test below compares raw TBox QuadInterface[] (predicate/termType shape)
+// against ABox quads; OntologyBuilder.raw() returns JSON-LD nodes, not the QuadInterface form.
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 import { projectGraph } from '../../src/modules/rdf/Projection.js';
 
 // ===========================================================================
@@ -169,10 +170,7 @@ import { projectGraph } from '../../src/modules/rdf/Projection.js';
         'expected': exp, 'input': inp, 'name': n, 'schema': sch
       } of scenarios) {
         void it(n, () => {
-          const registry = new SchemaRegistry();
-          const materializer = new Materializer(registry);
-
-          const result = materializer.materialize(sch, inp) as Record<string, unknown>;
+          const result = JsonTology.materialize(sch, inp) as Record<string, unknown>;
 
           for (const [
             key,
@@ -229,10 +227,7 @@ import { projectGraph } from '../../src/modules/rdf/Projection.js';
         'expectedKeys': keys, 'input': inp, 'name': n, 'schema': sch
       } of scenarios) {
         void it(n, () => {
-          const registry = new SchemaRegistry();
-          const materializer = new Materializer(registry);
-
-          const result = materializer.materialize(sch, inp) as Record<string, unknown>;
+          const result = JsonTology.materialize(sch, inp) as Record<string, unknown>;
 
           for (const key of keys) {
             assert.ok(key in result, `${n}: ${key} must be present`);
@@ -241,10 +236,7 @@ import { projectGraph } from '../../src/modules/rdf/Projection.js';
       }
 
       void it('optional property without default is undefined', () => {
-        const registry = new SchemaRegistry();
-        const materializer = new Materializer(registry);
-
-        const result = materializer.materialize({
+        const result = JsonTology.materialize({
           '$id': 'https://example.io/optional-undef',
           '$schema': 'https://json-schema.org/draft/2020-12/schema',
           'properties': {
@@ -302,12 +294,9 @@ import { projectGraph } from '../../src/modules/rdf/Projection.js';
         'input': inp, 'name': n, 'schema': sch
       } of scenarios) {
         void it(n, () => {
-          const registry = new SchemaRegistry();
-          const materializer = new Materializer(registry);
-
           assert.throws(
             () => {
-              return materializer.materialize(sch, inp);
+              return JsonTology.materialize(sch, inp);
             },
             (err: Error) => {
               return err.message.includes('Invalid');
@@ -367,22 +356,24 @@ import { projectGraph } from '../../src/modules/rdf/Projection.js';
         'check': chk, 'input': inp, 'materializerOpts': mOpts, 'name': n, 'registryOpts': rOpts, 'schema': sch
       } of scenarios) {
         void it(n, () => {
-          const registry = new SchemaRegistry(rOpts);
-          const materializer = new Materializer(registry, mOpts);
-
-          const result = materializer.materialize(sch, inp) as Record<string, unknown>;
+          const opts: Parameters<typeof JsonTology.create>[0] = {
+            'baseIRI': 'urn:test:',
+            ...rOpts,
+            ...(mOpts ? { 'materializer': mOpts } : {})
+          };
+          const tology = JsonTology.create(opts);
+          const result = tology.materialize(sch as typeof sch & { '$id': string }, inp) as Record<string, unknown>;
 
           chk(result);
         });
       }
 
       void it('auto-registered schema is accessible from registry', () => {
-        const registry = new SchemaRegistry();
-        const materializer = new Materializer(registry);
+        const tology = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-        materializer.materialize(ConfigSchema, { 'name': 'auto' });
+        tology.materialize(ConfigSchema, { 'name': 'auto' });
 
-        assert.ok(registry.get(ConfigSchema.$id) !== undefined);
+        assert.ok(tology.get(ConfigSchema.$id) !== undefined);
       });
     });
   });
@@ -485,20 +476,21 @@ import { projectGraph } from '../../src/modules/rdf/Projection.js';
         'expected': exp, 'name': n, 'schema': sch
       } of scenarios) {
         void it(n, () => {
-          const registry = new SchemaRegistry();
-          const materializer = new Materializer(registry);
+          const tology = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-          const result = materializer.createDefault(sch) as Record<string, unknown>;
+          tology.register(sch as typeof sch & { '$id': string });
+          const result = tology.value.create((sch as { '$id': string }).$id) as Record<string, unknown>;
 
           assert.deepStrictEqual(result, exp);
         });
       }
 
       void it('registry.create() delegates to createDefault', () => {
-        const registry = new SchemaRegistry();
-
-        registry.register(ConfigSchema);
-        const result = registry.create(ConfigSchema.$id) as Record<string, unknown>;
+        const tology = JsonTology.create({
+          'baseIRI': 'urn:test:',
+          'schemas': [ConfigSchema] as const
+        });
+        const result = tology.value.create(ConfigSchema.$id) as Record<string, unknown>;
 
         assert.strictEqual(result.name, '');
         assert.strictEqual(result.debug, false);
@@ -524,11 +516,11 @@ import { projectGraph } from '../../src/modules/rdf/Projection.js';
           'type': 'object'
         };
 
-        const registry = new SchemaRegistry();
+        const tology = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-        registry.register(PartSchema);
-        const materializer = new Materializer(registry);
-        const result = materializer.createDefault(WholeSchema) as Record<string, unknown>;
+        tology.register(PartSchema as typeof PartSchema & { '$id': string });
+        tology.register(WholeSchema as typeof WholeSchema & { '$id': string });
+        const result = tology.value.create(WholeSchema.$id) as Record<string, unknown>;
 
         assert.deepStrictEqual(result.part, { 'value': 99 });
       });
@@ -544,9 +536,10 @@ import { projectGraph } from '../../src/modules/rdf/Projection.js';
           'type': 'object'
         };
 
-        const registry = new SchemaRegistry();
-        const materializer = new Materializer(registry);
-        const result = materializer.createDefault(RecursiveSchema) as Record<string, unknown>;
+        const tology = JsonTology.create({ 'baseIRI': 'urn:test:' });
+
+        tology.register(RecursiveSchema as typeof RecursiveSchema & { '$id': string });
+        const result = tology.value.create(RecursiveSchema.$id) as Record<string, unknown>;
 
         assert.strictEqual(result.name, '');
       // child is not required, so it should not be in the default
@@ -584,10 +577,8 @@ import { projectGraph } from '../../src/modules/rdf/Projection.js';
         'expectErrors': errs, 'expectValid': valid, 'input': inp, 'name': n
       } of scenarios) {
         void it(n, () => {
-          const registry = new SchemaRegistry();
-          const materializer = new Materializer(registry);
-
-          const result = materializer.execute(ConfigSchema, inp, { 'baseIRI': 'https://example.io' });
+          const tology = JsonTology.create({ 'baseIRI': 'urn:test:' });
+          const result = tology.materializer.execute(ConfigSchema, inp, { 'baseIRI': 'https://example.io' });
 
           assert.equal(result.valid, valid);
           if (errs) {
@@ -599,10 +590,8 @@ import { projectGraph } from '../../src/modules/rdf/Projection.js';
       }
 
       void it('valid execution returns value and abox', () => {
-        const registry = new SchemaRegistry();
-        const materializer = new Materializer(registry);
-
-        const ok = materializer.execute(ConfigSchema, { 'name': 'test' }, { 'baseIRI': 'https://example.io' });
+        const tology = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        const ok = tology.materializer.execute(ConfigSchema, { 'name': 'test' }, { 'baseIRI': 'https://example.io' });
 
         assert.equal((ok.value as Record<string, unknown>).name, 'test');
         assert.ok(Array.isArray(ok.abox));
@@ -611,10 +600,11 @@ import { projectGraph } from '../../src/modules/rdf/Projection.js';
 
     void describe('execute -> materialize -> abox projection contract', () => {
       void it('projectAbox returns well-formed quads with rdf:type and property literals', () => {
-        const registry = new SchemaRegistry();
-        const materializer = new Materializer(registry);
-
-        const abox = materializer.projectAbox(ConfigSchema, { 'name': 'test' }, 'https://example.io');
+        const tology = JsonTology.create({
+          'baseIRI': 'https://example.io',
+          'schemas': [ConfigSchema] as const
+        });
+        const abox = tology.toQuads(ConfigSchema, { 'name': 'test' });
 
         // --- quad structure ---
         assert.ok(Array.isArray(abox));
@@ -666,11 +656,12 @@ import { projectGraph } from '../../src/modules/rdf/Projection.js';
           'data1': d1, 'data2': d2, 'expectSame': same, 'name': n
         } of scenarios) {
           void it(n, () => {
-            const registry = new SchemaRegistry();
-            const materializer = new Materializer(registry);
-
-            const abox1 = materializer.projectAbox(ConfigSchema, d1, 'https://example.io');
-            const abox2 = materializer.projectAbox(ConfigSchema, d2, 'https://example.io');
+            const tology = JsonTology.create({
+              'baseIRI': 'https://example.io',
+              'schemas': [ConfigSchema] as const
+            });
+            const abox1 = tology.toQuads(ConfigSchema, d1);
+            const abox2 = tology.toQuads(ConfigSchema, d2);
 
             const subj1 = abox1.find((quad: Quad) => {
               return quad.predicate === 'rdf:type';
@@ -689,14 +680,13 @@ import { projectGraph } from '../../src/modules/rdf/Projection.js';
       });
 
       void it('ABox instance types reference TBox classes', () => {
-        const registry = new SchemaRegistry();
-        const materializer = new Materializer(registry);
-
-        registry.register(ConfigSchema);
-
+        const tology = JsonTology.create({
+          'baseIRI': 'https://example.io',
+          'schemas': [ConfigSchema] as const
+        });
         const graph = new SchemaGraph(ConfigSchema);
         const tbox = projectGraph(graph);
-        const abox = materializer.projectAbox(ConfigSchema, { 'name': 'test' }, 'https://example.io');
+        const abox = tology.toQuads(ConfigSchema, { 'name': 'test' });
 
         const tboxClasses = new Set(tbox
           .filter((quad: Quad) => {
@@ -835,9 +825,7 @@ import { projectGraph } from '../../src/modules/rdf/Projection.js';
   void describe('Materializer default application', () => {
     for (const scenario of defaultScenarios) {
       void it(scenario.name, () => {
-        const registry = new SchemaRegistry();
-        const materializer = new Materializer(registry);
-        const result = materializer.materialize(scenario.schema, scenario.input) as Record<string, unknown>;
+        const result = JsonTology.materialize(scenario.schema, scenario.input) as Record<string, unknown>;
 
         scenario.assertions(result);
       });
@@ -913,9 +901,7 @@ import { projectGraph } from '../../src/modules/rdf/Projection.js';
   void describe('Materializer falsy default preservation', () => {
     for (const scenario of falsyScenarios) {
       void it(scenario.name, () => {
-        const registry = new SchemaRegistry();
-        const materializer = new Materializer(registry);
-        const result = materializer.materialize(scenario.schema, {}) as Record<string, unknown>;
+        const result = JsonTology.materialize(scenario.schema, {}) as Record<string, unknown>;
 
         assert.strictEqual(result[scenario.property], scenario.expected, scenario.name);
         assert.strictEqual(typeof result[scenario.property], scenario.expectedType, `${scenario.name} — type`);
@@ -1090,13 +1076,12 @@ import { projectGraph } from '../../src/modules/rdf/Projection.js';
 
           scenario.assertions(result);
         } else {
-          const registry = new SchemaRegistry();
+          const tology = JsonTology.create({ 'baseIRI': 'https://edge.io' });
 
           for (const extra of scenario.extraSchemas ?? []) {
-            registry.register(extra as Record<string, unknown> & { '$id': string });
+            tology.register(extra as Record<string, unknown> & { '$id': string });
           }
-          const materializer = new Materializer(registry);
-          const result = materializer.materialize(scenario.schema, scenario.input) as Record<string, unknown>;
+          const result = tology.materialize(scenario.schema, scenario.input) as Record<string, unknown>;
 
           scenario.assertions(result);
         }
@@ -1158,12 +1143,14 @@ import { projectGraph } from '../../src/modules/rdf/Projection.js';
   void describe('Materializer validation rejection', () => {
     for (const scenario of rejectionScenarios) {
       void it(scenario.name, () => {
-        const registry = new SchemaRegistry();
-        const materializer = new Materializer(registry, scenario.options);
+        const tology = JsonTology.create({
+          'baseIRI': 'urn:test:',
+          ...(scenario.options ? { 'materializer': scenario.options } : {})
+        });
 
         assert.throws(
           () => {
-            return materializer.materialize(scenario.schema, scenario.input);
+            return tology.materialize(scenario.schema, scenario.input);
           },
           (err: Error) => {
             return err.message.includes('Invalid');
@@ -1189,10 +1176,11 @@ import { projectGraph } from '../../src/modules/rdf/Projection.js';
         'type': 'object'
       } as const;
 
-      const registry = new SchemaRegistry();
-      const materializer = new Materializer(registry, { 'passAdditionalProperties': true });
-
-      const result = materializer.materialize(StrictSchema, {
+      const tology = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'materializer': { 'passAdditionalProperties': true }
+      });
+      const result = tology.materialize(StrictSchema, {
         'extra': 'allowed' as never,
         'name': 'test'
       });
