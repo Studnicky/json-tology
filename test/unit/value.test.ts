@@ -6,9 +6,11 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
-import { Value } from '../../src/modules/data/Value.js';
-import { Changeset } from '../../src/modules/data/Changeset.js';
+import {
+  Changeset, JsonTology, Value
+} from '../../src/index.js';
+
+type SchemaWithId = Record<string, unknown> & { '$id': string };
 
 // ---------------------------------------------------------------------------
 // create
@@ -82,12 +84,12 @@ void describe('Value.create()', () => {
     'expected': exp, 'name': scenarioName, 'schemaId': id, 'schemaObj': schema
   } of primitiveScenarios) {
     void it(scenarioName, () => {
-      const registry = new SchemaRegistry();
+      const tology = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'schemas': [schema as SchemaWithId]
+      });
 
-      registry.register(schema);
-      const value = new Value(registry);
-
-      assert.deepEqual(value.create(id), exp);
+      assert.deepEqual(tology.value.create(id), exp);
     });
   }
 
@@ -188,31 +190,29 @@ void describe('Value.create()', () => {
     'expected': exp, 'name': scenarioName, 'schemaId': id, 'schemas': schemaList
   } of defaultScenarios) {
     void it(scenarioName, () => {
-      const registry = new SchemaRegistry();
+      const tology = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'schemas': schemaList as readonly SchemaWithId[]
+      });
 
-      for (const schema of schemaList) {
-        registry.register(schema);
-      }
-      const value = new Value(registry);
-
-      assert.deepEqual(value.create(id), exp);
+      assert.deepEqual(tology.value.create(id), exp);
     });
   }
 
   void it('creates required properties but omits optional ones', () => {
-    const registry = new SchemaRegistry();
-
-    registry.register({
-      '$id': 'urn:test:required-props',
-      'properties': {
-        'id': { 'type': 'string' },
-        'optional': { 'type': 'number' }
-      },
-      'required': ['id'],
-      'type': 'object'
-    } as const);
-    const value = new Value(registry);
-    const result = value.create('urn:test:required-props') as Record<string, unknown>;
+    const tology = JsonTology.create({
+      'baseIRI': 'urn:test:',
+      'schemas': [{
+        '$id': 'urn:test:required-props',
+        'properties': {
+          'id': { 'type': 'string' },
+          'optional': { 'type': 'number' }
+        },
+        'required': ['id'],
+        'type': 'object'
+      }]
+    });
+    const result = tology.value.create('urn:test:required-props') as Record<string, unknown>;
 
     assert.equal(result.id, '');
     assert.equal('optional' in result, false);
@@ -571,50 +571,54 @@ void describe('Value.diff() -> Changeset', () => {
 // ---------------------------------------------------------------------------
 
 void describe('Value.cast()', () => {
-  const registry = new SchemaRegistry();
-
-  registry.register({
-    '$id': 'urn:test:number',
-    'type': 'number'
-  } as const);
-  registry.register({
-    '$id': 'urn:test:string',
-    'type': 'string'
-  } as const);
-  registry.register({
-    '$id': 'urn:test:boolean',
-    'type': 'boolean'
-  } as const);
-  registry.register({
-    '$id': 'urn:test:item',
-    'properties': {
-      'count': { 'type': 'integer' },
-      'flag': { 'type': 'boolean' },
-      'name': { 'type': 'string' },
-      'score': {
-        'default': 0,
-        'type': 'number'
-      }
+  const castSchemas: readonly SchemaWithId[] = [
+    {
+      '$id': 'urn:test:number',
+      'type': 'number'
     },
-    'type': 'object'
-  } as const);
-  registry.register({
-    '$defs': {
-      'metrics': {
-        'properties': {
-          'count': {
-            'default': 0,
-            'type': 'integer'
-          }
-        },
-        'type': 'object'
-      }
+    {
+      '$id': 'urn:test:string',
+      'type': 'string'
     },
-    '$id': 'urn:test:ref-metrics',
-    'properties': { 'metrics': { '$ref': '#/$defs/metrics' } },
-    'type': 'object'
-  } as const);
-  const value = new Value(registry);
+    {
+      '$id': 'urn:test:boolean',
+      'type': 'boolean'
+    },
+    {
+      '$id': 'urn:test:item',
+      'properties': {
+        'count': { 'type': 'integer' },
+        'flag': { 'type': 'boolean' },
+        'name': { 'type': 'string' },
+        'score': {
+          'default': 0,
+          'type': 'number'
+        }
+      },
+      'type': 'object'
+    },
+    {
+      '$defs': {
+        'metrics': {
+          'properties': {
+            'count': {
+              'default': 0,
+              'type': 'integer'
+            }
+          },
+          'type': 'object'
+        }
+      },
+      '$id': 'urn:test:ref-metrics',
+      'properties': { 'metrics': { '$ref': '#/$defs/metrics' } },
+      'type': 'object'
+    }
+  ];
+  const tology = JsonTology.create({
+    'baseIRI': 'urn:test:',
+    'schemas': castSchemas
+  });
+  const value = tology.value;
 
   const castScenarios: Array<{
     'expected': unknown;
@@ -696,23 +700,27 @@ void describe('Value.cast()', () => {
 // ---------------------------------------------------------------------------
 
 void describe('Value.clean()', () => {
-  const registry = new SchemaRegistry();
-
-  registry.register({
-    '$id': 'urn:test:address',
-    'properties': { 'street': { 'type': 'string' } },
-    'type': 'object'
-  } as const);
-  registry.register({
-    '$id': 'urn:test:user',
-    'properties': {
-      'address': { '$ref': 'urn:test:address' },
-      'email': { 'type': 'string' },
-      'name': { 'type': 'string' }
+  const cleanSchemas: readonly SchemaWithId[] = [
+    {
+      '$id': 'urn:test:address',
+      'properties': { 'street': { 'type': 'string' } },
+      'type': 'object'
     },
-    'type': 'object'
-  } as const);
-  const value = new Value(registry);
+    {
+      '$id': 'urn:test:user',
+      'properties': {
+        'address': { '$ref': 'urn:test:address' },
+        'email': { 'type': 'string' },
+        'name': { 'type': 'string' }
+      },
+      'type': 'object'
+    }
+  ];
+  const tology = JsonTology.create({
+    'baseIRI': 'urn:test:',
+    'schemas': cleanSchemas
+  });
+  const value = tology.value;
 
   const cleanScenarios: Array<{
     'expected': Record<string, unknown>;

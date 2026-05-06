@@ -6,8 +6,9 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { Transform } from '../../src/modules/transform/Transform.js';
-import { JsonTology } from '../../src/JsonTology.js';
+import {
+  JsonTology, Transform
+} from '../../src/index.js';
 
 // ---------------------------------------------------------------------------
 // Fixtures

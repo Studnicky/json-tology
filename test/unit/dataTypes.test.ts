@@ -16,8 +16,9 @@ import {
   resolveSingleXsdType,
   resolveXsdType
 } from '../../src/constants/XSD_MAPS.js';
-import { Curie } from '../../src/modules/rdf/Curie.js';
-import { JsonTology } from '../../src/index.js';
+import {
+  Curie, JsonTology
+} from '../../src/index.js';
 
 // ===========================================================================
 // Source: curie.test.ts

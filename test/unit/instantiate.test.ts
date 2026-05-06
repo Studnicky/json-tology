@@ -5,12 +5,10 @@ import assert from 'node:assert/strict';
 import {
   describe, it
 } from 'node:test';
-import { InstantiationError } from '../../src/errors/InstantiationError.js';
-import { JsonTology } from '../../src/JsonTology.js';
+import {
+  InstantiationError, JsonTology, SchemaError, ValidationErrors
+} from '../../src/index.js';
 import { Logger } from '../utils/Logger.js';
-import { SchemaError } from '../../src/errors/SchemaError.js';
-import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
-import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
 // ===========================================================================
 // Source: aliasCoercion.test.ts
@@ -92,7 +90,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
   void describe('jt:alias coercion', () => {
     void describe('single alias', () => {
       void it('maps alias input to canonical key', () => {
-        const registry = new SchemaRegistry();
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
         registry.register(SingleAliasSchema);
         const result = registry.instantiate(SingleAliasSchema.$id, { 'foo_bar': 'hello' });
@@ -101,7 +99,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
       });
 
       void it('canonical key still works when no alias is used', () => {
-        const registry = new SchemaRegistry();
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
         registry.register(SingleAliasSchema);
         const result = registry.instantiate(SingleAliasSchema.$id, { 'fooBar': 'hello' });
@@ -110,7 +108,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
       });
 
       void it('canonical key wins when both canonical and alias are present', () => {
-        const registry = new SchemaRegistry();
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
         registry.register(SingleAliasSchema);
         const result = registry.instantiate(SingleAliasSchema.$id, {
@@ -122,7 +120,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
       });
 
       void it('original input is not mutated', () => {
-        const registry = new SchemaRegistry();
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
         registry.register(SingleAliasSchema);
         const input = { 'foo_bar': 'hello' };
@@ -134,7 +132,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
     void describe('multi-alias', () => {
       void it('first alias in list resolves when canonical key absent', () => {
-        const registry = new SchemaRegistry();
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
         registry.register(MultiAliasSchema);
         const result = registry.instantiate(MultiAliasSchema.$id, { 'foo_bar': 'value1' });
@@ -143,7 +141,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
       });
 
       void it('second alias in list resolves when first alias and canonical key absent', () => {
-        const registry = new SchemaRegistry();
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
         registry.register(MultiAliasSchema);
         const result = registry.instantiate(MultiAliasSchema.$id, { 'fooBarLegacy': 'legacy' });
@@ -152,7 +150,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
       });
 
       void it('canonical key takes priority over all aliases', () => {
-        const registry = new SchemaRegistry();
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
         registry.register(MultiAliasSchema);
         const result = registry.instantiate(MultiAliasSchema.$id, {
@@ -167,7 +165,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
     void describe('required properties with alias', () => {
       void it('alias satisfies required constraint', () => {
-        const registry = new SchemaRegistry();
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
         registry.register(RequiredAliasSchema);
         assert.doesNotThrow(() => {
@@ -176,7 +174,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
       });
 
       void it('missing both canonical and alias fails required validation', () => {
-        const registry = new SchemaRegistry();
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
         registry.register(RequiredAliasSchema);
         assert.throws(() => {
@@ -187,7 +185,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
     void describe('nested object alias', () => {
       void it('alias on nested object property resolves to canonical key', () => {
-        const registry = new SchemaRegistry();
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
         registry.register(NestedAliasSchema);
         const result = registry.instantiate(NestedAliasSchema.$id, { 'inner': { 'my_prop': 'nested-value' } });
@@ -198,7 +196,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
     void describe('array item alias', () => {
       void it('alias on items schema property resolves for each element', () => {
-        const registry = new SchemaRegistry();
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
         registry.register(ArrayItemAliasSchema);
         const result = registry.instantiate(ArrayItemAliasSchema.$id, [
@@ -226,7 +224,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
           'type': 'object'
         } as const;
 
-        const registry = new SchemaRegistry();
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
         registry.register(WrongTypeSchema);
 
@@ -265,7 +263,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     'valid': boolean }
 
   function assertValidationScenarios(
-    registry: SchemaRegistry,
+    registry: JsonTology,
     schemaId: string,
     scenarios: ValidationScenario[]
   ): void {
@@ -288,7 +286,10 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('Self-referencing schemas', () => {
     void it('validates a tree structure with recursive $ref', () => {
-      const registry = new SchemaRegistry({ logger });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'logger': logger
+      });
 
       registry.register({
         '$id': 'https://ref.test/Tree',
@@ -367,7 +368,10 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('validates a linked list with recursive optional $ref', () => {
-      const registry = new SchemaRegistry({ logger });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'logger': logger
+      });
 
       registry.register({
         '$id': 'https://ref.test/ListNode',
@@ -408,7 +412,10 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('validates self-referencing via $defs', () => {
-      const registry = new SchemaRegistry({ logger });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'logger': logger
+      });
 
       registry.register({
         '$defs': {
@@ -465,7 +472,10 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('Cross-schema references', () => {
     void it('validates mutual recursion between two schemas', () => {
-      const registry = new SchemaRegistry({ logger });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'logger': logger
+      });
 
       registry.register([
         {
@@ -514,7 +524,10 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('validates a three-level reference chain A -> B -> C', () => {
-      const registry = new SchemaRegistry({ logger });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'logger': logger
+      });
 
       registry.register([
         {
@@ -596,7 +609,10 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('handles reference to a non-existent schema gracefully', () => {
-      const registry = new SchemaRegistry({ logger });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'logger': logger
+      });
 
       registry.register({
         '$id': 'https://ref.test/Dangling',
@@ -619,7 +635,10 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('$anchor and $defs resolution', () => {
     void it('resolves $ref to $anchor within the same schema', () => {
-      const registry = new SchemaRegistry({ logger });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'logger': logger
+      });
 
       registry.register({
         '$defs': {
@@ -651,7 +670,10 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('resolves $ref to $defs via JSON pointer', () => {
-      const registry = new SchemaRegistry({ logger });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'logger': logger
+      });
 
       registry.register({
         '$defs': {
@@ -704,7 +726,10 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('Deep nesting', () => {
     void it('validates 10+ levels of nested objects via $ref chain', () => {
-      const registry = new SchemaRegistry({ logger });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'logger': logger
+      });
 
       const depth = 12;
       const baseUrl = 'https://ref.test/deep';
@@ -762,7 +787,10 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('applies defaults at multiple nesting levels', () => {
-      const registry = new SchemaRegistry({ logger });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'logger': logger
+      });
 
       registry.register({
         '$id': 'https://ref.test/DeepDefaults',
@@ -808,7 +836,10 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('$ref with sibling keywords', () => {
     void it('merges $ref with sibling properties in 2020-12 dialect', () => {
-      const registry = new SchemaRegistry({ logger });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'logger': logger
+      });
 
       registry.register([
         {
@@ -891,7 +922,10 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('jt:strict per-field', () => {
     void it('accepts correct JS type for strict field', () => {
-      const registry = new SchemaRegistry({ 'enableTypeCast': true });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableTypeCast': true
+      });
 
       registry.register(StrictFieldSchema);
       const result = registry.instantiate(StrictFieldSchema.$id, {
@@ -906,7 +940,10 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('rejects string-as-integer for strict field even when global castTypes is on', () => {
-      const registry = new SchemaRegistry({ 'enableTypeCast': true });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableTypeCast': true
+      });
 
       registry.register(StrictFieldSchema);
 
@@ -919,7 +956,10 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('coerces non-strict field normally when global castTypes is on', () => {
-      const registry = new SchemaRegistry({ 'enableTypeCast': true });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableTypeCast': true
+      });
 
       registry.register(StrictFieldSchema);
       const result = registry.instantiate(StrictFieldSchema.$id, {
@@ -931,7 +971,10 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('rejects boolean-as-integer for strict field', () => {
-      const registry = new SchemaRegistry({ 'enableTypeCast': true });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableTypeCast': true
+      });
 
       registry.register(StrictFieldSchema);
 
@@ -944,7 +987,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('accepts valid integer for strict field without castTypes', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register(StrictFieldSchema);
       const result = registry.instantiate(StrictFieldSchema.$id, {
@@ -959,7 +1002,10 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('jt:config.strict applies to all fields when set', () => {
-      const registry = new SchemaRegistry({ 'enableTypeCast': true });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableTypeCast': true
+      });
 
       registry.register(GlobalStrictConfigSchema);
 
@@ -972,7 +1018,10 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('jt:strict: false opts out field when jt:config.strict is true', () => {
-      const registry = new SchemaRegistry({ 'enableTypeCast': true });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableTypeCast': true
+      });
 
       registry.register(GlobalStrictConfigSchema);
       const result = registry.instantiate(GlobalStrictConfigSchema.$id, {
@@ -984,7 +1033,10 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('validate() reflects strict type failures', () => {
-      const registry = new SchemaRegistry({ 'enableTypeCast': true });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableTypeCast': true
+      });
 
       registry.register(StrictFieldSchema);
       const errors = registry.validate(StrictFieldSchema.$id, {
@@ -996,7 +1048,10 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('is() returns false for strict field type mismatch', () => {
-      const registry = new SchemaRegistry({ 'enableTypeCast': true });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableTypeCast': true
+      });
 
       registry.register(StrictFieldSchema);
 
@@ -1007,7 +1062,10 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('is() returns true for correct types even with jt:strict', () => {
-      const registry = new SchemaRegistry({ 'enableTypeCast': true });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableTypeCast': true
+      });
 
       registry.register(StrictFieldSchema);
 
@@ -1070,7 +1128,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('jt:frozen output', () => {
     void it('coerce() returns frozen object when jt:frozen is set', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register(FrozenSchema);
       registry.register(MetaSchema);
@@ -1080,7 +1138,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('coerce() returns mutable object when jt:frozen is not set', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register(MutableSchema);
       const result = registry.instantiate(MutableSchema.$id, { 'value': 'hello' }) as Record<string, unknown>;
@@ -1091,7 +1149,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('mutation on frozen result throws in strict ESM mode', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register(FrozenSchema);
       registry.register(MetaSchema);
@@ -1103,7 +1161,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('nested objects are also frozen (deep freeze)', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register(MetaSchema);
       registry.register(FrozenSchema);
@@ -1117,7 +1175,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('arrays are frozen when parent has jt:frozen', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register(FrozenArraySchema);
       const result = registry.instantiate(FrozenArraySchema.$id, {
@@ -1132,7 +1190,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('jt:config.frozen works as shorthand for jt:frozen', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register(FrozenViaConfigSchema);
       const result = registry.instantiate(FrozenViaConfigSchema.$id, { 'value': 42 });
@@ -1164,7 +1222,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('frozen output is cycle-safe (no infinite recursion)', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register(FrozenSchema);
       registry.register(MetaSchema);
@@ -1195,7 +1253,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('enableDefaults option', () => {
     void it('fills defaults by default (enableDefaults: true)', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register(WithDefaultSchema as unknown as Record<string, unknown>);
 
@@ -1205,7 +1263,10 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('global opt-out: enableDefaults: false suppresses default-filling', () => {
-      const registry = new SchemaRegistry({ 'enableDefaults': false });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableDefaults': false
+      });
 
       registry.register(WithDefaultSchema as unknown as Record<string, unknown>);
 
@@ -1215,7 +1276,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('per-call opt-out overrides global true', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register(WithDefaultSchema as unknown as Record<string, unknown>);
 
@@ -1229,7 +1290,10 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('per-call opt-in overrides global false', () => {
-      const registry = new SchemaRegistry({ 'enableDefaults': false });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableDefaults': false
+      });
 
       registry.register(WithDefaultSchema as unknown as Record<string, unknown>);
 
@@ -1243,7 +1307,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('per-call options do not mutate registry stored default setting', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register(WithDefaultSchema as unknown as Record<string, unknown>);
 
@@ -1291,7 +1355,8 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
   void describe('enableInlineWarnings flag', () => {
     void it('emits warn via logger when inline-object found', () => {
       const warns: string[] = [];
-      const registry = new SchemaRegistry({
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
         'enableInlineWarnings': true,
         'logger': {
           'debug': (msg: string) => {
@@ -1324,7 +1389,8 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
     void it('is silent by default (no flags)', () => {
       const warns: string[] = [];
-      const registry = new SchemaRegistry({
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
         'logger': {
           'debug': (msg: string) => {
             warns.push(msg);
@@ -1358,7 +1424,10 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
   void describe('enableStrictGraph flag', () => {
     void it('throws SchemaError for inline-object', () => {
-      const registry = new SchemaRegistry({ 'enableStrictGraph': true });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableStrictGraph': true
+      });
 
       assert.throws(
         () => {
@@ -1371,7 +1440,10 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('throws SchemaError for inline-primitive', () => {
-      const registry = new SchemaRegistry({ 'enableStrictGraph': true });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableStrictGraph': true
+      });
 
       assert.throws(
         () => {
@@ -1384,7 +1456,10 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('passes for clean schema with no inline shapes', () => {
-      const registry = new SchemaRegistry({ 'enableStrictGraph': true });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableStrictGraph': true
+      });
 
       assert.doesNotThrow(() => {
         registry.register(CleanSchema as unknown as Record<string, unknown>);
@@ -1393,7 +1468,10 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
     void it('implies enableInlineWarnings (promotes warn to throw)', () => {
     // With strict, both inline-object and inline-primitive throw
-      const strictRegistry = new SchemaRegistry({ 'enableStrictGraph': true });
+      const strictRegistry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableStrictGraph': true
+      });
 
       assert.throws(() => {
         strictRegistry.register(InlineObjectSchema as unknown as Record<string, unknown>);
@@ -1414,7 +1492,10 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
       const ChildSchema = Compose.extend(ParentSchema, { 'role': { 'type': 'string' } } as const, 'urn:test:StrictChild') as unknown as Record<string, unknown>;
 
-      const registry = new SchemaRegistry({ 'enableStrictGraph': true });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableStrictGraph': true
+      });
 
       assert.doesNotThrow(() => {
         registry.register(ParentSchema as unknown as Record<string, unknown>);
@@ -1443,7 +1524,8 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
       };
 
       const warns: string[] = [];
-      const registry = new SchemaRegistry({
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
         'enableDuplicateDetection': true,
         'logger': {
           'debug': (msg: string) => {
