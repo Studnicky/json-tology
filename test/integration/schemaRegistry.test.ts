@@ -6,10 +6,12 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
+import {
+  InstantiationError, JsonTology
+} from '../../src/index.js';
+import type { SchemaRegistryInterface } from '../../src/interfaces/SchemaRegistry.js';
 import { Logger } from '../utils/Logger.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import { InstantiationError } from '../../src/errors/InstantiationError.js';
 
 const TestSchema = {
   '$id': 'https://example.io/test-schema',
@@ -96,9 +98,9 @@ function mockLogger(logs: string[]) {
 
 void describe('SchemaRegistry registration', () => {
   const registrationScenarios: Array<{
-    'check': (registry: SchemaRegistry) => void;
+    'check': (registry: SchemaRegistryInterface) => void;
     'name': string;
-    'setup': (registry: SchemaRegistry) => void;
+    'setup': (registry: SchemaRegistryInterface) => void;
   }> = [
     {
       'check': (registry) => {
@@ -206,7 +208,10 @@ void describe('SchemaRegistry registration', () => {
     {
       'check': () => {
         // Default mode: inline schemas register silently (no throw)
-        const defaultRegistry = new SchemaRegistry({ 'logger': new Logger() });
+        const defaultRegistry = JsonTology.create({
+          'baseIRI': 'https://example.io',
+          'logger': new Logger()
+        }).registry;
 
         assert.doesNotThrow(() => {
           defaultRegistry.register(InvalidInlineSchema);
@@ -214,10 +219,11 @@ void describe('SchemaRegistry registration', () => {
         assert.ok(defaultRegistry.get(InvalidInlineSchema.$id) !== undefined);
 
         // enableStrictGraph mode: inline schemas throw SchemaError
-        const strictRegistry = new SchemaRegistry({
+        const strictRegistry = JsonTology.create({
+          'baseIRI': 'https://example.io',
           'enableStrictGraph': true,
           'logger': new Logger()
-        });
+        }).registry;
 
         assert.throws(
           () => {
@@ -287,7 +293,10 @@ void describe('SchemaRegistry registration', () => {
     check, 'name': scenarioName, setup
   } of registrationScenarios) {
     void it(scenarioName, () => {
-      const registry = new SchemaRegistry({ 'logger': new Logger() });
+      const registry = JsonTology.create({
+        'baseIRI': 'https://example.io',
+        'logger': new Logger()
+      }).registry;
 
       setup(registry);
       check(registry);
@@ -298,7 +307,7 @@ void describe('SchemaRegistry registration', () => {
   const logScenarios: Array<{
     'checkLogs': (logs: string[]) => void;
     'name': string;
-    'setup': (registry: SchemaRegistry) => void;
+    'setup': (registry: SchemaRegistryInterface) => void;
   }> = [
     {
       'checkLogs': (logs) => {
@@ -335,7 +344,10 @@ void describe('SchemaRegistry registration', () => {
   } of logScenarios) {
     void it(scenarioName, () => {
       const logs: string[] = [];
-      const registry = new SchemaRegistry({ 'logger': mockLogger(logs) });
+      const registry = JsonTology.create({
+        'baseIRI': 'https://example.io',
+        'logger': mockLogger(logs)
+      }).registry;
 
       setup(registry);
       checkLogs(logs);
@@ -392,7 +404,10 @@ void describe('SchemaRegistry validation', () => {
     data, errorSubstring, 'name': scenarioName, schemaId, valid
   } of validationScenarios) {
     void it(scenarioName, () => {
-      const registry = new SchemaRegistry({ 'logger': new Logger() });
+      const registry = JsonTology.create({
+        'baseIRI': 'https://example.io',
+        'logger': new Logger()
+      }).registry;
 
       registry.register(TestSchema);
       registry.register(TestSchemaWithDefs);
@@ -413,7 +428,10 @@ void describe('SchemaRegistry validation', () => {
   }
 
   void it('unregistered schema throws SchemaError from validate()', () => {
-    const registry = new SchemaRegistry({ 'logger': new Logger() });
+    const registry = JsonTology.create({
+      'baseIRI': 'https://example.io',
+      'logger': new Logger()
+    }).registry;
 
     assert.throws(() => {
       registry.validate('https://example.io/nonexistent', {});
@@ -421,7 +439,10 @@ void describe('SchemaRegistry validation', () => {
   });
 
   void it('unregistered schema throws SchemaError from validate() (renamed)', () => {
-    const registry = new SchemaRegistry({ 'logger': new Logger() });
+    const registry = JsonTology.create({
+      'baseIRI': 'https://example.io',
+      'logger': new Logger()
+    }).registry;
 
     assert.throws(() => {
       registry.validate('https://example.io/nonexistent', {});
@@ -429,7 +450,10 @@ void describe('SchemaRegistry validation', () => {
   });
 
   void it('validates at JSON Pointer', () => {
-    const registry = new SchemaRegistry({ 'logger': new Logger() });
+    const registry = JsonTology.create({
+      'baseIRI': 'https://example.io',
+      'logger': new Logger()
+    }).registry;
 
     registry.register(TestSchemaWithDefs);
 
@@ -452,7 +476,7 @@ void describe('SchemaRegistry validation', () => {
 
 void describe('SchemaRegistry options', () => {
   const optionScenarios: Array<{
-    'check': (registry: SchemaRegistry, logs: string[]) => void;
+    'check': (registry: SchemaRegistryInterface, logs: string[]) => void;
     'name': string;
     'options': Record<string, unknown>;
   }> = [
@@ -512,10 +536,11 @@ void describe('SchemaRegistry options', () => {
   } of optionScenarios) {
     void it(scenarioName, () => {
       const logs: string[] = [];
-      const registry = new SchemaRegistry({
+      const registry = JsonTology.create({
+        'baseIRI': 'https://example.io',
         'logger': mockLogger(logs),
         ...options
-      });
+      }).registry;
 
       check(registry, logs);
     });
@@ -541,7 +566,7 @@ const ParseTestSchema = {
 
 void describe('coerce / is / errors', () => {
   const coerceScenarios: Array<{
-    'check': (registry: SchemaRegistry, data: unknown) => void;
+    'check': (registry: SchemaRegistryInterface, data: unknown) => void;
     'data': unknown;
     'name': string;
   }> = [
@@ -623,7 +648,10 @@ void describe('coerce / is / errors', () => {
     check, 'name': scenarioName
   } of coerceScenarios) {
     void it(scenarioName, () => {
-      const registry = new SchemaRegistry({ 'logger': new Logger() });
+      const registry = JsonTology.create({
+        'baseIRI': 'https://example.io',
+        'logger': new Logger()
+      }).registry;
 
       registry.register(ParseTestSchema);
       check(registry);
@@ -661,7 +689,10 @@ void describe('coerce / is / errors', () => {
     data, expected, 'name': scenarioName
   } of isScenarios) {
     void it(scenarioName, () => {
-      const registry = new SchemaRegistry({ 'logger': new Logger() });
+      const registry = JsonTology.create({
+        'baseIRI': 'https://example.io',
+        'logger': new Logger()
+      }).registry;
 
       registry.register(ParseTestSchema);
       assert.strictEqual(registry.is(ParseTestSchema, data), expected);
@@ -689,7 +720,10 @@ void describe('coerce / is / errors', () => {
     data, 'name': scenarioName, valid
   } of errorsScenarios) {
     void it(scenarioName, () => {
-      const registry = new SchemaRegistry({ 'logger': new Logger() });
+      const registry = JsonTology.create({
+        'baseIRI': 'https://example.io',
+        'logger': new Logger()
+      }).registry;
 
       registry.register(ParseTestSchema);
 
@@ -852,10 +886,11 @@ void describe('Structure Validation', () => {
   }> = [
     {
       'check': () => {
-        const registry = new SchemaRegistry({
+        const registry = JsonTology.create({
+          'baseIRI': 'https://example.io',
           'enableTypeCast': true,
           'logger': new Logger()
-        });
+        }).registry;
 
         registry.register(TestSchema);
         const converted = registry.convert(TestSchema.$id, {
@@ -870,7 +905,10 @@ void describe('Structure Validation', () => {
     },
     {
       'check': () => {
-        const registry = new SchemaRegistry({ 'logger': new Logger() });
+        const registry = JsonTology.create({
+          'baseIRI': 'https://example.io',
+          'logger': new Logger()
+        }).registry;
 
         registry.register(TestSchema);
         assert.throws(
@@ -886,7 +924,10 @@ void describe('Structure Validation', () => {
     },
     {
       'check': () => {
-        const registry = new SchemaRegistry({ 'logger': new Logger() });
+        const registry = JsonTology.create({
+          'baseIRI': 'https://example.io',
+          'logger': new Logger()
+        }).registry;
 
         registry.register(TestSchema);
         const validator = registry.validator(TestSchema.$id);
@@ -897,7 +938,10 @@ void describe('Structure Validation', () => {
     },
     {
       'check': () => {
-        const registry = new SchemaRegistry({ 'logger': new Logger() });
+        const registry = JsonTology.create({
+          'baseIRI': 'https://example.io',
+          'logger': new Logger()
+        }).registry;
 
         assert.throws(
           () => {

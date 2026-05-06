@@ -10,15 +10,16 @@ import {
 import {
   mkdirSync, rmSync, writeFileSync
 } from 'node:fs';
-import { Compose } from '../../src/modules/composition/Compose.js';
+import {
+  Compose, GraphEngine, InstantiationError, JsonTology, Resolver
+} from '../../src/index.js';
+// Internal access: FormatRegistry's builtin() / register() mechanics are tested
+// directly; the public API exposes formats only as a config option.
 import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
-import { GraphEngine } from '../../src/modules/graph/GraphEngine.js';
-import { InstantiationError } from '../../src/errors/InstantiationError.js';
-import { JsonTology } from '../../src/JsonTology.js';
-import { Logger } from '../utils/Logger.js';
-import { Resolver } from '../../src/modules/data/Resolver.js';
+// Internal access: SchemaLoader file-system loading + logger plumbing is tested
+// directly; the public JsonTology API does not expose a loader surface.
 import { SchemaLoader } from '../../src/modules/registry/SchemaLoader.js';
-import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
+import { Logger } from '../utils/Logger.js';
 import { resolve } from 'node:path';
 
 // ===========================================================================
@@ -71,7 +72,10 @@ import { resolve } from 'node:path';
         'type': 'object'
       } as const;
 
-      const registry = new SchemaRegistry({ 'enableTypeCast': true });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test',
+        'enableTypeCast': true
+      }).registry;
 
       registry.register(ConfigStrictSchema);
 
@@ -84,7 +88,7 @@ import { resolve } from 'node:path';
     });
 
     void it('jt:config.extra: allow retains unknown properties in coerce output', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
 
       registry.register(AllowExtraSchema);
       const result = registry.instantiate(AllowExtraSchema.$id, {
@@ -96,7 +100,7 @@ import { resolve } from 'node:path';
     });
 
     void it('jt:config.extra: forbid raises error on unknown properties', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
 
       registry.register(ForbidExtraSchema);
 
@@ -111,7 +115,7 @@ import { resolve } from 'node:path';
     });
 
     void it('jt:config.extra: forbid allows known properties only', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
 
       registry.register(ForbidExtraSchema);
       const result = registry.instantiate(ForbidExtraSchema.$id, { 'name': 'Alice' });
@@ -177,7 +181,7 @@ import { resolve } from 'node:path';
     });
 
     void it('extra: forbid reports EXTRA_FORBIDDEN error keyword', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
 
       registry.register(ForbidExtraSchema);
       const errs = registry.validate(ForbidExtraSchema.$id, {
@@ -224,7 +228,7 @@ import { resolve } from 'node:path';
 
   void describe('SchemaRegistry.findDuplicates()', () => {
     void it('returns empty when no duplicates', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
 
       registry.register(EmailSchema as unknown as Record<string, unknown>);
       registry.register({
@@ -236,7 +240,7 @@ import { resolve } from 'node:path';
     });
 
     void it('detects structurally-identical leaf shape that matches a registered schema', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
 
       registry.register(EmailSchema as unknown as Record<string, unknown>);
       registry.register(PersonSchema as unknown as Record<string, unknown>);
@@ -273,7 +277,7 @@ import { resolve } from 'node:path';
         'type': 'object'
       } as const;
 
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
 
       registry.register(Base as unknown as Record<string, unknown>);
       registry.register(Container as unknown as Record<string, unknown>);
@@ -284,7 +288,7 @@ import { resolve } from 'node:path';
     });
 
     void it('reports correct schemaId and equivalentTo fields', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
 
       registry.register(EmailSchema as unknown as Record<string, unknown>);
       registry.register(PersonSchema as unknown as Record<string, unknown>);
@@ -299,7 +303,7 @@ import { resolve } from 'node:path';
     });
 
     void it('returns empty when only $ref properties exist', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
 
       registry.register(EmailSchema as unknown as Record<string, unknown>);
       registry.register({
@@ -1120,7 +1124,10 @@ import { resolve } from 'node:path';
     }> = [
       {
         'check': () => {
-          const registry = new SchemaRegistry({ 'keywords': [evenNumberKeyword] });
+          const registry = JsonTology.create({
+            'baseIRI': 'urn:test',
+            'keywords': [evenNumberKeyword]
+          }).registry;
 
           registry.register({
             '$id': 'https://test.com/RegEven',
@@ -1134,7 +1141,7 @@ import { resolve } from 'node:path';
       },
       {
         'check': () => {
-          const reg2 = new SchemaRegistry();
+          const reg2 = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
 
           reg2.register({
             '$id': 'urn:test:graph-kw',

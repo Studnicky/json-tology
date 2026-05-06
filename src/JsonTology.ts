@@ -230,15 +230,18 @@ export class JsonTology<TMap = Record<never, never>> {
    *
    * @param schema - A schema object with `$id`.
    * @param data - Instance data to project.
-   * @returns@returns The projected RDF quads.
+   * @param options - Optional overrides: subjectIRI overrides the root subject IRI; graphIRI sets the graph field on all quads.
+   * @returns The projected RDF quads.
    */
   public static toQuads(
     schema: Record<string, unknown> & { readonly '$id': string },
-    data: unknown
+    data: unknown,
+    options?: { 'graphIRI'?: string;
+      'subjectIRI'?: string }
   ): QuadInterface[] {
     const jt = JsonTology.ephemeral(schema);
 
-    return jt.toQuads(schema as JSONSchema7Definition & { readonly '$id': string }, data);
+    return jt.toQuads(schema as JSONSchema7Definition & { readonly '$id': string }, data, options);
   }
 
   /**
@@ -802,13 +805,16 @@ export class JsonTology<TMap = Record<never, never>> {
    */
   public toQuads<TSchema extends JSONSchema7Definition & { readonly '$id': string; }>(
     schema: TSchema,
-    data: InferSchemaType<TSchema>
+    data: InferSchemaType<TSchema>,
+    options?: { 'graphIRI'?: string;
+      'subjectIRI'?: string }
   ): QuadInterface[] {
     return this.materializer.projectAbox(
       // Cast needed: JSONSchema7Definition includes boolean; runtime guarantees object with $id
       schema as unknown as Record<string, unknown> & { '$id': string; },
       data,
-      this.baseIRI
+      this.baseIRI,
+      options
     );
   }
   /**

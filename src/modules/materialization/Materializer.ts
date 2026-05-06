@@ -232,15 +232,18 @@ export class Materializer implements MaterializerInterface {
    * @param schema - Schema object with $id
    * @param data - Data to project
    * @param baseIRI - Base IRI for generated quad subjects
+   * @param options - Optional overrides: subjectIRI overrides the root subject IRI; graphIRI sets the graph field on all quads
    * @returns Array of RDF quads representing the ABox projection
    * @throws {@link MaterializationError} When the data fails validation
    */
   public projectAbox(
     schema: Record<string, unknown> & { '$id': string; },
     data: unknown,
-    baseIRI: string
+    baseIRI: string,
+    options?: { 'graphIRI'?: string | undefined;
+      'subjectIRI'?: string | undefined }
   ): QuadInterface[] {
-    const result = this.run(schema, data, baseIRI);
+    const result = this.run(schema, data, baseIRI, false, options);
 
     if (!result.valid) {
       throw new MaterializationError(schema.$id, result.errors);
@@ -252,9 +255,15 @@ export class Materializer implements MaterializerInterface {
   private projectAboxFromExecution(
     execution: GraphExecutionResultInterface,
     materialized: unknown,
-    baseIRI: string
+    baseIRI: string,
+    options?: { 'graphIRI'?: string | undefined;
+      'subjectIRI'?: string | undefined }
   ): QuadInterface[] {
-    const quads = projectAbox(execution.graph, materialized, baseIRI, { 'entryNode': execution.entryNode });
+    const quads = projectAbox(execution.graph, materialized, baseIRI, {
+      'entryNode': execution.entryNode,
+      'graphIRI': options?.graphIRI,
+      'subjectIRI': options?.subjectIRI
+    });
 
     return quads;
   }
@@ -298,7 +307,9 @@ export class Materializer implements MaterializerInterface {
     schema: Record<string, unknown> & { '$id': string; },
     data: unknown,
     baseIRI?: string,
-    synthesizeDefaults = false
+    synthesizeDefaults = false,
+    aboxOptions?: { 'graphIRI'?: string | undefined;
+      'subjectIRI'?: string | undefined }
   ): MaterializationResultInterface {
     this.registry.register(schema);
 
@@ -319,7 +330,7 @@ export class Materializer implements MaterializerInterface {
 
     const abox = baseIRI === undefined
       ? []
-      : this.projectAboxFromExecution(execution, materialized, baseIRI);
+      : this.projectAboxFromExecution(execution, materialized, baseIRI, aboxOptions);
 
     return {
       abox,

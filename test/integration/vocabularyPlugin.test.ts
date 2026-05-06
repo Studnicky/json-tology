@@ -2,16 +2,23 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
-import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import { GraphOntologySerializer } from '../../src/modules/ontology/GraphOntologySerializer.js';
-import { GraphShaclSerializer } from '../../src/modules/ontology/GraphShaclSerializer.js';
-import { Curie } from '../../src/modules/rdf/Curie.js';
-import { DEFAULT_PREFIXES } from '../../src/constants/PREFIXES.js';
-import { JsonTology } from '../../src/JsonTology.js';
-import type { VocabularyPluginInterface } from '../../src/interfaces/VocabularyPlugin.js';
-import type { SchemaGraphRelationInterface } from '../../src/interfaces/SchemaGraph.js';
 import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { SchemaGraphRelationInterface } from '../../src/interfaces/SchemaGraph.js';
+import type { SchemaRegistryInterface } from '../../src/interfaces/SchemaRegistry.js';
+import type { VocabularyPluginInterface } from '../../src/interfaces/VocabularyPlugin.js';
+import {
+  Curie, GraphOntologySerializer, JsonTology
+} from '../../src/index.js';
+// Internal access: vocabulary-plugin behaviour is observed at the graph level
+// (SchemaGraph construction with the plugin attached) and at the SHACL
+// serializer level. SchemaRegistry direct construction is also needed for the
+// plugin-prefix-override-default test, since JsonTology re-injects DEFAULT_PREFIXES
+// after vocabulary merging. These graph + registry surfaces are not part of the
+// public JsonTology API and constitute the contract for vocabulary-plugin integration.
+import { GraphShaclSerializer } from '../../src/modules/ontology/GraphShaclSerializer.js';
+import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
+import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
+import { DEFAULT_PREFIXES } from '../../src/constants/PREFIXES.js';
 
 const ACME_NS = 'https://acme.org/vocab#';
 
@@ -35,7 +42,7 @@ function acmePlugin(overrides?: Partial<VocabularyPluginInterface>): VocabularyP
 void describe('VocabularyPlugin', () => {
   void describe('prefix merging', () => {
     const scenarios: Array<{
-      'assertions': (registry: SchemaRegistry) => void;
+      'assertions': (registry: SchemaRegistryInterface) => void;
       'name': string;
       'plugin': VocabularyPluginInterface;
     }> = [
@@ -75,6 +82,11 @@ void describe('VocabularyPlugin', () => {
       assertions, name, plugin
     } of scenarios) {
       void it(name, () => {
+        // Internal access: JsonTology merges DEFAULT_PREFIXES into its own
+        // prefixes field and forwards them to registry.prefixes, which
+        // overrides plugin prefixes. To test plugin-overrides-default
+        // semantics directly, the registry is constructed without that
+        // post-merge step.
         const registry = new SchemaRegistry({ 'vocabularies': [plugin] });
 
         assertions(registry);
@@ -210,7 +222,10 @@ void describe('VocabularyPlugin', () => {
             }
           };
 
-          const registry = new SchemaRegistry({ 'vocabularies': [plugin] });
+          const registry = JsonTology.create({
+            'baseIRI': 'https://example.io',
+            'vocabularies': [plugin]
+          }).registry;
 
           registry.register(AcmeSchema as unknown as Record<string, unknown>);
 
@@ -271,7 +286,10 @@ void describe('VocabularyPlugin', () => {
             }
           };
 
-          const registry = new SchemaRegistry({ 'vocabularies': [plugin] });
+          const registry = JsonTology.create({
+            'baseIRI': 'https://example.io',
+            'vocabularies': [plugin]
+          }).registry;
 
           registry.register(AcmeSchema as unknown as Record<string, unknown>);
 
@@ -315,7 +333,10 @@ void describe('VocabularyPlugin', () => {
             'prefixes': {}
           };
 
-          const registry = new SchemaRegistry({ 'vocabularies': [plugin] });
+          const registry = JsonTology.create({
+            'baseIRI': 'https://example.io',
+            'vocabularies': [plugin]
+          }).registry;
 
           registry.register(AcmeSchema as unknown as Record<string, unknown>);
 
@@ -333,7 +354,10 @@ void describe('VocabularyPlugin', () => {
         assertions() {
           const plugin: VocabularyPluginInterface = { 'prefixes': {} };
 
-          const registry = new SchemaRegistry({ 'vocabularies': [plugin] });
+          const registry = JsonTology.create({
+            'baseIRI': 'https://example.io',
+            'vocabularies': [plugin]
+          }).registry;
 
           assert.ok(registry.curie !== undefined, 'edge: empty prefixes — curie exists');
           assert.equal(registry.curie.expand('owl:Class'), 'http://www.w3.org/2002/07/owl#Class', 'edge: empty prefixes — defaults still work');
@@ -349,12 +373,13 @@ void describe('VocabularyPlugin', () => {
 
           const plugin2: VocabularyPluginInterface = { 'prefixes': { 'shared': ns2 } };
 
-          const registry = new SchemaRegistry({
+          const registry = JsonTology.create({
+            'baseIRI': 'https://example.io',
             'vocabularies': [
               plugin1,
               plugin2
             ]
-          });
+          }).registry;
 
           assert.ok(registry.curie !== undefined, 'edge: conflicting prefixes — curie exists');
           const expanded = registry.curie.expand('shared:Thing');
@@ -386,7 +411,10 @@ void describe('VocabularyPlugin', () => {
         assertions() {
           const plugin: VocabularyPluginInterface = { 'prefixes': { 'acme': ACME_NS } };
 
-          const registry = new SchemaRegistry({ 'vocabularies': [plugin] });
+          const registry = JsonTology.create({
+            'baseIRI': 'https://example.io',
+            'vocabularies': [plugin]
+          }).registry;
 
           registry.register(AcmeSchema as unknown as Record<string, unknown>);
 
@@ -439,12 +467,13 @@ void describe('VocabularyPlugin', () => {
             'prefixes': { 'geo': geoNs }
           };
 
-          const registry = new SchemaRegistry({
+          const registry = JsonTology.create({
+            'baseIRI': 'https://example.io',
             'vocabularies': [
               bioPlugin,
               geoPlugin
             ]
-          });
+          }).registry;
 
           registry.register(AcmeSchema as unknown as Record<string, unknown>);
 
@@ -531,7 +560,10 @@ void describe('VocabularyPlugin', () => {
             'prefixes': { 'acme': ACME_NS }
           };
 
-          const registry = new SchemaRegistry({ 'vocabularies': [plugin] });
+          const registry = JsonTology.create({
+            'baseIRI': 'https://example.io',
+            'vocabularies': [plugin]
+          }).registry;
 
           registry.register(AcmeSchema as unknown as Record<string, unknown>);
 

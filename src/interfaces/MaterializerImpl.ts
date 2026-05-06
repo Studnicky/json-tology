@@ -22,6 +22,8 @@ export interface MaterializerInterface {
   projectAbox(
     schema: Record<string, unknown> & { '$id': string },
     data: unknown,
-    baseIRI: string
+    baseIRI: string,
+    options?: { 'graphIRI'?: string | undefined;
+      'subjectIRI'?: string | undefined }
   ): QuadInterface[];
 }
