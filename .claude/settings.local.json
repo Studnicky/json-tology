@@ -84,7 +84,10 @@
       "Bash(wc -l /Users/studs/Workspace/json-tology/test/unit/*.test.ts | sort -n | tail -20)",
       "Bash(python3 -)",
       "Bash(python3 -c ' *)",
-      "Bash(perl -i -pe \"s|const applyOp = Value\\\\.applyOp\\\\.bind\\\\\\(Value\\\\\\);|const applyOp = \\(root: unknown, op: Parameters<typeof Value.applyOp>[1]\\): ReturnType<typeof Value.applyOp> => Value.applyOp\\(root, op\\);|; s|const clone = Value\\\\.clone\\\\.bind\\\\\\(Value\\\\\\);|const clone = <T,>\\(value: T\\): T => Value.clone\\(value\\);|\" test/unit/operations.test.ts)"
+      "Bash(perl -i -pe \"s|const applyOp = Value\\\\.applyOp\\\\.bind\\\\\\(Value\\\\\\);|const applyOp = \\(root: unknown, op: Parameters<typeof Value.applyOp>[1]\\): ReturnType<typeof Value.applyOp> => Value.applyOp\\(root, op\\);|; s|const clone = Value\\\\.clone\\\\.bind\\\\\\(Value\\\\\\);|const clone = <T,>\\(value: T\\): T => Value.clone\\(value\\);|\" test/unit/operations.test.ts)",
+      "Bash(perl -i -pe \"s|\\\\\\(q\\\\\\)|\\(quad\\)|g; s|\\\\bof q\\\\b|of quad|g\" examples/06b-abox-stable-iri.mjs)",
+      "Bash(perl -i -pe \"s|for \\\\\\(const q of|for \\(const quad of|; s|console\\\\.log\\\\\\(q\\\\\\)|console.log\\(quad\\)|; s|q\\\\.subject|quad.subject|g; s|q\\\\.predicate|quad.predicate|g; s|q\\\\.object|quad.object|g; s|q\\\\.graph|quad.graph|g\" examples/06b-abox-stable-iri.mjs)",
+      "Bash(perl -i -pe \"s|\\\\.every\\\\\\(\\\\\\(g\\\\\\) =>|.every\\(\\(graph\\) =>|; s|return g === expectedGraph|return graph === expectedGraph|\" examples/06b-abox-stable-iri.mjs)"
     ]
   }
 }

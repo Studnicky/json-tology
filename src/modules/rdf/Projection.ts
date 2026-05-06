@@ -394,10 +394,12 @@ export function projectAbox(
   data: unknown,
   baseIRI: string,
   options?: { 'curie'?: CurieInterface | undefined;
-    'entryNode'?: SchemaGraphNodeInterface | undefined }
+    'entryNode'?: SchemaGraphNodeInterface | undefined;
+    'graphIRI'?: string | undefined;
+    'subjectIRI'?: string | undefined }
 ): QuadInterface[] {
   const {
-    curie, entryNode
+    curie, entryNode, graphIRI, subjectIRI
   } = options ?? {};
 
   QuadFactory.resetBnodeCounter();
@@ -409,7 +411,13 @@ export function projectAbox(
     return quads;
   }
 
-  projectInstance(graph, resolved, data, baseIRI, quads, curie);
+  projectInstance(graph, resolved, data, baseIRI, quads, curie, subjectIRI);
+
+  if (graphIRI !== undefined) {
+    for (const quad of quads) {
+      quad.graph = graphIRI;
+    }
+  }
 
   return quads;
 }
@@ -441,9 +449,10 @@ function projectInstance(
   data: Record<string, unknown>,
   baseIRI: string,
   quads: QuadInterface[],
-  curie: CurieInterface | undefined
+  curie: CurieInterface | undefined,
+  overrideSubjectIRI?: string
 ): string {
-  const instIRI = instanceIRI(baseIRI, node.id, data);
+  const instIRI = overrideSubjectIRI ?? instanceIRI(baseIRI, node.id, data);
   const nodeSemantics = graph.semantics(node);
 
   quads.push(QuadFactory.quad(instIRI, RDF.type, QuadFactory.iri(node.id, { curie }), { curie }));

@@ -3,19 +3,24 @@
 
 import assert from 'node:assert/strict';
 import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import type { SchemaRegistryInterface } from '../../src/interfaces/SchemaRegistry.js';
 import {
   describe, it
 } from 'node:test';
 import {
+  GraphOntologySerializer, JsonTology, OntologyBuilder
+} from '../../src/index.js';
+// Internal access: ontology serialization unit tests directly probe the graph
+// serializer pipeline (SchemaGraph construction, projection helpers, the SHACL
+// serializer, GraphSchemaSerializer round-trip). These graph-level surfaces are
+// the contract being asserted; the public ontology() / toQuads() methods only
+// expose composed output, not the per-quad projection shape.
+import {
   projectAbox, projectGraph, quadsToJsonLdNodes
 } from '../../src/modules/rdf/Projection.js';
-import { GraphOntologySerializer } from '../../src/modules/ontology/GraphOntologySerializer.js';
 import { GraphSchemaSerializer } from '../../src/modules/ontology/GraphSchemaSerializer.js';
 import { GraphShaclSerializer } from '../../src/modules/ontology/GraphShaclSerializer.js';
-import { JsonTology } from '../../src/JsonTology.js';
-import { OntologyBuilder } from '../../src/modules/ontology/OntologyBuilder.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
 // ===========================================================================
 // Source: graphSchemaSerializer.test.ts
@@ -4171,13 +4176,13 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 {
   type JsonLdNode = Record<string, unknown>;
 
-  function owlNodes(registry: SchemaRegistry): JsonLdNode[] {
+  function owlNodes(registry: SchemaRegistryInterface): JsonLdNode[] {
     const serializer = new GraphOntologySerializer();
 
     return serializer.serialize(registry.listGraphs()) as JsonLdNode[];
   }
 
-  function shaclNodes(registry: SchemaRegistry): JsonLdNode[] {
+  function shaclNodes(registry: SchemaRegistryInterface): JsonLdNode[] {
     const serializer = new GraphShaclSerializer();
 
     return serializer.serialize(registry.listGraphs()) as JsonLdNode[];
@@ -4222,7 +4227,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
   ];
 
   void describe('OWL serialization: scalar property ranges', () => {
-    const reg = new SchemaRegistry();
+    const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
     reg.register({
       '$id': 'https://example.com/ScalarOnly',
@@ -4278,7 +4283,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
   ];
 
   void describe('OWL serialization: mixed ref/scalar property types', () => {
-    const reg = new SchemaRegistry();
+    const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
     reg.register({
       '$id': 'https://example.com/Target',
@@ -4315,7 +4320,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
   // -------------------------------------------------------------------------
 
   void describe('OWL serialization: array of $ref with allValuesFrom', () => {
-    const reg = new SchemaRegistry();
+    const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
     reg.register({
       '$id': 'https://example.com/Item',
@@ -4448,7 +4453,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
   ];
 
   void describe('OWL serialization: readOnly/writeOnly annotations', () => {
-    const reg = new SchemaRegistry();
+    const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
     reg.register({
       '$id': 'https://example.com/AccessControl',
@@ -4487,7 +4492,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
   // -------------------------------------------------------------------------
 
   void describe('OWL serialization: enum oneOf', () => {
-    const reg = new SchemaRegistry();
+    const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
     reg.register({
       '$id': 'https://example.com/StatusEnum',
@@ -4613,7 +4618,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       classId, expectedSuperClasses, name, schemas
     } of owlSubClassScenarios) {
       void it(name, () => {
-        const reg = new SchemaRegistry();
+        const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
         for (const schema of schemas) {
           reg.register(schema);
@@ -4652,7 +4657,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
   void describe('OWL serialization: no-$id schema', () => {
     void it('throws SchemaError for schema with no $id', () => {
-      const reg = new SchemaRegistry();
+      const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
       assert.throws(() => {
         reg.register({
@@ -4686,7 +4691,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
   }];
 
   void describe('SHACL serialization: string constraints', () => {
-    const reg = new SchemaRegistry();
+    const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
     reg.register({
       '$id': 'https://example.com/StringConstrained',
@@ -4761,7 +4766,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       expectedPattern, name, propPathFragment, schema
     } of shaclPatternScenarios) {
       void it(name, () => {
-        const reg = new SchemaRegistry();
+        const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
         reg.register(schema);
 
@@ -4794,7 +4799,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
   // -------------------------------------------------------------------------
 
   void describe('SHACL serialization: array cardinality', () => {
-    const reg = new SchemaRegistry();
+    const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
     reg.register({
       '$id': 'https://example.com/ArrayConstrained',
@@ -4854,7 +4859,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
   // -------------------------------------------------------------------------
 
   void describe('SHACL serialization: nested $ref property', () => {
-    const reg = new SchemaRegistry();
+    const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
     reg.register({
       '$id': 'https://example.com/Address',
@@ -5056,7 +5061,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       expectedMinCount, name, propPathFragment, schemas, shapeId
     } of shaclRequiredScenarios) {
       void it(name, () => {
-        const reg = new SchemaRegistry();
+        const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
         for (const schema of schemas) {
           reg.register(schema);
@@ -5102,7 +5107,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
   void describe('cross-cutting serialization edge cases', () => {
     void it('edge: schema with only $defs and no properties produces class but no property nodes', () => {
-      const reg = new SchemaRegistry();
+      const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
       reg.register({
         '$defs': {
@@ -5134,7 +5139,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     });
 
     void it('edge: readOnly and writeOnly on same property emits both annotations', () => {
-      const reg = new SchemaRegistry();
+      const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
       reg.register({
         '$id': 'https://example.com/BothAccess',
@@ -5160,7 +5165,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     });
 
     void it('edge: schema with all constraint types combined serializes without error', () => {
-      const reg = new SchemaRegistry();
+      const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
       reg.register({
         '$id': 'https://example.com/AllConstraints',
@@ -5208,7 +5213,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     });
 
     void it('produces valid class/shape with no property shapes for empty schema', () => {
-      const reg = new SchemaRegistry();
+      const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
       reg.register({
         '$id': 'https://example.com/Empty',
@@ -5257,7 +5262,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     });
 
     void it('uses full IRIs in all predicate keys, no CURIE shortcuts', () => {
-      const reg = new SchemaRegistry();
+      const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
       reg.register({
         '$id': 'https://example.com/FullIri',
