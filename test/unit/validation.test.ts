@@ -2704,7 +2704,10 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
         registry.register(schema);
-        assert.ok(registry.validate(schema.$id as string, data).ok, `expected valid: ${name}`);
+        const validateResult = registry.validate(schema.$id as string, data);
+
+        assert.equal(validateResult.ok, true, `expected valid: ${name}`);
+        assert.equal(validateResult.length, 0, `expected zero errors: ${name}`);
       });
     }
 
@@ -2716,9 +2719,19 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         'type': 'object'
       });
 
-      assert.ok(syntheticId.startsWith('urn:json-tology:'), 'synthetic ID has expected prefix');
-      assert.ok(registry.validate(syntheticId, { 'value': 42 }).ok, 'valid data passes');
-      assert.ok(registry.validate(syntheticId, { 'value': 'not-a-number' }).length > 0, 'invalid data fails');
+      assert.match(syntheticId, /^urn:json-tology:/u, 'synthetic ID has expected prefix');
+
+      const validResult = registry.validate(syntheticId, { 'value': 42 });
+
+      assert.equal(validResult.ok, true, 'valid data passes');
+      assert.equal(validResult.length, 0, 'valid data has zero errors');
+
+      const invalidResult = registry.validate(syntheticId, { 'value': 'not-a-number' });
+
+      assert.equal(invalidResult.ok, false, 'invalid data fails');
+      assert.equal(invalidResult.length, 1, 'invalid data has exactly one type error');
+      assert.equal(invalidResult.items[0].keyword, 'type');
+      assert.equal(invalidResult.items[0].path, '/value');
     });
   });
 
@@ -2787,9 +2800,11 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
           const errors = registry.validate('https://edge.test/NumBounds', data);
 
           if (valid) {
-            assert.ok(errors.ok);
+            assert.equal(errors.ok, true);
+            assert.equal(errors.length, 0);
           } else {
-            assert.ok(errors.length > 0);
+            assert.equal(errors.ok, false);
+            assert(errors.length > 0, 'expected at least one validation error');
           }
         });
       }
@@ -2840,9 +2855,11 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
           const errors = registry.validate('https://edge.test/ExclBounds', data);
 
           if (valid) {
-            assert.ok(errors.ok);
+            assert.equal(errors.ok, true);
+            assert.equal(errors.length, 0);
           } else {
-            assert.ok(errors.length > 0);
+            assert.equal(errors.ok, false);
+            assert(errors.length > 0, 'expected at least one validation error');
           }
         });
       }
@@ -2892,9 +2909,11 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
           const errors = registry.validate('https://edge.test/MultOf', data);
 
           if (valid) {
-            assert.ok(errors.ok);
+            assert.equal(errors.ok, true);
+            assert.equal(errors.length, 0);
           } else {
-            assert.ok(errors.length > 0);
+            assert.equal(errors.ok, false);
+            assert(errors.length > 0, 'expected at least one validation error');
           }
         });
       }
@@ -2956,9 +2975,11 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
           const errors = registry.validate('https://edge.test/StrLen', data);
 
           if (valid) {
-            assert.ok(errors.ok);
+            assert.equal(errors.ok, true);
+            assert.equal(errors.length, 0);
           } else {
-            assert.ok(errors.length > 0);
+            assert.equal(errors.ok, false);
+            assert(errors.length > 0, 'expected at least one validation error');
           }
         });
       }
@@ -3013,9 +3034,11 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
           const errors = registry.validate('https://edge.test/Pattern', data);
 
           if (valid) {
-            assert.ok(errors.ok);
+            assert.equal(errors.ok, true);
+            assert.equal(errors.length, 0);
           } else {
-            assert.ok(errors.length > 0);
+            assert.equal(errors.ok, false);
+            assert(errors.length > 0, 'expected at least one validation error');
           }
         });
       }
@@ -3095,9 +3118,11 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         const errors = registry.validate('https://edge.test/ArrayItems', data);
 
         if (valid) {
-          assert.ok(errors.ok);
+          assert.equal(errors.ok, true);
+          assert.equal(errors.length, 0);
         } else {
-          assert.ok(errors.length > 0);
+          assert.equal(errors.ok, false);
+          assert(errors.length > 0, 'expected at least one validation error');
         }
       });
     }
@@ -3151,9 +3176,11 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
           const errors = registry.validate('https://edge.test/Enum', data);
 
           if (valid) {
-            assert.ok(errors.ok);
+            assert.equal(errors.ok, true);
+            assert.equal(errors.length, 0);
           } else {
-            assert.ok(errors.length > 0);
+            assert.equal(errors.ok, false);
+            assert(errors.length > 0, 'expected at least one validation error');
           }
         });
       }
@@ -3203,9 +3230,11 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
           const errors = registry.validate('https://edge.test/Const', data);
 
           if (valid) {
-            assert.ok(errors.ok);
+            assert.equal(errors.ok, true);
+            assert.equal(errors.length, 0);
           } else {
-            assert.ok(errors.length > 0);
+            assert.equal(errors.ok, false);
+            assert(errors.length > 0, 'expected at least one validation error');
           }
         });
       }
@@ -3284,9 +3313,11 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         const errors = registry.validate(schemaId, data);
 
         if (valid) {
-          assert.ok(errors.ok);
+          assert.equal(errors.ok, true);
+          assert.equal(errors.length, 0);
         } else {
-          assert.ok(errors.length > 0);
+          assert.equal(errors.ok, false);
+          assert(errors.length > 0, 'expected at least one validation error');
         }
       });
     }
@@ -3430,8 +3461,16 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         });
         assert.fail('should have thrown');
       } catch (error) {
-        assert.ok(error instanceof InstantiationError, 'nested failure: instanceof InstantiationError');
-        assert.ok(error.errors.length > 0, 'nested failure: has errors');
+        assert(error instanceof InstantiationError, 'nested failure: instanceof InstantiationError');
+        assert.equal(error.code, 'INSTANTIATION_FAILED');
+        assert.equal(error.retryable, false);
+        assert(error.errors.length > 0, 'nested failure: has errors');
+        const patternErr = error.errors.items.find((item) => {
+          return item.keyword === 'pattern';
+        });
+
+        assert(patternErr !== undefined, 'nested failure surfaces pattern keyword');
+        assert.equal(patternErr.path, '/address/zip');
       }
     });
 
@@ -3562,9 +3601,11 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
           const errors = registry.validate('https://edge.test/City', data);
 
           if (valid) {
-            assert.ok(errors.ok);
+            assert.equal(errors.ok, true);
+            assert.equal(errors.length, 0);
           } else {
-            assert.ok(errors.length > 0);
+            assert.equal(errors.ok, false);
+            assert(errors.length > 0, 'expected at least one validation error');
           }
         });
       }
@@ -3618,9 +3659,11 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
           const errors = registry.validate('https://edge.test/A', data);
 
           if (valid) {
-            assert.ok(errors.ok);
+            assert.equal(errors.ok, true);
+            assert.equal(errors.length, 0);
           } else {
-            assert.ok(errors.length > 0);
+            assert.equal(errors.ok, false);
+            assert(errors.length > 0, 'expected at least one validation error');
           }
         });
       }
@@ -3641,13 +3684,14 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         'check': (jt) => {
           const owl = jt.ontology().jsonLdObject();
 
-          assert.ok(owl['@graph'] !== undefined, 'OWL output has @graph');
+          assert(Array.isArray(owl['@graph']), 'OWL output has @graph array');
           const graph = owl['@graph'] as Array<Record<string, unknown>>;
           const markerClass = graph.find((node) => {
             return node['@id'] === 'https://edge.test/Marker';
           });
 
-          assert.ok(markerClass !== undefined, 'Marker class present in OWL graph');
+          assert(markerClass !== undefined, 'Marker class present in OWL graph');
+          assert.equal(markerClass['@type'], 'http://www.w3.org/2002/07/owl#Class');
         },
         'name': 'serializes schema with no properties to valid OWL class',
         'schemas': [{
@@ -3660,7 +3704,12 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
           const shacl = jt.ontology().shaclObject();
           const graph = shacl['@graph'] as Array<Record<string, unknown>>;
 
-          assert.ok(graph.length > 0, 'SHACL graph has nodes');
+          assert(graph.length > 0, 'SHACL graph has nodes');
+          const allScalarsShape = graph.find((node) => {
+            return node['@id'] === 'https://edge.test/AllScalars';
+          });
+
+          assert(allScalarsShape !== undefined, 'AllScalars NodeShape present');
         },
         'name': 'serializes schema with all scalar types',
         'schemas': [{
@@ -3676,17 +3725,25 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       },
       {
         'check': (jt) => {
-          assert.ok(jt.validate('https://edge.test/Tree', {
+          const recursiveResult = jt.validate('https://edge.test/Tree', {
             'children': [{
               'children': [],
               'label': 'child'
             }],
             'label': 'root'
-          }).ok, 'recursive data validates');
+          });
+
+          assert.equal(recursiveResult.ok, true, 'recursive data validates');
+          assert.equal(recursiveResult.length, 0);
 
           const owl = jt.ontology().jsonLdObject();
 
-          assert.ok(owl['@graph'] !== undefined, 'recursive schema serializes without infinite loop');
+          assert(Array.isArray(owl['@graph']), 'recursive schema serializes without infinite loop');
+          const treeClass = (owl['@graph'] as Array<Record<string, unknown>>).find((node) => {
+            return node['@id'] === 'https://edge.test/Tree';
+          });
+
+          assert(treeClass !== undefined, 'Tree class present in recursive output');
         },
         'name': 'handles schema with self-referencing $ref',
         'schemas': [{
@@ -3777,9 +3834,12 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         'type': 'object'
       });
 
-      assert.equal(jt.list().length, 2, 'two schemas registered');
-      assert.ok(jt.has('https://edge.test/First'), 'First schema present');
-      assert.ok(jt.has('https://edge.test/Second'), 'Second schema present');
+      assert.deepEqual(jt.list(), [
+        'https://edge.test/First',
+        'https://edge.test/Second'
+      ]);
+      assert.equal(jt.has('https://edge.test/First'), true, 'First schema present');
+      assert.equal(jt.has('https://edge.test/Second'), true, 'Second schema present');
     });
 
     void it('ontology cache invalidates after register()', () => {
