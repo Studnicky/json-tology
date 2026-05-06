@@ -61,12 +61,21 @@ import { DEFAULT_PREFIXES } from './constants/PREFIXES.js';
 const STATIC_BASE_IRI = 'http://json-tology.dev/_/static';
 
 /**
+ * The literal string `'blank-node'` requests anonymous-node subjects
+ * for every object in the projection. Exposed as a separate constant
+ * so consumers can spell the magic value without importing it inline.
+ */
+export const BLANK_NODE_IRI_FOR = 'blank-node';
+
+/**
  * Per-call options accepted by `toQuads`.
  *
- * `iriFor` — if a string, overrides the root subject IRI (depth 0); nested
- * objects fall through to the default minter. If a function, called once
- * per object subject with `{ path, value, depth }` and returns either an
- * IRI or `undefined` to fall through.
+ * `iriFor` — if a string IRI, overrides the root subject IRI (depth 0);
+ * nested objects fall through to the default minter. If the literal
+ * `'blank-node'`, every object subject is emitted as an anonymous blank
+ * node `_:b<n>` (counter scoped to the projectAbox call). If a function,
+ * called once per object subject with `{ path, value, depth }` and returns
+ * either an IRI or `undefined` to fall through.
  *
  * `graphIRI` — when set, every emitted quad has its `graph` field stamped
  * with this IRI.
@@ -92,6 +101,18 @@ interface NormalizedToQuadsOptionsType {
 function rootIriOnly(iri: string): SkolemizeFnType {
   return (ctx) => {
     return ctx.depth === 0 ? iri : undefined;
+  };
+}
+
+function blankNodeStrategy(): SkolemizeFnType {
+  let counter = 0;
+
+  return () => {
+    const name = `_:b${counter}`;
+
+    counter++;
+
+    return name;
   };
 }
 
@@ -139,6 +160,18 @@ function deskolemizeQuads(quads: readonly QuadInterface[]): QuadInterface[] {
   });
 }
 
+function liftIriForOption(raw: SkolemizeFnType | string | undefined): SkolemizeFnType | undefined {
+  if (raw === undefined) {
+    return undefined;
+  }
+
+  if (typeof raw !== 'string') {
+    return raw;
+  }
+
+  return raw === BLANK_NODE_IRI_FOR ? blankNodeStrategy() : rootIriOnly(raw);
+}
+
 function normalizeToQuadsOptions(options: ToQuadsOptionsType | undefined): NormalizedToQuadsOptionsType {
   if (options === undefined) {
     return {};
@@ -146,14 +179,11 @@ function normalizeToQuadsOptions(options: ToQuadsOptionsType | undefined): Norma
 
   const rawIriFor = options.iriFor ?? options.subjectIRI;
   const graphIRI = options.graphIRI;
+  const iriFor = liftIriForOption(rawIriFor);
 
-  if (rawIriFor === undefined) {
+  if (iriFor === undefined) {
     return graphIRI === undefined ? {} : { graphIRI };
   }
-
-  const iriFor: SkolemizeFnType = typeof rawIriFor === 'string'
-    ? rootIriOnly(rawIriFor)
-    : rawIriFor;
 
   return graphIRI === undefined
     ? { iriFor }
@@ -406,7 +436,7 @@ export class JsonTology<TMap = Record<never, never>> {
   private readonly baseIRI: string;
   private readonly defaultDeskolemize: boolean;
   private readonly defaultGraphIRI: string | undefined;
-  private readonly defaultIriFor: SkolemizeFnType | undefined;
+  private readonly defaultIriForRaw: SkolemizeFnType | string | undefined;
 
   public readonly materializer: MaterializerInterface;
   private ontologyCache: null | OntologyBuilder = null;
@@ -447,16 +477,7 @@ export class JsonTology<TMap = Record<never, never>> {
 
     this.defaultGraphIRI = options.defaultGraphIRI;
     this.defaultDeskolemize = options.defaultDeskolemize === true;
-
-    const rawDefaultIriFor = options.iriFor;
-    let defaultIriFor: SkolemizeFnType | undefined;
-
-    if (typeof rawDefaultIriFor === 'string') {
-      defaultIriFor = rootIriOnly(rawDefaultIriFor);
-    } else if (rawDefaultIriFor !== undefined) {
-      defaultIriFor = rawDefaultIriFor;
-    }
-    this.defaultIriFor = defaultIriFor;
+    this.defaultIriForRaw = options.iriFor;
 
     this.prefixes = {
       ...DEFAULT_PREFIXES,
@@ -947,7 +968,7 @@ export class JsonTology<TMap = Record<never, never>> {
     const normalized = normalizeToQuadsOptions(options);
     const effective = {
       'graphIRI': normalized.graphIRI ?? this.defaultGraphIRI,
-      'iriFor': normalized.iriFor ?? this.defaultIriFor
+      'iriFor': normalized.iriFor ?? liftIriForOption(this.defaultIriForRaw)
     };
 
     return this.materializer.projectAbox(
