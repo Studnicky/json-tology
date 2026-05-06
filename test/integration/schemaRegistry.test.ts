@@ -108,7 +108,6 @@ void describe('SchemaRegistry registration', () => {
       'check': (registry) => {
         const retrieved = registry.get('https://example.io/test-schema');
 
-        assert.ok(retrieved);
         assert.deepStrictEqual(retrieved, TestSchema);
       },
       'name': 'registers a single schema and retrieves it by $id',
@@ -118,8 +117,8 @@ void describe('SchemaRegistry registration', () => {
     },
     {
       'check': (registry) => {
-        assert.ok(registry.get('https://example.io/test-schema'));
-        assert.ok(registry.get('https://example.io/schema-with-defs'));
+        assert.deepStrictEqual(registry.get('https://example.io/test-schema'), TestSchema);
+        assert.deepStrictEqual(registry.get('https://example.io/schema-with-defs'), TestSchemaWithDefs);
       },
       'name': 'registers an array of schemas',
       'setup': (registry) => {
@@ -131,8 +130,8 @@ void describe('SchemaRegistry registration', () => {
     },
     {
       'check': (registry) => {
-        assert.ok(registry.get('https://example.io/test-schema'));
-        assert.ok(registry.get('https://example.io/schema-with-defs'));
+        assert.deepStrictEqual(registry.get('https://example.io/test-schema'), TestSchema);
+        assert.deepStrictEqual(registry.get('https://example.io/schema-with-defs'), TestSchemaWithDefs);
       },
       'name': 'registers single then array (mixed)',
       'setup': (registry) => {
@@ -142,7 +141,8 @@ void describe('SchemaRegistry registration', () => {
     },
     {
       'check': (registry) => {
-        assert.ok(registry.get('https://example.io/test-schema'));
+        assert.deepStrictEqual(registry.get('https://example.io/test-schema'), TestSchema);
+        assert.equal(registry.list().length, 1);
       },
       'name': 'idempotent: identical schema object registered twice',
       'setup': (registry) => {
@@ -156,9 +156,10 @@ void describe('SchemaRegistry registration', () => {
         const second = registry.graph(TestSchema.$id);
         const listed = registry.listGraphs();
 
-        assert.ok(first);
+        assert.notStrictEqual(first, undefined);
         assert.strictEqual(first, second);
-        assert.ok(listed.includes(first));
+        assert.equal(listed.includes(first), true);
+        assert.equal(listed.length, 2);
       },
       'name': 'caches canonical graphs per registered schema',
       'setup': (registry) => {
@@ -188,8 +189,15 @@ void describe('SchemaRegistry registration', () => {
     },
     {
       'check': (registry) => {
-        assert.ok(registry.get('https://example.io/Address'));
-        assert.ok(registry.get('https://example.io/User'));
+        const address = registry.get('https://example.io/Address') as Record<string, unknown>;
+        const user = registry.get('https://example.io/User') as Record<string, unknown>;
+
+        assert.equal(address.$id, 'https://example.io/Address');
+        assert.equal(user.$id, 'https://example.io/User');
+        assert.deepStrictEqual(
+          (user.properties as Record<string, unknown>).address,
+          { '$ref': 'https://example.io/Address' }
+        );
       },
       'name': 'registration succeeds with proper $ref patterns',
       'setup': (registry) => {
@@ -218,7 +226,7 @@ void describe('SchemaRegistry registration', () => {
         assert.doesNotThrow(() => {
           defaultRegistry.register(InvalidInlineSchema);
         });
-        assert.ok(defaultRegistry.get(InvalidInlineSchema.$id) !== undefined);
+        assert.deepStrictEqual(defaultRegistry.get(InvalidInlineSchema.$id), InvalidInlineSchema);
 
         // enableStrictGraph mode: inline schemas throw SchemaError
         const strictRegistry = JsonTology.create({
@@ -258,7 +266,7 @@ void describe('SchemaRegistry registration', () => {
       'check': (registry) => {
         const originalGraph = registry.graph(TestSchema.$id);
 
-        assert.ok(originalGraph !== undefined);
+        assert.notStrictEqual(originalGraph, undefined);
         assert.throws(() => {
           registry.register(InvalidOverwriteSchema);
         }, /already registered with different content/u);
@@ -269,7 +277,7 @@ void describe('SchemaRegistry registration', () => {
         assert.strictEqual(registry.graph(TestSchema.$id), originalGraph);
         assert.equal(registry.list().length, 1);
         assert.equal(registry.listGraphs().length, 1);
-        assert.ok(registry.validate(TestSchema.$id, { 'name': 'Alice' }).ok);
+        assert.equal(registry.validate(TestSchema.$id, { 'name': 'Alice' }).ok, true);
         const parsed = registry.instantiate(TestSchema.$id, { 'name': 'Alice' }) as Record<string, unknown>;
 
         assert.equal(parsed.name, 'Alice');
@@ -313,9 +321,12 @@ void describe('SchemaRegistry registration', () => {
   }> = [
     {
       'checkLogs': (logs) => {
-        assert.ok(logs.some((log) => {
+        const identicalLog = logs.find((log) => {
           return log.includes('identical');
-        }));
+        });
+
+        assert.notStrictEqual(identicalLog, undefined);
+        assert.match(identicalLog as string, /identical/u);
       },
       'name': 'identical content with different object reference traces "identical"',
       'setup': (registry) => {
@@ -325,9 +336,12 @@ void describe('SchemaRegistry registration', () => {
     },
     {
       'checkLogs': (logs) => {
-        assert.ok(logs.some((log) => {
+        const warnLog = logs.find((log) => {
           return log.includes('WARN:') && log.includes('already registered under different ID');
-        }));
+        });
+
+        assert.notStrictEqual(warnLog, undefined);
+        assert.match(warnLog as string, /WARN:.*already registered under different ID/u);
       },
       'name': 'same content with different $id warns about duplicate',
       'setup': (registry) => {
@@ -419,11 +433,14 @@ void describe('SchemaRegistry validation', () => {
       if (valid) {
         assert.strictEqual(errors.length, 0);
       } else {
-        assert.ok(errors.length > 0);
+        assert.equal(errors.length > 0, true);
         if (errorSubstring !== undefined) {
-          assert.ok(errors.items.some((err) => {
+          const matched = errors.items.find((err) => {
             return err.message.includes(errorSubstring);
-          }));
+          });
+
+          assert.notStrictEqual(matched, undefined);
+          assert.match((matched as { 'message': string }).message, new RegExp(errorSubstring, 'u'));
         }
       }
     });
@@ -491,8 +508,10 @@ void describe('SchemaRegistry options', () => {
     },
     {
       'check': (registry, logs) => {
+        const before = logs.length;
+
         registry.register(TestSchema);
-        assert.ok(logs.length > 0);
+        assert.equal(logs.length > before, true);
       },
       'name': 'logger option receives registration log messages',
       'options': {}
@@ -526,7 +545,7 @@ void describe('SchemaRegistry options', () => {
     },
     {
       'check': (registry) => {
-        assert.ok(!registry.castTypes);
+        assert.strictEqual(registry.castTypes, false);
       },
       'name': 'default options leave castTypes false',
       'options': {}
@@ -595,7 +614,7 @@ void describe('coerce / is / errors', () => {
     {
       'check': (registry) => {
         assert.strictEqual(registry.is(ParseTestSchema, { 'name': 'Frank' }), true);
-        assert.ok(registry.get(ParseTestSchema.$id) !== undefined);
+        assert.deepStrictEqual(registry.get(ParseTestSchema.$id), ParseTestSchema);
       },
       'data': { 'name': 'Frank' },
       'name': 'coerce() requires explicit register() call — is() works after register'
@@ -620,11 +639,17 @@ void describe('coerce / is / errors', () => {
           registry.instantiate(ParseTestSchema, {});
           assert.fail('should have thrown');
         } catch (error) {
-          assert.ok(error instanceof InstantiationError);
-          assert.ok(error.errors.length > 0);
-          assert.ok(typeof error.errors.items[0].path === 'string');
-          assert.ok(typeof error.errors.items[0].keyword === 'string');
-          assert.ok(typeof error.errors.items[0].message === 'string');
+          assert.equal(error instanceof InstantiationError, true);
+          const ie = error as InstantiationError;
+
+          assert.equal(ie.errors.length > 0, true);
+          const first = ie.errors.items[0];
+
+          assert.equal(typeof first.path, 'string');
+          assert.equal(typeof first.keyword, 'string');
+          assert.equal(typeof first.message, 'string');
+          assert.equal(first.keyword, 'required');
+          assert.match(first.message, /name|required/u);
         }
       },
       'data': {},
@@ -734,10 +759,13 @@ void describe('coerce / is / errors', () => {
       if (valid) {
         assert.equal(errs.length, 0);
       } else {
-        assert.ok(errs.length > 0);
-        assert.ok(typeof errs.items[0].path === 'string');
-        assert.ok(typeof errs.items[0].keyword === 'string');
-        assert.ok(typeof errs.items[0].params === 'object');
+        assert.equal(errs.length > 0, true);
+        const first = errs.items[0];
+
+        assert.equal(typeof first.path, 'string');
+        assert.equal(typeof first.keyword, 'string');
+        assert.equal(typeof first.params, 'object');
+        assert.equal(first.keyword, 'required');
       }
     });
   }
@@ -873,11 +901,11 @@ void describe('Structure Validation', () => {
 
       assert.equal(warnings.length, expectedWarnings);
       if (paths) {
-        for (const path of paths) {
-          assert.ok(warnings.some((warning) => {
-            return warning.path === path;
-          }));
-        }
+        const warningPaths = warnings.map((warning) => {
+          return warning.path;
+        }).sort();
+
+        assert.deepStrictEqual(warningPaths, [...paths].sort());
       }
     });
   }
@@ -934,7 +962,11 @@ void describe('Structure Validation', () => {
         registry.register(TestSchema);
         const validator = registry.validator(TestSchema.$id);
 
-        assert.ok(typeof validator.validate === 'function');
+        assert.equal(typeof validator.validate, 'function');
+        const result = validator.validate({ 'name': 'Alice' });
+
+        assert.equal(result.valid, true);
+        assert.equal(result.errors.length, 0);
       },
       'name': 'validator() returns compiled validator for registered schema'
     },
