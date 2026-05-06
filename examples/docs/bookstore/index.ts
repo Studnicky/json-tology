@@ -1,5 +1,5 @@
 import { JsonTology } from '../../../src/index.js';
-import type { InferType } from '../../../src/index.js';
+import type { InferType } from '../../../src/types/index.js';
 
 // Primitives — named, single source of truth per concept
 import { AmountSchema } from './entities/Amount.js';

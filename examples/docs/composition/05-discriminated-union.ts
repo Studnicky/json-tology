@@ -6,7 +6,7 @@
 import {
   Compose, JsonTology
 } from '../../../src/index.js';
-import type { InferType } from '../../../src/index.js';
+import type { InferType } from '../../../src/types/index.js';
 
 const CreditCardPaymentSchema = {
   '$id': 'https://bookstore.example/CreditCardPayment',
