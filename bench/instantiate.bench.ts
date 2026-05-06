@@ -1,6 +1,6 @@
 /**
  * Instantiate benchmarks: json-tology's primary parse-and-normalize API
- * vs Zod .parse / TypeBox Value.Parse / Valibot parse.
+ * vs Zod .parse / TypeBox Value.Parse / Valibot parse / io-ts decode.
  *
  * Distinct from coerce.bench.ts: this measures the typed entry point
  * (registry.instantiate / facade .instantiate), with castTypes off (no coercion),
@@ -24,8 +24,9 @@ import {
 } from './harness.js';
 import {
   AddressSchema, CustomerSchema, NestedSchema,
+  NestedSchemaIoTs,
   NestedSchemaTypebox, NestedSchemaValibot, NestedSchemaZod, nestedValid,
-  OrderItemSchema, SimpleSchema, SimpleSchemaTypebox, SimpleSchemaValibot,
+  OrderItemSchema, SimpleSchema, SimpleSchemaIoTs, SimpleSchemaTypebox, SimpleSchemaValibot,
   SimpleSchemaZod, simpleValid
 } from './fixtures.js';
 
@@ -62,6 +63,10 @@ export function runInstantiateBench(): BenchResult[] {
     vParse(SimpleSchemaValibot, simpleValid);
   }));
 
+  results.push(bench('instantiate simple', 'io-ts', () => {
+    SimpleSchemaIoTs.decode(simpleValid);
+  }));
+
   section('instantiate — nested schema (parse + normalize, no coercion)');
 
   results.push(bench('instantiate nested', 'json-tology', () => {
@@ -78,6 +83,10 @@ export function runInstantiateBench(): BenchResult[] {
 
   results.push(bench('instantiate nested', 'valibot', () => {
     vParse(NestedSchemaValibot, nestedValid);
+  }));
+
+  results.push(bench('instantiate nested', 'io-ts', () => {
+    NestedSchemaIoTs.decode(nestedValid);
   }));
 
   return results;

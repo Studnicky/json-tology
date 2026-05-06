@@ -1,5 +1,5 @@
 /**
- * Validation benchmarks: json-tology vs TypeBox vs AJV vs Zod vs Valibot.
+ * Validation benchmarks: json-tology vs TypeBox vs AJV vs Zod vs Valibot vs io-ts.
  */
 
 import { TypeCompiler } from '@sinclair/typebox/compiler';
@@ -11,9 +11,10 @@ import {
 import {
   AddressSchema, ajvValidateNested, ajvValidateSimple,
   CustomerSchema, NestedSchema,
+  NestedSchemaIoTs,
   NestedSchemaTypebox, NestedSchemaValibot, NestedSchemaZod, nestedValid,
   OrderItemSchema, simpleInvalid,
-  SimpleSchema, SimpleSchemaTypebox, SimpleSchemaValibot,
+  SimpleSchema, SimpleSchemaIoTs, SimpleSchemaTypebox, SimpleSchemaValibot,
   SimpleSchemaZod, simpleValid
 } from './fixtures.js';
 
@@ -57,6 +58,10 @@ export function runValidateBench(): BenchResult[] {
     safeParse(SimpleSchemaValibot, simpleValid);
   }));
 
+  results.push(bench('simple valid', 'io-ts', () => {
+    SimpleSchemaIoTs.decode(simpleValid);
+  }));
+
   section('Validation — simple flat schema (invalid data, error collection)');
 
   results.push(bench('simple invalid', 'json-tology', () => {
@@ -79,6 +84,10 @@ export function runValidateBench(): BenchResult[] {
     safeParse(SimpleSchemaValibot, simpleInvalid);
   }));
 
+  results.push(bench('simple invalid', 'io-ts', () => {
+    SimpleSchemaIoTs.decode(simpleInvalid);
+  }));
+
   section('Validation — nested schema (valid data)');
 
   results.push(bench('nested valid', 'json-tology', () => {
@@ -99,6 +108,10 @@ export function runValidateBench(): BenchResult[] {
 
   results.push(bench('nested valid', 'valibot', () => {
     safeParse(NestedSchemaValibot, nestedValid);
+  }));
+
+  results.push(bench('nested valid', 'io-ts', () => {
+    NestedSchemaIoTs.decode(nestedValid);
   }));
 
   return results;

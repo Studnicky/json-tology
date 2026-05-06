@@ -46,7 +46,7 @@ const REPORT_FLAG = '--report';
 const isReport = process.argv.includes(REPORT_FLAG);
 
 console.log('');
-console.log('json-tology vs TypeBox vs AJV vs Zod vs Valibot — performance benchmarks');
+console.log('json-tology vs TypeBox vs AJV vs Zod vs Valibot vs io-ts — performance benchmarks');
 console.log(`Node ${process.version}  •  ${new Date().toISOString()}`);
 
 const suites: SuiteEntry[] = [

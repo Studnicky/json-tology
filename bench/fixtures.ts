@@ -1,6 +1,6 @@
 /**
  * Shared fixtures for benchmarks.
- * Schemas declared for json-tology, TypeBox, AJV, Zod, and Valibot.
+ * Schemas declared for json-tology, TypeBox, AJV, Zod, Valibot, and io-ts.
  */
 
 import { Type } from '@sinclair/typebox';
@@ -8,6 +8,17 @@ import {
   Ajv, type ValidateFunction
 } from 'ajv';
 import addFormats from 'ajv-formats';
+import {
+  array as iotArray,
+  boolean as iotBoolean,
+  exact as iotExact,
+  literal as iotLiteral,
+  number as iotNumber,
+  refinement as iotRefinement,
+  string as iotString,
+  type as iotType,
+  union as iotUnion
+} from 'io-ts';
 import { z } from 'zod';
 import {
   array as vArray, boolean as vBoolean, email as vEmail,
@@ -85,6 +96,26 @@ export const SimpleSchemaValibot = vStrictObject({
   'id': vPipe(vNumber(), vInteger()),
   'name': vString()
 });
+
+const ioTsIntegerCodec = iotRefinement(iotNumber, (value) => {
+  return Number.isInteger(value);
+}, 'Integer');
+
+const ioTsEmailCodec = iotRefinement(iotString, (value) => {
+  return /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/u.test(value);
+}, 'Email');
+
+const ioTsAgeCodec = iotRefinement(ioTsIntegerCodec, (value) => {
+  return value >= 0 && value <= 150;
+}, 'Age');
+
+export const SimpleSchemaIoTs = iotExact(iotType({
+  'active': iotBoolean,
+  'age': ioTsAgeCodec,
+  'email': ioTsEmailCodec,
+  'id': ioTsIntegerCodec,
+  'name': iotString
+}));
 
 export const ajvValidateSimple: ValidateFunction = ajvInstance.compile(SimpleSchema);
 
@@ -414,8 +445,66 @@ export const NestedSchemaValibot = vObject({
   'total': vPipe(vNumber(), vMinValue(0))
 });
 
-// Re-export valibot helpers used in other bench files
+const ioTsCountryCodec = iotRefinement(iotString, (value) => {
+  return value.length === 2;
+}, 'Country');
 
+const ioTsZipCodec = iotRefinement(iotString, (value) => {
+  return /^\d{5}$/u.test(value);
+}, 'Zip');
+
+const ioTsIsoDateTimeCodec = iotRefinement(iotString, (value) => {
+  return !Number.isNaN(Date.parse(value));
+}, 'IsoDateTime');
+
+const ioTsPositiveNumberCodec = iotRefinement(iotNumber, (value) => {
+  return value >= 0;
+}, 'NonNegative');
+
+const ioTsPositiveQuantityCodec = iotRefinement(ioTsIntegerCodec, (value) => {
+  return value >= 1;
+}, 'PositiveQuantity');
+
+const ioTsAddressCodec = iotType({
+  'city': iotString,
+  'country': ioTsCountryCodec,
+  'street': iotString,
+  'zip': ioTsZipCodec
+});
+
+const ioTsCustomerCodec = iotType({
+  'address': ioTsAddressCodec,
+  'email': ioTsEmailCodec,
+  'id': ioTsIntegerCodec,
+  'name': iotString
+});
+
+const ioTsOrderItemCodec = iotType({
+  'price': ioTsPositiveNumberCodec,
+  'quantity': ioTsPositiveQuantityCodec,
+  'sku': iotString
+});
+
+const ioTsItemsCodec = iotRefinement(iotArray(ioTsOrderItemCodec), (value) => {
+  return value.length > 0;
+}, 'NonEmptyItems');
+
+const ioTsStatusCodec = iotUnion([
+  iotLiteral('pending'),
+  iotLiteral('paid'),
+  iotLiteral('shipped'),
+  iotLiteral('delivered'),
+  iotLiteral('cancelled')
+]);
+
+export const NestedSchemaIoTs = iotType({
+  'createdAt': ioTsIsoDateTimeCodec,
+  'customer': ioTsCustomerCodec,
+  'items': ioTsItemsCodec,
+  'orderId': iotString,
+  'status': ioTsStatusCodec,
+  'total': ioTsPositiveNumberCodec
+});
 
 export const ajvValidateNested: ValidateFunction = ajvInstance.compile(NestedSchemaAjv);
 
