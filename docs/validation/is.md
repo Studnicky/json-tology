@@ -100,6 +100,13 @@ function isCustomer(d: unknown): d is Customer {
 }
 ```
 
+```ts [Valibot]
+import * as v from 'valibot';
+if (v.is(CustomerSchema, data)) {
+  data.name; // narrowed to Customer
+}
+```
+
 ```ts [TypeBox + Value]
 import { TypeCompiler } from '@sinclair/typebox/compiler';
 const C = TypeCompiler.Compile(CustomerSchema);

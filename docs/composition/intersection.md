@@ -105,6 +105,11 @@ OrderSchema.and(AuditSchema)
 // Or: z.intersection(OrderSchema, AuditSchema)
 ```
 
+```ts [Valibot]
+import * as v from 'valibot';
+v.intersect([OrderSchema, AuditSchema])
+```
+
 ```ts [TypeBox + Value]
 import { Type } from '@sinclair/typebox';
 Type.Intersect([OrderSchema, AuditSchema])

@@ -115,6 +115,18 @@ DateSchema.parse('2026-01-15T10:30:00Z'); // → Date
 // No built-in encode step  - call .toISOString() manually for the reverse.
 ```
 
+```ts [Valibot]
+import * as v from 'valibot';
+const DateSchema = v.pipe(
+  v.string(),
+  v.isoDateTime(),
+  v.transform((s) => new Date(s)),
+);
+v.parse(DateSchema, '2026-01-15T10:30:00Z'); // → Date
+// Limitation: Valibot has no first-class encode direction. Define a
+// separate inverse schema or call dateVal.toISOString() manually.
+```
+
 ```ts [TypeBox + Value]
 // TypeBox validates only  - no decode/encode transform mechanism.
 // Apply manually after validation:
@@ -197,6 +209,13 @@ const wire = jt.encode(PlacedAtSchema, date); // Date → string
 const wire = date.toISOString();
 // Limitation: encode is decoupled from schema - the reverse transformation
 // is not registered anywhere; callers must remember which function to call per type.
+```
+
+```ts [Valibot]
+import * as v from 'valibot';
+// Limitation: Valibot has no schema-registered encode step.
+// Apply the inverse transformation manually:
+const wire = (date as Date).toISOString();
 ```
 
 ```ts [TypeBox + Value]

@@ -145,6 +145,20 @@ const OrderSchema = z.object({ items: z.array(OrderLineSchema) })
   }));
 ```
 
+```ts [Valibot]
+import * as v from 'valibot';
+const OrderSchema = v.pipe(
+  v.object({ items: v.array(OrderLineSchema) }),
+  v.transform((data) => ({
+    ...data,
+    total: data.items.reduce((s, l) => s + l.unitPrice * l.quantity, 0),
+  })),
+);
+// Limitation: Valibot has no registry of computed properties addressable
+// by name; the derivation is baked into the pipe and cannot be added
+// or removed against a registered schema after construction.
+```
+
 ```ts [TypeBox + Value]
 // Not a first-class concept  - compute manually after validation:
 const validated = Value.Check(OrderSchema, data);

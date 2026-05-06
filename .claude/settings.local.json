@@ -83,7 +83,8 @@
       "Bash(ls -la /Users/studs/Workspace/json-tology/docs/*.md)",
       "Bash(wc -l /Users/studs/Workspace/json-tology/test/unit/*.test.ts | sort -n | tail -20)",
       "Bash(python3 -)",
-      "Bash(python3 -c ' *)"
+      "Bash(python3 -c ' *)",
+      "Bash(perl -i -pe \"s|const applyOp = Value\\\\.applyOp\\\\.bind\\\\\\(Value\\\\\\);|const applyOp = \\(root: unknown, op: Parameters<typeof Value.applyOp>[1]\\): ReturnType<typeof Value.applyOp> => Value.applyOp\\(root, op\\);|; s|const clone = Value\\\\.clone\\\\.bind\\\\\\(Value\\\\\\);|const clone = <T,>\\(value: T\\): T => Value.clone\\(value\\);|\" test/unit/operations.test.ts)"
     ]
   }
 }

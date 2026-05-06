@@ -64,6 +64,12 @@ jt.register(BookSchema);
 // Zod schemas are module-scope  - no registry. Import the schema object directly.
 ```
 
+```ts [Valibot]
+// Limitation: Valibot has no registry concept. Each schema is an isolated
+// value; cross-schema reference is structural - import the schema and embed it.
+import { BookSchema } from './bookstore.js';
+```
+
 ```ts [TypeBox + Value]
 // TypeBox schemas are plain objects  - no registry concept.
 ```

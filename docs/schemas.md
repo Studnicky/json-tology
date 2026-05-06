@@ -100,6 +100,17 @@ const CustomerSchema = z.object({
 // No equivalent to a multi-schema registry with a type map.
 ```
 
+```ts [Valibot]
+import * as v from 'valibot';
+// Limitation: Valibot has no central registry; schemas are module-scope values.
+const CustomerSchema = v.object({
+  id:    v.pipe(v.string(), v.uuid()),
+  email: v.pipe(v.string(), v.email()),
+  name:  v.pipe(v.string(), v.minLength(1)),
+});
+// No multi-schema registry, no $id-based lookup, no type map.
+```
+
 ```ts [TypeBox]
 // TypeBox schemas are plain objects; no registry concept.
 // Validation requires passing the schema directly each time.
@@ -198,6 +209,13 @@ const CouponSchema = z.object({ discount: z.number() });
 CouponSchema.parse({ discount: 0.15 });
 ```
 
+```ts [Valibot]
+import * as v from 'valibot';
+// Limitation: no registry; inline schema has no $id and no synthetic key.
+const CouponSchema = v.object({ discount: v.number() });
+v.parse(CouponSchema, { discount: 0.15 });
+```
+
 ```ts [TypeBox]
 // TypeBox schemas are plain objects; pass directly to Ajv.
 import Ajv from 'ajv';
@@ -283,6 +301,11 @@ jt.has('https://bookstore.example/Customer') // true | false
 // Schema objects are present if the module importing them has loaded.
 ```
 
+```ts [Valibot]
+// Limitation: not applicable - Valibot has no registry. Schemas are values
+// that exist if their module has been imported.
+```
+
 ```ts [TypeBox]
 // Not applicable  - TypeBox schemas are plain JS objects; no registry.
 ```
@@ -364,6 +387,11 @@ const schema = jt.get('https://bookstore.example/Book');
 import { BookSchema } from './schemas';
 ```
 
+```ts [Valibot]
+// Limitation: not directly supported - Valibot schemas are module-scope values.
+import { BookSchema } from './schemas';
+```
+
 ```ts [TypeBox]
 // TypeBox schemas are plain objects  - access via import or variable reference.
 ```
@@ -438,6 +466,10 @@ jt.list() // string[]
 
 ```ts [Zod]
 // Not applicable  - no registry.
+```
+
+```ts [Valibot]
+// Limitation: not applicable - Valibot has no registry, so no list to enumerate.
 ```
 
 ```ts [TypeBox]
@@ -516,6 +548,13 @@ jt.toSchema('https://bookstore.example/Book')
 ```ts [Zod]
 // Not directly supported.
 // z.schema.description or zodToJsonSchema (third-party) can export JSON Schema.
+```
+
+```ts [Valibot]
+// Use the `@valibot/to-json-schema` companion library:
+import { toJsonSchema } from '@valibot/to-json-schema';
+const jsonSchema = toJsonSchema(BookSchema);
+// Limitation: not all Valibot constructs map to JSON Schema; no graph round-trip.
 ```
 
 ```ts [TypeBox]

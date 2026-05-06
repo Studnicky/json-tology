@@ -106,6 +106,13 @@ const json = JSON.stringify(book);
 // No exclude/include filtering without manual code.
 ```
 
+```ts [Valibot]
+// Limitation: Valibot has no dump/serialize step and no encode direction.
+// JSON.stringify the value directly; encoding of branded or transformed
+// fields (e.g. Date) must be applied manually before stringify.
+const json = JSON.stringify(book);
+```
+
 ```ts [TypeBox + Value]
 // TypeBox does not have a built-in dump/serialize utility.
 const json = JSON.stringify(book);
@@ -173,6 +180,11 @@ const json = jt.dumpJson(CustomerSchema.$id, customer);
 ```ts [Zod]
 const json = JSON.stringify(customer);
 // Date objects must be converted manually before stringify.
+```
+
+```ts [Valibot]
+// Limitation: no dumpJson; JSON.stringify works only for plain values.
+const json = JSON.stringify(customer);
 ```
 
 ```ts [TypeBox + Value]

@@ -106,6 +106,11 @@ Compose.pick(BookSchema, ['isbn', 'title', 'price'] as const, 'https://bookstore
 BookSchema.pick({ isbn: true, title: true, price: true })
 ```
 
+```ts [Valibot]
+import * as v from 'valibot';
+v.pick(BookSchema, ['isbn', 'title', 'price'])
+```
+
 ```ts [TypeBox + Value]
 import { Type } from '@sinclair/typebox';
 // TypeBox has Type.Pick:
@@ -210,6 +215,11 @@ Compose.omit(CustomerSchema, ['addresses'] as const, 'https://bookstore.example/
 
 ```ts [Zod]
 CustomerSchema.omit({ addresses: true })
+```
+
+```ts [Valibot]
+import * as v from 'valibot';
+v.omit(CustomerSchema, ['addresses'])
 ```
 
 ```ts [TypeBox + Value]

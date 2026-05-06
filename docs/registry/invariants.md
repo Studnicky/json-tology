@@ -148,6 +148,19 @@ const OrderSchema = baseOrderSchema.refine(
 );
 ```
 
+```ts [Valibot]
+import * as v from 'valibot';
+const OrderSchema = v.pipe(
+  baseOrderSchema,
+  v.check(
+    (order) => Math.abs(order.total - order.items.reduce((s, l) => s + l.unitPrice * l.quantity, 0)) < 0.01,
+    'total mismatch',
+  ),
+);
+// Limitation: Valibot has no registry, so cross-field rules cannot be
+// added or removed against a registered schema by name; rebuild the schema.
+```
+
 ```ts [TypeBox + Value]
 // Not a first-class concept  - apply manually after Type validation:
 if (!Check(OrderSchema, data)) throw new Error('invalid structure');

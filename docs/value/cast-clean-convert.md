@@ -69,6 +69,17 @@ const BookSchema = z.object({
 const book = BookSchema.parse(rawData);
 ```
 
+```ts [Valibot]
+import * as v from 'valibot';
+// Limitation: no schema-wide cast option. Wrap each coerced field
+// individually and rebuild the schema:
+const BookSchema = v.object({
+  price:   v.pipe(v.unknown(), v.transform(Number), v.number()),
+  inStock: v.pipe(v.unknown(), v.transform(Boolean), v.boolean()),
+});
+const book = v.parse(BookSchema, rawData);
+```
+
 ```ts [TypeBox + Value]
 import { Value } from '@sinclair/typebox/value';
 const book = Value.Convert(BookSchema, rawData); // type conversion
@@ -128,6 +139,13 @@ const cleaned = jt.value.clean(BookSchema.$id, data);
 ```ts [Zod]
 // Zod's default .parse() strips unknown keys:
 const cleaned = BookSchema.parse(data);
+```
+
+```ts [Valibot]
+import * as v from 'valibot';
+// v.object() strips unknown keys by default during v.parse:
+const cleaned = v.parse(BookSchema, data);
+// Use v.looseObject() to preserve unknowns; v.strictObject() to reject them.
 ```
 
 ```ts [TypeBox + Value]

@@ -94,6 +94,16 @@ const schema = z.string()
 // No built-in encode reversal.
 ```
 
+```ts [Valibot]
+import * as v from 'valibot';
+const schema = v.pipe(
+  v.string(),
+  v.transform((s) => s.replace(/[$,]/g, '')),
+  v.transform((s) => parseFloat(s)),
+);
+// Limitation: pipe is decode-direction only; no encode reversal.
+```
+
 ```ts [TypeBox + Value]
 // TypeBox has no pipeline mechanism. Apply manually after validation:
 const validated = Value.Check(schema, raw);
