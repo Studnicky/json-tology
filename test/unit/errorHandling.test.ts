@@ -9,10 +9,9 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
-import { JsonTology } from '../../src/JsonTology.js';
-import { InstantiationError } from '../../src/errors/InstantiationError.js';
-import { SchemaError } from '../../src/errors/SchemaError.js';
+import {
+  InstantiationError, JsonTology, SchemaError
+} from '../../src/index.js';
 
 // ---------------------------------------------------------------------------
 // SchemaError -- registration failures
@@ -51,7 +50,7 @@ void describe('SchemaError on registration', () => {
     for (const {
       messageContains, name, schema
     } of scenarios) {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       try {
         registry.register(schema);
@@ -64,7 +63,7 @@ void describe('SchemaError on registration', () => {
   });
 
   void it('throws SchemaError for conflicting overwrite', () => {
-    const registry = new SchemaRegistry();
+    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     registry.register({
       '$id': 'https://err.test/Original',
@@ -86,7 +85,7 @@ void describe('SchemaError on registration', () => {
   });
 
   void it('SchemaError has code and toJson()', () => {
-    const registry = new SchemaRegistry();
+    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     try {
       registry.register({ 'type': 'object' });
@@ -166,7 +165,7 @@ void describe('BaseError cause chain edge cases', () => {
 
 void describe('InstantiationError structure', () => {
   void it('carries structured ValidationErrors with items', () => {
-    const registry = new SchemaRegistry();
+    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     registry.register({
       '$id': 'https://err.test/Person',
@@ -203,7 +202,7 @@ void describe('InstantiationError structure', () => {
   });
 
   void it('reports multiple errors simultaneously', () => {
-    const registry = new SchemaRegistry();
+    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     registry.register({
       '$id': 'https://err.test/Multi',
@@ -234,7 +233,7 @@ void describe('InstantiationError structure', () => {
   });
 
   void it('InstantiationError.toJson() serializes cleanly', () => {
-    const registry = new SchemaRegistry();
+    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     registry.register({
       '$id': 'https://err.test/Serial',
@@ -266,7 +265,10 @@ void describe('InstantiationError structure', () => {
 void describe('Registry recovery', () => {
   void it('remains usable after failed registration', () => {
     // Use enableStrictGraph to trigger inline-object error (default mode is silent)
-    const registry = new SchemaRegistry({ 'enableStrictGraph': true });
+    const registry = JsonTology.create({
+      'baseIRI': 'urn:test:',
+      'enableStrictGraph': true
+    });
 
     registry.register({
       '$id': 'https://err.test/Good',
@@ -318,7 +320,7 @@ void describe('Registry recovery', () => {
   });
 
   void it('remains usable after InstantiationError', () => {
-    const registry = new SchemaRegistry();
+    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     registry.register({
       '$id': 'https://err.test/Recover',

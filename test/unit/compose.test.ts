@@ -6,12 +6,12 @@ import type { ValidationErrorType } from '../../src/types/Validation.js';
 import {
   describe, it
 } from 'node:test';
-import { BaseError } from '../../src/errors/BaseError.js';
-import { Compose } from '../../src/modules/composition/Compose.js';
-import { InstantiationError } from '../../src/errors/InstantiationError.js';
+import {
+  BaseError, Compose, InstantiationError, JsonTology, ValidationErrors
+} from '../../src/index.js';
+// Result monad is an internal validation primitive not surfaced via the public API;
+// the Result.pass/fail/map/orElse/unwrap tests below exercise its monadic contract directly.
 import { Result } from '../../src/modules/data/Result.js';
-import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
-import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
 
 // ===========================================================================
 // Source: composition.test.ts
@@ -300,7 +300,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
       },
       {
         'check': () => {
-          const reg = new SchemaRegistry();
+          const reg = JsonTology.create({ 'baseIRI': 'urn:test:' });
           const schema = Compose.partial(UserSchema, 'https://myapp.io/PartialUser2');
 
           reg.register(schema);
@@ -346,7 +346,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
       },
       {
         'check': () => {
-          const reg = new SchemaRegistry();
+          const reg = JsonTology.create({ 'baseIRI': 'urn:test:' });
           const schema = Compose.required(UserSchema, 'https://myapp.io/StrictUser2');
 
           reg.register(schema);
@@ -359,7 +359,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
       },
       {
         'check': () => {
-          const reg = new SchemaRegistry();
+          const reg = JsonTology.create({ 'baseIRI': 'urn:test:' });
           const schema = Compose.required(UserSchema, 'https://myapp.io/StrictUser3');
 
           reg.register(schema);
@@ -419,7 +419,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
       },
       {
         'check': () => {
-          const reg = new SchemaRegistry();
+          const reg = JsonTology.create({ 'baseIRI': 'urn:test:' });
           const schema = Compose.pick(UserSchema, [
             'id',
             'name'
@@ -486,7 +486,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
       },
       {
         'check': () => {
-          const reg = new SchemaRegistry();
+          const reg = JsonTology.create({ 'baseIRI': 'urn:test:' });
           const schema = Compose.omit(UserSchema, [
             'email',
             'role'
@@ -1765,7 +1765,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     });
 
     void it('two registered equivalent schemas validate the same data', () => {
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register(IsbnSchema as unknown as Record<string, unknown>);
 
@@ -1862,7 +1862,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
     void it('runtime validation validates parent + child properties', () => {
       const EmployeeSchema = Compose.extend(PersonSchema, { 'role': { 'type': 'string' } } as const, 'https://example.io/Employee2');
 
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register(PersonSchema as unknown as Record<string, unknown>);
       registry.register(EmployeeSchema as unknown as Record<string, unknown>);
@@ -1882,7 +1882,7 @@ import { ValidationErrors } from '../../src/errors/ValidationErrors.js';
         readonly '$id': string;
       }, { 'budget': { 'type': 'number' } } as const, 'https://example.io/SeniorManager');
 
-      const registry = new SchemaRegistry();
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register(PersonSchema as unknown as Record<string, unknown>);
       registry.register(ManagerSchema as unknown as Record<string, unknown>);
