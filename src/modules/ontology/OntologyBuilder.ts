@@ -41,15 +41,6 @@ export class OntologyBuilder {
   }
 
   /**
-   * Set the SHACL graph source for SHACL output methods.
-   */
-  public addShacl(source: (() => readonly unknown[]) | readonly unknown[]): this {
-    this.shaclSource = source;
-
-    return this;
-  }
-
-  /**
    * Add an array of RDF quads to the builder. The quads are projected
    * to JSON-LD nodes and appended to the graph sources. Use this when
    * combining the output of `entities.toQuads(schema, data)` with a
@@ -61,7 +52,19 @@ export class OntologyBuilder {
       return nodes;
     };
 
-    this.graphSources = [...this.graphSources, source];
+    this.graphSources = [
+      ...this.graphSources,
+      source
+    ];
+
+    return this;
+  }
+
+  /**
+   * Set the SHACL graph source for SHACL output methods.
+   */
+  public addShacl(source: (() => readonly unknown[]) | readonly unknown[]): this {
+    this.shaclSource = source;
 
     return this;
   }
