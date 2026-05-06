@@ -20,6 +20,7 @@ const sidebar = [
       { link: '/advanced/graph-concepts', text: 'Graph concepts (TBox / ABox)' },
       { link: '/advanced/graph-native-authoring', text: 'Graph-native authoring' },
       { link: '/advanced/sub-schemas', text: 'Sub-schemas and $ref composition' },
+      { link: '/advanced/skolemization', text: 'Skolemization' },
       { link: '/picking-a-method', text: 'Picking a method' },
       { link: '/argument-conventions', text: 'Argument conventions' }
     ]

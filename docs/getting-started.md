@@ -242,6 +242,16 @@ import type { LoggerInterface } from 'json-tology/interfaces';
 | `invariants` | `Record<string, InvariantInterface[]>` | `{}` | Cross-field invariant functions, keyed by schema `$id`. |
 | `computeds` | `Record<string, Record<string, ComputedFnType>>` | `{}` | Computed-field functions, keyed by schema `$id` then property name. |
 
+### Graph emission
+
+These options control how `toQuads` mints subject IRIs and how `fromQuads` reverses them. See [Skolemization](/advanced/skolemization) for the full reference.
+
+| Option | Type | Default | Purpose |
+|--------|------|---------|---------|
+| `iriFor` | `string \| 'blank-node' \| SkolemizeFnType` | _(content-hash)_ | Default IRI minting strategy for `toQuads`. A regular string becomes a root-only override; `'blank-node'` emits anonymous subjects; a function is the full `SkolemizeFnType` shape. Per-call options override this. |
+| `defaultGraphIRI` | `string` | _(none)_ | Default `graph` field for every quad emitted by `toQuads`. Per-call `graphIRI` overrides. |
+| `defaultDeskolemize` | `boolean` | `false` | Treat `*/.well-known/genid/*` IRIs as blank nodes during `fromQuads`. Reverses `Skolemize.wellKnownGenid`. |
+
 ## Related
 
 - [Bookstore domain](/bookstore-domain) - the running example domain used throughout these docs

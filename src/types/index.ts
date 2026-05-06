@@ -20,6 +20,7 @@ export type * from './Quad.js';
 export type * from './Registry.js';
 export type * from './Schema.js';
 export type * from './SchemaGraph.js';
+export type * from './Skolemize.js';
 export type * from './SubjectGroup.js';
 export type * from './Transform.js';
 export type * from './TypeConfig.js';

@@ -9,22 +9,24 @@
  * it maps validated instance data to quads, not schema structure.
  */
 
+import type { CurieInterface } from '../../interfaces/Curie.js';
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { QuadObjectType } from '../../types/Quad.js';
-import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type {
   SchemaGraphNodeInterface,
   SchemaGraphRelationInterface
 } from '../../interfaces/SchemaGraph.js';
-import type { CurieInterface } from '../../interfaces/Curie.js';
-import { isRecord } from '../data/DataTypes.js';
-import { SchemaIri } from '../graph/SchemaIri.js';
-import { resolveSingleXsdType } from '../../constants/XSD_MAPS.js';
-import { Hash } from '../hash/Hash.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { SkolemizeFnType } from '../../types/Skolemize.js';
+
 import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
 import { JSONLD } from '../../constants/JSONLD.js';
+import { resolveSingleXsdType } from '../../constants/XSD_MAPS.js';
+import { isRecord } from '../data/DataTypes.js';
+import { SchemaIri } from '../graph/SchemaIri.js';
+import { Hash } from '../hash/Hash.js';
 import { QuadFactory } from './QuadFactory.js';
 
 // ---------------------------------------------------------------------------
@@ -389,6 +391,74 @@ function projectStructuredRelation(
 // ABox projection
 // ---------------------------------------------------------------------------
 
+class IriMinter {
+  private readonly baseIRI: string;
+  private readonly iriFor: SkolemizeFnType | undefined;
+  private readonly memo: WeakMap<object, string>;
+
+  public constructor(baseIRI: string, iriFor: SkolemizeFnType | undefined) {
+    this.baseIRI = baseIRI;
+    this.iriFor = iriFor;
+    this.memo = new WeakMap();
+  }
+
+  public mint(classId: string, value: unknown, path: string, depth: number): string {
+    const memoKey = typeof value === 'object' && value !== null ? value : undefined;
+
+    if (memoKey !== undefined) {
+      const cached = this.memo.get(memoKey);
+
+      if (cached !== undefined) {
+        return cached;
+      }
+    }
+
+    let chosen: string | undefined;
+
+    if (this.iriFor !== undefined) {
+      chosen = this.iriFor({
+        depth,
+        path,
+        value
+      });
+    }
+
+    const iri = chosen ?? defaultInstanceIri(this.baseIRI, classId, value);
+
+    if (memoKey !== undefined) {
+      this.memo.set(memoKey, iri);
+    }
+
+    return iri;
+  }
+}
+
+interface ProjectInstanceArgs {
+  readonly 'curie': CurieInterface | undefined;
+  readonly 'data': Record<string, unknown>;
+  readonly 'depth': number;
+  readonly 'graph': SchemaGraphInterface;
+  readonly 'minter': IriMinter;
+  readonly 'node': SchemaGraphNodeInterface;
+  readonly 'path': string;
+  readonly 'quads': QuadInterface[];
+}
+
+interface ProjectPropertyArgs {
+  readonly 'curie': CurieInterface | undefined;
+  readonly 'depth': number;
+  readonly 'graph': SchemaGraphInterface;
+  readonly 'instanceIri': string;
+  readonly 'minter': IriMinter;
+  readonly 'path': string;
+  readonly 'propertyIRI': string;
+  readonly 'propertyNode': SchemaGraphNodeInterface;
+  readonly 'propertySemantics': { 'format': string | undefined;
+    'itemsNode': SchemaGraphNodeInterface | undefined };
+  readonly 'quads': QuadInterface[];
+  readonly 'value': unknown;
+}
+
 export function projectAbox(
   graph: SchemaGraphInterface,
   data: unknown,
@@ -396,10 +466,10 @@ export function projectAbox(
   options?: { 'curie'?: CurieInterface | undefined;
     'entryNode'?: SchemaGraphNodeInterface | undefined;
     'graphIRI'?: string | undefined;
-    'subjectIRI'?: string | undefined }
+    'iriFor'?: SkolemizeFnType | undefined }
 ): QuadInterface[] {
   const {
-    curie, entryNode, graphIRI, subjectIRI
+    curie, entryNode, graphIRI, iriFor
   } = options ?? {};
 
   QuadFactory.resetBnodeCounter();
@@ -411,7 +481,18 @@ export function projectAbox(
     return quads;
   }
 
-  projectInstance(graph, resolved, data, baseIRI, quads, curie, subjectIRI);
+  const minter = new IriMinter(baseIRI, iriFor);
+
+  projectInstance({
+    curie,
+    data,
+    'depth': 0,
+    graph,
+    minter,
+    'node': resolved,
+    'path': '',
+    quads
+  });
 
   if (graphIRI !== undefined) {
     for (const quad of quads) {
@@ -422,7 +503,7 @@ export function projectAbox(
   return quads;
 }
 
-function instanceIRI(baseIRI: string, classId: string, data: unknown): string {
+function defaultInstanceIri(baseIRI: string, classId: string, data: unknown): string {
   const contentHash = Hash.value(data);
 
   return `${baseIRI}/instances/${SchemaIri.escapeSegment(classId)}-${contentHash}`;
@@ -443,16 +524,11 @@ function resolveNode(graph: SchemaGraphInterface, node: SchemaGraphNodeInterface
   return node;
 }
 
-function projectInstance(
-  graph: SchemaGraphInterface,
-  node: SchemaGraphNodeInterface,
-  data: Record<string, unknown>,
-  baseIRI: string,
-  quads: QuadInterface[],
-  curie: CurieInterface | undefined,
-  overrideSubjectIRI?: string
-): string {
-  const instIRI = overrideSubjectIRI ?? instanceIRI(baseIRI, node.id, data);
+function projectInstance(args: ProjectInstanceArgs): string {
+  const {
+    curie, data, depth, graph, minter, node, path, quads
+  } = args;
+  const instIRI = minter.mint(node.id, data, path, depth);
   const nodeSemantics = graph.semantics(node);
 
   quads.push(QuadFactory.quad(instIRI, RDF.type, QuadFactory.iri(node.id, { curie }), { curie }));
@@ -471,57 +547,64 @@ function projectInstance(
     const resolved = resolveNode(graph, propertyNode);
     const propertySemantics = graph.semantics(resolved);
 
-    projectPropertyValue(graph, propertyIRI, propertySemantics, resolved, value, baseIRI, instIRI, quads, curie);
+    projectPropertyValue({
+      curie,
+      'depth': depth + 1,
+      graph,
+      'instanceIri': instIRI,
+      minter,
+      'path': `${path}/${propertyName}`,
+      propertyIRI,
+      'propertyNode': resolved,
+      propertySemantics,
+      quads,
+      value
+    });
   }
 
   return instIRI;
 }
 
-function projectPropertyValue(
-  graph: SchemaGraphInterface,
-  propertyIRI: string,
-  propertySemantics: { 'format': string | undefined;
-    'itemsNode': SchemaGraphNodeInterface | undefined },
-  propertyNode: SchemaGraphNodeInterface,
-  value: unknown,
-  baseIRI: string,
-  instanceIri: string,
-  quads: QuadInterface[],
-  curie: CurieInterface | undefined
-): void {
-  const emit = (val: unknown): void => {
-    projectSingleValue(graph, propertyIRI, propertySemantics, propertyNode, val, baseIRI, instanceIri, quads, curie);
-  };
+function projectPropertyValue(args: ProjectPropertyArgs): void {
+  const {
+    path, value
+  } = args;
 
   if (Array.isArray(value)) {
-    for (const element of value) {
-      emit(element);
+    const elements = value as readonly unknown[];
+
+    for (const [
+      index,
+      element
+    ] of elements.entries()) {
+      projectSingleValue({
+        ...args,
+        'path': `${path}/${index}`,
+        'value': element
+      });
     }
 
     return;
   }
 
-  emit(value);
+  projectSingleValue(args);
 }
 
-function projectSingleValue(
-  graph: SchemaGraphInterface,
-  propertyIRI: string,
-  propertySemantics: { 'format': string | undefined;
-    'itemsNode': SchemaGraphNodeInterface | undefined },
-  propertyNode: SchemaGraphNodeInterface,
-  value: unknown,
-  baseIRI: string,
-  instanceIri: string,
-  quads: QuadInterface[],
-  curie: CurieInterface | undefined
-): void {
+function projectSingleValue(args: ProjectPropertyArgs): void {
+  const {
+    curie, depth, graph, instanceIri, minter, path,
+    propertyIRI, propertyNode, propertySemantics, quads, value
+  } = args;
+
   if (value === null || value === undefined) {
     return;
   }
 
   if (typeof value === 'string') {
-    const xsdDatatype = resolveSingleXsdType('string', propertySemantics.format === undefined ? undefined : { 'format': propertySemantics.format }) ?? XSD.string;
+    const xsdDatatype = resolveSingleXsdType(
+      'string',
+      propertySemantics.format === undefined ? undefined : { 'format': propertySemantics.format }
+    ) ?? XSD.string;
 
     const strLit = QuadFactory.literal(value, xsdDatatype, { curie });
 
@@ -561,7 +644,16 @@ function projectSingleValue(
       return;
     }
 
-    const nestedIRI = projectInstance(graph, targetNode, value, baseIRI, quads, curie);
+    const nestedIRI = projectInstance({
+      curie,
+      'data': value,
+      depth,
+      graph,
+      minter,
+      'node': targetNode,
+      path,
+      quads
+    });
 
     quads.push(QuadFactory.quad(instanceIri, propertyIRI, QuadFactory.iri(nestedIRI, { curie }), { curie }));
   }
