@@ -1,11 +1,12 @@
 /**
- * Coerce pipeline benchmarks vs TypeBox Value.Parse vs Zod .parse.
+ * Coerce pipeline benchmarks vs TypeBox Value.Parse vs Zod .parse vs Valibot parse.
  */
 
 import { Value } from '@sinclair/typebox/value';
 import {
   FormatRegistry, Type
 } from '@sinclair/typebox';
+import { parse as vParse } from 'valibot';
 import { SchemaRegistry } from '../src/modules/registry/SchemaRegistry.js';
 
 // Register email format for TypeBox (it ships without built-in formats)
@@ -15,13 +16,14 @@ FormatRegistry.Set('email', (value) => {
 FormatRegistry.Set('date-time', (value) => {
   return !Number.isNaN(Date.parse(value));
 });
+
 import {
   bench, type BenchResult, section
 } from './harness.js';
 import {
   defaultsInput, DefaultsSchema,
   SimpleSchema,
-  SimpleSchemaTypebox, SimpleSchemaZod, simpleValid
+  SimpleSchemaTypebox, SimpleSchemaValibot, SimpleSchemaZod, simpleValid
 } from './fixtures.js';
 
 export function runCoerceBench(): BenchResult[] {
@@ -38,31 +40,27 @@ export function runCoerceBench(): BenchResult[] {
 
   section('coerce — already-valid data (no coercion needed)');
 
-  const coerceValidJt = bench('coerce valid', 'json-tology', () => {
+  results.push(bench('coerce valid', 'json-tology', () => {
     registry.instantiate(SimpleSchema, simpleValid);
-  });
+  }));
 
-  results.push(coerceValidJt);
-
-  const coerceValidTb = bench('coerce valid', 'typebox', () => {
+  results.push(bench('coerce valid', 'typebox', () => {
     Value.Parse(SimpleSchemaTypebox, simpleValid);
-  });
+  }));
 
-  results.push(coerceValidTb);
-
-  const coerceValidZod = bench('coerce valid', 'zod', () => {
+  results.push(bench('coerce valid', 'zod', () => {
     SimpleSchemaZod.parse(simpleValid);
-  });
+  }));
 
-  results.push(coerceValidZod);
+  results.push(bench('coerce valid', 'valibot', () => {
+    vParse(SimpleSchemaValibot, simpleValid);
+  }));
 
   section('coerce — defaults application');
 
-  const coerceDefaultsJt = bench('coerce defaults', 'json-tology', () => {
+  results.push(bench('coerce defaults', 'json-tology', () => {
     registry.instantiate(DefaultsSchema, defaultsInput);
-  });
-
-  results.push(coerceDefaultsJt);
+  }));
 
   const TBDefaultsSchema = Type.Object({
     'active': Type.Boolean({ 'default': true }),
@@ -71,11 +69,9 @@ export function runCoerceBench(): BenchResult[] {
     'tags': Type.Array(Type.String(), { 'default': [] })
   });
 
-  const coerceDefaultsTb = bench('coerce defaults', 'typebox', () => {
+  results.push(bench('coerce defaults', 'typebox', () => {
     Value.Parse(TBDefaultsSchema, defaultsInput);
-  });
-
-  results.push(coerceDefaultsTb);
+  }));
 
   return results;
 }

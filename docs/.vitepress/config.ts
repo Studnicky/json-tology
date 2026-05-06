@@ -137,6 +137,7 @@ const sidebar = [
       { link: '/errors/classes', text: 'Error classes' },
       { link: '/constraint-brands', text: 'Constraint brands' },
       { link: '/cli', text: 'CLI' },
+      { link: '/references/benchmarks', text: 'Benchmarks' },
       { link: '/references', text: 'External references' }
     ]
   }
