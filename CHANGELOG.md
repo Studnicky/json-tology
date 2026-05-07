@@ -17,6 +17,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `BookstoreGraph` also gains a navigation pane (zoom in / zoom out / fit-to-view / re-run-layout) docked bottom-right of the container, plus relaxed zoom limits so the user can back out for an overview as well as zoom in to read labels.
 - Brand wordmark gradient reshaped to dark → mid → dark (was light → mid → dark) for stronger contrast against both light and dark page backgrounds while staying within the teal family.
 - `bookstore-domain.md` rewritten to show the full generating code (one `entities/*.ts` listing per axiom kind) plus a graph-edge legend table — every declaration that produces an edge in the live `BookstoreGraph` is reproduced verbatim, so the docs page is the single reference for what the graph depicts.
+- **Compile-time enforcement of OWL class axioms and property restrictions**. `InferType<typeof Schema>` now folds the schema's OWL annotations into the inferred TypeScript type so violations are caught by the compiler, not just at runtime:
+  - `disjointWith: X` adds a `~jt:disjointWith` brand naming X. Symmetric declarations (both classes naming each other) make the cross-assignment a type error in either direction; asymmetric declarations cover one direction at compile time and the other at runtime.
+  - `not: { $ref: X }` (from `Compose.complementOf`) adds a `~jt:complementOf` brand naming X.
+  - `jt:restrictions` (from `Compose.subClassOf(restriction, body)`) narrows the named property's inferred type:
+    - `hasValue(prop, V)` → property type is the literal `V`.
+    - `cardinality(prop, N)` → property type is a length-`N` readonly tuple (capped at 16).
+    - `minCardinality(prop, N)` → non-empty tuple with `N` mandatory prefix elements.
+    - `maxCardinality(prop, N)` → union of tuples with length `0..N`.
+    - `someValuesFrom(prop, C)` → non-empty tuple of the property's element type.
+    - `allValuesFrom(prop, C)` → readonly array of the property's element type.
+- Runtime `disjointWith` enforcement: `SchemaRegistry.validate` runs the disjoint target's compiled validator after the source schema's structural pass and surfaces a `disjointWith` keyword `ValidationError` (with `params.disjointTarget`) if both succeed. Two unit tests cover the violation and negative cases. Layered with the compile-time brand: structural type errors at authoring time, runtime errors at the trust boundary.
 
 ### Changed
 

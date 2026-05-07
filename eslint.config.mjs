@@ -246,6 +246,16 @@ const typeScriptPluginRules = {
     { format: ['camelCase'], selector: 'method' },
     { format: ['camelCase', 'PascalCase', 'UPPER_CASE'], leadingUnderscore: 'allow', selector: 'property' },
     { format: null, selector: 'objectLiteralProperty' },
+    // OWL/RDF and json-tology vocab keys carry colons and prefix sigils
+    // (e.g. `jt:restrictions`, `~jt:disjointWith`, `owl:Class`). The
+    // camelCase rule does not apply to them — they are mandated by the
+    // vocabulary they belong to.
+    {
+      filter: { match: true, regex: '^~?[a-z]+:|^@[a-z]' },
+      format: null,
+      selector: 'typeProperty'
+    },
+    { format: ['camelCase', 'PascalCase', 'UPPER_CASE'], selector: 'typeProperty' },
     { format: ['camelCase'], selector: 'accessor' },
     { format: ['PascalCase'], prefix: ['T', 'K', 'V', 'U'], selector: 'typeParameter' }
   ],

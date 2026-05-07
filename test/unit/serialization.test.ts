@@ -331,7 +331,6 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
     }> = [
       {
         'check': (result) => {
-        // eslint-disable-next-line @typescript-eslint/naming-convention -- JSON-LD '@list' keyword
           const orValue = result[0]['sh:or'] as { '@list': unknown[] };
 
           assert.deepEqual(orValue['@list'], [

@@ -782,7 +782,6 @@ assert<AssertAssignable<ExternalDeepPointerRefResult, { readonly 'ext'?: unknown
 
 // With an explicit references map, external refs resolve at compile time
 interface ReferenceMap {
-  // eslint-disable-next-line @typescript-eslint/naming-convention
   readonly 'https://example.com/Other': {
     readonly '$anchor': 'someAnchor';
     readonly '$defs': {

@@ -297,6 +297,144 @@ type AdminName = InferType<typeof AdminNameSchema>;
 assertType<AssertAssignable<AdminName, { readonly 'name': string }>>();
 
 // ---------------------------------------------------------------------------
+// OWL class axioms — disjointWith / complementOf compile-time enforcement
+// ---------------------------------------------------------------------------
+
+const PrintFormatBase = {
+  '$id': 'https://example.io/PrintFormat',
+  'properties': { 'pages': { 'type': 'integer' } },
+  'required': ['pages'],
+  'type': 'object'
+} as const;
+
+const DigitalFormatBase = {
+  '$id': 'https://example.io/DigitalFormat',
+  'properties': { 'fileSize': { 'type': 'integer' } },
+  'required': ['fileSize'],
+  'type': 'object'
+} as const;
+
+// Symmetric disjointness — both classes declare the relation, so InferType
+// produces incompatible brands on each side.
+const PrintWithDisjoint = Compose.disjointWith(DigitalFormatBase, PrintFormatBase);
+const DigitalWithDisjoint = Compose.disjointWith(PrintFormatBase, DigitalFormatBase);
+
+type PrintBranded = InferType<typeof PrintWithDisjoint>;
+type DigitalBranded = InferType<typeof DigitalWithDisjoint>;
+
+// Each side carries its own '~jt:disjointWith' brand, so the cross-assignment
+// is rejected: PrintBranded is NOT assignable to DigitalBranded and vice versa.
+assertType<AssertAssignable<PrintBranded, DigitalBranded> extends false ? true : false>();
+assertType<AssertAssignable<DigitalBranded, PrintBranded> extends false ? true : false>();
+
+// complementOf — the result type carries a complement brand naming the source.
+const NotPrintFormat = Compose.complementOf(PrintFormatBase, {
+  '$id': 'https://example.io/NotPrintFormat',
+  'type': 'object'
+} as const);
+
+type NotPrintBranded = InferType<typeof NotPrintFormat>;
+assertType<NotPrintBranded extends { readonly '~jt:complementOf': { readonly 'https://example.io/PrintFormat': 'complement' } }
+  ? true : false>();
+
+// ---------------------------------------------------------------------------
+// OWL property restrictions — compile-time narrowing via jt:restrictions
+// ---------------------------------------------------------------------------
+
+const ContainerSchema = {
+  '$id': 'https://example.io/Container',
+  'properties': {
+    'items': {
+      'items': { 'type': 'string' },
+      'type': 'array'
+    },
+    'tag': { 'type': 'string' }
+  },
+  'required': [
+    'items',
+    'tag'
+  ],
+  'type': 'object'
+} as const;
+
+const ITEMS_PROP = 'https://example.io/Container#items';
+const TAG_PROP = 'https://example.io/Container#tag';
+
+// hasValue narrows the property type to the literal value.
+const TaggedContainer = Compose.subClassOf(
+  Compose.hasValue(TAG_PROP, 'shipped'),
+  Compose.subClassOf(ContainerSchema, {
+    '$id': 'https://example.io/TaggedContainer',
+    'type': 'object'
+  } as const)
+);
+
+type Tagged = InferType<typeof TaggedContainer>;
+assertType<Tagged extends { readonly 'tag': 'shipped' } ? true : false>();
+
+// cardinality(N) narrows the property to a length-N tuple.
+const ExactlyTwoItems = Compose.subClassOf(
+  Compose.cardinality(ITEMS_PROP, 2),
+  Compose.subClassOf(ContainerSchema, {
+    '$id': 'https://example.io/ExactlyTwoItems',
+    'type': 'object'
+  } as const)
+);
+
+type TwoItems = InferType<typeof ExactlyTwoItems>;
+assertType<TwoItems extends { readonly 'items': readonly [string, string] } ? true : false>();
+
+// minCardinality(N) → at least N elements (non-empty tuple prefix + variadic tail).
+const AtLeastOneItem = Compose.subClassOf(
+  Compose.minCardinality(ITEMS_PROP, 1),
+  Compose.subClassOf(ContainerSchema, {
+    '$id': 'https://example.io/AtLeastOneItem',
+    'type': 'object'
+  } as const)
+);
+
+type AtLeast1 = InferType<typeof AtLeastOneItem>;
+assertType<AtLeast1 extends { readonly 'items': readonly [string, ...string[]] } ? true : false>();
+
+// maxCardinality(N) → union of tuples with length 0..N.
+const AtMostTwoItems = Compose.subClassOf(
+  Compose.maxCardinality(ITEMS_PROP, 2),
+  Compose.subClassOf(ContainerSchema, {
+    '$id': 'https://example.io/AtMostTwoItems',
+    'type': 'object'
+  } as const)
+);
+
+type AtMost2 = InferType<typeof AtMostTwoItems>;
+assertType<readonly [] extends AtMost2['items'] ? true : false>();
+assertType<readonly [string] extends AtMost2['items'] ? true : false>();
+assertType<readonly [string, string] extends AtMost2['items'] ? true : false>();
+
+// allValuesFrom(C) narrows array element type to readonly C[].
+const StringContainer = Compose.subClassOf(
+  Compose.allValuesFrom(ITEMS_PROP, 'https://example.io/Container#items'),
+  Compose.subClassOf(ContainerSchema, {
+    '$id': 'https://example.io/StringContainer',
+    'type': 'object'
+  } as const)
+);
+
+type StringContent = InferType<typeof StringContainer>;
+assertType<StringContent['items'] extends readonly string[] ? true : false>();
+
+// someValuesFrom(C) narrows to a non-empty tuple.
+const NonEmptyContainer = Compose.subClassOf(
+  Compose.someValuesFrom(ITEMS_PROP, 'https://example.io/Container#items'),
+  Compose.subClassOf(ContainerSchema, {
+    '$id': 'https://example.io/NonEmptyContainer',
+    'type': 'object'
+  } as const)
+);
+
+type NonEmpty = InferType<typeof NonEmptyContainer>;
+assertType<NonEmpty['items'] extends readonly [string, ...string[]] ? true : false>();
+
+// ---------------------------------------------------------------------------
 // Suppress unused variable warnings
 // ---------------------------------------------------------------------------
 
@@ -309,5 +447,14 @@ void [
   UserWithoutAgeSchema,
   PersonWithAddressSchema,
   ShapeSchema,
-  AdminNameSchema
+  AdminNameSchema,
+  PrintWithDisjoint,
+  DigitalWithDisjoint,
+  NotPrintFormat,
+  TaggedContainer,
+  ExactlyTwoItems,
+  AtLeastOneItem,
+  AtMostTwoItems,
+  StringContainer,
+  NonEmptyContainer
 ];

@@ -91,7 +91,18 @@
       "Bash(/usr/bin/grep -rn \"disjointWith\\\\|DISJOINT\" src/ --include=\"*.ts\")",
       "Bash(/usr/bin/grep -v \"test\\\\|interfaces\")",
       "Bash(/usr/bin/grep -n \"ValidationErrorType\\\\|VALIDATION_ERROR_CODES\\\\|jt:disjoint\\\\|class SchemaRegistry\\\\|readonly invariants\" src/modules/registry/SchemaRegistry.ts)",
-      "Bash(/usr/bin/grep -n \"ValidationErrorType\" src/modules/registry/SchemaRegistry.ts)"
+      "Bash(/usr/bin/grep -n \"ValidationErrorType\" src/modules/registry/SchemaRegistry.ts)",
+      "Bash(/usr/bin/tail -10)",
+      "Bash(/usr/bin/tail -15)",
+      "Bash(/usr/bin/grep error *)",
+      "Bash(/usr/bin/head -5)",
+      "Bash(/Users/studs/.nvm/versions/node/v24.13.0/bin/npm run *)",
+      "Bash(/usr/bin/tail -3)",
+      "Bash(/bin/ls eslint.config* .eslintrc*)",
+      "Bash(/usr/bin/grep -n \"naming-convention\\\\|jt:\" eslint.config.js eslint.config.mjs)",
+      "Bash(/usr/bin/head -10)",
+      "Bash(/usr/bin/grep \"^/\")",
+      "Bash(/usr/bin/head -3)"
     ]
   }
 }
