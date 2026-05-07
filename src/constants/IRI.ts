@@ -1,5 +1,6 @@
 export const OWL = {
   'allValuesFrom': 'owl:allValuesFrom',
+  'cardinality': 'owl:cardinality',
   'Class': 'owl:Class',
   'complementOf': 'owl:complementOf',
   'DatatypeProperty': 'owl:DatatypeProperty',
@@ -9,6 +10,7 @@ export const OWL = {
   'hasValue': 'owl:hasValue',
   'intersectionOf': 'owl:intersectionOf',
   'inverseOf': 'owl:inverseOf',
+  'maxCardinality': 'owl:maxCardinality',
   'maxQualifiedCardinality': 'owl:maxQualifiedCardinality',
   'minCardinality': 'owl:minCardinality',
   'minQualifiedCardinality': 'owl:minQualifiedCardinality',
@@ -17,6 +19,7 @@ export const OWL = {
   'oneOf': 'owl:oneOf',
   'onProperty': 'owl:onProperty',
   'Restriction': 'owl:Restriction',
+  'sameAs': 'owl:sameAs',
   'someValuesFrom': 'owl:someValuesFrom',
   'SymmetricProperty': 'owl:SymmetricProperty',
   'TransitiveProperty': 'owl:TransitiveProperty',

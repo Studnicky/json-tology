@@ -229,7 +229,113 @@ export function projectOwlGraph(graph: SchemaGraphInterface, options?: { 'curie'
     }
   }
 
+  emitUserRestrictions(graph, quads, curie);
+
   return quads;
+}
+
+// ---------------------------------------------------------------------------
+// User-declared OWL restrictions (Compose.subClassOf with restriction parent)
+// ---------------------------------------------------------------------------
+
+interface RawRestrictionDescriptorType {
+  readonly 'kind': string;
+  readonly 'onProperty': string;
+  readonly 'value': unknown;
+}
+
+const RESTRICTION_PREDICATE: Partial<Record<string, string>> = {
+  'allValuesFrom': OWL.allValuesFrom,
+  'cardinality': OWL.cardinality,
+  'hasValue': OWL.hasValue,
+  'maxCardinality': OWL.maxCardinality,
+  'minCardinality': OWL.minCardinality,
+  'someValuesFrom': OWL.someValuesFrom
+};
+
+const CARDINALITY_KINDS = new Set([
+  'cardinality',
+  'maxCardinality',
+  'minCardinality'
+]);
+
+function emitUserRestrictions(
+  graph: SchemaGraphInterface,
+  quads: QuadInterface[],
+  curie: CurieInterface | undefined
+): void {
+  const root = graph.rootSchema;
+
+  if (typeof root === 'boolean') {
+    return;
+  }
+  const schema = root;
+  const restrictions = schema['jt:restrictions'];
+
+  if (!Array.isArray(restrictions)) {
+    return;
+  }
+  const classId = schema.$id;
+
+  if (typeof classId !== 'string') {
+    return;
+  }
+
+  for (const raw of restrictions) {
+    if (typeof raw !== 'object' || raw === null) {
+      continue;
+    }
+    const desc = raw as RawRestrictionDescriptorType;
+    const predicate: string | undefined = RESTRICTION_PREDICATE[desc.kind];
+
+    if (predicate === undefined) {
+      continue;
+    }
+
+    const value = restrictionObject(desc, curie);
+
+    if (value === undefined) {
+      continue;
+    }
+
+    const rBnode = emitRestriction(desc.onProperty, predicate, value, quads, curie);
+
+    quads.push(QuadFactory.quad(classId, RDFS.subClassOf, QuadFactory.bnode(rBnode), { curie }));
+  }
+}
+
+function restrictionObject(
+  desc: RawRestrictionDescriptorType,
+  curie: CurieInterface | undefined
+): QuadObjectType | undefined {
+  if (CARDINALITY_KINDS.has(desc.kind)) {
+    if (typeof desc.value !== 'number') {
+      return undefined;
+    }
+
+    return QuadFactory.literal(desc.value, XSD.nonNegativeInteger, { curie });
+  }
+
+  if (desc.kind === 'hasValue') {
+    if (typeof desc.value === 'boolean') {
+      return QuadFactory.literal(desc.value, XSD.boolean, { curie });
+    }
+    if (typeof desc.value === 'number') {
+      return QuadFactory.literal(desc.value, XSD.decimal, { curie });
+    }
+    if (typeof desc.value === 'string') {
+      return QuadFactory.literal(desc.value, XSD.string, { curie });
+    }
+
+    return undefined;
+  }
+
+  // someValuesFrom / allValuesFrom — value is a class IRI
+  if (typeof desc.value !== 'string') {
+    return undefined;
+  }
+
+  return QuadFactory.iri(desc.value, { curie });
 }
 
 // ---------------------------------------------------------------------------

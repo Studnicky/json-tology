@@ -5,6 +5,7 @@ import type { InvariantInterface } from './Invariant.js';
 import type { SchemaGraphInterface } from './SchemaGraphImpl.js';
 import type { ValidationErrors } from '../errors/ValidationErrors.js';
 import type { ComputedStore } from '../modules/registry/ComputedStore.js';
+import type { SameAsStore } from '../modules/registry/SameAsStore.js';
 import type { DuplicateReportEntryType } from '../modules/registry/SchemaRegistry.js';
 
 export interface SchemaRegistryInterface {
@@ -27,6 +28,7 @@ export interface SchemaRegistryInterface {
   register(schemas: ReadonlyArray<Record<string, unknown>> | Record<string, unknown>): void;
   registerAnonymous(schema: Record<string, unknown>): string;
   removeInvariant(schemaId: string, name: string): void;
+  readonly 'sameAsStore': SameAsStore;
   subschemaAt(schema: (Record<string, unknown> & { '$id': string }) | string, pointer: string): Record<string, unknown> & { '$id': string };
   validate(schema: (Record<string, unknown> & { '$id': string }) | string, data: unknown): ValidationErrors;
   validator(schemaId: string): CompiledValidatorInterface;
