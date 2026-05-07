@@ -32,7 +32,7 @@ const RDF_LIST = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#List';
 export interface NodeData {
   id: string;
   label: string;
-  kind: 'entity' | 'primitive';
+  kind: 'entity' | 'instance' | 'primitive';
 }
 
 export interface EdgeData {
@@ -462,12 +462,22 @@ export function toCytoscapeElements(): CytoscapeElements {
   }
 
   // ABox sameAs assertions live on the registry, not in toTbox(). Pull them
-  // separately so the graph viz shows owl:sameAs identity edges.
+  // separately so the graph viz shows owl:sameAs identity edges. The IRIs
+  // here are individuals (instances), not classes — overwrite their kind
+  // so the Vue component can render them with an instance-specific style
+  // (dashed border, lighter fill) and the user can tell them apart from
+  // the surrounding class nodes at a glance.
   const sameAsPairs = bookstoreEntities.registry.sameAsStore.all();
 
   for (const [iriA, iriB] of sameAsPairs) {
     addNode(iriA);
     addNode(iriB);
+    // Override kind to 'instance' even if the node was already added.
+    for (const node of nodes) {
+      if (node.data.id === iriA || node.data.id === iriB) {
+        node.data.kind = 'instance';
+      }
+    }
     addEdge(iriA, iriB, 'sameAs', 'sameAs');
   }
 

@@ -117,6 +117,28 @@ onMounted(async () => {
           'text-max-width': '64px'
         }
       },
+      // ABox instance nodes — gold-tinted ellipse with dashed border to
+      // mark them as individuals (concrete, ABox) rather than classes (TBox).
+      {
+        selector: 'node[kind = "instance"]',
+        style: {
+          'background-color': '#fbf3d4',
+          'border-color': '#daa520',
+          'border-width': 1.5,
+          'border-style': 'dashed',
+          'color': '#5a4710',
+          'label': 'data(label)',
+          'font-size': '11px',
+          'font-style': 'italic',
+          'text-valign': 'center',
+          'text-halign': 'center',
+          'width': '88px',
+          'height': '32px',
+          'shape': 'ellipse',
+          'text-wrap': 'ellipsis',
+          'text-max-width': '80px'
+        }
+      },
       // Selected node
       {
         selector: 'node:selected',
@@ -266,25 +288,33 @@ onMounted(async () => {
       name: 'cose',
       animate: false,
       fit: true,
-      padding: 80,
+      padding: 60,
       nodeRepulsion: () => 7000,
       idealEdgeLength: () => 75,
       gravity: 90,
       numIter: 1500,
       randomize: false,
-      componentSpacing: 50,
-      boundingBox: { x1: 60, y1: 40, w: 940, h: 640 }
+      componentSpacing: 50
     } as Record<string, unknown>
   });
 
-  // After the initial layout, fit so the whole graph is visible. The
-  // navigation pane (zoom in / zoom out / fit / rerun layout) lives at the
-  // bottom-right of the container; zoom limits are widened so the user can
-  // both back out for an overview and zoom in close enough to read labels.
+  // The cose layout produces positions synchronously when `animate: false`,
+  // but Cytoscape's renderer needs the container to have its final size
+  // before fit() can compute a meaningful zoom. On initial mount we
+  // sometimes hit a transient state where the container is sized but the
+  // viewport bounds haven't settled yet — fit() in that frame yields a
+  // slightly-off zoom and nodes drift outside the viewport. Run fit() once
+  // synchronously, then again on the next animation frame so the fit
+  // matches what clicking the navigation-pane "fit" button produces.
   cyInstance.fit(undefined, 60);
-  const fitZoom = cyInstance.zoom();
-  cyInstance.minZoom(fitZoom * 0.4);
-  cyInstance.maxZoom(fitZoom * 4);
+  requestAnimationFrame(() => {
+    cyInstance?.fit(undefined, 60);
+    if (cyInstance) {
+      const fitZoom = cyInstance.zoom();
+      cyInstance.minZoom(fitZoom * 0.4);
+      cyInstance.maxZoom(fitZoom * 4);
+    }
+  });
 
   // Click handler: open side panel
   const allEdges = graphData.edges.map(e => e.data);

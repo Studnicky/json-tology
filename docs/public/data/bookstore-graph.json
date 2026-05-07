@@ -407,11 +407,11 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:customer:c-7af3-21e8__sameAs__urn:bookstore:customer:legacy-4421",
+        "id": "urn:bookstore:customer:AliceSmith__sameAs__urn:bookstore:customer:AliceSmithLegacy",
         "kind": "sameAs",
         "label": "sameAs",
-        "source": "urn:bookstore:customer:c-7af3-21e8",
-        "target": "urn:bookstore:customer:legacy-4421"
+        "source": "urn:bookstore:customer:AliceSmith",
+        "target": "urn:bookstore:customer:AliceSmithLegacy"
       }
     }
   ],
@@ -656,16 +656,16 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:customer:c-7af3-21e8",
-        "kind": "primitive",
-        "label": "c-7af3-21e8"
+        "id": "urn:bookstore:customer:AliceSmith",
+        "kind": "instance",
+        "label": "AliceSmith"
       }
     },
     {
       "data": {
-        "id": "urn:bookstore:customer:legacy-4421",
-        "kind": "primitive",
-        "label": "legacy-4421"
+        "id": "urn:bookstore:customer:AliceSmithLegacy",
+        "kind": "instance",
+        "label": "AliceSmithLegacy"
       }
     }
   ]

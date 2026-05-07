@@ -99,13 +99,13 @@ export const bookstoreEntities = JsonTology.create({
   'schemas': allSchemas
 });
 
-// ABox-level identity demo — owl:sameAs between two customer IRIs.
-// In practice the bookstore migrated from a legacy CRM; some customers carry
-// a stable `urn:bookstore:customer:c-{uuid}` IRI and a legacy
-// `urn:bookstore:customer:legacy-{id}` IRI that resolves to the same person.
+// ABox-level identity demo — owl:sameAs between two customer IRIs that
+// denote the same individual. The bookstore migrated from a legacy CRM, so
+// the customer "Alice Smith" carries both her current stable IRI and her
+// legacy CRM IRI; declaring sameAs lets reasoners merge facts about both.
 bookstoreEntities.sameAs(
-  'urn:bookstore:customer:c-7af3-21e8',
-  'urn:bookstore:customer:legacy-4421'
+  'urn:bookstore:customer:AliceSmith',
+  'urn:bookstore:customer:AliceSmithLegacy'
 );
 
 // Entity types derived from schemas
