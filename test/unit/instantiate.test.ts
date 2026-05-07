@@ -87,8 +87,8 @@ import { Logger } from '../utils/Logger.js';
     'type': 'array'
   } as const;
 
-  void describe('jt:alias coercion', () => {
-    void describe('single alias', () => {
+  void describe('jt:alias coercion', { 'concurrency': true }, () => {
+    void describe('single alias', { 'concurrency': true }, () => {
       void it('maps alias input to canonical key', () => {
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
@@ -130,7 +130,7 @@ import { Logger } from '../utils/Logger.js';
       });
     });
 
-    void describe('multi-alias', () => {
+    void describe('multi-alias', { 'concurrency': true }, () => {
       void it('first alias in list resolves when canonical key absent', () => {
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
@@ -163,7 +163,7 @@ import { Logger } from '../utils/Logger.js';
       });
     });
 
-    void describe('required properties with alias', () => {
+    void describe('required properties with alias', { 'concurrency': true }, () => {
       void it('alias satisfies required constraint', () => {
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
@@ -183,7 +183,7 @@ import { Logger } from '../utils/Logger.js';
       });
     });
 
-    void describe('nested object alias', () => {
+    void describe('nested object alias', { 'concurrency': true }, () => {
       void it('alias on nested object property resolves to canonical key', () => {
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
@@ -194,7 +194,7 @@ import { Logger } from '../utils/Logger.js';
       });
     });
 
-    void describe('array item alias', () => {
+    void describe('array item alias', { 'concurrency': true }, () => {
       void it('alias on items schema property resolves for each element', () => {
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
@@ -211,7 +211,7 @@ import { Logger } from '../utils/Logger.js';
       });
     });
 
-    void describe('error messages use canonical pointer', () => {
+    void describe('error messages use canonical pointer', { 'concurrency': true }, () => {
       void it('validation errors reference canonical key path, not alias path', () => {
         const WrongTypeSchema = {
           '$id': 'https://example.com/WrongTypeAlias',
@@ -284,7 +284,7 @@ import { Logger } from '../utils/Logger.js';
   // Self-Referencing Schemas
   // ---------------------------------------------------------------------------
 
-  void describe('Self-referencing schemas', () => {
+  void describe('Self-referencing schemas', { 'concurrency': true }, () => {
     void it('validates a tree structure with recursive $ref', () => {
       const registry = JsonTology.create({
         'baseIRI': 'urn:test:',
@@ -470,7 +470,7 @@ import { Logger } from '../utils/Logger.js';
   // Cross-Schema References
   // ---------------------------------------------------------------------------
 
-  void describe('Cross-schema references', () => {
+  void describe('Cross-schema references', { 'concurrency': true }, () => {
     void it('validates mutual recursion between two schemas', () => {
       const registry = JsonTology.create({
         'baseIRI': 'urn:test:',
@@ -633,7 +633,7 @@ import { Logger } from '../utils/Logger.js';
   // $anchor and $defs
   // ---------------------------------------------------------------------------
 
-  void describe('$anchor and $defs resolution', () => {
+  void describe('$anchor and $defs resolution', { 'concurrency': true }, () => {
     void it('resolves $ref to $anchor within the same schema', () => {
       const registry = JsonTology.create({
         'baseIRI': 'urn:test:',
@@ -724,7 +724,7 @@ import { Logger } from '../utils/Logger.js';
   // Deep Nesting
   // ---------------------------------------------------------------------------
 
-  void describe('Deep nesting', () => {
+  void describe('Deep nesting', { 'concurrency': true }, () => {
     void it('validates 10+ levels of nested objects via $ref chain', () => {
       const registry = JsonTology.create({
         'baseIRI': 'urn:test:',
@@ -834,7 +834,7 @@ import { Logger } from '../utils/Logger.js';
   // $ref with Sibling Keywords (2020-12 Merge Semantics)
   // ---------------------------------------------------------------------------
 
-  void describe('$ref with sibling keywords', () => {
+  void describe('$ref with sibling keywords', { 'concurrency': true }, () => {
     void it('merges $ref with sibling properties in 2020-12 dialect', () => {
       const registry = JsonTology.create({
         'baseIRI': 'urn:test:',
@@ -920,7 +920,7 @@ import { Logger } from '../utils/Logger.js';
     'type': 'object'
   } as const;
 
-  void describe('jt:strict per-field', () => {
+  void describe('jt:strict per-field', { 'concurrency': true }, () => {
     void it('accepts correct JS type for strict field', () => {
       const registry = JsonTology.create({
         'baseIRI': 'urn:test:',
@@ -1126,7 +1126,7 @@ import { Logger } from '../utils/Logger.js';
     'type': 'object'
   } as const;
 
-  void describe('jt:frozen output', () => {
+  void describe('jt:frozen output', { 'concurrency': true }, () => {
     void it('coerce() returns frozen object when jt:frozen is set', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
@@ -1251,7 +1251,7 @@ import { Logger } from '../utils/Logger.js';
     'type': 'object'
   } as const;
 
-  void describe('enableDefaults option', () => {
+  void describe('enableDefaults option', { 'concurrency': true }, () => {
     void it('fills defaults by default (enableDefaults: true)', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
@@ -1352,7 +1352,7 @@ import { Logger } from '../utils/Logger.js';
     'type': 'object'
   } as const;
 
-  void describe('enableInlineWarnings flag', () => {
+  void describe('enableInlineWarnings flag', { 'concurrency': true }, () => {
     void it('emits warn via logger when inline-object found', () => {
       const warns: string[] = [];
       const registry = JsonTology.create({
@@ -1422,7 +1422,7 @@ import { Logger } from '../utils/Logger.js';
     });
   });
 
-  void describe('enableStrictGraph flag', () => {
+  void describe('enableStrictGraph flag', { 'concurrency': true }, () => {
     void it('throws SchemaError for inline-object', () => {
       const registry = JsonTology.create({
         'baseIRI': 'urn:test:',
@@ -1504,7 +1504,7 @@ import { Logger } from '../utils/Logger.js';
     });
   });
 
-  void describe('enableDuplicateDetection flag', () => {
+  void describe('enableDuplicateDetection flag', { 'concurrency': true }, () => {
     void it('emits warn when duplicate shape detected at registration', () => {
       const IsbnSchema = {
         '$id': 'urn:test:DupIsbn',

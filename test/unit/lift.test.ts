@@ -7,7 +7,7 @@ import { fromRdfQuad } from '../../src/modules/rdf/Lift.js';
 // RdfJsQuadInterface is the per-quad RDF/JS DataModel shape consumed by fromRdfQuad; not surfaced via the public API.
 import type { RdfJsQuadInterface } from '../../src/interfaces/RdfJsQuad.js';
 
-void describe('fromRdfQuad', () => {
+void describe('fromRdfQuad', { 'concurrency': true }, () => {
   void it('converts named node subject + predicate + named node object', () => {
     const quad: RdfJsQuadInterface = {
       'object': {

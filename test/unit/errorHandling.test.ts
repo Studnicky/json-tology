@@ -17,7 +17,7 @@ import {
 // SchemaError -- registration failures
 // ---------------------------------------------------------------------------
 
-void describe('SchemaError on registration', () => {
+void describe('SchemaError on registration', { 'concurrency': true }, () => {
   void it('throws SchemaError for invalid registrations', () => {
     const scenarios: Array<{ 'messageContains': string;
       'name': string;
@@ -105,7 +105,7 @@ void describe('SchemaError on registration', () => {
 // BaseError cause chain and flatten edge cases
 // ---------------------------------------------------------------------------
 
-void describe('BaseError cause chain edge cases', () => {
+void describe('BaseError cause chain edge cases', { 'concurrency': true }, () => {
   void it('handles error edge cases for cause and flatten', () => {
     const scenarios: Array<{
       'assertions': () => void;
@@ -163,7 +163,7 @@ void describe('BaseError cause chain edge cases', () => {
 // InstantiationError -- validation failures during coerce
 // ---------------------------------------------------------------------------
 
-void describe('InstantiationError structure', () => {
+void describe('InstantiationError structure', { 'concurrency': true }, () => {
   void it('carries structured ValidationErrors with items', () => {
     const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
@@ -262,7 +262,7 @@ void describe('InstantiationError structure', () => {
 // Registry recovery after errors
 // ---------------------------------------------------------------------------
 
-void describe('Registry recovery', () => {
+void describe('Registry recovery', { 'concurrency': true }, () => {
   void it('remains usable after failed registration', () => {
     // Use enableStrictGraph to trigger inline-object error (default mode is silent)
     const registry = JsonTology.create({
@@ -343,7 +343,7 @@ void describe('Registry recovery', () => {
 // JsonTology facade error handling
 // ---------------------------------------------------------------------------
 
-void describe('JsonTology error handling', () => {
+void describe('JsonTology error handling', { 'concurrency': true }, () => {
   void it('handles unregistered schema operations', () => {
     const jt = JsonTology.create({ 'baseIRI': 'https://err.test' });
 

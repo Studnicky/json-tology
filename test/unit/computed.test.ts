@@ -100,7 +100,7 @@ function makeJt() {
 // computed field absent on input is filled in by coerce()
 // ---------------------------------------------------------------------------
 
-void describe('computed fields', () => {
+void describe('computed fields', { 'concurrency': true }, () => {
   void it('coerce() fills computed field absent from input', () => {
     const jt = makeJt();
     const result = jt.instantiate('https://ex.io/Order', {

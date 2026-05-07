@@ -39,7 +39,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     return target;
   }
 
-  void describe('SchemaGraph', () => {
+  void describe('SchemaGraph', { 'concurrency': true }, () => {
     void it('lowers pointer-addressable schema nodes', () => {
       const schema = {
         '$defs': {
@@ -734,7 +734,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     });
   }
 
-  void describe('Enriched relations', () => {
+  void describe('Enriched relations', { 'concurrency': true }, () => {
     void it('produces conditional structures from if/then/else variants', () => {
       const scenarios = [
         {
@@ -1745,7 +1745,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     return reg;
   }
 
-  void describe('rdfs:domain and rdfs:range', () => {
+  void describe('rdfs:domain and rdfs:range', { 'concurrency': true }, () => {
     const reg = makeRegistry();
 
     const rangeScenarios: Array<{ 'data': unknown;
@@ -2102,8 +2102,8 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     'type': 'object'
   } as const;
 
-  void describe('GraphArtifact', () => {
-    void describe('toArtifact', () => {
+  void describe('GraphArtifact', { 'concurrency': true }, () => {
+    void describe('toArtifact', { 'concurrency': true }, () => {
       const toArtifactScenarios: Array<{
         'check': (artifact: GraphArtifactInterface) => void;
         'name': string;
@@ -2183,7 +2183,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       }
     });
 
-    void describe('fromArtifact', () => {
+    void describe('fromArtifact', { 'concurrency': true }, () => {
       const roundtripScenarios: Array<{
         'check': (rebuilt: ReturnType<typeof GraphArtifact.fromArtifact>, graph: SchemaGraph) => void;
         'name': string;
@@ -2289,7 +2289,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         });
       }
 
-      void describe('rejection scenarios', () => {
+      void describe('rejection scenarios', { 'concurrency': true }, () => {
         const rejectionScenarios: Array<{
           'matchPattern': ((err: unknown) => boolean) | RegExp;
           'name': string;
@@ -2380,7 +2380,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       });
     });
 
-    void describe('NormIR', () => {
+    void describe('NormIR', { 'concurrency': true }, () => {
       const normIRScenarios: Array<{
         'check': (normIR: NormIRInterface, fromConstructor: SchemaGraph) => void;
         'name': string;
@@ -2493,8 +2493,8 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 // Source: schemaEngine.test.ts
 // ===========================================================================
 {
-  void describe('Graph engine advanced keywords', () => {
-    void describe('propertyNames with pattern and length constraints', () => {
+  void describe('Graph engine advanced keywords', { 'concurrency': true }, () => {
+    void describe('propertyNames with pattern and length constraints', { 'concurrency': true }, () => {
       const scenarios: Array<{
         'data': Record<string, unknown>;
         'expected': boolean;
@@ -2596,7 +2596,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       }
     });
 
-    void describe('dependentSchemas with $ref', () => {
+    void describe('dependentSchemas with $ref', { 'concurrency': true }, () => {
       const scenarios: Array<{
         'data': Record<string, unknown>;
         'expected': boolean;
@@ -2647,7 +2647,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       }
     });
 
-    void describe('prefixItems with items:false tail constraint', () => {
+    void describe('prefixItems with items:false tail constraint', { 'concurrency': true }, () => {
       const scenarios: Array<{
         'data': unknown[];
         'expected': boolean;
@@ -2694,7 +2694,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       }
     });
 
-    void describe('contains with minContains/maxContains', () => {
+    void describe('contains with minContains/maxContains', { 'concurrency': true }, () => {
       const scenarios: Array<{
         'data': unknown[];
         'expected': boolean;
@@ -2774,7 +2774,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       }
     });
 
-    void describe('uniqueItems with semantic object equality', () => {
+    void describe('uniqueItems with semantic object equality', { 'concurrency': true }, () => {
       const scenarios: Array<{
         'data': unknown[];
         'expected': boolean;
@@ -2832,7 +2832,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       }
     });
 
-    void describe('if/then/else with $ref and unevaluatedProperties interaction', () => {
+    void describe('if/then/else with $ref and unevaluatedProperties interaction', { 'concurrency': true }, () => {
       const scenarios: Array<{
         'data': Record<string, unknown>;
         'expected': boolean;
@@ -2955,7 +2955,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       }
     });
 
-    void describe('extended format assertions (string and numeric)', () => {
+    void describe('extended format assertions (string and numeric)', { 'concurrency': true }, () => {
       const scenarios: Array<{
         'data': unknown;
         'expected': boolean;
@@ -3176,7 +3176,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       }
     });
 
-    void describe('dialect and vocabulary rejection', () => {
+    void describe('dialect and vocabulary rejection', { 'concurrency': true }, () => {
       const scenarios: Array<{
         'name': string;
         'pattern': RegExp;
@@ -3212,7 +3212,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       }
     });
 
-    void describe('format annotation vs assertion and content annotations per 2020-12 vocabulary', () => {
+    void describe('format annotation vs assertion and content annotations per 2020-12 vocabulary', { 'concurrency': true }, () => {
       const scenarios: Array<{
         'data': unknown;
         'expected': boolean;
@@ -3307,7 +3307,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       }
     });
 
-    void describe('unevaluatedProperties/Items with allOf, anyOf, and conditional tracking', () => {
+    void describe('unevaluatedProperties/Items with allOf, anyOf, and conditional tracking', { 'concurrency': true }, () => {
       const scenarios: Array<{
         'data': unknown;
         'expected': boolean;
@@ -3524,7 +3524,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       }
     });
 
-    void describe('local/external anchor and dynamic refs with scope override', () => {
+    void describe('local/external anchor and dynamic refs with scope override', { 'concurrency': true }, () => {
       const scenarios: Array<{
         'data': unknown;
         'name': string;
@@ -3665,7 +3665,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         });
       }
 
-      void describe('dynamic scope override (strict tree)', () => {
+      void describe('dynamic scope override (strict tree)', { 'concurrency': true }, () => {
         const treeScenarios: Array<{
           'data': unknown;
           'name': string;
@@ -3743,7 +3743,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       });
     });
 
-    void describe('boolean schemas, Unicode code-point length, and composition boundaries', () => {
+    void describe('boolean schemas, Unicode code-point length, and composition boundaries', { 'concurrency': true }, () => {
       const scenarios: Array<{
         'data': unknown;
         'expected': boolean;
@@ -3853,7 +3853,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       }
     });
 
-    void describe('nested $ref chains and additionalProperties with allOf', () => {
+    void describe('nested $ref chains and additionalProperties with allOf', { 'concurrency': true }, () => {
       const scenarios: Array<{
         'data': unknown;
         'name': string;
@@ -3947,7 +3947,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     });
   });
 
-  void describe('Discriminator-based oneOf optimization', () => {
+  void describe('Discriminator-based oneOf optimization', { 'concurrency': true }, () => {
     const CircleSchema = {
       '$id': 'urn:test:circle',
       'properties': {
@@ -4008,7 +4008,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       ]);
     }
 
-    void describe('discriminated oneOf validation', () => {
+    void describe('discriminated oneOf validation', { 'concurrency': true }, () => {
       const scenarios: Array<{
         'data': unknown;
         'expected': boolean;
@@ -4101,7 +4101,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       }
     });
 
-    void describe('discriminator.mapping dispatches by mapped $ref target', () => {
+    void describe('discriminator.mapping dispatches by mapped $ref target', { 'concurrency': true }, () => {
       const scenarios: Array<{
         'data': unknown;
         'expected': boolean;
@@ -4199,7 +4199,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 // Source: schemaIri.test.ts
 // ===========================================================================
 {
-  void describe('SchemaIri.propertyIri', () => {
+  void describe('SchemaIri.propertyIri', { 'concurrency': true }, () => {
     void it('appends property name as fragment', () => {
       assert.equal(
         SchemaIri.propertyIri('https://example.io/User', 'email'),
@@ -4215,7 +4215,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     });
   });
 
-  void describe('SchemaIri.escapeSegment', () => {
+  void describe('SchemaIri.escapeSegment', { 'concurrency': true }, () => {
     void it('encodes special characters', () => {
       assert.equal(SchemaIri.escapeSegment('hello world'), 'hello%20world');
     });
@@ -4237,7 +4237,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     });
   });
 
-  void describe('SchemaIri.splitSubject', () => {
+  void describe('SchemaIri.splitSubject', { 'concurrency': true }, () => {
     void it('returns base and null fragment for subject without hash', () => {
       const result = SchemaIri.splitSubject('http://example.com/User');
 
@@ -4260,7 +4260,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     });
   });
 
-  void describe('SchemaIri.isPropertySubject', () => {
+  void describe('SchemaIri.isPropertySubject', { 'concurrency': true }, () => {
     void it('returns true for subject with hash and /properties/ fragment', () => {
       assert.equal(SchemaIri.isPropertySubject('http://example.com/User#/properties/name'), true);
     });
@@ -4278,7 +4278,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     });
   });
 
-  void describe('SchemaIri.fragmentContains', () => {
+  void describe('SchemaIri.fragmentContains', { 'concurrency': true }, () => {
     void it('returns true when fragment contains the segment', () => {
       assert.equal(SchemaIri.fragmentContains('http://example.com/User#/properties/name', 'properties'), true);
     });
@@ -4292,7 +4292,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     });
   });
 
-  void describe('SchemaIri.structuralParent', () => {
+  void describe('SchemaIri.structuralParent', { 'concurrency': true }, () => {
     void it('returns subject unchanged when no hash present', () => {
       assert.equal(SchemaIri.structuralParent('http://example.com/User'), 'http://example.com/User');
     });
@@ -4313,7 +4313,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     });
   });
 
-  void describe('SchemaIri.lastSegment', () => {
+  void describe('SchemaIri.lastSegment', { 'concurrency': true }, () => {
     void it('returns full subject when no hash present', () => {
       assert.equal(SchemaIri.lastSegment('http://example.com/User'), 'http://example.com/User');
     });

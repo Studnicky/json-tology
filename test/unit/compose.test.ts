@@ -85,7 +85,7 @@ import { Result } from '../../src/modules/data/Result.js';
   // extend
   // ---------------------------------------------------------------------------
 
-  void describe('Compose.extend()', () => {
+  void describe('Compose.extend()', { 'concurrency': true }, () => {
     type ExtResult = Record<string, unknown> & {
       '$id': string;
       'allOf': readonly [{ '$ref': string }, Record<string, unknown>];
@@ -168,7 +168,7 @@ import { Result } from '../../src/modules/data/Result.js';
   // intersection
   // ---------------------------------------------------------------------------
 
-  void describe('Compose.intersection()', () => {
+  void describe('Compose.intersection()', { 'concurrency': true }, () => {
     const intersectionScenarios: Array<{
       'check': (result: Record<string, unknown>) => void;
       'name': string;
@@ -238,7 +238,7 @@ import { Result } from '../../src/modules/data/Result.js';
   // discriminatedUnion
   // ---------------------------------------------------------------------------
 
-  void describe('Compose.discriminatedUnion()', () => {
+  void describe('Compose.discriminatedUnion()', { 'concurrency': true }, () => {
     const duScenarios: Array<{
       'check': () => void;
       'name': string;
@@ -283,7 +283,7 @@ import { Result } from '../../src/modules/data/Result.js';
   // partial
   // ---------------------------------------------------------------------------
 
-  void describe('Compose.partial()', () => {
+  void describe('Compose.partial()', { 'concurrency': true }, () => {
     const partialScenarios: Array<{
       'check': () => void;
       'name': string;
@@ -324,7 +324,7 @@ import { Result } from '../../src/modules/data/Result.js';
   // required
   // ---------------------------------------------------------------------------
 
-  void describe('Compose.required()', () => {
+  void describe('Compose.required()', { 'concurrency': true }, () => {
     const requiredScenarios: Array<{
       'check': () => void;
       'name': string;
@@ -388,7 +388,7 @@ import { Result } from '../../src/modules/data/Result.js';
   // pick
   // ---------------------------------------------------------------------------
 
-  void describe('Compose.pick()', () => {
+  void describe('Compose.pick()', { 'concurrency': true }, () => {
     const pickScenarios: Array<{
       'check': () => void;
       'name': string;
@@ -458,7 +458,7 @@ import { Result } from '../../src/modules/data/Result.js';
   // omit
   // ---------------------------------------------------------------------------
 
-  void describe('Compose.omit()', () => {
+  void describe('Compose.omit()', { 'concurrency': true }, () => {
     const omitScenarios: Array<{
       'check': () => void;
       'name': string;
@@ -529,7 +529,7 @@ import { Result } from '../../src/modules/data/Result.js';
   // narrow
   // ---------------------------------------------------------------------------
 
-  void describe('Compose.narrow()', () => {
+  void describe('Compose.narrow()', { 'concurrency': true }, () => {
     const narrowScenarios: Array<{
       'expected': string;
       'key': string;
@@ -607,7 +607,7 @@ import { Result } from '../../src/modules/data/Result.js';
   // getDefaults
   // ---------------------------------------------------------------------------
 
-  void describe('Compose.getDefaults()', () => {
+  void describe('Compose.getDefaults()', { 'concurrency': true }, () => {
     const defaultScenarios: Array<{
       'check': (defaults: Record<string, unknown>) => void;
       'name': string;
@@ -721,7 +721,7 @@ import { Result } from '../../src/modules/data/Result.js';
   // ValidationErrors
   // ---------------------------------------------------------------------------
 
-  void describe('ValidationErrors', () => {
+  void describe('ValidationErrors', { 'concurrency': true }, () => {
     const formatScenarios: Array<{
       'check': (errs: ValidationErrors) => void;
       'items': Array<{ 'keyword': string;
@@ -1002,7 +1002,7 @@ import { Result } from '../../src/modules/data/Result.js';
   // Result monad
   // ---------------------------------------------------------------------------
 
-  void describe('Result', () => {
+  void describe('Result', { 'concurrency': true }, () => {
     const resultScenarios: Array<{
       'check': () => void;
       'name': string;
@@ -1131,7 +1131,7 @@ import { Result } from '../../src/modules/data/Result.js';
   // Error class toJson(), flatten(), and cause chain
   // ---------------------------------------------------------------------------
 
-  void describe('Error classes', () => {
+  void describe('Error classes', { 'concurrency': true }, () => {
     const baseErrorScenarios: Array<{
       'check': () => void;
       'name': string;
@@ -1346,7 +1346,7 @@ import { Result } from '../../src/modules/data/Result.js';
     }
   ];
 
-  void describe('Compose.extend() edge cases', () => {
+  void describe('Compose.extend() edge cases', { 'concurrency': true }, () => {
     for (const scenario of extendScenarios) {
       void it(scenario.name, () => {
         const result = Compose.extend(
@@ -1407,7 +1407,7 @@ import { Result } from '../../src/modules/data/Result.js';
     }
   ];
 
-  void describe('Compose.pick() edge cases', () => {
+  void describe('Compose.pick() edge cases', { 'concurrency': true }, () => {
     for (const scenario of pickScenarios) {
       void it(scenario.name, () => {
         const result = Compose.pick(
@@ -1462,7 +1462,7 @@ import { Result } from '../../src/modules/data/Result.js';
     }
   ];
 
-  void describe('Compose.omit() edge cases', () => {
+  void describe('Compose.omit() edge cases', { 'concurrency': true }, () => {
     for (const scenario of omitScenarios) {
       void it(scenario.name, () => {
         const result = Compose.omit(
@@ -1526,7 +1526,7 @@ import { Result } from '../../src/modules/data/Result.js';
     }
   ];
 
-  void describe('Compose.partial() edge cases', () => {
+  void describe('Compose.partial() edge cases', { 'concurrency': true }, () => {
     for (const scenario of partialScenarios) {
       void it(scenario.name, () => {
         const result = Compose.partial(
@@ -1625,7 +1625,7 @@ import { Result } from '../../src/modules/data/Result.js';
     }
   ];
 
-  void describe('Compose.intersection() edge cases', () => {
+  void describe('Compose.intersection() edge cases', { 'concurrency': true }, () => {
     for (const scenario of intersectionScenarios) {
       void it(scenario.name, () => {
         const result = Compose.intersection(
@@ -1717,7 +1717,7 @@ import { Result } from '../../src/modules/data/Result.js';
     }
   ];
 
-  void describe('Compose.discriminatedUnion() edge cases', () => {
+  void describe('Compose.discriminatedUnion() edge cases', { 'concurrency': true }, () => {
     for (const scenario of discriminatedUnionScenarios) {
       void it(scenario.name, () => {
         const result = Compose.discriminatedUnion(
@@ -1742,7 +1742,7 @@ import { Result } from '../../src/modules/data/Result.js';
     'type': 'string'
   } as const;
 
-  void describe('Compose.equivalent()', () => {
+  void describe('Compose.equivalent()', { 'concurrency': true }, () => {
     void it('emits $id and $ref, no structural duplication', () => {
       const result = Compose.equivalent(IsbnSchema, { '$id': 'urn:bookstore:PrimaryIsbn' });
 
@@ -1834,7 +1834,7 @@ import { Result } from '../../src/modules/data/Result.js';
     'type': 'object'
   } as const;
 
-  void describe('Compose.extend() allOf+$ref shape', () => {
+  void describe('Compose.extend() allOf+$ref shape', { 'concurrency': true }, () => {
     void it('emits allOf with $ref to parent as first member', () => {
       const result = Compose.extend(PersonSchema, { 'role': { 'type': 'string' } } as const, 'https://example.io/Employee') as unknown as {
         '$id': string;
