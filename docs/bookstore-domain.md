@@ -34,7 +34,12 @@ examples/docs/bookstore/
     ├── Customer.ts               # entity: composes CustomerId + Email + PersonName + Address
     ├── OrderLine.ts              # entity: composes Isbn + Quantity + Money
     ├── Order.ts                  # entity: composes OrderId + CustomerId + OrderLine + Money + ...
-    └── Review.ts                 # entity: composes ReviewId + Isbn + CustomerId + RatingScore + ...
+    ├── Review.ts                 # entity: composes ReviewId + Isbn + CustomerId + RatingScore + ...
+    ├── EBook.ts                  # subClassOf Book — digital format
+    ├── PrintBook.ts              # subClassOf Book + disjointWith EBook — physical format
+    ├── RareBook.ts               # subClassOf PrintBook + OWL property restrictions
+    ├── PromotionalBook.ts        # subClassOf Book — currently on promotion
+    └── NonPromotionalBook.ts     # complementOf PromotionalBook — defined by negation
 ```
 
 Each primitive file exports a single schema constant with a stable `$id` using the `urn:bookstore:` IRI pattern. Entity files import only the primitives they reference - every `$ref` is `{ $ref: SourceSchema.$id }` with an explicit named import at the top of the file.
@@ -270,6 +275,94 @@ export { IsbnSchema, BookSchema, CustomerSchema /* ... all schemas */ };
 ```
 
 `as const` is required so TypeScript preserves the literal types needed for `InferType<T>` inference.
+
+## Book taxonomy and OWL axioms
+
+The bookstore registry includes five entities that demonstrate `Compose`'s OWL class-axiom and restriction surface. They live alongside the primitive entities and are registered together so the live ontology graph (and the `BookstoreGraph` visualization) renders every axiom kind:
+
+```ts
+// entities/EBook.ts — Compose.subClassOf produces { $id, allOf: [{ $ref: Book.$id }, body] }
+import { Compose } from 'json-tology';
+export const EBookSchema = Compose.subClassOf(BookSchema, {
+  $id: 'urn:bookstore:EBook',
+  type: 'object',
+  properties: {
+    fileFormat:    { type: 'string', enum: ['epub', 'pdf', 'mobi'] },
+    downloadUrl:   { type: 'string', format: 'uri' },
+    fileSizeBytes: { type: 'integer', minimum: 0 },
+  },
+  required: ['fileFormat', 'downloadUrl'],
+} as const);
+```
+
+```ts
+// entities/PrintBook.ts — subClassOf Book + disjointWith EBook
+const PrintBookBase = Compose.subClassOf(BookSchema, {
+  $id: 'urn:bookstore:PrintBook',
+  type: 'object',
+  properties: {
+    binding:     { type: 'string', enum: ['hardcover', 'paperback'] },
+    pageCount:   { type: 'integer', minimum: 1 },
+    weightGrams: { type: 'number',  minimum: 0 },
+  },
+  required: ['binding', 'pageCount'],
+} as const);
+
+export const PrintBookSchema = Compose.disjointWith(EBookSchema, PrintBookBase);
+// TBox: urn:bookstore:PrintBook owl:disjointWith urn:bookstore:EBook
+```
+
+```ts
+// entities/RareBook.ts — chained Compose.subClassOf attaches OWL property restrictions
+const AUTHORS = 'urn:bookstore:Book#authors';
+
+export const RareBookSchema = Compose.subClassOf(
+  Compose.maxCardinality(AUTHORS, 1),
+  Compose.subClassOf(
+    Compose.someValuesFrom(AUTHORS, AuthorNameSchema.$id),
+    Compose.subClassOf(PrintBookSchema, {
+      $id: 'urn:bookstore:RareBook',
+      type: 'object',
+      properties: {
+        firstEditionYear:  { type: 'integer', minimum: 1450, maximum: 2100 },
+        estimatedAgeYears: { type: 'integer', minimum: 0 },
+      },
+      required: ['firstEditionYear'],
+    } as const),
+  ),
+);
+// TBox: two anonymous owl:Restriction blank nodes attached via rdfs:subClassOf —
+//   onProperty Book#authors, owl:someValuesFrom AuthorName
+//   onProperty Book#authors, owl:maxCardinality 1
+```
+
+```ts
+// entities/NonPromotionalBook.ts — Compose.complementOf
+export const NonPromotionalBookSchema = Compose.complementOf(PromotionalBookSchema, {
+  $id: 'urn:bookstore:NonPromotionalBook',
+  type: 'object',
+} as const);
+// Wire shape: { $id, not: { $ref: 'urn:bookstore:PromotionalBook' }, type: 'object' }
+// TBox: urn:bookstore:NonPromotionalBook owl:complementOf urn:bookstore:PromotionalBook
+```
+
+```ts
+// index.ts — ABox owl:sameAs assertion between two customer IRIs
+bookstoreEntities.sameAs(
+  'urn:bookstore:customer:c-7af3-21e8',
+  'urn:bookstore:customer:legacy-4421',
+);
+// toQuads() emits both directions:
+//   <c-7af3-21e8>     owl:sameAs <legacy-4421>
+//   <legacy-4421>     owl:sameAs <c-7af3-21e8>
+```
+
+The live graph at the top of [Your Types Are a Graph](/your-types-are-a-graph) renders every one of these axioms with a distinct edge style — `subClassOf` (gray), `disjointWith` (red dashed), `complementOf` (purple with tee terminator), `restriction` (teal dotted), and `sameAs` (gold dashed).
+
+See:
+- [`Compose.subClassOf` / `disjointWith` / `complementOf`](/composition/sub-class-of)
+- [OWL class restrictions](/composition/restrictions)
+- [`sameAs` (ABox identity)](/advanced/sameas)
 
 ## Importing in your examples
 

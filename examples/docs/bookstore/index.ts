@@ -34,6 +34,16 @@ import { OrderLineSchema } from './entities/OrderLine.js';
 import { OrderSchema } from './entities/Order.js';
 import { ReviewSchema } from './entities/Review.js';
 
+// Book taxonomy — Compose.subClassOf / disjointWith / complementOf / restrictions
+// EBookSchema and PrintBookSchema are disjoint subclasses of Book.
+// RareBookSchema layers OWL property restrictions onto PrintBook.
+// PromotionalBookSchema and NonPromotionalBookSchema demonstrate complementOf.
+import { EBookSchema } from './entities/EBook.js';
+import { PrintBookSchema } from './entities/PrintBook.js';
+import { RareBookSchema } from './entities/RareBook.js';
+import { PromotionalBookSchema } from './entities/PromotionalBook.js';
+import { NonPromotionalBookSchema } from './entities/NonPromotionalBook.js';
+
 const allSchemas = [
   // Primitives must register before entities that $ref them
   AmountSchema,
@@ -63,13 +73,28 @@ const allSchemas = [
   CustomerSchema,
   OrderLineSchema,
   OrderSchema,
-  ReviewSchema
+  ReviewSchema,
+  // Book taxonomy — must register Book first; class axioms below reference it
+  EBookSchema,
+  PrintBookSchema,
+  RareBookSchema,
+  PromotionalBookSchema,
+  NonPromotionalBookSchema
 ] as const;
 
 export const bookstoreEntities = JsonTology.create({
   'baseIRI': 'https://bookstore.example',
   'schemas': allSchemas
 });
+
+// ABox-level identity demo — owl:sameAs between two customer IRIs.
+// In practice the bookstore migrated from a legacy CRM; some customers carry
+// a stable `urn:bookstore:customer:c-{uuid}` IRI and a legacy
+// `urn:bookstore:customer:legacy-{id}` IRI that resolves to the same person.
+bookstoreEntities.sameAs(
+  'urn:bookstore:customer:c-7af3-21e8',
+  'urn:bookstore:customer:legacy-4421'
+);
 
 // Entity types derived from schemas
 export type Address = InferType<typeof AddressSchema>;
@@ -91,17 +116,22 @@ export { CurrencyCodeSchema } from './entities/CurrencyCode.js';
 export { CustomerSchema } from './entities/Customer.js';
 export { CustomerIdSchema } from './entities/CustomerId.js';
 export { CustomerNameSchema } from './entities/CustomerName.js';
+export { EBookSchema } from './entities/EBook.js';
 export { EmailSchema } from './entities/Email.js';
 export { IsbnSchema } from './entities/Isbn.js';
 export { Iso8601Schema } from './entities/Iso8601.js';
 export { MoneySchema } from './entities/Money.js';
+export { NonPromotionalBookSchema } from './entities/NonPromotionalBook.js';
 export { OrderSchema } from './entities/Order.js';
 export { OrderIdSchema } from './entities/OrderId.js';
 export { OrderLineSchema } from './entities/OrderLine.js';
 export { PersonNameSchema } from './entities/PersonName.js';
 export { PostalCodeSchema } from './entities/PostalCode.js';
-
+export { PrintBookSchema } from './entities/PrintBook.js';
+export { PromotionalBookSchema } from './entities/PromotionalBook.js';
 export { QuantitySchema } from './entities/Quantity.js';
+
+export { RareBookSchema } from './entities/RareBook.js';
 export { RatingScoreSchema } from './entities/RatingScore.js';
 export { ReviewSchema } from './entities/Review.js';
 export { ReviewIdSchema } from './entities/ReviewId.js';

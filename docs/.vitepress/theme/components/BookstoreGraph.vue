@@ -192,6 +192,74 @@ onMounted(async () => {
           'text-margin-y': '-8px',
           'width': 1.5
         }
+      },
+      // disjointWith edges — red dashed (no arrow, the relation is symmetric)
+      {
+        selector: 'edge[kind = "disjointWith"]',
+        style: {
+          'line-color': '#d63a3a',
+          'target-arrow-color': '#d63a3a',
+          'target-arrow-shape': 'none',
+          'curve-style': 'bezier',
+          'line-style': 'dashed',
+          'label': 'data(label)',
+          'font-size': '9px',
+          'color': '#d63a3a',
+          'text-rotation': 'autorotate',
+          'text-margin-y': '-8px',
+          'width': 2
+        }
+      },
+      // complementOf edges — purple solid
+      {
+        selector: 'edge[kind = "complementOf"]',
+        style: {
+          'line-color': '#8a2be2',
+          'target-arrow-color': '#8a2be2',
+          'target-arrow-shape': 'tee',
+          'curve-style': 'bezier',
+          'line-style': 'solid',
+          'label': 'data(label)',
+          'font-size': '9px',
+          'color': '#8a2be2',
+          'text-rotation': 'autorotate',
+          'text-margin-y': '-8px',
+          'width': 2
+        }
+      },
+      // restriction edges — teal dotted (class -> constrained property)
+      {
+        selector: 'edge[kind = "restriction"]',
+        style: {
+          'line-color': '#08717a',
+          'target-arrow-color': '#08717a',
+          'target-arrow-shape': 'circle',
+          'curve-style': 'bezier',
+          'line-style': 'dotted',
+          'label': 'data(label)',
+          'font-size': '9px',
+          'color': '#08717a',
+          'text-rotation': 'autorotate',
+          'text-margin-y': '-8px',
+          'width': 1.5
+        }
+      },
+      // sameAs edges — gold dashed, symmetric (no arrow)
+      {
+        selector: 'edge[kind = "sameAs"]',
+        style: {
+          'line-color': '#daa520',
+          'target-arrow-color': '#daa520',
+          'target-arrow-shape': 'none',
+          'curve-style': 'bezier',
+          'line-style': 'dashed',
+          'label': 'data(label)',
+          'font-size': '9px',
+          'color': '#daa520',
+          'text-rotation': 'autorotate',
+          'text-margin-y': '-8px',
+          'width': 2
+        }
       }
     ],
     layout: {

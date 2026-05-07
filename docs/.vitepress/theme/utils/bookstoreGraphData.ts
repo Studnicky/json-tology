@@ -7,7 +7,12 @@ import { bookstoreEntities } from '../../../../examples/docs/bookstore/index.js'
 const OWL_CLASS = 'http://www.w3.org/2002/07/owl#Class';
 const OWL_OBJECT_PROP = 'http://www.w3.org/2002/07/owl#ObjectProperty';
 const OWL_DATATYPE_PROP = 'http://www.w3.org/2002/07/owl#DatatypeProperty';
+const OWL_RESTRICTION = 'http://www.w3.org/2002/07/owl#Restriction';
+const OWL_ON_PROPERTY = 'http://www.w3.org/2002/07/owl#onProperty';
 const OWL_EQUIVALENT = 'http://www.w3.org/2002/07/owl#equivalentClass';
+const OWL_DISJOINT = 'http://www.w3.org/2002/07/owl#disjointWith';
+const OWL_COMPLEMENT = 'http://www.w3.org/2002/07/owl#complementOf';
+const OWL_SAME_AS = 'http://www.w3.org/2002/07/owl#sameAs';
 const RDFS_RANGE = 'http://www.w3.org/2000/01/rdf-schema#range';
 const RDFS_DOMAIN = 'http://www.w3.org/2000/01/rdf-schema#domain';
 const RDFS_SUBCLASS = 'http://www.w3.org/2000/01/rdf-schema#subClassOf';
@@ -29,7 +34,15 @@ export interface EdgeData {
   source: string;
   target: string;
   label: string;
-  kind: 'subClassOf' | 'domain' | 'range' | 'equivalentClass';
+  kind:
+    | 'complementOf'
+    | 'disjointWith'
+    | 'domain'
+    | 'equivalentClass'
+    | 'range'
+    | 'restriction'
+    | 'sameAs'
+    | 'subClassOf';
 }
 
 export interface CytoscapeElements {
@@ -240,6 +253,27 @@ export function toCytoscapeElements(): CytoscapeElements {
         const subs = Array.isArray(subClassOf) ? subClassOf : [subClassOf];
 
         for (const sub of subs) {
+          // Inlined owl:Restriction nodes appear directly inside subClassOf
+          // entries (no top-level @id). Render them as a `restriction` edge
+          // pointing from the class to the constrained property.
+          if (sub && typeof sub === 'object') {
+            const subObj = sub as Record<string, unknown>;
+            const subType = Array.isArray(subObj['@type'])
+              ? subObj['@type'] as string[]
+              : [subObj['@type'] as string];
+
+            if (subType.includes(OWL_RESTRICTION)) {
+              const onPropVal = subObj[OWL_ON_PROPERTY];
+              const onPropId = onPropVal ? iri(onPropVal) : null;
+
+              if (onPropId) {
+                addNode(onPropId);
+                addEdge(nodeId, onPropId, 'restriction', 'restriction');
+              }
+              continue;
+            }
+          }
+
           const targetId = iri(sub);
 
           if (targetId && !targetId.startsWith('_:') && !isPropertyNode(targetId)) {
@@ -258,6 +292,85 @@ export function toCytoscapeElements(): CytoscapeElements {
             if (!isBuiltinType(targetId)) {
               addNode(targetId);
               addEdge(nodeId, targetId, 'equivalentClass', 'equivalentClass');
+            }
+          }
+        }
+      }
+
+      const disjoint = node[OWL_DISJOINT];
+
+      if (disjoint) {
+        const disjointVals = Array.isArray(disjoint) ? disjoint : [disjoint];
+
+        for (const dj of disjointVals) {
+          const targetId = iri(dj);
+
+          if (targetId && !targetId.startsWith('_:')) {
+            addNode(targetId);
+            addEdge(nodeId, targetId, 'disjointWith', 'disjointWith');
+          }
+        }
+      }
+
+      const complement = node[OWL_COMPLEMENT];
+
+      if (complement) {
+        const complementVals = Array.isArray(complement) ? complement : [complement];
+
+        for (const cp of complementVals) {
+          const targetId = iri(cp);
+
+          if (targetId && !targetId.startsWith('_:')) {
+            addNode(targetId);
+            addEdge(nodeId, targetId, 'complementOf', 'complementOf');
+          }
+        }
+      }
+
+      const sameAs = node[OWL_SAME_AS];
+
+      if (sameAs) {
+        const sameAsVals = Array.isArray(sameAs) ? sameAs : [sameAs];
+
+        for (const sa of sameAsVals) {
+          const targetId = iri(sa);
+
+          if (targetId && !targetId.startsWith('_:')) {
+            addNode(targetId);
+            addEdge(nodeId, targetId, 'sameAs', 'sameAs');
+          }
+        }
+      }
+    }
+
+    // owl:Restriction blank nodes — render as a "restriction" edge from the
+    // class that subClassOf-references the restriction to the restricted property.
+    if (types.includes(OWL_RESTRICTION) && nodeId.startsWith('_:')) {
+      const onPropVal = node[OWL_ON_PROPERTY];
+      const onPropId = onPropVal ? iri(onPropVal) : null;
+
+      if (onPropId) {
+        addNode(onPropId);
+        // Find any class that subClassOf this restriction
+        for (const candidate of tboxRaw) {
+          if (typeof candidate !== 'object' || candidate === null) {
+            continue;
+          }
+          const candidateId = candidate['@id'];
+
+          if (typeof candidateId !== 'string' || candidateId.startsWith('_:')) {
+            continue;
+          }
+          const candidateSubClassOf = candidate[RDFS_SUBCLASS];
+          const subRefs = Array.isArray(candidateSubClassOf)
+            ? candidateSubClassOf
+            : (candidateSubClassOf ? [candidateSubClassOf] : []);
+
+          for (const ref of subRefs) {
+            const refId = iri(ref);
+
+            if (refId === nodeId) {
+              addEdge(candidateId, onPropId, 'restriction', 'restriction');
             }
           }
         }
@@ -313,6 +426,16 @@ export function toCytoscapeElements(): CytoscapeElements {
       addNode(target);
       addEdge(sourceId, target, propName, 'range');
     }
+  }
+
+  // ABox sameAs assertions live on the registry, not in toTbox(). Pull them
+  // separately so the graph viz shows owl:sameAs identity edges.
+  const sameAsPairs = bookstoreEntities.registry.sameAsStore.all();
+
+  for (const [iriA, iriB] of sameAsPairs) {
+    addNode(iriA);
+    addNode(iriB);
+    addEdge(iriA, iriB, 'sameAs', 'sameAs');
   }
 
   return {

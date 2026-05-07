@@ -288,5 +288,142 @@
       "postedAt"
     ],
     "type": "object"
+  },
+  "urn:bookstore:EBook": {
+    "$id": "urn:bookstore:EBook",
+    "allOf": [
+      {
+        "$ref": "urn:bookstore:Book"
+      },
+      {
+        "properties": {
+          "downloadUrl": {
+            "format": "uri",
+            "type": "string"
+          },
+          "fileFormat": {
+            "enum": [
+              "epub",
+              "pdf",
+              "mobi"
+            ],
+            "type": "string"
+          },
+          "fileSizeBytes": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "fileFormat",
+          "downloadUrl"
+        ],
+        "type": "object"
+      }
+    ]
+  },
+  "urn:bookstore:PrintBook": {
+    "$id": "urn:bookstore:PrintBook",
+    "disjointWith": "urn:bookstore:EBook",
+    "allOf": [
+      {
+        "$ref": "urn:bookstore:Book"
+      },
+      {
+        "properties": {
+          "binding": {
+            "enum": [
+              "hardcover",
+              "paperback"
+            ],
+            "type": "string"
+          },
+          "pageCount": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "weightGrams": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "binding",
+          "pageCount"
+        ],
+        "type": "object"
+      }
+    ]
+  },
+  "urn:bookstore:RareBook": {
+    "$id": "urn:bookstore:RareBook",
+    "allOf": [
+      {
+        "$ref": "urn:bookstore:PrintBook"
+      },
+      {
+        "properties": {
+          "estimatedAgeYears": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "firstEditionYear": {
+            "maximum": 2100,
+            "minimum": 1450,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "firstEditionYear"
+        ],
+        "type": "object"
+      }
+    ],
+    "jt:restrictions": [
+      {
+        "kind": "someValuesFrom",
+        "onProperty": "urn:bookstore:Book#authors",
+        "value": "urn:bookstore:AuthorName"
+      },
+      {
+        "kind": "maxCardinality",
+        "onProperty": "urn:bookstore:Book#authors",
+        "value": 1
+      }
+    ]
+  },
+  "urn:bookstore:PromotionalBook": {
+    "$id": "urn:bookstore:PromotionalBook",
+    "allOf": [
+      {
+        "$ref": "urn:bookstore:Book"
+      },
+      {
+        "properties": {
+          "discountPercent": {
+            "maximum": 100,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "promotionEndsAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "discountPercent",
+          "promotionEndsAt"
+        ],
+        "type": "object"
+      }
+    ]
+  },
+  "urn:bookstore:NonPromotionalBook": {
+    "$id": "urn:bookstore:NonPromotionalBook",
+    "not": {
+      "$ref": "urn:bookstore:PromotionalBook"
+    },
+    "description": "A book not currently on promotion. Defined by negation: any value that does not match urn:bookstore:PromotionalBook.",
+    "type": "object"
   }
 }
