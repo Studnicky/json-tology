@@ -28,6 +28,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `someValuesFrom(prop, C)` → non-empty tuple of the property's element type.
     - `allValuesFrom(prop, C)` → readonly array of the property's element type.
 - Runtime `disjointWith` enforcement: `SchemaRegistry.validate` runs the disjoint target's compiled validator after the source schema's structural pass and surfaces a `disjointWith` keyword `ValidationError` (with `params.disjointTarget`) if both succeed. Two unit tests cover the violation and negative cases. Layered with the compile-time brand: structural type errors at authoring time, runtime errors at the trust boundary.
+- **Compile-time tuple narrowing for raw `minItems` / `maxItems`** (designs/0002 Cluster C / Finding 17). `InferType` on an array schema now folds raw JSON Schema bounds into the inferred shape, mirroring the OWL `cardinality` / `minCardinality` / `maxCardinality` narrowing path:
+  - `minItems === maxItems === N` → `BuildExactTupleType<T, N>` (length exactly `N`).
+  - `minItems > 0` with no `maxItems` → `BuildAtLeastTupleType<T, minItems>` (`[T, ..., T, ...T[]]`).
+  - `maxItems` with no `minItems` → `BuildAtMostTupleType<T, maxItems>` (union of tuples length `0..maxItems`).
+  - `minItems < maxItems` → `BuildBoundedTupleType<T, minItems, maxItems>` (union of tuples length `minItems..maxItems`).
+  - Bounds without `items` narrow the tuple shape over an `unknown` element. Cap at `TupleCapType = 16`; bounds at or beyond the cap fall through to `readonly T[]` to keep recursion within TS limits. Existing `BuildFixedTupleType` / `BuildMinTupleType` helpers (length cap 10) in `Infer.ts` are removed in favour of the unified `RestrictionInfer.ts` builders so the OWL and raw paths share one implementation. New `test/types/infer-array-bounds.test.ts` covers exact / min-only / max-only / bounded-range / beyond-cap / no-bounds / raw-without-items cases.
 
 ### Changed
 
