@@ -283,10 +283,10 @@ void describe('encode — isolated behaviour', () => {
     assert.equal(wire, '2026-01-01T00:00:00.000Z');
   });
 
-  void it('parent with $ref to a transform-attached schema: instantiate preserves wire form (decoder not applied through $ref)', () => {
-    // Documents current behaviour: a cross-schema $ref to a Transform-attached
-    // schema does NOT apply the decoder when instantiating the parent — the
-    // leaf value remains in wire form (a plain string).
+  void it('parent with $ref to a transform-attached schema: instantiate applies decoder across the $ref boundary', () => {
+    // A cross-schema $ref to a Transform-attached schema applies the
+    // registered decoder at instantiate time, replacing the wire value
+    // with the decoded representation.
     const ParentSchema = {
       '$id': 'https://bookstore.io/EventLog',
       'properties': {
@@ -312,9 +312,11 @@ void describe('encode — isolated behaviour', () => {
     };
     const decoded = jt.instantiate(ParentSchema.$id, input) as Record<string, unknown>;
 
-    assert.equal(decoded.occurredAt, '2026-01-01T00:00:00.000Z');
+    const occurredAt = decoded.occurredAt;
+
     assert.equal(decoded.subject, 'login');
-    assert.equal(decoded.occurredAt instanceof Date, false);
+    assert.ok(occurredAt instanceof Date);
+    assert.equal(occurredAt.toISOString(), '2026-01-01T00:00:00.000Z');
   });
 });
 
