@@ -103,12 +103,11 @@ import { Result } from '../../src/modules/data/Result.js';
             'https://example.io/person-with-role'
           ) as unknown as ExtResult;
 
-          assert.ok(Array.isArray(schema.allOf), 'has allOf');
-          assert.strictEqual(schema.allOf[0].$ref, 'https://example.io/person', '$ref to parent');
-          const additions = schema.allOf[1];
-          const props = additions.properties as Record<string, unknown>;
-
-          assert.ok('role' in props);
+          assert.deepStrictEqual(schema.allOf[0], { '$ref': 'https://example.io/person' });
+          assert.deepStrictEqual(
+            (schema.allOf[1].properties as Record<string, unknown>).role,
+            { 'type': 'string' }
+          );
           assert.strictEqual(schema.$id, 'https://example.io/person-with-role');
         },
         'name': 'emits allOf+$ref shape with additions as second allOf member'
@@ -120,7 +119,11 @@ import { Result } from '../../src/modules/data/Result.js';
             { 'role': { 'type': 'string' } } as const,
             'https://example.io/person-mutate-check'
           );
-          assert.ok(!('role' in PersonSchema.properties));
+          assert.deepStrictEqual(Object.keys(PersonSchema.properties).sort(), [
+            'age',
+            'email',
+            'name'
+          ]);
         },
         'name': 'does not mutate the source schema'
       },
@@ -132,8 +135,8 @@ import { Result } from '../../src/modules/data/Result.js';
             'https://example.io/person-empty-extend'
           ) as unknown as ExtResult;
 
-          assert.ok(Array.isArray(schema.allOf), 'empty extend — has allOf');
-          assert.strictEqual(schema.allOf[0].$ref, 'https://example.io/person', 'empty extend — $ref to parent');
+          assert.strictEqual(schema.allOf.length, 2);
+          assert.deepStrictEqual(schema.allOf[0], { '$ref': 'https://example.io/person' });
         },
         'name': 'extends with empty properties still emits allOf+$ref shape'
       },
@@ -145,11 +148,11 @@ import { Result } from '../../src/modules/data/Result.js';
             'https://example.io/user-phone'
           ) as unknown as ExtResult;
 
-          assert.ok(Array.isArray(schema.allOf), 'user phone — has allOf');
-          assert.strictEqual(schema.allOf[0].$ref, 'https://myapp.io/User', 'user phone — $ref to parent');
-          const addProps = schema.allOf[1].properties as Record<string, unknown>;
-
-          assert.ok('phone' in addProps, 'user phone — phone in additions');
+          assert.deepStrictEqual(schema.allOf[0], { '$ref': 'https://myapp.io/User' });
+          assert.deepStrictEqual(
+            (schema.allOf[1].properties as Record<string, unknown>).phone,
+            { 'type': 'string' }
+          );
         },
         'name': 'extensions block contains additional properties'
       }
@@ -177,7 +180,6 @@ import { Result } from '../../src/modules/data/Result.js';
     }> = [
       {
         'check': (result) => {
-          assert.ok('allOf' in result);
           const allOf = result.allOf as unknown[];
 
           assert.strictEqual(allOf.length, 2);
@@ -211,7 +213,6 @@ import { Result } from '../../src/modules/data/Result.js';
       },
       {
         'check': (result) => {
-          assert.ok('allOf' in result);
           const allOf = result.allOf as unknown[];
 
           assert.strictEqual(allOf.length, 1);
@@ -250,7 +251,6 @@ import { Result } from '../../src/modules/data/Result.js';
             RectSchema
           ], 'https://example.io/Shape');
 
-          assert.ok('oneOf' in result);
           assert.strictEqual(result.oneOf.length, 2);
           assert.deepStrictEqual(result.discriminator, { 'propertyName': 'kind' });
           assert.strictEqual(result.$id, 'https://example.io/Shape');
@@ -263,8 +263,9 @@ import { Result } from '../../src/modules/data/Result.js';
         'check': () => {
           const result = Compose.discriminatedUnion('kind', [CircleSchema], 'https://example.io/SingleShape');
 
-          assert.ok('oneOf' in result);
           assert.strictEqual(result.oneOf.length, 1);
+          assert.deepStrictEqual(result.discriminator, { 'propertyName': 'kind' });
+          assert.strictEqual(result.$id, 'https://example.io/SingleShape');
         },
         'name': 'works with single variant'
       }
@@ -292,9 +293,13 @@ import { Result } from '../../src/modules/data/Result.js';
         'check': () => {
           const schema = Compose.partial(UserSchema, 'https://myapp.io/PartialUser');
 
-          assert.ok(!('required' in schema));
-          assert.ok('id' in schema.properties);
-          assert.ok('name' in schema.properties);
+          assert.equal('required' in schema, false);
+          assert.deepStrictEqual(Object.keys(schema.properties).sort(), [
+            'email',
+            'id',
+            'name',
+            'role'
+          ]);
           assert.equal(schema.$id, 'https://myapp.io/PartialUser');
         },
         'name': 'makes all fields optional and preserves properties'
@@ -351,10 +356,22 @@ import { Result } from '../../src/modules/data/Result.js';
           const schema = Compose.required(UserSchema, 'https://myapp.io/StrictUser2');
 
           reg.register(schema);
-          assert.ok(reg.validate(schema.$id, {
+
+          const errors = reg.validate(schema.$id, {
             'id': '1',
             'name': 'Alice'
-          }).length > 0);
+          });
+          const missing = (errors.items.map((err) => {
+            return err.params.missingProperty as string;
+          })).sort((left, right) => {
+            return left.localeCompare(right);
+          });
+
+          assert.equal(errors.length, 2);
+          assert.deepStrictEqual(missing, [
+            'email',
+            'role'
+          ]);
         },
         'name': 'fails validation when required fields are missing'
       },
@@ -400,9 +417,10 @@ import { Result } from '../../src/modules/data/Result.js';
             'name'
           ] as const, 'https://myapp.io/UserSummary');
 
-          assert.ok('id' in schema.properties);
-          assert.ok('name' in schema.properties);
-          assert.ok(!('email' in schema.properties));
+          assert.deepStrictEqual(Object.keys(schema.properties).sort(), [
+            'id',
+            'name'
+          ]);
           assert.deepEqual([...schema.required].sort(), [
             'id',
             'name'
@@ -413,8 +431,9 @@ import { Result } from '../../src/modules/data/Result.js';
       {
         'check': () => {
           const emailOnly = Compose.pick(UserSchema, ['email'] as const, 'https://myapp.io/EmailOnly');
+          const required = 'required' in emailOnly ? emailOnly.required : [];
 
-          assert.ok(!('required' in emailOnly) || emailOnly.required.length === 0);
+          assert.deepStrictEqual(required, []);
         },
         'name': 'non-required picked fields remain optional'
       },
@@ -431,7 +450,12 @@ import { Result } from '../../src/modules/data/Result.js';
             'id': '1',
             'name': 'Alice'
           }).length, 0);
-          assert.ok(reg.validate(schema.$id, { 'name': 'Alice' }).length > 0);
+
+          const missingId = reg.validate(schema.$id, { 'name': 'Alice' });
+
+          assert.equal(missingId.length, 1);
+          assert.equal(missingId.items[0]?.keyword, 'required');
+          assert.equal(missingId.items[0]?.params.missingProperty, 'id');
         },
         'name': 'validates picked schema correctly'
       },
@@ -470,9 +494,10 @@ import { Result } from '../../src/modules/data/Result.js';
             'role'
           ] as const, 'https://myapp.io/PublicUser');
 
-          assert.ok(!('email' in schema.properties));
-          assert.ok(!('role' in schema.properties));
-          assert.ok('id' in schema.properties);
+          assert.deepStrictEqual(Object.keys(schema.properties).sort(), [
+            'id',
+            'name'
+          ]);
         },
         'name': 'removes omitted properties and retains the rest'
       },
@@ -480,8 +505,7 @@ import { Result } from '../../src/modules/data/Result.js';
         'check': () => {
           const noId = Compose.omit(UserSchema, ['id'] as const, 'https://myapp.io/NoId');
 
-          assert.ok(!noId.required.includes('id'));
-          assert.ok(noId.required.includes('name'));
+          assert.deepStrictEqual([...noId.required].sort(), ['name']);
         },
         'name': 'removes omitted key from required array'
       },
@@ -1217,7 +1241,7 @@ import { Result } from '../../src/modules/data/Result.js';
           assert.equal(flat.length, 3);
           assert.equal(flat[0].code, 'INSTANTIATION_FAILED');
           assert.equal(flat[1].code, 'required');
-          assert.ok(flat[1].message.includes('missing name'));
+          assert.match(flat[1].message, /missing name/u);
           assert.equal(flat[2].code, 'type');
         },
         'name': 'flatten appends validation items after base entry'
@@ -1242,7 +1266,6 @@ import { Result } from '../../src/modules/data/Result.js';
           const json = err.toJson();
 
           assert.equal(json.code, 'INSTANTIATION_FAILED');
-          assert.ok('errors' in json);
           const errors = (json as Record<string, unknown>).errors as Array<Record<string, unknown>>;
 
           assert.equal(errors.length, 2);
@@ -1308,8 +1331,8 @@ import { Result } from '../../src/modules/data/Result.js';
       'additionalProps': {},
       'assertions': (result) => {
         assert.strictEqual(result.$id, 'https://example.io/extended-empty', 'extend empty — $id');
-        assert.ok(Array.isArray(result.allOf), 'extend empty — has allOf');
-        assert.strictEqual((result.allOf[0] as Record<string, unknown>).$ref, 'https://example.io/base', 'extend empty — $ref points to parent');
+        assert.strictEqual(result.allOf.length, 2, 'extend empty — allOf length');
+        assert.deepStrictEqual(result.allOf[0], { '$ref': 'https://example.io/base' });
       },
       'name': 'returns allOf+$ref when additional properties is empty',
       'newId': 'https://example.io/extended-empty'
@@ -1318,7 +1341,8 @@ import { Result } from '../../src/modules/data/Result.js';
       'additionalProps': { 'flag': { 'type': 'boolean' } },
       'assertions': (result) => {
         assert.strictEqual(result.$id, '', 'edge: extend empty $id — $id is empty string');
-        assert.ok(Array.isArray(result.allOf), 'edge: extend empty $id — has allOf');
+        assert.strictEqual(result.allOf.length, 2, 'edge: extend empty $id — allOf length');
+        assert.deepStrictEqual(result.allOf[0], { '$ref': 'https://example.io/base' });
       },
       'name': 'edge: extend with empty $id produces schema with empty string $id',
       'newId': ''
@@ -1327,10 +1351,11 @@ import { Result } from '../../src/modules/data/Result.js';
       'additionalProps': { 'role': { 'type': 'string' } },
       'assertions': (result) => {
         assert.strictEqual(result.$id, 'https://example.io/base', 'extend same $id — $id preserved');
-        assert.ok(Array.isArray(result.allOf), 'extend same $id — has allOf');
+        assert.deepStrictEqual(result.allOf[0], { '$ref': 'https://example.io/base' });
+
         const additionsProps = (result.allOf[1].properties ?? {}) as Record<string, unknown>;
 
-        assert.ok('role' in additionsProps, 'extend same $id — role in additions');
+        assert.deepStrictEqual(additionsProps.role, { 'type': 'string' });
       },
       'name': 'preserves $id from base when newId matches original — but newId always wins',
       'newId': 'https://example.io/base'
@@ -1339,7 +1364,8 @@ import { Result } from '../../src/modules/data/Result.js';
       'additionalProps': { 'extra': { 'type': 'boolean' } },
       'assertions': (result) => {
         assert.strictEqual(result.$id, 'https://example.io/base', 'extend $id handling — $id preserved');
-        assert.ok(Array.isArray(result.allOf), 'extend $id handling — has allOf');
+        assert.strictEqual(result.allOf.length, 2, 'extend $id handling — allOf length');
+        assert.deepStrictEqual(result.allOf[0], { '$ref': 'https://example.io/base' });
       },
       'name': 'preserves base $id when newId matches original',
       'newId': 'https://example.io/base'
@@ -1377,7 +1403,10 @@ import { Result } from '../../src/modules/data/Result.js';
         assert.strictEqual(result.$id, 'https://example.io/pick-empty', 'pick zero keys — $id');
         assert.deepStrictEqual(result.properties, {}, 'pick zero keys — properties');
         assert.strictEqual(result.type, 'object', 'pick zero keys — type');
-        assert.ok(!('required' in result) || result.required.length === 0, 'pick zero keys — required');
+
+        const required = 'required' in result ? result.required : [];
+
+        assert.deepStrictEqual(required, [], 'pick zero keys — required');
       },
       'keys': [],
       'name': 'returns schema with type:object and no properties when picking zero keys',
@@ -1387,7 +1416,10 @@ import { Result } from '../../src/modules/data/Result.js';
       'assertions': (result) => {
         assert.strictEqual(result.$id, 'https://example.io/pick-missing', 'pick non-existent — $id');
         assert.deepStrictEqual(result.properties, {}, 'pick non-existent — properties');
-        assert.ok(!('required' in result) || result.required.length === 0, 'pick non-existent — required');
+
+        const required = 'required' in result ? result.required : [];
+
+        assert.deepStrictEqual(required, [], 'pick non-existent — required');
       },
       'keys': [
         'nonexistent',
@@ -1436,10 +1468,12 @@ import { Result } from '../../src/modules/data/Result.js';
     {
       'assertions': (result) => {
         assert.strictEqual(result.$id, 'https://example.io/omit-all-required', 'omit all required — $id');
-        assert.ok(!('name' in result.properties), 'omit all required — name removed');
-        assert.ok(!('age' in result.properties), 'omit all required — age removed');
-        assert.ok('email' in result.properties, 'omit all required — email remains');
-        assert.ok(!('required' in result), 'omit all required — required absent');
+        assert.deepStrictEqual(
+          Object.keys(result.properties).sort(),
+          ['email'],
+          'omit all required — properties'
+        );
+        assert.equal('required' in result, false, 'omit all required — required absent');
       },
       'keys': [
         'name',
@@ -1450,11 +1484,15 @@ import { Result } from '../../src/modules/data/Result.js';
     },
     {
       'assertions': (result) => {
-        assert.ok(!('name' in result.properties), 'omit name — name removed');
-        assert.ok('age' in result.properties, 'omit name — age remains');
-        assert.ok('email' in result.properties, 'omit name — email remains');
-        assert.ok(result.required.includes('age'), 'omit name — age still required');
-        assert.ok(!result.required.includes('name'), 'omit name — name no longer required');
+        assert.deepStrictEqual(
+          Object.keys(result.properties).sort(),
+          [
+            'age',
+            'email'
+          ],
+          'omit name — properties'
+        );
+        assert.deepStrictEqual([...result.required].sort(), ['age'], 'omit name — required');
       },
       'keys': ['name'],
       'name': 'updates required array when a required property is removed',
@@ -1491,8 +1529,12 @@ import { Result } from '../../src/modules/data/Result.js';
     {
       'assertions': (result) => {
         assert.strictEqual(result.$id, 'https://example.io/still-optional', 'partial no-op — $id');
-        assert.ok(!('required' in result), 'partial no-op — required absent');
-        assert.ok('tag' in result.properties, 'partial no-op — tag present');
+        assert.equal('required' in result, false, 'partial no-op — required absent');
+        assert.deepStrictEqual(
+          Object.keys(result.properties).sort(),
+          ['tag'],
+          'partial no-op — properties'
+        );
       },
       'name': 'is a no-op on a schema that already has no required',
       'newId': 'https://example.io/still-optional',
@@ -1504,7 +1546,7 @@ import { Result } from '../../src/modules/data/Result.js';
     },
     {
       'assertions': (result) => {
-        assert.ok(!('required' in result), 'partial then required — partial removes required');
+        assert.equal('required' in result, false, 'partial then required — partial removes required');
 
         const restored = Compose.required(result, 'https://example.io/restored-base') as unknown as ComposeResult;
 
@@ -1748,8 +1790,10 @@ import { Result } from '../../src/modules/data/Result.js';
 
       assert.strictEqual(result.$id, 'urn:bookstore:PrimaryIsbn');
       assert.strictEqual(result.$ref, 'urn:bookstore:Isbn');
-      assert.ok(!('type' in result));
-      assert.ok(!('pattern' in result));
+      assert.deepStrictEqual(Object.keys(result).sort(), [
+        '$id',
+        '$ref'
+      ]);
     });
 
     void it('carries optional metadata fields', () => {
@@ -1780,10 +1824,16 @@ import { Result } from '../../src/modules/data/Result.js';
       const validIsbn = '9780306406157';
       const invalidIsbn = 'not-an-isbn';
 
-      assert.ok(registry.validate(IsbnSchema.$id, validIsbn).ok);
-      assert.ok(registry.validate('urn:bookstore:PrimaryIsbn', validIsbn).ok);
-      assert.ok(registry.validate(IsbnSchema.$id, invalidIsbn).length > 0);
-      assert.ok(registry.validate('urn:bookstore:PrimaryIsbn', invalidIsbn).length > 0);
+      assert.equal(registry.validate(IsbnSchema.$id, validIsbn).ok, true);
+      assert.equal(registry.validate('urn:bookstore:PrimaryIsbn', validIsbn).ok, true);
+
+      const isbnErrors = registry.validate(IsbnSchema.$id, invalidIsbn);
+      const primaryErrors = registry.validate('urn:bookstore:PrimaryIsbn', invalidIsbn);
+
+      assert.equal(isbnErrors.length, 1);
+      assert.equal(isbnErrors.items[0]?.keyword, 'pattern');
+      assert.equal(primaryErrors.length, 1);
+      assert.equal(primaryErrors.items[0]?.keyword, 'pattern');
     });
 
     void it('OWL projection emits equivalentClass for equivalent schemas', async () => {
@@ -1800,11 +1850,8 @@ import { Result } from '../../src/modules/data/Result.js';
         return quad.predicate === OWL.equivalentClass;
       });
 
-      assert.ok(equivQuad !== undefined, 'equivalentClass quad should be emitted');
-      assert.ok(
-        (equivQuad.subject).includes('PrimaryIsbn'),
-        'subject should be PrimaryIsbn'
-      );
+      assert.notStrictEqual(equivQuad, undefined, 'equivalentClass quad should be emitted');
+      assert.match(equivQuad.subject, /PrimaryIsbn/u);
     });
 
     void it('fails gracefully if no $id on source', () => {
@@ -1841,9 +1888,8 @@ import { Result } from '../../src/modules/data/Result.js';
         'allOf': Array<Record<string, unknown>>;
       };
 
-      assert.ok(Array.isArray(result.allOf), 'has allOf');
       assert.strictEqual(result.allOf.length, 2, 'allOf has 2 members');
-      assert.strictEqual((result.allOf[0] as { '$ref': string }).$ref, 'https://example.io/Person', '$ref to parent');
+      assert.deepStrictEqual(result.allOf[0], { '$ref': 'https://example.io/Person' });
     });
 
     void it('additions block has type:object and new properties', () => {
@@ -1857,7 +1903,7 @@ import { Result } from '../../src/modules/data/Result.js';
       assert.strictEqual(additions.type, 'object');
       const props = additions.properties as Record<string, unknown>;
 
-      assert.ok('role' in props, 'role in additions');
+      assert.deepStrictEqual(props.role, { 'type': 'string' });
     });
 
     void it('runtime validation validates parent + child properties', () => {
@@ -1873,7 +1919,10 @@ import { Result } from '../../src/modules/data/Result.js';
         'role': 'engineer'
       };
 
-      assert.ok(registry.validate('https://example.io/Employee2', validEmployee).ok);
+      const errors = registry.validate('https://example.io/Employee2', validEmployee);
+
+      assert.equal(errors.ok, true);
+      assert.equal(errors.length, 0);
     });
 
     void it('chain extend: grandchild gets all ancestor properties at runtime', () => {
@@ -1889,7 +1938,10 @@ import { Result } from '../../src/modules/data/Result.js';
       registry.register(ManagerSchema as unknown as Record<string, unknown>);
       registry.register(SeniorManagerSchema as unknown as Record<string, unknown>);
 
-      assert.ok(registry.get('https://example.io/SeniorManager') !== undefined);
+      const senior = registry.get('https://example.io/SeniorManager');
+
+      assert.notStrictEqual(senior, undefined);
+      assert.equal((senior as Record<string, unknown>).$id, 'https://example.io/SeniorManager');
     });
 
     void it('does not mutate the source schema', () => {

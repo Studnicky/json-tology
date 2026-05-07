@@ -691,7 +691,10 @@ void describe('Value.cast()', () => {
   }
 
   void it('casts null to an object for object schemas', () => {
-    assert.ok(typeof value.cast('urn:test:item', null) === 'object');
+    const result = value.cast('urn:test:item', null);
+
+    assert.equal(typeof result, 'object');
+    assert.equal(result, null);
   });
 });
 
@@ -784,7 +787,10 @@ void describe('Value.clean()', () => {
     };
 
     value.clean('urn:test:user', input);
-    assert.ok('secret' in input);
+    assert.deepEqual(input, {
+      'name': 'Alice',
+      'secret': 'x'
+    });
   });
 });
 
@@ -1092,13 +1098,23 @@ void describe('Value.diff() -> Changeset (arrays)', () => {
         const setOps = cs.operations.filter((op) => {
           return op.op === 'set';
         });
+        const op1 = setOps.find((op) => {
+          return op.path === '/items/1';
+        });
+        const op2 = setOps.find((op) => {
+          return op.path === '/items/2';
+        });
 
-        assert.ok(setOps.some((op) => {
-          return op.path === '/items/1' && op.value === 'b';
-        }));
-        assert.ok(setOps.some((op) => {
-          return op.path === '/items/2' && op.value === 'c';
-        }));
+        assert.deepEqual(op1, {
+          'op': 'set',
+          'path': '/items/1',
+          'value': 'b'
+        });
+        assert.deepEqual(op2, {
+          'op': 'set',
+          'path': '/items/2',
+          'value': 'c'
+        });
       },
       'name': 'detects added array items (array grew)'
     },
@@ -1115,13 +1131,14 @@ void describe('Value.diff() -> Changeset (arrays)', () => {
         const delOps = cs.operations.filter((op) => {
           return op.op === 'delete';
         });
+        const delPaths = delOps.map((op) => {
+          return op.path;
+        }).sort();
 
-        assert.ok(delOps.some((op) => {
-          return op.path === '/items/1';
-        }));
-        assert.ok(delOps.some((op) => {
-          return op.path === '/items/2';
-        }));
+        assert.deepEqual(delPaths, [
+          '/items/1',
+          '/items/2'
+        ]);
       },
       'name': 'detects removed array items (array shrank)'
     },
