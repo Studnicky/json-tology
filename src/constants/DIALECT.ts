@@ -22,14 +22,14 @@ export const SUPPORTED_VOCABULARIES = new Set([
   VOCABULARY_VALIDATION
 ]);
 
-export const DEFAULT_OPTIONS: Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>> = {
+export const DEFAULT_OPTIONS: Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema' | 'maxDepth'>> = {
   'allowAdditionalProperties': false,
   'applyDefaults': false,
   'castTypes': false,
   'collectErrors': true,
   'enforceSchemaProperties': false,
   'materializeContainers': false,
-  'maxDepth': Infinity,
+  'maxSchemaDepth': Infinity,
   'removeAdditionalProperties': false,
   'synthesizeDefaults': false
 };
