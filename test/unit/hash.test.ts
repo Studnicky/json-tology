@@ -8,7 +8,7 @@ import {
 import assert from 'node:assert/strict';
 import { Hash } from '../../src/index.js';
 
-void describe('Hash.value()', () => {
+void describe('Hash.value()', { 'concurrency': true }, () => {
   const equalityScenarios: Array<{
     'a': unknown;
     'b': unknown;

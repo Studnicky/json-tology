@@ -37,7 +37,7 @@ import {
     'xsd': 'http://www.w3.org/2001/XMLSchema#'
   };
 
-  void describe('Curie', () => {
+  void describe('Curie', { 'concurrency': true }, () => {
     void it('expands CURIEs to full IRIs', () => {
       const curie = new Curie(standardPrefixes);
       const scenarios: Array<{ 'expected': string;
@@ -376,7 +376,7 @@ import {
 // Source: dataTypes.test.ts
 // ===========================================================================
 {
-  void describe('isRecord', () => {
+  void describe('isRecord', { 'concurrency': true }, () => {
     void it('returns true for a plain object', () => {
       assert.equal(isRecord({ 'a': 1 }), true);
     });
@@ -405,7 +405,7 @@ import {
     });
   });
 
-  void describe('isPlainObject', () => {
+  void describe('isPlainObject', { 'concurrency': true }, () => {
     void it('returns true for an empty object literal', () => {
       assert.equal(isPlainObject({}), true);
     });
@@ -439,7 +439,7 @@ import {
     });
   });
 
-  void describe('deepEqual', () => {
+  void describe('deepEqual', { 'concurrency': true }, () => {
     void it('returns true for equal primitives', () => {
       assert.equal(deepEqual(42, 42), true);
       assert.equal(deepEqual('abc', 'abc'), true);
@@ -528,7 +528,7 @@ import {
     });
   });
 
-  void describe('deepFreeze', () => {
+  void describe('deepFreeze', { 'concurrency': true }, () => {
     void it('freezes the top-level object', () => {
       const obj = { 'a': 1 };
 
@@ -789,7 +789,7 @@ import {
     } as unknown as SchemaGraphSemanticsInterface;
   }
 
-  void describe('resolveSingleXsdType', () => {
+  void describe('resolveSingleXsdType', { 'concurrency': true }, () => {
     void it('maps string to xsd:string', () => {
       assert.equal(resolveSingleXsdType('string'), 'xsd:string');
     });
@@ -839,7 +839,7 @@ import {
     });
   });
 
-  void describe('resolveXsdType', () => {
+  void describe('resolveXsdType', { 'concurrency': true }, () => {
     void it('resolves a single string type', () => {
       assert.equal(resolveXsdType(semantics(['string'])), 'xsd:string');
     });

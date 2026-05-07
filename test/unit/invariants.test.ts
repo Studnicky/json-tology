@@ -79,7 +79,7 @@ function sumItems(items: OrderItem[]): number {
 // Tests
 // ---------------------------------------------------------------------------
 
-void describe('invariants', () => {
+void describe('invariants', { 'concurrency': true }, () => {
   void it('passing invariant returns no error', () => {
     const jt = JsonTology.create({
       'baseIRI': 'https://test.dev',

@@ -133,7 +133,7 @@ interface Scenario {
 // Test suites
 // ---------------------------------------------------------------------------
 
-void describe('Compiler conformance: basic types and multiple type unions', () => {
+void describe('Compiler conformance: basic types and multiple type unions', { 'concurrency': true }, () => {
   const basicTypeScenarios: Scenario[] = [
     // string
     {
@@ -382,7 +382,7 @@ void describe('Compiler conformance: basic types and multiple type unions', () =
   }
 });
 
-void describe('Compiler conformance: object constraints', () => {
+void describe('Compiler conformance: object constraints', { 'concurrency': true }, () => {
   const requiredPropsScenarios: Scenario[] = [
     {
       'data': { 'name': 'Alice' },
@@ -629,7 +629,7 @@ void describe('Compiler conformance: object constraints', () => {
   }
 });
 
-void describe('Compiler conformance: string and numeric constraints', () => {
+void describe('Compiler conformance: string and numeric constraints', { 'concurrency': true }, () => {
   const stringScenarios: Scenario[] = [
     {
       'data': 'hello',
@@ -835,7 +835,7 @@ void describe('Compiler conformance: string and numeric constraints', () => {
   }
 });
 
-void describe('Compiler conformance: enum, const, and composition keywords', () => {
+void describe('Compiler conformance: enum, const, and composition keywords', { 'concurrency': true }, () => {
   const enumConstScenarios: Scenario[] = [
     {
       'data': 'green',
@@ -923,7 +923,7 @@ void describe('Compiler conformance: enum, const, and composition keywords', () 
   }
 
   // allOf requires deps, so each scenario builds its own refs
-  void describe('allOf composition', () => {
+  void describe('allOf composition', { 'concurrency': true }, () => {
     const allOfScenarios: Array<{ 'data': unknown;
       'name': string;
       'valid': boolean }> = [
@@ -1135,7 +1135,7 @@ void describe('Compiler conformance: enum, const, and composition keywords', () 
   }
 });
 
-void describe('Compiler conformance: array keywords and contains', () => {
+void describe('Compiler conformance: array keywords and contains', { 'concurrency': true }, () => {
   const arrayScenarios: Scenario[] = [
     // items schema
     {
@@ -1359,7 +1359,7 @@ void describe('Compiler conformance: array keywords and contains', () => {
   }
 });
 
-void describe('Compiler conformance: $ref, if/then/else, and dependentRequired', () => {
+void describe('Compiler conformance: $ref, if/then/else, and dependentRequired', { 'concurrency': true }, () => {
   // $ref with $defs (local)
   const localRefScenarios: Scenario[] = [
     {
@@ -1528,7 +1528,7 @@ void describe('Compiler conformance: $ref, if/then/else, and dependentRequired',
   }
 
   // nested objects via $ref
-  void describe('nested objects via $ref', () => {
+  void describe('nested objects via $ref', { 'concurrency': true }, () => {
     const nestedScenarios: Array<{ 'data': unknown;
       'name': string;
       'valid': boolean }> = [
@@ -1597,7 +1597,7 @@ void describe('Compiler conformance: $ref, if/then/else, and dependentRequired',
   });
 });
 
-void describe('Compiler conformance: format and custom keywords', () => {
+void describe('Compiler conformance: format and custom keywords', { 'concurrency': true }, () => {
   const formatScenarios: Scenario[] = [
     {
       'data': 'user@example.com',
@@ -1630,7 +1630,7 @@ void describe('Compiler conformance: format and custom keywords', () => {
   }
 
   // custom keywords: compiled and interpreted agree
-  void describe('custom keyword evenNumber', () => {
+  void describe('custom keyword evenNumber', { 'concurrency': true }, () => {
     const evenKeyword = {
       'keyword': 'evenNumber',
       'type': 'number' as const,
@@ -1722,7 +1722,7 @@ void describe('Compiler conformance: format and custom keywords', () => {
   });
 
   // discriminator mapping
-  void describe('discriminator mapping', () => {
+  void describe('discriminator mapping', { 'concurrency': true }, () => {
     const discriminatorScenarios: Array<{ 'data': unknown;
       'name': string;
       'valid': boolean }> = [
