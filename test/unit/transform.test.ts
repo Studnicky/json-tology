@@ -216,7 +216,12 @@ void describe('Transform.brand()', () => {
 
         jt.register(UserIdSchema2);
         assert.equal(jt.validate(UserIdSchema2.$id, 'abc').length, 0);
-        assert.ok(jt.validate(UserIdSchema2.$id, 123).length > 0);
+
+        const wrongTypeErrors = jt.validate(UserIdSchema2.$id, 123);
+
+        assert.equal(wrongTypeErrors.length, 1);
+        assert.equal(wrongTypeErrors.items[0]?.keyword, 'type');
+        assert.match(wrongTypeErrors.items[0]?.message ?? '', /must be string/u);
       },
       'name': 'happy: branded schema validates correct type and rejects wrong type'
     },
@@ -234,7 +239,12 @@ void describe('Transform.brand()', () => {
 
         jt.register(ConstrainedId);
         assert.equal(jt.validate(ConstrainedId.$id, 'abc').length, 0);
-        assert.ok(jt.validate(ConstrainedId.$id, 'ab').length > 0);
+
+        const tooShortErrors = jt.validate(ConstrainedId.$id, 'ab');
+
+        assert.equal(tooShortErrors.length, 1);
+        assert.equal(tooShortErrors.items[0]?.keyword, 'minLength');
+        assert.match(tooShortErrors.items[0]?.message ?? '', /at least 3 characters/u);
       },
       'name': 'edge: brand preserves validation constraints from base schema'
     }
