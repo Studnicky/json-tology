@@ -374,7 +374,31 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     const schemaObj = typeof schema === 'string' ? entry.schema : schema;
     const decoder = Transform.getDecoder(schemaObj);
-    const decoded = decoder === undefined ? coerced : decoder.decode(coerced);
+    let decoded: unknown;
+
+    if (decoder === undefined) {
+      decoded = coerced;
+    } else {
+      try {
+        decoded = decoder.decode(coerced);
+      } catch (error) {
+        const causeError = error instanceof Error ? error : new Error(String(error));
+
+        throw new InstantiationError(
+          new ValidationErrors([{
+            'keyword': 'TRANSFORM_DECODE_FAILED',
+            'message': `transform decoder failed at root: ${causeError.message}`,
+            'params': {},
+            'path': ''
+          }]),
+          {
+            'cause': causeError,
+            'code': 'TRANSFORM_DECODE_FAILED',
+            'message': `transform decoder failed at root: ${causeError.message}`
+          }
+        );
+      }
+    }
     const isFrozen = isRecord(schemaObj)
       && (schemaObj['jt:frozen'] === true
         || (isRecord(schemaObj['jt:config']) && schemaObj['jt:config'].frozen === true));

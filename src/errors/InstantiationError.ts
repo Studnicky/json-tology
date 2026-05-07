@@ -6,6 +6,7 @@
  * file imports) and fails validation.
  */
 
+import type { InstantiationErrorCodeType } from '../types/ErrorCodes.js';
 import type { ValidationErrorType } from '../types/Validation.js';
 import { ValidationErrors } from './ValidationErrors.js';
 import { BaseError } from './BaseError.js';
@@ -17,15 +18,22 @@ export class InstantiationError extends BaseError {
    * Create an InstantiationError from validation errors, joining their messages as the error message.
    *
    * @param errors - Validation errors as a collection or raw array
-   * @param options - Optional cause for error chaining
+   * @param options - Optional cause for error chaining, code override, and message override
    */
-  public constructor(errors: ValidationErrors | ValidationErrorType[], options?: { 'cause'?: Error }) {
+  public constructor(
+    errors: ValidationErrors | ValidationErrorType[],
+    options?: {
+      'cause'?: Error;
+      'code'?: InstantiationErrorCodeType;
+      'message'?: string;
+    }
+  ) {
     const validationErrors = errors instanceof ValidationErrors ? errors : new ValidationErrors(errors);
-    const joinedMessages = validationErrors.items.map((err) => {
+    const joinedMessages = options?.message ?? validationErrors.items.map((err) => {
       return `${err.path || 'root'}: ${err.message}`;
     }).join('; ');
 
-    super('INSTANTIATION_FAILED', joinedMessages, false, options);
+    super(options?.code ?? 'INSTANTIATION_FAILED', joinedMessages, false, options);
     this.name = 'InstantiationError';
     this.errors = validationErrors;
   }
