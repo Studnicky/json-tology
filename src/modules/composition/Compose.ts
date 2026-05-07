@@ -23,6 +23,7 @@ import type {
 import type {
   RestrictionDescriptorInterface, RestrictionRefType
 } from '../../types/Restriction.js';
+import type { ValidateSchemaType } from '../../types/SchemaValidation.js';
 import {
   isRestrictionRef, RESTRICTION_TAG
 } from '../../types/Restriction.js';
@@ -87,7 +88,7 @@ export class Compose {
   public static complementOf<
     TOther extends { readonly '$id': string },
     TBody extends Record<string, unknown> & { readonly '$id': string }
-  >(other: TOther, body: TBody): ComplementOfSchemaInterface<TOther, TBody> {
+  >(other: TOther, body: ValidateSchemaType<TBody>): ComplementOfSchemaInterface<TOther, TBody> {
     const result: Record<string, unknown> = {
       '$id': body.$id,
       'not': { '$ref': other.$id }
@@ -158,7 +159,7 @@ export class Compose {
   public static disjointWith<
     TOther extends { readonly '$id': string },
     TBody extends Record<string, unknown> & { readonly '$id': string }
-  >(other: TOther, body: TBody): DisjointWithSchemaInterface<TOther, TBody> {
+  >(other: TOther, body: ValidateSchemaType<TBody>): DisjointWithSchemaInterface<TOther, TBody> {
     const result: Record<string, unknown> = {
       '$id': body.$id,
       'disjointWith': other.$id
@@ -247,7 +248,7 @@ export class Compose {
     TId extends string
   >(
     schema: TSchema,
-    additionalProperties: TAdditional,
+    additionalProperties: ValidateSchemaType<TAdditional>,
     newId: TId
   ): ExtendSchemaType<TSchema, TAdditional, TId> {
     const source = schema as unknown as Record<string, unknown>;
@@ -626,11 +627,11 @@ export class Compose {
    */
   public static subClassOf<
     TBody extends Record<string, unknown> & { readonly '$id': string }
-  >(parent: RestrictionRefType, body: TBody): TBody;
+  >(parent: RestrictionRefType, body: ValidateSchemaType<TBody>): TBody;
   public static subClassOf<
     TParent extends ReadonlyArray<{ readonly '$id': string }> | { readonly '$id': string },
     TBody extends Record<string, unknown> & { readonly '$id': string }
-  >(parent: TParent, body: TBody): SubClassOfSchemaInterface<TParent, TBody>;
+  >(parent: TParent, body: ValidateSchemaType<TBody>): SubClassOfSchemaInterface<TParent, TBody>;
   public static subClassOf<
     TBody extends Record<string, unknown> & { readonly '$id': string }
   >(
