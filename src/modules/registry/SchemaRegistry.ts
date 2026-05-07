@@ -30,6 +30,7 @@ import { GraphEngine } from '../graph/GraphEngine.js';
 import { Hash } from '../hash/Hash.js';
 import { InvariantStore } from './InvariantStore.js';
 import { Materializer } from '../materialization/Materializer.js';
+import { RefDecoder } from '../graph/RefDecoder.js';
 import { Resolver } from '../data/Resolver.js';
 import { SchemaCompiler } from '../validation/SchemaCompiler.js';
 import { SchemaError } from '../../errors/SchemaError.js';
@@ -119,155 +120,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
   public addInvariant(schemaId: string, invariant: InvariantInterface): void {
     this.invariants.add(schemaId, invariant);
-  }
-
-  /**
-   * Walk the schema graph alongside `value` and apply registered Transform
-   * decoders at every `$ref` to another registered schema with a decoder.
-   * Returns the value with decoders applied.
-   *
-   * Schemas without registered Transform decoders are passed through.
-   * Recurses into `properties`, `items` (list and tuple form),
-   * `additionalProperties`, and the composition keywords (`oneOf`, `anyOf`,
-   * `allOf`) so nested `$ref`s decode bottom-up before any enclosing
-   * `$ref`'s decoder runs.
-   *
-   * Schema-side cycle detection uses a `Set<schema>` keyed by reference;
-   * a schema visited on the current recursion path is not re-entered, so
-   * self-referential schemas (`Person -> $ref Person`) terminate cleanly.
-   *
-   * NOTE: this walker duplicates traversal logic that should ultimately
-   * live in the canonical graph layer (per CLAUDE.md). The graph-layer
-   * migration is tracked separately; this implementation is the pragmatic
-   * fix for the Phase 4 finding shipping today.
-   */
-  private applyRefDecoders(schema: unknown, value: unknown, visited?: Set<object>): unknown {
-    if (!isRecord(schema) || value === null || value === undefined) {
-      return value;
-    }
-    const path = visited ?? new Set<object>();
-
-    if (path.has(schema)) {
-      return value;
-    }
-    path.add(schema);
-    try {
-      return this.applyRefDecodersInner(schema, value, path);
-    } finally {
-      path.delete(schema);
-    }
-  }
-
-  private applyRefDecodersInner(schema: Record<string, unknown>, value: unknown, visited: Set<object>): unknown {
-    const refTarget = typeof schema.$ref === 'string' ? schema.$ref : undefined;
-
-    if (refTarget !== undefined) {
-      const targetId = this.resolve(refTarget);
-      const targetEntry = this.schemas.get(targetId);
-
-      if (targetEntry !== undefined) {
-        const inner = this.applyRefDecoders(targetEntry.schema, value, visited);
-        const targetDecoder = Transform.getDecoder(targetEntry.schema);
-
-        if (targetDecoder === undefined) {
-          return inner;
-        }
-        try {
-          return targetDecoder.decode(inner);
-        } catch (error) {
-          const causeError = error instanceof Error ? error : new Error(String(error));
-
-          throw new InstantiationError(
-            new ValidationErrors([{
-              'keyword': 'TRANSFORM_DECODE_FAILED',
-              'message': `transform decoder failed for $ref "${refTarget}": ${causeError.message}`,
-              'params': { '$ref': refTarget },
-              'path': ''
-            }]),
-            {
-              'cause': causeError,
-              'code': 'TRANSFORM_DECODE_FAILED',
-              'message': `transform decoder failed for $ref "${refTarget}": ${causeError.message}`
-            }
-          );
-        }
-      }
-
-      return value;
-    }
-
-    let current = value;
-
-    // Composition keywords: a $ref inside any of these branches still needs
-    // to fire its decoder. Without these the walker silently skips refs
-    // inside Compose.intersection / Compose.discriminatedUnion /
-    // Compose.extend / Compose.equivalent results.
-    for (const keyword of [
-      'oneOf',
-      'anyOf',
-      'allOf'
-    ] as const) {
-      const branches = schema[keyword];
-
-      if (Array.isArray(branches)) {
-        for (const branchSchema of branches) {
-          current = this.applyRefDecoders(branchSchema, current, visited);
-        }
-      }
-    }
-
-    if (isRecord(schema.properties) && isRecord(current)) {
-      for (const [
-        propName,
-        propSchema
-      ] of Object.entries(schema.properties)) {
-        if (!(propName in current)) {
-          continue;
-        }
-        const next = this.applyRefDecoders(propSchema, current[propName], visited);
-
-        if (next !== current[propName]) {
-          current[propName] = next;
-        }
-      }
-    }
-
-    if (Array.isArray(schema.items) && Array.isArray(current)) {
-      // Tuple form: items is an array of per-position schemas.
-      for (let index = 0; index < schema.items.length && index < current.length; index += 1) {
-        const next = this.applyRefDecoders(schema.items[index], current[index], visited);
-
-        if (next !== current[index]) {
-          current[index] = next;
-        }
-      }
-    } else if (isRecord(schema.items) && Array.isArray(current)) {
-      // List form: items is a single schema applied to every element.
-      for (let index = 0; index < current.length; index += 1) {
-        const next = this.applyRefDecoders(schema.items, current[index], visited);
-
-        if (next !== current[index]) {
-          current[index] = next;
-        }
-      }
-    }
-
-    if (isRecord(schema.additionalProperties) && isRecord(current)) {
-      const declaredProps = isRecord(schema.properties) ? new Set(Object.keys(schema.properties)) : new Set<string>();
-
-      for (const key of Object.keys(current)) {
-        if (declaredProps.has(key)) {
-          continue;
-        }
-        const next = this.applyRefDecoders(schema.additionalProperties, current[key], visited);
-
-        if (next !== current[key]) {
-          current[key] = next;
-        }
-      }
-    }
-
-    return current;
   }
 
   public cast(schemaOrId: (Record<string, unknown> & { '$id': string; }) | string, data: unknown): unknown {
@@ -522,7 +374,19 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
 
     const schemaObj = typeof schema === 'string' ? entry.schema : schema;
-    const refDecoded = this.applyRefDecoders(entry.schema, coerced);
+    const refDecoded = RefDecoder.run(this.graphOf(entry), coerced, {
+      'getGraph': (target) => {
+        const found = this.schemas.get(target.$id as string);
+
+        return found === undefined ? undefined : this.graphOf(found);
+      },
+      'getSchema': (targetId) => {
+        return this.schemas.get(targetId)?.schema;
+      },
+      'resolveSchemaId': (rawId) => {
+        return this.resolve(rawId);
+      }
+    });
     const decoder = Transform.getDecoder(schemaObj);
     let decoded: unknown;
 
