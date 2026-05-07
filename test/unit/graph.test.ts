@@ -260,7 +260,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
       const nameNode = rootSem.properties.get('name');
 
-      assert.ok(nameNode !== undefined);
+      assert.notStrictEqual(nameNode, undefined);
       const nameSem = graph.semantics(nameNode);
 
       assert.equal(nameSem.minLength, 1);
@@ -274,7 +274,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
       const ageNode = rootSem.properties.get('age');
 
-      assert.ok(ageNode !== undefined);
+      assert.notStrictEqual(ageNode, undefined);
       const ageSem = graph.semantics(ageNode);
 
       assert.equal(ageSem.minimum, 0);
@@ -285,7 +285,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
       const tagsNode = rootSem.properties.get('tags');
 
-      assert.ok(tagsNode !== undefined);
+      assert.notStrictEqual(tagsNode, undefined);
       const tagsSem = graph.semantics(tagsNode);
 
       assert.equal(tagsSem.minItems, 1);
@@ -294,7 +294,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
       const statusNode = rootSem.properties.get('status');
 
-      assert.ok(statusNode !== undefined);
+      assert.notStrictEqual(statusNode, undefined);
       const statusSem = graph.semantics(statusNode);
 
       assert.deepEqual(statusSem.enumValues, [
@@ -308,7 +308,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
       const bioNode = rootSem.properties.get('bio');
 
-      assert.ok(bioNode !== undefined);
+      assert.notStrictEqual(bioNode, undefined);
       const bioSem = graph.semantics(bioNode);
 
       assert.equal(bioSem.contentEncoding, 'base64');
@@ -368,13 +368,13 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       const rootSemantics = graph.semantics(graph.rootNode);
       const byAnchorNode = rootSemantics.properties.get('byAnchor');
 
-      assert.ok(byAnchorNode !== undefined);
+      assert.notStrictEqual(byAnchorNode, undefined);
       const byPointerNode = rootSemantics.properties.get('byPointer');
 
-      assert.ok(byPointerNode !== undefined);
+      assert.notStrictEqual(byPointerNode, undefined);
       const selfNode = rootSemantics.properties.get('self');
 
-      assert.ok(selfNode !== undefined);
+      assert.notStrictEqual(selfNode, undefined);
       const byAnchor = graph.semantics(byAnchorNode);
       const byPointer = graph.semantics(byPointerNode);
       const self = graph.semantics(selfNode);
