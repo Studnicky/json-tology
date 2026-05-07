@@ -330,7 +330,7 @@ export const EBookSchema = Compose.subClassOf(BookSchema, {
 
 ### `entities/PrintBook.ts` — `subClassOf` + `disjointWith`
 
-**In plain English:** a `PrintBook` is a physical-format `Book` with binding, page count, and weight. The `disjointWith` declaration asserts that no single value can be both a `PrintBook` and an `EBook` at the same time — they are mutually exclusive formats. Validators do not enforce this directly, but reasoners and OWL-aware query engines will infer contradictions if a value claims membership in both.
+**In plain English:** a `PrintBook` is a physical-format `Book` with binding, page count, and weight. The `disjointWith` declaration asserts that no single value can be both a `PrintBook` and an `EBook` at the same time — they are mutually exclusive formats. `JsonTology.validate(PrintBookSchema, value)` enforces the constraint at runtime: after a value passes `PrintBook`'s structural check, the registry runs `EBookSchema` against it; if both succeed it surfaces a `disjointWith` violation. Reasoners and OWL-aware query engines see the same assertion in the TBox.
 
 **Use this when:**
 - Two classes are siblings under a parent and a single individual cannot belong to both at once (hardcover vs ebook, fiction vs non-fiction in your domain rules, etc.).

@@ -17,6 +17,7 @@ import type { SchemaCompilerInterface } from '../../interfaces/SchemaCompilerImp
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { SchemaRegistryEntryInterface } from '../../interfaces/SchemaRegistryEntry.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
+import type { ValidationErrorType } from '../../types/Validation.js';
 import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugin.js';
 
 import { InstantiationError } from '../../errors/InstantiationError.js';
@@ -136,6 +137,76 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return compiled.validate(structuredClone(data), CAST_OPTIONS).value;
   }
 
+  /**
+   * Enforce `owl:disjointWith` annotations at validation time.
+   *
+   * If schema A declares `disjointWith: B` (via `Compose.disjointWith` or a
+   * raw annotation), no value may successfully validate against both A and B.
+   * After A's structural validation passes, run B's validator silently — if
+   * it also passes, the value violates the disjointness assertion and we
+   * surface a DISJOINT_VIOLATION error so callers see a real failure rather
+   * than an apparent OK.
+   */
+  private checkDisjointWith(schemaId: string, data: unknown): ValidationErrorType[] {
+    const entry = this.schemas.get(schemaId);
+
+    if (entry === undefined) {
+      return [];
+    }
+    const raw = entry.schema.disjointWith;
+    let disjointTargets: string[] = [];
+
+    if (typeof raw === 'string') {
+      disjointTargets = [raw];
+    } else if (Array.isArray(raw)) {
+      disjointTargets = raw.filter((target): target is string => {
+        return typeof target === 'string';
+      });
+    }
+
+    if (disjointTargets.length === 0) {
+      return [];
+    }
+    const errors: ValidationErrorType[] = [];
+
+    for (const targetId of disjointTargets) {
+      const resolved = this.resolve(targetId);
+      const targetCompiled = this.compiled(resolved);
+
+      if (targetCompiled === undefined) {
+        // Disjoint target not registered — surface as a structural violation
+        // rather than silently passing; the annotation references an unknown
+        // class and the contract can't be checked.
+        errors.push({
+          'keyword': 'disjointWith',
+          'message': `disjointWith target '${targetId}' is not registered; cannot enforce disjointness`,
+          'params': {
+            'disjointTarget': targetId,
+            'schemaId': schemaId
+          },
+          'path': ''
+        });
+        continue;
+      }
+
+      const targetResult = targetCompiled.validate(data, COLLECT_ERRORS_OPTIONS);
+
+      if (targetResult.errors.length === 0) {
+        errors.push({
+          'keyword': 'disjointWith',
+          'message': `value satisfies '${schemaId}' and '${targetId}', but they are declared disjoint`,
+          'params': {
+            'disjointTarget': targetId,
+            'schemaId': schemaId
+          },
+          'path': ''
+        });
+      }
+    }
+
+    return errors;
+  }
+
   public clean(schemaOrId: (Record<string, unknown> & { '$id': string; }) | string, data: unknown): unknown {
     const schemaId = this.resolveSchemaId(schemaOrId);
     const compiled = this.compiled(schemaId);
@@ -219,6 +290,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return materializer.createDefault(entry.schema as Record<string, unknown> & { '$id': string });
   }
 
+
   public engine(schema: Record<string, unknown>): GraphEngineInterface {
     const schemaId = schema.$id as string;
     const entry = this.schemas.get(schemaId);
@@ -241,7 +313,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     return entry.engine;
   }
-
 
   public findDuplicates(): readonly DuplicateReportEntryType[] {
     const topLevelHashes = new Map<string, string>();
@@ -592,10 +663,10 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     this.logger.trace(`Schema registered: ${schemaId}`);
   }
 
+
   public removeInvariant(schemaId: string, name: string): void {
     this.invariants.remove(schemaId, name);
   }
-
 
   private resolve(schemaId: string): string {
     if (this.curie === undefined) {
@@ -655,6 +726,12 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     if (result.errors.length > 0) {
       return new ValidationErrors(result.errors);
+    }
+
+    const disjointErrors = this.checkDisjointWith(schemaId, data);
+
+    if (disjointErrors.length > 0) {
+      return new ValidationErrors(disjointErrors);
     }
 
     const invariantErrors = this.invariants.runAll(schemaId, data);

@@ -2130,6 +2130,83 @@ import { Result } from '../../src/modules/data/Result.js';
       } as const);
       assert.strictEqual(JSON.stringify(WeaponSchema), before);
     });
+
+    void it('runtime validate enforces disjointness — value matching both classes is rejected', () => {
+      const Weapon = {
+        '$id': 'urn:aonprd:DisjointEnforce:Weapon',
+        'properties': { 'damage': { 'type': 'string' } },
+        'type': 'object'
+      } as const;
+
+      const Armor = Compose.disjointWith(Weapon, {
+        '$id': 'urn:aonprd:DisjointEnforce:Armor',
+        'properties': { 'damage': { 'type': 'string' } },
+        'type': 'object'
+      } as const);
+
+      const jt = JsonTology.create({
+        'baseIRI': 'urn:aonprd',
+        'schemas': [
+          Weapon,
+          Armor
+        ] as const
+      });
+
+      // Value matches BOTH Armor and Weapon (same shape) — must fail.
+      const both = { 'damage': '1d8' };
+      const errs = jt.validate(Armor as unknown as { '$id': string }, both);
+
+      assert.strictEqual(errs.length, 1, 'one disjointWith error expected');
+      assert.strictEqual(errs.items[0].keyword, 'disjointWith');
+      assert.strictEqual(
+        (errs.items[0].params).disjointTarget,
+        'urn:aonprd:DisjointEnforce:Weapon'
+      );
+    });
+
+    void it('runtime validate accepts a value that matches only the source class', () => {
+      const WeaponB = {
+        '$id': 'urn:aonprd:DisjointEnforce2:Weapon',
+        'properties': {
+          'damage': { 'type': 'string' },
+          'kind': {
+            'const': 'weapon',
+            'type': 'string'
+          }
+        },
+        'required': ['kind'],
+        'type': 'object'
+      } as const;
+
+      const ArmorB = Compose.disjointWith(WeaponB, {
+        '$id': 'urn:aonprd:DisjointEnforce2:Armor',
+        'properties': {
+          'ac': { 'type': 'integer' },
+          'kind': {
+            'const': 'armor',
+            'type': 'string'
+          }
+        },
+        'required': ['kind'],
+        'type': 'object'
+      } as const);
+
+      const jt = JsonTology.create({
+        'baseIRI': 'urn:aonprd',
+        'schemas': [
+          WeaponB,
+          ArmorB
+        ] as const
+      });
+
+      const armorOnly = {
+        'ac': 14,
+        'kind': 'armor'
+      };
+      const errs = jt.validate(ArmorB as unknown as { '$id': string }, armorOnly);
+
+      assert.strictEqual(errs.length, 0, 'pure armor must validate cleanly');
+    });
   });
 
   void describe('Compose.complementOf()', { 'concurrency': true }, () => {
