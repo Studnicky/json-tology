@@ -29,6 +29,7 @@ import {
   GraphError,
   InstantiationError,
   JsonTology,
+  MaterializationError,
   SchemaError,
   Skolemize,
   Transform
@@ -350,11 +351,19 @@ void describe('toQuads / fromQuads boundaries', () => {
     assert.deepStrictEqual(lifted, []);
   });
 
-  void it('fromQuads against an unregistered schema returns an empty array (silent passthrough)', () => {
+  void it('fromQuads against an unregistered schema throws SchemaError SCHEMA_NOT_REGISTERED', () => {
     const jt = JsonTology.create({ 'baseIRI': 'https://bookstore.io' });
-    const lifted = jt.fromQuads('https://bookstore.io/NotRegistered', []);
 
-    assert.deepStrictEqual(lifted, []);
+    assert.throws(
+      () => {
+        return jt.fromQuads('https://bookstore.io/NotRegistered', []);
+      },
+      (err: unknown) => {
+        return err instanceof SchemaError
+          && (err).code === 'SCHEMA_NOT_REGISTERED'
+          && err.message.includes('not registered');
+      }
+    );
   });
 
   void it('toQuads with iriFor from Skolemize.wellKnownGenid produces .well-known/genid IRIs', () => {
@@ -374,7 +383,7 @@ void describe('toQuads / fromQuads boundaries', () => {
     }
   });
 
-  void it('toQuads with cyclic data structure throws a stack-overflow RangeError (documented limitation)', () => {
+  void it('toQuads with cyclic data structure throws MaterializationError CYCLIC_DATA', () => {
     const SelfRefSchema = {
       '$id': 'https://bookstore.io/Node',
       'properties': {
@@ -400,7 +409,7 @@ void describe('toQuads / fromQuads boundaries', () => {
         return jt.toQuads(SelfRefSchema, cycle as Record<string, unknown>);
       },
       (err: unknown) => {
-        return err instanceof RangeError;
+        return err instanceof MaterializationError && (err).code === 'CYCLIC_DATA';
       }
     );
   });

@@ -2,6 +2,8 @@
  * MaterializationError — thrown when materialization or ABox projection fails validation
  */
 
+import type { MaterializationErrorCodeType } from '../types/ErrorCodes.js';
+
 import { BaseError } from './BaseError.js';
 
 export class MaterializationError extends BaseError {
@@ -13,10 +15,21 @@ export class MaterializationError extends BaseError {
    *
    * @param schemaId - The $id of the schema that failed materialization
    * @param validationErrors - Formatted validation error strings
-   * @param options - Optional cause for error chaining
+   * @param options - Optional cause for error chaining and an optional code
+   *   (defaults to `MATERIALIZATION_FAILED`).
    */
-  public constructor(schemaId: string, validationErrors: string[], options?: { 'cause'?: Error }) {
-    super('MATERIALIZATION_FAILED', `Invalid ${schemaId}: ${validationErrors.join('; ')}`, false, options);
+  public constructor(
+    schemaId: string,
+    validationErrors: string[],
+    options?: { 'cause'?: Error;
+      'code'?: MaterializationErrorCodeType;
+      'message'?: string }
+  ) {
+    const code = options?.code ?? 'MATERIALIZATION_FAILED';
+    const message = options?.message ?? `Invalid ${schemaId}: ${validationErrors.join('; ')}`;
+    const causeOptions = options?.cause === undefined ? undefined : { 'cause': options.cause };
+
+    super(code, message, false, causeOptions);
     this.name = 'MaterializationError';
     this.schemaId = schemaId;
     this.validationErrors = validationErrors;

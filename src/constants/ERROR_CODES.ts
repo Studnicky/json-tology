@@ -1,5 +1,10 @@
 import type {
-  CoercionErrorCodeType, GraphErrorCodeType, InstantiationErrorCodeType, LoadErrorCodeType, SchemaErrorCodeType
+  CoercionErrorCodeType,
+  GraphErrorCodeType,
+  InstantiationErrorCodeType,
+  LoadErrorCodeType,
+  MaterializationErrorCodeType,
+  SchemaErrorCodeType
 } from '../types/ErrorCodes.js';
 
 export const SchemaErrorCode = {
@@ -41,5 +46,12 @@ export const CoercionErrorCode = { 'EXTRA_FORBIDDEN': 'EXTRA_FORBIDDEN' } as con
 
 export const InstantiationErrorCode = {
   'EXTRA_FORBIDDEN': 'EXTRA_FORBIDDEN',
-  'INSTANTIATION_FAILED': 'INSTANTIATION_FAILED'
+  'INSTANTIATION_FAILED': 'INSTANTIATION_FAILED',
+  'TRANSFORM_DECODE_FAILED': 'TRANSFORM_DECODE_FAILED'
 } as const satisfies Record<string, InstantiationErrorCodeType>;
+
+export const MaterializationErrorCode = {
+  'CYCLIC_DATA': 'CYCLIC_DATA',
+  'DATA_DEPTH_EXCEEDED': 'DATA_DEPTH_EXCEEDED',
+  'MATERIALIZATION_FAILED': 'MATERIALIZATION_FAILED'
+} as const satisfies Record<string, MaterializationErrorCodeType>;

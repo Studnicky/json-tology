@@ -24,7 +24,10 @@ import {
 } from '../../constants/IRI.js';
 import { JSONLD } from '../../constants/JSONLD.js';
 import { resolveSingleXsdType } from '../../constants/XSD_MAPS.js';
-import { isRecord } from '../data/DataTypes.js';
+import { MaterializationError } from '../../errors/MaterializationError.js';
+import {
+  hasCycle, isRecord
+} from '../data/DataTypes.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { Hash } from '../hash/Hash.js';
 import { QuadFactory } from './QuadFactory.js';
@@ -442,6 +445,7 @@ interface ProjectInstanceArgs {
   readonly 'node': SchemaGraphNodeInterface;
   readonly 'path': string;
   readonly 'quads': QuadInterface[];
+  readonly 'visited': WeakSet<object>;
 }
 
 interface ProjectPropertyArgs {
@@ -457,6 +461,7 @@ interface ProjectPropertyArgs {
     'itemsNode': SchemaGraphNodeInterface | undefined };
   readonly 'quads': QuadInterface[];
   readonly 'value': unknown;
+  readonly 'visited': WeakSet<object>;
 }
 
 export function projectAbox(
@@ -481,6 +486,17 @@ export function projectAbox(
     return quads;
   }
 
+  if (hasCycle(data)) {
+    throw new MaterializationError(
+      resolved.id,
+      ['cyclic data detected at root'],
+      {
+        'code': 'CYCLIC_DATA',
+        'message': `Cyclic data detected during projection of ${resolved.id}`
+      }
+    );
+  }
+
   const minter = new IriMinter(baseIRI, iriFor);
 
   projectInstance({
@@ -491,7 +507,8 @@ export function projectAbox(
     minter,
     'node': resolved,
     'path': '',
-    quads
+    quads,
+    'visited': new WeakSet()
   });
 
   if (graphIRI !== undefined) {
@@ -526,8 +543,21 @@ function resolveNode(graph: SchemaGraphInterface, node: SchemaGraphNodeInterface
 
 function projectInstance(args: ProjectInstanceArgs): string {
   const {
-    curie, data, depth, graph, minter, node, path, quads
+    curie, data, depth, graph, minter, node, path, quads, visited
   } = args;
+
+  if (visited.has(data)) {
+    throw new MaterializationError(
+      node.id,
+      [`cyclic data detected at ${path === '' ? 'root' : path}`],
+      {
+        'code': 'CYCLIC_DATA',
+        'message': `Cyclic data detected during projection of ${node.id} at ${path === '' ? 'root' : path}`
+      }
+    );
+  }
+  visited.add(data);
+
   const instIRI = minter.mint(node.id, data, path, depth);
   const nodeSemantics = graph.semantics(node);
 
@@ -558,7 +588,8 @@ function projectInstance(args: ProjectInstanceArgs): string {
       'propertyNode': resolved,
       propertySemantics,
       quads,
-      value
+      value,
+      visited
     });
   }
 
@@ -593,7 +624,7 @@ function projectPropertyValue(args: ProjectPropertyArgs): void {
 function projectSingleValue(args: ProjectPropertyArgs): void {
   const {
     curie, depth, graph, instanceIri, minter, path,
-    propertyIRI, propertyNode, propertySemantics, quads, value
+    propertyIRI, propertyNode, propertySemantics, quads, value, visited
   } = args;
 
   if (value === null || value === undefined) {
@@ -652,7 +683,8 @@ function projectSingleValue(args: ProjectPropertyArgs): void {
       minter,
       'node': targetNode,
       path,
-      quads
+      quads,
+      visited
     });
 
     quads.push(QuadFactory.quad(instanceIri, propertyIRI, QuadFactory.iri(nestedIRI, { curie }), { curie }));
