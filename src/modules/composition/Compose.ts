@@ -7,10 +7,13 @@
  */
 
 import type {
+  ComplementOfSchemaInterface,
   DiscriminatedUnionSchemaInterface,
+  DisjointWithSchemaInterface,
   IntersectionSchemaInterface,
   OmitSchemaInterface,
-  PickSchemaInterface
+  PickSchemaInterface,
+  SubClassOfSchemaInterface
 } from '../../interfaces/Compose.js';
 import type {
   ExtendSchemaType,
@@ -19,7 +22,46 @@ import type {
 } from '../../types/Compose.js';
 import { isRecord } from '../data/DataTypes.js';
 
+const CLASS_AXIOM_BODY_SKIP_KEYS = new Set(['$id']);
+
 export class Compose {
+  /**
+   * Declare a class as the OWL complement of another class.
+   *
+   * The result is a schema that validates anything which is NOT an instance of `other`,
+   * plus any keywords supplied in `body`. The TBox emission carries `owl:complementOf`
+   * pointing at `other`.
+   *
+   * Wire shape: `{ $id, not: { $ref: other.$id }, ...body }`. Stays a valid
+   * JSON Schema 2020-12 document — `not` is a native keyword.
+   *
+   * @example
+   * const NonHumanRace = Compose.complementOf(HumanRaceSchema, {
+   *   $id: 'aonprd:NonHumanRace',
+   *   type: 'object'
+   * });
+   */
+  public static complementOf<
+    TOther extends { readonly '$id': string },
+    TBody extends Record<string, unknown> & { readonly '$id': string }
+  >(other: TOther, body: TBody): ComplementOfSchemaInterface<TOther, TBody> {
+    const result: Record<string, unknown> = {
+      '$id': body.$id,
+      'not': { '$ref': other.$id }
+    };
+
+    for (const [
+      key,
+      val
+    ] of Object.entries(body as Record<string, unknown>)) {
+      if (!CLASS_AXIOM_BODY_SKIP_KEYS.has(key) && key !== 'not') {
+        result[key] = val;
+      }
+    }
+
+    return result as unknown as ComplementOfSchemaInterface<TOther, TBody>;
+  }
+
   /**
    * Create a oneOf schema with a type discriminator field.
    *
@@ -50,6 +92,45 @@ export class Compose {
       'discriminator': { 'propertyName': discriminatorProperty },
       'oneOf': variants
     } as unknown as DiscriminatedUnionSchemaInterface<TDiscriminator, TVariants, TId>;
+  }
+
+  /**
+   * Declare a class as disjoint with another class.
+   *
+   * Two classes are disjoint when they share no instances. The result is a schema
+   * carrying body keywords plus the `disjointWith` annotation pointing at `other.$id`.
+   * In the OWL TBox, `owl:disjointWith` links the two classes.
+   *
+   * Wire shape: `{ $id, disjointWith: other.$id, ...body }`. The `disjointWith`
+   * annotation is a json-tology graph keyword (not a JSON Schema validation keyword);
+   * it's projected into the OWL/SHACL output.
+   *
+   * @example
+   * const Armor = Compose.disjointWith(WeaponSchema, {
+   *   $id: 'aonprd:Armor',
+   *   type: 'object',
+   *   properties: { ac: { type: 'integer' } }
+   * });
+   */
+  public static disjointWith<
+    TOther extends { readonly '$id': string },
+    TBody extends Record<string, unknown> & { readonly '$id': string }
+  >(other: TOther, body: TBody): DisjointWithSchemaInterface<TOther, TBody> {
+    const result: Record<string, unknown> = {
+      '$id': body.$id,
+      'disjointWith': other.$id
+    };
+
+    for (const [
+      key,
+      val
+    ] of Object.entries(body as Record<string, unknown>)) {
+      if (!CLASS_AXIOM_BODY_SKIP_KEYS.has(key) && key !== 'disjointWith') {
+        result[key] = val;
+      }
+    }
+
+    return result as unknown as DisjointWithSchemaInterface<TOther, TBody>;
   }
 
   /**
@@ -434,6 +515,68 @@ export class Compose {
       '$id': newId,
       'required': Object.keys(props)
     } as unknown as RequiredSchemaType<TSchema, TId>;
+  }
+
+  /**
+   * Declare a class as a subclass of one or more parent classes.
+   *
+   * Produces an `allOf + $ref` schema referencing each parent, with body keywords
+   * carried in a trailing object schema. The TBox emits `rdfs:subClassOf` for each parent.
+   *
+   * Differs from `Compose.extend`:
+   *   - `extend` is property-merging and accepts a single parent.
+   *   - `subClassOf` is taxonomic (explicit subclass intent) and accepts one OR
+   *     multiple parents.
+   *
+   * @example
+   * const Weapon = Compose.subClassOf(EquipmentSchema, {
+   *   $id: 'aonprd:Weapon',
+   *   type: 'object',
+   *   properties: { damage: { type: 'string' } }
+   * });
+   *
+   * const ScopedAuthorityToken = Compose.subClassOf(
+   *   [BearerTokenSchema, ScopedTokenSchema],
+   *   {
+   *     $id: 'urn:auth:ScopedAuthorityToken',
+   *     type: 'object',
+   *     properties: { scope: { type: 'string' } }
+   *   }
+   * );
+   */
+  public static subClassOf<
+    TParent extends ReadonlyArray<{ readonly '$id': string }> | { readonly '$id': string },
+    TBody extends Record<string, unknown> & { readonly '$id': string }
+  >(parent: TParent, body: TBody): SubClassOfSchemaInterface<TParent, TBody> {
+    const parents = Array.isArray(parent)
+      ? (parent as ReadonlyArray<{ readonly '$id': string }>)
+      : [parent as { readonly '$id': string }];
+
+    const allOf: Array<Record<string, unknown>> = [];
+
+    for (const parentSchema of parents) {
+      allOf.push({ '$ref': parentSchema.$id });
+    }
+
+    const bodySchema: Record<string, unknown> = {};
+
+    for (const [
+      key,
+      val
+    ] of Object.entries(body as Record<string, unknown>)) {
+      if (!CLASS_AXIOM_BODY_SKIP_KEYS.has(key)) {
+        bodySchema[key] = val;
+      }
+    }
+
+    if (Object.keys(bodySchema).length > 0) {
+      allOf.push(bodySchema);
+    }
+
+    return {
+      '$id': body.$id,
+      allOf
+    } as unknown as SubClassOfSchemaInterface<TParent, TBody>;
   }
 }
 

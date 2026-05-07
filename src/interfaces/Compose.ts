@@ -41,3 +41,37 @@ export interface OmitSchemaInterface<
   readonly 'required': ReadonlyArray<Exclude<ExtractRequiredType<TSchema>, TKeys>>;
   readonly 'type': 'object';
 }
+
+type SubClassOfAllOfType<TParent>
+  = TParent extends ReadonlyArray<{ readonly '$id': string }>
+    ? ReadonlyArray<Record<string, unknown>>
+    : TParent extends { readonly '$id': string }
+      ? ReadonlyArray<Record<string, unknown>>
+      : ReadonlyArray<Record<string, unknown>>;
+
+export type SubClassOfSchemaInterface<
+  TParent,
+  TBody extends Record<string, unknown> & { readonly '$id': string }
+>
+  = Omit<TBody, '$id'> & {
+    readonly '$id': TBody['$id'];
+    readonly 'allOf': SubClassOfAllOfType<TParent>;
+  };
+
+export type DisjointWithSchemaInterface<
+  TOther extends { readonly '$id': string },
+  TBody extends Record<string, unknown> & { readonly '$id': string }
+>
+  = Omit<TBody, '$id' | 'disjointWith'> & {
+    readonly '$id': TBody['$id'];
+    readonly 'disjointWith': TOther['$id'];
+  };
+
+export type ComplementOfSchemaInterface<
+  TOther extends { readonly '$id': string },
+  TBody extends Record<string, unknown> & { readonly '$id': string }
+>
+  = Omit<TBody, '$id' | 'not'> & {
+    readonly '$id': TBody['$id'];
+    readonly 'not': { readonly '$ref': TOther['$id'] };
+  };

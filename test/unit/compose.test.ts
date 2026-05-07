@@ -1953,3 +1953,236 @@ import { Result } from '../../src/modules/data/Result.js';
   });
 }
 
+// ===========================================================================
+// Class axioms: subClassOf, disjointWith, complementOf
+// ===========================================================================
+{
+  const EquipmentSchema = {
+    '$id': 'aonprd:Equipment',
+    'properties': {
+      'price': { 'type': 'number' },
+      'weight': { 'type': 'number' }
+    },
+    'type': 'object'
+  } as const;
+
+  const BearerTokenSchema = {
+    '$id': 'urn:auth:BearerToken',
+    'properties': { 'token': { 'type': 'string' } },
+    'type': 'object'
+  } as const;
+
+  const ScopedTokenSchema = {
+    '$id': 'urn:auth:ScopedToken',
+    'properties': { 'scope': { 'type': 'string' } },
+    'type': 'object'
+  } as const;
+
+  const HumanRaceSchema = {
+    '$id': 'aonprd:HumanRace',
+    'properties': { 'subrace': { 'type': 'string' } },
+    'type': 'object'
+  } as const;
+
+  const WeaponSchema = {
+    '$id': 'aonprd:Weapon',
+    'properties': { 'damage': { 'type': 'string' } },
+    'type': 'object'
+  } as const;
+
+  void describe('Compose.subClassOf()', { 'concurrency': true }, () => {
+    void it('single parent emits allOf with $ref to parent + body keywords block', () => {
+      const Weapon = Compose.subClassOf(EquipmentSchema, {
+        '$id': 'aonprd:WeaponSub',
+        'properties': { 'damage': { 'type': 'string' } },
+        'type': 'object'
+      } as const) as unknown as {
+        '$id': string;
+        'allOf': Array<Record<string, unknown>>;
+      };
+
+      assert.strictEqual(Weapon.$id, 'aonprd:WeaponSub');
+      assert.strictEqual(Weapon.allOf.length, 2);
+      assert.deepStrictEqual(Weapon.allOf[0], { '$ref': 'aonprd:Equipment' });
+      assert.strictEqual((Weapon.allOf[1]).type, 'object');
+      assert.deepStrictEqual(
+        (Weapon.allOf[1].properties as Record<string, unknown>).damage,
+        { 'type': 'string' }
+      );
+    });
+
+    void it('multiple parents emit one $ref per parent in allOf', () => {
+      const Scoped = Compose.subClassOf(
+        [
+          BearerTokenSchema,
+          ScopedTokenSchema
+        ] as const,
+        {
+          '$id': 'urn:auth:ScopedAuthorityToken',
+          'properties': { 'aud': { 'type': 'string' } },
+          'type': 'object'
+        } as const
+      ) as unknown as {
+        '$id': string;
+        'allOf': Array<Record<string, unknown>>;
+      };
+
+      assert.strictEqual(Scoped.allOf.length, 3);
+      assert.deepStrictEqual(Scoped.allOf[0], { '$ref': 'urn:auth:BearerToken' });
+      assert.deepStrictEqual(Scoped.allOf[1], { '$ref': 'urn:auth:ScopedToken' });
+      assert.strictEqual((Scoped.allOf[2]).type, 'object');
+    });
+
+    void it('omits body block when only $id is supplied', () => {
+      const result = Compose.subClassOf(EquipmentSchema, { '$id': 'aonprd:BareEquipmentSub' } as const) as unknown as {
+        '$id': string;
+        'allOf': Array<Record<string, unknown>>;
+      };
+
+      assert.strictEqual(result.allOf.length, 1);
+      assert.deepStrictEqual(result.allOf[0], { '$ref': 'aonprd:Equipment' });
+    });
+
+    void it('emits rdfs:subClassOf in OWL TBox for each parent', async () => {
+      const { SchemaGraph } = await import('../../src/modules/graph/SchemaGraph.js');
+      const { projectOwlGraph } = await import('../../src/modules/rdf/OwlProjection.js');
+      const { RDFS } = await import('../../src/constants/IRI.js');
+
+      const Scoped = Compose.subClassOf(
+        [
+          BearerTokenSchema,
+          ScopedTokenSchema
+        ] as const,
+        {
+          '$id': 'urn:auth:ScopedAuthorityToken2',
+          'type': 'object'
+        } as const
+      );
+
+      const graph = new SchemaGraph(Scoped as unknown as Record<string, unknown>);
+      const quads = projectOwlGraph(graph);
+      const subClassQuads = quads.filter((quad) => {
+        return quad.predicate === RDFS.subClassOf
+          && quad.subject === 'urn:auth:ScopedAuthorityToken2';
+      });
+      const targets = new Set(subClassQuads.map((quad) => {
+        const obj = quad.object as { 'value'?: string };
+
+        return obj.value ?? '';
+      }));
+
+      assert.ok(targets.has('urn:auth:BearerToken'), 'first parent must appear');
+      assert.ok(targets.has('urn:auth:ScopedToken'), 'second parent must appear');
+    });
+
+    void it('does not mutate parent schemas', () => {
+      const before = JSON.stringify(EquipmentSchema);
+
+      Compose.subClassOf(EquipmentSchema, {
+        '$id': 'aonprd:NoMutateSub',
+        'type': 'object'
+      } as const);
+      assert.strictEqual(JSON.stringify(EquipmentSchema), before);
+    });
+  });
+
+  void describe('Compose.disjointWith()', { 'concurrency': true }, () => {
+    void it('emits disjointWith annotation pointing at other.$id', () => {
+      const Armor = Compose.disjointWith(WeaponSchema, {
+        '$id': 'aonprd:Armor',
+        'properties': { 'ac': { 'type': 'integer' } },
+        'type': 'object'
+      } as const) as unknown as {
+        '$id': string;
+        'disjointWith': string;
+        'properties': Record<string, unknown>;
+      };
+
+      assert.strictEqual(Armor.$id, 'aonprd:Armor');
+      assert.strictEqual(Armor.disjointWith, 'aonprd:Weapon');
+      assert.deepStrictEqual(Armor.properties.ac, { 'type': 'integer' });
+    });
+
+    void it('emits owl:disjointWith in OWL TBox', async () => {
+      const { SchemaGraph } = await import('../../src/modules/graph/SchemaGraph.js');
+      const { projectOwlGraph } = await import('../../src/modules/rdf/OwlProjection.js');
+      const { OWL } = await import('../../src/constants/IRI.js');
+
+      const Armor = Compose.disjointWith(WeaponSchema, {
+        '$id': 'aonprd:Armor2',
+        'type': 'object'
+      } as const);
+
+      const graph = new SchemaGraph(Armor as unknown as Record<string, unknown>);
+      const quads = projectOwlGraph(graph);
+      const disjQuad = quads.find((quad) => {
+        return quad.predicate === OWL.disjointWith && quad.subject === 'aonprd:Armor2';
+      });
+
+      assert.notStrictEqual(disjQuad, undefined, 'disjointWith quad must be emitted');
+      assert.strictEqual((disjQuad?.object as { 'value'?: string }).value, 'aonprd:Weapon');
+    });
+
+    void it('does not mutate other schema', () => {
+      const before = JSON.stringify(WeaponSchema);
+
+      Compose.disjointWith(WeaponSchema, {
+        '$id': 'aonprd:NoMutateDisj',
+        'type': 'object'
+      } as const);
+      assert.strictEqual(JSON.stringify(WeaponSchema), before);
+    });
+  });
+
+  void describe('Compose.complementOf()', { 'concurrency': true }, () => {
+    void it('emits not: { $ref: other.$id } and carries body keywords', () => {
+      const NonHuman = Compose.complementOf(HumanRaceSchema, {
+        '$id': 'aonprd:NonHumanRace',
+        'type': 'object'
+      } as const) as unknown as {
+        '$id': string;
+        'not': { '$ref': string };
+        'type': string;
+      };
+
+      assert.strictEqual(NonHuman.$id, 'aonprd:NonHumanRace');
+      assert.deepStrictEqual(NonHuman.not, { '$ref': 'aonprd:HumanRace' });
+      assert.strictEqual(NonHuman.type, 'object');
+    });
+
+    void it('emits owl:complementOf pointing at the resolved parent class IRI', async () => {
+      const { SchemaGraph } = await import('../../src/modules/graph/SchemaGraph.js');
+      const { projectOwlGraph } = await import('../../src/modules/rdf/OwlProjection.js');
+      const { OWL } = await import('../../src/constants/IRI.js');
+
+      const NonHuman = Compose.complementOf(HumanRaceSchema, {
+        '$id': 'aonprd:NonHumanRace2',
+        'type': 'object'
+      } as const);
+
+      const graph = new SchemaGraph(NonHuman as unknown as Record<string, unknown>);
+      const quads = projectOwlGraph(graph);
+      const compQuad = quads.find((quad) => {
+        return quad.predicate === OWL.complementOf
+          && quad.subject === 'aonprd:NonHumanRace2';
+      });
+
+      assert.notStrictEqual(compQuad, undefined, 'complementOf quad must be emitted');
+      assert.strictEqual(
+        (compQuad?.object as { 'value'?: string }).value,
+        'aonprd:HumanRace',
+        'target must resolve through $ref to parent class IRI'
+      );
+    });
+
+    void it('does not mutate other schema', () => {
+      const before = JSON.stringify(HumanRaceSchema);
+
+      Compose.complementOf(HumanRaceSchema, {
+        '$id': 'aonprd:NoMutateComp',
+        'type': 'object'
+      } as const);
+      assert.strictEqual(JSON.stringify(HumanRaceSchema), before);
+    });
+  });
+}
