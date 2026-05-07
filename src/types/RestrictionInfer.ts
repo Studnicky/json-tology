@@ -69,28 +69,46 @@ type PropertyNameFromIriType<TIri extends string>
 // Tuple builders — bounded by TupleCap so recursion stays within TS limits.
 // ---------------------------------------------------------------------------
 
-type TupleCapType = 16;
+export type TupleCapType = 16;
 
-type BuildExactTupleType<TItem, TN extends number, TAcc extends readonly TItem[] = []>
+export type BuildExactTupleType<TItem, TN extends number, TAcc extends readonly TItem[] = []>
   = TAcc['length'] extends TN
     ? TAcc
     : TAcc['length'] extends TupleCapType
       ? readonly TItem[]
       : BuildExactTupleType<TItem, TN, readonly [TItem, ...TAcc]>;
 
-type BuildAtLeastTupleType<TItem, TN extends number, TAcc extends readonly TItem[] = []>
+export type BuildAtLeastTupleType<TItem, TN extends number, TAcc extends readonly TItem[] = []>
   = TAcc['length'] extends TN
     ? readonly [...TAcc, ...TItem[]]
     : TAcc['length'] extends TupleCapType
       ? readonly [TItem, ...TItem[]]
       : BuildAtLeastTupleType<TItem, TN, readonly [TItem, ...TAcc]>;
 
-type BuildAtMostTupleType<TItem, TN extends number, TAcc extends readonly TItem[] = []>
+export type BuildAtMostTupleType<TItem, TN extends number, TAcc extends readonly TItem[] = []>
   = TAcc['length'] extends TN
     ? TAcc
     : TAcc['length'] extends TupleCapType
       ? readonly TItem[]
       : BuildAtMostTupleType<TItem, TN, readonly [TItem, ...TAcc]> | TAcc;
+
+/**
+ * Build a union of readonly tuples whose lengths span `[TMin, TMax]` inclusive.
+ * Falls through to `readonly TItem[]` when the cap is reached.
+ */
+export type BuildBoundedTupleType<
+  TItem,
+  TMin extends number,
+  TMax extends number,
+  TAcc extends readonly TItem[] = []
+>
+  = TAcc['length'] extends TupleCapType
+    ? readonly TItem[]
+    : TAcc['length'] extends TMax
+      ? TAcc
+      : TAcc['length'] extends TMin
+        ? BuildBoundedTupleType<TItem, TMin, TMax, readonly [TItem, ...TAcc]> | TAcc
+        : BuildBoundedTupleType<TItem, TMin, TMax, readonly [TItem, ...TAcc]>;
 
 // ---------------------------------------------------------------------------
 // Restriction descriptor — matches the runtime shape from

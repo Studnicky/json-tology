@@ -53,6 +53,12 @@ import type {
   SchemaIdBrandInterface,
   UniqueItemsBrandInterface
 } from './ConstraintBrands.js';
+import type {
+  BuildAtLeastTupleType,
+  BuildAtMostTupleType,
+  BuildBoundedTupleType,
+  BuildExactTupleType
+} from './RestrictionInfer.js';
 import type { IsEnabledType } from './TypeConfig.js';
 import type { TransformBrandInterface } from '../interfaces/TransformBrand.js';
 
@@ -60,7 +66,6 @@ import type { TransformBrandInterface } from '../interfaces/TransformBrand.js';
 // Recursion limits (type-level caps to prevent infinite expansion)
 // ---------------------------------------------------------------------------
 
-type TupleRecursionCap = 10;
 type SchemaPointerDepthCap = 5;
 type DeepPropertyDepthCap = 4;
 type IntegerRangeCap = 50;
@@ -246,26 +251,33 @@ type InferEnumType<T>
   = T extends { readonly 'enum': ReadonlyArray<infer V> } ? V : never;
 
 // ---------------------------------------------------------------------------
-// Array tuple helpers
-// ---------------------------------------------------------------------------
-
-/** Build a readonly tuple with exactly `TLen` elements of type `TItem`. Caps at 10. */
-type BuildFixedTupleType<TItem, TLen extends number, TAccum extends unknown[] = []>
-  = number extends TLen ? readonly TItem[]
-    : TAccum['length'] extends TLen ? readonly [...TAccum]
-      : TAccum['length'] extends TupleRecursionCap ? readonly [...TAccum]
-        : BuildFixedTupleType<TItem, TLen, [...TAccum, TItem]>;
-
-/** Build a readonly tuple with at least `TMin` elements of type `TItem`, then rest. Caps at 10. */
-type BuildMinTupleType<TItem, TMin extends number, TAccum extends unknown[] = []>
-  = number extends TMin ? readonly TItem[]
-    : TAccum['length'] extends TMin ? readonly [...TAccum, ...TItem[]]
-      : TAccum['length'] extends TupleRecursionCap ? readonly [...TAccum, ...TItem[]]
-        : BuildMinTupleType<TItem, TMin, [...TAccum, TItem]>;
-
-// ---------------------------------------------------------------------------
 // Arrays
 // ---------------------------------------------------------------------------
+
+/**
+ * Narrow an array element type by `minItems` / `maxItems` to a tuple shape.
+ *
+ * - `min === max` → fixed-length tuple `[T, T, ..., T]` (length N)
+ * - `min > 0`, no max → `[T, ..., T, ...T[]]` (non-empty prefix + variadic tail)
+ * - `max`, no min → union of tuples length `0..max`
+ * - both, `min < max` → union of tuples length `min..max`
+ *
+ * Capped at `TupleCapType = 16`. Above the cap, falls through to
+ * `ReadonlyArray<TItem>`.
+ */
+type NarrowArrayByItemsBoundsType<TItem, T>
+  = T extends {
+    readonly 'maxItems': infer TMax extends number;
+    readonly 'minItems': infer TMin extends number;
+  }
+    ? TMin extends TMax
+      ? BuildExactTupleType<TItem, TMin>
+      : BuildBoundedTupleType<TItem, TMin, TMax>
+    : T extends { readonly 'minItems': infer TMin extends number }
+      ? BuildAtLeastTupleType<TItem, TMin>
+      : T extends { readonly 'maxItems': infer TMax extends number }
+        ? BuildAtMostTupleType<TItem, TMax>
+        : readonly TItem[];
 
 type InferArrayType<T, TRoot, TReferences>
   // prefixItems + items = tuple + rest
@@ -274,34 +286,26 @@ type InferArrayType<T, TRoot, TReferences>
     readonly 'type': 'array' }
     ? readonly [...{ readonly [K in keyof TPrefix]: InferSchemaType<TPrefix[K], TRoot, TReferences> },
       ...Array<InferSchemaType<I, TRoot, TReferences>>]
-    // items + minItems + maxItems (equal → fixed, unequal → min-length)
+    // items + minItems and/or maxItems → tuple narrowing
     : T extends { readonly 'items': infer I;
-      readonly 'maxItems': infer TMax extends number;
-      readonly 'minItems': infer TMin extends number;
       readonly 'type': 'array' }
-      ? TMin extends TMax
-        ? BuildFixedTupleType<InferSchemaType<I, TRoot, TReferences>, TMin>
-        : BuildMinTupleType<InferSchemaType<I, TRoot, TReferences>, TMin>
-      // items + minItems = min-length tuple
-      : T extends { readonly 'items': infer I;
-        readonly 'minItems': infer TMin extends number;
+      ? T extends { readonly 'maxItems': number } | { readonly 'minItems': number }
+        ? NarrowArrayByItemsBoundsType<InferSchemaType<I, TRoot, TReferences>, T>
+        : ReadonlyArray<InferSchemaType<I, TRoot, TReferences>>
+      // prefixItems only
+      : T extends { readonly 'prefixItems': readonly [...infer TPrefix];
         readonly 'type': 'array' }
-        ? BuildMinTupleType<InferSchemaType<I, TRoot, TReferences>, TMin>
-        // items only
-        : T extends { readonly 'items': infer I;
+        ? readonly [...{ readonly [K in keyof TPrefix]: InferSchemaType<TPrefix[K], TRoot, TReferences> }]
+        // contains only (no items) — element type narrows to contains schema
+        : T extends { readonly 'contains': infer C;
           readonly 'type': 'array' }
-          ? ReadonlyArray<InferSchemaType<I, TRoot, TReferences>>
-          // prefixItems only
-          : T extends { readonly 'prefixItems': readonly [...infer TPrefix];
-            readonly 'type': 'array' }
-            ? readonly [...{ readonly [K in keyof TPrefix]: InferSchemaType<TPrefix[K], TRoot, TReferences> }]
-            // contains only (no items) — element type narrows to contains schema
-            : T extends { readonly 'contains': infer C;
-              readonly 'type': 'array' }
-              ? ReadonlyArray<InferSchemaType<C, TRoot, TReferences>>
-              : T extends { readonly 'type': 'array' }
-                ? readonly unknown[]
-                : never;
+          ? ReadonlyArray<InferSchemaType<C, TRoot, TReferences>>
+          // raw minItems / maxItems on a typeless-element array → tuple of unknown
+          : T extends { readonly 'type': 'array' }
+            ? T extends { readonly 'maxItems': number } | { readonly 'minItems': number }
+              ? NarrowArrayByItemsBoundsType<unknown, T>
+              : readonly unknown[]
+            : never;
 
 // ---------------------------------------------------------------------------
 // Objects
