@@ -80,7 +80,7 @@
   "license": "MIT",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@rdfjs/types": "^1.1.0",
+    "@rdfjs/types": "^2.0.1",
     "@sinclair/typebox": "^0.34.48",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@types/json-schema": "^7.0.15",
