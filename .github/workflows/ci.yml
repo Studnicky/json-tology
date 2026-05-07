@@ -6,9 +6,11 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  build-test:
-    name: Build & Test
+  smoke-fast:
+    name: Smoke (Fast)
     runs-on: ubuntu-latest
+    env:
+      TSX_CACHE: 1
     steps:
       - uses: actions/checkout@v4
 
@@ -30,18 +32,80 @@ jobs:
       - name: Install dependencies
         run: npm ci --include=dev --include=optional
 
+      - name: Run smoke tests
+        env:
+          TSX_CACHE: 1
+        run: npm run test:smoke
+
+    timeout-minutes: 5
+
+  unit-integration:
+    name: Unit & Integration (${{ matrix.task }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [unit, integration, type-check]
+    env:
+      TSX_CACHE: 1
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          cache: npm
+          node-version: '24'
+
+      - name: Install dependencies
+        run: npm ci --include=dev --include=optional
+
+      - name: Build
+        if: matrix.task == 'type-check'
+        run: npm run build
+
+      - name: Run task
+        env:
+          TSX_CACHE: 1
+        run: |
+          case "${{ matrix.task }}" in
+            unit)        npm run test:unit ;;
+            integration) npm run test:integration ;;
+            type-check)  npm run type-check ;;
+          esac
+
+    timeout-minutes: 10
+
+  e2e-types:
+    name: E2E & Types (${{ matrix.task }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [e2e, types]
+    env:
+      TSX_CACHE: 1
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          cache: npm
+          node-version: '24'
+
+      - name: Install dependencies
+        run: npm ci --include=dev --include=optional
+
       - name: Build
         run: npm run build
 
-      - name: Type check
-        run: npm run type-check
-
-      - name: Type-level tests
-        continue-on-error: true
-        run: npx tsc --noEmit --project tsconfig.test-types.json
-
-      - name: Run tests
-        run: npm test
+      - name: Run task
+        env:
+          TSX_CACHE: 1
+        run: |
+          case "${{ matrix.task }}" in
+            e2e)   npm run test:e2e ;;
+            types) npm run test:types ;;
+          esac
 
     timeout-minutes: 10
 
@@ -86,7 +150,7 @@ jobs:
   ci-gate:
     if: always()
     name: CI Gate
-    needs: [build-test, lint, static-analysis]
+    needs: [smoke-fast, unit-integration, e2e-types, lint, static-analysis]
     runs-on: ubuntu-latest
     steps:
       - name: Check job results
@@ -95,13 +159,21 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Build & Test | ${{ needs.build-test.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Smoke (Fast) | ${{ needs.smoke-fast.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit & Integration | ${{ needs.unit-integration.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| E2E & Types | ${{ needs.e2e-types.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Lint | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Static Analysis | ${{ needs.static-analysis.result }} |" >> $GITHUB_STEP_SUMMARY
 
           FAILED=""
-          if [[ "${{ needs.build-test.result }}" != "success" ]]; then
-            FAILED="$FAILED  - Build & Test (${{ needs.build-test.result }})\n"
+          if [[ "${{ needs.smoke-fast.result }}" != "success" ]]; then
+            FAILED="$FAILED  - Smoke (Fast) (${{ needs.smoke-fast.result }})\n"
+          fi
+          if [[ "${{ needs.unit-integration.result }}" != "success" ]]; then
+            FAILED="$FAILED  - Unit & Integration (${{ needs.unit-integration.result }})\n"
+          fi
+          if [[ "${{ needs.e2e-types.result }}" != "success" ]]; then
+            FAILED="$FAILED  - E2E & Types (${{ needs.e2e-types.result }})\n"
           fi
           if [[ "${{ needs.lint.result }}" != "success" ]]; then
             FAILED="$FAILED  - Lint (${{ needs.lint.result }})\n"

@@ -1,9 +1,8 @@
-name: Benchmarks
+name: Benchmarks (Post-Merge)
 
-# Benchmark suite runs on each push to main and on manual dispatch.
-# Results are uploaded as workflow artifacts for trend-watching, NOT
-# used to gate PR merging — runner variance on shared hardware is too
-# high to be a reliable signal at the resolution we measure.
+# Slow tier: bench runs on main pushes only.
+# Does NOT gate PRs — runner variance on shared hardware is too high
+# to be a reliable signal at the resolution we measure.
 
 on:
   push:
@@ -18,6 +17,8 @@ jobs:
     name: Run benchmark suite
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      TSX_CACHE: 1
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,6 +33,8 @@ jobs:
         run: npm ci
 
       - name: Run benchmarks (report mode)
+        env:
+          TSX_CACHE: 1
         run: npm run bench:report
 
       - name: Capture environment metadata
