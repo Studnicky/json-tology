@@ -13,6 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `JsonTology.sameAs` — declare ABox identity between two named individuals. `SameAsStore` accumulates the assertions; the OWL ABox projection emits `owl:sameAs` triples in both directions.
 - Doc pages: `docs/composition/restrictions.md` (OWL restrictions reference) and `docs/advanced/sameas.md` (sameAs identity reference).
 
+### Changed
+
+- Bumped TypeScript to 6.0 (was 5.9). Required adding explicit `types: ["node"]` to `tsconfig.json` so node built-in modules resolve under the new default. Code paths that previously relied on `as unknown as Foo` casts in places where TS5 still required a hint now use direct assignment — the casts were dead weight under TS6's improved inference.
+- Bumped `@rdfjs/types` to 2.0 (was 1.1). Compatible at our consumption surface; eyereasoner's peer pins `@rdfjs/types@^1.1.0`, but its actual usage is purely consuming the existing interfaces v2 retains, so the resolution is sound.
+- ESLint ecosystem refresh: `@typescript-eslint/eslint-plugin` 8.59, `eslint` 10.3, `eslint-plugin-perfectionist` 5.9, `eslint-plugin-unicorn` 64. The unicorn 64 `consistent-function-scoping` rule surfaced two test-file factory closures whose inner arrow function was hoistable; refactored to top-level `*Impl` constants returned by the factory.
+- GitHub Actions ecosystem refresh: `actions/setup-node@v6`, `actions/upload-artifact@v7`, `actions/github-script@v9`, `actions/deploy-pages@v5`, `actions/configure-pages@v6`. All on Node 24 runtime to match `engines.node >=24.0.0`.
+- Minor/patch dependency refresh: `@sinclair/typebox` 0.34.49, `ajv` 8.20, `eyereasoner` 21.1, `vitepress-sidebar` 1.33.2, `zod` 4.4, `globals` 17.6.
+
 ## [0.3.3] - 2026-05-05
 
 ### Fixed

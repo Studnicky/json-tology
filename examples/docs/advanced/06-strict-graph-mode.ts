@@ -20,14 +20,14 @@ const SchemaWithInlineShape = {
 // Default mode: inline shapes register silently
 const defaultRegistry = new SchemaRegistry();
 
-defaultRegistry.register(SchemaWithInlineShape as unknown as Record<string, unknown>);
+defaultRegistry.register(SchemaWithInlineShape);
 console.log('Default mode: registration succeeded (inline shapes are silent)');
 
 // Strict mode: inline shapes throw SchemaError
 const strictRegistry = new SchemaRegistry({ 'enableStrictGraph': true });
 
 try {
-  strictRegistry.register(SchemaWithInlineShape as unknown as Record<string, unknown>);
+  strictRegistry.register(SchemaWithInlineShape);
   console.log('Strict mode: registration succeeded (unexpected)');
 } catch (error) {
   const schemaErr = error as { 'code'?: string;

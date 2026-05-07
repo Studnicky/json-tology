@@ -258,7 +258,7 @@ import { projectGraph } from '../../src/modules/rdf/Projection.js';
         'schema': Record<string, unknown>;
       }> = [
         {
-          'input': { 'name': 123 as unknown as string },
+          'input': { 'name': 123 },
           'name': 'type mismatch on required property',
           'schema': ConfigSchema
         },
@@ -270,21 +270,21 @@ import { projectGraph } from '../../src/modules/rdf/Projection.js';
         {
           'input': {
             'name': 'test',
-            'timeout': '10000' as unknown as number
+            'timeout': '10000'
           },
           'name': 'type mismatch without coerce',
           'schema': ConfigSchema
         },
         {
           'input': {
-            'extra': 'not allowed' as unknown as never,
+            'extra': 'not allowed',
             'name': 'test'
           },
           'name': 'extra keys without passAdditionalProperties',
           'schema': StrictSchema
         },
         {
-          'input': { 'name': null as unknown as string },
+          'input': { 'name': null },
           'name': 'null value for required string property',
           'schema': ConfigSchema
         }
@@ -331,7 +331,7 @@ import { projectGraph } from '../../src/modules/rdf/Projection.js';
           },
           'input': {
             'name': 'test',
-            'timeout': '10000' as unknown as number
+            'timeout': '10000'
           },
           'name': 'coerces types when registry castTypes: true',
           'registryOpts': { 'enableTypeCast': true },
@@ -343,7 +343,7 @@ import { projectGraph } from '../../src/modules/rdf/Projection.js';
             assert.strictEqual(result.extra, 'allowed');
           },
           'input': {
-            'extra': 'allowed' as unknown as never,
+            'extra': 'allowed',
             'name': 'test'
           },
           'materializerOpts': { 'passAdditionalProperties': true },
@@ -1103,7 +1103,7 @@ import { projectGraph } from '../../src/modules/rdf/Projection.js';
   const rejectionScenarios: RejectionScenario[] = [
     {
       'input': {
-        'extra': 'not allowed' as never,
+        'extra': 'not allowed',
         'name': 'test'
       },
       'name': 'rejects extra keys when additionalProperties is false',
@@ -1117,7 +1117,7 @@ import { projectGraph } from '../../src/modules/rdf/Projection.js';
       }
     },
     {
-      'input': { 'label': null as unknown as string },
+      'input': { 'label': null },
       'name': 'rejects null value for non-nullable property',
       'schema': {
         '$id': 'https://edge.io/non-nullable',
@@ -1181,7 +1181,7 @@ import { projectGraph } from '../../src/modules/rdf/Projection.js';
         'materializer': { 'passAdditionalProperties': true }
       });
       const result = tology.materialize(StrictSchema, {
-        'extra': 'allowed' as never,
+        'extra': 'allowed',
         'name': 'test'
       });
 

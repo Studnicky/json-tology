@@ -174,7 +174,7 @@ export function runComposeBench(): BenchResult[] {
     const reg = new SchemaRegistry();
 
     reg.register(BaseBookJt);
-    reg.register(child as Record<string, unknown>);
+    reg.register(child);
     reg.validate((child as { '$id': string }).$id, {
       ...validBook,
       'pages': 200

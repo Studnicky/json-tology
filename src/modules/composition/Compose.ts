@@ -134,7 +134,7 @@ export class Compose {
       '$id': newId,
       'discriminator': { 'propertyName': discriminatorProperty },
       'oneOf': variants
-    } as unknown as DiscriminatedUnionSchemaInterface<TDiscriminator, TVariants, TId>;
+    };
   }
 
   /**
@@ -402,7 +402,7 @@ export class Compose {
     return {
       '$id': newId,
       'allOf': schemas
-    } as unknown as IntersectionSchemaInterface<TSchemas, TId>;
+    };
   }
 
   /**

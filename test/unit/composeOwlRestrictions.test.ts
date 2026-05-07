@@ -189,7 +189,7 @@ void describe('Compose OWL restrictions', () => {
         } as const
       );
 
-      const nodes = tboxNodes(schema as Record<string, unknown> & { '$id': string });
+      const nodes = tboxNodes(schema);
       const restrictions = findRestrictionsOnProperty(nodes, PARENT_IRI);
 
       assert.equal(restrictions.length, 1, 'one owl:Restriction node emitted');
@@ -214,7 +214,7 @@ void describe('Compose OWL restrictions', () => {
           } as const
         )
       );
-      const nodes = tboxNodes(schema as Record<string, unknown> & { '$id': string });
+      const nodes = tboxNodes(schema);
       const restrictions = findRestrictionsOnProperty(nodes, PARENT_IRI);
 
       assert.equal(restrictions.length, 2);
@@ -243,7 +243,7 @@ void describe('Compose OWL restrictions', () => {
           } as const
         )
       );
-      const nodes = tboxNodes(schema as Record<string, unknown> & { '$id': string });
+      const nodes = tboxNodes(schema);
       const restrictions = findRestrictionsOnProperty(nodes, PARENT_IRI);
 
       const someNode = restrictions.find((restriction) => {
@@ -267,7 +267,7 @@ void describe('Compose OWL restrictions', () => {
           'type': 'object'
         } as const
       );
-      const nodes = tboxNodes(schema as Record<string, unknown> & { '$id': string });
+      const nodes = tboxNodes(schema);
       const restrictions = findRestrictionsOnProperty(nodes, NAME_IRI);
 
       assert.equal(restrictions.length, 1);

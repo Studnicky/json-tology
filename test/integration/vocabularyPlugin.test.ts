@@ -212,7 +212,7 @@ void describe('VocabularyPlugin', () => {
                     },
                     'language': '',
                     'termType': 'Literal',
-                    'value': relation.target as string
+                    'value': relation.target
                   },
                   'predicate': `${ACME_NS}category`,
                   'subject': relation.source.id
@@ -229,7 +229,7 @@ void describe('VocabularyPlugin', () => {
             'vocabularies': [plugin]
           }).registry;
 
-          registry.register(AcmeSchema as unknown as Record<string, unknown>);
+          registry.register(AcmeSchema);
 
           const curie = new Curie({
             ...DEFAULT_PREFIXES,
@@ -279,7 +279,7 @@ void describe('VocabularyPlugin', () => {
                     },
                     'language': '',
                     'termType': 'Literal',
-                    'value': relation.target as string
+                    'value': relation.target
                   },
                   'predicate': relation.predicate,
                   'subject': relation.source.id
@@ -293,7 +293,7 @@ void describe('VocabularyPlugin', () => {
             'vocabularies': [plugin]
           }).registry;
 
-          registry.register(AcmeSchema as unknown as Record<string, unknown>);
+          registry.register(AcmeSchema);
 
           const curie = new Curie({
             ...DEFAULT_PREFIXES,
@@ -340,7 +340,7 @@ void describe('VocabularyPlugin', () => {
             'vocabularies': [plugin]
           }).registry;
 
-          registry.register(AcmeSchema as unknown as Record<string, unknown>);
+          registry.register(AcmeSchema);
 
           const allRelations = registry.listGraphs()[0]?.allRelations() ?? [];
           const acmeRelations = allRelations.filter((rel) => {
@@ -418,7 +418,7 @@ void describe('VocabularyPlugin', () => {
             'vocabularies': [plugin]
           }).registry;
 
-          registry.register(AcmeSchema as unknown as Record<string, unknown>);
+          registry.register(AcmeSchema);
 
           const graphs = registry.listGraphs();
 
@@ -477,7 +477,7 @@ void describe('VocabularyPlugin', () => {
             ]
           }).registry;
 
-          registry.register(AcmeSchema as unknown as Record<string, unknown>);
+          registry.register(AcmeSchema);
 
           assert.ok(registry.curie !== undefined);
           assert.equal(registry.curie.expand('bio:organism'), `${bioNs}organism`);
@@ -524,7 +524,7 @@ void describe('VocabularyPlugin', () => {
                     },
                     'language': '',
                     'termType': 'Literal',
-                    'value': relation.target as string
+                    'value': relation.target
                   },
                   'predicate': relation.predicate,
                   'subject': relation.source.id
@@ -567,7 +567,7 @@ void describe('VocabularyPlugin', () => {
             'vocabularies': [plugin]
           }).registry;
 
-          registry.register(AcmeSchema as unknown as Record<string, unknown>);
+          registry.register(AcmeSchema);
 
           const graph = registry.graph(AcmeSchema.$id);
 

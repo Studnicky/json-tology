@@ -4148,12 +4148,12 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 // Source: arrays.test.ts
 // ===========================================================================
 {
-  const passing: ValidateWithErrorsFnType = ((value: unknown) => {
+  const passing: ValidateWithErrorsFnType = (value: unknown) => {
     return {
       'valid': true,
       value
     };
-  }) as ValidateWithErrorsFnType;
+  };
   const failing: ValidateWithErrorsFnType = (value, path, errors, collectErrors) => {
     if (collectErrors) {
       errors.push(BaseError.validationError(path, 'type', 'mock'));
@@ -4421,38 +4421,48 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 // Source: objects.test.ts
 // ===========================================================================
 {
+  const passingValidatorImpl: ValidateWithErrorsFnType = (value: unknown) => {
+    return {
+      'valid': true,
+      'value': value
+    };
+  };
+
+  const failingValidatorImpl: ValidateWithErrorsFnType = (
+    value: unknown,
+    path: string,
+    errors: ValidationErrorType[]
+  ) => {
+    errors.push({
+      'instancePath': path,
+      'keyword': 'type',
+      'message': 'mock failure',
+      'params': {}
+    } as unknown as ValidationErrorType);
+
+    return {
+      'valid': false,
+      'value': value
+    };
+  };
+
   function passingValidator(): ValidateWithErrorsFnType {
-    return ((value: unknown) => {
-      return {
-        'valid': true,
-        'value': value
-      };
-    }) as ValidateWithErrorsFnType;
+    return passingValidatorImpl;
   }
 
   function failingValidator(): ValidateWithErrorsFnType {
-    return ((value: unknown, path: string, errors: ValidationErrorType[]) => {
-      errors.push({
-        'instancePath': path,
-        'keyword': 'type',
-        'message': 'mock failure',
-        'params': {}
-      } as unknown as ValidationErrorType);
-
-      return {
-        'valid': false,
-        'value': value
-      };
-    }) as ValidateWithErrorsFnType;
+    return failingValidatorImpl;
   }
 
   function coercingValidator(coercedValue: unknown): ValidateWithErrorsFnType {
-    return (() => {
+    const impl: ValidateWithErrorsFnType = () => {
       return {
         'valid': true,
         'value': coercedValue
       };
-    }) as ValidateWithErrorsFnType;
+    };
+
+    return impl;
   }
 
   void describe('Objects', () => {
@@ -5024,29 +5034,37 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 // Source: compositionExec.test.ts
 // ===========================================================================
 {
+  const passingValidatorImpl: ValidateWithErrorsFnType = (value: unknown) => {
+    return {
+      'valid': true,
+      'value': value
+    };
+  };
+
+  const failingValidatorImpl: ValidateWithErrorsFnType = (
+    value: unknown,
+    path: string,
+    errors: ValidationErrorType[]
+  ) => {
+    errors.push({
+      'instancePath': path,
+      'keyword': 'type',
+      'message': 'mock failure',
+      'params': {}
+    } as unknown as ValidationErrorType);
+
+    return {
+      'valid': false,
+      'value': value
+    };
+  };
+
   function passingValidator(): ValidateWithErrorsFnType {
-    return ((value: unknown) => {
-      return {
-        'valid': true,
-        'value': value
-      };
-    }) as ValidateWithErrorsFnType;
+    return passingValidatorImpl;
   }
 
   function failingValidator(): ValidateWithErrorsFnType {
-    return ((value: unknown, path: string, errors: ValidationErrorType[]) => {
-      errors.push({
-        'instancePath': path,
-        'keyword': 'type',
-        'message': 'mock failure',
-        'params': {}
-      } as unknown as ValidationErrorType);
-
-      return {
-        'valid': false,
-        'value': value
-      };
-    }) as ValidateWithErrorsFnType;
+    return failingValidatorImpl;
   }
 
   const alwaysTrue: CheckFnType = (_: unknown): boolean => {
@@ -5287,9 +5305,9 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
           'allowedTypes': undefined,
           'keyword': 'x-even',
           'schemaValue': true,
-          'validate': (() => {
+          'validate': () => {
             return true;
-          }) as CustomKeywordEntryInterface['validate']
+          }
         }];
         const result = Composition.validateCustomKeywords('', 42, entries);
 
@@ -5302,9 +5320,9 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
           'allowedTypes': undefined,
           'keyword': 'x-fail',
           'schemaValue': true,
-          'validate': (() => {
+          'validate': () => {
             return false;
-          }) as CustomKeywordEntryInterface['validate']
+          }
         }];
         const result = Composition.validateCustomKeywords('/root', 42, entries);
 

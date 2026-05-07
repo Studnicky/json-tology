@@ -149,7 +149,7 @@ void describe('Infinity coercion rejection', () => {
         const result = registry.instantiate('urn:hardening:cast-number', input);
 
         assert.equal(typeof result, 'number', name);
-        assert.ok(Number.isFinite(result as number), name);
+        assert.ok(Number.isFinite(result), name);
       } else {
         assert.throws(() => {
           registry.instantiate('urn:hardening:cast-number', input);
@@ -459,7 +459,7 @@ void describe('schema freeze on registration', () => {
           'type': 'object'
         });
 
-        registry.register(schema as Record<string, unknown>);
+        registry.register(schema);
         assert.ok(Object.isFrozen(schema), 'already-frozen schema stays frozen');
       },
       'name': 'accepts already-frozen schemas without error'

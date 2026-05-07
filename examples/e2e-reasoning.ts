@@ -105,7 +105,7 @@ let allQuads: QuadInterface[] = [];
 
 for (const person of foafPersons) {
   const quads = jt.materializer.projectAbox(
-    PersonSchema as unknown as Record<string, unknown> & { '$id': string },
+    PersonSchema,
     person,
     'http://xmlns.com/foaf'
   );

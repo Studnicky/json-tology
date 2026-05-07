@@ -408,7 +408,7 @@ void describe('toQuads / fromQuads boundaries', () => {
 
     assert.throws(
       () => {
-        return jt.toQuads(SelfRefSchema, cycle as Record<string, unknown>);
+        return jt.toQuads(SelfRefSchema, cycle);
       },
       (err: unknown) => {
         return err instanceof MaterializationError && (err).code === 'CYCLIC_DATA';
@@ -834,7 +834,7 @@ void describe('Recursive ref depth limits', () => {
     // maxDepth bounds the SCHEMA-GRAPH traversal depth, not the data depth.
     // With maxDepth: 1 even a 2-element data chain trips the limit because
     // resolving a $ref counts as descent.
-    const engine = jt.registry.engine(SelfNode as unknown as Record<string, unknown>);
+    const engine = jt.registry.engine(SelfNode);
 
     assert.throws(
       () => {
@@ -852,7 +852,7 @@ void describe('Recursive ref depth limits', () => {
       'maxDepth': 100,
       'schemas': [SelfNode] as const
     });
-    const engine = jt.registry.engine(SelfNode as unknown as Record<string, unknown>);
+    const engine = jt.registry.engine(SelfNode);
     const result = engine.execute(buildSelfRefChain(5));
 
     assert.equal(result.valid, true);
@@ -1104,8 +1104,8 @@ void describe('findDuplicates — structurally identical, IRI distinct', () => {
     } as const;
     const jt = JsonTology.create({ 'baseIRI': 'urn:dup:' });
 
-    jt.registry.register(A as unknown as Record<string, unknown>);
-    jt.registry.register(Container as unknown as Record<string, unknown>);
+    jt.registry.register(A);
+    jt.registry.register(Container);
 
     const dups = jt.registry.findDuplicates();
 
@@ -1130,11 +1130,11 @@ void describe('Compose.equivalent — chain transitivity in TBox', () => {
       'type': 'string'
     } as const;
     const SchemaB = Compose.equivalent(SchemaA, { '$id': 'urn:equiv:B' });
-    const SchemaC = Compose.equivalent(SchemaB as Record<string, unknown> & { '$id': string }, { '$id': 'urn:equiv:C' });
+    const SchemaC = Compose.equivalent(SchemaB, { '$id': 'urn:equiv:C' });
 
     const builder = JsonTology.toTbox([
       SchemaA,
-      SchemaB as Record<string, unknown> & { '$id': string },
+      SchemaB,
       SchemaC
     ]);
 

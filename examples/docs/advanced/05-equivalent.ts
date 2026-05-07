@@ -20,8 +20,8 @@ const PrimaryIsbnSchema = Compose.equivalent(IsbnSchema, {
 
 const registry = new SchemaRegistry();
 
-registry.register(IsbnSchema as unknown as Record<string, unknown>);
-registry.register(PrimaryIsbnSchema as unknown as Record<string, unknown>);
+registry.register(IsbnSchema);
+registry.register(PrimaryIsbnSchema);
 
 // Both schemas validate the same data
 const validIsbn = '9780306406157';

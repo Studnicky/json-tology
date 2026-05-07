@@ -16,7 +16,7 @@ export class Resolver {
 
     for (const key of Object.keys(override) as Array<keyof T>) {
       if (override[key] !== undefined) {
-        result[key] = override[key] as T[keyof T];
+        result[key] = override[key];
       }
     }
 

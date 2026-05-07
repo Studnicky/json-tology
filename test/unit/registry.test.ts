@@ -232,7 +232,7 @@ import { resolve } from 'node:path';
     void it('returns empty when no duplicates', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
 
-      registry.register(EmailSchema as unknown as Record<string, unknown>);
+      registry.register(EmailSchema);
       registry.register({
         '$id': 'urn:test:Other',
         'type': 'number'
@@ -244,8 +244,8 @@ import { resolve } from 'node:path';
     void it('detects structurally-identical leaf shape that matches a registered schema', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
 
-      registry.register(EmailSchema as unknown as Record<string, unknown>);
-      registry.register(PersonSchema as unknown as Record<string, unknown>);
+      registry.register(EmailSchema);
+      registry.register(PersonSchema);
 
       const dups = registry.findDuplicates();
 
@@ -281,8 +281,8 @@ import { resolve } from 'node:path';
 
       const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
 
-      registry.register(Base as unknown as Record<string, unknown>);
-      registry.register(Container as unknown as Record<string, unknown>);
+      registry.register(Base);
+      registry.register(Container);
 
       const dups = registry.findDuplicates();
 
@@ -292,8 +292,8 @@ import { resolve } from 'node:path';
     void it('reports correct schemaId and equivalentTo fields', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
 
-      registry.register(EmailSchema as unknown as Record<string, unknown>);
-      registry.register(PersonSchema as unknown as Record<string, unknown>);
+      registry.register(EmailSchema);
+      registry.register(PersonSchema);
 
       const dups = registry.findDuplicates();
       const dup = dups[0];
@@ -307,7 +307,7 @@ import { resolve } from 'node:path';
     void it('returns empty when only $ref properties exist', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
 
-      registry.register(EmailSchema as unknown as Record<string, unknown>);
+      registry.register(EmailSchema);
       registry.register({
         '$id': 'urn:test:RefOnly',
         'properties': { 'email': { '$ref': 'urn:test:Email' } },

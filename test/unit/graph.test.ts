@@ -800,12 +800,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         assert.ok(conditionals[0].structure, `${label}: expected structure`);
         assert.equal(conditionals[0].structure.kind, 'conditional', `${label}: expected conditional kind`);
 
-        const struct = conditionals[0].structure as {
-          'elseRef'?: string;
-          'ifRef': string;
-          'kind': 'conditional';
-          'thenRef'?: string;
-        };
+        const struct = conditionals[0].structure;
 
         assert.ok(struct.ifRef !== '', `${label}: expected ifRef`);
         assert.ok(struct.thenRef !== undefined && struct.thenRef !== '', `${label}: expected thenRef`);
@@ -1741,8 +1736,8 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
   function makeRegistry(): SchemaRegistry {
     const reg = new SchemaRegistry();
 
-    reg.register(AddressSchema as unknown as Record<string, unknown>);
-    reg.register(PersonSchema as unknown as Record<string, unknown>);
+    reg.register(AddressSchema);
+    reg.register(PersonSchema);
 
     return reg;
   }
@@ -2141,7 +2136,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             assert.ok('properties' in artifact.normIR.entries['']);
           },
           'name': 'happy: serializes canonical artifact shape with normIR, metadata, pointers, hashes, and structural data',
-          'schema': TestSchema as unknown as Record<string, unknown>
+          'schema': TestSchema
         },
         {
           'check': (artifact) => {
@@ -2155,7 +2150,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             assert.ok(pointers.has('/properties/name'));
           },
           'name': 'edge: produces artifact from schema with boolean subschemas',
-          'schema': BooleanSubschemaSchema as unknown as Record<string, unknown>
+          'schema': BooleanSubschemaSchema
         },
         {
           'check': (artifact) => {
@@ -2169,7 +2164,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             assert.ok(pointers.has('/$defs/Address'));
           },
           'name': 'edge: produces artifact from schema with deeply nested $ref chains',
-          'schema': DeepRefSchema as unknown as Record<string, unknown>
+          'schema': DeepRefSchema
         }
       ];
 
@@ -2219,7 +2214,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             assert.equal(originalSem.properties.size, rebuiltSem.properties.size);
           },
           'name': 'happy: roundtrips preserving nodes, relations, ids, rootSchema, and semantics',
-          'schema': TestSchema as unknown as Record<string, unknown>
+          'schema': TestSchema
         },
         {
           'check': (rebuilt, graph) => {
@@ -2236,7 +2231,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             assert.equal(rebuiltSem.dynamicAnchor, 'rootDynamic');
           },
           'name': 'happy: roundtrips richer graph semantics including anchors, conditionals, and contains',
-          'schema': RichSchema as unknown as Record<string, unknown>
+          'schema': RichSchema
         },
         {
           'check': (rebuilt, graph) => {
@@ -2244,7 +2239,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             assert.equal(rebuilt.allRelations().length, graph.allRelations().length);
           },
           'name': 'happy: roundtrips through JSON serialization (portable artifact)',
-          'schema': TestSchema as unknown as Record<string, unknown>
+          'schema': TestSchema
         },
         {
           'check': (rebuilt, graph) => {
@@ -2252,7 +2247,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             assert.equal(rebuilt.allRelations().length, graph.allRelations().length);
           },
           'name': 'edge: roundtrips schema with boolean subschemas',
-          'schema': BooleanSubschemaSchema as unknown as Record<string, unknown>
+          'schema': BooleanSubschemaSchema
         },
         {
           'check': (rebuilt, graph) => {
@@ -2268,7 +2263,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             assert.ok(pointers.has('/$defs/Address'));
           },
           'name': 'edge: roundtrips schema with deeply nested $ref chains',
-          'schema': DeepRefSchema as unknown as Record<string, unknown>
+          'schema': DeepRefSchema
         }
       ];
 
@@ -2301,7 +2296,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             'matchPattern': /Semantics hash mismatch/u,
             'name': 'unhappy: rejects artifact with corrupted semantics hash',
             'setup': () => {
-              const graph = new SchemaGraph(TestSchema as unknown as Record<string, unknown>);
+              const graph = new SchemaGraph(TestSchema);
               const artifact = GraphArtifact.toArtifact(graph);
 
               artifact.semanticsHashes[''] = 'corrupted';
@@ -2315,7 +2310,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             },
             'name': 'unhappy: rejects artifact with corrupted schema hash (ARTIFACT_STALE)',
             'setup': () => {
-              const graph = new SchemaGraph(TestSchema as unknown as Record<string, unknown>);
+              const graph = new SchemaGraph(TestSchema);
               const artifact = GraphArtifact.toArtifact(graph);
 
               (artifact as unknown as { 'metadata': { 'schemaHash': string } }).metadata.schemaHash = 'wrong-hash';
@@ -2332,7 +2327,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             },
             'name': 'unhappy: rejects artifact with missing metadata (ARTIFACT_INVALID)',
             'setup': () => {
-              const graph = new SchemaGraph(TestSchema as unknown as Record<string, unknown>);
+              const graph = new SchemaGraph(TestSchema);
               const artifact = GraphArtifact.toArtifact(graph);
               const artifactRecord = artifact as unknown as Record<string, unknown>;
 
@@ -2375,7 +2370,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             const badArtifact = setup();
 
             assert.throws(() => {
-              return GraphArtifact.fromArtifact(badArtifact as GraphArtifactInterface);
+              return GraphArtifact.fromArtifact(badArtifact);
             }, pattern instanceof RegExp ? pattern : pattern);
           });
         }
@@ -2411,7 +2406,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             assert.equal(graph.nodes().length, fromConstructor.nodes().length);
           },
           'name': 'happy: buildNormIR produces same graph as constructor with JSON-serializable output',
-          'schema': TestSchema as unknown as Record<string, unknown>
+          'schema': TestSchema
         },
         {
           'check': (normIR) => {
@@ -2422,14 +2417,14 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             assert.equal(graph.entries(root, 'properties').length, 2);
 
             // getNormIR
-            const directGraph = new SchemaGraph(TestSchema as unknown as Record<string, unknown>);
+            const directGraph = new SchemaGraph(TestSchema);
             const directNormIR = directGraph.getNormIR();
 
             assert.ok(directNormIR.nodes.length > 0);
             assert.deepEqual(directNormIR.rootSchema, TestSchema);
           },
           'name': 'happy: fromNormIR preserves children and entries, getNormIR returns construction data',
-          'schema': TestSchema as unknown as Record<string, unknown>
+          'schema': TestSchema
         },
         {
           'check': (normIR) => {
@@ -2457,7 +2452,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             assert.equal(fromNormIR.allRelations().length, fromConstructor.allRelations().length);
           },
           'name': 'edge: buildNormIR handles schema with boolean subschemas',
-          'schema': BooleanSubschemaSchema as unknown as Record<string, unknown>
+          'schema': BooleanSubschemaSchema
         },
         {
           'check': (normIR, fromConstructor) => {
@@ -2473,7 +2468,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             assert.ok(pointers.has('/$defs/Address'));
           },
           'name': 'edge: buildNormIR handles schema with deeply nested $ref chains',
-          'schema': DeepRefSchema as unknown as Record<string, unknown>
+          'schema': DeepRefSchema
         }
       ];
 

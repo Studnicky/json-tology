@@ -2127,7 +2127,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
       },
       'input': { 'label': 'hello' },
       'name': 'round-trips a simple object',
-      'schema': SimpleSchema as unknown as Record<string, unknown> & { '$id': string },
+      'schema': SimpleSchema,
       'schemas': [SimpleSchema]
     },
     {
@@ -2147,7 +2147,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
         'score': 3.14
       },
       'name': 'round-trips all scalar types: string, number, integer, boolean',
-      'schema': AllScalarsSchema as unknown as Record<string, unknown> & { '$id': string },
+      'schema': AllScalarsSchema,
       'schemas': [AllScalarsSchema]
     }
   ];
@@ -2200,7 +2200,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
         'name': 'Alice'
       },
       'name': 'round-trips an object with a nested $ref',
-      'schema': PersonSchema as unknown as Record<string, unknown> & { '$id': string },
+      'schema': PersonSchema,
       'schemas': [PersonSchema]
     },
     {
@@ -2222,7 +2222,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
         'title': 'Sample'
       },
       'name': 'round-trips an object with an array property',
-      'schema': TagListSchema as unknown as Record<string, unknown> & { '$id': string },
+      'schema': TagListSchema,
       'schemas': [TagListSchema]
     },
     {
@@ -2234,7 +2234,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
       },
       'input': { 'middle': { 'inner': { 'value': 'deep' } } },
       'name': 'round-trips a deeply nested structure (3+ levels)',
-      'schema': DeeplyNestedSchema as unknown as Record<string, unknown> & { '$id': string },
+      'schema': DeeplyNestedSchema,
       'schemas': [DeeplyNestedSchema]
     }
   ];
@@ -2283,7 +2283,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
       },
       'input': { 'name': 'Test' },
       'name': 'preserves defaults through materialize then round-trip',
-      'schema': WithDefaultsSchema as unknown as Record<string, unknown> & { '$id': string },
+      'schema': WithDefaultsSchema,
       'schemas': [WithDefaultsSchema],
       'useMaterialize': true
     },
@@ -2298,7 +2298,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
       },
       'input': { 'name': 'Alice' },
       'name': 'omits absent optional properties after round-trip',
-      'schema': OptionalPropsSchema as unknown as Record<string, unknown> & { '$id': string },
+      'schema': OptionalPropsSchema,
       'schemas': [OptionalPropsSchema]
     },
     {
@@ -2310,7 +2310,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
       },
       'input': {},
       'name': 'round-trips an empty object with no required properties',
-      'schema': EmptyObjectSchema as unknown as Record<string, unknown> & { '$id': string },
+      'schema': EmptyObjectSchema,
       'schemas': [EmptyObjectSchema]
     },
     // Edge cases
@@ -2325,7 +2325,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
       },
       'input': {},
       'name': 'all-optional properties with missing values round-trip as empty',
-      'schema': AllOptionalSchema as unknown as Record<string, unknown> & { '$id': string },
+      'schema': AllOptionalSchema,
       'schemas': [AllOptionalSchema]
     },
     {
@@ -2339,7 +2339,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
       },
       'input': { 'name': 'Bob' },
       'name': 'all-optional properties with partial values',
-      'schema': AllOptionalSchema as unknown as Record<string, unknown> & { '$id': string },
+      'schema': AllOptionalSchema,
       'schemas': [AllOptionalSchema]
     }
   ];
@@ -2419,7 +2419,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
           const input = { 'status': status };
           const results = projectAndLift(
             jt,
-            EnumSchema as unknown as Record<string, unknown> & { '$id': string },
+            EnumSchema,
             input
           );
 
@@ -5400,7 +5400,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
       for (const {
         expected, label, schema
       } of scenarios) {
-        const shapes = serialize(schema as unknown as Record<string, unknown>);
+        const shapes = serialize(schema);
         const shape = findShape(shapes, schema.$id);
 
         assert.ok(shape, label);
@@ -5529,7 +5529,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
       for (const {
         expected, label, schema
       } of scenarios) {
-        const shapes = serialize(schema as unknown as Record<string, unknown>);
+        const shapes = serialize(schema);
         const shape = findShape(shapes, schema.$id) as Record<string, unknown>;
         const props = shape['http://www.w3.org/ns/shacl#property'] as Array<Record<string, unknown>>;
 
@@ -5616,7 +5616,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
       for (const {
         expectedKey, expectedValue, label, schema
       } of scenarios) {
-        const shapes = serialize(schema as unknown as Record<string, unknown>);
+        const shapes = serialize(schema);
         const shape = findShape(shapes, schema.$id) as Record<string, unknown>;
         const actual = shape[expectedKey];
 
@@ -5707,7 +5707,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
       for (const {
         assertions, name, schema
       } of edgeScenarios) {
-        const shapes = serialize(schema as unknown as Record<string, unknown>);
+        const shapes = serialize(schema);
 
         assertions(shapes);
         assert.ok(true, name);
