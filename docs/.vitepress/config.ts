@@ -5,16 +5,31 @@ import { fileURLToPath } from 'node:url';
 const pkg = JSON.parse(readFileSync(fileURLToPath(new URL('../../package.json', import.meta.url)), 'utf8')) as { version: string };
 import { themeConfig } from './theme.config.js';
 
-// Sidebar order: basic usage → composition / data ops → graph concepts →
-// advanced graph emission → examples → data models / reference.
-// (Pages flow from "what most users start with" at the top to data-model
-// references at the bottom, per docs feedback.)
+// Sidebar order:
+//   1. Introduction
+//   2. Lightweight concepts (3 pages a Zod/TypeBox-style user actually needs)
+//   3. Core authoring surface — schemas, validation, composition, transforms,
+//      values, serialization, registry. This is the entire surface for users
+//      who don't care about RDF / OWL / SPARQL.
+//   4. OPT-IN graph / ontology surface, gated together so it can be skipped:
+//      ontology concepts → OWL class axioms → ontology emission.
+//   5. Usage examples → data models → type inference → reference.
+//
+// Everything from "Ontology concepts" downward is advanced material. A
+// typical consumer can ignore it. Only authors who want OWL / SHACL / RDF
+// round-trip / SPARQL access need to descend into it.
 const sidebar = [
   {
     text: 'Introduction',
     items: [
       { link: '/getting-started', text: 'Getting Started' },
-      { link: '/bookstore-domain', text: 'The Bookstore Domain' },
+      { link: '/bookstore-domain', text: 'The Bookstore Domain' }
+    ]
+  },
+  {
+    text: 'Concepts',
+    items: [
+      { link: '/your-types-are-a-graph', text: 'Your types are a graph' },
       { link: '/picking-a-method', text: 'Picking a method' },
       { link: '/argument-conventions', text: 'Argument conventions' }
     ]
@@ -45,9 +60,7 @@ const sidebar = [
       { link: '/composition/intersection', text: 'intersection' },
       { link: '/composition/discriminated-union', text: 'discriminatedUnion / narrow' },
       { link: '/composition/get-defaults', text: 'getDefaults' },
-      { link: '/composition/equivalent', text: 'equivalent' },
-      { link: '/composition/sub-class-of', text: 'subClassOf / disjointWith / complementOf' },
-      { link: '/composition/restrictions', text: 'OWL restrictions' }
+      { link: '/composition/equivalent', text: 'equivalent' }
     ]
   },
   {
@@ -84,14 +97,25 @@ const sidebar = [
       { link: '/registry/find-duplicates', text: 'findDuplicates' }
     ]
   },
+  // ──────────────────────────────────────────────────────────────────────
+  // OPT-IN: graph / ontology surface. Everything below is for advanced
+  // users who want OWL / SHACL / RDF round-trip / SPARQL access. A typical
+  // Zod-style consumer can stop reading here.
+  // ──────────────────────────────────────────────────────────────────────
   {
-    text: 'Graph Concepts',
+    text: 'Ontology concepts (opt-in)',
     items: [
-      { link: '/your-types-are-a-graph', text: 'Your Types Are a Graph' },
       { link: '/advanced/graph-concepts', text: 'Graph concepts (TBox / ABox)' },
       { link: '/advanced/graph-native-authoring', text: 'Graph-native authoring' },
       { link: '/advanced/sub-schemas', text: 'Sub-schemas and $ref composition' },
       { link: '/advanced/skolemization', text: 'Skolemization' }
+    ]
+  },
+  {
+    text: 'OWL class axioms (opt-in)',
+    items: [
+      { link: '/composition/sub-class-of', text: 'subClassOf / disjointWith / complementOf' },
+      { link: '/composition/restrictions', text: 'OWL property restrictions' }
     ]
   },
   {
