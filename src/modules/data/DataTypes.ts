@@ -22,6 +22,48 @@ export function isPlainObject(value: unknown): boolean {
     && (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null);
 }
 
+/**
+ * Detect whether the value graph reachable from `value` contains a cycle.
+ *
+ * Walks plain objects and arrays only. Primitives and other reference types
+ * (Date, Map, Set, class instances) are treated as leaves.
+ */
+export function hasCycle(value: unknown): boolean {
+  return walkForCycle(value, new WeakSet());
+}
+
+function walkForCycle(value: unknown, seen: WeakSet<object>): boolean {
+  if (value === null || typeof value !== 'object') {
+    return false;
+  }
+  if (seen.has(value)) {
+    return true;
+  }
+  seen.add(value);
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      if (walkForCycle(item, seen)) {
+        return true;
+      }
+    }
+    seen.delete(value);
+
+    return false;
+  }
+
+  if (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null) {
+    for (const child of Object.values(value as Record<string, unknown>)) {
+      if (walkForCycle(child, seen)) {
+        return true;
+      }
+    }
+  }
+  seen.delete(value);
+
+  return false;
+}
+
 /** Recursively freeze an object and all nested objects in place. */
 export function deepFreeze<T extends object>(obj: T): T {
   Object.freeze(obj);

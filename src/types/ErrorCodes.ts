@@ -35,4 +35,9 @@ export type LoadErrorCodeType
 /** @deprecated Use InstantiationErrorCodeType */
 export type CoercionErrorCodeType = 'EXTRA_FORBIDDEN';
 
-export type InstantiationErrorCodeType = 'EXTRA_FORBIDDEN' | 'INSTANTIATION_FAILED';
+export type InstantiationErrorCodeType = 'EXTRA_FORBIDDEN' | 'INSTANTIATION_FAILED' | 'TRANSFORM_DECODE_FAILED';
+
+export type MaterializationErrorCodeType
+  = | 'CYCLIC_DATA'
+  | 'DATA_DEPTH_EXCEEDED'
+  | 'MATERIALIZATION_FAILED';

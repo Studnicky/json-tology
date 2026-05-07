@@ -683,6 +683,14 @@ export class JsonTology<TMap = Record<never, never>> {
       this.registry.register(schemaRef as Record<string, unknown>);
     }
 
+    if (this.registry.get(schemaId) === undefined) {
+      throw new SchemaError(
+        'SCHEMA_NOT_REGISTERED',
+        `Schema not registered: ${schemaId}. Call register() first.`,
+        schemaId
+      );
+    }
+
     const deskolemize = options?.deskolemize ?? this.defaultDeskolemize;
     const inputQuads = deskolemize ? deskolemizeQuads(quads) : quads;
     const raw = liftInstances(schemaId, inputQuads, this.registry);
