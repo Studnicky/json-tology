@@ -5,22 +5,16 @@ import { fileURLToPath } from 'node:url';
 const pkg = JSON.parse(readFileSync(fileURLToPath(new URL('../../package.json', import.meta.url)), 'utf8')) as { version: string };
 import { themeConfig } from './theme.config.js';
 
+// Sidebar order: basic usage → composition / data ops → graph concepts →
+// advanced graph emission → examples → data models / reference.
+// (Pages flow from "what most users start with" at the top to data-model
+// references at the bottom, per docs feedback.)
 const sidebar = [
   {
     text: 'Introduction',
     items: [
       { link: '/getting-started', text: 'Getting Started' },
-      { link: '/bookstore-domain', text: 'The Bookstore Domain' }
-    ]
-  },
-  {
-    text: 'Concepts',
-    items: [
-      { link: '/your-types-are-a-graph', text: 'Your Types Are a Graph' },
-      { link: '/advanced/graph-concepts', text: 'Graph concepts (TBox / ABox)' },
-      { link: '/advanced/graph-native-authoring', text: 'Graph-native authoring' },
-      { link: '/advanced/sub-schemas', text: 'Sub-schemas and $ref composition' },
-      { link: '/advanced/skolemization', text: 'Skolemization' },
+      { link: '/bookstore-domain', text: 'The Bookstore Domain' },
       { link: '/picking-a-method', text: 'Picking a method' },
       { link: '/argument-conventions', text: 'Argument conventions' }
     ]
@@ -29,22 +23,7 @@ const sidebar = [
     text: 'Schemas',
     items: [
       { link: '/schemas', text: 'Authoring schemas' },
-      { link: '/schemas/jt-keywords', text: 'JT keywords' },
-      {
-        text: 'Type Inference',
-        items: [
-          { link: '/types#infertype', text: 'InferType' },
-          { link: '/types#inferschematype', text: 'InferSchemaType' },
-          { link: '/types#deprecatedkeystype-t', text: 'DeprecatedKeysType' },
-          { link: '/types#nondeprecatedschematype-t', text: 'NonDeprecatedSchemaType' },
-          { link: '/types#looseinputtype-t', text: 'LooseInputType' },
-          { link: '/types#enumvaluestype-t', text: 'EnumValuesType' },
-          { link: '/types#exhaustivetype-t', text: 'ExhaustiveType' },
-          { link: '/types#defaultalignedtype-t', text: 'DefaultAlignedType' },
-          { link: '/types#integerrangetype-min-max', text: 'IntegerRangeType' },
-          { link: '/types#multipleofrangetype-min-max-step', text: 'MultipleOfRangeType' }
-        ]
-      }
+      { link: '/schemas/jt-keywords', text: 'JT keywords' }
     ]
   },
   {
@@ -55,14 +34,6 @@ const sidebar = [
       { link: '/validation/is', text: 'is' },
       { link: '/validation/errors', text: 'errors' },
       { link: '/validation/subschemaAt', text: 'subschemaAt' }
-    ]
-  },
-  {
-    text: 'ValidationErrors',
-    items: [
-      { link: '/errors', text: 'Overview / usage examples' },
-      { link: '/errors/views#validationerrors-aggregate', text: 'aggregate' },
-      { link: '/errors/views#validationerrors-report', text: 'report' }
     ]
   },
   {
@@ -114,6 +85,16 @@ const sidebar = [
     ]
   },
   {
+    text: 'Graph Concepts',
+    items: [
+      { link: '/your-types-are-a-graph', text: 'Your Types Are a Graph' },
+      { link: '/advanced/graph-concepts', text: 'Graph concepts (TBox / ABox)' },
+      { link: '/advanced/graph-native-authoring', text: 'Graph-native authoring' },
+      { link: '/advanced/sub-schemas', text: 'Sub-schemas and $ref composition' },
+      { link: '/advanced/skolemization', text: 'Skolemization' }
+    ]
+  },
+  {
     text: 'Ontology emission (opt-in)',
     items: [
       { link: '/advanced/ontology#entities-totbox', text: 'toTbox' },
@@ -135,11 +116,35 @@ const sidebar = [
     ]
   },
   {
+    text: 'Data models',
+    items: [
+      { link: '/errors', text: 'ValidationErrors (overview)' },
+      { link: '/errors/views', text: 'ValidationErrors views (aggregate / report)' },
+      { link: '/errors/classes', text: 'Error class hierarchy' },
+      { link: '/value/diff#changeset', text: 'Changeset (Value.diff result)' },
+      { link: '/advanced/quads#quad-shape', text: 'Quad / SubjectGroup' },
+      { link: '/advanced/utilities', text: 'Curie / Path / Resolver / Hash / Lift' }
+    ]
+  },
+  {
+    text: 'Type inference',
+    items: [
+      { link: '/types#infertype', text: 'InferType' },
+      { link: '/types#inferschematype', text: 'InferSchemaType' },
+      { link: '/types#deprecatedkeystype-t', text: 'DeprecatedKeysType' },
+      { link: '/types#nondeprecatedschematype-t', text: 'NonDeprecatedSchemaType' },
+      { link: '/types#looseinputtype-t', text: 'LooseInputType' },
+      { link: '/types#enumvaluestype-t', text: 'EnumValuesType' },
+      { link: '/types#exhaustivetype-t', text: 'ExhaustiveType' },
+      { link: '/types#defaultalignedtype-t', text: 'DefaultAlignedType' },
+      { link: '/types#integerrangetype-min-max', text: 'IntegerRangeType' },
+      { link: '/types#multipleofrangetype-min-max-step', text: 'MultipleOfRangeType' }
+    ]
+  },
+  {
     text: 'Reference',
     items: [
       { link: '/static-helpers', text: 'Static helpers' },
-      { link: '/advanced/utilities', text: 'Public utility classes' },
-      { link: '/errors/classes', text: 'Error classes' },
       { link: '/constraint-brands', text: 'Constraint brands' },
       { link: '/cli', text: 'CLI' },
       { link: '/references/benchmarks', text: 'Benchmarks' },
