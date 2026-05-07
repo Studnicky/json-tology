@@ -521,10 +521,15 @@ export function extractRelations(
   }
 
   if (sem.complementNode !== undefined) {
+    const complementSem = graph.semantics(sem.complementNode);
+    const complementTarget = complementSem.ref === undefined
+      ? sem.complementNode
+      : graph.resolveRefId(complementSem.ref);
+
     relations.push({
       'predicate': OWL.complementOf,
       'source': node,
-      'target': sem.complementNode
+      'target': complementTarget
     });
   }
 

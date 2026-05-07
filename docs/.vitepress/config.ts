@@ -74,7 +74,8 @@ const sidebar = [
       { link: '/composition/intersection', text: 'intersection' },
       { link: '/composition/discriminated-union', text: 'discriminatedUnion / narrow' },
       { link: '/composition/get-defaults', text: 'getDefaults' },
-      { link: '/composition/equivalent', text: 'equivalent' }
+      { link: '/composition/equivalent', text: 'equivalent' },
+      { link: '/composition/sub-class-of', text: 'subClassOf / disjointWith / complementOf' }
     ]
   },
   {
