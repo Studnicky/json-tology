@@ -392,38 +392,75 @@
       }
     ]
   },
-  "urn:bookstore:PromotionalBook": {
-    "$id": "urn:bookstore:PromotionalBook",
+  "urn:bookstore:SoloAuthoredBook": {
+    "$id": "urn:bookstore:SoloAuthoredBook",
     "allOf": [
       {
         "$ref": "urn:bookstore:Book"
       },
       {
-        "properties": {
-          "discountPercent": {
-            "maximum": 100,
-            "minimum": 0,
-            "type": "integer"
-          },
-          "promotionEndsAt": {
-            "format": "date-time",
-            "type": "string"
-          }
-        },
-        "required": [
-          "discountPercent",
-          "promotionEndsAt"
-        ],
         "type": "object"
+      }
+    ],
+    "jt:restrictions": [
+      {
+        "kind": "cardinality",
+        "onProperty": "urn:bookstore:Book#authors",
+        "value": 1
       }
     ]
   },
-  "urn:bookstore:NonPromotionalBook": {
-    "$id": "urn:bookstore:NonPromotionalBook",
+  "urn:bookstore:AnthologyBook": {
+    "$id": "urn:bookstore:AnthologyBook",
+    "allOf": [
+      {
+        "$ref": "urn:bookstore:Book"
+      },
+      {
+        "type": "object"
+      }
+    ],
+    "jt:restrictions": [
+      {
+        "kind": "allValuesFrom",
+        "onProperty": "urn:bookstore:Book#authors",
+        "value": "urn:bookstore:AuthorName"
+      },
+      {
+        "kind": "minCardinality",
+        "onProperty": "urn:bookstore:Book#authors",
+        "value": 2
+      }
+    ]
+  },
+  "urn:bookstore:InPrintBook": {
+    "$id": "urn:bookstore:InPrintBook",
+    "allOf": [
+      {
+        "$ref": "urn:bookstore:Book"
+      },
+      {
+        "type": "object"
+      }
+    ],
+    "jt:restrictions": [
+      {
+        "kind": "hasValue",
+        "onProperty": "urn:bookstore:Book#inStock",
+        "value": true
+      }
+    ]
+  },
+  "urn:bookstore:OutOfPrintBook": {
+    "$id": "urn:bookstore:OutOfPrintBook",
     "not": {
-      "$ref": "urn:bookstore:PromotionalBook"
+      "$ref": "urn:bookstore:InPrintBook"
     },
-    "description": "A book not currently on promotion. Defined by negation: any value that does not match urn:bookstore:PromotionalBook.",
+    "allOf": [
+      {
+        "$ref": "urn:bookstore:Book"
+      }
+    ],
     "type": "object"
   }
 }

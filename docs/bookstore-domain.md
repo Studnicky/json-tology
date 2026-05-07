@@ -37,9 +37,11 @@ examples/docs/bookstore/
     ├── Review.ts                 # entity: composes ReviewId + Isbn + CustomerId + RatingScore + ...
     ├── EBook.ts                  # subClassOf Book — digital format
     ├── PrintBook.ts              # subClassOf Book + disjointWith EBook — physical format
-    ├── RareBook.ts               # subClassOf PrintBook + OWL property restrictions
-    ├── PromotionalBook.ts        # subClassOf Book — currently on promotion
-    └── NonPromotionalBook.ts     # complementOf PromotionalBook — defined by negation
+    ├── RareBook.ts               # subClassOf PrintBook + someValuesFrom + maxCardinality
+    ├── SoloAuthoredBook.ts       # subClassOf Book + cardinality(authors, 1)
+    ├── AnthologyBook.ts          # subClassOf Book + minCardinality + allValuesFrom
+    ├── InPrintBook.ts            # subClassOf Book + hasValue(inStock, true)
+    └── OutOfPrintBook.ts         # complementOf InPrintBook, allOf-bounded to Book
 ```
 
 Each primitive file exports a single schema constant with a stable `$id` using the `urn:bookstore:` IRI pattern. Entity files import only the primitives they reference - every `$ref` is `{ $ref: SourceSchema.$id }` with an explicit named import at the top of the file.
@@ -278,11 +280,27 @@ export { IsbnSchema, BookSchema, CustomerSchema /* ... all schemas */ };
 
 ## Book taxonomy and OWL axioms
 
-The bookstore registry includes five entities that demonstrate `Compose`'s OWL class-axiom and restriction surface. They live alongside the primitive entities and are registered together so the live ontology graph (and the `BookstoreGraph` visualization) renders every axiom kind:
+Beyond the structural entities, the bookstore registry carries seven additional schemas plus one ABox identity assertion that together exercise every `Compose` class-axiom and OWL restriction the library supports. These are the declarations that drive the live `BookstoreGraph` visualization shown on [Your Types Are a Graph](/your-types-are-a-graph) and the home page.
+
+| Schema | Surface used | Edge in graph |
+|---|---|---|
+| `EBookSchema`         | `Compose.subClassOf(Book)`                                                                  | `subClassOf` → Book |
+| `PrintBookSchema`     | `Compose.subClassOf(Book)` + `Compose.disjointWith(EBook)`                                   | `subClassOf` → Book, `disjointWith` ↔ EBook |
+| `RareBookSchema`      | `Compose.subClassOf(PrintBook)` + `Compose.someValuesFrom` + `Compose.maxCardinality`        | `subClassOf` → PrintBook, two `restriction` edges |
+| `SoloAuthoredBookSchema` | `Compose.subClassOf(Book)` + `Compose.cardinality`                                        | `subClassOf` → Book, `restriction` |
+| `AnthologyBookSchema` | `Compose.subClassOf(Book)` + `Compose.minCardinality` + `Compose.allValuesFrom`              | `subClassOf` → Book, two `restriction` edges |
+| `InPrintBookSchema`   | `Compose.subClassOf(Book)` + `Compose.hasValue`                                              | `subClassOf` → Book, `restriction` |
+| `OutOfPrintBookSchema`| `Compose.complementOf(InPrintBook)` with body `allOf` bounding to Book                       | `subClassOf` → Book, `complementOf` → InPrintBook |
+| `bookstoreEntities.sameAs(a, b)` | `JsonTology.prototype.sameAs` (ABox)                                              | `sameAs` |
+
+Each `entities/*.ts` file is the single source of truth for one schema.
+
+### `entities/EBook.ts` — `subClassOf`
 
 ```ts
-// entities/EBook.ts — Compose.subClassOf produces { $id, allOf: [{ $ref: Book.$id }, body] }
 import { Compose } from 'json-tology';
+import { BookSchema } from './Book.js';
+
 export const EBookSchema = Compose.subClassOf(BookSchema, {
   $id: 'urn:bookstore:EBook',
   type: 'object',
@@ -293,10 +311,17 @@ export const EBookSchema = Compose.subClassOf(BookSchema, {
   },
   required: ['fileFormat', 'downloadUrl'],
 } as const);
+// Wire: { $id, allOf: [{ $ref: 'urn:bookstore:Book' }, body] }
+// TBox: urn:bookstore:EBook  rdfs:subClassOf  urn:bookstore:Book
 ```
 
+### `entities/PrintBook.ts` — `subClassOf` + `disjointWith`
+
 ```ts
-// entities/PrintBook.ts — subClassOf Book + disjointWith EBook
+import { Compose } from 'json-tology';
+import { BookSchema } from './Book.js';
+import { EBookSchema } from './EBook.js';
+
 const PrintBookBase = Compose.subClassOf(BookSchema, {
   $id: 'urn:bookstore:PrintBook',
   type: 'object',
@@ -309,17 +334,23 @@ const PrintBookBase = Compose.subClassOf(BookSchema, {
 } as const);
 
 export const PrintBookSchema = Compose.disjointWith(EBookSchema, PrintBookBase);
-// TBox: urn:bookstore:PrintBook owl:disjointWith urn:bookstore:EBook
+// Wire: { $id, disjointWith: 'urn:bookstore:EBook', allOf: [...] }
+// TBox: urn:bookstore:PrintBook  owl:disjointWith  urn:bookstore:EBook
 ```
 
+### `entities/RareBook.ts` — `someValuesFrom` + `maxCardinality`
+
 ```ts
-// entities/RareBook.ts — chained Compose.subClassOf attaches OWL property restrictions
-const AUTHORS = 'urn:bookstore:Book#authors';
+import { Compose } from 'json-tology';
+import { AuthorNameSchema } from './AuthorName.js';
+import { PrintBookSchema } from './PrintBook.js';
+
+const AUTHORS_PROP = 'urn:bookstore:Book#authors';
 
 export const RareBookSchema = Compose.subClassOf(
-  Compose.maxCardinality(AUTHORS, 1),
+  Compose.maxCardinality(AUTHORS_PROP, 1),
   Compose.subClassOf(
-    Compose.someValuesFrom(AUTHORS, AuthorNameSchema.$id),
+    Compose.someValuesFrom(AUTHORS_PROP, AuthorNameSchema.$id),
     Compose.subClassOf(PrintBookSchema, {
       $id: 'urn:bookstore:RareBook',
       type: 'object',
@@ -331,33 +362,124 @@ export const RareBookSchema = Compose.subClassOf(
     } as const),
   ),
 );
-// TBox: two anonymous owl:Restriction blank nodes attached via rdfs:subClassOf —
-//   onProperty Book#authors, owl:someValuesFrom AuthorName
-//   onProperty Book#authors, owl:maxCardinality 1
+// Wire: { $id, allOf: [...PrintBook chain..., body],
+//         'jt:restrictions': [
+//           { kind: 'someValuesFrom', onProperty: '...#authors', value: 'AuthorName' },
+//           { kind: 'maxCardinality', onProperty: '...#authors', value: 1 }
+//         ] }
+// TBox: two anonymous owl:Restriction blank nodes referenced via rdfs:subClassOf.
 ```
 
+### `entities/SoloAuthoredBook.ts` — `cardinality` (exact)
+
 ```ts
-// entities/NonPromotionalBook.ts — Compose.complementOf
-export const NonPromotionalBookSchema = Compose.complementOf(PromotionalBookSchema, {
-  $id: 'urn:bookstore:NonPromotionalBook',
+import { Compose } from 'json-tology';
+import { BookSchema } from './Book.js';
+
+const AUTHORS_PROP = 'urn:bookstore:Book#authors';
+
+export const SoloAuthoredBookSchema = Compose.subClassOf(
+  Compose.cardinality(AUTHORS_PROP, 1),
+  Compose.subClassOf(BookSchema, {
+    $id: 'urn:bookstore:SoloAuthoredBook',
+    type: 'object',
+  } as const),
+);
+// TBox: _:b1  a owl:Restriction ; owl:onProperty Book#authors ; owl:cardinality 1 .
+```
+
+### `entities/AnthologyBook.ts` — `minCardinality` + `allValuesFrom`
+
+```ts
+import { Compose } from 'json-tology';
+import { AuthorNameSchema } from './AuthorName.js';
+import { BookSchema } from './Book.js';
+
+const AUTHORS_PROP = 'urn:bookstore:Book#authors';
+
+export const AnthologyBookSchema = Compose.subClassOf(
+  Compose.minCardinality(AUTHORS_PROP, 2),
+  Compose.subClassOf(
+    Compose.allValuesFrom(AUTHORS_PROP, AuthorNameSchema.$id),
+    Compose.subClassOf(BookSchema, {
+      $id: 'urn:bookstore:AnthologyBook',
+      type: 'object',
+    } as const),
+  ),
+);
+// TBox: two owl:Restriction blank nodes — minCardinality 2 + allValuesFrom AuthorName.
+```
+
+### `entities/InPrintBook.ts` — `hasValue`
+
+```ts
+import { Compose } from 'json-tology';
+import { BookSchema } from './Book.js';
+
+const IN_STOCK_PROP = 'urn:bookstore:Book#inStock';
+
+export const InPrintBookSchema = Compose.subClassOf(
+  Compose.hasValue(IN_STOCK_PROP, true),
+  Compose.subClassOf(BookSchema, {
+    $id: 'urn:bookstore:InPrintBook',
+    type: 'object',
+  } as const),
+);
+// TBox: _:b1  a owl:Restriction ; owl:onProperty Book#inStock ; owl:hasValue "true"^^xsd:boolean .
+```
+
+### `entities/OutOfPrintBook.ts` — `complementOf` bounded to Book
+
+```ts
+import { Compose } from 'json-tology';
+import { BookSchema } from './Book.js';
+import { InPrintBookSchema } from './InPrintBook.js';
+
+export const OutOfPrintBookSchema = Compose.complementOf(InPrintBookSchema, {
+  $id: 'urn:bookstore:OutOfPrintBook',
+  allOf: [{ $ref: BookSchema.$id }],
   type: 'object',
 } as const);
-// Wire shape: { $id, not: { $ref: 'urn:bookstore:PromotionalBook' }, type: 'object' }
-// TBox: urn:bookstore:NonPromotionalBook owl:complementOf urn:bookstore:PromotionalBook
+// Wire: { $id, not: { $ref: 'urn:bookstore:InPrintBook' },
+//         allOf: [{ $ref: 'urn:bookstore:Book' }], type: 'object' }
+// TBox: urn:bookstore:OutOfPrintBook  owl:complementOf  urn:bookstore:InPrintBook .
+//       urn:bookstore:OutOfPrintBook  rdfs:subClassOf   urn:bookstore:Book .
 ```
 
+The body's `allOf: [{ $ref: Book }]` is what bounds the OWL complement to the Book universe. Without it, OWL's open-world `complementOf` would match anything that is not an `InPrintBook` — including non-books — which is the right OWL semantic but rarely what authors want.
+
+### `index.ts` — ABox `owl:sameAs` assertion
+
 ```ts
-// index.ts — ABox owl:sameAs assertion between two customer IRIs
+import { JsonTology } from 'json-tology';
+// ... all schemas registered above ...
+
+export const bookstoreEntities = JsonTology.create({
+  baseIRI: 'https://bookstore.example',
+  schemas: allSchemas,
+});
+
+// Two customer IRIs that resolve to the same individual.
 bookstoreEntities.sameAs(
   'urn:bookstore:customer:c-7af3-21e8',
   'urn:bookstore:customer:legacy-4421',
 );
 // toQuads() emits both directions:
-//   <c-7af3-21e8>     owl:sameAs <legacy-4421>
-//   <legacy-4421>     owl:sameAs <c-7af3-21e8>
+//   <c-7af3-21e8>  owl:sameAs  <legacy-4421>
+//   <legacy-4421>  owl:sameAs  <c-7af3-21e8>
 ```
 
-The live graph at the top of [Your Types Are a Graph](/your-types-are-a-graph) renders every one of these axioms with a distinct edge style — `subClassOf` (gray), `disjointWith` (red dashed), `complementOf` (purple with tee terminator), `restriction` (teal dotted), and `sameAs` (gold dashed).
+### Edge styles in the live graph
+
+| Edge `kind` | Visual | Source |
+|---|---|---|
+| `subClassOf`       | solid gray with arrow         | `Compose.subClassOf` (single or multi-parent) |
+| `equivalentClass`  | green dashed                  | `Compose.equivalent` |
+| `disjointWith`     | red dashed                    | `Compose.disjointWith` |
+| `complementOf`     | purple with tee terminator    | `Compose.complementOf` |
+| `restriction`      | teal dotted, label = `prop ∃` / `∀` / `card =N` / `card ≥N` / `card ≤N` / `prop = literal` | user-authored `jt:restrictions` (any of the six factory methods) |
+| `sameAs`           | gold dashed (symmetric)       | `JsonTology.prototype.sameAs` |
+| `range`            | blue with vee arrow           | property `$ref` / `items.$ref` |
 
 See:
 - [`Compose.subClassOf` / `disjointWith` / `complementOf`](/composition/sub-class-of)
