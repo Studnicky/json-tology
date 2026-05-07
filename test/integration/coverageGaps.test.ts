@@ -526,7 +526,7 @@ void describe('subschemaAt pointer errors', () => {
 // ===========================================================================
 
 void describe('static counterparts — failure modes', () => {
-  void it('JsonTology.instantiate propagates a Transform decoder error as a raw Error (not wrapped)', () => {
+  void it('JsonTology.instantiate wraps a Transform decoder error as InstantiationError TRANSFORM_DECODE_FAILED', () => {
     const ExplodingSchema = Transform.create(
       {
         '$id': 'urn:test:Exploding',
@@ -547,7 +547,10 @@ void describe('static counterparts — failure modes', () => {
         return JsonTology.instantiate(ExplodingSchema, 'whatever');
       },
       (err: unknown) => {
-        return err instanceof Error && (err).message.includes('decoder failure');
+        return err instanceof InstantiationError
+          && err.code === 'TRANSFORM_DECODE_FAILED'
+          && err.cause instanceof Error
+          && err.cause.message === 'decoder failure';
       }
     );
   });
@@ -1033,9 +1036,10 @@ void describe('Default propagation through nested $refs', () => {
 // ===========================================================================
 
 void describe('Transform decode errors at root-level coercion', () => {
-  void it('decoder throw at root propagates as a raw Error (not wrapped in InstantiationError)', () => {
-    // Documents current contract: Transform decode runs after compiled
-    // validation succeeds, so its errors reach the caller unwrapped.
+  void it('decoder throw at root wraps as InstantiationError TRANSFORM_DECODE_FAILED with original cause', () => {
+    // Transform decode runs after compiled validation succeeds; failures wrap
+    // as InstantiationError with code TRANSFORM_DECODE_FAILED and the original
+    // Error attached as cause.
     const HostileSchema = Transform.create(
       {
         '$id': 'urn:transform:Hostile',
@@ -1064,9 +1068,10 @@ void describe('Transform decode errors at root-level coercion', () => {
         return jt.instantiate(HostileSchema.$id, 'bad');
       },
       (err: unknown) => {
-        return err instanceof Error
-          && !(err instanceof InstantiationError)
-          && (err).message.includes('decoder rejects "bad"');
+        return err instanceof InstantiationError
+          && err.code === 'TRANSFORM_DECODE_FAILED'
+          && err.cause instanceof Error
+          && err.cause.message === 'decoder rejects "bad"';
       }
     );
   });
