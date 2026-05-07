@@ -420,10 +420,12 @@ void describe('fromQuads — deskolemize round-trip', () => {
       'name': 'Platform'
     }, { 'iriFor': noopSkolemize });
 
-    const rootCount = quads.filter((quad) => {
+    const instanceSubjects = new Set(quads.filter((quad) => {
       return quad.subject.includes('/instances/');
-    }).length;
+    }).map((quad) => {
+      return quad.subject;
+    }));
 
-    assert.ok(rootCount > 0, 'noopSkolemize falls through to default minter');
+    assert.equal(instanceSubjects.size, 2, 'noopSkolemize falls through to default minter for root + lead');
   });
 });
