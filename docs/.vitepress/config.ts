@@ -75,7 +75,8 @@ const sidebar = [
       { link: '/composition/discriminated-union', text: 'discriminatedUnion / narrow' },
       { link: '/composition/get-defaults', text: 'getDefaults' },
       { link: '/composition/equivalent', text: 'equivalent' },
-      { link: '/composition/sub-class-of', text: 'subClassOf / disjointWith / complementOf' }
+      { link: '/composition/sub-class-of', text: 'subClassOf / disjointWith / complementOf' },
+      { link: '/composition/restrictions', text: 'OWL restrictions' }
     ]
   },
   {
@@ -119,6 +120,7 @@ const sidebar = [
       { link: '/advanced/ontology#entities-toshacl', text: 'toShacl' },
       { link: '/advanced/ontology#entities-ontology', text: 'ontology' },
       { link: '/advanced/quads', text: 'RDF round-trip (toQuads / fromQuads)' },
+      { link: '/advanced/sameas', text: 'sameAs (ABox identity)' },
       { link: '/advanced/strict-graph-mode', text: 'Strict graph mode' }
     ]
   },

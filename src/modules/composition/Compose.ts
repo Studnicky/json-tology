@@ -20,11 +20,54 @@ import type {
   PartialSchemaType,
   RequiredSchemaType
 } from '../../types/Compose.js';
+import type {
+  RestrictionDescriptorInterface, RestrictionRefType
+} from '../../types/Restriction.js';
+import {
+  isRestrictionRef, RESTRICTION_TAG
+} from '../../types/Restriction.js';
 import { isRecord } from '../data/DataTypes.js';
 
 const CLASS_AXIOM_BODY_SKIP_KEYS = new Set(['$id']);
+const RESTRICTIONS_KEY = 'jt:restrictions';
+
+function makeRestriction(
+  kind: RestrictionDescriptorInterface['kind'],
+  onProperty: string,
+  value: boolean | number | string
+): RestrictionRefType {
+  return {
+    [RESTRICTION_TAG]: {
+      kind,
+      onProperty,
+      value
+    }
+  };
+}
 
 export class Compose {
+  /**
+   * Restrict a property so all values satisfy `rangeClassIRI`.
+   *
+   * Compose with `Compose.subClassOf` to attach the restriction to a class. The
+   * OWL TBox emits `_:b{n} rdf:type owl:Restriction; owl:onProperty <propIRI>;
+   * owl:allValuesFrom <rangeClassIRI>` and links the class via `rdfs:subClassOf`.
+   */
+  public static allValuesFrom(propIRI: string, rangeClassIRI: string): RestrictionRefType {
+    return makeRestriction('allValuesFrom', propIRI, rangeClassIRI);
+  }
+
+  /**
+   * Restrict a property to exactly `n` values.
+   *
+   * Compose with `Compose.subClassOf` to attach the restriction to a class. The
+   * OWL TBox emits `_:b{n} rdf:type owl:Restriction; owl:onProperty <propIRI>;
+   * owl:cardinality "n"^^xsd:nonNegativeInteger`.
+   */
+  public static cardinality(propIRI: string, n: number): RestrictionRefType {
+    return makeRestriction('cardinality', propIRI, n);
+  }
+
   /**
    * Declare a class as the OWL complement of another class.
    *
@@ -328,6 +371,18 @@ export class Compose {
   }
 
   /**
+   * Restrict a property to a fixed value (`owl:hasValue`).
+   *
+   * Compose with `Compose.subClassOf` to attach the restriction. The OWL TBox
+   * emits `_:b{n} rdf:type owl:Restriction; owl:onProperty <propIRI>;
+   * owl:hasValue <literal>`. Strings, numbers, and booleans are emitted as
+   * typed literals.
+   */
+  public static hasValue(propIRI: string, value: boolean | number | string): RestrictionRefType {
+    return makeRestriction('hasValue', propIRI, value);
+  }
+
+  /**
    * Combine multiple schemas using allOf (TypeScript intersection semantics).
    *
    * InferType<typeof result> will produce the intersection of all constituent types.
@@ -348,6 +403,20 @@ export class Compose {
       '$id': newId,
       'allOf': schemas
     } as unknown as IntersectionSchemaInterface<TSchemas, TId>;
+  }
+
+  /**
+   * Restrict a property to at most `n` values (`owl:maxCardinality`).
+   */
+  public static maxCardinality(propIRI: string, n: number): RestrictionRefType {
+    return makeRestriction('maxCardinality', propIRI, n);
+  }
+
+  /**
+   * Restrict a property to at least `n` values (`owl:minCardinality`).
+   */
+  public static minCardinality(propIRI: string, n: number): RestrictionRefType {
+    return makeRestriction('minCardinality', propIRI, n);
   }
 
   /**
@@ -518,6 +587,17 @@ export class Compose {
   }
 
   /**
+   * Restrict a property so at least one value satisfies `rangeClassIRI`.
+   *
+   * Compose with `Compose.subClassOf` to attach the restriction to a class. The
+   * OWL TBox emits `_:b{n} rdf:type owl:Restriction; owl:onProperty <propIRI>;
+   * owl:someValuesFrom <rangeClassIRI>`.
+   */
+  public static someValuesFrom(propIRI: string, rangeClassIRI: string): RestrictionRefType {
+    return makeRestriction('someValuesFrom', propIRI, rangeClassIRI);
+  }
+
+  /**
    * Declare a class as a subclass of one or more parent classes.
    *
    * Produces an `allOf + $ref` schema referencing each parent, with body keywords
@@ -545,9 +625,31 @@ export class Compose {
    * );
    */
   public static subClassOf<
+    TBody extends Record<string, unknown> & { readonly '$id': string }
+  >(parent: RestrictionRefType, body: TBody): TBody;
+  public static subClassOf<
     TParent extends ReadonlyArray<{ readonly '$id': string }> | { readonly '$id': string },
     TBody extends Record<string, unknown> & { readonly '$id': string }
-  >(parent: TParent, body: TBody): SubClassOfSchemaInterface<TParent, TBody> {
+  >(parent: TParent, body: TBody): SubClassOfSchemaInterface<TParent, TBody>;
+  public static subClassOf<
+    TBody extends Record<string, unknown> & { readonly '$id': string }
+  >(
+    parent: ReadonlyArray<{ readonly '$id': string }> | RestrictionRefType | { readonly '$id': string },
+    body: TBody
+  ): SubClassOfSchemaInterface<ReadonlyArray<{ readonly '$id': string }> | { readonly '$id': string }, TBody> | TBody {
+    if (isRestrictionRef(parent)) {
+      const bodyCopy: Record<string, unknown> = { ...(body as Record<string, unknown>) };
+      const existing = bodyCopy[RESTRICTIONS_KEY];
+      const list: RestrictionDescriptorInterface[] = Array.isArray(existing)
+        ? [...(existing as RestrictionDescriptorInterface[])]
+        : [];
+
+      list.push(parent[RESTRICTION_TAG]);
+      bodyCopy[RESTRICTIONS_KEY] = list;
+
+      return bodyCopy as TBody;
+    }
+
     const parents = Array.isArray(parent)
       ? (parent as ReadonlyArray<{ readonly '$id': string }>)
       : [parent as { readonly '$id': string }];
@@ -576,7 +678,7 @@ export class Compose {
     return {
       '$id': body.$id,
       allOf
-    } as unknown as SubClassOfSchemaInterface<TParent, TBody>;
+    } as unknown as SubClassOfSchemaInterface<ReadonlyArray<{ readonly '$id': string }> | { readonly '$id': string }, TBody>;
   }
 }
 

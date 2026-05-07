@@ -21,6 +21,7 @@ import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugi
 
 import { InstantiationError } from '../../errors/InstantiationError.js';
 import { ComputedStore } from './ComputedStore.js';
+import { SameAsStore } from './SameAsStore.js';
 import { Curie } from '../rdf/Curie.js';
 import {
   deepFreeze, isRecord
@@ -63,8 +64,8 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   private readonly compiler: SchemaCompilerInterface;
   public readonly computedStore: ComputedStore;
   public readonly curie: CurieInterface | undefined;
-
   private readonly enableDuplicateDetection: boolean;
+
   private readonly enableInlineWarnings: boolean;
   private readonly enableStrictGraph: boolean;
   private readonly enableStrictTypes: boolean;
@@ -74,6 +75,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   private readonly keywords: KeywordDefinitionInterface[] | undefined;
   private readonly logger: LoggerInterface;
   private readonly maxDepth: number | undefined;
+  public readonly sameAsStore: SameAsStore;
   private readonly schemaHashes = new Map<string, string>();
   private readonly schemas = new Map<string, SchemaRegistryEntryInterface>();
   private readonly vocabularies: readonly VocabularyPluginInterface[];
@@ -105,6 +107,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     this.curie = Object.keys(mergedPrefixes).length > 0 ? new Curie(mergedPrefixes) : undefined;
     this.computedStore = new ComputedStore();
+    this.sameAsStore = new SameAsStore();
     this.formatRegistry = options?.formatRegistry;
     this.keywords = options?.keywords;
     this.invariants = new InvariantStore(options?.invariants);

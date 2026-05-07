@@ -172,6 +172,46 @@ function liftIriForOption(raw: SkolemizeFnType | string | undefined): SkolemizeF
   return raw === BLANK_NODE_IRI_FOR ? blankNodeStrategy() : rootIriOnly(raw);
 }
 
+function appendSameAsQuads(
+  quads: QuadInterface[],
+  pairs: ReadonlyArray<readonly [string, string]>,
+  graphIRI: string | undefined
+): void {
+  if (pairs.length === 0) {
+    return;
+  }
+  const expandedSameAs = 'http://www.w3.org/2002/07/owl#sameAs';
+
+  for (const [
+    a,
+    b
+  ] of pairs) {
+    const forward: QuadInterface = {
+      'object': {
+        'termType': 'NamedNode',
+        'value': b
+      },
+      'predicate': expandedSameAs,
+      'subject': a
+    };
+    const reverse: QuadInterface = {
+      'object': {
+        'termType': 'NamedNode',
+        'value': a
+      },
+      'predicate': expandedSameAs,
+      'subject': b
+    };
+
+    if (graphIRI !== undefined) {
+      forward.graph = graphIRI;
+      reverse.graph = graphIRI;
+    }
+    quads.push(forward);
+    quads.push(reverse);
+  }
+}
+
 function normalizeToQuadsOptions(options: ToQuadsOptionsType | undefined): NormalizedToQuadsOptionsType {
   if (options === undefined) {
     return {};
@@ -911,6 +951,18 @@ export class JsonTology<TMap = Record<never, never>> {
   }
 
   /**
+   * Record an `owl:sameAs` assertion between two individuals.
+   *
+   * `sameAs` is ABox-level identity: both IRIs denote the same individual.
+   * Emitted symmetrically at `toQuads()` time.
+   *
+   * @param instanceIriA - First individual IRI
+   * @param instanceIriB - Second individual IRI
+   */
+  public sameAs(instanceIriA: string, instanceIriB: string): void {
+    this.registry.sameAsStore.add(instanceIriA, instanceIriB);
+  }
+  /**
    * Resolves a sub-schema at a JSON Pointer path within a registered schema.
    *
    * Returns the sub-schema as a registerable schema object with a synthesized `$id`
@@ -979,13 +1031,17 @@ export class JsonTology<TMap = Record<never, never>> {
       'iriFor': normalized.iriFor ?? liftIriForOption(this.defaultIriForRaw)
     };
 
-    return this.materializer.projectAbox(
+    const quads = this.materializer.projectAbox(
       // Cast needed: JSONSchema7Definition includes boolean; runtime guarantees object with $id
       schema as unknown as Record<string, unknown> & { '$id': string; },
       data,
       this.baseIRI,
       effective
     );
+
+    appendSameAsQuads(quads, this.registry.sameAsStore.all(), effective.graphIRI);
+
+    return quads;
   }
   /**
    * Reconstructs a JSON Schema document from the canonical graph for a registered schema.
