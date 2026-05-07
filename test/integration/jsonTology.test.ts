@@ -287,15 +287,15 @@ import {
       }
     ];
 
+    const jt = JsonTology.create({
+      'baseIRI': 'https://myapp.io',
+      'schemas': [UserSchema]
+    });
+
     for (const {
       check, 'name': scenarioName
     } of validateScenarios) {
       void it(scenarioName, () => {
-        const jt = JsonTology.create({
-          'baseIRI': 'https://myapp.io',
-          'schemas': [UserSchema]
-        });
-
         check(jt);
       });
     }
@@ -340,11 +340,12 @@ import {
       }
     ];
 
+    const jt = JsonTology.create({ 'baseIRI': 'https://myapp.io' });
+
     for (const {
       check, data, 'name': scenarioName
     } of materializeScenarios) {
       void it(scenarioName, () => {
-        const jt = JsonTology.create({ 'baseIRI': 'https://myapp.io' });
         const result = jt.materialize(UserSchema, data);
 
         check(result);

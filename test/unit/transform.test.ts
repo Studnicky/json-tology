@@ -298,18 +298,18 @@ void describe('Transform contract alignment', () => {
     }
   ];
 
+  const jt = JsonTology.create({
+    'baseIRI': 'https://myapp.io',
+    'schemas': [
+      TransformedDateSchema,
+      UserSchema
+    ] as const
+  });
+
   for (const {
     'check': check, 'name': name
   } of contractScenarios) {
     void it(name, () => {
-      const jt = JsonTology.create({
-        'baseIRI': 'https://myapp.io',
-        'schemas': [
-          TransformedDateSchema,
-          UserSchema
-        ] as const
-      });
-
       check(jt);
     });
   }

@@ -89,28 +89,23 @@ import { Logger } from '../utils/Logger.js';
 
   void describe('jt:alias coercion', { 'concurrency': true }, () => {
     void describe('single alias', { 'concurrency': true }, () => {
-      void it('maps alias input to canonical key', () => {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-        registry.register(SingleAliasSchema);
+      registry.register(SingleAliasSchema);
+
+      void it('maps alias input to canonical key', () => {
         const result = registry.instantiate(SingleAliasSchema.$id, { 'foo_bar': 'hello' });
 
         assert.deepStrictEqual(result, { 'fooBar': 'hello' });
       });
 
       void it('canonical key still works when no alias is used', () => {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-
-        registry.register(SingleAliasSchema);
         const result = registry.instantiate(SingleAliasSchema.$id, { 'fooBar': 'hello' });
 
         assert.deepStrictEqual(result, { 'fooBar': 'hello' });
       });
 
       void it('canonical key wins when both canonical and alias are present', () => {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-
-        registry.register(SingleAliasSchema);
         const result = registry.instantiate(SingleAliasSchema.$id, {
           'foo_bar': 'alias-value',
           'fooBar': 'canonical-value'
@@ -120,9 +115,6 @@ import { Logger } from '../utils/Logger.js';
       });
 
       void it('original input is not mutated', () => {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-
-        registry.register(SingleAliasSchema);
         const input = { 'foo_bar': 'hello' };
 
         registry.instantiate(SingleAliasSchema.$id, input);
@@ -131,28 +123,23 @@ import { Logger } from '../utils/Logger.js';
     });
 
     void describe('multi-alias', { 'concurrency': true }, () => {
-      void it('first alias in list resolves when canonical key absent', () => {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-        registry.register(MultiAliasSchema);
+      registry.register(MultiAliasSchema);
+
+      void it('first alias in list resolves when canonical key absent', () => {
         const result = registry.instantiate(MultiAliasSchema.$id, { 'foo_bar': 'value1' });
 
         assert.deepStrictEqual(result, { 'fooBar': 'value1' });
       });
 
       void it('second alias in list resolves when first alias and canonical key absent', () => {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-
-        registry.register(MultiAliasSchema);
         const result = registry.instantiate(MultiAliasSchema.$id, { 'fooBarLegacy': 'legacy' });
 
         assert.deepStrictEqual(result, { 'fooBar': 'legacy' });
       });
 
       void it('canonical key takes priority over all aliases', () => {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-
-        registry.register(MultiAliasSchema);
         const result = registry.instantiate(MultiAliasSchema.$id, {
           'foo_bar': 'alias1',
           'fooBar': 'canonical',
@@ -164,19 +151,17 @@ import { Logger } from '../utils/Logger.js';
     });
 
     void describe('required properties with alias', { 'concurrency': true }, () => {
-      void it('alias satisfies required constraint', () => {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-        registry.register(RequiredAliasSchema);
+      registry.register(RequiredAliasSchema);
+
+      void it('alias satisfies required constraint', () => {
         assert.doesNotThrow(() => {
           registry.instantiate(RequiredAliasSchema.$id, { 'foo_bar': 'value' });
         });
       });
 
       void it('missing both canonical and alias fails required validation', () => {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-
-        registry.register(RequiredAliasSchema);
         assert.throws(() => {
           registry.instantiate(RequiredAliasSchema.$id, {});
         });
@@ -184,10 +169,11 @@ import { Logger } from '../utils/Logger.js';
     });
 
     void describe('nested object alias', { 'concurrency': true }, () => {
-      void it('alias on nested object property resolves to canonical key', () => {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-        registry.register(NestedAliasSchema);
+      registry.register(NestedAliasSchema);
+
+      void it('alias on nested object property resolves to canonical key', () => {
         const result = registry.instantiate(NestedAliasSchema.$id, { 'inner': { 'my_prop': 'nested-value' } });
 
         assert.deepStrictEqual(result, { 'inner': { 'myProp': 'nested-value' } });
@@ -195,10 +181,11 @@ import { Logger } from '../utils/Logger.js';
     });
 
     void describe('array item alias', { 'concurrency': true }, () => {
-      void it('alias on items schema property resolves for each element', () => {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-        registry.register(ArrayItemAliasSchema);
+      registry.register(ArrayItemAliasSchema);
+
+      void it('alias on items schema property resolves for each element', () => {
         const result = registry.instantiate(ArrayItemAliasSchema.$id, [
           { 'lbl': 'first' },
           { 'lbl': 'second' }
