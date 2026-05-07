@@ -121,6 +121,100 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     this.invariants.add(schemaId, invariant);
   }
 
+  /**
+   * Walk the schema graph alongside `value`, and at every `$ref` to another
+   * registered schema with an attached Transform decoder, apply that decoder
+   * at the corresponding slot. Returns the value with decoders applied.
+   *
+   * Schemas without registered Transform decoders are passed through. Recurses
+   * into properties, items, and additionalProperties so nested $refs decode
+   * bottom-up before any enclosing $ref's decoder runs.
+   */
+  private applyRefDecoders(schema: unknown, value: unknown): unknown {
+    if (!isRecord(schema) || value === null || value === undefined) {
+      return value;
+    }
+    const refTarget = typeof schema.$ref === 'string' ? schema.$ref : undefined;
+
+    if (refTarget !== undefined) {
+      const targetId = this.resolve(refTarget);
+      const targetEntry = this.schemas.get(targetId);
+
+      if (targetEntry !== undefined) {
+        const inner = this.applyRefDecoders(targetEntry.schema, value);
+        const targetDecoder = Transform.getDecoder(targetEntry.schema);
+
+        if (targetDecoder === undefined) {
+          return inner;
+        }
+        try {
+          return targetDecoder.decode(inner);
+        } catch (error) {
+          const causeError = error instanceof Error ? error : new Error(String(error));
+
+          throw new InstantiationError(
+            new ValidationErrors([{
+              'keyword': 'TRANSFORM_DECODE_FAILED',
+              'message': `transform decoder failed for $ref "${refTarget}": ${causeError.message}`,
+              'params': { '$ref': refTarget },
+              'path': ''
+            }]),
+            {
+              'cause': causeError,
+              'code': 'TRANSFORM_DECODE_FAILED',
+              'message': `transform decoder failed for $ref "${refTarget}": ${causeError.message}`
+            }
+          );
+        }
+      }
+
+      return value;
+    }
+
+    if (isRecord(schema.properties) && isRecord(value)) {
+      for (const [
+        propName,
+        propSchema
+      ] of Object.entries(schema.properties)) {
+        if (!(propName in value)) {
+          continue;
+        }
+        const next = this.applyRefDecoders(propSchema, value[propName]);
+
+        if (next !== value[propName]) {
+          value[propName] = next;
+        }
+      }
+    }
+
+    if (isRecord(schema.items) && Array.isArray(value)) {
+      for (let index = 0; index < value.length; index += 1) {
+        const next = this.applyRefDecoders(schema.items, value[index]);
+
+        if (next !== value[index]) {
+          value[index] = next;
+        }
+      }
+    }
+
+    if (isRecord(schema.additionalProperties) && isRecord(value)) {
+      const declaredProps = isRecord(schema.properties) ? new Set(Object.keys(schema.properties)) : new Set<string>();
+
+      for (const key of Object.keys(value)) {
+        if (declaredProps.has(key)) {
+          continue;
+        }
+        const next = this.applyRefDecoders(schema.additionalProperties, value[key]);
+
+        if (next !== value[key]) {
+          value[key] = next;
+        }
+      }
+    }
+
+    return value;
+  }
+
   public cast(schemaOrId: (Record<string, unknown> & { '$id': string; }) | string, data: unknown): unknown {
     const schemaId = this.resolveSchemaId(schemaOrId);
     const compiled = this.compiled(schemaId);
@@ -373,14 +467,15 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
 
     const schemaObj = typeof schema === 'string' ? entry.schema : schema;
+    const refDecoded = this.applyRefDecoders(entry.schema, coerced);
     const decoder = Transform.getDecoder(schemaObj);
     let decoded: unknown;
 
     if (decoder === undefined) {
-      decoded = coerced;
+      decoded = refDecoded;
     } else {
       try {
-        decoded = decoder.decode(coerced);
+        decoded = decoder.decode(refDecoded);
       } catch (error) {
         const causeError = error instanceof Error ? error : new Error(String(error));
 
