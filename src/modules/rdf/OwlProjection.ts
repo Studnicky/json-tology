@@ -463,7 +463,7 @@ function typedLiteralObject(value: unknown): null | Record<string, unknown> {
   }
 
   if (jsType === 'number') {
-    const schemaType = Number.isInteger(value as number) ? 'integer' : 'number';
+    const schemaType = Number.isInteger(value) ? 'integer' : 'number';
 
     return {
       '@type': resolveSingleXsdType(schemaType),

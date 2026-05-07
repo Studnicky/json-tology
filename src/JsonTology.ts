@@ -252,7 +252,7 @@ export class JsonTology<TMap = Record<never, never>> {
 
     if (options.schemas && options.schemas.length > 0) {
       // Cast needed: const generic TSchemas preserves literal types that don't widen to Record<string, unknown>
-      jt.registry.register(options.schemas as unknown as Array<Record<string, unknown>>);
+      jt.registry.register(options.schemas);
     }
 
     // Cast needed: narrows default TMap to the inferred schema map computed from TSchemas
@@ -381,7 +381,7 @@ export class JsonTology<TMap = Record<never, never>> {
   public static ontology(schemas: ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>): OntologyBuilder {
     const jt = JsonTology.create({ 'baseIRI': STATIC_BASE_IRI });
 
-    jt.registry.register(schemas as unknown as Array<Record<string, unknown>>);
+    jt.registry.register(schemas);
 
     return jt.ontology();
   }
@@ -417,7 +417,7 @@ export class JsonTology<TMap = Record<never, never>> {
   ): QuadInterface[] {
     const jt = JsonTology.ephemeral(schema);
 
-    return jt.toQuads(schema as JSONSchema7Definition & { readonly '$id': string }, data, options);
+    return jt.toQuads(schema, data, options);
   }
 
   /**
@@ -441,7 +441,7 @@ export class JsonTology<TMap = Record<never, never>> {
   public static toShacl(schemas: ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>): OntologyBuilder {
     const jt = JsonTology.create({ 'baseIRI': STATIC_BASE_IRI });
 
-    jt.registry.register(schemas as unknown as Array<Record<string, unknown>>);
+    jt.registry.register(schemas);
 
     return jt.toShacl();
   }
@@ -455,7 +455,7 @@ export class JsonTology<TMap = Record<never, never>> {
   public static toTbox(schemas: ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>): OntologyBuilder {
     const jt = JsonTology.create({ 'baseIRI': STATIC_BASE_IRI });
 
-    jt.registry.register(schemas as unknown as Array<Record<string, unknown>>);
+    jt.registry.register(schemas);
 
     return jt.toTbox();
   }
@@ -642,7 +642,7 @@ export class JsonTology<TMap = Record<never, never>> {
     const schemaId = typeof schema === 'string' ? schema : schema.$id;
 
     if (typeof schema !== 'string') {
-      this.registry.register(schema as Record<string, unknown>);
+      this.registry.register(schema);
     }
 
     return Dumper.dump(this.registry, schemaId, value, options);
@@ -685,7 +685,7 @@ export class JsonTology<TMap = Record<never, never>> {
     schema: TransformedType<TSchema, TOut>,
     value: TOut
   ): InferSchemaType<TSchema> {
-    return (Transform.getDecoder(schema as object)?.encode(value) ?? value) as InferSchemaType<TSchema>;
+    return (Transform.getDecoder(schema)?.encode(value) ?? value) as InferSchemaType<TSchema>;
   }
   // ---------------------------------------------------------------------------
   // Validation
@@ -720,7 +720,7 @@ export class JsonTology<TMap = Record<never, never>> {
     const schemaId = typeof schemaRef === 'string' ? schemaRef : (schemaRef as Record<string, unknown> & { '$id': string }).$id;
 
     if (typeof schemaRef !== 'string') {
-      this.registry.register(schemaRef as Record<string, unknown>);
+      this.registry.register(schemaRef);
     }
 
     if (this.registry.get(schemaId) === undefined) {
@@ -785,7 +785,7 @@ export class JsonTology<TMap = Record<never, never>> {
     const schemaId = typeof schema === 'string' ? schema : (schema as Record<string, unknown> & { '$id': string }).$id;
 
     if (typeof schema !== 'string') {
-      this.registry.register(schema as Record<string, unknown>);
+      this.registry.register(schema);
     }
 
     return this.registry.instantiate(schemaId, data, callOptions);
@@ -808,7 +808,7 @@ export class JsonTology<TMap = Record<never, never>> {
     const schemaId = typeof schema === 'string' ? schema : (schema as Record<string, unknown> & { '$id': string }).$id;
 
     if (typeof schema !== 'string') {
-      this.registry.register(schema as Record<string, unknown>);
+      this.registry.register(schema);
     }
 
     return this.registry.is(schemaId, data);
@@ -867,7 +867,7 @@ export class JsonTology<TMap = Record<never, never>> {
       return result.value;
     }
 
-    return (this.materializer.materialize as (s: typeof schema, p?: typeof partial) => unknown)(
+    return (this.materializer.materialize)(
       schema,
       partial
     );
@@ -916,11 +916,11 @@ export class JsonTology<TMap = Record<never, never>> {
     const list = Array.isArray(schemaOrSchemas) ? schemaOrSchemas : [schemaOrSchemas];
 
     // Cast needed: const generic preserves literal types that don't widen to Record<string, unknown>
-    this.registry.register(list as unknown as Array<Record<string, unknown>>);
+    this.registry.register(list);
     this.ontologyCache = null;
 
     // Cast needed: TypeScript cannot track that register() accumulates into the TMap type parameter
-    return this as unknown as JsonTology<TMap>;
+    return this;
   }
   /**
    * Registers a schema that may lack a `$id`, assigning a content-hash-based synthetic ID if needed.
@@ -999,7 +999,7 @@ export class JsonTology<TMap = Record<never, never>> {
     const parentId = typeof schemaRef === 'string' ? schemaRef : (schemaRef as Record<string, unknown> & { '$id': string }).$id;
 
     if (typeof schemaRef !== 'string') {
-      this.registry.register(schemaRef as Record<string, unknown>);
+      this.registry.register(schemaRef);
     }
 
     return this.registry.subschemaAt(parentId, pointer);
@@ -1053,7 +1053,7 @@ export class JsonTology<TMap = Record<never, never>> {
     const schemaId = typeof schemaRef === 'string' ? schemaRef : (schemaRef as Record<string, unknown> & { '$id': string }).$id;
 
     if (typeof schemaRef !== 'string') {
-      this.registry.register(schemaRef as Record<string, unknown>);
+      this.registry.register(schemaRef);
     }
 
     const graph = this.registry.graph(schemaId);
@@ -1123,7 +1123,7 @@ export class JsonTology<TMap = Record<never, never>> {
     const schemaId = typeof schema === 'string' ? schema : (schema as Record<string, unknown> & { '$id': string }).$id;
 
     if (typeof schema !== 'string') {
-      this.registry.register(schema as Record<string, unknown>);
+      this.registry.register(schema);
     }
 
     return this.registry.validate(schemaId, data);

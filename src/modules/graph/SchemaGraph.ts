@@ -425,7 +425,7 @@ export class SchemaGraph implements SchemaGraphInterface {
       if (typeof value === 'boolean' || isRecord(value)) {
         const childPointer = `${pointer}/${escapeJsonPointerSegment(key)}`;
 
-        this.lower(value as JsonSchemaType, childPointer);
+        this.lower(value, childPointer);
         this.childMap.get(node)?.set(key, this.nodeMap.get(childPointer) as SchemaGraphNodeInterface);
 
         if (isRecord(value)) {
@@ -465,7 +465,7 @@ export class SchemaGraph implements SchemaGraphInterface {
         if (typeof element === 'boolean' || isRecord(element)) {
           const elementPointer = `${pointer}/${escapeJsonPointerSegment(key)}/${index}`;
 
-          this.lower(element as JsonSchemaType, elementPointer);
+          this.lower(element, elementPointer);
           indexedChildren.push(this.nodeMap.get(elementPointer) as SchemaGraphNodeInterface);
         }
       }

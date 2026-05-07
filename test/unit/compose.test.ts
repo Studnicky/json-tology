@@ -1843,7 +1843,7 @@ import { Result } from '../../src/modules/data/Result.js';
 
       const PrimaryIsbn = Compose.equivalent(IsbnSchema, { '$id': 'urn:bookstore:PrimaryIsbn' });
 
-      const graph = new SchemaGraph(PrimaryIsbn as unknown as Record<string, unknown>);
+      const graph = new SchemaGraph(PrimaryIsbn);
       const quads = projectOwlGraph(graph);
 
       const equivQuad = quads.find((quad) => {
@@ -1928,9 +1928,7 @@ import { Result } from '../../src/modules/data/Result.js';
     void it('chain extend: grandchild gets all ancestor properties at runtime', () => {
       const ManagerSchema = Compose.extend(PersonSchema, { 'department': { 'type': 'string' } } as const, 'https://example.io/Manager');
 
-      const SeniorManagerSchema = Compose.extend(ManagerSchema as unknown as Record<string, unknown> & {
-        readonly '$id': string;
-      }, { 'budget': { 'type': 'number' } } as const, 'https://example.io/SeniorManager');
+      const SeniorManagerSchema = Compose.extend(ManagerSchema, { 'budget': { 'type': 'number' } } as const, 'https://example.io/SeniorManager');
 
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
@@ -2059,7 +2057,7 @@ import { Result } from '../../src/modules/data/Result.js';
         } as const
       );
 
-      const graph = new SchemaGraph(Scoped as unknown as Record<string, unknown>);
+      const graph = new SchemaGraph(Scoped);
       const quads = projectOwlGraph(graph);
       const subClassQuads = quads.filter((quad) => {
         return quad.predicate === RDFS.subClassOf
@@ -2113,7 +2111,7 @@ import { Result } from '../../src/modules/data/Result.js';
         'type': 'object'
       } as const);
 
-      const graph = new SchemaGraph(Armor as unknown as Record<string, unknown>);
+      const graph = new SchemaGraph(Armor);
       const quads = projectOwlGraph(graph);
       const disjQuad = quads.find((quad) => {
         return quad.predicate === OWL.disjointWith && quad.subject === 'aonprd:Armor2';
@@ -2160,7 +2158,7 @@ import { Result } from '../../src/modules/data/Result.js';
         'type': 'object'
       } as const);
 
-      const graph = new SchemaGraph(NonHuman as unknown as Record<string, unknown>);
+      const graph = new SchemaGraph(NonHuman);
       const quads = projectOwlGraph(graph);
       const compQuad = quads.find((quad) => {
         return quad.predicate === OWL.complementOf

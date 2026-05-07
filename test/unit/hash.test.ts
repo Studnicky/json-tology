@@ -334,7 +334,7 @@ void describe('Hash.value()', { 'concurrency': true }, () => {
 
   void it('unhappy: throws on undefined (not JSON-serializable)', () => {
     assert.throws(() => {
-      (Hash.value as (input?: unknown) => string)();
+      (Hash.value)();
     });
   });
 });

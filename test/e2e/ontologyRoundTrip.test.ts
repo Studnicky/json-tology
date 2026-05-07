@@ -709,7 +709,7 @@ describe('ontology round-trip: multi-schema HR domain', () => {
         'zip': '10117'
       };
       const quads = jt.materializer.projectAbox(
-        AddressSchema as unknown as Record<string, unknown> & { '$id': string },
+        AddressSchema,
         input,
         BASE
       );
@@ -738,7 +738,7 @@ describe('ontology round-trip: multi-schema HR domain', () => {
         ]
       };
       const quads = jt.materializer.projectAbox(
-        EmployeeSchema as unknown as Record<string, unknown> & { '$id': string },
+        EmployeeSchema,
         input,
         BASE
       );
@@ -799,7 +799,7 @@ describe('ontology round-trip: multi-schema HR domain', () => {
         'name': 'Inline Test'
       };
       const quads = localJt.materializer.projectAbox(
-        InlineSchema as unknown as Record<string, unknown> & { '$id': string },
+        InlineSchema,
         input,
         BASE
       );
@@ -823,7 +823,7 @@ describe('ontology round-trip: multi-schema HR domain', () => {
         'taxExempt': false
       };
       const quads = jt.materializer.projectAbox(
-        OrganizationSchema as unknown as Record<string, unknown> & { '$id': string },
+        OrganizationSchema,
         input,
         BASE
       );
@@ -846,7 +846,7 @@ describe('ontology round-trip: multi-schema HR domain', () => {
         'salary': 99_999.5
       };
       const quads = jt.materializer.projectAbox(
-        EmployeeSchema as unknown as Record<string, unknown> & { '$id': string },
+        EmployeeSchema,
         input,
         BASE
       );

@@ -742,7 +742,7 @@ import {
             'schemas': [UserSchema] as const
           });
           const quads = jt.materializer.projectAbox(
-            UserSchema as unknown as Record<string, unknown> & { '$id': string },
+            UserSchema,
             {
               'email': 'a@b.com',
               'name': 'Alice'

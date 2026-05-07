@@ -97,4 +97,4 @@ const cc = localJt.instantiate(PaymentSchema.$id, {
   'method': 'credit_card'
 });
 
-console.assert(describePayment(cc as Payment) === 'Card ending in 4242');
+console.assert(describePayment(cc) === 'Card ending in 4242');
