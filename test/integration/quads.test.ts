@@ -78,6 +78,7 @@ void describe('toQuads — iriFor as string', () => {
     });
 
     assert.ok(rootHits.length > 0, 'root override should be applied');
+    assert.equal(rootHits[0].subject, 'https://example.com/teams/platform');
 
     const nestedSubjects = new Set(quads.map((quad) => {
       return quad.subject;
@@ -85,7 +86,7 @@ void describe('toQuads — iriFor as string', () => {
 
     nestedSubjects.delete('https://example.com/teams/platform');
     for (const subject of nestedSubjects) {
-      assert.ok(subject.includes('/instances/'), `nested subject should fall through, got ${subject}`);
+      assert.match(subject, /\/instances\//u, `nested subject should fall through, got ${subject}`);
     }
   });
 });
@@ -150,7 +151,7 @@ void describe('toQuads — Skolemize.fromProperty', () => {
       return quad.subject;
     }));
 
-    assert.ok(subjects.has('https://example.com/docs/doc-42'));
+    assert.equal(subjects.has('https://example.com/docs/doc-42'), true);
   });
 
   void it('falls through to fallback for nodes missing the property', () => {
@@ -174,7 +175,7 @@ void describe('toQuads — Skolemize.fromProperty', () => {
       'name': 'Platform'
     }, { 'iriFor': strategy });
 
-    assert.ok(fallbackCalls >= 2, 'every value lacks id; fallback should be invoked');
+    assert.equal(fallbackCalls, 2, 'fallback called once per object lacking id: root + lead');
   });
 });
 
@@ -221,21 +222,21 @@ void describe('toQuads — iriFor function ctx', () => {
       'name': 'Platform'
     }, { 'iriFor': recorder });
 
-    assert.ok(recorded.length >= 3, 'recorder should be called for root + lead + member');
+    assert.equal(recorded.length, 3, 'recorder called once per object: root + lead + member');
 
     const root = recorded.find((entry) => {
       return entry.depth === 0;
     });
 
-    assert.ok(root !== undefined, 'root call has depth 0');
+    assert.notEqual(root, undefined, 'root call has depth 0');
     assert.equal(root.path, '');
 
     const lead = recorded.find((entry) => {
       return entry.path === '/lead';
     });
 
-    assert.ok(lead !== undefined, 'lead path observed');
-    assert.ok(lead.depth >= 1, 'lead depth > 0');
+    assert.notEqual(lead, undefined, 'lead path observed');
+    assert.equal(lead.depth, 1, 'lead depth is 1');
   });
 
   void it('memoizes by value reference within a single projectAbox call', () => {
@@ -279,7 +280,7 @@ void describe('toQuads — registry-level config', () => {
       return quad.subject;
     }));
 
-    assert.ok(subjects.has('https://example.com/registry-default'));
+    assert.equal(subjects.has('https://example.com/registry-default'), true);
   });
 
   void it('per-call iriFor overrides registry default', () => {
@@ -293,7 +294,7 @@ void describe('toQuads — registry-level config', () => {
       return quad.subject;
     }));
 
-    assert.ok(subjects.has('https://example.com/per-call'));
+    assert.equal(subjects.has('https://example.com/per-call'), true);
     assert.equal(subjects.has('https://example.com/registry-default'), false);
   });
 
@@ -419,10 +420,12 @@ void describe('fromQuads — deskolemize round-trip', () => {
       'name': 'Platform'
     }, { 'iriFor': noopSkolemize });
 
-    const rootCount = quads.filter((quad) => {
+    const instanceSubjects = new Set(quads.filter((quad) => {
       return quad.subject.includes('/instances/');
-    }).length;
+    }).map((quad) => {
+      return quad.subject;
+    }));
 
-    assert.ok(rootCount > 0, 'noopSkolemize falls through to default minter');
+    assert.equal(instanceSubjects.size, 2, 'noopSkolemize falls through to default minter for root + lead');
   });
 });

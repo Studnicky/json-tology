@@ -334,7 +334,6 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
         // eslint-disable-next-line @typescript-eslint/naming-convention -- JSON-LD '@list' keyword
           const orValue = result[0]['sh:or'] as { '@list': unknown[] };
 
-          assert.ok('@list' in orValue);
           assert.deepEqual(orValue['@list'], [
             { '@id': 'ex:Circle' },
             { '@id': 'ex:Square' }
@@ -725,17 +724,14 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
       const builder = entities.toTbox();
       const raw = builder.raw();
 
-      assert.ok(raw.length > 0, 'toTbox() raw quads must be non-empty');
+      assert(raw.length > 0, 'toTbox() raw quads must be non-empty');
     });
 
     await it('raw output contains owl:Class declarations', () => {
       const builder = entities.toTbox();
       const raw = builder.raw();
 
-      assert.ok(
-        hasType(raw, OWL_CLASS_IRI),
-        `Expected at least one node with @type '${OWL_CLASS_IRI}'`
-      );
+      assert.equal(hasType(raw, OWL_CLASS_IRI), true);
     });
 
     await it('raw output contains OWL property declarations (DatatypeProperty or ObjectProperty)', () => {
@@ -745,40 +741,28 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
       const hasDatatype = hasType(raw, OWL_DATATYPE_PROPERTY_IRI);
       const hasObjectProp = hasType(raw, 'http://www.w3.org/2002/07/owl#ObjectProperty');
 
-      assert.ok(
-        hasDatatype || hasObjectProp,
-        'Expected at least one OWL property declaration in toTbox() output'
-      );
+      assert.equal(hasDatatype || hasObjectProp, true);
     });
 
     await it('raw output contains rdfs:domain triples', () => {
       const builder = entities.toTbox();
       const raw = builder.raw();
 
-      assert.ok(
-        hasPredicate(raw, RDFS_DOMAIN_IRI),
-        `Expected at least one node with '${RDFS_DOMAIN_IRI}' predicate`
-      );
+      assert.equal(hasPredicate(raw, RDFS_DOMAIN_IRI), true);
     });
 
     await it('raw output does NOT contain sh:NodeShape triples (no SHACL)', () => {
       const builder = entities.toTbox();
       const raw = builder.raw();
 
-      assert.ok(
-        !hasType(raw, SH_NODE_SHAPE_IRI),
-        'toTbox() raw output must not contain sh:NodeShape — SHACL must be absent'
-      );
+      assert.equal(hasType(raw, SH_NODE_SHAPE_IRI), false);
     });
 
     await it('raw output does NOT contain sh:property triples (no SHACL)', () => {
       const builder = entities.toTbox();
       const raw = builder.raw();
 
-      assert.ok(
-        !hasPredicate(raw, SH_PROPERTY_IRI),
-        'toTbox() raw output must not contain sh:property — SHACL must be absent'
-      );
+      assert.equal(hasPredicate(raw, SH_PROPERTY_IRI), false);
     });
 
     await it('two calls return different OntologyBuilder instances (not cached)', () => {
@@ -795,7 +779,8 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
       const shaclObj = builder.shaclObject();
       const graph = shaclObj['@graph'];
 
-      assert.ok(Array.isArray(graph) && graph.length > 0, 'toShacl() shaclObject @graph must be non-empty');
+      assert.equal(Array.isArray(graph), true);
+      assert((graph as unknown[]).length > 0, 'toShacl() shaclObject @graph must be non-empty');
     });
 
     await it('SHACL output contains sh:NodeShape triples', () => {
@@ -803,10 +788,7 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
       const shaclObj = builder.shaclObject();
       const graph = shaclObj['@graph'] as unknown[];
 
-      assert.ok(
-        hasType(graph, SH_NODE_SHAPE_IRI),
-        `Expected at least one node with @type '${SH_NODE_SHAPE_IRI}'`
-      );
+      assert.equal(hasType(graph, SH_NODE_SHAPE_IRI), true);
     });
 
     await it('SHACL output contains sh:property triples', () => {
@@ -814,30 +796,21 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
       const shaclObj = builder.shaclObject();
       const graph = shaclObj['@graph'] as unknown[];
 
-      assert.ok(
-        hasPredicate(graph, SH_PROPERTY_IRI),
-        `Expected at least one node with '${SH_PROPERTY_IRI}' predicate`
-      );
+      assert.equal(hasPredicate(graph, SH_PROPERTY_IRI), true);
     });
 
     await it('raw OWL output is empty — no owl:Class triples', () => {
       const builder = entities.toShacl();
       const raw = builder.raw();
 
-      assert.ok(
-        !hasType(raw, OWL_CLASS_IRI),
-        'toShacl() raw output must not contain owl:Class — OWL TBox must be absent'
-      );
+      assert.equal(hasType(raw, OWL_CLASS_IRI), false);
     });
 
     await it('raw OWL output is empty — no rdfs:domain triples', () => {
       const builder = entities.toShacl();
       const raw = builder.raw();
 
-      assert.ok(
-        !hasPredicate(raw, RDFS_DOMAIN_IRI),
-        'toShacl() raw output must not contain rdfs:domain — OWL TBox must be absent'
-      );
+      assert.equal(hasPredicate(raw, RDFS_DOMAIN_IRI), false);
     });
 
     await it('two calls return different OntologyBuilder instances (not cached)', () => {
@@ -853,10 +826,7 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
       const builder = entities.ontology();
       const raw = builder.raw();
 
-      assert.ok(
-        hasType(raw, OWL_CLASS_IRI),
-        'ontology() must still include owl:Class declarations (TBox regression)'
-      );
+      assert.equal(hasType(raw, OWL_CLASS_IRI), true);
     });
 
     await it('returns an OntologyBuilder with sh:NodeShape in SHACL output', () => {
@@ -864,10 +834,7 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
       const shaclObj = builder.shaclObject();
       const graph = shaclObj['@graph'] as unknown[];
 
-      assert.ok(
-        hasType(graph, SH_NODE_SHAPE_IRI),
-        'ontology() must still include sh:NodeShape (SHACL regression)'
-      );
+      assert.equal(hasType(graph, SH_NODE_SHAPE_IRI), true);
     });
 
     await it('is cached — two calls return the same OntologyBuilder reference', () => {

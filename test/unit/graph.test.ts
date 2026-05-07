@@ -182,11 +182,13 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       assert.equal(graph.semantics(root), rootSemantics);
       assert.deepEqual(rootSemantics.required, ['name']);
       assert.deepEqual(rootSemantics.schemaTypes, ['object']);
-      assert.ok(rootSemantics.properties.has('address'));
-      assert.ok(rootSemantics.properties.has('name'));
+      assert.deepEqual([...rootSemantics.properties.keys()].sort(), [
+        'address',
+        'name'
+      ]);
       const addressPropNode = rootSemantics.properties.get('address');
 
-      assert.ok(addressPropNode !== undefined);
+      assert.notStrictEqual(addressPropNode, undefined);
       assert.equal(addressPropNode.pointer, '/properties/address');
       assert.equal(addressPropNode.schema.$ref, '#/$defs/Address');
       assert.deepEqual(rootSemantics.dependentRequired, { 'name': ['address'] });
@@ -260,7 +262,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
       const nameNode = rootSem.properties.get('name');
 
-      assert.ok(nameNode !== undefined);
+      assert.notStrictEqual(nameNode, undefined);
       const nameSem = graph.semantics(nameNode);
 
       assert.equal(nameSem.minLength, 1);
@@ -274,7 +276,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
       const ageNode = rootSem.properties.get('age');
 
-      assert.ok(ageNode !== undefined);
+      assert.notStrictEqual(ageNode, undefined);
       const ageSem = graph.semantics(ageNode);
 
       assert.equal(ageSem.minimum, 0);
@@ -285,7 +287,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
       const tagsNode = rootSem.properties.get('tags');
 
-      assert.ok(tagsNode !== undefined);
+      assert.notStrictEqual(tagsNode, undefined);
       const tagsSem = graph.semantics(tagsNode);
 
       assert.equal(tagsSem.minItems, 1);
@@ -294,7 +296,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
       const statusNode = rootSem.properties.get('status');
 
-      assert.ok(statusNode !== undefined);
+      assert.notStrictEqual(statusNode, undefined);
       const statusSem = graph.semantics(statusNode);
 
       assert.deepEqual(statusSem.enumValues, [
@@ -308,7 +310,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
       const bioNode = rootSem.properties.get('bio');
 
-      assert.ok(bioNode !== undefined);
+      assert.notStrictEqual(bioNode, undefined);
       const bioSem = graph.semantics(bioNode);
 
       assert.equal(bioSem.contentEncoding, 'base64');
@@ -368,13 +370,13 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       const rootSemantics = graph.semantics(graph.rootNode);
       const byAnchorNode = rootSemantics.properties.get('byAnchor');
 
-      assert.ok(byAnchorNode !== undefined);
+      assert.notStrictEqual(byAnchorNode, undefined);
       const byPointerNode = rootSemantics.properties.get('byPointer');
 
-      assert.ok(byPointerNode !== undefined);
+      assert.notStrictEqual(byPointerNode, undefined);
       const selfNode = rootSemantics.properties.get('self');
 
-      assert.ok(selfNode !== undefined);
+      assert.notStrictEqual(selfNode, undefined);
       const byAnchor = graph.semantics(byAnchorNode);
       const byPointer = graph.semantics(byPointerNode);
       const self = graph.semantics(selfNode);
@@ -541,13 +543,13 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       const allGraph = new SchemaGraph(allSchema);
       const all = allGraph.allRelations();
 
-      assert.ok(all.length >= 3);
-      assert.ok(all.some((rel) => {
-        return rel.predicate === 'owl:Restriction';
+      assert.equal(all.length >= 3, true);
+      const allPreds = new Set(all.map((rel) => {
+        return rel.predicate;
       }));
-      assert.ok(all.some((rel) => {
-        return rel.predicate === 'owl:oneOf';
-      }));
+
+      assert.equal(allPreds.has('owl:Restriction'), true);
+      assert.equal(allPreds.has('owl:oneOf'), true);
     });
 
     void it('produces property-level OWL relations', () => {
@@ -606,7 +608,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
           return rel.predicate === predicate;
         });
 
-        assert.ok(rels.length > 0);
+        assert.equal(rels.length > 0, true);
         if (target !== undefined) {
           assert.equal(rels[0].target, target);
         }
@@ -680,9 +682,9 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       const iteGraph = new SchemaGraph(iteSchema);
       const iteSem = iteGraph.semantics(iteGraph.rootNode);
 
-      assert.ok(iteSem.ifNode !== undefined);
-      assert.ok(iteSem.thenNode !== undefined);
-      assert.ok(iteSem.elseNode !== undefined);
+      assert.notStrictEqual(iteSem.ifNode, undefined);
+      assert.notStrictEqual(iteSem.thenNode, undefined);
+      assert.notStrictEqual(iteSem.elseNode, undefined);
       assert.deepEqual(iteGraph.semantics(iteSem.ifNode).schemaTypes, ['string']);
       assert.equal(iteGraph.semantics(iteSem.thenNode).minLength, 1);
       assert.deepEqual(iteGraph.semantics(iteSem.elseNode).schemaTypes, ['number']);
@@ -835,9 +837,9 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       });
 
       assert.equal(depConditionals.length, 1);
-      assert.ok(depConditionals[0].metadata !== undefined);
+      assert.notStrictEqual(depConditionals[0].metadata, undefined);
       assert.equal(depConditionals[0].metadata.propertyName, 'address');
-      assert.ok(depConditionals[0].structure);
+      assert.notStrictEqual(depConditionals[0].structure, undefined);
       assert.equal(depConditionals[0].structure.kind, 'conditional');
 
       // contains → someValuesFrom restriction
@@ -851,7 +853,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
       assert.equal(svf.length, 1);
       assert.equal(svf[0].target, 'xsd:decimal');
-      assert.ok(svf[0].structure);
+      assert.notStrictEqual(svf[0].structure, undefined);
       assert.equal(svf[0].structure.kind, 'restriction');
 
       const svfStruct = svf[0].structure as {
@@ -917,7 +919,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         i,
         expected
       ] of expectedMembers.entries()) {
-        assert.ok(members[i].metadata !== undefined);
+        assert.notStrictEqual(members[i].metadata, undefined);
         assert.equal(members[i].metadata.position, expected.position);
         assert.equal(members[i].metadata.memberProperty, expected.memberProperty);
         assert.equal(members[i].target, expected.target);
@@ -938,9 +940,9 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       });
 
       assert.equal(patterns.length, 2);
-      assert.ok(patterns[0].metadata !== undefined);
+      assert.notStrictEqual(patterns[0].metadata, undefined);
       assert.equal(patterns[0].metadata.pattern, '^x-');
-      assert.ok(patterns[1].metadata !== undefined);
+      assert.notStrictEqual(patterns[1].metadata, undefined);
       assert.equal(patterns[1].metadata.pattern, '^y-');
     });
 
