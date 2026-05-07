@@ -87,7 +87,22 @@
       "Bash(perl -i -pe \"s|const applyOp = Value\\\\.applyOp\\\\.bind\\\\\\(Value\\\\\\);|const applyOp = \\(root: unknown, op: Parameters<typeof Value.applyOp>[1]\\): ReturnType<typeof Value.applyOp> => Value.applyOp\\(root, op\\);|; s|const clone = Value\\\\.clone\\\\.bind\\\\\\(Value\\\\\\);|const clone = <T,>\\(value: T\\): T => Value.clone\\(value\\);|\" test/unit/operations.test.ts)",
       "Bash(perl -i -pe \"s|\\\\\\(q\\\\\\)|\\(quad\\)|g; s|\\\\bof q\\\\b|of quad|g\" examples/06b-abox-stable-iri.mjs)",
       "Bash(perl -i -pe \"s|for \\\\\\(const q of|for \\(const quad of|; s|console\\\\.log\\\\\\(q\\\\\\)|console.log\\(quad\\)|; s|q\\\\.subject|quad.subject|g; s|q\\\\.predicate|quad.predicate|g; s|q\\\\.object|quad.object|g; s|q\\\\.graph|quad.graph|g\" examples/06b-abox-stable-iri.mjs)",
-      "Bash(perl -i -pe \"s|\\\\.every\\\\\\(\\\\\\(g\\\\\\) =>|.every\\(\\(graph\\) =>|; s|return g === expectedGraph|return graph === expectedGraph|\" examples/06b-abox-stable-iri.mjs)"
+      "Bash(perl -i -pe \"s|\\\\.every\\\\\\(\\\\\\(g\\\\\\) =>|.every\\(\\(graph\\) =>|; s|return g === expectedGraph|return graph === expectedGraph|\" examples/06b-abox-stable-iri.mjs)",
+      "Bash(/usr/bin/grep -rn \"disjointWith\\\\|DISJOINT\" src/ --include=\"*.ts\")",
+      "Bash(/usr/bin/grep -v \"test\\\\|interfaces\")",
+      "Bash(/usr/bin/grep -n \"ValidationErrorType\\\\|VALIDATION_ERROR_CODES\\\\|jt:disjoint\\\\|class SchemaRegistry\\\\|readonly invariants\" src/modules/registry/SchemaRegistry.ts)",
+      "Bash(/usr/bin/grep -n \"ValidationErrorType\" src/modules/registry/SchemaRegistry.ts)",
+      "Bash(/usr/bin/tail -10)",
+      "Bash(/usr/bin/tail -15)",
+      "Bash(/usr/bin/grep error *)",
+      "Bash(/usr/bin/head -5)",
+      "Bash(/Users/studs/.nvm/versions/node/v24.13.0/bin/npm run *)",
+      "Bash(/usr/bin/tail -3)",
+      "Bash(/bin/ls eslint.config* .eslintrc*)",
+      "Bash(/usr/bin/grep -n \"naming-convention\\\\|jt:\" eslint.config.js eslint.config.mjs)",
+      "Bash(/usr/bin/head -10)",
+      "Bash(/usr/bin/grep \"^/\")",
+      "Bash(/usr/bin/head -3)"
     ]
   }
 }

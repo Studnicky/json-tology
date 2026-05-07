@@ -7,7 +7,18 @@ import { bookstoreEntities } from '../../../../examples/docs/bookstore/index.js'
 const OWL_CLASS = 'http://www.w3.org/2002/07/owl#Class';
 const OWL_OBJECT_PROP = 'http://www.w3.org/2002/07/owl#ObjectProperty';
 const OWL_DATATYPE_PROP = 'http://www.w3.org/2002/07/owl#DatatypeProperty';
+const OWL_RESTRICTION = 'http://www.w3.org/2002/07/owl#Restriction';
+const OWL_ON_PROPERTY = 'http://www.w3.org/2002/07/owl#onProperty';
+const OWL_SOME_VALUES_FROM = 'http://www.w3.org/2002/07/owl#someValuesFrom';
+const OWL_ALL_VALUES_FROM = 'http://www.w3.org/2002/07/owl#allValuesFrom';
+const OWL_HAS_VALUE = 'http://www.w3.org/2002/07/owl#hasValue';
+const OWL_CARDINALITY = 'http://www.w3.org/2002/07/owl#cardinality';
+const OWL_MIN_CARDINALITY = 'http://www.w3.org/2002/07/owl#minCardinality';
+const OWL_MAX_CARDINALITY = 'http://www.w3.org/2002/07/owl#maxCardinality';
 const OWL_EQUIVALENT = 'http://www.w3.org/2002/07/owl#equivalentClass';
+const OWL_DISJOINT = 'http://www.w3.org/2002/07/owl#disjointWith';
+const OWL_COMPLEMENT = 'http://www.w3.org/2002/07/owl#complementOf';
+const OWL_SAME_AS = 'http://www.w3.org/2002/07/owl#sameAs';
 const RDFS_RANGE = 'http://www.w3.org/2000/01/rdf-schema#range';
 const RDFS_DOMAIN = 'http://www.w3.org/2000/01/rdf-schema#domain';
 const RDFS_SUBCLASS = 'http://www.w3.org/2000/01/rdf-schema#subClassOf';
@@ -21,7 +32,7 @@ const RDF_LIST = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#List';
 export interface NodeData {
   id: string;
   label: string;
-  kind: 'entity' | 'primitive';
+  kind: 'entity' | 'instance' | 'primitive';
 }
 
 export interface EdgeData {
@@ -29,7 +40,15 @@ export interface EdgeData {
   source: string;
   target: string;
   label: string;
-  kind: 'subClassOf' | 'domain' | 'range' | 'equivalentClass';
+  kind:
+    | 'complementOf'
+    | 'disjointWith'
+    | 'domain'
+    | 'equivalentClass'
+    | 'range'
+    | 'restriction'
+    | 'sameAs'
+    | 'subClassOf';
 }
 
 export interface CytoscapeElements {
@@ -240,6 +259,21 @@ export function toCytoscapeElements(): CytoscapeElements {
         const subs = Array.isArray(subClassOf) ? subClassOf : [subClassOf];
 
         for (const sub of subs) {
+          // Skip inlined owl:Restriction nodes — these are emitted by the OWL
+          // projection for every JSON-Schema `required` property and every
+          // `items.$ref` array binding (allValuesFrom). User-authored
+          // restrictions are read separately below from each schema's
+          // `jt:restrictions` annotation, which gives a clean signal.
+          if (sub && typeof sub === 'object') {
+            const subType = Array.isArray((sub as Record<string, unknown>)['@type'])
+              ? (sub as Record<string, unknown>)['@type'] as string[]
+              : [(sub as Record<string, unknown>)['@type'] as string];
+
+            if (subType.includes(OWL_RESTRICTION)) {
+              continue;
+            }
+          }
+
           const targetId = iri(sub);
 
           if (targetId && !targetId.startsWith('_:') && !isPropertyNode(targetId)) {
@@ -259,6 +293,51 @@ export function toCytoscapeElements(): CytoscapeElements {
               addNode(targetId);
               addEdge(nodeId, targetId, 'equivalentClass', 'equivalentClass');
             }
+          }
+        }
+      }
+
+      const disjoint = node[OWL_DISJOINT];
+
+      if (disjoint) {
+        const disjointVals = Array.isArray(disjoint) ? disjoint : [disjoint];
+
+        for (const dj of disjointVals) {
+          const targetId = iri(dj);
+
+          if (targetId && !targetId.startsWith('_:')) {
+            addNode(targetId);
+            addEdge(nodeId, targetId, 'disjointWith', 'disjointWith');
+          }
+        }
+      }
+
+      const complement = node[OWL_COMPLEMENT];
+
+      if (complement) {
+        const complementVals = Array.isArray(complement) ? complement : [complement];
+
+        for (const cp of complementVals) {
+          const targetId = iri(cp);
+
+          if (targetId && !targetId.startsWith('_:')) {
+            addNode(targetId);
+            addEdge(nodeId, targetId, 'complementOf', 'complementOf');
+          }
+        }
+      }
+
+      const sameAs = node[OWL_SAME_AS];
+
+      if (sameAs) {
+        const sameAsVals = Array.isArray(sameAs) ? sameAs : [sameAs];
+
+        for (const sa of sameAsVals) {
+          const targetId = iri(sa);
+
+          if (targetId && !targetId.startsWith('_:')) {
+            addNode(targetId);
+            addEdge(nodeId, targetId, 'sameAs', 'sameAs');
           }
         }
       }
@@ -313,6 +392,93 @@ export function toCytoscapeElements(): CytoscapeElements {
       addNode(target);
       addEdge(sourceId, target, propName, 'range');
     }
+  }
+
+  // User-authored restrictions live on each schema under `jt:restrictions`.
+  // Render one edge per descriptor: someValuesFrom/allValuesFrom point at
+  // the range class; cardinality/min/max/hasValue point at the constrained
+  // property node so the graph still reflects the binding without
+  // introducing a phantom literal node.
+  for (const schema of registeredSchemas) {
+    if (!schema || typeof schema !== 'object') {
+      continue;
+    }
+    const sourceId = schema['$id'];
+
+    if (typeof sourceId !== 'string') {
+      continue;
+    }
+    const restrictions = (schema as Record<string, unknown>)['jt:restrictions'];
+
+    if (!Array.isArray(restrictions)) {
+      continue;
+    }
+
+    for (const r of restrictions) {
+      if (!r || typeof r !== 'object') {
+        continue;
+      }
+      const desc = r as { kind?: string; onProperty?: string; value?: unknown };
+      const onPropId = typeof desc.onProperty === 'string' ? desc.onProperty : null;
+
+      if (!onPropId) {
+        continue;
+      }
+      const propName = nodeLabel(onPropId);
+
+      switch (desc.kind) {
+        case 'someValuesFrom':
+        case 'allValuesFrom': {
+          const target = typeof desc.value === 'string' ? desc.value : null;
+
+          if (target && !isBuiltinType(target)) {
+            addNode(target);
+            const symbol = desc.kind === 'someValuesFrom' ? '∃' : '∀';
+
+            addEdge(sourceId, target, `${propName} ${symbol}`, 'restriction');
+          }
+          break;
+        }
+        case 'hasValue':
+          addNode(onPropId);
+          addEdge(sourceId, onPropId, `${propName} = ${String(desc.value)}`, 'restriction');
+          break;
+        case 'cardinality':
+          addNode(onPropId);
+          addEdge(sourceId, onPropId, `${propName} card = ${String(desc.value)}`, 'restriction');
+          break;
+        case 'minCardinality':
+          addNode(onPropId);
+          addEdge(sourceId, onPropId, `${propName} card ≥ ${String(desc.value)}`, 'restriction');
+          break;
+        case 'maxCardinality':
+          addNode(onPropId);
+          addEdge(sourceId, onPropId, `${propName} card ≤ ${String(desc.value)}`, 'restriction');
+          break;
+        default:
+          break;
+      }
+    }
+  }
+
+  // ABox sameAs assertions live on the registry, not in toTbox(). Pull them
+  // separately so the graph viz shows owl:sameAs identity edges. The IRIs
+  // here are individuals (instances), not classes — overwrite their kind
+  // so the Vue component can render them with an instance-specific style
+  // (dashed border, lighter fill) and the user can tell them apart from
+  // the surrounding class nodes at a glance.
+  const sameAsPairs = bookstoreEntities.registry.sameAsStore.all();
+
+  for (const [iriA, iriB] of sameAsPairs) {
+    addNode(iriA);
+    addNode(iriB);
+    // Override kind to 'instance' even if the node was already added.
+    for (const node of nodes) {
+      if (node.data.id === iriA || node.data.id === iriB) {
+        node.data.kind = 'instance';
+      }
+    }
+    addEdge(iriA, iriB, 'sameAs', 'sameAs');
   }
 
   return {

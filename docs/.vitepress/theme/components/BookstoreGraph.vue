@@ -117,6 +117,28 @@ onMounted(async () => {
           'text-max-width': '64px'
         }
       },
+      // ABox instance nodes — gold-tinted ellipse with dashed border to
+      // mark them as individuals (concrete, ABox) rather than classes (TBox).
+      {
+        selector: 'node[kind = "instance"]',
+        style: {
+          'background-color': '#fbf3d4',
+          'border-color': '#daa520',
+          'border-width': 1.5,
+          'border-style': 'dashed',
+          'color': '#5a4710',
+          'label': 'data(label)',
+          'font-size': '11px',
+          'font-style': 'italic',
+          'text-valign': 'center',
+          'text-halign': 'center',
+          'width': '88px',
+          'height': '32px',
+          'shape': 'ellipse',
+          'text-wrap': 'ellipsis',
+          'text-max-width': '80px'
+        }
+      },
       // Selected node
       {
         selector: 'node:selected',
@@ -192,35 +214,106 @@ onMounted(async () => {
           'text-margin-y': '-8px',
           'width': 1.5
         }
+      },
+      // disjointWith edges — red dashed (no arrow, the relation is symmetric)
+      {
+        selector: 'edge[kind = "disjointWith"]',
+        style: {
+          'line-color': '#d63a3a',
+          'target-arrow-color': '#d63a3a',
+          'target-arrow-shape': 'none',
+          'curve-style': 'bezier',
+          'line-style': 'dashed',
+          'label': 'data(label)',
+          'font-size': '9px',
+          'color': '#d63a3a',
+          'text-rotation': 'autorotate',
+          'text-margin-y': '-8px',
+          'width': 2
+        }
+      },
+      // complementOf edges — purple solid
+      {
+        selector: 'edge[kind = "complementOf"]',
+        style: {
+          'line-color': '#8a2be2',
+          'target-arrow-color': '#8a2be2',
+          'target-arrow-shape': 'tee',
+          'curve-style': 'bezier',
+          'line-style': 'solid',
+          'label': 'data(label)',
+          'font-size': '9px',
+          'color': '#8a2be2',
+          'text-rotation': 'autorotate',
+          'text-margin-y': '-8px',
+          'width': 2
+        }
+      },
+      // restriction edges — teal dotted (class -> constrained property)
+      {
+        selector: 'edge[kind = "restriction"]',
+        style: {
+          'line-color': '#08717a',
+          'target-arrow-color': '#08717a',
+          'target-arrow-shape': 'circle',
+          'curve-style': 'bezier',
+          'line-style': 'dotted',
+          'label': 'data(label)',
+          'font-size': '9px',
+          'color': '#08717a',
+          'text-rotation': 'autorotate',
+          'text-margin-y': '-8px',
+          'width': 1.5
+        }
+      },
+      // sameAs edges — gold dashed, symmetric (no arrow)
+      {
+        selector: 'edge[kind = "sameAs"]',
+        style: {
+          'line-color': '#daa520',
+          'target-arrow-color': '#daa520',
+          'target-arrow-shape': 'none',
+          'curve-style': 'bezier',
+          'line-style': 'dashed',
+          'label': 'data(label)',
+          'font-size': '9px',
+          'color': '#daa520',
+          'text-rotation': 'autorotate',
+          'text-margin-y': '-8px',
+          'width': 2
+        }
       }
     ],
     layout: {
       name: 'cose',
       animate: false,
       fit: true,
-      padding: 80,
+      padding: 60,
       nodeRepulsion: () => 7000,
       idealEdgeLength: () => 75,
       gravity: 90,
       numIter: 1500,
       randomize: false,
-      componentSpacing: 50,
-      boundingBox: { x1: 60, y1: 40, w: 940, h: 640 }
+      componentSpacing: 50
     } as Record<string, unknown>
   });
 
-  // Bound zoom. After the layout's initial fit, the current zoom is the
-  // "everything visible" level. That becomes the floor (no zoom-out past
-  // full-graph) and we cap zoom-in at 3x for legibility on hover.
+  // The cose layout produces positions synchronously when `animate: false`,
+  // but Cytoscape's renderer needs the container to have its final size
+  // before fit() can compute a meaningful zoom. On initial mount we
+  // sometimes hit a transient state where the container is sized but the
+  // viewport bounds haven't settled yet — fit() in that frame yields a
+  // slightly-off zoom and nodes drift outside the viewport. Run fit() once
+  // synchronously, then again on the next animation frame so the fit
+  // matches what clicking the navigation-pane "fit" button produces.
   cyInstance.fit(undefined, 60);
-  const fitZoom = cyInstance.zoom();
-  cyInstance.minZoom(fitZoom);
-  cyInstance.maxZoom(fitZoom * 3);
-
-  // After a user drags a node and releases, refit so the full graph stays
-  // in frame. Keeps nodes from getting pushed off-screen.
-  cyInstance.on('dragfree', 'node', () => {
+  requestAnimationFrame(() => {
     cyInstance?.fit(undefined, 60);
+    if (cyInstance) {
+      const fitZoom = cyInstance.zoom();
+      cyInstance.minZoom(fitZoom * 0.4);
+      cyInstance.maxZoom(fitZoom * 4);
+    }
   });
 
   // Click handler: open side panel
@@ -256,6 +349,38 @@ function closePanel(): void {
 function schemaText(schema: unknown): string {
   return JSON.stringify(schema, null, 2);
 }
+
+function zoomIn(): void {
+  if (!cyInstance) return;
+  const next = cyInstance.zoom() * 1.25;
+  cyInstance.zoom({ level: Math.min(next, cyInstance.maxZoom()), renderedPosition: { x: cyInstance.width() / 2, y: cyInstance.height() / 2 } });
+}
+
+function zoomOut(): void {
+  if (!cyInstance) return;
+  const next = cyInstance.zoom() / 1.25;
+  cyInstance.zoom({ level: Math.max(next, cyInstance.minZoom()), renderedPosition: { x: cyInstance.width() / 2, y: cyInstance.height() / 2 } });
+}
+
+function fitGraph(): void {
+  cyInstance?.fit(undefined, 60);
+}
+
+function rerunLayout(): void {
+  if (!cyInstance) return;
+  const layout = cyInstance.layout({
+    name: 'cose',
+    animate: false,
+    nodeRepulsion: () => 7000,
+    idealEdgeLength: () => 75,
+    gravity: 90,
+    numIter: 1500,
+    randomize: true,
+    componentSpacing: 50
+  } as Record<string, unknown>);
+  layout.run();
+  cyInstance.fit(undefined, 60);
+}
 </script>
 
 <template>
@@ -277,6 +402,19 @@ function schemaText(schema: unknown): string {
       class="cy-container"
       aria-label="Bookstore ontology graph"
     />
+
+    <!-- Navigation pane: zoom + fit controls (bottom-right) -->
+    <div
+      v-show="!loading && !loadError"
+      class="graph-nav"
+      role="toolbar"
+      aria-label="Graph navigation"
+    >
+      <button class="graph-nav-btn" title="Zoom in" @click="zoomIn">＋</button>
+      <button class="graph-nav-btn" title="Zoom out" @click="zoomOut">－</button>
+      <button class="graph-nav-btn" title="Fit to view" @click="fitGraph">⤢</button>
+      <button class="graph-nav-btn" title="Re-run layout" @click="rerunLayout">⟳</button>
+    </div>
 
     <!-- Side panel for selected node -->
     <div v-if="selectedNode" class="graph-panel">
@@ -349,6 +487,51 @@ function schemaText(schema: unknown): string {
   font-size: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   z-index: 10;
+}
+
+/* Navigation pane — bottom-right zoom / fit / rerun-layout controls */
+.graph-nav {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--vp-c-bg);
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  padding: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 9;
+}
+
+.graph-nav-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 4px;
+  color: var(--vp-c-text-1);
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.graph-nav-btn:hover {
+  background: var(--vp-c-brand-soft);
+  border-color: var(--vp-c-brand-3);
+  color: var(--vp-c-brand-1);
+}
+
+.graph-nav-btn:focus-visible {
+  outline: 2px solid var(--vp-c-brand-1);
+  outline-offset: 1px;
 }
 
 .graph-panel-header {

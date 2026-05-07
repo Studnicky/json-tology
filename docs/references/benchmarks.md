@@ -1,21 +1,15 @@
 # Benchmarks
 
-> **json-tology is not yet uniformly faster than its comparators. Where we win, where we lose, and where we have work to do.**
+This page reports json-tology's performance against the comparators we benchmark against: AJV, Zod, TypeBox (interpreted `Value` and compiled `TypeCompiler`), Valibot, io-ts, plus `JSON.stringify` and `structuredClone` for serialization / clone scenarios. The numbers below come from the bench suite under `bench/`. Run `npm run bench:report` to regenerate.
 
-This page is the honest read on json-tology's performance against five comparators: AJV, Zod, TypeBox (interpreted `Value` and compiled `TypeCompiler`), Valibot, and io-ts. The numbers below come from the bench suite under `bench/`. Run `npm run bench:report` to regenerate.
-
-The headline: today, json-tology loses most warm validation scenarios to TypeBox compiled, and loses some warm scenarios to AJV / Valibot / io-ts. It wins at structural diff, transform encode, schema authoring (extend build), and validating invalid simple data with full error collection. Most of the loss surface comes from the canonical-graph-first execution model: every validate goes through the graph, which buys downstream features (ABox projection, OWL/SHACL emission, semantic round-trip) but pays a per-call cost a code-gen-only validator does not.
-
-We're publishing the full picture rather than cherry-picking. Where we are slow, we say so.
+Most of the per-call cost in json-tology comes from the canonical-graph-first execution model: every `validate` goes through the graph, which buys downstream features (ABox projection, OWL/SHACL emission, semantic round-trip, registry-wide reasoning) but adds work that a code-gen-only validator does not do. Read the tables for raw numbers; we do not assign WIN / LOSS labels.
 
 ## How to read this page
 
-- `WIN` — json-tology is at least 1.05x faster than the comparator on the listed scenario.
-- `LOSS` — json-tology is at least 1.05x slower.
-- `EVEN` — within 5% either way.
 - `ops/s` — operations per second after warmup. Higher is better.
 - `ns/op` — nanoseconds per operation. Lower is better.
-- `json-tology vs this` — the multiplier between json-tology and the listed library. "2.39x faster" means json-tology runs 2.39 ops for every 1 op of the comparator on this scenario.
+- `json-tology vs this` — multiplier between json-tology and the listed library on the same scenario. `2.39x faster` means json-tology runs 2.39 ops for every 1 op of the comparator; `2.39x slower` means the inverse. The cell reads `-` on the json-tology row itself.
+- `N/A` — the comparator does not implement the scenario's surface (e.g. AJV has no coerce mode; `JSON.stringify` is not a validator). Every per-scenario table lists every benchmarked library so the rows align across scenarios; `N/A` keeps that alignment without inventing comparisons.
 
 The latest run is auto-generated from `bench/results/latest.md` and is included in full at the end of this page.
 

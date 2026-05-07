@@ -5,6 +5,19 @@ import { fileURLToPath } from 'node:url';
 const pkg = JSON.parse(readFileSync(fileURLToPath(new URL('../../package.json', import.meta.url)), 'utf8')) as { version: string };
 import { themeConfig } from './theme.config.js';
 
+// Sidebar order:
+//   1. Introduction
+//   2. Lightweight concepts (3 pages a Zod/TypeBox-style user actually needs)
+//   3. Core authoring surface — schemas, validation, composition, transforms,
+//      values, serialization, registry. This is the entire surface for users
+//      who don't care about RDF / OWL / SPARQL.
+//   4. OPT-IN graph / ontology surface, gated together so it can be skipped:
+//      ontology concepts → OWL class axioms → ontology emission.
+//   5. Usage examples → data models → type inference → reference.
+//
+// Everything from "Ontology concepts" downward is advanced material. A
+// typical consumer can ignore it. Only authors who want OWL / SHACL / RDF
+// round-trip / SPARQL access need to descend into it.
 const sidebar = [
   {
     text: 'Introduction',
@@ -16,11 +29,7 @@ const sidebar = [
   {
     text: 'Concepts',
     items: [
-      { link: '/your-types-are-a-graph', text: 'Your Types Are a Graph' },
-      { link: '/advanced/graph-concepts', text: 'Graph concepts (TBox / ABox)' },
-      { link: '/advanced/graph-native-authoring', text: 'Graph-native authoring' },
-      { link: '/advanced/sub-schemas', text: 'Sub-schemas and $ref composition' },
-      { link: '/advanced/skolemization', text: 'Skolemization' },
+      { link: '/your-types-are-a-graph', text: 'Your types are a graph' },
       { link: '/picking-a-method', text: 'Picking a method' },
       { link: '/argument-conventions', text: 'Argument conventions' }
     ]
@@ -29,22 +38,7 @@ const sidebar = [
     text: 'Schemas',
     items: [
       { link: '/schemas', text: 'Authoring schemas' },
-      { link: '/schemas/jt-keywords', text: 'JT keywords' },
-      {
-        text: 'Type Inference',
-        items: [
-          { link: '/types#infertype', text: 'InferType' },
-          { link: '/types#inferschematype', text: 'InferSchemaType' },
-          { link: '/types#deprecatedkeystype-t', text: 'DeprecatedKeysType' },
-          { link: '/types#nondeprecatedschematype-t', text: 'NonDeprecatedSchemaType' },
-          { link: '/types#looseinputtype-t', text: 'LooseInputType' },
-          { link: '/types#enumvaluestype-t', text: 'EnumValuesType' },
-          { link: '/types#exhaustivetype-t', text: 'ExhaustiveType' },
-          { link: '/types#defaultalignedtype-t', text: 'DefaultAlignedType' },
-          { link: '/types#integerrangetype-min-max', text: 'IntegerRangeType' },
-          { link: '/types#multipleofrangetype-min-max-step', text: 'MultipleOfRangeType' }
-        ]
-      }
+      { link: '/schemas/jt-keywords', text: 'JT keywords' }
     ]
   },
   {
@@ -58,14 +52,6 @@ const sidebar = [
     ]
   },
   {
-    text: 'ValidationErrors',
-    items: [
-      { link: '/errors', text: 'Overview / usage examples' },
-      { link: '/errors/views#validationerrors-aggregate', text: 'aggregate' },
-      { link: '/errors/views#validationerrors-report', text: 'report' }
-    ]
-  },
-  {
     text: 'Composition',
     items: [
       { link: '/composition/extend', text: 'extend' },
@@ -74,9 +60,7 @@ const sidebar = [
       { link: '/composition/intersection', text: 'intersection' },
       { link: '/composition/discriminated-union', text: 'discriminatedUnion / narrow' },
       { link: '/composition/get-defaults', text: 'getDefaults' },
-      { link: '/composition/equivalent', text: 'equivalent' },
-      { link: '/composition/sub-class-of', text: 'subClassOf / disjointWith / complementOf' },
-      { link: '/composition/restrictions', text: 'OWL restrictions' }
+      { link: '/composition/equivalent', text: 'equivalent' }
     ]
   },
   {
@@ -113,6 +97,27 @@ const sidebar = [
       { link: '/registry/find-duplicates', text: 'findDuplicates' }
     ]
   },
+  // ──────────────────────────────────────────────────────────────────────
+  // OPT-IN: graph / ontology surface. Everything below is for advanced
+  // users who want OWL / SHACL / RDF round-trip / SPARQL access. A typical
+  // Zod-style consumer can stop reading here.
+  // ──────────────────────────────────────────────────────────────────────
+  {
+    text: 'Ontology concepts (opt-in)',
+    items: [
+      { link: '/advanced/graph-concepts', text: 'Graph concepts (TBox / ABox)' },
+      { link: '/advanced/graph-native-authoring', text: 'Graph-native authoring' },
+      { link: '/advanced/sub-schemas', text: 'Sub-schemas and $ref composition' },
+      { link: '/advanced/skolemization', text: 'Skolemization' }
+    ]
+  },
+  {
+    text: 'OWL class axioms (opt-in)',
+    items: [
+      { link: '/composition/sub-class-of', text: 'subClassOf / disjointWith / complementOf' },
+      { link: '/composition/restrictions', text: 'OWL property restrictions' }
+    ]
+  },
   {
     text: 'Ontology emission (opt-in)',
     items: [
@@ -135,11 +140,35 @@ const sidebar = [
     ]
   },
   {
+    text: 'Data models',
+    items: [
+      { link: '/errors', text: 'ValidationErrors (overview)' },
+      { link: '/errors/views', text: 'ValidationErrors views (aggregate / report)' },
+      { link: '/errors/classes', text: 'Error class hierarchy' },
+      { link: '/value/diff#changeset', text: 'Changeset (Value.diff result)' },
+      { link: '/advanced/quads#quad-shape', text: 'Quad / SubjectGroup' },
+      { link: '/advanced/utilities', text: 'Curie / Path / Resolver / Hash / Lift' }
+    ]
+  },
+  {
+    text: 'Type inference',
+    items: [
+      { link: '/types#infertype', text: 'InferType' },
+      { link: '/types#inferschematype', text: 'InferSchemaType' },
+      { link: '/types#deprecatedkeystype-t', text: 'DeprecatedKeysType' },
+      { link: '/types#nondeprecatedschematype-t', text: 'NonDeprecatedSchemaType' },
+      { link: '/types#looseinputtype-t', text: 'LooseInputType' },
+      { link: '/types#enumvaluestype-t', text: 'EnumValuesType' },
+      { link: '/types#exhaustivetype-t', text: 'ExhaustiveType' },
+      { link: '/types#defaultalignedtype-t', text: 'DefaultAlignedType' },
+      { link: '/types#integerrangetype-min-max', text: 'IntegerRangeType' },
+      { link: '/types#multipleofrangetype-min-max-step', text: 'MultipleOfRangeType' }
+    ]
+  },
+  {
     text: 'Reference',
     items: [
       { link: '/static-helpers', text: 'Static helpers' },
-      { link: '/advanced/utilities', text: 'Public utility classes' },
-      { link: '/errors/classes', text: 'Error classes' },
       { link: '/constraint-brands', text: 'Constraint brands' },
       { link: '/cli', text: 'CLI' },
       { link: '/references/benchmarks', text: 'Benchmarks' },

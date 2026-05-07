@@ -245,6 +245,87 @@
     },
     {
       "data": {
+        "id": "urn:bookstore:EBook__subClassOf__urn:bookstore:Book",
+        "kind": "subClassOf",
+        "label": "subClassOf",
+        "source": "urn:bookstore:EBook",
+        "target": "urn:bookstore:Book"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:PrintBook__subClassOf__urn:bookstore:Book",
+        "kind": "subClassOf",
+        "label": "subClassOf",
+        "source": "urn:bookstore:PrintBook",
+        "target": "urn:bookstore:Book"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:PrintBook__disjointWith__urn:bookstore:EBook",
+        "kind": "disjointWith",
+        "label": "disjointWith",
+        "source": "urn:bookstore:PrintBook",
+        "target": "urn:bookstore:EBook"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:RareBook__subClassOf__urn:bookstore:PrintBook",
+        "kind": "subClassOf",
+        "label": "subClassOf",
+        "source": "urn:bookstore:RareBook",
+        "target": "urn:bookstore:PrintBook"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:SoloAuthoredBook__subClassOf__urn:bookstore:Book",
+        "kind": "subClassOf",
+        "label": "subClassOf",
+        "source": "urn:bookstore:SoloAuthoredBook",
+        "target": "urn:bookstore:Book"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:AnthologyBook__subClassOf__urn:bookstore:Book",
+        "kind": "subClassOf",
+        "label": "subClassOf",
+        "source": "urn:bookstore:AnthologyBook",
+        "target": "urn:bookstore:Book"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:InPrintBook__subClassOf__urn:bookstore:Book",
+        "kind": "subClassOf",
+        "label": "subClassOf",
+        "source": "urn:bookstore:InPrintBook",
+        "target": "urn:bookstore:Book"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:OutOfPrintBook__subClassOf__urn:bookstore:Book",
+        "kind": "subClassOf",
+        "label": "subClassOf",
+        "source": "urn:bookstore:OutOfPrintBook",
+        "target": "urn:bookstore:Book"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:OutOfPrintBook__complementOf__urn:bookstore:InPrintBook",
+        "kind": "complementOf",
+        "label": "complementOf",
+        "source": "urn:bookstore:OutOfPrintBook",
+        "target": "urn:bookstore:InPrintBook"
+      }
+    },
+    {
+      "data": {
         "id": "urn:bookstore:Book__authors__urn:bookstore:AuthorName",
         "kind": "range",
         "label": "authors",
@@ -268,6 +349,69 @@
         "label": "items",
         "source": "urn:bookstore:Order",
         "target": "urn:bookstore:OrderLine"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:RareBook__authors ∃__urn:bookstore:AuthorName",
+        "kind": "restriction",
+        "label": "authors ∃",
+        "source": "urn:bookstore:RareBook",
+        "target": "urn:bookstore:AuthorName"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:RareBook__authors card ≤ 1__urn:bookstore:Book#authors",
+        "kind": "restriction",
+        "label": "authors card ≤ 1",
+        "source": "urn:bookstore:RareBook",
+        "target": "urn:bookstore:Book#authors"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:SoloAuthoredBook__authors card = 1__urn:bookstore:Book#authors",
+        "kind": "restriction",
+        "label": "authors card = 1",
+        "source": "urn:bookstore:SoloAuthoredBook",
+        "target": "urn:bookstore:Book#authors"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:AnthologyBook__authors ∀__urn:bookstore:AuthorName",
+        "kind": "restriction",
+        "label": "authors ∀",
+        "source": "urn:bookstore:AnthologyBook",
+        "target": "urn:bookstore:AuthorName"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:AnthologyBook__authors card ≥ 2__urn:bookstore:Book#authors",
+        "kind": "restriction",
+        "label": "authors card ≥ 2",
+        "source": "urn:bookstore:AnthologyBook",
+        "target": "urn:bookstore:Book#authors"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:InPrintBook__inStock = true__urn:bookstore:Book#inStock",
+        "kind": "restriction",
+        "label": "inStock = true",
+        "source": "urn:bookstore:InPrintBook",
+        "target": "urn:bookstore:Book#inStock"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:customer:AliceSmith__sameAs__urn:bookstore:customer:AliceSmithLegacy",
+        "kind": "sameAs",
+        "label": "sameAs",
+        "source": "urn:bookstore:customer:AliceSmith",
+        "target": "urn:bookstore:customer:AliceSmithLegacy"
       }
     }
   ],
@@ -445,6 +589,83 @@
         "id": "urn:bookstore:Review",
         "kind": "entity",
         "label": "Review"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:EBook",
+        "kind": "primitive",
+        "label": "EBook"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:PrintBook",
+        "kind": "primitive",
+        "label": "PrintBook"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:RareBook",
+        "kind": "primitive",
+        "label": "RareBook"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:SoloAuthoredBook",
+        "kind": "primitive",
+        "label": "SoloAuthoredBook"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:AnthologyBook",
+        "kind": "primitive",
+        "label": "AnthologyBook"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:InPrintBook",
+        "kind": "primitive",
+        "label": "InPrintBook"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:OutOfPrintBook",
+        "kind": "entity",
+        "label": "OutOfPrintBook"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Book#authors",
+        "kind": "primitive",
+        "label": "authors"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Book#inStock",
+        "kind": "primitive",
+        "label": "inStock"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:customer:AliceSmith",
+        "kind": "instance",
+        "label": "AliceSmith"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:customer:AliceSmithLegacy",
+        "kind": "instance",
+        "label": "AliceSmithLegacy"
       }
     }
   ]

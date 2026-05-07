@@ -59,7 +59,7 @@
    via the jt-brand markdown-it plugin in docs/.vitepress/plugins/jt-brand.mjs.
    Excluded from code blocks. */
 .jt-brand {
-  background: linear-gradient(135deg, var(--jst-teal-light) 0%, var(--jst-teal-mid) 50%, var(--jst-teal-dark) 100%);
+  background: linear-gradient(135deg, var(--jst-teal-dark) 0%, var(--jst-teal-mid) 50%, var(--jst-teal-dark) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;

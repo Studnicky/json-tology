@@ -34,6 +34,26 @@ import { OrderLineSchema } from './entities/OrderLine.js';
 import { OrderSchema } from './entities/Order.js';
 import { ReviewSchema } from './entities/Review.js';
 
+// Book taxonomy — Compose.subClassOf / disjointWith / complementOf / restrictions
+//
+// EBookSchema and PrintBookSchema are disjoint subclasses of Book (subClassOf
+// + disjointWith). RareBookSchema layers two restrictions onto PrintBook
+// (someValuesFrom + maxCardinality). The remaining four classes each cover
+// one of the other restriction methods so every Compose.* surface lands in
+// the live ontology graph:
+//
+//   SoloAuthoredBook  — Compose.cardinality(authors, 1)
+//   AnthologyBook     — Compose.minCardinality(authors, 2) + allValuesFrom
+//   InPrintBook       — Compose.hasValue(inStock, true)
+//   OutOfPrintBook    — Compose.complementOf(InPrintBook), bounded to Book
+import { AnthologyBookSchema } from './entities/AnthologyBook.js';
+import { EBookSchema } from './entities/EBook.js';
+import { InPrintBookSchema } from './entities/InPrintBook.js';
+import { OutOfPrintBookSchema } from './entities/OutOfPrintBook.js';
+import { PrintBookSchema } from './entities/PrintBook.js';
+import { RareBookSchema } from './entities/RareBook.js';
+import { SoloAuthoredBookSchema } from './entities/SoloAuthoredBook.js';
+
 const allSchemas = [
   // Primitives must register before entities that $ref them
   AmountSchema,
@@ -63,13 +83,30 @@ const allSchemas = [
   CustomerSchema,
   OrderLineSchema,
   OrderSchema,
-  ReviewSchema
+  ReviewSchema,
+  // Book taxonomy — must register Book first; class axioms below reference it
+  EBookSchema,
+  PrintBookSchema,
+  RareBookSchema,
+  SoloAuthoredBookSchema,
+  AnthologyBookSchema,
+  InPrintBookSchema,
+  OutOfPrintBookSchema
 ] as const;
 
 export const bookstoreEntities = JsonTology.create({
   'baseIRI': 'https://bookstore.example',
   'schemas': allSchemas
 });
+
+// ABox-level identity demo — owl:sameAs between two customer IRIs that
+// denote the same individual. The bookstore migrated from a legacy CRM, so
+// the customer "Alice Smith" carries both her current stable IRI and her
+// legacy CRM IRI; declaring sameAs lets reasoners merge facts about both.
+bookstoreEntities.sameAs(
+  'urn:bookstore:customer:AliceSmith',
+  'urn:bookstore:customer:AliceSmithLegacy'
+);
 
 // Entity types derived from schemas
 export type Address = InferType<typeof AddressSchema>;
@@ -83,6 +120,7 @@ export type Review = InferType<typeof ReviewSchema>;
 export { AddressSchema } from './entities/Address.js';
 // Re-export primitives
 export { AmountSchema } from './entities/Amount.js';
+export { AnthologyBookSchema } from './entities/AnthologyBook.js';
 export { AuthorNameSchema } from './entities/AuthorName.js';
 export { BookSchema } from './entities/Book.js';
 export { CityNameSchema } from './entities/CityName.js';
@@ -91,19 +129,25 @@ export { CurrencyCodeSchema } from './entities/CurrencyCode.js';
 export { CustomerSchema } from './entities/Customer.js';
 export { CustomerIdSchema } from './entities/CustomerId.js';
 export { CustomerNameSchema } from './entities/CustomerName.js';
+export { EBookSchema } from './entities/EBook.js';
 export { EmailSchema } from './entities/Email.js';
+export { InPrintBookSchema } from './entities/InPrintBook.js';
 export { IsbnSchema } from './entities/Isbn.js';
 export { Iso8601Schema } from './entities/Iso8601.js';
 export { MoneySchema } from './entities/Money.js';
 export { OrderSchema } from './entities/Order.js';
 export { OrderIdSchema } from './entities/OrderId.js';
 export { OrderLineSchema } from './entities/OrderLine.js';
+export { OutOfPrintBookSchema } from './entities/OutOfPrintBook.js';
 export { PersonNameSchema } from './entities/PersonName.js';
 export { PostalCodeSchema } from './entities/PostalCode.js';
-
+export { PrintBookSchema } from './entities/PrintBook.js';
 export { QuantitySchema } from './entities/Quantity.js';
+export { RareBookSchema } from './entities/RareBook.js';
+
 export { RatingScoreSchema } from './entities/RatingScore.js';
 export { ReviewSchema } from './entities/Review.js';
 export { ReviewIdSchema } from './entities/ReviewId.js';
+export { SoloAuthoredBookSchema } from './entities/SoloAuthoredBook.js';
 export { StreetLineSchema } from './entities/StreetLine.js';
 export { TitleSchema } from './entities/Title.js';

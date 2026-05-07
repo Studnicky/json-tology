@@ -17,7 +17,7 @@ All examples use the [bookstore domain](/bookstore-domain). See [Getting Started
 
 ## Related
 
-- [`ValidationErrors`](/errors/index) - the structured error collection returned by `validate`
+- [`ValidationErrors`](/errors/) - the structured error collection returned by `validate`
 - [`ValidationErrors` views](/errors/views) - `aggregate`, `report`
 - [`instantiate`](/validation/instantiate) - coerce + validate + apply defaults
 
