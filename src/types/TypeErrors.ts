@@ -1,14 +1,33 @@
 /**
- * Type-level error brands.
+ * Type-level diagnostic brands.
  *
- * These types exist purely at the type level to surface compile-time validation
- * failures with structured, IDE-hoverable diagnostics. When a schema fails a
- * cross-keyword check, `ValidateSchemaType` resolves to one of these branded
- * error types instead of `never`, so authors see why the schema was rejected.
+ * When a compile-time validation rule fails, json-tology builders resolve to a
+ * named brand type carrying the offending value(s) instead of plain `never`.
+ * IDE hovers then surface the actionable diagnostic (the constraint name + the
+ * offending key, id, etc.) instead of a generic "Argument of type X is not
+ * assignable to parameter of type never" message.
  *
- * Each brand carries a `kind` discriminant plus structured payload fields
- * describing the offending key and the available alternatives.
+ * Two patterns are used in this file:
+ *
+ * 1. **Validator-result interfaces** (Cluster B — `RequiredKeyNotInProperties`,
+ *    `DependentRequiredKeyNotInProperties`, `IfDiscriminatorNotInProperties`).
+ *    Returned from `ValidateSchemaType<T>` to surface schema-level cross-keyword
+ *    violations. Carry a `kind` discriminant plus structured payload.
+ *
+ * 2. **Constraint brands intersected with `never`** (Cluster A —
+ *    `SelfSubClassType`, `DiscriminatorMissingType`, `SelfEquivalentType`,
+ *    `IntersectionIdCollisionType`). Used as compose-builder argument
+ *    constraints — the brand intersected with `never` keeps the type
+ *    assignment-incompatible while preserving the descriptive shape for IDE
+ *    hover.
+ *
+ * Both patterns coexist; pick whichever fits the call site (validator output
+ * vs. parameter constraint).
  */
+
+// ---------------------------------------------------------------------------
+// Validator-result interfaces (Cluster B)
+// ---------------------------------------------------------------------------
 
 /**
  * Emitted when a `dependentRequired` map key — or one of the entries of one of
@@ -46,3 +65,37 @@ export interface RequiredKeyNotInPropertiesInterface<
   readonly 'invalidKey': TKey;
   readonly 'kind': 'RequiredKeyNotInProperties';
 }
+
+// ---------------------------------------------------------------------------
+// Constraint brands intersected with `never` (Cluster A)
+// ---------------------------------------------------------------------------
+
+declare const TYPE_ERROR_TAG: unique symbol;
+
+interface TypeErrorBrandInterface<TName extends string> {
+  readonly [TYPE_ERROR_TAG]: TName;
+}
+
+/** Compose.subClassOf body's $id collides with the parent's $id. */
+export type SelfSubClassType<TId extends string> = TypeErrorBrandInterface<'SelfSubClass'> & never & {
+  readonly 'collidingId': TId;
+};
+
+/** Compose.discriminatedUnion variant is missing a const discriminator on `prop`. */
+export type DiscriminatorMissingType<
+  TProp extends string,
+  TVariant
+> = TypeErrorBrandInterface<'DiscriminatorMissing'> & never & {
+  readonly 'discriminator': TProp;
+  readonly 'variant': TVariant;
+};
+
+/** Compose.equivalent options.$id collides with source.$id. */
+export type SelfEquivalentType<TId extends string> = TypeErrorBrandInterface<'SelfEquivalent'> & never & {
+  readonly 'collidingId': TId;
+};
+
+/** Compose.intersection newId collides with one of the input schemas' $ids. */
+export type IntersectionIdCollisionType<TId extends string> = TypeErrorBrandInterface<'IntersectionIdCollision'> & never & {
+  readonly 'collidingId': TId;
+};
