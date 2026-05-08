@@ -23,22 +23,16 @@
  * - `unevaluatedProperties` / `unevaluatedItems` — Treated identically to
  *   `additionalProperties` / `additionalItems`. The "unevaluated" scoping
  *   across subschemas is a runtime concern.
- * - `patternProperties` — When the regex pattern is a simple anchored literal
- *   (e.g. `^data_`, `_id$`, `^exact$`), the key is inferred as a template
- *   literal type. Patterns with metacharacters fall back to `string`.
- * - `if/then/else` — When every property in the `if.properties` clause is
- *   required and carries a recognised discriminator (`const`, `enum`, or
- *   `type`), the then branch is narrowed with the conjunction of those
- *   discriminator constraints. Recognised forms:
- *     - `{ properties: { kind: { const: 'circle' } }, required: ['kind'] }`
- *       → then branch narrowed with `{ kind: 'circle' }`.
- *     - `{ properties: { kind: { enum: ['a', 'b'] } }, required: ['kind'] }`
- *       → then branch narrowed with `{ kind: 'a' | 'b' }`.
- *     - `{ properties: { count: { type: 'number' } }, required: ['count'] }`
- *       → then branch narrowed structurally with `{ count: number }`.
- *     - Multi-property: all narrowing constraints intersect on the then branch.
- *   Otherwise falls back to the sound over-approximation: union of possible
- *   branch outputs.
+ * - `patternProperties` — Anchored regex shapes are mapped to template
+ *   literal key types: `^prefix` → `\`prefix${string}\``, `suffix$` →
+ *   `\`${string}suffix\``, `^exact$` → literal, `^(a|b|c)$` → literal union,
+ *   `^[class]+suffix$` → `\`${string}suffix\``, `^.{N}$` (small N) →
+ *   length-N character template literal. Unrecognised patterns fall back
+ *   to `string`.
+ * - `if/then/else` — When the `if` clause has a single const-discriminated
+ *   property (e.g. `{ properties: { kind: { const: 'circle' } }, required: ['kind'] }`),
+ *   the then branch is narrowed with the discriminator literal. Otherwise falls
+ *   back to the sound over-approximation: union of possible branch outputs.
  */
 
 import type {
@@ -78,6 +72,7 @@ import type { TransformBrandInterface } from '../interfaces/TransformBrand.js';
 type SchemaPointerDepthCap = 5;
 type DeepPropertyDepthCap = 4;
 type IntegerRangeCap = 50;
+type StringLengthCap = 8;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -135,25 +130,151 @@ type HasRegexMetaType<TS extends string>
     : false;
 
 /**
+ * Split an alternation body (`a|b|c`) into the union of its branches. Each
+ * branch must be free of further metacharacters; otherwise the alternation
+ * collapses to `string`.
+ */
+type AlternationToUnionType<TBody extends string>
+  = TBody extends `${infer THead}|${infer TTail}`
+    ? HasRegexMetaType<THead> extends true
+      ? string
+      : AlternationToUnionType<TTail> | THead
+    : HasRegexMetaType<TBody> extends true
+      ? string
+      : TBody;
+
+/**
+ * Build a length-N tuple of `string` segments. Used to express `^.{N}$` as a
+ * string of exactly N characters. Caps at {@link StringLengthCap}; above the
+ * cap it falls back to plain `string`.
+ */
+type BuildStringSegmentsType<TLen extends number, TAccum extends string[] = []>
+  = TAccum['length'] extends TLen ? TAccum
+    : TAccum['length'] extends StringLengthCap ? TAccum
+      : BuildStringSegmentsType<TLen, [...TAccum, string]>;
+
+/** Concatenate a tuple of segments into a single template literal. */
+type JoinSegmentsType<TSegs extends readonly string[]>
+  = TSegs extends readonly [infer THead extends string, ...infer TTail extends string[]]
+    ? `${THead}${JoinSegmentsType<TTail>}`
+    : '';
+
+/**
+ * Express `^.{N}$` as a length-N character template literal. For N greater
+ * than {@link StringLengthCap}, fall back to `string`.
+ */
+type FixedDotLengthType<TLen extends number>
+  = number extends TLen ? string
+    : BuildStringSegmentsType<TLen> extends infer TSegs extends readonly string[]
+      ? TSegs['length'] extends TLen ? JoinSegmentsType<TSegs> : string
+      : string;
+
+/**
+ * Detect a character-class + literal-suffix shape, e.g. `[a-z]+_id`. The
+ * suffix must be free of further metacharacters. The character-class portion
+ * is treated structurally as `string` (TypeScript cannot bind char ranges;
+ * the runtime regex still enforces the actual class).
+ */
+type CharClassPlusSuffixType<TBody extends string>
+  = TBody extends `[${string}]${'*' | '+'}${infer TSuffix}`
+    ? HasRegexMetaType<TSuffix> extends true
+      ? string
+      : `${string}${TSuffix}`
+    : never;
+
+/**
  * Map a regex pattern string to a TypeScript template literal key type.
  *
- * - `^prefix` (no metacharacters) → `` `prefix${string}` ``
- * - `suffix$` (no metacharacters) → `` `${string}suffix` ``
+ * Anchored shapes recognised; unhandled shapes fall back to `string`:
+ *
  * - `^exact$` (no metacharacters) → literal `'exact'`
- * - Anything with metacharacters or no anchors → `string` (safe fallback)
+ * - `^(a|b|c)$` (alternation of literals) → `'a' | 'b' | 'c'`
+ * - `^.{N}$` (small N ≤ {@link StringLengthCap}) → length-N template literal
+ * - `^[class]+suffix$` / `^[class]*suffix$` → `\`${string}suffix\``
+ * - `^prefix` (no metacharacters) → `\`prefix${string}\``
+ * - `suffix$` (no metacharacters) → `\`${string}suffix\``
+ * - everything else → `string`
  */
 type PatternToKeyType<TP extends string>
-  // ^exact$ — full match, literal string
-  = TP extends `^${infer Exact}$`
-    ? HasRegexMetaType<Exact> extends true ? string : Exact
-    // ^prefix — starts with
-    : TP extends `^${infer Prefix}`
-      ? HasRegexMetaType<Prefix> extends true ? string : `${Prefix}${string}`
-      // suffix$ — ends with
-      : TP extends `${infer Suffix}$`
-        ? HasRegexMetaType<Suffix> extends true ? string : `${string}${Suffix}`
-        // No anchors — fall back to string
-        : string;
+  // ^(a|b|c)$ — alternation of literal branches
+  = TP extends `^(${infer TBody})$`
+    ? AlternationToUnionType<TBody>
+    // ^.{N}$ — exact length string for small N
+    : TP extends `^.{${infer TLen extends number}}$`
+      ? FixedDotLengthType<TLen>
+      // ^[class]+suffix$ / ^[class]*suffix$ — char class + literal suffix
+      : TP extends `^${infer TBody}$`
+        ? CharClassPlusSuffixType<TBody> extends infer TCC
+          ? [TCC] extends [never]
+            // Fall through to existing exact-literal handling
+            ? HasRegexMetaType<TBody> extends true ? string : TBody
+            : TCC
+          : string
+        // ^prefix — starts with literal prefix
+        : TP extends `^${infer Prefix}`
+          ? HasRegexMetaType<Prefix> extends true ? string : `${Prefix}${string}`
+          // suffix$ — ends with literal suffix
+          : TP extends `${infer Suffix}$`
+            ? HasRegexMetaType<Suffix> extends true ? string : `${string}${Suffix}`
+            // No anchors — fall back to string
+            : string;
+
+// ---------------------------------------------------------------------------
+// Tight string-length narrowing helpers (Finding 20)
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a length-N character template literal type — `string` repeated N
+ * times. Caps at {@link StringLengthCap}; above the cap the type widens to
+ * plain `string`.
+ */
+type FixedLengthStringType<TLen extends number>
+  = number extends TLen ? string
+    : FixedDotLengthType<TLen>;
+
+/**
+ * Narrow a string by `minLength` / `maxLength`, only when the type-config
+ * has `tightStringLengths` enabled. Narrowing applies when both bounds are
+ * present and within {@link StringLengthCap}:
+ *
+ * - `minLength === maxLength === N` → length-N template literal
+ * - `minLength < maxLength`, both ≤ cap → union of length-N templates
+ * - everything else → plain `string`
+ */
+type TightStringLengthType<T>
+  = IsEnabledType<'tightStringLengths'> extends true
+    ? T extends {
+      readonly 'maxLength': infer TMax extends number;
+      readonly 'minLength': infer TMin extends number;
+    }
+      ? TMin extends TMax
+        ? FixedLengthStringType<TMin>
+        : BuildLengthRangeType<TMin, TMax>
+      : T extends { readonly 'maxLength': infer TMax extends number }
+        ? BuildLengthRangeType<0, TMax>
+        : string
+    : string;
+
+/**
+ * Build a union of fixed-length string template literals for every integer
+ * length between `TMin` and `TMax` inclusive. Caps at {@link StringLengthCap};
+ * any length above the cap pulls the whole union back to `string`.
+ */
+type BuildLengthRangeType<
+  TMin extends number, TMax extends number,
+  TAccum extends unknown[] = [], TResult = never
+>
+  = TAccum['length'] extends StringLengthCap
+    ? string
+    : BuildTupleType<TMax> extends [...TAccum, ...unknown[]]
+      ? BuildLengthRangeType<
+        TMin, TMax,
+        [...TAccum, unknown],
+        TAccum extends [...BuildTupleType<TMin>, ...unknown[]]
+          ? FixedLengthStringType<number & TAccum['length']> | TResult
+          : TResult
+      >
+      : TResult;
 
 // ---------------------------------------------------------------------------
 // Bound normalization helpers (integer ranges)
@@ -232,7 +353,7 @@ type InferObjectBrandsType<T>
 // ---------------------------------------------------------------------------
 
 type InferPrimitiveType<T>
-  = T extends { readonly 'type': 'string' } ? InferStringBrandsType<T> & string
+  = T extends { readonly 'type': 'string' } ? InferStringBrandsType<T> & TightStringLengthType<T>
     : T extends { readonly 'type': 'integer' }
       // Guard against never bounds (no bound or Sub1(0))
       ? [NormalizeMinType<T>] extends [never] ? InferNumberBrandsType<T> & number
@@ -586,7 +707,7 @@ type InferRecursiveRefType<T, TRoot, TReferences>
 // ---------------------------------------------------------------------------
 
 type InferSingleTypeType<U extends string, T, TRoot, TReferences>
-  = U extends 'string' ? InferStringBrandsType<T> & string
+  = U extends 'string' ? InferStringBrandsType<T> & TightStringLengthType<T>
     : U extends 'integer'
       ? [NormalizeMinType<T>] extends [never] ? InferNumberBrandsType<T> & number
         : [NormalizeMaxType<T>] extends [never] ? InferNumberBrandsType<T> & number
@@ -989,8 +1110,20 @@ type BuildIntegerRangeType<
           : BuildIntegerRangeType<TMin, TMax, [...TAccum, unknown]>;
 
 /**
+ * Test whether `TMax` fits within {@link IntegerRangeCap}. The tuple builder
+ * walks 0..TMax linearly, so the practical cap is on `TMax` rather than the
+ * range delta. A `TMax` above the cap collapses the union to `number`.
+ */
+type RangeWithinCapType<TMax extends number>
+  = number extends TMax ? false
+    : BuildTupleType<IntegerRangeCap> extends [...BuildTupleType<TMax>, ...unknown[]]
+      ? true
+      : false;
+
+/**
  * Produce a union of integer literals from Min to Max (inclusive).
- * Only practical for small non-negative ranges (0–50).
+ * Only practical for small non-negative ranges (Max ≤ 50). Above the cap,
+ * falls back to `number`.
  *
  * @example
  * type Rating = IntegerRangeType<1, 5>;  // 1 | 2 | 3 | 4 | 5
@@ -998,7 +1131,9 @@ type BuildIntegerRangeType<
 export type IntegerRangeType<TMin extends number, TMax extends number>
   = number extends TMin ? number
     : number extends TMax ? number
-      : BuildIntegerRangeType<TMin, TMax>;
+      : RangeWithinCapType<TMax> extends true
+        ? BuildIntegerRangeType<TMin, TMax>
+        : number;
 
 /**
  * Build a stepped integer range. Starts at 0, increments by TStep,
