@@ -17,8 +17,13 @@ import type {
 } from '../../interfaces/Compose.js';
 import type {
   ExtendSchemaType,
+  ExtractPropertiesType,
   PartialSchemaType,
-  RequiredSchemaType
+  RequiredSchemaType,
+  ValidateDiscriminatedVariantsType,
+  ValidateEquivalentOptionsType,
+  ValidateIntersectionIdType,
+  ValidateSubClassOfBodyType
 } from '../../types/Compose.js';
 import type {
   RestrictionDescriptorInterface, RestrictionRefType
@@ -128,7 +133,7 @@ export class Compose {
     TId extends string
   >(
     discriminatorProperty: TDiscriminator,
-    variants: TVariants,
+    variants: TVariants & ValidateDiscriminatedVariantsType<TVariants, TDiscriminator>,
     newId: TId
   ): DiscriminatedUnionSchemaInterface<TDiscriminator, TVariants, TId> {
     return {
@@ -190,14 +195,17 @@ export class Compose {
    *   description: 'The canonical ISBN used for catalog lookup.'
    * });
    */
-  public static equivalent<TSource extends { readonly '$id': string }>(
-    source: TSource,
-    options: {
+  public static equivalent<
+    TSource extends { readonly '$id': string },
+    TOptions extends {
       readonly '$id': string;
       readonly 'description'?: string;
       readonly 'examples'?: readonly unknown[];
       readonly 'title'?: string;
     }
+  >(
+    source: TSource,
+    options: TOptions & ValidateEquivalentOptionsType<TSource, TOptions>
   ): {
     readonly '$id': string;
     readonly '$ref': string;
@@ -399,7 +407,10 @@ export class Compose {
   public static intersection<
     TSchemas extends ReadonlyArray<Record<string, unknown>>,
     TId extends string
-  >(schemas: TSchemas, newId: TId): IntersectionSchemaInterface<TSchemas, TId> {
+  >(
+    schemas: TSchemas,
+    newId: TId & ValidateIntersectionIdType<TSchemas, TId>
+  ): IntersectionSchemaInterface<TSchemas, TId> {
     return {
       '$id': newId,
       'allOf': schemas
@@ -457,7 +468,7 @@ export class Compose {
    */
   public static omit<
     TSchema extends Record<string, unknown> & { readonly '$id': string; },
-    TKeys extends string,
+    TKeys extends keyof ExtractPropertiesType<TSchema> & string,
     TId extends string
   >(schema: TSchema, keys: readonly TKeys[], newId: TId): OmitSchemaInterface<TSchema, TKeys, TId> {
     const source = schema as unknown as Record<string, unknown>;
@@ -524,7 +535,7 @@ export class Compose {
    */
   public static pick<
     TSchema extends Record<string, unknown> & { readonly '$id': string; },
-    TKeys extends string,
+    TKeys extends keyof ExtractPropertiesType<TSchema> & string,
     TId extends string
   >(schema: TSchema, keys: readonly TKeys[], newId: TId): PickSchemaInterface<TSchema, TKeys, TId> {
     const source = schema as unknown as Record<string, unknown>;
@@ -631,7 +642,10 @@ export class Compose {
   public static subClassOf<
     TParent extends ReadonlyArray<{ readonly '$id': string }> | { readonly '$id': string },
     TBody extends Record<string, unknown> & { readonly '$id': string }
-  >(parent: TParent, body: ValidateSchemaType<TBody>): SubClassOfSchemaInterface<TParent, TBody>;
+  >(
+    parent: TParent,
+    body: ValidateSchemaType<TBody> & ValidateSubClassOfBodyType<TParent, TBody>
+  ): SubClassOfSchemaInterface<TParent, TBody>;
   public static subClassOf<
     TBody extends Record<string, unknown> & { readonly '$id': string }
   >(
