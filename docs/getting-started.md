@@ -10,7 +10,7 @@ npm install json-tology
 
 ## Define a schema
 
-Schemas are plain JSON Schema objects with `$id` and `as const`. The bookstore domain used in all examples follows the one-file-per-concept pattern. See the [Bookstore Domain](/bookstore-domain) page for the full folder layout and all schemas.
+Schemas are plain JSON Schema objects with `$id` and `as const`. They are interoperable with the wider JSON Schema ecosystem - for example, [sourcemeta/jsonschema](https://github.com/sourcemeta/jsonschema) will lint, bundle, and format the same files. The bookstore domain used in all examples follows the one-file-per-concept pattern. See the [Bookstore Domain](/bookstore-domain) page for the full folder layout and all schemas.
 
 Primitives are named, reusable schemas with a `urn:` IRI:
 
