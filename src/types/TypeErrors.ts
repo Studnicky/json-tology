@@ -77,7 +77,7 @@ interface TypeErrorBrandInterface<TName extends string> {
 }
 
 /** Compose.subClassOf body's $id collides with the parent's $id. */
-export type SelfSubClassType<TId extends string> = TypeErrorBrandInterface<'SelfSubClass'> & never & {
+export type SelfSubClassType<TId extends string> = never & TypeErrorBrandInterface<'SelfSubClass'> & {
   readonly 'collidingId': TId;
 };
 
@@ -85,17 +85,17 @@ export type SelfSubClassType<TId extends string> = TypeErrorBrandInterface<'Self
 export type DiscriminatorMissingType<
   TProp extends string,
   TVariant
-> = TypeErrorBrandInterface<'DiscriminatorMissing'> & never & {
+> = never & TypeErrorBrandInterface<'DiscriminatorMissing'> & {
   readonly 'discriminator': TProp;
   readonly 'variant': TVariant;
 };
 
 /** Compose.equivalent options.$id collides with source.$id. */
-export type SelfEquivalentType<TId extends string> = TypeErrorBrandInterface<'SelfEquivalent'> & never & {
+export type SelfEquivalentType<TId extends string> = never & TypeErrorBrandInterface<'SelfEquivalent'> & {
   readonly 'collidingId': TId;
 };
 
 /** Compose.intersection newId collides with one of the input schemas' $ids. */
-export type IntersectionIdCollisionType<TId extends string> = TypeErrorBrandInterface<'IntersectionIdCollision'> & never & {
+export type IntersectionIdCollisionType<TId extends string> = never & TypeErrorBrandInterface<'IntersectionIdCollision'> & {
   readonly 'collidingId': TId;
 };
