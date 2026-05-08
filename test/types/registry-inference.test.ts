@@ -203,3 +203,106 @@ void [
   _orderIdCheck,
   _totalCheck
 ];
+
+// ---------------------------------------------------------------------------
+// 7. Finding 12 — duplicate `$id` in schemas tuple is a compile error
+// ---------------------------------------------------------------------------
+
+const DuplicateA = {
+  '$id': 'https://example.io/Duplicate',
+  'properties': { 'a': { 'type': 'string' } },
+  'type': 'object'
+} as const;
+
+const DuplicateB = {
+  '$id': 'https://example.io/Duplicate',
+  'properties': { 'b': { 'type': 'number' } },
+  'type': 'object'
+} as const;
+
+if (false as boolean) {
+  // @ts-expect-error — two schemas share '$id': 'https://example.io/Duplicate'
+  JsonTology.create({
+    'baseIRI': 'https://example.io',
+    'schemas': [
+      DuplicateA,
+      DuplicateB
+    ] as const
+  });
+
+  // @ts-expect-error — duplicate also rejected on chained register()
+  JsonTology.create({
+    'baseIRI': 'https://example.io',
+    'schemas': [DuplicateA] as const
+  }).register([
+    DuplicateA,
+    DuplicateB
+  ] as const);
+}
+
+// Positive: distinct $ids accept fine
+const _distinct = JsonTology.create({
+  'baseIRI': 'https://example.io',
+  'schemas': [
+    UserSchema,
+    OrderSchema,
+    TagSchema
+  ] as const
+});
+
+void _distinct;
+
+// ---------------------------------------------------------------------------
+// 8. Finding 13 — addComputed / addInvariant reject unregistered schema IDs
+// ---------------------------------------------------------------------------
+
+// Positive: registered schema accepted
+jt.addComputed('https://example.io/User', 'name', (_) => {
+  return 'computed';
+});
+jt.addInvariant('https://example.io/User', {
+  'fn': (_) => {
+    return null;
+  },
+  'name': 'check-name'
+});
+
+if (false as boolean) {
+  // @ts-expect-error — schema not registered
+  jt.addComputed('https://example.io/NotRegistered', 'name', (_) => {
+    return 'x';
+  });
+  // @ts-expect-error — schema not registered
+  jt.addInvariant('https://example.io/NotRegistered', {
+    'fn': (_) => {
+      return null;
+    },
+    'name': 'no'
+  });
+}
+
+// ---------------------------------------------------------------------------
+// 9. Finding 14 — findDuplicates() returns literal-typed equivalentTo
+// ---------------------------------------------------------------------------
+
+const _dups = jt.findDuplicates();
+
+void _dups;
+type DupEntry = typeof _dups[number];
+type DupEquivalentTo = DupEntry['equivalentTo'];
+
+// Positive: equivalentTo is the literal union of registered $ids
+const _eq: DupEquivalentTo = 'https://example.io/User';
+const _eq2: DupEquivalentTo = 'https://example.io/Order';
+
+void [
+  _eq,
+  _eq2
+];
+
+if (false as boolean) {
+  // @ts-expect-error — equivalentTo is not an arbitrary string
+  const _badEq: DupEquivalentTo = 'https://example.io/NotRegistered';
+
+  void _badEq;
+}

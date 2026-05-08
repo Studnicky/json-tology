@@ -63,6 +63,11 @@ import type {
   BuildExactTupleType
 } from './RestrictionInfer.js';
 import type { IsEnabledType } from './TypeConfig.js';
+import type {
+  AnchorNotFoundInterface,
+  HasReferencesType,
+  RefNotFoundInterface
+} from './TypeErrors.js';
 import type { TransformBrandInterface } from '../interfaces/TransformBrand.js';
 
 // ---------------------------------------------------------------------------
@@ -586,10 +591,14 @@ type ResolveRefBaseSchemaType<TBase extends string, TRoot, TReferences>
       ? TRoot
       : TBase extends keyof TReferences
         ? TReferences[TBase]
-        : unknown
+        : HasReferencesType<TReferences> extends true
+          ? RefNotFoundInterface<TBase>
+          : unknown
     : TBase extends keyof TReferences
       ? TReferences[TBase]
-      : unknown;
+      : HasReferencesType<TReferences> extends true
+        ? RefNotFoundInterface<TBase>
+        : unknown;
 
 // ---------------------------------------------------------------------------
 // External fragment ref helpers
@@ -606,15 +615,27 @@ type ResolveRefBaseSchemaType<TBase extends string, TRoot, TReferences>
 type SplitFragmentRefType<TRef extends string, TRoot, TReferences = Record<never, never>>
   = TRef extends `${infer Base}#${infer Fragment}`
     ? ResolveRefBaseSchemaType<Base, TRoot, TReferences> extends infer TBaseSchema
-      ? Fragment extends `/$defs/${infer K}`
-        ? TBaseSchema extends { readonly '$defs': infer TDefs }
-          ? K extends keyof TDefs
-            ? TDefs[K]
-            : unknown
-          : unknown
-        : Fragment extends `/${infer TPath}`
-          ? NavigateSchemaPathType<TBaseSchema, TPath>
-          : FindAnchorType<Fragment, TBaseSchema>
+      ? TBaseSchema extends RefNotFoundInterface<string>
+        ? TBaseSchema
+        : Fragment extends `/$defs/${infer K}`
+          ? TBaseSchema extends { readonly '$defs': infer TDefs }
+            ? K extends keyof TDefs
+              ? TDefs[K]
+              : HasReferencesType<TReferences> extends true
+                ? AnchorNotFoundInterface<Base, Fragment>
+                : unknown
+            : HasReferencesType<TReferences> extends true
+              ? AnchorNotFoundInterface<Base, Fragment>
+              : unknown
+          : Fragment extends `/${infer TPath}`
+            ? NavigateSchemaPathType<TBaseSchema, TPath>
+            : FindAnchorType<Fragment, TBaseSchema> extends infer TAnchorResult
+              ? [unknown] extends [TAnchorResult]
+                ? HasReferencesType<TReferences> extends true
+                  ? AnchorNotFoundInterface<Base, Fragment>
+                  : unknown
+                : TAnchorResult
+              : unknown
       : unknown
     : unknown;
 
@@ -665,7 +686,9 @@ type InferRefType<T, TRoot, TReferences>
           : T extends { readonly '$ref': infer TRef extends string }
             ? TRef extends keyof TReferences
               ? InferSchemaType<TReferences[TRef], TReferences[TRef], TReferences>
-              : unknown
+              : HasReferencesType<TReferences> extends true
+                ? RefNotFoundInterface<TRef>
+                : unknown
             : unknown;
 
 /** Strip the leading `/` from a JSON Pointer path segment. */

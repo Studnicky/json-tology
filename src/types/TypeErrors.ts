@@ -66,6 +66,52 @@ export interface RequiredKeyNotInPropertiesInterface<
   readonly 'kind': 'RequiredKeyNotInProperties';
 }
 
+/**
+ * Emitted when a `JsonTology.create({ schemas: [...] })` tuple contains two
+ * schemas with the same `$id`. The brand attaches to the offending tuple
+ * slots via `UniqueSchemaIdsType`, surfacing the duplicated IRI by name in
+ * editor diagnostics.
+ *
+ * @template TId The duplicated `$id` IRI literal.
+ */
+export interface DuplicateSchemaIdInterface<TId extends string> {
+  readonly 'duplicateId': TId;
+  readonly 'kind': 'DuplicateSchemaId';
+}
+
+/**
+ * Emitted when an absolute `$ref` IRI is not present in the schema
+ * references map currently in scope. Surfaces in `InferType<S, TReferences>`
+ * when `S` references an `$id` the registry has not seen.
+ *
+ * @template TRef The unresolved `$ref` IRI literal.
+ */
+export interface RefNotFoundInterface<TRef extends string> {
+  readonly 'kind': 'RefNotFound';
+  readonly 'unresolvedRef': TRef;
+}
+
+/**
+ * Emitted when a cross-schema fragment ref of the form `<base>#<anchor>`
+ * resolves to a schema that does not declare a matching `$anchor` (or the
+ * JSON pointer fragment lands outside the schema graph).
+ *
+ * @template TBase   The base IRI portion of the ref.
+ * @template TAnchor The anchor or pointer fragment that could not be resolved.
+ */
+export interface AnchorNotFoundInterface<
+  TBase extends string,
+  TAnchor extends string
+> {
+  readonly 'inSchema': TBase;
+  readonly 'kind': 'AnchorNotFound';
+  readonly 'unresolvedAnchor': TAnchor;
+}
+
+/** True when a references map is present (has at least one key). */
+export type HasReferencesType<TReferences>
+  = [keyof TReferences] extends [never] ? false : true;
+
 // ---------------------------------------------------------------------------
 // Constraint brands intersected with `never` (Cluster A)
 // ---------------------------------------------------------------------------
