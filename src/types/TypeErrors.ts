@@ -9,10 +9,13 @@
  *
  * Two patterns are used in this file:
  *
- * 1. **Validator-result interfaces** (Cluster B — `RequiredKeyNotInProperties`,
- *    `DependentRequiredKeyNotInProperties`, `IfDiscriminatorNotInProperties`).
- *    Returned from `ValidateSchemaType<T>` to surface schema-level cross-keyword
- *    violations. Carry a `kind` discriminant plus structured payload.
+ * 1. **Validator-result interfaces** (Clusters B, D, E — `RequiredKeyNotInProperties`,
+ *    `DependentRequiredKeyNotInProperties`, `IfDiscriminatorNotInProperties`,
+ *    `PipeChainMismatch`, `PipeChainSchemaMismatch`, `DuplicateSchemaId`,
+ *    `RefNotFound`, `AnchorNotFound`).
+ *    Returned from cluster validators to surface schema-level / chain-level
+ *    cross-keyword violations. Carry a `kind` discriminant plus structured
+ *    payload.
  *
  * 2. **Constraint brands intersected with `never`** (Cluster A —
  *    `SelfSubClassType`, `DiscriminatorMissingType`, `SelfEquivalentType`,
@@ -26,7 +29,7 @@
  */
 
 // ---------------------------------------------------------------------------
-// Validator-result interfaces (Cluster B)
+// Validator-result interfaces (Clusters B, D, E)
 // ---------------------------------------------------------------------------
 
 /**
@@ -106,6 +109,43 @@ export interface AnchorNotFoundInterface<
   readonly 'inSchema': TBase;
   readonly 'kind': 'AnchorNotFound';
   readonly 'unresolvedAnchor': TAnchor;
+}
+
+/**
+ * Emitted when a `Transform.pipe` stage's decoded output type does not match
+ * the next stage's decoded input type. The chain is broken at `stageIndex`,
+ * which produced `producedByPriorStage` while the next stage expected
+ * `expectedByThisStage`.
+ *
+ * @template TStageIndex Zero-based index of the producing stage.
+ * @template TProduced   Decoded output type of the producing stage.
+ * @template TExpected   Decoded input type expected by the consuming stage.
+ */
+export interface PipeChainMismatchInterface<
+  TStageIndex extends number,
+  TProduced,
+  TExpected
+> {
+  readonly 'expectedByThisStage': TExpected;
+  readonly 'kind': 'PipeChainMismatch';
+  readonly 'producedByPriorStage': TProduced;
+  readonly 'stageIndex': TStageIndex;
+}
+
+/**
+ * Emitted when a `Transform.pipe` first stage's decoded input type does not
+ * match the schema's wire-form type.
+ *
+ * @template TWire           Wire-form type inferred from the schema.
+ * @template TFirstStageIn   Decoded input type of the first stage.
+ */
+export interface PipeChainSchemaMismatchInterface<
+  TWire,
+  TFirstStageIn
+> {
+  readonly 'firstStageDecodeInput': TFirstStageIn;
+  readonly 'kind': 'PipeChainSchemaMismatch';
+  readonly 'schemaWireType': TWire;
 }
 
 /** True when a references map is present (has at least one key). */

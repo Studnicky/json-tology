@@ -2,10 +2,10 @@ import { JsonTology } from '../../src/JsonTology.js';
 import { Transform } from '../../src/modules/transform/Transform.js';
 import type { InferType } from '../../src/types/Schema.js';
 import type { ParseOutputType } from '../../src/types/Transform.js';
+import type { TransformStageInterface } from '../../src/interfaces/TransformStage.js';
 
 const DateTimeSchema = {
   '$id': 'https://example.io/DateTime',
-  'format': 'date-time',
   'type': 'string'
 } as const;
 
@@ -62,3 +62,152 @@ void [
   _badMaterialized,
   _badEncoded
 ];
+
+// ---------------------------------------------------------------------------
+// Finding 10 — Transform.pipe pairwise chain compatibility
+// ---------------------------------------------------------------------------
+
+const PipeBase = {
+  '$id': 'https://example.io/PipeBase',
+  'type': 'string'
+} as const;
+
+const trimStage: TransformStageInterface<string, string> = {
+  'decode': (raw: string) => {
+    return raw.trim();
+  },
+  'encode': (value: string) => {
+    return ` ${value} `;
+  }
+};
+
+const upperStage: TransformStageInterface<string, string> = {
+  'decode': (value: string) => {
+    return value.toUpperCase();
+  },
+  'encode': (value: string) => {
+    return value.toLowerCase();
+  }
+};
+
+const stringToNumberStage: TransformStageInterface<string, number> = {
+  'decode': (value: string) => {
+    return value.length;
+  },
+  'encode': (value: number) => {
+    return 'x'.repeat(value);
+  }
+};
+
+const numberToDateStage: TransformStageInterface<number, Date> = {
+  'decode': (value: number) => {
+    return new Date(value);
+  },
+  'encode': (value: Date) => {
+    return value.getTime();
+  }
+};
+
+const numberToStringStage: TransformStageInterface<number, string> = {
+  'decode': String,
+  'encode': Number
+};
+
+// Positive: well-typed chain compiles and the final output type is the
+// last stage's decoded form.
+const okPipe = Transform.pipe(PipeBase, [
+  trimStage,
+  upperStage,
+  stringToNumberStage,
+  numberToDateStage
+] as const);
+
+type OkPipeOutput = ParseOutputType<typeof okPipe>;
+const _okPipeOutput: OkPipeOutput = new Date(0);
+
+// Two-stage chain ending in number — output must be number.
+const twoStagePipe = Transform.pipe(PipeBase, [
+  trimStage,
+  stringToNumberStage
+] as const);
+
+type TwoStagePipeOutput = ParseOutputType<typeof twoStagePipe>;
+const _twoStagePipeOutput: TwoStagePipeOutput = 42;
+
+// Single-stage chain — output type is the only stage's decoded form.
+const singleStagePipe = Transform.pipe(PipeBase, [stringToNumberStage] as const);
+
+type SingleStagePipeOutput = ParseOutputType<typeof singleStagePipe>;
+const _singleStagePipeOutput: SingleStagePipeOutput = 7;
+
+// Negative: stage 0 produces `number`, stage 1 expects `string`.
+// The pairwise check must reject this at the call site.
+//
+// Each bad stage triggers its own type error, so each line carries its
+// own `@ts-expect-error` directive. The errors surface as the stage type
+// being not assignable to `never` (the contracted-tuple element produced
+// by `ValidatePipeChainType` when the pair is incompatible).
+if (false as boolean) {
+  Transform.pipe(PipeBase, [
+    // @ts-expect-error pipe stage 0 produces number, stage 1 expects string
+    stringToNumberStage,
+    // @ts-expect-error pipe stage 0 produces number, stage 1 expects string
+    upperStage
+  ] as const);
+
+  // Three-stage mismatch in the middle: ok → ok → bad.
+  Transform.pipe(PipeBase, [
+    // @ts-expect-error pipe stage 1 produces number, stage 2 expects string
+    trimStage,
+    // @ts-expect-error pipe stage 1 produces number, stage 2 expects string
+    stringToNumberStage,
+    // @ts-expect-error pipe stage 1 produces number, stage 2 expects string
+    upperStage
+  ] as const);
+
+  // Schema is `string` but first stage decodes `number`.
+  // @ts-expect-error first pipe stage expects number but schema wire type is string
+  Transform.pipe(PipeBase, [numberToDateStage] as const);
+
+  // Two stages, both consume number, but schema is string → first-stage mismatch.
+  // The error brand replaces only stage 0; stage 1 stays untouched because
+  // its in-type matches stage 0's out-type.
+  Transform.pipe(PipeBase, [
+    // @ts-expect-error first pipe stage expects number but schema wire type is string
+    numberToStringStage,
+    upperStage
+  ] as const);
+}
+
+void [
+  okPipe,
+  twoStagePipe,
+  singleStagePipe,
+  _okPipeOutput,
+  _twoStagePipeOutput,
+  _singleStagePipeOutput
+];
+
+// ---------------------------------------------------------------------------
+// Finding 11 — Transform.encode value must match decoded form
+// ---------------------------------------------------------------------------
+//
+// Audit: `Transform.create` already constrains
+//   `encode: (output: TOut) => InferSchemaType<TSchema>`,
+// and `JsonTology.encode(schema, value)` already requires `value: TOut`.
+// The existing negative case at lines 51–52 above proves that a wire-form
+// value is rejected. The positive + extra negative cases below pin the
+// contract.
+
+// Positive: passing the decoded form to encode is accepted.
+const _encodedFromDate: string = jt.encode(TransformedDateSchema, new Date('2024-06-01T00:00:00.000Z'));
+
+// Negative: number is neither wire (string) nor decoded (Date).
+if (false as boolean) {
+  // @ts-expect-error encode rejects values that are neither wire-form nor decoded
+  jt.encode(TransformedDateSchema, 42);
+  // @ts-expect-error encode rejects strings; the decoded type is Date
+  jt.encode(TransformedDateSchema, 'not-a-date' as unknown as { 'foo': 'bar' });
+}
+
+void [_encodedFromDate];

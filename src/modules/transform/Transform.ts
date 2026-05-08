@@ -19,10 +19,18 @@
  */
 
 import type { JSONSchema7Definition } from 'json-schema';
-import type { TransformedType } from '../../types/Transform.js';
+import type {
+  PipeChainOutputType,
+  TransformedType,
+  ValidatePipeChainType
+} from '../../types/Transform.js';
 import type { BrandedType } from '../../types/Brand.js';
 import type { InferSchemaType } from '../../types/Infer.js';
 import type { TransformFnsInterface } from '../../interfaces/TransformFns.js';
+import type {
+  AnyTransformStageInterface,
+  TransformStageInterface
+} from '../../interfaces/TransformStage.js';
 
 
 // ---------------------------------------------------------------------------
@@ -83,26 +91,30 @@ export class Transform {
    *
    * Decode runs left-to-right: T1.decode → T2.decode → …
    * Encode runs right-to-left: … → T2.encode → T1.encode
+   *
+   * Pairwise chain compatibility is enforced at compile time:
+   *   - the first stage's `decode` input must accept the schema's wire type,
+   *   - each stage N's `decode` output must match stage N+1's `decode` input.
+   * Mismatches surface as a `PipeChainMismatchInterface` brand at the
+   * offending tuple position, which is not assignable from the user's
+   * literal stage object — so the call site is rejected.
    */
   public static pipe<
     TSchema extends JSONSchema7Definition & { readonly '$id': string; },
-    TOut extends unknown
+    TStages extends readonly AnyTransformStageInterface[]
   >(
     schema: TSchema,
-
-    transforms: Array<{
-      'decode': (value: unknown) => unknown;
-      'encode': (value: unknown) => unknown;
-    }>
-  ): TransformedType<TSchema, TOut> {
+    transforms: TStages & ValidatePipeChainType<TStages, InferSchemaType<TSchema>>
+  ): TransformedType<TSchema, PipeChainOutputType<TStages>> {
+    const stages = transforms as ReadonlyArray<TransformStageInterface<unknown, unknown>>;
     const composed: TransformFnsInterface = {
       'decode': (value: unknown) => {
-        return transforms.reduce((accumulator, transform) => {
+        return stages.reduce<unknown>((accumulator, transform) => {
           return transform.decode(accumulator);
         }, value);
       },
       'encode': (value: unknown) => {
-        return [...transforms].reverse().reduce((accumulator, transform) => {
+        return [...stages].reverse().reduce<unknown>((accumulator, transform) => {
           return transform.encode(accumulator);
         }, value);
       }
@@ -110,6 +122,6 @@ export class Transform {
 
     transformRegistry.set(schema, composed);
 
-    return schema as unknown as TransformedType<TSchema, TOut>;
+    return schema as unknown as TransformedType<TSchema, PipeChainOutputType<TStages>>;
   }
 }
