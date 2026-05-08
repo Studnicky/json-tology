@@ -38,6 +38,8 @@ That literal is:
 
 Sharing a contract with a Python back-end, a Go service, a Rust validator, or a Java reasoner is `JSON.stringify(CustomerSchema)`. There is no generator step. There is no regeneration on every refactor. The TS type and the wire schema can't drift because they are the same object.
 
+The same property holds for LLM consumers: every major model provider has converged on JSON Schema for structured outputs and tool calling, so a json-tology schema literal drops directly into an OpenAI or Anthropic function definition - see Sourcemeta's [AI only speaks JSON Schema](https://www.sourcemeta.com/blog/ai-only-speaks-json-schema/) for the full argument. The same `as const` object that types your TypeScript also defines the model's output contract.
+
 | Library | TS type | Runtime validator | Wire-format JSON Schema | OWL/SHACL output |
 |---|---|---|---|---|
 | Zod | source | yes | export-only via `zod-to-json-schema` (lossy) | no |

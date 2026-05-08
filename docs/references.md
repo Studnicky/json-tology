@@ -27,6 +27,22 @@ If you hit a conformance gap, open an issue at [github.com/Studnicky/json-tology
 | [Dublin Core Terms](https://www.dublincore.org/specifications/dublin-core/dcmi-terms/) | Optional metadata predicates. |
 | [Turtle (W3C)](https://www.w3.org/TR/turtle/) | Round-trippable serialization (via downstream tooling). |
 
+## Tooling and ecosystem
+
+External JSON Schema tooling and commentary that frame json-tology's positioning. json-tology is one node in a wider JSON Schema ecosystem; these references are where to look when the question is about JSON Schema as a language rather than json-tology as a library.
+
+### [sourcemeta/jsonschema](https://github.com/sourcemeta/jsonschema)
+
+The reference command-line tool for JSON Schema authors - linting, formatting, bundling, dereferencing, dialect upgrades, schema-level unit tests, and binary encoding, supporting every dialect from Draft 0 through 2020-12. It is the right tool for treating JSON Schema documents themselves as a build artifact: pre-commit format checks, CI lint gates, bundle-for-distribution. json-tology authors who keep schemas in a shared registry should run sourcemeta/jsonschema alongside json-tology's TypeScript-side checks.
+
+### [AI only speaks JSON Schema](https://www.sourcemeta.com/blog/ai-only-speaks-json-schema/)
+
+Sourcemeta essay documenting that every major LLM provider (OpenAI, Anthropic, Google, xAI, Mistral, DeepSeek) converged on JSON Schema as the sole schema language for structured outputs and tool calling - not Protocol Buffers, not Avro, not OpenAPI, not Pydantic-as-source. This is the external argument for json-tology's wager: if JSON Schema is what models speak, then the authoring language should be JSON Schema and everything else (TypeScript types, OWL TBox, SHACL shapes, RDF) should be projections of it.
+
+### [IETF JSON Schema Working Group](https://datatracker.ietf.org/wg/jsonschema/about/)
+
+The active IETF working group taking JSON Schema toward a Proposed Standard RFC, chaired by Paul E. Hoffman with target publication May 2027. The WG charter scopes a single RFC covering features already in known use, plus IANA media-type registration and security considerations. json-tology's contract - "JSON Schema is the authoring language" - is a bet on this standardization track; users who care about long-term spec stability should track the WG's drafts and milestones.
+
 ## Comparable libraries
 
 | Library | Language | Where compared |

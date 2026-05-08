@@ -2,7 +2,7 @@
 
 > This guide covers `register`, `registerAnonymous`, `has`, `get`, `list`, `toSchema`. All examples use the [bookstore domain](/bookstore-domain). See [Getting Started](/getting-started) for installation and the basic `JsonTology.create()` call.
 
-Schemas are plain JSON Schema objects with `$id` and `as const`. The registry stores them, compiles a canonical validation graph for each, and exposes lookup methods.
+Schemas are plain JSON Schema objects with `$id` and `as const`. The registry stores them, compiles a canonical validation graph for each, and exposes lookup methods. json-tology targets draft-2020-12, the dialect on track for Proposed Standard via the [IETF JSON Schema Working Group](https://datatracker.ietf.org/wg/jsonschema/about/).
 
 ---
 
