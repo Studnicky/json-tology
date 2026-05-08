@@ -26,10 +26,19 @@
  * - `patternProperties` — When the regex pattern is a simple anchored literal
  *   (e.g. `^data_`, `_id$`, `^exact$`), the key is inferred as a template
  *   literal type. Patterns with metacharacters fall back to `string`.
- * - `if/then/else` — When the `if` clause has a single const-discriminated
- *   property (e.g. `{ properties: { kind: { const: 'circle' } }, required: ['kind'] }`),
- *   the then branch is narrowed with the discriminator literal. Otherwise falls
- *   back to the sound over-approximation: union of possible branch outputs.
+ * - `if/then/else` — When every property in the `if.properties` clause is
+ *   required and carries a recognised discriminator (`const`, `enum`, or
+ *   `type`), the then branch is narrowed with the conjunction of those
+ *   discriminator constraints. Recognised forms:
+ *     - `{ properties: { kind: { const: 'circle' } }, required: ['kind'] }`
+ *       → then branch narrowed with `{ kind: 'circle' }`.
+ *     - `{ properties: { kind: { enum: ['a', 'b'] } }, required: ['kind'] }`
+ *       → then branch narrowed with `{ kind: 'a' | 'b' }`.
+ *     - `{ properties: { count: { type: 'number' } }, required: ['count'] }`
+ *       → then branch narrowed structurally with `{ count: number }`.
+ *     - Multi-property: all narrowing constraints intersect on the then branch.
+ *   Otherwise falls back to the sound over-approximation: union of possible
+ *   branch outputs.
  */
 
 import type {
@@ -604,47 +613,73 @@ type WithoutConditionalType<T>
   = T extends object ? Omit<T, 'else' | 'if' | 'then'> : T;
 
 /**
- * Extract a const-discriminated property from an if clause.
- * Resolves to `{ key: K; value: V }` when the if clause has a single const
- * property that is also required. Falls back to `never` otherwise.
+ * Narrow a single `if.properties[K]` schema to the value type its presence
+ * implies. Returns:
+ *   - the literal value `V` for `{ const: V }`
+ *   - the union `V` for `{ enum: [V, ...] }`
+ *   - the primitive for `{ type: 'string' | 'number' | ... }`
+ *   - `never` if the sub-schema doesn't match any recognised form
+ *
+ * The `never` sentinel is what gates whether the parent if clause qualifies
+ * for narrowing. A single `never` on any property means the if clause cannot
+ * be narrowed (every property must contribute a constraint).
  */
-type ExtractIfConstDiscriminatorType<TIf>
+type IfPropertyNarrowingType<TPropSchema>
+  = TPropSchema extends { readonly 'const': infer V } ? V
+    : TPropSchema extends { readonly 'enum': ReadonlyArray<infer V> } ? V
+      : TPropSchema extends { readonly 'type': infer U extends string }
+        ? PrimitiveFromTypeNameType<U>
+        : never;
+
+/**
+ * Build the narrowing object for an if clause: a `{ readonly [K]: V }` shape
+ * to intersect with the then branch. Resolves to `never` (sentinel) when the
+ * if clause doesn't qualify — every property in `if.properties` must be in
+ * `required` and must produce a non-`never` value type via
+ * `IfPropertyNarrowingType`.
+ *
+ * Single-property const discriminator (e.g. `{ kind: { const: 'circle' } }`)
+ * and multi-property conjunctions (e.g. `{ kind: { const: 'a' }, color: { const: 'b' } }`)
+ * are both handled uniformly here.
+ */
+type IfNarrowingObjectType<TIf>
   = TIf extends {
     readonly 'properties': infer P;
     readonly 'required': ReadonlyArray<infer TReq extends string>;
   }
-    ? keyof P & string extends infer K extends string
-      ? [K] extends [TReq]
-        ? P extends Readonly<Record<K, { readonly 'const': infer V }>>
-          ? {
-            'key': K;
-            'value': V;
-          }
-          : never
+    ? keyof P & string extends TReq
+      // Reject if any property resolved to `never` — that property couldn't
+      // be narrowed, so the whole conjunction is unsafe. Also reject when
+      // there are no properties at all (empty conjunction is meaningless).
+      ? { readonly [K in keyof P & string]: IfPropertyNarrowingType<P[K]> } extends infer TNarrow
+        ? [TNarrow[keyof TNarrow & string]] extends [never]
+          ? never
+          : keyof P & string extends never
+            ? never
+            : TNarrow
         : never
       : never
     : never;
 
 type InferConditionalType<T, TRoot, TReferences>
   = T extends { readonly 'if': infer TIf }
-    // Const-discriminated narrowing: if has { properties: { K: { const: V } }, required: [K] }
-    ? ExtractIfConstDiscriminatorType<TIf> extends {
-      'key': infer K extends string;
-      'value': infer V;
-    }
+    // Discriminator-narrowed branch: every property in if.properties has a
+    // recognised const/enum/type form and is required. Build the narrowing
+    // object once and intersect with the then branch.
+    ? IfNarrowingObjectType<TIf> extends infer TNarrow extends object
       ? T extends {
         readonly 'else': infer TElse;
         readonly 'then': infer TThen;
       }
         ? InferSchemaType<TElse & WithoutConditionalType<T>, TRoot, TReferences>
           | SimplifyType<InferSchemaType<TThen & WithoutConditionalType<T>, TRoot, TReferences>
-            & { readonly [P in K]: V }>
+            & TNarrow>
         : T extends { readonly 'then': infer TThen }
           ? InferSchemaType<WithoutConditionalType<T>, TRoot, TReferences>
             | SimplifyType<InferSchemaType<TThen & WithoutConditionalType<T>, TRoot, TReferences>
-              & { readonly [P in K]: V }>
+              & TNarrow>
           : InferSchemaType<WithoutConditionalType<T>, TRoot, TReferences>
-      // Fallback: union-of-branches approximation (no const discriminator detected)
+      // Fallback: union-of-branches approximation (no usable discriminator detected)
       : T extends { readonly 'else': infer TElse;
         readonly 'then': infer TThen; }
         ? InferSchemaType<TElse & WithoutConditionalType<T>, TRoot, TReferences>
