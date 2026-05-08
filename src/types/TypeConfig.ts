@@ -33,10 +33,33 @@ export interface JsonTologyTypeConfigInterface {
   'objectBrands': true;
   /** Brand strings with minLength, maxLength, pattern. */
   'stringBrands': true;
+  /**
+   * Narrow strings with tiny `minLength` / `maxLength` bounds (<= 8) into
+   * length-N character template literal types (`\`${string}${string}...\``).
+   * Disabled by default - opt-in because tight length narrowing can slow
+   * the type-checker on large schema fixtures. Opt in by augmenting:
+   *
+   * @example
+   * ```ts
+   * declare module 'json-tology/types' {
+   *   interface JsonTologyTypeConfigInterface { 'tightStringLengths': true }
+   * }
+   * ```
+   */
+  'tightStringLengths': false;
 }
 
-/** Check whether a brand category is enabled, respecting the master switch. */
+/**
+ * Check whether a brand category is enabled, respecting the master switch.
+ *
+ * Default-on flags resolve to `true` unless the interface declares `false`
+ * (or the master `brands: false` switch is set). The `tightStringLengths`
+ * flag is default-off - it resolves to `true` only when explicitly set to
+ * `true` via module augmentation.
+ */
 export type IsEnabledType<K extends keyof JsonTologyTypeConfigInterface>
   = JsonTologyTypeConfigInterface['brands'] extends false ? false
-    : JsonTologyTypeConfigInterface[K] extends false ? false
-      : true;
+    : K extends 'tightStringLengths'
+      ? JsonTologyTypeConfigInterface[K] extends true ? true : false
+      : JsonTologyTypeConfigInterface[K] extends false ? false
+        : true;
