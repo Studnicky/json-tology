@@ -52,6 +52,7 @@ import { liftInstances } from './modules/rdf/Lift.js';
 import { Materializer } from './modules/materialization/Materializer.js';
 import { OntologyBuilder } from './modules/ontology/OntologyBuilder.js';
 import { SchemaError } from './errors/SchemaError.js';
+import type { DuplicateReportEntryType } from './modules/registry/SchemaRegistry.js';
 import { SchemaRegistry } from './modules/registry/SchemaRegistry.js';
 import { Transform } from './modules/transform/Transform.js';
 import { Value } from './modules/data/Value.js';
@@ -597,19 +598,20 @@ export class JsonTology<TMap = Record<never, never>> {
    * @param name - The property name.
    * @param fn - Function receiving the instantiated/materialized object and returning the computed value.
    */
-  public addComputed<T = Record<string, unknown>>(
-    schemaId: string, name: keyof T & string, fn: (data: T) => unknown
+  public addComputed<T>(
+    schemaId: keyof TMap & string, name: keyof T & string, fn: (data: T) => unknown
   ): void;
-  public addComputed(schemaId: string, name: string, fn: ComputedFnType): void {
+  public addComputed(schemaId: keyof TMap & string, name: string, fn: ComputedFnType): void {
     this.registry.computedStore.add(schemaId, name, fn);
   }
   /**
    * Registers a cross-field invariant for a schema.
    *
-   * @param schemaId - The `$id` of the target schema.
+   * @param schemaId - The `$id` of the target schema. Must be a registered key
+   *   of the typed schema map; unregistered IRIs are rejected at compile time.
    * @param invariant - The invariant to add. Runs after structural validation succeeds.
    */
-  public addInvariant<T = unknown>(schemaId: string, invariant: InvariantInterface<T>): void {
+  public addInvariant<T>(schemaId: keyof TMap & string, invariant: InvariantInterface<T>): void {
     this.registry.addInvariant(schemaId, invariant as InvariantInterface);
   }
 
@@ -647,7 +649,6 @@ export class JsonTology<TMap = Record<never, never>> {
 
     return Dumper.dump(this.registry, schemaId, value, options);
   }
-
   /**
    * Serialize a value to a JSON string.
    *
@@ -686,6 +687,18 @@ export class JsonTology<TMap = Record<never, never>> {
     value: TOut
   ): InferSchemaType<TSchema> {
     return (Transform.getDecoder(schema)?.encode(value) ?? value) as InferSchemaType<TSchema>;
+  }
+  /**
+   * Report registered schemas (or inline subschemas) whose canonical shape
+   * matches another registered schema.
+   *
+   * The return type narrows `equivalentTo` to the literal union of registered
+   * `$id` values when the instance was constructed via `JsonTology.create({
+   * schemas: [...] })` or extended through `register()`. Consumers can
+   * destructure the IRI as a literal without `as const` casts.
+   */
+  public findDuplicates<TKey extends string = keyof TMap & string>(): ReadonlyArray<DuplicateReportEntryType<TKey>> {
+    return this.registry.findDuplicates() as ReadonlyArray<DuplicateReportEntryType<TKey>>;
   }
   // ---------------------------------------------------------------------------
   // Validation

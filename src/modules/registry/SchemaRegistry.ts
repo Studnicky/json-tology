@@ -53,8 +53,8 @@ import { SILENT_LOGGER } from '../../constants/LOGGER.js';
 
 const EMPTY_VALIDATION_ERRORS = new ValidationErrors([]);
 
-export interface DuplicateReportEntryType {
-  readonly 'equivalentTo': string;
+export interface DuplicateReportEntryType<TEquivalentTo extends string = string> {
+  readonly 'equivalentTo': TEquivalentTo;
   readonly 'pointer': string;
   readonly 'schemaId': string;
   readonly 'shape': Record<string, unknown>;

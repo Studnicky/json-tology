@@ -1,3 +1,4 @@
+import type { DuplicateSchemaIdInterface } from './TypeErrors.js';
 import type { ParseOutputType } from './Transform.js';
 
 /** Build a cross-schema references map: `{ [$id]: SchemaType }` for $ref resolution. */
@@ -56,12 +57,16 @@ type DuplicateIdsType<T extends readonly unknown[], TSeen = never, TDupes = neve
       : DuplicateIdsType<Rest, TSeen, TDupes>
     : TDupes;
 
-/** Enforces unique `$id` values across a schema tuple at compile time. */
+/** Enforces unique `$id` values across a schema tuple at compile time.
+ *
+ *  When two or more entries share an `$id`, the offending tuple slots are
+ *  branded with `DuplicateSchemaIdInterface<TId>`. Assignment fails at
+ *  compile time and the editor surfaces the duplicated IRI by name. */
 export type UniqueSchemaIdsType<T extends readonly unknown[]>
   = true extends HasDuplicateIdsType<T>
     ? { [K in keyof T]: T[K] extends { readonly '$id': infer Id extends string }
       ? Id extends DuplicateIdsType<T>
-        ? T[K] & { readonly '$id': `DUPLICATE $id: ${Id}` }
+        ? DuplicateSchemaIdInterface<Id> & T[K] & { readonly '$id': `DUPLICATE $id: ${Id}` }
         : T[K]
       : T[K] }
     : T;
