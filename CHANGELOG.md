@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `docs/schemas.md` TypeBox snippets in the "Define and Register a Schema", "Anonymous registration", and "Lookup by `$id` or symbol" sections. The earlier text routed TypeBox through AJV (`import Ajv from 'ajv'; ajv.validate(schema, …)`), which understated TypeBox by ignoring its own runtime. The corrected snippets use `@sinclair/typebox/value` (`import { Value } from '@sinclair/typebox/value'; Value.Check(schema, data)`) and note that `Type.Ref(target)` resolves against a user-maintained `$defs` map at compile time. No behaviour change — comparison-table accuracy only.
+
 ### Added
 
 - Compile-time tuple-distinctness narrowing for `uniqueItems: true`. `InferType<typeof Schema>` now folds `uniqueItems: true` into the inferred type two ways: (1) for homogeneous arrays, the inferred type carries `UniqueArrayBrandInterface<T>` (a generic uniqueness brand parameterised by element type, in `src/types/ConstraintBrands.ts`) so a plain `T[]` cannot satisfy it — values must come through `JsonTology.instantiate` / `coerce` / `materialize`; (2) for literal-typed tuples (≤ 8 elements, declared via `prefixItems`), `UniqueTuplePairwiseType` runs a pairwise overlap check at the type level and collapses the tuple to `never` when any pair of element types overlaps, so `{ prefixItems: [{const:'red'},{const:'red'}], uniqueItems: true }` is a compile-time error. Above the 8-element cap the tuple passes through unchanged and runtime validation still enforces `uniqueItems`. Closes Finding 25 of `designs/0002-total-compile-time-enforcement.md`.
