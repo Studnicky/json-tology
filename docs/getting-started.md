@@ -8,6 +8,8 @@ json-tology is an ontology-native type system for TypeScript. Declare schemas on
 npm install json-tology
 ```
 
+Supported dialect: JSON Schema draft 2020-12 (`https://json-schema.org/draft/2020-12/schema`).
+
 ## Define a schema
 
 Schemas are plain JSON Schema objects with `$id` and `as const`. They are interoperable with the wider JSON Schema ecosystem - for example, [sourcemeta/jsonschema](https://github.com/sourcemeta/jsonschema) will lint, bundle, and format the same files. The bookstore domain used in all examples follows the one-file-per-concept pattern. See the [Bookstore Domain](/bookstore-domain) page for the full folder layout and all schemas.
