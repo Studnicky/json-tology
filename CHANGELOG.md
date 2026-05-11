@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Runtime cross-schema `$ref` resolution is now strict.** Previously, registering a schema whose properties reference an unregistered `$id` succeeded silently, and validation against that schema treated the unresolvable branch as passing. The registry now performs a lazy walk on first use of an entry (the first `validate` / `instantiate` / `materialize` / `createDefault` / `convert` / `cast` / `is` / `clean` against it) and throws `GraphError` with code `REF_UNRESOLVED` if any non-fragment `$ref` points to an IRI that is neither in the registry nor embedded as a nested `$id` within the same schema. Local fragment refs (`#`, `#/foo`, `#anchor`) are unaffected. The check is cached on the entry so the walk runs at most once per schema. This brings runtime parity with the compile-time cross-schema `$ref` check shipped in PR #54 (`InferType` flags the same condition at the type level).
+
 ### Fixed
 
 - `docs/schemas.md` TypeBox snippets in the "Define and Register a Schema", "Anonymous registration", and "Lookup by `$id` or symbol" sections. The earlier text routed TypeBox through AJV (`import Ajv from 'ajv'; ajv.validate(schema, …)`), which understated TypeBox by ignoring its own runtime. The corrected snippets use `@sinclair/typebox/value` (`import { Value } from '@sinclair/typebox/value'; Value.Check(schema, data)`) and note that `Type.Ref(target)` resolves against a user-maintained `$defs` map at compile time. No behaviour change — comparison-table accuracy only.

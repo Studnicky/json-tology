@@ -585,19 +585,30 @@ void describe('static counterparts — failure modes', () => {
     assert.deepStrictEqual(value, { 'name': 'Asimov' });
   });
 
-  void it('JsonTology.validate against an unregistered cross-schema $ref returns ValidationErrors with no items (silent passthrough)', () => {
+  void it('validate against an unregistered cross-schema $ref throws GraphError REF_UNRESOLVED on first use', () => {
     const Standalone = {
       '$id': 'urn:test:Standalone',
       'properties': { 'ref': { '$ref': 'urn:test:NotInRegistry' } },
       'type': 'object'
     } as const;
 
-    // The static counterpart only registers the supplied schema, so the cross
-    // reference cannot resolve. Behaviour: validate is permissive — no errors.
-    const errors = JsonTology.validate(Standalone, { 'ref': { 'x': 1 } });
+    // Registration must NOT throw — schemas can register in any order, and
+    // forward refs across schemas are common. The check fires lazily on first
+    // use so unresolvable cross-schema refs surface instead of silently
+    // passing.
+    const jt = JsonTology.create({
+      'baseIRI': 'urn:test:',
+      'schemas': [Standalone] as const
+    });
 
-    assert.equal(errors.length, 0);
-    assert.equal(errors.ok, true);
+    assert.throws(
+      () => {
+        return jt.validate(Standalone.$id, { 'ref': { 'x': 1 } });
+      },
+      (err: unknown) => {
+        return err instanceof GraphError && (err).code === 'REF_UNRESOLVED';
+      }
+    );
   });
 
   void it('JsonTology.subschemaAt with invalid pointer throws GraphError', () => {

@@ -6,7 +6,7 @@ import {
   describe, it
 } from 'node:test';
 import {
-  InstantiationError, JsonTology, SchemaError, ValidationErrors
+  InstantiationError, JsonTology, SchemaError
 } from '../../src/index.js';
 import { Logger } from '../utils/Logger.js';
 
@@ -595,24 +595,32 @@ import { Logger } from '../utils/Logger.js';
       assertValidationScenarios(registry, 'https://ref.test/ChainA', scenarios);
     });
 
-    void it('handles reference to a non-existent schema gracefully', () => {
+    void it('throws GraphError REF_UNRESOLVED on first use when a cross-schema $ref points to an unregistered IRI', () => {
       const registry = JsonTology.create({
         'baseIRI': 'urn:test:',
         'logger': logger
       });
 
+      // Registration must NOT throw — schemas can register in any order and
+      // forward refs across schemas are common during bootstrap.
       registry.register({
         '$id': 'https://ref.test/Dangling',
         'properties': { 'link': { '$ref': 'https://ref.test/DoesNotExist' } },
         'type': 'object'
       });
 
-      // registration succeeds; validation does not throw
-      const errors = registry.validate('https://ref.test/Dangling', { 'link': {} });
-
-      // the registry produces a result without crashing — the unresolved $ref
-      // is either silently accepted or flagged; either way no exception is thrown
-      assert.ok(errors instanceof ValidationErrors || Array.isArray(errors.items));
+      // The lazy walker fires on first use (validate / instantiate / materialize /
+      // createDefault) and throws REF_UNRESOLVED — runtime parity with the
+      // compile-time cross-schema $ref check in InferType.
+      assert.throws(
+        () => {
+          return registry.validate('https://ref.test/Dangling', { 'link': {} });
+        },
+        (err: unknown) => {
+          return err instanceof Error
+            && (err as { 'code'?: unknown }).code === 'REF_UNRESOLVED';
+        }
+      );
     });
   });
 
