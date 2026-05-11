@@ -187,10 +187,15 @@ const SIMPLE_LITERAL_PREDICATES = new Map<string, SimplePredicateEntry>([
 ]);
 
 const IRI_PREDICATES = new Set<string>([
+  OWL.AsymmetricProperty,
   OWL.complementOf,
   OWL.disjointWith,
   OWL.equivalentClass,
+  OWL.FunctionalProperty,
+  OWL.InverseFunctionalProperty,
   OWL.inverseOf,
+  OWL.IrreflexiveProperty,
+  OWL.ReflexiveProperty,
   OWL.someValuesFrom,
   OWL.SymmetricProperty,
   OWL.TransitiveProperty,

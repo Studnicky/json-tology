@@ -1,5 +1,6 @@
 export const OWL = {
   'allValuesFrom': 'owl:allValuesFrom',
+  'AsymmetricProperty': 'owl:AsymmetricProperty',
   'cardinality': 'owl:cardinality',
   'Class': 'owl:Class',
   'complementOf': 'owl:complementOf',
@@ -7,9 +8,12 @@ export const OWL = {
   'deprecated': 'owl:deprecated',
   'disjointWith': 'owl:disjointWith',
   'equivalentClass': 'owl:equivalentClass',
+  'FunctionalProperty': 'owl:FunctionalProperty',
   'hasValue': 'owl:hasValue',
   'intersectionOf': 'owl:intersectionOf',
+  'InverseFunctionalProperty': 'owl:InverseFunctionalProperty',
   'inverseOf': 'owl:inverseOf',
+  'IrreflexiveProperty': 'owl:IrreflexiveProperty',
   'maxCardinality': 'owl:maxCardinality',
   'maxQualifiedCardinality': 'owl:maxQualifiedCardinality',
   'minCardinality': 'owl:minCardinality',
@@ -18,6 +22,7 @@ export const OWL = {
   'onDataRange': 'owl:onDataRange',
   'oneOf': 'owl:oneOf',
   'onProperty': 'owl:onProperty',
+  'ReflexiveProperty': 'owl:ReflexiveProperty',
   'Restriction': 'owl:Restriction',
   'sameAs': 'owl:sameAs',
   'someValuesFrom': 'owl:someValuesFrom',
@@ -38,7 +43,8 @@ export const RDFS = {
   'label': 'rdfs:label',
   'member': 'rdfs:member',
   'range': 'rdfs:range',
-  'subClassOf': 'rdfs:subClassOf'
+  'subClassOf': 'rdfs:subClassOf',
+  'subPropertyOf': 'rdfs:subPropertyOf'
 } as const;
 
 export const SH = {

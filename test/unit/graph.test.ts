@@ -596,6 +596,71 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             },
             'type': 'object'
           }
+        },
+        {
+          'predicate': 'owl:AsymmetricProperty',
+          'prop': 'parentOf',
+          'schema': {
+            'properties': {
+              'parentOf': {
+                'asymmetric': true,
+                'type': 'string'
+              }
+            },
+            'type': 'object'
+          }
+        },
+        {
+          'predicate': 'owl:FunctionalProperty',
+          'prop': 'birthDate',
+          'schema': {
+            'properties': {
+              'birthDate': {
+                'functional': true,
+                'type': 'string'
+              }
+            },
+            'type': 'object'
+          }
+        },
+        {
+          'predicate': 'owl:InverseFunctionalProperty',
+          'prop': 'employeeId',
+          'schema': {
+            'properties': {
+              'employeeId': {
+                'inverseFunctional': true,
+                'type': 'string'
+              }
+            },
+            'type': 'object'
+          }
+        },
+        {
+          'predicate': 'owl:ReflexiveProperty',
+          'prop': 'sameAge',
+          'schema': {
+            'properties': {
+              'sameAge': {
+                'reflexive': true,
+                'type': 'string'
+              }
+            },
+            'type': 'object'
+          }
+        },
+        {
+          'predicate': 'owl:IrreflexiveProperty',
+          'prop': 'spouseOf',
+          'schema': {
+            'properties': {
+              'spouseOf': {
+                'irreflexive': true,
+                'type': 'string'
+              }
+            },
+            'type': 'object'
+          }
         }
       ];
 
@@ -1926,6 +1991,53 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       });
 
       assert.ok(tagPS !== undefined);
+    });
+
+    void it('serializes the full OWL 2 property-characteristic vocabulary (asymmetric, functional, inverseFunctional, reflexive, irreflexive)', () => {
+      const registry = new SchemaRegistry();
+
+      registry.register({
+        '$id': 'https://example.io/Person',
+        'properties': {
+          'birthDate': {
+            'functional': true,
+            'type': 'string' as const
+          },
+          'employeeId': {
+            'inverseFunctional': true,
+            'type': 'string' as const
+          },
+          'parentOf': {
+            'asymmetric': true,
+            'type': 'string' as const
+          },
+          'sameAge': {
+            'reflexive': true,
+            'type': 'string' as const
+          },
+          'spouseOf': {
+            'irreflexive': true,
+            'type': 'string' as const
+          }
+        },
+        'type': 'object' as const
+      });
+
+      const nodes = new GraphOntologySerializer().serialize(registry.listGraphs()) as Array<Record<string, unknown>>;
+
+      const propTypes = (propIri: string): string[] => {
+        const node = nodes.find((entry) => {
+          return entry['@id'] === propIri;
+        });
+
+        return Array.isArray(node?.['@type']) ? node['@type'] as string[] : [];
+      };
+
+      assert.ok(propTypes('https://example.io/Person#parentOf').includes('http://www.w3.org/2002/07/owl#AsymmetricProperty'));
+      assert.ok(propTypes('https://example.io/Person#birthDate').includes('http://www.w3.org/2002/07/owl#FunctionalProperty'));
+      assert.ok(propTypes('https://example.io/Person#employeeId').includes('http://www.w3.org/2002/07/owl#InverseFunctionalProperty'));
+      assert.ok(propTypes('https://example.io/Person#sameAge').includes('http://www.w3.org/2002/07/owl#ReflexiveProperty'));
+      assert.ok(propTypes('https://example.io/Person#spouseOf').includes('http://www.w3.org/2002/07/owl#IrreflexiveProperty'));
     });
 
     void it('serializes extended predicates (disjointWith, inverseOf, transitive, symmetric)', () => {

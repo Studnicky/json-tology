@@ -445,6 +445,41 @@ export function extractRelations(
       'target': node.id
     });
   }
+  if (sem.asymmetric) {
+    relations.push({
+      'predicate': OWL.AsymmetricProperty,
+      'source': node,
+      'target': node.id
+    });
+  }
+  if (sem.functional) {
+    relations.push({
+      'predicate': OWL.FunctionalProperty,
+      'source': node,
+      'target': node.id
+    });
+  }
+  if (sem.inverseFunctional) {
+    relations.push({
+      'predicate': OWL.InverseFunctionalProperty,
+      'source': node,
+      'target': node.id
+    });
+  }
+  if (sem.reflexive) {
+    relations.push({
+      'predicate': OWL.ReflexiveProperty,
+      'source': node,
+      'target': node.id
+    });
+  }
+  if (sem.irreflexive) {
+    relations.push({
+      'predicate': OWL.IrreflexiveProperty,
+      'source': node,
+      'target': node.id
+    });
+  }
 
   if (sem.title !== undefined) {
     relations.push({
