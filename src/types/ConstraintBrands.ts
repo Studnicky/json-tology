@@ -49,3 +49,52 @@ export interface MultipleOfBrandInterface<TN extends number> { readonly [MULTIPL
 export interface PatternBrandInterface<TP extends string> { readonly [PATTERN]: TP }
 export interface SchemaIdBrandInterface<TId extends string> { readonly [SCHEMA_ID]: TId }
 export interface UniqueItemsBrandInterface { readonly [UNIQUE_ITEMS]: true }
+
+/**
+ * Per-format named brand aliases.
+ *
+ * `FormatBrandInterface<F>` is the underlying parametric brand. Each named
+ * alias below specialises it to a single format string so consumer APIs can
+ * write `function send(to: EmailBrandInterface): void` and reject plain
+ * `string` arguments at compile time.
+ *
+ * A value carrying these brands is only obtainable via the validation API
+ * (`JsonTology.instantiate`, `JsonTology.coerce`, `JsonTology.materialize`,
+ * `JsonTology.is`). Plain string literals are not assignable.
+ *
+ * The full set of standard JSON Schema 2020-12 string formats is covered:
+ * `email`, `idn-email`, `uri`, `uri-reference`, `uri-template`, `iri`,
+ * `iri-reference`, `uuid`, `date`, `date-time`, `time`, `duration`,
+ * `hostname`, `idn-hostname`, `ipv4`, `ipv6`, `regex`, `json-pointer`,
+ * `relative-json-pointer`. Number formats `int32`, `int64`, `float`,
+ * `double` plus the OpenAPI-flavoured string formats `binary`, `byte`
+ * round out the json-tology built-in registry.
+ *
+ * Ordering note: `FormatBrandInterface<F> & string` (not `string & ...`) so
+ * IDE hovers display the named brand first instead of `string`.
+ */
+export type EmailBrandInterface = FormatBrandInterface<'email'> & string;
+export type IdnEmailBrandInterface = FormatBrandInterface<'idn-email'> & string;
+export type UriBrandInterface = FormatBrandInterface<'uri'> & string;
+export type UriReferenceBrandInterface = FormatBrandInterface<'uri-reference'> & string;
+export type UriTemplateBrandInterface = FormatBrandInterface<'uri-template'> & string;
+export type IriBrandInterface = FormatBrandInterface<'iri'> & string;
+export type IriReferenceBrandInterface = FormatBrandInterface<'iri-reference'> & string;
+export type UuidBrandInterface = FormatBrandInterface<'uuid'> & string;
+export type DateBrandInterface = FormatBrandInterface<'date'> & string;
+export type DateTimeBrandInterface = FormatBrandInterface<'date-time'> & string;
+export type TimeBrandInterface = FormatBrandInterface<'time'> & string;
+export type DurationBrandInterface = FormatBrandInterface<'duration'> & string;
+export type HostnameBrandInterface = FormatBrandInterface<'hostname'> & string;
+export type IdnHostnameBrandInterface = FormatBrandInterface<'idn-hostname'> & string;
+export type Ipv4BrandInterface = FormatBrandInterface<'ipv4'> & string;
+export type Ipv6BrandInterface = FormatBrandInterface<'ipv6'> & string;
+export type RegexBrandInterface = FormatBrandInterface<'regex'> & string;
+export type JsonPointerBrandInterface = FormatBrandInterface<'json-pointer'> & string;
+export type RelativeJsonPointerBrandInterface = FormatBrandInterface<'relative-json-pointer'> & string;
+export type BinaryBrandInterface = FormatBrandInterface<'binary'> & string;
+export type ByteBrandInterface = FormatBrandInterface<'byte'> & string;
+export type Int32BrandInterface = FormatBrandInterface<'int32'> & number;
+export type Int64BrandInterface = FormatBrandInterface<'int64'> & number;
+export type FloatBrandInterface = FormatBrandInterface<'float'> & number;
+export type DoubleBrandInterface = FormatBrandInterface<'double'> & number;
