@@ -7,5 +7,6 @@ export interface SchemaRegistryEntryInterface {
   'engine'?: GraphEngineInterface;
   'graph'?: SchemaGraphInterface;
   'hash': string;
+  'refsChecked'?: boolean;
   'schema': Record<string, unknown>;
 }

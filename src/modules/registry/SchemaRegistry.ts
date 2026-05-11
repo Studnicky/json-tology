@@ -28,6 +28,7 @@ import {
   deepFreeze, isRecord
 } from '../data/DataTypes.js';
 import { Frozen } from '../data/Frozen.js';
+import { GraphError } from '../../errors/GraphError.js';
 import { GraphEngine } from '../graph/GraphEngine.js';
 import { Hash } from '../hash/Hash.js';
 import { InvariantStore } from './InvariantStore.js';
@@ -124,6 +125,31 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
   public addInvariant(schemaId: string, invariant: InvariantInterface): void {
     this.invariants.add(schemaId, invariant);
+  }
+
+  /**
+   * Lazy cross-schema $ref check. On first use of a registered schema
+   * (validate / instantiate / materialize / cast / clean / convert / is),
+   * walk the schema for any cross-schema $ref strings whose target IRI is
+   * not registered. Throws GraphError REF_UNRESOLVED if found.
+   *
+   * Local fragment refs (#, #/..., #anchor) are never reported here —
+   * they are resolved against the schema's own graph. Embedded schemas
+   * with their own $id are recognised so a $ref to that nested $id passes.
+   *
+   * Result is cached on the entry so we only walk once per entry.
+   */
+  private assertRefsResolvable(entry: SchemaRegistryEntryInterface): void {
+    if (entry.refsChecked === true) {
+      return;
+    }
+
+    const schemaId = (entry.schema.$id as string | undefined) ?? '<anonymous>';
+    const embeddedIds = new Set<string>();
+
+    this.collectEmbeddedIds(entry.schema, embeddedIds);
+    this.walkForUnresolvedRefs(entry.schema, schemaId, embeddedIds);
+    entry.refsChecked = true;
   }
 
   public cast(schemaOrId: (Record<string, unknown> & { '$id': string; }) | string, data: unknown): unknown {
@@ -247,6 +273,28 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
   }
 
+  private collectEmbeddedIds(node: unknown, ids: Set<string>): void {
+    if (Array.isArray(node)) {
+      for (const item of node) {
+        this.collectEmbeddedIds(item, ids);
+      }
+
+      return;
+    }
+
+    if (!isRecord(node)) {
+      return;
+    }
+
+    if (typeof node.$id === 'string' && node.$id !== '') {
+      ids.add(node.$id);
+    }
+
+    for (const value of Object.values(node)) {
+      this.collectEmbeddedIds(value, ids);
+    }
+  }
+
   private compiled(schemaId: string): CompiledValidatorInterface | undefined {
     const entry = this.schemas.get(schemaId);
 
@@ -258,6 +306,8 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   }
 
   private compiledFromEntry(entry: SchemaRegistryEntryInterface): CompiledValidatorInterface {
+    this.assertRefsResolvable(entry);
+
     if (entry.compiled === undefined) {
       const engine = this.engine(entry.schema);
 
@@ -285,11 +335,12 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       throw new SchemaError('SCHEMA_NOT_REGISTERED', `No schema registered for: ${schemaId}`, schemaId);
     }
 
+    this.assertRefsResolvable(entry);
+
     const materializer = new Materializer(this);
 
     return materializer.createDefault(entry.schema as Record<string, unknown> & { '$id': string });
   }
-
 
   public engine(schema: Record<string, unknown>): GraphEngineInterface {
     const schemaId = schema.$id as string;
@@ -313,6 +364,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     return entry.engine;
   }
+
 
   public findDuplicates(): readonly DuplicateReportEntryType[] {
     const topLevelHashes = new Map<string, string>();
@@ -663,10 +715,10 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     this.logger.trace(`Schema registered: ${schemaId}`);
   }
 
-
   public removeInvariant(schemaId: string, name: string): void {
     this.invariants.remove(schemaId, name);
   }
+
 
   private resolve(schemaId: string): string {
     if (this.curie === undefined) {
@@ -818,6 +870,40 @@ export class SchemaRegistry implements SchemaRegistryInterface {
         }
         this.walkForDuplicates(schemaId, defSchema, `${pointer}/$defs/${defName}`, topLevelHashes, results);
       }
+    }
+  }
+
+  private walkForUnresolvedRefs(node: unknown, parentSchemaId: string, embeddedIds: Set<string>): void {
+    if (Array.isArray(node)) {
+      for (const item of node) {
+        this.walkForUnresolvedRefs(item, parentSchemaId, embeddedIds);
+      }
+
+      return;
+    }
+
+    if (!isRecord(node)) {
+      return;
+    }
+
+    const ref = node.$ref;
+
+    if (typeof ref === 'string' && !ref.startsWith('#')) {
+      const hashIndex = ref.indexOf('#');
+      const refIri = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
+      const resolved = this.resolve(refIri);
+
+      if (!this.schemas.has(resolved) && !this.schemas.has(refIri) && !embeddedIds.has(refIri)) {
+        throw new GraphError(
+          'REF_UNRESOLVED',
+          `unresolved $ref: ${ref} (referenced from ${parentSchemaId})`,
+          ref
+        );
+      }
+    }
+
+    for (const value of Object.values(node)) {
+      this.walkForUnresolvedRefs(value, parentSchemaId, embeddedIds);
     }
   }
 }
