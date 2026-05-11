@@ -29,10 +29,12 @@ That literal is:
 - A TypeScript type via `InferType<typeof CustomerSchema>`
 - A runtime validator via `entities.validate(CustomerSchema, data)`
 - An OpenAPI 3.1 component (paste it into `components.schemas.Customer`)
-- A draft-2020-12 JSON Schema (Ajv, FastValidator, fastify-json-schema, any conforming validator reads it directly)
+- A JSON Schema draft 2020-12 document (Ajv, FastValidator, fastify-json-schema, any conforming validator reads it directly)
 - An OWL class (via `entities.toTbox()`)
 - A SHACL shape (via `entities.toShacl()`)
 - A documentation source for tools like `@apidevtools/json-schema-ref-parser`, `redoc`, `swagger-ui`
+
+All examples in this documentation target the JSON Schema draft 2020-12 dialect.
 
 ### Cross-language interop, no codegen
 

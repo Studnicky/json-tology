@@ -2,6 +2,10 @@
 
 External standards, comparable libraries, and tooling referenced throughout the docs. This page is the canonical home for outbound links - other pages reference back here rather than re-stating URLs.
 
+## Supported dialect
+
+json-tology targets **JSON Schema draft 2020-12** (`https://json-schema.org/draft/2020-12/schema`). All examples and documentation assume this dialect. The specification is on track for Proposed Standard via the [IETF JSON Schema Working Group](https://datatracker.ietf.org/wg/jsonschema/about/).
+
 ## Standards conformance
 
 > **W3C / RDF / OWL / SHACL conformance is aspirational and a work in progress.** json-tology emits OWL TBox and SHACL shapes from the canonical graph and round-trips RDF quads, but full normative conformance with each spec is still being built out. Output is intended to load into tools like [Protege](https://protege.stanford.edu/), [TopBraid Composer](https://www.topquadrant.com/products/topbraid-composer/), and standards-track reasoners; expect rough edges as the projection layers catch up to the specs.
