@@ -30,6 +30,7 @@ export interface SchemaGraphSemanticsInterface {
   'aliases': readonly string[];
   'allOf': SchemaGraphNodeInterface[];
   'anyOf': SchemaGraphNodeInterface[];
+  'asymmetric': boolean;
   'comment': string | undefined;
   'complementNode': SchemaGraphNodeInterface | undefined;
   'computed': boolean;
@@ -56,10 +57,13 @@ export interface SchemaGraphSemanticsInterface {
   'exclusiveMinimum': number | undefined;
   'extensions': Record<string, unknown>;
   'format': string | undefined;
+  'functional': boolean;
   'hasConst': boolean;
   'hasDefault': boolean;
   'ifNode': SchemaGraphNodeInterface | undefined;
+  'inverseFunctional': boolean;
   'inverseOf': string | undefined;
+  'irreflexive': boolean;
   'itemsNode': SchemaGraphNodeInterface | undefined;
   'jtConfig': JtConfigType | undefined;
   'jtFrozen': boolean;
@@ -87,6 +91,7 @@ export interface SchemaGraphSemanticsInterface {
   'recursiveAnchor': boolean;
   'recursiveRef': string | undefined;
   'ref': string | undefined;
+  'reflexive': boolean;
   'refTargetNode': SchemaGraphNodeInterface | undefined;
   'required': string[];
   'schemaAnchor': string | undefined;

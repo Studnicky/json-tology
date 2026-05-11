@@ -508,6 +508,28 @@ function emitPropertyQuads(
     quads.push(QuadFactory.quad(canonicalId, RDF.type, QuadFactory.iri(OWL.SymmetricProperty, { curie }), { curie }));
   }
 
+  if (entry.byPredicate.has(OWL.AsymmetricProperty)) {
+    quads.push(QuadFactory.quad(canonicalId, RDF.type, QuadFactory.iri(OWL.AsymmetricProperty, { curie }), { curie }));
+  }
+
+  if (entry.byPredicate.has(OWL.FunctionalProperty)) {
+    quads.push(QuadFactory.quad(canonicalId, RDF.type, QuadFactory.iri(OWL.FunctionalProperty, { curie }), { curie }));
+  }
+
+  if (entry.byPredicate.has(OWL.InverseFunctionalProperty)) {
+    const iri = QuadFactory.iri(OWL.InverseFunctionalProperty, { curie });
+
+    quads.push(QuadFactory.quad(canonicalId, RDF.type, iri, { curie }));
+  }
+
+  if (entry.byPredicate.has(OWL.ReflexiveProperty)) {
+    quads.push(QuadFactory.quad(canonicalId, RDF.type, QuadFactory.iri(OWL.ReflexiveProperty, { curie }), { curie }));
+  }
+
+  if (entry.byPredicate.has(OWL.IrreflexiveProperty)) {
+    quads.push(QuadFactory.quad(canonicalId, RDF.type, QuadFactory.iri(OWL.IrreflexiveProperty, { curie }), { curie }));
+  }
+
   const domainRels = entry.byPredicate.get(RDFS.domain) ?? [];
   const domainId = domainRels.length > 0 ? relationTargetId(domainRels[0]) : '';
 

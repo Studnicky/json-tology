@@ -364,6 +364,21 @@ export class GraphSchemaSerializer implements GraphSchemaSerializerInterface {
     if (semantics.symmetric) {
       result.symmetric = true;
     }
+    if (semantics.asymmetric) {
+      result.asymmetric = true;
+    }
+    if (semantics.functional) {
+      result.functional = true;
+    }
+    if (semantics.inverseFunctional) {
+      result.inverseFunctional = true;
+    }
+    if (semantics.reflexive) {
+      result.reflexive = true;
+    }
+    if (semantics.irreflexive) {
+      result.irreflexive = true;
+    }
 
     return result;
   }
