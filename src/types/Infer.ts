@@ -54,6 +54,7 @@ import type {
   MultipleOfBrandInterface,
   PatternBrandInterface,
   SchemaIdBrandInterface,
+  UniqueArrayBrandInterface,
   UniqueItemsBrandInterface
 } from './ConstraintBrands.js';
 import type {
@@ -341,7 +342,11 @@ type InferArrayBrandsType<T, TRoot, TReferences>
         ? MaxItemsBrandInterface<N> : unknown)
       & (T extends { readonly 'minItems': infer N extends number }
         ? MinItemsBrandInterface<N> : unknown)
-      & (T extends { readonly 'uniqueItems': true } ? UniqueItemsBrandInterface : unknown)
+      & (T extends { readonly 'uniqueItems': true }
+        ? T extends { readonly 'items': infer I }
+          ? UniqueArrayBrandInterface<InferSchemaType<I, TRoot, TReferences>>
+          : UniqueItemsBrandInterface
+        : unknown)
     : unknown;
 
 /** Intersect object constraint brands. */
@@ -414,7 +419,43 @@ type NarrowArrayByItemsBoundsType<TItem, T>
         ? BuildAtMostTupleType<TItem, TMax>
         : readonly TItem[];
 
+/**
+ * Pairwise-distinctness check across a tuple of literal-typed elements.
+ * Returns `never` if any pair of elements has overlapping types (treated as
+ * potential duplicates). Capped at 8 elements (quadratic cost). Above the cap,
+ * the tuple is returned unchanged — runtime validation still enforces
+ * `uniqueItems`.
+ */
+type UniqueTuplePairwiseType<TTuple, TPrev extends readonly unknown[] = []>
+  = TTuple extends readonly [infer THead, ...infer TRest]
+    ? TPrev['length'] extends 8
+      ? TTuple
+      : THead extends TPrev[number]
+        ? never
+        : TPrev[number] extends THead
+          ? never
+          : UniqueTuplePairwiseType<TRest, [...TPrev, THead]> extends never
+            ? never
+            : TTuple
+    : TTuple;
+
+/**
+ * Apply tuple distinctness narrowing when `uniqueItems: true`. Tuples whose
+ * elements are all literals (length ≤ 8) collapse to `never` if any pair shares
+ * a type. Non-tuple arrays pass through unchanged (the brand on
+ * `InferArrayBrandsType` already prevents raw arrays from satisfying the type).
+ */
+type ApplyUniqueItemsTupleNarrowingType<T, TArr>
+  = T extends { readonly 'uniqueItems': true }
+    ? TArr extends readonly [unknown, ...unknown[]]
+      ? UniqueTuplePairwiseType<TArr>
+      : TArr
+    : TArr;
+
 type InferArrayType<T, TRoot, TReferences>
+  = ApplyUniqueItemsTupleNarrowingType<T, InferArrayShapeType<T, TRoot, TReferences>>;
+
+type InferArrayShapeType<T, TRoot, TReferences>
   // prefixItems + items = tuple + rest
   = T extends { readonly 'items': infer I;
     readonly 'prefixItems': readonly [...infer TPrefix];
