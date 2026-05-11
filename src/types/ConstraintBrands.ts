@@ -29,6 +29,7 @@ declare const MULTIPLE_OF: unique symbol;
 declare const PATTERN: unique symbol;
 declare const SCHEMA_ID: unique symbol;
 declare const UNIQUE_ITEMS: unique symbol;
+declare const UNIQUE_ARRAY: unique symbol;
 
 export interface ContainsBrandInterface<T> { readonly [CONTAINS]: T }
 export interface ContentEncodingBrandInterface<T extends string> { readonly [CONTENT_ENCODING]: T }
@@ -49,6 +50,17 @@ export interface MultipleOfBrandInterface<TN extends number> { readonly [MULTIPL
 export interface PatternBrandInterface<TP extends string> { readonly [PATTERN]: TP }
 export interface SchemaIdBrandInterface<TId extends string> { readonly [SCHEMA_ID]: TId }
 export interface UniqueItemsBrandInterface { readonly [UNIQUE_ITEMS]: true }
+
+/**
+ * Generic uniqueness brand parameterised by element type. Lets downstream APIs
+ * assume distinctness post-validation. Produced by `JsonTology.instantiate`
+ * (and `coerce` / `materialize`) when the source schema declares
+ * `uniqueItems: true`. Plain arrays cannot satisfy this brand without going
+ * through the validation API.
+ */
+export interface UniqueArrayBrandInterface<T> extends UniqueItemsBrandInterface {
+  readonly [UNIQUE_ARRAY]: T;
+}
 
 /**
  * Per-format named brand aliases.
