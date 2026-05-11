@@ -123,12 +123,17 @@ const CustomerCodec = t.type({
 ```
 
 ```ts [TypeBox]
-// TypeBox schemas are plain objects; no registry concept.
-// Validation requires passing the schema directly each time.
-import Ajv from 'ajv';
-const ajv = new Ajv();
-ajv.addSchema(CustomerSchema, 'Customer');
-// The `ajv` instance is the "registry"  - typed only at call sites via generics.
+// TypeBox has no centralized registry. Schemas live as module exports
+// and are referenced by variable. Validation goes through the Value
+// module (TypeBox's own runtime - not AJV).
+import { Value } from '@sinclair/typebox/value';
+
+// To validate, pass the schema by reference each time:
+Value.Check(CustomerSchema, data);
+
+// For cross-schema $ref, use Type.Ref(target) - but you must maintain
+// a $defs object yourself and pass it to TypeCompiler at compile time.
+// There is no JsonTology.create-style schema map with type inference.
 ```
 
 ```ts [AJV]
@@ -235,11 +240,13 @@ CouponCodec.decode({ discount: 0.15 });
 ```
 
 ```ts [TypeBox]
-// TypeBox schemas are plain objects; pass directly to Ajv.
-import Ajv from 'ajv';
-const ajv = new Ajv();
-const schema = Type.Object({ discount: Type.Number() });
-ajv.validate(schema, { discount: 0.15 });
+// TypeBox has no concept of anonymous registration - schemas are
+// always referenced by JS variable. An inline schema needs no name.
+import { Type } from '@sinclair/typebox';
+import { Value } from '@sinclair/typebox/value';
+
+const Coupon = Type.Object({ discount: Type.Number() });
+Value.Check(Coupon, { discount: 0.15 });
 ```
 
 ```ts [AJV]
@@ -421,7 +428,10 @@ import { BookCodec } from './schemas';
 ```
 
 ```ts [TypeBox]
-// TypeBox schemas are plain objects  - access via import or variable reference.
+// TypeBox schemas are accessed via direct import. Use Type.Ref(schema)
+// to produce a $ref node; resolve via TypeCompiler with a $defs object.
+import { BookSchema } from './schemas';
+const ref = Type.Ref(BookSchema);
 ```
 
 ```ts [AJV]
