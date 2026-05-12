@@ -101,32 +101,33 @@ function makeJt() {
 // ---------------------------------------------------------------------------
 
 void describe('computed fields', { 'concurrency': true }, () => {
-  void it('coerce() fills computed field absent from input', () => {
+  void it('coerce() and materialize() both fill computed field absent from input, output contains computed key', () => {
+    // coerce() path — fills computed field
     const jt = makeJt();
-    const result = jt.instantiate('https://ex.io/Order', {
+    const coerced = jt.instantiate('https://ex.io/Order', {
       'items': [
         { 'price': 10 },
         { 'price': 5 }
       ]
     }) as Record<string, unknown>;
 
-    assert.equal(result.total, 15);
-  });
+    assert.equal(coerced.total, 15, 'coerce() fills computed field');
 
-  // ---------------------------------------------------------------------------
-  // computed field absent on input is filled in by materialize()
-  // ---------------------------------------------------------------------------
+    // coerce() output contains computed key (dump-equivalent sanity check)
+    const dumpResult = jt.instantiate('https://ex.io/Order', { 'items': [{ 'price': 50 }] }) as Record<string, unknown>;
 
-  void it('materialize() fills computed field absent from input', () => {
-    const jt = makeJt();
-    const result = jt.materialize(OrderSchema, {
+    assert.ok('total' in dumpResult, 'total key present on coerce() output');
+    assert.equal(dumpResult.total, 50, 'total value matches sum');
+
+    // materialize() path — also fills computed field
+    const materialized = jt.materialize(OrderSchema, {
       'items': [
         { 'price': 3 },
         { 'price': 7 }
       ]
     }) as Record<string, unknown>;
 
-    assert.equal(result.total, 10);
+    assert.equal(materialized.total, 10, 'materialize() fills computed field');
   });
 
   // ---------------------------------------------------------------------------
@@ -252,22 +253,11 @@ void describe('computed fields', { 'concurrency': true }, () => {
   });
 
   // ---------------------------------------------------------------------------
-  // computed field appears in coerce() output (dump equivalent)
+  // removeComputed + missing fn registration — both disable computed field
   // ---------------------------------------------------------------------------
 
-  void it('coerce() output contains computed field', () => {
-    const jt = makeJt();
-    const result = jt.instantiate('https://ex.io/Order', { 'items': [{ 'price': 50 }] }) as Record<string, unknown>;
-
-    assert.ok('total' in result, 'total key present on output');
-    assert.equal(result.total, 50);
-  });
-
-  // ---------------------------------------------------------------------------
-  // removeComputed by schemaId+name
-  // ---------------------------------------------------------------------------
-
-  void it('removeComputed disables the computed field', () => {
+  void it('removeComputed disables computed field, and missing fn throws SchemaError at registration', () => {
+    // removeComputed path
     const jt = makeJt();
 
     jt.removeComputed('https://ex.io/Order', 'total');
@@ -275,13 +265,8 @@ void describe('computed fields', { 'concurrency': true }, () => {
     const result = jt.instantiate('https://ex.io/Order', { 'items': [{ 'price': 10 }] }) as Record<string, unknown>;
 
     assert.ok(!('total' in result) || result.total === undefined, 'total not computed after removeComputed');
-  });
 
-  // ---------------------------------------------------------------------------
-  // missing compute function for jt:computed: true raises SchemaError at registration
-  // ---------------------------------------------------------------------------
-
-  void it('registering a schema with jt:computed property but no fn throws SchemaError', () => {
+    // missing fn path — SchemaError at registration time
     assert.throws(
       () => {
         JsonTology.create({
@@ -294,7 +279,7 @@ void describe('computed fields', { 'concurrency': true }, () => {
         });
       },
       (err: unknown) => {
-        assert.ok(err instanceof SchemaError, 'SchemaError thrown');
+        assert.ok(err instanceof SchemaError, 'SchemaError thrown for missing computed fn');
         assert.ok(
           (err).message.includes('COMPUTED_FN_MISSING')
           || (err).message.includes('jt:computed')
