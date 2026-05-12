@@ -234,6 +234,18 @@ function normalizeToQuadsOptions(options: ToQuadsOptionsType | undefined): Norma
  */
 export class JsonTology<TMap = Record<never, never>> {
   /**
+   * Narrows a JSONSchema7Definition to a named-schema object.
+   * Throws SchemaError if the value is a boolean schema or lacks `$id`.
+   */
+  private static asNamedSchema(schema: JSONSchema7Definition): Record<string, unknown> & { '$id': string } {
+    if (typeof schema === 'boolean' || typeof (schema as Record<string, unknown>).$id !== 'string') {
+      throw new SchemaError('SCHEMA_MISSING_ID', 'Schema must be an object with a string $id');
+    }
+
+    return schema as Record<string, unknown> & { '$id': string };
+  }
+
+  /**
    * Creates a {@link JsonTology} instance with constructor-time schemas and full type inference.
    *
    * @param options - Configuration including `baseIRI`, optional `schemas`, prefixes, format validators, and more.
@@ -263,9 +275,9 @@ export class JsonTology<TMap = Record<never, never>> {
    * @param options - Filtering and mode options.
    * @returns Wire-form representation.
    */
-  public static dump(
-    schema: Record<string, unknown> & { readonly '$id': string },
-    value: unknown,
+  public static dump<TSchema extends Record<string, unknown> & { readonly '$id': string }>(
+    schema: TSchema,
+    value: InferSchemaType<TSchema>,
     options?: DumpOptionsInterface
   ): unknown {
     const jt = JsonTology.ephemeral(schema);
@@ -305,14 +317,14 @@ export class JsonTology<TMap = Record<never, never>> {
    * @param quads - RDF quads to lift.
    * @returns Array of validated, typed objects.
    */
-  public static fromQuads(
-    schema: Record<string, unknown> & { readonly '$id': string },
+  public static fromQuads<TSchema extends Record<string, unknown> & { readonly '$id': string }>(
+    schema: TSchema,
     quads: QuadInterface[],
     options?: { 'deskolemize'?: boolean }
-  ): unknown[] {
+  ): Array<InferSchemaType<TSchema>> {
     const jt = JsonTology.ephemeral(schema);
 
-    return jt.fromQuads(schema, quads, options);
+    return jt.fromQuads(schema, quads, options) as Array<InferSchemaType<TSchema>>;
   }
 
   /**
@@ -323,14 +335,14 @@ export class JsonTology<TMap = Record<never, never>> {
    * @param options - Per-call options.
    * @returns The validated and normalized value.
    */
-  public static instantiate(
-    schema: Record<string, unknown> & { readonly '$id': string },
+  public static instantiate<TSchema extends Record<string, unknown> & { readonly '$id': string }>(
+    schema: TSchema,
     data: unknown,
     options?: { 'enableDefaults'?: boolean }
-  ): unknown {
+  ): InferSchemaType<TSchema> {
     const jt = JsonTology.ephemeral(schema);
 
-    return jt.instantiate(schema, data, options);
+    return jt.instantiate(schema as JSONSchema7Definition & { readonly '$id': string }, data, options) as InferSchemaType<TSchema>;
   }
 
   /**
@@ -354,14 +366,14 @@ export class JsonTology<TMap = Record<never, never>> {
    * @param options - Materialization options.
    * @returns A fully materialized instance.
    */
-  public static materialize(
-    schema: Record<string, unknown> & { readonly '$id': string },
-    data?: Record<string, unknown>,
+  public static materialize<TSchema extends Record<string, unknown> & { readonly '$id': string }>(
+    schema: TSchema,
+    data?: Partial<InferSchemaType<TSchema>>,
     options?: { 'enablePartial'?: boolean }
-  ): unknown {
+  ): MaterializedSchemaType<TSchema> {
     const jt = JsonTology.ephemeral(schema);
 
-    return jt.materialize(schema as JSONSchema7Definition & { readonly '$id': string }, data, options);
+    return jt.materialize(schema as JSONSchema7Definition & { readonly '$id': string }, data as Record<string, unknown>, options) as MaterializedSchemaType<TSchema>;
   }
 
   /**
@@ -677,7 +689,12 @@ export class JsonTology<TMap = Record<never, never>> {
     schema: TransformedType<TSchema, TOut>,
     value: TOut
   ): InferSchemaType<TSchema> {
-    return (Transform.getDecoder(schema)?.encode(value) ?? value) as InferSchemaType<TSchema>;
+    // JSONSchema7Definition includes boolean, but the { '$id': string } constraint on TSchema
+    // excludes boolean at runtime. TypeScript cannot reduce this intersection structurally,
+    // so a double cast is required to bridge TransformedType to Record<string, unknown>.
+    const decoder = Transform.getDecoder(schema as unknown as Record<string, unknown>);
+
+    return (decoder?.encode(value) ?? value) as InferSchemaType<TSchema>;
   }
   /**
    * Report registered schemas (or inline subschemas) whose canonical shape
@@ -1036,8 +1053,7 @@ export class JsonTology<TMap = Record<never, never>> {
     };
 
     const quads = this.materializer.projectAbox(
-      // Cast needed: JSONSchema7Definition includes boolean; runtime guarantees object with $id
-      schema as unknown as Record<string, unknown> & { '$id': string; },
+      JsonTology.asNamedSchema(schema),
       data,
       this.baseIRI,
       effective

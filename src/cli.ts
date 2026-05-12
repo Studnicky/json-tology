@@ -43,7 +43,10 @@ function findFiles(pattern: string): string[] {
   if (pattern.includes('*')) {
     const dir = pattern.slice(0, pattern.indexOf('*')).replace(/\/$/u, '') || '.';
     const ext = pattern.slice(pattern.lastIndexOf('.'));
-    const entries = readdirSync(resolve(dir), { 'recursive': true }) as unknown as string[];
+    const entries = readdirSync(resolve(dir), {
+      'encoding': 'utf8',
+      'recursive': true
+    });
 
     return entries
       .filter((entry) => {

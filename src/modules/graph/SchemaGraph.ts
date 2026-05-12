@@ -38,7 +38,16 @@ export class SchemaGraph implements SchemaGraphInterface {
   public static fromNormIR(normIR: NormIRInterface): SchemaGraph {
     const graph = Object.create(SchemaGraph.prototype) as SchemaGraph;
 
-    // Initialize private maps via reflection (bypass constructor)
+    // @internal
+    // Initialize private maps via reflection (bypass constructor).
+    // Invariant: `Object.create(SchemaGraph.prototype)` produces a valid SchemaGraph instance
+    // whose prototype chain is intact; we then populate every private field before the object
+    // escapes this factory method. The cast is structurally safe because the fields being set
+    // are exactly the private fields declared on SchemaGraph — no external field writes occur,
+    // and the resulting object satisfies the SchemaGraphInterface contract before it is returned.
+    // A factory constructor overload could replace this, but would require exposing the field
+    // initialisation as a separate internal method, increasing the risk of partially-initialised
+    // instances; the current pattern keeps initialisation atomic.
     const fields = graph as unknown as Record<string, unknown>;
 
     fields.anchorMap = new Map<string, SchemaGraphNodeInterface>();
@@ -412,10 +421,10 @@ export class SchemaGraph implements SchemaGraphInterface {
     }
 
     if (typeof schema.$anchor === 'string') {
-      this.anchorMap.set(schema.$anchor, this.nodeMap.get(pointer) as SchemaGraphNodeInterface);
+      this.anchorMap.set(schema.$anchor, this.nodeForPointer(pointer));
     }
     if (typeof schema.$dynamicAnchor === 'string') {
-      this.anchorMap.set(schema.$dynamicAnchor, this.nodeMap.get(pointer) as SchemaGraphNodeInterface);
+      this.anchorMap.set(schema.$dynamicAnchor, this.nodeForPointer(pointer));
     }
 
     for (const [
@@ -426,7 +435,7 @@ export class SchemaGraph implements SchemaGraphInterface {
         const childPointer = `${pointer}/${escapeJsonPointerSegment(key)}`;
 
         this.lower(value, childPointer);
-        this.childMap.get(node)?.set(key, this.nodeMap.get(childPointer) as SchemaGraphNodeInterface);
+        this.childMap.get(node)?.set(key, this.nodeForPointer(childPointer));
 
         if (isRecord(value)) {
           const entries: Array<[string, SchemaGraphNodeInterface]> = [];
@@ -442,7 +451,7 @@ export class SchemaGraph implements SchemaGraphInterface {
 
             entries.push([
               entryKey,
-              this.nodeMap.get(entryPointer) as SchemaGraphNodeInterface
+              this.nodeForPointer(entryPointer)
             ]);
           }
 
@@ -466,7 +475,7 @@ export class SchemaGraph implements SchemaGraphInterface {
           const elementPointer = `${pointer}/${escapeJsonPointerSegment(key)}/${index}`;
 
           this.lower(element, elementPointer);
-          indexedChildren.push(this.nodeMap.get(elementPointer) as SchemaGraphNodeInterface);
+          indexedChildren.push(this.nodeForPointer(elementPointer));
         }
       }
 
@@ -484,6 +493,20 @@ export class SchemaGraph implements SchemaGraphInterface {
    */
   public node(schema: Record<string, unknown>): SchemaGraphNodeInterface | undefined {
     return this.identityMap.get(schema);
+  }
+
+  /**
+   * Returns the graph node for a JSON Pointer, throwing GraphError if not found.
+   * Used internally at sites where key presence is an invariant.
+   */
+  private nodeForPointer(pointer: string): SchemaGraphNodeInterface {
+    const mapNode = this.nodeMap.get(pointer);
+
+    if (mapNode === undefined) {
+      throw new GraphError('POINTER_NOT_FOUND', `Schema graph node not found for pointer: ${pointer}`, pointer);
+    }
+
+    return mapNode;
   }
 
   /**
@@ -594,7 +617,7 @@ export class SchemaGraph implements SchemaGraphInterface {
    * @returns The root graph node.
    */
   public get rootNode(): SchemaGraphNodeInterface {
-    return this.nodeMap.get('') as SchemaGraphNodeInterface;
+    return this.nodeForPointer('');
   }
 
   /**

@@ -14,6 +14,8 @@ export class Resolver {
     }
     const result = { ...base };
 
+    // Object.keys returns string[], but override is Partial<T> so every key is keyof T.
+    // The cast is safe for this shallow merge: no keys outside T can appear in the override.
     for (const key of Object.keys(override) as Array<keyof T>) {
       if (override[key] !== undefined) {
         result[key] = override[key];

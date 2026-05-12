@@ -17,6 +17,7 @@ import type { CurieInterface } from '../../interfaces/Curie.js';
 import {
   DASH, DCT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
+import { GraphError } from '../../errors/GraphError.js';
 import { resolveSingleXsdType } from '../../constants/XSD_MAPS.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { QuadFactory } from './QuadFactory.js';
@@ -244,6 +245,12 @@ interface RawRestrictionDescriptorType {
   readonly 'value': unknown;
 }
 
+function isRawRestrictionDescriptor(raw: object): raw is RawRestrictionDescriptorType {
+  const rec = raw as Record<string, unknown>;
+
+  return typeof rec.kind === 'string' && typeof rec.onProperty === 'string' && 'value' in rec;
+}
+
 const RESTRICTION_PREDICATE: Partial<Record<string, string>> = {
   'allValuesFrom': OWL.allValuesFrom,
   'cardinality': OWL.cardinality,
@@ -285,7 +292,11 @@ function emitUserRestrictions(
     if (typeof raw !== 'object' || raw === null) {
       continue;
     }
-    const desc = raw as RawRestrictionDescriptorType;
+    if (!isRawRestrictionDescriptor(raw as object)) {
+      throw new GraphError('GRAPH_INVALID_RESTRICTION', 'Restriction entry missing required kind, onProperty, or value fields');
+    }
+
+    const desc: RawRestrictionDescriptorType = raw as RawRestrictionDescriptorType;
     const predicate: string | undefined = RESTRICTION_PREDICATE[desc.kind];
 
     if (predicate === undefined) {

@@ -689,7 +689,11 @@ export class GraphEngine implements GraphEngineInterface {
       }
 
       if (propertyNodeMap.has(key)) {
-        const propNode = propertyNodeMap.get(key) as SchemaGraphNodeInterface;
+        const propNode = propertyNodeMap.get(key);
+
+        if (propNode === undefined) {
+          throw new GraphError('POINTER_NOT_FOUND', `Property node not found for key: ${key}`, key);
+        }
         const child = this.visit(propNode, graph, workingValue[key], `${path}/${escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope, depth + 1);
 
         if (!child.valid && !options.collectErrors) {

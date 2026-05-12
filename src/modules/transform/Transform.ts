@@ -25,6 +25,7 @@ import type {
   ValidatePipeChainType
 } from '../../types/Transform.js';
 import type { BrandedType } from '../../types/Brand.js';
+import { brand } from '../../types/Brand.js';
 import type { InferSchemaType } from '../../types/Infer.js';
 import type { TransformFnsInterface } from '../../interfaces/TransformFns.js';
 import type {
@@ -54,7 +55,7 @@ export class Transform {
     TSchema extends JSONSchema7Definition,
     TBrand extends string
   >(schema: TSchema, _: TBrand): BrandedType<TSchema, TBrand> {
-    return schema as unknown as BrandedType<TSchema, TBrand>;
+    return brand<BrandedType<TSchema, TBrand>>(schema);
   }
 
   /**
@@ -78,11 +79,11 @@ export class Transform {
   ): TransformedType<TSchema, TOut> {
     transformRegistry.set(schema, fns as TransformFnsInterface);
 
-    return schema as unknown as TransformedType<TSchema, TOut>;
+    return brand<TransformedType<TSchema, TOut>>(schema);
   }
 
   /** Returns the decode/encode functions registered for a schema, or undefined. */
-  public static getDecoder(schema: object): TransformFnsInterface | undefined {
+  public static getDecoder(schema: Record<string, unknown>): TransformFnsInterface | undefined {
     return transformRegistry.get(schema);
   }
 
@@ -122,6 +123,6 @@ export class Transform {
 
     transformRegistry.set(schema, composed);
 
-    return schema as unknown as TransformedType<TSchema, PipeChainOutputType<TStages>>;
+    return brand<TransformedType<TSchema, PipeChainOutputType<TStages>>>(schema);
   }
 }

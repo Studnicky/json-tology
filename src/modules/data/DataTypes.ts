@@ -52,8 +52,11 @@ function walkForCycle(value: unknown, seen: WeakSet<object>): boolean {
     return false;
   }
 
-  if (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null) {
-    for (const child of Object.values(value as Record<string, unknown>)) {
+  if (
+    (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null)
+    && isRecord(value)
+  ) {
+    for (const child of Object.values(value)) {
       if (walkForCycle(child, seen)) {
         return true;
       }
@@ -114,9 +117,9 @@ export function deepEqual(left: unknown, right: unknown): boolean {
     return true;
   }
 
-  if (typeof left === 'object') {
-    const leftObj = left as Record<string, unknown>;
-    const rightObj = right as Record<string, unknown>;
+  if (isRecord(left) && isRecord(right)) {
+    const leftObj = left;
+    const rightObj = right;
     const leftKeys = Object.keys(leftObj);
     const rightKeys = Object.keys(rightObj);
 

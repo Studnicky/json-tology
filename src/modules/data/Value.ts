@@ -11,7 +11,7 @@
 import type { DiffOpType } from '../../types/Diff.js';
 import type { ValueInterface } from '../../interfaces/ValueImpl.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
-import { isPlainObject } from './DataTypes.js';
+import { isRecord } from './DataTypes.js';
 import { Hash } from '../hash/Hash.js';
 import { Changeset } from './Changeset.js';
 import {
@@ -145,9 +145,9 @@ export class Value implements ValueInterface {
 // ---------------------------------------------------------------------------
 
 function diffAt(path: string, before: unknown, after: unknown, ops: DiffOpType[]): void {
-  if (isPlainObject(before) && isPlainObject(after)) {
-    const beforeObj = before as Record<string, unknown>;
-    const afterObj = after as Record<string, unknown>;
+  if (isRecord(before) && isRecord(after)) {
+    const beforeObj = before;
+    const afterObj = after;
 
     for (const key in beforeObj) {
       const child = `${path}/${key}`;

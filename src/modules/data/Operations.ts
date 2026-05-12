@@ -1,5 +1,15 @@
+/**
+ * Operations — canonical implementations of `applyOp` and `clone`.
+ *
+ * These are the source-of-truth implementations. `Value.applyOp` and
+ * `Value.clone` delegate to them. Consolidation into a single call path
+ * lives here so that the data-transformation logic is not duplicated.
+ */
+
 import type { DiffOpType } from '../../types/Diff.js';
-import { isPlainObject } from './DataTypes.js';
+import {
+  isPlainObject, isRecord
+} from './DataTypes.js';
 
 /**
  * Apply a single diff operation (`set` or `delete`) to a value at the specified path.
@@ -32,7 +42,12 @@ export function applyOp(root: unknown, operation: DiffOpType): unknown {
 
   for (let i = 0; i < segments.length - 1; i++) {
     const segment = segments[i];
-    const child = (current as Record<string, unknown>)[segment];
+
+    if (!isRecord(current)) {
+      break;
+    }
+
+    const child = current[segment];
     let next: unknown;
 
     if (isPlainObject(child)) {
@@ -43,19 +58,21 @@ export function applyOp(root: unknown, operation: DiffOpType): unknown {
       next = child;
     }
 
-    (current as Record<string, unknown>)[segment] = next;
+    current[segment] = next;
     current = next;
   }
 
   const lastSegment: string = segments.at(-1) ?? '';
 
   if (operation.op === 'set') {
-    (current as Record<string, unknown>)[lastSegment] = operation.value;
+    if (isRecord(current)) {
+      current[lastSegment] = operation.value;
+    }
   } else {
     if (Array.isArray(current)) {
       (current as unknown[]).splice(Number(lastSegment), 1);
-    } else {
-      delete (current as Record<string, unknown>)[lastSegment];
+    } else if (isRecord(current)) {
+      delete current[lastSegment];
     }
   }
 

@@ -1,4 +1,4 @@
-export const EMPTY_ERROR_LIST: string[] = Object.freeze([]) as unknown as string[];
+export const EMPTY_ERROR_LIST: readonly string[] = Object.freeze<string[]>([]);
 
 export const CAST_OPTIONS = Object.freeze({
   'applyDefaults': true,
