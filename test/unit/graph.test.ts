@@ -4513,3 +4513,89 @@ void describe('maxSchemaDepth — GraphEngine recursion depth parameter', () => 
   });
 });
 
+// ===========================================================================
+// GraphEngine.resolveRef — self-referencing schema on direct-engine path
+// Regression for: REF_UNRESOLVED thrown when a schema's $ref pointed at its
+// own $id and the engine was obtained via registry.engine(schemaObj) or
+// constructed directly as new GraphEngine(schema) without a lookupSchema.
+// ===========================================================================
+
+void describe('GraphEngine self-reference resolution (parity regression)', () => {
+  const TreeNodeSchema = {
+    '$id': 'https://parity.test/tree-node',
+    'properties': {
+      'left': { '$ref': 'https://parity.test/tree-node' },
+      'right': { '$ref': 'https://parity.test/tree-node' },
+      'value': { 'type': 'number' }
+    },
+    'type': 'object'
+  } as const;
+
+  void it('engine obtained via registry.engine() resolves self-$ref without throwing', () => {
+    const registry = new SchemaRegistry();
+
+    registry.register(TreeNodeSchema);
+
+    const engine = registry.engine(TreeNodeSchema);
+    const valid = {
+      'left': { 'value': 2 },
+      'right': { 'value': 3 },
+      'value': 1
+    };
+    const errors = engine.errors(valid);
+
+    assert.equal(errors.length, 0, `expected no errors but got: ${errors.map((err) => {
+      return err.message;
+    }).join(', ')}`);
+  });
+
+  void it('new GraphEngine(schema) without lookupSchema resolves self-$ref without throwing', () => {
+    // The schema is mutable here (not yet frozen by a registry), which is the
+    // standalone usage pattern exercised by the direct-engine path.
+    const schema: Record<string, unknown> = {
+      '$id': 'https://parity.test/tree-node',
+      'properties': {
+        'left': { '$ref': 'https://parity.test/tree-node' },
+        'right': { '$ref': 'https://parity.test/tree-node' },
+        'value': { 'type': 'number' }
+      },
+      'type': 'object'
+    };
+    const engine = new GraphEngine(schema);
+    const valid = {
+      'left': { 'value': 2 },
+      'right': { 'value': 3 },
+      'value': 1
+    };
+    const errors = engine.errors(valid);
+
+    assert.equal(errors.length, 0, `expected no errors but got: ${errors.map((err) => {
+      return err.message;
+    }).join(', ')}`);
+  });
+
+  void it('engine rejects structurally invalid nested nodes via the self-$ref branch', () => {
+    const registry = new SchemaRegistry();
+
+    registry.register(TreeNodeSchema);
+
+    const engine = registry.engine(TreeNodeSchema);
+    // left.value is a string, violating { type: 'number' } on the self-referenced schema.
+    const invalid = {
+      'left': { 'value': 'not-a-number' },
+      'value': 1
+    };
+    const errors = engine.errors(invalid);
+
+    assert.ok(errors.length > 0, 'expected at least one validation error for invalid nested node');
+    assert.ok(
+      errors.some((err) => {
+        return err.path.includes('left');
+      }),
+      `expected an error path containing "left", got: ${errors.map((err) => {
+        return err.path;
+      }).join(', ')}`
+    );
+  });
+});
+

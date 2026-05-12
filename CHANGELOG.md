@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `GraphEngine.resolveRef` failed to resolve a schema's `$ref` to its own `$id` when the engine was obtained via `registry.engine(schemaObj)` and `.errors(data)` was called directly. The compiled fast-path (`registry.validate`) was unaffected. Now the interpreted path recognises the root schema's own `$id` and resolves self-references consistently with the compiled path, restoring parity. Surfaced by a new compiled/interpreted parity test.
+
 ### Changed
 
 - Test-tier corrections: `logger` tests moved smoke → unit; `baseTypes` cross-module registry scenarios moved smoke → integration; `quads` moved integration → unit; `maxSchemaDepth` scenarios moved integration → unit. `beforeEach`/`afterEach` shared-state hooks in `cliWriter` and `logger` tests replaced with per-`it` inline `try`/`finally` fixtures.

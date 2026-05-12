@@ -374,9 +374,19 @@ export class GraphEngine implements GraphEngineInterface {
       const lookedUp = this.options.lookupSchema?.(parsed.id);
 
       if (lookedUp === undefined) {
-        throw new GraphError('REF_UNRESOLVED', `Unresolved schema reference: ${ref}`, ref);
+        // Self-reference: $ref targets the root schema's own $id. Resolve
+        // against the root graph so a schema can reference itself without
+        // requiring an external lookupSchema callback.
+        const rootId = GraphEngineSupport.schemaId(this.rootSchema);
+
+        if (rootId !== undefined && parsed.id === rootId) {
+          graph = this.graphFor(this.rootSchema);
+        } else {
+          throw new GraphError('REF_UNRESOLVED', `Unresolved schema reference: ${ref}`, ref);
+        }
+      } else {
+        graph = this.graphFor(lookedUp);
       }
-      graph = this.graphFor(lookedUp);
     }
 
     const node = graph.resolveFragment(fragment);
