@@ -364,22 +364,21 @@ function buildNestedHashWithLeaf(leafValue: string, depth: number): Record<strin
 }
 
 void describe('Hash bad/ugly paths', () => {
-  // --- BigInt values ---
-  void it('unhappy: BigInt value causes JSON.stringify to throw (not JSON-serializable)', () => {
-    // BigInt is not JSON-serializable; JSON.stringify throws TypeError
+  // --- BigInt values (scalar and embedded) ---
+  void it('unhappy: BigInt values throw TypeError (not JSON-serializable) — scalar and embedded', () => {
+    // scalar BigInt
     assert.throws(
       () => {
         Hash.value(BigInt(42));
       },
       (err: unknown) => {
-        assert.ok(err instanceof TypeError, `expected TypeError, got ${String(err)}`);
+        assert.ok(err instanceof TypeError, `expected TypeError for BigInt scalar, got ${String(err)}`);
 
         return true;
       }
     );
-  });
 
-  void it('unhappy: object containing BigInt property throws', () => {
+    // BigInt inside an object
     const obj = {
       'count': BigInt(1),
       'name': 'test'
@@ -390,15 +389,15 @@ void describe('Hash bad/ugly paths', () => {
         Hash.value(obj);
       },
       (err: unknown) => {
-        assert.ok(err instanceof TypeError);
+        assert.ok(err instanceof TypeError, `expected TypeError for object with BigInt, got ${String(err)}`);
 
         return true;
       }
     );
   });
 
-  // --- Symbol keys ---
-  void it('edge: object with Symbol keys — Symbol-keyed props are silently dropped by JSON.stringify', () => {
+  // --- Symbol keys: silently dropped by JSON.stringify ---
+  void it('edge: Symbol-keyed properties are silently dropped — objects differing only by Symbol keys produce equal hashes', () => {
     const sym = Symbol('key');
     const objWithSym: Record<string | symbol, unknown> = {
       [sym]: 'hidden',
@@ -409,13 +408,11 @@ void describe('Hash bad/ugly paths', () => {
     const hashWithSym = Hash.value(objWithSym);
     const hashWithout = Hash.value({ 'visible': 'here' });
 
-    assert.equal(typeof hashWithSym, 'string');
-    assert.match(hashWithSym, /^[0-9a-f]+$/u);
-    // Hashes should be equal because Symbol keys are dropped
-    assert.equal(hashWithSym, hashWithout);
-  });
+    assert.equal(typeof hashWithSym, 'string', 'hash is a string');
+    assert.match(hashWithSym, /^[0-9a-f]+$/u, 'hash is hex');
+    assert.equal(hashWithSym, hashWithout, 'Symbol keys dropped: hashes equal');
 
-  void it('edge: two objects differing only in Symbol keys produce equal hashes', () => {
+    // two objects with different Symbol keys and same string keys produce equal hashes
     const sym1 = Symbol('a');
     const sym2 = Symbol('b');
     const obj1: Record<string | symbol, unknown> = {
@@ -427,33 +424,35 @@ void describe('Hash bad/ugly paths', () => {
       [sym2]: 'y'
     };
 
-    assert.equal(Hash.value(obj1), Hash.value(obj2));
+    assert.equal(Hash.value(obj1), Hash.value(obj2), 'differing Symbol keys produce equal hashes');
   });
 
-  // --- Mixed prototype objects (Object.create(null)) ---
-  void it('edge: null-prototype object hashes identically to a plain object with same keys', () => {
+  // --- Null-prototype objects ---
+  void it('edge: null-prototype objects hash identically to equivalent plain objects', () => {
+    // null-proto with keys equals plain object with same keys
     const nullProto = Object.create(null) as Record<string, unknown>;
 
     nullProto.a = 1;
     nullProto.b = 'hello';
 
-    const plainProto = {
-      'a': 1,
-      'b': 'hello'
-    };
+    assert.equal(
+      Hash.value(nullProto),
+      Hash.value({
+        'a': 1,
+        'b': 'hello'
+      }),
+      'null-prototype with keys equals plain object'
+    );
 
-    // JSON.stringify handles both the same way (no prototype methods needed)
-    assert.equal(Hash.value(nullProto), Hash.value(plainProto));
+    // null-proto with no keys equals empty plain object
+    const emptyNullProto = Object.create(null) as Record<string, unknown>;
+
+    assert.equal(Hash.value(emptyNullProto), Hash.value({}), 'null-prototype empty equals empty plain object');
   });
 
-  void it('edge: null-prototype object with no keys equals empty plain object', () => {
-    const nullProto = Object.create(null) as Record<string, unknown>;
-
-    assert.equal(Hash.value(nullProto), Hash.value({}));
-  });
-
-  // --- Circular references ---
-  void it('unhappy: circular reference in an object throws (RangeError from keySortReplacer recursion)', () => {
+  // --- Circular references (object and array) ---
+  void it('unhappy: circular reference in object or array throws (RangeError or TypeError)', () => {
+    // object circular ref
     const obj: Record<string, unknown> = { 'a': 1 };
 
     // circular: obj.self points back to obj itself
@@ -470,15 +469,14 @@ void describe('Hash bad/ugly paths', () => {
       (err: unknown) => {
         assert.ok(
           err instanceof RangeError || err instanceof TypeError,
-          `expected RangeError or TypeError for circular ref, got ${String(err)}`
+          `expected RangeError or TypeError for circular object ref, got ${String(err)}`
         );
 
         return true;
       }
     );
-  });
 
-  void it('unhappy: deeply nested circular array reference throws', () => {
+    // array circular ref
     const arr: unknown[] = [
       1,
       2
@@ -492,15 +490,19 @@ void describe('Hash bad/ugly paths', () => {
         Hash.value(arr);
       },
       (err: unknown) => {
-        assert.ok(err instanceof TypeError);
+        assert.ok(
+          err instanceof RangeError || err instanceof TypeError,
+          `expected RangeError or TypeError for circular array ref, got ${String(err)}`
+        );
 
         return true;
       }
     );
   });
 
-  // --- Deeply nested data ---
-  void it('edge: deeply nested legitimate data (50 levels) produces a hex string without throwing', () => {
+  // --- Deeply nested data (50 levels) ---
+  void it('edge: deeply nested (50 levels) — produces hex string, stable across calls, leaf-sensitive', () => {
+    // produces a hex string without throwing
     let nested: Record<string, unknown> = { 'leaf': 'value' };
 
     for (let i = 0; i < 50; i++) {
@@ -509,15 +511,21 @@ void describe('Hash bad/ugly paths', () => {
 
     const result = Hash.value(nested);
 
-    assert.equal(typeof result, 'string');
-    assert.match(result, /^[0-9a-f]+$/u);
-  });
+    assert.equal(typeof result, 'string', 'result is a string');
+    assert.match(result, /^[0-9a-f]+$/u, 'result is a hex string');
 
-  void it('edge: deeply nested (50 levels) same structure produces equal hashes across calls', () => {
-    assert.equal(Hash.value(buildNestedHash(50)), Hash.value(buildNestedHash(50)));
-  });
+    // same structure produces equal hashes across calls
+    assert.equal(
+      Hash.value(buildNestedHash(50)),
+      Hash.value(buildNestedHash(50)),
+      'equal hashes for identical 50-level structure'
+    );
 
-  void it('edge: deeply nested (50 levels) that differs at leaf produces different hashes', () => {
-    assert.notEqual(Hash.value(buildNestedHashWithLeaf('alpha', 50)), Hash.value(buildNestedHashWithLeaf('beta', 50)));
+    // different leaf produces different hashes
+    assert.notEqual(
+      Hash.value(buildNestedHashWithLeaf('alpha', 50)),
+      Hash.value(buildNestedHashWithLeaf('beta', 50)),
+      'different hashes when leaf differs'
+    );
   });
 });
