@@ -87,154 +87,93 @@ import { Logger } from '../utils/Logger.js';
     'type': 'array'
   } as const;
 
-  void describe('jt:alias coercion', { 'concurrency': true }, () => {
-    void describe('single alias', { 'concurrency': true }, () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+  void describe('jt:alias coercion — Good/Bad/Ugly', { 'concurrency': true }, () => {
+    void it('alias resolution: table-driven scenarios covering single, multi, required, nested, array', () => {
+      // Good: single alias maps to canonical key
+      const singleReg = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register(SingleAliasSchema);
+      singleReg.register(SingleAliasSchema);
+      assert.deepStrictEqual(singleReg.instantiate(SingleAliasSchema.$id, { 'foo_bar': 'hello' }), { 'fooBar': 'hello' });
+      assert.deepStrictEqual(singleReg.instantiate(SingleAliasSchema.$id, { 'fooBar': 'hello' }), { 'fooBar': 'hello' });
+      assert.deepStrictEqual(singleReg.instantiate(SingleAliasSchema.$id, {
+        'foo_bar': 'alias-value',
+        'fooBar': 'canonical-value'
+      }), { 'fooBar': 'canonical-value' });
+      const inputNoMutate = { 'foo_bar': 'hello' };
 
-      void it('maps alias input to canonical key', () => {
-        const result = registry.instantiate(SingleAliasSchema.$id, { 'foo_bar': 'hello' });
+      singleReg.instantiate(SingleAliasSchema.$id, inputNoMutate);
+      assert.deepStrictEqual(inputNoMutate, { 'foo_bar': 'hello' });
 
-        assert.deepStrictEqual(result, { 'fooBar': 'hello' });
+      // Good: multi-alias priority
+      const multiReg = JsonTology.create({ 'baseIRI': 'urn:test:' });
+
+      multiReg.register(MultiAliasSchema);
+      assert.deepStrictEqual(multiReg.instantiate(MultiAliasSchema.$id, { 'foo_bar': 'value1' }), { 'fooBar': 'value1' });
+      assert.deepStrictEqual(multiReg.instantiate(MultiAliasSchema.$id, { 'fooBarLegacy': 'legacy' }), { 'fooBar': 'legacy' });
+      assert.deepStrictEqual(multiReg.instantiate(MultiAliasSchema.$id, {
+        'foo_bar': 'alias1',
+        'fooBar': 'canonical',
+        'fooBarLegacy': 'alias2'
+      }), { 'fooBar': 'canonical' });
+
+      // Bad: required constraint satisfied via alias; fails without either
+      const reqReg = JsonTology.create({ 'baseIRI': 'urn:test:' });
+
+      reqReg.register(RequiredAliasSchema);
+      assert.doesNotThrow(() => {
+        reqReg.instantiate(RequiredAliasSchema.$id, { 'foo_bar': 'value' });
+      });
+      assert.throws(() => {
+        reqReg.instantiate(RequiredAliasSchema.$id, {});
       });
 
-      void it('canonical key still works when no alias is used', () => {
-        const result = registry.instantiate(SingleAliasSchema.$id, { 'fooBar': 'hello' });
+      // Good: nested object alias resolves
+      const nestedReg = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-        assert.deepStrictEqual(result, { 'fooBar': 'hello' });
-      });
+      nestedReg.register(NestedAliasSchema);
+      assert.deepStrictEqual(nestedReg.instantiate(NestedAliasSchema.$id, { 'inner': { 'my_prop': 'nested-value' } }), { 'inner': { 'myProp': 'nested-value' } });
 
-      void it('canonical key wins when both canonical and alias are present', () => {
-        const result = registry.instantiate(SingleAliasSchema.$id, {
-          'foo_bar': 'alias-value',
-          'fooBar': 'canonical-value'
-        });
+      // Good: array item alias resolves per element
+      const arrReg = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-        assert.deepStrictEqual(result, { 'fooBar': 'canonical-value' });
-      });
+      arrReg.register(ArrayItemAliasSchema);
+      assert.deepStrictEqual(arrReg.instantiate(ArrayItemAliasSchema.$id, [
+        { 'lbl': 'first' },
+        { 'lbl': 'second' }
+      ]), [
+        { 'label': 'first' },
+        { 'label': 'second' }
+      ]);
 
-      void it('original input is not mutated', () => {
-        const input = { 'foo_bar': 'hello' };
-
-        registry.instantiate(SingleAliasSchema.$id, input);
-        assert.deepStrictEqual(input, { 'foo_bar': 'hello' });
-      });
-    });
-
-    void describe('multi-alias', { 'concurrency': true }, () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-
-      registry.register(MultiAliasSchema);
-
-      void it('first alias in list resolves when canonical key absent', () => {
-        const result = registry.instantiate(MultiAliasSchema.$id, { 'foo_bar': 'value1' });
-
-        assert.deepStrictEqual(result, { 'fooBar': 'value1' });
-      });
-
-      void it('second alias in list resolves when first alias and canonical key absent', () => {
-        const result = registry.instantiate(MultiAliasSchema.$id, { 'fooBarLegacy': 'legacy' });
-
-        assert.deepStrictEqual(result, { 'fooBar': 'legacy' });
-      });
-
-      void it('canonical key takes priority over all aliases', () => {
-        const result = registry.instantiate(MultiAliasSchema.$id, {
-          'foo_bar': 'alias1',
-          'fooBar': 'canonical',
-          'fooBarLegacy': 'alias2'
-        });
-
-        assert.deepStrictEqual(result, { 'fooBar': 'canonical' });
-      });
-    });
-
-    void describe('required properties with alias', { 'concurrency': true }, () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-
-      registry.register(RequiredAliasSchema);
-
-      void it('alias satisfies required constraint', () => {
-        assert.doesNotThrow(() => {
-          registry.instantiate(RequiredAliasSchema.$id, { 'foo_bar': 'value' });
-        });
-      });
-
-      void it('missing both canonical and alias fails required validation', () => {
-        assert.throws(() => {
-          registry.instantiate(RequiredAliasSchema.$id, {});
-        });
-      });
-    });
-
-    void describe('nested object alias', { 'concurrency': true }, () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-
-      registry.register(NestedAliasSchema);
-
-      void it('alias on nested object property resolves to canonical key', () => {
-        const result = registry.instantiate(NestedAliasSchema.$id, { 'inner': { 'my_prop': 'nested-value' } });
-
-        assert.deepStrictEqual(result, { 'inner': { 'myProp': 'nested-value' } });
-      });
-    });
-
-    void describe('array item alias', { 'concurrency': true }, () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-
-      registry.register(ArrayItemAliasSchema);
-
-      void it('alias on items schema property resolves for each element', () => {
-        const result = registry.instantiate(ArrayItemAliasSchema.$id, [
-          { 'lbl': 'first' },
-          { 'lbl': 'second' }
-        ]);
-
-        assert.deepStrictEqual(result, [
-          { 'label': 'first' },
-          { 'label': 'second' }
-        ]);
-      });
-    });
-
-    void describe('error messages use canonical pointer', { 'concurrency': true }, () => {
-      void it('validation errors reference canonical key path, not alias path', () => {
-        const WrongTypeSchema = {
-          '$id': 'https://example.com/WrongTypeAlias',
-          'properties': {
-            'count': {
-              'jt:alias': 'cnt',
-              'type': 'integer'
-            }
-          },
-          'type': 'object'
-        } as const;
-
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-
-        registry.register(WrongTypeSchema);
-
-        let coercionPaths: string[] = [];
-
-        try {
-          registry.instantiate(WrongTypeSchema.$id, { 'cnt': 'not-a-number' });
-        } catch (error: unknown) {
-          if (error instanceof InstantiationError) {
-            coercionPaths = error.errors.items.map((item) => {
-              return item.path;
-            });
+      // Ugly: validation errors reference canonical key path, not alias path
+      const WrongTypeSchema = {
+        '$id': 'https://example.com/WrongTypeAlias',
+        'properties': {
+          'count': {
+            'jt:alias': 'cnt',
+            'type': 'integer'
           }
-        }
+        },
+        'type': 'object'
+      } as const;
+      const wtReg = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-        assert.ok(coercionPaths.length > 0, 'expected validation errors from coerce');
-        assert.ok(
-          coercionPaths.some((path) => {
-            return path.includes('/count');
-          }),
-          `expected error path to reference /count, got: ${coercionPaths.join(', ')}`
-        );
-      });
+      wtReg.register(WrongTypeSchema);
+      let coercionPaths: string[] = [];
+
+      try {
+        wtReg.instantiate(WrongTypeSchema.$id, { 'cnt': 'not-a-number' });
+      } catch (error: unknown) {
+        if (error instanceof InstantiationError) {
+          coercionPaths = error.errors.items.map((item) => {
+            return item.path;
+          });
+        }
+      }
+      assert.ok(coercionPaths.length > 0, 'expected validation errors from coerce');
+      assert.ok(coercionPaths.some((path) => {
+        return path.includes('/count');
+      }), `expected error path to reference /count, got: ${coercionPaths.join(', ')}`);
     });
   });
 }
@@ -915,156 +854,121 @@ import { Logger } from '../utils/Logger.js';
     'type': 'object'
   } as const;
 
-  void describe('jt:strict per-field', { 'concurrency': true }, () => {
-    void it('accepts correct JS type for strict field', () => {
-      const registry = JsonTology.create({
+  void describe('jt:strict per-field — Good/Bad/Ugly', { 'concurrency': true }, () => {
+    void it('strict enforcement: accepts correct types, rejects coercible types, honors jt:config.strict', () => {
+      // Good: accepts correct JS type for strict field
+      const r1 = JsonTology.create({
         'baseIRI': 'urn:test:',
         'enableTypeCast': true
       });
 
-      registry.register(StrictFieldSchema);
-      const result = registry.instantiate(StrictFieldSchema.$id, {
+      r1.register(StrictFieldSchema);
+      assert.deepEqual(r1.instantiate(StrictFieldSchema.$id, {
+        'age': 30,
+        'name': 'Alice'
+      }), {
         'age': 30,
         'name': 'Alice'
       });
 
-      assert.deepEqual(result, {
-        'age': 30,
-        'name': 'Alice'
-      });
-    });
-
-    void it('rejects string-as-integer for strict field even when global castTypes is on', () => {
-      const registry = JsonTology.create({
+      // Good: coerces non-strict field normally when global castTypes is on
+      const r2 = JsonTology.create({
         'baseIRI': 'urn:test:',
         'enableTypeCast': true
       });
 
-      registry.register(StrictFieldSchema);
-
-      assert.throws(() => {
-        registry.instantiate(StrictFieldSchema.$id, {
-          'age': '30',
-          'name': 'Alice'
-        });
-      });
-    });
-
-    void it('coerces non-strict field normally when global castTypes is on', () => {
-      const registry = JsonTology.create({
-        'baseIRI': 'urn:test:',
-        'enableTypeCast': true
-      });
-
-      registry.register(StrictFieldSchema);
-      const result = registry.instantiate(StrictFieldSchema.$id, {
+      r2.register(StrictFieldSchema);
+      const coercedResult = r2.instantiate(StrictFieldSchema.$id, {
         'age': 30,
         'name': 42
       }) as Record<string, unknown>;
 
-      assert.equal(result.name, '42');
-    });
+      assert.equal(coercedResult.name, '42');
 
-    void it('rejects boolean-as-integer for strict field', () => {
-      const registry = JsonTology.create({
+      // Good: accepts valid integer without castTypes
+      const r3 = JsonTology.create({ 'baseIRI': 'urn:test:' });
+
+      r3.register(StrictFieldSchema);
+      assert.deepEqual(r3.instantiate(StrictFieldSchema.$id, {
+        'age': 5,
+        'name': 'Bob'
+      }), {
+        'age': 5,
+        'name': 'Bob'
+      });
+
+      // Bad: rejects string-as-integer for strict field even with global castTypes
+      const r4 = JsonTology.create({
         'baseIRI': 'urn:test:',
         'enableTypeCast': true
       });
 
-      registry.register(StrictFieldSchema);
-
+      r4.register(StrictFieldSchema);
       assert.throws(() => {
-        registry.instantiate(StrictFieldSchema.$id, {
+        r4.instantiate(StrictFieldSchema.$id, {
+          'age': '30',
+          'name': 'Alice'
+        });
+      });
+
+      // Bad: rejects boolean-as-integer for strict field
+      const r5 = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableTypeCast': true
+      });
+
+      r5.register(StrictFieldSchema);
+      assert.throws(() => {
+        r5.instantiate(StrictFieldSchema.$id, {
           'age': true,
           'name': 'Alice'
         });
       });
-    });
 
-    void it('accepts valid integer for strict field without castTypes', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-
-      registry.register(StrictFieldSchema);
-      const result = registry.instantiate(StrictFieldSchema.$id, {
-        'age': 5,
-        'name': 'Bob'
-      });
-
-      assert.deepEqual(result, {
-        'age': 5,
-        'name': 'Bob'
-      });
-    });
-
-    void it('jt:config.strict applies to all fields when set', () => {
-      const registry = JsonTology.create({
+      // Bad: jt:config.strict applies to all fields
+      const r6 = JsonTology.create({
         'baseIRI': 'urn:test:',
         'enableTypeCast': true
       });
 
-      registry.register(GlobalStrictConfigSchema);
-
+      r6.register(GlobalStrictConfigSchema);
       assert.throws(() => {
-        registry.instantiate(GlobalStrictConfigSchema.$id, {
+        r6.instantiate(GlobalStrictConfigSchema.$id, {
           'count': '5',
           'label': 'hello'
         });
       });
-    });
 
-    void it('jt:strict: false opts out field when jt:config.strict is true', () => {
-      const registry = JsonTology.create({
+      // Ugly: jt:strict: false opts out field when jt:config.strict is true
+      const r7 = JsonTology.create({
         'baseIRI': 'urn:test:',
         'enableTypeCast': true
       });
 
-      registry.register(GlobalStrictConfigSchema);
-      const result = registry.instantiate(GlobalStrictConfigSchema.$id, {
+      r7.register(GlobalStrictConfigSchema);
+      const optedOut = r7.instantiate(GlobalStrictConfigSchema.$id, {
         'count': 5,
         'label': 99
       }) as Record<string, unknown>;
 
-      assert.equal(result.label, '99');
-    });
+      assert.equal(optedOut.label, '99');
 
-    void it('validate() reflects strict type failures', () => {
-      const registry = JsonTology.create({
+      // Ugly: validate() and is() reflect strict type failures
+      const r8 = JsonTology.create({
         'baseIRI': 'urn:test:',
         'enableTypeCast': true
       });
 
-      registry.register(StrictFieldSchema);
-      const errors = registry.validate(StrictFieldSchema.$id, {
+      r8.register(StrictFieldSchema);
+      assert.ok(r8.validate(StrictFieldSchema.$id, {
         'age': '30',
         'name': 'Alice'
-      });
-
-      assert.ok(errors.length > 0);
-    });
-
-    void it('is() returns false for strict field type mismatch', () => {
-      const registry = JsonTology.create({
-        'baseIRI': 'urn:test:',
-        'enableTypeCast': true
-      });
-
-      registry.register(StrictFieldSchema);
-
-      assert.equal(registry.is(StrictFieldSchema.$id, {
+      }).length > 0);
+      assert.equal(r8.is(StrictFieldSchema.$id, {
         'age': '30',
         'name': 'Alice'
       }), false);
-    });
-
-    void it('is() returns true for correct types even with jt:strict', () => {
-      const registry = JsonTology.create({
-        'baseIRI': 'urn:test:',
-        'enableTypeCast': true
-      });
-
-      registry.register(StrictFieldSchema);
-
-      assert.equal(registry.is(StrictFieldSchema.$id, {
+      assert.equal(r8.is(StrictFieldSchema.$id, {
         'age': 30,
         'name': 'Alice'
       }), true);
@@ -1121,109 +1025,93 @@ import { Logger } from '../utils/Logger.js';
     'type': 'object'
   } as const;
 
-  void describe('jt:frozen output', { 'concurrency': true }, () => {
-    void it('coerce() returns frozen object when jt:frozen is set', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+  void describe('jt:frozen output — Good/Bad/Ugly', { 'concurrency': true }, () => {
+    void it('freeze scenarios: frozen vs mutable, deep freeze, arrays, config shorthand, materialize, cycle-safe', () => {
+      // Good: frozen when jt:frozen is set
+      const r1 = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register(FrozenSchema);
-      registry.register(MetaSchema);
-      const result = registry.instantiate(FrozenSchema.$id, { 'name': 'Alice' });
+      r1.register(FrozenSchema);
+      r1.register(MetaSchema);
+      assert.ok(Object.isFrozen(r1.instantiate(FrozenSchema.$id, { 'name': 'Alice' })));
 
-      assert.ok(Object.isFrozen(result));
-    });
+      // Good: mutable when jt:frozen is not set
+      const r2 = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    void it('coerce() returns mutable object when jt:frozen is not set', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      r2.register(MutableSchema);
+      const mutable = r2.instantiate(MutableSchema.$id, { 'value': 'hello' }) as Record<string, unknown>;
 
-      registry.register(MutableSchema);
-      const result = registry.instantiate(MutableSchema.$id, { 'value': 'hello' }) as Record<string, unknown>;
+      assert.ok(!Object.isFrozen(mutable));
+      mutable.value = 'mutated';
+      assert.equal(mutable.value, 'mutated');
 
-      assert.ok(!Object.isFrozen(result));
-      result.value = 'mutated';
-      assert.equal(result.value, 'mutated');
-    });
+      // Bad: mutation on frozen result throws
+      const r3 = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    void it('mutation on frozen result throws in strict ESM mode', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-
-      registry.register(FrozenSchema);
-      registry.register(MetaSchema);
-      const result = registry.instantiate(FrozenSchema.$id, { 'name': 'Bob' }) as Record<string, unknown>;
+      r3.register(FrozenSchema);
+      r3.register(MetaSchema);
+      const frozen = r3.instantiate(FrozenSchema.$id, { 'name': 'Bob' }) as Record<string, unknown>;
 
       assert.throws(() => {
-        result.name = 'Charlie';
+        frozen.name = 'Charlie';
       }, TypeError);
-    });
 
-    void it('nested objects are also frozen (deep freeze)', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      // Good: nested objects are also frozen (deep freeze)
+      const r4 = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register(MetaSchema);
-      registry.register(FrozenSchema);
-      const result = registry.instantiate(FrozenSchema.$id, {
+      r4.register(MetaSchema);
+      r4.register(FrozenSchema);
+      const deepFrozen = r4.instantiate(FrozenSchema.$id, {
         'meta': { 'tag': 'test' },
         'name': 'Alice'
       }) as Record<string, unknown>;
 
-      assert.ok(Object.isFrozen(result));
-      assert.ok(Object.isFrozen(result.meta));
-    });
+      assert.ok(Object.isFrozen(deepFrozen));
+      assert.ok(Object.isFrozen(deepFrozen.meta));
 
-    void it('arrays are frozen when parent has jt:frozen', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      // Good: arrays are frozen
+      const r5 = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register(FrozenArraySchema);
-      const result = registry.instantiate(FrozenArraySchema.$id, {
+      r5.register(FrozenArraySchema);
+      const frozenArr = r5.instantiate(FrozenArraySchema.$id, {
         'items': [
           'a',
           'b'
         ]
       }) as Record<string, unknown>;
 
-      assert.ok(Object.isFrozen(result));
-      assert.ok(Object.isFrozen(result.items));
-    });
+      assert.ok(Object.isFrozen(frozenArr));
+      assert.ok(Object.isFrozen(frozenArr.items));
 
-    void it('jt:config.frozen works as shorthand for jt:frozen', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      // Good: jt:config.frozen shorthand works
+      const r6 = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register(FrozenViaConfigSchema);
-      const result = registry.instantiate(FrozenViaConfigSchema.$id, { 'value': 42 });
+      r6.register(FrozenViaConfigSchema);
+      assert.ok(Object.isFrozen(r6.instantiate(FrozenViaConfigSchema.$id, { 'value': 42 })));
 
-      assert.ok(Object.isFrozen(result));
-    });
-
-    void it('materialize() returns frozen object when jt:frozen is set', () => {
-      const jt = JsonTology.create({
+      // Good: materialize() respects jt:frozen
+      const jt7 = JsonTology.create({
         'baseIRI': 'https://ex.io',
         'schemas': [
           MetaSchema,
           FrozenSchema
         ] as const
       });
-      const result = jt.materialize(FrozenSchema, { 'name': 'Alice' });
 
-      assert.ok(Object.isFrozen(result));
-    });
-
-    void it('materialize() returns mutable object when jt:frozen is not set', () => {
-      const jt = JsonTology.create({
+      assert.ok(Object.isFrozen(jt7.materialize(FrozenSchema, { 'name': 'Alice' })));
+      const jt8 = JsonTology.create({
         'baseIRI': 'https://ex.io',
         'schemas': [MutableSchema] as const
       });
-      const result = jt.materialize(MutableSchema, { 'value': 'hello' }) as Record<string, unknown>;
 
-      assert.ok(!Object.isFrozen(result));
-    });
+      assert.ok(!Object.isFrozen(jt8.materialize(MutableSchema, { 'value': 'hello' })));
 
-    void it('frozen output is cycle-safe (no infinite recursion)', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      // Ugly: cycle-safe (no infinite recursion)
+      const r9 = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register(FrozenSchema);
-      registry.register(MetaSchema);
-
+      r9.register(FrozenSchema);
+      r9.register(MetaSchema);
       assert.doesNotThrow(() => {
-        registry.instantiate(FrozenSchema.$id, { 'name': 'safe' });
+        r9.instantiate(FrozenSchema.$id, { 'name': 'safe' });
       });
     });
   });

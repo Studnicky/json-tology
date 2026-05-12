@@ -47,66 +47,56 @@ const literalCustomFallback = (): string => {
   return 'urn:custom:fallback';
 };
 
-void describe('Skolemize.hash()', () => {
-  void it('returns undefined when no baseIRI configured', () => {
-    const fn = Skolemize.hash();
-    const iri = fn(ctx({ 'name': 'Alice' }));
+void describe('Skolemize.hash() — Good/Bad/Ugly', () => {
+  void it('mints IRIs deterministically, strips trailing slashes, returns undefined without baseIRI', () => {
+    // Bad: returns undefined when no baseIRI configured
+    const noBase = Skolemize.hash();
 
-    assert.equal(iri, undefined);
-  });
+    assert.equal(noBase(ctx({ 'name': 'Alice' })), undefined);
 
-  void it('mints baseIRI/instances/<hash> with strategy baseIRI', () => {
+    // Good: mints baseIRI/instances/<hash>
     const fn = Skolemize.hash({ 'baseIRI': 'https://example.com' });
     const iri = fn(ctx({ 'name': 'Alice' }));
 
     assert.ok(typeof iri === 'string');
     assert.match(iri, /^https:\/\/example\.com\/instances\//u);
-  });
 
-  void it('strips trailing slashes from baseIRI', () => {
-    const fn = Skolemize.hash({ 'baseIRI': 'https://example.com///' });
-    const iri = fn(ctx({ 'k': 1 }));
+    // Ugly: strips trailing slashes from baseIRI
+    const stripped = Skolemize.hash({ 'baseIRI': 'https://example.com///' });
+    const strippedIri = stripped(ctx({ 'k': 1 }));
 
-    assert.ok(typeof iri === 'string');
-    assert.ok(iri.startsWith('https://example.com/instances/'));
-  });
+    assert.ok(typeof strippedIri === 'string');
+    assert.ok((strippedIri).startsWith('https://example.com/instances/'));
 
-  void it('produces deterministic IRI for equal values', () => {
-    const fn = Skolemize.hash({ 'baseIRI': 'https://x' });
-    const first = fn(ctx({ 'name': 'Z' }));
-    const second = fn(ctx({ 'name': 'Z' }));
+    // Good: produces deterministic IRI for equal values
+    const fn2 = Skolemize.hash({ 'baseIRI': 'https://x' });
 
-    assert.equal(first, second);
-  });
+    assert.equal(fn2(ctx({ 'name': 'Z' })), fn2(ctx({ 'name': 'Z' })));
 
-  void it('hash matches Hash.value() output for the same input', () => {
+    // Good: hash matches Hash.value() output
     const value = { 'k': 'v' };
-    const fn = Skolemize.hash({ 'baseIRI': 'https://example.com' });
-    const iri = fn(ctx(value));
+    const fn3 = Skolemize.hash({ 'baseIRI': 'https://example.com' });
 
-    assert.equal(iri, `https://example.com/instances/${Hash.value(value)}`);
+    assert.equal(fn3(ctx(value)), `https://example.com/instances/${Hash.value(value)}`);
   });
 });
 
-void describe('Skolemize.wellKnownGenid()', () => {
-  void it('mints IRIs containing the well-known genid path', () => {
+void describe('Skolemize.wellKnownGenid() — Good/Bad/Ugly', () => {
+  void it('mints well-known genid IRIs, recognizes them, and is deterministic', () => {
+    // Good: mints IRIs containing the well-known genid path
     const fn = Skolemize.wellKnownGenid('https://example.com');
     const iri = fn(ctx({ 'k': 1 }));
 
     assert.ok(typeof iri === 'string');
     assert.match(iri, /\/\.well-known\/genid\//u);
-  });
 
-  void it('isWellKnownGenid recognizes minted IRIs', () => {
-    const fn = Skolemize.wellKnownGenid('https://example.com');
-    const iri = fn(ctx({ 'k': 1 })) as string;
+    // Good: isWellKnownGenid recognizes minted IRIs
+    const iri2 = fn(ctx({ 'k': 1 })) as string;
 
-    assert.equal(Skolemize.isWellKnownGenid(iri), true);
+    assert.equal(Skolemize.isWellKnownGenid(iri2), true);
     assert.equal(Skolemize.isWellKnownGenid('https://example.com/instances/abc'), false);
-  });
 
-  void it('produces deterministic output for the same input', () => {
-    const fn = Skolemize.wellKnownGenid('https://example.com');
+    // Good: deterministic for same input
     const first = fn(ctx({ 'name': 'Alice' }));
     const second = fn(ctx({ 'name': 'Alice' }));
 
@@ -114,114 +104,90 @@ void describe('Skolemize.wellKnownGenid()', () => {
   });
 });
 
-void describe('Skolemize.uuid()', () => {
-  void it('returns urn:uuid: IRIs', () => {
+void describe('Skolemize.uuid() — Good/Bad', () => {
+  void it('returns urn:uuid: IRIs and produces unique values per call', () => {
+    // Good: returns urn:uuid: IRIs
     const fn = Skolemize.uuid();
     const iri = fn(ctx(null));
 
     assert.ok(typeof iri === 'string');
     assert.match(iri, /^urn:uuid:[\da-f]{8}-[\da-f]{4}-4[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/u);
-  });
 
-  void it('produces fresh identity on each call', () => {
-    const fn = Skolemize.uuid();
-    const first = fn(ctx(null));
-    const second = fn(ctx(null));
-
-    assert.notEqual(first, second);
+    // Bad: produces fresh identity on each call
+    assert.notEqual(fn(ctx(null)), fn(ctx(null)));
   });
 });
 
-void describe('Skolemize.fromProperty()', () => {
-  void it('mints IRI from named property when present', () => {
+void describe('Skolemize.fromProperty() — Good/Bad/Ugly', () => {
+  void it('mints from property, falls through to fallback, encodes reserved chars', () => {
+    // Good: mints IRI from named property when present
     const fn = Skolemize.fromProperty('id', { 'baseIRI': 'https://example.com' });
-    const iri = fn(ctx({ 'id': 'alice-001' }));
 
-    assert.equal(iri, 'https://example.com/alice-001');
-  });
+    assert.equal(fn(ctx({ 'id': 'alice-001' })), 'https://example.com/alice-001');
 
-  void it('uses raw value when no baseIRI provided', () => {
-    const fn = Skolemize.fromProperty('id');
-    const iri = fn(ctx({ 'id': 'https://example.com/users/alice' }));
+    // Good: uses raw value when no baseIRI provided
+    const raw = Skolemize.fromProperty('id');
 
-    assert.equal(iri, 'https://example.com/users/alice');
-  });
+    assert.equal(raw(ctx({ 'id': 'https://example.com/users/alice' })), 'https://example.com/users/alice');
 
-  void it('falls through to fallback when property missing', () => {
-    const fn = Skolemize.fromProperty('id', {
+    // Bad: falls through to fallback when property missing
+    const withFallback = Skolemize.fromProperty('id', {
       'baseIRI': 'https://example.com',
       'fallback': literalCustomFallback
     });
-    const iri = fn(ctx({ 'name': 'Alice' }));
 
-    assert.equal(iri, 'urn:custom:fallback');
-  });
+    assert.equal(withFallback(ctx({ 'name': 'Alice' })), 'urn:custom:fallback');
 
-  void it('falls through to fallback when property is empty string', () => {
-    const fn = Skolemize.fromProperty('id', {
-      'baseIRI': 'https://example.com',
-      'fallback': literalCustomFallback
-    });
-    const iri = fn(ctx({ 'id': '' }));
+    // Bad: falls through to fallback when property is empty string
+    assert.equal(withFallback(ctx({ 'id': '' })), 'urn:custom:fallback');
 
-    assert.equal(iri, 'urn:custom:fallback');
-  });
+    // Ugly: default fallback is hash strategy with same baseIRI
+    const defaultFallback = Skolemize.fromProperty('id', { 'baseIRI': 'https://example.com' });
+    const defaultFallbackIri = defaultFallback(ctx({ 'name': 'Alice' }));
 
-  void it('default fallback is hash strategy with same baseIRI', () => {
-    const fn = Skolemize.fromProperty('id', { 'baseIRI': 'https://example.com' });
-    const iri = fn(ctx({ 'name': 'Alice' }));
+    assert.ok(typeof defaultFallbackIri === 'string');
+    assert.match(defaultFallbackIri, /^https:\/\/example\.com\/instances\//u);
 
-    assert.ok(typeof iri === 'string');
-    assert.match(iri, /^https:\/\/example\.com\/instances\//u);
-  });
+    // Ugly: encodes property values with reserved URI characters
+    const encoded = Skolemize.fromProperty('slug', { 'baseIRI': 'https://example.com' });
 
-  void it('encodes property values with reserved URI characters', () => {
-    const fn = Skolemize.fromProperty('slug', { 'baseIRI': 'https://example.com' });
-    const iri = fn(ctx({ 'slug': 'hello world/foo?bar' }));
-
-    assert.equal(iri, `https://example.com/${encodeURIComponent('hello world/foo?bar')}`);
+    assert.equal(encoded(ctx({ 'slug': 'hello world/foo?bar' })), `https://example.com/${encodeURIComponent('hello world/foo?bar')}`);
   });
 });
 
-void describe('Skolemize.compose()', () => {
-  void it('returns first non-undefined result', () => {
+void describe('Skolemize.compose() — Good/Bad/Ugly', () => {
+  void it('returns first non-undefined result, falls through, and does not call later strategies unnecessarily', () => {
+    // Good: returns first non-undefined result
     const fn = Skolemize.compose(undefinedStrategy, literalSecond, literalThird);
-    const iri = fn(ctx(null));
 
-    assert.equal(iri, 'urn:second');
-  });
+    assert.equal(fn(ctx(null)), 'urn:second');
 
-  void it('returns undefined when every strategy returns undefined', () => {
-    const fn = Skolemize.compose(undefinedStrategy, undefinedStrategy);
-    const iri = fn(ctx(null));
+    // Bad: returns undefined when every strategy returns undefined
+    const allUndefined = Skolemize.compose(undefinedStrategy, undefinedStrategy);
 
-    assert.equal(iri, undefined);
-  });
+    assert.equal(allUndefined(ctx(null)), undefined);
 
-  void it('composes fromProperty + hash fallback', () => {
-    const fn = Skolemize.compose(
+    // Good: composes fromProperty + hash fallback
+    const composed = Skolemize.compose(
       Skolemize.fromProperty('id'),
       Skolemize.hash({ 'baseIRI': 'https://x' })
     );
-    const withId = fn(ctx({ 'id': 'https://x/alice' }));
-    const withoutId = fn(ctx({ 'name': 'Bob' }));
 
-    assert.equal(withId, 'https://x/alice');
+    assert.equal(composed(ctx({ 'id': 'https://x/alice' })), 'https://x/alice');
+    const withoutId = composed(ctx({ 'name': 'Bob' }));
+
     assert.ok(typeof withoutId === 'string');
     assert.match(withoutId, /^https:\/\/x\/instances\//u);
-  });
 
-  void it('does not consult later strategies once one returns', () => {
+    // Ugly: does not consult later strategies once one returns
     let secondCalled = false;
     const second = (): string => {
       secondCalled = true;
 
       return 'urn:second';
     };
-    const fn = Skolemize.compose(literalFirst, second);
 
-    fn(ctx(null));
-
+    Skolemize.compose(literalFirst, second)(ctx(null));
     assert.equal(secondCalled, false);
   });
 });
