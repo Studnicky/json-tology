@@ -10,6 +10,9 @@ import type { SchemaGraphRelationInterface } from '../../src/interfaces/SchemaGr
 import {
   describe, it
 } from 'node:test';
+import {
+  GraphError, JsonTology
+} from '../../src/index.js';
 // GraphArtifact, GraphEngine, SchemaGraph, SchemaIri are graph-construction internals; not public.
 import { GraphArtifact } from '../../src/modules/graph/GraphArtifact.js';
 import { GraphEngine } from '../../src/modules/graph/GraphEngine.js';
@@ -4429,4 +4432,84 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     });
   });
 }
+
+// ===========================================================================
+// maxSchemaDepth — moved from test/integration/coverageGaps.test.ts §7
+// Tests a single GraphEngine parameter in isolation (unit-tier behaviour)
+// ===========================================================================
+
+function buildSelfRefChain(depth: number): Record<string, unknown> {
+  const root: Record<string, unknown> = { 'name': 'root' };
+  let cursor = root;
+
+  for (let index = 0; index < depth; index++) {
+    const child: Record<string, unknown> = { 'name': `n${index}` };
+
+    cursor.next = child;
+    cursor = child;
+  }
+
+  return root;
+}
+
+void describe('maxSchemaDepth — GraphEngine recursion depth parameter', () => {
+  const SelfNode = {
+    '$id': 'urn:depth:Node',
+    'properties': {
+      'name': { 'type': 'string' },
+      'next': { '$ref': 'urn:depth:Node' }
+    },
+    'required': ['name'],
+    'type': 'object'
+  } as const;
+
+  void it('engine.execute() with maxSchemaDepth below the schema-graph $ref depth throws RECURSION_LIMIT', () => {
+    const jt = JsonTology.create({
+      'baseIRI': 'urn:depth:',
+      'maxSchemaDepth': 1,
+      'schemas': [SelfNode] as const
+    });
+
+    // maxSchemaDepth bounds the SCHEMA-GRAPH traversal depth, not the data depth.
+    // With maxSchemaDepth: 1 even a 2-element data chain trips the limit because
+    // resolving a $ref counts as descent.
+    const engine = jt.registry.engine(SelfNode);
+
+    assert.throws(
+      () => {
+        return engine.execute(buildSelfRefChain(2));
+      },
+      (err: unknown) => {
+        return err instanceof GraphError && (err).code === 'RECURSION_LIMIT';
+      }
+    );
+  });
+
+  void it('engine.execute() with maxSchemaDepth above the $ref depth completes successfully', () => {
+    const jt = JsonTology.create({
+      'baseIRI': 'urn:depth:',
+      'maxSchemaDepth': 100,
+      'schemas': [SelfNode] as const
+    });
+    const engine = jt.registry.engine(SelfNode);
+    const result = engine.execute(buildSelfRefChain(5));
+
+    assert.equal(result.valid, true);
+    assert.equal((result.value as Record<string, unknown>).name, 'root');
+  });
+
+  void it('instantiate (compiled validation path) does NOT enforce maxSchemaDepth (documented gap)', () => {
+    const jt = JsonTology.create({
+      'baseIRI': 'urn:depth:',
+      'maxSchemaDepth': 1,
+      'schemas': [SelfNode] as const
+    });
+
+    // Compiled validation does not currently honour maxSchemaDepth — this passes
+    // even with a 50-deep chain. Pinning this so any future change is loud.
+    const result = jt.instantiate(SelfNode.$id, buildSelfRefChain(50)) as Record<string, unknown>;
+
+    assert.equal(result.name, 'root');
+  });
+});
 
