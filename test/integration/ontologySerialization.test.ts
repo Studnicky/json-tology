@@ -16,9 +16,7 @@ import {
 // serializer, GraphSchemaSerializer round-trip). These graph-level surfaces are
 // the contract being asserted; the public ontology() / toQuads() methods only
 // expose composed output, not the per-quad projection shape.
-import {
-  projectAbox, projectGraph, quadsToJsonLdNodes
-} from '../../src/modules/rdf/Projection.js';
+import { Projection } from '../../src/modules/rdf/Projection.js';
 import { GraphSchemaSerializer } from '../../src/modules/ontology/GraphSchemaSerializer.js';
 import { GraphShaclSerializer } from '../../src/modules/ontology/GraphShaclSerializer.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
@@ -800,7 +798,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
   function tboxQuads(schema: Record<string, unknown>): QuadInterface[] {
     const graph = new SchemaGraph(schema);
 
-    return projectGraph(graph);
+    return Projection.graph(graph);
   }
 
   // ---------------------------------------------------------------------------
@@ -1626,7 +1624,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
       check, name, quads
     } of scenarios) {
       void it(name, () => {
-        const nodes = quadsToJsonLdNodes(quads);
+        const nodes = Projection.toJsonLdNodes(quads);
 
         check(nodes);
       });
@@ -1783,7 +1781,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
       } of scenarios) {
         void it(name, () => {
           const graph = new SchemaGraph(schema);
-          const quads = projectAbox(graph, instance, 'https://data.example.com');
+          const quads = Projection.abox(graph, instance, 'https://data.example.com');
 
           check(quads);
         });
@@ -1855,7 +1853,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
       } of scenarios) {
         void it(name, () => {
           const graph = new SchemaGraph(schema);
-          const quads = projectAbox(graph, instance, 'https://data.example.com');
+          const quads = Projection.abox(graph, instance, 'https://data.example.com');
 
           check(quads);
         });
@@ -1929,8 +1927,8 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
       } of scenarios) {
         void it(name, () => {
           const graph = new SchemaGraph(schema);
-          const tbox = projectGraph(graph);
-          const abox = projectAbox(graph, instance, 'https://data.example.com');
+          const tbox = Projection.graph(graph);
+          const abox = Projection.abox(graph, instance, 'https://data.example.com');
 
           check(tbox, abox);
         });

@@ -1,6 +1,6 @@
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { QuadInterface } from '../../interfaces/Quad.js';
-import { projectOwlGraph } from '../rdf/OwlProjection.js';
+import { OwlProjection } from '../rdf/OwlProjection.js';
 import { RDFS_SUB_CLASS_OF_IRI } from '../../constants/PREFIXES.js';
 import { OWL_CORE_PREDICATES } from '../../constants/ONTOLOGY_PREDICATES.js';
 import { BaseGraphSerializer } from './BaseGraphSerializer.js';
@@ -17,6 +17,6 @@ export class GraphOntologySerializer extends BaseGraphSerializer {
   }
 
   protected projectGraph(graph: SchemaGraphInterface): QuadInterface[] {
-    return projectOwlGraph(graph, { 'curie': this.curie });
+    return OwlProjection.graph(graph, { 'curie': this.curie });
   }
 }

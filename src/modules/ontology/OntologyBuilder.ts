@@ -8,7 +8,7 @@
 import type { OntologyBuilderOptionsInterface } from '../../interfaces/Ontology.js';
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import { JSONLD } from '../../constants/JSONLD.js';
-import { quadsToJsonLdNodes } from '../rdf/Projection.js';
+import { Projection } from '../rdf/Projection.js';
 
 /**
  * Ontology Builder
@@ -47,7 +47,7 @@ export class OntologyBuilder {
    * TBox or SHACL document.
    */
   public addQuads(quads: QuadInterface[]): this {
-    const nodes = quadsToJsonLdNodes(quads);
+    const nodes = Projection.toJsonLdNodes(quads);
     const source = (): readonly unknown[] => {
       return nodes;
     };

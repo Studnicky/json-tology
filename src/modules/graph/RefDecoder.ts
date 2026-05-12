@@ -24,7 +24,7 @@ import { InstantiationError } from '../../errors/InstantiationError.js';
 import { Transform } from '../transform/Transform.js';
 import { ValidationErrors } from '../../errors/ValidationErrors.js';
 import { isRecord } from '../data/DataTypes.js';
-import { parseRef } from './GraphEngineSupport.js';
+import { GraphEngineSupport } from './GraphEngineSupport.js';
 
 /**
  * Lookup function provided by the registry: given a fully-resolved schema
@@ -297,7 +297,7 @@ export class RefDecoder {
       return RefDecoder.walk(graph, localTarget, value, registry, visited);
     }
 
-    const parsed = parseRef(refTarget);
+    const parsed = GraphEngineSupport.parseRef(refTarget);
     const targetId = registry.resolveSchemaId(parsed.id);
     const targetSchema = registry.getSchema(targetId);
 

@@ -10,7 +10,7 @@ import { JsonTology } from '../../src/index.js';
 // The cross-reference test below compares raw TBox QuadInterface[] (predicate/termType shape)
 // against ABox quads; OntologyBuilder.raw() returns JSON-LD nodes, not the QuadInterface form.
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import { projectGraph } from '../../src/modules/rdf/Projection.js';
+import { Projection } from '../../src/modules/rdf/Projection.js';
 
 // ===========================================================================
 // Source: materializer.test.ts
@@ -685,7 +685,7 @@ import { projectGraph } from '../../src/modules/rdf/Projection.js';
           'schemas': [ConfigSchema] as const
         });
         const graph = new SchemaGraph(ConfigSchema);
-        const tbox = projectGraph(graph);
+        const tbox = Projection.graph(graph);
         const abox = tology.toQuads(ConfigSchema, { 'name': 'test' });
 
         const tboxClasses = new Set(tbox

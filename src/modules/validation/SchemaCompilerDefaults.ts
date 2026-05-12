@@ -2,7 +2,7 @@ import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { DefaultResolutionContextInterface } from '../../interfaces/DefaultResolutionContext.js';
 import type { RefTargetInterface } from '../../interfaces/RefTarget.js';
-import { createImplicitDefaultValue } from '../graph/GraphEngineDefaults.js';
+import { GraphEngineDefaults } from '../graph/GraphEngineDefaults.js';
 import { RefResolver } from './RefResolver.js';
 
 import type { LookupSchemaFnType } from '../../types/LookupSchema.js';
@@ -33,20 +33,22 @@ function buildCompilerDefaultContext(lookupSchema: LookupSchemaFnType | undefine
   };
 }
 
-export function resolveImplicitDefaultValue(
-  node: SchemaGraphNodeInterface,
-  graph: SchemaGraphInterface,
-  lookupSchema: ((id: string) => Record<string, unknown> | undefined) | undefined,
-  visited: Set<unknown>
-): unknown {
-  const context = buildCompilerDefaultContext(lookupSchema);
-  const stringVisited = new Set<string>();
+export const SchemaCompilerDefaults = {
+  resolveImplicitDefaultValue(
+    node: SchemaGraphNodeInterface,
+    graph: SchemaGraphInterface,
+    lookupSchema: ((id: string) => Record<string, unknown> | undefined) | undefined,
+    visited: Set<unknown>
+  ): unknown {
+    const context = buildCompilerDefaultContext(lookupSchema);
+    const stringVisited = new Set<string>();
 
-  for (const item of visited) {
-    if (typeof item === 'object' && item !== null && 'id' in item) {
-      stringVisited.add((item as SchemaGraphNodeInterface).id);
+    for (const item of visited) {
+      if (typeof item === 'object' && item !== null && 'id' in item) {
+        stringVisited.add((item as SchemaGraphNodeInterface).id);
+      }
     }
-  }
 
-  return createImplicitDefaultValue(context, node, graph, [], stringVisited);
-}
+    return GraphEngineDefaults.createImplicitDefaultValue(context, node, graph, [], stringVisited);
+  }
+} as const;

@@ -16,31 +16,17 @@ import { FormatRegistry } from '../format/FormatRegistry.js';
 import { SchemaGraph } from './SchemaGraph.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { DEFAULT_OPTIONS } from '../../constants/DIALECT.js';
-import {
-  buildRootDialectPlan,
-  cloneCandidate,
-  extractNamedFragment,
-  parseRef,
-  schemaId
-} from './GraphEngineSupport.js';
-import { escapeJsonPointerSegment } from './SchemaGraphSupport.js';
+import { GraphEngineSupport } from './GraphEngineSupport.js';
+import { SchemaGraphSupport } from './SchemaGraphSupport.js';
 import type { DynamicScopeEntryInterface } from '../../interfaces/DynamicScopeEntry.js';
 import type { InternalExecutionResultInterface } from '../../interfaces/InternalExecutionResult.js';
 import type { RefTargetInterface } from '../../interfaces/RefTarget.js';
 import type { RootDialectPlanInterface } from '../../interfaces/RootDialectPlan.js';
-import {
-  coerceGraphValue,
-  matchesSchemaTypes,
-  validateNumberConstraints,
-  validateStringConstraints
-} from './GraphEngineScalars.js';
+import { GraphEngineScalars } from './GraphEngineScalars.js';
 import { BaseError } from '../../errors/BaseError.js';
-import {
-  createImplicitDefaultValue,
-  synthesizeZeroValue
-} from './GraphEngineDefaults.js';
+import { GraphEngineDefaults } from './GraphEngineDefaults.js';
 import type { DefaultResolutionContextInterface } from '../../interfaces/DefaultResolutionContext.js';
-import { visitNode } from './GraphEngineVisit.js';
+import { GraphEngineVisit } from './GraphEngineVisit.js';
 import type { VisitContextInterface } from '../../interfaces/VisitContext.js';
 
 import type { JSONSchema7Definition } from 'json-schema';
@@ -71,7 +57,7 @@ export class GraphEngine implements GraphEngineInterface {
       ...DEFAULT_OPTIONS,
       ...rest
     };
-    this.dialectPlan = buildRootDialectPlan(rootSchema);
+    this.dialectPlan = GraphEngineSupport.buildRootDialectPlan(rootSchema);
   }
 
   private applyUnevaluatedItems(
@@ -153,11 +139,11 @@ export class GraphEngine implements GraphEngineInterface {
 
       if (typeof unevaluatedPropertiesNode.schema === 'boolean') {
         if (!unevaluatedPropertiesNode.schema) {
-          errors.push(this.createError(`${path}/${escapeJsonPointerSegment(key)}`, 'unevaluatedProperties', 'must NOT have unevaluated properties', { 'unevaluatedProperty': key }));
+          errors.push(this.createError(`${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, 'unevaluatedProperties', 'must NOT have unevaluated properties', { 'unevaluatedProperty': key }));
         }
         continue;
       }
-      const child = this.visit(unevaluatedPropertiesNode, graph, workingValue[key], `${path}/${escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope, depth + 1);
+      const child = this.visit(unevaluatedPropertiesNode, graph, workingValue[key], `${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope, depth + 1);
 
       if (!child.valid && !options.collectErrors) {
         return child;
@@ -191,7 +177,7 @@ export class GraphEngine implements GraphEngineInterface {
   }
 
   private coerceValue(schemaTypes: string[], value: unknown, materializeContainers: boolean): unknown {
-    return coerceGraphValue(schemaTypes, value, materializeContainers);
+    return GraphEngineScalars.coerceGraphValue(schemaTypes, value, materializeContainers);
   }
 
   private createError(
@@ -209,7 +195,9 @@ export class GraphEngine implements GraphEngineInterface {
     dynamicScope: DynamicScopeEntryInterface[],
     visited = new Set<string>()
   ): unknown {
-    return createImplicitDefaultValue(this.defaultResolutionContext(), node, graph, dynamicScope, visited);
+    const ctx = this.defaultResolutionContext();
+
+    return GraphEngineDefaults.createImplicitDefaultValue(ctx, node, graph, dynamicScope, visited);
   }
 
   private defaultResolutionContext(): DefaultResolutionContextInterface {
@@ -310,7 +298,7 @@ export class GraphEngine implements GraphEngineInterface {
   }
 
   private matchesType(schemaTypes: string[], value: unknown): boolean {
-    return matchesSchemaTypes(schemaTypes, value);
+    return GraphEngineScalars.matchesSchemaTypes(schemaTypes, value);
   }
 
   private regexFor(pattern: string): RegExp {
@@ -344,7 +332,7 @@ export class GraphEngine implements GraphEngineInterface {
     }
 
     const resolved = this.resolveRef(ref, currentGraph);
-    const fragment = extractNamedFragment(ref);
+    const fragment = GraphEngineSupport.extractNamedFragment(ref);
     const resolvedSem = resolved.graph.semantics(resolved.node);
     const resolvedAnchor = resolvedSem.dynamicAnchor;
 
@@ -365,7 +353,7 @@ export class GraphEngine implements GraphEngineInterface {
   }
 
   private resolveRef(ref: string, currentGraph: SchemaGraphInterface): RefTargetInterface {
-    const currentRootId = schemaId(currentGraph.rootSchema);
+    const currentRootId = GraphEngineSupport.schemaId(currentGraph.rootSchema);
     const cacheKey = `${currentRootId ?? '<anonymous>'}::${ref}`;
     const cached = this.refCache.get(cacheKey);
 
@@ -379,7 +367,7 @@ export class GraphEngine implements GraphEngineInterface {
     if (ref.startsWith('#')) {
       fragment = ref.slice(1);
     } else {
-      const parsed = parseRef(ref);
+      const parsed = GraphEngineSupport.parseRef(ref);
 
       fragment = parsed.fragment;
 
@@ -408,7 +396,7 @@ export class GraphEngine implements GraphEngineInterface {
    * @returns The root schema's `$id` string, or `undefined` when absent.
    */
   public rootSchemaId(): string | undefined {
-    return schemaId(this.rootSchema);
+    return GraphEngineSupport.schemaId(this.rootSchema);
   }
 
   /**
@@ -425,7 +413,9 @@ export class GraphEngine implements GraphEngineInterface {
     graph: SchemaGraphInterface,
     dynamicScope: DynamicScopeEntryInterface[]
   ): unknown {
-    return synthesizeZeroValue(this.defaultResolutionContext(), node, graph, dynamicScope, new Set());
+    const ctx = this.defaultResolutionContext();
+
+    return GraphEngineDefaults.synthesizeZeroValue(ctx, node, graph, dynamicScope, new Set());
   }
 
   private validateArray(
@@ -528,7 +518,7 @@ export class GraphEngine implements GraphEngineInterface {
         index,
         element
       ] of workingValue.entries()) {
-        const candidate = this.visit(containsNode, graph, cloneCandidate(element), `${path}/${index}`, {
+        const candidate = this.visit(containsNode, graph, GraphEngineSupport.cloneCandidate(element), `${path}/${index}`, {
           ...options,
           'collectErrors': true
         }, refStack, dynamicScope, depth + 1);
@@ -564,7 +554,9 @@ export class GraphEngine implements GraphEngineInterface {
     value: number,
     sem: SchemaGraphSemanticsInterface
   ): ValidationErrorType[] {
-    return validateNumberConstraints(path, value, sem, this.formatRegistry, this.dialectPlan.formatAssertions);
+    const { formatAssertions } = this.dialectPlan;
+
+    return GraphEngineScalars.validateNumberConstraints(path, value, sem, this.formatRegistry, formatAssertions);
   }
 
   private validateObject(
@@ -683,7 +675,7 @@ export class GraphEngine implements GraphEngineInterface {
         errors.push(...propertyNameResult.errors.map((error) => {
           return {
             ...error,
-            'path': `${path}/${escapeJsonPointerSegment(key)}`
+            'path': `${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`
           };
         }));
       }
@@ -694,7 +686,7 @@ export class GraphEngine implements GraphEngineInterface {
         if (propNode === undefined) {
           throw new GraphError('POINTER_NOT_FOUND', `Property node not found for key: ${key}`, key);
         }
-        const child = this.visit(propNode, graph, workingValue[key], `${path}/${escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope, depth + 1);
+        const child = this.visit(propNode, graph, workingValue[key], `${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope, depth + 1);
 
         if (!child.valid && !options.collectErrors) {
           return child;
@@ -706,7 +698,7 @@ export class GraphEngine implements GraphEngineInterface {
 
       for (const patternEntry of patternPropertyEntries) {
         if (patternEntry.regex.test(key)) {
-          const child = this.visit(patternEntry.node, graph, workingValue[key], `${path}/${escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope, depth + 1);
+          const child = this.visit(patternEntry.node, graph, workingValue[key], `${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope, depth + 1);
 
           if (!child.valid && !options.collectErrors) {
             return child;
@@ -768,7 +760,7 @@ export class GraphEngine implements GraphEngineInterface {
         if (options.removeAdditionalProperties) {
           delete workingValue[key];
         } else {
-          errors.push(this.createError(`${path}/${escapeJsonPointerSegment(key)}`, 'additionalProperties', 'must NOT have additional properties', { 'additionalProperty': key }));
+          errors.push(this.createError(`${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, 'additionalProperties', 'must NOT have additional properties', { 'additionalProperty': key }));
         }
 
         return;
@@ -782,7 +774,7 @@ export class GraphEngine implements GraphEngineInterface {
         return;
       }
 
-      const child = this.visit(additionalProperties, graph, workingValue[key], `${path}/${escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope, depth + 1);
+      const child = this.visit(additionalProperties, graph, workingValue[key], `${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope, depth + 1);
 
       if (child.valid) {
         workingValue[key] = child.value;
@@ -812,7 +804,7 @@ export class GraphEngine implements GraphEngineInterface {
     value: string,
     sem: SchemaGraphSemanticsInterface
   ): ValidationErrorType[] {
-    return validateStringConstraints(
+    return GraphEngineScalars.validateStringConstraints(
       path,
       value,
       sem,
@@ -834,7 +826,9 @@ export class GraphEngine implements GraphEngineInterface {
     dynamicScope: DynamicScopeEntryInterface[],
     depth = 0
   ): InternalExecutionResultInterface {
-    return visitNode(this.visitContext(), node, graph, value, path, options, refStack, dynamicScope, depth);
+    const ctx = this.visitContext();
+
+    return GraphEngineVisit.visit(ctx, node, graph, value, path, options, refStack, dynamicScope, depth);
   }
 
   private visitContext(): VisitContextInterface {

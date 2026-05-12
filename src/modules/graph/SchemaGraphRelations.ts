@@ -5,10 +5,7 @@ import type {
 import { SchemaIri } from './SchemaIri.js';
 import { XsdTypes } from '../rdf/XsdTypes.js';
 import type { GraphAccessorInterface } from '../../interfaces/GraphAccessor.js';
-import {
-  isDefsEntryPointer, isPropertyPointer,
-  parentPropertiesPointer, propertyNameFromPointer
-} from './SchemaGraphSupport.js';
+import { SchemaGraphSupport } from './SchemaGraphSupport.js';
 import { FORMAT_PATTERNS } from '../../constants/FORMAT_PATTERNS.js';
 import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
@@ -248,7 +245,7 @@ function pushPropertyCardinalityRelations(
   relations: SchemaGraphRelationInterface[],
   nodeMap: Map<string, SchemaGraphNodeInterface>
 ): void {
-  if (!isPropertyPointer(node.pointer)) {
+  if (!SchemaGraphSupport.isPropertyPointer(node.pointer)) {
     return;
   }
 
@@ -260,14 +257,14 @@ function pushPropertyCardinalityRelations(
     });
   }
 
-  const parentPtr = parentPropertiesPointer(node.pointer);
+  const parentPtr = SchemaGraphSupport.parentPropertiesPointer(node.pointer);
 
   if (parentPtr !== undefined) {
     const parentNode = nodeMap.get(parentPtr);
 
     if (parentNode !== undefined) {
       const parentSem = graph.semantics(parentNode);
-      const propName = propertyNameFromPointer(node.pointer);
+      const propName = SchemaGraphSupport.propertyNameFromPointer(node.pointer);
 
       if (propName !== undefined && parentSem.required.includes(propName)) {
         relations.push({
@@ -285,7 +282,7 @@ function pushPropertyTypeRelations(
   sem: SchemaGraphSemanticsInterface,
   relations: SchemaGraphRelationInterface[]
 ): void {
-  if (!isPropertyPointer(node.pointer)) {
+  if (!SchemaGraphSupport.isPropertyPointer(node.pointer)) {
     return;
   }
 
@@ -310,7 +307,7 @@ function pushUnionTypeRelations(
   sem: SchemaGraphSemanticsInterface,
   relations: SchemaGraphRelationInterface[]
 ): void {
-  if (!isPropertyPointer(node.pointer)) {
+  if (!SchemaGraphSupport.isPropertyPointer(node.pointer)) {
     return;
   }
 
@@ -345,370 +342,372 @@ function pushUnionTypeRelations(
   }
 }
 
-export function extractRelations(
-  graph: GraphAccessorInterface,
-  node: SchemaGraphNodeInterface,
-  nodeMap: Map<string, SchemaGraphNodeInterface>
-): SchemaGraphRelationInterface[] {
-  const sem = graph.semantics(node);
-  const relations: SchemaGraphRelationInterface[] = [];
+export const SchemaGraphRelations = {
+  extractRelations(
+    graph: GraphAccessorInterface,
+    node: SchemaGraphNodeInterface,
+    nodeMap: Map<string, SchemaGraphNodeInterface>
+  ): SchemaGraphRelationInterface[] {
+    const sem = graph.semantics(node);
+    const relations: SchemaGraphRelationInterface[] = [];
 
-  if (sem.schemaId !== undefined) {
-    relations.push({
-      'predicate': RDF.type,
-      'source': node,
-      'target': OWL.Class
-    });
-  }
+    if (sem.schemaId !== undefined) {
+      relations.push({
+        'predicate': RDF.type,
+        'source': node,
+        'target': OWL.Class
+      });
+    }
 
-  if (sem.schemaId === undefined && isDefsEntryPointer(node.pointer) && sem.schemaTypes.includes('object')) {
-    relations.push({
-      'predicate': RDF.type,
-      'source': node,
-      'target': OWL.Class
-    });
-  }
+    if (sem.schemaId === undefined && SchemaGraphSupport.isDefsEntryPointer(node.pointer) && sem.schemaTypes.includes('object')) {
+      relations.push({
+        'predicate': RDF.type,
+        'source': node,
+        'target': OWL.Class
+      });
+    }
 
-  if (isPropertyPointer(node.pointer) && sem.rdfsDomain === undefined) {
-    const parentPtr = parentPropertiesPointer(node.pointer);
+    if (SchemaGraphSupport.isPropertyPointer(node.pointer) && sem.rdfsDomain === undefined) {
+      const parentPtr = SchemaGraphSupport.parentPropertiesPointer(node.pointer);
 
-    if (parentPtr !== undefined) {
-      const parentNode = nodeMap.get(parentPtr);
+      if (parentPtr !== undefined) {
+        const parentNode = nodeMap.get(parentPtr);
 
-      if (parentNode !== undefined) {
+        if (parentNode !== undefined) {
+          relations.push({
+            'predicate': RDFS.domain,
+            'source': node,
+            'target': parentNode
+          });
+        }
+      }
+    }
+
+    if (sem.rdfsDomain !== undefined) {
+      relations.push({
+        'predicate': RDFS.domain,
+        'source': node,
+        'target': sem.rdfsDomain
+      });
+    }
+    if (sem.rdfsRange !== undefined) {
+      relations.push({
+        'predicate': RDFS.range,
+        'source': node,
+        'target': sem.rdfsRange
+      });
+    }
+    if (sem.disjointWith !== undefined) {
+      relations.push({
+        'predicate': OWL.disjointWith,
+        'source': node,
+        'target': sem.disjointWith
+      });
+    }
+    if (sem.equivalentTo !== undefined) {
+      relations.push({
+        'predicate': OWL.equivalentClass,
+        'source': node,
+        'target': sem.equivalentTo
+      });
+    }
+
+    // Compose.equivalent shape: root-level schema whose only structural content is a $ref
+    if (sem.schemaId !== undefined && sem.ref !== undefined && node.pointer === '') {
+      relations.push({
+        'predicate': OWL.equivalentClass,
+        'source': node,
+        'target': graph.resolveRefId(sem.ref)
+      });
+    }
+    if (sem.inverseOf !== undefined) {
+      relations.push({
+        'predicate': OWL.inverseOf,
+        'source': node,
+        'target': sem.inverseOf
+      });
+    }
+    if (sem.transitive) {
+      relations.push({
+        'predicate': OWL.TransitiveProperty,
+        'source': node,
+        'target': node.id
+      });
+    }
+    if (sem.symmetric) {
+      relations.push({
+        'predicate': OWL.SymmetricProperty,
+        'source': node,
+        'target': node.id
+      });
+    }
+    if (sem.asymmetric) {
+      relations.push({
+        'predicate': OWL.AsymmetricProperty,
+        'source': node,
+        'target': node.id
+      });
+    }
+    if (sem.functional) {
+      relations.push({
+        'predicate': OWL.FunctionalProperty,
+        'source': node,
+        'target': node.id
+      });
+    }
+    if (sem.inverseFunctional) {
+      relations.push({
+        'predicate': OWL.InverseFunctionalProperty,
+        'source': node,
+        'target': node.id
+      });
+    }
+    if (sem.reflexive) {
+      relations.push({
+        'predicate': OWL.ReflexiveProperty,
+        'source': node,
+        'target': node.id
+      });
+    }
+    if (sem.irreflexive) {
+      relations.push({
+        'predicate': OWL.IrreflexiveProperty,
+        'source': node,
+        'target': node.id
+      });
+    }
+
+    if (sem.title !== undefined) {
+      relations.push({
+        'predicate': RDFS.label,
+        'source': node,
+        'target': sem.title
+      });
+    }
+    if (sem.description !== undefined) {
+      relations.push({
+        'predicate': RDFS.comment,
+        'source': node,
+        'target': sem.description
+      });
+    }
+    if (sem.deprecated) {
+      relations.push({
+        'predicate': OWL.deprecated,
+        'source': node,
+        'target': 'true'
+      });
+    }
+
+    if (sem.readOnly) {
+      relations.push({
+        'predicate': DASH.readOnly,
+        'source': node,
+        'target': 'true'
+      });
+    }
+    if (sem.writeOnly) {
+      relations.push({
+        'predicate': DASH.writeOnly,
+        'source': node,
+        'target': 'true'
+      });
+    }
+
+    if (sem.contentMediaType !== undefined) {
+      relations.push({
+        'predicate': DCT.format,
+        'source': node,
+        'target': sem.contentMediaType
+      });
+    }
+
+    for (const parent of sem.allOf) {
+      const parentSem = graph.semantics(parent);
+
+      if (parentSem.ref === undefined) {
         relations.push({
-          'predicate': RDFS.domain,
+          'predicate': RDFS.subClassOf,
           'source': node,
-          'target': parentNode
+          'target': parent
+        });
+      } else {
+        relations.push({
+          'predicate': RDFS.subClassOf,
+          'source': node,
+          'target': graph.resolveRefId(parentSem.ref)
         });
       }
     }
-  }
 
-  if (sem.rdfsDomain !== undefined) {
-    relations.push({
-      'predicate': RDFS.domain,
-      'source': node,
-      'target': sem.rdfsDomain
-    });
-  }
-  if (sem.rdfsRange !== undefined) {
-    relations.push({
-      'predicate': RDFS.range,
-      'source': node,
-      'target': sem.rdfsRange
-    });
-  }
-  if (sem.disjointWith !== undefined) {
-    relations.push({
-      'predicate': OWL.disjointWith,
-      'source': node,
-      'target': sem.disjointWith
-    });
-  }
-  if (sem.equivalentTo !== undefined) {
-    relations.push({
-      'predicate': OWL.equivalentClass,
-      'source': node,
-      'target': sem.equivalentTo
-    });
-  }
-
-  // Compose.equivalent shape: root-level schema whose only structural content is a $ref
-  if (sem.schemaId !== undefined && sem.ref !== undefined && node.pointer === '') {
-    relations.push({
-      'predicate': OWL.equivalentClass,
-      'source': node,
-      'target': graph.resolveRefId(sem.ref)
-    });
-  }
-  if (sem.inverseOf !== undefined) {
-    relations.push({
-      'predicate': OWL.inverseOf,
-      'source': node,
-      'target': sem.inverseOf
-    });
-  }
-  if (sem.transitive) {
-    relations.push({
-      'predicate': OWL.TransitiveProperty,
-      'source': node,
-      'target': node.id
-    });
-  }
-  if (sem.symmetric) {
-    relations.push({
-      'predicate': OWL.SymmetricProperty,
-      'source': node,
-      'target': node.id
-    });
-  }
-  if (sem.asymmetric) {
-    relations.push({
-      'predicate': OWL.AsymmetricProperty,
-      'source': node,
-      'target': node.id
-    });
-  }
-  if (sem.functional) {
-    relations.push({
-      'predicate': OWL.FunctionalProperty,
-      'source': node,
-      'target': node.id
-    });
-  }
-  if (sem.inverseFunctional) {
-    relations.push({
-      'predicate': OWL.InverseFunctionalProperty,
-      'source': node,
-      'target': node.id
-    });
-  }
-  if (sem.reflexive) {
-    relations.push({
-      'predicate': OWL.ReflexiveProperty,
-      'source': node,
-      'target': node.id
-    });
-  }
-  if (sem.irreflexive) {
-    relations.push({
-      'predicate': OWL.IrreflexiveProperty,
-      'source': node,
-      'target': node.id
-    });
-  }
-
-  if (sem.title !== undefined) {
-    relations.push({
-      'predicate': RDFS.label,
-      'source': node,
-      'target': sem.title
-    });
-  }
-  if (sem.description !== undefined) {
-    relations.push({
-      'predicate': RDFS.comment,
-      'source': node,
-      'target': sem.description
-    });
-  }
-  if (sem.deprecated) {
-    relations.push({
-      'predicate': OWL.deprecated,
-      'source': node,
-      'target': 'true'
-    });
-  }
-
-  if (sem.readOnly) {
-    relations.push({
-      'predicate': DASH.readOnly,
-      'source': node,
-      'target': 'true'
-    });
-  }
-  if (sem.writeOnly) {
-    relations.push({
-      'predicate': DASH.writeOnly,
-      'source': node,
-      'target': 'true'
-    });
-  }
-
-  if (sem.contentMediaType !== undefined) {
-    relations.push({
-      'predicate': DCT.format,
-      'source': node,
-      'target': sem.contentMediaType
-    });
-  }
-
-  for (const parent of sem.allOf) {
-    const parentSem = graph.semantics(parent);
-
-    if (parentSem.ref === undefined) {
+    for (const branch of [
+      ...sem.anyOf,
+      ...sem.oneOf
+    ]) {
       relations.push({
-        'predicate': RDFS.subClassOf,
+        'predicate': OWL.equivalentClass,
         'source': node,
-        'target': parent
-      });
-    } else {
-      relations.push({
-        'predicate': RDFS.subClassOf,
-        'source': node,
-        'target': graph.resolveRefId(parentSem.ref)
+        'target': branch
       });
     }
-  }
 
-  for (const branch of [
-    ...sem.anyOf,
-    ...sem.oneOf
-  ]) {
-    relations.push({
-      'predicate': OWL.equivalentClass,
-      'source': node,
-      'target': branch
-    });
-  }
+    if (sem.complementNode !== undefined) {
+      const complementSem = graph.semantics(sem.complementNode);
+      const complementTarget = complementSem.ref === undefined
+        ? sem.complementNode
+        : graph.resolveRefId(complementSem.ref);
 
-  if (sem.complementNode !== undefined) {
-    const complementSem = graph.semantics(sem.complementNode);
-    const complementTarget = complementSem.ref === undefined
-      ? sem.complementNode
-      : graph.resolveRefId(complementSem.ref);
-
-    relations.push({
-      'predicate': OWL.complementOf,
-      'source': node,
-      'target': complementTarget
-    });
-  }
-
-  for (const propertyName of sem.required) {
-    const propNode = sem.properties.get(propertyName);
-    const propIRI = `${node.id}#${propertyName}`;
-
-    relations.push({
-      'metadata': {
-        'minCardinality': 1,
-        'onProperty': propIRI
-      },
-      'predicate': OWL.Restriction,
-      'source': node,
-      'target': propNode ?? propIRI
-    });
-  }
-
-  if (sem.enumValues !== undefined) {
-    for (const value of sem.enumValues) {
       relations.push({
-        'predicate': OWL.oneOf,
+        'predicate': OWL.complementOf,
         'source': node,
-        'target': typeof value === 'string' ? value : JSON.stringify(value)
+        'target': complementTarget
       });
     }
-  }
 
-  if (sem.hasConst) {
-    relations.push({
-      'predicate': OWL.hasValue,
-      'source': node,
-      'target': typeof sem.constValue === 'string' ? sem.constValue : JSON.stringify(sem.constValue)
-    });
-  }
+    for (const propertyName of sem.required) {
+      const propNode = sem.properties.get(propertyName);
+      const propIRI = `${node.id}#${propertyName}`;
 
-  if (sem.additionalPropertiesNode === false) {
-    relations.push({
-      'predicate': SH.closed,
-      'source': node,
-      'target': 'true'
-    });
-  }
-
-  if (sem.pattern !== undefined) {
-    relations.push({
-      'predicate': SH.pattern,
-      'source': node,
-      'target': sem.pattern
-    });
-  }
-  if (sem.minLength !== undefined) {
-    relations.push({
-      'predicate': SH.minLength,
-      'source': node,
-      'target': String(sem.minLength)
-    });
-  }
-  if (sem.maxLength !== undefined) {
-    relations.push({
-      'predicate': SH.maxLength,
-      'source': node,
-      'target': String(sem.maxLength)
-    });
-  }
-  if (sem.minimum !== undefined) {
-    relations.push({
-      'predicate': SH.minInclusive,
-      'source': node,
-      'target': String(sem.minimum)
-    });
-  }
-  if (sem.maximum !== undefined) {
-    relations.push({
-      'predicate': SH.maxInclusive,
-      'source': node,
-      'target': String(sem.maximum)
-    });
-  }
-  if (sem.exclusiveMinimum !== undefined) {
-    relations.push({
-      'predicate': SH.minExclusive,
-      'source': node,
-      'target': String(sem.exclusiveMinimum)
-    });
-  }
-  if (sem.exclusiveMaximum !== undefined) {
-    relations.push({
-      'predicate': SH.maxExclusive,
-      'source': node,
-      'target': String(sem.exclusiveMaximum)
-    });
-  }
-  if (sem.multipleOf !== undefined) {
-    relations.push({
-      'predicate': JT.multipleOf,
-      'source': node,
-      'target': String(sem.multipleOf)
-    });
-  }
-  if (sem.minItems !== undefined) {
-    relations.push({
-      'predicate': SH.minCount,
-      'source': node,
-      'target': String(sem.minItems)
-    });
-  }
-  if (sem.maxItems !== undefined) {
-    relations.push({
-      'predicate': SH.maxCount,
-      'source': node,
-      'target': String(sem.maxItems)
-    });
-  }
-
-  if (sem.ref === undefined) {
-    const xsd = XsdTypes.resolve(sem);
-
-    if (xsd !== null) {
       relations.push({
-        'predicate': SH.datatype,
+        'metadata': {
+          'minCardinality': 1,
+          'onProperty': propIRI
+        },
+        'predicate': OWL.Restriction,
         'source': node,
-        'target': xsd
+        'target': propNode ?? propIRI
       });
     }
+
+    if (sem.enumValues !== undefined) {
+      for (const value of sem.enumValues) {
+        relations.push({
+          'predicate': OWL.oneOf,
+          'source': node,
+          'target': typeof value === 'string' ? value : JSON.stringify(value)
+        });
+      }
+    }
+
+    if (sem.hasConst) {
+      relations.push({
+        'predicate': OWL.hasValue,
+        'source': node,
+        'target': typeof sem.constValue === 'string' ? sem.constValue : JSON.stringify(sem.constValue)
+      });
+    }
+
+    if (sem.additionalPropertiesNode === false) {
+      relations.push({
+        'predicate': SH.closed,
+        'source': node,
+        'target': 'true'
+      });
+    }
+
+    if (sem.pattern !== undefined) {
+      relations.push({
+        'predicate': SH.pattern,
+        'source': node,
+        'target': sem.pattern
+      });
+    }
+    if (sem.minLength !== undefined) {
+      relations.push({
+        'predicate': SH.minLength,
+        'source': node,
+        'target': String(sem.minLength)
+      });
+    }
+    if (sem.maxLength !== undefined) {
+      relations.push({
+        'predicate': SH.maxLength,
+        'source': node,
+        'target': String(sem.maxLength)
+      });
+    }
+    if (sem.minimum !== undefined) {
+      relations.push({
+        'predicate': SH.minInclusive,
+        'source': node,
+        'target': String(sem.minimum)
+      });
+    }
+    if (sem.maximum !== undefined) {
+      relations.push({
+        'predicate': SH.maxInclusive,
+        'source': node,
+        'target': String(sem.maximum)
+      });
+    }
+    if (sem.exclusiveMinimum !== undefined) {
+      relations.push({
+        'predicate': SH.minExclusive,
+        'source': node,
+        'target': String(sem.exclusiveMinimum)
+      });
+    }
+    if (sem.exclusiveMaximum !== undefined) {
+      relations.push({
+        'predicate': SH.maxExclusive,
+        'source': node,
+        'target': String(sem.exclusiveMaximum)
+      });
+    }
+    if (sem.multipleOf !== undefined) {
+      relations.push({
+        'predicate': JT.multipleOf,
+        'source': node,
+        'target': String(sem.multipleOf)
+      });
+    }
+    if (sem.minItems !== undefined) {
+      relations.push({
+        'predicate': SH.minCount,
+        'source': node,
+        'target': String(sem.minItems)
+      });
+    }
+    if (sem.maxItems !== undefined) {
+      relations.push({
+        'predicate': SH.maxCount,
+        'source': node,
+        'target': String(sem.maxItems)
+      });
+    }
+
+    if (sem.ref === undefined) {
+      const xsd = XsdTypes.resolve(sem);
+
+      if (xsd !== null) {
+        relations.push({
+          'predicate': SH.datatype,
+          'source': node,
+          'target': xsd
+        });
+      }
+    }
+
+    if (sem.ref !== undefined) {
+      relations.push({
+        'metadata': { 'fromRef': true },
+        'predicate': RDFS.range,
+        'source': node,
+        'target': graph.resolveRefId(sem.ref)
+      });
+    }
+
+    pushPropertyTypeRelations(node, sem, relations);
+    pushPropertyCardinalityRelations(graph, node, sem, relations, nodeMap);
+    pushConditionalRelations(graph, node, sem, relations);
+    pushDependentSchemaRelations(graph, node, sem, relations);
+    pushContainsRelations(graph, node, sem, relations);
+    pushPrefixItemRelations(graph, node, sem, relations);
+    pushPatternPropertyRelations(graph, node, sem, relations);
+    pushUnionTypeRelations(node, sem, relations);
+    pushDependentRequiredRelations(node, sem, relations);
+    pushFormatPatternRelations(node, sem, relations);
+
+    return relations;
   }
-
-  if (sem.ref !== undefined) {
-    relations.push({
-      'metadata': { 'fromRef': true },
-      'predicate': RDFS.range,
-      'source': node,
-      'target': graph.resolveRefId(sem.ref)
-    });
-  }
-
-  pushPropertyTypeRelations(node, sem, relations);
-  pushPropertyCardinalityRelations(graph, node, sem, relations, nodeMap);
-  pushConditionalRelations(graph, node, sem, relations);
-  pushDependentSchemaRelations(graph, node, sem, relations);
-  pushContainsRelations(graph, node, sem, relations);
-  pushPrefixItemRelations(graph, node, sem, relations);
-  pushPatternPropertyRelations(graph, node, sem, relations);
-  pushUnionTypeRelations(node, sem, relations);
-  pushDependentRequiredRelations(node, sem, relations);
-  pushFormatPatternRelations(node, sem, relations);
-
-  return relations;
-}
+} as const;

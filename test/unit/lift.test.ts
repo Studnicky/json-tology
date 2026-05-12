@@ -2,8 +2,8 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-// fromRdfQuad is the single-quad lifter; the public batch fromQuads/toQuads do not surface the per-quad shape.
-import { fromRdfQuad } from '../../src/modules/rdf/Lift.js';
+// Lift.fromQuad is the single-quad lifter; the public batch fromQuads/toQuads do not surface the per-quad shape.
+import { Lift } from '../../src/modules/rdf/Lift.js';
 // RdfJsQuadInterface is the per-quad RDF/JS DataModel shape consumed by fromRdfQuad; not surfaced via the public API.
 import type { RdfJsQuadInterface } from '../../src/interfaces/RdfJsQuad.js';
 
@@ -18,7 +18,7 @@ void describe('fromRdfQuad', { 'concurrency': true }, () => {
       'subject': { 'value': 'http://example.com/User' }
     };
 
-    const result = fromRdfQuad(quad);
+    const result = Lift.fromQuad(quad);
 
     assert.equal(result.subject, 'http://example.com/User');
     assert.equal(result.predicate, 'http://www.w3.org/2000/01/rdf-schema#subClassOf');
@@ -38,7 +38,7 @@ void describe('fromRdfQuad', { 'concurrency': true }, () => {
       'subject': { 'value': 'http://example.com/user/1' }
     };
 
-    const result = fromRdfQuad(quad);
+    const result = Lift.fromQuad(quad);
 
     assert.equal(result.object.termType, 'Literal');
 
@@ -60,7 +60,7 @@ void describe('fromRdfQuad', { 'concurrency': true }, () => {
       'subject': { 'value': 'http://example.com/User' }
     };
 
-    const result = fromRdfQuad(quad);
+    const result = Lift.fromQuad(quad);
 
     assert.equal(result.predicate, 'rdf:type');
   });
@@ -75,7 +75,7 @@ void describe('fromRdfQuad', { 'concurrency': true }, () => {
       'subject': { 'value': 'http://example.com/user/1' }
     };
 
-    const result = fromRdfQuad(quad);
+    const result = Lift.fromQuad(quad);
 
     assert.equal(result.object.termType, 'BlankNode');
     assert.equal(result.object.value, '_:b0');
@@ -92,7 +92,7 @@ void describe('fromRdfQuad', { 'concurrency': true }, () => {
       'subject': { 'value': 'http://example.com/user/1' }
     };
 
-    const result = fromRdfQuad(quad);
+    const result = Lift.fromQuad(quad);
 
     assert.equal(result.object.termType, 'Literal');
 
@@ -115,7 +115,7 @@ void describe('fromRdfQuad', { 'concurrency': true }, () => {
       'subject': { 'value': 'http://example.com/user/1' }
     };
 
-    const result = fromRdfQuad(quad);
+    const result = Lift.fromQuad(quad);
 
     const literal = result.object as { 'value': unknown };
 
@@ -134,7 +134,7 @@ void describe('fromRdfQuad', { 'concurrency': true }, () => {
       'subject': { 'value': 'http://example.com/user/1' }
     };
 
-    const result = fromRdfQuad(quad);
+    const result = Lift.fromQuad(quad);
 
     const literal = result.object as { 'language': string;
       'termType': 'Literal' };

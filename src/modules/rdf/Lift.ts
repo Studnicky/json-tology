@@ -55,7 +55,7 @@ function normalizeDatatype(dt: string): string {
  * Convert an RDF/JS quad (from `n3`, `eyereasoner`, etc.) to the
  * module's internal `QuadInterface`.
  */
-export function fromRdfQuad(rdfQuad: RdfJsQuadInterface): QuadInterface {
+function fromRdfQuadImpl(rdfQuad: RdfJsQuadInterface): QuadInterface {
   return {
     'object': rdfTermToQuadObject(rdfQuad.object),
     'predicate': normalizePredicate(rdfQuad.predicate.value),
@@ -404,7 +404,7 @@ function liftSingleValue(
  * @param registry - Schema registry for graph/schema lookup.
  * @returns Array of reconstructed objects (unvalidated — caller should `parse()` for full validation).
  */
-export function liftInstances(
+function liftInstancesImpl(
   schemaId: string,
   quads: QuadInterface[],
   registry: SchemaRegistryInterface
@@ -444,3 +444,17 @@ export function liftInstances(
 
   return results;
 }
+
+export const Lift = {
+  fromQuad(rdfQuad: RdfJsQuadInterface): QuadInterface {
+    return fromRdfQuadImpl(rdfQuad);
+  },
+
+  instances(
+    schemaId: string,
+    quads: QuadInterface[],
+    registry: SchemaRegistryInterface
+  ): unknown[] {
+    return liftInstancesImpl(schemaId, quads, registry);
+  }
+} as const;

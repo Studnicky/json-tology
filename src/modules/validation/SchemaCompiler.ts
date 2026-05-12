@@ -22,23 +22,16 @@ import type {
   SchemaGraphNodeInterface, SchemaGraphSemanticsInterface
 } from '../../interfaces/SchemaGraph.js';
 import { isRecord } from '../data/DataTypes.js';
-import {
-  coerceCompiledValue
-} from './SchemaCompilerSupport.js';
+import { SchemaCompilerSupport } from './SchemaCompilerSupport.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { Predicates } from './Predicates.js';
-import { resolveImplicitDefaultValue } from './SchemaCompilerDefaults.js';
-import { cloneDefault } from '../graph/GraphEngineSupport.js';
-import { buildNodeCheckExecution } from './SchemaCompilerCheckExec.js';
-import { buildValidateWithErrorsExecution } from './SchemaCompilerValidateExec.js';
-import {
-  buildNodeValidationPlan
-} from './SchemaCompilerValidatePlan.js';
+import { SchemaCompilerDefaults } from './SchemaCompilerDefaults.js';
+import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
+import { SchemaCompilerCheckExec } from './SchemaCompilerCheckExec.js';
+import { SchemaCompilerValidateExec } from './SchemaCompilerValidateExec.js';
+import { SchemaCompilerValidatePlan } from './SchemaCompilerValidatePlan.js';
 import type { ValidateWithErrorsFnType } from '../../types/Validation.js';
-import {
-  compileArrayCheck, compileObjectCheck, compileRefCheck,
-  nodeSupportsCompilation, tryCompileFlatObjectCheck
-} from './SchemaCompilerGraph.js';
+import { SchemaCompilerGraph } from './SchemaCompilerGraph.js';
 import {
   DEFAULT_DIALECT_URI, VOCABULARY_FORMAT_ASSERTION
 } from '../../constants/DIALECT.js';
@@ -231,11 +224,11 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     this.compilingNodes.add(graphNode);
 
     try {
-      return buildNodeCheckExecution(
+      return SchemaCompilerCheckExec.buildNodeCheckExecution(
         {
           'activeCustomKeywords': this.activeCustomKeywords,
           'compileNodeArrayCheck': (targetNode, fmtReg, schemaGraph, schemaLookup) => {
-            return compileArrayCheck(
+            return SchemaCompilerGraph.compileArrayCheck(
               {
                 'activeCustomKeywords': this.activeCustomKeywords,
                 'compileNodeCheck': (innerNode, innerFmt, innerGraph, innerLookup) => {
@@ -257,7 +250,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
             return this.compileNodeCheck(targetNode, fmtReg, schemaGraph, schemaLookup);
           },
           'compileNodeObjectCheck': (targetNode, fmtReg, schemaGraph, schemaLookup) => {
-            return compileObjectCheck(
+            return SchemaCompilerGraph.compileObjectCheck(
               {
                 'activeCustomKeywords': this.activeCustomKeywords,
                 'compileNodeCheck': (innerNode, innerFmt, innerGraph, innerLookup) => {
@@ -282,7 +275,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
             return this.compileNumberCheck(min, max, exMin, exMax, mult);
           },
           'compileRefCheck': (ref, fmtReg, schemaGraph, schemaLookup) => {
-            return compileRefCheck(
+            return SchemaCompilerGraph.compileRefCheck(
               {
                 'activeCustomKeywords': this.activeCustomKeywords,
                 'compileNodeCheck': (innerNode, innerFmt, innerGraph, innerLookup) => {
@@ -307,7 +300,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
             return this.compileTypeCheck(types);
           },
           'tryCompileNodeFlatObjectCheck': (targetNode, fmtReg, schemaGraph, schemaLookup) => {
-            return tryCompileFlatObjectCheck(
+            return SchemaCompilerGraph.tryCompileFlatObjectCheck(
               {
                 'activeCustomKeywords': this.activeCustomKeywords,
                 'compileNodeCheck': (innerNode, innerFmt, innerGraph, innerLookup) => {
@@ -393,7 +386,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
   ): ValidateWithErrorsFnType {
-    const plan = buildNodeValidationPlan(
+    const plan = SchemaCompilerValidatePlan.buildNodeValidationPlan(
       {
         'activeCustomKeywords': this.activeCustomKeywords,
         'appliesFormatAssertions': (semantics) => {
@@ -412,7 +405,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
           return this.compileNodeValidateWithErrors(targetNode, fmtReg, schemaGraph, schemaLookup);
         },
         'resolveImplicitDefault': (targetNode, schemaGraph, schemaLookup, visited) => {
-          return resolveImplicitDefaultValue(targetNode, schemaGraph, schemaLookup, visited);
+          return SchemaCompilerDefaults.resolveImplicitDefaultValue(targetNode, schemaGraph, schemaLookup, visited);
         }
       },
       graphNode,
@@ -421,7 +414,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       lookupSchema
     );
 
-    return buildValidateWithErrorsExecution(plan);
+    return SchemaCompilerValidateExec.buildValidateWithErrorsExecution(plan);
   }
 
   private compileNumberCheck(
@@ -585,12 +578,12 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
       // Apply coercion at root level
       if (options?.castTypes === true && rootTypes.length > 0) {
-        workingValue = coerceCompiledValue(rootTypes, workingValue);
+        workingValue = SchemaCompilerSupport.coerceCompiledValue(rootTypes, workingValue);
       }
 
       // Apply defaults at root level
       if (options?.applyDefaults === true && workingValue === undefined && rootHasDefault) {
-        workingValue = cloneDefault(rootDefaultValue);
+        workingValue = GraphEngineSupport.cloneDefault(rootDefaultValue);
       }
 
       // For full mutation modes, delegate to validateWithErrors
@@ -697,6 +690,6 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
   ): boolean {
-    return nodeSupportsCompilation(graph.rootNode, graph, lookupSchema, new Set());
+    return SchemaCompilerGraph.nodeSupportsCompilation(graph.rootNode, graph, lookupSchema, new Set());
   }
 }

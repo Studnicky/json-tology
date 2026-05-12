@@ -4,9 +4,7 @@ import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphImpl.j
 import type { DynamicScopeEntryInterface } from '../../../interfaces/DynamicScopeEntry.js';
 import type { InternalExecutionResultInterface } from '../../../interfaces/InternalExecutionResult.js';
 import type { VisitContextInterface } from '../../../interfaces/VisitContext.js';
-import {
-  schemaId
-} from '../GraphEngineSupport.js';
+import { GraphEngineSupport } from '../GraphEngineSupport.js';
 
 export class Refs {
   static resolveDynamicRef(
@@ -21,7 +19,7 @@ export class Refs {
     depth: number,
     visitNode: VisitFnType
   ): InternalExecutionResultInterface {
-    const refKey = `${schemaId(graph.rootSchema) ?? '<anonymous>'}::dynamic::${dynamicRef}`;
+    const refKey = `${GraphEngineSupport.schemaId(graph.rootSchema) ?? '<anonymous>'}::dynamic::${dynamicRef}`;
 
     if (refStack.has(refKey)) {
       return {
@@ -64,7 +62,7 @@ export class Refs {
     depth: number,
     visitNode: VisitFnType
   ): InternalExecutionResultInterface {
-    const refKey = `${schemaId(graph.rootSchema) ?? '<anonymous>'}::${ref}`;
+    const refKey = `${GraphEngineSupport.schemaId(graph.rootSchema) ?? '<anonymous>'}::${ref}`;
 
     if (refStack.has(refKey)) {
       return {

@@ -1,6 +1,6 @@
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { QuadInterface } from '../../interfaces/Quad.js';
-import { projectShaclGraph } from '../rdf/ShaclProjection.js';
+import { ShaclProjection } from '../rdf/ShaclProjection.js';
 import { SHACL_CORE_PREDICATES } from '../../constants/ONTOLOGY_PREDICATES.js';
 import { BaseGraphSerializer } from './BaseGraphSerializer.js';
 import { SH } from '../../constants/IRI.js';
@@ -19,6 +19,6 @@ export class GraphShaclSerializer extends BaseGraphSerializer {
   }
 
   protected projectGraph(graph: SchemaGraphInterface): QuadInterface[] {
-    return projectShaclGraph(graph, { 'curie': this.curie });
+    return ShaclProjection.graph(graph, { 'curie': this.curie });
   }
 }

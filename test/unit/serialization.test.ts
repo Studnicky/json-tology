@@ -7,13 +7,8 @@ import type { QuadInterface } from '../../src/interfaces/Quad.js';
 // RelationStructure/SchemaGraphRelationInterface are graph-internal shapes used by projection tests.
 import type { RelationStructure } from '../../src/types/SchemaGraph.js';
 import type { SchemaGraphRelationInterface } from '../../src/interfaces/SchemaGraph.js';
-// ProjectionIndex helpers (buildIndex, isListStructure, isRestrictionStructure, relationTargetId) are projection internals.
-import {
-  buildIndex,
-  isListStructure,
-  isRestrictionStructure,
-  relationTargetId
-} from '../../src/modules/rdf/ProjectionIndex.js';
+// ProjectionIndex helpers are projection internals.
+import { ProjectionIndex } from '../../src/modules/rdf/ProjectionIndex.js';
 import {
   describe, it
 } from 'node:test';
@@ -23,8 +18,8 @@ import {
   JsonTology, Transform
 } from '../../src/index.js';
 import { bookstoreEntities as entities } from '../../examples/docs/bookstore/index.js';
-// quadsToJsonLd is a low-level JSON-LD formatter used by serializers; not surfaced by the public API.
-import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
+// JsonLdFormatter is a low-level JSON-LD formatter used by serializers; not surfaced by the public API.
+import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
 
 // ===========================================================================
 // Source: jsonLdFormatter.test.ts
@@ -194,7 +189,7 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
       'check': check, 'name': name, 'quads': quads
     } of groupingScenarios) {
       void it(name, () => {
-        const result = quadsToJsonLd(quads);
+        const result = JsonLdFormatter.fromQuads(quads);
 
         check(result);
       });
@@ -310,7 +305,7 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
       'check': check, 'name': name, 'quads': quads
     } of blankNodeScenarios) {
       void it(name, () => {
-        const result = quadsToJsonLd(quads);
+        const result = JsonLdFormatter.fromQuads(quads);
 
         check(result);
       });
@@ -391,7 +386,7 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
       'check': check, 'name': name, 'quads': quads
     } of termScenarios) {
       void it(name, () => {
-        const result = quadsToJsonLd(quads);
+        const result = JsonLdFormatter.fromQuads(quads);
 
         check(result);
       });
@@ -423,7 +418,7 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
 
   void describe('buildIndex', () => {
     void it('returns empty map for empty relations array', () => {
-      const index = buildIndex([]);
+      const index = ProjectionIndex.build([]);
 
       assert.equal(index.size, 0);
     });
@@ -435,7 +430,7 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
         makeRelation('http://example.com/Order', 'rdfs:label', 'Order')
       ];
 
-      const index = buildIndex(relations);
+      const index = ProjectionIndex.build(relations);
 
       assert.equal(index.size, 2);
       assert.equal(index.get('http://example.com/User')?.all.length, 2);
@@ -449,7 +444,7 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
         makeRelation('http://example.com/User', 'rdfs:label', 'UserAlias')
       ];
 
-      const index = buildIndex(relations);
+      const index = ProjectionIndex.build(relations);
       const entry = index.get('http://example.com/User');
 
       assert.equal(entry?.byPredicate.get('rdfs:label')?.length, 2);
@@ -463,7 +458,7 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
         makeRelation('http://example.com/User', 'rdf:type', 'rdfs:Resource')
       ];
 
-      const index = buildIndex(relations);
+      const index = ProjectionIndex.build(relations);
       const entry = index.get('http://example.com/User');
 
       assert.deepEqual(entry?.types, [
@@ -477,7 +472,7 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
     void it('returns string target directly', () => {
       const relation = makeRelation('http://example.com/User', 'rdfs:label', 'User');
 
-      assert.equal(relationTargetId(relation), 'User');
+      assert.equal(ProjectionIndex.relationTargetId(relation), 'User');
     });
 
     void it('returns node id for object target', () => {
@@ -491,7 +486,7 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
         }
       );
 
-      assert.equal(relationTargetId(relation), 'http://example.com/Class');
+      assert.equal(ProjectionIndex.relationTargetId(relation), 'http://example.com/Class');
     });
   });
 
@@ -504,7 +499,7 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
         'value': 1
       };
 
-      assert.equal(isRestrictionStructure(structure), true);
+      assert.equal(ProjectionIndex.isRestrictionStructure(structure), true);
     });
 
     void it('returns false for list kind', () => {
@@ -516,11 +511,11 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
         ]
       };
 
-      assert.equal(isRestrictionStructure(structure), false);
+      assert.equal(ProjectionIndex.isRestrictionStructure(structure), false);
     });
 
     void it('returns false for undefined', () => {
-      assert.equal(isRestrictionStructure(), false);
+      assert.equal(ProjectionIndex.isRestrictionStructure(), false);
     });
   });
 
@@ -534,7 +529,7 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
         ]
       };
 
-      assert.equal(isListStructure(structure), true);
+      assert.equal(ProjectionIndex.isListStructure(structure), true);
     });
 
     void it('returns false for restriction kind', () => {
@@ -545,11 +540,11 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
         'value': 0
       };
 
-      assert.equal(isListStructure(structure), false);
+      assert.equal(ProjectionIndex.isListStructure(structure), false);
     });
 
     void it('returns false for undefined', () => {
-      assert.equal(isListStructure(), false);
+      assert.equal(ProjectionIndex.isListStructure(), false);
     });
   });
 }
