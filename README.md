@@ -16,6 +16,10 @@ The full documentation is published at **https://studnicky.github.io/json-tology
 - [Ontology and Graphs](https://studnicky.github.io/json-tology/advanced/ontology) - OWL TBox, SHACL, JSON-LD, ABox projection
 - [Usage Examples](https://studnicky.github.io/json-tology/usage-examples/transforms-recipes) - transforms cookbook, custom format validators
 
+## Requirements
+
+Node.js >= 24 (matches `engines.node` in `package.json`).
+
 ## Install
 
 ```bash

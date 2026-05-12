@@ -9,7 +9,7 @@
  *   4. subschemaAt pointer errors
  *   5. Static-counterpart failure modes
  *   6. Computed / Invariant lifecycle (add/remove, override, throwing)
- *   7. Recursive ref depth limits + maxDepth
+ *   7. Recursive ref depth limits + maxSchemaDepth
  *   8. Mutual recursion graphs
  *   9. Mixed-tuple registration order
  *  10. Type-cast failures with enableTypeCast
@@ -835,15 +835,15 @@ void describe('Recursive ref depth limits', () => {
     'type': 'object'
   } as const;
 
-  void it('engine.execute() with maxDepth below the schema-graph $ref depth throws RECURSION_LIMIT', () => {
+  void it('engine.execute() with maxSchemaDepth below the schema-graph $ref depth throws RECURSION_LIMIT', () => {
     const jt = JsonTology.create({
       'baseIRI': 'urn:depth:',
-      'maxDepth': 1,
+      'maxSchemaDepth': 1,
       'schemas': [SelfNode] as const
     });
 
-    // maxDepth bounds the SCHEMA-GRAPH traversal depth, not the data depth.
-    // With maxDepth: 1 even a 2-element data chain trips the limit because
+    // maxSchemaDepth bounds the SCHEMA-GRAPH traversal depth, not the data depth.
+    // With maxSchemaDepth: 1 even a 2-element data chain trips the limit because
     // resolving a $ref counts as descent.
     const engine = jt.registry.engine(SelfNode);
 
@@ -857,10 +857,10 @@ void describe('Recursive ref depth limits', () => {
     );
   });
 
-  void it('engine.execute() with maxDepth above the $ref depth completes successfully', () => {
+  void it('engine.execute() with maxSchemaDepth above the $ref depth completes successfully', () => {
     const jt = JsonTology.create({
       'baseIRI': 'urn:depth:',
-      'maxDepth': 100,
+      'maxSchemaDepth': 100,
       'schemas': [SelfNode] as const
     });
     const engine = jt.registry.engine(SelfNode);
@@ -870,14 +870,14 @@ void describe('Recursive ref depth limits', () => {
     assert.equal((result.value as Record<string, unknown>).name, 'root');
   });
 
-  void it('instantiate (compiled validation path) does NOT enforce maxDepth (documented gap)', () => {
+  void it('instantiate (compiled validation path) does NOT enforce maxSchemaDepth (documented gap)', () => {
     const jt = JsonTology.create({
       'baseIRI': 'urn:depth:',
-      'maxDepth': 1,
+      'maxSchemaDepth': 1,
       'schemas': [SelfNode] as const
     });
 
-    // Compiled validation does not currently honour maxDepth — this passes
+    // Compiled validation does not currently honour maxSchemaDepth — this passes
     // even with a 50-deep chain. Pinning this so any future change is loud.
     const result = jt.instantiate(SelfNode.$id, buildSelfRefChain(50)) as Record<string, unknown>;
 
@@ -911,7 +911,7 @@ void describe('Mutual recursion graphs', () => {
     } as const;
     const jt = JsonTology.create({
       'baseIRI': 'urn:mutual:',
-      'maxDepth': 50,
+      'maxSchemaDepth': 50,
       'schemas': [
         NodeA,
         NodeB

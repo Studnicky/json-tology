@@ -98,8 +98,6 @@ entities.toQuads(OrderSchema, order, {
 
 See [skolemization](/advanced/skolemization) for the strategy reference.
 
-The v1 `subjectIRI: string` option is preserved as a backwards-compatible alias for `iriFor: string`. New code should use `iriFor`.
-
 ### Graph IRI
 
 Set the `graph` field on every emitted quad with `graphIRI`:

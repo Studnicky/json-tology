@@ -1,5 +1,4 @@
 import type {
-  CoercionErrorCodeType,
   GraphErrorCodeType,
   InstantiationErrorCodeType,
   LoadErrorCodeType,
@@ -41,8 +40,6 @@ export const LoadErrorCode = {
   'IO_FAILURE': 'LOAD_IO_FAILURE',
   'MISSING_ID': 'LOAD_MISSING_ID'
 } as const satisfies Record<string, LoadErrorCodeType>;
-
-export const CoercionErrorCode = { 'EXTRA_FORBIDDEN': 'EXTRA_FORBIDDEN' } as const satisfies Record<string, CoercionErrorCodeType>;
 
 export const InstantiationErrorCode = {
   'EXTRA_FORBIDDEN': 'EXTRA_FORBIDDEN',

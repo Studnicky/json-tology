@@ -27,12 +27,6 @@ export interface GraphEngineOptionsInterface {
   'lookupSchema'?: (schemaId: string) => Record<string, unknown> | undefined;
   'materializeContainers'?: boolean;
   /**
-   * @deprecated Use {@link maxSchemaDepth} instead. Retained as a
-   * backwards-compatible alias and copied to `maxSchemaDepth` when the latter
-   * is not provided.
-   */
-  'maxDepth'?: number;
-  /**
    * Maximum recursion depth for schema traversal during validation.
    * Limits how deeply nested `$ref`, `allOf`, `oneOf`, and other composition
    * keywords can recurse. When exceeded, a `GraphError('RECURSION_LIMIT')` is thrown.

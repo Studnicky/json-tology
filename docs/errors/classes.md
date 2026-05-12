@@ -183,7 +183,7 @@ The `errors` collection is the same `ValidationErrors` used by `validate()` - se
 
 **Adds.** `errors: ValidationErrors`.
 
-**Codes.** Always `COERCION_FAILED` at the wrapper level. The constant `CoercionErrorCode.EXTRA_FORBIDDEN` (`EXTRA_FORBIDDEN`) appears inside `errors.items` when extras are forbidden.
+**Codes.** Always `COERCION_FAILED` at the wrapper level. The constant `InstantiationErrorCode.EXTRA_FORBIDDEN` (`EXTRA_FORBIDDEN`) appears inside `errors.items` when extras are forbidden.
 
 ```ts
 import { CoercionError } from 'json-tology';

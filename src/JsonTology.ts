@@ -80,18 +80,10 @@ export const BLANK_NODE_IRI_FOR = 'blank-node';
  *
  * `graphIRI` — when set, every emitted quad has its `graph` field stamped
  * with this IRI.
- *
- * `subjectIRI` — deprecated v1 alias for `iriFor` when used as a string.
- * Retained so existing callers continue to work; new code should use
- * `iriFor` directly.
  */
 export interface ToQuadsOptionsType {
   readonly 'graphIRI'?: string | undefined;
   readonly 'iriFor'?: SkolemizeFnType | string | undefined;
-  /**
-   * @deprecated Use `iriFor` instead. Kept for v1 backwards compatibility.
-   */
-  readonly 'subjectIRI'?: string | undefined;
 }
 
 interface NormalizedToQuadsOptionsType {
@@ -218,9 +210,8 @@ function normalizeToQuadsOptions(options: ToQuadsOptionsType | undefined): Norma
     return {};
   }
 
-  const rawIriFor = options.iriFor ?? options.subjectIRI;
   const graphIRI = options.graphIRI;
-  const iriFor = liftIriForOption(rawIriFor);
+  const iriFor = liftIriForOption(options.iriFor);
 
   if (iriFor === undefined) {
     return graphIRI === undefined ? {} : { graphIRI };
@@ -548,7 +539,7 @@ export class JsonTology<TMap = Record<never, never>> {
       ...(options.enableDuplicateDetection === undefined ? {} : { 'enableDuplicateDetection': options.enableDuplicateDetection }),
       ...(options.enableStrictGraph === undefined ? {} : { 'enableStrictGraph': options.enableStrictGraph }),
       ...(options.vocabularies === undefined ? {} : { 'vocabularies': options.vocabularies }),
-      ...(options.maxDepth === undefined ? {} : { 'maxDepth': options.maxDepth }),
+      ...(options.maxSchemaDepth === undefined ? {} : { 'maxSchemaDepth': options.maxSchemaDepth }),
       ...(options.invariants === undefined ? {} : { 'invariants': options.invariants })
     };
 

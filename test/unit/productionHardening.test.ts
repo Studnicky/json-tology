@@ -478,11 +478,11 @@ void describe('schema freeze on registration', () => {
 });
 
 // ---------------------------------------------------------------------------
-// maxDepth option
+// maxSchemaDepth option
 // ---------------------------------------------------------------------------
 
-void describe('maxDepth option', () => {
-  void it('engine.execute() respects maxDepth and throws RECURSION_LIMIT', () => {
+void describe('maxSchemaDepth option', () => {
+  void it('engine.execute() respects maxSchemaDepth and throws RECURSION_LIMIT', () => {
     const schema: Record<string, unknown> = {
       '$id': 'urn:hardening:tree',
       'properties': {
@@ -500,7 +500,7 @@ void describe('maxDepth option', () => {
       'lookupSchema': () => {
         return schema;
       },
-      'maxDepth': 3
+      'maxSchemaDepth': 3
     });
 
     // Shallow data passes
@@ -513,10 +513,10 @@ void describe('maxDepth option', () => {
       engine.execute({ 'child': { 'child': { 'child': { 'child': { 'child': null } } } } });
     }, (error: unknown) => {
       return error instanceof GraphError && error.code === 'RECURSION_LIMIT';
-    }, 'deep data exceeds maxDepth');
+    }, 'deep data exceeds maxSchemaDepth');
   });
 
-  void it('defaults to no limit when maxDepth is not set', () => {
+  void it('defaults to no limit when maxSchemaDepth is not set', () => {
     const schema: Record<string, unknown> = {
       '$id': 'urn:hardening:deep',
       'properties': {
