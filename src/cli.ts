@@ -10,7 +10,7 @@
  *   json-tology viz  --schema 'schemas/*.json' [--output file.html] [--no-open]
  */
 
-import { exec } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import {
   existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync
 } from 'node:fs';
@@ -219,11 +219,11 @@ function openBrowser(filePath: string): void {
     cmd = 'start';
   }
 
-  try {
-    exec(`${cmd} "${filePath}"`);
-  } catch (error) {
-    console.error(`Failed to open browser: ${error instanceof Error ? error.message : String(error)}`);
-  }
+  execFile(cmd, [filePath], (error) => {
+    if (error) {
+      console.error(`Failed to open browser: ${error.message}`);
+    }
+  });
 }
 
 // ---------------------------------------------------------------------------

@@ -78,6 +78,14 @@
   ],
   "author": "Studnicky (https://github.com/Studnicky)",
   "license": "MIT",
+  "homepage": "https://studnicky.github.io/json-tology/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Studnicky/json-tology.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Studnicky/json-tology/issues"
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@rdfjs/types": "^2.0.1",

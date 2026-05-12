@@ -16,7 +16,7 @@ export interface RegistryOptionsInterface {
   'invariants'?: Record<string, readonly InvariantInterface[]>;
   'keywords'?: KeywordDefinitionInterface[];
   'logger'?: LoggerInterface;
-  'maxDepth'?: number;
+  'maxSchemaDepth'?: number;
   'prefixes'?: Record<string, string>;
   'vocabularies'?: readonly VocabularyPluginInterface[];
 }

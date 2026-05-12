@@ -1,7 +1,7 @@
 /**
  * 06b-abox-stable-iri.mjs
  *
- * Demonstrates toQuads() with subjectIRI and graphIRI overrides.
+ * Demonstrates toQuads() with iriFor and graphIRI overrides.
  * Stable canonical IRIs instead of hash-based instance IRIs.
  */
 
@@ -32,7 +32,7 @@ const bulbasaur = {
 
 const quads = jt.toQuads(SpeciesSchema, bulbasaur, {
   'graphIRI': 'https://pokemontology.dev/graph/universal/species',
-  'subjectIRI': 'https://pokemontology.dev/species/bulbasaur'
+  'iriFor': 'https://pokemontology.dev/species/bulbasaur'
 });
 
 console.log('Quad count:', quads.length);
@@ -68,13 +68,13 @@ if (!allGraphs.every((graph) => {
 }
 
 console.log('\nAll assertions passed.');
-console.log('  subjectIRI:', expectedSubject);
+console.log('  iriFor:    ', expectedSubject);
 console.log('  graphIRI:  ', expectedGraph);
 
 // Also verify static variant works the same way
 const staticQuads = JsonTology.toQuads(SpeciesSchema, bulbasaur, {
   'graphIRI': 'https://pokemontology.dev/graph/universal/species',
-  'subjectIRI': 'https://pokemontology.dev/species/bulbasaur'
+  'iriFor': 'https://pokemontology.dev/species/bulbasaur'
 });
 
 console.log('\nStatic toQuads quad count:', staticQuads.length);

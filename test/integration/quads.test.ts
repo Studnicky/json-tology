@@ -7,7 +7,6 @@
  *   - iriFor as Skolemize.fromProperty / Skolemize.wellKnownGenid
  *   - iriFor function ctx + memoization
  *   - registry-level iriFor / defaultGraphIRI / defaultDeskolemize
- *   - v1 backwards compatibility (subjectIRI alias)
  *   - fromQuads round-trip with deskolemize
  */
 
@@ -338,37 +337,6 @@ void describe('toQuads — registry-level config', () => {
   });
 });
 
-void describe('toQuads — v1 backwards compatibility', () => {
-  void it('subjectIRI: string still works as root override', () => {
-    const jt = JsonTology.create({
-      'baseIRI': 'https://example.com',
-      'schemas': [UserSchema]
-    });
-    const quads = jt.toQuads(UserSchema, { 'name': 'Alice' }, { 'subjectIRI': 'https://example.com/legacy/alice' });
-    const subjects = new Set(quads.map((quad) => {
-      return quad.subject;
-    }));
-
-    assert.ok(subjects.has('https://example.com/legacy/alice'));
-  });
-
-  void it('iriFor takes precedence when both are set', () => {
-    const jt = JsonTology.create({
-      'baseIRI': 'https://example.com',
-      'schemas': [UserSchema]
-    });
-    const quads = jt.toQuads(UserSchema, { 'name': 'Alice' }, {
-      'iriFor': 'https://example.com/new',
-      'subjectIRI': 'https://example.com/legacy'
-    });
-    const subjects = new Set(quads.map((quad) => {
-      return quad.subject;
-    }));
-
-    assert.ok(subjects.has('https://example.com/new'));
-    assert.equal(subjects.has('https://example.com/legacy'), false);
-  });
-});
 
 void describe('fromQuads — deskolemize round-trip', () => {
   void it('reproduces input data when paired with Skolemize.wellKnownGenid', () => {

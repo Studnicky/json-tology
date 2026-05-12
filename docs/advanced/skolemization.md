@@ -107,7 +107,7 @@ entities.toQuads(OrderSchema, order, {
 
 For the most common cases, `iriFor` accepts a string literal:
 
-- A regular IRI: `iriFor: 'https://shop.example.com/orders/A-1234'` — applied at the root only (depth 0). Nested objects fall through to the default minter. This matches the v1 `subjectIRI: string` behavior.
+- A regular IRI: `iriFor: 'https://shop.example.com/orders/A-1234'` — applied at the root only (depth 0). Nested objects fall through to the default minter.
 - The literal `'blank-node'`: emits `_:b<n>` blank nodes for every projected object. The counter is scoped to one `projectAbox` call, so two calls in a row both start at `_:b0`.
 
 ## Registry-level defaults

@@ -50,7 +50,7 @@ export class GraphEngine implements GraphEngineInterface {
   private readonly dialectPlan: RootDialectPlanInterface;
   public readonly formatRegistry: FormatRegistryInterface;
   private readonly graphCache = new WeakMap<object, SchemaGraph>();
-  private readonly options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema' | 'maxDepth'>>;
+  private readonly options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>>;
   private readonly refCache = new Map<string, RefTargetInterface>();
   private readonly regexCache = new Map<string, RegExp>();
 
@@ -62,20 +62,14 @@ export class GraphEngine implements GraphEngineInterface {
    */
   public constructor(public readonly rootSchema: JSONSchema7Definition, options: GraphEngineOptionsInterface = {}) {
     const {
-      formatRegistry, keywords, maxDepth, maxSchemaDepth, ...rest
+      formatRegistry, keywords, ...rest
     } = options;
 
     this.formatRegistry = formatRegistry ?? FormatRegistry.builtin();
     this.customKeywords = keywords ?? [];
-    // Backwards-compat: legacy `maxDepth` is mapped onto `maxSchemaDepth`
-    // when the new option is not provided. The deprecation warning is
-    // emitted at the JsonTology / SchemaRegistry layer (one-time per process).
-    const resolvedSchemaDepth = maxSchemaDepth ?? maxDepth;
-
     this.options = {
       ...DEFAULT_OPTIONS,
-      ...rest,
-      ...(resolvedSchemaDepth === undefined ? {} : { 'maxSchemaDepth': resolvedSchemaDepth })
+      ...rest
     };
     this.dialectPlan = buildRootDialectPlan(rootSchema);
   }
@@ -85,7 +79,7 @@ export class GraphEngine implements GraphEngineInterface {
     graph: SchemaGraphInterface,
     value: unknown[],
     path: string,
-    options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema' | 'maxDepth'>>,
+    options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>>,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntryInterface[],
     alreadyEvaluated: Set<number>,
@@ -136,7 +130,7 @@ export class GraphEngine implements GraphEngineInterface {
     graph: SchemaGraphInterface,
     value: Record<string, unknown>,
     path: string,
-    options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema' | 'maxDepth'>>,
+    options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>>,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntryInterface[],
     alreadyEvaluated: Set<string>,
@@ -438,7 +432,7 @@ export class GraphEngine implements GraphEngineInterface {
     graph: SchemaGraphInterface,
     value: unknown[],
     path: string,
-    options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema' | 'maxDepth'>>,
+    options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>>,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntryInterface[],
     sem: SchemaGraphSemanticsInterface,
@@ -578,7 +572,7 @@ export class GraphEngine implements GraphEngineInterface {
     graph: SchemaGraphInterface,
     value: Record<string, unknown>,
     path: string,
-    options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema' | 'maxDepth'>>,
+    options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>>,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntryInterface[],
     depth: number
@@ -831,7 +825,7 @@ export class GraphEngine implements GraphEngineInterface {
     graph: SchemaGraphInterface,
     value: unknown,
     path: string,
-    options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema' | 'maxDepth'>>,
+    options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>>,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntryInterface[],
     depth = 0

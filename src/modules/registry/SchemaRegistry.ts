@@ -8,7 +8,9 @@
 import type { CompiledValidatorInterface } from '../../interfaces/Compiler.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
-import type { KeywordDefinitionInterface } from '../../interfaces/GraphEngine.js';
+import type {
+  GraphEngineOptionsInterface, KeywordDefinitionInterface
+} from '../../interfaces/GraphEngine.js';
 import type { GraphEngineInterface } from '../../interfaces/GraphEngineImpl.js';
 import type { InvariantInterface } from '../../interfaces/Invariant.js';
 import type { LoggerInterface } from '../../interfaces/Logger.js';
@@ -76,7 +78,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   private readonly invariants: InvariantStore;
   private readonly keywords: KeywordDefinitionInterface[] | undefined;
   private readonly logger: LoggerInterface;
-  private readonly maxDepth: number | undefined;
+  private readonly maxSchemaDepth: number | undefined;
   public readonly sameAsStore: SameAsStore;
   private readonly schemaHashes = new Map<string, string>();
   private readonly schemas = new Map<string, SchemaRegistryEntryInterface>();
@@ -91,7 +93,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       'collectErrors': true,
       'removeAdditionalProperties': true
     });
-    this.maxDepth = options?.maxDepth;
+    this.maxSchemaDepth = options?.maxSchemaDepth;
     this.enableStrictTypes = options?.enableStrictTypes ?? false;
     this.enableStrictGraph = options?.enableStrictGraph ?? false;
     this.enableInlineWarnings = this.enableStrictGraph || (options?.enableInlineWarnings ?? false);
@@ -349,17 +351,15 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     if (entry === undefined) {
       throw new SchemaError('SCHEMA_VALIDATOR_MISSING', `No validator registered for schema: ${schemaId}`, schemaId);
     }
-    const engineOptions: Record<string, unknown> = {
+    const engineOptions: GraphEngineOptionsInterface = {
       ...(this.formatRegistry ? { 'formatRegistry': this.formatRegistry } : {}),
       ...(this.keywords && this.keywords.length > 0 ? { 'keywords': this.keywords } : {}),
+      ...(this.maxSchemaDepth === undefined ? {} : { 'maxSchemaDepth': this.maxSchemaDepth }),
       'lookupSchema': (lookupSchemaId: string) => {
         return this.schemas.get(lookupSchemaId)?.schema;
       }
     };
 
-    if (this.maxDepth !== undefined) {
-      engineOptions.maxDepth = this.maxDepth;
-    }
     entry.engine ??= new GraphEngine(entry.schema, engineOptions);
 
     return entry.engine;
