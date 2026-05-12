@@ -101,98 +101,105 @@ const OrderSchema = {
 // ===========================================================================
 
 void describe('dump / dumpJson failure modes', () => {
-  void it('dump on schema without $id throws SchemaError', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'https://bookstore.io' });
+  void it('GBU: dump error paths — no $id throws SchemaError, unregistered throws GraphError REF_UNRESOLVED, encoder throw propagates', () => {
+    // no $id
+    {
+      const jt = JsonTology.create({ 'baseIRI': 'https://bookstore.io' });
 
-    assert.throws(
-      () => {
-        return jt.dump(null as unknown as { '$id': string }, { 'name': 'x' });
-      },
-      (err: unknown) => {
-        return err instanceof SchemaError;
-      }
-    );
-  });
-
-  void it('dump on unregistered $id throws GraphError REF_UNRESOLVED', () => {
-    const jt = JsonTology.create({
-      'baseIRI': 'https://bookstore.io',
-      'schemas': [AuthorSchema] as const
-    });
-
-    assert.throws(
-      () => {
-        return jt.dump('https://bookstore.io/Unknown', { 'name': 'x' });
-      },
-      (err: unknown) => {
-        return err instanceof GraphError && (err).code === 'REF_UNRESOLVED';
-      }
-    );
-  });
-
-  void it('dump with a schema whose Transform encoder throws propagates the error', () => {
-    const ExplosiveSchema = Transform.create(
-      {
-        '$id': 'https://bookstore.io/Explosive',
-        'type': 'string'
-      } as const,
-      {
-        'decode': (raw: string) => {
-          return raw;
+      assert.throws(
+        () => {
+          return jt.dump(null as unknown as { '$id': string }, { 'name': 'x' });
         },
-        'encode': () => {
-          throw new Error('encoder boom');
+        (err: unknown) => {
+          return err instanceof SchemaError;
         }
-      }
-    );
-    const jt = JsonTology.create({
-      'baseIRI': 'https://bookstore.io',
-      'schemas': [ExplosiveSchema] as const
-    });
+      );
+    }
 
-    assert.throws(
-      () => {
-        return jt.dump(ExplosiveSchema.$id, 'value');
-      },
-      (err: unknown) => {
-        return err instanceof Error && err.message.includes('encoder boom');
-      }
-    );
+    // unregistered $id
+    {
+      const jt = JsonTology.create({
+        'baseIRI': 'https://bookstore.io',
+        'schemas': [AuthorSchema] as const
+      });
+
+      assert.throws(
+        () => {
+          return jt.dump('https://bookstore.io/Unknown', { 'name': 'x' });
+        },
+        (err: unknown) => {
+          return err instanceof GraphError && (err).code === 'REF_UNRESOLVED';
+        }
+      );
+    }
+
+    // encoder throw propagates
+    {
+      const ExplosiveSchema = Transform.create(
+        {
+          '$id': 'https://bookstore.io/Explosive',
+          'type': 'string'
+        } as const,
+        {
+          'decode': (raw: string) => {
+            return raw;
+          },
+          'encode': () => {
+            throw new Error('encoder boom');
+          }
+        }
+      );
+      const jt = JsonTology.create({
+        'baseIRI': 'https://bookstore.io',
+        'schemas': [ExplosiveSchema] as const
+      });
+
+      assert.throws(
+        () => {
+          return jt.dump(ExplosiveSchema.$id, 'value');
+        },
+        (err: unknown) => {
+          return err instanceof Error && err.message.includes('encoder boom');
+        }
+      );
+    }
   });
 
-  void it('dumpJson produces a valid JSON string for a registered schema', () => {
-    const jt = JsonTology.create({
-      'baseIRI': 'https://bookstore.io',
-      'schemas': [AuthorSchema] as const
-    });
-    const out = jt.dumpJson(AuthorSchema.$id, {
-      'id': 'a-1',
-      'name': 'Asimov'
-    });
+  void it('dumpJson produces valid JSON and throws TypeError for non-serializable BigInt', () => {
+    // valid JSON string output
+    {
+      const jt = JsonTology.create({
+        'baseIRI': 'https://bookstore.io',
+        'schemas': [AuthorSchema] as const
+      });
+      const out = jt.dumpJson(AuthorSchema.$id, {
+        'id': 'a-1',
+        'name': 'Asimov'
+      });
+      const parsed = JSON.parse(out) as Record<string, unknown>;
 
-    const parsed = JSON.parse(out) as Record<string, unknown>;
+      assert.equal(parsed.name, 'Asimov');
+      assert.equal(parsed.id, 'a-1');
+    }
 
-    assert.equal(parsed.name, 'Asimov');
-    assert.equal(parsed.id, 'a-1');
-  });
+    // BigInt throws TypeError
+    {
+      const BigIntSchema = {
+        '$id': 'https://bookstore.io/Bigint',
+        'type': 'number'
+      } as const;
+      const jt = JsonTology.create({
+        'baseIRI': 'https://bookstore.io',
+        'schemas': [BigIntSchema] as const
+      });
 
-  void it('dumpJson with BigInt value throws because JSON.stringify cannot encode it', () => {
-    const BigIntSchema = {
-      '$id': 'https://bookstore.io/Bigint',
-      'type': 'number'
-    } as const;
-    const jt = JsonTology.create({
-      'baseIRI': 'https://bookstore.io',
-      'schemas': [BigIntSchema] as const
-    });
-
-    assert.throws(
-      () => {
-        // BigInt deliberately violates the schema; documents engine behaviour.
-        return jt.dumpJson(BigIntSchema.$id, BigInt(10) as unknown as number);
-      },
-      TypeError
-    );
+      assert.throws(
+        () => {
+          return jt.dumpJson(BigIntSchema.$id, BigInt(10) as unknown as number);
+        },
+        TypeError
+      );
+    }
   });
 });
 
@@ -258,65 +265,64 @@ void describe('encode — isolated behaviour', () => {
     assert.equal(encoded, ' hi ');
   });
 
-  void it('encode with no transform attached returns the input unchanged (identity)', () => {
-    const jt = JsonTology.create({
-      'baseIRI': 'https://bookstore.io',
-      'schemas': [AuthorSchema] as const
-    });
-    const value = {
-      'id': 'a-1',
-      'name': 'Asimov'
-    };
-    // @ts-expect-error -- AuthorSchema has no transform; runtime falls through to identity.
-    const result = jt.encode(AuthorSchema as unknown, value);
+  void it('encode identity, decoder delegation, and cross-$ref decoder application', () => {
+    // identity: no transform → input unchanged
+    {
+      const jt = JsonTology.create({
+        'baseIRI': 'https://bookstore.io',
+        'schemas': [AuthorSchema] as const
+      });
+      const value = {
+        'id': 'a-1',
+        'name': 'Asimov'
+      };
+      // @ts-expect-error -- AuthorSchema has no transform; runtime falls through to identity.
+      const result = jt.encode(AuthorSchema as unknown, value);
 
-    assert.deepStrictEqual(result, value);
-  });
+      assert.deepStrictEqual(result, value);
+    }
 
-  void it('encode delegates to the Transform decoder when present', () => {
-    const jt = JsonTology.create({
-      'baseIRI': 'https://bookstore.io',
-      'schemas': [TimestampSchema] as const
-    });
-    const wire = jt.encode(TimestampSchema, new Date('2026-01-01T00:00:00.000Z'));
+    // delegates to Transform encoder
+    {
+      const jt = JsonTology.create({
+        'baseIRI': 'https://bookstore.io',
+        'schemas': [TimestampSchema] as const
+      });
+      const wire = jt.encode(TimestampSchema, new Date('2026-01-01T00:00:00.000Z'));
 
-    assert.equal(wire, '2026-01-01T00:00:00.000Z');
-  });
+      assert.equal(wire, '2026-01-01T00:00:00.000Z');
+    }
 
-  void it('parent with $ref to a transform-attached schema: instantiate applies decoder across the $ref boundary', () => {
-    // A cross-schema $ref to a Transform-attached schema applies the
-    // registered decoder at instantiate time, replacing the wire value
-    // with the decoded representation.
-    const ParentSchema = {
-      '$id': 'https://bookstore.io/EventLog',
-      'properties': {
-        'occurredAt': { '$ref': 'https://bookstore.io/Timestamp' },
-        'subject': { 'type': 'string' }
-      },
-      'required': [
-        'occurredAt',
-        'subject'
-      ],
-      'type': 'object'
-    } as const;
-    const jt = JsonTology.create({
-      'baseIRI': 'https://bookstore.io',
-      'schemas': [
-        TimestampSchema,
-        ParentSchema
-      ] as const
-    });
-    const input = {
-      'occurredAt': '2026-01-01T00:00:00.000Z',
-      'subject': 'login'
-    };
-    const decoded = jt.instantiate(ParentSchema.$id, input) as Record<string, unknown>;
+    // cross-$ref decoder applied at instantiate time
+    {
+      const ParentSchema = {
+        '$id': 'https://bookstore.io/EventLog',
+        'properties': {
+          'occurredAt': { '$ref': 'https://bookstore.io/Timestamp' },
+          'subject': { 'type': 'string' }
+        },
+        'required': [
+          'occurredAt',
+          'subject'
+        ],
+        'type': 'object'
+      } as const;
+      const jt = JsonTology.create({
+        'baseIRI': 'https://bookstore.io',
+        'schemas': [
+          TimestampSchema,
+          ParentSchema
+        ] as const
+      });
+      const decoded = jt.instantiate(ParentSchema.$id, {
+        'occurredAt': '2026-01-01T00:00:00.000Z',
+        'subject': 'login'
+      }) as Record<string, unknown>;
 
-    const occurredAt = decoded.occurredAt;
-
-    assert.equal(decoded.subject, 'login');
-    assert.ok(occurredAt instanceof Date);
-    assert.equal(occurredAt.toISOString(), '2026-01-01T00:00:00.000Z');
+      assert.equal(decoded.subject, 'login');
+      assert.ok(decoded.occurredAt instanceof Date);
+      assert.equal((decoded.occurredAt).toISOString(), '2026-01-01T00:00:00.000Z');
+    }
   });
 });
 
@@ -466,56 +472,38 @@ void describe('subschemaAt pointer errors', () => {
     'type': 'object'
   } as const;
 
-  const refScenarios: Array<{
-    'expectedCode': string;
-    'name': string;
-    'pointer': string;
-  }> = [
-    {
-      'expectedCode': 'POINTER_INVALID',
-      'name': 'invalid pointer (missing leading slash) throws POINTER_INVALID',
-      'pointer': 'properties/tag'
-    },
-    {
-      'expectedCode': 'POINTER_NOT_FOUND',
-      'name': 'pointer to non-existent path throws POINTER_NOT_FOUND',
-      'pointer': '/properties/missing'
-    }
-  ];
-
-  for (const scenario of refScenarios) {
-    void it(scenario.name, () => {
-      const jt = JsonTology.create({
-        'baseIRI': 'https://bookstore.io',
-        'schemas': [PARENT] as const
-      });
-
-      assert.throws(
-        () => {
-          return jt.subschemaAt(PARENT.$id, scenario.pointer);
-        },
-        (err: unknown) => {
-          return err instanceof GraphError && (err).code === scenario.expectedCode;
-        }
-      );
-    });
-  }
-
-  void it('subschemaAt with empty pointer returns the root schema', () => {
+  void it('GBU: invalid pointer throws, not-found throws, empty returns root, nested resolves', () => {
     const jt = JsonTology.create({
       'baseIRI': 'https://bookstore.io',
       'schemas': [PARENT] as const
     });
+
+    // invalid pointer (no leading slash)
+    assert.throws(
+      () => {
+        return jt.subschemaAt(PARENT.$id, 'properties/tag');
+      },
+      (err: unknown) => {
+        return err instanceof GraphError && (err).code === 'POINTER_INVALID';
+      }
+    );
+
+    // pointer to non-existent path
+    assert.throws(
+      () => {
+        return jt.subschemaAt(PARENT.$id, '/properties/missing');
+      },
+      (err: unknown) => {
+        return err instanceof GraphError && (err).code === 'POINTER_NOT_FOUND';
+      }
+    );
+
+    // empty pointer returns root
     const root = jt.subschemaAt(PARENT.$id, '');
 
     assert.equal(root.$id, `${PARENT.$id}#`);
-  });
 
-  void it('subschemaAt resolves a nested pointer to a sub-schema', () => {
-    const jt = JsonTology.create({
-      'baseIRI': 'https://bookstore.io',
-      'schemas': [PARENT] as const
-    });
+    // nested pointer resolves sub-schema
     const inner = jt.subschemaAt(PARENT.$id, '/properties/inner');
 
     assert.equal((inner as { 'type': string }).type, 'object');
@@ -557,61 +545,47 @@ void describe('static counterparts — failure modes', () => {
     );
   });
 
-  void it('JsonTology.toQuads with Skolemize.wellKnownGenid produces well-known IRIs', () => {
-    const quads = JsonTology.toQuads(
-      AuthorSchema,
-      { 'name': 'Asimov' },
-      { 'iriFor': Skolemize.wellKnownGenid('https://bookstore.io') }
-    );
+  void it('static methods: toQuads wellKnown IRIs, validate/is/instantiate ephemeral, REF_UNRESOLVED lazy, subschemaAt, toSchema, dump encoder throw', () => {
+    // toQuads with wellKnownGenid
+    {
+      const quads = JsonTology.toQuads(AuthorSchema, { 'name': 'Asimov' }, { 'iriFor': Skolemize.wellKnownGenid('https://bookstore.io') });
 
-    assert.ok(quads.length > 0);
-    for (const quad of quads) {
-      assert.match(quad.subject, /\/\.well-known\/genid\//u);
-    }
-  });
-
-  void it('JsonTology.validate, .is, .instantiate work without any prior .create() call', () => {
-    // Each call here is an ephemeral registry — no shared instance state.
-    const errors = JsonTology.validate(AuthorSchema, { 'name': 'Asimov' });
-
-    assert.equal(errors.length, 0);
-
-    const ok = JsonTology.is(AuthorSchema, { 'name': 'Asimov' });
-
-    assert.equal(ok, true);
-
-    const value = JsonTology.instantiate(AuthorSchema, { 'name': 'Asimov' });
-
-    assert.deepStrictEqual(value, { 'name': 'Asimov' });
-  });
-
-  void it('validate against an unregistered cross-schema $ref throws GraphError REF_UNRESOLVED on first use', () => {
-    const Standalone = {
-      '$id': 'urn:test:Standalone',
-      'properties': { 'ref': { '$ref': 'urn:test:NotInRegistry' } },
-      'type': 'object'
-    } as const;
-
-    // Registration must NOT throw — schemas can register in any order, and
-    // forward refs across schemas are common. The check fires lazily on first
-    // use so unresolvable cross-schema refs surface instead of silently
-    // passing.
-    const jt = JsonTology.create({
-      'baseIRI': 'urn:test:',
-      'schemas': [Standalone] as const
-    });
-
-    assert.throws(
-      () => {
-        return jt.validate(Standalone.$id, { 'ref': { 'x': 1 } });
-      },
-      (err: unknown) => {
-        return err instanceof GraphError && (err).code === 'REF_UNRESOLVED';
+      assert.ok(quads.length > 0);
+      for (const quad of quads) {
+        assert.match(quad.subject, /\/\.well-known\/genid\//u);
       }
-    );
-  });
+    }
 
-  void it('JsonTology.subschemaAt with invalid pointer throws GraphError', () => {
+    // validate, is, instantiate without prior create()
+    {
+      assert.equal(JsonTology.validate(AuthorSchema, { 'name': 'Asimov' }).length, 0);
+      assert.equal(JsonTology.is(AuthorSchema, { 'name': 'Asimov' }), true);
+      assert.deepStrictEqual(JsonTology.instantiate(AuthorSchema, { 'name': 'Asimov' }), { 'name': 'Asimov' });
+    }
+
+    // unregistered cross-schema $ref throws REF_UNRESOLVED lazily on first use
+    {
+      const Standalone = {
+        '$id': 'urn:test:Standalone',
+        'properties': { 'ref': { '$ref': 'urn:test:NotInRegistry' } },
+        'type': 'object'
+      } as const;
+      const jt = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'schemas': [Standalone] as const
+      });
+
+      assert.throws(
+        () => {
+          return jt.validate(Standalone.$id, { 'ref': { 'x': 1 } });
+        },
+        (err: unknown) => {
+          return err instanceof GraphError && (err).code === 'REF_UNRESOLVED';
+        }
+      );
+    }
+
+    // subschemaAt with invalid pointer throws GraphError
     assert.throws(
       () => {
         return JsonTology.subschemaAt(AuthorSchema, 'no-leading-slash');
@@ -620,39 +594,41 @@ void describe('static counterparts — failure modes', () => {
         return err instanceof GraphError;
       }
     );
-  });
 
-  void it('JsonTology.toSchema returns the registered schema as a graph-derived object', () => {
-    const result = JsonTology.toSchema(AuthorSchema);
+    // toSchema returns graph-derived object
+    {
+      const result = JsonTology.toSchema(AuthorSchema);
 
-    assert.ok(result !== undefined);
-    assert.equal((result as { '$id': string }).$id, AuthorSchema.$id);
-  });
+      assert.ok(result !== undefined);
+      assert.equal((result as { '$id': string }).$id, AuthorSchema.$id);
+    }
 
-  void it('JsonTology.dump on schema with throwing encoder propagates the error', () => {
-    const ExplosiveSchema = Transform.create(
-      {
-        '$id': 'urn:test:StaticExplosive',
-        'type': 'string'
-      } as const,
-      {
-        'decode': (raw: string) => {
-          return raw;
-        },
-        'encode': () => {
-          throw new Error('static encoder boom');
+    // dump with throwing encoder propagates error
+    {
+      const ExplosiveSchema = Transform.create(
+        {
+          '$id': 'urn:test:StaticExplosive',
+          'type': 'string'
+        } as const,
+        {
+          'decode': (raw: string) => {
+            return raw;
+          },
+          'encode': () => {
+            throw new Error('static encoder boom');
+          }
         }
-      }
-    );
+      );
 
-    assert.throws(
-      () => {
-        return JsonTology.dump(ExplosiveSchema, 'value');
-      },
-      (err: unknown) => {
-        return err instanceof Error && err.message.includes('static encoder boom');
-      }
-    );
+      assert.throws(
+        () => {
+          return JsonTology.dump(ExplosiveSchema, 'value');
+        },
+        (err: unknown) => {
+          return err instanceof Error && err.message.includes('static encoder boom');
+        }
+      );
+    }
   });
 });
 
@@ -674,135 +650,129 @@ void describe('Computed / Invariant lifecycle', () => {
     'type': 'object'
   } as const;
 
-  void it('addComputed then removeComputed: derived field disappears from output', () => {
-    const jt = JsonTology.create({
-      'baseIRI': 'urn:lifecycle:',
-      'computeds': {
-        'urn:lifecycle:Computed': {
-          'derived': (data: Record<string, unknown>) => {
-            return (data.value as number) * 2;
+  void it('GBU: addComputed/removeComputed, addComputed override, invariant throw, removeInvariant no-op, default-then-computed', () => {
+    // addComputed then removeComputed
+    {
+      const jt = JsonTology.create({
+        'baseIRI': 'urn:lifecycle:',
+        'computeds': {
+          'urn:lifecycle:Computed': {
+            'derived': (data: Record<string, unknown>) => {
+              return (data.value as number) * 2;
+            }
           }
-        }
-      },
-      'schemas': [ComputedSchema] as const
-    });
-
-    const before = jt.instantiate(ComputedSchema.$id, { 'value': 3 }) as Record<string, unknown>;
-
-    assert.equal(before.derived, 6);
-
-    jt.removeComputed(ComputedSchema.$id, 'derived');
-
-    const after = jt.instantiate(ComputedSchema.$id, { 'value': 3 }) as Record<string, unknown>;
-
-    assert.ok(!('derived' in after) || after.derived === undefined);
-  });
-
-  void it('addComputed twice for the same key — second registration overrides the first', () => {
-    const jt = JsonTology.create({
-      'baseIRI': 'urn:lifecycle:',
-      'computeds': {
-        'urn:lifecycle:Computed': {
-          'derived': () => {
-            return 1;
-          }
-        }
-      },
-      'schemas': [ComputedSchema] as const
-    });
-
-    jt.addComputed(ComputedSchema.$id, 'derived', () => {
-      return 99;
-    });
-
-    const result = jt.instantiate(ComputedSchema.$id, { 'value': 1 }) as Record<string, unknown>;
-
-    assert.equal(result.derived, 99);
-  });
-
-  void it('addInvariant whose function throws is wrapped in InstantiationError', () => {
-    const Schema = {
-      '$id': 'urn:lifecycle:InvariantThrow',
-      'properties': { 'name': { 'type': 'string' } },
-      'required': ['name'],
-      'type': 'object'
-    } as const;
-    const jt = JsonTology.create({
-      'baseIRI': 'urn:lifecycle:',
-      'schemas': [Schema] as const
-    });
-
-    jt.addInvariant(Schema.$id, {
-      'fn': () => {
-        throw new Error('invariant boom');
-      },
-      'name': 'thrower'
-    });
-
-    assert.throws(
-      () => {
-        return jt.instantiate(Schema.$id, { 'name': 'x' });
-      },
-      (err: unknown) => {
-        return err instanceof Error && /invariant boom|invariant/u.test(err.message);
-      }
-    );
-  });
-
-  void it('removeInvariant for a non-existent name is a no-op', () => {
-    const Schema = {
-      '$id': 'urn:lifecycle:NoOp',
-      'properties': { 'name': { 'type': 'string' } },
-      'required': ['name'],
-      'type': 'object'
-    } as const;
-    const jt = JsonTology.create({
-      'baseIRI': 'urn:lifecycle:',
-      'schemas': [Schema] as const
-    });
-
-    assert.doesNotThrow(() => {
-      jt.removeInvariant(Schema.$id, 'never-registered');
-    });
-
-    // Validation still passes — no invariants present.
-    const errors = jt.validate(Schema.$id, { 'name': 'x' });
-
-    assert.equal(errors.length, 0);
-  });
-
-  void it('computed depending on a defaulted field: default applies first, then computed runs', () => {
-    const Schema = {
-      '$id': 'urn:lifecycle:DefaultThenCompute',
-      'properties': {
-        'base': {
-          'default': 10,
-          'type': 'number'
         },
-        'doubled': {
-          'jt:computed': true,
-          'type': 'number'
-        }
-      },
-      'type': 'object'
-    } as const;
-    const jt = JsonTology.create({
-      'baseIRI': 'urn:lifecycle:',
-      'computeds': {
-        'urn:lifecycle:DefaultThenCompute': {
-          'doubled': (data: Record<string, unknown>) => {
-            return (data.base as number) * 2;
+        'schemas': [ComputedSchema] as const
+      });
+      const before = jt.instantiate(ComputedSchema.$id, { 'value': 3 }) as Record<string, unknown>;
+
+      assert.equal(before.derived, 6, 'computed field present before removeComputed');
+      jt.removeComputed(ComputedSchema.$id, 'derived');
+      const after = jt.instantiate(ComputedSchema.$id, { 'value': 3 }) as Record<string, unknown>;
+
+      assert.ok(!('derived' in after) || after.derived === undefined, 'derived absent after removeComputed');
+    }
+
+    // addComputed override
+    {
+      const jt = JsonTology.create({
+        'baseIRI': 'urn:lifecycle:',
+        'computeds': {
+          'urn:lifecycle:Computed': {
+            'derived': () => {
+              return 1;
+            }
           }
+        },
+        'schemas': [ComputedSchema] as const
+      });
+
+      jt.addComputed(ComputedSchema.$id, 'derived', () => {
+        return 99;
+      });
+      assert.equal((jt.instantiate(ComputedSchema.$id, { 'value': 1 }) as Record<string, unknown>).derived, 99, 'second addComputed overrides first');
+    }
+
+    // addInvariant that throws
+    {
+      const Schema = {
+        '$id': 'urn:lifecycle:InvariantThrow',
+        'properties': { 'name': { 'type': 'string' } },
+        'required': ['name'],
+        'type': 'object'
+      } as const;
+      const jt = JsonTology.create({
+        'baseIRI': 'urn:lifecycle:',
+        'schemas': [Schema] as const
+      });
+
+      jt.addInvariant(Schema.$id, {
+        'fn': () => {
+          throw new Error('invariant boom');
+        },
+        'name': 'thrower'
+      });
+      assert.throws(
+        () => {
+          return jt.instantiate(Schema.$id, { 'name': 'x' });
+        },
+        (err: unknown) => {
+          return err instanceof Error && /invariant boom|invariant/u.test(err.message);
         }
-      },
-      'schemas': [Schema] as const
-    });
+      );
+    }
 
-    // No 'base' in input — default 10 should be applied; computed should see 10.
-    const result = jt.instantiate(Schema.$id, {}) as Record<string, unknown>;
+    // removeInvariant no-op
+    {
+      const Schema = {
+        '$id': 'urn:lifecycle:NoOp',
+        'properties': { 'name': { 'type': 'string' } },
+        'required': ['name'],
+        'type': 'object'
+      } as const;
+      const jt = JsonTology.create({
+        'baseIRI': 'urn:lifecycle:',
+        'schemas': [Schema] as const
+      });
 
-    assert.equal(result.base, 10);
-    assert.equal(result.doubled, 20);
+      assert.doesNotThrow(() => {
+        jt.removeInvariant(Schema.$id, 'never-registered');
+      });
+      assert.equal(jt.validate(Schema.$id, { 'name': 'x' }).length, 0, 'validation still passes after no-op removeInvariant');
+    }
+
+    // default applies first, then computed
+    {
+      const Schema = {
+        '$id': 'urn:lifecycle:DefaultThenCompute',
+        'properties': {
+          'base': {
+            'default': 10,
+            'type': 'number'
+          },
+          'doubled': {
+            'jt:computed': true,
+            'type': 'number'
+          }
+        },
+        'type': 'object'
+      } as const;
+      const jt = JsonTology.create({
+        'baseIRI': 'urn:lifecycle:',
+        'computeds': {
+          'urn:lifecycle:DefaultThenCompute': {
+            'doubled': (data: Record<string, unknown>) => {
+              return (data.base as number) * 2;
+            }
+          }
+        },
+        'schemas': [Schema] as const
+      });
+      const result = jt.instantiate(Schema.$id, {}) as Record<string, unknown>;
+
+      assert.equal(result.base, 10, 'default applied');
+      assert.equal(result.doubled, 20, 'computed ran on defaulted value');
+    }
   });
 });
 
@@ -865,38 +835,38 @@ void describe('Mutual recursion graphs', () => {
 // ===========================================================================
 
 void describe('Mixed-tuple registration order — order independence', () => {
-  void it('order [Order, Customer]: cross-schema $ref resolves regardless of array position', () => {
-    const jt = JsonTology.create({
-      'baseIRI': 'https://bookstore.io',
-      'schemas': [
-        OrderSchema,
-        CustomerSchema
-      ] as const
-    });
-    const result = jt.instantiate(OrderSchema.$id, {
-      'customer': { 'name': 'Alice' },
-      'orderId': 'o-1'
-    }) as Record<string, unknown>;
+  void it('cross-schema $ref resolves regardless of schema registration order', () => {
+    for (const [
+      schemas,
+      orderId
+    ] of [
+        [
+          [
+            OrderSchema,
+            CustomerSchema
+          ],
+          'o-1'
+        ],
+        [
+          [
+            CustomerSchema,
+            OrderSchema
+          ],
+          'o-2'
+        ]
+      ] as const) {
+      const jt = JsonTology.create({
+        'baseIRI': 'https://bookstore.io',
+        'schemas': schemas as Array<typeof OrderSchema>
+      });
+      const result = jt.instantiate(OrderSchema.$id, {
+        'customer': { 'name': 'Alice' },
+        'orderId': orderId
+      }) as Record<string, unknown>;
 
-    assert.equal(result.orderId, 'o-1');
-    assert.equal((result.customer as Record<string, unknown>).name, 'Alice');
-  });
-
-  void it('order [Customer, Order]: same outcome — order does not matter', () => {
-    const jt = JsonTology.create({
-      'baseIRI': 'https://bookstore.io',
-      'schemas': [
-        CustomerSchema,
-        OrderSchema
-      ] as const
-    });
-    const result = jt.instantiate(OrderSchema.$id, {
-      'customer': { 'name': 'Alice' },
-      'orderId': 'o-2'
-    }) as Record<string, unknown>;
-
-    assert.equal(result.orderId, 'o-2');
-    assert.equal((result.customer as Record<string, unknown>).name, 'Alice');
+      assert.equal(result.orderId, orderId, `orderId ${orderId} preserved`);
+      assert.equal((result.customer as Record<string, unknown>).name, 'Alice', 'customer.name preserved');
+    }
   });
 });
 
@@ -912,32 +882,31 @@ void describe('Type-cast behaviour with enableTypeCast', () => {
     'type': 'object'
   } as const;
 
-  void it('default registry rejects "true" string for boolean field with InstantiationError', () => {
-    const jt = JsonTology.create({
+  void it('GBU: "true" string rejected by default, coerced to boolean true with enableTypeCast', () => {
+    // default: reject string for boolean
+    const jtDefault = JsonTology.create({
       'baseIRI': 'urn:typecast:',
       'schemas': [FlagSchema] as const
     });
 
     assert.throws(
       () => {
-        return jt.instantiate(FlagSchema.$id, { 'active': 'true' });
+        return jtDefault.instantiate(FlagSchema.$id, { 'active': 'true' });
       },
       (err: unknown) => {
         return err instanceof InstantiationError;
       }
     );
-  });
 
-  void it('enableTypeCast: true coerces "true" to boolean true', () => {
-    const jt = JsonTology.create({
+    // enableTypeCast: coerce to boolean
+    const jtCast = JsonTology.create({
       'baseIRI': 'urn:typecast:',
       'enableTypeCast': true,
       'schemas': [FlagSchema] as const
     });
+    const result = jtCast.instantiate(FlagSchema.$id, { 'active': 'true' }) as Record<string, unknown>;
 
-    const result = jt.instantiate(FlagSchema.$id, { 'active': 'true' }) as Record<string, unknown>;
-
-    assert.equal(result.active, true);
+    assert.equal(result.active, true, '"true" coerced to boolean true');
   });
 });
 
@@ -1133,7 +1102,7 @@ void describe('Mixed $defs + cross-schema $ref', () => {
     'type': 'object'
   } as const;
 
-  void it('instantiate accepts data using both $defs and cross-schema $ref', () => {
+  void it('GBU: instantiate accepts $defs+cross-ref, rejects on constraint fail, toSchema preserves both ref forms', () => {
     const jt = JsonTology.create({
       'baseIRI': 'urn:mixed:',
       'schemas': [
@@ -1142,6 +1111,7 @@ void describe('Mixed $defs + cross-schema $ref', () => {
       ] as const
     });
 
+    // valid data
     const result = jt.instantiate(Mixed.$id, {
       'local': { 'count': 5 },
       'tag': 'demo-tag'
@@ -1151,17 +1121,8 @@ void describe('Mixed $defs + cross-schema $ref', () => {
       'local': { 'count': 5 },
       'tag': 'demo-tag'
     });
-  });
 
-  void it('instantiate rejects data when cross-schema $ref constraint fails', () => {
-    const jt = JsonTology.create({
-      'baseIRI': 'urn:mixed:',
-      'schemas': [
-        ExternalTag,
-        Mixed
-      ] as const
-    });
-
+    // rejects when cross-schema $ref constraint fails
     assert.throws(
       () => {
         return jt.instantiate(Mixed.$id, {
@@ -1173,25 +1134,13 @@ void describe('Mixed $defs + cross-schema $ref', () => {
         return err instanceof InstantiationError;
       }
     );
-  });
 
-  void it('toSchema preserves both $defs and cross-schema $ref forms', () => {
-    const jt = JsonTology.create({
-      'baseIRI': 'urn:mixed:',
-      'schemas': [
-        ExternalTag,
-        Mixed
-      ] as const
-    });
-
+    // toSchema preserves both ref forms
     const reconstructed = jt.toSchema(Mixed.$id) as Record<string, unknown>;
     const properties = reconstructed.properties as Record<string, Record<string, unknown>>;
 
-    // Cross-schema ref preserved
-    assert.equal(properties.tag.$ref, 'urn:mixed:Tag');
-
-    // Local $defs ref preserved (string form, pointing into $defs)
-    assert.ok(typeof properties.local.$ref === 'string');
-    assert.match(properties.local.$ref, /\$defs\/Local|Doc/u);
+    assert.equal(properties.tag.$ref, 'urn:mixed:Tag', 'cross-schema ref preserved');
+    assert.ok(typeof properties.local.$ref === 'string', 'local $defs ref preserved as string');
+    assert.match(properties.local.$ref, /\$defs\/Local|Doc/u, 'local ref points into $defs');
   });
 });

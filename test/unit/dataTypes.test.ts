@@ -613,32 +613,39 @@ import {
   });
 
   void describe('deepFreeze', { 'concurrency': true }, () => {
-    void it('freezes the top-level object', () => {
-      const obj = { 'a': 1 };
+    void it('GBU: top-level frozen, nested frozen, deeply-nested frozen, same-reference returned', () => {
+      // Good: top-level object
+      const flat = { 'a': 1 };
 
-      deepFreeze(obj);
-      assert.equal(Object.isFrozen(obj), true);
-    });
+      deepFreeze(flat);
+      assert.equal(Object.isFrozen(flat), true, 'top-level object is frozen');
 
-    void it('freezes nested objects', () => {
-      const obj = { 'nested': { 'value': 42 } };
+      // Good: nested object
+      const nested = { 'nested': { 'value': 42 } };
 
-      deepFreeze(obj);
-      assert.equal(Object.isFrozen(obj.nested), true);
-    });
+      deepFreeze(nested);
+      assert.equal(Object.isFrozen(nested.nested), true, 'nested object is frozen');
 
-    void it('freezes deeply nested structures', () => {
-      const obj = { 'a': { 'b': { 'c': 3 } } };
+      // Good: deeply nested structure
+      const deep = { 'a': { 'b': { 'c': 3 } } };
 
-      deepFreeze(obj);
-      assert.equal(Object.isFrozen(obj.a.b), true);
-    });
+      deepFreeze(deep);
+      assert.equal(Object.isFrozen(deep.a.b), true, 'deeply nested object is frozen');
 
-    void it('returns the same reference', () => {
-      const obj = { 'x': 1 };
-      const result = deepFreeze(obj);
+      // Ugly: same reference returned
+      const ref = { 'x': 1 };
+      const result = deepFreeze(ref);
 
-      assert.equal(result, obj);
+      assert.equal(result, ref, 'deepFreeze returns the same reference');
+
+      // Ugly: already-frozen object is a no-op
+      const alreadyFrozen = Object.freeze({ 'y': 2 });
+
+      assert.doesNotThrow(() => {
+        deepFreeze(alreadyFrozen);
+      }, 'deepFreeze on already-frozen object does not throw');
+
+      assert.equal(Object.isFrozen(alreadyFrozen), true, 'already-frozen stays frozen');
     });
   });
 }
