@@ -26,7 +26,8 @@ function assertParityScenarios(
     data, name, valid
   } of scenarios) {
     const validateResult = registry.validate(schemaId, data);
-    const errorsResult = registry.validate(schemaId, data);
+    const schemaObj = registry.registry.get(schemaId) as Record<string, unknown>;
+    const errorsResult = registry.registry.engine(schemaObj).errors(data);
 
     assert.equal(validateResult.length === 0, valid, `validate: ${name}`);
     assert.equal(errorsResult.length === 0, valid, `errors: ${name}`);
@@ -599,7 +600,7 @@ void describe('compiled/interpreted parity', () => {
           }
         },
         'name': 'child missing required label (both engines agree)',
-        'valid': true
+        'valid': false
       }
     ];
 

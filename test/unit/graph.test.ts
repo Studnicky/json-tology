@@ -4599,3 +4599,93 @@ void describe('GraphEngine self-reference resolution (parity regression)', () =>
   });
 });
 
+// ===========================================================================
+// GraphEngine.resolveRef — embedded $id resolution on direct-engine path
+// Regression for: REF_UNRESOLVED thrown when a schema's $ref pointed at an
+// embedded $id declared inside $defs (or any nested sub-schema) and the engine
+// was obtained via registry.engine(schemaObj). The compiled fast-path was
+// unaffected; the engine path now performs the same embedded-id walk at
+// construction time so both paths agree.
+// ===========================================================================
+
+void describe('GraphEngine embedded $id resolution (parity regression)', () => {
+  // Schema with a $defs entry that carries its own $id.
+  // The outer schema's "root" property $refs the embedded $id.
+  const TreeSchema = {
+    '$defs': {
+      'TreeNode': {
+        '$id': 'https://parity.test/tree-node',
+        'properties': {
+          'children': {
+            'items': { '$ref': 'https://parity.test/tree-node' },
+            'type': 'array'
+          },
+          'label': { 'type': 'string' }
+        },
+        'required': ['label'],
+        'type': 'object'
+      }
+    },
+    '$id': 'https://parity.test/tree',
+    'properties': { 'root': { '$ref': 'https://parity.test/tree-node' } },
+    'required': ['root'],
+    'type': 'object'
+  } as const;
+
+  const validData = {
+    'root': {
+      'children': [{ 'label': 'leaf' }],
+      'label': 'root'
+    }
+  };
+
+  // label must be string; 42 violates the embedded TreeNode schema
+  const invalidData = {
+    'root': {
+      'children': [{ 'label': 42 }],
+      'label': 'root'
+    }
+  };
+
+  void it('engine obtained via registry.engine() resolves $ref to embedded $id without throwing', () => {
+    const registry = new SchemaRegistry();
+
+    registry.register(TreeSchema);
+
+    const engine = registry.engine(TreeSchema);
+    const errors = engine.errors(validData);
+
+    assert.equal(errors.length, 0, `expected no errors but got: ${errors.map((err) => {
+      return err.message;
+    }).join(', ')}`);
+  });
+
+  void it('engine rejects invalid data against the embedded $id schema', () => {
+    const registry = new SchemaRegistry();
+
+    registry.register(TreeSchema);
+
+    const engine = registry.engine(TreeSchema);
+    const errors = engine.errors(invalidData);
+
+    assert.ok(errors.length > 0, 'expected at least one validation error for invalid nested node');
+  });
+
+  void it('error path includes the nested field that failed', () => {
+    const registry = new SchemaRegistry();
+
+    registry.register(TreeSchema);
+
+    const engine = registry.engine(TreeSchema);
+    const errors = engine.errors(invalidData);
+
+    assert.ok(
+      errors.some((err) => {
+        return err.path.includes('children') || err.path.includes('label');
+      }),
+      `expected an error path containing "children" or "label", got: ${errors.map((err) => {
+        return err.path;
+      }).join(', ')}`
+    );
+  });
+});
