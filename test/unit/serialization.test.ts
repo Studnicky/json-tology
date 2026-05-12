@@ -17,10 +17,8 @@ import {
 import {
   describe, it
 } from 'node:test';
-// SerializerUtils ensureArray/normalizeArrays are JSON-LD post-processing internals not surfaced by the public API.
-import {
-  ensureArray, normalizeArrays
-} from '../../src/modules/ontology/SerializerUtils.js';
+// ensureArray/normalizeArrays are JSON-LD post-processing statics on BaseGraphSerializer.
+import { BaseGraphSerializer } from '../../src/modules/ontology/BaseGraphSerializer.js';
 import {
   JsonTology, Transform
 } from '../../src/index.js';
@@ -561,14 +559,14 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
 // ===========================================================================
 {
 // ---------------------------------------------------------------------------
-// ensureArray()
+// BaseGraphSerializer.ensureArray()
 // ---------------------------------------------------------------------------
 
-  void describe('ensureArray()', () => {
+  void describe('BaseGraphSerializer.ensureArray()', () => {
     void it('wraps a single value in an array', () => {
       const node: Record<string, unknown> = { 'label': 'Person' };
 
-      ensureArray(node, 'label');
+      BaseGraphSerializer.ensureArray(node, 'label');
       assert.deepEqual(node.label, ['Person']);
     });
 
@@ -580,7 +578,7 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
         ]
       };
 
-      ensureArray(node, 'label');
+      BaseGraphSerializer.ensureArray(node, 'label');
       assert.deepEqual(node.label, [
         'Person',
         'Human'
@@ -590,7 +588,7 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
     void it('no-op when key is undefined', () => {
       const node: Record<string, unknown> = { 'label': 'Person' };
 
-      ensureArray(node, 'missing');
+      BaseGraphSerializer.ensureArray(node, 'missing');
       assert.equal(node.missing, undefined);
       assert.equal(node.label, 'Person');
     });
@@ -598,20 +596,20 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
     void it('handles empty object', () => {
       const node: Record<string, unknown> = {};
 
-      ensureArray(node, 'any');
+      BaseGraphSerializer.ensureArray(node, 'any');
       assert.deepEqual(node, {});
     });
   });
 
   // ---------------------------------------------------------------------------
-  // normalizeArrays()
+  // BaseGraphSerializer.normalizeArrays()
   // ---------------------------------------------------------------------------
 
-  void describe('normalizeArrays()', () => {
+  void describe('BaseGraphSerializer.normalizeArrays()', () => {
     void it('wraps value at specified key in array', () => {
       const node: Record<string, unknown> = { 'label': 'Person' };
 
-      normalizeArrays(node, ['label']);
+      BaseGraphSerializer.normalizeArrays(node, ['label']);
       assert.deepEqual(node.label, ['Person']);
     });
 
@@ -621,7 +619,7 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
         'label': 'Person'
       };
 
-      normalizeArrays(node, [
+      BaseGraphSerializer.normalizeArrays(node, [
         'label',
         'comment'
       ]);
@@ -635,7 +633,7 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
         'label': 'Root'
       };
 
-      normalizeArrays(node, ['label']);
+      BaseGraphSerializer.normalizeArrays(node, ['label']);
       assert.deepEqual(node.label, ['Root']);
       assert.deepEqual((node.child as Record<string, unknown>).label, ['Nested']);
     });
@@ -648,7 +646,7 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
         ]
       };
 
-      normalizeArrays(node, ['label']);
+      BaseGraphSerializer.normalizeArrays(node, ['label']);
       assert.deepEqual((node.items as Array<Record<string, unknown>>)[0].label, ['First']);
       assert.deepEqual((node.items as Array<Record<string, unknown>>)[1].label, ['Second']);
     });
@@ -659,20 +657,20 @@ import { quadsToJsonLd } from '../../src/modules/rdf/JsonLdFormatter.js';
         'name': 'Alice'
       };
 
-      normalizeArrays(node, ['label']);
+      BaseGraphSerializer.normalizeArrays(node, ['label']);
       assert.deepEqual(node.label, ['Person']);
       assert.equal(node.name, 'Alice');
     });
 
     void it('handles null input gracefully', () => {
-      normalizeArrays(null, ['label']);
+      BaseGraphSerializer.normalizeArrays(null, ['label']);
     // no throw — void function returns silently
     });
 
     void it('handles primitive input gracefully', () => {
-      normalizeArrays('string', ['label']);
-      normalizeArrays(42, ['label']);
-      normalizeArrays(true, ['label']);
+      BaseGraphSerializer.normalizeArrays('string', ['label']);
+      BaseGraphSerializer.normalizeArrays(42, ['label']);
+      BaseGraphSerializer.normalizeArrays(true, ['label']);
     // no throw — void function returns silently
     });
   });

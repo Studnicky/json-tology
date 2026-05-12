@@ -2,7 +2,7 @@
  * Types Module
  */
 
-export type * from './BaseTypes.js';
+export * from './BaseTypes.js';
 export type * from './Brand.js';
 export type * from './Compose.js';
 export type * from './Computed.js';

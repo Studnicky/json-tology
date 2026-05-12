@@ -29,7 +29,7 @@ export interface RestrictionDescriptorInterface {
 
 export type RestrictionRefType = Readonly<Record<'~jt:restriction', RestrictionDescriptorInterface>>;
 
-export const RESTRICTION_TAG = '~jt:restriction';
+export { RESTRICTION_TAG } from '../constants/RESTRICTION.js';
 
 /**
  * Type guard — narrows an unknown value to a `RestrictionRefType`.
@@ -38,6 +38,6 @@ export function isRestrictionRef(value: unknown): value is RestrictionRefType {
   return (
     typeof value === 'object'
     && value !== null
-    && RESTRICTION_TAG in value
+    && '~jt:restriction' in value
   );
 }

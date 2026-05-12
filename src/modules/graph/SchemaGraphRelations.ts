@@ -3,9 +3,7 @@ import type {
   SchemaGraphSemanticsInterface
 } from '../../interfaces/SchemaGraph.js';
 import { SchemaIri } from './SchemaIri.js';
-import {
-  resolveSingleXsdType, resolveXsdType
-} from '../../constants/XSD_MAPS.js';
+import { XsdTypes } from '../rdf/XsdTypes.js';
 import type { GraphAccessorInterface } from '../../interfaces/GraphAccessor.js';
 import {
   isDefsEntryPointer, isPropertyPointer,
@@ -26,7 +24,7 @@ function resolveNodeRef(
     return graph.resolveRefId(nodeSem.ref);
   }
 
-  const xsd = resolveXsdType(nodeSem);
+  const xsd = XsdTypes.resolve(nodeSem);
 
   if (xsd !== null) {
     return xsd;
@@ -177,7 +175,7 @@ function pushFormatPatternRelations(
     return;
   }
 
-  const xsd = resolveXsdType(sem);
+  const xsd = XsdTypes.resolve(sem);
 
   if (xsd !== null && xsd !== XSD.string) {
     return;
@@ -327,7 +325,7 @@ function pushUnionTypeRelations(
   const resolved: string[] = [];
 
   for (const typeName of nonNullTypes) {
-    const xsd = resolveSingleXsdType(typeName, sem.format === undefined ? undefined : { 'format': sem.format });
+    const xsd = XsdTypes.resolveSingle(typeName, sem.format === undefined ? undefined : { 'format': sem.format });
 
     if (xsd !== null) {
       resolved.push(xsd);
@@ -681,7 +679,7 @@ export function extractRelations(
   }
 
   if (sem.ref === undefined) {
-    const xsd = resolveXsdType(sem);
+    const xsd = XsdTypes.resolve(sem);
 
     if (xsd !== null) {
       relations.push({
