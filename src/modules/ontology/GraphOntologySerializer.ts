@@ -4,7 +4,6 @@ import { projectOwlGraph } from '../rdf/OwlProjection.js';
 import { RDFS_SUB_CLASS_OF_IRI } from '../../constants/PREFIXES.js';
 import { OWL_CORE_PREDICATES } from '../../constants/ONTOLOGY_PREDICATES.js';
 import { BaseGraphSerializer } from './BaseGraphSerializer.js';
-import { ensureArray } from './SerializerUtils.js';
 
 export class GraphOntologySerializer extends BaseGraphSerializer {
   protected corePredicates(): ReadonlySet<string> {
@@ -13,7 +12,7 @@ export class GraphOntologySerializer extends BaseGraphSerializer {
 
   protected postProcessNodes(nodes: Array<Record<string, unknown>>): void {
     for (const node of nodes) {
-      ensureArray(node, RDFS_SUB_CLASS_OF_IRI);
+      BaseGraphSerializer.ensureArray(node, RDFS_SUB_CLASS_OF_IRI);
     }
   }
 

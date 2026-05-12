@@ -18,7 +18,7 @@ import {
   DASH, DCT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
 import { GraphError } from '../../errors/GraphError.js';
-import { resolveSingleXsdType } from '../../constants/XSD_MAPS.js';
+import { XsdTypes } from './XsdTypes.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { QuadFactory } from './QuadFactory.js';
 import {
@@ -468,7 +468,7 @@ function typedLiteralObject(value: unknown): null | Record<string, unknown> {
 
   if (jsType === 'string' || jsType === 'boolean') {
     return {
-      '@type': resolveSingleXsdType(String(jsType)),
+      '@type': XsdTypes.resolveSingle(String(jsType)),
       '@value': value
     };
   }
@@ -477,7 +477,7 @@ function typedLiteralObject(value: unknown): null | Record<string, unknown> {
     const schemaType = Number.isInteger(value) ? 'integer' : 'number';
 
     return {
-      '@type': resolveSingleXsdType(schemaType),
+      '@type': XsdTypes.resolveSingle(schemaType),
       '@value': value
     };
   }

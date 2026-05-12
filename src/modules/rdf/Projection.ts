@@ -23,7 +23,7 @@ import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
 import { JSONLD } from '../../constants/JSONLD.js';
-import { resolveSingleXsdType } from '../../constants/XSD_MAPS.js';
+import { XsdTypes } from './XsdTypes.js';
 import { MaterializationError } from '../../errors/MaterializationError.js';
 import {
   hasCycle, isRecord
@@ -637,7 +637,7 @@ function projectSingleValue(args: ProjectPropertyArgs): void {
   }
 
   if (typeof value === 'string') {
-    const xsdDatatype = resolveSingleXsdType(
+    const xsdDatatype = XsdTypes.resolveSingle(
       'string',
       propertySemantics.format === undefined ? undefined : { 'format': propertySemantics.format }
     ) ?? XSD.string;

@@ -2,9 +2,7 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  BaseTypes, makePageSchema, makeResponseSchema, makeResultSchema
-} from '../../src/types/BaseTypes.js';
+import { BaseTypes } from '../../src/modules/data/BaseTypes.js';
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
 void describe('BaseTypes', () => {
@@ -87,7 +85,7 @@ void describe('BaseTypes', () => {
       'properties': { 'name': { 'type': 'string' } },
       'type': 'object'
     } as const;
-    const response = makeResponseSchema(bodySchema, 'https://test.io/R');
+    const response = BaseTypes.response(bodySchema, 'https://test.io/R');
 
     assert.equal(response.$id, 'https://test.io/R');
     assert.deepEqual(response.properties.body, bodySchema);
@@ -96,7 +94,7 @@ void describe('BaseTypes', () => {
       'properties': { 'count': { 'type': 'number' } },
       'type': 'object'
     } as const;
-    const result = makeResultSchema(dataSchema, 'https://test.io/Res');
+    const result = BaseTypes.result(dataSchema, 'https://test.io/Res');
 
     assert.equal(result.$id, 'https://test.io/Res');
     assert.deepEqual(result.properties.data, dataSchema);
@@ -105,7 +103,7 @@ void describe('BaseTypes', () => {
       'properties': { 'id': { 'type': 'number' } },
       'type': 'object'
     } as const;
-    const page = makePageSchema(itemSchema, 'https://test.io/P');
+    const page = BaseTypes.page(itemSchema, 'https://test.io/P');
 
     assert.equal(page.$id, 'https://test.io/P');
     assert.deepEqual(page.properties.items.items, itemSchema);
@@ -118,7 +116,7 @@ void describe('BaseTypes', () => {
       'properties': { 'id': { 'type': 'number' } },
       'type': 'object'
     } as const;
-    const responseSchema = makeResponseSchema(
+    const responseSchema = BaseTypes.response(
       { '$ref': 'https://test.io/IdBody' } as const,
       'https://test.io/IdResponse'
     );
@@ -137,7 +135,7 @@ void describe('BaseTypes', () => {
       'properties': { 'name': { 'type': 'string' } },
       'type': 'object'
     } as const;
-    const pageSchema = makePageSchema(
+    const pageSchema = BaseTypes.page(
       { '$ref': 'https://test.io/NameItem' } as const,
       'https://test.io/NamePage'
     );
@@ -154,7 +152,7 @@ void describe('BaseTypes', () => {
     }).length, 0);
 
     // Rejects missing required fields
-    const aPageSchema = makePageSchema({ 'type': 'object' } as const, 'https://test.io/APage');
+    const aPageSchema = BaseTypes.page({ 'type': 'object' } as const, 'https://test.io/APage');
 
     registry.register(aPageSchema);
     assert.ok(registry.validate(aPageSchema.$id, { 'items': [] }).length > 0);
