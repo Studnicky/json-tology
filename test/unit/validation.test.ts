@@ -51,168 +51,142 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('if/then/else validation', () => {
-    void it('validates then branch when if matches', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-      const schemaId = 'https://cond.test/ITE1';
+    void it('GBU: then branch, else branch, and no-else branch scenarios', () => {
+      // then branch: if condition matches
+      {
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        const schemaId = 'https://cond.test/ITE1';
 
-      registry.register(makeThenElseSchema(
-        schemaId,
-        { 'properties': { 'kind': { 'const': 'person' } } },
-        {
+        registry.register(makeThenElseSchema(schemaId, { 'properties': { 'kind': { 'const': 'person' } } }, {
           'properties': { 'name': { 'type': 'string' } },
           'required': ['name']
+        }));
+
+        for (const {
+          data, name, valid
+        } of [
+            {
+              'data': {
+                'kind': 'person',
+                'name': 'Alice'
+              },
+              'name': 'if matches (kind=person) and then satisfied',
+              'valid': true
+            },
+            {
+              'data': { 'kind': 'person' },
+              'name': 'if matches (kind=person) but then not satisfied — missing name',
+              'valid': false
+            },
+            {
+              'data': null,
+              'name': 'edge: null data for if/then schema',
+              'valid': false
+            },
+            {
+              'data': {},
+              'name': 'edge: empty object — if properties vacuously pass so then enforced — fails',
+              'valid': false
+            },
+            {
+              'data': {
+                'kind': 'person',
+                'name': ''
+              },
+              'name': 'edge: empty string satisfies type string in then branch',
+              'valid': true
+            }
+          ]) {
+          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
         }
-      ));
-
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': {
-            'kind': 'person',
-            'name': 'Alice'
-          },
-          'name': 'if matches (kind=person) and then satisfied',
-          'valid': true
-        },
-        {
-          'data': { 'kind': 'person' },
-          'name': 'if matches (kind=person) but then not satisfied — missing name',
-          'valid': false
-        },
-        {
-          'data': null,
-          'name': 'edge: null data for if/then schema',
-          'valid': false
-        },
-        {
-          'data': {},
-          'name': 'edge: empty object — if properties vacuously pass so then enforced — fails',
-          'valid': false
-        },
-        {
-          'data': {
-            'kind': 'person',
-            'name': ''
-          },
-          'name': 'edge: empty string satisfies type string in then branch',
-          'valid': true
-        }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate(schemaId, data);
-
-        assert.equal(errors.length === 0, valid, name);
       }
-    });
 
-    void it('validates else branch when if does not match', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-      const schemaId = 'https://cond.test/ITE2';
+      // else branch: if condition does not match, else required
+      {
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        const schemaId = 'https://cond.test/ITE2';
 
-      registry.register(makeThenElseSchema(
-        schemaId,
-        { 'properties': { 'kind': { 'const': 'org' } } },
-        {
+        registry.register(makeThenElseSchema(schemaId, { 'properties': { 'kind': { 'const': 'org' } } }, {
           'properties': { 'orgName': { 'type': 'string' } },
           'required': ['orgName']
-        },
-        {
+        }, {
           'properties': { 'label': { 'type': 'string' } },
           'required': ['label']
+        }));
+
+        for (const {
+          data, name, valid
+        } of [
+            {
+              'data': {
+                'kind': 'person',
+                'label': 'Alice'
+              },
+              'name': 'if does not match — else requires label — satisfied',
+              'valid': true
+            },
+            {
+              'data': { 'kind': 'person' },
+              'name': 'if does not match — else requires label — missing',
+              'valid': false
+            },
+            {
+              'data': null,
+              'name': 'edge: null data for if/then/else schema',
+              'valid': false
+            },
+            {
+              'data': {
+                'kind': 'other',
+                'label': ''
+              },
+              'name': 'edge: empty string label satisfies else branch required string',
+              'valid': true
+            },
+            {
+              'data': {
+                'kind': 'org',
+                'orgName': 'Acme'
+              },
+              'name': 'edge: data matching if branch with then satisfied',
+              'valid': true
+            }
+          ]) {
+          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
         }
-      ));
-
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': {
-            'kind': 'person',
-            'label': 'Alice'
-          },
-          'name': 'if does not match — else requires label — satisfied',
-          'valid': true
-        },
-        {
-          'data': { 'kind': 'person' },
-          'name': 'if does not match — else requires label — missing',
-          'valid': false
-        },
-        {
-          'data': null,
-          'name': 'edge: null data for if/then/else schema',
-          'valid': false
-        },
-        {
-          'data': {
-            'kind': 'other',
-            'label': ''
-          },
-          'name': 'edge: empty string label satisfies else branch required string',
-          'valid': true
-        },
-        {
-          'data': {
-            'kind': 'org',
-            'orgName': 'Acme'
-          },
-          'name': 'edge: data matching if branch with then satisfied',
-          'valid': true
-        }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate(schemaId, data);
-
-        assert.equal(errors.length === 0, valid, name);
       }
-    });
 
-    void it('validates if does not match and no else branch', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-      const schemaId = 'https://cond.test/ITE3';
+      // no else branch: if does not match, no else — passes
+      {
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        const schemaId = 'https://cond.test/ITE3';
 
-      registry.register(makeThenElseSchema(
-        schemaId,
-        { 'properties': { 'kind': { 'const': 'special' } } },
-        {
+        registry.register(makeThenElseSchema(schemaId, { 'properties': { 'kind': { 'const': 'special' } } }, {
           'properties': { 'code': { 'type': 'number' } },
           'required': ['code']
+        }));
+
+        for (const {
+          data, name, valid
+        } of [
+            {
+              'data': { 'kind': 'normal' },
+              'name': 'if does not match, no else — passes',
+              'valid': true
+            },
+            {
+              'data': null,
+              'name': 'edge: null data with no else branch',
+              'valid': false
+            },
+            {
+              'data': {},
+              'name': 'edge: empty object — if properties vacuously pass, then requires code — fails',
+              'valid': false
+            }
+          ]) {
+          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
         }
-      ));
-
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': { 'kind': 'normal' },
-          'name': 'if does not match, no else — passes',
-          'valid': true
-        },
-        {
-          'data': null,
-          'name': 'edge: null data with no else branch',
-          'valid': false
-        },
-        {
-          'data': {},
-          'name': 'edge: empty object — if properties vacuously pass, then requires code — fails',
-          'valid': false
-        }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate(schemaId, data);
-
-        assert.equal(errors.length === 0, valid, name);
       }
     });
   });
@@ -222,390 +196,341 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('allOf validation', () => {
-    void it('validates allOf requiring all subschemas to match', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-      const schemaId = 'https://cond.test/AllOf1';
+    void it('GBU: allOf required subschemas, overlapping numeric constraints', () => {
+      // all subschemas must match
+      {
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        const schemaId = 'https://cond.test/AllOf1';
 
-      registry.register({
-        '$id': schemaId,
-        'allOf': [
-          {
-            'properties': { 'name': { 'type': 'string' } },
-            'required': ['name']
-          },
-          {
-            'properties': { 'age': { 'type': 'number' } },
-            'required': ['age']
-          }
-        ],
-        'type': 'object'
-      });
-
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': {
-            'age': 30,
-            'name': 'Alice'
-          },
-          'name': 'both name and age present',
-          'valid': true
-        },
-        {
-          'data': { 'name': 'Alice' },
-          'name': 'missing age',
-          'valid': false
-        },
-        {
-          'data': { 'age': 30 },
-          'name': 'missing name',
-          'valid': false
-        }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate(schemaId, data);
-
-        assert.equal(errors.length === 0, valid, name);
-      }
-    });
-
-    void it('validates allOf with overlapping property constraints', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-      const schemaId = 'https://cond.test/AllOfOverlap';
-
-      registry.register({
-        '$id': schemaId,
-        'allOf': [
-          {
-            'properties': {
-              'x': {
-                'minimum': 0,
-                'type': 'number'
-              }
+        registry.register({
+          '$id': schemaId,
+          'allOf': [
+            {
+              'properties': { 'name': { 'type': 'string' } },
+              'required': ['name']
+            },
+            {
+              'properties': { 'age': { 'type': 'number' } },
+              'required': ['age']
             }
-          },
-          {
-            'properties': {
-              'x': {
-                'maximum': 100,
-                'type': 'number'
-              }
-            }
-          }
-        ],
-        'type': 'object'
-      });
+          ],
+          'type': 'object'
+        });
 
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': { 'x': 50 },
-          'name': 'x within both constraints',
-          'valid': true
-        },
-        {
-          'data': { 'x': -1 },
-          'name': 'x below minimum',
-          'valid': false
-        },
-        {
-          'data': { 'x': 101 },
-          'name': 'x above maximum',
-          'valid': false
-        }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate(schemaId, data);
-
-        assert.equal(errors.length === 0, valid, name);
-      }
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // anyOf
-  // ---------------------------------------------------------------------------
-
-  void describe('anyOf validation', () => {
-    void it('validates anyOf accepting data matching any branch', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-      const schemaId = 'https://cond.test/AnyOf1';
-
-      registry.register({
-        '$id': schemaId,
-        'properties': {
-          'val': {
-            'anyOf': [
-              { 'type': 'string' },
-              { 'type': 'number' }
-            ]
-          }
-        },
-        'required': ['val'],
-        'type': 'object'
-      });
-
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': { 'val': 'hello' },
-          'name': 'string matches first branch',
-          'valid': true
-        },
-        {
-          'data': { 'val': 42 },
-          'name': 'number matches second branch',
-          'valid': true
-        },
-        {
-          'data': { 'val': true },
-          'name': 'boolean matches neither branch',
-          'valid': false
-        }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate(schemaId, data);
-
-        assert.equal(errors.length === 0, valid, name);
-      }
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // oneOf
-  // ---------------------------------------------------------------------------
-
-  void describe('oneOf validation', () => {
-    void it('validates oneOf accepting data matching exactly one branch', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-      const schemaId = 'https://cond.test/OneOf1';
-
-      registry.register({
-        '$id': schemaId,
-        'properties': {
-          'val': {
-            'oneOf': [
-              {
-                'maximum': 10,
-                'type': 'number'
+        for (const {
+          data, name, valid
+        } of [
+            {
+              'data': {
+                'age': 30,
+                'name': 'Alice'
               },
-              {
-                'minimum': 20,
-                'type': 'number'
+              'name': 'both name and age present',
+              'valid': true
+            },
+            {
+              'data': { 'name': 'Alice' },
+              'name': 'missing age',
+              'valid': false
+            },
+            {
+              'data': { 'age': 30 },
+              'name': 'missing name',
+              'valid': false
+            }
+          ]) {
+          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
+        }
+      }
+
+      // overlapping numeric constraints
+      {
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        const schemaId = 'https://cond.test/AllOfOverlap';
+
+        registry.register({
+          '$id': schemaId,
+          'allOf': [
+            {
+              'properties': {
+                'x': {
+                  'minimum': 0,
+                  'type': 'number'
+                }
               }
-            ]
-          }
-        },
-        'required': ['val'],
-        'type': 'object'
-      });
+            },
+            {
+              'properties': {
+                'x': {
+                  'maximum': 100,
+                  'type': 'number'
+                }
+              }
+            }
+          ],
+          'type': 'object'
+        });
 
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': { 'val': 5 },
-          'name': 'matches first branch only (val <= 10)',
-          'valid': true
-        },
-        {
-          'data': { 'val': 25 },
-          'name': 'matches second branch only (val >= 20)',
-          'valid': true
-        },
-        {
-          'data': { 'val': 15 },
-          'name': 'matches neither (between 10 and 20)',
-          'valid': false
+        for (const {
+          data, name, valid
+        } of [
+            {
+              'data': { 'x': 50 },
+              'name': 'x within both constraints',
+              'valid': true
+            },
+            {
+              'data': { 'x': -1 },
+              'name': 'x below minimum',
+              'valid': false
+            },
+            {
+              'data': { 'x': 101 },
+              'name': 'x above maximum',
+              'valid': false
+            }
+          ]) {
+          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
         }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate(schemaId, data);
-
-        assert.equal(errors.length === 0, valid, name);
       }
     });
   });
 
   // ---------------------------------------------------------------------------
-  // not
+  // anyOf / oneOf / not — GBU table
   // ---------------------------------------------------------------------------
 
-  void describe('not validation', () => {
-    void it('validates not rejecting data matching the negated schema', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-      const schemaId = 'https://cond.test/Not1';
+  void describe('anyOf, oneOf, not validation', () => {
+    void it('GBU: anyOf branch-match, oneOf exclusive-match, not negation table-driven', () => {
+      // anyOf: any branch
+      {
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        const schemaId = 'https://cond.test/AnyOf1';
 
-      registry.register({
-        '$id': schemaId,
-        'properties': {
-          'val': {
-            'not': { 'type': 'string' },
-            'type': [
-              'string',
-              'number'
-            ]
-          }
-        },
-        'required': ['val'],
-        'type': 'object'
-      });
-
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': { 'val': 42 },
-          'name': 'number does not match negated string schema',
-          'valid': true
-        },
-        {
-          'data': { 'val': 'hello' },
-          'name': 'string matches negated schema — rejected',
-          'valid': false
-        }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate(schemaId, data);
-
-        assert.equal(errors.length === 0, valid, name);
-      }
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // dependentRequired
-  // ---------------------------------------------------------------------------
-
-  void describe('dependentRequired validation', () => {
-    void it('validates dependent properties when trigger is present', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-      const schemaId = 'https://cond.test/DepReq1';
-
-      registry.register({
-        '$id': schemaId,
-        'dependentRequired': {
-          'email': ['name'],
-          'name': ['email']
-        },
-        'properties': {
-          'email': { 'type': 'string' },
-          'name': { 'type': 'string' }
-        },
-        'type': 'object'
-      });
-
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': {
-            'email': 'a@b.c',
-            'name': 'Alice'
+        registry.register({
+          '$id': schemaId,
+          'properties': {
+            'val': {
+              'anyOf': [
+                { 'type': 'string' },
+                { 'type': 'number' }
+              ]
+            }
           },
-          'name': 'both present — valid',
-          'valid': true
-        },
-        {
-          'data': {},
-          'name': 'neither present — valid',
-          'valid': true
-        },
-        {
-          'data': { 'name': 'Alice' },
-          'name': 'name without email — invalid',
-          'valid': false
-        },
-        {
-          'data': { 'email': 'a@b.c' },
-          'name': 'email without name — invalid',
-          'valid': false
+          'required': ['val'],
+          'type': 'object'
+        });
+
+        for (const {
+          data, name, valid
+        } of [
+            {
+              'data': { 'val': 'hello' },
+              'name': 'string matches first branch',
+              'valid': true
+            },
+            {
+              'data': { 'val': 42 },
+              'name': 'number matches second branch',
+              'valid': true
+            },
+            {
+              'data': { 'val': true },
+              'name': 'boolean matches neither branch',
+              'valid': false
+            }
+          ]) {
+          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
         }
-      ];
+      }
 
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate(schemaId, data);
+      // oneOf: exactly one branch
+      {
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        const schemaId = 'https://cond.test/OneOf1';
 
-        assert.equal(errors.length === 0, valid, name);
+        registry.register({
+          '$id': schemaId,
+          'properties': {
+            'val': {
+              'oneOf': [
+                {
+                  'maximum': 10,
+                  'type': 'number'
+                },
+                {
+                  'minimum': 20,
+                  'type': 'number'
+                }
+              ]
+            }
+          },
+          'required': ['val'],
+          'type': 'object'
+        });
+
+        for (const {
+          data, name, valid
+        } of [
+            {
+              'data': { 'val': 5 },
+              'name': 'matches first branch only (val <= 10)',
+              'valid': true
+            },
+            {
+              'data': { 'val': 25 },
+              'name': 'matches second branch only (val >= 20)',
+              'valid': true
+            },
+            {
+              'data': { 'val': 15 },
+              'name': 'matches neither (between 10 and 20)',
+              'valid': false
+            }
+          ]) {
+          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
+        }
+      }
+
+      // not: negation
+      {
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        const schemaId = 'https://cond.test/Not1';
+
+        registry.register({
+          '$id': schemaId,
+          'properties': {
+            'val': {
+              'not': { 'type': 'string' },
+              'type': [
+                'string',
+                'number'
+              ]
+            }
+          },
+          'required': ['val'],
+          'type': 'object'
+        });
+
+        for (const {
+          data, name, valid
+        } of [
+            {
+              'data': { 'val': 42 },
+              'name': 'number does not match negated string schema',
+              'valid': true
+            },
+            {
+              'data': { 'val': 'hello' },
+              'name': 'string matches negated schema — rejected',
+              'valid': false
+            }
+          ]) {
+          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
+        }
       }
     });
   });
 
   // ---------------------------------------------------------------------------
-  // dependentSchemas
+  // dependentRequired + dependentSchemas — GBU table
   // ---------------------------------------------------------------------------
 
-  void describe('dependentSchemas validation', () => {
-    void it('validates dependent schema when trigger property is present', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-      const schemaId = 'https://cond.test/DepSchema1';
+  void describe('dependentRequired and dependentSchemas validation', () => {
+    void it('GBU: dependentRequired mutual requirement, dependentSchemas trigger constraint', () => {
+      // dependentRequired: mutual dependency
+      {
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        const schemaId = 'https://cond.test/DepReq1';
 
-      const schema: Record<string, unknown> = {
-        '$id': schemaId,
-        'dependentSchemas': {
-          'billing': {
-            'properties': { 'billingAddress': { 'type': 'string' } },
-            'required': ['billingAddress']
-          }
-        },
-        'properties': {
-          'billing': { 'type': 'boolean' },
-          'billingAddress': { 'type': 'string' }
-        },
-        'type': 'object'
-      };
-
-      registry.register(schema);
-
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': {},
-          'name': 'billing absent — no dependent constraint',
-          'valid': true
-        },
-        {
-          'data': {
-            'billing': true,
-            'billingAddress': '123 Main St'
+        registry.register({
+          '$id': schemaId,
+          'dependentRequired': {
+            'email': ['name'],
+            'name': ['email']
           },
-          'name': 'billing present — billingAddress provided',
-          'valid': true
-        },
-        {
-          'data': { 'billing': true },
-          'name': 'billing present — billingAddress missing',
-          'valid': false
+          'properties': {
+            'email': { 'type': 'string' },
+            'name': { 'type': 'string' }
+          },
+          'type': 'object'
+        });
+
+        for (const {
+          data, name, valid
+        } of [
+            {
+              'data': {
+                'email': 'a@b.c',
+                'name': 'Alice'
+              },
+              'name': 'both present — valid',
+              'valid': true
+            },
+            {
+              'data': {},
+              'name': 'neither present — valid',
+              'valid': true
+            },
+            {
+              'data': { 'name': 'Alice' },
+              'name': 'name without email — invalid',
+              'valid': false
+            },
+            {
+              'data': { 'email': 'a@b.c' },
+              'name': 'email without name — invalid',
+              'valid': false
+            }
+          ]) {
+          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
         }
-      ];
+      }
 
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate(schemaId, data);
+      // dependentSchemas: trigger activates schema constraint
+      {
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        const schemaId = 'https://cond.test/DepSchema1';
 
-        assert.equal(errors.length === 0, valid, name);
+        registry.register({
+          '$id': schemaId,
+          'dependentSchemas': {
+            'billing': {
+              'properties': { 'billingAddress': { 'type': 'string' } },
+              'required': ['billingAddress']
+            }
+          },
+          'properties': {
+            'billing': { 'type': 'boolean' },
+            'billingAddress': { 'type': 'string' }
+          },
+          'type': 'object'
+        });
+
+        for (const {
+          data, name, valid
+        } of [
+            {
+              'data': {},
+              'name': 'billing absent — no dependent constraint',
+              'valid': true
+            },
+            {
+              'data': {
+                'billing': true,
+                'billingAddress': '123 Main St'
+              },
+              'name': 'billing present — billingAddress provided',
+              'valid': true
+            },
+            {
+              'data': { 'billing': true },
+              'name': 'billing present — billingAddress missing',
+              'valid': false
+            }
+          ]) {
+          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
+        }
       }
     });
   });
@@ -792,15 +717,15 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       }
     ];
 
-    for (const {
-      data, name, schema, valid
-    } of scenarios) {
-      void it(name, () => {
+    void it('oneOf edge cases: overlapping, empty, boolean schemas, identical refs', () => {
+      for (const {
+        data, name, schema, valid
+      } of scenarios) {
         const errors = registry.validate(schema, data);
 
         assert.equal(errors.length === 0, valid, name);
-      });
-    }
+      }
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -885,15 +810,15 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       }
     ];
 
-    for (const {
-      data, name, schema, valid
-    } of scenarios) {
-      void it(name, () => {
+    void it('anyOf edge cases: no-match, all-match, empty anyOf', () => {
+      for (const {
+        data, name, schema, valid
+      } of scenarios) {
         const errors = registry.validate(schema, data);
 
         assert.equal(errors.length === 0, valid, name);
-      });
-    }
+      }
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -1014,15 +939,15 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       }
     ];
 
-    for (const {
-      data, name, valid
-    } of shapeScenarios) {
-      void it(name, () => {
+    void it('Shape discriminated union: valid/invalid circle+square+edge cases', () => {
+      for (const {
+        data, name, valid
+      } of shapeScenarios) {
         const errors = shapeRegistry.validate('https://disc.test/Shape', data);
 
         assert.equal(errors.length === 0, valid, name);
-      });
-    }
+      }
+    });
 
     const eventRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
@@ -1131,15 +1056,15 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       }
     ];
 
-    for (const {
-      data, name, valid
-    } of eventScenarios) {
-      void it(name, () => {
+    void it('Event discriminated union: valid/invalid message+error+log events', () => {
+      for (const {
+        data, name, valid
+      } of eventScenarios) {
         const errors = eventRegistry.validate('https://disc.test/Event', data);
 
         assert.equal(errors.length === 0, valid, name);
-      });
-    }
+      }
+    });
   });
 }
 
@@ -1349,177 +1274,176 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('minContains validation', () => {
-    void it('validates minContains 0 scenarios', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-      const schemaId = 'https://contains.test/MinZero';
+    void it('GBU: minContains=0 (optional), minContains=2 (bounded), minContains=5 exceeds length', () => {
+      // Good: minContains=0 — array without matches is still valid
+      {
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        const schemaId = 'https://contains.test/MinZero';
 
-      registry.register({
-        '$id': schemaId,
-        'properties': {
-          'values': {
-            'contains': { 'type': 'number' },
-            'minContains': 0,
-            'type': 'array'
-          }
-        },
-        'required': ['values'],
-        'type': 'object'
-      });
-
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': {
-            'values': [
-              'a',
-              'b',
-              'c'
-            ]
+        registry.register({
+          '$id': schemaId,
+          'properties': {
+            'values': {
+              'contains': { 'type': 'number' },
+              'minContains': 0,
+              'type': 'array'
+            }
           },
-          'name': 'no matching items — valid because minContains is 0',
-          'valid': true
-        },
-        {
-          'data': { 'values': [] },
-          'name': 'empty array — valid because minContains is 0',
-          'valid': true
+          'required': ['values'],
+          'type': 'object'
+        });
+
+        const zeroScenarios: Array<{ 'data': unknown;
+          'name': string;
+          'valid': boolean }> = [
+          {
+            'data': {
+              'values': [
+                'a',
+                'b',
+                'c'
+              ]
+            },
+            'name': 'no matching items — valid because minContains is 0',
+            'valid': true
+          },
+          {
+            'data': { 'values': [] },
+            'name': 'empty array — valid because minContains is 0',
+            'valid': true
+          }
+        ];
+
+        for (const {
+          data, name, valid
+        } of zeroScenarios) {
+          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
         }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate(schemaId, data);
-
-        assert.equal(errors.length === 0, valid, name);
       }
-    });
 
-    void it('validates minContains 2 scenarios', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-      const schemaId = 'https://contains.test/MinTwo';
+      // Good: minContains=2 — requires at least 2 matching items
+      {
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        const schemaId = 'https://contains.test/MinTwo';
 
-      registry.register({
-        '$id': schemaId,
-        'properties': {
-          'values': {
-            'contains': { 'type': 'number' },
-            'minContains': 2,
-            'type': 'array'
+        registry.register({
+          '$id': schemaId,
+          'properties': {
+            'values': {
+              'contains': { 'type': 'number' },
+              'minContains': 2,
+              'type': 'array'
+            }
+          },
+          'required': ['values'],
+          'type': 'object'
+        });
+
+        const twoScenarios: Array<{ 'data': unknown;
+          'name': string;
+          'valid': boolean }> = [
+          {
+            'data': {
+              'values': [
+                'a',
+                1,
+                'b',
+                2
+              ]
+            },
+            'name': 'two matching items',
+            'valid': true
+          },
+          {
+            'data': {
+              'values': [
+                1,
+                2,
+                3
+              ]
+            },
+            'name': 'three matching items',
+            'valid': true
+          },
+          {
+            'data': {
+              'values': [
+                'a',
+                1,
+                'b'
+              ]
+            },
+            'name': 'only one matching item — fails',
+            'valid': false
+          },
+          {
+            'data': {
+              'values': [
+                'a',
+                'b'
+              ]
+            },
+            'name': 'no matching items — fails',
+            'valid': false
           }
-        },
-        'required': ['values'],
-        'type': 'object'
-      });
+        ];
 
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': {
-            'values': [
-              'a',
-              1,
-              'b',
-              2
-            ]
-          },
-          'name': 'two matching items',
-          'valid': true
-        },
-        {
-          'data': {
-            'values': [
-              1,
-              2,
-              3
-            ]
-          },
-          'name': 'three matching items',
-          'valid': true
-        },
-        {
-          'data': {
-            'values': [
-              'a',
-              1,
-              'b'
-            ]
-          },
-          'name': 'only one matching item — fails',
-          'valid': false
-        },
-        {
-          'data': {
-            'values': [
-              'a',
-              'b'
-            ]
-          },
-          'name': 'no matching items — fails',
-          'valid': false
+        for (const {
+          data, name, valid
+        } of twoScenarios) {
+          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
         }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate(schemaId, data);
-
-        assert.equal(errors.length === 0, valid, name);
       }
-    });
 
-    void it('validates minContains greater than array length always fails', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-      const schemaId = 'https://contains.test/MinExceedsLength';
+      // Bad: minContains=5 exceeds array length — always fails
+      {
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        const schemaId = 'https://contains.test/MinExceedsLength';
 
-      registry.register({
-        '$id': schemaId,
-        'properties': {
-          'values': {
-            'contains': { 'type': 'number' },
-            'minContains': 5,
-            'type': 'array'
+        registry.register({
+          '$id': schemaId,
+          'properties': {
+            'values': {
+              'contains': { 'type': 'number' },
+              'minContains': 5,
+              'type': 'array'
+            }
+          },
+          'required': ['values'],
+          'type': 'object'
+        });
+
+        const exceedsScenarios: Array<{ 'data': unknown;
+          'name': string;
+          'valid': boolean }> = [
+          {
+            'data': {
+              'values': [
+                1,
+                2,
+                3
+              ]
+            },
+            'name': 'array has only 3 items, cannot satisfy minContains=5',
+            'valid': false
+          },
+          {
+            'data': {
+              'values': [
+                1,
+                2
+              ]
+            },
+            'name': 'even with all matching, not enough items',
+            'valid': false
           }
-        },
-        'required': ['values'],
-        'type': 'object'
-      });
+        ];
 
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': {
-            'values': [
-              1,
-              2,
-              3
-            ]
-          },
-          'name': 'array has only 3 items, cannot satisfy minContains=5',
-          'valid': false
-        },
-        {
-          'data': {
-            'values': [
-              1,
-              2
-            ]
-          },
-          'name': 'even with all matching, not enough items',
-          'valid': false
+        for (const {
+          data, name, valid
+        } of exceedsScenarios) {
+          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
         }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate(schemaId, data);
-
-        assert.equal(errors.length === 0, valid, name);
       }
     });
   });
@@ -1529,110 +1453,110 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('maxContains validation', () => {
-    void it('validates maxContains 1 scenarios', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-      const schemaId = 'https://contains.test/MaxOne';
+    void it('GBU: maxContains=1 (allows exactly one), maxContains=0 (forbids any match)', () => {
+      // Good: maxContains=1 — at most 1 matching item
+      {
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        const schemaId = 'https://contains.test/MaxOne';
 
-      registry.register({
-        '$id': schemaId,
-        'properties': {
-          'values': {
-            'contains': { 'type': 'number' },
-            'maxContains': 1,
-            'type': 'array'
+        registry.register({
+          '$id': schemaId,
+          'properties': {
+            'values': {
+              'contains': { 'type': 'number' },
+              'maxContains': 1,
+              'type': 'array'
+            }
+          },
+          'required': ['values'],
+          'type': 'object'
+        });
+
+        const oneScenarios: Array<{ 'data': unknown;
+          'name': string;
+          'valid': boolean }> = [
+          {
+            'data': {
+              'values': [
+                'a',
+                1,
+                'b'
+              ]
+            },
+            'name': 'exactly one matching item',
+            'valid': true
+          },
+          {
+            'data': {
+              'values': [
+                1,
+                2,
+                'a'
+              ]
+            },
+            'name': 'two matching items — exceeds maxContains',
+            'valid': false
           }
-        },
-        'required': ['values'],
-        'type': 'object'
-      });
+        ];
 
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': {
-            'values': [
-              'a',
-              1,
-              'b'
-            ]
-          },
-          'name': 'exactly one matching item',
-          'valid': true
-        },
-        {
-          'data': {
-            'values': [
-              1,
-              2,
-              'a'
-            ]
-          },
-          'name': 'two matching items — exceeds maxContains',
-          'valid': false
+        for (const {
+          data, name, valid
+        } of oneScenarios) {
+          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
         }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate(schemaId, data);
-
-        assert.equal(errors.length === 0, valid, name);
       }
-    });
 
-    void it('validates maxContains 0 scenarios', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-      const schemaId = 'https://contains.test/MaxZero';
+      // Bad: maxContains=0 (combined with minContains=0) — no matches allowed
+      {
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        const schemaId = 'https://contains.test/MaxZero';
 
-      registry.register({
-        '$id': schemaId,
-        'properties': {
-          'values': {
-            'contains': { 'type': 'number' },
-            'maxContains': 0,
-            'minContains': 0,
-            'type': 'array'
+        registry.register({
+          '$id': schemaId,
+          'properties': {
+            'values': {
+              'contains': { 'type': 'number' },
+              'maxContains': 0,
+              'minContains': 0,
+              'type': 'array'
+            }
+          },
+          'required': ['values'],
+          'type': 'object'
+        });
+
+        const zeroScenarios: Array<{ 'data': unknown;
+          'name': string;
+          'valid': boolean }> = [
+          {
+            'data': {
+              'values': [
+                'a',
+                'b',
+                'c'
+              ]
+            },
+            'name': 'no matching items — valid',
+            'valid': true
+          },
+          {
+            'data': {
+              'values': [
+                'a',
+                1,
+                'b'
+              ]
+            },
+            'name': 'one matching item — exceeds maxContains=0',
+            'valid': false
           }
-        },
-        'required': ['values'],
-        'type': 'object'
-      });
+        ];
 
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': {
-            'values': [
-              'a',
-              'b',
-              'c'
-            ]
-          },
-          'name': 'no matching items — valid',
-          'valid': true
-        },
-        {
-          'data': {
-            'values': [
-              'a',
-              1,
-              'b'
-            ]
-          },
-          'name': 'one matching item — exceeds maxContains=0',
-          'valid': false
+        for (const {
+          data, name, valid
+        } of zeroScenarios) {
+          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
         }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate(schemaId, data);
-
-        assert.equal(errors.length === 0, valid, name);
       }
     });
   });
@@ -1642,154 +1566,154 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('minContains and maxContains range', () => {
-    void it('validates matching count within min and max bounds', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-      const schemaId = 'https://contains.test/Range';
+    void it('GBU: [2,4] range valid, below min fails, above max fails; impossible [min>max] always fails', () => {
+      // Good: minContains=2 maxContains=4 range
+      {
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        const schemaId = 'https://contains.test/Range';
 
-      registry.register({
-        '$id': schemaId,
-        'properties': {
-          'values': {
-            'contains': { 'type': 'number' },
-            'maxContains': 4,
-            'minContains': 2,
-            'type': 'array'
+        registry.register({
+          '$id': schemaId,
+          'properties': {
+            'values': {
+              'contains': { 'type': 'number' },
+              'maxContains': 4,
+              'minContains': 2,
+              'type': 'array'
+            }
+          },
+          'required': ['values'],
+          'type': 'object'
+        });
+
+        const rangeScenarios: Array<{ 'data': unknown;
+          'name': string;
+          'valid': boolean }> = [
+          {
+            'data': {
+              'values': [
+                'a',
+                1,
+                'b',
+                2
+              ]
+            },
+            'name': 'exactly 2 matching items (lower bound)',
+            'valid': true
+          },
+          {
+            'data': {
+              'values': [
+                1,
+                2,
+                3,
+                'a'
+              ]
+            },
+            'name': 'exactly 3 matching items (mid range)',
+            'valid': true
+          },
+          {
+            'data': {
+              'values': [
+                1,
+                2,
+                3,
+                4
+              ]
+            },
+            'name': 'exactly 4 matching items (upper bound)',
+            'valid': true
+          },
+          {
+            'data': {
+              'values': [
+                'a',
+                1,
+                'b',
+                'c'
+              ]
+            },
+            'name': 'only 1 matching item — below minContains',
+            'valid': false
+          },
+          {
+            'data': {
+              'values': [
+                1,
+                2,
+                3,
+                4,
+                5
+              ]
+            },
+            'name': '5 matching items — exceeds maxContains',
+            'valid': false
           }
-        },
-        'required': ['values'],
-        'type': 'object'
-      });
+        ];
 
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': {
-            'values': [
-              'a',
-              1,
-              'b',
-              2
-            ]
-          },
-          'name': 'exactly 2 matching items (lower bound)',
-          'valid': true
-        },
-        {
-          'data': {
-            'values': [
-              1,
-              2,
-              3,
-              'a'
-            ]
-          },
-          'name': 'exactly 3 matching items (mid range)',
-          'valid': true
-        },
-        {
-          'data': {
-            'values': [
-              1,
-              2,
-              3,
-              4
-            ]
-          },
-          'name': 'exactly 4 matching items (upper bound)',
-          'valid': true
-        },
-        {
-          'data': {
-            'values': [
-              'a',
-              1,
-              'b',
-              'c'
-            ]
-          },
-          'name': 'only 1 matching item — below minContains',
-          'valid': false
-        },
-        {
-          'data': {
-            'values': [
-              1,
-              2,
-              3,
-              4,
-              5
-            ]
-          },
-          'name': '5 matching items — exceeds maxContains',
-          'valid': false
+        for (const {
+          data, name, valid
+        } of rangeScenarios) {
+          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
         }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate(schemaId, data);
-
-        assert.equal(errors.length === 0, valid, name);
       }
-    });
 
-    void it('validates maxContains less than minContains always fails', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-      const schemaId = 'https://contains.test/Impossible';
+      // Ugly: impossible constraint maxContains < minContains — always fails
+      {
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        const schemaId = 'https://contains.test/Impossible';
 
-      registry.register({
-        '$id': schemaId,
-        'properties': {
-          'values': {
-            'contains': { 'type': 'number' },
-            'maxContains': 1,
-            'minContains': 3,
-            'type': 'array'
+        registry.register({
+          '$id': schemaId,
+          'properties': {
+            'values': {
+              'contains': { 'type': 'number' },
+              'maxContains': 1,
+              'minContains': 3,
+              'type': 'array'
+            }
+          },
+          'required': ['values'],
+          'type': 'object'
+        });
+
+        const impossibleScenarios: Array<{ 'data': unknown;
+          'name': string;
+          'valid': boolean }> = [
+          {
+            'data': {
+              'values': [
+                1,
+                2,
+                3
+              ]
+            },
+            'name': 'cannot satisfy min=3 and max=1 with 3 numbers',
+            'valid': false
+          },
+          {
+            'data': { 'values': [1] },
+            'name': 'cannot satisfy min=3 and max=1 with 1 number',
+            'valid': false
+          },
+          {
+            'data': {
+              'values': [
+                'a',
+                'b'
+              ]
+            },
+            'name': 'cannot satisfy min=3 and max=1 with no numbers',
+            'valid': false
           }
-        },
-        'required': ['values'],
-        'type': 'object'
-      });
+        ];
 
-      const scenarios: Array<{ 'data': unknown;
-        'name': string;
-        'valid': boolean }> = [
-        {
-          'data': {
-            'values': [
-              1,
-              2,
-              3
-            ]
-          },
-          'name': 'cannot satisfy min=3 and max=1 with 3 numbers',
-          'valid': false
-        },
-        {
-          'data': { 'values': [1] },
-          'name': 'cannot satisfy min=3 and max=1 with 1 number',
-          'valid': false
-        },
-        {
-          'data': {
-            'values': [
-              'a',
-              'b'
-            ]
-          },
-          'name': 'cannot satisfy min=3 and max=1 with no numbers',
-          'valid': false
+        for (const {
+          data, name, valid
+        } of impossibleScenarios) {
+          assert.equal(registry.validate(schemaId, data).length === 0, valid, name);
         }
-      ];
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        const errors = registry.validate(schemaId, data);
-
-        assert.equal(errors.length === 0, valid, name);
       }
     });
   });
@@ -2627,87 +2551,68 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 // ---------------------------------------------------------------------------
 
   void describe('Registration edge cases', () => {
-    const rejectScenarios: Array<{
-      'name': string;
-      'schema': Record<string, unknown>;
-    }> = [{
-      'name': 'rejects schema with empty string $id',
-      'schema': {
-        '$id': '',
-        'properties': { 'x': { 'type': 'string' } },
-        'type': 'object'
-      }
-    }];
-
-    for (const {
-      'name': n, 'schema': sch
-    } of rejectScenarios) {
-      void it(n, () => {
+    void it('GBU: empty $id throws, minimal schemas accept valid data, anonymous synthetic ID works', () => {
+      // Bad: rejects schema with empty string $id
+      {
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-        assert.throws(
-          () => {
-            registry.register(sch);
-          },
-          `${n} should throw`
-        );
-      });
-    }
+        assert.throws(() => {
+          registry.register({
+            '$id': '',
+            'properties': { 'x': { 'type': 'string' } },
+            'type': 'object'
+          });
+        }, 'rejects schema with empty string $id');
+      }
 
-    const acceptScenarios: Array<{
-      'data': Record<string, unknown>;
-      'expected': string[];
-      'name': string;
-      'schema': Record<string, unknown>;
-    }> = [
+      // Good: minimal schemas accept valid data
       {
-        'data': {},
-        'expected': [],
-        'name': 'schema with only $id and type validates empty object',
-        'schema': {
-          '$id': 'https://edge.test/EmptyObj',
-          'type': 'object'
-        }
-      },
-      {
-        'data': { 'anything': true },
-        'expected': [],
-        'name': 'schema with only $id and type allows extra properties',
-        'schema': {
-          '$id': 'https://edge.test/EmptyObj2',
-          'type': 'object'
-        }
-      },
-      {
-        'data': {},
-        'expected': [],
-        'name': 'schema with $defs but no properties validates empty object',
-        'schema': {
-          '$defs': {
-            'Inner': {
-              'properties': { 'x': { 'type': 'number' } },
+        const acceptScenarios = [
+          {
+            'data': {},
+            'name': 'schema with only $id and type validates empty object',
+            'schema': {
+              '$id': 'https://edge.test/EmptyObj',
               'type': 'object'
             }
           },
-          '$id': 'https://edge.test/DefsOnly',
-          'type': 'object'
+          {
+            'data': { 'anything': true },
+            'name': 'schema with only $id and type allows extra properties',
+            'schema': {
+              '$id': 'https://edge.test/EmptyObj2',
+              'type': 'object'
+            }
+          },
+          {
+            'data': {},
+            'name': 'schema with $defs but no properties validates empty object',
+            'schema': {
+              '$defs': {
+                'Inner': {
+                  'properties': { 'x': { 'type': 'number' } },
+                  'type': 'object'
+                }
+              },
+              '$id': 'https://edge.test/DefsOnly',
+              'type': 'object'
+            }
+          }
+        ];
+
+        for (const {
+          data, name, schema
+        } of acceptScenarios) {
+          const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+
+          registry.register(schema);
+          const validateResult = registry.validate(schema.$id, data);
+
+          assert.equal(validateResult.ok, true, `expected valid: ${name}`);
+          assert.equal(validateResult.length, 0, `expected zero errors: ${name}`);
         }
       }
-    ];
-
-    for (const {
-      data, name, schema
-    } of acceptScenarios) {
-      void it(name, () => {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-
-        registry.register(schema);
-        const validateResult = registry.validate(schema.$id as string, data);
-
-        assert.equal(validateResult.ok, true, `expected valid: ${name}`);
-        assert.equal(validateResult.length, 0, `expected zero errors: ${name}`);
-      });
-    }
+    });
 
     void it('handles registerAnonymous and validates against synthetic ID', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
@@ -2738,182 +2643,166 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('Numeric boundary validation', () => {
-    void describe('minimum/maximum at exact boundaries', () => {
-      const scenarios: Array<{
-        'data': Record<string, unknown>;
-        'name': string;
-        'valid': boolean;
-      }> = [
-        {
-          'data': { 'score': 0 },
-          'name': 'minimum boundary (0) passes',
-          'valid': true
-        },
-        {
-          'data': { 'score': 100 },
-          'name': 'maximum boundary (100) passes',
-          'valid': true
-        },
-        {
-          'data': { 'score': -1 },
-          'name': 'below minimum (-1) fails',
-          'valid': false
-        },
-        {
-          'data': { 'score': 101 },
-          'name': 'above maximum (101) fails',
-          'valid': false
-        },
-        {
-          'data': { 'score': 50.5 },
-          'name': 'fractional value within bounds passes',
-          'valid': true
-        },
-        {
-          'data': { 'score': -0.001 },
-          'name': 'value just below minimum fails',
-          'valid': false
-        }
-      ];
-
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-
-      registry.register({
-        '$id': 'https://edge.test/NumBounds',
-        'properties': {
-          'score': {
-            'maximum': 100,
-            'minimum': 0,
-            'type': 'number'
+    void it('GBU: minimum/maximum, exclusiveMinimum/Maximum, multipleOf table-driven', () => {
+      // minimum/maximum at exact boundaries
+      {
+        const scenarios = [
+          {
+            'data': { 'score': 0 },
+            'name': 'minimum boundary (0) passes',
+            'valid': true
+          },
+          {
+            'data': { 'score': 100 },
+            'name': 'maximum boundary (100) passes',
+            'valid': true
+          },
+          {
+            'data': { 'score': -1 },
+            'name': 'below minimum (-1) fails',
+            'valid': false
+          },
+          {
+            'data': { 'score': 101 },
+            'name': 'above maximum (101) fails',
+            'valid': false
+          },
+          {
+            'data': { 'score': 50.5 },
+            'name': 'fractional value within bounds passes',
+            'valid': true
+          },
+          {
+            'data': { 'score': -0.001 },
+            'name': 'value just below minimum fails',
+            'valid': false
           }
-        },
-        'required': ['score'],
-        'type': 'object'
-      });
+        ];
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        void it(name, () => {
+        registry.register({
+          '$id': 'https://edge.test/NumBounds',
+          'properties': {
+            'score': {
+              'maximum': 100,
+              'minimum': 0,
+              'type': 'number'
+            }
+          },
+          'required': ['score'],
+          'type': 'object'
+        });
+
+        for (const {
+          data, name, valid
+        } of scenarios) {
           const errors = registry.validate('https://edge.test/NumBounds', data);
 
           if (valid) {
-            assert.equal(errors.ok, true);
-            assert.equal(errors.length, 0);
+            assert.equal(errors.ok, true, name);
+            assert.equal(errors.length, 0, name);
           } else {
-            assert.equal(errors.ok, false);
-            assert(errors.length > 0, 'expected at least one validation error');
+            assert.equal(errors.ok, false, name);
+            assert(errors.length > 0, `expected at least one validation error: ${name}`);
           }
-        });
-      }
-    });
-
-    void describe('exclusiveMinimum and exclusiveMaximum', () => {
-      const scenarios: Array<{
-        'data': Record<string, unknown>;
-        'name': string;
-        'valid': boolean;
-      }> = [
-        {
-          'data': { 'val': 5 },
-          'name': 'middle value (5) passes',
-          'valid': true
-        },
-        {
-          'data': { 'val': 0 },
-          'name': 'exclusive minimum boundary (0) fails',
-          'valid': false
-        },
-        {
-          'data': { 'val': 10 },
-          'name': 'exclusive maximum boundary (10) fails',
-          'valid': false
         }
-      ];
+      }
 
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-
-      registry.register({
-        '$id': 'https://edge.test/ExclBounds',
-        'properties': {
-          'val': {
-            'exclusiveMaximum': 10,
-            'exclusiveMinimum': 0,
-            'type': 'number'
+      // exclusiveMinimum and exclusiveMaximum
+      {
+        const scenarios = [
+          {
+            'data': { 'val': 5 },
+            'name': 'middle value (5) passes',
+            'valid': true
+          },
+          {
+            'data': { 'val': 0 },
+            'name': 'exclusive minimum boundary (0) fails',
+            'valid': false
+          },
+          {
+            'data': { 'val': 10 },
+            'name': 'exclusive maximum boundary (10) fails',
+            'valid': false
           }
-        },
-        'required': ['val'],
-        'type': 'object'
-      });
+        ];
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        void it(name, () => {
+        registry.register({
+          '$id': 'https://edge.test/ExclBounds',
+          'properties': {
+            'val': {
+              'exclusiveMaximum': 10,
+              'exclusiveMinimum': 0,
+              'type': 'number'
+            }
+          },
+          'required': ['val'],
+          'type': 'object'
+        });
+
+        for (const {
+          data, name, valid
+        } of scenarios) {
           const errors = registry.validate('https://edge.test/ExclBounds', data);
 
           if (valid) {
-            assert.equal(errors.ok, true);
-            assert.equal(errors.length, 0);
+            assert.equal(errors.ok, true, name);
+            assert.equal(errors.length, 0, name);
           } else {
-            assert.equal(errors.ok, false);
-            assert(errors.length > 0, 'expected at least one validation error');
+            assert.equal(errors.ok, false, name);
+            assert(errors.length > 0, `expected at least one validation error: ${name}`);
           }
-        });
-      }
-    });
-
-    void describe('multipleOf with integers', () => {
-      const scenarios: Array<{
-        'data': Record<string, unknown>;
-        'name': string;
-        'valid': boolean;
-      }> = [
-        {
-          'data': { 'count': 0 },
-          'name': 'zero is multipleOf 3',
-          'valid': true
-        },
-        {
-          'data': { 'count': 9 },
-          'name': '9 is multipleOf 3',
-          'valid': true
-        },
-        {
-          'data': { 'count': 7 },
-          'name': '7 is not multipleOf 3',
-          'valid': false
         }
-      ];
+      }
 
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-
-      registry.register({
-        '$id': 'https://edge.test/MultOf',
-        'properties': {
-          'count': {
-            'multipleOf': 3,
-            'type': 'integer'
+      // multipleOf with integers
+      {
+        const scenarios = [
+          {
+            'data': { 'count': 0 },
+            'name': 'zero is multipleOf 3',
+            'valid': true
+          },
+          {
+            'data': { 'count': 9 },
+            'name': '9 is multipleOf 3',
+            'valid': true
+          },
+          {
+            'data': { 'count': 7 },
+            'name': '7 is not multipleOf 3',
+            'valid': false
           }
-        },
-        'required': ['count'],
-        'type': 'object'
-      });
+        ];
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        void it(name, () => {
+        registry.register({
+          '$id': 'https://edge.test/MultOf',
+          'properties': {
+            'count': {
+              'multipleOf': 3,
+              'type': 'integer'
+            }
+          },
+          'required': ['count'],
+          'type': 'object'
+        });
+
+        for (const {
+          data, name, valid
+        } of scenarios) {
           const errors = registry.validate('https://edge.test/MultOf', data);
 
           if (valid) {
-            assert.equal(errors.ok, true);
-            assert.equal(errors.length, 0);
+            assert.equal(errors.ok, true, name);
+            assert.equal(errors.length, 0, name);
           } else {
-            assert.equal(errors.ok, false);
-            assert(errors.length > 0, 'expected at least one validation error');
+            assert.equal(errors.ok, false, name);
+            assert(errors.length > 0, `expected at least one validation error: ${name}`);
           }
-        });
+        }
       }
     });
   });
@@ -2923,122 +2812,112 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('String constraint validation', () => {
-    void describe('string length constraints at boundaries', () => {
-      const scenarios: Array<{
-        'data': Record<string, unknown>;
-        'name': string;
-        'valid': boolean;
-      }> = [
-        {
-          'data': { 'code': 'ab' },
-          'name': 'minLength boundary (2 chars) passes',
-          'valid': true
-        },
-        {
-          'data': { 'code': 'abcde' },
-          'name': 'maxLength boundary (5 chars) passes',
-          'valid': true
-        },
-        {
-          'data': { 'code': 'a' },
-          'name': 'below minLength (1 char) fails',
-          'valid': false
-        },
-        {
-          'data': { 'code': 'abcdef' },
-          'name': 'above maxLength (6 chars) fails',
-          'valid': false
-        }
-      ];
-
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-
-      registry.register({
-        '$id': 'https://edge.test/StrLen',
-        'properties': {
-          'code': {
-            'maxLength': 5,
-            'minLength': 2,
-            'type': 'string'
+    void it('GBU: string length constraints and pattern table-driven', () => {
+      // string length constraints at boundaries
+      {
+        const scenarios = [
+          {
+            'data': { 'code': 'ab' },
+            'name': 'minLength boundary (2 chars) passes',
+            'valid': true
+          },
+          {
+            'data': { 'code': 'abcde' },
+            'name': 'maxLength boundary (5 chars) passes',
+            'valid': true
+          },
+          {
+            'data': { 'code': 'a' },
+            'name': 'below minLength (1 char) fails',
+            'valid': false
+          },
+          {
+            'data': { 'code': 'abcdef' },
+            'name': 'above maxLength (6 chars) fails',
+            'valid': false
           }
-        },
-        'required': ['code'],
-        'type': 'object'
-      });
+        ];
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        void it(name, () => {
+        registry.register({
+          '$id': 'https://edge.test/StrLen',
+          'properties': {
+            'code': {
+              'maxLength': 5,
+              'minLength': 2,
+              'type': 'string'
+            }
+          },
+          'required': ['code'],
+          'type': 'object'
+        });
+
+        for (const {
+          data, name, valid
+        } of scenarios) {
           const errors = registry.validate('https://edge.test/StrLen', data);
 
           if (valid) {
-            assert.equal(errors.ok, true);
-            assert.equal(errors.length, 0);
+            assert.equal(errors.ok, true, name);
+            assert.equal(errors.length, 0, name);
           } else {
-            assert.equal(errors.ok, false);
-            assert(errors.length > 0, 'expected at least one validation error');
+            assert.equal(errors.ok, false, name);
+            assert(errors.length > 0, `expected at least one validation error: ${name}`);
           }
-        });
-      }
-    });
-
-    void describe('pattern constraint', () => {
-      const scenarios: Array<{
-        'data': Record<string, unknown>;
-        'name': string;
-        'valid': boolean;
-      }> = [
-        {
-          'data': { 'zip': '12345' },
-          'name': 'valid 5-digit zip passes',
-          'valid': true
-        },
-        {
-          'data': { 'zip': '1234' },
-          'name': '4-digit zip fails',
-          'valid': false
-        },
-        {
-          'data': { 'zip': '123456' },
-          'name': '6-digit zip fails',
-          'valid': false
-        },
-        {
-          'data': { 'zip': 'abcde' },
-          'name': 'alpha zip fails',
-          'valid': false
         }
-      ];
+      }
 
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-
-      registry.register({
-        '$id': 'https://edge.test/Pattern',
-        'properties': {
-          'zip': {
-            'pattern': '^\\d{5}$',
-            'type': 'string'
+      // pattern constraint
+      {
+        const scenarios = [
+          {
+            'data': { 'zip': '12345' },
+            'name': 'valid 5-digit zip passes',
+            'valid': true
+          },
+          {
+            'data': { 'zip': '1234' },
+            'name': '4-digit zip fails',
+            'valid': false
+          },
+          {
+            'data': { 'zip': '123456' },
+            'name': '6-digit zip fails',
+            'valid': false
+          },
+          {
+            'data': { 'zip': 'abcde' },
+            'name': 'alpha zip fails',
+            'valid': false
           }
-        },
-        'required': ['zip'],
-        'type': 'object'
-      });
+        ];
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        void it(name, () => {
+        registry.register({
+          '$id': 'https://edge.test/Pattern',
+          'properties': {
+            'zip': {
+              'pattern': '^\\d{5}$',
+              'type': 'string'
+            }
+          },
+          'required': ['zip'],
+          'type': 'object'
+        });
+
+        for (const {
+          data, name, valid
+        } of scenarios) {
           const errors = registry.validate('https://edge.test/Pattern', data);
 
           if (valid) {
-            assert.equal(errors.ok, true);
-            assert.equal(errors.length, 0);
+            assert.equal(errors.ok, true, name);
+            assert.equal(errors.length, 0, name);
           } else {
-            assert.equal(errors.ok, false);
-            assert(errors.length > 0, 'expected at least one validation error');
+            assert.equal(errors.ok, false, name);
+            assert(errors.length > 0, `expected at least one validation error: ${name}`);
           }
-        });
+        }
       }
     });
   });
@@ -3048,82 +2927,77 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('Array constraint validation', () => {
-    const scenarios: Array<{
-      'data': Record<string, unknown>;
-      'name': string;
-      'valid': boolean;
-    }> = [
-      {
-        'data': { 'tags': ['a'] },
-        'name': 'minItems boundary (1 item) passes',
-        'valid': true
-      },
-      {
-        'data': {
-          'tags': [
-            'a',
-            'b',
-            'c'
-          ]
+    void it('GBU: minItems, maxItems, item type table-driven', () => {
+      const scenarios = [
+        {
+          'data': { 'tags': ['a'] },
+          'name': 'minItems boundary (1 item) passes',
+          'valid': true
         },
-        'name': 'maxItems boundary (3 items) passes',
-        'valid': true
-      },
-      {
-        'data': { 'tags': [] },
-        'name': 'empty array (below minItems) fails',
-        'valid': false
-      },
-      {
-        'data': {
-          'tags': [
-            'a',
-            'b',
-            'c',
-            'd'
-          ]
+        {
+          'data': {
+            'tags': [
+              'a',
+              'b',
+              'c'
+            ]
+          },
+          'name': 'maxItems boundary (3 items) passes',
+          'valid': true
         },
-        'name': 'above maxItems (4 items) fails',
-        'valid': false
-      },
-      {
-        'data': { 'tags': [1] },
-        'name': 'wrong item type (number) fails',
-        'valid': false
-      }
-    ];
-
-    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-
-    registry.register({
-      '$id': 'https://edge.test/ArrayItems',
-      'properties': {
-        'tags': {
-          'items': { 'type': 'string' },
-          'maxItems': 3,
-          'minItems': 1,
-          'type': 'array'
+        {
+          'data': { 'tags': [] },
+          'name': 'empty array (below minItems) fails',
+          'valid': false
+        },
+        {
+          'data': {
+            'tags': [
+              'a',
+              'b',
+              'c',
+              'd'
+            ]
+          },
+          'name': 'above maxItems (4 items) fails',
+          'valid': false
+        },
+        {
+          'data': { 'tags': [1] },
+          'name': 'wrong item type (number) fails',
+          'valid': false
         }
-      },
-      'required': ['tags'],
-      'type': 'object'
-    });
+      ];
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    for (const {
-      data, name, valid
-    } of scenarios) {
-      void it(name, () => {
+      registry.register({
+        '$id': 'https://edge.test/ArrayItems',
+        'properties': {
+          'tags': {
+            'items': { 'type': 'string' },
+            'maxItems': 3,
+            'minItems': 1,
+            'type': 'array'
+          }
+        },
+        'required': ['tags'],
+        'type': 'object'
+      });
+
+      for (const {
+        data, name, valid
+      } of scenarios) {
         const errors = registry.validate('https://edge.test/ArrayItems', data);
 
         if (valid) {
-          assert.equal(errors.ok, true);
-          assert.equal(errors.length, 0);
+          assert.equal(errors.ok, true, name);
+          assert.equal(errors.length, 0, name);
         } else {
-          assert.equal(errors.ok, false);
-          assert(errors.length > 0, 'expected at least one validation error');
+          assert.equal(errors.ok, false, name);
+          assert(errors.length > 0, `expected at least one validation error: ${name}`);
         }
-      });
-    }
+      }
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -3131,110 +3005,100 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('Enum and const validation', () => {
-    void describe('enum constraints', () => {
-      const scenarios: Array<{
-        'data': Record<string, unknown>;
-        'name': string;
-        'valid': boolean;
-      }> = [
-        {
-          'data': { 'status': 'active' },
-          'name': 'valid enum value passes',
-          'valid': true
-        },
-        {
-          'data': { 'status': 'unknown' },
-          'name': 'invalid enum value fails',
-          'valid': false
-        }
-      ];
-
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-
-      registry.register({
-        '$id': 'https://edge.test/Enum',
-        'properties': {
-          'status': {
-            'enum': [
-              'active',
-              'inactive',
-              'pending'
-            ],
-            'type': 'string'
+    void it('GBU: enum valid/invalid, const exact-match/mismatch/type-error table-driven', () => {
+      // enum constraints
+      {
+        const scenarios = [
+          {
+            'data': { 'status': 'active' },
+            'name': 'valid enum value passes',
+            'valid': true
+          },
+          {
+            'data': { 'status': 'unknown' },
+            'name': 'invalid enum value fails',
+            'valid': false
           }
-        },
-        'required': ['status'],
-        'type': 'object'
-      });
+        ];
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        void it(name, () => {
+        registry.register({
+          '$id': 'https://edge.test/Enum',
+          'properties': {
+            'status': {
+              'enum': [
+                'active',
+                'inactive',
+                'pending'
+              ],
+              'type': 'string'
+            }
+          },
+          'required': ['status'],
+          'type': 'object'
+        });
+
+        for (const {
+          data, name, valid
+        } of scenarios) {
           const errors = registry.validate('https://edge.test/Enum', data);
 
           if (valid) {
-            assert.equal(errors.ok, true);
-            assert.equal(errors.length, 0);
+            assert.equal(errors.ok, true, name);
+            assert.equal(errors.length, 0, name);
           } else {
-            assert.equal(errors.ok, false);
-            assert(errors.length > 0, 'expected at least one validation error');
+            assert.equal(errors.ok, false, name);
+            assert(errors.length > 0, `expected at least one validation error: ${name}`);
           }
-        });
-      }
-    });
-
-    void describe('const constraints', () => {
-      const scenarios: Array<{
-        'data': Record<string, unknown>;
-        'name': string;
-        'valid': boolean;
-      }> = [
-        {
-          'data': { 'version': 2 },
-          'name': 'exact const value passes',
-          'valid': true
-        },
-        {
-          'data': { 'version': 1 },
-          'name': 'different number fails',
-          'valid': false
-        },
-        {
-          'data': { 'version': '2' },
-          'name': 'string "2" fails (wrong type)',
-          'valid': false
         }
-      ];
+      }
 
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-
-      registry.register({
-        '$id': 'https://edge.test/Const',
-        'properties': {
-          'version': {
-            'const': 2,
-            'type': 'number'
+      // const constraints
+      {
+        const scenarios = [
+          {
+            'data': { 'version': 2 },
+            'name': 'exact const value passes',
+            'valid': true
+          },
+          {
+            'data': { 'version': 1 },
+            'name': 'different number fails',
+            'valid': false
+          },
+          {
+            'data': { 'version': '2' },
+            'name': 'string "2" fails (wrong type)',
+            'valid': false
           }
-        },
-        'required': ['version'],
-        'type': 'object'
-      });
+        ];
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        void it(name, () => {
+        registry.register({
+          '$id': 'https://edge.test/Const',
+          'properties': {
+            'version': {
+              'const': 2,
+              'type': 'number'
+            }
+          },
+          'required': ['version'],
+          'type': 'object'
+        });
+
+        for (const {
+          data, name, valid
+        } of scenarios) {
           const errors = registry.validate('https://edge.test/Const', data);
 
           if (valid) {
-            assert.equal(errors.ok, true);
-            assert.equal(errors.length, 0);
+            assert.equal(errors.ok, true, name);
+            assert.equal(errors.length, 0, name);
           } else {
-            assert.equal(errors.ok, false);
-            assert(errors.length > 0, 'expected at least one validation error');
+            assert.equal(errors.ok, false, name);
+            assert(errors.length > 0, `expected at least one validation error: ${name}`);
           }
-        });
+        }
       }
     });
   });
@@ -3244,81 +3108,74 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('Top-level type validation', () => {
-    const scenarios: Array<{
-      'data': unknown;
-      'name': string;
-      'schemaId': string;
-      'valid': boolean;
-    }> = [
-      {
-        'data': {},
-        'name': 'empty object against schema with no required fields',
-        'schemaId': 'https://edge.test/NoReq',
-        'valid': true
-      },
-      {
-        'data': 'a string',
-        'name': 'string rejected for object schema',
-        'schemaId': 'https://edge.test/ObjOnly',
-        'valid': false
-      },
-      {
-        'data': 42,
-        'name': 'number rejected for object schema',
-        'schemaId': 'https://edge.test/ObjOnly',
-        'valid': false
-      },
-      {
-        'data': null,
-        'name': 'null rejected for object schema',
-        'schemaId': 'https://edge.test/ObjOnly',
-        'valid': false
-      },
-      {
-        'data': [],
-        'name': 'array rejected for object schema',
-        'schemaId': 'https://edge.test/ObjOnly',
-        'valid': false
-      },
-      {
-        'data': undefined,
-        'name': 'undefined rejected for object schema',
-        'schemaId': 'https://edge.test/ObjOnly',
-        'valid': false
-      }
-    ];
+    void it('GBU: empty object passes, string/number/null/array/undefined rejected for object schema', () => {
+      const scenarios = [
+        {
+          'data': {},
+          'name': 'empty object against schema with no required fields',
+          'schemaId': 'https://edge.test/NoReq',
+          'valid': true
+        },
+        {
+          'data': 'a string',
+          'name': 'string rejected for object schema',
+          'schemaId': 'https://edge.test/ObjOnly',
+          'valid': false
+        },
+        {
+          'data': 42,
+          'name': 'number rejected for object schema',
+          'schemaId': 'https://edge.test/ObjOnly',
+          'valid': false
+        },
+        {
+          'data': null,
+          'name': 'null rejected for object schema',
+          'schemaId': 'https://edge.test/ObjOnly',
+          'valid': false
+        },
+        {
+          'data': [],
+          'name': 'array rejected for object schema',
+          'schemaId': 'https://edge.test/ObjOnly',
+          'valid': false
+        },
+        {
+          'data': undefined,
+          'name': 'undefined rejected for object schema',
+          'schemaId': 'https://edge.test/ObjOnly',
+          'valid': false
+        }
+      ];
+      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      registry.register({
+        '$id': 'https://edge.test/NoReq',
+        'properties': {
+          'a': { 'type': 'string' },
+          'b': { 'type': 'number' }
+        },
+        'type': 'object'
+      });
+      registry.register({
+        '$id': 'https://edge.test/ObjOnly',
+        'type': 'object'
+      });
 
-    registry.register({
-      '$id': 'https://edge.test/NoReq',
-      'properties': {
-        'a': { 'type': 'string' },
-        'b': { 'type': 'number' }
-      },
-      'type': 'object'
-    });
-
-    registry.register({
-      '$id': 'https://edge.test/ObjOnly',
-      'type': 'object'
-    });
-
-    for (const {
-      data, name, schemaId, valid
-    } of scenarios) {
-      void it(name, () => {
+      for (const {
+        data, name, schemaId, valid
+      } of scenarios) {
         const errors = registry.validate(schemaId, data);
 
         if (valid) {
-          assert.equal(errors.ok, true);
-          assert.equal(errors.length, 0);
+          assert.equal(errors.ok, true, name);
+          assert.equal(errors.length, 0, name);
         } else {
-          assert.equal(errors.ok, false);
-          assert(errors.length > 0, 'expected at least one validation error');
+          assert.equal(errors.ok, false, name);
+          assert(errors.length > 0, `expected at least one validation error: ${name}`);
         }
-      });
-    }
+      }
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -3326,12 +3183,10 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('Coercion edge cases', () => {
-    void describe('coerce applies nested defaults', () => {
-      const scenarios: Array<{
-        'expected': unknown;
+    void it('coerce applies nested defaults: name preserved, theme and volume defaults applied', () => {
+      const scenarios: Array<{ 'expected': unknown;
         'name': string;
-        'value': unknown;
-      }> = [
+        'value': unknown }> = [
         {
           'expected': 'Alice',
           'name': 'name preserved',
@@ -3348,7 +3203,6 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
           'value': 'settings.volume'
         }
       ];
-
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       registry.register({
@@ -3384,138 +3238,121 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       for (const {
         'expected': exp, 'name': n, 'value': path
       } of scenarios) {
-        void it(n, () => {
-          const parts = (path as string).split('.');
-          let current: unknown = result;
+        const parts = (path as string).split('.');
+        let current: unknown = result;
 
-          for (const part of parts) {
-            current = (current as Record<string, unknown>)[part];
-          }
+        for (const part of parts) {
+          current = (current as Record<string, unknown>)[part];
+        }
 
-          assert.equal(current, exp);
-        });
+        assert.equal(current, exp, n);
       }
     });
 
-    void it('coerce does not mutate the input object', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    void it('coerce: does not mutate input, throws InstantiationError with path on nested failure', () => {
+      // no mutation
+      {
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register({
-        '$id': 'https://edge.test/NoMutate',
-        'properties': {
-          'role': {
-            'default': 'user',
-            'type': 'string'
-          }
-        },
-        'type': 'object'
-      });
+        registry.register({
+          '$id': 'https://edge.test/NoMutate',
+          'properties': {
+            'role': {
+              'default': 'user',
+              'type': 'string'
+            }
+          },
+          'type': 'object'
+        });
+        const input = {};
 
-      const input = {};
+        registry.instantiate('https://edge.test/NoMutate', input);
+        assert.equal(Object.keys(input).length, 0, 'input object not mutated');
+      }
 
-      registry.instantiate('https://edge.test/NoMutate', input);
-      assert.equal(Object.keys(input).length, 0, 'input object not mutated');
+      // nested failure throws InstantiationError with path
+      {
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+
+        registry.register({
+          '$defs': {
+            'Address': {
+              'properties': {
+                'city': { 'type': 'string' },
+                'zip': {
+                  'pattern': '^\\d{5}$',
+                  'type': 'string'
+                }
+              },
+              'required': [
+                'city',
+                'zip'
+              ],
+              'type': 'object'
+            }
+          },
+          '$id': 'https://edge.test/NestedErr',
+          'properties': {
+            'address': { '$ref': '#/$defs/Address' },
+            'name': { 'type': 'string' }
+          },
+          'required': [
+            'name',
+            'address'
+          ],
+          'type': 'object'
+        });
+
+        try {
+          registry.instantiate('https://edge.test/NestedErr', {
+            'address': {
+              'city': 'Springfield',
+              'zip': 'bad'
+            },
+            'name': 'Alice'
+          });
+          assert.fail('should have thrown');
+        } catch (error) {
+          assert(error instanceof InstantiationError, 'nested failure: instanceof InstantiationError');
+          assert.equal(error.code, 'INSTANTIATION_FAILED');
+          assert.equal(error.retryable, false);
+          assert(error.errors.length > 0, 'nested failure: has errors');
+          const patternErr = error.errors.items.find((item) => {
+            return item.keyword === 'pattern';
+          });
+
+          assert(patternErr !== undefined, 'nested failure surfaces pattern keyword');
+          assert.equal(patternErr.path, '/address/zip');
+        }
+      }
     });
 
-    void it('coerce throws InstantiationError with path info on nested failure', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    void it('castTypes coercion: string-number coerced to number', () => {
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableTypeCast': true
+      });
 
       registry.register({
-        '$defs': {
-          'Address': {
-            'properties': {
-              'city': { 'type': 'string' },
-              'zip': {
-                'pattern': '^\\d{5}$',
-                'type': 'string'
-              }
-            },
-            'required': [
-              'city',
-              'zip'
-            ],
-            'type': 'object'
-          }
-        },
-        '$id': 'https://edge.test/NestedErr',
+        '$id': 'https://edge.test/CastNum',
         'properties': {
-          'address': { '$ref': '#/$defs/Address' },
+          'age': { 'type': 'number' },
           'name': { 'type': 'string' }
         },
         'required': [
           'name',
-          'address'
+          'age'
         ],
         'type': 'object'
       });
 
-      try {
-        registry.instantiate('https://edge.test/NestedErr', {
-          'address': {
-            'city': 'Springfield',
-            'zip': 'bad'
-          },
-          'name': 'Alice'
-        });
-        assert.fail('should have thrown');
-      } catch (error) {
-        assert(error instanceof InstantiationError, 'nested failure: instanceof InstantiationError');
-        assert.equal(error.code, 'INSTANTIATION_FAILED');
-        assert.equal(error.retryable, false);
-        assert(error.errors.length > 0, 'nested failure: has errors');
-        const patternErr = error.errors.items.find((item) => {
-          return item.keyword === 'pattern';
-        });
+      const result = registry.instantiate('https://edge.test/CastNum', {
+        'age': '25',
+        'name': 'Alice'
+      }) as Record<string, unknown>;
 
-        assert(patternErr !== undefined, 'nested failure surfaces pattern keyword');
-        assert.equal(patternErr.path, '/address/zip');
-      }
-    });
-
-    void describe('castTypes coercion', () => {
-      const scenarios: Array<{
-        'expectedType': string;
-        'expectedValue': unknown;
-        'input': Record<string, unknown>;
-        'name': string;
-      }> = [{
-        'expectedType': 'number',
-        'expectedValue': 25,
-        'input': {
-          'age': '25',
-          'name': 'Alice'
-        },
-        'name': 'coerces string number to number'
-      }];
-
-      for (const {
-        'expectedType': expType, 'expectedValue': expVal, 'input': inp, 'name': n
-      } of scenarios) {
-        void it(n, () => {
-          const registry = JsonTology.create({
-            'baseIRI': 'urn:test:',
-            'enableTypeCast': true
-          });
-
-          registry.register({
-            '$id': 'https://edge.test/CastNum',
-            'properties': {
-              'age': { 'type': 'number' },
-              'name': { 'type': 'string' }
-            },
-            'required': [
-              'name',
-              'age'
-            ],
-            'type': 'object'
-          });
-
-          const result = registry.instantiate('https://edge.test/CastNum', inp) as Record<string, unknown>;
-
-          assert.equal(result.age, expVal);
-          assert.equal(typeof result.age, expType);
-        });
-      }
+      assert.equal(result.age, 25, 'string "25" coerced to number 25');
+      assert.equal(typeof result.age, 'number', 'result.age is a number');
     });
   });
 
@@ -3524,146 +3361,136 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('Cross-schema $ref validation', () => {
-    void describe('validates data against cross-schema refs', () => {
-      const scenarios: Array<{
-        'data': unknown;
-        'name': string;
-        'valid': boolean;
-      }> = [
-        {
-          'data': {
-            'country': {
-              'code': 'US',
-              'name': 'United States'
+    void it('GBU: cross-schema refs valid/invalid, deeply chained A→B→C table-driven', () => {
+      // cross-schema City→Country
+      {
+        const scenarios = [
+          {
+            'data': {
+              'country': {
+                'code': 'US',
+                'name': 'United States'
+              },
+              'name': 'Springfield'
             },
-            'name': 'Springfield'
+            'name': 'valid City with valid Country ref',
+            'valid': true
           },
-          'name': 'valid City with valid Country ref',
-          'valid': true
-        },
-        {
-          'data': {
-            'country': {
-              'code': 'USA',
-              'name': 'United States'
+          {
+            'data': {
+              'country': {
+                'code': 'USA',
+                'name': 'United States'
+              },
+              'name': 'Springfield'
             },
-            'name': 'Springfield'
+            'name': 'invalid country code (too long)',
+            'valid': false
           },
-          'name': 'invalid country code (too long)',
-          'valid': false
-        },
-        {
-          'data': { 'name': 'Springfield' },
-          'name': 'missing required country ref',
-          'valid': false
-        }
-      ];
+          {
+            'data': { 'name': 'Springfield' },
+            'name': 'missing required country ref',
+            'valid': false
+          }
+        ];
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
-
-      registry.register([
-        {
-          '$id': 'https://edge.test/Country',
-          'properties': {
-            'code': {
-              'maxLength': 2,
-              'minLength': 2,
-              'type': 'string'
+        registry.register([
+          {
+            '$id': 'https://edge.test/Country',
+            'properties': {
+              'code': {
+                'maxLength': 2,
+                'minLength': 2,
+                'type': 'string'
+              },
+              'name': { 'type': 'string' }
             },
-            'name': { 'type': 'string' }
+            'required': [
+              'code',
+              'name'
+            ],
+            'type': 'object'
           },
-          'required': [
-            'code',
-            'name'
-          ],
-          'type': 'object'
-        },
-        {
-          '$id': 'https://edge.test/City',
-          'properties': {
-            'country': { '$ref': 'https://edge.test/Country' },
-            'name': { 'type': 'string' }
-          },
-          'required': [
-            'name',
-            'country'
-          ],
-          'type': 'object'
-        }
-      ]);
+          {
+            '$id': 'https://edge.test/City',
+            'properties': {
+              'country': { '$ref': 'https://edge.test/Country' },
+              'name': { 'type': 'string' }
+            },
+            'required': [
+              'name',
+              'country'
+            ],
+            'type': 'object'
+          }
+        ]);
 
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        void it(name, () => {
+        for (const {
+          data, name, valid
+        } of scenarios) {
           const errors = registry.validate('https://edge.test/City', data);
 
           if (valid) {
-            assert.equal(errors.ok, true);
-            assert.equal(errors.length, 0);
+            assert.equal(errors.ok, true, name);
+            assert.equal(errors.length, 0, name);
           } else {
-            assert.equal(errors.ok, false);
-            assert(errors.length > 0, 'expected at least one validation error');
+            assert.equal(errors.ok, false, name);
+            assert(errors.length > 0, `expected at least one validation error: ${name}`);
           }
-        });
+        }
       }
-    });
 
-    void describe('deeply chained refs (A -> B -> C)', () => {
-      const scenarios: Array<{
-        'data': unknown;
-        'name': string;
-        'valid': boolean;
-      }> = [
-        {
-          'data': { 'b': { 'c': { 'value': 42 } } },
-          'name': 'valid deeply chained ref data',
-          'valid': true
-        },
-        {
-          'data': { 'b': { 'c': { 'value': 'not-a-number' } } },
-          'name': 'invalid at deepest level (string instead of number)',
-          'valid': false
-        }
-      ];
+      // deeply chained A→B→C
+      {
+        const scenarios = [
+          {
+            'data': { 'b': { 'c': { 'value': 42 } } },
+            'name': 'valid deeply chained ref data',
+            'valid': true
+          },
+          {
+            'data': { 'b': { 'c': { 'value': 'not-a-number' } } },
+            'name': 'invalid at deepest level (string instead of number)',
+            'valid': false
+          }
+        ];
+        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        registry.register([
+          {
+            '$id': 'https://edge.test/C',
+            'properties': { 'value': { 'type': 'number' } },
+            'required': ['value'],
+            'type': 'object'
+          },
+          {
+            '$id': 'https://edge.test/B',
+            'properties': { 'c': { '$ref': 'https://edge.test/C' } },
+            'required': ['c'],
+            'type': 'object'
+          },
+          {
+            '$id': 'https://edge.test/A',
+            'properties': { 'b': { '$ref': 'https://edge.test/B' } },
+            'required': ['b'],
+            'type': 'object'
+          }
+        ]);
 
-      registry.register([
-        {
-          '$id': 'https://edge.test/C',
-          'properties': { 'value': { 'type': 'number' } },
-          'required': ['value'],
-          'type': 'object'
-        },
-        {
-          '$id': 'https://edge.test/B',
-          'properties': { 'c': { '$ref': 'https://edge.test/C' } },
-          'required': ['c'],
-          'type': 'object'
-        },
-        {
-          '$id': 'https://edge.test/A',
-          'properties': { 'b': { '$ref': 'https://edge.test/B' } },
-          'required': ['b'],
-          'type': 'object'
-        }
-      ]);
-
-      for (const {
-        data, name, valid
-      } of scenarios) {
-        void it(name, () => {
+        for (const {
+          data, name, valid
+        } of scenarios) {
           const errors = registry.validate('https://edge.test/A', data);
 
           if (valid) {
-            assert.equal(errors.ok, true);
-            assert.equal(errors.length, 0);
+            assert.equal(errors.ok, true, name);
+            assert.equal(errors.length, 0, name);
           } else {
-            assert.equal(errors.ok, false);
-            assert(errors.length > 0, 'expected at least one validation error');
+            assert.equal(errors.ok, false, name);
+            assert(errors.length > 0, `expected at least one validation error: ${name}`);
           }
-        });
+        }
       }
     });
   });
@@ -3759,18 +3586,16 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       }
     ];
 
-    for (const {
-      'check': chk, 'name': n, 'schemas': schs
-    } of scenarios) {
-      void it(n, () => {
+    void it('GBU: OWL class, SHACL shape, and recursive self-ref serialization scenarios', () => {
+      for (const scenario of scenarios) {
         const jt = JsonTology.create({
           'baseIRI': 'https://edge.test',
-          'schemas': schs
+          'schemas': scenario.schemas
         });
 
-        chk(jt);
-      });
-    }
+        scenario.check(jt);
+      }
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -3809,56 +3634,55 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         }
       ];
 
-      for (const {
-        check, name
-      } of scenarios) {
-        void it(name, () => {
+      void it('unregistered schema lookups: list/has/get/toSchema all return empty/false/undefined', () => {
+        for (const scenario of scenarios) {
           const jt = JsonTology.create({ 'baseIRI': 'https://edge.test' });
 
-          check(jt);
-        });
-      }
+          scenario.check(jt);
+        }
+      });
     });
 
-    void it('register() chains and accumulates schemas', () => {
-      const jt = JsonTology.create({ 'baseIRI': 'https://edge.test' });
+    void it('register() chains/accumulates schemas and invalidates ontology cache', () => {
+      // chains and accumulates
+      {
+        const jt = JsonTology.create({ 'baseIRI': 'https://edge.test' });
 
-      jt.register({
-        '$id': 'https://edge.test/First',
-        'type': 'object'
-      });
-      jt.register({
-        '$id': 'https://edge.test/Second',
-        'type': 'object'
-      });
-
-      assert.deepEqual(jt.list(), [
-        'https://edge.test/First',
-        'https://edge.test/Second'
-      ]);
-      assert.equal(jt.has('https://edge.test/First'), true, 'First schema present');
-      assert.equal(jt.has('https://edge.test/Second'), true, 'Second schema present');
-    });
-
-    void it('ontology cache invalidates after register()', () => {
-      const jt = JsonTology.create({
-        'baseIRI': 'https://edge.test',
-        'schemas': [{
-          '$id': 'https://edge.test/A',
+        jt.register({
+          '$id': 'https://edge.test/First',
           'type': 'object'
-        }] as const
-      });
+        });
+        jt.register({
+          '$id': 'https://edge.test/Second',
+          'type': 'object'
+        });
 
-      const ont1 = jt.ontology();
+        assert.deepEqual(jt.list(), [
+          'https://edge.test/First',
+          'https://edge.test/Second'
+        ]);
+        assert.equal(jt.has('https://edge.test/First'), true, 'First schema present');
+        assert.equal(jt.has('https://edge.test/Second'), true, 'Second schema present');
+      }
 
-      jt.register({
-        '$id': 'https://edge.test/B',
-        'type': 'object'
-      });
+      // ontology cache invalidates after register
+      {
+        const jt = JsonTology.create({
+          'baseIRI': 'https://edge.test',
+          'schemas': [{
+            '$id': 'https://edge.test/A',
+            'type': 'object'
+          }] as const
+        });
+        const ont1 = jt.ontology();
 
-      const ont2 = jt.ontology();
+        jt.register({
+          '$id': 'https://edge.test/B',
+          'type': 'object'
+        });
 
-      assert.notStrictEqual(ont1, ont2, 'new ontology instance after registration');
+        assert.notStrictEqual(ont1, jt.ontology(), 'new ontology instance after registration');
+      }
     });
   });
 }
@@ -3872,137 +3696,140 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 // ---------------------------------------------------------------------------
 
   void describe('ValidationErrors.aggregate()', () => {
-    void it('returns zero count and empty arrays when there are no errors', () => {
-      const errs = new ValidationErrors([]);
-      const rollup = errs.aggregate();
+    void it('GBU: empty aggregate, count matches length, deduplication, sorting, root path, log spread', () => {
+      // empty
+      {
+        const errs = new ValidationErrors([]);
+        const rollup = errs.aggregate();
 
-      assert.equal(rollup.count, 0, 'count is 0');
-      assert.deepEqual(rollup.paths, [], 'paths is empty');
-      assert.deepEqual(rollup.keywords, [], 'keywords is empty');
-    });
+        assert.equal(rollup.count, 0, 'count is 0');
+        assert.deepEqual(rollup.paths, [], 'paths is empty');
+        assert.deepEqual(rollup.keywords, [], 'keywords is empty');
+      }
 
-    void it('count matches .length', () => {
-      const errs = new ValidationErrors([
-        {
+      // count matches length
+      {
+        const errs = new ValidationErrors([
+          {
+            'keyword': 'type',
+            'message': 'must be string',
+            'params': {},
+            'path': '/name'
+          },
+          {
+            'keyword': 'minimum',
+            'message': 'must be >= 0',
+            'params': { 'limit': 0 },
+            'path': '/age'
+          }
+        ]);
+
+        assert.equal(errs.aggregate().count, errs.length, 'aggregate().count === .length');
+      }
+
+      // deduplication
+      {
+        const errs = new ValidationErrors([
+          {
+            'keyword': 'type',
+            'message': 'must be string',
+            'params': {},
+            'path': '/name'
+          },
+          {
+            'keyword': 'minLength',
+            'message': 'too short',
+            'params': { 'limit': 1 },
+            'path': '/name'
+          },
+          {
+            'keyword': 'type',
+            'message': 'must be number',
+            'params': {},
+            'path': '/age'
+          }
+        ]);
+        const rollup = errs.aggregate();
+
+        assert.equal(rollup.count, 3, 'count is 3 (no dedup on count)');
+        assert.deepEqual(rollup.paths, [
+          'age',
+          'name'
+        ], 'paths deduped and sorted (access form)');
+        assert.deepEqual(rollup.keywords, [
+          'minLength',
+          'type'
+        ], 'keywords deduped and sorted');
+      }
+
+      // alphabetical sorting
+      {
+        const errs = new ValidationErrors([
+          {
+            'keyword': 'type',
+            'message': 'err',
+            'params': {},
+            'path': '/z'
+          },
+          {
+            'keyword': 'minLength',
+            'message': 'err',
+            'params': {},
+            'path': '/a'
+          },
+          {
+            'keyword': 'format',
+            'message': 'err',
+            'params': {},
+            'path': '/m'
+          }
+        ]);
+        const rollup = errs.aggregate();
+
+        assert.deepEqual(rollup.paths, [
+          'a',
+          'm',
+          'z'
+        ], 'paths are sorted (access form)');
+        assert.deepEqual(rollup.keywords, [
+          'format',
+          'minLength',
+          'type'
+        ], 'keywords are sorted');
+      }
+
+      // root errors (empty path)
+      {
+        const errs = new ValidationErrors([{
+          'keyword': 'required',
+          'message': "must have required property 'name'",
+          'params': { 'missingProperty': 'name' },
+          'path': ''
+        }]);
+        const rollup = errs.aggregate();
+
+        assert.deepEqual(rollup.paths, [''], 'root error path is empty string');
+        assert.equal(rollup.count, 1, 'count is 1');
+      }
+
+      // safe to spread into log line
+      {
+        const errs = new ValidationErrors([{
           'keyword': 'type',
           'message': 'must be string',
-          'params': {},
+          'params': { 'type': 'string' },
           'path': '/name'
-        },
-        {
-          'keyword': 'minimum',
-          'message': 'must be >= 0',
-          'params': { 'limit': 0 },
-          'path': '/age'
-        }
-      ]);
+        }]);
+        const logLine = {
+          ...errs.aggregate(),
+          'schema': 'https://example.com/User'
+        };
 
-      assert.equal(errs.aggregate().count, errs.length, 'aggregate().count === .length');
-    });
-
-    void it('deduplicates paths and keywords', () => {
-      const errs = new ValidationErrors([
-        {
-          'keyword': 'type',
-          'message': 'must be string',
-          'params': {},
-          'path': '/name'
-        },
-        {
-          'keyword': 'minLength',
-          'message': 'too short',
-          'params': { 'limit': 1 },
-          'path': '/name'
-        },
-        {
-          'keyword': 'type',
-          'message': 'must be number',
-          'params': {},
-          'path': '/age'
-        }
-      ]);
-
-      const rollup = errs.aggregate();
-
-      assert.equal(rollup.count, 3, 'count is 3 (no dedup on count)');
-      assert.deepEqual(rollup.paths, [
-        'age',
-        'name'
-      ], 'paths deduped and sorted (access form)');
-      assert.deepEqual(rollup.keywords, [
-        'minLength',
-        'type'
-      ], 'keywords deduped and sorted');
-    });
-
-    void it('returns paths and keywords sorted alphabetically', () => {
-      const errs = new ValidationErrors([
-        {
-          'keyword': 'type',
-          'message': 'err',
-          'params': {},
-          'path': '/z'
-        },
-        {
-          'keyword': 'minLength',
-          'message': 'err',
-          'params': {},
-          'path': '/a'
-        },
-        {
-          'keyword': 'format',
-          'message': 'err',
-          'params': {},
-          'path': '/m'
-        }
-      ]);
-
-      const rollup = errs.aggregate();
-
-      assert.deepEqual(rollup.paths, [
-        'a',
-        'm',
-        'z'
-      ], 'paths are sorted (access form)');
-      assert.deepEqual(rollup.keywords, [
-        'format',
-        'minLength',
-        'type'
-      ], 'keywords are sorted');
-    });
-
-    void it('includes root errors (empty path) in paths', () => {
-      const errs = new ValidationErrors([{
-        'keyword': 'required',
-        'message': "must have required property 'name'",
-        'params': { 'missingProperty': 'name' },
-        'path': ''
-      }]);
-
-      const rollup = errs.aggregate();
-
-      assert.deepEqual(rollup.paths, [''], 'root error path is empty string');
-      assert.equal(rollup.count, 1, 'count is 1');
-    });
-
-    void it('is safe to spread into a structured log line', () => {
-      const errs = new ValidationErrors([{
-        'keyword': 'type',
-        'message': 'must be string',
-        'params': { 'type': 'string' },
-        'path': '/name'
-      }]);
-
-      const rollup = errs.aggregate();
-      const logLine = {
-        ...rollup,
-        'schema': 'https://example.com/User'
-      };
-
-      assert.equal(logLine.count, 1, 'spread count');
-      assert.deepEqual(logLine.paths, ['name'], 'spread paths (access form)');
-      assert.deepEqual(logLine.keywords, ['type'], 'spread keywords');
-      assert.equal(logLine.schema, 'https://example.com/User', 'additional field preserved');
+        assert.equal(logLine.count, 1, 'spread count');
+        assert.deepEqual(logLine.paths, ['name'], 'spread paths (access form)');
+        assert.deepEqual(logLine.keywords, ['type'], 'spread keywords');
+        assert.equal(logLine.schema, 'https://example.com/User', 'additional field preserved');
+      }
     });
   });
 
@@ -4011,133 +3838,123 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   // ---------------------------------------------------------------------------
 
   void describe('ValidationErrors.report()', () => {
-    void it('returns RFC 7807 shape with default type/title/status', () => {
-      const errs = new ValidationErrors([{
-        'keyword': 'type',
-        'message': 'must be string',
-        'params': {},
-        'path': '/name'
-      }]);
-
-      const problem = errs.report();
-
-      assert.equal(problem.type, 'https://json-tology.dev/problems/validation', 'type');
-      assert.equal(problem.title, 'Validation failed', 'title');
-      assert.equal(problem.status, 422, 'status');
-    });
-
-    void it('detail is singular when there is exactly 1 error', () => {
-      const errs = new ValidationErrors([{
-        'keyword': 'type',
-        'message': 'must be string',
-        'params': {},
-        'path': '/name'
-      }]);
-
-      assert.equal(errs.report().detail, '1 validation error', 'singular detail');
-    });
-
-    void it('detail is plural when there are multiple errors', () => {
-      const errs = new ValidationErrors([
-        {
+    void it('GBU: RFC 7807 defaults, singular/plural detail, errors entries, overrides, instance, clone', () => {
+      // RFC 7807 shape defaults
+      {
+        const errs = new ValidationErrors([{
           'keyword': 'type',
           'message': 'must be string',
           'params': {},
           'path': '/name'
-        },
-        {
-          'keyword': 'minimum',
-          'message': 'must be >= 0',
-          'params': { 'limit': 0 },
-          'path': '/age'
-        }
-      ]);
+        }]);
+        const problem = errs.report();
 
-      assert.equal(errs.report().detail, '2 validation errors', 'plural detail');
-    });
+        assert.equal(problem.type, 'https://json-tology.dev/problems/validation', 'type');
+        assert.equal(problem.title, 'Validation failed', 'title');
+        assert.equal(problem.status, 422, 'status');
+        assert.equal(problem.detail, '1 validation error', 'singular detail');
+      }
 
-    void it('each errors entry carries path, keyword, message, params', () => {
-      const errs = new ValidationErrors([{
-        'keyword': 'format',
-        'message': 'must match format "uuid"',
-        'params': { 'format': 'uuid' },
-        'path': '/id'
-      }]);
+      // plural detail
+      {
+        const errs = new ValidationErrors([
+          {
+            'keyword': 'type',
+            'message': 'must be string',
+            'params': {},
+            'path': '/name'
+          },
+          {
+            'keyword': 'minimum',
+            'message': 'must be >= 0',
+            'params': { 'limit': 0 },
+            'path': '/age'
+          }
+        ]);
 
-      const problem = errs.report();
+        assert.equal(errs.report().detail, '2 validation errors', 'plural detail');
+      }
 
-      assert.equal(problem.errors.length, 1, 'one error entry');
-      assert.deepEqual(
-        problem.errors,
-        [{
+      // errors entries carry all fields
+      {
+        const errs = new ValidationErrors([{
           'keyword': 'format',
           'message': 'must match format "uuid"',
           'params': { 'format': 'uuid' },
           'path': '/id'
-        }],
-        'errors entry carries all fields'
-      );
-    });
+        }]);
+        const problem = errs.report();
 
-    void it('overrides merge over defaults', () => {
-      const errs = new ValidationErrors([{
-        'keyword': 'type',
-        'message': 'must be string',
-        'params': {},
-        'path': '/name'
-      }]);
-
-      const problem = errs.report({
-        'instance': '/api/users',
-        'status': 400,
-        'title': 'Bad request'
-      });
-
-      assert.equal(problem.status, 400, 'overridden status');
-      assert.equal(problem.title, 'Bad request', 'overridden title');
-      assert.equal(problem.instance, '/api/users', 'instance attached');
-      assert.equal(problem.type, 'https://json-tology.dev/problems/validation', 'type unchanged');
-    });
-
-    void it('instance is undefined when not provided', () => {
-      const errs = new ValidationErrors([{
-        'keyword': 'type',
-        'message': 'err',
-        'params': {},
-        'path': ''
-      }]);
-
-      assert.equal(errs.report().instance, undefined, 'instance is undefined by default');
-    });
-
-    void it('payload survives structuredClone round-trip identically', () => {
-      const errs = new ValidationErrors([
-        {
+        assert.equal(problem.errors.length, 1, 'one error entry');
+        assert.deepEqual(problem.errors, [{
           'keyword': 'format',
           'message': 'must match format "uuid"',
           'params': { 'format': 'uuid' },
           'path': '/id'
-        },
-        {
-          'keyword': 'minItems',
-          'message': 'must NOT have fewer than 1 items',
-          'params': { 'limit': 1 },
-          'path': '/items'
-        }
-      ]);
+        }], 'errors entry carries all fields');
+      }
 
-      const problem = errs.report({ 'instance': '/orders' });
-      const cloned = structuredClone(problem);
+      // overrides merge over defaults
+      {
+        const errs = new ValidationErrors([{
+          'keyword': 'type',
+          'message': 'must be string',
+          'params': {},
+          'path': '/name'
+        }]);
+        const problem = errs.report({
+          'instance': '/api/users',
+          'status': 400,
+          'title': 'Bad request'
+        });
 
-      assert.deepEqual(cloned, problem, 'structuredClone round-trip is identical');
-    });
+        assert.equal(problem.status, 400, 'overridden status');
+        assert.equal(problem.title, 'Bad request', 'overridden title');
+        assert.equal(problem.instance, '/api/users', 'instance attached');
+        assert.equal(problem.type, 'https://json-tology.dev/problems/validation', 'type unchanged');
+      }
 
-    void it('errors array is empty when ValidationErrors has no items', () => {
-      const errs = new ValidationErrors([]);
-      const problem = errs.report();
+      // instance is undefined by default
+      {
+        const errs = new ValidationErrors([{
+          'keyword': 'type',
+          'message': 'err',
+          'params': {},
+          'path': ''
+        }]);
 
-      assert.equal(problem.errors.length, 0, 'no error entries');
-      assert.equal(problem.detail, '0 validation errors', 'zero plural detail');
+        assert.equal(errs.report().instance, undefined, 'instance is undefined by default');
+      }
+
+      // structuredClone round-trip
+      {
+        const errs = new ValidationErrors([
+          {
+            'keyword': 'format',
+            'message': 'must match format "uuid"',
+            'params': { 'format': 'uuid' },
+            'path': '/id'
+          },
+          {
+            'keyword': 'minItems',
+            'message': 'must NOT have fewer than 1 items',
+            'params': { 'limit': 1 },
+            'path': '/items'
+          }
+        ]);
+        const problem = errs.report({ 'instance': '/orders' });
+
+        assert.deepEqual(structuredClone(problem), problem, 'structuredClone round-trip is identical');
+      }
+
+      // empty errors array
+      {
+        const errs = new ValidationErrors([]);
+        const problem = errs.report();
+
+        assert.equal(problem.errors.length, 0, 'no error entries');
+        assert.equal(problem.detail, '0 validation errors', 'zero plural detail');
+      }
     });
   });
 }
