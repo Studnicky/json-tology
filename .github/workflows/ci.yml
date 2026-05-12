@@ -98,6 +98,10 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Type-check the type-test suite
+        if: matrix.task == 'types'
+        run: npm run type-check:tests
+
       - name: Run task
         env:
           TSX_CACHE: 1
