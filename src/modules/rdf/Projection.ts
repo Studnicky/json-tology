@@ -36,20 +36,38 @@ import { QuadFactory } from './QuadFactory.js';
 // TBox projection — purely relation-driven
 // ---------------------------------------------------------------------------
 
-export function projectGraph(graph: SchemaGraphInterface, options?: { 'curie'?: CurieInterface | undefined }): QuadInterface[] {
-  const { curie } = options ?? {};
+export const Projection = {
+  abox(
+    graph: SchemaGraphInterface,
+    data: unknown,
+    baseIRI: string,
+    options?: { 'curie'?: CurieInterface | undefined;
+      'entryNode'?: SchemaGraphNodeInterface | undefined;
+      'graphIRI'?: string | undefined;
+      'iriFor'?: SkolemizeFnType | undefined }
+  ): QuadInterface[] {
+    return projectAbox(graph, data, baseIRI, options);
+  },
 
-  QuadFactory.resetBnodeCounter();
-  const quads: QuadInterface[] = [];
+  graph(graph: SchemaGraphInterface, options?: { 'curie'?: CurieInterface | undefined }): QuadInterface[] {
+    const { curie } = options ?? {};
 
-  const allRelations = graph.allRelations();
+    QuadFactory.resetBnodeCounter();
+    const quads: QuadInterface[] = [];
 
-  for (const relation of allRelations) {
-    projectRelation(relation, quads, curie);
+    const allRelations = graph.allRelations();
+
+    for (const relation of allRelations) {
+      projectRelation(relation, quads, curie);
+    }
+
+    return quads;
+  },
+
+  toJsonLdNodes(quads: QuadInterface[]): Array<Record<string, unknown>> {
+    return quadsToJsonLdNodes(quads);
   }
-
-  return quads;
-}
+} as const;
 
 // ---------------------------------------------------------------------------
 // Data-driven predicate dispatch tables
@@ -469,7 +487,7 @@ interface ProjectPropertyArgs {
   readonly 'visited': WeakSet<object>;
 }
 
-export function projectAbox(
+function projectAbox(
   graph: SchemaGraphInterface,
   data: unknown,
   baseIRI: string,
@@ -700,7 +718,7 @@ function projectSingleValue(args: ProjectPropertyArgs): void {
 // Quad → JSON-LD node conversion
 // ---------------------------------------------------------------------------
 
-export function quadsToJsonLdNodes(quads: QuadInterface[]): Array<Record<string, unknown>> {
+function quadsToJsonLdNodes(quads: QuadInterface[]): Array<Record<string, unknown>> {
   const subjects = new Map<string, Record<string, unknown>>();
 
   for (const entry of quads) {

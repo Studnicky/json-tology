@@ -16,56 +16,58 @@ import { RDF } from '../../constants/IRI.js';
 // Relation index
 // ---------------------------------------------------------------------------
 
-export function buildIndex(allRelations: SchemaGraphRelationInterface[]): Map<string, RelationIndexInterface> {
-  const index = new Map<string, RelationIndexInterface>();
+export const ProjectionIndex = {
+  build(allRelations: SchemaGraphRelationInterface[]): Map<string, RelationIndexInterface> {
+    const index = new Map<string, RelationIndexInterface>();
 
-  for (const relation of allRelations) {
-    const sourceId = relation.source.id;
-    let entry = index.get(sourceId);
+    for (const relation of allRelations) {
+      const sourceId = relation.source.id;
+      let entry = index.get(sourceId);
 
-    if (entry === undefined) {
-      entry = {
-        'all': [],
-        'byPredicate': new Map(),
-        'types': []
-      };
-      index.set(sourceId, entry);
+      if (entry === undefined) {
+        entry = {
+          'all': [],
+          'byPredicate': new Map(),
+          'types': []
+        };
+        index.set(sourceId, entry);
+      }
+
+      entry.all.push(relation);
+
+      const predicateGroup = entry.byPredicate.get(relation.predicate);
+
+      if (predicateGroup === undefined) {
+        entry.byPredicate.set(relation.predicate, [relation]);
+      } else {
+        predicateGroup.push(relation);
+      }
+
+      if (relation.predicate === RDF.type) {
+        entry.types.push(ProjectionIndex.relationTargetId(relation));
+      }
     }
 
-    entry.all.push(relation);
+    return index;
+  },
 
-    const predicateGroup = entry.byPredicate.get(relation.predicate);
+  // ---------------------------------------------------------------------------
+  // Target ID resolution
+  // ---------------------------------------------------------------------------
 
-    if (predicateGroup === undefined) {
-      entry.byPredicate.set(relation.predicate, [relation]);
-    } else {
-      predicateGroup.push(relation);
-    }
+  isListStructure(structure: RelationStructure | undefined): structure is Extract<RelationStructure, { 'kind': 'list' }> {
+    return structure?.kind === 'list';
+  },
 
-    if (relation.predicate === RDF.type) {
-      entry.types.push(relationTargetId(relation));
-    }
+  // ---------------------------------------------------------------------------
+  // Structure type guards
+  // ---------------------------------------------------------------------------
+
+  isRestrictionStructure(structure: RelationStructure | undefined): structure is Extract<RelationStructure, { 'kind': 'restriction' }> {
+    return structure?.kind === 'restriction';
+  },
+
+  relationTargetId(relation: SchemaGraphRelationInterface): string {
+    return typeof relation.target === 'string' ? relation.target : relation.target.id;
   }
-
-  return index;
-}
-
-// ---------------------------------------------------------------------------
-// Target ID resolution
-// ---------------------------------------------------------------------------
-
-export function relationTargetId(relation: SchemaGraphRelationInterface): string {
-  return typeof relation.target === 'string' ? relation.target : relation.target.id;
-}
-
-// ---------------------------------------------------------------------------
-// Structure type guards
-// ---------------------------------------------------------------------------
-
-export function isRestrictionStructure(structure: RelationStructure | undefined): structure is Extract<RelationStructure, { 'kind': 'restriction' }> {
-  return structure?.kind === 'restriction';
-}
-
-export function isListStructure(structure: RelationStructure | undefined): structure is Extract<RelationStructure, { 'kind': 'list' }> {
-  return structure?.kind === 'list';
-}
+} as const;

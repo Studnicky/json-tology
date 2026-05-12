@@ -16,7 +16,7 @@
  */
 
 import {
-  fromRdfQuad, JsonTology
+  JsonTology, Lift
 } from '../src/index.js';
 import type { InferType } from '../src/types/index.js';
 import type { QuadInterface } from '../src/interfaces/index.js';
@@ -229,7 +229,7 @@ async function reason() {
   }
 
   const moduleQuads = parseN3Quads(resultN3).map((rdfQuad) => {
-    return fromRdfQuad(rdfQuad);
+    return Lift.fromQuad(rdfQuad);
   });
 
   const bySubject = new Map<string, QuadInterface[]>();

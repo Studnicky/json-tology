@@ -15,9 +15,9 @@ import { MaterializationError } from '../../errors/MaterializationError.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { Frozen } from '../data/Frozen.js';
 import { isRecord } from '../data/DataTypes.js';
-import { parseRef } from '../graph/GraphEngineSupport.js';
+import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
-import { projectAbox } from '../rdf/Projection.js';
+import { Projection } from '../rdf/Projection.js';
 import { ValidationErrors } from '../../errors/ValidationErrors.js';
 import { InstantiationError } from '../../errors/InstantiationError.js';
 
@@ -263,7 +263,7 @@ export class Materializer implements MaterializerInterface {
     baseIRI: string,
     options?: AboxOptionsType
   ): QuadInterface[] {
-    const quads = projectAbox(execution.graph, materialized, baseIRI, {
+    const quads = Projection.abox(execution.graph, materialized, baseIRI, {
       'entryNode': execution.entryNode,
       'graphIRI': options?.graphIRI,
       'iriFor': options?.iriFor
@@ -290,7 +290,7 @@ export class Materializer implements MaterializerInterface {
       return graph.resolveFragment(fragment);
     }
 
-    const parsed = parseRef(ref);
+    const parsed = GraphEngineSupport.parseRef(ref);
 
     const lookedUp = this.registry.get(parsed.id) as JSONSchema7Definition | undefined;
 

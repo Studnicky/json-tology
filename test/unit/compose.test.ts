@@ -1838,13 +1838,13 @@ import { Result } from '../../src/modules/data/Result.js';
 
     void it('OWL projection emits equivalentClass for equivalent schemas', async () => {
       const { SchemaGraph } = await import('../../src/modules/graph/SchemaGraph.js');
-      const { projectOwlGraph } = await import('../../src/modules/rdf/OwlProjection.js');
+      const { OwlProjection } = await import('../../src/modules/rdf/OwlProjection.js');
       const { OWL } = await import('../../src/constants/IRI.js');
 
       const PrimaryIsbn = Compose.equivalent(IsbnSchema, { '$id': 'urn:bookstore:PrimaryIsbn' });
 
       const graph = new SchemaGraph(PrimaryIsbn);
-      const quads = projectOwlGraph(graph);
+      const quads = OwlProjection.graph(graph);
 
       const equivQuad = quads.find((quad) => {
         return quad.predicate === OWL.equivalentClass;
@@ -2043,7 +2043,7 @@ import { Result } from '../../src/modules/data/Result.js';
 
     void it('emits rdfs:subClassOf in OWL TBox for each parent', async () => {
       const { SchemaGraph } = await import('../../src/modules/graph/SchemaGraph.js');
-      const { projectOwlGraph } = await import('../../src/modules/rdf/OwlProjection.js');
+      const { OwlProjection } = await import('../../src/modules/rdf/OwlProjection.js');
       const { RDFS } = await import('../../src/constants/IRI.js');
 
       const Scoped = Compose.subClassOf(
@@ -2058,7 +2058,7 @@ import { Result } from '../../src/modules/data/Result.js';
       );
 
       const graph = new SchemaGraph(Scoped);
-      const quads = projectOwlGraph(graph);
+      const quads = OwlProjection.graph(graph);
       const subClassQuads = quads.filter((quad) => {
         return quad.predicate === RDFS.subClassOf
           && quad.subject === 'urn:auth:ScopedAuthorityToken2';
@@ -2103,7 +2103,7 @@ import { Result } from '../../src/modules/data/Result.js';
 
     void it('emits owl:disjointWith in OWL TBox', async () => {
       const { SchemaGraph } = await import('../../src/modules/graph/SchemaGraph.js');
-      const { projectOwlGraph } = await import('../../src/modules/rdf/OwlProjection.js');
+      const { OwlProjection } = await import('../../src/modules/rdf/OwlProjection.js');
       const { OWL } = await import('../../src/constants/IRI.js');
 
       const Armor = Compose.disjointWith(WeaponSchema, {
@@ -2112,7 +2112,7 @@ import { Result } from '../../src/modules/data/Result.js';
       } as const);
 
       const graph = new SchemaGraph(Armor);
-      const quads = projectOwlGraph(graph);
+      const quads = OwlProjection.graph(graph);
       const disjQuad = quads.find((quad) => {
         return quad.predicate === OWL.disjointWith && quad.subject === 'aonprd:Armor2';
       });
@@ -2227,7 +2227,7 @@ import { Result } from '../../src/modules/data/Result.js';
 
     void it('emits owl:complementOf pointing at the resolved parent class IRI', async () => {
       const { SchemaGraph } = await import('../../src/modules/graph/SchemaGraph.js');
-      const { projectOwlGraph } = await import('../../src/modules/rdf/OwlProjection.js');
+      const { OwlProjection } = await import('../../src/modules/rdf/OwlProjection.js');
       const { OWL } = await import('../../src/constants/IRI.js');
 
       const NonHuman = Compose.complementOf(HumanRaceSchema, {
@@ -2236,7 +2236,7 @@ import { Result } from '../../src/modules/data/Result.js';
       } as const);
 
       const graph = new SchemaGraph(NonHuman);
-      const quads = projectOwlGraph(graph);
+      const quads = OwlProjection.graph(graph);
       const compQuad = quads.find((quad) => {
         return quad.predicate === OWL.complementOf
           && quad.subject === 'aonprd:NonHumanRace2';

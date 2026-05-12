@@ -48,7 +48,7 @@ import { FormatRegistry } from './modules/format/FormatRegistry.js';
 import { GraphOntologySerializer } from './modules/ontology/GraphOntologySerializer.js';
 import { GraphSchemaSerializer } from './modules/ontology/GraphSchemaSerializer.js';
 import { GraphShaclSerializer } from './modules/ontology/GraphShaclSerializer.js';
-import { liftInstances } from './modules/rdf/Lift.js';
+import { Lift } from './modules/rdf/Lift.js';
 import { Materializer } from './modules/materialization/Materializer.js';
 import { OntologyBuilder } from './modules/ontology/OntologyBuilder.js';
 import { SchemaError } from './errors/SchemaError.js';
@@ -754,7 +754,7 @@ export class JsonTology<TMap = Record<never, never>> {
 
     const deskolemize = options?.deskolemize ?? this.defaultDeskolemize;
     const inputQuads = deskolemize ? deskolemizeQuads(quads) : quads;
-    const raw = liftInstances(schemaId, inputQuads, this.registry);
+    const raw = Lift.instances(schemaId, inputQuads, this.registry);
 
     return raw.map((instance) => {
       return this.registry.instantiate(schemaId, instance);

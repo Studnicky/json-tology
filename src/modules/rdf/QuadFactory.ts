@@ -10,7 +10,7 @@ import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
 import type { RelationIndexInterface } from '../../interfaces/RelationIndex.js';
-import { relationTargetId } from './ProjectionIndex.js';
+import { ProjectionIndex } from './ProjectionIndex.js';
 import { XSD } from '../../constants/IRI.js';
 
 // ---------------------------------------------------------------------------
@@ -75,7 +75,7 @@ export class QuadFactory {
     const rels = entry.byPredicate.get(predicate) ?? [];
 
     if (rels.length > 0) {
-      const numLit = QuadFactory.literal(Number(relationTargetId(rels[0])), datatype, { curie });
+      const numLit = QuadFactory.literal(Number(ProjectionIndex.relationTargetId(rels[0])), datatype, { curie });
 
       quads.push(QuadFactory.quad(subject, predicate, numLit, { curie }));
     }
@@ -100,7 +100,7 @@ export class QuadFactory {
 
     if (rels !== undefined) {
       for (const rel of rels) {
-        const litVal = QuadFactory.literal(relationTargetId(rel), XSD.string, { curie });
+        const litVal = QuadFactory.literal(ProjectionIndex.relationTargetId(rel), XSD.string, { curie });
 
         quads.push(QuadFactory.quad(subject, outputPredicate, litVal, { curie }));
       }

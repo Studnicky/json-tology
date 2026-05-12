@@ -19,10 +19,7 @@ import {
 import { XSD_PREFIX } from '../../constants/PREFIXES.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { QuadFactory } from './QuadFactory.js';
-import {
-  buildIndex, isRestrictionStructure,
-  relationTargetId
-} from './ProjectionIndex.js';
+import { ProjectionIndex } from './ProjectionIndex.js';
 import type { RelationIndexInterface } from '../../interfaces/RelationIndex.js';
 import { VocabProjection } from './VocabProjection.js';
 
@@ -36,7 +33,7 @@ function resolveTargetRef(targetNodeId: string, index: Map<string, RelationIndex
   const rangeRels = targetEntry.byPredicate.get(RDFS.range) ?? [];
 
   if (rangeRels.length > 0) {
-    return relationTargetId(rangeRels[0]);
+    return ProjectionIndex.relationTargetId(rangeRels[0]);
   }
 
   return targetNodeId;
@@ -90,7 +87,7 @@ function isSerializationCandidate(
       return true;
     }
 
-    if (isRestrictionStructure(rel.structure)
+    if (ProjectionIndex.isRestrictionStructure(rel.structure)
       && rel.structure.constraint === OWL.someValuesFrom) {
       return true;
     }
@@ -218,7 +215,7 @@ class ShaclVocabProjection extends VocabProjection {
 
       const domainRels = propEntry.byPredicate.get(RDFS.domain) ?? [];
 
-      if (domainRels.length === 0 || relationTargetId(domainRels[0]) !== thenRef) {
+      if (domainRels.length === 0 || ProjectionIndex.relationTargetId(domainRels[0]) !== thenRef) {
         continue;
       }
 
@@ -291,45 +288,47 @@ class ShaclVocabProjection extends VocabProjection {
 // Public API
 // ---------------------------------------------------------------------------
 
-export function projectShaclGraph(graph: SchemaGraphInterface, options?: { 'curie'?: CurieInterface | undefined }): QuadInterface[] {
-  const { curie } = options ?? {};
-  const quads: QuadInterface[] = [];
-  const allRelations = graph.allRelations();
-  const index = buildIndex(allRelations);
+export const ShaclProjection = {
+  graph(graph: SchemaGraphInterface, options?: { 'curie'?: CurieInterface | undefined }): QuadInterface[] {
+    const { curie } = options ?? {};
+    const quads: QuadInterface[] = [];
+    const allRelations = graph.allRelations();
+    const index = ProjectionIndex.build(allRelations);
 
-  const propertyIndex = new Map<string, string[]>();
+    const propertyIndex = new Map<string, string[]>();
 
-  for (const [subject] of index) {
-    if (subject.startsWith('_:') || !SchemaIri.isPropertySubject(subject)) {
-      continue;
+    for (const [subject] of index) {
+      if (subject.startsWith('_:') || !SchemaIri.isPropertySubject(subject)) {
+        continue;
+      }
+
+      const parentId = SchemaIri.structuralParent(subject);
+      const list = propertyIndex.get(parentId) ?? [];
+
+      list.push(subject);
+      propertyIndex.set(parentId, list);
     }
 
-    const parentId = SchemaIri.structuralParent(subject);
-    const list = propertyIndex.get(parentId) ?? [];
+    const shaclVocab = new ShaclVocabProjection(index);
 
-    list.push(subject);
-    propertyIndex.set(parentId, list);
+    for (const [
+      subject,
+      entry
+    ] of index) {
+      if (subject.startsWith('_:')) {
+        continue;
+      }
+
+      if (!isSerializationCandidate(subject, entry, propertyIndex)) {
+        continue;
+      }
+
+      emitNodeShape(subject, entry, index, propertyIndex, shaclVocab, quads, curie);
+    }
+
+    return quads;
   }
-
-  const shaclVocab = new ShaclVocabProjection(index);
-
-  for (const [
-    subject,
-    entry
-  ] of index) {
-    if (subject.startsWith('_:')) {
-      continue;
-    }
-
-    if (!isSerializationCandidate(subject, entry, propertyIndex)) {
-      continue;
-    }
-
-    emitNodeShape(subject, entry, index, propertyIndex, shaclVocab, quads, curie);
-  }
-
-  return quads;
-}
+} as const;
 
 function emitNodeShape(
   subject: string,
@@ -382,7 +381,7 @@ function emitNodeShape(
   const subClassRels = entry.byPredicate.get(RDFS.subClassOf) ?? [];
 
   for (const rel of subClassRels) {
-    andItems.push(QuadFactory.iri(relationTargetId(rel), { curie }));
+    andItems.push(QuadFactory.iri(ProjectionIndex.relationTargetId(rel), { curie }));
   }
 
   const depReqItems = shaclVocab.processDependentRequired(subject, entry, quads, curie);
@@ -399,7 +398,7 @@ function emitNodeShape(
 
   if (equivRels.length > 0) {
     const orItems = equivRels.map((rel) => {
-      return QuadFactory.iri(resolveTargetRef(relationTargetId(rel), index), { curie });
+      return QuadFactory.iri(resolveTargetRef(ProjectionIndex.relationTargetId(rel), index), { curie });
     });
 
     quads.push(QuadFactory.quad(subject, SH.or, QuadFactory.rdfList(orItems), { curie }));
@@ -408,7 +407,7 @@ function emitNodeShape(
   const complementRels = entry.byPredicate.get(OWL.complementOf) ?? [];
 
   if (complementRels.length > 0) {
-    const compRef = resolveTargetRef(relationTargetId(complementRels[0]), index);
+    const compRef = resolveTargetRef(ProjectionIndex.relationTargetId(complementRels[0]), index);
 
     quads.push(QuadFactory.quad(subject, SH.not, QuadFactory.iri(compRef, { curie }), { curie }));
   }
@@ -416,7 +415,7 @@ function emitNodeShape(
   const disjointRels = entry.byPredicate.get(OWL.disjointWith) ?? [];
 
   if (complementRels.length === 0 && disjointRels.length > 0) {
-    const disjRef = resolveTargetRef(relationTargetId(disjointRels[0]), index);
+    const disjRef = resolveTargetRef(ProjectionIndex.relationTargetId(disjointRels[0]), index);
 
     quads.push(QuadFactory.quad(subject, SH.not, QuadFactory.iri(disjRef, { curie }), { curie }));
   }
@@ -425,7 +424,7 @@ function emitNodeShape(
 
   if (oneOfRels.length > 0) {
     const values = oneOfRels.map((rel) => {
-      return QuadFactory.literal(relationTargetId(rel), XSD.string, { curie });
+      return QuadFactory.literal(ProjectionIndex.relationTargetId(rel), XSD.string, { curie });
     });
 
     quads.push(QuadFactory.quad(subject, SH.in, QuadFactory.rdfList(values), { curie }));
@@ -444,7 +443,8 @@ function emitPropertyShape(
   quads.push(QuadFactory.quad(bnodeId, RDF.type, QuadFactory.iri(SH.PropertyShape, { curie }), { curie }));
 
   const domainRels = entry.byPredicate.get(RDFS.domain) ?? [];
-  const pathClassId = overridePathClassId ?? (domainRels.length > 0 ? relationTargetId(domainRels[0]) : classId);
+  const pathClassId = overridePathClassId
+    ?? (domainRels.length > 0 ? ProjectionIndex.relationTargetId(domainRels[0]) : classId);
   const propName = SchemaIri.lastSegment(subject);
   const canonicalId = SchemaIri.propertyIri(pathClassId, propName);
 
@@ -456,7 +456,7 @@ function emitPropertyShape(
   const rangeRels = entry.byPredicate.get(RDFS.range) ?? [];
 
   if (datatypeRels.length > 0 && rangeRels.length === 0) {
-    const dtIri = QuadFactory.iri(relationTargetId(datatypeRels[0]), { curie });
+    const dtIri = QuadFactory.iri(ProjectionIndex.relationTargetId(datatypeRels[0]), { curie });
 
     quads.push(QuadFactory.quad(bnodeId, SH.datatype, dtIri, { curie }));
   }
@@ -464,7 +464,7 @@ function emitPropertyShape(
   const minCountRels = entry.byPredicate.get(SH.minCount) ?? [];
 
   if (minCountRels.length > 0) {
-    const minVal = Number(relationTargetId(minCountRels[0]));
+    const minVal = Number(ProjectionIndex.relationTargetId(minCountRels[0]));
 
     quads.push(QuadFactory.quad(bnodeId, SH.minCount, QuadFactory.literal(minVal, XSD.integer, { curie }), { curie }));
   }
@@ -472,18 +472,18 @@ function emitPropertyShape(
   const maxCountRels = entry.byPredicate.get(SH.maxCount) ?? [];
 
   if (maxCountRels.length > 0) {
-    const maxVal = Number(relationTargetId(maxCountRels[0]));
+    const maxVal = Number(ProjectionIndex.relationTargetId(maxCountRels[0]));
 
     quads.push(QuadFactory.quad(bnodeId, SH.maxCount, QuadFactory.literal(maxVal, XSD.integer, { curie }), { curie }));
   }
 
   if (rangeRels.length > 0) {
     if (datatypeRels.length > 0 || rangeRels.length > 1) {
-      const rangeIri = QuadFactory.iri(relationTargetId(rangeRels[0]), { curie });
+      const rangeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(rangeRels[0]), { curie });
 
       quads.push(QuadFactory.quad(bnodeId, SH.class, rangeIri, { curie }));
     } else {
-      const rangeIri = QuadFactory.iri(relationTargetId(rangeRels[0]), { curie });
+      const rangeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(rangeRels[0]), { curie });
 
       quads.push(QuadFactory.quad(bnodeId, SH.node, rangeIri, { curie }));
     }
@@ -492,7 +492,7 @@ function emitPropertyShape(
   const hasValueRels = entry.byPredicate.get(OWL.hasValue) ?? [];
 
   if (hasValueRels.length > 0) {
-    const hasValLit = QuadFactory.literal(relationTargetId(hasValueRels[0]), XSD.string, { curie });
+    const hasValLit = QuadFactory.literal(ProjectionIndex.relationTargetId(hasValueRels[0]), XSD.string, { curie });
 
     quads.push(QuadFactory.quad(bnodeId, SH.hasValue, hasValLit, { curie }));
   }
@@ -504,7 +504,7 @@ function emitPropertyShape(
       continue;
     }
 
-    const patternLit = QuadFactory.literal(relationTargetId(rel), XSD.string, { curie });
+    const patternLit = QuadFactory.literal(ProjectionIndex.relationTargetId(rel), XSD.string, { curie });
 
     quads.push(QuadFactory.quad(bnodeId, SH.pattern, patternLit, { curie }));
   }
@@ -538,7 +538,7 @@ function emitContainsPropertyShape(
   curie: CurieInterface | undefined
 ): void {
   const containsRels = entry.all.filter((rel) => {
-    return isRestrictionStructure(rel.structure)
+    return ProjectionIndex.isRestrictionStructure(rel.structure)
     && rel.structure.constraint === OWL.someValuesFrom;
   });
 
@@ -548,7 +548,7 @@ function emitContainsPropertyShape(
 
   const structure = containsRels[0].structure;
 
-  if (!isRestrictionStructure(structure)) {
+  if (!ProjectionIndex.isRestrictionStructure(structure)) {
     return;
   }
 
@@ -570,7 +570,7 @@ function emitContainsPropertyShape(
   const minQualRels = entry.byPredicate.get(OWL.minQualifiedCardinality) ?? [];
 
   if (minQualRels.length > 0) {
-    const minQualVal = Number(relationTargetId(minQualRels[0]));
+    const minQualVal = Number(ProjectionIndex.relationTargetId(minQualRels[0]));
 
     const minQLit = QuadFactory.literal(minQualVal, XSD.integer, { curie });
 
@@ -580,7 +580,7 @@ function emitContainsPropertyShape(
   const maxQualRels = entry.byPredicate.get(OWL.maxQualifiedCardinality) ?? [];
 
   if (maxQualRels.length > 0) {
-    const maxQualVal = Number(relationTargetId(maxQualRels[0]));
+    const maxQualVal = Number(ProjectionIndex.relationTargetId(maxQualRels[0]));
 
     const maxQLit = QuadFactory.literal(maxQualVal, XSD.integer, { curie });
 

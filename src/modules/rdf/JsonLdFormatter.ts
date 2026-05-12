@@ -14,7 +14,7 @@ import { RDF_TYPE_IRI } from '../../constants/PREFIXES.js';
 import { RDF } from '../../constants/IRI.js';
 import { JSONLD } from '../../constants/JSONLD.js';
 
-export function quadsToJsonLd(quads: QuadInterface[]): Array<Record<string, unknown>> {
+function fromQuadsImpl(quads: QuadInterface[]): Array<Record<string, unknown>> {
   // Phase 1: group quads by subject
   const subjects = new Map<string, Record<string, unknown>>();
 
@@ -189,3 +189,9 @@ function resolveValue(
 
   return value;
 }
+
+export const JsonLdFormatter = {
+  fromQuads(quads: QuadInterface[]): Array<Record<string, unknown>> {
+    return fromQuadsImpl(quads);
+  }
+} as const;

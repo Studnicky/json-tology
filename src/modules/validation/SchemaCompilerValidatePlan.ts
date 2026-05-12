@@ -7,7 +7,7 @@ import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import { isRecord } from '../data/DataTypes.js';
 import type { ValidateWithErrorsFnType } from '../../types/Validation.js';
 import { BaseError } from '../../errors/BaseError.js';
-import { normalizeKeywordTypes } from './SchemaCompilerSupport.js';
+import { SchemaCompilerSupport } from './SchemaCompilerSupport.js';
 import { RefResolver } from './RefResolver.js';
 import type { CustomKeywordEntryInterface } from '../../interfaces/CustomKeywordEntry.js';
 import type { CompiledNodeValidationPlanInterface } from '../../interfaces/CompiledNodeValidationPlan.js';
@@ -156,7 +156,7 @@ function buildCustomKeywordEntries(
   for (const kw of activeCustomKeywords) {
     if (kw.keyword in sem.extensions) {
       entries.push({
-        'allowedTypes': normalizeKeywordTypes(kw.type),
+        'allowedTypes': SchemaCompilerSupport.normalizeKeywordTypes(kw.type),
         'keyword': kw.keyword,
         'schemaValue': sem.extensions[kw.keyword],
         'validate': kw.validate
@@ -187,186 +187,189 @@ function buildJtStrictPerField(
   return result.size > 0 ? result : undefined;
 }
 
-export function buildNodeValidationPlan(
-  context: SchemaCompilerValidatePlanContextInterface,
-  graphNode: SchemaGraphNodeInterface,
-  formatRegistry: FormatRegistryInterface,
-  graph: SchemaGraphInterface,
-  lookupSchema?: (id: string) => Record<string, unknown> | undefined
-): CompiledNodeValidationPlanInterface {
-  const sem = graph.semantics(graphNode);
-  const propertyEntries = sem.properties;
-  const patternRegex = sem.pattern === undefined ? undefined : new RegExp(sem.pattern, 'u');
-  const formatValidator = (sem.format !== undefined && context.appliesFormatAssertions(sem))
-    ? formatRegistry.get(sem.format)
-    : undefined;
-  const additionalValidator = sem.additionalPropertiesNode !== undefined
-    && sem.additionalPropertiesNode !== true
-    && sem.additionalPropertiesNode !== false
-    ? context.compileNodeOrBooleanValidateWithErrors(sem.additionalPropertiesNode, formatRegistry, graph, lookupSchema)
-    : undefined;
+export const SchemaCompilerValidatePlan = {
+  buildNodeValidationPlan(
+    context: SchemaCompilerValidatePlanContextInterface,
+    graphNode: SchemaGraphNodeInterface,
+    formatRegistry: FormatRegistryInterface,
+    graph: SchemaGraphInterface,
+    lookupSchema?: (id: string) => Record<string, unknown> | undefined
+  ): CompiledNodeValidationPlanInterface {
+    const sem = graph.semantics(graphNode);
+    const propertyEntries = sem.properties;
+    const patternRegex = sem.pattern === undefined ? undefined : new RegExp(sem.pattern, 'u');
+    const formatValidator = (sem.format !== undefined && context.appliesFormatAssertions(sem))
+      ? formatRegistry.get(sem.format)
+      : undefined;
+    const additionalPropertiesNode = sem.additionalPropertiesNode;
+    const additionalValidator = additionalPropertiesNode !== undefined
+      && additionalPropertiesNode !== true
+      && additionalPropertiesNode !== false
+      ? context.compileNodeOrBooleanValidateWithErrors(additionalPropertiesNode, formatRegistry, graph, lookupSchema)
+      : undefined;
 
-  const patternPropValidators = sem.patternPropertyEntries.length > 0
-    ? sem.patternPropertyEntries.map(([
-      pat,
-      patNode
+    const patternPropValidators = sem.patternPropertyEntries.length > 0
+      ? sem.patternPropertyEntries.map(([
+        pat,
+        patNode
+      ]) => {
+        return {
+          'regex': new RegExp(pat, 'u'),
+          'validator': context.compileNodeOrBooleanValidateWithErrors(patNode, formatRegistry, graph, lookupSchema)
+        };
+      })
+      : undefined;
+
+    const prefixValidators = sem.prefixItems.length > 0
+      ? sem.prefixItems.map((node) => {
+        return context.compileNodeOrBooleanValidateWithErrors(node, formatRegistry, graph, lookupSchema);
+      })
+      : undefined;
+
+    const containsCheck = sem.containsNode === undefined
+      ? undefined
+      : context.compileNodeOrBooleanCheck(sem.containsNode, formatRegistry, graph, lookupSchema);
+
+    const itemValidator = sem.itemsNode === undefined
+      ? undefined
+      : context.compileNodeOrBooleanValidateWithErrors(sem.itemsNode, formatRegistry, graph, lookupSchema);
+
+    const allOfValidators = sem.allOf.length > 0
+      ? sem.allOf.map((node) => {
+        return context.compileNodeOrBooleanValidateWithErrors(node, formatRegistry, graph, lookupSchema);
+      })
+      : undefined;
+
+    const anyOfChecks = sem.anyOf.length > 0
+      ? sem.anyOf.map((node) => {
+        return context.compileNodeOrBooleanCheck(node, formatRegistry, graph, lookupSchema);
+      })
+      : undefined;
+
+    const oneOfChecks = sem.oneOf.length > 0
+      ? sem.oneOf.map((node) => {
+        return context.compileNodeOrBooleanCheck(node, formatRegistry, graph, lookupSchema);
+      })
+      : undefined;
+
+    const complementCheck = sem.complementNode === undefined
+      ? undefined
+      : context.compileNodeOrBooleanCheck(sem.complementNode, formatRegistry, graph, lookupSchema);
+
+    const ifCheck = sem.ifNode === undefined
+      ? undefined
+      : context.compileNodeOrBooleanCheck(sem.ifNode, formatRegistry, graph, lookupSchema);
+    const thenValidator = sem.ifNode !== undefined && sem.thenNode !== undefined
+      ? context.compileNodeOrBooleanValidateWithErrors(sem.thenNode, formatRegistry, graph, lookupSchema)
+      : undefined;
+    const elseValidator = sem.ifNode !== undefined && sem.elseNode !== undefined
+      ? context.compileNodeOrBooleanValidateWithErrors(sem.elseNode, formatRegistry, graph, lookupSchema)
+      : undefined;
+
+    const depRequiredEntries = Object.entries(sem.dependentRequired).filter(([
+      ,
+      values
     ]) => {
-      return {
-        'regex': new RegExp(pat, 'u'),
-        'validator': context.compileNodeOrBooleanValidateWithErrors(patNode, formatRegistry, graph, lookupSchema)
-      };
-    })
-    : undefined;
+      return Array.isArray(values) && values.length > 0;
+    });
 
-  const prefixValidators = sem.prefixItems.length > 0
-    ? sem.prefixItems.map((node) => {
-      return context.compileNodeOrBooleanValidateWithErrors(node, formatRegistry, graph, lookupSchema);
-    })
-    : undefined;
+    const depSchemaValidators = sem.dependentSchemaEntries.length > 0
+      ? sem.dependentSchemaEntries.map(([
+        trigger,
+        node
+      ]) => {
+        return {
+          'trigger': trigger,
+          'validator': context.compileNodeOrBooleanValidateWithErrors(node, formatRegistry, graph, lookupSchema)
+        };
+      })
+      : undefined;
 
-  const containsCheck = sem.containsNode === undefined
-    ? undefined
-    : context.compileNodeOrBooleanCheck(sem.containsNode, formatRegistry, graph, lookupSchema);
+    const propertyNamesValidator = sem.propertyNamesNode === undefined
+      ? undefined
+      : context.compileNodeOrBooleanValidateWithErrors(sem.propertyNamesNode, formatRegistry, graph, lookupSchema);
 
-  const itemValidator = sem.itemsNode === undefined
-    ? undefined
-    : context.compileNodeOrBooleanValidateWithErrors(sem.itemsNode, formatRegistry, graph, lookupSchema);
+    const enumSet = sem.enumValues?.every((ev) => {
+      return ev === null || typeof ev === 'string' || typeof ev === 'number' || typeof ev === 'boolean';
+    }) === true
+      ? new Set<boolean | null | number | string>(sem.enumValues)
+      : undefined;
 
-  const allOfValidators = sem.allOf.length > 0
-    ? sem.allOf.map((node) => {
-      return context.compileNodeOrBooleanValidateWithErrors(node, formatRegistry, graph, lookupSchema);
-    })
-    : undefined;
+    const propertyAliases = new Map<string, string>();
 
-  const anyOfChecks = sem.anyOf.length > 0
-    ? sem.anyOf.map((node) => {
-      return context.compileNodeOrBooleanCheck(node, formatRegistry, graph, lookupSchema);
-    })
-    : undefined;
+    for (const [
+      canonicalKey,
+      propNode
+    ] of propertyEntries) {
+      const propSem = graph.semantics(propNode);
 
-  const oneOfChecks = sem.oneOf.length > 0
-    ? sem.oneOf.map((node) => {
-      return context.compileNodeOrBooleanCheck(node, formatRegistry, graph, lookupSchema);
-    })
-    : undefined;
-
-  const complementCheck = sem.complementNode === undefined
-    ? undefined
-    : context.compileNodeOrBooleanCheck(sem.complementNode, formatRegistry, graph, lookupSchema);
-
-  const ifCheck = sem.ifNode === undefined
-    ? undefined
-    : context.compileNodeOrBooleanCheck(sem.ifNode, formatRegistry, graph, lookupSchema);
-  const thenValidator = sem.ifNode !== undefined && sem.thenNode !== undefined
-    ? context.compileNodeOrBooleanValidateWithErrors(sem.thenNode, formatRegistry, graph, lookupSchema)
-    : undefined;
-  const elseValidator = sem.ifNode !== undefined && sem.elseNode !== undefined
-    ? context.compileNodeOrBooleanValidateWithErrors(sem.elseNode, formatRegistry, graph, lookupSchema)
-    : undefined;
-
-  const depRequiredEntries = Object.entries(sem.dependentRequired).filter(([
-    ,
-    values
-  ]) => {
-    return Array.isArray(values) && values.length > 0;
-  });
-
-  const depSchemaValidators = sem.dependentSchemaEntries.length > 0
-    ? sem.dependentSchemaEntries.map(([
-      trigger,
-      node
-    ]) => {
-      return {
-        'trigger': trigger,
-        'validator': context.compileNodeOrBooleanValidateWithErrors(node, formatRegistry, graph, lookupSchema)
-      };
-    })
-    : undefined;
-
-  const propertyNamesValidator = sem.propertyNamesNode === undefined
-    ? undefined
-    : context.compileNodeOrBooleanValidateWithErrors(sem.propertyNamesNode, formatRegistry, graph, lookupSchema);
-
-  const enumSet = sem.enumValues?.every((ev) => {
-    return ev === null || typeof ev === 'string' || typeof ev === 'number' || typeof ev === 'boolean';
-  }) === true
-    ? new Set<boolean | null | number | string>(sem.enumValues)
-    : undefined;
-
-  const propertyAliases = new Map<string, string>();
-
-  for (const [
-    canonicalKey,
-    propNode
-  ] of propertyEntries) {
-    const propSem = graph.semantics(propNode);
-
-    for (const alias of propSem.aliases) {
-      propertyAliases.set(alias, canonicalKey);
+      for (const alias of propSem.aliases) {
+        propertyAliases.set(alias, canonicalKey);
+      }
     }
-  }
 
-  const allowedKeys = propertyEntries.size > 0 ? new Set(propertyEntries.keys()) : undefined;
+    const allowedKeys = propertyEntries.size > 0 ? new Set(propertyEntries.keys()) : undefined;
 
-  if (allowedKeys !== undefined) {
-    for (const alias of propertyAliases.keys()) {
-      allowedKeys.add(alias);
+    if (allowedKeys !== undefined) {
+      for (const alias of propertyAliases.keys()) {
+        allowedKeys.add(alias);
+      }
     }
+
+    const jtExtra = sem.jtConfig?.extra;
+    const jtStrictPerField = buildJtStrictPerField(propertyEntries, graph);
+
+    return {
+      'additionalIsFalse': sem.additionalPropertiesNode === false,
+      additionalValidator,
+      allOfValidators,
+      allowedKeys,
+      anyOfChecks,
+      complementCheck,
+      'constVal': sem.constValue,
+      containsCheck,
+      'customKeywordEntries': buildCustomKeywordEntries(context.activeCustomKeywords, sem),
+      'defaultValue': sem.defaultValue,
+      depRequiredEntries,
+      depSchemaValidators,
+      elseValidator,
+      enumSet,
+      'enumValues': sem.enumValues,
+      'exclusiveMaximum': sem.exclusiveMaximum,
+      'exclusiveMinimum': sem.exclusiveMinimum,
+      'format': sem.format,
+      formatValidator,
+      'hasConst': sem.hasConst,
+      'hasDefault': sem.hasDefault,
+      ifCheck,
+      itemValidator,
+      'jtExtra': jtExtra,
+      'jtStrictPerField': jtStrictPerField,
+      'maxContains': sem.maxContains,
+      'maximum': sem.maximum,
+      'maxItems': sem.maxItems,
+      'maxLength': sem.maxLength,
+      'maxProperties': sem.maxProperties,
+      'minContains': sem.minContains,
+      'minimum': sem.minimum,
+      'minItems': sem.minItems,
+      'minLength': sem.minLength,
+      'minProperties': sem.minProperties,
+      'multipleOf': sem.multipleOf,
+      oneOfChecks,
+      'pattern': sem.pattern,
+      patternPropValidators,
+      patternRegex,
+      prefixValidators,
+      propertyAliases,
+      'propertyDefaults': buildPropertyDefaults(context, propertyEntries, graph, lookupSchema),
+      propertyNamesValidator,
+      'propValidators': compilePropertyValidators(context, propertyEntries, formatRegistry, graph, sem.jtConfig?.strict, lookupSchema),
+      'refValidator': compileRefValidator(context, sem.ref, formatRegistry, graph, lookupSchema),
+      'required': sem.required.length > 0 ? sem.required : undefined,
+      thenValidator,
+      'types': sem.schemaTypes,
+      'uniqueItems': sem.uniqueItems
+    };
   }
-
-  const jtExtra = sem.jtConfig?.extra;
-  const jtStrictPerField = buildJtStrictPerField(propertyEntries, graph);
-
-  return {
-    'additionalIsFalse': sem.additionalPropertiesNode === false,
-    additionalValidator,
-    allOfValidators,
-    allowedKeys,
-    anyOfChecks,
-    complementCheck,
-    'constVal': sem.constValue,
-    containsCheck,
-    'customKeywordEntries': buildCustomKeywordEntries(context.activeCustomKeywords, sem),
-    'defaultValue': sem.defaultValue,
-    depRequiredEntries,
-    depSchemaValidators,
-    elseValidator,
-    enumSet,
-    'enumValues': sem.enumValues,
-    'exclusiveMaximum': sem.exclusiveMaximum,
-    'exclusiveMinimum': sem.exclusiveMinimum,
-    'format': sem.format,
-    formatValidator,
-    'hasConst': sem.hasConst,
-    'hasDefault': sem.hasDefault,
-    ifCheck,
-    itemValidator,
-    'jtExtra': jtExtra,
-    'jtStrictPerField': jtStrictPerField,
-    'maxContains': sem.maxContains,
-    'maximum': sem.maximum,
-    'maxItems': sem.maxItems,
-    'maxLength': sem.maxLength,
-    'maxProperties': sem.maxProperties,
-    'minContains': sem.minContains,
-    'minimum': sem.minimum,
-    'minItems': sem.minItems,
-    'minLength': sem.minLength,
-    'minProperties': sem.minProperties,
-    'multipleOf': sem.multipleOf,
-    oneOfChecks,
-    'pattern': sem.pattern,
-    patternPropValidators,
-    patternRegex,
-    prefixValidators,
-    propertyAliases,
-    'propertyDefaults': buildPropertyDefaults(context, propertyEntries, graph, lookupSchema),
-    propertyNamesValidator,
-    'propValidators': compilePropertyValidators(context, propertyEntries, formatRegistry, graph, sem.jtConfig?.strict, lookupSchema),
-    'refValidator': compileRefValidator(context, sem.ref, formatRegistry, graph, lookupSchema),
-    'required': sem.required.length > 0 ? sem.required : undefined,
-    thenValidator,
-    'types': sem.schemaTypes,
-    'uniqueItems': sem.uniqueItems
-  };
-}
+} as const;

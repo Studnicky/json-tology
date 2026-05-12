@@ -7,14 +7,8 @@ import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugin.js';
 import { isRecord } from '../data/DataTypes.js';
 import { GraphError } from '../../errors/GraphError.js';
-import { extractRelations } from './SchemaGraphRelations.js';
-import {
-  escapeJsonPointerSegment,
-  extractSemantics,
-  nodeIdFromPointer,
-  resolveSchemaAtPointer,
-  validateGraphStructure
-} from './SchemaGraphSupport.js';
+import { SchemaGraphRelations } from './SchemaGraphRelations.js';
+import { SchemaGraphSupport } from './SchemaGraphSupport.js';
 import type { JsonSchemaType } from '../../types/Schema.js';
 
 export class SchemaGraph implements SchemaGraphInterface {
@@ -63,7 +57,7 @@ export class SchemaGraph implements SchemaGraphInterface {
 
     // Rebuild nodes from NormIR
     for (const normNode of normIR.nodes) {
-      const schema = resolveSchemaAtPointer(normIR.rootSchema, normNode.pointer);
+      const schema = SchemaGraphSupport.resolveSchemaAtPointer(normIR.rootSchema, normNode.pointer);
       const node: SchemaGraphNodeInterface = {
         'id': normNode.id,
         'pointer': normNode.pointer,
@@ -201,7 +195,7 @@ export class SchemaGraph implements SchemaGraphInterface {
    * @returns The sub-schema at the given pointer location.
    */
   static resolvePointer(rootSchema: JsonSchemaType, pointer: string): JsonSchemaType {
-    return resolveSchemaAtPointer(rootSchema, pointer);
+    return SchemaGraphSupport.resolveSchemaAtPointer(rootSchema, pointer);
   }
   private allRelationsCache: SchemaGraphRelationInterface[] | undefined = undefined;
   private readonly anchorMap = new Map<string, SchemaGraphNodeInterface>();
@@ -401,7 +395,7 @@ export class SchemaGraph implements SchemaGraphInterface {
   }
 
   private lower(schema: JsonSchemaType, pointer: string): void {
-    const id = nodeIdFromPointer(this.rootSchema, pointer, schema);
+    const id = SchemaGraphSupport.nodeIdFromPointer(this.rootSchema, pointer, schema);
     const node = {
       id,
       pointer,
@@ -432,7 +426,7 @@ export class SchemaGraph implements SchemaGraphInterface {
       value
     ] of Object.entries(schema)) {
       if (typeof value === 'boolean' || isRecord(value)) {
-        const childPointer = `${pointer}/${escapeJsonPointerSegment(key)}`;
+        const childPointer = `${pointer}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`;
 
         this.lower(value, childPointer);
         this.childMap.get(node)?.set(key, this.nodeForPointer(childPointer));
@@ -447,7 +441,7 @@ export class SchemaGraph implements SchemaGraphInterface {
               continue;
             }
 
-            const entryPointer = `${childPointer}/${escapeJsonPointerSegment(entryKey)}`;
+            const entryPointer = `${childPointer}/${SchemaGraphSupport.escapeJsonPointerSegment(entryKey)}`;
 
             entries.push([
               entryKey,
@@ -472,7 +466,7 @@ export class SchemaGraph implements SchemaGraphInterface {
         element
       ] of value.entries()) {
         if (typeof element === 'boolean' || isRecord(element)) {
-          const elementPointer = `${pointer}/${escapeJsonPointerSegment(key)}/${index}`;
+          const elementPointer = `${pointer}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}/${index}`;
 
           this.lower(element, elementPointer);
           indexedChildren.push(this.nodeForPointer(elementPointer));
@@ -531,7 +525,7 @@ export class SchemaGraph implements SchemaGraphInterface {
       return cached;
     }
 
-    const relations = extractRelations(this, node, this.nodeMap);
+    const relations = SchemaGraphRelations.extractRelations(this, node, this.nodeMap);
 
     this.relationMap.set(node, relations);
 
@@ -633,7 +627,7 @@ export class SchemaGraph implements SchemaGraphInterface {
       return cached;
     }
 
-    const sem = extractSemantics(this, node, (ref) => {
+    const sem = SchemaGraphSupport.extractSemantics(this, node, (ref) => {
       return this.resolveLocalRef(ref);
     });
 
@@ -648,6 +642,6 @@ export class SchemaGraph implements SchemaGraphInterface {
    * @returns An array of structure warnings, empty when the graph is well-formed.
    */
   public validateStructure(): StructureWarningInterface[] {
-    return validateGraphStructure(this.nodeMap);
+    return SchemaGraphSupport.validateGraphStructure(this.nodeMap);
   }
 }

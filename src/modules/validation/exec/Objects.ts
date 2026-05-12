@@ -5,7 +5,7 @@ import { BaseError } from '../../../errors/BaseError.js';
 import {
   isRecord
 } from '../../data/DataTypes.js';
-import { cloneDefault } from '../../graph/GraphEngineSupport.js';
+import { GraphEngineSupport } from '../../graph/GraphEngineSupport.js';
 
 export class Objects {
   static applyAliases(
@@ -35,7 +35,7 @@ export class Objects {
       propDefault
     ] of propertyDefaults) {
       if (!(key in obj) && propDefault.hasDefault) {
-        obj[key] = cloneDefault(propDefault.defaultValue);
+        obj[key] = GraphEngineSupport.cloneDefault(propDefault.defaultValue);
       }
     }
   }
@@ -107,7 +107,7 @@ export class Objects {
       const propDefault = propertyDefaults.get(key);
 
       if (propDefault?.hasDefault === true) {
-        propValue = cloneDefault(propDefault.defaultValue);
+        propValue = GraphEngineSupport.cloneDefault(propDefault.defaultValue);
         obj[key] = propValue;
       }
     }

@@ -6,7 +6,7 @@ import { isRecord } from './DataTypes.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
 import { Transform } from '../transform/Transform.js';
 import { GraphError } from '../../errors/GraphError.js';
-import { parseRef } from '../graph/GraphEngineSupport.js';
+import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
 
 /**
  * Dumper — serialize a validated JS value back to its wire form.
@@ -221,7 +221,7 @@ export class Dumper {
       };
     }
 
-    const parsed = parseRef(ref);
+    const parsed = GraphEngineSupport.parseRef(ref);
     const lookedUp = registry.get(parsed.id);
 
     if (lookedUp === undefined) {
