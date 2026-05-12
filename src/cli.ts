@@ -29,6 +29,9 @@ import { HtmlRenderer } from './modules/viz/HtmlRenderer.js';
 import type { SchemaGraphInterface } from './interfaces/SchemaGraphImpl.js';
 import { DEFAULT_PREFIXES } from './constants/PREFIXES.js';
 import { SchemaError } from './errors/SchemaError.js';
+import { CliWriter } from './modules/cli/CliWriter.js';
+
+const writer = CliWriter.default;
 
 const CLI_PREFIXES: Record<string, string> = {
   ...DEFAULT_PREFIXES,
@@ -65,8 +68,8 @@ function loadSchemaFiles(schemaGlob: string): Array<Record<string, unknown>> {
   const files = findFiles(schemaGlob);
 
   if (files.length === 0) {
-    console.error(`No files matched: ${schemaGlob}`);
-    process.exit(1);
+    writer.err(`No files matched: ${schemaGlob}`);
+    writer.exit(1);
   }
 
   return files.map((filePath) => {
@@ -224,7 +227,7 @@ function openBrowser(filePath: string): void {
 
   execFile(cmd, [filePath], (error) => {
     if (error) {
-      console.error(`Failed to open browser: ${error.message}`);
+      writer.err(`Failed to open browser: ${error.message}`);
     }
   });
 }
@@ -266,7 +269,7 @@ async function runBuild(options: BuildOptionsInterface): Promise<void> {
       const outPath = resolveSingleOutputPath(output, outputFile, 'ontology.jsonld');
 
       writeFileSync(outPath, JSON.stringify(builder.jsonLdObject(), null, 2));
-      console.log(`Built ${graphs.length} graph(s) → ${output}/`);
+      writer.out(`Built ${graphs.length} graph(s) → ${output}/`);
 
       return;
     }
@@ -284,7 +287,7 @@ async function runBuild(options: BuildOptionsInterface): Promise<void> {
     const outPath = resolveSingleOutputPath(output, outputFile, 'shacl.jsonld');
 
     writeFileSync(outPath, JSON.stringify(builder.shaclObject(), null, 2));
-    console.log(`Built ${graphs.length} graph(s) → ${output}/`);
+    writer.out(`Built ${graphs.length} graph(s) → ${output}/`);
 
     return;
   }
@@ -315,12 +318,12 @@ async function runBuild(options: BuildOptionsInterface): Promise<void> {
         break;
       }
       default:
-        console.error(`Unknown format: ${format}`);
-        process.exit(1);
+        writer.err(`Unknown format: ${format}`);
+        writer.exit(1);
     }
   }
 
-  console.log(`Built ${graphs.length} graph(s) → ${output}/`);
+  writer.out(`Built ${graphs.length} graph(s) → ${output}/`);
 }
 
 // ---------------------------------------------------------------------------
@@ -358,7 +361,7 @@ async function runViz(options: VizOptionsInterface): Promise<void> {
 
   writeFileSync(outputPath, html);
 
-  console.log(`Visualization written to ${outputPath}`);
+  writer.out(`Visualization written to ${outputPath}`);
 
   if (!noOpen) {
     openBrowser(outputPath);
@@ -407,6 +410,6 @@ program
 try {
   await program.parseAsync(process.argv);
 } catch (error) {
-  console.error(error);
-  process.exit(1);
+  writer.err(String(error));
+  writer.exit(1);
 }
