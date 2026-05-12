@@ -2,6 +2,26 @@ import type { ResultInterface } from '../../interfaces/Result.js';
 import { InstantiationError } from '../../errors/InstantiationError.js';
 import type { ValidationErrors } from '../../errors/ValidationErrors.js';
 
+/**
+ * Internal discriminated union for the pass (success) branch.
+ * Carries a validated value; errors is always undefined.
+ */
+interface PassResultInterface<T> {
+  readonly 'data': T;
+  readonly 'errors': undefined;
+  readonly 'success': true;
+}
+
+/**
+ * Internal discriminated union for the fail branch.
+ * Carries validation errors; data is always undefined.
+ */
+interface FailResultInterface {
+  readonly 'data': undefined;
+  readonly 'errors': ValidationErrors;
+  readonly 'success': false;
+}
+
 export class Result<T> implements ResultInterface<T> {
   /**
    * Create a failed Result carrying validation errors.
@@ -10,7 +30,11 @@ export class Result<T> implements ResultInterface<T> {
    * @returns Failed Result with no data
    */
   static fail<T extends unknown>(errors: ValidationErrors): Result<T> {
-    return new Result<T>(false, undefined, errors);
+    return new Result<T>({
+      'data': undefined,
+      'errors': errors,
+      'success': false
+    });
   }
 
   /**
@@ -20,14 +44,22 @@ export class Result<T> implements ResultInterface<T> {
    * @returns Successful Result with data
    */
   static pass<T extends unknown>(data: T): Result<T> {
-    return new Result<T>(true, data, undefined);
+    return new Result<T>({
+      'data': data,
+      'errors': undefined,
+      'success': true
+    });
   }
 
-  private constructor(
-    public readonly success: boolean,
-    public readonly data: T | undefined,
-    public readonly errors: undefined | ValidationErrors
-  ) {}
+  public readonly data: T | undefined;
+  public readonly errors: undefined | ValidationErrors;
+  public readonly success: boolean;
+
+  private constructor(inner: FailResultInterface | PassResultInterface<T>) {
+    this.success = inner.success;
+    this.data = inner.data;
+    this.errors = inner.errors;
+  }
 
   /**
    * Transform the data inside a successful Result, passing failures through unchanged.
@@ -36,9 +68,13 @@ export class Result<T> implements ResultInterface<T> {
    * @returns New Result with the transformed data, or the original failure
    */
   map<U extends unknown>(transform: (data: T) => U): Result<U> {
-    return this.success
-      ? Result.pass(transform(this.data as T))
-      : Result.fail<U>(this.errors as ValidationErrors);
+    if (this.success) {
+      // success === true guarantees data is T (set by pass())
+      return Result.pass(transform(this.data as T));
+    }
+
+    // success === false guarantees errors is ValidationErrors (set by fail())
+    return Result.fail<U>(this.errors as ValidationErrors);
   }
 
   /**
@@ -48,7 +84,11 @@ export class Result<T> implements ResultInterface<T> {
    * @returns The contained data on success, or the fallback value on failure
    */
   orElse(fallback: (errors: ValidationErrors) => T): T {
-    return this.success ? this.data as T : fallback(this.errors as ValidationErrors);
+    if (this.success) {
+      return this.data as T;
+    }
+
+    return fallback(this.errors as ValidationErrors);
   }
 
   /**

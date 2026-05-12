@@ -124,7 +124,7 @@ export class SchemaLoader implements SchemaLoaderInterface {
             });
             failed++;
             if (stopOnError) {
-              throw new LoadError('LOAD_INVALID_JSON', `Stopping: ${relativePath}`, relativePath, { 'cause': jsonError as Error });
+              throw new LoadError('LOAD_INVALID_JSON', `Stopping: ${relativePath}`, relativePath, { 'cause': jsonError instanceof Error ? jsonError : new Error(String(jsonError)) });
             }
 
             continue;

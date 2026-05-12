@@ -33,6 +33,7 @@ import {
   isRestrictionRef, RESTRICTION_TAG
 } from '../../types/Restriction.js';
 import { isRecord } from '../data/DataTypes.js';
+import { brand } from '../../types/Brand.js';
 
 const CLASS_AXIOM_BODY_SKIP_KEYS = new Set(['$id']);
 const RESTRICTIONS_KEY = 'jt:restrictions';
@@ -108,7 +109,7 @@ export class Compose {
       }
     }
 
-    return result as unknown as ComplementOfSchemaInterface<TOther, TBody>;
+    return brand<ComplementOfSchemaInterface<TOther, TBody>>(result);
   }
 
   /**
@@ -179,7 +180,7 @@ export class Compose {
       }
     }
 
-    return result as unknown as DisjointWithSchemaInterface<TOther, TBody>;
+    return brand<DisjointWithSchemaInterface<TOther, TBody>>(result);
   }
 
   /**
@@ -259,7 +260,7 @@ export class Compose {
     additionalProperties: ValidateSchemaType<TAdditional>,
     newId: TId
   ): ExtendSchemaType<TSchema, TAdditional, TId> {
-    const source = schema as unknown as Record<string, unknown>;
+    const source: Record<string, unknown> = schema;
     const parentId = source.$id as string;
     const additions = additionalProperties as Record<string, unknown>;
 
@@ -323,7 +324,7 @@ export class Compose {
       }
     }
 
-    return child as unknown as ExtendSchemaType<TSchema, TAdditional, TId>;
+    return brand<ExtendSchemaType<TSchema, TAdditional, TId>>(child);
   }
 
   /**
@@ -471,7 +472,7 @@ export class Compose {
     TKeys extends keyof ExtractPropertiesType<TSchema> & string,
     TId extends string
   >(schema: TSchema, keys: readonly TKeys[], newId: TId): OmitSchemaInterface<TSchema, TKeys, TId> {
-    const source = schema as unknown as Record<string, unknown>;
+    const source: Record<string, unknown> = schema;
     const rawOmitProps = source.properties;
     const sourceProps = isRecord(rawOmitProps)
       ? { ...rawOmitProps }
@@ -501,7 +502,7 @@ export class Compose {
       result['jt:config'] = source['jt:config'];
     }
 
-    return result as unknown as OmitSchemaInterface<TSchema, TKeys, TId>;
+    return brand<OmitSchemaInterface<TSchema, TKeys, TId>>(result);
   }
 
   /**
@@ -516,12 +517,12 @@ export class Compose {
     TSchema extends Record<string, unknown> & { readonly '$id': string; },
     TId extends string
   >(schema: TSchema, newId: TId): PartialSchemaType<TSchema, TId> {
-    const source = { ...(schema as unknown as Record<string, unknown>) };
+    const source: Record<string, unknown> = { ...schema };
 
     delete source.required;
     source.$id = newId;
 
-    return source as unknown as PartialSchemaType<TSchema, TId>;
+    return brand<PartialSchemaType<TSchema, TId>>(source);
   }
 
   /**
@@ -538,7 +539,7 @@ export class Compose {
     TKeys extends keyof ExtractPropertiesType<TSchema> & string,
     TId extends string
   >(schema: TSchema, keys: readonly TKeys[], newId: TId): PickSchemaInterface<TSchema, TKeys, TId> {
-    const source = schema as unknown as Record<string, unknown>;
+    const source: Record<string, unknown> = schema;
     const rawPickProps = source.properties;
     const sourceProps = isRecord(rawPickProps)
       ? rawPickProps
@@ -571,7 +572,7 @@ export class Compose {
       result['jt:config'] = source['jt:config'];
     }
 
-    return result as unknown as PickSchemaInterface<TSchema, TKeys, TId>;
+    return brand<PickSchemaInterface<TSchema, TKeys, TId>>(result);
   }
 
   /**
@@ -585,17 +586,17 @@ export class Compose {
     TSchema extends Record<string, unknown> & { readonly '$id': string; },
     TId extends string
   >(schema: TSchema, newId: TId): RequiredSchemaType<TSchema, TId> {
-    const source = schema as unknown as Record<string, unknown>;
+    const source: Record<string, unknown> = schema;
     const rawRequiredProps = source.properties;
     const props = isRecord(rawRequiredProps)
       ? rawRequiredProps
       : {};
 
-    return {
+    return brand<RequiredSchemaType<TSchema, TId>>({
       ...source,
       '$id': newId,
       'required': Object.keys(props)
-    } as unknown as RequiredSchemaType<TSchema, TId>;
+    });
   }
 
   /**
@@ -690,10 +691,10 @@ export class Compose {
       allOf.push(bodySchema);
     }
 
-    return {
+    return brand<SubClassOfSchemaInterface<ReadonlyArray<{ readonly '$id': string }> | { readonly '$id': string }, TBody>>({
       '$id': body.$id,
       allOf
-    } as unknown as SubClassOfSchemaInterface<ReadonlyArray<{ readonly '$id': string }> | { readonly '$id': string }, TBody>;
+    });
   }
 }
 

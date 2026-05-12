@@ -21,7 +21,7 @@ import { SchemaGraph } from '../graph/SchemaGraph.js';
 import type {
   SchemaGraphNodeInterface, SchemaGraphSemanticsInterface
 } from '../../interfaces/SchemaGraph.js';
-// isRecord and deepEqual are used by executor modules, imported from DataTypes directly there
+import { isRecord } from '../data/DataTypes.js';
 import {
   coerceCompiledValue
 } from './SchemaCompilerSupport.js';
@@ -78,8 +78,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   private appliesFormatAssertions(sem: SchemaGraphSemanticsInterface): boolean {
     const rootVocabulary = sem.schemaVocabulary;
 
-    if (rootVocabulary !== undefined && rootVocabulary !== null && typeof rootVocabulary === 'object') {
-      return (rootVocabulary as Record<string, unknown>)[VOCABULARY_FORMAT_ASSERTION] === true;
+    if (isRecord(rootVocabulary)) {
+      return rootVocabulary[VOCABULARY_FORMAT_ASSERTION] === true;
     }
 
     const schemaUri = sem.schemaDialect;
@@ -106,7 +106,11 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       return this.compileBooleanSchema(rootSchema);
     }
 
-    const schema = rootSchema as Record<string, unknown>;
+    if (!isRecord(rootSchema)) {
+      return this.compileBooleanSchema(false);
+    }
+
+    const schema = rootSchema;
     const formatRegistry = engine.formatRegistry;
     const lookupSchema = engine.schemaLookup();
     const graph = new SchemaGraph(schema);

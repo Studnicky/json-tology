@@ -18,3 +18,15 @@ export type BrandOutputType<TSchema>
   = TSchema extends BrandTagInterface<infer B extends string>
     ? ParseOutputType<TSchema> & { readonly 'brand': B }
     : ParseOutputType<TSchema>;
+
+/**
+ * Phantom brand projection. Compose / Transform return plain JS objects whose
+ * shape is captured by a branded interface for compile-time enforcement. The
+ * brand itself is a phantom (unique-symbol) field with no runtime presence,
+ * so the cast is structurally safe — every property of the branded interface
+ * is satisfied by the underlying object except the brand, which is a
+ * compile-time-only fiction.
+ */
+export function brand<TBranded>(value: unknown): TBranded {
+  return value as TBranded;
+}
