@@ -1,5 +1,6 @@
 export type * from './ArrayResult.js';
 export type * from './Changeset.js';
+export type * from './CliWriter.js';
 export type * from './CompiledNodeValidationPlan.js';
 export type * from './Compiler.js';
 export type * from './Compose.js';
