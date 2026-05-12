@@ -101,28 +101,49 @@ import { resolve } from 'node:path';
       assert.equal(result.extra, 'keep-me');
     });
 
-    void it('jt:config.extra: forbid raises error on unknown properties', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
+    void it('jt:config.extra: forbid — GBU: rejects unknown props (InstantiationError), accepts known only, reports EXTRA_FORBIDDEN keyword', () => {
+      // Bad: rejects unknown properties with InstantiationError
+      const reg1 = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
 
-      registry.register(ForbidExtraSchema);
+      reg1.register(ForbidExtraSchema);
 
       assert.throws(() => {
-        registry.instantiate(ForbidExtraSchema.$id, {
+        reg1.instantiate(ForbidExtraSchema.$id, {
           'name': 'Alice',
           'unexpected': 'value'
         });
       }, (error: unknown) => {
         return error instanceof InstantiationError;
       });
-    });
 
-    void it('jt:config.extra: forbid allows known properties only', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
+      // Good: accepts only known properties
+      const reg2 = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
 
-      registry.register(ForbidExtraSchema);
-      const result = registry.instantiate(ForbidExtraSchema.$id, { 'name': 'Alice' });
+      reg2.register(ForbidExtraSchema);
+      const result = reg2.instantiate(ForbidExtraSchema.$id, { 'name': 'Alice' });
 
       assert.deepEqual(result, { 'name': 'Alice' });
+
+      // Ugly: validate() reports EXTRA_FORBIDDEN keyword
+      const reg3 = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
+
+      reg3.register(ForbidExtraSchema);
+      const errs = reg3.validate(ForbidExtraSchema.$id, {
+        'name': 'Alice',
+        'unexpected': 'value'
+      });
+
+      assert.ok(!errs.ok);
+
+      const allErrors: ValidationErrorType[] = [];
+
+      for (const err of errs) {
+        allErrors.push(err);
+      }
+
+      assert.ok(allErrors.some((err) => {
+        return err.keyword === 'EXTRA_FORBIDDEN';
+      }));
     });
 
     void it('extend() merges jt:config — child wins per key', () => {
@@ -180,28 +201,6 @@ import { resolve } from 'node:path';
       const config = OmittedSchema['jt:config'] as Record<string, unknown>;
 
       assert.equal(config.extra, 'allow');
-    });
-
-    void it('extra: forbid reports EXTRA_FORBIDDEN error keyword', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
-
-      registry.register(ForbidExtraSchema);
-      const errs = registry.validate(ForbidExtraSchema.$id, {
-        'name': 'Alice',
-        'unexpected': 'value'
-      });
-
-      assert.ok(!errs.ok);
-
-      const allErrors: ValidationErrorType[] = [];
-
-      for (const err of errs) {
-        allErrors.push(err);
-      }
-
-      assert.ok(allErrors.some((err) => {
-        return err.keyword === 'EXTRA_FORBIDDEN';
-      }));
     });
   });
 }
@@ -516,17 +515,17 @@ import { resolve } from 'node:path';
         });
       }
 
-      void it('edge: unknown format returns undefined', () => {
-        assert.strictEqual(registry.get('nonexistent'), undefined);
-        assert.ok(!registry.has('nonexistent'));
-      });
+      // edge: unknown format returns undefined (no throw)
+      assert.strictEqual(registry.get('nonexistent'), undefined, 'unknown format: get returns undefined');
+      assert.ok(!registry.has('nonexistent'), 'unknown format: has returns false');
     });
 
     void describe('GraphEngine integration and override', () => {
-      void it('happy: validates with custom format via GraphEngine', () => {
-        const registry = FormatRegistry.builtin();
+      void it('validates with custom format via GraphEngine, and re-registering overrides the existing format', () => {
+        // happy: custom format validates correctly
+        const reg = FormatRegistry.builtin();
 
-        registry.register('hex-color', (value) => {
+        reg.register('hex-color', (value) => {
           return typeof value === 'string' && /^#[\da-f]{6}$/iu.test(value);
         });
 
@@ -541,16 +540,15 @@ import { resolve } from 'node:path';
           'type': 'string'
         };
 
-        const engine = new GraphEngine(schema, { 'formatRegistry': registry });
+        const engine = new GraphEngine(schema, { 'formatRegistry': reg });
 
-        assert.ok(engine.check('#ff00aa'));
-        assert.ok(!engine.check('not-a-color'));
-      });
+        assert.ok(engine.check('#ff00aa'), 'valid hex color accepted');
+        assert.ok(!engine.check('not-a-color'), 'invalid hex color rejected');
 
-      void it('edge: registering over existing format overrides it', () => {
-        const registry = FormatRegistry.builtin();
+        // edge: re-registering over an existing format overrides it
+        const overrideReg = FormatRegistry.builtin();
 
-        registry.register('email', () => {
+        overrideReg.register('email', () => {
           return false;
         });
 
@@ -565,9 +563,9 @@ import { resolve } from 'node:path';
           'type': 'string'
         };
 
-        const emailEngine = new GraphEngine(emailSchema, { 'formatRegistry': registry });
+        const emailEngine = new GraphEngine(emailSchema, { 'formatRegistry': overrideReg });
 
-        assert.ok(!emailEngine.check('user@example.com'));
+        assert.ok(!emailEngine.check('user@example.com'), 'overridden email format rejects valid email');
       });
     });
   });
@@ -784,36 +782,39 @@ import { resolve } from 'node:path';
         });
       }
 
-      void it('happy: filters by file pattern and counts skipped files', () => {
-        const loader = new SchemaLoader(new Logger({ 'silent': true }));
-        const [
-          _,
-          result
-        ] = loader.loadDirectory(validDir, { 'filePattern': /\.json$/iu });
+      void it('GBU: filePattern skips non-matching, stopOnError halts, nonexistent dir is empty', () => {
+        // Good: filePattern filters non-JSON files and counts them as skipped
+        {
+          const loader = new SchemaLoader(new Logger({ 'silent': true }));
+          const [
+            , result
+          ] = loader.loadDirectory(validDir, { 'filePattern': /\.json$/iu });
 
-        assert.strictEqual(result.skipped, 1);
-      });
+          assert.strictEqual(result.skipped, 1, 'one non-json file counted as skipped');
+        }
 
-      void it('unhappy: stops on first error when stopOnError is true', () => {
-        const loader = new SchemaLoader(new Logger({ 'silent': true }));
-        const [
-          _,
-          result
-        ] = loader.loadDirectory(invalidDir, { 'stopOnError': true });
+        // Bad: stopOnError stops after first failure
+        {
+          const loader = new SchemaLoader(new Logger({ 'silent': true }));
+          const [
+            , result
+          ] = loader.loadDirectory(invalidDir, { 'stopOnError': true });
 
-        assert.ok(result.failed > 0);
-      });
+          assert.ok(result.failed > 0, 'stopOnError: at least one failure recorded');
+        }
 
-      void it('edge: nonexistent directory produces zero results', () => {
-        const loader = new SchemaLoader(new Logger({ 'silent': true }));
-        const [
-          loadedSchemas,
-          result
-        ] = loader.loadDirectory(resolve(testDir, 'does-not-exist'));
+        // Ugly: nonexistent directory returns empty results without throwing
+        {
+          const loader = new SchemaLoader(new Logger({ 'silent': true }));
+          const [
+            loadedSchemas,
+            result
+          ] = loader.loadDirectory(resolve(testDir, 'does-not-exist'));
 
-        assert.strictEqual(loadedSchemas.length, 0);
-        assert.strictEqual(result.failed, 0);
-        assert.strictEqual(result.successful, 0);
+          assert.strictEqual(loadedSchemas.length, 0, 'no schemas loaded from nonexistent dir');
+          assert.strictEqual(result.failed, 0, 'no failures from nonexistent dir');
+          assert.strictEqual(result.successful, 0, 'no successes from nonexistent dir');
+        }
       });
     });
 
@@ -1224,81 +1225,89 @@ import { resolve } from 'node:path';
 // ===========================================================================
 {
   void describe('Resolver.merge()', () => {
-    void it('returns base when override is undefined', () => {
-      const base = {
-        'applyDefaults': true,
-        'castTypes': false,
-        'collectErrors': true
-      };
-      const result = Resolver.merge(base);
+    void it('GBU table: no-override, key-wins, undefined-does-not-blank, empty-clone, shallow-only, T-shape', () => {
+      // Good: returns base unchanged when override is undefined
+      {
+        const base = {
+          'applyDefaults': true,
+          'castTypes': false,
+          'collectErrors': true
+        };
+        const result = Resolver.merge(base);
 
-      assert.deepEqual(result, base);
-    });
+        assert.deepEqual(result, base, 'no override: result equals base');
+      }
 
-    void it('override keys win when defined', () => {
-      const base = {
-        'applyDefaults': true,
-        'collectErrors': true
-      };
-      const result = Resolver.merge(base, { 'applyDefaults': false });
+      // Good: override keys win when defined
+      {
+        const base = {
+          'applyDefaults': true,
+          'collectErrors': true
+        };
+        const result = Resolver.merge(base, { 'applyDefaults': false });
 
-      assert.equal(result.applyDefaults, false, 'override key replaces base value');
-      assert.equal(result.collectErrors, true, 'unrelated base key is preserved');
-    });
+        assert.equal(result.applyDefaults, false, 'override key replaces base value');
+        assert.equal(result.collectErrors, true, 'unrelated base key is preserved');
+      }
 
-    void it('override keys with undefined value do NOT blank base', () => {
-      const base = {
-        'applyDefaults': true,
-        'castTypes': false
-      };
-      const override: Partial<typeof base> = { 'applyDefaults': undefined };
-      const result = Resolver.merge(base, override);
+      // Bad: undefined override value does NOT blank base
+      {
+        const base = {
+          'applyDefaults': true,
+          'castTypes': false
+        };
+        const override: Partial<typeof base> = { 'applyDefaults': undefined };
+        const result = Resolver.merge(base, override);
 
-      assert.equal(result.applyDefaults, true, 'undefined override does not overwrite base');
-    });
+        assert.equal(result.applyDefaults, true, 'undefined override does not overwrite base');
+      }
 
-    void it('empty override object returns shallow-cloned base unchanged', () => {
-      const base = {
-        'applyDefaults': true,
-        'collectErrors': true
-      };
-      const result = Resolver.merge(base, {});
+      // Bad: empty override returns shallow clone of base
+      {
+        const base = {
+          'applyDefaults': true,
+          'collectErrors': true
+        };
+        const result = Resolver.merge(base, {});
 
-      assert.deepEqual(result, base);
-      assert.notEqual(result, base, 'result is a new object, not the same reference');
-    });
+        assert.deepEqual(result, base, 'empty override: result equals base');
+        assert.notEqual(result, base, 'result is a new object, not the same reference');
+      }
 
-    void it('nested object values are NOT deep-merged (shallow only)', () => {
-      interface NestedRecord { 'nested': { 'a': number;
-        'b'?: number } }
-      const base: NestedRecord = {
-        'nested': {
-          'a': 1,
-          'b': 2
-        }
-      };
-      const override: Partial<NestedRecord> = { 'nested': { 'a': 99 } };
-      const result = Resolver.merge(base, override);
+      // Ugly: nested objects are NOT deep-merged (shallow only)
+      {
+        interface NestedRecord { 'nested': { 'a': number;
+          'b'?: number } }
+        const base: NestedRecord = {
+          'nested': {
+            'a': 1,
+            'b': 2
+          }
+        };
+        const override: Partial<NestedRecord> = { 'nested': { 'a': 99 } };
+        const result = Resolver.merge(base, override);
 
-      assert.equal(result.nested.a, 99, 'override nested.a wins');
-      assert.equal(result.nested.b, undefined, 'shallow merge: base nested.b is not preserved');
-    });
+        assert.equal(result.nested.a, 99, 'override nested.a wins');
+        assert.equal(result.nested.b, undefined, 'shallow merge: base nested.b is not preserved');
+      }
 
-    void it('type signature preserves the T shape', () => {
-      const base = {
-        'applyDefaults': true,
-        'castTypes': false,
-        'collectErrors': true,
-        'removeAdditionalProperties': true
-      };
-      const result = Resolver.merge(base, { 'applyDefaults': false });
+      // Ugly: type signature preserves the T shape
+      {
+        const base = {
+          'applyDefaults': true,
+          'castTypes': false,
+          'collectErrors': true,
+          'removeAdditionalProperties': true
+        };
+        const result = Resolver.merge(base, { 'applyDefaults': false });
 
-      // Compile-time check: assignment satisfies the T shape constraint
-      const _typeCheck: typeof base = result;
+        // Compile-time check: assignment satisfies the T shape constraint
+        const _typeCheck: typeof base = result;
 
-      assert.equal(_typeCheck.applyDefaults, false, 'result satisfies the T shape');
-      assert.equal(typeof result.applyDefaults, 'boolean');
-      assert.equal(typeof result.castTypes, 'boolean');
+        assert.equal(_typeCheck.applyDefaults, false, 'result satisfies the T shape');
+        assert.equal(typeof result.applyDefaults, 'boolean');
+        assert.equal(typeof result.castTypes, 'boolean');
+      }
     });
   });
 }

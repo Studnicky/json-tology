@@ -8,137 +8,188 @@ import { Lift } from '../../src/modules/rdf/Lift.js';
 import type { RdfJsQuadInterface } from '../../src/interfaces/RdfJsQuad.js';
 
 void describe('fromRdfQuad', { 'concurrency': true }, () => {
-  void it('converts named node subject + predicate + named node object', () => {
-    const quad: RdfJsQuadInterface = {
-      'object': {
-        'termType': 'NamedNode',
-        'value': 'http://www.w3.org/2002/07/owl#Class'
+  // ---------------------------------------------------------------------------
+  // Good / Bad / Ugly — happy path conversions
+  // ---------------------------------------------------------------------------
+
+  void it('unhappy: malformed quads — undefined or missing object fields produce safe output', () => {
+    const malformedScenarios: Array<{ 'expectThrows': boolean;
+      'name': string;
+      'quad': RdfJsQuadInterface }> = [
+      {
+        'expectThrows': false,
+        'name': 'object with no termType treated as NamedNode-like',
+        'quad': {
+          'object': { 'value': 'http://example.com/Thing' },
+          'predicate': { 'value': 'http://example.com/pred' },
+          'subject': { 'value': 'http://example.com/sub' }
+        }
       },
-      'predicate': { 'value': 'http://www.w3.org/2000/01/rdf-schema#subClassOf' },
-      'subject': { 'value': 'http://example.com/User' }
-    };
+      {
+        'expectThrows': false,
+        'name': 'empty string values — returned as-is',
+        'quad': {
+          'object': {
+            'termType': 'NamedNode',
+            'value': ''
+          },
+          'predicate': { 'value': '' },
+          'subject': { 'value': '' }
+        }
+      }
+    ];
 
-    const result = Lift.fromQuad(quad);
-
-    assert.equal(result.subject, 'http://example.com/User');
-    assert.equal(result.predicate, 'http://www.w3.org/2000/01/rdf-schema#subClassOf');
-    assert.equal(result.object.termType, 'NamedNode');
-    assert.equal(result.object.value, 'http://www.w3.org/2002/07/owl#Class');
+    for (const scenario of malformedScenarios) {
+      if (scenario.expectThrows) {
+        assert.throws(() => {
+          Lift.fromQuad(scenario.quad);
+        }, scenario.name);
+      } else {
+        assert.doesNotThrow(() => {
+          Lift.fromQuad(scenario.quad);
+        }, scenario.name);
+      }
+    }
   });
 
-  void it('normalizes XSD datatype prefix on literal objects', () => {
-    const quad: RdfJsQuadInterface = {
-      'object': {
-        'datatype': { 'value': 'http://www.w3.org/2001/XMLSchema#string' },
-        'language': '',
-        'termType': 'Literal',
-        'value': 'Alice'
-      },
-      'predicate': { 'value': 'http://example.com/User#name' },
-      'subject': { 'value': 'http://example.com/user/1' }
-    };
-
-    const result = Lift.fromQuad(quad);
-
-    assert.equal(result.object.termType, 'Literal');
-
-    const literal = result.object as { 'datatype': { 'value': string };
+  void it('converts RDF terms: named nodes, literals, blank nodes, XSD coercions, language tags', () => {
+    interface LiteralObj { 'datatype': { 'value': string };
+      'language'?: string;
       'termType': 'Literal';
-      'value': unknown };
+      'value': unknown }
 
-    assert.equal(literal.datatype.value, 'xsd:string');
-    assert.equal(literal.value, 'Alice');
-  });
-
-  void it('normalizes full rdf:type IRI to prefixed form', () => {
-    const quad: RdfJsQuadInterface = {
-      'object': {
-        'termType': 'NamedNode',
-        'value': 'http://www.w3.org/2002/07/owl#Class'
+    const scenarios: Array<{
+      'check': (result: ReturnType<typeof Lift.fromQuad>) => void;
+      'name': string;
+      'quad': RdfJsQuadInterface;
+    }> = [
+      {
+        'check': (result) => {
+          assert.equal(result.subject, 'http://example.com/User', 'subject');
+          assert.equal(result.predicate, 'http://www.w3.org/2000/01/rdf-schema#subClassOf', 'predicate');
+          assert.equal(result.object.termType, 'NamedNode', 'object termType');
+          assert.equal(result.object.value, 'http://www.w3.org/2002/07/owl#Class', 'object value');
+        },
+        'name': 'named node subject + predicate + named node object',
+        'quad': {
+          'object': {
+            'termType': 'NamedNode',
+            'value': 'http://www.w3.org/2002/07/owl#Class'
+          },
+          'predicate': { 'value': 'http://www.w3.org/2000/01/rdf-schema#subClassOf' },
+          'subject': { 'value': 'http://example.com/User' }
+        }
       },
-      'predicate': { 'value': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' },
-      'subject': { 'value': 'http://example.com/User' }
-    };
+      {
+        'check': (result) => {
+          assert.equal(result.object.termType, 'Literal', 'termType Literal');
+          const literal = result.object as LiteralObj;
 
-    const result = Lift.fromQuad(quad);
-
-    assert.equal(result.predicate, 'rdf:type');
-  });
-
-  void it('converts blank node object with correct termType', () => {
-    const quad: RdfJsQuadInterface = {
-      'object': {
-        'termType': 'BlankNode',
-        'value': '_:b0'
+          assert.equal(literal.datatype.value, 'xsd:string', 'datatype normalized to xsd:string');
+          assert.equal(literal.value, 'Alice', 'value preserved');
+        },
+        'name': 'normalizes XSD datatype prefix on literal objects (xsd:string)',
+        'quad': {
+          'object': {
+            'datatype': { 'value': 'http://www.w3.org/2001/XMLSchema#string' },
+            'language': '',
+            'termType': 'Literal',
+            'value': 'Alice'
+          },
+          'predicate': { 'value': 'http://example.com/User#name' },
+          'subject': { 'value': 'http://example.com/user/1' }
+        }
       },
-      'predicate': { 'value': 'http://example.com/User#address' },
-      'subject': { 'value': 'http://example.com/user/1' }
-    };
-
-    const result = Lift.fromQuad(quad);
-
-    assert.equal(result.object.termType, 'BlankNode');
-    assert.equal(result.object.value, '_:b0');
-  });
-
-  void it('coerces xsd:integer literal value to number', () => {
-    const quad: RdfJsQuadInterface = {
-      'object': {
-        'datatype': { 'value': 'http://www.w3.org/2001/XMLSchema#integer' },
-        'termType': 'Literal',
-        'value': '42'
+      {
+        'check': (result) => {
+          assert.equal(result.predicate, 'rdf:type', 'full rdf:type IRI normalized to prefixed form');
+        },
+        'name': 'normalizes full rdf:type IRI to prefixed form',
+        'quad': {
+          'object': {
+            'termType': 'NamedNode',
+            'value': 'http://www.w3.org/2002/07/owl#Class'
+          },
+          'predicate': { 'value': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' },
+          'subject': { 'value': 'http://example.com/User' }
+        }
       },
-      'predicate': { 'value': 'http://example.com/User#age' },
-      'subject': { 'value': 'http://example.com/user/1' }
-    };
-
-    const result = Lift.fromQuad(quad);
-
-    assert.equal(result.object.termType, 'Literal');
-
-    const literal = result.object as { 'datatype': { 'value': string };
-      'termType': 'Literal';
-      'value': unknown };
-
-    assert.equal(literal.value, 42);
-    assert.equal(literal.datatype.value, 'xsd:integer');
-  });
-
-  void it('coerces xsd:boolean literal value to boolean', () => {
-    const quad: RdfJsQuadInterface = {
-      'object': {
-        'datatype': { 'value': 'http://www.w3.org/2001/XMLSchema#boolean' },
-        'termType': 'Literal',
-        'value': 'true'
+      {
+        'check': (result) => {
+          assert.equal(result.object.termType, 'BlankNode', 'blank node termType');
+          assert.equal(result.object.value, '_:b0', 'blank node value');
+        },
+        'name': 'converts blank node object with correct termType',
+        'quad': {
+          'object': {
+            'termType': 'BlankNode',
+            'value': '_:b0'
+          },
+          'predicate': { 'value': 'http://example.com/User#address' },
+          'subject': { 'value': 'http://example.com/user/1' }
+        }
       },
-      'predicate': { 'value': 'http://example.com/User#active' },
-      'subject': { 'value': 'http://example.com/user/1' }
-    };
+      {
+        'check': (result) => {
+          assert.equal(result.object.termType, 'Literal', 'termType Literal');
+          const literal = result.object as LiteralObj;
 
-    const result = Lift.fromQuad(quad);
-
-    const literal = result.object as { 'value': unknown };
-
-    assert.equal(literal.value, true);
-  });
-
-  void it('preserves language tag on literal objects', () => {
-    const quad: RdfJsQuadInterface = {
-      'object': {
-        'datatype': { 'value': 'http://www.w3.org/2001/XMLSchema#string' },
-        'language': 'en',
-        'termType': 'Literal',
-        'value': 'Hello'
+          assert.equal(literal.value, 42, 'xsd:integer coerced to number');
+          assert.equal(literal.datatype.value, 'xsd:integer', 'datatype normalized to xsd:integer');
+        },
+        'name': 'coerces xsd:integer literal value to number',
+        'quad': {
+          'object': {
+            'datatype': { 'value': 'http://www.w3.org/2001/XMLSchema#integer' },
+            'termType': 'Literal',
+            'value': '42'
+          },
+          'predicate': { 'value': 'http://example.com/User#age' },
+          'subject': { 'value': 'http://example.com/user/1' }
+        }
       },
-      'predicate': { 'value': 'http://example.com/User#greeting' },
-      'subject': { 'value': 'http://example.com/user/1' }
-    };
+      {
+        'check': (result) => {
+          const literal = result.object as LiteralObj;
 
-    const result = Lift.fromQuad(quad);
+          assert.equal(literal.value, true, 'xsd:boolean coerced to boolean true');
+        },
+        'name': 'coerces xsd:boolean literal value to boolean',
+        'quad': {
+          'object': {
+            'datatype': { 'value': 'http://www.w3.org/2001/XMLSchema#boolean' },
+            'termType': 'Literal',
+            'value': 'true'
+          },
+          'predicate': { 'value': 'http://example.com/User#active' },
+          'subject': { 'value': 'http://example.com/user/1' }
+        }
+      },
+      {
+        'check': (result) => {
+          const literal = result.object as { 'language': string;
+            'termType': 'Literal' };
 
-    const literal = result.object as { 'language': string;
-      'termType': 'Literal' };
+          assert.equal(literal.language, 'en', 'language tag preserved');
+        },
+        'name': 'preserves language tag on literal objects',
+        'quad': {
+          'object': {
+            'datatype': { 'value': 'http://www.w3.org/2001/XMLSchema#string' },
+            'language': 'en',
+            'termType': 'Literal',
+            'value': 'Hello'
+          },
+          'predicate': { 'value': 'http://example.com/User#greeting' },
+          'subject': { 'value': 'http://example.com/user/1' }
+        }
+      }
+    ];
 
-    assert.equal(literal.language, 'en');
+    for (const scenario of scenarios) {
+      const result = Lift.fromQuad(scenario.quad);
+
+      scenario.check(result);
+    }
   });
 });

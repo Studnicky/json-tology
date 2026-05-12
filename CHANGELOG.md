@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Second consolidation pass on the test suite: ~120 additional `it` blocks collapsed into scenario-driven GBU tables across `validation`, `coverageGaps`, `compilerConformance`, `registry`, `hash`, `lift`, `dataTypes`, and `computed`. Total assertion coverage preserved; suite organisation tightened.
 - Test-tier corrections: `logger` tests moved smoke → unit; `baseTypes` cross-module registry scenarios moved smoke → integration; `quads` moved integration → unit; `maxSchemaDepth` scenarios moved integration → unit. `beforeEach`/`afterEach` shared-state hooks in `cliWriter` and `logger` tests replaced with per-`it` inline `try`/`finally` fixtures.
 
 ## [0.4.0] - 2026-05-12
