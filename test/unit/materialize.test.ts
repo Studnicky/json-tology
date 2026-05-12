@@ -1191,3 +1191,231 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
   });
 }
 
+// ===========================================================================
+// Materializer ugly paths — cycles / depth / IRI collision / skolemizer
+// ===========================================================================
+{
+  const BaseSchema = {
+    '$id': 'https://ugly.io/base',
+    '$schema': 'https://json-schema.org/draft/2020-12/schema',
+    'properties': {
+      'debug': {
+        'default': false,
+        'type': 'boolean'
+      },
+      'name': { 'type': 'string' },
+      'timeout': {
+        'default': 5000,
+        'type': 'number'
+      }
+    },
+    'required': ['name'],
+    'type': 'object'
+  } as const;
+
+  void describe('Materializer ugly paths', () => {
+    void describe('CYCLIC_DATA via toQuads ABox projection', () => {
+      const scenarios: Array<{
+        'buildData': () => Record<string, unknown>;
+        'name': string;
+      }> = [
+        {
+          'buildData': () => {
+            const obj: Record<string, unknown> = { 'name': 'test' };
+
+            obj.self = obj;
+
+            return obj;
+          },
+          'name': 'cyclic self-reference throws MaterializationError(CYCLIC_DATA)'
+        },
+        {
+          'buildData': () => {
+            const obj1: Record<string, unknown> = { 'name': 'obj1' };
+            const obj2: Record<string, unknown> = { 'name': 'obj2' };
+
+            obj1.peer = obj2;
+            obj2.peer = obj1;
+
+            return obj1;
+          },
+          'name': 'mutually cyclic objects throw MaterializationError(CYCLIC_DATA)'
+        }
+      ];
+
+      for (const {
+        'buildData': build, 'name': n
+      } of scenarios) {
+        void it(n, () => {
+          const tology = JsonTology.create({
+            'baseIRI': 'https://ugly.io',
+            'schemas': [BaseSchema] as const
+          });
+          const data = build();
+
+          assert.throws(
+            () => {
+              tology.toQuads(BaseSchema, data);
+            },
+            (err: Error) => {
+              assert.equal(err.constructor.name, 'MaterializationError', `${n}: expected MaterializationError`);
+              assert.equal((err as { 'code': string }).code, 'CYCLIC_DATA', `${n}: expected code CYCLIC_DATA`);
+              assert.ok(
+                err.message.toLowerCase().includes('cyclic'),
+                `${n}: message should mention cyclic`
+              );
+
+              return true;
+            },
+            n
+          );
+        });
+      }
+    });
+
+    void describe('DATA_DEPTH_EXCEEDED — not yet enforced', () => {
+      // BEHAVIOURAL NOTE: maxDataDepth is accepted in the config interface but
+      // the enforcement has not been wired into the execution path. Providing
+      // maxDataDepth currently has no runtime effect — instantiate() succeeds
+      // regardless of nesting depth. The test asserts this observed behaviour
+      // so any future enforcement change will surface immediately.
+      void it('maxDataDepth config is accepted but does not yet throw on oversized nesting', () => {
+        const tology = JsonTology.create({
+          'baseIRI': 'https://ugly.io',
+          'maxDataDepth': 1,
+          'schemas': [BaseSchema] as const
+        });
+        const deepData = {
+          'level1': { 'level2': { 'level3': 'deep' } },
+          'name': 'test'
+        };
+
+        // Current behaviour: no throw — DATA_DEPTH_EXCEEDED not enforced yet
+        assert.doesNotThrow(() => {
+          tology.instantiate(BaseSchema.$id, deepData);
+        });
+      });
+    });
+
+    void describe('IRI collision via deterministic content-based minting', () => {
+      void it('same data produces the same IRI on separate toQuads calls', () => {
+        const tology = JsonTology.create({
+          'baseIRI': 'https://ugly.io',
+          'schemas': [BaseSchema] as const
+        });
+        const data = { 'name': 'stable' };
+        const quads1 = tology.toQuads(BaseSchema, data);
+        const quads2 = tology.toQuads(BaseSchema, data);
+
+        interface TypedQuad { 'predicate': string;
+          'subject': string }
+
+        const typeQuad1 = (quads1 as TypedQuad[]).find((quad) => {
+          return quad.predicate === 'rdf:type';
+        });
+        const typeQuad2 = (quads2 as TypedQuad[]).find((quad) => {
+          return quad.predicate === 'rdf:type';
+        });
+
+        assert.ok(typeQuad1, 'first projection must have rdf:type quad');
+        assert.ok(typeQuad2, 'second projection must have rdf:type quad');
+        assert.equal(typeQuad1.subject, typeQuad2.subject, 'same data must mint the same IRI (content-based, deterministic)');
+      });
+
+      void it('two objects with different data produce different subject IRIs', () => {
+        const tology = JsonTology.create({
+          'baseIRI': 'https://ugly.io',
+          'schemas': [BaseSchema] as const
+        });
+
+        interface TypedQuad { 'predicate': string;
+          'subject': string }
+
+        const quads1 = tology.toQuads(BaseSchema, { 'name': 'first' });
+        const quads2 = tology.toQuads(BaseSchema, { 'name': 'second' });
+
+        const iri1 = (quads1 as TypedQuad[]).find((quad) => {
+          return quad.predicate === 'rdf:type';
+        })?.subject;
+        const iri2 = (quads2 as TypedQuad[]).find((quad) => {
+          return quad.predicate === 'rdf:type';
+        })?.subject;
+
+        assert.ok(iri1 !== undefined, 'first projection must have rdf:type quad');
+        assert.ok(iri2 !== undefined, 'second projection must have rdf:type quad');
+        assert.notEqual(iri1, iri2, 'different data must produce different IRIs');
+      });
+
+      void it('custom iriFor function overrides the default minter', () => {
+        const tology = JsonTology.create({
+          'baseIRI': 'https://ugly.io',
+          'schemas': [BaseSchema] as const
+        });
+
+        interface TypedQuad { 'predicate': string;
+          'subject': string }
+
+        const customIri = 'https://custom.io/instance/42';
+        const quads = tology.toQuads(BaseSchema, { 'name': 'test' }, {
+          'iriFor': () => {
+            return customIri;
+          }
+        });
+
+        const typeQuad = (quads as TypedQuad[]).find((quad) => {
+          return quad.predicate === 'rdf:type';
+        });
+
+        assert.ok(typeQuad, 'custom iriFor must produce a rdf:type quad');
+        assert.equal(typeQuad.subject, customIri);
+      });
+
+      void it('BLANK_NODE_IRI_FOR produces blank-node subjects (_:b prefix)', () => {
+        const tology = JsonTology.create({
+          'baseIRI': 'https://ugly.io',
+          'schemas': [BaseSchema] as const
+        });
+
+        interface TypedQuad { 'predicate': string;
+          'subject': string }
+
+        const quads = tology.toQuads(BaseSchema, { 'name': 'test' }, { 'iriFor': 'blank-node' });
+        const typeQuad = (quads as TypedQuad[]).find((quad) => {
+          return quad.predicate === 'rdf:type';
+        });
+
+        assert.ok(typeQuad, 'blank-node mode must produce a rdf:type quad');
+        assert.ok(
+          typeQuad.subject.startsWith('_:'),
+          `blank-node subject should start with _:, got ${typeQuad.subject}`
+        );
+      });
+    });
+
+    void describe('iriFor that throws propagates the error', () => {
+      void it('iriFor function that throws propagates raw error', () => {
+        const tology = JsonTology.create({
+          'baseIRI': 'https://ugly.io',
+          'schemas': [BaseSchema] as const
+        });
+
+        assert.throws(
+          () => {
+            tology.toQuads(BaseSchema, { 'name': 'test' }, {
+              'iriFor': () => {
+                throw new Error('skolemizer refused to mint IRI');
+              }
+            });
+          },
+          (err: unknown) => {
+            assert.ok(err instanceof Error);
+            assert.ok((err).message.includes('skolemizer refused'));
+
+            return true;
+          }
+        );
+      });
+    });
+  });
+}
+

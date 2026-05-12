@@ -430,3 +430,204 @@ void describe('Transform.pipe()', () => {
     });
   }
 });
+
+// ---------------------------------------------------------------------------
+// Transform bad paths — encoder/decoder throw, empty pipe
+// ---------------------------------------------------------------------------
+
+void describe('Transform bad paths', () => {
+  // --- decoder throws ---
+  void it('unhappy: decoder that throws propagates as InstantiationError(TRANSFORM_DECODE_FAILED)', () => {
+    const BoomDecodeSchema = {
+      '$id': 'https://myapp.io/BoomDecode',
+      'type': 'string'
+    } as const;
+
+    const transformed = Transform.create(BoomDecodeSchema, {
+      'decode': (_: string) => {
+        throw new Error('decode boom');
+      },
+      'encode': (val: string) => {
+        return val;
+      }
+    });
+
+    const jt = JsonTology.create({
+      'baseIRI': 'https://myapp.io',
+      'schemas': [transformed] as const
+    });
+
+    assert.throws(
+      () => {
+        jt.instantiate(transformed.$id, 'hello');
+      },
+      (err: unknown) => {
+        assert.equal((err as Error).constructor.name, 'InstantiationError', `expected InstantiationError, got ${(err as Error).constructor.name}`);
+        assert.equal((err as { 'code': string }).code, 'TRANSFORM_DECODE_FAILED');
+        assert.ok((err as Error).message.includes('decode boom'));
+
+        return true;
+      }
+    );
+  });
+
+  void it('unhappy: decoder throws on specific input but not others', () => {
+    const PartialDecodeSchema = {
+      '$id': 'https://myapp.io/PartialDecode',
+      'type': 'string'
+    } as const;
+
+    const transformed = Transform.create(PartialDecodeSchema, {
+      'decode': (raw: string) => {
+        if (raw === 'bad') {
+          throw new Error('bad input rejected');
+        }
+
+        return raw.toUpperCase();
+      },
+      'encode': (val: string) => {
+        return val.toLowerCase();
+      }
+    });
+
+    const jt = JsonTology.create({
+      'baseIRI': 'https://myapp.io',
+      'schemas': [transformed] as const
+    });
+
+    // Valid input succeeds
+    const result = jt.instantiate(transformed.$id, 'hello');
+
+    assert.equal(result, 'HELLO');
+
+    // Bad input throws InstantiationError
+    assert.throws(
+      () => {
+        jt.instantiate(transformed.$id, 'bad');
+      },
+      (err: unknown) => {
+        assert.equal((err as Error).constructor.name, 'InstantiationError');
+        assert.equal((err as { 'code': string }).code, 'TRANSFORM_DECODE_FAILED');
+
+        return true;
+      }
+    );
+  });
+
+  // --- encoder throws ---
+  void it('unhappy: encoder that throws propagates the raw error (not wrapped)', () => {
+    const BoomEncodeSchema = {
+      '$id': 'https://myapp.io/BoomEncode',
+      'type': 'string'
+    } as const;
+
+    const transformed = Transform.create(BoomEncodeSchema, {
+      'decode': (raw: string) => {
+        return raw;
+      },
+      'encode': (_: string) => {
+        throw new Error('encode boom');
+      }
+    });
+
+    const jt = JsonTology.create({
+      'baseIRI': 'https://myapp.io',
+      'schemas': [transformed] as const
+    });
+
+    // BEHAVIOURAL NOTE: encoder throws propagate as the raw Error, not wrapped in
+    // an InstantiationError. This differs from decoder failures.
+    assert.throws(
+      () => {
+        jt.encode(transformed, 'some-value');
+      },
+      (err: unknown) => {
+        assert.ok(err instanceof Error, `expected Error, got ${String(err)}`);
+        assert.ok((err).message.includes('encode boom'));
+
+        return true;
+      }
+    );
+  });
+
+  // --- non-pure encoder (different shape on consecutive calls) ---
+  void it('edge: non-pure encoder produces different output on consecutive calls', () => {
+    let callCount = 0;
+    const NoPureSchema = {
+      '$id': 'https://myapp.io/NoPure',
+      'type': 'string'
+    } as const;
+
+    const transformed = Transform.create(NoPureSchema, {
+      'decode': (raw: string) => {
+        return raw;
+      },
+      'encode': (val: string) => {
+        callCount++;
+
+        return `${val}-${callCount}`;
+      }
+    });
+
+    const jt = JsonTology.create({
+      'baseIRI': 'https://myapp.io',
+      'schemas': [transformed] as const
+    });
+
+    const enc1 = jt.encode(transformed, 'test');
+    const enc2 = jt.encode(transformed, 'test');
+
+    // Non-pure encoder: outputs differ
+    assert.notEqual(enc1, enc2);
+    assert.equal(enc1, 'test-1');
+    assert.equal(enc2, 'test-2');
+  });
+
+  // --- empty pipe (zero transforms) ---
+  void it('edge: Transform.pipe with empty array is an identity transform (decode and encode pass-through)', () => {
+    const IdentityPipeSchema = {
+      '$id': 'https://myapp.io/IdentityPipe',
+      'type': 'string'
+    } as const;
+
+    const piped = Transform.pipe(IdentityPipeSchema, []);
+
+    // Schema identity is preserved
+    assert.equal(piped.$id, IdentityPipeSchema.$id);
+    assert.equal(piped.type, IdentityPipeSchema.type);
+
+    const jt = JsonTology.create({
+      'baseIRI': 'https://myapp.io',
+      'schemas': [piped] as const
+    });
+
+    // Decode: passes value through unchanged
+    const decoded = jt.instantiate(piped.$id, 'unchanged');
+
+    assert.equal(decoded, 'unchanged');
+
+    // Encode: passes value through unchanged
+    const encoded = jt.encode(piped, 'also-unchanged');
+
+    assert.equal(encoded, 'also-unchanged');
+  });
+
+  void it('edge: empty pipe registers a decoder that is retrievable via getDecoder', () => {
+    const EmptyPipeSchema = {
+      '$id': 'https://myapp.io/EmptyPipe',
+      'type': 'string'
+    } as const;
+
+    Transform.pipe(EmptyPipeSchema, []);
+
+    const fns = Transform.getDecoder(EmptyPipeSchema);
+
+    assert.ok(fns !== undefined, 'getDecoder should return functions for empty pipe');
+    assert.equal(typeof fns.decode, 'function');
+    assert.equal(typeof fns.encode, 'function');
+
+    // Identity semantics: decode and encode are both pass-through
+    assert.equal(fns.decode('input-value'), 'input-value');
+    assert.equal(fns.encode('output-value'), 'output-value');
+  });
+});
