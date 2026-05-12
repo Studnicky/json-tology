@@ -41,13 +41,6 @@ export interface JsonTologyOptionsInterface<TSchemas extends readonly unknown[] 
   'logger'?: LoggerInterface;
   'materializer'?: MaterializerOptionsInterface;
   /**
-   * Maximum value-tree nesting depth allowed during instantiate / validate.
-   * Bounds how deeply nested objects and arrays may go in the data being
-   * checked. Throws `MaterializationError({ code: 'DATA_DEPTH_EXCEEDED' })`
-   * when exceeded. Defaults to no limit.
-   */
-  'maxDataDepth'?: number;
-  /**
    * Maximum schema-graph traversal depth during validation. Bounds how deeply
    * `$ref`, `allOf`, `oneOf`, and other composition keywords may recurse while
    * walking the schema graph. Throws `GraphError('RECURSION_LIMIT')` when

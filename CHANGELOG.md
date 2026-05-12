@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-05-12
+
+### Removed
+
+- `maxDataDepth` option from `JsonTologyOptionsInterface`. Pre-1.0 clean-break: the field was declared and documented but never wired into the execution path. Removed entirely rather than shipped as dead API. The `MaterializationError` `DATA_DEPTH_EXCEEDED` code is removed alongside.
+
 ### Changed
 
 - Test suites consolidated into scenario-driven Good/Bad/Ugly tables: total `it` block count reduced ~70% while assertion coverage is preserved. Targets the dataTypes / instantiate / validation / graph / skolemize / sameAs / operations / serialization / quads suites. `compilerConformance` counter moved into a `describe` closure to remove the only test-order dependence in the suite.
@@ -316,7 +322,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-[Unreleased]: https://github.com/Studnicky/json-tology/compare/v0.3.3...HEAD
+[Unreleased]: https://github.com/Studnicky/json-tology/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/Studnicky/json-tology/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/Studnicky/json-tology/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/Studnicky/json-tology/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/Studnicky/json-tology/compare/v0.3.0...v0.3.1
