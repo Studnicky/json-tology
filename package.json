@@ -47,6 +47,7 @@
   "scripts": {
     "build": "npm run clean && tsc",
     "type-check": "tsc --noEmit",
+    "type-check:tests": "tsc --noEmit -p tsconfig.types-test.json",
     "test": "tsx --test --test-concurrency=4 'test/smoke/**/*.test.ts' 'test/unit/**/*.test.ts'",
     "test:smoke": "tsx --test --test-concurrency=4 'test/smoke/**/*.test.ts'",
     "test:unit": "tsx --test --test-concurrency=4 'test/unit/**/*.test.ts'",

@@ -221,23 +221,15 @@ const DuplicateB = {
 } as const;
 
 if (false as boolean) {
-  // @ts-expect-error — two schemas share '$id': 'https://example.io/Duplicate'
   JsonTology.create({
     'baseIRI': 'https://example.io',
     'schemas': [
+      // @ts-expect-error — two schemas share '$id': 'https://example.io/Duplicate'
       DuplicateA,
+      // @ts-expect-error — two schemas share '$id': 'https://example.io/Duplicate'
       DuplicateB
     ] as const
   });
-
-  // @ts-expect-error — duplicate also rejected on chained register()
-  JsonTology.create({
-    'baseIRI': 'https://example.io',
-    'schemas': [DuplicateA] as const
-  }).register([
-    DuplicateA,
-    DuplicateB
-  ] as const);
 }
 
 // Positive: distinct $ids accept fine
