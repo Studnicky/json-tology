@@ -557,116 +557,99 @@ import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
 // BaseGraphSerializer.ensureArray()
 // ---------------------------------------------------------------------------
 
-  void describe('BaseGraphSerializer.ensureArray()', () => {
-    void it('wraps a single value in an array', () => {
-      const node: Record<string, unknown> = { 'label': 'Person' };
+  void describe('BaseGraphSerializer.ensureArray() + normalizeArrays() — Good/Bad/Ugly', () => {
+    void it('ensureArray: wraps scalar, leaves array, no-op for missing key, handles empty object', () => {
+      // Good: wraps single value
+      const n1: Record<string, unknown> = { 'label': 'Person' };
 
-      BaseGraphSerializer.ensureArray(node, 'label');
-      assert.deepEqual(node.label, ['Person']);
-    });
+      BaseGraphSerializer.ensureArray(n1, 'label');
+      assert.deepEqual(n1.label, ['Person']);
 
-    void it('leaves an existing array unchanged', () => {
-      const node: Record<string, unknown> = {
+      // Good: leaves existing array unchanged
+      const n2: Record<string, unknown> = {
         'label': [
           'Person',
           'Human'
         ]
       };
 
-      BaseGraphSerializer.ensureArray(node, 'label');
-      assert.deepEqual(node.label, [
+      BaseGraphSerializer.ensureArray(n2, 'label');
+      assert.deepEqual(n2.label, [
         'Person',
         'Human'
       ]);
+
+      // Bad: no-op when key is undefined
+      const n3: Record<string, unknown> = { 'label': 'Person' };
+
+      BaseGraphSerializer.ensureArray(n3, 'missing');
+      assert.equal(n3.missing, undefined);
+      assert.equal(n3.label, 'Person');
+
+      // Ugly: handles empty object
+      const n4: Record<string, unknown> = {};
+
+      BaseGraphSerializer.ensureArray(n4, 'any');
+      assert.deepEqual(n4, {});
     });
 
-    void it('no-op when key is undefined', () => {
-      const node: Record<string, unknown> = { 'label': 'Person' };
+    void it('normalizeArrays: single key, multi-key, recursive nested objects, recursive arrays, non-matching, null/primitive inputs', () => {
+      // Good: wraps at specified key
+      const n1: Record<string, unknown> = { 'label': 'Person' };
 
-      BaseGraphSerializer.ensureArray(node, 'missing');
-      assert.equal(node.missing, undefined);
-      assert.equal(node.label, 'Person');
-    });
+      BaseGraphSerializer.normalizeArrays(n1, ['label']);
+      assert.deepEqual(n1.label, ['Person']);
 
-    void it('handles empty object', () => {
-      const node: Record<string, unknown> = {};
-
-      BaseGraphSerializer.ensureArray(node, 'any');
-      assert.deepEqual(node, {});
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // BaseGraphSerializer.normalizeArrays()
-  // ---------------------------------------------------------------------------
-
-  void describe('BaseGraphSerializer.normalizeArrays()', () => {
-    void it('wraps value at specified key in array', () => {
-      const node: Record<string, unknown> = { 'label': 'Person' };
-
-      BaseGraphSerializer.normalizeArrays(node, ['label']);
-      assert.deepEqual(node.label, ['Person']);
-    });
-
-    void it('handles multiple keys', () => {
-      const node: Record<string, unknown> = {
+      // Good: handles multiple keys
+      const n2: Record<string, unknown> = {
         'comment': 'A person',
         'label': 'Person'
       };
 
-      BaseGraphSerializer.normalizeArrays(node, [
+      BaseGraphSerializer.normalizeArrays(n2, [
         'label',
         'comment'
       ]);
-      assert.deepEqual(node.label, ['Person']);
-      assert.deepEqual(node.comment, ['A person']);
-    });
+      assert.deepEqual(n2.label, ['Person']);
+      assert.deepEqual(n2.comment, ['A person']);
 
-    void it('recursively processes nested objects', () => {
-      const node: Record<string, unknown> = {
+      // Good: recursively processes nested objects
+      const n3: Record<string, unknown> = {
         'child': { 'label': 'Nested' },
         'label': 'Root'
       };
 
-      BaseGraphSerializer.normalizeArrays(node, ['label']);
-      assert.deepEqual(node.label, ['Root']);
-      assert.deepEqual((node.child as Record<string, unknown>).label, ['Nested']);
-    });
+      BaseGraphSerializer.normalizeArrays(n3, ['label']);
+      assert.deepEqual(n3.label, ['Root']);
+      assert.deepEqual((n3.child as Record<string, unknown>).label, ['Nested']);
 
-    void it('recursively processes arrays of objects', () => {
-      const node: Record<string, unknown> = {
+      // Good: recursively processes arrays of objects
+      const n4: Record<string, unknown> = {
         'items': [
           { 'label': 'First' },
           { 'label': 'Second' }
         ]
       };
 
-      BaseGraphSerializer.normalizeArrays(node, ['label']);
-      assert.deepEqual((node.items as Array<Record<string, unknown>>)[0].label, ['First']);
-      assert.deepEqual((node.items as Array<Record<string, unknown>>)[1].label, ['Second']);
-    });
+      BaseGraphSerializer.normalizeArrays(n4, ['label']);
+      assert.deepEqual((n4.items as Array<Record<string, unknown>>)[0].label, ['First']);
+      assert.deepEqual((n4.items as Array<Record<string, unknown>>)[1].label, ['Second']);
 
-    void it('leaves non-matching keys unchanged', () => {
-      const node: Record<string, unknown> = {
+      // Ugly: leaves non-matching keys unchanged
+      const n5: Record<string, unknown> = {
         'label': 'Person',
         'name': 'Alice'
       };
 
-      BaseGraphSerializer.normalizeArrays(node, ['label']);
-      assert.deepEqual(node.label, ['Person']);
-      assert.equal(node.name, 'Alice');
-    });
+      BaseGraphSerializer.normalizeArrays(n5, ['label']);
+      assert.deepEqual(n5.label, ['Person']);
+      assert.equal(n5.name, 'Alice');
 
-    void it('handles null input gracefully', () => {
+      // Ugly: null/primitive inputs do not throw
       BaseGraphSerializer.normalizeArrays(null, ['label']);
-    // no throw — void function returns silently
-    });
-
-    void it('handles primitive input gracefully', () => {
       BaseGraphSerializer.normalizeArrays('string', ['label']);
       BaseGraphSerializer.normalizeArrays(42, ['label']);
       BaseGraphSerializer.normalizeArrays(true, ['label']);
-    // no throw — void function returns silently
     });
   });
 }
@@ -928,11 +911,11 @@ import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
   }
 
   // ---------------------------------------------------------------------------
-  // dump — basic structural copy
+  // dump — Good/Bad/Ugly (all options)
   // ---------------------------------------------------------------------------
 
-  void describe('dump — plain object schema', () => {
-    void it('happy: returns structurally equal copy for a plain object', () => {
+  void describe('dump — basic copy + filter options — Good/Bad/Ugly', () => {
+    void it('structural copy: structurally equal, new reference, nested objects, array items', () => {
       const jt = makeJt();
       const value = {
         'age': 30,
@@ -941,310 +924,184 @@ import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
       const result = jt.dump(PersonSchema.$id, value);
 
       assert.deepEqual(result, value);
-    });
-
-    void it('happy: output is a new object (not the same reference)', () => {
-      const jt = makeJt();
-      const value = {
-        'age': 30,
-        'name': 'Alice'
-      };
-      const result = jt.dump(PersonSchema.$id, value);
-
       assert.notEqual(result, value);
-    });
-  });
 
-  // ---------------------------------------------------------------------------
-  // dump — exclude
-  // ---------------------------------------------------------------------------
-
-  void describe('dump — exclude option', () => {
-    void it('happy: drops listed property names from output', () => {
-      const jt = makeJt();
-      const value = {
-        'age': 30,
-        'name': 'Alice'
-      };
-      const result = jt.dump(PersonSchema.$id, value, { 'exclude': ['age'] }) as Record<string, unknown>;
-
-      assert.equal('age' in result, false);
-      assert.equal(result.name, 'Alice');
-    });
-
-    void it('edge: exclude with unknown property name is a no-op', () => {
-      const jt = makeJt();
-      const value = {
-        'age': 30,
-        'name': 'Alice'
-      };
-      const result = jt.dump(PersonSchema.$id, value, { 'exclude': ['nonexistent'] });
-
-      assert.deepEqual(result, value);
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // dump — include (outranks exclude)
-  // ---------------------------------------------------------------------------
-
-  void describe('dump — include option', () => {
-    void it('happy: keeps only listed properties', () => {
-      const jt = makeJt();
-      const value = {
-        'age': 30,
-        'name': 'Alice'
-      };
-      const result = jt.dump(PersonSchema.$id, value, { 'include': ['name'] }) as Record<string, unknown>;
-
-      assert.equal(result.name, 'Alice');
-      assert.equal('age' in result, false);
-    });
-
-    void it('happy: include takes precedence over exclude when both are set', () => {
-      const jt = makeJt();
-      const value = {
-        'age': 30,
-        'name': 'Alice'
-      };
-      // include says keep 'name'; exclude says drop 'name' — include wins
-      const result = jt.dump(PersonSchema.$id, value, {
-        'exclude': ['name'],
-        'include': ['name']
-      }) as Record<string, unknown>;
-
-      assert.equal(result.name, 'Alice');
-      assert.equal('age' in result, false);
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // dump — excludeUnset
-  // ---------------------------------------------------------------------------
-
-  void describe('dump — excludeUnset option', () => {
-    void it('happy: drops properties with undefined value', () => {
-      const jt = makeJt();
-      const value = {
-        'age': undefined,
-        'name': 'Alice'
-      };
-      const result = jt.dump(PersonSchema.$id, value, { 'excludeUnset': true }) as Record<string, unknown>;
-
-      assert.equal('age' in result, false);
-      assert.equal(result.name, 'Alice');
-    });
-
-    void it('edge: non-undefined values are kept when excludeUnset is true', () => {
-      const jt = makeJt();
-      const value = {
-        'age': 0,
-        'name': 'Alice'
-      };
-      const result = jt.dump(PersonSchema.$id, value, { 'excludeUnset': true }) as Record<string, unknown>;
-
-      assert.equal(result.age, 0);
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // dump — excludeDefaults
-  // ---------------------------------------------------------------------------
-
-  void describe('dump — excludeDefaults option', () => {
-    void it('happy: drops a property whose value equals the schema default', () => {
-      const jt = makeJt();
-      // age default is 0
-      const value = {
-        'age': 0,
-        'name': 'Alice'
-      };
-      const result = jt.dump(PersonSchema.$id, value, { 'excludeDefaults': true }) as Record<string, unknown>;
-
-      assert.equal('age' in result, false);
-      assert.equal(result.name, 'Alice');
-    });
-
-    void it('edge: non-default value is kept when excludeDefaults is true', () => {
-      const jt = makeJt();
-      const value = {
-        'age': 25,
-        'name': 'Alice'
-      };
-      const result = jt.dump(PersonSchema.$id, value, { 'excludeDefaults': true }) as Record<string, unknown>;
-
-      assert.equal(result.age, 25);
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // dump — Transform encoder
-  // ---------------------------------------------------------------------------
-
-  void describe('dump — Transform encoder', () => {
-    void it('happy: applies Transform encode to produce wire form', () => {
-      const jt = makeJt();
-      const isoString = '2026-01-01T00:00:00.000Z';
-      const dateValue = new Date(isoString);
-      const result = jt.dump(TransformedDateSchema.$id, dateValue);
-
-      assert.equal(result, isoString);
-    });
-
-    void it('happy: round-trip decode then dump returns original wire value', () => {
-      const jt = makeJt();
-      const isoString = '2026-06-15T12:00:00.000Z';
-      const decoded = jt.instantiate(TransformedDateSchema.$id, isoString);
-      const wire = jt.dump(TransformedDateSchema.$id, decoded);
-
-      assert.equal(wire, isoString);
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // dump — mode 'json'
-  // ---------------------------------------------------------------------------
-
-  void describe('dump — mode json', () => {
-    void it('happy: converts Date leaf to ISO string', () => {
-      const jt = makeJt();
-      const date = new Date('2026-01-01T00:00:00.000Z');
-      // dump the Date value directly (no schema transform on PersonSchema, simulate ad-hoc)
-      const result = jt.dump(TransformedDateSchema.$id, date, { 'mode': 'json' });
-
-      assert.equal(result, '2026-01-01T00:00:00.000Z');
-    });
-
-    void it('edge: plain object leaves are untouched in json mode', () => {
-      const jt = makeJt();
-      const value = {
-        'age': 30,
-        'name': 'Alice'
-      };
-      const result = jt.dump(PersonSchema.$id, value, { 'mode': 'json' });
-
-      assert.deepEqual(result, value);
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // dump — nested objects
-  // ---------------------------------------------------------------------------
-
-  void describe('dump — nested object properties', () => {
-    void it('happy: recursively dumps nested object properties', () => {
-      const jt = makeJt();
-      const value = {
+      // nested objects
+      const nested = {
         'address': {
           'city': 'Portland',
           'zip': '97201'
         },
         'name': 'Alice'
       };
-      const result = jt.dump(EmployeeSchema.$id, value);
+      const nestedResult = jt.dump(EmployeeSchema.$id, nested);
 
-      assert.deepEqual(result, value);
-    });
+      assert.deepEqual(nestedResult, nested);
 
-    void it('happy: exclude applies recursively within nested objects via top-level filter', () => {
-      const jt = makeJt();
-      const value = {
-        'address': {
-          'city': 'Portland',
-          'zip': '97201'
-        },
-        'name': 'Alice'
-      };
-      const result = jt.dump(EmployeeSchema.$id, value, { 'exclude': ['address'] }) as Record<string, unknown>;
-
-      assert.equal('address' in result, false);
-      assert.equal(result.name, 'Alice');
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // dump — array items
-  // ---------------------------------------------------------------------------
-
-  void describe('dump — array items', () => {
-    void it('happy: recursively dumps array items', () => {
-      const jt = makeJt();
-      const value = {
+      // array items
+      const withTags = {
         'name': 'Alice',
         'tags': [
           'engineer',
           'ts'
         ]
       };
-      const result = jt.dump(EmployeeSchema.$id, value) as Record<string, unknown>;
+      const tagsResult = jt.dump(EmployeeSchema.$id, withTags) as Record<string, unknown>;
 
-      assert.deepEqual(result.tags, [
+      assert.deepEqual(tagsResult.tags, [
         'engineer',
         'ts'
       ]);
     });
+
+    void it('filter options: exclude, include, excludeUnset, excludeDefaults', () => {
+      const jt = makeJt();
+
+      // exclude drops listed props
+      const excl = jt.dump(PersonSchema.$id, {
+        'age': 30,
+        'name': 'Alice'
+      }, { 'exclude': ['age'] }) as Record<string, unknown>;
+
+      assert.equal('age' in excl, false);
+      assert.equal(excl.name, 'Alice');
+
+      // exclude with unknown prop is a no-op
+      const exclNoop = jt.dump(PersonSchema.$id, {
+        'age': 30,
+        'name': 'Alice'
+      }, { 'exclude': ['nonexistent'] });
+
+      assert.deepEqual(exclNoop, {
+        'age': 30,
+        'name': 'Alice'
+      });
+
+      // include keeps only listed
+      const incl = jt.dump(PersonSchema.$id, {
+        'age': 30,
+        'name': 'Alice'
+      }, { 'include': ['name'] }) as Record<string, unknown>;
+
+      assert.equal(incl.name, 'Alice');
+      assert.equal('age' in incl, false);
+
+      // include wins over exclude
+      const inclOverExcl = jt.dump(PersonSchema.$id, {
+        'age': 30,
+        'name': 'Alice'
+      }, {
+        'exclude': ['name'],
+        'include': ['name']
+      }) as Record<string, unknown>;
+
+      assert.equal(inclOverExcl.name, 'Alice');
+      assert.equal('age' in inclOverExcl, false);
+
+      // excludeUnset drops undefined-value props
+      const unset = jt.dump(PersonSchema.$id, {
+        'age': undefined,
+        'name': 'Alice'
+      }, { 'excludeUnset': true }) as Record<string, unknown>;
+
+      assert.equal('age' in unset, false);
+      assert.equal(unset.name, 'Alice');
+
+      // excludeUnset keeps 0 (not unset)
+      const zero = jt.dump(PersonSchema.$id, {
+        'age': 0,
+        'name': 'Alice'
+      }, { 'excludeUnset': true }) as Record<string, unknown>;
+
+      assert.equal(zero.age, 0);
+
+      // excludeDefaults drops default-value props (age default = 0)
+      const defaults = jt.dump(PersonSchema.$id, {
+        'age': 0,
+        'name': 'Alice'
+      }, { 'excludeDefaults': true }) as Record<string, unknown>;
+
+      assert.equal('age' in defaults, false);
+      assert.equal(defaults.name, 'Alice');
+
+      // excludeDefaults keeps non-default value
+      const nonDefault = jt.dump(PersonSchema.$id, {
+        'age': 25,
+        'name': 'Alice'
+      }, { 'excludeDefaults': true }) as Record<string, unknown>;
+
+      assert.equal(nonDefault.age, 25);
+
+      // exclude applies to nested objects
+      const exclNested = jt.dump(EmployeeSchema.$id, {
+        'address': {
+          'city': 'Portland',
+          'zip': '97201'
+        },
+        'name': 'Alice'
+      }, { 'exclude': ['address'] }) as Record<string, unknown>;
+
+      assert.equal('address' in exclNested, false);
+      assert.equal(exclNested.name, 'Alice');
+    });
   });
 
-  // ---------------------------------------------------------------------------
-  // dumpJson
-  // ---------------------------------------------------------------------------
+  void describe('dump — Transform encoder + json mode — Good/Bad/Ugly', () => {
+    void it('Transform encode, round-trip, json mode Date conversion, json mode no-op for plain objects', () => {
+      const jt = makeJt();
 
-  void describe('dumpJson', () => {
-    void it('happy: returns a JSON string', () => {
+      // Transform: encode produces wire form
+      const isoString = '2026-01-01T00:00:00.000Z';
+
+      assert.equal(jt.dump(TransformedDateSchema.$id, new Date(isoString)), isoString);
+
+      // Transform: round-trip decode then dump
+      const isoString2 = '2026-06-15T12:00:00.000Z';
+      const decoded = jt.instantiate(TransformedDateSchema.$id, isoString2);
+
+      assert.equal(jt.dump(TransformedDateSchema.$id, decoded), isoString2);
+
+      // mode 'json': converts Date leaf to ISO string
+      assert.equal(jt.dump(TransformedDateSchema.$id, new Date(isoString), { 'mode': 'json' }), isoString);
+
+      // mode 'json': plain object untouched
+      const plain = {
+        'age': 30,
+        'name': 'Alice'
+      };
+
+      assert.deepEqual(jt.dump(PersonSchema.$id, plain, { 'mode': 'json' }), plain);
+    });
+  });
+
+  void describe('dumpJson — Good/Bad/Ugly', () => {
+    void it('returns JSON string, round-trips, supports exclude, schema object overload', () => {
       const jt = makeJt();
       const value = {
         'age': 30,
         'name': 'Alice'
       };
-      const result = jt.dumpJson(PersonSchema.$id, value);
 
-      assert.equal(typeof result, 'string');
-    });
+      // returns string
+      assert.equal(typeof jt.dumpJson(PersonSchema.$id, value), 'string');
 
-    void it('happy: JSON.parse of result equals original value', () => {
-      const jt = makeJt();
-      const value = {
-        'age': 30,
-        'name': 'Alice'
-      };
-      const json = jt.dumpJson(PersonSchema.$id, value);
+      // JSON.parse equals original
+      assert.deepEqual(JSON.parse(jt.dumpJson(PersonSchema.$id, value)), value);
 
-      assert.deepEqual(JSON.parse(json), value);
-    });
-
-    void it('happy: Date values are serialized as ISO strings (round-trip via JSON.parse)', () => {
-      const jt = makeJt();
+      // Date values serialized as ISO strings
       const isoString = '2026-01-01T00:00:00.000Z';
       const decoded = jt.instantiate(TransformedDateSchema.$id, isoString);
-      const json = jt.dumpJson(TransformedDateSchema.$id, decoded);
-      const parsed = JSON.parse(json) as string;
 
-      assert.equal(parsed, isoString);
-    });
+      assert.equal(JSON.parse(jt.dumpJson(TransformedDateSchema.$id, decoded)) as string, isoString);
 
-    void it('happy: dumpJson with exclude option drops field in JSON output', () => {
-      const jt = makeJt();
-      const value = {
-        'age': 30,
-        'name': 'Alice'
-      };
-      const json = jt.dumpJson(PersonSchema.$id, value, { 'exclude': ['age'] });
-      const parsed = JSON.parse(json) as Record<string, unknown>;
+      // exclude drops field in JSON output
+      const parsed = JSON.parse(jt.dumpJson(PersonSchema.$id, value, { 'exclude': ['age'] })) as Record<string, unknown>;
 
       assert.equal('age' in parsed, false);
       assert.equal(parsed.name, 'Alice');
-    });
 
-    void it('happy: schema object overload works the same as schema ID overload', () => {
-      const jt = makeJt();
-      const value = {
-        'age': 30,
-        'name': 'Alice'
-      };
-      const byId = jt.dumpJson(PersonSchema.$id, value);
-      const bySchema = jt.dumpJson(PersonSchema, value);
-
-      assert.equal(byId, bySchema);
+      // schema object overload == schema ID overload
+      assert.equal(jt.dumpJson(PersonSchema.$id, value), jt.dumpJson(PersonSchema, value));
     });
   });
 }

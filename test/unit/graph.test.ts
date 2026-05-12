@@ -4308,134 +4308,123 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 // Source: schemaIri.test.ts
 // ===========================================================================
 {
-  void describe('SchemaIri.propertyIri', { 'concurrency': true }, () => {
-    void it('appends property name as fragment', () => {
-      assert.equal(
-        SchemaIri.propertyIri('https://example.io/User', 'email'),
-        'https://example.io/User#email'
-      );
+  void describe('SchemaIri helpers — Good/Bad/Ugly', { 'concurrency': true }, () => {
+    void it('propertyIri — appends fragment for standard and special-char property names', () => {
+      const cases: Array<{ 'expected': string;
+        'id': string;
+        'prop': string }> = [
+        {
+          'expected': 'https://example.io/User#email',
+          'id': 'https://example.io/User',
+          'prop': 'email'
+        },
+        {
+          'expected': 'https://example.io/Schema#my-prop',
+          'id': 'https://example.io/Schema',
+          'prop': 'my-prop'
+        }
+      ];
+
+      for (const {
+        expected, id, prop
+      } of cases) {
+        assert.equal(SchemaIri.propertyIri(id, prop), expected);
+      }
     });
 
-    void it('handles property names with special characters', () => {
-      assert.equal(
-        SchemaIri.propertyIri('https://example.io/Schema', 'my-prop'),
-        'https://example.io/Schema#my-prop'
-      );
-    });
-  });
+    void it('escapeSegment — encodes special chars, preserves slashes and alphanum', () => {
+      const cases: Array<{ 'expected': string;
+        'input': string }> = [
+        {
+          'expected': 'hello%20world',
+          'input': 'hello world'
+        },
+        {
+          'expected': 'a%23b',
+          'input': 'a#b'
+        },
+        {
+          'expected': 'a/b/c',
+          'input': 'a/b/c'
+        },
+        {
+          'expected': '',
+          'input': ''
+        },
+        {
+          'expected': 'abc123',
+          'input': 'abc123'
+        }
+      ];
 
-  void describe('SchemaIri.escapeSegment', { 'concurrency': true }, () => {
-    void it('encodes special characters', () => {
-      assert.equal(SchemaIri.escapeSegment('hello world'), 'hello%20world');
-    });
-
-    void it('encodes hash character', () => {
-      assert.equal(SchemaIri.escapeSegment('a#b'), 'a%23b');
-    });
-
-    void it('preserves forward slashes', () => {
-      assert.equal(SchemaIri.escapeSegment('a/b/c'), 'a/b/c');
-    });
-
-    void it('returns empty string for empty input', () => {
-      assert.equal(SchemaIri.escapeSegment(''), '');
-    });
-
-    void it('leaves alphanumeric characters unchanged', () => {
-      assert.equal(SchemaIri.escapeSegment('abc123'), 'abc123');
-    });
-  });
-
-  void describe('SchemaIri.splitSubject', { 'concurrency': true }, () => {
-    void it('returns base and null fragment for subject without hash', () => {
-      const result = SchemaIri.splitSubject('http://example.com/User');
-
-      assert.equal(result.base, 'http://example.com/User');
-      assert.equal(result.fragment, null);
+      for (const {
+        expected, input
+      } of cases) {
+        assert.equal(SchemaIri.escapeSegment(input), expected);
+      }
     });
 
-    void it('splits subject at hash boundary', () => {
-      const result = SchemaIri.splitSubject('http://example.com/User#/properties/name');
+    void it('splitSubject — splits on hash boundary and handles edge cases', () => {
+      const r1 = SchemaIri.splitSubject('http://example.com/User');
 
-      assert.equal(result.base, 'http://example.com/User');
-      assert.equal(result.fragment, '/properties/name');
+      assert.equal(r1.base, 'http://example.com/User');
+      assert.equal(r1.fragment, null);
+
+      const r2 = SchemaIri.splitSubject('http://example.com/User#/properties/name');
+
+      assert.equal(r2.base, 'http://example.com/User');
+      assert.equal(r2.fragment, '/properties/name');
+
+      const r3 = SchemaIri.splitSubject('http://example.com/User#');
+
+      assert.equal(r3.base, 'http://example.com/User');
+      assert.equal(r3.fragment, '');
     });
 
-    void it('handles empty fragment after hash', () => {
-      const result = SchemaIri.splitSubject('http://example.com/User#');
+    void it('isPropertySubject / fragmentContains — predicate table', () => {
+      const isPropCases: Array<{ 'expected': boolean;
+        'input': string }> = [
+        {
+          'expected': true,
+          'input': 'http://example.com/User#/properties/name'
+        },
+        {
+          'expected': true,
+          'input': 'http://example.com/User#/properties/address/properties/street'
+        },
+        {
+          'expected': false,
+          'input': 'http://example.com/User'
+        },
+        {
+          'expected': false,
+          'input': 'http://example.com/User#/$defs/Address'
+        }
+      ];
 
-      assert.equal(result.base, 'http://example.com/User');
-      assert.equal(result.fragment, '');
-    });
-  });
+      for (const {
+        expected, input
+      } of isPropCases) {
+        assert.equal(SchemaIri.isPropertySubject(input), expected, `isPropertySubject(${input})`);
+      }
 
-  void describe('SchemaIri.isPropertySubject', { 'concurrency': true }, () => {
-    void it('returns true for subject with hash and /properties/ fragment', () => {
-      assert.equal(SchemaIri.isPropertySubject('http://example.com/User#/properties/name'), true);
-    });
-
-    void it('returns true for deeply nested property subject', () => {
-      assert.equal(SchemaIri.isPropertySubject('http://example.com/User#/properties/address/properties/street'), true);
-    });
-
-    void it('returns false for subject without hash', () => {
-      assert.equal(SchemaIri.isPropertySubject('http://example.com/User'), false);
-    });
-
-    void it('returns false for subject with hash but no /properties/ fragment', () => {
-      assert.equal(SchemaIri.isPropertySubject('http://example.com/User#/$defs/Address'), false);
-    });
-  });
-
-  void describe('SchemaIri.fragmentContains', { 'concurrency': true }, () => {
-    void it('returns true when fragment contains the segment', () => {
       assert.equal(SchemaIri.fragmentContains('http://example.com/User#/properties/name', 'properties'), true);
-    });
-
-    void it('returns false when fragment does not contain the segment', () => {
       assert.equal(SchemaIri.fragmentContains('http://example.com/User#/$defs/Address', 'properties'), false);
-    });
-
-    void it('returns false when subject has no hash', () => {
       assert.equal(SchemaIri.fragmentContains('http://example.com/User', 'properties'), false);
     });
-  });
 
-  void describe('SchemaIri.structuralParent', { 'concurrency': true }, () => {
-    void it('returns subject unchanged when no hash present', () => {
+    void it('structuralParent + lastSegment — navigation helpers', () => {
       assert.equal(SchemaIri.structuralParent('http://example.com/User'), 'http://example.com/User');
-    });
-
-    void it('returns base when fragment has no /properties/', () => {
       assert.equal(SchemaIri.structuralParent('http://example.com/User#/$defs/Address'), 'http://example.com/User');
-    });
-
-    void it('returns base for root-level property', () => {
       assert.equal(SchemaIri.structuralParent('http://example.com/User#/properties/name'), 'http://example.com/User');
-    });
-
-    void it('returns parent pointer for nested property', () => {
       assert.equal(
         SchemaIri.structuralParent('http://example.com/User#/properties/address/properties/street'),
         'http://example.com/User#/properties/address'
       );
-    });
-  });
 
-  void describe('SchemaIri.lastSegment', { 'concurrency': true }, () => {
-    void it('returns full subject when no hash present', () => {
       assert.equal(SchemaIri.lastSegment('http://example.com/User'), 'http://example.com/User');
-    });
-
-    void it('returns last path segment from fragment', () => {
       assert.equal(SchemaIri.lastSegment('http://example.com/User#/properties/name'), 'name');
-    });
-
-    void it('returns last segment from deeply nested fragment', () => {
       assert.equal(SchemaIri.lastSegment('http://example.com/User#/properties/address/properties/street'), 'street');
-    });
-
-    void it('returns empty string for trailing slash', () => {
       assert.equal(SchemaIri.lastSegment('http://example.com/User#/properties/'), '');
     });
   });

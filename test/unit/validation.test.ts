@@ -6,8 +6,6 @@ import assert from 'node:assert/strict';
 import type {
   CheckFnType, ValidateWithErrorsFnType, ValidationErrorType
 } from '../../src/types/Validation.js';
-// CustomKeywordEntryInterface is the internal compiled-keyword shape consumed by the validation runtime.
-import type { CustomKeywordEntryInterface } from '../../src/interfaces/CustomKeywordEntry.js';
 import {
   describe, it
 } from 'node:test';
@@ -4174,245 +4172,224 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     return value === 1;
   };
 
-  void describe('Arrays', () => {
-    void describe('validateBounds', () => {
-      void it('returns valid when array is within bounds', () => {
-        const result = Arrays.validateBounds('/a', [
-          1,
-          2,
-          3
-        ], 1, 5, false);
+  void describe('Arrays — Good/Bad/Ugly', () => {
+    void it('validateBounds: within-bounds, minItems, maxItems, uniqueItems', () => {
+      // Good: within bounds
+      const r1 = Arrays.validateBounds('/a', [
+        1,
+        2,
+        3
+      ], 1, 5, false);
 
-        assert.equal(result.valid, true);
-        assert.equal(result.errors.length, 0);
-      });
+      assert.equal(r1.valid, true);
+      assert.equal(r1.errors.length, 0);
 
-      void it('returns invalid when array is below minItems', () => {
-        const result = Arrays.validateBounds('/a', [1], 3, undefined, false);
+      // Bad: below minItems
+      const r2 = Arrays.validateBounds('/a', [1], 3, undefined, false);
 
-        assert.equal(result.valid, false);
-        assert.equal(result.errors.length, 1);
-        assert.equal(result.errors[0].keyword, 'minItems');
-      });
+      assert.equal(r2.valid, false);
+      assert.equal(r2.errors.length, 1);
+      assert.equal(r2.errors[0].keyword, 'minItems');
 
-      void it('returns invalid when array is above maxItems', () => {
-        const result = Arrays.validateBounds('/a', [
-          1,
-          2,
-          3,
-          4
-        ], undefined, 2, false);
+      // Bad: above maxItems
+      const r3 = Arrays.validateBounds('/a', [
+        1,
+        2,
+        3,
+        4
+      ], undefined, 2, false);
 
-        assert.equal(result.valid, false);
-        assert.equal(result.errors.length, 1);
-        assert.equal(result.errors[0].keyword, 'maxItems');
-      });
+      assert.equal(r3.valid, false);
+      assert.equal(r3.errors.length, 1);
+      assert.equal(r3.errors[0].keyword, 'maxItems');
 
-      void it('returns invalid when uniqueItems is true and array has duplicates', () => {
-        const result = Arrays.validateBounds('/a', [
-          1,
-          2,
-          2,
-          3
-        ], undefined, undefined, true);
+      // Ugly: uniqueItems with duplicates
+      const r4 = Arrays.validateBounds('/a', [
+        1,
+        2,
+        2,
+        3
+      ], undefined, undefined, true);
 
-        assert.equal(result.valid, false);
-        assert.equal(result.errors.length, 1);
-        assert.equal(result.errors[0].keyword, 'uniqueItems');
-      });
+      assert.equal(r4.valid, false);
+      assert.equal(r4.errors.length, 1);
+      assert.equal(r4.errors[0].keyword, 'uniqueItems');
 
-      void it('returns valid when uniqueItems is true and all items are unique', () => {
-        const result = Arrays.validateBounds('/a', [
-          1,
-          2,
-          3
-        ], undefined, undefined, true);
+      // Good: uniqueItems all unique
+      const r5 = Arrays.validateBounds('/a', [
+        1,
+        2,
+        3
+      ], undefined, undefined, true);
 
-        assert.equal(result.valid, true);
-        assert.equal(result.errors.length, 0);
-      });
+      assert.equal(r5.valid, true);
+      assert.equal(r5.errors.length, 0);
     });
 
-    void describe('validateContains', () => {
-      void it('returns valid when containsCheck is undefined', () => {
-        const result = Arrays.validateContains('/a', [
-          1,
-          2
-        ]);
+    void it('validateContains: undefined, match, no-match, minContains, maxContains', () => {
+      // Good: no containsCheck = valid
+      const r1 = Arrays.validateContains('/a', [
+        1,
+        2
+      ]);
 
-        assert.equal(result.valid, true);
-        assert.equal(result.errors.length, 0);
-      });
+      assert.equal(r1.valid, true);
+      assert.equal(r1.errors.length, 0);
 
-      void it('returns valid when at least one item matches', () => {
-        const result = Arrays.validateContains('/a', [
-          1,
-          2,
-          3
-        ], passingCheck);
+      // Good: at least one matches
+      const r2 = Arrays.validateContains('/a', [
+        1,
+        2,
+        3
+      ], passingCheck);
 
-        assert.equal(result.valid, true);
-        assert.equal(result.errors.length, 0);
-      });
+      assert.equal(r2.valid, true);
+      assert.equal(r2.errors.length, 0);
 
-      void it('returns invalid when no item matches', () => {
-        const result = Arrays.validateContains('/a', [
-          1,
-          2,
-          3
-        ], failingCheck);
+      // Bad: no item matches
+      const r3 = Arrays.validateContains('/a', [
+        1,
+        2,
+        3
+      ], failingCheck);
 
-        assert.equal(result.valid, false);
-        assert.equal(result.errors.length, 1);
-        assert.equal(result.errors[0].keyword, 'contains');
-      });
+      assert.equal(r3.valid, false);
+      assert.equal(r3.errors.length, 1);
+      assert.equal(r3.errors[0].keyword, 'contains');
 
-      void it('returns invalid when match count is below minContains', () => {
-        const result = Arrays.validateContains('/a', [
-          1,
-          2,
-          3
-        ], oneMatch, 2);
+      // Bad: below minContains
+      const r4 = Arrays.validateContains('/a', [
+        1,
+        2,
+        3
+      ], oneMatch, 2);
 
-        assert.equal(result.valid, false);
-        assert.equal(result.errors.length, 1);
-        assert.match(result.errors[0].message, /at least 2/u);
-      });
+      assert.equal(r4.valid, false);
+      assert.equal(r4.errors.length, 1);
+      assert.match(r4.errors[0].message, /at least 2/u);
 
-      void it('returns invalid when match count is above maxContains', () => {
-        const result = Arrays.validateContains('/a', [
-          1,
-          2,
-          3
-        ], passingCheck, undefined, 2);
+      // Bad: above maxContains
+      const r5 = Arrays.validateContains('/a', [
+        1,
+        2,
+        3
+      ], passingCheck, undefined, 2);
 
-        assert.equal(result.valid, false);
-        assert.equal(result.errors.length, 1);
-        assert.match(result.errors[0].message, /at most 2/u);
-      });
+      assert.equal(r5.valid, false);
+      assert.equal(r5.errors.length, 1);
+      assert.match(r5.errors[0].message, /at most 2/u);
     });
 
-    void describe('validateItems', () => {
-      void it('returns valid when itemValidator is undefined', () => {
-        const errors: ValidationErrorType[] = [];
-        const result = Arrays.validateItems('/a', [
-          1,
-          2
-        ], undefined, undefined, errors, false, false, false, false);
+    void it('validateItems: undefined validator, all-pass, earlyExit, collect-errors, prefix-skip', () => {
+      // Good: no validator = valid
+      const e1: ValidationErrorType[] = [];
+      const r1 = Arrays.validateItems('/a', [
+        1,
+        2
+      ], undefined, undefined, e1, false, false, false, false);
 
-        assert.equal(result.valid, true);
-        assert.equal(result.earlyExit, false);
-      });
+      assert.equal(r1.valid, true);
+      assert.equal(r1.earlyExit, false);
 
-      void it('returns valid when all items pass', () => {
-        const errors: ValidationErrorType[] = [];
-        const result = Arrays.validateItems('/a', [
-          1,
-          2,
-          3
-        ], passing, undefined, errors, false, false, false, false);
+      // Good: all items pass
+      const e2: ValidationErrorType[] = [];
+      const r2 = Arrays.validateItems('/a', [
+        1,
+        2,
+        3
+      ], passing, undefined, e2, false, false, false, false);
 
-        assert.equal(result.valid, true);
-        assert.equal(result.earlyExit, false);
-      });
+      assert.equal(r2.valid, true);
+      assert.equal(r2.earlyExit, false);
 
-      void it('returns earlyExit when item fails and collectErrors is false', () => {
-        const errors: ValidationErrorType[] = [];
-        const result = Arrays.validateItems('/a', [
-          1,
-          2
-        ], failing, undefined, errors, false, false, false, false);
+      // Bad: earlyExit when fails and collectErrors is false
+      const e3: ValidationErrorType[] = [];
+      const r3 = Arrays.validateItems('/a', [
+        1,
+        2
+      ], failing, undefined, e3, false, false, false, false);
 
-        assert.equal(result.valid, false);
-        assert.equal(result.earlyExit, true);
-      });
+      assert.equal(r3.valid, false);
+      assert.equal(r3.earlyExit, true);
 
-      void it('collects errors when item fails and collectErrors is true', () => {
-        const errors: ValidationErrorType[] = [];
-        const result = Arrays.validateItems('/a', [
-          1,
-          2
-        ], failing, undefined, errors, true, false, false, false);
+      // Bad: collects errors when collectErrors is true
+      const e4: ValidationErrorType[] = [];
+      const r4 = Arrays.validateItems('/a', [
+        1,
+        2
+      ], failing, undefined, e4, true, false, false, false);
 
-        assert.equal(result.valid, false);
-        assert.equal(result.earlyExit, false);
-        assert.equal(errors.length, 2);
-      });
+      assert.equal(r4.valid, false);
+      assert.equal(r4.earlyExit, false);
+      assert.equal(e4.length, 2);
 
-      void it('skips prefix items when prefixValidators are present', () => {
-        const errors: ValidationErrorType[] = [];
-        const arr = [
-          1,
-          2,
-          3,
-          4
-        ];
-        const prefixValidators = [
-          passing,
-          passing
-        ];
-        const result = Arrays.validateItems('/a', arr, passing, prefixValidators, errors, false, false, false, false);
+      // Ugly: skips prefix-covered indices when prefixValidators present
+      const e5: ValidationErrorType[] = [];
+      const r5 = Arrays.validateItems('/a', [
+        1,
+        2,
+        3,
+        4
+      ], passing, [
+        passing,
+        passing
+      ], e5, false, false, false, false);
 
-        assert.equal(result.valid, true);
-        assert.equal(result.earlyExit, false);
-      });
+      assert.equal(r5.valid, true);
+      assert.equal(r5.earlyExit, false);
     });
 
-    void describe('validatePrefixItems', () => {
-      void it('returns valid when prefixValidators is undefined', () => {
-        const errors: ValidationErrorType[] = [];
-        const result = Arrays.validatePrefixItems('/a', [
-          1,
-          2
-        ], undefined, errors, false, false, false, false);
+    void it('validatePrefixItems: undefined, all-pass, earlyExit, collect-errors', () => {
+      // Good: no prefixValidators = valid
+      const e1: ValidationErrorType[] = [];
+      const r1 = Arrays.validatePrefixItems('/a', [
+        1,
+        2
+      ], undefined, e1, false, false, false, false);
 
-        assert.equal(result.valid, true);
-        assert.equal(result.earlyExit, false);
-      });
+      assert.equal(r1.valid, true);
+      assert.equal(r1.earlyExit, false);
 
-      void it('returns valid when all prefix items pass', () => {
-        const errors: ValidationErrorType[] = [];
-        const result = Arrays.validatePrefixItems('/a', [
-          1,
-          2,
-          3
-        ], [
-          passing,
-          passing
-        ], errors, false, false, false, false);
+      // Good: all prefix items pass
+      const e2: ValidationErrorType[] = [];
+      const r2 = Arrays.validatePrefixItems('/a', [
+        1,
+        2,
+        3
+      ], [
+        passing,
+        passing
+      ], e2, false, false, false, false);
 
-        assert.equal(result.valid, true);
-        assert.equal(result.earlyExit, false);
-      });
+      assert.equal(r2.valid, true);
+      assert.equal(r2.earlyExit, false);
 
-      void it('returns earlyExit when prefix item fails and collectErrors is false', () => {
-        const errors: ValidationErrorType[] = [];
-        const result = Arrays.validatePrefixItems('/a', [
-          1,
-          2
-        ], [
-          failing,
-          passing
-        ], errors, false, false, false, false);
+      // Bad: earlyExit when fails and collectErrors is false
+      const e3: ValidationErrorType[] = [];
+      const r3 = Arrays.validatePrefixItems('/a', [
+        1,
+        2
+      ], [
+        failing,
+        passing
+      ], e3, false, false, false, false);
 
-        assert.equal(result.valid, false);
-        assert.equal(result.earlyExit, true);
-      });
+      assert.equal(r3.valid, false);
+      assert.equal(r3.earlyExit, true);
 
-      void it('collects errors when prefix item fails and collectErrors is true', () => {
-        const errors: ValidationErrorType[] = [];
-        const result = Arrays.validatePrefixItems('/a', [
-          1,
-          2
-        ], [
-          failing,
-          failing
-        ], errors, true, false, false, false);
+      // Bad: collects errors when collectErrors is true
+      const e4: ValidationErrorType[] = [];
+      const r4 = Arrays.validatePrefixItems('/a', [
+        1,
+        2
+      ], [
+        failing,
+        failing
+      ], e4, true, false, false, false);
 
-        assert.equal(result.valid, false);
-        assert.equal(result.earlyExit, false);
-        assert.equal(errors.length, 2);
-      });
+      assert.equal(r4.valid, false);
+      assert.equal(r4.earlyExit, false);
+      assert.equal(e4.length, 2);
     });
   });
 }
@@ -4465,330 +4442,223 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     return impl;
   }
 
-  void describe('Objects', () => {
-    void describe('applyDefaults', () => {
-      void it('applies missing defaults', () => {
-        const obj: Record<string, unknown> = { 'a': 1 };
-        const defaults = new Map<string, { 'defaultValue': unknown;
-          'hasDefault': boolean }>([[
+  void describe('Objects — Good/Bad/Ugly', () => {
+    void it('applyDefaults: applies missing, skips existing, skips hasDefault=false', () => {
+      // Good: applies missing default
+      const obj1: Record<string, unknown> = { 'a': 1 };
+      const d1 = new Map<string, { 'defaultValue': unknown;
+        'hasDefault': boolean }>([[
+        'b',
+        {
+          'defaultValue': 42,
+          'hasDefault': true
+        }
+      ]]);
+
+      Objects.applyDefaults(obj1, d1);
+      assert.equal(obj1.b, 42);
+
+      // Bad: does not overwrite existing
+      const obj2: Record<string, unknown> = { 'a': 1 };
+      const d2 = new Map<string, { 'defaultValue': unknown;
+        'hasDefault': boolean }>([[
+        'a',
+        {
+          'defaultValue': 999,
+          'hasDefault': true
+        }
+      ]]);
+
+      Objects.applyDefaults(obj2, d2);
+      assert.equal(obj2.a, 1);
+
+      // Ugly: skips when hasDefault is false
+      const obj3: Record<string, unknown> = {};
+      const d3 = new Map<string, { 'defaultValue': unknown;
+        'hasDefault': boolean }>([[
+        'x',
+        {
+          'defaultValue': 'nope',
+          'hasDefault': false
+        }
+      ]]);
+
+      Objects.applyDefaults(obj3, d3);
+      assert.equal('x' in obj3, false);
+    });
+
+    void it('validateDependentRequired: empty, trigger+dep, trigger+miss, non-object, earlyExit', () => {
+      // Good: no entries = valid
+      const e1: ValidationErrorType[] = [];
+      const r1 = Objects.validateDependentRequired('', { 'a': 1 }, [], e1, true);
+
+      assert.equal(r1.valid, true);
+      assert.equal(r1.earlyExit, false);
+      assert.equal(e1.length, 0);
+
+      // Good: trigger present and dep present = valid
+      const e2: ValidationErrorType[] = [];
+      const r2 = Objects.validateDependentRequired('', {
+        'a': 1,
+        'b': 2
+      }, [[
+        'a',
+        ['b']
+      ]], e2, true);
+
+      assert.equal(r2.valid, true);
+      assert.equal(e2.length, 0);
+
+      // Bad: trigger present but dep missing = invalid
+      const e3: ValidationErrorType[] = [];
+      const r3 = Objects.validateDependentRequired('', { 'a': 1 }, [[
+        'a',
+        ['b']
+      ]], e3, true);
+
+      assert.equal(r3.valid, false);
+      assert.equal(e3.length, 1);
+
+      // Ugly: non-object value = valid (skipped)
+      const e4: ValidationErrorType[] = [];
+      const r4 = Objects.validateDependentRequired('', 'not-an-object', [[
+        'a',
+        ['b']
+      ]], e4, true);
+
+      assert.equal(r4.valid, true);
+
+      // Ugly: earlyExit when collectErrors is false
+      const e5: ValidationErrorType[] = [];
+      const r5 = Objects.validateDependentRequired('', { 'a': 1 }, [[
+        'a',
+        [
           'b',
-          {
-            'defaultValue': 42,
-            'hasDefault': true
-          }
-        ]]);
+          'c'
+        ]
+      ]], e5, false);
 
-        Objects.applyDefaults(obj, defaults);
-
-        assert.equal(obj.b, 42);
-      });
-
-      void it('does not overwrite existing keys', () => {
-        const obj: Record<string, unknown> = { 'a': 1 };
-        const defaults = new Map<string, { 'defaultValue': unknown;
-          'hasDefault': boolean }>([[
-          'a',
-          {
-            'defaultValue': 999,
-            'hasDefault': true
-          }
-        ]]);
-
-        Objects.applyDefaults(obj, defaults);
-
-        assert.equal(obj.a, 1);
-      });
-
-      void it('skips when hasDefault is false', () => {
-        const obj: Record<string, unknown> = {};
-        const defaults = new Map<string, { 'defaultValue': unknown;
-          'hasDefault': boolean }>([[
-          'x',
-          {
-            'defaultValue': 'nope',
-            'hasDefault': false
-          }
-        ]]);
-
-        Objects.applyDefaults(obj, defaults);
-
-        assert.equal('x' in obj, false);
-      });
+      assert.equal(r5.valid, false);
+      assert.equal(r5.earlyExit, true);
+      assert.equal(e5.length, 0);
     });
 
-    void describe('validateDependentRequired', () => {
-      void it('returns valid when no entries', () => {
-        const errors: ValidationErrorType[] = [];
-        const result = Objects.validateDependentRequired('', { 'a': 1 }, [], errors, true);
+    void it('validateRequired + validatePropertyCount + validatePropertyNames: table-driven', () => {
+      // validateRequired
+      const rr1 = Objects.validateRequired('', { 'a': 1 });
 
-        assert.equal(result.valid, true);
-        assert.equal(result.earlyExit, false);
-        assert.equal(errors.length, 0);
-      });
+      assert.equal(rr1.valid, true);
+      assert.equal(rr1.errors.length, 0);
 
-      void it('returns valid when trigger present and dep present', () => {
-        const errors: ValidationErrorType[] = [];
-        const entries: Array<[string, string[]]> = [[
-          'a',
-          ['b']
-        ]];
-        const result = Objects.validateDependentRequired('', {
-          'a': 1,
-          'b': 2
-        }, entries, errors, true);
+      const rr2 = Objects.validateRequired('', {
+        'a': 1,
+        'b': 2
+      }, [
+        'a',
+        'b'
+      ]);
 
-        assert.equal(result.valid, true);
-        assert.equal(errors.length, 0);
-      });
+      assert.equal(rr2.valid, true);
 
-      void it('returns invalid when trigger present and dep missing', () => {
-        const errors: ValidationErrorType[] = [];
-        const entries: Array<[string, string[]]> = [[
-          'a',
-          ['b']
-        ]];
-        const result = Objects.validateDependentRequired('', { 'a': 1 }, entries, errors, true);
+      const rr3 = Objects.validateRequired('/root', { 'a': 1 }, [
+        'a',
+        'b'
+      ]);
 
-        assert.equal(result.valid, false);
-        assert.equal(errors.length, 1);
-      });
+      assert.equal(rr3.valid, false);
+      assert.equal(rr3.errors.length, 1);
 
-      void it('returns valid for non-object value', () => {
-        const errors: ValidationErrorType[] = [];
-        const entries: Array<[string, string[]]> = [[
-          'a',
-          ['b']
-        ]];
-        const result = Objects.validateDependentRequired('', 'not-an-object', entries, errors, true);
+      // validatePropertyCount
+      const rc1 = Objects.validatePropertyCount('', {
+        'a': 1,
+        'b': 2
+      }, 1, 3);
 
-        assert.equal(result.valid, true);
-      });
+      assert.equal(rc1.valid, true);
+      assert.equal(rc1.errors.length, 0);
 
-      void it('earlyExits when collectErrors is false', () => {
-        const errors: ValidationErrorType[] = [];
-        const entries: Array<[string, string[]]> = [[
-          'a',
-          [
-            'b',
-            'c'
-          ]
-        ]];
-        const result = Objects.validateDependentRequired('', { 'a': 1 }, entries, errors, false);
+      const rc2 = Objects.validatePropertyCount('', { 'a': 1 }, 2);
 
-        assert.equal(result.valid, false);
-        assert.equal(result.earlyExit, true);
-        assert.equal(errors.length, 0);
-      });
+      assert.equal(rc2.valid, false);
+      assert.equal(rc2.errors.length, 1);
+
+      const rc3 = Objects.validatePropertyCount('', {
+        'a': 1,
+        'b': 2,
+        'c': 3
+      }, undefined, 2);
+
+      assert.equal(rc3.valid, false);
+      assert.equal(rc3.errors.length, 1);
+
+      // validatePropertyNames
+      const e1: ValidationErrorType[] = [];
+      const rn1 = Objects.validatePropertyNames('', { 'a': 1 }, undefined, e1, true);
+
+      assert.equal(rn1.valid, true);
+      assert.equal(rn1.earlyExit, false);
+
+      const e2: ValidationErrorType[] = [];
+      const rn2 = Objects.validatePropertyNames('', { 'ok': 1 }, passingValidator(), e2, true);
+
+      assert.equal(rn2.valid, true);
+      assert.equal(rn2.earlyExit, false);
+
+      const e3: ValidationErrorType[] = [];
+      const rn3 = Objects.validatePropertyNames('', { 'bad': 1 }, failingValidator(), e3, true);
+
+      assert.equal(rn3.valid, false);
+      assert.equal(e3.length, 1);
     });
 
-    void describe('validateRequired', () => {
-      void it('returns valid when required is undefined', () => {
-        const result = Objects.validateRequired('', { 'a': 1 });
-
-        assert.equal(result.valid, true);
-        assert.equal(result.errors.length, 0);
-      });
-
-      void it('returns valid when all required present', () => {
-        const result = Objects.validateRequired('', {
-          'a': 1,
-          'b': 2
-        }, [
-          'a',
-          'b'
-        ]);
-
-        assert.equal(result.valid, true);
-        assert.equal(result.errors.length, 0);
-      });
-
-      void it('returns invalid with error when missing required', () => {
-        const result = Objects.validateRequired('/root', { 'a': 1 }, [
-          'a',
-          'b'
-        ]);
-
-        assert.equal(result.valid, false);
-        assert.equal(result.errors.length, 1);
-      });
-    });
-
-    void describe('validateProperties', () => {
-      void it('validates known property', () => {
-        const propValidators = new Map<string, ValidateWithErrorsFnType>([[
-          'name',
-          passingValidator()
-        ]]);
-        const errors: ValidationErrorType[] = [];
-        const defaults = new Map<string, { 'defaultValue': unknown;
+    void it('validateProperties: known-prop, additional-false, stripUnknown, pattern-prop', () => {
+      const emptyDefaults = (): Map<string, { 'defaultValue': unknown;
+        'hasDefault': boolean }> => {
+        return new Map<string, { 'defaultValue': unknown;
           'hasDefault': boolean }>();
+      };
 
-        const result = Objects.validateProperties(
-          '',
-          { 'name': 'Alice' },
-          propValidators,
-          undefined,
-          false,
-          undefined,
-          undefined,
-          false,
-          defaults,
-          errors,
-          true,
-          false,
-          false
-        );
+      // Good: validates known property
+      const e1: ValidationErrorType[] = [];
+      const r1 = Objects.validateProperties('', { 'name': 'Alice' }, new Map([[
+        'name',
+        passingValidator()
+      ]]), undefined, false, undefined, undefined, false, emptyDefaults(), e1, true, false, false);
 
-        assert.equal(result.valid, true);
-        assert.equal(result.earlyExit, false);
-      });
+      assert.equal(r1.valid, true);
+      assert.equal(r1.earlyExit, false);
 
-      void it('returns invalid for unknown property with additionalIsFalse', () => {
-        const propValidators = new Map<string, ValidateWithErrorsFnType>();
-        const errors: ValidationErrorType[] = [];
-        const defaults = new Map<string, { 'defaultValue': unknown;
-          'hasDefault': boolean }>();
+      // Bad: invalid for unknown property with additionalIsFalse
+      const e2: ValidationErrorType[] = [];
+      const r2 = Objects.validateProperties('', { 'extra': 'bad' }, new Map(), undefined, true, undefined, undefined, false, emptyDefaults(), e2, true, false, false);
 
-        const result = Objects.validateProperties(
-          '',
-          { 'extra': 'bad' },
-          propValidators,
-          undefined,
-          true,
-          undefined,
-          undefined,
-          false,
-          defaults,
-          errors,
-          true,
-          false,
-          false
-        );
+      assert.equal(r2.valid, false);
+      assert.equal(e2.length, 1);
 
-        assert.equal(result.valid, false);
-        assert.equal(errors.length, 1);
-      });
+      // Ugly: strips unknown keys when stripUnknown is true
+      const obj3: Record<string, unknown> = {
+        'extra': 'removed',
+        'name': 'Alice'
+      };
+      const e3: ValidationErrorType[] = [];
 
-      void it('strips unknown keys when stripUnknown is true', () => {
-        const propValidators = new Map<string, ValidateWithErrorsFnType>([[
-          'name',
-          passingValidator()
-        ]]);
-        const errors: ValidationErrorType[] = [];
-        const defaults = new Map<string, { 'defaultValue': unknown;
-          'hasDefault': boolean }>();
-        const allowedKeys = new Set(['name']);
-        const obj: Record<string, unknown> = {
-          'extra': 'removed',
-          'name': 'Alice'
-        };
+      Objects.validateProperties('', obj3, new Map([[
+        'name',
+        passingValidator()
+      ]]), undefined, false, undefined, new Set(['name']), true, emptyDefaults(), e3, true, false, false);
+      assert.equal('extra' in obj3, false);
+      assert.equal(obj3.name, 'Alice');
 
-        Objects.validateProperties(
-          '',
-          obj,
-          propValidators,
-          undefined,
-          false,
-          undefined,
-          allowedKeys,
-          true,
-          defaults,
-          errors,
-          true,
-          false,
-          false
-        );
+      // Ugly: matches pattern property
+      const obj4: Record<string, unknown> = { 'x-custom': 'original' };
+      const e4: ValidationErrorType[] = [];
+      const r4 = Objects.validateProperties('', obj4, new Map(), [{
+        'regex': /^x-/u,
+        'validator': coercingValidator('coerced')
+      }], false, undefined, undefined, false, emptyDefaults(), e4, true, false, false);
 
-        assert.equal('extra' in obj, false);
-        assert.equal(obj.name, 'Alice');
-      });
-
-      void it('matches pattern property', () => {
-        const propValidators = new Map<string, ValidateWithErrorsFnType>();
-        const patternPropValidators = [{
-          'regex': /^x-/u,
-          'validator': coercingValidator('coerced')
-        }];
-        const errors: ValidationErrorType[] = [];
-        const defaults = new Map<string, { 'defaultValue': unknown;
-          'hasDefault': boolean }>();
-        const obj: Record<string, unknown> = { 'x-custom': 'original' };
-
-        const result = Objects.validateProperties(
-          '',
-          obj,
-          propValidators,
-          patternPropValidators,
-          false,
-          undefined,
-          undefined,
-          false,
-          defaults,
-          errors,
-          true,
-          false,
-          false
-        );
-
-        assert.equal(result.valid, true);
-        assert.equal(obj['x-custom'], 'coerced');
-      });
-    });
-
-    void describe('validatePropertyCount', () => {
-      void it('returns valid when within bounds', () => {
-        const result = Objects.validatePropertyCount('', {
-          'a': 1,
-          'b': 2
-        }, 1, 3);
-
-        assert.equal(result.valid, true);
-        assert.equal(result.errors.length, 0);
-      });
-
-      void it('returns invalid when below minProperties', () => {
-        const result = Objects.validatePropertyCount('', { 'a': 1 }, 2);
-
-        assert.equal(result.valid, false);
-        assert.equal(result.errors.length, 1);
-      });
-
-      void it('returns invalid when above maxProperties', () => {
-        const result = Objects.validatePropertyCount('', {
-          'a': 1,
-          'b': 2,
-          'c': 3
-        }, undefined, 2);
-
-        assert.equal(result.valid, false);
-        assert.equal(result.errors.length, 1);
-      });
-    });
-
-    void describe('validatePropertyNames', () => {
-      void it('returns valid when validator is undefined', () => {
-        const errors: ValidationErrorType[] = [];
-        const result = Objects.validatePropertyNames('', { 'a': 1 }, undefined, errors, true);
-
-        assert.equal(result.valid, true);
-        assert.equal(result.earlyExit, false);
-      });
-
-      void it('returns valid when all names pass', () => {
-        const errors: ValidationErrorType[] = [];
-        const result = Objects.validatePropertyNames('', { 'ok': 1 }, passingValidator(), errors, true);
-
-        assert.equal(result.valid, true);
-        assert.equal(result.earlyExit, false);
-      });
-
-      void it('returns invalid when a name fails', () => {
-        const errors: ValidationErrorType[] = [];
-        const result = Objects.validatePropertyNames('', { 'bad': 1 }, failingValidator(), errors, true);
-
-        assert.equal(result.valid, false);
-        assert.equal(errors.length, 1);
-      });
+      assert.equal(r4.valid, true);
+      assert.equal(obj4['x-custom'], 'coerced');
     });
   });
 }
@@ -4801,231 +4671,111 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     return typeof value === 'string' && value.includes('@');
   }
 
-  void describe('Scalars', () => {
-    void describe('validateConst', () => {
-      void it('returns valid when hasConst is false', () => {
-        const result = Scalars.validateConst('/x', 'anything', false);
+  void describe('Scalars — Good/Bad/Ugly', () => {
+    void it('validateConst / validateEnum / validateFormat: table-driven', () => {
+      const enumVals = [
+        'a',
+        'b',
+        'c'
+      ];
+      const enumSet = new Set<boolean | null | number | string>([
+        'a',
+        'b',
+        'c'
+      ]);
 
-        assert.equal(result.valid, true);
-        assert.equal(result.errors.length, 0);
-      });
+      // validateConst
+      const rc1 = Scalars.validateConst('/x', 'anything', false);
 
-      void it('returns valid when value matches constVal', () => {
-        const result = Scalars.validateConst('/x', 42, true, 42);
+      assert.equal(rc1.valid, true);
+      assert.equal(rc1.errors.length, 0);
 
-        assert.equal(result.valid, true);
-        assert.equal(result.errors.length, 0);
-      });
+      const rc2 = Scalars.validateConst('/x', 42, true, 42);
 
-      void it('returns invalid with error when value does not match constVal', () => {
-        const result = Scalars.validateConst('/x', 'wrong', true, 'expected');
+      assert.equal(rc2.valid, true);
+      assert.equal(rc2.errors.length, 0);
 
-        assert.equal(result.valid, false);
-        assert.equal(result.errors.length, 1);
-        assert.equal(result.errors[0].keyword, 'const');
-        assert.equal(result.errors[0].path, '/x');
-      });
+      const rc3 = Scalars.validateConst('/x', 'wrong', true, 'expected');
+
+      assert.equal(rc3.valid, false);
+      assert.equal(rc3.errors.length, 1);
+      assert.equal(rc3.errors[0].keyword, 'const');
+      assert.equal(rc3.errors[0].path, '/x');
+
+      // validateEnum
+      assert.equal(Scalars.validateEnum('/x', 'anything').valid, true);
+      assert.equal(Scalars.validateEnum('/x', 'b', enumVals, enumSet).valid, true);
+      const re3 = Scalars.validateEnum('/x', 'z', enumVals, enumSet);
+
+      assert.equal(re3.valid, false);
+      assert.equal(re3.errors.length, 1);
+      assert.equal(re3.errors[0].keyword, 'enum');
+      assert.equal(re3.errors[0].path, '/x');
+
+      // validateFormat
+      assert.equal(Scalars.validateFormat('/x', 'anything').valid, true);
+      assert.equal(Scalars.validateFormat('/x', 'a@b.com', 'email', emailValidator).valid, true);
+      const rf3 = Scalars.validateFormat('/x', 'not-an-email', 'email', emailValidator);
+
+      assert.equal(rf3.valid, false);
+      assert.equal(rf3.errors.length, 1);
+      assert.equal(rf3.errors[0].keyword, 'format');
+      assert.match(rf3.errors[0].message, /email/u);
     });
 
-    void describe('validateEnum', () => {
-      void it('returns valid when enumValues is undefined', () => {
-        const result = Scalars.validateEnum('/x', 'anything');
+    void it('validateString + validateNumber + validateType: table-driven', () => {
+      // validateString
+      const rs1 = Scalars.validateString('/x', 'hello', 2, 10);
 
-        assert.equal(result.valid, true);
-        assert.equal(result.errors.length, 0);
-      });
+      assert.equal(rs1.valid, true);
+      assert.equal(rs1.errors.length, 0);
 
-      void it('returns valid when value is in the enum set', () => {
-        const enumValues = [
-          'a',
-          'b',
-          'c'
-        ];
-        const enumSet = new Set<boolean | null | number | string>([
-          'a',
-          'b',
-          'c'
-        ]);
-        const result = Scalars.validateEnum('/x', 'b', enumValues, enumSet);
+      const rs2 = Scalars.validateString('/x', 'hi', 5);
 
-        assert.equal(result.valid, true);
-        assert.equal(result.errors.length, 0);
-      });
+      assert.equal(rs2.valid, false);
+      assert.equal(rs2.errors[0].keyword, 'minLength');
 
-      void it('returns invalid when value is not in the enum set', () => {
-        const enumValues = [
-          'a',
-          'b',
-          'c'
-        ];
-        const enumSet = new Set<boolean | null | number | string>([
-          'a',
-          'b',
-          'c'
-        ]);
-        const result = Scalars.validateEnum('/x', 'z', enumValues, enumSet);
+      const rs3 = Scalars.validateString('/x', 'hello world', undefined, 5);
 
-        assert.equal(result.valid, false);
-        assert.equal(result.errors.length, 1);
-        assert.equal(result.errors[0].keyword, 'enum');
-        assert.equal(result.errors[0].path, '/x');
-      });
-    });
+      assert.equal(rs3.valid, false);
+      assert.equal(rs3.errors[0].keyword, 'maxLength');
 
-    void describe('validateFormat', () => {
-      void it('returns valid when formatValidator is undefined', () => {
-        const result = Scalars.validateFormat('/x', 'anything');
+      const rs4 = Scalars.validateString('/x', 'abc123', undefined, undefined, /^[a-z]+\d+$/u, '^[a-z]+\\d+$');
 
-        assert.equal(result.valid, true);
-        assert.equal(result.errors.length, 0);
-      });
+      assert.equal(rs4.valid, true);
 
-      void it('returns valid when formatValidator passes', () => {
-        const result = Scalars.validateFormat('/x', 'a@b.com', 'email', emailValidator);
+      const rs5 = Scalars.validateString('/x', '!!!', undefined, undefined, /^[a-z]+$/u, '^[a-z]+$');
 
-        assert.equal(result.valid, true);
-        assert.equal(result.errors.length, 0);
-      });
+      assert.equal(rs5.valid, false);
+      assert.equal(rs5.errors[0].keyword, 'pattern');
 
-      void it('returns invalid when formatValidator fails', () => {
-        const result = Scalars.validateFormat('/x', 'not-an-email', 'email', emailValidator);
+      assert.equal(Scalars.validateString('/x', 'anything').valid, true);
 
-        assert.equal(result.valid, false);
-        assert.equal(result.errors.length, 1);
-        assert.equal(result.errors[0].keyword, 'format');
-        assert.match(result.errors[0].message, /email/u);
-      });
-    });
+      // validateNumber
+      assert.equal(Scalars.validateNumber('/x', 42).valid, true);
+      assert.equal(Scalars.validateNumber('/x', 3, 5).errors[0].keyword, 'minimum');
+      assert.equal(Scalars.validateNumber('/x', 20, undefined, 10).errors[0].keyword, 'maximum');
+      assert.equal(Scalars.validateNumber('/x', 5, undefined, undefined, 5).errors[0].keyword, 'exclusiveMinimum');
+      assert.equal(Scalars.validateNumber('/x', 10, undefined, undefined, undefined, 10).errors[0].keyword, 'exclusiveMaximum');
+      const rn6 = Scalars.validateNumber('/x', 7, undefined, undefined, undefined, undefined, 3);
 
-    void describe('validateString', () => {
-      void it('returns valid when value is within bounds', () => {
-        const result = Scalars.validateString('/x', 'hello', 2, 10);
+      assert.equal(rn6.valid, false);
+      assert.equal(rn6.errors.length, 1);
+      assert.equal(rn6.errors[0].keyword, 'multipleOf');
 
-        assert.equal(result.valid, true);
-        assert.equal(result.errors.length, 0);
-      });
+      // validateType
+      assert.equal(Scalars.validateType('/x', [], 'anything').valid, true);
+      assert.equal(Scalars.validateType('/x', ['string'], 'hello').valid, true);
+      assert.equal(Scalars.validateType('/x', [
+        'string',
+        'number'
+      ], 42).valid, true);
+      const rt4 = Scalars.validateType('/x', ['string'], 42);
 
-      void it('returns invalid when value is below minLength', () => {
-        const result = Scalars.validateString('/x', 'hi', 5);
-
-        assert.equal(result.valid, false);
-        assert.equal(result.errors.length, 1);
-        assert.equal(result.errors[0].keyword, 'minLength');
-      });
-
-      void it('returns invalid when value is above maxLength', () => {
-        const result = Scalars.validateString('/x', 'hello world', undefined, 5);
-
-        assert.equal(result.valid, false);
-        assert.equal(result.errors.length, 1);
-        assert.equal(result.errors[0].keyword, 'maxLength');
-      });
-
-      void it('returns valid when value matches pattern', () => {
-        const result = Scalars.validateString('/x', 'abc123', undefined, undefined, /^[a-z]+\d+$/u, '^[a-z]+\\d+$');
-
-        assert.equal(result.valid, true);
-        assert.equal(result.errors.length, 0);
-      });
-
-      void it('returns invalid when value does not match pattern', () => {
-        const result = Scalars.validateString('/x', '!!!', undefined, undefined, /^[a-z]+$/u, '^[a-z]+$');
-
-        assert.equal(result.valid, false);
-        assert.equal(result.errors.length, 1);
-        assert.equal(result.errors[0].keyword, 'pattern');
-      });
-
-      void it('returns valid when all constraints are undefined', () => {
-        const result = Scalars.validateString('/x', 'anything');
-
-        assert.equal(result.valid, true);
-        assert.equal(result.errors.length, 0);
-      });
-    });
-
-    void describe('validateNumber', () => {
-      void it('returns valid when all constraints are undefined', () => {
-        const result = Scalars.validateNumber('/x', 42);
-
-        assert.equal(result.valid, true);
-        assert.equal(result.errors.length, 0);
-      });
-
-      void it('returns invalid when value is below minimum', () => {
-        const result = Scalars.validateNumber('/x', 3, 5);
-
-        assert.equal(result.valid, false);
-        assert.equal(result.errors.length, 1);
-        assert.equal(result.errors[0].keyword, 'minimum');
-      });
-
-      void it('returns invalid when value is above maximum', () => {
-        const result = Scalars.validateNumber('/x', 20, undefined, 10);
-
-        assert.equal(result.valid, false);
-        assert.equal(result.errors.length, 1);
-        assert.equal(result.errors[0].keyword, 'maximum');
-      });
-
-      void it('returns invalid when value is at exclusiveMinimum', () => {
-        const result = Scalars.validateNumber('/x', 5, undefined, undefined, 5);
-
-        assert.equal(result.valid, false);
-        assert.equal(result.errors.length, 1);
-        assert.equal(result.errors[0].keyword, 'exclusiveMinimum');
-      });
-
-      void it('returns invalid when value is at exclusiveMaximum', () => {
-        const result = Scalars.validateNumber('/x', 10, undefined, undefined, undefined, 10);
-
-        assert.equal(result.valid, false);
-        assert.equal(result.errors.length, 1);
-        assert.equal(result.errors[0].keyword, 'exclusiveMaximum');
-      });
-
-      void it('returns invalid when value is not a multiple of multipleOf', () => {
-        const result = Scalars.validateNumber('/x', 7, undefined, undefined, undefined, undefined, 3);
-
-        assert.equal(result.valid, false);
-        assert.equal(result.errors.length, 1);
-        assert.equal(result.errors[0].keyword, 'multipleOf');
-      });
-    });
-
-    void describe('validateType', () => {
-      void it('returns valid when types array is empty', () => {
-        const result = Scalars.validateType('/x', [], 'anything');
-
-        assert.equal(result.valid, true);
-        assert.equal(result.errors.length, 0);
-      });
-
-      void it('returns valid when value matches a single type', () => {
-        const result = Scalars.validateType('/x', ['string'], 'hello');
-
-        assert.equal(result.valid, true);
-        assert.equal(result.errors.length, 0);
-      });
-
-      void it('returns valid when value matches one of multiple types', () => {
-        const result = Scalars.validateType('/x', [
-          'string',
-          'number'
-        ], 42);
-
-        assert.equal(result.valid, true);
-        assert.equal(result.errors.length, 0);
-      });
-
-      void it('returns invalid when value matches no type', () => {
-        const result = Scalars.validateType('/x', ['string'], 42);
-
-        assert.equal(result.valid, false);
-        assert.equal(result.errors.length, 1);
-        assert.equal(result.errors[0].keyword, 'type');
-        assert.equal(result.errors[0].path, '/x');
-      });
+      assert.equal(rt4.valid, false);
+      assert.equal(rt4.errors.length, 1);
+      assert.equal(rt4.errors[0].keyword, 'type');
+      assert.equal(rt4.errors[0].path, '/x');
     });
   });
 }
@@ -5075,260 +4825,155 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     return false;
   };
 
-  void describe('Composition', () => {
-    void describe('validateAllOf', () => {
-      void it('returns valid when validators is undefined', () => {
-        const errors: ValidationErrorType[] = [];
-        const result = Composition.validateAllOf('test', '', undefined, errors, true, false, false, false);
+  void describe('Composition — Good/Bad/Ugly', () => {
+    void it('validateAllOf: undefined, all-pass, earlyExit, collect-errors', () => {
+      const e1: ValidationErrorType[] = [];
+      const r1 = Composition.validateAllOf('test', '', undefined, e1, true, false, false, false);
 
-        assert.equal(result.valid, true);
-        assert.equal(result.earlyExit, false);
-        assert.equal(result.value, 'test');
-      });
+      assert.equal(r1.valid, true);
+      assert.equal(r1.earlyExit, false);
+      assert.equal(r1.value, 'test');
 
-      void it('returns valid when all pass', () => {
-        const errors: ValidationErrorType[] = [];
-        const validators = [
-          passingValidator(),
-          passingValidator()
-        ];
-        const result = Composition.validateAllOf('test', '', validators, errors, true, false, false, false);
+      const e2: ValidationErrorType[] = [];
+      const r2 = Composition.validateAllOf('test', '', [
+        passingValidator(),
+        passingValidator()
+      ], e2, true, false, false, false);
 
-        assert.equal(result.valid, true);
-        assert.equal(result.earlyExit, false);
-      });
+      assert.equal(r2.valid, true);
+      assert.equal(r2.earlyExit, false);
 
-      void it('returns earlyExit when one fails with collectErrors false', () => {
-        const errors: ValidationErrorType[] = [];
-        const validators = [
-          passingValidator(),
-          failingValidator()
-        ];
-        const result = Composition.validateAllOf('test', '/root', validators, errors, false, false, false, false);
+      const e3: ValidationErrorType[] = [];
+      const r3 = Composition.validateAllOf('test', '/root', [
+        passingValidator(),
+        failingValidator()
+      ], e3, false, false, false, false);
 
-        assert.equal(result.valid, false);
-        assert.equal(result.earlyExit, true);
-      });
+      assert.equal(r3.valid, false);
+      assert.equal(r3.earlyExit, true);
 
-      void it('collects errors when one fails with collectErrors true', () => {
-        const errors: ValidationErrorType[] = [];
-        const validators = [
-          passingValidator(),
-          failingValidator()
-        ];
-        const result = Composition.validateAllOf('test', '/root', validators, errors, true, false, false, false);
+      const e4: ValidationErrorType[] = [];
+      const r4 = Composition.validateAllOf('test', '/root', [
+        passingValidator(),
+        failingValidator()
+      ], e4, true, false, false, false);
 
-        assert.equal(result.valid, false);
-        assert.equal(result.earlyExit, false);
-        assert.equal(errors.length, 1);
-      });
+      assert.equal(r4.valid, false);
+      assert.equal(r4.earlyExit, false);
+      assert.equal(e4.length, 1);
     });
 
-    void describe('validateAnyOf', () => {
-      void it('returns valid when checks is undefined', () => {
-        const result = Composition.validateAnyOf('', 'test');
+    void it('validateAnyOf + validateOneOf + validateNot: table-driven', () => {
+      // anyOf
+      assert.equal(Composition.validateAnyOf('', 'test').valid, true);
+      assert.equal(Composition.validateAnyOf('', 'test', [
+        alwaysFalse,
+        alwaysTrue
+      ]).valid, true);
+      assert.equal(Composition.validateAnyOf('/root', 'test', [
+        alwaysFalse,
+        alwaysFalse
+      ]).valid, false);
 
-        assert.equal(result.valid, true);
-        assert.equal(result.error, undefined);
-      });
+      // oneOf
+      assert.equal(Composition.validateOneOf('', 'test').valid, true);
+      assert.equal(Composition.validateOneOf('', 'test', [
+        alwaysFalse,
+        alwaysTrue,
+        alwaysFalse
+      ]).valid, true);
+      assert.equal(Composition.validateOneOf('/root', 'test', [
+        alwaysFalse,
+        alwaysFalse
+      ]).valid, false);
+      assert.equal(Composition.validateOneOf('/root', 'test', [
+        alwaysTrue,
+        alwaysTrue
+      ]).valid, false);
 
-      void it('returns valid when one matches', () => {
-        const checks: CheckFnType[] = [
-          alwaysFalse,
-          alwaysTrue
-        ];
-        const result = Composition.validateAnyOf('', 'test', checks);
-
-        assert.equal(result.valid, true);
-        assert.equal(result.error, undefined);
-      });
-
-      void it('returns invalid with error when none match', () => {
-        const checks: CheckFnType[] = [
-          alwaysFalse,
-          alwaysFalse
-        ];
-        const result = Composition.validateAnyOf('/root', 'test', checks);
-
-        assert.equal(result.valid, false);
-        assert.notEqual(result.error, undefined);
-      });
+      // not
+      assert.equal(Composition.validateNot('', 'test').valid, true);
+      assert.equal(Composition.validateNot('', 'test', alwaysFalse).valid, true);
+      assert.equal(Composition.validateNot('/root', 'test', alwaysTrue).valid, false);
     });
 
-    void describe('validateOneOf', () => {
-      void it('returns valid when checks is undefined', () => {
-        const result = Composition.validateOneOf('', 'test');
+    void it('validateIfThenElse + validateDependentSchemas + validateCustomKeywords', () => {
+      // validateIfThenElse
+      const ei1: ValidationErrorType[] = [];
+      const rite1 = Composition.validateIfThenElse('test', '', undefined, undefined, undefined, ei1, true, false, false, false);
 
-        assert.equal(result.valid, true);
-        assert.equal(result.error, undefined);
-      });
+      assert.equal(rite1.valid, true);
+      assert.equal(rite1.value, 'test');
 
-      void it('returns valid when exactly one matches', () => {
-        const checks: CheckFnType[] = [
-          alwaysFalse,
-          alwaysTrue,
-          alwaysFalse
-        ];
-        const result = Composition.validateOneOf('', 'test', checks);
+      const ei2: ValidationErrorType[] = [];
 
-        assert.equal(result.valid, true);
-        assert.equal(result.error, undefined);
-      });
+      assert.equal(Composition.validateIfThenElse('test', '', alwaysTrue, passingValidator(), undefined, ei2, true, false, false, false).valid, true);
 
-      void it('returns invalid when zero match', () => {
-        const checks: CheckFnType[] = [
-          alwaysFalse,
-          alwaysFalse
-        ];
-        const result = Composition.validateOneOf('/root', 'test', checks);
+      const ei3: ValidationErrorType[] = [];
 
-        assert.equal(result.valid, false);
-        assert.notEqual(result.error, undefined);
-      });
+      assert.equal(Composition.validateIfThenElse('test', '/root', alwaysTrue, failingValidator(), undefined, ei3, true, false, false, false).valid, false);
 
-      void it('returns invalid when multiple match', () => {
-        const checks: CheckFnType[] = [
-          alwaysTrue,
-          alwaysTrue
-        ];
-        const result = Composition.validateOneOf('/root', 'test', checks);
+      const ei4: ValidationErrorType[] = [];
 
-        assert.equal(result.valid, false);
-        assert.notEqual(result.error, undefined);
-      });
-    });
+      assert.equal(Composition.validateIfThenElse('test', '', alwaysFalse, undefined, passingValidator(), ei4, true, false, false, false).valid, true);
 
-    void describe('validateNot', () => {
-      void it('returns valid when check is undefined', () => {
-        const result = Composition.validateNot('', 'test');
+      const ei5: ValidationErrorType[] = [];
 
-        assert.equal(result.valid, true);
-        assert.equal(result.error, undefined);
-      });
+      assert.equal(Composition.validateIfThenElse('test', '', alwaysFalse, undefined, undefined, ei5, true, false, false, false).valid, true);
 
-      void it('returns valid when complement fails (value passes not)', () => {
-        const result = Composition.validateNot('', 'test', alwaysFalse);
+      // validateDependentSchemas
+      const ed1: ValidationErrorType[] = [];
+      const rds1 = Composition.validateDependentSchemas({ 'a': 1 }, '', undefined, ed1, true, false, false, false);
 
-        assert.equal(result.valid, true);
-        assert.equal(result.error, undefined);
-      });
+      assert.equal(rds1.valid, true);
+      assert.equal(rds1.earlyExit, false);
 
-      void it('returns invalid when complement passes (value fails not)', () => {
-        const result = Composition.validateNot('/root', 'test', alwaysTrue);
+      const ed2: ValidationErrorType[] = [];
+      const rds2 = Composition.validateDependentSchemas({ 'a': 1 }, '', [{
+        'trigger': 'a',
+        'validator': passingValidator()
+      }], ed2, true, false, false, false);
 
-        assert.equal(result.valid, false);
-        assert.notEqual(result.error, undefined);
-      });
-    });
+      assert.equal(rds2.valid, true);
+      assert.equal(rds2.earlyExit, false);
 
-    void describe('validateIfThenElse', () => {
-      void it('returns valid when ifCheck is undefined', () => {
-        const errors: ValidationErrorType[] = [];
-        const result = Composition.validateIfThenElse('test', '', undefined, undefined, undefined, errors, true, false, false, false);
+      const ed3: ValidationErrorType[] = [];
+      const rds3 = Composition.validateDependentSchemas('not-an-object', '', [{
+        'trigger': 'a',
+        'validator': failingValidator()
+      }], ed3, true, false, false, false);
 
-        assert.equal(result.valid, true);
-        assert.equal(result.value, 'test');
-      });
+      assert.equal(rds3.valid, true);
 
-      void it('returns valid when if true and then passes', () => {
-        const errors: ValidationErrorType[] = [];
-        const result = Composition.validateIfThenElse('test', '', alwaysTrue, passingValidator(), undefined, errors, true, false, false, false);
+      // validateCustomKeywords
+      const rck1 = Composition.validateCustomKeywords('', 'test');
 
-        assert.equal(result.valid, true);
-      });
+      assert.equal(rck1.valid, true);
+      assert.equal(rck1.errors.length, 0);
 
-      void it('returns invalid when if true and then fails', () => {
-        const errors: ValidationErrorType[] = [];
-        const result = Composition.validateIfThenElse('test', '/root', alwaysTrue, failingValidator(), undefined, errors, true, false, false, false);
+      const rck2 = Composition.validateCustomKeywords('', 42, [{
+        'allowedTypes': undefined,
+        'keyword': 'x-even',
+        'schemaValue': true,
+        'validate': () => {
+          return true;
+        }
+      }]);
 
-        assert.equal(result.valid, false);
-      });
+      assert.equal(rck2.valid, true);
+      assert.equal(rck2.errors.length, 0);
 
-      void it('returns valid when if false and else passes', () => {
-        const errors: ValidationErrorType[] = [];
-        const result = Composition.validateIfThenElse('test', '', alwaysFalse, undefined, passingValidator(), errors, true, false, false, false);
+      const rck3 = Composition.validateCustomKeywords('/root', 42, [{
+        'allowedTypes': undefined,
+        'keyword': 'x-fail',
+        'schemaValue': true,
+        'validate': () => {
+          return false;
+        }
+      }]);
 
-        assert.equal(result.valid, true);
-      });
-
-      void it('returns valid when if false and no else', () => {
-        const errors: ValidationErrorType[] = [];
-        const result = Composition.validateIfThenElse('test', '', alwaysFalse, undefined, undefined, errors, true, false, false, false);
-
-        assert.equal(result.valid, true);
-      });
-    });
-
-    void describe('validateDependentSchemas', () => {
-      void it('returns valid when validators is undefined', () => {
-        const errors: ValidationErrorType[] = [];
-        const result = Composition.validateDependentSchemas({ 'a': 1 }, '', undefined, errors, true, false, false, false);
-
-        assert.equal(result.valid, true);
-        assert.equal(result.earlyExit, false);
-      });
-
-      void it('returns valid when trigger present and schema passes', () => {
-        const errors: ValidationErrorType[] = [];
-        const deps = [{
-          'trigger': 'a',
-          'validator': passingValidator()
-        }];
-        const result = Composition.validateDependentSchemas({ 'a': 1 }, '', deps, errors, true, false, false, false);
-
-        assert.equal(result.valid, true);
-        assert.equal(result.earlyExit, false);
-      });
-
-      void it('returns valid for non-object value', () => {
-        const errors: ValidationErrorType[] = [];
-        const deps = [{
-          'trigger': 'a',
-          'validator': failingValidator()
-        }];
-        const result = Composition.validateDependentSchemas('not-an-object', '', deps, errors, true, false, false, false);
-
-        assert.equal(result.valid, true);
-      });
-    });
-
-    void describe('validateCustomKeywords', () => {
-      void it('returns valid when entries is undefined', () => {
-        const result = Composition.validateCustomKeywords('', 'test');
-
-        assert.equal(result.valid, true);
-        assert.equal(result.errors.length, 0);
-      });
-
-      void it('returns valid when all pass', () => {
-        const entries: CustomKeywordEntryInterface[] = [{
-          'allowedTypes': undefined,
-          'keyword': 'x-even',
-          'schemaValue': true,
-          'validate': () => {
-            return true;
-          }
-        }];
-        const result = Composition.validateCustomKeywords('', 42, entries);
-
-        assert.equal(result.valid, true);
-        assert.equal(result.errors.length, 0);
-      });
-
-      void it('returns invalid when one fails', () => {
-        const entries: CustomKeywordEntryInterface[] = [{
-          'allowedTypes': undefined,
-          'keyword': 'x-fail',
-          'schemaValue': true,
-          'validate': () => {
-            return false;
-          }
-        }];
-        const result = Composition.validateCustomKeywords('/root', 42, entries);
-
-        assert.equal(result.valid, false);
-        assert.equal(result.errors.length, 1);
-      });
+      assert.equal(rck3.valid, false);
+      assert.equal(rck3.errors.length, 1);
     });
   });
 }

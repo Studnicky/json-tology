@@ -17,42 +17,41 @@ const PersonSchema = {
   'type': 'object'
 } as const;
 
-void describe('SameAsStore', () => {
-  void it('records distinct pairs', () => {
+void describe('SameAsStore — Good/Bad/Ugly', () => {
+  void it('records distinct pairs, idempotence, self-pair drop, and clear', () => {
+    // Good: records distinct pairs
     const store = new SameAsStore();
 
     store.add('urn:a', 'urn:b');
     store.add('urn:c', 'urn:d');
     assert.equal(store.all().length, 2);
-  });
 
-  void it('is idempotent for repeats in either direction', () => {
-    const store = new SameAsStore();
+    // Bad: idempotent for repeats in either direction
+    const store2 = new SameAsStore();
 
-    store.add('urn:a', 'urn:b');
-    store.add('urn:a', 'urn:b');
-    store.add('urn:b', 'urn:a');
-    assert.equal(store.all().length, 1);
-  });
+    store2.add('urn:a', 'urn:b');
+    store2.add('urn:a', 'urn:b');
+    store2.add('urn:b', 'urn:a');
+    assert.equal(store2.all().length, 1);
 
-  void it('drops self-pairs', () => {
-    const store = new SameAsStore();
+    // Ugly: drops self-pairs
+    const store3 = new SameAsStore();
 
-    store.add('urn:a', 'urn:a');
-    assert.equal(store.all().length, 0);
-  });
+    store3.add('urn:a', 'urn:a');
+    assert.equal(store3.all().length, 0);
 
-  void it('clear() empties the store', () => {
-    const store = new SameAsStore();
+    // clear empties the store
+    const store4 = new SameAsStore();
 
-    store.add('urn:a', 'urn:b');
-    store.clear();
-    assert.equal(store.all().length, 0);
+    store4.add('urn:a', 'urn:b');
+    store4.clear();
+    assert.equal(store4.all().length, 0);
   });
 });
 
-void describe('JsonTology.sameAs()', () => {
-  void it('records assertions on the registry sameAsStore', () => {
+void describe('JsonTology.sameAs() — Good/Bad/Ugly', () => {
+  void it('records assertions, emits symmetric quads, handles graphIRI, no quads without assertions', () => {
+    // Good: records single assertion, emits symmetric quad pair
     const jt = JsonTology.create({
       'baseIRI': 'urn:example',
       'schemas': [PersonSchema] as const
@@ -60,91 +59,68 @@ void describe('JsonTology.sameAs()', () => {
 
     jt.sameAs('urn:example:alice', 'urn:example:alice2');
     assert.equal(jt.registry.sameAsStore.all().length, 1);
-  });
 
-  void it('emits symmetric owl:sameAs quads in toQuads()', () => {
-    const jt = JsonTology.create({
-      'baseIRI': 'urn:example',
-      'schemas': [PersonSchema] as const
-    });
-
-    jt.sameAs('urn:example:alice', 'urn:example:alice2');
-
-    const data = {
+    const quads = jt.toQuads(PersonSchema, {
       'id': 'a1',
       'name': 'Alice'
-    };
-    const quads = jt.toQuads(PersonSchema, data, { 'iriFor': 'urn:example:alice' });
-
+    }, { 'iriFor': 'urn:example:alice' });
     const sameAsQuads = quads.filter((quad) => {
       return quad.predicate === OWL_SAME_AS;
     });
 
     assert.equal(sameAsQuads.length, 2, 'symmetric pair emitted');
-
     const forward = sameAsQuads.find((quad) => {
-      return quad.subject === 'urn:example:alice'
-        && quad.object.value === 'urn:example:alice2';
+      return quad.subject === 'urn:example:alice' && quad.object.value === 'urn:example:alice2';
     });
     const reverse = sameAsQuads.find((quad) => {
-      return quad.subject === 'urn:example:alice2'
-        && quad.object.value === 'urn:example:alice';
+      return quad.subject === 'urn:example:alice2' && quad.object.value === 'urn:example:alice';
     });
 
     assert.notEqual(forward, undefined, 'forward quad present');
     assert.notEqual(reverse, undefined, 'reverse quad present');
-  });
 
-  void it('emits no sameAs quads when no assertions are recorded', () => {
-    const jt = JsonTology.create({
+    // Bad: no sameAs quads when no assertions recorded
+    const jt2 = JsonTology.create({
       'baseIRI': 'urn:example',
       'schemas': [PersonSchema] as const
     });
-    const quads = jt.toQuads(PersonSchema, { 'id': 'a1' });
-    const sameAsQuads = quads.filter((quad) => {
+    const noSameAsQuads = jt2.toQuads(PersonSchema, { 'id': 'a1' }).filter((quad) => {
       return quad.predicate === OWL_SAME_AS;
     });
 
-    assert.equal(sameAsQuads.length, 0);
-  });
+    assert.equal(noSameAsQuads.length, 0);
 
-  void it('records multiple distinct assertions', () => {
-    const jt = JsonTology.create({
+    // Ugly: multiple distinct assertions → 4 quads (two pairs, symmetric)
+    const jt3 = JsonTology.create({
       'baseIRI': 'urn:example',
       'schemas': [PersonSchema] as const
     });
 
-    jt.sameAs('urn:a', 'urn:b');
-    jt.sameAs('urn:c', 'urn:d');
-    assert.equal(jt.registry.sameAsStore.all().length, 2);
-
-    const quads = jt.toQuads(PersonSchema, { 'id': 'a1' });
-    const sameAsQuads = quads.filter((quad) => {
+    jt3.sameAs('urn:a', 'urn:b');
+    jt3.sameAs('urn:c', 'urn:d');
+    assert.equal(jt3.registry.sameAsStore.all().length, 2);
+    const multiQuads = jt3.toQuads(PersonSchema, { 'id': 'a1' }).filter((quad) => {
       return quad.predicate === OWL_SAME_AS;
     });
 
-    assert.equal(sameAsQuads.length, 4, 'two pairs, symmetric → 4 quads');
-  });
+    assert.equal(multiQuads.length, 4, 'two pairs, symmetric → 4 quads');
 
-  void it('honors graphIRI when stamping sameAs quads', () => {
-    const jt = JsonTology.create({
+    // graphIRI stamping on sameAs quads
+    const jt4 = JsonTology.create({
       'baseIRI': 'urn:example',
       'schemas': [PersonSchema] as const
     });
 
-    jt.sameAs('urn:a', 'urn:b');
-
-    const quads = jt.toQuads(PersonSchema, { 'id': 'x1' }, {
+    jt4.sameAs('urn:a', 'urn:b');
+    const graphQuads = jt4.toQuads(PersonSchema, { 'id': 'x1' }, {
       'graphIRI': 'urn:example:graph1',
       'iriFor': 'urn:example:x'
-    });
-
-    const sameAsQuads = quads.filter((quad) => {
+    }).filter((quad) => {
       return quad.predicate === OWL_SAME_AS;
     });
 
-    assert.equal(sameAsQuads.length, 2);
-    for (const quad of sameAsQuads) {
+    assert.equal(graphQuads.length, 2);
+    for (const quad of graphQuads) {
       assert.equal(quad.graph, 'urn:example:graph1');
     }
   });

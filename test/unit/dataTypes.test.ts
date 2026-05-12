@@ -373,125 +373,109 @@ import {
 // Source: dataTypes.test.ts
 // ===========================================================================
 {
-  void describe('isRecord', { 'concurrency': true }, () => {
-    void it('returns true for a plain object', () => {
-      assert.equal(isRecord({ 'a': 1 }), true);
+  void describe('isRecord / isPlainObject — Good/Bad/Ugly', { 'concurrency': true }, () => {
+    interface GuardCase { 'expected': boolean;
+      'input': unknown;
+      'label': string }
+    void it('isRecord table-driven', () => {
+      const cases: GuardCase[] = [
+        {
+          'expected': true,
+          'input': { 'a': 1 },
+          'label': 'plain object'
+        },
+        {
+          'expected': true,
+          'input': {},
+          'label': 'empty object'
+        },
+        {
+          'expected': false,
+          'input': null,
+          'label': 'null'
+        },
+        {
+          'expected': false,
+          'input': [
+            1,
+            2
+          ],
+          'label': 'array'
+        },
+        {
+          'expected': false,
+          'input': 'hello',
+          'label': 'string'
+        },
+        {
+          'expected': false,
+          'input': undefined,
+          'label': 'undefined'
+        }
+      ];
+
+      for (const {
+        expected, input, label
+      } of cases) {
+        assert.equal(isRecord(input), expected, `isRecord(${label})`);
+      }
     });
 
-    void it('returns true for an empty object', () => {
-      assert.equal(isRecord({}), true);
-    });
-
-    void it('returns false for null', () => {
-      assert.equal(isRecord(null), false);
-    });
-
-    void it('returns false for an array', () => {
-      assert.equal(isRecord([
-        1,
-        2
-      ]), false);
-    });
-
-    void it('returns false for a string', () => {
-      assert.equal(isRecord('hello'), false);
-    });
-
-    void it('returns false for undefined', () => {
-      assert.equal(isRecord(), false);
-    });
-  });
-
-  void describe('isPlainObject', { 'concurrency': true }, () => {
-    void it('returns true for an empty object literal', () => {
-      assert.equal(isPlainObject({}), true);
-    });
-
-    void it('returns true for an object with properties', () => {
-      assert.equal(isPlainObject({ 'x': 1 }), true);
-    });
-
-    void it('returns true for Object.create(null)', () => {
-      assert.equal(isPlainObject(Object.create(null)), true);
-    });
-
-    void it('returns false for an array', () => {
-      assert.equal(isPlainObject([
-        1,
-        2
-      ]), false);
-    });
-
-    void it('returns false for a Date instance', () => {
-      assert.equal(isPlainObject(new Date()), false);
-    });
-
-    void it('returns false for null', () => {
-      assert.equal(isPlainObject(null), false);
-    });
-
-    void it('returns false for a class instance', () => {
+    void it('isPlainObject table-driven', () => {
       class Foo {}
-      assert.equal(isPlainObject(new Foo()), false);
+      const cases: GuardCase[] = [
+        {
+          'expected': true,
+          'input': {},
+          'label': 'empty object literal'
+        },
+        {
+          'expected': true,
+          'input': { 'x': 1 },
+          'label': 'object with props'
+        },
+        {
+          'expected': true,
+          'input': Object.create(null) as Record<string, unknown>,
+          'label': 'Object.create(null)'
+        },
+        {
+          'expected': false,
+          'input': [
+            1,
+            2
+          ],
+          'label': 'array'
+        },
+        {
+          'expected': false,
+          'input': new Date(),
+          'label': 'Date instance'
+        },
+        {
+          'expected': false,
+          'input': null,
+          'label': 'null'
+        },
+        {
+          'expected': false,
+          'input': new Foo(),
+          'label': 'class instance'
+        }
+      ];
+
+      for (const {
+        expected, input, label
+      } of cases) {
+        assert.equal(isPlainObject(input), expected, `isPlainObject(${label})`);
+      }
     });
   });
 
-  void describe('deepEqual', { 'concurrency': true }, () => {
-    void it('returns true for equal primitives', () => {
-      assert.equal(deepEqual(42, 42), true);
-      assert.equal(deepEqual('abc', 'abc'), true);
-      assert.equal(deepEqual(true, true), true);
-    });
-
-    void it('returns true for identical references', () => {
+  void describe('deepEqual — Good/Bad/Ugly', { 'concurrency': true }, () => {
+    void it('table-driven equality scenarios', () => {
       const obj = { 'a': 1 };
-
-      assert.equal(deepEqual(obj, obj), true);
-    });
-
-    void it('returns true for structurally equal objects', () => {
-      assert.equal(deepEqual({
-        'a': 1,
-        'b': 'x'
-      }, {
-        'a': 1,
-        'b': 'x'
-      }), true);
-    });
-
-    void it('returns false for unequal objects', () => {
-      assert.equal(deepEqual({ 'a': 1 }, { 'a': 2 }), false);
-    });
-
-    void it('returns false for objects with different keys', () => {
-      assert.equal(deepEqual({ 'a': 1 }, { 'b': 1 }), false);
-    });
-
-    void it('returns true for equal arrays', () => {
-      assert.equal(deepEqual([
-        1,
-        2,
-        3
-      ], [
-        1,
-        2,
-        3
-      ]), true);
-    });
-
-    void it('returns false for arrays of different length', () => {
-      assert.equal(deepEqual([
-        1,
-        2
-      ], [
-        1,
-        2,
-        3
-      ]), false);
-    });
-
-    void it('handles nested equality', () => {
-      const left = {
+      const nested = {
         'a': {
           'b': [
             1,
@@ -499,29 +483,132 @@ import {
           ]
         }
       };
-      const right = {
-        'a': {
-          'b': [
+      const scenarios: Array<{ 'expected': boolean;
+        'label': string;
+        'left': unknown;
+        'right': unknown }> = [
+        // Good
+        {
+          'expected': true,
+          'label': 'equal number primitives',
+          'left': 42,
+          'right': 42
+        },
+        {
+          'expected': true,
+          'label': 'equal string primitives',
+          'left': 'abc',
+          'right': 'abc'
+        },
+        {
+          'expected': true,
+          'label': 'equal boolean primitives',
+          'left': true,
+          'right': true
+        },
+        {
+          'expected': true,
+          'label': 'identical references',
+          'left': obj,
+          'right': obj
+        },
+        {
+          'expected': true,
+          'label': 'structurally equal objects',
+          'left': {
+            'a': 1,
+            'b': 'x'
+          },
+          'right': {
+            'a': 1,
+            'b': 'x'
+          }
+        },
+        {
+          'expected': true,
+          'label': 'equal arrays',
+          'left': [
             1,
-            { 'c': 2 }
+            2,
+            3
+          ],
+          'right': [
+            1,
+            2,
+            3
           ]
+        },
+        {
+          'expected': true,
+          'label': 'nested equality',
+          'left': nested,
+          'right': {
+            'a': {
+              'b': [
+                1,
+                { 'c': 2 }
+              ]
+            }
+          }
+        },
+        {
+          'expected': true,
+          'label': 'both null',
+          'left': null,
+          'right': null
+        },
+        // Bad
+        {
+          'expected': false,
+          'label': 'unequal object values',
+          'left': { 'a': 1 },
+          'right': { 'a': 2 }
+        },
+        {
+          'expected': false,
+          'label': 'objects with different keys',
+          'left': { 'a': 1 },
+          'right': { 'b': 1 }
+        },
+        {
+          'expected': false,
+          'label': 'arrays of different length',
+          'left': [
+            1,
+            2
+          ],
+          'right': [
+            1,
+            2,
+            3
+          ]
+        },
+        // Ugly
+        {
+          'expected': false,
+          'label': 'null vs object',
+          'left': null,
+          'right': { 'a': 1 }
+        },
+        {
+          'expected': false,
+          'label': 'object vs null',
+          'left': { 'a': 1 },
+          'right': null
+        },
+        {
+          'expected': false,
+          'label': 'different types (number vs string)',
+          'left': 1,
+          'right': '1'
         }
-      };
+      ];
 
-      assert.equal(deepEqual(left, right), true);
-    });
-
-    void it('returns false when one side is null', () => {
-      assert.equal(deepEqual(null, { 'a': 1 }), false);
-      assert.equal(deepEqual({ 'a': 1 }, null), false);
-    });
-
-    void it('returns true when both sides are null', () => {
-      assert.equal(deepEqual(null, null), true);
-    });
-
-    void it('returns false for different types', () => {
-      assert.equal(deepEqual(1, '1'), false);
+      for (const {
+        expected, label, left, right
+      } of scenarios) {
+        assert.equal(deepEqual(left, right), expected, `deepEqual: ${label}`);
+      }
     });
   });
 
@@ -786,89 +873,147 @@ import {
     } as unknown as SchemaGraphSemanticsInterface;
   }
 
-  void describe('XsdTypes.resolveSingle', { 'concurrency': true }, () => {
-    void it('maps string to xsd:string', () => {
-      assert.equal(XsdTypes.resolveSingle('string'), 'xsd:string');
+  void describe('XsdTypes.resolveSingle / XsdTypes.resolve — Good/Bad/Ugly', { 'concurrency': true }, () => {
+    void it('resolveSingle table-driven', () => {
+      const cases: Array<{ 'expected': null | string;
+        'format'?: string;
+        'label': string;
+        'type': string }> = [
+        // Good: scalar type mappings
+        {
+          'expected': 'xsd:string',
+          'label': 'string',
+          'type': 'string'
+        },
+        {
+          'expected': 'xsd:dateTime',
+          'format': 'date-time',
+          'label': 'string+date-time',
+          'type': 'string'
+        },
+        {
+          'expected': 'xsd:anyURI',
+          'format': 'uri',
+          'label': 'string+uri',
+          'type': 'string'
+        },
+        {
+          'expected': 'xsd:string',
+          'format': 'unknown-format',
+          'label': 'string+unknown format',
+          'type': 'string'
+        },
+        {
+          'expected': 'xsd:decimal',
+          'label': 'number',
+          'type': 'number'
+        },
+        {
+          'expected': 'xsd:float',
+          'format': 'float',
+          'label': 'number+float',
+          'type': 'number'
+        },
+        {
+          'expected': 'xsd:integer',
+          'label': 'integer',
+          'type': 'integer'
+        },
+        {
+          'expected': 'xsd:int',
+          'format': 'int32',
+          'label': 'integer+int32',
+          'type': 'integer'
+        },
+        {
+          'expected': 'xsd:boolean',
+          'label': 'boolean',
+          'type': 'boolean'
+        },
+        // Bad / Ugly: non-scalar returns null
+        {
+          'expected': null,
+          'label': 'object',
+          'type': 'object'
+        },
+        {
+          'expected': null,
+          'label': 'array',
+          'type': 'array'
+        },
+        {
+          'expected': null,
+          'label': 'unknown type',
+          'type': 'foobar'
+        }
+      ];
+
+      for (const {
+        expected, format, label, type
+      } of cases) {
+        const opts = format === undefined ? undefined : { format };
+
+        assert.equal(XsdTypes.resolveSingle(type, opts), expected, `resolveSingle(${label})`);
+      }
     });
 
-    void it('maps string with date-time format to xsd:dateTime', () => {
-      assert.equal(XsdTypes.resolveSingle('string', { 'format': 'date-time' }), 'xsd:dateTime');
-    });
+    void it('resolve table-driven', () => {
+      const cases: Array<{ 'expected': null | string;
+        'format'?: string;
+        'label': string;
+        'types': string[] }> = [
+        // Good
+        {
+          'expected': 'xsd:string',
+          'label': 'single string',
+          'types': ['string']
+        },
+        {
+          'expected': 'xsd:decimal',
+          'label': 'single number',
+          'types': ['number']
+        },
+        {
+          'expected': 'xsd:date',
+          'format': 'date',
+          'label': 'string with format',
+          'types': ['string']
+        },
+        {
+          'expected': 'xsd:string',
+          'label': 'string+null (nullable)',
+          'types': [
+            'string',
+            'null'
+          ]
+        },
+        // Bad
+        {
+          'expected': 'owl:Nothing',
+          'label': 'null-only',
+          'types': ['null']
+        },
+        {
+          'expected': null,
+          'label': 'multiple non-null types',
+          'types': [
+            'string',
+            'number'
+          ]
+        },
+        // Ugly
+        {
+          'expected': null,
+          'label': 'empty types array',
+          'types': []
+        }
+      ];
 
-    void it('maps string with uri format to xsd:anyURI', () => {
-      assert.equal(XsdTypes.resolveSingle('string', { 'format': 'uri' }), 'xsd:anyURI');
-    });
-
-    void it('maps string with unknown format to xsd:string', () => {
-      assert.equal(XsdTypes.resolveSingle('string', { 'format': 'unknown-format' }), 'xsd:string');
-    });
-
-    void it('maps number to xsd:decimal', () => {
-      assert.equal(XsdTypes.resolveSingle('number'), 'xsd:decimal');
-    });
-
-    void it('maps number with float format to xsd:float', () => {
-      assert.equal(XsdTypes.resolveSingle('number', { 'format': 'float' }), 'xsd:float');
-    });
-
-    void it('maps integer to xsd:integer', () => {
-      assert.equal(XsdTypes.resolveSingle('integer'), 'xsd:integer');
-    });
-
-    void it('maps integer with int32 format to xsd:int', () => {
-      assert.equal(XsdTypes.resolveSingle('integer', { 'format': 'int32' }), 'xsd:int');
-    });
-
-    void it('maps boolean to xsd:boolean', () => {
-      assert.equal(XsdTypes.resolveSingle('boolean'), 'xsd:boolean');
-    });
-
-    void it('returns null for object type', () => {
-      assert.equal(XsdTypes.resolveSingle('object'), null);
-    });
-
-    void it('returns null for array type', () => {
-      assert.equal(XsdTypes.resolveSingle('array'), null);
-    });
-
-    void it('returns null for unknown type', () => {
-      assert.equal(XsdTypes.resolveSingle('foobar'), null);
-    });
-  });
-
-  void describe('XsdTypes.resolve', { 'concurrency': true }, () => {
-    void it('resolves a single string type', () => {
-      assert.equal(XsdTypes.resolve(semantics(['string'])), 'xsd:string');
-    });
-
-    void it('resolves a single number type', () => {
-      assert.equal(XsdTypes.resolve(semantics(['number'])), 'xsd:decimal');
-    });
-
-    void it('resolves string with format', () => {
-      assert.equal(XsdTypes.resolve(semantics(['string'], 'date')), 'xsd:date');
-    });
-
-    void it('returns owl:Nothing for null-only type', () => {
-      assert.equal(XsdTypes.resolve(semantics(['null'])), 'owl:Nothing');
-    });
-
-    void it('filters out null and resolves remaining type', () => {
-      assert.equal(XsdTypes.resolve(semantics([
-        'string',
-        'null'
-      ])), 'xsd:string');
-    });
-
-    void it('returns null for multiple non-null types', () => {
-      assert.equal(XsdTypes.resolve(semantics([
-        'string',
-        'number'
-      ])), null);
-    });
-
-    void it('returns null for empty types array', () => {
-      assert.equal(XsdTypes.resolve(semantics([])), null);
+      for (const {
+        expected, format, label, types
+      } of cases) {
+        assert.equal(XsdTypes.resolve(semantics(types, format)), expected, `resolve(${label})`);
+      }
     });
   });
 }
