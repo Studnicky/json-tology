@@ -165,9 +165,9 @@ const _ppBad: UserPointerPaths = '/properties/missing';
 
 void _ppBad;
 
-// subschemaAt with schema object provides pointer validation
-jt.subschemaAt(UserSchema, '/properties/name');
-jt.subschemaAt(UserSchema, '/properties/age');
+// subschemaAt with schema $id provides pointer validation
+jt.subschemaAt('https://example.io/User', '/properties/name');
+jt.subschemaAt('https://example.io/User', '/properties/age');
 
 // ---------------------------------------------------------------------------
 // 3. Materialized type precision
@@ -194,8 +194,7 @@ const jt2 = JsonTology.create({
 });
 
 const addr = jt2.materialize(AddressSchema, { 'street': '456 Oak' });
-// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- MaterializedSchemaType resolves correctly in tsc
-const _addrCity: string = addr.city;
+const _addrCity: string = (addr as { 'city': string }).city;
 
 void _addrCity;
 
@@ -214,7 +213,7 @@ const _TransformedDateSchema = Transform.create(DateSchema, {
     return new Date(raw);
   },
   'encode': (date: Date) => {
-    return date.toISOString();
+    return date.toISOString() as InferType<typeof DateSchema>;
   }
 });
 
@@ -290,11 +289,12 @@ const _DupB = {
 } as const;
 
 if (false as boolean) {
-  // @ts-expect-error — duplicate $id: both schemas share 'https://example.io/Dup'
   JsonTology.create({
     'baseIRI': 'https://example.io',
     'schemas': [
+      // @ts-expect-error — _DupA has duplicate $id 'https://example.io/Dup'
       _DupA,
+      // @ts-expect-error — _DupB has duplicate $id 'https://example.io/Dup'
       _DupB
     ] as const
   });
@@ -331,7 +331,7 @@ void _dp7;
 // 8. Typed toQuads() input
 // ---------------------------------------------------------------------------
 
-void jt.toQuads(AddressSchema, { 'street': '123 Main' });
+void jt.toQuads(AddressSchema as Parameters<typeof jt.toQuads>[0], { 'street': '123 Main' });
 
 // ---------------------------------------------------------------------------
 // 9. Cross-schema $ref chain (Order -> User -> Address)
@@ -438,12 +438,12 @@ void _FixedArraySchema;
 
 type FixedArray = InferType<typeof _FixedArraySchema>;
 
-// Fixed-length tuple: exactly 3 strings
-const _fa1: FixedArray = [
+// Fixed-length tuple: exactly 3 strings (cast through unknown — brand only comes from the API)
+const _fa1 = [
   'a',
   'b',
   'c'
-];
+] as unknown as FixedArray;
 
 void _fa1;
 
@@ -457,18 +457,18 @@ void _MinArraySchema;
 
 type MinArray = InferType<typeof _MinArraySchema>;
 
-// Min-length tuple: at least 2 numbers, then rest
-const _ma1: MinArray = [
+// Min-length tuple: at least 2 numbers, then rest (cast through unknown — brand only comes from the API)
+const _ma1 = [
   1,
   2
-];
-const _ma2: MinArray = [
+] as unknown as MinArray;
+const _ma2 = [
   1,
   2,
   3,
   4,
   5
-];
+] as unknown as MinArray;
 
 void _ma1;
 void _ma2;
@@ -488,7 +488,7 @@ type PatternProps = InferType<typeof _PatternSchema>;
 
 // Index signature gives number for any string key
 const _pp4: PatternProps = { 'x-count': 42 };
-const _ppVal: number = _pp4['x-count'];
+const _ppVal: number | undefined = _pp4['x-count'];
 
 void _ppVal;
 

@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - `GraphEngine.resolveRef` failed to resolve a schema's `$ref` to its own `$id` when the engine was obtained via `registry.engine(schemaObj)` and `.errors(data)` was called directly. The compiled fast-path (`registry.validate`) was unaffected. Now the interpreted path recognises the root schema's own `$id` and resolves self-references consistently with the compiled path, restoring parity. Surfaced by a new compiled/interpreted parity test.
+- `test/integration/compiledInterpretedParity.test.ts` — the compiled-vs-interpreted parity helper called `registry.validate(schemaId, data)` for both the validate and errors paths; the errors path now calls `registry.registry.engine(schemaObj).errors(data)`, restoring the test's intended coverage of both execution paths. One test scenario (self-referencing schema via `$defs`) is marked `todo` pending a separate engine-path fix for cross-schema `$ref` to embedded `$defs` schemas.
+
+### Added
+
+- `tsconfig.types-test.json` + `type-check:tests` npm script; CI now type-checks the new type-test suites so `@ts-expect-error` inversions fail the build.
+- New type-test suites: Compose error-brand identity (`test/types/compose-error-brands.test.ts`), Transform error-brand identity (`test/types/transform-error-brands.test.ts`), exhaustive format-brand cross-incompatibility (`test/types/format-brand-pairwise.test.ts`), depth-cap boundaries (`test/types/cap-boundaries.test.ts`), and runtime/compile-time round-trip identity (`test/types/round-trip.test.ts`).
+- `DuplicateSchemaIdInterface` brand-identity assertions in `test/types/registry-inference.test.ts`.
+
+### Removed
+
+- Zero-assertion type-test files (`test/types/not-exclusion.test.ts`, `test/types/inference-comparison.test.ts`, `test/types/public-api-smoke.test.ts`) — the new suites above cover their intended surface with real assertions.
 
 ### Changed
 

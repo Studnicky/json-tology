@@ -122,9 +122,9 @@ if (false as boolean) {
 if (false as boolean) {
   Compose.pick(
     UserSchema,
-    // @ts-expect-error — 'foo' is not a key (mixed-with-good still rejects)
     [
       'name',
+      // @ts-expect-error — 'foo' is not a key (mixed-with-good still rejects)
       'foo'
     ] as const,
     'https://example.io/UserMixed'
@@ -215,27 +215,27 @@ void _UnionGood;
 
 // Negative: variant lacks the discriminator property entirely
 if (false as boolean) {
-  // @ts-expect-error — TriangleNoKindSchema has no 'kind' property
   Compose.discriminatedUnion('kind', [
     CircleSchema,
+    // @ts-expect-error — TriangleNoKindSchema has no 'kind' property
     TriangleNoKindSchema
   ] as const, 'https://example.io/BadShape1');
 }
 
 // Negative: discriminator exists but is not a const
 if (false as boolean) {
-  // @ts-expect-error — SquareNonConstKindSchema's 'kind' is type:string, not const
   Compose.discriminatedUnion('kind', [
     CircleSchema,
+    // @ts-expect-error — SquareNonConstKindSchema's 'kind' is type:string, not const
     SquareNonConstKindSchema
   ] as const, 'https://example.io/BadShape2');
 }
 
 // Negative: const declared but discriminator missing from required
 if (false as boolean) {
-  // @ts-expect-error — PentagonOptionalKindSchema does not list 'kind' in required
   Compose.discriminatedUnion('kind', [
     CircleSchema,
+    // @ts-expect-error — PentagonOptionalKindSchema does not list 'kind' in required
     PentagonOptionalKindSchema
   ] as const, 'https://example.io/BadShape3');
 }
@@ -254,8 +254,8 @@ void _EquivGood;
 
 // Negative: identical $id is rejected
 if (false as boolean) {
-  // @ts-expect-error — options.$id matches source.$id (self-equivalent)
   Compose.equivalent(UserSchema, {
+    // @ts-expect-error — options.$id matches source.$id (self-equivalent)
     '$id': 'https://example.io/User',
     'description': 'noop alias'
   } as const);
@@ -278,19 +278,25 @@ void _InterGood;
 
 // Negative: newId reuses an input schema's $id
 if (false as boolean) {
-  // @ts-expect-error — newId collides with UserSchema.$id
-  Compose.intersection([
-    UserSchema,
-    AddressSchema
-  ] as const, 'https://example.io/User');
+  Compose.intersection(
+    [
+      UserSchema,
+      AddressSchema
+    ] as const,
+    // @ts-expect-error — newId collides with UserSchema.$id
+    'https://example.io/User'
+  );
 }
 
 if (false as boolean) {
-  // @ts-expect-error — newId collides with AddressSchema.$id
-  Compose.intersection([
-    UserSchema,
-    AddressSchema
-  ] as const, 'https://example.io/Address');
+  Compose.intersection(
+    [
+      UserSchema,
+      AddressSchema
+    ] as const,
+    // @ts-expect-error — newId collides with AddressSchema.$id
+    'https://example.io/Address'
+  );
 }
 
 // ---------------------------------------------------------------------------

@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "rootDir": "."
+  },
+  "include": [
+    "src/**/*.ts",
+    "test/types/cap-boundaries.test.ts",
+    "test/types/compose-error-brands.test.ts",
+    "test/types/format-brand-pairwise.test.ts",
+    "test/types/registry-inference.test.ts",
+    "test/types/round-trip.test.ts",
+    "test/types/transform-error-brands.test.ts"
+  ],
+  "exclude": ["node_modules", "dist"]
+}

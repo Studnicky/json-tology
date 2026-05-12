@@ -12,6 +12,8 @@
  */
 
 import { JsonTology } from '../../src/JsonTology.js';
+import type { DuplicateSchemaIdInterface } from '../../src/types/TypeErrors.js';
+import type { UniqueSchemaIdsType } from '../../src/types/Registry.js';
 
 // ---------------------------------------------------------------------------
 // Test schemas
@@ -221,19 +223,20 @@ const DuplicateB = {
 } as const;
 
 if (false as boolean) {
-  // @ts-expect-error — two schemas share '$id': 'https://example.io/Duplicate'
   JsonTology.create({
     'baseIRI': 'https://example.io',
     'schemas': [
+      // @ts-expect-error — two schemas share '$id': 'https://example.io/Duplicate'
       DuplicateA,
+      // @ts-expect-error — two schemas share '$id': 'https://example.io/Duplicate'
       DuplicateB
     ] as const
   });
 
-  // @ts-expect-error — duplicate also rejected on chained register()
   JsonTology.create({
     'baseIRI': 'https://example.io',
     'schemas': [DuplicateA] as const
+  // @ts-expect-error — duplicate also rejected on chained register()
   }).register([
     DuplicateA,
     DuplicateB
@@ -251,6 +254,43 @@ const _distinct = JsonTology.create({
 });
 
 void _distinct;
+
+// ---------------------------------------------------------------------------
+// 7b. DuplicateSchemaIdInterface brand identity assertion
+//
+// When two schemas in a tuple share the same $id, UniqueSchemaIdsType brands
+// each offending slot with DuplicateSchemaIdInterface<TId>. Verify that:
+//   1. The brand has the correct `kind` discriminant.
+//   2. The brand carries the duplicated $id literal.
+//   3. UniqueSchemaIdsType[0] (for a 2-dup tuple) extends the brand.
+// ---------------------------------------------------------------------------
+
+type AssertEqualType<TLeft, TRight>
+  = [TLeft] extends [TRight] ? [TRight] extends [TLeft] ? true : false : false;
+
+function assertType<T extends true>(): void {
+  void 0 as unknown as T;
+}
+
+// Brand structural identity
+assertType<AssertEqualType<DuplicateSchemaIdInterface<'x'>['kind'], 'DuplicateSchemaId'>>();
+
+assertType<AssertEqualType<DuplicateSchemaIdInterface<'https://example.io/Dup'>['duplicateId'], 'https://example.io/Dup'>>();
+
+// UniqueSchemaIdsType brands duplicate slots with DuplicateSchemaIdInterface
+type DupTuple = readonly [typeof DuplicateA, typeof DuplicateB];
+type BrandedDupTuple = UniqueSchemaIdsType<DupTuple>;
+
+// Both slots [0] and [1] should carry DuplicateSchemaIdInterface<'https://example.io/Duplicate'>
+assertType<BrandedDupTuple[0] extends DuplicateSchemaIdInterface<'https://example.io/Duplicate'> ? true : false>();
+
+assertType<BrandedDupTuple[1] extends DuplicateSchemaIdInterface<'https://example.io/Duplicate'> ? true : false>();
+
+// Negative: a non-duplicate tuple is NOT branded — pass-through to the original type
+type NonDupTuple = readonly [typeof UserSchema, typeof OrderSchema];
+type BrandedNonDup = UniqueSchemaIdsType<NonDupTuple>;
+
+assertType<AssertEqualType<BrandedNonDup[0], typeof UserSchema>>();
 
 // ---------------------------------------------------------------------------
 // 8. Finding 13 — addComputed / addInvariant reject unregistered schema IDs

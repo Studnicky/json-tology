@@ -7,5 +7,5 @@
     "noUnusedParameters": false
   },
   "include": ["src/**/*", "test/types/**/*", "json-tology.d.ts"],
-  "exclude": ["node_modules", "dist", "test/types/inference-comparison.test.ts"]
+  "exclude": ["node_modules", "dist"]
 }
