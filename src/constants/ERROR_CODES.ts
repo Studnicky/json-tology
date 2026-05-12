@@ -49,6 +49,5 @@ export const InstantiationErrorCode = {
 
 export const MaterializationErrorCode = {
   'CYCLIC_DATA': 'CYCLIC_DATA',
-  'DATA_DEPTH_EXCEEDED': 'DATA_DEPTH_EXCEEDED',
   'MATERIALIZATION_FAILED': 'MATERIALIZATION_FAILED'
 } as const satisfies Record<string, MaterializationErrorCodeType>;

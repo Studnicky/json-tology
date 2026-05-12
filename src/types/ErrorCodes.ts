@@ -37,5 +37,4 @@ export type InstantiationErrorCodeType = 'EXTRA_FORBIDDEN' | 'INSTANTIATION_FAIL
 
 export type MaterializationErrorCodeType
   = | 'CYCLIC_DATA'
-  | 'DATA_DEPTH_EXCEEDED'
   | 'MATERIALIZATION_FAILED';

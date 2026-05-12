@@ -1273,30 +1273,6 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
       }
     });
 
-    void describe('DATA_DEPTH_EXCEEDED — not yet enforced', () => {
-      // BEHAVIOURAL NOTE: maxDataDepth is accepted in the config interface but
-      // the enforcement has not been wired into the execution path. Providing
-      // maxDataDepth currently has no runtime effect — instantiate() succeeds
-      // regardless of nesting depth. The test asserts this observed behaviour
-      // so any future enforcement change will surface immediately.
-      void it('maxDataDepth config is accepted but does not yet throw on oversized nesting', () => {
-        const tology = JsonTology.create({
-          'baseIRI': 'https://ugly.io',
-          'maxDataDepth': 1,
-          'schemas': [BaseSchema] as const
-        });
-        const deepData = {
-          'level1': { 'level2': { 'level3': 'deep' } },
-          'name': 'test'
-        };
-
-        // Current behaviour: no throw — DATA_DEPTH_EXCEEDED not enforced yet
-        assert.doesNotThrow(() => {
-          tology.instantiate(BaseSchema.$id, deepData);
-        });
-      });
-    });
-
     void describe('IRI collision via deterministic content-based minting', () => {
       void it('same data produces the same IRI on separate toQuads calls', () => {
         const tology = JsonTology.create({
