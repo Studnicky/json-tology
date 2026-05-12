@@ -32,6 +32,7 @@ import {
 import { Frozen } from '../data/Frozen.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GraphEngine } from '../graph/GraphEngine.js';
+import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
 import { Hash } from '../hash/Hash.js';
 import { InvariantStore } from './InvariantStore.js';
 import { Materializer } from '../materialization/Materializer.js';
@@ -351,16 +352,25 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     if (entry === undefined) {
       throw new SchemaError('SCHEMA_VALIDATOR_MISSING', `No validator registered for schema: ${schemaId}`, schemaId);
     }
-    const engineOptions: GraphEngineOptionsInterface = {
-      ...(this.formatRegistry ? { 'formatRegistry': this.formatRegistry } : {}),
-      ...(this.keywords && this.keywords.length > 0 ? { 'keywords': this.keywords } : {}),
-      ...(this.maxSchemaDepth === undefined ? {} : { 'maxSchemaDepth': this.maxSchemaDepth }),
-      'lookupSchema': (lookupSchemaId: string) => {
-        return this.schemas.get(lookupSchemaId)?.schema;
-      }
-    };
 
-    entry.engine ??= new GraphEngine(entry.schema, engineOptions);
+    if (entry.engine === undefined) {
+      // Collect embedded sub-schemas (those that declare their own $id inside
+      // $defs or any nested location) so the lookupSchema callback can
+      // resolve $refs that target an embedded $id without requiring a
+      // separate top-level registration.
+      const embeddedSchemas = GraphEngineSupport.buildEmbeddedSchemaMap(entry.schema);
+
+      const engineOptions: GraphEngineOptionsInterface = {
+        ...(this.formatRegistry ? { 'formatRegistry': this.formatRegistry } : {}),
+        ...(this.keywords && this.keywords.length > 0 ? { 'keywords': this.keywords } : {}),
+        ...(this.maxSchemaDepth === undefined ? {} : { 'maxSchemaDepth': this.maxSchemaDepth }),
+        'lookupSchema': (lookupSchemaId: string) => {
+          return this.schemas.get(lookupSchemaId)?.schema ?? embeddedSchemas.get(lookupSchemaId);
+        }
+      };
+
+      entry.engine = new GraphEngine(entry.schema, engineOptions);
+    }
 
     return entry.engine;
   }

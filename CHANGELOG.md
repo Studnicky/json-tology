@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - `GraphEngine.resolveRef` failed to resolve a schema's `$ref` to its own `$id` when the engine was obtained via `registry.engine(schemaObj)` and `.errors(data)` was called directly. The compiled fast-path (`registry.validate`) was unaffected. Now the interpreted path recognises the root schema's own `$id` and resolves self-references consistently with the compiled path, restoring parity. Surfaced by a new compiled/interpreted parity test.
+- `GraphEngine.resolveRef` failed to resolve `$ref` targets that pointed at embedded `$id` declarations inside a schema's `$defs` (or any nested sub-schema) when accessed via `registry.engine(schemaObj)`. The compiled fast-path (`registry.validate`) was unaffected because the compiled validate-with-errors path uses `lookupSchema` rather than `lookupCompiled` for ref resolution. The engine path now performs the same embedded-id walk on construction (Option B — engine-side), and `SchemaRegistry.engine()` additionally extends the `lookupSchema` callback to return embedded sub-schemas (Option A — registry-side), so the compiled validate path and the engine path both resolve embedded `$id` refs and agree on validation results.
 
 ### Changed
 

@@ -34,6 +34,13 @@ import type { JSONSchema7Definition } from 'json-schema';
 export class GraphEngine implements GraphEngineInterface {
   private readonly customKeywords: KeywordDefinitionInterface[];
   private readonly dialectPlan: RootDialectPlanInterface;
+  /**
+   * Embedded sub-schemas that declare their own `$id` within the root schema
+   * tree (e.g. inside `$defs`). Populated once at construction time so that
+   * `resolveRef` can resolve `$ref` targets that point at an embedded `$id`
+   * even when no external `lookupSchema` callback is provided.
+   */
+  private readonly embeddedSchemas: Map<string, JSONSchema7Definition>;
   public readonly formatRegistry: FormatRegistryInterface;
   private readonly graphCache = new WeakMap<object, SchemaGraph>();
   private readonly options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>>;
@@ -58,6 +65,8 @@ export class GraphEngine implements GraphEngineInterface {
       ...rest
     };
     this.dialectPlan = GraphEngineSupport.buildRootDialectPlan(rootSchema);
+    this.embeddedSchemas = new Map<string, JSONSchema7Definition>();
+    GraphEngineSupport.collectEmbeddedSchemas(rootSchema, this.embeddedSchemas, true);
   }
 
   private applyUnevaluatedItems(
@@ -382,7 +391,16 @@ export class GraphEngine implements GraphEngineInterface {
         if (rootId !== undefined && parsed.id === rootId) {
           graph = this.graphFor(this.rootSchema);
         } else {
-          throw new GraphError('REF_UNRESOLVED', `Unresolved schema reference: ${ref}`, ref);
+          // Embedded $id fallback: $ref targets an embedded sub-schema that
+          // declared its own $id inside $defs (or any nested location). The
+          // map was populated during construction, so we resolve directly
+          // against that sub-schema's graph.
+          const embedded = this.embeddedSchemas.get(parsed.id);
+
+          if (embedded === undefined) {
+            throw new GraphError('REF_UNRESOLVED', `Unresolved schema reference: ${ref}`, ref);
+          }
+          graph = this.graphFor(embedded);
         }
       } else {
         graph = this.graphFor(lookedUp);

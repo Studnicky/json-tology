@@ -12,6 +12,20 @@ import type { JSONSchema7Definition } from 'json-schema';
 import type { RootDialectPlanInterface } from '../../interfaces/RootDialectPlan.js';
 
 export const GraphEngineSupport = {
+  /**
+   * Convenience wrapper: walks a root schema tree and returns a map of
+   * embedded $id → sub-schema for all nested sub-schemas that declare their
+   * own `$id` (excluding the root itself). The map uses `Record<string, unknown>`
+   * so it is directly usable by the registry's `lookupSchema` callback.
+   */
+  buildEmbeddedSchemaMap(rootSchema: JSONSchema7Definition): Map<string, Record<string, unknown>> {
+    const out = new Map<string, JSONSchema7Definition>();
+
+    GraphEngineSupport.collectEmbeddedSchemas(rootSchema, out, true);
+
+    return out as unknown as Map<string, Record<string, unknown>>;
+  },
+
   buildRootDialectPlan(rootSchema: JSONSchema7Definition): RootDialectPlanInterface {
     if (!isRecord(rootSchema)) {
       return { 'formatAssertions': true };
@@ -65,6 +79,40 @@ export const GraphEngineSupport = {
     }
 
     return structuredClone(value);
+  },
+
+  /**
+   * Walks a schema tree and collects all nested sub-schemas that declare their
+   * own `$id`, mapping each embedded id to its sub-schema object. The root
+   * schema itself is excluded when `isRoot` is `true` (its `$id` is the engine
+   * root, not an embedded id). Used by `GraphEngine` to resolve `$ref` targets
+   * that point at embedded `$id` declarations inside `$defs` (or any nested
+   * sub-schema) when no external `lookupSchema` callback is present.
+   */
+  collectEmbeddedSchemas(
+    node: unknown,
+    out: Map<string, JSONSchema7Definition>,
+    isRoot: boolean
+  ): void {
+    if (Array.isArray(node)) {
+      for (const item of node) {
+        GraphEngineSupport.collectEmbeddedSchemas(item, out, false);
+      }
+
+      return;
+    }
+
+    if (!isRecord(node)) {
+      return;
+    }
+
+    if (!isRoot && typeof node.$id === 'string' && node.$id !== '') {
+      out.set(node.$id, node);
+    }
+
+    for (const value of Object.values(node)) {
+      GraphEngineSupport.collectEmbeddedSchemas(value, out, false);
+    }
   },
 
   extractNamedFragment(ref: string): string | undefined {
