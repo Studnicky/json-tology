@@ -1,3 +1,4 @@
+import type { ValidateSchemaType } from '../../../../src/types/SchemaValidation.js';
 import { CustomerIdSchema } from './CustomerId.js';
 import { IsbnSchema } from './Isbn.js';
 import { Iso8601Schema } from './Iso8601.js';
@@ -12,7 +13,13 @@ export const ReviewSchema = {
       'type': 'string'
     },
     'bookIsbn': { '$ref': IsbnSchema.$id },
-    'customerId': { '$ref': CustomerIdSchema.$id },
+    // functional: true — each Review has at most one customer (a review is
+    // written by exactly one person; the customerId property maps to a single
+    // Customer individual). OWL 2: owl:FunctionalProperty on customerId.
+    'customerId': {
+      '$ref': CustomerIdSchema.$id,
+      'functional': true
+    },
     'id': { '$ref': ReviewIdSchema.$id },
     'postedAt': { '$ref': Iso8601Schema.$id },
     'rating': { '$ref': RatingScoreSchema.$id }
@@ -27,3 +34,8 @@ export const ReviewSchema = {
   ],
   'type': 'object'
 } as const;
+
+// Compile-time self-check: every `required` entry must be in `properties`.
+const _reviewShapeOk: ValidateSchemaType<typeof ReviewSchema> = ReviewSchema;
+
+void _reviewShapeOk;

@@ -62,6 +62,11 @@ import { PrintBookSchema } from './entities/PrintBook.js';
 import { RareBookSchema } from './entities/RareBook.js';
 import { SoloAuthoredBookSchema } from './entities/SoloAuthoredBook.js';
 
+// Property-characteristic relation entities — OWL 2 axiom demonstrations
+// SimilarBook and Sequel both $ref Book, so they must import after BookSchema.
+import { SequelSchema } from './entities/Sequel.js';
+import { SimilarBookSchema } from './entities/SimilarBook.js';
+
 const allSchemas = [
   // Primitives must register before entities that $ref them
   AmountSchema,
@@ -106,7 +111,10 @@ const allSchemas = [
   SoloAuthoredBookSchema,
   AnthologyBookSchema,
   InPrintBookSchema,
-  OutOfPrintBookSchema
+  OutOfPrintBookSchema,
+  // Property-characteristic relation entities — $ref Book, must register after
+  SimilarBookSchema,
+  SequelSchema
 ] as const;
 
 export const bookstoreEntities = JsonTology.create({
@@ -166,6 +174,8 @@ export { RareBookSchema } from './entities/RareBook.js';
 export { RatingScoreSchema } from './entities/RatingScore.js';
 export { ReviewSchema } from './entities/Review.js';
 export { ReviewIdSchema } from './entities/ReviewId.js';
+export { SequelSchema } from './entities/Sequel.js';
+export { SimilarBookSchema } from './entities/SimilarBook.js';
 export { SoloAuthoredBookSchema } from './entities/SoloAuthoredBook.js';
 export { StockLevelSchema } from './entities/StockLevel.js';
 export { StreetLineSchema } from './entities/StreetLine.js';
