@@ -64,8 +64,14 @@
     "minLength": 3,
     "type": "string"
   },
+  "urn:bookstore:PublicationDate": {
+    "$id": "urn:bookstore:PublicationDate",
+    "format": "date",
+    "type": "string"
+  },
   "urn:bookstore:Quantity": {
     "$id": "urn:bookstore:Quantity",
+    "format": "int32",
     "minimum": 1,
     "type": "integer"
   },
@@ -79,6 +85,13 @@
     "$id": "urn:bookstore:ReviewId",
     "format": "uuid",
     "type": "string"
+  },
+  "urn:bookstore:StockLevel": {
+    "$id": "urn:bookstore:StockLevel",
+    "maximum": 100,
+    "minimum": 0,
+    "multipleOf": 5,
+    "type": "integer"
   },
   "urn:bookstore:StreetLine": {
     "$id": "urn:bookstore:StreetLine",
@@ -141,6 +154,93 @@
     ],
     "type": "object"
   },
+  "urn:bookstore:BookAnnotations": {
+    "$id": "urn:bookstore:BookAnnotations",
+    "patternProperties": {
+      "^note_": {
+        "type": "string"
+      },
+      "^tag_": {
+        "type": "string"
+      }
+    },
+    "type": "object"
+  },
+  "urn:bookstore:BookCatalogEntry": {
+    "$defs": {
+      "Variant": {
+        "$id": "urn:bookstore:BookCatalogEntryVariant",
+        "properties": {
+          "kind": {
+            "enum": [
+              "hardcover",
+              "paperback",
+              "ebook"
+            ],
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "kind",
+          "price"
+        ],
+        "type": "object"
+      }
+    },
+    "$id": "urn:bookstore:BookCatalogEntry",
+    "properties": {
+      "isbn": {
+        "$ref": "urn:bookstore:Isbn"
+      },
+      "variants": {
+        "items": {
+          "$ref": "urn:bookstore:BookCatalogEntryVariant"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "isbn",
+      "variants"
+    ],
+    "type": "object"
+  },
+  "urn:bookstore:BookRatingHistogram": {
+    "$id": "urn:bookstore:BookRatingHistogram",
+    "description": "Five-element histogram of star-rating counts: [1-star, 2-star, 3-star, 4-star, 5-star]",
+    "prefixItems": [
+      {
+        "description": "1-star count",
+        "minimum": 0,
+        "type": "integer"
+      },
+      {
+        "description": "2-star count",
+        "minimum": 0,
+        "type": "integer"
+      },
+      {
+        "description": "3-star count",
+        "minimum": 0,
+        "type": "integer"
+      },
+      {
+        "description": "4-star count",
+        "minimum": 0,
+        "type": "integer"
+      },
+      {
+        "description": "5-star count",
+        "minimum": 0,
+        "type": "integer"
+      }
+    ],
+    "type": "array",
+    "uniqueItems": true
+  },
   "urn:bookstore:Book": {
     "$id": "urn:bookstore:Book",
     "properties": {
@@ -149,7 +249,8 @@
           "$ref": "urn:bookstore:AuthorName"
         },
         "minItems": 1,
-        "type": "array"
+        "type": "array",
+        "uniqueItems": true
       },
       "inStock": {
         "default": true,
@@ -187,7 +288,8 @@
         "$ref": "urn:bookstore:Email"
       },
       "id": {
-        "$ref": "urn:bookstore:CustomerId"
+        "$ref": "urn:bookstore:CustomerId",
+        "inverseFunctional": true
       },
       "name": {
         "$ref": "urn:bookstore:CustomerName"
@@ -237,7 +339,9 @@
         "type": "array"
       },
       "placedAt": {
-        "$ref": "urn:bookstore:Iso8601"
+        "$ref": "urn:bookstore:Iso8601",
+        "irreflexive": true,
+        "transitive": true
       },
       "shippingAddress": {
         "$ref": "urn:bookstore:Address"
@@ -267,7 +371,8 @@
         "$ref": "urn:bookstore:Isbn"
       },
       "customerId": {
-        "$ref": "urn:bookstore:CustomerId"
+        "$ref": "urn:bookstore:CustomerId",
+        "functional": true
       },
       "id": {
         "$ref": "urn:bookstore:ReviewId"
@@ -289,6 +394,83 @@
     ],
     "type": "object"
   },
+  "urn:bookstore:BookListPage": {
+    "$id": "urn:bookstore:BookListPage",
+    "description": "A page of results with pagination metadata",
+    "properties": {
+      "hasNext": {
+        "type": "boolean"
+      },
+      "hasPrev": {
+        "type": "boolean"
+      },
+      "items": {
+        "items": {
+          "$id": "urn:bookstore:Book",
+          "properties": {
+            "authors": {
+              "items": {
+                "$ref": "urn:bookstore:AuthorName"
+              },
+              "minItems": 1,
+              "type": "array",
+              "uniqueItems": true
+            },
+            "inStock": {
+              "default": true,
+              "type": "boolean"
+            },
+            "isbn": {
+              "$ref": "urn:bookstore:Isbn"
+            },
+            "price": {
+              "$ref": "urn:bookstore:Money"
+            },
+            "title": {
+              "$ref": "urn:bookstore:Title"
+            }
+          },
+          "required": [
+            "isbn",
+            "title",
+            "authors",
+            "price"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "nextCursor": {
+        "type": "string"
+      },
+      "page": {
+        "minimum": 1,
+        "type": "number"
+      },
+      "pageSize": {
+        "minimum": 1,
+        "type": "number"
+      },
+      "prevCursor": {
+        "type": "string"
+      },
+      "total": {
+        "minimum": 0,
+        "type": "number"
+      },
+      "totalPages": {
+        "minimum": 0,
+        "type": "number"
+      }
+    },
+    "required": [
+      "items",
+      "total",
+      "page",
+      "pageSize"
+    ],
+    "type": "object"
+  },
   "urn:bookstore:EBook": {
     "$id": "urn:bookstore:EBook",
     "allOf": [
@@ -296,6 +478,28 @@
         "$ref": "urn:bookstore:Book"
       },
       {
+        "else": {
+          "properties": {
+            "pdfVersion": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "pdfVersion"
+          ],
+          "type": "object"
+        },
+        "if": {
+          "properties": {
+            "fileFormat": {
+              "const": "epub"
+            }
+          },
+          "required": [
+            "fileFormat"
+          ],
+          "type": "object"
+        },
         "properties": {
           "downloadUrl": {
             "format": "uri",
@@ -318,6 +522,17 @@
           "fileFormat",
           "downloadUrl"
         ],
+        "then": {
+          "properties": {
+            "epubVersion": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "epubVersion"
+          ],
+          "type": "object"
+        },
         "type": "object"
       }
     ]
@@ -460,6 +675,41 @@
       {
         "$ref": "urn:bookstore:Book"
       }
+    ],
+    "type": "object"
+  },
+  "urn:bookstore:SimilarBook": {
+    "$id": "urn:bookstore:SimilarBook",
+    "properties": {
+      "a": {
+        "$ref": "urn:bookstore:Book"
+      },
+      "b": {
+        "$ref": "urn:bookstore:Book",
+        "reflexive": true,
+        "symmetric": true
+      }
+    },
+    "required": [
+      "a",
+      "b"
+    ],
+    "type": "object"
+  },
+  "urn:bookstore:Sequel": {
+    "$id": "urn:bookstore:Sequel",
+    "properties": {
+      "book": {
+        "$ref": "urn:bookstore:Book"
+      },
+      "predecessor": {
+        "$ref": "urn:bookstore:Book",
+        "asymmetric": true
+      }
+    },
+    "required": [
+      "book",
+      "predecessor"
     ],
     "type": "object"
   }

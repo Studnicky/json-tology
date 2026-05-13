@@ -2,6 +2,18 @@
 
 ---
 
+## Changeset {#changeset}
+
+A `Changeset` is the result type returned by `Value.diff`. It holds an ordered list of JSON Pointer-based operations (`set` / `delete`) that transform one value into another. Key members:
+
+- `.isEmpty` — `true` when no operations were produced
+- `.length` — number of operations in the changeset
+- `.operations` — readonly array of `DiffOpType` (`{ op: 'set', path: string, value: unknown }` or `{ op: 'delete', path: string }`)
+
+See [`Value.diff`](#value-diff) for usage examples and [`Value.applyOp`](#value-applyop) for applying individual operations.
+
+---
+
 ## `Value.diff` {#value-diff}
 
 **Declaration.** Computes the structural diff between two values and returns a `Changeset`. The changeset contains an ordered list of JSON Pointer-based operations (`set` / `delete`) that transform `before` into `after`. Returns `Changeset` with `.isEmpty`, `.length`, `.operations` (readonly array of `DiffOpType`). Does not mutate either input.

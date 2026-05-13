@@ -125,9 +125,9 @@ const sidebar = [
   {
     text: 'Ontology emission (opt-in)',
     items: [
-      { link: '/advanced/ontology#entities-totbox', text: 'toTbox' },
-      { link: '/advanced/ontology#entities-toshacl', text: 'toShacl' },
-      { link: '/advanced/ontology#entities-ontology', text: 'ontology' },
+      { link: '/advanced/ontology#jt-totbox', text: 'toTbox' },
+      { link: '/advanced/ontology#jt-toshacl', text: 'toShacl' },
+      { link: '/advanced/ontology#jt-ontology', text: 'ontology' },
       { link: '/advanced/quads', text: 'RDF round-trip (toQuads / fromQuads)' },
       { link: '/advanced/sameas', text: 'sameAs (ABox identity)' },
       { link: '/advanced/strict-graph-mode', text: 'Strict graph mode' }

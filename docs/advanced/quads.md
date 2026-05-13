@@ -8,6 +8,19 @@ The bookstore schemas defined in the [Bookstore Domain](/bookstore-domain) are u
 
 ---
 
+## Quad / SubjectGroup {#quad-shape}
+
+A `Quad` is the atomic unit of RDF data produced and consumed by `toQuads` / `fromQuads`. Each quad is a plain object with four fields:
+
+- `subject` — the IRI or blank-node identifier of the resource being described
+- `predicate` — the property IRI
+- `object` — the value (IRI, blank node, or typed literal)
+- `graph` — the named-graph IRI, or the default graph when omitted
+
+A `SubjectGroup` is a convenience wrapper that groups all quads sharing the same subject, making it easier to reconstruct a single typed object from a quad array. `fromQuads` uses subject groups internally when lifting quads back into typed JS values via [`instantiate`](/validation/instantiate).
+
+---
+
 ## `jt.toQuads` {#jt-toquads}
 
 **Declaration.** Projects instance data through the canonical graph and returns a fresh `OntologyBuilder` containing the projected ABox quads. The first argument is a schema object with `$id` (registers the schema if it is not already registered). The second argument is the typed value, normally the output of `instantiate()`. The return value can be serialized via `jsonLd()`, `jsonLdObject()`, or `raw()`.
