@@ -40,7 +40,6 @@ export type * from './SchemaCompilerImpl.js';
 export type * from './SchemaCompilerValidatePlanContext.js';
 export type * from './SchemaGraph.js';
 export type * from './SchemaGraphImpl.js';
-export type * from './SchemaLoaderImpl.js';
 export type * from './SchemaRegistry.js';
 export type * from './SchemaRegistryEntry.js';
 export type * from './Serializer.js';

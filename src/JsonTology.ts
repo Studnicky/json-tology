@@ -23,6 +23,7 @@ import type { DumpOptionsInterface } from './interfaces/Dump.js';
 import type { InvariantInterface } from './interfaces/Invariant.js';
 import type { ComputedFnType } from './types/Computed.js';
 import type { JsonTologyOptionsInterface } from './interfaces/Config.js';
+import type { LoaderType } from './types/Loader.js';
 import type { MaterializerInterface } from './interfaces/MaterializerImpl.js';
 import type { QuadInterface } from './interfaces/Quad.js';
 import type { RegistryOptionsInterface } from './interfaces/Registry.js';
@@ -41,6 +42,7 @@ import type {
 import type { SchemaRefType } from './types/SchemaRef.js';
 import type { SkolemizeFnType } from './types/Skolemize.js';
 
+import { GraphError } from './errors/GraphError.js';
 import { Curie } from './modules/rdf/Curie.js';
 import { Skolemize } from './modules/rdf/Skolemize.js';
 import { Dumper } from './modules/data/Dumper.js';
@@ -248,15 +250,43 @@ export class JsonTology<TMap = Record<never, never>> {
   /**
    * Creates a {@link JsonTology} instance with constructor-time schemas and full type inference.
    *
-   * @param options - Configuration including `baseIRI`, optional `schemas`, prefixes, format validators, and more.
-   * @returns A fully configured instance with all provided schemas registered.
+   * **Mode A (no loader):** returns `JsonTology` synchronously. All existing behavior unchanged.
+   *
+   * **Mode B (loader present):** returns `Promise<JsonTology>`. Eagerly walks all transitive
+   * `$ref` IRIs, calls the loader for each unregistered IRI, registers the returned schemas,
+   * and recurses until the graph is fully resolved. The resolved instance is identical to
+   * a Mode A instance — all hot-path methods stay synchronous.
+   *
+   * @param options - Configuration including `baseIRI`, optional `schemas`, `loader`, prefixes, etc.
    */
-  public static create<const TSchemas extends ReadonlyArray<{ readonly '$id': string; }>>(options: JsonTologyOptionsInterface<TSchemas> & { 'schemas'?: UniqueSchemaIdsType<TSchemas> }): JsonTology<SchemaMapFromTupleType<TSchemas>> {
+  /**
+   * Creates a {@link JsonTology} instance with constructor-time schemas and full type inference.
+   *
+   * **Mode A (no loader):** returns `JsonTology` synchronously. All existing behavior unchanged.
+   *
+   * **Mode B (loader present):** returns `Promise<JsonTology>`. Eagerly walks all transitive
+   * `$ref` IRIs, calls the loader for each unregistered IRI, registers the returned schemas,
+   * and recurses until the graph is fully resolved. The resolved instance is identical to
+   * a Mode A instance — all hot-path methods stay synchronous.
+   *
+   * @param options - Configuration including `baseIRI`, optional `schemas`, `loader`, prefixes, etc.
+   */
+  public static create<const TSchemas extends ReadonlyArray<{ readonly '$id': string; }>>(options: JsonTologyOptionsInterface<TSchemas> & { 'schemas'?: UniqueSchemaIdsType<TSchemas> }): JsonTology<SchemaMapFromTupleType<TSchemas>>;
+  public static create<const TSchemas extends ReadonlyArray<{ readonly '$id': string; }>>(options: JsonTologyOptionsInterface<TSchemas> & { 'schemas'?: UniqueSchemaIdsType<TSchemas> }): JsonTology<SchemaMapFromTupleType<TSchemas>> | Promise<JsonTology<SchemaMapFromTupleType<TSchemas>>> {
     const jt = new JsonTology(options);
 
     if (options.schemas && options.schemas.length > 0) {
       // Cast needed: const generic TSchemas preserves literal types that don't widen to Record<string, unknown>
       jt.registry.register(options.schemas);
+    }
+
+    if (options.loader !== undefined) {
+      const loader = options.loader;
+
+      return jt.resolveAllRefs(loader).then(() => {
+        // Cast needed: narrows default TMap to the inferred schema map computed from TSchemas
+        return jt as unknown as JsonTology<SchemaMapFromTupleType<TSchemas>>;
+      });
     }
 
     // Cast needed: narrows default TMap to the inferred schema map computed from TSchemas
@@ -481,6 +511,7 @@ export class JsonTology<TMap = Record<never, never>> {
   private readonly defaultDeskolemize: boolean;
   private readonly defaultGraphIRI: string | undefined;
   private readonly defaultIriForRaw: SkolemizeFnType | string | undefined;
+  private readonly loader: LoaderType | undefined;
 
   public readonly materializer: MaterializerInterface;
   private ontologyCache: null | OntologyBuilder = null;
@@ -522,6 +553,7 @@ export class JsonTology<TMap = Record<never, never>> {
     this.defaultGraphIRI = options.defaultGraphIRI;
     this.defaultDeskolemize = options.defaultDeskolemize === true;
     this.defaultIriForRaw = options.iriFor;
+    this.loader = options.loader;
 
     this.prefixes = {
       ...DEFAULT_PREFIXES,
@@ -591,7 +623,7 @@ export class JsonTology<TMap = Record<never, never>> {
   }
 
   // ---------------------------------------------------------------------------
-  // Invariants
+  // Loader resolution (private)
   // ---------------------------------------------------------------------------
 
   /**
@@ -604,6 +636,9 @@ export class JsonTology<TMap = Record<never, never>> {
   public addComputed<T>(
     schemaId: keyof TMap & string, name: keyof T & string, fn: (data: T) => unknown
   ): void;
+  // ---------------------------------------------------------------------------
+  // Invariants
+  // ---------------------------------------------------------------------------
   public addComputed(schemaId: keyof TMap & string, name: string, fn: ComputedFnType): void {
     this.registry.computedStore.add(schemaId, name, fn);
   }
@@ -617,7 +652,6 @@ export class JsonTology<TMap = Record<never, never>> {
   public addInvariant<T>(schemaId: keyof TMap & string, invariant: InvariantInterface<T>): void {
     this.registry.addInvariant(schemaId, invariant as InvariantInterface);
   }
-
   /**
    * Serialize a value to its wire representation.
    *
@@ -760,7 +794,6 @@ export class JsonTology<TMap = Record<never, never>> {
       return this.registry.instantiate(schemaId, instance);
     });
   }
-
   /**
    * Retrieves a registered schema by its `$id`.
    *
@@ -770,6 +803,7 @@ export class JsonTology<TMap = Record<never, never>> {
   public get(schemaId: string): Record<string, unknown> | undefined {
     return this.registry.get(schemaId);
   }
+
   /**
    * Checks whether a schema with the given `$id` is registered.
    *
@@ -893,7 +927,6 @@ export class JsonTology<TMap = Record<never, never>> {
       partial
     );
   }
-
   /**
    * Generates ontology output (OWL + SHACL) derived from all registered schemas.
    *
@@ -953,6 +986,33 @@ export class JsonTology<TMap = Record<never, never>> {
     return this.registry.registerAnonymous(schema);
   }
   /**
+   * Registers a schema and eagerly resolves all transitive `$ref` IRIs via the configured loader.
+   *
+   * Equivalent to `register()` followed by a full transitive ref-resolution walk. Requires a
+   * `loader` to have been provided at construction time. Returns `Promise<this>` so it can be
+   * awaited and chained.
+   *
+   * @param schema - A schema object with `$id`.
+   * @throws If no loader was configured at construction time.
+   * @throws `GraphError('REF_UNRESOLVED')` if the loader returns `null` for a required IRI.
+   */
+  public async registerAsync<const T extends { readonly '$id': string }>(schema: T): Promise<JsonTology<SchemaEntryType<T> & TMap>> {
+    if (this.loader === undefined) {
+      throw new SchemaError(
+        'SCHEMA_INVALID_INPUT',
+        'registerAsync requires a loader configured at construction time (JsonTology.create({ loader }))'
+      );
+    }
+
+    this.registry.register(schema);
+    this.ontologyCache = null;
+
+    await this.resolveAllRefs(this.loader);
+
+    // Cast needed: TypeScript cannot track that registerAsync() accumulates into the TMap type parameter
+    return this as unknown as JsonTology<SchemaEntryType<T> & TMap>;
+  }
+  /**
    * Removes a previously registered compute function.
    *
    * @param schemaId - The `$id` of the schema owning the computed property.
@@ -969,6 +1029,53 @@ export class JsonTology<TMap = Record<never, never>> {
    */
   public removeInvariant(schemaId: string, name: string): void {
     this.registry.removeInvariant(schemaId, name);
+  }
+  /**
+   * Eagerly walks all transitive `$ref` IRIs currently registered, calling the loader
+   * for each unregistered IRI. Registers returned schemas and recurses until the graph
+   * is fully resolved. Uses a visited Set to avoid redundant loader calls.
+   *
+   * If the loader returns `null` for a required IRI, throws `GraphError('REF_UNRESOLVED')`.
+   */
+  private async resolveAllRefs(loader: LoaderType): Promise<void> {
+    const visited = new Set<string>();
+
+    const resolveSchema = async (schema: Record<string, unknown>): Promise<void> => {
+      const unresolved = this.registry.collectUnresolvedRefIris(schema);
+      const toFetch: string[] = [];
+
+      for (const iri of unresolved) {
+        if (!visited.has(iri)) {
+          visited.add(iri);
+          toFetch.push(iri);
+        }
+      }
+
+      for (const iri of toFetch) {
+        const loaded = await loader(iri);
+
+        if (loaded === null) {
+          throw new GraphError(
+            'REF_UNRESOLVED',
+            `loader returned null for IRI: ${iri}`,
+            iri
+          );
+        }
+
+        if (typeof loaded !== 'boolean') {
+          this.registry.register(loaded);
+          this.ontologyCache = null;
+
+          // Recurse into the newly registered schema
+          await resolveSchema(loaded);
+        }
+      }
+    };
+
+    // Walk all currently registered schemas
+    for (const schema of this.registry.list()) {
+      await resolveSchema(schema);
+    }
   }
 
   /**

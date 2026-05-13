@@ -13,6 +13,14 @@ export interface SchemaRegistryInterface {
   cast(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown): unknown;
   readonly 'castTypes': boolean;
   clean(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown): unknown;
+  /**
+   * Collect all non-fragment cross-schema `$ref` IRIs reachable from the given schema
+   * (including its transitive dependencies already in the registry). Used by the loader
+   * walker in `JsonTology._resolveAllRefs` to discover which IRIs need to be fetched.
+   *
+   * Only returns IRIs that are NOT already registered.
+   */
+  collectUnresolvedRefIris(schema: Record<string, unknown>): ReadonlySet<string>;
   readonly 'computedStore': ComputedStore;
   convert(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown): unknown;
   create(schemaId: string): unknown;

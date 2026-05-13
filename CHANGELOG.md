@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-05-13
+
+### Added
+
+- `LoaderType = (iri: string) => Promise<JsonSchemaType | null>` — pluggable async schema-fetch hook exported from `json-tology/types`.
+- `Loaders` namespace (exported from `json-tology`) with four universal helpers: `Loaders.fetch({ base?, init? })` (uses `globalThis.fetch`, works in Node ≥ 18, Bun, Deno, browsers), `Loaders.compose(...loaders)` (first non-null wins), `Loaders.cached(loader, { maxSize? })` (LRU, default 1024, caches null too), `Loaders.memory(map)` (in-memory lookup for tests / bundled schemas). No Node-only built-ins — zero new runtime dependencies.
+- `loader?: LoaderType` on `JsonTologyOptionsInterface`. When provided, `JsonTology.create()` returns `Promise<JsonTology>` and eagerly resolves all transitive `$ref` IRIs before yielding a fully-warmed instance. If the loader returns `null` for a required IRI, throws `GraphError('REF_UNRESOLVED')` with the IRI. Without a loader the existing sync API is unchanged.
+- `jt.registerAsync(schema)` — post-construction async registration that walks transitive refs via the configured loader. Requires a loader at construction time.
+- Docs: `docs/advanced/schema-federation.md` — how the loader hook integrates with `$ref` resolution, write-your-own loader examples, performance notes, error handling, comparison with AJV `loadSchema` and SPARQL `SERVICE`.
+- Docs: `docs/advanced/browser-usage.md` — universal (CDN, bundler, Node) usage guide using the loader hook as the central federation primitive. No environment-specific export paths.
+
+### Removed
+
+- **BREAKING**: `SchemaLoader` class (`src/modules/registry/SchemaLoader.ts`) — the Node-only file reader was the sole reason for any browser/node conditional export complexity. Migration: read the JSON file yourself with `node:fs` and pass the parsed schemas to `JsonTology.create({ schemas: [...] })`, or supply `loader: async (iri) => { const content = await fs.promises.readFile(path); return JSON.parse(content); }` to resolve on demand.
+- `SchemaLoaderInterface` removed from `src/interfaces/`.
+- `SchemaLoadErrorType` and `SchemaLoadResultType` remain exported from `json-tology/types` (they are inferred from the SCHEMAS constants and not load-bearing on SchemaLoader).
+
+### Changed
+
+- `JsonTology.create()` is now overloaded: `create({ loader })` → `Promise<JsonTology>`, `create({})` → `JsonTology` (existing sync form unchanged). TypeScript infers the return type from whether `loader` is present.
 ## [0.4.3] - 2026-05-13
 
 ### Added
