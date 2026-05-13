@@ -1,5 +1,5 @@
 /**
- * Transform.pipe — Example 1: Multi-step string → float transform
+ * Transform.chain — Example 1: Multi-step string → float transform
  * Demonstrates: left-to-right decode chain, right-to-left encode chain
  */
 
@@ -12,7 +12,7 @@ const FormattedPriceSchema = {
   'type': 'string'
 } as const;
 
-const PricedSchema = Transform.pipe<typeof FormattedPriceSchema, number>(
+const PricedSchema = Transform.chain<typeof FormattedPriceSchema, number>(
   FormattedPriceSchema,
   [
     // Step 1: strip currency symbol

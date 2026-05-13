@@ -158,7 +158,7 @@ try {
 | Constant | Value | When recorded |
 |----------|-------|---------------|
 | `InstantiationErrorCode.EXTRA_FORBIDDEN` | `EXTRA_FORBIDDEN` | `jt:config.extra: 'forbid'` rejects unknown properties |
-| `InstantiationErrorCode.TRANSFORM_DECODE_FAILED` | `TRANSFORM_DECODE_FAILED` | A `Transform.pipe` decode stage throws during `instantiate`. Thrown by `RefDecoder` and `SchemaRegistry` when a transform stage fails mid-decode. See `src/types/ErrorCodes.ts`. |
+| `InstantiationErrorCode.TRANSFORM_DECODE_FAILED` | `TRANSFORM_DECODE_FAILED` | A `Transform.chain` decode stage throws during `instantiate`. Thrown by `RefDecoder` and `SchemaRegistry` when a transform stage fails mid-decode. See `src/types/ErrorCodes.ts`. |
 
 ```ts
 import { bookstoreEntities as entities, OrderSchema } from './bookstore/index.js';

@@ -24,7 +24,8 @@ const sidebar = [
     items: [
       { link: '/getting-started', text: 'Getting Started' },
       { link: '/bookstore-domain', text: 'The Bookstore Domain' },
-      { link: '/migration-0.4.0', text: 'Migration to 0.4.0' }
+      { link: '/migration-0.4.0', text: 'Migration to 0.4.0' },
+      { link: '/migration-0.4.3', text: 'Migration to 0.4.3' }
     ]
   },
   {
@@ -71,7 +72,7 @@ const sidebar = [
     items: [
       { link: '/transforms/decode-encode', text: 'Transform.create / encode' },
       { link: '/transforms/brand', text: 'brand' },
-      { link: '/transforms/pipe', text: 'pipe' }
+      { link: '/transforms/chain', text: 'chain' }
     ]
   },
   {

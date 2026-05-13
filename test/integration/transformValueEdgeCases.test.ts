@@ -43,28 +43,28 @@ const getDecoderScenarios: TransformGetDecoderScenario[] = [
       assert.equal(fns.decode('hello'), 'hello', 'empty pipe — decode identity');
       assert.equal(fns.encode('hello'), 'hello', 'empty pipe — encode identity');
     },
-    'name': 'acts as a no-op identity transform with empty pipe',
+    'name': 'acts as a no-op identity transform with empty chain',
     'schema': {
-      '$id': 'urn:test:empty-pipe',
+      '$id': 'urn:test:empty-chain',
       'type': 'string'
     },
     'setup': (schema) => {
-      Transform.pipe(schema, []);
+      Transform.chain(schema, []);
     }
   },
   {
     'assertions': (fns) => {
-      assert.ok(fns !== undefined, 'single pipe — decoder exists');
-      assert.equal(fns.decode(5), 10, 'single pipe — decode');
-      assert.equal(fns.encode(10), 5, 'single pipe — encode');
+      assert.ok(fns !== undefined, 'single chain — decoder exists');
+      assert.equal(fns.decode(5), 10, 'single chain — decode');
+      assert.equal(fns.encode(10), 5, 'single chain — encode');
     },
-    'name': 'single pipe is equivalent to that transform alone',
+    'name': 'single chain is equivalent to that transform alone',
     'schema': {
-      '$id': 'urn:test:single-pipe',
+      '$id': 'urn:test:single-chain',
       'type': 'number'
     },
     'setup': (schema) => {
-      Transform.pipe(schema, [{
+      Transform.chain(schema, [{
         'decode': (value: number) => {
           return value * 2;
         },

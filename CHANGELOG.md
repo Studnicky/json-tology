@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-05-13
+
+### Changed
+
+- **BREAKING**: `Transform.pipe()` renamed to `Transform.chain()`. The previous name conflicted with the Node.js stream `.pipe()` convention. The supporting types are similarly renamed: `PipeChainMismatchInterface` → `ChainMismatchInterface`; `PipeChainSchemaMismatchInterface` → `ChainSchemaMismatchInterface`; `ValidatePipeChainType` → `ValidateChainType`; `PipeChainOutputType` → `ChainOutputType`; `PipeChainRecursionCap` → `ChainRecursionCap`. Migrate by replacing every `Transform.pipe` call site with `Transform.chain` and renaming any type imports.
+- Docs style: every `{ decode, encode }` transform-stage literal is now formatted with `decode` and `encode` on separate lines (project convention).
+
 ## [0.4.2] - 2026-05-13
 
 ### Fixed

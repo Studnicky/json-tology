@@ -10,8 +10,7 @@
 |--------|-------------|------|
 | [`Transform.create` / `jt.encode`](./decode-encode) | Attach decode/encode pair; encode domain → wire | <Badge type="warning" text="Compile-time + Runtime" /> |
 | [`Transform.brand`](./brand) | Compile-time nominal brand (no runtime effect) | <Badge type="info" text="Compile-time" /> |
-| [`Transform.pipe`](./pipe) | Multi-step decode/encode pipeline | <Badge type="warning" text="Compile-time + Runtime" /> |
-| [`Transform.pipe`](./pipe) | Compose multiple transformation steps |
+| [`Transform.chain`](./chain) | Multi-step decode/encode chain | <Badge type="warning" text="Compile-time + Runtime" /> |
 
 All examples use the [bookstore domain](/bookstore-domain).
 

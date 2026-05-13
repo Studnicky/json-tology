@@ -326,11 +326,11 @@ void describe('Transform contract alignment', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Transform.pipe()
+// Transform.chain()
 // ---------------------------------------------------------------------------
 
-void describe('Transform.pipe()', () => {
-  const pipeScenarios: Array<{
+void describe('Transform.chain()', () => {
+  const chainScenarios: Array<{
     'expectedDecode': string;
     'expectedEncode': string;
     'input': string;
@@ -366,7 +366,7 @@ void describe('Transform.pipe()', () => {
       'expectedDecode': 'HELLO',
       'expectedEncode': 'hello',
       'input': 'hello',
-      'name': 'edge: pipe with single transform behaves like create',
+      'name': 'edge: chain with single transform behaves like create',
       'transforms': [{
         'decode': (value: string) => {
           return value.toUpperCase();
@@ -380,7 +380,7 @@ void describe('Transform.pipe()', () => {
       'expectedDecode': 'unchanged',
       'expectedEncode': 'unchanged',
       'input': 'unchanged',
-      'name': 'edge: pipe with identity transforms preserves value',
+      'name': 'edge: chain with identity transforms preserves value',
       'transforms': [
         {
           'decode': (value: string) => {
@@ -404,27 +404,27 @@ void describe('Transform.pipe()', () => {
 
   for (const {
     'expectedDecode': expectedDecode, 'expectedEncode': expectedEncode, 'input': input, 'name': name, 'transforms': transforms
-  } of pipeScenarios) {
+  } of chainScenarios) {
     void it(name, () => {
-      const PipeSchema = {
-        '$id': 'https://myapp.io/PipeTest',
+      const ChainSchema = {
+        '$id': 'https://myapp.io/ChainTest',
         'type': 'string'
       } as const;
 
-      const piped = Transform.pipe(PipeSchema, transforms);
+      const chained = Transform.chain(ChainSchema, transforms);
 
-      assert.equal(piped.$id, PipeSchema.$id);
+      assert.equal(chained.$id, ChainSchema.$id);
 
       const jt = JsonTology.create({
         'baseIRI': 'https://myapp.io',
-        'schemas': [piped] as const
+        'schemas': [chained] as const
       });
 
-      const parsed = jt.instantiate(piped.$id, input);
+      const parsed = jt.instantiate(chained.$id, input);
 
       assert.equal(parsed, expectedDecode);
 
-      const wire = jt.encode(piped, expectedDecode);
+      const wire = jt.encode(chained, expectedDecode);
 
       assert.equal(wire, expectedEncode);
     });
@@ -432,7 +432,7 @@ void describe('Transform.pipe()', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Transform bad paths — encoder/decoder throw, empty pipe
+// Transform bad paths — encoder/decoder throw, empty chain
 // ---------------------------------------------------------------------------
 
 void describe('Transform bad paths', () => {
@@ -583,46 +583,46 @@ void describe('Transform bad paths', () => {
     assert.equal(enc2, 'test-2');
   });
 
-  // --- empty pipe (zero transforms) ---
-  void it('edge: Transform.pipe with empty array is an identity transform (decode and encode pass-through)', () => {
-    const IdentityPipeSchema = {
-      '$id': 'https://myapp.io/IdentityPipe',
+  // --- empty chain (zero transforms) ---
+  void it('edge: Transform.chain with empty array is an identity transform (decode and encode pass-through)', () => {
+    const IdentityChainSchema = {
+      '$id': 'https://myapp.io/IdentityChain',
       'type': 'string'
     } as const;
 
-    const piped = Transform.pipe(IdentityPipeSchema, []);
+    const chained = Transform.chain(IdentityChainSchema, []);
 
     // Schema identity is preserved
-    assert.equal(piped.$id, IdentityPipeSchema.$id);
-    assert.equal(piped.type, IdentityPipeSchema.type);
+    assert.equal(chained.$id, IdentityChainSchema.$id);
+    assert.equal(chained.type, IdentityChainSchema.type);
 
     const jt = JsonTology.create({
       'baseIRI': 'https://myapp.io',
-      'schemas': [piped] as const
+      'schemas': [chained] as const
     });
 
     // Decode: passes value through unchanged
-    const decoded = jt.instantiate(piped.$id, 'unchanged');
+    const decoded = jt.instantiate(chained.$id, 'unchanged');
 
     assert.equal(decoded, 'unchanged');
 
     // Encode: passes value through unchanged
-    const encoded = jt.encode(piped, 'also-unchanged');
+    const encoded = jt.encode(chained, 'also-unchanged');
 
     assert.equal(encoded, 'also-unchanged');
   });
 
-  void it('edge: empty pipe registers a decoder that is retrievable via getDecoder', () => {
-    const EmptyPipeSchema = {
-      '$id': 'https://myapp.io/EmptyPipe',
+  void it('edge: empty chain registers a decoder that is retrievable via getDecoder', () => {
+    const EmptyChainSchema = {
+      '$id': 'https://myapp.io/EmptyChain',
       'type': 'string'
     } as const;
 
-    Transform.pipe(EmptyPipeSchema, []);
+    Transform.chain(EmptyChainSchema, []);
 
-    const fns = Transform.getDecoder(EmptyPipeSchema);
+    const fns = Transform.getDecoder(EmptyChainSchema);
 
-    assert.ok(fns !== undefined, 'getDecoder should return functions for empty pipe');
+    assert.ok(fns !== undefined, 'getDecoder should return functions for empty chain');
     assert.equal(typeof fns.decode, 'function');
     assert.equal(typeof fns.encode, 'function');
 

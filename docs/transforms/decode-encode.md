@@ -12,7 +12,7 @@
 
 **Use this when** a wire-format value needs automatic conversion to a richer domain type - ISO date strings → `Date`, cents integers → floats, raw enums → branded enums, base64 strings → `Buffer`.
 
-**Don't use this when** you want multiple sequential transformations (use [`pipe`](/transforms/pipe) instead). Don't use it for nominal typing without runtime conversion (use [`brand`](/transforms/brand)).
+**Don't use this when** you want multiple sequential transformations (use [`chain`](/transforms/chain) instead). Don't use it for nominal typing without runtime conversion (use [`brand`](/transforms/brand)).
 
 ### Examples
 
@@ -93,7 +93,10 @@ jt.register(RawSchema);
 // ✓ Do this  - transform first, then register
 const Transformed = Transform.create(
   { $id: '...', type: 'string' } as const,
-  { decode: (s: string) => new Date(s), encode: (d: Date) => d.toISOString() },
+  {
+    decode: (s: string) => new Date(s),
+    encode: (d: Date) => d.toISOString()
+  },
 );
 const jt2 = JsonTology.create({ schemas: [Transformed] as const });
 ```
@@ -105,7 +108,10 @@ const jt2 = JsonTology.create({ schemas: [Transformed] as const });
 ```ts [json-tology]
 const DateSchema = Transform.create(
   { $id: 'https://bookstore.example/PlacedAt', type: 'string', format: 'date-time' } as const,
-  { decode: (isoStr: string) => new Date(isoStr), encode: (dateVal: Date) => dateVal.toISOString() },
+  {
+    decode: (isoStr: string) => new Date(isoStr),
+    encode: (dateVal: Date) => dateVal.toISOString()
+  },
 );
 // jt.instantiate(DateSchema.$id, '2026-01-15T10:30:00Z') → Date
 // jt.encode(DateSchema, date) → '2026-01-15T10:30:00Z'
@@ -176,7 +182,7 @@ class Order(BaseModel):
 ### Related
 
 - [`jt.encode`](#jtencode) - apply the encode function (domain → wire)
-- [`pipe`](/transforms/pipe) - chain multiple transformation steps
+- [`chain`](/transforms/chain) - compose multiple transformation steps
 - [`brand`](/transforms/brand) - compile-time nominal typing without runtime decode
 - [`dump`](/serialization/dump) - applies `encode` during schema graph traversal
 
@@ -184,7 +190,7 @@ class Order(BaseModel):
 
 ## `jt.encode` {#jtencode}
 
-**Declaration.** Applies the `encode` function registered on `schema` via `Transform.create` or `Transform.pipe`. Converts a decoded domain value back to its wire representation. Returns `InferSchemaType<TSchema>`. If no transform is registered on the schema, returns the value unchanged.
+**Declaration.** Applies the `encode` function registered on `schema` via `Transform.create` or `Transform.chain`. Converts a decoded domain value back to its wire representation. Returns `InferSchemaType<TSchema>`. If no transform is registered on the schema, returns the value unchanged.
 
 **Use this when** you have a decoded domain value (e.g. a `Date` object) and need the wire form (e.g. ISO string) for storage, HTTP response, or queue message.
 
