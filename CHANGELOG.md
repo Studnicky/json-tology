@@ -9,7 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+<<<<<<< HEAD
 - Bookstore demo (β): new `examples/docs/bookstore/transforms.ts` (Transform.create + Transform.pipe pairwise compatibility), `examples/docs/bookstore/antiPatterns.ts` (Compose brand-error documentation via @ts-expect-error), and `scripts/bookstore-static.ts` (parametrised JsonTology static facade).
+=======
+- Bookstore demo (α): five new entities (`StockLevel`, `PublicationDate`, `BookAnnotations`, `BookListPage`, `BookCatalogEntry`) and updates to `Book.authors` (uniqueItems), `EBook.fileFormat` (if/then/else), `Quantity` (int32 format brand) to demonstrate bounded multipleOf narrowing, the `date` format brand, patternProperties template-literal expansion, `BaseTypes.page()` factory, embedded-`$id` $ref resolution, `UniqueArrayBrandInterface`, generalised if/then/else inference, and a numeric format brand.
+>>>>>>> 33a3bee (feat(examples): bookstore schemas demonstrate v0.4 compile-time features)
 
 ### Fixed
 

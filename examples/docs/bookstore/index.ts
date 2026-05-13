@@ -13,9 +13,11 @@ import { Iso8601Schema } from './entities/Iso8601.js';
 import { OrderIdSchema } from './entities/OrderId.js';
 import { PersonNameSchema } from './entities/PersonName.js';
 import { PostalCodeSchema } from './entities/PostalCode.js';
+import { PublicationDateSchema } from './entities/PublicationDate.js';
 import { QuantitySchema } from './entities/Quantity.js';
 import { RatingScoreSchema } from './entities/RatingScore.js';
 import { ReviewIdSchema } from './entities/ReviewId.js';
+import { StockLevelSchema } from './entities/StockLevel.js';
 import { StreetLineSchema } from './entities/StreetLine.js';
 import { TitleSchema } from './entities/Title.js';
 
@@ -28,11 +30,17 @@ import { MoneySchema } from './entities/Money.js';
 
 // Entities — composed of named primitives via $ref
 import { AddressSchema } from './entities/Address.js';
+import { BookAnnotationsSchema } from './entities/BookAnnotations.js';
+import { BookCatalogEntrySchema } from './entities/BookCatalogEntry.js';
+import { BookRatingHistogramSchema } from './entities/BookRatingHistogram.js';
 import { BookSchema } from './entities/Book.js';
 import { CustomerSchema } from './entities/Customer.js';
 import { OrderLineSchema } from './entities/OrderLine.js';
 import { OrderSchema } from './entities/Order.js';
 import { ReviewSchema } from './entities/Review.js';
+
+// BookListPage depends on Book — must import after
+import { BookListPageSchema } from './entities/BookListPage.js';
 
 // Book taxonomy — Compose.subClassOf / disjointWith / complementOf / restrictions
 //
@@ -67,9 +75,11 @@ const allSchemas = [
   OrderIdSchema,
   PersonNameSchema,
   PostalCodeSchema,
+  PublicationDateSchema,
   QuantitySchema,
   RatingScoreSchema,
   ReviewIdSchema,
+  StockLevelSchema,
   StreetLineSchema,
   TitleSchema,
   // CustomerName + AuthorName are sibling extensions of PersonName
@@ -77,13 +87,18 @@ const allSchemas = [
   CustomerNameSchema,
   // Money depends on Amount + CurrencyCode
   MoneySchema,
-  // Entities
+  // Entities (no $ref inter-deps among new ones; BookCatalogEntry $refs Isbn which is above)
   AddressSchema,
+  BookAnnotationsSchema,
+  BookCatalogEntrySchema,
+  BookRatingHistogramSchema,
   BookSchema,
   CustomerSchema,
   OrderLineSchema,
   OrderSchema,
   ReviewSchema,
+  // BookListPage depends on Book — must register after Book
+  BookListPageSchema,
   // Book taxonomy — must register Book first; class axioms below reference it
   EBookSchema,
   PrintBookSchema,
@@ -116,13 +131,16 @@ export type Order = InferType<typeof OrderSchema>;
 export type OrderLine = InferType<typeof OrderLineSchema>;
 export type Review = InferType<typeof ReviewSchema>;
 
-// Re-export entities
+// Re-export all schemas — sorted by module specifier (perfectionist/sort-exports)
 export { AddressSchema } from './entities/Address.js';
-// Re-export primitives
 export { AmountSchema } from './entities/Amount.js';
 export { AnthologyBookSchema } from './entities/AnthologyBook.js';
 export { AuthorNameSchema } from './entities/AuthorName.js';
 export { BookSchema } from './entities/Book.js';
+export { BookAnnotationsSchema } from './entities/BookAnnotations.js';
+export { BookCatalogEntrySchema } from './entities/BookCatalogEntry.js';
+export { BookListPageSchema } from './entities/BookListPage.js';
+export { BookRatingHistogramSchema } from './entities/BookRatingHistogram.js';
 export { CityNameSchema } from './entities/CityName.js';
 export { CountryCodeSchema } from './entities/CountryCode.js';
 export { CurrencyCodeSchema } from './entities/CurrencyCode.js';
@@ -142,12 +160,13 @@ export { OutOfPrintBookSchema } from './entities/OutOfPrintBook.js';
 export { PersonNameSchema } from './entities/PersonName.js';
 export { PostalCodeSchema } from './entities/PostalCode.js';
 export { PrintBookSchema } from './entities/PrintBook.js';
+export { PublicationDateSchema } from './entities/PublicationDate.js';
 export { QuantitySchema } from './entities/Quantity.js';
 export { RareBookSchema } from './entities/RareBook.js';
-
 export { RatingScoreSchema } from './entities/RatingScore.js';
 export { ReviewSchema } from './entities/Review.js';
 export { ReviewIdSchema } from './entities/ReviewId.js';
 export { SoloAuthoredBookSchema } from './entities/SoloAuthoredBook.js';
+export { StockLevelSchema } from './entities/StockLevel.js';
 export { StreetLineSchema } from './entities/StreetLine.js';
 export { TitleSchema } from './entities/Title.js';
