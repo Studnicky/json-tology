@@ -131,6 +131,63 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   }
 
   /**
+   * Walk the top-level `properties` of a schema and throw if any property
+   * carries a hard OWL 2 characteristic conflict.
+   *
+   * Hard conflicts (forbidden by OWL 2 semantics):
+   *   - symmetric  + asymmetric  (mutually exclusive)
+   *   - reflexive  + irreflexive (mutually exclusive)
+   *   - asymmetric + reflexive   (asymmetric implies irreflexive in OWL 2;
+   *                               explicit reflexive contradicts that)
+   */
+  private assertNoPropertyCharacteristicConflicts(
+    schema: Record<string, unknown>,
+    schemaId: string
+  ): void {
+    if (!isRecord(schema.properties)) {
+      return;
+    }
+
+    for (const [
+      propName,
+      propSchema
+    ] of Object.entries(schema.properties)) {
+      if (!isRecord(propSchema)) {
+        continue;
+      }
+
+      const sym = propSchema.symmetric === true;
+      const asym = propSchema.asymmetric === true;
+      const refl = propSchema.reflexive === true;
+      const irr = propSchema.irreflexive === true;
+
+      if (sym && asym) {
+        throw new SchemaError(
+          'PROPERTY_CHARACTERISTIC_CONFLICT',
+          `Property "${propName}" in schema "${schemaId}" sets both symmetric:true and asymmetric:true, which are mutually exclusive OWL 2 characteristics`,
+          schemaId
+        );
+      }
+
+      if (refl && irr) {
+        throw new SchemaError(
+          'PROPERTY_CHARACTERISTIC_CONFLICT',
+          `Property "${propName}" in schema "${schemaId}" sets both reflexive:true and irreflexive:true, which are mutually exclusive OWL 2 characteristics`,
+          schemaId
+        );
+      }
+
+      if (asym && refl) {
+        throw new SchemaError(
+          'PROPERTY_CHARACTERISTIC_CONFLICT',
+          `Property "${propName}" in schema "${schemaId}" sets both asymmetric:true and reflexive:true; asymmetric implies irreflexive in OWL 2, so reflexive directly contradicts it`,
+          schemaId
+        );
+      }
+    }
+  }
+
+  /**
    * Lazy cross-schema $ref check. On first use of a registered schema
    * (validate / instantiate / materialize / cast / clean / convert / is),
    * walk the schema for any cross-schema $ref strings whose target IRI is
@@ -345,6 +402,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return materializer.createDefault(entry.schema as Record<string, unknown> & { '$id': string });
   }
 
+
   public engine(schema: Record<string, unknown>): GraphEngineInterface {
     const schemaId = schema.$id as string;
     const entry = this.schemas.get(schemaId);
@@ -374,7 +432,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     return entry.engine;
   }
-
 
   public findDuplicates(): readonly DuplicateReportEntryType[] {
     const topLevelHashes = new Map<string, string>();
@@ -637,6 +694,8 @@ export class SchemaRegistry implements SchemaRegistryInterface {
         schemaId
       );
     }
+
+    this.assertNoPropertyCharacteristicConflicts(schema, schemaId);
 
     if (typeof schema === 'object') {
       const anchors = new Set<string>();
