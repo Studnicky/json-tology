@@ -298,6 +298,54 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
   }
 
+  private collectRefsInNode(
+    node: unknown,
+    embeddedIds: Set<string>,
+    out: Set<string>
+  ): void {
+    if (Array.isArray(node)) {
+      for (const item of node) {
+        this.collectRefsInNode(item, embeddedIds, out);
+      }
+
+      return;
+    }
+
+    if (!isRecord(node)) {
+      return;
+    }
+
+    const ref = node.$ref;
+
+    if (typeof ref === 'string' && !ref.startsWith('#')) {
+      const hashIndex = ref.indexOf('#');
+      const refIri = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
+      const resolved = this.resolve(refIri);
+
+      if (!this.schemas.has(resolved) && !this.schemas.has(refIri) && !embeddedIds.has(refIri)) {
+        out.add(resolved === refIri ? refIri : resolved);
+      }
+    }
+
+    for (const value of Object.values(node)) {
+      this.collectRefsInNode(value, embeddedIds, out);
+    }
+  }
+
+  /**
+   * Collect all non-fragment cross-schema $ref IRIs reachable from the given schema
+   * that are not yet registered. Used by the loader walker in JsonTology._resolveAllRefs.
+   */
+  public collectUnresolvedRefIris(schema: Record<string, unknown>): ReadonlySet<string> {
+    const unresolved = new Set<string>();
+    const embeddedIds = new Set<string>();
+
+    this.collectEmbeddedIds(schema, embeddedIds);
+    this.collectRefsInNode(schema, embeddedIds, unresolved);
+
+    return unresolved;
+  }
+
   private compiled(schemaId: string): CompiledValidatorInterface | undefined {
     const entry = this.schemas.get(schemaId);
 

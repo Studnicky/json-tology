@@ -111,6 +111,8 @@ const sidebar = [
       { link: '/advanced/graph-concepts', text: 'Graph concepts (TBox / ABox)' },
       { link: '/advanced/graph-native-authoring', text: 'Graph-native authoring' },
       { link: '/advanced/sub-schemas', text: 'Sub-schemas and $ref composition' },
+      { link: '/advanced/schema-federation', text: 'Schema federation (loader hook)' },
+      { link: '/advanced/browser-usage', text: 'Browser usage' },
       { link: '/advanced/skolemization', text: 'Skolemization' },
       { link: '/advanced/owl-property-characteristics', text: 'OWL 2 property characteristics' }
     ]
