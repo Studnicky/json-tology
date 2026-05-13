@@ -1,4 +1,4 @@
-# `Compose.getDefaults` <Badge type="info" text="Compile-time" />
+# `Compose.getDefaults` <Badge type="tip" text="Runtime" />
 
 > Validation modes: [Validation modes reference](/validation-modes)
 

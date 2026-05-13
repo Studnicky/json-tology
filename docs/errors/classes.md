@@ -49,17 +49,19 @@ try {
 
 **Codes.**
 
-| Constant                                | Value                          |
-|-----------------------------------------|--------------------------------|
-| `SchemaErrorCode.MISSING_ID`            | `SCHEMA_MISSING_ID`            |
-| `SchemaErrorCode.INVALID_INPUT`         | `SCHEMA_INVALID_INPUT`         |
-| `SchemaErrorCode.NOT_REGISTERED`        | `SCHEMA_NOT_REGISTERED`        |
-| `SchemaErrorCode.STRUCTURE_INVALID`     | `SCHEMA_STRUCTURE_INVALID`     |
-| `SchemaErrorCode.DUPLICATE_ANCHOR`      | `SCHEMA_DUPLICATE_ANCHOR`      |
-| `SchemaErrorCode.DIALECT_UNSUPPORTED`   | `SCHEMA_DIALECT_UNSUPPORTED`   |
-| `SchemaErrorCode.VALIDATOR_MISSING`     | `SCHEMA_VALIDATOR_MISSING`     |
-| `SchemaErrorCode.COMPUTED_FN_MISSING`   | `COMPUTED_FN_MISSING`          |
-| `SchemaErrorCode.COMPUTED_INPUT_FORBIDDEN` | `COMPUTED_INPUT_FORBIDDEN`  |
+| Constant                                | Value                          | Notes |
+|-----------------------------------------|--------------------------------|-------|
+| `SchemaErrorCode.MISSING_ID`            | `SCHEMA_MISSING_ID`            | |
+| `SchemaErrorCode.INVALID_INPUT`         | `SCHEMA_INVALID_INPUT`         | |
+| `SchemaErrorCode.NOT_REGISTERED`        | `SCHEMA_NOT_REGISTERED`        | |
+| `SchemaErrorCode.STRUCTURE_INVALID`     | `SCHEMA_STRUCTURE_INVALID`     | |
+| `SchemaErrorCode.DUPLICATE_ANCHOR`      | `SCHEMA_DUPLICATE_ANCHOR`      | |
+| `SchemaErrorCode.DIALECT_UNSUPPORTED`   | `SCHEMA_DIALECT_UNSUPPORTED`   | |
+| `SchemaErrorCode.VALIDATOR_MISSING`     | `SCHEMA_VALIDATOR_MISSING`     | |
+| `SchemaErrorCode.COMPUTED_FN_MISSING`   | `COMPUTED_FN_MISSING`          | |
+| `SchemaErrorCode.COMPUTED_INPUT_FORBIDDEN` | `COMPUTED_INPUT_FORBIDDEN`  | |
+| _(direct string)_                       | `SCHEMA_DUPLICATE_ID`          | Thrown by `SchemaRegistry` when two schemas with the same `$id` are registered. Detected during `register()` with `enableDuplicateDetection` enabled. See `src/types/ErrorCodes.ts`. |
+| _(direct string)_                       | `SCHEMA_DUPLICATE_SHAPE`       | Thrown by `SchemaRegistry` when a schema with a duplicate canonical shape (same structural hash) is registered. See `src/types/ErrorCodes.ts`. |
 
 ```ts
 import { JsonTology, SchemaError } from 'json-tology';
@@ -98,6 +100,7 @@ try {
 | `GraphErrorCode.BOOLEAN_SCHEMA_FRAGMENT` | `BOOLEAN_SCHEMA_FRAGMENT`| |
 | `GraphErrorCode.ARTIFACT_INVALID`     | `ARTIFACT_INVALID`          | |
 | `GraphErrorCode.ARTIFACT_STALE`       | `ARTIFACT_STALE`            | |
+| _(direct string)_                     | `GRAPH_INVALID_RESTRICTION` | Thrown by `OwlProjection` when a restriction entry is missing a required `kind`, `onProperty`, or `value` field. See `src/types/ErrorCodes.ts`. |
 
 ```ts
 import { bookstoreEntities as entities, OrderSchema } from './bookstore/index.js';
@@ -150,7 +153,12 @@ try {
 
 **Adds.** `errors: ValidationErrors` (the full `ValidationErrors` collection).
 
-**Codes.** Always `INSTANTIATION_FAILED` at the wrapper level; per-error `keyword` values appear inside `errors.items`. The constant `InstantiationErrorCode.EXTRA_FORBIDDEN` (`EXTRA_FORBIDDEN`) is the keyword recorded when `jt:config.extra: 'forbid'` rejects unknown properties.
+**Codes.** Always `INSTANTIATION_FAILED` at the wrapper level; per-error `keyword` values appear inside `errors.items`. Additional keyword codes recorded inside `errors.items`:
+
+| Constant | Value | When recorded |
+|----------|-------|---------------|
+| `InstantiationErrorCode.EXTRA_FORBIDDEN` | `EXTRA_FORBIDDEN` | `jt:config.extra: 'forbid'` rejects unknown properties |
+| `InstantiationErrorCode.TRANSFORM_DECODE_FAILED` | `TRANSFORM_DECODE_FAILED` | A `Transform.pipe` decode stage throws during `instantiate`. Thrown by `RefDecoder` and `SchemaRegistry` when a transform stage fails mid-decode. See `src/types/ErrorCodes.ts`. |
 
 ```ts
 import { bookstoreEntities as entities, OrderSchema } from './bookstore/index.js';
@@ -206,7 +214,12 @@ try {
 
 **Adds.** `schemaId: string` and `validationErrors: string[]` (formatted `path: message` strings).
 
-**Code.** Always `MATERIALIZATION_FAILED`.
+**Codes.**
+
+| Value | When thrown |
+|-------|-------------|
+| `MATERIALIZATION_FAILED` | Default materialization failure |
+| `CYCLIC_DATA` | Circular reference detected during ABox projection (`toQuads`). Thrown by `Projection` when a data object contains a cycle that would loop indefinitely during RDF quad emission. See `src/types/ErrorCodes.ts`. |
 
 ```ts
 import { bookstoreEntities as entities, OrderSchema } from './bookstore/index.js';

@@ -12,15 +12,17 @@ Reading scattered docs is hard when every page introduces fresh data types. By a
 examples/docs/bookstore/
 ├── index.ts                      # JsonTology.create + re-exports
 └── entities/
-    ├── AuthorName.ts             # primitive: string, minLength 1
+    ├── Amount.ts                 # primitive: number, minimum 0
+    ├── AuthorName.ts             # primitive: string, minLength 1 (equivalent of PersonName)
     ├── CityName.ts               # primitive: string, 1-100 chars
     ├── CountryCode.ts            # primitive: string, pattern ^[A-Z]{2}$
     ├── CurrencyCode.ts           # primitive: string, enum of 6 codes
     ├── CustomerId.ts             # primitive: string, format uuid
+    ├── CustomerName.ts           # primitive: string, equivalent of PersonName in customer context
     ├── Email.ts                  # primitive: string, format email
     ├── Isbn.ts                   # primitive: string, pattern ^\d{13}$
     ├── Iso8601.ts                # primitive: string, format date-time
-    ├── Money.ts                  # primitive: number, minimum 0
+    ├── Money.ts                  # composite: { amount: Amount, currency: CurrencyCode }
     ├── OrderId.ts                # primitive: string, format uuid
     ├── PersonName.ts             # primitive: string, 1-200 chars
     ├── PostalCode.ts             # primitive: string, 3-12 chars
@@ -31,7 +33,7 @@ examples/docs/bookstore/
     ├── Title.ts                  # primitive: string, 1-500 chars
     ├── Address.ts                # entity: composes StreetLine + CityName + PostalCode + CountryCode
     ├── Book.ts                   # entity: composes Isbn + Title + AuthorName + Money + CurrencyCode
-    ├── Customer.ts               # entity: composes CustomerId + Email + PersonName + Address
+    ├── Customer.ts               # entity: composes CustomerId + Email + CustomerName + Address
     ├── OrderLine.ts              # entity: composes Isbn + Quantity + Money
     ├── Order.ts                  # entity: composes OrderId + CustomerId + OrderLine + Money + ...
     ├── Review.ts                 # entity: composes ReviewId + Isbn + CustomerId + RatingScore + ...
@@ -251,7 +253,7 @@ export const ReviewSchema = {
 
 ## Registering everything at once
 
-The orchestrator `examples/docs/bookstore/index.ts` creates the shared `jt` instance with all 23 schemas pre-registered. Primitives register first (required by `$ref` resolution):
+The orchestrator `examples/docs/bookstore/index.ts` creates the shared `jt` instance with all 31 schemas pre-registered. Primitives register first (required by `$ref` resolution):
 
 ```ts
 import { JsonTology } from 'json-tology';

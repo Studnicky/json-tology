@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- 0.4.0 doc audit remediation: 11 critical + 17 high findings across `getting-started`, `schemas`, `constraint-brands`, `argument-conventions`, `composition/*`, `advanced/*`, `errors/*`, `migration-0.4.0`, `bookstore-domain`, and `validation-modes`. Fixes: wrong return type for `toQuads` (now correctly `QuadInterface[]`, not `OntologyBuilder`); `value.cast` (not `value.coerce`); brand interface names use the `...Interface` suffix throughout; `Lift.fromQuad` (not `fromRdfQuad`); `subschemaAt` documented as 2-arg; 5 previously-undocumented error codes added (`GRAPH_INVALID_RESTRICTION`, `SCHEMA_DUPLICATE_ID`, `SCHEMA_DUPLICATE_SHAPE`, `TRANSFORM_DECODE_FAILED`, `CYCLIC_DATA`); validation-mode badges corrected for `getDefaults` (Runtime), `complementOf` (split out from group badge), `sameAs` (badge added); bookstore folder layout aligned to actual entities. Two code changes: error-code constants (`SchemaErrorCode`, `GraphErrorCode`, etc.) now publicly exported from `'json-tology'`; `SchemaRefType` now publicly exported from `'json-tology/types'` — both unblock import patterns the docs claim work.
+
 ## [0.4.0] - 2026-05-12
 
 ### Removed

@@ -60,7 +60,7 @@ The enforcement layer for every keyword in the standard JSON Schema 2020-12 voca
 | `$id` nominal brand | <Badge type="info" text="Compile-time" /> |
 | `$schema` dialect brand | <Badge type="info" text="Compile-time" /> |
 | `disjointWith` | <Badge type="warning" text="Compile-time + Runtime" /> |
-| `complementOf` | <Badge type="info" text="Compile-time" /> |
+| `complementOf` | <Badge type="info" text="Compile-time" /> (runtime `not` constraint applies via the emitted `not: { $ref }` wire shape; no custom registry check) |
 | OWL property restrictions (`jt:restrictions`) | <Badge type="info" text="Compile-time" /> |
 | OWL property characteristics | <Badge type="tip" text="Runtime" /> |
 | `Compose.pick` / `Compose.omit` key validity | <Badge type="info" text="Compile-time" /> |

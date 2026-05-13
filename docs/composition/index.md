@@ -14,8 +14,10 @@
 | [`intersection`](./intersection) | Combine schemas with `allOf` | <Badge type="warning" text="Compile-time + Runtime" /> |
 | [`equivalent`](/composition/equivalent) | Declare two schemas as semantically equivalent | <Badge type="info" text="Compile-time" /> |
 | [`discriminatedUnion` / `narrow`](./discriminated-union) | `oneOf` with type discriminator | <Badge type="warning" text="Compile-time + Runtime" /> |
-| [`getDefaults`](./get-defaults) | Extract declared default values | <Badge type="info" text="Compile-time" /> |
-| [`subClassOf` / `disjointWith` / `complementOf`](./sub-class-of) | OWL class axioms | <Badge type="warning" text="Compile-time + Runtime" /> |
+| [`getDefaults`](./get-defaults) | Extract declared default values | <Badge type="tip" text="Runtime" /> |
+| [`subClassOf`](./sub-class-of) | OWL subclass axiom | <Badge type="info" text="Compile-time" /> |
+| [`disjointWith`](./sub-class-of) | OWL disjoint-class axiom | <Badge type="warning" text="Compile-time + Runtime" /> |
+| [`complementOf`](./sub-class-of) | OWL complement axiom | <Badge type="info" text="Compile-time" /> |
 | [`restrictions`](./restrictions) | OWL property restrictions | <Badge type="info" text="Compile-time" /> |
 
 All examples use the [bookstore domain](/bookstore-domain). Composed schemas build on each other - see [Getting Started](/getting-started) for the basics.

@@ -85,11 +85,11 @@ Used internally by `registerAnonymous` to mint synthetic `$id` values from schem
 The `Lift` module exposes interop helpers between RDF/JS quads (from libraries like `n3` or `eyereasoner`) and json-tology's internal quad shape, plus the `liftInstances` function that powers `JsonTology.fromQuads`.
 
 ```ts
-import { fromRdfQuad } from 'json-tology';
+import { Lift } from 'json-tology';
 import type { QuadInterface } from 'json-tology/types';
 
 // rdfQuads from an external RDF/JS source (e.g. n3.Parser)
-const internal: QuadInterface[] = rdfQuads.map(fromRdfQuad);
+const internal: QuadInterface[] = rdfQuads.map(q => Lift.fromQuad(q));
 
 // pass to JsonTology.fromQuads
 const books = entities.fromQuads('https://bookstore.example/Book', internal);
