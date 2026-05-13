@@ -1,3 +1,4 @@
+import type { ValidateSchemaType } from '../../../../src/types/SchemaValidation.js';
 import { AddressSchema } from './Address.js';
 import { CustomerIdSchema } from './CustomerId.js';
 import { Iso8601Schema } from './Iso8601.js';
@@ -15,7 +16,16 @@ export const OrderSchema = {
       'minItems': 1,
       'type': 'array'
     },
-    'placedAt': { '$ref': Iso8601Schema.$id },
+    // transitive: true — timestamp ordering is transitive: if order A was
+    // placed before B and B before C, then A was placed before C.
+    // irreflexive: true — an order cannot be placed before itself; the
+    // "before" relation on timestamps is strictly irreflexive.
+    // OWL 2: owl:TransitiveProperty + owl:IrreflexiveProperty on placedAt.
+    'placedAt': {
+      '$ref': Iso8601Schema.$id,
+      'irreflexive': true,
+      'transitive': true
+    },
     'shippingAddress': { '$ref': AddressSchema.$id },
     'total': { '$ref': MoneySchema.$id }
   },
@@ -29,3 +39,8 @@ export const OrderSchema = {
   ],
   'type': 'object'
 } as const;
+
+// Compile-time self-check: every `required` entry must be in `properties`.
+const _orderShapeOk: ValidateSchemaType<typeof OrderSchema> = OrderSchema;
+
+void _orderShapeOk;
