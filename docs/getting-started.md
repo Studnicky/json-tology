@@ -64,7 +64,7 @@ type Customer = InferType<typeof CustomerSchema>;
 // }
 ```
 
-No code generation. No separate type declaration file. The type comes directly from the schema literal at compile time. See [Type Inference](/types/infer) for how `$ref`, enums, brands, and cross-schema references work.
+No code generation. No separate type declaration file. The type comes directly from the schema literal at compile time.
 
 ## Create an instance and register schemas
 
@@ -154,7 +154,7 @@ const CustomerSummarySchema = Compose.pick(
 );
 ```
 
-See [Composition](/composition/extend) for `extend`, `omit`, `required`, `intersection`, and `discriminatedUnion`.
+The full set of combinators (`extend`, `omit`, `required`, `intersection`, `discriminatedUnion`) is covered in [Composition](/composition/extend).
 
 ## Serialize back to wire form
 
@@ -171,7 +171,7 @@ const wire = jt.dumpJson(CustomerSchema.$id, customer);
 // '{"id":"c1a2b3d4-e5f6-7890-abcd-ef1234567890","email":"alice@bookstore.example","name":"Alice Chen","addresses":[]}'
 ```
 
-See [Serialization](/serialization/dump) for filtering options (`exclude`, `include`, `excludeDefaults`).
+Filtering options (`exclude`, `include`, `excludeDefaults`) are documented in [Serialization](/serialization/dump).
 
 ## Sub-path imports
 
@@ -194,8 +194,6 @@ import type { LoggerInterface } from 'json-tology/interfaces';
 
 ## What's in the box
 
-See [Validation modes](/validation-modes) for the badge reference.
-
 | Feature | Method(s) | Mode |
 |---------|-----------|------|
 | Type inference | `InferType<T>`, `InferSchemaType<T, Root>` | <Badge type="info" text="Compile-time" /> |
@@ -211,75 +209,17 @@ See [Validation modes](/validation-modes) for the badge reference.
 | Materialization | `materialize` | <Badge type="warning" text="Compile-time + Runtime" /> |
 | RDF/Ontology _(advanced, opt-in)_ | `ontology`, `toQuads`, `fromQuads`, `toSchema` | <Badge type="tip" text="Runtime" /> |
 
+## Configuring `JsonTology.create`
+
+The full option reference lives at [Static helpers](/static-helpers#jsontology-create-options). Briefly, you supply `baseIRI` (string), `schemas` (array `as const`), and optional dialect / format-registry / strict / coercion controls.
+
 ## Next steps
 
 | Topic | Guide |
 |-------|-------|
 | The running example domain | [Bookstore Domain](/bookstore-domain) |
-| Schemas and registration | [Schemas](/schemas) |
 | TypeScript type inference | [Type Inference](/types/infer) |
 | Validation and instantiation | [Validation](/validation/instantiate) |
 | Composing schemas | [Composition](/composition/extend) |
-| Value operations | [Value Operations](/value/clone-hash) |
-| Transforms and brands | [Transforms](/transforms/decode-encode) |
 | Serialization | [Serialization](/serialization/dump) |
-| Computed fields | [Computed Fields](/registry/computed) |
-| Cross-field invariants | [Invariants](/registry/invariants) |
-| RDF/OWL (advanced) | [Ontology and Graphs](/advanced/ontology) |
-
-## All `JsonTology.create` options
-
-See [Validation modes](/validation-modes) for the badge reference. Options marked <Badge type="info" text="Compile-time" /> affect type inference only; options marked <Badge type="tip" text="Runtime" /> affect the validation or materialization path.
-
-| Option | Type | Default | Purpose |
-|--------|------|---------|---------|
-| `baseIRI` | `string` | _(required)_ | Base URI for the canonical graph and ontology output. |
-| `schemas` | `readonly Schema[]` | `[]` | Schemas to register at construction. Order matters when using `$ref` - register referenced schemas before referencing schemas. |
-| `prefixes` | `Record<string, string>` | `DEFAULT_PREFIXES` | Vocabulary prefix → IRI mappings, merged with built-in defaults. |
-| `formats` | `Record<string, FormatValidatorFn>` | `{}` | Custom format validators. Keys are format names (`'isbn'`), values are `(value: unknown) => boolean`. |
-| `enableTypeCast` | `boolean` | `false` | Enable string→number/boolean coercion at validation time. |
-| `enableStrictTypes` | `boolean` | `false` | Reject implicit coercions globally. Per-field `jt:strict` overrides. Different from `enableStrictGraph`. |
-| `enableDefaults` | `boolean` | `true` | Fill schema `default` values during `instantiate`. Set `false` to validate without mutating missing fields. |
-| `enableDebug` | `boolean` | `false` | Surface internal debug logging via `logger.debug` (graph construction, validator compilation, materialization steps). Useful when investigating unexpected validation outcomes. |
-| `enableInlineWarnings` | `boolean` | `false` | Surface inline-object, inline-primitive, and inline-array-items warnings via `logger.warn` at registration. Implied by `enableStrictGraph`. See [graph-native authoring](/advanced/graph-native-authoring). |
-| `enableDuplicateDetection` | `boolean` | `false` | Run `findDuplicates()` at registration and warn on structural duplicates. Implied by `enableStrictGraph`. |
-| `enableStrictGraph` | `boolean` | `false` | Promote inline warnings and duplicate detection to `SchemaError` throws. Requires all sub-schemas to be standalone `$id` schemas or `$defs` entries. See [strict graph mode](/advanced/strict-graph-mode#enablestrictgraph). |
-| `keywords` | `KeywordDefinitionInterface[]` | `[]` | Custom keyword handlers for unrecognized JSON Schema vocabulary. |
-| `vocabularies` | `VocabularyPluginInterface[]` | `[]` | Vocabulary plugins for custom RDF output (DCAT, FOAF, etc.). |
-| `materializer` | `MaterializerOptionsInterface` | _(built-in)_ | Override the default materializer (rare). |
-| `maxSchemaDepth` | `number` | _(no limit)_ | Maximum schema-graph traversal depth. Protects against pathological schemas. |
-| `logger` | `LoggerInterface` | `SILENT_LOGGER` | Logger for warnings (`enableInlineWarnings`, `enableDuplicateDetection`). Must be set for warnings to surface. |
-| `invariants` | `Record<string, InvariantInterface[]>` | `{}` | Cross-field invariant functions, keyed by schema `$id`. |
-| `computeds` | `Record<string, Record<string, ComputedFnType>>` | `{}` | Computed-field functions, keyed by schema `$id` then property name. |
-
-### Type inference options
-
-These options are configured via module augmentation in a `.d.ts` file, not through `JsonTology.create`. They affect `InferType` output only and have zero runtime cost.
-
-| Flag | Default | Purpose |
-|------|---------|---------|
-| `tightStringLengths` | `false` | <Badge type="info" text="Compile-time" /> Narrow strings with `minLength`/`maxLength` bounds within 8 to fixed-length template literals. Opt in with `declare module 'json-tology/types' { interface JsonTologyTypeConfigInterface { 'tightStringLengths': true } }`. |
-
-See [Constraint brands — tightStringLengths](/constraint-brands#tightstringlengths-opt-in-narrowing) for the full reference.
-
-### Graph emission
-
-These options control how `toQuads` mints subject IRIs and how `fromQuads` reverses them. See [Skolemization](/advanced/skolemization) for the full reference.
-
-| Option | Type | Default | Purpose |
-|--------|------|---------|---------|
-| `iriFor` | `SkolemizeFnType \| string` | _(content-hash)_ | Default IRI minting strategy for `toQuads`. A regular string becomes a root-only override; the string `'blank-node'` is a runtime-recognised constant that emits anonymous subjects (not a discriminated type member); a function matching `SkolemizeFnType` is the full custom minting shape. Per-call options override this. |
-| `defaultGraphIRI` | `string` | _(none)_ | Default `graph` field for every quad emitted by `toQuads`. Per-call `graphIRI` overrides. |
-| `defaultDeskolemize` | `boolean` | `false` | Treat `*/.well-known/genid/*` IRIs as blank nodes during `fromQuads`. Reverses `Skolemize.wellKnownGenid`. |
-
-## Related
-
-- [Bookstore domain](/bookstore-domain) - the running example domain used throughout these docs
-- [Schemas](/schemas) - `register`, `has`, `get`, `list`, `toSchema`
-- [Picking a method](/picking-a-method) - decision guide for `instantiate`, `validate`, `is`, `materialize`
-
-## See also
-
-- [Argument conventions](/argument-conventions) - universal `SchemaRef`, static counterparts
-- [Type Inference](/types/infer) - how `InferType` resolves `$ref`, enums, brands
-- [Composition](/composition/extend) - derive schemas with `extend`, `pick`, `omit`
+| Static helpers and create options | [Static helpers](/static-helpers) |

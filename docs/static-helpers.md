@@ -55,6 +55,51 @@ const errs2 = JsonTology.validate(CustomerSchema, data);
 
 The two forms return the same `ValidationErrors` collection. Pick the static form for one-off scripts, examples, and self-contained schemas; pick the instance form for everything else.
 
+## JsonTology.create options {#jsontology-create-options}
+
+Options marked <Badge type="info" text="Compile-time" /> affect type inference only; options marked <Badge type="tip" text="Runtime" /> affect the validation or materialization path. See [Validation modes](/validation-modes) for the badge reference.
+
+| Option | Type | Default | Purpose |
+|--------|------|---------|---------|
+| `baseIRI` | `string` | _(required)_ | Base URI for the canonical graph and ontology output. |
+| `schemas` | `readonly Schema[]` | `[]` | Schemas to register at construction. Order matters when using `$ref` — register referenced schemas before referencing schemas. |
+| `prefixes` | `Record<string, string>` | `DEFAULT_PREFIXES` | Vocabulary prefix → IRI mappings, merged with built-in defaults. |
+| `formats` | `Record<string, FormatValidatorFn>` | `{}` | Custom format validators. Keys are format names (`'isbn'`), values are `(value: unknown) => boolean`. |
+| `enableTypeCast` | `boolean` | `false` | Enable string→number/boolean coercion at validation time. |
+| `enableStrictTypes` | `boolean` | `false` | Reject implicit coercions globally. Per-field `jt:strict` overrides. Different from `enableStrictGraph`. |
+| `enableDefaults` | `boolean` | `true` | Fill schema `default` values during `instantiate`. Set `false` to validate without mutating missing fields. |
+| `enableDebug` | `boolean` | `false` | Surface internal debug logging via `logger.debug` (graph construction, validator compilation, materialization steps). Useful when investigating unexpected validation outcomes. |
+| `enableInlineWarnings` | `boolean` | `false` | Surface inline-object, inline-primitive, and inline-array-items warnings via `logger.warn` at registration. Implied by `enableStrictGraph`. See [graph-native authoring](/advanced/graph-native-authoring). |
+| `enableDuplicateDetection` | `boolean` | `false` | Run `findDuplicates()` at registration and warn on structural duplicates. Implied by `enableStrictGraph`. |
+| `enableStrictGraph` | `boolean` | `false` | Promote inline warnings and duplicate detection to `SchemaError` throws. Requires all sub-schemas to be standalone `$id` schemas or `$defs` entries. See [strict graph mode](/advanced/strict-graph-mode#enablestrictgraph). |
+| `keywords` | `KeywordDefinitionInterface[]` | `[]` | Custom keyword handlers for unrecognized JSON Schema vocabulary. |
+| `vocabularies` | `VocabularyPluginInterface[]` | `[]` | Vocabulary plugins for custom RDF output (DCAT, FOAF, etc.). |
+| `materializer` | `MaterializerOptionsInterface` | _(built-in)_ | Override the default materializer (rare). |
+| `maxSchemaDepth` | `number` | _(no limit)_ | Maximum schema-graph traversal depth. Protects against pathological schemas. |
+| `logger` | `LoggerInterface` | `SILENT_LOGGER` | Logger for warnings (`enableInlineWarnings`, `enableDuplicateDetection`). Must be set for warnings to surface. |
+| `invariants` | `Record<string, InvariantInterface[]>` | `{}` | Cross-field invariant functions, keyed by schema `$id`. |
+| `computeds` | `Record<string, Record<string, ComputedFnType>>` | `{}` | Computed-field functions, keyed by schema `$id` then property name. |
+
+### Type inference options
+
+These options are configured via module augmentation in a `.d.ts` file, not through `JsonTology.create`. They affect `InferType` output only and have zero runtime cost.
+
+| Flag | Default | Purpose |
+|------|---------|---------|
+| `tightStringLengths` | `false` | <Badge type="info" text="Compile-time" /> Narrow strings with `minLength`/`maxLength` bounds within 8 to fixed-length template literals. Opt in with `declare module 'json-tology/types' { interface JsonTologyTypeConfigInterface { 'tightStringLengths': true } }`. |
+
+See [Constraint brands — tightStringLengths](/constraint-brands#tightstringlengths-opt-in-narrowing) for the full reference.
+
+### Graph emission options
+
+These options control how `toQuads` mints subject IRIs and how `fromQuads` reverses them. See [Skolemization](/advanced/skolemization) for the full reference.
+
+| Option | Type | Default | Purpose |
+|--------|------|---------|---------|
+| `iriFor` | `SkolemizeFnType \| string` | _(content-hash)_ | Default IRI minting strategy for `toQuads`. A regular string becomes a root-only override; the string `'blank-node'` is a runtime-recognised constant that emits anonymous subjects (not a discriminated type member); a function matching `SkolemizeFnType` is the full custom minting shape. Per-call options override this. |
+| `defaultGraphIRI` | `string` | _(none)_ | Default `graph` field for every quad emitted by `toQuads`. Per-call `graphIRI` overrides. |
+| `defaultDeskolemize` | `boolean` | `false` | Treat `*/.well-known/genid/*` IRIs as blank nodes during `fromQuads`. Reverses `Skolemize.wellKnownGenid`. |
+
 ## Related
 
 - [Picking a method](/picking-a-method) - decision guide across the validation surface
