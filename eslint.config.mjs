@@ -509,6 +509,7 @@ export default [
     ignores: [
       'node_modules/**',
       'dist/**',
+      'dist-browser/**',
       '**/*.min.js',
       '**/*.d.ts',
       '**/*.md',

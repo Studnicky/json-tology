@@ -46,3 +46,4 @@ yarn-error.log*
 preview-jst-*.svg
 json-tology-jst-*.svg
 w3c-node-*.zip
+dist-browser

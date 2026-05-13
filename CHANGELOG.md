@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Browser compatibility: `FormatRegistry` no longer depends on `node:net` or `node:url`. The `./schema` subpath now exposes a browser-safe variant via the `exports` map (excludes `SchemaLoader`, which remains Node-only via the `node` condition).
+- Pre-bundled browser ESM artifacts shipped in `dist-browser/`, exposed via the `./browser` subpath export. Built with esbuild `platform: 'browser'`, tree-shaken, source-mapped; zero `node:*` runtime dependencies. Five entry bundles: `json-tology` (main), `json-tology.schema`, `json-tology.value`, `json-tology.ontology`, `json-tology.viz`.
+- `scripts/build-browser.mjs` build script, `npm run build:browser` / `type-check:browser` / `test:browser` scripts. `tsconfig.browser.json` proves the browser-relevant subset compiles without Node types. `test/browser/smoke.test.ts` verifies the bundle exposes `JsonTology`, has zero `node:*` imports, and end-to-end validates.
+- `docs/browser-usage.md` documentation page covering ESM via CDN, bundler usage, and the pre-bundled artifact.
+- Template conformance: 7 reference pages now follow the canonical `Examples / Bad examples / Comparison / Related / See also` structure: `validation/subschemaAt`, `composition/equivalent`, `composition/restrictions`, `advanced/sameas`, `advanced/utilities`, `serialization/toSchema`, `registry/find-duplicates`.
+- `docs/usage-examples/class-hydration-orm.md` extracts the TypeORM / Prisma / Mikro-ORM / Drizzle / DDD / Active Record recipes out of `class-hydration.md`. `getting-started.md` trims to ~200 LOC by extracting "All `JsonTology.create` options" to `static-helpers.md`.
 
 ### Changed
 
