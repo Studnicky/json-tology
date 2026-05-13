@@ -176,6 +176,25 @@ const ids = jt.list();
 const bookstoreSchemas = jt.list().filter(id => id.startsWith('https://bookstore.example/'));
 ```
 
+---
+
+## Map-like access on `jt.registry` {#registry-map}
+
+`jt.registry` exposes the read methods of a native `Map`: `has`, `get`, `keys`, `values`, `entries`, `forEach`, `size`, and `for...of` iteration yielding `[iri, schema]` pairs.
+
+```ts
+jt.registry.has('https://bookstore.example/Customer');   // boolean
+jt.registry.size;                                         // number of registered schemas
+
+for (const iri of jt.registry.keys()) { /* ... */ }
+for (const schema of jt.registry.values()) { /* ... */ }
+for (const [iri, schema] of jt.registry) { /* ... */ }
+
+jt.registry.forEach((schema, iri) => { /* ... */ });
+```
+
+No removal methods are exposed: registration semantics differ from `Map.set`/`delete`. Use `jt.register(schema)` to add schemas.
+
 ## Related
 
 - [`JsonTology.materialize`](/registry/materialize) - build instances from schemas

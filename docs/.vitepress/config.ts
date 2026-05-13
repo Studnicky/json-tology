@@ -114,7 +114,7 @@ const sidebar = [
       { link: '/advanced/graph-internals', text: 'Graph internals' },
       { link: '/advanced/graph-native-authoring', text: 'Graph-native authoring' },
       { link: '/advanced/sub-schemas', text: 'Sub-schemas and $ref composition' },
-      { link: '/advanced/schema-federation', text: 'Schema federation (loader hook)' },
+      { link: '/advanced/schema-federation', text: 'Schema federation (prefetch + snapshot)' },
       { link: '/advanced/browser-usage', text: 'Browser usage' },
       { link: '/advanced/skolemization', text: 'Skolemization' },
       { link: '/advanced/owl-property-characteristics', text: 'OWL 2 property characteristics' }
@@ -150,12 +150,6 @@ const sidebar = [
     ]
   },
   {
-    text: 'Browser',
-    items: [
-      { link: '/browser-usage', text: 'Browser usage' }
-    ]
-  },
-  {
     text: 'Data models',
     items: [
       { link: '/errors', text: 'ValidationErrors (overview)' },
@@ -183,7 +177,8 @@ const sidebar = [
       { link: '/cli', text: 'CLI' },
       { link: '/references', text: 'External references' },
       { link: '/migration-0.4.0', text: 'Migration to 0.4.0' },
-      { link: '/migration-0.4.3', text: 'Migration to 0.4.3' }
+      { link: '/migration-0.4.3', text: 'Migration to 0.4.3' },
+      { link: '/migration-0.6.0', text: 'Migration to 0.6.0' }
     ]
   }
 ];

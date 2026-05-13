@@ -854,7 +854,7 @@ export class JsonTology<TMap = Record<never, never>> {
    * @returns `true` if a schema with that ID exists in the registry.
    */
   public has(schemaId: string): boolean {
-    return this.registry.get(schemaId) !== undefined;
+    return this.registry.has(schemaId);
   }
   /**
    * Validates data against a registered schema, applying defaults and stripping unknown properties.
@@ -917,13 +917,7 @@ export class JsonTology<TMap = Record<never, never>> {
    * @returns Array of registered schema ID strings.
    */
   public list(): string[] {
-    return this.registry.list()
-      .map((schema) => {
-        return schema.$id as string;
-      })
-      .filter((id) => {
-        return typeof id === 'string';
-      });
+    return [...this.registry.keys()];
   }
   /**
    * Materializes an entity instance with schema defaults applied, optionally merging partial input.
