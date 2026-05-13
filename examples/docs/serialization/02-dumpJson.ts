@@ -1,19 +1,19 @@
 /**
- * entities.dumpJson — Example 1: JSON string serialization
+ * bookstoreEntities.dumpJson — Example 1: JSON string serialization
  * Demonstrates: returns string, excludeDefaults option
  */
 
 import {
-  CustomerSchema, bookstoreEntities as entities
+  bookstoreEntities, CustomerSchema
 } from '../bookstore/index.js';
 
-const customer = entities.instantiate(CustomerSchema.$id, {
+const customer = bookstoreEntities.instantiate(CustomerSchema.$id, {
   'email': 'alice@bookstore.example',
   'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'name': 'Alice Chen'
 });
 
-const json = entities.dumpJson(CustomerSchema.$id, customer);
+const json = bookstoreEntities.dumpJson(CustomerSchema.$id, customer);
 
 console.assert(typeof json === 'string');
 

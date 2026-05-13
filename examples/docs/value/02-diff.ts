@@ -6,16 +6,16 @@
 import { Value } from '../../../src/index.js';
 import type { Customer } from '../bookstore/index.js';
 import {
-  CustomerSchema, bookstoreEntities as entities
+  bookstoreEntities, CustomerSchema
 } from '../bookstore/index.js';
 
-const before = entities.instantiate(CustomerSchema.$id, {
+const before = bookstoreEntities.instantiate(CustomerSchema.$id, {
   'email': 'alice@bookstore.example',
   'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'name': 'Alice Chen'
 });
 
-const after = entities.instantiate(CustomerSchema.$id, {
+const after = bookstoreEntities.instantiate(CustomerSchema.$id, {
   'email': 'alice.chen@bookstore.example',
   'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'name': 'Alice Chen'

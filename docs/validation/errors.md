@@ -37,9 +37,9 @@ type ValidationErrorType = {
 ### Example 1: Check validity, iterate errors
 
 ```ts
-import { bookstoreEntities as entities, OrderSchema } from './bookstore/index.js';
+import { bookstoreEntities, OrderSchema } from './bookstore/index.js';
 
-const errs = entities.validate(OrderSchema.$id, {
+const errs = bookstoreEntities.validate(OrderSchema.$id, {
   id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   placedAt:   '2026-01-15T10:30:00Z',
@@ -61,9 +61,9 @@ for (const err of errs) {
 ### Example 2: Valid data returns empty collection
 
 ```ts
-import { bookstoreEntities as entities, BookSchema } from './bookstore/index.js';
+import { bookstoreEntities, BookSchema } from './bookstore/index.js';
 
-const errs = entities.validate(BookSchema.$id, {
+const errs = bookstoreEntities.validate(BookSchema.$id, {
   isbn:    '9780140449136',
   title:   'Crime and Punishment',
   authors: ['Fyodor Dostoevsky'],
@@ -78,9 +78,9 @@ console.log(errs.length); // 0
 See [`Error views`](/errors/views) for full documentation of each view.
 
 ```ts
-import { bookstoreEntities as entities, ReviewSchema } from './bookstore/index.js';
+import { bookstoreEntities, ReviewSchema } from './bookstore/index.js';
 
-const errs = entities.validate(ReviewSchema.$id, badReview);
+const errs = bookstoreEntities.validate(ReviewSchema.$id, badReview);
 
 // Choose the shape that matches your output target:
 console.log(errs.items.map(e => `${e.path}: ${e.message}`));   // string[]  - one per error
@@ -96,7 +96,7 @@ console.log(errs.report());     // RFC 7807 ProblemDetailsType
 
 ```ts
 // ⊥ Don't do this  - double validation; if errors is empty just call instantiate
-const errs = entities.validate(CustomerSchema.$id, data);
+const errs = bookstoreEntities.validate(CustomerSchema.$id, data);
 if (errs.ok) {
   const customer = jt.instantiate(CustomerSchema.$id, data); // validates again
 }
@@ -129,7 +129,7 @@ const grouped = Object.groupBy(errs.items, err => err.path || "_root");
 ::: code-group
 
 ```ts [json-tology]
-const errs = entities.validate(OrderSchema.$id, data);
+const errs = bookstoreEntities.validate(OrderSchema.$id, data);
 // ValidationErrors  - .ok, .length, iterable, .items, .aggregate(), .report()
 ```
 

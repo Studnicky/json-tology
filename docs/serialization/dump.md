@@ -27,9 +27,9 @@
 #### Example 1: Basic serialization of a coerced book
 
 ```ts
-import { bookstoreEntities as entities, BookSchema } from './bookstore/index.js';
+import { bookstoreEntities, BookSchema } from './bookstore/index.js';
 
-const book = jt.instantiate(BookSchema.$id, {
+const book = bookstoreEntities.instantiate(BookSchema.$id, {
   isbn:    '9780140449136',
   title:   'Crime and Punishment',
   authors: ['Fyodor Dostoevsky'],
@@ -38,7 +38,7 @@ const book = jt.instantiate(BookSchema.$id, {
 });
 
 // Wire-form output  - all fields including defaults
-const wire = jt.dump(BookSchema.$id, book);
+const wire = bookstoreEntities.dump(BookSchema.$id, book);
 // { isbn: '...', title: '...', authors: [...], price: 14.99, currency: 'USD', inStock: true }
 ```
 

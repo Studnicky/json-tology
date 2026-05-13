@@ -11,9 +11,9 @@
 ### Example 1: Blank Book form state
 
 ```ts
-import { bookstoreEntities as entities, BookSchema } from './bookstore/index.js';
+import { bookstoreEntities, BookSchema } from './bookstore/index.js';
 
-const blank = jt.value.create(BookSchema.$id);
+const blank = bookstoreEntities.value.create(BookSchema.$id);
 // {
 //   isbn:     '',          ← zero-value for required string
 //   title:    '',          ← zero-value for required string

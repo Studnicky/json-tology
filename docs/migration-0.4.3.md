@@ -4,7 +4,7 @@
 
 ## `Transform.pipe` renamed to `Transform.chain`
 
-The `pipe` method name conflicted with the Node.js stream `.pipe()` convention. The semantic is chaining transform stages sequentially — `chain` reads correctly.
+The `pipe` method name conflicted with the Node.js stream `.pipe()` convention. The semantic is chaining transform stages sequentially - `chain` reads correctly.
 
 ### Method rename
 
@@ -42,6 +42,6 @@ import type { ChainMismatchInterface, ChainSchemaMismatchInterface } from 'json-
 
 1. Replace every `Transform.pipe(` call with `Transform.chain(`.
 2. Rename type imports as shown in the table above.
-3. Update any IDE hover text or error message references that cite `PipeChainMismatch` — they now read `ChainMismatch`.
+3. Update any IDE hover text or error message references that cite `PipeChainMismatch`: they now read `ChainMismatch`.
 
-No runtime behaviour changes — the composed decode (left-to-right) and encode (right-to-left) semantics are identical.
+No runtime behaviour changes - the composed decode (left-to-right) and encode (right-to-left) semantics are identical.

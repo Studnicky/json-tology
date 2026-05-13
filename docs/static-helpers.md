@@ -39,9 +39,9 @@ A static call rebuilds the canonical graph for every invocation. An instance reu
 
 ```ts
 // ── Instance form ──────────────────────────────────────────
-import { bookstoreEntities as entities, CustomerSchema } from './bookstore/index.js';
+import { bookstoreEntities, CustomerSchema } from './bookstore/index.js';
 
-const errs = entities.validate(CustomerSchema.$id, data);
+const errs = bookstoreEntities.validate(CustomerSchema.$id, data);
 // CustomerSchema is registered once at JsonTology.create() time;
 // every call reuses the compiled validator.
 
@@ -62,7 +62,7 @@ Options marked <Badge type="info" text="Compile-time" /> affect type inference o
 | Option | Type | Default | Purpose |
 |--------|------|---------|---------|
 | `baseIRI` | `string` | _(required)_ | Base URI for the canonical graph and ontology output. |
-| `schemas` | `readonly Schema[]` | `[]` | Schemas to register at construction. Order matters when using `$ref` — register referenced schemas before referencing schemas. |
+| `schemas` | `readonly Schema[]` | `[]` | Schemas to register at construction. Order matters when using `$ref`: register referenced schemas before referencing schemas. |
 | `prefixes` | `Record<string, string>` | `DEFAULT_PREFIXES` | Vocabulary prefix → IRI mappings, merged with built-in defaults. |
 | `formats` | `Record<string, FormatValidatorFn>` | `{}` | Custom format validators. Keys are format names (`'isbn'`), values are `(value: unknown) => boolean`. |
 | `enableTypeCast` | `boolean` | `false` | Enable string→number/boolean coercion at validation time. |
@@ -88,7 +88,7 @@ These options are configured via module augmentation in a `.d.ts` file, not thro
 |------|---------|---------|
 | `tightStringLengths` | `false` | <Badge type="info" text="Compile-time" /> Narrow strings with `minLength`/`maxLength` bounds within 8 to fixed-length template literals. Opt in with `declare module 'json-tology/types' { interface JsonTologyTypeConfigInterface { 'tightStringLengths': true } }`. |
 
-See [Constraint brands — tightStringLengths](/constraint-brands#tightstringlengths-opt-in-narrowing) for the full reference.
+See [Constraint brands - tightStringLengths](/constraint-brands#tightstringlengths-opt-in-narrowing) for the full reference.
 
 ### Graph emission options
 

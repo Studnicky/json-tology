@@ -2,7 +2,7 @@
 
 > Validation modes: [Validation modes reference](/validation-modes)
 
-These three methods complete the OWL class-axiom set on `Compose`. They are authored as plain JSON Schema documents — every concept lives behind a method, not behind a custom keyword on the schema literal.
+These three methods complete the OWL class-axiom set on `Compose`. They are authored as plain JSON Schema documents - every concept lives behind a method, not behind a custom keyword on the schema literal.
 
 ## Declaration
 
@@ -12,25 +12,25 @@ Compose.disjointWith(other, body):           { $id, disjointWith, ...body }
 Compose.complementOf(other, body):           { $id, not: { $ref }, ...body }
 ```
 
-**`subClassOf`** <Badge type="info" text="Compile-time" /> — self-subclass is a compile-time error (`SelfSubClassType` brand). The body's `$id` cannot match any parent's `$id`.
+**`subClassOf`** <Badge type="info" text="Compile-time" /> - self-subclass is a compile-time error (`SelfSubClassType` brand). The body's `$id` cannot match any parent's `$id`.
 
-**`disjointWith`** <Badge type="warning" text="Compile-time + Runtime" /> — compile-time brand (`~jt:disjointWith`) names the disjoint target; runtime enforces the constraint at `validate` / `instantiate`.
+**`disjointWith`** <Badge type="warning" text="Compile-time + Runtime" /> - compile-time brand (`~jt:disjointWith`) names the disjoint target; runtime enforces the constraint at `validate` / `instantiate`.
 
-**`complementOf`** <Badge type="info" text="Compile-time" /> — adds `~jt:complementOf` brand naming the complement target. Runtime JSON Schema `not` semantics apply.
+**`complementOf`** <Badge type="info" text="Compile-time" /> - adds `~jt:complementOf` brand naming the complement target. Runtime JSON Schema `not` semantics apply.
 
 `body` always carries the new schema's `$id` and any structural keywords you would normally write inline (`type`, `properties`, `required`, `description`, etc.).
 
 ## Use this when
 
-- **`subClassOf`** — you want explicit taxonomic narrowing with one OR multiple parents. Emits `rdfs:subClassOf` per parent in the OWL TBox.
-- **`disjointWith`** — two classes share no instances (e.g. `Weapon` and `Armor`). Emits `owl:disjointWith`.
-- **`complementOf`** — a class is the negation of another (e.g. `NonHumanRace` is everything that is not `HumanRace`). Emits `owl:complementOf`.
+- **`subClassOf`** - you want explicit taxonomic narrowing with one OR multiple parents. Emits `rdfs:subClassOf` per parent in the OWL TBox.
+- **`disjointWith`** - two classes share no instances (e.g. `Weapon` and `Armor`). Emits `owl:disjointWith`.
+- **`complementOf`** - a class is the negation of another (e.g. `NonHumanRace` is everything that is not `HumanRace`). Emits `owl:complementOf`.
 
 ## Don't use this when
 
-- You only need property-merging with a single parent — use [`Compose.extend`](/composition/extend), which is structurally equivalent (both produce `allOf + $ref`) but signals "extension" rather than "is-a".
-- You want type aliasing without OWL semantics — use [`Compose.equivalent`](/composition/equivalent).
-- You want individual-level identity (`owl:sameAs` between two ABox individuals) — use [`JsonTology.prototype.sameAs`](/advanced/sameas). Class axioms operate on the TBox layer.
+- You only need property-merging with a single parent - use [`Compose.extend`](/composition/extend), which is structurally equivalent (both produce `allOf + $ref`) but signals "extension" rather than "is-a".
+- You want type aliasing without OWL semantics - use [`Compose.equivalent`](/composition/equivalent).
+- You want individual-level identity (`owl:sameAs` between two ABox individuals) - use [`JsonTology.prototype.sameAs`](/advanced/sameas). Class axioms operate on the TBox layer.
 
 ## Examples
 
@@ -159,8 +159,8 @@ class Weapon(Equipment):
 
 ## Related / See also
 
-- [`Compose.extend`](/composition/extend) — property-merging extension (single parent, allOf+$ref shape, no explicit "subclass" semantic)
-- [`Compose.equivalent`](/composition/equivalent) — `owl:equivalentClass` for structurally identical types
-- [`Compose.intersection`](/composition/intersection) — generic `allOf` over multiple schemas
+- [`Compose.extend`](/composition/extend) - property-merging extension (single parent, allOf+$ref shape, no explicit "subclass" semantic)
+- [`Compose.equivalent`](/composition/equivalent) - `owl:equivalentClass` for structurally identical types
+- [`Compose.intersection`](/composition/intersection) - generic `allOf` over multiple schemas
 - [OWL TBox output](/advanced/ontology#entities-totbox)
 - [Graph-native authoring](/advanced/graph-native-authoring)

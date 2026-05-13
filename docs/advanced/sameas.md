@@ -8,7 +8,7 @@ jt.sameAs(instanceIriA: string, instanceIriB: string): void
 
 **Use this when** you want to declare that two distinct IRIs refer to the same real-world entity. The canonical use is linking a current stable IRI to a legacy IRI after a system migration, or linking identifiers across two authoritative sources (e.g. an internal customer ID alongside a third-party marketplace ID). This is the ABox counterpart to `Compose.equivalent` (which is class-level via `owl:equivalentClass`).
 
-**Don't use this when** the two schemas have different structure or you need class-level identity (use [`Compose.equivalent`](/composition/equivalent)). Don't use it to express that two records *should* be merged — `sameAs` asserts they *already* refer to the same individual and downstream reasoners will treat their property values as belonging to one entity. Don't try to declare an instance is `sameAs` a class; OWL forbids cross-level identity.
+**Don't use this when** the two schemas have different structure or you need class-level identity (use [`Compose.equivalent`](/composition/equivalent)). Don't use it to express that two records *should* be merged - `sameAs` asserts they *already* refer to the same individual and downstream reasoners will treat their property values as belonging to one entity. Don't try to declare an instance is `sameAs` a class; OWL forbids cross-level identity.
 
 ## Examples
 
@@ -18,7 +18,7 @@ The bookstore migrated from a legacy CRM. Customer Alice carries both her curren
 
 ```ts
 import { JsonTology } from 'json-tology';
-import { bookstoreEntities as entities, CustomerSchema } from './bookstore/index.js';
+import { bookstoreEntities, CustomerSchema } from './bookstore/index.js';
 
 entities.sameAs(
   'urn:bookstore:customer:AliceSmith',
@@ -31,7 +31,7 @@ const aliceData = {
   name:  'Alice Smith',
 };
 
-const quads = entities.toQuads(CustomerSchema, aliceData);
+const quads = bookstoreEntities.toQuads(CustomerSchema, aliceData);
 // quads include both directions:
 //   <urn:bookstore:customer:AliceSmith> owl:sameAs <urn:bookstore:customer:AliceSmithLegacy>
 //   <urn:bookstore:customer:AliceSmithLegacy> owl:sameAs <urn:bookstore:customer:AliceSmith>
@@ -42,7 +42,7 @@ const quads = entities.toQuads(CustomerSchema, aliceData);
 A book is known by a different IRI in a partner catalog feed. Declaring `sameAs` lets a reasoner unify its properties from both sources.
 
 ```ts
-import { bookstoreEntities as entities } from './bookstore/index.js';
+import { bookstoreEntities } from './bookstore/index.js';
 
 // Internal catalog IRI and partner feed IRI for the same title
 entities.sameAs(
@@ -52,12 +52,12 @@ entities.sameAs(
 // → downstream reasoners treat both IRIs as denoting the same book
 ```
 
-### Example 3: Idempotence — duplicate and reverse pairs are no-ops
+### Example 3: Idempotence: duplicate and reverse pairs are no-ops
 
 Recording the same pair twice, or in reverse order, is a no-op. Self-pairs are silently dropped.
 
 ```ts
-import { bookstoreEntities as entities } from './bookstore/index.js';
+import { bookstoreEntities } from './bookstore/index.js';
 
 entities.sameAs('urn:a', 'urn:b');
 entities.sameAs('urn:b', 'urn:a'); // no-op — pair already recorded
@@ -69,21 +69,21 @@ entities.sameAs('urn:a', 'urn:a'); // no-op — self-pair
 `owl:sameAs` is symmetric by definition, but reasoners differ in whether they materialize the symmetric edge. `sameAs` emits both directions so consumers see the relation regardless of reasoner behaviour.
 
 ```ts
-import { bookstoreEntities as entities, CustomerSchema } from './bookstore/index.js';
+import { bookstoreEntities, CustomerSchema } from './bookstore/index.js';
 
 entities.sameAs('urn:bookstore:customer:c1', 'urn:bookstore:customer:c1-legacy');
-const quads = entities.toQuads(CustomerSchema, customerData);
+const quads = bookstoreEntities.toQuads(CustomerSchema, customerData);
 
 const sameAsQuads = quads.filter(q => q.predicate.value === 'http://www.w3.org/2002/07/owl#sameAs');
 // sameAsQuads.length === 2 — both directions always emitted
 ```
 
-## Bad examples — what NOT to do
+## Bad examples: what NOT to do
 
 ### Anti-pattern 1: Using sameAs for class-level identity
 
 ```ts
-import { bookstoreEntities as entities } from './bookstore/index.js';
+import { bookstoreEntities } from './bookstore/index.js';
 
 // ✗ Don't do this — sameAs is for individuals; use Compose.equivalent for classes
 entities.sameAs(
@@ -116,15 +116,15 @@ entities.sameAs('urn:customer:c1', 'urn:customer:c2');
 ### Anti-pattern 3: Calling sameAs after toQuads instead of before
 
 ```ts
-import { bookstoreEntities as entities, CustomerSchema } from './bookstore/index.js';
+import { bookstoreEntities, CustomerSchema } from './bookstore/index.js';
 
-const quads = entities.toQuads(CustomerSchema, customerData); // sameAs not yet recorded
+const quads = bookstoreEntities.toQuads(CustomerSchema, customerData); // sameAs not yet recorded
 
 entities.sameAs('urn:customer:c1', 'urn:customer:c1-legacy'); // ✗ too late — not in quads
 
 // ✓ Do this — record sameAs assertions before calling toQuads
 entities.sameAs('urn:customer:c1', 'urn:customer:c1-legacy');
-const quads2 = entities.toQuads(CustomerSchema, customerData);
+const quads2 = bookstoreEntities.toQuads(CustomerSchema, customerData);
 ```
 
 ## Comparison
@@ -174,15 +174,15 @@ g.add((c1_legacy, OWL.sameAs, c1))
 
 ## Future / not implemented
 
-`owl:differentFrom` — the negation of `sameAs`. Tracked separately.
+`owl:differentFrom`: the negation of `sameAs`. Tracked separately.
 
 ## Related
 
-- [`Compose.equivalent`](/composition/equivalent) — `owl:equivalentClass` for class identity
-- [OWL class restrictions](/composition/restrictions) — TBox-level constraints
+- [`Compose.equivalent`](/composition/equivalent) - `owl:equivalentClass` for class identity
+- [OWL class restrictions](/composition/restrictions) - TBox-level constraints
 - [Graph concepts (TBox / ABox)](/advanced/graph-concepts)
 - [`toQuads` / `fromQuads`](/advanced/quads)
 
 ## See also
 
-- [Bookstore domain](/bookstore-domain) — schema definitions used in examples
+- [Bookstore domain](/bookstore-domain) - schema definitions used in examples

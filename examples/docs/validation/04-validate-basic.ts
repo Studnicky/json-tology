@@ -4,11 +4,11 @@
  */
 
 import {
-  CustomerSchema, bookstoreEntities as entities
+  bookstoreEntities, CustomerSchema
 } from '../bookstore/index.js';
 
 // Valid input
-const ok = entities.validate(CustomerSchema.$id, {
+const ok = bookstoreEntities.validate(CustomerSchema.$id, {
   'email': 'alice@bookstore.example',
   'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'name': 'Alice Chen'
@@ -17,7 +17,7 @@ const ok = entities.validate(CustomerSchema.$id, {
 console.assert(ok.length === 0);
 
 // Missing required fields
-const bad = entities.validate(CustomerSchema.$id, {
+const bad = bookstoreEntities.validate(CustomerSchema.$id, {
   'email': 'alice@bookstore.example'
   // id and name missing
 });

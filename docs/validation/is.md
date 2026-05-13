@@ -13,10 +13,10 @@
 ### Example 1: Type narrowing in a conditional branch
 
 ```ts
-import { bookstoreEntities as entities, CustomerSchema } from './bookstore/index.js';
+import { bookstoreEntities, CustomerSchema } from './bookstore/index.js';
 
 function describeCustomer(data: unknown): string {
-  if (jt.is(CustomerSchema.$id, data)) {
+  if (bookstoreEntities.is(CustomerSchema.$id, data)) {
     // data is narrowed to Customer here
     return `${data.name} <${data.email}>`;
   }
@@ -27,11 +27,11 @@ function describeCustomer(data: unknown): string {
 ### Example 2: Filtering an array of unknowns
 
 ```ts
-import { bookstoreEntities as entities, CustomerSchema, type Customer } from './bookstore/index.js';
+import { bookstoreEntities, CustomerSchema, type Customer } from './bookstore/index.js';
 
 const mixed: unknown[] = fetchFromApi();
 const customers = mixed.filter(
-  (item): item is Customer => jt.is(CustomerSchema.$id, item)
+  (item): item is Customer => bookstoreEntities.is(CustomerSchema.$id, item)
 );
 // customers is Customer[]
 ```
@@ -39,10 +39,10 @@ const customers = mixed.filter(
 ### Example 3: Guards at a service boundary
 
 ```ts
-import { bookstoreEntities as entities, OrderSchema, type Order } from './bookstore/index.js';
+import { bookstoreEntities, OrderSchema, type Order } from './bookstore/index.js';
 
 function processOrder(data: unknown): void {
-  if (!jt.is(OrderSchema.$id, data)) {
+  if (!bookstoreEntities.is(OrderSchema.$id, data)) {
     throw new TypeError('Expected an Order');
   }
   // data is Order from here  - no explicit cast needed

@@ -5,12 +5,12 @@
 
 import { InstantiationError } from '../../../src/index.js';
 import {
-  CustomerSchema, bookstoreEntities as entities
+  bookstoreEntities, CustomerSchema
 } from '../bookstore/index.js';
 
 function createCustomer(body: unknown) {
   try {
-    return entities.instantiate(CustomerSchema.$id, body);
+    return bookstoreEntities.instantiate(CustomerSchema.$id, body);
   } catch (error) {
     if (error instanceof InstantiationError) {
       const problem = error.errors.report({ 'instance': '/customers' });

@@ -13,7 +13,7 @@ All of these import paths work in a browser bundle:
 
 | Entry | Status |
 |---|---|
-| `json-tology` | Full library — register schemas, validate, instantiate, encode/decode, ontology emission, viz |
+| `json-tology` | Full library - register schemas, validate, instantiate, encode/decode, ontology emission, viz |
 | `json-tology/value` | `Changeset`, `Hash`, value operations |
 | `json-tology/schema` | Composition, transforms, format registry, validation compiler (excludes `SchemaLoader`) |
 | `json-tology/ontology` | RDF/OWL/SHACL serializers |
@@ -23,7 +23,7 @@ All of these import paths work in a browser bundle:
 
 ## What does not work
 
-- `json-tology/schema` does NOT expose `SchemaLoader` in browser bundles. `SchemaLoader` reads schemas from disk via `node:fs` — there is no browser equivalent. If you need to load schemas dynamically in a browser, fetch the JSON and call `jt.register(parsedSchema)`.
+- `json-tology/schema` does NOT expose `SchemaLoader` in browser bundles. `SchemaLoader` reads schemas from disk via `node:fs`: there is no browser equivalent. If you need to load schemas dynamically in a browser, fetch the JSON and call `jt.register(parsedSchema)`.
 - The `json-tology` CLI binary is Node-only.
 
 ## Native ESM via CDN
@@ -79,5 +79,5 @@ This artifact is built from `src/index.ts` via esbuild with `platform: 'browser'
 
 ## See also
 
-- [Getting started](/getting-started) — schema authoring basics
-- [Validation modes](/validation-modes) — compile-time vs runtime behavior
+- [Getting started](/getting-started) - schema authoring basics
+- [Validation modes](/validation-modes) - compile-time vs runtime behavior

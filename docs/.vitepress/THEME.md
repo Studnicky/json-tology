@@ -4,11 +4,11 @@ The theme is split into four files. Replace one to retarget; copy three to lift 
 
 | File | Per-project | Verbatim |
 |------|------------|----------|
-| `theme/palette.css` | yes — change accent / surface tokens | |
-| `theme/base.css` | | yes — copy unchanged |
-| `theme/index.ts` | | yes — copy unchanged |
-| `theme.config.ts` | | yes — copy unchanged |
-| `config.ts` | yes — title, sidebar, nav, GitHub URL | |
+| `theme/palette.css` | yes - change accent / surface tokens | |
+| `theme/base.css` | | yes - copy unchanged |
+| `theme/index.ts` | | yes - copy unchanged |
+| `theme.config.ts` | | yes - copy unchanged |
+| `config.ts` | yes - title, sidebar, nav, GitHub URL | |
 
 ## Default palette
 
@@ -29,9 +29,9 @@ Replace `palette.css` with that project's accent. Examples:
 
 - **yamete** (existing aesthetic): brand `#ff6b8a`, `#ffb3c4`, dark default
 - **nocturne** (existing aesthetic): match its accent, dark default
-- **Material**, **Carbon**, **Tailwind** color tokens — drop in those palettes verbatim
+- **Material**, **Carbon**, **Tailwind** color tokens - drop in those palettes verbatim
 
-`base.css` reads every visual rule through `var(--vp-c-*)` references — it never hard-codes a color. Swapping `palette.css` recolors the entire site.
+`base.css` reads every visual rule through `var(--vp-c-*)` references - it never hard-codes a color. Swapping `palette.css` recolors the entire site.
 
 ## Customizing layout
 

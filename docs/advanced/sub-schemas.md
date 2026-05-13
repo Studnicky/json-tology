@@ -117,4 +117,4 @@ Previously these only worked on the `registry.validate` compiled fast-path. The 
 
 - [Bookstore domain](/bookstore-domain) - every entity uses `$ref` composition
 - [Graph concepts](/advanced/graph-concepts) - TBox vs ABox, domain and range
-- [Schemas — cross-schema `$ref` strict resolution](/schemas#cross-schema-ref-strict-resolution) — `REF_UNRESOLVED` error
+- [Schemas - cross-schema `$ref` strict resolution](/schemas#cross-schema-ref-strict-resolution) - `REF_UNRESOLVED` error

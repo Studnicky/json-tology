@@ -6,22 +6,22 @@ json-tology enforces schema constraints at two layers: the TypeScript compiler a
 
 | Badge | Meaning |
 |-------|---------|
-| <Badge type="info" text="Compile-time" /> | The TypeScript compiler rejects the violation. Data that fails this check never compiles — the bug is caught before the program runs. |
-| <Badge type="tip" text="Runtime" /> | The validator catches the violation when untrusted data enters the system — at `instantiate`, `validate`, `is`, `materialize`, or `cast`. |
+| <Badge type="info" text="Compile-time" /> | The TypeScript compiler rejects the violation. Data that fails this check never compiles - the bug is caught before the program runs. |
+| <Badge type="tip" text="Runtime" /> | The validator catches the violation when untrusted data enters the system - at `instantiate`, `validate`, `is`, `materialize`, or `cast`. |
 | <Badge type="warning" text="Compile-time + Runtime" /> | Both layers enforce the constraint. The compiler blocks authoring mistakes; the runtime validator guards the trust boundary for data from external sources. |
 
 ## Why both layers?
 
 The two layers cover different failure modes:
 
-- **Compile-time** catches programmer mistakes — passing the wrong type to a function, violating a schema constraint in code you control.
-- **Runtime** catches data quality failures — untrusted input from APIs, files, user-submitted forms, or messages that may not respect the schema.
+- **Compile-time** catches programmer mistakes - passing the wrong type to a function, violating a schema constraint in code you control.
+- **Runtime** catches data quality failures - untrusted input from APIs, files, user-submitted forms, or messages that may not respect the schema.
 
 Ideal keyword coverage is **Compile-time + Runtime**: the compiler prevents in-process mistakes, and the runtime validator guards external boundaries.
 
-Some constraints are **Compile-time** only — they express TypeScript-level invariants that have no equivalent runtime check (e.g. `$id` nominal brands: two schemas with the same structure but different `$id` values produce incompatible TypeScript types; at runtime they validate identically).
+Some constraints are **Compile-time** only - they express TypeScript-level invariants that have no equivalent runtime check (e.g. `$id` nominal brands: two schemas with the same structure but different `$id` values produce incompatible TypeScript types; at runtime they validate identically).
 
-Some constraints are **Runtime** only — they require value inspection that happens after data arrives (e.g. cross-schema `$ref` resolution, uniqueness of array element values beyond tuple literal narrowing).
+Some constraints are **Runtime** only - they require value inspection that happens after data arrives (e.g. cross-schema `$ref` resolution, uniqueness of array element values beyond tuple literal narrowing).
 
 ## Where badges appear
 
@@ -73,6 +73,6 @@ The enforcement layer for every keyword in the standard JSON Schema 2020-12 voca
 
 ## Related
 
-- [Constraint brands](/constraint-brands) — phantom brands for every constraint keyword
-- [Schemas](/schemas) — standard keyword authoring
-- [Migration to 0.4.0](/migration-0.4.0) — breaking changes in this release
+- [Constraint brands](/constraint-brands) - phantom brands for every constraint keyword
+- [Schemas](/schemas) - standard keyword authoring
+- [Migration to 0.4.0](/migration-0.4.0) - breaking changes in this release

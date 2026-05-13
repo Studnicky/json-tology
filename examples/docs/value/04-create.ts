@@ -4,10 +4,10 @@
  */
 
 import {
-  BookSchema, bookstoreEntities as entities
+  BookSchema, bookstoreEntities
 } from '../bookstore/index.js';
 
-const blank = entities.value.create(BookSchema.$id);
+const blank = bookstoreEntities.value.create(BookSchema.$id);
 
 // Required fields with no default get zero-values
 console.assert((blank as { 'isbn': string }).isbn === '');

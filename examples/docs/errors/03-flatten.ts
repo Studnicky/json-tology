@@ -6,10 +6,10 @@
 
 import type { ValidationErrorType } from '../../../src/types/index.js';
 import {
-  bookstoreEntities as entities, ReviewSchema
+  bookstoreEntities, ReviewSchema
 } from '../bookstore/index.js';
 
-const errs = entities.validate(ReviewSchema.$id, {
+const errs = bookstoreEntities.validate(ReviewSchema.$id, {
   'body': 'short',
   'bookIsbn': '9780140449136',
   'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',

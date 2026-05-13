@@ -14,7 +14,7 @@ Update your deployment environment and CI matrix before upgrading.
 
 The `subjectIRI` option on `toQuads` / `fromQuads` call sites is removed. Use `iriFor` instead.
 
-The string, `'blank-node'`, and `SkolemizeFnType` overloads are identical — only the option name changes.
+The string, `'blank-node'`, and `SkolemizeFnType` overloads are identical - only the option name changes.
 
 ```ts
 // Before
@@ -36,7 +36,7 @@ JsonTology.create({ baseIRI: '...', iriFor: myFn });
 
 ### `maxDepth` → `maxSchemaDepth`
 
-The `maxDepth` option alias is removed. Use `maxSchemaDepth`. The semantics are identical — the rename aligns the option name with its scope.
+The `maxDepth` option alias is removed. Use `maxSchemaDepth`. The semantics are identical - the rename aligns the option name with its scope.
 
 ```ts
 // Before
@@ -50,7 +50,7 @@ JsonTology.create({ baseIRI: '...', maxSchemaDepth: 10 });
 
 ### `maxDataDepth`
 
-`maxDataDepth` is removed entirely. The option was declared in `JsonTologyOptionsInterface` but was never wired into the execution path. Any assignment to `maxDataDepth` in your configuration can be deleted — the field was a no-op.
+`maxDataDepth` is removed entirely. The option was declared in `JsonTologyOptionsInterface` but was never wired into the execution path. Any assignment to `maxDataDepth` in your configuration can be deleted - the field was a no-op.
 
 The `MaterializationError` code `DATA_DEPTH_EXCEEDED` is removed alongside it.
 
@@ -70,7 +70,7 @@ import type { InstantiationErrorCodeType } from 'json-tology/types';
 
 ### `CoercionErrorCode` constant removed
 
-The `CoercionErrorCodeType` *type* is removed and replaced by `InstantiationErrorCodeType`. The `CoercionError` *class* continues to exist and throws code `'COERCION_FAILED'` — it has not been removed. No `CoercionErrorCode` constant object ever existed in the public API; use `InstantiationErrorCode` for code lookup if needed.
+The `CoercionErrorCodeType` *type* is removed and replaced by `InstantiationErrorCodeType`. The `CoercionError` *class* continues to exist and throws code `'COERCION_FAILED'`: it has not been removed. No `CoercionErrorCode` constant object ever existed in the public API; use `InstantiationErrorCode` for code lookup if needed.
 
 ```ts
 // Before
@@ -114,10 +114,10 @@ const user = JsonTology.instantiate(UserSchema, raw) as User;
 const user = JsonTology.instantiate(UserSchema, raw); // typed as InferType<typeof UserSchema>
 ```
 
-No call-site changes are required for TypeScript to pick up the narrower return type — the generics are inferred automatically. Only remove casts that previously worked around `unknown`.
+No call-site changes are required for TypeScript to pick up the narrower return type - the generics are inferred automatically. Only remove casts that previously worked around `unknown`.
 
 ## Related
 
-- [Getting started](/getting-started) — updated option table reflecting current names
-- [Validation modes](/validation-modes) — the badge system introduced in 0.4.0
-- [Constraint brands](/constraint-brands) — 25 new named format brands
+- [Getting started](/getting-started) - updated option table reflecting current names
+- [Validation modes](/validation-modes) - the badge system introduced in 0.4.0
+- [Constraint brands](/constraint-brands) - 25 new named format brands

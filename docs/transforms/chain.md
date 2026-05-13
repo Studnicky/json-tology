@@ -61,7 +61,7 @@ console.log(wire);  // '14.99'
 
 ## Pairwise chain compatibility <Badge type="info" text="Compile-time" />
 
-`Transform.chain` enforces stage-to-stage type compatibility at the call site. Each stage is typed as `TransformStageInterface<TIn, TOut>`. The output type of stage `N` must be assignable to the input type of stage `N+1`. When a mismatch is detected, the incompatible stage position is replaced with a `ChainMismatchInterface<index, produced, expected>` brand — the compiler rejects the call and the IDE hover explains which stage is incompatible.
+`Transform.chain` enforces stage-to-stage type compatibility at the call site. Each stage is typed as `TransformStageInterface<TIn, TOut>`. The output type of stage `N` must be assignable to the input type of stage `N+1`. When a mismatch is detected, the incompatible stage position is replaced with a `ChainMismatchInterface<index, produced, expected>` brand - the compiler rejects the call and the IDE hover explains which stage is incompatible.
 
 The first stage is also checked against the schema's wire type. A mismatch surfaces `ChainSchemaMismatchInterface<wire, firstStageIn>`.
 
@@ -87,7 +87,7 @@ const bad = Transform.chain(schema, [step1, step3]);
 //                                            ^ ChainMismatchInterface<1, number, string>
 ```
 
-The chain parameter is typed as `TStages & ValidateChainType<TStages, InferSchemaType<TSchema>>`. When validation fires, the intersection collapses incompatible positions to `never` and the user's literal stages are not assignable — the call site is rejected.
+The chain parameter is typed as `TStages & ValidateChainType<TStages, InferSchemaType<TSchema>>`. When validation fires, the intersection collapses incompatible positions to `never` and the user's literal stages are not assignable - the call site is rejected.
 
 Chains are checked up to 10 stages (`TupleRecursionCap`).
 

@@ -17,9 +17,9 @@
 Valid input: unknown properties are stripped, defaults are filled, the return type is `Customer`.
 
 ```ts
-import { bookstoreEntities as entities, CustomerSchema } from './bookstore/index.js';
+import { bookstoreEntities, CustomerSchema } from './bookstore/index.js';
 
-const customer = jt.instantiate(CustomerSchema.$id, {
+const customer = bookstoreEntities.instantiate(CustomerSchema.$id, {
   id:            'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   email:         'alice@bookstore.example',
   name:          'Alice Chen',
@@ -37,11 +37,11 @@ Catch `InstantiationError` and convert to an RFC 7807 Problem Details response (
 
 ```ts
 import { InstantiationError } from 'json-tology';
-import { bookstoreEntities as entities, CustomerSchema } from './bookstore/index.js';
+import { bookstoreEntities, CustomerSchema } from './bookstore/index.js';
 
 function createCustomer(body: unknown) {
   try {
-    return jt.instantiate(CustomerSchema.$id, body);
+    return bookstoreEntities.instantiate(CustomerSchema.$id, body);
   } catch (err) {
     if (err instanceof InstantiationError) {
       // err.errors is a ValidationErrors collection
@@ -60,9 +60,9 @@ function createCustomer(body: unknown) {
 `OrderSchema` contains `items: [OrderLine]` via `$ref`. Each `OrderLine` is coerced independently. See the [bookstore domain](/bookstore-domain) for schema definitions.
 
 ```ts
-import { bookstoreEntities as entities, OrderSchema } from './bookstore/index.js';
+import { bookstoreEntities, OrderSchema } from './bookstore/index.js';
 
-const order = jt.instantiate(OrderSchema.$id, {
+const order = bookstoreEntities.instantiate(OrderSchema.$id, {
   id:              'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   customerId:      'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   placedAt:        '2026-01-15T10:30:00Z',
@@ -91,7 +91,7 @@ try {
 }
 
 // ✓ Do this  - surface the error list
-const errs = entities.validate(CustomerSchema.$id, data);
+const errs = bookstoreEntities.validate(CustomerSchema.$id, data);
 if (!errs.ok) {
   console.log(errs.items.map(e => `${e.path}: ${e.message}`));
 }

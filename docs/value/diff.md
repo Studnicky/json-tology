@@ -6,9 +6,9 @@
 
 A `Changeset` is the result type returned by `Value.diff`. It holds an ordered list of JSON Pointer-based operations (`set` / `delete`) that transform one value into another. Key members:
 
-- `.isEmpty` — `true` when no operations were produced
-- `.length` — number of operations in the changeset
-- `.operations` — readonly array of `DiffOpType` (`{ op: 'set', path: string, value: unknown }` or `{ op: 'delete', path: string }`)
+- `.isEmpty`: `true` when no operations were produced
+- `.length`: number of operations in the changeset
+- `.operations`: readonly array of `DiffOpType` (`{ op: 'set', path: string, value: unknown }` or `{ op: 'delete', path: string }`)
 
 See [`Value.diff`](#value-diff) for usage examples and [`Value.applyOp`](#value-applyop) for applying individual operations.
 
@@ -28,15 +28,15 @@ See [`Value.diff`](#value-diff) for usage examples and [`Value.applyOp`](#value-
 
 ```ts
 import { Value } from 'json-tology';
-import { bookstoreEntities as entities, CustomerSchema } from './bookstore/index.js';
+import { bookstoreEntities, CustomerSchema } from './bookstore/index.js';
 
-const before = jt.instantiate(CustomerSchema.$id, {
+const before = bookstoreEntities.instantiate(CustomerSchema.$id, {
   id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   email: 'alice@bookstore.example',
   name:  'Alice Chen',
 });
 
-const after = jt.instantiate(CustomerSchema.$id, {
+const after = bookstoreEntities.instantiate(CustomerSchema.$id, {
   id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   email: 'alice.chen@bookstore.example', // changed
   name:  'Alice Chen',

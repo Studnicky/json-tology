@@ -4,11 +4,11 @@
  */
 
 import {
-  BookSchema, bookstoreEntities as entities
+  BookSchema, bookstoreEntities
 } from '../bookstore/index.js';
 
 // Materialize with required fields supplied — defaults filled automatically
-const book = entities.materialize(BookSchema, {
+const book = bookstoreEntities.materialize(BookSchema, {
   'authors': ['Fyodor Dostoevsky'],
   'isbn': '9780140449136',
   'price': {
@@ -22,6 +22,6 @@ console.assert(book.inStock === true);
 console.assert(book.isbn === '9780140449136');
 
 // value.create synthesizes zero-values for ALL required fields + explicit defaults
-const blank = entities.value.create(BookSchema.$id);
+const blank = bookstoreEntities.value.create(BookSchema.$id);
 
 console.assert((blank as { 'isbn': string }).isbn === '');

@@ -1,6 +1,6 @@
 ---
 title: Primary Inference Types
-description: InferType, InferSchemaType, and constraint brands — compile-time TypeScript type derivation from JSON Schema literals.
+description: InferType, InferSchemaType, and constraint brands - compile-time TypeScript type derivation from JSON Schema literals.
 ---
 
 # Primary Inference Types <Badge type="info" text="Compile-time" />

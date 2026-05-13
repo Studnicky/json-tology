@@ -1,4 +1,4 @@
-# Constraint Brands — Keywords
+# Constraint Brands: Keywords
 
 > Siblings: [Structural Narrowing](./narrowing) &nbsp;|&nbsp; [Validation modes reference](/validation-modes)
 

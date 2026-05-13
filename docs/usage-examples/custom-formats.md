@@ -139,7 +139,7 @@ const jt = JsonTology.create({
 
 ## Number formats
 
-The `formats` map handles number formats too. The validator simply receives the number.
+The `formats` map handles number formats too. The validator receives the number.
 
 ```ts
 const jt = JsonTology.create({

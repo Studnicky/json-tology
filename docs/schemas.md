@@ -35,7 +35,7 @@ const jt = JsonTology.create({
 
 ---
 
-## `$ref` — cross-schema references
+## `$ref`: cross-schema references
 
 Use `$ref` to point one schema at another by IRI. The runtime resolves the reference against the registry.
 
@@ -105,9 +105,9 @@ const AddressSchema = {
 
 Use fully-qualified IRIs as schema identifiers:
 
-- **Base IRI** — use the same origin for all schemas in a project (`https://bookstore.example`). Pass it as `baseIRI` to `JsonTology.create` so relative `$ref` values resolve correctly.
-- **Path segment** — use the domain entity name as the path (`/Book`, `/Customer`, `/OrderLine`). One schema per IRI.
-- **Stability** — once a schema `$id` is published and referenced by other schemas, treat it as stable. Changing a `$id` breaks all cross-schema `$ref` that target it.
+- **Base IRI** - use the same origin for all schemas in a project (`https://bookstore.example`). Pass it as `baseIRI` to `JsonTology.create` so relative `$ref` values resolve correctly.
+- **Path segment** - use the domain entity name as the path (`/Book`, `/Customer`, `/OrderLine`). One schema per IRI.
+- **Stability** - once a schema `$id` is published and referenced by other schemas, treat it as stable. Changing a `$id` breaks all cross-schema `$ref` that target it.
 
 IRI-based identity is what allows the runtime to perform `$ref` resolution, compile-time type checking, and ontology export without additional configuration.
 
@@ -122,7 +122,7 @@ Cross-schema `$ref` resolution is enforced at both layers:
 
 Local fragment refs (`#`, `#/foo`, `#anchor`) are unaffected by the strict check.
 
-The walk runs at most once per schema entry — subsequent calls against the same schema use the cached result.
+The walk runs at most once per schema entry - subsequent calls against the same schema use the cached result.
 
 ```ts
 import { JsonTology, GraphError } from 'json-tology';

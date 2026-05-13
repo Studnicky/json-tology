@@ -19,7 +19,7 @@ Compose.subClassOf(restriction, body): typeof body
 
 ## Use this when
 
-You want to express OWL property-restriction class axioms — anonymous classes that constrain how a property is used. Each restriction becomes an `owl:Restriction` blank node in the TBox, referenced from the body class via `rdfs:subClassOf`. Restrictions compose: chaining `Compose.subClassOf` accumulates `jt:restrictions` on the body schema.
+You want to express OWL property-restriction class axioms - anonymous classes that constrain how a property is used. Each restriction becomes an `owl:Restriction` blank node in the TBox, referenced from the body class via `rdfs:subClassOf`. Restrictions compose: chaining `Compose.subClassOf` accumulates `jt:restrictions` on the body schema.
 
 ```ts
 import { Compose, JsonTology } from 'json-tology';
@@ -90,12 +90,12 @@ The TBox carries two `owl:Restriction` blank nodes attached via `rdfs:subClassOf
 ## Don't use this when
 
 * Use [`Compose.equivalent`](/composition/equivalent) to declare two classes have identical extension. That maps to `owl:equivalentClass`, not a property restriction.
-* Use [`Compose.extend`](/composition/extend) for structural inheritance (allOf + $ref). Restrictions are *property-level* axioms — they say "values of this property satisfy X", not "this class also has these properties".
+* Use [`Compose.extend`](/composition/extend) for structural inheritance (allOf + $ref). Restrictions are *property-level* axioms - they say "values of this property satisfy X", not "this class also has these properties".
 * Don't use `cardinality`/`minCardinality`/`maxCardinality` to drive structural validation. JSON Schema's `required`, `minItems`, and `maxItems` already cover those at instance time. Restrictions are purely TBox semantic content for reasoners.
 
 ## Examples
 
-### Example 1: Exact cardinality — PersonWithExactlyTwoParents
+### Example 1: Exact cardinality: PersonWithExactlyTwoParents
 
 ```ts
 import { Compose, JsonTology } from 'json-tology';
@@ -127,7 +127,7 @@ console.log(jt.toTbox().jsonLd());
 // }
 ```
 
-### Example 2: someValuesFrom — book authored by at least one author
+### Example 2: someValuesFrom: book authored by at least one author
 
 ```ts
 import { Compose, JsonTology } from 'json-tology';
@@ -146,7 +146,7 @@ const AuthoredBookSchema = Compose.subClassOf(
 // TypeScript narrows the authored-by property to a non-empty tuple at compile time
 ```
 
-### Example 3: Chaining restrictions — at least one author, all authors are Author instances
+### Example 3: Chaining restrictions: at least one author, all authors are Author instances
 
 ```ts
 import { Compose } from 'json-tology';
@@ -164,7 +164,7 @@ const VerifiedAuthoredBook = Compose.subClassOf(
 // TBox carries two owl:Restriction blank nodes on rdfs:subClassOf
 ```
 
-### Example 4: hasValue — mark in-print books
+### Example 4: hasValue: mark in-print books
 
 ```ts
 import { Compose } from 'json-tology';
@@ -178,7 +178,7 @@ const InPrintBook = Compose.subClassOf(
 // TypeScript narrows the inStock property type to the literal `true`
 ```
 
-## Bad examples — what NOT to do
+## Bad examples: what NOT to do
 
 ### Anti-pattern 1: Using cardinality restrictions to drive instance validation
 
@@ -299,12 +299,12 @@ class InPrintBook(BaseModel):
 
 ## Related
 
-* [`Compose.equivalent`](/composition/equivalent) — `owl:equivalentClass` for class identity
-* [`Compose.extend`](/composition/extend) — `rdfs:subClassOf` via allOf + $ref
+* [`Compose.equivalent`](/composition/equivalent) - `owl:equivalentClass` for class identity
+* [`Compose.extend`](/composition/extend) - `rdfs:subClassOf` via allOf + $ref
 * [Graph concepts (TBox / ABox)](/advanced/graph-concepts)
-* [`sameAs`](/advanced/sameas) — the ABox counterpart to class restrictions
+* [`sameAs`](/advanced/sameas) - the ABox counterpart to class restrictions
 
 ## See also
 
-* [Bookstore domain](/bookstore-domain) — schema definitions used in examples
-* [OWL TBox output](/advanced/ontology#jt-totbox) — how restrictions appear in the emitted TBox
+* [Bookstore domain](/bookstore-domain) - schema definitions used in examples
+* [OWL TBox output](/advanced/ontology#jt-totbox) - how restrictions appear in the emitted TBox

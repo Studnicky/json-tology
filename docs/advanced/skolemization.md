@@ -2,20 +2,20 @@
 
 > Skolemization is the process of replacing blank nodes in an RDF graph with deterministic IRIs so consumers can refer to those nodes stably across calls and stores. The W3C term comes from `Skolem(1920)`'s function: every existential variable becomes a fresh constant. In RDF, every anonymous node becomes a fresh IRI.
 
-json-tology projects every typed value into ABox quads via `toQuads`. By default, every emitted object gets a deterministic IRI of the form `<baseIRI>/instances/<classId>-<contentHash>`. Sometimes that's exactly right — content-addressed IRIs are stable, deduplicating, and need no external coordination. Sometimes you want something else: a property-derived IRI, a UUID, an explicit override, or genuine blank nodes. The `iriFor` option (and the `Skolemize` helper class) gives you that control.
+json-tology projects every typed value into ABox quads via `toQuads`. By default, every emitted object gets a deterministic IRI of the form `<baseIRI>/instances/<classId>-<contentHash>`. Sometimes that's exactly right - content-addressed IRIs are stable, deduplicating, and need no external coordination. Sometimes you want something else: a property-derived IRI, a UUID, an explicit override, or genuine blank nodes. The `iriFor` option (and the `Skolemize` helper class) gives you that control.
 
 Relevant standards:
 
-- [W3C RDF 1.1 §3.5 — Replacing Blank Nodes with IRIs](https://www.w3.org/TR/rdf11-concepts/#section-skolemization)
-- [W3C RDFC-1.0 — RDF Dataset Canonicalization](https://www.w3.org/TR/rdf-canon/)
+- [W3C RDF 1.1 §3.5 - Replacing Blank Nodes with IRIs](https://www.w3.org/TR/rdf11-concepts/#section-skolemization)
+- [W3C RDFC-1.0 - RDF Dataset Canonicalization](https://www.w3.org/TR/rdf-canon/)
 
 ## The four built-in strategies
 
-`Skolemize` is a static-only helper class exposing four reusable minting strategies. Each returns a `SkolemizeFnType` — a function `(ctx) => string | undefined` suitable for the `iriFor` option on `toQuads`.
+`Skolemize` is a static-only helper class exposing four reusable minting strategies. Each returns a `SkolemizeFnType`: a function `(ctx) => string | undefined` suitable for the `iriFor` option on `toQuads`.
 
 ### `Skolemize.hash({ baseIRI })`
 
-Default-equivalent. Hashes the value with FNV-1a and emits `<baseIRI>/instances/<hash>`. Deterministic — equal values produce equal IRIs across calls and processes.
+Default-equivalent. Hashes the value with FNV-1a and emits `<baseIRI>/instances/<hash>`. Deterministic - equal values produce equal IRIs across calls and processes.
 
 ```ts
 import { Skolemize } from 'json-tology';
@@ -28,7 +28,7 @@ entities.toQuads(BookSchema, book, {
 
 ### `Skolemize.wellKnownGenid(baseIRI)`
 
-Mints IRIs matching the [RDF 1.1 §3.5 well-known genid pattern](https://www.w3.org/TR/rdf11-concepts/#section-skolemization): `<baseIRI>/.well-known/genid/<hash>`. These IRIs are intentionally reversible — `fromQuads({ deskolemize: true })` recognizes the pattern and rewrites the IRIs back to blank nodes during lift.
+Mints IRIs matching the [RDF 1.1 §3.5 well-known genid pattern](https://www.w3.org/TR/rdf11-concepts/#section-skolemization): `<baseIRI>/.well-known/genid/<hash>`. These IRIs are intentionally reversible - `fromQuads({ deskolemize: true })` recognizes the pattern and rewrites the IRIs back to blank nodes during lift.
 
 ```ts
 const quads = entities.toQuads(OrderSchema, order, {
@@ -43,7 +43,7 @@ Use this strategy when you want to publish RDF over the wire (which requires nam
 
 ### `Skolemize.uuid()`
 
-Mints `urn:uuid:<v4>`. Non-deterministic — every emission gets a fresh identity. Useful when you want unique IRIs and don't care about content addressing or external joins.
+Mints `urn:uuid:<v4>`. Non-deterministic - every emission gets a fresh identity. Useful when you want unique IRIs and don't care about content addressing or external joins.
 
 ```ts
 entities.toQuads(EventSchema, event, { iriFor: Skolemize.uuid() });
@@ -107,7 +107,7 @@ entities.toQuads(OrderSchema, order, {
 
 For the most common cases, `iriFor` accepts a string literal:
 
-- A regular IRI: `iriFor: 'https://shop.example.com/orders/A-1234'` — applied at the root only (depth 0). Nested objects fall through to the default minter.
+- A regular IRI: `iriFor: 'https://shop.example.com/orders/A-1234'`: applied at the root only (depth 0). Nested objects fall through to the default minter.
 - The literal `'blank-node'`: emits `_:b<n>` blank nodes for every projected object. The counter is scoped to one `projectAbox` call, so two calls in a row both start at `_:b0`.
 
 ## Registry-level defaults
@@ -148,6 +148,6 @@ The `'blank-node'` registry-level default is re-instantiated on every call so th
 
 ## Related
 
-- [RDF round-trip with `toQuads` / `fromQuads`](/advanced/quads) — the projection API
-- [Graph concepts](/advanced/graph-concepts) — canonical graph structure
-- [Getting started — graph emission](/getting-started#graph-emission) — registry-level options
+- [RDF round-trip with `toQuads` / `fromQuads`](/advanced/quads) - the projection API
+- [Graph concepts](/advanced/graph-concepts) - canonical graph structure
+- [Getting started - graph emission](/getting-started#graph-emission) - registry-level options

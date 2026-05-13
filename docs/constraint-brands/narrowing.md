@@ -1,8 +1,8 @@
-# Constraint Brands — Structural Narrowing
+# Constraint Brands: Structural Narrowing
 
 > Siblings: [Branded Keywords](./keywords) &nbsp;|&nbsp; [Validation modes reference](/validation-modes)
 
-Beyond phantom brands on individual keywords, the type system narrows structural TypeScript types from JSON Schema constraints. These narrowings produce literal union types, template literal key types, and conditional discriminated unions — all at compile time.
+Beyond phantom brands on individual keywords, the type system narrows structural TypeScript types from JSON Schema constraints. These narrowings produce literal union types, template literal key types, and conditional discriminated unions - all at compile time.
 
 ## Structural narrowing <Badge type="info" text="Compile-time" />
 
@@ -196,13 +196,13 @@ type Payment = InferType<typeof PaymentSchema>;
 
 `uniqueItems: true` is enforced at two compile-time levels depending on the array shape:
 
-1. **Homogeneous arrays** — the inferred type carries `UniqueArrayBrandInterface<T>` (a generic uniqueness brand parameterised by element type). A plain `T[]` cannot satisfy it; values must come through `JsonTology.instantiate` / coerce / `materialize`.
+1. **Homogeneous arrays** - the inferred type carries `UniqueArrayBrandInterface<T>` (a generic uniqueness brand parameterised by element type). A plain `T[]` cannot satisfy it; values must come through `JsonTology.instantiate` / coerce / `materialize`.
 
-2. **Literal-typed tuples** (≤ 8 elements via `prefixItems`) — `UniqueTuplePairwiseType` runs a pairwise overlap check at the type level and collapses the tuple to `never` when any pair of element types overlaps. This means `{ prefixItems: [{ const: 'red' }, { const: 'red' }], uniqueItems: true }` is a compile-time error.
+2. **Literal-typed tuples** (≤ 8 elements via `prefixItems`) - `UniqueTuplePairwiseType` runs a pairwise overlap check at the type level and collapses the tuple to `never` when any pair of element types overlaps. This means `{ prefixItems: [{ const: 'red' }, { const: 'red' }], uniqueItems: true }` is a compile-time error.
 
 Above 8 elements the pairwise check is skipped and runtime validation still enforces `uniqueItems`.
 
-> **Note:** Compile-time tuple pairwise checking applies only to literal-typed tuples declared via `prefixItems` with ≤ 8 elements. Homogeneous arrays (e.g. `string[]`) receive only the `UniqueArrayBrandInterface<T>` brand and rely on runtime enforcement for actual uniqueness — there is no compile-time element-by-element comparison for homogeneous arrays.
+> **Note:** Compile-time tuple pairwise checking applies only to literal-typed tuples declared via `prefixItems` with ≤ 8 elements. Homogeneous arrays (e.g. `string[]`) receive only the `UniqueArrayBrandInterface<T>` brand and rely on runtime enforcement for actual uniqueness - there is no compile-time element-by-element comparison for homogeneous arrays.
 
 ```ts
 const DuplicateConstTuple = {
@@ -255,5 +255,5 @@ Bounds above the cap (or with the flag disabled) fall back to plain `string`. Th
 
 - [Branded Keywords](./keywords) - string, number, array, object, and nominal brands
 - [Type Inference](/types/infer) - how `InferType` resolves narrowings and brand intersections
-- [Composition — discriminated union](/composition/discriminated-union) - `if/then/else` in schema composition
+- [Composition - discriminated union](/composition/discriminated-union) - `if/then/else` in schema composition
 - [Bookstore domain](/bookstore-domain) - real-world narrowing examples

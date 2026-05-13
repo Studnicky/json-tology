@@ -27,7 +27,7 @@ const MySchema = {
 const _check: ValidateSchemaType<typeof MySchema> = MySchema;
 ```
 
-Schemas passed to `Compose.subClassOf`, `Compose.complementOf`, `Compose.disjointWith`, and `Compose.extend` are validated automatically — correct-by-construction without a manual `_check` variable.
+Schemas passed to `Compose.subClassOf`, `Compose.complementOf`, `Compose.disjointWith`, and `Compose.extend` are validated automatically - correct-by-construction without a manual `_check` variable.
 
 ## Validated constraints
 
@@ -120,6 +120,6 @@ const Child = Compose.subClassOf(BaseSchema, {
 
 ## Related
 
-- [Compose argument validation](/composition/) — pick/omit/subClassOf/discriminatedUnion argument type checking
-- [Constraint brands](/constraint-brands) — keyword-level phantom brands
-- [Validation modes](/validation-modes) — enforcement layer reference
+- [Compose argument validation](/composition/) - pick/omit/subClassOf/discriminatedUnion argument type checking
+- [Constraint brands](/constraint-brands) - keyword-level phantom brands
+- [Validation modes](/validation-modes) - enforcement layer reference

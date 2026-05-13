@@ -108,10 +108,10 @@ Most of the per-call cost in json-tology comes from the canonical-graph-first ex
 
 ### How to read the tables
 
-- `ops/s` — operations per second after warmup. Higher is better.
-- `ns/op` — nanoseconds per operation. Lower is better.
-- `json-tology vs this` — multiplier between json-tology and the listed library on the same scenario. `2.39x faster` means json-tology runs 2.39 ops for every 1 op of the comparator; `2.39x slower` means the inverse. The cell reads `-` on the json-tology row itself.
-- `N/A` — the comparator does not implement the scenario's surface (e.g. AJV has no coerce mode; `JSON.stringify` is not a validator).
+- `ops/s`: operations per second after warmup. Higher is better.
+- `ns/op`: nanoseconds per operation. Lower is better.
+- `json-tology vs this`: multiplier between json-tology and the listed library on the same scenario. `2.39x faster` means json-tology runs 2.39 ops for every 1 op of the comparator; `2.39x slower` means the inverse. The cell reads `-` on the json-tology row itself.
+- `N/A`: the comparator does not implement the scenario's surface (e.g. AJV has no coerce mode; `JSON.stringify` is not a validator).
 
 The latest run is auto-generated from `bench/results/latest.md` and is included in full at the end of this section.
 
@@ -127,15 +127,15 @@ The latest run is auto-generated from `bench/results/latest.md` and is included 
 | Composition | `Compose.extend / intersection / discriminatedUnion` | TypeBox `Type.Composite / Intersect / Union`, Zod `.extend / intersection / discriminatedUnion`, Valibot `variant` |
 | Serialization | `dump`, `dumpJson`, facade `encode` | `JSON.stringify`, `structuredClone`, TypeBox `Value.Encode` |
 | Registry | cold register + first validate, warm validate | TypeBox `TypeCompiler.Compile + Check`, Zod, Valibot |
-| Compiled vs Interpreted | `SchemaCompiler` vs `GraphEngine.execute` | internal — measures the speedup of the compile path |
+| Compiled vs Interpreted | `SchemaCompiler` vs `GraphEngine.execute` | internal - measures the speedup of the compile path |
 
 ### What's unique
 
 These are operations no comparator implements. They appear only as a single-library row in the report and are included for completeness, not as head-to-head wins.
 
-- `toTbox` — OWL TBox projection from the canonical graph.
-- `toShacl` — SHACL shape projection.
-- `toQuads` / `fromQuads` — RDF round-trip via projection.
+- `toTbox`: OWL TBox projection from the canonical graph.
+- `toShacl`: SHACL shape projection.
+- `toQuads` / `fromQuads`: RDF round-trip via projection.
 - ABox projection through `Materializer.projectAbox`.
 - `findDuplicates` over the registry.
 - The `jt:` keyword set (computed properties, invariants, decoders, brands).
@@ -145,14 +145,14 @@ These are operations no comparator implements. They appear only as a single-libr
 
 Scenarios where json-tology is more than 5x slower than the median comparator. Each is a known issue.
 
-- `simple valid` validation (~6x slower than median) — the per-validate graph traversal cost dominates a 5-property flat schema. Tracked: rework hot path so flat schemas skip subgraph dispatch when no $refs are present.
-- `nested valid` validation (~7x slower than median) — same root cause as `simple valid`, amplified by per-property subschema lookup. Tracked: precompile a flattened property dispatch table per schema graph.
-- `convert simple` (~32x slower than TypeBox) — `castTypes: true` runs a separate normalize pass over the value before validate. Tracked: fold normalize into the compiled validator.
-- `extend + validate` cold path (~12x slower than TypeBox) — registering a derived schema rebuilds the canonical graph from scratch per call. Tracked: cache subgraph fragments at register time.
-- `intersection` cold path (~12x slower than Zod) — same root cause as `extend + validate`.
-- `dumpJson nested` (~8x slower than `JSON.stringify`) — `dump` walks the schema graph for every property. Tracked: short-circuit when no Transform encoders are attached anywhere in the subgraph.
-- `discriminated union` warm (~74x slower than TypeBox compiled) — every variant is currently re-resolved through `oneOf` semantics. Tracked: discriminator-aware fast path that switches directly on the discriminator key.
-- `cold first validate` (~156x slower than Valibot) — Valibot has no compile step at all; the cold path is the warm path. Our cold path includes graph construction, subschema linking, and JIT compilation. Acceptable cost because subsequent calls are fast, but the gap is honest. Tracked: lazy subgraph build for unreachable parts of the schema.
+- `simple valid` validation (~6x slower than median) - the per-validate graph traversal cost dominates a 5-property flat schema. Tracked: rework hot path so flat schemas skip subgraph dispatch when no $refs are present.
+- `nested valid` validation (~7x slower than median) - same root cause as `simple valid`, amplified by per-property subschema lookup. Tracked: precompile a flattened property dispatch table per schema graph.
+- `convert simple` (~32x slower than TypeBox) - `castTypes: true` runs a separate normalize pass over the value before validate. Tracked: fold normalize into the compiled validator.
+- `extend + validate` cold path (~12x slower than TypeBox) - registering a derived schema rebuilds the canonical graph from scratch per call. Tracked: cache subgraph fragments at register time.
+- `intersection` cold path (~12x slower than Zod) - same root cause as `extend + validate`.
+- `dumpJson nested` (~8x slower than `JSON.stringify`) - `dump` walks the schema graph for every property. Tracked: short-circuit when no Transform encoders are attached anywhere in the subgraph.
+- `discriminated union` warm (~74x slower than TypeBox compiled) - every variant is currently re-resolved through `oneOf` semantics. Tracked: discriminator-aware fast path that switches directly on the discriminator key.
+- `cold first validate` (~156x slower than Valibot) - Valibot has no compile step at all; the cold path is the warm path. Our cold path includes graph construction, subschema linking, and JIT compilation. Acceptable cost because subsequent calls are fast, but the gap is honest. Tracked: lazy subgraph build for unreachable parts of the schema.
 
 ### Reproduce
 

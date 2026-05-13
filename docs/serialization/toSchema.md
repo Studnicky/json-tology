@@ -11,9 +11,9 @@
 ### Example 1: Round-trip an Order schema
 
 ```ts
-import { bookstoreEntities as entities } from './bookstore/index.js';
+import { bookstoreEntities } from './bookstore/index.js';
 
-const reconstructed = jt.toSchema('https://bookstore.example/Order');
+const reconstructed = bookstoreEntities.toSchema('https://bookstore.example/Order');
 console.log(JSON.stringify(reconstructed, null, 2));
 // Should match the original OrderSchema structure
 ```
@@ -22,16 +22,16 @@ console.log(JSON.stringify(reconstructed, null, 2));
 
 ```ts
 import { Compose } from 'json-tology';
-import { bookstoreEntities as entities, BookSchema } from './bookstore/index.js';
+import { bookstoreEntities, BookSchema } from './bookstore/index.js';
 
 const BookSummarySchema = Compose.pick(
   BookSchema,
   ['isbn', 'title', 'price'] as const,
   'https://bookstore.example/BookSummary',
 );
-jt.register(BookSummarySchema);
+bookstoreEntities.register(BookSummarySchema);
 
-const roundTripped = jt.toSchema('https://bookstore.example/BookSummary');
+const roundTripped = bookstoreEntities.toSchema('https://bookstore.example/BookSummary');
 // Should contain only isbn, title, price properties
 const keys = Object.keys((roundTripped?.properties as object) ?? {});
 console.log(keys); // ['isbn', 'title', 'price']
@@ -44,20 +44,20 @@ const missing = jt.toSchema('https://bookstore.example/NonExistent');
 console.log(missing); // undefined
 ```
 
-## Bad examples — what NOT to do
+## Bad examples: what NOT to do
 
 ### Anti-pattern 1: Using toSchema when you need the original authored object
 
 ```ts
-import { bookstoreEntities as entities } from './bookstore/index.js';
+import { bookstoreEntities } from './bookstore/index.js';
 
 // ✗ Don't do this — toSchema reconstructs from the graph; the result may
 // differ in key order, inlined $defs, or normalized forms
-const schema = entities.toSchema('https://bookstore.example/Book');
+const schema = bookstoreEntities.toSchema('https://bookstore.example/Book');
 const originalTitle = schema?.title; // may be present or absent depending on normalization
 
-// ✓ Do this — use jt.get to retrieve the original object reference
-const original = entities.get('https://bookstore.example/Book');
+// ✓ Do this — use bookstoreEntities.get to retrieve the original object reference
+const original = bookstoreEntities.get('https://bookstore.example/Book');
 // original is the exact object passed to JsonTology.create
 ```
 
@@ -66,7 +66,7 @@ const original = entities.get('https://bookstore.example/Book');
 ```ts
 // ✗ Don't do this — comparing reconstructed schema against original via deep-equal
 // is fragile; normalization may reorder keys or inline $defs differently
-const reconstructed = entities.toSchema('https://bookstore.example/Order');
+const reconstructed = bookstoreEntities.toSchema('https://bookstore.example/Order');
 const original = OrderSchema;
 console.log(JSON.stringify(reconstructed) === JSON.stringify(original)); // may be false even when semantically equivalent
 
@@ -78,11 +78,11 @@ console.log(JSON.stringify(reconstructed) === JSON.stringify(original)); // may 
 
 ```ts
 // ✗ Don't do this — ignoring the undefined return for schemas not in the registry
-const schema = entities.toSchema('https://bookstore.example/Nonexistent');
+const schema = bookstoreEntities.toSchema('https://bookstore.example/Nonexistent');
 const props = Object.keys(schema.properties); // TypeError: Cannot read properties of undefined
 
 // ✓ Do this — check for undefined before accessing the result
-const schema2 = entities.toSchema('https://bookstore.example/Nonexistent');
+const schema2 = bookstoreEntities.toSchema('https://bookstore.example/Nonexistent');
 if (schema2 === undefined) {
   console.warn('Schema not registered');
 } else {

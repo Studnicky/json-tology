@@ -77,9 +77,9 @@ for (const err of errs) {
 #### Example 1: Structured log
 
 ```ts
-import { bookstoreEntities as entities, OrderSchema } from './bookstore/index.js';
+import { bookstoreEntities, OrderSchema } from './bookstore/index.js';
 
-const errs = entities.validate(OrderSchema.$id, badOrder);
+const errs = bookstoreEntities.validate(OrderSchema.$id, badOrder);
 
 if (!errs.ok) {
   const rollup = errs.aggregate();
@@ -217,10 +217,10 @@ keywords = sorted(set(e['type'] for e in errors))
 #### Example 1: Express/Fastify/Hono request handler
 
 ```ts
-import { bookstoreEntities as entities, ReviewSchema } from './bookstore/index.js';
+import { bookstoreEntities, ReviewSchema } from './bookstore/index.js';
 
 app.post('/reviews', (req, res) => {
-  const errs = entities.validate(ReviewSchema.$id, req.body);
+  const errs = bookstoreEntities.validate(ReviewSchema.$id, req.body);
 
   if (!errs.ok) {
     return res
@@ -229,7 +229,7 @@ app.post('/reviews', (req, res) => {
       .send(errs.report({ instance: req.url }));
   }
 
-  const review = entities.instantiate(ReviewSchema.$id, req.body);
+  const review = bookstoreEntities.instantiate(ReviewSchema.$id, req.body);
   // ... persist and return 201
 });
 ```

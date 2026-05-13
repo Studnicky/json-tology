@@ -5,10 +5,10 @@
 
 import { Value } from '../../../src/index.js';
 import {
-  bookstoreEntities as entities, OrderSchema
+  bookstoreEntities, OrderSchema
 } from '../bookstore/index.js';
 
-const order = entities.instantiate(OrderSchema.$id, {
+const order = bookstoreEntities.instantiate(OrderSchema.$id, {
   'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'id': 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   'items': [{

@@ -4,11 +4,11 @@
  */
 
 import {
-  type Customer, CustomerSchema, bookstoreEntities as entities
+  bookstoreEntities, type Customer, CustomerSchema
 } from '../bookstore/index.js';
 
 function describeCustomer(data: unknown): string {
-  if (entities.is(CustomerSchema.$id, data)) {
+  if (bookstoreEntities.is(CustomerSchema.$id, data)) {
     // data is narrowed to Customer here
     return `${String(data.name)} <${String(data.email)}>`;
   }
@@ -44,7 +44,7 @@ const mixed: unknown[] = [
 ];
 
 const customers = mixed.filter((item): item is Customer => {
-  return entities.is(CustomerSchema.$id, item);
+  return bookstoreEntities.is(CustomerSchema.$id, item);
 });
 
 console.assert(customers.length === 2);

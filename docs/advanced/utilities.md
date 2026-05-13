@@ -1,6 +1,6 @@
 # Public utility classes
 
-A small set of utility classes is exported alongside `JsonTology` for advanced use — cases where you reach below the facade for graph, RDF, or hashing primitives. Each utility has one responsibility.
+A small set of utility classes is exported alongside `JsonTology` for advanced use - cases where you reach below the facade for graph, RDF, or hashing primitives. Each utility has one responsibility.
 
 | Class      | Module                                | Purpose                                                   |
 |------------|---------------------------------------|-----------------------------------------------------------|
@@ -35,7 +35,7 @@ When multiple prefixes share an overlap, `compact` picks the longest match.
 
 ## `Path`
 
-`Path.toAccess(jsonPointer)` converts a JSON Pointer into JS access form — the path you would write to read the value out of the object. Useful when surfacing validation errors in UIs that expect access notation.
+`Path.toAccess(jsonPointer)` converts a JSON Pointer into JS access form - the path you would write to read the value out of the object. Useful when surfacing validation errors in UIs that expect access notation.
 
 ```ts
 import { Path } from 'json-tology';
@@ -50,7 +50,7 @@ Numeric segments become `[N]`; identifier-shaped segments become `.name`; non-id
 
 ## `Resolver`
 
-`Resolver.merge(base, override)` returns a fresh object with `override`'s defined keys overwriting `base`. `undefined` keys in `override` do not erase base values — this is the per-call option-merge pattern used throughout json-tology.
+`Resolver.merge(base, override)` returns a fresh object with `override`'s defined keys overwriting `base`. `undefined` keys in `override` do not erase base values - this is the per-call option-merge pattern used throughout json-tology.
 
 ```ts
 import { Resolver } from 'json-tology';
@@ -92,7 +92,7 @@ import type { QuadInterface } from 'json-tology/types';
 const internal: QuadInterface[] = rdfQuads.map(q => Lift.fromQuad(q));
 
 // pass to JsonTology.fromQuads
-const books = entities.fromQuads('https://bookstore.example/Book', internal);
+const books = bookstoreEntities.fromQuads('https://bookstore.example/Book', internal);
 ```
 
 For the typed round-trip use the `JsonTology` facade ([RDF round-trip](/advanced/quads)). Reach for `Lift` only when integrating with an external RDF/JS library directly.
@@ -101,7 +101,7 @@ For the typed round-trip use the `JsonTology` facade ([RDF round-trip](/advanced
 
 ## Examples
 
-### Example 1: Curie — compact bookstore IRIs for display
+### Example 1: Curie: compact bookstore IRIs for display
 
 Shrink full IRIs to CURIE form for readable output in debug logs or ontology tooling.
 
@@ -120,15 +120,15 @@ curie.compact('http://www.w3.org/2002/07/owl#Class'); // → 'owl:Class'
 curie.expand('bk:Customer');                        // → 'https://bookstore.example/Customer'
 ```
 
-### Example 2: Path — surface validation error paths in a form UI
+### Example 2: Path: surface validation error paths in a form UI
 
 Convert JSON Pointer paths from `ValidationErrors` into JS access notation for a form library that uses dot/bracket paths.
 
 ```ts
 import { Path } from 'json-tology';
-import { bookstoreEntities as entities, OrderSchema } from './bookstore/index.js';
+import { bookstoreEntities, OrderSchema } from './bookstore/index.js';
 
-const errs = entities.validate(OrderSchema.$id, {
+const errs = bookstoreEntities.validate(OrderSchema.$id, {
   id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   placedAt:   '2026-01-15T10:30:00Z',
@@ -143,7 +143,7 @@ for (const err of errs) {
 // 'items[0].quantity' 'must be >= 1'
 ```
 
-### Example 3: Resolver — merge per-call options without mutating the base
+### Example 3: Resolver: merge per-call options without mutating the base
 
 Override a single flag for one call without constructing a full options object each time.
 
@@ -161,7 +161,7 @@ const sameAsDefault = Resolver.merge(defaultOpts, { enableDefaults: undefined })
 // { enableDefaults: true, enableValidation: true, enableThrow: false }
 ```
 
-### Example 4: Hash — stable cache key for a schema content fingerprint
+### Example 4: Hash: stable cache key for a schema content fingerprint
 
 Use `Hash.value` to produce a deterministic fingerprint for a schema object. Two structurally identical schemas with different key order produce the same hash.
 
@@ -181,7 +181,7 @@ if (!cache.has(key)) {
 }
 ```
 
-### Example 5: Lift — integrate an external n3 RDF/JS source
+### Example 5: Lift: integrate an external n3 RDF/JS source
 
 Convert quads produced by the `n3` parser into json-tology's internal quad shape for `fromQuads`.
 
@@ -189,7 +189,7 @@ Convert quads produced by the `n3` parser into json-tology's internal quad shape
 import { Lift } from 'json-tology';
 import { Parser } from 'n3';
 import type { QuadInterface } from 'json-tology/types';
-import { bookstoreEntities as entities } from './bookstore/index.js';
+import { bookstoreEntities } from './bookstore/index.js';
 
 const turtle = `
   <https://bookstore.example/books/9780140449136>
@@ -202,14 +202,14 @@ const parser = new Parser();
 const rdfQuads = parser.parse(turtle);
 const internal: QuadInterface[] = rdfQuads.map(q => Lift.fromQuad(q));
 
-const books = entities.fromQuads('https://bookstore.example/Book', internal);
+const books = bookstoreEntities.fromQuads('https://bookstore.example/Book', internal);
 // books[0].isbn === '9780140449136'
 // books[0].title === 'Crime and Punishment'
 ```
 
-## Bad examples — what NOT to do
+## Bad examples: what NOT to do
 
-### Anti-pattern 1: Curie — expanding a prefix that is not registered
+### Anti-pattern 1: Curie: expanding a prefix that is not registered
 
 ```ts
 import { Curie } from 'json-tology';
@@ -228,7 +228,7 @@ const curie2 = new Curie({
 curie2.expand('schema:Book'); // → 'https://schema.org/Book'
 ```
 
-### Anti-pattern 2: Path — using toAccess on a non-JSON Pointer string
+### Anti-pattern 2: Path: using toAccess on a non-JSON Pointer string
 
 ```ts
 import { Path } from 'json-tology';
@@ -240,7 +240,7 @@ Path.toAccess('items.0.quantity'); // → '["items.0.quantity"]' (treated as one
 Path.toAccess('/items/0/quantity'); // → 'items[0].quantity'
 ```
 
-### Anti-pattern 3: Hash — using Hash.value as a cryptographic hash
+### Anti-pattern 3: Hash: using Hash.value as a cryptographic hash
 
 ```ts
 import { Hash } from 'json-tology';
@@ -256,7 +256,7 @@ import { createHash } from 'node:crypto';
 const safeHash = createHash('sha256').update(JSON.stringify(sensitivePayload)).digest('hex');
 ```
 
-### Anti-pattern 4: Lift — passing Lift quads directly to a native RDF/JS consumer
+### Anti-pattern 4: Lift: passing Lift quads directly to a native RDF/JS consumer
 
 ```ts
 import { Lift } from 'json-tology';

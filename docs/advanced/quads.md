@@ -12,10 +12,10 @@ The bookstore schemas defined in the [Bookstore Domain](/bookstore-domain) are u
 
 A `Quad` is the atomic unit of RDF data produced and consumed by `toQuads` / `fromQuads`. Each quad is a plain object with four fields:
 
-- `subject` — the IRI or blank-node identifier of the resource being described
-- `predicate` — the property IRI
-- `object` — the value (IRI, blank node, or typed literal)
-- `graph` — the named-graph IRI, or the default graph when omitted
+- `subject`: the IRI or blank-node identifier of the resource being described
+- `predicate`: the property IRI
+- `object`: the value (IRI, blank node, or typed literal)
+- `graph`: the named-graph IRI, or the default graph when omitted
 
 A `SubjectGroup` is a convenience wrapper that groups all quads sharing the same subject, making it easier to reconstruct a single typed object from a quad array. `fromQuads` uses subject groups internally when lifting quads back into typed JS values via [`instantiate`](/validation/instantiate).
 
@@ -34,9 +34,9 @@ A `SubjectGroup` is a convenience wrapper that groups all quads sharing the same
 #### Example 1: Project an order to ABox quads
 
 ```ts
-import { bookstoreEntities as entities, OrderSchema } from './bookstore/index.js';
+import { bookstoreEntities, OrderSchema } from './bookstore/index.js';
 
-const order = entities.instantiate(OrderSchema.$id, {
+const order = bookstoreEntities.instantiate(OrderSchema.$id, {
   id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   placedAt:   '2026-01-15T10:30:00Z',
@@ -47,14 +47,14 @@ const order = entities.instantiate(OrderSchema.$id, {
   ],
 });
 
-const quads = entities.toQuads(OrderSchema, order);
+const quads = bookstoreEntities.toQuads(OrderSchema, order);
 
 console.log(quads.length);  // count of RDF quads
 console.log(quads[0]);      // { subject, predicate, object, graph }
 
 // For richer output (JSON-LD, SHACL composition) pass the quads through
 // the ontology builder:
-const ontology = entities.ontology().addQuads(quads);
+const ontology = bookstoreEntities.ontology().addQuads(quads);
 console.log(ontology.jsonLd());       // JSON-LD string
 console.log(ontology.jsonLdObject()); // JSON-LD object
 ```
@@ -62,10 +62,10 @@ console.log(ontology.jsonLdObject()); // JSON-LD object
 #### Example 2: Merge ABox with TBox in a single document
 
 ```ts
-import { bookstoreEntities as entities, OrderSchema } from './bookstore/index.js';
+import { bookstoreEntities, OrderSchema } from './bookstore/index.js';
 
-const tbox = entities.toTbox();
-const abox = entities.toQuads(OrderSchema, order);
+const tbox = bookstoreEntities.toTbox();
+const abox = bookstoreEntities.toQuads(OrderSchema, order);
 
 const merged = {
   '@context': tbox.context(),
@@ -121,7 +121,7 @@ entities.toQuads(OrderSchema, order, {
 });
 ```
 
-Both options can be paired with registry-level defaults via `JsonTology.create({ iriFor, defaultGraphIRI })` — see [getting started](/getting-started#graph-emission).
+Both options can be paired with registry-level defaults via `JsonTology.create({ iriFor, defaultGraphIRI })`: see [getting started](/getting-started#graph-emission).
 
 ## `jt.fromQuads` {#jt-fromquads}
 
@@ -136,11 +136,11 @@ Both options can be paired with registry-level defaults via `JsonTology.create({
 Pass `{ deskolemize: true }` to treat IRIs matching the W3C well-known genid pattern (`*/.well-known/genid/<hash>`) as blank nodes during reconstruction. This pairs with `Skolemize.wellKnownGenid` on `toQuads`:
 
 ```ts
-const quads = entities.toQuads(OrderSchema, order, {
+const quads = bookstoreEntities.toQuads(OrderSchema, order, {
   iriFor: Skolemize.wellKnownGenid('https://shop.example.com')
 });
 
-const [restored] = entities.fromQuads(OrderSchema.$id, quads, { deskolemize: true });
+const [restored] = bookstoreEntities.fromQuads(OrderSchema.$id, quads, { deskolemize: true });
 ```
 
 The registry-level `defaultDeskolemize: true` flips this on for every `fromQuads` call without per-call overrides.
@@ -150,10 +150,10 @@ The registry-level `defaultDeskolemize: true` flips this on for every `fromQuads
 #### Example 1: Round-trip an order
 
 ```ts
-import { bookstoreEntities as entities, OrderSchema } from './bookstore/index.js';
+import { bookstoreEntities, OrderSchema } from './bookstore/index.js';
 import { strict as assert } from 'node:assert';
 
-const original = entities.instantiate(OrderSchema.$id, {
+const original = bookstoreEntities.instantiate(OrderSchema.$id, {
   id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   placedAt:   '2026-01-15T10:30:00Z',
@@ -164,8 +164,8 @@ const original = entities.instantiate(OrderSchema.$id, {
   ],
 });
 
-const quads = entities.toQuads(OrderSchema, original);
-const [restored] = entities.fromQuads(OrderSchema.$id, quads);
+const quads = bookstoreEntities.toQuads(OrderSchema, original);
+const [restored] = bookstoreEntities.fromQuads(OrderSchema.$id, quads);
 
 assert.deepEqual(restored, original);
 ```
@@ -173,13 +173,13 @@ assert.deepEqual(restored, original);
 #### Example 2: Lift quads from a triple store
 
 ```ts
-import { bookstoreEntities as entities, BookSchema } from './bookstore/index.js';
+import { bookstoreEntities, BookSchema } from './bookstore/index.js';
 
 // quads from an external SPARQL CONSTRUCT or DESCRIBE
 const quads = await fetchQuadsFromTripleStore('SELECT ... WHERE { ?b a :Book }');
 
 // returns Book[] - validated, typed, defaults applied
-const books = entities.fromQuads(BookSchema.$id, quads);
+const books = bookstoreEntities.fromQuads(BookSchema.$id, quads);
 
 for (const book of books) {
   console.log(book.title, book.price);

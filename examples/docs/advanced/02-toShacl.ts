@@ -5,9 +5,9 @@
  * property shapes derived from the registered schemas. No OWL TBox quads.
  */
 
-import { bookstoreEntities as entities } from '../bookstore/index.js';
+import { bookstoreEntities } from '../bookstore/index.js';
 
-const shaclBuilder = entities.toShacl();
+const shaclBuilder = bookstoreEntities.toShacl();
 
 // SHACL shapes as a JSON-LD object
 const shaclObject = shaclBuilder.shaclObject();

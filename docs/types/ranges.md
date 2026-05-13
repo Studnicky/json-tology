@@ -1,11 +1,11 @@
 ---
 title: Range Types
-description: IntegerRangeType and MultipleOfRangeType — compile-time literal unions for bounded numeric ranges.
+description: IntegerRangeType and MultipleOfRangeType - compile-time literal unions for bounded numeric ranges.
 ---
 
 # Range Types <Badge type="info" text="Compile-time" />
 
-> This page covers `IntegerRangeType` and `MultipleOfRangeType` — compile-time utilities that produce literal unions for bounded integer ranges. All examples use the [bookstore domain](/bookstore-domain). See [Schemas](/schemas) for how schemas are registered.
+> This page covers `IntegerRangeType` and `MultipleOfRangeType`: compile-time utilities that produce literal unions for bounded integer ranges. All examples use the [bookstore domain](/bookstore-domain). See [Schemas](/schemas) for how schemas are registered.
 
 See also [Primary inference](./infer.md), [Utility types](./utility.md).
 

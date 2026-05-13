@@ -5,9 +5,9 @@
  * declarations derived from the registered schemas. No SHACL shapes.
  */
 
-import { bookstoreEntities as entities } from '../bookstore/index.js';
+import { bookstoreEntities } from '../bookstore/index.js';
 
-const tbox = entities.toTbox();
+const tbox = bookstoreEntities.toTbox();
 
 // Full OWL JSON-LD document
 const jsonLd = tbox.jsonLd();

@@ -103,11 +103,11 @@ try {
 | _(direct string)_                     | `GRAPH_INVALID_RESTRICTION` | Thrown by `OwlProjection` when a restriction entry is missing a required `kind`, `onProperty`, or `value` field. See `src/types/ErrorCodes.ts`. |
 
 ```ts
-import { bookstoreEntities as entities, OrderSchema } from './bookstore/index.js';
+import { bookstoreEntities, OrderSchema } from './bookstore/index.js';
 import { GraphError } from 'json-tology';
 
 try {
-  entities.subschemaAt(OrderSchema.$id, '/properties/nope');
+  bookstoreEntities.subschemaAt(OrderSchema.$id, '/properties/nope');
 } catch (err) {
   if (err instanceof GraphError) {
     console.log(err.code);     // "POINTER_NOT_FOUND"
@@ -161,11 +161,11 @@ try {
 | `InstantiationErrorCode.TRANSFORM_DECODE_FAILED` | `TRANSFORM_DECODE_FAILED` | A `Transform.chain` decode stage throws during `instantiate`. Thrown by `RefDecoder` and `SchemaRegistry` when a transform stage fails mid-decode. See `src/types/ErrorCodes.ts`. |
 
 ```ts
-import { bookstoreEntities as entities, OrderSchema } from './bookstore/index.js';
+import { bookstoreEntities, OrderSchema } from './bookstore/index.js';
 import { InstantiationError } from 'json-tology';
 
 try {
-  entities.instantiate(OrderSchema.$id, {
+  bookstoreEntities.instantiate(OrderSchema.$id, {
     id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
     customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
     placedAt:   '2026-01-15T10:30:00Z',
@@ -222,12 +222,12 @@ try {
 | `CYCLIC_DATA` | Circular reference detected during ABox projection (`toQuads`). Thrown by `Projection` when a data object contains a cycle that would loop indefinitely during RDF quad emission. See `src/types/ErrorCodes.ts`. |
 
 ```ts
-import { bookstoreEntities as entities, OrderSchema } from './bookstore/index.js';
+import { bookstoreEntities, OrderSchema } from './bookstore/index.js';
 import { MaterializationError } from 'json-tology';
 
 try {
   // materialize without enablePartial fails when required has no default
-  entities.materialize(OrderSchema, {});
+  bookstoreEntities.materialize(OrderSchema, {});
 } catch (err) {
   if (err instanceof MaterializationError) {
     console.log(err.code);              // "MATERIALIZATION_FAILED"

@@ -1,6 +1,6 @@
 ---
 title: Utility Types
-description: DeprecatedKeysType, NonDeprecatedSchemaType, LooseInputType, EnumValuesType, ExhaustiveType, and DefaultAlignedType — compile-time schema metadata utilities.
+description: DeprecatedKeysType, NonDeprecatedSchemaType, LooseInputType, EnumValuesType, ExhaustiveType, and DefaultAlignedType - compile-time schema metadata utilities.
 ---
 
 # Utility Types <Badge type="info" text="Compile-time" />

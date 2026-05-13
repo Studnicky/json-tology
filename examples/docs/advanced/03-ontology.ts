@@ -6,9 +6,9 @@
  * you need only one vocabulary. Use ontology() when you need both.
  */
 
-import { bookstoreEntities as entities } from '../bookstore/index.js';
+import { bookstoreEntities } from '../bookstore/index.js';
 
-const builder = entities.ontology();
+const builder = bookstoreEntities.ontology();
 
 // OWL JSON-LD (TBox)
 const owlJsonLd = builder.jsonLd();
@@ -23,7 +23,7 @@ const shacl = builder.shaclObject();
 const ctx = builder.context();
 
 // Subsequent calls return the same cached builder
-const cached = entities.ontology();
+const cached = bookstoreEntities.ontology();
 
 // true — ontology() is cached
 void (builder === cached);

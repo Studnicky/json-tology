@@ -289,7 +289,7 @@ The bookstore domain extends to an OWL-style class hierarchy with subClassOf and
 All subsequent guide pages import from the shared orchestrator:
 
 ```ts
-import { bookstoreEntities as entities, CustomerSchema } from '../bookstore/index.js';
+import { bookstoreEntities, CustomerSchema } from '../bookstore/index.js';
 ```
 
 Or import directly from the specific entity file when only one is needed:

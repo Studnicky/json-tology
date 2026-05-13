@@ -2,15 +2,15 @@
 
 > Validation modes: [Validation modes reference](/validation-modes)
 
-**Declaration.** Creates a new schema with a different `$id` that references the source schema via `$ref`. The two schemas are structurally identical — they validate the same data — but serve different semantic roles in the domain model. In the OWL TBox, `owl:equivalentClass` is emitted automatically. In SHACL, the new schema gains `sh:node` pointing at the source.
+**Declaration.** Creates a new schema with a different `$id` that references the source schema via `$ref`. The two schemas are structurally identical - they validate the same data - but serve different semantic roles in the domain model. In the OWL TBox, `owl:equivalentClass` is emitted automatically. In SHACL, the new schema gains `sh:node` pointing at the source.
 
 ```ts
 Compose.equivalent(source, options): { $id, $ref, description?, title?, examples? }
 ```
 
-**Use this when** you want to give a domain-distinct name to an existing schema without duplicating its structure. The canonical use is giving purpose-specific aliases to shared primitives — `PrimaryIsbn` wrapping `Isbn`, `CatalogPrice` wrapping `Money` — where the two names carry different semantic intent but must validate identically.
+**Use this when** you want to give a domain-distinct name to an existing schema without duplicating its structure. The canonical use is giving purpose-specific aliases to shared primitives - `PrimaryIsbn` wrapping `Isbn`, `CatalogPrice` wrapping `Money`: where the two names carry different semantic intent but must validate identically.
 
-**Don't use this when** the two schemas have _different_ structure. If `PrimaryIsbn` had an extra constraint (e.g. must start with `978`), it is NOT equivalent to `Isbn` — use `Compose.extend` or a new standalone schema instead.
+**Don't use this when** the two schemas have _different_ structure. If `PrimaryIsbn` had an extra constraint (e.g. must start with `978`), it is NOT equivalent to `Isbn`: use `Compose.extend` or a new standalone schema instead.
 
 ## Self-equivalence prevention <Badge type="info" text="Compile-time" />
 
@@ -87,7 +87,7 @@ const tbox = jt.toTbox().jsonLd();
 // { "@id": "https://bookstore.example/PrimaryIsbn", "owl:equivalentClass": { "@id": "https://bookstore.example/Isbn" } }
 ```
 
-## Bad examples — what NOT to do
+## Bad examples: what NOT to do
 
 ### Anti-pattern 1: Using equivalent when the new schema adds a constraint
 
@@ -194,6 +194,6 @@ class CatalogIsbn(Isbn):
 
 - [OWL TBox output](/advanced/ontology#jt-totbox)
 - [SHACL output](/advanced/ontology#jt-toshacl)
-- [`Compose.extend`](/composition/extend) — structural extension (produces allOf+$ref, maps to `rdfs:subClassOf`)
-- [`Compose.subClassOf`](/composition/sub-class-of) — explicit taxonomic subclass with optional multi-parent
-- [Graph-native authoring](/advanced/graph-native-authoring) — why naming reduces drift
+- [`Compose.extend`](/composition/extend) - structural extension (produces allOf+$ref, maps to `rdfs:subClassOf`)
+- [`Compose.subClassOf`](/composition/sub-class-of) - explicit taxonomic subclass with optional multi-parent
+- [Graph-native authoring](/advanced/graph-native-authoring) - why naming reduces drift

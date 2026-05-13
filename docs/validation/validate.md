@@ -15,10 +15,10 @@ Equivalent to `materialize(idOrSchema, data, { enableValidation: true, enableThr
 ### Example 1: Basic valid and invalid cases
 
 ```ts
-import { bookstoreEntities as entities, CustomerSchema } from './bookstore/index.js';
+import { bookstoreEntities, CustomerSchema } from './bookstore/index.js';
 
 // Valid  - empty collection
-const ok = jt.validate(CustomerSchema.$id, {
+const ok = bookstoreEntities.validate(CustomerSchema.$id, {
   id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   email: 'alice@bookstore.example',
   name:  'Alice Chen',
@@ -27,7 +27,7 @@ console.log(ok.ok);     // true
 console.log(ok.length); // 0
 
 // Missing required fields
-const bad = jt.validate(CustomerSchema.$id, {
+const bad = bookstoreEntities.validate(CustomerSchema.$id, {
   email: 'alice@bookstore.example',
 });
 console.log(bad.length); // 2
@@ -43,9 +43,9 @@ for (const err of bad) {
 `OrderSchema` contains `items: [OrderLine]` via `$ref`. Errors on nested fields include the full JSON Pointer path.
 
 ```ts
-import { bookstoreEntities as entities, OrderSchema } from './bookstore/index.js';
+import { bookstoreEntities, OrderSchema } from './bookstore/index.js';
 
-const errs = jt.validate(OrderSchema.$id, {
+const errs = bookstoreEntities.validate(OrderSchema.$id, {
   id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   placedAt:   '2026-01-15T10:30:00Z',
@@ -64,10 +64,10 @@ Validate on blur before attempting a full instantiate.
 
 ```ts
 import type { ValidationErrors } from 'json-tology/types';
-import { bookstoreEntities as entities, ReviewSchema } from './bookstore/index.js';
+import { bookstoreEntities, ReviewSchema } from './bookstore/index.js';
 
 function validateReviewForm(formData: Record<string, unknown>): ValidationErrors {
-  return jt.validate(ReviewSchema.$id, formData);
+  return bookstoreEntities.validate(ReviewSchema.$id, formData);
 }
 
 const fieldErrors = validateReviewForm({ rating: 6, body: 'hi' });

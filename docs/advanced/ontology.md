@@ -23,9 +23,9 @@ The bookstore schemas defined in the [Bookstore Domain](/bookstore-domain) are u
 #### Example 1: Generate OWL TBox JSON-LD from bookstore schemas
 
 ```ts
-import { bookstoreEntities as entities } from './bookstore/schemas.js';
+import { bookstoreEntities } from './bookstore/schemas.js';
 
-const tbox = entities.toTbox();
+const tbox = bookstoreEntities.toTbox();
 
 // Full OWL JSON-LD string
 console.log(tbox.jsonLd());
@@ -40,10 +40,10 @@ const raw = tbox.raw();
 #### Example 2: Merge TBox with separately sourced ABox
 
 ```ts
-import { bookstoreEntities as entities, CustomerSchema } from './bookstore/schemas.js';
+import { bookstoreEntities, CustomerSchema } from './bookstore/schemas.js';
 
-const tbox  = entities.toTbox();
-const abox  = entities.toQuads(CustomerSchema, customerData); // QuadInterface[]
+const tbox  = bookstoreEntities.toTbox();
+const abox  = bookstoreEntities.toQuads(CustomerSchema, customerData); // QuadInterface[]
 
 const merged = {
   '@context': tbox.context(),
@@ -101,9 +101,9 @@ const cached = jt.ontology();
 #### Example 1: Generate SHACL shapes JSON-LD from bookstore schemas
 
 ```ts
-import { bookstoreEntities as entities } from './bookstore/schemas.js';
+import { bookstoreEntities } from './bookstore/schemas.js';
 
-const shaclBuilder = entities.toShacl();
+const shaclBuilder = bookstoreEntities.toShacl();
 
 // SHACL shapes JSON-LD object (includes sh: prefix in context)
 const shacl = shaclBuilder.shaclObject();
@@ -172,9 +172,9 @@ const shacl = builder.shaclObject();
 #### Example 1: Generate OWL JSON-LD for all bookstore schemas
 
 ```ts
-import { bookstoreEntities as entities } from './bookstore/index.js';
+import { bookstoreEntities } from './bookstore/index.js';
 
-const builder = jt.ontology();
+const builder = bookstoreEntities.ontology();
 
 // OWL JSON-LD string
 console.log(builder.jsonLd());
@@ -384,7 +384,7 @@ import { Store, Parser } from 'n3';
 const store = new Store();
 const parser = new Parser({ format: 'application/ld+json' });
 
-parser.parse(entities.toTbox().jsonLd(), (error, quad) => {
+parser.parse(bookstoreEntities.toTbox().jsonLd(), (error, quad) => {
   if (quad) store.addQuad(quad);
 });
 

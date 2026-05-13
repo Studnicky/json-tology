@@ -40,15 +40,15 @@ jt.register([AddressSchema, CustomerSchema] as const);
 
 ```ts
 import { Compose } from 'json-tology';
-import { bookstoreEntities as entities, BookSchema } from './bookstore/index.js';
+import { bookstoreEntities, BookSchema } from './bookstore/index.js';
 
 const BookSummarySchema = Compose.pick(
   BookSchema,
   ['isbn', 'title', 'price'] as const,
   'https://bookstore.example/BookSummary',
 );
-jt.register(BookSummarySchema);
-console.log(jt.has('https://bookstore.example/BookSummary')); // true
+bookstoreEntities.register(BookSummarySchema);
+console.log(bookstoreEntities.has('https://bookstore.example/BookSummary')); // true
 ```
 
 ### Comparison

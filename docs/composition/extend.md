@@ -9,9 +9,9 @@
 **Don't use this when** you need all constituent schemas' required constraints to apply simultaneously and the base must also be inlined rather than referenced (use [`intersection`](/composition/intersection) directly with `allOf` instead). Don't use it when you want to narrow properties (use [`pick`](/composition/pick-omit)). Don't use it if the added fields should all be optional with default-only filling (use [`materialize`](/registry/materialize) instead).
 
 **`extend` vs `subClassOf`.** Both produce the same `allOf + $ref` wire shape and both map to `rdfs:subClassOf` in the OWL TBox. The split is intentional:
-- `extend` is **property-merging** — single parent, additions as a sibling object schema, designed around "I have a base and I want a few more fields".
-- [`Compose.subClassOf`](/composition/sub-class-of) is **taxonomic** — accepts one OR multiple parents, signals explicit subclass intent.
-Reach for `subClassOf` when you want the ontology to read as taxonomy and you may need multiple supertypes; reach for `extend` when you simply want fields added to a base.
+- `extend` is **property-merging** - single parent, additions as a sibling object schema, designed around "I have a base and I want a few more fields".
+- [`Compose.subClassOf`](/composition/sub-class-of) is **taxonomic** - accepts one OR multiple parents, signals explicit subclass intent.
+Reach for `subClassOf` when you want the ontology to read as taxonomy and you may need multiple supertypes; reach for `extend` when you want fields added to a base.
 
 ## Examples
 

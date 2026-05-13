@@ -11,13 +11,13 @@
 ### Example 1: Validate a single field on blur
 
 ```ts
-import { bookstoreEntities as entities, BookSchema } from './bookstore/index.js';
+import { bookstoreEntities, BookSchema } from './bookstore/index.js';
 
 // Resolve the isbn sub-schema once
-const isbnSchema = entities.subschemaAt(BookSchema.$id, '/properties/isbn');
+const isbnSchema = bookstoreEntities.subschemaAt(BookSchema.$id, '/properties/isbn');
 
 // isbn must match ^\d{13}$
-const errors = entities.validate(isbnSchema, '978014044913');   // 12 digits  - requires 13
+const errors = bookstoreEntities.validate(isbnSchema, '978014044913');   // 12 digits  - requires 13
 console.log(errors.items.map(e => e.message));
 // ['must match pattern "^\\d{13}$"']
 ```
@@ -25,11 +25,11 @@ console.log(errors.items.map(e => e.message));
 ### Example 2: Instantiate an array item sub-schema
 
 ```ts
-import { bookstoreEntities as entities, OrderSchema } from './bookstore/index.js';
+import { bookstoreEntities, OrderSchema } from './bookstore/index.js';
 
-const lineItemSchema = entities.subschemaAt(OrderSchema.$id, '/properties/items/items');
+const lineItemSchema = bookstoreEntities.subschemaAt(OrderSchema.$id, '/properties/items/items');
 
-const line = entities.instantiate(lineItemSchema, {
+const line = bookstoreEntities.instantiate(lineItemSchema, {
   bookId: 'b-1',
   quantity: 2
 });
@@ -39,7 +39,7 @@ const line = entities.instantiate(lineItemSchema, {
 ### Example 3: Compose subschemaAt with is()
 
 ```ts
-const priceSub = entities.subschemaAt(BookSchema.$id, '/properties/price');
+const priceSub = bookstoreEntities.subschemaAt(BookSchema.$id, '/properties/price');
 
 if (!entities.is(priceSub, candidatePrice)) {
   console.error('price is not a valid Amount');
@@ -55,19 +55,19 @@ const sub = JsonTology.subschemaAt(OrderSchema, '/properties/customerId');
 // sub.$id === 'https://example.io/Order#/properties/customerId'
 ```
 
-## Bad examples — what NOT to do
+## Bad examples: what NOT to do
 
 ### Anti-pattern 1: Passing the raw property value instead of the JSON Pointer
 
 ```ts
-import { bookstoreEntities as entities, BookSchema } from './bookstore/index.js';
+import { bookstoreEntities, BookSchema } from './bookstore/index.js';
 
 // ✗ Don't do this — passing a property name string instead of a JSON Pointer
-const wrong = entities.subschemaAt(BookSchema.$id, 'isbn');
+const wrong = bookstoreEntities.subschemaAt(BookSchema.$id, 'isbn');
 // → resolves to undefined; the pointer must start with '/'
 
 // ✓ Do this — JSON Pointer with leading slash per RFC 6901
-const isbnSchema = entities.subschemaAt(BookSchema.$id, '/properties/isbn');
+const isbnSchema = bookstoreEntities.subschemaAt(BookSchema.$id, '/properties/isbn');
 ```
 
 ### Anti-pattern 2: Calling subschemaAt repeatedly inside a loop
@@ -75,14 +75,14 @@ const isbnSchema = entities.subschemaAt(BookSchema.$id, '/properties/isbn');
 ```ts
 // ✗ Don't do this — re-resolves and re-registers the sub-schema on every iteration
 for (const rawIsbn of candidateIsbns) {
-  const sub = entities.subschemaAt(BookSchema.$id, '/properties/isbn');
-  entities.validate(sub, rawIsbn);
+  const sub = bookstoreEntities.subschemaAt(BookSchema.$id, '/properties/isbn');
+  bookstoreEntities.validate(sub, rawIsbn);
 }
 
 // ✓ Do this — resolve once, reuse across calls
-const isbnSchema = entities.subschemaAt(BookSchema.$id, '/properties/isbn');
+const isbnSchema = bookstoreEntities.subschemaAt(BookSchema.$id, '/properties/isbn');
 for (const rawIsbn of candidateIsbns) {
-  entities.validate(isbnSchema, rawIsbn);
+  bookstoreEntities.validate(isbnSchema, rawIsbn);
 }
 ```
 
@@ -90,7 +90,7 @@ for (const rawIsbn of candidateIsbns) {
 
 ```ts
 // ✗ Don't do this — sub-schema validation ignores sibling constraints
-const isbnSub = entities.subschemaAt(BookSchema.$id, '/properties/isbn');
+const isbnSub = bookstoreEntities.subschemaAt(BookSchema.$id, '/properties/isbn');
 entities.validate(isbnSub, rawBook);  // misses required, price, authors…
 
 // ✓ Do this — validate the full object against its registered schema
@@ -102,9 +102,9 @@ entities.validate(BookSchema.$id, rawBook);
 ::: code-group
 
 ```ts [json-tology]
-const isbnSchema = entities.subschemaAt(BookSchema.$id, '/properties/isbn');
+const isbnSchema = bookstoreEntities.subschemaAt(BookSchema.$id, '/properties/isbn');
 // auto-registered; subsequent validate/is/instantiate calls resolve by synthesized $id
-const errs = entities.validate(isbnSchema, '978014044913');
+const errs = bookstoreEntities.validate(isbnSchema, '978014044913');
 ```
 
 ```ts [Zod]
@@ -160,7 +160,7 @@ result = ta.validate_python('978014044913')
 The returned object has a synthesized `$id` of the form `<parent.$id>#<pointer>`:
 
 ```ts
-const sub = entities.subschemaAt(OrderSchema.$id, '/properties/items');
+const sub = bookstoreEntities.subschemaAt(OrderSchema.$id, '/properties/items');
 // sub.$id === 'https://example.io/Order#/properties/items'
 ```
 

@@ -4,10 +4,10 @@
  */
 
 import {
-  bookstoreEntities as entities, OrderSchema
+  bookstoreEntities, OrderSchema
 } from '../bookstore/index.js';
 
-const errors = entities.validate(OrderSchema.$id, {
+const errors = bookstoreEntities.validate(OrderSchema.$id, {
   'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'id': 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   'items': [{

@@ -115,7 +115,7 @@ console.log(errors.length === 0); // true
 
 ### Discriminator argument validation <Badge type="info" text="Compile-time" />
 
-Every variant must declare `properties[prop]` as `const` and list `prop` in `required`. Missing or non-const discriminators surface a `DiscriminatorMissingType` brand error at the call site — a compile error rather than a runtime surprise.
+Every variant must declare `properties[prop]` as `const` and list `prop` in `required`. Missing or non-const discriminators surface a `DiscriminatorMissingType` brand error at the call site - a compile error rather than a runtime surprise.
 
 ```ts
 const BadVariant = {

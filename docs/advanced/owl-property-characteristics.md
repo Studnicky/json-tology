@@ -75,7 +75,7 @@ The TBox output for `KnowsSchema` includes:
 
 ## Semantics
 
-Property characteristics are TBox axioms — they describe logical structure and enable reasoning, they do not add runtime validation constraints.
+Property characteristics are TBox axioms - they describe logical structure and enable reasoning, they do not add runtime validation constraints.
 
 - **`symmetric`**: if `A knows B` then `B knows A`.
 - **`transitive`**: if `A knows B` and `B knows C` then `A knows C`.
@@ -91,8 +91,8 @@ Three combinations are logically impossible under OWL 2 semantics. Setting them 
 
 | Conflict | Reason |
 |----------|--------|
-| `symmetric` + `asymmetric` | Mutually exclusive by definition — a relation cannot be both directed and undirected |
-| `reflexive` + `irreflexive` | Mutually exclusive by definition — an individual cannot both relate and not relate to itself |
+| `symmetric` + `asymmetric` | Mutually exclusive by definition - a relation cannot be both directed and undirected |
+| `reflexive` + `irreflexive` | Mutually exclusive by definition - an individual cannot both relate and not relate to itself |
 | `asymmetric` + `reflexive` | Asymmetric implies irreflexive in OWL 2; explicit `reflexive` directly contradicts that |
 
 ### symmetric + asymmetric
@@ -201,7 +201,7 @@ const OrderSchema = {
 } as const;
 ```
 
-## Bad examples — what NOT to do
+## Bad examples: what NOT to do
 
 ```ts
 // Bad — symmetric and asymmetric are mutually exclusive
@@ -240,9 +240,9 @@ const Bad3 = {
 
 ## Comparison
 
-**OWL DL reasoners** detect these contradictions at query time — a reasoner run over a TBox that declares both `owl:SymmetricProperty` and `owl:AsymmetricProperty` on the same property will identify it as an inconsistency, but only after the ontology is loaded and reasoned over. json-tology surfaces the same contradiction at schema-authoring time, before any data touches the system.
+**OWL DL reasoners** detect these contradictions at query time - a reasoner run over a TBox that declares both `owl:SymmetricProperty` and `owl:AsymmetricProperty` on the same property will identify it as an inconsistency, but only after the ontology is loaded and reasoned over. json-tology surfaces the same contradiction at schema-authoring time, before any data touches the system.
 
-**Zod** has no concept of OWL property characteristics and provides no equivalent enforcement layer — authors must discover logical impossibilities through runtime behavior or domain review rather than compiler output.
+**Zod** has no concept of OWL property characteristics and provides no equivalent enforcement layer - authors must discover logical impossibilities through runtime behavior or domain review rather than compiler output.
 
 ## Constants
 
@@ -266,11 +266,11 @@ RDFS.subPropertyOf;           // 'http://www.w3.org/2000/01/rdf-schema#subProper
 
 ## Related
 
-- [Ontology and graphs](/advanced/ontology) — `toTbox`, `toShacl`, `ontology`
-- [OWL class axioms](/composition/sub-class-of) — `subClassOf`, `disjointWith`, `complementOf`
-- [OWL property restrictions](/composition/restrictions) — cardinality, `someValuesFrom`, `allValuesFrom`, `hasValue`
+- [Ontology and graphs](/advanced/ontology) - `toTbox`, `toShacl`, `ontology`
+- [OWL class axioms](/composition/sub-class-of) - `subClassOf`, `disjointWith`, `complementOf`
+- [OWL property restrictions](/composition/restrictions) - cardinality, `someValuesFrom`, `allValuesFrom`, `hasValue`
 
 ## See also
 
-- [Bookstore domain](/bookstore-domain) — the running example domain
-- [Validation modes](/validation-modes) — enforcement layer reference
+- [Bookstore domain](/bookstore-domain) - the running example domain
+- [Validation modes](/validation-modes) - enforcement layer reference
