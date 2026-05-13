@@ -9,7 +9,8 @@ export const BookSchema = {
     'authors': {
       'items': { '$ref': AuthorNameSchema.$id },
       'minItems': 1,
-      'type': 'array'
+      'type': 'array',
+      'uniqueItems': true
     },
     'inStock': {
       'default': true,
