@@ -24,8 +24,18 @@
       "types": "./dist/value.d.ts"
     },
     "./schema": {
-      "import": "./dist/schema.js",
-      "types": "./dist/schema.d.ts"
+      "browser": {
+        "import": "./dist/schema.browser.js",
+        "types": "./dist/schema.browser.d.ts"
+      },
+      "node": {
+        "import": "./dist/schema.js",
+        "types": "./dist/schema.d.ts"
+      },
+      "default": {
+        "import": "./dist/schema.browser.js",
+        "types": "./dist/schema.browser.d.ts"
+      }
     },
     "./ontology": {
       "import": "./dist/ontology.js",

@@ -1,12 +1,10 @@
-import { isIP } from 'node:net';
-import { domainToASCII } from 'node:url';
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
 import {
   BASE64_CHUNK_SIZE, BASE64_MAX_PADDING, DATE_DAY_MAX,
   DATE_DAY_OFFSET_1, DATE_DAY_OFFSET_2, DATE_DAY_SEPARATOR_OFFSET,
   DATE_MONTH_MAX, DATE_MONTH_OFFSET_1, DATE_MONTH_OFFSET_2,
   DATE_STRING_LENGTH, DATE_YEAR_DIGIT_COUNT, DATETIME_MIN_LENGTH,
-  DECIMAL_RADIX, HOSTNAME_LABEL_MAX_LENGTH, IP_VERSION_4, IP_VERSION_6,
+  DECIMAL_RADIX, HOSTNAME_LABEL_MAX_LENGTH,
   TIME_BASE_LENGTH, TIME_HOUR_MAX, TIME_MINUTE_MAX,
   TIME_OFFSET_COLON, TIME_OFFSET_HOUR1, TIME_OFFSET_HOUR2,
   TIME_OFFSET_MIN1, TIME_OFFSET_MIN2, TIME_SECOND_MAX,
@@ -116,6 +114,81 @@ function isUriReference(value: string): boolean {
     } catch {
       return false;
     }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Browser-compatible IP and IDN helpers (no node:net / node:url)
+// ---------------------------------------------------------------------------
+
+function isIPv4(value: string): boolean {
+  const parts = value.split('.');
+
+  if (parts.length !== 4) {
+    return false;
+  }
+  for (const part of parts) {
+    if (part.length === 0 || part.length > 3) {
+      return false;
+    }
+    // no leading zeros
+    if (part.length > 1 && part.startsWith('0')) {
+      return false;
+    }
+    if (!/^\d+$/u.test(part)) {
+      return false;
+    }
+    const n = Number(part);
+
+    if (n > 255) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+// Matches full IPv6 addresses including :: collapsed forms and optional
+// trailing IPv4-mapped suffix (RFC 4291 §2.2).
+const IPV6_FULL = /^[\da-f]{1,4}(?::[\da-f]{1,4}){7}$/iu;
+const IPV6_WITH_DOUBLE_COLON = /^(?:[\da-f]{1,4}:){0,7}:(?:[\da-f]{1,4}:){0,6}[\da-f]{0,4}$/iu;
+const IPV6_MIXED = /^(?:[\da-f]{1,4}:){6}(?:\d{1,3}\.){3}\d{1,3}$/iu;
+const IPV6_MIXED_COMPRESSED = /^::(?:[\da-f]{1,4}:){0,5}(?:\d{1,3}\.){3}\d{1,3}$/iu;
+
+function isIPv6(value: string): boolean {
+  if (value.length === 0) {
+    return false;
+  }
+  // Fully-expanded 8-group form
+  if (IPV6_FULL.test(value)) {
+    return true;
+  }
+  // Mixed IPv4-in-IPv6 (e.g. ::ffff:192.0.2.1)
+  if (IPV6_MIXED.test(value) || IPV6_MIXED_COMPRESSED.test(value)) {
+    return true;
+  }
+  // "::" collapsed form: at most one "::" allowed
+  const doubleColonCount = (value.match(/::/gu) ?? []).length;
+
+  if (doubleColonCount > 1) {
+    return false;
+  }
+  if (IPV6_WITH_DOUBLE_COLON.test(value)) {
+    // Count groups to ensure total ≤ 8
+    const withoutDC = value.replaceAll('::', ':').replaceAll(/^:|:$/gu, '');
+    const groups = withoutDC.length === 0 ? 0 : withoutDC.split(':').length;
+
+    return groups <= 8;
+  }
+
+  return false;
+}
+
+function domainToAscii(value: string): string {
+  try {
+    return new URL(`https://${value}`).hostname;
+  } catch {
+    return '';
   }
 }
 
@@ -366,7 +439,7 @@ function validateIdnEmail(value: string): boolean {
   }
   const domain = value.slice(at + 1);
 
-  return domainToASCII(domain).length > 0;
+  return domainToAscii(domain).length > 0;
 }
 
 function validateJsonPointer(value: string): boolean {
@@ -497,12 +570,8 @@ const STRING_FORMAT_VALIDATORS: Record<string, (value: string) => boolean> = {
   'duration': validateDuration,
   'email': validateEmail,
   'hostname': isAsciiHostname,
-  'ipv4': (value) => {
-    return isIP(value) === IP_VERSION_4;
-  },
-  'ipv6': (value) => {
-    return isIP(value) === IP_VERSION_6;
-  },
+  'ipv4': isIPv4,
+  'ipv6': isIPv6,
   'iri': isUriLike,
   'regex': validateRegex,
   'time': validateTimeFormat,
@@ -513,7 +582,7 @@ const STRING_FORMAT_VALIDATORS: Record<string, (value: string) => boolean> = {
 STRING_FORMAT_VALIDATORS['date-time'] = validateDateTime;
 STRING_FORMAT_VALIDATORS['idn-email'] = validateIdnEmail;
 STRING_FORMAT_VALIDATORS['idn-hostname'] = (value) => {
-  return domainToASCII(value).length > 0;
+  return domainToAscii(value).length > 0;
 };
 STRING_FORMAT_VALIDATORS['iri-reference'] = isUriReference;
 STRING_FORMAT_VALIDATORS['json-pointer'] = validateJsonPointer;
