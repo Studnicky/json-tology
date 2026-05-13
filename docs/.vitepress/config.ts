@@ -6,14 +6,17 @@ const pkg = JSON.parse(readFileSync(fileURLToPath(new URL('../../package.json', 
 import { themeConfig } from './theme.config.js';
 
 // Sidebar order:
-//   1. Introduction
-//   2. Lightweight concepts (3 pages a Zod/TypeBox-style user actually needs)
+//   1. Introduction — onboarding only (no migration guides)
+//   2. Core concepts — graph mental model + method-selection guides,
+//      placed after Introduction so readers encounter at least one page
+//      before the concept pages ask them to compare methods.
 //   3. Core authoring surface — schemas, validation, composition, transforms,
 //      values, serialization, registry. This is the entire surface for users
 //      who don't care about RDF / OWL / SPARQL.
 //   4. OPT-IN graph / ontology surface, gated together so it can be skipped:
 //      ontology concepts → OWL class axioms → ontology emission.
-//   5. Usage examples → data models → type inference → reference.
+//   5. Usage examples → browser → data models → type inference → reference.
+//      Migration guides live at the bottom of Reference (require familiarity).
 //
 // Everything from "Ontology concepts" downward is advanced material. A
 // typical consumer can ignore it. Only authors who want OWL / SHACL / RDF
@@ -23,18 +26,16 @@ const sidebar = [
     text: 'Introduction',
     items: [
       { link: '/getting-started', text: 'Getting Started' },
-      { link: '/bookstore-domain', text: 'The Bookstore Domain' },
-      { link: '/migration-0.4.0', text: 'Migration to 0.4.0' },
-      { link: '/migration-0.4.3', text: 'Migration to 0.4.3' }
+      { link: '/bookstore-domain', text: 'The Bookstore Domain' }
     ]
   },
   {
-    text: 'Concepts',
+    text: 'Core concepts',
     items: [
       { link: '/your-types-are-a-graph', text: 'Your types are a graph' },
+      { link: '/validation-modes', text: 'Validation modes' },
       { link: '/picking-a-method', text: 'Picking a method' },
-      { link: '/argument-conventions', text: 'Argument conventions' },
-      { link: '/validation-modes', text: 'Validation modes' }
+      { link: '/argument-conventions', text: 'Argument conventions' }
     ]
   },
   {
@@ -110,6 +111,7 @@ const sidebar = [
     text: 'Ontology concepts (opt-in)',
     items: [
       { link: '/advanced/graph-concepts', text: 'Graph concepts (TBox / ABox)' },
+      { link: '/advanced/graph-internals', text: 'Graph internals' },
       { link: '/advanced/graph-native-authoring', text: 'Graph-native authoring' },
       { link: '/advanced/sub-schemas', text: 'Sub-schemas and $ref composition' },
       { link: '/advanced/skolemization', text: 'Skolemization' },
@@ -140,8 +142,15 @@ const sidebar = [
       { link: '/usage-examples/custom-formats', text: 'Custom format validators' },
       { link: '/usage-examples/transforms-recipes', text: 'Transform recipes' },
       { link: '/usage-examples/class-hydration', text: 'Class hydration' },
-      { link: '/usage-examples/sparql-queries', text: 'SPARQL queries' },
-      { link: '/usage-examples/sub-schema-patterns', text: 'Sub-schema patterns' }
+      { link: '/usage-examples/class-hydration-orm', text: 'Class hydration: ORM recipes' },
+      { link: '/usage-examples/sub-schema-patterns', text: 'Sub-schema patterns' },
+      { link: '/usage-examples/bookstore-owl-taxonomy', text: 'Bookstore OWL taxonomy' }
+    ]
+  },
+  {
+    text: 'Browser',
+    items: [
+      { link: '/browser-usage', text: 'Browser usage' }
     ]
   },
   {
@@ -158,26 +167,21 @@ const sidebar = [
   {
     text: 'Type inference',
     items: [
-      { link: '/types#infertype', text: 'InferType' },
-      { link: '/types#inferschematype', text: 'InferSchemaType' },
-      { link: '/types#deprecatedkeystype-t', text: 'DeprecatedKeysType' },
-      { link: '/types#nondeprecatedschematype-t', text: 'NonDeprecatedSchemaType' },
-      { link: '/types#looseinputtype-t', text: 'LooseInputType' },
-      { link: '/types#enumvaluestype-t', text: 'EnumValuesType' },
-      { link: '/types#exhaustivetype-t', text: 'ExhaustiveType' },
-      { link: '/types#defaultalignedtype-t', text: 'DefaultAlignedType' },
-      { link: '/types#integerrangetype-min-max', text: 'IntegerRangeType' },
-      { link: '/types#multipleofrangetype-min-max-step', text: 'MultipleOfRangeType' }
+      { link: '/types/infer', text: 'InferType' },
+      { link: '/types/utility', text: 'Utility types' },
+      { link: '/types/ranges', text: 'Range types' }
     ]
   },
   {
     text: 'Reference',
     items: [
       { link: '/static-helpers', text: 'Static helpers' },
-      { link: '/constraint-brands', text: 'Constraint brands' },
+      { link: '/constraint-brands/keywords', text: 'Constraint brands (keywords)' },
+      { link: '/constraint-brands/narrowing', text: 'Constraint brands (narrowing)' },
       { link: '/cli', text: 'CLI' },
-      { link: '/references/benchmarks', text: 'Benchmarks' },
-      { link: '/references', text: 'External references' }
+      { link: '/references', text: 'External references' },
+      { link: '/migration-0.4.0', text: 'Migration to 0.4.0' },
+      { link: '/migration-0.4.3', text: 'Migration to 0.4.3' }
     ]
   }
 ];
