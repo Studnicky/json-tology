@@ -8,7 +8,11 @@ json-tology is an ontology-native type system for TypeScript. Declare schemas on
 npm install json-tology
 ```
 
+Requires Node.js `>=24.0.0`.
+
 Supported dialect: JSON Schema draft 2020-12 (`https://json-schema.org/draft/2020-12/schema`).
+
+Upgrading from 0.3.x? See [Migration to 0.4.0](/migration-0.4.0) for the breaking changes.
 
 ## Define a schema
 
@@ -190,20 +194,22 @@ import type { LoggerInterface } from 'json-tology/interfaces';
 
 ## What's in the box
 
-| Feature | Method(s) |
-|---------|-----------|
-| Type inference | `InferType<T>`, `InferSchemaType<T, Root>` |
-| Validation | `validate`, `is`, `subschemaAt` |
-| Coercion + defaults | `instantiate` |
-| Error views | `aggregate`, `report` |
-| Composition | `Compose.extend`, `pick`, `omit`, `partial`, `required`, `intersection`, `equivalent`, `discriminatedUnion` |
-| Value utilities | `Value.clone`, `hash`, `diff`, `value.cast`, `clean`, `convert`, `create` |
-| Transforms | `Transform.create`, `brand`, `pipe`, `jt.encode` |
-| Serialization | `dump`, `dumpJson` |
-| Computed fields | `addComputed`, `removeComputed` |
-| Cross-field invariants | `addInvariant`, `removeInvariant` |
-| Materialization | `materialize` |
-| RDF/Ontology _(advanced, opt-in)_ | `ontology`, `toQuads`, `fromQuads`, `toSchema` |
+See [Validation modes](/validation-modes) for the badge reference.
+
+| Feature | Method(s) | Mode |
+|---------|-----------|------|
+| Type inference | `InferType<T>`, `InferSchemaType<T, Root>` | <Badge type="info" text="Compile-time" /> |
+| Validation | `validate`, `is`, `subschemaAt` | <Badge type="tip" text="Runtime" /> |
+| Coercion + defaults | `instantiate` | <Badge type="warning" text="Compile-time + Runtime" /> |
+| Error views | `aggregate`, `report` | <Badge type="tip" text="Runtime" /> |
+| Composition | `Compose.extend`, `pick`, `omit`, `partial`, `required`, `intersection`, `equivalent`, `discriminatedUnion` | <Badge type="warning" text="Compile-time + Runtime" /> |
+| Value utilities | `Value.clone`, `hash`, `diff`, `value.cast`, `clean`, `convert`, `create` | <Badge type="tip" text="Runtime" /> |
+| Transforms | `Transform.create`, `brand`, `pipe`, `jt.encode` | <Badge type="warning" text="Compile-time + Runtime" /> |
+| Serialization | `dump`, `dumpJson` | <Badge type="tip" text="Runtime" /> |
+| Computed fields | `addComputed`, `removeComputed` | <Badge type="tip" text="Runtime" /> |
+| Cross-field invariants | `addInvariant`, `removeInvariant` | <Badge type="tip" text="Runtime" /> |
+| Materialization | `materialize` | <Badge type="warning" text="Compile-time + Runtime" /> |
+| RDF/Ontology _(advanced, opt-in)_ | `ontology`, `toQuads`, `fromQuads`, `toSchema` | <Badge type="tip" text="Runtime" /> |
 
 ## Next steps
 
@@ -222,6 +228,8 @@ import type { LoggerInterface } from 'json-tology/interfaces';
 | RDF/OWL (advanced) | [Ontology and Graphs](/advanced/ontology) |
 
 ## All `JsonTology.create` options
+
+See [Validation modes](/validation-modes) for the badge reference. Options marked <Badge type="info" text="Compile-time" /> affect type inference only; options marked <Badge type="tip" text="Runtime" /> affect the validation or materialization path.
 
 | Option | Type | Default | Purpose |
 |--------|------|---------|---------|
@@ -243,6 +251,16 @@ import type { LoggerInterface } from 'json-tology/interfaces';
 | `logger` | `LoggerInterface` | `SILENT_LOGGER` | Logger for warnings (`enableInlineWarnings`, `enableDuplicateDetection`). Must be set for warnings to surface. |
 | `invariants` | `Record<string, InvariantInterface[]>` | `{}` | Cross-field invariant functions, keyed by schema `$id`. |
 | `computeds` | `Record<string, Record<string, ComputedFnType>>` | `{}` | Computed-field functions, keyed by schema `$id` then property name. |
+
+### Type inference options
+
+These options are configured via module augmentation in a `.d.ts` file, not through `JsonTology.create`. They affect `InferType` output only and have zero runtime cost.
+
+| Flag | Default | Purpose |
+|------|---------|---------|
+| `tightStringLengths` | `false` | <Badge type="info" text="Compile-time" /> Narrow strings with `minLength`/`maxLength` bounds within 8 to fixed-length template literals. Opt in with `declare module 'json-tology/types' { interface JsonTologyTypeConfigInterface { 'tightStringLengths': true } }`. |
+
+See [Constraint brands — tightStringLengths](/constraint-brands#tightstringlengths-opt-in-narrowing) for the full reference.
 
 ### Graph emission
 

@@ -1,5 +1,7 @@
 # Graph Concepts
 
+> Validation modes: [Validation modes reference](/validation-modes)
+
 json-tology represents every schema as a node in a directed graph. This page explains the key
 concepts of that graph model - what lives where, how relationships work, and how standard semantic
 web vocabulary maps onto JSON Schema constructs.

@@ -1,5 +1,7 @@
 # Ontology and Graphs
 
+> Validation modes: [Validation modes reference](/validation-modes)
+
 > **Conformance status:** RDF/OWL/SHACL conformance is aspirational and a work in progress. Output loads into reasoners like Apache Jena and editors like Protege, but full normative conformance is still being built out. See [References - Standards conformance](/references#standards-conformance). File issues at [github.com/Studnicky/json-tology/issues](https://github.com/Studnicky/json-tology/issues).
 >
 > You only need this section if you want to emit or consume **RDF/OWL/SHACL** output, perform graph-based reasoning, or round-trip data through an RDF store. If you are building a TypeScript application that validates and coerces data, the core guides (Schemas, Validation, Composition, Transforms) are all you need. The ontology features are fully tree-shakable - importing from `json-tology/ontology` does not increase the bundle of consumers who only import from `json-tology`, `json-tology/value`, or `json-tology/types`.

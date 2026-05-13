@@ -1,5 +1,7 @@
 # Static helpers
 
+> Validation modes: [Validation modes reference](/validation-modes)
+
 Every operation that takes a registered schema also has a static counterpart on `JsonTology`. The static form builds a one-shot ephemeral registry containing only the supplied schema, runs the operation, and discards the registry.
 
 > Use static when you do not need to reuse a registry across calls.

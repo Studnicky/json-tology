@@ -23,7 +23,8 @@ const sidebar = [
     text: 'Introduction',
     items: [
       { link: '/getting-started', text: 'Getting Started' },
-      { link: '/bookstore-domain', text: 'The Bookstore Domain' }
+      { link: '/bookstore-domain', text: 'The Bookstore Domain' },
+      { link: '/migration-0.4.0', text: 'Migration to 0.4.0' }
     ]
   },
   {
@@ -31,14 +32,16 @@ const sidebar = [
     items: [
       { link: '/your-types-are-a-graph', text: 'Your types are a graph' },
       { link: '/picking-a-method', text: 'Picking a method' },
-      { link: '/argument-conventions', text: 'Argument conventions' }
+      { link: '/argument-conventions', text: 'Argument conventions' },
+      { link: '/validation-modes', text: 'Validation modes' }
     ]
   },
   {
     text: 'Schemas',
     items: [
       { link: '/schemas', text: 'Authoring schemas' },
-      { link: '/schemas/jt-keywords', text: 'JT keywords' }
+      { link: '/schemas/jt-keywords', text: 'JT keywords' },
+      { link: '/compile-time-schema-validation', text: 'Compile-time schema validation' }
     ]
   },
   {
@@ -108,7 +111,8 @@ const sidebar = [
       { link: '/advanced/graph-concepts', text: 'Graph concepts (TBox / ABox)' },
       { link: '/advanced/graph-native-authoring', text: 'Graph-native authoring' },
       { link: '/advanced/sub-schemas', text: 'Sub-schemas and $ref composition' },
-      { link: '/advanced/skolemization', text: 'Skolemization' }
+      { link: '/advanced/skolemization', text: 'Skolemization' },
+      { link: '/advanced/owl-property-characteristics', text: 'OWL 2 property characteristics' }
     ]
   },
   {

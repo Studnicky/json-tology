@@ -1,4 +1,6 @@
-# `Compose.partial` and `Compose.required`
+# `Compose.partial` and `Compose.required` <Badge type="warning" text="Compile-time + Runtime" />
+
+> Validation modes: [Validation modes reference](/validation-modes)
 
 `partial` and `required` are inverse operations for adjusting the required-ness of all properties. Both return new schema objects - inputs are never mutated.
 

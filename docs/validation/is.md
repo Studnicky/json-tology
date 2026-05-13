@@ -1,4 +1,6 @@
-# `JsonTology.is`
+# `JsonTology.is` <Badge type="warning" text="Compile-time + Runtime" />
+
+> Validation modes: [Validation modes reference](/validation-modes)
 
 **Declaration.** Validates data against a registered schema and returns a boolean. When the schema is registered via `JsonTology.create({ schemas })`, the return type is a TypeScript type predicate (`data is TMap[K]`), which narrows the type of `data` to the schema's inferred type inside the `if` block. Does not mutate input. Does not throw on validation failure.
 

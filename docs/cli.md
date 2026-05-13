@@ -1,4 +1,6 @@
-# CLI
+# CLI <Badge type="tip" text="Runtime" />
+
+> Validation modes: [Validation modes reference](/validation-modes)
 
 `json-tology build` compiles JSON Schema files to graph artifacts, reconstructed schemas, OWL ontologies, or SHACL shapes.
 

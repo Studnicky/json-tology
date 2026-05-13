@@ -1,14 +1,17 @@
 # JT keyword reference
 
+> Validation modes: [Validation modes reference](/validation-modes)
+
 json-tology adds a small set of `jt:`-prefixed keywords to JSON Schema. They are tracked alongside the standard keywords (see `KNOWN_SCHEMA_KEYWORDS` in `src/constants/SCHEMA_KEYWORDS.ts`) and read at specific points in the pipeline. Each keyword has a documented payload shape, semantics, and a clear "what reads it" answer.
 
-| Keyword         | Payload                                | Read by                                    |
-|-----------------|----------------------------------------|--------------------------------------------|
-| `jt:alias`      | `string \| string[]`                   | `SchemaGraphSupport`                       |
-| `jt:computed`   | `true`                                 | `Materializer` (via computed-field map)    |
-| `jt:config`     | `{ extra?, frozen?, strict? }`         | `SchemaGraphSupport`, `Materializer`       |
-| `jt:frozen`     | `true`                                 | `Materializer`, `SchemaRegistry`           |
-| `jt:strict`     | `boolean`                              | `SchemaGraphSupport` (via `enableStrictTypes`) |
+| Keyword         | Payload                                | Mode | Read by                                    |
+|-----------------|----------------------------------------|------|--------------------------------------------|
+| `jt:alias`      | `string \| string[]`                   | <Badge type="tip" text="Runtime" /> | `SchemaGraphSupport`                       |
+| `jt:computed`   | `true`                                 | <Badge type="tip" text="Runtime" /> | `Materializer` (via computed-field map)    |
+| `jt:config`     | `{ extra?, frozen?, strict? }`         | <Badge type="tip" text="Runtime" /> | `SchemaGraphSupport`, `Materializer`       |
+| `jt:frozen`     | `true`                                 | <Badge type="tip" text="Runtime" /> | `Materializer`, `SchemaRegistry`           |
+| `jt:strict`     | `boolean`                              | <Badge type="tip" text="Runtime" /> | `SchemaGraphSupport` (via `enableStrictTypes`) |
+| `jt:restrictions` | `RestrictionRefType[]`              | <Badge type="info" text="Compile-time" /> | `InferType` (type narrowing), TBox projection (OWL) |
 
 The bookstore schemas defined in the [Bookstore Domain](/bookstore-domain) are used in the examples.
 

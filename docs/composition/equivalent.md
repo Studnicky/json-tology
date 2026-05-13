@@ -1,4 +1,6 @@
-# `Compose.equivalent`
+# `Compose.equivalent` <Badge type="info" text="Compile-time" />
+
+> Validation modes: [Validation modes reference](/validation-modes)
 
 ## Declaration
 
@@ -27,6 +29,15 @@ Output shape:
 ```
 
 In the OWL TBox, `PrimaryIsbn owl:equivalentClass Isbn` is emitted automatically. In SHACL, `PrimaryIsbn sh:node Isbn`.
+
+## Self-equivalence prevention <Badge type="info" text="Compile-time" />
+
+`options.$id` cannot equal `source.$id`. A self-equivalent declaration surfaces a `SelfEquivalentType` brand error at the call site.
+
+```ts
+// compile error — same $id as IsbnSchema
+const Bad = Compose.equivalent(IsbnSchema, { $id: IsbnSchema.$id });
+```
 
 ## Don't use this when
 

@@ -1,5 +1,7 @@
 # Argument conventions
 
+> Validation modes: [Validation modes reference](/validation-modes)
+
 ## Universal SchemaRef
 
 Every method that accepts a schema reference accepts **both** a string ID and a schema object:
@@ -20,7 +22,9 @@ entities.validate(UserSchema, data);
 
 Resolution rule: if a string, look up in the registry; if an object with `$id`, register it (idempotent) then run against it.
 
-## Static counterparts
+## Static counterparts <Badge type="warning" text="Compile-time + Runtime" />
+
+The static facade methods (`JsonTology.dump`, `JsonTology.fromQuads`, `JsonTology.instantiate`, `JsonTology.materialize`) are generic over the supplied schema and return the inferred type rather than `unknown`. Explicit casts to the schema's inferred type are no longer required.
 
 Every instance method has a static counterpart on `JsonTology` that creates an ephemeral registry, registers the schema, runs the operation, and returns. No shared state. No setup required.
 

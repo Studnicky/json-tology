@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Docs: new "Validation modes" page introducing the `Compile-time` / `Runtime` / `Compile-time + Runtime` badge system; every keyword, brand, and feature in the reference docs is now tagged with its enforcement layer. New / expanded pages cover the 0.4.0 surface: 25 named format brands, uniqueItems tuple distinctness, multipleOf bounded narrowing, full OWL 2 property characteristics, generalised if/then/else inference, patternProperties template-literal expansion, Compose argument validation, schema-validator brands, OWL class-axiom compile-time enforcement, runtime cross-schema $ref strict resolution, GraphEngine self-ref / embedded-$id resolution, and the static-facade parametrization. New migration page covers the 0.4.0 breaking changes (subjectIRI / maxDepth / maxDataDepth / CoercionErrorCodeType removed; make*Schema → BaseTypes.response()/.result()/.page(); Node >= 24).
+
 ### Fixed
 
 - `GraphEngine.resolveRef` failed to resolve a schema's `$ref` to its own `$id` when the engine was obtained via `registry.engine(schemaObj)` and `.errors(data)` was called directly. The compiled fast-path (`registry.validate`) was unaffected. Now the interpreted path recognises the root schema's own `$id` and resolves self-references consistently with the compiled path, restoring parity. Surfaced by a new compiled/interpreted parity test.

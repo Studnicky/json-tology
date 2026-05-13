@@ -1,5 +1,7 @@
 # Error class hierarchy
 
+> Validation modes: [Validation modes reference](/validation-modes)
+
 Every json-tology error extends `BaseError`. The base class carries a machine-readable `code`, a human `message`, a `retryable` flag, an optional `cause` chain, and two structured projections (`toJson()`, `flatten()`). Every subclass adds domain-specific fields - schema IDs, JSON Pointers, file paths, validation errors.
 
 > Never throw a bare `new Error()` from json-tology code. Pick the appropriate subclass.
@@ -39,7 +41,7 @@ try {
 }
 ```
 
-## `SchemaError`
+## `SchemaError` <Badge type="tip" text="Runtime" />
 
 **Thrown for.** Schema registration and structural problems - missing `$id`, duplicate anchors, unsupported dialect, structure validation failures.
 
@@ -75,7 +77,7 @@ try {
 }
 ```
 
-## `GraphError`
+## `GraphError` <Badge type="tip" text="Runtime" />
 
 **Thrown for.** Pointer resolution failures, anchor lookup failures, ref resolution failures, dialect or vocabulary issues, recursion-limit hits.
 
@@ -83,19 +85,19 @@ try {
 
 **Codes.**
 
-| Constant                              | Value                       |
-|---------------------------------------|-----------------------------|
-| `GraphErrorCode.POINTER_INVALID`      | `POINTER_INVALID`           |
-| `GraphErrorCode.POINTER_NOT_FOUND`    | `POINTER_NOT_FOUND`         |
-| `GraphErrorCode.POINTER_NOT_SCHEMA`   | `POINTER_NOT_SCHEMA`        |
-| `GraphErrorCode.ANCHOR_NOT_FOUND`     | `ANCHOR_NOT_FOUND`          |
-| `GraphErrorCode.REF_UNRESOLVED`       | `REF_UNRESOLVED`            |
-| `GraphErrorCode.RECURSION_LIMIT`      | `RECURSION_LIMIT`           |
-| `GraphErrorCode.DIALECT_UNSUPPORTED`  | `DIALECT_UNSUPPORTED`       |
-| `GraphErrorCode.VOCABULARY_UNSUPPORTED` | `VOCABULARY_UNSUPPORTED`  |
-| `GraphErrorCode.BOOLEAN_SCHEMA_FRAGMENT` | `BOOLEAN_SCHEMA_FRAGMENT`|
-| `GraphErrorCode.ARTIFACT_INVALID`     | `ARTIFACT_INVALID`          |
-| `GraphErrorCode.ARTIFACT_STALE`       | `ARTIFACT_STALE`            |
+| Constant                              | Value                       | Notes |
+|---------------------------------------|-----------------------------|-------|
+| `GraphErrorCode.POINTER_INVALID`      | `POINTER_INVALID`           | |
+| `GraphErrorCode.POINTER_NOT_FOUND`    | `POINTER_NOT_FOUND`         | |
+| `GraphErrorCode.POINTER_NOT_SCHEMA`   | `POINTER_NOT_SCHEMA`        | |
+| `GraphErrorCode.ANCHOR_NOT_FOUND`     | `ANCHOR_NOT_FOUND`          | |
+| `GraphErrorCode.REF_UNRESOLVED`       | `REF_UNRESOLVED`            | Cross-schema `$ref` points to an IRI not in the registry. Thrown on first use of a schema entry. |
+| `GraphErrorCode.RECURSION_LIMIT`      | `RECURSION_LIMIT`           | |
+| `GraphErrorCode.DIALECT_UNSUPPORTED`  | `DIALECT_UNSUPPORTED`       | |
+| `GraphErrorCode.VOCABULARY_UNSUPPORTED` | `VOCABULARY_UNSUPPORTED`  | |
+| `GraphErrorCode.BOOLEAN_SCHEMA_FRAGMENT` | `BOOLEAN_SCHEMA_FRAGMENT`| |
+| `GraphErrorCode.ARTIFACT_INVALID`     | `ARTIFACT_INVALID`          | |
+| `GraphErrorCode.ARTIFACT_STALE`       | `ARTIFACT_STALE`            | |
 
 ```ts
 import { bookstoreEntities as entities, OrderSchema } from './bookstore/index.js';
@@ -111,7 +113,7 @@ try {
 }
 ```
 
-## `LoadError`
+## `LoadError` <Badge type="tip" text="Runtime" />
 
 **Thrown for.** File-loading failures when `stopOnError` is set - missing files, invalid JSON, duplicate `$id` across files, schema parse failures.
 
@@ -142,7 +144,7 @@ try {
 }
 ```
 
-## `InstantiationError`
+## `InstantiationError` <Badge type="tip" text="Runtime" />
 
 **Thrown for.** Validation failure inside `instantiate()` - the trust-boundary entry point. Carries the full structured error list.
 
@@ -177,7 +179,7 @@ try {
 
 The `errors` collection is the same `ValidationErrors` used by `validate()` - see [ValidationErrors views](/errors/views) for the full surface.
 
-## `CoercionError`
+## `CoercionError` <Badge type="tip" text="Runtime" />
 
 **Thrown for.** Coerce-time validation failure - the same shape as `InstantiationError` but raised by the coercion path.
 
@@ -198,7 +200,7 @@ try {
 }
 ```
 
-## `MaterializationError`
+## `MaterializationError` <Badge type="tip" text="Runtime" />
 
 **Thrown for.** Materialization failure - the result of `materialize()` (or ABox projection) failed validation.
 

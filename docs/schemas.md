@@ -625,8 +625,49 @@ Customer.model_json_schema()  # Exports JSON Schema from the model class
 - [Ontology and Graphs](/advanced/ontology) - advanced: `toQuads`, `fromQuads`, graph serialization
 - `get` - retrieve the original registered schema (before graph normalization)
 
+## Cross-schema `$ref` strict resolution <Badge type="warning" text="Compile-time + Runtime" />
+
+Cross-schema `$ref` resolution is enforced at both layers:
+
+- **Compile-time**: `InferType` flags any `$ref` that points to an IRI not present in the type map at the call site. This was introduced in 0.3.x (PR #54).
+- **Runtime**: The registry performs a lazy walk on first use of an entry (the first `validate` / `instantiate` / `materialize` / `createDefault` / `convert` / `cast` / `is` / `clean` against it) and throws `GraphError` with code `REF_UNRESOLVED` if any non-fragment `$ref` points to an IRI that is neither in the registry nor embedded as a nested `$id` within the same schema.
+
+Local fragment refs (`#`, `#/foo`, `#anchor`) are unaffected by the strict check.
+
+The walk runs at most once per schema entry — subsequent calls against the same schema use the cached result.
+
+```ts
+import { JsonTology, GraphError } from 'json-tology';
+
+const OrderLineSchema = {
+  $id: 'https://bookstore.example/OrderLine',
+  type: 'object',
+  properties: {
+    book: { $ref: 'https://bookstore.example/Book' },  // non-fragment $ref
+    qty:  { type: 'integer', minimum: 1 },
+  },
+} as const;
+
+// BookSchema is NOT registered
+const jt = JsonTology.create({
+  baseIRI: 'https://bookstore.example',
+  schemas: [OrderLineSchema] as const,
+});
+
+try {
+  jt.validate(OrderLineSchema.$id, { book: {}, qty: 1 });
+} catch (err) {
+  if (err instanceof GraphError && err.code === 'REF_UNRESOLVED') {
+    // REF_UNRESOLVED: https://bookstore.example/Book is not registered
+  }
+}
+```
+
+See [Error class hierarchy](/errors/classes) for the full `GraphError` surface.
+
 ## See also
 
 - [Bookstore domain](/bookstore-domain) - where all six schemas are registered
 - [Composition](/composition/extend) - derive new schemas to register
+- [Validation modes](/validation-modes) - enforcement layer reference
 - [Argument conventions](/argument-conventions) - how registered schemas work as `SchemaRef`
