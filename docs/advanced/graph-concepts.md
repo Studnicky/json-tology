@@ -315,7 +315,7 @@ ontology document itself.
 
 ## Querying the TBox
 
-Once emitted as JSON-LD the TBox loads into any RDF store; standard SPARQL applies. See [SPARQL queries](/usage-examples/sparql-queries) for recipes.
+Once emitted as JSON-LD the TBox loads into any RDF store; standard SPARQL applies. See [Querying the TBox](/advanced/ontology#querying-the-tbox) for recipes.
 
 ---
 
@@ -344,7 +344,7 @@ irreducibles.
 - [Graph-native authoring](/advanced/graph-native-authoring) - how to write schemas that produce clean graphs
 - [Ontology and Graphs](/advanced/ontology) - `toTbox`, `toShacl`, `ontology`, `toQuads`, `fromQuads`
 - [RDF round-trip](/advanced/quads) - operator-level `toQuads` / `fromQuads` reference
-- [SPARQL queries](/usage-examples/sparql-queries) - querying the TBox
+- [Querying the TBox](/advanced/ontology#querying-the-tbox) - querying the TBox with SPARQL
 
 ## See also
 
