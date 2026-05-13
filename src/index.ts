@@ -5,6 +5,16 @@
  * projection from one graph-native model.
  */
 
+// Error-code constant objects: machine-readable code lookup without importing
+// from the constants subpath. Exported here so callers can do
+// `import { InstantiationErrorCode } from 'json-tology'` as documented.
+export {
+  GraphErrorCode,
+  InstantiationErrorCode,
+  LoadErrorCode,
+  MaterializationErrorCode,
+  SchemaErrorCode
+} from './constants/ERROR_CODES.js';
 // Errors are runtime classes: tests catch them by class identity, callers
 // throw them, instances cross the package boundary through the public API.
 // They belong here, not under a subpath.
@@ -31,7 +41,6 @@ export * from './modules/data/Path.js';
 export * from './modules/data/Resolver.js';
 export * from './modules/data/Value.js';
 export * from './modules/graph/GraphEngine.js';
-
 export * from './modules/hash/Hash.js';
 export * from './modules/materialization/Materializer.js';
 export * from './modules/ontology/GraphOntologySerializer.js';

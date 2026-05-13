@@ -68,14 +68,14 @@ import type { CoercionErrorCodeType } from 'json-tology/types';
 import type { InstantiationErrorCodeType } from 'json-tology/types';
 ```
 
-### `CoercionErrorCode` → `InstantiationErrorCode`
+### `CoercionErrorCode` constant removed
 
-The `CoercionErrorCode` constant object is removed. Use `InstantiationErrorCode`.
+The `CoercionErrorCodeType` *type* is removed and replaced by `InstantiationErrorCodeType`. The `CoercionError` *class* continues to exist and throws code `'COERCION_FAILED'` — it has not been removed. No `CoercionErrorCode` constant object ever existed in the public API; use `InstantiationErrorCode` for code lookup if needed.
 
 ```ts
 // Before
-import { CoercionErrorCode } from 'json-tology';
-if (err.code === CoercionErrorCode.EXTRA_FORBIDDEN) { ... }
+import type { CoercionErrorCodeType } from 'json-tology/types';
+// (no CoercionErrorCode constant was ever exported)
 
 // After
 import { InstantiationErrorCode } from 'json-tology';

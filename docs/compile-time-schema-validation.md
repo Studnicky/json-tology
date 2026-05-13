@@ -47,7 +47,7 @@ const Bad = {
 
 const _check: ValidateSchemaType<typeof Bad> = Bad;
 // Type 'typeof Bad' is not assignable to type 'never'.
-//   RequiredKeyNotInPropertiesInterface: { missingKey: 'nonExistentField' }
+//   RequiredKeyNotInPropertiesInterface: { invalidKey: 'nonExistentField', actualPropertyKeys: 'name' }
 ```
 
 ### `dependentRequired` key presence <Badge type="info" text="Compile-time" />

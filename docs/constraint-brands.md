@@ -29,13 +29,13 @@ type Uri   = InferType<typeof UriSchema>;
 
 | | Brands ON (default) | Brands OFF |
 |---|---|---|
-| `Email` resolves to | `string & FormatBrand<'email'>` | `string` |
-| `Uri` resolves to | `string & FormatBrand<'uri'>` | `string` |
+| `Email` resolves to | `string & FormatBrandInterface<'email'>` | `string` |
+| `Uri` resolves to | `string & FormatBrandInterface<'uri'>` | `string` |
 | `const x: Email = '' as string` | compile error | compiles |
 | `const x: Email = '' as Uri` | compile error | compiles |
 | `const x: Email = jt.instantiate(id, data)` | compiles | compiles |
 
-The only way to obtain a branded value is through the validation API (`instantiate`, `materialize`, `is`, `value.coerce`, etc.). This is intentional - it enforces that data passes runtime validation before being treated as a constrained type.
+The only way to obtain a branded value is through the validation API (`instantiate`, `materialize`, `is`, `value.cast`, etc.). This is intentional - it enforces that data passes runtime validation before being treated as a constrained type.
 
 ## Branded keywords
 
@@ -43,12 +43,12 @@ The only way to obtain a branded value is through the validation API (`instantia
 
 | Keyword | Brand | Config flag | Example |
 |---|---|---|---|
-| `format` | `FormatBrandInterface<F>` | `formatBrands` | `format: 'email'` brands as `FormatBrand<'email'>` |
-| `pattern` | `PatternBrandInterface<P>` | `stringBrands` | `pattern: '^[A-Z]'` brands as `PatternBrand<'^[A-Z]'>` |
-| `minLength` | `MinLengthBrandInterface<N>` | `stringBrands` | `minLength: 5` brands as `MinLengthBrand<5>` |
-| `maxLength` | `MaxLengthBrandInterface<N>` | `stringBrands` | `maxLength: 100` brands as `MaxLengthBrand<100>` |
-| `contentMediaType` | `ContentMediaTypeBrandInterface<T>` | `contentBrands` | `contentMediaType: 'image/png'` brands as `ContentMediaTypeBrand<'image/png'>` |
-| `contentEncoding` | `ContentEncodingBrandInterface<T>` | `contentBrands` | `contentEncoding: 'base64'` brands as `ContentEncodingBrand<'base64'>` |
+| `format` | `FormatBrandInterface<F>` | `formatBrands` | `format: 'email'` brands as `FormatBrandInterface<'email'>` |
+| `pattern` | `PatternBrandInterface<P>` | `stringBrands` | `pattern: '^[A-Z]'` brands as `PatternBrandInterface<'^[A-Z]'>` |
+| `minLength` | `MinLengthBrandInterface<N>` | `stringBrands` | `minLength: 5` brands as `MinLengthBrandInterface<5>` |
+| `maxLength` | `MaxLengthBrandInterface<N>` | `stringBrands` | `maxLength: 100` brands as `MaxLengthBrandInterface<100>` |
+| `contentMediaType` | `ContentMediaTypeBrandInterface<T>` | `contentBrands` | `contentMediaType: 'image/png'` brands as `ContentMediaTypeBrandInterface<'image/png'>` |
+| `contentEncoding` | `ContentEncodingBrandInterface<T>` | `contentBrands` | `contentEncoding: 'base64'` brands as `ContentEncodingBrandInterface<'base64'>` |
 
 ```ts
 const PasswordSchema = {
@@ -59,7 +59,7 @@ const PasswordSchema = {
 } as const;
 
 type Password = InferType<typeof PasswordSchema>;
-// string & MinLengthBrand<8> & MaxLengthBrand<128> & PatternBrand<'^(?=.*[A-Z])(?=.*[0-9])'>
+// string & MinLengthBrandInterface<8> & MaxLengthBrandInterface<128> & PatternBrandInterface<'^(?=.*[A-Z])(?=.*[0-9])'>
 
 const raw: string = 'hello';
 const pw: Password = raw;  // compile error  - must go through validation
@@ -69,12 +69,12 @@ const pw: Password = raw;  // compile error  - must go through validation
 
 | Keyword | Brand | Config flag | Example |
 |---|---|---|---|
-| `format` | `FormatBrandInterface<F>` | `formatBrands` | `format: 'int32'` brands as `FormatBrand<'int32'>` |
-| `minimum` | `MinimumBrandInterface<N>` | `numericBrands` | `minimum: 0` brands as `MinimumBrand<0>` |
-| `maximum` | `MaximumBrandInterface<N>` | `numericBrands` | `maximum: 100` brands as `MaximumBrand<100>` |
-| `exclusiveMinimum` | `ExclusiveMinimumBrandInterface<N>` | `numericBrands` | `exclusiveMinimum: 0` brands as `ExclusiveMinimumBrand<0>` |
-| `exclusiveMaximum` | `ExclusiveMaximumBrandInterface<N>` | `numericBrands` | `exclusiveMaximum: 100` brands as `ExclusiveMaximumBrand<100>` |
-| `multipleOf` | `MultipleOfBrandInterface<N>` | `numericBrands` | `multipleOf: 5` brands as `MultipleOfBrand<5>` |
+| `format` | `FormatBrandInterface<F>` | `formatBrands` | `format: 'int32'` brands as `FormatBrandInterface<'int32'>` |
+| `minimum` | `MinimumBrandInterface<N>` | `numericBrands` | `minimum: 0` brands as `MinimumBrandInterface<0>` |
+| `maximum` | `MaximumBrandInterface<N>` | `numericBrands` | `maximum: 100` brands as `MaximumBrandInterface<100>` |
+| `exclusiveMinimum` | `ExclusiveMinimumBrandInterface<N>` | `numericBrands` | `exclusiveMinimum: 0` brands as `ExclusiveMinimumBrandInterface<0>` |
+| `exclusiveMaximum` | `ExclusiveMaximumBrandInterface<N>` | `numericBrands` | `exclusiveMaximum: 100` brands as `ExclusiveMaximumBrandInterface<100>` |
+| `multipleOf` | `MultipleOfBrandInterface<N>` | `numericBrands` | `multipleOf: 5` brands as `MultipleOfBrandInterface<5>` |
 
 ```ts
 const PercentSchema = {
@@ -91,8 +91,8 @@ const TemperatureSchema = {
 type Percent     = InferType<typeof PercentSchema>;
 type Temperature = InferType<typeof TemperatureSchema>;
 
-// Percent:     number & MinimumBrand<0> & MaximumBrand<100>
-// Temperature: number & MinimumBrand<-273>
+// Percent:     number & MinimumBrandInterface<0> & MaximumBrandInterface<100>
+// Temperature: number & MinimumBrandInterface<-273>
 
 // These are incompatible  - different MinimumBrand values
 const temp: Temperature = {} as Percent;  // compile error
@@ -103,9 +103,9 @@ const temp: Temperature = {} as Percent;  // compile error
 | Keyword | Brand | Config flag | Example |
 |---|---|---|---|
 | `uniqueItems` | `UniqueItemsBrandInterface` / `UniqueArrayBrandInterface<T>` | `arrayBrands` | `uniqueItems: true` brands the array |
-| `contains` | `ContainsBrandInterface<T>` | `arrayBrands` | `contains: { type: 'number' }` brands as `ContainsBrand<number>` |
-| `minItems` | `MinItemsBrandInterface<N>` | `arrayBrands` | `minItems: 1` brands as `MinItemsBrand<1>` |
-| `maxItems` | `MaxItemsBrandInterface<N>` | `arrayBrands` | `maxItems: 10` brands as `MaxItemsBrand<10>` |
+| `contains` | `ContainsBrandInterface<T>` | `arrayBrands` | `contains: { type: 'number' }` brands as `ContainsBrandInterface<number>` |
+| `minItems` | `MinItemsBrandInterface<N>` | `arrayBrands` | `minItems: 1` brands as `MinItemsBrandInterface<1>` |
+| `maxItems` | `MaxItemsBrandInterface<N>` | `arrayBrands` | `maxItems: 10` brands as `MaxItemsBrandInterface<10>` |
 
 When `contains` is present without `items`, the array element type narrows to the contains schema type.
 
@@ -117,7 +117,7 @@ const TagSetSchema = {
 } as const;
 
 type TagSet = InferType<typeof TagSetSchema>;
-// readonly string[] & UniqueItemsBrand
+// readonly string[] & UniqueItemsBrandInterface
 
 const NumberArraySchema = {
   type: 'array',
@@ -125,15 +125,15 @@ const NumberArraySchema = {
 } as const;
 
 type NumberArray = InferType<typeof NumberArraySchema>;
-// readonly number[] & ContainsBrand<number>
+// readonly number[] & ContainsBrandInterface<number>
 ```
 
 ### Object constraints <Badge type="warning" text="Compile-time + Runtime" />
 
 | Keyword | Brand | Config flag | Example |
 |---|---|---|---|
-| `minProperties` | `MinPropertiesBrandInterface<N>` | `objectBrands` | `minProperties: 1` brands as `MinPropertiesBrand<1>` |
-| `maxProperties` | `MaxPropertiesBrandInterface<N>` | `objectBrands` | `maxProperties: 5` brands as `MaxPropertiesBrand<5>` |
+| `minProperties` | `MinPropertiesBrandInterface<N>` | `objectBrands` | `minProperties: 1` brands as `MinPropertiesBrandInterface<1>` |
+| `maxProperties` | `MaxPropertiesBrandInterface<N>` | `objectBrands` | `maxProperties: 5` brands as `MaxPropertiesBrandInterface<5>` |
 
 When `additionalProperties: false` and properties are declared, excess property keys are flagged as `never` at compile time (requires `objectBrands` enabled):
 
@@ -429,6 +429,8 @@ Use the generic `FormatBrandInterface<F>` for custom format strings not covered 
 
 Above 8 elements the pairwise check is skipped and runtime validation still enforces `uniqueItems`.
 
+> **Note:** Compile-time tuple pairwise checking applies only to literal-typed tuples declared via `prefixItems` with ≤ 8 elements. Homogeneous arrays (e.g. `string[]`) receive only the `UniqueArrayBrandInterface<T>` brand and rely on runtime enforcement for actual uniqueness — there is no compile-time element-by-element comparison for homogeneous arrays.
+
 ```ts
 const DuplicateConstTuple = {
   type: 'array',
@@ -493,8 +495,8 @@ const ValidatedEmail = {
 } as const;
 
 type VEmail = InferType<typeof ValidatedEmail>;
-// string & FormatBrand<'email'> & string & MinLengthBrand<5>
-// simplifies to: string & FormatBrand<'email'> & MinLengthBrand<5>
+// string & FormatBrandInterface<'email'> & string & MinLengthBrandInterface<5>
+// simplifies to: string & FormatBrandInterface<'email'> & MinLengthBrandInterface<5>
 ```
 
 ### anyOf / oneOf <Badge type="warning" text="Compile-time + Runtime" />
@@ -510,7 +512,7 @@ const IdSchema = {
 } as const;
 
 type Id = InferType<typeof IdSchema>;
-// (string & FormatBrand<'uuid'>) | (number & MinimumBrand<1>)
+// (string & FormatBrandInterface<'uuid'>) | (number & MinimumBrandInterface<1>)
 ```
 
 ## Utility types
@@ -543,7 +545,7 @@ Strips brands to the base primitive. Useful for function parameters that accept 
 import type { InferType, LooseInputType } from 'json-tology/types';
 
 const EmailSchema = { type: 'string', format: 'email' } as const;
-type Email = InferType<typeof EmailSchema>;  // string & FormatBrand<'email'>
+type Email = InferType<typeof EmailSchema>;  // string & FormatBrandInterface<'email'>
 type Input = LooseInputType<Email>;          // string
 ```
 
@@ -659,7 +661,7 @@ type Email = InferType<typeof EmailSchema>;
 
 | `formatBrands` | `Email` resolves to | Plain `string` assignable? |
 |---|---|---|
-| `true` (default) | `string & FormatBrand<'email'>` | No - compile error |
+| `true` (default) | `string & FormatBrandInterface<'email'>` | No - compile error |
 | `false` | `string` | Yes |
 
 ### Before and after: numeric brands
@@ -671,7 +673,7 @@ type Score = InferType<typeof ScoreSchema>;
 
 | `numericBrands` | `Score` resolves to | Plain `number` assignable? |
 |---|---|---|
-| `true` (default) | `number & MinimumBrand<0> & MaximumBrand<100>` | No - compile error |
+| `true` (default) | `number & MinimumBrandInterface<0> & MaximumBrandInterface<100>` | No - compile error |
 | `false` | `number` | Yes |
 
 ### Before and after: string brands
@@ -683,7 +685,7 @@ type Code = InferType<typeof CodeSchema>;
 
 | `stringBrands` | `Code` resolves to | Plain `string` assignable? |
 |---|---|---|
-| `true` (default) | `string & MinLengthBrand<3> & MaxLengthBrand<10>` | No - compile error |
+| `true` (default) | `string & MinLengthBrandInterface<3> & MaxLengthBrandInterface<10>` | No - compile error |
 | `false` | `string` | Yes |
 
 ### Before and after: array brands
@@ -695,7 +697,7 @@ type Set = InferType<typeof SetSchema>;
 
 | `arrayBrands` | `Set` resolves to | `readonly string[]` assignable? |
 |---|---|---|
-| `true` (default) | `readonly string[] & UniqueItemsBrand` | No - compile error |
+| `true` (default) | `readonly string[] & UniqueItemsBrandInterface` | No - compile error |
 | `false` | `readonly string[]` | Yes |
 
 ### Before and after: object brands
@@ -758,7 +760,7 @@ const jt = JsonTology.create({
 });
 
 // All of these return branded types:
-const email = jt.instantiate('https://example.com/Email', input);     // string & FormatBrand<'email'>
+const email = jt.instantiate('https://example.com/Email', input);     // string & FormatBrandInterface<'email'>
 const clean = jt.value.instantiate('https://example.com/Email', input); // same
 
 if (jt.is('https://example.com/Email', input)) {

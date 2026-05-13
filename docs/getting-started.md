@@ -268,7 +268,7 @@ These options control how `toQuads` mints subject IRIs and how `fromQuads` rever
 
 | Option | Type | Default | Purpose |
 |--------|------|---------|---------|
-| `iriFor` | `string \| 'blank-node' \| SkolemizeFnType` | _(content-hash)_ | Default IRI minting strategy for `toQuads`. A regular string becomes a root-only override; `'blank-node'` emits anonymous subjects; a function is the full `SkolemizeFnType` shape. Per-call options override this. |
+| `iriFor` | `SkolemizeFnType \| string` | _(content-hash)_ | Default IRI minting strategy for `toQuads`. A regular string becomes a root-only override; the string `'blank-node'` is a runtime-recognised constant that emits anonymous subjects (not a discriminated type member); a function matching `SkolemizeFnType` is the full custom minting shape. Per-call options override this. |
 | `defaultGraphIRI` | `string` | _(none)_ | Default `graph` field for every quad emitted by `toQuads`. Per-call `graphIRI` overrides. |
 | `defaultDeskolemize` | `boolean` | `false` | Treat `*/.well-known/genid/*` IRIs as blank nodes during `fromQuads`. Reverses `Skolemize.wellKnownGenid`. |
 

@@ -25,7 +25,7 @@ If you hit a conformance gap, open an issue at [github.com/Studnicky/json-tology
 | [RDF Schema 1.1](https://www.w3.org/TR/rdf-schema/) | `rdfs:Class`, `rdfs:domain`, `rdfs:range`, `rdfs:subClassOf` emission. |
 | [OWL 2 Web Ontology Language](https://www.w3.org/TR/owl2-overview/) | TBox emission via `JsonTology.toTbox()` / `entities.ontology()`. |
 | [SHACL Shapes Constraint Language](https://www.w3.org/TR/shacl/) | SHACL shape emission via `JsonTology.toShacl()`. |
-| [JSON-LD 1.1](https://www.w3.org/TR/json-ld11/) | TBox/quad serialization format via `dump`/`dumpJson`. |
+| [JSON-LD 1.1](https://www.w3.org/TR/json-ld11/) | TBox/quad serialization format via `toTbox`, `toShacl`, `ontology`. |
 | [XSD Datatypes](https://www.w3.org/TR/xmlschema11-2/) | Mapping JSON Schema `format` to XSD types in the RDF projection. |
 | [Schema.org](https://schema.org/) | Default vocabulary for property predicates. |
 | [Dublin Core Terms](https://www.dublincore.org/specifications/dublin-core/dcmi-terms/) | Optional metadata predicates. |

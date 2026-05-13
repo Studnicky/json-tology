@@ -30,7 +30,7 @@ Compose.complementOf(other, body):           { $id, not: { $ref }, ...body }
 
 - You only need property-merging with a single parent — use [`Compose.extend`](/composition/extend), which is structurally equivalent (both produce `allOf + $ref`) but signals "extension" rather than "is-a".
 - You want type aliasing without OWL semantics — use [`Compose.equivalent`](/composition/equivalent).
-- You want individual-level identity (`owl:sameAs` between two ABox individuals) — that's a future `JsonTology.sameAs` API. Class axioms operate on the TBox layer.
+- You want individual-level identity (`owl:sameAs` between two ABox individuals) — use [`JsonTology.prototype.sameAs`](/advanced/sameas). Class axioms operate on the TBox layer.
 
 ## Examples
 

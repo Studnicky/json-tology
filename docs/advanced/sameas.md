@@ -1,4 +1,4 @@
-# `JsonTology.prototype.sameAs`
+# `JsonTology.prototype.sameAs` <Badge type="tip" text="Runtime" />
 
 ## Declaration
 

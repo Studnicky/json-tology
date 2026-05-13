@@ -14,7 +14,7 @@ OWL 2 defines seven property characteristics that describe logical properties of
 | `irreflexive` | `owl:IrreflexiveProperty` | `<prop> rdf:type owl:IrreflexiveProperty` |
 | `reflexive` | `owl:ReflexiveProperty` | `<prop> rdf:type owl:ReflexiveProperty` |
 
-All seven keywords are tracked in `OWL_CORE_PREDICATES` in `src/constants/ONTOLOGY_PREDICATES.ts` and exposed as fields on `SchemaGraphSemanticsInterface` so consumers can inspect them on the canonical graph without re-reading the source schema.
+All seven keywords are registered in `KNOWN_SCHEMA_KEYWORDS` (`src/constants/SCHEMA_KEYWORDS.ts`); the emit logic that converts them to `rdf:type owl:*Property` quads lives in `src/modules/graph/SchemaGraphRelations.ts`. They are also exposed as fields on `SchemaGraphSemanticsInterface` so consumers can inspect them on the canonical graph without re-reading the source schema.
 
 ## Usage
 

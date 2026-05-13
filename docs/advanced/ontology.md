@@ -42,14 +42,14 @@ const raw = tbox.raw();
 ```ts
 import { bookstoreEntities as entities, CustomerSchema } from './bookstore/schemas.js';
 
-const tbox = entities.toTbox();
-const abox = entities.toQuads(CustomerSchema, customerData);
+const tbox  = entities.toTbox();
+const abox  = entities.toQuads(CustomerSchema, customerData); // QuadInterface[]
 
 const merged = {
   '@context': tbox.context(),
   '@graph': [
-    ...tbox.raw(),    // OWL class/property declarations
-    ...abox.raw(),    // ABox individual assertions
+    ...tbox.raw(),  // OWL class/property declarations
+    ...abox,        // ABox individual assertions (already a QuadInterface[])
   ],
 };
 ```
@@ -212,7 +212,7 @@ const shacl  = localJt.ontology().shaclObject();
 
 ## `jt.toQuads` {#jt-toquads}
 
-**Declaration.** Projects instance data into RDF quads (ABox individuals) and returns an `OntologyBuilder` containing the projected nodes. Validates the data against the schema before projecting - throws `MaterializationError` if validation fails. Inverse of [`fromQuads`](#jt-fromquads).
+**Declaration.** Projects instance data into RDF quads (ABox individuals) and returns a `QuadInterface[]` array of the projected nodes. Validates the data against the schema before projecting - throws `MaterializationError` if validation fails. Inverse of [`fromQuads`](#jt-fromquads). See [RDF round-trip](/advanced/quads) for the full quad pattern.
 
 **Use this when** you want to produce ABox (instance-level) RDF triples from validated domain objects - for storage in an RDF triplestore, for input to a reasoner, or for export as Linked Data.
 
@@ -229,6 +229,7 @@ const localJt = JsonTology.create({
   schemas:  [AddressSchema, CustomerSchema] as const,
 });
 
+// toQuads returns QuadInterface[] — use the array directly
 const abox = localJt.toQuads(CustomerSchema, {
   id:        'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   email:     'alice@bookstore.example',
@@ -236,22 +237,23 @@ const abox = localJt.toQuads(CustomerSchema, {
   addresses: [{ street: '12 Elm Lane', city: 'Bookham', postalCode: '94107' }],
 });
 
-const jsonLd = abox.jsonLdObject();
-const raw    = abox.raw();  // raw quad nodes
+// abox is QuadInterface[]  - iterate, filter, or pass to OntologyBuilder
+console.log(abox.length); // number of projected quads
+console.log(abox[0]);     // first QuadInterface node
 ```
 
 #### Example 2: Combine TBox and ABox
 
 ```ts
-const tbox = localJt.ontology();         // TBox  - class/property definitions
-const abox = localJt.toQuads(CustomerSchema, customerData); // ABox  - individuals
+const tbox = localJt.ontology();                           // TBox — OntologyBuilder
+const abox = localJt.toQuads(CustomerSchema, customerData); // ABox — QuadInterface[]
 
 // Merge for a complete JSON-LD document:
 const merged = {
   '@context': tbox.context(),
   '@graph': [
-    ...tbox.raw(),
-    ...abox.raw(),
+    ...tbox.raw(),  // OWL/SHACL quads from the OntologyBuilder
+    ...abox,        // ABox individual quads (QuadInterface[] — spread directly)
   ],
 };
 ```
@@ -269,12 +271,11 @@ const merged = {
 #### Example 1: Round-trip a customer through quads
 
 ```ts
-// Project to quads
+// Project to quads — toQuads returns QuadInterface[] directly
 const abox = localJt.toQuads(CustomerSchema, customerData);
-const quads = abox.raw();
 
 // Lift back to typed objects
-const customers = localJt.fromQuads(CustomerSchema.$id, quads);
+const customers = localJt.fromQuads(CustomerSchema.$id, abox);
 // customers: Customer[]  - each element validated through coerce
 console.log(customers[0].name); // 'Alice Chen'
 ```
