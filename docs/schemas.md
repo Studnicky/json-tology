@@ -1,629 +1,117 @@
 # Schemas
 
-> This guide covers `register`, `registerAnonymous`, `has`, `get`, `list`, `toSchema`. All examples use the [bookstore domain](/bookstore-domain). See [Getting Started](/getting-started) for installation and the basic `JsonTology.create()` call.
-
 Schemas are plain JSON Schema objects with `$id` and `as const`. The registry stores them, compiles a canonical validation graph for each, and exposes lookup methods. json-tology targets **JSON Schema draft 2020-12** (`https://json-schema.org/draft/2020-12/schema`), the dialect on track for Proposed Standard via the [IETF JSON Schema Working Group](https://datatracker.ietf.org/wg/jsonschema/about/).
 
----
-
-## register
-
-Registers one or more schemas and returns `this` with the schema types accumulated into the type map.
-
-### Signature
-
-```ts
-public register<const T extends { readonly '$id': string }>(schema: T): JsonTology<...>
-public register<const T extends ReadonlyArray<{ readonly '$id': string }>>(schemas: T): JsonTology<...>
-```
-
-### When to use
-
-Use `register` when you need to add schemas after construction - for example when schemas are loaded from files or built dynamically at startup. Prefer `JsonTology.create({ schemas })` when you know all schemas up front, because it builds the type map in one pass and TypeScript infers the full type map at compile time.
-
-### Examples
-
-#### Example 1: Registration at construction time
-
-The most common pattern. Pass all schemas at once so the type map is fully inferred from the start.
-
-```ts
-import { JsonTology } from 'json-tology';
-
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [
-    AddressSchema,
-    CustomerSchema,
-    BookSchema,
-    OrderLineSchema,
-    OrderSchema,
-    ReviewSchema,
-  ] as const,
-});
-```
-
-All six schemas are registered. Every `jt.instantiate(CustomerSchema.$id, data)` call returns `Customer` (typed).
-
-#### Example 2: Chained post-construction registration
-
-`register()` returns `this` with an updated type parameter, so you can chain or assign the result.
-
-```ts
-const jt = JsonTology.create({ baseIRI: 'https://bookstore.example' });
-
-// Chain a single schema
-const jt2 = jt.register(AddressSchema).register(CustomerSchema);
-
-// Or register an array at once
-const jt3 = jt.register([AddressSchema, CustomerSchema, BookSchema] as const);
-```
-
-#### Example 3: Registering a dynamically built schema
-
-Composed schemas (see [Composition](/composition/extend)) are valid schemas that can be registered immediately after creation.
-
-```ts
-import { Compose } from 'json-tology';
-
-const BookSummarySchema = Compose.pick(
-  BookSchema,
-  ['isbn', 'title', 'price'] as const,
-  'https://bookstore.example/BookSummary',
-);
-
-jt.register(BookSummarySchema);
-console.log(jt.has('https://bookstore.example/BookSummary')); // true
-```
-
-### Comparison
-
-::: code-group
-
-```ts [json-tology]
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [CustomerSchema, BookSchema] as const,
-});
-// Or post-construction:
-jt.register(ReviewSchema);
-```
-
-```ts [Zod]
-// Zod schemas are registered in module scope  - no central registry.
-// You import the schema object directly wherever needed.
-const CustomerSchema = z.object({
-  id:    z.string().uuid(),
-  email: z.string().email(),
-  name:  z.string(),
-});
-// No equivalent to a multi-schema registry with a type map.
-```
-
-```ts [Valibot]
-import * as v from 'valibot';
-// Limitation: Valibot has no central registry; schemas are module-scope values.
-const CustomerSchema = v.object({
-  id:    v.pipe(v.string(), v.uuid()),
-  email: v.pipe(v.string(), v.email()),
-  name:  v.pipe(v.string(), v.minLength(1)),
-});
-// No multi-schema registry, no $id-based lookup, no type map.
-```
-
-```ts [io-ts]
-import * as t from 'io-ts';
-// Limitation: io-ts has no central registry; codecs are module-scope values.
-const CustomerCodec = t.type({
-  id:    t.string,
-  email: t.string,
-  name:  t.string,
-});
-// No multi-schema registry, no $id-based lookup, no type map.
-```
-
-```ts [TypeBox]
-// TypeBox has no centralized registry. Schemas live as module exports
-// and are referenced by variable. Validation goes through the Value
-// module (TypeBox's own runtime - not AJV).
-import { Value } from '@sinclair/typebox/value';
-
-// To validate, pass the schema by reference each time:
-Value.Check(CustomerSchema, data);
-
-// For cross-schema $ref, use Type.Ref(target) - but you must maintain
-// a $defs object yourself and pass it to TypeCompiler at compile time.
-// There is no JsonTology.create-style schema map with type inference.
-```
-
-```ts [AJV]
-import Ajv from 'ajv';
-const ajv = new Ajv();
-ajv.addSchema(customerJsonSchema);
-ajv.addSchema(bookJsonSchema);
-// No TypeScript type map  - types must be maintained separately.
-```
-
-```py [Pydantic]
-# Pydantic models are registered by the Python class system.
-# No explicit registry  - you import the model class directly.
-from pydantic import BaseModel
-
-class Customer(BaseModel):
-    id: str
-    email: str
-    name: str
-```
-
-:::
-
-### Related
-
-- `registerAnonymous` - for schemas without a `$id`
-- `has` / `get` / `list` - registry inspection
-- [Composition](/composition/extend) - build schemas from existing ones before registering
+All examples use the [bookstore domain](/bookstore-domain). See [Getting Started](/getting-started) for installation and the basic `JsonTology.create()` call.
 
 ---
 
-## registerAnonymous
+## Schema authoring
 
-Registers a schema that may not have a `$id`. If a `$id` is absent, a content-hash-based synthetic ID is assigned.
-
-### Signature
+Schemas are declared as TypeScript `const` objects so the compiler can read the literal types. The minimal shape is:
 
 ```ts
-public registerAnonymous(schema: Record<string, unknown>): string
-```
-
-Returns the `$id` used for registration (original or synthetic).
-
-### When to use
-
-Use when you receive schemas from external sources (OpenAPI `$defs`, dynamic form builders, etc.) that may not carry a stable `$id`. The returned synthetic ID can be used in subsequent `instantiate` and `validate` calls.
-
-### Examples
-
-#### Example 1: Schema without $id
-
-```ts
-const syntheticId = jt.registerAnonymous({
+const UserSchema = {
+  $id: 'https://example.com/User',
   type: 'object',
   properties: {
-    couponCode: { type: 'string' },
-    discount:   { type: 'number', minimum: 0, maximum: 1 },
+    id:   { type: 'string' },
+    name: { type: 'string' },
   },
-  required: ['couponCode', 'discount'],
-});
-
-console.log(syntheticId); // 'urn:json-tology:hash:<hex>'
-
-const coupon = jt.instantiate(syntheticId, { couponCode: 'SAVE10', discount: 0.1 });
+  required: ['id', 'name'],
+} as const;
 ```
 
-#### Example 2: Schema with existing $id delegates to register
-
-If the schema already has a `$id`, `registerAnonymous` behaves identically to `register`.
-
-```ts
-const id = jt.registerAnonymous(BookSchema);
-console.log(id); // 'https://bookstore.example/Book'  - unchanged
-```
-
-### Comparison
-
-::: code-group
-
-```ts [json-tology]
-const id = jt.registerAnonymous({ type: 'object', properties: { discount: { type: 'number' } } });
-jt.validate(id, { discount: 0.15 });
-```
-
-```ts [Zod]
-// Not directly supported  - Zod schemas are typed at declaration site.
-// An inline z.object() can be used without a name but has no registry ID.
-const CouponSchema = z.object({ discount: z.number() });
-CouponSchema.parse({ discount: 0.15 });
-```
-
-```ts [Valibot]
-import * as v from 'valibot';
-// Limitation: no registry; inline schema has no $id and no synthetic key.
-const CouponSchema = v.object({ discount: v.number() });
-v.parse(CouponSchema, { discount: 0.15 });
-```
-
-```ts [io-ts]
-import * as t from 'io-ts';
-// Limitation: no registry; inline codec has no $id and no synthetic key.
-const CouponCodec = t.type({ discount: t.number });
-CouponCodec.decode({ discount: 0.15 });
-```
-
-```ts [TypeBox]
-// TypeBox has no concept of anonymous registration - schemas are
-// always referenced by JS variable. An inline schema needs no name.
-import { Type } from '@sinclair/typebox';
-import { Value } from '@sinclair/typebox/value';
-
-const Coupon = Type.Object({ discount: Type.Number() });
-Value.Check(Coupon, { discount: 0.15 });
-```
-
-```ts [AJV]
-import Ajv from 'ajv';
-const ajv = new Ajv();
-const schema = { type: 'object', properties: { discount: { type: 'number' } } };
-ajv.validate(schema, { discount: 0.15 });
-// Inline schemas require no registration.
-```
-
-```py [Pydantic]
-# Not directly supported  - all models must be declared as named classes.
-# Dynamic models can be created with `create_model`.
-from pydantic import create_model
-Coupon = create_model('Coupon', discount=(float, ...))
-Coupon(discount=0.15)
-```
-
-:::
-
-### Related
-
-- `register` - for schemas with a stable `$id`
-- `has` / `get` - verify a schema is present after registration
-
----
-
-## has
-
-Checks whether a schema with the given `$id` is registered.
-
-### Signature
-
-```ts
-public has(schemaId: string): boolean
-```
-
-### When to use
-
-Use before calling `instantiate` or `validate` when you cannot guarantee a schema is registered (e.g., loading schemas from optional plugin modules). Most application code that calls `JsonTology.create({ schemas })` doesn't need this - all schemas are known registered.
-
-### Examples
-
-#### Example 1: Checking after construction
-
-```ts
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [CustomerSchema] as const,
-});
-
-console.log(jt.has('https://bookstore.example/Customer')); // true
-console.log(jt.has('https://bookstore.example/Review'));   // false
-```
-
-#### Example 2: Guard before validate
-
-```ts
-function validateIfRegistered(schemaId: string, data: unknown): ValidationErrors {
-  if (!jt.has(schemaId)) {
-    return new ValidationErrors([{ path: '', keyword: 'unknown', message: `Schema '${schemaId}' is not registered`, params: {} }]);
-  }
-  return jt.validate(schemaId, data);
-}
-```
-
-### Comparison
-
-::: code-group
-
-```ts [json-tology]
-jt.has('https://bookstore.example/Customer') // true | false
-```
-
-```ts [Zod]
-// Not applicable  - Zod has no central registry.
-// Schema objects are present if the module importing them has loaded.
-```
-
-```ts [Valibot]
-// Limitation: not applicable - Valibot has no registry. Schemas are values
-// that exist if their module has been imported.
-```
-
-```ts [io-ts]
-// Limitation: not applicable - io-ts has no registry. Codecs are values
-// that exist if their module has been imported.
-```
-
-```ts [TypeBox]
-// Not applicable  - TypeBox schemas are plain JS objects; no registry.
-```
-
-```ts [AJV]
-const ajv = new Ajv();
-ajv.addSchema(customerSchema, 'Customer');
-const compiled = ajv.getSchema('Customer');
-console.log(compiled !== undefined); // true if schema was added
-```
-
-```py [Pydantic]
-# Python class introspection:
-'Customer' in [cls.__name__ for cls in BaseModel.__subclasses__()]
-# Not idiomatic  - normally you just import the class.
-```
-
-:::
-
-### Related
-
-- `get` - retrieve the schema object itself
-- `list` - enumerate all registered IDs
-
----
-
-## get
-
-Retrieves a registered schema by its `$id`.
-
-### Signature
-
-```ts
-public get(schemaId: string): Record<string, unknown> | undefined
-```
-
-Returns `undefined` when the schema is not registered.
-
-### When to use
-
-Use when you need to inspect the raw schema document - for example to feed into `Compose` methods, display in developer tooling, or log for debugging. This returns the plain JSON Schema object, not the compiled graph.
-
-### Examples
-
-#### Example 1: Retrieve and inspect
-
-```ts
-const book = jt.get('https://bookstore.example/Book');
-console.log(book?.properties?.['price']); // { type: 'number', exclusiveMinimum: 0 }
-```
-
-#### Example 2: Retrieve to derive a new schema
-
-Build a narrowed schema from one already in the registry. This pattern ties into [Composition](/composition/extend).
-
-```ts
-const raw = jt.get('https://bookstore.example/Book');
-if (raw) {
-  const BookSummary = Compose.pick(
-    raw as typeof BookSchema,
-    ['isbn', 'title', 'price'] as const,
-    'https://bookstore.example/BookSummary',
-  );
-  jt.register(BookSummary);
-}
-```
-
-### Comparison
-
-::: code-group
-
-```ts [json-tology]
-const schema = jt.get('https://bookstore.example/Book');
-```
-
-```ts [Zod]
-// Not directly supported  - Zod schemas are module-scope variables.
-// Access them via direct import.
-import { BookSchema } from './schemas';
-```
-
-```ts [Valibot]
-// Limitation: not directly supported - Valibot schemas are module-scope values.
-import { BookSchema } from './schemas';
-```
-
-```ts [io-ts]
-// Limitation: not directly supported - io-ts codecs are module-scope values.
-import { BookCodec } from './schemas';
-```
-
-```ts [TypeBox]
-// TypeBox schemas are accessed via direct import. Use Type.Ref(schema)
-// to produce a $ref node; resolve via TypeCompiler with a $defs object.
-import { BookSchema } from './schemas';
-const ref = Type.Ref(BookSchema);
-```
-
-```ts [AJV]
-const schema = ajv.getSchema('Book');
-// Returns the compiled ValidateFunction, not the raw JSON Schema.
-```
-
-```py [Pydantic]
-Customer.model_json_schema()  # Returns the JSON Schema for a model class
-```
-
-:::
-
-### Related
-
-- `has` - existence check
-- `toSchema` - round-trip via canonical graph (advanced)
-
----
-
-## list
-
-Lists the `$id` of every registered schema.
-
-### Signature
-
-```ts
-public list(): string[]
-```
-
-### When to use
-
-Use for developer tooling - building a schema browser, logging the registry state, or producing an index of available schemas at startup. Not typically needed in application hot paths.
-
-### Examples
-
-#### Example 1: Enumerate registered schemas
+**`$id` is required.** Every schema registered with `register()` must carry a fully-qualified IRI as its `$id`. The IRI is the stable identity used by `has`, `get`, `validate`, `instantiate`, `materialize`, and cross-schema `$ref`. Use the project's `baseIRI` as the namespace:
 
 ```ts
 const jt = JsonTology.create({
   baseIRI: 'https://bookstore.example',
   schemas: [AddressSchema, CustomerSchema, BookSchema] as const,
 });
-
-console.log(jt.list());
-// [
-//   'https://bookstore.example/Address',
-//   'https://bookstore.example/Customer',
-//   'https://bookstore.example/Book',
-// ]
 ```
 
-#### Example 2: Validate all schemas share the same base
-
-```ts
-const base = 'https://bookstore.example';
-const foreign = jt.list().filter(id => !id.startsWith(base));
-if (foreign.length > 0) {
-  console.warn('Unexpected schemas:', foreign);
-}
-```
-
-### Comparison
-
-::: code-group
-
-```ts [json-tology]
-jt.list() // string[]
-```
-
-```ts [Zod]
-// Not applicable  - no registry.
-```
-
-```ts [Valibot]
-// Limitation: not applicable - Valibot has no registry, so no list to enumerate.
-```
-
-```ts [io-ts]
-// Limitation: not applicable - io-ts has no registry, so no list to enumerate.
-```
-
-```ts [TypeBox]
-// Not applicable  - no registry.
-```
-
-```ts [AJV]
-// Not directly supported  - AJV does not expose a list of added schema IDs.
-```
-
-```py [Pydantic]
-# Not directly supported.
-# You can enumerate model subclasses via:
-[cls.__name__ for cls in BaseModel.__subclasses__()]
-```
-
-:::
-
-### Related
-
-- `has` / `get` - single-schema lookup
+**`as const` is required for type inference.** Without it, TypeScript widens string literals to `string` and `InferType` cannot derive precise property types.
 
 ---
 
-## toSchema
+## `$ref` — cross-schema references
 
-Reconstructs a JSON Schema document from the canonical graph for a registered schema.
-
-### Signature
+Use `$ref` to point one schema at another by IRI. The runtime resolves the reference against the registry.
 
 ```ts
-public toSchema(schemaId: string): Record<string, unknown> | undefined
+const OrderLineSchema = {
+  $id: 'https://bookstore.example/OrderLine',
+  type: 'object',
+  properties: {
+    book: { $ref: 'https://bookstore.example/Book' },
+    qty:  { type: 'integer', minimum: 1 },
+  },
+  required: ['book', 'qty'],
+} as const;
 ```
 
-Returns `undefined` when the schema is not registered.
+**Local fragment refs** (`#`, `#/properties/foo`, `#anchor`) resolve within the same schema document and do not require registry lookup.
 
-### When to use
+**Cross-schema non-fragment refs** must point to a `$id` that is registered (or nested within a registered schema). See the [strict resolution section](#cross-schema-ref-strict-resolution) below for how enforcement works.
 
-Use to verify round-trip fidelity - that the canonical graph preserves all structural semantics from the authored schema. Also useful when you want a clean, normalized version of the schema (redundant keywords removed, structure canonicalized). Not needed for typical validation or coercion workflows.
+---
 
-### Examples
+## `$defs` and anchors
 
-#### Example 1: Round-trip a registered schema
+Use `$defs` to define reusable sub-schemas inline within a parent schema. They are accessible via `$ref` with a JSON Pointer fragment (`#/$defs/Name`) or via a named `$anchor`.
 
 ```ts
-const reconstructed = jt.toSchema('https://bookstore.example/Order');
-console.log(JSON.stringify(reconstructed, null, 2));
-// Matches the original OrderSchema structure
+const OrderSchema = {
+  $id: 'https://bookstore.example/Order',
+  type: 'object',
+  $defs: {
+    Status: {
+      type: 'string',
+      enum: ['pending', 'shipped', 'delivered', 'cancelled'],
+    },
+  },
+  properties: {
+    id:     { type: 'string' },
+    status: { $ref: '#/$defs/Status' },
+    lines:  { type: 'array', items: { $ref: 'https://bookstore.example/OrderLine' } },
+  },
+  required: ['id', 'status', 'lines'],
+} as const;
 ```
 
-#### Example 2: Verify graph fidelity after composition
+`$anchor` assigns a named pointer to any sub-schema node, independent of its structural path:
 
 ```ts
-const BookSummarySchema = Compose.pick(
-  BookSchema,
-  ['isbn', 'title', 'price'] as const,
-  'https://bookstore.example/BookSummary',
-);
-jt.register(BookSummarySchema);
-
-const roundTripped = jt.toSchema('https://bookstore.example/BookSummary');
-// Should contain only isbn, title, price properties
-console.log(Object.keys(roundTripped?.properties ?? {}));
-// ['isbn', 'title', 'price']
+const AddressSchema = {
+  $id: 'https://bookstore.example/Address',
+  type: 'object',
+  $defs: {
+    PostalCode: {
+      $anchor: 'postal-code',
+      type: 'string',
+      pattern: '^[0-9]{5}(-[0-9]{4})?$',
+    },
+  },
+  properties: {
+    postalCode: { $ref: '#postal-code' },
+  },
+} as const;
 ```
 
-### Comparison
+---
 
-::: code-group
+## `$id` conventions
 
-```ts [json-tology]
-jt.toSchema('https://bookstore.example/Book')
-// Returns the JSON Schema reconstructed from the internal graph
-```
+Use fully-qualified IRIs as schema identifiers:
 
-```ts [Zod]
-// Not directly supported.
-// z.schema.description or zodToJsonSchema (third-party) can export JSON Schema.
-```
+- **Base IRI** — use the same origin for all schemas in a project (`https://bookstore.example`). Pass it as `baseIRI` to `JsonTology.create` so relative `$ref` values resolve correctly.
+- **Path segment** — use the domain entity name as the path (`/Book`, `/Customer`, `/OrderLine`). One schema per IRI.
+- **Stability** — once a schema `$id` is published and referenced by other schemas, treat it as stable. Changing a `$id` breaks all cross-schema `$ref` that target it.
 
-```ts [Valibot]
-// Use the `@valibot/to-json-schema` companion library:
-import { toJsonSchema } from '@valibot/to-json-schema';
-const jsonSchema = toJsonSchema(BookSchema);
-// Limitation: not all Valibot constructs map to JSON Schema; no graph round-trip.
-```
+IRI-based identity is what allows the runtime to perform `$ref` resolution, compile-time type checking, and ontology export without additional configuration.
 
-```ts [io-ts]
-// Limitation: io-ts has no built-in JSON Schema export. Codecs lack a
-// structural representation that maps cleanly onto JSON Schema; third-party
-// tooling exists for narrow subsets but full round-trip is not supported.
-```
-
-```ts [TypeBox]
-// TypeBox schemas ARE plain JSON Schema  - no round-trip needed.
-// JSON.stringify(schema) gives the wire form directly.
-```
-
-```ts [AJV]
-// Not directly supported  - AJV stores compiled validators, not schemas.
-```
-
-```py [Pydantic]
-Customer.model_json_schema()  # Exports JSON Schema from the model class
-```
-
-:::
-
-### Related
-
-- [Ontology and Graphs](/advanced/ontology) - advanced: `toQuads`, `fromQuads`, graph serialization
-- `get` - retrieve the original registered schema (before graph normalization)
+---
 
 ## Cross-schema `$ref` strict resolution <Badge type="warning" text="Compile-time + Runtime" />
 
@@ -665,9 +153,24 @@ try {
 
 See [Error class hierarchy](/errors/classes) for the full `GraphError` surface.
 
+---
+
+## Registry methods
+
+| Method | Description |
+|--------|-------------|
+| [`register` / `registerAnonymous`](/registry/register#registry-register) | Add schemas to the runtime |
+| [`has`](/registry/register#registry-has) | Check if a schema is registered |
+| [`get`](/registry/register#registry-get) | Retrieve the original schema object |
+| [`list`](/registry/register#registry-list) | Enumerate all registered `$id` values |
+| [`toSchema`](/serialization/toSchema) | Reconstruct a schema from the canonical graph |
+
+---
+
 ## See also
 
 - [Bookstore domain](/bookstore-domain) - where all six schemas are registered
 - [Composition](/composition/extend) - derive new schemas to register
 - [Validation modes](/validation-modes) - enforcement layer reference
 - [Argument conventions](/argument-conventions) - how registered schemas work as `SchemaRef`
+- [jt: keywords](/schemas/jt-keywords) - json-tology-specific schema extensions
