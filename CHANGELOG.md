@@ -7,20 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-
-- Docs: new "Validation modes" page introducing the `Compile-time` / `Runtime` / `Compile-time + Runtime` badge system; every keyword, brand, and feature in the reference docs is now tagged with its enforcement layer. New / expanded pages cover the 0.4.0 surface: 25 named format brands, uniqueItems tuple distinctness, multipleOf bounded narrowing, full OWL 2 property characteristics, generalised if/then/else inference, patternProperties template-literal expansion, Compose argument validation, schema-validator brands, OWL class-axiom compile-time enforcement, runtime cross-schema $ref strict resolution, GraphEngine self-ref / embedded-$id resolution, and the static-facade parametrization. New migration page covers the 0.4.0 breaking changes (subjectIRI / maxDepth / maxDataDepth / CoercionErrorCodeType removed; make*Schema → BaseTypes.response()/.result()/.page(); Node >= 24).
-
-### Fixed
-
-- `GraphEngine.resolveRef` failed to resolve a schema's `$ref` to its own `$id` when the engine was obtained via `registry.engine(schemaObj)` and `.errors(data)` was called directly. The compiled fast-path (`registry.validate`) was unaffected. Now the interpreted path recognises the root schema's own `$id` and resolves self-references consistently with the compiled path, restoring parity. Surfaced by a new compiled/interpreted parity test.
-- `GraphEngine.resolveRef` failed to resolve `$ref` targets that pointed at embedded `$id` declarations inside a schema's `$defs` (or any nested sub-schema) when accessed via `registry.engine(schemaObj)`. The compiled fast-path (`registry.validate`) was unaffected because the compiled validate-with-errors path uses `lookupSchema` rather than `lookupCompiled` for ref resolution. The engine path now performs the same embedded-id walk on construction (Option B — engine-side), and `SchemaRegistry.engine()` additionally extends the `lookupSchema` callback to return embedded sub-schemas (Option A — registry-side), so the compiled validate path and the engine path both resolve embedded `$id` refs and agree on validation results.
-
-### Changed
-
-- Second consolidation pass on the test suite: ~120 additional `it` blocks collapsed into scenario-driven GBU tables across `validation`, `coverageGaps`, `compilerConformance`, `registry`, `hash`, `lift`, `dataTypes`, and `computed`. Total assertion coverage preserved; suite organisation tightened.
-- Test-tier corrections: `logger` tests moved smoke → unit; `baseTypes` cross-module registry scenarios moved smoke → integration; `quads` moved integration → unit; `maxSchemaDepth` scenarios moved integration → unit. `beforeEach`/`afterEach` shared-state hooks in `cliWriter` and `logger` tests replaced with per-`it` inline `try`/`finally` fixtures.
-
 ## [0.4.0] - 2026-05-12
 
 ### Removed
@@ -29,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Docs: new "Validation modes" page introducing the `Compile-time` / `Runtime` / `Compile-time + Runtime` badge system; every keyword, brand, and feature in the reference docs is now tagged with its enforcement layer. New / expanded pages cover the 0.4.0 surface: 25 named format brands, uniqueItems tuple distinctness, multipleOf bounded narrowing, full OWL 2 property characteristics, generalised if/then/else inference, patternProperties template-literal expansion, Compose argument validation, schema-validator brands, OWL class-axiom compile-time enforcement, runtime cross-schema $ref strict resolution, GraphEngine self-ref / embedded-$id resolution, and the static-facade parametrization. New migration page covers the 0.4.0 breaking changes (subjectIRI / maxDepth / maxDataDepth / CoercionErrorCodeType removed; make*Schema → BaseTypes.response()/.result()/.page(); Node >= 24).
+- Second consolidation pass on the test suite: ~120 additional `it` blocks collapsed into scenario-driven GBU tables across `validation`, `coverageGaps`, `compilerConformance`, `registry`, `hash`, `lift`, `dataTypes`, and `computed`. Total assertion coverage preserved; suite organisation tightened.
+- Test-tier corrections: `logger` tests moved smoke → unit; `baseTypes` cross-module registry scenarios moved smoke → integration; `quads` moved integration → unit; `maxSchemaDepth` scenarios moved integration → unit. `beforeEach`/`afterEach` shared-state hooks in `cliWriter` and `logger` tests replaced with per-`it` inline `try`/`finally` fixtures.
 - Test suites consolidated into scenario-driven Good/Bad/Ugly tables: total `it` block count reduced ~70% while assertion coverage is preserved. Targets the dataTypes / instantiate / validation / graph / skolemize / sameAs / operations / serialization / quads suites. `compilerConformance` counter moved into a `describe` closure to remove the only test-order dependence in the suite.
 - Module-structure cleanup: `BaseTypes` runtime data moved from `src/types/` to `src/modules/data/`; factory functions renamed `make*` → `BaseTypes.response()` / `.result()` / `.page()` per the noun.verb() convention. `RESTRICTION_TAG` constant moved from `src/types/Restriction.ts` to `src/constants/`. XSD type-resolver functions promoted from `src/constants/XSD_MAPS.ts` into a dedicated `XsdTypes` module. `SerializerUtils.ts` folded into `BaseGraphSerializer`.
 - Public type surface refinements for 0.4.0: `JsonTology` static facade methods (`dump`, `fromQuads`, `instantiate`, `materialize`) are now generic over the supplied schema and return the inferred type instead of `unknown`; a new `brand<T>()` helper in `src/types/Brand.ts` replaces the 10 ad-hoc `as unknown as` brand projections in `Compose` / `Transform`; `SchemaGraph.nodeForPointer()` / `GraphEngine` `propertyNodeMap`-style helpers replace 7 `Map.get() as Interface` casts with explicit `GraphError('POINTER_NOT_FOUND')` throws.
@@ -36,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `GraphEngine.resolveRef` failed to resolve a schema's `$ref` to its own `$id` when the engine was obtained via `registry.engine(schemaObj)` and `.errors(data)` was called directly. The compiled fast-path (`registry.validate`) was unaffected. Now the interpreted path recognises the root schema's own `$id` and resolves self-references consistently with the compiled path, restoring parity. Surfaced by a new compiled/interpreted parity test.
+- `GraphEngine.resolveRef` failed to resolve `$ref` targets that pointed at embedded `$id` declarations inside a schema's `$defs` (or any nested sub-schema) when accessed via `registry.engine(schemaObj)`. The engine path now performs the same embedded-id walk on construction and `SchemaRegistry.engine()` extends the `lookupSchema` callback to return embedded sub-schemas, so the compiled validate path and the engine path both resolve embedded `$id` refs and agree on validation results.
 - `docs/schemas.md` TypeBox snippets in the "Define and Register a Schema", "Anonymous registration", and "Lookup by `$id` or symbol" sections. The earlier text routed TypeBox through AJV (`import Ajv from 'ajv'; ajv.validate(schema, …)`), which understated TypeBox by ignoring its own runtime. The corrected snippets use `@sinclair/typebox/value` (`import { Value } from '@sinclair/typebox/value'; Value.Check(schema, data)`) and note that `Type.Ref(target)` resolves against a user-maintained `$defs` map at compile time. No behaviour change — comparison-table accuracy only.
 
 ### Added
