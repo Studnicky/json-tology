@@ -60,9 +60,62 @@ if (dups.length > 0) {
 }
 ```
 
+## Comparison
+
+::: code-group
+
+```ts [json-tology]
+const dups = jt.registry.findDuplicates();
+// Returns [{ schemaId, pointer, equivalentTo, shape }] — structural, JSON Pointer-addressed.
+// Pure — no mutation. Run at any point after registration.
+```
+
+```ts [Zod]
+// Zod has no built-in duplicate-detection. All schemas are independent runtime
+// objects; structural equivalence is not tracked. You would need to implement
+// a manual deep-equal check across all schema definitions.
+// Limitation: no registry; no JSON Pointer addresses; no concept of inline vs. named.
+```
+
+```ts [Valibot]
+// Valibot has no duplicate-detection. Schemas are plain objects; no registry
+// maintains structural identity. Manual comparison requires traversing the
+// schema tree yourself.
+// Limitation: no first-class registry; no inline-vs-named concept.
+```
+
+```ts [AJV]
+// AJV does not track structural equivalence across registered schemas.
+// You can inspect ajv.schemas (internal map), but there is no API to detect
+// inline shapes that duplicate a named schema.
+// Limitation: no findDuplicates equivalent; structural comparison must be
+// hand-rolled against the raw schema objects.
+```
+
+```ts [TypeBox + Value]
+// TypeBox schemas are plain JSON Schema objects. TypeBox has no registry
+// and no duplicate-detection API. A CI lint script must compare schema
+// definitions manually via deep-equal.
+// Limitation: no registry; no pointer-addressed duplicate report.
+```
+
+```ts [json-schema-to-typescript]
+// json-schema-to-typescript generates TypeScript types but does not detect
+// duplicate inline shapes. Structural drift between inline definitions and
+// named schemas is invisible until generated types diverge.
+// Limitation: no runtime registry; no findDuplicates API.
+```
+
+:::
+
 ## Related
 
 - [`enableInlineWarnings`](/advanced/strict-graph-mode) - warn-on-register for inline shapes
 - [`enableDuplicateDetection`](/advanced/strict-graph-mode) - run findDuplicates after each registration
 - [`enableStrictGraph`](/advanced/strict-graph-mode) - throw on inline constrained shapes
 - [Graph-native authoring](/advanced/graph-native-authoring) - the underlying drift problem
+
+## See also
+
+- [Bookstore domain](/bookstore-domain) - schema definitions used in examples
+- [Schemas guide](/schemas) - schema registration and management

@@ -44,6 +44,52 @@ const missing = jt.toSchema('https://bookstore.example/NonExistent');
 console.log(missing); // undefined
 ```
 
+## Bad examples — what NOT to do
+
+### Anti-pattern 1: Using toSchema when you need the original authored object
+
+```ts
+import { bookstoreEntities as entities } from './bookstore/index.js';
+
+// ✗ Don't do this — toSchema reconstructs from the graph; the result may
+// differ in key order, inlined $defs, or normalized forms
+const schema = entities.toSchema('https://bookstore.example/Book');
+const originalTitle = schema?.title; // may be present or absent depending on normalization
+
+// ✓ Do this — use jt.get to retrieve the original object reference
+const original = entities.get('https://bookstore.example/Book');
+// original is the exact object passed to JsonTology.create
+```
+
+### Anti-pattern 2: Using the reconstructed schema as a source of truth for structural comparison
+
+```ts
+// ✗ Don't do this — comparing reconstructed schema against original via deep-equal
+// is fragile; normalization may reorder keys or inline $defs differently
+const reconstructed = entities.toSchema('https://bookstore.example/Order');
+const original = OrderSchema;
+console.log(JSON.stringify(reconstructed) === JSON.stringify(original)); // may be false even when semantically equivalent
+
+// ✓ Do this — use toSchema for debugging and display; use the original schema
+// for structural comparisons
+```
+
+### Anti-pattern 3: Calling toSchema for an unregistered schema without handling undefined
+
+```ts
+// ✗ Don't do this — ignoring the undefined return for schemas not in the registry
+const schema = entities.toSchema('https://bookstore.example/Nonexistent');
+const props = Object.keys(schema.properties); // TypeError: Cannot read properties of undefined
+
+// ✓ Do this — check for undefined before accessing the result
+const schema2 = entities.toSchema('https://bookstore.example/Nonexistent');
+if (schema2 === undefined) {
+  console.warn('Schema not registered');
+} else {
+  const props = Object.keys((schema2.properties as object) ?? {});
+}
+```
+
 ## Comparison
 
 ::: code-group

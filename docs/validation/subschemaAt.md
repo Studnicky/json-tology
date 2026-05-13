@@ -55,6 +55,106 @@ const sub = JsonTology.subschemaAt(OrderSchema, '/properties/customerId');
 // sub.$id === 'https://example.io/Order#/properties/customerId'
 ```
 
+## Bad examples — what NOT to do
+
+### Anti-pattern 1: Passing the raw property value instead of the JSON Pointer
+
+```ts
+import { bookstoreEntities as entities, BookSchema } from './bookstore/index.js';
+
+// ✗ Don't do this — passing a property name string instead of a JSON Pointer
+const wrong = entities.subschemaAt(BookSchema.$id, 'isbn');
+// → resolves to undefined; the pointer must start with '/'
+
+// ✓ Do this — JSON Pointer with leading slash per RFC 6901
+const isbnSchema = entities.subschemaAt(BookSchema.$id, '/properties/isbn');
+```
+
+### Anti-pattern 2: Calling subschemaAt repeatedly inside a loop
+
+```ts
+// ✗ Don't do this — re-resolves and re-registers the sub-schema on every iteration
+for (const rawIsbn of candidateIsbns) {
+  const sub = entities.subschemaAt(BookSchema.$id, '/properties/isbn');
+  entities.validate(sub, rawIsbn);
+}
+
+// ✓ Do this — resolve once, reuse across calls
+const isbnSchema = entities.subschemaAt(BookSchema.$id, '/properties/isbn');
+for (const rawIsbn of candidateIsbns) {
+  entities.validate(isbnSchema, rawIsbn);
+}
+```
+
+### Anti-pattern 3: Using subschemaAt when you want the full object validated
+
+```ts
+// ✗ Don't do this — sub-schema validation ignores sibling constraints
+const isbnSub = entities.subschemaAt(BookSchema.$id, '/properties/isbn');
+entities.validate(isbnSub, rawBook);  // misses required, price, authors…
+
+// ✓ Do this — validate the full object against its registered schema
+entities.validate(BookSchema.$id, rawBook);
+```
+
+## Comparison
+
+::: code-group
+
+```ts [json-tology]
+const isbnSchema = entities.subschemaAt(BookSchema.$id, '/properties/isbn');
+// auto-registered; subsequent validate/is/instantiate calls resolve by synthesized $id
+const errs = entities.validate(isbnSchema, '978014044913');
+```
+
+```ts [Zod]
+// Zod schemas compose as objects; access a property sub-schema directly:
+const isbnSchema = BookSchema.shape.isbn;
+const result = isbnSchema.safeParse('978014044913');
+// Limitation: no JSON Pointer addressing; nested path access requires manual
+// traversal of .shape/.element/.items for arrays.
+```
+
+```ts [Valibot]
+import * as v from 'valibot';
+// Access a nested entry from an object schema:
+const isbnSchema = BookSchema.entries.isbn;
+const result = v.safeParse(isbnSchema, '978014044913');
+// Limitation: .entries is schema-specific; no generic JSON Pointer resolver.
+```
+
+```ts [AJV]
+import Ajv from 'ajv';
+const ajv = new Ajv();
+ajv.addSchema(BookSchema);
+// Resolve a sub-schema by JSON Pointer using getSchema + $ref trick:
+const validate = ajv.getSchema('https://bookstore.example/Book#/properties/isbn');
+const valid = validate?.('978014044913');
+// Requires the pointer fragment to already appear in the schema's $defs or
+// properties; AJV does not auto-register synthesized sub-schemas.
+```
+
+```ts [TypeBox + Value]
+import { Type } from '@sinclair/typebox';
+import { TypeCompiler } from '@sinclair/typebox/compiler';
+// Manually extract a property sub-schema:
+const isbnSchema = BookSchema.properties.isbn;
+const C = TypeCompiler.Compile(isbnSchema);
+const errors = [...C.Errors('978014044913')];
+// Limitation: manual property access; no JSON Pointer resolver; sub-schemas
+// are not auto-registered or reachable by synthesized ID.
+```
+
+```py [Pydantic]
+# Pydantic v2 — access a field's annotation for targeted validation:
+from pydantic import TypeAdapter
+ta = TypeAdapter(str)  # manually construct from Book.model_fields['isbn'].annotation
+result = ta.validate_python('978014044913')
+# No JSON Pointer resolver; requires manual field lookup.
+```
+
+:::
+
 ## Return type
 
 The returned object has a synthesized `$id` of the form `<parent.$id>#<pointer>`:
