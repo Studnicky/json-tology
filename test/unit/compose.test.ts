@@ -1909,17 +1909,17 @@ import { Result } from '../../src/modules/data/Result.js';
     void it('runtime validation validates parent + child properties', () => {
       const EmployeeSchema = Compose.extend(PersonSchema, { 'role': { 'type': 'string' } } as const, 'https://example.io/Employee2');
 
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const jt = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register(PersonSchema as unknown as Record<string, unknown>);
-      registry.register(EmployeeSchema as unknown as Record<string, unknown>);
+      jt.register(PersonSchema as unknown as Record<string, unknown>);
+      jt.register(EmployeeSchema as unknown as Record<string, unknown>);
 
       const validEmployee = {
         'name': 'Alice',
         'role': 'engineer'
       };
 
-      const errors = registry.validate('https://example.io/Employee2', validEmployee);
+      const errors = jt.validate('https://example.io/Employee2', validEmployee);
 
       assert.equal(errors.ok, true);
       assert.equal(errors.length, 0);
@@ -1930,13 +1930,13 @@ import { Result } from '../../src/modules/data/Result.js';
 
       const SeniorManagerSchema = Compose.extend(ManagerSchema, { 'budget': { 'type': 'number' } } as const, 'https://example.io/SeniorManager');
 
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const jt = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register(PersonSchema as unknown as Record<string, unknown>);
-      registry.register(ManagerSchema as unknown as Record<string, unknown>);
-      registry.register(SeniorManagerSchema as unknown as Record<string, unknown>);
+      jt.register(PersonSchema as unknown as Record<string, unknown>);
+      jt.register(ManagerSchema as unknown as Record<string, unknown>);
+      jt.register(SeniorManagerSchema as unknown as Record<string, unknown>);
 
-      const senior = registry.get('https://example.io/SeniorManager');
+      const senior = jt.registry.get('https://example.io/SeniorManager');
 
       assert.notStrictEqual(senior, undefined);
       assert.equal((senior as Record<string, unknown>).$id, 'https://example.io/SeniorManager');

@@ -216,7 +216,7 @@ import { Compose } from 'json-tology';
 import { bookstoreEntities, BookSchema } from './bookstore/index.js';
 
 // Retrieve and narrow dynamically
-const raw = bookstoreEntities.get(BookSchema.$id);
+const raw = bookstoreEntities.registry.get(BookSchema.$id);
 if (raw) {
   const BookWithoutStock = Compose.omit(
     raw as typeof BookSchema,

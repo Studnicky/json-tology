@@ -16,7 +16,8 @@ import { themeConfig } from './theme.config.js';
 //   4. OPT-IN graph / ontology surface, gated together so it can be skipped:
 //      ontology concepts → OWL class axioms → ontology emission.
 //   5. Usage examples → browser → data models → type inference → reference.
-//      Migration guides live at the bottom of Reference (require familiarity).
+//   6. Migration guides live in their own section at the very bottom — they
+//      are read once per version bump and assume familiarity with the rest.
 //
 // Everything from "Ontology concepts" downward is advanced material. A
 // typical consumer can ignore it. Only authors who want OWL / SHACL / RDF
@@ -95,7 +96,7 @@ const sidebar = [
   {
     text: 'Registry',
     items: [
-      { link: '/registry/register', text: 'register / has / get / list' },
+      { link: '/registry/register', text: 'register / registry access' },
       { link: '/registry/materialize', text: 'materialize' },
       { link: '/registry/computed', text: 'addComputed / removeComputed' },
       { link: '/registry/invariants', text: 'addInvariant / removeInvariant' },
@@ -175,7 +176,12 @@ const sidebar = [
       { link: '/constraint-brands/keywords', text: 'Constraint brands (keywords)' },
       { link: '/constraint-brands/narrowing', text: 'Constraint brands (narrowing)' },
       { link: '/cli', text: 'CLI' },
-      { link: '/references', text: 'External references' },
+      { link: '/references', text: 'External references' }
+    ]
+  },
+  {
+    text: 'Migration',
+    items: [
       { link: '/migration-0.4.0', text: 'Migration to 0.4.0' },
       { link: '/migration-0.4.3', text: 'Migration to 0.4.3' },
       { link: '/migration-0.6.0', text: 'Migration to 0.6.0' }

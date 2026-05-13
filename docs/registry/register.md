@@ -1,6 +1,6 @@
-# `register`, `registerAnonymous`, `has`, `get`, `list`
+# `register`, `registerAnonymous`, registry access
 
-Schema management - registering, inspecting, and introspecting the schema registry.
+Schema management — registering, inspecting, and introspecting the schema registry.
 
 ---
 
@@ -48,7 +48,7 @@ const BookSummarySchema = Compose.pick(
   'https://bookstore.example/BookSummary',
 );
 bookstoreEntities.register(BookSummarySchema);
-console.log(bookstoreEntities.has('https://bookstore.example/BookSummary')); // true
+console.log(bookstoreEntities.registry.has('https://bookstore.example/BookSummary')); // true
 ```
 
 ### Comparison
@@ -119,78 +119,61 @@ jt.validate(syntheticId, { couponCode: 'SAVE10', discount: 0.1 });
 
 ---
 
-## `JsonTology.has` {#registry-has}
+## Reading the registry: `jt.registry` {#registry-access}
 
-**Declaration.** Returns `true` if a schema with the given `$id` is registered. `O(1)` lookup.
+`jt.registry` is the single read surface for registered schemas. It exposes the read methods of a native `Map` — `has`, `get`, `keys`, `values`, `entries`, `forEach`, `size`, and `for...of` iteration yielding `[iri, schema]` pairs. No facade aliases on `JsonTology` itself; everything goes through the registry.
 
-**Use this when** you need to guard before calling `instantiate` or `validate` on a schema that might not be registered - for example, when plugin schemas are conditionally loaded.
+### `jt.registry.has(iri)` {#registry-has}
 
-### Examples
+`O(1)` lookup. Returns `true` if a schema with the given `$id` is registered.
 
 ```ts
-console.log(jt.has('https://bookstore.example/Customer')); // true
-console.log(jt.has('https://bookstore.example/NonExistent')); // false
+jt.registry.has('https://bookstore.example/Customer');     // true
+jt.registry.has('https://bookstore.example/NonExistent');  // false
 
 // Guard pattern:
 function validateIfPresent(schemaId: string, data: unknown): ValidationErrors {
-  if (!jt.has(schemaId)) return new ValidationErrors([{ path: '', keyword: 'unknown', message: `Schema '${schemaId}' not registered`, params: {} }]);
+  if (!jt.registry.has(schemaId)) {
+    return new ValidationErrors([{
+      path: '', keyword: 'unknown',
+      message: `Schema '${schemaId}' not registered`,
+      params: {}
+    }]);
+  }
   return jt.validate(schemaId, data);
 }
 ```
 
----
+### `jt.registry.get(iri)` {#registry-get}
 
-## `JsonTology.get` {#registry-get}
-
-**Declaration.** Retrieves the original schema object by `$id`. Returns `Record<string, unknown> | undefined` - `undefined` when not registered.
-
-**Use this when** you need the raw schema object - to feed into `Compose` methods, display in a schema browser, or log for debugging.
-
-### Examples
+Retrieves the original schema object by `$id`. Returns `Record<string, unknown> | undefined`.
 
 ```ts
-const book = jt.get('https://bookstore.example/Book');
+const book = jt.registry.get('https://bookstore.example/Book');
 console.log(book?.properties?.['price']); // { exclusiveMinimum: 0, type: 'number' }
 
-// Use to derive a new schema dynamically:
 if (book) {
-  const BookSummary = Compose.pick(book as typeof BookSchema, ['isbn', 'title', 'price'] as const, '...');
+  const BookSummary = Compose.pick(
+    book as typeof BookSchema,
+    ['isbn', 'title', 'price'] as const,
+    '...'
+  );
 }
 ```
 
----
+### `jt.registry.keys()` / `values()` / `entries()` {#registry-iteration}
 
-## `JsonTology.list` {#registry-list}
-
-**Declaration.** Returns an array of `$id` strings for all registered schemas. Array order is not guaranteed.
-
-**Use this when** building developer tooling - schema browsers, startup logs, API documentation generators.
-
-### Examples
+Standard Map iterators. `keys()` yields `$id` strings, `values()` yields schema objects, `entries()` yields `[iri, schema]` pairs.
 
 ```ts
-const ids = jt.list();
-// ['https://bookstore.example/Address', 'https://bookstore.example/Customer', ...]
+const ids = [...jt.registry.keys()];
+const bookstoreSchemas = ids.filter(id => id.startsWith('https://bookstore.example/'));
 
-// Find schemas from a specific base IRI:
-const bookstoreSchemas = jt.list().filter(id => id.startsWith('https://bookstore.example/'));
-```
-
----
-
-## Map-like access on `jt.registry` {#registry-map}
-
-`jt.registry` exposes the read methods of a native `Map`: `has`, `get`, `keys`, `values`, `entries`, `forEach`, `size`, and `for...of` iteration yielding `[iri, schema]` pairs.
-
-```ts
-jt.registry.has('https://bookstore.example/Customer');   // boolean
-jt.registry.size;                                         // number of registered schemas
-
-for (const iri of jt.registry.keys()) { /* ... */ }
 for (const schema of jt.registry.values()) { /* ... */ }
-for (const [iri, schema] of jt.registry) { /* ... */ }
+for (const [iri, schema] of jt.registry) { /* ... */ }   // direct for-of works too
 
 jt.registry.forEach((schema, iri) => { /* ... */ });
+jt.registry.size;   // number of registered schemas
 ```
 
 No removal methods are exposed: registration semantics differ from `Map.set`/`delete`. Use `jt.register(schema)` to add schemas.

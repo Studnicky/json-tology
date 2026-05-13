@@ -269,10 +269,8 @@ describe('ontology round-trip: multi-schema HR domain', () => {
 
   describe('schema registration', () => {
     it('registers all 6 schemas', () => {
-      const ids = jt.list();
-
       for (const schema of AllSchemas) {
-        assert.ok(ids.includes(schema.$id) === true, `${schema.$id} registered`);
+        assert.ok(jt.registry.has(schema.$id) === true, `${schema.$id} registered`);
       }
     });
   });

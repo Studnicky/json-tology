@@ -838,25 +838,6 @@ export class JsonTology<TMap = Record<never, never>> {
     });
   }
   /**
-   * Retrieves a registered schema by its `$id`.
-   *
-   * @param schemaId - The `$id` of the schema to look up.
-   * @returns The schema object, or `undefined` if not registered.
-   */
-  public get(schemaId: string): Record<string, unknown> | undefined {
-    return this.registry.get(schemaId);
-  }
-
-  /**
-   * Checks whether a schema with the given `$id` is registered.
-   *
-   * @param schemaId - The `$id` to look up.
-   * @returns `true` if a schema with that ID exists in the registry.
-   */
-  public has(schemaId: string): boolean {
-    return this.registry.has(schemaId);
-  }
-  /**
    * Validates data against a registered schema, applying defaults and stripping unknown properties.
    *
    * Use `instantiate` when data crosses a trust boundary — HTTP request bodies, queue messages,
@@ -910,14 +891,6 @@ export class JsonTology<TMap = Record<never, never>> {
     }
 
     return this.registry.is(schemaId, data);
-  }
-  /**
-   * Lists the `$id` of every registered schema.
-   *
-   * @returns Array of registered schema ID strings.
-   */
-  public list(): string[] {
-    return [...this.registry.keys()];
   }
   /**
    * Materializes an entity instance with schema defaults applied, optionally merging partial input.

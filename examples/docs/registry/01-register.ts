@@ -17,24 +17,22 @@ const bookstoreEntities = JsonTology.create({
   'schemas': [CustomerSchema] as const
 });
 
-console.assert(bookstoreEntities.has(CustomerSchema.$id));
-console.assert(!bookstoreEntities.has(BookSchema.$id));
+console.assert(bookstoreEntities.registry.has(CustomerSchema.$id));
+console.assert(!bookstoreEntities.registry.has(BookSchema.$id));
 
 // Post-construction register
 bookstoreEntities.register(BookSchema);
-console.assert(bookstoreEntities.has(BookSchema.$id));
+console.assert(bookstoreEntities.registry.has(BookSchema.$id));
 
 // Retrieve schema object
-const raw = bookstoreEntities.get(BookSchema.$id);
+const raw = bookstoreEntities.registry.get(BookSchema.$id);
 
 console.assert(raw !== undefined);
 
 
 // List all registered IDs
-const ids = bookstoreEntities.list();
-
-console.assert(ids.includes(CustomerSchema.$id));
-console.assert(ids.includes(BookSchema.$id));
+console.assert(bookstoreEntities.registry.has(CustomerSchema.$id));
+console.assert(bookstoreEntities.registry.has(BookSchema.$id));
 
 // registerAnonymous — no $id needed
 const syntheticId = bookstoreEntities.registerAnonymous({
@@ -50,4 +48,4 @@ const syntheticId = bookstoreEntities.registerAnonymous({
 });
 
 console.assert(typeof syntheticId === 'string' && syntheticId.length > 0);
-console.assert(bookstoreEntities.has(syntheticId));
+console.assert(bookstoreEntities.registry.has(syntheticId));

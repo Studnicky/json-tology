@@ -373,7 +373,7 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
 
         tology.materialize(ConfigSchema, { 'name': 'auto' });
 
-        assert.ok(tology.get(ConfigSchema.$id) !== undefined);
+        assert.ok(tology.registry.get(ConfigSchema.$id) !== undefined);
       });
     });
   });

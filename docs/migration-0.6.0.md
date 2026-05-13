@@ -47,6 +47,20 @@ const jt = JsonTology.create({ baseIRI, prefetched: snapshot });
 
 `jt.register(schema)` is unchanged and remains the sync path for schemas whose refs are already in scope.
 
-## `SchemaRegistryInterface` Map-like read surface
+## Registry reads go through `jt.registry`
 
-The registry now exposes the read methods of a native `Map`. `jt.registry.has(iri)`, `keys()`, `values()`, `entries()`, `forEach(cb)`, `size`, and `for...of` iteration (yielding `[iri, schema]` pairs) are all available. Existing methods (`get`, `list`, `register`, etc.) are unchanged. No removal methods are exposed — registration semantics differ from `Map.set`/`delete`.
+The facade methods `jt.has`, `jt.get`, and `jt.list` are removed. There is one path to registry reads — `jt.registry`, which exposes the read surface of a native `Map`.
+
+```ts
+// Before
+jt.has(iri);
+jt.get(iri);
+jt.list();
+
+// After
+jt.registry.has(iri);
+jt.registry.get(iri);
+[...jt.registry.keys()];
+```
+
+Additional Map-like access points: `jt.registry.values()`, `jt.registry.entries()`, `jt.registry.forEach(cb)`, `jt.registry.size`, and `for...of` iteration yielding `[iri, schema]` pairs. No removal methods are exposed — registration semantics differ from `Map.set`/`delete`.

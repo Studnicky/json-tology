@@ -3610,19 +3610,19 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       }> = [
         {
           'check': (jt) => {
-            assert.deepEqual(jt.list(), []);
+            assert.deepEqual([...jt.registry.keys()], []);
           },
           'name': 'list() returns empty array when no schemas registered'
         },
         {
           'check': (jt) => {
-            assert.equal(jt.has('https://edge.test/Nonexistent'), false);
+            assert.equal(jt.registry.has('https://edge.test/Nonexistent'), false);
           },
           'name': 'has() returns false for unknown schema'
         },
         {
           'check': (jt) => {
-            assert.equal(jt.get('https://edge.test/Nonexistent'), undefined);
+            assert.equal(jt.registry.get('https://edge.test/Nonexistent'), undefined);
           },
           'name': 'get() returns undefined for unknown schema'
         },
@@ -3657,12 +3657,12 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
           'type': 'object'
         });
 
-        assert.deepEqual(jt.list(), [
+        assert.deepEqual([...jt.registry.keys()], [
           'https://edge.test/First',
           'https://edge.test/Second'
         ]);
-        assert.equal(jt.has('https://edge.test/First'), true, 'First schema present');
-        assert.equal(jt.has('https://edge.test/Second'), true, 'Second schema present');
+        assert.equal(jt.registry.has('https://edge.test/First'), true, 'First schema present');
+        assert.equal(jt.registry.has('https://edge.test/Second'), true, 'Second schema present');
       }
 
       // ontology cache invalidates after register

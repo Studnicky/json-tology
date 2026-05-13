@@ -89,7 +89,7 @@ import {
           assert.ok(jt instanceof JsonTology);
           assert.ok(typeof jt.registry === 'object');
           assert.ok(typeof jt.materializer === 'object');
-          assert.ok(jt.get(UserSchema.$id) !== undefined);
+          assert.ok(jt.registry.get(UserSchema.$id) !== undefined);
         },
         'name': 'constructs with schemas provided and exposes registry + materializer'
       },
@@ -107,7 +107,7 @@ import {
           const result = jt.register(UserSchema);
 
           assert.strictEqual(result, jt);
-          assert.ok(jt.get(UserSchema.$id) !== undefined);
+          assert.ok(jt.registry.get(UserSchema.$id) !== undefined);
         },
         'name': 'register() is fluent and registers a single schema'
       },
@@ -117,7 +117,7 @@ import {
 
           jt.register(UserSchema);
           jt.register([RoleSchema]);
-          assert.ok(jt.get(RoleSchema.$id) !== undefined);
+          assert.ok(jt.registry.get(RoleSchema.$id) !== undefined);
         },
         'name': 'register() accepts an array of schemas'
       },
@@ -127,8 +127,8 @@ import {
 
           jt.register(UserSchema);
           jt.register(UserSchema);
-          assert.ok(jt.get(UserSchema.$id) !== undefined);
-          assert.equal(jt.list().filter((id) => {
+          assert.ok(jt.registry.get(UserSchema.$id) !== undefined);
+          assert.equal([...jt.registry.keys()].filter((id) => {
             return id === UserSchema.$id;
           }).length, 1);
         },
@@ -638,7 +638,7 @@ import {
               DirectorySchema
             ] as const
           });
-          const ids = jt.list();
+          const ids = [...jt.registry.keys()];
 
           assert.ok(ids.includes(UserSchema.$id));
           assert.ok(ids.includes(DirectorySchema.$id));
@@ -656,8 +656,8 @@ import {
             ] as const
           });
 
-          assert.equal(jt.has(UserSchema.$id), true);
-          assert.equal(jt.has('https://nonexistent.io/Missing'), false);
+          assert.equal(jt.registry.has(UserSchema.$id), true);
+          assert.equal(jt.registry.has('https://nonexistent.io/Missing'), false);
         },
         'name': 'has() checks presence of registered and unregistered schemas'
       },
@@ -690,7 +690,7 @@ import {
           const id = jt.registerAnonymous(anonSchema);
 
           assert.ok(id.startsWith('urn:json-tology:hash:'));
-          assert.equal(jt.has(id), true);
+          assert.equal(jt.registry.has(id), true);
           assert.equal(jt.validate(id, { 'x': 1 }).length, 0);
         },
         'name': 'registerAnonymous() assigns synthetic id to schemas without $id'
@@ -705,7 +705,7 @@ import {
           const namedId = jt.registerAnonymous(namedSchema);
 
           assert.equal(namedId, 'https://myapp.io/Named');
-          assert.equal(jt.has('https://myapp.io/Named'), true);
+          assert.equal(jt.registry.has('https://myapp.io/Named'), true);
         },
         'name': 'registerAnonymous() with $id delegates to register()'
       },
@@ -763,7 +763,7 @@ import {
         'check': () => {
           const jt = JsonTology.create({ 'baseIRI': 'https://myapp.io' });
 
-          assert.deepEqual(jt.list(), []);
+          assert.deepEqual([...jt.registry.keys()], []);
         },
         'name': 'list() returns empty array for fresh instance with no schemas'
       },
@@ -771,7 +771,7 @@ import {
         'check': () => {
           const jt = JsonTology.create({ 'baseIRI': 'https://myapp.io' });
 
-          assert.equal(jt.has('https://anything.io/Foo'), false);
+          assert.equal(jt.registry.has('https://anything.io/Foo'), false);
         },
         'name': 'has() returns false for empty instance'
       }

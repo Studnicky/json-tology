@@ -56,8 +56,8 @@ import { bookstoreEntities } from './bookstore/index.js';
 const schema = bookstoreEntities.toSchema('https://bookstore.example/Book');
 const originalTitle = schema?.title; // may be present or absent depending on normalization
 
-// ✓ Do this — use bookstoreEntities.get to retrieve the original object reference
-const original = bookstoreEntities.get('https://bookstore.example/Book');
+// ✓ Do this — use bookstoreEntities.registry.get to retrieve the original object reference
+const original = bookstoreEntities.registry.get('https://bookstore.example/Book');
 // original is the exact object passed to JsonTology.create
 ```
 

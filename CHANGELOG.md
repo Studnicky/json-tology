@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - **BREAKING**: `jt.registerAsync(schema)` is gone. Federation runs through `JsonTology.prefetch` only; `jt.register(schema)` remains for sync registration of schemas whose refs are already resolved.
+- **BREAKING**: `jt.has(iri)`, `jt.get(iri)`, and `jt.list()` facade methods removed. There is one path to registry reads: `jt.registry.has(iri)`, `jt.registry.get(iri)`, `[...jt.registry.keys()]`. The registry exposes the full Map-like read surface.
 
 ### Security
 

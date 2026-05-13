@@ -50,10 +50,10 @@ void describe('SchemaError on registration', { 'concurrency': true }, () => {
     for (const {
       messageContains, name, schema
     } of scenarios) {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const jt = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       try {
-        registry.register(schema);
+        jt.register(schema);
         assert.fail(`${name}: should throw`);
       } catch (error) {
         assert.ok(error instanceof SchemaError, `${name}: instanceof SchemaError`);
@@ -63,16 +63,16 @@ void describe('SchemaError on registration', { 'concurrency': true }, () => {
   });
 
   void it('throws SchemaError for conflicting overwrite', () => {
-    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const jt = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    registry.register({
+    jt.register({
       '$id': 'https://err.test/Original',
       'properties': { 'x': { 'type': 'string' } },
       'type': 'object'
     });
 
     try {
-      registry.register({
+      jt.register({
         '$id': 'https://err.test/Original',
         'properties': { 'y': { 'type': 'number' } },
         'type': 'object'
@@ -85,10 +85,10 @@ void describe('SchemaError on registration', { 'concurrency': true }, () => {
   });
 
   void it('SchemaError has code and toJson()', () => {
-    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const jt = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     try {
-      registry.register({ 'type': 'object' });
+      jt.register({ 'type': 'object' });
       assert.fail('should throw');
     } catch (error) {
       assert.ok(error instanceof SchemaError, 'instanceof SchemaError');
@@ -165,9 +165,9 @@ void describe('BaseError cause chain edge cases', { 'concurrency': true }, () =>
 
 void describe('InstantiationError structure', { 'concurrency': true }, () => {
   void it('carries structured ValidationErrors with items', () => {
-    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const jt = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    registry.register({
+    jt.register({
       '$id': 'https://err.test/Person',
       'properties': {
         'age': {
@@ -184,7 +184,7 @@ void describe('InstantiationError structure', { 'concurrency': true }, () => {
     });
 
     try {
-      registry.instantiate('https://err.test/Person', { 'age': -5 });
+      jt.instantiate('https://err.test/Person', { 'age': -5 });
       assert.fail('should throw');
     } catch (error) {
       assert.ok(error instanceof InstantiationError, 'instanceof InstantiationError');
@@ -202,9 +202,9 @@ void describe('InstantiationError structure', { 'concurrency': true }, () => {
   });
 
   void it('reports multiple errors simultaneously', () => {
-    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const jt = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    registry.register({
+    jt.register({
       '$id': 'https://err.test/Multi',
       'properties': {
         'email': {
@@ -224,7 +224,7 @@ void describe('InstantiationError structure', { 'concurrency': true }, () => {
     });
 
     try {
-      registry.instantiate('https://err.test/Multi', {});
+      jt.instantiate('https://err.test/Multi', {});
       assert.fail('should throw');
     } catch (error) {
       assert.ok(error instanceof InstantiationError, 'instanceof InstantiationError');
@@ -233,9 +233,9 @@ void describe('InstantiationError structure', { 'concurrency': true }, () => {
   });
 
   void it('InstantiationError.toJson() serializes cleanly', () => {
-    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const jt = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    registry.register({
+    jt.register({
       '$id': 'https://err.test/Serial',
       'properties': { 'x': { 'type': 'number' } },
       'required': ['x'],
@@ -243,7 +243,7 @@ void describe('InstantiationError structure', { 'concurrency': true }, () => {
     });
 
     try {
-      registry.instantiate('https://err.test/Serial', {});
+      jt.instantiate('https://err.test/Serial', {});
       assert.fail('should throw');
     } catch (error) {
       assert.ok(error instanceof InstantiationError, 'instanceof InstantiationError');
@@ -265,19 +265,19 @@ void describe('InstantiationError structure', { 'concurrency': true }, () => {
 void describe('Registry recovery', { 'concurrency': true }, () => {
   void it('remains usable after failed registration', () => {
     // Use enableStrictGraph to trigger inline-object error (default mode is silent)
-    const registry = JsonTology.create({
+    const jt = JsonTology.create({
       'baseIRI': 'urn:test:',
       'enableStrictGraph': true
     });
 
-    registry.register({
+    jt.register({
       '$id': 'https://err.test/Good',
       'properties': { 'x': { 'type': 'string' } },
       'type': 'object'
     });
 
     assert.throws(() => {
-      registry.register({
+      jt.register({
         '$id': 'https://err.test/Bad',
         'properties': {
           'nested': {
@@ -293,19 +293,19 @@ void describe('Registry recovery', { 'concurrency': true }, () => {
       'name': string }> = [
       {
         'check': () => {
-          assert.ok(registry.validate('https://err.test/Good', { 'x': 'hello' }).ok);
+          assert.ok(jt.validate('https://err.test/Good', { 'x': 'hello' }).ok);
         },
         'name': 'original schema still validates'
       },
       {
         'check': () => {
-          assert.ok(registry.get('https://err.test/Good') !== undefined);
+          assert.ok(jt.registry.get('https://err.test/Good') !== undefined);
         },
         'name': 'original schema still retrievable'
       },
       {
         'check': () => {
-          assert.equal(registry.get('https://err.test/Bad'), undefined);
+          assert.equal(jt.registry.get('https://err.test/Bad'), undefined);
         },
         'name': 'failed schema not registered'
       }
@@ -320,9 +320,9 @@ void describe('Registry recovery', { 'concurrency': true }, () => {
   });
 
   void it('remains usable after InstantiationError', () => {
-    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const jt = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    registry.register({
+    jt.register({
       '$id': 'https://err.test/Recover',
       'properties': { 'x': { 'type': 'number' } },
       'required': ['x'],
@@ -330,12 +330,12 @@ void describe('Registry recovery', { 'concurrency': true }, () => {
     });
 
     assert.throws(() => {
-      registry.instantiate('https://err.test/Recover', {});
+      jt.instantiate('https://err.test/Recover', {});
     });
 
-    const result = registry.instantiate('https://err.test/Recover', { 'x': 42 }) as Record<string, unknown>;
+    const result = jt.instantiate('https://err.test/Recover', { 'x': 42 }) as Record<string, unknown>;
 
-    assert.equal(result.x, 42, 'registry works for valid data after InstantiationError');
+    assert.equal(result.x, 42, 'jt works for valid data after InstantiationError');
   });
 });
 
