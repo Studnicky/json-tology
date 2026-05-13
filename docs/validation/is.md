@@ -155,5 +155,5 @@ except ValidationError:
 
 ## See also
 
-- [Type Inference](/types) - how the type predicate works with `TMap`
+- [Type Inference](/types/infer) - how the type predicate works with `TMap`
 - [Bookstore domain](/bookstore-domain) - schema definitions used in examples

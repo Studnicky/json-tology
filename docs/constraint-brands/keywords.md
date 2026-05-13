@@ -522,7 +522,7 @@ if (jt.is('https://example.com/Email', input)) {
 ## See also
 
 - [`Transform.brand`](/transforms/brand) - explicit nominal branding via `BrandOutputType`
-- [Type Inference](/types) - how `InferType` resolves brand intersections
+- [Type Inference](/types/infer) - how `InferType` resolves brand intersections
 - [`instantiate`](/validation/instantiate) - the only source of branded values at runtime
 - [Bookstore domain](/bookstore-domain) - branded primitives (`CustomerId`, `Email`, `Isbn`)
 - [Picking a method](/picking-a-method) - the trust boundary that produces validated, branded values

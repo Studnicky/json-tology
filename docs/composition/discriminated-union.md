@@ -255,7 +255,7 @@ Payment = Annotated[CreditCardPayment | InvoicePayment, Discriminator('method')]
 
 - [`intersection`](/composition/intersection) - combine schemas that must ALL be satisfied
 - [`extend`](/composition/extend) - add properties without creating a union
-- [Type Inference](/types) - how the TypeScript union type is inferred
+- [Type Inference](/types/infer) - how the TypeScript union type is inferred
 
 ## See also
 

@@ -165,7 +165,7 @@ See also [Graph internals](./graph-internals) for $ref resolution, serializer be
 - [Graph-native authoring](/advanced/graph-native-authoring) - how to write schemas that produce clean graphs
 - [Ontology and Graphs](/advanced/ontology) - `toTbox`, `toShacl`, `ontology`, `toQuads`, `fromQuads`
 - [RDF round-trip](/advanced/quads) - operator-level `toQuads` / `fromQuads` reference
-- [SPARQL queries](/usage-examples/sparql-queries) - querying the TBox
+- [Querying the TBox](/advanced/ontology#querying-the-tbox) - querying the TBox with SPARQL
 
 ## See also
 

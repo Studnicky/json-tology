@@ -145,7 +145,7 @@ CustomerIdType = Annotated[str, AfterValidator(lambda v: v)]
 
 - [`Transform.create`](/transforms/decode-encode) - attach decode/encode with runtime conversion
 - [Constraint Brands](/constraint-brands) - automatic brands from JSON Schema keywords (`format`, `pattern`, etc.)
-- [Type Inference](/types) - how `BrandOutputType` integrates with `InferType`
+- [Type Inference](/types/infer) - how `BrandOutputType` integrates with `InferType`
 
 ## See also
 

@@ -126,7 +126,7 @@ If you also need RDF/OWL/SHACL output, that's available as **opt-in advanced fea
 - **[Bookstore Domain](/bookstore-domain)** - the running example domain used throughout the docs
 - **[Validation](/validation/instantiate)** - `instantiate`, `validate`, `is`, `subschemaAt`
 - **[Error Views](/errors/views)** - `aggregate`, `report` (RFC 7807)
-- **[Type Inference](/types)** - how `InferType` works, reference maps, branded types
+- **[Type Inference](/types/infer)** - how `InferType` works, reference maps, branded types
 - **[Composition](/composition/extend)** - derive schemas from other schemas
 - **[Serialization](/serialization/dump)** - `dump`, `dumpJson`, Transform encoders
 - **[Ontology and Graphs](/advanced/ontology)** - *advanced:* OWL TBox, SHACL shapes, JSON-LD, ABox projection

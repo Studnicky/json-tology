@@ -305,7 +305,7 @@ The guides that follow build concepts one at a time, each adding to what came be
 | Guide | What it adds |
 |-------|-------------|
 | [Schemas](/schemas) | How `register`, `has`, `get`, `list` work with these definitions |
-| [Type Inference](/types) | How `InferType<typeof CustomerSchema>` resolves at compile time |
+| [Type Inference](/types/infer) | How `InferType<typeof CustomerSchema>` resolves at compile time |
 | [Validation](/validation/instantiate) | `validate`, `is`, `errors` - checking incoming data against these schemas |
 | [Coercion](/validation/instantiate) | `instantiate` - validated + defaults applied, typed result |
 | [Error Views](/errors/views) | `aggregate`, `report` |
@@ -317,7 +317,7 @@ The guides that follow build concepts one at a time, each adding to what came be
 ## Related
 
 - [Schemas](/schemas) - how `register`, `has`, `get` work with these definitions
-- [Type Inference](/types) - how `InferType<typeof CustomerSchema>` resolves
+- [Type Inference](/types/infer) - how `InferType<typeof CustomerSchema>` resolves
 - [Validation](/validation/instantiate) - coercing incoming data against these schemas
 
 ## See also

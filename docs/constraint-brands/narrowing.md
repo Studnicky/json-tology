@@ -254,6 +254,6 @@ Bounds above the cap (or with the flag disabled) fall back to plain `string`. Th
 ## See also
 
 - [Branded Keywords](./keywords) - string, number, array, object, and nominal brands
-- [Type Inference](/types) - how `InferType` resolves narrowings and brand intersections
+- [Type Inference](/types/infer) - how `InferType` resolves narrowings and brand intersections
 - [Composition — discriminated union](/composition/discriminated-union) - `if/then/else` in schema composition
 - [Bookstore domain](/bookstore-domain) - real-world narrowing examples

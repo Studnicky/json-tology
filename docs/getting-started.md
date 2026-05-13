@@ -64,7 +64,7 @@ type Customer = InferType<typeof CustomerSchema>;
 // }
 ```
 
-No code generation. No separate type declaration file. The type comes directly from the schema literal at compile time. See [Type Inference](/types) for how `$ref`, enums, brands, and cross-schema references work.
+No code generation. No separate type declaration file. The type comes directly from the schema literal at compile time. See [Type Inference](/types/infer) for how `$ref`, enums, brands, and cross-schema references work.
 
 ## Create an instance and register schemas
 
@@ -217,7 +217,7 @@ See [Validation modes](/validation-modes) for the badge reference.
 |-------|-------|
 | The running example domain | [Bookstore Domain](/bookstore-domain) |
 | Schemas and registration | [Schemas](/schemas) |
-| TypeScript type inference | [Type Inference](/types) |
+| TypeScript type inference | [Type Inference](/types/infer) |
 | Validation and instantiation | [Validation](/validation/instantiate) |
 | Composing schemas | [Composition](/composition/extend) |
 | Value operations | [Value Operations](/value/clone-hash) |
@@ -281,5 +281,5 @@ These options control how `toQuads` mints subject IRIs and how `fromQuads` rever
 ## See also
 
 - [Argument conventions](/argument-conventions) - universal `SchemaRef`, static counterparts
-- [Type Inference](/types) - how `InferType` resolves `$ref`, enums, brands
+- [Type Inference](/types/infer) - how `InferType` resolves `$ref`, enums, brands
 - [Composition](/composition/extend) - derive schemas with `extend`, `pick`, `omit`
