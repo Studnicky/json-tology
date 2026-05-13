@@ -224,8 +224,8 @@ void describe('encode — isolated behaviour', () => {
     }
   );
 
-  void it('encode through chained Transform.pipe runs encoders in reverse order', () => {
-    const ChainedSchema = Transform.pipe(
+  void it('encode through chained Transform.chain runs encoders in reverse order', () => {
+    const ChainedSchema = Transform.chain(
       {
         '$id': 'https://bookstore.io/Chained',
         'type': 'string'

@@ -11,7 +11,7 @@
  *
  * 1. **Validator-result interfaces** (Clusters B, D, E — `RequiredKeyNotInProperties`,
  *    `DependentRequiredKeyNotInProperties`, `IfDiscriminatorNotInProperties`,
- *    `PipeChainMismatch`, `PipeChainSchemaMismatch`, `DuplicateSchemaId`,
+ *    `ChainMismatch`, `ChainSchemaMismatch`, `DuplicateSchemaId`,
  *    `RefNotFound`, `AnchorNotFound`).
  *    Returned from cluster validators to surface schema-level / chain-level
  *    cross-keyword violations. Carry a `kind` discriminant plus structured
@@ -112,7 +112,7 @@ export interface AnchorNotFoundInterface<
 }
 
 /**
- * Emitted when a `Transform.pipe` stage's decoded output type does not match
+ * Emitted when a `Transform.chain` stage's decoded output type does not match
  * the next stage's decoded input type. The chain is broken at `stageIndex`,
  * which produced `producedByPriorStage` while the next stage expected
  * `expectedByThisStage`.
@@ -121,30 +121,30 @@ export interface AnchorNotFoundInterface<
  * @template TProduced   Decoded output type of the producing stage.
  * @template TExpected   Decoded input type expected by the consuming stage.
  */
-export interface PipeChainMismatchInterface<
+export interface ChainMismatchInterface<
   TStageIndex extends number,
   TProduced,
   TExpected
 > {
   readonly 'expectedByThisStage': TExpected;
-  readonly 'kind': 'PipeChainMismatch';
+  readonly 'kind': 'ChainMismatch';
   readonly 'producedByPriorStage': TProduced;
   readonly 'stageIndex': TStageIndex;
 }
 
 /**
- * Emitted when a `Transform.pipe` first stage's decoded input type does not
+ * Emitted when a `Transform.chain` first stage's decoded input type does not
  * match the schema's wire-form type.
  *
  * @template TWire           Wire-form type inferred from the schema.
  * @template TFirstStageIn   Decoded input type of the first stage.
  */
-export interface PipeChainSchemaMismatchInterface<
+export interface ChainSchemaMismatchInterface<
   TWire,
   TFirstStageIn
 > {
   readonly 'firstStageDecodeInput': TFirstStageIn;
-  readonly 'kind': 'PipeChainSchemaMismatch';
+  readonly 'kind': 'ChainSchemaMismatch';
   readonly 'schemaWireType': TWire;
 }
 

@@ -64,7 +64,7 @@ void [
 ];
 
 // ---------------------------------------------------------------------------
-// Finding 10 — Transform.pipe pairwise chain compatibility
+// Finding 10 — Transform.chain pairwise chain compatibility
 // ---------------------------------------------------------------------------
 
 const PipeBase = {
@@ -115,30 +115,30 @@ const numberToStringStage: TransformStageInterface<number, string> = {
 
 // Positive: well-typed chain compiles and the final output type is the
 // last stage's decoded form.
-const okPipe = Transform.pipe(PipeBase, [
+const okChain = Transform.chain(PipeBase, [
   trimStage,
   upperStage,
   stringToNumberStage,
   numberToDateStage
 ] as const);
 
-type OkPipeOutput = ParseOutputType<typeof okPipe>;
-const _okPipeOutput: OkPipeOutput = new Date(0);
+type OkChainOutput = ParseOutputType<typeof okChain>;
+const _okChainOutput: OkChainOutput = new Date(0);
 
 // Two-stage chain ending in number — output must be number.
-const twoStagePipe = Transform.pipe(PipeBase, [
+const twoStageChain = Transform.chain(PipeBase, [
   trimStage,
   stringToNumberStage
 ] as const);
 
-type TwoStagePipeOutput = ParseOutputType<typeof twoStagePipe>;
-const _twoStagePipeOutput: TwoStagePipeOutput = 42;
+type TwoStageChainOutput = ParseOutputType<typeof twoStageChain>;
+const _twoStageChainOutput: TwoStageChainOutput = 42;
 
 // Single-stage chain — output type is the only stage's decoded form.
-const singleStagePipe = Transform.pipe(PipeBase, [stringToNumberStage] as const);
+const singleStageChain = Transform.chain(PipeBase, [stringToNumberStage] as const);
 
-type SingleStagePipeOutput = ParseOutputType<typeof singleStagePipe>;
-const _singleStagePipeOutput: SingleStagePipeOutput = 7;
+type SingleStageChainOutput = ParseOutputType<typeof singleStageChain>;
+const _singleStageChainOutput: SingleStageChainOutput = 7;
 
 // Negative: stage 0 produces `number`, stage 1 expects `string`.
 // The pairwise check must reject this at the call site.
@@ -146,46 +146,46 @@ const _singleStagePipeOutput: SingleStagePipeOutput = 7;
 // Each bad stage triggers its own type error, so each line carries its
 // own `@ts-expect-error` directive. The errors surface as the stage type
 // being not assignable to `never` (the contracted-tuple element produced
-// by `ValidatePipeChainType` when the pair is incompatible).
+// by `ValidateChainType` when the pair is incompatible).
 if (false as boolean) {
-  Transform.pipe(PipeBase, [
-    // @ts-expect-error pipe stage 0 produces number, stage 1 expects string
+  Transform.chain(PipeBase, [
+    // @ts-expect-error chain stage 0 produces number, stage 1 expects string
     stringToNumberStage,
-    // @ts-expect-error pipe stage 0 produces number, stage 1 expects string
+    // @ts-expect-error chain stage 0 produces number, stage 1 expects string
     upperStage
   ] as const);
 
   // Three-stage mismatch in the middle: ok → ok → bad.
-  Transform.pipe(PipeBase, [
-    // @ts-expect-error pipe stage 1 produces number, stage 2 expects string
+  Transform.chain(PipeBase, [
+    // @ts-expect-error chain stage 1 produces number, stage 2 expects string
     trimStage,
-    // @ts-expect-error pipe stage 1 produces number, stage 2 expects string
+    // @ts-expect-error chain stage 1 produces number, stage 2 expects string
     stringToNumberStage,
-    // @ts-expect-error pipe stage 1 produces number, stage 2 expects string
+    // @ts-expect-error chain stage 1 produces number, stage 2 expects string
     upperStage
   ] as const);
 
   // Schema is `string` but first stage decodes `number`.
-  // @ts-expect-error first pipe stage expects number but schema wire type is string
-  Transform.pipe(PipeBase, [numberToDateStage] as const);
+  // @ts-expect-error first chain stage expects number but schema wire type is string
+  Transform.chain(PipeBase, [numberToDateStage] as const);
 
   // Two stages, both consume number, but schema is string → first-stage mismatch.
   // The error brand replaces only stage 0; stage 1 stays untouched because
   // its in-type matches stage 0's out-type.
-  Transform.pipe(PipeBase, [
-    // @ts-expect-error first pipe stage expects number but schema wire type is string
+  Transform.chain(PipeBase, [
+    // @ts-expect-error first chain stage expects number but schema wire type is string
     numberToStringStage,
     upperStage
   ] as const);
 }
 
 void [
-  okPipe,
-  twoStagePipe,
-  singleStagePipe,
-  _okPipeOutput,
-  _twoStagePipeOutput,
-  _singleStagePipeOutput
+  okChain,
+  twoStageChain,
+  singleStageChain,
+  _okChainOutput,
+  _twoStageChainOutput,
+  _singleStageChainOutput
 ];
 
 // ---------------------------------------------------------------------------

@@ -68,7 +68,7 @@ The enforcement layer for every keyword in the standard JSON Schema 2020-12 voca
 | `Compose.subClassOf` self-subclass prevention | <Badge type="info" text="Compile-time" /> |
 | `Compose.equivalent` self-equivalence prevention | <Badge type="info" text="Compile-time" /> |
 | `Compose.intersection` ID collision prevention | <Badge type="info" text="Compile-time" /> |
-| `Transform.pipe` stage chain compatibility | <Badge type="info" text="Compile-time" /> |
+| `Transform.chain` stage chain compatibility | <Badge type="info" text="Compile-time" /> |
 | Schema cross-keyword validation (`ValidateSchemaType`) | <Badge type="info" text="Compile-time" /> |
 
 ## Related

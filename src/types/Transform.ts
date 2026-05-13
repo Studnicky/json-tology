@@ -2,8 +2,8 @@ import type { TransformBrandInterface } from '../interfaces/TransformBrand.js';
 import type { AnyTransformStageInterface } from '../interfaces/TransformStage.js';
 import type { InferSchemaType } from './Infer.js';
 import type {
-  PipeChainMismatchInterface,
-  PipeChainSchemaMismatchInterface
+  ChainMismatchInterface,
+  ChainSchemaMismatchInterface
 } from './TypeErrors.js';
 
 /**
@@ -23,26 +23,26 @@ export type ParseOutputType<TSchema, TReferences = Record<never, never>>
   = TSchema extends TransformBrandInterface<infer Out> ? Out : InferSchemaType<TSchema, TSchema, TReferences>;
 
 // ---------------------------------------------------------------------------
-// Pipe chain compatibility (compile-time pairwise validation)
+// Chain compatibility (compile-time pairwise validation)
 // ---------------------------------------------------------------------------
 
 /**
- * Recursion budget for pipe chain validation. Matches the project-wide
+ * Recursion budget for chain validation. Matches the project-wide
  * `TupleRecursionCap` in `Infer.ts`. Chains longer than this fall through
  * unchecked.
  */
-type PipeChainRecursionCap = 10;
+type ChainRecursionCap = 10;
 
 /**
- * Walk a pipe chain pairwise and verify each stage's output type matches
+ * Walk a chain pairwise and verify each stage's output type matches
  * the next stage's input type. Each element in the resulting tuple is
  * either:
  *   - the original stage type (compatibility holds), or
- *   - a `PipeChainMismatchInterface` brand (the chain is broken).
+ *   - a `ChainMismatchInterface` brand (the chain is broken).
  *
  * Additionally, the first stage's input type must accept the schema's
  * wire-form type `TWire`; otherwise the first element resolves to a
- * `PipeChainSchemaMismatchInterface` brand.
+ * `ChainSchemaMismatchInterface` brand.
  *
  * The validator infers stage in/out types from each stage's `decode`
  * function shape so that contravariance does not interfere with the
@@ -53,11 +53,11 @@ type PipeChainRecursionCap = 10;
  * assignable to a tuple containing an error-branded element of a
  * different length.
  */
-export type ValidatePipeChainType<
+export type ValidateChainType<
   TStages extends readonly AnyTransformStageInterface[],
   TWire,
   TIndex extends readonly unknown[] = readonly []
-> = TIndex['length'] extends PipeChainRecursionCap
+> = TIndex['length'] extends ChainRecursionCap
   ? TStages
   : TStages extends readonly [infer THead, ...infer TRest]
     ? TRest extends readonly AnyTransformStageInterface[]
@@ -71,17 +71,17 @@ export type ValidatePipeChainType<
             ? TOutHead extends TInNext
               ? readonly [
                 THead,
-                ...ValidatePipeChainType<TRest, TOutHead, readonly [...TIndex, unknown]>
+                ...ValidateChainType<TRest, TOutHead, readonly [...TIndex, unknown]>
               ]
               : readonly [
                 THead,
-                PipeChainMismatchInterface<TIndex['length'], TOutHead, TInNext>,
+                ChainMismatchInterface<TIndex['length'], TOutHead, TInNext>,
                 ...TRest
               ]
             : TStages
         : THead extends { 'decode': (input: infer TInHead) => unknown }
           ? readonly [
-            PipeChainSchemaMismatchInterface<TWire, TInHead>,
+            ChainSchemaMismatchInterface<TWire, TInHead>,
             ...TRest
           ]
           : TStages
@@ -89,17 +89,17 @@ export type ValidatePipeChainType<
     : TStages;
 
 /**
- * Extract the final decoded output type of a pipe chain — the `TOut` of
- * the last stage. Used to type `Transform.pipe`'s return value so the
+ * Extract the final decoded output type of a chain — the `TOut` of
+ * the last stage. Used to type `Transform.chain`'s return value so the
  * resulting schema's `ParseOutputType` matches the chain's terminal type.
  *
  * Inferred from each stage's `decode` return type to avoid the variance
- * issues described on `ValidatePipeChainType`.
+ * issues described on `ValidateChainType`.
  */
-export type PipeChainOutputType<
+export type ChainOutputType<
   TStages extends readonly AnyTransformStageInterface[],
   TIndex extends readonly unknown[] = readonly []
-> = TIndex['length'] extends PipeChainRecursionCap
+> = TIndex['length'] extends ChainRecursionCap
   ? unknown
   : TStages extends readonly [infer TOnly]
     ? TOnly extends { 'decode': (input: never) => infer TOut }
@@ -107,6 +107,6 @@ export type PipeChainOutputType<
       : unknown
     : TStages extends readonly [AnyTransformStageInterface, ...infer TRest]
       ? TRest extends readonly AnyTransformStageInterface[]
-        ? PipeChainOutputType<TRest, readonly [...TIndex, unknown]>
+        ? ChainOutputType<TRest, readonly [...TIndex, unknown]>
         : unknown
       : unknown;

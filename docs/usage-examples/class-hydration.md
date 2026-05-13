@@ -525,7 +525,7 @@ const user = v.parse(UserSchema, { name: 'Ada' });
 ## Related
 
 - [`Transform.create` and `jt.encode`](/transforms/decode-encode) - the underlying API
-- [`Transform.pipe`](/transforms/pipe) - multi-step wire transformations
+- [`Transform.chain`](/transforms/chain) - multi-step wire transformations
 - [`Transform.brand`](/transforms/brand) - nominal typing without classes
 - [Transform recipes](/usage-examples/transforms-recipes) - date, money, and identifier recipes
 

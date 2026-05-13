@@ -1,30 +1,30 @@
 /**
- * Bookstore Transform pipeline demo — ISBN normalisation.
+ * Bookstore Transform chain demo — ISBN normalisation.
  *
- * Demonstrates `Transform.create` and `Transform.pipe` with pairwise
+ * Demonstrates `Transform.create` and `Transform.chain` with pairwise
  * chain-compatibility checking.
  *
  * Pairwise compatibility
  * ----------------------
- * `Transform.pipe` enforces at compile time that stage N's `decode` return
+ * `Transform.chain` enforces at compile time that stage N's `decode` return
  * type is assignable to stage N+1's `decode` parameter type.  A mismatch
- * surfaces a `PipeChainMismatchInterface` brand at the offending tuple
+ * surfaces a `ChainMismatchInterface` brand at the offending tuple
  * position so the call is rejected before runtime.  The validator also checks
  * that the first stage's input accepts the schema's wire type — a first-stage
- * mismatch surfaces a `PipeChainSchemaMismatchInterface` brand.
+ * mismatch surfaces a `ChainSchemaMismatchInterface` brand.
  *
- * Transform.create vs Transform.pipe
- * -----------------------------------
+ * Transform.create vs Transform.chain
+ * ------------------------------------
  * `Transform.create` attaches a single decode/encode pair to a schema.  The
  * decode function receives the schema's inferred wire type and returns the
  * desired output type.  The encode function is the inverse.
  *
- * `Transform.pipe` composes multiple stages.  Each stage is a plain object
+ * `Transform.chain` composes multiple stages.  Each stage is a plain object
  * with `decode` and `encode`.  Stages run left-to-right on decode and
  * right-to-left on encode.
  *
- * Pipeline (using Transform.pipe)
- * --------------------------------
+ * Chain (using Transform.chain)
+ * ------------------------------
  * wire string (e.g. "978-0-525-55947-4")
  *   → validateLength   : string → string      (asserts exactly 13 digits)
  *   → parseIsbn        : string → ParsedIsbnInterface (extracts EAN prefix, group code, etc.)
@@ -86,10 +86,10 @@ export const stripHyphensSchema = Transform.create(RawIsbnSchema, {
 });
 
 // ---------------------------------------------------------------------------
-// Transform.pipe — multi-stage pipeline bound to IsbnSchema
+// Transform.chain — multi-stage chain bound to IsbnSchema
 //
 // Stage declarations as standalone TransformStageInterface objects so they
-// can be unit-tested or reused in other pipelines independently.
+// can be unit-tested or reused in other chains independently.
 // ---------------------------------------------------------------------------
 
 /**
@@ -130,7 +130,7 @@ const parseIsbnSegments: TransformStageInterface<string, ParsedIsbnInterface> = 
 };
 
 /**
- * Full ISBN pipeline composed via `Transform.pipe`.
+ * Full ISBN chain composed via `Transform.chain`.
  *
  * `ParseOutputType<typeof IsbnPipelineSchema>` resolves to `ParsedIsbnInterface`.
  * Pass this schema to `jt.instantiate()` to get a structured `ParsedIsbnInterface`
@@ -141,10 +141,10 @@ const parseIsbnSegments: TransformStageInterface<string, ParsedIsbnInterface> = 
  *   • parseIsbnSegments.decode   : string → ParsedIsbnInterface (matches validateIsbnLength output)
  *
  * Swapping the order (parseIsbnSegments before validateIsbnLength) would produce a
- * `PipeChainMismatchInterface` brand error because `ParsedIsbnInterface` is not
+ * `ChainMismatchInterface` brand error because `ParsedIsbnInterface` is not
  * assignable to validateIsbnLength's `string` parameter.
  */
-export const IsbnPipelineSchema = Transform.pipe(IsbnSchema, [
+export const IsbnPipelineSchema = Transform.chain(IsbnSchema, [
   validateIsbnLength,
   parseIsbnSegments
 ] as const);

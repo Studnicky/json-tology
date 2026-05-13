@@ -7,9 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-05-13
+
 ### Added
 
 - Browser compatibility: `FormatRegistry` no longer depends on `node:net` or `node:url`. The `./schema` subpath now exposes a browser-safe variant via the `exports` map (excludes `SchemaLoader`, which remains Node-only via the `node` condition).
+
+### Changed
+
+- **BREAKING**: `Transform.pipe()` renamed to `Transform.chain()`. The previous name conflicted with the Node.js stream `.pipe()` convention. The supporting types are similarly renamed: `PipeChainMismatchInterface` → `ChainMismatchInterface`; `PipeChainSchemaMismatchInterface` → `ChainSchemaMismatchInterface`; `ValidatePipeChainType` → `ValidateChainType`; `PipeChainOutputType` → `ChainOutputType`; `PipeChainRecursionCap` → `ChainRecursionCap`. Migrate by replacing every `Transform.pipe` call site with `Transform.chain` and renaming any type imports.
+- Docs style: every `{ decode, encode }` transform-stage literal is now formatted with `decode` and `encode` on separate lines (project convention).
+- Docs IA: 7 reference pages split for scope — `types.md` → `types/{infer,utility,ranges}.md`; `constraint-brands.md` → `constraint-brands/{keywords,narrowing}.md`; `bookstore-domain.md` → extracted OWL taxonomy to `usage-examples/bookstore-owl-taxonomy.md`; `advanced/graph-concepts.md` → `graph-concepts.md` (fundamentals) + `graph-internals.md` (implementation); `schemas.md` deduplicated against registry pages (673 → 176 LOC); `usage-examples/sparql-queries.md` folded into `advanced/ontology.md`; `references/benchmarks.md` folded into `references.md`.
 
 ## [0.4.2] - 2026-05-13
 

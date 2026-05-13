@@ -20,9 +20,9 @@
 
 import type { JSONSchema7Definition } from 'json-schema';
 import type {
-  PipeChainOutputType,
+  ChainOutputType,
   TransformedType,
-  ValidatePipeChainType
+  ValidateChainType
 } from '../../types/Transform.js';
 import type { BrandedType } from '../../types/Brand.js';
 import { brand } from '../../types/Brand.js';
@@ -59,6 +59,45 @@ export class Transform {
   }
 
   /**
+   * Compose multiple transforms into a single chain attached to a schema.
+   *
+   * Decode runs left-to-right: T1.decode → T2.decode → …
+   * Encode runs right-to-left: … → T2.encode → T1.encode
+   *
+   * Pairwise chain compatibility is enforced at compile time:
+   *   - the first stage's `decode` input must accept the schema's wire type,
+   *   - each stage N's `decode` output must match stage N+1's `decode` input.
+   * Mismatches surface as a `ChainMismatchInterface` brand at the
+   * offending tuple position, which is not assignable from the user's
+   * literal stage object — so the call site is rejected.
+   */
+  public static chain<
+    TSchema extends JSONSchema7Definition & { readonly '$id': string; },
+    TStages extends readonly AnyTransformStageInterface[]
+  >(
+    schema: TSchema,
+    transforms: TStages & ValidateChainType<TStages, InferSchemaType<TSchema>>
+  ): TransformedType<TSchema, ChainOutputType<TStages>> {
+    const stages = transforms as ReadonlyArray<TransformStageInterface<unknown, unknown>>;
+    const composed: TransformFnsInterface = {
+      'decode': (value: unknown) => {
+        return stages.reduce<unknown>((accumulator, transform) => {
+          return transform.decode(accumulator);
+        }, value);
+      },
+      'encode': (value: unknown) => {
+        return [...stages].reverse().reduce<unknown>((accumulator, transform) => {
+          return transform.encode(accumulator);
+        }, value);
+      }
+    };
+
+    transformRegistry.set(schema, composed);
+
+    return brand<TransformedType<TSchema, ChainOutputType<TStages>>>(schema);
+  }
+
+  /**
    * Attach decode and encode functions to a schema.
    *
    * - `decode` is called by parse() after validation succeeds.
@@ -85,44 +124,5 @@ export class Transform {
   /** Returns the decode/encode functions registered for a schema, or undefined. */
   public static getDecoder(schema: Record<string, unknown>): TransformFnsInterface | undefined {
     return transformRegistry.get(schema);
-  }
-
-  /**
-   * Compose multiple transforms into a single pipeline attached to a schema.
-   *
-   * Decode runs left-to-right: T1.decode → T2.decode → …
-   * Encode runs right-to-left: … → T2.encode → T1.encode
-   *
-   * Pairwise chain compatibility is enforced at compile time:
-   *   - the first stage's `decode` input must accept the schema's wire type,
-   *   - each stage N's `decode` output must match stage N+1's `decode` input.
-   * Mismatches surface as a `PipeChainMismatchInterface` brand at the
-   * offending tuple position, which is not assignable from the user's
-   * literal stage object — so the call site is rejected.
-   */
-  public static pipe<
-    TSchema extends JSONSchema7Definition & { readonly '$id': string; },
-    TStages extends readonly AnyTransformStageInterface[]
-  >(
-    schema: TSchema,
-    transforms: TStages & ValidatePipeChainType<TStages, InferSchemaType<TSchema>>
-  ): TransformedType<TSchema, PipeChainOutputType<TStages>> {
-    const stages = transforms as ReadonlyArray<TransformStageInterface<unknown, unknown>>;
-    const composed: TransformFnsInterface = {
-      'decode': (value: unknown) => {
-        return stages.reduce<unknown>((accumulator, transform) => {
-          return transform.decode(accumulator);
-        }, value);
-      },
-      'encode': (value: unknown) => {
-        return [...stages].reverse().reduce<unknown>((accumulator, transform) => {
-          return transform.encode(accumulator);
-        }, value);
-      }
-    };
-
-    transformRegistry.set(schema, composed);
-
-    return brand<TransformedType<TSchema, PipeChainOutputType<TStages>>>(schema);
   }
 }

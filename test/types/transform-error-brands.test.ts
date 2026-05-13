@@ -1,10 +1,10 @@
 /**
- * Compile-time identity assertions for Transform pipe error brands.
+ * Compile-time identity assertions for Transform chain error brands.
  *
- * For each named pipe-error brand, verifies that:
+ * For each named chain-error brand, verifies that:
  * 1. The brand interface has the expected structural shape.
- * 2. A Transform.pipe call that triggers the error condition is rejected.
- * 3. A well-typed pipe chain compiles without errors.
+ * 2. A Transform.chain call that triggers the error condition is rejected.
+ * 3. A well-typed chain compiles without errors.
  */
 
 import {
@@ -13,8 +13,8 @@ import {
 
 import { Transform } from '../../src/modules/transform/Transform.js';
 import type {
-  PipeChainMismatchInterface,
-  PipeChainSchemaMismatchInterface
+  ChainMismatchInterface,
+  ChainSchemaMismatchInterface
 } from '../../src/types/TypeErrors.js';
 import type { TransformStageInterface } from '../../src/interfaces/TransformStage.js';
 
@@ -71,75 +71,75 @@ const stringToString: TransformStageInterface<string, string> = {
 };
 
 // ---------------------------------------------------------------------------
-// Brand B1: PipeChainMismatchInterface — stage output ≠ next stage input
+// Brand B1: ChainMismatchInterface — stage output ≠ next stage input
 // ---------------------------------------------------------------------------
 
 // Brand structural identity: carries kind, stageIndex, producedByPriorStage, expectedByThisStage
-assert<AssertEqualType<PipeChainMismatchInterface<0, string, number>['kind'], 'PipeChainMismatch'>>();
+assert<AssertEqualType<ChainMismatchInterface<0, string, number>['kind'], 'ChainMismatch'>>();
 
-assert<AssertEqualType<PipeChainMismatchInterface<0, string, number>['stageIndex'], 0>>();
+assert<AssertEqualType<ChainMismatchInterface<0, string, number>['stageIndex'], 0>>();
 
-assert<AssertEqualType<PipeChainMismatchInterface<0, string, number>['producedByPriorStage'], string>>();
+assert<AssertEqualType<ChainMismatchInterface<0, string, number>['producedByPriorStage'], string>>();
 
-assert<AssertEqualType<PipeChainMismatchInterface<0, string, number>['expectedByThisStage'], number>>();
+assert<AssertEqualType<ChainMismatchInterface<0, string, number>['expectedByThisStage'], number>>();
 
 // Positive: well-typed chain compiles
-const _okPipe = Transform.pipe(StringSchema, [
+const _okChain = Transform.chain(StringSchema, [
   stringToNumber,
   numberToDate
 ] as const);
 
-void _okPipe;
+void _okChain;
 
 // Negative: stage 0 produces number, stage 1 expects string
 // Each bad stage emits its own error so each carries @ts-expect-error
 if (false as boolean) {
-  Transform.pipe(StringSchema, [
-    // @ts-expect-error — stage 0 produces number, stage 1 expects string (PipeChainMismatchInterface)
+  Transform.chain(StringSchema, [
+    // @ts-expect-error — stage 0 produces number, stage 1 expects string (ChainMismatchInterface)
     stringToNumber,
-    // @ts-expect-error — stage 0 produces number, stage 1 expects string (PipeChainMismatchInterface)
+    // @ts-expect-error — stage 0 produces number, stage 1 expects string (ChainMismatchInterface)
     stringToString
   ] as const);
 }
 
 // Negative: three-stage chain — mismatch at position 1
 if (false as boolean) {
-  Transform.pipe(StringSchema, [
-    // @ts-expect-error — stage 1 produces number, stage 2 expects string (PipeChainMismatchInterface)
+  Transform.chain(StringSchema, [
+    // @ts-expect-error — stage 1 produces number, stage 2 expects string (ChainMismatchInterface)
     stringToString,
-    // @ts-expect-error — stage 1 produces number, stage 2 expects string (PipeChainMismatchInterface)
+    // @ts-expect-error — stage 1 produces number, stage 2 expects string (ChainMismatchInterface)
     stringToNumber,
-    // @ts-expect-error — stage 1 produces number, stage 2 expects string (PipeChainMismatchInterface)
+    // @ts-expect-error — stage 1 produces number, stage 2 expects string (ChainMismatchInterface)
     stringToString
   ] as const);
 }
 
 // ---------------------------------------------------------------------------
-// Brand B2: PipeChainSchemaMismatchInterface — first stage input ≠ schema wire type
+// Brand B2: ChainSchemaMismatchInterface — first stage input ≠ schema wire type
 // ---------------------------------------------------------------------------
 
 // Brand structural identity: carries kind, schemaWireType, firstStageDecodeInput
-assert<AssertEqualType<PipeChainSchemaMismatchInterface<string, number>['kind'], 'PipeChainSchemaMismatch'>>();
+assert<AssertEqualType<ChainSchemaMismatchInterface<string, number>['kind'], 'ChainSchemaMismatch'>>();
 
-assert<AssertEqualType<PipeChainSchemaMismatchInterface<string, number>['schemaWireType'], string>>();
+assert<AssertEqualType<ChainSchemaMismatchInterface<string, number>['schemaWireType'], string>>();
 
-assert<AssertEqualType<PipeChainSchemaMismatchInterface<string, number>['firstStageDecodeInput'], number>>();
+assert<AssertEqualType<ChainSchemaMismatchInterface<string, number>['firstStageDecodeInput'], number>>();
 
 // Positive: first stage input matches schema wire type (string → string is fine)
-const _schemaMismatchOk = Transform.pipe(StringSchema, [stringToNumber] as const);
+const _schemaMismatchOk = Transform.chain(StringSchema, [stringToNumber] as const);
 
 void _schemaMismatchOk;
 
 // Negative: schema is string but first stage expects number
 if (false as boolean) {
-  // @ts-expect-error — schema wire type is string, first stage expects number (PipeChainSchemaMismatchInterface)
-  Transform.pipe(StringSchema, [numberToDate] as const);
+  // @ts-expect-error — schema wire type is string, first stage expects number (ChainSchemaMismatchInterface)
+  Transform.chain(StringSchema, [numberToDate] as const);
 }
 
 // Negative: schema is string but first stage consumes number — two-stage case
 if (false as boolean) {
-  Transform.pipe(StringSchema, [
-    // @ts-expect-error — schema wire type is string, first stage expects number (PipeChainSchemaMismatchInterface)
+  Transform.chain(StringSchema, [
+    // @ts-expect-error — schema wire type is string, first stage expects number (ChainSchemaMismatchInterface)
     numberToString,
     stringToNumber
   ] as const);

@@ -66,7 +66,10 @@ import { Transform } from 'json-tology';
 
 const PlacedAtSchema = Transform.create(
   { $id: 'https://bookstore.example/PlacedAt', type: 'string', format: 'date-time' } as const,
-  { decode: (s: string) => new Date(s), encode: (d: Date) => d.toISOString() },
+  {
+    decode: (s: string) => new Date(s),
+    encode: (d: Date) => d.toISOString()
+  },
 );
 
 const date = jt.instantiate(PlacedAtSchema.$id, '2026-01-15T10:30:00.000Z');

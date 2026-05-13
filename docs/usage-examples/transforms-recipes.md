@@ -1,8 +1,8 @@
 # Transform recipes
 
-Working recipes for everyday transform problems. Each recipe is a `Transform.create` (or `Transform.pipe`) call, registered with the rest of the bookstore domain, that round-trips through `jt.instantiate` and `jt.encode`.
+Working recipes for everyday transform problems. Each recipe is a `Transform.create` (or `Transform.chain`) call, registered with the rest of the bookstore domain, that round-trips through `jt.instantiate` and `jt.encode`.
 
-All recipes use the [bookstore domain](/bookstore-domain). For the underlying APIs see [`Transform.create` and `jt.encode`](/transforms/decode-encode), [`Transform.pipe`](/transforms/pipe), and [`Transform.brand`](/transforms/brand).
+All recipes use the [bookstore domain](/bookstore-domain). For the underlying APIs see [`Transform.create` and `jt.encode`](/transforms/decode-encode), [`Transform.chain`](/transforms/chain), and [`Transform.brand`](/transforms/brand).
 
 ---
 
@@ -92,16 +92,22 @@ const PriceCentsSchema = Transform.create(
 
 If you prefer the project's built-in [Money composite](/bookstore-domain#money), keep cents as the wire format and use Money for the decoded slot.
 
-### Formatted string to float (multi-step pipeline)
+### Formatted string to float (multi-step chain)
 
 Wire format: `'$1,234.56'`. Two decoders run left to right; encoders run right to left.
 
 ```ts
-const FormattedPriceSchema = Transform.pipe(
+const FormattedPriceSchema = Transform.chain(
   { $id: 'urn:bookstore:FormattedPrice', type: 'string' } as const,
   [
-    { decode: (s: string) => s.replace(/[$,]/g, ''), encode: (s: string) => `$${s}` },
-    { decode: (s: string) => parseFloat(s),          encode: (n: number) => n.toFixed(2) }
+    {
+      decode: (s: string) => s.replace(/[$,]/g, ''),
+      encode: (s: string) => `$${s}`
+    },
+    {
+      decode: (s: string) => parseFloat(s),
+      encode: (n: number) => n.toFixed(2)
+    }
   ]
 );
 ```
@@ -288,7 +294,7 @@ roundTrip(PlacedAtSchema, ['2026-01-15T10:30:00.000Z']);
 ## Related
 
 - [`Transform.create` and `jt.encode`](/transforms/decode-encode) - the underlying API
-- [`Transform.pipe`](/transforms/pipe) - multi-stage pipelines, decode/encode direction
+- [`Transform.chain`](/transforms/chain) - multi-stage chains, decode/encode direction
 - [`Transform.brand`](/transforms/brand) - nominal typing without runtime conversion
 - [Custom formats](/usage-examples/custom-formats) - validate the wire format before decoding
 
