@@ -1,6 +1,8 @@
 # Browser usage
 
-json-tology has no environment-specific export paths. The same `import` works in Node, Bun, Deno, and browsers — no conditional `browser`/`node` exports to navigate. The only tool for loading schemas from a remote source is the **loader hook**, which uses `globalThis.fetch` and therefore runs identically everywhere.
+json-tology has no environment-specific export paths. The same `import` works in Node, Bun, Deno, and browsers — no conditional `browser`/`node` exports to navigate. Async schema fetching runs through the **loader hook** consumed by `JsonTology.prefetch`, which uses `globalThis.fetch` and therefore runs identically everywhere.
+
+The shape is two steps: prefetch the snapshot once (async), then construct the instance synchronously anywhere from the snapshot.
 
 ## CDN (no bundler)
 
@@ -8,10 +10,14 @@ json-tology has no environment-specific export paths. The same `import` works in
 <script type="module">
   import { JsonTology, Loaders } from 'https://esm.sh/json-tology';
 
-  const jt = await JsonTology.create({
-    baseIRI: 'https://myapp.io',
-    schemas: [],
+  const snapshot = await JsonTology.prefetch({
     loader: Loaders.fetch({ base: 'https://schemas.myapp.io/v1/' }),
+    rootIds: ['https://schemas.myapp.io/v1/User'],
+  });
+
+  const jt = JsonTology.create({
+    baseIRI: 'https://myapp.io',
+    prefetched: snapshot,
   });
 
   const result = jt.validate('https://schemas.myapp.io/v1/User', formData);
@@ -26,13 +32,18 @@ import UserSchema from './schemas/User.json';
 import AddressSchema from './schemas/Address.json';
 
 // Pre-bundle local schemas; fall back to network for remote refs
-const jt = await JsonTology.create({
-  baseIRI: 'https://myapp.io',
-  schemas: [UserSchema, AddressSchema] as const,
+const snapshot = await JsonTology.prefetch({
   loader: Loaders.compose(
     Loaders.memory({ /* additional compile-time schemas */ }),
     Loaders.fetch({ base: 'https://schemas.myapp.io/v1/' }),
   ),
+  schemas: [UserSchema, AddressSchema],
+});
+
+const jt = JsonTology.create({
+  baseIRI: 'https://myapp.io',
+  prefetched: snapshot,
+  schemas: [UserSchema, AddressSchema] as const,
 });
 ```
 
@@ -41,12 +52,17 @@ const jt = await JsonTology.create({
 ```ts
 import { JsonTology, Loaders } from 'json-tology';
 
-const jt = await JsonTology.create({
-  baseIRI: 'https://myapp.io',
-  schemas: [UserSchema] as const,
+const snapshot = await JsonTology.prefetch({
   loader: Loaders.cached(
     Loaders.fetch({ base: 'https://schemas.example/' })
   ),
+  schemas: [UserSchema],
+});
+
+const jt = JsonTology.create({
+  baseIRI: 'https://myapp.io',
+  prefetched: snapshot,
+  schemas: [UserSchema] as const,
 });
 ```
 
@@ -66,10 +82,9 @@ const fsLoader = async (iri: string) => {
 
 ## Schema-only (no $ref federation)
 
-If all schemas are known at build time and have no external `$ref`s, skip the loader entirely:
+If all schemas are known at build time and have no external `$ref`s, skip `prefetch` entirely:
 
 ```ts
-// Fully synchronous — no await
 const jt = JsonTology.create({
   baseIRI: 'https://myapp.io',
   schemas: [UserSchema, AddressSchema, OrderSchema] as const,
@@ -79,6 +94,6 @@ const jt = JsonTology.create({
 ## Key points
 
 - No `browser`/`node`/`default` conditional export paths on any json-tology subpath.
-- All helpers in the `Loaders` namespace use only `globalThis.fetch` and `Promise` — no Node built-ins.
-- `JsonTology.create({ loader })` returns `Promise<JsonTology>`. The hot path (`validate`, `instantiate`, `is`, etc.) is synchronous after the promise resolves.
+- `Loaders` helpers use only `globalThis.fetch` and `Promise` — no Node built-ins.
+- `JsonTology.create` is synchronous. Async fetching is isolated to `JsonTology.prefetch`.
 - The library has zero runtime dependencies beyond `commander` (CLI only).

@@ -1,14 +1,9 @@
 /**
- * Integration tests for the loader hook on JsonTology.create and registerAsync.
+ * Integration tests for JsonTology.prefetch and the `prefetched` option on
+ * JsonTology.create.
  *
- * These tests exercise the full transitive ref-resolution walk with mocked
- * loaders, and verify that loader-equipped instances behave identically to
- * statically-registered ones on the hot path.
- *
- * Note: TypeScript types `JsonTology.create({ loader })` as `JsonTology` (sync)
- * because the single-overload approach is required for compatibility with large
- * schema arrays that exceed TypeScript's type-instantiation depth limits. The
- * runtime Promise is explicitly cast below for tests that need to await it.
+ * `prefetch` runs the async transitive `$ref` walk via a loader and returns a
+ * snapshot. `create()` consumes the snapshot synchronously via `prefetched`.
  */
 
 import assert from 'node:assert/strict';
@@ -19,10 +14,6 @@ import type { LoaderType } from '../../src/types/Loader.js';
 import {
   GraphError, JsonTology, Loaders
 } from '../../src/index.js';
-
-// ---------------------------------------------------------------------------
-// Test schemas
-// ---------------------------------------------------------------------------
 
 const AddressSchema = {
   '$id': 'https://schema.example/Address',
@@ -44,7 +35,6 @@ const UserSchema = {
   'type': 'object'
 } as const;
 
-// A deeper chain: Order → LineItem → Product
 const ProductSchema = {
   '$id': 'https://schema.example/Product',
   'properties': { 'sku': { 'type': 'string' } },
@@ -80,81 +70,49 @@ const schemaMap = {
   [UserSchema.$id]: UserSchema
 } as const;
 
-/**
- * Runtime cast helper: `create({ loader })` returns a Promise at runtime but
- * TypeScript's single-overload types it as sync for broad compatibility. The
- * cast is intentional and explicitly documented here so it is centrally visible.
- */
-function createAsync<TSchemas extends ReadonlyArray<{ readonly '$id': string }>>(options: Parameters<typeof JsonTology.create<TSchemas>>[0] & { 'loader': LoaderType }): Promise<JsonTology> {
-  return JsonTology.create(options) as unknown as Promise<JsonTology>;
-}
-
-// ---------------------------------------------------------------------------
-// Loader hook on construction (Mode B)
-// ---------------------------------------------------------------------------
-
-void describe('JsonTology.create with loader', () => {
-  void it('happy: returns a Promise<JsonTology> when loader is provided', async () => {
-    const jt = createAsync({
-      'baseIRI': 'https://schema.example',
+void describe('JsonTology.prefetch', () => {
+  void it('happy: walks transitive refs from seed schemas and returns a snapshot', async () => {
+    const snapshot = await JsonTology.prefetch({
       'loader': Loaders.memory(schemaMap),
-      'schemas': [UserSchema] as const
+      'schemas': [UserSchema]
     });
 
-    assert.ok(jt instanceof Promise, 'create() returns a Promise when loader is set');
-    const resolved = await jt;
-
-    assert.ok(resolved instanceof JsonTology);
+    assert.strictEqual(snapshot.version, 1);
+    assert.ok(snapshot.schemas.has(UserSchema.$id), 'seed schema present');
+    assert.ok(snapshot.schemas.has(AddressSchema.$id), 'transitive ref resolved');
   });
 
-  void it('happy: returns JsonTology synchronously when no loader', () => {
-    const jt = JsonTology.create({
-      'baseIRI': 'https://schema.example',
-      'schemas': [AddressSchema] as const
+  void it('happy: deep chain (Order -> LineItem -> Product) closes', async () => {
+    const snapshot = await JsonTology.prefetch({
+      'loader': Loaders.memory(schemaMap),
+      'schemas': [OrderSchema]
     });
 
-    assert.ok(jt instanceof JsonTology, 'create() returns JsonTology synchronously without loader');
+    assert.ok(snapshot.schemas.has(OrderSchema.$id));
+    assert.ok(snapshot.schemas.has(LineItemSchema.$id));
+    assert.ok(snapshot.schemas.has(ProductSchema.$id));
   });
 
-  void it('happy: resolved instance validates against a transitively loaded schema', async () => {
-    const jt = await createAsync({
-      'baseIRI': 'https://schema.example',
+  void it('happy: rootIds loads schemas directly without a seed', async () => {
+    const snapshot = await JsonTology.prefetch({
       'loader': Loaders.memory(schemaMap),
-      'schemas': [UserSchema] as const
+      'rootIds': [UserSchema.$id]
     });
 
-    const errors = jt.validate(UserSchema, {
-      'address': { 'city': 'London' },
-      'name': 'Alice'
-    });
-
-    assert.ok(errors.ok, `validation should pass, errors: ${JSON.stringify(errors.items)}`);
-  });
-
-  void it('happy: deep transitive chain (Order → LineItem → Product) resolved', async () => {
-    const jt = await createAsync({
-      'baseIRI': 'https://schema.example',
-      'loader': Loaders.memory(schemaMap),
-      'schemas': [OrderSchema] as const
-    });
-
-    assert.ok(jt.has(ProductSchema.$id), 'Product schema transitively resolved');
-    assert.ok(jt.has(LineItemSchema.$id), 'LineItem schema transitively resolved');
+    assert.ok(snapshot.schemas.has(UserSchema.$id));
+    assert.ok(snapshot.schemas.has(AddressSchema.$id));
   });
 
   void it('unhappy: throws REF_UNRESOLVED when loader returns null for a required IRI', async () => {
-    const emptyLoader = Loaders.memory({});
-
     await assert.rejects(
       async () => {
-        return createAsync({
-          'baseIRI': 'https://schema.example',
-          'loader': emptyLoader,
-          'schemas': [UserSchema] as const
+        return JsonTology.prefetch({
+          'loader': Loaders.memory({}),
+          'schemas': [UserSchema]
         });
       },
       (err: unknown) => {
-        assert.ok(err instanceof GraphError, 'should throw GraphError');
+        assert.ok(err instanceof GraphError);
         assert.strictEqual(err.code, 'REF_UNRESOLVED');
         assert.ok(
           err.pointer?.includes('https://schema.example/Address') === true,
@@ -169,7 +127,6 @@ void describe('JsonTology.create with loader', () => {
   void it('edge: duplicate ref IRIs only call loader once (visited-set dedup)', async () => {
     let callCount = 0;
 
-    // Schema referencing the same IRI twice in different properties
     const DupRefSchema = {
       '$id': 'https://schema.example/DupRef',
       'properties': {
@@ -185,16 +142,15 @@ void describe('JsonTology.create with loader', () => {
       return (schemaMap as Record<string, Record<string, unknown>>)[iri] ?? null;
     };
 
-    await createAsync({
-      'baseIRI': 'https://schema.example',
+    await JsonTology.prefetch({
       'loader': trackingLoader,
-      'schemas': [DupRefSchema] as const
+      'schemas': [DupRefSchema]
     });
 
     assert.strictEqual(callCount, 1, 'loader called exactly once for deduplicated IRI');
   });
 
-  void it('edge: schema with no unregistered refs resolves immediately without loader calls', async () => {
+  void it('edge: schema with no unregistered refs resolves without loader calls', async () => {
     let callCount = 0;
 
     const loader: LoaderType = async (_: string) => {
@@ -203,75 +159,57 @@ void describe('JsonTology.create with loader', () => {
       return null;
     };
 
-    await createAsync({
-      'baseIRI': 'https://schema.example',
+    await JsonTology.prefetch({
       'loader': loader,
-      'schemas': [AddressSchema] as const
+      'schemas': [AddressSchema]
     });
 
     assert.strictEqual(callCount, 0, 'loader not called when all refs are local');
   });
 });
 
-// ---------------------------------------------------------------------------
-// registerAsync
-// ---------------------------------------------------------------------------
-
-void describe('jt.registerAsync', () => {
-  void it('happy: registerAsync resolves transitive refs and warms the registry', async () => {
-    const jt = await createAsync({
-      'baseIRI': 'https://schema.example',
+void describe('JsonTology.create with prefetched snapshot', () => {
+  void it('happy: validates against a transitively prefetched schema', async () => {
+    const snapshot = await JsonTology.prefetch({
       'loader': Loaders.memory(schemaMap),
-      'schemas': [AddressSchema] as const
+      'schemas': [UserSchema]
     });
 
-    await jt.registerAsync(UserSchema);
-
-    assert.ok(jt.has(UserSchema.$id), 'User schema registered');
-    assert.ok(jt.has(AddressSchema.$id), 'Address schema still present');
-  });
-
-  void it('unhappy: registerAsync throws REF_UNRESOLVED when loader returns null', async () => {
-    const jt = await createAsync({
-      'baseIRI': 'https://schema.example',
-      'loader': Loaders.memory({ [AddressSchema.$id]: AddressSchema }),
-      'schemas': [AddressSchema] as const
-    });
-
-    // OrderSchema refs LineItem which refs Product — none are in the loader
-    const noLineItemLoader = Loaders.memory({ [AddressSchema.$id]: AddressSchema });
-    const jt2 = await createAsync({
-      'baseIRI': 'https://schema.example',
-      'loader': noLineItemLoader,
-      'schemas': [AddressSchema] as const
-    });
-
-    void jt;
-
-    await assert.rejects(
-      async () => {
-        return jt2.registerAsync(OrderSchema);
-      },
-      (err: unknown) => {
-        assert.ok(err instanceof GraphError);
-        assert.strictEqual(err.code, 'REF_UNRESOLVED');
-
-        return true;
-      }
-    );
-  });
-
-  void it('unhappy: registerAsync throws SchemaError when no loader configured', async () => {
     const jt = JsonTology.create({
       'baseIRI': 'https://schema.example',
-      'schemas': [AddressSchema] as const
+      'prefetched': snapshot,
+      'schemas': [UserSchema] as const
     });
 
-    await assert.rejects(
-      async () => {
-        return jt.registerAsync(UserSchema);
-      },
-      /loader/u
-    );
+    const errors = jt.validate(UserSchema, {
+      'address': { 'city': 'London' },
+      'name': 'Alice'
+    });
+
+    assert.ok(errors.ok, `validation should pass, errors: ${JSON.stringify(errors.items)}`);
+    assert.ok(jt.registry.has(AddressSchema.$id), 'transitive schema available via registry');
+  });
+
+  void it('happy: schemas passed to create() win over snapshot on $id collision', async () => {
+    const snapshot = await JsonTology.prefetch({
+      'loader': Loaders.memory(schemaMap),
+      'rootIds': [AddressSchema.$id]
+    });
+
+    const OverrideAddressSchema = {
+      '$id': 'https://schema.example/Address',
+      'properties': { 'overridden': { 'type': 'boolean' } },
+      'type': 'object'
+    } as const;
+
+    const jt = JsonTology.create({
+      'baseIRI': 'https://schema.example',
+      'prefetched': snapshot,
+      'schemas': [OverrideAddressSchema] as const
+    });
+
+    const registered = jt.registry.get(AddressSchema.$id);
+
+    assert.deepStrictEqual(registered?.properties, OverrideAddressSchema.properties);
   });
 });

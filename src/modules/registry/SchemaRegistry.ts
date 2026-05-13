@@ -64,6 +64,12 @@ export interface DuplicateReportEntryType<TEquivalentTo extends string = string>
   readonly 'shape': Record<string, unknown>;
 }
 
+type SchemaRegistryForEachCallback = (
+  schema: Record<string, unknown>,
+  schemaId: string,
+  registry: SchemaRegistryInterface
+) => void;
+
 export class SchemaRegistry implements SchemaRegistryInterface {
   public readonly castTypes: boolean;
   private readonly compiler: SchemaCompilerInterface;
@@ -481,6 +487,18 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return entry.engine;
   }
 
+  public *entries(): IterableIterator<[string, Record<string, unknown>]> {
+    for (const [
+      iri,
+      entry
+    ] of this.schemas) {
+      yield [
+        iri,
+        entry.schema
+      ];
+    }
+  }
+
   public findDuplicates(): readonly DuplicateReportEntryType[] {
     const topLevelHashes = new Map<string, string>();
 
@@ -505,6 +523,15 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return results;
   }
 
+  public forEach(callback: SchemaRegistryForEachCallback): void {
+    for (const [
+      iri,
+      entry
+    ] of this.schemas) {
+      callback(entry.schema, iri, this);
+    }
+  }
+
   public get(schemaId: string): Record<string, unknown> | undefined {
     return this.schemas.get(this.resolve(schemaId))?.schema;
   }
@@ -523,6 +550,10 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     entry.graph ??= new SchemaGraph(entry.schema, { 'vocabularies': this.vocabularies });
 
     return entry.graph;
+  }
+
+  public has(schemaId: string): boolean {
+    return this.schemas.has(this.resolve(schemaId));
   }
 
   private hashSchema(schema: Record<string, unknown>): string {
@@ -677,6 +708,10 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
 
     return this.invariants.runAll(schemaId, data).length === 0;
+  }
+
+  public keys(): IterableIterator<string> {
+    return this.schemas.keys();
   }
 
   public list(): ReadonlyArray<Record<string, unknown>> {
@@ -836,7 +871,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     this.invariants.remove(schemaId, name);
   }
 
-
   private resolve(schemaId: string): string {
     if (this.curie === undefined) {
       return schemaId;
@@ -850,6 +884,11 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     return this.resolve(raw);
   }
+
+  public get size(): number {
+    return this.schemas.size;
+  }
+
 
   public subschemaAt(
     schema: (Record<string, unknown> & { '$id': string; }) | string,
@@ -878,6 +917,10 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
 
     return result;
+  }
+
+  public [Symbol.iterator](): IterableIterator<[string, Record<string, unknown>]> {
+    return this.entries();
   }
 
   public validate(
@@ -920,6 +963,12 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
 
     return compiled;
+  }
+
+  public *values(): IterableIterator<Record<string, unknown>> {
+    for (const entry of this.schemas.values()) {
+      yield entry.schema;
+    }
   }
 
   private walkForDuplicates(

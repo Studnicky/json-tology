@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `JsonTology.prefetch({ loader, schemas?, rootIds?, baseIRI? })` walks transitive `$ref` IRIs via a loader and returns a `SnapshotInterface { version: 1; schemas: ReadonlyMap<string, JsonSchemaType>; provenance? }` keyed by `$id`. Throws `GraphError('REF_UNRESOLVED')` when the loader returns `null` for a required IRI; loader-thrown errors propagate.
+- `prefetched?: SnapshotInterface` option on `JsonTology.create`. Schemas passed via `schemas` register first; entries from the snapshot then fill any IRIs not already in the registry — `schemas` wins on collision.
+- `SchemaRegistryInterface` exposes the Map-like read surface: `has(iri)`, `keys()`, `values()`, `entries()`, `forEach(callback)`, `size`, and `[Symbol.iterator]()` yielding `[iri, schema]` pairs. No removal methods (registration semantics differ from `Map.set`).
+- `SnapshotInterface`, `SnapshotProvenanceInterface`, and `PrefetchOptionsInterface` exported from `json-tology/interfaces`.
+
+### Changed
+
+- **BREAKING**: `JsonTology.create` is synchronous on every call site. The `loader` option is removed from `JsonTologyOptionsInterface`. Async transitive resolution lives entirely in `JsonTology.prefetch`. Migration: replace `await JsonTology.create({ loader, schemas })` with `const snapshot = await JsonTology.prefetch({ loader, schemas }); JsonTology.create({ prefetched: snapshot, schemas })`.
+
+### Removed
+
+- **BREAKING**: `jt.registerAsync(schema)` is gone. Federation runs through `JsonTology.prefetch` only; `jt.register(schema)` remains for sync registration of schemas whose refs are already resolved.
+
 ### Security
 
 - npm overrides force `vite` to `^6.4.2` and `esbuild` to `^0.25.0` to resolve [GHSA-4w7w-66w2-5vf9](https://github.com/advisories/GHSA-4w7w-66w2-5vf9) (vite path traversal in optimized deps `.map` handling) and [GHSA-67mh-4wv8-2f99](https://github.com/advisories/GHSA-67mh-4wv8-2f99) (esbuild dev server request smuggling). Both surfaces are dev-only (vitepress docs build); production bundles unaffected.

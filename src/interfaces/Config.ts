@@ -2,10 +2,10 @@ import type { InvariantInterface } from './Invariant.js';
 import type { KeywordDefinitionInterface } from './GraphEngine.js';
 import type { LoggerInterface } from './Logger.js';
 import type { MaterializerOptionsInterface } from './Materializer.js';
+import type { SnapshotInterface } from './Snapshot.js';
 import type { VocabularyPluginInterface } from './VocabularyPlugin.js';
 import type { BuiltinFormatNameType } from '../types/Format.js';
 import type { ComputedFnType } from '../types/Computed.js';
-import type { LoaderType } from '../types/Loader.js';
 import type { SkolemizeFnType } from '../types/Skolemize.js';
 
 export interface JsonTologyOptionsInterface<TSchemas extends readonly unknown[] = readonly unknown[]> {
@@ -39,23 +39,6 @@ export interface JsonTologyOptionsInterface<TSchemas extends readonly unknown[] 
    */
   readonly 'iriFor'?: SkolemizeFnType | string;
   'keywords'?: KeywordDefinitionInterface[];
-  /**
-   * Pluggable async schema-fetch hook for transitive `$ref` resolution.
-   *
-   * When provided, `JsonTology.create()` returns a `Promise<JsonTology>` and
-   * eagerly walks all transitive `$ref` IRIs, calling this loader for any IRI
-   * not already in the registry. After the promise resolves the instance is
-   * fully warmed — all hot-path methods (`validate`, `instantiate`, `is`, etc.)
-   * remain synchronous.
-   *
-   * Returning `null` for a required IRI throws `GraphError('REF_UNRESOLVED')`.
-   * Network errors should propagate so callers see real connectivity failures.
-   *
-   * Without a loader, the sync API is unchanged.
-   *
-   * @see {@link Loaders} for pre-built helpers (fetch, memory, cached, compose).
-   */
-  'loader'?: LoaderType;
   'logger'?: LoggerInterface;
   'materializer'?: MaterializerOptionsInterface;
   /**
@@ -65,6 +48,14 @@ export interface JsonTologyOptionsInterface<TSchemas extends readonly unknown[] 
    * exceeded. Defaults to no limit.
    */
   'maxSchemaDepth'?: number;
+  /**
+   * Pre-resolved schema bundle produced by {@link JsonTology.prefetch}. Schemas
+   * passed via `schemas` register first; entries from the snapshot then fill any
+   * IRIs not already in the registry, so `schemas` wins on `$id` collision.
+   * Schemas added via `prefetched` do not participate in the compile-time
+   * `UniqueSchemaIdsType` check.
+   */
+  'prefetched'?: SnapshotInterface;
   'prefixes'?: Record<string, string>;
   'schemas'?: TSchemas;
   'vocabularies'?: readonly VocabularyPluginInterface[];

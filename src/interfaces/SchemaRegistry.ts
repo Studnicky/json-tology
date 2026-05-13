@@ -8,17 +8,15 @@ import type { ComputedStore } from '../modules/registry/ComputedStore.js';
 import type { SameAsStore } from '../modules/registry/SameAsStore.js';
 import type { DuplicateReportEntryType } from '../modules/registry/SchemaRegistry.js';
 
-export interface SchemaRegistryInterface {
+export interface SchemaRegistryInterface extends Iterable<[string, Record<string, unknown>]> {
   addInvariant(schemaId: string, invariant: InvariantInterface): void;
   cast(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown): unknown;
   readonly 'castTypes': boolean;
   clean(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown): unknown;
   /**
    * Collect all non-fragment cross-schema `$ref` IRIs reachable from the given schema
-   * (including its transitive dependencies already in the registry). Used by the loader
-   * walker in `JsonTology._resolveAllRefs` to discover which IRIs need to be fetched.
-   *
-   * Only returns IRIs that are NOT already registered.
+   * (including its transitive dependencies already in the registry). Only returns IRIs
+   * that are not already registered.
    */
   collectUnresolvedRefIris(schema: Record<string, unknown>): ReadonlySet<string>;
   readonly 'computedStore': ComputedStore;
@@ -26,18 +24,26 @@ export interface SchemaRegistryInterface {
   create(schemaId: string): unknown;
   readonly 'curie': CurieInterface | undefined;
   engine(schema: Record<string, unknown>): GraphEngineInterface;
+  entries(): IterableIterator<[string, Record<string, unknown>]>;
   findDuplicates(): readonly DuplicateReportEntryType[];
+  forEach(
+    callback: (schema: Record<string, unknown>, schemaId: string, registry: SchemaRegistryInterface) => void
+  ): void;
   get(schemaId: string): Record<string, unknown> | undefined;
   graph(schemaId: string): SchemaGraphInterface | undefined;
+  has(schemaId: string): boolean;
   instantiate(schema: (Record<string, unknown> & { '$id': string }) | string, data: unknown, callOptions?: { 'enableDefaults'?: boolean }): unknown;
   is(schema: (Record<string, unknown> & { '$id': string }) | string, data: unknown): boolean;
+  keys(): IterableIterator<string>;
   list(): ReadonlyArray<Record<string, unknown>>;
   listGraphs(): readonly SchemaGraphInterface[];
   register(schemas: ReadonlyArray<Record<string, unknown>> | Record<string, unknown>): void;
   registerAnonymous(schema: Record<string, unknown>): string;
   removeInvariant(schemaId: string, name: string): void;
   readonly 'sameAsStore': SameAsStore;
+  readonly 'size': number;
   subschemaAt(schema: (Record<string, unknown> & { '$id': string }) | string, pointer: string): Record<string, unknown> & { '$id': string };
   validate(schema: (Record<string, unknown> & { '$id': string }) | string, data: unknown): ValidationErrors;
   validator(schemaId: string): CompiledValidatorInterface;
+  values(): IterableIterator<Record<string, unknown>>;
 }

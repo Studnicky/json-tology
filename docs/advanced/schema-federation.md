@@ -2,39 +2,53 @@
 
 json-tology resolves `$ref` IRIs at registration time. By default, all referenced schemas must be registered before first use — the registry throws `GraphError('REF_UNRESOLVED')` if a non-fragment IRI points to an unregistered schema.
 
-The **loader hook** is a single async function that extends this mechanism to fetch schemas on demand:
+The **loader hook** is a single async function that fetches schemas on demand:
 
 ```ts
 type LoaderType = (iri: string) => Promise<JsonSchemaType | null>;
 ```
 
-Pass it at construction time. `JsonTology.create()` returns a `Promise<JsonTology>` that is fully resolved before any hot-path method is called:
+Async work is isolated to a single entry point: `JsonTology.prefetch`, which builds a snapshot. `JsonTology.create` is synchronous on every call site and consumes the snapshot through the `prefetched` option.
+
+## Prefetch + sync create
+
+`JsonTology.prefetch` walks transitive `$ref`s via the loader and returns a snapshot. The snapshot is loader-agnostic — pass it to `create()` via the `prefetched` option for sync consumption.
 
 ```ts
 import { JsonTology, Loaders } from 'json-tology';
 
-const jt = await JsonTology.create({
-  baseIRI: 'https://myapp.io',
-  schemas: [UserSchema],
+const snapshot = await JsonTology.prefetch({
   loader: Loaders.cached(
     Loaders.fetch({ base: 'https://schemas.example/v1/' })
   ),
+  schemas: [UserSchema],
 });
 
-// Hot path is synchronous — no await needed
-jt.validate(UserSchema, data);
+const jt = JsonTology.create({
+  baseIRI: 'https://myapp.io',
+  prefetched: snapshot,
+  schemas: [UserSchema] as const,
+});
+
+jt.validate(UserSchema, data);   // sync hot path
 ```
+
+`prefetch` accepts:
+- `loader` — required.
+- `schemas` — seed schemas whose refs are followed.
+- `rootIds` — IRIs to load directly from the loader (no local seed required).
+- `baseIRI` — used by the ephemeral walker; defaults to a static placeholder when omitted.
 
 ## How the resolution walk works
 
-1. After `schemas` are registered, the walker iterates all registered schemas.
-2. For each schema, it collects every non-fragment cross-schema `$ref` IRI that is not yet in the registry.
+1. `prefetch` registers any `schemas` provided as seeds, then loads each `rootIds` IRI.
+2. The walker iterates registered schemas and collects every non-fragment cross-schema `$ref` IRI not yet present.
 3. Each unresolved IRI is passed to the loader. If the loader returns `null`, the walk throws `GraphError('REF_UNRESOLVED')` with the offending IRI in `err.pointer`.
 4. Returned schemas are registered and recursed into — their own `$ref`s are added to the queue.
-5. A `Set<string>` of visited IRIs prevents calling the loader twice for the same IRI within a single walk.
-6. The resolved instance is identical to a statically-registered instance — all methods stay synchronous.
+5. A `Set<string>` of visited IRIs prevents calling the loader twice for the same IRI.
+6. The walker captures every resolved schema into `snapshot.schemas` keyed by `$id`.
 
-## Built-in helpers
+## Built-in loader helpers
 
 The `Loaders` namespace ships four universal helpers that work in Node ≥ 18, Bun, Deno, and browsers.
 
@@ -96,29 +110,18 @@ const fsLoader = async (iri: string): Promise<Record<string, unknown> | null> =>
   }
 };
 
-const jt = await JsonTology.create({ baseIRI: 'https://myapp.io', loader: fsLoader });
+const snapshot = await JsonTology.prefetch({ loader: fsLoader, rootIds: [UserSchema.$id] });
 ```
 
-## Post-construction registration
+## Adding schemas after construction
 
-`jt.registerAsync(schema)` follows the same eager-resolve walk after registering a new schema. It requires a loader at construction time:
-
-```ts
-const jt = await JsonTology.create({
-  baseIRI: 'https://myapp.io',
-  loader: Loaders.fetch({ base: 'https://schemas.example/' }),
-});
-
-await jt.registerAsync(OrderSchema);  // walks transitive refs of OrderSchema
-```
-
-Sync `jt.register(schema)` still exists and still throws `REF_UNRESOLVED` for any unregistered cross-schema refs — it does not call the loader.
+`jt.register(schema)` is synchronous and throws `REF_UNRESOLVED` for any unregistered cross-schema refs. For schemas whose transitive refs are not yet known locally, build a fresh snapshot with `JsonTology.prefetch` and pass it through `prefetched` on a new `JsonTology.create` call, or merge the new schemas into the existing registry by calling `register` once every dependency is in scope.
 
 ## Performance notes
 
-- **Pre-warm at boot.** Pass all known schemas in the `schemas` array at construction. The loader is only called for schemas not already present.
-- **Cache the loader.** Wrap with `Loaders.cached()` so schemas fetched in one session are not re-fetched if `registerAsync` is called later.
-- **Bundle critical schemas.** Use `Loaders.compose(Loaders.memory(bundled), Loaders.fetch(...))` so critical schemas are served from memory and the network is a fallback.
+- **Cache the loader.** Wrap with `Loaders.cached()` so schemas fetched in one walk are not re-fetched if `prefetch` is called again.
+- **Bundle critical schemas.** `Loaders.compose(Loaders.memory(bundled), Loaders.fetch(...))` serves critical schemas from memory with the network as fallback.
+- **Snapshot at build time.** Run `prefetch` in a build step and persist the resulting `snapshot.schemas` map; consume it at runtime with zero network calls.
 
 ## Error handling
 
@@ -131,10 +134,10 @@ Sync `jt.register(schema)` still exists and still throws `REF_UNRESOLVED` for an
 
 ## Comparison with similar mechanisms
 
-| Feature | json-tology loader | AJV `loadSchema` | SPARQL `SERVICE` |
-|---------|-------------------|------------------|-----------------|
+| Feature | json-tology | AJV `loadSchema` | SPARQL `SERVICE` |
+|---------|-------------|------------------|-----------------|
 | Protocol-agnostic | Yes | Yes | HTTP only |
-| Sync hot path after init | Yes | No (async validate) | N/A |
+| Sync `create()` after prefetch | Yes | No (async compile) | N/A |
 | Cycle detection | Visited-set dedup | Manual | Depends on engine |
 | Universal (Node/browser) | Yes | Yes | Server-side only |
 | Built-in caching | `Loaders.cached` | None | Endpoint-level |

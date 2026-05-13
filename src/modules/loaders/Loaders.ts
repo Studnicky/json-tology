@@ -2,8 +2,8 @@
  * Loaders — universal, pluggable schema-fetch helpers.
  *
  * Every helper returns a {@link LoaderType} function that can be composed and
- * passed to `JsonTology.create({ loader })`. No Node-only built-ins are used;
- * all helpers work in Node ≥ 18, Bun, Deno, and browsers.
+ * passed to {@link JsonTology.prefetch}. No Node-only built-ins are used; all
+ * helpers work in Node ≥ 18, Bun, Deno, and browsers.
  */
 
 import type { JsonSchemaType } from '../../types/Schema.js';
@@ -30,12 +30,17 @@ export interface FetchLoaderOptionsInterface {
  *
  * @example
  * ```ts
- * const jt = await JsonTology.create({
- *   baseIRI: 'https://example.com',
- *   schemas: [LocalSchema],
+ * const snapshot = await JsonTology.prefetch({
  *   loader: Loaders.cached(
  *     Loaders.fetch({ base: 'https://schemas.example/v1' })
  *   ),
+ *   schemas: [LocalSchema],
+ * });
+ *
+ * const jt = JsonTology.create({
+ *   baseIRI: 'https://example.com',
+ *   prefetched: snapshot,
+ *   schemas: [LocalSchema] as const,
  * });
  * ```
  */

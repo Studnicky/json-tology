@@ -1,21 +1,18 @@
 /**
- * Runtime behavior tests for JsonTology.create with and without a loader.
+ * Type-level and runtime test for JsonTology.create.
  *
- * TypeScript types both forms as `JsonTology` (single overload for large-schema-array
- * compatibility), but at runtime `create({ loader })` returns a Promise. These tests
- * verify the runtime contract: sync without loader, Promise with loader.
+ * `create()` is always synchronous and returns `JsonTology`. Async transitive
+ * `$ref` resolution lives in {@link JsonTology.prefetch}; the returned snapshot
+ * is consumed sync via the `prefetched` option on `create`.
  */
 
 import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import type { LoaderType } from '../../src/types/Loader.js';
-import { JsonTology } from '../../src/JsonTology.js';
-
-const noOpLoader: LoaderType = async (_: string) => {
-  return null;
-};
+import {
+  JsonTology, Loaders
+} from '../../src/index.js';
 
 const AddressSchema = {
   '$id': 'https://schema.example/Address',
@@ -23,39 +20,46 @@ const AddressSchema = {
   'type': 'object'
 } as const;
 
-void describe('JsonTology.create runtime return type', () => {
-  void it('create without loader returns JsonTology instance (not a Promise)', () => {
+const UserSchema = {
+  '$id': 'https://schema.example/User',
+  'properties': {
+    'address': { '$ref': 'https://schema.example/Address' },
+    'name': { 'type': 'string' }
+  },
+  'type': 'object'
+} as const;
+
+void describe('JsonTology.create return type', () => {
+  void it('create() returns JsonTology synchronously', () => {
     const result = JsonTology.create({
       'baseIRI': 'https://schema.example',
       'schemas': [AddressSchema] as const
     });
 
-    // Must NOT be a Promise — synchronous return
-    assert.ok(!(result instanceof Promise), 'no-loader create() must return synchronously');
-    assert.ok(result instanceof JsonTology, 'no-loader create() returns JsonTology');
+    // Compile-time: `.has()` is on JsonTology's registry; .then() would not type-check.
+    const hasAddr: boolean = result.registry.has(AddressSchema.$id);
 
-    const hasAddr: boolean = result.has(AddressSchema.$id);
-
-    void hasAddr;
+    assert.ok(result instanceof JsonTology);
+    assert.ok(!(result instanceof Promise));
+    assert.ok(hasAddr);
   });
 
-  void it('create with loader returns Promise<JsonTology> at runtime', async () => {
-    // TypeScript types this as JsonTology (single overload), but at runtime it is a Promise
-    const result = JsonTology.create({
-      'baseIRI': 'https://schema.example',
-      'loader': noOpLoader,
-      'schemas': [] as const
+  void it('create({ prefetched }) consumes a snapshot synchronously', async () => {
+    const snapshot = await JsonTology.prefetch({
+      'loader': Loaders.memory({
+        [AddressSchema.$id]: AddressSchema,
+        [UserSchema.$id]: UserSchema
+      }),
+      'schemas': [UserSchema]
     });
 
-    // Runtime assertion: IS a Promise
-    assert.ok(result instanceof Promise, 'loader create() must return a Promise at runtime');
+    const jt = JsonTology.create({
+      'baseIRI': 'https://schema.example',
+      'prefetched': snapshot,
+      'schemas': [UserSchema] as const
+    });
 
-    const jt = await (result as unknown as Promise<JsonTology>);
-
-    assert.ok(jt instanceof JsonTology, 'resolved value is JsonTology');
-
-    const hasAddr: boolean = jt.has(AddressSchema.$id);
-
-    void hasAddr;
+    assert.ok(jt instanceof JsonTology);
+    assert.ok(jt.registry.has(AddressSchema.$id));
   });
 });
