@@ -1,4 +1,6 @@
-# `Compose.intersection`
+# `Compose.intersection` <Badge type="warning" text="Compile-time + Runtime" />
+
+> Validation modes: [Validation modes reference](/validation-modes)
 
 **Declaration.** Creates a new `allOf` schema that combines multiple schemas. Data must satisfy every constituent schema simultaneously. TypeScript infers the intersection of all constituent types. The `$id` is set to `newId`.
 
@@ -67,6 +69,18 @@ import { Compose } from 'json-tology';
 const defaults = Compose.getDefaults(OrderSchema);
 // { currency: 'USD' }
 // Combined schemas' defaults are merged at validation time
+```
+
+## ID collision prevention <Badge type="info" text="Compile-time" />
+
+`newId` cannot collide with any input schema's `$id`. A collision surfaces an `IntersectionIdCollisionType` brand error at the call site.
+
+```ts
+// compile error — newId collides with BookSchema.$id
+const Bad = Compose.intersection(
+  [BookSchema, AuditSchema] as const,
+  'https://bookstore.example/Book',  // same as BookSchema.$id
+);
 ```
 
 ## Bad examples - what NOT to do

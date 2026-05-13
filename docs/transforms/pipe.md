@@ -1,4 +1,6 @@
-# `Transform.pipe`
+# `Transform.pipe` <Badge type="warning" text="Compile-time + Runtime" />
+
+> Validation modes: [Validation modes reference](/validation-modes)
 
 **Declaration.** Composes multiple decode/encode function pairs into a single transform pipeline attached to a schema. Decode runs left-to-right through the array; encode runs right-to-left. The schema object is never mutated - the pipeline is stored in a WeakMap keyed by the schema object. Returns `TransformedType<TSchema, TOut>`.
 
@@ -56,6 +58,29 @@ console.log(wire);  // '14.99'
 // decode: A.decode(wire) → B.decode(result) → C.decode(result) = domain
 // encode: C.encode(domain) → B.encode(result) → A.encode(result) = wire
 ```
+
+## Pairwise chain compatibility <Badge type="info" text="Compile-time" />
+
+`Transform.pipe` enforces stage-to-stage type compatibility at the call site. Each stage is typed as `TransformStageInterface<TIn, TOut>`. The output type of stage `N` must be assignable to the input type of stage `N+1`. When a mismatch is detected, the incompatible stage position is replaced with a `PipeChainMismatchInterface<index, produced, expected>` brand — the compiler rejects the call and the IDE hover explains which stage is incompatible.
+
+The first stage is also checked against the schema's wire type. A mismatch surfaces `PipeChainSchemaMismatchInterface<wire, firstStageIn>`.
+
+```ts
+const step1 = { decode: (s: string) => parseInt(s), encode: (n: number) => String(n) };
+const step2 = { decode: (n: number) => new Date(n), encode: (d: Date) => d.getTime() };
+
+// Correct — string → number → Date
+const ok = Transform.pipe(schema, [step1, step2]);
+
+// Incorrect — step1 produces number, step3 expects string → compile error
+const step3 = { decode: (s: string) => s.toUpperCase(), encode: (s: string) => s };
+const bad = Transform.pipe(schema, [step1, step3]);
+//                                           ^ PipeChainMismatchInterface<1, number, string>
+```
+
+The pipe parameter is typed as `TStages & ValidatePipeChainType<TStages, InferSchemaType<TSchema>>`. When validation fires, the intersection collapses incompatible positions to `never` and the user's literal stages are not assignable — the call site is rejected.
+
+Chains are checked up to 10 stages (`TupleRecursionCap`).
 
 ## Bad examples - what NOT to do
 

@@ -1,8 +1,10 @@
 # `Compose.discriminatedUnion` and `Compose.narrow`
 
+> Validation modes: [Validation modes reference](/validation-modes)
+
 ---
 
-## `Compose.discriminatedUnion` {#compose-discriminatedunion}
+## `Compose.discriminatedUnion` {#compose-discriminatedunion} <Badge type="warning" text="Compile-time + Runtime" />
 
 **Declaration.** Creates a `oneOf` schema with a discriminator hint. The discriminator indicates which property uniquely identifies the variant. TypeScript infers the union of all variant types. The `$id` is set to `newId`. Each variant schema should have the discriminator property with a `const` value.
 
@@ -111,7 +113,29 @@ const errs = jt2.validate(OrderWithPaymentSchema.$id, {
 console.log(errs.items.length === 0); // true
 ```
 
-## `Compose.narrow` {#compose-narrow}
+### Discriminator argument validation <Badge type="info" text="Compile-time" />
+
+Every variant must declare `properties[prop]` as `const` and list `prop` in `required`. Missing or non-const discriminators surface a `DiscriminatorMissingType` brand error at the call site — a compile error rather than a runtime surprise.
+
+```ts
+const BadVariant = {
+  $id: 'https://bookstore.example/BadPayment',
+  type: 'object',
+  properties: {
+    method: { type: 'string' },  // not const — compile error
+  },
+  required: ['method'],
+} as const;
+
+// compile error: variant 'BadPayment' does not declare properties.method as const
+const PaymentSchema = Compose.discriminatedUnion(
+  'method',
+  [BadVariant] as const,
+  'https://bookstore.example/Payment',
+);
+```
+
+## `Compose.narrow` {#compose-narrow} <Badge type="info" text="Compile-time" />
 
 **Declaration.** Type guard that narrows a discriminated union value to the variant whose discriminant property equals `expected`. Returns `Extract<TUnion, Record<TDiscriminant, TValue>>` inside the truthy branch. No runtime effect beyond the property comparison.
 

@@ -1,4 +1,6 @@
-# `JsonTology.instantiate`
+# `JsonTology.instantiate` <Badge type="warning" text="Compile-time + Runtime" />
+
+> Validation modes: [Validation modes reference](/validation-modes)
 
 **Trust boundary.** Use `instantiate` when data crosses into your system from outside - HTTP request bodies, queue messages, file imports, IPC payloads. Failure means the caller sent invalid data; `InstantiationError` carries the full structured error list for your error response.
 

@@ -1,4 +1,6 @@
-# `ValidationErrors`
+# `ValidationErrors` <Badge type="tip" text="Runtime" />
+
+> Validation modes: [Validation modes reference](/validation-modes)
 
 **Declaration.** `validate()` returns `ValidationErrors` (not `string[]`). See [`validate()`](/validation/validate) for the method reference. This page covers the `ValidationErrors` collection shape and usage patterns.
 

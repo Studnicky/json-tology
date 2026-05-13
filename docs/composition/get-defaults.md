@@ -1,4 +1,6 @@
-# `Compose.getDefaults`
+# `Compose.getDefaults` <Badge type="info" text="Compile-time" />
+
+> Validation modes: [Validation modes reference](/validation-modes)
 
 **Declaration.** Extracts declared `default` values from a schema's `properties`, returning a plain object containing only the properties that have a `default` keyword declared. Properties without defaults are omitted. Nested object properties with their own `default`-bearing children are recursively traversed.
 

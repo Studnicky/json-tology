@@ -1,4 +1,6 @@
-# `Compose.extend`
+# `Compose.extend` <Badge type="warning" text="Compile-time + Runtime" />
+
+> Validation modes: [Validation modes reference](/validation-modes)
 
 **Declaration.** Creates a new schema by emitting `{ $id: newId, allOf: [{ $ref: parent.$id }, additionsSchema] }`. The base schema is referenced by its `$id` (not flattened or copied), and the additions become a sibling object schema in the `allOf` array. The base schema's `required` constraints flow through unchanged via the `$ref`. The `$id` is replaced with the new `newId` argument. Input schemas are never mutated. Per-key merge happens for `jt:config` (child wins). TypeScript infers the merged type automatically.
 

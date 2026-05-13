@@ -1,4 +1,4 @@
-# Type Inference
+# Type Inference <Badge type="info" text="Compile-time" />
 
 > This guide covers `InferType`, `InferSchemaType`, `Transform.brand`, constraint brands, and utility types. All examples use the [bookstore domain](/bookstore-domain). See [Schemas](/schemas) for how schemas are registered.
 

@@ -1,4 +1,6 @@
-# `JsonTology.validate`
+# `JsonTology.validate` <Badge type="tip" text="Runtime" />
+
+> Validation modes: [Validation modes reference](/validation-modes)
 
 **Declaration.** Validates data against a registered schema and returns a `ValidationErrors` collection. The collection is empty (`.ok === true`) when the data is valid. Does not mutate the input. Does not throw on validation failure.
 

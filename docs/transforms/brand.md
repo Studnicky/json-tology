@@ -1,4 +1,6 @@
-# `Transform.brand`
+# `Transform.brand` <Badge type="info" text="Compile-time" />
+
+> Validation modes: [Validation modes reference](/validation-modes)
 
 **Declaration.** Attaches a compile-time nominal brand string to a schema's TypeScript type. Returns the same schema object at runtime - no WeakMap entry is created, no runtime effect. The TypeScript return type becomes `BrandedType<TSchema, TBrand>`, which intersects the inferred type with `{ readonly brand: TBrand }`. Access the branded type via `BrandOutputType<typeof schema>`.
 

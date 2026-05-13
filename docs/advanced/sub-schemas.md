@@ -1,4 +1,6 @@
-# Sub-schemas and `$ref` composition
+# Sub-schemas and `$ref` composition <Badge type="warning" text="Compile-time + Runtime" />
+
+> Validation modes: [Validation modes reference](/validation-modes)
 
 A schema becomes a sub-schema of another by `$ref`-ing its `$id`. The parent owns the property slot; the registry resolves the reference at validation, instantiation, materialization, and TBox-emit time. The wire format stays a single declarative literal - no JS-level inheritance, no inlining.
 
@@ -94,6 +96,15 @@ For ergonomic, refactor-safe, ontology-friendly authoring: name every value type
 
 ---
 
+## GraphEngine self-ref and embedded `$id` resolution <Badge type="tip" text="Runtime" />
+
+When accessing the engine directly via `registry.engine(schemaObj).errors(data)`, self-references and embedded `$id` declarations inside `$defs` now resolve correctly.
+
+- **Self-references**: `$ref` pointing to the root schema's own `$id` resolves correctly on the interpreted path, matching the behaviour of the compiled path (`registry.validate`).
+- **Embedded `$id` in `$defs`**: `$ref` targets that point at an `$id` declared inside `$defs` (or any nested sub-schema) resolve on both the compiled and interpreted paths.
+
+Previously these only worked on the `registry.validate` compiled fast-path. The two paths now produce the same validation results for all `$ref` shapes.
+
 ## Related
 
 - [Picking a method](/picking-a-method) - validate vs instantiate vs materialize
@@ -106,3 +117,4 @@ For ergonomic, refactor-safe, ontology-friendly authoring: name every value type
 
 - [Bookstore domain](/bookstore-domain) - every entity uses `$ref` composition
 - [Graph concepts](/advanced/graph-concepts) - TBox vs ABox, domain and range
+- [Schemas — cross-schema `$ref` strict resolution](/schemas#cross-schema-ref-strict-resolution) — `REF_UNRESOLVED` error

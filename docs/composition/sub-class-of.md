@@ -1,5 +1,7 @@
 # `Compose.subClassOf` / `Compose.disjointWith` / `Compose.complementOf`
 
+> Validation modes: [Validation modes reference](/validation-modes)
+
 These three methods complete the OWL class-axiom set on `Compose`. They are authored as plain JSON Schema documents — every concept lives behind a method, not behind a custom keyword on the schema literal.
 
 ## Declaration
@@ -9,6 +11,12 @@ Compose.subClassOf(parent | parents, body): { $id, allOf: [{ $ref }, ...] }
 Compose.disjointWith(other, body):           { $id, disjointWith, ...body }
 Compose.complementOf(other, body):           { $id, not: { $ref }, ...body }
 ```
+
+**`subClassOf`** <Badge type="info" text="Compile-time" /> — self-subclass is a compile-time error (`SelfSubClassType` brand). The body's `$id` cannot match any parent's `$id`.
+
+**`disjointWith`** <Badge type="warning" text="Compile-time + Runtime" /> — compile-time brand (`~jt:disjointWith`) names the disjoint target; runtime enforces the constraint at `validate` / `instantiate`.
+
+**`complementOf`** <Badge type="info" text="Compile-time" /> — adds `~jt:complementOf` brand naming the complement target. Runtime JSON Schema `not` semantics apply.
 
 `body` always carries the new schema's `$id` and any structural keywords you would normally write inline (`type`, `properties`, `required`, `description`, etc.).
 

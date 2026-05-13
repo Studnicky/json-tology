@@ -1,4 +1,6 @@
-# `Transform.create` and `jt.encode`
+# `Transform.create` and `jt.encode` <Badge type="warning" text="Compile-time + Runtime" />
+
+> Validation modes: [Validation modes reference](/validation-modes)
 
 `Transform.create` and `jt.encode` are a symmetric pair: `create` attaches decode/encode functions to a schema, and `jt.encode` uses the registered encode function to convert a domain value back to wire form.
 

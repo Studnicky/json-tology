@@ -1,5 +1,7 @@
 # Constraint Brands
 
+> Validation modes: [Validation modes reference](/validation-modes)
+
 json-tology surfaces JSON Schema constraint keywords as compile-time phantom brands. Two values that satisfy different constraints produce incompatible TypeScript types, preventing silent misuse at compile time.
 
 ## What changes
@@ -37,7 +39,7 @@ The only way to obtain a branded value is through the validation API (`instantia
 
 ## Branded keywords
 
-### String constraints
+### String constraints <Badge type="warning" text="Compile-time + Runtime" />
 
 | Keyword | Brand | Config flag | Example |
 |---|---|---|---|
@@ -63,7 +65,7 @@ const raw: string = 'hello';
 const pw: Password = raw;  // compile error  - must go through validation
 ```
 
-### Number constraints
+### Number constraints <Badge type="warning" text="Compile-time + Runtime" />
 
 | Keyword | Brand | Config flag | Example |
 |---|---|---|---|
@@ -96,11 +98,11 @@ type Temperature = InferType<typeof TemperatureSchema>;
 const temp: Temperature = {} as Percent;  // compile error
 ```
 
-### Array constraints
+### Array constraints <Badge type="warning" text="Compile-time + Runtime" />
 
 | Keyword | Brand | Config flag | Example |
 |---|---|---|---|
-| `uniqueItems` | `UniqueItemsBrandInterface` | `arrayBrands` | `uniqueItems: true` brands the array |
+| `uniqueItems` | `UniqueItemsBrandInterface` / `UniqueArrayBrandInterface<T>` | `arrayBrands` | `uniqueItems: true` brands the array |
 | `contains` | `ContainsBrandInterface<T>` | `arrayBrands` | `contains: { type: 'number' }` brands as `ContainsBrand<number>` |
 | `minItems` | `MinItemsBrandInterface<N>` | `arrayBrands` | `minItems: 1` brands as `MinItemsBrand<1>` |
 | `maxItems` | `MaxItemsBrandInterface<N>` | `arrayBrands` | `maxItems: 10` brands as `MaxItemsBrand<10>` |
@@ -126,7 +128,7 @@ type NumberArray = InferType<typeof NumberArraySchema>;
 // readonly number[] & ContainsBrand<number>
 ```
 
-### Object constraints
+### Object constraints <Badge type="warning" text="Compile-time + Runtime" />
 
 | Keyword | Brand | Config flag | Example |
 |---|---|---|---|
@@ -151,7 +153,7 @@ const ok: Closed = { name: 'Alice', age: 30 };      // compiles
 const bad: Closed = { name: 'Bob', extra: true };    // compile error  - 'extra' is never
 ```
 
-### Nominal constraints
+### Nominal constraints <Badge type="info" text="Compile-time" />
 
 | Keyword | Brand | Config flag | Example |
 |---|---|---|---|
@@ -181,11 +183,11 @@ type Employee = NominalSchemaType<typeof EmployeeSchema>;
 // Structurally identical but nominally distinct  - cannot assign one to the other
 ```
 
-## Structural narrowing
+## Structural narrowing <Badge type="info" text="Compile-time" />
 
 Beyond phantom brands, the type system narrows structural types from JSON Schema keywords.
 
-### Auto integer ranges
+### Auto integer ranges <Badge type="info" text="Compile-time" />
 
 Bounded `integer` schemas with both bounds in the 0-50 range automatically produce literal union types:
 
@@ -205,7 +207,7 @@ const bad: Rating = 0;  // compile error  - 0 is not in 1..5
 
 Exclusive bounds are normalized automatically: `exclusiveMinimum: 0` becomes inclusive minimum `1`, `exclusiveMaximum: 6` becomes inclusive maximum `5`.
 
-### multipleOf stepped ranges
+### multipleOf stepped ranges <Badge type="info" text="Compile-time" />
 
 When `multipleOf` is present alongside bounds, only multiples within the range are included:
 
@@ -223,7 +225,7 @@ type EvenDice = InferType<typeof EvenDiceSchema>;
 
 Use `MultipleOfRangeType<Min, Max, Step>` as a standalone utility for arbitrary stepped ranges.
 
-### `not` exclusion
+### `not` exclusion <Badge type="warning" text="Compile-time + Runtime" />
 
 Simple `not` clauses narrow the inferred type:
 
@@ -256,7 +258,7 @@ type Restricted = InferType<typeof RestrictedSchema>;
 // 'a' | 'd'
 ```
 
-### `propertyNames: { enum }` strict keys
+### `propertyNames: { enum }` strict keys <Badge type="info" text="Compile-time" />
 
 When `propertyNames` specifies an enum, the object keys are narrowed to that union:
 
@@ -271,16 +273,19 @@ type Config = InferType<typeof ConfigSchema>;
 // { readonly host?: string; readonly port?: string; readonly debug?: string }
 ```
 
-### `patternProperties` template literal keys
+### `patternProperties` template literal keys <Badge type="info" text="Compile-time" />
 
-Simple anchored regex patterns (without metacharacters) are converted to TypeScript template literal types:
+Anchored regex patterns are converted to TypeScript template literal types. Four pattern shapes are recognised:
 
 | Pattern | Inferred key type |
 |---|---|
 | `^data_` | `` `data_${string}` `` |
 | `_id$` | `` `${string}_id` `` |
 | `^exact$` | `'exact'` (literal) |
-| `^[a-z]+_` | `string` (fallback - contains metacharacters) |
+| `^(a\|b\|c)$` | `'a' \| 'b' \| 'c'` (literal union) |
+| `` ^[class]+suffix$ `` | `` `${string}suffix` `` |
+| `^.{N}$` (N ≤ 8) | length-N template literal |
+| Other patterns | `string` (fallback) |
 
 ```ts
 const MetadataSchema = {
@@ -299,9 +304,11 @@ const bad: Metadata = { data_age: 99 };                            // compile er
 
 Multiple `patternProperties` entries are intersected so each pattern enforces its own value type.
 
-### `if/then/else` const-discriminated narrowing
+### `if/then/else` generalised narrowing <Badge type="warning" text="Compile-time + Runtime" />
 
-When the `if` clause has a single const-discriminated property, the then branch is narrowed with the discriminator literal:
+`if/then/else` narrowing recognises three property forms in `if.properties`: `{ const: V }`, `{ enum: [...] }`, and `{ type: 'string' | 'number' | ... }`. Multi-property discriminators intersect all literals at once. Every property in `if.properties` must appear in `required` for narrowing to apply; otherwise the inferred type is the union of both branches.
+
+For a single const discriminator:
 
 ```ts
 const ShapeSchema = {
@@ -321,7 +328,30 @@ type Shape = InferType<typeof ShapeSchema>;
 // | { kind: string; width: number; ... }         - else branch
 ```
 
-### `dependentRequired` conditional typing
+Multi-property discriminator example:
+
+```ts
+const MultiDiscriminatorSchema = {
+  type: 'object',
+  properties: {
+    kind:  { type: 'string' },
+    color: { type: 'string' },
+  },
+  required: ['kind', 'color'],
+  if: {
+    properties: { kind: { const: 'circle' }, color: { const: 'red' } },
+    required:   ['kind', 'color'],
+  },
+  then: { properties: { radius: { type: 'number' } }, required: ['radius'] },
+  else: { properties: { width:  { type: 'number' } }, required: ['width'] },
+} as const;
+
+type MultiShape = InferType<typeof MultiDiscriminatorSchema>;
+// { kind: 'circle'; color: 'red'; radius: number; ... }  - then branch
+// | { kind: string; color: string; width: number; ... }  - else branch
+```
+
+### `dependentRequired` conditional typing <Badge type="warning" text="Compile-time + Runtime" />
 
 Modeled as a per-trigger union. When the trigger key is present, all its dependents become required:
 
@@ -343,11 +373,114 @@ type Payment = InferType<typeof PaymentSchema>;
 // | { billing_address: unknown; ... }                     - credit card present → address required
 ```
 
+## Named format brands <Badge type="info" text="Compile-time" />
+
+25 named format-brand aliases cover the full JSON Schema 2020-12 standard format set plus json-tology built-ins. Each alias specialises `FormatBrandInterface<F>` to a single format string so function signatures can name the required format explicitly.
+
+The brand-first intersection ordering (`FormatBrandInterface<F> & string`) keeps the named brand visible in IDE hovers instead of being hidden behind `string`.
+
+```ts
+import type { EmailBrandInterface, UuidBrandInterface } from 'json-tology/types';
+
+// Reject plain string — must come from instantiate/validate
+function send(to: EmailBrandInterface): void { ... }
+function track(id: UuidBrandInterface): void { ... }
+```
+
+### Standard format aliases
+
+| Brand type | Format string |
+|-----------|--------------|
+| `EmailBrandInterface` | `'email'` |
+| `IdnEmailBrandInterface` | `'idn-email'` |
+| `UriBrandInterface` | `'uri'` |
+| `UriReferenceBrandInterface` | `'uri-reference'` |
+| `UriTemplateBrandInterface` | `'uri-template'` |
+| `IriBrandInterface` | `'iri'` |
+| `IriReferenceBrandInterface` | `'iri-reference'` |
+| `UuidBrandInterface` | `'uuid'` |
+| `DateBrandInterface` | `'date'` |
+| `DateTimeBrandInterface` | `'date-time'` |
+| `TimeBrandInterface` | `'time'` |
+| `DurationBrandInterface` | `'duration'` |
+| `HostnameBrandInterface` | `'hostname'` |
+| `IdnHostnameBrandInterface` | `'idn-hostname'` |
+| `Ipv4BrandInterface` | `'ipv4'` |
+| `Ipv6BrandInterface` | `'ipv6'` |
+| `RegexBrandInterface` | `'regex'` |
+| `JsonPointerBrandInterface` | `'json-pointer'` |
+| `RelativeJsonPointerBrandInterface` | `'relative-json-pointer'` |
+| `BinaryBrandInterface` | `'binary'` |
+| `ByteBrandInterface` | `'byte'` |
+| `Int32BrandInterface` | `'int32'` |
+| `Int64BrandInterface` | `'int64'` |
+| `FloatBrandInterface` | `'float'` |
+| `DoubleBrandInterface` | `'double'` |
+
+Use the generic `FormatBrandInterface<F>` for custom format strings not covered by the named aliases.
+
+## `uniqueItems` tuple distinctness <Badge type="warning" text="Compile-time + Runtime" />
+
+`uniqueItems: true` is enforced at two compile-time levels depending on the array shape:
+
+1. **Homogeneous arrays** — the inferred type carries `UniqueArrayBrandInterface<T>` (a generic uniqueness brand parameterised by element type). A plain `T[]` cannot satisfy it; values must come through `JsonTology.instantiate` / coerce / `materialize`.
+
+2. **Literal-typed tuples** (≤ 8 elements via `prefixItems`) — `UniqueTuplePairwiseType` runs a pairwise overlap check at the type level and collapses the tuple to `never` when any pair of element types overlaps. This means `{ prefixItems: [{ const: 'red' }, { const: 'red' }], uniqueItems: true }` is a compile-time error.
+
+Above 8 elements the pairwise check is skipped and runtime validation still enforces `uniqueItems`.
+
+```ts
+const DuplicateConstTuple = {
+  type: 'array',
+  prefixItems: [
+    { const: 'red' },
+    { const: 'red' },   // duplicate — same literal type
+  ],
+  uniqueItems: true,
+} as const;
+
+type DuplicateTuple = InferType<typeof DuplicateConstTuple>;
+// never — the pairwise check detected the overlap at compile time
+```
+
+## `tightStringLengths` opt-in narrowing <Badge type="info" text="Compile-time" />
+
+When a project augments `JsonTologyTypeConfigInterface` with `'tightStringLengths': true`, `InferType` narrows strings whose `minLength`/`maxLength` bounds are within `StringLengthCap = 8` to a union of fixed-length character template literals.
+
+```ts
+// json-tology.d.ts — opt in
+declare module 'json-tology/types' {
+  interface JsonTologyTypeConfigInterface { 'tightStringLengths': true }
+}
+```
+
+```ts
+const ThreeCharSchema = {
+  type: 'string',
+  minLength: 3,
+  maxLength: 3,
+} as const;
+
+type ThreeChar = InferType<typeof ThreeCharSchema>;
+// `${string}${string}${string}` — exactly 3 characters
+
+const OneToThreeSchema = {
+  type: 'string',
+  minLength: 1,
+  maxLength: 3,
+} as const;
+
+type OneToThree = InferType<typeof OneToThreeSchema>;
+// `${string}` | `${string}${string}` | `${string}${string}${string}`
+```
+
+Bounds above the cap (or with the flag disabled) fall back to plain `string`. The flag is default-off so existing schemas pay no compile cost.
+
 ## Composition
 
 Brands compose naturally through JSON Schema composition keywords.
 
-### allOf
+### allOf <Badge type="warning" text="Compile-time + Runtime" />
 
 Intersection merges brands from all branches:
 
@@ -364,7 +497,7 @@ type VEmail = InferType<typeof ValidatedEmail>;
 // simplifies to: string & FormatBrand<'email'> & MinLengthBrand<5>
 ```
 
-### anyOf / oneOf
+### anyOf / oneOf <Badge type="warning" text="Compile-time + Runtime" />
 
 Union preserves each branch's brands independently:
 

@@ -1,10 +1,12 @@
 # `Compose.pick` and `Compose.omit`
 
+> Validation modes: [Validation modes reference](/validation-modes)
+
 `pick` and `omit` are inverse operations for creating schema projections. Both return new schema objects - input schemas are never mutated.
 
 ---
 
-## `Compose.pick` {#compose-pick}
+## `Compose.pick` {#compose-pick} <Badge type="warning" text="Compile-time + Runtime" />
 
 **Declaration.** Creates a new schema containing only the specified property keys. The `required` array is filtered to include only keys that were in the original `required` and appear in the `keys` argument. Non-picked `required` fields are dropped. TypeScript infers a type with only the picked properties.
 
@@ -82,6 +84,15 @@ const errors = jt2.validate(ReviewRatingSchema.$id, { rating: 6 });
 // ['/rating: must be <= 5']
 ```
 
+### Argument validation <Badge type="info" text="Compile-time" />
+
+`keys` are bound to `keyof properties`. Passing a key that does not exist in the source schema's `properties` is a compile-time error rather than a silent empty-properties result.
+
+```ts
+// compile error — 'nonExistent' is not a key of BookSchema.properties
+const Bad = Compose.pick(BookSchema, ['isbn', 'nonExistent'] as const, '...');
+```
+
 ### Bad examples - what NOT to do
 
 #### Anti-pattern 1: Forgetting `as const` on the keys array
@@ -157,7 +168,7 @@ class BookSummary(BaseModel):
 
 ---
 
-## `Compose.omit` {#compose-omit}
+## `Compose.omit` {#compose-omit} <Badge type="warning" text="Compile-time + Runtime" />
 
 **Declaration.** Creates a new schema with the specified property keys removed from `properties`. Removed keys are also dropped from `required`. TypeScript infers a type without the omitted properties.
 
