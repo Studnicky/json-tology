@@ -67,16 +67,6 @@ const jt = JsonTology.create({ baseIRI, schemas: [ExtendedSchema] });
 
 No polyfills are required. The bundle has zero Node API dependencies.
 
-## Pre-bundled artifact
-
-For environments without a build step, the package ships a pre-bundled ESM artifact:
-
-```html
-<script type="module" src="https://esm.sh/json-tology/browser"></script>
-```
-
-This artifact is built from `src/index.ts` via esbuild with `platform: 'browser'`, ES2022 target, tree-shaken, and source-mapped.
-
 ## See also
 
 - [Getting started](/getting-started) - schema authoring basics
