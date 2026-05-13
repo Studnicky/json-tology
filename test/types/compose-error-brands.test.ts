@@ -21,13 +21,6 @@ import type {
   SelfSubClassType
 } from '../../src/types/TypeErrors.js';
 
-// ---------------------------------------------------------------------------
-// Bidirectional equality helper — uses tuple wrapping to prevent distribution
-// ---------------------------------------------------------------------------
-
-type AssertEqualType<TLeft, TRight>
-  = [TLeft] extends [TRight] ? [TRight] extends [TLeft] ? true : false : false;
-
 function assert<T extends true>(): void {
   void 0 as unknown as T;
 }
