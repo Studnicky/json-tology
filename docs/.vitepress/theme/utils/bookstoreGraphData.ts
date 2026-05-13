@@ -147,22 +147,17 @@ function isBuiltinType(id: string): boolean {
 }
 
 function refTarget(propSchema: unknown): string | null {
-  if (!propSchema || typeof propSchema !== 'object') {
-    return null;
-  }
+  if (!propSchema || typeof propSchema !== 'object') return null;
   const ps = propSchema as Record<string, unknown>;
 
-  if (typeof ps['$ref'] === 'string') {
-    return ps['$ref'];
-  }
+  if (typeof ps['$ref'] === 'string') return ps['$ref'];
   if (ps['type'] === 'array' && ps['items'] && typeof ps['items'] === 'object') {
     const items = ps['items'] as Record<string, unknown>;
-
-    if (typeof items['$ref'] === 'string') {
-      return items['$ref'];
-    }
+    if (typeof items['$ref'] === 'string') return items['$ref'];
+    // Handle BaseTypes.page() and similar inlined-schema patterns: items
+    // carries the full schema object with $id rather than a $ref pointer.
+    if (typeof items['$id'] === 'string') return items['$id'];
   }
-
   return null;
 }
 

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-05-13
+
+### Fixed
+
+- `BookstoreGraph` (`docs/your-types-are-a-graph.html`) was missing the `BookListPage → Book` edge because the visualization's `refTarget()` only recognised `items.$ref` and not the inline `items.$id` pattern produced by `BaseTypes.page()`. Extended `refTarget()` to fall back to `items.$id` when `items.$ref` is absent.
+- Sidebar anchor navigation was broken on 5 links: three `entities.*` method anchors in `advanced/ontology.html` (now use the actual `#jt-*` IDs), the Changeset link in `value/diff.html`, and the Quad / SubjectGroup link in `advanced/quads.html` (latter two had no matching heading; added).
+
 ## [0.4.1] - 2026-05-13
 
 ### Added

@@ -74,6 +74,15 @@
     },
     {
       "data": {
+        "id": "urn:bookstore:BookCatalogEntry__isbn__urn:bookstore:Isbn",
+        "kind": "range",
+        "label": "isbn",
+        "source": "urn:bookstore:BookCatalogEntry",
+        "target": "urn:bookstore:Isbn"
+      }
+    },
+    {
+      "data": {
         "id": "urn:bookstore:Book__isbn__urn:bookstore:Isbn",
         "kind": "range",
         "label": "isbn",
@@ -326,6 +335,51 @@
     },
     {
       "data": {
+        "id": "urn:bookstore:SimilarBook__a__urn:bookstore:Book",
+        "kind": "range",
+        "label": "a",
+        "source": "urn:bookstore:SimilarBook",
+        "target": "urn:bookstore:Book"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:SimilarBook__b__urn:bookstore:Book",
+        "kind": "range",
+        "label": "b",
+        "source": "urn:bookstore:SimilarBook",
+        "target": "urn:bookstore:Book"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Sequel__book__urn:bookstore:Book",
+        "kind": "range",
+        "label": "book",
+        "source": "urn:bookstore:Sequel",
+        "target": "urn:bookstore:Book"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Sequel__predecessor__urn:bookstore:Book",
+        "kind": "range",
+        "label": "predecessor",
+        "source": "urn:bookstore:Sequel",
+        "target": "urn:bookstore:Book"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:BookCatalogEntry__variants__urn:bookstore:BookCatalogEntryVariant",
+        "kind": "range",
+        "label": "variants",
+        "source": "urn:bookstore:BookCatalogEntry",
+        "target": "urn:bookstore:BookCatalogEntryVariant"
+      }
+    },
+    {
+      "data": {
         "id": "urn:bookstore:Book__authors__urn:bookstore:AuthorName",
         "kind": "range",
         "label": "authors",
@@ -349,6 +403,15 @@
         "label": "items",
         "source": "urn:bookstore:Order",
         "target": "urn:bookstore:OrderLine"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:BookListPage__items__urn:bookstore:Book",
+        "kind": "range",
+        "label": "items",
+        "source": "urn:bookstore:BookListPage",
+        "target": "urn:bookstore:Book"
       }
     },
     {
@@ -495,6 +558,13 @@
     },
     {
       "data": {
+        "id": "urn:bookstore:PublicationDate",
+        "kind": "primitive",
+        "label": "PublicationDate"
+      }
+    },
+    {
+      "data": {
         "id": "urn:bookstore:Quantity",
         "kind": "primitive",
         "label": "Quantity"
@@ -512,6 +582,13 @@
         "id": "urn:bookstore:ReviewId",
         "kind": "primitive",
         "label": "ReviewId"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:StockLevel",
+        "kind": "primitive",
+        "label": "StockLevel"
       }
     },
     {
@@ -558,6 +635,34 @@
     },
     {
       "data": {
+        "id": "urn:bookstore:BookAnnotations",
+        "kind": "entity",
+        "label": "BookAnnotations"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:BookCatalogEntry",
+        "kind": "entity",
+        "label": "BookCatalogEntry"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:BookCatalogEntryVariant",
+        "kind": "primitive",
+        "label": "BookCatalogEntryVariant"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:BookRatingHistogram",
+        "kind": "primitive",
+        "label": "BookRatingHistogram"
+      }
+    },
+    {
+      "data": {
         "id": "urn:bookstore:Book",
         "kind": "entity",
         "label": "Book"
@@ -589,6 +694,13 @@
         "id": "urn:bookstore:Review",
         "kind": "entity",
         "label": "Review"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:BookListPage",
+        "kind": "entity",
+        "label": "BookListPage"
       }
     },
     {
@@ -638,6 +750,20 @@
         "id": "urn:bookstore:OutOfPrintBook",
         "kind": "entity",
         "label": "OutOfPrintBook"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:SimilarBook",
+        "kind": "entity",
+        "label": "SimilarBook"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Sequel",
+        "kind": "entity",
+        "label": "Sequel"
       }
     },
     {
