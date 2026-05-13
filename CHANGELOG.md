@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Browser compatibility: `FormatRegistry` no longer depends on `node:net` or `node:url`. The `./schema` subpath now exposes a browser-safe variant via the `exports` map (excludes `SchemaLoader`, which remains Node-only via the `node` condition).
+
 ## [0.4.2] - 2026-05-13
 
 ### Fixed
