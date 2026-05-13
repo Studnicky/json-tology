@@ -126,5 +126,9 @@
   "sideEffects": false,
   "dependencies": {
     "commander": "^14.0.3"
+  },
+  "overrides": {
+    "vite": "^6.4.2",
+    "esbuild": "^0.25.0"
   }
 }

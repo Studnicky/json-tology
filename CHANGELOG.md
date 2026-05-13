@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- npm overrides force `vite` to `^6.4.2` and `esbuild` to `^0.25.0` to resolve [GHSA-4w7w-66w2-5vf9](https://github.com/advisories/GHSA-4w7w-66w2-5vf9) (vite path traversal in optimized deps `.map` handling) and [GHSA-67mh-4wv8-2f99](https://github.com/advisories/GHSA-67mh-4wv8-2f99) (esbuild dev server request smuggling). Both surfaces are dev-only (vitepress docs build); production bundles unaffected.
+
 ## [0.5.0] - 2026-05-13
 
 ### Added
