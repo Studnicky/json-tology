@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Compile-time enforcement of OWL 2 property-characteristic conflicts. Setting `symmetric` + `asymmetric`, `reflexive` + `irreflexive`, or `asymmetric` + `reflexive` together on the same property now surfaces a `PropertyCharacteristicConflictInterface` branded type error at the offending line. Runtime registration throws `SchemaError` with code `PROPERTY_CHARACTERISTIC_CONFLICT`. OWL property characteristics now carry the **Compile-time + Runtime** validation badge.
+
 ## [0.4.2] - 2026-05-13
 
 ### Fixed

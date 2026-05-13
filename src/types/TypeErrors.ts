@@ -185,3 +185,81 @@ export type SelfEquivalentType<TId extends string> = never & TypeErrorBrandInter
 export type IntersectionIdCollisionType<TId extends string> = never & TypeErrorBrandInterface<'IntersectionIdCollision'> & {
   readonly 'collidingId': TId;
 };
+
+// ---------------------------------------------------------------------------
+// OWL 2 property-characteristic conflict brands (Cluster F)
+// ---------------------------------------------------------------------------
+
+/**
+ * Emitted when two or more OWL 2 property characteristics that are logically
+ * incompatible are set to `true` on the same property schema.
+ *
+ * Hard-conflict pairs (forbidden by OWL 2 semantics):
+ *   - `symmetric` + `asymmetric`  — mutually exclusive by definition
+ *   - `reflexive`  + `irreflexive` — mutually exclusive by definition
+ *   - `asymmetric` + `reflexive`   — asymmetric implies irreflexive in OWL 2;
+ *                                    explicit reflexive contradicts that
+ *
+ * @template TProperty  The property name where the conflict was detected.
+ * @template TConflicts Tuple of the conflicting characteristic names.
+ */
+export interface PropertyCharacteristicConflictInterface<
+  TProperty extends string,
+  TConflicts extends readonly string[]
+> {
+  readonly 'conflicts': TConflicts;
+  readonly 'kind': 'PropertyCharacteristicConflict';
+  readonly 'property': TProperty;
+}
+
+/**
+ * Check a single property schema for conflicting OWL 2 characteristics.
+ *
+ * Returns `never` when there are no conflicts; returns a
+ * `PropertyCharacteristicConflictInterface` brand when a hard conflict is
+ * detected. The brand is surfaced as a `schemaErrors` field on the enclosing
+ * schema so `ValidateSchemaType` (and `ValidatePropertyCharacteristicsType`)
+ * can propagate the incompatibility to the author's call site.
+ *
+ * @template TName  The property name (for the brand payload).
+ * @template TProp  The property schema object.
+ */
+export type CheckPropertyCharacteristicsType<TName extends string, TProp>
+  = TProp extends { readonly 'asymmetric': true;
+    readonly 'symmetric': true; }
+    ? PropertyCharacteristicConflictInterface<TName, readonly ['symmetric', 'asymmetric']>
+    : TProp extends { readonly 'irreflexive': true;
+      readonly 'reflexive': true; }
+      ? PropertyCharacteristicConflictInterface<TName, readonly ['reflexive', 'irreflexive']>
+      : TProp extends { readonly 'asymmetric': true;
+        readonly 'reflexive': true }
+        ? PropertyCharacteristicConflictInterface<TName, readonly ['asymmetric', 'reflexive']>
+        : never;
+
+/**
+ * Walk every entry of a `properties` map and collect all characteristic
+ * conflicts into a union. Returns `never` when all properties are sound.
+ *
+ * @template TProps  The `properties` record from a schema (e.g. `{ a: {...}, b: {...} }`).
+ */
+export type PropertyCharacteristicErrorsType<TProps>
+  = {
+    [K in Extract<keyof TProps, string>]: CheckPropertyCharacteristicsType<K, TProps[K]>;
+  }[Extract<keyof TProps, string>];
+
+/**
+ * Validate a schema's `properties` map for OWL 2 characteristic conflicts.
+ *
+ * Pass `T` through if every property is conflict-free; otherwise intersect `T`
+ * with `{ readonly 'schemaErrors': <brand union> }` so the literal is
+ * incompatible with `ValidateSchemaType`'s expected shape and the IDE hover
+ * surfaces the conflict details.
+ *
+ * @template T  The full schema object.
+ */
+export type ValidatePropertyCharacteristicsType<T>
+  = T extends { readonly 'properties': infer TProps }
+    ? [PropertyCharacteristicErrorsType<TProps>] extends [never]
+      ? T
+      : T & { readonly 'schemaErrors': PropertyCharacteristicErrorsType<TProps> }
+    : T;
