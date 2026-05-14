@@ -257,7 +257,6 @@ except ValidationError as e:
 
 ## Related
 
-- [`JsonTology.validate`](/validation/validate) - when you only need the human-readable error strings without a throw
 - [`JsonTology.validate`](/validation/validate) - when you need structured `ValidationErrors` without an exception
 - [`JsonTology.is`](/validation/is) - when you only need a boolean type guard
 - [`JsonTology.materialize`](/registry/materialize) - when you want to build from partial trusted data + defaults without validation throwing

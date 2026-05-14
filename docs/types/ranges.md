@@ -25,7 +25,9 @@ See also [Primary inference](./infer.md), [Utility types](./utility.md).
 export type IntegerRangeType<TMin extends number, TMax extends number>
   = number extends TMin ? number
     : number extends TMax ? number
-      : BuildIntegerRangeType<TMin, TMax>;
+      : RangeWithinCapType<TMax> extends true
+        ? BuildIntegerRangeType<TMin, TMax>
+        : number;
 ```
 
 ### Examples

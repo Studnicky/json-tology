@@ -237,7 +237,7 @@ Wipes every registered schema. Use in test teardown or when rebuilding the regis
 
 ### `jt.registry.revision` {#registry-revision}
 
-Monotonically increasing counter bumped on every mutation (`register`, `set`, `delete`, `clear`). External code that caches derived views (ontology builders, compiled graphs) snapshots the revision and rebuilds when it advances. `jt.ontology()` uses this internally.
+Monotonically increasing counter bumped on every mutation (`set`, `delete`, `clear`). External code that caches derived views (ontology builders, compiled graphs) snapshots the revision and rebuilds when it advances. `jt.ontology()` uses this internally.
 
 ## Related
 

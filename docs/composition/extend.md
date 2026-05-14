@@ -209,7 +209,7 @@ class CustomerWithDiscount(Customer):
 - [`intersection`](/composition/intersection) - when all schemas' `required` constraints must apply
 - [`partial`](/composition/partial-required) - make all fields optional after extension
 - [`pick`](/composition/pick-omit) - keep only a subset of properties
-- [`Schemas`](/schemas#register) - registering extended schemas before use
+- [`Schemas`](/schemas#registry-methods) - registering extended schemas before use
 
 ## See also
 

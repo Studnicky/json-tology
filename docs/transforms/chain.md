@@ -20,7 +20,7 @@ const FormattedPriceSchema = {
   type: 'string',
 } as const;
 
-const PricedSchema = Transform.chain<typeof FormattedPriceSchema, number>(
+const PricedSchema = Transform.chain(
   FormattedPriceSchema,
   [
     // Step 1: strip currency symbol and commas
@@ -45,7 +45,7 @@ const price = jt.instantiate(PricedSchema.$id, '$14.99');
 console.log(price); // 14.99
 
 const wire = jt.encode(PricedSchema, price as number);
-console.log(wire);  // '14.99'
+console.log(wire);  // '$14.99'
 ```
 
 ### Example 2: Decode direction is left-to-right, encode is right-to-left
@@ -97,10 +97,10 @@ Chains are checked up to 10 stages (`TupleRecursionCap`).
 
 ```ts
 // ⊥ Don't do this  - chain with one step is unnecessarily complex
-Transform.chain<typeof Schema, Date>(schema, [
+Transform.chain(schema, [
   {
-    decode: (s: unknown) => new Date(s as string),
-    encode: (d: unknown) => (d as Date).toISOString()
+    decode: (s: string) => new Date(s),
+    encode: (d: Date) => d.toISOString()
   },
 ]);
 
@@ -116,14 +116,14 @@ Transform.create(schema, {
 ::: code-group
 
 ```ts [json-tology]
-Transform.chain<typeof Schema, number>(schema, [
+Transform.chain(schema, [
   {
-    decode: raw => raw.replace(/[$,]/g, ''),
-    encode: s => `$${s}`
+    decode: (raw: string) => raw.replace(/[$,]/g, ''),
+    encode: (s: string) => `$${s}`
   },
   {
-    decode: s => parseFloat(s),
-    encode: n => n.toFixed(2)
+    decode: (s: string) => parseFloat(s),
+    encode: (n: number) => n.toFixed(2)
   },
 ]);
 // Decode runs left-to-right; encode runs right-to-left.

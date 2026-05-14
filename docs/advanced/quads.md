@@ -23,7 +23,7 @@ A `SubjectGroup` is a convenience wrapper that groups all quads sharing the same
 
 ## `jt.toQuads` {#jt-toquads}
 
-**Declaration.** Projects instance data through the canonical graph and returns a fresh `OntologyBuilder` containing the projected ABox quads. The first argument is a schema object with `$id` (registers the schema if it is not already registered). The second argument is the typed value, normally the output of `instantiate()`. The return value can be serialized via `jsonLd()`, `jsonLdObject()`, or `raw()`.
+**Declaration.** Projects instance data through the canonical graph and returns a `QuadInterface[]` array of the projected ABox quads. The first argument is a schema object with `$id` (registers the schema if it is not already registered). The second argument is the typed value, normally the output of `instantiate()`. To serialize the quads as JSON-LD, pass them to an `OntologyBuilder` via `addQuads(quads)` and call `jsonLd()`, `jsonLdObject()`, or `raw()` on the builder.
 
 **Use this when** you want to publish a validated value as Linked Data, push it into a triple store, hand it to an OWL or SHACL reasoner, or merge it into a knowledge graph that already contains the matching TBox.
 

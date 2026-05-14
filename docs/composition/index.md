@@ -24,7 +24,7 @@ All examples use the [bookstore domain](/bookstore-domain). Composed schemas bui
 
 ## Related
 
-- [`register`](/registry/register) - register composed schemas before use
+- [`set`](/registry/register#registry-set) - register composed schemas before use
 - [`instantiate`](/validation/instantiate) - coerce values through composed schemas
 - [`materialize`](/registry/materialize) - fill defaults through composed schemas
 

@@ -22,7 +22,7 @@ const UserSchema = {
 } as const;
 ```
 
-**`$id` is required.** Every schema registered with `register()` must carry a fully-qualified IRI as its `$id`. The IRI is the stable identity used by `has`, `get`, `validate`, `instantiate`, `materialize`, and cross-schema `$ref`. Use the project's `baseIRI` as the namespace:
+**`$id` is required.** Every schema registered with `set()` must carry a fully-qualified IRI as its `$id`. The IRI is the stable identity used by `registry.has`, `registry.get`, `validate`, `instantiate`, `materialize`, and cross-schema `$ref`. Use the project's `baseIRI` as the namespace:
 
 ```ts
 const jt = JsonTology.create({

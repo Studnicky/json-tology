@@ -200,7 +200,7 @@ class BookV1(BaseModel):
 
 ## `NonDeprecatedSchemaType<T>`
 
-**Declaration.** Derives the TypeScript object type for a schema literal with all properties marked `deprecated: true` omitted. Delegates to `InferType<T>` and applies `Omit<…, DeprecatedKeysType<T>>`.
+**Declaration.** Derives the TypeScript object type for a schema literal with all properties marked `deprecated: true` omitted. Delegates to `InferSchemaType<T>` and applies `Omit<…, DeprecatedKeysType<T>>`.
 
 **Use this when** you want a type that represents the "current" shape of an object after stripping legacy fields - for example, for API response types or view models that should never surface deprecated properties.
 
@@ -211,8 +211,8 @@ class BookV1(BaseModel):
 ```ts
 export type NonDeprecatedSchemaType<T, TRoot = T, TReferences = Record<never, never>>
   = T extends { readonly 'properties': unknown; readonly 'type': 'object' }
-    ? SimplifyType<Omit<InferType<T, TRoot, TReferences>, DeprecatedKeysType<T>>>
-    : InferType<T, TRoot, TReferences>;
+    ? SimplifyType<Omit<InferSchemaType<T, TRoot, TReferences>, DeprecatedKeysType<T>>>
+    : InferSchemaType<T, TRoot, TReferences>;
 ```
 
 ### Examples

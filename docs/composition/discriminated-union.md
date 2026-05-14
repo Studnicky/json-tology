@@ -110,7 +110,7 @@ const errs = jt2.validate(OrderWithPaymentSchema.$id, {
   items:      [{ bookIsbn: '9780140449136', quantity: 1, unitPrice: 14.99 }],
   payment:    { method: 'credit_card', cardLast4: '4242', expiry: '12/28' },
 });
-console.log(errors.length === 0); // true
+console.log(errs.length === 0); // true
 ```
 
 ### Discriminator argument validation <Badge type="info" text="Compile-time" />

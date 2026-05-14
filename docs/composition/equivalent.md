@@ -63,8 +63,8 @@ const jt = JsonTology.create({
 });
 
 // Both IDs validate identically
-const a = jt.validate('https://bookstore.example/Isbn',        '9780140449136'); // ok.ok === true
-const b = jt.validate('https://bookstore.example/CatalogIsbn', '9780140449136'); // ok.ok === true
+const a = jt.validate('https://bookstore.example/Isbn',        '9780140449136'); // a.ok === true
+const b = jt.validate('https://bookstore.example/CatalogIsbn', '9780140449136'); // b.ok === true
 ```
 
 ### Example 3: OWL equivalence in the emitted TBox
