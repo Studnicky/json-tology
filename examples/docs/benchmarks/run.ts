@@ -317,4 +317,87 @@ function writeMarkdownReport(
 
   writeFileSync(outPath, lines.join('\n'), 'utf8');
   console.log(`Markdown report written: ${outPath}`);
+
+  writePerScenarioFragments(suiteList, librariesBySuite, outDir);
+}
+
+function slugify(value: string): string {
+  return value.toLowerCase()
+    .replaceAll(/[^a-z0-9]+/gu, '-')
+    .replaceAll(/^-/gu, '')
+    .replaceAll(/-$/gu, '');
+}
+
+/**
+ * Per-scenario fragment writer — emits one .md per scenario containing
+ * just the table. docs/benchmarks.md @-includes each fragment next to
+ * its in-browser BenchmarkScenario component so the page shows browser
+ * and Node numbers side by side. Files land at
+ * results/scenarios/<slug>.md.
+ */
+function writePerScenarioFragments(
+  suiteList: SuiteEntry[],
+  librariesBySuite: Map<string, string[]>,
+  outDir: string
+): void {
+  const scenariosDir = resolve(outDir, 'scenarios');
+
+  mkdirSync(scenariosDir, { 'recursive': true });
+
+  for (const suite of suiteList) {
+    const groups = new Map<string, BenchResult[]>();
+
+    for (const result of suite.results) {
+      const group = groups.get(result.name) ?? [];
+
+      group.push(result);
+      groups.set(result.name, group);
+    }
+    const libraryOrder = librariesBySuite.get(suite.name) ?? ['json-tology'];
+
+    for (const [
+      scenarioName,
+      group
+    ] of groups) {
+      const byLibrary = new Map<string, BenchResult>();
+
+      for (const result of group) {
+        byLibrary.set(result.library, result);
+      }
+      const ours = byLibrary.get('json-tology');
+      const slug = slugify(scenarioName);
+      const fragmentLines: string[] = [];
+
+      fragmentLines.push('| Library | ops/s | ns/op | json-tology vs this |');
+      fragmentLines.push('| - | - | - | - |');
+      for (const library of libraryOrder) {
+        const result = byLibrary.get(library);
+
+        if (result === undefined) {
+          fragmentLines.push(`| ${library} | N/A | N/A | N/A |`);
+          continue;
+        }
+        const ops = result.opsPerSec.toLocaleString();
+        const ns = (result.avgUs * 1000).toFixed(0);
+        let comparison: string;
+
+        if (library === 'json-tology' || ours === undefined) {
+          comparison = '-';
+        } else {
+          const ratio = ours.opsPerSec / result.opsPerSec;
+
+          comparison = ratio >= 1
+            ? `${ratio.toFixed(2)}x faster`
+            : `${(1 / ratio).toFixed(2)}x slower`;
+        }
+        fragmentLines.push(`| ${library} | ${ops} | ${ns} | ${comparison} |`);
+      }
+      fragmentLines.push('');
+
+      const fragmentPath = resolve(scenariosDir, `${slug}.md`);
+
+      writeFileSync(fragmentPath, fragmentLines.join('\n'), 'utf8');
+    }
+  }
+  console.log(`Per-scenario fragments written under: ${scenariosDir}`);
 }

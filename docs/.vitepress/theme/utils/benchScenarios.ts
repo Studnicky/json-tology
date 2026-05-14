@@ -403,7 +403,7 @@ function structuredCloneSetup(data: unknown): Setup {
 export const SCENARIOS: Scenario[] = [
   // -- Validation --
   {
-    id: 'validation-simple-valid',
+    id: 'simple-valid',
     family: 'Validation',
     name: 'simple valid',
     description: 'Flat 3-property object that satisfies the schema.',
@@ -418,7 +418,7 @@ export const SCENARIOS: Scenario[] = [
     },
   },
   {
-    id: 'validation-simple-invalid',
+    id: 'simple-invalid',
     family: 'Validation',
     name: 'simple invalid',
     description: 'Flat 3-property object that fails every constraint.',
@@ -433,7 +433,7 @@ export const SCENARIOS: Scenario[] = [
     },
   },
   {
-    id: 'validation-nested-valid',
+    id: 'nested-valid',
     family: 'Validation',
     name: 'nested valid',
     description: 'Nested object with sub-objects and refs.',
@@ -585,7 +585,7 @@ export const SCENARIOS: Scenario[] = [
     },
   },
   {
-    id: 'dumpJson-nested',
+    id: 'dumpjson-nested',
     family: 'Serialization',
     name: 'dumpJson nested',
     description: 'Serialize a nested object to a JSON string.',
@@ -597,7 +597,7 @@ export const SCENARIOS: Scenario[] = [
 
   // -- Registry --
   {
-    id: 'registry-warm-validate',
+    id: 'warm-validate',
     family: 'Registry',
     name: 'warm validate',
     description: 'Validate after registration; hot path.',

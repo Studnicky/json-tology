@@ -264,8 +264,10 @@ export function runComposeBench(): BenchResult[] {
   results.push(bench('intersection', 'json-tology', () => {
     icounter++;
     const inter = Compose.intersection(
-      BaseBookJt,
-      Tagged,
+      [
+        BaseBookJt,
+        Tagged
+      ],
       `urn:bench:BookTagged:${String(icounter)}`
     );
     const subreg = new SchemaRegistry();
