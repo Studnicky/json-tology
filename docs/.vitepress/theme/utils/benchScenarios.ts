@@ -24,8 +24,11 @@ export type LibKey =
   | 'arktype'
   | 'runtypes'
   | 'io-ts'
+  | 'yup'
+  | 'joi'
   | 'json-stringify'
-  | 'structured-clone';
+  | 'structured-clone'
+  | 'manual';
 
 export interface LibSpec {
   readonly key: LibKey;
@@ -44,8 +47,11 @@ export const LIB_SPECS: readonly LibSpec[] = [
   { key: 'arktype',          label: 'ArkType',             url: 'https://esm.sh/arktype@2' },
   { key: 'runtypes',         label: 'Runtypes',            url: 'https://esm.sh/runtypes@7' },
   { key: 'io-ts',            label: 'io-ts',               url: 'https://esm.sh/io-ts@2' },
+  { key: 'yup',              label: 'Yup',                 url: 'https://esm.sh/yup@1' },
+  { key: 'joi',              label: 'Joi',                 url: 'https://esm.sh/joi@17' },
   { key: 'json-stringify',   label: 'JSON.stringify' },
   { key: 'structured-clone', label: 'structuredClone' },
+  { key: 'manual',           label: 'Manual (handwritten)' },
 ];
 
 const moduleCache = new Map<string, unknown>();
@@ -328,11 +334,154 @@ function jtCoerceDefaults(): Setup {
   };
 }
 
-function jtClean(data: unknown, schema: unknown): Setup {
+function jtClean(data: unknown, primary: { readonly $id: string }, schemas: readonly unknown[]): Setup {
   return async () => {
     const mod = (await loadLib('json-tology')).main as { JsonTology: { create: (o: unknown) => { registry: { clean: (id: string, d: unknown) => unknown } } } };
-    const jt = mod.JsonTology.create({ baseIRI: 'urn:bench:', schemas: [schema] });
-    return () => { void jt.registry.clean((schema as { $id: string }).$id, data); };
+    const jt = mod.JsonTology.create({ baseIRI: 'urn:bench:', schemas });
+    return () => { void jt.registry.clean(primary.$id, data); };
+  };
+}
+
+// ----------------------------------------------------------------------------
+// Strip-unknown-keys ("clean") — how each library would achieve the same.
+// Some libraries have a direct API; others require the call site to opt into
+// strict-object construction so the parser drops unknown keys.
+// ----------------------------------------------------------------------------
+
+function zodClean(data: unknown, build: (z: typeof import('zod')) => { parse: (d: unknown) => unknown }): Setup {
+  return async () => {
+    const z = (await loadLib('zod')).main as typeof import('zod');
+    const Customer = build(z);
+    return () => { void Customer.parse(data); };
+  };
+}
+
+function valibotClean(data: unknown, build: (v: Record<string, (...a: unknown[]) => unknown>) => unknown): Setup {
+  return async () => {
+    const v = (await loadLib('valibot')).main as Record<string, (...a: unknown[]) => unknown>;
+    const schema = build(v);
+    const parse = v.parse as (s: unknown, d: unknown) => unknown;
+    return () => { void parse(schema, data); };
+  };
+}
+
+function typeboxClean(data: unknown, build: (Type: { Object: (s: unknown) => unknown; String: (a?: unknown) => unknown; Number: () => unknown }) => unknown): Setup {
+  return async () => {
+    const tb = (await loadLib('typebox')).main as { Type: { Object: (s: unknown) => unknown; String: (a?: unknown) => unknown; Number: () => unknown } };
+    const value = await importOnce<{ Value: { Clean: (s: unknown, d: unknown) => unknown } }>('https://esm.sh/@sinclair/typebox@0.34/value');
+    const schema = build(tb.Type);
+    return () => { void value.Value.Clean(schema, data); };
+  };
+}
+
+function yupClean(data: unknown, build: (yup: typeof import('yup')) => { cast: (d: unknown, opts: unknown) => unknown }): Setup {
+  return async () => {
+    const yup = (await importOnce('https://esm.sh/yup@1')) as typeof import('yup');
+    const Customer = build(yup);
+    return () => { void Customer.cast(data, { stripUnknown: true }); };
+  };
+}
+
+function joiClean(data: unknown, build: (Joi: { object: (s: unknown) => { unknown: (b: boolean) => unknown } } & Record<string, (...a: unknown[]) => unknown>) => { validate: (d: unknown, opts: unknown) => unknown }): Setup {
+  return async () => {
+    const joiMod = (await importOnce('https://esm.sh/joi@17')) as { default?: unknown };
+    const Joi = (joiMod.default ?? joiMod) as { object: (s: unknown) => { unknown: (b: boolean) => unknown } } & Record<string, (...a: unknown[]) => unknown>;
+    const Customer = build(Joi);
+    return () => { void Customer.validate(data, { stripUnknown: true }); };
+  };
+}
+
+// JSON-round-trip clone: universal fallback every JS user has access to.
+function jsonRoundTripClone(data: unknown): Setup {
+  return async () => () => { void JSON.parse(JSON.stringify(data)); };
+}
+
+// Manual structural diff — what a user would write if their library has no
+// diff primitive. Walks two objects and records changed/added/removed keys.
+function manualDiff(): Setup {
+  const before = { ...NESTED_VALID, amount: 100 };
+  const after = { ...NESTED_VALID, amount: 100, customer: { ...NESTED_VALID.customer, name: 'Renamed' } };
+  return async () => () => {
+    const diff: Array<{ path: string; kind: 'add' | 'remove' | 'change'; from?: unknown; to?: unknown }> = [];
+    const walk = (a: Record<string, unknown>, b: Record<string, unknown>, base: string): void => {
+      const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+      for (const k of keys) {
+        const av = a[k];
+        const bv = b[k];
+        const p = base ? `${base}/${k}` : `/${k}`;
+        if (!(k in a)) diff.push({ path: p, kind: 'add', to: bv });
+        else if (!(k in b)) diff.push({ path: p, kind: 'remove', from: av });
+        else if (av !== bv) {
+          if (av && bv && typeof av === 'object' && typeof bv === 'object'
+              && !Array.isArray(av) && !Array.isArray(bv)) {
+            walk(av as Record<string, unknown>, bv as Record<string, unknown>, p);
+          } else if (JSON.stringify(av) !== JSON.stringify(bv)) {
+            diff.push({ path: p, kind: 'change', from: av, to: bv });
+          }
+        }
+      }
+    };
+    walk(before as Record<string, unknown>, after as Record<string, unknown>, '');
+    void diff;
+  };
+}
+
+// Coerce-equivalent factories for libraries with a real coerce mode.
+function zodCoerceValid(data: unknown): Setup {
+  return async () => {
+    const z = (await loadLib('zod')).main as typeof import('zod');
+    const C = z.z.object({ n: z.z.coerce.number(), ok: z.z.coerce.boolean(), tag: z.z.string().default('x') });
+    return () => { void C.parse(data); };
+  };
+}
+
+function valibotCoerceValid(data: unknown): Setup {
+  return async () => {
+    const v = (await loadLib('valibot')).main as Record<string, (...a: unknown[]) => unknown>;
+    const object = v.object as (s: unknown) => unknown;
+    const string = v.string as () => unknown;
+    const number = v.number as () => unknown;
+    const boolean = v.boolean as () => unknown;
+    const pipe = v.pipe as (...a: unknown[]) => unknown;
+    const transform = v.transform as (fn: (x: unknown) => unknown) => unknown;
+    const optional = v.optional as (s: unknown, d: unknown) => unknown;
+    const schema = object({
+      n:   pipe(string(), transform((x) => Number(x))),
+      ok:  pipe(string(), transform((x) => x === 'true')),
+      tag: optional(string(), 'x'),
+    });
+    const parse = v.parse as (s: unknown, d: unknown) => unknown;
+    return () => { void parse(schema, data); };
+  };
+}
+
+function yupCoerceValid(data: unknown): Setup {
+  return async () => {
+    const yup = (await importOnce('https://esm.sh/yup@1')) as typeof import('yup');
+    const Schema = yup.object({
+      n:   yup.number(),
+      ok:  yup.boolean(),
+      tag: yup.string().default('x'),
+    });
+    return () => { void Schema.cast(data); };
+  };
+}
+
+function joiCoerceValid(data: unknown): Setup {
+  return async () => {
+    const joiMod = (await importOnce('https://esm.sh/joi@17')) as { default?: unknown };
+    const Joi = (joiMod.default ?? joiMod) as {
+      object: (s: unknown) => { validate: (d: unknown, opts: unknown) => unknown };
+      number: () => unknown;
+      boolean: () => unknown;
+      string: () => { default: (v: string) => unknown };
+    };
+    const Schema = Joi.object({
+      n:   Joi.number(),
+      ok:  Joi.boolean(),
+      tag: Joi.string().default('x'),
+    });
+    return () => { void Schema.validate(data, { convert: true }); };
   };
 }
 
@@ -509,10 +658,19 @@ export const SCENARIOS: Scenario[] = [
     description: 'Already-valid data through the coerce path.',
     factories: {
       'json-tology': jtCoerceValid(),
-      'zod': async () => {
-        const z = (await loadLib('zod')).main as typeof import('zod');
-        const C = z.z.object({ n: z.z.coerce.number(), ok: z.z.coerce.boolean(), tag: z.z.string().default('x') });
-        return () => { void C.parse(COERCE_INPUT); };
+      'zod': zodCoerceValid(COERCE_INPUT),
+      'valibot': valibotCoerceValid(COERCE_INPUT),
+      // Yup .cast() applies type coercion the same way zod.coerce does.
+      // Joi has `convert: true` enabled by default — equivalent surface.
+      'arktype': async () => {
+        // ArkType has no built-in coerce; the user wraps the input. This is
+        // how someone using ArkType would normalize a query-string payload.
+        const ark = (await loadLib('arktype')).main as { type: (s: unknown) => (d: unknown) => unknown };
+        const Schema = ark.type({ n: 'number', ok: 'boolean', 'tag?': 'string' });
+        return () => {
+          const coerced = { n: Number(COERCE_INPUT.n), ok: COERCE_INPUT.ok === 'true' };
+          void Schema(coerced);
+        };
       },
     },
   },
@@ -528,6 +686,19 @@ export const SCENARIOS: Scenario[] = [
         const C = z.z.object({ n: z.z.number(), ok: z.z.boolean(), tag: z.z.string().default('x') });
         return () => { void C.parse(DEFAULTS_INPUT); };
       },
+      'valibot': async () => {
+        const v = (await loadLib('valibot')).main as Record<string, (...a: unknown[]) => unknown>;
+        const object = v.object as (s: unknown) => unknown;
+        const string = v.string as () => unknown;
+        const number = v.number as () => unknown;
+        const boolean = v.boolean as () => unknown;
+        const optional = v.optional as (s: unknown, d: unknown) => unknown;
+        const schema = object({ n: number(), ok: boolean(), tag: optional(string(), 'x') });
+        const parse = v.parse as (s: unknown, d: unknown) => unknown;
+        return () => { void parse(schema, DEFAULTS_INPUT); };
+      },
+      'yup': yupCoerceValid(DEFAULTS_INPUT),
+      'joi': joiCoerceValid(DEFAULTS_INPUT),
     },
   },
 
@@ -538,7 +709,31 @@ export const SCENARIOS: Scenario[] = [
     name: 'clean simple',
     description: 'Strip unknown keys from a flat object.',
     factories: {
-      'json-tology': jtClean({ ...FLAT_VALID, extra: 1, more: 'no' }, JT_FLAT_SCHEMA),
+      'json-tology': jtClean({ ...FLAT_VALID, extra: 1, more: 'no' }, JT_FLAT_SCHEMA, [JT_FLAT_SCHEMA]),
+      // Zod z.object() strips unknown keys by default on .parse(); explicit
+      // .strip() makes the intent visible.
+      'zod': zodClean({ ...FLAT_VALID, extra: 1, more: 'no' }, (z) => {
+        return z.z.object({ id: z.z.string(), email: z.z.string(), name: z.z.string() }).strip();
+      }),
+      // Valibot's object() schema drops unknown keys on parse(); use
+      // `strictObject` to error instead. The default is the strip behavior.
+      'valibot': valibotClean({ ...FLAT_VALID, extra: 1, more: 'no' }, (v) => {
+        const object = v.object as (s: unknown) => unknown;
+        const string = v.string as () => unknown;
+        return object({ id: string(), email: string(), name: string() });
+      }),
+      // TypeBox: Value.Clean is the explicit strip-unknown operation.
+      'typebox': typeboxClean({ ...FLAT_VALID, extra: 1, more: 'no' }, (Type) => {
+        return Type.Object({ id: Type.String(), email: Type.String(), name: Type.String() });
+      }),
+      // Yup has .noUnknown() to declare the intent and stripUnknown to enforce.
+      'yup': yupClean({ ...FLAT_VALID, extra: 1, more: 'no' }, (yup) => {
+        return yup.object({ id: yup.string(), email: yup.string(), name: yup.string() }).noUnknown();
+      }),
+      // Joi defaults to .unknown(false) — pair with stripUnknown to drop.
+      'joi': joiClean({ ...FLAT_VALID, extra: 1, more: 'no' }, (Joi) => {
+        return Joi.object({ id: Joi.string(), email: Joi.string(), name: Joi.string() });
+      }),
     },
   },
   {
@@ -547,7 +742,37 @@ export const SCENARIOS: Scenario[] = [
     name: 'clean nested',
     description: 'Strip unknown keys from a nested object.',
     factories: {
-      'json-tology': jtClean({ ...NESTED_VALID, extra: 1 }, JT_NESTED_SCHEMA),
+      'json-tology': jtClean({ ...NESTED_VALID, extra: 1 }, JT_NESTED_SCHEMA, [JT_FLAT_SCHEMA, JT_NESTED_SCHEMA]),
+      'zod': zodClean({ ...NESTED_VALID, extra: 1 }, (z) => {
+        const Customer = z.z.object({ id: z.z.string(), email: z.z.string(), name: z.z.string() });
+        const Address = z.z.object({ street: z.z.string(), city: z.z.string(), zip: z.z.string() });
+        return z.z.object({ customer: Customer, address: Address, amount: z.z.number() }).strip();
+      }),
+      'valibot': valibotClean({ ...NESTED_VALID, extra: 1 }, (v) => {
+        const object = v.object as (s: unknown) => unknown;
+        const string = v.string as () => unknown;
+        const number = v.number as () => unknown;
+        const Customer = object({ id: string(), email: string(), name: string() });
+        const Address = object({ street: string(), city: string(), zip: string() });
+        return object({ customer: Customer, address: Address, amount: number() });
+      }),
+      'typebox': typeboxClean({ ...NESTED_VALID, extra: 1 }, (Type) => {
+        return Type.Object({
+          customer: Type.Object({ id: Type.String(), email: Type.String(), name: Type.String() }),
+          address: Type.Object({ street: Type.String(), city: Type.String(), zip: Type.String() }),
+          amount: Type.Number(),
+        });
+      }),
+      'yup': yupClean({ ...NESTED_VALID, extra: 1 }, (yup) => {
+        const Customer = yup.object({ id: yup.string(), email: yup.string(), name: yup.string() });
+        const Address = yup.object({ street: yup.string(), city: yup.string(), zip: yup.string() });
+        return yup.object({ customer: Customer, address: Address, amount: yup.number() }).noUnknown();
+      }),
+      'joi': joiClean({ ...NESTED_VALID, extra: 1 }, (Joi) => {
+        const Customer = Joi.object({ id: Joi.string(), email: Joi.string(), name: Joi.string() });
+        const Address = Joi.object({ street: Joi.string(), city: Joi.string(), zip: Joi.string() });
+        return Joi.object({ customer: Customer, address: Address, amount: Joi.number() });
+      }),
     },
   },
   {
@@ -557,6 +782,11 @@ export const SCENARIOS: Scenario[] = [
     description: 'String → number / boolean coercion only.',
     factories: {
       'json-tology': jtConvert(COERCE_INPUT),
+      // What every user resorts to in a library without a coerce primitive:
+      // explicit per-field `Number(x)` / `x === 'true'`.
+      'manual': async () => () => {
+        void { n: Number(COERCE_INPUT.n), ok: COERCE_INPUT.ok === 'true' };
+      },
     },
   },
   {
@@ -567,6 +797,8 @@ export const SCENARIOS: Scenario[] = [
     factories: {
       'json-tology': jtClone(NESTED_VALID),
       'structured-clone': structuredCloneSetup(NESTED_VALID),
+      // The pre-structuredClone idiom every JS user has reached for.
+      'json-stringify': jsonRoundTripClone(NESTED_VALID),
     },
   },
   {
@@ -576,6 +808,9 @@ export const SCENARIOS: Scenario[] = [
     description: 'Compute a changeset between two nested objects.',
     factories: {
       'json-tology': jtDiff(),
+      // What a user writes when the library has no diff primitive — a hand-rolled
+      // recursive walk that records add/remove/change per JSON Pointer path.
+      'manual': manualDiff(),
     },
   },
 
