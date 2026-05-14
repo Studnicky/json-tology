@@ -1,12 +1,20 @@
-# `register`, `registerAnonymous`, registry access
+# `set`, `registerAnonymous`, registry access
 
-Schema management — registering, inspecting, and introspecting the schema registry.
+Schema management — adding, inspecting, and introspecting the schema registry.
 
 ---
 
-## `JsonTology.register` {#registry-register}
+## `JsonTology.set` {#registry-set}
 
-**Declaration.** Registers one or more schemas and returns `this` with the schema types accumulated into the type map. Accepts a single schema object or an array. The `$id` of each schema must be unique. Schemas with `$ref` that reference other schemas must have those other schemas registered first (or registered in the same call). Returns `JsonTology<merged TMap>`.
+**Declaration.** Adds or replaces one or more schemas and returns `this` with the schema types accumulated into the type map. The schema is always the first argument:
+
+- `set(schema)` — single; key derived from `schema.$id`.
+- `set(schema, iri)` — explicit key; for non-canonical aliasing.
+- `set([schema | [schema, iri], ...])` — bulk; each entry is a schema or `[schema, iri]` tuple.
+
+Schemas with `$ref` that reference other schemas must have those other schemas in the registry first (or supplied in the same `set` call). Replaces silently on `$id` collision, per `Map.set` semantics.
+
+Returns `JsonTology<merged TMap>` so the new schema's static type is visible to subsequent `validate` / `instantiate` / `is` calls.
 
 **Use this when** you need to add schemas after construction, or when schemas are loaded from files at startup. Prefer `JsonTology.create({ schemas })` for known-at-compile-time schemas since it builds the full type map in one pass.
 
@@ -97,7 +105,7 @@ ajv.addSchema(bookSchema);
 
 ## `JsonTology.registerAnonymous` {#registry-registeranonymous}
 
-**Declaration.** Registers a schema that may not have a `$id`. If `$id` is absent, assigns a content-hash-based synthetic ID (`urn:json-tology:hash:<hex>`). If `$id` is present, delegates to `register`. Returns the `$id` string used for registration.
+**Declaration.** Registers a schema that may not have a `$id`. If `$id` is absent, assigns a content-hash-based synthetic ID (`urn:json-tology:hash:<hex>`). If `$id` is present, delegates to `set`. Returns the `$id` string used for registration.
 
 **Use this when** you receive schemas from external sources (OpenAPI `$defs`, dynamic form builders) that may not carry a stable `$id`.
 
@@ -178,17 +186,20 @@ jt.registry.forEach((schema, iri) => { /* ... */ });
 jt.registry.size;   // number of registered schemas
 ```
 
-### `jt.registry.set(iri, schema)` {#registry-set}
+### `jt.registry.set(schema, iri?)` {#registry-set-method}
 
-Map-style write. Replaces any existing entry at `iri`. The key must equal `schema.$id`; mismatches throw `SchemaError('SCHEMA_INVALID_INPUT')`. Returns the registry for chaining.
+Map-style write. Schema is always the first argument; key is derived from `schema.$id`. Pass an explicit `iri` only for non-canonical aliasing — passing one that disagrees with `schema.$id` throws `SchemaError('SCHEMA_INVALID_INPUT')`. Bulk writes accept an array of schemas or `[schema, iri]` tuples. Replaces silently on collision per `Map.set`. Returns the registry for chaining.
 
 ```ts
 jt.registry
-  .set(UserSchema.$id, UserSchema)
-  .set(AddressSchema.$id, AddressSchema);
+  .set(UserSchema)
+  .set(AddressSchema);
+
+jt.registry.set([UserSchema, AddressSchema]);
+jt.registry.set([[UserSchema, 'urn:alias:user'], AddressSchema]);
 ```
 
-`jt.set(schema)` is the type-accumulating wrapper that calls `set` internally and widens the TypeScript type map. Use `register` when you want the new schema's shape reflected in subsequent `validate`/`instantiate`/`is` calls; use `set` for hot-reload or test-fixture replacement where the static type doesn't need to follow.
+`jt.set(schema)` is the type-accumulating wrapper that calls `registry.set` internally and widens the TypeScript type map. Use `jt.set` when you want the new schema's shape reflected in subsequent `validate`/`instantiate`/`is` calls; use `jt.registry.set` for hot-reload or test-fixture replacement where the static type doesn't need to follow.
 
 ### `jt.registry.delete(iri)` {#registry-delete}
 

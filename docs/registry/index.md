@@ -6,7 +6,7 @@ Schema registration and entity management.
 
 | Method | Description |
 |--------|-------------|
-| [`register` / `registerAnonymous` / `has` / `get` / `list`](./register) | Schema lifecycle |
+| [`set` / `registerAnonymous` / registry access](./register) | Schema lifecycle |
 | [`materialize`](./materialize) | Build instance from partial + defaults |
 | [`addInvariant` / `removeInvariant`](./invariants) | Cross-field validation rules |
 | [`addComputed` / `removeComputed`](./computed) | Derived field computation |

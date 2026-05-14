@@ -159,10 +159,10 @@ See [Error class hierarchy](/errors/classes) for the full `GraphError` surface.
 
 | Method | Description |
 |--------|-------------|
-| [`register` / `registerAnonymous`](/registry/register#registry-register) | Add schemas to the runtime |
-| [`has`](/registry/register#registry-has) | Check if a schema is registered |
-| [`get`](/registry/register#registry-get) | Retrieve the original schema object |
-| [`list`](/registry/register#registry-list) | Enumerate all registered `$id` values |
+| [`set` / `registerAnonymous`](/registry/register#registry-set) | Add schemas to the runtime |
+| [`registry.has`](/registry/register#registry-has) | Check if a schema is registered |
+| [`registry.get`](/registry/register#registry-get) | Retrieve the original schema object |
+| [`registry.keys`](/registry/register#registry-iteration) | Enumerate all registered `$id` values |
 | [`toSchema`](/serialization/toSchema) | Reconstruct a schema from the canonical graph |
 
 ---

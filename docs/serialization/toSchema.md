@@ -4,7 +4,7 @@
 
 **Use this when** you want to verify round-trip fidelity - that the canonical graph preserves all structural semantics from the authored schema. Also useful for producing normalized/canonical versions of schemas for display, debugging, or downstream tooling.
 
-**Don't use this when** you need the original schema object as-authored (use [`jt.get`](/registry/#registry-get) instead). `get` returns the original object reference; `toSchema` returns a new object reconstructed from the internal graph.
+**Don't use this when** you need the original schema object as-authored (use [`jt.registry.get`](/registry/register#registry-get) instead). `get` returns the original object reference; `toSchema` returns a new object reconstructed from the internal graph.
 
 ## Examples
 
@@ -137,7 +137,7 @@ Book.model_json_schema()  # Exports JSON Schema from the model class
 
 ## Related
 
-- [`jt.get`](/registry/#registry-get) - retrieve the original schema object (not reconstructed)
+- [`jt.registry.get`](/registry/register#registry-get) - retrieve the original schema object (not reconstructed)
 - [Ontology and Graphs](/advanced/ontology) - `toQuads` and `fromQuads` for the advanced graph API
 
 ## See also
