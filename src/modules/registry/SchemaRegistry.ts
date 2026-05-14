@@ -71,12 +71,13 @@ type SchemaRegistryForEachCallback = (
 ) => void;
 
 export class SchemaRegistry implements SchemaRegistryInterface {
+  private _revision = 0;
   public readonly castTypes: boolean;
   private readonly compiler: SchemaCompilerInterface;
   public readonly computedStore: ComputedStore;
   public readonly curie: CurieInterface | undefined;
-  private readonly enableDuplicateDetection: boolean;
 
+  private readonly enableDuplicateDetection: boolean;
   private readonly enableInlineWarnings: boolean;
   private readonly enableStrictGraph: boolean;
   private readonly enableStrictTypes: boolean;
@@ -310,6 +311,15 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return compiled.validate(structuredClone(data), CLEAN_OPTIONS).value;
   }
 
+  public clear(): void {
+    if (this.schemas.size === 0 && this.schemaHashes.size === 0) {
+      return;
+    }
+    this.schemas.clear();
+    this.schemaHashes.clear();
+    this._revision++;
+  }
+
   private collectAnchors(schema: Record<string, unknown>, seen: Set<string>, schemaId: string): void {
     if (typeof schema.$anchor === 'string') {
       if (seen.has(schema.$anchor)) {
@@ -456,6 +466,19 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return materializer.createDefault(entry.schema as Record<string, unknown> & { '$id': string });
   }
 
+  public delete(schemaId: string): boolean {
+    const resolved = this.resolve(schemaId);
+    const entry = this.schemas.get(resolved);
+
+    if (entry === undefined) {
+      return false;
+    }
+    this.schemas.delete(resolved);
+    this.schemaHashes.delete(entry.hash);
+    this._revision++;
+
+    return true;
+  }
 
   public engine(schema: Record<string, unknown>): GraphEngineInterface {
     const schemaId = schema.$id as string;
@@ -486,6 +509,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     return entry.engine;
   }
+
 
   public *entries(): IterableIterator<[string, Record<string, unknown>]> {
     for (const [
@@ -846,6 +870,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     this.schemas.set(schemaId, entry);
     this.schemaHashes.set(hash, schemaId);
+    this._revision++;
     this.computedStore.validateAgainstGraph(graph);
 
     if (this.enableDuplicateDetection) {
@@ -883,6 +908,37 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const raw = typeof schemaOrId === 'string' ? schemaOrId : schemaOrId.$id;
 
     return this.resolve(raw);
+  }
+
+  public get revision(): number {
+    return this._revision;
+  }
+
+  public set(schemaId: string, schema: Record<string, unknown>): this {
+    if ((schema as unknown) === null || typeof schema !== 'object' || Array.isArray(schema)) {
+      throw new SchemaError(
+        'SCHEMA_INVALID_INPUT',
+        `set() requires a plain object, received ${(schema as unknown) === null ? 'null' : typeof schema}`
+      );
+    }
+
+    const schemaIdOnObject = schema.$id;
+
+    if (typeof schemaIdOnObject !== 'string' || schemaIdOnObject === '') {
+      throw new SchemaError('SCHEMA_MISSING_ID', 'Schema must have a $id property');
+    }
+
+    if (schemaIdOnObject !== schemaId) {
+      throw new SchemaError(
+        'SCHEMA_INVALID_INPUT',
+        `set() key "${schemaId}" does not match schema.$id "${schemaIdOnObject}"`,
+        schemaId
+      );
+    }
+    this.delete(schemaId);
+    this.registerSingle(schema);
+
+    return this;
   }
 
   public get size(): number {

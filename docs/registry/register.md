@@ -119,9 +119,11 @@ jt.validate(syntheticId, { couponCode: 'SAVE10', discount: 0.1 });
 
 ---
 
-## Reading the registry: `jt.registry` {#registry-access}
+## `jt.registry` — the Map-native interface {#registry-access}
 
-`jt.registry` is the single read surface for registered schemas. It exposes the read methods of a native `Map` — `has`, `get`, `keys`, `values`, `entries`, `forEach`, `size`, and `for...of` iteration yielding `[iri, schema]` pairs. No facade aliases on `JsonTology` itself; everything goes through the registry.
+`jt.registry` mirrors the surface of a native `Map<string, Schema>`. Reads (`has`, `get`, `keys`, `values`, `entries`, `forEach`, `size`, `for...of`) and writes (`set`, `delete`, `clear`) are spelled exactly as on `Map`. No facade aliases on `JsonTology` itself; everything goes through the registry.
+
+`set` requires the key to equal the schema's `$id`. `clear` and `delete` are constant-time. Every mutation bumps `jt.registry.revision`; callers cache derived views (ontology builders, externally cached graphs) by snapshotting the revision and rebuilding when it advances.
 
 ### `jt.registry.has(iri)` {#registry-has}
 
@@ -176,7 +178,34 @@ jt.registry.forEach((schema, iri) => { /* ... */ });
 jt.registry.size;   // number of registered schemas
 ```
 
-No removal methods are exposed: registration semantics differ from `Map.set`/`delete`. Use `jt.register(schema)` to add schemas.
+### `jt.registry.set(iri, schema)` {#registry-set}
+
+Map-style write. Replaces any existing entry at `iri`. The key must equal `schema.$id`; mismatches throw `SchemaError('SCHEMA_INVALID_INPUT')`. Returns the registry for chaining.
+
+```ts
+jt.registry
+  .set(UserSchema.$id, UserSchema)
+  .set(AddressSchema.$id, AddressSchema);
+```
+
+`jt.register(schema)` is the type-accumulating wrapper that calls `set` internally and widens the TypeScript type map. Use `register` when you want the new schema's shape reflected in subsequent `validate`/`instantiate`/`is` calls; use `set` for hot-reload or test-fixture replacement where the static type doesn't need to follow.
+
+### `jt.registry.delete(iri)` {#registry-delete}
+
+Returns `true` if a schema was removed, `false` if `iri` wasn't registered. Subsequent `$ref` resolution to the deleted IRI throws `GraphError('REF_UNRESOLVED')` on the next validate/instantiate call against any schema that points to it.
+
+```ts
+jt.registry.delete('https://bookstore.example/Customer');   // true
+jt.registry.delete('https://bookstore.example/Customer');   // false
+```
+
+### `jt.registry.clear()` {#registry-clear}
+
+Wipes every registered schema. Use in test teardown or when rebuilding the registry from scratch.
+
+### `jt.registry.revision` {#registry-revision}
+
+Monotonically increasing counter bumped on every mutation (`register`, `set`, `delete`, `clear`). External code that caches derived views (ontology builders, compiled graphs) snapshots the revision and rebuilds when it advances. `jt.ontology()` uses this internally.
 
 ## Related
 

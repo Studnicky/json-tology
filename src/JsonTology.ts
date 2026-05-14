@@ -558,7 +558,10 @@ export class JsonTology<TMap = Record<never, never>> {
   private readonly defaultIriForRaw: SkolemizeFnType | string | undefined;
 
   public readonly materializer: MaterializerInterface;
-  private ontologyCache: null | OntologyBuilder = null;
+  private ontologyCache: null | {
+    'builder': OntologyBuilder;
+    'revision': number;
+  } = null;
   private readonly ontologySerializer: GraphOntologySerializer;
   private readonly prefixes: Record<string, string>;
   /**
@@ -943,21 +946,28 @@ export class JsonTology<TMap = Record<never, never>> {
    * @returns An {@link OntologyBuilder} for further serialization (JSON-LD, Turtle, etc.).
    */
   public ontology(): OntologyBuilder {
-    if (this.ontologyCache) {
-      return this.ontologyCache;
+    const revision = this.registry.revision;
+
+    if (this.ontologyCache !== null && this.ontologyCache.revision === revision) {
+      return this.ontologyCache.builder;
     }
 
     const graph = this.ontologySerializer.serialize(this.registry.listGraphs());
     const shaclShapes = this.shaclSerializer.serialize(this.registry.listGraphs());
 
-    this.ontologyCache = new OntologyBuilder({
+    const builder = new OntologyBuilder({
       'baseIRI': this.baseIRI,
       'graphSources': [graph],
       'prefixes': this.prefixes
     });
-    this.ontologyCache.addShacl(shaclShapes);
 
-    return this.ontologyCache;
+    builder.addShacl(shaclShapes);
+    this.ontologyCache = {
+      builder,
+      revision
+    };
+
+    return builder;
   }
 
   /**
@@ -981,7 +991,6 @@ export class JsonTology<TMap = Record<never, never>> {
 
     // Cast needed: const generic preserves literal types that don't widen to Record<string, unknown>
     this.registry.register(list);
-    this.ontologyCache = null;
 
     // Cast needed: TypeScript cannot track that register() accumulates into the TMap type parameter
     return this;
@@ -1047,7 +1056,6 @@ export class JsonTology<TMap = Record<never, never>> {
 
         if (typeof loaded !== 'boolean') {
           this.registry.register(loaded);
-          this.ontologyCache = null;
 
           // Recurse into the newly registered schema
           await resolveSchema(loaded);

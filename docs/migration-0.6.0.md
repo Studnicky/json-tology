@@ -63,4 +63,16 @@ jt.registry.get(iri);
 [...jt.registry.keys()];
 ```
 
-Additional Map-like access points: `jt.registry.values()`, `jt.registry.entries()`, `jt.registry.forEach(cb)`, `jt.registry.size`, and `for...of` iteration yielding `[iri, schema]` pairs. No removal methods are exposed — registration semantics differ from `Map.set`/`delete`.
+Additional Map-like access points: `jt.registry.values()`, `jt.registry.entries()`, `jt.registry.forEach(cb)`, `jt.registry.size`, and `for...of` iteration yielding `[iri, schema]` pairs.
+
+Writes also follow `Map`:
+
+```ts
+jt.registry.set(UserSchema.$id, UserSchema);   // replace; key must equal schema.$id
+jt.registry.delete('urn:User');                 // returns boolean
+jt.registry.clear();                            // wipe
+```
+
+`jt.register(schema)` remains as the type-accumulating wrapper around `set` — use it when you want the new schema's static type reflected in subsequent `validate`/`instantiate` calls; use `set` directly for hot-reload or test-fixture replacement where the static type doesn't need to follow.
+
+`jt.registry.revision` is bumped on every mutation. External code that caches derived views (ontology builders, compiled graphs) snapshots the revision and rebuilds when it advances; `jt.ontology()` uses this internally so it no longer needs explicit invalidation.

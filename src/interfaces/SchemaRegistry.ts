@@ -13,6 +13,7 @@ export interface SchemaRegistryInterface extends Iterable<[string, Record<string
   cast(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown): unknown;
   readonly 'castTypes': boolean;
   clean(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown): unknown;
+  clear(): void;
   /**
    * Collect all non-fragment cross-schema `$ref` IRIs reachable from the given schema
    * (including its transitive dependencies already in the registry). Only returns IRIs
@@ -23,6 +24,7 @@ export interface SchemaRegistryInterface extends Iterable<[string, Record<string
   convert(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown): unknown;
   create(schemaId: string): unknown;
   readonly 'curie': CurieInterface | undefined;
+  delete(schemaId: string): boolean;
   engine(schema: Record<string, unknown>): GraphEngineInterface;
   entries(): IterableIterator<[string, Record<string, unknown>]>;
   findDuplicates(): readonly DuplicateReportEntryType[];
@@ -40,7 +42,15 @@ export interface SchemaRegistryInterface extends Iterable<[string, Record<string
   register(schemas: ReadonlyArray<Record<string, unknown>> | Record<string, unknown>): void;
   registerAnonymous(schema: Record<string, unknown>): string;
   removeInvariant(schemaId: string, name: string): void;
+  /**
+   * Monotonically increasing counter incremented on every registry mutation
+   * (register, set, delete, clear). Consumers cache derived views (ontology
+   * builders, compiled validator graphs) by snapshotting the revision and
+   * rebuilding when it advances.
+   */
+  readonly 'revision': number;
   readonly 'sameAsStore': SameAsStore;
+  set(schemaId: string, schema: Record<string, unknown>): SchemaRegistryInterface;
   readonly 'size': number;
   subschemaAt(schema: (Record<string, unknown> & { '$id': string }) | string, pointer: string): Record<string, unknown> & { '$id': string };
   validate(schema: (Record<string, unknown> & { '$id': string }) | string, data: unknown): ValidationErrors;
