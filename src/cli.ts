@@ -84,7 +84,11 @@ function loadSchemas(schemaGlob: string): SchemaRegistry {
   const registry = new SchemaRegistry();
 
   for (const schema of schemas) {
-    registry.register(schema);
+    const id = schema.$id;
+
+    if (typeof id === 'string') {
+      registry.set(id, schema);
+    }
   }
 
   return registry;
@@ -345,7 +349,11 @@ async function runViz(options: VizOptionsInterface): Promise<void> {
   const registry = new SchemaRegistry(Object.keys(prefixes).length > 0 ? { prefixes } : undefined);
 
   for (const schema of schemas) {
-    registry.register(schema);
+    const id = schema.$id;
+
+    if (typeof id === 'string') {
+      registry.set(id, schema);
+    }
   }
 
   const collector = new VizDataCollector(registry);

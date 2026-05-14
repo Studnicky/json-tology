@@ -39,6 +39,11 @@ export interface SchemaRegistryInterface extends Iterable<[string, Record<string
   keys(): IterableIterator<string>;
   list(): ReadonlyArray<Record<string, unknown>>;
   listGraphs(): readonly SchemaGraphInterface[];
+  /**
+   * Bulk-add helper. Each schema's `$id` is used as the key. Equivalent to a
+   * loop of {@link SchemaRegistryInterface.set} calls. Prefer `set` for explicit
+   * single-schema writes.
+   */
   register(schemas: ReadonlyArray<Record<string, unknown>> | Record<string, unknown>): void;
   registerAnonymous(schema: Record<string, unknown>): string;
   removeInvariant(schemaId: string, name: string): void;
