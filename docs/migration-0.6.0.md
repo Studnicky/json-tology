@@ -47,27 +47,6 @@ const jt = JsonTology.create({ baseIRI, prefetched: snapshot });
 
 `jt.set(schema)` is unchanged and remains the sync path for schemas whose refs are already in scope.
 
-## `register` → `set` (Map-native naming)
-
-`register` is gone from `SchemaRegistryInterface`, `JsonTology`, and `FormatRegistryInterface`. The merged write method is `set`, with three overloads that match how schemas were previously registered:
-
-```ts
-// Before
-jt.register(UserSchema);
-jt.register([UserSchema, AddressSchema] as const);
-jt.registry.register(UserSchema);
-formatRegistry.register('phone', validator);
-
-// After
-jt.set(UserSchema);                           // single, widens TMap
-jt.set([UserSchema, AddressSchema] as const); // bulk, widens TMap
-jt.registry.set(UserSchema);                  // registry-level, no widening
-jt.registry.set(UserSchema.$id, UserSchema);  // Map-style key + value
-formatRegistry.set('phone', validator);
-```
-
-Semantics change: `set` replaces silently when the key already exists, matching `Map.set`. The previous `register`-with-different-content throw is gone. Identical-content writes silently replace too. `registerAnonymous` stays — it computes a hash key, a different verb from `Map.set`.
-
 ## `register` → `set` (Map-native naming, schema-first ordering)
 
 `register` is gone from `SchemaRegistryInterface`, `JsonTology`, and `FormatRegistryInterface`. The replacement is `set`. The schema is always the first argument; an explicit IRI follows as an optional second arg for non-canonical aliasing. Bulk writes accept an array where each entry is either a schema or a `[schema, iri]` tuple.
