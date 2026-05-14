@@ -30,10 +30,10 @@ const jt = JsonTology.create({
 
 ```ts
 const jt = JsonTology.create({ baseIRI: 'https://bookstore.example' });
-jt.register(AddressSchema).register(CustomerSchema);
+jt.set(AddressSchema).set(CustomerSchema);
 
 // Or register an array:
-jt.register([AddressSchema, CustomerSchema] as const);
+jt.set([AddressSchema, CustomerSchema] as const);
 ```
 
 #### Example 3: Register a composed schema immediately
@@ -47,7 +47,7 @@ const BookSummarySchema = Compose.pick(
   ['isbn', 'title', 'price'] as const,
   'https://bookstore.example/BookSummary',
 );
-bookstoreEntities.register(BookSummarySchema);
+bookstoreEntities.set(BookSummarySchema);
 console.log(bookstoreEntities.registry.has('https://bookstore.example/BookSummary')); // true
 ```
 
@@ -56,7 +56,7 @@ console.log(bookstoreEntities.registry.has('https://bookstore.example/BookSummar
 ::: code-group
 
 ```ts [json-tology]
-jt.register(BookSchema);
+jt.set(BookSchema);
 // Or: JsonTology.create({ schemas: [...] as const })
 ```
 
@@ -188,7 +188,7 @@ jt.registry
   .set(AddressSchema.$id, AddressSchema);
 ```
 
-`jt.register(schema)` is the type-accumulating wrapper that calls `set` internally and widens the TypeScript type map. Use `register` when you want the new schema's shape reflected in subsequent `validate`/`instantiate`/`is` calls; use `set` for hot-reload or test-fixture replacement where the static type doesn't need to follow.
+`jt.set(schema)` is the type-accumulating wrapper that calls `set` internally and widens the TypeScript type map. Use `register` when you want the new schema's shape reflected in subsequent `validate`/`instantiate`/`is` calls; use `set` for hot-reload or test-fixture replacement where the static type doesn't need to follow.
 
 ### `jt.registry.delete(iri)` {#registry-delete}
 

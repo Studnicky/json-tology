@@ -39,12 +39,6 @@ export interface SchemaRegistryInterface extends Iterable<[string, Record<string
   keys(): IterableIterator<string>;
   list(): ReadonlyArray<Record<string, unknown>>;
   listGraphs(): readonly SchemaGraphInterface[];
-  /**
-   * Bulk-add helper. Each schema's `$id` is used as the key. Equivalent to a
-   * loop of {@link SchemaRegistryInterface.set} calls. Prefer `set` for explicit
-   * single-schema writes.
-   */
-  register(schemas: ReadonlyArray<Record<string, unknown>> | Record<string, unknown>): void;
   registerAnonymous(schema: Record<string, unknown>): string;
   removeInvariant(schemaId: string, name: string): void;
   /**
@@ -55,7 +49,19 @@ export interface SchemaRegistryInterface extends Iterable<[string, Record<string
    */
   readonly 'revision': number;
   readonly 'sameAsStore': SameAsStore;
-  set(schemaId: string, schema: Record<string, unknown>): SchemaRegistryInterface;
+  /**
+   * Add or replace a schema in the registry. The schema is always the first
+   * argument; the iri is derived from `schema.$id` and may be overridden by
+   * passing `iri` as the second argument (rare — only when registering under
+   * a non-canonical key). Bulk writes accept an array where each entry is
+   * either a schema or a `[schema, iri]` tuple.
+   *
+   * Replaces silently on `$id` collision, per `Map.set` semantics.
+   */
+  set(schema: Record<string, unknown>, iri?: string): SchemaRegistryInterface;
+  set(
+    entries: ReadonlyArray<readonly [Record<string, unknown>, string] | Record<string, unknown>>
+  ): SchemaRegistryInterface;
   readonly 'size': number;
   subschemaAt(schema: (Record<string, unknown> & { '$id': string }) | string, pointer: string): Record<string, unknown> & { '$id': string };
   validate(schema: (Record<string, unknown> & { '$id': string }) | string, data: unknown): ValidationErrors;

@@ -72,7 +72,7 @@ void describe('BaseTypes', () => {
     for (const {
       invalid, schema, valid
     } of scenarios) {
-      registry.register(schema);
+      registry.set(schema);
       assert.equal(registry.validate(schema.$id, valid).length, 0);
       if (invalid) {
         assert.ok(registry.validate(schema.$id, invalid.data).length > 0);

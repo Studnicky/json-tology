@@ -109,9 +109,9 @@ const jt = JsonTology.create({
   'schemas': [EntitySchema]
 });
 
-jt.register(AdminUserSchema);
-jt.register(EntitySummarySchema);
-jt.register(PatchEntitySchema);
+jt.set(AdminUserSchema);
+jt.set(EntitySummarySchema);
+jt.set(PatchEntitySchema);
 
 const fullEntity = {
   'createdAt': '2026-01-01T00:00:00Z',

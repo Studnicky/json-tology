@@ -1804,8 +1804,8 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
   function makeRegistry(): SchemaRegistry {
     const reg = new SchemaRegistry();
 
-    reg.register(AddressSchema);
-    reg.register(PersonSchema);
+    reg.set(AddressSchema);
+    reg.set(PersonSchema);
 
     return reg;
   }
@@ -1912,7 +1912,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     void it('treats unregistered range schema as annotation-only', () => {
       const localReg = new SchemaRegistry();
 
-      localReg.register({
+      localReg.set({
         '$id': 'https://example.io/WithUnknownRange',
         'properties': {
           'data': {
@@ -1999,7 +1999,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     void it('serializes the full OWL 2 property-characteristic vocabulary (asymmetric, functional, inverseFunctional, reflexive, irreflexive)', () => {
       const registry = new SchemaRegistry();
 
-      registry.register({
+      registry.set({
         '$id': 'https://example.io/Person',
         'properties': {
           'birthDate': {
@@ -2046,23 +2046,23 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     void it('serializes extended predicates (disjointWith, inverseOf, transitive, symmetric)', () => {
       const registry = new SchemaRegistry();
 
-      registry.register({
+      registry.set({
         '$id': 'https://example.io/Dog',
         'disjointWith': 'https://example.io/Cat',
         'properties': { 'name': { 'type': 'string' as const } },
         'type': 'object' as const
       });
-      registry.register({
+      registry.set({
         '$id': 'https://example.io/Cat',
         'properties': { 'name': { 'type': 'string' as const } },
         'type': 'object' as const
       });
-      registry.register({
+      registry.set({
         '$id': 'https://example.io/Pet',
         'properties': { 'owner': { '$ref': 'https://example.io/Owner' } },
         'type': 'object' as const
       });
-      registry.register({
+      registry.set({
         '$id': 'https://example.io/Owner',
         'properties': {
           'pets': {
@@ -2073,7 +2073,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         },
         'type': 'object' as const
       });
-      registry.register({
+      registry.set({
         '$id': 'https://example.io/GraphNode',
         'properties': {
           'ancestor': {
@@ -2702,7 +2702,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         'data': d, 'expected': exp, 'name': n, 'schema': sch
       } of scenarios) {
         void it(n, () => {
-          registry.register(sch);
+          registry.set(sch);
           assert.equal(registry.is(sch.$id as string, d), exp);
         });
       }
@@ -2745,7 +2745,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         'type': 'object'
       } as const;
 
-      registry.register([
+      registry.set([
         kindDepSchema,
         schema
       ]);
@@ -2795,7 +2795,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         'type': 'array'
       } as const;
 
-      registry.register(schema);
+      registry.set(schema);
 
       for (const {
         'data': d, 'expected': exp, 'name': n
@@ -2863,14 +2863,14 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
       const registry = new SchemaRegistry();
 
-      registry.register({
+      registry.set({
         '$id': 'urn:test:contains-min-max',
         'contains': { 'type': 'number' },
         'maxContains': 3,
         'minContains': 2,
         'type': 'array'
       });
-      registry.register({
+      registry.set({
         '$id': 'urn:test:contains-min-zero',
         'contains': { 'type': 'string' },
         'minContains': 0,
@@ -2933,7 +2933,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         'uniqueItems': true
       } as const;
 
-      registry.register(schema);
+      registry.set(schema);
 
       for (const {
         'data': d, 'expected': exp, 'name': n
@@ -3050,13 +3050,13 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         'unevaluatedProperties': false
       } as const;
 
-      registry.register([
+      registry.set([
         ifSchema,
         thenSchema,
         elseSchema,
         schema
       ]);
-      registry.register(unevalSchema);
+      registry.set(unevalSchema);
 
       for (const {
         'data': d, 'expected': exp, 'name': n, 'schemaId': sid
@@ -3282,7 +3282,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         'data': d, 'expected': exp, 'name': n, 'schema': sch
       } of scenarios) {
         void it(n, () => {
-          registry.register(sch);
+          registry.set(sch);
           assert.equal(registry.is(sch.$id as string, d), exp);
         });
       }
@@ -3402,7 +3402,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       const registry = new SchemaRegistry();
 
       // Pre-register the content-inner schema needed by the content annotation test
-      registry.register({
+      registry.set({
         '$id': 'urn:test:content-inner',
         'properties': { 'name': { 'type': 'string' } },
         'required': ['name'],
@@ -3413,7 +3413,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         'data': d, 'expected': exp, 'name': n, 'schema': sch
       } of scenarios) {
         void it(n, () => {
-          registry.register(sch);
+          registry.set(sch);
           assert.equal(registry.is(sch.$id as string, d), exp);
         });
       }
@@ -3564,19 +3564,19 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
       const registry = new SchemaRegistry();
 
-      registry.register({
+      registry.set({
         '$id': 'urn:test:unevaluated-props',
         'properties': { 'name': { 'type': 'string' } },
         'type': 'object',
         'unevaluatedProperties': false
       });
-      registry.register({
+      registry.set({
         '$id': 'urn:test:unevaluated-items',
         'contains': { 'type': 'number' },
         'type': 'array',
         'unevaluatedItems': false
       });
-      registry.register({
+      registry.set({
         '$id': 'urn:test:unevaluated-allof',
         'allOf': [{
           'properties': { 'name': { 'type': 'string' } },
@@ -3585,7 +3585,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         'type': 'object',
         'unevaluatedProperties': false
       });
-      registry.register({
+      registry.set({
         '$id': 'urn:test:unevaluated-anyof',
         'anyOf': [
           {
@@ -3600,7 +3600,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         'type': 'object',
         'unevaluatedProperties': false
       });
-      registry.register({
+      registry.set({
         '$id': 'urn:test:unevaluated-anyof-multi',
         'anyOf': [
           { 'properties': { 'a': { 'type': 'string' } } },
@@ -3609,13 +3609,13 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         'type': 'object',
         'unevaluatedProperties': false
       });
-      registry.register({
+      registry.set({
         '$id': 'urn:test:unevaluated-items-allof',
         'allOf': [{ 'prefixItems': [{ 'type': 'string' }] }],
         'type': 'array',
         'unevaluatedItems': false
       });
-      registry.register({
+      registry.set({
         '$id': 'urn:test:unevaluated-conditional',
         'else': { 'properties': { 'bValue': { 'type': 'string' } } },
         'if': { 'properties': { 'kind': { 'const': 'a' } } },
@@ -3702,7 +3702,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       const registry = new SchemaRegistry();
 
       // Local anchor
-      registry.register({
+      registry.set({
         '$defs': {
           'named': {
             '$anchor': 'namedAddress',
@@ -3718,7 +3718,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       });
 
       // External anchor
-      registry.register([
+      registry.set([
         {
           '$anchor': 'sharedAddress',
           '$id': 'https://example.io/AddressAnchored',
@@ -3735,7 +3735,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       ]);
 
       // Local dynamic ref
-      registry.register({
+      registry.set({
         '$dynamicAnchor': 'node',
         '$id': 'urn:test:local-dynamic-refs',
         'properties': {
@@ -3747,7 +3747,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       });
 
       // External dynamic ref
-      registry.register([
+      registry.set([
         {
           '$dynamicAnchor': 'addressNode',
           '$id': 'https://example.io/dynamic-address',
@@ -3808,7 +3808,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
         const innerRegistry = new SchemaRegistry();
 
-        innerRegistry.register([
+        innerRegistry.set([
           {
             '$dynamicAnchor': 'node',
             '$id': 'https://example.io/tree',
@@ -3926,19 +3926,19 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
       const registry = new SchemaRegistry();
 
-      registry.register([
+      registry.set([
         { '$id': 'urn:test:bool-true' },
         {
           '$id': 'urn:test:bool-false',
           'not': {}
         }
       ]);
-      registry.register({
+      registry.set({
         '$id': 'urn:test:unicode-length',
         'maxLength': 1,
         'type': 'string'
       });
-      registry.register([
+      registry.set([
         {
           '$id': 'urn:test:allof-true',
           'allOf': [true]
@@ -4015,7 +4015,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
       const registry = new SchemaRegistry();
 
-      registry.register([
+      registry.set([
         {
           '$id': 'https://example.io/C',
           'properties': { 'value': { 'type': 'number' } },
@@ -4035,7 +4035,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
           'type': 'object'
         }
       ]);
-      registry.register({
+      registry.set({
         '$id': 'urn:test:additional-allof',
         'additionalProperties': false,
         'allOf': [{ 'properties': { 'b': { 'type': 'number' } } }],
@@ -4112,7 +4112,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     } as const;
 
     function registerAll(registry: SchemaRegistry) {
-      registry.register([
+      registry.set([
         CircleSchema,
         RectSchema,
         discriminatedSchema,
@@ -4290,7 +4290,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         ]
       };
 
-      registry.register([
+      registry.set([
         DogSchema,
         CatSchema,
         PetSchema
@@ -4534,7 +4534,7 @@ void describe('GraphEngine self-reference resolution (parity regression)', () =>
   void it('engine obtained via registry.engine() resolves self-$ref without throwing', () => {
     const registry = new SchemaRegistry();
 
-    registry.register(TreeNodeSchema);
+    registry.set(TreeNodeSchema);
 
     const engine = registry.engine(TreeNodeSchema);
     const valid = {
@@ -4577,7 +4577,7 @@ void describe('GraphEngine self-reference resolution (parity regression)', () =>
   void it('engine rejects structurally invalid nested nodes via the self-$ref branch', () => {
     const registry = new SchemaRegistry();
 
-    registry.register(TreeNodeSchema);
+    registry.set(TreeNodeSchema);
 
     const engine = registry.engine(TreeNodeSchema);
     // left.value is a string, violating { type: 'number' } on the self-referenced schema.
@@ -4650,7 +4650,7 @@ void describe('GraphEngine embedded $id resolution (parity regression)', () => {
   void it('engine obtained via registry.engine() resolves $ref to embedded $id without throwing', () => {
     const registry = new SchemaRegistry();
 
-    registry.register(TreeSchema);
+    registry.set(TreeSchema);
 
     const engine = registry.engine(TreeSchema);
     const errors = engine.errors(validData);
@@ -4663,7 +4663,7 @@ void describe('GraphEngine embedded $id resolution (parity regression)', () => {
   void it('engine rejects invalid data against the embedded $id schema', () => {
     const registry = new SchemaRegistry();
 
-    registry.register(TreeSchema);
+    registry.set(TreeSchema);
 
     const engine = registry.engine(TreeSchema);
     const errors = engine.errors(invalidData);
@@ -4674,7 +4674,7 @@ void describe('GraphEngine embedded $id resolution (parity regression)', () => {
   void it('error path includes the nested field that failed', () => {
     const registry = new SchemaRegistry();
 
-    registry.register(TreeSchema);
+    registry.set(TreeSchema);
 
     const engine = registry.engine(TreeSchema);
     const errors = engine.errors(invalidData);

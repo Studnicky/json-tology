@@ -19,8 +19,8 @@ You want to audit an existing schema set for inline shapes that duplicate a name
 
 ```ts
 const registry = new SchemaRegistry();
-registry.register(IsbnSchema);
-registry.register(BookSchema); // has inline isbn: { type: 'string', pattern: ... }
+registry.set(IsbnSchema);
+registry.set(BookSchema); // has inline isbn: { type: 'string', pattern: ... }
 
 const dups = registry.findDuplicates();
 // [{ schemaId: 'urn:bookstore:Book', pointer: '/properties/isbn', equivalentTo: 'urn:bookstore:Isbn', shape: {...} }]

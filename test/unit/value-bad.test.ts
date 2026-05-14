@@ -337,7 +337,7 @@ void describe('Value — registry modification after Value creation', () => {
     );
 
     // Register after getting the Value reference
-    tology.register({
+    tology.set({
       '$id': 'urn:test:late-schema',
       'type': 'string'
     });
@@ -352,7 +352,7 @@ void describe('Value — registry modification after Value creation', () => {
     const tology = JsonTology.create({ 'baseIRI': 'urn:test:' });
     const value = tology.value;
 
-    tology.register({
+    tology.set({
       '$id': 'urn:test:late-string',
       'type': 'string'
     });

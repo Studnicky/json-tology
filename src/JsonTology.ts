@@ -265,7 +265,7 @@ export class JsonTology<TMap = Record<never, never>> {
 
     if (options.schemas) {
       for (const schema of options.schemas) {
-        jt.registry.set(schema.$id, schema);
+        jt.registry.set(schema);
       }
     }
 
@@ -275,7 +275,7 @@ export class JsonTology<TMap = Record<never, never>> {
         schema
       ] of options.prefetched.schemas) {
         if (typeof schema !== 'boolean' && !jt.registry.has(iri)) {
-          jt.registry.set(iri, schema);
+          jt.registry.set(schema, iri);
         }
       }
     }
@@ -406,7 +406,7 @@ export class JsonTology<TMap = Record<never, never>> {
     const jt = JsonTology.create({ 'baseIRI': STATIC_BASE_IRI });
 
     for (const schema of schemas) {
-      jt.registry.set(schema.$id, schema);
+      jt.registry.set(schema);
     }
 
     return jt.ontology();
@@ -430,7 +430,7 @@ export class JsonTology<TMap = Record<never, never>> {
 
     if (options.schemas) {
       for (const schema of options.schemas) {
-        tmp.registry.set(schema.$id, schema);
+        tmp.registry.set(schema);
       }
     }
 
@@ -450,7 +450,7 @@ export class JsonTology<TMap = Record<never, never>> {
           const loadedId = loaded.$id;
 
           if (typeof loadedId === 'string') {
-            tmp.registry.set(loadedId, loaded);
+            tmp.registry.set(loaded, loadedId);
           }
         }
       }
@@ -530,7 +530,7 @@ export class JsonTology<TMap = Record<never, never>> {
     const jt = JsonTology.create({ 'baseIRI': STATIC_BASE_IRI });
 
     for (const schema of schemas) {
-      jt.registry.set(schema.$id, schema);
+      jt.registry.set(schema);
     }
 
     return jt.toShacl();
@@ -546,7 +546,7 @@ export class JsonTology<TMap = Record<never, never>> {
     const jt = JsonTology.create({ 'baseIRI': STATIC_BASE_IRI });
 
     for (const schema of schemas) {
-      jt.registry.set(schema.$id, schema);
+      jt.registry.set(schema);
     }
 
     return jt.toTbox();
@@ -626,7 +626,7 @@ export class JsonTology<TMap = Record<never, never>> {
         name,
         validator
       ] of Object.entries(options.formats)) {
-        formatRegistry.register(name, validator);
+        formatRegistry.set(name, validator);
       }
     }
 
@@ -740,7 +740,7 @@ export class JsonTology<TMap = Record<never, never>> {
     const schemaId = typeof schema === 'string' ? schema : schema.$id;
 
     if (typeof schema !== 'string') {
-      this.registry.set(schema.$id, schema);
+      this.registry.set(schema);
     }
 
     return Dumper.dump(this.registry, schemaId, value, options);
@@ -834,7 +834,7 @@ export class JsonTology<TMap = Record<never, never>> {
     const schemaId = typeof schemaRef === 'string' ? schemaRef : (schemaRef as Record<string, unknown> & { '$id': string }).$id;
 
     if (typeof schemaRef !== 'string') {
-      this.registry.set(schemaId, schemaRef);
+      this.registry.set(schemaRef);
     }
 
     if (this.registry.get(schemaId) === undefined) {
@@ -880,7 +880,7 @@ export class JsonTology<TMap = Record<never, never>> {
     const schemaId = typeof schema === 'string' ? schema : (schema as Record<string, unknown> & { '$id': string }).$id;
 
     if (typeof schema !== 'string') {
-      this.registry.set(schemaId, schema);
+      this.registry.set(schema);
     }
 
     return this.registry.instantiate(schemaId, data, callOptions);
@@ -903,7 +903,7 @@ export class JsonTology<TMap = Record<never, never>> {
     const schemaId = typeof schema === 'string' ? schema : (schema as Record<string, unknown> & { '$id': string }).$id;
 
     if (typeof schema !== 'string') {
-      this.registry.set(schemaId, schema);
+      this.registry.set(schema);
     }
 
     return this.registry.is(schemaId, data);
@@ -984,36 +984,15 @@ export class JsonTology<TMap = Record<never, never>> {
   }
 
   /**
-   * Registers one or more schemas and returns `this` with the schema types accumulated.
+   * Adds a schema that may lack a `$id`, assigning a content-hash-based synthetic ID
+   * when one is not present.
    *
-   * @param schema - A single schema or array of schemas, each with a `$id`.
-   * @returns This instance with the new schema types merged into `TMap`.
-   */
-  public register<const T extends { readonly '$id': string; }>(
-    schema: T
-  ): JsonTology<SchemaEntryType<T> & TMap>;
-  public register<const T extends ReadonlyArray<{ readonly '$id': string; }>>(
-    schemas: T & UniqueSchemaIdsType<T>
-  ): JsonTology<SchemaMapFromTupleType<T> & TMap>;
-  public register(schemaOrSchemas: ReadonlyArray<{ readonly '$id': string; }> | { readonly '$id': string; }): JsonTology<TMap> {
-    const list = Array.isArray(schemaOrSchemas) ? schemaOrSchemas : [schemaOrSchemas];
-
-    this.registry.register(list);
-
-    // Cast needed: TypeScript cannot track that register() accumulates into the TMap type parameter
-    return this;
-  }
-
-  /**
-   * Registers a schema that may lack a `$id`, assigning a content-hash-based synthetic ID if needed.
-   *
-   * @param schema - The schema object; if it already has a `$id`, delegates to {@link register}.
+   * @param schema - The schema object; if it already has a `$id`, delegates to {@link set}.
    * @returns The `$id` used for registration (original or synthetic).
    */
   public registerAnonymous(schema: Record<string, unknown>): string {
     return this.registry.registerAnonymous(schema);
   }
-
   // ---------------------------------------------------------------------------
   // Materialization
   // ---------------------------------------------------------------------------
@@ -1071,7 +1050,7 @@ export class JsonTology<TMap = Record<never, never>> {
           const loadedId = loaded.$id;
 
           if (typeof loadedId === 'string') {
-            this.registry.set(loadedId, loaded);
+            this.registry.set(loaded, loadedId);
           }
 
           // Recurse into the newly registered schema
@@ -1097,6 +1076,41 @@ export class JsonTology<TMap = Record<never, never>> {
    */
   public sameAs(instanceIriA: string, instanceIriB: string): void {
     this.registry.sameAsStore.add(instanceIriA, instanceIriB);
+  }
+
+  /**
+   * Add or replace one or more schemas. Schema is always the first argument:
+   * - `set(schema)` — key derived from `schema.$id`; widens `TMap`.
+   * - `set(schema, iri)` — explicit key; rare, for non-canonical aliasing.
+   * - `set([s1, s2])` — bulk; each entry is either a schema or `[schema, iri]`.
+   *
+   * Replaces silently on `$id` collision per `Map.set` semantics.
+   *
+   * @returns This instance with the new schema types merged into `TMap`.
+   */
+  public set<const T extends { readonly '$id': string; }>(
+    schema: T,
+    iri?: string
+  ): JsonTology<SchemaEntryType<T> & TMap>;
+  public set<const T extends ReadonlyArray<{ readonly '$id': string; }>>(
+    entries: T & UniqueSchemaIdsType<T>
+  ): JsonTology<SchemaMapFromTupleType<T> & TMap>;
+  public set(
+    first:
+      | ReadonlyArray<readonly [{ readonly '$id': string; }, string] | { readonly '$id': string; }>
+      | { readonly '$id': string; },
+    second?: string
+  ): JsonTology<TMap> {
+    if (Array.isArray(first)) {
+      this.registry.set(first as ReadonlyArray<Record<string, unknown>>);
+    } else if (second === undefined) {
+      this.registry.set(first as Record<string, unknown>);
+    } else {
+      this.registry.set(first as Record<string, unknown>, second);
+    }
+
+    // Cast needed: TypeScript cannot track that set() accumulates into the TMap type parameter
+    return this;
   }
   /**
    * Resolves a sub-schema at a JSON Pointer path within a registered schema.
@@ -1135,7 +1149,7 @@ export class JsonTology<TMap = Record<never, never>> {
     const parentId = typeof schemaRef === 'string' ? schemaRef : (schemaRef as Record<string, unknown> & { '$id': string }).$id;
 
     if (typeof schemaRef !== 'string') {
-      this.registry.set(parentId, schemaRef);
+      this.registry.set(schemaRef);
     }
 
     return this.registry.subschemaAt(parentId, pointer);
@@ -1188,7 +1202,7 @@ export class JsonTology<TMap = Record<never, never>> {
     const schemaId = typeof schemaRef === 'string' ? schemaRef : (schemaRef as Record<string, unknown> & { '$id': string }).$id;
 
     if (typeof schemaRef !== 'string') {
-      this.registry.set(schemaId, schemaRef);
+      this.registry.set(schemaRef);
     }
 
     const graph = this.registry.graph(schemaId);
@@ -1258,7 +1272,7 @@ export class JsonTology<TMap = Record<never, never>> {
     const schemaId = typeof schema === 'string' ? schema : (schema as Record<string, unknown> & { '$id': string }).$id;
 
     if (typeof schema !== 'string') {
-      this.registry.set(schemaId, schema);
+      this.registry.set(schema);
     }
 
     return this.registry.validate(schemaId, data);

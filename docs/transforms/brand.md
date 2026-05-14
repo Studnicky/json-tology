@@ -69,13 +69,13 @@ type ISBN13 = BrandOutputType<typeof IsbnSchema>;
 ```ts
 // ⊥ Don't do this  - brand only changes the TypeScript type, not the registration
 const RawSchema = { $id: '...', type: 'string' } as const;
-jt.register(RawSchema);
+jt.set(RawSchema);
 // The brand is applied to a different object reference  - the registered schema is unchanged
 const Branded = Transform.brand(RawSchema, 'MyBrand');
 
 // ✓ Do this  - brand before registration
 const Branded2 = Transform.brand({ $id: '...', type: 'string' } as const, 'MyBrand');
-jt.register(Branded2);
+jt.set(Branded2);
 ```
 
 ## Comparison

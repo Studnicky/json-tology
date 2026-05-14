@@ -29,12 +29,12 @@ interface Scenario {
 
 const registry = new SchemaRegistry({ 'castTypes': true });
 
-registry.register(SimpleSchema);
-registry.register(AddressSchema);
-registry.register(CustomerSchema);
-registry.register(OrderItemSchema);
-registry.register(NestedSchema);
-registry.register(DefaultsSchema);
+registry.set(SimpleSchema);
+registry.set(AddressSchema);
+registry.set(CustomerSchema);
+registry.set(OrderItemSchema);
+registry.set(NestedSchema);
+registry.set(DefaultsSchema);
 
 // Warm up all paths
 registry.validate(SimpleSchema.$id, simpleValid);

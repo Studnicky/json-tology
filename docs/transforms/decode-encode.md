@@ -71,7 +71,7 @@ const PriceCentsSchema = Transform.create(
   },
 );
 
-const jt2 = jt.register(PriceCentsSchema);
+const jt2 = jt.set(PriceCentsSchema);
 
 const price = jt2.instantiate(PriceCentsSchema.$id, 1499);
 console.log(price); // 14.99
@@ -87,7 +87,7 @@ console.log(wire2); // 1499
 ```ts
 // ⊥ Don't do this  - Transform.create must be called BEFORE register
 const RawSchema = { $id: '...', type: 'string' } as const;
-jt.register(RawSchema);
+jt.set(RawSchema);
 // Then applying brand/transform to RawSchema affects a different object reference
 
 // ✓ Do this  - transform first, then register

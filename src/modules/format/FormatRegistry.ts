@@ -630,7 +630,7 @@ export class FormatRegistry implements FormatRegistryInterface {
       name,
       fn
     ] of Object.entries(STRING_FORMAT_VALIDATORS)) {
-      registry.register(name, (value) => {
+      registry.set(name, (value) => {
         return typeof value === 'string' && fn(value);
       });
     }
@@ -639,7 +639,7 @@ export class FormatRegistry implements FormatRegistryInterface {
       name,
       fn
     ] of Object.entries(NUMBER_FORMAT_VALIDATORS)) {
-      registry.register(name, (value) => {
+      registry.set(name, (value) => {
         return typeof value === 'number' && fn(value);
       });
     }
@@ -670,12 +670,12 @@ export class FormatRegistry implements FormatRegistryInterface {
   }
 
   /**
-   * Register a format validator under the given name, replacing any previous validator.
+   * Add a format validator under the given name, replacing any previous validator.
    *
    * @param name - Format name to register
    * @param validator - Validation function that returns true when the value matches the format
    */
-  register(name: string, validator: (value: unknown) => boolean): void {
+  set(name: string, validator: (value: unknown) => boolean): void {
     this.validators.set(name, validator);
   }
 }

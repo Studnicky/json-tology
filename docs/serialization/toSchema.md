@@ -29,7 +29,7 @@ const BookSummarySchema = Compose.pick(
   ['isbn', 'title', 'price'] as const,
   'https://bookstore.example/BookSummary',
 );
-bookstoreEntities.register(BookSummarySchema);
+bookstoreEntities.set(BookSummarySchema);
 
 const roundTripped = bookstoreEntities.toSchema('https://bookstore.example/BookSummary');
 // Should contain only isbn, title, price properties

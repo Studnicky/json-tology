@@ -309,7 +309,7 @@ import { Result } from '../../src/modules/data/Result.js';
           const reg = JsonTology.create({ 'baseIRI': 'urn:test:' });
           const schema = Compose.partial(UserSchema, 'https://myapp.io/PartialUser2');
 
-          reg.register(schema);
+          reg.set(schema);
           assert.equal(reg.validate(schema.$id, {}).length, 0);
         },
         'name': 'validates with empty object (all optional)'
@@ -355,7 +355,7 @@ import { Result } from '../../src/modules/data/Result.js';
           const reg = JsonTology.create({ 'baseIRI': 'urn:test:' });
           const schema = Compose.required(UserSchema, 'https://myapp.io/StrictUser2');
 
-          reg.register(schema);
+          reg.set(schema);
 
           const errors = reg.validate(schema.$id, {
             'id': '1',
@@ -380,7 +380,7 @@ import { Result } from '../../src/modules/data/Result.js';
           const reg = JsonTology.create({ 'baseIRI': 'urn:test:' });
           const schema = Compose.required(UserSchema, 'https://myapp.io/StrictUser3');
 
-          reg.register(schema);
+          reg.set(schema);
           assert.equal(reg.validate(schema.$id, {
             'email': 'a@b.com',
             'id': '1',
@@ -445,7 +445,7 @@ import { Result } from '../../src/modules/data/Result.js';
             'name'
           ] as const, 'https://myapp.io/UserSummary3');
 
-          reg.register(schema);
+          reg.set(schema);
           assert.equal(reg.validate(schema.$id, {
             'id': '1',
             'name': 'Alice'
@@ -517,7 +517,7 @@ import { Result } from '../../src/modules/data/Result.js';
             'role'
           ] as const, 'https://myapp.io/PublicUser2');
 
-          reg.register(schema);
+          reg.set(schema);
           assert.equal(reg.validate(schema.$id, {
             'id': '1',
             'name': 'Alice'
@@ -1812,14 +1812,14 @@ import { Result } from '../../src/modules/data/Result.js';
     void it('two registered equivalent schemas validate the same data', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register(IsbnSchema as unknown as Record<string, unknown>);
+      registry.set(IsbnSchema as unknown as Record<string, unknown>);
 
       const PrimaryIsbn = Compose.equivalent(IsbnSchema, {
         '$id': 'urn:bookstore:PrimaryIsbn',
         'description': 'Primary ISBN'
       });
 
-      registry.register(PrimaryIsbn as unknown as Record<string, unknown>);
+      registry.set(PrimaryIsbn as unknown as Record<string, unknown>);
 
       const validIsbn = '9780306406157';
       const invalidIsbn = 'not-an-isbn';
@@ -1911,8 +1911,8 @@ import { Result } from '../../src/modules/data/Result.js';
 
       const jt = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      jt.register(PersonSchema as unknown as Record<string, unknown>);
-      jt.register(EmployeeSchema as unknown as Record<string, unknown>);
+      jt.set(PersonSchema as unknown as Record<string, unknown>);
+      jt.set(EmployeeSchema as unknown as Record<string, unknown>);
 
       const validEmployee = {
         'name': 'Alice',
@@ -1932,9 +1932,9 @@ import { Result } from '../../src/modules/data/Result.js';
 
       const jt = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      jt.register(PersonSchema as unknown as Record<string, unknown>);
-      jt.register(ManagerSchema as unknown as Record<string, unknown>);
-      jt.register(SeniorManagerSchema as unknown as Record<string, unknown>);
+      jt.set(PersonSchema as unknown as Record<string, unknown>);
+      jt.set(ManagerSchema as unknown as Record<string, unknown>);
+      jt.set(SeniorManagerSchema as unknown as Record<string, unknown>);
 
       const senior = jt.registry.get('https://example.io/SeniorManager');
 

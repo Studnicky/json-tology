@@ -132,7 +132,7 @@ void describe('Transform.create()', () => {
           'schemas': [TransformedDateSchema] as const
         });
 
-        jt.register(UserSchema);
+        jt.set(UserSchema);
 
         return jt;
       }
@@ -214,7 +214,7 @@ void describe('Transform.brand()', () => {
         );
         const jt = JsonTology.create({ 'baseIRI': 'https://myapp.io' });
 
-        jt.register(UserIdSchema2);
+        jt.set(UserIdSchema2);
         assert.equal(jt.validate(UserIdSchema2.$id, 'abc').length, 0);
 
         const wrongTypeErrors = jt.validate(UserIdSchema2.$id, 123);
@@ -237,7 +237,7 @@ void describe('Transform.brand()', () => {
         );
         const jt = JsonTology.create({ 'baseIRI': 'https://myapp.io' });
 
-        jt.register(ConstrainedId);
+        jt.set(ConstrainedId);
         assert.equal(jt.validate(ConstrainedId.$id, 'abc').length, 0);
 
         const tooShortErrors = jt.validate(ConstrainedId.$id, 'ab');

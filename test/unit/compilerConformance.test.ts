@@ -53,11 +53,11 @@ void describe('Compiler conformance', () => {
 
     if (deps) {
       for (const dep of deps) {
-        registry.register(dep);
+        registry.set(dep);
       }
     }
 
-    registry.register(schema);
+    registry.set(schema);
     const schemaId = schema.$id as string;
 
     // Compiled path (may fall back to engine internally)
@@ -1644,7 +1644,7 @@ void describe('Compiler conformance', () => {
             'type': 'integer'
           };
 
-          registry.register(schema);
+          registry.set(schema);
           const schemaId = schema.$id;
 
           const compiledErrors = registry.validate(schemaId, data);
@@ -1672,7 +1672,7 @@ void describe('Compiler conformance', () => {
           'type': 'integer'
         };
 
-        registry.register(schema);
+        registry.set(schema);
 
         const validator = registry.registry.validator(schema.$id);
 

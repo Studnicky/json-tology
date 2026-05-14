@@ -223,7 +223,7 @@ if (raw) {
     ['inStock'] as const,
     'https://bookstore.example/BookWithoutStock',
   );
-  bookstoreEntities.register(BookWithoutStock);
+  bookstoreEntities.set(BookWithoutStock);
 }
 ```
 

@@ -71,7 +71,7 @@ import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
         'enableTypeCast': true
       }).registry;
 
-      registry.register(ConfigStrictSchema);
+      registry.set(ConfigStrictSchema);
 
       assert.throws(() => {
         registry.instantiate(ConfigStrictSchema.$id, {
@@ -84,7 +84,7 @@ import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
     void it('jt:config.extra: allow retains unknown properties in coerce output', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
 
-      registry.register(AllowExtraSchema);
+      registry.set(AllowExtraSchema);
       const result = registry.instantiate(AllowExtraSchema.$id, {
         'extra': 'keep-me',
         'name': 'Alice'
@@ -97,7 +97,7 @@ import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
       // Bad: rejects unknown properties with InstantiationError
       const reg1 = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
 
-      reg1.register(ForbidExtraSchema);
+      reg1.set(ForbidExtraSchema);
 
       assert.throws(() => {
         reg1.instantiate(ForbidExtraSchema.$id, {
@@ -111,7 +111,7 @@ import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
       // Good: accepts only known properties
       const reg2 = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
 
-      reg2.register(ForbidExtraSchema);
+      reg2.set(ForbidExtraSchema);
       const result = reg2.instantiate(ForbidExtraSchema.$id, { 'name': 'Alice' });
 
       assert.deepEqual(result, { 'name': 'Alice' });
@@ -119,7 +119,7 @@ import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
       // Ugly: validate() reports EXTRA_FORBIDDEN keyword
       const reg3 = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
 
-      reg3.register(ForbidExtraSchema);
+      reg3.set(ForbidExtraSchema);
       const errs = reg3.validate(ForbidExtraSchema.$id, {
         'name': 'Alice',
         'unexpected': 'value'
@@ -223,8 +223,8 @@ import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
     void it('returns empty when no duplicates', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
 
-      registry.register(EmailSchema);
-      registry.register({
+      registry.set(EmailSchema);
+      registry.set({
         '$id': 'urn:test:Other',
         'type': 'number'
       });
@@ -235,8 +235,8 @@ import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
     void it('detects structurally-identical leaf shape that matches a registered schema', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
 
-      registry.register(EmailSchema);
-      registry.register(PersonSchema);
+      registry.set(EmailSchema);
+      registry.set(PersonSchema);
 
       const dups = registry.findDuplicates();
 
@@ -272,8 +272,8 @@ import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
 
       const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
 
-      registry.register(Base);
-      registry.register(Container);
+      registry.set(Base);
+      registry.set(Container);
 
       const dups = registry.findDuplicates();
 
@@ -283,8 +283,8 @@ import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
     void it('reports correct schemaId and equivalentTo fields', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
 
-      registry.register(EmailSchema);
-      registry.register(PersonSchema);
+      registry.set(EmailSchema);
+      registry.set(PersonSchema);
 
       const dups = registry.findDuplicates();
       const dup = dups[0];
@@ -298,8 +298,8 @@ import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
     void it('returns empty when only $ref properties exist', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
 
-      registry.register(EmailSchema);
-      registry.register({
+      registry.set(EmailSchema);
+      registry.set({
         '$id': 'urn:test:RefOnly',
         'properties': { 'email': { '$ref': 'urn:test:Email' } },
         'type': 'object'
@@ -491,7 +491,7 @@ import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
 
       const registry = new FormatRegistry();
 
-      registry.register('phone', (value) => {
+      registry.set('phone', (value) => {
         return typeof value === 'string' && /^\+\d{10,15}$/u.test(value);
       });
 
@@ -517,7 +517,7 @@ import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
         // happy: custom format validates correctly
         const reg = FormatRegistry.builtin();
 
-        reg.register('hex-color', (value) => {
+        reg.set('hex-color', (value) => {
           return typeof value === 'string' && /^#[\da-f]{6}$/iu.test(value);
         });
 
@@ -540,7 +540,7 @@ import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
         // edge: re-registering over an existing format overrides it
         const overrideReg = FormatRegistry.builtin();
 
-        overrideReg.register('email', () => {
+        overrideReg.set('email', () => {
           return false;
         });
 
@@ -839,7 +839,7 @@ import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
             'keywords': [evenNumberKeyword]
           }).registry;
 
-          registry.register({
+          registry.set({
             '$id': 'https://test.com/RegEven',
             'evenNumber': true,
             'type': 'number'
@@ -853,7 +853,7 @@ import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
         'check': () => {
           const reg2 = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
 
-          reg2.register({
+          reg2.set({
             '$id': 'urn:test:graph-kw',
             'evenNumber': true,
             'type': 'number'

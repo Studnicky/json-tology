@@ -87,7 +87,7 @@ function loadSchemas(schemaGlob: string): SchemaRegistry {
     const id = schema.$id;
 
     if (typeof id === 'string') {
-      registry.set(id, schema);
+      registry.set(schema, id);
     }
   }
 
@@ -352,7 +352,7 @@ async function runViz(options: VizOptionsInterface): Promise<void> {
     const id = schema.$id;
 
     if (typeof id === 'string') {
-      registry.set(id, schema);
+      registry.set(schema, id);
     }
   }
 

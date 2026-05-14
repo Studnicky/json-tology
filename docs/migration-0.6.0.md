@@ -45,7 +45,50 @@ const snapshot = await JsonTology.prefetch({ loader, schemas: [OrderSchema] });
 const jt = JsonTology.create({ baseIRI, prefetched: snapshot });
 ```
 
-`jt.register(schema)` is unchanged and remains the sync path for schemas whose refs are already in scope.
+`jt.set(schema)` is unchanged and remains the sync path for schemas whose refs are already in scope.
+
+## `register` → `set` (Map-native naming)
+
+`register` is gone from `SchemaRegistryInterface`, `JsonTology`, and `FormatRegistryInterface`. The merged write method is `set`, with three overloads that match how schemas were previously registered:
+
+```ts
+// Before
+jt.register(UserSchema);
+jt.register([UserSchema, AddressSchema] as const);
+jt.registry.register(UserSchema);
+formatRegistry.register('phone', validator);
+
+// After
+jt.set(UserSchema);                           // single, widens TMap
+jt.set([UserSchema, AddressSchema] as const); // bulk, widens TMap
+jt.registry.set(UserSchema);                  // registry-level, no widening
+jt.registry.set(UserSchema.$id, UserSchema);  // Map-style key + value
+formatRegistry.set('phone', validator);
+```
+
+Semantics change: `set` replaces silently when the key already exists, matching `Map.set`. The previous `register`-with-different-content throw is gone. Identical-content writes silently replace too. `registerAnonymous` stays — it computes a hash key, a different verb from `Map.set`.
+
+## `register` → `set` (Map-native naming, schema-first ordering)
+
+`register` is gone from `SchemaRegistryInterface`, `JsonTology`, and `FormatRegistryInterface`. The replacement is `set`. The schema is always the first argument; an explicit IRI follows as an optional second arg for non-canonical aliasing. Bulk writes accept an array where each entry is either a schema or a `[schema, iri]` tuple.
+
+```ts
+// Before
+jt.register(UserSchema);
+jt.register([UserSchema, AddressSchema] as const);
+jt.registry.register(UserSchema);
+formatRegistry.register('phone', validator);
+
+// After
+jt.set(UserSchema);                                 // single, widens TMap
+jt.set([UserSchema, AddressSchema] as const);       // bulk, widens TMap
+jt.set(UserSchema, 'urn:alias');                    // explicit aliasing key
+jt.set([[UserSchema, 'urn:alias'], AddressSchema]); // mixed bulk: tuple + schema
+jt.registry.set(UserSchema);                        // registry-level, no widening
+formatRegistry.set('phone', validator);             // FormatRegistry keeps (name, validator)
+```
+
+Semantics change: `set` replaces silently when the key already exists, matching `Map.set`. The previous `register`-with-different-content throw is gone. `registerAnonymous` stays — it computes a hash key, a different verb.
 
 ## Registry reads go through `jt.registry`
 
@@ -73,6 +116,6 @@ jt.registry.delete('urn:User');                 // returns boolean
 jt.registry.clear();                            // wipe
 ```
 
-`jt.register(schema)` remains as the type-accumulating wrapper around `set` — use it when you want the new schema's static type reflected in subsequent `validate`/`instantiate` calls; use `set` directly for hot-reload or test-fixture replacement where the static type doesn't need to follow.
+`jt.set(schema)` remains as the type-accumulating wrapper around `set` — use it when you want the new schema's static type reflected in subsequent `validate`/`instantiate` calls; use `set` directly for hot-reload or test-fixture replacement where the static type doesn't need to follow.
 
 `jt.registry.revision` is bumped on every mutation. External code that caches derived views (ontology builders, compiled graphs) snapshots the revision and rebuilds when it advances; `jt.ontology()` uses this internally so it no longer needs explicit invalidation.

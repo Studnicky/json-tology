@@ -121,7 +121,7 @@ const AddressSchema = {
   required: ['street', 'city', 'postalCode'],
 } as const;
 
-const jt2 = jt.register(AddressSchema);
+const jt2 = jt.set(AddressSchema);
 
 const address = jt2.instantiate(AddressSchema.$id, {
   street:     '12 Elm Lane',

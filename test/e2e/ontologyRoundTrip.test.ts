@@ -879,7 +879,7 @@ describe('ontology round-trip: multi-schema HR domain', () => {
         '$id': altId
       };
 
-      jt.register(altSchema as { readonly '$id': string });
+      jt.set(altSchema as { readonly '$id': string });
 
       const data = {
         'city': 'Berlin',
@@ -953,7 +953,7 @@ describe('ontology round-trip: multi-schema HR domain', () => {
         '$id': altId
       };
 
-      jt.register(altSchema as { readonly '$id': string });
+      jt.set(altSchema as { readonly '$id': string });
 
       // Missing required "name" — should fail
       const errors = jt.validate(altId, { 'founded': 2020 });

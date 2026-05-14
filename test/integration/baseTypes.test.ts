@@ -18,7 +18,7 @@ void describe('BaseTypes — cross-module registry integration', () => {
       'https://test.io/IdResponse'
     );
 
-    registry.register([
+    registry.set([
       IdBodySchema,
       responseSchema
     ]);
@@ -37,7 +37,7 @@ void describe('BaseTypes — cross-module registry integration', () => {
       'https://test.io/NamePage'
     );
 
-    registry.register([
+    registry.set([
       NameItemSchema,
       pageSchema
     ]);
@@ -51,7 +51,7 @@ void describe('BaseTypes — cross-module registry integration', () => {
     // Rejects missing required fields
     const aPageSchema = BaseTypes.page({ 'type': 'object' } as const, 'https://test.io/APage');
 
-    registry.register(aPageSchema);
+    registry.set(aPageSchema);
     assert.ok(registry.validate(aPageSchema.$id, { 'items': [] }).length > 0);
   });
 });

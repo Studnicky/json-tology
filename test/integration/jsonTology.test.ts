@@ -104,7 +104,7 @@ import {
       {
         'check': () => {
           const jt = JsonTology.create({ 'baseIRI': 'https://myapp.io' });
-          const result = jt.register(UserSchema);
+          const result = jt.set(UserSchema);
 
           assert.strictEqual(result, jt);
           assert.ok(jt.registry.get(UserSchema.$id) !== undefined);
@@ -115,8 +115,8 @@ import {
         'check': () => {
           const jt = JsonTology.create({ 'baseIRI': 'https://myapp.io' });
 
-          jt.register(UserSchema);
-          jt.register([RoleSchema]);
+          jt.set(UserSchema);
+          jt.set([RoleSchema]);
           assert.ok(jt.registry.get(RoleSchema.$id) !== undefined);
         },
         'name': 'register() accepts an array of schemas'
@@ -125,8 +125,8 @@ import {
         'check': () => {
           const jt = JsonTology.create({ 'baseIRI': 'https://myapp.io' });
 
-          jt.register(UserSchema);
-          jt.register(UserSchema);
+          jt.set(UserSchema);
+          jt.set(UserSchema);
           assert.ok(jt.registry.get(UserSchema.$id) !== undefined);
           assert.equal([...jt.registry.keys()].filter((id) => {
             return id === UserSchema.$id;
@@ -399,7 +399,7 @@ import {
             'schemas': [UserSchema]
           });
 
-          jt.register(RoleSchema);
+          jt.set(RoleSchema);
           const graph = jt.ontology().raw() as Array<Record<string, unknown>>;
           const ids = graph.filter((node) => {
             return node['@type'] === 'http://www.w3.org/2002/07/owl#Class';

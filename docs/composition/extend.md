@@ -112,7 +112,7 @@ const B = Compose.extend(A, { y: { type: 'number' } } as const, '...b');
 jt.instantiate(B.$id, data); // fails  - B is not registered
 
 // ✓ Register before use
-jt.register(B);
+jt.set(B);
 jt.instantiate(B.$id, data); // works
 ```
 

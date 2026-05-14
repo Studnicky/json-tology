@@ -809,7 +809,7 @@ import type { DefaultAlignedType } from 'json-tology/types';
 function registerChecked<T>(schema: DefaultAlignedType<T>): void {
   // DefaultAlignedType<T> ensures the schema never reaches this function
   // when its defaults are misaligned  - the call site becomes a compile error.
-  jt.register(schema as T);
+  jt.set(schema as T);
 }
 
 registerChecked(BookSchema);  // OK  - defaults are aligned
@@ -827,7 +827,7 @@ const BadSchema = {
   properties: { currency: { type: 'string', default: 42 } },
 } as const;
 
-jt.register(BadSchema); // runtime error  - but could have been caught at compile time
+jt.set(BadSchema); // runtime error  - but could have been caught at compile time
 ```
 
 ### Comparison

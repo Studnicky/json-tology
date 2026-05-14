@@ -25,15 +25,15 @@ import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
 void describe('Infinity rejection (type: number)', () => {
   const registry = new SchemaRegistry();
 
-  registry.register({
+  registry.set({
     '$id': 'urn:hardening:number',
     'type': 'number'
   });
-  registry.register({
+  registry.set({
     '$id': 'urn:hardening:integer',
     'type': 'integer'
   });
-  registry.register({
+  registry.set({
     '$id': 'urn:hardening:bounded',
     'maximum': 100,
     'minimum': 0,
@@ -141,7 +141,7 @@ void describe('Infinity coercion rejection', () => {
     void it(name, () => {
       const registry = new SchemaRegistry({ 'enableTypeCast': true });
 
-      registry.register({
+      registry.set({
         '$id': 'urn:hardening:cast-number',
         'type': 'number'
       });
@@ -166,12 +166,12 @@ void describe('Infinity coercion rejection', () => {
 void describe('multipleOf zero rejection', () => {
   const registry = new SchemaRegistry();
 
-  registry.register({
+  registry.set({
     '$id': 'urn:hardening:multiple-zero',
     'multipleOf': 0,
     'type': 'number'
   });
-  registry.register({
+  registry.set({
     '$id': 'urn:hardening:multiple-three',
     'multipleOf': 3,
     'type': 'number'
@@ -226,7 +226,7 @@ void describe('compilation fallback produces working validator', () => {
   void it('validates correctly even when compiled path falls back', () => {
     const registry = new SchemaRegistry();
 
-    registry.register({
+    registry.set({
       '$id': 'urn:hardening:fallback',
       'properties': { 'name': { 'type': 'string' } },
       'required': ['name'],
@@ -264,12 +264,12 @@ void describe('format validator error handling', () => {
     void it(name, () => {
       const formatRegistry = FormatRegistry.builtin();
 
-      formatRegistry.register('throwing', () => {
+      formatRegistry.set('throwing', () => {
         throw new Error('validator exploded');
       });
       const registry = new SchemaRegistry({ 'formatRegistry': formatRegistry });
 
-      registry.register({
+      registry.set({
         '$id': 'urn:hardening:throwing-format',
         '$schema': 'https://json-schema.org/draft/2020-12/schema',
         '$vocabulary': {
@@ -391,7 +391,7 @@ void describe('register() input validation', () => {
       const registry = new SchemaRegistry();
 
       assert.throws(() => {
-        registry.register(input as Record<string, unknown>);
+        registry.set(input as Record<string, unknown>);
       }, (error: unknown) => {
         return error instanceof SchemaError && error.code === 'SCHEMA_INVALID_INPUT';
       }, name);
@@ -414,7 +414,7 @@ void describe('schema freeze on registration', () => {
           'type': 'object'
         };
 
-        registry.register(schema);
+        registry.set(schema);
         assert.ok(Object.isFrozen(schema), 'schema is frozen after registration');
       },
       'name': 'freezes schema object on registration'
@@ -431,7 +431,7 @@ void describe('schema freeze on registration', () => {
           'type': 'object'
         };
 
-        registry.register(schema);
+        registry.set(schema);
         assert.ok(Object.isFrozen(schema.properties), 'properties object is frozen');
         assert.ok(Object.isFrozen(schema.properties.name), 'nested property descriptor is frozen');
       },
@@ -445,7 +445,7 @@ void describe('schema freeze on registration', () => {
           'type': 'object'
         };
 
-        registry.register(schema);
+        registry.set(schema);
         assert.throws(() => {
           (schema as Record<string, unknown>).newProp = true;
         }, TypeError, 'mutation attempt throws TypeError');
@@ -459,7 +459,7 @@ void describe('schema freeze on registration', () => {
           'type': 'object'
         });
 
-        registry.register(schema);
+        registry.set(schema);
         assert.ok(Object.isFrozen(schema), 'already-frozen schema stays frozen');
       },
       'name': 'accepts already-frozen schemas without error'

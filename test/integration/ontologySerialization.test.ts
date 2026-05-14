@@ -4228,7 +4228,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
   void describe('OWL serialization: scalar property ranges', () => {
     const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
-    reg.register({
+    reg.set({
       '$id': 'https://example.com/ScalarOnly',
       'properties': {
         'active': { 'type': 'boolean' },
@@ -4284,12 +4284,12 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
   void describe('OWL serialization: mixed ref/scalar property types', () => {
     const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
-    reg.register({
+    reg.set({
       '$id': 'https://example.com/Target',
       'properties': { 'value': { 'type': 'string' } },
       'type': 'object'
     });
-    reg.register({
+    reg.set({
       '$id': 'https://example.com/MixedProps',
       'properties': {
         'label': { 'type': 'string' },
@@ -4321,12 +4321,12 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
   void describe('OWL serialization: array of $ref with allValuesFrom', () => {
     const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
-    reg.register({
+    reg.set({
       '$id': 'https://example.com/Item',
       'properties': { 'name': { 'type': 'string' } },
       'type': 'object'
     });
-    reg.register({
+    reg.set({
       '$id': 'https://example.com/Container',
       'properties': {
         'items': {
@@ -4454,7 +4454,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
   void describe('OWL serialization: readOnly/writeOnly annotations', () => {
     const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
-    reg.register({
+    reg.set({
       '$id': 'https://example.com/AccessControl',
       'properties': {
         'createdAt': {
@@ -4493,7 +4493,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
   void describe('OWL serialization: enum oneOf', () => {
     const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
-    reg.register({
+    reg.set({
       '$id': 'https://example.com/StatusEnum',
       'enum': [
         'active',
@@ -4620,7 +4620,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
         const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
         for (const schema of schemas) {
-          reg.register(schema);
+          reg.set(schema);
         }
 
         const nodes = owlNodes(reg);
@@ -4659,7 +4659,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
       const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
       assert.throws(() => {
-        reg.register({
+        reg.set({
           'properties': { 'name': { 'type': 'string' } },
           'type': 'object'
         });
@@ -4692,7 +4692,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
   void describe('SHACL serialization: string constraints', () => {
     const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
-    reg.register({
+    reg.set({
       '$id': 'https://example.com/StringConstrained',
       'properties': {
         'code': {
@@ -4767,7 +4767,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
       void it(name, () => {
         const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
-        reg.register(schema);
+        reg.set(schema);
 
         const shapes = shaclNodes(reg);
 
@@ -4800,7 +4800,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
   void describe('SHACL serialization: array cardinality', () => {
     const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
-    reg.register({
+    reg.set({
       '$id': 'https://example.com/ArrayConstrained',
       'items': { 'type': 'string' },
       'maxItems': 10,
@@ -4860,7 +4860,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
   void describe('SHACL serialization: nested $ref property', () => {
     const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
-    reg.register({
+    reg.set({
       '$id': 'https://example.com/Address',
       'properties': {
         'city': { 'type': 'string' },
@@ -4868,7 +4868,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
       },
       'type': 'object'
     });
-    reg.register({
+    reg.set({
       '$id': 'https://example.com/Person',
       'properties': {
         'address': { '$ref': 'https://example.com/Address' },
@@ -5063,7 +5063,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
         const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
         for (const schema of schemas) {
-          reg.register(schema);
+          reg.set(schema);
         }
 
         const shapes = shaclNodes(reg);
@@ -5108,7 +5108,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
     void it('edge: schema with only $defs and no properties produces class but no property nodes', () => {
       const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
-      reg.register({
+      reg.set({
         '$defs': {
           'Inner': {
             'properties': { 'x': { 'type': 'string' } },
@@ -5140,7 +5140,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
     void it('edge: readOnly and writeOnly on same property emits both annotations', () => {
       const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
-      reg.register({
+      reg.set({
         '$id': 'https://example.com/BothAccess',
         'properties': {
           'token': {
@@ -5166,7 +5166,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
     void it('edge: schema with all constraint types combined serializes without error', () => {
       const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
-      reg.register({
+      reg.set({
         '$id': 'https://example.com/AllConstraints',
         'additionalProperties': false,
         'enum': [
@@ -5214,7 +5214,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
     void it('produces valid class/shape with no property shapes for empty schema', () => {
       const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
-      reg.register({
+      reg.set({
         '$id': 'https://example.com/Empty',
         'type': 'object'
       });
@@ -5263,7 +5263,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
     void it('uses full IRIs in all predicate keys, no CURIE shortcuts', () => {
       const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
 
-      reg.register({
+      reg.set({
         '$id': 'https://example.com/FullIri',
         'properties': {
           'name': { 'type': 'string' },

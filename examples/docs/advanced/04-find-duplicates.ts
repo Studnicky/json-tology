@@ -26,8 +26,8 @@ const BookSchema = {
 
 const registry = new SchemaRegistry();
 
-registry.register(IsbnSchema);
-registry.register(BookSchema);
+registry.set(IsbnSchema);
+registry.set(BookSchema);
 
 const duplicates = registry.findDuplicates();
 

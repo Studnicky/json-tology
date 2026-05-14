@@ -50,7 +50,7 @@ const jt = JsonTology.create({
   'schemas': allSchemas
 });
 
-jt.register(PersonName).register(PatchPerson);
+jt.set(PersonName).set(PatchPerson);
 
 // ---------------------------------------------------------------------------
 // Type-safe parse — return type is Person, not unknown
@@ -159,7 +159,7 @@ const StatusSchema = {
 } as const;
 
 type Status = EnumValuesType<typeof StatusSchema>;
-jt.register(StatusSchema);
+jt.set(StatusSchema);
 // 'active' | 'inactive' | 'pending'
 
 // LooseInputType strips brands to base primitives (for pre-validation input)
@@ -172,7 +172,7 @@ console.log('Status type: literal union from enum');
 console.log('LooseMbox type: string (brands stripped)');
 
 // Register and validate with integer range
-const jt2 = jt.register(RatingSchema);
+const jt2 = jt.set(RatingSchema);
 const rating = jt2.instantiate(RatingSchema.$id, 3);
 
 console.log('Validated rating:', rating);

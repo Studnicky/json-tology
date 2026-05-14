@@ -1005,8 +1005,8 @@ void describe('findDuplicates — structurally identical, IRI distinct', () => {
     } as const;
     const jt = JsonTology.create({ 'baseIRI': 'urn:dup:' });
 
-    jt.registry.register(A);
-    jt.registry.register(Container);
+    jt.registry.set(A);
+    jt.registry.set(Container);
 
     const dups = jt.registry.findDuplicates();
 

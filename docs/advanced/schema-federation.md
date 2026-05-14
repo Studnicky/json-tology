@@ -115,7 +115,7 @@ const snapshot = await JsonTology.prefetch({ loader: fsLoader, rootIds: [UserSch
 
 ## Adding schemas after construction
 
-`jt.register(schema)` is synchronous and throws `REF_UNRESOLVED` for any unregistered cross-schema refs. For schemas whose transitive refs are not yet known locally, build a fresh snapshot with `JsonTology.prefetch` and pass it through `prefetched` on a new `JsonTology.create` call, or merge the new schemas into the existing registry by calling `register` once every dependency is in scope.
+`jt.set(schema)` is synchronous and throws `REF_UNRESOLVED` for any unregistered cross-schema refs. For schemas whose transitive refs are not yet known locally, build a fresh snapshot with `JsonTology.prefetch` and pass it through `prefetched` on a new `JsonTology.create` call, or merge the new schemas into the existing registry by calling `register` once every dependency is in scope.
 
 ## Performance notes
 

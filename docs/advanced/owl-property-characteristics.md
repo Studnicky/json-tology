@@ -87,7 +87,7 @@ Property characteristics are TBox axioms - they describe logical structure and e
 
 ## Compile-time conflict detection
 
-Three combinations are logically impossible under OWL 2 semantics. Setting them on the same property produces a `PropertyCharacteristicConflictInterface` branded type error at the property definition site, and `SchemaRegistry.register()` throws a `SchemaError` with code `PROPERTY_CHARACTERISTIC_CONFLICT` at runtime.
+Three combinations are logically impossible under OWL 2 semantics. Setting them on the same property produces a `PropertyCharacteristicConflictInterface` branded type error at the property definition site, and `SchemaRegistry.set()` throws a `SchemaError` with code `PROPERTY_CHARACTERISTIC_CONFLICT` at runtime.
 
 | Conflict | Reason |
 |----------|--------|

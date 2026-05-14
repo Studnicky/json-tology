@@ -173,8 +173,8 @@ export function runComposeBench(): BenchResult[] {
     );
     const reg = new SchemaRegistry();
 
-    reg.register(BaseBookJt);
-    reg.register(child);
+    reg.set(BaseBookJt);
+    reg.set(child);
     reg.validate((child as { '$id': string }).$id, {
       ...validBook,
       'pages': 200
@@ -215,9 +215,9 @@ export function runComposeBench(): BenchResult[] {
   );
   const reg = new SchemaRegistry();
 
-  reg.register(CircleJt);
-  reg.register(RectJt);
-  reg.register(ShapeJt as Record<string, unknown>);
+  reg.set(CircleJt);
+  reg.set(RectJt);
+  reg.set(ShapeJt as Record<string, unknown>);
   reg.validate((ShapeJt as { '$id': string }).$id, validCircle);
 
   const ShapeTbCompiled = TypeCompiler.Compile(ShapeTb);
@@ -270,9 +270,9 @@ export function runComposeBench(): BenchResult[] {
     );
     const subreg = new SchemaRegistry();
 
-    subreg.register(BaseBookJt);
-    subreg.register(Tagged);
-    subreg.register(inter as Record<string, unknown>);
+    subreg.set(BaseBookJt);
+    subreg.set(Tagged);
+    subreg.set(inter as Record<string, unknown>);
     subreg.validate((inter as { '$id': string }).$id, {
       ...validBook,
       'tags': ['a']

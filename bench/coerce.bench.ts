@@ -31,8 +31,8 @@ export function runCoerceBench(): BenchResult[] {
 
   const registry = new SchemaRegistry({ 'castTypes': true });
 
-  registry.register(SimpleSchema);
-  registry.register(DefaultsSchema);
+  registry.set(SimpleSchema);
+  registry.set(DefaultsSchema);
 
   // Warm up
   registry.instantiate(SimpleSchema, simpleValid);

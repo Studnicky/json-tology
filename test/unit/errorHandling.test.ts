@@ -53,7 +53,7 @@ void describe('SchemaError on registration', { 'concurrency': true }, () => {
       const jt = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
       try {
-        jt.register(schema);
+        jt.set(schema);
         assert.fail(`${name}: should throw`);
       } catch (error) {
         assert.ok(error instanceof SchemaError, `${name}: instanceof SchemaError`);
@@ -62,33 +62,36 @@ void describe('SchemaError on registration', { 'concurrency': true }, () => {
     }
   });
 
-  void it('throws SchemaError for conflicting overwrite', () => {
+  void it('set() replaces an existing schema with new content (Map semantics)', () => {
     const jt = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    jt.register({
+    jt.set({
       '$id': 'https://err.test/Original',
       'properties': { 'x': { 'type': 'string' } },
       'type': 'object'
     });
 
-    try {
-      jt.register({
-        '$id': 'https://err.test/Original',
-        'properties': { 'y': { 'type': 'number' } },
-        'type': 'object'
-      });
-      assert.fail('should throw');
-    } catch (error) {
-      assert.ok(error instanceof SchemaError, 'conflicting overwrite: instanceof SchemaError');
-      assert.ok((error).message.includes('already registered'), 'conflicting overwrite: message');
-    }
+    jt.set({
+      '$id': 'https://err.test/Original',
+      'properties': { 'y': { 'type': 'number' } },
+      'type': 'object'
+    });
+
+    const replaced = jt.registry.get('https://err.test/Original');
+
+    assert.ok(replaced !== undefined, 'schema is registered after replace');
+    assert.deepStrictEqual(
+      (replaced).properties,
+      { 'y': { 'type': 'number' } },
+      'replaced schema has the new content'
+    );
   });
 
   void it('SchemaError has code and toJson()', () => {
     const jt = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
     try {
-      jt.register({ 'type': 'object' });
+      jt.set({ 'type': 'object' });
       assert.fail('should throw');
     } catch (error) {
       assert.ok(error instanceof SchemaError, 'instanceof SchemaError');
@@ -167,7 +170,7 @@ void describe('InstantiationError structure', { 'concurrency': true }, () => {
   void it('carries structured ValidationErrors with items', () => {
     const jt = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    jt.register({
+    jt.set({
       '$id': 'https://err.test/Person',
       'properties': {
         'age': {
@@ -204,7 +207,7 @@ void describe('InstantiationError structure', { 'concurrency': true }, () => {
   void it('reports multiple errors simultaneously', () => {
     const jt = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    jt.register({
+    jt.set({
       '$id': 'https://err.test/Multi',
       'properties': {
         'email': {
@@ -235,7 +238,7 @@ void describe('InstantiationError structure', { 'concurrency': true }, () => {
   void it('InstantiationError.toJson() serializes cleanly', () => {
     const jt = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    jt.register({
+    jt.set({
       '$id': 'https://err.test/Serial',
       'properties': { 'x': { 'type': 'number' } },
       'required': ['x'],
@@ -270,14 +273,14 @@ void describe('Registry recovery', { 'concurrency': true }, () => {
       'enableStrictGraph': true
     });
 
-    jt.register({
+    jt.set({
       '$id': 'https://err.test/Good',
       'properties': { 'x': { 'type': 'string' } },
       'type': 'object'
     });
 
     assert.throws(() => {
-      jt.register({
+      jt.set({
         '$id': 'https://err.test/Bad',
         'properties': {
           'nested': {
@@ -322,7 +325,7 @@ void describe('Registry recovery', { 'concurrency': true }, () => {
   void it('remains usable after InstantiationError', () => {
     const jt = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    jt.register({
+    jt.set({
       '$id': 'https://err.test/Recover',
       'properties': { 'x': { 'type': 'number' } },
       'required': ['x'],

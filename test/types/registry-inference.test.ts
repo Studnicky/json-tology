@@ -3,7 +3,7 @@
  *
  * This file validates that:
  * 1. JsonTology.create() infers types from constructor schemas
- * 2. .register() accumulates types via chaining
+ * 2. .set() accumulates types via chaining
  * 3. coerce(), is(), validate() constrain schemaId to registered keys
  * 4. coerce() returns the correct inferred type
  * 5. Incorrect schema IDs and type mismatches are caught at compile time
@@ -98,13 +98,13 @@ if (false as boolean) {
 }
 
 // ---------------------------------------------------------------------------
-// 2. .register() — chained type accumulation
+// 2. .set() — chained type accumulation
 // ---------------------------------------------------------------------------
 
 const jt2 = JsonTology.create({
   'baseIRI': 'https://example.io',
   'schemas': [UserSchema] as const
-}).register(OrderSchema);
+}).set(OrderSchema);
 
 // Both schemas accessible
 const _u2 = jt2.instantiate('https://example.io/User', { 'name': 'Ada' });
@@ -119,7 +119,7 @@ if (false as boolean) {
 }
 
 // Chain another register
-const jt3 = jt2.register(TagSchema);
+const jt3 = jt2.set(TagSchema);
 const tag = jt3.instantiate('https://example.io/Tag', { 'label': 'foo' });
 const _tagLabel: string = tag.label;
 

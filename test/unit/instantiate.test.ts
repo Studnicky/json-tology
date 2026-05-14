@@ -92,7 +92,7 @@ import { Logger } from '../utils/Logger.js';
       // Good: single alias maps to canonical key
       const singleReg = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      singleReg.register(SingleAliasSchema);
+      singleReg.set(SingleAliasSchema);
       assert.deepStrictEqual(singleReg.instantiate(SingleAliasSchema.$id, { 'foo_bar': 'hello' }), { 'fooBar': 'hello' });
       assert.deepStrictEqual(singleReg.instantiate(SingleAliasSchema.$id, { 'fooBar': 'hello' }), { 'fooBar': 'hello' });
       assert.deepStrictEqual(singleReg.instantiate(SingleAliasSchema.$id, {
@@ -107,7 +107,7 @@ import { Logger } from '../utils/Logger.js';
       // Good: multi-alias priority
       const multiReg = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      multiReg.register(MultiAliasSchema);
+      multiReg.set(MultiAliasSchema);
       assert.deepStrictEqual(multiReg.instantiate(MultiAliasSchema.$id, { 'foo_bar': 'value1' }), { 'fooBar': 'value1' });
       assert.deepStrictEqual(multiReg.instantiate(MultiAliasSchema.$id, { 'fooBarLegacy': 'legacy' }), { 'fooBar': 'legacy' });
       assert.deepStrictEqual(multiReg.instantiate(MultiAliasSchema.$id, {
@@ -119,7 +119,7 @@ import { Logger } from '../utils/Logger.js';
       // Bad: required constraint satisfied via alias; fails without either
       const reqReg = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      reqReg.register(RequiredAliasSchema);
+      reqReg.set(RequiredAliasSchema);
       assert.doesNotThrow(() => {
         reqReg.instantiate(RequiredAliasSchema.$id, { 'foo_bar': 'value' });
       });
@@ -130,13 +130,13 @@ import { Logger } from '../utils/Logger.js';
       // Good: nested object alias resolves
       const nestedReg = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      nestedReg.register(NestedAliasSchema);
+      nestedReg.set(NestedAliasSchema);
       assert.deepStrictEqual(nestedReg.instantiate(NestedAliasSchema.$id, { 'inner': { 'my_prop': 'nested-value' } }), { 'inner': { 'myProp': 'nested-value' } });
 
       // Good: array item alias resolves per element
       const arrReg = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      arrReg.register(ArrayItemAliasSchema);
+      arrReg.set(ArrayItemAliasSchema);
       assert.deepStrictEqual(arrReg.instantiate(ArrayItemAliasSchema.$id, [
         { 'lbl': 'first' },
         { 'lbl': 'second' }
@@ -158,7 +158,7 @@ import { Logger } from '../utils/Logger.js';
       } as const;
       const wtReg = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      wtReg.register(WrongTypeSchema);
+      wtReg.set(WrongTypeSchema);
       let coercionPaths: string[] = [];
 
       try {
@@ -217,7 +217,7 @@ import { Logger } from '../utils/Logger.js';
         'logger': logger
       });
 
-      registry.register({
+      registry.set({
         '$id': 'https://ref.test/Tree',
         'properties': {
           'children': {
@@ -299,7 +299,7 @@ import { Logger } from '../utils/Logger.js';
         'logger': logger
       });
 
-      registry.register({
+      registry.set({
         '$id': 'https://ref.test/ListNode',
         'properties': {
           'next': { '$ref': 'https://ref.test/ListNode' },
@@ -343,7 +343,7 @@ import { Logger } from '../utils/Logger.js';
         'logger': logger
       });
 
-      registry.register({
+      registry.set({
         '$defs': {
           'Node': {
             'properties': {
@@ -403,7 +403,7 @@ import { Logger } from '../utils/Logger.js';
         'logger': logger
       });
 
-      registry.register([
+      registry.set([
         {
           '$id': 'https://ref.test/Person',
           'properties': {
@@ -455,7 +455,7 @@ import { Logger } from '../utils/Logger.js';
         'logger': logger
       });
 
-      registry.register([
+      registry.set([
         {
           '$id': 'https://ref.test/ChainC',
           'properties': { 'code': { 'type': 'string' } },
@@ -542,7 +542,7 @@ import { Logger } from '../utils/Logger.js';
 
       // Registration must NOT throw — schemas can register in any order and
       // forward refs across schemas are common during bootstrap.
-      registry.register({
+      registry.set({
         '$id': 'https://ref.test/Dangling',
         'properties': { 'link': { '$ref': 'https://ref.test/DoesNotExist' } },
         'type': 'object'
@@ -574,7 +574,7 @@ import { Logger } from '../utils/Logger.js';
         'logger': logger
       });
 
-      registry.register({
+      registry.set({
         '$defs': {
           'EmailType': {
             '$anchor': 'emailDef',
@@ -609,7 +609,7 @@ import { Logger } from '../utils/Logger.js';
         'logger': logger
       });
 
-      registry.register({
+      registry.set({
         '$defs': {
           'Address': {
             'properties': {
@@ -690,7 +690,7 @@ import { Logger } from '../utils/Logger.js';
         });
       }
 
-      registry.register(schemas);
+      registry.set(schemas);
 
       const topId = `${baseUrl}/Level${String(depth - 1)}`;
 
@@ -726,7 +726,7 @@ import { Logger } from '../utils/Logger.js';
         'logger': logger
       });
 
-      registry.register({
+      registry.set({
         '$id': 'https://ref.test/DeepDefaults',
         'properties': {
           'outer': {
@@ -775,7 +775,7 @@ import { Logger } from '../utils/Logger.js';
         'logger': logger
       });
 
-      registry.register([
+      registry.set([
         {
           '$id': 'https://ref.test/Base',
           'properties': { 'name': { 'type': 'string' } },
@@ -862,7 +862,7 @@ import { Logger } from '../utils/Logger.js';
         'enableTypeCast': true
       });
 
-      r1.register(StrictFieldSchema);
+      r1.set(StrictFieldSchema);
       assert.deepEqual(r1.instantiate(StrictFieldSchema.$id, {
         'age': 30,
         'name': 'Alice'
@@ -877,7 +877,7 @@ import { Logger } from '../utils/Logger.js';
         'enableTypeCast': true
       });
 
-      r2.register(StrictFieldSchema);
+      r2.set(StrictFieldSchema);
       const coercedResult = r2.instantiate(StrictFieldSchema.$id, {
         'age': 30,
         'name': 42
@@ -888,7 +888,7 @@ import { Logger } from '../utils/Logger.js';
       // Good: accepts valid integer without castTypes
       const r3 = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      r3.register(StrictFieldSchema);
+      r3.set(StrictFieldSchema);
       assert.deepEqual(r3.instantiate(StrictFieldSchema.$id, {
         'age': 5,
         'name': 'Bob'
@@ -903,7 +903,7 @@ import { Logger } from '../utils/Logger.js';
         'enableTypeCast': true
       });
 
-      r4.register(StrictFieldSchema);
+      r4.set(StrictFieldSchema);
       assert.throws(() => {
         r4.instantiate(StrictFieldSchema.$id, {
           'age': '30',
@@ -917,7 +917,7 @@ import { Logger } from '../utils/Logger.js';
         'enableTypeCast': true
       });
 
-      r5.register(StrictFieldSchema);
+      r5.set(StrictFieldSchema);
       assert.throws(() => {
         r5.instantiate(StrictFieldSchema.$id, {
           'age': true,
@@ -931,7 +931,7 @@ import { Logger } from '../utils/Logger.js';
         'enableTypeCast': true
       });
 
-      r6.register(GlobalStrictConfigSchema);
+      r6.set(GlobalStrictConfigSchema);
       assert.throws(() => {
         r6.instantiate(GlobalStrictConfigSchema.$id, {
           'count': '5',
@@ -945,7 +945,7 @@ import { Logger } from '../utils/Logger.js';
         'enableTypeCast': true
       });
 
-      r7.register(GlobalStrictConfigSchema);
+      r7.set(GlobalStrictConfigSchema);
       const optedOut = r7.instantiate(GlobalStrictConfigSchema.$id, {
         'count': 5,
         'label': 99
@@ -959,7 +959,7 @@ import { Logger } from '../utils/Logger.js';
         'enableTypeCast': true
       });
 
-      r8.register(StrictFieldSchema);
+      r8.set(StrictFieldSchema);
       assert.ok(r8.validate(StrictFieldSchema.$id, {
         'age': '30',
         'name': 'Alice'
@@ -1030,14 +1030,14 @@ import { Logger } from '../utils/Logger.js';
       // Good: frozen when jt:frozen is set
       const r1 = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      r1.register(FrozenSchema);
-      r1.register(MetaSchema);
+      r1.set(FrozenSchema);
+      r1.set(MetaSchema);
       assert.ok(Object.isFrozen(r1.instantiate(FrozenSchema.$id, { 'name': 'Alice' })));
 
       // Good: mutable when jt:frozen is not set
       const r2 = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      r2.register(MutableSchema);
+      r2.set(MutableSchema);
       const mutable = r2.instantiate(MutableSchema.$id, { 'value': 'hello' }) as Record<string, unknown>;
 
       assert.ok(!Object.isFrozen(mutable));
@@ -1047,8 +1047,8 @@ import { Logger } from '../utils/Logger.js';
       // Bad: mutation on frozen result throws
       const r3 = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      r3.register(FrozenSchema);
-      r3.register(MetaSchema);
+      r3.set(FrozenSchema);
+      r3.set(MetaSchema);
       const frozen = r3.instantiate(FrozenSchema.$id, { 'name': 'Bob' }) as Record<string, unknown>;
 
       assert.throws(() => {
@@ -1058,8 +1058,8 @@ import { Logger } from '../utils/Logger.js';
       // Good: nested objects are also frozen (deep freeze)
       const r4 = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      r4.register(MetaSchema);
-      r4.register(FrozenSchema);
+      r4.set(MetaSchema);
+      r4.set(FrozenSchema);
       const deepFrozen = r4.instantiate(FrozenSchema.$id, {
         'meta': { 'tag': 'test' },
         'name': 'Alice'
@@ -1071,7 +1071,7 @@ import { Logger } from '../utils/Logger.js';
       // Good: arrays are frozen
       const r5 = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      r5.register(FrozenArraySchema);
+      r5.set(FrozenArraySchema);
       const frozenArr = r5.instantiate(FrozenArraySchema.$id, {
         'items': [
           'a',
@@ -1085,7 +1085,7 @@ import { Logger } from '../utils/Logger.js';
       // Good: jt:config.frozen shorthand works
       const r6 = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      r6.register(FrozenViaConfigSchema);
+      r6.set(FrozenViaConfigSchema);
       assert.ok(Object.isFrozen(r6.instantiate(FrozenViaConfigSchema.$id, { 'value': 42 })));
 
       // Good: materialize() respects jt:frozen
@@ -1108,8 +1108,8 @@ import { Logger } from '../utils/Logger.js';
       // Ugly: cycle-safe (no infinite recursion)
       const r9 = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      r9.register(FrozenSchema);
-      r9.register(MetaSchema);
+      r9.set(FrozenSchema);
+      r9.set(MetaSchema);
       assert.doesNotThrow(() => {
         r9.instantiate(FrozenSchema.$id, { 'name': 'safe' });
       });
@@ -1138,7 +1138,7 @@ import { Logger } from '../utils/Logger.js';
     void it('fills defaults by default (enableDefaults: true)', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register(WithDefaultSchema as unknown as Record<string, unknown>);
+      registry.set(WithDefaultSchema as unknown as Record<string, unknown>);
 
       const result = registry.instantiate(WithDefaultSchema.$id, { 'name': 'Alice' }) as Record<string, unknown>;
 
@@ -1151,7 +1151,7 @@ import { Logger } from '../utils/Logger.js';
         'enableDefaults': false
       });
 
-      registry.register(WithDefaultSchema as unknown as Record<string, unknown>);
+      registry.set(WithDefaultSchema as unknown as Record<string, unknown>);
 
       const result = registry.instantiate(WithDefaultSchema.$id, { 'name': 'Alice' }) as Record<string, unknown>;
 
@@ -1161,7 +1161,7 @@ import { Logger } from '../utils/Logger.js';
     void it('per-call opt-out overrides global true', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register(WithDefaultSchema as unknown as Record<string, unknown>);
+      registry.set(WithDefaultSchema as unknown as Record<string, unknown>);
 
       const result = registry.instantiate(
         WithDefaultSchema.$id,
@@ -1178,7 +1178,7 @@ import { Logger } from '../utils/Logger.js';
         'enableDefaults': false
       });
 
-      registry.register(WithDefaultSchema as unknown as Record<string, unknown>);
+      registry.set(WithDefaultSchema as unknown as Record<string, unknown>);
 
       const result = registry.instantiate(
         WithDefaultSchema.$id,
@@ -1192,7 +1192,7 @@ import { Logger } from '../utils/Logger.js';
     void it('per-call options do not mutate registry stored default setting', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register(WithDefaultSchema as unknown as Record<string, unknown>);
+      registry.set(WithDefaultSchema as unknown as Record<string, unknown>);
 
       registry.instantiate(WithDefaultSchema.$id, { 'name': 'Alice' }, { 'enableDefaults': false });
 
@@ -1263,7 +1263,7 @@ import { Logger } from '../utils/Logger.js';
         }
       });
 
-      registry.register(InlineObjectSchema as unknown as Record<string, unknown>);
+      registry.set(InlineObjectSchema as unknown as Record<string, unknown>);
       assert.ok(warns.length > 0, 'warning emitted');
       assert.ok(warns.some((msg) => {
         return msg.includes('inline');
@@ -1296,7 +1296,7 @@ import { Logger } from '../utils/Logger.js';
         }
       });
 
-      registry.register(InlineObjectSchema as unknown as Record<string, unknown>);
+      registry.set(InlineObjectSchema as unknown as Record<string, unknown>);
       const inlineWarns = warns.filter((msg) => {
         return msg.includes('inline');
       });
@@ -1314,7 +1314,7 @@ import { Logger } from '../utils/Logger.js';
 
       assert.throws(
         () => {
-          registry.register(InlineObjectSchema as unknown as Record<string, unknown>);
+          registry.set(InlineObjectSchema as unknown as Record<string, unknown>);
         },
         (err: unknown) => {
           return err instanceof SchemaError && err.code === 'SCHEMA_STRUCTURE_INVALID';
@@ -1330,7 +1330,7 @@ import { Logger } from '../utils/Logger.js';
 
       assert.throws(
         () => {
-          registry.register(InlinePrimitiveSchema as unknown as Record<string, unknown>);
+          registry.set(InlinePrimitiveSchema as unknown as Record<string, unknown>);
         },
         (err: unknown) => {
           return err instanceof SchemaError && err.code === 'SCHEMA_STRUCTURE_INVALID';
@@ -1345,7 +1345,7 @@ import { Logger } from '../utils/Logger.js';
       });
 
       assert.doesNotThrow(() => {
-        registry.register(CleanSchema as unknown as Record<string, unknown>);
+        registry.set(CleanSchema as unknown as Record<string, unknown>);
       });
     });
 
@@ -1357,10 +1357,10 @@ import { Logger } from '../utils/Logger.js';
       });
 
       assert.throws(() => {
-        strictRegistry.register(InlineObjectSchema as unknown as Record<string, unknown>);
+        strictRegistry.set(InlineObjectSchema as unknown as Record<string, unknown>);
       });
       assert.throws(() => {
-        strictRegistry.register(InlinePrimitiveSchema as unknown as Record<string, unknown>);
+        strictRegistry.set(InlinePrimitiveSchema as unknown as Record<string, unknown>);
       });
     });
 
@@ -1381,8 +1381,8 @@ import { Logger } from '../utils/Logger.js';
       });
 
       assert.doesNotThrow(() => {
-        registry.register(ParentSchema as unknown as Record<string, unknown>);
-        registry.register(ChildSchema);
+        registry.set(ParentSchema as unknown as Record<string, unknown>);
+        registry.set(ChildSchema);
       });
     });
   });
@@ -1432,8 +1432,8 @@ import { Logger } from '../utils/Logger.js';
         }
       });
 
-      registry.register(IsbnSchema);
-      registry.register(BookSchema);
+      registry.set(IsbnSchema);
+      registry.set(BookSchema);
 
       const dupWarns = warns.filter((msg) => {
         return msg.toLowerCase().includes('duplicate');

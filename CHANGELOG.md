@@ -18,11 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **BREAKING**: `JsonTology.create` is synchronous on every call site. The `loader` option is removed from `JsonTologyOptionsInterface`. Async transitive resolution lives entirely in `JsonTology.prefetch`. Migration: replace `await JsonTology.create({ loader, schemas })` with `const snapshot = await JsonTology.prefetch({ loader, schemas }); JsonTology.create({ prefetched: snapshot, schemas })`.
+- **BREAKING**: `register` is renamed `set` on `SchemaRegistryInterface`, `JsonTology`, and `FormatRegistryInterface`. The merged write surface takes the schema first, with an optional explicit key as the second argument: `set(schema)`, `set(schema, iri)`, or `set(entries[])` where each entry is either a schema or a `[schema, iri]` tuple. `JsonTology.set` widens `TMap`. `FormatRegistry.set(name, validator)` keeps Map's `(key, value)` ordering (no schema involved). Semantics shift: `set` replaces silently per `Map` contract; the previous `register`-with-different-content throw is gone.
 
 ### Removed
 
-- **BREAKING**: `jt.registerAsync(schema)` is gone. Federation runs through `JsonTology.prefetch` only; `jt.register(schema)` remains for sync registration of schemas whose refs are already resolved.
+- **BREAKING**: `jt.registerAsync(schema)` is gone. Federation runs through `JsonTology.prefetch` only; `jt.set(schema)` remains for sync registration of schemas whose refs are already resolved.
 - **BREAKING**: `jt.has(iri)`, `jt.get(iri)`, and `jt.list()` facade methods removed. There is one path to registry reads: `jt.registry.has(iri)`, `jt.registry.get(iri)`, `[...jt.registry.keys()]`. The registry exposes the full Map-like read surface.
+- **BREAKING**: `register()` removed from `SchemaRegistryInterface`, `JsonTology`, and `FormatRegistryInterface`. Replaced by `set` (see Changed). `registerAnonymous` stays because it generates a hash key — distinct verb from `Map.set`.
 
 ### Security
 

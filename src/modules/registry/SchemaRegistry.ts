@@ -750,27 +750,9 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     });
   }
 
-  public register(schemas: ReadonlyArray<Record<string, unknown>> | Record<string, unknown>): void {
-    if ((schemas as unknown) === null || (schemas as unknown) === undefined) {
-      throw new SchemaError('SCHEMA_INVALID_INPUT', 'register() requires a non-null schema object or array');
-    }
-
-    const list: ReadonlyArray<Record<string, unknown>> = Array.isArray(schemas) ? schemas : [schemas];
-
-    for (const element of list) {
-      if ((element as unknown) === null || typeof element !== 'object' || Array.isArray(element)) {
-        throw new SchemaError(
-          'SCHEMA_INVALID_INPUT',
-          `register() requires plain objects, received ${(element as unknown) === null ? 'null' : typeof element}`
-        );
-      }
-      this.registerSingle(element);
-    }
-  }
-
   public registerAnonymous(schema: Record<string, unknown>): string {
     if (typeof schema.$id === 'string' && schema.$id !== '') {
-      this.register(schema);
+      this.setOne(schema);
 
       return schema.$id;
     }
@@ -782,7 +764,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       '$id': syntheticId
     };
 
-    this.register(withId);
+    this.setOne(withId);
 
     return syntheticId;
   }
@@ -914,31 +896,80 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return this._revision;
   }
 
-  public set(schemaId: string, schema: Record<string, unknown>): this {
-    if ((schema as unknown) === null || typeof schema !== 'object' || Array.isArray(schema)) {
-      throw new SchemaError(
-        'SCHEMA_INVALID_INPUT',
-        `set() requires a plain object, received ${(schema as unknown) === null ? 'null' : typeof schema}`
-      );
+  public set(schema: Record<string, unknown>, iri?: string): this;
+  public set(
+    entries: ReadonlyArray<readonly [Record<string, unknown>, string] | Record<string, unknown>>
+  ): this;
+  public set(
+    first:
+      | ReadonlyArray<readonly [Record<string, unknown>, string] | Record<string, unknown>>
+      | Record<string, unknown>,
+    second?: string
+  ): this {
+    type SetEntry = readonly [Record<string, unknown>, string] | Record<string, unknown>;
+
+    if (Array.isArray(first)) {
+      for (const entry of first as readonly SetEntry[]) {
+        if (Array.isArray(entry)) {
+          const [
+            schema,
+            iri
+          ] = entry as readonly [Record<string, unknown>, string];
+
+          this.setKeyed(iri, schema);
+        } else {
+          this.setOne(entry as Record<string, unknown>);
+        }
+      }
+
+      return this;
     }
 
+    if (second !== undefined) {
+      this.setKeyed(second, first as Record<string, unknown>);
+
+      return this;
+    }
+    this.setOne(first as Record<string, unknown>);
+
+    return this;
+  }
+
+  private setKeyed(iri: string, schema: Record<string, unknown>): void {
     const schemaIdOnObject = schema.$id;
 
     if (typeof schemaIdOnObject !== 'string' || schemaIdOnObject === '') {
       throw new SchemaError('SCHEMA_MISSING_ID', 'Schema must have a $id property');
     }
 
-    if (schemaIdOnObject !== schemaId) {
+    if (schemaIdOnObject !== iri) {
       throw new SchemaError(
         'SCHEMA_INVALID_INPUT',
-        `set() key "${schemaId}" does not match schema.$id "${schemaIdOnObject}"`,
-        schemaId
+        `set() key "${iri}" does not match schema.$id "${schemaIdOnObject}"`,
+        iri
       );
     }
-    this.delete(schemaId);
+    this.delete(iri);
     this.registerSingle(schema);
+  }
 
-    return this;
+  private setOne(schema: Record<string, unknown>): void {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for JS callers
+    if (schema === null || typeof schema !== 'object' || Array.isArray(schema)) {
+      throw new SchemaError(
+        'SCHEMA_INVALID_INPUT',
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- error message reflects actual runtime value
+        `set() requires plain objects, received ${schema === null ? 'null' : typeof schema}`
+      );
+    }
+
+    const iri = schema.$id;
+
+    if (typeof iri !== 'string' || iri === '') {
+      throw new SchemaError('SCHEMA_MISSING_ID', 'Schema must have a $id property');
+    }
+    this.delete(iri);
+    this.registerSingle(schema);
   }
 
   public get size(): number {
@@ -969,7 +1000,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     // Register so the result can be passed to validate/instantiate/is directly
     if (!this.schemas.has(synthesizedId)) {
-      this.register(result);
+      this.set(result);
     }
 
     return result;

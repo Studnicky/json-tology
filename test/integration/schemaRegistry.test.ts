@@ -112,7 +112,7 @@ void describe('SchemaRegistry registration', () => {
       },
       'name': 'registers a single schema and retrieves it by $id',
       'setup': (registry) => {
-        registry.register(TestSchema);
+        registry.set(TestSchema);
       }
     },
     {
@@ -122,7 +122,7 @@ void describe('SchemaRegistry registration', () => {
       },
       'name': 'registers an array of schemas',
       'setup': (registry) => {
-        registry.register([
+        registry.set([
           TestSchema,
           TestSchemaWithDefs
         ]);
@@ -135,8 +135,8 @@ void describe('SchemaRegistry registration', () => {
       },
       'name': 'registers single then array (mixed)',
       'setup': (registry) => {
-        registry.register(TestSchema);
-        registry.register([TestSchemaWithDefs]);
+        registry.set(TestSchema);
+        registry.set([TestSchemaWithDefs]);
       }
     },
     {
@@ -146,8 +146,8 @@ void describe('SchemaRegistry registration', () => {
       },
       'name': 'idempotent: identical schema object registered twice',
       'setup': (registry) => {
-        registry.register(TestSchema);
-        registry.register(TestSchema);
+        registry.set(TestSchema);
+        registry.set(TestSchema);
       }
     },
     {
@@ -163,7 +163,7 @@ void describe('SchemaRegistry registration', () => {
       },
       'name': 'caches canonical graphs per registered schema',
       'setup': (registry) => {
-        registry.register([
+        registry.set([
           TestSchema,
           TestSchemaWithDefs
         ]);
@@ -175,7 +175,7 @@ void describe('SchemaRegistry registration', () => {
 
         assert.throws(
           () => {
-            registry.register(schemaNoId);
+            registry.set(schemaNoId);
           },
           (err: Error) => {
             return err.message.includes('Schema must have a $id property');
@@ -201,7 +201,7 @@ void describe('SchemaRegistry registration', () => {
       },
       'name': 'registration succeeds with proper $ref patterns',
       'setup': (registry) => {
-        registry.register([
+        registry.set([
           {
             '$id': 'https://example.io/Address',
             'properties': { 'street': { 'type': 'string' } },
@@ -224,7 +224,7 @@ void describe('SchemaRegistry registration', () => {
         }).registry;
 
         assert.doesNotThrow(() => {
-          defaultRegistry.register(InvalidInlineSchema);
+          defaultRegistry.set(InvalidInlineSchema);
         });
         assert.deepStrictEqual(defaultRegistry.get(InvalidInlineSchema.$id), InvalidInlineSchema);
 
@@ -237,7 +237,7 @@ void describe('SchemaRegistry registration', () => {
 
         assert.throws(
           () => {
-            strictRegistry.register(InvalidInlineSchema);
+            strictRegistry.set(InvalidInlineSchema);
           },
           (err: unknown) => {
             const schemaErr = err as { 'code'?: string };
@@ -267,24 +267,18 @@ void describe('SchemaRegistry registration', () => {
         const originalGraph = registry.graph(TestSchema.$id);
 
         assert.notStrictEqual(originalGraph, undefined);
-        assert.throws(() => {
-          registry.register(InvalidOverwriteSchema);
-        }, /already registered with different content/u);
+        registry.set(InvalidOverwriteSchema);
 
         const retrieved = registry.get(TestSchema.$id);
 
-        assert.deepEqual(retrieved, TestSchema);
-        assert.strictEqual(registry.graph(TestSchema.$id), originalGraph);
+        assert.deepEqual(retrieved, InvalidOverwriteSchema);
+        assert.notStrictEqual(registry.graph(TestSchema.$id), originalGraph);
         assert.equal(registry.list().length, 1);
         assert.equal(registry.listGraphs().length, 1);
-        assert.equal(registry.validate(TestSchema.$id, { 'name': 'Alice' }).ok, true);
-        const parsed = registry.instantiate(TestSchema.$id, { 'name': 'Alice' }) as Record<string, unknown>;
-
-        assert.equal(parsed.name, 'Alice');
       },
-      'name': 'failed overwrite preserves previously registered valid schema and caches',
+      'name': 'set() replaces an existing entry with new content (Map semantics)',
       'setup': (registry) => {
-        registry.register(TestSchema);
+        registry.set(TestSchema);
       }
     },
     {
@@ -294,7 +288,7 @@ void describe('SchemaRegistry registration', () => {
       },
       'name': 'registering an empty array is a no-op',
       'setup': (registry) => {
-        registry.register([]);
+        registry.set([]);
       }
     }
   ];
@@ -321,17 +315,16 @@ void describe('SchemaRegistry registration', () => {
   }> = [
     {
       'checkLogs': (logs) => {
-        const identicalLog = logs.find((log) => {
-          return log.includes('identical');
+        const errorLog = logs.find((log) => {
+          return log.includes('ERROR:') || log.includes('SCHEMA_DUPLICATE_ID');
         });
 
-        assert.notStrictEqual(identicalLog, undefined);
-        assert.match(identicalLog as string, /identical/u);
+        assert.strictEqual(errorLog, undefined, 'identical content replaces silently — no error');
       },
-      'name': 'identical content with different object reference traces "identical"',
+      'name': 'set() with identical content replaces silently (Map semantics)',
       'setup': (registry) => {
-        registry.register(TestSchema);
-        registry.register({ ...TestSchema });
+        registry.set(TestSchema);
+        registry.set({ ...TestSchema });
       }
     },
     {
@@ -345,8 +338,8 @@ void describe('SchemaRegistry registration', () => {
       },
       'name': 'same content with different $id warns about duplicate',
       'setup': (registry) => {
-        registry.register(DuplicateSchema);
-        registry.register({
+        registry.set(DuplicateSchema);
+        registry.set({
           '$id': 'https://example.io/duplicate-2',
           'properties': { 'value': { 'type': 'string' } },
           'type': 'object'
@@ -425,8 +418,8 @@ void describe('SchemaRegistry validation', () => {
         'logger': new Logger()
       }).registry;
 
-      registry.register(TestSchema);
-      registry.register(TestSchemaWithDefs);
+      registry.set(TestSchema);
+      registry.set(TestSchemaWithDefs);
 
       const errors = registry.validate(schemaId, data);
 
@@ -474,7 +467,7 @@ void describe('SchemaRegistry validation', () => {
       'logger': new Logger()
     }).registry;
 
-    registry.register(TestSchemaWithDefs);
+    registry.set(TestSchemaWithDefs);
 
     const subSchema = registry.subschemaAt(
       'https://example.io/schema-with-defs',
@@ -510,7 +503,7 @@ void describe('SchemaRegistry options', () => {
       'check': (registry, logs) => {
         const before = logs.length;
 
-        registry.register(TestSchema);
+        registry.set(TestSchema);
         assert.equal(logs.length > before, true);
       },
       'name': 'logger option receives registration log messages',
@@ -520,7 +513,7 @@ void describe('SchemaRegistry options', () => {
       'check': (registry) => {
         assert.throws(
           () => {
-            return registry.register({
+            return registry.set({
               '$id': 'https://example.io/old-dialect',
               '$schema': 'http://json-schema.org/draft-07/schema#',
               'type': 'object'
@@ -537,7 +530,7 @@ void describe('SchemaRegistry options', () => {
     {
       'check': (registry) => {
         assert.doesNotThrow(() => {
-          return registry.register(TestSchema);
+          return registry.set(TestSchema);
         });
       },
       'name': 'strict mode accepts 2020-12 schema',
@@ -680,7 +673,7 @@ void describe('coerce / is / errors', () => {
         'logger': new Logger()
       }).registry;
 
-      registry.register(ParseTestSchema);
+      registry.set(ParseTestSchema);
       check(registry);
     });
   }
@@ -721,7 +714,7 @@ void describe('coerce / is / errors', () => {
         'logger': new Logger()
       }).registry;
 
-      registry.register(ParseTestSchema);
+      registry.set(ParseTestSchema);
       assert.strictEqual(registry.is(ParseTestSchema, data), expected);
     });
   }
@@ -752,7 +745,7 @@ void describe('coerce / is / errors', () => {
         'logger': new Logger()
       }).registry;
 
-      registry.register(ParseTestSchema);
+      registry.set(ParseTestSchema);
 
       const errs = registry.validate(ParseTestSchema.$id, data);
 
@@ -922,7 +915,7 @@ void describe('Structure Validation', () => {
           'logger': new Logger()
         }).registry;
 
-        registry.register(TestSchema);
+        registry.set(TestSchema);
         const converted = registry.convert(TestSchema.$id, {
           'age': '25',
           'name': 'Alice'
@@ -940,7 +933,7 @@ void describe('Structure Validation', () => {
           'logger': new Logger()
         }).registry;
 
-        registry.register(TestSchema);
+        registry.set(TestSchema);
         assert.throws(
           () => {
             return registry.validator('https://example.io/nonexistent');
@@ -959,7 +952,7 @@ void describe('Structure Validation', () => {
           'logger': new Logger()
         }).registry;
 
-        registry.register(TestSchema);
+        registry.set(TestSchema);
         const validator = registry.validator(TestSchema.$id);
 
         assert.equal(typeof validator.validate, 'function');
@@ -979,7 +972,7 @@ void describe('Structure Validation', () => {
 
         assert.throws(
           () => {
-            return registry.register({
+            return registry.set({
               '$defs': {
                 'A': {
                   '$anchor': 'dup',

@@ -314,7 +314,7 @@ export class Materializer implements MaterializerInterface {
     synthesizeDefaults = false,
     aboxOptions?: AboxOptionsType
   ): MaterializationResultInterface {
-    this.registry.set(schema.$id, schema);
+    this.registry.set(schema);
 
     const engine = this.registry.engine(schema);
     const execution = engine.execute(data, {

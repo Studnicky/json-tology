@@ -302,7 +302,7 @@ import {
 import { SchemaRegistry } from 'json-tology/schema';
 
 const registry = new SchemaRegistry();
-registry.register(BookSchema);
+registry.set(BookSchema);
 
 const graphs = registry.listGraphs();
 

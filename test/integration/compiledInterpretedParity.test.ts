@@ -43,7 +43,7 @@ void describe('compiled/interpreted parity', () => {
   void it('keyword: dependentSchemas', () => {
     const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    registry.register({
+    registry.set({
       '$id': 'https://parity.test/dependent-schemas',
       'dependentSchemas': {
         'creditCard': {
@@ -94,7 +94,7 @@ void describe('compiled/interpreted parity', () => {
   void it('edge: null data, empty object, empty array, undefined properties, NaN/Infinity', () => {
     const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    registry.register({
+    registry.set({
       '$id': 'https://parity.test/basic-object',
       'properties': {
         'name': { 'type': 'string' },
@@ -155,7 +155,7 @@ void describe('compiled/interpreted parity', () => {
   void it('keyword: dependentRequired', () => {
     const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    registry.register({
+    registry.set({
       '$id': 'https://parity.test/dependent-required',
       'dependentRequired': { 'email': ['username'] },
       'properties': {
@@ -218,7 +218,7 @@ void describe('compiled/interpreted parity', () => {
       'properties': { 'startDate': { 'type': 'string' } },
       'required': ['startDate']
     });
-    registry.register(ifThenElseSchema);
+    registry.set(ifThenElseSchema);
 
     const scenarios: Scenario[] = [
       {
@@ -259,7 +259,7 @@ void describe('compiled/interpreted parity', () => {
   void it('keyword: allOf with conflicting constraints', () => {
     const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    registry.register({
+    registry.set({
       '$id': 'https://parity.test/allof-conflict',
       'allOf': [
         {
@@ -316,7 +316,7 @@ void describe('compiled/interpreted parity', () => {
   void it('keyword: anyOf with overlapping branches', () => {
     const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    registry.register({
+    registry.set({
       '$id': 'https://parity.test/anyof-overlap',
       'anyOf': [
         {
@@ -369,7 +369,7 @@ void describe('compiled/interpreted parity', () => {
   void it('keyword: oneOf with overlapping branches', () => {
     const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    registry.register({
+    registry.set({
       '$id': 'https://parity.test/oneof-overlap',
       'oneOf': [
         {
@@ -429,7 +429,7 @@ void describe('compiled/interpreted parity', () => {
   void it('keyword: patternProperties + additionalProperties=false', () => {
     const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    registry.register({
+    registry.set({
       '$id': 'https://parity.test/pattern-props',
       'additionalProperties': false,
       'patternProperties': { '^x-': { 'type': 'string' } },
@@ -479,7 +479,7 @@ void describe('compiled/interpreted parity', () => {
   void it('keyword: $ref to another schema', () => {
     const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    registry.register([
+    registry.set([
       {
         '$id': 'https://parity.test/address',
         'properties': {
@@ -543,7 +543,7 @@ void describe('compiled/interpreted parity', () => {
   void it('keyword: self-referencing schema (recursive tree)', () => {
     const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    registry.register({
+    registry.set({
       '$defs': {
         'TreeNode': {
           '$id': 'https://parity.test/tree-node',
@@ -614,7 +614,7 @@ void describe('compiled/interpreted parity', () => {
   void it('keyword: nested objects via $defs', () => {
     const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    registry.register({
+    registry.set({
       '$defs': {
         'Contact': {
           '$id': 'https://parity.test/contact',
@@ -681,7 +681,7 @@ void describe('compiled/interpreted parity', () => {
   void it('keyword: array with items + minItems + uniqueItems', () => {
     const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    registry.register({
+    registry.set({
       '$id': 'https://parity.test/array-constraints',
       'properties': {
         'tags': {
@@ -750,7 +750,7 @@ void describe('compiled/interpreted parity', () => {
   void it('keyword: enum with complex objects', () => {
     const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    registry.register({
+    registry.set({
       '$id': 'https://parity.test/enum-complex',
       'properties': {
         'level': {
@@ -817,7 +817,7 @@ void describe('compiled/interpreted parity', () => {
   void it('keyword: const with null value', () => {
     const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    registry.register({
+    registry.set({
       '$id': 'https://parity.test/const-null',
       'properties': {
         'deleted': { 'const': null },
@@ -880,11 +880,11 @@ void describe('compiled/interpreted parity', () => {
   void it('keyword: Infinity/NaN rejection for type number', () => {
     const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    registry.register({
+    registry.set({
       '$id': 'https://parity.test/number',
       'type': 'number'
     });
-    registry.register({
+    registry.set({
       '$id': 'https://parity.test/integer',
       'type': 'integer'
     });
@@ -943,22 +943,22 @@ void describe('compiled/interpreted parity', () => {
   void it('keyword: multipleOf with floating-point and zero', () => {
     const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    registry.register({
+    registry.set({
       '$id': 'https://parity.test/multiple-three',
       'multipleOf': 3,
       'type': 'number'
     });
-    registry.register({
+    registry.set({
       '$id': 'https://parity.test/multiple-tenth',
       'multipleOf': 0.1,
       'type': 'number'
     });
-    registry.register({
+    registry.set({
       '$id': 'https://parity.test/multiple-hundredth',
       'multipleOf': 0.01,
       'type': 'number'
     });
-    registry.register({
+    registry.set({
       '$id': 'https://parity.test/multiple-zero',
       'multipleOf': 0,
       'type': 'number'

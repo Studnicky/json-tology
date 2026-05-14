@@ -57,7 +57,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
         const schemaId = 'https://cond.test/ITE1';
 
-        registry.register(makeThenElseSchema(schemaId, { 'properties': { 'kind': { 'const': 'person' } } }, {
+        registry.set(makeThenElseSchema(schemaId, { 'properties': { 'kind': { 'const': 'person' } } }, {
           'properties': { 'name': { 'type': 'string' } },
           'required': ['name']
         }));
@@ -106,7 +106,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
         const schemaId = 'https://cond.test/ITE2';
 
-        registry.register(makeThenElseSchema(schemaId, { 'properties': { 'kind': { 'const': 'org' } } }, {
+        registry.set(makeThenElseSchema(schemaId, { 'properties': { 'kind': { 'const': 'org' } } }, {
           'properties': { 'orgName': { 'type': 'string' } },
           'required': ['orgName']
         }, {
@@ -161,7 +161,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
         const schemaId = 'https://cond.test/ITE3';
 
-        registry.register(makeThenElseSchema(schemaId, { 'properties': { 'kind': { 'const': 'special' } } }, {
+        registry.set(makeThenElseSchema(schemaId, { 'properties': { 'kind': { 'const': 'special' } } }, {
           'properties': { 'code': { 'type': 'number' } },
           'required': ['code']
         }));
@@ -202,7 +202,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
         const schemaId = 'https://cond.test/AllOf1';
 
-        registry.register({
+        registry.set({
           '$id': schemaId,
           'allOf': [
             {
@@ -248,7 +248,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
         const schemaId = 'https://cond.test/AllOfOverlap';
 
-        registry.register({
+        registry.set({
           '$id': schemaId,
           'allOf': [
             {
@@ -307,7 +307,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
         const schemaId = 'https://cond.test/AnyOf1';
 
-        registry.register({
+        registry.set({
           '$id': schemaId,
           'properties': {
             'val': {
@@ -349,7 +349,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
         const schemaId = 'https://cond.test/OneOf1';
 
-        registry.register({
+        registry.set({
           '$id': schemaId,
           'properties': {
             'val': {
@@ -397,7 +397,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
         const schemaId = 'https://cond.test/Not1';
 
-        registry.register({
+        registry.set({
           '$id': schemaId,
           'properties': {
             'val': {
@@ -443,7 +443,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
         const schemaId = 'https://cond.test/DepReq1';
 
-        registry.register({
+        registry.set({
           '$id': schemaId,
           'dependentRequired': {
             'email': ['name'],
@@ -492,7 +492,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
         const schemaId = 'https://cond.test/DepSchema1';
 
-        registry.register({
+        registry.set({
           '$id': schemaId,
           'dependentSchemas': {
             'billing': {
@@ -614,7 +614,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       } of scenarios) {
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-        registry.register(schema);
+        registry.set(schema);
         assert.equal(registry.validate(schema.$id as string, data).length === 0, valid, name);
       }
     });
@@ -632,14 +632,14 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   void describe('oneOf edge cases', () => {
     const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    registry.register({
+    registry.set({
       '$id': 'https://disc.test/BranchA',
       'properties': { 'x': { 'type': 'number' } },
       'required': ['x'],
       'type': 'object'
     });
 
-    registry.register({
+    registry.set({
       '$id': 'https://disc.test/BranchB',
       'properties': {
         'x': { 'type': 'number' },
@@ -649,7 +649,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       'type': 'object'
     });
 
-    registry.register({
+    registry.set({
       '$id': 'https://disc.test/OverlapOneOf',
       'oneOf': [
         { '$ref': 'https://disc.test/BranchA' },
@@ -658,13 +658,13 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       'type': 'object'
     });
 
-    registry.register({
+    registry.set({
       '$id': 'https://disc.test/EmptyOneOf',
       'oneOf': [],
       'type': 'object'
     });
 
-    registry.register({
+    registry.set({
       '$id': 'https://disc.test/BoolOneOf',
       'oneOf': [
         true,
@@ -672,13 +672,13 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       ]
     });
 
-    registry.register({
+    registry.set({
       '$id': 'https://disc.test/StringObj',
       'properties': { 'a': { 'type': 'string' } },
       'type': 'object'
     });
 
-    registry.register({
+    registry.set({
       '$id': 'https://disc.test/IdenticalOneOf',
       'oneOf': [
         { '$ref': 'https://disc.test/StringObj' },
@@ -735,21 +735,21 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   void describe('anyOf edge cases', () => {
     const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    registry.register({
+    registry.set({
       '$id': 'https://disc.test/AnyBranchX',
       'properties': { 'x': { 'type': 'number' } },
       'required': ['x'],
       'type': 'object'
     });
 
-    registry.register({
+    registry.set({
       '$id': 'https://disc.test/AnyBranchY',
       'properties': { 'y': { 'type': 'number' } },
       'required': ['y'],
       'type': 'object'
     });
 
-    registry.register({
+    registry.set({
       '$id': 'https://disc.test/NoMatchAnyOf',
       'anyOf': [
         { '$ref': 'https://disc.test/AnyBranchX' },
@@ -758,20 +758,20 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       'type': 'object'
     });
 
-    registry.register({
+    registry.set({
       '$id': 'https://disc.test/AllBranchReqX',
       'properties': { 'x': { 'type': 'number' } },
       'required': ['x'],
       'type': 'object'
     });
 
-    registry.register({
+    registry.set({
       '$id': 'https://disc.test/AllBranchOptX',
       'properties': { 'x': { 'type': 'number' } },
       'type': 'object'
     });
 
-    registry.register({
+    registry.set({
       '$id': 'https://disc.test/AllMatchAnyOf',
       'anyOf': [
         { '$ref': 'https://disc.test/AllBranchReqX' },
@@ -780,7 +780,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       'type': 'object'
     });
 
-    registry.register({
+    registry.set({
       '$id': 'https://disc.test/EmptyAnyOf',
       'anyOf': [],
       'type': 'object'
@@ -828,7 +828,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   void describe('Discriminated union validation', () => {
     const shapeRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    shapeRegistry.register({
+    shapeRegistry.set({
       '$id': 'https://disc.test/Circle',
       'properties': {
         'kind': { 'const': 'circle' },
@@ -841,7 +841,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       'type': 'object'
     });
 
-    shapeRegistry.register({
+    shapeRegistry.set({
       '$id': 'https://disc.test/Square',
       'properties': {
         'kind': { 'const': 'square' },
@@ -854,7 +854,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       'type': 'object'
     });
 
-    shapeRegistry.register({
+    shapeRegistry.set({
       '$id': 'https://disc.test/Shape',
       'oneOf': [
         { '$ref': 'https://disc.test/Circle' },
@@ -951,7 +951,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 
     const eventRegistry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    eventRegistry.register({
+    eventRegistry.set({
       '$id': 'https://disc.test/MessageEvent',
       'properties': {
         'payload': { 'type': 'string' },
@@ -964,7 +964,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       'type': 'object'
     });
 
-    eventRegistry.register({
+    eventRegistry.set({
       '$id': 'https://disc.test/ErrorEvent',
       'properties': {
         'code': { 'type': 'number' },
@@ -977,7 +977,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       'type': 'object'
     });
 
-    eventRegistry.register({
+    eventRegistry.set({
       '$id': 'https://disc.test/LogEvent',
       'properties': {
         'level': {
@@ -996,7 +996,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       'type': 'object'
     });
 
-    eventRegistry.register({
+    eventRegistry.set({
       '$id': 'https://disc.test/Event',
       'oneOf': [
         { '$ref': 'https://disc.test/MessageEvent' },
@@ -1081,7 +1081,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
       const schemaId = 'https://contains.test/Basic';
 
-      registry.register({
+      registry.set({
         '$id': schemaId,
         'properties': {
           'values': {
@@ -1263,7 +1263,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       } of scenarios) {
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-        registry.register(schema);
+        registry.set(schema);
         assert.equal(registry.validate(schema.$id as string, data).length === 0, valid, name);
       }
     });
@@ -1280,7 +1280,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
         const schemaId = 'https://contains.test/MinZero';
 
-        registry.register({
+        registry.set({
           '$id': schemaId,
           'properties': {
             'values': {
@@ -1326,7 +1326,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
         const schemaId = 'https://contains.test/MinTwo';
 
-        registry.register({
+        registry.set({
           '$id': schemaId,
           'properties': {
             'values': {
@@ -1400,7 +1400,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
         const schemaId = 'https://contains.test/MinExceedsLength';
 
-        registry.register({
+        registry.set({
           '$id': schemaId,
           'properties': {
             'values': {
@@ -1459,7 +1459,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
         const schemaId = 'https://contains.test/MaxOne';
 
-        registry.register({
+        registry.set({
           '$id': schemaId,
           'properties': {
             'values': {
@@ -1511,7 +1511,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
         const schemaId = 'https://contains.test/MaxZero';
 
-        registry.register({
+        registry.set({
           '$id': schemaId,
           'properties': {
             'values': {
@@ -1572,7 +1572,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
         const schemaId = 'https://contains.test/Range';
 
-        registry.register({
+        registry.set({
           '$id': schemaId,
           'properties': {
             'values': {
@@ -1664,7 +1664,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
         const schemaId = 'https://contains.test/Impossible';
 
-        registry.register({
+        registry.set({
           '$id': schemaId,
           'properties': {
             'values': {
@@ -1731,7 +1731,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     void it('validates single pattern against declared schema', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register({
+      registry.set({
         '$id': 'https://pattern.test/BasicString',
         'patternProperties': { '^S_': { 'type': 'string' } },
         'type': 'object'
@@ -1792,7 +1792,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     void it('validates multiple distinct patterns independently', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register({
+      registry.set({
         '$id': 'https://pattern.test/MultiPattern',
         'patternProperties': {
           '^I_': { 'type': 'integer' },
@@ -1836,7 +1836,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     void it('allows keys that match no pattern when additionalProperties is not restricted', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register({
+      registry.set({
         '$id': 'https://pattern.test/Unrestricted',
         'patternProperties': { '^S_': { 'type': 'string' } },
         'type': 'object'
@@ -1868,7 +1868,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     void it('applies all matching pattern schemas to a single property', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register({
+      registry.set({
         '$id': 'https://pattern.test/Overlap',
         'patternProperties': {
           '^S_': { 'type': 'string' },
@@ -1920,7 +1920,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     void it('enforces both explicit property and pattern type constraints', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register({
+      registry.set({
         '$id': 'https://pattern.test/PropAndPattern',
         'patternProperties': { '^S_': { 'type': 'string' } },
         'properties': { 'S_name': { 'type': 'string' } },
@@ -1970,7 +1970,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     void it('applies additionalProperties schema to keys not matching any pattern', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register({
+      registry.set({
         '$id': 'https://pattern.test/AdditionalSchema',
         'additionalProperties': { 'type': 'boolean' },
         'patternProperties': { '^S_': { 'type': 'string' } },
@@ -2009,7 +2009,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     void it('allows explicit properties alongside pattern-matched properties', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register({
+      registry.set({
         '$id': 'https://pattern.test/ExplicitAndPattern',
         'additionalProperties': { 'type': 'boolean' },
         'patternProperties': { '^x_': { 'type': 'number' } },
@@ -2064,7 +2064,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     void it('allows only keys matching patterns when additionalProperties is false', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register({
+      registry.set({
         '$id': 'https://pattern.test/PatternFalse',
         'additionalProperties': false,
         'patternProperties': {
@@ -2110,7 +2110,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     void it('validates type constraints with anchored digit-only pattern', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register({
+      registry.set({
         '$id': 'https://pattern.test/DigitKeys',
         'patternProperties': { '^\\d+$': { 'type': 'string' } },
         'type': 'object'
@@ -2156,7 +2156,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     void it('validates type constraints with dot-separated key pattern', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register({
+      registry.set({
         '$id': 'https://pattern.test/DotSep',
         'patternProperties': { '^[a-z]+(\\.[a-z]+)*$': { 'type': 'string' } },
         'type': 'object'
@@ -2198,7 +2198,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     void it('validates when all keys conform to the single pattern schema', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register({
+      registry.set({
         '$id': 'https://pattern.test/AllMatch',
         'patternProperties': { '^field_': { 'type': 'number' } },
         'type': 'object'
@@ -2244,7 +2244,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     void it('treats unmatched keys per additionalProperties schema constraint', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register({
+      registry.set({
         '$id': 'https://pattern.test/NoMatch',
         'additionalProperties': { 'type': 'boolean' },
         'patternProperties': { '^x_': { 'type': 'string' } },
@@ -2281,7 +2281,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     void it('accepts empty objects regardless of pattern configuration', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register({
+      registry.set({
         '$id': 'https://pattern.test/NoMatchEmpty',
         'additionalProperties': false,
         'patternProperties': { '^zzz_': { 'type': 'string' } },
@@ -2314,7 +2314,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     void it('validates pattern property values against referenced nested object constraints', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register({
+      registry.set({
         '$defs': {
           'Addr': {
             'properties': {
@@ -2393,7 +2393,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     void it('required applies to named keys only, not to patterns', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register({
+      registry.set({
         '$id': 'https://pattern.test/WithRequired',
         'patternProperties': { '^opt_': { 'type': 'string' } },
         'properties': { 'id': { 'type': 'string' } },
@@ -2450,7 +2450,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     void it('applies each pattern schema only to its own matching keys', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register({
+      registry.set({
         '$id': 'https://pattern.test/Exclusive',
         'patternProperties': {
           '^bool_': { 'type': 'boolean' },
@@ -2501,7 +2501,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     void it('handles mixed valid and invalid keys across exclusive patterns', () => {
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register({
+      registry.set({
         '$id': 'https://pattern.test/ExclusiveMixed',
         'patternProperties': {
           '^ct_': { 'type': 'integer' },
@@ -2557,7 +2557,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
         assert.throws(() => {
-          registry.register({
+          registry.set({
             '$id': '',
             'properties': { 'x': { 'type': 'string' } },
             'type': 'object'
@@ -2605,7 +2605,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         } of acceptScenarios) {
           const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-          registry.register(schema);
+          registry.set(schema);
           const validateResult = registry.validate(schema.$id, data);
 
           assert.equal(validateResult.ok, true, `expected valid: ${name}`);
@@ -2680,7 +2680,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         ];
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-        registry.register({
+        registry.set({
           '$id': 'https://edge.test/NumBounds',
           'properties': {
             'score': {
@@ -2729,7 +2729,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         ];
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-        registry.register({
+        registry.set({
           '$id': 'https://edge.test/ExclBounds',
           'properties': {
             'val': {
@@ -2778,7 +2778,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         ];
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-        registry.register({
+        registry.set({
           '$id': 'https://edge.test/MultOf',
           'properties': {
             'count': {
@@ -2839,7 +2839,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         ];
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-        registry.register({
+        registry.set({
           '$id': 'https://edge.test/StrLen',
           'properties': {
             'code': {
@@ -2893,7 +2893,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         ];
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-        registry.register({
+        registry.set({
           '$id': 'https://edge.test/Pattern',
           'properties': {
             'zip': {
@@ -2970,7 +2970,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       ];
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register({
+      registry.set({
         '$id': 'https://edge.test/ArrayItems',
         'properties': {
           'tags': {
@@ -3022,7 +3022,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         ];
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-        registry.register({
+        registry.set({
           '$id': 'https://edge.test/Enum',
           'properties': {
             'status': {
@@ -3074,7 +3074,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         ];
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-        registry.register({
+        registry.set({
           '$id': 'https://edge.test/Const',
           'properties': {
             'version': {
@@ -3149,7 +3149,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       ];
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register({
+      registry.set({
         '$id': 'https://edge.test/NoReq',
         'properties': {
           'a': { 'type': 'string' },
@@ -3157,7 +3157,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         },
         'type': 'object'
       });
-      registry.register({
+      registry.set({
         '$id': 'https://edge.test/ObjOnly',
         'type': 'object'
       });
@@ -3205,7 +3205,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       ];
       const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-      registry.register({
+      registry.set({
         '$defs': {
           'Settings': {
             'properties': {
@@ -3254,7 +3254,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       {
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-        registry.register({
+        registry.set({
           '$id': 'https://edge.test/NoMutate',
           'properties': {
             'role': {
@@ -3274,7 +3274,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       {
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-        registry.register({
+        registry.set({
           '$defs': {
             'Address': {
               'properties': {
@@ -3333,7 +3333,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         'enableTypeCast': true
       });
 
-      registry.register({
+      registry.set({
         '$id': 'https://edge.test/CastNum',
         'properties': {
           'age': { 'type': 'number' },
@@ -3395,7 +3395,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         ];
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-        registry.register([
+        registry.set([
           {
             '$id': 'https://edge.test/Country',
             'properties': {
@@ -3457,7 +3457,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         ];
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-        registry.register([
+        registry.set([
           {
             '$id': 'https://edge.test/C',
             'properties': { 'value': { 'type': 'number' } },
@@ -3648,11 +3648,11 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       {
         const jt = JsonTology.create({ 'baseIRI': 'https://edge.test' });
 
-        jt.register({
+        jt.set({
           '$id': 'https://edge.test/First',
           'type': 'object'
         });
-        jt.register({
+        jt.set({
           '$id': 'https://edge.test/Second',
           'type': 'object'
         });
@@ -3676,7 +3676,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         });
         const ont1 = jt.ontology();
 
-        jt.register({
+        jt.set({
           '$id': 'https://edge.test/B',
           'type': 'object'
         });

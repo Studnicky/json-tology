@@ -321,7 +321,7 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
             assert.strictEqual(result.name, 'auto');
           },
           'input': { 'name': 'auto' },
-          'name': 'auto-registers the schema with no prior registry.register()',
+          'name': 'auto-registers the schema with no prior registry.set()',
           'schema': ConfigSchema
         },
         {
@@ -478,7 +478,7 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
         void it(n, () => {
           const tology = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-          tology.register(sch as typeof sch & { '$id': string });
+          tology.set(sch as typeof sch & { '$id': string });
           const result = tology.value.create((sch as { '$id': string }).$id) as Record<string, unknown>;
 
           assert.deepStrictEqual(result, exp);
@@ -518,8 +518,8 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
 
         const tology = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-        tology.register(PartSchema as typeof PartSchema & { '$id': string });
-        tology.register(WholeSchema as typeof WholeSchema & { '$id': string });
+        tology.set(PartSchema as typeof PartSchema & { '$id': string });
+        tology.set(WholeSchema as typeof WholeSchema & { '$id': string });
         const result = tology.value.create(WholeSchema.$id) as Record<string, unknown>;
 
         assert.deepStrictEqual(result.part, { 'value': 99 });
@@ -538,7 +538,7 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
 
         const tology = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-        tology.register(RecursiveSchema as typeof RecursiveSchema & { '$id': string });
+        tology.set(RecursiveSchema as typeof RecursiveSchema & { '$id': string });
         const result = tology.value.create(RecursiveSchema.$id) as Record<string, unknown>;
 
         assert.strictEqual(result.name, '');
@@ -1079,7 +1079,7 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
           const tology = JsonTology.create({ 'baseIRI': 'https://edge.io' });
 
           for (const extra of scenario.extraSchemas ?? []) {
-            tology.register(extra as Record<string, unknown> & { '$id': string });
+            tology.set(extra as Record<string, unknown> & { '$id': string });
           }
           const result = tology.materialize(scenario.schema, scenario.input) as Record<string, unknown>;
 

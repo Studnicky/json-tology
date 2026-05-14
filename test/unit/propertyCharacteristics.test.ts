@@ -1,7 +1,7 @@
 /**
  * Runtime enforcement of OWL 2 property-characteristic conflict detection.
  *
- * Verifies that SchemaRegistry.register() throws SchemaError with code
+ * Verifies that SchemaRegistry.set() throws SchemaError with code
  * PROPERTY_CHARACTERISTIC_CONFLICT for each of the three hard-conflict pairs,
  * and that registration succeeds for individual characteristics and
  * non-conflicting combinations.
@@ -31,7 +31,7 @@ function assertConflict(
 
   assert.throws(
     () => {
-      reg.register(schema);
+      reg.set(schema);
     },
     (error: unknown) => {
       assert.ok(error instanceof SchemaError, `Expected SchemaError, got ${String(error)}`);
@@ -122,7 +122,7 @@ void describe('OWL property characteristics — registration succeeds (individua
   ] of entries) {
     void it(`registers ${name} without error`, () => {
       assert.doesNotThrow(() => {
-        registry().register(schema);
+        registry().set(schema);
       });
     });
   }
@@ -135,7 +135,7 @@ void describe('OWL property characteristics — registration succeeds (individua
 void describe('OWL property characteristics — registration succeeds (non-conflicting pairs)', () => {
   void it('symmetric + reflexive (SimilarBook pattern)', () => {
     assert.doesNotThrow(() => {
-      registry().register({
+      registry().set({
         '$id': 'urn:test:SymRefl',
         'properties': {
           'rel': {
@@ -150,7 +150,7 @@ void describe('OWL property characteristics — registration succeeds (non-confl
 
   void it('transitive + irreflexive (Order.placedAt pattern)', () => {
     assert.doesNotThrow(() => {
-      registry().register({
+      registry().set({
         '$id': 'urn:test:TransIrr',
         'properties': {
           'rel': {
@@ -165,7 +165,7 @@ void describe('OWL property characteristics — registration succeeds (non-confl
 
   void it('functional + inverseFunctional', () => {
     assert.doesNotThrow(() => {
-      registry().register({
+      registry().set({
         '$id': 'urn:test:FuncInvFunc',
         'properties': {
           'rel': {
@@ -180,7 +180,7 @@ void describe('OWL property characteristics — registration succeeds (non-confl
 
   void it('asymmetric alone (Sequel pattern)', () => {
     assert.doesNotThrow(() => {
-      registry().register({
+      registry().set({
         '$id': 'urn:test:AsymAlone',
         'properties': { 'rel': { 'asymmetric': true } },
         'type': 'object'
@@ -216,7 +216,7 @@ void describe('OWL property characteristics — conflict: symmetric + asymmetric
     const reg = registry();
 
     try {
-      reg.register({
+      reg.set({
         '$id': 'urn:test:SymAsymConflict2',
         'properties': {
           'mySpecialProp': {
@@ -261,7 +261,7 @@ void describe('OWL property characteristics — conflict: reflexive + irreflexiv
     const reg = registry();
 
     try {
-      reg.register({
+      reg.set({
         '$id': 'urn:test:ReflIrrConflict2',
         'properties': {
           'loopEdge': {
@@ -306,7 +306,7 @@ void describe('OWL property characteristics — conflict: asymmetric + reflexive
     const reg = registry();
 
     try {
-      reg.register({
+      reg.set({
         '$id': 'urn:test:AsymReflConflict2',
         'properties': {
           'predecessorOf': {
@@ -334,7 +334,7 @@ void describe('OWL property characteristics — conflict detected among multiple
 
     assert.throws(
       () => {
-        reg.register({
+        reg.set({
           '$id': 'urn:test:MultiPropConflict',
           'properties': {
             'badProp': {

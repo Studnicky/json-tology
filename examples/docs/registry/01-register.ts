@@ -21,7 +21,7 @@ console.assert(bookstoreEntities.registry.has(CustomerSchema.$id));
 console.assert(!bookstoreEntities.registry.has(BookSchema.$id));
 
 // Post-construction register
-bookstoreEntities.register(BookSchema);
+bookstoreEntities.set(BookSchema);
 console.assert(bookstoreEntities.registry.has(BookSchema.$id));
 
 // Retrieve schema object

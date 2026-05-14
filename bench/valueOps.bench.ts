@@ -48,11 +48,11 @@ export function runValueOpsBench(): BenchResult[] {
 
   const registry = new SchemaRegistry({ 'castTypes': true });
 
-  registry.register(SimpleSchema);
-  registry.register(AddressSchema);
-  registry.register(CustomerSchema);
-  registry.register(OrderItemSchema);
-  registry.register(NestedSchema);
+  registry.set(SimpleSchema);
+  registry.set(AddressSchema);
+  registry.set(CustomerSchema);
+  registry.set(OrderItemSchema);
+  registry.set(NestedSchema);
 
   // Warm up engines
   registry.validate(SimpleSchema.$id, simpleValid);

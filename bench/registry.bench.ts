@@ -35,10 +35,10 @@ export function runRegistryBench(): BenchResult[] {
   results.push(bench('cold first validate', 'json-tology', () => {
     const reg = new SchemaRegistry();
 
-    reg.register(AddressSchema);
-    reg.register(CustomerSchema);
-    reg.register(OrderItemSchema);
-    reg.register(NestedSchema);
+    reg.set(AddressSchema);
+    reg.set(CustomerSchema);
+    reg.set(OrderItemSchema);
+    reg.set(NestedSchema);
     reg.validate(NestedSchema.$id, nestedValid);
   }, { 'iterations': 5000 }));
 
@@ -70,10 +70,10 @@ export function runRegistryBench(): BenchResult[] {
   // Warm registries
   const reg = new SchemaRegistry();
 
-  reg.register(AddressSchema);
-  reg.register(CustomerSchema);
-  reg.register(OrderItemSchema);
-  reg.register(NestedSchema);
+  reg.set(AddressSchema);
+  reg.set(CustomerSchema);
+  reg.set(OrderItemSchema);
+  reg.set(NestedSchema);
   reg.validate(NestedSchema.$id, nestedValid);
 
   const tbCompiled = TypeCompiler.Compile(NestedSchemaTypebox);

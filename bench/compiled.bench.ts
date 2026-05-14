@@ -21,11 +21,11 @@ export function runCompiledBench(): BenchResult[] {
   // Compiled path via registry
   const registry = new SchemaRegistry();
 
-  registry.register(SimpleSchema);
-  registry.register(AddressSchema);
-  registry.register(CustomerSchema);
-  registry.register(OrderItemSchema);
-  registry.register(NestedSchema);
+  registry.set(SimpleSchema);
+  registry.set(AddressSchema);
+  registry.set(CustomerSchema);
+  registry.set(OrderItemSchema);
+  registry.set(NestedSchema);
 
   // Force compilation
   registry.validate(SimpleSchema.$id, simpleValid);
