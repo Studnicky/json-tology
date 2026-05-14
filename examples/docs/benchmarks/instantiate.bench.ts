@@ -10,7 +10,7 @@
 import { Value } from '@sinclair/typebox/value';
 import { FormatRegistry } from '@sinclair/typebox';
 import { parse as vParse } from 'valibot';
-import { SchemaRegistry } from '../src/modules/registry/SchemaRegistry.js';
+import { SchemaRegistry } from '../../../src/modules/registry/SchemaRegistry.js';
 
 FormatRegistry.Set('email', (value) => {
   return /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/u.test(value);

@@ -22,7 +22,8 @@ import { fileURLToPath } from 'node:url';
 const CURRENT_DIR = fileURLToPath(new URL('.', import.meta.url));
 const EXAMPLES_ROOT = resolve(CURRENT_DIR, '../../examples/docs');
 
-// Recursively find all .ts files that are json-tology examples (not comparators)
+// Recursively find all .ts files that are json-tology examples (not comparators
+// and not the benchmark suite — bench files are runnable scripts, not API examples).
 async function findExamples(dir: string): Promise<string[]> {
   const entries = await readdir(dir, { 'withFileTypes': true });
   const results: string[] = [];
@@ -31,6 +32,9 @@ async function findExamples(dir: string): Promise<string[]> {
     const fullPath = join(dir, entry.name);
 
     if (entry.isDirectory()) {
+      if (entry.name === 'benchmarks') {
+        continue;
+      }
       results.push(...await findExamples(fullPath));
     } else if (
       entry.isFile()

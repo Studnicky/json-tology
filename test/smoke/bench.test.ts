@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {
   describe, it
 } from 'node:test';
-import { runCompiledBench } from '../../bench/compiled.bench.js';
+import { runCompiledBench } from '../../examples/docs/benchmarks/compiled.bench.js';
 
 void describe('Benchmark smoke tests', () => {
   void it('runCompiledBench completes without unresolved refs', () => {

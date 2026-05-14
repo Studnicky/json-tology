@@ -16,8 +16,8 @@ import {
   safeParse as vSafeParse,
   variant as vVariant
 } from 'valibot';
-import { Compose } from '../src/modules/composition/Compose.js';
-import { SchemaRegistry } from '../src/modules/registry/SchemaRegistry.js';
+import { Compose } from '../../../src/modules/composition/Compose.js';
+import { SchemaRegistry } from '../../../src/modules/registry/SchemaRegistry.js';
 import {
   bench, type BenchResult, section
 } from './harness.js';

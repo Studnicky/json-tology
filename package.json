@@ -64,9 +64,9 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "clean": "rm -rf dist",
-    "bench": "tsx bench/run.ts",
-    "bench:report": "tsx bench/run.ts --report",
-    "bench:flame": "0x --output-dir .flame -- node --import tsx/esm bench/run.ts"
+    "bench": "tsx examples/docs/benchmarks/run.ts",
+    "bench:report": "tsx examples/docs/benchmarks/run.ts --report",
+    "bench:flame": "0x --output-dir .flame -- node --import tsx/esm examples/docs/benchmarks/run.ts"
   },
   "keywords": [
     "json-schema",

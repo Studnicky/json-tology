@@ -7,7 +7,7 @@ import {
   FormatRegistry, Type
 } from '@sinclair/typebox';
 import { parse as vParse } from 'valibot';
-import { SchemaRegistry } from '../src/modules/registry/SchemaRegistry.js';
+import { SchemaRegistry } from '../../../src/modules/registry/SchemaRegistry.js';
 
 // Register email format for TypeBox (it ships without built-in formats)
 FormatRegistry.Set('email', (value) => {

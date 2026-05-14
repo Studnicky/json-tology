@@ -14,8 +14,8 @@ import {
   type Static, Type
 } from '@sinclair/typebox';
 import { Value } from '@sinclair/typebox/value';
-import { JsonTology } from '../src/JsonTology.js';
-import { Transform } from '../src/modules/transform/Transform.js';
+import { JsonTology } from '../../../src/JsonTology.js';
+import { Transform } from '../../../src/modules/transform/Transform.js';
 import {
   bench, type BenchResult, section
 } from './harness.js';

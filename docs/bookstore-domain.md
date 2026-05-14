@@ -1,6 +1,8 @@
 # The Bookstore Domain
 
-Every example throughout this documentation uses a single running domain - an eCommerce bookstore. This page defines the folder structure and the schemas that appear in all subsequent guides. Later guides build on this foundation, and examples reference these types by name without re-defining them.
+Every example throughout this documentation uses a single running domain — an eCommerce bookstore. This page defines the folder structure and the schemas that appear in all subsequent guides. Later guides build on this foundation, and examples reference these types by name without re-defining them.
+
+> **Source:** the full domain (TBox schemas, ABox seed data, transforms, anti-pattern fixtures) lives at [`examples/docs/bookstore/`](https://github.com/Studnicky/json-tology/tree/main/examples/docs/bookstore). Every code block on this page is excerpted from those files; clone the repo and run them directly.
 
 ## Why a shared domain
 

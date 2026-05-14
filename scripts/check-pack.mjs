@@ -21,7 +21,6 @@ const FORBIDDEN_PREFIXES = [
   'ARCHITECTURE.md',
   '.claude/',
   '.flame/',
-  'bench/',
   'check_',
   'docs/',
   'examples/',

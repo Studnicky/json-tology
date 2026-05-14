@@ -26,11 +26,11 @@ interface Profile {
 }
 
 const files = [
-  'bench/validate-valid.cpuprofile',
-  'bench/validate-invalid.cpuprofile',
-  'bench/coerce.cpuprofile',
-  'bench/convert.cpuprofile',
-  'bench/clean.cpuprofile'
+  'examples/docs/benchmarks/validate-valid.cpuprofile',
+  'examples/docs/benchmarks/validate-invalid.cpuprofile',
+  'examples/docs/benchmarks/coerce.cpuprofile',
+  'examples/docs/benchmarks/convert.cpuprofile',
+  'examples/docs/benchmarks/clean.cpuprofile'
 ];
 
 for (const file of files) {

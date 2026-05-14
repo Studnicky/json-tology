@@ -17,7 +17,7 @@
 import { TypeCompiler } from '@sinclair/typebox/compiler';
 import { z } from 'zod';
 import { safeParse } from 'valibot';
-import { SchemaRegistry } from '../src/modules/registry/SchemaRegistry.js';
+import { SchemaRegistry } from '../../../src/modules/registry/SchemaRegistry.js';
 import {
   bench, type BenchResult, section
 } from './harness.js';

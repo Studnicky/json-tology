@@ -176,6 +176,8 @@ const sidebar = [
       { link: '/constraint-brands/keywords', text: 'Constraint brands (keywords)' },
       { link: '/constraint-brands/narrowing', text: 'Constraint brands (narrowing)' },
       { link: '/cli', text: 'CLI' },
+      { link: '/comparisons', text: 'Library comparisons' },
+      { link: '/benchmarks', text: 'Benchmarks' },
       { link: '/references', text: 'External references' }
     ]
   },

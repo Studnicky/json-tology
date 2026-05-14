@@ -2,7 +2,7 @@
  * CPU profiling harness — generates .cpuprofile files for analysis.
  *
  * Usage:
- *   npx tsx bench/profile.ts [scenario]
+ *   npx tsx examples/docs/benchmarks/profile.ts [scenario]
  *
  * Scenarios: validate-valid, validate-invalid, coerce, convert, clean
  * Default: runs all scenarios.
@@ -10,7 +10,7 @@
 
 import { Session } from 'node:inspector/promises';
 import { writeFileSync } from 'node:fs';
-import { SchemaRegistry } from '../src/modules/registry/SchemaRegistry.js';
+import { SchemaRegistry } from '../../../src/modules/registry/SchemaRegistry.js';
 import {
   AddressSchema, CustomerSchema, defaultsInput,
   DefaultsSchema, NestedSchema, nestedValid, OrderItemSchema,
@@ -130,8 +130,8 @@ async function profileScenario(scenario: Scenario): Promise<void> {
 
   const { profile } = await session.post('Profiler.stop') as { 'profile': object };
 
-  writeFileSync(`bench/${scenario.name}.cpuprofile`, JSON.stringify(profile));
-  console.log(`  ${scenario.name}: ${String(scenario.iterations)} iterations -> bench/${scenario.name}.cpuprofile`);
+  writeFileSync(`examples/docs/benchmarks/${scenario.name}.cpuprofile`, JSON.stringify(profile));
+  console.log(`  ${scenario.name}: ${String(scenario.iterations)} iterations -> examples/docs/benchmarks/${scenario.name}.cpuprofile`);
 }
 
 async function main(): Promise<void> {
