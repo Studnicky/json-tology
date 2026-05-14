@@ -20,22 +20,50 @@ interface Row {
   note: string;
 }
 
-const rows     = ref<Row[]>([]);
-const running  = ref(false);
-const progress = ref(0);
-const error    = ref<string | null>(null);
-const baseline = ref<LibKey | null>(null);
-const ua       = ref<string>('');
+const rows        = ref<Row[]>([]);
+const running     = ref(false);
+const progress    = ref(0);
+const error       = ref<string | null>(null);
+const baseline    = ref<LibKey | null>(null);
+const ua          = ref<string>('');
+const currentLib  = ref<string>('');
+const currentPhase = ref<string>('');
 
 onMounted(() => {
   ua.value = typeof navigator !== 'undefined' ? navigator.userAgent : '';
 });
 
-function timeIt(fn: () => void, warmup: number, iterations: number) {
-  for (let i = 0; i < warmup; i++) fn();
+const CHUNK = 2_000;
+
+function nextTick(): Promise<void> {
+  return new Promise<void>((r) => {
+    setTimeout(r, 0);
+  });
+}
+
+async function timeChunked(
+  fn: () => void,
+  warmup: number,
+  iterations: number,
+  onProgress: (frac: number) => void
+): Promise<{ opsPerSec: number; nsPerOp: number }> {
+  // Warmup (chunked so the UI can paint between bursts)
+  for (let i = 0; i < warmup; i += CHUNK) {
+    const end = Math.min(i + CHUNK, warmup);
+    for (let j = i; j < end; j++) fn();
+    onProgress(0);
+    await nextTick();
+  }
+
   const start = performance.now();
-  for (let i = 0; i < iterations; i++) fn();
+  for (let i = 0; i < iterations; i += CHUNK) {
+    const end = Math.min(i + CHUNK, iterations);
+    for (let j = i; j < end; j++) fn();
+    onProgress(end / iterations);
+    await nextTick();
+  }
   const elapsedMs = performance.now() - start;
+
   return {
     opsPerSec: (iterations / elapsedMs) * 1000,
     nsPerOp: (elapsedMs * 1_000_000) / iterations,
@@ -48,6 +76,8 @@ async function run(): Promise<void> {
   error.value = null;
   rows.value = [];
   progress.value = 0;
+  currentLib.value = '';
+  currentPhase.value = '';
 
   const iterations = props.iterations ?? 20_000;
   const warmup     = props.warmup     ?? 200;
@@ -60,15 +90,27 @@ async function run(): Promise<void> {
     ...libs.filter(l => l.key !== 'json-tology'),
   ];
 
-  for (let i = 0; i < ordered.length; i++) {
+  const totalSteps = ordered.length;
+
+  for (let i = 0; i < totalSteps; i++) {
     const spec = ordered[i];
     const factory = scenario.value.factories[spec.key];
     if (!factory) continue;
 
+    currentLib.value = spec.label;
+    currentPhase.value = 'loading';
+    progress.value = (i / totalSteps) * 100;
+    await nextTick();
+
     try {
       const runFn = await factory();
-      await new Promise(r => setTimeout(r, 0));
-      const { opsPerSec, nsPerOp } = timeIt(runFn, warmup, iterations);
+      currentPhase.value = 'measuring';
+      await nextTick();
+
+      const { opsPerSec, nsPerOp } = await timeChunked(runFn, warmup, iterations, (frac) => {
+        progress.value = ((i + frac) / totalSteps) * 100;
+      });
+
       rows.value = [
         ...rows.value,
         { libKey: spec.key, label: spec.label, opsPerSec, nsPerOp, note: '' },
@@ -76,14 +118,17 @@ async function run(): Promise<void> {
       if (spec.key === 'json-tology') baseline.value = 'json-tology';
     } catch (e) {
       const message = (e as Error).message || 'failed to load';
+
       rows.value = [
         ...rows.value,
         { libKey: spec.key, label: spec.label, opsPerSec: null, nsPerOp: null, note: truncate(message) },
       ];
     }
-    progress.value = ((i + 1) / ordered.length) * 100;
+    progress.value = ((i + 1) / totalSteps) * 100;
   }
 
+  currentLib.value = '';
+  currentPhase.value = '';
   running.value = false;
 }
 
@@ -133,6 +178,15 @@ function ratio(libKey: LibKey): string {
       <span class="bench-scenario__meta">
         {{ supportedLibs.length }} libs · {{ props.iterations ?? 20000 }} iterations
       </span>
+    </div>
+
+    <div v-if="running" class="bench-scenario__progress">
+      <div class="bench-scenario__progress-bar" :style="{ width: `${progress}%` }" />
+    </div>
+
+    <div v-if="running && currentLib" class="bench-scenario__status">
+      <span class="bench-scenario__status-label">{{ currentPhase }}:</span>
+      <span class="bench-scenario__status-lib">{{ currentLib }}</span>
     </div>
 
     <div v-if="error" class="bench-scenario__error">{{ error }}</div>
@@ -205,6 +259,39 @@ function ratio(libKey: LibKey): string {
 .bench-scenario__meta {
   color: var(--vp-c-text-2);
   font-size: 0.85rem;
+}
+
+.bench-scenario__progress {
+  margin-top: 0.5rem;
+  height: 6px;
+  background: var(--vp-c-bg-soft);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.bench-scenario__progress-bar {
+  height: 100%;
+  background: var(--vp-c-brand-1);
+  transition: width 120ms ease-out;
+}
+
+.bench-scenario__status {
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--vp-c-text-2);
+}
+
+.bench-scenario__status-label {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-right: 0.4em;
+  font-size: 0.7rem;
+  color: var(--vp-c-text-3, var(--vp-c-text-2));
+}
+
+.bench-scenario__status-lib {
+  font-weight: 600;
+  color: var(--vp-c-text-1);
 }
 
 .bench-scenario__error {
