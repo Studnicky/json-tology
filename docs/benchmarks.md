@@ -144,6 +144,30 @@ Validate after registration; hot path. Equivalent to the validation scenarios ab
 
 ---
 
+---
+
+## Node-only scenarios
+
+The scenarios below appear in the **Latest run (Node)** report at the bottom of this page but are deliberately not exposed as browser runners. Each has a specific reason — measuring them in-browser would mislead more than it informs.
+
+### Composition (`extend + validate`, `intersection`, `discriminated union`) — cold/warm
+
+**Why Node-only:** composition timing is setup-dominated. The cold path includes graph construction + subschema linking + JIT compilation; the warm path measures one compiled validator. The mix of cold/warm in a hot loop is library-specific and produces noisy in-browser numbers that misrepresent the steady-state cost. The Node bench [`compose.bench.ts`](https://github.com/Studnicky/json-tology/blob/main/examples/docs/benchmarks/compose.bench.ts) measures each phase deterministically.
+
+### Transforms (`decode date`, `encode date`, `encode event`)
+
+**Why Node-only:** the Transform encoder/decoder takes a schema with a registered codec (`decoders` + `encoders` keyword set) and the timing depends on how the canonical graph caches the codec dispatch table. A one-button click can't faithfully reproduce the registry-warmed state that the Node suite measures in [`transform.bench.ts`](https://github.com/Studnicky/json-tology/blob/main/examples/docs/benchmarks/transform.bench.ts) and [`serialize.bench.ts`](https://github.com/Studnicky/json-tology/blob/main/examples/docs/benchmarks/serialize.bench.ts).
+
+### `cold first validate`
+
+**Why Node-only:** measures the cost of *registering and JIT-compiling* a schema for the very first time, before any caches are warm. Browsers don't expose a way to fully discard module-level state between iterations — the second iteration in the loop is already warm even if the per-call API is reset. The Node bench [`registry.bench.ts`](https://github.com/Studnicky/json-tology/blob/main/examples/docs/benchmarks/registry.bench.ts) constructs a fresh registry per iteration.
+
+### Compiled vs Interpreted (`compiled simple valid`, `compiled simple invalid`, `compiled nested valid`)
+
+**Why Node-only:** this is a json-tology-internal A/B between `SchemaCompiler` and `GraphEngine.execute` on the same registered schema. No peer library has an equivalent surface — there's nothing to compare against in-browser, only against itself. Source: [`compiled.bench.ts`](https://github.com/Studnicky/json-tology/blob/main/examples/docs/benchmarks/compiled.bench.ts).
+
+---
+
 ## What's unique to json-tology
 
 Operations no comparator implements. These appear in the Node bench report as single-library rows and are included for completeness, not as head-to-head wins.
