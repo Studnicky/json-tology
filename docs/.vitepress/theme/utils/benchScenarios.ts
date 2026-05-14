@@ -3,13 +3,16 @@
  *
  * Each scenario id matches a `### <name>` heading in
  * examples/docs/benchmarks/results/latest.md. For every scenario, every
- * comparator library that can run it has a factory that loads the lib from
- * its esm.sh CDN entry on demand and returns a closure to time.
+ * comparator library that can run it has a factory that returns a closure
+ * to time.
  *
- * `null` factory → library does not run this scenario (intentional skip).
+ * json-tology is bundled directly from the local source (Vite alias in
+ * docs/.vitepress/config.ts) so the page measures HEAD, not whatever
+ * version happens to be on esm.sh. Peer libraries load from their esm.sh
+ * CDN entries on demand so they don't bloat the docs bundle.
  */
 
-const VERSION = '0.5.0';
+import * as JsonTologyModule from 'json-tology';
 
 export type LibKey =
   | 'json-tology'
@@ -32,7 +35,7 @@ export interface LibSpec {
 }
 
 export const LIB_SPECS: readonly LibSpec[] = [
-  { key: 'json-tology',      label: 'json-tology',         url: `https://esm.sh/json-tology@${VERSION}` },
+  { key: 'json-tology',      label: 'json-tology (HEAD)' },
   { key: 'zod',              label: 'Zod',                 url: 'https://esm.sh/zod@3' },
   { key: 'valibot',          label: 'Valibot',             url: 'https://esm.sh/valibot@1' },
   { key: 'typebox',          label: 'TypeBox (Value)',     url: 'https://esm.sh/@sinclair/typebox@0.34', extras: ['https://esm.sh/@sinclair/typebox@0.34/value'] },
@@ -54,6 +57,9 @@ async function importOnce<T = unknown>(url: string): Promise<T> {
 }
 
 async function loadLib(key: LibKey): Promise<{ main: unknown; extras: unknown[] }> {
+  if (key === 'json-tology') {
+    return { main: JsonTologyModule, extras: [] };
+  }
   const spec = LIB_SPECS.find(s => s.key === key);
   if (!spec || !spec.url) return { main: null, extras: [] };
   const main = await importOnce(spec.url);

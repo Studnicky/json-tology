@@ -2,7 +2,10 @@ import { defineConfig } from 'vitepress';
 import { jtBrandPlugin } from './plugins/jt-brand.mjs';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { resolve, dirname } from 'node:path';
 const pkg = JSON.parse(readFileSync(fileURLToPath(new URL('../../package.json', import.meta.url)), 'utf8')) as { version: string };
+const __here = dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = resolve(__here, '../..');
 import { themeConfig } from './theme.config.js';
 
 // Sidebar order:
@@ -195,6 +198,13 @@ export default defineConfig({
   vite: {
     define: {
       __JT_VERSION__: JSON.stringify(pkg.version)
+    },
+    resolve: {
+      alias: {
+        // The browser bench scenarios import json-tology directly so the page
+        // measures whatever HEAD is, not whatever happens to be on esm.sh.
+        'json-tology': resolve(REPO_ROOT, 'src/index.ts')
+      }
     }
   },
   base: '/json-tology/',
