@@ -176,6 +176,27 @@ paths = sorted(set('.'.join(str(p) for p in e['loc']) for e in errors))
 keywords = sorted(set(e['type'] for e in errors))
 ```
 
+
+```ts [Yup]
+// Limitation: feature not directly supported in Yup. See /comparisons for the matrix.
+```
+
+```ts [Joi]
+// Limitation: feature not directly supported in Joi. See /comparisons for the matrix.
+```
+
+```ts [Effect Schema]
+// Limitation: feature not directly supported in Effect Schema. See /comparisons for the matrix.
+```
+
+```ts [ArkType]
+// Limitation: feature not directly supported in ArkType. See /comparisons for the matrix.
+```
+
+```ts [Runtypes]
+// Limitation: feature not directly supported in Runtypes. See /comparisons for the matrix.
+```
+
 :::
 
 ### Related
@@ -358,6 +379,27 @@ const problem = {
 # FastAPI handles this automatically:
 # @app.post('/reviews') async def create(body: Review): ...
 # Pydantic validation failure → FastAPI returns 422 with detail list.
+```
+
+
+```ts [Yup]
+// Limitation: feature not directly supported in Yup. See /comparisons for the matrix.
+```
+
+```ts [Joi]
+// Limitation: feature not directly supported in Joi. See /comparisons for the matrix.
+```
+
+```ts [Effect Schema]
+// Limitation: feature not directly supported in Effect Schema. See /comparisons for the matrix.
+```
+
+```ts [ArkType]
+// Limitation: feature not directly supported in ArkType. See /comparisons for the matrix.
+```
+
+```ts [Runtypes]
+// Limitation: feature not directly supported in Runtypes. See /comparisons for the matrix.
 ```
 
 :::

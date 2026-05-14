@@ -155,6 +155,27 @@ class Weapon(Equipment):
 # but it does not emit OWL or JSON Schema axioms by default.
 ```
 
+
+```ts [AJV]
+// Limitation: feature not directly supported in AJV. See /comparisons for the matrix.
+```
+
+```ts [Yup]
+// Limitation: feature not directly supported in Yup. See /comparisons for the matrix.
+```
+
+```ts [Joi]
+// Limitation: feature not directly supported in Joi. See /comparisons for the matrix.
+```
+
+```ts [ArkType]
+// Limitation: feature not directly supported in ArkType. See /comparisons for the matrix.
+```
+
+```ts [Runtypes]
+// Limitation: feature not directly supported in Runtypes. See /comparisons for the matrix.
+```
+
 :::
 
 ## Related / See also

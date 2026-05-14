@@ -155,6 +155,35 @@ class BookV1(BaseModel):
 # No equivalent of DeprecatedKeysType  - introspection is runtime only.
 ```
 
+
+```ts [Valibot]
+// Limitation: feature not directly supported in Valibot. See /comparisons for the matrix.
+```
+
+```ts [Yup]
+// Limitation: feature not directly supported in Yup. See /comparisons for the matrix.
+```
+
+```ts [Joi]
+// Limitation: feature not directly supported in Joi. See /comparisons for the matrix.
+```
+
+```ts [io-ts]
+// Limitation: feature not directly supported in io-ts. See /comparisons for the matrix.
+```
+
+```ts [Effect Schema]
+// Limitation: feature not directly supported in Effect Schema. See /comparisons for the matrix.
+```
+
+```ts [ArkType]
+// Limitation: feature not directly supported in ArkType. See /comparisons for the matrix.
+```
+
+```ts [Runtypes]
+// Limitation: feature not directly supported in Runtypes. See /comparisons for the matrix.
+```
+
 :::
 
 ### Related
@@ -274,6 +303,35 @@ class BookV1(BaseModel):
 data = BookV1(isbn='9780000000001', legacy_sku='OLD-1')
 data.model_dump(exclude_deprecated=True)
 # {'isbn': '9780000000001'}  - but the static type still includes legacy_sku
+```
+
+
+```ts [Valibot]
+// Limitation: feature not directly supported in Valibot. See /comparisons for the matrix.
+```
+
+```ts [Yup]
+// Limitation: feature not directly supported in Yup. See /comparisons for the matrix.
+```
+
+```ts [Joi]
+// Limitation: feature not directly supported in Joi. See /comparisons for the matrix.
+```
+
+```ts [io-ts]
+// Limitation: feature not directly supported in io-ts. See /comparisons for the matrix.
+```
+
+```ts [Effect Schema]
+// Limitation: feature not directly supported in Effect Schema. See /comparisons for the matrix.
+```
+
+```ts [ArkType]
+// Limitation: feature not directly supported in ArkType. See /comparisons for the matrix.
+```
+
+```ts [Runtypes]
+// Limitation: feature not directly supported in Runtypes. See /comparisons for the matrix.
 ```
 
 :::
@@ -418,6 +476,35 @@ type CustomerInput = Static<typeof CustomerSchema>; // already brand-free
 # For loose input, use a TypedDict or dict[str, Any] at the boundary layer.
 from typing import Any
 CustomerInput = dict[str, Any]
+```
+
+
+```ts [Valibot]
+// Limitation: feature not directly supported in Valibot. See /comparisons for the matrix.
+```
+
+```ts [Yup]
+// Limitation: feature not directly supported in Yup. See /comparisons for the matrix.
+```
+
+```ts [Joi]
+// Limitation: feature not directly supported in Joi. See /comparisons for the matrix.
+```
+
+```ts [io-ts]
+// Limitation: feature not directly supported in io-ts. See /comparisons for the matrix.
+```
+
+```ts [Effect Schema]
+// Limitation: feature not directly supported in Effect Schema. See /comparisons for the matrix.
+```
+
+```ts [ArkType]
+// Limitation: feature not directly supported in ArkType. See /comparisons for the matrix.
+```
+
+```ts [Runtypes]
+// Limitation: feature not directly supported in Runtypes. See /comparisons for the matrix.
 ```
 
 :::
@@ -570,6 +657,35 @@ Currency = Literal['USD', 'EUR', 'GBP']
 
 # Or extract from a model field annotation at runtime:
 # typing.get_args(model.model_fields['currency'].annotation)
+```
+
+
+```ts [Valibot]
+// Limitation: feature not directly supported in Valibot. See /comparisons for the matrix.
+```
+
+```ts [Yup]
+// Limitation: feature not directly supported in Yup. See /comparisons for the matrix.
+```
+
+```ts [Joi]
+// Limitation: feature not directly supported in Joi. See /comparisons for the matrix.
+```
+
+```ts [io-ts]
+// Limitation: feature not directly supported in io-ts. See /comparisons for the matrix.
+```
+
+```ts [Effect Schema]
+// Limitation: feature not directly supported in Effect Schema. See /comparisons for the matrix.
+```
+
+```ts [ArkType]
+// Limitation: feature not directly supported in ArkType. See /comparisons for the matrix.
+```
+
+```ts [Runtypes]
+// Limitation: feature not directly supported in Runtypes. See /comparisons for the matrix.
 ```
 
 :::
@@ -732,6 +848,35 @@ match status:
         assert_never(status)  # type error if the match is not exhaustive
 ```
 
+
+```ts [Valibot]
+// Limitation: feature not directly supported in Valibot. See /comparisons for the matrix.
+```
+
+```ts [Yup]
+// Limitation: feature not directly supported in Yup. See /comparisons for the matrix.
+```
+
+```ts [Joi]
+// Limitation: feature not directly supported in Joi. See /comparisons for the matrix.
+```
+
+```ts [io-ts]
+// Limitation: feature not directly supported in io-ts. See /comparisons for the matrix.
+```
+
+```ts [Effect Schema]
+// Limitation: feature not directly supported in Effect Schema. See /comparisons for the matrix.
+```
+
+```ts [ArkType]
+// Limitation: feature not directly supported in ArkType. See /comparisons for the matrix.
+```
+
+```ts [Runtypes]
+// Limitation: feature not directly supported in Runtypes. See /comparisons for the matrix.
+```
+
 :::
 
 ### Related
@@ -871,6 +1016,35 @@ from pydantic import BaseModel
 class Book(BaseModel):
     currency: str = 'USD'  # OK
     # price: int = 'free'  # ValidationError at class definition  - caught early
+```
+
+
+```ts [Valibot]
+// Limitation: feature not directly supported in Valibot. See /comparisons for the matrix.
+```
+
+```ts [Yup]
+// Limitation: feature not directly supported in Yup. See /comparisons for the matrix.
+```
+
+```ts [Joi]
+// Limitation: feature not directly supported in Joi. See /comparisons for the matrix.
+```
+
+```ts [io-ts]
+// Limitation: feature not directly supported in io-ts. See /comparisons for the matrix.
+```
+
+```ts [Effect Schema]
+// Limitation: feature not directly supported in Effect Schema. See /comparisons for the matrix.
+```
+
+```ts [ArkType]
+// Limitation: feature not directly supported in ArkType. See /comparisons for the matrix.
+```
+
+```ts [Runtypes]
+// Limitation: feature not directly supported in Runtypes. See /comparisons for the matrix.
 ```
 
 :::

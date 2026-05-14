@@ -144,6 +144,27 @@ book.model_dump(exclude_defaults=True)
 book.model_dump(exclude_none=True)
 ```
 
+
+```ts [Yup]
+// Limitation: feature not directly supported in Yup. See /comparisons for the matrix.
+```
+
+```ts [Joi]
+// Limitation: feature not directly supported in Joi. See /comparisons for the matrix.
+```
+
+```ts [Effect Schema]
+// Limitation: feature not directly supported in Effect Schema. See /comparisons for the matrix.
+```
+
+```ts [ArkType]
+// Limitation: feature not directly supported in ArkType. See /comparisons for the matrix.
+```
+
+```ts [Runtypes]
+// Limitation: feature not directly supported in Runtypes. See /comparisons for the matrix.
+```
+
 :::
 
 ---
@@ -214,6 +235,27 @@ const json = JSON.stringify(customer);
 ```py [Pydantic]
 json_str = customer.model_dump_json()
 # Equivalent; datetime fields serialized to ISO automatically.
+```
+
+
+```ts [Yup]
+// Limitation: feature not directly supported in Yup. See /comparisons for the matrix.
+```
+
+```ts [Joi]
+// Limitation: feature not directly supported in Joi. See /comparisons for the matrix.
+```
+
+```ts [Effect Schema]
+// Limitation: feature not directly supported in Effect Schema. See /comparisons for the matrix.
+```
+
+```ts [ArkType]
+// Limitation: feature not directly supported in ArkType. See /comparisons for the matrix.
+```
+
+```ts [Runtypes]
+// Limitation: feature not directly supported in Runtypes. See /comparisons for the matrix.
 ```
 
 :::

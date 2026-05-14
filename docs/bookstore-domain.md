@@ -73,160 +73,39 @@ export const IsbnSchema = {
 } as const;
 ```
 
-### CustomerId / OrderId / ReviewId
+### CustomerId
 
-```ts
-// entities/CustomerId.ts
-import { CustomerIdSchema } from './entities/CustomerId.js';
-
-export const CustomerIdSchema = {
-  $id: 'urn:bookstore:CustomerId',
-  type: 'string',
-  format: 'uuid',
-} as const;
-```
+<<< ../examples/docs/bookstore/entities/CustomerId.ts
 
 ### Email
 
-```ts
-// entities/Email.ts
-export const EmailSchema = {
-  $id: 'urn:bookstore:Email',
-  type: 'string',
-  format: 'email',
-} as const;
-```
+<<< ../examples/docs/bookstore/entities/Email.ts
 
 ### Money
 
-```ts
-// entities/Money.ts
-export const MoneySchema = {
-  $id: 'urn:bookstore:Money',
-  type: 'number',
-  minimum: 0,
-} as const;
-```
+<<< ../examples/docs/bookstore/entities/Money.ts
 
 ## Entities (composed of named primitives)
 
 ### Address
 
-```ts
-// entities/Address.ts
-import { CityNameSchema } from './CityName.js';
-import { CountryCodeSchema } from './CountryCode.js';
-import { PostalCodeSchema } from './PostalCode.js';
-import { StreetLineSchema } from './StreetLine.js';
-
-export const AddressSchema = {
-  $id: 'urn:bookstore:Address',
-  type: 'object',
-  properties: {
-    street:     { $ref: StreetLineSchema.$id },
-    city:       { $ref: CityNameSchema.$id },
-    postalCode: { $ref: PostalCodeSchema.$id },
-    country:    { $ref: CountryCodeSchema.$id },
-  },
-  required: ['street', 'city', 'postalCode'],
-} as const;
-```
+<<< ../examples/docs/bookstore/entities/Address.ts
 
 ### Customer
 
-```ts
-// entities/Customer.ts
-import { CustomerIdSchema } from './CustomerId.js';
-import { EmailSchema } from './Email.js';
-import { PersonNameSchema } from './PersonName.js';
-// see entities/Address.ts for AddressSchema
-export const CustomerSchema = {
-  $id: 'urn:bookstore:Customer',
-  type: 'object',
-  properties: {
-    id:        { $ref: CustomerIdSchema.$id },
-    email:     { $ref: EmailSchema.$id },
-    name:      { $ref: PersonNameSchema.$id },
-    addresses: {
-      type: 'array',
-      items: { $ref: AddressSchema.$id },
-      default: [],
-    },
-  },
-  required: ['id', 'email', 'name'],
-} as const;
-```
+<<< ../examples/docs/bookstore/entities/Customer.ts
 
 ### Book
 
-```ts
-// entities/Book.ts
-import { AuthorNameSchema } from './AuthorName.js';
-import { CurrencyCodeSchema } from './CurrencyCode.js';
-import { IsbnSchema } from './Isbn.js';
-import { MoneySchema } from './Money.js';
-import { TitleSchema } from './Title.js';
-
-export const BookSchema = {
-  $id: 'urn:bookstore:Book',
-  type: 'object',
-  properties: {
-    isbn:     { $ref: IsbnSchema.$id },
-    title:    { $ref: TitleSchema.$id },
-    authors:  { type: 'array', items: { $ref: AuthorNameSchema.$id }, minItems: 1 },
-    price:    { $ref: MoneySchema.$id },
-    currency: { $ref: CurrencyCodeSchema.$id, default: 'USD' },
-    inStock:  { type: 'boolean', default: true },
-  },
-  required: ['isbn', 'title', 'authors', 'price', 'currency'],
-} as const;
-```
+<<< ../examples/docs/bookstore/entities/Book.ts
 
 ### OrderLine
 
-```ts
-// entities/OrderLine.ts
-import { IsbnSchema } from './Isbn.js';
-import { MoneySchema } from './Money.js';
-import { QuantitySchema } from './Quantity.js';
-
-export const OrderLineSchema = {
-  $id: 'urn:bookstore:OrderLine',
-  type: 'object',
-  properties: {
-    bookIsbn:  { $ref: IsbnSchema.$id },
-    quantity:  { $ref: QuantitySchema.$id },
-    unitPrice: { $ref: MoneySchema.$id },
-  },
-  required: ['bookIsbn', 'quantity', 'unitPrice'],
-} as const;
-```
+<<< ../examples/docs/bookstore/entities/OrderLine.ts
 
 ### Order
 
-```ts
-// entities/Order.ts
-import { AddressSchema } from './Address.js';
-import { CustomerIdSchema } from './CustomerId.js';
-import { Iso8601Schema } from './Iso8601.js';
-import { MoneySchema } from './Money.js';
-import { OrderIdSchema } from './OrderId.js';
-import { OrderLineSchema } from './OrderLine.js';
-
-export const OrderSchema = {
-  $id: 'urn:bookstore:Order',
-  type: 'object',
-  properties: {
-    id:              { $ref: OrderIdSchema.$id },
-    customerId:      { $ref: CustomerIdSchema.$id },
-    items:           { type: 'array', items: { $ref: OrderLineSchema.$id }, minItems: 1 },
-    total:           { $ref: MoneySchema.$id },
-    shippingAddress: { $ref: AddressSchema.$id },
-    placedAt:        { $ref: Iso8601Schema.$id },
-  },
-  required: ['id', 'customerId', 'items', 'total', 'placedAt', 'shippingAddress'],
-} as const;
-```
+<<< ../examples/docs/bookstore/entities/Order.ts
 
 ### Review
 

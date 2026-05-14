@@ -232,6 +232,27 @@ except ValidationError as e:
     print(e.errors())  # structured error list
 ```
 
+
+```ts [Yup]
+// Limitation: feature not directly supported in Yup. See /comparisons for the matrix.
+```
+
+```ts [Joi]
+// Limitation: feature not directly supported in Joi. See /comparisons for the matrix.
+```
+
+```ts [Effect Schema]
+// Limitation: feature not directly supported in Effect Schema. See /comparisons for the matrix.
+```
+
+```ts [ArkType]
+// Limitation: feature not directly supported in ArkType. See /comparisons for the matrix.
+```
+
+```ts [Runtypes]
+// Limitation: feature not directly supported in Runtypes. See /comparisons for the matrix.
+```
+
 :::
 
 ## Related

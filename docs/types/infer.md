@@ -154,6 +154,35 @@ class Customer(BaseModel):
 # Python type annotations ARE the schema  - no separate inference step.
 ```
 
+
+```ts [Valibot]
+// Limitation: feature not directly supported in Valibot. See /comparisons for the matrix.
+```
+
+```ts [Yup]
+// Limitation: feature not directly supported in Yup. See /comparisons for the matrix.
+```
+
+```ts [Joi]
+// Limitation: feature not directly supported in Joi. See /comparisons for the matrix.
+```
+
+```ts [io-ts]
+// Limitation: feature not directly supported in io-ts. See /comparisons for the matrix.
+```
+
+```ts [Effect Schema]
+// Limitation: feature not directly supported in Effect Schema. See /comparisons for the matrix.
+```
+
+```ts [ArkType]
+// Limitation: feature not directly supported in ArkType. See /comparisons for the matrix.
+```
+
+```ts [Runtypes]
+// Limitation: feature not directly supported in Runtypes. See /comparisons for the matrix.
+```
+
 :::
 
 ### Related
@@ -238,6 +267,35 @@ type Sub = InferSchemaType<typeof SubSchema, typeof RootSchema>;
 
 ```py [Pydantic]
 # Not applicable  - Python uses class-based types, not JSON Pointer sub-schemas.
+```
+
+
+```ts [Valibot]
+// Limitation: feature not directly supported in Valibot. See /comparisons for the matrix.
+```
+
+```ts [Yup]
+// Limitation: feature not directly supported in Yup. See /comparisons for the matrix.
+```
+
+```ts [Joi]
+// Limitation: feature not directly supported in Joi. See /comparisons for the matrix.
+```
+
+```ts [io-ts]
+// Limitation: feature not directly supported in io-ts. See /comparisons for the matrix.
+```
+
+```ts [Effect Schema]
+// Limitation: feature not directly supported in Effect Schema. See /comparisons for the matrix.
+```
+
+```ts [ArkType]
+// Limitation: feature not directly supported in ArkType. See /comparisons for the matrix.
+```
+
+```ts [Runtypes]
+// Limitation: feature not directly supported in Runtypes. See /comparisons for the matrix.
 ```
 
 :::
@@ -331,6 +389,35 @@ from typing import Annotated
 
 class Customer(BaseModel):
     email: EmailStr  # validated as email at runtime, typed as str
+```
+
+
+```ts [Valibot]
+// Limitation: feature not directly supported in Valibot. See /comparisons for the matrix.
+```
+
+```ts [Yup]
+// Limitation: feature not directly supported in Yup. See /comparisons for the matrix.
+```
+
+```ts [Joi]
+// Limitation: feature not directly supported in Joi. See /comparisons for the matrix.
+```
+
+```ts [io-ts]
+// Limitation: feature not directly supported in io-ts. See /comparisons for the matrix.
+```
+
+```ts [Effect Schema]
+// Limitation: feature not directly supported in Effect Schema. See /comparisons for the matrix.
+```
+
+```ts [ArkType]
+// Limitation: feature not directly supported in ArkType. See /comparisons for the matrix.
+```
+
+```ts [Runtypes]
+// Limitation: feature not directly supported in Runtypes. See /comparisons for the matrix.
 ```
 
 :::
