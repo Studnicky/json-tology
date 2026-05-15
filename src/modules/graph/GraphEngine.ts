@@ -43,7 +43,7 @@ export class GraphEngine implements GraphEngineInterface {
   private readonly embeddedSchemas: Map<string, JSONSchema7Definition>;
   public readonly formatRegistry: FormatRegistryInterface;
   private readonly graphCache = new WeakMap<object, SchemaGraph>();
-  private readonly options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>>;
+  private readonly options: Pick<GraphEngineOptionsInterface, 'lookupGraph' | 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupGraph' | 'lookupSchema'>>;
   private readonly refCache = new Map<string, RefTargetInterface>();
   private readonly regexCache = new Map<string, RegExp>();
 
@@ -74,7 +74,7 @@ export class GraphEngine implements GraphEngineInterface {
     graph: SchemaGraphInterface,
     value: unknown[],
     path: string,
-    options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>>,
+    options: Pick<GraphEngineOptionsInterface, 'lookupGraph' | 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupGraph' | 'lookupSchema'>>,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntryInterface[],
     alreadyEvaluated: Set<number>,
@@ -125,7 +125,7 @@ export class GraphEngine implements GraphEngineInterface {
     graph: SchemaGraphInterface,
     value: Record<string, unknown>,
     path: string,
-    options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>>,
+    options: Pick<GraphEngineOptionsInterface, 'lookupGraph' | 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupGraph' | 'lookupSchema'>>,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntryInterface[],
     alreadyEvaluated: Set<string>,
@@ -289,6 +289,15 @@ export class GraphEngine implements GraphEngineInterface {
   }
 
   /**
+   * Returns the schema lookup function provided at construction, if any.
+   *
+   * @returns The lookup callback, or `undefined` when none was configured.
+   */
+  public graphLookup(): ((schemaId: string) => SchemaGraphInterface | undefined) | undefined {
+    return this.options.lookupGraph;
+  }
+
+  /**
    * Indicates whether the engine was configured with custom keyword definitions.
    *
    * @returns `true` if at least one custom keyword is registered.
@@ -427,11 +436,6 @@ export class GraphEngine implements GraphEngineInterface {
     return GraphEngineSupport.schemaId(this.rootSchema);
   }
 
-  /**
-   * Returns the schema lookup function provided at construction, if any.
-   *
-   * @returns The lookup callback, or `undefined` when none was configured.
-   */
   public schemaLookup(): ((schemaId: string) => Record<string, unknown> | undefined) | undefined {
     return this.options.lookupSchema;
   }
@@ -450,7 +454,7 @@ export class GraphEngine implements GraphEngineInterface {
     graph: SchemaGraphInterface,
     value: unknown[],
     path: string,
-    options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>>,
+    options: Pick<GraphEngineOptionsInterface, 'lookupGraph' | 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupGraph' | 'lookupSchema'>>,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntryInterface[],
     sem: SchemaGraphSemanticsInterface,
@@ -592,7 +596,7 @@ export class GraphEngine implements GraphEngineInterface {
     graph: SchemaGraphInterface,
     value: Record<string, unknown>,
     path: string,
-    options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>>,
+    options: Pick<GraphEngineOptionsInterface, 'lookupGraph' | 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupGraph' | 'lookupSchema'>>,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntryInterface[],
     depth: number
@@ -849,7 +853,7 @@ export class GraphEngine implements GraphEngineInterface {
     graph: SchemaGraphInterface,
     value: unknown,
     path: string,
-    options: Pick<GraphEngineOptionsInterface, 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>>,
+    options: Pick<GraphEngineOptionsInterface, 'lookupGraph' | 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupGraph' | 'lookupSchema'>>,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntryInterface[],
     depth = 0

@@ -1,4 +1,3 @@
-import type { ScalarResultInterface } from '../../../interfaces/ScalarResult.js';
 import type { ValidationErrorType } from '../../../types/Validation.js';
 import { BaseError } from '../../../errors/BaseError.js';
 import { Predicates } from '../Predicates.js';
@@ -8,39 +7,27 @@ export class Scalars {
     path: string,
     value: unknown,
     hasConst: boolean,
-    constVal: unknown
-  ): ScalarResultInterface {
-    if (!hasConst) {
-      return {
-        'errors': [],
-        'valid': true
-      };
+    constVal: unknown,
+    errors: ValidationErrorType[]
+  ): boolean {
+    if (!hasConst || Predicates.satisfiesConst(value, constVal)) {
+      return true;
     }
 
-    if (Predicates.satisfiesConst(value, constVal)) {
-      return {
-        'errors': [],
-        'valid': true
-      };
-    }
+    errors.push(BaseError.validationError(path, 'const', `must be ${JSON.stringify(constVal)}`));
 
-    return {
-      'errors': [BaseError.validationError(path, 'const', `must be ${JSON.stringify(constVal)}`)],
-      'valid': false
-    };
+    return false;
   }
 
   static validateEnum(
     path: string,
     value: unknown,
     enumValues: undefined | unknown[],
-    enumSet: Set<boolean | null | number | string> | undefined
-  ): ScalarResultInterface {
+    enumSet: Set<boolean | null | number | string> | undefined,
+    errors: ValidationErrorType[]
+  ): boolean {
     if (enumValues === undefined) {
-      return {
-        'errors': [],
-        'valid': true
-      };
+      return true;
     }
 
     const matched = enumSet === undefined
@@ -48,42 +35,28 @@ export class Scalars {
       : enumSet.has(value as boolean | null | number | string);
 
     if (matched) {
-      return {
-        'errors': [],
-        'valid': true
-      };
+      return true;
     }
 
-    return {
-      'errors': [BaseError.validationError(path, 'enum', 'must be one of the allowed values')],
-      'valid': false
-    };
+    errors.push(BaseError.validationError(path, 'enum', 'must be one of the allowed values'));
+
+    return false;
   }
 
   static validateFormat(
     path: string,
     value: unknown,
     format: string | undefined,
-    formatValidator: ((v: unknown) => boolean) | undefined
-  ): ScalarResultInterface {
-    if (formatValidator === undefined) {
-      return {
-        'errors': [],
-        'valid': true
-      };
+    formatValidator: ((v: unknown) => boolean) | undefined,
+    errors: ValidationErrorType[]
+  ): boolean {
+    if (formatValidator === undefined || Predicates.satisfiesFormat(value, formatValidator)) {
+      return true;
     }
 
-    if (Predicates.satisfiesFormat(value, formatValidator)) {
-      return {
-        'errors': [],
-        'valid': true
-      };
-    }
+    errors.push(BaseError.validationError(path, 'format', `must match format "${format}"`));
 
-    return {
-      'errors': [BaseError.validationError(path, 'format', `must match format "${format}"`)],
-      'valid': false
-    };
+    return false;
   }
 
   static validateNumber(
@@ -93,9 +66,10 @@ export class Scalars {
     maximum: number | undefined,
     exclusiveMinimum: number | undefined,
     exclusiveMaximum: number | undefined,
-    multipleOf: number | undefined
-  ): ScalarResultInterface {
-    const errors: ValidationErrorType[] = [];
+    multipleOf: number | undefined,
+    errors: ValidationErrorType[]
+  ): boolean {
+    const pre = errors.length;
 
     if (minimum !== undefined && !Predicates.satisfiesMinimum(value, minimum)) {
       errors.push(BaseError.validationError(path, 'minimum', `must be >= ${minimum}`));
@@ -113,10 +87,7 @@ export class Scalars {
       errors.push(BaseError.validationError(path, 'multipleOf', `must be a multiple of ${multipleOf}`));
     }
 
-    return {
-      errors,
-      'valid': errors.length === 0
-    };
+    return errors.length === pre;
   }
 
   static validateString(
@@ -125,9 +96,10 @@ export class Scalars {
     minLength: number | undefined,
     maxLength: number | undefined,
     patternRegex: RegExp | undefined,
-    pattern: string | undefined
-  ): ScalarResultInterface {
-    const errors: ValidationErrorType[] = [];
+    pattern: string | undefined,
+    errors: ValidationErrorType[]
+  ): boolean {
+    const pre = errors.length;
 
     if (minLength !== undefined && !Predicates.satisfiesMinLength(value, minLength)) {
       errors.push(BaseError.validationError(path, 'minLength', `must be at least ${minLength} characters`));
@@ -139,41 +111,32 @@ export class Scalars {
       errors.push(BaseError.validationError(path, 'pattern', `must match pattern "${pattern}"`));
     }
 
-    return {
-      errors,
-      'valid': errors.length === 0
-    };
+    return errors.length === pre;
   }
 
   static validateType(
     path: string,
     types: string[],
-    value: unknown
-  ): ScalarResultInterface {
+    value: unknown,
+    errors: ValidationErrorType[]
+  ): boolean {
     if (types.length === 0) {
-      return {
-        'errors': [],
-        'valid': true
-      };
+      return true;
     }
 
     for (const typeName of types) {
       if (Predicates.matchesType(typeName, value)) {
-        return {
-          'errors': [],
-          'valid': true
-        };
+        return true;
       }
     }
 
-    return {
-      'errors': [BaseError.validationError(
-        path,
-        'type',
-        types.length === 1 ? `must be ${types[0]}` : `must be one of: ${types.join(', ')}`,
-        { 'type': types }
-      )],
-      'valid': false
-    };
+    errors.push(BaseError.validationError(
+      path,
+      'type',
+      types.length === 1 ? `must be ${types[0]}` : `must be one of: ${types.join(', ')}`,
+      { 'type': types }
+    ));
+
+    return false;
   }
 }

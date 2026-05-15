@@ -2,20 +2,16 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { Value } from '../../src/index.js';
+import { Operations } from '../../src/index.js';
 
-const {
-  applyOp, clone
-} = Value;
-
-void describe('clone — Good/Bad/Ugly', () => {
+void describe('Operations.clone — Good/Bad/Ugly', () => {
   void it('clones objects, arrays, and primitives with structural isolation', () => {
     // Good: deep clones an object
     const original = {
       'a': 1,
       'b': { 'c': 2 }
     };
-    const cloned = clone(original);
+    const cloned = Operations.clone(original);
 
     assert.deepStrictEqual(cloned, original);
     assert.notEqual(cloned, original);
@@ -30,28 +26,28 @@ void describe('clone — Good/Bad/Ugly', () => {
       ],
       { 'x': 4 }
     ];
-    const arrCloned = clone(arr);
+    const arrCloned = Operations.clone(arr);
 
     assert.deepStrictEqual(arrCloned, arr);
     assert.notEqual(arrCloned, arr);
-    assert.notEqual((arrCloned)[1], arr[1]);
+    assert.notEqual((arrCloned as unknown[][])[1], arr[1]);
 
     // Bad/Ugly: handles primitives unchanged
-    assert.equal(clone(42), 42);
-    assert.equal(clone('hello'), 'hello');
-    assert.equal(clone(true), true);
-    assert.equal(clone(null), null);
+    assert.equal(Operations.clone(42), 42);
+    assert.equal(Operations.clone('hello'), 'hello');
+    assert.equal(Operations.clone(true), true);
+    assert.equal(Operations.clone(null), null);
   });
 });
 
-void describe('applyOp set — Good/Bad/Ugly', () => {
+void describe('Operations.patch set — Good/Bad/Ugly', () => {
   void it('sets values at various paths immutably', () => {
     // Good: sets top-level path
     const root = {
       'a': 1,
       'b': 2
     };
-    const result = applyOp(root, {
+    const result = Operations.patch(root, {
       'op': 'set',
       'path': '/a',
       'value': 10
@@ -63,7 +59,7 @@ void describe('applyOp set — Good/Bad/Ugly', () => {
     });
 
     // Good: does not mutate original
-    applyOp(root, {
+    Operations.patch(root, {
       'op': 'set',
       'path': '/a',
       'value': 99
@@ -72,7 +68,7 @@ void describe('applyOp set — Good/Bad/Ugly', () => {
 
     // Good: sets at nested path
     const nested = { 'address': { 'city': 'Boston' } };
-    const nestedResult = applyOp(nested, {
+    const nestedResult = Operations.patch(nested, {
       'op': 'set',
       'path': '/address/city',
       'value': 'Denver'
@@ -82,7 +78,7 @@ void describe('applyOp set — Good/Bad/Ugly', () => {
     assert.equal(nested.address.city, 'Boston');
 
     // Bad: replaces root when path is /
-    const rootResult = applyOp({ 'a': 1 }, {
+    const rootResult = Operations.patch({ 'a': 1 }, {
       'op': 'set',
       'path': '/',
       'value': 'replaced'
@@ -91,7 +87,7 @@ void describe('applyOp set — Good/Bad/Ugly', () => {
     assert.equal(rootResult, 'replaced');
 
     // Ugly: adds a new key at top-level path
-    const addResult = applyOp({ 'a': 1 }, {
+    const addResult = Operations.patch({ 'a': 1 }, {
       'op': 'set',
       'path': '/b',
       'value': 2
@@ -104,14 +100,14 @@ void describe('applyOp set — Good/Bad/Ugly', () => {
   });
 });
 
-void describe('applyOp delete — Good/Bad/Ugly', () => {
+void describe('Operations.patch delete — Good/Bad/Ugly', () => {
   void it('deletes keys at various paths immutably', () => {
     // Good: removes a top-level key
     const root = {
       'a': 1,
       'b': 2
     };
-    const result = applyOp(root, {
+    const result = Operations.patch(root, {
       'op': 'delete',
       'path': '/a'
     });
@@ -128,7 +124,7 @@ void describe('applyOp delete — Good/Bad/Ugly', () => {
         'zip': '02101'
       }
     };
-    const nestedResult = applyOp(nested, {
+    const nestedResult = Operations.patch(nested, {
       'op': 'delete',
       'path': '/address/zip'
     });
@@ -136,7 +132,7 @@ void describe('applyOp delete — Good/Bad/Ugly', () => {
     assert.deepStrictEqual(nestedResult, { 'address': { 'city': 'Boston' } });
 
     // Bad: returns undefined when deleting root
-    const rootResult = applyOp({ 'a': 1 }, {
+    const rootResult = Operations.patch({ 'a': 1 }, {
       'op': 'delete',
       'path': '/'
     });
@@ -151,7 +147,7 @@ void describe('applyOp delete — Good/Bad/Ugly', () => {
         'c'
       ]
     };
-    const arrResult = applyOp(arrRoot, {
+    const arrResult = Operations.patch(arrRoot, {
       'op': 'delete',
       'path': '/items/1'
     }) as { 'items': string[] };

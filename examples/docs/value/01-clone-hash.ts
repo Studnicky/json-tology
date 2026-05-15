@@ -3,7 +3,9 @@
  * Demonstrates: clone independence, hash key-order invariance
  */
 
-import { Value } from '../../../src/index.js';
+import {
+  Hash, Operations
+} from '../../../src/index.js';
 import {
   bookstoreEntities, OrderSchema
 } from '../bookstore/index.js';
@@ -33,7 +35,7 @@ const order = bookstoreEntities.instantiate(OrderSchema.$id, {
 });
 
 // clone — deep copy; mutations don't affect original
-const copy = Value.clone(order);
+const copy = Operations.clone(order);
 
 (copy.items as Array<{
   'bookIsbn': string;
@@ -54,11 +56,11 @@ console.assert(order.items.length === 1);
 console.assert(copy.items.length === 2);
 
 // hash — deterministic, key-order invariant
-const h1 = Value.hash({
+const h1 = Hash.value({
   'isbn': '9780140449136',
   'title': 'Crime and Punishment'
 });
-const h2 = Value.hash({
+const h2 = Hash.value({
   'isbn': '9780140449136',
   'title': 'Crime and Punishment'
 });

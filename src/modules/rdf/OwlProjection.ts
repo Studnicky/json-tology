@@ -23,6 +23,7 @@ import { SchemaIri } from '../graph/SchemaIri.js';
 import { QuadFactory } from './QuadFactory.js';
 import { ProjectionIndex } from './ProjectionIndex.js';
 import type { RelationIndexInterface } from '../../interfaces/RelationIndex.js';
+import type { RawRestrictionDescriptorType } from '../../types/RawRestrictionDescriptor.js';
 import { VocabProjection } from './VocabProjection.js';
 
 function emitRestriction(
@@ -237,12 +238,6 @@ export const OwlProjection = {
 // ---------------------------------------------------------------------------
 // User-declared OWL restrictions (Compose.subClassOf with restriction parent)
 // ---------------------------------------------------------------------------
-
-interface RawRestrictionDescriptorType {
-  readonly 'kind': string;
-  readonly 'onProperty': string;
-  readonly 'value': unknown;
-}
 
 function isRawRestrictionDescriptor(raw: object): raw is RawRestrictionDescriptorType {
   const rec = raw as Record<string, unknown>;

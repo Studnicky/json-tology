@@ -22,7 +22,7 @@ export const SUPPORTED_VOCABULARIES = new Set([
   VOCABULARY_VALIDATION
 ]);
 
-export const DEFAULT_OPTIONS: Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupSchema'>> = {
+export const DEFAULT_OPTIONS: Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupGraph' | 'lookupSchema'>> = {
   'allowAdditionalProperties': false,
   'applyDefaults': false,
   'castTypes': false,

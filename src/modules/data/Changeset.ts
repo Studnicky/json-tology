@@ -6,9 +6,7 @@
 
 import type { ChangesetInterface } from '../../interfaces/Changeset.js';
 import type { DiffOpType } from '../../types/Diff.js';
-import {
-  applyOp, clone
-} from './Operations.js';
+import { Operations } from './Operations.js';
 
 
 /**
@@ -39,10 +37,10 @@ export class Changeset implements ChangesetInterface {
    * The original value is never mutated.
    */
   public apply<T extends unknown>(value: T): T {
-    let result: unknown = clone(value);
+    let result: unknown = Operations.clone(value);
 
     for (const operation of this.operations) {
-      result = applyOp(result, operation);
+      result = Operations.patch(result, operation);
     }
 
     return result as T;

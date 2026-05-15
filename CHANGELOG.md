@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **BREAKING**: `Value.applyOp`, `Value.clone`, and `Value.hash` are removed. They were thin wrappers and now live where the work happens: `Operations.patch(value, op)` (renamed from `applyOp` so it does not collide with `Function.prototype.apply` in lint rules), `Operations.clone(value)`, and `Hash.value(value)`. `Operations` is exported from `json-tology/value`.
+- `SchemaCompiler` is collapsed from six files into two: `SchemaCompiler.ts` (entry, caching, hoisted exec contexts) and `SchemaCompilerPlan.ts` (single plan builder). Property and keyword traversal runs once per node, dispatched on `mode: 'check' | 'validate'`.
+- `SchemaRegistry` is decomposed. Entry storage moves to `SchemaEntryStore` (Map, hash index, revision counter, duplicate detection). Ref walking moves to `SchemaRefWalker` (embedded `$id`, ref collection, resolvability checks). Public API of `SchemaRegistry` unchanged.
+- `JsonTology` ref-resolution orchestration moves to `RefResolutionLoader`. Public API of `JsonTology` unchanged.
+
+### Performance
+
+- `SchemaRegistry.graphOf(schemaId)` is the single source for `SchemaGraph` construction. Prior duplicate construction in `SchemaCompiler`, `Materializer`, `RefResolver`, and `Dumper` is eliminated. `Materializer.graphCache` is deleted; it now reads through the registry cache.
+- `SchemaCompiler` hoists the recursive compile context (8 arrow closures per concern) into constructor-built `private readonly` fields. Recursive compile calls now pass a stable reference instead of allocating a fresh object literal.
+- Property-path prefix computed once per `validateProperties`/`validatePatternProperties`/`validatePropertyNames` call instead of per key. Eliminates the `path === ''` ternary from the per-property hot loop.
+- `validateProperties` returns the key count alongside its result; `validatePropertyCount` consumes the precomputed count, eliminating a second `Object.keys(obj)` walk for objects under min/maxProperties.
+- Composition fast-path: when a node has no `allOf`/`anyOf`/`oneOf`/`not`/`if`, the emitted validator skips the composition block entirely. No calls to `validateAllOf`/`validateAnyOf`/`validateOneOf`/`validateNot`/`validateIfThenElse`, no wrapper-object allocations on the dominant no-composition path.
+- Validation exec helpers (`Scalars`, `Arrays`, `Objects`, `Composition`) push into a caller-provided `errors[]` accumulator and return a boolean instead of allocating `{ valid, errors, value }` wrapper objects on every call. Ten helpers refactored.
+
+### Internal
+
+- Inline type and interface declarations moved to canonical `src/types/` and `src/interfaces/` locations: `NormalizedToQuadsOptionsType`, `BuildOptionsInterface`, `VizOptionsInterface`, `AboxOptionsType`, `SchemaRegistryForEachCallback`, `PassResultInterface`, `FailResultInterface`, `SimplePredicateEntry`, `SpecialHandlerFn`, `ProjectInstanceArgs`, `ProjectPropertyArgs`, `RawRestrictionDescriptorType`.
+- Public-contract interfaces declared for `SchemaIri`, `Unevaluated`, `Refs`, `VisitComposition`, `RefDecoder`.
+- Pagination constants (`DEFAULT_PAGE_SIZE`, `MAX_PAGE_SIZE`) centralized in `src/constants/PAGINATION.ts`; UUID constants in `src/constants/UUID.ts`.
+- Direct unit-test coverage added for `RefDecoder`, `SchemaGraphRelations`, `ShaclProjection`, `OwlProjection` (39 new tests).
+
 ## [0.6.0] - 2026-05-14
 
 ### Added

@@ -1,4 +1,3 @@
-import type { ObjectResultInterface } from '../../../interfaces/ObjectResult.js';
 import type { ValidationErrorType } from '../../../types/Validation.js';
 import type { ValidateWithErrorsFnType } from '../../../types/Validation.js';
 import { BaseError } from '../../../errors/BaseError.js';
@@ -161,13 +160,16 @@ export class Objects {
     collectErrors: boolean,
     applyDefaults: boolean,
     doCoerce: boolean
-  ): { 'earlyExit': boolean;
+  ): { 'count': number;
+    'earlyExit': boolean;
     'valid': boolean } {
     let valid = true;
+    const pathPrefix = path === '' ? '/' : `${path}/`;
+    const keys = Object.keys(obj);
 
-    for (const key of Object.keys(obj)) {
+    for (const key of keys) {
       const propValidator = propValidators.get(key);
-      const childPath = path === '' ? `/${key}` : `${path}/${key}`;
+      const childPath = pathPrefix + key;
 
       if (propValidator === undefined) {
         const patternResult = Objects.validateUnknownProperty(
@@ -187,6 +189,7 @@ export class Objects {
 
         if (patternResult.earlyExit) {
           return {
+            'count': 0,
             'earlyExit': true,
             'valid': false
           };
@@ -210,6 +213,7 @@ export class Objects {
 
         if (knownResult.earlyExit) {
           return {
+            'count': 0,
             'earlyExit': true,
             'valid': false
           };
@@ -221,6 +225,7 @@ export class Objects {
     }
 
     return {
+      'count': keys.length,
       'earlyExit': false,
       valid
     };
@@ -230,18 +235,16 @@ export class Objects {
     path: string,
     obj: Record<string, unknown>,
     minProperties: number | undefined,
-    maxProperties: number | undefined
-  ): ObjectResultInterface {
+    maxProperties: number | undefined,
+    errors: ValidationErrorType[],
+    precomputedCount?: number
+  ): boolean {
     if (minProperties === undefined && maxProperties === undefined) {
-      return {
-        'errors': [],
-        'valid': true,
-        'value': obj
-      };
+      return true;
     }
 
-    const count = Object.keys(obj).length;
-    const errors: ValidationErrorType[] = [];
+    const count = precomputedCount ?? Object.keys(obj).length;
+    const pre = errors.length;
 
     if (minProperties !== undefined && count < minProperties) {
       errors.push(BaseError.validationError(path, 'minProperties', `must have at least ${minProperties} properties`));
@@ -250,11 +253,7 @@ export class Objects {
       errors.push(BaseError.validationError(path, 'maxProperties', `must have at most ${maxProperties} properties`));
     }
 
-    return {
-      errors,
-      'valid': errors.length === 0,
-      'value': obj
-    };
+    return errors.length === pre;
   }
 
   static validatePropertyNames(
@@ -273,9 +272,10 @@ export class Objects {
     }
 
     let valid = true;
+    const pathPrefix = path === '' ? '/' : `${path}/`;
 
     for (const key of Object.keys(value)) {
-      const pnResult = propertyNamesValidator(key, path === '' ? `/${key}` : `${path}/${key}`, errors, collectErrors, false, false, false);
+      const pnResult = propertyNamesValidator(key, pathPrefix + key, errors, collectErrors, false, false, false);
 
       if (!pnResult.valid) {
         if (!collectErrors) {
@@ -297,17 +297,14 @@ export class Objects {
   static validateRequired(
     path: string,
     obj: Record<string, unknown>,
-    required: string[] | undefined
-  ): ObjectResultInterface {
+    required: string[] | undefined,
+    errors: ValidationErrorType[]
+  ): boolean {
     if (required === undefined) {
-      return {
-        'errors': [],
-        'valid': true,
-        'value': obj
-      };
+      return true;
     }
 
-    const errors: ValidationErrorType[] = [];
+    const pre = errors.length;
 
     for (const key of required) {
       if (!(key in obj)) {
@@ -315,11 +312,7 @@ export class Objects {
       }
     }
 
-    return {
-      errors,
-      'valid': errors.length === 0,
-      'value': obj
-    };
+    return errors.length === pre;
   }
 
   private static validateUnknownProperty(

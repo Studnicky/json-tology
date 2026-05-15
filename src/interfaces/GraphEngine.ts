@@ -24,6 +24,7 @@ export interface GraphEngineOptionsInterface {
   'enforceSchemaProperties'?: boolean;
   'formatRegistry'?: FormatRegistryInterface;
   'keywords'?: KeywordDefinitionInterface[];
+  'lookupGraph'?: (schemaId: string) => SchemaGraphInterface | undefined;
   'lookupSchema'?: (schemaId: string) => Record<string, unknown> | undefined;
   'materializeContainers'?: boolean;
   /**

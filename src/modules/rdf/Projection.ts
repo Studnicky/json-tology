@@ -18,6 +18,11 @@ import type {
 } from '../../interfaces/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { SkolemizeFnType } from '../../types/Skolemize.js';
+import type { SimplePredicateEntry } from '../../interfaces/SimplePredicateEntry.js';
+import type { SpecialHandlerFn } from '../../types/SpecialHandlerFn.js';
+import type {
+  ProjectInstanceArgs, ProjectPropertyArgs
+} from '../../interfaces/Projection.js';
 
 import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
@@ -72,11 +77,6 @@ export const Projection = {
 // ---------------------------------------------------------------------------
 // Data-driven predicate dispatch tables
 // ---------------------------------------------------------------------------
-
-interface SimplePredicateEntry {
-  readonly 'coerce'?: (value: string) => unknown;
-  readonly 'datatype': string;
-}
 
 const SIMPLE_LITERAL_PREDICATES = new Map<string, SimplePredicateEntry>([
   [
@@ -229,15 +229,6 @@ const IRI_PREDICATES = new Set<string>([
 // ---------------------------------------------------------------------------
 // Special predicate handlers (non-trivial emit logic)
 // ---------------------------------------------------------------------------
-
-type SpecialHandlerFn = (
-  subject: string,
-  predicate: string,
-  targetId: string,
-  relation: SchemaGraphRelationInterface,
-  quads: QuadInterface[],
-  curie: CurieInterface | undefined
-) => void;
 
 function handleDependentRequired(
   subject: string,
@@ -457,34 +448,6 @@ class IriMinter {
 
     return iri;
   }
-}
-
-interface ProjectInstanceArgs {
-  readonly 'curie': CurieInterface | undefined;
-  readonly 'data': Record<string, unknown>;
-  readonly 'depth': number;
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'minter': IriMinter;
-  readonly 'node': SchemaGraphNodeInterface;
-  readonly 'path': string;
-  readonly 'quads': QuadInterface[];
-  readonly 'visited': WeakSet<object>;
-}
-
-interface ProjectPropertyArgs {
-  readonly 'curie': CurieInterface | undefined;
-  readonly 'depth': number;
-  readonly 'graph': SchemaGraphInterface;
-  readonly 'instanceIri': string;
-  readonly 'minter': IriMinter;
-  readonly 'path': string;
-  readonly 'propertyIRI': string;
-  readonly 'propertyNode': SchemaGraphNodeInterface;
-  readonly 'propertySemantics': { 'format': string | undefined;
-    'itemsNode': SchemaGraphNodeInterface | undefined };
-  readonly 'quads': QuadInterface[];
-  readonly 'value': unknown;
-  readonly 'visited': WeakSet<object>;
 }
 
 function projectAbox(

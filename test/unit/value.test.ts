@@ -7,7 +7,7 @@ import {
 } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  Changeset, JsonTology, Value
+  Changeset, Hash, JsonTology, Operations, Value
 } from '../../src/index.js';
 
 type SchemaWithId = Record<string, unknown> & { '$id': string };
@@ -223,7 +223,7 @@ void describe('Value.create()', () => {
 // clone + hash
 // ---------------------------------------------------------------------------
 
-void describe('Value.clone() and Value.hash()', () => {
+void describe('Operations.clone() and Hash.value()', () => {
   const cloneScenarios: Array<{
     'check': (cloned: unknown, original: unknown) => void;
     'input': unknown;
@@ -308,7 +308,7 @@ void describe('Value.clone() and Value.hash()', () => {
     'check': checkFn, 'input': inp, 'name': scenarioName
   } of cloneScenarios) {
     void it(scenarioName, () => {
-      const cloned = Value.clone(inp);
+      const cloned = Operations.clone(inp);
 
       checkFn(cloned, inp);
     });
@@ -320,18 +320,18 @@ void describe('Value.clone() and Value.hash()', () => {
   }> = [
     {
       'check': () => {
-        assert.equal(typeof Value.hash({ 'a': 1 }), 'string');
+        assert.equal(typeof Hash.value({ 'a': 1 }), 'string');
       },
       'name': 'produces a string'
     },
     {
       'check': () => {
         assert.equal(
-          Value.hash({
+          Hash.value({
             'a': 1,
             'b': 2
           }),
-          Value.hash({
+          Hash.value({
             'a': 1,
             'b': 2
           })
@@ -341,37 +341,37 @@ void describe('Value.clone() and Value.hash()', () => {
     },
     {
       'check': () => {
-        assert.notEqual(Value.hash({ 'a': 1 }), Value.hash({ 'a': 2 }));
+        assert.notEqual(Hash.value({ 'a': 1 }), Hash.value({ 'a': 2 }));
       },
       'name': 'differs for different values'
     },
     {
       'check': () => {
-        assert.equal(Value.hash(42), Value.hash(42));
+        assert.equal(Hash.value(42), Hash.value(42));
       },
       'name': 'is deterministic for identical primitives'
     },
     {
       'check': () => {
-        assert.notEqual(Value.hash(42), Value.hash('42'));
+        assert.notEqual(Hash.value(42), Hash.value('42'));
       },
       'name': 'is type-sensitive (number vs string)'
     },
     {
       'check': () => {
-        assert.equal(Value.hash({}), Value.hash({}));
+        assert.equal(Hash.value({}), Hash.value({}));
       },
       'name': 'produces consistent hash for empty object'
     },
     {
       'check': () => {
-        assert.equal(Value.hash([]), Value.hash([]));
+        assert.equal(Hash.value([]), Hash.value([]));
       },
       'name': 'produces consistent hash for empty array'
     },
     {
       'check': () => {
-        assert.notEqual(Value.hash({}), Value.hash([]));
+        assert.notEqual(Hash.value({}), Hash.value([]));
       },
       'name': 'distinguishes empty object from empty array'
     }
@@ -543,10 +543,10 @@ void describe('Value.diff() -> Changeset', () => {
   } of roundTripScenarios) {
     void it(scenarioName, () => {
       const changeset = Value.diff(before, after);
-      let patched: unknown = Value.clone(before);
+      let patched: unknown = Operations.clone(before);
 
       for (const operation of changeset.operations) {
-        patched = Value.applyOp(patched, operation);
+        patched = Operations.patch(patched, operation);
       }
 
       assert.deepEqual(patched, after);
@@ -556,10 +556,10 @@ void describe('Value.diff() -> Changeset', () => {
   void it('does not mutate original during patch', () => {
     const orig = { 'x': 1 };
     const changeset = Value.diff(orig, { 'x': 2 });
-    let patched: unknown = Value.clone(orig);
+    let patched: unknown = Operations.clone(orig);
 
     for (const operation of changeset.operations) {
-      patched = Value.applyOp(patched, operation);
+      patched = Operations.patch(patched, operation);
     }
 
     assert.equal(orig.x, 1);
@@ -798,7 +798,7 @@ void describe('Value.clean()', () => {
 // applyOp edge cases (folded from operations.test.ts)
 // ---------------------------------------------------------------------------
 
-void describe('Value.applyOp() edge cases', () => {
+void describe('Operations.patch() edge cases', () => {
   const applyOpScenarios: Array<{
     'expected': unknown;
     'input': unknown;
@@ -852,7 +852,7 @@ void describe('Value.applyOp() edge cases', () => {
     'expected': exp, 'input': inp, 'name': scenarioName, 'operation': op
   } of applyOpScenarios) {
     void it(scenarioName, () => {
-      const result = Value.applyOp(inp, op as { 'op': 'delete';
+      const result = Operations.patch(inp, op as { 'op': 'delete';
         'path': string } | { 'op': 'set';
           'path': string;
           'value': unknown });
@@ -870,7 +870,7 @@ void describe('Value.applyOp() edge cases', () => {
       ]
     };
 
-    Value.applyOp(original, {
+    Operations.patch(original, {
       'op': 'delete',
       'path': '/items/0'
     });

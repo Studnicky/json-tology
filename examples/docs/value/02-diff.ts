@@ -3,7 +3,9 @@
  * Demonstrates: operations array, isEmpty
  */
 
-import { Value } from '../../../src/index.js';
+import {
+  Operations, Value
+} from '../../../src/index.js';
 import type { Customer } from '../bookstore/index.js';
 import {
   bookstoreEntities, CustomerSchema
@@ -30,10 +32,10 @@ console.assert(changes.operations.some((op) => {
 }));
 
 // Replay each operation to reconstruct the after value
-let reconstructed: unknown = Value.clone(before);
+let reconstructed: unknown = Operations.clone(before);
 
 for (const operation of changes.operations) {
-  reconstructed = Value.applyOp(reconstructed, operation);
+  reconstructed = Operations.patch(reconstructed, operation);
 }
 
 console.assert((reconstructed as Customer).email === 'alice.chen@bookstore.example');

@@ -27,6 +27,8 @@ import { OntologyBuilder } from './modules/ontology/OntologyBuilder.js';
 import { VizDataCollector } from './modules/viz/VizDataCollector.js';
 import { HtmlRenderer } from './modules/viz/HtmlRenderer.js';
 import type { SchemaGraphInterface } from './interfaces/SchemaGraphImpl.js';
+import type { BuildOptionsInterface } from './interfaces/BuildOptions.js';
+import type { VizOptionsInterface } from './interfaces/VizOptions.js';
 import { DEFAULT_PREFIXES } from './constants/PREFIXES.js';
 import { SchemaError } from './errors/SchemaError.js';
 import { CliWriter } from './modules/cli/CliWriter.js';
@@ -240,14 +242,6 @@ function openBrowser(filePath: string): void {
 // Build command
 // ---------------------------------------------------------------------------
 
-interface BuildOptionsInterface {
-  'baseIri'?: string;
-  'format': string;
-  'output': string;
-  'outputFile'?: string;
-  'schema': string;
-}
-
 async function runBuild(options: BuildOptionsInterface): Promise<void> {
   const {
     'baseIri': configuredBaseIRI, format, output, outputFile, 'schema': schemaGlob
@@ -333,12 +327,6 @@ async function runBuild(options: BuildOptionsInterface): Promise<void> {
 // ---------------------------------------------------------------------------
 // Viz command
 // ---------------------------------------------------------------------------
-
-interface VizOptionsInterface {
-  'noOpen': boolean;
-  'output': string;
-  'schema': string;
-}
 
 async function runViz(options: VizOptionsInterface): Promise<void> {
   const {

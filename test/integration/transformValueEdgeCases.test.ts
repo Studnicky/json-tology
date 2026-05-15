@@ -7,7 +7,7 @@ import {
 } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  Transform, Value
+  Hash, Operations, Transform, Value
 } from '../../src/index.js';
 
 // ---------------------------------------------------------------------------
@@ -291,10 +291,10 @@ const cloneScenarios: CloneScenario[] = [
   }
 ];
 
-void describe('Value.clone edge cases', () => {
+void describe('Operations.clone edge cases', () => {
   for (const scenario of cloneScenarios) {
     void it(scenario.name, () => {
-      const cloned = Value.clone(scenario.input);
+      const cloned = Operations.clone(scenario.input);
 
       scenario.assertions(cloned, scenario.input);
     });
@@ -369,11 +369,11 @@ const hashScenarios: HashScenario[] = [
   }
 ];
 
-void describe('Value.hash consistency', () => {
+void describe('Hash.value consistency', () => {
   for (const scenario of hashScenarios) {
     void it(scenario.name, () => {
       const hashes = scenario.inputs.map((input) => {
-        return Value.hash(input);
+        return Hash.value(input);
       });
 
       const first = hashes[0];

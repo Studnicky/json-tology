@@ -3,7 +3,6 @@ import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraph.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
 import { isRecord } from './DataTypes.js';
-import { SchemaGraph } from '../graph/SchemaGraph.js';
 import { Transform } from '../transform/Transform.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
@@ -64,7 +63,7 @@ export class Dumper {
       throw new GraphError('REF_UNRESOLVED', `Schema not registered: ${schemaId}`, schemaId);
     }
 
-    const graph = registry.graph(schemaId) ?? new SchemaGraph(schema);
+    const graph = registry.graph(schemaId) as SchemaGraphInterface;
     const rootNode = graph.rootNode;
 
     return Dumper.dumpNode(registry, graph, rootNode, schema, value, options);
@@ -228,7 +227,7 @@ export class Dumper {
       throw new GraphError('REF_UNRESOLVED', `Unresolved schema reference: ${ref}`, ref);
     }
 
-    const targetGraph = registry.graph(parsed.id) ?? new SchemaGraph(lookedUp);
+    const targetGraph = registry.graph(parsed.id) as SchemaGraphInterface;
     const targetNode = targetGraph.resolveFragment(parsed.fragment);
 
     return {
