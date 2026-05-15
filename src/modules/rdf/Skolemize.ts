@@ -16,15 +16,14 @@ import { Hash } from '../hash/Hash.js';
 import { HEX_RADIX } from '../../constants/NUMERIC.js';
 import {
   UUID_BYTE_LENGTH,
-  UUID_BYTE_MAX_PLUS_ONE
+  UUID_BYTE_MAX_PLUS_ONE,
+  UUID_VARIANT_BYTE_INDEX,
+  UUID_VARIANT_MASK,
+  UUID_VARIANT_SET,
+  UUID_VERSION_BYTE_INDEX,
+  UUID_VERSION_MASK,
+  UUID_VERSION_SET
 } from '../../constants/UUID.js';
-
-const UUID_VERSION_MASK = 0x0F;
-const UUID_VERSION_SET = 0x40;
-const UUID_VARIANT_MASK = 0x3F;
-const UUID_VARIANT_SET = 0x80;
-const UUID_VERSION_BYTE_INDEX = 6;
-const UUID_VARIANT_BYTE_INDEX = 8;
 
 function stripTrailingSlash(iri: string): string {
   let result = iri;

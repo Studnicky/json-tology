@@ -1,7 +1,7 @@
 | Library | ops/s | ns/op | json-tology vs this |
 | - | - | - | - |
-| json-tology | 471,115 | 2123 | - |
-| io-ts | 4,825,760 | 207 | 10.24x slower |
-| typebox | 806,311 | 1240 | 1.71x slower |
-| valibot | 3,213,862 | 311 | 6.82x slower |
-| zod | 3,811,024 | 262 | 8.09x slower |
+| json-tology | 526,941 | 1898 | - |
+| io-ts | 4,382,329 | 228 | 8.32x slower |
+| typebox | 785,650 | 1273 | 1.49x slower |
+| valibot | 2,982,626 | 335 | 5.66x slower |
+| zod | 3,596,001 | 278 | 6.82x slower |

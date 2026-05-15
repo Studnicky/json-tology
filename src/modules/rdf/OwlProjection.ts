@@ -17,6 +17,7 @@ import type { CurieInterface } from '../../interfaces/Curie.js';
 import {
   DASH, DCT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
+import { RESTRICTION_PREDICATE } from '../../constants/ONTOLOGY_PREDICATES.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { XsdTypes } from './XsdTypes.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
@@ -49,7 +50,8 @@ function canonicalPropertyIri(subject: string): string {
     return subject;
   }
 
-  const propName = SchemaIri.lastSegment(subject);
+  const segments = parts.fragment.split('/');
+  const propName = segments.at(-1) ?? '';
   const propsIdx = parts.fragment.lastIndexOf('/properties/');
 
   if (propsIdx === -1) {
@@ -244,15 +246,6 @@ function isRawRestrictionDescriptor(raw: object): raw is RawRestrictionDescripto
 
   return typeof rec.kind === 'string' && typeof rec.onProperty === 'string' && 'value' in rec;
 }
-
-const RESTRICTION_PREDICATE: Partial<Record<string, string>> = {
-  'allValuesFrom': OWL.allValuesFrom,
-  'cardinality': OWL.cardinality,
-  'hasValue': OWL.hasValue,
-  'maxCardinality': OWL.maxCardinality,
-  'minCardinality': OWL.minCardinality,
-  'someValuesFrom': OWL.someValuesFrom
-};
 
 const CARDINALITY_KINDS = new Set([
   'cardinality',

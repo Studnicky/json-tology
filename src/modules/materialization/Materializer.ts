@@ -198,11 +198,9 @@ export class Materializer implements MaterializerInterface {
   }
 
   private materializeResult(result: GraphExecutionResultInterface): unknown {
-    const value = structuredClone(result.value);
+    this.fillImplicitProperties(result.graph, result.entryNode, result.value);
 
-    this.fillImplicitProperties(result.graph, result.entryNode, value);
-
-    return value;
+    return result.value;
   }
 
   /**
@@ -282,7 +280,11 @@ export class Materializer implements MaterializerInterface {
     synthesizeDefaults = false,
     aboxOptions?: AboxOptionsType
   ): MaterializationResultInterface {
-    this.registry.set(schema);
+    const id = schema.$id;
+
+    if (!this.registry.has(id)) {
+      this.registry.set(schema);
+    }
 
     const engine = this.registry.engine(schema);
     const execution = engine.execute(data, {
@@ -296,7 +298,7 @@ export class Materializer implements MaterializerInterface {
       }
     });
     const materialized = synthesizeDefaults
-      ? structuredClone(execution.value)
+      ? execution.value
       : this.materializeResult(execution);
 
     const abox = baseIRI === undefined

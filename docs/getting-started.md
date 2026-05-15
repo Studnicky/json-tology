@@ -201,7 +201,7 @@ import type { LoggerInterface } from 'json-tology/interfaces';
 | Coercion + defaults | `instantiate` | <Badge type="warning" text="Compile-time + Runtime" /> |
 | Error views | `aggregate`, `report` | <Badge type="tip" text="Runtime" /> |
 | Composition | `Compose.extend`, `pick`, `omit`, `partial`, `required`, `intersection`, `equivalent`, `discriminatedUnion` | <Badge type="warning" text="Compile-time + Runtime" /> |
-| Value utilities | `Value.clone`, `hash`, `diff`, `value.cast`, `clean`, `convert`, `create` | <Badge type="tip" text="Runtime" /> |
+| Value utilities | `Operations.clone`, `Hash.value`, `Value.diff`, `Operations.patch`, `value.cast`, `clean`, `convert`, `create` | <Badge type="tip" text="Runtime" /> |
 | Transforms | `Transform.create`, `brand`, `pipe`, `jt.encode` | <Badge type="warning" text="Compile-time + Runtime" /> |
 | Serialization | `dump`, `dumpJson` | <Badge type="tip" text="Runtime" /> |
 | Computed fields | `addComputed`, `removeComputed` | <Badge type="tip" text="Runtime" /> |

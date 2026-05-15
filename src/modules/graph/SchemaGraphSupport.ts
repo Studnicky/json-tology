@@ -6,6 +6,7 @@ import { GraphError } from '../../errors/GraphError.js';
 import {
   RDFS_DOMAIN_IRI, RDFS_RANGE_IRI
 } from '../../constants/PREFIXES.js';
+import { ALLOF_EXTENSION_RE } from '../../constants/GRAPH_REGEXES.js';
 import {
   DEFS_POINTER_PARTS_LENGTH, KNOWN_SCHEMA_KEYWORDS,
   MIN_PROPERTY_POINTER_PARTS
@@ -56,92 +57,99 @@ function extractJtConfig(schema: Record<string, unknown>): JtConfigType | undefi
   return Object.keys(config).length > 0 ? config : undefined;
 }
 
-function emptySchemaGraphSemantics(): SchemaGraphSemanticsInterface {
-  return {
-    'additionalItemsNode': undefined,
-    'additionalPropertiesNode': undefined,
-    'aliases': [],
-    'allOf': [],
-    'anyOf': [],
-    'asymmetric': false,
-    'comment': undefined,
-    'complementNode': undefined,
-    'computed': false,
-    'constValue': undefined,
-    'containsNode': undefined,
-    'contentEncoding': undefined,
-    'contentMediaType': undefined,
-    'defaultValue': undefined,
-    'definitions': [],
-    'dependentRequired': {},
-    'dependentSchemaEntries': [],
-    'deprecated': false,
-    'description': undefined,
-    'discriminatorMapping': undefined,
-    'discriminatorPropertyName': undefined,
-    'disjointWith': undefined,
-    'dynamicAnchor': undefined,
-    'dynamicRef': undefined,
-    'elseNode': undefined,
-    'enumValues': undefined,
-    'equivalentTo': undefined,
-    'examples': undefined,
-    'exclusiveMaximum': undefined,
-    'exclusiveMinimum': undefined,
-    'extensions': {},
-    'format': undefined,
-    'functional': false,
-    'hasConst': false,
-    'hasDefault': false,
-    'ifNode': undefined,
-    'inverseFunctional': false,
-    'inverseOf': undefined,
-    'irreflexive': false,
-    'itemsNode': undefined,
-    'jtConfig': undefined,
-    'jtFrozen': false,
-    'jtStrict': undefined,
-    'maxContains': undefined,
-    'maximum': undefined,
-    'maxItems': undefined,
-    'maxLength': undefined,
-    'maxProperties': undefined,
-    'minContains': undefined,
-    'minimum': undefined,
-    'minItems': undefined,
-    'minLength': undefined,
-    'minProperties': undefined,
-    'multipleOf': undefined,
-    'oneOf': [],
-    'pattern': undefined,
-    'patternPropertyEntries': [],
-    'prefixItems': [],
-    'properties': new Map(),
-    'propertyNamesNode': undefined,
-    'rdfsDomain': undefined,
-    'rdfsRange': undefined,
-    'readOnly': false,
-    'recursiveAnchor': false,
-    'recursiveRef': undefined,
-    'ref': undefined,
-    'reflexive': false,
-    'refTargetNode': undefined,
-    'required': [],
-    'schemaAnchor': undefined,
-    'schemaDialect': undefined,
-    'schemaId': undefined,
-    'schemaTypes': [],
-    'schemaVocabulary': undefined,
-    'symmetric': false,
-    'thenNode': undefined,
-    'title': undefined,
-    'transitive': false,
-    'unevaluatedItemsNode': undefined,
-    'unevaluatedPropertiesNode': undefined,
-    'uniqueItems': false,
-    'writeOnly': false
-  };
+type PropertyEntry = [string, SchemaGraphNodeInterface];
+type PropertyMap = ReadonlyMap<string, SchemaGraphNodeInterface>;
+
+const EMPTY_MAP: PropertyMap = new Map();
+
+function propertiesMap(entries: PropertyEntry[]): PropertyMap {
+  return entries.length === 0 ? EMPTY_MAP : new Map(entries);
 }
+
+const EMPTY_SEMANTICS: SchemaGraphSemanticsInterface = Object.freeze({
+  'additionalItemsNode': undefined,
+  'additionalPropertiesNode': undefined,
+  'aliases': [],
+  'allOf': [],
+  'anyOf': [],
+  'asymmetric': false,
+  'comment': undefined,
+  'complementNode': undefined,
+  'computed': false,
+  'constValue': undefined,
+  'containsNode': undefined,
+  'contentEncoding': undefined,
+  'contentMediaType': undefined,
+  'defaultValue': undefined,
+  'definitions': [],
+  'dependentRequired': {},
+  'dependentSchemaEntries': [],
+  'deprecated': false,
+  'description': undefined,
+  'discriminatorMapping': undefined,
+  'discriminatorPropertyName': undefined,
+  'disjointWith': undefined,
+  'dynamicAnchor': undefined,
+  'dynamicRef': undefined,
+  'elseNode': undefined,
+  'enumValues': undefined,
+  'equivalentTo': undefined,
+  'examples': undefined,
+  'exclusiveMaximum': undefined,
+  'exclusiveMinimum': undefined,
+  'extensions': {},
+  'format': undefined,
+  'functional': false,
+  'hasConst': false,
+  'hasDefault': false,
+  'ifNode': undefined,
+  'inverseFunctional': false,
+  'inverseOf': undefined,
+  'irreflexive': false,
+  'itemsNode': undefined,
+  'jtConfig': undefined,
+  'jtFrozen': false,
+  'jtStrict': undefined,
+  'maxContains': undefined,
+  'maximum': undefined,
+  'maxItems': undefined,
+  'maxLength': undefined,
+  'maxProperties': undefined,
+  'minContains': undefined,
+  'minimum': undefined,
+  'minItems': undefined,
+  'minLength': undefined,
+  'minProperties': undefined,
+  'multipleOf': undefined,
+  'oneOf': [],
+  'pattern': undefined,
+  'patternPropertyEntries': [],
+  'prefixItems': [],
+  'properties': EMPTY_MAP,
+  'propertyNamesNode': undefined,
+  'rdfsDomain': undefined,
+  'rdfsRange': undefined,
+  'readOnly': false,
+  'recursiveAnchor': false,
+  'recursiveRef': undefined,
+  'ref': undefined,
+  'reflexive': false,
+  'refTargetNode': undefined,
+  'required': [],
+  'schemaAnchor': undefined,
+  'schemaDialect': undefined,
+  'schemaId': undefined,
+  'schemaTypes': [],
+  'schemaVocabulary': undefined,
+  'symmetric': false,
+  'thenNode': undefined,
+  'title': undefined,
+  'transitive': false,
+  'unevaluatedItemsNode': undefined,
+  'unevaluatedPropertiesNode': undefined,
+  'uniqueItems': false,
+  'writeOnly': false
+});
 
 function normalizeSchemaTypes(schema: Record<string, unknown>): string[] {
   const rawType = schema.type;
@@ -272,8 +280,6 @@ function isInDefs(pointer: string): boolean {
   return pointer.includes('/$defs/');
 }
 
-const ALLOF_EXTENSION_RE = /\/allOf\/\d+/u;
-
 function isInAllOfExtensionBlock(pointer: string): boolean {
   // Skip direct allOf members (/allOf/0, /allOf/1, etc.) and their properties
   // These are produced by Compose.extend and are structural, not inline definitions
@@ -291,7 +297,7 @@ export const SchemaGraphSupport = {
     resolveLocalRef: (ref: string) => SchemaGraphNodeInterface
   ): SchemaGraphSemanticsInterface {
     if (!isRecord(node.schema)) {
-      return emptySchemaGraphSemantics();
+      return EMPTY_SEMANTICS;
     }
 
     const schemaTypes = normalizeSchemaTypes(node.schema);
@@ -368,7 +374,7 @@ export const SchemaGraphSupport = {
       'pattern': typeof node.schema.pattern === 'string' ? node.schema.pattern : undefined,
       'patternPropertyEntries': graph.entries(node, 'patternProperties'),
       'prefixItems': graph.indexedChildren(node, 'prefixItems'),
-      'properties': new Map(graph.entries(node, 'properties')),
+      'properties': propertiesMap(graph.entries(node, 'properties')),
       'propertyNamesNode': graph.child(node, 'propertyNames'),
       'rdfsDomain': (typeof node.schema['rdfs:domain'] === 'string' ? node.schema['rdfs:domain'] : undefined) ?? (typeof node.schema[RDFS_DOMAIN_IRI] === 'string' ? node.schema[RDFS_DOMAIN_IRI] : undefined),
       'rdfsRange': (typeof node.schema['rdfs:range'] === 'string' ? node.schema['rdfs:range'] : undefined) ?? (typeof node.schema[RDFS_RANGE_IRI] === 'string' ? node.schema[RDFS_RANGE_IRI] : undefined),

@@ -83,7 +83,7 @@ export interface SchemaGraphSemanticsInterface {
   'pattern': string | undefined;
   'patternPropertyEntries': Array<[string, SchemaGraphNodeInterface]>;
   'prefixItems': SchemaGraphNodeInterface[];
-  'properties': Map<string, SchemaGraphNodeInterface>;
+  'properties': ReadonlyMap<string, SchemaGraphNodeInterface>;
   'propertyNamesNode': SchemaGraphNodeInterface | undefined;
   'rdfsDomain': string | undefined;
   'rdfsRange': string | undefined;

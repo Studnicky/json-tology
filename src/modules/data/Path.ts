@@ -1,14 +1,4 @@
-/**
- * Path — JSON Pointer and access-form conversion
- *
- * Access-form rules:
- * - Numeric segments → `[N]`
- * - String segments → `.name`
- * - Quote when not a valid JS identifier → `["weird-key"]`
- * - Root → empty string
- */
-
-const VALID_IDENTIFIER = /^[a-zA-Z_$][\w$]*$/u;
+import { VALID_IDENTIFIER } from '../../constants/PATH.js';
 
 export class Path {
   /**

@@ -20,8 +20,8 @@ export class Unevaluated {
     path: string,
     options: EffectiveOptionsType,
     errors: ValidationErrorType[],
-    evaluatedItems: Set<number>,
-    evaluatedProperties: Set<string>
+    evaluatedItems: Set<number> | undefined,
+    evaluatedProperties: Set<string> | undefined
   ): InternalExecutionResultInterface | undefined {
     if (customKeywords.length === 0) {
       return undefined;

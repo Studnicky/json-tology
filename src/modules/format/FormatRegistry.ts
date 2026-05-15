@@ -1,5 +1,8 @@
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
 import {
+  IPV6_FULL, IPV6_MIXED, IPV6_MIXED_COMPRESSED, IPV6_WITH_DOUBLE_COLON
+} from '../../constants/FORMAT_REGEXES.js';
+import {
   BASE64_CHUNK_SIZE, BASE64_MAX_PADDING, DATE_DAY_MAX,
   DATE_DAY_OFFSET_1, DATE_DAY_OFFSET_2, DATE_DAY_SEPARATOR_OFFSET,
   DATE_MONTH_MAX, DATE_MONTH_OFFSET_1, DATE_MONTH_OFFSET_2,
@@ -148,12 +151,6 @@ function isIPv4(value: string): boolean {
   return true;
 }
 
-// Matches full IPv6 addresses including :: collapsed forms and optional
-// trailing IPv4-mapped suffix (RFC 4291 §2.2).
-const IPV6_FULL = /^[\da-f]{1,4}(?::[\da-f]{1,4}){7}$/iu;
-const IPV6_WITH_DOUBLE_COLON = /^(?:[\da-f]{1,4}:){0,7}:(?:[\da-f]{1,4}:){0,6}[\da-f]{0,4}$/iu;
-const IPV6_MIXED = /^(?:[\da-f]{1,4}:){6}(?:\d{1,3}\.){3}\d{1,3}$/iu;
-const IPV6_MIXED_COMPRESSED = /^::(?:[\da-f]{1,4}:){0,5}(?:\d{1,3}\.){3}\d{1,3}$/iu;
 
 function isIPv6(value: string): boolean {
   if (value.length === 0) {
@@ -337,6 +334,21 @@ function validateByte(value: string): boolean {
   return true;
 }
 
+const DAYS_IN_MONTH: readonly number[] = Object.freeze([
+  31,
+  28,
+  31,
+  30,
+  31,
+  30,
+  31,
+  31,
+  30,
+  31,
+  30,
+  31
+]);
+
 function validateDateFormat(value: string): boolean {
   if (value.length !== DATE_STRING_LENGTH) {
     return false;
@@ -344,9 +356,13 @@ function validateDateFormat(value: string): boolean {
   if (!validateDate(value, 0)) {
     return false;
   }
-  const candidate = new Date(`${value}T00:00:00.000Z`);
+  const year = Number(value.slice(0, 4));
+  const month = Number(value.slice(5, 7));
+  const day = Number(value.slice(8, 10));
+  const isLeap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const maxDay = month === 2 && isLeap ? 29 : DAYS_IN_MONTH[month - 1];
 
-  return !Number.isNaN(candidate.getTime()) && candidate.toISOString().startsWith(value);
+  return day >= 1 && day <= maxDay;
 }
 
 function validateDateTime(value: string): boolean {
@@ -563,50 +579,86 @@ function validateRegex(value: string): boolean {
   }
 }
 
-const STRING_FORMAT_VALIDATORS: Record<string, (value: string) => boolean> = {
-  'binary': validateBinary,
-  'byte': validateByte,
-  'date': validateDateFormat,
-  'duration': validateDuration,
-  'email': validateEmail,
-  'hostname': isAsciiHostname,
-  'ipv4': isIPv4,
-  'ipv6': isIPv6,
-  'iri': isUriLike,
-  'regex': validateRegex,
-  'time': validateTimeFormat,
-  'uri': isUriLike,
-  'uuid': validateUuid
+const STRING_FORMAT_VALIDATORS: Record<string, (value: unknown) => boolean> = {
+  'binary': (value) => {
+    return typeof value === 'string' && validateBinary(value);
+  },
+  'byte': (value) => {
+    return typeof value === 'string' && validateByte(value);
+  },
+  'date': (value) => {
+    return typeof value === 'string' && validateDateFormat(value);
+  },
+  'duration': (value) => {
+    return typeof value === 'string' && validateDuration(value);
+  },
+  'email': (value) => {
+    return typeof value === 'string' && validateEmail(value);
+  },
+  'hostname': (value) => {
+    return typeof value === 'string' && isAsciiHostname(value);
+  },
+  'ipv4': (value) => {
+    return typeof value === 'string' && isIPv4(value);
+  },
+  'ipv6': (value) => {
+    return typeof value === 'string' && isIPv6(value);
+  },
+  'iri': (value) => {
+    return typeof value === 'string' && isUriLike(value);
+  },
+  'regex': (value) => {
+    return typeof value === 'string' && validateRegex(value);
+  },
+  'time': (value) => {
+    return typeof value === 'string' && validateTimeFormat(value);
+  },
+  'uri': (value) => {
+    return typeof value === 'string' && isUriLike(value);
+  },
+  'uuid': (value) => {
+    return typeof value === 'string' && validateUuid(value);
+  }
 };
 
-STRING_FORMAT_VALIDATORS['date-time'] = validateDateTime;
-STRING_FORMAT_VALIDATORS['idn-email'] = validateIdnEmail;
-STRING_FORMAT_VALIDATORS['idn-hostname'] = (value) => {
-  return domainToAscii(value).length > 0;
+STRING_FORMAT_VALIDATORS['date-time'] = (value) => {
+  return typeof value === 'string' && validateDateTime(value);
 };
-STRING_FORMAT_VALIDATORS['iri-reference'] = isUriReference;
-STRING_FORMAT_VALIDATORS['json-pointer'] = validateJsonPointer;
-STRING_FORMAT_VALIDATORS['uri-reference'] = isUriReference;
+STRING_FORMAT_VALIDATORS['idn-email'] = (value) => {
+  return typeof value === 'string' && validateIdnEmail(value);
+};
+STRING_FORMAT_VALIDATORS['idn-hostname'] = (value) => {
+  return typeof value === 'string' && domainToAscii(value).length > 0;
+};
+STRING_FORMAT_VALIDATORS['iri-reference'] = (value) => {
+  return typeof value === 'string' && isUriReference(value);
+};
+STRING_FORMAT_VALIDATORS['json-pointer'] = (value) => {
+  return typeof value === 'string' && validateJsonPointer(value);
+};
+STRING_FORMAT_VALIDATORS['uri-reference'] = (value) => {
+  return typeof value === 'string' && isUriReference(value);
+};
 STRING_FORMAT_VALIDATORS['uri-template'] = (value) => {
-  return isUriReference(value) && hasBalancedBraces(value);
+  return typeof value === 'string' && isUriReference(value) && hasBalancedBraces(value);
 };
 
 // ---------------------------------------------------------------------------
 // Built-in number format validators
 // ---------------------------------------------------------------------------
 
-const NUMBER_FORMAT_VALIDATORS: Record<string, (value: number) => boolean> = {
+const NUMBER_FORMAT_VALIDATORS: Record<string, (value: unknown) => boolean> = {
   'double': (value) => {
-    return Number.isFinite(value);
+    return typeof value === 'number' && Number.isFinite(value);
   },
   'float': (value) => {
-    return Number.isFinite(value) && Math.fround(value) === value;
+    return typeof value === 'number' && Number.isFinite(value) && Math.fround(value) === value;
   },
   'int32': (value) => {
-    return Number.isInteger(value) && value >= -2_147_483_648 && value <= 2_147_483_647;
+    return typeof value === 'number' && Number.isInteger(value) && value >= -2_147_483_648 && value <= 2_147_483_647;
   },
   'int64': (value) => {
-    return Number.isInteger(value) && Number.isSafeInteger(value);
+    return typeof value === 'number' && Number.isInteger(value) && Number.isSafeInteger(value);
   }
 };
 
@@ -630,18 +682,14 @@ export class FormatRegistry implements FormatRegistryInterface {
       name,
       fn
     ] of Object.entries(STRING_FORMAT_VALIDATORS)) {
-      registry.set(name, (value) => {
-        return typeof value === 'string' && fn(value);
-      });
+      registry.set(name, fn);
     }
 
     for (const [
       name,
       fn
     ] of Object.entries(NUMBER_FORMAT_VALIDATORS)) {
-      registry.set(name, (value) => {
-        return typeof value === 'number' && fn(value);
-      });
+      registry.set(name, fn);
     }
 
     return registry;

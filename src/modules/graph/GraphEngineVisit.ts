@@ -15,6 +15,9 @@ import { Refs } from './visit/Refs.js';
 import { VisitComposition } from './visit/VisitComposition.js';
 import { Unevaluated } from './visit/Unevaluated.js';
 
+const EMPTY_SET_STRING: Set<string> = Object.freeze(new Set<string>());
+const EMPTY_SET_NUMBER: Set<number> = Object.freeze(new Set<number>());
+
 export const GraphEngineVisit = {
   visit(
     context: VisitContextInterface,
@@ -35,15 +38,15 @@ export const GraphEngineVisit = {
       return node.schema
         ? {
           'errors': [],
-          'evaluatedItems': new Set(),
-          'evaluatedProperties': new Set(),
+          'evaluatedItems': undefined,
+          'evaluatedProperties': undefined,
           'valid': true,
           value
         }
         : {
           'errors': [context.createError(path, 'falseSchema', 'must not match false schema')],
-          'evaluatedItems': new Set(),
-          'evaluatedProperties': new Set(),
+          'evaluatedItems': undefined,
+          'evaluatedProperties': undefined,
           'valid': false,
           value
         };
@@ -143,8 +146,8 @@ export const GraphEngineVisit = {
     }
 
     const errors: ValidationErrorType[] = [];
-    const evaluatedProperties = new Set<string>();
-    const evaluatedItems = new Set<number>();
+    let evaluatedProperties: Set<string> | undefined;
+    let evaluatedItems: Set<number> | undefined;
 
     const pushErrors = (nextErrors: ValidationErrorType[]): void => {
       if (nextErrors.length === 0) {
@@ -230,8 +233,8 @@ export const GraphEngineVisit = {
       }
       workingValue = arrayResult.value;
       pushErrors(arrayResult.errors);
-      for (const index of arrayResult.evaluatedItems) {
-        evaluatedItems.add(index);
+      for (const index of arrayResult.evaluatedItems ?? EMPTY_SET_NUMBER) {
+        (evaluatedItems ??= new Set()).add(index);
       }
     }
 
@@ -244,8 +247,8 @@ export const GraphEngineVisit = {
       }
       workingValue = objectResult.value;
       pushErrors(objectResult.errors);
-      for (const key of objectResult.evaluatedProperties) {
-        evaluatedProperties.add(key);
+      for (const key of objectResult.evaluatedProperties ?? EMPTY_SET_STRING) {
+        (evaluatedProperties ??= new Set()).add(key);
       }
     }
 
@@ -369,6 +372,9 @@ export const GraphEngineVisit = {
       workingValue = acc.value;
     }
 
+    evaluatedItems = acc.evaluatedItems;
+    evaluatedProperties = acc.evaluatedProperties;
+
     // --- Unevaluated items ---
     if (Array.isArray(workingValue) && unevaluatedItemsNode !== undefined) {
       const unevaluatedResult = context.applyUnevaluatedItems(
@@ -379,7 +385,7 @@ export const GraphEngineVisit = {
         options,
         refStack,
         dynScope,
-        evaluatedItems,
+        evaluatedItems ?? EMPTY_SET_NUMBER,
         depth
       );
 
@@ -388,8 +394,8 @@ export const GraphEngineVisit = {
       }
       workingValue = unevaluatedResult.value;
       pushErrors(unevaluatedResult.errors);
-      for (const index of unevaluatedResult.evaluatedItems) {
-        evaluatedItems.add(index);
+      for (const index of unevaluatedResult.evaluatedItems ?? EMPTY_SET_NUMBER) {
+        (evaluatedItems ??= new Set()).add(index);
       }
     }
 
@@ -403,7 +409,7 @@ export const GraphEngineVisit = {
         options,
         refStack,
         dynScope,
-        evaluatedProperties,
+        evaluatedProperties ?? EMPTY_SET_STRING,
         depth
       );
 
@@ -412,8 +418,8 @@ export const GraphEngineVisit = {
       }
       workingValue = unevaluatedResult.value;
       pushErrors(unevaluatedResult.errors);
-      for (const key of unevaluatedResult.evaluatedProperties) {
-        evaluatedProperties.add(key);
+      for (const key of unevaluatedResult.evaluatedProperties ?? EMPTY_SET_STRING) {
+        (evaluatedProperties ??= new Set()).add(key);
       }
     }
 

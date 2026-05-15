@@ -226,7 +226,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     entry.refsChecked = true;
   }
 
-  public cast(schemaOrId: (Record<string, unknown> & { '$id': string; }) | string, data: unknown): unknown {
+  public cast(schemaOrId: (Record<string, unknown> & { '$id': string; }) | string, data: unknown, options?: { 'clone'?: boolean }): unknown {
     const schemaId = this.resolveSchemaId(schemaOrId);
     const compiled = this.compiled(schemaId);
 
@@ -234,7 +234,9 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`, schemaId);
     }
 
-    return compiled.validate(structuredClone(data), CAST_OPTIONS).value;
+    const input = options?.clone === false ? data : structuredClone(data);
+
+    return compiled.validate(input, CAST_OPTIONS).value;
   }
 
   /**
@@ -389,7 +391,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return entry.compiled;
   }
 
-  public convert(schemaOrId: (Record<string, unknown> & { '$id': string; }) | string, data: unknown): unknown {
+  public convert(schemaOrId: (Record<string, unknown> & { '$id': string; }) | string, data: unknown, options?: { 'clone'?: boolean }): unknown {
     const schemaId = this.resolveSchemaId(schemaOrId);
     const compiled = this.compiled(schemaId);
 
@@ -397,7 +399,9 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`, schemaId);
     }
 
-    return compiled.validate(structuredClone(data), CONVERT_OPTIONS).value;
+    const input = options?.clone === false ? data : structuredClone(data);
+
+    return compiled.validate(input, CONVERT_OPTIONS).value;
   }
 
   public create(schemaId: string): unknown {
@@ -491,6 +495,22 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return this.graphOf(entry);
   }
 
+  public graphEntry(schemaId: string): undefined | {
+    'graph': SchemaGraphInterface;
+    'schema': Record<string, unknown>;
+  } {
+    const entry = this.store.get(this.resolve(schemaId));
+
+    if (entry === undefined) {
+      return undefined;
+    }
+
+    return {
+      'graph': this.graphOf(entry),
+      'schema': entry.schema
+    };
+  }
+
   private graphOf(entry: SchemaRegistryEntryInterface): SchemaGraphInterface {
     entry.graph ??= new SchemaGraph(entry.schema, { 'vocabularies': this.vocabularies });
 
@@ -512,7 +532,10 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   public instantiate(
     schema: (Record<string, unknown> & { '$id': string; }) | string,
     data: unknown,
-    callOptions?: { 'enableDefaults'?: boolean }
+    callOptions?: {
+      'clone'?: boolean;
+      'enableDefaults'?: boolean;
+    }
   ): unknown {
     const schemaId = typeof schema === 'string' ? this.resolve(schema) : schema.$id;
     const entry = this.store.get(schemaId);
@@ -550,7 +573,8 @@ export class SchemaRegistry implements SchemaRegistryInterface {
         ? undefined
         : { 'applyDefaults': callOptions.enableDefaults }
     );
-    const result = compiled.validate(structuredClone(data), resolvedOptions);
+    const input = callOptions?.clone === false ? data : structuredClone(data);
+    const result = compiled.validate(input, resolvedOptions);
 
     if (!result.valid) {
       throw new InstantiationError(new ValidationErrors(result.errors));

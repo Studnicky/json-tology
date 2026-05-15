@@ -2,8 +2,8 @@ import type { ValidationErrorType } from '../types/Validation.js';
 
 export interface InternalExecutionResultInterface {
   'errors': ValidationErrorType[];
-  'evaluatedItems': Set<number>;
-  'evaluatedProperties': Set<string>;
+  'evaluatedItems': Set<number> | undefined;
+  'evaluatedProperties': Set<string> | undefined;
   'valid': boolean;
   'value': unknown;
 }

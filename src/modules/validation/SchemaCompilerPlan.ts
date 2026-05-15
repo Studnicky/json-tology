@@ -626,7 +626,7 @@ function wrapStrictValidator(inner: ValidateWithErrorsFnType): ValidateWithError
 
 function compilePropertyValidators(
   context: SchemaCompilerValidatePlanContextInterface,
-  propertyEntries: Map<string, SchemaGraphNodeInterface>,
+  propertyEntries: ReadonlyMap<string, SchemaGraphNodeInterface>,
   formatRegistry: FormatRegistryInterface,
   graph: SchemaGraphInterface,
   configStrict: boolean | undefined,
@@ -691,7 +691,7 @@ function compileRefValidator(
 
 function buildPropertyDefaults(
   context: SchemaCompilerValidatePlanContextInterface,
-  propertyEntries: Map<string, SchemaGraphNodeInterface>,
+  propertyEntries: ReadonlyMap<string, SchemaGraphNodeInterface>,
   graph: SchemaGraphInterface,
   lookupSchema?: (id: string) => Record<string, unknown> | undefined
 ): Map<string, { 'defaultValue': unknown;
@@ -754,7 +754,7 @@ function buildCustomKeywordEntries(
 }
 
 function buildJtStrictPerField(
-  propertyEntries: Map<string, SchemaGraphNodeInterface>,
+  propertyEntries: ReadonlyMap<string, SchemaGraphNodeInterface>,
   graph: SchemaGraphInterface
 ): Map<string, boolean> | undefined {
   const result = new Map<string, boolean>();

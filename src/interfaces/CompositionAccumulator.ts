@@ -1,5 +1,5 @@
 export interface CompositionAccumulatorInterface {
-  readonly 'evaluatedItems': Set<number>;
-  readonly 'evaluatedProperties': Set<string>;
+  'evaluatedItems': Set<number> | undefined;
+  'evaluatedProperties': Set<string> | undefined;
   'value': unknown;
 }

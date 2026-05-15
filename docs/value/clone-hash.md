@@ -1,10 +1,10 @@
-# `Value.clone` and `Value.hash`
+# `Operations.clone` and `Hash.value`
 
 Pure static utilities that work on any value without a schema.
 
 ---
 
-## `Value.clone` {#value-clone}
+## `Operations.clone` {#operations-clone}
 
 **Declaration.** Deep-copies a value using `structuredClone`. Returns an independent copy with no shared object references. Type-preserving - `clone<T>(v: T): T`.
 
@@ -17,7 +17,7 @@ Pure static utilities that work on any value without a schema.
 #### Example 1: Clone an order before adding a line item
 
 ```ts
-import { Value } from 'json-tology';
+import { Operations } from 'json-tology/value';
 import { bookstoreEntities, OrderSchema } from './bookstore/index.js';
 
 const order = bookstoreEntities.instantiate(OrderSchema.$id, {
@@ -28,7 +28,7 @@ const order = bookstoreEntities.instantiate(OrderSchema.$id, {
   items:      [{ bookIsbn: '9780140449136', quantity: 1, unitPrice: 14.99 }],
 });
 
-const copy = Value.clone(order);
+const copy = Operations.clone(order);
 (copy.items as Array<{ bookIsbn: string; quantity: number; unitPrice: number }>).push(
   { bookIsbn: '9780062316110', quantity: 1, unitPrice: 9.99 }
 );
@@ -47,7 +47,7 @@ const customer = jt.instantiate(CustomerSchema.$id, {
   addresses: [{ street: '12 Elm Lane', city: 'Bookham', postalCode: '94107' }],
 });
 
-const copy = Value.clone(customer);
+const copy = Operations.clone(customer);
 console.log(copy.addresses === customer.addresses); // false  - deep copy
 ```
 
@@ -56,7 +56,7 @@ console.log(copy.addresses === customer.addresses); // false  - deep copy
 ::: code-group
 
 ```ts [json-tology]
-const copy = Value.clone(order); // deep copy via structuredClone
+const copy = Operations.clone(order); // deep copy via structuredClone
 ```
 
 ```ts [Zod]
@@ -113,7 +113,7 @@ copy = order.model_copy(deep=True)
 
 ---
 
-## `Value.hash` {#value-hash}
+## `Hash.value` {#hash-value}
 
 **Declaration.** Computes a deterministic FNV-1a hash of a JSON-serializable value. Property key order is normalized before hashing - two objects with the same keys/values but different key order produce identical hashes. Returns a hex string. Not cryptographically secure.
 
@@ -126,6 +126,8 @@ copy = order.model_copy(deep=True)
 #### Example 1: Generate an ETag for a book
 
 ```ts
+import { Hash } from 'json-tology/value';
+
 const book = jt.instantiate(BookSchema.$id, {
   isbn:    '9780140449136',
   title:   'Crime and Punishment',
@@ -133,22 +135,22 @@ const book = jt.instantiate(BookSchema.$id, {
   price:   14.99,
 });
 
-const etag = Value.hash(book);
+const etag = Hash.value(book);
 // deterministic hex string  - same value each time, key order independent
 
-const h1 = Value.hash({ isbn: '9780140449136', title: 'Crime and Punishment' });
-const h2 = Value.hash({ title: 'Crime and Punishment', isbn: '9780140449136' });
+const h1 = Hash.value({ isbn: '9780140449136', title: 'Crime and Punishment' });
+const h2 = Hash.value({ title: 'Crime and Punishment', isbn: '9780140449136' });
 console.log(h1 === h2); // true  - key order doesn't matter
 ```
 
 #### Example 2: Cache invalidation
 
 ```ts
-const prevHash = Value.hash(order);
+const prevHash = Hash.value(order);
 // ... order is updated ...
 const newOrder = jt.instantiate(OrderSchema.$id, { ...order, total: 27.98 });
 
-if (Value.hash(newOrder) !== prevHash) {
+if (Hash.value(newOrder) !== prevHash) {
   invalidateCache(order.id);
 }
 ```
@@ -158,7 +160,7 @@ if (Value.hash(newOrder) !== prevHash) {
 ::: code-group
 
 ```ts [json-tology]
-Value.hash(book) // deterministic FNV-1a hex, key-order invariant
+Hash.value(book) // deterministic FNV-1a hex, key-order invariant
 ```
 
 ```ts [Zod]
@@ -222,7 +224,7 @@ h = hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()
 ## Related
 
 - [`Value.diff`](/value/diff) - compute structural differences between two values
-- [`Value.clone`](#value-clone) - deep copy before mutation or diffing
+- [`Operations.clone`](#operations-clone) - deep copy before mutation or diffing
 
 ## See also
 

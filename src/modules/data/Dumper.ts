@@ -57,13 +57,16 @@ export class Dumper {
     value: unknown,
     options?: DumpOptionsInterface
   ): unknown {
-    const schema = registry.get(schemaId);
+    const entry = registry.graphEntry(schemaId);
 
-    if (schema === undefined) {
+    if (entry === undefined) {
       throw new GraphError('REF_UNRESOLVED', `Schema not registered: ${schemaId}`, schemaId);
     }
 
-    const graph = registry.graph(schemaId) as SchemaGraphInterface;
+    const {
+      graph,
+      schema
+    } = entry;
     const rootNode = graph.rootNode;
 
     return Dumper.dumpNode(registry, graph, rootNode, schema, value, options);
@@ -221,20 +224,23 @@ export class Dumper {
     }
 
     const parsed = GraphEngineSupport.parseRef(ref);
-    const lookedUp = registry.get(parsed.id);
+    const lookedUp = registry.graphEntry(parsed.id);
 
     if (lookedUp === undefined) {
       throw new GraphError('REF_UNRESOLVED', `Unresolved schema reference: ${ref}`, ref);
     }
 
-    const targetGraph = registry.graph(parsed.id) as SchemaGraphInterface;
+    const {
+      'graph': targetGraph,
+      'schema': targetSchema
+    } = lookedUp;
     const targetNode = targetGraph.resolveFragment(parsed.fragment);
 
     return {
       'graph': targetGraph,
       'node': targetNode,
       'registry': registry,
-      'schema': isRecord(targetNode.schema) ? targetNode.schema : lookedUp
+      'schema': isRecord(targetNode.schema) ? targetNode.schema : targetSchema
     };
   }
 }
