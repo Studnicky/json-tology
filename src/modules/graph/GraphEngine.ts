@@ -580,7 +580,7 @@ export class GraphEngine implements GraphEngineInterface {
     return {
       errors,
       evaluatedItems,
-      'evaluatedProperties': new Set(),
+      'evaluatedProperties': undefined,
       'valid': errors.length === 0,
       'value': workingValue
     };
@@ -835,7 +835,7 @@ export class GraphEngine implements GraphEngineInterface {
 
     return {
       errors,
-      'evaluatedItems': new Set(),
+      'evaluatedItems': undefined,
       evaluatedProperties,
       'valid': errors.length === 0,
       'value': workingValue

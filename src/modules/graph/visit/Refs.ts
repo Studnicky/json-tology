@@ -24,8 +24,8 @@ export class Refs {
     if (refStack.has(refKey)) {
       return {
         'errors': [],
-        'evaluatedItems': new Set(),
-        'evaluatedProperties': new Set(),
+        'evaluatedItems': undefined,
+        'evaluatedProperties': undefined,
         'valid': true,
         'value': workingValue
       };
@@ -67,8 +67,8 @@ export class Refs {
     if (refStack.has(refKey)) {
       return {
         'errors': [],
-        'evaluatedItems': new Set(),
-        'evaluatedProperties': new Set(),
+        'evaluatedItems': undefined,
+        'evaluatedProperties': undefined,
         'valid': true,
         'value': workingValue
       };
