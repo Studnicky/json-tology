@@ -33,6 +33,10 @@ export interface SchemaRegistryInterface extends Iterable<[string, Record<string
   ): void;
   get(schemaId: string): Record<string, unknown> | undefined;
   graph(schemaId: string): SchemaGraphInterface | undefined;
+  graphEntry(schemaId: string): undefined | {
+    'graph': SchemaGraphInterface;
+    'schema': Record<string, unknown>;
+  };
   has(schemaId: string): boolean;
   instantiate(schema: (Record<string, unknown> & { '$id': string }) | string, data: unknown, callOptions?: { 'enableDefaults'?: boolean }): unknown;
   is(schema: (Record<string, unknown> & { '$id': string }) | string, data: unknown): boolean;

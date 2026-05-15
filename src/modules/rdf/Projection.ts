@@ -594,23 +594,19 @@ function projectPropertyValue(args: ProjectPropertyArgs): void {
       index,
       element
     ] of elements.entries()) {
-      projectSingleValue({
-        ...args,
-        'path': `${path}/${index}`,
-        'value': element
-      });
+      projectSingleValue(args, `${path}/${index}`, element);
     }
 
     return;
   }
 
-  projectSingleValue(args);
+  projectSingleValue(args, path, value);
 }
 
-function projectSingleValue(args: ProjectPropertyArgs): void {
+function projectSingleValue(args: ProjectPropertyArgs, path: string, value: unknown): void {
   const {
-    curie, depth, graph, instanceIri, minter, path,
-    propertyIRI, propertyNode, propertySemantics, quads, value, visited
+    curie, depth, graph, instanceIri, minter,
+    propertyIRI, propertyNode, propertySemantics, quads, visited
   } = args;
 
   if (value === null || value === undefined) {

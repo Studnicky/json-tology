@@ -49,7 +49,8 @@ function canonicalPropertyIri(subject: string): string {
     return subject;
   }
 
-  const propName = SchemaIri.lastSegment(subject);
+  const segments = parts.fragment.split('/');
+  const propName = segments.at(-1) ?? '';
   const propsIdx = parts.fragment.lastIndexOf('/properties/');
 
   if (propsIdx === -1) {

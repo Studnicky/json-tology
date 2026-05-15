@@ -56,7 +56,14 @@ function extractJtConfig(schema: Record<string, unknown>): JtConfigType | undefi
   return Object.keys(config).length > 0 ? config : undefined;
 }
 
-const EMPTY_MAP: ReadonlyMap<string, SchemaGraphNodeInterface> = new Map();
+type PropertyEntry = [string, SchemaGraphNodeInterface];
+type PropertyMap = ReadonlyMap<string, SchemaGraphNodeInterface>;
+
+const EMPTY_MAP: PropertyMap = new Map();
+
+function propertiesMap(entries: PropertyEntry[]): PropertyMap {
+  return entries.length === 0 ? EMPTY_MAP : new Map(entries);
+}
 
 const EMPTY_SEMANTICS: SchemaGraphSemanticsInterface = Object.freeze({
   'additionalItemsNode': undefined,
@@ -368,7 +375,7 @@ export const SchemaGraphSupport = {
       'pattern': typeof node.schema.pattern === 'string' ? node.schema.pattern : undefined,
       'patternPropertyEntries': graph.entries(node, 'patternProperties'),
       'prefixItems': graph.indexedChildren(node, 'prefixItems'),
-      'properties': graph.entries(node, 'properties').length === 0 ? EMPTY_MAP : new Map(graph.entries(node, 'properties')),
+      'properties': propertiesMap(graph.entries(node, 'properties')),
       'propertyNamesNode': graph.child(node, 'propertyNames'),
       'rdfsDomain': (typeof node.schema['rdfs:domain'] === 'string' ? node.schema['rdfs:domain'] : undefined) ?? (typeof node.schema[RDFS_DOMAIN_IRI] === 'string' ? node.schema[RDFS_DOMAIN_IRI] : undefined),
       'rdfsRange': (typeof node.schema['rdfs:range'] === 'string' ? node.schema['rdfs:range'] : undefined) ?? (typeof node.schema[RDFS_RANGE_IRI] === 'string' ? node.schema[RDFS_RANGE_IRI] : undefined),

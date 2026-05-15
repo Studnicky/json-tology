@@ -491,6 +491,22 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return this.graphOf(entry);
   }
 
+  public graphEntry(schemaId: string): undefined | {
+    'graph': SchemaGraphInterface;
+    'schema': Record<string, unknown>;
+  } {
+    const entry = this.store.get(this.resolve(schemaId));
+
+    if (entry === undefined) {
+      return undefined;
+    }
+
+    return {
+      'graph': this.graphOf(entry),
+      'schema': entry.schema
+    };
+  }
+
   private graphOf(entry: SchemaRegistryEntryInterface): SchemaGraphInterface {
     entry.graph ??= new SchemaGraph(entry.schema, { 'vocabularies': this.vocabularies });
 

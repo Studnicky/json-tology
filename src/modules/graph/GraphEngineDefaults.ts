@@ -8,7 +8,7 @@ import type { DynamicScopeEntryInterface } from '../../interfaces/DynamicScopeEn
 import type { DefaultResolutionContextInterface } from '../../interfaces/DefaultResolutionContext.js';
 import { MAX_DEFAULT_DEPTH } from '../../constants/NUMERIC.js';
 
-function propertiesFromSemantics(sem: SchemaGraphSemanticsInterface): Map<string, SchemaGraphNodeInterface> {
+function propertiesFromSemantics(sem: SchemaGraphSemanticsInterface): ReadonlyMap<string, SchemaGraphNodeInterface> {
   return sem.properties;
 }
 
