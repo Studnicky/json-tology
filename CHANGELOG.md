@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Performance (audit pass 2)
+
+- Interpreted-validation path is 3-4× faster. `compiled vs interpreted` benchmark now reports 250-330% throughput gains for the interpreted variant across simple-valid, simple-invalid, and nested-valid scenarios.
+- `SchemaRegistry.graphEntry(id)` returns `{ schema, graph }` in one lookup. `Dumper.dump()` and `Dumper.resolveRef()` collapse two sequential `resolve() + store.get()` round-trips into one — recovers most of the prior `dump nested` regression.
+- `GraphEngine.visitContext` is hoisted to a constructor-built `private readonly` field. The 12-closure object literal is no longer allocated per `visit()`.
+- `GraphEngine.execute()` reuses `this.options` directly when `overrides` is empty; the `{ ...this.options, ...overrides }` spread runs only when overrides carry keys.
+- `GraphEngine.validateObject` walks `Object.keys(workingValue)` once instead of three times.
+- `GraphEngine.resolveRef` uses a per-root cache map keyed by `ref` directly when the call targets the engine's own root graph, skipping per-call template-literal compound-key allocation.
+- `SchemaGraphSupport.emptySchemaGraphSemantics()` returns a frozen module-scope singleton. The 60-field object is no longer allocated per boolean-schema node.
+- `SchemaGraphSupport.extractSemantics()` returns a frozen `EMPTY_MAP` sentinel when a relation kind has no entries.
+- `Materializer.run()` guards re-registration: `set(schema)` only runs when `!registry.has(schema.$id)`.
+- `Materializer` `structuredClone`s eliminated on the two engine-output paths where ownership is already local; `SchemaRegistry.instantiate`/`cast`/`convert` gain an opt-out `clone: false` flag used by Materializer.
+- `FormatRegistry` date validation uses an integer-table day-in-month check + leap-year branch. The `new Date(...)` + `.toISOString()` allocations are gone.
+- `FormatRegistry` built-in validators no longer wrap each inner function in a `(value) => typeof === 'string' && fn(value)` closure — type guards inlined; call site is monomorphic.
+- `Projection.projectPropertyValue` no longer object-spreads the args struct per array element; `path` and `value` are explicit parameters.
+- `OwlProjection.canonicalPropertyIri` performs one IRI parse instead of two.
+- `VisitComposition` lazy-initializes `evaluatedProperties` / `evaluatedItems` Sets. `allOf`/`anyOf`/`oneOf`/`ifThenElse` branches that emit no evaluated members allocate no Set.
+
+### Changed (audit pass 2 — internal)
+
+- 2 type aliases moved from `RefDecoder.ts` to `src/types/`.
+- 7 module-scope constant clusters moved to `src/constants/` (`COMPOSITION`, `PATH`, `FORMAT_REGEXES`, `GRAPH_REGEXES`, `SHACL`, appended to `ONTOLOGY_PREDICATES` and `UUID`).
+- 10 inline schema definitions moved from `src/modules/data/BaseTypes.ts` to `src/constants/BASE_SCHEMAS.ts`.
+- ~32 JSDoc blocks on private/internal methods removed across `GraphEngine`, `SchemaIri`, `SchemaGraph`, `GraphEngineSupport`, `RefDecoder`.
+
+### Added (audit pass 2)
+
+- Direct unit tests for `SchemaEntryStore`, `SchemaRefWalker`, `RefResolutionLoader`, and `SchemaCompilerPlan` (+61 new tests; suite now 1596 pass).
+- Strict JSON Schema 2020-12 model types: `JsonSchema`, `JsonSchemaObject` (interface), and `JsonSchemaTypeName`. Coexists with the loose runtime-boundary `JsonSchemaType`.
+
+### Docs (audit pass 2)
+
+- `docs/value/clone-hash.md`, `docs/value/diff.md`, `docs/value/index.md`, `docs/benchmarks.md`, `docs/getting-started.md`, and the bench scenario file updated to the `Operations`/`Hash` API.
+
 ### Changed
 
 - **BREAKING**: `Value.applyOp`, `Value.clone`, and `Value.hash` are removed. They were thin wrappers and now live where the work happens: `Operations.patch(value, op)` (renamed from `applyOp` so it does not collide with `Function.prototype.apply` in lint rules), `Operations.clone(value)`, and `Hash.value(value)`. `Operations` is exported from `json-tology/value`.
