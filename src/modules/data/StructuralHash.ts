@@ -6,14 +6,7 @@
  */
 
 import { Hash } from '../hash/Hash.js';
-
-const METADATA_KEYS = new Set([
-  '$comment',
-  '$id',
-  'description',
-  'examples',
-  'title'
-]);
+import { METADATA_KEYS } from '../../constants/STRUCTURAL_HASH.js';
 
 export class StructuralHash {
   public static of(schema: Record<string, unknown>): string {

@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Performance (audit pass 3)
+
+- `intersection` and `extend + validate` benchmarks now measure steady-state validate, not registry construction. The corrected bench measures `intersection` at 1.84M ops/s (was 22K ops/s when the timing loop included `new SchemaRegistry()`) and `extend + validate` at 1.6M ops/s (was 30K).
+- `dumpJson` short-circuits to `JSON.stringify(value)` when the schema has no registered transform decoders and the options carry no active filters. Yields +49% on the `dumpJson nested` scenario.
+- `Dumper.dumpObject` allocates the `knownKeys` Set only when `excludeDefaults === true`.
+- `Predicates.satisfiesFormat` removed. The try/catch indirection exited V8 JIT optimization on the surrounding function and the validator call site was polymorphic. Built-in format validators are now invoked directly at the call site. User-supplied validators that throw are still caught at the single remaining trust boundary in `Scalars.validateFormat`.
+- `VisitComposition.anyOf` lazy-initializes `successfulResults` and pre-allocates the `collectErrors` options sentinel once per call instead of spreading per branch (six spread sites removed across `anyOf`, `oneOf`, `ifThenElse`, `not`).
+- `VisitComposition.oneOf` caches per-variant semantic descriptors in a module-scope `WeakMap` keyed on the oneOf node array. First call builds; subsequent calls read.
+- `Compose.extend` constants `EXTEND_SKIP_KEYS` and `CLASS_AXIOM_BODY_SKIP_KEYS` hoisted to `src/constants/COMPOSITION.ts`.
+- `Lift.findPropertyQuads` consumes a per-subject predicate index built once per `liftSubject` call when the subject has more than 3 properties, replacing two per-property `.filter()` passes with Map lookups.
+- `JsonLdFormatter` blank-node inlining uses a single-pass copy that skips `@id` during construction (no spread + delete).
+- `Skolemize` UUID fallback uses a 256-entry hex lookup table instead of `toString(16).padStart(2, '0')` per byte.
+
+### Internal (audit pass 3)
+
+- 2 inline interfaces moved to `src/interfaces/` (`RefDecoderRegistry`, `FetchLoaderOptions`).
+- 8 module-scope constant clusters relocated to `src/constants/` (`COMPOSITION`, `STRUCTURAL_HASH`, `SCHEMA_KEYWORDS` appended with `PRIMITIVE_CONSTRAINT_KEYWORDS` and `PRIMITIVE_TYPES`, `XSD_MAPS` appended with `XSD_COERCERS`, `ONTOLOGY_PREDICATES` appended with `CARDINALITY_KINDS`, `SIMPLE_LITERAL_PREDICATES`, `IRI_PREDICATES`).
+- 4 schema-keyword constants added to `src/constants/SCHEMA_KEYWORDS.ts` (`ID_KEYWORD`, `REF_KEYWORD`, `DEFS_KEYWORD`, `SCHEMA_KEYWORD`).
+- `ARCHITECTURE.md` rebuilt with current public API surface and file inventory across all `src/` modules.
+
 ## [0.7.0] - 2026-05-15
 
 ### Added

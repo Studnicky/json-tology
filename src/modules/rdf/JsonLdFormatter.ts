@@ -167,10 +167,13 @@ function resolveValue(
         if (inlined !== undefined) {
           // Recursively resolve the inlined node
           inlineBnodes(inlined, subjects, inlinedIds);
-          // Remove @id from inlined blank nodes
-          const copy = { ...inlined };
+          const copy: Record<string, unknown> = {};
 
-          delete copy[JSONLD.id];
+          for (const key in inlined) {
+            if (key !== JSONLD.id) {
+              copy[key] = inlined[key];
+            }
+          }
 
           return copy;
         }

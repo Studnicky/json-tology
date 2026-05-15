@@ -1,6 +1,11 @@
 export const DEFS_POINTER_PARTS_LENGTH = 3;
 export const MIN_PROPERTY_POINTER_PARTS = 3;
 
+export const ID_KEYWORD = '$id';
+export const REF_KEYWORD = '$ref';
+export const DEFS_KEYWORD = '$defs';
+export const SCHEMA_KEYWORD = '$schema';
+
 export const KNOWN_SCHEMA_KEYWORDS = new Set([
   '$anchor',
   '$comment',
@@ -80,4 +85,25 @@ export const KNOWN_SCHEMA_KEYWORDS = new Set([
   'unevaluatedProperties',
   'uniqueItems',
   'writeOnly'
+]);
+
+export const PRIMITIVE_CONSTRAINT_KEYWORDS = new Set<string>([
+  'const',
+  'enum',
+  'exclusiveMaximum',
+  'exclusiveMinimum',
+  'format',
+  'maximum',
+  'maxLength',
+  'minimum',
+  'minLength',
+  'multipleOf',
+  'pattern'
+]);
+
+export const PRIMITIVE_TYPES = new Set<string>([
+  'boolean',
+  'integer',
+  'number',
+  'string'
 ]);

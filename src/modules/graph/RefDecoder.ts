@@ -1,7 +1,6 @@
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraph.js';
-import type { SchemaLookupType } from '../../types/SchemaLookup.js';
-import type { GraphLookupType } from '../../types/GraphLookup.js';
+import type { RefDecoderRegistryInterface } from '../../interfaces/RefDecoderRegistry.js';
 
 import { InstantiationError } from '../../errors/InstantiationError.js';
 import { Transform } from '../transform/Transform.js';
@@ -9,13 +8,7 @@ import { ValidationErrors } from '../../errors/ValidationErrors.js';
 import { isRecord } from '../data/DataTypes.js';
 import { GraphEngineSupport } from './GraphEngineSupport.js';
 
-export type { GraphLookupType } from '../../types/GraphLookup.js';
-export type { SchemaLookupType } from '../../types/SchemaLookup.js';
-export interface RefDecoderRegistryInterface {
-  readonly 'getGraph': GraphLookupType;
-  readonly 'getSchema': SchemaLookupType;
-  readonly 'resolveSchemaId': (rawId: string) => string;
-}
+export type { RefDecoderRegistryInterface } from '../../interfaces/RefDecoderRegistry.js';
 
 export class RefDecoder {
   private static decodeWithSchema(

@@ -19,7 +19,7 @@ import {
 } from '../../src/index.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { RefDecoder } from '../../src/modules/graph/RefDecoder.js';
-import type { RefDecoderRegistryInterface } from '../../src/modules/graph/RefDecoder.js';
+import type { RefDecoderRegistryInterface } from '../../src/interfaces/RefDecoderRegistry.js';
 
 // ---------------------------------------------------------------------------
 // Minimal registry stubs — used when we drive RefDecoder.run directly

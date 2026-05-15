@@ -34,9 +34,11 @@ import {
 } from '../../types/Restriction.js';
 import { isRecord } from '../data/DataTypes.js';
 import { brand } from '../../types/Brand.js';
-import { RESTRICTIONS_KEY } from '../../constants/COMPOSITION.js';
-
-const CLASS_AXIOM_BODY_SKIP_KEYS = new Set(['$id']);
+import {
+  CLASS_AXIOM_BODY_SKIP_KEYS,
+  EXTEND_SKIP_KEYS,
+  RESTRICTIONS_KEY
+} from '../../constants/COMPOSITION.js';
 
 function makeRestriction(
   kind: RestrictionDescriptorInterface['kind'],
@@ -306,20 +308,11 @@ export class Compose {
       ]
     };
 
-    // Carry descriptive top-level keywords (title, description, examples, etc.)
-    const SKIP_KEYS = new Set([
-      '$id',
-      'jt:config',
-      'properties',
-      'required',
-      'type'
-    ]);
-
     for (const [
       key,
       val
     ] of Object.entries(additions)) {
-      if (!SKIP_KEYS.has(key)) {
+      if (!EXTEND_SKIP_KEYS.has(key)) {
         child[key] = val;
       }
     }

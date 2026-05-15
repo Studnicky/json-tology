@@ -68,7 +68,7 @@ export const GraphEngineScalars = {
     if (format !== undefined) {
       const validator = formatRegistry.get(format);
 
-      if (validator !== undefined && formatAssertions && !Predicates.satisfiesFormat(value, validator)) {
+      if (validator !== undefined && formatAssertions && !validator(value)) {
         errors.push(BaseError.validationError(path, 'format', `must match format "${format}"`, { format }));
       }
     }
@@ -104,7 +104,7 @@ export const GraphEngineScalars = {
     if (format !== undefined) {
       const validator = formatRegistry.get(format);
 
-      if (validator !== undefined && formatAssertions && !Predicates.satisfiesFormat(value, validator)) {
+      if (validator !== undefined && formatAssertions && !validator(value)) {
         errors.push(BaseError.validationError(path, 'format', `must match format "${format}"`, { format }));
       }
     }
