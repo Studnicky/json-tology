@@ -44,6 +44,7 @@ import type {
 } from './types/Registry.js';
 import type { SchemaRefType } from './types/SchemaRef.js';
 import type { SkolemizeFnType } from './types/Skolemize.js';
+import type { NormalizedToQuadsOptionsType } from './types/NormalizedToQuadsOptions.js';
 
 import { RefResolutionLoader } from './modules/registry/RefResolutionLoader.js';
 import { Curie } from './modules/rdf/Curie.js';
@@ -89,11 +90,6 @@ export const BLANK_NODE_IRI_FOR = 'blank-node';
 export interface ToQuadsOptionsType {
   readonly 'graphIRI'?: string | undefined;
   readonly 'iriFor'?: SkolemizeFnType | string | undefined;
-}
-
-interface NormalizedToQuadsOptionsType {
-  readonly 'graphIRI'?: string | undefined;
-  readonly 'iriFor'?: SkolemizeFnType | undefined;
 }
 
 function rootIriOnly(iri: string): SkolemizeFnType {
