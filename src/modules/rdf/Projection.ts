@@ -408,7 +408,7 @@ function projectStructuredRelation(
 // ABox projection
 // ---------------------------------------------------------------------------
 
-export class IriMinter {
+class IriMinter {
   private readonly baseIRI: string;
   private readonly iriFor: SkolemizeFnType | undefined;
   private readonly memo: WeakMap<object, string>;
