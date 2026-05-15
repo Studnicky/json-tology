@@ -68,14 +68,11 @@ export class Composition {
   static validateAnyOf(
     path: string,
     value: unknown,
-    anyOfChecks: CheckFnType[] | undefined
-  ): { 'error': undefined | ValidationErrorType;
-    'valid': boolean } {
+    anyOfChecks: CheckFnType[] | undefined,
+    errors: ValidationErrorType[]
+  ): boolean {
     if (anyOfChecks === undefined) {
-      return {
-        'error': undefined,
-        'valid': true
-      };
+      return true;
     }
 
     const matched = anyOfChecks.some((check) => {
@@ -83,33 +80,26 @@ export class Composition {
     });
 
     if (matched) {
-      return {
-        'error': undefined,
-        'valid': true
-      };
+      return true;
     }
 
-    return {
-      'error': BaseError.validationError(path, 'anyOf', 'must match at least one schema in anyOf'),
-      'valid': false
-    };
+    errors.push(BaseError.validationError(path, 'anyOf', 'must match at least one schema in anyOf'));
+
+    return false;
   }
 
   static validateCustomKeywords(
     path: string,
     value: unknown,
-    customKeywordEntries: CustomKeywordEntryInterface[] | undefined
-  ): { 'errors': ValidationErrorType[];
-    'valid': boolean } {
+    customKeywordEntries: CustomKeywordEntryInterface[] | undefined,
+    errors: ValidationErrorType[]
+  ): boolean {
     if (customKeywordEntries === undefined) {
-      return {
-        'errors': [],
-        'valid': true
-      };
+      return true;
     }
 
     const dataType = Predicates.inferValueType(value);
-    const errors: ValidationErrorType[] = [];
+    const pre = errors.length;
 
     for (const entry of customKeywordEntries) {
       if (entry.allowedTypes !== undefined && !entry.allowedTypes.includes(dataType)) {
@@ -131,10 +121,7 @@ export class Composition {
       }
     }
 
-    return {
-      errors,
-      'valid': errors.length === 0
-    };
+    return errors.length === pre;
   }
 
   static validateDependentSchemas(
@@ -295,33 +282,26 @@ export class Composition {
   static validateNot(
     path: string,
     value: unknown,
-    complementCheck: CheckFnType | undefined
-  ): { 'error': undefined | ValidationErrorType;
-    'valid': boolean } {
+    complementCheck: CheckFnType | undefined,
+    errors: ValidationErrorType[]
+  ): boolean {
     if (complementCheck?.(value) !== true) {
-      return {
-        'error': undefined,
-        'valid': true
-      };
+      return true;
     }
 
-    return {
-      'error': BaseError.validationError(path, 'not', 'must not match schema'),
-      'valid': false
-    };
+    errors.push(BaseError.validationError(path, 'not', 'must not match schema'));
+
+    return false;
   }
 
   static validateOneOf(
     path: string,
     value: unknown,
-    oneOfChecks: CheckFnType[] | undefined
-  ): { 'error': undefined | ValidationErrorType;
-    'valid': boolean } {
+    oneOfChecks: CheckFnType[] | undefined,
+    errors: ValidationErrorType[]
+  ): boolean {
     if (oneOfChecks === undefined) {
-      return {
-        'error': undefined,
-        'valid': true
-      };
+      return true;
     }
 
     let count = 0;
@@ -336,19 +316,15 @@ export class Composition {
     }
 
     if (count === 1) {
-      return {
-        'error': undefined,
-        'valid': true
-      };
+      return true;
     }
 
     const msg = count === 0
       ? 'must match exactly one schema in oneOf (matched none)'
       : 'must match exactly one schema in oneOf (matched multiple)';
 
-    return {
-      'error': BaseError.validationError(path, 'oneOf', msg, { 'matchCount': count }),
-      'valid': false
-    };
+    errors.push(BaseError.validationError(path, 'oneOf', msg, { 'matchCount': count }));
+
+    return false;
   }
 }

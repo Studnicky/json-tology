@@ -3992,109 +3992,119 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   void describe('Arrays — Good/Bad/Ugly', () => {
     void it('validateBounds: within-bounds, minItems, maxItems, uniqueItems', () => {
       // Good: within bounds
+      const e1: ValidationErrorType[] = [];
       const r1 = Arrays.validateBounds('/a', [
         1,
         2,
         3
-      ], 1, 5, false);
+      ], 1, 5, false, e1);
 
-      assert.equal(r1.valid, true);
-      assert.equal(r1.errors.length, 0);
+      assert.equal(r1, true);
+      assert.equal(e1.length, 0);
 
       // Bad: below minItems
-      const r2 = Arrays.validateBounds('/a', [1], 3, undefined, false);
+      const e2: ValidationErrorType[] = [];
+      const r2 = Arrays.validateBounds('/a', [1], 3, undefined, false, e2);
 
-      assert.equal(r2.valid, false);
-      assert.equal(r2.errors.length, 1);
-      assert.equal(r2.errors[0].keyword, 'minItems');
+      assert.equal(r2, false);
+      assert.equal(e2.length, 1);
+      assert.equal(e2[0].keyword, 'minItems');
 
       // Bad: above maxItems
+      const e3: ValidationErrorType[] = [];
       const r3 = Arrays.validateBounds('/a', [
         1,
         2,
         3,
         4
-      ], undefined, 2, false);
+      ], undefined, 2, false, e3);
 
-      assert.equal(r3.valid, false);
-      assert.equal(r3.errors.length, 1);
-      assert.equal(r3.errors[0].keyword, 'maxItems');
+      assert.equal(r3, false);
+      assert.equal(e3.length, 1);
+      assert.equal(e3[0].keyword, 'maxItems');
 
       // Ugly: uniqueItems with duplicates
+      const e4: ValidationErrorType[] = [];
       const r4 = Arrays.validateBounds('/a', [
         1,
         2,
         2,
         3
-      ], undefined, undefined, true);
+      ], undefined, undefined, true, e4);
 
-      assert.equal(r4.valid, false);
-      assert.equal(r4.errors.length, 1);
-      assert.equal(r4.errors[0].keyword, 'uniqueItems');
+      assert.equal(r4, false);
+      assert.equal(e4.length, 1);
+      assert.equal(e4[0].keyword, 'uniqueItems');
 
       // Good: uniqueItems all unique
+      const e5: ValidationErrorType[] = [];
       const r5 = Arrays.validateBounds('/a', [
         1,
         2,
         3
-      ], undefined, undefined, true);
+      ], undefined, undefined, true, e5);
 
-      assert.equal(r5.valid, true);
-      assert.equal(r5.errors.length, 0);
+      assert.equal(r5, true);
+      assert.equal(e5.length, 0);
     });
 
     void it('validateContains: undefined, match, no-match, minContains, maxContains', () => {
       // Good: no containsCheck = valid
+      const e1: ValidationErrorType[] = [];
       const r1 = Arrays.validateContains('/a', [
         1,
         2
-      ]);
+      ], undefined, undefined, undefined, e1);
 
-      assert.equal(r1.valid, true);
-      assert.equal(r1.errors.length, 0);
+      assert.equal(r1, true);
+      assert.equal(e1.length, 0);
 
       // Good: at least one matches
+      const e2: ValidationErrorType[] = [];
       const r2 = Arrays.validateContains('/a', [
         1,
         2,
         3
-      ], passingCheck);
+      ], passingCheck, undefined, undefined, e2);
 
-      assert.equal(r2.valid, true);
-      assert.equal(r2.errors.length, 0);
+      assert.equal(r2, true);
+      assert.equal(e2.length, 0);
 
       // Bad: no item matches
+      const e3: ValidationErrorType[] = [];
       const r3 = Arrays.validateContains('/a', [
         1,
         2,
         3
-      ], failingCheck);
+      ], failingCheck, undefined, undefined, e3);
 
-      assert.equal(r3.valid, false);
-      assert.equal(r3.errors.length, 1);
-      assert.equal(r3.errors[0].keyword, 'contains');
+      assert.equal(r3, false);
+      assert.equal(e3.length, 1);
+      assert.equal(e3[0].keyword, 'contains');
 
       // Bad: below minContains
+      const e4: ValidationErrorType[] = [];
       const r4 = Arrays.validateContains('/a', [
         1,
         2,
         3
-      ], oneMatch, 2);
+      ], oneMatch, 2, undefined, e4);
 
-      assert.equal(r4.valid, false);
-      assert.equal(r4.errors.length, 1);
-      assert.match(r4.errors[0].message, /at least 2/u);
+      assert.equal(r4, false);
+      assert.equal(e4.length, 1);
+      assert.match(e4[0].message, /at least 2/u);
 
       // Bad: above maxContains
+      const e5: ValidationErrorType[] = [];
       const r5 = Arrays.validateContains('/a', [
         1,
         2,
         3
-      ], passingCheck, undefined, 2);
+      ], passingCheck, undefined, 2, e5);
 
-      assert.equal(r5.valid, false);
-      assert.equal(r5.errors.length, 1);
-      assert.match(r5.errors[0].message, /at most 2/u);
+      assert.equal(r5, false);
+      assert.equal(e5.length, 1);
+      assert.match(e5[0].message, /at most 2/u);
     });
 
     void it('validateItems: undefined validator, all-pass, earlyExit, collect-errors, prefix-skip', () => {
@@ -4362,51 +4372,57 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 
     void it('validateRequired + validatePropertyCount + validatePropertyNames: table-driven', () => {
       // validateRequired
-      const rr1 = Objects.validateRequired('', { 'a': 1 });
+      const err1: ValidationErrorType[] = [];
+      const rr1 = Objects.validateRequired('', { 'a': 1 }, undefined, err1);
 
-      assert.equal(rr1.valid, true);
-      assert.equal(rr1.errors.length, 0);
+      assert.equal(rr1, true);
+      assert.equal(err1.length, 0);
 
+      const err2: ValidationErrorType[] = [];
       const rr2 = Objects.validateRequired('', {
         'a': 1,
         'b': 2
       }, [
         'a',
         'b'
-      ]);
+      ], err2);
 
-      assert.equal(rr2.valid, true);
+      assert.equal(rr2, true);
 
+      const err3: ValidationErrorType[] = [];
       const rr3 = Objects.validateRequired('/root', { 'a': 1 }, [
         'a',
         'b'
-      ]);
+      ], err3);
 
-      assert.equal(rr3.valid, false);
-      assert.equal(rr3.errors.length, 1);
+      assert.equal(rr3, false);
+      assert.equal(err3.length, 1);
 
       // validatePropertyCount
+      const erc1: ValidationErrorType[] = [];
       const rc1 = Objects.validatePropertyCount('', {
         'a': 1,
         'b': 2
-      }, 1, 3);
+      }, 1, 3, erc1);
 
-      assert.equal(rc1.valid, true);
-      assert.equal(rc1.errors.length, 0);
+      assert.equal(rc1, true);
+      assert.equal(erc1.length, 0);
 
-      const rc2 = Objects.validatePropertyCount('', { 'a': 1 }, 2);
+      const erc2: ValidationErrorType[] = [];
+      const rc2 = Objects.validatePropertyCount('', { 'a': 1 }, 2, undefined, erc2);
 
-      assert.equal(rc2.valid, false);
-      assert.equal(rc2.errors.length, 1);
+      assert.equal(rc2, false);
+      assert.equal(erc2.length, 1);
 
+      const erc3: ValidationErrorType[] = [];
       const rc3 = Objects.validatePropertyCount('', {
         'a': 1,
         'b': 2,
         'c': 3
-      }, undefined, 2);
+      }, undefined, 2, erc3);
 
-      assert.equal(rc3.valid, false);
-      assert.equal(rc3.errors.length, 1);
+      assert.equal(rc3, false);
+      assert.equal(erc3.length, 1);
 
       // validatePropertyNames
       const e1: ValidationErrorType[] = [];
@@ -4502,97 +4518,151 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       ]);
 
       // validateConst
-      const rc1 = Scalars.validateConst('/x', 'anything', false);
+      const ec1: ValidationErrorType[] = [];
+      const rc1 = Scalars.validateConst('/x', 'anything', false, undefined, ec1);
 
-      assert.equal(rc1.valid, true);
-      assert.equal(rc1.errors.length, 0);
+      assert.equal(rc1, true);
+      assert.equal(ec1.length, 0);
 
-      const rc2 = Scalars.validateConst('/x', 42, true, 42);
+      const ec2: ValidationErrorType[] = [];
+      const rc2 = Scalars.validateConst('/x', 42, true, 42, ec2);
 
-      assert.equal(rc2.valid, true);
-      assert.equal(rc2.errors.length, 0);
+      assert.equal(rc2, true);
+      assert.equal(ec2.length, 0);
 
-      const rc3 = Scalars.validateConst('/x', 'wrong', true, 'expected');
+      const ec3: ValidationErrorType[] = [];
+      const rc3 = Scalars.validateConst('/x', 'wrong', true, 'expected', ec3);
 
-      assert.equal(rc3.valid, false);
-      assert.equal(rc3.errors.length, 1);
-      assert.equal(rc3.errors[0].keyword, 'const');
-      assert.equal(rc3.errors[0].path, '/x');
+      assert.equal(rc3, false);
+      assert.equal(ec3.length, 1);
+      assert.equal(ec3[0].keyword, 'const');
+      assert.equal(ec3[0].path, '/x');
 
       // validateEnum
-      assert.equal(Scalars.validateEnum('/x', 'anything').valid, true);
-      assert.equal(Scalars.validateEnum('/x', 'b', enumVals, enumSet).valid, true);
-      const re3 = Scalars.validateEnum('/x', 'z', enumVals, enumSet);
+      const ee1: ValidationErrorType[] = [];
 
-      assert.equal(re3.valid, false);
-      assert.equal(re3.errors.length, 1);
-      assert.equal(re3.errors[0].keyword, 'enum');
-      assert.equal(re3.errors[0].path, '/x');
+      assert.equal(Scalars.validateEnum('/x', 'anything', undefined, undefined, ee1), true);
+
+      const ee2: ValidationErrorType[] = [];
+
+      assert.equal(Scalars.validateEnum('/x', 'b', enumVals, enumSet, ee2), true);
+
+      const ee3: ValidationErrorType[] = [];
+      const re3 = Scalars.validateEnum('/x', 'z', enumVals, enumSet, ee3);
+
+      assert.equal(re3, false);
+      assert.equal(ee3.length, 1);
+      assert.equal(ee3[0].keyword, 'enum');
+      assert.equal(ee3[0].path, '/x');
 
       // validateFormat
-      assert.equal(Scalars.validateFormat('/x', 'anything').valid, true);
-      assert.equal(Scalars.validateFormat('/x', 'a@b.com', 'email', emailValidator).valid, true);
-      const rf3 = Scalars.validateFormat('/x', 'not-an-email', 'email', emailValidator);
+      const ef1: ValidationErrorType[] = [];
 
-      assert.equal(rf3.valid, false);
-      assert.equal(rf3.errors.length, 1);
-      assert.equal(rf3.errors[0].keyword, 'format');
-      assert.match(rf3.errors[0].message, /email/u);
+      assert.equal(Scalars.validateFormat('/x', 'anything', undefined, undefined, ef1), true);
+
+      const ef2: ValidationErrorType[] = [];
+
+      assert.equal(Scalars.validateFormat('/x', 'a@b.com', 'email', emailValidator, ef2), true);
+
+      const ef3: ValidationErrorType[] = [];
+      const rf3 = Scalars.validateFormat('/x', 'not-an-email', 'email', emailValidator, ef3);
+
+      assert.equal(rf3, false);
+      assert.equal(ef3.length, 1);
+      assert.equal(ef3[0].keyword, 'format');
+      assert.match(ef3[0].message, /email/u);
     });
 
     void it('validateString + validateNumber + validateType: table-driven', () => {
       // validateString
-      const rs1 = Scalars.validateString('/x', 'hello', 2, 10);
+      const es1: ValidationErrorType[] = [];
+      const rs1 = Scalars.validateString('/x', 'hello', 2, 10, undefined, undefined, es1);
 
-      assert.equal(rs1.valid, true);
-      assert.equal(rs1.errors.length, 0);
+      assert.equal(rs1, true);
+      assert.equal(es1.length, 0);
 
-      const rs2 = Scalars.validateString('/x', 'hi', 5);
+      const es2: ValidationErrorType[] = [];
+      const rs2 = Scalars.validateString('/x', 'hi', 5, undefined, undefined, undefined, es2);
 
-      assert.equal(rs2.valid, false);
-      assert.equal(rs2.errors[0].keyword, 'minLength');
+      assert.equal(rs2, false);
+      assert.equal(es2[0].keyword, 'minLength');
 
-      const rs3 = Scalars.validateString('/x', 'hello world', undefined, 5);
+      const es3: ValidationErrorType[] = [];
+      const rs3 = Scalars.validateString('/x', 'hello world', undefined, 5, undefined, undefined, es3);
 
-      assert.equal(rs3.valid, false);
-      assert.equal(rs3.errors[0].keyword, 'maxLength');
+      assert.equal(rs3, false);
+      assert.equal(es3[0].keyword, 'maxLength');
 
-      const rs4 = Scalars.validateString('/x', 'abc123', undefined, undefined, /^[a-z]+\d+$/u, '^[a-z]+\\d+$');
+      const es4: ValidationErrorType[] = [];
+      const rs4 = Scalars.validateString('/x', 'abc123', undefined, undefined, /^[a-z]+\d+$/u, '^[a-z]+\\d+$', es4);
 
-      assert.equal(rs4.valid, true);
+      assert.equal(rs4, true);
 
-      const rs5 = Scalars.validateString('/x', '!!!', undefined, undefined, /^[a-z]+$/u, '^[a-z]+$');
+      const es5: ValidationErrorType[] = [];
+      const rs5 = Scalars.validateString('/x', '!!!', undefined, undefined, /^[a-z]+$/u, '^[a-z]+$', es5);
 
-      assert.equal(rs5.valid, false);
-      assert.equal(rs5.errors[0].keyword, 'pattern');
+      assert.equal(rs5, false);
+      assert.equal(es5[0].keyword, 'pattern');
 
-      assert.equal(Scalars.validateString('/x', 'anything').valid, true);
+      const es6: ValidationErrorType[] = [];
+
+      assert.equal(Scalars.validateString('/x', 'anything', undefined, undefined, undefined, undefined, es6), true);
 
       // validateNumber
-      assert.equal(Scalars.validateNumber('/x', 42).valid, true);
-      assert.equal(Scalars.validateNumber('/x', 3, 5).errors[0].keyword, 'minimum');
-      assert.equal(Scalars.validateNumber('/x', 20, undefined, 10).errors[0].keyword, 'maximum');
-      assert.equal(Scalars.validateNumber('/x', 5, undefined, undefined, 5).errors[0].keyword, 'exclusiveMinimum');
-      assert.equal(Scalars.validateNumber('/x', 10, undefined, undefined, undefined, 10).errors[0].keyword, 'exclusiveMaximum');
-      const rn6 = Scalars.validateNumber('/x', 7, undefined, undefined, undefined, undefined, 3);
+      const en1: ValidationErrorType[] = [];
 
-      assert.equal(rn6.valid, false);
-      assert.equal(rn6.errors.length, 1);
-      assert.equal(rn6.errors[0].keyword, 'multipleOf');
+      assert.equal(Scalars.validateNumber('/x', 42, undefined, undefined, undefined, undefined, undefined, en1), true);
+
+      const en2: ValidationErrorType[] = [];
+
+      Scalars.validateNumber('/x', 3, 5, undefined, undefined, undefined, undefined, en2);
+      assert.equal(en2[0].keyword, 'minimum');
+
+      const en3: ValidationErrorType[] = [];
+
+      Scalars.validateNumber('/x', 20, undefined, 10, undefined, undefined, undefined, en3);
+      assert.equal(en3[0].keyword, 'maximum');
+
+      const en4: ValidationErrorType[] = [];
+
+      Scalars.validateNumber('/x', 5, undefined, undefined, 5, undefined, undefined, en4);
+      assert.equal(en4[0].keyword, 'exclusiveMinimum');
+
+      const en5: ValidationErrorType[] = [];
+
+      Scalars.validateNumber('/x', 10, undefined, undefined, undefined, 10, undefined, en5);
+      assert.equal(en5[0].keyword, 'exclusiveMaximum');
+
+      const en6: ValidationErrorType[] = [];
+      const rn6 = Scalars.validateNumber('/x', 7, undefined, undefined, undefined, undefined, 3, en6);
+
+      assert.equal(rn6, false);
+      assert.equal(en6.length, 1);
+      assert.equal(en6[0].keyword, 'multipleOf');
 
       // validateType
-      assert.equal(Scalars.validateType('/x', [], 'anything').valid, true);
-      assert.equal(Scalars.validateType('/x', ['string'], 'hello').valid, true);
+      const et1: ValidationErrorType[] = [];
+
+      assert.equal(Scalars.validateType('/x', [], 'anything', et1), true);
+
+      const et2: ValidationErrorType[] = [];
+
+      assert.equal(Scalars.validateType('/x', ['string'], 'hello', et2), true);
+
+      const et3: ValidationErrorType[] = [];
+
       assert.equal(Scalars.validateType('/x', [
         'string',
         'number'
-      ], 42).valid, true);
-      const rt4 = Scalars.validateType('/x', ['string'], 42);
+      ], 42, et3), true);
 
-      assert.equal(rt4.valid, false);
-      assert.equal(rt4.errors.length, 1);
-      assert.equal(rt4.errors[0].keyword, 'type');
-      assert.equal(rt4.errors[0].path, '/x');
+      const et4: ValidationErrorType[] = [];
+      const rt4 = Scalars.validateType('/x', ['string'], 42, et4);
+
+      assert.equal(rt4, false);
+      assert.equal(et4.length, 1);
+      assert.equal(et4[0].keyword, 'type');
+      assert.equal(et4[0].path, '/x');
     });
   });
 }
@@ -4682,36 +4752,63 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 
     void it('validateAnyOf + validateOneOf + validateNot: table-driven', () => {
       // anyOf
-      assert.equal(Composition.validateAnyOf('', 'test').valid, true);
+      const ea1: ValidationErrorType[] = [];
+
+      assert.equal(Composition.validateAnyOf('', 'test', undefined, ea1), true);
+
+      const ea2: ValidationErrorType[] = [];
+
       assert.equal(Composition.validateAnyOf('', 'test', [
         alwaysFalse,
         alwaysTrue
-      ]).valid, true);
+      ], ea2), true);
+
+      const ea3: ValidationErrorType[] = [];
+
       assert.equal(Composition.validateAnyOf('/root', 'test', [
         alwaysFalse,
         alwaysFalse
-      ]).valid, false);
+      ], ea3), false);
 
       // oneOf
-      assert.equal(Composition.validateOneOf('', 'test').valid, true);
+      const eo1: ValidationErrorType[] = [];
+
+      assert.equal(Composition.validateOneOf('', 'test', undefined, eo1), true);
+
+      const eo2: ValidationErrorType[] = [];
+
       assert.equal(Composition.validateOneOf('', 'test', [
         alwaysFalse,
         alwaysTrue,
         alwaysFalse
-      ]).valid, true);
+      ], eo2), true);
+
+      const eo3: ValidationErrorType[] = [];
+
       assert.equal(Composition.validateOneOf('/root', 'test', [
         alwaysFalse,
         alwaysFalse
-      ]).valid, false);
+      ], eo3), false);
+
+      const eo4: ValidationErrorType[] = [];
+
       assert.equal(Composition.validateOneOf('/root', 'test', [
         alwaysTrue,
         alwaysTrue
-      ]).valid, false);
+      ], eo4), false);
 
       // not
-      assert.equal(Composition.validateNot('', 'test').valid, true);
-      assert.equal(Composition.validateNot('', 'test', alwaysFalse).valid, true);
-      assert.equal(Composition.validateNot('/root', 'test', alwaysTrue).valid, false);
+      const en1: ValidationErrorType[] = [];
+
+      assert.equal(Composition.validateNot('', 'test', undefined, en1), true);
+
+      const en2: ValidationErrorType[] = [];
+
+      assert.equal(Composition.validateNot('', 'test', alwaysFalse, en2), true);
+
+      const en3: ValidationErrorType[] = [];
+
+      assert.equal(Composition.validateNot('/root', 'test', alwaysTrue, en3), false);
     });
 
     void it('validateIfThenElse + validateDependentSchemas + validateCustomKeywords', () => {
@@ -4763,11 +4860,13 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       assert.equal(rds3.valid, true);
 
       // validateCustomKeywords
-      const rck1 = Composition.validateCustomKeywords('', 'test');
+      const eck1: ValidationErrorType[] = [];
+      const rck1 = Composition.validateCustomKeywords('', 'test', undefined, eck1);
 
-      assert.equal(rck1.valid, true);
-      assert.equal(rck1.errors.length, 0);
+      assert.equal(rck1, true);
+      assert.equal(eck1.length, 0);
 
+      const eck2: ValidationErrorType[] = [];
       const rck2 = Composition.validateCustomKeywords('', 42, [{
         'allowedTypes': undefined,
         'keyword': 'x-even',
@@ -4775,11 +4874,12 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         'validate': () => {
           return true;
         }
-      }]);
+      }], eck2);
 
-      assert.equal(rck2.valid, true);
-      assert.equal(rck2.errors.length, 0);
+      assert.equal(rck2, true);
+      assert.equal(eck2.length, 0);
 
+      const eck3: ValidationErrorType[] = [];
       const rck3 = Composition.validateCustomKeywords('/root', 42, [{
         'allowedTypes': undefined,
         'keyword': 'x-fail',
@@ -4787,10 +4887,10 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         'validate': () => {
           return false;
         }
-      }]);
+      }], eck3);
 
-      assert.equal(rck3.valid, false);
-      assert.equal(rck3.errors.length, 1);
+      assert.equal(rck3, false);
+      assert.equal(eck3.length, 1);
     });
   });
 }

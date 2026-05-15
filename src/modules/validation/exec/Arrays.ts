@@ -1,4 +1,3 @@
-import type { ArrayResultInterface } from '../../../interfaces/ArrayResult.js';
 import type { ValidationErrorType } from '../../../types/Validation.js';
 import type {
   CheckFnType, ValidateWithErrorsFnType
@@ -12,9 +11,10 @@ export class Arrays {
     arr: unknown[],
     minItems: number | undefined,
     maxItems: number | undefined,
-    uniqueItems: boolean
-  ): ArrayResultInterface {
-    const errors: ValidationErrorType[] = [];
+    uniqueItems: boolean,
+    errors: ValidationErrorType[]
+  ): boolean {
+    const pre = errors.length;
 
     if (minItems !== undefined && arr.length < minItems) {
       errors.push(BaseError.validationError(path, 'minItems', `must have at least ${minItems} items`));
@@ -26,11 +26,7 @@ export class Arrays {
       errors.push(BaseError.validationError(path, 'uniqueItems', 'must have unique items'));
     }
 
-    return {
-      errors,
-      'valid': errors.length === 0,
-      'value': arr
-    };
+    return errors.length === pre;
   }
 
   static validateContains(
@@ -38,14 +34,11 @@ export class Arrays {
     arr: unknown[],
     containsCheck: CheckFnType | undefined,
     minContains: number | undefined,
-    maxContains: number | undefined
-  ): ArrayResultInterface {
+    maxContains: number | undefined,
+    errors: ValidationErrorType[]
+  ): boolean {
     if (containsCheck === undefined) {
-      return {
-        'errors': [],
-        'valid': true,
-        'value': arr
-      };
+      return true;
     }
 
     let count = 0;
@@ -56,7 +49,7 @@ export class Arrays {
       }
     }
 
-    const errors: ValidationErrorType[] = [];
+    const pre = errors.length;
 
     if (minContains !== undefined && count < minContains) {
       errors.push(BaseError.validationError(path, 'contains', `must contain at least ${minContains} matching items`));
@@ -66,11 +59,7 @@ export class Arrays {
       errors.push(BaseError.validationError(path, 'contains', 'must contain at least one matching item'));
     }
 
-    return {
-      errors,
-      'valid': errors.length === 0,
-      'value': arr
-    };
+    return errors.length === pre;
   }
 
   static validateItems(

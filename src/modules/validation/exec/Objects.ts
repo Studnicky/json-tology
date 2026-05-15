@@ -1,4 +1,3 @@
-import type { ObjectResultInterface } from '../../../interfaces/ObjectResult.js';
 import type { ValidationErrorType } from '../../../types/Validation.js';
 import type { ValidateWithErrorsFnType } from '../../../types/Validation.js';
 import { BaseError } from '../../../errors/BaseError.js';
@@ -237,18 +236,15 @@ export class Objects {
     obj: Record<string, unknown>,
     minProperties: number | undefined,
     maxProperties: number | undefined,
+    errors: ValidationErrorType[],
     precomputedCount?: number
-  ): ObjectResultInterface {
+  ): boolean {
     if (minProperties === undefined && maxProperties === undefined) {
-      return {
-        'errors': [],
-        'valid': true,
-        'value': obj
-      };
+      return true;
     }
 
     const count = precomputedCount ?? Object.keys(obj).length;
-    const errors: ValidationErrorType[] = [];
+    const pre = errors.length;
 
     if (minProperties !== undefined && count < minProperties) {
       errors.push(BaseError.validationError(path, 'minProperties', `must have at least ${minProperties} properties`));
@@ -257,11 +253,7 @@ export class Objects {
       errors.push(BaseError.validationError(path, 'maxProperties', `must have at most ${maxProperties} properties`));
     }
 
-    return {
-      errors,
-      'valid': errors.length === 0,
-      'value': obj
-    };
+    return errors.length === pre;
   }
 
   static validatePropertyNames(
@@ -305,17 +297,14 @@ export class Objects {
   static validateRequired(
     path: string,
     obj: Record<string, unknown>,
-    required: string[] | undefined
-  ): ObjectResultInterface {
+    required: string[] | undefined,
+    errors: ValidationErrorType[]
+  ): boolean {
     if (required === undefined) {
-      return {
-        'errors': [],
-        'valid': true,
-        'value': obj
-      };
+      return true;
     }
 
-    const errors: ValidationErrorType[] = [];
+    const pre = errors.length;
 
     for (const key of required) {
       if (!(key in obj)) {
@@ -323,11 +312,7 @@ export class Objects {
       }
     }
 
-    return {
-      errors,
-      'valid': errors.length === 0,
-      'value': obj
-    };
+    return errors.length === pre;
   }
 
   private static validateUnknownProperty(
