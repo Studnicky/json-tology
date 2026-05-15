@@ -254,6 +254,24 @@ function isStructurallyCompatible(
   return true;
 }
 
+const PREDICATE_INDEX_THRESHOLD = 3;
+
+function buildPredicateIndex(subjectQuads: QuadInterface[]): Map<string, QuadInterface[]> {
+  const index = new Map<string, QuadInterface[]>();
+
+  for (const quad of subjectQuads) {
+    let list = index.get(quad.predicate);
+
+    if (list === undefined) {
+      list = [];
+      index.set(quad.predicate, list);
+    }
+    list.push(quad);
+  }
+
+  return index;
+}
+
 /**
  * Find quads matching a schema property.
  *
@@ -263,9 +281,36 @@ function isStructurallyCompatible(
 function findPropertyQuads(
   subjectQuads: QuadInterface[],
   classId: string,
-  propName: string
+  propName: string,
+  index: Map<string, QuadInterface[]> | undefined
 ): QuadInterface[] {
   const exact = `${classId}#${propName}`;
+
+  if (index !== undefined) {
+    const byExact = index.get(exact);
+
+    if (byExact !== undefined && byExact.length > 0) {
+      return byExact;
+    }
+
+    const matches: QuadInterface[] = [];
+
+    for (const [
+      predicate,
+      quads
+    ] of index) {
+      const hash = predicate.lastIndexOf('#');
+
+      if (hash !== -1 && predicate.slice(hash + 1) === propName) {
+        for (const quad of quads) {
+          matches.push(quad);
+        }
+      }
+    }
+
+    return matches;
+  }
+
   const byExact = subjectQuads.filter((quad) => {
     return quad.predicate === exact;
   });
@@ -307,12 +352,15 @@ function liftSubject(
 ): Record<string, unknown> {
   const sem = graph.semantics(node);
   const obj: Record<string, unknown> = {};
+  const index = sem.properties.size > PREDICATE_INDEX_THRESHOLD
+    ? buildPredicateIndex(subjectQuads)
+    : undefined;
 
   for (const [
     propName,
     propNode
   ] of sem.properties) {
-    const matching = findPropertyQuads(subjectQuads, classId, propName);
+    const matching = findPropertyQuads(subjectQuads, classId, propName, index);
 
     if (matching.length === 0) {
       continue;
