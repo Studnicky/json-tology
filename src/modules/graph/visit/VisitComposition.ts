@@ -9,6 +9,10 @@ import type { InternalExecutionResultInterface } from '../../../interfaces/Inter
 import type { VisitContextInterface } from '../../../interfaces/VisitContext.js';
 import { GraphEngineSupport } from '../GraphEngineSupport.js';
 
+interface VariantEntry { 'node': SchemaGraphNodeInterface;
+  'sem': ReturnType<SchemaGraphInterface['semantics']> }
+const oneOfVariantCache = new WeakMap<SchemaGraphNodeInterface[], VariantEntry[]>();
+
 export class VisitComposition {
   static allOf(
     context: VisitContextInterface,
@@ -59,20 +63,33 @@ export class VisitComposition {
     visitNode: VisitFnType,
     invalid: (error: ValidationErrorType) => InternalExecutionResultInterface
   ): InternalExecutionResultInterface | undefined {
-    const successfulResults: InternalExecutionResultInterface[] = [];
-
-    for (const childNode of anyOf) {
-      const candidate = visitNode(context, childNode, graph, GraphEngineSupport.cloneCandidate(acc.value), path, {
+    const collectErrorsOptions: EffectiveOptionsType = options.collectErrors
+      ? options
+      : {
         ...options,
         'collectErrors': true
-      }, refStack, dynScope, depth + 1);
+      };
+    let successfulResults: InternalExecutionResultInterface[] | undefined;
+
+    for (const childNode of anyOf) {
+      const candidate = visitNode(
+        context,
+        childNode,
+        graph,
+        GraphEngineSupport.cloneCandidate(acc.value),
+        path,
+        collectErrorsOptions,
+        refStack,
+        dynScope,
+        depth + 1
+      );
 
       if (candidate.valid) {
-        successfulResults.push(candidate);
+        (successfulResults ??= []).push(candidate);
       }
     }
 
-    if (successfulResults.length === 0) {
+    if (successfulResults === undefined) {
       return invalid(context.createError(path, 'anyOf', 'must match at least one schema'));
     }
 
@@ -108,10 +125,23 @@ export class VisitComposition {
     visitNode: VisitFnType,
     pushErrors: (errors: ValidationErrorType[]) => void
   ): InternalExecutionResultInterface | undefined {
-    const condition = visitNode(context, ifNode, graph, GraphEngineSupport.cloneCandidate(acc.value), path, {
-      ...options,
-      'collectErrors': true
-    }, refStack, dynScope, depth + 1);
+    const collectErrorsOptions: EffectiveOptionsType = options.collectErrors
+      ? options
+      : {
+        ...options,
+        'collectErrors': true
+      };
+    const condition = visitNode(
+      context,
+      ifNode,
+      graph,
+      GraphEngineSupport.cloneCandidate(acc.value),
+      path,
+      collectErrorsOptions,
+      refStack,
+      dynScope,
+      depth + 1
+    );
     const branchNode = condition.valid ? thenNode : elseNode;
 
     if (condition.evaluatedProperties !== undefined) {
@@ -161,10 +191,23 @@ export class VisitComposition {
     visitNode: VisitFnType,
     invalid: (error: ValidationErrorType) => InternalExecutionResultInterface
   ): InternalExecutionResultInterface | undefined {
-    const notResult = visitNode(context, complementNode, graph, GraphEngineSupport.cloneCandidate(workingValue), path, {
-      ...options,
-      'collectErrors': true
-    }, refStack, dynScope, depth + 1);
+    const collectErrorsOptions: EffectiveOptionsType = options.collectErrors
+      ? options
+      : {
+        ...options,
+        'collectErrors': true
+      };
+    const notResult = visitNode(
+      context,
+      complementNode,
+      graph,
+      GraphEngineSupport.cloneCandidate(workingValue),
+      path,
+      collectErrorsOptions,
+      refStack,
+      dynScope,
+      depth + 1
+    );
 
     if (notResult.valid) {
       return invalid(context.createError(path, 'not', 'must not match schema'));
@@ -191,6 +234,12 @@ export class VisitComposition {
     let matches = 0;
     let matchedResult: InternalExecutionResultInterface | undefined;
 
+    const collectErrorsOptions: EffectiveOptionsType = options.collectErrors
+      ? options
+      : {
+        ...options,
+        'collectErrors': true
+      };
     const discProp = discriminatorPropertyName;
     let discriminatorHandled = false;
 
@@ -204,12 +253,17 @@ export class VisitComposition {
       const discValue = dataObj[discProp];
 
       if (discValue !== undefined && typeof discValue === 'string') {
-        const variantCache = oneOf.map((child) => {
-          return {
-            'node': child,
-            'sem': graph.semantics(child)
-          };
-        });
+        let variantCache = oneOfVariantCache.get(oneOf);
+
+        if (variantCache === undefined) {
+          variantCache = oneOf.map((child) => {
+            return {
+              'node': child,
+              'sem': graph.semantics(child)
+            };
+          });
+          oneOfVariantCache.set(oneOf, variantCache);
+        }
 
         const mapping = discriminatorMapping;
 
@@ -219,10 +273,17 @@ export class VisitComposition {
           for (const variant of variantCache) {
             if (variant.sem.ref === targetRef) {
               const clone = GraphEngineSupport.cloneCandidate(acc.value);
-              const candidate = visitNode(context, variant.node, graph, clone, path, {
-                ...options,
-                'collectErrors': true
-              }, refStack, dynScope, depth + 1);
+              const candidate = visitNode(
+                context,
+                variant.node,
+                graph,
+                clone,
+                path,
+                collectErrorsOptions,
+                refStack,
+                dynScope,
+                depth + 1
+              );
 
               if (candidate.valid) {
                 matches = 1;
@@ -243,10 +304,17 @@ export class VisitComposition {
 
               if (discPropSemantics.hasConst && discPropSemantics.constValue === discValue) {
                 const clone = GraphEngineSupport.cloneCandidate(acc.value);
-                const candidate = visitNode(context, variant.node, graph, clone, path, {
-                  ...options,
-                  'collectErrors': true
-                }, refStack, dynScope, depth + 1);
+                const candidate = visitNode(
+                  context,
+                  variant.node,
+                  graph,
+                  clone,
+                  path,
+                  collectErrorsOptions,
+                  refStack,
+                  dynScope,
+                  depth + 1
+                );
 
                 if (candidate.valid) {
                   matches = 1;
@@ -263,10 +331,17 @@ export class VisitComposition {
 
     if (!discriminatorHandled) {
       for (const oneOfChild of oneOf) {
-        const candidate = visitNode(context, oneOfChild, graph, GraphEngineSupport.cloneCandidate(acc.value), path, {
-          ...options,
-          'collectErrors': true
-        }, refStack, dynScope, depth + 1);
+        const candidate = visitNode(
+          context,
+          oneOfChild,
+          graph,
+          GraphEngineSupport.cloneCandidate(acc.value),
+          path,
+          collectErrorsOptions,
+          refStack,
+          dynScope,
+          depth + 1
+        );
 
         if (candidate.valid) {
           matches++;

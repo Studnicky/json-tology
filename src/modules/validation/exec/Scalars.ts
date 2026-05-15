@@ -50,8 +50,16 @@ export class Scalars {
     formatValidator: ((v: unknown) => boolean) | undefined,
     errors: ValidationErrorType[]
   ): boolean {
-    if (formatValidator === undefined || Predicates.satisfiesFormat(value, formatValidator)) {
+    if (formatValidator === undefined) {
       return true;
+    }
+
+    try {
+      if (formatValidator(value)) {
+        return true;
+      }
+    } catch {
+      // user-supplied validator threw — treat as format failure
     }
 
     errors.push(BaseError.validationError(path, 'format', `must match format "${format}"`));

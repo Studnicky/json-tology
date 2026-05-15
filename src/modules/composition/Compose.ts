@@ -38,6 +38,14 @@ import { RESTRICTIONS_KEY } from '../../constants/COMPOSITION.js';
 
 const CLASS_AXIOM_BODY_SKIP_KEYS = new Set(['$id']);
 
+const EXTEND_SKIP_KEYS = new Set([
+  '$id',
+  'jt:config',
+  'properties',
+  'required',
+  'type'
+]);
+
 function makeRestriction(
   kind: RestrictionDescriptorInterface['kind'],
   onProperty: string,
@@ -306,20 +314,11 @@ export class Compose {
       ]
     };
 
-    // Carry descriptive top-level keywords (title, description, examples, etc.)
-    const SKIP_KEYS = new Set([
-      '$id',
-      'jt:config',
-      'properties',
-      'required',
-      'type'
-    ]);
-
     for (const [
       key,
       val
     ] of Object.entries(additions)) {
-      if (!SKIP_KEYS.has(key)) {
+      if (!EXTEND_SKIP_KEYS.has(key)) {
         child[key] = val;
       }
     }

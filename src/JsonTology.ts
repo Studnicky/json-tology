@@ -746,10 +746,17 @@ export class JsonTology<TMap = Record<never, never>> {
     value: unknown,
     options?: Omit<DumpOptionsInterface, 'mode'>
   ): string {
-    return JSON.stringify(this.dump(schema as (keyof TMap & string), value as TMap[keyof TMap & string], {
-      ...options,
-      'mode': 'json'
-    }));
+    if ((schema as unknown) === null || (schema as unknown) === undefined) {
+      throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
+    }
+
+    const schemaId = typeof schema === 'string' ? schema : schema.$id;
+
+    if (typeof schema !== 'string') {
+      this.registry.set(schema);
+    }
+
+    return Dumper.dumpJson(this.registry, schemaId, value, options);
   }
   /**
    * Encodes a decoded value back to its wire representation using the schema's registered {@link Transform}.

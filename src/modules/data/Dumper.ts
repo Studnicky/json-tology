@@ -7,6 +7,39 @@ import { Transform } from '../transform/Transform.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
 
+const graphTransformCache = new WeakMap<SchemaGraphInterface, boolean>();
+
+function graphHasTransforms(graph: SchemaGraphInterface): boolean {
+  const cached = graphTransformCache.get(graph);
+
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const result = graph.nodes().some((n) => {
+    const s = n.schema;
+
+    return isRecord(s) && Transform.getDecoder(s) !== undefined;
+  });
+
+  graphTransformCache.set(graph, result);
+
+  return result;
+}
+
+function hasActiveFilterOptions(options: Omit<DumpOptionsInterface, 'mode'> | undefined): boolean {
+  if (options === undefined) {
+    return false;
+  }
+
+  return (
+    (options.exclude !== undefined && options.exclude.length > 0)
+    || options.excludeDefaults === true
+    || options.excludeUnset === true
+    || (options.include !== undefined && options.include.length > 0)
+  );
+}
+
 /**
  * Dumper — serialize a validated JS value back to its wire form.
  *
@@ -93,6 +126,41 @@ export class Dumper {
     });
   }
 
+  /**
+   * Serialize `value` to a JSON string according to the schema graph.
+   *
+   * Fast path: when the graph has no transform decoders and no active filter
+   * options, delegates directly to `JSON.stringify` without walking the graph.
+   */
+  public static dumpJson(
+    registry: SchemaRegistryInterface,
+    schemaId: string,
+    value: unknown,
+    options?: Omit<DumpOptionsInterface, 'mode'>
+  ): string {
+    const entry = registry.graphEntry(schemaId);
+
+    if (entry === undefined) {
+      throw new GraphError('REF_UNRESOLVED', `Schema not registered: ${schemaId}`, schemaId);
+    }
+
+    if (!graphHasTransforms(entry.graph) && !hasActiveFilterOptions(options)) {
+      return JSON.stringify(value);
+    }
+
+    return JSON.stringify(Dumper.dumpNode(
+      registry,
+      entry.graph,
+      entry.graph.rootNode,
+      entry.schema,
+      value,
+      {
+        ...options,
+        'mode': 'json'
+      }
+    ));
+  }
+
   private static dumpNode(
     registry: SchemaRegistryInterface,
     graph: SchemaGraphInterface,
@@ -144,8 +212,8 @@ export class Dumper {
 
     const out: Record<string, unknown> = {};
 
-    // Collect keys that are known in the schema (to dump with schema context)
-    const knownKeys = new Set<string>(semantics.properties.keys());
+    // Only allocated when excludeDefaults is active — used for O(1) membership test
+    const knownKeys = excludeDefaults ? new Set<string>(semantics.properties.keys()) : undefined;
 
     // Determine effective property set to output
     const allValueKeys = Object.keys(value);
@@ -167,7 +235,7 @@ export class Dumper {
         continue;
       }
 
-      if (excludeDefaults && knownKeys.has(key)) {
+      if (excludeDefaults && knownKeys?.has(key) === true) {
         const propNode = semantics.properties.get(key);
 
         if (propNode !== undefined) {

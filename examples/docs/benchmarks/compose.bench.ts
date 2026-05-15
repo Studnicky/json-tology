@@ -160,47 +160,41 @@ export function runComposeBench(): BenchResult[] {
     BaseBookZod.extend({ 'pages': z.number().int() });
   }));
 
-  section('compose — extend + first validate (build then check one value)');
+  section('compose — extend + validate (warm, build outside loop)');
 
-  let counter = 0;
+  // warm: register once outside the timing loop — measures steady-state validate, not registration + compile
+  const ExtBookJt = Compose.extend(
+    BaseBookJt,
+    { 'properties': { 'pages': { 'type': 'integer' } } } as const,
+    'urn:bench:ExtBookJt'
+  );
+  const extReg = new SchemaRegistry();
+
+  extReg.set(BaseBookJt);
+  extReg.set(ExtBookJt);
+
+  const extBookId = (ExtBookJt as { '$id': string }).$id;
+  const extBookValid = {
+    ...validBook,
+    'pages': 200
+  };
+
+  const extTbCompiled = TypeCompiler.Compile(Type.Composite([
+    BaseBookTb,
+    Type.Object({ 'pages': Type.Integer() })
+  ]));
+  const extZodSchema = BaseBookZod.extend({ 'pages': z.number().int() });
 
   results.push(bench('extend + validate', 'json-tology', () => {
-    counter++;
-    const child = Compose.extend(
-      BaseBookJt,
-      { 'properties': { 'pages': { 'type': 'integer' } } } as const,
-      `urn:bench:ExtBookJt:${String(counter)}`
-    );
-    const reg = new SchemaRegistry();
-
-    reg.set(BaseBookJt);
-    reg.set(child);
-    reg.validate((child as { '$id': string }).$id, {
-      ...validBook,
-      'pages': 200
-    });
+    extReg.validate(extBookId, extBookValid);
   }));
 
   results.push(bench('extend + validate', 'typebox', () => {
-    const composite = Type.Composite([
-      BaseBookTb,
-      Type.Object({ 'pages': Type.Integer() })
-    ]);
-    const compiled = TypeCompiler.Compile(composite);
-
-    compiled.Check({
-      ...validBook,
-      'pages': 200
-    });
+    extTbCompiled.Check(extBookValid);
   }));
 
   results.push(bench('extend + validate', 'zod', () => {
-    const extended = BaseBookZod.extend({ 'pages': z.number().int() });
-
-    extended.safeParse({
-      ...validBook,
-      'pages': 200
-    });
+    extZodSchema.safeParse(extBookValid);
   }));
 
   section('compose — discriminatedUnion validation (warm)');
@@ -242,7 +236,7 @@ export function runComposeBench(): BenchResult[] {
     vSafeParse(ShapeVb, validCircle);
   }));
 
-  section('compose — intersection (build + validate)');
+  section('compose — intersection (warm, build outside loop)');
 
   const Tagged = {
     '$id': 'urn:bench:Tagged',
@@ -259,48 +253,42 @@ export function runComposeBench(): BenchResult[] {
   const TaggedTb = Type.Object({ 'tags': Type.Array(Type.String()) });
   const TaggedZod = z.object({ 'tags': z.array(z.string()) });
 
-  let icounter = 0;
+  // warm: register once outside the timing loop — measures steady-state validate, not registration + compile
+  const BookTaggedInter = Compose.intersection(
+    [
+      BaseBookJt,
+      Tagged
+    ],
+    'urn:bench:BookTagged'
+  );
+  const subReg = new SchemaRegistry();
+
+  subReg.set(BaseBookJt);
+  subReg.set(Tagged);
+  subReg.set(BookTaggedInter as Record<string, unknown>);
+
+  const bookTaggedId = (BookTaggedInter as { '$id': string }).$id;
+  const bookTaggedValid = {
+    ...validBook,
+    'tags': ['a']
+  };
+
+  const interTbCompiled = TypeCompiler.Compile(Type.Intersect([
+    BaseBookTb,
+    TaggedTb
+  ]));
+  const interZodSchema = z.intersection(BaseBookZod, TaggedZod);
 
   results.push(bench('intersection', 'json-tology', () => {
-    icounter++;
-    const inter = Compose.intersection(
-      [
-        BaseBookJt,
-        Tagged
-      ],
-      `urn:bench:BookTagged:${String(icounter)}`
-    );
-    const subreg = new SchemaRegistry();
-
-    subreg.set(BaseBookJt);
-    subreg.set(Tagged);
-    subreg.set(inter as Record<string, unknown>);
-    subreg.validate((inter as { '$id': string }).$id, {
-      ...validBook,
-      'tags': ['a']
-    });
+    subReg.validate(bookTaggedId, bookTaggedValid);
   }));
 
   results.push(bench('intersection', 'typebox', () => {
-    const inter = Type.Intersect([
-      BaseBookTb,
-      TaggedTb
-    ]);
-    const compiled = TypeCompiler.Compile(inter);
-
-    compiled.Check({
-      ...validBook,
-      'tags': ['a']
-    });
+    interTbCompiled.Check(bookTaggedValid);
   }));
 
   results.push(bench('intersection', 'zod', () => {
-    const inter = z.intersection(BaseBookZod, TaggedZod);
-
-    inter.safeParse({
-      ...validBook,
-      'tags': ['a']
-    });
+    interZodSchema.safeParse(bookTaggedValid);
   }));
 
   return results;

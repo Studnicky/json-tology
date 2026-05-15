@@ -13,7 +13,6 @@
 
 import type { SkolemizeFnType } from '../../types/Skolemize.js';
 import { Hash } from '../hash/Hash.js';
-import { HEX_RADIX } from '../../constants/NUMERIC.js';
 import {
   UUID_BYTE_LENGTH,
   UUID_BYTE_MAX_PLUS_ONE,
@@ -24,6 +23,10 @@ import {
   UUID_VERSION_MASK,
   UUID_VERSION_SET
 } from '../../constants/UUID.js';
+
+const HEX_LOOKUP: readonly string[] = Array.from({ 'length': 256 }, (_, i) => {
+  return i.toString(16).padStart(2, '0');
+});
 
 function stripTrailingSlash(iri: string): string {
   let result = iri;
@@ -56,13 +59,16 @@ function randomUuidV4(): string {
   bytes[UUID_VERSION_BYTE_INDEX] = (bytes[UUID_VERSION_BYTE_INDEX] & UUID_VERSION_MASK) | UUID_VERSION_SET;
   bytes[UUID_VARIANT_BYTE_INDEX] = (bytes[UUID_VARIANT_BYTE_INDEX] & UUID_VARIANT_MASK) | UUID_VARIANT_SET;
 
-  const hex: string[] = [];
-
-  for (const byte of bytes) {
-    hex.push(byte.toString(HEX_RADIX).padStart(2, '0'));
-  }
-
-  return `${hex.slice(0, 4).join('')}-${hex.slice(4, 6).join('')}-${hex.slice(6, 8).join('')}-${hex.slice(8, 10).join('')}-${hex.slice(10, 16).join('')}`;
+  return (
+    `${HEX_LOOKUP[bytes[0]] + HEX_LOOKUP[bytes[1]]
+    + HEX_LOOKUP[bytes[2]] + HEX_LOOKUP[bytes[3]]}-${
+      HEX_LOOKUP[bytes[4]]}${HEX_LOOKUP[bytes[5]]}-${
+      HEX_LOOKUP[bytes[6]]}${HEX_LOOKUP[bytes[7]]}-${
+      HEX_LOOKUP[bytes[8]]}${HEX_LOOKUP[bytes[9]]}-${
+      HEX_LOOKUP[bytes[10]]}${HEX_LOOKUP[bytes[11]]
+    }${HEX_LOOKUP[bytes[12]]}${HEX_LOOKUP[bytes[13]]
+    }${HEX_LOOKUP[bytes[14]]}${HEX_LOOKUP[bytes[15]]}`
+  );
 }
 
 function mintUuidIri(): string {
