@@ -19,7 +19,7 @@ import { GraphError } from '../../src/errors/GraphError.js';
 // Helpers
 // ---------------------------------------------------------------------------
 
-function noKnown(_id: string): boolean {
+function noKnown(_: string): boolean {
   return false;
 }
 

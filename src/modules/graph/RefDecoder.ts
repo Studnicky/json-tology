@@ -1,24 +1,7 @@
-/**
- * RefDecoder — graph-native application of registered Transform decoders.
- *
- * Walks the canonical schema graph alongside a value tree and invokes any
- * registered Transform decoder at every `$ref` boundary that resolves to a
- * registered schema with a decoder attached. Recursion ordering is bottom-up:
- * nested `$ref` decoders fire before any enclosing `$ref`'s decoder, so
- * containers receive already-decoded inner values.
- *
- * Cycle detection uses a `Set` keyed by graph-node identity. A node revisited
- * on the current recursion path is not re-entered, so self-referential
- * schemas (e.g. `Person.manager: $ref Person`) terminate cleanly.
- *
- * This replaces the schema-walking implementation that previously lived as a
- * private method on `SchemaRegistry`. Per the project contract in CLAUDE.md,
- * traversal that pairs the schema with the value tree must execute against
- * the canonical graph, not a parallel raw-schema walker.
- */
-
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraph.js';
+import type { SchemaLookupType } from '../../types/SchemaLookup.js';
+import type { GraphLookupType } from '../../types/GraphLookup.js';
 
 import { InstantiationError } from '../../errors/InstantiationError.js';
 import { Transform } from '../transform/Transform.js';
@@ -26,26 +9,8 @@ import { ValidationErrors } from '../../errors/ValidationErrors.js';
 import { isRecord } from '../data/DataTypes.js';
 import { GraphEngineSupport } from './GraphEngineSupport.js';
 
-/**
- * Lookup function provided by the registry: given a fully-resolved schema
- * `$id`, return the registered schema object (frozen) or `undefined` if no
- * such schema is registered. Used to resolve cross-schema `$ref` targets.
- */
-export type SchemaLookupType = (schemaId: string) => Record<string, unknown> | undefined;
-
-/**
- * Lookup function provided by the registry: given a registered schema
- * object, return its canonical `SchemaGraphInterface`. Used to follow
- * cross-schema `$ref` boundaries onto the target schema's graph so the
- * decoder walk can continue beneath the referenced shape.
- */
-export type GraphLookupType = (schema: Record<string, unknown>) => SchemaGraphInterface | undefined;
-
-/**
- * Optional registry callback bundle. The decoder is graph-native but cross-
- * schema `$ref` traversal still needs the registry as the source of truth
- * for "is this `$ref` target a registered schema, and what is its graph?"
- */
+export type { GraphLookupType } from '../../types/GraphLookup.js';
+export type { SchemaLookupType } from '../../types/SchemaLookup.js';
 export interface RefDecoderRegistryInterface {
   readonly 'getGraph': GraphLookupType;
   readonly 'getSchema': SchemaLookupType;

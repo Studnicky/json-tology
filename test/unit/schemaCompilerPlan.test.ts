@@ -36,10 +36,10 @@ const passCheck: CheckFnType = () => {
 };
 
 const stubFormatRegistry: FormatRegistryInterface = {
-  'get': (_fmt) => {
+  'get': (_) => {
     return;
   },
-  'register': (_name, _fn) => {
+  'register': (_) => {
     // no-op
   }
 };
@@ -47,22 +47,22 @@ const stubFormatRegistry: FormatRegistryInterface = {
 function makeContext(): SchemaCompilerValidatePlanContextInterface {
   return {
     'activeCustomKeywords': [],
-    'appliesFormatAssertions': (_sem) => {
+    'appliesFormatAssertions': (_) => {
       return false;
     },
-    'compileNodeCheck': (_node, _fmt, _graph, _lookup) => {
+    'compileNodeCheck': (_) => {
       return passCheck;
     },
-    'compileNodeOrBooleanCheck': (_node, _fmt, _graph, _lookup) => {
+    'compileNodeOrBooleanCheck': (_) => {
       return passCheck;
     },
-    'compileNodeOrBooleanValidateWithErrors': (_node, _fmt, _graph, _lookup) => {
+    'compileNodeOrBooleanValidateWithErrors': (_) => {
       return passValidator;
     },
-    'compileNodeValidateWithErrors': (_node, _fmt, _graph, _lookup) => {
+    'compileNodeValidateWithErrors': (_) => {
       return passValidator;
     },
-    'resolveImplicitDefault': (_node, _graph, _lookup, _visited) => {
+    'resolveImplicitDefault': (_) => {
       return;
     }
   };
