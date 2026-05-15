@@ -35,23 +35,8 @@ export class RefDecoder {
     }
   }
 
-  /**
-   * Apply registered Transform decoders along every `$ref` boundary in the
-   * graph rooted at `graph`. Mutates `value` in place where a child slot is
-   * replaced by its decoded form, and returns the (possibly replaced) root
-   * value.
-   *
-   * The decoder for the root schema itself is *not* applied here — callers
-   * (e.g. `SchemaRegistry.instantiate`) apply the root-level decoder
-   * separately so they can attach the appropriate path/context to any
-   * thrown error.
-   *
-   * @param graph - Canonical graph for the root schema being instantiated.
-   * @param value - Value already coerced through validation; will be walked
-   *   alongside the graph and mutated where decoders replace sub-values.
-   * @param registry - Cross-schema lookup callbacks (see interface).
-   * @returns The walked value (same reference as `value` for objects/arrays).
-   */
+  // Root-level decoder is NOT applied here — callers (e.g. SchemaRegistry.instantiate)
+  // apply it separately to attach the appropriate path/context to thrown errors.
   public static run(
     graph: SchemaGraphInterface,
     value: unknown,

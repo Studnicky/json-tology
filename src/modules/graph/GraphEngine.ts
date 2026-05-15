@@ -164,13 +164,6 @@ export class GraphEngine implements GraphEngineInterface {
     };
   }
 
-  /**
-   * Returns whether a value is valid against the schema at the given pointer.
-   *
-   * @param value - The value to validate.
-   * @param options - Optional settings including a JSON Pointer into the root schema.
-   * @returns `true` if the value passes validation, `false` otherwise.
-   */
   public check(value: unknown, options?: { 'pointer'?: string }): boolean {
     return this.execute(value, {
       'overrides': { 'collectErrors': false },
@@ -213,13 +206,6 @@ export class GraphEngine implements GraphEngineInterface {
     };
   }
 
-  /**
-   * Collects all validation errors for a value against the schema at the given pointer.
-   *
-   * @param value - The value to validate.
-   * @param options - Optional settings including a JSON Pointer into the root schema.
-   * @returns An array of validation errors, empty when the value is valid.
-   */
   public errors(value: unknown, options?: { 'pointer'?: string }): ValidationErrorType[] {
     return this.execute(value, {
       'overrides': { 'collectErrors': true },
@@ -227,14 +213,6 @@ export class GraphEngine implements GraphEngineInterface {
     }).errors;
   }
 
-  /**
-   * Executes the full graph-based validation and normalization pipeline for a value.
-   *
-   * @param value - The value to validate and normalize.
-   * @param options - Optional pointer and per-call option overrides merged on top of the engine defaults.
-   * @returns The execution result containing validity, errors, normalized value, and graph metadata.
-   * @throws {@link GraphError} If the pointer cannot be resolved in the graph.
-   */
   public execute(
     value: unknown,
     options?: { 'overrides'?: Partial<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'lookupSchema'>>
@@ -283,29 +261,14 @@ export class GraphEngine implements GraphEngineInterface {
     return graph;
   }
 
-  /**
-   * Returns the schema lookup function provided at construction, if any.
-   *
-   * @returns The lookup callback, or `undefined` when none was configured.
-   */
   public graphLookup(): ((schemaId: string) => SchemaGraphInterface | undefined) | undefined {
     return this.options.lookupGraph;
   }
 
-  /**
-   * Indicates whether the engine was configured with custom keyword definitions.
-   *
-   * @returns `true` if at least one custom keyword is registered.
-   */
   public hasRegisteredCustomKeywords(): boolean {
     return this.customKeywords.length > 0;
   }
 
-  /**
-   * Returns the list of custom keyword definitions registered with this engine.
-   *
-   * @returns The custom keyword definitions array.
-   */
   public keywords(): KeywordDefinitionInterface[] {
     return this.customKeywords;
   }
@@ -432,11 +395,6 @@ export class GraphEngine implements GraphEngineInterface {
     return target;
   }
 
-  /**
-   * Returns the `$id` of the root schema, if one is declared.
-   *
-   * @returns The root schema's `$id` string, or `undefined` when absent.
-   */
   public rootSchemaId(): string | undefined {
     return GraphEngineSupport.schemaId(this.rootSchema);
   }

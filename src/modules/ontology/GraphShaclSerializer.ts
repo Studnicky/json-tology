@@ -3,9 +3,7 @@ import type { QuadInterface } from '../../interfaces/Quad.js';
 import { ShaclProjection } from '../rdf/ShaclProjection.js';
 import { SHACL_CORE_PREDICATES } from '../../constants/ONTOLOGY_PREDICATES.js';
 import { BaseGraphSerializer } from './BaseGraphSerializer.js';
-import { SH } from '../../constants/IRI.js';
-
-const SHACL_ARRAY_KEYS = [SH.PROPERTY_IRI] as const;
+import { SHACL_ARRAY_KEYS } from '../../constants/SHACL.js';
 
 export class GraphShaclSerializer extends BaseGraphSerializer {
   protected corePredicates(): ReadonlySet<string> {

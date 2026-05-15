@@ -34,9 +34,9 @@ import {
 } from '../../types/Restriction.js';
 import { isRecord } from '../data/DataTypes.js';
 import { brand } from '../../types/Brand.js';
+import { RESTRICTIONS_KEY } from '../../constants/COMPOSITION.js';
 
 const CLASS_AXIOM_BODY_SKIP_KEYS = new Set(['$id']);
-const RESTRICTIONS_KEY = 'jt:restrictions';
 
 function makeRestriction(
   kind: RestrictionDescriptorInterface['kind'],

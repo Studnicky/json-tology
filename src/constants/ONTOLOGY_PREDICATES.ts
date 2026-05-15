@@ -1,3 +1,14 @@
+import { OWL } from './IRI.js';
+
+export const RESTRICTION_PREDICATE: Partial<Record<string, string>> = {
+  'allValuesFrom': OWL.allValuesFrom,
+  'cardinality': OWL.cardinality,
+  'hasValue': OWL.hasValue,
+  'maxCardinality': OWL.maxCardinality,
+  'minCardinality': OWL.minCardinality,
+  'someValuesFrom': OWL.someValuesFrom
+};
+
 export const OWL_CORE_PREDICATES: ReadonlySet<string> = new Set([
   'owl:AllDifferent',
   'owl:AsymmetricProperty',

@@ -6,6 +6,7 @@ import { GraphError } from '../../errors/GraphError.js';
 import {
   RDFS_DOMAIN_IRI, RDFS_RANGE_IRI
 } from '../../constants/PREFIXES.js';
+import { ALLOF_EXTENSION_RE } from '../../constants/GRAPH_REGEXES.js';
 import {
   DEFS_POINTER_PARTS_LENGTH, KNOWN_SCHEMA_KEYWORDS,
   MIN_PROPERTY_POINTER_PARTS
@@ -278,8 +279,6 @@ function constraintKeywordsOf(schema: Record<string, unknown>): string[] {
 function isInDefs(pointer: string): boolean {
   return pointer.includes('/$defs/');
 }
-
-const ALLOF_EXTENSION_RE = /\/allOf\/\d+/u;
 
 function isInAllOfExtensionBlock(pointer: string): boolean {
   // Skip direct allOf members (/allOf/0, /allOf/1, etc.) and their properties
