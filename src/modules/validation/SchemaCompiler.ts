@@ -1664,9 +1664,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         const formatValidator = formatRegistry.get(format);
 
         if (formatValidator !== undefined) {
-          formatCheck = (value) => {
-            return Predicates.satisfiesFormat(value, formatValidator);
-          };
+          formatCheck = formatValidator;
         }
       }
     }

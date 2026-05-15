@@ -251,15 +251,6 @@ export class Predicates {
     return value > limit;
   }
 
-  static satisfiesFormat(value: unknown, validator: (v: unknown) => boolean): boolean {
-    try {
-      return validator(value);
-    } catch {
-      return false;
-    }
-  }
-
-
   static satisfiesMaximum(value: number, maximum: number): boolean {
     return value <= maximum;
   }
