@@ -622,97 +622,78 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         }
 
         // --- Scalar: type, enum, const ---
-        const typeResult = Scalars.validateType(path, types, workingValue);
-
-        if (!typeResult.valid) {
+        if (!Scalars.validateType(path, types, workingValue, errors)) {
           if (!collectErrors) {
             return {
               'valid': false,
               'value': workingValue
             };
           }
-          errors.push(...typeResult.errors);
           valid = false;
         }
 
-        const enumResult = Scalars.validateEnum(path, workingValue, enumValues, enumSet);
-
-        if (!enumResult.valid) {
+        if (!Scalars.validateEnum(path, workingValue, enumValues, enumSet, errors)) {
           if (!collectErrors) {
             return {
               'valid': false,
               'value': workingValue
             };
           }
-          errors.push(...enumResult.errors);
           valid = false;
         }
 
-        const constResult = Scalars.validateConst(path, workingValue, hasConst, constVal);
-
-        if (!constResult.valid) {
+        if (!Scalars.validateConst(path, workingValue, hasConst, constVal, errors)) {
           if (!collectErrors) {
             return {
               'valid': false,
               'value': workingValue
             };
           }
-          errors.push(...constResult.errors);
           valid = false;
         }
 
         // --- Scalar: string constraints ---
-        if (typeof workingValue === 'string') {
-          const stringResult = Scalars.validateString(path, workingValue, minLength, maxLength, patternRegex, pattern);
-
-          if (!stringResult.valid) {
-            if (!collectErrors) {
-              return {
-                'valid': false,
-                'value': workingValue
-              };
-            }
-            errors.push(...stringResult.errors);
-            valid = false;
-          }
-        }
-
-        // --- Scalar: format ---
-        const formatResult = Scalars.validateFormat(path, workingValue, format, formatValidator);
-
-        if (!formatResult.valid) {
+        if (typeof workingValue === 'string'
+          && !Scalars.validateString(path, workingValue, minLength, maxLength, patternRegex, pattern, errors)) {
           if (!collectErrors) {
             return {
               'valid': false,
               'value': workingValue
             };
           }
-          errors.push(...formatResult.errors);
+          valid = false;
+        }
+
+        // --- Scalar: format ---
+        if (!Scalars.validateFormat(path, workingValue, format, formatValidator, errors)) {
+          if (!collectErrors) {
+            return {
+              'valid': false,
+              'value': workingValue
+            };
+          }
           valid = false;
         }
 
         // --- Scalar: number constraints ---
-        if (typeof workingValue === 'number') {
-          const numberResult = Scalars.validateNumber(
+        if (typeof workingValue === 'number'
+          && !Scalars.validateNumber(
             path,
             workingValue,
             minimum,
             maximum,
             exclusiveMinimum,
             exclusiveMaximum,
-            multipleOf
-          );
-
-          if (!numberResult.valid) {
-            if (!collectErrors) {
-              return {
-                'valid': false,
-                'value': workingValue
-              };
-            }
-            errors.push(...numberResult.errors);
-            valid = false;
+            multipleOf,
+            errors
+          )) {
+          if (!collectErrors) {
+            return {
+              'valid': false,
+              'value': workingValue
+            };
           }
+          valid = false;
         }
 
         // --- Object validation ---
@@ -727,16 +708,13 @@ export class SchemaCompiler implements SchemaCompilerInterface {
             Objects.applyDefaults(obj, propertyDefaults);
           }
 
-          const requiredResult = Objects.validateRequired(path, obj, required);
-
-          if (!requiredResult.valid) {
+          if (!Objects.validateRequired(path, obj, required, errors)) {
             if (!collectErrors) {
               return {
                 'valid': false,
                 'value': workingValue
               };
             }
-            errors.push(...requiredResult.errors);
             valid = false;
           }
 
@@ -787,16 +765,13 @@ export class SchemaCompiler implements SchemaCompilerInterface {
             }
           }
 
-          const countResult = Objects.validatePropertyCount(path, obj, minProperties, maxProperties, propsResult.count);
-
-          if (!countResult.valid) {
+          if (!Objects.validatePropertyCount(path, obj, minProperties, maxProperties, errors, propsResult.count)) {
             if (!collectErrors) {
               return {
                 'valid': false,
                 'value': workingValue
               };
             }
-            errors.push(...countResult.errors);
             valid = false;
           }
         }
@@ -805,16 +780,13 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         if (Array.isArray(workingValue)) {
           const arr = workingValue;
 
-          const boundsResult = Arrays.validateBounds(path, arr, minItems, maxItems, uniqueItems);
-
-          if (!boundsResult.valid) {
+          if (!Arrays.validateBounds(path, arr, minItems, maxItems, uniqueItems, errors)) {
             if (!collectErrors) {
               return {
                 'valid': false,
                 'value': workingValue
               };
             }
-            errors.push(...boundsResult.errors);
             valid = false;
           }
 
@@ -861,16 +833,13 @@ export class SchemaCompiler implements SchemaCompilerInterface {
             valid = false;
           }
 
-          const containsResult = Arrays.validateContains(path, arr, containsCheck, minContains, maxContains);
-
-          if (!containsResult.valid) {
+          if (!Arrays.validateContains(path, arr, containsCheck, minContains, maxContains, errors)) {
             if (!collectErrors) {
               return {
                 'valid': false,
                 'value': workingValue
               };
             }
-            errors.push(...containsResult.errors);
             valid = false;
           }
         }
@@ -937,16 +906,13 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         }
 
         // --- Custom keywords ---
-        const kwResult = Composition.validateCustomKeywords(path, workingValue, customKeywordEntries);
-
-        if (!kwResult.valid) {
+        if (!Composition.validateCustomKeywords(path, workingValue, customKeywordEntries, errors)) {
           if (!collectErrors) {
             return {
               'valid': false,
               'value': workingValue
             };
           }
-          errors.push(...kwResult.errors);
           valid = false;
         }
 
@@ -1004,95 +970,79 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       }
 
       // --- Scalar: type, enum, const ---
-      const typeResult = Scalars.validateType(path, types, workingValue);
-
-      if (!typeResult.valid) {
+      if (!Scalars.validateType(path, types, workingValue, errors)) {
         if (!collectErrors) {
           return {
             'valid': false,
             'value': workingValue
           };
         }
-        errors.push(...typeResult.errors);
         valid = false;
       }
 
-      const enumResult = Scalars.validateEnum(path, workingValue, enumValues, enumSet);
-
-      if (!enumResult.valid) {
+      if (!Scalars.validateEnum(path, workingValue, enumValues, enumSet, errors)) {
         if (!collectErrors) {
           return {
             'valid': false,
             'value': workingValue
           };
         }
-        errors.push(...enumResult.errors);
         valid = false;
       }
 
-      const constResult = Scalars.validateConst(path, workingValue, hasConst, constVal);
-
-      if (!constResult.valid) {
+      if (!Scalars.validateConst(path, workingValue, hasConst, constVal, errors)) {
         if (!collectErrors) {
           return {
             'valid': false,
             'value': workingValue
           };
         }
-        errors.push(...constResult.errors);
         valid = false;
       }
 
       // --- Scalar: string constraints ---
-      if (typeof workingValue === 'string') {
-        const stringResult = Scalars.validateString(path, workingValue, minLength, maxLength, patternRegex, pattern);
-
-        if (!stringResult.valid) {
-          if (!collectErrors) {
-            return {
-              'valid': false,
-              'value': workingValue
-            };
-          }
-          errors.push(...stringResult.errors);
-          valid = false;
-        }
-      }
-
-      // --- Scalar: format ---
-      const formatResult = Scalars.validateFormat(path, workingValue, format, formatValidator);
-
-      if (!formatResult.valid) {
+      if (typeof workingValue === 'string'
+        && !Scalars.validateString(path, workingValue, minLength, maxLength, patternRegex, pattern, errors)) {
         if (!collectErrors) {
           return {
             'valid': false,
             'value': workingValue
           };
         }
-        errors.push(...formatResult.errors);
+        valid = false;
+      }
+
+      // --- Scalar: format ---
+      if (!Scalars.validateFormat(path, workingValue, format, formatValidator, errors)) {
+        if (!collectErrors) {
+          return {
+            'valid': false,
+            'value': workingValue
+          };
+        }
         valid = false;
       }
 
       // --- Scalar: number constraints ---
       if (typeof workingValue === 'number') {
-        const numberResult = Scalars.validateNumber(
+        const numValid = Scalars.validateNumber(
           path,
           workingValue,
           minimum,
           maximum,
           exclusiveMinimum,
           exclusiveMaximum,
-          multipleOf
+          multipleOf,
+          errors
         );
 
-        if (!numberResult.valid) {
+        if (!numValid) {
           if (!collectErrors) {
             return {
               'valid': false,
               'value': workingValue
             };
           }
-          errors.push(...numberResult.errors);
           valid = false;
         }
       }
@@ -1109,16 +1059,13 @@ export class SchemaCompiler implements SchemaCompilerInterface {
           Objects.applyDefaults(obj, propertyDefaults);
         }
 
-        const requiredResult = Objects.validateRequired(path, obj, required);
-
-        if (!requiredResult.valid) {
+        if (!Objects.validateRequired(path, obj, required, errors)) {
           if (!collectErrors) {
             return {
               'valid': false,
               'value': workingValue
             };
           }
-          errors.push(...requiredResult.errors);
           valid = false;
         }
 
@@ -1169,16 +1116,13 @@ export class SchemaCompiler implements SchemaCompilerInterface {
           }
         }
 
-        const countResult = Objects.validatePropertyCount(path, obj, minProperties, maxProperties, propsResult.count);
-
-        if (!countResult.valid) {
+        if (!Objects.validatePropertyCount(path, obj, minProperties, maxProperties, errors, propsResult.count)) {
           if (!collectErrors) {
             return {
               'valid': false,
               'value': workingValue
             };
           }
-          errors.push(...countResult.errors);
           valid = false;
         }
       }
@@ -1187,16 +1131,13 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       if (Array.isArray(workingValue)) {
         const arr = workingValue;
 
-        const boundsResult = Arrays.validateBounds(path, arr, minItems, maxItems, uniqueItems);
-
-        if (!boundsResult.valid) {
+        if (!Arrays.validateBounds(path, arr, minItems, maxItems, uniqueItems, errors)) {
           if (!collectErrors) {
             return {
               'valid': false,
               'value': workingValue
             };
           }
-          errors.push(...boundsResult.errors);
           valid = false;
         }
 
@@ -1243,16 +1184,13 @@ export class SchemaCompiler implements SchemaCompilerInterface {
           valid = false;
         }
 
-        const containsResult = Arrays.validateContains(path, arr, containsCheck, minContains, maxContains);
-
-        if (!containsResult.valid) {
+        if (!Arrays.validateContains(path, arr, containsCheck, minContains, maxContains, errors)) {
           if (!collectErrors) {
             return {
               'valid': false,
               'value': workingValue
             };
           }
-          errors.push(...containsResult.errors);
           valid = false;
         }
       }
@@ -1281,49 +1219,34 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       workingValue = allOfResult.value;
 
       // --- Composition: anyOf ---
-      const anyOfResult = Composition.validateAnyOf(path, workingValue, anyOfChecks);
-
-      if (!anyOfResult.valid) {
+      if (!Composition.validateAnyOf(path, workingValue, anyOfChecks, errors)) {
         if (!collectErrors) {
           return {
             'valid': false,
             'value': workingValue
           };
-        }
-        if (anyOfResult.error !== undefined) {
-          errors.push(anyOfResult.error);
         }
         valid = false;
       }
 
       // --- Composition: oneOf ---
-      const oneOfResult = Composition.validateOneOf(path, workingValue, oneOfChecks);
-
-      if (!oneOfResult.valid) {
+      if (!Composition.validateOneOf(path, workingValue, oneOfChecks, errors)) {
         if (!collectErrors) {
           return {
             'valid': false,
             'value': workingValue
           };
-        }
-        if (oneOfResult.error !== undefined) {
-          errors.push(oneOfResult.error);
         }
         valid = false;
       }
 
       // --- Composition: not ---
-      const notResult = Composition.validateNot(path, workingValue, complementCheck);
-
-      if (!notResult.valid) {
+      if (!Composition.validateNot(path, workingValue, complementCheck, errors)) {
         if (!collectErrors) {
           return {
             'valid': false,
             'value': workingValue
           };
-        }
-        if (notResult.error !== undefined) {
-          errors.push(notResult.error);
         }
         valid = false;
       }
@@ -1409,16 +1332,13 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       }
 
       // --- Custom keywords ---
-      const kwResult = Composition.validateCustomKeywords(path, workingValue, customKeywordEntries);
-
-      if (!kwResult.valid) {
+      if (!Composition.validateCustomKeywords(path, workingValue, customKeywordEntries, errors)) {
         if (!collectErrors) {
           return {
             'valid': false,
             'value': workingValue
           };
         }
-        errors.push(...kwResult.errors);
         valid = false;
       }
 

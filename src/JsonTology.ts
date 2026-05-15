@@ -45,7 +45,7 @@ import type {
 import type { SchemaRefType } from './types/SchemaRef.js';
 import type { SkolemizeFnType } from './types/Skolemize.js';
 
-import { GraphError } from './errors/GraphError.js';
+import { RefResolutionLoader } from './modules/registry/RefResolutionLoader.js';
 import { Curie } from './modules/rdf/Curie.js';
 import { Skolemize } from './modules/rdf/Skolemize.js';
 import { Dumper } from './modules/data/Dumper.js';
@@ -435,25 +435,7 @@ export class JsonTology<TMap = Record<never, never>> {
     }
 
     if (options.rootIds) {
-      for (const iri of options.rootIds) {
-        if (tmp.registry.has(iri)) {
-          continue;
-        }
-
-        const loaded = await options.loader(iri);
-
-        if (loaded === null) {
-          throw new GraphError('REF_UNRESOLVED', `loader returned null for IRI: ${iri}`, iri);
-        }
-
-        if (typeof loaded !== 'boolean') {
-          const loadedId = loaded.$id;
-
-          if (typeof loadedId === 'string') {
-            tmp.registry.set(loaded, loadedId);
-          }
-        }
-      }
+      await tmp.refLoader.loadRootIds(options.rootIds, options.loader);
     }
 
     await tmp.resolveAllRefs(options.loader);
@@ -577,6 +559,7 @@ export class JsonTology<TMap = Record<never, never>> {
   } = null;
   private readonly ontologySerializer: GraphOntologySerializer;
   private readonly prefixes: Record<string, string>;
+  private readonly refLoader: RefResolutionLoader;
   /**
    * Direct access to the underlying schema registry for advanced use cases.
    *
@@ -647,6 +630,7 @@ export class JsonTology<TMap = Record<never, never>> {
     };
 
     this.registry = new SchemaRegistry(registryOptions);
+    this.refLoader = new RefResolutionLoader(this.registry);
 
     // Wire pre-registered compute functions
     if (options.computeds) {
@@ -1021,48 +1005,8 @@ export class JsonTology<TMap = Record<never, never>> {
    *
    * If the loader returns `null` for a required IRI, throws `GraphError('REF_UNRESOLVED')`.
    */
-  private async resolveAllRefs(loader: LoaderType): Promise<void> {
-    const visited = new Set<string>();
-
-    const resolveSchema = async (schema: Record<string, unknown>): Promise<void> => {
-      const unresolved = this.registry.collectUnresolvedRefIris(schema);
-      const toFetch: string[] = [];
-
-      for (const iri of unresolved) {
-        if (!visited.has(iri)) {
-          visited.add(iri);
-          toFetch.push(iri);
-        }
-      }
-
-      for (const iri of toFetch) {
-        const loaded = await loader(iri);
-
-        if (loaded === null) {
-          throw new GraphError(
-            'REF_UNRESOLVED',
-            `loader returned null for IRI: ${iri}`,
-            iri
-          );
-        }
-
-        if (typeof loaded !== 'boolean') {
-          const loadedId = loaded.$id;
-
-          if (typeof loadedId === 'string') {
-            this.registry.set(loaded, loadedId);
-          }
-
-          // Recurse into the newly registered schema
-          await resolveSchema(loaded);
-        }
-      }
-    };
-
-    // Walk all currently registered schemas
-    for (const schema of this.registry.list()) {
-      await resolveSchema(schema);
-    }
+  private resolveAllRefs(loader: LoaderType): Promise<void> {
+    return this.refLoader.resolveAll(loader);
   }
 
   /**

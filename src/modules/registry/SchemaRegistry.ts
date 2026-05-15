@@ -20,6 +20,7 @@ import type {
   DuplicateReportEntryType, SchemaEntryStoreInterface
 } from '../../interfaces/SchemaEntryStore.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { SchemaRefWalkerInterface } from '../../interfaces/SchemaRefWalker.js';
 import type { SchemaRegistryEntryInterface } from '../../interfaces/SchemaRegistryEntry.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
 import type { ValidationErrorType } from '../../types/Validation.js';
@@ -28,13 +29,13 @@ import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugi
 import { InstantiationError } from '../../errors/InstantiationError.js';
 import { ComputedStore } from './ComputedStore.js';
 import { SchemaEntryStore } from './SchemaEntryStore.js';
+import { SchemaRefWalker } from './SchemaRefWalker.js';
 import { SameAsStore } from './SameAsStore.js';
 import { Curie } from '../rdf/Curie.js';
 import {
   deepFreeze, isRecord
 } from '../data/DataTypes.js';
 import { Frozen } from '../data/Frozen.js';
-import { GraphError } from '../../errors/GraphError.js';
 import { GraphEngine } from '../graph/GraphEngine.js';
 import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
 import { Hash } from '../hash/Hash.js';
@@ -85,6 +86,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   private readonly keywords: KeywordDefinitionInterface[] | undefined;
   private readonly logger: LoggerInterface;
   private readonly maxSchemaDepth: number | undefined;
+  private readonly refs: SchemaRefWalkerInterface;
   public readonly sameAsStore: SameAsStore;
   private readonly store: SchemaEntryStoreInterface;
   private readonly vocabularies: readonly VocabularyPluginInterface[];
@@ -116,6 +118,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     this.curie = Object.keys(mergedPrefixes).length > 0 ? new Curie(mergedPrefixes) : undefined;
     this.computedStore = new ComputedStore();
+    this.refs = new SchemaRefWalker();
     this.store = new SchemaEntryStore();
     this.sameAsStore = new SameAsStore();
     this.formatRegistry = options?.formatRegistry;
@@ -212,8 +215,18 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const schemaId = (entry.schema.$id as string | undefined) ?? '<anonymous>';
     const embeddedIds = new Set<string>();
 
-    this.collectEmbeddedIds(entry.schema, embeddedIds);
-    this.walkForUnresolvedRefs(entry.schema, schemaId, embeddedIds);
+    this.refs.collectEmbeddedIds(entry.schema, embeddedIds);
+    this.refs.assertResolvable(
+      entry.schema,
+      schemaId,
+      embeddedIds,
+      (id) => {
+        return this.store.has(id);
+      },
+      (id) => {
+        return this.resolve(id);
+      }
+    );
     entry.refsChecked = true;
   }
 
@@ -342,74 +355,20 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
   }
 
-  private collectEmbeddedIds(node: unknown, ids: Set<string>): void {
-    if (Array.isArray(node)) {
-      for (const item of node) {
-        this.collectEmbeddedIds(item, ids);
-      }
-
-      return;
-    }
-
-    if (!isRecord(node)) {
-      return;
-    }
-
-    if (typeof node.$id === 'string' && node.$id !== '') {
-      ids.add(node.$id);
-    }
-
-    for (const value of Object.values(node)) {
-      this.collectEmbeddedIds(value, ids);
-    }
-  }
-
-  private collectRefsInNode(
-    node: unknown,
-    embeddedIds: Set<string>,
-    out: Set<string>
-  ): void {
-    if (Array.isArray(node)) {
-      for (const item of node) {
-        this.collectRefsInNode(item, embeddedIds, out);
-      }
-
-      return;
-    }
-
-    if (!isRecord(node)) {
-      return;
-    }
-
-    const ref = node.$ref;
-
-    if (typeof ref === 'string' && !ref.startsWith('#')) {
-      const hashIndex = ref.indexOf('#');
-      const refIri = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
-      const resolved = this.resolve(refIri);
-
-      if (!this.store.has(resolved) && !this.store.has(refIri) && !embeddedIds.has(refIri)) {
-        out.add(resolved === refIri ? refIri : resolved);
-      }
-    }
-
-    for (const value of Object.values(node)) {
-      this.collectRefsInNode(value, embeddedIds, out);
-    }
-  }
-
   /**
    * Collect all non-fragment cross-schema $ref IRIs reachable from the given schema
    * that are not yet registered. Used by the loader walker in JsonTology._resolveAllRefs.
    */
   public collectUnresolvedRefIris(schema: Record<string, unknown>): ReadonlySet<string> {
-    const unresolved = new Set<string>();
-    const embeddedIds = new Set<string>();
-
-    this.collectEmbeddedIds(schema, embeddedIds);
-    this.collectRefsInNode(schema, embeddedIds, unresolved);
-
-    return unresolved;
+    return this.refs.collectUnresolved(
+      schema,
+      (id) => {
+        return this.store.has(id);
+      },
+      (id) => {
+        return this.resolve(id);
+      }
+    );
   }
 
   private compiled(schemaId: string): CompiledValidatorInterface | undefined {
@@ -1018,40 +977,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   public *values(): IterableIterator<Record<string, unknown>> {
     for (const entry of this.store.values()) {
       yield entry.schema;
-    }
-  }
-
-  private walkForUnresolvedRefs(node: unknown, parentSchemaId: string, embeddedIds: Set<string>): void {
-    if (Array.isArray(node)) {
-      for (const item of node) {
-        this.walkForUnresolvedRefs(item, parentSchemaId, embeddedIds);
-      }
-
-      return;
-    }
-
-    if (!isRecord(node)) {
-      return;
-    }
-
-    const ref = node.$ref;
-
-    if (typeof ref === 'string' && !ref.startsWith('#')) {
-      const hashIndex = ref.indexOf('#');
-      const refIri = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
-      const resolved = this.resolve(refIri);
-
-      if (!this.store.has(resolved) && !this.store.has(refIri) && !embeddedIds.has(refIri)) {
-        throw new GraphError(
-          'REF_UNRESOLVED',
-          `unresolved $ref: ${ref} (referenced from ${parentSchemaId})`,
-          ref
-        );
-      }
-    }
-
-    for (const value of Object.values(node)) {
-      this.walkForUnresolvedRefs(value, parentSchemaId, embeddedIds);
     }
   }
 }

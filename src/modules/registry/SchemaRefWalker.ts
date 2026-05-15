@@ -1,0 +1,126 @@
+/**
+ * SchemaRefWalker
+ *
+ * Stateless tree walker. Collects embedded $id values and cross-schema $ref
+ * IRIs from a JSON Schema tree. Dependency-free: registry state is injected
+ * via callbacks so the walker remains pure and independently testable.
+ */
+
+import type { SchemaRefWalkerInterface } from '../../interfaces/SchemaRefWalker.js';
+
+import { GraphError } from '../../errors/GraphError.js';
+import { isRecord } from '../data/DataTypes.js';
+
+export class SchemaRefWalker implements SchemaRefWalkerInterface {
+  public assertResolvable(
+    node: unknown,
+    parentSchemaId: string,
+    embeddedIds: Set<string>,
+    knownIds: (id: string) => boolean,
+    resolve: (id: string) => string
+  ): void {
+    if (Array.isArray(node)) {
+      for (const item of node) {
+        this.assertResolvable(item, parentSchemaId, embeddedIds, knownIds, resolve);
+      }
+
+      return;
+    }
+
+    if (!isRecord(node)) {
+      return;
+    }
+
+    const ref = node.$ref;
+
+    if (typeof ref === 'string' && !ref.startsWith('#')) {
+      const hashIndex = ref.indexOf('#');
+      const refIri = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
+      const resolved = resolve(refIri);
+
+      if (!knownIds(resolved) && !knownIds(refIri) && !embeddedIds.has(refIri)) {
+        throw new GraphError(
+          'REF_UNRESOLVED',
+          `unresolved $ref: ${ref} (referenced from ${parentSchemaId})`,
+          ref
+        );
+      }
+    }
+
+    for (const value of Object.values(node)) {
+      this.assertResolvable(value, parentSchemaId, embeddedIds, knownIds, resolve);
+    }
+  }
+
+  public collectEmbeddedIds(node: unknown, ids: Set<string>): void {
+    if (Array.isArray(node)) {
+      for (const item of node) {
+        this.collectEmbeddedIds(item, ids);
+      }
+
+      return;
+    }
+
+    if (!isRecord(node)) {
+      return;
+    }
+
+    if (typeof node.$id === 'string' && node.$id !== '') {
+      ids.add(node.$id);
+    }
+
+    for (const value of Object.values(node)) {
+      this.collectEmbeddedIds(value, ids);
+    }
+  }
+
+  public collectRefsInNode(
+    node: unknown,
+    embeddedIds: Set<string>,
+    out: Set<string>,
+    knownIds: (id: string) => boolean,
+    resolve: (id: string) => string
+  ): void {
+    if (Array.isArray(node)) {
+      for (const item of node) {
+        this.collectRefsInNode(item, embeddedIds, out, knownIds, resolve);
+      }
+
+      return;
+    }
+
+    if (!isRecord(node)) {
+      return;
+    }
+
+    const ref = node.$ref;
+
+    if (typeof ref === 'string' && !ref.startsWith('#')) {
+      const hashIndex = ref.indexOf('#');
+      const refIri = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
+      const resolved = resolve(refIri);
+
+      if (!knownIds(resolved) && !knownIds(refIri) && !embeddedIds.has(refIri)) {
+        out.add(resolved === refIri ? refIri : resolved);
+      }
+    }
+
+    for (const value of Object.values(node)) {
+      this.collectRefsInNode(value, embeddedIds, out, knownIds, resolve);
+    }
+  }
+
+  public collectUnresolved(
+    schema: Record<string, unknown>,
+    knownIds: (id: string) => boolean,
+    resolve: (id: string) => string
+  ): ReadonlySet<string> {
+    const unresolved = new Set<string>();
+    const embeddedIds = new Set<string>();
+
+    this.collectEmbeddedIds(schema, embeddedIds);
+    this.collectRefsInNode(schema, embeddedIds, unresolved, knownIds, resolve);
+
+    return unresolved;
+  }
+}
