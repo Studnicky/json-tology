@@ -435,7 +435,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     if (entry.compiled === undefined) {
       const engine = this.engine(entry.schema);
 
-      entry.compiled = this.compiler.compile(engine);
+      entry.compiled = this.compiler.compile(engine, this.graphOf(entry));
     }
 
     return entry.compiled;
@@ -499,6 +499,9 @@ export class SchemaRegistry implements SchemaRegistryInterface {
         ...(this.formatRegistry ? { 'formatRegistry': this.formatRegistry } : {}),
         ...(this.keywords && this.keywords.length > 0 ? { 'keywords': this.keywords } : {}),
         ...(this.maxSchemaDepth === undefined ? {} : { 'maxSchemaDepth': this.maxSchemaDepth }),
+        'lookupGraph': (lookupSchemaId: string) => {
+          return this.graph(lookupSchemaId);
+        },
         'lookupSchema': (lookupSchemaId: string) => {
           return this.schemas.get(lookupSchemaId)?.schema ?? embeddedSchemas.get(lookupSchemaId);
         }
@@ -988,7 +991,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`, schemaId);
     }
 
-    const graph = new SchemaGraph(entry.schema);
+    const graph = this.graphOf(entry);
     const node = graph.resolvePointer(pointer);
     const subSchema = node.schema;
     const synthesizedId = `${schemaId}#${pointer}`;

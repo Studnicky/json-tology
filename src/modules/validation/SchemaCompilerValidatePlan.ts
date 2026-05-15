@@ -74,13 +74,14 @@ function compileRefValidator(
   ref: string | undefined,
   formatRegistry: FormatRegistryInterface,
   graph: SchemaGraphInterface,
-  lookupSchema?: (id: string) => Record<string, unknown> | undefined
+  lookupSchema?: (id: string) => Record<string, unknown> | undefined,
+  lookupGraph?: (id: string) => SchemaGraphInterface | undefined
 ): undefined | ValidateWithErrorsFnType {
   if (typeof ref !== 'string') {
     return undefined;
   }
 
-  const resolved = RefResolver.resolve(ref, graph, lookupSchema);
+  const resolved = RefResolver.resolve(ref, graph, lookupSchema, lookupGraph);
 
   if (resolved === undefined) {
     return undefined;
@@ -193,7 +194,8 @@ export const SchemaCompilerValidatePlan = {
     graphNode: SchemaGraphNodeInterface,
     formatRegistry: FormatRegistryInterface,
     graph: SchemaGraphInterface,
-    lookupSchema?: (id: string) => Record<string, unknown> | undefined
+    lookupSchema?: (id: string) => Record<string, unknown> | undefined,
+    lookupGraph?: (id: string) => SchemaGraphInterface | undefined
   ): CompiledNodeValidationPlanInterface {
     const sem = graph.semantics(graphNode);
     const propertyEntries = sem.properties;
@@ -365,7 +367,7 @@ export const SchemaCompilerValidatePlan = {
       'propertyDefaults': buildPropertyDefaults(context, propertyEntries, graph, lookupSchema),
       propertyNamesValidator,
       'propValidators': compilePropertyValidators(context, propertyEntries, formatRegistry, graph, sem.jtConfig?.strict, lookupSchema),
-      'refValidator': compileRefValidator(context, sem.ref, formatRegistry, graph, lookupSchema),
+      'refValidator': compileRefValidator(context, sem.ref, formatRegistry, graph, lookupSchema, lookupGraph),
       'required': sem.required.length > 0 ? sem.required : undefined,
       thenValidator,
       'types': sem.schemaTypes,

@@ -7,7 +7,10 @@ import { RefResolver } from './RefResolver.js';
 
 import type { LookupSchemaFnType } from '../../types/LookupSchema.js';
 
-function buildCompilerDefaultContext(lookupSchema: LookupSchemaFnType | undefined): DefaultResolutionContextInterface {
+function buildCompilerDefaultContext(
+  lookupSchema: LookupSchemaFnType | undefined,
+  lookupGraph?: (id: string) => SchemaGraphInterface | undefined
+): DefaultResolutionContextInterface {
   return {
     resolveDynamicRef(
       _: string,
@@ -19,7 +22,7 @@ function buildCompilerDefaultContext(lookupSchema: LookupSchemaFnType | undefine
       };
     },
     resolveRef(ref: string, currentGraph: SchemaGraphInterface): RefTargetInterface {
-      const resolved = RefResolver.resolve(ref, currentGraph, lookupSchema);
+      const resolved = RefResolver.resolve(ref, currentGraph, lookupSchema, lookupGraph);
 
       if (resolved === undefined) {
         return {
@@ -38,9 +41,10 @@ export const SchemaCompilerDefaults = {
     node: SchemaGraphNodeInterface,
     graph: SchemaGraphInterface,
     lookupSchema: ((id: string) => Record<string, unknown> | undefined) | undefined,
-    visited: Set<unknown>
+    visited: Set<unknown>,
+    lookupGraph?: (id: string) => SchemaGraphInterface | undefined
   ): unknown {
-    const context = buildCompilerDefaultContext(lookupSchema);
+    const context = buildCompilerDefaultContext(lookupSchema, lookupGraph);
     const stringVisited = new Set<string>();
 
     for (const item of visited) {

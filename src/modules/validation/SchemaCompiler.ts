@@ -50,6 +50,7 @@ import type { CheckFnType } from '../../types/Validation.js';
 
 export class SchemaCompiler implements SchemaCompilerInterface {
   private activeCustomKeywords: KeywordDefinitionInterface[] = [];
+  private activeLookupGraph: ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
   private readonly compilingNodes = new Set<SchemaGraphNodeInterface>();
   private readonly logger: LoggerInterface;
   public readonly lookupCompiled: ((schemaId: string) => CompiledValidatorInterface | undefined) | undefined;
@@ -92,7 +93,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
    * @param engine - Graph engine holding the schema to compile
    * @returns Compiled validator with check and validate functions
    */
-  public compile(engine: GraphEngineInterface): CompiledValidatorInterface {
+  public compile(engine: GraphEngineInterface, graph?: SchemaGraphInterface): CompiledValidatorInterface {
     const rootSchema = engine.rootSchema;
 
     if (typeof rootSchema === 'boolean') {
@@ -106,21 +107,22 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     const schema = rootSchema;
     const formatRegistry = engine.formatRegistry;
     const lookupSchema = engine.schemaLookup();
-    const graph = new SchemaGraph(schema);
+    const resolvedGraph = graph ?? new SchemaGraph(schema);
 
     this.activeCustomKeywords = engine.keywords();
+    this.activeLookupGraph = engine.graphLookup();
 
     // Check for unsupported features that require engine fallback
-    if (!this.supportsCompilationPath(graph, lookupSchema)) {
+    if (!this.supportsCompilationPath(resolvedGraph, lookupSchema)) {
       this.activeCustomKeywords = [];
 
       return this.engineFallback(engine);
     }
 
     try {
-      const checkFn = this.compileCheck(schema, formatRegistry, graph, lookupSchema);
-      const validateWithErrorsFn = this.compileValidateWithErrors(schema, formatRegistry, graph, lookupSchema);
-      const validateFn = this.compileValidateMutating(schema, graph, validateWithErrorsFn, checkFn);
+      const checkFn = this.compileCheck(schema, formatRegistry, resolvedGraph, lookupSchema);
+      const validateWithErrorsFn = this.compileValidateWithErrors(schema, formatRegistry, resolvedGraph, lookupSchema);
+      const validateFn = this.compileValidateMutating(schema, resolvedGraph, validateWithErrorsFn, checkFn);
 
       return {
         'check': checkFn,
@@ -290,7 +292,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
               ref,
               fmtReg,
               schemaGraph,
-              schemaLookup
+              schemaLookup,
+              this.activeLookupGraph
             );
           },
           'compileStringCheck': (minLen, maxLen, pat, fmt, fmtReg, sem) => {
@@ -405,13 +408,22 @@ export class SchemaCompiler implements SchemaCompilerInterface {
           return this.compileNodeValidateWithErrors(targetNode, fmtReg, schemaGraph, schemaLookup);
         },
         'resolveImplicitDefault': (targetNode, schemaGraph, schemaLookup, visited) => {
-          return SchemaCompilerDefaults.resolveImplicitDefaultValue(targetNode, schemaGraph, schemaLookup, visited);
+          const lookupGraph = this.activeLookupGraph;
+
+          return SchemaCompilerDefaults.resolveImplicitDefaultValue(
+            targetNode,
+            schemaGraph,
+            schemaLookup,
+            visited,
+            lookupGraph
+          );
         }
       },
       graphNode,
       formatRegistry,
       graph,
-      lookupSchema
+      lookupSchema,
+      this.activeLookupGraph
     );
 
     return SchemaCompilerValidateExec.buildValidateWithErrorsExecution(plan);
@@ -690,6 +702,12 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
   ): boolean {
-    return SchemaCompilerGraph.nodeSupportsCompilation(graph.rootNode, graph, lookupSchema, new Set());
+    return SchemaCompilerGraph.nodeSupportsCompilation(
+      graph.rootNode,
+      graph,
+      lookupSchema,
+      new Set(),
+      this.activeLookupGraph
+    );
   }
 }

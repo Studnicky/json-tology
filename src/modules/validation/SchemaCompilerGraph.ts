@@ -342,7 +342,8 @@ export const SchemaCompilerGraph = {
     ref: string,
     formatRegistry: FormatRegistryInterface,
     graph: SchemaGraphInterface,
-    lookupSchema?: (id: string) => Record<string, unknown> | undefined
+    lookupSchema?: (id: string) => Record<string, unknown> | undefined,
+    lookupGraph?: (id: string) => SchemaGraphInterface | undefined
   ): CheckFnType | undefined {
     // Fast path: cross-schema root ref with a pre-compiled entry
     if (!ref.startsWith('#')) {
@@ -361,7 +362,7 @@ export const SchemaCompilerGraph = {
       }
     }
 
-    const resolved = RefResolver.resolve(ref, graph, lookupSchema);
+    const resolved = RefResolver.resolve(ref, graph, lookupSchema, lookupGraph);
 
     if (resolved === undefined) {
       return undefined;
@@ -398,7 +399,8 @@ export const SchemaCompilerGraph = {
     node: SchemaGraphNodeInterface,
     graph: SchemaGraphInterface,
     lookupSchema: ((id: string) => Record<string, unknown> | undefined) | undefined,
-    visited: Set<SchemaGraphNodeInterface | string>
+    visited: Set<SchemaGraphNodeInterface | string>,
+    lookupGraph?: (id: string) => SchemaGraphInterface | undefined
   ): boolean {
     if (visited.has(node)) {
       return true;
@@ -418,11 +420,7 @@ export const SchemaCompilerGraph = {
     }
 
     if (sem.ref !== undefined) {
-      if (sem.refTargetNode !== undefined) {
-        if (!SchemaCompilerGraph.nodeSupportsCompilation(sem.refTargetNode, graph, lookupSchema, visited)) {
-          return false;
-        }
-      } else if (lookupSchema !== undefined) {
+      if (sem.refTargetNode === undefined) {
         const hashIndex = sem.ref.indexOf('#');
         const schemaId = hashIndex === -1 ? sem.ref : sem.ref.slice(0, hashIndex);
 
@@ -431,14 +429,36 @@ export const SchemaCompilerGraph = {
         }
         visited.add(schemaId);
 
-        const refSchema = lookupSchema(schemaId);
+        const refGraph = lookupGraph?.(schemaId) ?? ((): SchemaGraphInterface | undefined => {
+          const refSchema = lookupSchema?.(schemaId);
 
-        if (refSchema !== undefined) {
-          const refGraph = new SchemaGraph(refSchema);
+          return refSchema === undefined ? undefined : new SchemaGraph(refSchema);
+        })();
 
-          if (!SchemaCompilerGraph.nodeSupportsCompilation(refGraph.rootNode, refGraph, lookupSchema, visited)) {
+        if (refGraph !== undefined) {
+          const refRootSupported = SchemaCompilerGraph.nodeSupportsCompilation(
+            refGraph.rootNode,
+            refGraph,
+            lookupSchema,
+            visited,
+            lookupGraph
+          );
+
+          if (!refRootSupported) {
             return false;
           }
+        }
+      } else {
+        const refTargetSupported = SchemaCompilerGraph.nodeSupportsCompilation(
+          sem.refTargetNode,
+          graph,
+          lookupSchema,
+          visited,
+          lookupGraph
+        );
+
+        if (!refTargetSupported) {
+          return false;
         }
       }
     }
@@ -448,7 +468,7 @@ export const SchemaCompilerGraph = {
       ...sem.anyOf,
       ...sem.oneOf
     ]) {
-      if (!SchemaCompilerGraph.nodeSupportsCompilation(branch, graph, lookupSchema, visited)) {
+      if (!SchemaCompilerGraph.nodeSupportsCompilation(branch, graph, lookupSchema, visited, lookupGraph)) {
         return false;
       }
     }
@@ -459,7 +479,8 @@ export const SchemaCompilerGraph = {
       sem.thenNode,
       sem.elseNode
     ]) {
-      if (child !== undefined && !SchemaCompilerGraph.nodeSupportsCompilation(child, graph, lookupSchema, visited)) {
+      if (child !== undefined
+        && !SchemaCompilerGraph.nodeSupportsCompilation(child, graph, lookupSchema, visited, lookupGraph)) {
         return false;
       }
     }
@@ -468,20 +489,30 @@ export const SchemaCompilerGraph = {
       ,
       propNode
     ] of sem.properties) {
-      if (!SchemaCompilerGraph.nodeSupportsCompilation(propNode, graph, lookupSchema, visited)) {
+      if (!SchemaCompilerGraph.nodeSupportsCompilation(propNode, graph, lookupSchema, visited, lookupGraph)) {
         return false;
       }
     }
 
-    if (sem.itemsNode !== undefined
-      && !SchemaCompilerGraph.nodeSupportsCompilation(sem.itemsNode, graph, lookupSchema, visited)) {
+    if (
+      sem.itemsNode !== undefined
+      && !SchemaCompilerGraph.nodeSupportsCompilation(sem.itemsNode, graph, lookupSchema, visited, lookupGraph)
+    ) {
       return false;
     }
 
-    if (sem.additionalPropertiesNode !== undefined
-      && typeof sem.additionalPropertiesNode !== 'boolean'
-      && !SchemaCompilerGraph.nodeSupportsCompilation(sem.additionalPropertiesNode, graph, lookupSchema, visited)) {
-      return false;
+    if (sem.additionalPropertiesNode !== undefined && typeof sem.additionalPropertiesNode !== 'boolean') {
+      const addlSupported = SchemaCompilerGraph.nodeSupportsCompilation(
+        sem.additionalPropertiesNode,
+        graph,
+        lookupSchema,
+        visited,
+        lookupGraph
+      );
+
+      if (!addlSupported) {
+        return false;
+      }
     }
 
     return true;

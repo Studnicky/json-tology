@@ -16,7 +16,6 @@ import { GraphError } from '../../errors/GraphError.js';
 import { Frozen } from '../data/Frozen.js';
 import { isRecord } from '../data/DataTypes.js';
 import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
-import { SchemaGraph } from '../graph/SchemaGraph.js';
 import { Projection } from '../rdf/Projection.js';
 import { ValidationErrors } from '../../errors/ValidationErrors.js';
 import { InstantiationError } from '../../errors/InstantiationError.js';
@@ -57,8 +56,6 @@ export class Materializer implements MaterializerInterface {
 
     return false;
   }
-
-  private readonly graphCache = new WeakMap<object, SchemaGraphInterface>();
 
   /**
    * Create a Materializer bound to a schema registry.
@@ -170,24 +167,6 @@ export class Materializer implements MaterializerInterface {
     return BaseError.formatErrors(result.errors);
   }
 
-  private graphFor(rootSchema: JSONSchema7Definition): SchemaGraphInterface {
-    if (!isRecord(rootSchema)) {
-      return new SchemaGraph(rootSchema as boolean);
-    }
-
-    const cached = this.graphCache.get(rootSchema);
-
-    if (cached !== undefined) {
-      return cached;
-    }
-
-    const graph = new SchemaGraph(rootSchema);
-
-    this.graphCache.set(rootSchema, graph);
-
-    return graph;
-  }
-
   /**
    * Materialize partial data against a schema, filling implicit properties and validating.
    *
@@ -292,17 +271,11 @@ export class Materializer implements MaterializerInterface {
 
     const parsed = GraphEngineSupport.parseRef(ref);
 
-    const lookedUp = this.registry.get(parsed.id) as JSONSchema7Definition | undefined;
+    const targetGraph = this.registry.graph(parsed.id);
 
-    if (lookedUp === undefined) {
+    if (targetGraph === undefined) {
       throw new GraphError('REF_UNRESOLVED', `Unresolved schema reference: ${ref}`, ref);
     }
-
-    if (!isRecord(lookedUp)) {
-      return schemaNode;
-    }
-
-    const targetGraph = this.graphFor(lookedUp);
 
     return targetGraph.resolveFragment(parsed.fragment);
   }
