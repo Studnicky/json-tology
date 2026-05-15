@@ -32,27 +32,18 @@ import type { VisitContextInterface } from '../../interfaces/VisitContext.js';
 import type { JSONSchema7Definition } from 'json-schema';
 
 export class GraphEngine implements GraphEngineInterface {
+  private readonly cachedVisitContext: VisitContextInterface;
   private readonly customKeywords: KeywordDefinitionInterface[];
   private readonly dialectPlan: RootDialectPlanInterface;
-  /**
-   * Embedded sub-schemas that declare their own `$id` within the root schema
-   * tree (e.g. inside `$defs`). Populated once at construction time so that
-   * `resolveRef` can resolve `$ref` targets that point at an embedded `$id`
-   * even when no external `lookupSchema` callback is provided.
-   */
   private readonly embeddedSchemas: Map<string, JSONSchema7Definition>;
   public readonly formatRegistry: FormatRegistryInterface;
   private readonly graphCache = new WeakMap<object, SchemaGraph>();
   private readonly options: Pick<GraphEngineOptionsInterface, 'lookupGraph' | 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupGraph' | 'lookupSchema'>>;
   private readonly refCache = new Map<string, RefTargetInterface>();
+  private readonly refCacheOwn = new Map<string, RefTargetInterface>();
   private readonly regexCache = new Map<string, RegExp>();
+  private readonly rootId: string | undefined;
 
-  /**
-   * Creates a new graph engine for the given root schema.
-   *
-   * @param rootSchema - The JSON Schema definition used as the root of this engine.
-   * @param options - Engine configuration including format registry, custom keywords, and lookup function.
-   */
   public constructor(public readonly rootSchema: JSONSchema7Definition, options: GraphEngineOptionsInterface = {}) {
     const {
       formatRegistry, keywords, ...rest
@@ -67,6 +58,8 @@ export class GraphEngine implements GraphEngineInterface {
     this.dialectPlan = GraphEngineSupport.buildRootDialectPlan(rootSchema);
     this.embeddedSchemas = new Map<string, JSONSchema7Definition>();
     GraphEngineSupport.collectEmbeddedSchemas(rootSchema, this.embeddedSchemas, true);
+    this.rootId = GraphEngineSupport.schemaId(rootSchema);
+    this.cachedVisitContext = this.visitContext();
   }
 
   private applyUnevaluatedItems(
@@ -252,10 +245,12 @@ export class GraphEngine implements GraphEngineInterface {
     } = options ?? {};
     const graph = this.graphFor(this.rootSchema);
     const entryNode = graph.resolvePointer(pointer ?? '');
-    const effective = {
-      ...this.options,
-      ...overrides
-    };
+    const effective = overrides !== undefined && Object.keys(overrides).length > 0
+      ? {
+        ...this.options,
+        ...overrides
+      }
+      : this.options;
 
     const result = this.visit(entryNode, graph, value, '', effective, new Set(), []);
 
@@ -371,12 +366,24 @@ export class GraphEngine implements GraphEngineInterface {
   }
 
   private resolveRef(ref: string, currentGraph: SchemaGraphInterface): RefTargetInterface {
-    const currentRootId = GraphEngineSupport.schemaId(currentGraph.rootSchema);
-    const cacheKey = `${currentRootId ?? '<anonymous>'}::${ref}`;
-    const cached = this.refCache.get(cacheKey);
+    const isOwnRoot = currentGraph.rootSchema === this.rootSchema;
 
-    if (cached !== undefined) {
-      return cached;
+    if (isOwnRoot) {
+      const cached = this.refCacheOwn.get(ref);
+
+      if (cached !== undefined) {
+        return cached;
+      }
+    }
+
+    if (!isOwnRoot) {
+      const currentRootId = GraphEngineSupport.schemaId(currentGraph.rootSchema);
+      const cacheKey = `${currentRootId ?? '<anonymous>'}::${ref}`;
+      const cached = this.refCache.get(cacheKey);
+
+      if (cached !== undefined) {
+        return cached;
+      }
     }
 
     let graph = currentGraph;
@@ -392,18 +399,9 @@ export class GraphEngine implements GraphEngineInterface {
       const lookedUp = this.options.lookupSchema?.(parsed.id);
 
       if (lookedUp === undefined) {
-        // Self-reference: $ref targets the root schema's own $id. Resolve
-        // against the root graph so a schema can reference itself without
-        // requiring an external lookupSchema callback.
-        const rootId = GraphEngineSupport.schemaId(this.rootSchema);
-
-        if (rootId !== undefined && parsed.id === rootId) {
+        if (this.rootId !== undefined && parsed.id === this.rootId) {
           graph = this.graphFor(this.rootSchema);
         } else {
-          // Embedded $id fallback: $ref targets an embedded sub-schema that
-          // declared its own $id inside $defs (or any nested location). The
-          // map was populated during construction, so we resolve directly
-          // against that sub-schema's graph.
           const embedded = this.embeddedSchemas.get(parsed.id);
 
           if (embedded === undefined) {
@@ -422,7 +420,14 @@ export class GraphEngine implements GraphEngineInterface {
       node
     };
 
-    this.refCache.set(cacheKey, target);
+    if (isOwnRoot) {
+      this.refCacheOwn.set(ref, target);
+    } else {
+      const currentRootId = GraphEngineSupport.schemaId(currentGraph.rootSchema);
+      const cacheKey = `${currentRootId ?? '<anonymous>'}::${ref}`;
+
+      this.refCache.set(cacheKey, target);
+    }
 
     return target;
   }
@@ -644,10 +649,12 @@ export class GraphEngine implements GraphEngineInterface {
     } = sem;
     const propertyNamesNode = sem.propertyNamesNode;
 
-    if (typeof minProperties === 'number' && Object.keys(workingValue).length < minProperties) {
+    const objectKeys = Object.keys(workingValue);
+
+    if (typeof minProperties === 'number' && objectKeys.length < minProperties) {
       errors.push(this.createError(path, 'minProperties', `must NOT have fewer than ${minProperties} properties`, { 'limit': minProperties }));
     }
-    if (typeof maxProperties === 'number' && Object.keys(workingValue).length > maxProperties) {
+    if (typeof maxProperties === 'number' && objectKeys.length > maxProperties) {
       errors.push(this.createError(path, 'maxProperties', `must NOT have more than ${maxProperties} properties`, { 'limit': maxProperties }));
     }
 
@@ -693,7 +700,9 @@ export class GraphEngine implements GraphEngineInterface {
       }
     }
 
-    for (const key of Object.keys(workingValue)) {
+    const iterKeys = Object.keys(workingValue);
+
+    for (const key of iterKeys) {
       if (propertyNamesNode !== undefined) {
         const propertyNameResult = this.visit(propertyNamesNode, graph, key, path, {
           ...options,
@@ -816,7 +825,7 @@ export class GraphEngine implements GraphEngineInterface {
       }
     };
 
-    for (const key of Object.keys(workingValue)) {
+    for (const key of iterKeys) {
       if (!evaluatedProperties.has(key)) {
         applyAdditional(key);
       }
@@ -858,7 +867,7 @@ export class GraphEngine implements GraphEngineInterface {
     dynamicScope: DynamicScopeEntryInterface[],
     depth = 0
   ): InternalExecutionResultInterface {
-    const ctx = this.visitContext();
+    const ctx = this.cachedVisitContext;
 
     return GraphEngineVisit.visit(ctx, node, graph, value, path, options, refStack, dynamicScope, depth);
   }
