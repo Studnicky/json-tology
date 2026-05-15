@@ -14,6 +14,8 @@ export type * from './Format.js';
 export type * from './GraphLookup.js';
 export type * from './Infer.js';
 export type * from './Invariant.js';
+export type * from './JsonSchema.js';
+export type * from './JsonSchemaTypeName.js';
 export type * from './JtConfig.js';
 export type * from './Loader.js';
 export type * from './LookupSchema.js';
