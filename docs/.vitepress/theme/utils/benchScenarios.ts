@@ -26,6 +26,7 @@ export type LibKey =
   | 'io-ts'
   | 'yup'
   | 'joi'
+  | 'effect-schema'
   | 'json-stringify'
   | 'structured-clone'
   | 'manual';
@@ -49,6 +50,7 @@ export const LIB_SPECS: readonly LibSpec[] = [
   { key: 'io-ts',            label: 'io-ts',               url: 'https://esm.sh/io-ts@2' },
   { key: 'yup',              label: 'Yup',                 url: 'https://esm.sh/yup@1' },
   { key: 'joi',              label: 'Joi',                 url: 'https://esm.sh/joi@17' },
+  { key: 'effect-schema',    label: 'Effect Schema',       url: 'https://esm.sh/effect@3' },
   { key: 'json-stringify',   label: 'JSON.stringify' },
   { key: 'structured-clone', label: 'structuredClone' },
   { key: 'manual',           label: 'Manual (handwritten)' },
@@ -485,6 +487,378 @@ function joiCoerceValid(data: unknown): Setup {
   };
 }
 
+// ----------------------------------------------------------------------------
+// FULL-COVERAGE helpers — every scenario × every library. Where a library
+// lacks a primitive, the factory shows the workaround a user of that library
+// would actually write. Comments mark the difference between native APIs and
+// userland equivalents.
+// ----------------------------------------------------------------------------
+
+// Yup / Joi flat validators (validation family)
+function yupFlatValidate(data: unknown): Setup {
+  return async () => {
+    const yup = (await importOnce('https://esm.sh/yup@1')) as typeof import('yup');
+    const Customer = yup.object({
+      id: yup.string().uuid().required(),
+      email: yup.string().email().required(),
+      name: yup.string().required(),
+    });
+    return () => {
+      try { Customer.validateSync(data, { abortEarly: false }); } catch { /* error collected */ }
+    };
+  };
+}
+
+function yupNestedValidate(data: unknown): Setup {
+  return async () => {
+    const yup = (await importOnce('https://esm.sh/yup@1')) as typeof import('yup');
+    const Customer = yup.object({ id: yup.string(), email: yup.string(), name: yup.string() });
+    const Address = yup.object({ street: yup.string(), city: yup.string(), zip: yup.string() });
+    const Nested = yup.object({ customer: Customer, address: Address, amount: yup.number() });
+    return () => {
+      try { Nested.validateSync(data, { abortEarly: false }); } catch { /* error collected */ }
+    };
+  };
+}
+
+function joiFlatValidate(data: unknown): Setup {
+  return async () => {
+    const joiMod = (await importOnce('https://esm.sh/joi@17')) as { default?: unknown };
+    const Joi = (joiMod.default ?? joiMod) as {
+      object: (s: unknown) => { validate: (d: unknown, opts: unknown) => unknown };
+      string: () => { uuid: () => unknown; email: () => unknown; required: () => unknown };
+    };
+    const Customer = Joi.object({
+      id: Joi.string().uuid().required(),
+      email: Joi.string().email().required(),
+      name: Joi.string().required(),
+    });
+    return () => { void Customer.validate(data, { abortEarly: false }); };
+  };
+}
+
+function joiNestedValidate(data: unknown): Setup {
+  return async () => {
+    const joiMod = (await importOnce('https://esm.sh/joi@17')) as { default?: unknown };
+    const Joi = (joiMod.default ?? joiMod) as {
+      object: (s: unknown) => { validate: (d: unknown, opts: unknown) => unknown };
+      string: () => unknown;
+      number: () => unknown;
+    };
+    const Customer = Joi.object({ id: Joi.string(), email: Joi.string(), name: Joi.string() });
+    const Address  = Joi.object({ street: Joi.string(), city: Joi.string(), zip: Joi.string() });
+    const Nested   = Joi.object({ customer: Customer, address: Address, amount: Joi.number() });
+    return () => { void Nested.validate(data, { abortEarly: false }); };
+  };
+}
+
+// Runtypes flat / nested
+function runtypesFlat(data: unknown): Setup {
+  return async () => {
+    const rt = (await loadLib('runtypes')).main as Record<string, unknown>;
+    const RtObject = (rt.Object ?? rt.Record) as (s: unknown) => { check: (d: unknown) => unknown; validate?: (d: unknown) => unknown };
+    const String = rt.String as unknown;
+    const Customer = RtObject({ id: String, email: String, name: String });
+    return () => {
+      try { Customer.check(data); } catch { /* error collected */ }
+    };
+  };
+}
+
+function runtypesNested(data: unknown): Setup {
+  return async () => {
+    const rt = (await loadLib('runtypes')).main as Record<string, unknown>;
+    const RtObject = (rt.Object ?? rt.Record) as (s: unknown) => { check: (d: unknown) => unknown };
+    const String = rt.String as unknown;
+    const Number = rt.Number as unknown;
+    const Customer = RtObject({ id: String, email: String, name: String });
+    const Address  = RtObject({ street: String, city: String, zip: String });
+    const Nested   = RtObject({ customer: Customer, address: Address, amount: Number });
+    return () => {
+      try { Nested.check(data); } catch { /* error collected */ }
+    };
+  };
+}
+
+// Effect Schema flat / nested
+async function loadEffect(): Promise<{ Schema: Record<string, unknown>; Either: { isLeft: (e: unknown) => boolean } }> {
+  const mod = (await loadLib('effect-schema')).main as { Schema: Record<string, unknown>; Either: { isLeft: (e: unknown) => boolean } };
+  return mod;
+}
+
+function effectFlat(data: unknown): Setup {
+  return async () => {
+    const { Schema: S, Either } = await loadEffect();
+    const Struct = S.Struct as (s: unknown) => unknown;
+    const String = S.String as unknown;
+    const Customer = Struct({ id: String, email: String, name: String });
+    const decode = (S.decodeUnknownEither as (s: unknown) => (d: unknown) => unknown)(Customer);
+    return () => {
+      const r = decode(data);
+      void Either.isLeft(r);
+    };
+  };
+}
+
+function effectNested(data: unknown): Setup {
+  return async () => {
+    const { Schema: S, Either } = await loadEffect();
+    const Struct = S.Struct as (s: unknown) => unknown;
+    const String = S.String as unknown;
+    const Number = S.Number as unknown;
+    const Customer = Struct({ id: String, email: String, name: String });
+    const Address  = Struct({ street: String, city: String, zip: String });
+    const Nested   = Struct({ customer: Customer, address: Address, amount: Number });
+    const decode = (S.decodeUnknownEither as (s: unknown) => (d: unknown) => unknown)(Nested);
+    return () => {
+      const r = decode(data);
+      void Either.isLeft(r);
+    };
+  };
+}
+
+// AJV instantiate: AJV doesn't return the value; the user runs validate and
+// uses the original data. This is the userland equivalent path.
+function ajvInstantiate(data: unknown, schema: unknown): Setup {
+  return async () => {
+    const mod = (await loadLib('ajv')).main as { default?: new () => unknown };
+    const Ajv = (mod.default ?? mod) as new () => { compile: (s: unknown) => (d: unknown) => boolean };
+    const ajv = new Ajv();
+    const validate = ajv.compile(schema);
+    return () => {
+      if (validate(data)) { void data; } else { /* invalid; user discards */ }
+    };
+  };
+}
+
+// Yup / Joi / Runtypes / Effect instantiate (parse + return value)
+function yupInstantiate(data: unknown, nested: boolean): Setup {
+  return async () => {
+    const yup = (await importOnce('https://esm.sh/yup@1')) as typeof import('yup');
+    if (nested) {
+      const Customer = yup.object({ id: yup.string(), email: yup.string(), name: yup.string() });
+      const Address  = yup.object({ street: yup.string(), city: yup.string(), zip: yup.string() });
+      const Nested   = yup.object({ customer: Customer, address: Address, amount: yup.number() });
+      return () => { void Nested.validateSync(data); };
+    }
+    const Schema = yup.object({ id: yup.string(), email: yup.string(), name: yup.string() });
+    return () => { void Schema.validateSync(data); };
+  };
+}
+
+function joiInstantiate(data: unknown, nested: boolean): Setup {
+  return async () => {
+    const joiMod = (await importOnce('https://esm.sh/joi@17')) as { default?: unknown };
+    const Joi = (joiMod.default ?? joiMod) as { object: (s: unknown) => { validate: (d: unknown) => unknown }; string: () => unknown; number: () => unknown };
+    if (nested) {
+      const Customer = Joi.object({ id: Joi.string(), email: Joi.string(), name: Joi.string() });
+      const Address  = Joi.object({ street: Joi.string(), city: Joi.string(), zip: Joi.string() });
+      const Nested   = Joi.object({ customer: Customer, address: Address, amount: Joi.number() });
+      return () => { void Nested.validate(data); };
+    }
+    const Schema = Joi.object({ id: Joi.string(), email: Joi.string(), name: Joi.string() });
+    return () => { void Schema.validate(data); };
+  };
+}
+
+// io-ts / Effect / typebox / ajv / yup / joi / runtypes clean
+function arktypeClean(data: unknown, nested: boolean): Setup {
+  return async () => {
+    const ark = (await loadLib('arktype')).main as { type: (s: unknown) => (d: unknown) => unknown };
+    const Schema = nested
+      ? ark.type({
+          customer: { id: 'string', email: 'string', name: 'string' },
+          address: { street: 'string', city: 'string', zip: 'string' },
+          amount: 'number',
+        })
+      : ark.type({ id: 'string', email: 'string', name: 'string' });
+    // ArkType has no native strip-unknown — the user-level equivalent is to
+    // run validation, then keep only the keys that the schema declares.
+    const known = nested
+      ? ['customer', 'address', 'amount'] as const
+      : ['id', 'email', 'name'] as const;
+    return () => {
+      const r = Schema(data) as Record<string, unknown>;
+      if (r) {
+        const out: Record<string, unknown> = {};
+        for (const k of known) out[k] = r[k];
+        void out;
+      }
+    };
+  };
+}
+
+function runtypesClean(data: unknown, nested: boolean): Setup {
+  return async () => {
+    const rt = (await loadLib('runtypes')).main as Record<string, unknown>;
+    const RtObject = (rt.Object ?? rt.Record) as (s: unknown) => { check: (d: unknown) => unknown };
+    const String = rt.String as unknown;
+    const Number = rt.Number as unknown;
+    const Schema = nested
+      ? RtObject({
+          customer: RtObject({ id: String, email: String, name: String }),
+          address: RtObject({ street: String, city: String, zip: String }),
+          amount: Number,
+        })
+      : RtObject({ id: String, email: String, name: String });
+    const known = nested ? ['customer', 'address', 'amount'] : ['id', 'email', 'name'];
+    // Runtypes has no strip-unknown. Validate then handpick known keys.
+    return () => {
+      try {
+        const checked = Schema.check(data) as Record<string, unknown>;
+        const out: Record<string, unknown> = {};
+        for (const k of known) out[k] = checked[k];
+        void out;
+      } catch { /* invalid */ }
+    };
+  };
+}
+
+function ajvClean(data: unknown, nested: boolean): Setup {
+  return async () => {
+    const mod = (await loadLib('ajv')).main as { default?: new (opts: unknown) => unknown };
+    const Ajv = (mod.default ?? mod) as new (opts: unknown) => { compile: (s: unknown) => (d: unknown) => boolean };
+    // AJV: removeAdditional in compiled validator mutates the value to strip
+    // properties not in the schema. This is the AJV strip-unknown path.
+    const ajv = new Ajv({ removeAdditional: 'all' });
+    const schema = nested
+      ? {
+          type: 'object',
+          properties: {
+            customer: { type: 'object', additionalProperties: false, properties: { id: { type: 'string' }, email: { type: 'string' }, name: { type: 'string' } } },
+            address:  { type: 'object', additionalProperties: false, properties: { street: { type: 'string' }, city: { type: 'string' }, zip: { type: 'string' } } },
+            amount:   { type: 'number' },
+          },
+          additionalProperties: false,
+        }
+      : {
+          type: 'object',
+          properties: { id: { type: 'string' }, email: { type: 'string' }, name: { type: 'string' } },
+          additionalProperties: false,
+        };
+    const validate = ajv.compile(schema);
+    return () => {
+      const copy = JSON.parse(JSON.stringify(data));
+      validate(copy);
+      void copy;
+    };
+  };
+}
+
+function iotsClean(data: unknown, nested: boolean): Setup {
+  return async () => {
+    const t = (await loadLib('io-ts')).main as { type: (s: unknown) => { decode: (d: unknown) => unknown }; exact: (s: unknown) => { decode: (d: unknown) => unknown }; string: unknown; number: unknown };
+    const Schema = nested
+      ? t.exact(t.type({
+          customer: t.exact(t.type({ id: t.string, email: t.string, name: t.string })),
+          address:  t.exact(t.type({ street: t.string, city: t.string, zip: t.string })),
+          amount: t.number,
+        }))
+      : t.exact(t.type({ id: t.string, email: t.string, name: t.string }));
+    // t.exact wraps the codec so unknown keys are stripped on decode.
+    return () => { void Schema.decode(data); };
+  };
+}
+
+function effectClean(data: unknown, nested: boolean): Setup {
+  return async () => {
+    const { Schema: S } = await loadEffect();
+    const Struct = S.Struct as (s: unknown) => unknown;
+    const String = S.String as unknown;
+    const Number = S.Number as unknown;
+    const Schema = nested
+      ? Struct({
+          customer: Struct({ id: String, email: String, name: String }),
+          address: Struct({ street: String, city: String, zip: String }),
+          amount: Number,
+        })
+      : Struct({ id: String, email: String, name: String });
+    // Effect Schema's decode strips unknown keys by default.
+    const decode = (S.decodeUnknownSync as (s: unknown) => (d: unknown) => unknown)(Schema);
+    return () => { try { void decode(data); } catch { /* invalid */ } };
+  };
+}
+
+// Convert/coerce factories for remaining libs (typebox-compiled, ajv, io-ts,
+// runtypes, effect)
+function typeboxConvert(data: unknown): Setup {
+  return async () => {
+    const tb = (await loadLib('typebox')).main as { Type: { Object: (s: unknown) => unknown; Number: () => unknown; Boolean: () => unknown; String: () => unknown } };
+    const value = await importOnce<{ Value: { Convert: (s: unknown, d: unknown) => unknown } }>('https://esm.sh/@sinclair/typebox@0.34/value');
+    const Schema = tb.Type.Object({ n: tb.Type.Number(), ok: tb.Type.Boolean(), tag: tb.Type.String() });
+    return () => { void value.Value.Convert(Schema, data); };
+  };
+}
+
+function ajvCoerceValid(data: unknown): Setup {
+  return async () => {
+    const mod = (await loadLib('ajv')).main as { default?: new (opts: unknown) => unknown };
+    const Ajv = (mod.default ?? mod) as new (opts: unknown) => { compile: (s: unknown) => (d: unknown) => boolean };
+    const ajv = new Ajv({ coerceTypes: true, useDefaults: true });
+    const validate = ajv.compile({
+      type: 'object',
+      properties: { n: { type: 'number' }, ok: { type: 'boolean' }, tag: { type: 'string', default: 'x' } },
+      required: ['n', 'ok'],
+    });
+    return () => {
+      const copy = JSON.parse(JSON.stringify(data));
+      validate(copy);
+      void copy;
+    };
+  };
+}
+
+function iotsCoerce(data: unknown): Setup {
+  return async () => {
+    const t = (await loadLib('io-ts')).main as { type: (s: unknown) => { decode: (d: unknown) => unknown }; string: unknown };
+    // io-ts has no built-in coerce; the user-level path is to decode the raw
+    // shape and then coerce in application code.
+    const Raw = t.type({ n: t.string, ok: t.string });
+    return () => {
+      Raw.decode(data);
+      void { n: Number(typeof data === 'object' && data ? (data as Record<string, string>).n : 0), ok: typeof data === 'object' && data ? (data as Record<string, string>).ok === 'true' : false };
+    };
+  };
+}
+
+function runtypesCoerce(data: unknown): Setup {
+  return async () => {
+    const rt = (await loadLib('runtypes')).main as Record<string, unknown>;
+    const RtObject = (rt.Object ?? rt.Record) as (s: unknown) => { check: (d: unknown) => unknown };
+    const String = rt.String as unknown;
+    // Runtypes also has no coerce — same workaround as io-ts: validate raw,
+    // then coerce explicitly.
+    const Raw = RtObject({ n: String, ok: String });
+    return () => {
+      try { Raw.check(data); } catch { /* invalid */ }
+      void { n: Number(typeof data === 'object' && data ? (data as Record<string, string>).n : 0), ok: typeof data === 'object' && data ? (data as Record<string, string>).ok === 'true' : false };
+    };
+  };
+}
+
+function effectCoerce(data: unknown): Setup {
+  return async () => {
+    const { Schema: S } = await loadEffect();
+    const Struct = S.Struct as (s: unknown) => unknown;
+    const NumberFromString = (S.NumberFromString ?? S.Number) as unknown;
+    const String = S.String as unknown;
+    const Schema = Struct({ n: NumberFromString, ok: String });
+    const decode = (S.decodeUnknownSync as (s: unknown) => (d: unknown) => unknown)(Schema);
+    return () => { try { void decode(data); } catch { /* invalid */ } };
+  };
+}
+
+// Universal clone equivalents (every lib gets the standard idiom).
+function jsonRoundTripCloneFor(data: unknown): Setup {
+  return jsonRoundTripClone(data);
+}
+
+// Universal serialize equivalents — JSON.stringify is the user-level baseline
+// for every library that doesn't have a custom encoder.
+function jsonStringifyEncode(data: unknown): Setup {
+  return async () => () => { void JSON.stringify(data); };
+}
+
 function jtConvert(data: unknown): Setup {
   return async () => {
     const mod = (await loadLib('json-tology')).main as { JsonTology: { create: (o: unknown) => { registry: { convert: (id: string, d: unknown) => unknown } } } };
@@ -570,6 +944,10 @@ export const SCENARIOS: Scenario[] = [
       'ajv': ajvFlatValidate(FLAT_VALID),
       'arktype': arktypeFlat(FLAT_VALID),
       'io-ts': iotsFlat(FLAT_VALID),
+      'yup': yupFlatValidate(FLAT_VALID),
+      'joi': joiFlatValidate(FLAT_VALID),
+      'runtypes': runtypesFlat(FLAT_VALID),
+      'effect-schema': effectFlat(FLAT_VALID),
     },
   },
   {
@@ -585,6 +963,10 @@ export const SCENARIOS: Scenario[] = [
       'ajv': ajvFlatValidate(FLAT_INVALID),
       'arktype': arktypeFlat(FLAT_INVALID),
       'io-ts': iotsFlat(FLAT_INVALID),
+      'yup': yupFlatValidate(FLAT_INVALID),
+      'joi': joiFlatValidate(FLAT_INVALID),
+      'runtypes': runtypesFlat(FLAT_INVALID),
+      'effect-schema': effectFlat(FLAT_INVALID),
     },
   },
   {
@@ -600,6 +982,10 @@ export const SCENARIOS: Scenario[] = [
       'ajv': ajvNestedValidate(NESTED_VALID),
       'arktype': arktypeNested(NESTED_VALID),
       'io-ts': iotsNested(NESTED_VALID),
+      'yup': yupNestedValidate(NESTED_VALID),
+      'joi': joiNestedValidate(NESTED_VALID),
+      'runtypes': runtypesNested(NESTED_VALID),
+      'effect-schema': effectNested(NESTED_VALID),
     },
   },
 
@@ -627,8 +1013,15 @@ export const SCENARIOS: Scenario[] = [
         return () => { void parse(Customer, FLAT_VALID); };
       },
       'typebox-compiled': typeboxFlatCompiled(FLAT_VALID),
+      // AJV has no parse — user validates then uses the original value. This
+      // is what an AJV consumer writes when they need json-tology.instantiate.
+      'ajv': ajvInstantiate(FLAT_VALID, JT_FLAT_SCHEMA),
       'arktype': arktypeFlat(FLAT_VALID),
       'io-ts': iotsFlat(FLAT_VALID),
+      'yup': yupInstantiate(FLAT_VALID, false),
+      'joi': joiInstantiate(FLAT_VALID, false),
+      'runtypes': runtypesFlat(FLAT_VALID),
+      'effect-schema': effectFlat(FLAT_VALID),
     },
   },
   {
@@ -645,8 +1038,13 @@ export const SCENARIOS: Scenario[] = [
       'zod': zodNestedValidate(NESTED_VALID),
       'valibot': valibotNestedValidate(NESTED_VALID),
       'typebox-compiled': typeboxNestedCompiled(NESTED_VALID),
+      'ajv': ajvInstantiate(NESTED_VALID, JT_NESTED_SCHEMA),
       'arktype': arktypeNested(NESTED_VALID),
       'io-ts': iotsNested(NESTED_VALID),
+      'yup': yupInstantiate(NESTED_VALID, true),
+      'joi': joiInstantiate(NESTED_VALID, true),
+      'runtypes': runtypesNested(NESTED_VALID),
+      'effect-schema': effectNested(NESTED_VALID),
     },
   },
 
@@ -660,8 +1058,8 @@ export const SCENARIOS: Scenario[] = [
       'json-tology': jtCoerceValid(),
       'zod': zodCoerceValid(COERCE_INPUT),
       'valibot': valibotCoerceValid(COERCE_INPUT),
-      // Yup .cast() applies type coercion the same way zod.coerce does.
-      // Joi has `convert: true` enabled by default — equivalent surface.
+      'typebox': typeboxConvert(COERCE_INPUT),
+      'ajv': ajvCoerceValid(COERCE_INPUT),
       'arktype': async () => {
         // ArkType has no built-in coerce; the user wraps the input. This is
         // how someone using ArkType would normalize a query-string payload.
@@ -672,6 +1070,11 @@ export const SCENARIOS: Scenario[] = [
           void Schema(coerced);
         };
       },
+      'io-ts': iotsCoerce(COERCE_INPUT),
+      'runtypes': runtypesCoerce(COERCE_INPUT),
+      'yup': yupCoerceValid(COERCE_INPUT),
+      'joi': joiCoerceValid(COERCE_INPUT),
+      'effect-schema': effectCoerce(COERCE_INPUT),
     },
   },
   {
@@ -697,8 +1100,31 @@ export const SCENARIOS: Scenario[] = [
         const parse = v.parse as (s: unknown, d: unknown) => unknown;
         return () => { void parse(schema, DEFAULTS_INPUT); };
       },
+      'typebox': typeboxConvert(DEFAULTS_INPUT),
+      'ajv': ajvCoerceValid(DEFAULTS_INPUT),
+      // ArkType has no defaults — user merges defaults before validate.
+      'arktype': async () => {
+        const ark = (await loadLib('arktype')).main as { type: (s: unknown) => (d: unknown) => unknown };
+        const Schema = ark.type({ n: 'number', ok: 'boolean', tag: 'string' });
+        return () => { void Schema({ tag: 'x', ...DEFAULTS_INPUT }); };
+      },
+      'io-ts': async () => {
+        // io-ts has no defaults; the user merges them in application code
+        // before decoding.
+        const t = (await loadLib('io-ts')).main as { type: (s: unknown) => { decode: (d: unknown) => unknown }; string: unknown; number: unknown; boolean: unknown };
+        const Schema = t.type({ n: t.number, ok: t.boolean, tag: t.string });
+        return () => { void Schema.decode({ tag: 'x', ...DEFAULTS_INPUT }); };
+      },
+      'runtypes': async () => {
+        // Runtypes has no defaults; user merges before .check().
+        const rt = (await loadLib('runtypes')).main as Record<string, unknown>;
+        const RtObject = (rt.Object ?? rt.Record) as (s: unknown) => { check: (d: unknown) => unknown };
+        const Schema = RtObject({ n: rt.Number, ok: rt.Boolean, tag: rt.String });
+        return () => { try { void Schema.check({ tag: 'x', ...DEFAULTS_INPUT }); } catch { /* invalid */ } };
+      },
       'yup': yupCoerceValid(DEFAULTS_INPUT),
       'joi': joiCoerceValid(DEFAULTS_INPUT),
+      'effect-schema': effectCoerce(DEFAULTS_INPUT),
     },
   },
 
@@ -734,6 +1160,20 @@ export const SCENARIOS: Scenario[] = [
       'joi': joiClean({ ...FLAT_VALID, extra: 1, more: 'no' }, (Joi) => {
         return Joi.object({ id: Joi.string(), email: Joi.string(), name: Joi.string() });
       }),
+      // typebox-compiled: same as Value.Clean via the compiled API surface.
+      'typebox-compiled': typeboxClean({ ...FLAT_VALID, extra: 1, more: 'no' }, (Type) => {
+        return Type.Object({ id: Type.String(), email: Type.String(), name: Type.String() });
+      }),
+      // AJV: removeAdditional in the compiled validator mutates the value.
+      'ajv': ajvClean({ ...FLAT_VALID, extra: 1, more: 'no' }, false),
+      // ArkType has no native strip — validate + handpick known keys.
+      'arktype': arktypeClean({ ...FLAT_VALID, extra: 1, more: 'no' }, false),
+      // io-ts: t.exact wraps the codec so unknown keys are stripped on decode.
+      'io-ts': iotsClean({ ...FLAT_VALID, extra: 1, more: 'no' }, false),
+      // Runtypes has no strip — validate + handpick.
+      'runtypes': runtypesClean({ ...FLAT_VALID, extra: 1, more: 'no' }, false),
+      // Effect Schema's decode strips unknown keys by default.
+      'effect-schema': effectClean({ ...FLAT_VALID, extra: 1, more: 'no' }, false),
     },
   },
   {
@@ -773,6 +1213,18 @@ export const SCENARIOS: Scenario[] = [
         const Address = Joi.object({ street: Joi.string(), city: Joi.string(), zip: Joi.string() });
         return Joi.object({ customer: Customer, address: Address, amount: Joi.number() });
       }),
+      'typebox-compiled': typeboxClean({ ...NESTED_VALID, extra: 1 }, (Type) => {
+        return Type.Object({
+          customer: Type.Object({ id: Type.String(), email: Type.String(), name: Type.String() }),
+          address: Type.Object({ street: Type.String(), city: Type.String(), zip: Type.String() }),
+          amount: Type.Number(),
+        });
+      }),
+      'ajv': ajvClean({ ...NESTED_VALID, extra: 1 }, true),
+      'arktype': arktypeClean({ ...NESTED_VALID, extra: 1 }, true),
+      'io-ts': iotsClean({ ...NESTED_VALID, extra: 1 }, true),
+      'runtypes': runtypesClean({ ...NESTED_VALID, extra: 1 }, true),
+      'effect-schema': effectClean({ ...NESTED_VALID, extra: 1 }, true),
     },
   },
   {
@@ -782,8 +1234,16 @@ export const SCENARIOS: Scenario[] = [
     description: 'String → number / boolean coercion only.',
     factories: {
       'json-tology': jtConvert(COERCE_INPUT),
-      // What every user resorts to in a library without a coerce primitive:
-      // explicit per-field `Number(x)` / `x === 'true'`.
+      'zod': zodCoerceValid(COERCE_INPUT),
+      'valibot': valibotCoerceValid(COERCE_INPUT),
+      'typebox': typeboxConvert(COERCE_INPUT),
+      'ajv': ajvCoerceValid(COERCE_INPUT),
+      'io-ts': iotsCoerce(COERCE_INPUT),
+      'runtypes': runtypesCoerce(COERCE_INPUT),
+      'yup': yupCoerceValid(COERCE_INPUT),
+      'joi': joiCoerceValid(COERCE_INPUT),
+      'effect-schema': effectCoerce(COERCE_INPUT),
+      // Universal baseline: explicit per-field Number(x) / x === 'true'.
       'manual': async () => () => {
         void { n: Number(COERCE_INPUT.n), ok: COERCE_INPUT.ok === 'true' };
       },
@@ -797,8 +1257,21 @@ export const SCENARIOS: Scenario[] = [
     factories: {
       'json-tology': jtClone(NESTED_VALID),
       'structured-clone': structuredCloneSetup(NESTED_VALID),
-      // The pre-structuredClone idiom every JS user has reached for.
-      'json-stringify': jsonRoundTripClone(NESTED_VALID),
+      // Pre-structuredClone idiom every JS user has reached for.
+      'json-stringify': jsonRoundTripCloneFor(NESTED_VALID),
+      // Cloning is not validator-territory; every per-library row routes
+      // through the same JSON round-trip — that's literally what a Zod /
+      // Valibot / TypeBox / etc. user writes for "deep clone this object".
+      'zod': jsonRoundTripCloneFor(NESTED_VALID),
+      'valibot': jsonRoundTripCloneFor(NESTED_VALID),
+      'typebox': jsonRoundTripCloneFor(NESTED_VALID),
+      'ajv': jsonRoundTripCloneFor(NESTED_VALID),
+      'arktype': jsonRoundTripCloneFor(NESTED_VALID),
+      'io-ts': jsonRoundTripCloneFor(NESTED_VALID),
+      'runtypes': jsonRoundTripCloneFor(NESTED_VALID),
+      'yup': jsonRoundTripCloneFor(NESTED_VALID),
+      'joi': jsonRoundTripCloneFor(NESTED_VALID),
+      'effect-schema': jsonRoundTripCloneFor(NESTED_VALID),
     },
   },
   {
@@ -808,9 +1281,21 @@ export const SCENARIOS: Scenario[] = [
     description: 'Compute a changeset between two nested objects.',
     factories: {
       'json-tology': jtDiff(),
-      // What a user writes when the library has no diff primitive — a hand-rolled
-      // recursive walk that records add/remove/change per JSON Pointer path.
+      // No peer library exposes a diff primitive. Every "what would the user
+      // write" answer is the same recursive walk — make that explicit by
+      // routing every row through manualDiff so the table shows what running
+      // a hand-rolled diff actually costs.
       'manual': manualDiff(),
+      'zod': manualDiff(),
+      'valibot': manualDiff(),
+      'typebox': manualDiff(),
+      'ajv': manualDiff(),
+      'arktype': manualDiff(),
+      'io-ts': manualDiff(),
+      'runtypes': manualDiff(),
+      'yup': manualDiff(),
+      'joi': manualDiff(),
+      'effect-schema': manualDiff(),
     },
   },
 
@@ -823,6 +1308,20 @@ export const SCENARIOS: Scenario[] = [
     factories: {
       'json-tology': jtDump(),
       'structured-clone': structuredCloneSetup(NESTED_FOR_DUMP),
+      // None of the comparators have a "dump through schema" primitive —
+      // the user-level equivalent for "produce a serializable representation"
+      // is the JSON round-trip every JS user reaches for.
+      'zod': jsonRoundTripCloneFor(NESTED_FOR_DUMP),
+      'valibot': jsonRoundTripCloneFor(NESTED_FOR_DUMP),
+      'typebox': jsonRoundTripCloneFor(NESTED_FOR_DUMP),
+      'ajv': jsonRoundTripCloneFor(NESTED_FOR_DUMP),
+      'arktype': jsonRoundTripCloneFor(NESTED_FOR_DUMP),
+      'io-ts': jsonRoundTripCloneFor(NESTED_FOR_DUMP),
+      'runtypes': jsonRoundTripCloneFor(NESTED_FOR_DUMP),
+      'yup': jsonRoundTripCloneFor(NESTED_FOR_DUMP),
+      'joi': jsonRoundTripCloneFor(NESTED_FOR_DUMP),
+      'effect-schema': jsonRoundTripCloneFor(NESTED_FOR_DUMP),
+      'json-stringify': jsonStringifyEncode(NESTED_FOR_DUMP),
     },
   },
   {
@@ -833,6 +1332,17 @@ export const SCENARIOS: Scenario[] = [
     factories: {
       'json-tology': jtDumpJson(),
       'json-stringify': jsonStringify(NESTED_FOR_DUMP),
+      // Same answer for every peer library — the user writes JSON.stringify.
+      'zod': jsonStringifyEncode(NESTED_FOR_DUMP),
+      'valibot': jsonStringifyEncode(NESTED_FOR_DUMP),
+      'typebox': jsonStringifyEncode(NESTED_FOR_DUMP),
+      'ajv': jsonStringifyEncode(NESTED_FOR_DUMP),
+      'arktype': jsonStringifyEncode(NESTED_FOR_DUMP),
+      'io-ts': jsonStringifyEncode(NESTED_FOR_DUMP),
+      'runtypes': jsonStringifyEncode(NESTED_FOR_DUMP),
+      'yup': jsonStringifyEncode(NESTED_FOR_DUMP),
+      'joi': jsonStringifyEncode(NESTED_FOR_DUMP),
+      'effect-schema': jsonStringifyEncode(NESTED_FOR_DUMP),
     },
   },
 
@@ -848,6 +1358,12 @@ export const SCENARIOS: Scenario[] = [
       'valibot': valibotFlatValidate(FLAT_VALID),
       'typebox-compiled': typeboxFlatCompiled(FLAT_VALID),
       'ajv': ajvFlatValidate(FLAT_VALID),
+      'arktype': arktypeFlat(FLAT_VALID),
+      'io-ts': iotsFlat(FLAT_VALID),
+      'yup': yupFlatValidate(FLAT_VALID),
+      'joi': joiFlatValidate(FLAT_VALID),
+      'runtypes': runtypesFlat(FLAT_VALID),
+      'effect-schema': effectFlat(FLAT_VALID),
     },
   },
 ];
