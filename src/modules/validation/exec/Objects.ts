@@ -161,12 +161,14 @@ export class Objects {
     collectErrors: boolean,
     applyDefaults: boolean,
     doCoerce: boolean
-  ): { 'earlyExit': boolean;
+  ): { 'count': number;
+    'earlyExit': boolean;
     'valid': boolean } {
     let valid = true;
     const pathPrefix = path === '' ? '/' : `${path}/`;
+    const keys = Object.keys(obj);
 
-    for (const key of Object.keys(obj)) {
+    for (const key of keys) {
       const propValidator = propValidators.get(key);
       const childPath = pathPrefix + key;
 
@@ -188,6 +190,7 @@ export class Objects {
 
         if (patternResult.earlyExit) {
           return {
+            'count': 0,
             'earlyExit': true,
             'valid': false
           };
@@ -211,6 +214,7 @@ export class Objects {
 
         if (knownResult.earlyExit) {
           return {
+            'count': 0,
             'earlyExit': true,
             'valid': false
           };
@@ -222,6 +226,7 @@ export class Objects {
     }
 
     return {
+      'count': keys.length,
       'earlyExit': false,
       valid
     };
@@ -231,7 +236,8 @@ export class Objects {
     path: string,
     obj: Record<string, unknown>,
     minProperties: number | undefined,
-    maxProperties: number | undefined
+    maxProperties: number | undefined,
+    precomputedCount?: number
   ): ObjectResultInterface {
     if (minProperties === undefined && maxProperties === undefined) {
       return {
@@ -241,7 +247,7 @@ export class Objects {
       };
     }
 
-    const count = Object.keys(obj).length;
+    const count = precomputedCount ?? Object.keys(obj).length;
     const errors: ValidationErrorType[] = [];
 
     if (minProperties !== undefined && count < minProperties) {

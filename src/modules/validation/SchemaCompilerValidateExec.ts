@@ -257,7 +257,7 @@ export const SchemaCompilerValidateExec = {
           }
         }
 
-        const countResult = Objects.validatePropertyCount(path, obj, minProperties, maxProperties);
+        const countResult = Objects.validatePropertyCount(path, obj, minProperties, maxProperties, propsResult.count);
 
         if (!countResult.valid) {
           if (!collectErrors) {
