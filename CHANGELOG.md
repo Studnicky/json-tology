@@ -7,13 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-05-14
+
 ### Added
 
 - `JsonTology.prefetch({ loader, schemas?, rootIds?, baseIRI? })` walks transitive `$ref` IRIs via a loader and returns a `SnapshotInterface { version: 1; schemas: ReadonlyMap<string, JsonSchemaType>; provenance? }` keyed by `$id`. Throws `GraphError('REF_UNRESOLVED')` when the loader returns `null` for a required IRI; loader-thrown errors propagate.
 - `prefetched?: SnapshotInterface` option on `JsonTology.create`. Schemas passed via `schemas` register first; entries from the snapshot then fill any IRIs not already in the registry — `schemas` wins on collision.
-- `SchemaRegistryInterface` mirrors the surface of a native `Map<string, Schema>`. Reads: `has`, `get`, `keys`, `values`, `entries`, `forEach`, `size`, `[Symbol.iterator]`. Writes: `set(iri, schema)` (replace; key must equal `schema.$id`), `delete(iri)` (returns boolean), `clear()`.
+- `SchemaRegistryInterface` mirrors the surface of a native `Map<string, Schema>`. Reads: `has`, `get`, `keys`, `values`, `entries`, `forEach`, `size`, `[Symbol.iterator]`. Writes: `set(schema, iri?)` and `set([schema | [schema, iri], ...])` (schema-first ordering, replace on collision per `Map.set`), `delete(iri)` (returns boolean), `clear()`.
 - `SchemaRegistryInterface.revision` — monotonic counter bumped on every mutation. Drives the ontology cache and is available for external consumers that cache derived views.
 - `SnapshotInterface`, `SnapshotProvenanceInterface`, and `PrefetchOptionsInterface` exported from `json-tology/interfaces`.
+- Docs: `/comparisons` — capability matrix across 11 comparator libraries (Zod, Valibot, TypeBox, AJV, Pydantic, Yup, Joi, io-ts, Effect Schema, ArkType, Runtypes).
+- Docs: `/benchmarks` — per-scenario in-browser runner. Every scenario shows the source code (via vitepress includes), a Run-in-browser button that loads each comparator from its esm.sh CDN entry on demand (json-tology imports from local `src/` via Vite alias so the page measures HEAD), and the canonical Node-side results. Every library has a row in every scenario; where a library lacks a primitive the row runs the userland equivalent the library's consumers would actually write.
+- The bench suite now lives at `examples/docs/benchmarks/` as runnable examples linked to GitHub source. `npm run bench:report` writes the consolidated `results/latest.md` and per-scenario fragments under `results/scenarios/`.
 
 ### Changed
 
