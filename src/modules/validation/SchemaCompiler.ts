@@ -43,6 +43,9 @@ import { SILENT_LOGGER } from '../../constants/LOGGER.js';
 // ---------------------------------------------------------------------------
 
 import type { CheckFnType } from '../../types/Validation.js';
+import type { SchemaCompilerCheckExecutionContextInterface } from '../../interfaces/SchemaCompilerCheckExecutionContext.js';
+import type { SchemaCompilerGraphContextInterface } from '../../interfaces/SchemaCompilerGraphContext.js';
+import type { SchemaCompilerValidatePlanContextInterface } from '../../interfaces/SchemaCompilerValidatePlanContext.js';
 
 // ---------------------------------------------------------------------------
 // SchemaCompiler
@@ -51,10 +54,13 @@ import type { CheckFnType } from '../../types/Validation.js';
 export class SchemaCompiler implements SchemaCompilerInterface {
   private activeCustomKeywords: KeywordDefinitionInterface[] = [];
   private activeLookupGraph: ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
+  private readonly checkExecContext: SchemaCompilerCheckExecutionContextInterface;
   private readonly compilingNodes = new Set<SchemaGraphNodeInterface>();
+  private readonly graphContext: SchemaCompilerGraphContextInterface;
   private readonly logger: LoggerInterface;
   public readonly lookupCompiled: ((schemaId: string) => CompiledValidatorInterface | undefined) | undefined;
   private readonly regexCache = new Map<string, RegExp>();
+  private readonly validatePlanContext: SchemaCompilerValidatePlanContextInterface;
 
   /**
    * Create a SchemaCompiler with an optional cross-schema lookup for compiled validators.
@@ -67,6 +73,96 @@ export class SchemaCompiler implements SchemaCompilerInterface {
   }) {
     this.lookupCompiled = options?.lookupCompiled;
     this.logger = options?.logger ?? SILENT_LOGGER;
+
+    this.graphContext = {
+      'activeCustomKeywords': this.activeCustomKeywords,
+      'compileNodeCheck': (node, fmt, graph, lookup) => {
+        return this.compileNodeCheck(node, fmt, graph, lookup);
+      },
+      'compileNodeOrBooleanCheck': (node, fmt, graph, lookup) => {
+        return this.compileNodeOrBooleanCheck(node, fmt, graph, lookup);
+      },
+      'compilingNodes': this.compilingNodes,
+      'lookupCompiled': this.lookupCompiled
+    };
+
+    Object.defineProperty(this.graphContext, 'activeCustomKeywords', {
+      'enumerable': true,
+      'get': () => {
+        return this.activeCustomKeywords;
+      }
+    });
+
+    this.checkExecContext = {
+      'activeCustomKeywords': this.activeCustomKeywords,
+      'compileNodeArrayCheck': (node, fmtReg, graph, lookup) => {
+        return SchemaCompilerGraph.compileArrayCheck(this.graphContext, node, fmtReg, graph, lookup);
+      },
+      'compileNodeCheck': (node, fmtReg, graph, lookup) => {
+        return this.compileNodeCheck(node, fmtReg, graph, lookup);
+      },
+      'compileNodeObjectCheck': (node, fmtReg, graph, lookup) => {
+        return SchemaCompilerGraph.compileObjectCheck(this.graphContext, node, fmtReg, graph, lookup);
+      },
+      'compileNodeOrBooleanCheck': (node, fmtReg, graph, lookup) => {
+        return this.compileNodeOrBooleanCheck(node, fmtReg, graph, lookup);
+      },
+      'compileNumberCheck': (min, max, exMin, exMax, mult) => {
+        return this.compileNumberCheck(min, max, exMin, exMax, mult);
+      },
+      'compileRefCheck': (ref, fmtReg, graph, lookup) => {
+        const lookupGraph = this.activeLookupGraph;
+
+        return SchemaCompilerGraph.compileRefCheck(this.graphContext, ref, fmtReg, graph, lookup, lookupGraph);
+      },
+      'compileStringCheck': (minLen, maxLen, pat, fmt, fmtReg, sem) => {
+        return this.compileStringCheck(minLen, maxLen, pat, fmt, fmtReg, sem);
+      },
+      'compileTypeCheck': (types) => {
+        return this.compileTypeCheck(types);
+      },
+      'tryCompileNodeFlatObjectCheck': (node, fmtReg, graph, lookup) => {
+        return SchemaCompilerGraph.tryCompileFlatObjectCheck(this.graphContext, node, fmtReg, graph, lookup);
+      }
+    };
+
+    Object.defineProperty(this.checkExecContext, 'activeCustomKeywords', {
+      'enumerable': true,
+      'get': () => {
+        return this.activeCustomKeywords;
+      }
+    });
+
+    this.validatePlanContext = {
+      'activeCustomKeywords': this.activeCustomKeywords,
+      'appliesFormatAssertions': (semantics) => {
+        return this.appliesFormatAssertions(semantics);
+      },
+      'compileNodeCheck': (targetNode, fmtReg, schemaGraph, schemaLookup) => {
+        return this.compileNodeCheck(targetNode, fmtReg, schemaGraph, schemaLookup);
+      },
+      'compileNodeOrBooleanCheck': (targetNode, fmtReg, schemaGraph, schemaLookup) => {
+        return this.compileNodeOrBooleanCheck(targetNode, fmtReg, schemaGraph, schemaLookup);
+      },
+      'compileNodeOrBooleanValidateWithErrors': (targetNode, fmtReg, schemaGraph, schemaLookup) => {
+        return this.compileNodeOrBooleanValidateWithErrors(targetNode, fmtReg, schemaGraph, schemaLookup);
+      },
+      'compileNodeValidateWithErrors': (targetNode, fmtReg, schemaGraph, schemaLookup) => {
+        return this.compileNodeValidateWithErrors(targetNode, fmtReg, schemaGraph, schemaLookup);
+      },
+      'resolveImplicitDefault': (node, graph, lookup, visited) => {
+        const lookupGraph = this.activeLookupGraph;
+
+        return SchemaCompilerDefaults.resolveImplicitDefaultValue(node, graph, lookup, visited, lookupGraph);
+      }
+    };
+
+    Object.defineProperty(this.validatePlanContext, 'activeCustomKeywords', {
+      'enumerable': true,
+      'get': () => {
+        return this.activeCustomKeywords;
+      }
+    });
   }
 
   private appliesFormatAssertions(sem: SchemaGraphSemanticsInterface): boolean {
@@ -227,101 +323,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
     try {
       return SchemaCompilerCheckExec.buildNodeCheckExecution(
-        {
-          'activeCustomKeywords': this.activeCustomKeywords,
-          'compileNodeArrayCheck': (targetNode, fmtReg, schemaGraph, schemaLookup) => {
-            return SchemaCompilerGraph.compileArrayCheck(
-              {
-                'activeCustomKeywords': this.activeCustomKeywords,
-                'compileNodeCheck': (innerNode, innerFmt, innerGraph, innerLookup) => {
-                  return this.compileNodeCheck(innerNode, innerFmt, innerGraph, innerLookup);
-                },
-                'compileNodeOrBooleanCheck': (innerNode, innerFmt, innerGraph, innerLookup) => {
-                  return this.compileNodeOrBooleanCheck(innerNode, innerFmt, innerGraph, innerLookup);
-                },
-                'compilingNodes': this.compilingNodes,
-                'lookupCompiled': this.lookupCompiled
-              },
-              targetNode,
-              fmtReg,
-              schemaGraph,
-              schemaLookup
-            );
-          },
-          'compileNodeCheck': (targetNode, fmtReg, schemaGraph, schemaLookup) => {
-            return this.compileNodeCheck(targetNode, fmtReg, schemaGraph, schemaLookup);
-          },
-          'compileNodeObjectCheck': (targetNode, fmtReg, schemaGraph, schemaLookup) => {
-            return SchemaCompilerGraph.compileObjectCheck(
-              {
-                'activeCustomKeywords': this.activeCustomKeywords,
-                'compileNodeCheck': (innerNode, innerFmt, innerGraph, innerLookup) => {
-                  return this.compileNodeCheck(innerNode, innerFmt, innerGraph, innerLookup);
-                },
-                'compileNodeOrBooleanCheck': (innerNode, innerFmt, innerGraph, innerLookup) => {
-                  return this.compileNodeOrBooleanCheck(innerNode, innerFmt, innerGraph, innerLookup);
-                },
-                'compilingNodes': this.compilingNodes,
-                'lookupCompiled': this.lookupCompiled
-              },
-              targetNode,
-              fmtReg,
-              schemaGraph,
-              schemaLookup
-            );
-          },
-          'compileNodeOrBooleanCheck': (targetNode, fmtReg, schemaGraph, schemaLookup) => {
-            return this.compileNodeOrBooleanCheck(targetNode, fmtReg, schemaGraph, schemaLookup);
-          },
-          'compileNumberCheck': (min, max, exMin, exMax, mult) => {
-            return this.compileNumberCheck(min, max, exMin, exMax, mult);
-          },
-          'compileRefCheck': (ref, fmtReg, schemaGraph, schemaLookup) => {
-            return SchemaCompilerGraph.compileRefCheck(
-              {
-                'activeCustomKeywords': this.activeCustomKeywords,
-                'compileNodeCheck': (innerNode, innerFmt, innerGraph, innerLookup) => {
-                  return this.compileNodeCheck(innerNode, innerFmt, innerGraph, innerLookup);
-                },
-                'compileNodeOrBooleanCheck': (innerNode, innerFmt, innerGraph, innerLookup) => {
-                  return this.compileNodeOrBooleanCheck(innerNode, innerFmt, innerGraph, innerLookup);
-                },
-                'compilingNodes': this.compilingNodes,
-                'lookupCompiled': this.lookupCompiled
-              },
-              ref,
-              fmtReg,
-              schemaGraph,
-              schemaLookup,
-              this.activeLookupGraph
-            );
-          },
-          'compileStringCheck': (minLen, maxLen, pat, fmt, fmtReg, sem) => {
-            return this.compileStringCheck(minLen, maxLen, pat, fmt, fmtReg, sem);
-          },
-          'compileTypeCheck': (types) => {
-            return this.compileTypeCheck(types);
-          },
-          'tryCompileNodeFlatObjectCheck': (targetNode, fmtReg, schemaGraph, schemaLookup) => {
-            return SchemaCompilerGraph.tryCompileFlatObjectCheck(
-              {
-                'activeCustomKeywords': this.activeCustomKeywords,
-                'compileNodeCheck': (innerNode, innerFmt, innerGraph, innerLookup) => {
-                  return this.compileNodeCheck(innerNode, innerFmt, innerGraph, innerLookup);
-                },
-                'compileNodeOrBooleanCheck': (innerNode, innerFmt, innerGraph, innerLookup) => {
-                  return this.compileNodeOrBooleanCheck(innerNode, innerFmt, innerGraph, innerLookup);
-                },
-                'compilingNodes': this.compilingNodes,
-                'lookupCompiled': this.lookupCompiled
-              },
-              targetNode,
-              fmtReg,
-              schemaGraph,
-              schemaLookup
-            );
-          }
-        },
+        this.checkExecContext,
         graphNode,
         formatRegistry,
         graph,
@@ -390,35 +392,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
   ): ValidateWithErrorsFnType {
     const plan = SchemaCompilerValidatePlan.buildNodeValidationPlan(
-      {
-        'activeCustomKeywords': this.activeCustomKeywords,
-        'appliesFormatAssertions': (semantics) => {
-          return this.appliesFormatAssertions(semantics);
-        },
-        'compileNodeCheck': (targetNode, fmtReg, schemaGraph, schemaLookup) => {
-          return this.compileNodeCheck(targetNode, fmtReg, schemaGraph, schemaLookup);
-        },
-        'compileNodeOrBooleanCheck': (targetNode, fmtReg, schemaGraph, schemaLookup) => {
-          return this.compileNodeOrBooleanCheck(targetNode, fmtReg, schemaGraph, schemaLookup);
-        },
-        'compileNodeOrBooleanValidateWithErrors': (targetNode, fmtReg, schemaGraph, schemaLookup) => {
-          return this.compileNodeOrBooleanValidateWithErrors(targetNode, fmtReg, schemaGraph, schemaLookup);
-        },
-        'compileNodeValidateWithErrors': (targetNode, fmtReg, schemaGraph, schemaLookup) => {
-          return this.compileNodeValidateWithErrors(targetNode, fmtReg, schemaGraph, schemaLookup);
-        },
-        'resolveImplicitDefault': (targetNode, schemaGraph, schemaLookup, visited) => {
-          const lookupGraph = this.activeLookupGraph;
-
-          return SchemaCompilerDefaults.resolveImplicitDefaultValue(
-            targetNode,
-            schemaGraph,
-            schemaLookup,
-            visited,
-            lookupGraph
-          );
-        }
-      },
+      this.validatePlanContext,
       graphNode,
       formatRegistry,
       graph,

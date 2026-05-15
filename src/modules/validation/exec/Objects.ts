@@ -164,10 +164,11 @@ export class Objects {
   ): { 'earlyExit': boolean;
     'valid': boolean } {
     let valid = true;
+    const pathPrefix = path === '' ? '/' : `${path}/`;
 
     for (const key of Object.keys(obj)) {
       const propValidator = propValidators.get(key);
-      const childPath = path === '' ? `/${key}` : `${path}/${key}`;
+      const childPath = pathPrefix + key;
 
       if (propValidator === undefined) {
         const patternResult = Objects.validateUnknownProperty(
@@ -273,9 +274,10 @@ export class Objects {
     }
 
     let valid = true;
+    const pathPrefix = path === '' ? '/' : `${path}/`;
 
     for (const key of Object.keys(value)) {
-      const pnResult = propertyNamesValidator(key, path === '' ? `/${key}` : `${path}/${key}`, errors, collectErrors, false, false, false);
+      const pnResult = propertyNamesValidator(key, pathPrefix + key, errors, collectErrors, false, false, false);
 
       if (!pnResult.valid) {
         if (!collectErrors) {
