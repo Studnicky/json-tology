@@ -10,7 +10,7 @@ import type { DuplicateReportEntryType } from '../modules/registry/SchemaRegistr
 
 export interface SchemaRegistryInterface extends Iterable<[string, Record<string, unknown>]> {
   addInvariant(schemaId: string, invariant: InvariantInterface): void;
-  cast(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown): unknown;
+  cast(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown, options?: { 'clone'?: boolean }): unknown;
   readonly 'castTypes': boolean;
   clean(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown): unknown;
   clear(): void;
@@ -21,7 +21,7 @@ export interface SchemaRegistryInterface extends Iterable<[string, Record<string
    */
   collectUnresolvedRefIris(schema: Record<string, unknown>): ReadonlySet<string>;
   readonly 'computedStore': ComputedStore;
-  convert(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown): unknown;
+  convert(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown, options?: { 'clone'?: boolean }): unknown;
   create(schemaId: string): unknown;
   readonly 'curie': CurieInterface | undefined;
   delete(schemaId: string): boolean;
@@ -38,7 +38,10 @@ export interface SchemaRegistryInterface extends Iterable<[string, Record<string
     'schema': Record<string, unknown>;
   };
   has(schemaId: string): boolean;
-  instantiate(schema: (Record<string, unknown> & { '$id': string }) | string, data: unknown, callOptions?: { 'enableDefaults'?: boolean }): unknown;
+  instantiate(schema: (Record<string, unknown> & { '$id': string }) | string, data: unknown, callOptions?: {
+    'clone'?: boolean;
+    'enableDefaults'?: boolean;
+  }): unknown;
   is(schema: (Record<string, unknown> & { '$id': string }) | string, data: unknown): boolean;
   keys(): IterableIterator<string>;
   list(): ReadonlyArray<Record<string, unknown>>;

@@ -31,11 +31,15 @@ export class VisitComposition {
       }
       pushErrors(branch.errors);
       acc.value = branch.value;
-      for (const key of branch.evaluatedProperties) {
-        acc.evaluatedProperties.add(key);
+      if (branch.evaluatedProperties !== undefined) {
+        for (const key of branch.evaluatedProperties) {
+          (acc.evaluatedProperties ??= new Set()).add(key);
+        }
       }
-      for (const index of branch.evaluatedItems) {
-        acc.evaluatedItems.add(index);
+      if (branch.evaluatedItems !== undefined) {
+        for (const index of branch.evaluatedItems) {
+          (acc.evaluatedItems ??= new Set()).add(index);
+        }
       }
     }
 
@@ -74,11 +78,15 @@ export class VisitComposition {
 
     acc.value = successfulResults[0].value;
     for (const successful of successfulResults) {
-      for (const key of successful.evaluatedProperties) {
-        acc.evaluatedProperties.add(key);
+      if (successful.evaluatedProperties !== undefined) {
+        for (const key of successful.evaluatedProperties) {
+          (acc.evaluatedProperties ??= new Set()).add(key);
+        }
       }
-      for (const index of successful.evaluatedItems) {
-        acc.evaluatedItems.add(index);
+      if (successful.evaluatedItems !== undefined) {
+        for (const index of successful.evaluatedItems) {
+          (acc.evaluatedItems ??= new Set()).add(index);
+        }
       }
     }
 
@@ -106,11 +114,15 @@ export class VisitComposition {
     }, refStack, dynScope, depth + 1);
     const branchNode = condition.valid ? thenNode : elseNode;
 
-    for (const key of condition.evaluatedProperties) {
-      acc.evaluatedProperties.add(key);
+    if (condition.evaluatedProperties !== undefined) {
+      for (const key of condition.evaluatedProperties) {
+        (acc.evaluatedProperties ??= new Set()).add(key);
+      }
     }
-    for (const index of condition.evaluatedItems) {
-      acc.evaluatedItems.add(index);
+    if (condition.evaluatedItems !== undefined) {
+      for (const index of condition.evaluatedItems) {
+        (acc.evaluatedItems ??= new Set()).add(index);
+      }
     }
 
     if (branchNode !== undefined) {
@@ -121,11 +133,15 @@ export class VisitComposition {
       }
       pushErrors(branch.errors);
       acc.value = branch.value;
-      for (const key of branch.evaluatedProperties) {
-        acc.evaluatedProperties.add(key);
+      if (branch.evaluatedProperties !== undefined) {
+        for (const key of branch.evaluatedProperties) {
+          (acc.evaluatedProperties ??= new Set()).add(key);
+        }
       }
-      for (const index of branch.evaluatedItems) {
-        acc.evaluatedItems.add(index);
+      if (branch.evaluatedItems !== undefined) {
+        for (const index of branch.evaluatedItems) {
+          (acc.evaluatedItems ??= new Set()).add(index);
+        }
       }
     }
 
@@ -264,11 +280,15 @@ export class VisitComposition {
     }
     if (matchedResult !== undefined) {
       acc.value = matchedResult.value;
-      for (const key of matchedResult.evaluatedProperties) {
-        acc.evaluatedProperties.add(key);
+      if (matchedResult.evaluatedProperties !== undefined) {
+        for (const key of matchedResult.evaluatedProperties) {
+          (acc.evaluatedProperties ??= new Set()).add(key);
+        }
       }
-      for (const index of matchedResult.evaluatedItems) {
-        acc.evaluatedItems.add(index);
+      if (matchedResult.evaluatedItems !== undefined) {
+        for (const index of matchedResult.evaluatedItems) {
+          (acc.evaluatedItems ??= new Set()).add(index);
+        }
       }
     }
 
