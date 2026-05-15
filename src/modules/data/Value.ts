@@ -4,45 +4,21 @@
  * Instance methods (cast, clean, instantiate, convert, create) delegate to a
  * SchemaRegistry for schema-aware operations.
  *
- * Static methods (clone, hash, diff, applyOp) operate on plain values
- * without requiring a schema or registry.
+ * Static method (diff) owns the internal diffAt walker and is not a wrapper.
+ * For clone and apply operations use the Operations class.
+ * For hash operations use Hash.value().
  */
 
 import type { DiffOpType } from '../../types/Diff.js';
 import type { ValueInterface } from '../../interfaces/ValueImpl.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
 import { isRecord } from './DataTypes.js';
-import { Hash } from '../hash/Hash.js';
 import { Changeset } from './Changeset.js';
-import {
-  applyOp, clone
-} from './Operations.js';
 
 export class Value implements ValueInterface {
   // ---------------------------------------------------------------------------
   // Static — pure value operations (no schema/registry)
   // ---------------------------------------------------------------------------
-
-  /**
-   * Apply a single diff operation to a value and return the result.
-   *
-   * @param root - Value to apply the operation to
-   * @param operation - Diff operation (set or delete)
-   * @returns Modified value after applying the operation
-   */
-  static applyOp(root: unknown, operation: DiffOpType): unknown {
-    return applyOp(root, operation);
-  }
-
-  /**
-   * Deep-clone a value using structured cloning.
-   *
-   * @param value - Value to clone
-   * @returns Independent deep copy of the value
-   */
-  public static clone<T extends unknown>(value: T): T {
-    return clone(value);
-  }
 
   /**
    * Compute the structural diff between two values as a Changeset.
@@ -57,16 +33,6 @@ export class Value implements ValueInterface {
     diffAt('', before, after, operations);
 
     return new Changeset(operations);
-  }
-
-  /**
-   * Compute a deterministic FNV-1a hash of a JSON-serializable value.
-   *
-   * @param value - Value to hash
-   * @returns Hex string hash
-   */
-  public static hash(value: unknown): string {
-    return Hash.value(value);
   }
 
   // ---------------------------------------------------------------------------

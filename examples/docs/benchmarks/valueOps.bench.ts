@@ -12,6 +12,7 @@ FormatRegistry.Set('email', (value) => {
 FormatRegistry.Set('date-time', (value) => {
   return !Number.isNaN(Date.parse(value));
 });
+import { Operations } from '../../../src/modules/data/Operations.js';
 import { Value } from '../../../src/modules/data/Value.js';
 import { SchemaRegistry } from '../../../src/modules/registry/SchemaRegistry.js';
 import {
@@ -104,7 +105,7 @@ export function runValueOpsBench(): BenchResult[] {
   section('clone — deep clone');
 
   const cloneNestedResult = bench('clone nested', 'json-tology', () => {
-    Value.clone(nestedValid);
+    Operations.clone(nestedValid);
   });
 
   results.push(cloneNestedResult);

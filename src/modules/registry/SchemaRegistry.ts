@@ -25,6 +25,7 @@ import type { SchemaRegistryEntryInterface } from '../../interfaces/SchemaRegist
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
 import type { ValidationErrorType } from '../../types/Validation.js';
 import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugin.js';
+import type { SchemaRegistryForEachCallback } from '../../types/SchemaRegistryForEachCallback.js';
 
 import { InstantiationError } from '../../errors/InstantiationError.js';
 import { ComputedStore } from './ComputedStore.js';
@@ -64,11 +65,6 @@ const EMPTY_VALIDATION_ERRORS = new ValidationErrors([]);
 // Re-exported so existing consumers of SchemaRegistry keep their import paths.
 export type { DuplicateReportEntryType } from '../../interfaces/SchemaEntryStore.js';
 
-type SchemaRegistryForEachCallback = (
-  schema: Record<string, unknown>,
-  schemaId: string,
-  registry: SchemaRegistryInterface
-) => void;
 
 export class SchemaRegistry implements SchemaRegistryInterface {
   public readonly castTypes: boolean;

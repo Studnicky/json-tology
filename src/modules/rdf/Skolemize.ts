@@ -14,7 +14,10 @@
 import type { SkolemizeFnType } from '../../types/Skolemize.js';
 import { Hash } from '../hash/Hash.js';
 import { HEX_RADIX } from '../../constants/NUMERIC.js';
-import { UUID_BYTE_LENGTH, UUID_BYTE_MAX_PLUS_ONE } from '../../constants/UUID.js';
+import {
+  UUID_BYTE_LENGTH,
+  UUID_BYTE_MAX_PLUS_ONE
+} from '../../constants/UUID.js';
 
 const UUID_VERSION_MASK = 0x0F;
 const UUID_VERSION_SET = 0x40;

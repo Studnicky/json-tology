@@ -8,7 +8,7 @@
  */
 
 import {
-  Compose, JsonTology, Value
+  Compose, Hash, JsonTology, Value
 } from '../src/index.js';
 import type {
   EnumValuesType, InferType, LooseInputType
@@ -121,7 +121,7 @@ console.log('PatchPerson:', patch);
 // Value operations
 // ---------------------------------------------------------------------------
 
-const hash = Value.hash(alice);
+const hash = Hash.value(alice);
 const diff = Value.diff(alice, {
   ...alice,
   'familyName': 'Smith-Jones'

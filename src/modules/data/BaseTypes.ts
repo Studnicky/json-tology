@@ -8,7 +8,10 @@
 
 import type { JSONSchema7Definition } from 'json-schema';
 import { DEFAULT_DIALECT_URI } from '../../constants/DIALECT.js';
-import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from '../../constants/PAGINATION.js';
+import {
+  DEFAULT_PAGE_SIZE,
+  MAX_PAGE_SIZE
+} from '../../constants/PAGINATION.js';
 
 const DurationDef = {
   'description': 'Duration information',

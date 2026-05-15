@@ -40,7 +40,7 @@ export class Changeset implements ChangesetInterface {
     let result: unknown = Operations.clone(value);
 
     for (const operation of this.operations) {
-      result = Operations.apply(result, operation);
+      result = Operations.patch(result, operation);
     }
 
     return result as T;

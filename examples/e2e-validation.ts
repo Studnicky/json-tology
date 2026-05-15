@@ -9,7 +9,7 @@
  */
 
 import {
-  InstantiationError, JsonTology, Value
+  Hash, InstantiationError, JsonTology, Value
 } from '../src/index.js';
 import {
   allSchemas, DateTimeSchema, foafPersons,
@@ -132,15 +132,15 @@ const applied = diff.apply(before);
 
 console.log('Applied matches after:', JSON.stringify(applied) === JSON.stringify(after));
 
-// ===== 8. Value.hash() — content-addressed deduplication ===================
+// ===== 8. Hash.value() — content-addressed deduplication ===================
 
-console.log('\n=== 8. Value.hash() ===');
-const h1 = Value.hash({
+console.log('\n=== 8. Hash.value() ===');
+const h1 = Hash.value({
   'familyName': 'Smith',
   'givenName': 'Alice'
 });
 // same content, different variable — should produce identical hash
-const h2 = Value.hash({
+const h2 = Hash.value({
   'familyName': 'Smith',
   'givenName': 'Alice'
 });

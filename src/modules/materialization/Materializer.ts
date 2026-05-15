@@ -8,7 +8,7 @@ import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
 import type { InferSchemaType } from '../../types/Infer.js';
-import type { SkolemizeFnType } from '../../types/Skolemize.js';
+import type { AboxOptionsType } from '../../types/AboxOptions.js';
 import type { JSONSchema7Definition } from 'json-schema';
 import { BaseError } from '../../errors/BaseError.js';
 import { MaterializationError } from '../../errors/MaterializationError.js';
@@ -19,11 +19,6 @@ import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
 import { Projection } from '../rdf/Projection.js';
 import { ValidationErrors } from '../../errors/ValidationErrors.js';
 import { InstantiationError } from '../../errors/InstantiationError.js';
-
-interface AboxOptionsType {
-  readonly 'graphIRI'?: string | undefined;
-  readonly 'iriFor'?: SkolemizeFnType | undefined;
-}
 
 /**
  * Materializer — runtime projection over validation execution results.
