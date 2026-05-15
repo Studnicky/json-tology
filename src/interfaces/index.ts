@@ -39,6 +39,7 @@ export type * from './SchemaCompilerCheckExecutionContext.js';
 export type * from './SchemaCompilerGraphContext.js';
 export type * from './SchemaCompilerImpl.js';
 export type * from './SchemaCompilerValidatePlanContext.js';
+export type * from './SchemaEntryStore.js';
 export type * from './SchemaGraph.js';
 export type * from './SchemaGraphImpl.js';
 export type * from './SchemaRegistry.js';

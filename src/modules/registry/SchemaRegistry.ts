@@ -16,6 +16,9 @@ import type { InvariantInterface } from '../../interfaces/Invariant.js';
 import type { LoggerInterface } from '../../interfaces/Logger.js';
 import type { RegistryOptionsInterface } from '../../interfaces/Registry.js';
 import type { SchemaCompilerInterface } from '../../interfaces/SchemaCompilerImpl.js';
+import type {
+  DuplicateReportEntryType, SchemaEntryStoreInterface
+} from '../../interfaces/SchemaEntryStore.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { SchemaRegistryEntryInterface } from '../../interfaces/SchemaRegistryEntry.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
@@ -24,6 +27,7 @@ import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugi
 
 import { InstantiationError } from '../../errors/InstantiationError.js';
 import { ComputedStore } from './ComputedStore.js';
+import { SchemaEntryStore } from './SchemaEntryStore.js';
 import { SameAsStore } from './SameAsStore.js';
 import { Curie } from '../rdf/Curie.js';
 import {
@@ -41,7 +45,6 @@ import { Resolver } from '../data/Resolver.js';
 import { SchemaCompiler } from '../validation/SchemaCompiler.js';
 import { SchemaError } from '../../errors/SchemaError.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
-import { StructuralHash } from '../data/StructuralHash.js';
 import { Transform } from '../transform/Transform.js';
 import { ValidationErrors } from '../../errors/ValidationErrors.js';
 
@@ -57,12 +60,8 @@ import { SILENT_LOGGER } from '../../constants/LOGGER.js';
 
 const EMPTY_VALIDATION_ERRORS = new ValidationErrors([]);
 
-export interface DuplicateReportEntryType<TEquivalentTo extends string = string> {
-  readonly 'equivalentTo': TEquivalentTo;
-  readonly 'pointer': string;
-  readonly 'schemaId': string;
-  readonly 'shape': Record<string, unknown>;
-}
+// Re-exported so existing consumers of SchemaRegistry keep their import paths.
+export type { DuplicateReportEntryType } from '../../interfaces/SchemaEntryStore.js';
 
 type SchemaRegistryForEachCallback = (
   schema: Record<string, unknown>,
@@ -71,7 +70,6 @@ type SchemaRegistryForEachCallback = (
 ) => void;
 
 export class SchemaRegistry implements SchemaRegistryInterface {
-  private _revision = 0;
   public readonly castTypes: boolean;
   private readonly compiler: SchemaCompilerInterface;
   public readonly computedStore: ComputedStore;
@@ -88,8 +86,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   private readonly logger: LoggerInterface;
   private readonly maxSchemaDepth: number | undefined;
   public readonly sameAsStore: SameAsStore;
-  private readonly schemaHashes = new Map<string, string>();
-  private readonly schemas = new Map<string, SchemaRegistryEntryInterface>();
+  private readonly store: SchemaEntryStoreInterface;
   private readonly vocabularies: readonly VocabularyPluginInterface[];
 
   public constructor(options?: RegistryOptionsInterface) {
@@ -119,6 +116,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     this.curie = Object.keys(mergedPrefixes).length > 0 ? new Curie(mergedPrefixes) : undefined;
     this.computedStore = new ComputedStore();
+    this.store = new SchemaEntryStore();
     this.sameAsStore = new SameAsStore();
     this.formatRegistry = options?.formatRegistry;
     this.keywords = options?.keywords;
@@ -126,7 +124,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     this.compiler = new SchemaCompiler({
       'logger': this.logger,
       'lookupCompiled': (schemaId) => {
-        return this.schemas.has(schemaId)
+        return this.store.has(schemaId)
           ? this.compiled(schemaId)
           : undefined;
       }
@@ -241,7 +239,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
    * than an apparent OK.
    */
   private checkDisjointWith(schemaId: string, data: unknown): ValidationErrorType[] {
-    const entry = this.schemas.get(schemaId);
+    const entry = this.store.get(schemaId);
 
     if (entry === undefined) {
       return [];
@@ -312,12 +310,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   }
 
   public clear(): void {
-    if (this.schemas.size === 0 && this.schemaHashes.size === 0) {
-      return;
-    }
-    this.schemas.clear();
-    this.schemaHashes.clear();
-    this._revision++;
+    this.store.clear();
   }
 
   private collectAnchors(schema: Record<string, unknown>, seen: Set<string>, schemaId: string): void {
@@ -395,7 +388,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       const refIri = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
       const resolved = this.resolve(refIri);
 
-      if (!this.schemas.has(resolved) && !this.schemas.has(refIri) && !embeddedIds.has(refIri)) {
+      if (!this.store.has(resolved) && !this.store.has(refIri) && !embeddedIds.has(refIri)) {
         out.add(resolved === refIri ? refIri : resolved);
       }
     }
@@ -420,7 +413,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   }
 
   private compiled(schemaId: string): CompiledValidatorInterface | undefined {
-    const entry = this.schemas.get(schemaId);
+    const entry = this.store.get(schemaId);
 
     if (entry === undefined) {
       return undefined;
@@ -453,7 +446,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   }
 
   public create(schemaId: string): unknown {
-    const entry = this.schemas.get(this.resolve(schemaId));
+    const entry = this.store.get(this.resolve(schemaId));
 
     if (entry === undefined) {
       throw new SchemaError('SCHEMA_NOT_REGISTERED', `No schema registered for: ${schemaId}`, schemaId);
@@ -467,22 +460,12 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   }
 
   public delete(schemaId: string): boolean {
-    const resolved = this.resolve(schemaId);
-    const entry = this.schemas.get(resolved);
-
-    if (entry === undefined) {
-      return false;
-    }
-    this.schemas.delete(resolved);
-    this.schemaHashes.delete(entry.hash);
-    this._revision++;
-
-    return true;
+    return this.store.delete(this.resolve(schemaId));
   }
 
   public engine(schema: Record<string, unknown>): GraphEngineInterface {
     const schemaId = schema.$id as string;
-    const entry = this.schemas.get(schemaId);
+    const entry = this.store.get(schemaId);
 
     if (entry === undefined) {
       throw new SchemaError('SCHEMA_VALIDATOR_MISSING', `No validator registered for schema: ${schemaId}`, schemaId);
@@ -503,7 +486,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
           return this.graph(lookupSchemaId);
         },
         'lookupSchema': (lookupSchemaId: string) => {
-          return this.schemas.get(lookupSchemaId)?.schema ?? embeddedSchemas.get(lookupSchemaId);
+          return this.store.get(lookupSchemaId)?.schema ?? embeddedSchemas.get(lookupSchemaId);
         }
       };
 
@@ -518,7 +501,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     for (const [
       iri,
       entry
-    ] of this.schemas) {
+    ] of this.store.entries()) {
       yield [
         iri,
         entry.schema
@@ -527,44 +510,24 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   }
 
   public findDuplicates(): readonly DuplicateReportEntryType[] {
-    const topLevelHashes = new Map<string, string>();
-
-    for (const [
-      schemaId,
-      entry
-    ] of this.schemas) {
-      const topHash = StructuralHash.of(entry.schema);
-
-      topLevelHashes.set(topHash, schemaId);
-    }
-
-    const results: DuplicateReportEntryType[] = [];
-
-    for (const [
-      schemaId,
-      entry
-    ] of this.schemas) {
-      this.walkForDuplicates(schemaId, entry.schema, '', topLevelHashes, results);
-    }
-
-    return results;
+    return this.store.findDuplicates();
   }
 
   public forEach(callback: SchemaRegistryForEachCallback): void {
     for (const [
       iri,
       entry
-    ] of this.schemas) {
+    ] of this.store.entries()) {
       callback(entry.schema, iri, this);
     }
   }
 
   public get(schemaId: string): Record<string, unknown> | undefined {
-    return this.schemas.get(this.resolve(schemaId))?.schema;
+    return this.store.get(this.resolve(schemaId))?.schema;
   }
 
   public graph(schemaId: string): SchemaGraphInterface | undefined {
-    const entry = this.schemas.get(this.resolve(schemaId));
+    const entry = this.store.get(this.resolve(schemaId));
 
     if (entry === undefined) {
       return undefined;
@@ -580,7 +543,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   }
 
   public has(schemaId: string): boolean {
-    return this.schemas.has(this.resolve(schemaId));
+    return this.store.has(this.resolve(schemaId));
   }
 
   private hashSchema(schema: Record<string, unknown>): string {
@@ -597,7 +560,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     callOptions?: { 'enableDefaults'?: boolean }
   ): unknown {
     const schemaId = typeof schema === 'string' ? this.resolve(schema) : schema.$id;
-    const entry = this.schemas.get(schemaId);
+    const entry = this.store.get(schemaId);
 
     if (entry === undefined) {
       throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`);
@@ -675,12 +638,12 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const schemaObj = typeof schema === 'string' ? entry.schema : schema;
     const refDecoded = RefDecoder.run(this.graphOf(entry), coerced, {
       'getGraph': (target) => {
-        const found = this.schemas.get(target.$id as string);
+        const found = this.store.get(target.$id as string);
 
         return found === undefined ? undefined : this.graphOf(found);
       },
       'getSchema': (targetId) => {
-        return this.schemas.get(targetId)?.schema;
+        return this.store.get(targetId)?.schema;
       },
       'resolveSchemaId': (rawId) => {
         return this.resolve(rawId);
@@ -738,17 +701,17 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   }
 
   public keys(): IterableIterator<string> {
-    return this.schemas.keys();
+    return this.store.keys();
   }
 
   public list(): ReadonlyArray<Record<string, unknown>> {
-    return [...this.schemas.values()].map((entry) => {
+    return [...this.store.values()].map((entry) => {
       return entry.schema;
     });
   }
 
   public listGraphs(): readonly SchemaGraphInterface[] {
-    return [...this.schemas.values()].map((entry) => {
+    return [...this.store.values()].map((entry) => {
       return this.graphOf(entry);
     });
   }
@@ -797,8 +760,8 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     const hash = this.hashSchema(schema);
 
-    if (this.schemas.has(schemaId)) {
-      const existing = this.schemas.get(schemaId);
+    if (this.store.has(schemaId)) {
+      const existing = this.store.get(schemaId);
 
       if (existing === undefined) {
         return;
@@ -822,7 +785,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       );
     }
 
-    const existingId = this.schemaHashes.get(hash);
+    const existingId = this.store.getByHash(hash);
 
     if (existingId !== undefined && existingId !== schemaId) {
       this.logger.warn(`Schema content already registered under different ID: existing="${existingId}" new="${schemaId}"`);
@@ -853,9 +816,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       }
     }
 
-    this.schemas.set(schemaId, entry);
-    this.schemaHashes.set(hash, schemaId);
-    this._revision++;
+    this.store.add(schemaId, entry);
     this.computedStore.validateAgainstGraph(graph);
 
     if (this.enableDuplicateDetection) {
@@ -896,7 +857,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   }
 
   public get revision(): number {
-    return this._revision;
+    return this.store.revision;
   }
 
   public set(schema: Record<string, unknown>, iri?: string): this;
@@ -976,16 +937,15 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   }
 
   public get size(): number {
-    return this.schemas.size;
+    return this.store.size;
   }
-
 
   public subschemaAt(
     schema: (Record<string, unknown> & { '$id': string; }) | string,
     pointer: string
   ): Record<string, unknown> & { '$id': string } {
     const schemaId = typeof schema === 'string' ? this.resolve(schema) : schema.$id;
-    const entry = this.schemas.get(schemaId);
+    const entry = this.store.get(schemaId);
 
     if (!entry) {
       throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`, schemaId);
@@ -1002,7 +962,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     };
 
     // Register so the result can be passed to validate/instantiate/is directly
-    if (!this.schemas.has(synthesizedId)) {
+    if (!this.store.has(synthesizedId)) {
       this.set(result);
     }
 
@@ -1056,76 +1016,8 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   }
 
   public *values(): IterableIterator<Record<string, unknown>> {
-    for (const entry of this.schemas.values()) {
+    for (const entry of this.store.values()) {
       yield entry.schema;
-    }
-  }
-
-  private walkForDuplicates(
-    schemaId: string,
-    schema: Record<string, unknown>,
-    pointer: string,
-    topLevelHashes: Map<string, string>,
-    results: DuplicateReportEntryType[]
-  ): void {
-    if (isRecord(schema.properties)) {
-      for (const [
-        propName,
-        propSchema
-      ] of Object.entries(schema.properties)) {
-        if (!isRecord(propSchema)) {
-          continue;
-        }
-        const propPointer = `${pointer}/properties/${propName}`;
-
-        if (typeof propSchema.$id !== 'string' && !('$ref' in propSchema)) {
-          const leafHash = StructuralHash.of(propSchema);
-          const matchId = topLevelHashes.get(leafHash);
-
-          if (matchId !== undefined && matchId !== schemaId) {
-            results.push({
-              'equivalentTo': matchId,
-              'pointer': propPointer,
-              'schemaId': schemaId,
-              'shape': propSchema
-            });
-          }
-        }
-
-        this.walkForDuplicates(schemaId, propSchema, propPointer, topLevelHashes, results);
-      }
-    }
-
-    for (const compositionKey of [
-      'allOf',
-      'anyOf',
-      'oneOf'
-    ]) {
-      const compositionArr = schema[compositionKey];
-
-      if (Array.isArray(compositionArr)) {
-        for (const [
-          idx,
-          subSchema
-        ] of compositionArr.entries()) {
-          if (!isRecord(subSchema)) {
-            continue;
-          }
-          this.walkForDuplicates(schemaId, subSchema, `${pointer}/${compositionKey}/${idx}`, topLevelHashes, results);
-        }
-      }
-    }
-
-    if (isRecord(schema.$defs)) {
-      for (const [
-        defName,
-        defSchema
-      ] of Object.entries(schema.$defs)) {
-        if (!isRecord(defSchema)) {
-          continue;
-        }
-        this.walkForDuplicates(schemaId, defSchema, `${pointer}/$defs/${defName}`, topLevelHashes, results);
-      }
     }
   }
 
@@ -1149,7 +1041,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       const refIri = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
       const resolved = this.resolve(refIri);
 
-      if (!this.schemas.has(resolved) && !this.schemas.has(refIri) && !embeddedIds.has(refIri)) {
+      if (!this.store.has(resolved) && !this.store.has(refIri) && !embeddedIds.has(refIri)) {
         throw new GraphError(
           'REF_UNRESOLVED',
           `unresolved $ref: ${ref} (referenced from ${parentSchemaId})`,
