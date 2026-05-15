@@ -869,8 +869,8 @@ function jtConvert(data: unknown): Setup {
 
 function jtClone(data: unknown): Setup {
   return async () => {
-    const mod = (await loadLib('json-tology')).main as { Value: { clone: (d: unknown) => unknown } };
-    return () => { void mod.Value.clone(data); };
+    const mod = (await loadLib('json-tology')).main as { Operations: { clone: (d: unknown) => unknown } };
+    return () => { void mod.Operations.clone(data); };
   };
 }
 

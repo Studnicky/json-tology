@@ -1,5 +1,8 @@
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
 import {
+  IPV6_FULL, IPV6_MIXED, IPV6_MIXED_COMPRESSED, IPV6_WITH_DOUBLE_COLON
+} from '../../constants/FORMAT_REGEXES.js';
+import {
   BASE64_CHUNK_SIZE, BASE64_MAX_PADDING, DATE_DAY_MAX,
   DATE_DAY_OFFSET_1, DATE_DAY_OFFSET_2, DATE_DAY_SEPARATOR_OFFSET,
   DATE_MONTH_MAX, DATE_MONTH_OFFSET_1, DATE_MONTH_OFFSET_2,
@@ -148,12 +151,6 @@ function isIPv4(value: string): boolean {
   return true;
 }
 
-// Matches full IPv6 addresses including :: collapsed forms and optional
-// trailing IPv4-mapped suffix (RFC 4291 §2.2).
-const IPV6_FULL = /^[\da-f]{1,4}(?::[\da-f]{1,4}){7}$/iu;
-const IPV6_WITH_DOUBLE_COLON = /^(?:[\da-f]{1,4}:){0,7}:(?:[\da-f]{1,4}:){0,6}[\da-f]{0,4}$/iu;
-const IPV6_MIXED = /^(?:[\da-f]{1,4}:){6}(?:\d{1,3}\.){3}\d{1,3}$/iu;
-const IPV6_MIXED_COMPRESSED = /^::(?:[\da-f]{1,4}:){0,5}(?:\d{1,3}\.){3}\d{1,3}$/iu;
 
 function isIPv6(value: string): boolean {
   if (value.length === 0) {

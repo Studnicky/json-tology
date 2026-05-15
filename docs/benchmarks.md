@@ -130,7 +130,7 @@ Apply default values during instantiate.
 
 ## Value operations
 
-`Value.clone`, `Value.diff`, `registry.clean`, `registry.convert` against `structuredClone`.
+`Operations.clone`, `Value.diff`, `registry.clean`, `registry.convert` against `structuredClone`.
 
 Source:
 

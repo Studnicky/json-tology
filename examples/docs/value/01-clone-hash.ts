@@ -1,5 +1,5 @@
 /**
- * Value.clone / Value.hash — Example 1: Deep copy and deterministic hash
+ * Operations.clone / Hash.value — Example 1: Deep copy and deterministic hash
  * Demonstrates: clone independence, hash key-order invariance
  */
 

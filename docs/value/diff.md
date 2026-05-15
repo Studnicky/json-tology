@@ -1,4 +1,4 @@
-# `Value.diff` and `Value.applyOp`
+# `Value.diff` and `Operations.patch`
 
 ---
 
@@ -10,7 +10,7 @@ A `Changeset` is the result type returned by `Value.diff`. It holds an ordered l
 - `.length`: number of operations in the changeset
 - `.operations`: readonly array of `DiffOpType` (`{ op: 'set', path: string, value: unknown }` or `{ op: 'delete', path: string }`)
 
-See [`Value.diff`](#value-diff) for usage examples and [`Value.applyOp`](#value-applyop) for applying individual operations.
+See [`Value.diff`](#value-diff) for usage examples and [`Operations.patch`](#operations-patch) for applying individual operations.
 
 ---
 
@@ -20,7 +20,7 @@ See [`Value.diff`](#value-diff) for usage examples and [`Value.applyOp`](#value-
 
 **Use this when** you need event sourcing, audit logs, optimistic concurrency checks, undo/redo, or detecting whether two values differ without a full deep-equal check.
 
-**Don't use this when** you only need a boolean "are these equal?" check - `Value.hash(a) === Value.hash(b)` is faster for equality. Don't use it inside tight inner loops - it walks both objects recursively.
+**Don't use this when** you only need a boolean "are these equal?" check - `Hash.value(a) === Hash.value(b)` is faster for equality. Don't use it inside tight inner loops - it walks both objects recursively.
 
 ### Examples
 
@@ -168,22 +168,24 @@ changes = {k: v for k, v in after_dict.items() if before_dict.get(k) != v}
 
 ---
 
-## `Value.applyOp` {#value-applyop}
+## `Operations.patch` {#operations-patch}
 
 **Declaration.** Applies a single `DiffOpType` operation (`{ op: 'set', path: string, value: unknown }` or `{ op: 'delete', path: string }`) to a value and returns the result. The path is a JSON Pointer string. Does not mutate the input - clone it first if you need the original.
 
 **Use this when** you want to apply specific operations from a changeset rather than all of them - for example, rolling back one field change in an undo system, or applying real-time patch updates one at a time.
 
-**Don't use this when** you want to apply all operations at once - use `changeset.apply(value)` (or loop over `changeset.operations` and call `Value.applyOp` yourself - see the note about `Changeset.apply` below).
+**Don't use this when** you want to apply all operations at once - use `changeset.apply(value)` (or loop over `changeset.operations` and call `Operations.patch` yourself - see the note about `Changeset.apply` below).
 
 ::: tip Note on Changeset.apply
 
 The project lint rules block direct calls to methods named `.apply()` (to prevent accidental use of `Function.prototype.apply`). To apply a full changeset, loop over `.operations` manually:
 
 ```ts
-let result: unknown = Value.clone(before);
+import { Operations } from 'json-tology/value';
+
+let result: unknown = Operations.clone(before);
 for (const op of changes.operations) {
-  result = Value.applyOp(result, op);
+  result = Operations.patch(result, op);
 }
 ```
 
@@ -194,7 +196,7 @@ for (const op of changes.operations) {
 #### Example 1: Apply a single price update
 
 ```ts
-import { Value } from 'json-tology';
+import { Operations } from 'json-tology/value';
 
 const book = jt.instantiate(BookSchema.$id, {
   isbn:    '9780140449136',
@@ -203,7 +205,7 @@ const book = jt.instantiate(BookSchema.$id, {
   price:   14.99,
 });
 
-const updated = Value.applyOp(Value.clone(book), {
+const updated = Operations.patch(Operations.clone(book), {
   op:    'set',
   path:  '/price',
   value: 12.99,
@@ -217,11 +219,11 @@ console.log(book.price);                      // 14.99  - original unchanged
 ::: code-group
 
 ```ts [json-tology]
-const result = Value.applyOp(Value.clone(book), { op: 'set', path: '/price', value: 12.99 });
+const result = Operations.patch(Operations.clone(book), { op: 'set', path: '/price', value: 12.99 });
 ```
 
 ```ts [Zod]
-// Zod has no built-in applyOp. Use fast-json-patch:
+// Zod has no built-in patch. Use fast-json-patch:
 import { applyOperation } from 'fast-json-patch';
 const result = applyOperation(clone, { op: 'replace', path: '/price', value: 12.99 }).newDocument;
 // Limitation: fast-json-patch uses JSON Patch format (op: 'replace'), not the
@@ -229,14 +231,14 @@ const result = applyOperation(clone, { op: 'replace', path: '/price', value: 12.
 ```
 
 ```ts [Valibot]
-// Limitation: Valibot has no applyOp. Use fast-json-patch:
+// Limitation: Valibot has no patch utility. Use fast-json-patch:
 import { applyOperation } from 'fast-json-patch';
 const result = applyOperation(clone, { op: 'replace', path: '/price', value: 12.99 }).newDocument;
 // Same constraints as Zod - JSON Patch format, extra dependency, no schema awareness.
 ```
 
 ```ts [io-ts]
-// Limitation: io-ts has no applyOp. Use fast-json-patch:
+// Limitation: io-ts has no patch utility. Use fast-json-patch:
 import { applyOperation } from 'fast-json-patch';
 const result = applyOperation(clone, { op: 'replace', path: '/price', value: 12.99 }).newDocument;
 // JSON Patch format, extra dependency, no schema-aware mutation.
@@ -246,14 +248,14 @@ const result = applyOperation(clone, { op: 'replace', path: '/price', value: 12.
 // TypeBox has no built-in diff.
 // Closest: implement manually over Value.Errors or with a deep-diff library.
 // Limitation: no standard diff API; output format is library-specific;
-// no composable `applyOp` complement.
+// no composable patch complement.
 
 ```
 
 ```ts [AJV]
 // AJV has no built-in diff.
 // Use a third-party library (microdiff, deep-diff) applied after validation.
-// Limitation: same as TypeBox - no Changeset, no JSON Pointer paths, no applyOp.
+// Limitation: same as TypeBox - no Changeset, no JSON Pointer paths, no patch.
 ```
 
 ```py [Pydantic]
@@ -285,7 +287,7 @@ updated = book.model_copy(update={'price': 12.99})
 
 ## Related
 
-- [`Value.clone`](/value/clone-hash#value-clone) - clone before applying to preserve original
+- [`Operations.clone`](/value/clone-hash#operations-clone) - clone before applying to preserve original
 - [`Value.diff`](#value-diff) - produce the operations to apply
 
 ## See also
