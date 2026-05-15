@@ -27,16 +27,27 @@ import { BaseError } from '../../errors/BaseError.js';
 import { Predicates } from './Predicates.js';
 import { SchemaCompilerDefaults } from './SchemaCompilerDefaults.js';
 import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
-import { SchemaCompilerCheckExec } from './SchemaCompilerCheckExec.js';
-import { SchemaCompilerValidateExec } from './SchemaCompilerValidateExec.js';
-import { SchemaCompilerValidatePlan } from './SchemaCompilerValidatePlan.js';
 import type { ValidateWithErrorsFnType } from '../../types/Validation.js';
-import { SchemaCompilerGraph } from './SchemaCompilerGraph.js';
 import {
   DEFAULT_DIALECT_URI, VOCABULARY_FORMAT_ASSERTION
 } from '../../constants/DIALECT.js';
 import type { LoggerInterface } from '../../interfaces/Logger.js';
 import { SILENT_LOGGER } from '../../constants/LOGGER.js';
+import type { CompiledNodeValidationPlanInterface } from '../../interfaces/CompiledNodeValidationPlan.js';
+import { Arrays } from './exec/Arrays.js';
+import { Composition } from './exec/Composition.js';
+import { Objects } from './exec/Objects.js';
+import { Scalars } from './exec/Scalars.js';
+import {
+  buildNodePlan,
+  compileArrayCheck,
+  compileConstCheck,
+  compileEnumCheck,
+  compileObjectCheck,
+  compileRefCheck,
+  nodeSupportsCompilation,
+  tryCompileFlatObjectCheck
+} from './SchemaCompilerPlan.js';
 
 // ---------------------------------------------------------------------------
 // Internal types
@@ -96,13 +107,13 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     this.checkExecContext = {
       'activeCustomKeywords': this.activeCustomKeywords,
       'compileNodeArrayCheck': (node, fmtReg, graph, lookup) => {
-        return SchemaCompilerGraph.compileArrayCheck(this.graphContext, node, fmtReg, graph, lookup);
+        return compileArrayCheck(this.graphContext, node, fmtReg, graph, lookup);
       },
       'compileNodeCheck': (node, fmtReg, graph, lookup) => {
         return this.compileNodeCheck(node, fmtReg, graph, lookup);
       },
       'compileNodeObjectCheck': (node, fmtReg, graph, lookup) => {
-        return SchemaCompilerGraph.compileObjectCheck(this.graphContext, node, fmtReg, graph, lookup);
+        return compileObjectCheck(this.graphContext, node, fmtReg, graph, lookup);
       },
       'compileNodeOrBooleanCheck': (node, fmtReg, graph, lookup) => {
         return this.compileNodeOrBooleanCheck(node, fmtReg, graph, lookup);
@@ -113,7 +124,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       'compileRefCheck': (ref, fmtReg, graph, lookup) => {
         const lookupGraph = this.activeLookupGraph;
 
-        return SchemaCompilerGraph.compileRefCheck(this.graphContext, ref, fmtReg, graph, lookup, lookupGraph);
+        return compileRefCheck(this.graphContext, ref, fmtReg, graph, lookup, lookupGraph);
       },
       'compileStringCheck': (minLen, maxLen, pat, fmt, fmtReg, sem) => {
         return this.compileStringCheck(minLen, maxLen, pat, fmt, fmtReg, sem);
@@ -122,7 +133,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         return this.compileTypeCheck(types);
       },
       'tryCompileNodeFlatObjectCheck': (node, fmtReg, graph, lookup) => {
-        return SchemaCompilerGraph.tryCompileFlatObjectCheck(this.graphContext, node, fmtReg, graph, lookup);
+        return tryCompileFlatObjectCheck(this.graphContext, node, fmtReg, graph, lookup);
       }
     };
 
@@ -181,6 +192,1241 @@ export class SchemaCompiler implements SchemaCompilerInterface {
 
     // No $schema or other dialect → default to enabled
     return true;
+  }
+
+  private buildNodeCheckExecution(
+    context: SchemaCompilerCheckExecutionContextInterface,
+    graphNode: SchemaGraphNodeInterface,
+    formatRegistry: FormatRegistryInterface,
+    graph: SchemaGraphInterface,
+    lookupSchema?: (id: string) => Record<string, unknown> | undefined
+  ): CheckFnType {
+    const fastPath = context.tryCompileNodeFlatObjectCheck(graphNode, formatRegistry, graph, lookupSchema);
+
+    if (fastPath !== undefined) {
+      return fastPath;
+    }
+
+    const checks: CheckFnType[] = [];
+    const sem = graph.semantics(graphNode);
+    const types = sem.schemaTypes;
+
+    if (types.length > 0) {
+      checks.push(context.compileTypeCheck(types));
+    }
+
+    if (sem.hasConst) {
+      checks.push(compileConstCheck(sem.constValue));
+    }
+
+    if (sem.enumValues !== undefined) {
+      checks.push(compileEnumCheck(sem.enumValues));
+    }
+
+    if (sem.minLength !== undefined || sem.maxLength !== undefined
+    || sem.pattern !== undefined || sem.format !== undefined) {
+      const stringCheck = context.compileStringCheck(
+        sem.minLength,
+        sem.maxLength,
+        sem.pattern,
+        sem.format,
+        formatRegistry,
+        sem
+      );
+
+      if (stringCheck !== undefined) {
+        checks.push(stringCheck);
+      }
+    }
+
+    if (sem.minimum !== undefined || sem.maximum !== undefined || sem.exclusiveMinimum !== undefined
+    || sem.exclusiveMaximum !== undefined || sem.multipleOf !== undefined) {
+      const numCheck = context.compileNumberCheck(
+        sem.minimum,
+        sem.maximum,
+        sem.exclusiveMinimum,
+        sem.exclusiveMaximum,
+        sem.multipleOf
+      );
+
+      if (numCheck !== undefined) {
+        checks.push(numCheck);
+      }
+    }
+
+    if (typeof sem.ref === 'string') {
+      const refCheck = context.compileRefCheck(sem.ref, formatRegistry, graph, lookupSchema);
+
+      if (refCheck !== undefined) {
+        checks.push(refCheck);
+      }
+    }
+
+    if (sem.schemaTypes.includes('object') || sem.properties.size > 0 || sem.required.length > 0) {
+      const objCheck = context.compileNodeObjectCheck(graphNode, formatRegistry, graph, lookupSchema);
+
+      if (objCheck !== undefined) {
+        checks.push(objCheck);
+      }
+    }
+
+    if (Object.keys(sem.dependentRequired).length > 0) {
+      const depEntries = Object.entries(sem.dependentRequired);
+
+      checks.push((value) => {
+        if (!isRecord(value)) {
+          return true;
+        }
+        const obj = value;
+
+        for (const [
+          trigger,
+          required
+        ] of depEntries) {
+          if (trigger in obj) {
+            for (const req of required) {
+              if (!(req in obj)) {
+                return false;
+              }
+            }
+          }
+        }
+
+        return true;
+      });
+    }
+
+    if (sem.dependentSchemaEntries.length > 0) {
+      const depSchemaChecks: Array<{ 'check': CheckFnType;
+        'trigger': string; }> = [];
+
+      for (const [
+        trigger,
+        node
+      ] of sem.dependentSchemaEntries) {
+        let depCheck: CheckFnType;
+
+        if (typeof node.schema === 'boolean') {
+          depCheck = node.schema
+            ? () => {
+              return true;
+            }
+            : () => {
+              return false;
+            };
+        } else {
+          depCheck = context.compileNodeCheck(node, formatRegistry, graph, lookupSchema);
+        }
+        depSchemaChecks.push({
+          'check': depCheck,
+          'trigger': trigger
+        });
+      }
+
+      if (depSchemaChecks.length > 0) {
+        checks.push((value) => {
+          if (!isRecord(value)) {
+            return true;
+          }
+          const obj = value;
+
+          for (const dep of depSchemaChecks) {
+            if (dep.trigger in obj && !dep.check(value)) {
+              return false;
+            }
+          }
+
+          return true;
+        });
+      }
+    }
+
+    if (sem.propertyNamesNode !== undefined) {
+      const pnCheck = context.compileNodeOrBooleanCheck(sem.propertyNamesNode, formatRegistry, graph, lookupSchema);
+
+      checks.push((value) => {
+        if (!isRecord(value)) {
+          return true;
+        }
+
+        for (const key of Object.keys(value)) {
+          if (!pnCheck(key)) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+    }
+
+    if (sem.schemaTypes.includes('array') || sem.itemsNode !== undefined || sem.prefixItems.length > 0) {
+      const arrCheck = context.compileNodeArrayCheck(graphNode, formatRegistry, graph, lookupSchema);
+
+      if (arrCheck !== undefined) {
+        checks.push(arrCheck);
+      }
+    }
+
+    if (sem.allOf.length > 0) {
+      const allOfChecks = sem.allOf.map((node) => {
+        return context.compileNodeOrBooleanCheck(node, formatRegistry, graph, lookupSchema);
+      });
+
+      checks.push((value) => {
+        return allOfChecks.every((check) => {
+          return check(value);
+        });
+      });
+    }
+
+    if (sem.anyOf.length > 0) {
+      const anyOfChecks = sem.anyOf.map((node) => {
+        return context.compileNodeOrBooleanCheck(node, formatRegistry, graph, lookupSchema);
+      });
+
+      checks.push((value) => {
+        return anyOfChecks.some((check) => {
+          return check(value);
+        });
+      });
+    }
+
+    if (sem.oneOf.length > 0) {
+      const oneOfChecks = sem.oneOf.map((node) => {
+        return context.compileNodeOrBooleanCheck(node, formatRegistry, graph, lookupSchema);
+      });
+
+      checks.push((value) => {
+        let count = 0;
+
+        for (const check of oneOfChecks) {
+          if (check(value)) {
+            count++;
+            if (count > 1) {
+              return false;
+            }
+          }
+        }
+
+        return count === 1;
+      });
+    }
+
+    if (sem.complementNode !== undefined) {
+      const { complementNode } = sem;
+      const complementCheck = context.compileNodeOrBooleanCheck(complementNode, formatRegistry, graph, lookupSchema);
+
+      checks.push((value) => {
+        return !complementCheck(value);
+      });
+    }
+
+    if (sem.ifNode !== undefined) {
+      const ifCheck = context.compileNodeOrBooleanCheck(sem.ifNode, formatRegistry, graph, lookupSchema);
+      const thenCheck = sem.thenNode === undefined
+        ? undefined
+        : context.compileNodeOrBooleanCheck(sem.thenNode, formatRegistry, graph, lookupSchema);
+      const elseCheck = sem.elseNode === undefined
+        ? undefined
+        : context.compileNodeOrBooleanCheck(sem.elseNode, formatRegistry, graph, lookupSchema);
+
+      checks.push((value) => {
+        if (ifCheck(value)) {
+          return thenCheck === undefined || thenCheck(value);
+        }
+
+        return elseCheck === undefined || elseCheck(value);
+      });
+    }
+
+    if (context.activeCustomKeywords.length > 0) {
+      const extensionEntries: Array<{ 'allowedTypes': string[] | undefined;
+        'keyword': string;
+        'schemaValue': unknown;
+        'validate': KeywordDefinitionInterface['validate']; }> = [];
+
+      for (const kw of context.activeCustomKeywords) {
+        if (kw.keyword in sem.extensions) {
+          extensionEntries.push({
+            'allowedTypes': SchemaCompilerSupport.normalizeKeywordTypes(kw.type),
+            'keyword': kw.keyword,
+            'schemaValue': sem.extensions[kw.keyword],
+            'validate': kw.validate
+          });
+        }
+      }
+
+      if (extensionEntries.length > 0) {
+        checks.push((value) => {
+          let dataType: string;
+
+          if (value === null) {
+            dataType = 'null';
+          } else if (Array.isArray(value)) {
+            dataType = 'array';
+          } else {
+            dataType = typeof value;
+          }
+
+          for (const entry of extensionEntries) {
+            if (entry.allowedTypes !== undefined && !entry.allowedTypes.includes(dataType)) {
+              continue;
+            }
+
+            const ctx = {
+              'parentData': undefined as unknown,
+              'parentKey': '',
+              'path': '',
+              'rootData': value
+            };
+            const result = entry.validate(entry.schemaValue, value, ctx);
+
+            if (result === false) {
+              return false;
+            }
+            if (Array.isArray(result) && result.length > 0) {
+              return false;
+            }
+          }
+
+          return true;
+        });
+      }
+    }
+
+    if (checks.length === 0) {
+      return () => {
+        return true;
+      };
+    }
+    if (checks.length === 1) {
+      return checks[0];
+    }
+
+    return (value) => {
+      for (const check of checks) {
+        if (!check(value)) {
+          return false;
+        }
+      }
+
+      return true;
+    };
+  }
+
+  private buildValidateWithErrorsExecution(plan: CompiledNodeValidationPlanInterface): ValidateWithErrorsFnType {
+    const {
+      additionalIsFalse,
+      additionalValidator,
+      allOfValidators,
+      allowedKeys,
+      anyOfChecks,
+      complementCheck,
+      constVal,
+      containsCheck,
+      customKeywordEntries,
+      defaultValue,
+      depRequiredEntries,
+      depSchemaValidators,
+      elseValidator,
+      enumSet,
+      enumValues,
+      exclusiveMaximum,
+      exclusiveMinimum,
+      format,
+      formatValidator,
+      hasConst,
+      hasDefault,
+      ifCheck,
+      itemValidator,
+      jtExtra,
+      maxContains,
+      maximum,
+      maxItems,
+      maxLength,
+      maxProperties,
+      minContains,
+      minimum,
+      minItems,
+      minLength,
+      minProperties,
+      multipleOf,
+      oneOfChecks,
+      pattern,
+      patternPropValidators,
+      patternRegex,
+      prefixValidators,
+      propertyAliases,
+      propertyDefaults,
+      propertyNamesValidator,
+      propValidators,
+      refValidator,
+      required,
+      thenValidator,
+      types,
+      uniqueItems
+    } = plan;
+
+    const hasComposition
+      = (allOfValidators !== undefined && allOfValidators.length > 0)
+      || (anyOfChecks !== undefined && anyOfChecks.length > 0)
+      || (oneOfChecks !== undefined && oneOfChecks.length > 0)
+      || complementCheck !== undefined
+      || ifCheck !== undefined;
+
+    if (!hasComposition) {
+      return (
+        value: unknown,
+        path: string,
+        errors: ValidationErrorType[],
+        collectErrors: boolean,
+        applyDefaults: boolean,
+        doCoerce: boolean,
+        stripUnknown: boolean
+      ): { 'valid': boolean;
+        'value': unknown; } => {
+        let workingValue = value;
+
+        if (applyDefaults && workingValue === undefined && hasDefault) {
+          workingValue = GraphEngineSupport.cloneDefault(defaultValue);
+        }
+
+        if (doCoerce && types.length > 0) {
+          workingValue = SchemaCompilerSupport.coerceCompiledValue(types, workingValue);
+        }
+
+        let valid = true;
+
+        // --- $ref ---
+        if (refValidator !== undefined) {
+          const refResult = refValidator(
+            workingValue,
+            path,
+            errors,
+            collectErrors,
+            applyDefaults,
+            doCoerce,
+            stripUnknown
+          );
+
+          if (!refResult.valid) {
+            if (!collectErrors) {
+              return {
+                'valid': false,
+                'value': refResult.value
+              };
+            }
+            valid = false;
+          }
+          workingValue = refResult.value;
+        }
+
+        // --- Scalar: type, enum, const ---
+        const typeResult = Scalars.validateType(path, types, workingValue);
+
+        if (!typeResult.valid) {
+          if (!collectErrors) {
+            return {
+              'valid': false,
+              'value': workingValue
+            };
+          }
+          errors.push(...typeResult.errors);
+          valid = false;
+        }
+
+        const enumResult = Scalars.validateEnum(path, workingValue, enumValues, enumSet);
+
+        if (!enumResult.valid) {
+          if (!collectErrors) {
+            return {
+              'valid': false,
+              'value': workingValue
+            };
+          }
+          errors.push(...enumResult.errors);
+          valid = false;
+        }
+
+        const constResult = Scalars.validateConst(path, workingValue, hasConst, constVal);
+
+        if (!constResult.valid) {
+          if (!collectErrors) {
+            return {
+              'valid': false,
+              'value': workingValue
+            };
+          }
+          errors.push(...constResult.errors);
+          valid = false;
+        }
+
+        // --- Scalar: string constraints ---
+        if (typeof workingValue === 'string') {
+          const stringResult = Scalars.validateString(path, workingValue, minLength, maxLength, patternRegex, pattern);
+
+          if (!stringResult.valid) {
+            if (!collectErrors) {
+              return {
+                'valid': false,
+                'value': workingValue
+              };
+            }
+            errors.push(...stringResult.errors);
+            valid = false;
+          }
+        }
+
+        // --- Scalar: format ---
+        const formatResult = Scalars.validateFormat(path, workingValue, format, formatValidator);
+
+        if (!formatResult.valid) {
+          if (!collectErrors) {
+            return {
+              'valid': false,
+              'value': workingValue
+            };
+          }
+          errors.push(...formatResult.errors);
+          valid = false;
+        }
+
+        // --- Scalar: number constraints ---
+        if (typeof workingValue === 'number') {
+          const numberResult = Scalars.validateNumber(
+            path,
+            workingValue,
+            minimum,
+            maximum,
+            exclusiveMinimum,
+            exclusiveMaximum,
+            multipleOf
+          );
+
+          if (!numberResult.valid) {
+            if (!collectErrors) {
+              return {
+                'valid': false,
+                'value': workingValue
+              };
+            }
+            errors.push(...numberResult.errors);
+            valid = false;
+          }
+        }
+
+        // --- Object validation ---
+        if (isRecord(workingValue)) {
+          const obj = workingValue;
+
+          if (propertyAliases.size > 0) {
+            Objects.applyAliases(obj, propertyAliases);
+          }
+
+          if (applyDefaults) {
+            Objects.applyDefaults(obj, propertyDefaults);
+          }
+
+          const requiredResult = Objects.validateRequired(path, obj, required);
+
+          if (!requiredResult.valid) {
+            if (!collectErrors) {
+              return {
+                'valid': false,
+                'value': workingValue
+              };
+            }
+            errors.push(...requiredResult.errors);
+            valid = false;
+          }
+
+          // jt:config extra: 'allow' keeps unknowns; 'forbid' defers stripping to post-check
+          const effectiveStrip = jtExtra === 'allow' || jtExtra === 'forbid' ? false : stripUnknown;
+
+          const propsResult = Objects.validateProperties(
+            path,
+            obj,
+            propValidators,
+            patternPropValidators,
+            additionalIsFalse,
+            additionalValidator,
+            allowedKeys,
+            effectiveStrip,
+            propertyDefaults,
+            errors,
+            collectErrors,
+            applyDefaults,
+            doCoerce
+          );
+
+          if (propsResult.earlyExit) {
+            return {
+              'valid': false,
+              'value': workingValue
+            };
+          }
+          if (!propsResult.valid) {
+            valid = false;
+          }
+
+          // jt:config extra: 'forbid' — error on unknown properties
+          if (jtExtra === 'forbid' && allowedKeys !== undefined) {
+            for (const key of Object.keys(obj)) {
+              if (!allowedKeys.has(key)) {
+                const childPath = path === '' ? `/${key}` : `${path}/${key}`;
+
+                if (!collectErrors) {
+                  return {
+                    'valid': false,
+                    'value': workingValue
+                  };
+                }
+                errors.push(BaseError.validationError(childPath, 'EXTRA_FORBIDDEN', `must NOT have additional property '${key}'`));
+                valid = false;
+              }
+            }
+          }
+
+          const countResult = Objects.validatePropertyCount(path, obj, minProperties, maxProperties, propsResult.count);
+
+          if (!countResult.valid) {
+            if (!collectErrors) {
+              return {
+                'valid': false,
+                'value': workingValue
+              };
+            }
+            errors.push(...countResult.errors);
+            valid = false;
+          }
+        }
+
+        // --- Array validation ---
+        if (Array.isArray(workingValue)) {
+          const arr = workingValue;
+
+          const boundsResult = Arrays.validateBounds(path, arr, minItems, maxItems, uniqueItems);
+
+          if (!boundsResult.valid) {
+            if (!collectErrors) {
+              return {
+                'valid': false,
+                'value': workingValue
+              };
+            }
+            errors.push(...boundsResult.errors);
+            valid = false;
+          }
+
+          const prefixResult = Arrays.validatePrefixItems(
+            path,
+            arr,
+            prefixValidators,
+            errors,
+            collectErrors,
+            applyDefaults,
+            doCoerce,
+            stripUnknown
+          );
+
+          if (prefixResult.earlyExit) {
+            return {
+              'valid': false,
+              'value': workingValue
+            };
+          }
+          if (!prefixResult.valid) {
+            valid = false;
+          }
+
+          const itemsResult = Arrays.validateItems(
+            path,
+            arr,
+            itemValidator,
+            prefixValidators,
+            errors,
+            collectErrors,
+            applyDefaults,
+            doCoerce,
+            stripUnknown
+          );
+
+          if (itemsResult.earlyExit) {
+            return {
+              'valid': false,
+              'value': workingValue
+            };
+          }
+          if (!itemsResult.valid) {
+            valid = false;
+          }
+
+          const containsResult = Arrays.validateContains(path, arr, containsCheck, minContains, maxContains);
+
+          if (!containsResult.valid) {
+            if (!collectErrors) {
+              return {
+                'valid': false,
+                'value': workingValue
+              };
+            }
+            errors.push(...containsResult.errors);
+            valid = false;
+          }
+        }
+
+        // --- Object: dependentRequired ---
+        const depReqResult = Objects.validateDependentRequired(
+          path,
+          workingValue,
+          depRequiredEntries,
+          errors,
+          collectErrors
+        );
+
+        if (depReqResult.earlyExit) {
+          return {
+            'valid': false,
+            'value': workingValue
+          };
+        }
+        if (!depReqResult.valid) {
+          valid = false;
+        }
+
+        // --- Composition: dependentSchemas ---
+        const depSchemaResult = Composition.validateDependentSchemas(
+          workingValue,
+          path,
+          depSchemaValidators,
+          errors,
+          collectErrors,
+          applyDefaults,
+          doCoerce,
+          stripUnknown
+        );
+
+        if (depSchemaResult.earlyExit) {
+          return {
+            'valid': false,
+            'value': depSchemaResult.value
+          };
+        }
+        if (!depSchemaResult.valid) {
+          valid = false;
+        }
+        workingValue = depSchemaResult.value;
+
+        // --- Object: propertyNames ---
+        const pnResult = Objects.validatePropertyNames(
+          path,
+          workingValue,
+          propertyNamesValidator,
+          errors,
+          collectErrors
+        );
+
+        if (pnResult.earlyExit) {
+          return {
+            'valid': false,
+            'value': workingValue
+          };
+        }
+        if (!pnResult.valid) {
+          valid = false;
+        }
+
+        // --- Custom keywords ---
+        const kwResult = Composition.validateCustomKeywords(path, workingValue, customKeywordEntries);
+
+        if (!kwResult.valid) {
+          if (!collectErrors) {
+            return {
+              'valid': false,
+              'value': workingValue
+            };
+          }
+          errors.push(...kwResult.errors);
+          valid = false;
+        }
+
+        return {
+          valid,
+          'value': workingValue
+        };
+      };
+    }
+
+    return (
+      value: unknown,
+      path: string,
+      errors: ValidationErrorType[],
+      collectErrors: boolean,
+      applyDefaults: boolean,
+      doCoerce: boolean,
+      stripUnknown: boolean
+    ): { 'valid': boolean;
+      'value': unknown; } => {
+      let workingValue = value;
+
+      if (applyDefaults && workingValue === undefined && hasDefault) {
+        workingValue = GraphEngineSupport.cloneDefault(defaultValue);
+      }
+
+      if (doCoerce && types.length > 0) {
+        workingValue = SchemaCompilerSupport.coerceCompiledValue(types, workingValue);
+      }
+
+      let valid = true;
+
+      // --- $ref ---
+      if (refValidator !== undefined) {
+        const refResult = refValidator(
+          workingValue,
+          path,
+          errors,
+          collectErrors,
+          applyDefaults,
+          doCoerce,
+          stripUnknown
+        );
+
+        if (!refResult.valid) {
+          if (!collectErrors) {
+            return {
+              'valid': false,
+              'value': refResult.value
+            };
+          }
+          valid = false;
+        }
+        workingValue = refResult.value;
+      }
+
+      // --- Scalar: type, enum, const ---
+      const typeResult = Scalars.validateType(path, types, workingValue);
+
+      if (!typeResult.valid) {
+        if (!collectErrors) {
+          return {
+            'valid': false,
+            'value': workingValue
+          };
+        }
+        errors.push(...typeResult.errors);
+        valid = false;
+      }
+
+      const enumResult = Scalars.validateEnum(path, workingValue, enumValues, enumSet);
+
+      if (!enumResult.valid) {
+        if (!collectErrors) {
+          return {
+            'valid': false,
+            'value': workingValue
+          };
+        }
+        errors.push(...enumResult.errors);
+        valid = false;
+      }
+
+      const constResult = Scalars.validateConst(path, workingValue, hasConst, constVal);
+
+      if (!constResult.valid) {
+        if (!collectErrors) {
+          return {
+            'valid': false,
+            'value': workingValue
+          };
+        }
+        errors.push(...constResult.errors);
+        valid = false;
+      }
+
+      // --- Scalar: string constraints ---
+      if (typeof workingValue === 'string') {
+        const stringResult = Scalars.validateString(path, workingValue, minLength, maxLength, patternRegex, pattern);
+
+        if (!stringResult.valid) {
+          if (!collectErrors) {
+            return {
+              'valid': false,
+              'value': workingValue
+            };
+          }
+          errors.push(...stringResult.errors);
+          valid = false;
+        }
+      }
+
+      // --- Scalar: format ---
+      const formatResult = Scalars.validateFormat(path, workingValue, format, formatValidator);
+
+      if (!formatResult.valid) {
+        if (!collectErrors) {
+          return {
+            'valid': false,
+            'value': workingValue
+          };
+        }
+        errors.push(...formatResult.errors);
+        valid = false;
+      }
+
+      // --- Scalar: number constraints ---
+      if (typeof workingValue === 'number') {
+        const numberResult = Scalars.validateNumber(
+          path,
+          workingValue,
+          minimum,
+          maximum,
+          exclusiveMinimum,
+          exclusiveMaximum,
+          multipleOf
+        );
+
+        if (!numberResult.valid) {
+          if (!collectErrors) {
+            return {
+              'valid': false,
+              'value': workingValue
+            };
+          }
+          errors.push(...numberResult.errors);
+          valid = false;
+        }
+      }
+
+      // --- Object validation ---
+      if (isRecord(workingValue)) {
+        const obj = workingValue;
+
+        if (propertyAliases.size > 0) {
+          Objects.applyAliases(obj, propertyAliases);
+        }
+
+        if (applyDefaults) {
+          Objects.applyDefaults(obj, propertyDefaults);
+        }
+
+        const requiredResult = Objects.validateRequired(path, obj, required);
+
+        if (!requiredResult.valid) {
+          if (!collectErrors) {
+            return {
+              'valid': false,
+              'value': workingValue
+            };
+          }
+          errors.push(...requiredResult.errors);
+          valid = false;
+        }
+
+        // jt:config extra: 'allow' keeps unknowns; 'forbid' defers stripping to post-check
+        const effectiveStrip = jtExtra === 'allow' || jtExtra === 'forbid' ? false : stripUnknown;
+
+        const propsResult = Objects.validateProperties(
+          path,
+          obj,
+          propValidators,
+          patternPropValidators,
+          additionalIsFalse,
+          additionalValidator,
+          allowedKeys,
+          effectiveStrip,
+          propertyDefaults,
+          errors,
+          collectErrors,
+          applyDefaults,
+          doCoerce
+        );
+
+        if (propsResult.earlyExit) {
+          return {
+            'valid': false,
+            'value': workingValue
+          };
+        }
+        if (!propsResult.valid) {
+          valid = false;
+        }
+
+        // jt:config extra: 'forbid' — error on unknown properties
+        if (jtExtra === 'forbid' && allowedKeys !== undefined) {
+          for (const key of Object.keys(obj)) {
+            if (!allowedKeys.has(key)) {
+              const childPath = path === '' ? `/${key}` : `${path}/${key}`;
+
+              if (!collectErrors) {
+                return {
+                  'valid': false,
+                  'value': workingValue
+                };
+              }
+              errors.push(BaseError.validationError(childPath, 'EXTRA_FORBIDDEN', `must NOT have additional property '${key}'`));
+              valid = false;
+            }
+          }
+        }
+
+        const countResult = Objects.validatePropertyCount(path, obj, minProperties, maxProperties, propsResult.count);
+
+        if (!countResult.valid) {
+          if (!collectErrors) {
+            return {
+              'valid': false,
+              'value': workingValue
+            };
+          }
+          errors.push(...countResult.errors);
+          valid = false;
+        }
+      }
+
+      // --- Array validation ---
+      if (Array.isArray(workingValue)) {
+        const arr = workingValue;
+
+        const boundsResult = Arrays.validateBounds(path, arr, minItems, maxItems, uniqueItems);
+
+        if (!boundsResult.valid) {
+          if (!collectErrors) {
+            return {
+              'valid': false,
+              'value': workingValue
+            };
+          }
+          errors.push(...boundsResult.errors);
+          valid = false;
+        }
+
+        const prefixResult = Arrays.validatePrefixItems(
+          path,
+          arr,
+          prefixValidators,
+          errors,
+          collectErrors,
+          applyDefaults,
+          doCoerce,
+          stripUnknown
+        );
+
+        if (prefixResult.earlyExit) {
+          return {
+            'valid': false,
+            'value': workingValue
+          };
+        }
+        if (!prefixResult.valid) {
+          valid = false;
+        }
+
+        const itemsResult = Arrays.validateItems(
+          path,
+          arr,
+          itemValidator,
+          prefixValidators,
+          errors,
+          collectErrors,
+          applyDefaults,
+          doCoerce,
+          stripUnknown
+        );
+
+        if (itemsResult.earlyExit) {
+          return {
+            'valid': false,
+            'value': workingValue
+          };
+        }
+        if (!itemsResult.valid) {
+          valid = false;
+        }
+
+        const containsResult = Arrays.validateContains(path, arr, containsCheck, minContains, maxContains);
+
+        if (!containsResult.valid) {
+          if (!collectErrors) {
+            return {
+              'valid': false,
+              'value': workingValue
+            };
+          }
+          errors.push(...containsResult.errors);
+          valid = false;
+        }
+      }
+
+      // --- Composition: allOf ---
+      const allOfResult = Composition.validateAllOf(
+        workingValue,
+        path,
+        allOfValidators,
+        errors,
+        collectErrors,
+        applyDefaults,
+        doCoerce,
+        stripUnknown
+      );
+
+      if (allOfResult.earlyExit) {
+        return {
+          'valid': false,
+          'value': allOfResult.value
+        };
+      }
+      if (!allOfResult.valid) {
+        valid = false;
+      }
+      workingValue = allOfResult.value;
+
+      // --- Composition: anyOf ---
+      const anyOfResult = Composition.validateAnyOf(path, workingValue, anyOfChecks);
+
+      if (!anyOfResult.valid) {
+        if (!collectErrors) {
+          return {
+            'valid': false,
+            'value': workingValue
+          };
+        }
+        if (anyOfResult.error !== undefined) {
+          errors.push(anyOfResult.error);
+        }
+        valid = false;
+      }
+
+      // --- Composition: oneOf ---
+      const oneOfResult = Composition.validateOneOf(path, workingValue, oneOfChecks);
+
+      if (!oneOfResult.valid) {
+        if (!collectErrors) {
+          return {
+            'valid': false,
+            'value': workingValue
+          };
+        }
+        if (oneOfResult.error !== undefined) {
+          errors.push(oneOfResult.error);
+        }
+        valid = false;
+      }
+
+      // --- Composition: not ---
+      const notResult = Composition.validateNot(path, workingValue, complementCheck);
+
+      if (!notResult.valid) {
+        if (!collectErrors) {
+          return {
+            'valid': false,
+            'value': workingValue
+          };
+        }
+        if (notResult.error !== undefined) {
+          errors.push(notResult.error);
+        }
+        valid = false;
+      }
+
+      // --- Composition: if/then/else ---
+      const ifResult = Composition.validateIfThenElse(
+        workingValue,
+        path,
+        ifCheck,
+        thenValidator,
+        elseValidator,
+        errors,
+        collectErrors,
+        applyDefaults,
+        doCoerce,
+        stripUnknown
+      );
+
+      if (ifResult.earlyExit) {
+        return {
+          'valid': false,
+          'value': ifResult.value
+        };
+      }
+      if (!ifResult.valid) {
+        valid = false;
+      }
+      workingValue = ifResult.value;
+
+      // --- Object: dependentRequired ---
+      const depReqResult = Objects.validateDependentRequired(
+        path,
+        workingValue,
+        depRequiredEntries,
+        errors,
+        collectErrors
+      );
+
+      if (depReqResult.earlyExit) {
+        return {
+          'valid': false,
+          'value': workingValue
+        };
+      }
+      if (!depReqResult.valid) {
+        valid = false;
+      }
+
+      // --- Composition: dependentSchemas ---
+      const depSchemaResult = Composition.validateDependentSchemas(
+        workingValue,
+        path,
+        depSchemaValidators,
+        errors,
+        collectErrors,
+        applyDefaults,
+        doCoerce,
+        stripUnknown
+      );
+
+      if (depSchemaResult.earlyExit) {
+        return {
+          'valid': false,
+          'value': depSchemaResult.value
+        };
+      }
+      if (!depSchemaResult.valid) {
+        valid = false;
+      }
+      workingValue = depSchemaResult.value;
+
+      // --- Object: propertyNames ---
+      const pnResult = Objects.validatePropertyNames(path, workingValue, propertyNamesValidator, errors, collectErrors);
+
+      if (pnResult.earlyExit) {
+        return {
+          'valid': false,
+          'value': workingValue
+        };
+      }
+      if (!pnResult.valid) {
+        valid = false;
+      }
+
+      // --- Custom keywords ---
+      const kwResult = Composition.validateCustomKeywords(path, workingValue, customKeywordEntries);
+
+      if (!kwResult.valid) {
+        if (!collectErrors) {
+          return {
+            'valid': false,
+            'value': workingValue
+          };
+        }
+        errors.push(...kwResult.errors);
+        valid = false;
+      }
+
+      return {
+        valid,
+        'value': workingValue
+      };
+    };
   }
 
   /**
@@ -322,7 +1568,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     this.compilingNodes.add(graphNode);
 
     try {
-      return SchemaCompilerCheckExec.buildNodeCheckExecution(
+      return this.buildNodeCheckExecution(
         this.checkExecContext,
         graphNode,
         formatRegistry,
@@ -391,7 +1637,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
   ): ValidateWithErrorsFnType {
-    const plan = SchemaCompilerValidatePlan.buildNodeValidationPlan(
+    const plan = buildNodePlan(
       this.validatePlanContext,
       graphNode,
       formatRegistry,
@@ -400,7 +1646,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       this.activeLookupGraph
     );
 
-    return SchemaCompilerValidateExec.buildValidateWithErrorsExecution(plan);
+    return this.buildValidateWithErrorsExecution(plan);
   }
 
   private compileNumberCheck(
@@ -456,6 +1702,10 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       return true;
     };
   }
+
+  // ---------------------------------------------------------------------------
+  // validate() compilation — with errors and mutation support
+  // ---------------------------------------------------------------------------
 
   private compileStringCheck(
     minLength: number | undefined,
@@ -542,10 +1792,6 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     };
   }
 
-  // ---------------------------------------------------------------------------
-  // validate() compilation — with errors and mutation support
-  // ---------------------------------------------------------------------------
-
   private compileValidateMutating(
     schema: Record<string, unknown>,
     graph: SchemaGraphInterface,
@@ -606,6 +1852,11 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     };
   }
 
+
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
+
   /**
    * Entry point: compiles a schema object into a validate-with-errors function.
    * Thin wrapper that resolves the graph node, then delegates to compileNodeValidateWithErrors.
@@ -656,9 +1907,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     };
   }
 
-
   // ---------------------------------------------------------------------------
-  // Helpers
+  // Check execution (inlined from SchemaCompilerCheckExec)
   // ---------------------------------------------------------------------------
 
   private regexFor(pattern: string): RegExp {
@@ -672,11 +1922,15 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     return cached;
   }
 
+  // ---------------------------------------------------------------------------
+  // Validate execution (inlined from SchemaCompilerValidateExec)
+  // ---------------------------------------------------------------------------
+
   private supportsCompilationPath(
     graph: SchemaGraphInterface,
     lookupSchema?: (id: string) => Record<string, unknown> | undefined
   ): boolean {
-    return SchemaCompilerGraph.nodeSupportsCompilation(
+    return nodeSupportsCompilation(
       graph.rootNode,
       graph,
       lookupSchema,
