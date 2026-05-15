@@ -17,7 +17,9 @@ import type { CurieInterface } from '../../interfaces/Curie.js';
 import {
   DASH, DCT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
-import { RESTRICTION_PREDICATE } from '../../constants/ONTOLOGY_PREDICATES.js';
+import {
+  CARDINALITY_KINDS, RESTRICTION_PREDICATE
+} from '../../constants/ONTOLOGY_PREDICATES.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { XsdTypes } from './XsdTypes.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
@@ -247,11 +249,6 @@ function isRawRestrictionDescriptor(raw: object): raw is RawRestrictionDescripto
   return typeof rec.kind === 'string' && typeof rec.onProperty === 'string' && 'value' in rec;
 }
 
-const CARDINALITY_KINDS = new Set([
-  'cardinality',
-  'maxCardinality',
-  'minCardinality'
-]);
 
 function emitUserRestrictions(
   graph: SchemaGraphInterface,

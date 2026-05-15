@@ -19,7 +19,7 @@ import type { QuadObjectType } from '../../types/Quad.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
 import type { SubjectGroupType } from '../../types/SubjectGroup.js';
 
-import { DECIMAL_RADIX } from '../../constants/FORMAT_VALIDATION.js';
+import { XSD_COERCERS } from '../../constants/XSD_MAPS.js';
 
 import {
   RDF_TYPE_IRI, XSD_IRI_PREFIX, XSD_PREFIX
@@ -91,56 +91,6 @@ function rdfTermToQuadObject(term: RdfJsQuadInterface['object']): QuadObjectType
   };
 }
 
-const XSD_COERCERS = new Map<string, (raw: string) => unknown>([
-  [
-    'boolean',
-    (raw) => {
-      return raw === 'true';
-    }
-  ],
-  [
-    'decimal',
-    (raw) => {
-      return Number.parseFloat(raw);
-    }
-  ],
-  [
-    'double',
-    (raw) => {
-      return Number.parseFloat(raw);
-    }
-  ],
-  [
-    'float',
-    (raw) => {
-      return Number.parseFloat(raw);
-    }
-  ],
-  [
-    'int',
-    (raw) => {
-      return Number.parseInt(raw, DECIMAL_RADIX);
-    }
-  ],
-  [
-    'integer',
-    (raw) => {
-      return Number.parseInt(raw, DECIMAL_RADIX);
-    }
-  ],
-  [
-    'long',
-    (raw) => {
-      return Number.parseInt(raw, DECIMAL_RADIX);
-    }
-  ],
-  [
-    'short',
-    (raw) => {
-      return Number.parseInt(raw, DECIMAL_RADIX);
-    }
-  ]
-]);
 
 function coerceLiteralValue(raw: string, datatype: string): unknown {
   const local = datatype.startsWith(XSD_PREFIX) ? datatype.slice(XSD_PREFIX.length) : datatype;

@@ -6,7 +6,7 @@
  */
 
 import type { SchemaGraphInterface } from '../interfaces/SchemaGraphImpl.js';
-import type { RefDecoderRegistryInterface } from '../modules/graph/RefDecoder.js';
+import type { RefDecoderRegistryInterface } from '../interfaces/RefDecoderRegistry.js';
 
 export interface RefDecoderInterface {
   /**

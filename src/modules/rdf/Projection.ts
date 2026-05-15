@@ -18,15 +18,17 @@ import type {
 } from '../../interfaces/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { SkolemizeFnType } from '../../types/Skolemize.js';
-import type { SimplePredicateEntry } from '../../interfaces/SimplePredicateEntry.js';
 import type { SpecialHandlerFn } from '../../types/SpecialHandlerFn.js';
 import type {
   ProjectInstanceArgs, ProjectPropertyArgs
 } from '../../interfaces/Projection.js';
 
 import {
-  DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
+  JT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
+import {
+  IRI_PREDICATES, SIMPLE_LITERAL_PREDICATES
+} from '../../constants/ONTOLOGY_PREDICATES.js';
 import { JSONLD } from '../../constants/JSONLD.js';
 import { XsdTypes } from './XsdTypes.js';
 import { MaterializationError } from '../../errors/MaterializationError.js';
@@ -78,153 +80,6 @@ export const Projection = {
 // Data-driven predicate dispatch tables
 // ---------------------------------------------------------------------------
 
-const SIMPLE_LITERAL_PREDICATES = new Map<string, SimplePredicateEntry>([
-  [
-    DASH.readOnly,
-    {
-      'coerce': (value) => {
-        return value === 'true';
-      },
-      'datatype': XSD.boolean
-    }
-  ],
-  [
-    DASH.writeOnly,
-    {
-      'coerce': (value) => {
-        return value === 'true';
-      },
-      'datatype': XSD.boolean
-    }
-  ],
-  [
-    DCT.format,
-    { 'datatype': XSD.string }
-  ],
-  [
-    JT.multipleOf,
-    {
-      'coerce': Number,
-      'datatype': XSD.decimal
-    }
-  ],
-  [
-    OWL.deprecated,
-    { 'datatype': XSD.boolean }
-  ],
-  [
-    OWL.hasValue,
-    { 'datatype': XSD.string }
-  ],
-  [
-    OWL.maxQualifiedCardinality,
-    {
-      'coerce': Number,
-      'datatype': XSD.nonNegativeInteger
-    }
-  ],
-  [
-    OWL.minQualifiedCardinality,
-    {
-      'coerce': Number,
-      'datatype': XSD.nonNegativeInteger
-    }
-  ],
-  [
-    OWL.oneOf,
-    { 'datatype': XSD.string }
-  ],
-  [
-    RDFS.comment,
-    { 'datatype': XSD.string }
-  ],
-  [
-    RDFS.label,
-    { 'datatype': XSD.string }
-  ],
-  [
-    SH.closed,
-    { 'datatype': XSD.boolean }
-  ],
-  [
-    SH.maxCount,
-    {
-      'coerce': Number,
-      'datatype': XSD.integer
-    }
-  ],
-  [
-    SH.maxExclusive,
-    {
-      'coerce': Number,
-      'datatype': XSD.decimal
-    }
-  ],
-  [
-    SH.maxInclusive,
-    {
-      'coerce': Number,
-      'datatype': XSD.decimal
-    }
-  ],
-  [
-    SH.maxLength,
-    {
-      'coerce': Number,
-      'datatype': XSD.integer
-    }
-  ],
-  [
-    SH.minCount,
-    {
-      'coerce': Number,
-      'datatype': XSD.integer
-    }
-  ],
-  [
-    SH.minExclusive,
-    {
-      'coerce': Number,
-      'datatype': XSD.decimal
-    }
-  ],
-  [
-    SH.minInclusive,
-    {
-      'coerce': Number,
-      'datatype': XSD.decimal
-    }
-  ],
-  [
-    SH.minLength,
-    {
-      'coerce': Number,
-      'datatype': XSD.integer
-    }
-  ]
-]);
-
-const IRI_PREDICATES = new Set<string>([
-  OWL.AsymmetricProperty,
-  OWL.complementOf,
-  OWL.disjointWith,
-  OWL.equivalentClass,
-  OWL.FunctionalProperty,
-  OWL.InverseFunctionalProperty,
-  OWL.inverseOf,
-  OWL.IrreflexiveProperty,
-  OWL.ReflexiveProperty,
-  OWL.someValuesFrom,
-  OWL.SymmetricProperty,
-  OWL.TransitiveProperty,
-  OWL.unionOf,
-  RDF.type,
-  RDFS.domain,
-  RDFS.member,
-  RDFS.range,
-  RDFS.subClassOf,
-  SH.datatype
-]);
 
 // ---------------------------------------------------------------------------
 // Special predicate handlers (non-trivial emit logic)

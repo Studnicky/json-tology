@@ -1,3 +1,56 @@
+import { DECIMAL_RADIX } from './FORMAT_VALIDATION.js';
+
+export const XSD_COERCERS: Map<string, (raw: string) => unknown> = new Map<string, (raw: string) => unknown>([
+  [
+    'boolean',
+    (raw) => {
+      return raw === 'true';
+    }
+  ],
+  [
+    'decimal',
+    (raw) => {
+      return Number.parseFloat(raw);
+    }
+  ],
+  [
+    'double',
+    (raw) => {
+      return Number.parseFloat(raw);
+    }
+  ],
+  [
+    'float',
+    (raw) => {
+      return Number.parseFloat(raw);
+    }
+  ],
+  [
+    'int',
+    (raw) => {
+      return Number.parseInt(raw, DECIMAL_RADIX);
+    }
+  ],
+  [
+    'integer',
+    (raw) => {
+      return Number.parseInt(raw, DECIMAL_RADIX);
+    }
+  ],
+  [
+    'long',
+    (raw) => {
+      return Number.parseInt(raw, DECIMAL_RADIX);
+    }
+  ],
+  [
+    'short',
+    (raw) => {
+      return Number.parseInt(raw, DECIMAL_RADIX);
+    }
+  ]
+]);
+
 export const BASE_TYPE_MAP: Readonly<Record<string, string>> = {
   'boolean': 'xsd:boolean',
   'integer': 'xsd:integer',

@@ -9,7 +9,9 @@ import {
 import { ALLOF_EXTENSION_RE } from '../../constants/GRAPH_REGEXES.js';
 import {
   DEFS_POINTER_PARTS_LENGTH, KNOWN_SCHEMA_KEYWORDS,
-  MIN_PROPERTY_POINTER_PARTS
+  MIN_PROPERTY_POINTER_PARTS,
+  PRIMITIVE_CONSTRAINT_KEYWORDS,
+  PRIMITIVE_TYPES
 } from '../../constants/SCHEMA_KEYWORDS.js';
 import { isRecord } from '../data/DataTypes.js';
 import type { JsonSchemaType } from '../../types/Schema.js';
@@ -249,26 +251,6 @@ function pointerId(rootSchema: JsonSchemaType, pointer: string): string {
   return `#${pointer}`;
 }
 
-const PRIMITIVE_CONSTRAINT_KEYWORDS = new Set([
-  'const',
-  'enum',
-  'exclusiveMaximum',
-  'exclusiveMinimum',
-  'format',
-  'maximum',
-  'maxLength',
-  'minimum',
-  'minLength',
-  'multipleOf',
-  'pattern'
-]);
-
-const PRIMITIVE_TYPES = new Set([
-  'boolean',
-  'integer',
-  'number',
-  'string'
-]);
 
 function constraintKeywordsOf(schema: Record<string, unknown>): string[] {
   return Object.keys(schema).filter((key) => {

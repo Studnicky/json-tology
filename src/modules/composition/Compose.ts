@@ -34,17 +34,11 @@ import {
 } from '../../types/Restriction.js';
 import { isRecord } from '../data/DataTypes.js';
 import { brand } from '../../types/Brand.js';
-import { RESTRICTIONS_KEY } from '../../constants/COMPOSITION.js';
-
-const CLASS_AXIOM_BODY_SKIP_KEYS = new Set(['$id']);
-
-const EXTEND_SKIP_KEYS = new Set([
-  '$id',
-  'jt:config',
-  'properties',
-  'required',
-  'type'
-]);
+import {
+  CLASS_AXIOM_BODY_SKIP_KEYS,
+  EXTEND_SKIP_KEYS,
+  RESTRICTIONS_KEY
+} from '../../constants/COMPOSITION.js';
 
 function makeRestriction(
   kind: RestrictionDescriptorInterface['kind'],
