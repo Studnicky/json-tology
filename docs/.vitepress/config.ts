@@ -194,6 +194,20 @@ const sidebar = [
   }
 ];
 
+// ── Site identity — single source of truth for SEO, OG, JSON-LD ─────────
+const SITE_TITLE = 'json-tology';
+const SITE_TAGLINE = 'TypeScript types, validation, and OWL ontology from one JSON Schema';
+const SITE_DESCRIPTION = 'One source of truth for TypeScript types, runtime validation, coercion, and OWL ontology output. Author in JSON Schema; share with any backend; reason over the graph.';
+const SITE_DESCRIPTION_SHORT = 'One source of truth for TypeScript types, runtime validation, coercion, and OWL ontology output. Reason over the graph.';
+const SITE_URL = 'https://studnicky.github.io/json-tology/';
+const SITE_BASE = '/json-tology/';
+const SITE_OG_IMAGE = `${SITE_URL}og-image.png`;
+const SITE_THEME_COLOR = '#08717A';
+const SITE_KEYWORDS = 'json-schema, typescript, validation, type-inference, ontology, owl, shacl, rdf, jsonld, semantic-web, graph, runtime-validation, coercion, ajv-alternative, zod-alternative, valibot-alternative, typebox-alternative';
+const SITE_AUTHOR_NAME = 'Andrew Studnicky';
+const SITE_AUTHOR_URL = 'https://github.com/Studnicky';
+const SITE_REPO = 'https://github.com/Studnicky/json-tology';
+
 export default defineConfig({
   vite: {
     define: {
@@ -207,24 +221,133 @@ export default defineConfig({
       }
     }
   },
-  base: '/json-tology/',
+  base: SITE_BASE,
+  cleanUrls: true,
+  description: SITE_DESCRIPTION,
+  lang: 'en-US',
+  lastUpdated: true,
   markdown: { config: (md) => { md.use(jtBrandPlugin); } },
+  sitemap: { hostname: SITE_URL },
+  title: SITE_TITLE,
+  titleTemplate: `:title | ${SITE_TITLE}`,
   head: [
-    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/json-tology/nodes/jst-node.svg' }],
-    ['link', { rel: 'mask-icon', href: '/json-tology/nodes/jst-node.svg', color: '#08717A' }],
-    ['meta', { name: 'theme-color', content: '#08717A' }]
+    // ── Favicon stack — every common form pointing at the same icon
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: `${SITE_BASE}nodes/jst-node.svg` }],
+    ['link', { rel: 'icon', type: 'image/x-icon', href: `${SITE_BASE}favicon.ico` }],
+    ['link', { rel: 'icon', type: 'image/png', sizes: '32x32', href: `${SITE_BASE}jst-node-512.png` }],
+    ['link', { rel: 'icon', type: 'image/png', sizes: '192x192', href: `${SITE_BASE}jst-node-512.png` }],
+    ['link', { rel: 'shortcut icon', href: `${SITE_BASE}favicon.ico` }],
+    ['link', { rel: 'apple-touch-icon', sizes: '180x180', href: `${SITE_BASE}apple-touch-icon.png` }],
+    ['link', { rel: 'mask-icon', href: `${SITE_BASE}nodes/jst-node.svg`, color: SITE_THEME_COLOR }],
+    ['meta', { name: 'theme-color', content: SITE_THEME_COLOR }],
+    ['meta', { name: 'color-scheme', content: 'dark light' }],
+    ['meta', { name: 'msapplication-TileColor', content: SITE_THEME_COLOR }],
+    ['meta', { name: 'msapplication-TileImage', content: `${SITE_BASE}jst-node-512.png` }],
+    ['meta', { name: 'application-name', content: SITE_TITLE }],
+    ['meta', { name: 'apple-mobile-web-app-title', content: SITE_TITLE }],
+    ['meta', { name: 'apple-mobile-web-app-capable', content: 'yes' }],
+    ['meta', { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' }],
+
+    // ── SEO basics
+    ['meta', { name: 'description', content: SITE_DESCRIPTION }],
+    ['meta', { name: 'keywords', content: SITE_KEYWORDS }],
+    ['meta', { name: 'author', content: SITE_AUTHOR_NAME }],
+    ['meta', { name: 'robots', content: 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1' }],
+    ['meta', { name: 'googlebot', content: 'index, follow' }],
+    ['meta', { name: 'generator', content: 'VitePress' }],
+    ['link', { rel: 'sitemap', type: 'application/xml', href: `${SITE_BASE}sitemap.xml` }],
+
+    // ── Open Graph (FB, Slack, Discord, LinkedIn). Per-page overrides in transformPageData.
+    ['meta', { property: 'og:type', content: 'website' }],
+    ['meta', { property: 'og:site_name', content: SITE_TITLE }],
+    ['meta', { property: 'og:title', content: `${SITE_TITLE} — ${SITE_TAGLINE}` }],
+    ['meta', { property: 'og:description', content: SITE_DESCRIPTION }],
+    ['meta', { property: 'og:url', content: SITE_URL }],
+    ['meta', { property: 'og:image', content: SITE_OG_IMAGE }],
+    ['meta', { property: 'og:image:secure_url', content: SITE_OG_IMAGE }],
+    ['meta', { property: 'og:image:type', content: 'image/png' }],
+    ['meta', { property: 'og:image:width', content: '1200' }],
+    ['meta', { property: 'og:image:height', content: '630' }],
+    ['meta', { property: 'og:image:alt', content: `${SITE_TITLE} — ${SITE_TAGLINE}` }],
+    ['meta', { property: 'og:locale', content: 'en_US' }],
+
+    // ── Twitter Card. Per-page overrides in transformPageData.
+    ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
+    ['meta', { name: 'twitter:title', content: `${SITE_TITLE} — ${SITE_TAGLINE}` }],
+    ['meta', { name: 'twitter:description', content: SITE_DESCRIPTION_SHORT }],
+    ['meta', { name: 'twitter:image', content: SITE_OG_IMAGE }],
+    ['meta', { name: 'twitter:image:alt', content: `${SITE_TITLE} — ${SITE_TAGLINE}` }],
+
+    // ── JSON-LD: SoftwareSourceCode for code-discovery results
+    ['script', { type: 'application/ld+json' }, JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'SoftwareSourceCode',
+      'name': SITE_TITLE,
+      'description': SITE_DESCRIPTION,
+      'url': SITE_URL,
+      'codeRepository': SITE_REPO,
+      'programmingLanguage': 'TypeScript',
+      'runtimePlatform': 'Node.js >=24',
+      'license': 'https://opensource.org/licenses/MIT',
+      'image': SITE_OG_IMAGE,
+      'author': {
+        '@type': 'Person',
+        'name': SITE_AUTHOR_NAME,
+        'url': SITE_AUTHOR_URL
+      },
+      'keywords': SITE_KEYWORDS
+    })],
+
+    // ── JSON-LD: WebSite for site-card results
+    ['script', { type: 'application/ld+json' }, JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      'name': SITE_TITLE,
+      'url': SITE_URL,
+      'description': SITE_DESCRIPTION,
+      'inLanguage': 'en-US'
+    })]
   ],
+  /**
+   * Per-page metadata. Emits page-specific og:url / og:title / og:description /
+   * twitter:title / twitter:description / canonical so social unfurls and SEO
+   * results surface the page's own title and URL rather than the site-level
+   * default. Without this, every Discord paste of any page would show the
+   * homepage card.
+   */
+  transformPageData(pageData): void {
+    const relPath = pageData.relativePath
+      .replace(/\.md$/, '')
+      .replace(/(^|\/)index$/, '');
+    const pageUrl = relPath === '' ? SITE_URL : `${SITE_URL}${relPath}`;
+    const title = (pageData.frontmatter['title'] as string | undefined)
+      ?? pageData.title
+      ?? SITE_TITLE;
+    const description = (pageData.frontmatter['description'] as string | undefined)
+      ?? pageData.description
+      ?? SITE_DESCRIPTION;
+    const displayTitle = title === SITE_TITLE ? SITE_TITLE : `${title} | ${SITE_TITLE}`;
+
+    pageData.frontmatter['head'] = [
+      ...(pageData.frontmatter['head'] as ReadonlyArray<readonly [string, Record<string, string>]> ?? []),
+      ['link', { rel: 'canonical', href: pageUrl }],
+      ['meta', { property: 'og:url', content: pageUrl }],
+      ['meta', { property: 'og:title', content: displayTitle }],
+      ['meta', { property: 'og:description', content: description }],
+      ['meta', { name: 'twitter:title', content: displayTitle }],
+      ['meta', { name: 'twitter:description', content: description }],
+      ['meta', { name: 'description', content: description }]
+    ];
+  },
   appearance: themeConfig.appearance,
-  description: 'One source of truth for TypeScript types, runtime validation, coercion, and OWL ontology output. Author in JSON Schema; share with any backend; reason over the graph.',
   srcDir: '.',
   themeConfig: {
     ...themeConfig,
     nav: [
       { link: '/getting-started', text: 'Docs' },
-      { link: 'https://github.com/Studnicky/json-tology', text: 'GitHub' }
+      { link: SITE_REPO, text: 'GitHub' }
     ],
     sidebar,
-    socialLinks: [{ icon: 'github', link: 'https://github.com/Studnicky/json-tology' }]
-  },
-  title: 'json-tology'
+    socialLinks: [{ icon: 'github', link: SITE_REPO }]
+  }
 });
