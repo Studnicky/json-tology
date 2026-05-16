@@ -5,59 +5,108 @@
  *   #7FE7D8 (light teal)  → #24A5B5 (mid teal) → #08717A (dark teal)
  *   #BDF6F2 circuit accent
  *
- * To swap the accent for another project, change ONLY this file.
- * base.css reads every --vp-c-brand-* and surface variable via var().
+ * The runtime token values below are produced by the iridis CLI
+ * (`@studnicky/iridis-cli`) running its `enforce:wcagAAA` pipeline
+ * over `scripts/iridis-config.json`. Every contrast pair declared in
+ * that config is guaranteed by iridis to meet WCAG 2.1 AAA:
+ *
+ *   - body text and links: 7:1 (1.4.6 Contrast Enhanced)
+ *   - large text and UI:   4.5:1
+ *
+ * Regenerate via:
+ *   npx -p tsx tsx /Users/studs/Workspace/iridis/packages/cli/src/main.ts \
+ *     scripts/iridis-config.json
+ *
+ * To swap the accent for another project, change the seed colors in
+ * scripts/iridis-config.json and re-run iridis.
  */
 
 :root {
+  /* JST gradient stops — used for the linear-gradient brand mark only.
+     Decorative; not part of the AAA contrast budget. */
   --jst-teal-light:   #7FE7D8;
   --jst-teal-mid:     #24A5B5;
   --jst-teal-dark:    #08717A;
-  --jst-teal-darker:  #06535a;
   --jst-circuit:      #BDF6F2;
 
-  --vp-c-brand-1:    var(--jst-teal-dark);
-  --vp-c-brand-2:    var(--jst-teal-darker);
-  --vp-c-brand-3:    var(--jst-teal-mid);
-  --vp-c-brand-soft: rgba(36, 165, 181, 0.14);
+  /* iridis-emitted AAA-enforced light palette. */
+  --vp-c-bg:        #e7fefa;
+  --vp-c-bg-alt:    #cefdf5;
+  --vp-c-bg-elv:    #cefdf5;
+  --vp-c-bg-soft:   #c0fdf3;
 
-  --vp-c-text-1: #0d1f22;
-  --vp-c-text-2: #455257;
-  --vp-c-text-3: #7a8a8e;
+  --vp-c-text-1: #021a1d;
+  --vp-c-text-2: #0f5158;
+  --vp-c-text-3: #08717a;
 
-  --vp-c-bg:        #ffffff;
-  --vp-c-bg-alt:    #f6fbfb;
-  --vp-c-bg-elv:    #ffffff;
-  --vp-c-bg-soft:   #f0f8f8;
+  --vp-c-brand-1:    #17575d;
+  --vp-c-brand-2:    #0c4045;
+  --vp-c-brand-3:    #08717a;
+  --vp-c-brand-soft: rgba(23, 87, 93, 0.14);
 
-  --vp-c-divider: #d8e6e7;
-  --vp-c-border:  #d8e6e7;
+  --vp-c-divider: #08717a;
+  --vp-c-border:  #08717a;
 
-  --vp-c-purple: #75336c;
+  --vp-c-purple: #5e2856;
 }
 
 .dark {
-  --vp-c-brand-1:    var(--jst-teal-light);
-  --vp-c-brand-2:    #aef0e6;
-  --vp-c-brand-3:    var(--jst-teal-light);
-  --vp-c-brand-soft: rgba(127, 231, 216, 0.16);
+  /* iridis-emitted AAA-enforced dark palette. */
+  --vp-c-bg:        #000000;
+  --vp-c-bg-alt:    #000000;
+  --vp-c-bg-elv:    #000000;
+  --vp-c-bg-soft:   #000000;
 
-  --vp-c-text-1: #f0f7f7;
-  --vp-c-text-2: #c2d2d3;
-  --vp-c-text-3: #8a9a9c;
+  --vp-c-text-1: #78ced7;
+  --vp-c-text-2: #368f98;
+  --vp-c-text-3: #067079;
 
-  --vp-c-bg:        #061013;
-  --vp-c-bg-alt:    #0b181b;
-  --vp-c-bg-elv:    #112024;
-  --vp-c-bg-soft:   #0b181b;
+  --vp-c-brand-1:    #2f8992;
+  --vp-c-brand-2:    #4ba1aa;
+  --vp-c-brand-3:    #067079;
+  --vp-c-brand-soft: rgba(47, 137, 146, 0.16);
 
-  --vp-c-divider: #1f3236;
-  --vp-c-border:  #1f3236;
+  --vp-c-divider: #067079;
+  --vp-c-border:  #067079;
+}
+
+/* Wide-gamut P3 enhancement (iridis-emitted). Same chromaticity, broader
+   gamut on capable displays. */
+@supports (color: color(display-p3 0 0 0)) {
+  :root {
+    --vp-c-bg:      color(display-p3 0.7499 1.0000 1.0000);
+    --vp-c-bg-alt:  color(display-p3 0.7242 1.0000 0.9755);
+    --vp-c-bg-elv:  color(display-p3 0.7242 1.0000 0.9755);
+    --vp-c-bg-soft: color(display-p3 0.7113 1.0000 0.9624);
+    --vp-c-text-1:  color(display-p3 0.0000 0.1156 0.1505);
+    --vp-c-text-2:  color(display-p3 0.0590 0.3227 0.3581);
+    --vp-c-brand-1: color(display-p3 0.0900 0.3448 0.3802);
+    --vp-c-brand-2: color(display-p3 0.0000 0.2580 0.2931);
+  }
+}
+
+/* Forced-colors mode (Windows High Contrast). System tokens override iridis. */
+@media (forced-colors: active) {
+  :root {
+    --vp-c-bg:        Canvas;
+    --vp-c-bg-alt:    Canvas;
+    --vp-c-bg-elv:    Canvas;
+    --vp-c-bg-soft:   Canvas;
+    --vp-c-text-1:    CanvasText;
+    --vp-c-text-2:    GrayText;
+    --vp-c-text-3:    GrayText;
+    --vp-c-brand-1:   Highlight;
+    --vp-c-brand-2:   Highlight;
+    --vp-c-brand-3:   Highlight;
+    --vp-c-divider:   GrayText;
+    --vp-c-border:    GrayText;
+  }
 }
 
 /* json-tology brand gradient — applied to literal 'json-tology' across docs
    via the jt-brand markdown-it plugin in docs/.vitepress/plugins/jt-brand.mjs.
-   Excluded from code blocks. */
+   Excluded from code blocks. The gradient itself is decorative; the
+   surrounding readable text uses the AAA palette above. */
 .jt-brand {
   background: linear-gradient(135deg, var(--jst-teal-dark) 0%, var(--jst-teal-mid) 50%, var(--jst-teal-dark) 100%);
   -webkit-background-clip: text;
