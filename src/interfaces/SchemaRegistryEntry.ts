@@ -6,6 +6,8 @@ export interface SchemaRegistryEntryInterface {
   'compiled'?: CompiledValidatorInterface;
   'engine'?: GraphEngineInterface;
   'graph'?: SchemaGraphInterface;
+  'hasComputedFields': boolean;
+  'hasEmbeddedIds': boolean;
   'hash': string;
   'refsChecked'?: boolean;
   'schema': Record<string, unknown>;
