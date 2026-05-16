@@ -26,6 +26,12 @@ export class ComputedStore {
     return Object.fromEntries(entry);
   }
 
+  public has(schemaId: string): boolean {
+    const entry = this.store.get(schemaId);
+
+    return entry !== undefined && entry.size > 0;
+  }
+
   public remove(schemaId: string, name: string): void {
     this.store.get(schemaId)?.delete(name);
   }

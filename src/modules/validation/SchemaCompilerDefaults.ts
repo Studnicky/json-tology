@@ -53,6 +53,6 @@ export const SchemaCompilerDefaults = {
       }
     }
 
-    return GraphEngineDefaults.createImplicitDefaultValue(context, node, graph, [], stringVisited);
+    return GraphEngineDefaults.createImplicitDefaultValueSeeded(context, node, graph, [], stringVisited);
   }
 } as const;

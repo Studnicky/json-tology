@@ -34,6 +34,36 @@ import { BaseError } from '../../errors/BaseError.js';
 import { SchemaCompilerSupport } from './SchemaCompilerSupport.js';
 
 // ---------------------------------------------------------------------------
+// Module-scope singletons — boolean schema fast paths (A.1)
+// ---------------------------------------------------------------------------
+
+const ALWAYS_TRUE_CHECK: CheckFnType = (_) => {
+  return true;
+};
+
+const ALWAYS_FALSE_CHECK: CheckFnType = (_) => {
+  return false;
+};
+
+const TRUE_VALIDATOR: ValidateWithErrorsFnType = (value) => {
+  return {
+    'valid': true,
+    value
+  };
+};
+
+const FALSE_VALIDATOR: ValidateWithErrorsFnType = (value, path, errors, collectErrors) => {
+  if (collectErrors) {
+    errors.push(BaseError.validationError(path, 'falseSchema', 'must not match false schema'));
+  }
+
+  return {
+    'valid': false,
+    value
+  };
+};
+
+// ---------------------------------------------------------------------------
 // Internal helpers (graph context)
 // ---------------------------------------------------------------------------
 
@@ -85,17 +115,19 @@ function buildFlatObjectPropertyChecks(
   graph: SchemaGraphInterface,
   lookupSchema?: (id: string) => Record<string, unknown> | undefined
 ): PropCheckInterface[] {
-  const requiredSet = new Set(sem.required);
+  const {
+    properties, required
+  } = sem;
   const propChecks: PropCheckInterface[] = [];
 
   for (const [
     name,
     propNode
-  ] of sem.properties) {
+  ] of properties) {
     propChecks.push({
       'check': context.compileNodeOrBooleanCheck(propNode, formatRegistry, graph, lookupSchema),
       name,
-      'required': requiredSet.has(name)
+      'required': required.includes(name)
     });
   }
 
@@ -128,9 +160,7 @@ export function compileArrayCheck(
   if (itemsNode !== undefined) {
     if (typeof itemsNode.schema === 'boolean') {
       if (!itemsNode.schema) {
-        itemCheck = () => {
-          return false;
-        };
+        itemCheck = ALWAYS_FALSE_CHECK;
       }
     } else {
       itemCheck = context.compileNodeCheck(itemsNode, formatRegistry, graph, lookupSchema);
@@ -252,16 +282,14 @@ export function compileObjectCheck(
   ] of sem.properties) {
     if (typeof propNode.schema === 'boolean') {
       if (!propNode.schema) {
-        propValidators.set(key, () => {
-          return false;
-        });
+        propValidators.set(key, ALWAYS_FALSE_CHECK);
       }
     } else {
       propValidators.set(key, context.compileNodeCheck(propNode, formatRegistry, graph, lookupSchema));
     }
   }
 
-  const allowedKeys = sem.properties.size > 0 ? new Set(sem.properties.keys()) : undefined;
+  const properties = sem.properties;
   const required = sem.required.length > 0 ? sem.required : undefined;
   const additionalPropertiesNode = sem.additionalPropertiesNode;
   const minProperties = sem.minProperties;
@@ -352,7 +380,7 @@ export function compileObjectCheck(
       }
 
       if (additionalIsFalse) {
-        if (allowedKeys?.has(key) !== true) {
+        if (!properties.has(key)) {
           return false;
         }
       } else if (additionalCheck !== undefined && !additionalCheck(value[key])) {
@@ -400,13 +428,7 @@ export function compileRefCheck(
   } = resolved;
 
   if (typeof targetNode.schema === 'boolean') {
-    return targetNode.schema
-      ? () => {
-        return true;
-      }
-      : () => {
-        return false;
-      };
+    return targetNode.schema ? ALWAYS_TRUE_CHECK : ALWAYS_FALSE_CHECK;
   }
 
   if (targetGraph === graph && context.compilingNodes.has(targetNode)) {
@@ -456,11 +478,8 @@ export function nodeSupportsCompilation(
       }
       visited.add(schemaId);
 
-      const refGraph = lookupGraph?.(schemaId) ?? ((): SchemaGraphInterface | undefined => {
-        const refSchema = lookupSchema?.(schemaId);
-
-        return refSchema === undefined ? undefined : new SchemaGraph(refSchema);
-      })();
+      const refSchema = lookupGraph === undefined ? lookupSchema?.(schemaId) : undefined;
+      const refGraph = lookupGraph?.(schemaId) ?? (refSchema === undefined ? undefined : new SchemaGraph(refSchema));
 
       if (refGraph !== undefined) {
         const refRootSupported = nodeSupportsCompilation(
@@ -490,11 +509,19 @@ export function nodeSupportsCompilation(
     }
   }
 
-  for (const branch of [
-    ...sem.allOf,
-    ...sem.anyOf,
-    ...sem.oneOf
-  ]) {
+  for (const branch of sem.allOf) {
+    if (!nodeSupportsCompilation(branch, graph, lookupSchema, visited, lookupGraph)) {
+      return false;
+    }
+  }
+
+  for (const branch of sem.anyOf) {
+    if (!nodeSupportsCompilation(branch, graph, lookupSchema, visited, lookupGraph)) {
+      return false;
+    }
+  }
+
+  for (const branch of sem.oneOf) {
     if (!nodeSupportsCompilation(branch, graph, lookupSchema, visited, lookupGraph)) {
       return false;
     }
@@ -560,7 +587,7 @@ export function tryCompileFlatObjectCheck(
 
   const propChecks = buildFlatObjectPropertyChecks(context, sem, formatRegistry, graph, lookupSchema);
   const rejectsAdditional = sem.additionalPropertiesNode === false;
-  const propNameSet = new Set(sem.properties.keys());
+  const semProperties = sem.properties;
 
   return (value: unknown): boolean => {
     if (!isRecord(value)) {
@@ -584,7 +611,7 @@ export function tryCompileFlatObjectCheck(
 
     if (rejectsAdditional) {
       for (const key of Object.keys(obj)) {
-        if (!propNameSet.has(key)) {
+        if (!semProperties.has(key)) {
           return false;
         }
       }
@@ -599,23 +626,7 @@ export function tryCompileFlatObjectCheck(
 // ---------------------------------------------------------------------------
 
 function booleanValidateWithErrors(schema: boolean): ValidateWithErrorsFnType {
-  return schema
-    ? (value) => {
-      return {
-        'valid': true,
-        'value': value
-      };
-    }
-    : (value, path, errors, collectErrors) => {
-      if (collectErrors) {
-        errors.push(BaseError.validationError(path, 'falseSchema', 'must not match false schema'));
-      }
-
-      return {
-        'valid': false,
-        'value': value
-      };
-    };
+  return schema ? TRUE_VALIDATOR : FALSE_VALIDATOR;
 }
 
 function wrapStrictValidator(inner: ValidateWithErrorsFnType): ValidateWithErrorsFnType {
