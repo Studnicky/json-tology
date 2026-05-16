@@ -1,0 +1,21 @@
+{
+  "rootBlock": ":root {\n  --jt-canvas: #e7fefa;\n  --jt-surface: #cefdf5;\n  --jt-surface-soft: #c0fdf3;\n  --jt-text: #021a1d;\n  --jt-text-muted: #0f5158;\n  --jt-text-subtle: #08717a;\n  --jt-accent: #17575d;\n  --jt-accent-hover: #0c4045;\n  --jt-accent-ui: #08717a;\n  --jt-on-accent: #cefdf5;\n  --jt-border: #08717a;\n}",
+  "scopedBlock": "[data-theme='json-tology'] {\n  --jt-canvas: #e7fefa;\n  --jt-surface: #cefdf5;\n  --jt-surface-soft: #c0fdf3;\n  --jt-text: #021a1d;\n  --jt-text-muted: #0f5158;\n  --jt-text-subtle: #08717a;\n  --jt-accent: #17575d;\n  --jt-accent-hover: #0c4045;\n  --jt-accent-ui: #08717a;\n  --jt-on-accent: #cefdf5;\n  --jt-border: #08717a;\n}",
+  "darkScheme": "@media (prefers-color-scheme: dark) {\n  :root {\n    --jt-canvas: #000000;\n    --jt-surface: #000000;\n    --jt-surface-soft: #000000;\n    --jt-text: #78ced7;\n    --jt-text-muted: #368f98;\n    --jt-text-subtle: #067079;\n    --jt-accent: #2f8992;\n    --jt-accent-hover: #4ba1aa;\n    --jt-accent-ui: #067079;\n    --jt-on-accent: #000000;\n    --jt-border: #067079;\n  }\n}",
+  "forcedColors": "@media (forced-colors: active) {\n  :root {\n    --jt-canvas: Canvas;\n    --jt-surface: Canvas;\n    --jt-surface-soft: Canvas;\n    --jt-text: CanvasText;\n    --jt-text-muted: GrayText;\n    --jt-text-subtle: GrayText;\n    --jt-accent: Highlight;\n    --jt-accent-hover: Highlight;\n    --jt-accent-ui: Highlight;\n    --jt-on-accent: CanvasText;\n    --jt-border: GrayText;\n  }\n}",
+  "wideGamut": "@supports (color: color(display-p3 0 0 0)) {\n  :root {\n    --jt-canvas: color(display-p3 0.7499 1.0000 1.0000);\n    --jt-surface: color(display-p3 0.7242 1.0000 0.9755);\n    --jt-surface-soft: color(display-p3 0.7113 1.0000 0.9624);\n    --jt-text: color(display-p3 0.0000 0.1156 0.1505);\n    --jt-text-muted: color(display-p3 0.0590 0.3227 0.3581);\n    --jt-accent: color(display-p3 0.0900 0.3448 0.3802);\n    --jt-accent-hover: color(display-p3 0.0000 0.2580 0.2931);\n    --jt-on-accent: color(display-p3 0.7242 1.0000 0.9755);\n  }\n}",
+  "full": ":root {\n  --jt-canvas: #e7fefa;\n  --jt-surface: #cefdf5;\n  --jt-surface-soft: #c0fdf3;\n  --jt-text: #021a1d;\n  --jt-text-muted: #0f5158;\n  --jt-text-subtle: #08717a;\n  --jt-accent: #17575d;\n  --jt-accent-hover: #0c4045;\n  --jt-accent-ui: #08717a;\n  --jt-on-accent: #cefdf5;\n  --jt-border: #08717a;\n}\n\n@media (prefers-color-scheme: dark) {\n  :root {\n    --jt-canvas: #000000;\n    --jt-surface: #000000;\n    --jt-surface-soft: #000000;\n    --jt-text: #78ced7;\n    --jt-text-muted: #368f98;\n    --jt-text-subtle: #067079;\n    --jt-accent: #2f8992;\n    --jt-accent-hover: #4ba1aa;\n    --jt-accent-ui: #067079;\n    --jt-on-accent: #000000;\n    --jt-border: #067079;\n  }\n}\n\n@supports (color: color(display-p3 0 0 0)) {\n  :root {\n    --jt-canvas: color(display-p3 0.7499 1.0000 1.0000);\n    --jt-surface: color(display-p3 0.7242 1.0000 0.9755);\n    --jt-surface-soft: color(display-p3 0.7113 1.0000 0.9624);\n    --jt-text: color(display-p3 0.0000 0.1156 0.1505);\n    --jt-text-muted: color(display-p3 0.0590 0.3227 0.3581);\n    --jt-accent: color(display-p3 0.0900 0.3448 0.3802);\n    --jt-accent-hover: color(display-p3 0.0000 0.2580 0.2931);\n    --jt-on-accent: color(display-p3 0.7242 1.0000 0.9755);\n  }\n}\n\n@media (forced-colors: active) {\n  :root {\n    --jt-canvas: Canvas;\n    --jt-surface: Canvas;\n    --jt-surface-soft: Canvas;\n    --jt-text: CanvasText;\n    --jt-text-muted: GrayText;\n    --jt-text-subtle: GrayText;\n    --jt-accent: Highlight;\n    --jt-accent-hover: Highlight;\n    --jt-accent-ui: Highlight;\n    --jt-on-accent: CanvasText;\n    --jt-border: GrayText;\n  }\n}",
+  "map": {
+    "canvas": "--jt-canvas",
+    "surface": "--jt-surface",
+    "surfaceSoft": "--jt-surface-soft",
+    "text": "--jt-text",
+    "textMuted": "--jt-text-muted",
+    "textSubtle": "--jt-text-subtle",
+    "accent": "--jt-accent",
+    "accentHover": "--jt-accent-hover",
+    "accentUi": "--jt-accent-ui",
+    "onAccent": "--jt-on-accent",
+    "border": "--jt-border"
+  }
+}
