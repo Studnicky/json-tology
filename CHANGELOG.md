@@ -7,7 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Performance (audit pass 4 — production "build once, reuse many")
+## [0.8.0] - 2026-05-15
+
+### Added
+
+- `SchemaRegistry.graphEntry(id)` returns `{ schema, graph }` in a single lookup. Used by `Dumper` to collapse two sequential `resolve() + store.get()` round-trips into one.
+- `SchemaRegistry.instantiate` / `cast` / `convert` accept an opt-out `clone: false` flag. Used internally by `Materializer` on engine-output paths where ownership is already local.
+- `hasEmbeddedIds` and `hasComputedFields` flags on `SchemaRegistryEntryInterface`, computed once at registration. Drive sentinel + flag-gated fast paths in `engine()` and `instantiate()`.
+
+### Performance — production "build once, reuse many"
+
+- `discriminated union` +58% vs 0.7.0; `extend + validate` and `intersection` corrected from measurement artifacts to steady-state 1.89M and 2.18M ops/s; `dumpJson nested` +41% via no-transform fast path; broad +2-5% across validate/coerce/clean/diff/encode paths.
+- `GraphEngine.cachedDefaultResolutionContext` and `cachedVisitContext` are constructor-built `private readonly` fields. The 12-closure visit context and the two-closure default-resolution context are no longer allocated per call.
+- `Materializer` precomputes `cachedOverridesWithDefaults` and `cachedOverridesNoDefaults` as instance fields. `run()` selects with a ternary instead of building a fresh 6-field overrides object.
+- `JsonTology.graphSchemaSerializer` is a `private readonly` instance field (matches the `ontologySerializer` / `shaclSerializer` pattern). `new GraphSchemaSerializer()` per `toSchema()` is gone.
+- `SchemaRegistry.lookupGraph` is a `private readonly` constructor-bound field. `engine()` builds options via direct field assignment instead of three nested object spreads.
+- `Curie.expand` memoizes prefix expansion. Cache valid for the Curie's lifetime; prefixes are constructor-injected and immutable.
+- `engine()` returns a frozen `EMPTY_EMBEDDED_MAP` sentinel when `entry.hasEmbeddedIds === false`. `instantiate` skips the `computedStore.getMap` round-trip when `entry.hasComputedFields === false`.
+- `SchemaCompilerPlan` hoists module-scope `ALWAYS_TRUE_CHECK`, `ALWAYS_FALSE_CHECK`, `TRUE_VALIDATOR`, `FALSE_VALIDATOR` singletons. Boolean-schema compile paths reference the singletons instead of allocating fresh `() => true` / `() => false` per call.
+- `SchemaCompilerPlan` replaces `[...sem.allOf, ...sem.anyOf, ...sem.oneOf]` with three sequential `for...of` loops in `nodeSupportsCompilation`.
+- `SchemaCompilerPlan` flat-object fast path uses `Map.has` and `Array.includes` directly instead of materializing per-compile Sets.
+- `Predicates.satisfiesFormat` removed. The try/catch wrapper exited V8 JIT optimization and the validator call site was polymorphic. Built-in format validators are now invoked directly; user-supplied validators that throw are caught at the single boundary in `Scalars.validateFormat`.
+- `Dumper.dumpJson` short-circuits to `JSON.stringify(value)` when the schema has no registered transform decoders and the options carry no active filters.
+- `Dumper.dumpObject` allocates the `knownKeys` Set only when `excludeDefaults === true`.
+- `VisitComposition` lazy-initializes `evaluatedProperties` / `evaluatedItems` / `successfulResults`. Six `{ ...options, collectErrors: true }` per-branch spreads collapsed to one pre-allocated `collectErrorsOptions` per call across `anyOf` / `oneOf` / `ifThenElse` / `not`.
+- `VisitComposition.oneOf` caches per-variant semantic descriptors in a module-scope `WeakMap` keyed on the oneOf node array.
+- `RefDecoder.walkAdditionalProperties` calls `semantics.properties.has(key)` directly on the Map instead of allocating a fresh Set from `.keys()`.
+- `GraphEngine.validateObject` uses a single `propertyNodeMap.get(key)` + undefined check instead of `has(key)` then `get(key)`.
+- `GraphEngine.validateArray` uniqueItems uses a labeled inner loop scanning from `index + 1` instead of allocating a `.slice(index + 1)` per element.
+- `GraphEngine` hoists a module-scope `escape` alias for `SchemaGraphSupport.escapeJsonPointerSegment`, eliminating six static-method-call paths inside per-property loops.
+- `GraphEngineDefaults.createImplicitDefaultValue` / `synthesizeZeroValue` split into public wrappers that own the single `Set<string>` cycle-guard allocation and internal recursive workers that take `visited` as a required parameter.
+- `Lift.findPropertyQuads` consumes a per-subject predicate index built once per `liftSubject` call when the subject has more than 3 properties, replacing two per-property `.filter()` passes with Map lookups.
+- `JsonLdFormatter` blank-node inlining uses a single-pass copy that skips `@id` during construction (no spread + delete).
+- `Skolemize` UUID fallback uses a 256-entry hex lookup table instead of `toString(16).padStart(2, '0')` per byte.
+- `SchemaGraphRelations.pushDependentRequiredRelations` iterates `Object.entries` with a length guard instead of `.filter().forEach()`. `extractRelations` computes `nonNullTypes` once and shares it across `pushPropertyTypeRelations` and `pushUnionTypeRelations`.
+- `Compose.extend` constants `EXTEND_SKIP_KEYS` and `CLASS_AXIOM_BODY_SKIP_KEYS` hoisted to `src/constants/COMPOSITION.ts`.
+
+### Bench
+
+- `intersection` and `extend + validate` benchmarks corrected to measure steady-state validate, not registry construction. Previous loops allocated `new SchemaRegistry()` per iteration, measuring graph lowering + compile + validate as one operation. Production callers warm the registry once.
+
+### Internal
+
+- 2 inline interfaces moved to `src/interfaces/` (`RefDecoderRegistry`, `FetchLoaderOptions`).
+- 8 module-scope constant clusters relocated to `src/constants/` (`COMPOSITION`, `STRUCTURAL_HASH`, `SCHEMA_KEYWORDS` appended with `PRIMITIVE_CONSTRAINT_KEYWORDS` and `PRIMITIVE_TYPES`, `XSD_MAPS` appended with `XSD_COERCERS`, `ONTOLOGY_PREDICATES` appended with `CARDINALITY_KINDS`, `SIMPLE_LITERAL_PREDICATES`, `IRI_PREDICATES`).
+- 4 schema-keyword constants added to `src/constants/SCHEMA_KEYWORDS.ts` (`ID_KEYWORD`, `REF_KEYWORD`, `DEFS_KEYWORD`, `SCHEMA_KEYWORD`).
+- `ARCHITECTURE.md` rebuilt with current public API surface and file inventory (214 files enumerated across all modules).
+
+## [0.7.0] - 2026-05-15
 
 - `discriminated union` +39%, `extend + validate` +18%, `intersection` +18%, `extend build` +5%, `convert simple` +5%, `clone nested` +5%, broad +2-4% wins across validate/coerce/clean/diff/encode paths. Aggregate effect of caching production-code state that prior passes left re-allocating per call.
 - `GraphEngine.defaultResolutionContext` is hoisted to a constructor-built `private readonly cachedDefaultResolutionContext` field. Same pattern as Pass-2 `cachedVisitContext` — the per-call object literal with two arrow closures is gone.
