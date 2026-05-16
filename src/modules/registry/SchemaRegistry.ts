@@ -61,6 +61,36 @@ import { DEFAULT_PREFIXES } from '../../constants/PREFIXES.js';
 import { SILENT_LOGGER } from '../../constants/LOGGER.js';
 
 const EMPTY_VALIDATION_ERRORS = new ValidationErrors([]);
+const EMPTY_EMBEDDED_MAP_MUTABLE = new Map<string, Record<string, unknown>>();
+const EMPTY_EMBEDDED_MAP: ReadonlyMap<string, Record<string, unknown>> = Object.freeze(EMPTY_EMBEDDED_MAP_MUTABLE);
+
+function detectEmbeddedIds(node: unknown, isRoot: boolean): boolean {
+  if (Array.isArray(node)) {
+    for (const item of node) {
+      if (detectEmbeddedIds(item, false)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  if (!isRecord(node)) {
+    return false;
+  }
+
+  if (!isRoot && typeof node.$id === 'string' && node.$id !== '') {
+    return true;
+  }
+
+  for (const value of Object.values(node)) {
+    if (detectEmbeddedIds(value, false)) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 // Re-exported so existing consumers of SchemaRegistry keep their import paths.
 export type { DuplicateReportEntryType } from '../../interfaces/SchemaEntryStore.js';
@@ -81,6 +111,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   private readonly invariants: InvariantStore;
   private readonly keywords: KeywordDefinitionInterface[] | undefined;
   private readonly logger: LoggerInterface;
+  private readonly lookupGraphFn: (id: string) => SchemaGraphInterface | undefined;
   private readonly maxSchemaDepth: number | undefined;
   private readonly refs: SchemaRefWalkerInterface;
   public readonly sameAsStore: SameAsStore;
@@ -120,6 +151,9 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     this.formatRegistry = options?.formatRegistry;
     this.keywords = options?.keywords;
     this.invariants = new InvariantStore(options?.invariants);
+    this.lookupGraphFn = (id: string): SchemaGraphInterface | undefined => {
+      return this.graph(id);
+    };
     this.compiler = new SchemaCompiler({
       'logger': this.logger,
       'lookupCompiled': (schemaId) => {
@@ -431,23 +465,26 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
 
     if (entry.engine === undefined) {
-      // Collect embedded sub-schemas (those that declare their own $id inside
-      // $defs or any nested location) so the lookupSchema callback can
-      // resolve $refs that target an embedded $id without requiring a
-      // separate top-level registration.
-      const embeddedSchemas = GraphEngineSupport.buildEmbeddedSchemaMap(entry.schema);
+      const embeddedSchemas = entry.hasEmbeddedIds
+        ? GraphEngineSupport.buildEmbeddedSchemaMap(entry.schema)
+        : EMPTY_EMBEDDED_MAP;
 
       const engineOptions: GraphEngineOptionsInterface = {
-        ...(this.formatRegistry ? { 'formatRegistry': this.formatRegistry } : {}),
-        ...(this.keywords && this.keywords.length > 0 ? { 'keywords': this.keywords } : {}),
-        ...(this.maxSchemaDepth === undefined ? {} : { 'maxSchemaDepth': this.maxSchemaDepth }),
-        'lookupGraph': (lookupSchemaId: string) => {
-          return this.graph(lookupSchemaId);
-        },
-        'lookupSchema': (lookupSchemaId: string) => {
+        'lookupGraph': this.lookupGraphFn,
+        'lookupSchema': (lookupSchemaId: string): Record<string, unknown> | undefined => {
           return this.store.get(lookupSchemaId)?.schema ?? embeddedSchemas.get(lookupSchemaId);
         }
       };
+
+      if (this.formatRegistry !== undefined) {
+        engineOptions.formatRegistry = this.formatRegistry;
+      }
+      if (this.keywords !== undefined && this.keywords.length > 0) {
+        engineOptions.keywords = this.keywords;
+      }
+      if (this.maxSchemaDepth !== undefined) {
+        engineOptions.maxSchemaDepth = this.maxSchemaDepth;
+      }
 
       entry.engine = new GraphEngine(entry.schema, engineOptions);
     }
@@ -544,7 +581,11 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`);
     }
 
-    const computedMap = this.computedStore.getMap(schemaId);
+    if (!entry.hasComputedFields && this.computedStore.has(schemaId)) {
+      entry.hasComputedFields = true;
+    }
+
+    const computedMap = entry.hasComputedFields ? this.computedStore.getMap(schemaId) : {};
     const computedNames = Object.keys(computedMap);
 
     if (computedNames.length > 0 && isRecord(data)) {
@@ -775,6 +816,8 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
 
     const entry: SchemaRegistryEntryInterface = {
+      'hasComputedFields': false,
+      'hasEmbeddedIds': detectEmbeddedIds(schema, true),
       hash,
       schema
     };

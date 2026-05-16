@@ -548,6 +548,7 @@ export class JsonTology<TMap = Record<never, never>> {
   private readonly defaultGraphIRI: string | undefined;
   private readonly defaultIriForRaw: SkolemizeFnType | string | undefined;
 
+  private readonly graphSchemaSerializer: GraphSchemaSerializer;
   public readonly materializer: MaterializerInterface;
   private ontologyCache: null | {
     'builder': OntologyBuilder;
@@ -651,6 +652,7 @@ export class JsonTology<TMap = Record<never, never>> {
     const curie = this.registry.curie ?? new Curie(this.prefixes);
     const vocabularies = options.vocabularies ?? [];
 
+    this.graphSchemaSerializer = new GraphSchemaSerializer();
     this.ontologySerializer = new GraphOntologySerializer({
       curie,
       vocabularies
@@ -1158,7 +1160,7 @@ export class JsonTology<TMap = Record<never, never>> {
       return undefined;
     }
 
-    return new GraphSchemaSerializer().serialize(graph);
+    return this.graphSchemaSerializer.serialize(graph);
   }
 
   /**

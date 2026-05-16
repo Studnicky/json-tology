@@ -58,10 +58,48 @@ export class Materializer implements MaterializerInterface {
    * @param registry - Schema registry for engine and schema lookups
    * @param options - Materializer options (e.g. passAdditionalProperties)
    */
+  private readonly cachedOverridesNoDefaults: {
+    readonly 'allowAdditionalProperties': boolean;
+    readonly 'applyDefaults': true;
+    readonly 'castTypes': boolean;
+    readonly 'collectErrors': true;
+    readonly 'removeAdditionalProperties': false;
+    readonly 'synthesizeDefaults': false;
+  };
+
+  private readonly cachedOverridesWithDefaults: {
+    readonly 'allowAdditionalProperties': boolean;
+    readonly 'applyDefaults': true;
+    readonly 'castTypes': boolean;
+    readonly 'collectErrors': true;
+    readonly 'removeAdditionalProperties': false;
+    readonly 'synthesizeDefaults': true;
+  };
+
   public constructor(
     private readonly registry: SchemaRegistryInterface,
-    private readonly options: MaterializerOptionsInterface = {}
-  ) {}
+    options: MaterializerOptionsInterface = {}
+  ) {
+    const allowAdditionalProperties = options.passAdditionalProperties === true;
+    const castTypes = registry.castTypes;
+
+    this.cachedOverridesNoDefaults = {
+      'allowAdditionalProperties': allowAdditionalProperties,
+      'applyDefaults': true,
+      'castTypes': castTypes,
+      'collectErrors': true,
+      'removeAdditionalProperties': false,
+      'synthesizeDefaults': false
+    };
+    this.cachedOverridesWithDefaults = {
+      'allowAdditionalProperties': allowAdditionalProperties,
+      'applyDefaults': true,
+      'castTypes': castTypes,
+      'collectErrors': true,
+      'removeAdditionalProperties': false,
+      'synthesizeDefaults': true
+    };
+  }
 
   private applyComputedFields(schemaId: string, value: Record<string, unknown>): void {
     const computedMap = this.registry.computedStore.getMap(schemaId);
@@ -287,16 +325,7 @@ export class Materializer implements MaterializerInterface {
     }
 
     const engine = this.registry.engine(schema);
-    const execution = engine.execute(data, {
-      'overrides': {
-        'allowAdditionalProperties': this.options.passAdditionalProperties === true,
-        'applyDefaults': true,
-        'castTypes': this.registry.castTypes,
-        'collectErrors': true,
-        'removeAdditionalProperties': false,
-        'synthesizeDefaults': synthesizeDefaults
-      }
-    });
+    const execution = engine.execute(data, { 'overrides': synthesizeDefaults ? this.cachedOverridesWithDefaults : this.cachedOverridesNoDefaults });
     const materialized = synthesizeDefaults
       ? execution.value
       : this.materializeResult(execution);

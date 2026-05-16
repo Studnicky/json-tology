@@ -31,7 +31,12 @@ import type { VisitContextInterface } from '../../interfaces/VisitContext.js';
 
 import type { JSONSchema7Definition } from 'json-schema';
 
+const escape = (segment: string): string => {
+  return SchemaGraphSupport.escapeJsonPointerSegment(segment);
+};
+
 export class GraphEngine implements GraphEngineInterface {
+  private readonly cachedDefaultResolutionContext: DefaultResolutionContextInterface;
   private readonly cachedVisitContext: VisitContextInterface;
   private readonly customKeywords: KeywordDefinitionInterface[];
   private readonly dialectPlan: RootDialectPlanInterface;
@@ -59,6 +64,7 @@ export class GraphEngine implements GraphEngineInterface {
     this.embeddedSchemas = new Map<string, JSONSchema7Definition>();
     GraphEngineSupport.collectEmbeddedSchemas(rootSchema, this.embeddedSchemas, true);
     this.rootId = GraphEngineSupport.schemaId(rootSchema);
+    this.cachedDefaultResolutionContext = this.defaultResolutionContext();
     this.cachedVisitContext = this.visitContext();
   }
 
@@ -141,11 +147,11 @@ export class GraphEngine implements GraphEngineInterface {
 
       if (typeof unevaluatedPropertiesNode.schema === 'boolean') {
         if (!unevaluatedPropertiesNode.schema) {
-          errors.push(this.createError(`${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, 'unevaluatedProperties', 'must NOT have unevaluated properties', { 'unevaluatedProperty': key }));
+          errors.push(this.createError(`${path}/${escape(key)}`, 'unevaluatedProperties', 'must NOT have unevaluated properties', { 'unevaluatedProperty': key }));
         }
         continue;
       }
-      const child = this.visit(unevaluatedPropertiesNode, graph, workingValue[key], `${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope, depth + 1);
+      const child = this.visit(unevaluatedPropertiesNode, graph, workingValue[key], `${path}/${escape(key)}`, options, refStack, dynamicScope, depth + 1);
 
       if (!child.valid && !options.collectErrors) {
         return child;
@@ -187,12 +193,11 @@ export class GraphEngine implements GraphEngineInterface {
   private createImplicitDefault(
     node: SchemaGraphNodeInterface,
     graph: SchemaGraphInterface,
-    dynamicScope: DynamicScopeEntryInterface[],
-    visited = new Set<string>()
+    dynamicScope: DynamicScopeEntryInterface[]
   ): unknown {
-    const ctx = this.defaultResolutionContext();
+    const ctx = this.cachedDefaultResolutionContext;
 
-    return GraphEngineDefaults.createImplicitDefaultValue(ctx, node, graph, dynamicScope, visited);
+    return GraphEngineDefaults.createImplicitDefaultValue(ctx, node, graph, dynamicScope);
   }
 
   private defaultResolutionContext(): DefaultResolutionContextInterface {
@@ -408,9 +413,7 @@ export class GraphEngine implements GraphEngineInterface {
     graph: SchemaGraphInterface,
     dynamicScope: DynamicScopeEntryInterface[]
   ): unknown {
-    const ctx = this.defaultResolutionContext();
-
-    return GraphEngineDefaults.synthesizeZeroValue(ctx, node, graph, dynamicScope, new Set());
+    return GraphEngineDefaults.synthesizeZeroValue(this.cachedDefaultResolutionContext, node, graph, dynamicScope);
   }
 
   private validateArray(
@@ -444,15 +447,15 @@ export class GraphEngine implements GraphEngineInterface {
       errors.push(this.createError(path, 'maxItems', `must have at most ${maxItems} items`, { 'limit': maxItems }));
     }
     if (uniqueItems) {
-      for (let index = 0; index < workingValue.length; index++) {
+      outer: for (let index = 0; index < workingValue.length; index++) {
         const item = workingValue[index];
 
-        if (workingValue.slice(index + 1).some((candidate) => {
-          return deepEqual(item, candidate);
-        })) {
-          errors.push(this.createError(path, 'uniqueItems', 'must NOT have duplicate items'));
+        for (let j = index + 1; j < workingValue.length; j++) {
+          if (deepEqual(item, workingValue[j])) {
+            errors.push(this.createError(path, 'uniqueItems', 'must NOT have duplicate items'));
 
-          break;
+            break outer;
+          }
         }
       }
     }
@@ -567,7 +570,6 @@ export class GraphEngine implements GraphEngineInterface {
     const errors: ValidationErrorType[] = [];
     const evaluatedProperties = new Set<string>();
     const sem = graph.semantics(node);
-    const propertyEntries = sem.properties;
     const propertyNodeMap = sem.properties;
     const required = sem.required;
     const patternPropertyEntries = sem.patternPropertyEntries.map(([
@@ -587,7 +589,7 @@ export class GraphEngine implements GraphEngineInterface {
     for (const [
       canonicalKey,
       propNode
-    ] of propertyEntries) {
+    ] of propertyNodeMap) {
       const propSem = graph.semantics(propNode);
 
       for (const alias of propSem.aliases) {
@@ -620,7 +622,7 @@ export class GraphEngine implements GraphEngineInterface {
       for (const [
         key,
         propNode
-      ] of propertyEntries) {
+      ] of propertyNodeMap) {
         if (key in workingValue) {
           continue;
         }
@@ -674,18 +676,15 @@ export class GraphEngine implements GraphEngineInterface {
         errors.push(...propertyNameResult.errors.map((error) => {
           return {
             ...error,
-            'path': `${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`
+            'path': `${path}/${escape(key)}`
           };
         }));
       }
 
-      if (propertyNodeMap.has(key)) {
-        const propNode = propertyNodeMap.get(key);
+      const propNode = propertyNodeMap.get(key);
 
-        if (propNode === undefined) {
-          throw new GraphError('POINTER_NOT_FOUND', `Property node not found for key: ${key}`, key);
-        }
-        const child = this.visit(propNode, graph, workingValue[key], `${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope, depth + 1);
+      if (propNode !== undefined) {
+        const child = this.visit(propNode, graph, workingValue[key], `${path}/${escape(key)}`, options, refStack, dynamicScope, depth + 1);
 
         if (!child.valid && !options.collectErrors) {
           return child;
@@ -697,7 +696,7 @@ export class GraphEngine implements GraphEngineInterface {
 
       for (const patternEntry of patternPropertyEntries) {
         if (patternEntry.regex.test(key)) {
-          const child = this.visit(patternEntry.node, graph, workingValue[key], `${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope, depth + 1);
+          const child = this.visit(patternEntry.node, graph, workingValue[key], `${path}/${escape(key)}`, options, refStack, dynamicScope, depth + 1);
 
           if (!child.valid && !options.collectErrors) {
             return child;
@@ -761,7 +760,7 @@ export class GraphEngine implements GraphEngineInterface {
         if (options.removeAdditionalProperties) {
           delete workingValue[key];
         } else {
-          errors.push(this.createError(`${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, 'additionalProperties', 'must NOT have additional properties', { 'additionalProperty': key }));
+          errors.push(this.createError(`${path}/${escape(key)}`, 'additionalProperties', 'must NOT have additional properties', { 'additionalProperty': key }));
         }
 
         return;
@@ -775,7 +774,7 @@ export class GraphEngine implements GraphEngineInterface {
         return;
       }
 
-      const child = this.visit(additionalProperties, graph, workingValue[key], `${path}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`, options, refStack, dynamicScope, depth + 1);
+      const child = this.visit(additionalProperties, graph, workingValue[key], `${path}/${escape(key)}`, options, refStack, dynamicScope, depth + 1);
 
       if (child.valid) {
         workingValue[key] = child.value;

@@ -79,10 +79,8 @@ export class RefDecoder {
     if (additional === undefined || typeof additional === 'boolean') {
       return value;
     }
-    const declared = new Set(semantics.properties.keys());
-
     for (const key of Object.keys(value)) {
-      if (declared.has(key)) {
+      if (semantics.properties.has(key)) {
         continue;
       }
       const next = RefDecoder.walk(graph, additional, value[key], registry, visited);

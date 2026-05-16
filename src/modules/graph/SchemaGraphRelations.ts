@@ -112,16 +112,13 @@ function pushDependentRequiredRelations(
   sem: SchemaGraphSemanticsInterface,
   relations: SchemaGraphRelationInterface[]
 ): void {
-  const entries = Object.entries(sem.dependentRequired).filter(([
-    , v
-  ]) => {
-    return v.length > 0;
-  });
-
   for (const [
     trigger,
     required
-  ] of entries) {
+  ] of Object.entries(sem.dependentRequired)) {
+    if (required.length === 0) {
+      continue;
+    }
     relations.push({
       'metadata': {
         required,
@@ -280,15 +277,13 @@ function pushPropertyCardinalityRelations(
 function pushPropertyTypeRelations(
   node: SchemaGraphNodeInterface,
   sem: SchemaGraphSemanticsInterface,
-  relations: SchemaGraphRelationInterface[]
+  relations: SchemaGraphRelationInterface[],
+  nonNullTypes: string[]
 ): void {
   if (!SchemaGraphSupport.isPropertyPointer(node.pointer)) {
     return;
   }
 
-  const nonNullTypes = sem.schemaTypes.filter((schemaType) => {
-    return schemaType !== 'null';
-  });
   const primaryType = nonNullTypes.length > 0 ? nonNullTypes[0] : null;
   const isObjectProperty = primaryType === 'array'
     || primaryType === 'object'
@@ -305,15 +300,12 @@ function pushPropertyTypeRelations(
 function pushUnionTypeRelations(
   node: SchemaGraphNodeInterface,
   sem: SchemaGraphSemanticsInterface,
-  relations: SchemaGraphRelationInterface[]
+  relations: SchemaGraphRelationInterface[],
+  nonNullTypes: string[]
 ): void {
   if (!SchemaGraphSupport.isPropertyPointer(node.pointer)) {
     return;
   }
-
-  const nonNullTypes = sem.schemaTypes.filter((schemaType) => {
-    return schemaType !== 'null';
-  });
 
   if (nonNullTypes.length <= 1) {
     return;
@@ -697,14 +689,18 @@ export const SchemaGraphRelations = {
       });
     }
 
-    pushPropertyTypeRelations(node, sem, relations);
+    const nonNullTypes = sem.schemaTypes.filter((schemaType) => {
+      return schemaType !== 'null';
+    });
+
+    pushPropertyTypeRelations(node, sem, relations, nonNullTypes);
     pushPropertyCardinalityRelations(graph, node, sem, relations, nodeMap);
     pushConditionalRelations(graph, node, sem, relations);
     pushDependentSchemaRelations(graph, node, sem, relations);
     pushContainsRelations(graph, node, sem, relations);
     pushPrefixItemRelations(graph, node, sem, relations);
     pushPatternPropertyRelations(graph, node, sem, relations);
-    pushUnionTypeRelations(node, sem, relations);
+    pushUnionTypeRelations(node, sem, relations, nonNullTypes);
     pushDependentRequiredRelations(node, sem, relations);
     pushFormatPatternRelations(node, sem, relations);
 
