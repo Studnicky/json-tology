@@ -159,7 +159,8 @@ export class Objects {
     errors: ValidationErrorType[],
     collectErrors: boolean,
     applyDefaults: boolean,
-    doCoerce: boolean
+    doCoerce: boolean,
+    allowedKeysForStrip?: Set<string>
   ): { 'count': number;
     'earlyExit': boolean;
     'valid': boolean } {
@@ -184,7 +185,8 @@ export class Objects {
           errors,
           collectErrors,
           applyDefaults,
-          doCoerce
+          doCoerce,
+          allowedKeysForStrip ?? allowedKeys
         );
 
         if (patternResult.earlyExit) {
@@ -328,7 +330,8 @@ export class Objects {
     errors: ValidationErrorType[],
     collectErrors: boolean,
     applyDefaults: boolean,
-    doCoerce: boolean
+    doCoerce: boolean,
+    allowedKeysForStrip?: Set<string>
   ): { 'earlyExit': boolean;
     'valid': boolean } {
     let matchedPattern = false;
@@ -365,7 +368,13 @@ export class Objects {
     }
 
     if (!matchedPattern) {
-      if (stripUnknown && allowedKeys !== undefined && !allowedKeys.has(key)) {
+      // Strip uses the wider set (own + allOf-inherited) so coercion
+      // doesn't delete parent fields supplied to a subclass schema.
+      // The additionalProperties:false check uses the strict own-only
+      // set per JSON Schema semantics.
+      const stripAllowed = allowedKeysForStrip ?? allowedKeys;
+
+      if (stripUnknown && stripAllowed !== undefined && !stripAllowed.has(key)) {
         delete obj[key];
       } else if (additionalIsFalse && allowedKeys?.has(key) !== true) {
         if (!collectErrors) {

@@ -18,8 +18,7 @@ export class Composition {
     errors: ValidationErrorType[],
     collectErrors: boolean,
     applyDefaults: boolean,
-    doCoerce: boolean,
-    stripUnknown: boolean
+    doCoerce: boolean
   ): { 'earlyExit': boolean;
     'valid': boolean;
     'value': unknown } {
@@ -34,6 +33,12 @@ export class Composition {
     let valid = true;
     let current = workingValue;
 
+    // allOf members run with stripUnknown forced false: each member
+    // sees only its own properties as "known" but the value carries
+    // fields from all members, so per-member stripping would erase
+    // legitimate values from sibling members. The top-level node's
+    // validator performs the final strip against `allowedKeysForStrip`,
+    // which is the union of own + allOf-inherited property names.
     for (const allOfValidator of allOfValidators) {
       const allOfResult = allOfValidator(
         current,
@@ -42,7 +47,7 @@ export class Composition {
         collectErrors,
         applyDefaults,
         doCoerce,
-        stripUnknown
+        false
       );
 
       if (!allOfResult.valid) {

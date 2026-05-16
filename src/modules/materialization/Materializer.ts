@@ -127,6 +127,57 @@ export class Materializer implements MaterializerInterface {
   }
 
   /**
+   * Collect every property the schema effectively carries: own `properties`
+   * plus those reachable through `allOf` members (recursively, resolving
+   * `$ref` parents that point to other graphs in the registry). Without
+   * this walk a `Compose.subClassOf(Parent, body)` schema only materializes
+   * the body's own properties; parent fields supplied at the wire level
+   * are dropped from the output even though validation accepts them.
+   */
+  private collectEffectiveProperties(
+    graph: SchemaGraphInterface,
+    node: SchemaGraphNodeInterface
+  ): Map<string, { 'graph': SchemaGraphInterface;
+    'node': SchemaGraphNodeInterface }> {
+    const collected = new Map<string, { 'graph': SchemaGraphInterface;
+      'node': SchemaGraphNodeInterface }>();
+    const visited = new Set<SchemaGraphNodeInterface>();
+
+    const walk = (currentGraph: SchemaGraphInterface, current: SchemaGraphNodeInterface): void => {
+      if (visited.has(current)) {
+        return;
+      }
+      visited.add(current);
+
+      const [
+        resolvedGraph,
+        resolvedNode
+      ] = this.resolveTargetGraphAndNode(currentGraph, current);
+      const semantics = resolvedGraph.semantics(resolvedNode);
+
+      for (const [
+        name,
+        propNode
+      ] of semantics.properties) {
+        if (!collected.has(name)) {
+          collected.set(name, {
+            'graph': resolvedGraph,
+            'node': propNode
+          });
+        }
+      }
+
+      for (const member of semantics.allOf) {
+        walk(resolvedGraph, member);
+      }
+    };
+
+    walk(graph, node);
+
+    return collected;
+  }
+
+  /**
    * Create a default instance of a schema by synthesizing zero values for required properties.
    *
    * @param schema - Schema object with $id
@@ -158,41 +209,53 @@ export class Materializer implements MaterializerInterface {
   private fillImplicitProperties(
     graph: SchemaGraphInterface,
     node: SchemaGraphNodeInterface,
-    value: unknown
+    value: unknown,
+    visited = new WeakSet()
   ): void {
-    const targetNode = this.resolveGraphTargetNode(graph, node);
-
     if (!isRecord(value)) {
       return;
     }
+    if (visited.has(value)) {
+      return;
+    }
+    visited.add(value);
+
+    const [
+      resolvedGraph,
+      resolvedNode
+    ] = this.resolveTargetGraphAndNode(graph, node);
+    const propertyNodes = this.collectEffectiveProperties(resolvedGraph, resolvedNode);
 
     for (const [
       propertyName,
-      propertyNode
-    ] of graph.semantics(targetNode).properties) {
+      entry
+    ] of propertyNodes) {
       if (!(propertyName in value)) {
         value[propertyName] = undefined;
         continue;
       }
 
       const propertyValue = value[propertyName];
-      const propertyTargetNode = this.resolveGraphTargetNode(graph, propertyNode);
+      const [
+        propertyGraph,
+        propertyTargetNode
+      ] = this.resolveTargetGraphAndNode(entry.graph, entry.node);
 
       if (Array.isArray(propertyValue)) {
-        const itemsNode = graph.semantics(propertyTargetNode).itemsNode;
+        const itemsNode = propertyGraph.semantics(propertyTargetNode).itemsNode;
 
         if (itemsNode === undefined) {
           continue;
         }
 
         for (const item of propertyValue) {
-          this.fillImplicitProperties(graph, itemsNode, item);
+          this.fillImplicitProperties(propertyGraph, itemsNode, item, visited);
         }
 
         continue;
       }
 
-      this.fillImplicitProperties(graph, propertyTargetNode, propertyValue);
+      this.fillImplicitProperties(propertyGraph, propertyTargetNode, propertyValue, visited);
     }
   }
 
@@ -234,7 +297,6 @@ export class Materializer implements MaterializerInterface {
 
     return value;
   }
-
   private materializeResult(result: GraphExecutionResultInterface): unknown {
     this.fillImplicitProperties(result.graph, result.entryNode, result.value);
 
@@ -282,33 +344,46 @@ export class Materializer implements MaterializerInterface {
     return quads;
   }
 
-  private resolveGraphTargetNode(
+  /**
+   * Resolve a node that may carry a $ref into the (graph, node) pair where
+   * its semantics actually live. Cross-graph refs are common in the
+   * bookstore registry — `subClassOf(Customer, body)` produces a child
+   * with `$ref: 'urn:bookstore:Customer'` whose target node belongs to
+   * Customer's own graph.
+   */
+  private resolveTargetGraphAndNode(
     graph: SchemaGraphInterface,
-    schemaNode: SchemaGraphNodeInterface
-  ): SchemaGraphNodeInterface {
-    const semantics = graph.semantics(schemaNode);
+    node: SchemaGraphNodeInterface
+  ): [SchemaGraphInterface, SchemaGraphNodeInterface] {
+    const semantics = graph.semantics(node);
 
     if (semantics.ref === undefined) {
-      return schemaNode;
+      return [
+        graph,
+        node
+      ];
     }
 
     const ref = semantics.ref;
 
     if (ref.startsWith('#')) {
-      const fragment = ref.slice(1);
-
-      return graph.resolveFragment(fragment);
+      return [
+        graph,
+        graph.resolveFragment(ref.slice(1))
+      ];
     }
 
     const parsed = GraphEngineSupport.parseRef(ref);
-
     const targetGraph = this.registry.graph(parsed.id);
 
     if (targetGraph === undefined) {
       throw new GraphError('REF_UNRESOLVED', `Unresolved schema reference: ${ref}`, ref);
     }
 
-    return targetGraph.resolveFragment(parsed.fragment);
+    return [
+      targetGraph,
+      targetGraph.resolveFragment(parsed.fragment)
+    ];
   }
 
   private run(
