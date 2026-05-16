@@ -34,7 +34,7 @@ examples/docs/bookstore/
     ├── StreetLine.ts             # primitive: string, 1-200 chars
     ├── Title.ts                  # primitive: string, 1-500 chars
     ├── Address.ts                # entity: composes StreetLine + CityName + PostalCode + CountryCode
-    ├── Book.ts                   # entity: composes Isbn + Title + AuthorName + Money + CurrencyCode
+    ├── Book.ts                   # entity: composes Isbn + Title + AuthorName + Money + PublicationDate + StockLevel + BookAnnotations + BookRatingHistogram
     ├── Customer.ts               # entity: composes CustomerId + Email + CustomerName + Address
     ├── OrderLine.ts              # entity: composes Isbn + Quantity + Money
     ├── Order.ts                  # entity: composes OrderId + CustomerId + OrderLine + Money + ...

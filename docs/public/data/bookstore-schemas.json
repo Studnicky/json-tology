@@ -244,6 +244,9 @@
   "urn:bookstore:Book": {
     "$id": "urn:bookstore:Book",
     "properties": {
+      "annotations": {
+        "$ref": "urn:bookstore:BookAnnotations"
+      },
       "authors": {
         "items": {
           "$ref": "urn:bookstore:AuthorName"
@@ -261,6 +264,15 @@
       },
       "price": {
         "$ref": "urn:bookstore:Money"
+      },
+      "publishedOn": {
+        "$ref": "urn:bookstore:PublicationDate"
+      },
+      "ratings": {
+        "$ref": "urn:bookstore:BookRatingHistogram"
+      },
+      "stockLevel": {
+        "$ref": "urn:bookstore:StockLevel"
       },
       "title": {
         "$ref": "urn:bookstore:Title"
@@ -408,6 +420,9 @@
         "items": {
           "$id": "urn:bookstore:Book",
           "properties": {
+            "annotations": {
+              "$ref": "urn:bookstore:BookAnnotations"
+            },
             "authors": {
               "items": {
                 "$ref": "urn:bookstore:AuthorName"
@@ -425,6 +440,15 @@
             },
             "price": {
               "$ref": "urn:bookstore:Money"
+            },
+            "publishedOn": {
+              "$ref": "urn:bookstore:PublicationDate"
+            },
+            "ratings": {
+              "$ref": "urn:bookstore:BookRatingHistogram"
+            },
+            "stockLevel": {
+              "$ref": "urn:bookstore:StockLevel"
             },
             "title": {
               "$ref": "urn:bookstore:Title"
@@ -677,6 +701,32 @@
       }
     ],
     "type": "object"
+  },
+  "urn:bookstore:SignedFirstEdition": {
+    "$id": "urn:bookstore:SignedFirstEdition",
+    "allOf": [
+      {
+        "$ref": "urn:bookstore:RareBook"
+      },
+      {
+        "$ref": "urn:bookstore:SoloAuthoredBook"
+      },
+      {
+        "properties": {
+          "provenance": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "signedBy": {
+            "$ref": "urn:bookstore:AuthorName"
+          }
+        },
+        "required": [
+          "signedBy"
+        ],
+        "type": "object"
+      }
+    ]
   },
   "urn:bookstore:SimilarBook": {
     "$id": "urn:bookstore:SimilarBook",

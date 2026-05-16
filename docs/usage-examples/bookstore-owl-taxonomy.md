@@ -8,7 +8,7 @@ This page extends the bookstore domain with OWL-style class taxonomy - subClassO
 
 ## Book taxonomy and OWL axioms
 
-Beyond the structural entities, the bookstore registry carries seven additional schemas plus one ABox identity assertion that together exercise every `Compose` class-axiom and OWL restriction the library supports. These are the declarations that drive the live `BookstoreGraph` visualization shown on [Your Types Are a Graph](/your-types-are-a-graph) and the home page.
+Beyond the structural entities, the bookstore registry carries seven additional schemas plus two ABox identity assertions that together exercise every `Compose` class-axiom, every OWL restriction the library supports, and the runtime `sameAs` surface. These are the declarations that drive the live `BookstoreGraph` visualization shown on [Your Types Are a Graph](/your-types-are-a-graph) and the home page.
 
 | Schema | Surface used | Edge in graph |
 |---|---|---|
@@ -19,7 +19,8 @@ Beyond the structural entities, the bookstore registry carries seven additional 
 | `AnthologyBookSchema` | `Compose.subClassOf(Book)` + `Compose.minCardinality` + `Compose.allValuesFrom`              | `subClassOf` → Book, two `restriction` edges |
 | `InPrintBookSchema`   | `Compose.subClassOf(Book)` + `Compose.hasValue`                                              | `subClassOf` → Book, `restriction` |
 | `OutOfPrintBookSchema`| `Compose.complementOf(InPrintBook)` with body `allOf` bounding to Book                       | `subClassOf` → Book, `complementOf` → InPrintBook |
-| `bookstoreEntities.sameAs(a, b)` | `JsonTology.prototype.sameAs` (ABox)                                              | `sameAs` |
+| `sameAs(alice-smith, cust-00042)` | `JsonTology.prototype.sameAs` — customer migration (ABox)                        | `sameAs` between two customer-individual nodes |
+| `sameAs(dune-1965-chilton, oclc/463127)` | `JsonTology.prototype.sameAs` — cross-catalog rare-book identity (ABox)   | `sameAs` between two book-individual nodes |
 
 Each `entities/*.ts` file is the single source of truth for one schema.
 
@@ -257,15 +258,20 @@ The body's `allOf: [{ $ref: Book }]` is what bounds the OWL complement to the Bo
 
 → See: [`Compose.complementOf` reference](/composition/sub-class-of) · [Graph concepts (TBox / ABox)](/advanced/graph-concepts)
 
-### `index.ts`: ABox `owl:sameAs` assertion
+### `index.ts`: ABox identity — a customer who ordered a rare book
 
-**In plain English:** all the schemas above are TBox declarations - they describe *kinds of thing*. `sameAs` is different: it operates on individuals (concrete records, the ABox), and asserts "these two IRIs name the same person/object/thing". In the bookstore the customer "Alice Smith" exists in the current system as `urn:bookstore:customer:AliceSmith`, but a legacy CRM still references her as `urn:bookstore:customer:AliceSmithLegacy`. Recording `sameAs` lets a reasoner merge facts about the two IRIs into one logical individual.
+All the schemas above are TBox declarations — they describe *kinds of thing*. `sameAs` is different: it operates on individuals (concrete records, the ABox), and asserts "these two IRIs name the same person/object/thing". The bookstore demonstrates two such assertions tied to one coherent narrative.
+
+**The scenario.** Customer Alice Smith placed an order on 2026-04-12 containing a single line item: a rare first-edition Frank Herbert's *Dune* (Chilton Books, 1965, ISBN-13 9780441172719). Two identity assertions register against this scenario:
+
+1. **Customer-CRM migration.** When the bookstore migrated systems in 2024, Alice's old CRM record (`urn:legacy-crm:cust-00042`) carried over alongside her new bookstore IRI. Both still resolve to the same person, so `sameAs` lets a reasoner merge purchase history from both sources.
+2. **Cross-catalog rare-book identity.** The 1965 Chilton first edition is also catalogued by WorldCat under OCLC `463127`. Declaring `sameAs` unifies bibliographic facts (publisher, page count, condition notes) regardless of which authority emitted them.
 
 **Use this when:**
 - Two IRIs in your data refer to the same real-world entity (records merged after a migration, alias systems, cross-org identifiers).
 
 **Don't use this when:**
-- You want class-level identity (two *classes* that have the same instances) - use [`Compose.equivalent`](/composition/equivalent) instead. `sameAs` is for individuals, not classes.
+- You want class-level identity (two *classes* that have the same instances) — use [`Compose.equivalent`](/composition/equivalent) instead. `sameAs` is for individuals, not classes.
 - You want to express "these two records *should* be merged" as a workflow step. `sameAs` is an OWL *assertion* that they already refer to one entity; downstream reasoners will treat their property values as belonging to a single individual.
 
 ```ts
@@ -277,14 +283,35 @@ export const bookstoreEntities = JsonTology.create({
   schemas: allSchemas,
 });
 
-// Two customer IRIs that resolve to the same individual.
+// 1. Customer Alice in the bookstore system ↔ same individual in the legacy CRM.
 bookstoreEntities.sameAs(
-  'urn:bookstore:customer:AliceSmith',
-  'urn:bookstore:customer:AliceSmithLegacy',
+  'urn:bookstore:customer:alice-smith',
+  'urn:legacy-crm:cust-00042',
 );
-// toQuads() emits both directions:
-//   <AliceSmith>       owl:sameAs  <AliceSmithLegacy>
-//   <AliceSmithLegacy> owl:sameAs  <AliceSmith>
+
+// 2. The rare 1965 Chilton first edition of Dune in the bookstore catalog
+//    ↔ the same physical edition in WorldCat's union catalog.
+bookstoreEntities.sameAs(
+  'urn:bookstore:rarebook:dune-1965-chilton',
+  'http://www.worldcat.org/oclc/463127',
+);
+// toQuads() emits both directions for each pair (four sameAs quads total).
+```
+
+The order Alice placed, the customer record, the rare-book metadata, and her later review are all defined as runtime values on the `aboxFixtures` export. `instantiate()` and `toQuads()` accept those fixtures directly so the same scenario can be used end-to-end across docs pages and integration tests.
+
+```ts
+import { bookstoreEntities, OrderSchema, RareBookSchema, aboxFixtures } from './bookstore/index.js';
+
+// Validate the rare-book record itself (passes RareBook's hierarchy:
+// Book + PrintBook structural rules + someValuesFrom + maxCardinality(authors=1)).
+bookstoreEntities.instantiate(RareBookSchema.$id, aboxFixtures.rareBook);
+
+// Validate Alice's order containing one line for that rare book.
+bookstoreEntities.instantiate(OrderSchema.$id, aboxFixtures.order);
+
+// Emit the full RDF graph: schema-level rules + sameAs assertions + ABox quads.
+const quads = bookstoreEntities.toQuads(OrderSchema, aboxFixtures.order);
 ```
 
 → See: [`sameAs` (ABox identity) reference](/advanced/sameas) · [`Compose.equivalent`](/composition/equivalent) (the class-level counterpart) · [Graph concepts (TBox / ABox)](/advanced/graph-concepts)

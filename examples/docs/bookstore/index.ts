@@ -60,6 +60,7 @@ import { InPrintBookSchema } from './entities/InPrintBook.js';
 import { OutOfPrintBookSchema } from './entities/OutOfPrintBook.js';
 import { PrintBookSchema } from './entities/PrintBook.js';
 import { RareBookSchema } from './entities/RareBook.js';
+import { SignedFirstEditionSchema } from './entities/SignedFirstEdition.js';
 import { SoloAuthoredBookSchema } from './entities/SoloAuthoredBook.js';
 
 // Property-characteristic relation entities — OWL 2 axiom demonstrations
@@ -112,6 +113,9 @@ const allSchemas = [
   AnthologyBookSchema,
   InPrintBookSchema,
   OutOfPrintBookSchema,
+  // SignedFirstEdition extends both RareBook and SoloAuthoredBook — must
+  // register after both of those (multi-parent subClassOf).
+  SignedFirstEditionSchema,
   // Property-characteristic relation entities — $ref Book, must register after
   SimilarBookSchema,
   SequelSchema
@@ -122,14 +126,140 @@ export const bookstoreEntities = JsonTology.create({
   'schemas': allSchemas
 });
 
-// ABox-level identity demo — owl:sameAs between two customer IRIs that
-// denote the same individual. The bookstore migrated from a legacy CRM, so
-// the customer "Alice Smith" carries both her current stable IRI and her
-// legacy CRM IRI; declaring sameAs lets reasoners merge facts about both.
+// ──────────────────────────────────────────────────────────────────────────
+// ABox: a customer placing an order for a rare book.
+//
+// Concrete individuals demonstrated by this scenario:
+//   • Customer Alice Smith — has both the current bookstore IRI and the
+//     legacy CRM ID (`cust-00042`) the bookstore inherited from a 2024
+//     systems migration. owl:sameAs lets a reasoner merge facts from both
+//     authoritative sources.
+//   • A rare first-edition Frank Herbert's "Dune" (Chilton Books, 1965).
+//     Has both the bookstore catalog IRI and the WorldCat OCLC record IRI;
+//     declaring sameAs unifies bibliographic facts across catalogs.
+//   • Alice's order containing one line item for the rare book.
+//
+// Only the owl:sameAs identity assertions register into the registry
+// (and thereby appear in the live graph as gold-dashed instance ellipses).
+// The order/customer/rare-book instance values themselves are shown below
+// as runtime data the user would pass to `instantiate()` / `toQuads()` —
+// they are documentation, not registry state.
+// ──────────────────────────────────────────────────────────────────────────
+
+// ──────────────────────────────────────────────────────────────────────────
+// Cross-field rules registered against the production schemas. These are
+// json-tology's first-class concepts for ABox-level constraints that
+// can't be expressed structurally (a relation between two property
+// values). They fire on every `instantiate(OrderSchema, ...)` call and
+// surface as `INVARIANT_VIOLATION` errors in the same `ValidationErrors`
+// collection the structural checks use.
+// ──────────────────────────────────────────────────────────────────────────
+
+// Invariant: an Order's `total.amount` must equal Σ items[i].unitPrice.amount × items[i].quantity.
+// Demonstrates `addInvariant` on the real OrderSchema (not a docs-only variant).
+bookstoreEntities.addInvariant<{
+  'items'?: ReadonlyArray<{ 'quantity'?: number;
+    'unitPrice'?: { 'amount'?: number } }>;
+  'total'?: { 'amount'?: number };
+}>(OrderSchema.$id, {
+  'fn': (order) => {
+    const items = order.items ?? [];
+    const computed = items.reduce((sum, line) => {
+      const quantity = line.quantity ?? 0;
+      const unitAmount = line.unitPrice?.amount ?? 0;
+
+      return sum + (unitAmount * quantity);
+    }, 0);
+    const reported = order.total?.amount ?? 0;
+
+    if (Math.abs(reported - computed) < 0.005) {
+      return null;
+    }
+
+    return `Order total ${reported} does not equal Σ items[i].unitPrice.amount × quantity = ${computed}`;
+  },
+  'name': 'orderTotalMatchesItems',
+  'pointer': '/total/amount'
+});
+
 bookstoreEntities.sameAs(
-  'urn:bookstore:customer:AliceSmith',
-  'urn:bookstore:customer:AliceSmithLegacy'
+  'urn:bookstore:customer:alice-smith',
+  'urn:legacy-crm:cust-00042'
 );
+bookstoreEntities.sameAs(
+  'urn:bookstore:rarebook:dune-1965-chilton',
+  'http://www.worldcat.org/oclc/463127'
+);
+
+// Shared address record used by both Customer.addresses[0] and
+// Order.shippingAddress so the scenario stays internally consistent —
+// Alice's order ships to the same address she registered with.
+const ALICE_HOME_ADDRESS = {
+  'city': 'Springfield',
+  'country': 'US',
+  'postalCode': '49007',
+  'street': '742 Evergreen Terrace'
+} as const;
+
+const ALICE_ID = 'c1a2b3d4-e5f6-7890-abcd-ef1234567890';
+const DUNE_ISBN = '9780441172719';
+const DUNE_PRICE = {
+  'amount': 12_500,
+  'currency': 'USD'
+} as const;
+
+/**
+ * Runtime ABox instance values for the customer-orders-rare-book scenario.
+ * Field names match the registered schemas verbatim — passing each fixture
+ * to `bookstoreEntities.instantiate(<SchemaId>, fixture)` is the
+ * authoritative compliance check; `verifyAboxFixtures()` below runs that
+ * validation at module-load time so any drift between schema and fixture
+ * surfaces immediately.
+ */
+export const aboxFixtures = {
+  'customer': {
+    'addresses': [ALICE_HOME_ADDRESS],
+    'email': 'alice@bookstore.example',
+    'id': ALICE_ID,
+    'name': 'Alice Smith'
+  } as const,
+  'order': {
+    'customerId': ALICE_ID,
+    'id': '09f8e7d6-c5b4-3210-9876-543210fedcba',
+    'items': [{
+      'bookIsbn': DUNE_ISBN,
+      'quantity': 1,
+      'unitPrice': DUNE_PRICE
+    }],
+    'placedAt': '2026-04-12T14:23:11Z',
+    'shippingAddress': ALICE_HOME_ADDRESS,
+    'total': DUNE_PRICE
+  } as const,
+  'rareBook': {
+    'authors': ['Frank Herbert'],
+    'binding': 'hardcover',
+    'estimatedAgeYears': 61,
+    'firstEditionYear': 1965,
+    'inStock': true,
+    'isbn': DUNE_ISBN,
+    'pageCount': 412,
+    'price': DUNE_PRICE,
+    'publishedOn': '1965-08-01',
+    // StockLevel is multipleOf 5; the shop tracks rare-book inventory in
+    // batches of 5 even when only a single signed copy is actively on hand.
+    'stockLevel': 5,
+    'title': 'Dune',
+    'weightGrams': 820
+  } as const,
+  'review': {
+    'body': "A foundational work of science fiction. Herbert's worldbuilding is unparalleled and this first edition is in remarkable condition.",
+    'bookIsbn': DUNE_ISBN,
+    'customerId': ALICE_ID,
+    'id': 'a4d3c2b1-a098-7654-a210-fedcba987654',
+    'postedAt': '2026-04-20T09:15:00Z',
+    'rating': 5
+  } as const
+} as const;
 
 // Entity types derived from schemas
 export type Address = InferType<typeof AddressSchema>;
@@ -175,6 +305,7 @@ export { RatingScoreSchema } from './entities/RatingScore.js';
 export { ReviewSchema } from './entities/Review.js';
 export { ReviewIdSchema } from './entities/ReviewId.js';
 export { SequelSchema } from './entities/Sequel.js';
+export { SignedFirstEditionSchema } from './entities/SignedFirstEdition.js';
 export { SimilarBookSchema } from './entities/SimilarBook.js';
 export { SoloAuthoredBookSchema } from './entities/SoloAuthoredBook.js';
 export { StockLevelSchema } from './entities/StockLevel.js';

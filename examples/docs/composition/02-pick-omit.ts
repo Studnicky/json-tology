@@ -7,8 +7,9 @@ import {
   Compose, JsonTology
 } from '../../../src/index.js';
 import {
-  AmountSchema, AuthorNameSchema, BookSchema, CurrencyCodeSchema, CustomerNameSchema,
-  IsbnSchema, MoneySchema, TitleSchema
+  AmountSchema, AuthorNameSchema, BookAnnotationsSchema, BookRatingHistogramSchema,
+  BookSchema, CurrencyCodeSchema, CustomerNameSchema,
+  IsbnSchema, MoneySchema, PublicationDateSchema, StockLevelSchema, TitleSchema
 } from '../bookstore/index.js';
 
 // pick — keep only catalog display fields
@@ -41,6 +42,10 @@ const bookstoreEntities = JsonTology.create({
     IsbnSchema,
     MoneySchema,
     TitleSchema,
+    BookAnnotationsSchema,
+    BookRatingHistogramSchema,
+    PublicationDateSchema,
+    StockLevelSchema,
     BookSchema,
     BookSummarySchema,
     PublicBookSchema

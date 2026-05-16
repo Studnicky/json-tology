@@ -62,20 +62,26 @@ urn:bookstore:Book#isbn  rdfs:range   urn:bookstore:Isbn .
 For primitive string properties with a `format` hint, the range is an XSD datatype:
 
 ```ts
-const ArticleSchema = {
-  $id: 'urn:example:Article',
-  properties: {
-    publishedAt: { type: 'string', format: 'date' },
-    permalink:   { type: 'string', format: 'uri' }
-  }
+// PublicationDate is the canonical `format: 'date'` primitive in the bookstore.
+const PublicationDateSchema = {
+  $id: 'urn:bookstore:PublicationDate',
+  type: 'string',
+  format: 'date'
+} as const;
+
+// Iso8601 is the canonical `format: 'date-time'` primitive.
+const Iso8601Schema = {
+  $id: 'urn:bookstore:Iso8601',
+  type: 'string',
+  format: 'date-time'
 } as const;
 ```
 
-This emits:
+These emit:
 
 ```turtle
-urn:example:Article#publishedAt  rdfs:range  xsd:date .
-urn:example:Article#permalink    rdfs:range  xsd:anyURI .
+urn:bookstore:PublicationDate  rdfs:range  xsd:date .
+urn:bookstore:Iso8601          rdfs:range  xsd:dateTime .
 ```
 
 Supported format → XSD mappings include: `date` → `xsd:date`, `date-time` → `xsd:dateTime`,

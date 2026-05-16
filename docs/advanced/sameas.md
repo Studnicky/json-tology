@@ -12,44 +12,39 @@ jt.sameAs(instanceIriA: string, instanceIriB: string): void
 
 ## Examples
 
-### Example 1: Link a legacy CRM identifier to a stable IRI
+### Example 1: Link a legacy CRM identifier to a stable customer IRI
 
-The bookstore migrated from a legacy CRM. Customer Alice carries both her current stable IRI and her legacy CRM IRI. Declaring `sameAs` lets reasoners merge facts about both.
+The bookstore migrated from a legacy CRM in 2024. Customer Alice Smith carries her bookstore IRI alongside the legacy CRM ID (`cust-00042`) the bookstore inherited from the old system. Declaring `sameAs` lets a reasoner merge facts about both — Alice's new email address from the bookstore and her old purchase history from the CRM resolve to one logical individual.
 
 ```ts
-import { JsonTology } from 'json-tology';
-import { bookstoreEntities, CustomerSchema } from './bookstore/index.js';
+import { bookstoreEntities, CustomerSchema, aboxFixtures } from './bookstore/index.js';
 
-entities.sameAs(
-  'urn:bookstore:customer:AliceSmith',
-  'urn:bookstore:customer:AliceSmithLegacy'
+bookstoreEntities.sameAs(
+  'urn:bookstore:customer:alice-smith',
+  'urn:legacy-crm:cust-00042'
 );
 
-const aliceData = {
-  id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  email: 'alice@bookstore.example',
-  name:  'Alice Smith',
-};
-
-const quads = bookstoreEntities.toQuads(CustomerSchema, aliceData);
+const quads = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer);
 // quads include both directions:
-//   <urn:bookstore:customer:AliceSmith> owl:sameAs <urn:bookstore:customer:AliceSmithLegacy>
-//   <urn:bookstore:customer:AliceSmithLegacy> owl:sameAs <urn:bookstore:customer:AliceSmith>
+//   <urn:bookstore:customer:alice-smith> owl:sameAs <urn:legacy-crm:cust-00042>
+//   <urn:legacy-crm:cust-00042>          owl:sameAs <urn:bookstore:customer:alice-smith>
 ```
 
-### Example 2: Cross-source book identity
+### Example 2: Cross-catalog book identity
 
-A book is known by a different IRI in a partner catalog feed. Declaring `sameAs` lets a reasoner unify its properties from both sources.
+Alice ordered a rare first-edition Frank Herbert's *Dune* (Chilton Books, 1965). The bookstore catalogs it under one IRI; WorldCat's union catalog references the same physical edition under an OCLC record IRI. Declaring `sameAs` lets a bibliographic reasoner unify metadata (publisher, page count, ISBN-13) regardless of which authority the fact came from.
 
 ```ts
-import { bookstoreEntities } from './bookstore/index.js';
+import { bookstoreEntities, RareBookSchema, aboxFixtures } from './bookstore/index.js';
 
-// Internal catalog IRI and partner feed IRI for the same title
-entities.sameAs(
-  'https://bookstore.example/books/9780140449136',
-  'https://partnercatalog.example/items/crimeandpunishment-dostoevsky'
+bookstoreEntities.sameAs(
+  'urn:bookstore:rarebook:dune-1965-chilton',
+  'http://www.worldcat.org/oclc/463127'
 );
-// → downstream reasoners treat both IRIs as denoting the same book
+
+const quads = bookstoreEntities.toQuads(RareBookSchema, aboxFixtures.rareBook);
+// → both IRIs now resolve to the same rare-book individual across the
+//   internal catalog and any partner reasoner that consults WorldCat.
 ```
 
 ### Example 3: Idempotence: duplicate and reverse pairs are no-ops
@@ -59,9 +54,9 @@ Recording the same pair twice, or in reverse order, is a no-op. Self-pairs are s
 ```ts
 import { bookstoreEntities } from './bookstore/index.js';
 
-entities.sameAs('urn:a', 'urn:b');
-entities.sameAs('urn:b', 'urn:a'); // no-op — pair already recorded
-entities.sameAs('urn:a', 'urn:a'); // no-op — self-pair
+bookstoreEntities.sameAs('urn:bookstore:customer:alice-smith', 'urn:legacy-crm:cust-00042');
+bookstoreEntities.sameAs('urn:legacy-crm:cust-00042', 'urn:bookstore:customer:alice-smith'); // no-op — pair already recorded
+bookstoreEntities.sameAs('urn:bookstore:customer:alice-smith', 'urn:bookstore:customer:alice-smith'); // no-op — self-pair
 ```
 
 ### Example 4: Symmetric emission
@@ -69,10 +64,10 @@ entities.sameAs('urn:a', 'urn:a'); // no-op — self-pair
 `owl:sameAs` is symmetric by definition, but reasoners differ in whether they materialize the symmetric edge. `sameAs` emits both directions so consumers see the relation regardless of reasoner behaviour.
 
 ```ts
-import { bookstoreEntities, CustomerSchema } from './bookstore/index.js';
+import { bookstoreEntities, CustomerSchema, aboxFixtures } from './bookstore/index.js';
 
-entities.sameAs('urn:bookstore:customer:c1', 'urn:bookstore:customer:c1-legacy');
-const quads = bookstoreEntities.toQuads(CustomerSchema, customerData);
+bookstoreEntities.sameAs('urn:bookstore:customer:alice-smith', 'urn:legacy-crm:cust-00042');
+const quads = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer);
 
 const sameAsQuads = quads.filter(q => q.predicate.value === 'http://www.w3.org/2002/07/owl#sameAs');
 // sameAsQuads.length === 2 — both directions always emitted
@@ -100,31 +95,45 @@ const CatalogItemSchema = Compose.equivalent(BookSchema, {
 });
 ```
 
-### Anti-pattern 2: Using sameAs to express a "should merge" intent
+### Anti-pattern 2: Declaring sameAs between two editions of the same title
 
 ```ts
-// ✗ Don't do this — sameAs is not a merge request; it is an ontological assertion
-// that downstream reasoners act on immediately. If these records differ in
-// property values, reasoners will merge those values.
-entities.sameAs('urn:customer:c1', 'urn:customer:c2');
-// If c1 and c2 have different email addresses, reasoners will now treat
-// BOTH addresses as belonging to the same individual.
+// ✗ Don't do this — sameAs asserts identity of individuals, not "they share
+// a title". The 1965 Chilton first edition and the 1990 Ace mass-market
+// paperback of Dune are two different physical books with different ISBNs,
+// publishers, page counts, prices, and condition notes. They share an
+// author and a title — that is what `Compose.equivalent` / shared $ref to
+// the title primitive expresses at the class level, not what `sameAs`
+// expresses at the instance level.
+bookstoreEntities.sameAs(
+  'urn:bookstore:rarebook:dune-1965-chilton',     // First edition, hardcover, $12,500
+  'urn:bookstore:rarebook:dune-1990-ace-paperback' // Mass-market paperback, $9.99
+);
+// A reasoner that consumes both edges will now treat one logical book as
+// having two ISBNs, two publishers, two prices, and two condition reports —
+// silently corrupting the catalog.
 
-// ✓ Do this — use sameAs only when you are certain the IRIs denote the same entity
+// ✓ Do this — use sameAs only across two IRIs that authoritatively name the
+//   same physical or logical individual (one record in two systems, one
+//   customer across a CRM migration, one book in two union catalogs).
+bookstoreEntities.sameAs(
+  'urn:bookstore:rarebook:dune-1965-chilton',
+  'http://www.worldcat.org/oclc/463127'
+);
 ```
 
 ### Anti-pattern 3: Calling sameAs after toQuads instead of before
 
 ```ts
-import { bookstoreEntities, CustomerSchema } from './bookstore/index.js';
+import { bookstoreEntities, CustomerSchema, aboxFixtures } from './bookstore/index.js';
 
-const quads = bookstoreEntities.toQuads(CustomerSchema, customerData); // sameAs not yet recorded
+const quads = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer); // sameAs not yet recorded
 
-entities.sameAs('urn:customer:c1', 'urn:customer:c1-legacy'); // ✗ too late — not in quads
+bookstoreEntities.sameAs('urn:bookstore:customer:alice-smith', 'urn:legacy-crm:cust-00042'); // ✗ too late — not in quads
 
 // ✓ Do this — record sameAs assertions before calling toQuads
-entities.sameAs('urn:customer:c1', 'urn:customer:c1-legacy');
-const quads2 = bookstoreEntities.toQuads(CustomerSchema, customerData);
+bookstoreEntities.sameAs('urn:bookstore:customer:alice-smith', 'urn:legacy-crm:cust-00042');
+const quads2 = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer);
 ```
 
 ## Comparison
@@ -132,7 +141,7 @@ const quads2 = bookstoreEntities.toQuads(CustomerSchema, customerData);
 ::: code-group
 
 ```ts [json-tology]
-entities.sameAs('urn:bookstore:customer:c1', 'urn:bookstore:customer:c1-legacy');
+bookstoreEntities.sameAs('urn:bookstore:customer:alice-smith', 'urn:legacy-crm:cust-00042');
 // Emits both directions at toQuads() time as owl:sameAs quads.
 ```
 
@@ -154,8 +163,10 @@ entities.sameAs('urn:bookstore:customer:c1', 'urn:bookstore:customer:c1-legacy')
 import { graph, sym, Statement } from 'rdflib';
 const store = graph();
 const OWL = 'http://www.w3.org/2002/07/owl#';
-store.add(new Statement(sym('urn:c1'), sym(`${OWL}sameAs`), sym('urn:c1-legacy'), sym('urn:g')));
-store.add(new Statement(sym('urn:c1-legacy'), sym(`${OWL}sameAs`), sym('urn:c1'), sym('urn:g')));
+const alice = sym('urn:bookstore:customer:alice-smith');
+const aliceCrm = sym('urn:legacy-crm:cust-00042');
+store.add(new Statement(alice, sym(`${OWL}sameAs`), aliceCrm, sym('urn:g')));
+store.add(new Statement(aliceCrm, sym(`${OWL}sameAs`), alice, sym('urn:g')));
 // Limitation: both directions must be added manually; no schema validation
 // or typed instance pipeline; standalone RDF store without JSON Schema authoring.
 ```
@@ -163,10 +174,10 @@ store.add(new Statement(sym('urn:c1-legacy'), sym(`${OWL}sameAs`), sym('urn:c1')
 ```py [rdflib (Python)]
 from rdflib import Graph, URIRef, OWL
 g = Graph()
-c1 = URIRef('urn:bookstore:customer:c1')
-c1_legacy = URIRef('urn:bookstore:customer:c1-legacy')
-g.add((c1, OWL.sameAs, c1_legacy))
-g.add((c1_legacy, OWL.sameAs, c1))
+alice = URIRef('urn:bookstore:customer:alice-smith')
+alice_crm = URIRef('urn:legacy-crm:cust-00042')
+g.add((alice, OWL.sameAs, alice_crm))
+g.add((alice_crm, OWL.sameAs, alice))
 # Limitation: manual symmetric emission; no schema-validated pipeline.
 ```
 

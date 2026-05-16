@@ -4,70 +4,71 @@
  * DO NOT EDIT BY HAND. Regenerate via:
  *   npm run build:palette
  *
- * Source seeds: docs/public/nodes/jst-node.svg gradient
- *   #7FE7D8 (light teal) → #24A5B5 (mid teal) → #08717A (dark teal)
- *   #BDF6F2 circuit accent
+ * Source seeds:
+ *   light canvas: #fafaf7 (warm off-white, W3C-style)
+ *   dark canvas:  #15191d (warm dark neutral, not pure black)
+ *   JST accent:   #7FE7D8 / #24A5B5 / #08717A (the brand gradient)
  *
- * Compliance: every contrast pair declared in scripts/iridis-config.json
+ * Compliance: every contrast pair declared in
+ *   scripts/iridis-config-light.json
+ *   scripts/iridis-config-dark.json
  * is enforced by @studnicky/iridis-cli's enforce:wcagAAA pipeline task
  * to satisfy WCAG 2.1 AAA before emit:cssVars writes the values below.
  *   - body text and links: 7:1 (1.4.6 Contrast Enhanced)
  *   - large text and UI:   4.5:1
  *
- * Token name translation (iridis → VitePress) is performed by
- * scripts/build-palette.mjs (see TOKEN_MAP).
+ * The chromaRange constraint on the role schema (≤0.02 OKLCH chroma)
+ * keeps canvas, surface, text, and border roles neutral — only the
+ * accent roles inherit chroma from the JST teal seeds. This matches
+ * the W3C-style restrained aesthetic instead of pulling every surface
+ * into the brand family.
  */
 
 :root {
   /* JST gradient stops — decorative brand mark only, outside the AAA
      contrast budget. The readable text around the mark uses the
-     iridis-darkened tokens below. */
+     iridis-emitted tokens below. */
   --jst-teal-light: #7FE7D8;
   --jst-teal-mid:   #24A5B5;
   --jst-teal-dark:  #08717A;
   --jst-circuit:    #BDF6F2;
 
-  --vp-c-bg: #e7fefa;
-  --vp-c-bg-alt: #cefdf5;
-  --vp-c-bg-soft: #c0fdf3;
-  --vp-c-text-1: #021a1d;
-  --vp-c-text-2: #0f5158;
-  --vp-c-text-3: #08717a;
+  --vp-c-bg: #fafaf7;
+  --vp-c-bg-alt: #f9f9f6;
+  --vp-c-bg-soft: #fafaf7;
+  --vp-c-text-1: #0a191a;
+  --vp-c-text-2: #3b4b4d;
+  --vp-c-text-3: #576769;
   --vp-c-brand-1: #17575d;
   --vp-c-brand-2: #0c4045;
   --vp-c-brand-3: #08717a;
-  --vp-c-divider: #08717a;
-  --vp-c-border: #08717a;
+  --vp-c-divider: #5a6668;
+  --vp-c-border: #5a6668;
 
   --vp-c-brand-soft: rgba(23, 87, 93, 0.14);
   --vp-c-purple:     #5e2856;
 }
 
 .dark {
-  --vp-c-bg: #000000;
-  --vp-c-bg-alt: #000000;
-  --vp-c-bg-soft: #000000;
-  --vp-c-text-1: #78ced7;
-  --vp-c-text-2: #368f98;
-  --vp-c-text-3: #067079;
-  --vp-c-brand-1: #2f8992;
-  --vp-c-brand-2: #4ba1aa;
-  --vp-c-brand-3: #067079;
-  --vp-c-divider: #067079;
-  --vp-c-border: #067079;
+  --vp-c-bg: #040609;
+  --vp-c-bg-alt: #0e1216;
+  --vp-c-bg-soft: #13161a;
+  --vp-c-text-1: #d7e9e6;
+  --vp-c-text-2: #c3d6d2;
+  --vp-c-text-3: #86979a;
+  --vp-c-brand-1: #7fe7d8;
+  --vp-c-brand-2: #85edde;
+  --vp-c-brand-3: #2daaba;
+  --vp-c-divider: #6e7e80;
+  --vp-c-border: #6e7e80;
 
   --vp-c-brand-soft: rgba(47, 137, 146, 0.16);
 }
 
-/* Wide-gamut P3 enhancement (iridis-emitted). Same chromaticity, broader
-   gamut on capable displays. */
+/* Wide-gamut P3 enhancement (iridis-emitted, light scheme). Same
+   chromaticity, broader gamut on capable displays. */
 @supports (color: color(display-p3 0 0 0)) {
   :root {
-    --vp-c-bg: color(display-p3 0.7499 1.0000 1.0000);
-    --vp-c-bg-alt: color(display-p3 0.7242 1.0000 0.9755);
-    --vp-c-bg-soft: color(display-p3 0.7113 1.0000 0.9624);
-    --vp-c-text-1: color(display-p3 0.0000 0.1156 0.1505);
-    --vp-c-text-2: color(display-p3 0.0590 0.3227 0.3581);
     --vp-c-brand-1: color(display-p3 0.0900 0.3448 0.3802);
     --vp-c-brand-2: color(display-p3 0.0000 0.2580 0.2931);
   }

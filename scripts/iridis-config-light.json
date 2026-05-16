@@ -1,6 +1,6 @@
 {
   "input": {
-    "colors": ["#08717A", "#24A5B5", "#7FE7D8"],
+    "colors": ["#fafaf7", "#08717A", "#24A5B5", "#7FE7D8"],
     "contrast": { "level": "AAA", "algorithm": "wcag21" },
     "metadata": {
       "cssVarPrefix": "--jt-",
@@ -8,70 +8,76 @@
     },
     "roles": {
       "name": "json-tology-docs-aaa",
-      "description": "WCAG 2.1 AAA palette for the json-tology docs site (light + dark)",
+      "description": "WCAG 2.1 AAA palette for the json-tology docs site. Neutral W3C-style canvas with restrained JST-teal accents only.",
       "roles": [
         {
           "name":           "canvas",
-          "description":    "Page background",
+          "description":    "Page background — neutral off-white (W3C-style cream), not teal",
           "intent":         "background",
           "required":       true,
-          "lightnessRange": [0.98, 1.0]
+          "lightnessRange": [0.97, 1.0],
+          "chromaRange":    [0.0, 0.01]
         },
         {
           "name":           "surface",
-          "description":    "Elevated surface (sidebar, cards)",
+          "description":    "Elevated surface (sidebar, cards) — slightly cooler neutral",
           "intent":         "background",
           "required":       true,
-          "lightnessRange": [0.96, 0.99]
+          "lightnessRange": [0.94, 0.98],
+          "chromaRange":    [0.0, 0.01]
         },
         {
           "name":           "surfaceSoft",
-          "description":    "Subtle tinted surface for inline highlights",
+          "description":    "Subtle tinted surface — barely tinted neutral",
           "intent":         "background",
           "required":       true,
-          "lightnessRange": [0.95, 0.985]
+          "lightnessRange": [0.95, 0.985],
+          "chromaRange":    [0.0, 0.015]
         },
         {
           "name":           "text",
-          "description":    "Primary body text",
+          "description":    "Primary body text — near-black neutral",
           "intent":         "text",
           "required":       true,
-          "lightnessRange": [0.08, 0.20]
+          "lightnessRange": [0.08, 0.20],
+          "chromaRange":    [0.0, 0.02]
         },
         {
           "name":           "textMuted",
-          "description":    "Secondary text",
+          "description":    "Secondary text — neutral slate",
           "intent":         "muted",
           "required":       true,
-          "lightnessRange": [0.25, 0.40]
+          "lightnessRange": [0.28, 0.40],
+          "chromaRange":    [0.0, 0.02]
         },
         {
           "name":           "textSubtle",
-          "description":    "Tertiary text / captions / timestamps",
+          "description":    "Tertiary text / captions — lighter neutral",
           "intent":         "muted",
           "required":       true,
-          "lightnessRange": [0.38, 0.52]
+          "lightnessRange": [0.40, 0.52],
+          "chromaRange":    [0.0, 0.02]
         },
         {
           "name":           "accent",
           "description":    "JST teal — links, primary actions, headings",
           "intent":         "accent",
           "required":       true,
-          "lightnessRange": [0.28, 0.42]
+          "lightnessRange": [0.30, 0.42]
         },
         {
           "name":           "accentHover",
           "description":    "Darker accent for hover state",
           "intent":         "accent",
           "required":       true,
-          "lightnessRange": [0.20, 0.34]
+          "lightnessRange": [0.22, 0.34]
         },
         {
           "name":           "accentUi",
           "description":    "Brighter accent for UI components and large text",
           "intent":         "accent",
           "required":       true,
-          "lightnessRange": [0.42, 0.58]
+          "lightnessRange": [0.42, 0.55]
         },
         {
           "name":           "onAccent",
@@ -82,10 +88,11 @@
         },
         {
           "name":           "border",
-          "description":    "Component borders and dividers",
+          "description":    "Component borders and dividers — neutral grey",
           "intent":         "muted",
           "required":       true,
-          "lightnessRange": [0.45, 0.65]
+          "lightnessRange": [0.45, 0.60],
+          "chromaRange":    [0.0, 0.015]
         }
       ],
       "contrastPairs": [
@@ -113,13 +120,12 @@
     "expand:family",
     "resolve:roles",
     "enforce:wcagAAA",
-    "derive:variant",
     "emit:cssVars"
   ],
   "output": {
     "directory": "./scripts/iridis-out",
     "files": {
-      "cssVars": "json-tology-palette.json"
+      "cssVars": "json-tology-palette-light.json"
     }
   }
 }

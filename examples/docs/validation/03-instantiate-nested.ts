@@ -36,8 +36,10 @@ const order = bookstoreEntities.instantiate(OrderSchema.$id, {
     'postalCode': '10001',
     'street': '123 Main St'
   },
+  // total = 12.99 × 2 + 1.00 × 1 = 26.98 — must match the registered
+  // `orderTotalMatchesItems` invariant; tampering trips a jt:invariant error.
   'total': {
-    'amount': 27.98,
+    'amount': 26.98,
     'currency': 'USD'
   },
   'unexpectedField': 'stripped'

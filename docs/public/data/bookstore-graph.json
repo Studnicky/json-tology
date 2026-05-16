@@ -83,6 +83,15 @@
     },
     {
       "data": {
+        "id": "urn:bookstore:Book__annotations__urn:bookstore:BookAnnotations",
+        "kind": "range",
+        "label": "annotations",
+        "source": "urn:bookstore:Book",
+        "target": "urn:bookstore:BookAnnotations"
+      }
+    },
+    {
+      "data": {
         "id": "urn:bookstore:Book__isbn__urn:bookstore:Isbn",
         "kind": "range",
         "label": "isbn",
@@ -97,6 +106,33 @@
         "label": "price",
         "source": "urn:bookstore:Book",
         "target": "urn:bookstore:Money"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Book__publishedOn__urn:bookstore:PublicationDate",
+        "kind": "range",
+        "label": "publishedOn",
+        "source": "urn:bookstore:Book",
+        "target": "urn:bookstore:PublicationDate"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Book__ratings__urn:bookstore:BookRatingHistogram",
+        "kind": "range",
+        "label": "ratings",
+        "source": "urn:bookstore:Book",
+        "target": "urn:bookstore:BookRatingHistogram"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Book__stockLevel__urn:bookstore:StockLevel",
+        "kind": "range",
+        "label": "stockLevel",
+        "source": "urn:bookstore:Book",
+        "target": "urn:bookstore:StockLevel"
       }
     },
     {
@@ -335,6 +371,24 @@
     },
     {
       "data": {
+        "id": "urn:bookstore:SignedFirstEdition__subClassOf__urn:bookstore:RareBook",
+        "kind": "subClassOf",
+        "label": "subClassOf",
+        "source": "urn:bookstore:SignedFirstEdition",
+        "target": "urn:bookstore:RareBook"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:SignedFirstEdition__subClassOf__urn:bookstore:SoloAuthoredBook",
+        "kind": "subClassOf",
+        "label": "subClassOf",
+        "source": "urn:bookstore:SignedFirstEdition",
+        "target": "urn:bookstore:SoloAuthoredBook"
+      }
+    },
+    {
+      "data": {
         "id": "urn:bookstore:SimilarBook__a__urn:bookstore:Book",
         "kind": "range",
         "label": "a",
@@ -416,6 +470,15 @@
     },
     {
       "data": {
+        "id": "urn:bookstore:SignedFirstEdition__signedBy__urn:bookstore:AuthorName",
+        "kind": "range",
+        "label": "signedBy",
+        "source": "urn:bookstore:SignedFirstEdition",
+        "target": "urn:bookstore:AuthorName"
+      }
+    },
+    {
+      "data": {
         "id": "urn:bookstore:RareBook__authors ∃__urn:bookstore:AuthorName",
         "kind": "restriction",
         "label": "authors ∃",
@@ -470,11 +533,20 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:customer:AliceSmith__sameAs__urn:bookstore:customer:AliceSmithLegacy",
+        "id": "urn:bookstore:customer:alice-smith__sameAs__urn:legacy-crm:cust-00042",
         "kind": "sameAs",
         "label": "sameAs",
-        "source": "urn:bookstore:customer:AliceSmith",
-        "target": "urn:bookstore:customer:AliceSmithLegacy"
+        "source": "urn:bookstore:customer:alice-smith",
+        "target": "urn:legacy-crm:cust-00042"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:rarebook:dune-1965-chilton__sameAs__http://www.worldcat.org/oclc/463127",
+        "kind": "sameAs",
+        "label": "sameAs",
+        "source": "urn:bookstore:rarebook:dune-1965-chilton",
+        "target": "http://www.worldcat.org/oclc/463127"
       }
     }
   ],
@@ -754,6 +826,13 @@
     },
     {
       "data": {
+        "id": "urn:bookstore:SignedFirstEdition",
+        "kind": "primitive",
+        "label": "SignedFirstEdition"
+      }
+    },
+    {
+      "data": {
         "id": "urn:bookstore:SimilarBook",
         "kind": "entity",
         "label": "SimilarBook"
@@ -782,16 +861,30 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:customer:AliceSmith",
+        "id": "urn:bookstore:customer:alice-smith",
         "kind": "instance",
-        "label": "AliceSmith"
+        "label": "alice-smith"
       }
     },
     {
       "data": {
-        "id": "urn:bookstore:customer:AliceSmithLegacy",
+        "id": "urn:legacy-crm:cust-00042",
         "kind": "instance",
-        "label": "AliceSmithLegacy"
+        "label": "cust-00042"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:rarebook:dune-1965-chilton",
+        "kind": "instance",
+        "label": "dune-1965-chilton"
+      }
+    },
+    {
+      "data": {
+        "id": "http://www.worldcat.org/oclc/463127",
+        "kind": "instance",
+        "label": "463127"
       }
     }
   ]
