@@ -1,30 +1,29 @@
 import { Compose } from '../../../../src/index.js';
 import { AuthorNameSchema } from './AuthorName.js';
 import { RareBookSchema } from './RareBook.js';
-import { SoloAuthoredBookSchema } from './SoloAuthoredBook.js';
 
 /**
- * SignedFirstEdition — demonstrates multi-parent `Compose.subClassOf`.
+ * SignedFirstEdition — a RareBook signed by its sole author.
  *
- * A book signed by its sole author is BOTH a `RareBook` (OWL restrictions
- * on edition year and authorship cardinality from RareBook's parents) AND
- * a `SoloAuthoredBook` (Compose.cardinality(authors, 1)). Multi-parent
- * `subClassOf` records both class memberships in a single declaration; the
- * emitted `allOf` carries one `$ref` per parent followed by the body
- * block, and the OWL TBox emits two `rdfs:subClassOf` triples.
+ * Single-parent `subClassOf(RareBook)`: structurally adds `signedBy` and
+ * `provenance`. The "exactly one author" axiom is enforced by the
+ * registered invariant `signedFirstEditionIsSoloAuthored` (in
+ * `index.ts`), which fires on every `validate()` / `instantiate()` and
+ * surfaces in `ValidationErrors` with `keyword: 'jt:invariant'` — same
+ * collection shape as structural errors. This is how json-tology
+ * augments TypeScript: cross-field rules ride alongside the schema and
+ * are projected through type inference, rather than left to ad-hoc
+ * runtime helpers.
  *
  * Demonstrates:
- *   - `Compose.subClassOf([parentA, parentB], body)` — multi-parent shape
- *   - Class membership in two sibling restriction chains
- *   - $ref to an authoring-context primitive (`AuthorName`) for the
- *     signature attribution.
+ *   - `Compose.subClassOf(parent, body)` — single-parent shape
+ *   - `$ref` to `AuthorName` for the signature attribution
+ *   - Pairing an OWL subclass declaration with a registered invariant
+ *     for the rule TypeScript / JSON Schema can't express structurally.
  */
 
 export const SignedFirstEditionSchema = Compose.subClassOf(
-  [
-    RareBookSchema,
-    SoloAuthoredBookSchema
-  ],
+  RareBookSchema,
   {
     '$id': 'urn:bookstore:SignedFirstEdition',
     'properties': {

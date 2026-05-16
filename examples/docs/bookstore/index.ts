@@ -13,6 +13,7 @@ import { Iso8601Schema } from './entities/Iso8601.js';
 import { OrderIdSchema } from './entities/OrderId.js';
 import { PersonNameSchema } from './entities/PersonName.js';
 import { PostalCodeSchema } from './entities/PostalCode.js';
+import { PrintStatusSchema } from './entities/PrintStatus.js';
 import { PublicationDateSchema } from './entities/PublicationDate.js';
 import { QuantitySchema } from './entities/Quantity.js';
 import { RatingScoreSchema } from './entities/RatingScore.js';
@@ -45,23 +46,26 @@ import { BookListPageSchema } from './entities/BookListPage.js';
 // Book taxonomy — Compose.subClassOf / disjointWith / complementOf / restrictions
 //
 // EBookSchema and PrintBookSchema are disjoint subclasses of Book (subClassOf
-// + disjointWith). RareBookSchema layers two restrictions onto PrintBook
-// (someValuesFrom + maxCardinality). The remaining four classes each cover
-// one of the other restriction methods so every Compose.* surface lands in
-// the live ontology graph:
+// + disjointWith). RareBookSchema layers restrictions onto PrintBook
+// (someValuesFrom + maxCardinality on authors). InPrintBook /
+// OutOfPrintBook discriminate on Book.printStatus, which is the editorial
+// publisher state (orthogonal to inventory `inStock`).
 //
-//   SoloAuthoredBook  — Compose.cardinality(authors, 1)
-//   AnthologyBook     — Compose.minCardinality(authors, 2) + allValuesFrom
-//   InPrintBook       — Compose.hasValue(inStock, true)
-//   OutOfPrintBook    — Compose.complementOf(InPrintBook), bounded to Book
-import { AnthologyBookSchema } from './entities/AnthologyBook.js';
+// `SoloAuthoredBook` and `AnthologyBook` used to live here as registered
+// schemas that only constrained `authors` cardinality. They added no
+// structural fields and so do not earn distinct OWL class identity.
+// Single-authorship now lives as the registered invariant
+// `signedFirstEditionIsSoloAuthored` on `SignedFirstEditionSchema` — a
+// cross-field rule that fires alongside structural validation. The
+// `Compose.cardinality / minCardinality / allValuesFrom` builder surfaces
+// are exercised in `examples/docs/composition/restrictions.ts` against
+// standalone demo schemas (not registered).
 import { EBookSchema } from './entities/EBook.js';
 import { InPrintBookSchema } from './entities/InPrintBook.js';
 import { OutOfPrintBookSchema } from './entities/OutOfPrintBook.js';
 import { PrintBookSchema } from './entities/PrintBook.js';
 import { RareBookSchema } from './entities/RareBook.js';
 import { SignedFirstEditionSchema } from './entities/SignedFirstEdition.js';
-import { SoloAuthoredBookSchema } from './entities/SoloAuthoredBook.js';
 
 // Property-characteristic relation entities — OWL 2 axiom demonstrations
 // SimilarBook and Sequel both $ref Book, so they must import after BookSchema.
@@ -81,6 +85,7 @@ const allSchemas = [
   OrderIdSchema,
   PersonNameSchema,
   PostalCodeSchema,
+  PrintStatusSchema,
   PublicationDateSchema,
   QuantitySchema,
   RatingScoreSchema,
@@ -109,12 +114,9 @@ const allSchemas = [
   EBookSchema,
   PrintBookSchema,
   RareBookSchema,
-  SoloAuthoredBookSchema,
-  AnthologyBookSchema,
   InPrintBookSchema,
   OutOfPrintBookSchema,
-  // SignedFirstEdition extends both RareBook and SoloAuthoredBook — must
-  // register after both of those (multi-parent subClassOf).
+  // SignedFirstEdition extends RareBook — register after RareBook.
   SignedFirstEditionSchema,
   // Property-characteristic relation entities — $ref Book, must register after
   SimilarBookSchema,
@@ -182,6 +184,26 @@ bookstoreEntities.addInvariant<{
   'pointer': '/total/amount'
 });
 
+// Invariant: a SignedFirstEdition has exactly one author. The OWL parent
+// `RareBook` already declares `maxCardinality(authors, 1)`; this invariant
+// is the runtime-enforceable companion (json-tology will surface it in
+// ValidationErrors before any OWL reasoner runs).
+bookstoreEntities.addInvariant<{
+  'authors'?: readonly string[];
+}>(SignedFirstEditionSchema.$id, {
+  'fn': (book) => {
+    const count = book.authors?.length ?? 0;
+
+    if (count === 1) {
+      return null;
+    }
+
+    return `SignedFirstEdition must have exactly one author, got ${count}`;
+  },
+  'name': 'signedFirstEditionIsSoloAuthored',
+  'pointer': '/authors'
+});
+
 bookstoreEntities.sameAs(
   'urn:bookstore:customer:alice-smith',
   'urn:legacy-crm:cust-00042'
@@ -191,75 +213,10 @@ bookstoreEntities.sameAs(
   'http://www.worldcat.org/oclc/463127'
 );
 
-// Shared address record used by both Customer.addresses[0] and
-// Order.shippingAddress so the scenario stays internally consistent —
-// Alice's order ships to the same address she registered with.
-const ALICE_HOME_ADDRESS = {
-  'city': 'Springfield',
-  'country': 'US',
-  'postalCode': '49007',
-  'street': '742 Evergreen Terrace'
-} as const;
-
-const ALICE_ID = 'c1a2b3d4-e5f6-7890-abcd-ef1234567890';
-const DUNE_ISBN = '9780441172719';
-const DUNE_PRICE = {
-  'amount': 12_500,
-  'currency': 'USD'
-} as const;
-
-/**
- * Runtime ABox instance values for the customer-orders-rare-book scenario.
- * Field names match the registered schemas verbatim — passing each fixture
- * to `bookstoreEntities.instantiate(<SchemaId>, fixture)` is the
- * authoritative compliance check; `verifyAboxFixtures()` below runs that
- * validation at module-load time so any drift between schema and fixture
- * surfaces immediately.
- */
-export const aboxFixtures = {
-  'customer': {
-    'addresses': [ALICE_HOME_ADDRESS],
-    'email': 'alice@bookstore.example',
-    'id': ALICE_ID,
-    'name': 'Alice Smith'
-  } as const,
-  'order': {
-    'customerId': ALICE_ID,
-    'id': '09f8e7d6-c5b4-3210-9876-543210fedcba',
-    'items': [{
-      'bookIsbn': DUNE_ISBN,
-      'quantity': 1,
-      'unitPrice': DUNE_PRICE
-    }],
-    'placedAt': '2026-04-12T14:23:11Z',
-    'shippingAddress': ALICE_HOME_ADDRESS,
-    'total': DUNE_PRICE
-  } as const,
-  'rareBook': {
-    'authors': ['Frank Herbert'],
-    'binding': 'hardcover',
-    'estimatedAgeYears': 61,
-    'firstEditionYear': 1965,
-    'inStock': true,
-    'isbn': DUNE_ISBN,
-    'pageCount': 412,
-    'price': DUNE_PRICE,
-    'publishedOn': '1965-08-01',
-    // StockLevel is multipleOf 5; the shop tracks rare-book inventory in
-    // batches of 5 even when only a single signed copy is actively on hand.
-    'stockLevel': 5,
-    'title': 'Dune',
-    'weightGrams': 820
-  } as const,
-  'review': {
-    'body': "A foundational work of science fiction. Herbert's worldbuilding is unparalleled and this first edition is in remarkable condition.",
-    'bookIsbn': DUNE_ISBN,
-    'customerId': ALICE_ID,
-    'id': 'a4d3c2b1-a098-7654-a210-fedcba987654',
-    'postedAt': '2026-04-20T09:15:00Z',
-    'rating': 5
-  } as const
-} as const;
+// Concrete ABox instance values for the Alice-orders-Dune scenario.
+// Lives in its own file so any doc page can `<<<` include the fixtures
+// without dragging in the registry construction.
+export { aboxFixtures } from './aboxFixtures.js';
 
 // Entity types derived from schemas
 export type Address = InferType<typeof AddressSchema>;
@@ -272,7 +229,6 @@ export type Review = InferType<typeof ReviewSchema>;
 // Re-export all schemas — sorted by module specifier (perfectionist/sort-exports)
 export { AddressSchema } from './entities/Address.js';
 export { AmountSchema } from './entities/Amount.js';
-export { AnthologyBookSchema } from './entities/AnthologyBook.js';
 export { AuthorNameSchema } from './entities/AuthorName.js';
 export { BookSchema } from './entities/Book.js';
 export { BookAnnotationsSchema } from './entities/BookAnnotations.js';
@@ -298,6 +254,7 @@ export { OutOfPrintBookSchema } from './entities/OutOfPrintBook.js';
 export { PersonNameSchema } from './entities/PersonName.js';
 export { PostalCodeSchema } from './entities/PostalCode.js';
 export { PrintBookSchema } from './entities/PrintBook.js';
+export { PrintStatusSchema } from './entities/PrintStatus.js';
 export { PublicationDateSchema } from './entities/PublicationDate.js';
 export { QuantitySchema } from './entities/Quantity.js';
 export { RareBookSchema } from './entities/RareBook.js';
@@ -307,7 +264,6 @@ export { ReviewIdSchema } from './entities/ReviewId.js';
 export { SequelSchema } from './entities/Sequel.js';
 export { SignedFirstEditionSchema } from './entities/SignedFirstEdition.js';
 export { SimilarBookSchema } from './entities/SimilarBook.js';
-export { SoloAuthoredBookSchema } from './entities/SoloAuthoredBook.js';
 export { StockLevelSchema } from './entities/StockLevel.js';
 export { StreetLineSchema } from './entities/StreetLine.js';
 export { TitleSchema } from './entities/Title.js';

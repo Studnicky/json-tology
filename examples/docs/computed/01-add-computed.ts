@@ -1,105 +1,55 @@
 /**
- * addComputed / removeComputed — Example 1: Order total computed from lines
- * Demonstrates: entities:computed marker, computeds at construction, coerce triggers fn
+ * addComputed — Example 1: Derived `subtotal` on the canonical Order
+ *
+ * Demonstrates `addComputed` against the real registered `OrderSchema`
+ * from the bookstore. `addComputed` registers a derivation function for
+ * a property name; on every subsequent `instantiate()` the materializer
+ * invokes the fn with the live instance and writes the result onto the
+ * output value.
+ *
+ * The canonical `OrderSchema` does not declare `subtotal` as a property
+ * — it is layered on at runtime via `addComputed`, then read back from
+ * the materialized result. This keeps the canonical schema free of
+ * mandatory computed-field commitments while still demonstrating the
+ * surface against real registered data.
  */
 
-import { JsonTology } from '../../../src/index.js';
-import type { InferType } from '../../../src/types/index.js';
 import {
-  IsbnSchema, MoneySchema, OrderLineSchema,
-  QuantitySchema
+  aboxFixtures, bookstoreEntities, OrderSchema
 } from '../bookstore/index.js';
 
-const ComputedOrderSchema = {
-  '$id': 'https://bookstore.example/ComputedOrder',
-  'properties': {
-    'customerId': {
-      'format': 'uuid',
-      'type': 'string'
-    },
-    'id': {
-      'format': 'uuid',
-      'type': 'string'
-    },
-    'items': {
-      'items': { '$ref': OrderLineSchema.$id },
-      'minItems': 1,
-      'type': 'array'
-    },
-    'placedAt': {
-      'format': 'date-time',
-      'type': 'string'
-    },
-    'total': {
-      'entities:computed': true,
-      'type': 'number'
-    }
+interface OrderItems {
+  'items': ReadonlyArray<{
+    'quantity': number;
+    'unitPrice': { 'amount': number };
+  }>;
+}
+
+bookstoreEntities.addComputed<OrderItems & { 'subtotal': number }>(
+  OrderSchema.$id,
+  'subtotal',
+  (order) => {
+    return order.items.reduce(
+      (sum, line) => {
+        return sum + (line.unitPrice.amount * line.quantity);
+      },
+      0
+    );
+  }
+);
+
+const materialized = bookstoreEntities.instantiate(OrderSchema.$id, aboxFixtures.order);
+const expected = aboxFixtures.order.items.reduce(
+  (sum, line) => {
+    return sum + (line.unitPrice.amount * line.quantity);
   },
-  'required': [
-    'id',
-    'customerId',
-    'items',
-    'placedAt'
-  ],
-  'type': 'object'
-} as const;
+  0
+);
 
-type ComputedOrder = InferType<typeof ComputedOrderSchema>;
+console.assert(Math.abs((materialized as { 'subtotal': number }).subtotal - expected) < 0.005);
 
-const bookstoreEntities = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
-  'computeds': {
-    'https://bookstore.example/ComputedOrder': {
-      'total': (order) => {
-        const typed = order as ComputedOrder;
+// removeComputed unregisters the fn; further instantiate() calls drop the field.
+bookstoreEntities.removeComputed(OrderSchema.$id, 'subtotal');
+const after = bookstoreEntities.instantiate(OrderSchema.$id, aboxFixtures.order);
 
-        return (typed.items as Array<{
-          'quantity': number;
-          'unitPrice': {
-            'amount': number;
-            'currency': string;
-          };
-        }>)
-          .reduce((sum, line) => {
-            return sum + line.unitPrice.amount * line.quantity;
-          }, 0);
-      }
-    }
-  },
-  'schemas': [
-    IsbnSchema,
-    MoneySchema,
-    QuantitySchema,
-    OrderLineSchema,
-    ComputedOrderSchema
-  ] as const
-});
-
-const order = bookstoreEntities.instantiate(ComputedOrderSchema.$id, {
-  'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  'id': 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-  'items': [
-    {
-      'bookIsbn': '9780140449136',
-      'quantity': 2,
-      'unitPrice': {
-        'amount': 12.99,
-        'currency': 'USD'
-      }
-    },
-    {
-      'bookIsbn': '9780062316110',
-      'quantity': 1,
-      'unitPrice': {
-        'amount': 9.99,
-        'currency': 'USD'
-      }
-    }
-  ],
-  'placedAt': '2026-01-15T10:30:00Z'
-  // total is omitted — computed from items
-});
-
-const expectedTotal = 2 * 12.99 + 1 * 9.99;
-
-console.assert(Math.abs((order as { 'total': number }).total - expectedTotal) < 0.001);
+console.assert(!('subtotal' in (after as object)));

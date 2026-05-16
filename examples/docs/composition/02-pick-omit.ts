@@ -9,7 +9,8 @@ import {
 import {
   AmountSchema, AuthorNameSchema, BookAnnotationsSchema, BookRatingHistogramSchema,
   BookSchema, CurrencyCodeSchema, CustomerNameSchema,
-  IsbnSchema, MoneySchema, PublicationDateSchema, StockLevelSchema, TitleSchema
+  IsbnSchema, MoneySchema, PrintStatusSchema, PublicationDateSchema,
+  StockLevelSchema, TitleSchema
 } from '../bookstore/index.js';
 
 // pick — keep only catalog display fields
@@ -44,6 +45,7 @@ const bookstoreEntities = JsonTology.create({
     TitleSchema,
     BookAnnotationsSchema,
     BookRatingHistogramSchema,
+    PrintStatusSchema,
     PublicationDateSchema,
     StockLevelSchema,
     BookSchema,
@@ -75,6 +77,7 @@ const pub = bookstoreEntities.validate(PublicBookSchema.$id, {
     'amount': 14.99,
     'currency': 'USD'
   },
+  'printStatus': 'inPrint',
   'title': 'Crime and Punishment'
 });
 

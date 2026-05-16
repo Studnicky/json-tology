@@ -52,9 +52,9 @@ Output wire shape:
 // }
 ```
 
-### Example 2: multiple parents
+### Example 2: subclass + invariant for axioms TypeScript can't express
 
-A book signed by its sole author is **both** a `RareBook` (OWL restrictions on edition year and authorship cardinality inherited from RareBook's parents) **and** a `SoloAuthoredBook` (`Compose.cardinality(authors, 1)`). Multi-parent `subClassOf` records both class memberships in a single declaration; the emitted `allOf` carries one `$ref` per parent followed by the body block, and the OWL TBox emits two `rdfs:subClassOf` triples.
+A `SignedFirstEdition` is a `RareBook` whose sole author signed the copy. The structural OWL contract — "subclass of RareBook, adds `signedBy` and `provenance`" — is expressed by single-parent `subClassOf`. The "exactly one author" axiom is registered as a runtime invariant (`signedFirstEditionIsSoloAuthored`) on the schema, surfaced through the same `ValidationErrors` shape as structural errors. Single-authorship is a predicate over `authors`, not a distinct OWL class identity, so it deliberately stays out of the TBox.
 
 <<< ../../examples/docs/bookstore/entities/SignedFirstEdition.ts
 

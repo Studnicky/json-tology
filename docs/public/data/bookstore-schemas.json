@@ -64,6 +64,15 @@
     "minLength": 3,
     "type": "string"
   },
+  "urn:bookstore:PrintStatus": {
+    "$id": "urn:bookstore:PrintStatus",
+    "enum": [
+      "inPrint",
+      "outOfPrint",
+      "limitedRun"
+    ],
+    "type": "string"
+  },
   "urn:bookstore:PublicationDate": {
     "$id": "urn:bookstore:PublicationDate",
     "format": "date",
@@ -265,6 +274,9 @@
       "price": {
         "$ref": "urn:bookstore:Money"
       },
+      "printStatus": {
+        "$ref": "urn:bookstore:PrintStatus"
+      },
       "publishedOn": {
         "$ref": "urn:bookstore:PublicationDate"
       },
@@ -282,7 +294,8 @@
       "isbn",
       "title",
       "authors",
-      "price"
+      "price",
+      "printStatus"
     ],
     "type": "object"
   },
@@ -441,6 +454,9 @@
             "price": {
               "$ref": "urn:bookstore:Money"
             },
+            "printStatus": {
+              "$ref": "urn:bookstore:PrintStatus"
+            },
             "publishedOn": {
               "$ref": "urn:bookstore:PublicationDate"
             },
@@ -458,7 +474,8 @@
             "isbn",
             "title",
             "authors",
-            "price"
+            "price",
+            "printStatus"
           ],
           "type": "object"
         },
@@ -631,47 +648,6 @@
       }
     ]
   },
-  "urn:bookstore:SoloAuthoredBook": {
-    "$id": "urn:bookstore:SoloAuthoredBook",
-    "allOf": [
-      {
-        "$ref": "urn:bookstore:Book"
-      },
-      {
-        "type": "object"
-      }
-    ],
-    "jt:restrictions": [
-      {
-        "kind": "cardinality",
-        "onProperty": "urn:bookstore:Book#authors",
-        "value": 1
-      }
-    ]
-  },
-  "urn:bookstore:AnthologyBook": {
-    "$id": "urn:bookstore:AnthologyBook",
-    "allOf": [
-      {
-        "$ref": "urn:bookstore:Book"
-      },
-      {
-        "type": "object"
-      }
-    ],
-    "jt:restrictions": [
-      {
-        "kind": "allValuesFrom",
-        "onProperty": "urn:bookstore:Book#authors",
-        "value": "urn:bookstore:AuthorName"
-      },
-      {
-        "kind": "minCardinality",
-        "onProperty": "urn:bookstore:Book#authors",
-        "value": 2
-      }
-    ]
-  },
   "urn:bookstore:InPrintBook": {
     "$id": "urn:bookstore:InPrintBook",
     "allOf": [
@@ -685,8 +661,8 @@
     "jt:restrictions": [
       {
         "kind": "hasValue",
-        "onProperty": "urn:bookstore:Book#inStock",
-        "value": true
+        "onProperty": "urn:bookstore:Book#printStatus",
+        "value": "inPrint"
       }
     ]
   },
@@ -707,9 +683,6 @@
     "allOf": [
       {
         "$ref": "urn:bookstore:RareBook"
-      },
-      {
-        "$ref": "urn:bookstore:SoloAuthoredBook"
       },
       {
         "properties": {

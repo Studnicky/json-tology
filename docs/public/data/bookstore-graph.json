@@ -110,6 +110,15 @@
     },
     {
       "data": {
+        "id": "urn:bookstore:Book__printStatus__urn:bookstore:PrintStatus",
+        "kind": "range",
+        "label": "printStatus",
+        "source": "urn:bookstore:Book",
+        "target": "urn:bookstore:PrintStatus"
+      }
+    },
+    {
+      "data": {
         "id": "urn:bookstore:Book__publishedOn__urn:bookstore:PublicationDate",
         "kind": "range",
         "label": "publishedOn",
@@ -326,24 +335,6 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:SoloAuthoredBook__subClassOf__urn:bookstore:Book",
-        "kind": "subClassOf",
-        "label": "subClassOf",
-        "source": "urn:bookstore:SoloAuthoredBook",
-        "target": "urn:bookstore:Book"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:AnthologyBook__subClassOf__urn:bookstore:Book",
-        "kind": "subClassOf",
-        "label": "subClassOf",
-        "source": "urn:bookstore:AnthologyBook",
-        "target": "urn:bookstore:Book"
-      }
-    },
-    {
-      "data": {
         "id": "urn:bookstore:InPrintBook__subClassOf__urn:bookstore:Book",
         "kind": "subClassOf",
         "label": "subClassOf",
@@ -376,15 +367,6 @@
         "label": "subClassOf",
         "source": "urn:bookstore:SignedFirstEdition",
         "target": "urn:bookstore:RareBook"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:SignedFirstEdition__subClassOf__urn:bookstore:SoloAuthoredBook",
-        "kind": "subClassOf",
-        "label": "subClassOf",
-        "source": "urn:bookstore:SignedFirstEdition",
-        "target": "urn:bookstore:SoloAuthoredBook"
       }
     },
     {
@@ -497,38 +479,11 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:SoloAuthoredBook__authors card = 1__urn:bookstore:Book#authors",
+        "id": "urn:bookstore:InPrintBook__printStatus = inPrint__urn:bookstore:Book#printStatus",
         "kind": "restriction",
-        "label": "authors card = 1",
-        "source": "urn:bookstore:SoloAuthoredBook",
-        "target": "urn:bookstore:Book#authors"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:AnthologyBook__authors ∀__urn:bookstore:AuthorName",
-        "kind": "restriction",
-        "label": "authors ∀",
-        "source": "urn:bookstore:AnthologyBook",
-        "target": "urn:bookstore:AuthorName"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:AnthologyBook__authors card ≥ 2__urn:bookstore:Book#authors",
-        "kind": "restriction",
-        "label": "authors card ≥ 2",
-        "source": "urn:bookstore:AnthologyBook",
-        "target": "urn:bookstore:Book#authors"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:InPrintBook__inStock = true__urn:bookstore:Book#inStock",
-        "kind": "restriction",
-        "label": "inStock = true",
+        "label": "printStatus = inPrint",
         "source": "urn:bookstore:InPrintBook",
-        "target": "urn:bookstore:Book#inStock"
+        "target": "urn:bookstore:Book#printStatus"
       }
     },
     {
@@ -626,6 +581,13 @@
         "id": "urn:bookstore:PostalCode",
         "kind": "primitive",
         "label": "PostalCode"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:PrintStatus",
+        "kind": "primitive",
+        "label": "PrintStatus"
       }
     },
     {
@@ -798,20 +760,6 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:SoloAuthoredBook",
-        "kind": "primitive",
-        "label": "SoloAuthoredBook"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:AnthologyBook",
-        "kind": "primitive",
-        "label": "AnthologyBook"
-      }
-    },
-    {
-      "data": {
         "id": "urn:bookstore:InPrintBook",
         "kind": "primitive",
         "label": "InPrintBook"
@@ -854,9 +802,9 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:Book#inStock",
+        "id": "urn:bookstore:Book#printStatus",
         "kind": "primitive",
-        "label": "inStock"
+        "label": "printStatus"
       }
     },
     {

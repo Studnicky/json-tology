@@ -53,14 +53,14 @@ These have distinct structure, distinct OWL class identity, or both.
 | `Sequel`, `SimilarBook` | Property-characteristic demos (`asymmetric`, `symmetric` on Book → Book relations) |
 | All 19 primitives (`Isbn`, `Email`, `Iso8601`, `PrintStatus` NEW, etc.) | Single-source primitives |
 
-#### Removed from the registry (predicates instead)
+#### Removed from the registry (invariants instead)
 
 | Old schema | New form |
 |---|---|
-| `SoloAuthoredBookSchema` | `examples/docs/bookstore/predicates.ts → isSoloAuthored(book): book is SoloAuthoredBook` — type-narrows via length-1 tuple |
-| `AnthologyBookSchema` | `predicates.ts → isAnthology(book): book is AnthologyBook` — type-narrows via min-length-2 tuple |
+| `SoloAuthoredBookSchema` | Registered invariant `signedFirstEditionIsSoloAuthored` on `SignedFirstEditionSchema` — fires through the same `ValidationErrors` collection as structural errors, with `keyword: 'jt:invariant'`. |
+| `AnthologyBookSchema` | If a domain need for it surfaces, add a registered invariant on the specific schema that requires multi-author composition; do not introduce a separate OWL class for a pure cardinality predicate. |
 
-These predicates are TypeScript-native classifications; they don't add to the OWL TBox because they're not OWL classes. The `Compose.cardinality / minCardinality / allValuesFrom` builders are demonstrated in `examples/docs/composition/restrictions.ts` against standalone demo schemas (not registered).
+Single-authorship adds no structural fields and earns no distinct OWL class identity — but it is still a json-tology axiom, expressed through `addInvariant`. The `Compose.cardinality / minCardinality / allValuesFrom` builder surfaces are demonstrated in `examples/docs/composition/restrictions.ts` against standalone demo schemas (not registered into the canonical bookstore).
 
 #### New primitive: `PrintStatusSchema`
 
@@ -85,16 +85,26 @@ These predicates are TypeScript-native classifications; they don't add to the OW
 
 Invariants surface as `{ keyword: 'jt:invariant', message, params: { invariant: name }, path: pointer }` in `ValidationErrors` — same shape as structural errors.
 
-#### Computed fields on real schemas
+#### Computed fields
 
-| Computed | Schema | From |
-|---|---|---|
-| `Customer.displayName` | Customer | `${name}` (or richer formatting) |
-| `Order.itemCount` | Order | `items.length` |
-| `Order.totalQuantity` | Order | `Σ items[i].quantity` |
-| `RareBook.estimatedAgeYears` (already in schema) | RareBook | `currentYear - firstEditionYear` |
+The canonical Customer / Order / Book schemas do not declare any
+`jt:computed: true` properties — a `jt:computed` marker forces every
+consumer of that schema to register the matching compute function or
+the registry refuses to load.
 
-These demonstrate `addComputed` on registered schemas, not docs-only variants.
+`addComputed` is demonstrated against the canonical `OrderSchema` in
+`examples/docs/computed/01-add-computed.ts`: the example calls
+`bookstoreEntities.addComputed(OrderSchema.$id, 'subtotal', fn)`,
+materializes the canonical Alice-orders-Dune fixture, and reads the
+new `subtotal` field off the result. `removeComputed` then deregisters
+the fn; the next materialization no longer carries `subtotal`. The
+materializer always invokes registered compute fns, even for property
+names that the schema does not declare — `addComputed` is the runtime
+augmentation surface, not a schema declaration.
+
+This pattern keeps the canonical bookstore free of mandatory
+computed-field commitments while still demonstrating the surface
+against the real registered schemas and fixtures.
 
 #### ABox: the Alice-orders-Dune scenario
 
@@ -223,11 +233,12 @@ Each phase ends with `npm run test:all` + `npm run lint` + `npm run docs:build` 
 3. Rewrite `InPrintBookSchema` to use `hasValue(printStatus, 'inPrint')`
 4. Drop `SoloAuthoredBookSchema`, `AnthologyBookSchema` from registry (delete the files)
 5. Simplify `SignedFirstEdition` to single-parent `subClassOf(RareBook)` + invariant on `authors.length === 1`
-6. Add `examples/docs/bookstore/predicates.ts` with `isSoloAuthored`, `isAnthology`, `hasStock`
+6. Register the `signedFirstEditionIsSoloAuthored` invariant in `index.ts` against `SignedFirstEditionSchema`
 7. Add `examples/docs/bookstore/aboxFixtures.ts` (split out from `index.ts`)
 8. Update `aboxFixtures.rareBook` to include `printStatus: 'outOfPrint'`
 9. Add registered invariants on Order and SignedFirstEdition
-10. Add registered computed fields (`Customer.displayName`, `Order.itemCount`, `Order.totalQuantity`)
+10. Rewrite `examples/docs/computed/01-add-computed.ts` to use a dedicated
+    `ComputedOrderSchema` (computed kept off the canonical Customer/Order)
 11. `test/smoke/bookstoreFixtures.test.ts` — runtime verification
 12. `test/types/bookstore-axioms.test.ts` — compile-time axiom assertions
 

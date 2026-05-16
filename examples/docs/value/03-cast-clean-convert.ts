@@ -7,7 +7,8 @@ import { JsonTology } from '../../../src/index.js';
 import {
   AmountSchema, AuthorNameSchema, BookAnnotationsSchema, BookRatingHistogramSchema,
   BookSchema, CurrencyCodeSchema, CustomerNameSchema,
-  IsbnSchema, MoneySchema, PublicationDateSchema, StockLevelSchema, TitleSchema
+  IsbnSchema, MoneySchema, PrintStatusSchema, PublicationDateSchema,
+  StockLevelSchema, TitleSchema
 } from '../bookstore/index.js';
 
 const localJt = JsonTology.create({
@@ -23,6 +24,7 @@ const localJt = JsonTology.create({
     TitleSchema,
     BookAnnotationsSchema,
     BookRatingHistogramSchema,
+    PrintStatusSchema,
     PublicationDateSchema,
     StockLevelSchema,
     BookSchema
@@ -38,6 +40,7 @@ const casted = localJt.value.cast(BookSchema.$id, {
     'amount': 14.99,
     'currency': 'USD'
   },
+  'printStatus': 'inPrint',
   'title': 'Crime and Punishment'
 });
 
@@ -53,6 +56,7 @@ const dirty = {
     'amount': 14.99,
     'currency': 'USD'
   },
+  'printStatus': 'inPrint',
   'title': 'Crime and Punishment'
 };
 const cleaned = localJt.value.clean(BookSchema.$id, dirty);
@@ -68,6 +72,7 @@ const converted = localJt.value.convert(BookSchema.$id, {
     'amount': 14.99,
     'currency': 'USD'
   },
+  'printStatus': 'inPrint',
   'title': 'Crime and Punishment'
 });
 

@@ -34,7 +34,7 @@ examples/docs/bookstore/
     ├── StreetLine.ts             # primitive: string, 1-200 chars
     ├── Title.ts                  # primitive: string, 1-500 chars
     ├── Address.ts                # entity: composes StreetLine + CityName + PostalCode + CountryCode
-    ├── Book.ts                   # entity: composes Isbn + Title + AuthorName + Money + PublicationDate + StockLevel + BookAnnotations + BookRatingHistogram
+    ├── Book.ts                   # entity: composes Isbn + Title + AuthorName + Money + PrintStatus + PublicationDate + StockLevel + BookAnnotations + BookRatingHistogram
     ├── Customer.ts               # entity: composes CustomerId + Email + CustomerName + Address
     ├── OrderLine.ts              # entity: composes Isbn + Quantity + Money
     ├── Order.ts                  # entity: composes OrderId + CustomerId + OrderLine + Money + ...
@@ -42,11 +42,12 @@ examples/docs/bookstore/
     ├── EBook.ts                  # subClassOf Book — digital format
     ├── PrintBook.ts              # subClassOf Book + disjointWith EBook — physical format
     ├── RareBook.ts               # subClassOf PrintBook + someValuesFrom + maxCardinality
-    ├── SoloAuthoredBook.ts       # subClassOf Book + cardinality(authors, 1)
-    ├── AnthologyBook.ts          # subClassOf Book + minCardinality + allValuesFrom
-    ├── InPrintBook.ts            # subClassOf Book + hasValue(inStock, true)
+    ├── SignedFirstEdition.ts     # subClassOf RareBook + signedFirstEditionIsSoloAuthored invariant
+    ├── InPrintBook.ts            # subClassOf Book + hasValue(printStatus, 'inPrint')
     └── OutOfPrintBook.ts         # complementOf InPrintBook, allOf-bounded to Book
 ```
+
+Cross-field rules that JSON Schema and TypeScript can't express structurally — like "a `SignedFirstEdition` has exactly one author" — are registered on the schema as invariants (`bookstoreEntities.addInvariant`). The invariant function runs after structural validation and surfaces failures in the same `ValidationErrors` shape as any structural error, with `keyword: 'jt:invariant'`. This is how json-tology augments TypeScript: schema declarations carry not just shape but the runtime axioms that shape can't express, and the inferred TS type tracks both.
 
 Each primitive file exports a single schema constant with a stable `$id` using the `urn:bookstore:` IRI pattern. Entity files import only the primitives they reference - every `$ref` is `{ $ref: SourceSchema.$id }` with an explicit named import at the top of the file.
 

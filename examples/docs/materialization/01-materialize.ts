@@ -15,6 +15,7 @@ const book = bookstoreEntities.materialize(BookSchema, {
     'amount': 14.99,
     'currency': 'USD'
   },
+  'printStatus': 'inPrint',
   'title': 'Crime and Punishment'
 });
 
