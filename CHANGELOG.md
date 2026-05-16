@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Performance (audit pass 4 — production "build once, reuse many")
+
+- `discriminated union` +39%, `extend + validate` +18%, `intersection` +18%, `extend build` +5%, `convert simple` +5%, `clone nested` +5%, broad +2-4% wins across validate/coerce/clean/diff/encode paths. Aggregate effect of caching production-code state that prior passes left re-allocating per call.
+- `GraphEngine.defaultResolutionContext` is hoisted to a constructor-built `private readonly cachedDefaultResolutionContext` field. Same pattern as Pass-2 `cachedVisitContext` — the per-call object literal with two arrow closures is gone.
+- `Materializer.run` caches two `cachedOverridesNoDefaults` / `cachedOverridesWithDefaults` variants as instance fields. The 6-field overrides object is built twice at construction instead of once per call.
+- `JsonTology.toSchema` holds `GraphSchemaSerializer` as a `private readonly` instance field (matches the `ontologySerializer` / `shaclSerializer` pattern). No more `new GraphSchemaSerializer()` per call.
+- `GraphEngine.validateObject` does one `propertyNodeMap.get(key)` + undefined check instead of `has(key)` then `get(key)`. The double Map lookup in the per-key validation loop is eliminated.
+- `GraphEngine.validateArray` uniqueItems uses a labeled inner loop scanning from `index + 1` instead of `workingValue.slice(index + 1).some(...)`. No per-element slice allocation.
+- `GraphEngine` hoists a module-scope `escape` alias for `SchemaGraphSupport.escapeJsonPointerSegment`, replacing six static-method-call paths inside per-property loops.
+- `SchemaRegistry.engine` hoists `lookupGraph` to a `private readonly` field built in the constructor. Conditional engine-options fields use direct guarded assignments instead of three nested object spreads.
+- `SchemaRegistry` adds `hasEmbeddedIds` and `hasComputedFields` flags on `SchemaRegistryEntryInterface`, computed once at registration. `engine()` returns a frozen `EMPTY_EMBEDDED_MAP` sentinel when `hasEmbeddedIds === false`. `instantiate` skips `computedStore.getMap` allocation when `hasComputedFields === false`.
+- `Curie.expand` memoizes the prefix-expansion result. Prefixes are constructor-injected and immutable; the cache is valid for the Curie's lifetime.
+- `SchemaCompilerPlan` hoists module-scope `ALWAYS_TRUE_CHECK`, `ALWAYS_FALSE_CHECK`, `TRUE_VALIDATOR`, `FALSE_VALIDATOR` singletons. Boolean-schema compile paths reference the singletons instead of allocating fresh `() => true` / `() => false` closures.
+- `SchemaCompilerPlan` replaces `[...sem.allOf, ...sem.anyOf, ...sem.oneOf]` with three sequential `for...of` loops in `nodeSupportsCompilation`.
+- `SchemaCompilerPlan` flat-object fast path uses `sem.required.includes(name)` and `sem.properties.has(key)` directly instead of materializing fresh Sets per compile-node.
+- `RefDecoder.walkAdditionalProperties` calls `semantics.properties.has(key)` directly on the Map instead of allocating a fresh Set from `.keys()`.
+- `GraphEngineDefaults.createImplicitDefaultValue` / `synthesizeZeroValue` split into public wrappers that own the single `Set<string>` cycle-guard allocation and internal recursive functions that take `visited` as a required parameter. Callers that don't need to seed allocate one Set per top-level call instead of one per recursion.
+- `SchemaGraphRelations.pushDependentRequiredRelations` iterates `Object.entries` with a length guard instead of `.filter().forEach()`. `extractRelations` computes `nonNullTypes` once and shares it across `pushPropertyTypeRelations` and `pushUnionTypeRelations`.
+
 ### Performance (audit pass 3)
 
 - `intersection` and `extend + validate` benchmarks now measure steady-state validate, not registry construction. The corrected bench measures `intersection` at 1.84M ops/s (was 22K ops/s when the timing loop included `new SchemaRegistry()`) and `extend + validate` at 1.6M ops/s (was 30K).
