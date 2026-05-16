@@ -7,6 +7,7 @@
 import type { CurieInterface } from '../../interfaces/Curie.js';
 
 export class Curie implements CurieInterface {
+  private readonly expandCache = new Map<string, string>();
   private readonly prefixes: Record<string, string>;
 
   /**
@@ -52,7 +53,15 @@ export class Curie implements CurieInterface {
    * @returns The expanded IRI, or the original value if no prefix match is found
    */
   public expand(value: string): string {
+    const cached = this.expandCache.get(value);
+
+    if (cached !== undefined) {
+      return cached;
+    }
+
     if (!value.includes(':')) {
+      this.expandCache.set(value, value);
+
       return value;
     }
 
@@ -63,9 +72,15 @@ export class Curie implements CurieInterface {
     const namespace = this.prefixes[prefix];
 
     if (!namespace) {
+      this.expandCache.set(value, value);
+
       return value;
     }
 
-    return `${namespace}${localPart}`;
+    const result = `${namespace}${localPart}`;
+
+    this.expandCache.set(value, result);
+
+    return result;
   }
 }
