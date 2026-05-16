@@ -57,6 +57,7 @@
     "test:all": "tsx --test --test-concurrency=4 'test/smoke/**/*.test.ts' 'test/unit/**/*.test.ts' 'test/integration/**/*.test.ts' 'test/e2e/**/*.test.ts' 'test/types/**/*.test.ts'",
     "test:coverage": "tsx --test --test-concurrency=4 --experimental-test-coverage 'test/smoke/**/*.test.ts' 'test/unit/**/*.test.ts'",
     "build:bookstore-tbox": "node ./scripts/build-bookstore-tbox.mjs",
+    "build:palette": "node ./scripts/build-palette.mjs",
     "pack:check": "node ./scripts/check-pack.mjs",
     "docs:dev": "vitepress dev docs",
     "docs:build": "npm run build:bookstore-tbox && vitepress build docs",
