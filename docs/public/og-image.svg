@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="json-tology — One source of truth for TypeScript types, runtime validation, and OWL ontology output">
+
+  <defs>
+    <linearGradient id="bgGradient" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0E2A2E"/>
+      <stop offset="0.5" stop-color="#0A2024"/>
+      <stop offset="1" stop-color="#08171A"/>
+    </linearGradient>
+
+    <linearGradient id="nodeBlueGreen" x1="92" y1="36" x2="308" y2="364" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7FE7D8"/>
+      <stop offset="0.5" stop-color="#24A5B5"/>
+      <stop offset="1" stop-color="#08717A"/>
+    </linearGradient>
+
+    <filter id="nodeShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+
+    <style>
+      .title {
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        fill: #DDFBFF;
+      }
+      .tagline {
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-weight: 500;
+        letter-spacing: 0;
+        fill: #7FE7D8;
+        opacity: 0.85;
+      }
+      .meta {
+        font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+        font-weight: 500;
+        fill: #BDF6F2;
+        opacity: 0.6;
+      }
+      .nodeLabel {
+        font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+        font-weight: 700;
+        letter-spacing: -0.075em;
+        fill: #FFFFFF;
+      }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="630" fill="url(#bgGradient)"/>
+
+  <g transform="translate(120, 115) scale(1.0)" filter="url(#nodeShadow)">
+    <g transform="scale(1.0)">
+      <path d="M200 24 L352.4 112 L352.4 288 L200 376 L47.6 288 L47.6 112 Z" fill="url(#nodeBlueGreen)"/>
+      <path d="M200 24 L47.6 112 L112 149 L200 98 Z" fill="#FFFFFF" opacity="0.16"/>
+      <path d="M200 24 L352.4 112 L288 149 L200 98 Z" fill="#FFFFFF" opacity="0.08"/>
+      <path d="M47.6 112 L112 149 L200 376 L47.6 288 Z" fill="#003E46" opacity="0.14"/>
+      <path d="M352.4 112 L288 149 L200 376 L352.4 288 Z" fill="#003E46" opacity="0.20"/>
+      <path d="M112 149 L200 98 L288 149 L200 376 Z" fill="#FFFFFF" opacity="0.07"/>
+      <path d="M200 24 L352.4 112 L352.4 288 L200 376 L47.6 288 L47.6 112 Z" fill="none" stroke="#DDFBFF" stroke-width="6" opacity="0.78"/>
+      <text class="nodeLabel" x="203" y="264" text-anchor="middle" font-size="142">JST</text>
+    </g>
+  </g>
+
+  <g transform="translate(560, 235)">
+    <text class="title" x="0" y="0" font-size="84">json-tology</text>
+    <text class="tagline" x="0" y="62" font-size="30">One source of truth.</text>
+    <text class="tagline" x="0" y="100" font-size="30">TypeScript types · validation · OWL ontology.</text>
+    <text class="meta" x="0" y="180" font-size="22">Author in JSON Schema. Reason over the graph.</text>
+  </g>
+</svg>
