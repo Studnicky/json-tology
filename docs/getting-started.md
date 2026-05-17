@@ -91,53 +91,13 @@ See [Validation](/validation/instantiate) for `is()`, `validate()`, `subschemaAt
 
 `instantiate()` validates, applies defaults, strips unknown properties, and returns a typed value. Throws `InstantiationError` on failure.
 
-```ts
-import { InstantiationError } from 'json-tology';
-
-const AddressSchema = {
-  $id: 'https://bookstore.example/Address',
-  type: 'object',
-  properties: {
-    street:     { type: 'string' },
-    city:       { type: 'string' },
-    postalCode: { type: 'string' },
-    country:    { type: 'string', default: 'US' },
-  },
-  required: ['street', 'city', 'postalCode'],
-} as const;
-
-const jt2 = jt.set(AddressSchema);
-
-const address = jt2.instantiate(AddressSchema.$id, {
-  street:     '12 Elm Lane',
-  city:       'Bookham',
-  postalCode: '94107',
-  extra:      'ignored',       // stripped
-  // country omitted  - default 'US' applied
-});
-// { street: '12 Elm Lane', city: 'Bookham', postalCode: '94107', country: 'US' }
-```
+<<< ../examples/docs/getting-started/03-address-defaults.ts
 
 ## Compose schemas
 
 `Compose` derives new schemas from existing ones. All composition runs at compile time and produces correct JSON Schema objects.
 
-```ts
-import { Compose } from 'json-tology';
-
-// A PATCH-body schema where every field is optional
-const PatchCustomerSchema = Compose.partial(
-  CustomerSchema,
-  'https://bookstore.example/PatchCustomer',
-);
-
-// A read-only summary for list views
-const CustomerSummarySchema = Compose.pick(
-  CustomerSchema,
-  ['id', 'name'] as const,
-  'https://bookstore.example/CustomerSummary',
-);
-```
+<<< ../examples/docs/getting-started/04-compose-partial-pick.ts
 
 The full set of combinators (`extend`, `omit`, `required`, `intersection`, `discriminatedUnion`) is covered in [Composition](/composition/extend).
 
@@ -145,16 +105,7 @@ The full set of combinators (`extend`, `omit`, `required`, `intersection`, `disc
 
 `dump()` walks the validation graph and applies any registered `Transform` encoders. It is the Pydantic `model_dump()` equivalent.
 
-```ts
-const customer = jt.instantiate(CustomerSchema.$id, {
-  id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  email: 'bastian.bux@bookstore.example',
-  name:  'Bastian Balthazar Bux',
-});
-
-const wire = jt.dumpJson(CustomerSchema.$id, customer);
-// '{"id":"c1a2b3d4-e5f6-7890-abcd-ef1234567890","email":"bastian.bux@bookstore.example","name":"Bastian Balthazar Bux","addresses":[]}'
-```
+<<< ../examples/docs/getting-started/05-dump-json.ts
 
 Filtering options (`exclude`, `include`, `excludeDefaults`) are documented in [Serialization](/serialization/dump).
 
@@ -162,20 +113,7 @@ Filtering options (`exclude`, `include`, `excludeDefaults`) are documented in [S
 
 Import only what you need. Every sub-path is tree-shakable.
 
-```ts
-// Everything
-import { JsonTology, Compose, Transform, Value } from 'json-tology';
-
-// Value operations only (no validation graph or ontology)
-import { Value, Hash, Changeset } from 'json-tology/value';
-
-// Schema registry and format validators
-import { SchemaRegistry, FormatRegistry } from 'json-tology/schema';
-
-// Types and interfaces only (compile-time, no runtime cost)
-import type { InferType } from 'json-tology/types';
-import type { LoggerInterface } from 'json-tology/interfaces';
-```
+<<< ../examples/docs/getting-started/07-subpath-imports.ts
 
 ## What's in the box
 

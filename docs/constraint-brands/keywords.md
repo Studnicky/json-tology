@@ -33,20 +33,7 @@ The only way to obtain a branded value is through the validation API (`instantia
 | `contentMediaType` | `ContentMediaTypeBrandInterface<T>` | `contentBrands` | `contentMediaType: 'image/png'` brands as `ContentMediaTypeBrandInterface<'image/png'>` |
 | `contentEncoding` | `ContentEncodingBrandInterface<T>` | `contentBrands` | `contentEncoding: 'base64'` brands as `ContentEncodingBrandInterface<'base64'>` |
 
-```ts
-const PasswordSchema = {
-  type: 'string',
-  minLength: 8,
-  maxLength: 128,
-  pattern: '^(?=.*[A-Z])(?=.*[0-9])',
-} as const;
-
-type Password = InferType<typeof PasswordSchema>;
-// string & MinLengthBrandInterface<8> & MaxLengthBrandInterface<128> & PatternBrandInterface<'^(?=.*[A-Z])(?=.*[0-9])'>
-
-const raw: string = 'hello';
-const pw: Password = raw;  // compile error  - must go through validation
-```
+<<< ../../examples/docs/constraint-brands/03-password-constraints.ts
 
 ### Number constraints <Badge type="warning" text="Compile-time + Runtime" />
 
@@ -59,27 +46,7 @@ const pw: Password = raw;  // compile error  - must go through validation
 | `exclusiveMaximum` | `ExclusiveMaximumBrandInterface<N>` | `numericBrands` | `exclusiveMaximum: 100` brands as `ExclusiveMaximumBrandInterface<100>` |
 | `multipleOf` | `MultipleOfBrandInterface<N>` | `numericBrands` | `multipleOf: 5` brands as `MultipleOfBrandInterface<5>` |
 
-```ts
-const PercentSchema = {
-  type: 'number',
-  minimum: 0,
-  maximum: 100,
-} as const;
-
-const TemperatureSchema = {
-  type: 'number',
-  minimum: -273,
-} as const;
-
-type Percent     = InferType<typeof PercentSchema>;
-type Temperature = InferType<typeof TemperatureSchema>;
-
-// Percent:     number & MinimumBrandInterface<0> & MaximumBrandInterface<100>
-// Temperature: number & MinimumBrandInterface<-273>
-
-// These are incompatible  - different MinimumBrand values
-const temp: Temperature = {} as Percent;  // compile error
-```
+<<< ../../examples/docs/constraint-brands/04-numeric-brands.ts
 
 ### Array constraints <Badge type="warning" text="Compile-time + Runtime" />
 
@@ -92,24 +59,7 @@ const temp: Temperature = {} as Percent;  // compile error
 
 When `contains` is present without `items`, the array element type narrows to the contains schema type.
 
-```ts
-const TagSetSchema = {
-  type: 'array',
-  items: { type: 'string' },
-  uniqueItems: true,
-} as const;
-
-type TagSet = InferType<typeof TagSetSchema>;
-// readonly string[] & UniqueItemsBrandInterface
-
-const NumberArraySchema = {
-  type: 'array',
-  contains: { type: 'number' },
-} as const;
-
-type NumberArray = InferType<typeof NumberArraySchema>;
-// readonly number[] & ContainsBrandInterface<number>
-```
+<<< ../../examples/docs/constraint-brands/05-array-brands.ts
 
 ### Object constraints <Badge type="warning" text="Compile-time + Runtime" />
 
@@ -120,21 +70,7 @@ type NumberArray = InferType<typeof NumberArraySchema>;
 
 When `additionalProperties: false` and properties are declared, excess property keys are flagged as `never` at compile time (requires `objectBrands` enabled):
 
-```ts
-const ClosedSchema = {
-  type: 'object',
-  properties: {
-    name: { type: 'string' },
-    age: { type: 'integer' },
-  },
-  additionalProperties: false,
-} as const;
-
-type Closed = InferType<typeof ClosedSchema>;
-
-const ok: Closed = { name: 'Bastian Balthazar Bux', age: 30 };      // compiles
-const bad: Closed = { name: 'Bob', extra: true };    // compile error  - 'extra' is never
-```
+<<< ../../examples/docs/constraint-brands/06-object-properties-closed.ts
 
 ### Nominal constraints <Badge type="info" text="Compile-time" />
 
@@ -145,26 +81,7 @@ const bad: Closed = { name: 'Bob', extra: true };    // compile error  - 'extra'
 
 Nominal brands make structurally identical schemas produce incompatible types when they have different `$id` values. Use `NominalSchemaType<T>` to access the branded type:
 
-```ts
-import type { NominalSchemaType } from 'json-tology/types';
-
-const UserSchema = {
-  $id: 'https://example.com/User',
-  type: 'object',
-  properties: { name: { type: 'string' } },
-} as const;
-
-const EmployeeSchema = {
-  $id: 'https://example.com/Employee',
-  type: 'object',
-  properties: { name: { type: 'string' } },
-} as const;
-
-type User = NominalSchemaType<typeof UserSchema>;
-type Employee = NominalSchemaType<typeof EmployeeSchema>;
-
-// Structurally identical but nominally distinct  - cannot assign one to the other
-```
+<<< ../../examples/docs/constraint-brands/07-nominal-schemas.ts
 
 ## Named format brands <Badge type="info" text="Compile-time" />
 
@@ -172,13 +89,7 @@ type Employee = NominalSchemaType<typeof EmployeeSchema>;
 
 The brand-first intersection ordering (`FormatBrandInterface<F> & string`) keeps the named brand visible in IDE hovers instead of being hidden behind `string`.
 
-```ts
-import type { EmailBrandInterface, UuidBrandInterface } from 'json-tology/types';
-
-// Reject plain string — must come from instantiate/validate
-function send(to: EmailBrandInterface): void { ... }
-function track(id: UuidBrandInterface): void { ... }
-```
+<<< ../../examples/docs/constraint-brands/08-named-format-brands.ts
 
 ### Standard format aliases
 
@@ -220,34 +131,13 @@ Brands compose naturally through JSON Schema composition keywords.
 
 Intersection merges brands from all branches:
 
-```ts
-const ValidatedEmail = {
-  allOf: [
-    { type: 'string', format: 'email' },
-    { type: 'string', minLength: 5 },
-  ],
-} as const;
-
-type VEmail = InferType<typeof ValidatedEmail>;
-// string & FormatBrandInterface<'email'> & string & MinLengthBrandInterface<5>
-// simplifies to: string & FormatBrandInterface<'email'> & MinLengthBrandInterface<5>
-```
+<<< ../../examples/docs/constraint-brands/09-allof-composition.ts
 
 ### anyOf / oneOf <Badge type="warning" text="Compile-time + Runtime" />
 
 Union preserves each branch's brands independently:
 
-```ts
-const IdSchema = {
-  oneOf: [
-    { type: 'string', format: 'uuid' },
-    { type: 'number', minimum: 1 },
-  ],
-} as const;
-
-type Id = InferType<typeof IdSchema>;
-// (string & FormatBrandInterface<'uuid'>) | (number & MinimumBrandInterface<1>)
-```
+<<< ../../examples/docs/constraint-brands/10-oneof-union.ts
 
 ## Utility types
 
@@ -255,33 +145,13 @@ type Id = InferType<typeof IdSchema>;
 
 Filter deprecated properties from a schema type:
 
-```ts
-import type { DeprecatedKeysType, NonDeprecatedSchemaType } from 'json-tology/types';
-
-const UserSchema = {
-  type: 'object',
-  properties: {
-    name: { type: 'string' },
-    legacyId: { type: 'string', deprecated: true },
-  },
-  required: ['name'],
-} as const;
-
-type DepKeys = DeprecatedKeysType<typeof UserSchema>;  // 'legacyId'
-type User = NonDeprecatedSchemaType<typeof UserSchema>; // { name: string }  - no legacyId
-```
+<<< ../../examples/docs/constraint-brands/11-deprecated-keys.ts
 
 ### `LooseInputType<T>`
 
 Strips brands to the base primitive. Useful for function parameters that accept pre-validation input:
 
-```ts
-import type { InferType, LooseInputType } from 'json-tology/types';
-
-const EmailSchema = { type: 'string', format: 'email' } as const;
-type Email = InferType<typeof EmailSchema>;  // string & FormatBrandInterface<'email'>
-type Input = LooseInputType<Email>;          // string
-```
+<<< ../../examples/docs/constraint-brands/12-loose-input-type.ts
 
 `LooseInputType` is a standalone utility - it is not applied to library method signatures.
 
@@ -400,10 +270,7 @@ type Email = InferType<typeof EmailSchema>;
 
 ### Before and after: numeric brands
 
-```ts
-const ScoreSchema = { type: 'number', minimum: 0, maximum: 100 } as const;
-type Score = InferType<typeof ScoreSchema>;
-```
+<<< ../../examples/docs/constraint-brands/14-score-numeric.ts
 
 | `numericBrands` | `Score` resolves to | Plain `number` assignable? |
 |---|---|---|
@@ -412,10 +279,7 @@ type Score = InferType<typeof ScoreSchema>;
 
 ### Before and after: string brands
 
-```ts
-const CodeSchema = { type: 'string', minLength: 3, maxLength: 10 } as const;
-type Code = InferType<typeof CodeSchema>;
-```
+<<< ../../examples/docs/constraint-brands/15-code-string-length.ts
 
 | `stringBrands` | `Code` resolves to | Plain `string` assignable? |
 |---|---|---|
@@ -424,10 +288,7 @@ type Code = InferType<typeof CodeSchema>;
 
 ### Before and after: array brands
 
-```ts
-const SetSchema = { type: 'array', items: { type: 'string' }, uniqueItems: true } as const;
-type Set = InferType<typeof SetSchema>;
-```
+<<< ../../examples/docs/constraint-brands/16-set-unique-items.ts
 
 | `arrayBrands` | `Set` resolves to | `readonly string[]` assignable? |
 |---|---|---|

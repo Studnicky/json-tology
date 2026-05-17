@@ -26,14 +26,7 @@ When multiple prefixes share an overlap, `compact` picks the longest match.
 
 `Path.toAccess(jsonPointer)` converts a JSON Pointer into JS access form - the path you would write to read the value out of the object. Useful when surfacing validation errors in UIs that expect access notation.
 
-```ts
-import { Path } from 'json-tology';
-
-Path.toAccess('/items/0/quantity');  // 'items[0].quantity'
-Path.toAccess('/customer/name');     // 'customer.name'
-Path.toAccess('/oddly-shaped-key');  // '["oddly-shaped-key"]'
-Path.toAccess('');                   // ''
-```
+<<< ../../examples/docs/advanced/08-path-json-pointer.ts
 
 Numeric segments become `[N]`; identifier-shaped segments become `.name`; non-identifier segments are quoted with bracket notation.
 
@@ -41,31 +34,13 @@ Numeric segments become `[N]`; identifier-shaped segments become `.name`; non-id
 
 `Resolver.merge(base, override)` returns a fresh object with `override`'s defined keys overwriting `base`. `undefined` keys in `override` do not erase base values - this is the per-call option-merge pattern used throughout json-tology.
 
-```ts
-import { Resolver } from 'json-tology';
-
-const base = { enableDefaults: true, enableValidation: true };
-const merged = Resolver.merge(base, { enableDefaults: false });
-// { enableDefaults: false, enableValidation: true }
-
-Resolver.merge(base, { enableDefaults: undefined });
-// { enableDefaults: true, enableValidation: true }
-```
+<<< ../../examples/docs/advanced/09-resolver-merge.ts
 
 ## `Hash`
 
 `Hash.value(input)` returns a hex FNV-1a hash. Object keys are sorted before serialization, so two objects that differ only in key order produce the same hash.
 
-```ts
-import { Hash } from 'json-tology';
-
-Hash.value({ isbn: '9780140449136', title: 'War and Peace' });
-// 'abc12345' (deterministic, hex)
-
-Hash.value({ title: 'War and Peace', isbn: '9780140449136' }) ===
-  Hash.value({ isbn: '9780140449136', title: 'War and Peace' });
-// true - key order does not matter
-```
+<<< ../../examples/docs/advanced/10-hash-fnv1a.ts
 
 Used internally by `registerAnonymous` to mint synthetic `$id` values from schema content. Use it directly when you need a stable cache key for a structured value.
 
@@ -73,16 +48,7 @@ Used internally by `registerAnonymous` to mint synthetic `$id` values from schem
 
 The `Lift` module exposes interop helpers between RDF/JS quads (from libraries like `n3` or `eyereasoner`) and json-tology's internal quad shape, plus the `liftInstances` function that powers `JsonTology.fromQuads`.
 
-```ts
-import { Lift } from 'json-tology';
-import type { QuadInterface } from 'json-tology/types';
-
-// rdfQuads from an external RDF/JS source (e.g. n3.Parser)
-const internal: QuadInterface[] = rdfQuads.map(q => Lift.fromQuad(q));
-
-// pass to JsonTology.fromQuads
-const books = bookstoreEntities.fromQuads('https://bookstore.example/Book', internal);
-```
+<<< ../../examples/docs/advanced/11-lift-n3-interop.ts
 
 For the typed round-trip use the `JsonTology` facade ([RDF round-trip](/advanced/quads)). Reach for `Lift` only when integrating with an external RDF/JS library directly.
 
@@ -113,88 +79,25 @@ curie.expand('bk:Customer');                        // → 'https://bookstore.ex
 
 Convert JSON Pointer paths from `ValidationErrors` into JS access notation for a form library that uses dot/bracket paths.
 
-```ts
-import { Path } from 'json-tology';
-import { bookstoreEntities, OrderSchema } from './bookstore/index.js';
-
-const errs = bookstoreEntities.validate(OrderSchema.$id, {
-  id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-  customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  placedAt:   '2026-01-15T10:30:00Z',
-  total:      50,
-  items:      [{ bookIsbn: '9780140449136', quantity: 0, unitPrice: 14.99 }],
-});
-
-for (const err of errs) {
-  const accessPath = Path.toAccess(err.path);
-  console.log(accessPath, err.message);
-}
-// 'items[0].quantity' 'must be >= 1'
-```
+<<< ../../examples/docs/advanced/12-path-error-form-ui.ts
 
 ### Example 3: Resolver: merge per-call options without mutating the base
 
 Override a single flag for one call without constructing a full options object each time.
 
-```ts
-import { Resolver } from 'json-tology';
-
-const defaultOpts = { enableDefaults: true, enableValidation: true, enableThrow: false };
-
-// Per-call: turn off defaults for one strict parse
-const strictOpts = Resolver.merge(defaultOpts, { enableDefaults: false });
-// { enableDefaults: false, enableValidation: true, enableThrow: false }
-
-// undefined does not erase base values
-const sameAsDefault = Resolver.merge(defaultOpts, { enableDefaults: undefined });
-// { enableDefaults: true, enableValidation: true, enableThrow: false }
-```
+<<< ../../examples/docs/advanced/13-resolver-per-call-options.ts
 
 ### Example 4: Hash: stable cache key for a schema content fingerprint
 
 Use `Hash.value` to produce a deterministic fingerprint for a schema object. Two structurally identical schemas with different key order produce the same hash.
 
-```ts
-import { Hash } from 'json-tology';
-
-const schemaA = { type: 'object', properties: { isbn: { type: 'string' }, title: { type: 'string' } } };
-const schemaB = { properties: { title: { type: 'string' }, isbn: { type: 'string' } }, type: 'object' };
-
-Hash.value(schemaA) === Hash.value(schemaB); // → true (key order does not matter)
-
-// Use as a cache key
-const cache = new Map<string, unknown>();
-const key = Hash.value(schemaA);
-if (!cache.has(key)) {
-  cache.set(key, computeExpensiveResult(schemaA));
-}
-```
+<<< ../../examples/docs/advanced/14-hash-cache-key.ts
 
 ### Example 5: Lift: integrate an external n3 RDF/JS source
 
 Convert quads produced by the `n3` parser into json-tology's internal quad shape for `fromQuads`.
 
-```ts
-import { Lift } from 'json-tology';
-import { Parser } from 'n3';
-import type { QuadInterface } from 'json-tology/types';
-import { bookstoreEntities } from './bookstore/index.js';
-
-const turtle = `
-  <https://bookstore.example/books/9780140449136>
-    a <https://bookstore.example/Book> ;
-    <https://bookstore.example/isbn> "9780140449136" ;
-    <https://bookstore.example/title> "Die unendliche Geschichte" .
-`;
-
-const parser = new Parser();
-const rdfQuads = parser.parse(turtle);
-const internal: QuadInterface[] = rdfQuads.map(q => Lift.fromQuad(q));
-
-const books = bookstoreEntities.fromQuads('https://bookstore.example/Book', internal);
-// books[0].isbn === '9780140449136'
-// books[0].title === 'Die unendliche Geschichte'
-```
+<<< ../../examples/docs/advanced/11-lift-n3-interop.ts
 
 ## Bad examples: what NOT to do
 

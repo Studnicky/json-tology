@@ -48,27 +48,7 @@ export type DeprecatedKeysType<T>
 
 #### Example 2: Compile-time assertion that a key is deprecated
 
-```ts
-import type { DeprecatedKeysType } from 'json-tology/types';
-
-const BookV1Schema = {
-  $id: 'https://bookstore.example/BookV1',
-  type: 'object',
-  properties: {
-    isbn:     { type: 'string' },
-    title:    { type: 'string' },
-    legacySku: { type: 'string', deprecated: true },
-  },
-  required: ['isbn', 'title'],
-} as const;
-
-type DeprecatedBookKeys = DeprecatedKeysType<typeof BookV1Schema>;
-// 'legacySku'
-
-// Compile-time guard  - narrows to never if the key is not deprecated:
-const _check: DeprecatedBookKeys = 'legacySku'; // OK
-// const _bad: DeprecatedBookKeys = 'title';    // compile error
-```
+<<< ../../examples/docs/types/04-deprecated-assertion.ts
 
 ### Bad examples
 
@@ -204,27 +184,7 @@ export type NonDeprecatedSchemaType<T, TRoot = T, TReferences = Record<never, ne
 
 #### Example 1: Schema with a deprecated field
 
-```ts
-import type { InferType, NonDeprecatedSchemaType } from 'json-tology/types';
-
-const BookV1Schema = {
-  $id: 'https://bookstore.example/BookV1',
-  type: 'object',
-  properties: {
-    isbn:      { type: 'string' },
-    title:     { type: 'string' },
-    legacySku: { type: 'string', deprecated: true },
-  },
-  required: ['isbn', 'title'],
-} as const;
-
-type BookV1Full    = InferType<typeof BookV1Schema>;
-// { readonly isbn: string; readonly title: string; readonly legacySku?: string }
-
-type BookV1Current = NonDeprecatedSchemaType<typeof BookV1Schema>;
-// { readonly isbn: string; readonly title: string }
-//  - legacySku is gone
-```
+<<< ../../examples/docs/types/05-nondeprecated-basic.ts
 
 #### Example 2: Using as a return type for a view layer function
 
@@ -540,29 +500,7 @@ type Currency = EnumValuesType<typeof CurrencySchema>;
 
 #### Example 2: With `ExhaustiveType` for an exhaustive switch
 
-```ts
-import type { EnumValuesType, ExhaustiveType } from 'json-tology/types';
-
-const CurrencySchema = {
-  type: 'string',
-  enum: ['USD', 'EUR', 'GBP'],
-} as const;
-
-type Currency = EnumValuesType<typeof CurrencySchema>;
-
-function currencySymbol(c: Currency): string {
-  switch (c) {
-    case 'USD': return '$';
-    case 'EUR': return '€';
-    case 'GBP': return '£';
-    default: {
-      const _: ExhaustiveType<typeof c> = c;
-      return _;
-      // Adding 'JPY' to the enum without adding a case here becomes a compile error
-    }
-  }
-}
-```
+<<< ../../examples/docs/types/06-enum-exhaustive.ts
 
 #### Example 3: As a function parameter type
 

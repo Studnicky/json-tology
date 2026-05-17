@@ -26,28 +26,11 @@ Returns `JsonTology<merged TMap>` so the new schema's static type is visible to 
 
 #### Example 2: Post-construction registration
 
-```ts
-const jt = JsonTology.create({ baseIRI: 'https://bookstore.example' });
-jt.set(AddressSchema).set(CustomerSchema);
-
-// Or register an array:
-jt.set([AddressSchema, CustomerSchema] as const);
-```
+<<< ../../examples/docs/registry/02-register-post-construction.ts
 
 #### Example 3: Register a composed schema immediately
 
-```ts
-import { Compose } from 'json-tology';
-import { bookstoreEntities, BookSchema } from './bookstore/index.js';
-
-const BookSummarySchema = Compose.pick(
-  BookSchema,
-  ['isbn', 'title', 'price'] as const,
-  'https://bookstore.example/BookSummary',
-);
-bookstoreEntities.set(BookSummarySchema);
-console.log(bookstoreEntities.registry.has('https://bookstore.example/BookSummary')); // true
-```
+<<< ../../examples/docs/registry/03-composed-register.ts
 
 ### Comparison
 
@@ -148,67 +131,25 @@ jt.validate(syntheticId, { couponCode: 'SAVE10', discount: 0.1 });
 
 `O(1)` lookup. Returns `true` if a schema with the given `$id` is registered.
 
-```ts
-jt.registry.has('https://bookstore.example/Customer');     // true
-jt.registry.has('https://bookstore.example/NonExistent');  // false
-
-// Guard pattern:
-function validateIfPresent(schemaId: string, data: unknown): ValidationErrors {
-  if (!jt.registry.has(schemaId)) {
-    return new ValidationErrors([{
-      path: '', keyword: 'unknown',
-      message: `Schema '${schemaId}' not registered`,
-      params: {}
-    }]);
-  }
-  return jt.validate(schemaId, data);
-}
-```
+<<< ../../examples/docs/registry/04-registry-has.ts
 
 ### `jt.registry.get(iri)` {#registry-get}
 
 Retrieves the original schema object by `$id`. Returns `Record<string, unknown> | undefined`.
 
-```ts
-const book = jt.registry.get('https://bookstore.example/Book');
-console.log(book?.properties?.['price']); // { exclusiveMinimum: 0, type: 'number' }
-
-if (book) {
-  const BookSummary = Compose.pick(
-    book as typeof BookSchema,
-    ['isbn', 'title', 'price'] as const,
-    '...'
-  );
-}
-```
+<<< ../../examples/docs/registry/05-registry-get.ts
 
 ### `jt.registry.keys()` / `values()` / `entries()` {#registry-iteration}
 
 Standard Map iterators. `keys()` yields `$id` strings, `values()` yields schema objects, `entries()` yields `[iri, schema]` pairs.
 
-```ts
-const ids = [...jt.registry.keys()];
-const bookstoreSchemas = ids.filter(id => id.startsWith('https://bookstore.example/'));
-
-for (const schema of jt.registry.values()) { /* ... */ }
-for (const [iri, schema] of jt.registry) { /* ... */ }   // direct for-of works too
-
-jt.registry.forEach((schema, iri) => { /* ... */ });
-jt.registry.size;   // number of registered schemas
-```
+<<< ../../examples/docs/registry/06-registry-iteration.ts
 
 ### `jt.registry.set(schema, iri?)` {#registry-set-method}
 
 Map-style write. Schema is always the first argument; key is derived from `schema.$id`. Pass an explicit `iri` only for non-canonical aliasing — passing one that disagrees with `schema.$id` throws `SchemaError('SCHEMA_INVALID_INPUT')`. Bulk writes accept an array of schemas or `[schema, iri]` tuples. Replaces silently on collision per `Map.set`. Returns the registry for chaining.
 
-```ts
-jt.registry
-  .set(UserSchema)
-  .set(AddressSchema);
-
-jt.registry.set([UserSchema, AddressSchema]);
-jt.registry.set([[UserSchema, 'urn:alias:user'], AddressSchema]);
-```
+<<< ../../examples/docs/registry/07-registry-set-method.ts
 
 `jt.set(schema)` is the type-accumulating wrapper that calls `registry.set` internally and widens the TypeScript type map. Use `jt.set` when you want the new schema's shape reflected in subsequent `validate`/`instantiate`/`is` calls; use `jt.registry.set` for hot-reload or test-fixture replacement where the static type doesn't need to follow.
 

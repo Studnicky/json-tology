@@ -26,20 +26,7 @@ The bookstore schemas defined in the [Bookstore Domain](/bookstore-domain) are u
 
 #### Example 2: Merge TBox with separately sourced ABox
 
-```ts
-import { bookstoreEntities, CustomerSchema } from './bookstore/schemas.js';
-
-const tbox  = bookstoreEntities.toTbox();
-const abox  = bookstoreEntities.toQuads(CustomerSchema, customerData); // QuadInterface[]
-
-const merged = {
-  '@context': tbox.context(),
-  '@graph': [
-    ...tbox.raw(),  // OWL class/property declarations
-    ...abox,        // ABox individual assertions (already a QuadInterface[])
-  ],
-};
-```
+<<< ../../examples/docs/advanced/08-merge-tbox-abox.ts
 
 ### Bad examples
 
@@ -87,32 +74,11 @@ const cached = jt.ontology();
 
 #### Example 1: Generate SHACL shapes JSON-LD from bookstore schemas
 
-```ts
-import { bookstoreEntities } from './bookstore/schemas.js';
-
-const shaclBuilder = bookstoreEntities.toShacl();
-
-// SHACL shapes JSON-LD object (includes sh: prefix in context)
-const shacl = shaclBuilder.shaclObject();
-
-// Prefix map
-const ctx = shaclBuilder.context();
-```
+<<< ../../examples/docs/advanced/09-toshacl-shapes.ts
 
 #### Example 2: SHACL-only export for a validation pipeline
 
-```ts
-import { JsonTology } from 'json-tology';
-import { BookSchema, CustomerSchema } from './bookstore/schemas.js';
-
-const localJt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [BookSchema, CustomerSchema] as const,
-});
-
-// Ship SHACL to a downstream SHACL processor  - no OWL leakage
-const shapes = localJt.toShacl().shaclObject();
-```
+<<< ../../examples/docs/advanced/10-toshacl-validation-pipeline.ts
 
 ### Bad examples
 
@@ -158,42 +124,13 @@ const shacl = builder.shaclObject();
 
 #### Example 1: Generate OWL JSON-LD for all bookstore schemas
 
-```ts
-import { bookstoreEntities } from './bookstore/index.js';
-
-const builder = bookstoreEntities.ontology();
-
-// OWL JSON-LD string
-console.log(builder.jsonLd());
-
-// OWL JSON-LD as a JS object
-const owl = builder.jsonLdObject();
-
-// SHACL shapes JSON-LD
-const shacl = builder.shaclObject();
-
-// Prefix map
-const ctx = builder.context();
-console.log(ctx.owl); // 'http://www.w3.org/2002/07/owl#'
-```
+<<< ../../examples/docs/advanced/11-ontology-both-tbox-shacl.ts
 
 #### Example 2: OWL and SHACL from cross-referenced schemas
 
 `CustomerSchema` has `addresses: [Address]` via `$ref`. The ontology output produces `rdfs:domain` and `rdfs:range` relations between the Customer class and the Address class.
 
-```ts
-import { JsonTology } from 'json-tology';
-import { AddressSchema, CustomerSchema } from './bookstore/index.js';
-
-const localJt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  prefixes: { bs: 'https://bookstore.example/' },
-  schemas:  [AddressSchema, CustomerSchema] as const,
-});
-
-const owl    = localJt.ontology().jsonLdObject();
-const shacl  = localJt.ontology().shaclObject();
-```
+<<< ../../examples/docs/advanced/12-ontology-cross-refs.ts
 
 ---
 
@@ -207,43 +144,11 @@ const shacl  = localJt.ontology().shaclObject();
 
 #### Example 1: Project a customer to ABox quads
 
-```ts
-import { JsonTology } from 'json-tology';
-import { AddressSchema, CustomerSchema } from './bookstore/index.js';
-
-const localJt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas:  [AddressSchema, CustomerSchema] as const,
-});
-
-// toQuads returns QuadInterface[] — use the array directly
-const abox = localJt.toQuads(CustomerSchema, {
-  id:        'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  email:     'bastian.bux@bookstore.example',
-  name:      'Bastian Balthazar Bux',
-  addresses: [{ street: 'Reichenbachstraße 14', city: 'München', postalCode: '80538' }],
-});
-
-// abox is QuadInterface[]  - iterate, filter, or pass to OntologyBuilder
-console.log(abox.length); // number of projected quads
-console.log(abox[0]);     // first QuadInterface node
-```
+<<< ../../examples/docs/advanced/13-toquads-customer.ts
 
 #### Example 2: Combine TBox and ABox
 
-```ts
-const tbox = localJt.ontology();                           // TBox — OntologyBuilder
-const abox = localJt.toQuads(CustomerSchema, customerData); // ABox — QuadInterface[]
-
-// Merge for a complete JSON-LD document:
-const merged = {
-  '@context': tbox.context(),
-  '@graph': [
-    ...tbox.raw(),  // OWL/SHACL quads from the OntologyBuilder
-    ...abox,        // ABox individual quads (QuadInterface[] — spread directly)
-  ],
-};
-```
+<<< ../../examples/docs/advanced/14-toquads-combine-tbox-abox.ts
 
 ---
 
@@ -257,15 +162,7 @@ const merged = {
 
 #### Example 1: Round-trip a customer through quads
 
-```ts
-// Project to quads — toQuads returns QuadInterface[] directly
-const abox = localJt.toQuads(CustomerSchema, customerData);
-
-// Lift back to typed objects
-const customers = localJt.fromQuads(CustomerSchema.$id, abox);
-// customers: Customer[]  - each element validated through coerce
-console.log(customers[0].name); // 'Bastian Balthazar Bux'
-```
+<<< ../../examples/docs/advanced/15-fromquads-roundtrip.ts
 
 ---
 
@@ -279,67 +176,11 @@ See [`jt.toSchema`](/serialization/toSchema) in the Serialization guide - it rec
 
 For advanced use cases without the `JsonTology` facade, serializers are importable from `json-tology/ontology`:
 
-```ts
-import {
-  GraphOntologySerializer,
-  GraphShaclSerializer,
-  GraphSchemaSerializer,
-  OntologyBuilder,
-} from 'json-tology/ontology';
-import { SchemaRegistry } from 'json-tology/schema';
-
-const registry = new SchemaRegistry();
-registry.set(BookSchema);
-
-const graphs = registry.listGraphs();
-
-// OWL
-const owlSerializer = new GraphOntologySerializer();
-const owlNodes = owlSerializer.serialize(graphs);
-
-const builder = new OntologyBuilder({
-  baseIRI:      'https://bookstore.example',
-  graphSources: [owlNodes],
-  prefixes:     { bs: 'https://bookstore.example/' },
-});
-console.log(builder.jsonLd());
-
-// SHACL
-const shaclSerializer = new GraphShaclSerializer();
-const shaclNodes = shaclSerializer.serialize(graphs);
-builder.addShacl(shaclNodes);
-console.log(JSON.stringify(builder.shaclObject(), null, 2));
-
-// Reconstruct schema from a single graph
-const schemaSerializer = new GraphSchemaSerializer();
-const graph = registry.graph('https://bookstore.example/Book');
-if (graph) {
-  const schema = schemaSerializer.serialize(graph);
-  console.log(schema);
-}
-```
+<<< ../../examples/docs/advanced/16-direct-serializer-access.ts
 
 ## Custom prefixes and vocabulary plugins
 
-```ts
-import type { VocabularyPluginInterface } from 'json-tology/interfaces';
-
-const myVocabulary: VocabularyPluginInterface = {
-  prefixes: { myns: 'https://myorg.io/ns#' },
-  extractRelations(node, semantics, graph) {
-    return [];
-  },
-  project(relation, emit) {
-    // Emit custom quads for non-core predicates
-  },
-};
-
-const jt = JsonTology.create({
-  baseIRI:     'https://bookstore.example',
-  schemas:     [BookSchema] as const,
-  vocabularies: [myVocabulary],
-});
-```
+<<< ../../examples/docs/advanced/17-custom-vocabulary-plugin.ts
 
 ## Querying the TBox {#querying-the-tbox}
 
@@ -365,19 +206,7 @@ SELECT ?cls WHERE {
 
 ### Usage with N3.js {#usage-with-n3js}
 
-```ts
-import { Store, Parser } from 'n3';
-
-const store = new Store();
-const parser = new Parser({ format: 'application/ld+json' });
-
-parser.parse(bookstoreEntities.toTbox().jsonLd(), (error, quad) => {
-  if (quad) store.addQuad(quad);
-});
-
-// Query: all subclass relations
-const subclasses = store.getQuads(null, 'http://www.w3.org/2000/01/rdf-schema#subClassOf', null, null);
-```
+<<< ../../examples/docs/advanced/18-n3-parser-integration.ts
 
 ## Related
 

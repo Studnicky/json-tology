@@ -10,92 +10,33 @@
 
 ### Example 1: Validate a single field on blur
 
-```ts
-import { bookstoreEntities, BookSchema } from './bookstore/index.js';
-
-// Resolve the isbn sub-schema once
-const isbnSchema = bookstoreEntities.subschemaAt(BookSchema.$id, '/properties/isbn');
-
-// isbn must match ^\d{13}$
-const errors = bookstoreEntities.validate(isbnSchema, '978014044913');   // 12 digits  - requires 13
-console.log(errors.items.map(e => e.message));
-// ['must match pattern "^\\d{13}$"']
-```
+<<< ../../examples/docs/validation/09-subschema-field-blur.ts
 
 ### Example 2: Instantiate an array item sub-schema
 
-```ts
-import { bookstoreEntities, OrderSchema } from './bookstore/index.js';
-
-const lineItemSchema = bookstoreEntities.subschemaAt(OrderSchema.$id, '/properties/items/items');
-
-const line = bookstoreEntities.instantiate(lineItemSchema, {
-  bookId: 'b-1',
-  quantity: 2
-});
-// line is a typed OrderLine with defaults applied
-```
+<<< ../../examples/docs/validation/10-subschema-array-item.ts
 
 ### Example 3: Compose subschemaAt with is()
 
-```ts
-const priceSub = bookstoreEntities.subschemaAt(BookSchema.$id, '/properties/price');
-
-if (!entities.is(priceSub, candidatePrice)) {
-  console.error('price is not a valid Amount');
-}
-```
+<<< ../../examples/docs/validation/11-subschema-is-guard.ts
 
 ### Example 4: Static variant (no instance required)
 
-```ts
-import { JsonTology } from 'json-tology';
-
-const sub = JsonTology.subschemaAt(OrderSchema, '/properties/customerId');
-// sub.$id === 'https://example.io/Order#/properties/customerId'
-```
+<<< ../../examples/docs/validation/12-subschema-static.ts
 
 ## Bad examples: what NOT to do
 
 ### Anti-pattern 1: Passing the raw property value instead of the JSON Pointer
 
-```ts
-import { bookstoreEntities, BookSchema } from './bookstore/index.js';
-
-// ✗ Don't do this — passing a property name string instead of a JSON Pointer
-const wrong = bookstoreEntities.subschemaAt(BookSchema.$id, 'isbn');
-// → resolves to undefined; the pointer must start with '/'
-
-// ✓ Do this — JSON Pointer with leading slash per RFC 6901
-const isbnSchema = bookstoreEntities.subschemaAt(BookSchema.$id, '/properties/isbn');
-```
+<<< ../../examples/docs/validation/13-antipattern-wrong-pointer.ts
 
 ### Anti-pattern 2: Calling subschemaAt repeatedly inside a loop
 
-```ts
-// ✗ Don't do this — re-resolves and re-registers the sub-schema on every iteration
-for (const rawIsbn of candidateIsbns) {
-  const sub = bookstoreEntities.subschemaAt(BookSchema.$id, '/properties/isbn');
-  bookstoreEntities.validate(sub, rawIsbn);
-}
-
-// ✓ Do this — resolve once, reuse across calls
-const isbnSchema = bookstoreEntities.subschemaAt(BookSchema.$id, '/properties/isbn');
-for (const rawIsbn of candidateIsbns) {
-  bookstoreEntities.validate(isbnSchema, rawIsbn);
-}
-```
+<<< ../../examples/docs/validation/14-antipattern-loop.ts
 
 ### Anti-pattern 3: Using subschemaAt when you want the full object validated
 
-```ts
-// ✗ Don't do this — sub-schema validation ignores sibling constraints
-const isbnSub = bookstoreEntities.subschemaAt(BookSchema.$id, '/properties/isbn');
-entities.validate(isbnSub, rawBook);  // misses required, price, authors…
-
-// ✓ Do this — validate the full object against its registered schema
-entities.validate(BookSchema.$id, rawBook);
-```
+<<< ../../examples/docs/validation/15-antipattern-full-object.ts
 
 ## Comparison
 
@@ -184,10 +125,7 @@ result = ta.validate_python('978014044913')
 
 The returned object has a synthesized `$id` of the form `<parent.$id>#<pointer>`:
 
-```ts
-const sub = bookstoreEntities.subschemaAt(OrderSchema.$id, '/properties/items');
-// sub.$id === 'https://example.io/Order#/properties/items'
-```
+<<< ../../examples/docs/validation/16-subschema-return-type.ts
 
 The schema is automatically registered in the calling registry. Subsequent calls to `validate`, `is`, `instantiate`, or `materialize` with the same synthesized ID will resolve immediately without re-walking the graph.
 

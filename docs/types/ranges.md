@@ -34,7 +34,7 @@ export type IntegerRangeType<TMin extends number, TMax extends number>
 
 #### Example 1: Star rating range
 
-<<< ../../examples/docs/types/03-range-types.ts
+<<< ../../examples/docs/types/07-integer-range-rating.ts
 
 #### Example 2: Deriving automatically via `InferType`
 
@@ -190,15 +190,7 @@ export type MultipleOfRangeType<
 
 #### Example 1: Even numbers in a range
 
-```ts
-import type { MultipleOfRangeType } from 'json-tology/types';
-
-type EvenQuantity = MultipleOfRangeType<0, 10, 2>;
-// 0 | 2 | 4 | 6 | 8 | 10
-
-const q: EvenQuantity = 6;   // OK
-// const bad: EvenQuantity = 3; // compile error  - 3 is not a multiple of 2
-```
+<<< ../../examples/docs/types/08-multiple-of-range.ts
 
 #### Example 2: Deriving automatically via `InferType`
 

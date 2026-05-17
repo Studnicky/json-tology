@@ -20,15 +20,7 @@ Symmetric and lossless: `encode(decode(x)) === x` for any RFC 3339 string.
 
 Wire format: `'2026-01-15'`. The bare date format does not carry a time zone, so the decoder pins it to UTC midnight; the encoder strips the time component on the way out.
 
-```ts
-const BirthdaySchema = Transform.create(
-  { $id: 'urn:bookstore:Birthday', type: 'string', format: 'date' } as const,
-  {
-    decode: (s: string) => new Date(`${s}T00:00:00Z`),
-    encode: (d: Date)   => d.toISOString().slice(0, 10)
-  }
-);
-```
+<<< ../../examples/docs/usage-examples/04-transforms-date-only.ts
 
 ### Unix epoch milliseconds to `Date`
 
