@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Library
+
+- Added `JsonSchemaDocumentType` — a structural Draft-2020-12 schema document type (ported from nocturne and extended with json-tology's OWL property characteristics, class axioms, and `jt:*` directives). Replaces `JSONSchema7Definition` from the upstream `json-schema` package as the constraint for every public-API generic (`jt.materialize<TSchema>`, `jt.instantiate<TSchema>`, `Transform.create<TSchema>`, etc.). Schemas declaring `$schema: 'https://json-schema.org/draft/2020-12/schema'` or using post-Draft-07 keywords (`prefixItems`, `unevaluatedProperties`, `dependentSchemas` as a keyword) now satisfy the constraint.
+- Added `jt.addTransform<TSchema, TOut>(schema, fns)` — registry-aware variant of static `Transform.create`. Decode/encode lambda parameter types resolve through `InferSchemaType<TSchema, TSchema, TMap>` so cross-registry `$ref`s (e.g. `{ $ref: 'urn:bookstore:Customer' }` inside a wrapping schema) infer to the full referenced entity rather than `unknown`.
+- Added `Compose.subClassOf` / `Compose.extend` allOf-parent property propagation on `instantiate`. The compiler's `allowedKeysForStrip` now unions own properties with allOf-inherited keys (recursively, resolving cross-graph `$ref`), so coercion no longer silently drops parent fields from a subclass schema. The strict `additionalProperties: false` validation error continues to use the own-only set per JSON Schema semantics. The materializer walks the same effective-property set so `fillImplicitProperties` populates parent slots that were missing from the input.
+
+### Docs / examples
+
+- The canonical bookstore at `examples/docs/bookstore/` is now the single source of truth for every docs page, example file, and benchmark scenario.
+  - Dropped `SoloAuthoredBookSchema` and `AnthologyBookSchema` as registered schemas — single-authorship is a cross-field rule on `Book.authors`, not a distinct OWL class. The new `signedFirstEditionIsSoloAuthored` invariant on `SignedFirstEditionSchema` enforces it through `ValidationErrors` with `keyword: 'jt:invariant'`.
+  - Added `PrintStatusSchema` primitive (`'inPrint' | 'outOfPrint' | 'limitedRun'`). `Book.printStatus` is required. `InPrintBookSchema` / `OutOfPrintBookSchema` discriminate on publisher state (`printStatus`) rather than inventory state (`inStock`), so a book can be in stock and out of print at the same time.
+  - `SignedFirstEditionSchema` simplifies to single-parent `subClassOf(RareBook)` plus the registered invariant.
+  - Concrete instances live in `examples/docs/bookstore/aboxFixtures.ts`: customer Bastian Balthazar Bux orders a rare 1979 Thienemann first edition of Michael Ende's *Die unendliche Geschichte* (ISBN 9783522128001). Two `owl:sameAs` pairs (customer-migration + cross-catalog book) thread through the docs.
+  - Every example file imports `bookstoreEntities` directly; no mini-registries; derived schemas (`Compose.pick`/`omit`/`extend`/`partial`/`required`/`intersection`/`discriminatedUnion`/`equivalent`) register via `bookstoreEntities.set()`. Every fixture name is a real author (Michael Ende, Cornelia Funke, Walter Moers, Hermann Hesse, Patrick Süskind) or a Neverending Story character (Bastian Balthazar Bux, Carl Conrad Coreander). All ISBNs are real. Pronouns referring to fixture personas are gender-neutral.
+  - New example directories: `examples/docs/types/`, `examples/docs/schemas/`, `examples/docs/usage-examples/`, `examples/docs/getting-started/`, `examples/docs/picking-a-method/`, `examples/docs/argument-conventions/`. Existing scopes filled in for composition, computed, invariants, transforms, value, serialization, validation, materialization, registry.
+  - New tests: `test/smoke/bookstoreFixtures.test.ts` validates every fixture against its schema and proves the invariant fires; `test/types/bookstore-axioms.test.ts` pins every OWL axiom at compile time via `AssertEqualType`.
+- Phase 3 docs conversion: 18 docs pages (composition, registry, serialization, transforms, validation, value, errors) replace canonical inline `\`\`\`ts` demos with VitePress `<<<` includes pointing at the runnable example file. Docs and runtime stay in lockstep.
+- Documented the example-suite contract as invariant #13 in `ARCHITECTURE.md`.
+
 ## [0.8.0] - 2026-05-15
 
 ### Added
