@@ -32,14 +32,14 @@ import { bookstoreEntities, CustomerSchema } from './bookstore/index.js';
 
 const before = bookstoreEntities.instantiate(CustomerSchema.$id, {
   id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  email: 'alice@bookstore.example',
-  name:  'Alice Chen',
+  email: 'bastian.bux@bookstore.example',
+  name:  'Bastian Balthazar Bux',
 });
 
 const after = bookstoreEntities.instantiate(CustomerSchema.$id, {
   id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  email: 'alice.chen@bookstore.example', // changed
-  name:  'Alice Chen',
+  email: 'bastian.balthazar.bux@bookstore.example', // changed
+  name:  'Bastian Balthazar Bux',
 });
 
 const changes = Value.diff(before, after);
@@ -47,7 +47,7 @@ const changes = Value.diff(before, after);
 console.log(changes.isEmpty);   // false
 console.log(changes.length);    // 1
 console.log(changes.operations);
-// [{ op: 'set', path: '/email', value: 'alice.chen@bookstore.example' }]
+// [{ op: 'set', path: '/email', value: 'bastian.balthazar.bux@bookstore.example' }]
 ```
 
 #### Example 2: Track order line additions
@@ -58,14 +58,14 @@ const beforeOrder = jt.instantiate(OrderSchema.$id, {
   customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   placedAt:   '2026-01-15T10:30:00Z',
   total:      14.99,
-  items:      [{ bookIsbn: '9780140449136', quantity: 1, unitPrice: 14.99 }],
+  items:      [{ bookIsbn: '9783522128001', quantity: 1, unitPrice: 14.99 }],
 });
 
 const afterOrder = jt.instantiate(OrderSchema.$id, {
   ...beforeOrder,
   items: [
     ...beforeOrder.items,
-    { bookIsbn: '9780062316110', quantity: 1, unitPrice: 9.99 },
+    { bookIsbn: '9783522115056', quantity: 1, unitPrice: 9.99 },
   ],
   total: 24.98,
 });
@@ -199,9 +199,9 @@ for (const op of changes.operations) {
 import { Operations } from 'json-tology/value';
 
 const book = jt.instantiate(BookSchema.$id, {
-  isbn:    '9780140449136',
-  title:   'Crime and Punishment',
-  authors: ['Fyodor Dostoevsky'],
+  isbn:    '9783522128001',
+  title:   'Die unendliche Geschichte',
+  authors: ['Michael Ende'],
   price:   14.99,
 });
 

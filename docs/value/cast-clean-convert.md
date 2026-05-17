@@ -27,9 +27,9 @@ const jt = JsonTology.create({
 });
 
 const book = jt.value.cast(BookSchema.$id, {
-  isbn:    '9780140449136',
-  title:   'Crime and Punishment',
-  authors: ['Fyodor Dostoevsky'],
+  isbn:    '9783522128001',
+  title:   'Die unendliche Geschichte',
+  authors: ['Michael Ende'],
   price:   '14.99',   // string → coerced to number
   inStock: 'true',    // string → coerced to boolean
 });
@@ -42,10 +42,10 @@ const book = jt.value.cast(BookSchema.$id, {
 // req.query.rating is '4' (string)
 const params = jt.value.cast(ReviewSchema.$id, {
   id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-  bookIsbn:   '9780140449136',
+  bookIsbn:   '9783522128001',
   customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   rating:     req.query.rating,  // '4' → 4
-  body:       'Absolutely gripping from start to finish.',
+  body:       'A profound meditation on imagination and reality.',
   postedAt:   new Date().toISOString(),
 });
 console.log(params.rating); // 4 (number)
@@ -153,12 +153,12 @@ book = Book.model_validate(raw_data)  # '14.99' → 14.99
 
 ```ts
 const apiResponse = {
-  isbn:         '9780140449136',
-  title:        'Crime and Punishment',
-  authors:      ['Fyodor Dostoevsky'],
+  isbn:         '9783522128001',
+  title:        'Die unendliche Geschichte',
+  authors:      ['Michael Ende'],
   price:        14.99,
   _internal_id: 'int-001',       // not in BookSchema
-  _cache_key:   'k:9780140449136', // not in BookSchema
+  _cache_key:   'k:9783522128001', // not in BookSchema
 };
 
 const cleaned = jt.value.clean(BookSchema.$id, apiResponse);
@@ -253,7 +253,7 @@ cleaned = Book.model_validate(data)
 ```ts
 const converted = jt.value.convert(ReviewSchema.$id, {
   id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-  bookIsbn:   '9780140449136',
+  bookIsbn:   '9783522128001',
   customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   rating:     '5',    // coerced to number 5
   body:       'One of the greatest novels ever written.',

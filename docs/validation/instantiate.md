@@ -21,8 +21,8 @@ import { bookstoreEntities, CustomerSchema } from './bookstore/index.js';
 
 const customer = bookstoreEntities.instantiate(CustomerSchema.$id, {
   id:            'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  email:         'alice@bookstore.example',
-  name:          'Alice Chen',
+  email:         'bastian.bux@bookstore.example',
+  name:          'Bastian Balthazar Bux',
   internalNotes: 'vip',   // ← stripped  - not in schema
   // addresses omitted  - default [] applied
 });
@@ -68,7 +68,7 @@ const order = bookstoreEntities.instantiate(OrderSchema.$id, {
   placedAt:        '2026-01-15T10:30:00Z',
   total:           27.98,
   items: [
-    { bookIsbn: '9780140449136', quantity: 2, unitPrice: 12.99, extra: 'gone' },
+    { bookIsbn: '9783522128001', quantity: 2, unitPrice: 12.99, extra: 'gone' },
   ],
   unexpectedField: 'stripped',
 });

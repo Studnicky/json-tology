@@ -30,9 +30,9 @@
 import { bookstoreEntities, BookSchema } from './bookstore/index.js';
 
 const book = bookstoreEntities.instantiate(BookSchema.$id, {
-  isbn:    '9780140449136',
-  title:   'Crime and Punishment',
-  authors: ['Fyodor Dostoevsky'],
+  isbn:    '9783522128001',
+  title:   'Die unendliche Geschichte',
+  authors: ['Michael Ende'],
   price:   14.99,
   // currency defaults to 'USD', inStock defaults to true
 });
@@ -54,7 +54,7 @@ const compact = jt.dump(BookSchema.$id, book, { excludeDefaults: true });
 
 ```ts
 const listing = jt.dump(BookSchema.$id, book, { include: ['isbn', 'title', 'price'] });
-// { isbn: '9780140449136', title: 'Crime and Punishment', price: 14.99 }
+// { isbn: '9783522128001', title: 'Die unendliche Geschichte', price: 14.99 }
 ```
 
 #### Example 4: Transform integration - `encode` applied automatically
@@ -83,7 +83,7 @@ const wire = jt.dump(PlacedAtSchema.$id, date as Date);
 
 ```ts
 // ⊥ Don't do this  - dump expects an instantiated domain value, not raw input
-const raw = { isbn: '9780140449136', title: 'Crime...', authors: ['Dostoevsky'], price: '14.99' };
+const raw = { isbn: '9783522128001', title: 'Die unendliche...', authors: ['Michael Ende'], price: '14.99' };
 const wire = jt.dump(BookSchema.$id, raw as Book);
 // price is still '14.99' string  - not coerced; dump just applies encode, not type coercion
 
@@ -182,12 +182,12 @@ book.model_dump(exclude_none=True)
 ```ts
 const customer = jt.instantiate(CustomerSchema.$id, {
   id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  email: 'alice@bookstore.example',
-  name:  'Alice Chen',
+  email: 'bastian.bux@bookstore.example',
+  name:  'Bastian Balthazar Bux',
 });
 
 const json = jt.dumpJson(CustomerSchema.$id, customer);
-// '{"id":"...","email":"alice@bookstore.example","name":"Alice Chen","addresses":[]}'
+// '{"id":"...","email":"bastian.bux@bookstore.example","name":"Bastian Balthazar Bux","addresses":[]}'
 
 // In an Express handler:
 // res.type('application/json').send(json);

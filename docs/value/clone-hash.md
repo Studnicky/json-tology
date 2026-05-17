@@ -25,12 +25,12 @@ const order = bookstoreEntities.instantiate(OrderSchema.$id, {
   customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   placedAt:   '2026-01-15T10:30:00Z',
   total:      14.99,
-  items:      [{ bookIsbn: '9780140449136', quantity: 1, unitPrice: 14.99 }],
+  items:      [{ bookIsbn: '9783522128001', quantity: 1, unitPrice: 14.99 }],
 });
 
 const copy = Operations.clone(order);
 (copy.items as Array<{ bookIsbn: string; quantity: number; unitPrice: number }>).push(
-  { bookIsbn: '9780062316110', quantity: 1, unitPrice: 9.99 }
+  { bookIsbn: '9783522115056', quantity: 1, unitPrice: 9.99 }
 );
 
 console.log(order.items.length); // 1  - original unchanged
@@ -42,9 +42,9 @@ console.log(copy.items.length);  // 2
 ```ts
 const customer = jt.instantiate(CustomerSchema.$id, {
   id:        'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  email:     'alice@bookstore.example',
-  name:      'Alice Chen',
-  addresses: [{ street: '12 Elm Lane', city: 'Bookham', postalCode: '94107' }],
+  email:     'bastian.bux@bookstore.example',
+  name:      'Bastian Balthazar Bux',
+  addresses: [{ street: 'Reichenbachstraße 14', city: 'München', postalCode: '80538' }],
 });
 
 const copy = Operations.clone(customer);
@@ -129,17 +129,17 @@ copy = order.model_copy(deep=True)
 import { Hash } from 'json-tology/value';
 
 const book = jt.instantiate(BookSchema.$id, {
-  isbn:    '9780140449136',
-  title:   'Crime and Punishment',
-  authors: ['Fyodor Dostoevsky'],
+  isbn:    '9783522128001',
+  title:   'Die unendliche Geschichte',
+  authors: ['Michael Ende'],
   price:   14.99,
 });
 
 const etag = Hash.value(book);
 // deterministic hex string  - same value each time, key order independent
 
-const h1 = Hash.value({ isbn: '9780140449136', title: 'Crime and Punishment' });
-const h2 = Hash.value({ title: 'Crime and Punishment', isbn: '9780140449136' });
+const h1 = Hash.value({ isbn: '9783522128001', title: 'Die unendliche Geschichte' });
+const h2 = Hash.value({ title: 'Die unendliche Geschichte', isbn: '9783522128001' });
 console.log(h1 === h2); // true  - key order doesn't matter
 ```
 

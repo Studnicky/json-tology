@@ -18,9 +18,9 @@
 import { bookstoreEntities, BookSchema } from './bookstore/index.js';
 
 const book = bookstoreEntities.materialize(BookSchema, {
-  isbn:    '9780140449136',
-  title:   'Crime and Punishment',
-  authors: ['Fyodor Dostoevsky'],
+  isbn:    '9783522128001',
+  title:   'Die unendliche Geschichte',
+  authors: ['Michael Ende'],
   price:   14.99,
 });
 
@@ -35,8 +35,8 @@ import { bookstoreEntities, CustomerSchema } from './bookstore/index.js';
 
 const customer = bookstoreEntities.materialize(CustomerSchema, {
   id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  email: 'alice@bookstore.example',
-  name:  'Alice Chen',
+  email: 'bastian.bux@bookstore.example',
+  name:  'Bastian Balthazar Bux',
 });
 
 console.log(customer.addresses); // []  ← default applied
@@ -46,7 +46,7 @@ console.log(customer.addresses); // []  ← default applied
 
 ```ts
 // materialize  - fills declared defaults, partial is trusted
-const m = jt.materialize(BookSchema, { isbn: '9780140449136', title: '...', authors: ['...'], price: 14.99 });
+const m = jt.materialize(BookSchema, { isbn: '9783522128001', title: '...', authors: ['...'], price: 14.99 });
 // → { isbn: '...', title: '...', authors: [...], price: 14.99, currency: 'USD', inStock: true }
 
 // value.create  - fills ALL required fields with zero-values + explicit defaults
@@ -77,8 +77,8 @@ const book2 = jt.instantiate(BookSchema.$id, req.body);
 
 ```ts [json-tology]
 jt.materialize(BookSchema, {
-  isbn: '9780140449136', title: 'Crime and Punishment',
-  authors: ['Dostoevsky'], price: 14.99,
+  isbn: '9783522128001', title: 'Die unendliche Geschichte',
+  authors: ['Michael Ende'], price: 14.99,
 })
 // → currency: 'USD', inStock: true applied from declared defaults
 ```
@@ -86,8 +86,8 @@ jt.materialize(BookSchema, {
 ```ts [Zod]
 // Zod applies defaults during parse(); no separate materialize step:
 const book = BookSchema.parse({
-  isbn: '9780140449136', title: 'Crime and Punishment',
-  authors: ['Dostoevsky'], price: 14.99,
+  isbn: '9783522128001', title: 'Die unendliche Geschichte',
+  authors: ['Michael Ende'], price: 14.99,
 });
 // Requires .default() on each field in the schema definition.
 ```
@@ -96,8 +96,8 @@ const book = BookSchema.parse({
 import * as v from 'valibot';
 // Valibot applies defaults during v.parse() via v.optional(schema, default):
 const book = v.parse(BookSchema, {
-  isbn: '9780140449136', title: 'Crime and Punishment',
-  authors: ['Dostoevsky'], price: 14.99,
+  isbn: '9783522128001', title: 'Die unendliche Geschichte',
+  authors: ['Michael Ende'], price: 14.99,
 });
 // Limitation: no separate materialize step; defaults only flow when
 // fields are wrapped in v.optional(..., defaultValue).
@@ -116,7 +116,7 @@ const result = BookCodec.decode({ ...defaults, ...partial });
 import { Value } from '@sinclair/typebox/value';
 // Value.Default fills defaults:
 const book = Value.Default(BookSchema, {
-  isbn: '9780140449136', title: '...', authors: [...], price: 14.99,
+  isbn: '9783522128001', title: '...', authors: [...], price: 14.99,
 });
 ```
 
@@ -128,8 +128,8 @@ ajv.validate(bookSchema, data);  // mutates data in place with defaults
 ```
 
 ```py [Pydantic]
-book = Book(isbn='9780140449136', title='Crime and Punishment',
-            authors=['Dostoevsky'], price=14.99)
+book = Book(isbn='9783522128001', title='Die unendliche Geschichte',
+            authors=['Michael Ende'], price=14.99)
 # currency and in_stock filled from defaults automatically
 ```
 

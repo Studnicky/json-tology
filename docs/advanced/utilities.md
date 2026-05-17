@@ -195,7 +195,7 @@ const turtle = `
   <https://bookstore.example/books/9780140449136>
     a <https://bookstore.example/Book> ;
     <https://bookstore.example/isbn> "9780140449136" ;
-    <https://bookstore.example/title> "Crime and Punishment" .
+    <https://bookstore.example/title> "Die unendliche Geschichte" .
 `;
 
 const parser = new Parser();
@@ -204,7 +204,7 @@ const internal: QuadInterface[] = rdfQuads.map(q => Lift.fromQuad(q));
 
 const books = bookstoreEntities.fromQuads('https://bookstore.example/Book', internal);
 // books[0].isbn === '9780140449136'
-// books[0].title === 'Crime and Punishment'
+// books[0].title === 'Die unendliche Geschichte'
 ```
 
 ## Bad examples: what NOT to do

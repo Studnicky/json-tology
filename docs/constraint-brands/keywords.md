@@ -149,7 +149,7 @@ const ClosedSchema = {
 
 type Closed = InferType<typeof ClosedSchema>;
 
-const ok: Closed = { name: 'Alice', age: 30 };      // compiles
+const ok: Closed = { name: 'Bastian Balthazar Bux', age: 30 };      // compiles
 const bad: Closed = { name: 'Bob', extra: true };    // compile error  - 'extra' is never
 ```
 

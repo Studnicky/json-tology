@@ -19,15 +19,15 @@ import { bookstoreEntities, CustomerSchema } from './bookstore/index.js';
 // Valid  - empty collection
 const ok = bookstoreEntities.validate(CustomerSchema.$id, {
   id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  email: 'alice@bookstore.example',
-  name:  'Alice Chen',
+  email: 'bastian.bux@bookstore.example',
+  name:  'Bastian Balthazar Bux',
 });
 console.log(ok.ok);     // true
 console.log(ok.length); // 0
 
 // Missing required fields
 const bad = bookstoreEntities.validate(CustomerSchema.$id, {
-  email: 'alice@bookstore.example',
+  email: 'bastian.bux@bookstore.example',
 });
 console.log(bad.length); // 2
 for (const err of bad) {

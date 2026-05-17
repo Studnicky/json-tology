@@ -38,11 +38,11 @@ const jt = JsonTology.create({
 });
 
 const summary = jt.instantiate(BookSummarySchema.$id, {
-  isbn:    '9780140449136',
-  title:   'Crime and Punishment',
+  isbn:    '9783522128001',
+  title:   'Die unendliche Geschichte',
   price:   14.99,
   inStock: true,
-  authors: ['Dostoevsky'],  // not picked  - stripped during coerce
+  authors: ['Michael Ende'],  // not picked  - stripped during coerce
 });
 // { isbn: '...', title: '...', price: 14.99, inStock: true }
 // authors is gone

@@ -95,7 +95,7 @@ the registry refuses to load.
 `addComputed` is demonstrated against the canonical `OrderSchema` in
 `examples/docs/computed/01-add-computed.ts`: the example calls
 `bookstoreEntities.addComputed(OrderSchema.$id, 'subtotal', fn)`,
-materializes the canonical Alice-orders-Dune fixture, and reads the
+materializes the canonical Bastian-orders-Neverending-Story fixture, and reads the
 new `subtotal` field off the result. `removeComputed` then deregisters
 the fn; the next materialization no longer carries `subtotal`. The
 materializer always invokes registered compute fns, even for property
@@ -106,15 +106,15 @@ This pattern keeps the canonical bookstore free of mandatory
 computed-field commitments while still demonstrating the surface
 against the real registered schemas and fixtures.
 
-#### ABox: the Alice-orders-Dune scenario
+#### ABox: the Bastian-orders-Neverending-Story scenario
 
 Single coherent narrative threaded through every example:
 
-- **Customer** Alice Smith — `urn:bookstore:customer:alice-smith` ↔ `urn:legacy-crm:cust-00042` (sameAs migration)
-- **Order** #09f8e7d6-... placed 2026-04-12, ships to Alice's home address
+- **Customer** Bastian Balthazar Bux — `urn:bookstore:customer:bastian-bux` ↔ `urn:coreander-antiquariat:cust-00042` (sameAs migration)
+- **Order** #09f8e7d6-... placed 2026-04-12, ships to Bastian's home address
 - **OrderLine** (1×) for the rare book at $12,500
-- **RareBook** Frank Herbert's *Dune* (Chilton 1965) — `urn:bookstore:rarebook:dune-1965-chilton` ↔ `http://www.worldcat.org/oclc/463127` (sameAs cross-catalog)
-- **Review** Alice's 5-star review
+- **RareBook** Michael Ende's *Die unendliche Geschichte* (Thienemann Verlag 1979) — `urn:bookstore:rarebook:neverending-1979-thienemann` ↔ `http://www.worldcat.org/oclc/5705614` (sameAs cross-catalog)
+- **Review** Bastian's 5-star review
 
 This data lives in `examples/docs/bookstore/aboxFixtures.ts` (split out from `index.ts` for clarity). Validation against the real schemas is enforced by `test/smoke/bookstoreFixtures.test.ts`.
 
@@ -144,7 +144,7 @@ The test/types files use `AssertEqualType<L, R>` (existing utility) to make the 
 examples/docs/
 ├── bookstore/                 # THE ONE SOURCE OF TRUTH
 │   ├── index.ts              # Registry construction + sameAs + invariants + computed
-│   ├── aboxFixtures.ts       # Concrete instance data (the Alice-orders-Dune scenario)
+│   ├── aboxFixtures.ts       # Concrete instance data (the Bastian-orders-Neverending-Story scenario)
 │   ├── predicates.ts         # isSoloAuthored, isAnthology, hasStock + type guards
 │   ├── antiPatterns.ts       # Intentionally broken values for negative-case demos
 │   └── entities/             # One file per schema; single source per entity

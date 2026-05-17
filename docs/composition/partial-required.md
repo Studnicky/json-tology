@@ -37,8 +37,8 @@ const jt = JsonTology.create({
 });
 
 // PATCH body  - only name provided
-const patch = jt.instantiate(PatchCustomerSchema.$id, { name: 'Alice P. Chen' });
-// { name: 'Alice P. Chen' }
+const patch = jt.instantiate(PatchCustomerSchema.$id, { name: 'Bastian Balthazar Bux' });
+// { name: 'Bastian Balthazar Bux' }
 ```
 
 #### Example 2: Form initial state for a Review
@@ -169,9 +169,9 @@ const jt = JsonTology.create({
 
 // Missing currency and inStock
 const errors = jt.validate(CreateBookSchema.$id, {
-  isbn:    '9780140449136',
-  title:   'Crime and Punishment',
-  authors: ['Fyodor Dostoevsky'],
+  isbn:    '9783522128001',
+  title:   'Die unendliche Geschichte',
+  authors: ['Michael Ende'],
   price:   14.99,
 });
 console.log(errors.length > 0); // true  - currency and inStock are now required

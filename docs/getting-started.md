@@ -87,13 +87,13 @@ const jt = JsonTology.create({
 // Valid customer
 const errs = jt.validate(CustomerSchema.$id, {
   id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  email: 'alice@bookstore.example',
-  name:  'Alice Chen',
+  email: 'bastian.bux@bookstore.example',
+  name:  'Bastian Balthazar Bux',
 });
 console.log(errs.ok); // true
 
 // Missing required field
-const bad = jt.validate(CustomerSchema.$id, { email: 'alice@bookstore.example' });
+const bad = jt.validate(CustomerSchema.$id, { email: 'bastian.bux@bookstore.example' });
 console.log(bad.length); // 2
 for (const err of bad) {
   console.log(err.path, err.keyword, err.message);
@@ -163,12 +163,12 @@ The full set of combinators (`extend`, `omit`, `required`, `intersection`, `disc
 ```ts
 const customer = jt.instantiate(CustomerSchema.$id, {
   id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  email: 'alice@bookstore.example',
-  name:  'Alice Chen',
+  email: 'bastian.bux@bookstore.example',
+  name:  'Bastian Balthazar Bux',
 });
 
 const wire = jt.dumpJson(CustomerSchema.$id, customer);
-// '{"id":"c1a2b3d4-e5f6-7890-abcd-ef1234567890","email":"alice@bookstore.example","name":"Alice Chen","addresses":[]}'
+// '{"id":"c1a2b3d4-e5f6-7890-abcd-ef1234567890","email":"bastian.bux@bookstore.example","name":"Bastian Balthazar Bux","addresses":[]}'
 ```
 
 Filtering options (`exclude`, `include`, `excludeDefaults`) are documented in [Serialization](/serialization/dump).

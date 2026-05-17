@@ -58,9 +58,9 @@ const jt = JsonTology.create({
 });
 
 const featured = jt.instantiate(FeaturedBookSchema.$id, {
-  isbn:     '9780140449136',
-  title:    'Crime and Punishment',
-  authors:  ['Fyodor Dostoevsky'],
+  isbn:     '9783522128001',
+  title:    'Die unendliche Geschichte',
+  authors:  ['Michael Ende'],
   price:    14.99,
   badge:    'bestseller',
   position: 1,

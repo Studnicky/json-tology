@@ -64,9 +64,9 @@ for (const err of errs) {
 import { bookstoreEntities, BookSchema } from './bookstore/index.js';
 
 const errs = bookstoreEntities.validate(BookSchema.$id, {
-  isbn:    '9780140449136',
-  title:   'Crime and Punishment',
-  authors: ['Fyodor Dostoevsky'],
+  isbn:    '9783522128001',
+  title:   'Die unendliche Geschichte',
+  authors: ['Michael Ende'],
   price:   14.99,
 });
 console.log(errs.ok);     // true

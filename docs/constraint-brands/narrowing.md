@@ -117,7 +117,7 @@ const MetadataSchema = {
 
 type Metadata = InferType<typeof MetadataSchema>;
 
-const ok: Metadata = { data_name: 'Alice', meta_version: 1 };     // compiles
+const ok: Metadata = { data_name: 'Bastian', meta_version: 1 };     // compiles
 const bad: Metadata = { data_age: 99 };                            // compile error  - must be string
 ```
 

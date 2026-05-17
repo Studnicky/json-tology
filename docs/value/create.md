@@ -50,7 +50,7 @@ const defaults = Compose.getDefaults(BookSchema);
 
 // materialize  - fill declared defaults, partial is trusted, throws if required missing
 const m = jt.materialize(BookSchema, {
-  isbn: '9780140449136', title: 'Crime and Punishment', authors: ['Dostoevsky'], price: 14.99,
+  isbn: '9783522128001', title: 'Die unendliche Geschichte', authors: ['Michael Ende'], price: 14.99,
 });
 // { isbn: '...', ..., currency: 'USD', inStock: true }
 ```
@@ -66,9 +66,9 @@ jt.validate(BookSchema.$id, blank); // may have errors: isbn pattern fails, pric
 
 // ✓ Do this  - use actual test data
 const testBook = jt.instantiate(BookSchema.$id, {
-  isbn:    '9780140449136',
-  title:   'Test Book',
-  authors: ['Test Author'],
+  isbn:    '9783522128001',
+  title:   'Die unendliche Geschichte',
+  authors: ['Michael Ende'],
   price:   9.99,
 });
 ```

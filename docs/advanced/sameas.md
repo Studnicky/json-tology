@@ -14,32 +14,32 @@ jt.sameAs(instanceIriA: string, instanceIriB: string): void
 
 ### Example 1: Link a legacy CRM identifier to a stable customer IRI
 
-The bookstore migrated from a legacy CRM in 2024. Customer Alice Smith carries her bookstore IRI alongside the legacy CRM ID (`cust-00042`) the bookstore inherited from the old system. Declaring `sameAs` lets a reasoner merge facts about both — Alice's new email address from the bookstore and her old purchase history from the CRM resolve to one logical individual.
+The bookstore migrated from a legacy CRM in 2024. Customer Bastian Balthazar Bux carries his bookstore IRI alongside the legacy CRM ID (`cust-00042`) the bookstore inherited from the old system. Declaring `sameAs` lets a reasoner merge facts about both — Bastian's new email address from the bookstore and his old purchase history from the CRM resolve to one logical individual.
 
 ```ts
 import { bookstoreEntities, CustomerSchema, aboxFixtures } from './bookstore/index.js';
 
 bookstoreEntities.sameAs(
-  'urn:bookstore:customer:alice-smith',
+  'urn:bookstore:customer:bastian-bux',
   'urn:legacy-crm:cust-00042'
 );
 
 const quads = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer);
 // quads include both directions:
-//   <urn:bookstore:customer:alice-smith> owl:sameAs <urn:legacy-crm:cust-00042>
-//   <urn:legacy-crm:cust-00042>          owl:sameAs <urn:bookstore:customer:alice-smith>
+//   <urn:bookstore:customer:bastian-bux> owl:sameAs <urn:legacy-crm:cust-00042>
+//   <urn:legacy-crm:cust-00042>          owl:sameAs <urn:bookstore:customer:bastian-bux>
 ```
 
 ### Example 2: Cross-catalog book identity
 
-Alice ordered a rare first-edition Frank Herbert's *Dune* (Chilton Books, 1965). The bookstore catalogs it under one IRI; WorldCat's union catalog references the same physical edition under an OCLC record IRI. Declaring `sameAs` lets a bibliographic reasoner unify metadata (publisher, page count, ISBN-13) regardless of which authority the fact came from.
+Bastian ordered a rare first-edition Michael Ende's *Die unendliche Geschichte* (Klett Books, 1979). The bookstore catalogs it under one IRI; WorldCat's union catalog references the same physical edition under an OCLC record IRI. Declaring `sameAs` lets a bibliographic reasoner unify metadata (publisher, page count, ISBN-13) regardless of which authority the fact came from.
 
 ```ts
 import { bookstoreEntities, RareBookSchema, aboxFixtures } from './bookstore/index.js';
 
 bookstoreEntities.sameAs(
-  'urn:bookstore:rarebook:dune-1965-chilton',
-  'http://www.worldcat.org/oclc/463127'
+  'urn:bookstore:rarebook:unendlichegeschichte-1979-klett',
+  'http://www.worldcat.org/oclc/644849'
 );
 
 const quads = bookstoreEntities.toQuads(RareBookSchema, aboxFixtures.rareBook);
@@ -54,9 +54,9 @@ Recording the same pair twice, or in reverse order, is a no-op. Self-pairs are s
 ```ts
 import { bookstoreEntities } from './bookstore/index.js';
 
-bookstoreEntities.sameAs('urn:bookstore:customer:alice-smith', 'urn:legacy-crm:cust-00042');
-bookstoreEntities.sameAs('urn:legacy-crm:cust-00042', 'urn:bookstore:customer:alice-smith'); // no-op — pair already recorded
-bookstoreEntities.sameAs('urn:bookstore:customer:alice-smith', 'urn:bookstore:customer:alice-smith'); // no-op — self-pair
+bookstoreEntities.sameAs('urn:bookstore:customer:bastian-bux', 'urn:legacy-crm:cust-00042');
+bookstoreEntities.sameAs('urn:legacy-crm:cust-00042', 'urn:bookstore:customer:bastian-bux'); // no-op — pair already recorded
+bookstoreEntities.sameAs('urn:bookstore:customer:bastian-bux', 'urn:bookstore:customer:bastian-bux'); // no-op — self-pair
 ```
 
 ### Example 4: Symmetric emission
@@ -66,7 +66,7 @@ bookstoreEntities.sameAs('urn:bookstore:customer:alice-smith', 'urn:bookstore:cu
 ```ts
 import { bookstoreEntities, CustomerSchema, aboxFixtures } from './bookstore/index.js';
 
-bookstoreEntities.sameAs('urn:bookstore:customer:alice-smith', 'urn:legacy-crm:cust-00042');
+bookstoreEntities.sameAs('urn:bookstore:customer:bastian-bux', 'urn:legacy-crm:cust-00042');
 const quads = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer);
 
 const sameAsQuads = quads.filter(q => q.predicate.value === 'http://www.w3.org/2002/07/owl#sameAs');
@@ -99,15 +99,15 @@ const CatalogItemSchema = Compose.equivalent(BookSchema, {
 
 ```ts
 // ✗ Don't do this — sameAs asserts identity of individuals, not "they share
-// a title". The 1965 Chilton first edition and the 1990 Ace mass-market
-// paperback of Dune are two different physical books with different ISBNs,
-// publishers, page counts, prices, and condition notes. They share an
-// author and a title — that is what `Compose.equivalent` / shared $ref to
-// the title primitive expresses at the class level, not what `sameAs`
-// expresses at the instance level.
+// a title". The 1979 Thienemann first edition and the 1984 Penguin English
+// translation of Die unendliche Geschichte are two different physical books
+// with different ISBNs, publishers, page counts, prices, and condition
+// notes. They share an author and a title — that is what
+// `Compose.equivalent` / shared $ref to the title primitive expresses at
+// the class level, not what `sameAs` expresses at the instance level.
 bookstoreEntities.sameAs(
-  'urn:bookstore:rarebook:dune-1965-chilton',     // First edition, hardcover, $12,500
-  'urn:bookstore:rarebook:dune-1990-ace-paperback' // Mass-market paperback, $9.99
+  'urn:bookstore:rarebook:neverending-1979-thienemann', // First edition, hardcover, €850
+  'urn:bookstore:rarebook:neverending-1984-penguin'     // Penguin English paperback, €14.99
 );
 // A reasoner that consumes both edges will now treat one logical book as
 // having two ISBNs, two publishers, two prices, and two condition reports —
@@ -115,10 +115,10 @@ bookstoreEntities.sameAs(
 
 // ✓ Do this — use sameAs only across two IRIs that authoritatively name the
 //   same physical or logical individual (one record in two systems, one
-//   customer across a CRM migration, one book in two union catalogs).
+//   customer across a migration, one book in two union catalogs).
 bookstoreEntities.sameAs(
-  'urn:bookstore:rarebook:dune-1965-chilton',
-  'http://www.worldcat.org/oclc/463127'
+  'urn:bookstore:rarebook:neverending-1979-thienemann',
+  'http://www.worldcat.org/oclc/5705614'
 );
 ```
 
@@ -129,10 +129,10 @@ import { bookstoreEntities, CustomerSchema, aboxFixtures } from './bookstore/ind
 
 const quads = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer); // sameAs not yet recorded
 
-bookstoreEntities.sameAs('urn:bookstore:customer:alice-smith', 'urn:legacy-crm:cust-00042'); // ✗ too late — not in quads
+bookstoreEntities.sameAs('urn:bookstore:customer:bastian-bux', 'urn:legacy-crm:cust-00042'); // ✗ too late — not in quads
 
 // ✓ Do this — record sameAs assertions before calling toQuads
-bookstoreEntities.sameAs('urn:bookstore:customer:alice-smith', 'urn:legacy-crm:cust-00042');
+bookstoreEntities.sameAs('urn:bookstore:customer:bastian-bux', 'urn:legacy-crm:cust-00042');
 const quads2 = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer);
 ```
 
@@ -141,7 +141,7 @@ const quads2 = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer);
 ::: code-group
 
 ```ts [json-tology]
-bookstoreEntities.sameAs('urn:bookstore:customer:alice-smith', 'urn:legacy-crm:cust-00042');
+bookstoreEntities.sameAs('urn:bookstore:customer:bastian-bux', 'urn:legacy-crm:cust-00042');
 // Emits both directions at toQuads() time as owl:sameAs quads.
 ```
 
@@ -163,10 +163,10 @@ bookstoreEntities.sameAs('urn:bookstore:customer:alice-smith', 'urn:legacy-crm:c
 import { graph, sym, Statement } from 'rdflib';
 const store = graph();
 const OWL = 'http://www.w3.org/2002/07/owl#';
-const alice = sym('urn:bookstore:customer:alice-smith');
-const aliceCrm = sym('urn:legacy-crm:cust-00042');
-store.add(new Statement(alice, sym(`${OWL}sameAs`), aliceCrm, sym('urn:g')));
-store.add(new Statement(aliceCrm, sym(`${OWL}sameAs`), alice, sym('urn:g')));
+const bastian = sym('urn:bookstore:customer:bastian-bux');
+const bastianCrm = sym('urn:legacy-crm:cust-00042');
+store.add(new Statement(bastian, sym(`${OWL}sameAs`), bastianCrm, sym('urn:g')));
+store.add(new Statement(bastianCrm, sym(`${OWL}sameAs`), bastian, sym('urn:g')));
 // Limitation: both directions must be added manually; no schema validation
 // or typed instance pipeline; standalone RDF store without JSON Schema authoring.
 ```
@@ -174,10 +174,10 @@ store.add(new Statement(aliceCrm, sym(`${OWL}sameAs`), alice, sym('urn:g')));
 ```py [rdflib (Python)]
 from rdflib import Graph, URIRef, OWL
 g = Graph()
-alice = URIRef('urn:bookstore:customer:alice-smith')
-alice_crm = URIRef('urn:legacy-crm:cust-00042')
-g.add((alice, OWL.sameAs, alice_crm))
-g.add((alice_crm, OWL.sameAs, alice))
+bastian = URIRef('urn:bookstore:customer:bastian-bux')
+bastian_crm = URIRef('urn:legacy-crm:cust-00042')
+g.add((bastian, OWL.sameAs, bastian_crm))
+g.add((bastian_crm, OWL.sameAs, bastian))
 # Limitation: manual symmetric emission; no schema-validated pipeline.
 ```
 

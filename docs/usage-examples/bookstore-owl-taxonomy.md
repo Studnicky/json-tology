@@ -20,8 +20,8 @@ Beyond the structural entities, the bookstore registry carries seven additional 
 | `OutOfPrintBookSchema`| `Compose.complementOf(InPrintBook)` with body `allOf` bounding to Book                        | `subClassOf` → Book, `complementOf` → InPrintBook |
 | `orderTotalMatchesItems` | `bookstoreEntities.addInvariant(OrderSchema, ...)`                                         | runtime cross-field rule on `Order.total` |
 | `signedFirstEditionIsSoloAuthored` | `bookstoreEntities.addInvariant(SignedFirstEditionSchema, ...)`                  | runtime cardinality rule on `SignedFirstEdition.authors` |
-| `sameAs(alice-smith, cust-00042)` | `JsonTology.prototype.sameAs` — customer migration (ABox)                         | `sameAs` between two customer-individual nodes |
-| `sameAs(dune-1965-chilton, oclc/463127)` | `JsonTology.prototype.sameAs` — cross-catalog rare-book identity (ABox)    | `sameAs` between two book-individual nodes |
+| `sameAs(bastian-bux, cust-00042)` | `JsonTology.prototype.sameAs` — customer migration (ABox)                         | `sameAs` between two customer-individual nodes |
+| `sameAs(neverending-1979-thienemann, oclc/5705614)` | `JsonTology.prototype.sameAs` — cross-catalog rare-book identity (ABox)    | `sameAs` between two book-individual nodes |
 
 Each `entities/*.ts` file is the single source of truth for one schema.
 
@@ -244,9 +244,9 @@ The body's `allOf: [{ $ref: Book }]` is what bounds the OWL complement to the Bo
 
 All the schemas above are TBox declarations — they describe *kinds of thing*. `sameAs` is different: it operates on individuals (concrete records, the ABox), and asserts "these two IRIs name the same person/object/thing". The bookstore demonstrates two such assertions tied to one coherent narrative.
 
-**The scenario.** Customer Alice Smith placed an order on 2026-04-12 containing a single line item: a rare first-edition Frank Herbert's *Dune* (Chilton Books, 1965, ISBN-13 9780441172719). Two identity assertions register against this scenario:
+**The scenario.** Customer Bastian Balthazar Bux placed an order on 2026-04-12 containing a single line item: a rare first edition of Michael Ende's *Die unendliche Geschichte* (Thienemann Verlag, Stuttgart, 1979, ISBN-13 9783522128001). Two identity assertions register against this scenario:
 
-1. **Customer-CRM migration.** When the bookstore migrated systems in 2024, Alice's old CRM record (`urn:legacy-crm:cust-00042`) carried over alongside her new bookstore IRI. Both still resolve to the same person, so `sameAs` lets a reasoner merge purchase history from both sources.
+1. **Customer-CRM migration.** When the bookstore migrated systems in 2024, Bastian's old CRM record (`urn:coreander-antiquariat:cust-00042`) carried over alongside her new bookstore IRI. Both still resolve to the same person, so `sameAs` lets a reasoner merge purchase history from both sources.
 2. **Cross-catalog rare-book identity.** The 1965 Chilton first edition is also catalogued by WorldCat under OCLC `463127`. Declaring `sameAs` unifies bibliographic facts (publisher, page count, condition notes) regardless of which authority emitted them.
 
 **Use this when:**
@@ -265,22 +265,23 @@ export const bookstoreEntities = JsonTology.create({
   schemas: allSchemas,
 });
 
-// 1. Customer Alice in the bookstore system ↔ same individual in the legacy CRM.
+// 1. Customer Bastian in the bookstore system ↔ same individual in the legacy CRM.
 bookstoreEntities.sameAs(
-  'urn:bookstore:customer:alice-smith',
-  'urn:legacy-crm:cust-00042',
+  'urn:bookstore:customer:bastian-bux',
+  'urn:coreander-antiquariat:cust-00042',
 );
 
-// 2. The rare 1965 Chilton first edition of Dune in the bookstore catalog
-//    ↔ the same physical edition in WorldCat's union catalog.
+// 2. The rare 1979 Thienemann first edition of Die unendliche Geschichte
+//    in the bookstore catalog ↔ the same physical edition in WorldCat's
+//    union catalog.
 bookstoreEntities.sameAs(
-  'urn:bookstore:rarebook:dune-1965-chilton',
-  'http://www.worldcat.org/oclc/463127',
+  'urn:bookstore:rarebook:neverending-1979-thienemann',
+  'http://www.worldcat.org/oclc/5705614',
 );
 // toQuads() emits both directions for each pair (four sameAs quads total).
 ```
 
-The order Alice placed, the customer record, the rare-book metadata, and her later review are all defined as runtime values on the `aboxFixtures` export. `instantiate()` and `toQuads()` accept those fixtures directly so the same scenario can be used end-to-end across docs pages and integration tests.
+The order Bastian placed, the customer record, the rare-book metadata, and his later review are all defined as runtime values on the `aboxFixtures` export. `instantiate()` and `toQuads()` accept those fixtures directly so the same scenario can be used end-to-end across docs pages and integration tests.
 
 ```ts
 import { bookstoreEntities, OrderSchema, RareBookSchema, aboxFixtures } from './bookstore/index.js';
@@ -289,7 +290,7 @@ import { bookstoreEntities, OrderSchema, RareBookSchema, aboxFixtures } from './
 // Book + PrintBook structural rules + someValuesFrom + maxCardinality(authors=1)).
 bookstoreEntities.instantiate(RareBookSchema.$id, aboxFixtures.rareBook);
 
-// Validate Alice's order containing one line for that rare book.
+// Validate Bastian's order containing one line for that rare book.
 bookstoreEntities.instantiate(OrderSchema.$id, aboxFixtures.order);
 
 // Emit the full RDF graph: schema-level rules + sameAs assertions + ABox quads.

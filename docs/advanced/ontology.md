@@ -232,9 +232,9 @@ const localJt = JsonTology.create({
 // toQuads returns QuadInterface[] — use the array directly
 const abox = localJt.toQuads(CustomerSchema, {
   id:        'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  email:     'alice@bookstore.example',
-  name:      'Alice Chen',
-  addresses: [{ street: '12 Elm Lane', city: 'Bookham', postalCode: '94107' }],
+  email:     'bastian.bux@bookstore.example',
+  name:      'Bastian Balthazar Bux',
+  addresses: [{ street: 'Reichenbachstraße 14', city: 'München', postalCode: '80538' }],
 });
 
 // abox is QuadInterface[]  - iterate, filter, or pass to OntologyBuilder
@@ -277,7 +277,7 @@ const abox = localJt.toQuads(CustomerSchema, customerData);
 // Lift back to typed objects
 const customers = localJt.fromQuads(CustomerSchema.$id, abox);
 // customers: Customer[]  - each element validated through coerce
-console.log(customers[0].name); // 'Alice Chen'
+console.log(customers[0].name); // 'Bastian Balthazar Bux'
 ```
 
 ---

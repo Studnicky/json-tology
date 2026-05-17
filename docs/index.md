@@ -95,8 +95,8 @@ const jt = JsonTology.create({
 
 const customer = jt.instantiate(CustomerSchema.$id, {
   id: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  email: 'alice@bookstore.example',
-  name: 'Alice Chen',
+  email: 'bastian.bux@bookstore.example',
+  name: 'Bastian Balthazar Bux',
 });
 //    ^? Customer - typed, validated, defaults applied
 ```
