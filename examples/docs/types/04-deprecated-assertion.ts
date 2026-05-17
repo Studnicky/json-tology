@@ -7,7 +7,7 @@
 
 import type { DeprecatedKeysType } from '../../../src/types/index.js';
 
-const BookV1Schema = {
+const _BookV1Schema = {
   '$id': 'https://bookstore.example/BookV1',
   'properties': {
     'isbn': { 'type': 'string' },
@@ -24,10 +24,11 @@ const BookV1Schema = {
   'type': 'object'
 } as const;
 
-type DeprecatedBookKeys = DeprecatedKeysType<typeof BookV1Schema>;
+type DeprecatedBookKeys = DeprecatedKeysType<typeof _BookV1Schema>;
 // 'legacySku'
 
-// Compile-time guard - narrows to never if the key is not deprecated:
-const _check: DeprecatedBookKeys = 'legacySku'; // OK
+// Compile-time guard - narrows to never if the key is not deprecated.
+// OK: 'legacySku' is in DeprecatedBookKeys
+const _check: DeprecatedBookKeys = 'legacySku';
 
 void _check;

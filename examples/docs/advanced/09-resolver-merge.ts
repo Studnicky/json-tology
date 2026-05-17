@@ -5,7 +5,7 @@
  * values in the override do not erase base values.
  */
 
-import { Resolver } from 'json-tology';
+import { Resolver } from '../../../src/index.js';
 
 const base = {
   'enableDefaults': true,

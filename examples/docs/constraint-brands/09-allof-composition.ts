@@ -1,6 +1,6 @@
 import type { InferType } from '../../../src/types/index.js';
 
-const ValidatedEmail = {
+const _ValidatedEmail = {
   'allOf': [
     {
       'format': 'email',
@@ -13,7 +13,7 @@ const ValidatedEmail = {
   ]
 } as const;
 
-type VEmail = InferType<typeof ValidatedEmail>;
+type VEmail = InferType<typeof _ValidatedEmail>;
 // string & FormatBrandInterface<'email'> & string & MinLengthBrandInterface<5>
 // simplifies to: string & FormatBrandInterface<'email'> & MinLengthBrandInterface<5>
 void 0 as unknown as VEmail;

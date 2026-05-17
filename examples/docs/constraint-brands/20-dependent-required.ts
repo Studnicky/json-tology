@@ -1,6 +1,6 @@
 import type { InferType } from '../../../src/types/index.js';
 
-const PaymentSchema = {
+const _PaymentSchema = {
   'dependentRequired': { 'credit_card': ['billing_address'] },
   'properties': {
     'billing_address': { 'type': 'string' },
@@ -9,7 +9,7 @@ const PaymentSchema = {
   'type': 'object'
 } as const;
 
-type Payment = InferType<typeof PaymentSchema>;
+type Payment = InferType<typeof _PaymentSchema>;
 // Either:
 //   { credit_card?: never; billing_address?: string }    - no credit card, address optional
 // | { billing_address: unknown; ... }                     - credit card present → address required

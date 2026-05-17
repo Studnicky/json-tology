@@ -22,5 +22,5 @@ if (book) {
     'https://bookstore.example/BookSummary'
   );
 
-  console.assert(BookSummary.$id !== undefined, 'Composed schema should have $id');
+  console.assert(typeof BookSummary.$id === 'string', 'Composed schema should have $id');
 }

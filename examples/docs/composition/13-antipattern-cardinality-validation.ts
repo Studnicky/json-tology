@@ -4,7 +4,7 @@ import {
 
 // ✗ Don't do this — owl:cardinality is a TBox semantic axiom for reasoners,
 // NOT a runtime validation constraint on instance data
-const StrictBook = Compose.subClassOf(
+const _StrictBook = Compose.subClassOf(
   Compose.cardinality('https://bookstore.example/authors', 1),
   {
     '$id': 'https://bookstore.example/StrictBook',
@@ -13,7 +13,7 @@ const StrictBook = Compose.subClassOf(
 );
 const jt = JsonTology.create({
   'baseIRI': 'https://bookstore.example',
-  'schemas': [StrictBook] as const
+  'schemas': [_StrictBook] as const
 });
 
 jt.validate('https://bookstore.example/StrictBook', {
@@ -25,7 +25,7 @@ jt.validate('https://bookstore.example/StrictBook', {
 // Does NOT fail — restrictions are TBox-only, not checked at validate/instantiate time
 
 // ✓ Do this — use JSON Schema keywords for instance validation
-const StrictBook2 = {
+const _StrictBook2 = {
   '$id': 'https://bookstore.example/StrictBook2',
   'properties': {
     'authors': {
@@ -37,4 +37,4 @@ const StrictBook2 = {
   'type': 'object'
 } as const;
 
-void 0 as unknown as [typeof jt, typeof StrictBook2];
+void 0 as unknown as [typeof jt, typeof _StrictBook2];

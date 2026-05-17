@@ -5,7 +5,7 @@
  * options object or constructing a full options object each time.
  */
 
-import { Resolver } from 'json-tology';
+import { Resolver } from '../../../src/index.js';
 
 const defaultOpts = {
   'enableDefaults': true,

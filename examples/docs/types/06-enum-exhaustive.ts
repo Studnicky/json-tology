@@ -10,7 +10,7 @@ import type {
   EnumValuesType, ExhaustiveType
 } from '../../../src/types/index.js';
 
-const CurrencySchema = {
+const _CurrencySchema = {
   'enum': [
     'USD',
     'EUR',
@@ -19,18 +19,18 @@ const CurrencySchema = {
   'type': 'string'
 } as const;
 
-type Currency = EnumValuesType<typeof CurrencySchema>;
+type Currency = EnumValuesType<typeof _CurrencySchema>;
 
-function currencySymbol(c: Currency): string {
-  switch (c) {
+function currencySymbol(cur: Currency): string {
+  switch (cur) {
     case 'EUR': return '€';
     case 'GBP': return '£';
     case 'USD': return '$';
     default: {
-      const _: ExhaustiveType<typeof c> = c;
+      // Adding 'JPY' to the enum without adding a case here becomes a compile error
+      const _: ExhaustiveType<typeof cur> = cur;
 
       return _;
-      // Adding 'JPY' to the enum without adding a case here becomes a compile error
     }
   }
 }

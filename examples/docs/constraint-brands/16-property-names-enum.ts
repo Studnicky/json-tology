@@ -1,6 +1,6 @@
 import type { InferType } from '../../../src/types/index.js';
 
-const ConfigSchema = {
+const _ConfigSchema = {
   'additionalProperties': { 'type': 'string' },
   'propertyNames': {
     'enum': [
@@ -12,6 +12,6 @@ const ConfigSchema = {
   'type': 'object'
 } as const;
 
-type Config = InferType<typeof ConfigSchema>;
+type Config = InferType<typeof _ConfigSchema>;
 // { readonly host?: string; readonly port?: string; readonly debug?: string }
 void 0 as unknown as Config;

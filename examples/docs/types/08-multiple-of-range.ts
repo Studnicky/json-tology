@@ -10,6 +10,7 @@ import type { MultipleOfRangeType } from '../../../src/types/index.js';
 type EvenQuantity = MultipleOfRangeType<0, 10, 2>;
 // 0 | 2 | 4 | 6 | 8 | 10
 
-const q: EvenQuantity = 6; // OK
+// OK — 6 is divisible by 2, within 0–10
+const qty: EvenQuantity = 6;
 
-void q;
+void qty;

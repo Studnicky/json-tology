@@ -16,7 +16,9 @@ void 0 as unknown as typeof CustomerIdSchema;
 void 0 as unknown as typeof EmailSchema;
 void 0 as unknown as typeof PersonNameSchema;
 
-console.assert(CustomerSchema.$id === 'urn:bookstore:Customer');
+const id: string = CustomerSchema.$id;
+
+console.assert(id === 'urn:bookstore:Customer');
 console.assert(CustomerSchema.required.includes('id'));
 console.assert(CustomerSchema.required.includes('email'));
 console.assert(CustomerSchema.required.includes('name'));

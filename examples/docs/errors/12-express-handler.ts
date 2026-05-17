@@ -37,7 +37,7 @@ console.assert(
   response.contentType === 'application/problem+json',
   'Response should be problem+json'
 );
-if ('body' in response && typeof response.body === 'object' && response.body !== null) {
+if ('body' in response && typeof response.body === 'object') {
   const problem = response.body as Record<string, unknown>;
 
   console.assert(problem.status === 422, 'Problem should have 422 status');

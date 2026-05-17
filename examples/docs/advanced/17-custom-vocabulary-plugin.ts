@@ -5,16 +5,16 @@
  * beyond the core OWL/SHACL vocabularies.
  */
 
-import { JsonTology } from 'json-tology';
-import type { VocabularyPluginInterface } from 'json-tology/interfaces';
+import { JsonTology } from '../../../src/index.js';
+import type { VocabularyPluginInterface } from '../../../src/interfaces/index.js';
 import { BookSchema } from '../bookstore/index.js';
 
 const myVocabulary: VocabularyPluginInterface = {
-  extractRelations(_node, _semantics, _graph) {
+  extractRelations() {
     return [];
   },
   'prefixes': { 'myns': 'https://myorg.io/ns#' },
-  project(_relation, _emit) {
+  project() {
     // Emit custom quads for non-core predicates
   }
 };

@@ -21,9 +21,13 @@ const turtle = `
     <urn:bookstore:Book#title> "Die unendliche Geschichte" .
 `;
 
-const rdfQuads = new Parser().parse(turtle);
-const internal: QuadInterface[] = rdfQuads.map((quad) => {
-  return Lift.fromQuad(quad);
+const parser = new Parser();
+const rdfQuads = parser.parse(turtle) as unknown[];
+const internal: QuadInterface[] = (rdfQuads as Array<{ 'graph'?: string
+  'object'?: string;
+  'predicate'?: string;
+  'subject'?: string; }>).map((quad) => {
+  return Lift.fromQuad(quad as Parameters<typeof Lift.fromQuad>[0]);
 });
 
 console.assert(internal.length > 0);

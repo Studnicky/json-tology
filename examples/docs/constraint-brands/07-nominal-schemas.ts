@@ -1,6 +1,4 @@
-import type {
-  InferType, NominalSchemaType
-} from '../../../src/types/index.js';
+import type { NominalSchemaType } from '../../../src/types/index.js';
 
 const UserSchema = {
   '$id': 'https://example.com/User',

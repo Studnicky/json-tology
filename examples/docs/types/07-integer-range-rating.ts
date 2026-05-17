@@ -12,15 +12,15 @@ import type {
 type StarRating = IntegerRangeType<1, 5>;
 // 1 | 2 | 3 | 4 | 5
 
-function ratingLabel(r: StarRating): string {
-  switch (r) {
+function ratingLabel(rating: StarRating): string {
+  switch (rating) {
     case 1: return 'Poor';
     case 2: return 'Fair';
     case 3: return 'Good';
     case 4: return 'Very Good';
     case 5: return 'Excellent';
     default: {
-      const _: ExhaustiveType<typeof r> = r;
+      const _: ExhaustiveType<typeof rating> = rating;
 
       return _;
     }

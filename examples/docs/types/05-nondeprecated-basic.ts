@@ -16,7 +16,7 @@ function assert<T extends true>(): void {
   void 0 as unknown as T;
 }
 
-const BookV1Schema = {
+const _BookV1Schema = {
   '$id': 'https://bookstore.example/BookV1',
   'properties': {
     'isbn': { 'type': 'string' },
@@ -33,10 +33,10 @@ const BookV1Schema = {
   'type': 'object'
 } as const;
 
-type BookV1Full = InferType<typeof BookV1Schema>;
+type BookV1Full = InferType<typeof _BookV1Schema>;
 // { readonly isbn: string; readonly title: string; readonly legacySku?: string }
 
-type BookV1Current = NonDeprecatedSchemaType<typeof BookV1Schema>;
+type BookV1Current = NonDeprecatedSchemaType<typeof _BookV1Schema>;
 // { readonly isbn: string; readonly title: string }
 //  - legacySku is gone
 

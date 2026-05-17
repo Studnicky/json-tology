@@ -5,7 +5,7 @@
  * for use in UI error display and form libraries.
  */
 
-import { Path } from 'json-tology';
+import { Path } from '../../../src/index.js';
 
 const tests = [
   [

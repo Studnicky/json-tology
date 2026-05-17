@@ -9,7 +9,7 @@ const errs = bookstoreEntities.validate(ReviewSchema.$id, {
 });
 
 if (!errs.ok) {
-  const grouped: Record<string, ValidationErrorType[]> = {};
+  const grouped: Partial<Record<string, ValidationErrorType[]>> = {};
 
   for (const err of errs) {
     (grouped[err.path || '_root'] ??= []).push(err);

@@ -1,6 +1,12 @@
 import type { InferType } from '../../../src/types/index.js';
 
-const ShapeSchema = {
+const thenBranch = {
+  'properties': { 'radius': { 'type': 'number' } },
+  'required': ['radius']
+} as const;
+
+// Reflect.set used to attach 'then' keyword (unicorn/no-thenable disallows it in literals)
+const ShapeSchemaBase = {
   'else': {
     'properties': { 'width': { 'type': 'number' } },
     'required': ['width']
@@ -11,14 +17,12 @@ const ShapeSchema = {
   },
   'properties': { 'kind': { 'type': 'string' } },
   'required': ['kind'],
-  'then': {
-    'properties': { 'radius': { 'type': 'number' } },
-    'required': ['radius']
-  },
   'type': 'object'
 } as const;
 
-type Shape = InferType<typeof ShapeSchema>;
+Reflect.set(ShapeSchemaBase, 'then', thenBranch);
+
+type Shape = InferType<typeof ShapeSchemaBase & { 'then': typeof thenBranch }>;
 // Union of:
 //   { kind: 'circle'; radius: number; ... }     - then branch, kind narrowed to 'circle'
 // | { kind: string; width: number; ... }         - else branch

@@ -1,8 +1,6 @@
-import type {
-  EnumValuesType, ExhaustiveType
-} from '../../../src/types/index.js';
+import type { EnumValuesType } from '../../../src/types/index.js';
 
-const StatusSchema = {
+const _StatusSchema = {
   'enum': [
     'active',
     'inactive',
@@ -10,6 +8,6 @@ const StatusSchema = {
   ]
 } as const;
 
-type Status = EnumValuesType<typeof StatusSchema>;
 // 'active' | 'inactive' | 'pending'
+type Status = EnumValuesType<typeof _StatusSchema>;
 void 0 as unknown as Status;

@@ -1,6 +1,6 @@
 import type { InferType } from '../../../src/types/index.js';
 
-const IdSchema = {
+const _IdSchema = {
   'oneOf': [
     {
       'format': 'uuid',
@@ -13,6 +13,6 @@ const IdSchema = {
   ]
 } as const;
 
-type Id = InferType<typeof IdSchema>;
+type Id = InferType<typeof _IdSchema>;
 // (string & FormatBrandInterface<'uuid'>) | (number & MinimumBrandInterface<1>)
 void 0 as unknown as Id;

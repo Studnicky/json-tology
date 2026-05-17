@@ -5,7 +5,7 @@
  * serialization, so key order does not matter.
  */
 
-import { Hash } from 'json-tology';
+import { Hash } from '../../../src/index.js';
 
 const schemaA = {
   'isbn': '9780140449136',

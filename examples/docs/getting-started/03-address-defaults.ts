@@ -1,6 +1,4 @@
-import {
-  InstantiationError, JsonTology
-} from '../../../src/index.js';
+import { JsonTology } from '../../../src/index.js';
 
 const AddressSchema = {
   '$id': 'https://bookstore.example/Address',
@@ -28,12 +26,13 @@ const jt = JsonTology.create({
 
 const jt2 = jt.set(AddressSchema);
 
+// country omitted - default 'US' applied
+// stripped
 const address = jt2.instantiate(AddressSchema.$id, {
   'city': 'Bookham',
-  'extra': 'ignored', // stripped
+  'extra': 'ignored',
   'postalCode': '94107',
   'street': '12 Elm Lane'
-  // country omitted  - default 'US' applied
 });
 
 // { street: '12 Elm Lane', city: 'Bookham', postalCode: '94107', country: 'US' }

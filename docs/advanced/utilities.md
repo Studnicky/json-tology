@@ -79,7 +79,7 @@ curie.expand('bk:Customer');                        // → 'https://bookstore.ex
 
 Convert JSON Pointer paths from `ValidationErrors` into JS access notation for a form library that uses dot/bracket paths.
 
-<<< ../../examples/docs/advanced/12-path-error-form-ui.ts
+<<< ../../examples/docs/advanced/23-path-error-form-ui.ts
 
 ### Example 3: Resolver: merge per-call options without mutating the base
 

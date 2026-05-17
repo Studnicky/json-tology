@@ -20,7 +20,8 @@ import { bookstoreEntities } from '../bookstore/index.js';
 
 const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
 
-const tbox = bookstoreEntities.toTbox().raw();
+const tbox = bookstoreEntities.toTbox().raw() as Array<{ '@id'?: unknown;
+  '@type'?: unknown }>;
 const store = new Store();
 
 for (const node of tbox) {
@@ -30,18 +31,15 @@ for (const node of tbox) {
   if (typeof id !== 'string' || typeof type !== 'string') {
     continue;
   }
-  store.addQuad(
-    DataFactory.namedNode(id),
-    DataFactory.namedNode(RDF_TYPE),
-    DataFactory.namedNode(type)
-  );
+  const subject = DataFactory.namedNode(id);
+  const predicate = DataFactory.namedNode(RDF_TYPE);
+  const object = DataFactory.namedNode(type);
+
+  store.addQuad(subject, predicate, object);
 }
 
-const owlClasses = store.getQuads(
-  null,
-  DataFactory.namedNode(RDF_TYPE),
-  DataFactory.namedNode('http://www.w3.org/2002/07/owl#Class'),
-  null
-);
+const predicate = DataFactory.namedNode(RDF_TYPE);
+const classObject = DataFactory.namedNode('http://www.w3.org/2002/07/owl#Class');
+const owlClasses = store.getQuads(null, predicate, classObject, null);
 
 console.assert(owlClasses.length > 0);

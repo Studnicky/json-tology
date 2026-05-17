@@ -1,6 +1,14 @@
+/**
+ * Multi-key discriminator narrowing — InferType handles `if` clauses
+ * with multiple required `const`-pinned properties. The result is a
+ * discriminated union narrowed on every if-pinned key. `then` here
+ * is the JSON Schema keyword, not a Promise method.
+ */
+
 import type { InferType } from '../../../src/types/index.js';
 
-const MultiDiscriminatorSchema = {
+/* eslint-disable unicorn/no-thenable -- 'then' is a JSON Schema keyword, not a Promise thenable. */
+const _MultiDiscriminatorSchema = {
   'else': {
     'properties': { 'width': { 'type': 'number' } },
     'required': ['width']
@@ -29,8 +37,8 @@ const MultiDiscriminatorSchema = {
   },
   'type': 'object'
 } as const;
+/* eslint-enable unicorn/no-thenable */
 
-type MultiShape = InferType<typeof MultiDiscriminatorSchema>;
-// { kind: 'circle'; color: 'red'; radius: number; ... }  - then branch
-// | { kind: string; color: string; width: number; ... }  - else branch
+type MultiShape = InferType<typeof _MultiDiscriminatorSchema>;
+
 void 0 as unknown as MultiShape;

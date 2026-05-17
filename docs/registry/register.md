@@ -105,19 +105,7 @@ ajv.addSchema(bookSchema);
 
 ### Examples
 
-```ts
-const syntheticId = jt.registerAnonymous({
-  type: 'object',
-  properties: {
-    couponCode: { type: 'string' },
-    discount:   { type: 'number', minimum: 0, maximum: 1 },
-  },
-  required: ['couponCode', 'discount'],
-});
-
-console.log(syntheticId); // 'urn:json-tology:hash:<hex>'
-jt.validate(syntheticId, { couponCode: 'SAVE10', discount: 0.1 });
-```
+<<< ../../examples/docs/errors/06-register-anonymous.ts
 
 ---
 

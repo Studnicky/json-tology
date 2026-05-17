@@ -2,11 +2,13 @@ import type {
   InferType, LooseInputType
 } from '../../../src/types/index.js';
 
-const EmailSchema = {
+const _EmailSchema = {
   'format': 'email',
   'type': 'string'
 } as const;
 
-type Email = InferType<typeof EmailSchema>; // string & FormatBrandInterface<'email'>
-type Input = LooseInputType<Email>; // string
+// string & FormatBrandInterface<'email'>
+type Email = InferType<typeof _EmailSchema>;
+// string
+type Input = LooseInputType<Email>;
 void 0 as unknown as Input;

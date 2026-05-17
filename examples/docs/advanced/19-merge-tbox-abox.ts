@@ -1,15 +1,15 @@
 /**
- * Combine TBox and ABox
+ * Merge TBox with separately sourced ABox
  *
- * Merge OWL TBox vocabulary with ABox individual data to create
- * a complete RDF document.
+ * Use toTbox() to get the OWL vocabulary, then combine with separately
+ * produced ABox quads (from toQuads or an external reasoner).
  */
 
 import {
   bookstoreEntities, CustomerSchema
 } from '../bookstore/index.js';
 
-const tbox = bookstoreEntities.ontology(); // TBox — OntologyBuilder
+const tbox = bookstoreEntities.toTbox();
 const abox = bookstoreEntities.toQuads(CustomerSchema, {
   'addresses': [{
     'city': 'München',
@@ -19,16 +19,17 @@ const abox = bookstoreEntities.toQuads(CustomerSchema, {
   'email': 'bastian.bux@bookstore.example',
   'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'name': 'Bastian Balthazar Bux'
-}); // ABox — QuadInterface[]
+});
 
-// Merge for a complete JSON-LD document:
+// OWL class/property declarations
+// ABox individual assertions (already a QuadInterface[])
 const merged = {
   '@context': tbox.context(),
   '@graph': [
-    ...tbox.raw(), // OWL/SHACL quads from the OntologyBuilder
-    ...abox // ABox individual quads (QuadInterface[] — spread directly)
+    ...tbox.raw(),
+    ...abox
   ]
 };
 
 console.assert(merged['@context'], 'context present');
-console.assert(merged['@graph'].length > 0, 'graph has content');
+console.assert(merged['@graph'].length > 0, 'graph has triples');

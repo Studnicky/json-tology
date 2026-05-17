@@ -18,8 +18,8 @@ if (!errs.ok) {
     'Should have JSON Pointer paths'
   );
   console.assert(
-    jsonPointerPaths.every((p) => {
-      return p.startsWith('/') || p === '';
+    jsonPointerPaths.every((path) => {
+      return path.startsWith('/') || path === '';
     }),
     'Paths should be in JSON Pointer format'
   );

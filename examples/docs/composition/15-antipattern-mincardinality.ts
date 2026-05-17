@@ -2,7 +2,7 @@ import { Compose } from '../../../src/index.js';
 
 // ✗ Don't do this — minCardinality on a multi-valued property is an OWL axiom;
 // it does NOT add a minItems constraint on the JSON Schema array
-const AuthoredBook = Compose.subClassOf(
+const _AuthoredBook = Compose.subClassOf(
   Compose.minCardinality('https://bookstore.example/authors', 2),
   {
     '$id': 'https://bookstore.example/AuthoredBook',
@@ -12,7 +12,7 @@ const AuthoredBook = Compose.subClassOf(
 // jt.validate('AuthoredBook', { authors: [] }) → passes (no minItems in JSON Schema)
 
 // ✓ Do this — use minItems in the JSON Schema definition for runtime enforcement
-const AuthoredBook2 = {
+const _AuthoredBook2 = {
   '$id': 'https://bookstore.example/AuthoredBook2',
   'properties': {
     'authors': {
@@ -23,4 +23,4 @@ const AuthoredBook2 = {
   'type': 'object'
 } as const;
 
-void 0 as unknown as [typeof AuthoredBook, typeof AuthoredBook2];
+void 0 as unknown as [typeof _AuthoredBook, typeof _AuthoredBook2];

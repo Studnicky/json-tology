@@ -10,7 +10,7 @@ const errs = bookstoreEntities.validate(ReviewSchema.$id, {
 if (!errs.ok) {
   // Anti-pattern: Constructing RFC 7807 manually
   // Don't do this - roll-your-own is fragile and inconsistent
-  const problem_wrong = {
+  const _problemWrong = {
     'errors': errs.items.map((err) => {
       return {
         'error': err.message,

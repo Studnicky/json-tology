@@ -17,4 +17,7 @@ import type {
 import type { InferType } from '../../../src/types/index.js';
 import type { LoggerInterface } from '../../../src/interfaces/index.js';
 
-void 0 as unknown as [JsonTology, Compose, Transform, Value, V, Hash, Changeset, SchemaRegistry, FormatRegistry, InferType, LoggerInterface];
+void 0 as unknown as [
+  JsonTology, Compose, Transform, Value, V, Hash, Changeset,
+  SchemaRegistry, FormatRegistry, InferType, LoggerInterface
+];

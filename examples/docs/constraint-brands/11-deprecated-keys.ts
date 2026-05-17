@@ -2,7 +2,7 @@ import type {
   DeprecatedKeysType, NonDeprecatedSchemaType
 } from '../../../src/types/index.js';
 
-const UserSchema = {
+const _UserSchema = {
   'properties': {
     'legacyId': {
       'deprecated': true,
@@ -14,6 +14,8 @@ const UserSchema = {
   'type': 'object'
 } as const;
 
-type DepKeys = DeprecatedKeysType<typeof UserSchema>; // 'legacyId'
-type User = NonDeprecatedSchemaType<typeof UserSchema>; // { name: string }  - no legacyId
+// 'legacyId'
+type DepKeys = DeprecatedKeysType<typeof _UserSchema>;
+// { name: string }  - no legacyId
+type User = NonDeprecatedSchemaType<typeof _UserSchema>;
 void 0 as unknown as [DepKeys, User];

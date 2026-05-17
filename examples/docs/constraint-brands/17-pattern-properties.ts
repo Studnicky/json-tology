@@ -1,6 +1,6 @@
 import type { InferType } from '../../../src/types/index.js';
 
-const MetadataSchema = {
+const _MetadataSchema = {
   'patternProperties': {
     '^data_': { 'type': 'string' },
     '^meta_': { 'type': 'number' }
@@ -8,12 +8,14 @@ const MetadataSchema = {
   'type': 'object'
 } as const;
 
-type Metadata = InferType<typeof MetadataSchema>;
+type Metadata = InferType<typeof _MetadataSchema>;
 
-const ok: Metadata = {
+// compiles
+const _ok: Metadata = {
   'data_name': 'Bastian',
   'meta_version': 1
-}; // compiles
-const bad: Metadata = { 'data_age': 99 }; // compile error  - must be string
+};
+// compile error — must be string
+const _bad: Metadata = { 'data_age': 99 };
 
-void 0 as unknown as [typeof ok, typeof bad];
+void 0 as unknown as [typeof _ok, typeof _bad];

@@ -1,7 +1,7 @@
 import type { InferType } from '../../../src/types/index.js';
 
 // not: { type }  - removes primitives from unions
-const NonStringSchema = {
+const _NonStringSchema = {
   'not': { 'type': 'string' },
   'type': [
     'string',
@@ -10,11 +10,11 @@ const NonStringSchema = {
   ]
 } as const;
 
-type NonString = InferType<typeof NonStringSchema>;
 // boolean | number
+type NonString = InferType<typeof _NonStringSchema>;
 
 // not: { const }  - removes specific values
-const NonNullStatusSchema = {
+const _NonNullStatusSchema = {
   'enum': [
     'active',
     'inactive',
@@ -23,8 +23,8 @@ const NonNullStatusSchema = {
   'not': { 'const': null }
 } as const;
 
-type NonNullStatus = InferType<typeof NonNullStatusSchema>;
 // 'active' | 'inactive'
+type NonNullStatus = InferType<typeof _NonNullStatusSchema>;
 
 // not: { enum }  - removes a set of values
 const RestrictedSchema = {
@@ -42,6 +42,6 @@ const RestrictedSchema = {
   }
 } as const;
 
-type Restricted = InferType<typeof RestrictedSchema>;
 // 'a' | 'd'
+type Restricted = InferType<typeof RestrictedSchema>;
 void 0 as unknown as [NonString, NonNullStatus, Restricted];

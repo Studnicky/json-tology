@@ -23,8 +23,10 @@ try {
 }
 
 console.assert(caught !== undefined);
-console.assert(caught?.code === 'POINTER_INVALID');
+if (caught) {
+  console.assert(caught.code === 'POINTER_INVALID');
+}
 
 const isbnSchema = bookstoreEntities.subschemaAt(BookSchema.$id, '/properties/isbn');
 
-console.assert(isbnSchema !== undefined);
+console.assert(typeof isbnSchema === 'object');

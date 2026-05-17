@@ -5,7 +5,7 @@
  * for form libraries that use dot/bracket paths.
  */
 
-import { Path } from 'json-tology';
+import { Path } from '../../../src/index.js';
 import {
   bookstoreEntities, OrderSchema
 } from '../bookstore/index.js';

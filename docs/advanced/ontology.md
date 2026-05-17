@@ -26,7 +26,7 @@ The bookstore schemas defined in the [Bookstore Domain](/bookstore-domain) are u
 
 #### Example 2: Merge TBox with separately sourced ABox
 
-<<< ../../examples/docs/advanced/08-merge-tbox-abox.ts
+<<< ../../examples/docs/advanced/19-merge-tbox-abox.ts
 
 ### Bad examples
 
@@ -74,11 +74,11 @@ const cached = jt.ontology();
 
 #### Example 1: Generate SHACL shapes JSON-LD from bookstore schemas
 
-<<< ../../examples/docs/advanced/09-toshacl-shapes.ts
+<<< ../../examples/docs/advanced/20-toshacl-shapes.ts
 
 #### Example 2: SHACL-only export for a validation pipeline
 
-<<< ../../examples/docs/advanced/10-toshacl-validation-pipeline.ts
+<<< ../../examples/docs/advanced/21-toshacl-validation-pipeline.ts
 
 ### Bad examples
 
@@ -124,7 +124,7 @@ const shacl = builder.shaclObject();
 
 #### Example 1: Generate OWL JSON-LD for all bookstore schemas
 
-<<< ../../examples/docs/advanced/11-ontology-both-tbox-shacl.ts
+<<< ../../examples/docs/advanced/22-ontology-both-tbox-shacl.ts
 
 #### Example 2: OWL and SHACL from cross-referenced schemas
 
@@ -144,11 +144,11 @@ const shacl = builder.shaclObject();
 
 #### Example 1: Project a customer to ABox quads
 
-<<< ../../examples/docs/advanced/13-toquads-customer.ts
+<<< ../../examples/docs/advanced/24-toquads-customer.ts
 
 #### Example 2: Combine TBox and ABox
 
-<<< ../../examples/docs/advanced/14-toquads-combine-tbox-abox.ts
+<<< ../../examples/docs/advanced/25-toquads-combine-tbox-abox.ts
 
 ---
 

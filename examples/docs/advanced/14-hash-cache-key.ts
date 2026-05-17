@@ -5,7 +5,7 @@
  * Two structurally identical schemas with different key order produce the same hash.
  */
 
-import { Hash } from 'json-tology';
+import { Hash } from '../../../src/index.js';
 
 const schemaA = {
   'properties': {
