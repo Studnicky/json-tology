@@ -16,45 +16,7 @@
 
 ### Example 1: Payment method union
 
-```ts
-import { Compose, JsonTology } from 'json-tology';
-import type { InferType } from 'json-tology/types';
-
-const CreditCardPaymentSchema = {
-  $id: 'https://bookstore.example/CreditCardPayment',
-  type: 'object',
-  properties: {
-    method:    { type: 'string', const: 'credit_card' },
-    cardLast4: { type: 'string', pattern: '^\\d{4}$' },
-    expiry:    { type: 'string', pattern: '^\\d{2}/\\d{2}$' },
-  },
-  required: ['method', 'cardLast4', 'expiry'],
-} as const;
-
-const InvoicePaymentSchema = {
-  $id: 'https://bookstore.example/InvoicePayment',
-  type: 'object',
-  properties: {
-    method:        { type: 'string', const: 'invoice' },
-    purchaseOrder: { type: 'string' },
-  },
-  required: ['method', 'purchaseOrder'],
-} as const;
-
-const PaymentSchema = Compose.discriminatedUnion(
-  'method',
-  [CreditCardPaymentSchema, InvoicePaymentSchema] as const,
-  'https://bookstore.example/Payment',
-);
-
-type Payment = InferType<typeof PaymentSchema>;
-// CreditCardPayment | InvoicePayment
-
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [CreditCardPaymentSchema, InvoicePaymentSchema, PaymentSchema] as const,
-});
-```
+<<< ../../examples/docs/composition/05-discriminated-union.ts
 
 ### Example 2: Validate each variant
 

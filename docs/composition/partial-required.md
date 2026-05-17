@@ -18,28 +18,7 @@
 
 #### Example 1: PATCH customer endpoint
 
-```ts
-import { Compose, JsonTology } from 'json-tology';
-import type { InferType } from 'json-tology/types';
-import { CustomerSchema } from './bookstore/index.js';
-
-const PatchCustomerSchema = Compose.partial(
-  CustomerSchema,
-  'https://bookstore.example/PatchCustomer',
-);
-
-type PatchCustomer = InferType<typeof PatchCustomerSchema>;
-// { id?: string; email?: string; name?: string; addresses?: Address[] }
-
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [PatchCustomerSchema] as const,
-});
-
-// PATCH body  - only name provided
-const patch = jt.instantiate(PatchCustomerSchema.$id, { name: 'Bastian Balthazar Bux' });
-// { name: 'Bastian Balthazar Bux' }
-```
+<<< ../../examples/docs/composition/03-partial-required.ts
 
 #### Example 2: Form initial state for a Review
 

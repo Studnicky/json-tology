@@ -18,35 +18,7 @@
 
 #### Example 1: Book catalog summary - only display fields
 
-```ts
-import { Compose, JsonTology } from 'json-tology';
-import type { InferType } from 'json-tology/types';
-import { BookSchema } from './bookstore/index.js';
-
-const BookSummarySchema = Compose.pick(
-  BookSchema,
-  ['isbn', 'title', 'price', 'inStock'] as const,
-  'https://bookstore.example/BookSummary',
-);
-
-type BookSummary = InferType<typeof BookSummarySchema>;
-// { readonly isbn?: string; readonly title?: string; readonly price?: number; readonly inStock?: boolean }
-
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [BookSummarySchema] as const,
-});
-
-const summary = jt.instantiate(BookSummarySchema.$id, {
-  isbn:    '9783522128001',
-  title:   'Die unendliche Geschichte',
-  price:   14.99,
-  inStock: true,
-  authors: ['Michael Ende'],  // not picked  - stripped during coerce
-});
-// { isbn: '...', title: '...', price: 14.99, inStock: true }
-// authors is gone
-```
+<<< ../../examples/docs/composition/02-pick-omit.ts
 
 #### Example 2: Customer card for embedding in order responses
 

@@ -14,35 +14,7 @@
 
 Both `Order` and `Audit` required arrays must be satisfied.
 
-```ts
-import { Compose, JsonTology } from 'json-tology';
-import type { InferType } from 'json-tology/types';
-import { OrderLineSchema, OrderSchema } from './bookstore/index.js';
-
-const AuditSchema = {
-  $id: 'https://bookstore.example/Audit',
-  type: 'object',
-  properties: {
-    createdAt: { type: 'string', format: 'date-time' },
-    updatedAt: { type: 'string', format: 'date-time' },
-    createdBy: { type: 'string' },
-  },
-  required: ['createdAt', 'updatedAt'],
-} as const;
-
-const AuditedOrderSchema = Compose.intersection(
-  [OrderSchema, AuditSchema] as const,
-  'https://bookstore.example/AuditedOrder',
-);
-
-type AuditedOrder = InferType<typeof AuditedOrderSchema>;
-// Order & { createdAt: string; updatedAt: string; createdBy?: string }
-
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [OrderLineSchema, OrderSchema, AuditSchema, AuditedOrderSchema] as const,
-});
-```
+<<< ../../examples/docs/composition/04-intersection.ts
 
 ### Example 2: Validation fails if any constituent schema fails
 

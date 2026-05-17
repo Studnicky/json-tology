@@ -18,43 +18,7 @@
 
 #### Example 1: ISO datetime to Date - full round-trip
 
-```ts
-import { Transform, JsonTology, InstantiationError } from 'json-tology';
-
-const PlacedAtSchema = Transform.create(
-  {
-    $id:    'https://bookstore.example/PlacedAt',
-    type:   'string',
-    format: 'date-time',
-  } as const,
-  {
-    decode: (isoString: string) => new Date(isoString),
-    encode: (dateValue: Date)   => dateValue.toISOString(),
-  },
-);
-
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [PlacedAtSchema] as const,
-});
-
-// Wire → Domain
-const raw = '2026-01-15T10:30:00.000Z';
-const date = jt.instantiate(PlacedAtSchema.$id, raw);
-console.log(date instanceof Date);          // true
-console.log((date as Date).getFullYear());  // 2026
-
-// Domain → Wire
-const wire = jt.encode(PlacedAtSchema, date as Date);
-console.log(wire === raw); // true
-
-// Invalid input still throws InstantiationError
-try {
-  jt.instantiate(PlacedAtSchema.$id, 'not-a-date');
-} catch (error) {
-  console.log(error instanceof InstantiationError); // true
-}
-```
+<<< ../../examples/docs/transforms/01-decode-encode.ts
 
 #### Example 2: Price in cents to decimal
 

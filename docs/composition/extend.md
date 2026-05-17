@@ -19,23 +19,7 @@ Reach for `subClassOf` when you want the ontology to read as taxonomy and you ma
 
 Building on `CustomerSchema` from the [bookstore domain](/bookstore-domain):
 
-```ts
-import { Compose } from 'json-tology';
-import type { InferType } from 'json-tology/types';
-import { CustomerSchema } from './bookstore/index.js';
-
-const CustomerWithDiscountSchema = Compose.extend(
-  CustomerSchema,
-  {
-    discountRate: { type: 'number', minimum: 0, maximum: 1, default: 0 },
-    tier:         { type: 'string', enum: ['bronze', 'silver', 'gold'] },
-  } as const,
-  'https://bookstore.example/CustomerWithDiscount',
-);
-
-type CustomerWithDiscount = InferType<typeof CustomerWithDiscountSchema>;
-// Customer & { discountRate?: number; tier?: 'bronze' | 'silver' | 'gold' }
-```
+<<< ../../examples/docs/composition/01-extend.ts
 
 ### Example 2: Extend Book with featured display info
 
@@ -66,7 +50,7 @@ const featured = jt.instantiate(FeaturedBookSchema.$id, {
   position: 1,
 });
 // featured.badge === 'bestseller'
-// featured.isbn === '9780140449136' (inherited)
+// featured.isbn === '9783522128001' (inherited)
 ```
 
 ### Example 3: Tighten a property in the additions side of the allOf

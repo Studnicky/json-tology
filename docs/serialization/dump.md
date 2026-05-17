@@ -26,21 +26,7 @@
 
 #### Example 1: Basic serialization of a coerced book
 
-```ts
-import { bookstoreEntities, BookSchema } from './bookstore/index.js';
-
-const book = bookstoreEntities.instantiate(BookSchema.$id, {
-  isbn:    '9783522128001',
-  title:   'Die unendliche Geschichte',
-  authors: ['Michael Ende'],
-  price:   14.99,
-  // currency defaults to 'USD', inStock defaults to true
-});
-
-// Wire-form output  - all fields including defaults
-const wire = bookstoreEntities.dump(BookSchema.$id, book);
-// { isbn: '...', title: '...', authors: [...], price: 14.99, currency: 'USD', inStock: true }
-```
+<<< ../../examples/docs/serialization/01-dump.ts
 
 #### Example 2: Compact payload - exclude default-valued fields
 

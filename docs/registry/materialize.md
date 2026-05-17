@@ -14,19 +14,7 @@
 
 `currency` and `inStock` have declared defaults - they are filled in automatically.
 
-```ts
-import { bookstoreEntities, BookSchema } from './bookstore/index.js';
-
-const book = bookstoreEntities.materialize(BookSchema, {
-  isbn:    '9783522128001',
-  title:   'Die unendliche Geschichte',
-  authors: ['Michael Ende'],
-  price:   14.99,
-});
-
-console.log(book.currency); // 'USD'  ← from default
-console.log(book.inStock);  // true   ← from default
-```
+<<< ../../examples/docs/materialization/01-materialize.ts
 
 ### Example 2: Materialize a Customer - addresses default is empty array
 

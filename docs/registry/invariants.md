@@ -16,34 +16,7 @@ Invariants are cross-field validation rules that run after structural validation
 
 #### Example 1: Order total must match line items
 
-```ts
-import { JsonTology } from 'json-tology';
-import type { InferType } from 'json-tology/types';
-import { OrderLineSchema, OrderSchema } from './bookstore/index.js';
-
-type Order = InferType<typeof OrderSchema>;
-
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [OrderLineSchema, OrderSchema] as const,
-  invariants: {
-    'https://bookstore.example/Order': [
-      {
-        name:    'totalMatchesItems',
-        pointer: '/total',   // error pinned to /total path
-        fn: (order) => {
-          const typed = order as Order;
-          const computed = (typed.items as Array<{ unitPrice: number; quantity: number }>)
-            .reduce((sum, l) => sum + l.unitPrice * l.quantity, 0);
-          return Math.abs(typed.total - computed) < 0.01
-            ? null
-            : `total must equal sum of items (expected ${computed.toFixed(2)}, got ${typed.total})`;
-        },
-      },
-    ],
-  },
-});
-```
+<<< ../../examples/docs/invariants/01-add-invariant.ts
 
 #### Example 2: Invariant failure surfaces in validate(), instantiate(), is()
 

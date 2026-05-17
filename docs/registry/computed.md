@@ -16,49 +16,7 @@ Computed fields are properties derived from other fields at instantiate/material
 
 #### Example 1: Order total derived from line items (construction time)
 
-```ts
-import { JsonTology } from 'json-tology';
-import type { InferType } from 'json-tology/types';
-import { OrderLineSchema } from './bookstore/index.js';
-
-const ComputedOrderSchema = {
-  $id: 'https://bookstore.example/ComputedOrder',
-  type: 'object',
-  properties: {
-    id:         { type: 'string', format: 'uuid' },
-    customerId: { type: 'string', format: 'uuid' },
-    placedAt:   { type: 'string', format: 'date-time' },
-    items: {
-      type: 'array',
-      items: { $ref: 'https://bookstore.example/OrderLine' },
-      minItems: 1,
-    },
-    currency: { type: 'string', default: 'USD' },
-    total: {
-      type: 'number',
-      'jt:computed': true,  // ← computed marker
-    },
-  },
-  required: ['id', 'customerId', 'items', 'placedAt'],
-  // total NOT in required  - it's always supplied by the compute fn
-} as const;
-
-type ComputedOrder = InferType<typeof ComputedOrderSchema>;
-
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [OrderLineSchema, ComputedOrderSchema] as const,
-  computeds: {
-    'https://bookstore.example/ComputedOrder': {
-      total: (order) => {
-        const o = order as ComputedOrder;
-        return (o.items as Array<{ unitPrice: number; quantity: number }>)
-          .reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
-      },
-    },
-  },
-});
-```
+<<< ../../examples/docs/computed/01-add-computed.ts
 
 #### Example 2: Coerce triggers the compute function
 
