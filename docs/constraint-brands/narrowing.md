@@ -26,7 +26,7 @@ Use `MultipleOfRangeType<Min, Max, Step>` as a standalone utility for arbitrary 
 
 Simple `not` clauses narrow the inferred type:
 
-<<< ../../examples/docs/constraint-brands/15-not-exclusion.ts
+<<< ../../examples/docs/constraint-brands/25-not-exclusion.ts
 
 ### `propertyNames: { enum }` strict keys <Badge type="info" text="Compile-time" />
 

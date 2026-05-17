@@ -270,7 +270,7 @@ type Email = InferType<typeof EmailSchema>;
 
 ### Before and after: numeric brands
 
-<<< ../../examples/docs/constraint-brands/14-score-numeric.ts
+<<< ../../examples/docs/constraint-brands/24-score-numeric.ts
 
 | `numericBrands` | `Score` resolves to | Plain `number` assignable? |
 |---|---|---|
@@ -288,7 +288,7 @@ type Email = InferType<typeof EmailSchema>;
 
 ### Before and after: array brands
 
-<<< ../../examples/docs/constraint-brands/16-set-unique-items.ts
+<<< ../../examples/docs/constraint-brands/26-set-unique-items.ts
 
 | `arrayBrands` | `Set` resolves to | `readonly string[]` assignable? |
 |---|---|---|
