@@ -16,26 +16,7 @@ Pure static utilities that work on any value without a schema.
 
 #### Example 1: Clone an order before adding a line item
 
-```ts
-import { Operations } from 'json-tology/value';
-import { bookstoreEntities, OrderSchema } from './bookstore/index.js';
-
-const order = bookstoreEntities.instantiate(OrderSchema.$id, {
-  id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-  customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  placedAt:   '2026-01-15T10:30:00Z',
-  total:      14.99,
-  items:      [{ bookIsbn: '9783522128001', quantity: 1, unitPrice: 14.99 }],
-});
-
-const copy = Operations.clone(order);
-(copy.items as Array<{ bookIsbn: string; quantity: number; unitPrice: number }>).push(
-  { bookIsbn: '9783522115056', quantity: 1, unitPrice: 9.99 }
-);
-
-console.log(order.items.length); // 1  - original unchanged
-console.log(copy.items.length);  // 2
-```
+<<< ../../examples/docs/value/01-clone-hash.ts
 
 #### Example 2: Clone nested addresses
 

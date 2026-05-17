@@ -16,25 +16,7 @@ Schema-aware instance methods on `jt.value`. All three operate against the regis
 
 #### Example 1: Cast form input with string numbers
 
-```ts
-import { JsonTology } from 'json-tology';
-import { BookSchema } from './bookstore/index.js';
-
-const jt = JsonTology.create({
-  baseIRI:   'https://bookstore.example',
-  schemas:   [BookSchema] as const,
-  enableTypeCast: true,
-});
-
-const book = jt.value.cast(BookSchema.$id, {
-  isbn:    '9783522128001',
-  title:   'Die unendliche Geschichte',
-  authors: ['Michael Ende'],
-  price:   '14.99',   // string → coerced to number
-  inStock: 'true',    // string → coerced to boolean
-});
-// { isbn: '...', ..., price: 14.99, inStock: true, currency: 'USD' }
-```
+<<< ../../examples/docs/value/03-cast-clean-convert.ts
 
 #### Example 2: Cast URL query params for a Review filter
 

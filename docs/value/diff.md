@@ -26,29 +26,7 @@ See [`Value.diff`](#value-diff) for usage examples and [`Operations.patch`](#ope
 
 #### Example 1: Detect email change on a customer update
 
-```ts
-import { Value } from 'json-tology';
-import { bookstoreEntities, CustomerSchema } from './bookstore/index.js';
-
-const before = bookstoreEntities.instantiate(CustomerSchema.$id, {
-  id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  email: 'bastian.bux@bookstore.example',
-  name:  'Bastian Balthazar Bux',
-});
-
-const after = bookstoreEntities.instantiate(CustomerSchema.$id, {
-  id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  email: 'bastian.b.bux@bookstore.example', // changed
-  name:  'Bastian Balthazar Bux',
-});
-
-const changes = Value.diff(before, after);
-
-console.log(changes.isEmpty);   // false
-console.log(changes.length);    // 1
-console.log(changes.operations);
-// [{ op: 'set', path: '/email', value: 'bastian.b.bux@bookstore.example' }]
-```
+<<< ../../examples/docs/value/02-diff.ts
 
 #### Example 2: Track order line additions
 

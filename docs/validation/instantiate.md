@@ -16,20 +16,7 @@
 
 Valid input: unknown properties are stripped, defaults are filled, the return type is `Customer`.
 
-```ts
-import { bookstoreEntities, CustomerSchema } from './bookstore/index.js';
-
-const customer = bookstoreEntities.instantiate(CustomerSchema.$id, {
-  id:            'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  email:         'bastian.bux@bookstore.example',
-  name:          'Bastian Balthazar Bux',
-  internalNotes: 'vip',   // ← stripped  - not in schema
-  // addresses omitted  - default [] applied
-});
-// customer is typed as Customer
-// customer.addresses === []
-// customer.internalNotes → compile error: property doesn't exist on Customer
-```
+<<< ../../examples/docs/validation/01-instantiate-basic.ts
 
 ### Example 2: Coerce as part of a request handler
 
