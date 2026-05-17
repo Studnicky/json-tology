@@ -488,20 +488,20 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:customer:alice-smith__sameAs__urn:legacy-crm:cust-00042",
+        "id": "urn:bookstore:customer:bastian-bux__sameAs__urn:coreander-antiquariat:cust-00042",
         "kind": "sameAs",
         "label": "sameAs",
-        "source": "urn:bookstore:customer:alice-smith",
-        "target": "urn:legacy-crm:cust-00042"
+        "source": "urn:bookstore:customer:bastian-bux",
+        "target": "urn:coreander-antiquariat:cust-00042"
       }
     },
     {
       "data": {
-        "id": "urn:bookstore:rarebook:dune-1965-chilton__sameAs__http://www.worldcat.org/oclc/463127",
+        "id": "urn:bookstore:rarebook:neverending-1979-thienemann__sameAs__http://www.worldcat.org/oclc/5705614",
         "kind": "sameAs",
         "label": "sameAs",
-        "source": "urn:bookstore:rarebook:dune-1965-chilton",
-        "target": "http://www.worldcat.org/oclc/463127"
+        "source": "urn:bookstore:rarebook:neverending-1979-thienemann",
+        "target": "http://www.worldcat.org/oclc/5705614"
       }
     }
   ],
@@ -809,30 +809,30 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:customer:alice-smith",
+        "id": "urn:bookstore:customer:bastian-bux",
         "kind": "instance",
-        "label": "alice-smith"
+        "label": "bastian-bux"
       }
     },
     {
       "data": {
-        "id": "urn:legacy-crm:cust-00042",
+        "id": "urn:coreander-antiquariat:cust-00042",
         "kind": "instance",
         "label": "cust-00042"
       }
     },
     {
       "data": {
-        "id": "urn:bookstore:rarebook:dune-1965-chilton",
+        "id": "urn:bookstore:rarebook:neverending-1979-thienemann",
         "kind": "instance",
-        "label": "dune-1965-chilton"
+        "label": "neverending-1979-thienemann"
       }
     },
     {
       "data": {
-        "id": "http://www.worldcat.org/oclc/463127",
+        "id": "http://www.worldcat.org/oclc/5705614",
         "kind": "instance",
-        "label": "463127"
+        "label": "5705614"
       }
     }
   ]

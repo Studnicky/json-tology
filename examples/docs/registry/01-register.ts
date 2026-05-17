@@ -1,48 +1,61 @@
 /**
  * register / has / get / list — Example 1: Registry lifecycle
- * Demonstrates: construction-time registration, post-construction register,
- * has/get/list inspection
+ * Demonstrates: post-construction register, has/get inspection, registerAnonymous
+ *
+ * Operates against the canonical bookstore registry. The canonical
+ * entities (Customer, Book, …) are already registered at construction
+ * time; this example layers a GiftCertificate schema on top to show
+ * post-hoc registration.
  */
 
 import {
-  JsonTology
-} from '../../../src/index.js';
-import {
-  BookSchema, CustomerSchema
+  BookSchema, bookstoreEntities, CustomerSchema
 } from '../bookstore/index.js';
 
-// Construction-time registration
-const bookstoreEntities = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
-  'schemas': [CustomerSchema] as const
-});
-
+// Canonical entities registered at construction time.
 console.assert(bookstoreEntities.registry.has(CustomerSchema.$id));
-console.assert(!bookstoreEntities.registry.has(BookSchema.$id));
-
-// Post-construction register
-bookstoreEntities.set(BookSchema);
 console.assert(bookstoreEntities.registry.has(BookSchema.$id));
 
-// Retrieve schema object
-const raw = bookstoreEntities.registry.get(BookSchema.$id);
+// Post-construction register — a gift certificate Carl Conrad Coreander
+// offers for purchases at the antiquariat.
+const CoreanderGiftCertificateSchema = {
+  '$id': 'https://bookstore.example/CoreanderGiftCertificate',
+  'properties': {
+    'code': { 'type': 'string' },
+    'value': {
+      'maximum': 10_000,
+      'minimum': 0,
+      'type': 'number'
+    }
+  },
+  'required': [
+    'code',
+    'value'
+  ],
+  'type': 'object'
+} as const;
+
+console.assert(!bookstoreEntities.registry.has(CoreanderGiftCertificateSchema.$id));
+
+bookstoreEntities.set(CoreanderGiftCertificateSchema);
+
+console.assert(bookstoreEntities.registry.has(CoreanderGiftCertificateSchema.$id));
+
+// Retrieve the schema object.
+const raw = bookstoreEntities.registry.get(CoreanderGiftCertificateSchema.$id);
 
 console.assert(raw !== undefined);
 
-
-// List all registered IDs
-console.assert(bookstoreEntities.registry.has(CustomerSchema.$id));
-console.assert(bookstoreEntities.registry.has(BookSchema.$id));
-
-// registerAnonymous — no $id needed
+// registerAnonymous — no $id needed. Useful for ad-hoc input shapes,
+// e.g. a one-off "BastianCheckoutPayload" the storefront posts.
 const syntheticId = bookstoreEntities.registerAnonymous({
   'properties': {
-    'couponCode': { 'type': 'string' },
-    'discount': { 'type': 'number' }
+    'certificateCode': { 'type': 'string' },
+    'remainingBalance': { 'type': 'number' }
   },
   'required': [
-    'couponCode',
-    'discount'
+    'certificateCode',
+    'remainingBalance'
   ],
   'type': 'object'
 });

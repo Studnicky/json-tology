@@ -1,49 +1,49 @@
 /**
  * coerce — Example 3: Coerce nested schema with $ref (Order → OrderLine)
  * Demonstrates: nested coercion, defaults on nested schema, unknown stripping
+ *
+ * Bastian Balthazar Bux orders two Michael Ende titles in one transaction:
+ * the canonical 1979 rare-edition Neverending Story plus a contemporary
+ * Momo paperback. Total = 850 + 16.99 EUR — must satisfy the registered
+ * `orderTotalMatchesItems` invariant on OrderSchema.
  */
 
 import {
-  bookstoreEntities, OrderSchema
+  aboxFixtures, bookstoreEntities, OrderSchema
 } from '../bookstore/index.js';
 
 const order = bookstoreEntities.instantiate(OrderSchema.$id, {
-  'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  'id': 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+  'customerId': aboxFixtures.customer.id,
+  'id': aboxFixtures.order.id,
   'items': [
     {
-      'bookIsbn': '9780140449136',
+      // Canonical rare Neverending Story fixture — 850 EUR × 1.
+      'bookIsbn': aboxFixtures.rareBook.isbn,
       'extra': 'gone',
-      'quantity': 2,
-      'unitPrice': {
-        'amount': 12.99,
-        'currency': 'USD'
-      }
+      'quantity': 1,
+      'unitPrice': aboxFixtures.rareBook.price
     },
     {
-      'bookIsbn': '9780062316110',
+      // Michael Ende, Momo — Thienemann, 1973 — 16.99 EUR × 1.
+      'bookIsbn': '9783522115056',
       'quantity': 1,
       'unitPrice': {
-        'amount': 1,
-        'currency': 'USD'
+        'amount': 16.99,
+        'currency': 'EUR'
       }
     }
   ],
-  'placedAt': '2026-01-15T10:30:00Z',
-  'shippingAddress': {
-    'city': 'New York',
-    'country': 'US',
-    'postalCode': '10001',
-    'street': '123 Main St'
-  },
-  // total = 12.99 × 2 + 1.00 × 1 = 26.98 — must match the registered
-  // `orderTotalMatchesItems` invariant; tampering trips a jt:invariant error.
+  'placedAt': aboxFixtures.order.placedAt,
+  'shippingAddress': aboxFixtures.order.shippingAddress,
+  // 850 × 1 + 16.99 × 1 = 866.99 — satisfies `orderTotalMatchesItems`.
   'total': {
-    'amount': 26.98,
-    'currency': 'USD'
+    'amount': 866.99,
+    'currency': 'EUR'
   },
   'unexpectedField': 'stripped'
 });
 
 console.assert(order.items.length === 2);
-console.assert(!('extra' in order.items[0])); console.assert(!('unexpectedField' in order));
+console.assert(!('extra' in order.items[0]));
+console.assert(!('unexpectedField' in order));
+console.assert(order.items[0].bookIsbn === aboxFixtures.rareBook.isbn);

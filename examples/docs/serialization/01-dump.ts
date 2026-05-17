@@ -1,6 +1,10 @@
 /**
  * bookstoreEntities.dump — Example 1: Wire-form serialization with options
  * Demonstrates: excludeDefaults, include, basic dump
+ *
+ * The book is Cornelia Funke's Tintenherz (Cecilie Dressler Verlag, 2003) —
+ * a contemporary German children's classic shelved alongside the
+ * Neverending Story rare-book fixture in Coreander's bookshop.
  */
 
 import {
@@ -8,29 +12,29 @@ import {
 } from '../bookstore/index.js';
 
 const book = bookstoreEntities.instantiate(BookSchema.$id, {
-  'authors': ['Fyodor Dostoevsky'],
-  'isbn': '9780140449136',
+  'authors': ['Cornelia Funke'],
+  'isbn': '9783791504650',
   'price': {
-    'amount': 14.99,
-    'currency': 'USD'
+    'amount': 19.95,
+    'currency': 'EUR'
   },
   'printStatus': 'inPrint',
-  'title': 'Crime and Punishment'
+  'title': 'Tintenherz'
   // inStock defaults to true
 });
 
-// Basic dump — all fields including defaults
+// Basic dump — all fields including defaults.
 const wire = bookstoreEntities.dump(BookSchema.$id, book);
 
 console.assert(typeof wire === 'object' && wire !== null);
 console.assert((wire as { 'inStock': boolean }).inStock);
 
-// excludeDefaults — drops inStock:true
+// excludeDefaults — drops inStock:true.
 const compact = bookstoreEntities.dump(BookSchema.$id, book, { 'excludeDefaults': true });
 
 console.assert(!('inStock' in (compact as object)));
 
-// include — projection to specific fields
+// include — projection to specific fields.
 const projected = bookstoreEntities.dump(BookSchema.$id, book, {
   'include': [
     'isbn',

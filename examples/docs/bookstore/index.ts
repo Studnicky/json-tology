@@ -131,21 +131,25 @@ export const bookstoreEntities = JsonTology.create({
 // ──────────────────────────────────────────────────────────────────────────
 // ABox: a customer placing an order for a rare book.
 //
-// Concrete individuals demonstrated by this scenario:
-//   • Customer Alice Smith — has both the current bookstore IRI and the
-//     legacy CRM ID (`cust-00042`) the bookstore inherited from a 2024
-//     systems migration. owl:sameAs lets a reasoner merge facts from both
-//     authoritative sources.
-//   • A rare first-edition Frank Herbert's "Dune" (Chilton Books, 1965).
-//     Has both the bookstore catalog IRI and the WorldCat OCLC record IRI;
-//     declaring sameAs unifies bibliographic facts across catalogs.
-//   • Alice's order containing one line item for the rare book.
+// Concrete individuals demonstrated by this scenario (drawn from the
+// framing story of Michael Ende's *The Neverending Story*):
+//   • Customer Bastian Balthazar Bux — has both the current bookstore
+//     IRI and the legacy antiquariat ID (`cust-00042`) the bookstore
+//     inherited from Carl Conrad Coreander's antique shop records.
+//     owl:sameAs lets a reasoner merge facts from both authoritative
+//     sources.
+//   • A rare first edition of Michael Ende's "Die unendliche Geschichte"
+//     (Thienemann Verlag, Stuttgart, 1979). Has both the bookstore
+//     catalog IRI and the WorldCat OCLC record IRI; declaring sameAs
+//     unifies bibliographic facts across catalogs.
+//   • Bastian's order containing one line item for the rare book.
 //
 // Only the owl:sameAs identity assertions register into the registry
 // (and thereby appear in the live graph as gold-dashed instance ellipses).
-// The order/customer/rare-book instance values themselves are shown below
-// as runtime data the user would pass to `instantiate()` / `toQuads()` —
-// they are documentation, not registry state.
+// The order/customer/rare-book instance values themselves are exported
+// from `./aboxFixtures.ts` as runtime data a user would pass to
+// `instantiate()` / `toQuads()` — they are documentation, not registry
+// state.
 // ──────────────────────────────────────────────────────────────────────────
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -205,15 +209,15 @@ bookstoreEntities.addInvariant<{
 });
 
 bookstoreEntities.sameAs(
-  'urn:bookstore:customer:alice-smith',
-  'urn:legacy-crm:cust-00042'
+  'urn:bookstore:customer:bastian-bux',
+  'urn:coreander-antiquariat:cust-00042'
 );
 bookstoreEntities.sameAs(
-  'urn:bookstore:rarebook:dune-1965-chilton',
-  'http://www.worldcat.org/oclc/463127'
+  'urn:bookstore:rarebook:neverending-1979-thienemann',
+  'http://www.worldcat.org/oclc/5705614'
 );
 
-// Concrete ABox instance values for the Alice-orders-Dune scenario.
+// Concrete ABox instance values for the Bastian-orders-Neverending-Story scenario.
 // Lives in its own file so any doc page can `<<<` include the fixtures
 // without dragging in the registry construction.
 export { aboxFixtures } from './aboxFixtures.js';

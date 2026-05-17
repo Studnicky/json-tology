@@ -1,43 +1,45 @@
 /**
  * Transform.brand — Example 1: Nominally distinct Customer vs Order IDs
  * Demonstrates: compile-time brand, BrandOutputType, coerce to obtain branded value
+ *
+ * Branded ID schemas register onto the canonical bookstore via
+ * `bookstoreEntities.set()`. The two concrete IDs are the canonical
+ * Bastian Balthazar Bux customer and order fixtures from his rare
+ * Neverending Story purchase at Coreander's antiquariat.
  */
 
+import { Transform } from '../../../src/index.js';
 import {
-  JsonTology, Transform
-} from '../../../src/index.js';
+  aboxFixtures, bookstoreEntities
+} from '../bookstore/index.js';
 
-const CustomerIdSchema = Transform.brand(
+const BrandedCustomerIdSchema = Transform.brand(
   {
-    '$id': 'https://bookstore.example/CustomerId',
+    '$id': 'https://bookstore.example/BrandedCustomerId',
     'format': 'uuid',
     'type': 'string'
   } as const,
   'CustomerId'
 );
 
-const OrderIdSchema = Transform.brand(
+const BrandedOrderIdSchema = Transform.brand(
   {
-    '$id': 'https://bookstore.example/OrderId',
+    '$id': 'https://bookstore.example/BrandedOrderId',
     'format': 'uuid',
     'type': 'string'
   } as const,
   'OrderId'
 );
 
+bookstoreEntities.set(BrandedCustomerIdSchema);
+bookstoreEntities.set(BrandedOrderIdSchema);
 
-const localJt = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
-  'schemas': [
-    CustomerIdSchema,
-    OrderIdSchema
-  ] as const
-});
-
-// Both are strings at runtime
-const cid = localJt.instantiate(CustomerIdSchema.$id, 'c1a2b3d4-e5f6-7890-abcd-ef1234567890');
-const oid = localJt.instantiate(OrderIdSchema.$id, 'a1b2c3d4-e5f6-7890-abcd-ef1234567890');
+// Both are strings at runtime — Bastian's customer + order UUIDs.
+const cid = bookstoreEntities.instantiate(BrandedCustomerIdSchema.$id, aboxFixtures.customer.id);
+const oid = bookstoreEntities.instantiate(BrandedOrderIdSchema.$id, aboxFixtures.order.id);
 
 console.assert(typeof cid === 'string');
 console.assert(typeof oid === 'string');
-// At compile time: CustomerId ≠ OrderId — type-level protection
+console.assert(cid === aboxFixtures.customer.id);
+console.assert(oid === aboxFixtures.order.id);
+// At compile time: CustomerId ≠ OrderId — type-level protection.

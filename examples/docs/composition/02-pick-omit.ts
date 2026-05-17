@@ -1,19 +1,18 @@
 /**
  * Compose.pick / omit — Example 1: BookSummary and PublicBook
  * Demonstrates: pick keeps fields, omit removes fields, required adjusted
+ *
+ * Derived schemas register onto the canonical bookstore via
+ * `bookstoreEntities.set()`. Every validate/instantiate call goes
+ * through the same registry the rest of the docs reference, using
+ * the canonical Bastian-orders-Neverending-Story fixture data.
  */
 
+import { Compose } from '../../../src/index.js';
 import {
-  Compose, JsonTology
-} from '../../../src/index.js';
-import {
-  AmountSchema, AuthorNameSchema, BookAnnotationsSchema, BookRatingHistogramSchema,
-  BookSchema, CurrencyCodeSchema, CustomerNameSchema,
-  IsbnSchema, MoneySchema, PrintStatusSchema, PublicationDateSchema,
-  StockLevelSchema, TitleSchema
+  aboxFixtures, BookSchema, bookstoreEntities
 } from '../bookstore/index.js';
 
-// pick — keep only catalog display fields
 const BookSummarySchema = Compose.pick(
   BookSchema,
   [
@@ -25,60 +24,33 @@ const BookSummarySchema = Compose.pick(
   'https://bookstore.example/BookSummary'
 );
 
-// omit — remove internal fields
 const PublicBookSchema = Compose.omit(
   BookSchema,
   ['inStock'] as const,
   'https://bookstore.example/PublicBook'
 );
 
-
-const bookstoreEntities = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
-  'schemas': [
-    AmountSchema,
-    CustomerNameSchema,
-    AuthorNameSchema,
-    CurrencyCodeSchema,
-    IsbnSchema,
-    MoneySchema,
-    TitleSchema,
-    BookAnnotationsSchema,
-    BookRatingHistogramSchema,
-    PrintStatusSchema,
-    PublicationDateSchema,
-    StockLevelSchema,
-    BookSchema,
-    BookSummarySchema,
-    PublicBookSchema
-  ] as const
-});
+bookstoreEntities.set(BookSummarySchema);
+bookstoreEntities.set(PublicBookSchema);
 
 // BookSummary — only picked fields survive
 const summary = bookstoreEntities.instantiate(BookSummarySchema.$id, {
-  'authors': ['Dostoevsky'],
-  'inStock': true,
-  'isbn': '9780140449136',
-  'price': {
-    'amount': 14.99,
-    'currency': 'USD'
-  },
-  'title': 'Crime and Punishment'
+  'inStock': aboxFixtures.rareBook.inStock,
+  'isbn': aboxFixtures.rareBook.isbn,
+  'price': aboxFixtures.rareBook.price,
+  'title': aboxFixtures.rareBook.title
 });
 
 console.assert(!('authors' in summary));
-console.assert(summary.isbn === '9780140449136');
+console.assert(summary.isbn === aboxFixtures.rareBook.isbn);
 
-// PublicBook — inStock removed
+// PublicBook — inStock removed, printStatus still required
 const pub = bookstoreEntities.validate(PublicBookSchema.$id, {
-  'authors': ['Dostoevsky'],
-  'isbn': '9780140449136',
-  'price': {
-    'amount': 14.99,
-    'currency': 'USD'
-  },
-  'printStatus': 'inPrint',
-  'title': 'Crime and Punishment'
+  'authors': aboxFixtures.rareBook.authors,
+  'isbn': aboxFixtures.rareBook.isbn,
+  'price': aboxFixtures.rareBook.price,
+  'printStatus': aboxFixtures.rareBook.printStatus,
+  'title': aboxFixtures.rareBook.title
 });
 
 console.assert(pub.length === 0);

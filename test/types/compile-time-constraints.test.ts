@@ -194,7 +194,7 @@ const jt2 = JsonTology.create({
 });
 
 const addr = jt2.materialize(AddressSchema, { 'street': '456 Oak' });
-// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- MaterializedSchemaType resolves correctly in tsc
+
 const _addrCity: string = addr.city;
 
 void _addrCity;

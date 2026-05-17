@@ -1,100 +1,62 @@
 /**
- * Compose.discriminatedUnion — Example 1: Payment method union
- * Demonstrates: oneOf with discriminator, Compose.narrow type guard
+ * Compose.discriminatedUnion — Example 1: Book print status union
+ *
+ * Demonstrates oneOf with a discriminator. Book print-status variants
+ * use the canonical `InPrintBookSchema` / `OutOfPrintBookSchema` from
+ * the bookstore. The discriminator is `printStatus` ('inPrint' vs
+ * 'outOfPrint'). Inputs are the canonical rare-book fixture (Bastian's
+ * 1979 Thienemann first edition of *Die unendliche Geschichte*) and a
+ * sibling in-print Michael Ende title (Momo, 9783522115056).
  */
 
-import {
-  Compose, JsonTology
-} from '../../../src/index.js';
+import { Compose } from '../../../src/index.js';
 import type { InferType } from '../../../src/types/index.js';
+import {
+  aboxFixtures, bookstoreEntities, InPrintBookSchema, OutOfPrintBookSchema
+} from '../bookstore/index.js';
 
-const CreditCardPaymentSchema = {
-  '$id': 'https://bookstore.example/CreditCardPayment',
-  'properties': {
-    'cardLast4': {
-      'pattern': '^\\d{4}$',
-      'type': 'string'
-    },
-    'expiry': {
-      'pattern': '^\\d{2}/\\d{2}$',
-      'type': 'string'
-    },
-    'method': {
-      'const': 'credit_card',
-      'type': 'string'
-    }
-  },
-  'required': [
-    'method',
-    'cardLast4',
-    'expiry'
-  ],
-  'type': 'object'
-} as const;
-
-const InvoicePaymentSchema = {
-  '$id': 'https://bookstore.example/InvoicePayment',
-  'properties': {
-    'method': {
-      'const': 'invoice',
-      'type': 'string'
-    },
-    'purchaseOrder': { 'type': 'string' }
-  },
-  'required': [
-    'method',
-    'purchaseOrder'
-  ],
-  'type': 'object'
-} as const;
-
-const PaymentSchema = Compose.discriminatedUnion(
-  'method',
+const BookStatusSchema = Compose.discriminatedUnion(
+  'printStatus',
   [
-    CreditCardPaymentSchema,
-    InvoicePaymentSchema
+    InPrintBookSchema,
+    OutOfPrintBookSchema
   ] as const,
-  'https://bookstore.example/Payment'
+  'https://bookstore.example/BookStatus'
 );
 
-type Payment = InferType<typeof PaymentSchema>;
+type BookStatus = InferType<typeof BookStatusSchema>;
 
-const localJt = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
-  'schemas': [
-    CreditCardPaymentSchema,
-    InvoicePaymentSchema,
-    PaymentSchema
-  ] as const
-});
+bookstoreEntities.set(BookStatusSchema);
 
-// Validate each variant
-console.assert(localJt.validate(PaymentSchema.$id, {
-  'cardLast4': '4242',
-  'expiry': '12/28',
-  'method': 'credit_card'
-}).length === 0);
-console.assert(localJt.validate(PaymentSchema.$id, {
-  'method': 'invoice',
-  'purchaseOrder': 'PO-001'
-}).length === 0);
+// OutOfPrint variant — Bastian's rare 1979 Thienemann hardcover.
+const outOfPrintErrs = bookstoreEntities.validate(BookStatusSchema.$id, aboxFixtures.rareBook);
 
-// Narrow type guard
-function describePayment(payment: Payment): string {
-  if (Compose.narrow(payment, 'method', 'credit_card')) {
-    return `Card ending in ${payment.cardLast4}`;
-  }
-  if (Compose.narrow(payment, 'method', 'invoice')) {
-    return `Invoice PO#${payment.purchaseOrder}`;
-  }
+console.assert(outOfPrintErrs.length === 0);
 
-  return 'unknown';
-}
+// InPrint variant — Michael Ende's Momo (Thienemann Verlag, 1973), still in print.
+const inPrintData = {
+  'authors': ['Michael Ende'],
+  'inStock': true,
+  'isbn': '9783522115056',
+  'price': {
+    'amount': 16.99,
+    'currency': 'EUR'
+  },
+  'printStatus': 'inPrint',
+  'title': 'Momo'
+} as const;
 
-const cc = localJt.instantiate(PaymentSchema.$id, {
-  'cardLast4': '4242',
-  'expiry': '12/28',
-  'method': 'credit_card'
-});
+const inPrintErrs = bookstoreEntities.validate(BookStatusSchema.$id, inPrintData);
 
-console.assert(describePayment(cc) === 'Card ending in 4242');
+console.assert(inPrintErrs.length === 0);
+
+// Compile-time discriminator narrowing — `BookStatus` is the discriminated
+// union of `InPrintBook | OutOfPrintBook`. The rare-book fixture's literal
+// `printStatus: 'outOfPrint'` satisfies the `OutOfPrintBook` branch.
+const rare: BookStatus = { ...aboxFixtures.rareBook };
+
+const description = rare.printStatus === 'inPrint'
+  ? `In print: ${rare.title}`
+  : `Rare: ${rare.title}`;
+
+console.assert(description.startsWith('Rare: Die unendliche Geschichte'));

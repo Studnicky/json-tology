@@ -60,7 +60,7 @@ These have distinct structure, distinct OWL class identity, or both.
 | `SoloAuthoredBookSchema` | Registered invariant `signedFirstEditionIsSoloAuthored` on `SignedFirstEditionSchema` — fires through the same `ValidationErrors` collection as structural errors, with `keyword: 'jt:invariant'`. |
 | `AnthologyBookSchema` | If a domain need for it surfaces, add a registered invariant on the specific schema that requires multi-author composition; do not introduce a separate OWL class for a pure cardinality predicate. |
 
-Single-authorship adds no structural fields and earns no distinct OWL class identity — but it is still a json-tology axiom, expressed through `addInvariant`. The `Compose.cardinality / minCardinality / allValuesFrom` builder surfaces are demonstrated in `examples/docs/composition/restrictions.ts` against standalone demo schemas (not registered into the canonical bookstore).
+Single-authorship adds no structural fields and earns no distinct OWL class identity — but it is still a json-tology axiom, expressed through `addInvariant`. The `Compose.cardinality / minCardinality / allValuesFrom` builder surfaces are demonstrated in `examples/docs/composition/restrictions.ts` against canonical bookstore schemas — e.g. the same `Book.authors` property the `signedFirstEditionIsSoloAuthored` invariant constrains. If a surface needs a property the canonical schemas don't carry, *extend the canonical bookstore* to add it; never invent a one-off synthetic schema for a docs example.
 
 #### New primitive: `PrintStatusSchema`
 

@@ -32,12 +32,12 @@ export function runCompiledBench(): BenchResult[] {
   registry.validate(NestedSchema.$id, nestedValid);
 
   // Interpreted path via GraphEngine directly
-  const simpleEngine = new GraphEngine(SimpleSchema as Record<string, unknown>, {
+  const simpleEngine = new GraphEngine(SimpleSchema, {
     'lookupSchema': (id) => {
       return registry.get(id);
     }
   });
-  const nestedEngine = new GraphEngine(NestedSchema as Record<string, unknown>, {
+  const nestedEngine = new GraphEngine(NestedSchema, {
     'lookupSchema': (id) => {
       return registry.get(id);
     }

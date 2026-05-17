@@ -1,45 +1,29 @@
 /**
  * Validation Example 08 — coerce with enableDefaults: false
  * Demonstrates: per-call opt-out of default-filling for PATCH semantics
+ *
+ * Uses the canonical Bastian Balthazar Bux customer fixture against the
+ * canonical bookstore registry — no mini-registry.
  */
 
-import { JsonTology } from '../../../src/index.js';
 import {
-  AddressSchema, CityNameSchema, CountryCodeSchema, CustomerIdSchema,
-  CustomerNameSchema, CustomerSchema, EmailSchema, PersonNameSchema,
-  PostalCodeSchema, StreetLineSchema
+  aboxFixtures, bookstoreEntities, CustomerSchema
 } from '../bookstore/index.js';
 
-const jt = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
-  'schemas': [
-    CityNameSchema,
-    CountryCodeSchema,
-    CustomerIdSchema,
-    EmailSchema,
-    PersonNameSchema,
-    PostalCodeSchema,
-    StreetLineSchema,
-    CustomerNameSchema,
-    AddressSchema,
-    CustomerSchema
-  ] as const
-});
-
-// Full coerce — fills defaults including addresses: []
-const full = jt.instantiate(CustomerSchema.$id, {
-  'email': 'alice@bookstore.example',
-  'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  'name': 'Alice Chen'
+// Full coerce — fills defaults including addresses: [].
+const full = bookstoreEntities.instantiate(CustomerSchema.$id, {
+  'email': aboxFixtures.customer.email,
+  'id': aboxFixtures.customer.id,
+  'name': aboxFixtures.customer.name
 }) as Record<string, unknown>;
 
-console.log('Full coerce (addresses default filled):', Array.isArray(full.addresses) && full.addresses.length === 0);
+console.assert(Array.isArray(full.addresses) && (full.addresses as unknown[]).length === 0);
 
-// Patch coerce — missing fields stay missing (no defaults filled)
-const patch = jt.instantiate(CustomerSchema.$id, {
-  'email': 'alice@bookstore.example',
-  'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  'name': 'Alice Chen'
+// Patch coerce — missing fields stay missing (no defaults filled).
+const patch = bookstoreEntities.instantiate(CustomerSchema.$id, {
+  'email': aboxFixtures.customer.email,
+  'id': aboxFixtures.customer.id,
+  'name': aboxFixtures.customer.name
 }, { 'enableDefaults': false }) as Record<string, unknown>;
 
-console.log('Patch coerce (addresses not filled):', patch.addresses === undefined);
+console.assert(patch.addresses === undefined);
