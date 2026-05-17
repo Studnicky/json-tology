@@ -38,7 +38,7 @@ const before = bookstoreEntities.instantiate(CustomerSchema.$id, {
 
 const after = bookstoreEntities.instantiate(CustomerSchema.$id, {
   id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  email: 'bastian.balthazar.bux@bookstore.example', // changed
+  email: 'bastian.b.bux@bookstore.example', // changed
   name:  'Bastian Balthazar Bux',
 });
 
@@ -47,7 +47,7 @@ const changes = Value.diff(before, after);
 console.log(changes.isEmpty);   // false
 console.log(changes.length);    // 1
 console.log(changes.operations);
-// [{ op: 'set', path: '/email', value: 'bastian.balthazar.bux@bookstore.example' }]
+// [{ op: 'set', path: '/email', value: 'bastian.b.bux@bookstore.example' }]
 ```
 
 #### Example 2: Track order line additions

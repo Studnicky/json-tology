@@ -2,7 +2,7 @@
  * Value.diff — Example 1: Detect changes, replay changeset
  * Demonstrates: operations array, isEmpty
  *
- * Bastian Balthazar Bux updates the email on his customer record from
+ * Bastian Balthazar Bux updates the email on their customer record from
  * the old antiquariat-era address to a more formal contact.
  */
 

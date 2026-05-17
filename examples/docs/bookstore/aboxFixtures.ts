@@ -23,7 +23,7 @@
  */
 
 // Shared so Customer.addresses[0] and Order.shippingAddress stay in sync —
-// Bastian's order ships to the address he registered with.
+// Bastian's order ships to the address they registered with.
 export const BASTIAN_HOME_ADDRESS = {
   'city': 'München',
   'country': 'DE',
@@ -80,7 +80,7 @@ export const aboxFixtures = {
     'weightGrams': 980
   } as const,
   'review': {
-    'body': "Ende's framing of a boy who reads himself into a story is craftsmanship of the highest order; this Thienemann first edition with the red and green ink intact is the only way to read it.",
+    'body': "Ende's framing of a reader who reads themself into a story is craftsmanship of the highest order; this Thienemann first edition with the red and green ink intact is the only way to read it.",
     'bookIsbn': NEVERENDING_ISBN,
     'customerId': BASTIAN_ID,
     'id': 'a4d3c2b1-a098-7654-a210-fedcba987654',

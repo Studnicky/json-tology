@@ -4,7 +4,7 @@
  *
  * The transform schema registers onto the canonical bookstore via
  * `bookstoreEntities.set()`. The decoded value is the moment Bastian
- * Balthazar Bux placed his order for the 1979 Neverending Story from
+ * Balthazar Bux placed their order for the 1979 Neverending Story from
  * Coreander's antiquariat — `aboxFixtures.order.placedAt`.
  */
 

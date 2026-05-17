@@ -4,7 +4,7 @@
  *
  * Branded ID schemas register onto the canonical bookstore via
  * `bookstoreEntities.set()`. The two concrete IDs are the canonical
- * Bastian Balthazar Bux customer and order fixtures from his rare
+ * Bastian Balthazar Bux customer and order fixtures from their rare
  * Neverending Story purchase at Coreander's antiquariat.
  */
 
