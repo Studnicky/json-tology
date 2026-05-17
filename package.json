@@ -62,6 +62,7 @@
     "docs:dev": "vitepress dev docs",
     "docs:build": "npm run build:bookstore-tbox && vitepress build docs",
     "docs:preview": "vitepress preview docs",
+    "docs:check-includes": "node ./scripts/check-docs-includes.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "clean": "rm -rf dist",
