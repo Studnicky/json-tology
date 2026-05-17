@@ -22,17 +22,7 @@ Returns `JsonTology<merged TMap>` so the new schema's static type is visible to 
 
 #### Example 1: Construction-time registration (preferred)
 
-```ts
-import { JsonTology } from 'json-tology';
-
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [
-    AddressSchema, CustomerSchema, BookSchema,
-    OrderLineSchema, OrderSchema, ReviewSchema,
-  ] as const,
-});
-```
+<<< ../../examples/docs/registry/01-register.ts
 
 #### Example 2: Post-construction registration
 

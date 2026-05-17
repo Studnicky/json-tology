@@ -76,23 +76,7 @@ for (const err of errs) {
 
 #### Example 1: Structured log
 
-```ts
-import { bookstoreEntities, OrderSchema } from './bookstore/index.js';
-
-const errs = bookstoreEntities.validate(OrderSchema.$id, badOrder);
-
-if (!errs.ok) {
-  const rollup = errs.aggregate();
-  // { count: 2, paths: ['items', 'total'], keywords: ['exclusiveMinimum', 'minItems'] }
-
-  logger.warn('validation.failed', {
-    count:    rollup.count,
-    keywords: rollup.keywords,
-    paths:    rollup.paths,
-    schema:   OrderSchema.$id,
-  });
-}
-```
+<<< ../../examples/docs/errors/02-format.ts
 
 #### Example 2: Metric recording
 

@@ -10,19 +10,7 @@
 
 ### Example 1: Blank Book form state
 
-```ts
-import { bookstoreEntities, BookSchema } from './bookstore/index.js';
-
-const blank = bookstoreEntities.value.create(BookSchema.$id);
-// {
-//   isbn:     '',          ← zero-value for required string
-//   title:    '',          ← zero-value for required string
-//   authors:  [],          ← zero-value for required array
-//   price:    0,           ← zero-value for required number
-//   currency: 'USD',       ← explicit default preserved
-//   inStock:  true,        ← explicit default preserved
-// }
-```
+<<< ../../examples/docs/value/04-create.ts
 
 ### Example 2: Blank Customer for testing
 
