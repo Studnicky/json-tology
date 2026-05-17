@@ -44,22 +44,7 @@ export type DeprecatedKeysType<T>
 
 #### Example 1: Extract deprecated keys from a schema
 
-```ts
-import type { DeprecatedKeysType } from 'json-tology/types';
-import { CustomerSchema } from '../bookstore/index.js';
-
-// Imagine CustomerSchema had a legacy `phone` field:
-const LegacyCustomerSchema = {
-  ...CustomerSchema,
-  properties: {
-    ...CustomerSchema.properties,
-    phone: { type: 'string', deprecated: true },
-  },
-} as const;
-
-type Deprecated = DeprecatedKeysType<typeof LegacyCustomerSchema>;
-// 'phone'
-```
+<<< ../../examples/docs/types/02-utility-types.ts
 
 #### Example 2: Compile-time assertion that a key is deprecated
 

@@ -36,7 +36,7 @@ const DOCS_ROOT = join(REPO_ROOT, 'docs');
 // Ratchet ceiling: docs/**\/*.md may carry at most this many inline ```ts
 // blocks that live OUTSIDE a `::: code-group ... :::` comparator section.
 // Lower as Phase 3 progresses.
-const INLINE_TS_CEILING = 433;
+const INLINE_TS_CEILING = 427;
 
 async function listMarkdownFiles(root) {
   const out = [];

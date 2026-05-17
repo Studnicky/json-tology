@@ -18,18 +18,7 @@ The bookstore domain in [Bookstore Domain](/bookstore-domain) supplies prefixes 
 
 `new Curie(prefixes)` returns a CURIE handler. `compact(iri)` shrinks a full IRI; `expand(curie)` resolves a compact form back to a full IRI.
 
-```ts
-import { Curie } from 'json-tology';
-
-const curie = new Curie({
-  bk:  'https://bookstore.example/',
-  xsd: 'http://www.w3.org/2001/XMLSchema#',
-});
-
-curie.compact('https://bookstore.example/Book');  // 'bk:Book'
-curie.expand('bk:Book');                          // 'https://bookstore.example/Book'
-curie.expand('xsd:string');                       // 'http://www.w3.org/2001/XMLSchema#string'
-```
+<<< ../../examples/docs/advanced/07-utilities.ts
 
 When multiple prefixes share an overlap, `compact` picks the longest match.
 

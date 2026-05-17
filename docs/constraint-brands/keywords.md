@@ -8,24 +8,7 @@ json-tology surfaces JSON Schema constraint keywords as compile-time phantom bra
 
 Without brands, `{ type: 'string', format: 'email' }` and `{ type: 'string', format: 'uri' }` both infer as `string`. Any string can flow between them silently. With brands enabled (the default), each constraint keyword intersects a phantom brand onto the base type. The types become structurally incompatible.
 
-```ts
-import type { InferType } from 'json-tology/types';
-
-const EmailSchema = {
-  $id: 'https://example.com/Email',
-  type: 'string',
-  format: 'email',
-} as const;
-
-const UriSchema = {
-  $id: 'https://example.com/Uri',
-  type: 'string',
-  format: 'uri',
-} as const;
-
-type Email = InferType<typeof EmailSchema>;
-type Uri   = InferType<typeof UriSchema>;
-```
+<<< ../../examples/docs/constraint-brands/02-keywords.ts
 
 | | Brands ON (default) | Brands OFF |
 |---|---|---|

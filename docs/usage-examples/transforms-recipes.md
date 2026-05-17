@@ -12,17 +12,7 @@ All recipes use the [bookstore domain](/bookstore-domain). For the underlying AP
 
 Wire format: `'2026-01-15T10:30:00Z'`. Decoded type: `Date`.
 
-```ts
-import { JsonTology, Transform } from 'json-tology';
-
-const PlacedAtSchema = Transform.create(
-  { $id: 'urn:bookstore:PlacedAt', type: 'string', format: 'date-time' } as const,
-  {
-    decode: (isoString: string) => new Date(isoString),
-    encode: (dateValue: Date)   => dateValue.toISOString()
-  }
-);
-```
+<<< ../../examples/docs/usage-examples/03-transforms-recipes.ts
 
 Symmetric and lossless: `encode(decode(x)) === x` for any RFC 3339 string.
 

@@ -22,20 +22,7 @@ The bookstore schemas defined in the [Bookstore Domain](/bookstore-domain) are u
 
 #### Example 1: Generate OWL TBox JSON-LD from bookstore schemas
 
-```ts
-import { bookstoreEntities } from './bookstore/schemas.js';
-
-const tbox = bookstoreEntities.toTbox();
-
-// Full OWL JSON-LD string
-console.log(tbox.jsonLd());
-
-// OWL JSON-LD as a JS object
-const owl = tbox.jsonLdObject();
-
-// Raw graph nodes (OWL quads only  - no SHACL)
-const raw = tbox.raw();
-```
+<<< ../../examples/docs/advanced/03-ontology.ts
 
 #### Example 2: Merge TBox with separately sourced ABox
 

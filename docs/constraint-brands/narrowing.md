@@ -10,19 +10,7 @@ Beyond phantom brands on individual keywords, the type system narrows structural
 
 Bounded `integer` schemas with both bounds in the 0-50 range automatically produce literal union types:
 
-```ts
-const RatingSchema = {
-  type: 'integer',
-  minimum: 1,
-  maximum: 5,
-} as const;
-
-type Rating = InferType<typeof RatingSchema>;
-// 1 | 2 | 3 | 4 | 5
-
-const r: Rating = 3;   // compiles
-const bad: Rating = 0;  // compile error  - 0 is not in 1..5
-```
+<<< ../../examples/docs/constraint-brands/01-narrowing.ts
 
 Exclusive bounds are normalized automatically: `exclusiveMinimum: 0` becomes inclusive minimum `1`, `exclusiveMaximum: 6` becomes inclusive maximum `5`.
 
