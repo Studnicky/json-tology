@@ -9,72 +9,102 @@ import {
 import { parse as vParse } from 'valibot';
 import { SchemaRegistry } from '../../../src/modules/registry/SchemaRegistry.js';
 
-// Register email format for TypeBox (it ships without built-in formats)
+// Register formats for TypeBox (it ships without built-in formats)
 FormatRegistry.Set('email', (value) => {
   return /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/u.test(value);
 });
 FormatRegistry.Set('date-time', (value) => {
   return !Number.isNaN(Date.parse(value));
 });
+FormatRegistry.Set('uuid', (value) => {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu.test(value);
+});
 
 import {
   bench, type BenchResult, section
 } from './harness.js';
 import {
-  defaultsInput, DefaultsSchema,
-  SimpleSchema, SimpleSchemaIoTs,
-  SimpleSchemaTypebox, SimpleSchemaValibot, SimpleSchemaZod, simpleValid
+  bookstoreBenchSchemas,
+  customerDefaultsInput,
+  ReviewSchemaIoTs,
+  ReviewSchemaTypebox, ReviewSchemaValibot, ReviewSchemaZod, reviewValid
 } from './fixtures.js';
+import {
+  CustomerSchema, ReviewSchema
+} from '../bookstore/index.js';
 
 export function runCoerceBench(): BenchResult[] {
   const results: BenchResult[] = [];
 
   const registry = new SchemaRegistry({ 'castTypes': true });
 
-  registry.set(SimpleSchema);
-  registry.set(DefaultsSchema);
+  for (const schema of bookstoreBenchSchemas) {
+    registry.set(schema as Record<string, unknown>);
+  }
 
   // Warm up
-  registry.instantiate(SimpleSchema, simpleValid);
-  registry.instantiate(DefaultsSchema, defaultsInput);
+  registry.instantiate(ReviewSchema, reviewValid);
+  registry.instantiate(CustomerSchema, customerDefaultsInput);
 
-  section('coerce — already-valid data (no coercion needed)');
+  section('coerce — already-valid Review (no coercion needed)');
 
-  results.push(bench('coerce valid', 'json-tology', () => {
-    registry.instantiate(SimpleSchema, simpleValid);
+  results.push(bench('coerce review valid', 'json-tology', () => {
+    registry.instantiate(ReviewSchema, reviewValid);
   }));
 
-  results.push(bench('coerce valid', 'typebox', () => {
-    Value.Parse(SimpleSchemaTypebox, simpleValid);
+  results.push(bench('coerce review valid', 'typebox', () => {
+    Value.Parse(ReviewSchemaTypebox, reviewValid);
   }));
 
-  results.push(bench('coerce valid', 'zod', () => {
-    SimpleSchemaZod.parse(simpleValid);
+  results.push(bench('coerce review valid', 'zod', () => {
+    ReviewSchemaZod.parse(reviewValid);
   }));
 
-  results.push(bench('coerce valid', 'valibot', () => {
-    vParse(SimpleSchemaValibot, simpleValid);
+  results.push(bench('coerce review valid', 'valibot', () => {
+    vParse(ReviewSchemaValibot, reviewValid);
   }));
 
-  results.push(bench('coerce valid', 'io-ts', () => {
-    SimpleSchemaIoTs.decode(simpleValid);
+  results.push(bench('coerce review valid', 'io-ts', () => {
+    ReviewSchemaIoTs.decode(reviewValid);
   }));
 
-  section('coerce — defaults application');
+  section('coerce — Customer with defaults application (addresses → [])');
 
-  results.push(bench('coerce defaults', 'json-tology', () => {
-    registry.instantiate(DefaultsSchema, defaultsInput);
+  results.push(bench('coerce customer defaults', 'json-tology', () => {
+    registry.instantiate(CustomerSchema, customerDefaultsInput);
   }));
 
-  const TBDefaultsSchema = Type.Object({
-    'active': Type.Boolean({ 'default': true }),
-    'role': Type.String({ 'default': 'user' }),
-    'score': Type.Integer({ 'default': 0 }),
-    'tags': Type.Array(Type.String(), { 'default': [] })
+  // TypeBox mirror of the bookstore Customer wire shape so the defaults
+  // application can be compared head-to-head with json-tology.
+  const CustomerWithDefaultsTb = Type.Object({
+    'addresses': Type.Array(
+      Type.Object({
+        'city': Type.String({
+          'maxLength': 100,
+          'minLength': 1
+        }),
+        'country': Type.String({ 'pattern': '^[A-Z]{2}$' }),
+        'postalCode': Type.String({
+          'maxLength': 12,
+          'minLength': 3
+        }),
+        'street': Type.String({
+          'maxLength': 200,
+          'minLength': 1
+        })
+      }),
+      { 'default': [] }
+    ),
+    'email': Type.String({ 'format': 'email' }),
+    'id': Type.String({ 'format': 'uuid' }),
+    'name': Type.String({
+      'maxLength': 200,
+      'minLength': 1
+    })
   });
 
-  results.push(bench('coerce defaults', 'typebox', () => {
-    Value.Parse(TBDefaultsSchema, defaultsInput);
+  results.push(bench('coerce customer defaults', 'typebox', () => {
+    Value.Parse(CustomerWithDefaultsTb, customerDefaultsInput);
   }));
 
   return results;

@@ -21,26 +21,7 @@ Compose.subClassOf(restriction, body): typeof body
 
 You want to express OWL property-restriction class axioms - anonymous classes that constrain how a property is used. Each restriction becomes an `owl:Restriction` blank node in the TBox, referenced from the body class via `rdfs:subClassOf`. Restrictions compose: chaining `Compose.subClassOf` accumulates `jt:restrictions` on the body schema.
 
-```ts
-import { Compose, JsonTology } from 'json-tology';
-
-const PARENT = 'https://example.com/parent';
-
-const PersonWithExactlyTwoParents = Compose.subClassOf(
-  Compose.cardinality(PARENT, 2),
-  {
-    $id: 'urn:example:PersonWithExactlyTwoParents',
-    type: 'object',
-  } as const
-);
-
-const jt = JsonTology.create({
-  baseIRI: 'urn:example',
-  schemas: [PersonWithExactlyTwoParents] as const,
-});
-
-console.log(jt.toTbox().jsonLd());
-```
+<<< ../../examples/docs/composition/08-restrictions.ts
 
 The TBox emits:
 

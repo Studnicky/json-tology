@@ -9,109 +9,109 @@ import {
   bench, type BenchResult, section
 } from './harness.js';
 import {
-  AddressSchema, ajvValidateNested, ajvValidateSimple,
-  CustomerSchema, NestedSchema,
-  NestedSchemaIoTs,
-  NestedSchemaTypebox, NestedSchemaValibot, NestedSchemaZod, nestedValid,
-  OrderItemSchema, simpleInvalid,
-  SimpleSchema, SimpleSchemaIoTs, SimpleSchemaTypebox, SimpleSchemaValibot,
-  SimpleSchemaZod, simpleValid
+  ajvValidateOrder, ajvValidateReview,
+  bookstoreBenchSchemas,
+  OrderSchemaIoTs, OrderSchemaTypebox, OrderSchemaValibot, OrderSchemaZod,
+  orderValid,
+  reviewInvalid, ReviewSchemaIoTs, ReviewSchemaTypebox, ReviewSchemaValibot,
+  ReviewSchemaZod, reviewValid
 } from './fixtures.js';
+import {
+  OrderSchema, ReviewSchema
+} from '../bookstore/index.js';
 
 export function runValidateBench(): BenchResult[] {
   const results: BenchResult[] = [];
 
   const registry = new SchemaRegistry();
 
-  registry.set(SimpleSchema);
-  registry.set(AddressSchema);
-  registry.set(CustomerSchema);
-  registry.set(OrderItemSchema);
-  registry.set(NestedSchema);
+  for (const schema of bookstoreBenchSchemas) {
+    registry.set(schema as Record<string, unknown>);
+  }
 
-  const tbSimple = TypeCompiler.Compile(SimpleSchemaTypebox);
-  const tbNested = TypeCompiler.Compile(NestedSchemaTypebox);
+  const tbReview = TypeCompiler.Compile(ReviewSchemaTypebox);
+  const tbOrder = TypeCompiler.Compile(OrderSchemaTypebox);
 
   // Force lazy compilation
-  registry.validate(SimpleSchema.$id, simpleValid);
-  registry.validate(NestedSchema.$id, nestedValid);
+  registry.validate(ReviewSchema.$id, reviewValid);
+  registry.validate(OrderSchema.$id, orderValid);
 
-  section('Validation — simple flat schema (valid data)');
+  section('Validation — Review (flat object, valid data)');
 
-  results.push(bench('simple valid', 'json-tology', () => {
-    registry.validate(SimpleSchema.$id, simpleValid);
+  results.push(bench('review valid', 'json-tology', () => {
+    registry.validate(ReviewSchema.$id, reviewValid);
   }));
 
-  results.push(bench('simple valid', 'typebox', () => {
-    tbSimple.Check(simpleValid);
+  results.push(bench('review valid', 'typebox', () => {
+    tbReview.Check(reviewValid);
   }));
 
-  results.push(bench('simple valid', 'ajv', () => {
-    ajvValidateSimple(simpleValid);
+  results.push(bench('review valid', 'ajv', () => {
+    ajvValidateReview(reviewValid);
   }));
 
-  results.push(bench('simple valid', 'zod', () => {
-    SimpleSchemaZod.safeParse(simpleValid);
+  results.push(bench('review valid', 'zod', () => {
+    ReviewSchemaZod.safeParse(reviewValid);
   }));
 
-  results.push(bench('simple valid', 'valibot', () => {
-    safeParse(SimpleSchemaValibot, simpleValid);
+  results.push(bench('review valid', 'valibot', () => {
+    safeParse(ReviewSchemaValibot, reviewValid);
   }));
 
-  results.push(bench('simple valid', 'io-ts', () => {
-    SimpleSchemaIoTs.decode(simpleValid);
+  results.push(bench('review valid', 'io-ts', () => {
+    ReviewSchemaIoTs.decode(reviewValid);
   }));
 
-  section('Validation — simple flat schema (invalid data, error collection)');
+  section('Validation — Review (invalid data, error collection)');
 
-  results.push(bench('simple invalid', 'json-tology', () => {
-    registry.validate(SimpleSchema.$id, simpleInvalid);
+  results.push(bench('review invalid', 'json-tology', () => {
+    registry.validate(ReviewSchema.$id, reviewInvalid);
   }));
 
-  results.push(bench('simple invalid', 'typebox', () => {
-    void [...tbSimple.Errors(simpleInvalid)];
+  results.push(bench('review invalid', 'typebox', () => {
+    void [...tbReview.Errors(reviewInvalid)];
   }));
 
-  results.push(bench('simple invalid', 'ajv', () => {
-    ajvValidateSimple(simpleInvalid);
+  results.push(bench('review invalid', 'ajv', () => {
+    ajvValidateReview(reviewInvalid);
   }));
 
-  results.push(bench('simple invalid', 'zod', () => {
-    SimpleSchemaZod.safeParse(simpleInvalid);
+  results.push(bench('review invalid', 'zod', () => {
+    ReviewSchemaZod.safeParse(reviewInvalid);
   }));
 
-  results.push(bench('simple invalid', 'valibot', () => {
-    safeParse(SimpleSchemaValibot, simpleInvalid);
+  results.push(bench('review invalid', 'valibot', () => {
+    safeParse(ReviewSchemaValibot, reviewInvalid);
   }));
 
-  results.push(bench('simple invalid', 'io-ts', () => {
-    SimpleSchemaIoTs.decode(simpleInvalid);
+  results.push(bench('review invalid', 'io-ts', () => {
+    ReviewSchemaIoTs.decode(reviewInvalid);
   }));
 
-  section('Validation — nested schema (valid data)');
+  section('Validation — Order (nested $ref graph, valid data)');
 
-  results.push(bench('nested valid', 'json-tology', () => {
-    registry.validate(NestedSchema.$id, nestedValid);
+  results.push(bench('order valid', 'json-tology', () => {
+    registry.validate(OrderSchema.$id, orderValid);
   }));
 
-  results.push(bench('nested valid', 'typebox', () => {
-    tbNested.Check(nestedValid);
+  results.push(bench('order valid', 'typebox', () => {
+    tbOrder.Check(orderValid);
   }));
 
-  results.push(bench('nested valid', 'ajv', () => {
-    ajvValidateNested(nestedValid);
+  results.push(bench('order valid', 'ajv', () => {
+    ajvValidateOrder(orderValid);
   }));
 
-  results.push(bench('nested valid', 'zod', () => {
-    NestedSchemaZod.safeParse(nestedValid);
+  results.push(bench('order valid', 'zod', () => {
+    OrderSchemaZod.safeParse(orderValid);
   }));
 
-  results.push(bench('nested valid', 'valibot', () => {
-    safeParse(NestedSchemaValibot, nestedValid);
+  results.push(bench('order valid', 'valibot', () => {
+    safeParse(OrderSchemaValibot, orderValid);
   }));
 
-  results.push(bench('nested valid', 'io-ts', () => {
-    NestedSchemaIoTs.decode(nestedValid);
+  results.push(bench('order valid', 'io-ts', () => {
+    OrderSchemaIoTs.decode(orderValid);
   }));
 
   return results;

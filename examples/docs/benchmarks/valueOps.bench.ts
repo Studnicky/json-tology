@@ -12,6 +12,9 @@ FormatRegistry.Set('email', (value) => {
 FormatRegistry.Set('date-time', (value) => {
   return !Number.isNaN(Date.parse(value));
 });
+FormatRegistry.Set('uuid', (value) => {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu.test(value);
+});
 import { Operations } from '../../../src/modules/data/Operations.js';
 import { Value } from '../../../src/modules/data/Value.js';
 import { SchemaRegistry } from '../../../src/modules/registry/SchemaRegistry.js';
@@ -19,29 +22,31 @@ import {
   bench, type BenchResult, section
 } from './harness.js';
 import {
-  AddressSchema, CustomerSchema, NestedSchema,
-  NestedSchemaTypebox, nestedValid,
-  OrderItemSchema, simpleCoercible,
-  SimpleSchema, SimpleSchemaTypebox, simpleValid
+  bookstoreBenchSchemas,
+  OrderSchemaTypebox, orderValid,
+  reviewCoercible, ReviewSchemaTypebox, reviewValid
 } from './fixtures.js';
+import {
+  OrderSchema, ReviewSchema
+} from '../bookstore/index.js';
 
-const dirtySimple = {
-  ...simpleValid,
+const dirtyReview = {
+  ...reviewValid,
   'extra1': 'junk',
   'extra2': 42,
   'extra3': true
 };
-const dirtyNested = {
-  ...nestedValid,
-  'customer': {
-    ...nestedValid.customer,
-    'address': {
-      ...nestedValid.customer.address,
-      'extra': 'x'
-    },
-    'hackField': 'bad'
+const dirtyOrder = {
+  ...orderValid,
+  'extraTop': 'remove me',
+  'shippingAddress': {
+    ...orderValid.shippingAddress,
+    'extra': 'x'
   },
-  'extraTop': 'remove me'
+  'total': {
+    ...orderValid.total,
+    'hackField': 'bad'
+  }
 };
 
 export function runValueOpsBench(): BenchResult[] {
@@ -49,69 +54,67 @@ export function runValueOpsBench(): BenchResult[] {
 
   const registry = new SchemaRegistry({ 'castTypes': true });
 
-  registry.set(SimpleSchema);
-  registry.set(AddressSchema);
-  registry.set(CustomerSchema);
-  registry.set(OrderItemSchema);
-  registry.set(NestedSchema);
+  for (const schema of bookstoreBenchSchemas) {
+    registry.set(schema as Record<string, unknown>);
+  }
 
   // Warm up engines
-  registry.validate(SimpleSchema.$id, simpleValid);
-  registry.validate(NestedSchema.$id, nestedValid);
+  registry.validate(ReviewSchema.$id, reviewValid);
+  registry.validate(OrderSchema.$id, orderValid);
 
   // ---------------------------------------------------------------------------
   section('clean — strip unknown properties');
 
-  const cleanSimpleResult = bench('clean simple', 'json-tology', () => {
-    registry.clean(SimpleSchema.$id, dirtySimple);
+  const cleanReviewResult = bench('clean review', 'json-tology', () => {
+    registry.clean(ReviewSchema.$id, dirtyReview);
   });
 
-  results.push(cleanSimpleResult);
+  results.push(cleanReviewResult);
 
-  const cleanSimpleTbResult = bench('clean simple', 'typebox', () => {
-    void TypeBoxValue.clean(SimpleSchemaTypebox, structuredClone(dirtySimple));
+  const cleanReviewTbResult = bench('clean review', 'typebox', () => {
+    void TypeBoxValue.clean(ReviewSchemaTypebox, structuredClone(dirtyReview));
   });
 
-  results.push(cleanSimpleTbResult);
+  results.push(cleanReviewTbResult);
 
-  const cleanNestedResult = bench('clean nested', 'json-tology', () => {
-    registry.clean(NestedSchema.$id, dirtyNested);
+  const cleanOrderResult = bench('clean order', 'json-tology', () => {
+    registry.clean(OrderSchema.$id, dirtyOrder);
   });
 
-  results.push(cleanNestedResult);
+  results.push(cleanOrderResult);
 
-  const cleanNestedTbResult = bench('clean nested', 'typebox', () => {
-    void TypeBoxValue.clean(NestedSchemaTypebox, structuredClone(dirtyNested));
+  const cleanOrderTbResult = bench('clean order', 'typebox', () => {
+    void TypeBoxValue.clean(OrderSchemaTypebox, structuredClone(dirtyOrder));
   });
 
-  results.push(cleanNestedTbResult);
+  results.push(cleanOrderTbResult);
 
   // ---------------------------------------------------------------------------
   section('convert — type coercion (no defaults)');
 
-  const convertSimpleResult = bench('convert simple', 'json-tology', () => {
-    registry.convert(SimpleSchema.$id, simpleCoercible);
+  const convertReviewResult = bench('convert review', 'json-tology', () => {
+    registry.convert(ReviewSchema.$id, reviewCoercible);
   });
 
-  results.push(convertSimpleResult);
+  results.push(convertReviewResult);
 
-  const convertSimpleTbResult = bench('convert simple', 'typebox', () => {
-    void TypeBoxValue.convert(SimpleSchemaTypebox, simpleCoercible);
+  const convertReviewTbResult = bench('convert review', 'typebox', () => {
+    void TypeBoxValue.convert(ReviewSchemaTypebox, reviewCoercible);
   });
 
-  results.push(convertSimpleTbResult);
+  results.push(convertReviewTbResult);
 
   // ---------------------------------------------------------------------------
   section('clone — deep clone');
 
-  const cloneNestedResult = bench('clone nested', 'json-tology', () => {
-    Operations.clone(nestedValid);
+  const cloneOrderResult = bench('clone order', 'json-tology', () => {
+    Operations.clone(orderValid);
   });
 
-  results.push(cloneNestedResult);
+  results.push(cloneOrderResult);
 
-  const cloneStructuredResult = bench('clone nested', 'structuredClone', () => {
-    structuredClone(nestedValid);
+  const cloneStructuredResult = bench('clone order', 'structuredClone', () => {
+    structuredClone(orderValid);
   });
 
   results.push(cloneStructuredResult);
@@ -119,27 +122,29 @@ export function runValueOpsBench(): BenchResult[] {
   // ---------------------------------------------------------------------------
   section('diff — structural diff');
 
-  const nestedModified = {
-    ...nestedValid,
-    'customer': {
-      ...nestedValid.customer,
-      'name': 'Robert Smith'
+  const orderModified = {
+    ...orderValid,
+    'shippingAddress': {
+      ...orderValid.shippingAddress,
+      'city': 'Berlin'
     },
-    'status': 'paid',
-    'total': 50
+    'total': {
+      ...orderValid.total,
+      'amount': 999
+    }
   };
 
-  const diffNestedResult = bench('diff nested', 'json-tology', () => {
-    Value.diff(nestedValid, nestedModified);
+  const diffOrderResult = bench('diff order', 'json-tology', () => {
+    Value.diff(orderValid, orderModified);
   });
 
-  results.push(diffNestedResult);
+  results.push(diffOrderResult);
 
-  const diffNestedTbResult = bench('diff nested', 'typebox', () => {
-    void [...TypeBoxValue.diff(nestedValid, nestedModified)];
+  const diffOrderTbResult = bench('diff order', 'typebox', () => {
+    void [...TypeBoxValue.diff(orderValid, orderModified)];
   });
 
-  results.push(diffNestedTbResult);
+  results.push(diffOrderTbResult);
 
   return results;
 }

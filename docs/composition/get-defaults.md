@@ -14,23 +14,7 @@
 
 `BookSchema` has `currency: 'USD'` and `inStock: true`. `isbn`, `title`, `authors`, and `price` have no declared defaults - they are omitted from the result.
 
-```ts
-import { Compose } from 'json-tology';
-import { BookSchema } from './bookstore/index.js';
-
-const defaults = Compose.getDefaults(BookSchema);
-console.log(defaults);
-// { currency: 'USD', inStock: true }
-
-// Initialize form state with defaults pre-filled, others empty:
-const formState = {
-  ...defaults,
-  isbn:    '',
-  title:   '',
-  authors: [],
-  price:   0,
-};
-```
+<<< ../../examples/docs/composition/07-get-defaults.ts
 
 ### Example 2: Pre-populate an Order form
 

@@ -3,6 +3,9 @@
  *
  * Measures the performance difference between SchemaCompiler (closure-based)
  * and GraphEngine (interpreted) validation paths.
+ *
+ * "simple" runs against the bookstore ReviewSchema (flat object).
+ * "nested" runs against the bookstore OrderSchema (multi-level $refs).
  */
 
 import { SchemaRegistry } from '../../../src/modules/registry/SchemaRegistry.js';
@@ -11,76 +14,78 @@ import {
   bench, type BenchResult, section
 } from './harness.js';
 import {
-  AddressSchema, CustomerSchema, NestedSchema,
-  nestedValid, OrderItemSchema, simpleInvalid, SimpleSchema, simpleValid
+  bookstoreBenchSchemas,
+  orderValid, reviewInvalid, reviewValid
 } from './fixtures.js';
+import {
+  OrderSchema, ReviewSchema
+} from '../bookstore/index.js';
 
 export function runCompiledBench(): BenchResult[] {
   const results: BenchResult[] = [];
 
-  // Compiled path via registry
+  // Compiled path via registry — register the full canonical bookstore
+  // closure so every $ref (Isbn, Money, Address, etc.) resolves.
   const registry = new SchemaRegistry();
 
-  registry.set(SimpleSchema);
-  registry.set(AddressSchema);
-  registry.set(CustomerSchema);
-  registry.set(OrderItemSchema);
-  registry.set(NestedSchema);
+  for (const schema of bookstoreBenchSchemas) {
+    registry.set(schema as Record<string, unknown>);
+  }
 
   // Force compilation
-  registry.validate(SimpleSchema.$id, simpleValid);
-  registry.validate(NestedSchema.$id, nestedValid);
+  registry.validate(ReviewSchema.$id, reviewValid);
+  registry.validate(OrderSchema.$id, orderValid);
 
   // Interpreted path via GraphEngine directly
-  const simpleEngine = new GraphEngine(SimpleSchema, {
+  const reviewEngine = new GraphEngine(ReviewSchema, {
     'lookupSchema': (id) => {
       return registry.get(id);
     }
   });
-  const nestedEngine = new GraphEngine(NestedSchema, {
+  const orderEngine = new GraphEngine(OrderSchema, {
     'lookupSchema': (id) => {
       return registry.get(id);
     }
   });
 
-  section('Compiled vs Interpreted — simple schema (valid)');
+  section('Compiled vs Interpreted — Review (valid)');
 
   const compiledSimpleValid = bench('compiled simple valid', 'compiled', () => {
-    registry.validate(SimpleSchema.$id, simpleValid);
+    registry.validate(ReviewSchema.$id, reviewValid);
   });
 
   results.push(compiledSimpleValid);
 
   const interpretedSimpleValid = bench('compiled simple valid', 'interpreted', () => {
-    simpleEngine.execute(simpleValid);
+    reviewEngine.execute(reviewValid);
   });
 
   results.push(interpretedSimpleValid);
 
-  section('Compiled vs Interpreted — simple schema (invalid)');
+  section('Compiled vs Interpreted — Review (invalid)');
 
   const compiledSimpleInvalid = bench('compiled simple invalid', 'compiled', () => {
-    registry.validate(SimpleSchema.$id, simpleInvalid);
+    registry.validate(ReviewSchema.$id, reviewInvalid);
   });
 
   results.push(compiledSimpleInvalid);
 
   const interpretedSimpleInvalid = bench('compiled simple invalid', 'interpreted', () => {
-    simpleEngine.execute(simpleInvalid);
+    reviewEngine.execute(reviewInvalid);
   });
 
   results.push(interpretedSimpleInvalid);
 
-  section('Compiled vs Interpreted — nested schema (valid)');
+  section('Compiled vs Interpreted — Order (valid)');
 
   const compiledNestedValid = bench('compiled nested valid', 'compiled', () => {
-    registry.validate(NestedSchema.$id, nestedValid);
+    registry.validate(OrderSchema.$id, orderValid);
   });
 
   results.push(compiledNestedValid);
 
   const interpretedNestedValid = bench('compiled nested valid', 'interpreted', () => {
-    nestedEngine.execute(nestedValid);
+    orderEngine.execute(orderValid);
   });
 
   results.push(interpretedNestedValid);

@@ -34,16 +34,7 @@ export type IntegerRangeType<TMin extends number, TMax extends number>
 
 #### Example 1: Star rating range
 
-```ts
-import type { IntegerRangeType } from 'json-tology/types';
-
-type StarRating = IntegerRangeType<1, 5>;
-// 1 | 2 | 3 | 4 | 5
-
-const r: StarRating = 3;   // OK
-// const bad: StarRating = 0;  // compile error
-// const bad: StarRating = 6;  // compile error
-```
+<<< ../../examples/docs/types/03-range-types.ts
 
 #### Example 2: Deriving automatically via `InferType`
 

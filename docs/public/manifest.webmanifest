@@ -1,0 +1,43 @@
+{
+  "name": "json-tology — TypeScript types, validation, and OWL ontology from one JSON Schema",
+  "short_name": "json-tology",
+  "description": "One source of truth for TypeScript types, runtime validation, coercion, and OWL ontology output. Author in JSON Schema; share with any backend; reason over the graph.",
+  "id": "/json-tology/",
+  "start_url": "/json-tology/",
+  "scope": "/json-tology/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#08717A",
+  "background_color": "#0f0f12",
+  "lang": "en-US",
+  "categories": ["developer", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/json-tology/nodes/jst-node.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    },
+    {
+      "src": "/json-tology/jst-node-512.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/json-tology/jst-node-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/json-tology/og-image.png",
+      "type": "image/png",
+      "sizes": "1200x630",
+      "form_factor": "wide",
+      "label": "json-tology docs site"
+    }
+  ]
+}

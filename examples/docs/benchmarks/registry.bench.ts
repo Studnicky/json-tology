@@ -22,10 +22,11 @@ import {
   bench, type BenchResult, section
 } from './harness.js';
 import {
-  AddressSchema, CustomerSchema, NestedSchema,
-  NestedSchemaTypebox, NestedSchemaValibot, NestedSchemaZod,
-  nestedValid, OrderItemSchema
+  bookstoreBenchSchemas,
+  OrderSchemaTypebox, OrderSchemaValibot, OrderSchemaZod,
+  orderValid
 } from './fixtures.js';
+import { OrderSchema } from '../bookstore/index.js';
 
 export function runRegistryBench(): BenchResult[] {
   const results: BenchResult[] = [];
@@ -35,34 +36,33 @@ export function runRegistryBench(): BenchResult[] {
   results.push(bench('cold first validate', 'json-tology', () => {
     const reg = new SchemaRegistry();
 
-    reg.set(AddressSchema);
-    reg.set(CustomerSchema);
-    reg.set(OrderItemSchema);
-    reg.set(NestedSchema);
-    reg.validate(NestedSchema.$id, nestedValid);
+    for (const schema of bookstoreBenchSchemas) {
+      reg.set(schema as Record<string, unknown>);
+    }
+    reg.validate(OrderSchema.$id, orderValid);
   }, { 'iterations': 5000 }));
 
   results.push(bench('cold first validate', 'typebox', () => {
-    const compiled = TypeCompiler.Compile(NestedSchemaTypebox);
+    const compiled = TypeCompiler.Compile(OrderSchemaTypebox);
 
-    compiled.Check(nestedValid);
+    compiled.Check(orderValid);
   }, { 'iterations': 5000 }));
 
   results.push(bench('cold first validate', 'zod', () => {
     // Zod has no compile step; reconstruct the schema each time
     const fresh = z.object({
-      'createdAt': z.string().datetime(),
-      'orderId': z.string()
+      'id': z.string().uuid(),
+      'placedAt': z.string().datetime()
     });
 
     fresh.safeParse({
-      'createdAt': nestedValid.createdAt,
-      'orderId': nestedValid.orderId
+      'id': orderValid.id as string,
+      'placedAt': orderValid.placedAt as string
     });
   }, { 'iterations': 5000 }));
 
   results.push(bench('cold first validate', 'valibot', () => {
-    safeParse(NestedSchemaValibot, nestedValid);
+    safeParse(OrderSchemaValibot, orderValid);
   }, { 'iterations': 5000 }));
 
   section('registry — warm: cached validate (steady state)');
@@ -70,32 +70,31 @@ export function runRegistryBench(): BenchResult[] {
   // Warm registries
   const reg = new SchemaRegistry();
 
-  reg.set(AddressSchema);
-  reg.set(CustomerSchema);
-  reg.set(OrderItemSchema);
-  reg.set(NestedSchema);
-  reg.validate(NestedSchema.$id, nestedValid);
+  for (const schema of bookstoreBenchSchemas) {
+    reg.set(schema as Record<string, unknown>);
+  }
+  reg.validate(OrderSchema.$id, orderValid);
 
-  const tbCompiled = TypeCompiler.Compile(NestedSchemaTypebox);
+  const tbCompiled = TypeCompiler.Compile(OrderSchemaTypebox);
 
-  tbCompiled.Check(nestedValid);
-  NestedSchemaZod.safeParse(nestedValid);
-  safeParse(NestedSchemaValibot, nestedValid);
+  tbCompiled.Check(orderValid);
+  OrderSchemaZod.safeParse(orderValid);
+  safeParse(OrderSchemaValibot, orderValid);
 
   results.push(bench('warm validate', 'json-tology', () => {
-    reg.validate(NestedSchema.$id, nestedValid);
+    reg.validate(OrderSchema.$id, orderValid);
   }));
 
   results.push(bench('warm validate', 'typebox', () => {
-    tbCompiled.Check(nestedValid);
+    tbCompiled.Check(orderValid);
   }));
 
   results.push(bench('warm validate', 'zod', () => {
-    NestedSchemaZod.safeParse(nestedValid);
+    OrderSchemaZod.safeParse(orderValid);
   }));
 
   results.push(bench('warm validate', 'valibot', () => {
-    safeParse(NestedSchemaValibot, nestedValid);
+    safeParse(OrderSchemaValibot, orderValid);
   }));
 
   return results;

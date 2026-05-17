@@ -8,55 +8,7 @@ All examples use the [bookstore domain](/bookstore-domain). For the underlying A
 
 ## The pattern in one block
 
-```ts
-import { JsonTology, Transform } from 'json-tology';
-
-class Order {
-  id!: string;
-  customerId!: string;
-  items!: ReadonlyArray<{ bookIsbn: string; quantity: number; unitPrice: { amount: number } }>;
-  total!: { amount: number };
-  shippingAddress!: { street: string; city: string; postalCode: string };
-  placedAt!: string;
-  status: 'pending' | 'shipped' = 'pending';
-
-  markShipped(): void {
-    this.status = 'shipped';
-  }
-
-  totalWithTax(rate = 0.08): number {
-    return this.total.amount * (1 + rate);
-  }
-}
-
-const _OrderSchemaBare = {
-  $id: 'urn:bookstore:Order',
-  type: 'object',
-  properties: {
-    id:              { type: 'string' },
-    customerId:      { type: 'string' },
-    items:           { type: 'array', items: { type: 'object' } },
-    total:           { type: 'object' },
-    shippingAddress: { type: 'object' },
-    placedAt:        { type: 'string', format: 'date-time' }
-  },
-  required: ['id', 'customerId', 'items', 'total', 'placedAt', 'shippingAddress']
-} as const;
-
-const OrderSchema = Transform.create(_OrderSchemaBare, {
-  decode: (plain) => Object.assign(Reflect.construct(Order, []), plain),
-  encode: (instance) => Object.fromEntries(
-    Object.entries(instance).filter(([_key, value]) => typeof value !== 'function')
-  )
-});
-
-const jt = JsonTology.create({ baseIRI: 'urn:bookstore', schemas: [OrderSchema] as const });
-
-const order = jt.instantiate(OrderSchema.$id, raw);
-order.markShipped();           // class method on a hydrated instance
-order instanceof Order;         // true
-JSON.stringify(order);          // round-trips through encode (or toJSON if defined)
-```
+<<< ../../examples/docs/usage-examples/02-class-hydration.ts
 
 That is the whole pattern. The remainder of this page is variations, tradeoffs, and recipes for real frameworks.
 

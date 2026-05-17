@@ -20,9 +20,9 @@ import {
   bench, type BenchResult, section
 } from './harness.js';
 import {
-  AddressSchema, CustomerSchema, NestedSchema, NestedSchemaTypebox,
-  nestedValid, OrderItemSchema
+  bookstoreBenchSchemas, OrderSchemaTypebox, orderValid
 } from './fixtures.js';
+import { OrderSchema } from '../bookstore/index.js';
 
 // ---------------------------------------------------------------------------
 // Schema with a transform — exercises the encode path
@@ -96,41 +96,38 @@ export function runSerializeBench(): BenchResult[] {
   const jt = JsonTology.create({
     'baseIRI': 'urn:bench:serialize',
     'schemas': [
-      AddressSchema,
-      CustomerSchema,
-      OrderItemSchema,
-      NestedSchema,
+      ...bookstoreBenchSchemas,
       EventSchemaJt
-    ] as const
+    ]
   });
 
   // Warm
-  jt.dump(NestedSchema, nestedValid);
-  jt.dumpJson(NestedSchema, nestedValid);
+  jt.dump(OrderSchema, orderValid);
+  jt.dumpJson(OrderSchema, orderValid);
   jt.encode(EventSchemaJt, richEvent);
 
-  section('serialize — dump (validated → wire), no transforms');
+  section('serialize — dump Order (validated → wire), no transforms');
 
-  results.push(bench('dump nested', 'json-tology', () => {
-    jt.dump(NestedSchema, nestedValid);
+  results.push(bench('dump order', 'json-tology', () => {
+    jt.dump(OrderSchema, orderValid);
   }));
 
-  results.push(bench('dump nested', 'structuredClone', () => {
-    structuredClone(nestedValid);
+  results.push(bench('dump order', 'structuredClone', () => {
+    structuredClone(orderValid);
   }));
 
-  results.push(bench('dump nested', 'typebox', () => {
-    Value.Encode(NestedSchemaTypebox, nestedValid);
+  results.push(bench('dump order', 'typebox', () => {
+    Value.Encode(OrderSchemaTypebox, orderValid);
   }));
 
-  section('serialize — dumpJson (validated → JSON string)');
+  section('serialize — dumpJson Order (validated → JSON string)');
 
-  results.push(bench('dumpJson nested', 'json-tology', () => {
-    jt.dumpJson(NestedSchema, nestedValid);
+  results.push(bench('dumpJson order', 'json-tology', () => {
+    jt.dumpJson(OrderSchema, orderValid);
   }));
 
-  results.push(bench('dumpJson nested', 'JSON.stringify', () => {
-    JSON.stringify(nestedValid);
+  results.push(bench('dumpJson order', 'JSON.stringify', () => {
+    JSON.stringify(orderValid);
   }));
 
   section('serialize — encode rich → wire (with transforms)');

@@ -8,20 +8,7 @@ All examples use the [bookstore domain](/bookstore-domain).
 
 ## Validation reaches into `$ref`s
 
-```ts
-const ok = jt.validate(CustomerSchema.$id, {
-  id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  email: 'alice@bookstore.example'
-});
-console.log(ok.items.length === 0); // true
-
-const bad = jt.validate(CustomerSchema.$id, {
-  id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  email: 'not-an-email'
-});
-console.log(bad.items[0].path);    // '/email'
-console.log(bad.items[0].keyword); // 'format'
-```
+<<< ../../examples/docs/usage-examples/01-sub-schema-patterns.ts
 
 The validator follows the `$ref` to `EmailSchema` and applies its `format: 'email'` constraint. The error path points at the parent's slot (`/email`), not at the referenced schema. Callers see one validation surface per request.
 

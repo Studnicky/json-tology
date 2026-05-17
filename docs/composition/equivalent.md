@@ -27,16 +27,7 @@ const Bad = Compose.equivalent(IsbnSchema, { $id: IsbnSchema.$id });
 
 Give the shared `IsbnSchema` a catalog-specific name. The two schemas validate identically; the alias carries the catalog-facing description.
 
-```ts
-import { Compose } from 'json-tology';
-import { IsbnSchema } from './bookstore/index.js';
-
-export const PrimaryIsbnSchema = Compose.equivalent(IsbnSchema, {
-  $id: 'https://bookstore.example/PrimaryIsbn',
-  description: 'The canonical ISBN used for catalog lookup and ordering.',
-});
-// → { $id: 'https://bookstore.example/PrimaryIsbn', $ref: 'https://bookstore.example/Isbn', description: '...' }
-```
+<<< ../../examples/docs/composition/06-equivalent.ts
 
 In the OWL TBox:
 

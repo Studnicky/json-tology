@@ -83,22 +83,7 @@ const jt = JsonTology.create({
 
 `validate()` returns a `ValidationErrors` collection. An empty collection (`errs.ok === true`) means valid.
 
-```ts
-// Valid customer
-const errs = jt.validate(CustomerSchema.$id, {
-  id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  email: 'bastian.bux@bookstore.example',
-  name:  'Bastian Balthazar Bux',
-});
-console.log(errs.ok); // true
-
-// Missing required field
-const bad = jt.validate(CustomerSchema.$id, { email: 'bastian.bux@bookstore.example' });
-console.log(bad.length); // 2
-for (const err of bad) {
-  console.log(err.path, err.keyword, err.message);
-}
-```
+<<< ../examples/docs/getting-started/01-validate.ts
 
 See [Validation](/validation/instantiate) for `is()`, `validate()`, `subschemaAt()`, and the structured error views.
 

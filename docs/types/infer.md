@@ -32,26 +32,7 @@ Use `InferType<T>` everywhere you need the TypeScript type corresponding to a sc
 
 #### Example 1: Object schema with required and optional fields
 
-```ts
-import type { InferType } from 'json-tology/types';
-
-// From the bookstore domain (see /bookstore-domain)
-type Customer = InferType<typeof CustomerSchema>;
-// {
-//   readonly id: string & FormatBrand<'uuid'>;
-//   readonly email: string & FormatBrand<'email'>;
-//   readonly name: string;
-//   readonly addresses?: readonly (Address)[];
-// }
-
-type Address = InferType<typeof AddressSchema>;
-// {
-//   readonly street: string;
-//   readonly city: string;
-//   readonly postalCode: string;
-//   readonly country?: string;
-// }
-```
+<<< ../../examples/docs/types/01-infer-type.ts
 
 The `addresses` array has `default: []` in the schema - at the type level it remains optional because `default` is a runtime concept; at runtime `instantiate()` always fills it in.
 
