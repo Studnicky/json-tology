@@ -8,19 +8,19 @@ import {
 import { GraphError } from '../../errors/GraphError.js';
 import { isRecord } from '../data/DataTypes.js';
 
-import type { JSONSchema7Definition } from 'json-schema';
+import type { JsonSchemaDocumentType } from '../../types/Schema.js';
 import type { RootDialectPlanInterface } from '../../interfaces/RootDialectPlan.js';
 
 export const GraphEngineSupport = {
-  buildEmbeddedSchemaMap(rootSchema: JSONSchema7Definition): Map<string, Record<string, unknown>> {
-    const out = new Map<string, JSONSchema7Definition>();
+  buildEmbeddedSchemaMap(rootSchema: JsonSchemaDocumentType): Map<string, Record<string, unknown>> {
+    const out = new Map<string, JsonSchemaDocumentType>();
 
     GraphEngineSupport.collectEmbeddedSchemas(rootSchema, out, true);
 
     return out as unknown as Map<string, Record<string, unknown>>;
   },
 
-  buildRootDialectPlan(rootSchema: JSONSchema7Definition): RootDialectPlanInterface {
+  buildRootDialectPlan(rootSchema: JsonSchemaDocumentType): RootDialectPlanInterface {
     if (!isRecord(rootSchema)) {
       return { 'formatAssertions': true };
     }
@@ -77,7 +77,7 @@ export const GraphEngineSupport = {
 
   collectEmbeddedSchemas(
     node: unknown,
-    out: Map<string, JSONSchema7Definition>,
+    out: Map<string, JsonSchemaDocumentType>,
     isRoot: boolean
   ): void {
     if (Array.isArray(node)) {
@@ -129,7 +129,7 @@ export const GraphEngineSupport = {
     };
   },
 
-  schemaId(schema: JSONSchema7Definition): string | undefined {
+  schemaId(schema: JsonSchemaDocumentType): string | undefined {
     if (!isRecord(schema)) {
       return undefined;
     }

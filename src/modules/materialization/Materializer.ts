@@ -9,7 +9,7 @@ import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
 import type { InferSchemaType } from '../../types/Infer.js';
 import type { AboxOptionsType } from '../../types/AboxOptions.js';
-import type { JSONSchema7Definition } from 'json-schema';
+import type { JsonSchemaDocumentType } from '../../types/Schema.js';
 import { BaseError } from '../../errors/BaseError.js';
 import { MaterializationError } from '../../errors/MaterializationError.js';
 import { GraphError } from '../../errors/GraphError.js';
@@ -271,7 +271,7 @@ export class Materializer implements MaterializerInterface {
    * @returns Fully materialized value matching the schema
    * @throws {@link MaterializationError} When the data fails validation
    */
-  public materialize<TSchema extends JSONSchema7Definition & { readonly '$id': string; }>(
+  public materialize<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }>(
     schema: TSchema,
     partial?: Partial<InferSchemaType<TSchema>>,
   ): InferSchemaType<TSchema>;

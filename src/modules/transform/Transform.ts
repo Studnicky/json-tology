@@ -18,7 +18,7 @@
  * const date = jt.parse(DateSchema.$id, '2026-01-01'); // typed as Date
  */
 
-import type { JSONSchema7Definition } from 'json-schema';
+import type { JsonSchemaDocumentType } from '../../types/Schema.js';
 import type {
   ChainOutputType,
   TransformedType,
@@ -52,7 +52,7 @@ export class Transform {
    * Use `BrandOutputType<typeof schema>` to obtain the branded TypeScript type.
    */
   public static brand<
-    TSchema extends JSONSchema7Definition,
+    TSchema extends JsonSchemaDocumentType,
     TBrand extends string
   >(schema: TSchema, _: TBrand): BrandedType<TSchema, TBrand> {
     return brand<BrandedType<TSchema, TBrand>>(schema);
@@ -72,7 +72,7 @@ export class Transform {
    * literal stage object — so the call site is rejected.
    */
   public static chain<
-    TSchema extends JSONSchema7Definition & { readonly '$id': string; },
+    TSchema extends JsonSchemaDocumentType & { readonly '$id': string; },
     TStages extends readonly AnyTransformStageInterface[]
   >(
     schema: TSchema,
@@ -107,7 +107,7 @@ export class Transform {
    * return type is widened so `parse()` returns the decoded type.
    */
   public static create<
-    TSchema extends JSONSchema7Definition & { readonly '$id': string; },
+    TSchema extends JsonSchemaDocumentType & { readonly '$id': string; },
     TOut extends unknown
   >(
     schema: TSchema,
