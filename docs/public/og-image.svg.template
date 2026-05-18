@@ -104,7 +104,7 @@
     <!-- Version pill -->
     <g transform="translate(0, 220)">
       <rect x="0" y="0" rx="22" ry="22" width="170" height="44" fill="#08717A" stroke="#7FE7D8" stroke-width="1.5"/>
-      <text x="85" y="30" font-family="'SF Mono', Menlo, Consolas, monospace" font-size="20" font-weight="700" fill="#DDFBFF" text-anchor="middle" letter-spacing="0.5">v0.9.1</text>
+      <text x="85" y="30" font-family="'SF Mono', Menlo, Consolas, monospace" font-size="20" font-weight="700" fill="#DDFBFF" text-anchor="middle" letter-spacing="0.5">v{{VERSION}}</text>
     </g>
   </g>
 </svg>

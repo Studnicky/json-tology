@@ -19,6 +19,9 @@ jobs:
       - name: Install dependencies
         run: npm ci --include=dev --include=optional
 
+      - name: Verify version-stamped SVGs are in sync
+        run: npm run stamp-version:check
+
       - name: Build
         run: npm run build
 
