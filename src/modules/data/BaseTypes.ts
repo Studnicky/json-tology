@@ -1,4 +1,4 @@
-import type { JSONSchema7Definition } from 'json-schema';
+import type { JsonSchemaDocumentType } from '../../types/Schema.js';
 import { DEFAULT_DIALECT_URI } from '../../constants/DIALECT.js';
 import {
   CursorDef,
@@ -38,7 +38,7 @@ export const BaseTypes = {
     '$id': 'https://json-tology.dev/schemas/base-types/filter.schema.json'
   } as const,
 
-  'page': <TItem extends JSONSchema7Definition, TId extends string>(
+  'page': <TItem extends JsonSchemaDocumentType, TId extends string>(
     itemSchema: TItem,
     id: TId
   ) => {
@@ -91,7 +91,7 @@ export const BaseTypes = {
     '$id': 'https://json-tology.dev/schemas/base-types/pagination.schema.json'
   } as const,
 
-  'response': <TBody extends JSONSchema7Definition, TId extends string>(
+  'response': <TBody extends JsonSchemaDocumentType, TId extends string>(
     bodySchema: TBody,
     id: TId
   ) => {
@@ -115,7 +115,7 @@ export const BaseTypes = {
     '$id': 'https://json-tology.dev/schemas/base-types/response.schema.json'
   } as const,
 
-  'result': <TData extends JSONSchema7Definition, TId extends string>(
+  'result': <TData extends JsonSchemaDocumentType, TId extends string>(
     dataSchema: TData,
     id: TId
   ) => {

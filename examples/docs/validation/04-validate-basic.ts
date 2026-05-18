@@ -1,24 +1,22 @@
 /**
  * validate — Example 1: Basic valid and invalid cases
  * Demonstrates: empty collection on success (.ok, .length), ValidationErrors on failure
+ *
+ * Uses the canonical Bastian Balthazar Bux customer fixture.
  */
 
 import {
-  bookstoreEntities, CustomerSchema
+  aboxFixtures, bookstoreEntities, CustomerSchema
 } from '../bookstore/index.js';
 
 // Valid input
-const ok = bookstoreEntities.validate(CustomerSchema.$id, {
-  'email': 'alice@bookstore.example',
-  'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  'name': 'Alice Chen'
-});
+const ok = bookstoreEntities.validate(CustomerSchema.$id, aboxFixtures.customer);
 
 console.assert(ok.length === 0);
 
-// Missing required fields
+// Missing required fields — only email present.
 const bad = bookstoreEntities.validate(CustomerSchema.$id, {
-  'email': 'alice@bookstore.example'
+  'email': aboxFixtures.customer.email
   // id and name missing
 });
 

@@ -24,6 +24,7 @@ describe('DCAT-AP e2e: Semantic round-trip', () => {
   it('registers all 9 schemas without error', async () => {
     jt = JsonTology.create({
       'baseIRI': 'https://example.com/',
+      'enableStrictGraph': false,
       'schemas': AllSchemas
     });
     assert.ok(jt, 'JsonTology initialized');
@@ -139,17 +140,16 @@ describe('DCAT-AP e2e: Semantic round-trip', () => {
       const parser = new Parser();
 
       await new Promise<void>((promiseResolve, promiseReject) => {
-        parser.parse(shaclTtl, (parseError, quad) => {
-          if (parseError) {
-            promiseReject(parseError);
-
-            return;
-          }
-          if (quad !== null && quad !== undefined) {
-            store.addQuad(quad);
-            officialQuads.push(quad);
+        parser.parse(shaclTtl, (parseError: Error | null, quad: null | Quad) => {
+          if (parseError === null) {
+            if (quad === null) {
+              promiseResolve();
+            } else {
+              store.addQuad(quad);
+              officialQuads.push(quad);
+            }
           } else {
-            promiseResolve();
+            promiseReject(parseError);
           }
         });
       });
@@ -206,17 +206,16 @@ describe('DCAT-AP e2e: Semantic round-trip', () => {
       const parser = new Parser();
 
       await new Promise<void>((promiseResolve, promiseReject) => {
-        parser.parse(owlTtl, (parseError, quad) => {
-          if (parseError) {
-            promiseReject(parseError);
-
-            return;
-          }
-          if (quad !== null && quad !== undefined) {
-            store.addQuad(quad);
-            officialOwlQuads.push(quad);
+        parser.parse(owlTtl, (parseError: Error | null, quad: null | Quad) => {
+          if (parseError === null) {
+            if (quad === null) {
+              promiseResolve();
+            } else {
+              store.addQuad(quad);
+              officialOwlQuads.push(quad);
+            }
           } else {
-            promiseResolve();
+            promiseReject(parseError);
           }
         });
       });

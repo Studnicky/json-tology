@@ -1,31 +1,26 @@
 #!/usr/bin/env node
 /**
  * build-palette.mjs — regenerate docs/.vitepress/theme/palette.css from
- * the iridis CLI's WCAG 2.1 AAA-enforced output.
+ * two iridis CLI runs (one light, one dark), each WCAG 2.1 AAA-enforced.
  *
- * Pipeline:
- *   1. Run @studnicky/iridis-cli over scripts/iridis-config.json
- *   2. Read the emitted scripts/iridis-out/json-tology-palette.json
- *   3. Translate iridis token names (--jt-*) into VitePress brand/text/
- *      surface variables (--vp-c-*)
- *   4. Write the final palette.css with header, light/dark/P3/forced-
- *      colors blocks, and the decorative .jt-brand gradient
+ * Why two runs? The single-config + `derive:variant` approach inverts
+ * lightness, which collapses an off-white canvas into pure black on
+ * the dark side — code blocks render as solid black bars. A separate
+ * dark config gives us a warm dark canvas with chroma-bounded
+ * neutrals and bright JST-teal accents, each pair AAA-enforced.
  *
- * Compliance proof: iridis's `enforce:wcagAAA` task calls
- * ensureContrast.apply(fg, bg, required, 'wcag21') on every contrast
- * pair declared in scripts/iridis-config.json. The script aborts if
- * iridis emits any "pair could not reach required ratio" warning, so
- * a green run is a green WCAG 2.1 AAA audit.
+ * Pipeline (per config):
+ *   intake:any → expand:family → resolve:roles → enforce:wcagAAA
+ *   → emit:cssVars
+ *
+ * The script aborts if iridis emits any 'Pair could not reach required
+ * ratio' warning, so a green run is a green WCAG 2.1 AAA audit on both
+ * schemes.
  *
  * Usage:
  *   node scripts/build-palette.mjs
  *   # or
  *   npm run build:palette
- *
- * Iridis CLI path discovery (first match wins):
- *   1. IRIDIS_CLI_PATH env var
- *   2. ../iridis/packages/cli/src/main.ts (sibling checkout)
- *   3. ./node_modules/@studnicky/iridis-cli/src/main.ts (npm install)
  */
 
 import { spawnSync } from 'node:child_process';
@@ -39,18 +34,16 @@ import { fileURLToPath } from 'node:url';
 
 const __HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__HERE, '..');
-const CONFIG_PATH = resolve(REPO_ROOT, 'scripts/iridis-config.json');
-const OUTPUT_JSON = resolve(REPO_ROOT, 'scripts/iridis-out/json-tology-palette.json');
+const CONFIG_LIGHT = resolve(REPO_ROOT, 'scripts/iridis-config-light.json');
+const CONFIG_DARK = resolve(REPO_ROOT, 'scripts/iridis-config-dark.json');
+const OUTPUT_LIGHT = resolve(REPO_ROOT, 'scripts/iridis-out/json-tology-palette-light.json');
+const OUTPUT_DARK = resolve(REPO_ROOT, 'scripts/iridis-out/json-tology-palette-dark.json');
 const PALETTE_CSS = resolve(REPO_ROOT, 'docs/.vitepress/theme/palette.css');
 
 /**
  * Map iridis token name → VitePress variable name. Tokens absent from
  * this map are dropped from the emitted palette (e.g. --jt-on-accent
  * has no direct VitePress counterpart and is unused by the theme).
- *
- * The --vp-c-border alias is added by the script after extracting the
- * --vp-c-divider value from each block; iridis emits a single 'border'
- * token that doubles for both.
  */
 const TOKEN_MAP = {
   '--jt-accent': '--vp-c-brand-1',
@@ -81,9 +74,8 @@ function discoverIridisCli() {
     + 'github.com/Studnicky/iridis next to this repo.');
 }
 
-function runIridis(cliPath) {
-  process.stdout.write(`Running iridis CLI: ${cliPath}\n`);
-  mkdirSync(dirname(OUTPUT_JSON), { 'recursive': true });
+function runIridis(cliPath, configPath, label) {
+  process.stdout.write(`Running iridis CLI (${label}): ${configPath}\n`);
   const result = spawnSync(
     'npx',
     [
@@ -91,7 +83,7 @@ function runIridis(cliPath) {
       'tsx',
       'tsx',
       cliPath,
-      CONFIG_PATH
+      configPath
     ],
     {
       'cwd': REPO_ROOT,
@@ -101,35 +93,30 @@ function runIridis(cliPath) {
 
   if (result.status !== 0) {
     process.stderr.write(result.stderr || result.stdout || '');
-    throw new Error(`iridis CLI exited with status ${result.status}`);
+    throw new Error(`iridis CLI exited with status ${result.status} for ${label}`);
   }
   const stderr = result.stderr ?? '';
 
   if (stderr.includes('Pair could not reach required ratio')) {
     process.stderr.write(stderr);
-    throw new Error('AAA enforcement failed for at least one pair (see iridis warnings above).');
+    throw new Error(`AAA enforcement failed for at least one pair in ${label} (see iridis warnings above).`);
   }
   if (result.stdout) {
     process.stdout.write(result.stdout);
   }
 }
 
-function readBlocks() {
-  if (!existsSync(OUTPUT_JSON)) {
-    throw new Error(`Expected iridis output at ${OUTPUT_JSON} not found.`);
+function readBlocks(outputJson) {
+  if (!existsSync(outputJson)) {
+    throw new Error(`Expected iridis output at ${outputJson} not found.`);
   }
 
-  return JSON.parse(readFileSync(OUTPUT_JSON, 'utf8'));
+  return JSON.parse(readFileSync(outputJson, 'utf8'));
 }
 
 /**
- * Parse one iridis-emitted CSS block and return an array of mapped
- * `--vp-c-* : value;` declarations. Tokens absent from TOKEN_MAP are
- * dropped. Whitespace, `:root {`, `@media`, `@supports`, and closing
- * braces are stripped.
- *
- * Returns { declarations: string[], borderValue: string|null } where
- * borderValue is the divider value (used to alias --vp-c-border below).
+ * Parse one iridis-emitted CSS block. Returns mapped `--vp-c-*` lines
+ * plus the border value extracted for aliasing to --vp-c-border.
  */
 function parseBlock(block) {
   const declarations = [];
@@ -162,26 +149,28 @@ function renderDecls(declarations, indent) {
   }).join('\n');
 }
 
-function buildCss(blocks) {
-  const root = parseBlock(blocks.rootBlock);
-  const dark = parseBlock(blocks.darkScheme);
-  const p3 = parseBlock(blocks.wideGamut);
-  const fc = parseBlock(blocks.forcedColors);
+function buildCss(lightBlocks, darkBlocks) {
+  const lightRoot = parseBlock(lightBlocks.rootBlock);
+  const lightP3 = parseBlock(lightBlocks.wideGamut);
+  const lightFc = parseBlock(lightBlocks.forcedColors);
+  // dark "root" is actually the dark config's :root (not a media query) — it
+  // serves as our .dark { } block since we set framing manually via vitepress.
+  const darkRoot = parseBlock(darkBlocks.rootBlock);
 
-  if (root.borderValue !== null) {
-    root.declarations.push(`--vp-c-border: ${root.borderValue};`);
+  if (lightRoot.borderValue !== null) {
+    lightRoot.declarations.push(`--vp-c-border: ${lightRoot.borderValue};`);
   }
-  if (dark.borderValue !== null) {
-    dark.declarations.push(`--vp-c-border: ${dark.borderValue};`);
+  if (darkRoot.borderValue !== null) {
+    darkRoot.declarations.push(`--vp-c-border: ${darkRoot.borderValue};`);
   }
-  if (fc.borderValue !== null) {
-    fc.declarations.push(`--vp-c-border: ${fc.borderValue};`);
+  if (lightFc.borderValue !== null) {
+    lightFc.declarations.push(`--vp-c-border: ${lightFc.borderValue};`);
   }
 
-  const rootBody = renderDecls(root.declarations, '  ');
-  const darkBody = renderDecls(dark.declarations, '  ');
-  const p3Body = renderDecls(p3.declarations, '    ');
-  const fcBody = renderDecls(fc.declarations, '    ');
+  const lightBody = renderDecls(lightRoot.declarations, '  ');
+  const darkBody = renderDecls(darkRoot.declarations, '  ');
+  const p3Body = renderDecls(lightP3.declarations, '    ');
+  const fcBody = renderDecls(lightFc.declarations, '    ');
 
   return `/**
  * palette.css — generated by scripts/build-palette.mjs
@@ -189,30 +178,36 @@ function buildCss(blocks) {
  * DO NOT EDIT BY HAND. Regenerate via:
  *   npm run build:palette
  *
- * Source seeds: docs/public/nodes/jst-node.svg gradient
- *   #7FE7D8 (light teal) → #24A5B5 (mid teal) → #08717A (dark teal)
- *   #BDF6F2 circuit accent
+ * Source seeds:
+ *   light canvas: #fafaf7 (warm off-white, W3C-style)
+ *   dark canvas:  #15191d (warm dark neutral, not pure black)
+ *   JST accent:   #7FE7D8 / #24A5B5 / #08717A (the brand gradient)
  *
- * Compliance: every contrast pair declared in scripts/iridis-config.json
+ * Compliance: every contrast pair declared in
+ *   scripts/iridis-config-light.json
+ *   scripts/iridis-config-dark.json
  * is enforced by @studnicky/iridis-cli's enforce:wcagAAA pipeline task
  * to satisfy WCAG 2.1 AAA before emit:cssVars writes the values below.
  *   - body text and links: 7:1 (1.4.6 Contrast Enhanced)
  *   - large text and UI:   4.5:1
  *
- * Token name translation (iridis → VitePress) is performed by
- * scripts/build-palette.mjs (see TOKEN_MAP).
+ * The chromaRange constraint on the role schema (≤0.02 OKLCH chroma)
+ * keeps canvas, surface, text, and border roles neutral — only the
+ * accent roles inherit chroma from the JST teal seeds. This matches
+ * the W3C-style restrained aesthetic instead of pulling every surface
+ * into the brand family.
  */
 
 :root {
   /* JST gradient stops — decorative brand mark only, outside the AAA
      contrast budget. The readable text around the mark uses the
-     iridis-darkened tokens below. */
+     iridis-emitted tokens below. */
   --jst-teal-light: #7FE7D8;
   --jst-teal-mid:   #24A5B5;
   --jst-teal-dark:  #08717A;
   --jst-circuit:    #BDF6F2;
 
-${rootBody}
+${lightBody}
 
   --vp-c-brand-soft: rgba(23, 87, 93, 0.14);
   --vp-c-purple:     #5e2856;
@@ -224,8 +219,8 @@ ${darkBody}
   --vp-c-brand-soft: rgba(47, 137, 146, 0.16);
 }
 
-/* Wide-gamut P3 enhancement (iridis-emitted). Same chromaticity, broader
-   gamut on capable displays. */
+/* Wide-gamut P3 enhancement (iridis-emitted, light scheme). Same
+   chromaticity, broader gamut on capable displays. */
 @supports (color: color(display-p3 0 0 0)) {
   :root {
 ${p3Body}
@@ -257,9 +252,14 @@ ${fcBody}
 
 const cliPath = discoverIridisCli();
 
-runIridis(cliPath);
-const blocks = readBlocks();
-const css = buildCss(blocks);
+mkdirSync(dirname(OUTPUT_LIGHT), { 'recursive': true });
+
+runIridis(cliPath, CONFIG_LIGHT, 'light');
+runIridis(cliPath, CONFIG_DARK, 'dark');
+
+const lightBlocks = readBlocks(OUTPUT_LIGHT);
+const darkBlocks = readBlocks(OUTPUT_DARK);
+const css = buildCss(lightBlocks, darkBlocks);
 
 writeFileSync(PALETTE_CSS, css);
 process.stdout.write(`✓ Wrote ${PALETTE_CSS}\n`);

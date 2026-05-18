@@ -1,105 +1,43 @@
 /**
- * addInvariant / removeInvariant — Example 1: Order total must match items
- * Demonstrates: invariant failure in validate(), coerce(), is()
+ * addInvariant — Example 1: Order total invariant
+ * Demonstrates: canonical invariant registered on OrderSchema, validation with
+ * invariant failure, and passing valid fixture
+ *
+ * Operates against the canonical bookstore registry. The production invariant
+ * `orderTotalMatchesItems` is already registered on OrderSchema in
+ * `examples/docs/bookstore/index.ts`. This example demonstrates the invariant
+ * in action: rejecting a tampered total with an invariant violation error,
+ * then passing the canonical Bastian fixture (which satisfies all invariants).
  */
 
-import { JsonTology } from '../../../src/index.js';
-import type { InferType } from '../../../src/types/index.js';
 import {
-  AddressSchema, AmountSchema, CityNameSchema, CountryCodeSchema,
-  CurrencyCodeSchema, CustomerIdSchema, CustomerNameSchema, EmailSchema,
-  IsbnSchema, Iso8601Schema, MoneySchema, OrderIdSchema, OrderLineSchema,
-  OrderSchema, PostalCodeSchema, QuantitySchema, StreetLineSchema
+  aboxFixtures, bookstoreEntities, OrderSchema
 } from '../bookstore/index.js';
 
-type Order = InferType<typeof OrderSchema>;
+// The canonical fixture passes all invariants (structural + relational).
+const validOrder = bookstoreEntities.validate(OrderSchema.$id, aboxFixtures.order);
 
-const localJt = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
-  'invariants': {
-    [OrderSchema.$id]: [{
-      'fn': (order) => {
-        const typed = order as Order;
-        const computed = (typed.items as Array<{
-          'quantity': number;
-          'unitPrice': {
-            'amount': number;
-            'currency': string;
-          };
-        }>).reduce((sum, line) => {
-          return sum + line.unitPrice.amount * line.quantity;
-        }, 0);
+console.assert(validOrder.ok);
+console.assert(!validOrder.items.some((errItem) => {
+  return errItem.keyword === 'jt:invariant';
+}));
 
-        return Math.abs((typed.total as { 'amount': number }).amount - computed) < 0.01
-          ? null
-          : `total must equal sum of items (expected ${computed.toFixed(2)}, got ${String((typed.total as { 'amount': number }).amount)})`;
-      },
-      'name': 'totalMatchesItems',
-      'pointer': '/total'
-    }]
-  },
-  'schemas': [
-    AmountSchema,
-    CityNameSchema,
-    CountryCodeSchema,
-    CurrencyCodeSchema,
-    CustomerIdSchema,
-    CustomerNameSchema,
-    EmailSchema,
-    Iso8601Schema,
-    IsbnSchema,
-    MoneySchema,
-    OrderIdSchema,
-    PostalCodeSchema,
-    QuantitySchema,
-    StreetLineSchema,
-    AddressSchema,
-    OrderLineSchema,
-    OrderSchema
-  ] as const
-});
-
-const invalidOrder = {
-  'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  'id': 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-  'items': [{
-    'bookIsbn': '9780140449136',
-    'quantity': 1,
-    'unitPrice': {
-      'amount': 14.99,
-      'currency': 'USD'
-    }
-  }],
-  'placedAt': '2026-01-15T10:30:00Z',
-  'shippingAddress': {
-    'city': 'New York',
-    'country': 'US',
-    'postalCode': '10001',
-    'street': '123 Main St'
-  },
+// Now tamper with the total — claim €1000 when items sum to €850.
+const tamperedOrder = {
+  ...aboxFixtures.order,
   'total': {
-    'amount': 99,
-    'currency': 'USD'
+    'amount': 1000,
+    'currency': aboxFixtures.order.total.currency
   }
 };
 
-// validate() surfaces invariant failure
-const errs = localJt.validate(OrderSchema.$id, invalidOrder);
+// validate() surfaces the orderTotalMatchesItems invariant failure.
+const errs = bookstoreEntities.validate(OrderSchema.$id, tamperedOrder);
 
 console.assert(!errs.ok);
 console.assert(errs.items.some((errItem) => {
   return errItem.keyword === 'jt:invariant';
 }));
 
-// is() returns false
-console.assert(!localJt.is(OrderSchema.$id, invalidOrder));
-
-// removeInvariant works
-localJt.removeInvariant(OrderSchema.$id, 'totalMatchesItems');
-
-// After removal, invariant no longer fires
-const errs2 = localJt.validate(OrderSchema.$id, invalidOrder);
-
-console.assert(errs2.items.every((errItem) => {
-  return errItem.keyword !== 'jt:invariant';
-}));
+// is() returns false for the tampered order.
+console.assert(!bookstoreEntities.is(OrderSchema.$id, tamperedOrder));

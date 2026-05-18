@@ -26,7 +26,7 @@ npm run lint
 npm test
 ```
 
-The publish workflow runs the same checks under the `Validate Before Publish` job, plus License Check, Security Audit, and Code Coverage. All four are required for `main` merges.
+The `publish.yml` workflow runs the same checks under the `Validate Before Publish` job: build, type-check, lint, and test. All are required before the publish step proceeds.
 
 ## Docs
 
@@ -40,12 +40,12 @@ Doc pages must be in current tense, em-dash free, and emoji free. See [Reference
 
 ## Releases
 
-Patch (`0.3.x`) and minor (`0.x`) releases are cut from `main`:
+Patch (`0.8.x`) and minor (`0.x`) releases are cut from `main`:
 
 1. Bump `package.json#version`.
 2. Date the `[Unreleased]` section in `CHANGELOG.md` to `## [<version>] - YYYY-MM-DD`.
 3. Open a `release/<version>` PR.
-4. After merge, tag `v<version>` and push the tag.
-5. Run `gh release create v<version> --prerelease --notes-file <notes>` (the `Publish Package` workflow auto-creates the release on tag push if `NPM_TOKEN` is set).
+4. After merge, `publish.yml` triggers on the `main` push: it builds, validates, and publishes to npm if the version is not already present.
+5. After a successful publish, `publish.yml` creates a GitHub release with changelog notes as a post-publish artifact. No manual tag push is required.
 
 Tags `v*` are protected against deletion and force-update by repository ruleset.

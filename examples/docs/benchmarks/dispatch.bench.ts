@@ -147,9 +147,9 @@ function dispatchTable(type: string, value: unknown): string {
 const sampleObj = {
   'active': true,
   'age': 30,
-  'email': 'alice@example.com',
+  'email': 'bastian@example.com',
   'id': 1,
-  'name': 'Alice'
+  'name': 'Bastian Balthazar Bux'
 };
 
 // Simulates the current generated JIT check style (sequential per-prop ifs)

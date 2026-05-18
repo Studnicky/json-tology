@@ -4,9 +4,7 @@ json-tology resolves `$ref` IRIs at registration time. By default, all reference
 
 The **loader hook** is a single async function that fetches schemas on demand:
 
-```ts
-type LoaderType = (iri: string) => Promise<JsonSchemaType | null>;
-```
+<<< ../../examples/docs/advanced/89-loaders-type-signature.ts
 
 Async work is isolated to a single entry point: `JsonTology.prefetch`, which builds a snapshot. `JsonTology.create` is synchronous on every call site and consumes the snapshot through the `prefetched` option.
 
@@ -14,24 +12,7 @@ Async work is isolated to a single entry point: `JsonTology.prefetch`, which bui
 
 `JsonTology.prefetch` walks transitive `$ref`s via the loader and returns a snapshot. The snapshot is loader-agnostic — pass it to `create()` via the `prefetched` option for sync consumption.
 
-```ts
-import { JsonTology, Loaders } from 'json-tology';
-
-const snapshot = await JsonTology.prefetch({
-  loader: Loaders.cached(
-    Loaders.fetch({ base: 'https://schemas.example/v1/' })
-  ),
-  schemas: [UserSchema],
-});
-
-const jt = JsonTology.create({
-  baseIRI: 'https://myapp.io',
-  prefetched: snapshot,
-  schemas: [UserSchema] as const,
-});
-
-jt.validate(UserSchema, data);   // sync hot path
-```
+<<< ../../examples/docs/advanced/71-prefetch-bundler-compose.ts
 
 `prefetch` accepts:
 - `loader` — required.
@@ -56,62 +37,31 @@ The `Loaders` namespace ships four universal helpers that work in Node ≥ 18, B
 
 Uses `globalThis.fetch`. Works anywhere. 4xx/5xx → `null`. Network errors propagate.
 
-```ts
-Loaders.fetch()                           // fetch from the IRI directly
-Loaders.fetch({ base: 'https://cdn.example/schemas/' })  // resolve relative IRIs
-Loaders.fetch({ init: { headers: { 'X-Api-Key': key } } })
-```
+<<< ../../examples/docs/advanced/87-loaders-fetch-options.ts
 
 ### `Loaders.memory`
 
 In-memory lookup. Accepts a `Map` or plain object. Zero I/O.
 
-```ts
-Loaders.memory({ [UserSchema.$id]: UserSchema, [AddressSchema.$id]: AddressSchema })
-Loaders.memory(new Map([[UserSchema.$id, UserSchema]]))
-```
+<<< ../../examples/docs/advanced/58-loaders-memory.ts
 
 ### `Loaders.compose`
 
 Chains multiple loaders. Returns the first non-null result.
 
-```ts
-Loaders.compose(
-  Loaders.memory(localSchemas),          // pre-bundled fast path
-  Loaders.fetch({ base: 'https://cdn.example/' })  // fallback to network
-)
-```
+<<< ../../examples/docs/advanced/59-loaders-compose.ts
 
 ### `Loaders.cached`
 
 Wraps any loader with an LRU cache (default: 1024 entries). Both resolved schemas and `null` results are cached so the inner loader is called at most once per IRI.
 
-```ts
-Loaders.cached(Loaders.fetch())            // default maxSize (1024)
-Loaders.cached(Loaders.fetch(), { maxSize: 256 })
-```
+<<< ../../examples/docs/advanced/60-loaders-cached.ts
 
 ## Write your own loader
 
 Any function with the signature `(iri: string) => Promise<JsonSchemaType | null>` is a valid loader. Node `fs` example:
 
-```ts
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
-
-const fsLoader = async (iri: string): Promise<Record<string, unknown> | null> => {
-  const filename = path.join('/schemas', new URL(iri).pathname + '.json');
-
-  try {
-    const content = await fs.readFile(filename, 'utf8');
-    return JSON.parse(content);
-  } catch {
-    return null;
-  }
-};
-
-const snapshot = await JsonTology.prefetch({ loader: fsLoader, rootIds: [UserSchema.$id] });
-```
+<<< ../../examples/docs/advanced/61-loaders-fs-custom.ts
 
 ## Adding schemas after construction
 

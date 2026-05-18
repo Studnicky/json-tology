@@ -5,7 +5,7 @@ import type {
 } from './GraphEngine.js';
 import type { FormatRegistryInterface } from './FormatRegistry.js';
 import type { SchemaGraphInterface } from './SchemaGraphImpl.js';
-import type { JSONSchema7Definition } from 'json-schema';
+import type { JsonSchemaDocumentType } from '../types/Schema.js';
 
 export interface GraphEngineInterface {
   check(value: unknown, options?: { 'pointer'?: string }): boolean;
@@ -19,7 +19,7 @@ export interface GraphEngineInterface {
   graphLookup(): ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
   hasRegisteredCustomKeywords(): boolean;
   keywords(): KeywordDefinitionInterface[];
-  readonly 'rootSchema': JSONSchema7Definition;
+  readonly 'rootSchema': JsonSchemaDocumentType;
   rootSchemaId(): string | undefined;
   schemaLookup(): ((schemaId: string) => Record<string, unknown> | undefined) | undefined;
 }

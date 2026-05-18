@@ -20,32 +20,28 @@ import {
 import { bookstoreEntities as entities } from '../../examples/docs/bookstore/index.js';
 // JsonLdFormatter is a low-level JSON-LD formatter used by serializers; not surfaced by the public API.
 import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
+// Terms factory — produces rdf/js-compliant term objects for test quad construction.
+import { Terms } from '../../src/modules/rdf/Terms.js';
 
 // ===========================================================================
 // Source: jsonLdFormatter.test.ts
 // ===========================================================================
 {
   function literal(value: unknown, datatype = 'xsd:string'): QuadInterface['object'] {
-    const obj: QuadInterface['object'] = {
-      'datatype': {
-        'termType': 'NamedNode',
-        'value': datatype
-      },
-      'language': '',
-      'termType': 'Literal',
-      'value': value
-    };
-
-    return obj;
+    return Terms.literal(value, { 'datatype': Terms.iri(datatype) });
   }
 
   function named(value: string): QuadInterface['object'] {
-    const obj: QuadInterface['object'] = {
-      'termType': 'NamedNode',
-      'value': value
-    };
+    return Terms.iri(value);
+  }
 
-    return obj;
+  function quad(subject: string, predicate: string, object: QuadInterface['object']): QuadInterface {
+    return {
+      'graph': Terms.defaultGraph(),
+      object,
+      'predicate': Terms.iri(predicate),
+      'subject': subject.startsWith('_:') ? Terms.blank(subject) : Terms.iri(subject)
+    };
   }
 
   // ---------------------------------------------------------------------------
@@ -67,21 +63,9 @@ import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
         },
         'name': 'happy: groups quads by subject into separate nodes',
         'quads': [
-          {
-            'object': literal('Person'),
-            'predicate': 'rdfs:label',
-            'subject': 'ex:Person'
-          },
-          {
-            'object': literal('A person'),
-            'predicate': 'rdfs:comment',
-            'subject': 'ex:Person'
-          },
-          {
-            'object': literal('Animal'),
-            'predicate': 'rdfs:label',
-            'subject': 'ex:Animal'
-          }
+          quad('ex:Person', 'rdfs:label', literal('Person')),
+          quad('ex:Person', 'rdfs:comment', literal('A person')),
+          quad('ex:Animal', 'rdfs:label', literal('Animal'))
         ]
       },
       {
@@ -90,11 +74,7 @@ import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
           assert.equal(result[0]['rdf:type'], undefined);
         },
         'name': 'happy: converts rdf:type to @type',
-        'quads': [{
-          'object': named('owl:Class'),
-          'predicate': 'rdf:type',
-          'subject': 'ex:Person'
-        }]
+        'quads': [quad('ex:Person', 'rdf:type', named('owl:Class'))]
       },
       {
         'check': (result) => {
@@ -105,16 +85,8 @@ import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
         },
         'name': 'happy: multiple values for same predicate become arrays',
         'quads': [
-          {
-            'object': literal('Person'),
-            'predicate': 'rdfs:label',
-            'subject': 'ex:Person'
-          },
-          {
-            'object': literal('Human'),
-            'predicate': 'rdfs:label',
-            'subject': 'ex:Person'
-          }
+          quad('ex:Person', 'rdfs:label', literal('Person')),
+          quad('ex:Person', 'rdfs:label', literal('Human'))
         ]
       },
       {
@@ -126,16 +98,8 @@ import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
         },
         'name': 'happy: multiple rdf:type values become @type array',
         'quads': [
-          {
-            'object': named('owl:Class'),
-            'predicate': 'rdf:type',
-            'subject': 'ex:Person'
-          },
-          {
-            'object': named('rdfs:Resource'),
-            'predicate': 'rdf:type',
-            'subject': 'ex:Person'
-          }
+          quad('ex:Person', 'rdf:type', named('owl:Class')),
+          quad('ex:Person', 'rdf:type', named('rdfs:Resource'))
         ]
       },
       {
@@ -152,11 +116,7 @@ import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
           assert.equal(result[0]['rdfs:label'], 'Widget');
         },
         'name': 'edge: single quad produces single node',
-        'quads': [{
-          'object': literal('Widget'),
-          'predicate': 'rdfs:label',
-          'subject': 'ex:Widget'
-        }]
+        'quads': [quad('ex:Widget', 'rdfs:label', literal('Widget'))]
       },
       {
         'check': (result) => {
@@ -166,21 +126,9 @@ import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
         },
         'name': 'edge: duplicate subjects with different predicates merge into one node',
         'quads': [
-          {
-            'object': literal('Alice'),
-            'predicate': 'ex:name',
-            'subject': 'ex:Person'
-          },
-          {
-            'object': literal(30, 'xsd:integer'),
-            'predicate': 'ex:age',
-            'subject': 'ex:Person'
-          },
-          {
-            'object': literal('Alice'),
-            'predicate': 'ex:name',
-            'subject': 'ex:Person'
-          }
+          quad('ex:Person', 'ex:name', literal('Alice')),
+          quad('ex:Person', 'ex:age', literal(30, 'xsd:integer')),
+          quad('ex:Person', 'ex:name', literal('Alice'))
         ]
       }
     ];
@@ -217,19 +165,8 @@ import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
         },
         'name': 'happy: singly-referenced blank node is inlined',
         'quads': [
-          {
-            'object': {
-              'termType': 'BlankNode' as const,
-              'value': '_:b0'
-            },
-            'predicate': 'ex:address',
-            'subject': 'ex:Person'
-          },
-          {
-            'object': literal('Portland'),
-            'predicate': 'ex:city',
-            'subject': '_:b0'
-          }
+          quad('ex:Person', 'ex:address', Terms.blank('_:b0')),
+          quad('_:b0', 'ex:city', literal('Portland'))
         ]
       },
       {
@@ -242,27 +179,9 @@ import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
         },
         'name': 'happy: multiply-referenced blank node is NOT inlined',
         'quads': [
-          {
-            'object': {
-              'termType': 'BlankNode' as const,
-              'value': '_:b0'
-            },
-            'predicate': 'ex:address',
-            'subject': 'ex:Person'
-          },
-          {
-            'object': {
-              'termType': 'BlankNode' as const,
-              'value': '_:b0'
-            },
-            'predicate': 'ex:address',
-            'subject': 'ex:Company'
-          },
-          {
-            'object': literal('Portland'),
-            'predicate': 'ex:city',
-            'subject': '_:b0'
-          }
+          quad('ex:Person', 'ex:address', Terms.blank('_:b0')),
+          quad('ex:Company', 'ex:address', Terms.blank('_:b0')),
+          quad('_:b0', 'ex:city', literal('Portland'))
         ]
       },
       {
@@ -281,22 +200,8 @@ import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
         },
         'name': 'edge: blank node with no properties still referenced by @id',
         'quads': [
-          {
-            'object': {
-              'termType': 'BlankNode' as const,
-              'value': '_:empty'
-            },
-            'predicate': 'ex:ref',
-            'subject': 'ex:Parent'
-          },
-          {
-            'object': {
-              'termType': 'BlankNode' as const,
-              'value': '_:empty'
-            },
-            'predicate': 'ex:ref',
-            'subject': 'ex:Other'
-          }
+          quad('ex:Parent', 'ex:ref', Terms.blank('_:empty')),
+          quad('ex:Other', 'ex:ref', Terms.blank('_:empty'))
         ]
       }
     ];
@@ -332,17 +237,10 @@ import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
           ]);
         },
         'name': 'happy: List term becomes @list',
-        'quads': [{
-          'object': {
-            'items': [
-              named('ex:Circle'),
-              named('ex:Square')
-            ],
-            'termType': 'List'
-          } as unknown as QuadInterface['object'],
-          'predicate': 'sh:or',
-          'subject': 'ex:Shape'
-        }]
+        'quads': [quad('ex:Shape', 'sh:or', Terms.list([
+          named('ex:Circle'),
+          named('ex:Square')
+        ]))]
       },
       {
         'check': (result) => {
@@ -352,21 +250,9 @@ import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
         },
         'name': 'happy: literal types preserved (integer, boolean, string)',
         'quads': [
-          {
-            'object': literal(42, 'xsd:integer'),
-            'predicate': 'ex:count',
-            'subject': 'ex:Item'
-          },
-          {
-            'object': literal(true, 'xsd:boolean'),
-            'predicate': 'ex:active',
-            'subject': 'ex:Item'
-          },
-          {
-            'object': literal('Widget'),
-            'predicate': 'ex:name',
-            'subject': 'ex:Item'
-          }
+          quad('ex:Item', 'ex:count', literal(42, 'xsd:integer')),
+          quad('ex:Item', 'ex:active', literal(true, 'xsd:boolean')),
+          quad('ex:Item', 'ex:name', literal('Widget'))
         ]
       },
       {
@@ -374,11 +260,7 @@ import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
           assert.deepEqual(result[0]['rdfs:subClassOf'], { '@id': 'ex:Agent' });
         },
         'name': 'happy: NamedNode becomes @id reference',
-        'quads': [{
-          'object': named('ex:Agent'),
-          'predicate': 'rdfs:subClassOf',
-          'subject': 'ex:Person'
-        }]
+        'quads': [quad('ex:Person', 'rdfs:subClassOf', named('ex:Agent'))]
       }
     ];
 

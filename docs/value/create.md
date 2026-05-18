@@ -10,68 +10,21 @@
 
 ### Example 1: Blank Book form state
 
-```ts
-import { bookstoreEntities, BookSchema } from './bookstore/index.js';
-
-const blank = bookstoreEntities.value.create(BookSchema.$id);
-// {
-//   isbn:     '',          ← zero-value for required string
-//   title:    '',          ← zero-value for required string
-//   authors:  [],          ← zero-value for required array
-//   price:    0,           ← zero-value for required number
-//   currency: 'USD',       ← explicit default preserved
-//   inStock:  true,        ← explicit default preserved
-// }
-```
+<<< ../../examples/docs/value/04-create.ts
 
 ### Example 2: Blank Customer for testing
 
-```ts
-const blankCustomer = jt.value.create(CustomerSchema.$id);
-// {
-//   id:        '',
-//   email:     '',
-//   name:      '',
-//   addresses: [],   ← default []
-// }
-```
+<<< ../../examples/docs/value/15-create-blank-customer.ts
 
 ### Example 3: Contrast with materialize and Compose.getDefaults
 
-```ts
-// value.create  - zero-values + explicit defaults, ALL required fields present
-const fromCreate = jt.value.create(BookSchema.$id);
-// { isbn: '', title: '', authors: [], price: 0, currency: 'USD', inStock: true }
-
-// Compose.getDefaults  - only declared defaults (no zero-values)
-const defaults = Compose.getDefaults(BookSchema);
-// { currency: 'USD', inStock: true }
-// isbn, title, authors, price absent  - they have no declared defaults
-
-// materialize  - fill declared defaults, partial is trusted, throws if required missing
-const m = jt.materialize(BookSchema, {
-  isbn: '9780140449136', title: 'Crime and Punishment', authors: ['Dostoevsky'], price: 14.99,
-});
-// { isbn: '...', ..., currency: 'USD', inStock: true }
-```
+<<< ../../examples/docs/value/16-create-vs-materialize-vs-getdefaults.ts
 
 ## Bad examples - what NOT to do
 
 ### Anti-pattern 1: Using value.create to generate valid instances for tests
 
-```ts
-// ⊥ Don't do this  - zero-values may not pass validation (empty strings, 0 price)
-const blank = jt.value.create(BookSchema.$id);
-jt.validate(BookSchema.$id, blank); // may have errors: isbn pattern fails, price ≤ 0
-
-// ✓ Do this  - use actual test data
-const testBook = jt.instantiate(BookSchema.$id, {
-  isbn:    '9780140449136',
-  title:   'Test Book',
-  authors: ['Test Author'],
-  price:   9.99,
-});
-```
+<<< ../../examples/docs/value/16-create-vs-materialize-vs-getdefaults.ts
 
 ## Comparison
 

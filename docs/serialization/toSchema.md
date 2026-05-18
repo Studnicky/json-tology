@@ -10,85 +10,29 @@
 
 ### Example 1: Round-trip an Order schema
 
-```ts
-import { bookstoreEntities } from './bookstore/index.js';
-
-const reconstructed = bookstoreEntities.toSchema('https://bookstore.example/Order');
-console.log(JSON.stringify(reconstructed, null, 2));
-// Should match the original OrderSchema structure
-```
+<<< ../../examples/docs/serialization/09-toschema-roundtrip.ts
 
 ### Example 2: Verify a composed schema round-trips correctly
 
-```ts
-import { Compose } from 'json-tology';
-import { bookstoreEntities, BookSchema } from './bookstore/index.js';
-
-const BookSummarySchema = Compose.pick(
-  BookSchema,
-  ['isbn', 'title', 'price'] as const,
-  'https://bookstore.example/BookSummary',
-);
-bookstoreEntities.set(BookSummarySchema);
-
-const roundTripped = bookstoreEntities.toSchema('https://bookstore.example/BookSummary');
-// Should contain only isbn, title, price properties
-const keys = Object.keys((roundTripped?.properties as object) ?? {});
-console.log(keys); // ['isbn', 'title', 'price']
-```
+<<< ../../examples/docs/serialization/10-toschema-composed.ts
 
 ### Example 3: Undefined for unregistered schemas
 
-```ts
-const missing = jt.toSchema('https://bookstore.example/NonExistent');
-console.log(missing); // undefined
-```
+<<< ../../examples/docs/serialization/11-toschema-undefined.ts
 
 ## Bad examples: what NOT to do
 
 ### Anti-pattern 1: Using toSchema when you need the original authored object
 
-```ts
-import { bookstoreEntities } from './bookstore/index.js';
-
-// ✗ Don't do this — toSchema reconstructs from the graph; the result may
-// differ in key order, inlined $defs, or normalized forms
-const schema = bookstoreEntities.toSchema('https://bookstore.example/Book');
-const originalTitle = schema?.title; // may be present or absent depending on normalization
-
-// ✓ Do this — use bookstoreEntities.registry.get to retrieve the original object reference
-const original = bookstoreEntities.registry.get('https://bookstore.example/Book');
-// original is the exact object passed to JsonTology.create
-```
+<<< ../../examples/docs/serialization/12-toschema-antipattern-original-object.ts
 
 ### Anti-pattern 2: Using the reconstructed schema as a source of truth for structural comparison
 
-```ts
-// ✗ Don't do this — comparing reconstructed schema against original via deep-equal
-// is fragile; normalization may reorder keys or inline $defs differently
-const reconstructed = bookstoreEntities.toSchema('https://bookstore.example/Order');
-const original = OrderSchema;
-console.log(JSON.stringify(reconstructed) === JSON.stringify(original)); // may be false even when semantically equivalent
-
-// ✓ Do this — use toSchema for debugging and display; use the original schema
-// for structural comparisons
-```
+<<< ../../examples/docs/serialization/13-toschema-antipattern-structural-compare.ts
 
 ### Anti-pattern 3: Calling toSchema for an unregistered schema without handling undefined
 
-```ts
-// ✗ Don't do this — ignoring the undefined return for schemas not in the registry
-const schema = bookstoreEntities.toSchema('https://bookstore.example/Nonexistent');
-const props = Object.keys(schema.properties); // TypeError: Cannot read properties of undefined
-
-// ✓ Do this — check for undefined before accessing the result
-const schema2 = bookstoreEntities.toSchema('https://bookstore.example/Nonexistent');
-if (schema2 === undefined) {
-  console.warn('Schema not registered');
-} else {
-  const props = Object.keys((schema2.properties as object) ?? {});
-}
-```
+<<< ../../examples/docs/serialization/14-toschema-antipattern-undefined.ts
 
 ## Comparison
 

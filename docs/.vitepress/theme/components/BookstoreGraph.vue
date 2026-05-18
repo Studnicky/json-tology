@@ -15,11 +15,13 @@ const selectedNode = ref<{ id: string; schema: unknown; edges: EdgeData[] } | nu
 interface CyHandle {
   destroy(): void;
   fit(elements?: unknown, padding?: number): void;
+  resize(): void;
   zoom(): number;
   minZoom(level: number): void;
   maxZoom(level: number): void;
   userZoomingEnabled(enabled: boolean): void;
   on(event: string, selector: string | ((event: unknown) => void), handler?: (event: unknown) => void): void;
+  one(event: string, handler: () => void): void;
 }
 let cyInstance: CyHandle | null = null;
 
@@ -72,6 +74,21 @@ onMounted(async () => {
   loading.value = false;
 
   if (!containerRef.value) return;
+
+  // Wait until the container actually has non-zero dimensions before
+  // constructing Cytoscape. VitePress's reactive layout sometimes mounts the
+  // component before the surrounding flex/grid math has settled, and
+  // Cytoscape's renderer falls back to a 300×150 canvas if construction runs
+  // against a zero-sized container — leaving the graph invisible inside an
+  // otherwise-correctly-sized div.
+  async function waitForContainerSize(el: HTMLElement): Promise<void> {
+    for (let attempt = 0; attempt < 60; attempt++) {
+      const rect = el.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) return;
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    }
+  }
+  await waitForContainerSize(containerRef.value);
 
   // Build Cytoscape elements
   const elements = [
@@ -285,36 +302,61 @@ onMounted(async () => {
       }
     ],
     layout: {
-      name: 'cose',
+      name: 'fcose',
       animate: false,
       fit: true,
-      padding: 60,
-      nodeRepulsion: () => 7000,
-      idealEdgeLength: () => 75,
-      gravity: 90,
-      numIter: 1500,
+      padding: 50,
+      quality: 'proof',
+      nodeDimensionsIncludeLabels: true,
+      nodeRepulsion: () => 6500,
+      idealEdgeLength: () => 80,
+      edgeElasticity: () => 0.45,
+      gravity: 0.3,
+      gravityRangeCompound: 1.5,
+      gravityCompound: 1.0,
+      gravityRange: 3.8,
+      numIter: 2500,
       randomize: false,
-      componentSpacing: 50
+      uniformNodeDimensions: false,
+      packComponents: true,
+      tile: false
     } as Record<string, unknown>
   });
 
-  // The cose layout produces positions synchronously when `animate: false`,
-  // but Cytoscape's renderer needs the container to have its final size
-  // before fit() can compute a meaningful zoom. On initial mount we
-  // sometimes hit a transient state where the container is sized but the
-  // viewport bounds haven't settled yet — fit() in that frame yields a
-  // slightly-off zoom and nodes drift outside the viewport. Run fit() once
-  // synchronously, then again on the next animation frame so the fit
-  // matches what clicking the navigation-pane "fit" button produces.
-  cyInstance.fit(undefined, 60);
-  requestAnimationFrame(() => {
-    cyInstance?.fit(undefined, 60);
-    if (cyInstance) {
-      const fitZoom = cyInstance.zoom();
-      cyInstance.minZoom(fitZoom * 0.4);
-      cyInstance.maxZoom(fitZoom * 4);
-    }
+  // Listen for the layout to actually finish before fitting. The cytoscape
+  // constructor returns before the embedded `layout` option's run() emits
+  // `layoutstop`, so an immediate fit() captures whatever positions exist
+  // at construction (often clustered or pre-layout).
+  function refit(): void {
+    if (cyInstance === null) return;
+    cyInstance.fit(undefined, 50);
+  }
+  (cyInstance as unknown as { one(ev: string, cb: () => void): void }).one('layoutstop', () => {
+    refit();
+    // Defer the zoom-clamp until fit has settled the zoom value.
+    requestAnimationFrame(() => {
+      if (cyInstance !== null) {
+        const fitZoom = cyInstance.zoom();
+        cyInstance.minZoom(fitZoom * 0.25);
+        cyInstance.maxZoom(fitZoom * 6);
+      }
+    });
   });
+  // Belt-and-suspenders for two cases the layoutstop listener can't cover:
+  // (1) fonts loading after layout completed and shifting node bounds,
+  // (2) a ResizeObserver firing because the sidebar drawer toggled.
+  setTimeout(refit, 250);
+  if (containerRef.value !== null && typeof ResizeObserver !== 'undefined') {
+    const resizeObserver = new ResizeObserver(() => {
+      // resize() tells Cytoscape to re-read the container dimensions and
+      // resize its internal canvas. Without this, fit() would compute zoom
+      // against stale dimensions and the graph stays clipped.
+      cyInstance?.resize();
+      refit();
+    });
+    resizeObserver.observe(containerRef.value);
+    onUnmounted(() => { resizeObserver.disconnect(); });
+  }
 
   // Click handler: open side panel
   const allEdges = graphData.edges.map(e => e.data);
@@ -369,14 +411,20 @@ function fitGraph(): void {
 function rerunLayout(): void {
   if (!cyInstance) return;
   const layout = cyInstance.layout({
-    name: 'cose',
+    name: 'fcose',
     animate: false,
-    nodeRepulsion: () => 7000,
-    idealEdgeLength: () => 75,
-    gravity: 90,
-    numIter: 1500,
+    quality: 'proof',
+    nodeRepulsion: () => 8000,
+    idealEdgeLength: () => 90,
+    gravity: 0.25,
+    gravityRangeCompound: 1.5,
+    gravityCompound: 1.0,
+    gravityRange: 3.8,
+    numIter: 2500,
     randomize: true,
-    componentSpacing: 50
+    uniformNodeDimensions: false,
+    packComponents: true,
+    tile: false
   } as Record<string, unknown>);
   layout.run();
   cyInstance.fit(undefined, 60);

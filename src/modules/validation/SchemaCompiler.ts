@@ -520,6 +520,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
       additionalValidator,
       allOfValidators,
       allowedKeys,
+      allowedKeysForStrip,
       anyOfChecks,
       complementCheck,
       constVal,
@@ -734,7 +735,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
             errors,
             collectErrors,
             applyDefaults,
-            doCoerce
+            doCoerce,
+            allowedKeysForStrip
           );
 
           if (propsResult.earlyExit) {
@@ -1085,7 +1087,8 @@ export class SchemaCompiler implements SchemaCompilerInterface {
           errors,
           collectErrors,
           applyDefaults,
-          doCoerce
+          doCoerce,
+          allowedKeysForStrip
         );
 
         if (propsResult.earlyExit) {
@@ -1203,8 +1206,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
         errors,
         collectErrors,
         applyDefaults,
-        doCoerce,
-        stripUnknown
+        doCoerce
       );
 
       if (allOfResult.earlyExit) {

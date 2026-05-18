@@ -1,0 +1,35 @@
+/**
+ * ValidationErrors — Example 1: Check validity, iterate errors
+ * Demonstrates: .ok, .length, for...of iteration, .path, .keyword, .message, .params
+ *
+ * An Order with a negative total and an empty items array violates
+ * `exclusiveMinimum` and `minItems` — surfaces at least two structured errors.
+ */
+
+import {
+  aboxFixtures, bookstoreEntities, OrderSchema
+} from '../bookstore/index.js';
+
+const errs = bookstoreEntities.validate(OrderSchema.$id, {
+  'customerId': aboxFixtures.customer.id,
+  'id': aboxFixtures.order.id,
+  // minItems: 1 violated
+  'items': [],
+  'placedAt': '2026-01-15T10:30:00Z',
+  'shippingAddress': aboxFixtures.order.shippingAddress,
+  'total': {
+    // exclusiveMinimum: 0 violated
+    'amount': -5,
+    'currency': 'EUR'
+  }
+});
+
+console.assert(!errs.ok);
+console.assert(errs.length >= 2);
+
+for (const err of errs) {
+  console.assert(typeof err.path === 'string');
+  console.assert(typeof err.keyword === 'string');
+  console.assert(typeof err.message === 'string');
+  console.assert(typeof err.params === 'object');
+}

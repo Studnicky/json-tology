@@ -26,69 +26,15 @@ See [`Value.diff`](#value-diff) for usage examples and [`Operations.patch`](#ope
 
 #### Example 1: Detect email change on a customer update
 
-```ts
-import { Value } from 'json-tology';
-import { bookstoreEntities, CustomerSchema } from './bookstore/index.js';
-
-const before = bookstoreEntities.instantiate(CustomerSchema.$id, {
-  id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  email: 'alice@bookstore.example',
-  name:  'Alice Chen',
-});
-
-const after = bookstoreEntities.instantiate(CustomerSchema.$id, {
-  id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  email: 'alice.chen@bookstore.example', // changed
-  name:  'Alice Chen',
-});
-
-const changes = Value.diff(before, after);
-
-console.log(changes.isEmpty);   // false
-console.log(changes.length);    // 1
-console.log(changes.operations);
-// [{ op: 'set', path: '/email', value: 'alice.chen@bookstore.example' }]
-```
+<<< ../../examples/docs/value/02-diff.ts
 
 #### Example 2: Track order line additions
 
-```ts
-const beforeOrder = jt.instantiate(OrderSchema.$id, {
-  id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-  customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  placedAt:   '2026-01-15T10:30:00Z',
-  total:      14.99,
-  items:      [{ bookIsbn: '9780140449136', quantity: 1, unitPrice: 14.99 }],
-});
-
-const afterOrder = jt.instantiate(OrderSchema.$id, {
-  ...beforeOrder,
-  items: [
-    ...beforeOrder.items,
-    { bookIsbn: '9780062316110', quantity: 1, unitPrice: 9.99 },
-  ],
-  total: 24.98,
-});
-
-const changes = Value.diff(beforeOrder, afterOrder);
-// operations: [{ op: 'set', path: '/items/1', value: {...} }, { op: 'set', path: '/total', value: 24.98 }]
-```
+<<< ../../examples/docs/value/05-diff-order-lines.ts
 
 #### Example 3: Audit log entry
 
-```ts
-function auditUpdate(schemaId: string, before: unknown, after: unknown) {
-  const changes = Value.diff(before, after);
-  if (!changes.isEmpty) {
-    logger.info('record.updated', {
-      count:  changes.length,
-      ops:    changes.operations,
-      schema: schemaId,
-    });
-  }
-  return changes;
-}
-```
+<<< ../../examples/docs/value/06-diff-audit-log.ts
 
 ### Comparison
 
@@ -180,14 +126,7 @@ changes = {k: v for k, v in after_dict.items() if before_dict.get(k) != v}
 
 The project lint rules block direct calls to methods named `.apply()` (to prevent accidental use of `Function.prototype.apply`). To apply a full changeset, loop over `.operations` manually:
 
-```ts
-import { Operations } from 'json-tology/value';
-
-let result: unknown = Operations.clone(before);
-for (const op of changes.operations) {
-  result = Operations.patch(result, op);
-}
-```
+<<< ../../examples/docs/value/07-diff-apply-loop.ts
 
 :::
 
@@ -195,24 +134,7 @@ for (const op of changes.operations) {
 
 #### Example 1: Apply a single price update
 
-```ts
-import { Operations } from 'json-tology/value';
-
-const book = jt.instantiate(BookSchema.$id, {
-  isbn:    '9780140449136',
-  title:   'Crime and Punishment',
-  authors: ['Fyodor Dostoevsky'],
-  price:   14.99,
-});
-
-const updated = Operations.patch(Operations.clone(book), {
-  op:    'set',
-  path:  '/price',
-  value: 12.99,
-});
-console.log((updated as typeof book).price); // 12.99
-console.log(book.price);                      // 14.99  - original unchanged
-```
+<<< ../../examples/docs/value/08-patch-single-price.ts
 
 ### Comparison
 

@@ -34,7 +34,7 @@ examples/docs/bookstore/
     ├── StreetLine.ts             # primitive: string, 1-200 chars
     ├── Title.ts                  # primitive: string, 1-500 chars
     ├── Address.ts                # entity: composes StreetLine + CityName + PostalCode + CountryCode
-    ├── Book.ts                   # entity: composes Isbn + Title + AuthorName + Money + CurrencyCode
+    ├── Book.ts                   # entity: composes Isbn + Title + AuthorName + Money + PrintStatus + PublicationDate + StockLevel + BookAnnotations + BookRatingHistogram
     ├── Customer.ts               # entity: composes CustomerId + Email + CustomerName + Address
     ├── OrderLine.ts              # entity: composes Isbn + Quantity + Money
     ├── Order.ts                  # entity: composes OrderId + CustomerId + OrderLine + Money + ...
@@ -42,11 +42,12 @@ examples/docs/bookstore/
     ├── EBook.ts                  # subClassOf Book — digital format
     ├── PrintBook.ts              # subClassOf Book + disjointWith EBook — physical format
     ├── RareBook.ts               # subClassOf PrintBook + someValuesFrom + maxCardinality
-    ├── SoloAuthoredBook.ts       # subClassOf Book + cardinality(authors, 1)
-    ├── AnthologyBook.ts          # subClassOf Book + minCardinality + allValuesFrom
-    ├── InPrintBook.ts            # subClassOf Book + hasValue(inStock, true)
+    ├── SignedFirstEdition.ts     # subClassOf RareBook + signedFirstEditionIsSoloAuthored invariant
+    ├── InPrintBook.ts            # subClassOf Book + hasValue(printStatus, 'inPrint')
     └── OutOfPrintBook.ts         # complementOf InPrintBook, allOf-bounded to Book
 ```
+
+Cross-field rules that JSON Schema and TypeScript can't express structurally — like "a `SignedFirstEdition` has exactly one author" — are registered on the schema as invariants (`bookstoreEntities.addInvariant`). The invariant function runs after structural validation and surfaces failures in the same `ValidationErrors` shape as any structural error, with `keyword: 'jt:invariant'`. This is how json-tology augments TypeScript: schema declarations carry not just shape but the runtime axioms that shape can't express, and the inferred TS type tracks both.
 
 Each primitive file exports a single schema constant with a stable `$id` using the `urn:bookstore:` IRI pattern. Entity files import only the primitives they reference - every `$ref` is `{ $ref: SourceSchema.$id }` with an explicit named import at the top of the file.
 
@@ -64,14 +65,7 @@ Examples: `urn:bookstore:Isbn`, `urn:bookstore:Customer`, `urn:bookstore:Order`.
 
 ### Isbn
 
-```ts
-// entities/Isbn.ts
-export const IsbnSchema = {
-  $id: 'urn:bookstore:Isbn',
-  type: 'string',
-  pattern: '^\\d{13}$',
-} as const;
-```
+<<< ../examples/docs/bookstore-domain/01-isbn-primitive.ts
 
 ### CustomerId
 
@@ -109,55 +103,13 @@ export const IsbnSchema = {
 
 ### Review
 
-```ts
-// entities/Review.ts
-import { CustomerIdSchema } from './CustomerId.js';
-import { IsbnSchema } from './Isbn.js';
-import { Iso8601Schema } from './Iso8601.js';
-import { RatingScoreSchema } from './RatingScore.js';
-import { ReviewIdSchema } from './ReviewId.js';
-
-export const ReviewSchema = {
-  $id: 'urn:bookstore:Review',
-  type: 'object',
-  properties: {
-    id:         { $ref: ReviewIdSchema.$id },
-    bookIsbn:   { $ref: IsbnSchema.$id },
-    customerId: { $ref: CustomerIdSchema.$id },
-    rating:     { $ref: RatingScoreSchema.$id },
-    body:       { type: 'string', minLength: 10 },
-    postedAt:   { $ref: Iso8601Schema.$id },
-  },
-  required: ['id', 'bookIsbn', 'customerId', 'rating', 'body', 'postedAt'],
-} as const;
-```
+<<< ../examples/docs/bookstore-domain/02-review-schema.ts
 
 ## Registering everything at once
 
 The orchestrator `examples/docs/bookstore/index.ts` creates the shared `jt` instance with all 31 schemas pre-registered. Primitives register first (required by `$ref` resolution):
 
-```ts
-import { JsonTology } from 'json-tology';
-import { AuthorNameSchema } from './entities/AuthorName.js';
-import { IsbnSchema } from './entities/Isbn.js';
-import { MoneySchema } from './entities/Money.js';
-// ... all primitives
-import { BookSchema } from './entities/Book.js';
-import { CustomerSchema } from './entities/Customer.js';
-// ... all entities
-
-export const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [
-    // Primitives first
-    AuthorNameSchema, /* ... */
-    // Entities after
-    AddressSchema, BookSchema, CustomerSchema, OrderLineSchema, OrderSchema, ReviewSchema,
-  ] as const,
-});
-
-export { IsbnSchema, BookSchema, CustomerSchema /* ... all schemas */ };
-```
+<<< ../examples/docs/bookstore-domain/03-registry-orchestrator.ts
 
 `as const` is required so TypeScript preserves the literal types needed for `InferType<T>` inference.
 
@@ -169,15 +121,11 @@ The bookstore domain extends to an OWL-style class hierarchy with subClassOf and
 
 All subsequent guide pages import from the shared orchestrator:
 
-```ts
-import { bookstoreEntities, CustomerSchema } from '../bookstore/index.js';
-```
+<<< ../examples/docs/bookstore-domain/04-import-from-orchestrator.ts
 
 Or import directly from the specific entity file when only one is needed:
 
-```ts
-import { IsbnSchema } from '../bookstore/entities/Isbn.js';
-```
+<<< ../examples/docs/bookstore-domain/05-import-direct-entity.ts
 
 ## What comes next
 

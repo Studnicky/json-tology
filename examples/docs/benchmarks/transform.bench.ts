@@ -102,6 +102,7 @@ const decodedValue = new Date(wireValue);
 export function runTransformBench(): BenchResult[] {
   const results: BenchResult[] = [];
 
+  // doc example with synthetic fixture schemas (strict-graph default does not throw because no inline duplicates)
   const jt = JsonTology.create({
     'baseIRI': 'urn:bench:transform',
     'schemas': [DateSchemaJt]

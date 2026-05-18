@@ -10,7 +10,7 @@ import {
 
 function createCustomer(body: unknown) {
   try {
-    return bookstoreEntities.instantiate(CustomerSchema.$id, body);
+    return bookstoreEntities.instantiate(CustomerSchema, body);
   } catch (error) {
     if (error instanceof InstantiationError) {
       const problem = error.errors.report({ 'instance': '/customers' });

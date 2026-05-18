@@ -27,21 +27,7 @@ The bookstore schemas defined in the [Bookstore Domain](/bookstore-domain) are u
 
 **Use this when** you publish RDF that needs to interoperate with externally minted IRIs for the same concept.
 
-```ts
-const BookSchema = {
-  $id: 'https://bookstore.example/Book',
-  type: 'object',
-  'jt:alias': [
-    'https://schema.org/Book',
-    'https://www.loc.gov/mads/rdf/v1#Title',
-  ],
-  properties: {
-    isbn:  { type: 'string', pattern: '^\\d{13}$' },
-    title: { type: 'string' },
-  },
-  required: ['isbn', 'title'],
-} as const;
-```
+<<< ../../examples/docs/schemas/02-jt-alias.ts
 
 ## `jt:computed`
 
@@ -53,18 +39,7 @@ const BookSchema = {
 
 **Use this when** a property is mechanically derivable from other fields - an order `total` from line items, a `displayName` concatenating fields, a hash of canonical content. Pair it with `addComputed` (or the `computeds` constructor option) to register the function.
 
-```ts
-const ComputedOrderSchema = {
-  $id: 'https://bookstore.example/ComputedOrder',
-  type: 'object',
-  properties: {
-    items:    { type: 'array', items: { $ref: 'https://bookstore.example/OrderLine' }, minItems: 1 },
-    total:    { type: 'number', 'jt:computed': true },
-    currency: { type: 'string', default: 'USD' },
-  },
-  required: ['items'],
-} as const;
-```
+<<< ../../examples/docs/schemas/03-jt-computed.ts
 
 See [`addComputed`](/registry/computed) for the function-side contract.
 
@@ -84,22 +59,7 @@ See [`addComputed`](/registry/computed) for the function-side contract.
 
 **Use this when** you want to colocate several runtime policy bits without scattering individual keywords across the schema.
 
-```ts
-const FrozenAddressSchema = {
-  $id: 'https://bookstore.example/FrozenAddress',
-  type: 'object',
-  'jt:config': {
-    extra:  'forbid',  // throw on unknown properties
-    frozen: true,      // Object.freeze the materialized value
-  },
-  properties: {
-    street:     { type: 'string' },
-    city:       { type: 'string' },
-    postalCode: { type: 'string' },
-  },
-  required: ['street', 'city', 'postalCode'],
-} as const;
-```
+<<< ../../examples/docs/schemas/04-jt-config.ts
 
 The three `extra` values:
 
@@ -121,18 +81,7 @@ The three `extra` values:
 
 **Use this when** every materialized value of this schema should be immutable - configuration objects, value objects, snapshot records.
 
-```ts
-const MoneySchema = {
-  $id: 'https://bookstore.example/Money',
-  type: 'object',
-  'jt:frozen': true,
-  properties: {
-    amount:   { type: 'number', exclusiveMinimum: 0 },
-    currency: { type: 'string', minLength: 3, maxLength: 3 },
-  },
-  required: ['amount', 'currency'],
-} as const;
-```
+<<< ../../examples/docs/schemas/05-jt-frozen.ts
 
 Prefer `jt:config: { frozen: true }` when you also need `extra` or `strict`. Use the standalone form when freeze is the only policy.
 
@@ -146,27 +95,7 @@ Prefer `jt:config: { frozen: true }` when you also need `extra` or `strict`. Use
 
 **Use this when** one schema in a registry needs the opposite policy from the rest - for example, a wire-facing payload that must reject coercions even though the rest of the system allows them.
 
-```ts
-import { JsonTology } from 'json-tology';
-
-const StrictBookSchema = {
-  $id: 'https://bookstore.example/StrictBook',
-  type: 'object',
-  'jt:strict': true,        // reject "12.99" as a string for `price`
-  properties: {
-    isbn:  { type: 'string', pattern: '^\\d{13}$' },
-    title: { type: 'string' },
-    price: { type: 'number', exclusiveMinimum: 0 },
-  },
-  required: ['isbn', 'title', 'price'],
-} as const;
-
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  enableStrictTypes: false, // global default: lenient
-  schemas: [StrictBookSchema] as const,
-});
-```
+<<< ../../examples/docs/schemas/06-jt-strict.ts
 
 ## Related
 

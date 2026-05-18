@@ -1,0 +1,21 @@
+{
+  "rootBlock": ":root {\n  --jt-canvas: #040609;\n  --jt-surface: #0e1216;\n  --jt-surface-soft: #13161a;\n  --jt-text: #d7e9e6;\n  --jt-text-muted: #c3d6d2;\n  --jt-text-subtle: #86979a;\n  --jt-accent: #7fe7d8;\n  --jt-accent-hover: #85edde;\n  --jt-accent-ui: #2daaba;\n  --jt-on-accent: #0e1216;\n  --jt-border: #6e7e80;\n}",
+  "scopedBlock": "[data-theme='json-tology-dark'] {\n  --jt-canvas: #040609;\n  --jt-surface: #0e1216;\n  --jt-surface-soft: #13161a;\n  --jt-text: #d7e9e6;\n  --jt-text-muted: #c3d6d2;\n  --jt-text-subtle: #86979a;\n  --jt-accent: #7fe7d8;\n  --jt-accent-hover: #85edde;\n  --jt-accent-ui: #2daaba;\n  --jt-on-accent: #0e1216;\n  --jt-border: #6e7e80;\n}",
+  "darkScheme": "",
+  "forcedColors": "@media (forced-colors: active) {\n  :root {\n    --jt-canvas: Canvas;\n    --jt-surface: Canvas;\n    --jt-surface-soft: Canvas;\n    --jt-text: CanvasText;\n    --jt-text-muted: GrayText;\n    --jt-text-subtle: GrayText;\n    --jt-accent: Highlight;\n    --jt-accent-hover: Highlight;\n    --jt-accent-ui: Highlight;\n    --jt-on-accent: CanvasText;\n    --jt-border: CanvasText;\n  }\n}",
+  "wideGamut": "",
+  "full": ":root {\n  --jt-canvas: #040609;\n  --jt-surface: #0e1216;\n  --jt-surface-soft: #13161a;\n  --jt-text: #d7e9e6;\n  --jt-text-muted: #c3d6d2;\n  --jt-text-subtle: #86979a;\n  --jt-accent: #7fe7d8;\n  --jt-accent-hover: #85edde;\n  --jt-accent-ui: #2daaba;\n  --jt-on-accent: #0e1216;\n  --jt-border: #6e7e80;\n}\n\n@media (forced-colors: active) {\n  :root {\n    --jt-canvas: Canvas;\n    --jt-surface: Canvas;\n    --jt-surface-soft: Canvas;\n    --jt-text: CanvasText;\n    --jt-text-muted: GrayText;\n    --jt-text-subtle: GrayText;\n    --jt-accent: Highlight;\n    --jt-accent-hover: Highlight;\n    --jt-accent-ui: Highlight;\n    --jt-on-accent: CanvasText;\n    --jt-border: CanvasText;\n  }\n}",
+  "map": {
+    "canvas": "--jt-canvas",
+    "surface": "--jt-surface",
+    "surfaceSoft": "--jt-surface-soft",
+    "text": "--jt-text",
+    "textMuted": "--jt-text-muted",
+    "textSubtle": "--jt-text-subtle",
+    "accent": "--jt-accent",
+    "accentHover": "--jt-accent-hover",
+    "accentUi": "--jt-accent-ui",
+    "onAccent": "--jt-on-accent",
+    "border": "--jt-border"
+  }
+}

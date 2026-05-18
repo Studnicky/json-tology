@@ -17,29 +17,7 @@ The semantic web distinguishes two kinds of knowledge:
 
 In json-tology:
 
-```ts
-// TBox  - what a Book looks like
-import { IsbnSchema } from './entities/Isbn.js';
-import { TitleSchema } from './entities/Title.js';
-
-const BookSchema = {
-  $id: 'urn:bookstore:Book',
-  type: 'object',
-  properties: {
-    isbn:   { $ref: IsbnSchema.$id },
-    title:  { $ref: TitleSchema.$id }
-  }
-} as const;
-
-// TBox output  - OWL class + property declarations
-const tbox = entities.toTbox();
-
-// ABox  - a specific book
-const book = { isbn: '9780140449136', title: 'The Odyssey', ... };
-
-// ABox output  - RDF quads about that instance
-const abox = entities.toQuads(BookSchema, book);
-```
+<<< ../../examples/docs/advanced/74-graph-tbox-abox-pattern.ts
 
 `entities.toTbox()` emits the TBox.
 `entities.toQuads(schema, data)` emits the ABox for a given data instance.
@@ -58,22 +36,7 @@ JSON Schema describes what is *required* and *constrained*, not what is *exhaust
 This is the **open-world assumption (OWA)**: a schema does not claim to enumerate all properties
 that may ever exist on an instance.
 
-```ts
-import { CustomerIdSchema } from './entities/CustomerId.js';
-import { CustomerNameSchema } from './entities/CustomerName.js';
-import { EmailSchema } from './entities/Email.js';
-
-const CustomerSchema = {
-  $id: 'urn:bookstore:Customer',
-  type: 'object',
-  properties: {
-    id:    { $ref: CustomerIdSchema.$id },
-    email: { $ref: EmailSchema.$id },
-    name:  { $ref: CustomerNameSchema.$id }
-  },
-  required: ['id', 'email', 'name']
-} as const;
-```
+<<< ../../examples/docs/advanced/75-graph-open-world-assumption.ts
 
 This schema says: every Customer *must* have `id`, `email`, and `name`. It does not say those
 are the *only* properties allowed.
@@ -103,15 +66,7 @@ More constraints = more specific type = subclass.
 Every `PremiumCustomer` schema that extends `Customer` describes a *narrower* set of valid
 instances. In OWL terms: the class `PremiumCustomer` is a subclass of `Customer`.
 
-```ts
-const PremiumCustomerSchema = Compose.extend(CustomerSchema, {
-  $id: 'urn:bookstore:PremiumCustomer',
-  properties: {
-    tier: { type: 'string', enum: ['gold', 'platinum'] }
-  },
-  required: ['tier']
-});
-```
+<<< ../../examples/docs/advanced/76-graph-subclass-extend.ts
 
 In the TBox, this emits:
 
@@ -135,12 +90,7 @@ See [Compose.extend](../composition/extend.md) for full API documentation.
 
 Two schemas can describe structurally identical data while carrying domain-distinct names.
 
-```ts
-const PrimaryIsbnSchema = Compose.equivalent(IsbnSchema, {
-  $id: 'urn:bookstore:PrimaryIsbn',
-  description: 'The canonical ISBN used for indexing'
-});
-```
+<<< ../../examples/docs/advanced/77-graph-equivalent-class.ts
 
 In the TBox, this emits:
 

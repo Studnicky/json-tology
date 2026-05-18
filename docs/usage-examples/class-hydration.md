@@ -8,55 +8,7 @@ All examples use the [bookstore domain](/bookstore-domain). For the underlying A
 
 ## The pattern in one block
 
-```ts
-import { JsonTology, Transform } from 'json-tology';
-
-class Order {
-  id!: string;
-  customerId!: string;
-  items!: ReadonlyArray<{ bookIsbn: string; quantity: number; unitPrice: { amount: number } }>;
-  total!: { amount: number };
-  shippingAddress!: { street: string; city: string; postalCode: string };
-  placedAt!: string;
-  status: 'pending' | 'shipped' = 'pending';
-
-  markShipped(): void {
-    this.status = 'shipped';
-  }
-
-  totalWithTax(rate = 0.08): number {
-    return this.total.amount * (1 + rate);
-  }
-}
-
-const _OrderSchemaBare = {
-  $id: 'urn:bookstore:Order',
-  type: 'object',
-  properties: {
-    id:              { type: 'string' },
-    customerId:      { type: 'string' },
-    items:           { type: 'array', items: { type: 'object' } },
-    total:           { type: 'object' },
-    shippingAddress: { type: 'object' },
-    placedAt:        { type: 'string', format: 'date-time' }
-  },
-  required: ['id', 'customerId', 'items', 'total', 'placedAt', 'shippingAddress']
-} as const;
-
-const OrderSchema = Transform.create(_OrderSchemaBare, {
-  decode: (plain) => Object.assign(Reflect.construct(Order, []), plain),
-  encode: (instance) => Object.fromEntries(
-    Object.entries(instance).filter(([_key, value]) => typeof value !== 'function')
-  )
-});
-
-const jt = JsonTology.create({ baseIRI: 'urn:bookstore', schemas: [OrderSchema] as const });
-
-const order = jt.instantiate(OrderSchema.$id, raw);
-order.markShipped();           // class method on a hydrated instance
-order instanceof Order;         // true
-JSON.stringify(order);          // round-trips through encode (or toJSON if defined)
-```
+<<< ../../examples/docs/usage-examples/02-class-hydration.ts
 
 That is the whole pattern. The remainder of this page is variations, tradeoffs, and recipes for real frameworks.
 
@@ -80,12 +32,7 @@ There are three idiomatic ways to turn a validated plain object into a class ins
 
 ### `Object.assign(Reflect.construct(Order, []), plain)`
 
-```ts
-const OrderSchema = Transform.create(_OrderSchemaBare, {
-  decode: (plain) => Object.assign(Reflect.construct(Order, []), plain),
-  encode: (instance) => ({ ...instance })
-});
-```
+<<< ../../examples/docs/usage-examples/19-class-hydration-reflect-construct.ts
 
 **When to use.** Default for most cases. Works whether or not the constructor takes arguments, because `Reflect.construct(Order, [])` calls it with `[]`.
 
@@ -93,12 +40,7 @@ const OrderSchema = Transform.create(_OrderSchemaBare, {
 
 ### `Object.assign(new Order(), plain)`
 
-```ts
-const OrderSchema = Transform.create(_OrderSchemaBare, {
-  decode: (plain) => Object.assign(new Order(), plain),
-  encode: (instance) => ({ ...instance })
-});
-```
+<<< ../../examples/docs/usage-examples/20-class-hydration-new-instance.ts
 
 **When to use.** Same case as `Reflect.construct`, but the syntax is more familiar. Only valid when the constructor is parameterless or all parameters are optional.
 
@@ -106,22 +48,7 @@ const OrderSchema = Transform.create(_OrderSchemaBare, {
 
 ### `Order.fromPlain(plain)`
 
-```ts
-class Order {
-  static fromPlain(plain: PlainOrder): Order {
-    const o = new Order(plain.id, plain.customerId);  // run real construction
-    o.items = plain.items;
-    o.total = plain.total;
-    // ... assign rest, validate invariants, set #private fields, etc.
-    return o;
-  }
-}
-
-const OrderSchema = Transform.create(_OrderSchemaBare, {
-  decode: (plain) => Order.fromPlain(plain),
-  encode: (instance) => instance.toPlain()
-});
-```
+<<< ../../examples/docs/usage-examples/21-class-hydration-from-plain.ts
 
 **When to use.** Recommended for classes with `#privateFields`, non-trivial constructors, derived state, or invariants the class needs to enforce on construction.
 
@@ -129,15 +56,7 @@ const OrderSchema = Transform.create(_OrderSchemaBare, {
 
 ### `Object.setPrototypeOf(plain, Order.prototype)`
 
-```ts
-const OrderSchema = Transform.create(_OrderSchemaBare, {
-  decode: (plain) => {
-    Object.setPrototypeOf(plain, Order.prototype);
-    return plain as Order;
-  },
-  encode: (instance) => ({ ...instance })
-});
-```
+<<< ../../examples/docs/usage-examples/22-class-hydration-set-prototype.ts
 
 **When to use.** Hot paths where allocation is the bottleneck. Skips the constructor entirely; reuses the validated object as the instance backing store.
 
@@ -151,50 +70,19 @@ const OrderSchema = Transform.create(_OrderSchemaBare, {
 
 ### Filter methods automatically
 
-```ts
-encode: (instance) => Object.fromEntries(
-  Object.entries(instance).filter(([_key, value]) => typeof value !== 'function')
-)
-```
+<<< ../../examples/docs/usage-examples/23-class-hydration-encode-filter.ts
 
-This is the default in the headline example. It works because prototype methods are not enumerable own-properties: `Object.entries(instance)` only sees the data assigned by `decode`, so the filter is mostly belt-and-suspenders.
+This is the default in the headline example. It works because prototype methods are not enumerable own-properties: `Object.entries(instance)` only sees the data assigned by `decode`, so the filter does its real work when the class assigns methods as instance fields (`this.foo = () => ...`).
 
 ### `instance.toJSON()`
 
-```ts
-class Order {
-  toJSON(): PlainOrder {
-    return { id: this.id, customerId: this.customerId, /* ... */ };
-  }
-}
-
-const OrderSchema = Transform.create(_OrderSchemaBare, {
-  decode: (plain) => Object.assign(Reflect.construct(Order, []), plain),
-  encode: (instance) => instance.toJSON()
-});
-```
+<<< ../../examples/docs/usage-examples/24-class-hydration-encode-tojson.ts
 
 **When to use.** The class already defines `toJSON` for `JSON.stringify` integration. Reusing it as the encode body keeps one source of truth for serialization shape.
 
 ### Explicit `instance.toPlain()`
 
-```ts
-class Order {
-  #internalCacheKey = '';
-
-  toPlain(): PlainOrder {
-    return {
-      id:        this.id,
-      customerId: this.customerId,
-      items:     this.items,
-      total:     this.total,
-      shippingAddress: this.shippingAddress,
-      placedAt:  this.placedAt
-      // status, totalWithTax, #internalCacheKey deliberately omitted
-    };
-  }
-}
-```
+<<< ../../examples/docs/usage-examples/25-class-hydration-encode-toplain.ts
 
 **When to use.** The class needs to omit derived fields, hide private state, or apply transforms before serialization. `toPlain` is also a useful convention when the class's `toJSON` is reserved for a different output format (e.g. an external API representation).
 
@@ -202,33 +90,9 @@ class Order {
 
 ## Round-trip property test pattern
 
-Class hydration is correct only if `dump(instantiate(s, x))` deep-equals `x`. Validate that with a test:
+Class hydration is correct only if `encode(instantiate(s, x))` deep-equals `x`. Validate that with an assert:
 
-```ts
-import { strict as assert } from 'node:assert';
-import { test } from 'node:test';
-import { JsonTology } from 'json-tology';
-import { OrderSchema, Order } from './bookstore/Order.js';
-
-test('OrderSchema round-trips wire to instance and back', () => {
-  const jt = JsonTology.create({ baseIRI: 'urn:bookstore', schemas: [OrderSchema] as const });
-
-  const wire = {
-    id:              'order-1',
-    customerId:      'cust-1',
-    items:           [{ bookIsbn: '9780140449136', quantity: 2, unitPrice: { amount: 1499 } }],
-    total:           { amount: 2998 },
-    shippingAddress: { street: '1 Main', city: 'Springfield', postalCode: '00000' },
-    placedAt:        '2026-01-15T10:30:00.000Z'
-  };
-
-  const instance = jt.instantiate(OrderSchema.$id, wire);
-  assert.ok(instance instanceof Order);
-
-  const reEncoded = jt.encode(OrderSchema, instance);
-  assert.deepStrictEqual(reEncoded, wire);
-});
-```
+<<< ../../examples/docs/usage-examples/26-class-hydration-round-trip.ts
 
 This matters because `decode` and `encode` are independent functions; nothing forces them to be inverses. A round-trip test is the cheapest way to catch drift the moment it happens, before it propagates into queue payloads, database rows, or HTTP responses.
 
@@ -244,54 +108,9 @@ For TypeORM, Prisma, and Sequelize patterns, see [Class hydration: ORM recipes](
 
 When one class-attached schema `$ref`s another class-attached schema, the registry walks references and applies each schema's decoder bottom-up.
 
-```ts
-class Customer {
-  id!: string;
-  email!: string;
-  fullName(): string { return `${this.given} ${this.family}`; }
-  given!: string;
-  family!: string;
-}
+<<< ../../examples/docs/usage-examples/27-class-hydration-nested.ts
 
-const _CustomerSchemaBare = {
-  $id: 'urn:bookstore:Customer',
-  type: 'object',
-  properties: {
-    id:     { type: 'string' },
-    email:  { type: 'string', format: 'email' },
-    given:  { type: 'string' },
-    family: { type: 'string' }
-  },
-  required: ['id', 'email', 'given', 'family']
-} as const;
-
-const CustomerSchema = Transform.create(_CustomerSchemaBare, {
-  decode: (plain) => Object.assign(Reflect.construct(Customer, []), plain),
-  encode: (instance) => Object.fromEntries(
-    Object.entries(instance).filter(([_key, value]) => typeof value !== 'function')
-  )
-});
-
-const _OrderSchemaBare = {
-  $id: 'urn:bookstore:Order',
-  type: 'object',
-  properties: {
-    id:    { type: 'string' },
-    buyer: { $ref: CustomerSchema.$id },
-    items: { type: 'array', items: { type: 'object' } }
-  },
-  required: ['id', 'buyer', 'items']
-} as const;
-
-const OrderSchema = Transform.create(_OrderSchemaBare, {
-  decode: (plain) => Object.assign(Reflect.construct(Order, []), plain),
-  encode: (instance) => Object.fromEntries(
-    Object.entries(instance).filter(([_key, value]) => typeof value !== 'function')
-  )
-});
-```
-
-When `jt.instantiate(OrderSchema.$id, raw)` runs, the registry first decodes `raw.buyer` through `CustomerSchema`'s decoder (producing a `Customer` instance), then runs `OrderSchema`'s decoder over the now-mixed plain-object/`Customer` payload. The result: `order.buyer` is a `Customer` and `order` is an `Order`. `order.buyer.fullName()` is callable directly.
+When `jt.instantiate(OrderSchema.$id, raw)` runs, the registry first decodes `raw.buyer` through `CustomerSchema`'s decoder (producing a `Customer` instance), then runs `OrderSchema`'s decoder over the now-mixed plain-object/`Customer` payload. The result: `order.buyer` is a `Customer` and `order` is an `Order`. `order.buyer.greet()` is callable directly.
 
 `encode` runs in the reverse direction: `Order.encode` projects the `Order` to a plain shape that still contains a `Customer` in `buyer`, and the registry then applies `Customer.encode` to that field on its way back to the wire.
 

@@ -29,7 +29,7 @@ import type { DefaultResolutionContextInterface } from '../../interfaces/Default
 import { GraphEngineVisit } from './GraphEngineVisit.js';
 import type { VisitContextInterface } from '../../interfaces/VisitContext.js';
 
-import type { JSONSchema7Definition } from 'json-schema';
+import type { JsonSchemaDocumentType } from '../../types/Schema.js';
 
 const escape = (segment: string): string => {
   return SchemaGraphSupport.escapeJsonPointerSegment(segment);
@@ -40,7 +40,7 @@ export class GraphEngine implements GraphEngineInterface {
   private readonly cachedVisitContext: VisitContextInterface;
   private readonly customKeywords: KeywordDefinitionInterface[];
   private readonly dialectPlan: RootDialectPlanInterface;
-  private readonly embeddedSchemas: Map<string, JSONSchema7Definition>;
+  private readonly embeddedSchemas: Map<string, JsonSchemaDocumentType>;
   public readonly formatRegistry: FormatRegistryInterface;
   private readonly graphCache = new WeakMap<object, SchemaGraph>();
   private readonly options: Pick<GraphEngineOptionsInterface, 'lookupGraph' | 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupGraph' | 'lookupSchema'>>;
@@ -49,7 +49,7 @@ export class GraphEngine implements GraphEngineInterface {
   private readonly regexCache = new Map<string, RegExp>();
   private readonly rootId: string | undefined;
 
-  public constructor(public readonly rootSchema: JSONSchema7Definition, options: GraphEngineOptionsInterface = {}) {
+  public constructor(public readonly rootSchema: JsonSchemaDocumentType, options: GraphEngineOptionsInterface = {}) {
     const {
       formatRegistry, keywords, ...rest
     } = options;
@@ -61,7 +61,7 @@ export class GraphEngine implements GraphEngineInterface {
       ...rest
     };
     this.dialectPlan = GraphEngineSupport.buildRootDialectPlan(rootSchema);
-    this.embeddedSchemas = new Map<string, JSONSchema7Definition>();
+    this.embeddedSchemas = new Map<string, JsonSchemaDocumentType>();
     GraphEngineSupport.collectEmbeddedSchemas(rootSchema, this.embeddedSchemas, true);
     this.rootId = GraphEngineSupport.schemaId(rootSchema);
     this.cachedDefaultResolutionContext = this.defaultResolutionContext();
@@ -248,7 +248,7 @@ export class GraphEngine implements GraphEngineInterface {
     };
   }
 
-  private graphFor(rootSchema: JSONSchema7Definition): SchemaGraphInterface {
+  private graphFor(rootSchema: JsonSchemaDocumentType): SchemaGraphInterface {
     if (!isRecord(rootSchema)) {
       return new SchemaGraph(rootSchema as boolean);
     }

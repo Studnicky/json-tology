@@ -16,78 +16,15 @@ Computed fields are properties derived from other fields at instantiate/material
 
 #### Example 1: Order total derived from line items (construction time)
 
-```ts
-import { JsonTology } from 'json-tology';
-import type { InferType } from 'json-tology/types';
-import { OrderLineSchema } from './bookstore/index.js';
-
-const ComputedOrderSchema = {
-  $id: 'https://bookstore.example/ComputedOrder',
-  type: 'object',
-  properties: {
-    id:         { type: 'string', format: 'uuid' },
-    customerId: { type: 'string', format: 'uuid' },
-    placedAt:   { type: 'string', format: 'date-time' },
-    items: {
-      type: 'array',
-      items: { $ref: 'https://bookstore.example/OrderLine' },
-      minItems: 1,
-    },
-    currency: { type: 'string', default: 'USD' },
-    total: {
-      type: 'number',
-      'jt:computed': true,  // ← computed marker
-    },
-  },
-  required: ['id', 'customerId', 'items', 'placedAt'],
-  // total NOT in required  - it's always supplied by the compute fn
-} as const;
-
-type ComputedOrder = InferType<typeof ComputedOrderSchema>;
-
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [OrderLineSchema, ComputedOrderSchema] as const,
-  computeds: {
-    'https://bookstore.example/ComputedOrder': {
-      total: (order) => {
-        const o = order as ComputedOrder;
-        return (o.items as Array<{ unitPrice: number; quantity: number }>)
-          .reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
-      },
-    },
-  },
-});
-```
+<<< ../../examples/docs/computed/01-add-computed.ts
 
 #### Example 2: Coerce triggers the compute function
 
-```ts
-const order = jt.instantiate(ComputedOrderSchema.$id, {
-  id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-  customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  placedAt:   '2026-01-15T10:30:00Z',
-  items: [
-    { bookIsbn: '9780140449136', quantity: 2, unitPrice: 12.99 },
-    { bookIsbn: '9780062316110', quantity: 1, unitPrice:  9.99 },
-  ],
-  // total omitted  - computed from items
-});
-
-const expectedTotal = 2 * 12.99 + 1 * 9.99;
-console.log(Math.abs((order as ComputedOrder).total - expectedTotal) < 0.001); // true
-```
+<<< ../../examples/docs/registry/08-computed-coerce-triggers.ts
 
 #### Example 3: Imperative registration after construction
 
-```ts
-jt.addComputed<ComputedOrder>(
-  ComputedOrderSchema.$id,
-  'total',
-  (order) => (order.items as Array<{ unitPrice: number; quantity: number }>)
-    .reduce((s, l) => s + l.unitPrice * l.quantity, 0),
-);
-```
+<<< ../../examples/docs/registry/09-computed-imperative-add.ts
 
 ### Behaviour table
 
@@ -102,19 +39,7 @@ jt.addComputed<ComputedOrder>(
 
 #### Anti-pattern 1: Using computed for validation logic
 
-```ts
-// ⊥ Don't do this  - computed functions derive values, not validate them
-jt.addComputed(OrderSchema.$id, 'total', (order) => {
-  if ((order as Order).total < 0) throw new Error('invalid total');
-  return (order as Order).total;
-});
-
-// ✓ Do this  - use addInvariant for validation
-jt.addInvariant(OrderSchema.$id, {
-  name: 'totalPositive',
-  fn: (order) => (order as Order).total > 0 ? null : 'total must be positive',
-});
-```
+<<< ../../examples/docs/registry/09-computed-imperative-add.ts
 
 ### Comparison
 
@@ -247,17 +172,7 @@ class Order(BaseModel):
 
 #### Example 1: Replace a compute function
 
-```ts
-// Remove the existing totaliser
-jt.removeComputed(ComputedOrderSchema.$id, 'total');
-
-// Register a discounted totaliser (10% off for gold-tier customers)
-jt.addComputed<ComputedOrder>(ComputedOrderSchema.$id, 'total', (order) => {
-  const raw = (order.items as Array<{ unitPrice: number; quantity: number }>)
-    .reduce((s, l) => s + l.unitPrice * l.quantity, 0);
-  return raw * 0.9; // gold tier: 10% discount
-});
-```
+<<< ../../examples/docs/registry/10-computed-replace-fn.ts
 
 ### Related
 

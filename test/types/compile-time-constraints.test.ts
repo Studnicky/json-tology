@@ -109,6 +109,7 @@ const OrderSchema = {
 
 const jt = JsonTology.create({
   'baseIRI': 'https://example.io',
+  'enableStrictGraph': false,
   'schemas': [
     AddressSchema,
     UserSchema,
@@ -190,11 +191,12 @@ void _matCity;
 // materialize() returns MaterializedSchemaType
 const jt2 = JsonTology.create({
   'baseIRI': 'https://example.io',
+  'enableStrictGraph': false,
   'schemas': [AddressSchema] as const
 });
 
 const addr = jt2.materialize(AddressSchema, { 'street': '456 Oak' });
-// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- MaterializedSchemaType resolves correctly in tsc
+
 const _addrCity: string = addr.city;
 
 void _addrCity;
@@ -293,6 +295,7 @@ if (false as boolean) {
   // @ts-expect-error — duplicate $id: both schemas share 'https://example.io/Dup'
   JsonTology.create({
     'baseIRI': 'https://example.io',
+    'enableStrictGraph': false,
     'schemas': [
       _DupA,
       _DupB
@@ -623,6 +626,7 @@ void _emailBad;
 // Coerce returns the branded type
 const jtBrand = JsonTology.create({
   'baseIRI': 'https://example.io',
+  'enableStrictGraph': false,
   'schemas': [_EmailSchema] as const
 });
 
@@ -878,6 +882,7 @@ void _rBad2;
 
 const _ValJt = JsonTology.create({
   'baseIRI': 'https://example.io',
+  'enableStrictGraph': false,
   'schemas': [AddressSchema] as const
 });
 

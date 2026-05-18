@@ -23,6 +23,7 @@ The `ValidationErrors` collection is also carried on `InstantiationError.errors`
 
 Each `ValidationErrorType` carries:
 
+<!-- inline-ts-ok: shape declaration mirroring the canonical type alias in src/types/Errors; documenting it here keeps the reference table self-contained. -->
 ```ts
 type ValidationErrorType = {
   path:    string;                 // JSON Pointer path
@@ -36,93 +37,27 @@ type ValidationErrorType = {
 
 ### Example 1: Check validity, iterate errors
 
-```ts
-import { bookstoreEntities, OrderSchema } from './bookstore/index.js';
-
-const errs = bookstoreEntities.validate(OrderSchema.$id, {
-  id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-  customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  placedAt:   '2026-01-15T10:30:00Z',
-  total:      -5,
-  items:      [],       // minItems: 1 violated
-});
-
-console.log(errs.ok);      // false
-console.log(errs.length);  // >= 2
-
-for (const err of errs) {
-  console.log(err.path);    // '/total', '/items'
-  console.log(err.keyword); // 'exclusiveMinimum', 'minItems'
-  console.log(err.message); // human-readable
-  console.log(err.params);  // { limit: 0 }, { limit: 1 }
-}
-```
+<<< ../../examples/docs/validation/17-errors-iterate.ts
 
 ### Example 2: Valid data returns empty collection
 
-```ts
-import { bookstoreEntities, BookSchema } from './bookstore/index.js';
-
-const errs = bookstoreEntities.validate(BookSchema.$id, {
-  isbn:    '9780140449136',
-  title:   'Crime and Punishment',
-  authors: ['Fyodor Dostoevsky'],
-  price:   14.99,
-});
-console.log(errs.ok);     // true
-console.log(errs.length); // 0
-```
+<<< ../../examples/docs/validation/18-errors-ok-empty.ts
 
 ### Example 3: Combine with the structured views
 
 See [`Error views`](/errors/views) for full documentation of each view.
 
-```ts
-import { bookstoreEntities, ReviewSchema } from './bookstore/index.js';
-
-const errs = bookstoreEntities.validate(ReviewSchema.$id, badReview);
-
-// Choose the shape that matches your output target:
-console.log(errs.items.map(e => `${e.path}: ${e.message}`));   // string[]  - one per error
-console.log(Object.groupBy(errs.items, err => err.path || "_root"));     // Record<string, ...>  - grouped by path
-console.log(Object.groupBy(errs.items, err => err.path ? "fieldErrors" : "formErrors"));    // { fieldErrors, formErrors }
-console.log(errs.aggregate());  // { count, paths, keywords }
-console.log(errs.report());     // RFC 7807 ProblemDetailsType
-```
+<<< ../../examples/docs/validation/19-errors-views.ts
 
 ## Bad examples - what NOT to do
 
 ### Anti-pattern 1: Calling validate() and then instantiate() separately
 
-```ts
-// ⊥ Don't do this  - double validation; if errors is empty just call instantiate
-const errs = bookstoreEntities.validate(CustomerSchema.$id, data);
-if (errs.ok) {
-  const customer = jt.instantiate(CustomerSchema.$id, data); // validates again
-}
-
-// ✓ Do this  - catch InstantiationError directly
-try {
-  const customer = jt.instantiate(CustomerSchema.$id, data);
-} catch (err) {
-  if (err instanceof InstantiationError) {
-    const problem = err.errors.report();  // same ValidationErrors collection on InstantiationError
-  }
-}
-```
+<<< ../../examples/docs/validation/20-errors-antipattern-double-validate.ts
 
 ### Anti-pattern 2: Re-implementing a built-in view
 
-```ts
-// ⊥ Don't do this  - rolling your own grouping when Object.groupBy + items does it
-const grouped: Record<string, string[]> = {};
-for (const item of errs.items) {
-  (grouped[item.path] ??= []).push(item.message);
-}
-
-// ✓ Do this  - use Object.groupBy on .items, or call .aggregate() / .report()
-const grouped = Object.groupBy(errs.items, err => err.path || "_root");
-```
+<<< ../../examples/docs/validation/21-errors-antipattern-manual-grouping.ts
 
 ## Comparison
 

@@ -23,7 +23,7 @@ import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
 // ---------------------------------------------------------------------------
 
 void describe('Infinity rejection (type: number)', () => {
-  const registry = new SchemaRegistry();
+  const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
   registry.set({
     '$id': 'urn:hardening:number',
@@ -139,7 +139,10 @@ void describe('Infinity coercion rejection', () => {
     input, name, shouldCoerce
   } of scenarios) {
     void it(name, () => {
-      const registry = new SchemaRegistry({ 'enableTypeCast': true });
+      const registry = new SchemaRegistry({
+        'enableStrictGraph': false,
+        'enableTypeCast': true
+      });
 
       registry.set({
         '$id': 'urn:hardening:cast-number',
@@ -164,7 +167,7 @@ void describe('Infinity coercion rejection', () => {
 // ---------------------------------------------------------------------------
 
 void describe('multipleOf zero rejection', () => {
-  const registry = new SchemaRegistry();
+  const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
   registry.set({
     '$id': 'urn:hardening:multiple-zero',
@@ -224,7 +227,7 @@ void describe('multipleOf zero rejection', () => {
 
 void describe('compilation fallback produces working validator', () => {
   void it('validates correctly even when compiled path falls back', () => {
-    const registry = new SchemaRegistry();
+    const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
     registry.set({
       '$id': 'urn:hardening:fallback',
@@ -267,7 +270,10 @@ void describe('format validator error handling', () => {
       formatRegistry.set('throwing', () => {
         throw new Error('validator exploded');
       });
-      const registry = new SchemaRegistry({ 'formatRegistry': formatRegistry });
+      const registry = new SchemaRegistry({
+        'enableStrictGraph': false,
+        'formatRegistry': formatRegistry
+      });
 
       registry.set({
         '$id': 'urn:hardening:throwing-format',
@@ -294,6 +300,7 @@ void describe('format validator error handling', () => {
 void describe('null/undefined schema guard on public API', () => {
   const jt = JsonTology.create({
     'baseIRI': 'urn:test',
+    'enableStrictGraph': false,
     'schemas': [{
       '$id': 'urn:hardening:guard',
       'type': 'object'
@@ -388,7 +395,7 @@ void describe('register() input validation', () => {
     input, name
   } of scenarios) {
     void it(name, () => {
-      const registry = new SchemaRegistry();
+      const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
       assert.throws(() => {
         registry.set(input as Record<string, unknown>);
@@ -470,7 +477,7 @@ void describe('schema freeze on registration', () => {
     check, name
   } of scenarios) {
     void it(name, () => {
-      const registry = new SchemaRegistry();
+      const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
       check(registry);
     });

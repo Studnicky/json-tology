@@ -60,6 +60,7 @@ type ObjectExpected = InferType<typeof ObjectSchema>;
 
 const jtObject = JsonTology.create({
   'baseIRI': 'https://rt.test',
+  'enableStrictGraph': false,
   'schemas': [ObjectSchema] as const
 });
 
@@ -83,6 +84,7 @@ type ArrayExpected = InferType<typeof ArraySchema>;
 
 const jtArray = JsonTology.create({
   'baseIRI': 'https://rt.test',
+  'enableStrictGraph': false,
   'schemas': [ArraySchema] as const
 });
 
@@ -109,6 +111,7 @@ type StringExpected = InferType<typeof StringSchema>;
 
 const jtString = JsonTology.create({
   'baseIRI': 'https://rt.test',
+  'enableStrictGraph': false,
   'schemas': [StringSchema] as const
 });
 
@@ -132,6 +135,7 @@ type NumberExpected = InferType<typeof NumberSchema>;
 
 const jtNumber = JsonTology.create({
   'baseIRI': 'https://rt.test',
+  'enableStrictGraph': false,
   'schemas': [NumberSchema] as const
 });
 
@@ -155,6 +159,7 @@ type IntegerExpected = InferType<typeof IntegerSchema>;
 
 const jtInteger = JsonTology.create({
   'baseIRI': 'https://rt.test',
+  'enableStrictGraph': false,
   'schemas': [IntegerSchema] as const
 });
 
@@ -178,6 +183,7 @@ type BooleanExpected = InferType<typeof BooleanSchema>;
 
 const jtBoolean = JsonTology.create({
   'baseIRI': 'https://rt.test',
+  'enableStrictGraph': false,
   'schemas': [BooleanSchema] as const
 });
 
@@ -205,6 +211,7 @@ type EnumExpected = InferType<typeof EnumSchema>;
 
 const jtEnum = JsonTology.create({
   'baseIRI': 'https://rt.test',
+  'enableStrictGraph': false,
   'schemas': [EnumSchema] as const
 });
 
@@ -228,6 +235,7 @@ type ConstExpected = InferType<typeof ConstSchema>;
 
 const jtConst = JsonTology.create({
   'baseIRI': 'https://rt.test',
+  'enableStrictGraph': false,
   'schemas': [ConstSchema] as const
 });
 
@@ -283,6 +291,7 @@ type ShapeExpected = InferType<typeof ShapeSchema>;
 
 const jtShape = JsonTology.create({
   'baseIRI': 'https://rt.test',
+  'enableStrictGraph': false,
   'schemas': [
     CircleSchema,
     RectSchema,
@@ -323,6 +332,7 @@ type TransformedExpected = ParseOutputType<typeof TransformedDateSchema>;
 
 const jtDate = JsonTology.create({
   'baseIRI': 'https://rt.test',
+  'enableStrictGraph': false,
   'schemas': [TransformedDateSchema] as const
 });
 

@@ -1,23 +1,25 @@
 /**
  * coerce — Example 1: Validate and apply defaults
  * Demonstrates: valid input, defaults filled, unknowns stripped
+ *
+ * Uses the canonical Bastian Balthazar Bux customer fixture, with one
+ * unknown property added inline so the smoke test sees stripping work.
  */
 
 import {
-  bookstoreEntities, CustomerSchema
+  aboxFixtures, bookstoreEntities, CustomerSchema
 } from '../bookstore/index.js';
 
-const customer = bookstoreEntities.instantiate(CustomerSchema.$id, {
-  'email': 'alice@bookstore.example',
-  'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
+const customer = bookstoreEntities.instantiate(CustomerSchema, {
+  'email': aboxFixtures.customer.email,
+  'id': aboxFixtures.customer.id,
   'internalNotes': 'vip',
-  'name': 'Alice Chen'
+  'name': aboxFixtures.customer.name
   // addresses omitted — default [] will be applied
 });
 
 // customer is typed as Customer
-console.assert(customer.name === 'Alice Chen');
+console.assert(customer.name === aboxFixtures.customer.name);
 console.assert(Array.isArray(customer.addresses));
 console.assert(customer.addresses.length === 0);
-// @ts-expect-error — internalNotes is not on Customer
-// console.log(customer.internalNotes);
+console.assert(!('internalNotes' in customer));

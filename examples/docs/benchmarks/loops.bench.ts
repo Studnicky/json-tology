@@ -10,9 +10,9 @@ const results: BenchResult[] = [];
 const obj: Record<string, boolean | number | string> = {
   'active': true,
   'age': 30,
-  'email': 'alice@example.com',
+  'email': 'bastian@example.com',
   'id': 1,
-  'name': 'Alice',
+  'name': 'Bastian Balthazar Bux',
   'role': 'admin',
   'score': 99
 };

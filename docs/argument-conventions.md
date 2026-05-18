@@ -6,19 +6,7 @@
 
 Every method that accepts a schema reference accepts **both** a string ID and a schema object:
 
-```ts
-import type { SchemaRefType } from 'json-tology/types';
-
-// String ID  - looks up in registry
-entities.instantiate(UserSchema.$id, data);
-
-// Schema object  - registers on first use, then runs
-entities.instantiate(UserSchema, data);
-
-// Same for validate, is, materialize, subschemaAt, dump, dumpJson, fromQuads, toSchema
-entities.validate(UserSchema.$id, data);
-entities.validate(UserSchema, data);
-```
+<<< ../examples/docs/argument-conventions/02-universal-schema-ref.ts
 
 Resolution rule: if a string, look up in the registry; if an object with `$id`, register it (idempotent) then run against it.
 
@@ -28,26 +16,7 @@ The static facade methods (`JsonTology.dump`, `JsonTology.fromQuads`, `JsonTolog
 
 Every instance method has a static counterpart on `JsonTology` that creates an ephemeral registry, registers the schema, runs the operation, and returns. No shared state. No setup required.
 
-```ts
-import { JsonTology } from 'json-tology';
-
-// One-shot instantiate  - no setup
-const user = JsonTology.instantiate(UserSchema, rawData);
-
-// One-shot validate
-const errors = JsonTology.validate(UserSchema, rawData);
-
-// One-shot materialize
-const fixture = JsonTology.materialize(UserSchema, { id: 'u1' });
-
-// One-shot subschema
-const nameSub = JsonTology.subschemaAt(UserSchema, '/properties/name');
-
-// Ontology from multiple schemas
-const tbox = JsonTology.toTbox([UserSchema, OrderSchema]);
-const shacl = JsonTology.toShacl([UserSchema, OrderSchema]);
-const ont = JsonTology.ontology([UserSchema, OrderSchema]);
-```
+<<< ../examples/docs/argument-conventions/03-static-counterparts.ts
 
 Available static methods:
 
@@ -80,14 +49,7 @@ that reference each other, or when you need to register invariants and computeds
 `subschemaAt` resolves a JSON Pointer within a parent schema and returns the sub-schema as
 a registerable schema object. The result can be passed directly to any of the four core methods:
 
-```ts
-const itemSchema = entities.subschemaAt(OrderSchema.$id, '/properties/items/items');
-
-entities.validate(itemSchema, orderLineData);
-entities.is(itemSchema, orderLineData);
-entities.instantiate(itemSchema, orderLineData);
-entities.materialize(itemSchema, partialLine);
-```
+<<< ../examples/docs/argument-conventions/04-subschema-at.ts
 
 The returned schema has a synthesized `$id` of the form `<parent.$id>#<pointer>` and is
 automatically registered in the calling registry so subsequent operations work directly.

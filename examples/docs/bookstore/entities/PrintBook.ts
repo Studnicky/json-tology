@@ -12,26 +12,19 @@ import { EBookSchema } from './EBook.js';
  * The disjointWith axiom emits `urn:bookstore:PrintBook owl:disjointWith
  * urn:bookstore:EBook` in the OWL TBox — a single book copy is either a
  * physical artefact or a digital download, never both at once.
+ *
+ * All properties reference named primitives (strict-graph compliant):
+ *   - binding → BindingType (enum: hardcover | paperback)
+ *   - pageCount → PrintPageCount (positive integer)
+ *   - weightGrams → WeightGrams (non-negative number)
  */
 
 const PrintBookBase = Compose.subClassOf(BookSchema, {
   '$id': 'urn:bookstore:PrintBook',
   'properties': {
-    'binding': {
-      'enum': [
-        'hardcover',
-        'paperback'
-      ],
-      'type': 'string'
-    },
-    'pageCount': {
-      'minimum': 1,
-      'type': 'integer'
-    },
-    'weightGrams': {
-      'minimum': 0,
-      'type': 'number'
-    }
+    'binding': { '$ref': 'urn:bookstore:BindingType' },
+    'pageCount': { '$ref': 'urn:bookstore:PrintPageCount' },
+    'weightGrams': { '$ref': 'urn:bookstore:WeightGrams' }
   },
   'required': [
     'binding',

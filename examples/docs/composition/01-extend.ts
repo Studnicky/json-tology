@@ -1,13 +1,21 @@
+/**
+ * Compose.extend — Example 1: CustomerWithDiscount adds discount fields
+ * Demonstrates: layering fields onto the canonical Customer via Compose.extend
+ *
+ * The derived schema is registered onto the canonical bookstore via
+ * `jt.set()`. No mini-registry: every example operates
+ * against the one source of truth.
+ */
+
+import { Compose } from '../../../src/index.js';
 import {
-  Compose, JsonTology
-} from '../../../src/index.js';
-import {
-  AddressSchema, AmountSchema, AuthorNameSchema, CityNameSchema, CountryCodeSchema,
-  CurrencyCodeSchema, CustomerIdSchema, CustomerNameSchema, CustomerSchema,
-  EmailSchema, IsbnSchema, Iso8601Schema, MoneySchema, OrderIdSchema,
-  PostalCodeSchema, QuantitySchema, RatingScoreSchema, ReviewIdSchema,
-  StreetLineSchema, TitleSchema
+  createBookstoreDocRegistry,
+  CustomerSchema
 } from '../bookstore/index.js';
+
+// createBookstoreDocRegistry seeds a permissive copy of the bookstore — docs examples extend
+// it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
+const jt = createBookstoreDocRegistry();
 
 const CustomerWithDiscountSchema = Compose.extend(
   CustomerSchema,
@@ -30,41 +38,16 @@ const CustomerWithDiscountSchema = Compose.extend(
   'https://bookstore.example/CustomerWithDiscount'
 );
 
-const bookstoreEntities = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
-  'schemas': [
-    AmountSchema,
-    AuthorNameSchema,
-    CityNameSchema,
-    CountryCodeSchema,
-    CurrencyCodeSchema,
-    CustomerIdSchema,
-    CustomerNameSchema,
-    EmailSchema,
-    IsbnSchema,
-    Iso8601Schema,
-    MoneySchema,
-    OrderIdSchema,
-    PostalCodeSchema,
-    QuantitySchema,
-    RatingScoreSchema,
-    ReviewIdSchema,
-    StreetLineSchema,
-    TitleSchema,
-    AddressSchema,
-    CustomerSchema,
-    CustomerWithDiscountSchema
-  ] as const
-});
+jt.set(CustomerWithDiscountSchema);
 
-const coercedCustomer = bookstoreEntities.instantiate(CustomerWithDiscountSchema.$id, {
+const coercedCustomer = jt.instantiate(CustomerWithDiscountSchema.$id, {
   'discountRate': 0.15,
-  'email': 'alice@bookstore.example',
+  'email': 'bastian.bux@bookstore.example',
   'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  'name': 'Alice Chen',
+  'name': 'Bastian Balthazar Bux',
   'tier': 'silver'
 }) as Record<string, unknown>;
 
 console.assert(coercedCustomer.discountRate === 0.15);
 console.assert(coercedCustomer.tier === 'silver');
-console.assert(coercedCustomer.name === 'Alice Chen');
+console.assert(coercedCustomer.name === 'Bastian Balthazar Bux');

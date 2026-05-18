@@ -14,62 +14,21 @@
 
 `currency` and `inStock` have declared defaults - they are filled in automatically.
 
-```ts
-import { bookstoreEntities, BookSchema } from './bookstore/index.js';
-
-const book = bookstoreEntities.materialize(BookSchema, {
-  isbn:    '9780140449136',
-  title:   'Crime and Punishment',
-  authors: ['Fyodor Dostoevsky'],
-  price:   14.99,
-});
-
-console.log(book.currency); // 'USD'  ← from default
-console.log(book.inStock);  // true   ← from default
-```
+<<< ../../examples/docs/materialization/01-materialize.ts
 
 ### Example 2: Materialize a Customer - addresses default is empty array
 
-```ts
-import { bookstoreEntities, CustomerSchema } from './bookstore/index.js';
-
-const customer = bookstoreEntities.materialize(CustomerSchema, {
-  id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  email: 'alice@bookstore.example',
-  name:  'Alice Chen',
-});
-
-console.log(customer.addresses); // []  ← default applied
-```
+<<< ../../examples/docs/registry/16-materialize-customer-defaults.ts
 
 ### Example 3: Contrast with coerce and value.create
 
-```ts
-// materialize  - fills declared defaults, partial is trusted
-const m = jt.materialize(BookSchema, { isbn: '9780140449136', title: '...', authors: ['...'], price: 14.99 });
-// → { isbn: '...', title: '...', authors: [...], price: 14.99, currency: 'USD', inStock: true }
-
-// value.create  - fills ALL required fields with zero-values + explicit defaults
-const c = jt.value.create(BookSchema.$id);
-// → { isbn: '', title: '', authors: [], price: 0, currency: 'USD', inStock: true }
-
-// coerce  - validates, strips unknowns, applies defaults, throws on failure
-const o = jt.instantiate(BookSchema.$id, rawInput);
-// → same shape, but validates and throws InstantiationError if rawInput is invalid
-```
+<<< ../../examples/docs/registry/17-materialize-vs-create-vs-coerce.ts
 
 ## Bad examples - what NOT to do
 
 ### Anti-pattern 1: Using materialize for untrusted API input
 
-```ts
-// ⊥ Don't do this  - materialize doesn't validate or strip unknowns
-const book = jt.materialize(BookSchema, req.body as Partial<Book>);
-// Unknown fields from req.body will appear in the result unchecked
-
-// ✓ Do this  - coerce validates, strips unknowns, applies defaults
-const book2 = jt.instantiate(BookSchema.$id, req.body);
-```
+<<< ../../examples/docs/registry/17-materialize-vs-create-vs-coerce.ts
 
 ## Comparison
 
@@ -77,8 +36,8 @@ const book2 = jt.instantiate(BookSchema.$id, req.body);
 
 ```ts [json-tology]
 jt.materialize(BookSchema, {
-  isbn: '9780140449136', title: 'Crime and Punishment',
-  authors: ['Dostoevsky'], price: 14.99,
+  isbn: '9783522128001', title: 'Die unendliche Geschichte',
+  authors: ['Michael Ende'], price: 14.99,
 })
 // → currency: 'USD', inStock: true applied from declared defaults
 ```
@@ -86,8 +45,8 @@ jt.materialize(BookSchema, {
 ```ts [Zod]
 // Zod applies defaults during parse(); no separate materialize step:
 const book = BookSchema.parse({
-  isbn: '9780140449136', title: 'Crime and Punishment',
-  authors: ['Dostoevsky'], price: 14.99,
+  isbn: '9783522128001', title: 'Die unendliche Geschichte',
+  authors: ['Michael Ende'], price: 14.99,
 });
 // Requires .default() on each field in the schema definition.
 ```
@@ -96,8 +55,8 @@ const book = BookSchema.parse({
 import * as v from 'valibot';
 // Valibot applies defaults during v.parse() via v.optional(schema, default):
 const book = v.parse(BookSchema, {
-  isbn: '9780140449136', title: 'Crime and Punishment',
-  authors: ['Dostoevsky'], price: 14.99,
+  isbn: '9783522128001', title: 'Die unendliche Geschichte',
+  authors: ['Michael Ende'], price: 14.99,
 });
 // Limitation: no separate materialize step; defaults only flow when
 // fields are wrapped in v.optional(..., defaultValue).
@@ -116,7 +75,7 @@ const result = BookCodec.decode({ ...defaults, ...partial });
 import { Value } from '@sinclair/typebox/value';
 // Value.Default fills defaults:
 const book = Value.Default(BookSchema, {
-  isbn: '9780140449136', title: '...', authors: [...], price: 14.99,
+  isbn: '9783522128001', title: '...', authors: [...], price: 14.99,
 });
 ```
 
@@ -128,8 +87,8 @@ ajv.validate(bookSchema, data);  // mutates data in place with defaults
 ```
 
 ```py [Pydantic]
-book = Book(isbn='9780140449136', title='Crime and Punishment',
-            authors=['Dostoevsky'], price=14.99)
+book = Book(isbn='9783522128001', title='Die unendliche Geschichte',
+            authors=['Michael Ende'], price=14.99)
 # currency and in_stock filled from defaults automatically
 ```
 

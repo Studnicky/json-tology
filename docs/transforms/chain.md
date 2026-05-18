@@ -12,52 +12,11 @@
 
 ### Example 1: Formatted price string to float (two steps)
 
-```ts
-import { Transform, JsonTology } from 'json-tology';
-
-const FormattedPriceSchema = {
-  $id:  'https://bookstore.example/FormattedPrice',
-  type: 'string',
-} as const;
-
-const PricedSchema = Transform.chain(
-  FormattedPriceSchema,
-  [
-    // Step 1: strip currency symbol and commas
-    {
-      decode: (raw: unknown) => (raw as string).replace(/[$,]/g, ''),
-      encode: (stripped: unknown) => `$${stripped as string}`,
-    },
-    // Step 2: parse to float
-    {
-      decode: (stripped: unknown) => parseFloat(stripped as string),
-      encode: (num: unknown) => (num as number).toFixed(2),
-    },
-  ],
-);
-
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [PricedSchema] as const,
-});
-
-const price = jt.instantiate(PricedSchema.$id, '$14.99');
-console.log(price); // 14.99
-
-const wire = jt.encode(PricedSchema, price as number);
-console.log(wire);  // '$14.99'
-```
+<<< ../../examples/docs/transforms/03-chain.ts
 
 ### Example 2: Decode direction is left-to-right, encode is right-to-left
 
-```ts
-// Decode: step1.decode → step2.decode → ...
-// Encode: ... → step2.encode → step1.encode
-
-// With 3 steps [A, B, C]:
-// decode: A.decode(wire) → B.decode(result) → C.decode(result) = domain
-// encode: C.encode(domain) → B.encode(result) → A.encode(result) = wire
-```
+<<< ../../examples/docs/transforms/10-chain-direction.ts
 
 ## Pairwise chain compatibility <Badge type="info" text="Compile-time" />
 
@@ -65,27 +24,7 @@ console.log(wire);  // '$14.99'
 
 The first stage is also checked against the schema's wire type. A mismatch surfaces `ChainSchemaMismatchInterface<wire, firstStageIn>`.
 
-```ts
-const step1 = {
-  decode: (s: string) => parseInt(s),
-  encode: (n: number) => String(n)
-};
-const step2 = {
-  decode: (n: number) => new Date(n),
-  encode: (d: Date) => d.getTime()
-};
-
-// Correct — string → number → Date
-const ok = Transform.chain(schema, [step1, step2]);
-
-// Incorrect — step1 produces number, step3 expects string → compile error
-const step3 = {
-  decode: (s: string) => s.toUpperCase(),
-  encode: (s: string) => s
-};
-const bad = Transform.chain(schema, [step1, step3]);
-//                                            ^ ChainMismatchInterface<1, number, string>
-```
+<<< ../../examples/docs/transforms/11-chain-type-safety.ts
 
 The chain parameter is typed as `TStages & ValidateChainType<TStages, InferSchemaType<TSchema>>`. When validation fires, the intersection collapses incompatible positions to `never` and the user's literal stages are not assignable - the call site is rejected.
 
@@ -95,21 +34,7 @@ Chains are checked up to 10 stages (`TupleRecursionCap`).
 
 ### Anti-pattern 1: Using chain for a single transformation step
 
-```ts
-// ⊥ Don't do this  - chain with one step is unnecessarily complex
-Transform.chain(schema, [
-  {
-    decode: (s: string) => new Date(s),
-    encode: (d: Date) => d.toISOString()
-  },
-]);
-
-// ✓ Do this  - Transform.create is designed for one-step transforms
-Transform.create(schema, {
-  decode: (s: string) => new Date(s),
-  encode: (d: Date) => d.toISOString(),
-});
-```
+<<< ../../examples/docs/transforms/12-chain-use-create-for-one-step.ts
 
 ## Comparison
 

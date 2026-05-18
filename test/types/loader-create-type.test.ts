@@ -33,6 +33,7 @@ void describe('JsonTology.create return type', () => {
   void it('create() returns JsonTology synchronously', () => {
     const result = JsonTology.create({
       'baseIRI': 'https://schema.example',
+      'enableStrictGraph': false,
       'schemas': [AddressSchema] as const
     });
 
@@ -55,6 +56,7 @@ void describe('JsonTology.create return type', () => {
 
     const jt = JsonTology.create({
       'baseIRI': 'https://schema.example',
+      'enableStrictGraph': false,
       'prefetched': snapshot,
       'schemas': [UserSchema] as const
     });

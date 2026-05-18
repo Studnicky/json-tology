@@ -614,8 +614,11 @@ void describe('Value.cast()', () => {
       'type': 'object'
     }
   ];
+  // enableStrictGraph: false — synthetic fixture schemas include plain-type properties
+  // that structurally match other registered schemas; this tests cast mechanics.
   const tology = JsonTology.create({
     'baseIRI': 'urn:test:',
+    'enableStrictGraph': false,
     'schemas': castSchemas
   });
   const value = tology.value;

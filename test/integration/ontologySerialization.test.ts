@@ -20,6 +20,7 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
 import { GraphSchemaSerializer } from '../../src/modules/ontology/GraphSchemaSerializer.js';
 import { GraphShaclSerializer } from '../../src/modules/ontology/GraphShaclSerializer.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
+import { Terms } from '../../src/modules/rdf/Terms.js';
 
 // ===========================================================================
 // Source: graphSchemaSerializer.test.ts
@@ -750,20 +751,20 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 
   function findQuads(quads: QuadInterface[], predicate: string): QuadInterface[] {
     return quads.filter((quad) => {
-      return quad.predicate === predicate;
+      return quad.predicate.value === predicate;
     });
   }
 
   function findQuadsForSubject(quads: QuadInterface[], subject: string, predicate: string): QuadInterface[] {
     return quads.filter((quad) => {
-      return quad.subject === subject && quad.predicate === predicate;
+      return quad.subject.value === subject && quad.predicate.value === predicate;
     });
   }
 
   function hasIriQuad(quads: QuadInterface[], subject: string, predicate: string, objectIri: string): boolean {
     return quads.some((quad) => {
-      return quad.subject === subject
-    && quad.predicate === predicate
+      return quad.subject.value === subject
+    && quad.predicate.value === predicate
     && quad.object.termType === 'NamedNode'
     && quad.object.value === objectIri;
     });
@@ -772,8 +773,8 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
   // eslint-disable-next-line @stylistic/max-len
   function hasLiteralQuad(quads: QuadInterface[], subject: string, predicate: string, value: unknown, datatype?: string): boolean {
     return quads.some((quad) => {
-      return quad.subject === subject
-    && quad.predicate === predicate
+      return quad.subject.value === subject
+    && quad.predicate.value === predicate
     && quad.object.termType === 'Literal'
     && quad.object.value === value
     && (datatype === undefined || quad.object.datatype.value === datatype);
@@ -782,8 +783,8 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 
   function hasBnodeQuad(quads: QuadInterface[], subject: string, predicate: string): QuadInterface | undefined {
     return quads.find((quad) => {
-      return quad.subject === subject
-    && quad.predicate === predicate
+      return quad.subject.value === subject
+    && quad.predicate.value === predicate
     && quad.object.termType === 'BlankNode';
     });
   }
@@ -878,7 +879,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
             );
 
             const propQuads = quads.filter((quad) => {
-              return quad.predicate === 'rdf:type'
+              return quad.predicate.value === 'rdf:type'
               && quad.object.termType === 'NamedNode'
               && (quad.object.value === 'owl:DatatypeProperty' || quad.object.value === 'owl:ObjectProperty');
             });
@@ -893,7 +894,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
             assert.ok(hasIriQuad(quads, 'https://example.com/NoProps', 'rdf:type', 'owl:Class'));
 
             const propQuads = quads.filter((quad) => {
-              return quad.predicate === 'rdf:type'
+              return quad.predicate.value === 'rdf:type'
               && quad.object.termType === 'NamedNode'
               && (quad.object.value === 'owl:DatatypeProperty' || quad.object.value === 'owl:ObjectProperty');
             });
@@ -1589,33 +1590,22 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
       'name': 'preserves stable blank node identifiers without double-prefixing',
       'quads': [
         {
-          'object': {
-            'termType': 'BlankNode' as const,
-            'value': '_:b1'
-          },
-          'predicate': 'ex:child',
-          'subject': 'https://example.com/Thing'
+          'graph': Terms.defaultGraph(),
+          'object': Terms.blank('_:b1'),
+          'predicate': Terms.iri('ex:child'),
+          'subject': Terms.iri('https://example.com/Thing')
         },
         {
-          'object': {
-            'termType': 'NamedNode' as const,
-            'value': 'ex:Nested'
-          },
-          'predicate': 'rdf:type',
-          'subject': '_:b1'
+          'graph': Terms.defaultGraph(),
+          'object': Terms.iri('ex:Nested'),
+          'predicate': Terms.iri('rdf:type'),
+          'subject': Terms.blank('_:b1')
         },
         {
-          'object': {
-            'datatype': {
-              'termType': 'NamedNode' as const,
-              'value': 'xsd:string'
-            },
-            'language': '',
-            'termType': 'Literal' as const,
-            'value': 'nested'
-          },
-          'predicate': 'ex:value',
-          'subject': '_:b1'
+          'graph': Terms.defaultGraph(),
+          'object': Terms.literal('nested', { 'datatype': Terms.iri('xsd:string') }),
+          'predicate': Terms.iri('ex:value'),
+          'subject': Terms.blank('_:b1')
         }
       ]
     }];
@@ -1649,7 +1639,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 
             assert.ok(typeQuads.length > 0, 'should have at least one rdf:type quad');
 
-            const instIRI = typeQuads[0].subject;
+            const instIRI = typeQuads[0].subject.value;
 
             assert.ok(instIRI.startsWith('https://data.example.com/'));
             assert.ok(hasIriQuad(quads, instIRI, 'rdf:type', 'https://example.com/User'));
@@ -1676,11 +1666,11 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
         {
           'check': (quads) => {
             const arrTypeQuad = quads.find((quad) => {
-              return quad.predicate === 'rdf:type';
+              return quad.predicate.value === 'rdf:type';
             });
 
             assert.ok(arrTypeQuad, 'should have rdf:type quad');
-            const arrInstIRI = arrTypeQuad.subject;
+            const arrInstIRI = arrTypeQuad.subject.value;
             const tagQuads = findQuadsForSubject(quads, arrInstIRI, 'https://example.com/Tags#tags');
 
             assert.equal(tagQuads.length, 3);
@@ -1719,11 +1709,11 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
         {
           'check': (quads) => {
             const nullTypeQuad = quads.find((quad) => {
-              return quad.predicate === 'rdf:type';
+              return quad.predicate.value === 'rdf:type';
             });
 
             assert.ok(nullTypeQuad, 'should have rdf:type quad');
-            const nullInstIRI = nullTypeQuad.subject;
+            const nullInstIRI = nullTypeQuad.subject.value;
 
             assert.ok(hasLiteralQuad(quads, nullInstIRI, 'https://example.com/Nullable#name', 'Alice'));
 
@@ -1749,7 +1739,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
         {
           'check': (quads) => {
             const nonTypeQuads = quads.filter((quad) => {
-              return quad.predicate !== 'rdf:type';
+              return quad.predicate.value !== 'rdf:type';
             });
 
             assert.equal(nonTypeQuads.length, 0, 'empty instance should produce no property quads');
@@ -1797,13 +1787,13 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
       }> = [{
         'check': (quads) => {
           const parentTypeQuads = quads.filter((quad) => {
-            return quad.predicate === 'rdf:type'
+            return quad.predicate.value === 'rdf:type'
             && quad.object.termType === 'NamedNode'
             && quad.object.value === 'https://example.com/Parent';
           });
 
           assert.equal(parentTypeQuads.length, 1);
-          const parentIRI = parentTypeQuads[0].subject;
+          const parentIRI = parentTypeQuads[0].subject.value;
 
           const addrQuads = findQuadsForSubject(quads, parentIRI, 'https://example.com/Parent#address');
 
@@ -1816,8 +1806,8 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
             hasLiteralQuad(quads, nestedIRI, 'https://example.com/Parent#/properties/address#street', 'Springfield', 'xsd:string')
             || hasLiteralQuad(quads, nestedIRI, 'https://example.com/Parent#/properties/address#city', 'Springfield', 'xsd:string')
             || quads.some((quad) => {
-              return quad.subject === nestedIRI
-              && quad.predicate.includes('city')
+              return quad.subject.value === nestedIRI
+              && quad.predicate.value.includes('city')
               && quad.object.termType === 'Literal'
               && quad.object.value === 'Springfield';
             }),
@@ -1870,15 +1860,15 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
         'check': (tbox, abox) => {
           const tboxClasses = new Set(tbox
             .filter((quad) => {
-              return quad.predicate === 'rdf:type' && quad.object.termType === 'NamedNode' && quad.object.value === 'owl:Class';
+              return quad.predicate.value === 'rdf:type' && quad.object.termType === 'NamedNode' && quad.object.value === 'owl:Class';
             })
             .map((quad) => {
-              return quad.subject;
+              return quad.subject.value;
             }));
 
           const aboxTypes = abox
             .filter((quad) => {
-              return quad.predicate === 'rdf:type' && quad.object.termType === 'NamedNode';
+              return quad.predicate.value === 'rdf:type' && quad.object.termType === 'NamedNode';
             })
             .map((quad) => {
               return quad.object.termType === 'NamedNode' ? quad.object.value : '';
@@ -1893,10 +1883,10 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 
           const aboxPropPredicates = abox
             .filter((quad) => {
-              return quad.predicate !== 'rdf:type';
+              return quad.predicate.value !== 'rdf:type';
             })
             .map((quad) => {
-              return quad.predicate;
+              return quad.predicate.value;
             });
 
           for (const pred of aboxPropPredicates) {
@@ -2155,8 +2145,10 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
       check, input, name, schema, schemas
     } of simpleRoundTripScenarios) {
       void it(name, () => {
+        // enableStrictGraph: false — round-trip test schemas use inline constraints
         const jt = JsonTology.create({
           'baseIRI': BASE_IRI,
+          'enableStrictGraph': false,
           'schemas': schemas
         });
         const results = projectAndLift(jt, schema, input);
@@ -2242,8 +2234,10 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
       check, input, name, schema, schemas
     } of nestedRoundTripScenarios) {
       void it(name, () => {
+        // enableStrictGraph: false — round-trip test schemas use inline constraints
         const jt = JsonTology.create({
           'baseIRI': BASE_IRI,
+          'enableStrictGraph': false,
           'schemas': schemas
         });
         const results = projectAndLift(jt, schema, input);
@@ -2451,8 +2445,10 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
       check, name, schemas
     } of multiEnumScenarios) {
       void it(name, () => {
+        // enableStrictGraph: false — multi-instance test schemas include inline constraints
         const jt = JsonTology.create({
           'baseIRI': BASE_IRI,
+          'enableStrictGraph': false,
           'schemas': schemas
         });
 
@@ -4690,7 +4686,11 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
   }];
 
   void describe('SHACL serialization: string constraints', () => {
-    const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
+    // enableStrictGraph: false — serialization test uses inline string length constraints
+    const reg = JsonTology.create({
+      'baseIRI': 'https://test.io',
+      'enableStrictGraph': false
+    }).registry;
 
     reg.set({
       '$id': 'https://example.com/StringConstrained',
@@ -4765,7 +4765,11 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
       expectedPattern, name, propPathFragment, schema
     } of shaclPatternScenarios) {
       void it(name, () => {
-        const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
+        // enableStrictGraph: false — pattern test schemas use inline pattern constraints
+        const reg = JsonTology.create({
+          'baseIRI': 'https://test.io',
+          'enableStrictGraph': false
+        }).registry;
 
         reg.set(schema);
 
@@ -5164,7 +5168,11 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
     });
 
     void it('edge: schema with all constraint types combined serializes without error', () => {
-      const reg = JsonTology.create({ 'baseIRI': 'https://test.io' }).registry;
+      // enableStrictGraph: false — edge-case schema uses many inline constraints
+      const reg = JsonTology.create({
+        'baseIRI': 'https://test.io',
+        'enableStrictGraph': false
+      }).registry;
 
       reg.set({
         '$id': 'https://example.com/AllConstraints',

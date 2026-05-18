@@ -26,7 +26,7 @@ Node.js >= 24 (matches `engines.node` in `package.json`).
 npm install json-tology
 ```
 
-or from GitHub Packages (current canonical pre-1.0 distribution):
+The package is also mirrored to GitHub Packages as `@studnicky/json-tology`:
 
 ```bash
 echo '@studnicky:registry=https://npm.pkg.github.com' >> .npmrc

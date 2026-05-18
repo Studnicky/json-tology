@@ -9,6 +9,7 @@ export interface CompiledNodeValidationPlanInterface {
   readonly 'additionalValidator': undefined | ValidateWithErrorsFnType;
   readonly 'allOfValidators': undefined | ValidateWithErrorsFnType[];
   readonly 'allowedKeys': Set<string> | undefined;
+  readonly 'allowedKeysForStrip': Set<string> | undefined;
   readonly 'anyOfChecks': CheckFnType[] | undefined;
   readonly 'complementCheck': CheckFnType | undefined;
   readonly 'constVal': unknown;

@@ -89,6 +89,7 @@ function makeJt() {
         }
       }
     },
+    'enableStrictGraph': false,
     'schemas': [
       ItemSchema,
       OrderSchema
@@ -199,6 +200,7 @@ void describe('computed fields', { 'concurrency': true }, () => {
           }
         }
       },
+      'enableStrictGraph': false,
       'schemas': [
         CustomerSchema,
         NestedOrderSchema
@@ -227,6 +229,7 @@ void describe('computed fields', { 'concurrency': true }, () => {
           }
         }
       },
+      'enableStrictGraph': false,
       'schemas': [ThrowingSchema] as const
     });
 
@@ -271,6 +274,7 @@ void describe('computed fields', { 'concurrency': true }, () => {
       () => {
         JsonTology.create({
           'baseIRI': 'https://ex.io',
+          'enableStrictGraph': false,
           // No computeds provided
           'schemas': [
             OrderSchema,

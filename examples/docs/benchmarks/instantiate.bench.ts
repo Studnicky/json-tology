@@ -18,75 +18,79 @@ FormatRegistry.Set('email', (value) => {
 FormatRegistry.Set('date-time', (value) => {
   return !Number.isNaN(Date.parse(value));
 });
+FormatRegistry.Set('uuid', (value) => {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu.test(value);
+});
 
 import {
   bench, type BenchResult, section
 } from './harness.js';
 import {
-  AddressSchema, CustomerSchema, NestedSchema,
-  NestedSchemaIoTs,
-  NestedSchemaTypebox, NestedSchemaValibot, NestedSchemaZod, nestedValid,
-  OrderItemSchema, SimpleSchema, SimpleSchemaIoTs, SimpleSchemaTypebox, SimpleSchemaValibot,
-  SimpleSchemaZod, simpleValid
+  bookstoreBenchSchemas,
+  OrderSchemaIoTs, OrderSchemaTypebox, OrderSchemaValibot, OrderSchemaZod,
+  orderValid,
+  ReviewSchemaIoTs, ReviewSchemaTypebox, ReviewSchemaValibot, ReviewSchemaZod,
+  reviewValid
 } from './fixtures.js';
+import {
+  OrderSchema, ReviewSchema
+} from '../bookstore/index.js';
 
 export function runInstantiateBench(): BenchResult[] {
   const results: BenchResult[] = [];
 
-  const registry = new SchemaRegistry();
+  const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
-  registry.set(SimpleSchema);
-  registry.set(AddressSchema);
-  registry.set(CustomerSchema);
-  registry.set(OrderItemSchema);
-  registry.set(NestedSchema);
+  for (const schema of bookstoreBenchSchemas) {
+    registry.set(schema as Record<string, unknown>);
+  }
 
   // Warm up
-  registry.instantiate(SimpleSchema, simpleValid);
-  registry.instantiate(NestedSchema, nestedValid);
+  registry.instantiate(ReviewSchema, reviewValid);
+  registry.instantiate(OrderSchema, orderValid);
 
-  section('instantiate — simple flat schema (parse + normalize, no coercion)');
+  section('instantiate — Review (parse + normalize, no coercion)');
 
-  results.push(bench('instantiate simple', 'json-tology', () => {
-    registry.instantiate(SimpleSchema, simpleValid);
+  results.push(bench('instantiate review', 'json-tology', () => {
+    registry.instantiate(ReviewSchema, reviewValid);
   }));
 
-  results.push(bench('instantiate simple', 'typebox', () => {
-    Value.Parse(SimpleSchemaTypebox, simpleValid);
+  results.push(bench('instantiate review', 'typebox', () => {
+    Value.Parse(ReviewSchemaTypebox, reviewValid);
   }));
 
-  results.push(bench('instantiate simple', 'zod', () => {
-    SimpleSchemaZod.parse(simpleValid);
+  results.push(bench('instantiate review', 'zod', () => {
+    ReviewSchemaZod.parse(reviewValid);
   }));
 
-  results.push(bench('instantiate simple', 'valibot', () => {
-    vParse(SimpleSchemaValibot, simpleValid);
+  results.push(bench('instantiate review', 'valibot', () => {
+    vParse(ReviewSchemaValibot, reviewValid);
   }));
 
-  results.push(bench('instantiate simple', 'io-ts', () => {
-    SimpleSchemaIoTs.decode(simpleValid);
+  results.push(bench('instantiate review', 'io-ts', () => {
+    ReviewSchemaIoTs.decode(reviewValid);
   }));
 
-  section('instantiate — nested schema (parse + normalize, no coercion)');
+  section('instantiate — Order (parse + normalize, no coercion)');
 
-  results.push(bench('instantiate nested', 'json-tology', () => {
-    registry.instantiate(NestedSchema, nestedValid);
+  results.push(bench('instantiate order', 'json-tology', () => {
+    registry.instantiate(OrderSchema, orderValid);
   }));
 
-  results.push(bench('instantiate nested', 'typebox', () => {
-    Value.Parse(NestedSchemaTypebox, nestedValid);
+  results.push(bench('instantiate order', 'typebox', () => {
+    Value.Parse(OrderSchemaTypebox, orderValid);
   }));
 
-  results.push(bench('instantiate nested', 'zod', () => {
-    NestedSchemaZod.parse(nestedValid);
+  results.push(bench('instantiate order', 'zod', () => {
+    OrderSchemaZod.parse(orderValid);
   }));
 
-  results.push(bench('instantiate nested', 'valibot', () => {
-    vParse(NestedSchemaValibot, nestedValid);
+  results.push(bench('instantiate order', 'valibot', () => {
+    vParse(OrderSchemaValibot, orderValid);
   }));
 
-  results.push(bench('instantiate nested', 'io-ts', () => {
-    NestedSchemaIoTs.decode(nestedValid);
+  results.push(bench('instantiate order', 'io-ts', () => {
+    OrderSchemaIoTs.decode(orderValid);
   }));
 
   return results;

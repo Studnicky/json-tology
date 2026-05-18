@@ -18,88 +18,17 @@
 
 #### Example 1: ISO datetime to Date - full round-trip
 
-```ts
-import { Transform, JsonTology, InstantiationError } from 'json-tology';
-
-const PlacedAtSchema = Transform.create(
-  {
-    $id:    'https://bookstore.example/PlacedAt',
-    type:   'string',
-    format: 'date-time',
-  } as const,
-  {
-    decode: (isoString: string) => new Date(isoString),
-    encode: (dateValue: Date)   => dateValue.toISOString(),
-  },
-);
-
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [PlacedAtSchema] as const,
-});
-
-// Wire → Domain
-const raw = '2026-01-15T10:30:00.000Z';
-const date = jt.instantiate(PlacedAtSchema.$id, raw);
-console.log(date instanceof Date);          // true
-console.log((date as Date).getFullYear());  // 2026
-
-// Domain → Wire
-const wire = jt.encode(PlacedAtSchema, date as Date);
-console.log(wire === raw); // true
-
-// Invalid input still throws InstantiationError
-try {
-  jt.instantiate(PlacedAtSchema.$id, 'not-a-date');
-} catch (error) {
-  console.log(error instanceof InstantiationError); // true
-}
-```
+<<< ../../examples/docs/transforms/01-decode-encode.ts
 
 #### Example 2: Price in cents to decimal
 
-```ts
-const PriceCentsSchema = Transform.create(
-  {
-    $id:     'https://bookstore.example/PriceCents',
-    type:    'integer',
-    minimum: 0,
-  } as const,
-  {
-    decode: (cents: number)   => cents / 100,
-    encode: (dollars: number) => Math.round(dollars * 100),
-  },
-);
-
-const jt2 = jt.set(PriceCentsSchema);
-
-const price = jt2.instantiate(PriceCentsSchema.$id, 1499);
-console.log(price); // 14.99
-
-const wire2 = jt2.encode(PriceCentsSchema, price as number);
-console.log(wire2); // 1499
-```
+<<< ../../examples/docs/transforms/04-price-cents-transform.ts
 
 ### Bad examples - what NOT to do
 
 #### Anti-pattern 1: Applying transform after the schema was registered
 
-```ts
-// ⊥ Don't do this  - Transform.create must be called BEFORE register
-const RawSchema = { $id: '...', type: 'string' } as const;
-jt.set(RawSchema);
-// Then applying brand/transform to RawSchema affects a different object reference
-
-// ✓ Do this  - transform first, then register
-const Transformed = Transform.create(
-  { $id: '...', type: 'string' } as const,
-  {
-    decode: (s: string) => new Date(s),
-    encode: (d: Date) => d.toISOString()
-  },
-);
-const jt2 = JsonTology.create({ schemas: [Transformed] as const });
-```
+<<< ../../examples/docs/transforms/05-encode-roundtrip.ts
 
 ### Comparison
 
@@ -221,27 +150,11 @@ class Order(BaseModel):
 
 #### Example 1: Round-trip a placement timestamp
 
-```ts
-const raw = '2026-01-15T10:30:00.000Z';
-const date = jt.instantiate(PlacedAtSchema.$id, raw);   // wire → domain
-const wire = jt.encode(PlacedAtSchema, date as Date); // domain → wire
-console.log(wire === raw);     // true
-console.log(typeof wire);      // 'string'
-```
+<<< ../../examples/docs/transforms/05-encode-roundtrip.ts
 
 #### Example 2: Serialize before database write
 
-```ts
-// After processing an order:
-const placedDate = jt.instantiate(PlacedAtSchema.$id, event.placedAt) as Date;
-// ... do business logic ...
-
-// Before writing to DB:
-const dbRow = {
-  id:        event.id,
-  placed_at: jt.encode(PlacedAtSchema, placedDate), // back to ISO string
-};
-```
+<<< ../../examples/docs/transforms/06-encode-before-db-write.ts
 
 ### Comparison
 

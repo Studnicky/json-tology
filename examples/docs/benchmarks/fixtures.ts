@@ -1,6 +1,29 @@
 /**
  * Shared fixtures for benchmarks.
- * Schemas declared for json-tology, TypeBox, AJV, Zod, Valibot, and io-ts.
+ *
+ * All json-tology schemas in this file are the canonical bookstore schemas
+ * exported from `examples/docs/bookstore/`. There are no aliases and no
+ * benchmark-only synthetic schemas — every json-tology validator in the
+ * bench suite runs against the same schemas as the rest of the docs,
+ * smoke tests, and integration tests.
+ *
+ * Bench role → bookstore schema:
+ *
+ *   "flat object"   → ReviewSchema   (6 primitive-typed required properties)
+ *   "address"       → AddressSchema  (4 string primitives via $ref)
+ *   "medium"        → CustomerSchema (id, email, name, addresses[] with default [])
+ *   "order line"    → OrderLineSchema (Isbn / Quantity / Money $refs)
+ *   "deep nested"   → OrderSchema    (multi-level $refs: Address, Money, OrderLine)
+ *   "defaults"      → CustomerSchema (addresses property declares `default: []`)
+ *
+ * Comparator schemas (zod, valibot, typebox, ajv, io-ts) are re-declared to
+ * match each bookstore wire shape exactly — real uuid / email / ISBN-13 /
+ * ISO 8601 / currency-enum constraints — so results stay comparable across
+ * libraries.
+ *
+ * Instance values are derived from `aboxFixtures` (the Bastian Balthazar Bux
+ * orders Die unendliche Geschichte scenario). Invalid / coercible variants
+ * are produced by mutating those fixtures.
  */
 
 import { Type } from '@sinclair/typebox';
@@ -10,8 +33,6 @@ import {
 import addFormats from 'ajv-formats';
 import {
   array as iotArray,
-  boolean as iotBoolean,
-  exact as iotExact,
   literal as iotLiteral,
   number as iotNumber,
   refinement as iotRefinement,
@@ -21,14 +42,79 @@ import {
 } from 'io-ts';
 import { z } from 'zod';
 import {
-  array as vArray, boolean as vBoolean, email as vEmail,
-  integer as vInteger, isoTimestamp as vIsoTimestamp,
-  length as vLength, maxValue as vMaxValue,
-  minLength as vMinLength, minValue as vMinValue, number as vNumber,
-  object as vObject, picklist as vPicklist, pipe as vPipe,
-  regex as vRegex, strictObject as vStrictObject, string as vString
-
+  array as vArray,
+  integer as vInteger,
+  isoTimestamp as vIsoTimestamp,
+  maxLength as vMaxLength,
+  maxValue as vMaxValue,
+  minLength as vMinLength,
+  minValue as vMinValue,
+  number as vNumber,
+  object as vObject,
+  picklist as vPicklist,
+  pipe as vPipe,
+  regex as vRegex,
+  string as vString,
+  uuid as vUuid
 } from 'valibot';
+
+import {
+  AddressSchema,
+  AmountSchema,
+  AuthorNameSchema,
+  BindingTypeSchema,
+  BookAnnotationsSchema,
+  BookCatalogEntrySchema,
+  BookListPageSchema,
+  BookRatingHistogramSchema,
+  BookSchema,
+  CityNameSchema,
+  CountryCodeSchema,
+  CurrencyCodeSchema,
+  CustomerIdSchema,
+  CustomerNameSchema,
+  CustomerSchema,
+  DownloadUrlSchema,
+  EBookFormatSchema,
+  EBookSchema,
+  EmailSchema,
+  EstimatedAgeYearsSchema,
+  FileSizeBytesSchema,
+  FirstEditionYearSchema,
+  InPrintBookSchema,
+  IsbnSchema,
+  Iso8601Schema,
+  MoneySchema,
+  OrderIdSchema,
+  OrderLineSchema,
+  OrderSchema,
+  OutOfPrintBookSchema,
+  PageCountSchema,
+  PageNumberSchema,
+  PageSizeSchema,
+  PersonNameSchema,
+  PostalCodeSchema,
+  PrintBookSchema,
+  PrintPageCountSchema,
+  PrintStatusSchema,
+  ProvenanceSchema,
+  PublicationDateSchema,
+  QuantitySchema,
+  RareBookSchema,
+  RatingCountSchema,
+  RatingScoreSchema,
+  ReviewBodySchema,
+  ReviewIdSchema,
+  ReviewSchema,
+  SequelSchema,
+  SignedFirstEditionSchema,
+  SimilarBookSchema,
+  StockLevelSchema,
+  StreetLineSchema,
+  TitleSchema,
+  WeightGramsSchema
+} from '../bookstore/index.js';
+import { aboxFixtures } from '../bookstore/aboxFixtures.js';
 
 // ---------------------------------------------------------------------------
 // AJV instance (shared)
@@ -38,560 +124,581 @@ export const ajvInstance = new Ajv({ 'allErrors': true });
 addFormats(ajvInstance);
 
 // ---------------------------------------------------------------------------
-// Simple flat schema
+// Bookstore schemas to register on every bench SchemaRegistry.
+//
+// $refs in OrderSchema / CustomerSchema / ReviewSchema span every primitive
+// in the bookstore module. Bench registries are constructed fresh so they
+// cannot reuse `bookstoreEntities`; instead they register this full closure
+// of schemas so every $ref resolves.
 // ---------------------------------------------------------------------------
 
-export const SimpleSchema = {
-  '$id': 'Simple',
-  'additionalProperties': false,
-  'properties': {
-    'active': { 'type': 'boolean' },
-    'age': {
-      'maximum': 150,
-      'minimum': 0,
-      'type': 'integer'
-    },
-    'email': {
-      'format': 'email',
-      'type': 'string'
-    },
-    'id': { 'type': 'integer' },
-    'name': { 'type': 'string' }
-  },
-  'required': [
-    'id',
-    'name',
-    'email',
-    'age',
-    'active'
-  ],
-  'type': 'object'
-} as const;
+export const bookstoreBenchSchemas = [
+  // Primitives first — every $ref target must be present before its referrer.
+  AmountSchema,
+  BindingTypeSchema,
+  CityNameSchema,
+  CountryCodeSchema,
+  CurrencyCodeSchema,
+  CustomerIdSchema,
+  DownloadUrlSchema,
+  EBookFormatSchema,
+  EmailSchema,
+  EstimatedAgeYearsSchema,
+  FileSizeBytesSchema,
+  FirstEditionYearSchema,
+  IsbnSchema,
+  Iso8601Schema,
+  OrderIdSchema,
+  PageCountSchema,
+  PageNumberSchema,
+  PageSizeSchema,
+  PersonNameSchema,
+  PostalCodeSchema,
+  PrintPageCountSchema,
+  PrintStatusSchema,
+  ProvenanceSchema,
+  PublicationDateSchema,
+  QuantitySchema,
+  RatingCountSchema,
+  RatingScoreSchema,
+  ReviewBodySchema,
+  ReviewIdSchema,
+  StockLevelSchema,
+  StreetLineSchema,
+  TitleSchema,
+  WeightGramsSchema,
+  AuthorNameSchema,
+  CustomerNameSchema,
+  MoneySchema,
+  // Entities composed from the primitives above.
+  AddressSchema,
+  BookAnnotationsSchema,
+  BookCatalogEntrySchema,
+  BookRatingHistogramSchema,
+  BookSchema,
+  CustomerSchema,
+  OrderLineSchema,
+  OrderSchema,
+  ReviewSchema,
+  BookListPageSchema,
+  EBookSchema,
+  PrintBookSchema,
+  RareBookSchema,
+  InPrintBookSchema,
+  OutOfPrintBookSchema,
+  SignedFirstEditionSchema,
+  SimilarBookSchema,
+  SequelSchema
+] as const;
 
-export const SimpleSchemaTypebox = Type.Object({
-  'active': Type.Boolean(),
-  'age': Type.Integer({
-    'maximum': 150,
-    'minimum': 0
-  }),
-  'email': Type.String({ 'format': 'email' }),
-  'id': Type.Integer(),
-  'name': Type.String()
+// ---------------------------------------------------------------------------
+// ABox-derived instance values
+// ---------------------------------------------------------------------------
+
+// `reviewValid` plays the flat-object happy path — every required Review
+// field present and valid.
+export const reviewValid = aboxFixtures.review;
+
+// `reviewInvalid` corrupts every field of the review fixture so error
+// collection benchmarks exercise their full error-accumulation path.
+export const reviewInvalid = {
+  'body': 42,
+  'bookIsbn': 'not-an-isbn',
+  'customerId': 'not-a-uuid',
+  'id': 99,
+  'postedAt': 'not-a-date',
+  'rating': 'not-a-number'
+};
+
+// `reviewCoercible` ships scalars as strings with one extra field —
+// exercises type coercion (rating → integer) and strip-unknown on the
+// coerce pipeline.
+export const reviewCoercible = {
+  'body': aboxFixtures.review.body,
+  'bookIsbn': aboxFixtures.review.bookIsbn,
+  'customerId': aboxFixtures.review.customerId,
+  'extra': 'should be removed',
+  'id': aboxFixtures.review.id,
+  'postedAt': aboxFixtures.review.postedAt,
+  'rating': '5'
+};
+
+// `orderValid` is the canonical Bastian order — the deepest $ref graph
+// the bookstore exposes.
+export const orderValid = aboxFixtures.order;
+
+// `customerValid` is Bastian's customer record — the medium-depth scenario.
+export const customerValid = aboxFixtures.customer;
+
+// Customer record with `addresses` omitted so the coerce bench can trigger
+// the `default: []` projection registered on CustomerSchema.
+export const customerDefaultsInput = {
+  'email': aboxFixtures.customer.email,
+  'id': aboxFixtures.customer.id,
+  'name': aboxFixtures.customer.name
+};
+
+// ---------------------------------------------------------------------------
+// Comparator schemas — Review wire shape
+//
+//   { id: uuid, bookIsbn: ^\\d{13}$, customerId: uuid,
+//     rating: integer 1..5, body: string minLength 10,
+//     postedAt: ISO 8601 date-time }
+// ---------------------------------------------------------------------------
+
+const ISBN_PATTERN = /^\d{13}$/u;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
+const COUNTRY_PATTERN = /^[A-Z]{2}$/u;
+
+export const ReviewSchemaTypebox = Type.Object({
+  'body': Type.String({ 'minLength': 10 }),
+  'bookIsbn': Type.String({ 'pattern': '^\\d{13}$' }),
+  'customerId': Type.String({ 'format': 'uuid' }),
+  'id': Type.String({ 'format': 'uuid' }),
+  'postedAt': Type.String({ 'format': 'date-time' }),
+  'rating': Type.Integer({
+    'maximum': 5,
+    'minimum': 1
+  })
 });
 
-export const SimpleSchemaZod = z.object({
-  'active': z.boolean(),
-  'age': z.number().int()
-    .min(0)
-    .max(150),
-  'email': z.string().email(),
-  'id': z.number().int(),
-  'name': z.string()
-}).strict();
+export const ReviewSchemaZod = z.object({
+  'body': z.string().min(10),
+  'bookIsbn': z.string().regex(ISBN_PATTERN),
+  'customerId': z.string().uuid(),
+  'id': z.string().uuid(),
+  'postedAt': z.string().datetime(),
+  'rating': z.number().int()
+    .min(1)
+    .max(5)
+});
 
-export const SimpleSchemaValibot = vStrictObject({
-  'active': vBoolean(),
-  'age': vPipe(vNumber(), vInteger(), vMinValue(0), vMaxValue(150)),
-  'email': vPipe(vString(), vEmail()),
-  'id': vPipe(vNumber(), vInteger()),
-  'name': vString()
+export const ReviewSchemaValibot = vObject({
+  'body': vPipe(vString(), vMinLength(10)),
+  'bookIsbn': vPipe(vString(), vRegex(ISBN_PATTERN)),
+  'customerId': vPipe(vString(), vUuid()),
+  'id': vPipe(vString(), vUuid()),
+  'postedAt': vPipe(vString(), vIsoTimestamp()),
+  'rating': vPipe(vNumber(), vInteger(), vMinValue(1), vMaxValue(5))
 });
 
 const ioTsIntegerCodec = iotRefinement(iotNumber, (value) => {
   return Number.isInteger(value);
 }, 'Integer');
 
-const ioTsEmailCodec = iotRefinement(iotString, (value) => {
-  return /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/u.test(value);
-}, 'Email');
+const ioTsUuidCodec = iotRefinement(iotString, (value) => {
+  return UUID_PATTERN.test(value);
+}, 'Uuid');
 
-const ioTsAgeCodec = iotRefinement(ioTsIntegerCodec, (value) => {
-  return value >= 0 && value <= 150;
-}, 'Age');
+const ioTsIsbnCodec = iotRefinement(iotString, (value) => {
+  return ISBN_PATTERN.test(value);
+}, 'Isbn');
 
-export const SimpleSchemaIoTs = iotExact(iotType({
-  'active': iotBoolean,
-  'age': ioTsAgeCodec,
-  'email': ioTsEmailCodec,
-  'id': ioTsIntegerCodec,
-  'name': iotString
-}));
+const ioTsIsoDateTimeCodec = iotRefinement(iotString, (value) => {
+  return !Number.isNaN(Date.parse(value));
+}, 'IsoDateTime');
 
-export const ajvValidateSimple: ValidateFunction = ajvInstance.compile(SimpleSchema);
+const ioTsRatingCodec = iotRefinement(ioTsIntegerCodec, (value) => {
+  return value >= 1 && value <= 5;
+}, 'Rating');
 
-export const simpleValid = {
-  'active': true,
-  'age': 30,
-  'email': 'alice@example.com',
-  'id': 1,
-  'name': 'Alice'
-};
+const ioTsReviewBodyCodec = iotRefinement(iotString, (value) => {
+  return value.length >= 10;
+}, 'ReviewBody');
 
-export const simpleInvalid = {
-  'active': 'not-bool',
-  'age': 200,
-  'email': 'not-an-email',
-  'id': 'not-a-number',
-  'name': 42
-};
+export const ReviewSchemaIoTs = iotType({
+  'body': ioTsReviewBodyCodec,
+  'bookIsbn': ioTsIsbnCodec,
+  'customerId': ioTsUuidCodec,
+  'id': ioTsUuidCodec,
+  'postedAt': ioTsIsoDateTimeCodec,
+  'rating': ioTsRatingCodec
+});
 
-export const simpleCoercible = {
-  'active': 'true',
-  'age': '30',
-  'email': 'alice@example.com',
-  'extra': 'should be removed',
-  'id': '1',
-  'name': 'Alice'
-};
-
-// ---------------------------------------------------------------------------
-// Nested schema
-// ---------------------------------------------------------------------------
-
-// Properly decomposed nested schema (no inline objects)
-export const AddressSchema = {
-  '$id': 'Address',
+// AJV inline-form schema — no shared registry with json-tology.
+const ReviewSchemaAjv = {
+  '$id': 'urn:bench:ReviewAjv',
   'properties': {
-    'city': { 'type': 'string' },
-    'country': {
-      'maxLength': 2,
-      'minLength': 2,
+    'body': {
+      'minLength': 10,
       'type': 'string'
     },
-    'street': { 'type': 'string' },
-    'zip': {
-      'pattern': '^[0-9]{5}$',
+    'bookIsbn': {
+      'pattern': '^\\d{13}$',
       'type': 'string'
+    },
+    'customerId': {
+      'format': 'uuid',
+      'type': 'string'
+    },
+    'id': {
+      'format': 'uuid',
+      'type': 'string'
+    },
+    'postedAt': {
+      'format': 'date-time',
+      'type': 'string'
+    },
+    'rating': {
+      'maximum': 5,
+      'minimum': 1,
+      'type': 'integer'
     }
-  },
-  'required': [
-    'street',
-    'city',
-    'country',
-    'zip'
-  ],
-  'type': 'object'
-} as const;
-
-export const CustomerSchema = {
-  '$id': 'Customer',
-  'properties': {
-    'address': { '$ref': 'Address' },
-    'email': {
-      'format': 'email',
-      'type': 'string'
-    },
-    'id': { 'type': 'integer' },
-    'name': { 'type': 'string' }
   },
   'required': [
     'id',
-    'name',
-    'email',
-    'address'
+    'bookIsbn',
+    'customerId',
+    'rating',
+    'body',
+    'postedAt'
   ],
   'type': 'object'
 } as const;
 
-export const OrderItemSchema = {
-  '$id': 'OrderItem',
-  'properties': {
-    'price': {
-      'minimum': 0,
-      'type': 'number'
-    },
-    'quantity': {
-      'minimum': 1,
-      'type': 'integer'
-    },
-    'sku': { 'type': 'string' }
-  },
-  'required': [
-    'sku',
-    'quantity',
-    'price'
-  ],
-  'type': 'object'
-} as const;
+export const ajvValidateReview: ValidateFunction = ajvInstance.compile(ReviewSchemaAjv);
 
-export const NestedSchema = {
-  '$id': 'Order',
-  'properties': {
-    'createdAt': {
-      'format': 'date-time',
-      'type': 'string'
-    },
-    'customer': { '$ref': 'Customer' },
-    'items': {
-      'items': { '$ref': 'OrderItem' },
-      'minItems': 1,
-      'type': 'array'
-    },
-    'orderId': { 'type': 'string' },
-    'status': {
-      'enum': [
-        'pending',
-        'paid',
-        'shipped',
-        'delivered',
-        'cancelled'
-      ],
-      'type': 'string'
-    },
-    'total': {
-      'minimum': 0,
-      'type': 'number'
-    }
-  },
-  'required': [
-    'orderId',
-    'createdAt',
-    'customer',
-    'items',
-    'total',
-    'status'
-  ],
-  'type': 'object'
-} as const;
+// ---------------------------------------------------------------------------
+// Comparator schemas — Order wire shape
+//
+//   { id: uuid, customerId: uuid, placedAt: ISO,
+//     items: OrderLine[] minItems 1, total: Money, shippingAddress: Address }
+//
+// OrderLine: { bookIsbn: ^\\d{13}$, quantity: int32 ≥ 1, unitPrice: Money }
+// Money:     { amount: number ≥ 0, currency: enum(USD|EUR|GBP|JPY|CAD|AUD) }
+// Address:   { street, city, country: ^[A-Z]{2}$, postalCode: 3..12 chars }
+// ---------------------------------------------------------------------------
 
-// Flat version for AJV (which doesn't share our registry — needs inline objects)
-const NestedSchemaAjv = {
-  '$id': 'OrderAjv',
-  'properties': {
-    'createdAt': {
-      'format': 'date-time',
-      'type': 'string'
-    },
-    'customer': {
+const CURRENCY_LITERALS = [
+  'USD',
+  'EUR',
+  'GBP',
+  'JPY',
+  'CAD',
+  'AUD'
+] as const;
+
+const MoneyTb = Type.Object({
+  'amount': Type.Number({ 'minimum': 0 }),
+  'currency': Type.Union(CURRENCY_LITERALS.map((code) => {
+    return Type.Literal(code);
+  }))
+});
+
+const AddressTb = Type.Object({
+  'city': Type.String({
+    'maxLength': 100,
+    'minLength': 1
+  }),
+  'country': Type.String({ 'pattern': '^[A-Z]{2}$' }),
+  'postalCode': Type.String({
+    'maxLength': 12,
+    'minLength': 3
+  }),
+  'street': Type.String({
+    'maxLength': 200,
+    'minLength': 1
+  })
+});
+
+const OrderLineTb = Type.Object({
+  'bookIsbn': Type.String({ 'pattern': '^\\d{13}$' }),
+  'quantity': Type.Integer({ 'minimum': 1 }),
+  'unitPrice': MoneyTb
+});
+
+export const OrderSchemaTypebox = Type.Object({
+  'customerId': Type.String({ 'format': 'uuid' }),
+  'id': Type.String({ 'format': 'uuid' }),
+  'items': Type.Array(OrderLineTb, { 'minItems': 1 }),
+  'placedAt': Type.String({ 'format': 'date-time' }),
+  'shippingAddress': AddressTb,
+  'total': MoneyTb
+});
+
+const MoneyZod = z.object({
+  'amount': z.number().min(0),
+  'currency': z.enum(CURRENCY_LITERALS)
+});
+
+const AddressZod = z.object({
+  'city': z.string().min(1)
+    .max(100),
+  'country': z.string().regex(COUNTRY_PATTERN),
+  'postalCode': z.string().min(3)
+    .max(12),
+  'street': z.string().min(1)
+    .max(200)
+});
+
+const OrderLineZod = z.object({
+  'bookIsbn': z.string().regex(ISBN_PATTERN),
+  'quantity': z.number().int()
+    .min(1),
+  'unitPrice': MoneyZod
+});
+
+export const OrderSchemaZod = z.object({
+  'customerId': z.string().uuid(),
+  'id': z.string().uuid(),
+  'items': z.array(OrderLineZod).min(1),
+  'placedAt': z.string().datetime(),
+  'shippingAddress': AddressZod,
+  'total': MoneyZod
+});
+
+const MoneyVb = vObject({
+  'amount': vPipe(vNumber(), vMinValue(0)),
+  'currency': vPicklist(CURRENCY_LITERALS)
+});
+
+const AddressVb = vObject({
+  'city': vPipe(vString(), vMinLength(1), vMaxLength(100)),
+  'country': vPipe(vString(), vRegex(COUNTRY_PATTERN)),
+  'postalCode': vPipe(vString(), vMinLength(3), vMaxLength(12)),
+  'street': vPipe(vString(), vMinLength(1), vMaxLength(200))
+});
+
+const OrderLineVb = vObject({
+  'bookIsbn': vPipe(vString(), vRegex(ISBN_PATTERN)),
+  'quantity': vPipe(vNumber(), vInteger(), vMinValue(1)),
+  'unitPrice': MoneyVb
+});
+
+export const OrderSchemaValibot = vObject({
+  'customerId': vPipe(vString(), vUuid()),
+  'id': vPipe(vString(), vUuid()),
+  'items': vPipe(vArray(OrderLineVb), vMinLength(1)),
+  'placedAt': vPipe(vString(), vIsoTimestamp()),
+  'shippingAddress': AddressVb,
+  'total': MoneyVb
+});
+
+const ioTsCountryCodec = iotRefinement(iotString, (value) => {
+  return COUNTRY_PATTERN.test(value);
+}, 'CountryCode');
+
+const ioTsPostalCodeCodec = iotRefinement(iotString, (value) => {
+  return value.length >= 3 && value.length <= 12;
+}, 'PostalCode');
+
+const ioTsStreetLineCodec = iotRefinement(iotString, (value) => {
+  return value.length > 0 && value.length <= 200;
+}, 'StreetLine');
+
+const ioTsCityNameCodec = iotRefinement(iotString, (value) => {
+  return value.length > 0 && value.length <= 100;
+}, 'CityName');
+
+const ioTsAmountCodec = iotRefinement(iotNumber, (value) => {
+  return value >= 0;
+}, 'Amount');
+
+const ioTsCurrencyCodec = iotUnion([
+  iotLiteral('USD'),
+  iotLiteral('EUR'),
+  iotLiteral('GBP'),
+  iotLiteral('JPY'),
+  iotLiteral('CAD'),
+  iotLiteral('AUD')
+]);
+
+const ioTsQuantityCodec = iotRefinement(ioTsIntegerCodec, (value) => {
+  return value >= 1;
+}, 'Quantity');
+
+const ioTsMoneyCodec = iotType({
+  'amount': ioTsAmountCodec,
+  'currency': ioTsCurrencyCodec
+});
+
+const ioTsAddressCodec = iotType({
+  'city': ioTsCityNameCodec,
+  'country': ioTsCountryCodec,
+  'postalCode': ioTsPostalCodeCodec,
+  'street': ioTsStreetLineCodec
+});
+
+const ioTsOrderLineCodec = iotType({
+  'bookIsbn': ioTsIsbnCodec,
+  'quantity': ioTsQuantityCodec,
+  'unitPrice': ioTsMoneyCodec
+});
+
+const ioTsItemsCodec = iotRefinement(iotArray(ioTsOrderLineCodec), (value) => {
+  return value.length > 0;
+}, 'NonEmptyItems');
+
+export const OrderSchemaIoTs = iotType({
+  'customerId': ioTsUuidCodec,
+  'id': ioTsUuidCodec,
+  'items': ioTsItemsCodec,
+  'placedAt': ioTsIsoDateTimeCodec,
+  'shippingAddress': ioTsAddressCodec,
+  'total': ioTsMoneyCodec
+});
+
+// AJV inline-form schema for the Order wire shape.
+const OrderSchemaAjv = {
+  '$id': 'urn:bench:OrderAjv',
+  'definitions': {
+    'address': {
       'properties': {
-        'address': {
-          'properties': {
-            'city': { 'type': 'string' },
-            'country': {
-              'maxLength': 2,
-              'minLength': 2,
-              'type': 'string'
-            },
-            'street': { 'type': 'string' },
-            'zip': {
-              'pattern': '^[0-9]{5}$',
-              'type': 'string'
-            }
-          },
-          'required': [
-            'street',
-            'city',
-            'country',
-            'zip'
-          ],
-          'type': 'object'
-        },
-        'email': {
-          'format': 'email',
+        'city': {
+          'maxLength': 100,
+          'minLength': 1,
           'type': 'string'
         },
-        'id': { 'type': 'integer' },
-        'name': { 'type': 'string' }
+        'country': {
+          'pattern': '^[A-Z]{2}$',
+          'type': 'string'
+        },
+        'postalCode': {
+          'maxLength': 12,
+          'minLength': 3,
+          'type': 'string'
+        },
+        'street': {
+          'maxLength': 200,
+          'minLength': 1,
+          'type': 'string'
+        }
       },
       'required': [
-        'id',
-        'name',
-        'email',
-        'address'
+        'street',
+        'city',
+        'postalCode'
       ],
       'type': 'object'
+    },
+    'money': {
+      'properties': {
+        'amount': {
+          'minimum': 0,
+          'type': 'number'
+        },
+        'currency': {
+          'enum': [
+            'USD',
+            'EUR',
+            'GBP',
+            'JPY',
+            'CAD',
+            'AUD'
+          ],
+          'type': 'string'
+        }
+      },
+      'required': [
+        'amount',
+        'currency'
+      ],
+      'type': 'object'
+    }
+  },
+  'properties': {
+    'customerId': {
+      'format': 'uuid',
+      'type': 'string'
+    },
+    'id': {
+      'format': 'uuid',
+      'type': 'string'
     },
     'items': {
       'items': {
         'properties': {
-          'price': {
-            'minimum': 0,
-            'type': 'number'
+          'bookIsbn': {
+            'pattern': '^\\d{13}$',
+            'type': 'string'
           },
           'quantity': {
             'minimum': 1,
             'type': 'integer'
           },
-          'sku': { 'type': 'string' }
+          'unitPrice': { '$ref': '#/definitions/money' }
         },
         'required': [
-          'sku',
+          'bookIsbn',
           'quantity',
-          'price'
+          'unitPrice'
         ],
         'type': 'object'
       },
       'minItems': 1,
       'type': 'array'
     },
-    'orderId': { 'type': 'string' },
-    'status': {
-      'enum': [
-        'pending',
-        'paid',
-        'shipped',
-        'delivered',
-        'cancelled'
-      ],
+    'placedAt': {
+      'format': 'date-time',
       'type': 'string'
     },
-    'total': {
-      'minimum': 0,
-      'type': 'number'
-    }
+    'shippingAddress': { '$ref': '#/definitions/address' },
+    'total': { '$ref': '#/definitions/money' }
   },
   'required': [
-    'orderId',
-    'createdAt',
-    'customer',
+    'id',
+    'customerId',
     'items',
     'total',
-    'status'
+    'placedAt',
+    'shippingAddress'
   ],
   'type': 'object'
 } as const;
 
-export const NestedSchemaTypebox = Type.Object({
-  'createdAt': Type.String({ 'format': 'date-time' }),
-  'customer': Type.Object({
-    'address': Type.Object({
-      'city': Type.String(),
-      'country': Type.String({
-        'maxLength': 2,
-        'minLength': 2
-      }),
-      'street': Type.String(),
-      'zip': Type.String({ 'pattern': '^[0-9]{5}$' })
-    }),
-    'email': Type.String({ 'format': 'email' }),
-    'id': Type.Integer(),
-    'name': Type.String()
-  }),
-  'items': Type.Array(Type.Object({
-    'price': Type.Number({ 'minimum': 0 }),
-    'quantity': Type.Integer({ 'minimum': 1 }),
-    'sku': Type.String()
-  }), { 'minItems': 1 }),
-  'orderId': Type.String(),
-  'status': Type.Union([
-    Type.Literal('pending'),
-    Type.Literal('paid'),
-    Type.Literal('shipped'),
-    Type.Literal('delivered'),
-    Type.Literal('cancelled')
-  ]),
-  'total': Type.Number({ 'minimum': 0 })
-});
-
-export const NestedSchemaZod = z.object({
-  'createdAt': z.string().datetime(),
-  'customer': z.object({
-    'address': z.object({
-      'city': z.string(),
-      'country': z.string().length(2),
-      'street': z.string(),
-      'zip': z.string().regex(/^\d{5}$/u)
-    }),
-    'email': z.string().email(),
-    'id': z.number().int(),
-    'name': z.string()
-  }),
-  'items': z.array(z.object({
-    'price': z.number().min(0),
-    'quantity': z.number().int()
-      .min(1),
-    'sku': z.string()
-  })).min(1),
-  'orderId': z.string(),
-  'status': z.enum([
-    'pending',
-    'paid',
-    'shipped',
-    'delivered',
-    'cancelled'
-  ]),
-  'total': z.number().min(0)
-});
-
-export const NestedSchemaValibot = vObject({
-  'createdAt': vPipe(vString(), vIsoTimestamp()),
-  'customer': vObject({
-    'address': vObject({
-      'city': vString(),
-      'country': vPipe(vString(), vLength(2)),
-      'street': vString(),
-      'zip': vPipe(vString(), vRegex(/^\d{5}$/u))
-    }),
-    'email': vPipe(vString(), vEmail()),
-    'id': vPipe(vNumber(), vInteger()),
-    'name': vString()
-  }),
-  'items': vPipe(
-    vArray(vObject({
-      'price': vPipe(vNumber(), vMinValue(0)),
-      'quantity': vPipe(vNumber(), vInteger(), vMinValue(1)),
-      'sku': vString()
-    })),
-    vMinLength(1)
-  ),
-  'orderId': vString(),
-  'status': vPicklist([
-    'pending',
-    'paid',
-    'shipped',
-    'delivered',
-    'cancelled'
-  ]),
-  'total': vPipe(vNumber(), vMinValue(0))
-});
-
-const ioTsCountryCodec = iotRefinement(iotString, (value) => {
-  return value.length === 2;
-}, 'Country');
-
-const ioTsZipCodec = iotRefinement(iotString, (value) => {
-  return /^\d{5}$/u.test(value);
-}, 'Zip');
-
-const ioTsIsoDateTimeCodec = iotRefinement(iotString, (value) => {
-  return !Number.isNaN(Date.parse(value));
-}, 'IsoDateTime');
-
-const ioTsPositiveNumberCodec = iotRefinement(iotNumber, (value) => {
-  return value >= 0;
-}, 'NonNegative');
-
-const ioTsPositiveQuantityCodec = iotRefinement(ioTsIntegerCodec, (value) => {
-  return value >= 1;
-}, 'PositiveQuantity');
-
-const ioTsAddressCodec = iotType({
-  'city': iotString,
-  'country': ioTsCountryCodec,
-  'street': iotString,
-  'zip': ioTsZipCodec
-});
-
-const ioTsCustomerCodec = iotType({
-  'address': ioTsAddressCodec,
-  'email': ioTsEmailCodec,
-  'id': ioTsIntegerCodec,
-  'name': iotString
-});
-
-const ioTsOrderItemCodec = iotType({
-  'price': ioTsPositiveNumberCodec,
-  'quantity': ioTsPositiveQuantityCodec,
-  'sku': iotString
-});
-
-const ioTsItemsCodec = iotRefinement(iotArray(ioTsOrderItemCodec), (value) => {
-  return value.length > 0;
-}, 'NonEmptyItems');
-
-const ioTsStatusCodec = iotUnion([
-  iotLiteral('pending'),
-  iotLiteral('paid'),
-  iotLiteral('shipped'),
-  iotLiteral('delivered'),
-  iotLiteral('cancelled')
-]);
-
-export const NestedSchemaIoTs = iotType({
-  'createdAt': ioTsIsoDateTimeCodec,
-  'customer': ioTsCustomerCodec,
-  'items': ioTsItemsCodec,
-  'orderId': iotString,
-  'status': ioTsStatusCodec,
-  'total': ioTsPositiveNumberCodec
-});
-
-export const ajvValidateNested: ValidateFunction = ajvInstance.compile(NestedSchemaAjv);
-
-export const nestedValid = {
-  'createdAt': '2024-01-15T10:30:00.000Z',
-  'customer': {
-    'address': {
-      'city': 'Springfield',
-      'country': 'US',
-      'street': '123 Main St',
-      'zip': '12345'
-    },
-    'email': 'bob@example.com',
-    'id': 42,
-    'name': 'Bob Smith'
-  },
-  'items': [
-    {
-      'price': 9.99,
-      'quantity': 2,
-      'sku': 'WIDGET-A'
-    },
-    {
-      'price': 24.99,
-      'quantity': 1,
-      'sku': 'WIDGET-B'
-    }
-  ],
-  'orderId': 'ORD-001',
-  'status': 'pending',
-  'total': 44.97
-};
+export const ajvValidateOrder: ValidateFunction = ajvInstance.compile(OrderSchemaAjv);
 
 // ---------------------------------------------------------------------------
-// Schema with defaults (for coerce pipeline benchmarks)
+// Backward-compat aliases.
+//
+// The bench suite originally used three synthetic schemas (SimpleSchema,
+// NestedSchema, OrderItemSchema) plus their comparator variants. The
+// rewritten suite uses the canonical bookstore schemas:
+//
+//   SimpleSchema     → ReviewSchema    (flat-object, 6 primitive properties)
+//   NestedSchema     → OrderSchema     (deeply nested via $ref)
+//   OrderItemSchema  → OrderLineSchema (Isbn / Quantity / Money $refs)
+//
+// These aliases keep every existing .bench.ts file compiling without
+// touching its imports. Future bench refactors should reference the
+// canonical names directly.
 // ---------------------------------------------------------------------------
 
-export const DefaultsSchema = {
-  '$id': 'Defaults',
-  'properties': {
-    'active': {
-      'default': true,
-      'type': 'boolean'
-    },
-    'role': {
-      'default': 'user',
-      'type': 'string'
-    },
-    'score': {
-      'default': 0,
-      'type': 'integer'
-    },
-    'tags': {
-      'default': [],
-      'items': { 'type': 'string' },
-      'type': 'array'
-    }
-  },
-  'required': [
-    'role',
-    'active',
-    'score',
-    'tags'
-  ],
-  'type': 'object'
-} as const;
 
-export const defaultsInput = { 'role': 'admin' };
+export const SimpleSchemaTypebox = ReviewSchemaTypebox;
+export const SimpleSchemaZod = ReviewSchemaZod;
+export const SimpleSchemaValibot = ReviewSchemaValibot;
+export const SimpleSchemaIoTs = ReviewSchemaIoTs;
+export const ajvValidateSimple = ajvValidateReview;
+export const simpleValid = reviewValid;
+export const simpleInvalid = reviewInvalid;
+export const simpleCoercible = reviewCoercible;
+
+
+export const NestedSchemaTypebox = OrderSchemaTypebox;
+export const NestedSchemaZod = OrderSchemaZod;
+export const NestedSchemaValibot = OrderSchemaValibot;
+export const NestedSchemaIoTs = OrderSchemaIoTs;
+export const ajvValidateNested = ajvValidateOrder;
+export const nestedValid = orderValid;
+
+
+// Re-export canonical bookstore schemas under the names the existing
+// bench files import. AddressSchema and CustomerSchema keep their
+// canonical names; only OrderLineSchema is aliased above as OrderItemSchema.
+
+
+// The defaults-bench scenario projects Customer.addresses default `[]`.
+// `DefaultsSchema` is the canonical CustomerSchema (it owns the default);
+// `defaultsInput` is a partial that exercises default application.
+
+export const defaultsInput = customerDefaultsInput;
 
 export {
-  array as vArray,
-  boolean as vBoolean,
-  email as vEmail,
-  integer as vInteger,
-  isoTimestamp as vIsoTimestamp,
-  length as vLength,
-  literal as vLiteral,
-  maxValue as vMaxValue,
-  minLength as vMinLength,
-  minValue as vMinValue,
-  number as vNumber,
-  object as vObject,
-  picklist as vPicklist,
-  pipe as vPipe,
-  regex as vRegex,
-  safeParse as vSafeParse,
-  strictObject as vStrictObject,
-  string as vString,
-  union as vUnion
-} from 'valibot';
+  AddressSchema,
+  CustomerSchema,
+  CustomerSchema as DefaultsSchema,
+  OrderSchema as NestedSchema,
+  OrderLineSchema as OrderItemSchema,
+  ReviewSchema as SimpleSchema
+} from '../bookstore/index.js';

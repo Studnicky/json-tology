@@ -1,0 +1,21 @@
+{
+  "rootBlock": ":root {\n  --jt-canvas: #fafaf7;\n  --jt-surface: #f9f9f6;\n  --jt-surface-soft: #fafaf7;\n  --jt-text: #0a191a;\n  --jt-text-muted: #3b4b4d;\n  --jt-text-subtle: #576769;\n  --jt-accent: #17575d;\n  --jt-accent-hover: #0c4045;\n  --jt-accent-ui: #08717a;\n  --jt-on-accent: #fafaf7;\n  --jt-border: #5a6668;\n}",
+  "scopedBlock": "[data-theme='json-tology'] {\n  --jt-canvas: #fafaf7;\n  --jt-surface: #f9f9f6;\n  --jt-surface-soft: #fafaf7;\n  --jt-text: #0a191a;\n  --jt-text-muted: #3b4b4d;\n  --jt-text-subtle: #576769;\n  --jt-accent: #17575d;\n  --jt-accent-hover: #0c4045;\n  --jt-accent-ui: #08717a;\n  --jt-on-accent: #fafaf7;\n  --jt-border: #5a6668;\n}",
+  "darkScheme": "",
+  "forcedColors": "@media (forced-colors: active) {\n  :root {\n    --jt-canvas: Canvas;\n    --jt-surface: Canvas;\n    --jt-surface-soft: Canvas;\n    --jt-text: CanvasText;\n    --jt-text-muted: GrayText;\n    --jt-text-subtle: GrayText;\n    --jt-accent: Highlight;\n    --jt-accent-hover: Highlight;\n    --jt-accent-ui: Highlight;\n    --jt-on-accent: CanvasText;\n    --jt-border: GrayText;\n  }\n}",
+  "wideGamut": "@supports (color: color(display-p3 0 0 0)) {\n  :root {\n    --jt-accent: color(display-p3 0.0900 0.3448 0.3802);\n    --jt-accent-hover: color(display-p3 0.0000 0.2580 0.2931);\n  }\n}",
+  "full": ":root {\n  --jt-canvas: #fafaf7;\n  --jt-surface: #f9f9f6;\n  --jt-surface-soft: #fafaf7;\n  --jt-text: #0a191a;\n  --jt-text-muted: #3b4b4d;\n  --jt-text-subtle: #576769;\n  --jt-accent: #17575d;\n  --jt-accent-hover: #0c4045;\n  --jt-accent-ui: #08717a;\n  --jt-on-accent: #fafaf7;\n  --jt-border: #5a6668;\n}\n\n@supports (color: color(display-p3 0 0 0)) {\n  :root {\n    --jt-accent: color(display-p3 0.0900 0.3448 0.3802);\n    --jt-accent-hover: color(display-p3 0.0000 0.2580 0.2931);\n  }\n}\n\n@media (forced-colors: active) {\n  :root {\n    --jt-canvas: Canvas;\n    --jt-surface: Canvas;\n    --jt-surface-soft: Canvas;\n    --jt-text: CanvasText;\n    --jt-text-muted: GrayText;\n    --jt-text-subtle: GrayText;\n    --jt-accent: Highlight;\n    --jt-accent-hover: Highlight;\n    --jt-accent-ui: Highlight;\n    --jt-on-accent: CanvasText;\n    --jt-border: GrayText;\n  }\n}",
+  "map": {
+    "canvas": "--jt-canvas",
+    "surface": "--jt-surface",
+    "surfaceSoft": "--jt-surface-soft",
+    "text": "--jt-text",
+    "textMuted": "--jt-text-muted",
+    "textSubtle": "--jt-text-subtle",
+    "accent": "--jt-accent",
+    "accentHover": "--jt-accent-hover",
+    "accentUi": "--jt-accent-ui",
+    "onAccent": "--jt-on-accent",
+    "border": "--jt-border"
+  }
+}

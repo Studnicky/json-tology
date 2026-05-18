@@ -8,6 +8,7 @@ The `pipe` method name conflicted with the Node.js stream `.pipe()` convention. 
 
 ### Method rename
 
+<!-- inline-ts-ok: demonstrates removed/legacy Transform.pipe method; before/after preserved as migration context. -->
 ```ts
 // Before
 const schema = Transform.pipe(BaseSchema, [stage1, stage2] as const);
@@ -30,6 +31,7 @@ The supporting compile-time types are similarly renamed:
 
 Update any type imports accordingly:
 
+<!-- inline-ts-ok: demonstrates removed/legacy PipeChain* types; compile-time import rename, not a runnable expression. -->
 ```ts
 // Before
 import type { PipeChainMismatchInterface, PipeChainSchemaMismatchInterface } from 'json-tology/types';

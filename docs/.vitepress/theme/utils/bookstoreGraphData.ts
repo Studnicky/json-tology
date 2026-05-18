@@ -161,6 +161,44 @@ function refTarget(propSchema: unknown): string | null {
   return null;
 }
 
+/**
+ * Yields property maps reachable from a schema: the schema's own
+ * `properties` block plus the `properties` block of every entry in
+ * `allOf` (recursively). Multi-parent `Compose.subClassOf` bodies
+ * declare their fields inside `allOf[N]`; semantically those fields
+ * belong to the top-level class, so the second-pass $ref walk needs
+ * to see them under the class's own $id.
+ */
+function* collectPropertyMaps(schema: Record<string, unknown>): Generator<Record<string, unknown>> {
+  const own = schema['properties'];
+  if (own !== null && typeof own === 'object') {
+    yield own as Record<string, unknown>;
+  }
+  const allOf = schema['allOf'];
+  if (Array.isArray(allOf)) {
+    for (const member of allOf) {
+      if (member !== null && typeof member === 'object') {
+        yield* collectPropertyMaps(member as Record<string, unknown>);
+      }
+    }
+  }
+}
+
+/**
+ * Maps an anonymous body IRI like `urn:bookstore:Foo#/allOf/2` back to its
+ * owning top-level class IRI (`urn:bookstore:Foo`) when that class is
+ * registered. OWL projects properties declared in `allOf` bodies with the
+ * body's anonymous IRI as `rdfs:domain`; for graph rendering we collapse
+ * that back to the class the user actually authored.
+ */
+function resolveTopLevelClass(domainId: string, entityIds: Set<string>): string | null {
+  if (entityIds.has(domainId)) return domainId;
+  const hash = domainId.indexOf('#');
+  if (hash === -1) return null;
+  const prefix = domainId.slice(0, hash);
+  return entityIds.has(prefix) ? prefix : null;
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -338,28 +376,36 @@ export function toCytoscapeElements(): CytoscapeElements {
       }
     }
 
-    // Property nodes → edges between class nodes
+    // Property nodes → edges between class nodes. Resolve anonymous body
+    // IRIs (e.g. `Foo#/allOf/2`) back to the top-level class `Foo` so
+    // properties declared inside multi-parent subClassOf bodies still
+    // appear with the user-authored class as the edge source.
     if ((types.includes(OWL_OBJECT_PROP) || types.includes(OWL_DATATYPE_PROP)) && isPropertyNode(nodeId)) {
       const domainVal = node[RDFS_DOMAIN];
       const rangeVal = node[RDFS_RANGE];
-      const domainId = domainVal ? iri(domainVal) : null;
+      const rawDomainId = domainVal ? iri(domainVal) : null;
       const rangeId = rangeVal ? iri(rangeVal) : null;
       const propName = nodeLabel(nodeId);
+      const domainId = rawDomainId !== null ? resolveTopLevelClass(rawDomainId, entityIds) : null;
 
-      if (domainId && !isPropertyNode(domainId)) {
+      if (domainId !== null) {
         addNode(domainId);
       }
 
       if (rangeId && !isBuiltinType(rangeId) && !isPropertyNode(rangeId)) {
         addNode(rangeId);
-        if (domainId) {
+        if (domainId !== null) {
           addEdge(domainId, rangeId, propName, 'range');
         }
       }
     }
   }
 
-  // Walk registered schemas for $ref relations (authoritative pass)
+  // Walk registered schemas for $ref relations (authoritative pass).
+  // Properties live either on the schema's own `properties` block OR inside
+  // any `allOf[N].properties` block — the latter is what multi-parent
+  // `Compose.subClassOf(...).body` produces. Both belong to the top-level
+  // class identified by `$id`, so we emit the edge from `sourceId`.
   for (const schema of registeredSchemas) {
     if (!schema || typeof schema !== 'object') {
       continue;
@@ -369,23 +415,20 @@ export function toCytoscapeElements(): CytoscapeElements {
     if (typeof sourceId !== 'string') {
       continue;
     }
-    const props = schema['properties'];
 
-    if (!props || typeof props !== 'object') {
-      continue;
-    }
+    for (const props of collectPropertyMaps(schema)) {
+      for (const [propName, propSchema] of Object.entries(props)) {
+        const target = refTarget(propSchema);
 
-    for (const [propName, propSchema] of Object.entries(props as Record<string, unknown>)) {
-      const target = refTarget(propSchema);
-
-      if (!target) {
-        continue;
+        if (!target) {
+          continue;
+        }
+        if (isBuiltinType(target)) {
+          continue;
+        }
+        addNode(target);
+        addEdge(sourceId, target, propName, 'range');
       }
-      if (isBuiltinType(target)) {
-        continue;
-      }
-      addNode(target);
-      addEdge(sourceId, target, propName, 'range');
     }
   }
 

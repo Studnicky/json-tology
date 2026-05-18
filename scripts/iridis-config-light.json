@@ -1,0 +1,131 @@
+{
+  "input": {
+    "colors": ["#fafaf7", "#08717A", "#24A5B5", "#7FE7D8"],
+    "contrast": { "level": "AAA", "algorithm": "wcag21" },
+    "metadata": {
+      "cssVarPrefix": "--jt-",
+      "themeName": "json-tology"
+    },
+    "roles": {
+      "name": "json-tology-docs-aaa",
+      "description": "WCAG 2.1 AAA palette for the json-tology docs site. Neutral W3C-style canvas with restrained JST-teal accents only.",
+      "roles": [
+        {
+          "name":           "canvas",
+          "description":    "Page background — neutral off-white (W3C-style cream), not teal",
+          "intent":         "background",
+          "required":       true,
+          "lightnessRange": [0.97, 1.0],
+          "chromaRange":    [0.0, 0.01]
+        },
+        {
+          "name":           "surface",
+          "description":    "Elevated surface (sidebar, cards) — slightly cooler neutral",
+          "intent":         "background",
+          "required":       true,
+          "lightnessRange": [0.94, 0.98],
+          "chromaRange":    [0.0, 0.01]
+        },
+        {
+          "name":           "surfaceSoft",
+          "description":    "Subtle tinted surface — barely tinted neutral",
+          "intent":         "background",
+          "required":       true,
+          "lightnessRange": [0.95, 0.985],
+          "chromaRange":    [0.0, 0.015]
+        },
+        {
+          "name":           "text",
+          "description":    "Primary body text — near-black neutral",
+          "intent":         "text",
+          "required":       true,
+          "lightnessRange": [0.08, 0.20],
+          "chromaRange":    [0.0, 0.02]
+        },
+        {
+          "name":           "textMuted",
+          "description":    "Secondary text — neutral slate",
+          "intent":         "muted",
+          "required":       true,
+          "lightnessRange": [0.28, 0.40],
+          "chromaRange":    [0.0, 0.02]
+        },
+        {
+          "name":           "textSubtle",
+          "description":    "Tertiary text / captions — lighter neutral",
+          "intent":         "muted",
+          "required":       true,
+          "lightnessRange": [0.40, 0.52],
+          "chromaRange":    [0.0, 0.02]
+        },
+        {
+          "name":           "accent",
+          "description":    "JST teal — links, primary actions, headings",
+          "intent":         "accent",
+          "required":       true,
+          "lightnessRange": [0.30, 0.42]
+        },
+        {
+          "name":           "accentHover",
+          "description":    "Darker accent for hover state",
+          "intent":         "accent",
+          "required":       true,
+          "lightnessRange": [0.22, 0.34]
+        },
+        {
+          "name":           "accentUi",
+          "description":    "Brighter accent for UI components and large text",
+          "intent":         "accent",
+          "required":       true,
+          "lightnessRange": [0.42, 0.55]
+        },
+        {
+          "name":           "onAccent",
+          "description":    "Text placed on the accent color",
+          "intent":         "text",
+          "required":       true,
+          "lightnessRange": [0.96, 1.0]
+        },
+        {
+          "name":           "border",
+          "description":    "Component borders and dividers — neutral grey",
+          "intent":         "muted",
+          "required":       true,
+          "lightnessRange": [0.45, 0.60],
+          "chromaRange":    [0.0, 0.015]
+        }
+      ],
+      "contrastPairs": [
+        { "foreground": "text",        "background": "canvas",      "minRatio": 7.0, "algorithm": "wcag21" },
+        { "foreground": "text",        "background": "surface",     "minRatio": 7.0, "algorithm": "wcag21" },
+        { "foreground": "text",        "background": "surfaceSoft", "minRatio": 7.0, "algorithm": "wcag21" },
+        { "foreground": "textMuted",   "background": "canvas",      "minRatio": 7.0, "algorithm": "wcag21" },
+        { "foreground": "textMuted",   "background": "surface",     "minRatio": 7.0, "algorithm": "wcag21" },
+        { "foreground": "textSubtle",  "background": "canvas",      "minRatio": 4.5, "algorithm": "wcag21" },
+        { "foreground": "accent",      "background": "canvas",      "minRatio": 7.0, "algorithm": "wcag21" },
+        { "foreground": "accent",      "background": "surface",     "minRatio": 7.0, "algorithm": "wcag21" },
+        { "foreground": "accent",      "background": "surfaceSoft", "minRatio": 7.0, "algorithm": "wcag21" },
+        { "foreground": "accentHover", "background": "canvas",      "minRatio": 7.0, "algorithm": "wcag21" },
+        { "foreground": "accentUi",    "background": "canvas",      "minRatio": 4.5, "algorithm": "wcag21" },
+        { "foreground": "onAccent",    "background": "accent",      "minRatio": 7.0, "algorithm": "wcag21" },
+        { "foreground": "onAccent",    "background": "accentHover", "minRatio": 7.0, "algorithm": "wcag21" },
+        { "foreground": "border",      "background": "canvas",      "minRatio": 4.5, "algorithm": "wcag21" }
+      ]
+    }
+  },
+  "enableContrast":   true,
+  "enableStylesheet": true,
+  "pipeline": [
+    "intake:any",
+    "expand:family",
+    "resolve:roles",
+    "enforce:wcagAAA",
+    "emit:cssVars"
+  ],
+  "output": {
+    "directory": "./scripts/iridis-out",
+    "files": {
+      "cssVars": "json-tology-palette-light.json"
+    }
+  }
+}

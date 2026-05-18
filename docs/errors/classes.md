@@ -27,19 +27,7 @@ The bookstore schemas defined in the [Bookstore Domain](/bookstore-domain) appea
 
 The `code` values are exported as constants from `src/constants/ERROR_CODES.ts` for each subclass.
 
-```ts
-import { BaseError } from 'json-tology';
-
-try {
-  // ...
-} catch (err) {
-  if (err instanceof BaseError) {
-    console.log(err.code);          // "INSTANTIATION_FAILED"
-    console.log(err.toJson());      // structured for logging
-    console.log(err.flatten());     // root-first cause chain
-  }
-}
-```
+<<< ../../examples/docs/errors/15-base-error-shape.ts
 
 ## `SchemaError` <Badge type="tip" text="Runtime" />
 
@@ -63,21 +51,7 @@ try {
 | _(direct string)_                       | `SCHEMA_DUPLICATE_ID`          | Thrown by `SchemaRegistry` when two schemas with the same `$id` are registered. Detected during `register()` with `enableDuplicateDetection` enabled. See `src/types/ErrorCodes.ts`. |
 | _(direct string)_                       | `SCHEMA_DUPLICATE_SHAPE`       | Thrown by `SchemaRegistry` when a schema with a duplicate canonical shape (same structural hash) is registered. See `src/types/ErrorCodes.ts`. |
 
-```ts
-import { JsonTology, SchemaError } from 'json-tology';
-
-try {
-  JsonTology.create({
-    baseIRI: 'https://bookstore.example',
-    schemas: [{ type: 'object' }] as const, // missing $id
-  });
-} catch (err) {
-  if (err instanceof SchemaError) {
-    console.log(err.code);       // "SCHEMA_MISSING_ID"
-    console.log(err.schemaId);   // undefined
-  }
-}
-```
+<<< ../../examples/docs/errors/16-schema-error.ts
 
 ## `GraphError` <Badge type="tip" text="Runtime" />
 
@@ -102,19 +76,7 @@ try {
 | `GraphErrorCode.ARTIFACT_STALE`       | `ARTIFACT_STALE`            | |
 | _(direct string)_                     | `GRAPH_INVALID_RESTRICTION` | Thrown by `OwlProjection` when a restriction entry is missing a required `kind`, `onProperty`, or `value` field. See `src/types/ErrorCodes.ts`. |
 
-```ts
-import { bookstoreEntities, OrderSchema } from './bookstore/index.js';
-import { GraphError } from 'json-tology';
-
-try {
-  bookstoreEntities.subschemaAt(OrderSchema.$id, '/properties/nope');
-} catch (err) {
-  if (err instanceof GraphError) {
-    console.log(err.code);     // "POINTER_NOT_FOUND"
-    console.log(err.pointer);  // "/properties/nope"
-  }
-}
-```
+<<< ../../examples/docs/errors/17-graph-error.ts
 
 ## `LoadError` <Badge type="tip" text="Runtime" />
 
@@ -133,19 +95,7 @@ try {
 | `LoadErrorCode.DUPLICATE_ANCHOR`  | `LOAD_DUPLICATE_ANCHOR`|
 | `LoadErrorCode.IO_FAILURE`        | `LOAD_IO_FAILURE`      |
 
-```ts
-import { LoadError } from 'json-tology';
-
-try {
-  // file-loader call site
-} catch (err) {
-  if (err instanceof LoadError) {
-    console.log(err.code);       // e.g. "LOAD_INVALID_JSON"
-    console.log(err.filePath);   // "/path/to/Order.schema.json"
-    console.log(err.retryable);  // true
-  }
-}
-```
+<<< ../../examples/docs/errors/18-load-error.ts
 
 ## `InstantiationError` <Badge type="tip" text="Runtime" />
 
@@ -160,30 +110,7 @@ try {
 | `InstantiationErrorCode.EXTRA_FORBIDDEN` | `EXTRA_FORBIDDEN` | `jt:config.extra: 'forbid'` rejects unknown properties |
 | `InstantiationErrorCode.TRANSFORM_DECODE_FAILED` | `TRANSFORM_DECODE_FAILED` | A `Transform.chain` decode stage throws during `instantiate`. Thrown by `RefDecoder` and `SchemaRegistry` when a transform stage fails mid-decode. See `src/types/ErrorCodes.ts`. |
 
-```ts
-import { bookstoreEntities, OrderSchema } from './bookstore/index.js';
-import { InstantiationError } from 'json-tology';
-
-try {
-  bookstoreEntities.instantiate(OrderSchema.$id, {
-    id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-    customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-    placedAt:   '2026-01-15T10:30:00Z',
-    total:      -5,
-    items: [{ bookIsbn: '9780140449136', quantity: 0, unitPrice: 12.99 }],
-  });
-} catch (err) {
-  if (err instanceof InstantiationError) {
-    console.log(err.code);                 // "INSTANTIATION_FAILED"
-    console.log(err.errors.length);        // 2
-    for (const item of err.errors) {
-      console.log(item.path, item.keyword, item.message);
-    }
-    // /total          exclusiveMinimum  must be > 0
-    // /items/0/quantity  minimum        must be >= 1
-  }
-}
-```
+<<< ../../examples/docs/errors/19-instantiation-error.ts
 
 The `errors` collection is the same `ValidationErrors` used by `validate()` - see [ValidationErrors views](/errors/views) for the full surface.
 
@@ -195,18 +122,7 @@ The `errors` collection is the same `ValidationErrors` used by `validate()` - se
 
 **Codes.** Always `COERCION_FAILED` at the wrapper level. The constant `InstantiationErrorCode.EXTRA_FORBIDDEN` (`EXTRA_FORBIDDEN`) appears inside `errors.items` when extras are forbidden.
 
-```ts
-import { CoercionError } from 'json-tology';
-
-try {
-  // coercion call site
-} catch (err) {
-  if (err instanceof CoercionError) {
-    console.log(err.code);             // "COERCION_FAILED"
-    console.log(err.errors.length);    // structural error count
-  }
-}
-```
+<<< ../../examples/docs/errors/20-coercion-error.ts
 
 ## `MaterializationError` <Badge type="tip" text="Runtime" />
 
@@ -221,39 +137,13 @@ try {
 | `MATERIALIZATION_FAILED` | Default materialization failure |
 | `CYCLIC_DATA` | Circular reference detected during ABox projection (`toQuads`). Thrown by `Projection` when a data object contains a cycle that would loop indefinitely during RDF quad emission. See `src/types/ErrorCodes.ts`. |
 
-```ts
-import { bookstoreEntities, OrderSchema } from './bookstore/index.js';
-import { MaterializationError } from 'json-tology';
-
-try {
-  // materialize without enablePartial fails when required has no default
-  bookstoreEntities.materialize(OrderSchema, {});
-} catch (err) {
-  if (err instanceof MaterializationError) {
-    console.log(err.code);              // "MATERIALIZATION_FAILED"
-    console.log(err.schemaId);          // "https://bookstore.example/Order"
-    console.log(err.validationErrors);  // ["root: must have required property 'id'", ...]
-  }
-}
-```
+<<< ../../examples/docs/errors/21-materialization-error.ts
 
 ## Inspecting the cause chain
 
 Every error supports `flatten()`, which walks the cause chain and returns a root-first array of plain objects suitable for structured logging.
 
-```ts
-import { InstantiationError } from 'json-tology';
-
-try {
-  // ...
-} catch (err) {
-  if (err instanceof InstantiationError) {
-    for (const entry of err.flatten()) {
-      console.log(entry.code, entry.message, entry.retryable);
-    }
-  }
-}
-```
+<<< ../../examples/docs/errors/22-flatten-cause-chain.ts
 
 `InstantiationError.flatten()` and `CoercionError.flatten()` additionally append every item in their `errors` collection, so a single call surfaces both the wrapper and each underlying validation issue.
 

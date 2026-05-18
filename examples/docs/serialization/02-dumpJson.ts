@@ -1,17 +1,15 @@
 /**
  * bookstoreEntities.dumpJson — Example 1: JSON string serialization
  * Demonstrates: returns string, excludeDefaults option
+ *
+ * The customer is the canonical Bastian Balthazar Bux fixture.
  */
 
 import {
-  bookstoreEntities, CustomerSchema
+  aboxFixtures, bookstoreEntities, CustomerSchema
 } from '../bookstore/index.js';
 
-const customer = bookstoreEntities.instantiate(CustomerSchema.$id, {
-  'email': 'alice@bookstore.example',
-  'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  'name': 'Alice Chen'
-});
+const customer = bookstoreEntities.instantiate(CustomerSchema, aboxFixtures.customer);
 
 const json = bookstoreEntities.dumpJson(CustomerSchema.$id, customer);
 
@@ -19,6 +17,7 @@ console.assert(typeof json === 'string');
 
 const parsed = JSON.parse(json) as Record<string, unknown>;
 
-console.assert(parsed.id === 'c1a2b3d4-e5f6-7890-abcd-ef1234567890');
-console.assert(parsed.email === 'alice@bookstore.example');
+console.assert(parsed.id === aboxFixtures.customer.id);
+console.assert(parsed.email === aboxFixtures.customer.email);
 console.assert(Array.isArray(parsed.addresses));
+console.assert((parsed.addresses as unknown[]).length === 1);

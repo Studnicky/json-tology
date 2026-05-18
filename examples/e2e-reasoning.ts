@@ -20,7 +20,6 @@ import {
 } from '../src/index.js';
 import type { InferType } from '../src/types/index.js';
 import type { QuadInterface } from '../src/interfaces/index.js';
-import type { RdfJsQuadInterface } from '../src/interfaces/RdfJsQuad.js';
 import { n3reasoner } from 'eyereasoner';
 import { Parser } from 'n3';
 import {
@@ -221,24 +220,34 @@ async function reason() {
   console.log('\n=== Running EYE reasoner ===');
   const resultN3 = await n3reasoner(dataN3, queryN3());
 
-  function parseN3Quads(n3Text: string): RdfJsQuadInterface[] {
+  interface ExternalQuad {
+    'object': { 'datatype'?: { 'value': string };
+      'language'?: string;
+      'termType': string;
+      'value': string };
+    'predicate': { 'value': string };
+    'subject': { 'value': string };
+  }
+
+  function parseN3Quads(n3Text: string): ExternalQuad[] {
     const N3Parser = Parser as unknown as new (opts: Record<string, string>) => { 'parse': (input: string) => unknown[] };
     const parser = new N3Parser({ 'format': 'text/n3' });
 
-    return parser.parse(n3Text) as RdfJsQuadInterface[];
+    return parser.parse(n3Text) as ExternalQuad[];
   }
 
   const moduleQuads = parseN3Quads(resultN3).map((rdfQuad) => {
-    return Lift.fromQuad(rdfQuad);
+    return Lift.fromExternalQuad(rdfQuad);
   });
 
   const bySubject = new Map<string, QuadInterface[]>();
 
   for (const quad of moduleQuads) {
-    let list = bySubject.get(quad.subject);
+    const subjectValue = quad.subject.value;
+    let list = bySubject.get(subjectValue);
 
     if (!list) {
-      list = []; bySubject.set(quad.subject, list);
+      list = []; bySubject.set(subjectValue, list);
     }
     list.push(quad);
   }
@@ -259,14 +268,14 @@ async function reason() {
     const personName = nameOf[subject] ?? subject;
 
     for (const quad of quads) {
-      if (quad.predicate === `${FOAF}knows`) {
+      if (quad.predicate.value === `${FOAF}knows`) {
         const targetName = nameOf[quad.object.value as string] ?? quad.object.value;
 
         console.log(`  ${personName} knows ${targetName}`);
       }
     }
     for (const quad of quads) {
-      if (quad.predicate === `${FOAF}couldCollaborateWith`) {
+      if (quad.predicate.value === `${FOAF}couldCollaborateWith`) {
         const targetName = nameOf[quad.object.value as string] ?? quad.object.value;
 
         console.log(`  ${personName} could collaborate with ${targetName}`);
@@ -275,8 +284,8 @@ async function reason() {
   }
 
   const carolKnowsBob = moduleQuads.some((quad) => {
-    return quad.subject === `${FOAF}carol`
-      && quad.predicate === `${FOAF}knows`
+    return quad.subject.value === `${FOAF}carol`
+      && quad.predicate.value === `${FOAF}knows`
       && quad.object.value === `${FOAF}bob`;
   });
 

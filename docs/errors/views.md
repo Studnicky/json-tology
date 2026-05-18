@@ -18,38 +18,15 @@ Common shapes for projecting `errs.items` into the format a caller wants.
 
 ### Path-prefixed message strings
 
-```ts
-errs.items.map(err => `${err.path || 'root'}: ${err.message}`)
-// ["/rating: must be <= 5", "/body: must NOT have fewer than 10 characters"]
-```
+<<< ../../examples/docs/errors/07-path-prefixed-messages.ts
 
 ### Group by path
 
-```ts
-import type { ValidationErrorType } from 'json-tology/types';
-
-const grouped: Record<string, ValidationErrorType[]> = {};
-for (const err of errs) {
-  (grouped[err.path || '_root'] ??= []).push(err);
-}
-// grouped['/rating'] → [{ keyword: 'maximum', message: 'must be <= 5', ... }]
-// grouped['_root']   → [{ keyword: 'required', ... }]
-```
+<<< ../../examples/docs/errors/08-group-by-path.ts
 
 ### Field vs form errors
 
-```ts
-import type { ValidationErrorType } from 'json-tology/types';
-
-const fieldErrors: ValidationErrorType[] = [];
-const formErrors:  ValidationErrorType[] = [];
-
-for (const err of errs) {
-  if (err.path) { fieldErrors.push(err); } else { formErrors.push(err); }
-}
-// fieldErrors → errors with a non-empty path (field-specific)
-// formErrors  → errors without a path (form-level, e.g. required at root)
-```
+<<< ../../examples/docs/errors/09-field-vs-form-errors.ts
 
 ---
 
@@ -63,6 +40,7 @@ for (const err of errs) {
 
 ### Return type
 
+<!-- inline-ts-ok: TS-style annotated shape of aggregate()'s return value; not a runnable expression. -->
 ```ts
 // aggregate() return type
 {
@@ -76,42 +54,15 @@ for (const err of errs) {
 
 #### Example 1: Structured log
 
-```ts
-import { bookstoreEntities, OrderSchema } from './bookstore/index.js';
-
-const errs = bookstoreEntities.validate(OrderSchema.$id, badOrder);
-
-if (!errs.ok) {
-  const rollup = errs.aggregate();
-  // { count: 2, paths: ['items', 'total'], keywords: ['exclusiveMinimum', 'minItems'] }
-
-  logger.warn('validation.failed', {
-    count:    rollup.count,
-    keywords: rollup.keywords,
-    paths:    rollup.paths,
-    schema:   OrderSchema.$id,
-  });
-}
-```
+<<< ../../examples/docs/errors/02-format.ts
 
 #### Example 2: Metric recording
 
-```ts
-const rollup = errs.aggregate();
-// paths and keywords are bounded sets  - safe as metric labels
-metrics.increment('validation.failure', {
-  keywords: rollup.keywords.join(','),
-  schema:   'Order',
-});
-```
+<<< ../../examples/docs/errors/10-metric-recording.ts
 
 #### Example 3: JSON Pointer paths (use items, not aggregate)
 
-```ts
-// aggregate().paths is access form  - use items for JSON Pointer
-const jsonPointerPaths = errs.items.map(err => err.path);
-// ['/total', '/items/0/quantity']
-```
+<<< ../../examples/docs/errors/11-json-pointer-paths.ts
 
 ### Comparison
 
@@ -216,6 +167,7 @@ keywords = sorted(set(e['type'] for e in errors))
 
 ### Return type
 
+<!-- inline-ts-ok: ProblemDetailsType shape annotated as TS comments; type definition lives in src/types and the doc only illustrates the wire shape. -->
 ```ts
 // ProblemDetailsType
 {
@@ -237,65 +189,17 @@ keywords = sorted(set(e['type'] for e in errors))
 
 #### Example 1: Express/Fastify/Hono request handler
 
-```ts
-import { bookstoreEntities, ReviewSchema } from './bookstore/index.js';
-
-app.post('/reviews', (req, res) => {
-  const errs = bookstoreEntities.validate(ReviewSchema.$id, req.body);
-
-  if (!errs.ok) {
-    return res
-      .status(422)
-      .type('application/problem+json')
-      .send(errs.report({ instance: req.url }));
-  }
-
-  const review = bookstoreEntities.instantiate(ReviewSchema.$id, req.body);
-  // ... persist and return 201
-});
-```
-
-Response body:
-
-```json
-{
-  "type":     "https://json-tology.dev/problems/validation",
-  "title":    "Validation failed",
-  "status":   422,
-  "detail":   "2 validation errors",
-  "instance": "/reviews",
-  "errors": [
-    { "path": "/rating", "keyword": "maximum",   "message": "must be <= 5",                           "params": { "limit": 5  } },
-    { "path": "/body",   "keyword": "minLength", "message": "must NOT have fewer than 10 characters", "params": { "limit": 10 } }
-  ]
-}
-```
+<<< ../../examples/docs/errors/12-express-handler.ts
 
 #### Example 2: Override defaults
 
-```ts
-const problem = errs.report({
-  type:   'https://api.bookstore.example/problems/validation',
-  title:  'Review submission failed',
-  status: 400,
-});
-```
+<<< ../../examples/docs/errors/13-override-defaults.ts
 
 ### Bad examples - what NOT to do
 
 #### Anti-pattern: Constructing RFC 7807 manually
 
-```ts
-// ⊥ Don't do this  - roll-your-own is fragile and inconsistent
-const problem = {
-  type:   'validation-error',
-  status: 422,
-  errors: errs.items.map(err => ({ field: err.path, error: err.message })),
-};
-
-// ✓ Do this  - use report() for RFC 7807 compliance
-const problem = errs.report({ instance: req.url });
-```
+<<< ../../examples/docs/errors/14-antipattern-manual-rfc7807.ts
 
 ### Comparison
 

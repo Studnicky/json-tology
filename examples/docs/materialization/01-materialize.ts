@@ -1,27 +1,32 @@
 /**
  * materialize — Example 1: Build a Book from partial data with defaults
  * Demonstrates: defaults filled, missing fields absent, vs value.create
+ *
+ * The Book here is Michael Ende's Momo (Thienemann Verlag, 1973),
+ * a sibling title to the canonical Neverending Story rare-book fixture.
  */
 
 import {
   BookSchema, bookstoreEntities
 } from '../bookstore/index.js';
 
-// Materialize with required fields supplied — defaults filled automatically
+// Materialize with required fields supplied — defaults filled automatically.
 const book = bookstoreEntities.materialize(BookSchema, {
-  'authors': ['Fyodor Dostoevsky'],
-  'isbn': '9780140449136',
+  'authors': ['Michael Ende'],
+  'isbn': '9783522115056',
   'price': {
-    'amount': 14.99,
-    'currency': 'USD'
+    'amount': 16.99,
+    'currency': 'EUR'
   },
-  'title': 'Crime and Punishment'
+  'printStatus': 'inPrint',
+  'title': 'Momo'
 });
 
 console.assert(book.inStock === true);
-console.assert(book.isbn === '9780140449136');
+console.assert(book.isbn === '9783522115056');
+console.assert(book.title === 'Momo');
 
-// value.create synthesizes zero-values for ALL required fields + explicit defaults
-const blank = bookstoreEntities.value.create(BookSchema.$id);
+// value.create synthesizes zero-values for ALL required fields + explicit defaults.
+const blank = bookstoreEntities.value.create(BookSchema.$id) as Record<string, unknown>;
 
 console.assert((blank as { 'isbn': string }).isbn === '');

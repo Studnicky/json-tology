@@ -73,14 +73,14 @@ void describe('toQuads — iriFor strategies — Good/Bad/Ugly', () => {
     }, { 'iriFor': 'https://example.com/teams/platform' });
 
     const rootHits = quads.filter((quad) => {
-      return quad.subject === 'https://example.com/teams/platform';
+      return quad.subject.value === 'https://example.com/teams/platform';
     });
 
     assert.ok(rootHits.length > 0, 'root override should be applied');
-    assert.equal(rootHits[0].subject, 'https://example.com/teams/platform');
+    assert.equal(rootHits[0].subject.value, 'https://example.com/teams/platform');
 
     const nestedSubjects = new Set(quads.map((quad) => {
-      return quad.subject;
+      return quad.subject.value;
     }));
 
     nestedSubjects.delete('https://example.com/teams/platform');
@@ -104,7 +104,7 @@ void describe('toQuads — iriFor strategies — Good/Bad/Ugly', () => {
     }, { 'iriFor': 'blank-node' });
 
     const subjects = new Set(quads.map((quad) => {
-      return quad.subject;
+      return quad.subject.value;
     }));
 
     for (const subject of subjects) {
@@ -118,8 +118,8 @@ void describe('toQuads — iriFor strategies — Good/Bad/Ugly', () => {
     const quadsA = jtUser.toQuads(UserSchema, { 'name': 'Alice' }, { 'iriFor': 'blank-node' });
     const quadsB = jtUser.toQuads(UserSchema, { 'name': 'Bob' }, { 'iriFor': 'blank-node' });
 
-    assert.equal(quadsA[0].subject, '_:b0');
-    assert.equal(quadsB[0].subject, '_:b0');
+    assert.equal(quadsA[0].subject.value, '_:b0');
+    assert.equal(quadsB[0].subject.value, '_:b0');
   });
 
   void it('Skolemize.fromProperty + wellKnownGenid strategies', () => {
@@ -141,7 +141,7 @@ void describe('toQuads — iriFor strategies — Good/Bad/Ugly', () => {
       'title': 'Hello'
     }, { 'iriFor': Skolemize.fromProperty('id', { 'baseIRI': 'https://example.com/docs' }) });
     const docSubjects = new Set(docQuads.map((quad) => {
-      return quad.subject;
+      return quad.subject.value;
     }));
 
     assert.equal(docSubjects.has('https://example.com/docs/doc-42'), true);
@@ -177,7 +177,7 @@ void describe('toQuads — iriFor strategies — Good/Bad/Ugly', () => {
     }, { 'iriFor': Skolemize.wellKnownGenid('https://example.com') });
 
     for (const subject of new Set(wkQuads.map((quad) => {
-      return quad.subject;
+      return quad.subject.value;
     }))) {
       assert.match(subject, /\/\.well-known\/genid\//u);
     }
@@ -253,13 +253,13 @@ void describe('toQuads — iriFor function ctx + registry-level config — Good/
     });
 
     assert.equal(new Set(jt1.toQuads(UserSchema, { 'name': 'Alice' }).map((quad) => {
-      return quad.subject;
+      return quad.subject.value;
     })).has('https://example.com/registry-default'), true);
 
     // per-call overrides registry
     const q2 = jt1.toQuads(UserSchema, { 'name': 'Alice' }, { 'iriFor': 'https://example.com/per-call' });
     const s2 = new Set(q2.map((quad) => {
-      return quad.subject;
+      return quad.subject.value;
     }));
 
     assert.equal(s2.has('https://example.com/per-call'), true);
@@ -273,12 +273,12 @@ void describe('toQuads — iriFor function ctx + registry-level config — Good/
     });
 
     for (const quad of jt3.toQuads(UserSchema, { 'name': 'Alice' })) {
-      assert.equal(quad.graph, 'https://example.com/g/default');
+      assert.equal(quad.graph.value, 'https://example.com/g/default');
     }
 
     // per-call graphIRI overrides registry
     for (const quad of jt3.toQuads(UserSchema, { 'name': 'Alice' }, { 'graphIRI': 'https://example.com/g/override' })) {
-      assert.equal(quad.graph, 'https://example.com/g/override');
+      assert.equal(quad.graph.value, 'https://example.com/g/override');
     }
 
     // blank-node registry-level config produces fresh counters per call
@@ -288,8 +288,8 @@ void describe('toQuads — iriFor function ctx + registry-level config — Good/
       'schemas': [UserSchema]
     });
 
-    assert.equal(jt5.toQuads(UserSchema, { 'name': 'A' })[0].subject, '_:b0');
-    assert.equal(jt5.toQuads(UserSchema, { 'name': 'B' })[0].subject, '_:b0');
+    assert.equal(jt5.toQuads(UserSchema, { 'name': 'A' })[0].subject.value, '_:b0');
+    assert.equal(jt5.toQuads(UserSchema, { 'name': 'B' })[0].subject.value, '_:b0');
 
     // noopSkolemize falls back to default IRI minter
     const jtTeam = JsonTology.create({
@@ -301,9 +301,9 @@ void describe('toQuads — iriFor function ctx + registry-level config — Good/
       'name': 'Platform'
     }, { 'iriFor': noopSkolemize });
     const instanceSubjects = new Set(noopQuads.filter((quad) => {
-      return quad.subject.includes('/instances/');
+      return quad.subject.value.includes('/instances/');
     }).map((quad) => {
-      return quad.subject;
+      return quad.subject.value;
     }));
 
     assert.equal(instanceSubjects.size, 2, 'noopSkolemize falls through to default minter for root + lead');
@@ -355,9 +355,9 @@ void describe('fromQuads — deskolemize round-trip — Good/Bad/Ugly', () => {
       'name': 'Platform'
     }, { 'iriFor': noopSkolemize });
     const instanceSubjects = new Set(noopQuads.filter((quad) => {
-      return quad.subject.includes('/instances/');
+      return quad.subject.value.includes('/instances/');
     }).map((quad) => {
-      return quad.subject;
+      return quad.subject.value;
     }));
 
     assert.equal(instanceSubjects.size, 2, 'noopSkolemize falls through to default minter for root + lead');

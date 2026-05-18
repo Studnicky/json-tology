@@ -67,6 +67,64 @@ const FALSE_VALIDATOR: ValidateWithErrorsFnType = (value, path, errors, collectE
 // Internal helpers (graph context)
 // ---------------------------------------------------------------------------
 
+/**
+ * Walk `allOf` parents (recursively, resolving `$ref` into the parent's
+ * graph) and collect every property name the schema effectively
+ * declares. Without this, `allowedKeys` only contains the body's own
+ * properties and `removeAdditionalProperties: true` strips parent
+ * fields supplied at the wire level — values that the rest of the
+ * validator already accepts through the allOf member chain.
+ */
+function collectInheritedAllOfPropertyKeys(
+  sem: SchemaGraphSemanticsInterface,
+  graph: SchemaGraphInterface,
+  lookupGraph?: (id: string) => SchemaGraphInterface | undefined
+): Set<string> {
+  const inherited = new Set<string>();
+  const visited = new Set<SchemaGraphNodeInterface>();
+
+  const walk = (currentGraph: SchemaGraphInterface, node: SchemaGraphNodeInterface): void => {
+    if (visited.has(node)) {
+      return;
+    }
+    visited.add(node);
+
+    const nodeSem = currentGraph.semantics(node);
+
+    if (nodeSem.ref !== undefined) {
+      const ref = nodeSem.ref;
+
+      if (ref.startsWith('#')) {
+        walk(currentGraph, currentGraph.resolveFragment(ref.slice(1)));
+      } else if (lookupGraph !== undefined) {
+        const hashIndex = ref.indexOf('#');
+        const id = hashIndex < 0 ? ref : ref.slice(0, hashIndex);
+        const fragment = hashIndex < 0 ? '' : ref.slice(hashIndex + 1);
+        const targetGraph = lookupGraph(id);
+
+        if (targetGraph !== undefined) {
+          walk(targetGraph, targetGraph.resolveFragment(fragment));
+        }
+      }
+
+      return;
+    }
+
+    for (const name of nodeSem.properties.keys()) {
+      inherited.add(name);
+    }
+    for (const member of nodeSem.allOf) {
+      walk(currentGraph, member);
+    }
+  };
+
+  for (const member of sem.allOf) {
+    walk(graph, member);
+  }
+
+  return inherited;
+}
+
 function canUseFlatObjectFastPath(
   context: SchemaCompilerGraphContextInterface,
   sem: SchemaGraphSemanticsInterface
@@ -917,6 +975,21 @@ export function buildNodePlan(
     }
   }
 
+  // Strip-only allowedKeys: includes properties inherited through `allOf`
+  // chains (recursively, resolving cross-graph `$ref`). Used solely by
+  // `removeAdditionalProperties: true` so coercion does not strip parent
+  // fields supplied to a `Compose.subClassOf` / `Compose.extend` schema.
+  // Validation against `additionalProperties: false` continues to use the
+  // strict `allowedKeys` set per JSON Schema semantics, where allOf-
+  // contributed properties do not count as own properties.
+  const inheritedKeys = collectInheritedAllOfPropertyKeys(sem, graph, lookupGraph);
+  const allowedKeysForStrip = inheritedKeys.size > 0
+    ? new Set<string>([
+      ...allowedKeys ?? [],
+      ...inheritedKeys
+    ])
+    : allowedKeys;
+
   const jtExtra = sem.jtConfig?.extra;
   const jtStrictPerField = buildJtStrictPerField(propertyEntries, graph);
 
@@ -925,6 +998,7 @@ export function buildNodePlan(
     additionalValidator,
     allOfValidators,
     allowedKeys,
+    allowedKeysForStrip,
     anyOfChecks,
     complementCheck,
     'constVal': sem.constValue,

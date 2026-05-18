@@ -18,48 +18,11 @@
 
 #### Example 1: PATCH customer endpoint
 
-```ts
-import { Compose, JsonTology } from 'json-tology';
-import type { InferType } from 'json-tology/types';
-import { CustomerSchema } from './bookstore/index.js';
-
-const PatchCustomerSchema = Compose.partial(
-  CustomerSchema,
-  'https://bookstore.example/PatchCustomer',
-);
-
-type PatchCustomer = InferType<typeof PatchCustomerSchema>;
-// { id?: string; email?: string; name?: string; addresses?: Address[] }
-
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [PatchCustomerSchema] as const,
-});
-
-// PATCH body  - only name provided
-const patch = jt.instantiate(PatchCustomerSchema.$id, { name: 'Alice P. Chen' });
-// { name: 'Alice P. Chen' }
-```
+<<< ../../examples/docs/composition/03-partial-required.ts
 
 #### Example 2: Form initial state for a Review
 
-```ts
-import { Compose, JsonTology } from 'json-tology';
-import { ReviewSchema } from './bookstore/index.js';
-
-const DraftReviewSchema = Compose.partial(
-  ReviewSchema,
-  'https://bookstore.example/DraftReview',
-);
-
-// Valid even with nothing filled in  - all optional
-const jt2 = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [DraftReviewSchema] as const,
-});
-const errors = jt2.validate(DraftReviewSchema.$id, {});
-console.log(errors.length === 0); // true
-```
+<<< ../../examples/docs/composition/38-partial-draft-review.ts
 
 ### Comparison
 
@@ -146,36 +109,9 @@ class PatchCustomer(BaseModel):
 
 #### Example 1: Strict book creation requiring all fields
 
-`BookSchema` has `currency` and `inStock` with defaults (so they're effectively optional in the base schema). A strict create schema requires them explicitly.
+`BookSchema` declares `inStock` with a default (so it is effectively optional in the base schema). A strict create schema requires every declared property explicitly.
 
-```ts
-import { Compose, JsonTology } from 'json-tology';
-import type { InferType } from 'json-tology/types';
-import { BookSchema } from './bookstore/index.js';
-
-const CreateBookSchema = Compose.required(
-  BookSchema,
-  'https://bookstore.example/CreateBook',
-);
-
-type CreateBook = InferType<typeof CreateBookSchema>;
-// { isbn: string; title: string; authors: string[]; price: number; currency: string; inStock: boolean }
-// ALL fields required
-
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [CreateBookSchema] as const,
-});
-
-// Missing currency and inStock
-const errors = jt.validate(CreateBookSchema.$id, {
-  isbn:    '9780140449136',
-  title:   'Crime and Punishment',
-  authors: ['Fyodor Dostoevsky'],
-  price:   14.99,
-});
-console.log(errors.length > 0); // true  - currency and inStock are now required
-```
+<<< ../../examples/docs/composition/39-required-strict-book.ts
 
 ### Comparison
 

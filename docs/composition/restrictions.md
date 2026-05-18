@@ -6,6 +6,7 @@ OWL property restrictions narrow the inferred TypeScript type of the restricted 
 
 ## Declaration
 
+<!-- inline-ts-ok: pseudocode signature group for the restriction builders; not runnable expressions. -->
 ```ts
 Compose.someValuesFrom(propIRI, rangeClassIRI): RestrictionRefType
 Compose.allValuesFrom(propIRI, rangeClassIRI): RestrictionRefType
@@ -21,26 +22,7 @@ Compose.subClassOf(restriction, body): typeof body
 
 You want to express OWL property-restriction class axioms - anonymous classes that constrain how a property is used. Each restriction becomes an `owl:Restriction` blank node in the TBox, referenced from the body class via `rdfs:subClassOf`. Restrictions compose: chaining `Compose.subClassOf` accumulates `jt:restrictions` on the body schema.
 
-```ts
-import { Compose, JsonTology } from 'json-tology';
-
-const PARENT = 'https://example.com/parent';
-
-const PersonWithExactlyTwoParents = Compose.subClassOf(
-  Compose.cardinality(PARENT, 2),
-  {
-    $id: 'urn:example:PersonWithExactlyTwoParents',
-    type: 'object',
-  } as const
-);
-
-const jt = JsonTology.create({
-  baseIRI: 'urn:example',
-  schemas: [PersonWithExactlyTwoParents] as const,
-});
-
-console.log(jt.toTbox().jsonLd());
-```
+<<< ../../examples/docs/composition/08-restrictions.ts
 
 The TBox emits:
 
@@ -75,15 +57,7 @@ The compile-time narrowing applies to the property named in the restriction. `ca
 
 `Compose.subClassOf` is composable. Each call appends to the body's `jt:restrictions`:
 
-```ts
-const Adult = Compose.subClassOf(
-  Compose.minCardinality(PARENT, 1),
-  Compose.subClassOf(
-    Compose.maxCardinality(PARENT, 2),
-    { $id: 'urn:example:Adult', type: 'object' } as const
-  )
-);
-```
+<<< ../../examples/docs/composition/37-restrictions-chained-cardinality.ts
 
 The TBox carries two `owl:Restriction` blank nodes attached via `rdfs:subClassOf`.
 
@@ -97,149 +71,33 @@ The TBox carries two `owl:Restriction` blank nodes attached via `rdfs:subClassOf
 
 ### Example 1: Exact cardinality: PersonWithExactlyTwoParents
 
-```ts
-import { Compose, JsonTology } from 'json-tology';
-
-const PARENT = 'https://bookstore.example/parent';
-
-const PersonWithExactlyTwoParents = Compose.subClassOf(
-  Compose.cardinality(PARENT, 2),
-  {
-    $id: 'https://bookstore.example/PersonWithExactlyTwoParents',
-    type: 'object',
-  } as const
-);
-
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [PersonWithExactlyTwoParents] as const,
-});
-
-console.log(jt.toTbox().jsonLd());
-// {
-//   "@id": "https://bookstore.example/PersonWithExactlyTwoParents",
-//   "@type": "owl:Class",
-//   "rdfs:subClassOf": [{
-//     "@type": "owl:Restriction",
-//     "owl:onProperty": { "@id": "https://bookstore.example/parent" },
-//     "owl:cardinality": 2
-//   }]
-// }
-```
+<<< ../../examples/docs/composition/09-cardinality-two-parents.ts
 
 ### Example 2: someValuesFrom: book authored by at least one author
 
-```ts
-import { Compose, JsonTology } from 'json-tology';
-import { BookSchema } from './bookstore/index.js';
-
-const AUTHORED_BY = 'https://bookstore.example/authoredBy';
-const AUTHOR_IRI  = 'https://bookstore.example/Author';
-
-const AuthoredBookSchema = Compose.subClassOf(
-  Compose.someValuesFrom(AUTHORED_BY, AUTHOR_IRI),
-  {
-    $id: 'https://bookstore.example/AuthoredBook',
-    type: 'object',
-  } as const
-);
-// TypeScript narrows the authored-by property to a non-empty tuple at compile time
-```
+<<< ../../examples/docs/composition/10-some-values-from.ts
 
 ### Example 3: Chaining restrictions: at least one author, all authors are Author instances
 
-```ts
-import { Compose } from 'json-tology';
-
-const AUTHORED_BY = 'https://bookstore.example/authoredBy';
-const AUTHOR_IRI  = 'https://bookstore.example/Author';
-
-const VerifiedAuthoredBook = Compose.subClassOf(
-  Compose.minCardinality(AUTHORED_BY, 1),
-  Compose.subClassOf(
-    Compose.allValuesFrom(AUTHORED_BY, AUTHOR_IRI),
-    { $id: 'https://bookstore.example/VerifiedAuthoredBook', type: 'object' } as const
-  )
-);
-// TBox carries two owl:Restriction blank nodes on rdfs:subClassOf
-```
+<<< ../../examples/docs/composition/11-chained-restrictions.ts
 
 ### Example 4: hasValue: mark in-print books
 
-```ts
-import { Compose } from 'json-tology';
-
-const IN_STOCK = 'https://bookstore.example/inStock';
-
-const InPrintBook = Compose.subClassOf(
-  Compose.hasValue(IN_STOCK, true),
-  { $id: 'https://bookstore.example/InPrintBook', type: 'object' } as const
-);
-// TypeScript narrows the inStock property type to the literal `true`
-```
+<<< ../../examples/docs/composition/12-has-value-literal.ts
 
 ## Bad examples: what NOT to do
 
 ### Anti-pattern 1: Using cardinality restrictions to drive instance validation
 
-```ts
-import { Compose, JsonTology } from 'json-tology';
-
-// ✗ Don't do this — owl:cardinality is a TBox semantic axiom for reasoners,
-// NOT a runtime validation constraint on instance data
-const StrictBook = Compose.subClassOf(
-  Compose.cardinality('https://bookstore.example/authors', 1),
-  { $id: 'https://bookstore.example/StrictBook', type: 'object' } as const
-);
-const jt = JsonTology.create({ baseIRI: 'https://bookstore.example', schemas: [StrictBook] as const });
-jt.validate('https://bookstore.example/StrictBook', { authors: ['A', 'B'] });
-// Does NOT fail — restrictions are TBox-only, not checked at validate/instantiate time
-
-// ✓ Do this — use JSON Schema keywords for instance validation
-const StrictBook2 = {
-  $id: 'https://bookstore.example/StrictBook2',
-  type: 'object',
-  properties: { authors: { type: 'array', minItems: 1, maxItems: 1 } },
-} as const;
-```
+<<< ../../examples/docs/composition/13-antipattern-cardinality-validation.ts
 
 ### Anti-pattern 2: Using Compose.equivalent to express a property restriction
 
-```ts
-// ✗ Don't do this — equivalent expresses class identity, not property constraints
-import { Compose } from 'json-tology';
-import { BookSchema } from './bookstore/index.js';
-
-const InPrintBook = Compose.equivalent(BookSchema, {
-  $id: 'https://bookstore.example/InPrintBook',
-  // can't express owl:hasValue here — equivalent only supports $id / description / title
-});
-
-// ✓ Do this — use Compose.subClassOf + Compose.hasValue
-const InPrintBook2 = Compose.subClassOf(
-  Compose.hasValue('https://bookstore.example/inStock', true),
-  { $id: 'https://bookstore.example/InPrintBook2', type: 'object' } as const
-);
-```
+<<< ../../examples/docs/composition/14-antipattern-equivalent.ts
 
 ### Anti-pattern 3: Confusing minCardinality and JSON Schema minItems
 
-```ts
-// ✗ Don't do this — minCardinality on a multi-valued property is an OWL axiom;
-// it does NOT add a minItems constraint on the JSON Schema array
-const AuthoredBook = Compose.subClassOf(
-  Compose.minCardinality('https://bookstore.example/authors', 2),
-  { $id: 'https://bookstore.example/AuthoredBook', type: 'object' } as const
-);
-// jt.validate('AuthoredBook', { authors: [] }) → passes (no minItems in JSON Schema)
-
-// ✓ Do this — use minItems in the JSON Schema definition for runtime enforcement
-const AuthoredBook2 = {
-  $id: 'https://bookstore.example/AuthoredBook2',
-  type: 'object',
-  properties: { authors: { type: 'array', minItems: 2 } },
-} as const;
-```
+<<< ../../examples/docs/composition/15-antipattern-mincardinality.ts
 
 ## Comparison
 

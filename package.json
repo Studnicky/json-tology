@@ -1,6 +1,6 @@
 {
   "name": "json-tology",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "One source of truth for TypeScript types, runtime validation, coercion, and OWL ontology output. Author in JSON Schema; share with any backend; reason over the graph.",
   "type": "module",
   "main": "./dist/index.js",
@@ -62,6 +62,7 @@
     "docs:dev": "vitepress dev docs",
     "docs:build": "npm run build:bookstore-tbox && vitepress build docs",
     "docs:preview": "vitepress preview docs",
+    "docs:check-includes": "node ./scripts/check-docs-includes.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "clean": "rm -rf dist",
@@ -70,13 +71,17 @@
     "bench:flame": "0x --output-dir .flame -- node --import tsx/esm examples/docs/benchmarks/run.ts"
   },
   "keywords": [
+    "coercion",
+    "json-ld",
     "json-schema",
-    "validation",
-    "type-system",
     "ontology",
-    "semantic-web",
+    "owl",
     "rdf",
-    "jsonld"
+    "semantic-web",
+    "shacl",
+    "type-inference",
+    "type-system",
+    "validation"
   ],
   "author": "Studnicky (https://github.com/Studnicky)",
   "license": "MIT",
@@ -94,6 +99,7 @@
     "@sinclair/typebox": "^0.34.49",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@types/json-schema": "^7.0.15",
+    "@types/n3": "^1.26.1",
     "@types/node": "^25.7.0",
     "@typescript-eslint/eslint-plugin": "^8.59.3",
     "@typescript-eslint/parser": "^8.59.3",
@@ -131,5 +137,12 @@
   "overrides": {
     "vite": "^6.4.2",
     "esbuild": "^0.25.0"
+  },
+  "json-tology": {
+    "seo": {
+      "googleSiteVerification": "",
+      "bingSiteVerification": "",
+      "twitterHandle": ""
+    }
   }
 }

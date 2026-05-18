@@ -87,3 +87,165 @@ export type InferType<TSchema, TReferences = Record<never, never>>
   >;
 
 export type JsonSchemaType = boolean | Record<string, unknown>;
+
+/**
+ * Primitive type names supported by JSON Schema's `type` keyword.
+ */
+export type JsonSchemaTypeNameType
+  = | 'array'
+  | 'boolean'
+  | 'integer'
+  | 'null'
+  | 'number'
+  | 'object'
+  | 'string';
+
+/**
+ * Structural JSON Schema object — Draft-2020-12 core, validation,
+ * format-annotation, content, and meta-data vocabularies, extended with
+ * json-tology's OWL property characteristics, class axioms, and `jt:*`
+ * directives.
+ *
+ * Models the full Draft-2020-12 keyword set (`prefixItems`,
+ * `unevaluatedProperties`, `unevaluatedItems`, `dependentSchemas`,
+ * `dependentRequired`, `$dynamicAnchor`, `$dynamicRef`) plus
+ * json-tology extensions: OWL 2 property characteristics (`functional`,
+ * `inverseFunctional`, `transitive`, `symmetric`, `asymmetric`,
+ * `reflexive`, `irreflexive`, `inverseOf`), class axioms
+ * (`equivalentTo`, `disjointWith`), RDFS domain/range annotations, and
+ * `jt:*` directives (`jt:computed`, `jt:frozen`, `jt:strict`,
+ * `jt:config`, `jt:restrictions`). Draft-07 keywords removed in
+ * 2020-12 (`definitions`, `dependencies`, `additionalItems`, the array
+ * form of `items`, the boolean form of
+ * `exclusiveMaximum`/`exclusiveMinimum`) are intentionally absent.
+ *
+ * Used as the constraint for public API generics
+ * (`jt.materialize<TSchema>`, `Transform.create<TSchema>`,
+ * `jt.instantiate<TSchema>`, etc.).
+ *
+ * Specs:
+ *   https://json-schema.org/draft/2020-12/json-schema-core
+ *   https://json-schema.org/draft/2020-12/json-schema-validation
+ */
+export interface JsonSchemaDocumentObjectType {
+  readonly '$anchor'?: string;
+  readonly '$comment'?: string;
+  readonly '$defs'?: Readonly<Record<string, JsonSchemaDocumentType>>;
+  readonly '$dynamicAnchor'?: string;
+  readonly '$dynamicRef'?: string;
+  readonly '$id'?: string;
+  readonly '$recursiveAnchor'?: boolean;
+  readonly '$recursiveRef'?: string;
+  readonly '$ref'?: string;
+  // ── Core: identifiers and references ────────────────────────────
+  readonly '$schema'?: string;
+  readonly '$vocabulary'?: Readonly<Record<string, boolean>>;
+
+  readonly 'additionalProperties'?: JsonSchemaDocumentType;
+  // ── Applicators: composition ────────────────────────────────────
+  readonly 'allOf'?: readonly JsonSchemaDocumentType[];
+  readonly 'anyOf'?: readonly JsonSchemaDocumentType[];
+  readonly 'asymmetric'?: boolean;
+
+  readonly 'const'?: unknown;
+  readonly 'contains'?: JsonSchemaDocumentType;
+  // ── Content ─────────────────────────────────────────────────────
+  readonly 'contentEncoding'?: string;
+
+  readonly 'contentMediaType'?: string;
+  readonly 'contentSchema'?: JsonSchemaDocumentType;
+  readonly 'default'?: unknown;
+  readonly 'dependentRequired'?: Readonly<Record<string, readonly string[]>>;
+  readonly 'dependentSchemas'?: Readonly<Record<string, JsonSchemaDocumentType>>;
+  readonly 'deprecated'?: boolean;
+
+  readonly 'description'?: string;
+  // ── OWL 2 class axioms ──────────────────────────────────────────
+  readonly 'disjointWith'?: string;
+  readonly 'else'?: JsonSchemaDocumentType;
+  readonly 'enum'?: readonly unknown[];
+
+  readonly 'equivalentTo'?: string;
+  readonly 'examples'?: readonly unknown[];
+  readonly 'exclusiveMaximum'?: number;
+
+  readonly 'exclusiveMinimum'?: number;
+  // ── Format (annotation by default in 2020-12) ───────────────────
+  readonly 'format'?: string;
+  readonly 'functional'?: boolean;
+  // ── Applicators: conditional ────────────────────────────────────
+  readonly 'if'?: JsonSchemaDocumentType;
+  // ── OWL 2 property characteristics ──────────────────────────────
+  readonly 'inverseFunctional'?: boolean;
+
+  readonly 'inverseOf'?: string;
+  readonly 'irreflexive'?: boolean;
+  readonly 'items'?: JsonSchemaDocumentType;
+
+  // ── json-tology directives ──────────────────────────────────────
+  readonly 'jt:computed'?: boolean;
+  readonly 'jt:config'?: Record<string, unknown>;
+  readonly 'jt:frozen'?: boolean;
+  readonly 'jt:restrictions'?: ReadonlyArray<Record<string, unknown>>;
+  readonly 'jt:strict'?: boolean;
+
+  readonly 'maxContains'?: number;
+  readonly 'maximum'?: number;
+  // ── Validation: arrays ──────────────────────────────────────────
+  readonly 'maxItems'?: number;
+  // ── Validation: strings ─────────────────────────────────────────
+  readonly 'maxLength'?: number;
+
+  // ── Validation: objects ─────────────────────────────────────────
+  readonly 'maxProperties'?: number;
+
+  readonly 'minContains'?: number;
+  readonly 'minimum'?: number;
+  readonly 'minItems'?: number;
+
+  readonly 'minLength'?: number;
+  readonly 'minProperties'?: number;
+  // ── Validation: numbers ─────────────────────────────────────────
+  readonly 'multipleOf'?: number;
+  readonly 'not'?: JsonSchemaDocumentType;
+  readonly 'oneOf'?: readonly JsonSchemaDocumentType[];
+  readonly 'pattern'?: string;
+  readonly 'patternProperties'?: Readonly<Record<string, JsonSchemaDocumentType>>;
+
+  // ── Applicators: arrays ─────────────────────────────────────────
+  readonly 'prefixItems'?: readonly JsonSchemaDocumentType[];
+  // ── Applicators: objects ────────────────────────────────────────
+  readonly 'properties'?: Readonly<Record<string, JsonSchemaDocumentType>>;
+  readonly 'propertyNames'?: JsonSchemaDocumentType;
+  readonly 'rdfs:domain'?: string;
+  readonly 'rdfs:range'?: string;
+  readonly 'readOnly'?: boolean;
+  readonly 'reflexive'?: boolean;
+  readonly 'required'?: readonly string[];
+
+  readonly 'symmetric'?: boolean;
+  readonly 'then'?: JsonSchemaDocumentType;
+  // ── Meta-data ───────────────────────────────────────────────────
+  readonly 'title'?: string;
+  readonly 'transitive'?: boolean;
+
+  // ── Validation: any instance ────────────────────────────────────
+  readonly 'type'?: JsonSchemaTypeNameType | readonly JsonSchemaTypeNameType[];
+  readonly 'unevaluatedItems'?: JsonSchemaDocumentType;
+  readonly 'unevaluatedProperties'?: JsonSchemaDocumentType;
+  readonly 'uniqueItems'?: boolean;
+  readonly 'writeOnly'?: boolean;
+}
+
+/**
+ * A JSON Schema document — either the structural object defined by
+ * `JsonSchemaDocumentObjectType` or one of the boolean shortcuts
+ * (`true` accepts every instance, `false` rejects every instance).
+ * Used as the public-API constraint for `TSchema` generics in
+ * `JsonTology` methods.
+ *
+ * The `& { readonly '$id': string }` intersection used in named-schema
+ * overloads narrows this to the registered-schema case automatically;
+ * boolean shortcuts have no `$id` and drop out of the intersection.
+ */
+export type JsonSchemaDocumentType = boolean | JsonSchemaDocumentObjectType;

@@ -31,13 +31,13 @@ function project(schema: Record<string, unknown>): QuadInterface[] {
 
 function filterByPredicate(quads: QuadInterface[], predicate: string): QuadInterface[] {
   return quads.filter((quad) => {
-    return quad.predicate === predicate;
+    return quad.predicate.value === predicate;
   });
 }
 
 function filterBySubject(quads: QuadInterface[], subject: string): QuadInterface[] {
   return quads.filter((quad) => {
-    return quad.subject === subject;
+    return quad.subject.value === subject;
   });
 }
 
@@ -74,8 +74,8 @@ void describe('ShaclProjection.graph()', { 'concurrency': true }, () => {
 
     const quads = project(schema);
     const nodeShapeQuads = quads.filter((quad) => {
-      return quad.subject === schema.$id
-        && quad.predicate === RDF.type
+      return quad.subject.value === schema.$id
+        && quad.predicate.value === RDF.type
         && objectNamedNodeValue(quad) === SH.NodeShape;
     });
 
@@ -94,7 +94,7 @@ void describe('ShaclProjection.graph()', { 'concurrency': true }, () => {
 
     const quads = project(schema);
     const propQuads = filterBySubject(quads, schema.$id).filter((quad) => {
-      return quad.predicate === SH.property;
+      return quad.predicate.value === SH.property;
     });
 
     assert.equal(propQuads.length, 2, 'should emit sh:property for each declared property');

@@ -26,6 +26,7 @@ type JsonLdNodeType = Record<string, unknown>;
 function tboxNodes(schema: Record<string, unknown> & { '$id': string }): readonly JsonLdNodeType[] {
   const jt = JsonTology.create({
     'baseIRI': 'urn:example',
+    'enableStrictGraph': false,
     'schemas': [schema] as const
   });
 

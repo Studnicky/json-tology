@@ -10,19 +10,7 @@ Beyond phantom brands on individual keywords, the type system narrows structural
 
 Bounded `integer` schemas with both bounds in the 0-50 range automatically produce literal union types:
 
-```ts
-const RatingSchema = {
-  type: 'integer',
-  minimum: 1,
-  maximum: 5,
-} as const;
-
-type Rating = InferType<typeof RatingSchema>;
-// 1 | 2 | 3 | 4 | 5
-
-const r: Rating = 3;   // compiles
-const bad: Rating = 0;  // compile error  - 0 is not in 1..5
-```
+<<< ../../examples/docs/constraint-brands/01-narrowing.ts
 
 Exclusive bounds are normalized automatically: `exclusiveMinimum: 0` becomes inclusive minimum `1`, `exclusiveMaximum: 6` becomes inclusive maximum `5`.
 
@@ -30,17 +18,7 @@ Exclusive bounds are normalized automatically: `exclusiveMinimum: 0` becomes inc
 
 When `multipleOf` is present alongside bounds, only multiples within the range are included:
 
-```ts
-const EvenDiceSchema = {
-  type: 'integer',
-  minimum: 1,
-  maximum: 6,
-  multipleOf: 2,
-} as const;
-
-type EvenDice = InferType<typeof EvenDiceSchema>;
-// 2 | 4 | 6
-```
+<<< ../../examples/docs/constraint-brands/14-multipleof-range.ts
 
 Use `MultipleOfRangeType<Min, Max, Step>` as a standalone utility for arbitrary stepped ranges.
 
@@ -48,49 +26,13 @@ Use `MultipleOfRangeType<Min, Max, Step>` as a standalone utility for arbitrary 
 
 Simple `not` clauses narrow the inferred type:
 
-```ts
-// not: { type }  - removes primitives from unions
-const NonStringSchema = {
-  type: ['string', 'number', 'boolean'],
-  not: { type: 'string' },
-} as const;
-
-type NonString = InferType<typeof NonStringSchema>;
-// boolean | number
-
-// not: { const }  - removes specific values
-const NonNullStatusSchema = {
-  enum: ['active', 'inactive', null],
-  not: { const: null },
-} as const;
-
-type NonNullStatus = InferType<typeof NonNullStatusSchema>;
-// 'active' | 'inactive'
-
-// not: { enum }  - removes a set of values
-const RestrictedSchema = {
-  enum: ['a', 'b', 'c', 'd'],
-  not: { enum: ['b', 'c'] },
-} as const;
-
-type Restricted = InferType<typeof RestrictedSchema>;
-// 'a' | 'd'
-```
+<<< ../../examples/docs/constraint-brands/25-not-exclusion.ts
 
 ### `propertyNames: { enum }` strict keys <Badge type="info" text="Compile-time" />
 
 When `propertyNames` specifies an enum, the object keys are narrowed to that union:
 
-```ts
-const ConfigSchema = {
-  type: 'object',
-  propertyNames: { enum: ['host', 'port', 'debug'] },
-  additionalProperties: { type: 'string' },
-} as const;
-
-type Config = InferType<typeof ConfigSchema>;
-// { readonly host?: string; readonly port?: string; readonly debug?: string }
-```
+<<< ../../examples/docs/constraint-brands/16-property-names-enum.ts
 
 ### `patternProperties` template literal keys <Badge type="info" text="Compile-time" />
 
@@ -106,20 +48,7 @@ Anchored regex patterns are converted to TypeScript template literal types. Four
 | `^.{N}$` (N ≤ 8) | length-N template literal |
 | Other patterns | `string` (fallback) |
 
-```ts
-const MetadataSchema = {
-  type: 'object',
-  patternProperties: {
-    '^data_': { type: 'string' },
-    '^meta_': { type: 'number' },
-  },
-} as const;
-
-type Metadata = InferType<typeof MetadataSchema>;
-
-const ok: Metadata = { data_name: 'Alice', meta_version: 1 };     // compiles
-const bad: Metadata = { data_age: 99 };                            // compile error  - must be string
-```
+<<< ../../examples/docs/constraint-brands/17-pattern-properties.ts
 
 Multiple `patternProperties` entries are intersected so each pattern enforces its own value type.
 
@@ -129,68 +58,17 @@ Multiple `patternProperties` entries are intersected so each pattern enforces it
 
 For a single const discriminator:
 
-```ts
-const ShapeSchema = {
-  type: 'object',
-  properties: {
-    kind: { type: 'string' },
-  },
-  required: ['kind'],
-  if: { properties: { kind: { const: 'circle' } }, required: ['kind'] },
-  then: { properties: { radius: { type: 'number' } }, required: ['radius'] },
-  else: { properties: { width: { type: 'number' } }, required: ['width'] },
-} as const;
-
-type Shape = InferType<typeof ShapeSchema>;
-// Union of:
-//   { kind: 'circle'; radius: number; ... }     - then branch, kind narrowed to 'circle'
-// | { kind: string; width: number; ... }         - else branch
-```
+<<< ../../examples/docs/constraint-brands/18-ifthenelse-discriminator.ts
 
 Multi-property discriminator example:
 
-```ts
-const MultiDiscriminatorSchema = {
-  type: 'object',
-  properties: {
-    kind:  { type: 'string' },
-    color: { type: 'string' },
-  },
-  required: ['kind', 'color'],
-  if: {
-    properties: { kind: { const: 'circle' }, color: { const: 'red' } },
-    required:   ['kind', 'color'],
-  },
-  then: { properties: { radius: { type: 'number' } }, required: ['radius'] },
-  else: { properties: { width:  { type: 'number' } }, required: ['width'] },
-} as const;
-
-type MultiShape = InferType<typeof MultiDiscriminatorSchema>;
-// { kind: 'circle'; color: 'red'; radius: number; ... }  - then branch
-// | { kind: string; color: string; width: number; ... }  - else branch
-```
+<<< ../../examples/docs/constraint-brands/19-multi-discriminator.ts
 
 ### `dependentRequired` conditional typing <Badge type="warning" text="Compile-time + Runtime" />
 
 Modeled as a per-trigger union. When the trigger key is present, all its dependents become required:
 
-```ts
-const PaymentSchema = {
-  type: 'object',
-  properties: {
-    credit_card: { type: 'string' },
-    billing_address: { type: 'string' },
-  },
-  dependentRequired: {
-    credit_card: ['billing_address'],
-  },
-} as const;
-
-type Payment = InferType<typeof PaymentSchema>;
-// Either:
-//   { credit_card?: never; billing_address?: string }    - no credit card, address optional
-// | { billing_address: unknown; ... }                     - credit card present → address required
-```
+<<< ../../examples/docs/constraint-brands/20-dependent-required.ts
 
 ## `uniqueItems` tuple distinctness <Badge type="warning" text="Compile-time + Runtime" />
 
@@ -204,50 +82,22 @@ Above 8 elements the pairwise check is skipped and runtime validation still enfo
 
 > **Note:** Compile-time tuple pairwise checking applies only to literal-typed tuples declared via `prefixItems` with ≤ 8 elements. Homogeneous arrays (e.g. `string[]`) receive only the `UniqueArrayBrandInterface<T>` brand and rely on runtime enforcement for actual uniqueness - there is no compile-time element-by-element comparison for homogeneous arrays.
 
-```ts
-const DuplicateConstTuple = {
-  type: 'array',
-  prefixItems: [
-    { const: 'red' },
-    { const: 'red' },   // duplicate — same literal type
-  ],
-  uniqueItems: true,
-} as const;
-
-type DuplicateTuple = InferType<typeof DuplicateConstTuple>;
-// never — the pairwise check detected the overlap at compile time
-```
+<<< ../../examples/docs/constraint-brands/21-unique-items-tuple.ts
 
 ## `tightStringLengths` opt-in narrowing <Badge type="info" text="Compile-time" />
 
 When a project augments `JsonTologyTypeConfigInterface` with `'tightStringLengths': true`, `InferType` narrows strings whose `minLength`/`maxLength` bounds are within `StringLengthCap = 8` to a union of fixed-length character template literals.
 
+<!-- inline-ts-ok: .d.ts module augmentation; must live in the consumer project's tsconfig include path and cannot run from examples/. -->
 ```ts
-// json-tology.d.ts — opt in
+// json-tology.d.ts — opt in to tight string length narrowing
 declare module 'json-tology/types' {
   interface JsonTologyTypeConfigInterface { 'tightStringLengths': true }
 }
 ```
 
-```ts
-const ThreeCharSchema = {
-  type: 'string',
-  minLength: 3,
-  maxLength: 3,
-} as const;
-
-type ThreeChar = InferType<typeof ThreeCharSchema>;
-// `${string}${string}${string}` — exactly 3 characters
-
-const OneToThreeSchema = {
-  type: 'string',
-  minLength: 1,
-  maxLength: 3,
-} as const;
-
-type OneToThree = InferType<typeof OneToThreeSchema>;
-// `${string}` | `${string}${string}` | `${string}${string}${string}`
-```
+<<< ../../examples/docs/constraint-brands/22-three-char-template.ts
+<<< ../../examples/docs/constraint-brands/23-variable-length-template.ts
 
 Bounds above the cap (or with the flag disabled) fall back to plain `string`. The flag is default-off so existing schemas pay no compile cost.
 

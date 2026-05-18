@@ -346,7 +346,11 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
 
       // oneOf: exactly one branch
       {
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        // enableStrictGraph: false — synthetic oneOf branches with inline constraints
+        const registry = JsonTology.create({
+          'baseIRI': 'urn:test:',
+          'enableStrictGraph': false
+        });
         const schemaId = 'https://cond.test/OneOf1';
 
         registry.set({
@@ -2678,7 +2682,11 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
             'valid': false
           }
         ];
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        // enableStrictGraph: false — synthetic fixture with inline numeric bounds
+        const registry = JsonTology.create({
+          'baseIRI': 'urn:test:',
+          'enableStrictGraph': false
+        });
 
         registry.set({
           '$id': 'https://edge.test/NumBounds',
@@ -2727,7 +2735,11 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
             'valid': false
           }
         ];
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        // enableStrictGraph: false — synthetic fixture with inline exclusiveMinimum/Maximum
+        const registry = JsonTology.create({
+          'baseIRI': 'urn:test:',
+          'enableStrictGraph': false
+        });
 
         registry.set({
           '$id': 'https://edge.test/ExclBounds',
@@ -2776,7 +2788,11 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
             'valid': false
           }
         ];
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        // enableStrictGraph: false — synthetic fixture with inline multipleOf
+        const registry = JsonTology.create({
+          'baseIRI': 'urn:test:',
+          'enableStrictGraph': false
+        });
 
         registry.set({
           '$id': 'https://edge.test/MultOf',
@@ -2837,7 +2853,11 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
             'valid': false
           }
         ];
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        // enableStrictGraph: false — synthetic fixture with inline string length constraints
+        const registry = JsonTology.create({
+          'baseIRI': 'urn:test:',
+          'enableStrictGraph': false
+        });
 
         registry.set({
           '$id': 'https://edge.test/StrLen',
@@ -2891,7 +2911,11 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
             'valid': false
           }
         ];
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        // enableStrictGraph: false — synthetic fixture with inline pattern constraint
+        const registry = JsonTology.create({
+          'baseIRI': 'urn:test:',
+          'enableStrictGraph': false
+        });
 
         registry.set({
           '$id': 'https://edge.test/Pattern',
@@ -3020,7 +3044,11 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
             'valid': false
           }
         ];
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        // enableStrictGraph: false — synthetic fixture with inline enum constraint
+        const registry = JsonTology.create({
+          'baseIRI': 'urn:test:',
+          'enableStrictGraph': false
+        });
 
         registry.set({
           '$id': 'https://edge.test/Enum',
@@ -3072,7 +3100,11 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
             'valid': false
           }
         ];
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        // enableStrictGraph: false — synthetic fixture with inline const constraint
+        const registry = JsonTology.create({
+          'baseIRI': 'urn:test:',
+          'enableStrictGraph': false
+        });
 
         registry.set({
           '$id': 'https://edge.test/Const',
@@ -3393,7 +3425,11 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
             'valid': false
           }
         ];
-        const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        // enableStrictGraph: false — cross-schema fixtures with inline length constraints
+        const registry = JsonTology.create({
+          'baseIRI': 'urn:test:',
+          'enableStrictGraph': false
+        });
 
         registry.set([
           {

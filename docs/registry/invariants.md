@@ -16,82 +16,15 @@ Invariants are cross-field validation rules that run after structural validation
 
 #### Example 1: Order total must match line items
 
-```ts
-import { JsonTology } from 'json-tology';
-import type { InferType } from 'json-tology/types';
-import { OrderLineSchema, OrderSchema } from './bookstore/index.js';
-
-type Order = InferType<typeof OrderSchema>;
-
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [OrderLineSchema, OrderSchema] as const,
-  invariants: {
-    'https://bookstore.example/Order': [
-      {
-        name:    'totalMatchesItems',
-        pointer: '/total',   // error pinned to /total path
-        fn: (order) => {
-          const typed = order as Order;
-          const computed = (typed.items as Array<{ unitPrice: number; quantity: number }>)
-            .reduce((sum, l) => sum + l.unitPrice * l.quantity, 0);
-          return Math.abs(typed.total - computed) < 0.01
-            ? null
-            : `total must equal sum of items (expected ${computed.toFixed(2)}, got ${typed.total})`;
-        },
-      },
-    ],
-  },
-});
-```
+<<< ../../examples/docs/invariants/01-add-invariant.ts
 
 #### Example 2: Invariant failure surfaces in validate(), instantiate(), is()
 
-```ts
-const badOrder = {
-  id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-  customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  placedAt:   '2026-01-15T10:30:00Z',
-  total:      99.00,   // wrong  - items sum to 14.99
-  items:      [{ bookIsbn: '9780140449136', quantity: 1, unitPrice: 14.99 }],
-};
-
-// validate()  - invariant failure as ValidationErrorType with keyword: 'jt:invariant'
-const errs = entities.validate(OrderSchema.$id, badOrder);
-console.log(errs.ok);                                            // false
-console.log(errs.items.some(e => e.keyword === 'jt:invariant')); // true
-console.log(errs.items.some(e => e.message.includes('total must equal'))); // true
-
-// is()  - returns false when invariant fails
-console.log(jt.is(OrderSchema.$id, badOrder));  // false
-
-// instantiate()  - throws InstantiationError carrying the same ValidationErrors
-try {
-  jt.instantiate(OrderSchema.$id, badOrder);
-} catch (err) {
-  // err instanceof InstantiationError; err.errors is the ValidationErrors collection
-}
-```
+<<< ../../examples/docs/registry/13-invariant-failure-surfaces.ts
 
 #### Example 3: Imperative add after construction
 
-```ts
-import type { InferType } from 'json-tology/types';
-import { ReviewSchema } from './bookstore/index.js';
-
-type Review = InferType<typeof ReviewSchema>;
-
-jt.addInvariant<Review>('https://bookstore.example/Review', {
-  name:    'highRatingRequiresDetailedReview',
-  pointer: '/body',
-  fn: (review) => {
-    if (review.rating === 5 && review.body.length < 50) {
-      return '5-star reviews must have a body of at least 50 characters';
-    }
-    return null;
-  },
-});
-```
+<<< ../../examples/docs/registry/14-invariant-review-body-length.ts
 
 ### Behaviour table
 
@@ -108,22 +41,7 @@ Invariants do not run when structural validation already failed - this prevents 
 
 #### Anti-pattern 1: Using an invariant for a constraint that JSON Schema can express
 
-```ts
-// ⊥ Don't do this  - JSON Schema already has minimum/maximum
-jt.addInvariant(ReviewSchema.$id, {
-  name: 'ratingRange',
-  fn: (r) => (r as { rating: number }).rating >= 1 && (r as { rating: number }).rating <= 5
-    ? null : 'rating out of range',
-});
-
-// ✓ Do this  - express the constraint in the schema itself
-const ReviewSchema = {
-  // ...
-  properties: {
-    rating: { type: 'integer', minimum: 1, maximum: 5 },
-  },
-};
-```
+<<< ../../examples/docs/registry/14-invariant-review-body-length.ts
 
 ### Comparison
 
@@ -243,21 +161,7 @@ class Order(BaseModel):
 
 #### Example 1: Remove a review length requirement during a promotion
 
-```ts
-// Register
-jt.addInvariant('https://bookstore.example/Review', {
-  name: 'highRatingRequiresDetailedReview',
-  fn: (r) => {
-    const review = r as { rating: number; body: string };
-    return review.rating === 5 && review.body.length < 50
-      ? '5-star reviews must have a body of at least 50 characters'
-      : null;
-  },
-});
-
-// Remove during promotional event (relax minimum body length)
-jt.removeInvariant('https://bookstore.example/Review', 'highRatingRequiresDetailedReview');
-```
+<<< ../../examples/docs/registry/15-invariant-remove-promotion.ts
 
 ### Related
 

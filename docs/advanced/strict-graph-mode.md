@@ -10,13 +10,7 @@ The lowest level is the on-demand audit. The middle level emits warnings as sche
 
 Emits `logger.warn` at registration when inline-object or inline-primitive shapes are found. No throws. Requires a logger to be set.
 
-```ts
-const jt = JsonTology.create({
-  baseIRI: 'https://example.com',
-  enableInlineWarnings: true,
-  logger: myLogger
-});
-```
+<<< ../../examples/docs/advanced/78-strict-inline-warnings.ts
 
 Use when you want passive feedback during development without breaking the build.
 
@@ -26,13 +20,7 @@ Use when you want passive feedback during development without breaking the build
 
 Runs `findDuplicates()` after each schema is registered and emits `logger.warn` if duplicates are found.
 
-```ts
-const jt = JsonTology.create({
-  baseIRI: 'https://example.com',
-  enableDuplicateDetection: true,
-  logger: myLogger
-});
-```
+<<< ../../examples/docs/advanced/79-strict-duplicate-detection.ts
 
 Use when you have already extracted some named schemas and want continuous detection of regressions without a manual audit step.
 
@@ -48,13 +36,7 @@ Promotes warnings to `SchemaError` throws. Every sub-schema must be either:
 
 Inline constrained shapes - objects with `properties`, primitives with `pattern`/`format`/`minimum`/etc., array items with constraints - are all forbidden.
 
-```ts
-const jt = JsonTology.create({
-  baseIRI: 'https://example.com',
-  enableStrictGraph: true,
-  schemas: [...] as const  // all inline shapes throw SchemaError here
-});
-```
+<<< ../../examples/docs/advanced/06-strict-graph-mode.ts
 
 **What's allowed inline in strict mode:**
 
@@ -77,22 +59,7 @@ const jt = JsonTology.create({
 
 ## CI script example
 
-```ts
-// scripts/check-graph.ts
-import { JsonTology } from 'json-tology';
-import { schemas } from '../src/schemas.js';
-
-const jt = JsonTology.create({ baseIRI: 'https://example.com', schemas });
-const dups = jt.registry.findDuplicates();
-
-if (dups.length > 0) {
-  console.error('Duplicate inline shapes found:');
-  for (const dup of dups) {
-    console.error(`  ${dup.schemaId}#${dup.pointer} duplicates ${dup.equivalentTo}`);
-  }
-  process.exit(1);
-}
-```
+<<< ../../examples/docs/advanced/80-strict-ci-findduplicates.ts
 
 ## When inline is OK {#when-inline-is-ok}
 

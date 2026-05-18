@@ -1,6 +1,9 @@
 /**
  * Value.diff — Example 1: Detect changes, replay changeset
  * Demonstrates: operations array, isEmpty
+ *
+ * Bastian Balthazar Bux updates the email on their customer record from
+ * the old antiquariat-era address to a more formal contact.
  */
 
 import {
@@ -8,19 +11,14 @@ import {
 } from '../../../src/index.js';
 import type { Customer } from '../bookstore/index.js';
 import {
-  bookstoreEntities, CustomerSchema
+  aboxFixtures, bookstoreEntities, CustomerSchema
 } from '../bookstore/index.js';
 
-const before = bookstoreEntities.instantiate(CustomerSchema.$id, {
-  'email': 'alice@bookstore.example',
-  'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  'name': 'Alice Chen'
-});
+const before = bookstoreEntities.instantiate(CustomerSchema, aboxFixtures.customer);
 
-const after = bookstoreEntities.instantiate(CustomerSchema.$id, {
-  'email': 'alice.chen@bookstore.example',
-  'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  'name': 'Alice Chen'
+const after = bookstoreEntities.instantiate(CustomerSchema, {
+  ...aboxFixtures.customer,
+  'email': 'bastian.balthazar.bux@bookstore.example'
 });
 
 const changes = Value.diff(before, after);
@@ -31,11 +29,11 @@ console.assert(changes.operations.some((op) => {
   return op.path === '/email';
 }));
 
-// Replay each operation to reconstruct the after value
+// Replay each operation to reconstruct the after value.
 let reconstructed: unknown = Operations.clone(before);
 
 for (const operation of changes.operations) {
   reconstructed = Operations.patch(reconstructed, operation);
 }
 
-console.assert((reconstructed as Customer).email === 'alice.chen@bookstore.example');
+console.assert((reconstructed as Customer).email === 'bastian.balthazar.bux@bookstore.example');

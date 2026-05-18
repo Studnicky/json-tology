@@ -29,13 +29,13 @@ function project(schema: Record<string, unknown>): QuadInterface[] {
 
 function filterByPredicate(quads: QuadInterface[], predicate: string): QuadInterface[] {
   return quads.filter((quad) => {
-    return quad.predicate === predicate;
+    return quad.predicate.value === predicate;
   });
 }
 
 function filterBySubjectAndPredicate(quads: QuadInterface[], subject: string, predicate: string): QuadInterface[] {
   return quads.filter((quad) => {
-    return quad.subject === subject && quad.predicate === predicate;
+    return quad.subject.value === subject && quad.predicate.value === predicate;
   });
 }
 
@@ -62,8 +62,8 @@ void describe('OwlProjection.graph()', { 'concurrency': true }, () => {
 
     const quads = project(schema);
     const classQuads = quads.filter((quad) => {
-      return quad.subject === schema.$id
-        && quad.predicate === RDF.type
+      return quad.subject.value === schema.$id
+        && quad.predicate.value === RDF.type
         && objectNamedNodeValue(quad) === OWL.Class;
     });
 
@@ -79,11 +79,11 @@ void describe('OwlProjection.graph()', { 'concurrency': true }, () => {
 
     const quads = project(schema);
     const dtPropQuads = quads.filter((quad) => {
-      return quad.predicate === RDF.type && objectNamedNodeValue(quad) === OWL.DatatypeProperty;
+      return quad.predicate.value === RDF.type && objectNamedNodeValue(quad) === OWL.DatatypeProperty;
     });
 
     assert.ok(dtPropQuads.length > 0, 'string property should produce owl:DatatypeProperty quad');
-    const propSubject = dtPropQuads[0].subject;
+    const propSubject = dtPropQuads[0].subject.value;
 
     assert.ok(
       typeof propSubject === 'string' && propSubject.includes('title'),
@@ -100,11 +100,11 @@ void describe('OwlProjection.graph()', { 'concurrency': true }, () => {
 
     const quads = project(schema);
     const objPropQuads = quads.filter((quad) => {
-      return quad.predicate === RDF.type && objectNamedNodeValue(quad) === OWL.ObjectProperty;
+      return quad.predicate.value === RDF.type && objectNamedNodeValue(quad) === OWL.ObjectProperty;
     });
 
     assert.ok(objPropQuads.length > 0, '$ref property should produce owl:ObjectProperty quad');
-    const propSubject = objPropQuads[0].subject;
+    const propSubject = objPropQuads[0].subject.value;
 
     assert.ok(
       typeof propSubject === 'string' && propSubject.includes('customer'),
@@ -202,7 +202,7 @@ void describe('OwlProjection.graph()', { 'concurrency': true }, () => {
 
     const quads = project(schema);
     const restrictionTypeQuads = quads.filter((quad) => {
-      return quad.predicate === RDF.type && objectNamedNodeValue(quad) === OWL.Restriction;
+      return quad.predicate.value === RDF.type && objectNamedNodeValue(quad) === OWL.Restriction;
     });
 
     assert.ok(restrictionTypeQuads.length > 0, 'required property should produce owl:Restriction bnode');

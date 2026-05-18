@@ -12,30 +12,7 @@ All examples use the [bookstore domain](/bookstore-domain).
 
 ## Pattern: name a value, reference it everywhere
 
-```ts
-import { JsonTology } from 'json-tology';
-
-const EmailSchema = {
-  $id: 'urn:bookstore:Email',
-  type: 'string',
-  format: 'email'
-} as const;
-
-const CustomerSchema = {
-  $id: 'urn:bookstore:Customer',
-  type: 'object',
-  properties: {
-    id:    { type: 'string', format: 'uuid' },
-    email: { $ref: EmailSchema.$id }
-  },
-  required: ['id', 'email']
-} as const;
-
-const jt = JsonTology.create({
-  baseIRI: 'urn:bookstore',
-  schemas: [EmailSchema, CustomerSchema] as const
-});
-```
+<<< ../../examples/docs/advanced/86-sub-schema-ref-pattern.ts
 
 `EmailSchema` is the canonical definition of the value type "email." Any schema that wants an email field references its `$id`. The reference is symbolic, not structural - changing `EmailSchema` changes every consumer at once, and `findDuplicates()` will not flag two `$ref` slots as redundant.
 

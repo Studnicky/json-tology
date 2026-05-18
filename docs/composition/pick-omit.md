@@ -18,92 +18,27 @@
 
 #### Example 1: Book catalog summary - only display fields
 
-```ts
-import { Compose, JsonTology } from 'json-tology';
-import type { InferType } from 'json-tology/types';
-import { BookSchema } from './bookstore/index.js';
-
-const BookSummarySchema = Compose.pick(
-  BookSchema,
-  ['isbn', 'title', 'price', 'inStock'] as const,
-  'https://bookstore.example/BookSummary',
-);
-
-type BookSummary = InferType<typeof BookSummarySchema>;
-// { readonly isbn?: string; readonly title?: string; readonly price?: number; readonly inStock?: boolean }
-
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [BookSummarySchema] as const,
-});
-
-const summary = jt.instantiate(BookSummarySchema.$id, {
-  isbn:    '9780140449136',
-  title:   'Crime and Punishment',
-  price:   14.99,
-  inStock: true,
-  authors: ['Dostoevsky'],  // not picked  - stripped during coerce
-});
-// { isbn: '...', title: '...', price: 14.99, inStock: true }
-// authors is gone
-```
+<<< ../../examples/docs/composition/02-pick-omit.ts
 
 #### Example 2: Customer card for embedding in order responses
 
-```ts
-import { Compose } from 'json-tology';
-import { CustomerSchema } from './bookstore/index.js';
-
-const CustomerCardSchema = Compose.pick(
-  CustomerSchema,
-  ['id', 'name', 'email'] as const,
-  'https://bookstore.example/CustomerCard',
-);
-// Useful for embedding customer info in Order responses without Address data
-```
+<<< ../../examples/docs/composition/21-pick-customer-card.ts
 
 #### Example 3: Build sub-schema for partial validation (builds on subschemaAt)
 
-```ts
-import { Compose, JsonTology } from 'json-tology';
-import { ReviewSchema } from './bookstore/index.js';
-
-const ReviewRatingSchema = Compose.pick(
-  ReviewSchema,
-  ['rating'] as const,
-  'https://bookstore.example/ReviewRating',
-);
-
-const jt2 = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [ReviewRatingSchema] as const,
-});
-
-// Validate just the rating field on blur
-const errors = jt2.validate(ReviewRatingSchema.$id, { rating: 6 });
-// ['/rating: must be <= 5']
-```
+<<< ../../examples/docs/composition/22-pick-review-rating-subschema.ts
 
 ### Argument validation <Badge type="info" text="Compile-time" />
 
 `keys` are bound to `keyof properties`. Passing a key that does not exist in the source schema's `properties` is a compile-time error rather than a silent empty-properties result.
 
-```ts
-// compile error — 'nonExistent' is not a key of BookSchema.properties
-const Bad = Compose.pick(BookSchema, ['isbn', 'nonExistent'] as const, '...');
-```
+<<< ../../examples/docs/composition/47-antipattern-pick-unknown-key.ts
 
 ### Bad examples - what NOT to do
 
 #### Anti-pattern 1: Forgetting `as const` on the keys array
 
-```ts
-// ⊥ Don't do this  - without as const, keys array widens to string[] and TypeScript loses the literal types
-const schema = Compose.pick(BookSchema, ['isbn', 'title'], '...');
-
-// ✓ Do this
-const schema2 = Compose.pick(BookSchema, ['isbn', 'title'] as const, '...');
-```
+<<< ../../examples/docs/composition/23-antipattern-pick-without-as-const.ts
 
 ### Comparison
 
@@ -201,52 +136,15 @@ class BookSummary(BaseModel):
 
 #### Example 1: Public book without internal currency field
 
-```ts
-import { Compose } from 'json-tology';
-import { BookSchema } from './bookstore/index.js';
-
-const PublicBookSchema = Compose.omit(
-  BookSchema,
-  ['currency'] as const,
-  'https://bookstore.example/PublicBook',
-);
-// All Book properties except currency
-// currency was optional (has default) so required array unchanged
-```
+<<< ../../examples/docs/composition/24-omit-public-book.ts
 
 #### Example 2: Order summary without line items
 
-```ts
-import { Compose } from 'json-tology';
-import { OrderSchema } from './bookstore/index.js';
-
-const OrderSummarySchema = Compose.omit(
-  OrderSchema,
-  ['items'] as const,
-  'https://bookstore.example/OrderSummary',
-);
-
-type OrderSummary = InferType<typeof OrderSummarySchema>;
-// { id, customerId, total, currency?, placedAt }  - no items array
-```
+<<< ../../examples/docs/composition/25-omit-order-summary.ts
 
 #### Example 3: Build a derived schema from a retrieved schema (builds on get)
 
-```ts
-import { Compose } from 'json-tology';
-import { bookstoreEntities, BookSchema } from './bookstore/index.js';
-
-// Retrieve and narrow dynamically
-const raw = bookstoreEntities.registry.get(BookSchema.$id);
-if (raw) {
-  const BookWithoutStock = Compose.omit(
-    raw as typeof BookSchema,
-    ['inStock'] as const,
-    'https://bookstore.example/BookWithoutStock',
-  );
-  bookstoreEntities.set(BookWithoutStock);
-}
-```
+<<< ../../examples/docs/composition/26-omit-from-registry.ts
 
 ### Comparison
 

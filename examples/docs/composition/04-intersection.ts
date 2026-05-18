@@ -1,18 +1,21 @@
 /**
  * Compose.intersection — Example 1: AuditedOrder = Order ∩ Audit
  * Demonstrates: allOf composition, all constituent schemas must pass
+ *
+ * AuditSchema and AuditedOrderSchema register onto the canonical bookstore
+ * via `jt.set()` — no mini-registry. The order payload is
+ * the canonical Bastian-orders-Neverending-Story fixture.
  */
 
+import { Compose } from '../../../src/index.js';
 import {
-  Compose, JsonTology
-} from '../../../src/index.js';
-import {
-  AddressSchema, AmountSchema, CityNameSchema, CountryCodeSchema,
-  CurrencyCodeSchema, CustomerIdSchema, CustomerNameSchema, EmailSchema,
-  IsbnSchema, Iso8601Schema, MoneySchema, OrderIdSchema,
-  OrderLineSchema, OrderSchema, PostalCodeSchema, QuantitySchema,
-  StreetLineSchema
+  aboxFixtures, createBookstoreDocRegistry,
+  OrderSchema
 } from '../bookstore/index.js';
+
+// createBookstoreDocRegistry seeds a permissive copy of the bookstore — docs examples extend
+// it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
+const jt = createBookstoreDocRegistry();
 
 const AuditSchema = {
   '$id': 'https://bookstore.example/Audit',
@@ -41,85 +44,19 @@ const AuditedOrderSchema = Compose.intersection(
   'https://bookstore.example/AuditedOrder'
 );
 
+jt.set(AuditSchema);
+jt.set(AuditedOrderSchema);
 
-const bookstoreEntities = JsonTology.create({
-  'baseIRI': 'https://bookstore.example',
-  'schemas': [
-    AmountSchema,
-    CityNameSchema,
-    CountryCodeSchema,
-    CurrencyCodeSchema,
-    CustomerIdSchema,
-    CustomerNameSchema,
-    EmailSchema,
-    IsbnSchema,
-    Iso8601Schema,
-    MoneySchema,
-    OrderIdSchema,
-    PostalCodeSchema,
-    QuantitySchema,
-    StreetLineSchema,
-    AddressSchema,
-    OrderLineSchema,
-    OrderSchema,
-    AuditSchema,
-    AuditedOrderSchema
-  ] as const
-});
-
-// Missing createdAt/updatedAt — AuditSchema required fields not met
-const errors = bookstoreEntities.validate(AuditedOrderSchema.$id, {
-  'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  'id': 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-  'items': [{
-    'bookIsbn': '9780140449136',
-    'quantity': 1,
-    'unitPrice': {
-      'amount': 14.99,
-      'currency': 'USD'
-    }
-  }],
-  'placedAt': '2026-01-15T10:30:00Z',
-  'shippingAddress': {
-    'city': 'New York',
-    'country': 'US',
-    'postalCode': '10001',
-    'street': '123 Main St'
-  },
-  'total': {
-    'amount': 14.99,
-    'currency': 'USD'
-  }
-  // createdAt and updatedAt missing
-});
+// Bastian's order without audit metadata — AuditSchema required fields not met.
+const errors = jt.validate(AuditedOrderSchema.$id, aboxFixtures.order);
 
 console.assert(errors.length > 0);
 
-// All fields present — passes
-const valid = bookstoreEntities.validate(AuditedOrderSchema.$id, {
-  'createdAt': '2026-01-15T10:30:00Z',
-  'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  'id': 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-  'items': [{
-    'bookIsbn': '9780140449136',
-    'quantity': 1,
-    'unitPrice': {
-      'amount': 14.99,
-      'currency': 'USD'
-    }
-  }],
-  'placedAt': '2026-01-15T10:30:00Z',
-  'shippingAddress': {
-    'city': 'New York',
-    'country': 'US',
-    'postalCode': '10001',
-    'street': '123 Main St'
-  },
-  'total': {
-    'amount': 14.99,
-    'currency': 'USD'
-  },
-  'updatedAt': '2026-01-15T10:30:00Z'
+// All fields present — passes.
+const valid = jt.validate(AuditedOrderSchema.$id, {
+  ...aboxFixtures.order,
+  'createdAt': aboxFixtures.order.placedAt,
+  'updatedAt': aboxFixtures.order.placedAt
 });
 
 console.assert(valid.length === 0);
