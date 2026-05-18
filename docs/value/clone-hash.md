@@ -20,17 +20,7 @@ Pure static utilities that work on any value without a schema.
 
 #### Example 2: Clone nested addresses
 
-```ts
-const customer = jt.instantiate(CustomerSchema.$id, {
-  id:        'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  email:     'bastian.bux@bookstore.example',
-  name:      'Bastian Balthazar Bux',
-  addresses: [{ street: 'Reichenbachstraße 14', city: 'München', postalCode: '80538' }],
-});
-
-const copy = Operations.clone(customer);
-console.log(copy.addresses === customer.addresses); // false  - deep copy
-```
+<<< ../../examples/docs/value/12-clone-nested-addresses.ts
 
 ### Comparison
 
@@ -106,35 +96,11 @@ copy = order.model_copy(deep=True)
 
 #### Example 1: Generate an ETag for a book
 
-```ts
-import { Hash } from 'json-tology/value';
-
-const book = jt.instantiate(BookSchema.$id, {
-  isbn:    '9783522128001',
-  title:   'Die unendliche Geschichte',
-  authors: ['Michael Ende'],
-  price:   14.99,
-});
-
-const etag = Hash.value(book);
-// deterministic hex string  - same value each time, key order independent
-
-const h1 = Hash.value({ isbn: '9783522128001', title: 'Die unendliche Geschichte' });
-const h2 = Hash.value({ title: 'Die unendliche Geschichte', isbn: '9783522128001' });
-console.log(h1 === h2); // true  - key order doesn't matter
-```
+<<< ../../examples/docs/value/13-hash-etag.ts
 
 #### Example 2: Cache invalidation
 
-```ts
-const prevHash = Hash.value(order);
-// ... order is updated ...
-const newOrder = jt.instantiate(OrderSchema.$id, { ...order, total: 27.98 });
-
-if (Hash.value(newOrder) !== prevHash) {
-  invalidateCache(order.id);
-}
-```
+<<< ../../examples/docs/value/14-hash-cache-invalidation.ts
 
 ### Comparison
 

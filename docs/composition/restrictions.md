@@ -6,6 +6,7 @@ OWL property restrictions narrow the inferred TypeScript type of the restricted 
 
 ## Declaration
 
+<!-- inline-ts-ok: pseudocode signature group for the restriction builders; not runnable expressions. -->
 ```ts
 Compose.someValuesFrom(propIRI, rangeClassIRI): RestrictionRefType
 Compose.allValuesFrom(propIRI, rangeClassIRI): RestrictionRefType
@@ -56,15 +57,7 @@ The compile-time narrowing applies to the property named in the restriction. `ca
 
 `Compose.subClassOf` is composable. Each call appends to the body's `jt:restrictions`:
 
-```ts
-const Adult = Compose.subClassOf(
-  Compose.minCardinality(PARENT, 1),
-  Compose.subClassOf(
-    Compose.maxCardinality(PARENT, 2),
-    { $id: 'urn:example:Adult', type: 'object' } as const
-  )
-);
-```
+<<< ../../examples/docs/composition/37-restrictions-chained-cardinality.ts
 
 The TBox carries two `owl:Restriction` blank nodes attached via `rdfs:subClassOf`.
 

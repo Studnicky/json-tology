@@ -19,10 +19,7 @@ Derives a TypeScript type from an `as const` JSON Schema literal.
 
 ### Signature
 
-```ts
-type MyType = InferType<typeof MySchema>
-// Equivalent to: InferSchemaType<typeof MySchema, typeof MySchema, {}>
-```
+<<< ../../examples/docs/types/45-infertype-signature.ts
 
 ### When to use
 
@@ -38,22 +35,7 @@ The `addresses` array has `default: []` in the schema - at the type level it rem
 
 #### Example 2: Integer range, enum, and const
 
-```ts
-import type { InferType } from 'json-tology/types';
-
-// rating: minimum 1, maximum 5  - auto-generates literal union
-type Rating = InferType<typeof ReviewSchema>['rating'];
-// 1 | 2 | 3 | 4 | 5
-
-const CurrencySchema = {
-  $id: 'https://bookstore.example/Currency',
-  type: 'string',
-  enum: ['USD', 'EUR', 'GBP', 'JPY'],
-} as const;
-
-type Currency = InferType<typeof CurrencySchema>;
-// 'USD' | 'EUR' | 'GBP' | 'JPY'
-```
+<<< ../../examples/docs/types/46-infertype-range-enum-const.ts
 
 Bounded `integer` schemas with both bounds in the 0-50 range automatically produce literal unions. See [Constraint Brands](/constraint-brands#structural-narrowing) for details on integer ranges and multipleOf ranges.
 
@@ -61,21 +43,7 @@ Bounded `integer` schemas with both bounds in the 0-50 range automatically produ
 
 When a schema references another by absolute IRI, pass a reference map as the second type argument.
 
-```ts
-import type { InferType } from 'json-tology/types';
-
-type Order = InferType<typeof OrderSchema, {
-  'https://bookstore.example/OrderLine': typeof OrderLineSchema;
-}>;
-// {
-//   readonly id: string & FormatBrand<'uuid'>;
-//   readonly customerId: string & FormatBrand<'uuid'>;
-//   readonly items: readonly OrderLine[];   ← resolved from the ref map
-//   readonly total: number;
-//   readonly currency?: string;
-//   readonly placedAt: string & FormatBrand<'date-time'>;
-// }
-```
+<<< ../../examples/docs/types/47-infertype-cross-schema-refs.ts
 
 Without the reference map, `items` would resolve to `unknown` at the element level.
 
@@ -180,13 +148,7 @@ Lower-level inference with explicit `Root` and `Refs` parameters. Resolves `$ref
 
 ### Signature
 
-```ts
-type MySubType = InferSchemaType<
-  typeof SubSchema,    // The sub-schema to infer
-  typeof RootSchema,   // Root schema providing $defs for $ref resolution
-  RefMap               // Optional cross-schema reference map
->
-```
+<<< ../../examples/docs/types/48-inferschematype-signature.ts
 
 ### When to use
 
@@ -196,33 +158,7 @@ Use when you need to infer the type of a sub-schema that uses `$ref: '#/$defs/..
 
 #### Example 1: Infer a sub-schema type from $defs
 
-```ts
-import type { InferSchemaType } from 'json-tology/types';
-
-const CatalogSchema = {
-  $id: 'https://bookstore.example/Catalog',
-  type: 'object',
-  properties: {
-    featured: { $ref: '#/$defs/FeaturedBook' },
-  },
-  $defs: {
-    FeaturedBook: {
-      type: 'object',
-      properties: {
-        isbn:  { type: 'string' },
-        badge: { type: 'string', enum: ['bestseller', 'new', 'staff-pick'] },
-      },
-      required: ['isbn', 'badge'],
-    },
-  },
-} as const;
-
-type FeaturedBook = InferSchemaType<
-  typeof CatalogSchema['$defs']['FeaturedBook'],
-  typeof CatalogSchema
->;
-// { readonly isbn: string; readonly badge: 'bestseller' | 'new' | 'staff-pick' }
-```
+<<< ../../examples/docs/types/49-inferschematype-defs-sub.ts
 
 ### Comparison
 
@@ -295,44 +231,17 @@ See [Constraint Brands](/constraint-brands) for the full reference, configuratio
 
 #### Example 1: Format brands prevent mixing email and UUID strings
 
-```ts
-import type { InferType } from 'json-tology/types';
-
-type Customer = InferType<typeof CustomerSchema>;
-
-// customer.id has type: string & FormatBrand<'uuid'>
-// customer.email has type: string & FormatBrand<'email'>
-
-// TypeScript rejects this at compile time:
-// const id: typeof customer.id = customer.email; // error  - incompatible brands
-
-// The only way to produce a branded value:
-const customer = jt.instantiate(CustomerSchema.$id, rawData); // typed + validated
-```
+<<< ../../examples/docs/types/50-brands-format-incompatible.ts
 
 #### Example 2: Integer range as literal union
 
-```ts
-// ReviewSchema has: rating: { type: 'integer', minimum: 1, maximum: 5 }
-type Review = InferType<typeof ReviewSchema>;
-type Rating = Review['rating']; // 1 | 2 | 3 | 4 | 5
-
-const r: Rating = 3;   // OK
-// const bad: Rating = 0;  // compile error  - 0 is not in 1..5
-```
+<<< ../../examples/docs/types/51-brands-integer-range-literal.ts
 
 #### Example 3: Disable brands for a project
 
 Create a `.d.ts` anywhere in your `tsconfig include` path:
 
-```ts
-// json-tology.d.ts
-declare module 'json-tology/types' {
-  interface JsonTologyTypeConfigInterface {
-    brands: false; // disables all phantom brands
-  }
-}
-```
+<<< ../../examples/docs/types/52-brands-disable-config.ts
 
 All `InferType` results revert to plain TypeScript primitives. Runtime validation is unaffected.
 

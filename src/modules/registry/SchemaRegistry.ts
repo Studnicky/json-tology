@@ -129,9 +129,14 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     });
     this.maxSchemaDepth = options?.maxSchemaDepth;
     this.enableStrictTypes = options?.enableStrictTypes ?? false;
-    this.enableStrictGraph = options?.enableStrictGraph ?? false;
-    this.enableInlineWarnings = this.enableStrictGraph || (options?.enableInlineWarnings ?? false);
-    this.enableDuplicateDetection = this.enableStrictGraph || (options?.enableDuplicateDetection ?? false);
+    // Strict-by-default: every graph-integrity gate is on unless the consumer
+    // explicitly opts out. Inline primitive constraints and structural
+    // duplicates of an existing registered schema are both registration
+    // errors. A schema that legitimately needs the historical permissive
+    // behaviour passes the relevant flag as `false`.
+    this.enableStrictGraph = options?.enableStrictGraph ?? true;
+    this.enableInlineWarnings = this.enableStrictGraph || (options?.enableInlineWarnings ?? true);
+    this.enableDuplicateDetection = this.enableStrictGraph || (options?.enableDuplicateDetection ?? true);
     this.vocabularies = options?.vocabularies ?? [];
 
     const mergedPrefixes = { ...DEFAULT_PREFIXES };

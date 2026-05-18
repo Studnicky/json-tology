@@ -42,15 +42,7 @@ Properties in OWL have `rdfs:domain` (the class the property belongs to) and `rd
 
 json-tology derives these from the schema graph:
 
-```ts
-// Book has isbn, which is of type Isbn
-const BookSchema = {
-  $id: 'urn:bookstore:Book',
-  properties: {
-    isbn: { $ref: IsbnSchema.$id }
-  }
-} as const;
-```
+<<< ../../examples/docs/advanced/62-graph-domain-range.ts
 
 This emits (in the TBox):
 
@@ -61,21 +53,7 @@ urn:bookstore:Book#isbn  rdfs:range   urn:bookstore:Isbn .
 
 For primitive string properties with a `format` hint, the range is an XSD datatype:
 
-```ts
-// PublicationDate is the canonical `format: 'date'` primitive in the bookstore.
-const PublicationDateSchema = {
-  $id: 'urn:bookstore:PublicationDate',
-  type: 'string',
-  format: 'date'
-} as const;
-
-// Iso8601 is the canonical `format: 'date-time'` primitive.
-const Iso8601Schema = {
-  $id: 'urn:bookstore:Iso8601',
-  type: 'string',
-  format: 'date-time'
-} as const;
-```
+<<< ../../examples/docs/advanced/63-graph-format-xsd-mapping.ts
 
 These emit:
 
@@ -94,35 +72,12 @@ Formats without an XSD equivalent (`email`, `uuid`, `hostname`, etc.) stay `xsd:
 
 The schema graph is a **directed graph**, not a tree. `$ref` creates edges between nodes.
 
-```ts
-// Book → isbn → Isbn (cross-schema $ref)
-import { IsbnSchema } from './entities/Isbn.js';
-
-const BookSchema = {
-  $id: 'urn:bookstore:Book',
-  properties: {
-    isbn: { $ref: IsbnSchema.$id }
-  }
-} as const;
-```
+<<< ../../examples/docs/advanced/64-graph-ref-resolution.ts
 
 `$defs` entries live in the **same namespace** as their parent schema. They are part of
 that schema's ontology surface:
 
-```ts
-const OrderSchema = {
-  $id: 'urn:bookstore:Order',
-  $defs: {
-    LineItem: {
-      type: 'object',
-      properties: { qty: { type: 'integer' } }
-    }
-  },
-  properties: {
-    line: { $ref: '#/$defs/LineItem' }
-  }
-} as const;
-```
+<<< ../../examples/docs/advanced/88-graph-defs-namespace.ts
 
 Here `LineItem` is accessible as `urn:bookstore:Order#/$defs/LineItem` - a node in the graph
 whose parent is `urn:bookstore:Order`.
@@ -156,12 +111,7 @@ ABox projection round-trips typed data through RDF quads - see [RDF round-trip](
 The bookstore example uses `urn:bookstore:{PascalCase}` - e.g. `urn:bookstore:Isbn`,
 `urn:bookstore:Book`.
 
-```ts
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: allSchemas
-});
-```
+<<< ../../examples/docs/advanced/65-graph-base-iri.ts
 
 `baseIRI` is used by the serializers to expand CURIE prefixes and anchor relative IRIs. It does
 not need to match the `$id` prefixes of the registered schemas - it is the base for the

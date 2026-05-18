@@ -387,7 +387,7 @@ void describe('toQuads / fromQuads boundaries', () => {
 
     assert.ok(quads.length > 0);
     for (const quad of quads) {
-      assert.match(quad.subject, /\/\.well-known\/genid\//u);
+      assert.match(quad.subject.value, /\/\.well-known\/genid\//u);
     }
   });
 
@@ -446,7 +446,7 @@ void describe('toQuads / fromQuads boundaries', () => {
     );
 
     const subjects = new Set(quads.map((quad) => {
-      return quad.subject;
+      return quad.subject.value;
     }));
 
     // Documented collision: every object subject collapses to the constant.
@@ -473,8 +473,10 @@ void describe('subschemaAt pointer errors', () => {
   } as const;
 
   void it('GBU: invalid pointer throws, not-found throws, empty returns root, nested resolves', () => {
+    // enableStrictGraph: false — PARENT has inline nested object to test subschemaAt
     const jt = JsonTology.create({
       'baseIRI': 'https://bookstore.io',
+      'enableStrictGraph': false,
       'schemas': [PARENT] as const
     });
 
@@ -552,7 +554,7 @@ void describe('static counterparts — failure modes', () => {
 
       assert.ok(quads.length > 0);
       for (const quad of quads) {
-        assert.match(quad.subject, /\/\.well-known\/genid\//u);
+        assert.match(quad.subject.value, /\/\.well-known\/genid\//u);
       }
     }
 
@@ -1003,7 +1005,12 @@ void describe('findDuplicates — structurally identical, IRI distinct', () => {
       },
       'type': 'object'
     } as const;
-    const jt = JsonTology.create({ 'baseIRI': 'urn:dup:' });
+    // enableStrictGraph: false — test registers inline duplicate shape to verify
+    // findDuplicates() detection.
+    const jt = JsonTology.create({
+      'baseIRI': 'urn:dup:',
+      'enableStrictGraph': false
+    });
 
     jt.registry.set(A);
     jt.registry.set(Container);

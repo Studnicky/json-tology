@@ -8,8 +8,13 @@
 
 import { Compose } from '../../../src/index.js';
 import {
-  aboxFixtures, bookstoreEntities, CustomerSchema
+  aboxFixtures, createBookstoreDocRegistry,
+  CustomerSchema
 } from '../bookstore/index.js';
+
+// createBookstoreDocRegistry seeds a permissive copy of the bookstore — docs examples extend
+// it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
+const jt = createBookstoreDocRegistry();
 
 const PatchCustomerSchema = Compose.partial(
   CustomerSchema,
@@ -25,14 +30,14 @@ const CustomerSummarySchema = Compose.pick(
   'https://bookstore.example/CustomerSummary'
 );
 
-bookstoreEntities.set(PatchCustomerSchema);
-bookstoreEntities.set(CustomerSummarySchema);
+jt.set(PatchCustomerSchema);
+jt.set(CustomerSummarySchema);
 
-const patchErrs = bookstoreEntities.validate(PatchCustomerSchema.$id, { 'name': aboxFixtures.customer.name });
+const patchErrs = jt.validate(PatchCustomerSchema.$id, { 'name': aboxFixtures.customer.name });
 
 console.assert(patchErrs.length === 0);
 
-const summary = bookstoreEntities.instantiate(CustomerSummarySchema.$id, {
+const summary = jt.instantiate(CustomerSummarySchema.$id, {
   'id': aboxFixtures.customer.id,
   'name': aboxFixtures.customer.name
 }) as { 'id': string;

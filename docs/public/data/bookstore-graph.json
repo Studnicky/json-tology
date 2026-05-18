@@ -254,6 +254,15 @@
     },
     {
       "data": {
+        "id": "urn:bookstore:Review__body__urn:bookstore:ReviewBody",
+        "kind": "range",
+        "label": "body",
+        "source": "urn:bookstore:Review",
+        "target": "urn:bookstore:ReviewBody"
+      }
+    },
+    {
+      "data": {
         "id": "urn:bookstore:Review__bookIsbn__urn:bookstore:Isbn",
         "kind": "range",
         "label": "bookIsbn",
@@ -295,6 +304,42 @@
         "label": "rating",
         "source": "urn:bookstore:Review",
         "target": "urn:bookstore:RatingScore"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:BookListPage__page__urn:bookstore:PageNumber",
+        "kind": "range",
+        "label": "page",
+        "source": "urn:bookstore:BookListPage",
+        "target": "urn:bookstore:PageNumber"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:BookListPage__pageSize__urn:bookstore:PageSize",
+        "kind": "range",
+        "label": "pageSize",
+        "source": "urn:bookstore:BookListPage",
+        "target": "urn:bookstore:PageSize"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:BookListPage__total__urn:bookstore:PageCount",
+        "kind": "range",
+        "label": "total",
+        "source": "urn:bookstore:BookListPage",
+        "target": "urn:bookstore:PageCount"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:BookListPage__totalPages__urn:bookstore:PageCount",
+        "kind": "range",
+        "label": "totalPages",
+        "source": "urn:bookstore:BookListPage",
+        "target": "urn:bookstore:PageCount"
       }
     },
     {
@@ -452,6 +497,87 @@
     },
     {
       "data": {
+        "id": "urn:bookstore:EBook__downloadUrl__urn:bookstore:DownloadUrl",
+        "kind": "range",
+        "label": "downloadUrl",
+        "source": "urn:bookstore:EBook",
+        "target": "urn:bookstore:DownloadUrl"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:EBook__fileFormat__urn:bookstore:EBookFormat",
+        "kind": "range",
+        "label": "fileFormat",
+        "source": "urn:bookstore:EBook",
+        "target": "urn:bookstore:EBookFormat"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:EBook__fileSizeBytes__urn:bookstore:FileSizeBytes",
+        "kind": "range",
+        "label": "fileSizeBytes",
+        "source": "urn:bookstore:EBook",
+        "target": "urn:bookstore:FileSizeBytes"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:PrintBook__binding__urn:bookstore:BindingType",
+        "kind": "range",
+        "label": "binding",
+        "source": "urn:bookstore:PrintBook",
+        "target": "urn:bookstore:BindingType"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:PrintBook__pageCount__urn:bookstore:PrintPageCount",
+        "kind": "range",
+        "label": "pageCount",
+        "source": "urn:bookstore:PrintBook",
+        "target": "urn:bookstore:PrintPageCount"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:PrintBook__weightGrams__urn:bookstore:WeightGrams",
+        "kind": "range",
+        "label": "weightGrams",
+        "source": "urn:bookstore:PrintBook",
+        "target": "urn:bookstore:WeightGrams"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:RareBook__estimatedAgeYears__urn:bookstore:EstimatedAgeYears",
+        "kind": "range",
+        "label": "estimatedAgeYears",
+        "source": "urn:bookstore:RareBook",
+        "target": "urn:bookstore:EstimatedAgeYears"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:RareBook__firstEditionYear__urn:bookstore:FirstEditionYear",
+        "kind": "range",
+        "label": "firstEditionYear",
+        "source": "urn:bookstore:RareBook",
+        "target": "urn:bookstore:FirstEditionYear"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:SignedFirstEdition__provenance__urn:bookstore:Provenance",
+        "kind": "range",
+        "label": "provenance",
+        "source": "urn:bookstore:SignedFirstEdition",
+        "target": "urn:bookstore:Provenance"
+      }
+    },
+    {
+      "data": {
         "id": "urn:bookstore:SignedFirstEdition__signedBy__urn:bookstore:AuthorName",
         "kind": "range",
         "label": "signedBy",
@@ -515,6 +641,13 @@
     },
     {
       "data": {
+        "id": "urn:bookstore:BindingType",
+        "kind": "primitive",
+        "label": "BindingType"
+      }
+    },
+    {
+      "data": {
         "id": "urn:bookstore:CityName",
         "kind": "primitive",
         "label": "CityName"
@@ -543,9 +676,44 @@
     },
     {
       "data": {
+        "id": "urn:bookstore:DownloadUrl",
+        "kind": "primitive",
+        "label": "DownloadUrl"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:EBookFormat",
+        "kind": "primitive",
+        "label": "EBookFormat"
+      }
+    },
+    {
+      "data": {
         "id": "urn:bookstore:Email",
         "kind": "primitive",
         "label": "Email"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:EstimatedAgeYears",
+        "kind": "primitive",
+        "label": "EstimatedAgeYears"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:FileSizeBytes",
+        "kind": "primitive",
+        "label": "FileSizeBytes"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:FirstEditionYear",
+        "kind": "primitive",
+        "label": "FirstEditionYear"
       }
     },
     {
@@ -571,6 +739,27 @@
     },
     {
       "data": {
+        "id": "urn:bookstore:PageCount",
+        "kind": "primitive",
+        "label": "PageCount"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:PageNumber",
+        "kind": "primitive",
+        "label": "PageNumber"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:PageSize",
+        "kind": "primitive",
+        "label": "PageSize"
+      }
+    },
+    {
+      "data": {
         "id": "urn:bookstore:PersonName",
         "kind": "primitive",
         "label": "PersonName"
@@ -585,9 +774,23 @@
     },
     {
       "data": {
+        "id": "urn:bookstore:PrintPageCount",
+        "kind": "primitive",
+        "label": "PrintPageCount"
+      }
+    },
+    {
+      "data": {
         "id": "urn:bookstore:PrintStatus",
         "kind": "primitive",
         "label": "PrintStatus"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Provenance",
+        "kind": "primitive",
+        "label": "Provenance"
       }
     },
     {
@@ -606,9 +809,23 @@
     },
     {
       "data": {
+        "id": "urn:bookstore:RatingCount",
+        "kind": "primitive",
+        "label": "RatingCount"
+      }
+    },
+    {
+      "data": {
         "id": "urn:bookstore:RatingScore",
         "kind": "primitive",
         "label": "RatingScore"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:ReviewBody",
+        "kind": "primitive",
+        "label": "ReviewBody"
       }
     },
     {
@@ -637,6 +854,13 @@
         "id": "urn:bookstore:Title",
         "kind": "primitive",
         "label": "Title"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:WeightGrams",
+        "kind": "primitive",
+        "label": "WeightGrams"
       }
     },
     {

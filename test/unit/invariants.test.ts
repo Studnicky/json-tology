@@ -83,6 +83,7 @@ void describe('invariants', { 'concurrency': true }, () => {
   void it('passing invariant returns no error', () => {
     const jt = JsonTology.create({
       'baseIRI': 'https://test.dev',
+      'enableStrictGraph': false,
       'invariants': {
         'https://test.dev/inv/Order': [{
           'fn': (order: unknown) => {
@@ -119,6 +120,7 @@ void describe('invariants', { 'concurrency': true }, () => {
   void it('failing invariant adds error to errors() output and ValidationErrors', () => {
     const jt = JsonTology.create({
       'baseIRI': 'https://test.dev',
+      'enableStrictGraph': false,
       'invariants': {
         'https://test.dev/inv/Order': [{
           'fn': (order: unknown) => {
@@ -151,6 +153,7 @@ void describe('invariants', { 'concurrency': true }, () => {
   void it('failing invariant causes coerce() to throw InstantiationError', () => {
     const jt = JsonTology.create({
       'baseIRI': 'https://test.dev',
+      'enableStrictGraph': false,
       'invariants': {
         'https://test.dev/inv/Order': [{
           'fn': (order: unknown) => {
@@ -190,6 +193,7 @@ void describe('invariants', { 'concurrency': true }, () => {
   void it('failing invariant causes is() to return false', () => {
     const jt = JsonTology.create({
       'baseIRI': 'https://test.dev',
+      'enableStrictGraph': false,
       'invariants': {
         'https://test.dev/inv/Order': [{
           'fn': (order: unknown) => {
@@ -231,6 +235,7 @@ void describe('invariants', { 'concurrency': true }, () => {
   void it('multiple invariants on the same schema all run; all failures collected', () => {
     const jt = JsonTology.create({
       'baseIRI': 'https://test.dev',
+      'enableStrictGraph': false,
       'invariants': {
         'https://test.dev/inv/Order': [
           {
@@ -276,6 +281,7 @@ void describe('invariants', { 'concurrency': true }, () => {
     let invariantRan = false;
     const jt = JsonTology.create({
       'baseIRI': 'https://test.dev',
+      'enableStrictGraph': false,
       'invariants': {
         'https://test.dev/inv/Order': [{
           'fn': () => {
@@ -308,6 +314,7 @@ void describe('invariants', { 'concurrency': true }, () => {
   void it('imperative addInvariant registers post-construction', () => {
     const jt = JsonTology.create({
       'baseIRI': 'https://test.dev',
+      'enableStrictGraph': false,
       'schemas': [
         OrderItemSchema,
         OrderSchema
@@ -340,6 +347,7 @@ void describe('invariants', { 'concurrency': true }, () => {
   void it('removeInvariant by name removes the invariant', () => {
     const jt = JsonTology.create({
       'baseIRI': 'https://test.dev',
+      'enableStrictGraph': false,
       'schemas': [
         OrderItemSchema,
         OrderSchema
@@ -375,6 +383,7 @@ void describe('invariants', { 'concurrency': true }, () => {
     let callCount = 0;
     const jt = JsonTology.create({
       'baseIRI': 'https://test.dev',
+      'enableStrictGraph': false,
       'schemas': [
         ChildSchema,
         ParentSchema
@@ -401,6 +410,7 @@ void describe('invariants', { 'concurrency': true }, () => {
   void it('error pointer reflects configured pointer when supplied', () => {
     const jt = JsonTology.create({
       'baseIRI': 'https://test.dev',
+      'enableStrictGraph': false,
       'schemas': [
         OrderItemSchema,
         OrderSchema

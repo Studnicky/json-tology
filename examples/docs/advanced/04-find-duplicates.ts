@@ -24,7 +24,9 @@ const BookSchema = {
   'type': 'object'
 } as const;
 
-const registry = new SchemaRegistry();
+// enableStrictGraph: false — this example intentionally registers a schema
+// with an inline duplicate shape to demonstrate findDuplicates() detection.
+const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
 registry.set(IsbnSchema);
 registry.set(BookSchema);

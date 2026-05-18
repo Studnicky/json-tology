@@ -27,6 +27,6 @@ console.assert(book.isbn === '9783522115056');
 console.assert(book.title === 'Momo');
 
 // value.create synthesizes zero-values for ALL required fields + explicit defaults.
-const blank = bookstoreEntities.value.create(BookSchema.$id);
+const blank = bookstoreEntities.value.create(BookSchema.$id) as Record<string, unknown>;
 
 console.assert((blank as { 'isbn': string }).isbn === '');

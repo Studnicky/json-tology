@@ -1,0 +1,40 @@
+/**
+ * Anti-pattern: Relying solely on runtime to catch misaligned
+ * defaults.
+ *
+ * Registering a misaligned schema raises a runtime error — but the
+ * mismatch is detectable at compile time. Wrap registration in a
+ * helper constrained by `DefaultAlignedType<T>` and the misalignment
+ * surfaces in the editor before it ever reaches `set()`.
+ */
+
+import type { DefaultAlignedType } from '../../../src/types/index.js';
+
+const _BadSchema = {
+  '$id': 'https://bookstore.example/BadBook',
+  'properties': {
+    'currency': {
+      'default': 42,
+      'type': 'string'
+    }
+  },
+  'type': 'object'
+} as const;
+
+// ⊥ Don't do this — runtime-only detection.
+// jt.set(_BadSchema); // throws at registration time
+
+// ✓ Do this — catch the misalignment at compile time.
+type GuardedBadSchema = DefaultAlignedType<typeof _BadSchema>;
+// never — DefaultAlignedType refuses the misaligned schema.
+
+type AssertEqualType<TLeft, TRight>
+  = [TLeft] extends [TRight] ? [TRight] extends [TLeft] ? true : false : false;
+
+function assert<T extends true>(): void {
+  void 0 as unknown as T;
+}
+
+assert<AssertEqualType<GuardedBadSchema, never>>();
+
+void _BadSchema;

@@ -1802,7 +1802,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
   } as const;
 
   function makeRegistry(): SchemaRegistry {
-    const reg = new SchemaRegistry();
+    const reg = new SchemaRegistry({ 'enableStrictGraph': false });
 
     reg.set(AddressSchema);
     reg.set(PersonSchema);
@@ -1910,7 +1910,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     }
 
     void it('treats unregistered range schema as annotation-only', () => {
-      const localReg = new SchemaRegistry();
+      const localReg = new SchemaRegistry({ 'enableStrictGraph': false });
 
       localReg.set({
         '$id': 'https://example.io/WithUnknownRange',
@@ -1997,7 +1997,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     });
 
     void it('serializes the full OWL 2 property-characteristic vocabulary (asymmetric, functional, inverseFunctional, reflexive, irreflexive)', () => {
-      const registry = new SchemaRegistry();
+      const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
       registry.set({
         '$id': 'https://example.io/Person',
@@ -2044,7 +2044,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     });
 
     void it('serializes extended predicates (disjointWith, inverseOf, transitive, symmetric)', () => {
-      const registry = new SchemaRegistry();
+      const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
       registry.set({
         '$id': 'https://example.io/Dog',
@@ -2696,7 +2696,9 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         }
       ];
 
-      const registry = new SchemaRegistry();
+      // enableStrictGraph: false — propertyNames test schemas use inline pattern/
+      // length constraints to test keyword mechanics, not data-modelling discipline.
+      const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
       for (const {
         'data': d, 'expected': exp, 'name': n, 'schema': sch
@@ -2729,7 +2731,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         }
       ];
 
-      const registry = new SchemaRegistry();
+      const registry = new SchemaRegistry({ 'enableStrictGraph': false });
       const kindDepSchema = {
         '$id': 'urn:test:dependent-schemas-kind-dep',
         'properties': {
@@ -2784,7 +2786,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         }
       ];
 
-      const registry = new SchemaRegistry();
+      const registry = new SchemaRegistry({ 'enableStrictGraph': false });
       const schema = {
         '$id': 'urn:test:prefix-items',
         'items': false,
@@ -2861,7 +2863,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         }
       ];
 
-      const registry = new SchemaRegistry();
+      const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
       registry.set({
         '$id': 'urn:test:contains-min-max',
@@ -2926,7 +2928,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         }
       ];
 
-      const registry = new SchemaRegistry();
+      const registry = new SchemaRegistry({ 'enableStrictGraph': false });
       const schema = {
         '$id': 'urn:test:unique-items',
         'type': 'array',
@@ -3008,7 +3010,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         }
       ];
 
-      const registry = new SchemaRegistry();
+      const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
       const ifSchema = {
         '$id': 'urn:test:ite-if',
@@ -3276,7 +3278,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         }
       ];
 
-      const registry = new SchemaRegistry();
+      const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
       for (const {
         'data': d, 'expected': exp, 'name': n, 'schema': sch
@@ -3399,7 +3401,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         }
       ];
 
-      const registry = new SchemaRegistry();
+      const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
       // Pre-register the content-inner schema needed by the content annotation test
       registry.set({
@@ -3562,7 +3564,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         }
       ];
 
-      const registry = new SchemaRegistry();
+      const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
       registry.set({
         '$id': 'urn:test:unevaluated-props',
@@ -3699,7 +3701,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         }
       ];
 
-      const registry = new SchemaRegistry();
+      const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
       // Local anchor
       registry.set({
@@ -3806,7 +3808,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
           }
         ];
 
-        const innerRegistry = new SchemaRegistry();
+        const innerRegistry = new SchemaRegistry({ 'enableStrictGraph': false });
 
         innerRegistry.set([
           {
@@ -3924,7 +3926,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         }
       ];
 
-      const registry = new SchemaRegistry();
+      const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
       registry.set([
         { '$id': 'urn:test:bool-true' },
@@ -4013,7 +4015,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         }
       ];
 
-      const registry = new SchemaRegistry();
+      const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
       registry.set([
         {
@@ -4200,7 +4202,9 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         }
       ];
 
-      const registry = new SchemaRegistry();
+      // enableStrictGraph: false — discriminated-oneOf test schemas use inline
+      // const/type shapes to test discriminator mechanics, not data-modelling.
+      const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
       registerAll(registry);
 
@@ -4250,7 +4254,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         }
       ];
 
-      const registry = new SchemaRegistry();
+      const registry = new SchemaRegistry({ 'enableStrictGraph': false });
       const DogSchema = {
         '$id': 'urn:test:dog',
         'properties': {
@@ -4466,6 +4470,7 @@ void describe('maxSchemaDepth — GraphEngine recursion depth parameter', () => 
   void it('engine.execute() with maxSchemaDepth below the schema-graph $ref depth throws RECURSION_LIMIT', () => {
     const jt = JsonTology.create({
       'baseIRI': 'urn:depth:',
+      'enableStrictGraph': false,
       'maxSchemaDepth': 1,
       'schemas': [SelfNode] as const
     });
@@ -4488,6 +4493,7 @@ void describe('maxSchemaDepth — GraphEngine recursion depth parameter', () => 
   void it('engine.execute() with maxSchemaDepth above the $ref depth completes successfully', () => {
     const jt = JsonTology.create({
       'baseIRI': 'urn:depth:',
+      'enableStrictGraph': false,
       'maxSchemaDepth': 100,
       'schemas': [SelfNode] as const
     });
@@ -4501,6 +4507,7 @@ void describe('maxSchemaDepth — GraphEngine recursion depth parameter', () => 
   void it('instantiate (compiled validation path) does NOT enforce maxSchemaDepth (documented gap)', () => {
     const jt = JsonTology.create({
       'baseIRI': 'urn:depth:',
+      'enableStrictGraph': false,
       'maxSchemaDepth': 1,
       'schemas': [SelfNode] as const
     });
@@ -4532,7 +4539,7 @@ void describe('GraphEngine self-reference resolution (parity regression)', () =>
   } as const;
 
   void it('engine obtained via registry.engine() resolves self-$ref without throwing', () => {
-    const registry = new SchemaRegistry();
+    const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
     registry.set(TreeNodeSchema);
 
@@ -4575,7 +4582,7 @@ void describe('GraphEngine self-reference resolution (parity regression)', () =>
   });
 
   void it('engine rejects structurally invalid nested nodes via the self-$ref branch', () => {
-    const registry = new SchemaRegistry();
+    const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
     registry.set(TreeNodeSchema);
 
@@ -4648,7 +4655,7 @@ void describe('GraphEngine embedded $id resolution (parity regression)', () => {
   };
 
   void it('engine obtained via registry.engine() resolves $ref to embedded $id without throwing', () => {
-    const registry = new SchemaRegistry();
+    const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
     registry.set(TreeSchema);
 
@@ -4661,7 +4668,7 @@ void describe('GraphEngine embedded $id resolution (parity regression)', () => {
   });
 
   void it('engine rejects invalid data against the embedded $id schema', () => {
-    const registry = new SchemaRegistry();
+    const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
     registry.set(TreeSchema);
 
@@ -4672,7 +4679,7 @@ void describe('GraphEngine embedded $id resolution (parity regression)', () => {
   });
 
   void it('error path includes the nested field that failed', () => {
-    const registry = new SchemaRegistry();
+    const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
     registry.set(TreeSchema);
 

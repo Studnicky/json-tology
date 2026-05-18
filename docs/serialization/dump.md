@@ -30,53 +30,23 @@
 
 #### Example 2: Compact payload - exclude default-valued fields
 
-```ts
-const compact = jt.dump(BookSchema.$id, book, { excludeDefaults: true });
-// { isbn: '...', title: '...', authors: [...], price: 14.99 }
-// currency: 'USD' and inStock: true are omitted (equal to schema defaults)
-```
+<<< ../../examples/docs/serialization/03-dump-exclude-defaults.ts
 
 #### Example 3: Project to specific fields
 
-```ts
-const listing = jt.dump(BookSchema.$id, book, { include: ['isbn', 'title', 'price'] });
-// { isbn: '9783522128001', title: 'Die unendliche Geschichte', price: 14.99 }
-```
+<<< ../../examples/docs/serialization/04-dump-include-projection.ts
 
 #### Example 4: Transform integration - `encode` applied automatically
 
 If the schema has a `Transform` encoder registered (see [Transforms](/transforms/decode-encode)), `dump` applies the `encode` function at each transformed node. A `instantiate` → `dump` round-trip recovers the original wire value.
 
-```ts
-import { Transform } from 'json-tology';
-
-const PlacedAtSchema = Transform.create(
-  { $id: 'https://bookstore.example/PlacedAt', type: 'string', format: 'date-time' } as const,
-  {
-    decode: (s: string) => new Date(s),
-    encode: (d: Date) => d.toISOString()
-  },
-);
-
-const date = jt.instantiate(PlacedAtSchema.$id, '2026-01-15T10:30:00.000Z');
-const wire = jt.dump(PlacedAtSchema.$id, date as Date);
-// '2026-01-15T10:30:00.000Z'  - encode applied automatically
-```
+<<< ../../examples/docs/serialization/05-dump-transform-encode.ts
 
 ### Bad examples - what NOT to do
 
 #### Anti-pattern 1: Calling dump on raw (uninstantiated) input
 
-```ts
-// ⊥ Don't do this  - dump expects an instantiated domain value, not raw input
-const raw = { isbn: '9783522128001', title: 'Die unendliche...', authors: ['Michael Ende'], price: '14.99' };
-const wire = jt.dump(BookSchema.$id, raw as Book);
-// price is still '14.99' string  - not coerced; dump just applies encode, not type coercion
-
-// ✓ Do this  - instantiate first, then dump
-const book = jt.instantiate(BookSchema.$id, raw);
-const wireBook = jt.dump(BookSchema.$id, book);
-```
+<<< ../../examples/docs/serialization/06-dump-antipattern-raw-input.ts
 
 ### Comparison
 
@@ -165,26 +135,11 @@ book.model_dump(exclude_none=True)
 
 #### Example 1: Serialize a customer for an HTTP response
 
-```ts
-const customer = jt.instantiate(CustomerSchema.$id, {
-  id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  email: 'bastian.bux@bookstore.example',
-  name:  'Bastian Balthazar Bux',
-});
-
-const json = jt.dumpJson(CustomerSchema.$id, customer);
-// '{"id":"...","email":"bastian.bux@bookstore.example","name":"Bastian Balthazar Bux","addresses":[]}'
-
-// In an Express handler:
-// res.type('application/json').send(json);
-```
+<<< ../../examples/docs/serialization/07-dumpjson-http-response.ts
 
 #### Example 2: Compact order payload
 
-```ts
-const orderJson = jt.dumpJson(OrderSchema.$id, order, { excludeDefaults: true });
-// JSON string without currency: 'USD'
-```
+<<< ../../examples/docs/serialization/08-dumpjson-compact-order.ts
 
 ### Comparison
 

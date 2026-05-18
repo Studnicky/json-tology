@@ -10,6 +10,10 @@
  * - External quads (full IRI predicates, blank node nesting)
  * - Inline nested objects (pointer-based type IRIs)
  * - Structural subtyping (Compose.extend child → parent lift)
+ *
+ * After the RDF/JS spec compliance refactor, `QuadInterface` is itself
+ * rdf/js-compatible — external quads from `n3`, `eyereasoner`, etc. can
+ * be passed directly without a conversion bridge.
  */
 
 import type { QuadInterface } from '../../interfaces/Quad.js';
@@ -27,92 +31,22 @@ import {
 
 import { RDF } from '../../constants/IRI.js';
 
-import type { RdfJsQuadInterface } from '../../interfaces/RdfJsQuad.js';
-
-// ---------------------------------------------------------------------------
-// RDF/JS interop
-// ---------------------------------------------------------------------------
-
-/**
- * Normalize a predicate IRI to the module's internal convention.
- * Maps the full `rdf:type` IRI to the prefixed string used internally.
- */
-function normalizePredicate(iri: string): string {
-  return iri === RDF_TYPE_IRI ? RDF.type : iri;
-}
-
-/**
- * Normalize an XSD datatype IRI to the module's prefixed form.
- * `http://www.w3.org/2001/XMLSchema#string` → `xsd:string`
- */
-function normalizeDatatype(dt: string): string {
-  return dt.startsWith(XSD_IRI_PREFIX)
-    ? `xsd:${dt.slice(XSD_IRI_PREFIX.length)}`
-    : dt;
-}
-
-/**
- * Convert an RDF/JS quad (from `n3`, `eyereasoner`, etc.) to the
- * module's internal `QuadInterface`.
- */
-function fromRdfQuadImpl(rdfQuad: RdfJsQuadInterface): QuadInterface {
-  return {
-    'object': rdfTermToQuadObject(rdfQuad.object),
-    'predicate': normalizePredicate(rdfQuad.predicate.value),
-    'subject': rdfQuad.subject.value
-  };
-}
-
-function rdfTermToQuadObject(term: RdfJsQuadInterface['object']): QuadObjectType {
-  if (term.termType === 'Literal') {
-    const normalizedDatatype = normalizeDatatype(term.datatype?.value ?? '');
-
-    return {
-      'datatype': {
-        'termType': 'NamedNode',
-        'value': normalizedDatatype
-      },
-      'language': term.language ?? '',
-      'termType': 'Literal',
-      'value': coerceLiteralValue(term.value, normalizedDatatype)
-    };
-  }
-
-  if (term.termType === 'BlankNode') {
-    return {
-      'termType': 'BlankNode',
-      'value': term.value
-    };
-  }
-
-  return {
-    'termType': 'NamedNode',
-    'value': term.value
-  };
-}
-
-
-function coerceLiteralValue(raw: string, datatype: string): unknown {
-  const local = datatype.startsWith(XSD_PREFIX) ? datatype.slice(XSD_PREFIX.length) : datatype;
-  const coercer = XSD_COERCERS.get(local);
-
-  return coercer === undefined ? raw : coercer(raw);
-}
+import { Terms } from './Terms.js';
 
 // ---------------------------------------------------------------------------
 // Lift internals
 // ---------------------------------------------------------------------------
 
-
 function groupBySubject(quads: QuadInterface[]): SubjectGroupType {
   const groups: SubjectGroupType = new Map();
 
   for (const quad of quads) {
-    let list = groups.get(quad.subject);
+    const subjectValue = quad.subject.value;
+    let list = groups.get(subjectValue);
 
     if (!list) {
       list = [];
-      groups.set(quad.subject, list);
+      groups.set(subjectValue, list);
     }
     list.push(quad);
   }
@@ -122,7 +56,10 @@ function groupBySubject(quads: QuadInterface[]): SubjectGroupType {
 
 function typeOf(quads: QuadInterface[]): string | undefined {
   for (const quad of quads) {
-    if (quad.predicate === RDF.type && quad.object.termType === 'NamedNode') {
+    const predicateValue = quad.predicate.value;
+
+    if ((predicateValue === RDF.type || predicateValue === RDF_TYPE_IRI)
+      && quad.object.termType === 'NamedNode') {
       return quad.object.value;
     }
   }
@@ -210,11 +147,12 @@ function buildPredicateIndex(subjectQuads: QuadInterface[]): Map<string, QuadInt
   const index = new Map<string, QuadInterface[]>();
 
   for (const quad of subjectQuads) {
-    let list = index.get(quad.predicate);
+    const predicateValue = quad.predicate.value;
+    let list = index.get(predicateValue);
 
     if (list === undefined) {
       list = [];
-      index.set(quad.predicate, list);
+      index.set(predicateValue, list);
     }
     list.push(quad);
   }
@@ -262,7 +200,7 @@ function findPropertyQuads(
   }
 
   const byExact = subjectQuads.filter((quad) => {
-    return quad.predicate === exact;
+    return quad.predicate.value === exact;
   });
 
   if (byExact.length > 0) {
@@ -270,9 +208,9 @@ function findPropertyQuads(
   }
 
   return subjectQuads.filter((quad) => {
-    const hash = quad.predicate.lastIndexOf('#');
+    const hash = quad.predicate.value.lastIndexOf('#');
 
-    return hash !== -1 && quad.predicate.slice(hash + 1) === propName;
+    return hash !== -1 && quad.predicate.value.slice(hash + 1) === propName;
   });
 }
 
@@ -385,20 +323,43 @@ function liftSingleValue(
 }
 
 /**
+ * Coerce a raw string literal value via XSD datatype prefix.
+ * Used when lifting external (non-internal) quads that carry string-serialised values.
+ */
+function coerceLiteralValue(raw: string, datatype: string): unknown {
+  const local = datatype.startsWith(XSD_PREFIX) ? datatype.slice(XSD_PREFIX.length) : datatype;
+  const coercer = XSD_COERCERS.get(local);
+
+  return coercer === undefined ? raw : coercer(raw);
+}
+
+/**
+ * Normalise an XSD datatype IRI to the module's prefixed form.
+ * `http://www.w3.org/2001/XMLSchema#string` → `xsd:string`
+ */
+function normalizeDatatype(dt: string): string {
+  return dt.startsWith(XSD_IRI_PREFIX)
+    ? `xsd:${dt.slice(XSD_IRI_PREFIX.length)}`
+    : dt;
+}
+
+/**
  * Lift typed JS objects from RDF quads.
  *
  * Given a schema ID and a set of quads (from ABox projection, a reasoner,
- * or any RDF source), reconstructs plain JS objects matching the schema.
+ * or any RDF source that produces rdf/js-compatible quads), reconstructs
+ * plain JS objects matching the schema.
  *
  * Supports:
  * - Internal quads (from `projectAbox`) — 100% lossless round-trip
- * - External quads (from `n3`, `eyereasoner`) — via `fromRdfQuad()` conversion
+ * - External quads (from `n3`, `eyereasoner`) — pass directly (QuadInterface is
+ *   rdf/js-compatible; no conversion bridge required)
  * - Structural subtyping — `Compose.extend()` children lift as parent types
  * - Inline nested objects — pointer-based type IRIs resolved within parent graph
  * - Blank node nesting — blank node references followed like named nodes
  *
  * @param schemaId - The `$id` of the target schema.
- * @param quads - RDF quads in the module's internal format.
+ * @param quads - RDF quads in rdf/js-compatible format.
  * @param registry - Schema registry for graph/schema lookup.
  * @returns Array of reconstructed objects (unvalidated — caller should `parse()` for full validation).
  */
@@ -443,9 +404,78 @@ function liftInstancesImpl(
   return results;
 }
 
+/**
+ * Adapt an external RDF/JS quad (from n3, eyereasoner, etc.) to a QuadInterface.
+ *
+ * External rdf/js quads are structurally compatible with QuadInterface when they
+ * carry term objects (termType + value) on subject, predicate, and object. This
+ * adapter handles the common case where the external library uses full IRI strings
+ * for rdf:type and XSD datatypes that the internal lift logic expects in prefixed form.
+ *
+ * Normalisation performed:
+ * - rdf:type full IRI → prefixed `rdf:type`
+ * - XSD datatype full IRIs → `xsd:localName`
+ * - Literal values are coerced from string by XSD datatype
+ *
+ * The returned object satisfies QuadInterface structurally; `equals()` methods
+ * delegate to the external term objects if present or return simple value comparisons.
+ */
+interface ExternalRdfJsQuadShape {
+  'object': { 'datatype'?: { 'value': string };
+    'language'?: string;
+    'termType': string;
+    'value': string };
+  'predicate': { 'value': string };
+  'subject': { 'value': string };
+}
+
+function fromExternalRdfJsQuad(rdfQuad: ExternalRdfJsQuadShape): QuadInterface {
+  const normalizedPredicate = rdfQuad.predicate.value === RDF_TYPE_IRI
+    ? RDF.type
+    : rdfQuad.predicate.value;
+
+  let objectTerm: QuadObjectType;
+  const obj = rdfQuad.object;
+
+  if (obj.termType === 'Literal') {
+    const normalizedDatatype = normalizeDatatype(obj.datatype?.value ?? '');
+    const coercedValue = coerceLiteralValue(obj.value, normalizedDatatype);
+
+    objectTerm = Terms.literal(coercedValue, {
+      'datatype': Terms.iri(normalizedDatatype),
+      'language': obj.language ?? ''
+    });
+  } else if (obj.termType === 'BlankNode') {
+    objectTerm = Terms.blank(obj.value);
+  } else {
+    objectTerm = Terms.iri(obj.value);
+  }
+
+  return {
+    'graph': Terms.defaultGraph(),
+    'object': objectTerm,
+    'predicate': Terms.iri(normalizedPredicate),
+    'subject': Terms.iri(rdfQuad.subject.value)
+  };
+}
+
 export const Lift = {
-  fromQuad(rdfQuad: RdfJsQuadInterface): QuadInterface {
-    return fromRdfQuadImpl(rdfQuad);
+  /**
+   * Adapt an external RDF/JS quad (from n3, eyereasoner, etc.) into a QuadInterface.
+   *
+   * Use this when the external library produces quads with string-serialised
+   * XSD datatypes and full IRI rdf:type — Lift.fromExternalQuad normalises these
+   * to the prefixed forms that json-tology's lift logic expects.
+   *
+   * If the external library already produces rdf/js-compliant quads with term objects,
+   * you can pass them directly to `Lift.instances()` without conversion.
+   *
+   * @deprecated Prefer passing rdf/js quads directly to `Lift.instances()`.
+   *   This method remains for compatibility with libraries that use string-valued
+   *   datatypes (full XSD IRIs) rather than the prefixed form json-tology uses internally.
+   */
+  fromExternalQuad(rdfQuad: ExternalRdfJsQuadShape): QuadInterface {
+    return fromExternalRdfJsQuad(rdfQuad);
   },
 
   instances(

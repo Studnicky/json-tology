@@ -26,70 +26,21 @@ The shape is two steps: prefetch the snapshot once (async), then construct the i
 
 ## Bundler (Vite, esbuild, webpack)
 
-```ts
-import { JsonTology, Loaders } from 'json-tology';
-import UserSchema from './schemas/User.json';
-import AddressSchema from './schemas/Address.json';
-
-// Pre-bundle local schemas; fall back to network for remote refs
-const snapshot = await JsonTology.prefetch({
-  loader: Loaders.compose(
-    Loaders.memory({ /* additional compile-time schemas */ }),
-    Loaders.fetch({ base: 'https://schemas.myapp.io/v1/' }),
-  ),
-  schemas: [UserSchema, AddressSchema],
-});
-
-const jt = JsonTology.create({
-  baseIRI: 'https://myapp.io',
-  prefetched: snapshot,
-  schemas: [UserSchema, AddressSchema] as const,
-});
-```
+<<< ../../examples/docs/advanced/71-prefetch-bundler-compose.ts
 
 ## Node (same API)
 
-```ts
-import { JsonTology, Loaders } from 'json-tology';
-
-const snapshot = await JsonTology.prefetch({
-  loader: Loaders.cached(
-    Loaders.fetch({ base: 'https://schemas.example/' })
-  ),
-  schemas: [UserSchema],
-});
-
-const jt = JsonTology.create({
-  baseIRI: 'https://myapp.io',
-  prefetched: snapshot,
-  schemas: [UserSchema] as const,
-});
-```
+<<< ../../examples/docs/advanced/72-prefetch-node-cached.ts
 
 For local file loading, write a four-line fs loader:
 
-```ts
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
-
-const fsLoader = async (iri: string) => {
-  try {
-    const file = path.join('/schemas', new URL(iri).pathname + '.json');
-    return JSON.parse(await fs.readFile(file, 'utf8'));
-  } catch { return null; }
-};
-```
+<<< ../../examples/docs/advanced/61-loaders-fs-custom.ts
 
 ## Schema-only (no $ref federation)
 
 If all schemas are known at build time and have no external `$ref`s, skip `prefetch` entirely:
 
-```ts
-const jt = JsonTology.create({
-  baseIRI: 'https://myapp.io',
-  schemas: [UserSchema, AddressSchema, OrderSchema] as const,
-});
-```
+<<< ../../examples/docs/advanced/73-schema-only-no-prefetch.ts
 
 ## Key points
 

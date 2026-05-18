@@ -10,7 +10,7 @@ import {
   aboxFixtures, bookstoreEntities, CustomerSchema
 } from '../bookstore/index.js';
 
-const customer = bookstoreEntities.instantiate(CustomerSchema.$id, aboxFixtures.customer);
+const customer = bookstoreEntities.instantiate(CustomerSchema, aboxFixtures.customer);
 const wire = bookstoreEntities.dumpJson(CustomerSchema.$id, customer);
 
 console.assert(typeof wire === 'string' && wire.length > 0);

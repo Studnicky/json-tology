@@ -6,7 +6,7 @@ import { BookSchema } from './Book.js';
  *
  * Demonstrates:
  *   - Compose.subClassOf with a single parent (rdfs:subClassOf in TBox)
- *   - Format-specific properties layered onto the parent
+ *   - Format-specific properties layered onto the parent, all via named $refs
  *   - Generalised if/then/else inference: when fileFormat === 'epub' the then
  *     branch narrows to require epubVersion; when not-epub (else) pdfVersion is required.
  *
@@ -16,6 +16,11 @@ import { BookSchema } from './Book.js';
  *   | (EBook base & { pdfVersion: string })
  *
  * Wire shape: { $id, allOf: [{ $ref: 'urn:bookstore:Book' }, { type: 'object', ... }] }
+ *
+ * All properties reference named primitives (strict-graph compliant):
+ *   - downloadUrl → DownloadUrl (format: uri string)
+ *   - fileFormat  → EBookFormat (enum: epub | pdf | mobi)
+ *   - fileSizeBytes → FileSizeBytes (non-negative integer)
  */
 
 export const EBookSchema = Compose.subClassOf(BookSchema, {
@@ -31,22 +36,9 @@ export const EBookSchema = Compose.subClassOf(BookSchema, {
     'type': 'object'
   },
   'properties': {
-    'downloadUrl': {
-      'format': 'uri',
-      'type': 'string'
-    },
-    'fileFormat': {
-      'enum': [
-        'epub',
-        'pdf',
-        'mobi'
-      ],
-      'type': 'string'
-    },
-    'fileSizeBytes': {
-      'minimum': 0,
-      'type': 'integer'
-    }
+    'downloadUrl': { '$ref': 'urn:bookstore:DownloadUrl' },
+    'fileFormat': { '$ref': 'urn:bookstore:EBookFormat' },
+    'fileSizeBytes': { '$ref': 'urn:bookstore:FileSizeBytes' }
   },
   'required': [
     'fileFormat',

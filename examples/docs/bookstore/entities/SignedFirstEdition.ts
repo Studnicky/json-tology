@@ -18,6 +18,7 @@ import { RareBookSchema } from './RareBook.js';
  * Demonstrates:
  *   - `Compose.subClassOf(parent, body)` — single-parent shape
  *   - `$ref` to `AuthorName` for the signature attribution
+ *   - `$ref` to `Provenance` for the custody trail (strict-graph compliant)
  *   - Pairing an OWL subclass declaration with a registered invariant
  *     for the rule TypeScript / JSON Schema can't express structurally.
  */
@@ -27,10 +28,7 @@ export const SignedFirstEditionSchema = Compose.subClassOf(
   {
     '$id': 'urn:bookstore:SignedFirstEdition',
     'properties': {
-      'provenance': {
-        'minLength': 1,
-        'type': 'string'
-      },
+      'provenance': { '$ref': 'urn:bookstore:Provenance' },
       'signedBy': { '$ref': AuthorNameSchema.$id }
     },
     'required': ['signedBy'],

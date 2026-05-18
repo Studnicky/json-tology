@@ -12,12 +12,17 @@ import {
   Compose, Transform
 } from '../../../src/index.js';
 import {
-  AmountSchema, bookstoreEntities
+  AmountSchema, bookstoreEntities,
+  createBookstoreDocRegistry
 } from '../bookstore/index.js';
+
+// createBookstoreDocRegistry seeds a permissive copy of the bookstore — docs examples extend
+// it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
+const jt = createBookstoreDocRegistry();
 
 const PriceCentsSchema = Compose.equivalent(AmountSchema, { '$id': 'https://bookstore.example/PriceCents' } as const);
 
-bookstoreEntities.set(PriceCentsSchema);
+jt.set(PriceCentsSchema);
 
 Transform.create<typeof PriceCentsSchema, number>(PriceCentsSchema, {
   'decode': (cents) => {
@@ -29,10 +34,10 @@ Transform.create<typeof PriceCentsSchema, number>(PriceCentsSchema, {
 });
 
 const wireCents = 1499;
-const decoded = bookstoreEntities.instantiate(PriceCentsSchema.$id, wireCents);
+const decoded = jt.instantiate(PriceCentsSchema, wireCents);
 
 console.assert(decoded === 14.99);
 
-const reEncoded = bookstoreEntities.encode(PriceCentsSchema, decoded as number);
+const reEncoded = jt.encode(PriceCentsSchema, decoded as number);
 
 console.assert(reEncoded === wireCents);

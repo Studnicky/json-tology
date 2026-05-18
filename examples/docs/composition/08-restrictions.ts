@@ -8,15 +8,20 @@
  * Demonstrates how additional restriction-narrowed sibling classes
  * register onto the canonical bookstore.
  *
- * Each derived schema attaches to `bookstoreEntities` via
- * `bookstoreEntities.set()` so the canonical registry remains the
+ * Each derived schema attaches to `` via
+ * `jt.set()` so the canonical registry remains the
  * single source of truth.
  */
 
 import { Compose } from '../../../src/index.js';
 import {
-  AuthorNameSchema, BookSchema, bookstoreEntities
+  AuthorNameSchema, BookSchema,
+  createBookstoreDocRegistry
 } from '../bookstore/index.js';
+
+// createBookstoreDocRegistry seeds a permissive copy of the bookstore — docs examples extend
+// it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
+const jt = createBookstoreDocRegistry();
 
 const AUTHORS_PROP = 'urn:bookstore:Book#authors';
 
@@ -41,8 +46,8 @@ const MultiAuthoredBookSchema = Compose.subClassOf(
   )
 );
 
-bookstoreEntities.set(OneAuthorBookSchema);
-bookstoreEntities.set(MultiAuthoredBookSchema);
+jt.set(OneAuthorBookSchema);
+jt.set(MultiAuthoredBookSchema);
 
 // A solo-authored Michael Ende title passes OneAuthorBook.
 const momo = {
@@ -57,7 +62,7 @@ const momo = {
   'title': 'Momo'
 } as const;
 
-const oneAuthorErrs = bookstoreEntities.validate(OneAuthorBookSchema.$id, momo);
+const oneAuthorErrs = jt.validate(OneAuthorBookSchema.$id, momo);
 
 console.assert(oneAuthorErrs.length === 0);
 
@@ -77,6 +82,6 @@ const anthology = {
   'title': 'Märchen-Sammelband'
 } as const;
 
-const multiErrs = bookstoreEntities.validate(MultiAuthoredBookSchema.$id, anthology);
+const multiErrs = jt.validate(MultiAuthoredBookSchema.$id, anthology);
 
 console.assert(multiErrs.length === 0);

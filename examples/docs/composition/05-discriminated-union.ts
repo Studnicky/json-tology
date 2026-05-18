@@ -12,8 +12,13 @@
 import { Compose } from '../../../src/index.js';
 import type { InferType } from '../../../src/types/index.js';
 import {
-  aboxFixtures, bookstoreEntities, InPrintBookSchema, OutOfPrintBookSchema
+  aboxFixtures, createBookstoreDocRegistry, InPrintBookSchema,
+  OutOfPrintBookSchema
 } from '../bookstore/index.js';
+
+// createBookstoreDocRegistry seeds a permissive copy of the bookstore — docs examples extend
+// it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
+const jt = createBookstoreDocRegistry();
 
 const BookStatusSchema = Compose.discriminatedUnion(
   'printStatus',
@@ -26,10 +31,10 @@ const BookStatusSchema = Compose.discriminatedUnion(
 
 type BookStatus = InferType<typeof BookStatusSchema>;
 
-bookstoreEntities.set(BookStatusSchema);
+jt.set(BookStatusSchema);
 
 // OutOfPrint variant — Bastian's rare 1979 Thienemann hardcover.
-const outOfPrintErrs = bookstoreEntities.validate(BookStatusSchema.$id, aboxFixtures.rareBook);
+const outOfPrintErrs = jt.validate(BookStatusSchema.$id, aboxFixtures.rareBook);
 
 console.assert(outOfPrintErrs.length === 0);
 
@@ -46,7 +51,7 @@ const inPrintData = {
   'title': 'Momo'
 } as const;
 
-const inPrintErrs = bookstoreEntities.validate(BookStatusSchema.$id, inPrintData);
+const inPrintErrs = jt.validate(BookStatusSchema.$id, inPrintData);
 
 console.assert(inPrintErrs.length === 0);
 

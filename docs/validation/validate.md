@@ -19,74 +19,23 @@
 
 `OrderSchema` contains `items: [OrderLine]` via `$ref`. Errors on nested fields include the full JSON Pointer path.
 
-```ts
-import { bookstoreEntities, OrderSchema } from './bookstore/index.js';
-
-const errs = bookstoreEntities.validate(OrderSchema.$id, {
-  id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-  customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  placedAt:   '2026-01-15T10:30:00Z',
-  total:      -5,      // exclusiveMinimum: 0 violated
-  items: [
-    { bookIsbn: '9780140449136', quantity: 0, unitPrice: 12.99 }, // minimum: 1 violated
-  ],
-});
-console.log(errs.items.map(e => `${e.path}: ${e.message}`));
-// ["/total: must be > 0", "/items/0/quantity: must be >= 1"]
-```
+<<< ../../examples/docs/validation/33-validate-nested-errors.ts
 
 ### Example 3: Use as a lightweight form validator
 
 Validate on blur before attempting a full instantiate.
 
-```ts
-import type { ValidationErrors } from 'json-tology/types';
-import { bookstoreEntities, ReviewSchema } from './bookstore/index.js';
-
-function validateReviewForm(formData: Record<string, unknown>): ValidationErrors {
-  return bookstoreEntities.validate(ReviewSchema.$id, formData);
-}
-
-const fieldErrors = validateReviewForm({ rating: 6, body: 'hi' });
-// items: [{ path: '/rating', ... }, { path: '/body', ... }]
-if (fieldErrors.length > 0) {
-  // display errors in the UI
-}
-```
+<<< ../../examples/docs/validation/34-validate-form-validator.ts
 
 ## Bad examples - what NOT to do
 
 ### Anti-pattern 1: Checking the return length and then re-instantiating
 
-```ts
-// ⊥ Don't do this  - double work, data is validated twice
-const errs = jt.validate(CustomerSchema.$id, data);
-if (errs.length === 0) {
-  const customer = jt.instantiate(CustomerSchema.$id, data); // validates again
-}
-
-// ✓ Do this  - instantiate directly; it validates + applies defaults in one pass
-try {
-  const customer = jt.instantiate(CustomerSchema.$id, data);
-} catch (err) {
-  // handle InstantiationError
-}
-```
+<<< ../../examples/docs/validation/35-validate-antipattern-double-work.ts
 
 ### Anti-pattern 2: Re-parsing message strings to extract field paths
 
-```ts
-// ⊥ Don't do this  - parsing formatted strings is fragile
-const errs = jt.validate(CustomerSchema.$id, data);
-const msg  = errs.items[0]?.message ?? '';
-const path = msg.split(':')[0]; // fragile string parsing
-
-// ✓ Do this  - iterate the structured ValidationErrorType objects
-const structured = jt.validate(CustomerSchema.$id, data);
-for (const err of structured) {
-  console.log(err.path, err.keyword, err.message);
-}
-```
+<<< ../../examples/docs/validation/36-validate-antipattern-string-parsing.ts
 
 ## Comparison
 

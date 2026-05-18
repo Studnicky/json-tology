@@ -2,9 +2,7 @@
 
 **Declaration.** Records an `owl:sameAs` assertion between two individuals (ABox-level identity). Both IRIs denote the same real-world entity. Emitted at `toQuads()` time as a pair of symmetric quads.
 
-```ts
-jt.sameAs(instanceIriA: string, instanceIriB: string): void
-```
+<<< ../../examples/docs/advanced/42-sameas-signature.ts
 
 **Use this when** you want to declare that two distinct IRIs refer to the same real-world entity. The canonical use is linking a current stable IRI to a legacy IRI after a system migration, or linking identifiers across two authoritative sources (e.g. an internal customer ID alongside a third-party marketplace ID). This is the ABox counterpart to `Compose.equivalent` (which is class-level via `owl:equivalentClass`).
 
@@ -16,125 +14,39 @@ jt.sameAs(instanceIriA: string, instanceIriB: string): void
 
 The bookstore migrated from a legacy CRM in 2024. Customer Bastian Balthazar Bux carries the current bookstore IRI alongside the legacy CRM ID (`cust-00042`) the bookstore inherited from the old system. Declaring `sameAs` lets a reasoner merge facts about both — the new email from the bookstore and the old purchase history from the CRM resolve to one logical individual.
 
-```ts
-import { bookstoreEntities, CustomerSchema, aboxFixtures } from './bookstore/index.js';
-
-bookstoreEntities.sameAs(
-  'urn:bookstore:customer:bastian-bux',
-  'urn:legacy-crm:cust-00042'
-);
-
-const quads = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer);
-// quads include both directions:
-//   <urn:bookstore:customer:bastian-bux> owl:sameAs <urn:legacy-crm:cust-00042>
-//   <urn:legacy-crm:cust-00042>          owl:sameAs <urn:bookstore:customer:bastian-bux>
-```
+<<< ../../examples/docs/advanced/43-sameas-legacy-crm.ts
 
 ### Example 2: Cross-catalog book identity
 
 Bastian ordered a rare first-edition Michael Ende's *Die unendliche Geschichte* (Klett Books, 1979). The bookstore catalogs it under one IRI; WorldCat's union catalog references the same physical edition under an OCLC record IRI. Declaring `sameAs` lets a bibliographic reasoner unify metadata (publisher, page count, ISBN-13) regardless of which authority the fact came from.
 
-```ts
-import { bookstoreEntities, RareBookSchema, aboxFixtures } from './bookstore/index.js';
-
-bookstoreEntities.sameAs(
-  'urn:bookstore:rarebook:unendlichegeschichte-1979-klett',
-  'http://www.worldcat.org/oclc/644849'
-);
-
-const quads = bookstoreEntities.toQuads(RareBookSchema, aboxFixtures.rareBook);
-// → both IRIs now resolve to the same rare-book individual across the
-//   internal catalog and any partner reasoner that consults WorldCat.
-```
+<<< ../../examples/docs/advanced/44-sameas-cross-catalog-book.ts
 
 ### Example 3: Idempotence: duplicate and reverse pairs are no-ops
 
 Recording the same pair twice, or in reverse order, is a no-op. Self-pairs are silently dropped.
 
-```ts
-import { bookstoreEntities } from './bookstore/index.js';
-
-bookstoreEntities.sameAs('urn:bookstore:customer:bastian-bux', 'urn:legacy-crm:cust-00042');
-bookstoreEntities.sameAs('urn:legacy-crm:cust-00042', 'urn:bookstore:customer:bastian-bux'); // no-op — pair already recorded
-bookstoreEntities.sameAs('urn:bookstore:customer:bastian-bux', 'urn:bookstore:customer:bastian-bux'); // no-op — self-pair
-```
+<<< ../../examples/docs/advanced/45-sameas-idempotence.ts
 
 ### Example 4: Symmetric emission
 
 `owl:sameAs` is symmetric by definition, but reasoners differ in whether they materialize the symmetric edge. `sameAs` emits both directions so consumers see the relation regardless of reasoner behaviour.
 
-```ts
-import { bookstoreEntities, CustomerSchema, aboxFixtures } from './bookstore/index.js';
-
-bookstoreEntities.sameAs('urn:bookstore:customer:bastian-bux', 'urn:legacy-crm:cust-00042');
-const quads = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer);
-
-const sameAsQuads = quads.filter(q => q.predicate.value === 'http://www.w3.org/2002/07/owl#sameAs');
-// sameAsQuads.length === 2 — both directions always emitted
-```
+<<< ../../examples/docs/advanced/46-sameas-symmetric-emission.ts
 
 ## Bad examples: what NOT to do
 
 ### Anti-pattern 1: Using sameAs for class-level identity
 
-```ts
-import { bookstoreEntities } from './bookstore/index.js';
-
-// ✗ Don't do this — sameAs is for individuals; use Compose.equivalent for classes
-entities.sameAs(
-  'https://bookstore.example/Book',     // a class IRI
-  'https://bookstore.example/CatalogItem' // another class IRI
-);
-// OWL forbids owl:sameAs between class URIs — this produces invalid RDF
-
-// ✓ Do this — use Compose.equivalent for class-level identity
-import { Compose } from 'json-tology';
-import { BookSchema } from './bookstore/index.js';
-const CatalogItemSchema = Compose.equivalent(BookSchema, {
-  $id: 'https://bookstore.example/CatalogItem',
-});
-```
+<<< ../../examples/docs/advanced/47-sameas-antipattern-class-level.ts
 
 ### Anti-pattern 2: Declaring sameAs between two editions of the same title
 
-```ts
-// ✗ Don't do this — sameAs asserts identity of individuals, not "they share
-// a title". The 1979 Thienemann first edition and the 1984 Penguin English
-// translation of Die unendliche Geschichte are two different physical books
-// with different ISBNs, publishers, page counts, prices, and condition
-// notes. They share an author and a title — that is what
-// `Compose.equivalent` / shared $ref to the title primitive expresses at
-// the class level, not what `sameAs` expresses at the instance level.
-bookstoreEntities.sameAs(
-  'urn:bookstore:rarebook:neverending-1979-thienemann', // First edition, hardcover, €850
-  'urn:bookstore:rarebook:neverending-1984-penguin'     // Penguin English paperback, €14.99
-);
-// A reasoner that consumes both edges will now treat one logical book as
-// having two ISBNs, two publishers, two prices, and two condition reports —
-// silently corrupting the catalog.
-
-// ✓ Do this — use sameAs only across two IRIs that authoritatively name the
-//   same physical or logical individual (one record in two systems, one
-//   customer across a migration, one book in two union catalogs).
-bookstoreEntities.sameAs(
-  'urn:bookstore:rarebook:neverending-1979-thienemann',
-  'http://www.worldcat.org/oclc/5705614'
-);
-```
+<<< ../../examples/docs/advanced/48-sameas-antipattern-two-editions.ts
 
 ### Anti-pattern 3: Calling sameAs after toQuads instead of before
 
-```ts
-import { bookstoreEntities, CustomerSchema, aboxFixtures } from './bookstore/index.js';
-
-const quads = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer); // sameAs not yet recorded
-
-bookstoreEntities.sameAs('urn:bookstore:customer:bastian-bux', 'urn:legacy-crm:cust-00042'); // ✗ too late — not in quads
-
-// ✓ Do this — record sameAs assertions before calling toQuads
-bookstoreEntities.sameAs('urn:bookstore:customer:bastian-bux', 'urn:legacy-crm:cust-00042');
-const quads2 = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer);
-```
+<<< ../../examples/docs/advanced/49-sameas-antipattern-after-toquads.ts
 
 ## Comparison
 

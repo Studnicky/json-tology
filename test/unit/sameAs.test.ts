@@ -65,15 +65,15 @@ void describe('JsonTology.sameAs() — Good/Bad/Ugly', () => {
       'name': 'Alice'
     }, { 'iriFor': 'urn:example:alice' });
     const sameAsQuads = quads.filter((quad) => {
-      return quad.predicate === OWL_SAME_AS;
+      return quad.predicate.value === OWL_SAME_AS;
     });
 
     assert.equal(sameAsQuads.length, 2, 'symmetric pair emitted');
     const forward = sameAsQuads.find((quad) => {
-      return quad.subject === 'urn:example:alice' && quad.object.value === 'urn:example:alice2';
+      return quad.subject.value === 'urn:example:alice' && quad.object.value === 'urn:example:alice2';
     });
     const reverse = sameAsQuads.find((quad) => {
-      return quad.subject === 'urn:example:alice2' && quad.object.value === 'urn:example:alice';
+      return quad.subject.value === 'urn:example:alice2' && quad.object.value === 'urn:example:alice';
     });
 
     assert.notEqual(forward, undefined, 'forward quad present');
@@ -85,7 +85,7 @@ void describe('JsonTology.sameAs() — Good/Bad/Ugly', () => {
       'schemas': [PersonSchema] as const
     });
     const noSameAsQuads = jt2.toQuads(PersonSchema, { 'id': 'a1' }).filter((quad) => {
-      return quad.predicate === OWL_SAME_AS;
+      return quad.predicate.value === OWL_SAME_AS;
     });
 
     assert.equal(noSameAsQuads.length, 0);
@@ -100,7 +100,7 @@ void describe('JsonTology.sameAs() — Good/Bad/Ugly', () => {
     jt3.sameAs('urn:c', 'urn:d');
     assert.equal(jt3.registry.sameAsStore.all().length, 2);
     const multiQuads = jt3.toQuads(PersonSchema, { 'id': 'a1' }).filter((quad) => {
-      return quad.predicate === OWL_SAME_AS;
+      return quad.predicate.value === OWL_SAME_AS;
     });
 
     assert.equal(multiQuads.length, 4, 'two pairs, symmetric → 4 quads');
@@ -116,12 +116,12 @@ void describe('JsonTology.sameAs() — Good/Bad/Ugly', () => {
       'graphIRI': 'urn:example:graph1',
       'iriFor': 'urn:example:x'
     }).filter((quad) => {
-      return quad.predicate === OWL_SAME_AS;
+      return quad.predicate.value === OWL_SAME_AS;
     });
 
     assert.equal(graphQuads.length, 2);
     for (const quad of graphQuads) {
-      assert.equal(quad.graph, 'urn:example:graph1');
+      assert.equal(quad.graph.value, 'urn:example:graph1');
     }
   });
 });

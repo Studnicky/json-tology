@@ -4,6 +4,10 @@
  * Owns blank-node counter state and provides helpers for building
  * RDF quad objects: iri(), literal(), bnode(), rdfList(), quad(),
  * and the shared emitLiterals() helper used by OWL/SHACL projections.
+ *
+ * All quads are rdf/js-compliant: subject, predicate, and graph are
+ * term objects (IriTermType | BnodeTermType | DefaultGraphTermType),
+ * not bare strings. Use `.value` to extract the IRI string.
  */
 
 import type { QuadInterface } from '../../interfaces/Quad.js';
@@ -11,6 +15,7 @@ import type { QuadObjectType } from '../../types/Quad.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
 import type { RelationIndexInterface } from '../../interfaces/RelationIndex.js';
 import { ProjectionIndex } from './ProjectionIndex.js';
+import { Terms } from './Terms.js';
 import { XSD } from '../../constants/IRI.js';
 
 // ---------------------------------------------------------------------------
@@ -51,10 +56,7 @@ function expandCurieIfNeeded(value: string, curie: CurieInterface): string {
 
 export class QuadFactory {
   static bnode(id: string): QuadObjectType {
-    return {
-      'termType': 'BlankNode',
-      'value': id
-    };
+    return Terms.blank(id);
   }
 
   /**
@@ -111,25 +113,14 @@ export class QuadFactory {
     const { curie } = options ?? {};
     const expandedValue = curie ? expandCurieIfNeeded(value, curie) : value;
 
-    return {
-      'termType': 'NamedNode',
-      'value': expandedValue
-    };
+    return Terms.iri(expandedValue);
   }
 
   static literal(value: unknown, datatype: string, options?: { 'curie'?: CurieInterface | undefined }): QuadObjectType {
     const { curie } = options ?? {};
     const expandedDatatype = curie ? expandCurieIfNeeded(datatype, curie) : datatype;
 
-    return {
-      'datatype': {
-        'termType': 'NamedNode' as const,
-        'value': expandedDatatype
-      },
-      'language': '',
-      'termType': 'Literal',
-      value
-    };
+    return Terms.literal(value, { 'datatype': Terms.iri(expandedDatatype) });
   }
 
   static nextBnode(): string {
@@ -144,19 +135,22 @@ export class QuadFactory {
   ): QuadInterface {
     const { curie } = options ?? {};
     const expandedPredicate = curie ? expandCurieIfNeeded(predicate, curie) : predicate;
+    const expandedSubject = curie ? expandCurieIfNeeded(subject, curie) : subject;
+
+    const subjectTerm = expandedSubject.startsWith('_:')
+      ? Terms.blank(expandedSubject)
+      : Terms.iri(expandedSubject);
 
     return {
+      'graph': Terms.defaultGraph(),
       object,
-      'predicate': expandedPredicate,
-      subject
+      'predicate': Terms.iri(expandedPredicate),
+      'subject': subjectTerm
     };
   }
 
   static rdfList(items: QuadObjectType[]): QuadObjectType {
-    return {
-      items,
-      'termType': 'List'
-    };
+    return Terms.list(items);
   }
 
   static resetBnodeCounter(): void {

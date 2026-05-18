@@ -30,7 +30,9 @@
  *   → parseIsbn        : string → ParsedIsbnInterface (extracts EAN prefix, group code, etc.)
  */
 
-import { Transform } from '../../../src/index.js';
+import {
+  Compose, Transform
+} from '../../../src/index.js';
 import type { TransformStageInterface } from '../../../src/interfaces/TransformStage.js';
 import { IsbnSchema } from './entities/Isbn.js';
 
@@ -132,6 +134,12 @@ const parseIsbnSegments: TransformStageInterface<string, ParsedIsbnInterface> = 
 /**
  * Full ISBN chain composed via `Transform.chain`.
  *
+ * The chain is attached to a `Compose.equivalent` sibling of `IsbnSchema` so
+ * the canonical `IsbnSchema` object remains transform-free. Any example that
+ * instantiates `IsbnSchema` directly (or via `$ref: urn:bookstore:Isbn`) sees
+ * the plain string wire format — the decode pipeline only fires when callers
+ * explicitly use `IsbnPipelineSchema.$id`.
+ *
  * `ParseOutputType<typeof IsbnPipelineSchema>` resolves to `ParsedIsbnInterface`.
  * Pass this schema to `jt.instantiate()` to get a structured `ParsedIsbnInterface`
  * back instead of the raw wire string.
@@ -144,7 +152,9 @@ const parseIsbnSegments: TransformStageInterface<string, ParsedIsbnInterface> = 
  * `ChainMismatchInterface` brand error because `ParsedIsbnInterface` is not
  * assignable to validateIsbnLength's `string` parameter.
  */
-export const IsbnPipelineSchema = Transform.chain(IsbnSchema, [
+const IsbnPipelineBase = Compose.equivalent(IsbnSchema, { '$id': 'urn:bookstore:_IsbnPipeline' } as const);
+
+export const IsbnPipelineSchema = Transform.chain(IsbnPipelineBase, [
   validateIsbnLength,
   parseIsbnSegments
 ] as const);

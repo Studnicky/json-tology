@@ -37,21 +37,7 @@ A static call rebuilds the canonical graph for every invocation. An instance reu
 
 ## Comparison: instance vs static for `validate`
 
-```ts
-// ── Instance form ──────────────────────────────────────────
-import { bookstoreEntities, CustomerSchema } from './bookstore/index.js';
-
-const errs = bookstoreEntities.validate(CustomerSchema.$id, data);
-// CustomerSchema is registered once at JsonTology.create() time;
-// every call reuses the compiled validator.
-
-// ── Static form ────────────────────────────────────────────
-import { JsonTology, CustomerSchema } from './bookstore/index.js';
-
-const errs2 = JsonTology.validate(CustomerSchema, data);
-// Builds an ephemeral registry, registers CustomerSchema,
-// runs validate, discards the registry. Each call repeats the work.
-```
+<<< ../examples/docs/static-helpers/01-instance-vs-static.ts
 
 The two forms return the same `ValidationErrors` collection. Pick the static form for one-off scripts, examples, and self-contained schemas; pick the instance form for everything else.
 

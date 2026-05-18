@@ -217,21 +217,9 @@ void describe('SchemaRegistry registration', () => {
     },
     {
       'check': () => {
-        // Default mode: inline schemas register silently (no throw)
-        const defaultRegistry = JsonTology.create({
-          'baseIRI': 'https://example.io',
-          'logger': new Logger()
-        }).registry;
-
-        assert.doesNotThrow(() => {
-          defaultRegistry.set(InvalidInlineSchema);
-        });
-        assert.deepStrictEqual(defaultRegistry.get(InvalidInlineSchema.$id), InvalidInlineSchema);
-
-        // enableStrictGraph mode: inline schemas throw SchemaError
+        // Default (strict) mode: inline schemas throw SchemaError
         const strictRegistry = JsonTology.create({
           'baseIRI': 'https://example.io',
-          'enableStrictGraph': true,
           'logger': new Logger()
         }).registry;
 
@@ -256,8 +244,20 @@ void describe('SchemaRegistry registration', () => {
         assert.throws(() => {
           strictRegistry.instantiate(InvalidInlineSchema.$id, {});
         }, /SCHEMA_NOT_REGISTERED|Schema not registered/u);
+
+        // Permissive mode (enableStrictGraph: false): inline schemas register silently
+        const permissiveRegistry = JsonTology.create({
+          'baseIRI': 'https://example.io',
+          'enableStrictGraph': false,
+          'logger': new Logger()
+        }).registry;
+
+        assert.doesNotThrow(() => {
+          permissiveRegistry.set(InvalidInlineSchema);
+        });
+        assert.deepStrictEqual(permissiveRegistry.get(InvalidInlineSchema.$id), InvalidInlineSchema);
       },
-      'name': 'inline schema: silent by default, throws with enableStrictGraph',
+      'name': 'inline schema: throws by default (strict), silent with enableStrictGraph: false',
       'setup': () => {
         // no setup needed
       }
@@ -297,8 +297,11 @@ void describe('SchemaRegistry registration', () => {
     check, 'name': scenarioName, setup
   } of registrationScenarios) {
     void it(scenarioName, () => {
+      // enableStrictGraph: false — some scenarios register schemas with inline
+      // nested objects to test Map-replacement semantics.
       const registry = JsonTology.create({
         'baseIRI': 'https://example.io',
+        'enableStrictGraph': false,
         'logger': new Logger()
       }).registry;
 

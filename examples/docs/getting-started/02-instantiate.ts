@@ -10,7 +10,7 @@ import {
 } from '../bookstore/index.js';
 
 // Instantiate with fixture values; strip extra fields
-const customer = bookstoreEntities.instantiate(CustomerSchema.$id, {
+const customer = bookstoreEntities.instantiate(CustomerSchema, {
   'email': aboxFixtures.customer.email,
   // Not in schema — stripped on instantiate.
   'extra': 'stripped',

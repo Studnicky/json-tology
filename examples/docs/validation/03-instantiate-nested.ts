@@ -12,7 +12,7 @@ import {
   aboxFixtures, bookstoreEntities, OrderSchema
 } from '../bookstore/index.js';
 
-const order = bookstoreEntities.instantiate(OrderSchema.$id, {
+const order = bookstoreEntities.instantiate(OrderSchema, {
   'customerId': aboxFixtures.customer.id,
   'id': aboxFixtures.order.id,
   'items': [
@@ -46,4 +46,4 @@ const order = bookstoreEntities.instantiate(OrderSchema.$id, {
 console.assert(order.items.length === 2);
 console.assert(!('extra' in order.items[0]));
 console.assert(!('unexpectedField' in order));
-console.assert(order.items[0].bookIsbn === aboxFixtures.rareBook.isbn);
+console.assert((order.items[0] as { 'bookIsbn': string }).bookIsbn === aboxFixtures.rareBook.isbn);

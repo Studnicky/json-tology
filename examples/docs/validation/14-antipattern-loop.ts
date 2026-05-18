@@ -1,6 +1,11 @@
 import {
-  BookSchema, bookstoreEntities
+  BookSchema,
+  createBookstoreDocRegistry
 } from '../bookstore/index.js';
+
+// createBookstoreDocRegistry seeds a permissive copy of the bookstore — docs examples extend
+// it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
+const jt = createBookstoreDocRegistry();
 
 const candidateIsbns = [
   '978014044913',
@@ -10,16 +15,16 @@ const candidateIsbns = [
 // Anti-pattern: re-resolves and re-registers the sub-schema on every iteration
 // Don't do this
 for (const rawIsbn of candidateIsbns) {
-  const sub = bookstoreEntities.subschemaAt(BookSchema.$id, '/properties/isbn');
+  const sub = jt.subschemaAt(BookSchema.$id, '/properties/isbn');
 
-  bookstoreEntities.validate(sub, rawIsbn);
+  jt.validate(sub, rawIsbn);
 }
 
 // Correct approach: resolve once, reuse across calls
-const isbnSchema = bookstoreEntities.subschemaAt(BookSchema.$id, '/properties/isbn');
+const isbnSchema = jt.subschemaAt(BookSchema.$id, '/properties/isbn');
 
 for (const rawIsbn of candidateIsbns) {
-  const result = bookstoreEntities.validate(isbnSchema, rawIsbn);
+  const result = jt.validate(isbnSchema, rawIsbn);
 
   if (typeof result === 'object') {
     console.assert(true, 'Each validation should complete');

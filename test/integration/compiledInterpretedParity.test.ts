@@ -314,7 +314,11 @@ void describe('compiled/interpreted parity', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: anyOf with overlapping branches', () => {
-    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    // enableStrictGraph: false — synthetic anyOf branches with inline minimum constraints
+    const registry = JsonTology.create({
+      'baseIRI': 'urn:test:',
+      'enableStrictGraph': false
+    });
 
     registry.set({
       '$id': 'https://parity.test/anyof-overlap',
@@ -367,7 +371,11 @@ void describe('compiled/interpreted parity', () => {
   // ---------------------------------------------------------------------------
 
   void it('keyword: oneOf with overlapping branches', () => {
-    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    // enableStrictGraph: false — synthetic oneOf branches with inline min/max constraints
+    const registry = JsonTology.create({
+      'baseIRI': 'urn:test:',
+      'enableStrictGraph': false
+    });
 
     registry.set({
       '$id': 'https://parity.test/oneof-overlap',

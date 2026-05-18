@@ -7,10 +7,24 @@
  *
  * Per the architecture invariant in ARCHITECTURE.md (#13), every docs
  * TypeScript example must originate from a runnable example file so
- * the docs and the runtime stay in lockstep. Inline `\`\`\`ts` blocks
- * inside comparison code-groups (`::: code-group` ... `:::`) are
- * allowed because comparator code (zod / valibot / typebox / ajv /
- * io-ts) is non-json-tology and lives only in docs.
+ * the docs and the runtime stay in lockstep.
+ *
+ * Three kinds of inline `\`\`\`ts` blocks are exempt from the count:
+ *
+ *   1. Blocks inside a `::: code-group` ... `:::` block. These exist
+ *      to compare json-tology with peer libraries (zod / valibot /
+ *      typebox / ajv / io-ts) and the comparator code legitimately
+ *      lives only in docs.
+ *
+ *   2. Blocks immediately preceded by an HTML comment of the form
+ *      `<!-- inline-ts-ok: <reason> -->`. The marker carries a human
+ *      rationale (`.d.ts module augmentation`, `pseudocode signature`,
+ *      `type-shape illustration`, etc.) for why the block cannot be a
+ *      runnable example file.
+ *
+ *   3. Files matching `EXEMPT_FILE_PATTERNS` — historical migration
+ *      guides and planning/handoff documents that describe a snapshot
+ *      in time rather than the current API surface.
  *
  * Exit status:
  *   0 — under the ceiling
@@ -18,7 +32,7 @@
  *       without being converted)
  *
  * Ratcheting: the ceiling lives next to this script as a constant.
- * Lower it as Phase 3 conversion proceeds; never raise it.
+ * Lower it as conversion progresses; never raise it.
  */
 
 import {
@@ -34,9 +48,21 @@ const REPO_ROOT = join(SCRIPT_DIR, '..');
 const DOCS_ROOT = join(REPO_ROOT, 'docs');
 
 // Ratchet ceiling: docs/**\/*.md may carry at most this many inline ```ts
-// blocks that live OUTSIDE a `::: code-group ... :::` comparator section.
-// Lower as Phase 3 progresses.
-const INLINE_TS_CEILING = 427;
+// blocks that are NOT inside a code-group, NOT carrying an
+// `inline-ts-ok` exemption marker, and NOT in an exempt file.
+const INLINE_TS_CEILING = 0;
+
+// Files exempt from the count. Historical migration guides document past
+// API behaviour and pin to a specific release; their inline snippets are
+// not part of the current authoring surface. Planning/handoff documents
+// describe project state at a moment in time and are not API references.
+const EXEMPT_FILE_PATTERNS = [
+  /^docs\/migration-\d+\.\d+\.\d+\.md$/,
+  /^docs\/example-suite-plan\.md$/,
+  /^docs\/resume-handoff\.md$/
+];
+
+const INLINE_OK_MARKER = /<!--\s*inline-ts-ok:\s*([^>]*?)\s*-->/;
 
 async function listMarkdownFiles(root) {
   const out = [];
@@ -68,24 +94,56 @@ function countNonGroupTsBlocks(content) {
   const lines = content.split('\n');
   let inGroup = false;
   let count = 0;
+  let pendingExemption = false;
 
   for (const line of lines) {
     const trimmed = line.trimStart();
 
     if (trimmed.startsWith('::: code-group')) {
       inGroup = true;
+      pendingExemption = false;
       continue;
     }
     if (inGroup && trimmed === ':::') {
       inGroup = false;
       continue;
     }
+
+    // Track inline-ok exemption markers immediately preceding a ts block.
+    if (!inGroup && INLINE_OK_MARKER.test(trimmed)) {
+      pendingExemption = true;
+      continue;
+    }
+
     if (!inGroup && /^```ts(\s|$)/.test(trimmed)) {
+      if (pendingExemption) {
+        pendingExemption = false;
+        continue;
+      }
       count += 1;
+      continue;
+    }
+
+    // Blank lines preserve a pending exemption; any non-blank non-fence
+    // line clears it. Markers must be the IMMEDIATELY-preceding non-blank
+    // line before the ts fence so reviewers can see the rationale next to
+    // the code it exempts.
+    if (trimmed !== '') {
+      pendingExemption = false;
     }
   }
 
   return count;
+}
+
+function isExemptFile(relPath) {
+  for (const pattern of EXEMPT_FILE_PATTERNS) {
+    if (pattern.test(relPath)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 const files = await listMarkdownFiles(DOCS_ROOT);
@@ -93,12 +151,18 @@ let total = 0;
 const breakdown = [];
 
 for (const file of files) {
+  const relPath = relative(REPO_ROOT, file);
+
+  if (isExemptFile(relPath)) {
+    continue;
+  }
+
   const content = await fs.readFile(file, 'utf8');
   const count = countNonGroupTsBlocks(content);
 
   if (count > 0) {
     breakdown.push([
-      relative(REPO_ROOT, file),
+      relPath,
       count
     ]);
     total += count;
@@ -113,6 +177,14 @@ console.log('Inline ```ts blocks outside comparator code-groups in docs/**/*.md:
 console.log(`  total: ${total}`);
 console.log(`  ceiling: ${INLINE_TS_CEILING}`);
 console.log();
+console.log('Exemptions:');
+console.log('  - blocks inside `::: code-group ... :::`');
+console.log('  - blocks preceded by `<!-- inline-ts-ok: <reason> -->`');
+console.log('  - files matching:');
+for (const pattern of EXEMPT_FILE_PATTERNS) {
+  console.log(`      ${pattern}`);
+}
+console.log();
 console.log('Top contributors:');
 for (const [
   path,
@@ -125,7 +197,9 @@ if (total > INLINE_TS_CEILING) {
   console.error();
   console.error(`✗ docs inline-ts count ${total} exceeds ceiling ${INLINE_TS_CEILING}.`);
   console.error('  Either convert blocks to `<<<` includes against examples/docs/,');
-  console.error('  or lower the ceiling intentionally in scripts/check-docs-includes.mjs.');
+  console.error('  add `<!-- inline-ts-ok: <reason> -->` immediately above the block');
+  console.error('  if it genuinely cannot be runnable, or lower the ceiling intentionally');
+  console.error('  in scripts/check-docs-includes.mjs.');
   process.exit(1);
 }
 console.log();

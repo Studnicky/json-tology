@@ -18,46 +18,17 @@
 
 ### Example 2: Materialize a Customer - addresses default is empty array
 
-```ts
-import { bookstoreEntities, CustomerSchema } from './bookstore/index.js';
-
-const customer = bookstoreEntities.materialize(CustomerSchema, {
-  id:    'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  email: 'bastian.bux@bookstore.example',
-  name:  'Bastian Balthazar Bux',
-});
-
-console.log(customer.addresses); // []  ← default applied
-```
+<<< ../../examples/docs/registry/16-materialize-customer-defaults.ts
 
 ### Example 3: Contrast with coerce and value.create
 
-```ts
-// materialize  - fills declared defaults, partial is trusted
-const m = jt.materialize(BookSchema, { isbn: '9783522128001', title: '...', authors: ['...'], price: 14.99 });
-// → { isbn: '...', title: '...', authors: [...], price: 14.99, currency: 'USD', inStock: true }
-
-// value.create  - fills ALL required fields with zero-values + explicit defaults
-const c = jt.value.create(BookSchema.$id);
-// → { isbn: '', title: '', authors: [], price: 0, currency: 'USD', inStock: true }
-
-// coerce  - validates, strips unknowns, applies defaults, throws on failure
-const o = jt.instantiate(BookSchema.$id, rawInput);
-// → same shape, but validates and throws InstantiationError if rawInput is invalid
-```
+<<< ../../examples/docs/registry/17-materialize-vs-create-vs-coerce.ts
 
 ## Bad examples - what NOT to do
 
 ### Anti-pattern 1: Using materialize for untrusted API input
 
-```ts
-// ⊥ Don't do this  - materialize doesn't validate or strip unknowns
-const book = jt.materialize(BookSchema, req.body as Partial<Book>);
-// Unknown fields from req.body will appear in the result unchecked
-
-// ✓ Do this  - coerce validates, strips unknowns, applies defaults
-const book2 = jt.instantiate(BookSchema.$id, req.body);
-```
+<<< ../../examples/docs/registry/17-materialize-vs-create-vs-coerce.ts
 
 ## Comparison
 

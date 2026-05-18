@@ -5,7 +5,7 @@ import {
 // Simulated request handler
 function handleReviewSubmission(req: { 'body': unknown;
   'url': string }) {
-  const errs = bookstoreEntities.validate(ReviewSchema.$id, req.body);
+  const errs = bookstoreEntities.validate(ReviewSchema, req.body);
 
   if (!errs.ok) {
     return {
@@ -15,7 +15,7 @@ function handleReviewSubmission(req: { 'body': unknown;
     };
   }
 
-  const review = bookstoreEntities.instantiate(ReviewSchema.$id, req.body);
+  const review = bookstoreEntities.instantiate(ReviewSchema, req.body);
 
   return {
     'body': review,

@@ -16,6 +16,10 @@ import { PrintBookSchema } from './PrintBook.js';
  *
  * The TBox emits two anonymous `owl:Restriction` blank nodes referenced from
  * `urn:bookstore:RareBook` via `rdfs:subClassOf`.
+ *
+ * All properties reference named primitives (strict-graph compliant):
+ *   - estimatedAgeYears → EstimatedAgeYears (non-negative integer)
+ *   - firstEditionYear  → FirstEditionYear (1450–2100 integer)
  */
 
 const AUTHORS_PROP = 'urn:bookstore:Book#authors';
@@ -27,15 +31,8 @@ export const RareBookSchema = Compose.subClassOf(
     Compose.subClassOf(PrintBookSchema, {
       '$id': 'urn:bookstore:RareBook',
       'properties': {
-        'estimatedAgeYears': {
-          'minimum': 0,
-          'type': 'integer'
-        },
-        'firstEditionYear': {
-          'maximum': 2100,
-          'minimum': 1450,
-          'type': 'integer'
-        }
+        'estimatedAgeYears': { '$ref': 'urn:bookstore:EstimatedAgeYears' },
+        'firstEditionYear': { '$ref': 'urn:bookstore:FirstEditionYear' }
       },
       'required': ['firstEditionYear'],
       'type': 'object'

@@ -10,22 +10,7 @@ See [Validation modes](/validation-modes) for the badge system used across this 
 
 Apply it as an assignment constraint to opt in for hand-written schemas:
 
-```ts
-import type { ValidateSchemaType } from 'json-tology/types';
-
-const MySchema = {
-  $id: 'https://example.com/MySchema',
-  type: 'object',
-  properties: {
-    name: { type: 'string' },
-    age:  { type: 'number' },
-  },
-  required: ['name', 'age'],
-} as const;
-
-// Opt in: assigning to ValidateSchemaType is a compile error if the schema is invalid
-const _check: ValidateSchemaType<typeof MySchema> = MySchema;
-```
+<<< ../examples/docs/compile-time-validation/01-validate-schema-type.ts
 
 Schemas passed to `Compose.subClassOf`, `Compose.complementOf`, `Compose.disjointWith`, and `Compose.extend` are validated automatically - correct-by-construction without a manual `_check` variable.
 
@@ -35,54 +20,19 @@ Schemas passed to `Compose.subClassOf`, `Compose.complementOf`, `Compose.disjoin
 
 Every key in `required` must appear in `properties`. A `required` entry that references a non-existent property surfaces a `RequiredKeyNotInPropertiesInterface` brand error at the call site.
 
-```ts
-const Bad = {
-  $id: 'https://example.com/Bad',
-  type: 'object',
-  properties: {
-    name: { type: 'string' },
-  },
-  required: ['name', 'nonExistentField'],  // compile error: 'nonExistentField' not in properties
-} as const;
-
-const _check: ValidateSchemaType<typeof Bad> = Bad;
-// Type 'typeof Bad' is not assignable to type 'never'.
-//   RequiredKeyNotInPropertiesInterface: { invalidKey: 'nonExistentField', actualPropertyKeys: 'name' }
-```
+<<< ../examples/docs/compile-time-validation/02-required-key-check.ts
 
 ### `dependentRequired` key presence <Badge type="info" text="Compile-time" />
 
 Every trigger key and every entry in the dependent key arrays in `dependentRequired` must appear in `properties`. Violations surface a `DependentRequiredKeyNotInPropertiesInterface` brand error.
 
-```ts
-const Bad = {
-  $id: 'https://example.com/Bad',
-  type: 'object',
-  properties: {
-    credit_card: { type: 'string' },
-  },
-  dependentRequired: {
-    credit_card: ['billing_address'],  // compile error: 'billing_address' not in properties
-  },
-} as const;
-```
+<<< ../examples/docs/compile-time-validation/03-dependent-required-check.ts
 
 ### `if.properties` discriminator presence <Badge type="info" text="Compile-time" />
 
 Every property key in `if.properties` must appear in the parent schema's `properties`. Discriminator keys that are absent from `properties` surface an `IfDiscriminatorNotInPropertiesInterface` brand error.
 
-```ts
-const Bad = {
-  $id: 'https://example.com/Bad',
-  type: 'object',
-  properties: {
-    kind: { type: 'string' },
-  },
-  if:   { properties: { ghostProp: { const: 'value' } }, required: ['ghostProp'] },
-  then: { properties: { extra: { type: 'string' } } },
-} as const;
-// compile error: 'ghostProp' is not in properties
-```
+<<< ../examples/docs/compile-time-validation/04-if-discriminator-check.ts
 
 ## Brand error types
 
@@ -100,23 +50,7 @@ IDE hovers on a failing assignment show the specific brand type and the offendin
 
 Compose methods that accept a schema body (`subClassOf`, `complementOf`, `disjointWith`, `extend`) apply `ValidateSchemaType` as a parameter constraint. This means any schema passed to these methods is validated automatically:
 
-```ts
-import { Compose } from 'json-tology';
-
-const BaseSchema = {
-  $id: 'https://example.com/Base',
-  type: 'object',
-  properties: { id: { type: 'string' } },
-} as const;
-
-// compile error: body has a required entry 'missing' that is not in properties
-const Child = Compose.subClassOf(BaseSchema, {
-  $id: 'https://example.com/Child',
-  type: 'object',
-  properties: { name: { type: 'string' } },
-  required: ['name', 'missing'],
-} as const);
-```
+<<< ../examples/docs/compile-time-validation/05-compose-integration.ts
 
 ## Related
 

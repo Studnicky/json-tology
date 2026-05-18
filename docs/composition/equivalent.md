@@ -4,6 +4,7 @@
 
 **Declaration.** Creates a new schema with a different `$id` that references the source schema via `$ref`. The two schemas are structurally identical - they validate the same data - but serve different semantic roles in the domain model. In the OWL TBox, `owl:equivalentClass` is emitted automatically. In SHACL, the new schema gains `sh:node` pointing at the source.
 
+<!-- inline-ts-ok: pseudocode signature describing the function's return shape; not a runnable expression. -->
 ```ts
 Compose.equivalent(source, options): { $id, $ref, description?, title?, examples? }
 ```
@@ -16,10 +17,7 @@ Compose.equivalent(source, options): { $id, $ref, description?, title?, examples
 
 `options.$id` cannot equal `source.$id`. A self-equivalent declaration surfaces a `SelfEquivalentType` brand error at the call site.
 
-```ts
-// compile error — same $id as IsbnSchema
-const Bad = Compose.equivalent(IsbnSchema, { $id: IsbnSchema.$id });
-```
+<<< ../../examples/docs/composition/45-antipattern-self-equivalent.ts
 
 ## Examples
 
@@ -39,99 +37,25 @@ In the OWL TBox:
 
 Register the alias alongside the source so both IDs are available to `validate` and `instantiate`.
 
-```ts
-import { Compose, JsonTology } from 'json-tology';
-import { IsbnSchema, BookSchema } from './bookstore/index.js';
-
-const CatalogIsbnSchema = Compose.equivalent(IsbnSchema, {
-  $id: 'https://bookstore.example/CatalogIsbn',
-  description: 'ISBN as used in the public catalog feed.',
-});
-
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [IsbnSchema, CatalogIsbnSchema, BookSchema] as const,
-});
-
-// Both IDs validate identically
-const a = jt.validate('https://bookstore.example/Isbn',        '9780140449136'); // a.ok === true
-const b = jt.validate('https://bookstore.example/CatalogIsbn', '9780140449136'); // b.ok === true
-```
+<<< ../../examples/docs/composition/16-equivalent-catalog-isbn.ts
 
 ### Example 3: OWL equivalence in the emitted TBox
 
-```ts
-import { JsonTology } from 'json-tology';
-import { IsbnSchema } from './bookstore/index.js';
-
-const PrimaryIsbnSchema = Compose.equivalent(IsbnSchema, {
-  $id: 'https://bookstore.example/PrimaryIsbn',
-});
-
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [IsbnSchema, PrimaryIsbnSchema] as const,
-});
-
-const tbox = jt.toTbox().jsonLd();
-// tbox includes:
-// { "@id": "https://bookstore.example/PrimaryIsbn", "owl:equivalentClass": { "@id": "https://bookstore.example/Isbn" } }
-```
+<<< ../../examples/docs/composition/17-equivalent-tbox.ts
 
 ## Bad examples: what NOT to do
 
 ### Anti-pattern 1: Using equivalent when the new schema adds a constraint
 
-```ts
-import { Compose } from 'json-tology';
-import { IsbnSchema } from './bookstore/index.js';
-
-// ✗ Don't do this — adds a pattern constraint; the new schema is NOT structurally
-// identical to Isbn, so owl:equivalentClass would be semantically wrong
-const Isbn978Schema = Compose.equivalent(IsbnSchema, {
-  $id: 'https://bookstore.example/Isbn978',
-  // @ts-expect-error  — pattern is not a valid option on Compose.equivalent
-  pattern: '^978',
-});
-
-// ✓ Do this — use extend (or a standalone schema) when adding constraints
-import { Compose } from 'json-tology';
-const Isbn978Schema = Compose.extend(
-  IsbnSchema,
-  { pattern: '^978' } as const,
-  'https://bookstore.example/Isbn978',
-);
-```
+<<< ../../examples/docs/composition/18-antipattern-equivalent-with-constraint.ts
 
 ### Anti-pattern 2: Registering only the alias, not the source
 
-```ts
-import { JsonTology } from 'json-tology';
-
-// ✗ Don't do this — CatalogIsbn $refs Isbn, but Isbn is not registered;
-// validate/instantiate will throw a GraphError on ref resolution
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [CatalogIsbnSchema] as const, // missing IsbnSchema
-});
-
-// ✓ Do this — register source before (or alongside) the alias
-const jt2 = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [IsbnSchema, CatalogIsbnSchema] as const,
-});
-```
+<<< ../../examples/docs/composition/19-antipattern-equivalent-without-source.ts
 
 ### Anti-pattern 3: Using equivalent to rename a class in place
 
-```ts
-// ✗ Don't do this — if you no longer need the original name, don't alias it;
-// simply change the $id on the source schema and update references
-const RenamedIsbn = Compose.equivalent(IsbnSchema, { $id: 'https://bookstore.example/BookId' });
-// Two names in the registry for the same thing creates drift
-
-// ✓ Do this — use equivalent only when both names must coexist in the domain model
-```
+<<< ../../examples/docs/composition/20-antipattern-equivalent-rename.ts
 
 ## Comparison
 

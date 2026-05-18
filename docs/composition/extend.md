@@ -23,82 +23,23 @@ Building on `CustomerSchema` from the [bookstore domain](/bookstore-domain):
 
 ### Example 2: Extend Book with featured display info
 
-```ts
-import { Compose, JsonTology } from 'json-tology';
-import { BookSchema } from './bookstore/index.js';
-
-const FeaturedBookSchema = Compose.extend(
-  BookSchema,
-  {
-    badge:    { type: 'string', enum: ['bestseller', 'new', 'staff-pick'] },
-    position: { type: 'integer', minimum: 1 },
-  } as const,
-  'https://bookstore.example/FeaturedBook',
-);
-
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [FeaturedBookSchema] as const,
-});
-
-const featured = jt.instantiate(FeaturedBookSchema.$id, {
-  isbn:     '9783522128001',
-  title:    'Die unendliche Geschichte',
-  authors:  ['Michael Ende'],
-  price:    14.99,
-  badge:    'bestseller',
-  position: 1,
-});
-// featured.badge === 'bestseller'
-// featured.isbn === '9783522128001' (inherited)
-```
+<<< ../../examples/docs/composition/30-extend-featured-book.ts
 
 ### Example 3: Tighten a property in the additions side of the allOf
 
 `Compose.extend` does not flatten `properties` over the base. The additions appear as a second `allOf` entry, so a property declared in the additions becomes an *additional* constraint that must hold alongside the base's constraint. Both must be satisfied, which is how `allOf` works in JSON Schema. Use this when you want to add a stricter constraint on top of the base.
 
-```ts
-const PremiumBookSchema = Compose.extend(
-  BookSchema,
-  { price: { type: 'number', minimum: 25 } } as const,  // minimum raised from 0+
-  'https://bookstore.example/PremiumBook',
-);
-```
+<<< ../../examples/docs/composition/31-extend-tightened-property.ts
 
 ## Bad examples - what NOT to do
 
 ### Anti-pattern 1: Using extend when you need required on the new fields
 
-```ts
-import { Compose } from 'json-tology';
-
-// ⊥ Don't do this  - extend inherits required from base; new fields are NOT required
-const Extended = Compose.extend(CustomerSchema, { tier: { type: 'string' } } as const, '...');
-// tier is optional  - extend only merges properties, required comes from base
-
-// ✓ Do this  - use intersection if the added schema needs its own required array
-const WithRequiredTier = {
-  $id: 'https://bookstore.example/TierSchema',
-  type: 'object',
-  properties: { tier: { type: 'string' } },
-  required: ['tier'],
-} as const;
-const Extended2 = Compose.intersection([CustomerSchema, WithRequiredTier] as const, '...');
-```
+<<< ../../examples/docs/composition/32-antipattern-extend-required-additions.ts
 
 ### Anti-pattern 2: Chaining extend to build a history of derivations without registering intermediates
 
-```ts
-// ⊥ Don't do this  - extends don't need to be registered to be extended further,
-// but intermediates used in coerce/validate must be registered
-const A = Compose.extend(CustomerSchema, { x: { type: 'string' } } as const, '...a');
-const B = Compose.extend(A, { y: { type: 'number' } } as const, '...b');
-jt.instantiate(B.$id, data); // fails  - B is not registered
-
-// ✓ Register before use
-jt.set(B);
-jt.instantiate(B.$id, data); // works
-```
+<<< ../../examples/docs/composition/33-antipattern-extend-unregistered-chain.ts
 
 ## Comparison
 

@@ -12,71 +12,17 @@
 
 ### Example 1: Nominally distinct Customer and Order IDs
 
-```ts
-import { Transform, JsonTology } from 'json-tology';
-import type { BrandOutputType } from 'json-tology/types';
-
-const CustomerIdSchema = Transform.brand(
-  { $id: 'https://bookstore.example/CustomerId', type: 'string', format: 'uuid' } as const,
-  'CustomerId',
-);
-
-const OrderIdSchema = Transform.brand(
-  { $id: 'https://bookstore.example/OrderId', type: 'string', format: 'uuid' } as const,
-  'OrderId',
-);
-
-type CustomerId = BrandOutputType<typeof CustomerIdSchema>;
-type OrderId    = BrandOutputType<typeof OrderIdSchema>;
-
-// Both are string at runtime, but compile-time incompatible:
-// const cid: CustomerId = 'abc' as OrderId;  // compile error
-
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [CustomerIdSchema, OrderIdSchema] as const,
-});
-
-// The only way to obtain a branded value  - go through coerce:
-const cid = jt.instantiate(CustomerIdSchema.$id, 'c1a2b3d4-e5f6-7890-abcd-ef1234567890');
-// cid is typed as CustomerId
-
-function lookupCustomer(id: CustomerId) { /* ... */ }
-lookupCustomer(cid); // OK  - typed correctly
-```
+<<< ../../examples/docs/transforms/07-brand-nominal-ids.ts
 
 ### Example 2: Branded ISBN for books
 
-```ts
-const IsbnSchema = Transform.brand(
-  {
-    $id:     'https://bookstore.example/ISBN13',
-    type:    'string',
-    pattern: '^\\d{13}$',
-  } as const,
-  'ISBN13',
-);
-
-type ISBN13 = BrandOutputType<typeof IsbnSchema>;
-
-// lookupBook(isbn: ISBN13) prevents passing plain unvalidated strings
-```
+<<< ../../examples/docs/transforms/08-brand-isbn.ts
 
 ## Bad examples - what NOT to do
 
 ### Anti-pattern 1: Applying brand after the schema has been registered
 
-```ts
-// ⊥ Don't do this  - brand only changes the TypeScript type, not the registration
-const RawSchema = { $id: '...', type: 'string' } as const;
-jt.set(RawSchema);
-// The brand is applied to a different object reference  - the registered schema is unchanged
-const Branded = Transform.brand(RawSchema, 'MyBrand');
-
-// ✓ Do this  - brand before registration
-const Branded2 = Transform.brand({ $id: '...', type: 'string' } as const, 'MyBrand');
-jt.set(Branded2);
-```
+<<< ../../examples/docs/transforms/09-brand-register-order.ts
 
 ## Comparison
 

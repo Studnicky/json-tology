@@ -9,12 +9,17 @@
  */
 
 import {
-  BookSchema, bookstoreEntities, CustomerSchema
+  BookSchema, createBookstoreDocRegistry,
+  CustomerSchema
 } from '../bookstore/index.js';
 
+// createBookstoreDocRegistry seeds a permissive copy of the bookstore — docs examples extend
+// it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
+const jt = createBookstoreDocRegistry();
+
 // Canonical entities registered at construction time.
-console.assert(bookstoreEntities.registry.has(CustomerSchema.$id));
-console.assert(bookstoreEntities.registry.has(BookSchema.$id));
+console.assert(jt.registry.has(CustomerSchema.$id));
+console.assert(jt.registry.has(BookSchema.$id));
 
 // Post-construction register — a gift certificate Carl Conrad Coreander
 // offers for purchases at the antiquariat.
@@ -35,20 +40,20 @@ const CoreanderGiftCertificateSchema = {
   'type': 'object'
 } as const;
 
-console.assert(!bookstoreEntities.registry.has(CoreanderGiftCertificateSchema.$id));
+console.assert(!jt.registry.has(CoreanderGiftCertificateSchema.$id));
 
-bookstoreEntities.set(CoreanderGiftCertificateSchema);
+jt.set(CoreanderGiftCertificateSchema);
 
-console.assert(bookstoreEntities.registry.has(CoreanderGiftCertificateSchema.$id));
+console.assert(jt.registry.has(CoreanderGiftCertificateSchema.$id));
 
 // Retrieve the schema object.
-const raw = bookstoreEntities.registry.get(CoreanderGiftCertificateSchema.$id);
+const raw = jt.registry.get(CoreanderGiftCertificateSchema.$id);
 
 console.assert(raw !== undefined);
 
 // registerAnonymous — no $id needed. Useful for ad-hoc input shapes,
 // e.g. a one-off "BastianCheckoutPayload" the storefront posts.
-const syntheticId = bookstoreEntities.registerAnonymous({
+const syntheticId = jt.registerAnonymous({
   'properties': {
     'certificateCode': { 'type': 'string' },
     'remainingBalance': { 'type': 'number' }
@@ -61,4 +66,4 @@ const syntheticId = bookstoreEntities.registerAnonymous({
 });
 
 console.assert(typeof syntheticId === 'string' && syntheticId.length > 0);
-console.assert(bookstoreEntities.registry.has(syntheticId));
+console.assert(jt.registry.has(syntheticId));

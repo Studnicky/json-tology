@@ -38,23 +38,7 @@ Each `entities/*.ts` file is the single source of truth for one schema.
 - You want every field to become optional - use [`Compose.partial`](/composition/partial-required).
 - You only want a structural alias (no parent-child semantic) - use [`Compose.equivalent`](/composition/equivalent).
 
-```ts
-import { Compose } from 'json-tology';
-import { BookSchema } from './Book.js';
-
-export const EBookSchema = Compose.subClassOf(BookSchema, {
-  $id: 'urn:bookstore:EBook',
-  type: 'object',
-  properties: {
-    fileFormat:    { type: 'string', enum: ['epub', 'pdf', 'mobi'] },
-    downloadUrl:   { type: 'string', format: 'uri' },
-    fileSizeBytes: { type: 'integer', minimum: 0 },
-  },
-  required: ['fileFormat', 'downloadUrl'],
-} as const);
-// Wire: { $id, allOf: [{ $ref: 'urn:bookstore:Book' }, body] }
-// TBox: urn:bookstore:EBook  rdfs:subClassOf  urn:bookstore:Book
-```
+<<< ../../examples/docs/usage-examples/28-bookstore-ebook-subclass.ts
 
 → See: [`Compose.subClassOf` reference](/composition/sub-class-of) · [`Compose.extend`](/composition/extend) (property-merge alternative) · [Graph concepts (TBox / ABox)](/advanced/graph-concepts)
 
@@ -69,26 +53,7 @@ export const EBookSchema = Compose.subClassOf(BookSchema, {
 - The two classes overlap intentionally - use plain `Compose.subClassOf` for both without `disjointWith`.
 - You want one class to be the negation of another - use [`Compose.complementOf`](/composition/sub-class-of) instead.
 
-```ts
-import { Compose } from 'json-tology';
-import { BookSchema } from './Book.js';
-import { EBookSchema } from './EBook.js';
-
-const PrintBookBase = Compose.subClassOf(BookSchema, {
-  $id: 'urn:bookstore:PrintBook',
-  type: 'object',
-  properties: {
-    binding:     { type: 'string', enum: ['hardcover', 'paperback'] },
-    pageCount:   { type: 'integer', minimum: 1 },
-    weightGrams: { type: 'number',  minimum: 0 },
-  },
-  required: ['binding', 'pageCount'],
-} as const);
-
-export const PrintBookSchema = Compose.disjointWith(EBookSchema, PrintBookBase);
-// Wire: { $id, disjointWith: 'urn:bookstore:EBook', allOf: [...] }
-// TBox: urn:bookstore:PrintBook  owl:disjointWith  urn:bookstore:EBook
-```
+<<< ../../examples/docs/usage-examples/29-bookstore-printbook-disjoint.ts
 
 → See: [`Compose.disjointWith` reference](/composition/sub-class-of) · [Graph concepts (TBox / ABox)](/advanced/graph-concepts)
 
@@ -104,35 +69,7 @@ export const PrintBookSchema = Compose.disjointWith(EBookSchema, PrintBookBase);
 - You only want to enforce array length at validation time - JSON Schema's native `minItems` / `maxItems` already cover that. Restrictions are for TBox semantic content that reasoners read.
 - You want to require *every* value to satisfy a class - use [`Compose.allValuesFrom`](/composition/restrictions) (see `AnthologyBook` below).
 
-```ts
-import { Compose } from 'json-tology';
-import { AuthorNameSchema } from './AuthorName.js';
-import { PrintBookSchema } from './PrintBook.js';
-
-const AUTHORS_PROP = 'urn:bookstore:Book#authors';
-
-export const RareBookSchema = Compose.subClassOf(
-  Compose.maxCardinality(AUTHORS_PROP, 1),
-  Compose.subClassOf(
-    Compose.someValuesFrom(AUTHORS_PROP, AuthorNameSchema.$id),
-    Compose.subClassOf(PrintBookSchema, {
-      $id: 'urn:bookstore:RareBook',
-      type: 'object',
-      properties: {
-        firstEditionYear:  { type: 'integer', minimum: 1450, maximum: 2100 },
-        estimatedAgeYears: { type: 'integer', minimum: 0 },
-      },
-      required: ['firstEditionYear'],
-    } as const),
-  ),
-);
-// Wire: { $id, allOf: [...PrintBook chain..., body],
-//         'jt:restrictions': [
-//           { kind: 'someValuesFrom', onProperty: '...#authors', value: 'AuthorName' },
-//           { kind: 'maxCardinality', onProperty: '...#authors', value: 1 }
-//         ] }
-// TBox: two anonymous owl:Restriction blank nodes referenced via rdfs:subClassOf.
-```
+<<< ../../examples/docs/usage-examples/30-bookstore-rarebook-restrictions.ts
 
 → See: [OWL class restrictions](/composition/restrictions) · [`Compose.subClassOf` reference](/composition/sub-class-of) · [Graph concepts (TBox / ABox)](/advanced/graph-concepts)
 
@@ -148,31 +85,7 @@ export const RareBookSchema = Compose.subClassOf(
 - The constraint *is* structural — use `minItems`/`maxItems` on the array directly.
 - The constraint is fixing a property to a literal value — use `Compose.hasValue` (an OWL class axiom).
 
-```ts
-// entities/SignedFirstEdition.ts
-import { Compose } from 'json-tology';
-import { AuthorNameSchema } from './AuthorName.js';
-import { RareBookSchema } from './RareBook.js';
-
-export const SignedFirstEditionSchema = Compose.subClassOf(RareBookSchema, {
-  $id: 'urn:bookstore:SignedFirstEdition',
-  type: 'object',
-  properties: {
-    signedBy:   { $ref: AuthorNameSchema.$id },
-    provenance: { type: 'string', minLength: 1 },
-  },
-  required: ['signedBy'],
-} as const);
-
-// index.ts — registered alongside the schema
-bookstoreEntities.addInvariant(SignedFirstEditionSchema.$id, {
-  name: 'signedFirstEditionIsSoloAuthored',
-  pointer: '/authors',
-  fn: (book) => book.authors.length === 1
-    ? null
-    : `SignedFirstEdition must have exactly one author, got ${book.authors.length}`,
-});
-```
+<<< ../../examples/docs/usage-examples/31-bookstore-signed-first-edition-invariant.ts
 
 The pair encodes the full domain rule: the OWL TBox sees a clean `rdfs:subClassOf RareBook` triple, and `validate()` rejects any candidate `SignedFirstEdition` that fails the cross-field check.
 
@@ -191,21 +104,7 @@ The pair encodes the full domain rule: the OWL TBox sees a clean `rdfs:subClassO
 - The fixed value is a class instance - use `Compose.someValuesFrom` or `Compose.allValuesFrom` (those work with class IRIs, not literals).
 - The constraint should only apply at runtime - JSON Schema's native `const` keyword is simpler.
 
-```ts
-import { Compose } from 'json-tology';
-import { BookSchema } from './Book.js';
-
-const PRINT_STATUS_PROP = 'urn:bookstore:Book#printStatus';
-
-export const InPrintBookSchema = Compose.subClassOf(
-  Compose.hasValue(PRINT_STATUS_PROP, 'inPrint'),
-  Compose.subClassOf(BookSchema, {
-    $id: 'urn:bookstore:InPrintBook',
-    type: 'object',
-  } as const),
-);
-// TBox: _:b1  a owl:Restriction ; owl:onProperty Book#printStatus ; owl:hasValue "inPrint" .
-```
+<<< ../../examples/docs/usage-examples/32-bookstore-inprint-hasvalue.ts
 
 → See: [OWL class restrictions](/composition/restrictions) · [`Compose.subClassOf` reference](/composition/sub-class-of)
 
@@ -220,21 +119,7 @@ export const InPrintBookSchema = Compose.subClassOf(
 - You want the unbounded OWL complement (every non-X in the universe). Pass the body without `allOf` and document the open-world semantic clearly.
 - You want a runtime "not these specific values" check - JSON Schema's `not` at the top level (without OWL annotations) is simpler.
 
-```ts
-import { Compose } from 'json-tology';
-import { BookSchema } from './Book.js';
-import { InPrintBookSchema } from './InPrintBook.js';
-
-export const OutOfPrintBookSchema = Compose.complementOf(InPrintBookSchema, {
-  $id: 'urn:bookstore:OutOfPrintBook',
-  allOf: [{ $ref: BookSchema.$id }],
-  type: 'object',
-} as const);
-// Wire: { $id, not: { $ref: 'urn:bookstore:InPrintBook' },
-//         allOf: [{ $ref: 'urn:bookstore:Book' }], type: 'object' }
-// TBox: urn:bookstore:OutOfPrintBook  owl:complementOf  urn:bookstore:InPrintBook .
-//       urn:bookstore:OutOfPrintBook  rdfs:subClassOf   urn:bookstore:Book .
-```
+<<< ../../examples/docs/usage-examples/33-bookstore-outofprint-complement.ts
 
 The body's `allOf: [{ $ref: Book }]` is what bounds the OWL complement to the Book universe. Without it, OWL's open-world `complementOf` would match anything that is not an `InPrintBook`: including non-books - which is the right OWL semantic but rarely what authors want.
 
@@ -256,46 +141,11 @@ All the schemas above are TBox declarations — they describe *kinds of thing*. 
 - You want class-level identity (two *classes* that have the same instances) — use [`Compose.equivalent`](/composition/equivalent) instead. `sameAs` is for individuals, not classes.
 - You want to express "these two records *should* be merged" as a workflow step. `sameAs` is an OWL *assertion* that they already refer to one entity; downstream reasoners will treat their property values as belonging to a single individual.
 
-```ts
-import { JsonTology } from 'json-tology';
-// ... all schemas registered above ...
-
-export const bookstoreEntities = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: allSchemas,
-});
-
-// 1. Customer Bastian in the bookstore system ↔ same individual in the legacy CRM.
-bookstoreEntities.sameAs(
-  'urn:bookstore:customer:bastian-bux',
-  'urn:coreander-antiquariat:cust-00042',
-);
-
-// 2. The rare 1979 Thienemann first edition of Die unendliche Geschichte
-//    in the bookstore catalog ↔ the same physical edition in WorldCat's
-//    union catalog.
-bookstoreEntities.sameAs(
-  'urn:bookstore:rarebook:neverending-1979-thienemann',
-  'http://www.worldcat.org/oclc/5705614',
-);
-// toQuads() emits both directions for each pair (four sameAs quads total).
-```
+<<< ../../examples/docs/usage-examples/34-bookstore-sameas-identity.ts
 
 The order Bastian placed, the customer record, the rare-book metadata, and their later review are all defined as runtime values on the `aboxFixtures` export. `instantiate()` and `toQuads()` accept those fixtures directly so the same scenario can be used end-to-end across docs pages and integration tests.
 
-```ts
-import { bookstoreEntities, OrderSchema, RareBookSchema, aboxFixtures } from './bookstore/index.js';
-
-// Validate the rare-book record itself (passes RareBook's hierarchy:
-// Book + PrintBook structural rules + someValuesFrom + maxCardinality(authors=1)).
-bookstoreEntities.instantiate(RareBookSchema.$id, aboxFixtures.rareBook);
-
-// Validate Bastian's order containing one line for that rare book.
-bookstoreEntities.instantiate(OrderSchema.$id, aboxFixtures.order);
-
-// Emit the full RDF graph: schema-level rules + sameAs assertions + ABox quads.
-const quads = bookstoreEntities.toQuads(OrderSchema, aboxFixtures.order);
-```
+<<< ../../examples/docs/usage-examples/35-bookstore-abox-fixtures.ts
 
 → See: [`sameAs` (ABox identity) reference](/advanced/sameas) · [`Compose.equivalent`](/composition/equivalent) (the class-level counterpart) · [Graph concepts (TBox / ABox)](/advanced/graph-concepts)
 

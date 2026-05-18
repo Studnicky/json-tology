@@ -49,7 +49,12 @@ void describe('Compiler conformance', () => {
     expectedValid: boolean,
     deps?: Array<Record<string, unknown>>
   ): void {
-    const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    // enableStrictGraph: false — conformance tests use synthetic schemas with
+    // inline primitive constraints to test validation mechanics, not data modelling.
+    const registry = JsonTology.create({
+      'baseIRI': 'urn:test:',
+      'enableStrictGraph': false
+    });
 
     if (deps) {
       for (const dep of deps) {
@@ -1636,6 +1641,7 @@ void describe('Compiler conformance', () => {
         } of customKeywordScenarios) {
           const registry = JsonTology.create({
             'baseIRI': 'urn:test:',
+            'enableStrictGraph': false,
             'keywords': [evenKeyword]
           });
           const schema = {
@@ -1664,6 +1670,7 @@ void describe('Compiler conformance', () => {
         // custom keyword schema compiles without engine fallback
         const registry = JsonTology.create({
           'baseIRI': 'urn:test:',
+          'enableStrictGraph': false,
           'keywords': [evenKeyword]
         });
         const schema = {

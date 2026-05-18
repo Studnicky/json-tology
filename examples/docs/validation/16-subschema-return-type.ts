@@ -1,8 +1,13 @@
 import {
-  bookstoreEntities, OrderSchema
+  createBookstoreDocRegistry,
+  OrderSchema
 } from '../bookstore/index.js';
 
-const sub = bookstoreEntities.subschemaAt(OrderSchema.$id, '/properties/items');
+// createBookstoreDocRegistry seeds a permissive copy of the bookstore — docs examples extend
+// it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
+const jt = createBookstoreDocRegistry();
+
+const sub = jt.subschemaAt(OrderSchema.$id, '/properties/items');
 
 console.assert(
   sub.$id === 'https://bookstore.example/Order#/properties/items',

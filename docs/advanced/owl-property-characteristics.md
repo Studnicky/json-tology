@@ -20,49 +20,7 @@ All seven keywords are registered in `KNOWN_SCHEMA_KEYWORDS` (`src/constants/SCH
 
 Declare a characteristic on the property's schema body. The keyword is set at the property-schema level, not the class level.
 
-```ts
-import { JsonTology } from 'json-tology';
-
-const KnowsSchema = {
-  $id:   'https://example.com/knows',
-  type:  'object',
-  symmetric: true,       // owl:SymmetricProperty
-  transitive: true,      // owl:TransitiveProperty
-  properties: {
-    subject: { type: 'string', format: 'uri' },
-    object:  { type: 'string', format: 'uri' },
-  },
-} as const;
-
-const ParentOfSchema = {
-  $id:      'https://example.com/parentOf',
-  type:     'object',
-  asymmetric: true,      // owl:AsymmetricProperty — cannot be its own parent
-  irreflexive: true,     // owl:IrreflexiveProperty
-  properties: {
-    parent: { type: 'string', format: 'uri' },
-    child:  { type: 'string', format: 'uri' },
-  },
-} as const;
-
-const HasIdentifierSchema = {
-  $id:              'https://example.com/hasIdentifier',
-  type:             'object',
-  functional:       true,       // owl:FunctionalProperty — at most one value per subject
-  inverseFunctional: true,      // owl:InverseFunctionalProperty — uniquely identifies subject
-  properties: {
-    entity:     { type: 'string', format: 'uri' },
-    identifier: { type: 'string' },
-  },
-} as const;
-
-const jt = JsonTology.create({
-  baseIRI: 'https://example.com',
-  schemas: [KnowsSchema, ParentOfSchema, HasIdentifierSchema] as const,
-});
-
-console.log(jt.toTbox().jsonLd());
-```
+<<< ../../examples/docs/advanced/26-owl-property-characteristics-tbox.ts
 
 The TBox output for `KnowsSchema` includes:
 
@@ -97,146 +55,29 @@ Three combinations are logically impossible under OWL 2 semantics. Setting them 
 
 ### symmetric + asymmetric
 
-```ts
-import type { ValidatePropertyCharacteristicsType } from 'json-tology/types';
-
-// @ts-expect-error — 'relates' sets symmetric:true and asymmetric:true
-//                     (PropertyCharacteristicConflictInterface)
-const _bad: ValidatePropertyCharacteristicsType<{
-  readonly '$id': 'urn:test:Bad';
-  readonly 'properties': {
-    readonly 'relates': { readonly 'asymmetric': true; readonly 'symmetric': true };
-  };
-  readonly 'type': 'object';
-}> = {
-  '$id': 'urn:test:Bad',
-  'properties': { 'relates': { 'asymmetric': true, 'symmetric': true } },
-  'type': 'object'
-} as const;
-```
+<<< ../../examples/docs/advanced/27-owl-conflict-symmetric-asymmetric.ts
 
 ### reflexive + irreflexive
 
-```ts
-// @ts-expect-error — 'rel' sets reflexive:true and irreflexive:true
-//                     (PropertyCharacteristicConflictInterface)
-const _bad: ValidatePropertyCharacteristicsType<{
-  readonly '$id': 'urn:test:Bad';
-  readonly 'properties': {
-    readonly 'rel': { readonly 'irreflexive': true; readonly 'reflexive': true };
-  };
-  readonly 'type': 'object';
-}> = {
-  '$id': 'urn:test:Bad',
-  'properties': { 'rel': { 'irreflexive': true, 'reflexive': true } },
-  'type': 'object'
-} as const;
-```
+<<< ../../examples/docs/advanced/28-owl-conflict-reflexive-irreflexive.ts
 
 ### asymmetric + reflexive
 
-```ts
-// @ts-expect-error — 'edge' sets asymmetric:true and reflexive:true
-//                     (PropertyCharacteristicConflictInterface)
-const _bad: ValidatePropertyCharacteristicsType<{
-  readonly '$id': 'urn:test:Bad';
-  readonly 'properties': {
-    readonly 'edge': { readonly 'asymmetric': true; readonly 'reflexive': true };
-  };
-  readonly 'type': 'object';
-}> = {
-  '$id': 'urn:test:Bad',
-  'properties': { 'edge': { 'asymmetric': true, 'reflexive': true } },
-  'type': 'object'
-} as const;
-```
+<<< ../../examples/docs/advanced/29-owl-conflict-asymmetric-reflexive.ts
 
 The brand interface shape is:
 
-```ts
-interface PropertyCharacteristicConflictInterface<
-  TProperty extends string,
-  TConflicts extends readonly string[]
-> {
-  readonly kind:      'PropertyCharacteristicConflict';
-  readonly property:  TProperty;
-  readonly conflicts: TConflicts;
-}
-```
+<<< ../../examples/docs/advanced/30-owl-conflict-brand-shape.ts
 
 IDE hover on the failing assignment surfaces `kind`, `property`, and `conflicts` directly, making the offending property and characteristics visible without reading a stack trace.
 
 ## Examples
 
-```ts
-// Good — symmetric + reflexive (SimilarBook pattern)
-const SimilarBookSchema = {
-  $id: 'urn:bookstore:SimilarBook',
-  type: 'object',
-  properties: {
-    a: { $ref: 'urn:bookstore:Book' },
-    b: { $ref: 'urn:bookstore:Book', symmetric: true, reflexive: true }
-  },
-  required: ['a', 'b']
-} as const;
-
-// Good — asymmetric alone (Sequel pattern)
-const SequelSchema = {
-  $id: 'urn:bookstore:Sequel',
-  type: 'object',
-  properties: {
-    predecessor: { $ref: 'urn:bookstore:Book', asymmetric: true }
-  },
-  required: ['predecessor']
-} as const;
-
-// Good — transitive + irreflexive (Order.placedAt pattern)
-const OrderSchema = {
-  $id: 'urn:bookstore:Order',
-  type: 'object',
-  properties: {
-    placedAt: { $ref: 'urn:bookstore:Iso8601', transitive: true, irreflexive: true }
-  },
-  required: ['placedAt']
-} as const;
-```
+<<< ../../examples/docs/advanced/31-owl-good-patterns.ts
 
 ## Bad examples: what NOT to do
 
-```ts
-// Bad — symmetric and asymmetric are mutually exclusive
-const Bad1 = {
-  $id: 'urn:test:Bad1',
-  type: 'object',
-  properties: {
-    relates: { symmetric: true, asymmetric: true }
-  //          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  //          PropertyCharacteristicConflictInterface<'relates', ['symmetric', 'asymmetric']>
-  }
-} as const;
-
-// Bad — reflexive and irreflexive are mutually exclusive
-const Bad2 = {
-  $id: 'urn:test:Bad2',
-  type: 'object',
-  properties: {
-    rel: { reflexive: true, irreflexive: true }
-    //    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    //    PropertyCharacteristicConflictInterface<'rel', ['reflexive', 'irreflexive']>
-  }
-} as const;
-
-// Bad — asymmetric implies irreflexive; explicit reflexive contradicts it
-const Bad3 = {
-  $id: 'urn:test:Bad3',
-  type: 'object',
-  properties: {
-    edge: { asymmetric: true, reflexive: true }
-    //     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    //     PropertyCharacteristicConflictInterface<'edge', ['asymmetric', 'reflexive']>
-  }
-} as const;
-```
+<<< ../../examples/docs/advanced/32-owl-bad-patterns.ts
 
 ## Comparison
 
@@ -248,21 +89,7 @@ const Bad3 = {
 
 The IRI constants are exported from `src/constants/IRI.ts`:
 
-```ts
-import {
-  OWL,
-  RDFS,
-} from 'json-tology/schema';
-
-OWL.AsymmetricProperty;       // 'http://www.w3.org/2002/07/owl#AsymmetricProperty'
-OWL.FunctionalProperty;       // 'http://www.w3.org/2002/07/owl#FunctionalProperty'
-OWL.InverseFunctionalProperty;// 'http://www.w3.org/2002/07/owl#InverseFunctionalProperty'
-OWL.IrreflexiveProperty;      // 'http://www.w3.org/2002/07/owl#IrreflexiveProperty'
-OWL.ReflexiveProperty;        // 'http://www.w3.org/2002/07/owl#ReflexiveProperty'
-OWL.SymmetricProperty;        // 'http://www.w3.org/2002/07/owl#SymmetricProperty'
-OWL.TransitiveProperty;       // 'http://www.w3.org/2002/07/owl#TransitiveProperty'
-RDFS.subPropertyOf;           // 'http://www.w3.org/2000/01/rdf-schema#subPropertyOf'
-```
+<<< ../../examples/docs/advanced/33-owl-iri-constants.ts
 
 ## Related
 

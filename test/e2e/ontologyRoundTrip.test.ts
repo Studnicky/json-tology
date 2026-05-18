@@ -250,8 +250,11 @@ describe('ontology round-trip: multi-schema HR domain', () => {
   let shaclNodes: JsonLdNode[];
 
   before(() => {
+    // enableStrictGraph: false — e2e test schemas use inline constraints to
+    // exercise ontology round-trip mechanics, not data-modelling discipline.
     jt = JsonTology.create({
       'baseIRI': BASE,
+      'enableStrictGraph': false,
       'schemas': AllSchemas
     });
 
@@ -786,6 +789,7 @@ describe('ontology round-trip: multi-schema HR domain', () => {
 
       const localJt = JsonTology.create({
         'baseIRI': BASE,
+        'enableStrictGraph': false,
         'schemas': [InlineSchema]
       });
 

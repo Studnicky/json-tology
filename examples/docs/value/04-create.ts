@@ -3,11 +3,14 @@
  * Demonstrates: zero-values for required fields, explicit defaults preserved
  */
 
+import type { InferType } from '../../../src/types/index.js';
 import {
   BookSchema, bookstoreEntities
 } from '../bookstore/index.js';
 
-const blank = bookstoreEntities.value.create(BookSchema.$id);
+type Book = InferType<typeof BookSchema>;
+
+const blank: Book = bookstoreEntities.value.create(BookSchema.$id) as Book;
 
 // Required fields with no default get zero-values
 console.assert((blank as { 'isbn': string }).isbn === '');

@@ -64,16 +64,11 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
     'type': 'object'
   } as const;
 
-  interface QuadObject {
-    'termType': string;
-    'type': string;
-    'value'?: unknown;
-  }
-
   interface Quad {
-    'object': QuadObject;
-    'predicate': string;
-    'subject': string;
+    'object': { 'termType': string;
+      'value'?: unknown };
+    'predicate': { 'value': string };
+    'subject': { 'value': string };
   }
 
   void describe('Materializer', () => {
@@ -369,7 +364,10 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
       }
 
       void it('auto-registered schema is accessible from registry', () => {
-        const tology = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        const tology = JsonTology.create({
+          'baseIRI': 'urn:test:',
+          'enableStrictGraph': false
+        });
 
         tology.materialize(ConfigSchema, { 'name': 'auto' });
 
@@ -476,7 +474,11 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
         'expected': exp, 'name': n, 'schema': sch
       } of scenarios) {
         void it(n, () => {
-          const tology = JsonTology.create({ 'baseIRI': 'urn:test:' });
+          // enableStrictGraph: false — synthetic fixture schemas with inline enum
+          const tology = JsonTology.create({
+            'baseIRI': 'urn:test:',
+            'enableStrictGraph': false
+          });
 
           tology.set(sch as typeof sch & { '$id': string });
           const result = tology.value.create((sch as { '$id': string }).$id) as Record<string, unknown>;
@@ -488,6 +490,7 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
       void it('registry.create() delegates to createDefault', () => {
         const tology = JsonTology.create({
           'baseIRI': 'urn:test:',
+          'enableStrictGraph': false,
           'schemas': [ConfigSchema] as const
         });
         const result = tology.value.create(ConfigSchema.$id) as Record<string, unknown>;
@@ -516,7 +519,10 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
           'type': 'object'
         };
 
-        const tology = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        const tology = JsonTology.create({
+          'baseIRI': 'urn:test:',
+          'enableStrictGraph': false
+        });
 
         tology.set(PartSchema as typeof PartSchema & { '$id': string });
         tology.set(WholeSchema as typeof WholeSchema & { '$id': string });
@@ -536,7 +542,10 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
           'type': 'object'
         };
 
-        const tology = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        const tology = JsonTology.create({
+          'baseIRI': 'urn:test:',
+          'enableStrictGraph': false
+        });
 
         tology.set(RecursiveSchema as typeof RecursiveSchema & { '$id': string });
         const result = tology.value.create(RecursiveSchema.$id) as Record<string, unknown>;
@@ -577,7 +586,10 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
         'expectErrors': errs, 'expectValid': valid, 'input': inp, 'name': n
       } of scenarios) {
         void it(n, () => {
-          const tology = JsonTology.create({ 'baseIRI': 'urn:test:' });
+          const tology = JsonTology.create({
+            'baseIRI': 'urn:test:',
+            'enableStrictGraph': false
+          });
           const result = tology.materializer.execute(ConfigSchema, inp, { 'baseIRI': 'https://example.io' });
 
           assert.equal(result.valid, valid);
@@ -590,7 +602,10 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
       }
 
       void it('valid execution returns value and abox', () => {
-        const tology = JsonTology.create({ 'baseIRI': 'urn:test:' });
+        const tology = JsonTology.create({
+          'baseIRI': 'urn:test:',
+          'enableStrictGraph': false
+        });
         const ok = tology.materializer.execute(ConfigSchema, { 'name': 'test' }, { 'baseIRI': 'https://example.io' });
 
         assert.equal((ok.value as Record<string, unknown>).name, 'test');
@@ -602,6 +617,7 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
       void it('projectAbox returns well-formed quads with rdf:type and property literals', () => {
         const tology = JsonTology.create({
           'baseIRI': 'https://example.io',
+          'enableStrictGraph': false,
           'schemas': [ConfigSchema] as const
         });
         const abox = tology.toQuads(ConfigSchema, { 'name': 'test' });
@@ -612,20 +628,20 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
 
         const first = abox[0] as Quad;
 
-        assert.ok(typeof first.subject === 'string', 'quad must have string subject');
-        assert.ok(typeof first.predicate === 'string', 'quad must have string predicate');
+        assert.ok(typeof first.subject.value === 'string', 'quad must have string subject value');
+        assert.ok(typeof first.predicate.value === 'string', 'quad must have string predicate value');
         assert.ok(typeof first.object === 'object', 'quad must have object');
         assert.ok(typeof first.object.termType === 'string', 'quad object must have termType');
 
         // --- rdf:type and property literals ---
         const typeQuad = abox.find((quad: Quad) => {
-          return quad.predicate === 'rdf:type' && quad.object.termType === 'NamedNode' && quad.object.value === ConfigSchema.$id;
+          return quad.predicate.value === 'rdf:type' && quad.object.termType === 'NamedNode' && quad.object.value === ConfigSchema.$id;
         });
 
         assert.ok(typeQuad, 'ABox must contain rdf:type quad referencing schema $id');
 
         const nameQuad = abox.find((quad: Quad) => {
-          return quad.predicate.endsWith('#name') && quad.object.termType === 'Literal' && quad.object.value === 'test';
+          return quad.predicate.value.endsWith('#name') && quad.object.termType === 'Literal' && quad.object.value === 'test';
         });
 
         assert.ok(nameQuad, 'ABox must contain name property quad');
@@ -658,17 +674,18 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
           void it(n, () => {
             const tology = JsonTology.create({
               'baseIRI': 'https://example.io',
+              'enableStrictGraph': false,
               'schemas': [ConfigSchema] as const
             });
             const abox1 = tology.toQuads(ConfigSchema, d1);
             const abox2 = tology.toQuads(ConfigSchema, d2);
 
             const subj1 = abox1.find((quad: Quad) => {
-              return quad.predicate === 'rdf:type';
-            })?.subject;
+              return quad.predicate.value === 'rdf:type';
+            })?.subject.value;
             const subj2 = abox2.find((quad: Quad) => {
-              return quad.predicate === 'rdf:type';
-            })?.subject;
+              return quad.predicate.value === 'rdf:type';
+            })?.subject.value;
 
             if (same) {
               assert.strictEqual(subj1, subj2);
@@ -682,6 +699,7 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
       void it('ABox instance types reference TBox classes', () => {
         const tology = JsonTology.create({
           'baseIRI': 'https://example.io',
+          'enableStrictGraph': false,
           'schemas': [ConfigSchema] as const
         });
         const graph = new SchemaGraph(ConfigSchema);
@@ -690,15 +708,15 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
 
         const tboxClasses = new Set(tbox
           .filter((quad: Quad) => {
-            return quad.predicate === 'rdf:type' && quad.object.termType === 'NamedNode' && quad.object.value === 'owl:Class';
+            return quad.predicate.value === 'rdf:type' && quad.object.termType === 'NamedNode' && quad.object.value === 'owl:Class';
           })
           .map((quad: Quad) => {
-            return quad.subject;
+            return quad.subject.value;
           }));
 
         const aboxTypes = abox
           .filter((quad: Quad) => {
-            return quad.predicate === 'rdf:type' && quad.object.termType === 'NamedNode';
+            return quad.predicate.value === 'rdf:type' && quad.object.termType === 'NamedNode';
           })
           .map((quad: Quad) => {
             return quad.object.value;
@@ -1076,7 +1094,10 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
 
           scenario.assertions(result);
         } else {
-          const tology = JsonTology.create({ 'baseIRI': 'https://edge.io' });
+          const tology = JsonTology.create({
+            'baseIRI': 'https://edge.io',
+            'enableStrictGraph': false
+          });
 
           for (const extra of scenario.extraSchemas ?? []) {
             tology.set(extra as Record<string, unknown> & { '$id': string });
@@ -1145,6 +1166,7 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
       void it(scenario.name, () => {
         const tology = JsonTology.create({
           'baseIRI': 'urn:test:',
+          'enableStrictGraph': false,
           ...(scenario.options ? { 'materializer': scenario.options } : {})
         });
 
@@ -1178,6 +1200,7 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
 
       const tology = JsonTology.create({
         'baseIRI': 'urn:test:',
+        'enableStrictGraph': false,
         'materializer': { 'passAdditionalProperties': true }
       });
       const result = tology.materialize(StrictSchema, {
@@ -1249,6 +1272,7 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
         void it(n, () => {
           const tology = JsonTology.create({
             'baseIRI': 'https://ugly.io',
+            'enableStrictGraph': false,
             'schemas': [BaseSchema] as const
           });
           const data = build();
@@ -1277,45 +1301,47 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
       void it('same data produces the same IRI on separate toQuads calls', () => {
         const tology = JsonTology.create({
           'baseIRI': 'https://ugly.io',
+          'enableStrictGraph': false,
           'schemas': [BaseSchema] as const
         });
         const data = { 'name': 'stable' };
         const quads1 = tology.toQuads(BaseSchema, data);
         const quads2 = tology.toQuads(BaseSchema, data);
 
-        interface TypedQuad { 'predicate': string;
-          'subject': string }
+        interface TypedQuad { 'predicate': { 'value': string };
+          'subject': { 'value': string } }
 
         const typeQuad1 = (quads1 as TypedQuad[]).find((quad) => {
-          return quad.predicate === 'rdf:type';
+          return quad.predicate.value === 'rdf:type';
         });
         const typeQuad2 = (quads2 as TypedQuad[]).find((quad) => {
-          return quad.predicate === 'rdf:type';
+          return quad.predicate.value === 'rdf:type';
         });
 
         assert.ok(typeQuad1, 'first projection must have rdf:type quad');
         assert.ok(typeQuad2, 'second projection must have rdf:type quad');
-        assert.equal(typeQuad1.subject, typeQuad2.subject, 'same data must mint the same IRI (content-based, deterministic)');
+        assert.equal(typeQuad1.subject.value, typeQuad2.subject.value, 'same data must mint the same IRI (content-based, deterministic)');
       });
 
       void it('two objects with different data produce different subject IRIs', () => {
         const tology = JsonTology.create({
           'baseIRI': 'https://ugly.io',
+          'enableStrictGraph': false,
           'schemas': [BaseSchema] as const
         });
 
-        interface TypedQuad { 'predicate': string;
-          'subject': string }
+        interface TypedQuad { 'predicate': { 'value': string };
+          'subject': { 'value': string } }
 
         const quads1 = tology.toQuads(BaseSchema, { 'name': 'first' });
         const quads2 = tology.toQuads(BaseSchema, { 'name': 'second' });
 
         const iri1 = (quads1 as TypedQuad[]).find((quad) => {
-          return quad.predicate === 'rdf:type';
-        })?.subject;
+          return quad.predicate.value === 'rdf:type';
+        })?.subject.value;
         const iri2 = (quads2 as TypedQuad[]).find((quad) => {
-          return quad.predicate === 'rdf:type';
-        })?.subject;
+          return quad.predicate.value === 'rdf:type';
+        })?.subject.value;
 
         assert.ok(iri1 !== undefined, 'first projection must have rdf:type quad');
         assert.ok(iri2 !== undefined, 'second projection must have rdf:type quad');
@@ -1325,11 +1351,12 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
       void it('custom iriFor function overrides the default minter', () => {
         const tology = JsonTology.create({
           'baseIRI': 'https://ugly.io',
+          'enableStrictGraph': false,
           'schemas': [BaseSchema] as const
         });
 
-        interface TypedQuad { 'predicate': string;
-          'subject': string }
+        interface TypedQuad { 'predicate': { 'value': string };
+          'subject': { 'value': string } }
 
         const customIri = 'https://custom.io/instance/42';
         const quads = tology.toQuads(BaseSchema, { 'name': 'test' }, {
@@ -1339,31 +1366,32 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
         });
 
         const typeQuad = (quads as TypedQuad[]).find((quad) => {
-          return quad.predicate === 'rdf:type';
+          return quad.predicate.value === 'rdf:type';
         });
 
         assert.ok(typeQuad, 'custom iriFor must produce a rdf:type quad');
-        assert.equal(typeQuad.subject, customIri);
+        assert.equal(typeQuad.subject.value, customIri);
       });
 
       void it('BLANK_NODE_IRI_FOR produces blank-node subjects (_:b prefix)', () => {
         const tology = JsonTology.create({
           'baseIRI': 'https://ugly.io',
+          'enableStrictGraph': false,
           'schemas': [BaseSchema] as const
         });
 
-        interface TypedQuad { 'predicate': string;
-          'subject': string }
+        interface TypedQuad { 'predicate': { 'value': string };
+          'subject': { 'value': string } }
 
         const quads = tology.toQuads(BaseSchema, { 'name': 'test' }, { 'iriFor': 'blank-node' });
         const typeQuad = (quads as TypedQuad[]).find((quad) => {
-          return quad.predicate === 'rdf:type';
+          return quad.predicate.value === 'rdf:type';
         });
 
         assert.ok(typeQuad, 'blank-node mode must produce a rdf:type quad');
         assert.ok(
-          typeQuad.subject.startsWith('_:'),
-          `blank-node subject should start with _:, got ${typeQuad.subject}`
+          typeQuad.subject.value.startsWith('_:'),
+          `blank-node subject should start with _:, got ${typeQuad.subject.value}`
         );
       });
     });
@@ -1372,6 +1400,7 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
       void it('iriFor function that throws propagates raw error', () => {
         const tology = JsonTology.create({
           'baseIRI': 'https://ugly.io',
+          'enableStrictGraph': false,
           'schemas': [BaseSchema] as const
         });
 

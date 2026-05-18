@@ -14,9 +14,9 @@ import {
   aboxFixtures, bookstoreEntities, CustomerSchema
 } from '../bookstore/index.js';
 
-const before = bookstoreEntities.instantiate(CustomerSchema.$id, aboxFixtures.customer);
+const before = bookstoreEntities.instantiate(CustomerSchema, aboxFixtures.customer);
 
-const after = bookstoreEntities.instantiate(CustomerSchema.$id, {
+const after = bookstoreEntities.instantiate(CustomerSchema, {
   ...aboxFixtures.customer,
   'email': 'bastian.balthazar.bux@bookstore.example'
 });

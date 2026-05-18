@@ -20,6 +20,7 @@ const TransformedDateSchema = Transform.create(DateTimeSchema, {
 
 const jt = JsonTology.create({
   'baseIRI': 'https://example.io',
+  'enableStrictGraph': false,
   'schemas': [TransformedDateSchema] as const
 });
 

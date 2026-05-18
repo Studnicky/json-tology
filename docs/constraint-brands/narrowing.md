@@ -88,6 +88,7 @@ Above 8 elements the pairwise check is skipped and runtime validation still enfo
 
 When a project augments `JsonTologyTypeConfigInterface` with `'tightStringLengths': true`, `InferType` narrows strings whose `minLength`/`maxLength` bounds are within `StringLengthCap = 8` to a union of fixed-length character template literals.
 
+<!-- inline-ts-ok: .d.ts module augmentation; must live in the consumer project's tsconfig include path and cannot run from examples/. -->
 ```ts
 // json-tology.d.ts — opt in to tight string length narrowing
 declare module 'json-tology/types' {

@@ -11,7 +11,7 @@ import {
   BookSchema, bookstoreEntities
 } from '../bookstore/index.js';
 
-const book = bookstoreEntities.instantiate(BookSchema.$id, {
+const book = bookstoreEntities.instantiate(BookSchema, {
   'authors': ['Cornelia Funke'],
   'isbn': '9783791504650',
   'price': {

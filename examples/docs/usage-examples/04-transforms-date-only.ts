@@ -11,12 +11,17 @@ import {
   Compose, Transform
 } from '../../../src/index.js';
 import {
-  aboxFixtures, bookstoreEntities, PublicationDateSchema
+  aboxFixtures, bookstoreEntities, createBookstoreDocRegistry,
+  PublicationDateSchema
 } from '../bookstore/index.js';
+
+// createBookstoreDocRegistry seeds a permissive copy of the bookstore — docs examples extend
+// it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
+const jt = createBookstoreDocRegistry();
 
 const PublishedAtSchema = Compose.equivalent(PublicationDateSchema, { '$id': 'https://bookstore.example/PublishedAt' } as const);
 
-bookstoreEntities.set(PublishedAtSchema);
+jt.set(PublishedAtSchema);
 
 Transform.create<typeof PublishedAtSchema, Date>(PublishedAtSchema, {
   'decode': (wire) => {
@@ -28,7 +33,7 @@ Transform.create<typeof PublishedAtSchema, Date>(PublishedAtSchema, {
 });
 
 const wire = aboxFixtures.rareBook.publishedOn;
-const decoded = bookstoreEntities.instantiate(PublishedAtSchema.$id, wire);
+const decoded = jt.instantiate(PublishedAtSchema, wire);
 
 if (!(decoded instanceof Date)) {
   throw new TypeError('PublishedAt transform did not return a Date');
@@ -38,6 +43,6 @@ const date: Date = decoded;
 
 console.assert(date.getUTCFullYear() === 1979);
 
-const reEncoded = bookstoreEntities.encode(PublishedAtSchema, date);
+const reEncoded = jt.encode(PublishedAtSchema, date);
 
 console.assert(reEncoded === wire);

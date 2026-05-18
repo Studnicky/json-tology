@@ -19,64 +19,26 @@ Where does the data come from?
 
 ### HTTP request handler
 
-```ts
-import { InstantiationError } from 'json-tology';
-
-async function createOrder(req: Request, res: Response) {
-  let order: Order;
-
-  try {
-    order = entities.instantiate(OrderSchema.$id, await req.json()) as Order;
-  } catch (err) {
-    if (err instanceof InstantiationError) {
-      return res.status(400).json(err.toJson());
-    }
-    throw err;
-  }
-
-  await db.orders.insert(order);
-  res.status(201).json(order);
-}
-```
+<<< ../examples/docs/picking-a-method/02-http-handler-instantiate.ts
 
 ### Test fixture
 
-```ts
-const testOrder = entities.materialize(OrderSchema, {
-  customerId: 'cust-1',
-  // items omitted  - defaults applied
-});
-// testOrder has all required fields filled; validation passed
-```
+<<< ../examples/docs/picking-a-method/03-test-fixture-materialize.ts
 
 ### Lenient partial construction
 
-```ts
-// Build a partial order for form scaffolding  - missing required fields OK
-const scaffold = entities.materialize(OrderSchema, { customerId: 'cust-1' }, { enablePartial: true });
-```
+<<< ../examples/docs/picking-a-method/04-partial-materialize.ts
 
 ### Logging / analytics (no throw needed)
 
-```ts
-const errors = entities.validate(OrderSchema.$id, incoming);
-
-if (!errors.ok) {
-  logger.warn('Invalid order payload', { errors: errors.items });
-}
-```
+<<< ../examples/docs/picking-a-method/05-validate-no-throw.ts
 
 ## When to use `is`
 
 `is` is a TypeScript type guard. Use it when you need to narrow a union type or check
 unknown input without triggering a throw:
 
-```ts
-if (entities.is(OrderSchema.$id, data)) {
-  // data is narrowed to Order here
-  processOrder(data);
-}
-```
+<<< ../examples/docs/picking-a-method/06-is-type-guard.ts
 
 ## Related
 

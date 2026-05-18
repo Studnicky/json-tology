@@ -159,59 +159,19 @@ Strips brands to the base primitive. Useful for function parameters that accept 
 
 Extract enum values and enforce exhaustive handling:
 
-```ts
-import type { EnumValuesType, ExhaustiveType } from 'json-tology/types';
-
-const StatusSchema = { enum: ['active', 'inactive', 'pending'] } as const;
-
-type Status = EnumValuesType<typeof StatusSchema>;
-// 'active' | 'inactive' | 'pending'
-
-function handle(s: Status): string {
-  switch (s) {
-    case 'active': return 'on';
-    case 'inactive': return 'off';
-    case 'pending': return 'waiting';
-    default: return s satisfies ExhaustiveType<typeof s>;
-  }
-}
-```
+<<< ../../examples/docs/constraint-brands/27-enum-values-exhaustive.ts
 
 ### `DefaultAlignedType<T>`
 
 Validates that `default` values match the declared type. Resolves to `never` when a default mismatches:
 
-```ts
-import type { DefaultAlignedType } from 'json-tology/types';
-
-const GoodSchema = {
-  type: 'object',
-  properties: {
-    count: { type: 'number', default: 0 },
-  },
-} as const;
-
-const BadSchema = {
-  type: 'object',
-  properties: {
-    count: { type: 'number', default: 'zero' },  // string default on number property
-  },
-} as const;
-
-type Good = DefaultAlignedType<typeof GoodSchema>;  // typeof GoodSchema
-type Bad = DefaultAlignedType<typeof BadSchema>;     // never
-```
+<<< ../../examples/docs/constraint-brands/28-default-aligned.ts
 
 ### `IntegerRangeType<Min, Max>` / `MultipleOfRangeType<Min, Max, Step>`
 
 Manual utilities for generating literal union types from integer ranges:
 
-```ts
-import type { IntegerRangeType, MultipleOfRangeType } from 'json-tology/types';
-
-type Rating = IntegerRangeType<1, 5>;           // 1 | 2 | 3 | 4 | 5
-type EvenDigit = MultipleOfRangeType<0, 8, 2>;  // 0 | 2 | 4 | 6 | 8
-```
+<<< ../../examples/docs/constraint-brands/29-integer-range-types.ts
 
 Practical for ranges in 0-50. Larger ranges fall back to `number`.
 
@@ -229,6 +189,7 @@ This is the same pattern used by libraries like Zod, tRPC, Express, and Fastify 
 
 Create a file (any name, `.d.ts` extension) in your project:
 
+<!-- inline-ts-ok: .d.ts module augmentation; must live in the consumer project's tsconfig include path and cannot run from examples/. -->
 ```ts
 // json-tology.d.ts
 declare module 'json-tology/types' {
@@ -258,10 +219,7 @@ The master `brands` flag takes precedence. When `brands: false`, all other flags
 
 ### Before and after: format brands
 
-```ts
-const EmailSchema = { type: 'string', format: 'email' } as const;
-type Email = InferType<typeof EmailSchema>;
-```
+<<< ../../examples/docs/constraint-brands/30-email-format-brand.ts
 
 | `formatBrands` | `Email` resolves to | Plain `string` assignable? |
 |---|---|---|
@@ -297,14 +255,7 @@ type Email = InferType<typeof EmailSchema>;
 
 ### Before and after: object brands
 
-```ts
-const ClosedSchema = {
-  type: 'object',
-  properties: { name: { type: 'string' } },
-  additionalProperties: false,
-} as const;
-type Closed = InferType<typeof ClosedSchema>;
-```
+<<< ../../examples/docs/constraint-brands/31-closed-object.ts
 
 | `objectBrands` | Excess property `{ name: 'x', extra: 1 }` | Plain object assignable? |
 |---|---|---|
@@ -313,6 +264,7 @@ type Closed = InferType<typeof ClosedSchema>;
 
 ### Before and after: all brands off
 
+<!-- inline-ts-ok: .d.ts module augmentation; must live in the consumer project's tsconfig include path and cannot run from examples/. -->
 ```ts
 // json-tology.d.ts  - disable everything
 declare module 'json-tology/types' {
@@ -328,6 +280,7 @@ All `InferType` results revert to plain TypeScript types with no phantom brands.
 
 The augmented interface is type-checked. A typo in a flag name produces a compile error:
 
+<!-- inline-ts-ok: .d.ts module augmentation; demonstrates a deliberate typo that the consumer project's tsconfig surfaces as a compile error. -->
 ```ts
 declare module 'json-tology/types' {
   interface JsonTologyTypeConfigInterface {
@@ -340,28 +293,7 @@ declare module 'json-tology/types' {
 
 Branded types enforce that data goes through validation. The validation API returns branded types automatically:
 
-```ts
-import { JsonTology } from 'json-tology';
-
-const EmailSchema = {
-  $id: 'https://example.com/Email',
-  type: 'string',
-  format: 'email',
-} as const;
-
-const jt = JsonTology.create({
-  baseIRI: 'https://example.com',
-  schemas: [EmailSchema] as const,
-});
-
-// All of these return branded types:
-const email = jt.instantiate('https://example.com/Email', input);     // string & FormatBrandInterface<'email'>
-const clean = jt.value.instantiate('https://example.com/Email', input); // same
-
-if (jt.is('https://example.com/Email', input)) {
-  input; // narrowed to branded type
-}
-```
+<<< ../../examples/docs/constraint-brands/32-obtain-branded-values.ts
 
 ## See also
 

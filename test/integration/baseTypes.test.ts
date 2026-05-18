@@ -7,7 +7,9 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
 void describe('BaseTypes — cross-module registry integration', () => {
   void it('make*Schema() validates via registry with $ref', () => {
-    const registry = new SchemaRegistry();
+    // enableStrictGraph: false — BaseTypes.page() factory produces schemas with
+    // inline primitive shapes (minimum) by design; this tests registry integration.
+    const registry = new SchemaRegistry({ 'enableStrictGraph': false });
     const IdBodySchema = {
       '$id': 'https://test.io/IdBody',
       'properties': { 'id': { 'type': 'number' } },

@@ -85,6 +85,7 @@ assert<AssertAssignableType<Email, string>>();
 // instantiate returns the branded type; assignment to EmailBrandInterface is OK
 const jtEmail = JsonTology.create({
   'baseIRI': 'https://example.io',
+  'enableStrictGraph': false,
   'schemas': [_EmailSchema] as const
 });
 
@@ -446,6 +447,7 @@ assert<AssertAssignableType<User['id'], UuidBrandInterface>>();
 // instantiate returns a User where the fields satisfy their brands
 const jtUser = JsonTology.create({
   'baseIRI': 'https://example.io',
+  'enableStrictGraph': false,
   'schemas': [_UserSchema] as const
 });
 

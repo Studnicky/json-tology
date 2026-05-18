@@ -8,35 +8,40 @@
  * `owl:equivalentClass`, SHACL emits `sh:node`.
  *
  * The alias registers onto the canonical bookstore via
- * `bookstoreEntities.set()`, so every call goes through the same
+ * `jt.set()`, so every call goes through the same
  * registry the rest of the docs reference.
  */
 
 import { Compose } from '../../../src/index.js';
 import {
-  aboxFixtures, bookstoreEntities, IsbnSchema
+  aboxFixtures, createBookstoreDocRegistry,
+  IsbnSchema
 } from '../bookstore/index.js';
+
+// createBookstoreDocRegistry seeds a permissive copy of the bookstore — docs examples extend
+// it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
+const jt = createBookstoreDocRegistry();
 
 const PrimaryIsbnSchema = Compose.equivalent(IsbnSchema, {
   '$id': 'https://bookstore.example/PrimaryIsbn',
   'description': 'The canonical ISBN used for catalog lookup and ordering.'
 } as const);
 
-bookstoreEntities.set(PrimaryIsbnSchema);
+jt.set(PrimaryIsbnSchema);
 
 // The canonical Bastian-ordered ISBN validates against both schemas.
 const isbn = aboxFixtures.rareBook.isbn;
 
-const sourceErrs = bookstoreEntities.validate(IsbnSchema.$id, isbn);
-const aliasErrs = bookstoreEntities.validate(PrimaryIsbnSchema.$id, isbn);
+const sourceErrs = jt.validate(IsbnSchema.$id, isbn);
+const aliasErrs = jt.validate(PrimaryIsbnSchema.$id, isbn);
 
 console.assert(sourceErrs.length === 0);
 console.assert(aliasErrs.length === 0);
 
 // A malformed ISBN fails identically through both names.
 const badIsbn = 'not-an-isbn';
-const sourceBad = bookstoreEntities.validate(IsbnSchema.$id, badIsbn);
-const aliasBad = bookstoreEntities.validate(PrimaryIsbnSchema.$id, badIsbn);
+const sourceBad = jt.validate(IsbnSchema.$id, badIsbn);
+const aliasBad = jt.validate(PrimaryIsbnSchema.$id, badIsbn);
 
 console.assert(sourceBad.length === aliasBad.length);
 console.assert(sourceBad.length > 0);

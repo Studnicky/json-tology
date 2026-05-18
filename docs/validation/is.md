@@ -12,74 +12,25 @@
 
 ### Example 1: Type narrowing in a conditional branch
 
-```ts
-import { bookstoreEntities, CustomerSchema } from './bookstore/index.js';
-
-function describeCustomer(data: unknown): string {
-  if (bookstoreEntities.is(CustomerSchema.$id, data)) {
-    // data is narrowed to Customer here
-    return `${data.name} <${data.email}>`;
-  }
-  return 'not a customer';
-}
-```
+<<< ../../examples/docs/validation/28-is-type-narrowing.ts
 
 ### Example 2: Filtering an array of unknowns
 
-```ts
-import { bookstoreEntities, CustomerSchema, type Customer } from './bookstore/index.js';
-
-const mixed: unknown[] = fetchFromApi();
-const customers = mixed.filter(
-  (item): item is Customer => bookstoreEntities.is(CustomerSchema.$id, item)
-);
-// customers is Customer[]
-```
+<<< ../../examples/docs/validation/29-is-array-filter.ts
 
 ### Example 3: Guards at a service boundary
 
-```ts
-import { bookstoreEntities, OrderSchema, type Order } from './bookstore/index.js';
-
-function processOrder(data: unknown): void {
-  if (!bookstoreEntities.is(OrderSchema.$id, data)) {
-    throw new TypeError('Expected an Order');
-  }
-  // data is Order from here  - no explicit cast needed
-  console.log(`Processing order ${data.id} for customer ${data.customerId}`);
-}
-```
+<<< ../../examples/docs/validation/30-is-service-boundary.ts
 
 ## Bad examples - what NOT to do
 
 ### Anti-pattern 1: Using `is` when you need the coerced (defaults-filled) value
 
-```ts
-// ⊥ Don't do this  - is() only checks, it doesn't apply defaults
-if (jt.is(CustomerSchema.$id, data)) {
-  // data.addresses might be undefined if the input didn't include it
-  // is() doesn't apply the default: []
-  data.addresses.forEach(/* ... */);  // potential runtime error
-}
-
-// ✓ Do this  - coerce to get defaults applied
-const customer = jt.instantiate(CustomerSchema.$id, data);
-customer.addresses.forEach(/* ... */);  // addresses always present (default [])
-```
+<<< ../../examples/docs/validation/31-is-antipattern-no-defaults.ts
 
 ### Anti-pattern 2: Checking `is` and then immediately coercing
 
-```ts
-// ⊥ Don't do this  - double validation
-if (jt.is(CustomerSchema.$id, data)) {
-  const customer = jt.instantiate(CustomerSchema.$id, data); // validates again
-}
-
-// ✓ Do this  - coerce directly; catch the error if invalid
-try {
-  const customer = jt.instantiate(CustomerSchema.$id, data);
-} catch (err) { /* handle */ }
-```
+<<< ../../examples/docs/validation/32-is-antipattern-double-validate.ts
 
 ## Comparison
 

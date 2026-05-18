@@ -20,62 +20,23 @@ Schemas are plain JSON Schema objects with `$id` and `as const`. They are intero
 
 Primitives are named, reusable schemas with a `urn:` IRI:
 
-```ts
-// entities/CustomerId.ts
-export const CustomerIdSchema = {
-  $id: 'urn:bookstore:CustomerId',
-  type: 'string',
-  format: 'uuid',
-} as const;
-```
+<<< ../examples/docs/getting-started/08-primitive-schema.ts
 
 Entities compose primitives via `$ref: SourceSchema.$id` - never bare string literals:
 
-```ts
-// entities/Customer.ts
-import { CustomerIdSchema } from './CustomerId.js';
-import { EmailSchema } from './Email.js';
-import { PersonNameSchema } from './PersonName.js';
-
-const CustomerSchema = {
-  $id: 'urn:bookstore:Customer',
-  type: 'object',
-  properties: {
-    id:    { $ref: CustomerIdSchema.$id },
-    email: { $ref: EmailSchema.$id },
-    name:  { $ref: PersonNameSchema.$id },
-  },
-  required: ['id', 'email', 'name'],
-} as const;
-```
+<<< ../examples/docs/getting-started/09-entity-schema.ts
 
 `as const` is required. Without it TypeScript widens every string literal and `InferType<T>` cannot produce the right type.
 
 ## Derive the TypeScript type
 
-```ts
-import type { InferType } from 'json-tology/types';
-
-type Customer = InferType<typeof CustomerSchema>;
-// {
-//   readonly id: string & FormatBrand<'uuid'>;
-//   readonly email: string & FormatBrand<'email'>;
-//   readonly name: string;
-// }
-```
+<<< ../examples/docs/getting-started/10-infer-type.ts
 
 No code generation. No separate type declaration file. The type comes directly from the schema literal at compile time.
 
 ## Create an instance and register schemas
 
-```ts
-import { JsonTology } from 'json-tology';
-
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [CustomerSchema] as const,
-});
-```
+<<< ../examples/docs/getting-started/11-create-register.ts
 
 `JsonTology.create()` registers all schemas, compiles the validation graph, and builds the type map. Every method that accepts a schema `$id` returns typed results from that map.
 

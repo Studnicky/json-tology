@@ -50,7 +50,10 @@ void describe('SchemaError on registration', { 'concurrency': true }, () => {
     for (const {
       messageContains, name, schema
     } of scenarios) {
-      const jt = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const jt = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableStrictGraph': false
+      });
 
       try {
         jt.set(schema);
@@ -63,7 +66,10 @@ void describe('SchemaError on registration', { 'concurrency': true }, () => {
   });
 
   void it('set() replaces an existing schema with new content (Map semantics)', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const jt = JsonTology.create({
+      'baseIRI': 'urn:test:',
+      'enableStrictGraph': false
+    });
 
     jt.set({
       '$id': 'https://err.test/Original',
@@ -88,7 +94,10 @@ void describe('SchemaError on registration', { 'concurrency': true }, () => {
   });
 
   void it('SchemaError has code and toJson()', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const jt = JsonTology.create({
+      'baseIRI': 'urn:test:',
+      'enableStrictGraph': false
+    });
 
     try {
       jt.set({ 'type': 'object' });
@@ -168,7 +177,11 @@ void describe('BaseError cause chain edge cases', { 'concurrency': true }, () =>
 
 void describe('InstantiationError structure', { 'concurrency': true }, () => {
   void it('carries structured ValidationErrors with items', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    // enableStrictGraph: false — synthetic fixture schema with inline minimum
+    const jt = JsonTology.create({
+      'baseIRI': 'urn:test:',
+      'enableStrictGraph': false
+    });
 
     jt.set({
       '$id': 'https://err.test/Person',
@@ -205,7 +218,11 @@ void describe('InstantiationError structure', { 'concurrency': true }, () => {
   });
 
   void it('reports multiple errors simultaneously', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    // enableStrictGraph: false — synthetic fixture schema with inline format/minLength
+    const jt = JsonTology.create({
+      'baseIRI': 'urn:test:',
+      'enableStrictGraph': false
+    });
 
     jt.set({
       '$id': 'https://err.test/Multi',
@@ -236,7 +253,10 @@ void describe('InstantiationError structure', { 'concurrency': true }, () => {
   });
 
   void it('InstantiationError.toJson() serializes cleanly', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const jt = JsonTology.create({
+      'baseIRI': 'urn:test:',
+      'enableStrictGraph': false
+    });
 
     jt.set({
       '$id': 'https://err.test/Serial',
@@ -323,7 +343,10 @@ void describe('Registry recovery', { 'concurrency': true }, () => {
   });
 
   void it('remains usable after InstantiationError', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'urn:test:' });
+    const jt = JsonTology.create({
+      'baseIRI': 'urn:test:',
+      'enableStrictGraph': false
+    });
 
     jt.set({
       '$id': 'https://err.test/Recover',
@@ -348,7 +371,10 @@ void describe('Registry recovery', { 'concurrency': true }, () => {
 
 void describe('JsonTology error handling', { 'concurrency': true }, () => {
   void it('handles unregistered schema operations', () => {
-    const jt = JsonTology.create({ 'baseIRI': 'https://err.test' });
+    const jt = JsonTology.create({
+      'baseIRI': 'https://err.test',
+      'enableStrictGraph': false
+    });
 
     const scenarios: Array<{ 'check': () => void;
       'name': string }> = [

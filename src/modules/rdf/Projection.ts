@@ -22,6 +22,7 @@ import type { SpecialHandlerFn } from '../../types/SpecialHandlerFn.js';
 import type {
   ProjectInstanceArgs, ProjectPropertyArgs
 } from '../../interfaces/Projection.js';
+import { Terms } from './Terms.js';
 
 import {
   JT, OWL, RDF, RDFS, SH, XSD
@@ -353,8 +354,10 @@ function projectAbox(
   });
 
   if (graphIRI !== undefined) {
+    const graphTerm = Terms.iri(graphIRI);
+
     for (const quad of quads) {
-      quad.graph = graphIRI;
+      quad.graph = graphTerm;
     }
   }
 
@@ -536,25 +539,27 @@ function quadsToJsonLdNodes(quads: QuadInterface[]): Array<Record<string, unknow
   const subjects = new Map<string, Record<string, unknown>>();
 
   for (const entry of quads) {
-    let node = subjects.get(entry.subject);
+    const subjectValue = entry.subject.value;
+    let node = subjects.get(subjectValue);
 
     if (!node) {
-      node = { [JSONLD.id]: entry.subject };
-      subjects.set(entry.subject, node);
+      node = { [JSONLD.id]: subjectValue };
+      subjects.set(subjectValue, node);
     }
 
     const value = quadObjectToJsonLd(entry.object);
+    const predicateValue = entry.predicate.value;
 
-    if (entry.predicate === RDF.type) {
+    if (predicateValue === RDF.type) {
       node[JSONLD.type] = value;
-    } else if (node[entry.predicate] === undefined) {
-      node[entry.predicate] = value;
+    } else if (node[predicateValue] === undefined) {
+      node[predicateValue] = value;
     } else {
-      if (Array.isArray(node[entry.predicate])) {
-        (node[entry.predicate] as unknown[]).push(value);
+      if (Array.isArray(node[predicateValue])) {
+        (node[predicateValue] as unknown[]).push(value);
       } else {
-        node[entry.predicate] = [
-          node[entry.predicate],
+        node[predicateValue] = [
+          node[predicateValue],
           value
         ];
       }

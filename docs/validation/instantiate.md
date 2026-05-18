@@ -22,96 +22,27 @@ Valid input: unknown properties are stripped, defaults are filled, the return ty
 
 Catch `InstantiationError` and convert to an RFC 7807 Problem Details response (built on [`errors.report`](/errors/views#validationerrors-report)).
 
-```ts
-import { InstantiationError } from 'json-tology';
-import { bookstoreEntities, CustomerSchema } from './bookstore/index.js';
-
-function createCustomer(body: unknown) {
-  try {
-    return bookstoreEntities.instantiate(CustomerSchema.$id, body);
-  } catch (err) {
-    if (err instanceof InstantiationError) {
-      // err.errors is a ValidationErrors collection
-      return {
-        status: 422,
-        body:   err.errors.report({ instance: '/customers' }),
-      };
-    }
-    throw err;
-  }
-}
-```
+<<< ../../examples/docs/validation/22-instantiate-request-handler.ts
 
 ### Example 3: Coerce a nested schema with $ref
 
 `OrderSchema` contains `items: [OrderLine]` via `$ref`. Each `OrderLine` is coerced independently. See the [bookstore domain](/bookstore-domain) for schema definitions.
 
-```ts
-import { bookstoreEntities, OrderSchema } from './bookstore/index.js';
-
-const order = bookstoreEntities.instantiate(OrderSchema.$id, {
-  id:              'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-  customerId:      'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  placedAt:        '2026-01-15T10:30:00Z',
-  total:           27.98,
-  items: [
-    { bookIsbn: '9783522128001', quantity: 2, unitPrice: 12.99, extra: 'gone' },
-  ],
-  unexpectedField: 'stripped',
-});
-
-// order.currency === 'USD' (default)
-// order.items[0].extra is gone (stripped from OrderLine)
-// order.unexpectedField gone (stripped from Order)
-```
+<<< ../../examples/docs/validation/23-instantiate-nested-ref.ts
 
 ## Bad examples - what NOT to do
 
 ### Anti-pattern 1: Catching InstantiationError silently
 
-```ts
-// ⊥ Don't do this  - you lose the structured ValidationErrors
-try {
-  jt.instantiate(CustomerSchema.$id, data);
-} catch {
-  /* swallowed */
-}
-
-// ✓ Do this  - surface the error list
-const errs = bookstoreEntities.validate(CustomerSchema.$id, data);
-if (!errs.ok) {
-  console.log(errs.items.map(e => `${e.path}: ${e.message}`));
-}
-```
+<<< ../../examples/docs/validation/24-instantiate-antipattern-swallow.ts
 
 ### Anti-pattern 2: Coercing already-coerced values
 
-```ts
-// ⊥ Don't do this  - wasted work; coerce already returned a typed, clean value
-const validated = jt.instantiate(CustomerSchema.$id, body);
-const again     = jt.instantiate(CustomerSchema.$id, validated);
-
-// ✓ Just use the first result
-const customer = jt.instantiate(CustomerSchema.$id, body);
-```
+<<< ../../examples/docs/validation/25-instantiate-antipattern-double-coerce.ts
 
 ### Anti-pattern 3: Building partial shapes by hand instead of using derived schemas
 
-```ts
-import { Compose } from 'json-tology';
-
-// ⊥ Don't do this  - build a sub-schema with Compose instead
-const partial = { name: body.name, email: body.email };
-jt.instantiate(CustomerSchema.$id, partial);
-
-// ✓ Do this  - pick the sub-schema, coerce cleanly
-const SignupSchema = Compose.pick(
-  CustomerSchema,
-  ['name', 'email'] as const,
-  'https://bookstore.example/Signup',
-);
-jt.instantiate(SignupSchema.$id, body);
-```
+<<< ../../examples/docs/validation/26-instantiate-antipattern-manual-partial.ts
 
 ## Comparison
 
@@ -267,12 +198,6 @@ except ValidationError as e:
 
 Useful for PATCH endpoints where missing fields mean "no change" rather than "use default":
 
-```ts
-const patched = jt.instantiate(
-  CustomerSchema.$id,
-  incomingPatchBody,
-  { enableDefaults: false }  // missing fields stay missing
-);
-```
+<<< ../../examples/docs/validation/27-instantiate-no-defaults-patch.ts
 
 The registry's global `enableDefaults` setting is unchanged by per-call options.

@@ -14,12 +14,17 @@ import {
   Compose, Transform
 } from '../../../src/index.js';
 import {
-  aboxFixtures, bookstoreEntities, Iso8601Schema
+  aboxFixtures, bookstoreEntities, createBookstoreDocRegistry,
+  Iso8601Schema
 } from '../bookstore/index.js';
+
+// createBookstoreDocRegistry seeds a permissive copy of the bookstore — docs examples extend
+// it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
+const jt = createBookstoreDocRegistry();
 
 const PlacedAtSchema = Compose.equivalent(Iso8601Schema, { '$id': 'https://bookstore.example/PlacedAt' } as const);
 
-bookstoreEntities.set(PlacedAtSchema);
+jt.set(PlacedAtSchema);
 
 Transform.create<typeof PlacedAtSchema, Date>(PlacedAtSchema, {
   'decode': (wire) => {
@@ -31,7 +36,7 @@ Transform.create<typeof PlacedAtSchema, Date>(PlacedAtSchema, {
 });
 
 const wire: string = aboxFixtures.order.placedAt;
-const decoded = bookstoreEntities.instantiate(PlacedAtSchema.$id, wire);
+const decoded = jt.instantiate(PlacedAtSchema, wire);
 
 if (!(decoded instanceof Date)) {
   throw new TypeError('PlacedAt transform did not return a Date');
@@ -43,7 +48,7 @@ console.assert(date.getUTCFullYear() === 2026);
 // April is month 3 (0-indexed)
 console.assert(date.getUTCMonth() === 3);
 
-const reEncoded = bookstoreEntities.encode(PlacedAtSchema, date);
+const reEncoded = jt.encode(PlacedAtSchema, date);
 
 console.assert(typeof reEncoded === 'string');
 // Round-trip equality on the wire-format precision.

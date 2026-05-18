@@ -6,6 +6,7 @@ These three methods complete the OWL class-axiom set on `Compose`. They are auth
 
 ## Declaration
 
+<!-- inline-ts-ok: pseudocode signature group describing return shapes; not runnable expressions. -->
 ```ts
 Compose.subClassOf(parent | parents, body): { $id, allOf: [{ $ref }, ...] }
 Compose.disjointWith(other, body):           { $id, disjointWith, ...body }
@@ -42,6 +43,7 @@ Compose.complementOf(other, body):           { $id, not: { $ref }, ...body }
 
 Output wire shape:
 
+<!-- inline-ts-ok: emitted JSON object shape annotated as TS comments; illustrates wire output, not runnable code. -->
 ```ts
 // {
 //   $id: 'urn:bookstore:EBook',

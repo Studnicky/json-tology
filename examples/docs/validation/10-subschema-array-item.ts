@@ -8,15 +8,20 @@
  */
 
 import {
-  aboxFixtures, bookstoreEntities, OrderSchema
+  aboxFixtures, createBookstoreDocRegistry,
+  OrderSchema
 } from '../bookstore/index.js';
 
-const orderLineSubschema = bookstoreEntities.subschemaAt(
+// createBookstoreDocRegistry seeds a permissive copy of the bookstore — docs examples extend
+// it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
+const jt = createBookstoreDocRegistry();
+
+const orderLineSubschema = jt.subschemaAt(
   OrderSchema.$id,
   '/properties/items/items'
 );
 
-const line = bookstoreEntities.instantiate(
+const line = jt.instantiate(
   orderLineSubschema,
   aboxFixtures.order.items[0]
 ) as { 'bookIsbn': string;

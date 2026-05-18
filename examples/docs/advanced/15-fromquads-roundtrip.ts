@@ -24,7 +24,7 @@ const customerData = {
 const abox = bookstoreEntities.toQuads(CustomerSchema, customerData);
 
 // Lift back to typed objects
-const customers = bookstoreEntities.fromQuads(CustomerSchema.$id, abox);
+const customers = bookstoreEntities.fromQuads(CustomerSchema, abox);
 // customers: Customer[] — each element validated through coerce
 
 console.assert(Array.isArray(customers), 'customers is array');

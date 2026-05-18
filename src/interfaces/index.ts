@@ -29,7 +29,6 @@ export type * from './Ontology.js';
 export type * from './Prefetch.js';
 export type * from './PropCheck.js';
 export type * from './Quad.js';
-export type * from './RdfJsQuad.js';
 export type * from './RefDecoder.js';
 export type * from './RefDecoderRegistry.js';
 export type * from './Refs.js';

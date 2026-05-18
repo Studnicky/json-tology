@@ -30,15 +30,7 @@ The bookstore schemas defined in the [Bookstore Domain](/bookstore-domain) are u
 
 ### Bad examples
 
-```ts
-// WRONG: toTbox() is not cached  - don't call it in a hot path expecting reference equality
-const first  = jt.toTbox();
-const second = jt.toTbox();
-first === second; // false  - each call is fresh
-
-// RIGHT for hot paths: use ontology() which is cached
-const cached = jt.ontology();
-```
+<<< ../../examples/docs/advanced/84-ontology-totbox-not-cached.ts
 
 ### Comparison
 
@@ -82,14 +74,7 @@ const cached = jt.ontology();
 
 ### Bad examples
 
-```ts
-// WRONG: toShacl() raw() is empty  - SHACL lives in shaclObject(), not raw()
-const builder = jt.toShacl();
-builder.raw(); // []  - always empty for toShacl()
-
-// RIGHT: use shaclObject() to access SHACL content
-const shacl = builder.shaclObject();
-```
+<<< ../../examples/docs/advanced/85-ontology-toshacl-shaclObject.ts
 
 ### Comparison
 

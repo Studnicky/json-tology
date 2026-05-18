@@ -21,14 +21,7 @@ See also [Primary inference](./infer.md), [Utility types](./utility.md).
 
 ### Signature
 
-```ts
-export type IntegerRangeType<TMin extends number, TMax extends number>
-  = number extends TMin ? number
-    : number extends TMax ? number
-      : RangeWithinCapType<TMax> extends true
-        ? BuildIntegerRangeType<TMin, TMax>
-        : number;
-```
+<<< ../../examples/docs/types/35-integerrange-signature.ts
 
 ### Examples
 
@@ -38,50 +31,21 @@ export type IntegerRangeType<TMin extends number, TMax extends number>
 
 #### Example 2: Deriving automatically via `InferType`
 
-```ts
-import type { InferType } from 'json-tology/types';
-import { ReviewSchema } from '../bookstore/index.js';
-
-// ReviewSchema.properties.rating: { type: 'integer', minimum: 1, maximum: 5 }
-type Rating = InferType<typeof ReviewSchema>['rating'];
-// 1 | 2 | 3 | 4 | 5  - same result, derived from schema automatically
-
-// Use IntegerRangeType<1,5> only when you need the range without a schema:
-import type { IntegerRangeType } from 'json-tology/types';
-type RatingManual = IntegerRangeType<1, 5>; // explicit form
-```
+<<< ../../examples/docs/types/36-integerrange-via-infer.ts
 
 #### Example 3: Small page-size range for a paginated query
 
-```ts
-import type { IntegerRangeType } from 'json-tology/types';
-
-type PageSize = IntegerRangeType<1, 50>;
-// 1 | 2 | 3 | ... | 50
-
-function fetchBooks(page: number, pageSize: PageSize): Promise<unknown[]> {
-  // pageSize is compile-time bounded  - no need for a runtime min/max guard
-  return Promise.resolve([]);
-}
-```
+<<< ../../examples/docs/types/37-integerrange-pagesize.ts
 
 ### Bad examples
 
 #### Anti-pattern 1: Large ranges
 
-```ts
-// ⊥ Don't do this  - IntegerRangeType<1, 1000> falls back to number (cap is 50)
-type ArticleId = IntegerRangeType<1, 1000>;
-// Falls back to number  - use a branded number type or runtime validation instead
-```
+<<< ../../examples/docs/types/38-antipattern-integerrange-large.ts
 
 #### Anti-pattern 2: Floating-point bounds
 
-```ts
-// ⊥ Don't do this  - bounds must be non-negative integer literals
-type Price = IntegerRangeType<0.5, 9.99>;
-// Produces unexpected results  - IntegerRangeType is for integers only
-```
+<<< ../../examples/docs/types/39-antipattern-integerrange-floats.ts
 
 ### Comparison
 
@@ -176,15 +140,7 @@ StarRating = Annotated[int, Field(ge=1, le=5)]
 
 ### Signature
 
-```ts
-export type MultipleOfRangeType<
-  TMin extends number, TMax extends number, TStep extends number
->
-  = number extends TMin ? number
-    : number extends TMax ? number
-      : number extends TStep ? number
-        : BuildMultipleOfRangeType<TMin, TMax, TStep>;
-```
+<<< ../../examples/docs/types/40-multipleof-signature.ts
 
 ### Examples
 
@@ -194,55 +150,21 @@ export type MultipleOfRangeType<
 
 #### Example 2: Deriving automatically via `InferType`
 
-```ts
-import type { InferType } from 'json-tology/types';
-
-const EvenQuantitySchema = {
-  type: 'integer',
-  minimum: 0,
-  maximum: 10,
-  multipleOf: 2,
-} as const;
-
-type EvenQuantity = InferType<typeof EvenQuantitySchema>;
-// 0 | 2 | 4 | 6 | 8 | 10  - same result, derived from schema automatically
-
-// Use MultipleOfRangeType explicitly only when you need it without a schema:
-import type { MultipleOfRangeType } from 'json-tology/types';
-type EvenQuantityManual = MultipleOfRangeType<0, 10, 2>;
-```
+<<< ../../examples/docs/types/41-multipleof-via-infer.ts
 
 #### Example 3: Discount tiers in 5% increments
 
-```ts
-import type { MultipleOfRangeType } from 'json-tology/types';
-
-// Discounts from 0% to 50% in 5% steps
-type DiscountPercent = MultipleOfRangeType<0, 50, 5>;
-// 0 | 5 | 10 | 15 | 20 | 25 | 30 | 35 | 40 | 45 | 50
-
-function applyDiscount(price: number, discount: DiscountPercent): number {
-  return price * (1 - discount / 100);
-}
-```
+<<< ../../examples/docs/types/42-multipleof-discount-tiers.ts
 
 ### Bad examples
 
 #### Anti-pattern 1: Stepped range that exceeds the cap
 
-```ts
-// ⊥ Don't do this  - MultipleOfRangeType<0, 100, 1> produces 101 values, exceeds cap
-type AllPercentages = MultipleOfRangeType<0, 100, 1>;
-// Falls back to number  - use a runtime validator or branded number instead
-```
+<<< ../../examples/docs/types/43-antipattern-multipleof-large.ts
 
 #### Anti-pattern 2: Step of zero
 
-```ts
-// ⊥ Don't do this  - step of 0 produces an infinite loop in the type recursion
-type BadRange = MultipleOfRangeType<0, 10, 0>;
-// Undefined behaviour  - always use a positive non-zero step
-```
+<<< ../../examples/docs/types/44-antipattern-multipleof-zero-step.ts
 
 ### Comparison
 

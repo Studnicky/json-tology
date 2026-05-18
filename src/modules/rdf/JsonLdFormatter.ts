@@ -19,14 +19,17 @@ function fromQuadsImpl(quads: QuadInterface[]): Array<Record<string, unknown>> {
   const subjects = new Map<string, Record<string, unknown>>();
 
   for (const entry of quads) {
-    let node = subjects.get(entry.subject);
+    const subjectValue = entry.subject.value;
+    let node = subjects.get(subjectValue);
 
     if (node === undefined) {
-      node = { [JSONLD.id]: entry.subject };
-      subjects.set(entry.subject, node);
+      node = { [JSONLD.id]: subjectValue };
+      subjects.set(subjectValue, node);
     }
 
-    if (entry.predicate === RDF.type || entry.predicate === RDF_TYPE_IRI) {
+    const predicateValue = entry.predicate.value;
+
+    if (predicateValue === RDF.type || predicateValue === RDF_TYPE_IRI) {
       // @type values are plain strings, not { @id: ... } wrappers
       const typeValue = entry.object.termType === 'NamedNode' ? entry.object.value : objectToJsonLd(entry.object);
       const existing = node[JSONLD.type];
@@ -43,14 +46,14 @@ function fromQuadsImpl(quads: QuadInterface[]): Array<Record<string, unknown>> {
       }
     } else {
       const value = objectToJsonLd(entry.object);
-      const existing = node[entry.predicate];
+      const existing = node[predicateValue];
 
       if (existing === undefined) {
-        node[entry.predicate] = value;
+        node[predicateValue] = value;
       } else if (Array.isArray(existing)) {
         (existing as unknown[]).push(value);
       } else {
-        node[entry.predicate] = [
+        node[predicateValue] = [
           existing,
           value
         ];

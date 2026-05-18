@@ -7,13 +7,18 @@
  *
  * This makes the docs un-bit-rottable: if an API changes and a doc example
  * is not updated, this test fails.
+ *
+ * Implementation note: file discovery runs synchronously via readdirSync.
+ * `node:test` schedules subtests at registration time; if we discover
+ * asynchronously the runner can begin closing the file before later
+ * describes register, so we keep all enumeration synchronous.
  */
 
 import assert from 'node:assert/strict';
 import {
   describe, it
 } from 'node:test';
-import { readdir } from 'node:fs/promises';
+import { readdirSync } from 'node:fs';
 import {
   join, resolve
 } from 'node:path';
@@ -22,20 +27,15 @@ import { fileURLToPath } from 'node:url';
 const CURRENT_DIR = fileURLToPath(new URL('.', import.meta.url));
 const EXAMPLES_ROOT = resolve(CURRENT_DIR, '../../examples/docs');
 
-// Recursively find all .ts files that are json-tology examples (not comparators
-// and not the benchmark suite — bench files are runnable scripts, not API examples).
-async function findExamples(dir: string): Promise<string[]> {
-  const entries = await readdir(dir, { 'withFileTypes': true });
+function findExamplesIn(dir: string): string[] {
+  const entries = readdirSync(dir, { 'withFileTypes': true });
   const results: string[] = [];
 
   for (const entry of entries) {
     const fullPath = join(dir, entry.name);
 
     if (entry.isDirectory()) {
-      if (entry.name === 'benchmarks') {
-        continue;
-      }
-      results.push(...await findExamples(fullPath));
+      results.push(...findExamplesIn(fullPath));
     } else if (
       entry.isFile()
       && entry.name.endsWith('.ts')
@@ -50,21 +50,38 @@ async function findExamples(dir: string): Promise<string[]> {
   return results;
 }
 
-const examples = await findExamples(EXAMPLES_ROOT);
+function listSections(): string[] {
+  const entries = readdirSync(EXAMPLES_ROOT, { 'withFileTypes': true });
+  const sections: string[] = [];
 
-assert.ok(examples.length > 0, 'Expected at least one example file in examples/docs/');
-
-await describe('doc examples smoke', async () => {
-  for (const examplePath of examples) {
-    const relPath = examplePath.replace(`${EXAMPLES_ROOT}/`, '');
-
-    await it(`imports without throwing: ${relPath}`, async () => {
-      await assert.doesNotReject(
-        () => {
-          return import(examplePath);
-        },
-        `Example file ${relPath} threw on import`
-      );
-    });
+  for (const entry of entries) {
+    if (entry.isDirectory() && entry.name !== 'benchmarks') {
+      sections.push(entry.name);
+    }
   }
-});
+
+  return sections.sort();
+}
+
+const sections = listSections();
+
+assert.ok(sections.length > 0, 'Expected at least one example section in examples/docs/');
+
+for (const section of sections) {
+  const examples = findExamplesIn(join(EXAMPLES_ROOT, section));
+
+  void describe(`doc examples smoke — ${section}`, () => {
+    for (const examplePath of examples) {
+      const relPath = examplePath.replace(`${EXAMPLES_ROOT}/`, '');
+
+      void it(`imports without throwing: ${relPath}`, async () => {
+        await assert.doesNotReject(
+          () => {
+            return import(examplePath);
+          },
+          `Example file ${relPath} threw on import`
+        );
+      });
+    }
+  });
+}

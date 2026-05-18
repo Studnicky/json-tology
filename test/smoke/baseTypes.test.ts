@@ -25,7 +25,10 @@ void describe('BaseTypes', () => {
   });
 
   void it('validates all schema types and rejects invalid data', () => {
-    const registry = new SchemaRegistry();
+    // enableStrictGraph: false — BaseTypes factory schemas use inline primitive
+    // shapes (minimum, enum, etc.) by design; this test exercises the registry
+    // validation mechanics, not data-modelling discipline.
+    const registry = new SchemaRegistry({ 'enableStrictGraph': false });
     const scenarios: Array<{ 'invalid'?: { 'data': unknown };
       'schema': Record<string, unknown> & { '$id': string };
       'valid': unknown }> = [

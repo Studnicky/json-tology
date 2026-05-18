@@ -26,7 +26,7 @@ interface OrderItems {
 }
 
 bookstoreEntities.addComputed<OrderItems & { 'subtotal': number }>(
-  OrderSchema.$id,
+  OrderSchema,
   'subtotal',
   (order) => {
     return order.items.reduce(
@@ -38,7 +38,7 @@ bookstoreEntities.addComputed<OrderItems & { 'subtotal': number }>(
   }
 );
 
-const materialized = bookstoreEntities.instantiate(OrderSchema.$id, aboxFixtures.order);
+const materialized = bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order);
 const expected = aboxFixtures.order.items.reduce(
   (sum, line) => {
     return sum + (line.unitPrice.amount * line.quantity);
@@ -49,7 +49,7 @@ const expected = aboxFixtures.order.items.reduce(
 console.assert(Math.abs((materialized as { 'subtotal': number }).subtotal - expected) < 0.005);
 
 // removeComputed unregisters the fn; further instantiate() calls drop the field.
-bookstoreEntities.removeComputed(OrderSchema.$id, 'subtotal');
-const after = bookstoreEntities.instantiate(OrderSchema.$id, aboxFixtures.order);
+bookstoreEntities.removeComputed(OrderSchema, 'subtotal');
+const after = bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order);
 
 console.assert(!('subtotal' in (after as object)));

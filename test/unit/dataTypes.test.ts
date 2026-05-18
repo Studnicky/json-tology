@@ -703,8 +703,12 @@ import {
   } as const;
 
   function makeJt(): ReturnType<typeof JsonTology.create> {
+    // enableStrictGraph: false — ArticleSchema uses inline format-constrained
+    // properties intentionally: inline shapes (not $ref) ensure the projection
+    // emits XSD IRIs as rdfs:range / sh:datatype rather than referenced schema IRIs.
     return JsonTology.create({
       'baseIRI': 'https://xsd-test.example',
+      'enableStrictGraph': false,
       'schemas': [ArticleSchema]
     });
   }

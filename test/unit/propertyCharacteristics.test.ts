@@ -19,7 +19,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 // ---------------------------------------------------------------------------
 
 function registry(): SchemaRegistry {
-  return new SchemaRegistry();
+  return new SchemaRegistry({ 'enableStrictGraph': false });
 }
 
 function assertConflict(

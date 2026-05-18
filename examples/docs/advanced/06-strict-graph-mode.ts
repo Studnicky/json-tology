@@ -1,6 +1,13 @@
 /**
  * Advanced Example 06 — enableStrictGraph mode
- * Demonstrates: how the same schema succeeds silently but throws in strict mode
+ * Demonstrates: strict graph checking is the default; consumers opt out to relax.
+ *
+ * Strict mode (the default, enableStrictGraph: true) rejects inline primitive
+ * constraints such as { pattern: ..., type: 'string' } as properties — each
+ * constrained primitive must be a named schema registered with a $id.
+ *
+ * Permissive mode (enableStrictGraph: false) accepts inline shapes silently;
+ * use this only for test fixtures or migration scaffolding.
  */
 
 import { SchemaRegistry } from '../../../src/modules/registry/SchemaRegistry.js';
@@ -17,14 +24,8 @@ const SchemaWithInlineShape = {
   'type': 'object'
 } as const;
 
-// Default mode: inline shapes register silently
-const defaultRegistry = new SchemaRegistry();
-
-defaultRegistry.set(SchemaWithInlineShape);
-console.log('Default mode: registration succeeded (inline shapes are silent)');
-
-// Strict mode: inline shapes throw SchemaError
-const strictRegistry = new SchemaRegistry({ 'enableStrictGraph': true });
+// Strict mode (default): inline shapes throw SchemaError
+const strictRegistry = new SchemaRegistry();
 
 try {
   strictRegistry.set(SchemaWithInlineShape);
@@ -39,3 +40,9 @@ try {
     .trim()
     .split(';')[0].trim());
 }
+
+// Permissive mode (opt-out): inline shapes register silently
+const permissiveRegistry = new SchemaRegistry({ 'enableStrictGraph': false });
+
+permissiveRegistry.set(SchemaWithInlineShape);
+console.log('Permissive mode: registration succeeded (inline shapes are accepted)');

@@ -10,7 +10,7 @@ import {
   aboxFixtures, bookstoreEntities, CustomerSchema
 } from '../bookstore/index.js';
 
-const customer = bookstoreEntities.instantiate(CustomerSchema.$id, {
+const customer = bookstoreEntities.instantiate(CustomerSchema, {
   'email': aboxFixtures.customer.email,
   'id': aboxFixtures.customer.id,
   'internalNotes': 'vip',

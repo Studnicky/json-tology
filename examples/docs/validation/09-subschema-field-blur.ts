@@ -1,12 +1,17 @@
 import {
-  BookSchema, bookstoreEntities
+  BookSchema,
+  createBookstoreDocRegistry
 } from '../bookstore/index.js';
 
+// createBookstoreDocRegistry seeds a permissive copy of the bookstore — docs examples extend
+// it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
+const jt = createBookstoreDocRegistry();
+
 // Resolve the isbn sub-schema once
-const isbnSchema = bookstoreEntities.subschemaAt(BookSchema.$id, '/properties/isbn');
+const isbnSchema = jt.subschemaAt(BookSchema.$id, '/properties/isbn');
 
 // isbn must match ^\d{13}$ — 12 digits fails, requires 13
-const errors = bookstoreEntities.validate(isbnSchema, '978014044913');
+const errors = jt.validate(isbnSchema, '978014044913');
 
 console.assert(!errors.ok, 'Invalid ISBN should fail validation');
 console.assert(

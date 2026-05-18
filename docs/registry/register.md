@@ -145,10 +145,7 @@ Map-style write. Schema is always the first argument; key is derived from `schem
 
 Returns `true` if a schema was removed, `false` if `iri` wasn't registered. Subsequent `$ref` resolution to the deleted IRI throws `GraphError('REF_UNRESOLVED')` on the next validate/instantiate call against any schema that points to it.
 
-```ts
-jt.registry.delete('https://bookstore.example/Customer');   // true
-jt.registry.delete('https://bookstore.example/Customer');   // false
-```
+<<< ../../examples/docs/registry/18-registry-delete.ts
 
 ### `jt.registry.clear()` {#registry-clear}
 

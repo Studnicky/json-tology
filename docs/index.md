@@ -11,18 +11,7 @@ Most TypeScript validation libraries treat JSON Schema as a side-effect. You wri
 
 json-tology inverts this. The JSON Schema literal **is** the schema. Type inference is derived from it. Validation reads it. Coercion reads it. The OWL TBox reads it. The same `as const` object you authored in TypeScript is also a wire-format-compatible JSON Schema document, ready to ship to any consumer in any language.
 
-```ts
-const CustomerSchema = {
-  $id: 'urn:bookstore:Customer',
-  type: 'object',
-  properties: {
-    id:    { $ref: 'urn:bookstore:CustomerId' },
-    email: { $ref: 'urn:bookstore:Email' },
-    name:  { $ref: 'urn:bookstore:PersonName' }
-  },
-  required: ['id', 'email', 'name']
-} as const;
-```
+<<< ../examples/docs/landing/01-schema-as-source.ts
 
 That literal is:
 
@@ -69,37 +58,7 @@ Every TypeScript type system has a graph hiding in it. Below is the bookstore do
 
 If you're coming from Pydantic, Zod, or TypeBox, json-tology gives you the same authoring ergonomics with **JSON Schema as the source of truth** - your schema works in TypeScript, in JSON Schema validators, in OpenAPI, in IDE auto-complete, and as a wire-format contract, all from one declaration.
 
-```ts
-import { JsonTology } from 'json-tology';
-import type { InferType } from 'json-tology/types';
-
-const CustomerSchema = {
-  $id: 'https://bookstore.example/Customer',
-  type: 'object',
-  properties: {
-    id:        { type: 'string', format: 'uuid' },
-    email:     { type: 'string', format: 'email' },
-    name:      { type: 'string' },
-    addresses: { type: 'array', items: { type: 'object' }, default: [] },
-  },
-  required: ['id', 'email', 'name'],
-} as const;
-
-type Customer = InferType<typeof CustomerSchema>;
-//   ^? { readonly id: string; readonly email: string; readonly name: string; readonly addresses?: readonly object[] }
-
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [CustomerSchema] as const,
-});
-
-const customer = jt.instantiate(CustomerSchema.$id, {
-  id: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  email: 'bastian.bux@bookstore.example',
-  name: 'Bastian Balthazar Bux',
-});
-//    ^? Customer - typed, validated, defaults applied
-```
+<<< ../examples/docs/landing/02-core-workflow.ts
 
 That's the entire core. Validation, type inference, coercion, defaults - all from one schema literal.
 

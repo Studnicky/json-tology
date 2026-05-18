@@ -9,7 +9,7 @@ import {
   aboxFixtures, bookstoreEntities, CustomerSchema
 } from '../bookstore/index.js';
 
-const customer = bookstoreEntities.instantiate(CustomerSchema.$id, aboxFixtures.customer);
+const customer = bookstoreEntities.instantiate(CustomerSchema, aboxFixtures.customer);
 
 const json = bookstoreEntities.dumpJson(CustomerSchema.$id, customer);
 

@@ -4,6 +4,14 @@
     "minimum": 0,
     "type": "number"
   },
+  "urn:bookstore:BindingType": {
+    "$id": "urn:bookstore:BindingType",
+    "enum": [
+      "hardcover",
+      "paperback"
+    ],
+    "type": "string"
+  },
   "urn:bookstore:CityName": {
     "$id": "urn:bookstore:CityName",
     "maxLength": 100,
@@ -32,10 +40,40 @@
     "format": "uuid",
     "type": "string"
   },
+  "urn:bookstore:DownloadUrl": {
+    "$id": "urn:bookstore:DownloadUrl",
+    "format": "uri",
+    "type": "string"
+  },
+  "urn:bookstore:EBookFormat": {
+    "$id": "urn:bookstore:EBookFormat",
+    "enum": [
+      "epub",
+      "pdf",
+      "mobi"
+    ],
+    "type": "string"
+  },
   "urn:bookstore:Email": {
     "$id": "urn:bookstore:Email",
     "format": "email",
     "type": "string"
+  },
+  "urn:bookstore:EstimatedAgeYears": {
+    "$id": "urn:bookstore:EstimatedAgeYears",
+    "minimum": 0,
+    "type": "integer"
+  },
+  "urn:bookstore:FileSizeBytes": {
+    "$id": "urn:bookstore:FileSizeBytes",
+    "minimum": 0,
+    "type": "integer"
+  },
+  "urn:bookstore:FirstEditionYear": {
+    "$id": "urn:bookstore:FirstEditionYear",
+    "maximum": 2100,
+    "minimum": 1450,
+    "type": "integer"
   },
   "urn:bookstore:Isbn": {
     "$id": "urn:bookstore:Isbn",
@@ -52,6 +90,21 @@
     "format": "uuid",
     "type": "string"
   },
+  "urn:bookstore:PageCount": {
+    "$id": "urn:bookstore:PageCount",
+    "minimum": 0,
+    "type": "integer"
+  },
+  "urn:bookstore:PageNumber": {
+    "$id": "urn:bookstore:PageNumber",
+    "minimum": 1,
+    "type": "integer"
+  },
+  "urn:bookstore:PageSize": {
+    "$id": "urn:bookstore:PageSize",
+    "minimum": 1,
+    "type": "integer"
+  },
   "urn:bookstore:PersonName": {
     "$id": "urn:bookstore:PersonName",
     "maxLength": 200,
@@ -64,6 +117,11 @@
     "minLength": 3,
     "type": "string"
   },
+  "urn:bookstore:PrintPageCount": {
+    "$id": "urn:bookstore:PrintPageCount",
+    "minimum": 1,
+    "type": "integer"
+  },
   "urn:bookstore:PrintStatus": {
     "$id": "urn:bookstore:PrintStatus",
     "enum": [
@@ -71,6 +129,11 @@
       "outOfPrint",
       "limitedRun"
     ],
+    "type": "string"
+  },
+  "urn:bookstore:Provenance": {
+    "$id": "urn:bookstore:Provenance",
+    "minLength": 1,
     "type": "string"
   },
   "urn:bookstore:PublicationDate": {
@@ -84,11 +147,21 @@
     "minimum": 1,
     "type": "integer"
   },
+  "urn:bookstore:RatingCount": {
+    "$id": "urn:bookstore:RatingCount",
+    "minimum": 0,
+    "type": "integer"
+  },
   "urn:bookstore:RatingScore": {
     "$id": "urn:bookstore:RatingScore",
     "maximum": 5,
     "minimum": 1,
     "type": "integer"
+  },
+  "urn:bookstore:ReviewBody": {
+    "$id": "urn:bookstore:ReviewBody",
+    "minLength": 10,
+    "type": "string"
   },
   "urn:bookstore:ReviewId": {
     "$id": "urn:bookstore:ReviewId",
@@ -113,6 +186,11 @@
     "maxLength": 500,
     "minLength": 1,
     "type": "string"
+  },
+  "urn:bookstore:WeightGrams": {
+    "$id": "urn:bookstore:WeightGrams",
+    "minimum": 0,
+    "type": "number"
   },
   "urn:bookstore:AuthorName": {
     "$id": "urn:bookstore:AuthorName",
@@ -222,29 +300,24 @@
     "description": "Five-element histogram of star-rating counts: [1-star, 2-star, 3-star, 4-star, 5-star]",
     "prefixItems": [
       {
-        "description": "1-star count",
-        "minimum": 0,
-        "type": "integer"
+        "$ref": "urn:bookstore:RatingCount",
+        "description": "1-star count"
       },
       {
-        "description": "2-star count",
-        "minimum": 0,
-        "type": "integer"
+        "$ref": "urn:bookstore:RatingCount",
+        "description": "2-star count"
       },
       {
-        "description": "3-star count",
-        "minimum": 0,
-        "type": "integer"
+        "$ref": "urn:bookstore:RatingCount",
+        "description": "3-star count"
       },
       {
-        "description": "4-star count",
-        "minimum": 0,
-        "type": "integer"
+        "$ref": "urn:bookstore:RatingCount",
+        "description": "4-star count"
       },
       {
-        "description": "5-star count",
-        "minimum": 0,
-        "type": "integer"
+        "$ref": "urn:bookstore:RatingCount",
+        "description": "5-star count"
       }
     ],
     "type": "array",
@@ -389,8 +462,7 @@
     "$id": "urn:bookstore:Review",
     "properties": {
       "body": {
-        "minLength": 10,
-        "type": "string"
+        "$ref": "urn:bookstore:ReviewBody"
       },
       "bookIsbn": {
         "$ref": "urn:bookstore:Isbn"
@@ -421,7 +493,7 @@
   },
   "urn:bookstore:BookListPage": {
     "$id": "urn:bookstore:BookListPage",
-    "description": "A page of results with pagination metadata",
+    "description": "A page of Book results with pagination metadata",
     "properties": {
       "hasNext": {
         "type": "boolean"
@@ -431,53 +503,7 @@
       },
       "items": {
         "items": {
-          "$id": "urn:bookstore:Book",
-          "properties": {
-            "annotations": {
-              "$ref": "urn:bookstore:BookAnnotations"
-            },
-            "authors": {
-              "items": {
-                "$ref": "urn:bookstore:AuthorName"
-              },
-              "minItems": 1,
-              "type": "array",
-              "uniqueItems": true
-            },
-            "inStock": {
-              "default": true,
-              "type": "boolean"
-            },
-            "isbn": {
-              "$ref": "urn:bookstore:Isbn"
-            },
-            "price": {
-              "$ref": "urn:bookstore:Money"
-            },
-            "printStatus": {
-              "$ref": "urn:bookstore:PrintStatus"
-            },
-            "publishedOn": {
-              "$ref": "urn:bookstore:PublicationDate"
-            },
-            "ratings": {
-              "$ref": "urn:bookstore:BookRatingHistogram"
-            },
-            "stockLevel": {
-              "$ref": "urn:bookstore:StockLevel"
-            },
-            "title": {
-              "$ref": "urn:bookstore:Title"
-            }
-          },
-          "required": [
-            "isbn",
-            "title",
-            "authors",
-            "price",
-            "printStatus"
-          ],
-          "type": "object"
+          "$ref": "urn:bookstore:Book"
         },
         "type": "array"
       },
@@ -485,23 +511,19 @@
         "type": "string"
       },
       "page": {
-        "minimum": 1,
-        "type": "number"
+        "$ref": "urn:bookstore:PageNumber"
       },
       "pageSize": {
-        "minimum": 1,
-        "type": "number"
+        "$ref": "urn:bookstore:PageSize"
       },
       "prevCursor": {
         "type": "string"
       },
       "total": {
-        "minimum": 0,
-        "type": "number"
+        "$ref": "urn:bookstore:PageCount"
       },
       "totalPages": {
-        "minimum": 0,
-        "type": "number"
+        "$ref": "urn:bookstore:PageCount"
       }
     },
     "required": [
@@ -543,20 +565,13 @@
         },
         "properties": {
           "downloadUrl": {
-            "format": "uri",
-            "type": "string"
+            "$ref": "urn:bookstore:DownloadUrl"
           },
           "fileFormat": {
-            "enum": [
-              "epub",
-              "pdf",
-              "mobi"
-            ],
-            "type": "string"
+            "$ref": "urn:bookstore:EBookFormat"
           },
           "fileSizeBytes": {
-            "minimum": 0,
-            "type": "integer"
+            "$ref": "urn:bookstore:FileSizeBytes"
           }
         },
         "required": [
@@ -588,19 +603,13 @@
       {
         "properties": {
           "binding": {
-            "enum": [
-              "hardcover",
-              "paperback"
-            ],
-            "type": "string"
+            "$ref": "urn:bookstore:BindingType"
           },
           "pageCount": {
-            "minimum": 1,
-            "type": "integer"
+            "$ref": "urn:bookstore:PrintPageCount"
           },
           "weightGrams": {
-            "minimum": 0,
-            "type": "number"
+            "$ref": "urn:bookstore:WeightGrams"
           }
         },
         "required": [
@@ -620,13 +629,10 @@
       {
         "properties": {
           "estimatedAgeYears": {
-            "minimum": 0,
-            "type": "integer"
+            "$ref": "urn:bookstore:EstimatedAgeYears"
           },
           "firstEditionYear": {
-            "maximum": 2100,
-            "minimum": 1450,
-            "type": "integer"
+            "$ref": "urn:bookstore:FirstEditionYear"
           }
         },
         "required": [
@@ -687,8 +693,7 @@
       {
         "properties": {
           "provenance": {
-            "minLength": 1,
-            "type": "string"
+            "$ref": "urn:bookstore:Provenance"
           },
           "signedBy": {
             "$ref": "urn:bookstore:AuthorName"

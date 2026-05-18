@@ -14,7 +14,7 @@ import {
   aboxFixtures, bookstoreEntities, OrderSchema
 } from '../bookstore/index.js';
 
-const order = bookstoreEntities.instantiate(OrderSchema.$id, aboxFixtures.order);
+const order = bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order);
 
 // clone — deep copy; mutations don't affect original.
 const copy = Operations.clone(order);

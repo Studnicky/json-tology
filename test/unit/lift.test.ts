@@ -2,12 +2,21 @@ import {
   describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-// Lift.fromQuad is the single-quad lifter; the public batch fromQuads/toQuads do not surface the per-quad shape.
+// Lift.fromExternalQuad converts external rdf/js-shaped quads (from n3, eyereasoner, etc.)
+// into QuadInterface. The public batch fromQuads/toQuads do not surface the per-quad shape.
 import { Lift } from '../../src/modules/rdf/Lift.js';
-// RdfJsQuadInterface is the per-quad RDF/JS DataModel shape consumed by fromRdfQuad; not surfaced via the public API.
-import type { RdfJsQuadInterface } from '../../src/interfaces/RdfJsQuad.js';
 
-void describe('fromRdfQuad', { 'concurrency': true }, () => {
+// External quad shape (from n3, eyereasoner, etc.) — term objects with .value strings
+interface ExternalRdfJsQuad {
+  'object': { 'datatype'?: { 'value': string };
+    'language'?: string;
+    'termType': string;
+    'value': string };
+  'predicate': { 'value': string };
+  'subject': { 'value': string };
+}
+
+void describe('fromExternalQuad', { 'concurrency': true }, () => {
   // ---------------------------------------------------------------------------
   // Good / Bad / Ugly — happy path conversions
   // ---------------------------------------------------------------------------
@@ -15,7 +24,7 @@ void describe('fromRdfQuad', { 'concurrency': true }, () => {
   void it('unhappy: malformed quads — undefined or missing object fields produce safe output', () => {
     const malformedScenarios: Array<{ 'expectThrows': boolean;
       'name': string;
-      'quad': RdfJsQuadInterface }> = [
+      'quad': ExternalRdfJsQuad }> = [
       {
         'expectThrows': false,
         'name': 'object with no termType treated as NamedNode-like',
@@ -42,11 +51,11 @@ void describe('fromRdfQuad', { 'concurrency': true }, () => {
     for (const scenario of malformedScenarios) {
       if (scenario.expectThrows) {
         assert.throws(() => {
-          Lift.fromQuad(scenario.quad);
+          Lift.fromExternalQuad(scenario.quad);
         }, scenario.name);
       } else {
         assert.doesNotThrow(() => {
-          Lift.fromQuad(scenario.quad);
+          Lift.fromExternalQuad(scenario.quad);
         }, scenario.name);
       }
     }
@@ -59,14 +68,14 @@ void describe('fromRdfQuad', { 'concurrency': true }, () => {
       'value': unknown }
 
     const scenarios: Array<{
-      'check': (result: ReturnType<typeof Lift.fromQuad>) => void;
+      'check': (result: ReturnType<typeof Lift.fromExternalQuad>) => void;
       'name': string;
-      'quad': RdfJsQuadInterface;
+      'quad': ExternalRdfJsQuad;
     }> = [
       {
         'check': (result) => {
-          assert.equal(result.subject, 'http://example.com/User', 'subject');
-          assert.equal(result.predicate, 'http://www.w3.org/2000/01/rdf-schema#subClassOf', 'predicate');
+          assert.equal(result.subject.value, 'http://example.com/User', 'subject value');
+          assert.equal(result.predicate.value, 'http://www.w3.org/2000/01/rdf-schema#subClassOf', 'predicate value');
           assert.equal(result.object.termType, 'NamedNode', 'object termType');
           assert.equal(result.object.value, 'http://www.w3.org/2002/07/owl#Class', 'object value');
         },
@@ -102,7 +111,7 @@ void describe('fromRdfQuad', { 'concurrency': true }, () => {
       },
       {
         'check': (result) => {
-          assert.equal(result.predicate, 'rdf:type', 'full rdf:type IRI normalized to prefixed form');
+          assert.equal(result.predicate.value, 'rdf:type', 'full rdf:type IRI normalized to prefixed form');
         },
         'name': 'normalizes full rdf:type IRI to prefixed form',
         'quad': {
@@ -187,7 +196,7 @@ void describe('fromRdfQuad', { 'concurrency': true }, () => {
     ];
 
     for (const scenario of scenarios) {
-      const result = Lift.fromQuad(scenario.quad);
+      const result = Lift.fromExternalQuad(scenario.quad);
 
       scenario.check(result);
     }

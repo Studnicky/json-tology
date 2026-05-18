@@ -33,81 +33,17 @@ A `SubjectGroup` is a convenience wrapper that groups all quads sharing the same
 
 #### Example 1: Project an order to ABox quads
 
-```ts
-import { bookstoreEntities, OrderSchema } from './bookstore/index.js';
-
-const order = bookstoreEntities.instantiate(OrderSchema.$id, {
-  id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-  customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  placedAt:   '2026-01-15T10:30:00Z',
-  total:      35.97,
-  items: [
-    { bookIsbn: '9780140449136', quantity: 2, unitPrice: 12.99 },
-    { bookIsbn: '9780062316110', quantity: 1, unitPrice:  9.99 },
-  ],
-});
-
-const quads = bookstoreEntities.toQuads(OrderSchema, order);
-
-console.log(quads.length);  // count of RDF quads
-console.log(quads[0]);      // { subject, predicate, object, graph }
-
-// For richer output (JSON-LD, SHACL composition) pass the quads through
-// the ontology builder:
-const ontology = bookstoreEntities.ontology().addQuads(quads);
-console.log(ontology.jsonLd());       // JSON-LD string
-console.log(ontology.jsonLdObject()); // JSON-LD object
-```
+<<< ../../examples/docs/advanced/34-toquads-order-abox.ts
 
 #### Example 2: Merge ABox with TBox in a single document
 
-```ts
-import { bookstoreEntities, OrderSchema } from './bookstore/index.js';
-
-const tbox = bookstoreEntities.toTbox();
-const abox = bookstoreEntities.toQuads(OrderSchema, order);
-
-const merged = {
-  '@context': tbox.context(),
-  '@graph': [
-    ...tbox.raw(),  // class and property declarations
-    ...abox,        // individual assertions (Quad[])
-  ],
-};
-```
+<<< ../../examples/docs/advanced/35-toquads-merge-tbox-abox-order.ts
 
 ### Subject minting with `iriFor`
 
 The default minter assigns `<baseIRI>/instances/<classId>-<contentHash>` to every projected object. To override that, pass `iriFor` to `toQuads`:
 
-```ts
-import { Skolemize } from 'json-tology';
-
-// Root-only override (depth 0 wins; nested objects fall through):
-entities.toQuads(OrderSchema, order, {
-  iriFor: 'https://shop.example.com/orders/A-1234'
-});
-
-// Anonymous blank-node subjects for every emitted object:
-entities.toQuads(OrderSchema, order, { iriFor: 'blank-node' });
-
-// Mint from a property of the value:
-entities.toQuads(BookSchema, book, {
-  iriFor: Skolemize.fromProperty('isbn', { baseIRI: 'https://books.example.com/isbn' })
-});
-
-// W3C RDF 1.1 §3.5 well-known genid pattern (reversible by deskolemize):
-entities.toQuads(OrderSchema, order, {
-  iriFor: Skolemize.wellKnownGenid('https://shop.example.com')
-});
-
-// Custom function. Receives { path, value, depth }; return undefined to fall through.
-entities.toQuads(OrderSchema, order, {
-  iriFor: (ctx) => ctx.depth === 0
-    ? `https://shop.example.com/orders/${(ctx.value as { id: string }).id}`
-    : undefined
-});
-```
+<<< ../../examples/docs/advanced/36-toquads-irifor-strategies.ts
 
 See [skolemization](/advanced/skolemization) for the strategy reference.
 
@@ -115,11 +51,7 @@ See [skolemization](/advanced/skolemization) for the strategy reference.
 
 Set the `graph` field on every emitted quad with `graphIRI`:
 
-```ts
-entities.toQuads(OrderSchema, order, {
-  graphIRI: 'https://shop.example.com/graphs/2026-01'
-});
-```
+<<< ../../examples/docs/advanced/37-toquads-graph-iri.ts
 
 Both options can be paired with registry-level defaults via `JsonTology.create({ iriFor, defaultGraphIRI })`: see [getting started](/getting-started#graph-emission).
 
@@ -135,13 +67,7 @@ Both options can be paired with registry-level defaults via `JsonTology.create({
 
 Pass `{ deskolemize: true }` to treat IRIs matching the W3C well-known genid pattern (`*/.well-known/genid/<hash>`) as blank nodes during reconstruction. This pairs with `Skolemize.wellKnownGenid` on `toQuads`:
 
-```ts
-const quads = bookstoreEntities.toQuads(OrderSchema, order, {
-  iriFor: Skolemize.wellKnownGenid('https://shop.example.com')
-});
-
-const [restored] = bookstoreEntities.fromQuads(OrderSchema.$id, quads, { deskolemize: true });
-```
+<<< ../../examples/docs/advanced/38-fromquads-deskolemize-roundtrip.ts
 
 The registry-level `defaultDeskolemize: true` flips this on for every `fromQuads` call without per-call overrides.
 
@@ -149,55 +75,17 @@ The registry-level `defaultDeskolemize: true` flips this on for every `fromQuads
 
 #### Example 1: Round-trip an order
 
-```ts
-import { bookstoreEntities, OrderSchema } from './bookstore/index.js';
-import { strict as assert } from 'node:assert';
-
-const original = bookstoreEntities.instantiate(OrderSchema.$id, {
-  id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-  customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  placedAt:   '2026-01-15T10:30:00Z',
-  total:      35.97,
-  items: [
-    { bookIsbn: '9780140449136', quantity: 2, unitPrice: 12.99 },
-    { bookIsbn: '9780062316110', quantity: 1, unitPrice:  9.99 },
-  ],
-});
-
-const quads = bookstoreEntities.toQuads(OrderSchema, original);
-const [restored] = bookstoreEntities.fromQuads(OrderSchema.$id, quads);
-
-assert.deepEqual(restored, original);
-```
+<<< ../../examples/docs/advanced/39-fromquads-order-roundtrip.ts
 
 #### Example 2: Lift quads from a triple store
 
-```ts
-import { bookstoreEntities, BookSchema } from './bookstore/index.js';
-
-// quads from an external SPARQL CONSTRUCT or DESCRIBE
-const quads = await fetchQuadsFromTripleStore('SELECT ... WHERE { ?b a :Book }');
-
-// returns Book[] - validated, typed, defaults applied
-const books = bookstoreEntities.fromQuads(BookSchema.$id, quads);
-
-for (const book of books) {
-  console.log(book.title, book.price);
-}
-```
+<<< ../../examples/docs/advanced/40-fromquads-lift-external-books.ts
 
 ## Static counterparts
 
 Both methods have static counterparts on `JsonTology` for one-shot use without a long-lived registry. The static variants build an ephemeral registry containing only the supplied schema, run the operation, and discard the registry.
 
-```ts
-import { JsonTology } from 'json-tology';
-import { OrderSchema } from './bookstore/index.js';
-
-const quads = JsonTology.toQuads(OrderSchema, order);
-
-const restored = JsonTology.fromQuads(OrderSchema, quads);
-```
+<<< ../../examples/docs/advanced/41-toquads-fromquads-static.ts
 
 Use the static form when:
 

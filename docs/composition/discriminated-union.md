@@ -20,82 +20,19 @@
 
 ### Example 2: Validate each variant
 
-```ts
-// Credit card  - valid
-const cc = jt.validate(PaymentSchema.$id, {
-  method: 'credit_card', cardLast4: '4242', expiry: '12/28',
-});
-console.log(cc.length === 0); // true
-
-// Invoice  - valid
-const inv = jt.validate(PaymentSchema.$id, {
-  method: 'invoice', purchaseOrder: 'PO-001',
-});
-console.log(inv.length === 0); // true
-```
+<<< ../../examples/docs/composition/40-discriminated-union-validate.ts
 
 ### Example 3: Order with a discriminated payment field (builds on extend)
 
 Extend `OrderSchema` with a `payment` field typed as the union, register the composite, then validate against it.
 
-```ts
-import { Compose, JsonTology } from 'json-tology';
-import { OrderSchema } from './bookstore/index.js';
-
-const OrderWithPaymentSchema = Compose.extend(
-  OrderSchema,
-  {
-    payment: { $ref: PaymentSchema.$id },
-  } as const,
-  'https://bookstore.example/OrderWithPayment',
-);
-
-const jt2 = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [
-    CreditCardPaymentSchema,
-    InvoicePaymentSchema,
-    PaymentSchema,
-    OrderSchema,
-    OrderWithPaymentSchema,
-  ] as const,
-});
-
-// Validate the composite, not its parts. The $ref to PaymentSchema
-// resolves through the registry, so each variant is checked at the
-// payment slot.
-const errs = jt2.validate(OrderWithPaymentSchema.$id, {
-  id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-  customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  placedAt:   '2026-01-15T10:30:00Z',
-  total:      14.99,
-  items:      [{ bookIsbn: '9780140449136', quantity: 1, unitPrice: 14.99 }],
-  payment:    { method: 'credit_card', cardLast4: '4242', expiry: '12/28' },
-});
-console.log(errs.length === 0); // true
-```
+<<< ../../examples/docs/composition/41-discriminated-union-order-payment.ts
 
 ### Discriminator argument validation <Badge type="info" text="Compile-time" />
 
 Every variant must declare `properties[prop]` as `const` and list `prop` in `required`. Missing or non-const discriminators surface a `DiscriminatorMissingType` brand error at the call site - a compile error rather than a runtime surprise.
 
-```ts
-const BadVariant = {
-  $id: 'https://bookstore.example/BadPayment',
-  type: 'object',
-  properties: {
-    method: { type: 'string' },  // not const — compile error
-  },
-  required: ['method'],
-} as const;
-
-// compile error: variant 'BadPayment' does not declare properties.method as const
-const PaymentSchema = Compose.discriminatedUnion(
-  'method',
-  [BadVariant] as const,
-  'https://bookstore.example/Payment',
-);
-```
+<<< ../../examples/docs/composition/42-discriminator-validation.ts
 
 ## `Compose.narrow` {#compose-narrow} <Badge type="info" text="Compile-time" />
 
@@ -109,35 +46,11 @@ const PaymentSchema = Compose.discriminatedUnion(
 
 #### Example 1: Narrow a Payment to access variant-specific fields
 
-```ts
-function describePayment(payment: Payment): string {
-  if (Compose.narrow(payment, 'method', 'credit_card')) {
-    // payment is narrowed to CreditCardPayment
-    return `Card ending in ${payment.cardLast4}`;
-  }
-  if (Compose.narrow(payment, 'method', 'invoice')) {
-    // payment is narrowed to InvoicePayment
-    return `Invoice PO#${payment.purchaseOrder}`;
-  }
-  return 'Unknown payment method';
-}
-```
+<<< ../../examples/docs/composition/43-narrow-payment.ts
 
 #### Example 2: Exhaustive switch with Compose.narrow
 
-```ts
-function processPayment(payment: Payment): void {
-  if (Compose.narrow(payment, 'method', 'credit_card')) {
-    chargeCard(payment.cardLast4, payment.expiry);
-    return;
-  }
-  if (Compose.narrow(payment, 'method', 'invoice')) {
-    createInvoice(payment.purchaseOrder);
-    return;
-  }
-  // TypeScript can enforce exhaustiveness here with `satisfies ExhaustiveType`
-}
-```
+<<< ../../examples/docs/composition/44-narrow-exhaustive-switch.ts
 
 ## Comparison (discriminatedUnion)
 

@@ -10,26 +10,11 @@ All examples use the [bookstore domain](/bookstore-domain). See [Getting Started
 
 Schemas are declared as TypeScript `const` objects so the compiler can read the literal types. The minimal shape is:
 
-```ts
-const UserSchema = {
-  $id: 'https://example.com/User',
-  type: 'object',
-  properties: {
-    id:   { type: 'string' },
-    name: { type: 'string' },
-  },
-  required: ['id', 'name'],
-} as const;
-```
+<<< ../examples/docs/schemas/07-schema-authoring.ts
 
 **`$id` is required.** Every schema registered with `set()` must carry a fully-qualified IRI as its `$id`. The IRI is the stable identity used by `registry.has`, `registry.get`, `validate`, `instantiate`, `materialize`, and cross-schema `$ref`. Use the project's `baseIRI` as the namespace:
 
-```ts
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [AddressSchema, CustomerSchema, BookSchema] as const,
-});
-```
+<<< ../examples/docs/schemas/08-jsontology-create.ts
 
 **`as const` is required for type inference.** Without it, TypeScript widens string literals to `string` and `InferType` cannot derive precise property types.
 
@@ -39,17 +24,7 @@ const jt = JsonTology.create({
 
 Use `$ref` to point one schema at another by IRI. The runtime resolves the reference against the registry.
 
-```ts
-const OrderLineSchema = {
-  $id: 'https://bookstore.example/OrderLine',
-  type: 'object',
-  properties: {
-    book: { $ref: 'https://bookstore.example/Book' },
-    qty:  { type: 'integer', minimum: 1 },
-  },
-  required: ['book', 'qty'],
-} as const;
-```
+<<< ../examples/docs/schemas/09-ref-cross-schema.ts
 
 **Local fragment refs** (`#`, `#/properties/foo`, `#anchor`) resolve within the same schema document and do not require registry lookup.
 
@@ -61,43 +36,7 @@ const OrderLineSchema = {
 
 Use `$defs` to define reusable sub-schemas inline within a parent schema. They are accessible via `$ref` with a JSON Pointer fragment (`#/$defs/Name`) or via a named `$anchor`.
 
-```ts
-const OrderSchema = {
-  $id: 'https://bookstore.example/Order',
-  type: 'object',
-  $defs: {
-    Status: {
-      type: 'string',
-      enum: ['pending', 'shipped', 'delivered', 'cancelled'],
-    },
-  },
-  properties: {
-    id:     { type: 'string' },
-    status: { $ref: '#/$defs/Status' },
-    lines:  { type: 'array', items: { $ref: 'https://bookstore.example/OrderLine' } },
-  },
-  required: ['id', 'status', 'lines'],
-} as const;
-```
-
-`$anchor` assigns a named pointer to any sub-schema node, independent of its structural path:
-
-```ts
-const AddressSchema = {
-  $id: 'https://bookstore.example/Address',
-  type: 'object',
-  $defs: {
-    PostalCode: {
-      $anchor: 'postal-code',
-      type: 'string',
-      pattern: '^[0-9]{5}(-[0-9]{4})?$',
-    },
-  },
-  properties: {
-    postalCode: { $ref: '#postal-code' },
-  },
-} as const;
-```
+<<< ../examples/docs/schemas/10-defs-anchor.ts
 
 ---
 
@@ -124,32 +63,7 @@ Local fragment refs (`#`, `#/foo`, `#anchor`) are unaffected by the strict check
 
 The walk runs at most once per schema entry - subsequent calls against the same schema use the cached result.
 
-```ts
-import { JsonTology, GraphError } from 'json-tology';
-
-const OrderLineSchema = {
-  $id: 'https://bookstore.example/OrderLine',
-  type: 'object',
-  properties: {
-    book: { $ref: 'https://bookstore.example/Book' },  // non-fragment $ref
-    qty:  { type: 'integer', minimum: 1 },
-  },
-} as const;
-
-// BookSchema is NOT registered
-const jt = JsonTology.create({
-  baseIRI: 'https://bookstore.example',
-  schemas: [OrderLineSchema] as const,
-});
-
-try {
-  jt.validate(OrderLineSchema.$id, { book: {}, qty: 1 });
-} catch (err) {
-  if (err instanceof GraphError && err.code === 'REF_UNRESOLVED') {
-    // REF_UNRESOLVED: https://bookstore.example/Book is not registered
-  }
-}
-```
+<<< ../examples/docs/schemas/11-ref-unresolved-error.ts
 
 See [Error class hierarchy](/errors/classes) for the full `GraphError` surface.
 

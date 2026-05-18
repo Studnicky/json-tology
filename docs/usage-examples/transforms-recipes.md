@@ -26,31 +26,15 @@ Wire format: `'2026-01-15'`. The bare date format does not carry a time zone, so
 
 Wire format: integer milliseconds since the epoch.
 
-```ts
-const TimestampSchema = Transform.create(
-  { $id: 'urn:bookstore:Timestamp', type: 'integer', minimum: 0 } as const,
-  {
-    decode: (ms: number) => new Date(ms),
-    encode: (d: Date)    => d.getTime()
-  }
-);
-```
+<<< ../../examples/docs/usage-examples/06-transforms-epoch-ms.ts
 
 For seconds-since-epoch swap `* 1000` and `/ 1000`.
 
 ### Temporal API plain date
 
-If your runtime ships [`Temporal`](https://tc39.es/proposal-temporal/), prefer `Temporal.PlainDate` over `Date` for calendar values - it has no time zone and no time component, so it round-trips cleanly without the UTC-midnight workaround.
+If your runtime ships [`Temporal`](https://tc39.es/proposal-temporal/), prefer `Temporal.PlainDate` over `Date` for calendar values - it has no time zone and no time component, so it round-trips cleanly without the UTC-midnight workaround. The runnable example below uses a hand-rolled `PlainDate` analogue because the `Temporal` global is not yet a stable Node.js builtin; swap the class for `Temporal.PlainDate` once your runtime ships it.
 
-```ts
-const ReleaseDateSchema = Transform.create(
-  { $id: 'urn:bookstore:ReleaseDate', type: 'string', format: 'date' } as const,
-  {
-    decode: (s: string) => Temporal.PlainDate.from(s),
-    encode: (d: Temporal.PlainDate) => d.toString()
-  }
-);
-```
+<<< ../../examples/docs/usage-examples/08-transforms-plain-date.ts
 
 ---
 
@@ -58,19 +42,9 @@ const ReleaseDateSchema = Transform.create(
 
 ### Cents (integer) to a decimal type
 
-Storing money as integer cents avoids floating-point error. Decode to a `Decimal` from your library of choice (e.g. `decimal.js`), encode back to cents.
+Storing money as integer cents avoids floating-point error. Decode to a `Decimal` from your library of choice (e.g. `decimal.js`), encode back to cents. The runnable example below uses a `bigint`-backed `BigCents` wrapper so it has no external dependency; swap the wrapper for `Decimal` (or your own arbitrary-precision type) when integrating.
 
-```ts
-import Decimal from 'decimal.js';
-
-const PriceCentsSchema = Transform.create(
-  { $id: 'urn:bookstore:PriceCents', type: 'integer', minimum: 0 } as const,
-  {
-    decode: (cents: number)  => new Decimal(cents).div(100),
-    encode: (amount: Decimal) => amount.mul(100).toNumber()
-  }
-);
-```
+<<< ../../examples/docs/usage-examples/09-transforms-cents-bigcents.ts
 
 If you prefer the project's built-in [Money composite](/bookstore-domain#money), keep cents as the wire format and use Money for the decoded slot.
 
@@ -78,21 +52,7 @@ If you prefer the project's built-in [Money composite](/bookstore-domain#money),
 
 Wire format: `'$1,234.56'`. Two decoders run left to right; encoders run right to left.
 
-```ts
-const FormattedPriceSchema = Transform.chain(
-  { $id: 'urn:bookstore:FormattedPrice', type: 'string' } as const,
-  [
-    {
-      decode: (s: string) => s.replace(/[$,]/g, ''),
-      encode: (s: string) => `$${s}`
-    },
-    {
-      decode: (s: string) => parseFloat(s),
-      encode: (n: number) => n.toFixed(2)
-    }
-  ]
-);
-```
+<<< ../../examples/docs/usage-examples/07-transforms-formatted-price.ts
 
 `jt.instantiate(..., '$1,234.56')` yields `1234.56`; `jt.encode(..., 1234.56)` yields `'$1234.56'`. (Note the encoder does not re-insert thousands separators - that is a one-way concern; add a third stage if your wire format requires it on the way out.)
 
@@ -100,15 +60,7 @@ const FormattedPriceSchema = Transform.chain(
 
 JSON cannot natively represent `BigInt`. Stringify on the wire; parse on decode.
 
-```ts
-const BigIdSchema = Transform.create(
-  { $id: 'urn:bookstore:BigId', type: 'string', pattern: '^\\d+$' } as const,
-  {
-    decode: (s: string) => BigInt(s),
-    encode: (n: bigint) => n.toString()
-  }
-);
-```
+<<< ../../examples/docs/usage-examples/10-transforms-bigint-id.ts
 
 ---
 
@@ -118,41 +70,17 @@ const BigIdSchema = Transform.create(
 
 Validation alone does not normalize. Use a transform when you want the canonical form on every read.
 
-```ts
-const NormalizedEmailSchema = Transform.create(
-  { $id: 'urn:bookstore:NormalizedEmail', type: 'string', format: 'email' } as const,
-  {
-    decode: (raw: string) => raw.trim().toLowerCase(),
-    encode: (e: string)   => e
-  }
-);
-```
+<<< ../../examples/docs/usage-examples/11-transforms-email-normalize.ts
 
 The encoder is the identity, so the wire form preserves whatever the decoder produced. If you need to track the original, register a sibling property.
 
 ### URL string to `URL` object
 
-```ts
-const HrefSchema = Transform.create(
-  { $id: 'urn:bookstore:Href', type: 'string', format: 'uri' } as const,
-  {
-    decode: (s: string) => new URL(s),
-    encode: (u: URL)    => u.toString()
-  }
-);
-```
+<<< ../../examples/docs/usage-examples/12-transforms-url.ts
 
 ### Slug normalization
 
-```ts
-const SlugSchema = Transform.create(
-  { $id: 'urn:bookstore:Slug', type: 'string' } as const,
-  {
-    decode: (raw: string) => raw.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
-    encode: (s: string)   => s
-  }
-);
-```
+<<< ../../examples/docs/usage-examples/13-transforms-slug.ts
 
 Pair with the [custom `slug` format](/usage-examples/custom-formats) if you also want validation.
 
@@ -162,29 +90,13 @@ Pair with the [custom `slug` format](/usage-examples/custom-formats) if you also
 
 ### Base64 string to `Uint8Array`
 
-```ts
-const BinarySchema = Transform.create(
-  { $id: 'urn:bookstore:Binary', type: 'string', contentEncoding: 'base64' } as const,
-  {
-    decode: (b64: string) => Uint8Array.from(atob(b64), c => c.charCodeAt(0)),
-    encode: (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes))
-  }
-);
-```
+<<< ../../examples/docs/usage-examples/14-transforms-base64.ts
 
-For Node, swap `atob`/`btoa` for `Buffer.from(b64, 'base64')` / `buf.toString('base64')`.
+For browsers, swap `Buffer.from(b64, 'base64')` for `Uint8Array.from(atob(b64), c => c.charCodeAt(0))` and the encoder for `btoa(String.fromCharCode(...bytes))`.
 
 ### JSON string to a parsed object
 
-```ts
-const JsonBlobSchema = Transform.create(
-  { $id: 'urn:bookstore:JsonBlob', type: 'string' } as const,
-  {
-    decode: (s: string) => JSON.parse(s) as unknown,
-    encode: (v: unknown) => JSON.stringify(v)
-  }
-);
-```
+<<< ../../examples/docs/usage-examples/15-transforms-json-blob.ts
 
 Validation runs against the wire `string`. If you want the decoded value validated too, register the inner schema separately and use a `$ref` rather than a transform.
 
@@ -196,15 +108,7 @@ Validation runs against the wire `string`. If you want the decoded value validat
 
 Wire format: `'fiction, paperback, bestseller'`. Decoded type: `string[]`.
 
-```ts
-const TagListSchema = Transform.create(
-  { $id: 'urn:bookstore:TagList', type: 'string' } as const,
-  {
-    decode: (s: string)    => s.split(',').map(t => t.trim()).filter(Boolean),
-    encode: (arr: string[]) => arr.join(', ')
-  }
-);
-```
+<<< ../../examples/docs/usage-examples/16-transforms-csv-tags.ts
 
 If both ends of the wire are an array, prefer a plain `type: 'array'` schema with no transform.
 
@@ -216,18 +120,7 @@ If both ends of the wire are an array, prefer a plain `type: 'array'` schema wit
 
 `Transform.brand` attaches a phantom brand to the inferred type without changing the wire format. Compose it with `Transform.create` when you also need a runtime conversion.
 
-```ts
-import type { BrandedType } from 'json-tology/types';
-
-const IsbnSchema = Transform.brand(
-  { $id: 'urn:bookstore:Isbn', type: 'string', pattern: '^[0-9X]{10,13}$' } as const,
-  'Isbn'
-);
-
-type Isbn = BrandedType<string, 'Isbn'>;
-// jt.instantiate(IsbnSchema.$id, '9780140449136') is typed as Isbn,
-// distinguishable from a plain string at compile time.
-```
+<<< ../../examples/docs/usage-examples/17-transforms-brand-isbn.ts
 
 To brand AND convert, chain via `Transform.create` on the branded schema.
 
@@ -248,19 +141,7 @@ If your recipe is lossy, document which direction loses information and what the
 
 ### Property test pattern
 
-```ts
-import { strict as assert } from 'node:assert';
-
-function roundTrip<T>(schema: { $id: string }, samples: readonly unknown[]): void {
-  for (const wire of samples) {
-    const decoded = jt.instantiate(schema.$id, wire);
-    const reEncoded = jt.encode(schema, decoded);
-    assert.deepEqual(reEncoded, wire);
-  }
-}
-
-roundTrip(PlacedAtSchema, ['2026-01-15T10:30:00.000Z']);
-```
+<<< ../../examples/docs/usage-examples/18-transforms-property-test.ts
 
 ---
 

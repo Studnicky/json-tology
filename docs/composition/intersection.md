@@ -18,63 +18,25 @@ Both `Order` and `Audit` required arrays must be satisfied.
 
 ### Example 2: Validation fails if any constituent schema fails
 
-```ts
-// Missing createdAt and updatedAt from AuditSchema required:
-const errors = jt.validate(AuditedOrderSchema.$id, {
-  id:         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-  customerId: 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
-  placedAt:   '2026-01-15T10:30:00Z',
-  total:      14.99,
-  items:      [{ bookIsbn: '9780140449136', quantity: 1, unitPrice: 14.99 }],
-  // createdAt and updatedAt missing
-});
-console.log(errors.length > 0); // true
-```
+<<< ../../examples/docs/composition/27-intersection-validation-failure.ts
 
 ### Example 3: getDefaults on an intersection schema
 
 Build on [`Compose.getDefaults`](/composition/get-defaults) - extracting defaults from an intersection walks each constituent.
 
-```ts
-import { Compose } from 'json-tology';
-
-const defaults = Compose.getDefaults(OrderSchema);
-// { currency: 'USD' }
-// Combined schemas' defaults are merged at validation time
-```
+<<< ../../examples/docs/composition/28-intersection-get-defaults.ts
 
 ## ID collision prevention <Badge type="info" text="Compile-time" />
 
 `newId` cannot collide with any input schema's `$id`. A collision surfaces an `IntersectionIdCollisionType` brand error at the call site.
 
-```ts
-// compile error — newId collides with BookSchema.$id
-const Bad = Compose.intersection(
-  [BookSchema, AuditSchema] as const,
-  'https://bookstore.example/Book',  // same as BookSchema.$id
-);
-```
+<<< ../../examples/docs/composition/46-antipattern-intersection-id-collision.ts
 
 ## Bad examples - what NOT to do
 
 ### Anti-pattern 1: Using intersection when extend is simpler
 
-```ts
-import { Compose } from 'json-tology';
-
-// ⊥ Don't do this for simple property merging  - allOf is heavier than needed
-const ExtendedSchema = Compose.intersection(
-  [BookSchema, { type: 'object', properties: { badge: { type: 'string' } } }] as const,
-  'https://bookstore.example/ExtendedBook',
-);
-
-// ✓ Do this  - extend is designed for this
-const ExtendedSchema2 = Compose.extend(
-  BookSchema,
-  { badge: { type: 'string' } } as const,
-  'https://bookstore.example/ExtendedBook',
-);
-```
+<<< ../../examples/docs/composition/29-antipattern-intersection-vs-extend.ts
 
 ## Comparison
 

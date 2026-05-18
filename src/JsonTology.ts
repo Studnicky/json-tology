@@ -49,6 +49,7 @@ import type { NormalizedToQuadsOptionsType } from './types/NormalizedToQuadsOpti
 import { RefResolutionLoader } from './modules/registry/RefResolutionLoader.js';
 import { Curie } from './modules/rdf/Curie.js';
 import { Skolemize } from './modules/rdf/Skolemize.js';
+import { Terms } from './modules/rdf/Terms.js';
 import { Dumper } from './modules/data/Dumper.js';
 import { FormatRegistry } from './modules/format/FormatRegistry.js';
 import { GraphOntologySerializer } from './modules/ontology/GraphOntologySerializer.js';
@@ -124,7 +125,7 @@ function blankNodeNameFor(iri: string): string {
  */
 function deskolemizeQuads(quads: readonly QuadInterface[]): QuadInterface[] {
   return quads.map((quad) => {
-    const subjectGenid = Skolemize.isWellKnownGenid(quad.subject);
+    const subjectGenid = Skolemize.isWellKnownGenid(quad.subject.value);
     const objectGenid = quad.object.termType === 'NamedNode'
       && Skolemize.isWellKnownGenid(quad.object.value);
 
@@ -132,23 +133,19 @@ function deskolemizeQuads(quads: readonly QuadInterface[]): QuadInterface[] {
       return quad;
     }
 
-    const subject = subjectGenid ? `_:${blankNodeNameFor(quad.subject)}` : quad.subject;
+    const subject = subjectGenid
+      ? Terms.blank(blankNodeNameFor(quad.subject.value))
+      : quad.subject;
     const object = objectGenid && quad.object.termType === 'NamedNode'
-      ? {
-        'termType': 'BlankNode' as const,
-        'value': blankNodeNameFor(quad.object.value)
-      }
+      ? Terms.blank(blankNodeNameFor(quad.object.value))
       : quad.object;
 
     const rewritten: QuadInterface = {
+      'graph': quad.graph,
       object,
       'predicate': quad.predicate,
       subject
     };
-
-    if (quad.graph !== undefined) {
-      rewritten.graph = quad.graph;
-    }
 
     return rewritten;
   });
@@ -175,32 +172,25 @@ function appendSameAsQuads(
     return;
   }
   const expandedSameAs = 'http://www.w3.org/2002/07/owl#sameAs';
+  const graphTerm = graphIRI === undefined ? Terms.defaultGraph() : Terms.iri(graphIRI);
 
   for (const [
     a,
     b
   ] of pairs) {
     const forward: QuadInterface = {
-      'object': {
-        'termType': 'NamedNode',
-        'value': b
-      },
-      'predicate': expandedSameAs,
-      'subject': a
+      'graph': graphTerm,
+      'object': Terms.iri(b),
+      'predicate': Terms.iri(expandedSameAs),
+      'subject': Terms.iri(a)
     };
     const reverse: QuadInterface = {
-      'object': {
-        'termType': 'NamedNode',
-        'value': a
-      },
-      'predicate': expandedSameAs,
-      'subject': b
+      'graph': graphTerm,
+      'object': Terms.iri(a),
+      'predicate': Terms.iri(expandedSameAs),
+      'subject': Terms.iri(b)
     };
 
-    if (graphIRI !== undefined) {
-      forward.graph = graphIRI;
-      reverse.graph = graphIRI;
-    }
     quads.push(forward);
     quads.push(reverse);
   }
@@ -320,8 +310,13 @@ export class JsonTology<TMap = Record<never, never>> {
   }
 
   private static ephemeral(schema: Record<string, unknown> & { readonly '$id': string }): JsonTology {
+    // enableStrictGraph: false — ephemeral registries are single-use helpers
+    // for the static convenience methods (materialize, encode, etc.). They accept
+    // whatever schema is passed without imposing graph-integrity constraints; the
+    // caller is responsible for schema quality in production code.
     return JsonTology.create({
       'baseIRI': STATIC_BASE_IRI,
+      'enableStrictGraph': false,
       'schemas': [schema] as const
     });
   }
@@ -505,7 +500,12 @@ export class JsonTology<TMap = Record<never, never>> {
    * @returns An {@link OntologyBuilder} containing SHACL shape quads.
    */
   public static toShacl(schemas: ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>): OntologyBuilder {
-    const jt = JsonTology.create({ 'baseIRI': STATIC_BASE_IRI });
+    // enableStrictGraph: false — static convenience method accepts any schema without
+    // imposing graph-integrity constraints; the caller manages schema quality.
+    const jt = JsonTology.create({
+      'baseIRI': STATIC_BASE_IRI,
+      'enableStrictGraph': false
+    });
 
     for (const schema of schemas) {
       jt.registry.set(schema);
@@ -521,7 +521,12 @@ export class JsonTology<TMap = Record<never, never>> {
    * @returns An {@link OntologyBuilder} containing OWL TBox quads.
    */
   public static toTbox(schemas: ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>): OntologyBuilder {
-    const jt = JsonTology.create({ 'baseIRI': STATIC_BASE_IRI });
+    // enableStrictGraph: false — static convenience method accepts any schema without
+    // imposing graph-integrity constraints; the caller manages schema quality.
+    const jt = JsonTology.create({
+      'baseIRI': STATIC_BASE_IRI,
+      'enableStrictGraph': false
+    });
 
     for (const schema of schemas) {
       jt.registry.set(schema);

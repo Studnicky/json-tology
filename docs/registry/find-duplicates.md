@@ -2,6 +2,7 @@
 
 ## Declaration
 
+<!-- inline-ts-ok: pseudocode signature describing the method's return shape; not a runnable expression. -->
 ```ts
 registry.findDuplicates(): ReadonlyArray<{
   schemaId: string;
@@ -17,14 +18,7 @@ Returns a report of inline shapes that structurally match a registered top-level
 
 You want to audit an existing schema set for inline shapes that duplicate a named schema. The output drives an extract-and-`$ref`-replace refactor: each entry tells you exactly which schema, which JSON pointer, and which named schema the inline shape would be equivalent to.
 
-```ts
-const registry = new SchemaRegistry();
-registry.set(IsbnSchema);
-registry.set(BookSchema); // has inline isbn: { type: 'string', pattern: ... }
-
-const dups = registry.findDuplicates();
-// [{ schemaId: 'urn:bookstore:Book', pointer: '/properties/isbn', equivalentTo: 'urn:bookstore:Isbn', shape: {...} }]
-```
+<<< ../../examples/docs/registry/11-find-duplicates-oneshot.ts
 
 ## Don't use this when
 
@@ -34,31 +28,11 @@ You want continuous enforcement at registration time - prefer [`enableDuplicateD
 
 ### Example 1: One-shot audit
 
-```ts
-const dups = jt.registry.findDuplicates();
-for (const dup of dups) {
-  console.log(`${dup.schemaId}#${dup.pointer} duplicates ${dup.equivalentTo}`);
-}
-```
+<<< ../../examples/docs/registry/11-find-duplicates-oneshot.ts
 
 ### Example 2: CI gate
 
-```ts
-// scripts/check-graph.ts
-import { JsonTology } from 'json-tology';
-import { schemas } from '../src/schemas.js';
-
-const jt = JsonTology.create({ baseIRI: 'https://example.com', schemas });
-const dups = jt.registry.findDuplicates();
-
-if (dups.length > 0) {
-  console.error('Duplicate inline shapes found:');
-  for (const dup of dups) {
-    console.error(`  ${dup.schemaId}#${dup.pointer} duplicates ${dup.equivalentTo}`);
-  }
-  process.exit(1);
-}
-```
+<<< ../../examples/docs/registry/12-find-duplicates-ci-gate.ts
 
 ## Comparison
 

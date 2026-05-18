@@ -18,8 +18,13 @@ import {
   Compose, Transform
 } from '../../../src/index.js';
 import {
-  aboxFixtures, bookstoreEntities, OrderSchema
+  aboxFixtures, bookstoreEntities, createBookstoreDocRegistry,
+  OrderSchema
 } from '../bookstore/index.js';
+
+// createBookstoreDocRegistry seeds a permissive copy of the bookstore — docs examples extend
+// it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
+const jt = createBookstoreDocRegistry();
 
 type OrderWire = typeof aboxFixtures.order;
 
@@ -43,7 +48,7 @@ const OrderRecordSchema = Compose.equivalent(
   { '$id': 'https://bookstore.example/OrderRecord' } as const
 );
 
-bookstoreEntities.set(OrderRecordSchema);
+jt.set(OrderRecordSchema);
 
 Transform.create<typeof OrderRecordSchema, OrderRecord>(OrderRecordSchema, {
   'decode': (input) => {
@@ -70,8 +75,8 @@ Transform.create<typeof OrderRecordSchema, OrderRecord>(OrderRecordSchema, {
   }
 });
 
-const hydrated = bookstoreEntities.instantiate(
-  OrderRecordSchema.$id,
+const hydrated = jt.instantiate(
+  OrderRecordSchema,
   aboxFixtures.order
 );
 

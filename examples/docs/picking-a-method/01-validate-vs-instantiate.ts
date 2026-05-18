@@ -10,7 +10,7 @@ import {
 } from '../bookstore/index.js';
 
 // Valid order — instantiate returns coerced value
-const validOrder = bookstoreEntities.instantiate(OrderSchema.$id, aboxFixtures.order);
+const validOrder = bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order);
 
 console.assert(validOrder.id === aboxFixtures.order.id);
 console.assert(validOrder.customerId === aboxFixtures.order.customerId);
@@ -26,7 +26,7 @@ const invalidOrder = {
 let caught = false;
 
 try {
-  bookstoreEntities.instantiate(OrderSchema.$id, invalidOrder);
+  bookstoreEntities.instantiate(OrderSchema, invalidOrder);
 } catch (error) {
   caught = true;
   console.assert(error.name === 'InstantiationError');

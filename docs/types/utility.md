@@ -32,13 +32,7 @@ json-tology exports six utility types for working with schema-derived types. Eac
 
 ### Signature
 
-```ts
-export type DeprecatedKeysType<T>
-  = T extends { readonly 'properties': infer P }
-    ? { [K in keyof P & string]: P[K] extends { readonly 'deprecated': true } ? K : never
-      }[keyof P & string]
-    : never;
-```
+<<< ../../examples/docs/types/09-deprecatedkeys-signature.ts
 
 ### Examples
 
@@ -54,21 +48,11 @@ export type DeprecatedKeysType<T>
 
 #### Anti-pattern 1: Manual string union
 
-```ts
-// ⊥ Don't do this
-type DeprecatedBookKeys = 'legacySku';
-// drifts from BookV1Schema the moment a second field is deprecated
-```
+<<< ../../examples/docs/types/10-antipattern-manual-deprecated-union.ts
 
 #### Anti-pattern 2: Using it where NonDeprecatedSchemaType is the right tool
 
-```ts
-// ⊥ Don't do this  - you want the filtered type, not just the key names
-type SafeBook = Omit<InferType<typeof BookV1Schema>, DeprecatedKeysType<typeof BookV1Schema>>;
-
-// Do this instead:
-type SafeBook = NonDeprecatedSchemaType<typeof BookV1Schema>;
-```
+<<< ../../examples/docs/types/11-antipattern-omit-vs-nondeprecated.ts
 
 ### Comparison
 
@@ -173,12 +157,7 @@ class BookV1(BaseModel):
 
 ### Signature
 
-```ts
-export type NonDeprecatedSchemaType<T, TRoot = T, TReferences = Record<never, never>>
-  = T extends { readonly 'properties': unknown; readonly 'type': 'object' }
-    ? SimplifyType<Omit<InferSchemaType<T, TRoot, TReferences>, DeprecatedKeysType<T>>>
-    : InferSchemaType<T, TRoot, TReferences>;
-```
+<<< ../../examples/docs/types/12-nondeprecated-signature.ts
 
 ### Examples
 
@@ -188,28 +167,13 @@ export type NonDeprecatedSchemaType<T, TRoot = T, TReferences = Record<never, ne
 
 #### Example 2: Using as a return type for a view layer function
 
-```ts
-import type { NonDeprecatedSchemaType } from 'json-tology/types';
-import { BookV1Schema } from '../bookstore/index.js';
-
-function toBookView(raw: unknown): NonDeprecatedSchemaType<typeof BookV1Schema> {
-  // instantiate validates and returns the full type; the return type annotation
-  // signals that callers should not depend on deprecated fields.
-  const book = jt.instantiate(BookV1Schema.$id, raw);
-  const { legacySku: _dropped, ...rest } = book;
-  return rest;
-}
-```
+<<< ../../examples/docs/types/13-nondeprecated-view-function.ts
 
 ### Bad examples
 
 #### Anti-pattern 1: Manual Omit with a string literal
 
-```ts
-// ⊥ Don't do this
-type BookV1Current = Omit<InferType<typeof BookV1Schema>, 'legacySku'>;
-// drifts when more fields are marked deprecated  - the Omit list becomes stale
-```
+<<< ../../examples/docs/types/14-antipattern-manual-omit.ts
 
 ### Comparison
 
@@ -303,88 +267,31 @@ data.model_dump(exclude_deprecated=True)
 
 ### Signature
 
-```ts
-export type LooseInputType<T>
-  = [T] extends [string] ? string
-    : [T] extends [number] ? number
-      : [T] extends [boolean] ? boolean
-        : [T] extends [readonly unknown[]] ? readonly unknown[]
-          : [T] extends [Record<string, unknown>] ? Record<string, unknown>
-            : unknown;
-```
+<<< ../../examples/docs/types/15-looseinput-signature.ts
 
 ### Examples
 
 #### Example 1: Accepting unvalidated customer input
 
-```ts
-import type { InferType, LooseInputType } from 'json-tology/types';
-import { CustomerSchema } from '../bookstore/index.js';
-
-type Customer      = InferType<typeof CustomerSchema>;
-// { readonly id: string & FormatBrand<'uuid'>; readonly email: string & FormatBrand<'email'>; ... }
-
-type CustomerInput = LooseInputType<Customer>;
-// Record<string, unknown>  - strips all brands for raw-input boundaries
-
-function createCustomerFromForm(raw: CustomerInput): Customer {
-  return jt.instantiate(CustomerSchema.$id, raw); // validates and re-brands
-}
-```
+<<< ../../examples/docs/types/16-looseinput-form-handler.ts
 
 #### Example 2: Stripping brands from a single field type
 
-```ts
-import type { InferType, LooseInputType } from 'json-tology/types';
-import { ReviewSchema } from '../bookstore/index.js';
-
-type Review       = InferType<typeof ReviewSchema>;
-type ReviewBody   = Review['body'];
-// string & MinLengthBrand<10>
-
-type LooseBody = LooseInputType<ReviewBody>;
-// string  - plain string, no brand
-```
+<<< ../../examples/docs/types/17-looseinput-single-field.ts
 
 #### Example 3: Test helpers that produce fixture data
 
-```ts
-import type { InferType, LooseInputType } from 'json-tology/types';
-import { OrderSchema } from '../bookstore/index.js';
-
-type Order = InferType<typeof OrderSchema>;
-
-// Test factory accepts plain primitives  - no need to produce branded values
-function orderFixture(overrides: Partial<LooseInputType<Order>> = {}): unknown {
-  return {
-    id: '00000000-0000-0000-0000-000000000001',
-    customerId: '00000000-0000-0000-0000-000000000002',
-    items: [],
-    total: 9.99,
-    placedAt: '2024-01-01T00:00:00Z',
-    ...overrides,
-  };
-}
-```
+<<< ../../examples/docs/types/18-looseinput-test-fixture.ts
 
 ### Bad examples
 
 #### Anti-pattern 1: Stripping brands after validation
 
-```ts
-// ⊥ Don't do this
-const customer = jt.instantiate(CustomerSchema.$id, raw);
-const loose: LooseInputType<typeof customer> = customer;
-// You just discarded the validation guarantee  - keep the branded type
-```
+<<< ../../examples/docs/types/19-antipattern-strip-after-validation.ts
 
 #### Anti-pattern 2: Using it as a permanent storage type
 
-```ts
-// ⊥ Don't do this
-type StoredCustomer = LooseInputType<InferType<typeof CustomerSchema>>;
-// Storage types should carry brands so downstream code stays safe
-```
+<<< ../../examples/docs/types/20-antipattern-loose-storage-type.ts
 
 ### Comparison
 
@@ -476,27 +383,13 @@ CustomerInput = dict[str, Any]
 
 ### Signature
 
-```ts
-export type EnumValuesType<T>
-  = T extends { readonly 'enum': ReadonlyArray<infer V> } ? V : never;
-```
+<<< ../../examples/docs/types/21-enumvalues-signature.ts
 
 ### Examples
 
 #### Example 1: Currency enum from an inline schema
 
-```ts
-import type { EnumValuesType } from 'json-tology/types';
-
-const CurrencySchema = {
-  $id: 'https://bookstore.example/Currency',
-  type: 'string',
-  enum: ['USD', 'EUR', 'GBP', 'JPY'],
-} as const;
-
-type Currency = EnumValuesType<typeof CurrencySchema>;
-// 'USD' | 'EUR' | 'GBP' | 'JPY'
-```
+<<< ../../examples/docs/types/22-enumvalues-currency.ts
 
 #### Example 2: With `ExhaustiveType` for an exhaustive switch
 
@@ -504,39 +397,17 @@ type Currency = EnumValuesType<typeof CurrencySchema>;
 
 #### Example 3: As a function parameter type
 
-```ts
-import type { EnumValuesType } from 'json-tology/types';
-import { BookSchema } from '../bookstore/index.js';
-
-// BookSchema.properties.currency is { type: 'string', default: 'USD' }
-//  - no enum here, so this illustrates a standalone currency schema:
-const CurrencySchema = { type: 'string', enum: ['USD', 'EUR', 'GBP'] } as const;
-
-type Currency = EnumValuesType<typeof CurrencySchema>;
-
-function formatPrice(amount: number, currency: Currency): string {
-  const symbols: Record<Currency, string> = { USD: '$', EUR: '€', GBP: '£' };
-  return `${symbols[currency]}${amount.toFixed(2)}`;
-}
-```
+<<< ../../examples/docs/types/23-enumvalues-function-param.ts
 
 ### Bad examples
 
 #### Anti-pattern 1: Hand-rolled duplicate union
 
-```ts
-// ⊥ Don't do this
-type Currency = 'USD' | 'EUR' | 'GBP';
-// drifts from CurrencySchema.enum the moment someone adds 'JPY'
-```
+<<< ../../examples/docs/types/24-antipattern-handrolled-enum-union.ts
 
 #### Anti-pattern 2: Unsafe index access
 
-```ts
-// ⊥ Don't do this
-type Currency = (typeof CurrencySchema)['enum'][number];
-// Breaks when enum is not a const array; EnumValuesType handles edge cases (single-element enums, mixed types)
-```
+<<< ../../examples/docs/types/25-antipattern-unsafe-enum-index.ts
 
 ### Comparison
 
@@ -635,92 +506,27 @@ Currency = Literal['USD', 'EUR', 'GBP']
 
 ### Signature
 
-```ts
-export type ExhaustiveType<T extends never> = T;
-```
+<<< ../../examples/docs/types/26-exhaustive-signature.ts
 
 ### Examples
 
 #### Example 1: Exhaustive switch over a Review rating
 
-```ts
-import type { ExhaustiveType, IntegerRangeType } from 'json-tology/types';
-
-type Rating = IntegerRangeType<1, 5>; // 1 | 2 | 3 | 4 | 5
-
-function ratingLabel(r: Rating): string {
-  switch (r) {
-    case 1: return 'Poor';
-    case 2: return 'Fair';
-    case 3: return 'Good';
-    case 4: return 'Very Good';
-    case 5: return 'Excellent';
-    default: {
-      const _: ExhaustiveType<typeof r> = r;
-      return _;
-    }
-  }
-}
-```
+<<< ../../examples/docs/types/07-integer-range-rating.ts
 
 #### Example 2: Pairing with `EnumValuesType` for a string enum
 
-```ts
-import type { EnumValuesType, ExhaustiveType } from 'json-tology/types';
-
-const OrderStatusSchema = {
-  type: 'string',
-  enum: ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'],
-} as const;
-
-type OrderStatus = EnumValuesType<typeof OrderStatusSchema>;
-
-function describeStatus(s: OrderStatus): string {
-  switch (s) {
-    case 'pending':   return 'Awaiting confirmation';
-    case 'confirmed': return 'Confirmed, preparing shipment';
-    case 'shipped':   return 'In transit';
-    case 'delivered': return 'Delivered';
-    case 'cancelled': return 'Order cancelled';
-    default: {
-      const _: ExhaustiveType<typeof s> = s;
-      return _;
-      // Adding 'refunded' to the schema.enum without a case here → compile error
-    }
-  }
-}
-```
+<<< ../../examples/docs/types/27-exhaustive-order-status.ts
 
 ### Bad examples
 
 #### Anti-pattern 1: Using `never` directly instead of the named alias
 
-```ts
-// Works, but intent is less clear
-default: {
-  const _: never = s;
-  return _;
-}
-
-// Prefer the named form  - communicates exhaustiveness intent explicitly:
-default: {
-  const _: ExhaustiveType<typeof s> = s;
-  return _;
-}
-```
+<<< ../../examples/docs/types/28-antipattern-never-directly.ts
 
 #### Anti-pattern 2: Omitting the default branch entirely
 
-```ts
-// ⊥ Don't do this  - TypeScript may not error on missing cases without the check
-function describeStatus(s: OrderStatus): string {
-  switch (s) {
-    case 'pending': return 'Awaiting confirmation';
-    // ... other cases, but no default exhaustiveness check
-    // Adding a new status value silently falls through
-  }
-}
-```
+<<< ../../examples/docs/types/29-antipattern-no-default-branch.ts
 
 ### Comparison
 
@@ -824,79 +630,27 @@ match status:
 
 ### Signature
 
-```ts
-export type DefaultAlignedType<T>
-  = T extends { readonly 'properties': infer TP }
-    ? CheckPropertyDefaultsType<TP> extends true ? T : never
-    : T;
-```
+<<< ../../examples/docs/types/30-defaultaligned-signature.ts
 
 ### Examples
 
 #### Example 1: A well-aligned schema passes through
 
-```ts
-import type { DefaultAlignedType } from 'json-tology/types';
-
-const BookSchema = {
-  $id: 'https://bookstore.example/Book',
-  type: 'object',
-  properties: {
-    currency: { type: 'string',  default: 'USD'  },
-    inStock:  { type: 'boolean', default: true   },
-    price:    { type: 'number',  exclusiveMinimum: 0 }, // no default  - passes through
-  },
-  required: ['price'],
-} as const;
-
-type AlignedBook = DefaultAlignedType<typeof BookSchema>;
-// typeof BookSchema  - same type, defaults are aligned
-```
+<<< ../../examples/docs/types/31-defaultaligned-passes-through.ts
 
 #### Example 2: A misaligned default resolves to `never`
 
-```ts
-import type { DefaultAlignedType } from 'json-tology/types';
-
-const BadSchema = {
-  type: 'object',
-  properties: {
-    currency: { type: 'string', default: 42 }, // ⊥ number default for string field
-  },
-} as const;
-
-type MisalignedBook = DefaultAlignedType<typeof BadSchema>;
-// never  - default 42 is not assignable to 'string'
-```
+<<< ../../examples/docs/types/32-defaultaligned-misaligned-never.ts
 
 #### Example 3: Using as a generic constraint on a registration helper
 
-```ts
-import type { DefaultAlignedType } from 'json-tology/types';
-
-function registerChecked<T>(schema: DefaultAlignedType<T>): void {
-  // DefaultAlignedType<T> ensures the schema never reaches this function
-  // when its defaults are misaligned  - the call site becomes a compile error.
-  jt.set(schema as T);
-}
-
-registerChecked(BookSchema);  // OK  - defaults are aligned
-// registerChecked(BadSchema); // compile error  - resolves to never
-```
+<<< ../../examples/docs/types/33-defaultaligned-registration-helper.ts
 
 ### Bad examples
 
 #### Anti-pattern 1: Runtime-only default validation
 
-```ts
-// ⊥ Relying on runtime to catch misaligned defaults:
-const BadSchema = {
-  type: 'object',
-  properties: { currency: { type: 'string', default: 42 } },
-} as const;
-
-jt.set(BadSchema); // runtime error  - but could have been caught at compile time
-```
+<<< ../../examples/docs/types/34-antipattern-runtime-default-check.ts
 
 ### Comparison
 

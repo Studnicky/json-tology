@@ -40,6 +40,7 @@ Common shapes for projecting `errs.items` into the format a caller wants.
 
 ### Return type
 
+<!-- inline-ts-ok: TS-style annotated shape of aggregate()'s return value; not a runnable expression. -->
 ```ts
 // aggregate() return type
 {
@@ -166,6 +167,7 @@ keywords = sorted(set(e['type'] for e in errors))
 
 ### Return type
 
+<!-- inline-ts-ok: ProblemDetailsType shape annotated as TS comments; type definition lives in src/types and the doc only illustrates the wire shape. -->
 ```ts
 // ProblemDetailsType
 {

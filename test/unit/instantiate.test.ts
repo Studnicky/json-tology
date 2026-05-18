@@ -90,7 +90,10 @@ import { Logger } from '../utils/Logger.js';
   void describe('jt:alias coercion — Good/Bad/Ugly', { 'concurrency': true }, () => {
     void it('alias resolution: table-driven scenarios covering single, multi, required, nested, array', () => {
       // Good: single alias maps to canonical key
-      const singleReg = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const singleReg = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableStrictGraph': false
+      });
 
       singleReg.set(SingleAliasSchema);
       assert.deepStrictEqual(singleReg.instantiate(SingleAliasSchema.$id, { 'foo_bar': 'hello' }), { 'fooBar': 'hello' });
@@ -105,7 +108,10 @@ import { Logger } from '../utils/Logger.js';
       assert.deepStrictEqual(inputNoMutate, { 'foo_bar': 'hello' });
 
       // Good: multi-alias priority
-      const multiReg = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const multiReg = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableStrictGraph': false
+      });
 
       multiReg.set(MultiAliasSchema);
       assert.deepStrictEqual(multiReg.instantiate(MultiAliasSchema.$id, { 'foo_bar': 'value1' }), { 'fooBar': 'value1' });
@@ -117,7 +123,10 @@ import { Logger } from '../utils/Logger.js';
       }), { 'fooBar': 'canonical' });
 
       // Bad: required constraint satisfied via alias; fails without either
-      const reqReg = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const reqReg = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableStrictGraph': false
+      });
 
       reqReg.set(RequiredAliasSchema);
       assert.doesNotThrow(() => {
@@ -128,13 +137,19 @@ import { Logger } from '../utils/Logger.js';
       });
 
       // Good: nested object alias resolves
-      const nestedReg = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const nestedReg = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableStrictGraph': false
+      });
 
       nestedReg.set(NestedAliasSchema);
       assert.deepStrictEqual(nestedReg.instantiate(NestedAliasSchema.$id, { 'inner': { 'my_prop': 'nested-value' } }), { 'inner': { 'myProp': 'nested-value' } });
 
       // Good: array item alias resolves per element
-      const arrReg = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const arrReg = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableStrictGraph': false
+      });
 
       arrReg.set(ArrayItemAliasSchema);
       assert.deepStrictEqual(arrReg.instantiate(ArrayItemAliasSchema.$id, [
@@ -156,7 +171,10 @@ import { Logger } from '../utils/Logger.js';
         },
         'type': 'object'
       } as const;
-      const wtReg = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const wtReg = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableStrictGraph': false
+      });
 
       wtReg.set(WrongTypeSchema);
       let coercionPaths: string[] = [];
@@ -214,6 +232,7 @@ import { Logger } from '../utils/Logger.js';
     void it('validates a tree structure with recursive $ref', () => {
       const registry = JsonTology.create({
         'baseIRI': 'urn:test:',
+        'enableStrictGraph': false,
         'logger': logger
       });
 
@@ -296,6 +315,7 @@ import { Logger } from '../utils/Logger.js';
     void it('validates a linked list with recursive optional $ref', () => {
       const registry = JsonTology.create({
         'baseIRI': 'urn:test:',
+        'enableStrictGraph': false,
         'logger': logger
       });
 
@@ -340,6 +360,7 @@ import { Logger } from '../utils/Logger.js';
     void it('validates self-referencing via $defs', () => {
       const registry = JsonTology.create({
         'baseIRI': 'urn:test:',
+        'enableStrictGraph': false,
         'logger': logger
       });
 
@@ -400,6 +421,7 @@ import { Logger } from '../utils/Logger.js';
     void it('validates mutual recursion between two schemas', () => {
       const registry = JsonTology.create({
         'baseIRI': 'urn:test:',
+        'enableStrictGraph': false,
         'logger': logger
       });
 
@@ -452,6 +474,7 @@ import { Logger } from '../utils/Logger.js';
     void it('validates a three-level reference chain A -> B -> C', () => {
       const registry = JsonTology.create({
         'baseIRI': 'urn:test:',
+        'enableStrictGraph': false,
         'logger': logger
       });
 
@@ -537,6 +560,7 @@ import { Logger } from '../utils/Logger.js';
     void it('throws GraphError REF_UNRESOLVED on first use when a cross-schema $ref points to an unregistered IRI', () => {
       const registry = JsonTology.create({
         'baseIRI': 'urn:test:',
+        'enableStrictGraph': false,
         'logger': logger
       });
 
@@ -571,6 +595,7 @@ import { Logger } from '../utils/Logger.js';
     void it('resolves $ref to $anchor within the same schema', () => {
       const registry = JsonTology.create({
         'baseIRI': 'urn:test:',
+        'enableStrictGraph': false,
         'logger': logger
       });
 
@@ -606,6 +631,7 @@ import { Logger } from '../utils/Logger.js';
     void it('resolves $ref to $defs via JSON pointer', () => {
       const registry = JsonTology.create({
         'baseIRI': 'urn:test:',
+        'enableStrictGraph': false,
         'logger': logger
       });
 
@@ -662,6 +688,7 @@ import { Logger } from '../utils/Logger.js';
     void it('validates 10+ levels of nested objects via $ref chain', () => {
       const registry = JsonTology.create({
         'baseIRI': 'urn:test:',
+        'enableStrictGraph': false,
         'logger': logger
       });
 
@@ -723,6 +750,7 @@ import { Logger } from '../utils/Logger.js';
     void it('applies defaults at multiple nesting levels', () => {
       const registry = JsonTology.create({
         'baseIRI': 'urn:test:',
+        'enableStrictGraph': false,
         'logger': logger
       });
 
@@ -772,6 +800,7 @@ import { Logger } from '../utils/Logger.js';
     void it('merges $ref with sibling properties in 2020-12 dialect', () => {
       const registry = JsonTology.create({
         'baseIRI': 'urn:test:',
+        'enableStrictGraph': false,
         'logger': logger
       });
 
@@ -859,6 +888,7 @@ import { Logger } from '../utils/Logger.js';
       // Good: accepts correct JS type for strict field
       const r1 = JsonTology.create({
         'baseIRI': 'urn:test:',
+        'enableStrictGraph': false,
         'enableTypeCast': true
       });
 
@@ -874,6 +904,7 @@ import { Logger } from '../utils/Logger.js';
       // Good: coerces non-strict field normally when global castTypes is on
       const r2 = JsonTology.create({
         'baseIRI': 'urn:test:',
+        'enableStrictGraph': false,
         'enableTypeCast': true
       });
 
@@ -886,7 +917,10 @@ import { Logger } from '../utils/Logger.js';
       assert.equal(coercedResult.name, '42');
 
       // Good: accepts valid integer without castTypes
-      const r3 = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const r3 = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableStrictGraph': false
+      });
 
       r3.set(StrictFieldSchema);
       assert.deepEqual(r3.instantiate(StrictFieldSchema.$id, {
@@ -900,6 +934,7 @@ import { Logger } from '../utils/Logger.js';
       // Bad: rejects string-as-integer for strict field even with global castTypes
       const r4 = JsonTology.create({
         'baseIRI': 'urn:test:',
+        'enableStrictGraph': false,
         'enableTypeCast': true
       });
 
@@ -914,6 +949,7 @@ import { Logger } from '../utils/Logger.js';
       // Bad: rejects boolean-as-integer for strict field
       const r5 = JsonTology.create({
         'baseIRI': 'urn:test:',
+        'enableStrictGraph': false,
         'enableTypeCast': true
       });
 
@@ -928,6 +964,7 @@ import { Logger } from '../utils/Logger.js';
       // Bad: jt:config.strict applies to all fields
       const r6 = JsonTology.create({
         'baseIRI': 'urn:test:',
+        'enableStrictGraph': false,
         'enableTypeCast': true
       });
 
@@ -942,6 +979,7 @@ import { Logger } from '../utils/Logger.js';
       // Ugly: jt:strict: false opts out field when jt:config.strict is true
       const r7 = JsonTology.create({
         'baseIRI': 'urn:test:',
+        'enableStrictGraph': false,
         'enableTypeCast': true
       });
 
@@ -956,6 +994,7 @@ import { Logger } from '../utils/Logger.js';
       // Ugly: validate() and is() reflect strict type failures
       const r8 = JsonTology.create({
         'baseIRI': 'urn:test:',
+        'enableStrictGraph': false,
         'enableTypeCast': true
       });
 
@@ -1028,14 +1067,20 @@ import { Logger } from '../utils/Logger.js';
   void describe('jt:frozen output — Good/Bad/Ugly', { 'concurrency': true }, () => {
     void it('freeze scenarios: frozen vs mutable, deep freeze, arrays, config shorthand, materialize, cycle-safe', () => {
       // Good: frozen when jt:frozen is set
-      const r1 = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const r1 = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableStrictGraph': false
+      });
 
       r1.set(FrozenSchema);
       r1.set(MetaSchema);
       assert.ok(Object.isFrozen(r1.instantiate(FrozenSchema.$id, { 'name': 'Alice' })));
 
       // Good: mutable when jt:frozen is not set
-      const r2 = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const r2 = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableStrictGraph': false
+      });
 
       r2.set(MutableSchema);
       const mutable = r2.instantiate(MutableSchema.$id, { 'value': 'hello' }) as Record<string, unknown>;
@@ -1045,7 +1090,10 @@ import { Logger } from '../utils/Logger.js';
       assert.equal(mutable.value, 'mutated');
 
       // Bad: mutation on frozen result throws
-      const r3 = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const r3 = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableStrictGraph': false
+      });
 
       r3.set(FrozenSchema);
       r3.set(MetaSchema);
@@ -1056,7 +1104,10 @@ import { Logger } from '../utils/Logger.js';
       }, TypeError);
 
       // Good: nested objects are also frozen (deep freeze)
-      const r4 = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const r4 = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableStrictGraph': false
+      });
 
       r4.set(MetaSchema);
       r4.set(FrozenSchema);
@@ -1069,7 +1120,10 @@ import { Logger } from '../utils/Logger.js';
       assert.ok(Object.isFrozen(deepFrozen.meta));
 
       // Good: arrays are frozen
-      const r5 = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const r5 = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableStrictGraph': false
+      });
 
       r5.set(FrozenArraySchema);
       const frozenArr = r5.instantiate(FrozenArraySchema.$id, {
@@ -1083,7 +1137,10 @@ import { Logger } from '../utils/Logger.js';
       assert.ok(Object.isFrozen(frozenArr.items));
 
       // Good: jt:config.frozen shorthand works
-      const r6 = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const r6 = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableStrictGraph': false
+      });
 
       r6.set(FrozenViaConfigSchema);
       assert.ok(Object.isFrozen(r6.instantiate(FrozenViaConfigSchema.$id, { 'value': 42 })));
@@ -1091,6 +1148,7 @@ import { Logger } from '../utils/Logger.js';
       // Good: materialize() respects jt:frozen
       const jt7 = JsonTology.create({
         'baseIRI': 'https://ex.io',
+        'enableStrictGraph': false,
         'schemas': [
           MetaSchema,
           FrozenSchema
@@ -1100,13 +1158,17 @@ import { Logger } from '../utils/Logger.js';
       assert.ok(Object.isFrozen(jt7.materialize(FrozenSchema, { 'name': 'Alice' })));
       const jt8 = JsonTology.create({
         'baseIRI': 'https://ex.io',
+        'enableStrictGraph': false,
         'schemas': [MutableSchema] as const
       });
 
       assert.ok(!Object.isFrozen(jt8.materialize(MutableSchema, { 'value': 'hello' })));
 
       // Ugly: cycle-safe (no infinite recursion)
-      const r9 = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const r9 = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableStrictGraph': false
+      });
 
       r9.set(FrozenSchema);
       r9.set(MetaSchema);
@@ -1136,7 +1198,10 @@ import { Logger } from '../utils/Logger.js';
 
   void describe('enableDefaults option', { 'concurrency': true }, () => {
     void it('fills defaults by default (enableDefaults: true)', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableStrictGraph': false
+      });
 
       registry.set(WithDefaultSchema as unknown as Record<string, unknown>);
 
@@ -1148,7 +1213,8 @@ import { Logger } from '../utils/Logger.js';
     void it('global opt-out: enableDefaults: false suppresses default-filling', () => {
       const registry = JsonTology.create({
         'baseIRI': 'urn:test:',
-        'enableDefaults': false
+        'enableDefaults': false,
+        'enableStrictGraph': false
       });
 
       registry.set(WithDefaultSchema as unknown as Record<string, unknown>);
@@ -1159,7 +1225,10 @@ import { Logger } from '../utils/Logger.js';
     });
 
     void it('per-call opt-out overrides global true', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableStrictGraph': false
+      });
 
       registry.set(WithDefaultSchema as unknown as Record<string, unknown>);
 
@@ -1175,7 +1244,8 @@ import { Logger } from '../utils/Logger.js';
     void it('per-call opt-in overrides global false', () => {
       const registry = JsonTology.create({
         'baseIRI': 'urn:test:',
-        'enableDefaults': false
+        'enableDefaults': false,
+        'enableStrictGraph': false
       });
 
       registry.set(WithDefaultSchema as unknown as Record<string, unknown>);
@@ -1190,7 +1260,10 @@ import { Logger } from '../utils/Logger.js';
     });
 
     void it('per-call options do not mutate registry stored default setting', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableStrictGraph': false
+      });
 
       registry.set(WithDefaultSchema as unknown as Record<string, unknown>);
 
@@ -1238,9 +1311,11 @@ import { Logger } from '../utils/Logger.js';
   void describe('enableInlineWarnings flag', { 'concurrency': true }, () => {
     void it('emits warn via logger when inline-object found', () => {
       const warns: string[] = [];
+      // enableStrictGraph: false — tests warn-only mode; with strict on, inline shapes throw.
       const registry = JsonTology.create({
         'baseIRI': 'urn:test:',
         'enableInlineWarnings': true,
+        'enableStrictGraph': false,
         'logger': {
           'debug': (msg: string) => {
             warns.push(msg);
@@ -1272,8 +1347,12 @@ import { Logger } from '../utils/Logger.js';
 
     void it('is silent by default (no flags)', () => {
       const warns: string[] = [];
+      // enableStrictGraph: false, enableInlineWarnings: false — tests the fully
+      // permissive mode where inline shapes are silently accepted (no warn, no throw).
       const registry = JsonTology.create({
         'baseIRI': 'urn:test:',
+        'enableInlineWarnings': false,
+        'enableStrictGraph': false,
         'logger': {
           'debug': (msg: string) => {
             warns.push(msg);
@@ -1301,7 +1380,7 @@ import { Logger } from '../utils/Logger.js';
         return msg.includes('inline');
       });
 
-      assert.strictEqual(inlineWarns.length, 0, 'no inline warnings in default mode');
+      assert.strictEqual(inlineWarns.length, 0, 'no inline warnings in permissive mode');
     });
   });
 
@@ -1407,9 +1486,12 @@ import { Logger } from '../utils/Logger.js';
       };
 
       const warns: string[] = [];
+      // enableStrictGraph: false — tests duplicate-detection warn mode; with strict
+      // on, inline shapes throw before duplicate detection can run.
       const registry = JsonTology.create({
         'baseIRI': 'urn:test:',
         'enableDuplicateDetection': true,
+        'enableStrictGraph': false,
         'logger': {
           'debug': (msg: string) => {
             warns.push(msg);

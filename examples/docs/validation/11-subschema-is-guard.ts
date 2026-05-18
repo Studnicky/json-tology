@@ -1,8 +1,13 @@
 import {
-  BookSchema, bookstoreEntities
+  BookSchema, bookstoreEntities,
+  createBookstoreDocRegistry
 } from '../bookstore/index.js';
 
-const priceSub = bookstoreEntities.subschemaAt(BookSchema.$id, '/properties/price');
+// createBookstoreDocRegistry seeds a permissive copy of the bookstore — docs examples extend
+// it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
+const jt = createBookstoreDocRegistry();
+
+const priceSub = jt.subschemaAt(BookSchema.$id, '/properties/price');
 
 const candidatePrice = 29.99;
 

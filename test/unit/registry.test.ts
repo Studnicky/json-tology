@@ -233,7 +233,12 @@ import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
     });
 
     void it('detects structurally-identical leaf shape that matches a registered schema', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
+      // enableStrictGraph: false — this test explicitly registers inline duplicate
+      // shapes to verify findDuplicates() detects them.
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test',
+        'enableStrictGraph': false
+      }).registry;
 
       registry.set(EmailSchema);
       registry.set(PersonSchema);
@@ -270,7 +275,12 @@ import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
         'type': 'object'
       } as const;
 
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
+      // enableStrictGraph: false — registers inline duplicate shapes to verify
+      // that findDuplicates() ignores title/description in structural matching.
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test',
+        'enableStrictGraph': false
+      }).registry;
 
       registry.set(Base);
       registry.set(Container);
@@ -281,7 +291,12 @@ import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
     });
 
     void it('reports correct schemaId and equivalentTo fields', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test' }).registry;
+      // enableStrictGraph: false — registers inline duplicate shapes to verify
+      // findDuplicates() result shape.
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test',
+        'enableStrictGraph': false
+      }).registry;
 
       registry.set(EmailSchema);
       registry.set(PersonSchema);

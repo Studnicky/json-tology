@@ -18,54 +18,17 @@
 
 ### Example 2: Pre-populate an Order form
 
-```ts
-import { Compose } from 'json-tology';
-import { OrderSchema } from './bookstore/index.js';
-
-const defaults = Compose.getDefaults(OrderSchema);
-console.log(defaults);
-// { currency: 'USD' }
-// id, customerId, items, total, placedAt have no defaults  - absent from result
-```
+<<< ../../examples/docs/composition/34-getdefaults-order.ts
 
 ### Example 3: Nested defaults are traversed
 
-```ts
-import { Compose } from 'json-tology';
-
-const SettingsSchema = {
-  $id: 'https://bookstore.example/Settings',
-  type: 'object',
-  properties: {
-    theme: { type: 'string', default: 'light' },
-    notifications: {
-      type: 'object',
-      properties: {
-        email:  { type: 'boolean', default: true },
-        push:   { type: 'boolean', default: false },
-      },
-    },
-  },
-} as const;
-
-const defaults = Compose.getDefaults(SettingsSchema);
-// { theme: 'light', notifications: { email: true, push: false } }
-```
+<<< ../../examples/docs/composition/35-getdefaults-nested.ts
 
 ## Bad examples - what NOT to do
 
 ### Anti-pattern 1: Using getDefaults as a substitute for coerce/materialize
 
-```ts
-// ⊥ Don't do this  - getDefaults returns only declared defaults, not all fields
-const partial = Compose.getDefaults(CustomerSchema);
-// partial === {}  - Customer has no declared defaults (addresses has default [])
-// This is NOT a valid Customer object
-
-// ✓ Do this for a blank Customer form:
-const blank = jt.value.create(CustomerSchema.$id);
-// → { id: '', email: '', name: '', addresses: [] }
-```
+<<< ../../examples/docs/composition/36-antipattern-getdefaults-as-coerce.ts
 
 ## Comparison
 

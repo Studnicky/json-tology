@@ -17,23 +17,7 @@
 
 Common projections from `errs.items`:
 
-```ts
-// Path-prefixed message strings
-errs.items.map(err => `${err.path}: ${err.message}`)
-
-// Group by path
-const grouped: Record<string, ValidationErrorType[]> = {};
-for (const err of errs) {
-  (grouped[err.path || '_root'] ??= []).push(err);
-}
-
-// Field vs form errors
-const fieldErrors: ValidationErrorType[] = [];
-const formErrors: ValidationErrorType[] = [];
-for (const err of errs) {
-  if (err.path) { fieldErrors.push(err); } else { formErrors.push(err); }
-}
-```
+<<< ../../examples/docs/errors/23-projection-recipes.ts
 
 All examples use the [bookstore domain](/bookstore-domain). See [`entities.validate()`](/validation/validate) for how to obtain the collection.
 

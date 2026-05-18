@@ -711,8 +711,11 @@ import {
       },
       {
         'check': () => {
+          // enableStrictGraph: false — subschemaAt registers extracted sub-schema
+          // which triggers duplicate detection against the parent schema's shapes.
           const jt = JsonTology.create({
             'baseIRI': 'https://myapp.io',
+            'enableStrictGraph': false,
             'schemas': [UserSchema] as const
           });
           const sub = jt.subschemaAt(UserSchema.$id, '/properties/name');
@@ -724,8 +727,11 @@ import {
       },
       {
         'check': () => {
+          // enableStrictGraph: false — subschemaAt registers extracted sub-schema
+          // which triggers duplicate detection against the parent schema's shapes.
           const jt = JsonTology.create({
             'baseIRI': 'https://myapp.io',
+            'enableStrictGraph': false,
             'schemas': [UserSchema] as const
           });
           const sub = jt.subschemaAt(UserSchema.$id, '/properties/name');
@@ -1057,8 +1063,10 @@ import {
     });
 
     void it('return shape matches instance method return shape', () => {
+      // enableStrictGraph: false — PersonSchema has inline minimum constraint
       const jt = JsonTology.create({
         'baseIRI': 'https://static-counterparts.test',
+        'enableStrictGraph': false,
         'schemas': [PersonSchema] as const
       });
       const instanceResult = jt.validate(PersonSchema, {
@@ -1107,6 +1115,7 @@ import {
     void it('return shape matches instance method return shape', () => {
       const jt = JsonTology.create({
         'baseIRI': 'https://static-counterparts.test',
+        'enableStrictGraph': false,
         'schemas': [PersonSchema] as const
       });
       const instanceResult = jt.toShacl();
@@ -1147,6 +1156,7 @@ import {
     void it('return shape matches instance method return shape', () => {
       const jt = JsonTology.create({
         'baseIRI': 'https://static-counterparts.test',
+        'enableStrictGraph': false,
         'schemas': [PersonSchema] as const
       });
       const instanceResult = jt.toTbox();
@@ -1183,6 +1193,7 @@ import {
     void it('return shape matches instance method return shape', () => {
       const jt = JsonTology.create({
         'baseIRI': 'https://static-counterparts.test',
+        'enableStrictGraph': false,
         'schemas': [PersonSchema] as const
       });
       const instanceResult = jt.toSchema(PersonSchema);

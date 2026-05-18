@@ -22,7 +22,7 @@ const casted = bookstoreEntities.value.cast(BookSchema.$id, {
   },
   'printStatus': 'inPrint',
   'title': 'Siddhartha'
-});
+}) as Record<string, unknown>;
 
 console.assert((casted as { 'price': { 'amount': number } }).price.amount === 12);
 
@@ -39,7 +39,7 @@ const dirty = {
   'printStatus': 'inPrint',
   'title': 'Siddhartha'
 };
-const cleaned = bookstoreEntities.value.clean(BookSchema.$id, dirty);
+const cleaned = bookstoreEntities.value.clean(BookSchema.$id, dirty) as Record<string, unknown>;
 
 console.assert(!('_internalId' in (cleaned as object)));
 console.assert(!('_cacheKey' in (cleaned as object)));
@@ -54,6 +54,6 @@ const converted = bookstoreEntities.value.convert(BookSchema.$id, {
   },
   'printStatus': 'inPrint',
   'title': 'Siddhartha'
-});
+}) as Record<string, unknown>;
 
 console.assert(typeof (converted as { 'price': { 'amount': number } }).price.amount === 'number');

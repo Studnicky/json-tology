@@ -1,7 +1,7 @@
 /**
  * Registry.set — fluent + bulk forms.
  *
- * `bookstoreEntities.set(schema)` adds one schema; `set([s1, s2, ...])`
+ * `jt.set(schema)` adds one schema; `set([s1, s2, ...])`
  * adds a tuple. Both keep the canonical bookstore as the single source
  * of truth — derived schemas attach to it rather than building a
  * mini-registry.
@@ -9,8 +9,13 @@
 
 import { Compose } from '../../../src/index.js';
 import {
-  bookstoreEntities, CustomerSchema
+  createBookstoreDocRegistry,
+  CustomerSchema
 } from '../bookstore/index.js';
+
+// createBookstoreDocRegistry seeds a permissive copy of the bookstore — docs examples extend
+// it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
+const jt = createBookstoreDocRegistry();
 
 const PatchCustomerSchema = Compose.partial(
   CustomerSchema,
@@ -25,8 +30,8 @@ const SummaryCustomerSchema = Compose.pick(
   'https://bookstore.example/RegistrySetSummary'
 );
 
-bookstoreEntities.set(PatchCustomerSchema);
-bookstoreEntities.set(SummaryCustomerSchema);
+jt.set(PatchCustomerSchema);
+jt.set(SummaryCustomerSchema);
 
-console.assert(bookstoreEntities.registry.has(PatchCustomerSchema.$id));
-console.assert(bookstoreEntities.registry.has(SummaryCustomerSchema.$id));
+console.assert(jt.registry.has(PatchCustomerSchema.$id));
+console.assert(jt.registry.has(SummaryCustomerSchema.$id));

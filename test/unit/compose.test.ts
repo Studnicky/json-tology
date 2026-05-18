@@ -306,7 +306,10 @@ import { Result } from '../../src/modules/data/Result.js';
       },
       {
         'check': () => {
-          const reg = JsonTology.create({ 'baseIRI': 'urn:test:' });
+          const reg = JsonTology.create({
+            'baseIRI': 'urn:test:',
+            'enableStrictGraph': false
+          });
           const schema = Compose.partial(UserSchema, 'https://myapp.io/PartialUser2');
 
           reg.set(schema);
@@ -352,7 +355,10 @@ import { Result } from '../../src/modules/data/Result.js';
       },
       {
         'check': () => {
-          const reg = JsonTology.create({ 'baseIRI': 'urn:test:' });
+          const reg = JsonTology.create({
+            'baseIRI': 'urn:test:',
+            'enableStrictGraph': false
+          });
           const schema = Compose.required(UserSchema, 'https://myapp.io/StrictUser2');
 
           reg.set(schema);
@@ -377,7 +383,10 @@ import { Result } from '../../src/modules/data/Result.js';
       },
       {
         'check': () => {
-          const reg = JsonTology.create({ 'baseIRI': 'urn:test:' });
+          const reg = JsonTology.create({
+            'baseIRI': 'urn:test:',
+            'enableStrictGraph': false
+          });
           const schema = Compose.required(UserSchema, 'https://myapp.io/StrictUser3');
 
           reg.set(schema);
@@ -439,7 +448,10 @@ import { Result } from '../../src/modules/data/Result.js';
       },
       {
         'check': () => {
-          const reg = JsonTology.create({ 'baseIRI': 'urn:test:' });
+          const reg = JsonTology.create({
+            'baseIRI': 'urn:test:',
+            'enableStrictGraph': false
+          });
           const schema = Compose.pick(UserSchema, [
             'id',
             'name'
@@ -511,7 +523,10 @@ import { Result } from '../../src/modules/data/Result.js';
       },
       {
         'check': () => {
-          const reg = JsonTology.create({ 'baseIRI': 'urn:test:' });
+          const reg = JsonTology.create({
+            'baseIRI': 'urn:test:',
+            'enableStrictGraph': false
+          });
           const schema = Compose.omit(UserSchema, [
             'email',
             'role'
@@ -1810,7 +1825,10 @@ import { Result } from '../../src/modules/data/Result.js';
     });
 
     void it('two registered equivalent schemas validate the same data', () => {
-      const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const registry = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableStrictGraph': false
+      });
 
       registry.set(IsbnSchema as unknown as Record<string, unknown>);
 
@@ -1847,11 +1865,11 @@ import { Result } from '../../src/modules/data/Result.js';
       const quads = OwlProjection.graph(graph);
 
       const equivQuad = quads.find((quad) => {
-        return quad.predicate === OWL.equivalentClass;
+        return quad.predicate.value === OWL.equivalentClass;
       });
 
       assert.notStrictEqual(equivQuad, undefined, 'equivalentClass quad should be emitted');
-      assert.match(equivQuad.subject, /PrimaryIsbn/u);
+      assert.match(equivQuad.subject.value, /PrimaryIsbn/u);
     });
 
     void it('fails gracefully if no $id on source', () => {
@@ -1909,7 +1927,10 @@ import { Result } from '../../src/modules/data/Result.js';
     void it('runtime validation validates parent + child properties', () => {
       const EmployeeSchema = Compose.extend(PersonSchema, { 'role': { 'type': 'string' } } as const, 'https://example.io/Employee2');
 
-      const jt = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const jt = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableStrictGraph': false
+      });
 
       jt.set(PersonSchema as unknown as Record<string, unknown>);
       jt.set(EmployeeSchema as unknown as Record<string, unknown>);
@@ -1930,7 +1951,10 @@ import { Result } from '../../src/modules/data/Result.js';
 
       const SeniorManagerSchema = Compose.extend(ManagerSchema, { 'budget': { 'type': 'number' } } as const, 'https://example.io/SeniorManager');
 
-      const jt = JsonTology.create({ 'baseIRI': 'urn:test:' });
+      const jt = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'enableStrictGraph': false
+      });
 
       jt.set(PersonSchema as unknown as Record<string, unknown>);
       jt.set(ManagerSchema as unknown as Record<string, unknown>);
@@ -2060,8 +2084,8 @@ import { Result } from '../../src/modules/data/Result.js';
       const graph = new SchemaGraph(Scoped);
       const quads = OwlProjection.graph(graph);
       const subClassQuads = quads.filter((quad) => {
-        return quad.predicate === RDFS.subClassOf
-          && quad.subject === 'urn:auth:ScopedAuthorityToken2';
+        return quad.predicate.value === RDFS.subClassOf
+          && quad.subject.value === 'urn:auth:ScopedAuthorityToken2';
       });
       const targets = new Set(subClassQuads.map((quad) => {
         const obj = quad.object as { 'value'?: string };
@@ -2114,7 +2138,7 @@ import { Result } from '../../src/modules/data/Result.js';
       const graph = new SchemaGraph(Armor);
       const quads = OwlProjection.graph(graph);
       const disjQuad = quads.find((quad) => {
-        return quad.predicate === OWL.disjointWith && quad.subject === 'aonprd:Armor2';
+        return quad.predicate.value === OWL.disjointWith && quad.subject.value === 'aonprd:Armor2';
       });
 
       assert.notStrictEqual(disjQuad, undefined, 'disjointWith quad must be emitted');
@@ -2146,6 +2170,7 @@ import { Result } from '../../src/modules/data/Result.js';
 
       const jt = JsonTology.create({
         'baseIRI': 'urn:aonprd',
+        'enableStrictGraph': false,
         'schemas': [
           Weapon,
           Armor
@@ -2191,8 +2216,11 @@ import { Result } from '../../src/modules/data/Result.js';
         'type': 'object'
       } as const);
 
+      // enableStrictGraph: false — synthetic test schemas use const/string inline
+      // shapes to test disjointWith mechanics, not data-modelling discipline.
       const jt = JsonTology.create({
         'baseIRI': 'urn:aonprd',
+        'enableStrictGraph': false,
         'schemas': [
           WeaponB,
           ArmorB
@@ -2238,8 +2266,8 @@ import { Result } from '../../src/modules/data/Result.js';
       const graph = new SchemaGraph(NonHuman);
       const quads = OwlProjection.graph(graph);
       const compQuad = quads.find((quad) => {
-        return quad.predicate === OWL.complementOf
-          && quad.subject === 'aonprd:NonHumanRace2';
+        return quad.predicate.value === OWL.complementOf
+          && quad.subject.value === 'aonprd:NonHumanRace2';
       });
 
       assert.notStrictEqual(compQuad, undefined, 'complementOf quad must be emitted');

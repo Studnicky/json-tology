@@ -25,53 +25,13 @@ The rest of this page covers:
 
 When you write the same constrained shape inline in two different schemas, the graph sees them as two separate, unrelated nodes:
 
-```ts
-// BAD  - three separate ISBN nodes in the graph
-const BookSchema = {
-  $id: 'urn:bookstore:Book',
-  type: 'object',
-  properties: {
-    isbn: { type: 'string', pattern: '^\\d{13}$' }  // node 1
-  }
-} as const;
-
-const OrderSchema = {
-  $id: 'urn:bookstore:Order',
-  type: 'object',
-  properties: {
-    isbn: { type: 'string', pattern: '^\\d{13}$' }  // node 2  - structurally identical but unrelated
-  }
-} as const;
-```
+<<< ../../examples/docs/advanced/81-graph-native-antipattern-inline.ts
 
 The OWL output produces two anonymous DatatypeProperty ranges. Fix the ISBN regex once, and you have to find and update every copy. SHACL constraint propagation and rdfs:range reasoning work per-node - the two "isbn" properties have no declared relationship.
 
 ### The named-entity solution
 
-```ts
-// GOOD  - one ISBN node, two references
-export const IsbnSchema = {
-  $id: 'urn:bookstore:Isbn',
-  type: 'string',
-  pattern: '^\\d{13}$'
-} as const;
-
-const BookSchema = {
-  $id: 'urn:bookstore:Book',
-  type: 'object',
-  properties: {
-    isbn: { $ref: IsbnSchema.$id }
-  }
-} as const;
-
-const OrderSchema = {
-  $id: 'urn:bookstore:Order',
-  type: 'object',
-  properties: {
-    isbn: { $ref: IsbnSchema.$id }
-  }
-} as const;
-```
+<<< ../../examples/docs/advanced/82-graph-native-named-entity.ts
 
 Now:
 - Change the ISBN pattern in one place - both schemas update.
@@ -94,21 +54,7 @@ entities/
 
 Inside `Book.ts`:
 
-```ts
-import { IsbnSchema } from './Isbn.js';
-import { AuthorSchema } from './Author.js';
-
-export const BookSchema = {
-  $id: 'urn:bookstore:Book',
-  type: 'object',
-  properties: {
-    isbn:   { $ref: IsbnSchema.$id },
-    author: { $ref: AuthorSchema.$id },
-    title:  { type: 'string' }
-  },
-  required: ['isbn', 'title']
-} as const;
-```
+<<< ../../examples/docs/advanced/83-graph-native-per-entity-file.ts
 
 Always show the import that defines the referenced shape - never use a bare string `$ref` pointing to an undocumented IRI.
 

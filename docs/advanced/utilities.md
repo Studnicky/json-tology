@@ -60,20 +60,7 @@ For the typed round-trip use the `JsonTology` facade ([RDF round-trip](/advanced
 
 Shrink full IRIs to CURIE form for readable output in debug logs or ontology tooling.
 
-```ts
-import { Curie } from 'json-tology';
-
-const curie = new Curie({
-  bk:  'https://bookstore.example/',
-  owl: 'http://www.w3.org/2002/07/owl#',
-  xsd: 'http://www.w3.org/2001/XMLSchema#',
-});
-
-curie.compact('https://bookstore.example/Book');    // → 'bk:Book'
-curie.compact('https://bookstore.example/Order');   // → 'bk:Order'
-curie.compact('http://www.w3.org/2002/07/owl#Class'); // → 'owl:Class'
-curie.expand('bk:Customer');                        // → 'https://bookstore.example/Customer'
-```
+<<< ../../examples/docs/advanced/66-curie-compact-bookstore.ts
 
 ### Example 2: Path: surface validation error paths in a form UI
 
@@ -103,65 +90,19 @@ Convert quads produced by the `n3` parser into json-tology's internal quad shape
 
 ### Anti-pattern 1: Curie: expanding a prefix that is not registered
 
-```ts
-import { Curie } from 'json-tology';
-
-const curie = new Curie({ bk: 'https://bookstore.example/' });
-
-// ✗ Don't do this — expanding an unknown prefix returns the input unchanged,
-// which silently produces an invalid IRI
-const iri = curie.expand('schema:Book'); // → 'schema:Book' (not a valid IRI)
-
-// ✓ Do this — register all prefixes you intend to expand
-const curie2 = new Curie({
-  bk:     'https://bookstore.example/',
-  schema: 'https://schema.org/',
-});
-curie2.expand('schema:Book'); // → 'https://schema.org/Book'
-```
+<<< ../../examples/docs/advanced/67-curie-antipattern-unknown-prefix.ts
 
 ### Anti-pattern 2: Path: using toAccess on a non-JSON Pointer string
 
-```ts
-import { Path } from 'json-tology';
-
-// ✗ Don't do this — passing a dot-path (JS access notation) instead of a JSON Pointer
-Path.toAccess('items.0.quantity'); // → '["items.0.quantity"]' (treated as one segment)
-
-// ✓ Do this — always pass a valid RFC 6901 JSON Pointer (leading slash, slash-separated)
-Path.toAccess('/items/0/quantity'); // → 'items[0].quantity'
-```
+<<< ../../examples/docs/advanced/68-path-antipattern-non-pointer.ts
 
 ### Anti-pattern 3: Hash: using Hash.value as a cryptographic hash
 
-```ts
-import { Hash } from 'json-tology';
-
-// ✗ Don't do this — FNV-1a is a non-cryptographic hash; do not use for
-// security-sensitive purposes (tokens, signatures, deduplication of untrusted input)
-const token = Hash.value(sensitivePayload); // NOT cryptographically secure
-
-// ✓ Do this — use Hash.value only for cache keys, synthetic schema IDs,
-// or content fingerprints where collision resistance is not required
-// For security: use node:crypto
-import { createHash } from 'node:crypto';
-const safeHash = createHash('sha256').update(JSON.stringify(sensitivePayload)).digest('hex');
-```
+<<< ../../examples/docs/advanced/69-hash-antipattern-cryptographic.ts
 
 ### Anti-pattern 4: Lift: passing Lift quads directly to a native RDF/JS consumer
 
-```ts
-import { Lift } from 'json-tology';
-
-// ✗ Don't do this — Lift.fromQuad returns json-tology's internal QuadInterface shape,
-// which is not an RDF/JS DataFactory quad; passing it to n3.Store.addQuad will fail
-const internal = rdfJsQuads.map(q => Lift.fromQuad(q));
-n3Store.addQuad(internal[0]); // TypeError — not an RDF/JS Quad
-
-// ✓ Do this — use internal quads with json-tology only (fromQuads); for RDF/JS
-// consumers, keep the original RDF/JS quads
-entities.fromQuads('https://bookstore.example/Book', internal); // correct usage
-```
+<<< ../../examples/docs/advanced/70-lift-antipattern-rdfjs-passthrough.ts
 
 ## Comparison
 
