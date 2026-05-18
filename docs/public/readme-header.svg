@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" role="img" aria-label="json-tology — TypeScript types, runtime validation, and OWL ontology output">
+
+  <defs>
+    <linearGradient id="bgGradient" x1="0" y1="0" x2="1280" y2="320" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0E2A2E"/>
+      <stop offset="0.5" stop-color="#0A2024"/>
+      <stop offset="1" stop-color="#08171A"/>
+    </linearGradient>
+
+    <linearGradient id="hexJst" x1="92" y1="36" x2="308" y2="364" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7FE7D8"/>
+      <stop offset="0.5" stop-color="#24A5B5"/>
+      <stop offset="1" stop-color="#08717A"/>
+    </linearGradient>
+
+    <linearGradient id="hexBlue" x1="86" y1="32" x2="314" y2="368" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#58A9E6"/>
+      <stop offset="0.48" stop-color="#317FC4"/>
+      <stop offset="1" stop-color="#3178C6"/>
+    </linearGradient>
+
+    <linearGradient id="hexGrey" x1="86" y1="32" x2="314" y2="368" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F7F7F7"/>
+      <stop offset="0.52" stop-color="#D9DEE3"/>
+      <stop offset="1" stop-color="#8A929A"/>
+    </linearGradient>
+
+    <linearGradient id="hexGreen" x1="86" y1="32" x2="314" y2="368" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5BC371"/>
+      <stop offset="0.5" stop-color="#34A04F"/>
+      <stop offset="1" stop-color="#1E7B36"/>
+    </linearGradient>
+
+    <linearGradient id="hexAmber" x1="86" y1="32" x2="314" y2="368" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F4C97A"/>
+      <stop offset="0.5" stop-color="#C9892B"/>
+      <stop offset="1" stop-color="#8C5A14"/>
+    </linearGradient>
+
+    <linearGradient id="hexPurple" x1="86" y1="32" x2="314" y2="368" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#B393F0"/>
+      <stop offset="0.5" stop-color="#7E5BC4"/>
+      <stop offset="1" stop-color="#5436A4"/>
+    </linearGradient>
+
+    <linearGradient id="hexRose" x1="86" y1="32" x2="314" y2="368" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F0A2A2"/>
+      <stop offset="0.5" stop-color="#D45C5C"/>
+      <stop offset="1" stop-color="#9C3030"/>
+    </linearGradient>
+
+    <filter id="nodeShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000000" flood-opacity="0.42"/>
+    </filter>
+
+    <symbol id="hexCell" viewBox="0 0 400 400" overflow="visible">
+      <path d="M200 24 L352.4 112 L352.4 288 L200 376 L47.6 288 L47.6 112 Z"/>
+      <path d="M200 24 L47.6 112 L112 149 L200 98 Z" fill="#FFFFFF" opacity="0.16"/>
+      <path d="M200 24 L352.4 112 L288 149 L200 98 Z" fill="#FFFFFF" opacity="0.08"/>
+      <path d="M47.6 112 L112 149 L200 376 L47.6 288 Z" fill="#000000" opacity="0.14"/>
+      <path d="M352.4 112 L288 149 L200 376 L352.4 288 Z" fill="#000000" opacity="0.20"/>
+      <path d="M200 24 L352.4 112 L352.4 288 L200 376 L47.6 288 L47.6 112 Z" fill="none" stroke="#FFFFFF" stroke-width="6" opacity="0.45"/>
+    </symbol>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="320" fill="url(#bgGradient)"/>
+
+  <!--
+    Seven-cluster hex motif (compact). Cluster centered at (170, 160) with
+    scale 0.205 so each hex spans ~62 wide / ~72 tall and the full
+    7-cluster fits inside a 280×280 footprint to the left of the wordmark.
+  -->
+  <g filter="url(#nodeShadow)">
+    <g transform="translate(129, 121) scale(0.205)"><use href="#hexCell" fill="url(#hexJst)"/></g>
+    <g transform="translate(191, 121) scale(0.205)"><use href="#hexCell" fill="url(#hexBlue)"/></g>
+    <g transform="translate(160, 175) scale(0.205)"><use href="#hexCell" fill="url(#hexAmber)"/></g>
+    <g transform="translate(98, 175) scale(0.205)"><use href="#hexCell" fill="url(#hexGreen)"/></g>
+    <g transform="translate(67, 121) scale(0.205)"><use href="#hexCell" fill="url(#hexRose)"/></g>
+    <g transform="translate(98, 67) scale(0.205)"><use href="#hexCell" fill="url(#hexGrey)"/></g>
+    <g transform="translate(160, 67) scale(0.205)"><use href="#hexCell" fill="url(#hexPurple)"/></g>
+  </g>
+
+  <!-- Hex labels -->
+  <g font-family="Arial, Helvetica, sans-serif" font-weight="700" text-anchor="middle" fill="#FFFFFF">
+    <text x="170" y="166" font-size="20" letter-spacing="-1">JST</text>
+    <text x="232" y="164" font-size="13" letter-spacing="-0.5">TS</text>
+    <text x="201" y="218" font-size="11" letter-spacing="-0.3">JSON</text>
+    <text x="139" y="218" font-size="12" letter-spacing="-0.3">VAL</text>
+    <text x="108" y="164" font-size="13" letter-spacing="-0.3">RDF</text>
+    <text x="139" y="110" font-size="13" letter-spacing="-0.3">W3C</text>
+    <text x="201" y="110" font-size="11" letter-spacing="-0.3">NODE</text>
+  </g>
+
+  <!-- Wordmark + version pill + tagline -->
+  <g transform="translate(360, 116)">
+    <text x="0" y="0" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="800" letter-spacing="-1.8" fill="#DDFBFF">json-tology</text>
+    <!-- Version pill flush right of wordmark -->
+    <g transform="translate(440, -42)">
+      <rect x="0" y="0" rx="20" ry="20" width="160" height="40" fill="#08717A" stroke="#7FE7D8" stroke-width="1.5"/>
+      <text x="80" y="27" font-family="'SF Mono', Menlo, Consolas, monospace" font-size="18" font-weight="700" fill="#DDFBFF" text-anchor="middle" letter-spacing="0.5">v0.9.1</text>
+    </g>
+    <text x="0" y="46" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="500" fill="#7FE7D8" opacity="0.88">TypeScript types · runtime validation · OWL ontology.</text>
+    <text x="0" y="86" font-family="'SF Mono', Menlo, Consolas, monospace" font-size="18" font-weight="500" fill="#BDF6F2" opacity="0.65">Author in JSON Schema. Reason over the graph.</text>
+  </g>
+</svg>

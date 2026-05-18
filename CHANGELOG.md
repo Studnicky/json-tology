@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-05-18
+
+Docs and release-pipeline polish.
+
+### Added
+
+- **Versioned README header.** Replaces the static node-ring banner with a brand-styled 7-cluster hex SVG that carries the current release version in a pill beside the wordmark. The SVG is referenced via `raw.githubusercontent.com` so it renders on the README on GitHub and inside release-note bodies. The 7-cluster matches the sidebar `HexRing` motif on the docs site so the social-preview card, the GitHub README banner, and the live site share one visual identity.
+- **`docs/public/og-image.svg.template`** + **`docs/public/readme-header.svg.template`** — version-stamped sources for the social preview and the README header. Both render the 7-cluster + a version pill that reads the current `package.json#version`.
+- **`scripts/stamp-version.mjs`** reads `package.json#version` and stamps every `docs/public/*.svg.template` into its sibling `.svg` with the current version. `--check` flag is the CI drift guard wired into `publish.yml`'s validate step. The stamp runs automatically before `docs:build` via `predocs:build`.
+- **Release-publish workflow** (`.github/workflows/release.yml`). Fires on any `v*` tag push: verifies each stamped SVG matches the tag, extracts the matching `## [<version>]` section from `CHANGELOG.md`, and creates or updates the GitHub release with a body that embeds the per-tag stamped SVG URL. Historical release pages render the version that was stamped at tag time rather than always-latest. Supports `workflow_dispatch` for manual republish.
+
+### Changed
+
+- **`docs/.vitepress/theme/components/BookstoreGraph.vue`** runs the fcose layout synchronously and calls `fit()` in the same tick as the cytoscape render, so the first paint already shows the laid-out graph instead of clustered pre-layout positions. The previous `cyInstance.one('layoutstop', ...)` + `setTimeout(refit, 250)` race-window workaround is gone.
+
 ## [0.9.0] - 2026-05-18
 
 ### Breaking

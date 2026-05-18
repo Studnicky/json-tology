@@ -12,6 +12,9 @@ const loading = ref(true);
 const selectedNode = ref<{ id: string; schema: unknown; edges: EdgeData[] } | null>(null);
 
 // Keep a reference to destroy on unmount
+interface CyLayoutHandle {
+  run(): void;
+}
 interface CyHandle {
   destroy(): void;
   fit(elements?: unknown, padding?: number): void;
@@ -22,6 +25,7 @@ interface CyHandle {
   userZoomingEnabled(enabled: boolean): void;
   on(event: string, selector: string | ((event: unknown) => void), handler?: (event: unknown) => void): void;
   one(event: string, handler: () => void): void;
+  layout(options: Record<string, unknown>): CyLayoutHandle;
 }
 let cyInstance: CyHandle | null = null;
 
@@ -300,52 +304,46 @@ onMounted(async () => {
           'width': 2
         }
       }
-    ],
-    layout: {
-      name: 'fcose',
-      animate: false,
-      fit: true,
-      padding: 50,
-      quality: 'proof',
-      nodeDimensionsIncludeLabels: true,
-      nodeRepulsion: () => 6500,
-      idealEdgeLength: () => 80,
-      edgeElasticity: () => 0.45,
-      gravity: 0.3,
-      gravityRangeCompound: 1.5,
-      gravityCompound: 1.0,
-      gravityRange: 3.8,
-      numIter: 2500,
-      randomize: false,
-      uniformNodeDimensions: false,
-      packComponents: true,
-      tile: false
-    } as Record<string, unknown>
+    ]
+    // No layout option here — fcose runs synchronously below so re-layout
+    // and fit are guaranteed to fire IMMEDIATELY after the cytoscape render
+    // returns, rather than racing the constructor's deferred layoutstop.
   });
 
-  // Listen for the layout to actually finish before fitting. The cytoscape
-  // constructor returns before the embedded `layout` option's run() emits
-  // `layoutstop`, so an immediate fit() captures whatever positions exist
-  // at construction (often clustered or pre-layout).
+  // Run fcose synchronously (animate: false) and fit the viewport in the
+  // same tick as the cytoscape render, so the first paint already shows
+  // the laid-out graph instead of clustered pre-layout positions.
   function refit(): void {
     if (cyInstance === null) return;
     cyInstance.fit(undefined, 50);
   }
-  (cyInstance as unknown as { one(ev: string, cb: () => void): void }).one('layoutstop', () => {
-    refit();
-    // Defer the zoom-clamp until fit has settled the zoom value.
-    requestAnimationFrame(() => {
-      if (cyInstance !== null) {
-        const fitZoom = cyInstance.zoom();
-        cyInstance.minZoom(fitZoom * 0.25);
-        cyInstance.maxZoom(fitZoom * 6);
-      }
-    });
-  });
-  // Belt-and-suspenders for two cases the layoutstop listener can't cover:
-  // (1) fonts loading after layout completed and shifting node bounds,
-  // (2) a ResizeObserver firing because the sidebar drawer toggled.
-  setTimeout(refit, 250);
+  cyInstance.layout({
+    name: 'fcose',
+    animate: false,
+    fit: true,
+    padding: 50,
+    quality: 'proof',
+    nodeDimensionsIncludeLabels: true,
+    nodeRepulsion: () => 6500,
+    idealEdgeLength: () => 80,
+    edgeElasticity: () => 0.45,
+    gravity: 0.3,
+    gravityRangeCompound: 1.5,
+    gravityCompound: 1.0,
+    gravityRange: 3.8,
+    numIter: 2500,
+    randomize: false,
+    uniformNodeDimensions: false,
+    packComponents: true,
+    tile: false
+  }).run();
+  refit();
+
+  // Clamp zoom range to the just-settled fit value.
+  const fitZoom = cyInstance.zoom();
+  cyInstance.minZoom(fitZoom * 0.25);
+  cyInstance.maxZoom(fitZoom * 6);
+
   if (containerRef.value !== null && typeof ResizeObserver !== 'undefined') {
     const resizeObserver = new ResizeObserver(() => {
       // resize() tells Cytoscape to re-read the container dimensions and
