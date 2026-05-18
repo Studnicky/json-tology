@@ -73,6 +73,7 @@ const anthology = {
     'Cornelia Funke'
   ],
   'inStock': true,
+  // Märchen-Sammelband anthology by Cornelia Funke & Michael Ende
   'isbn': '9783522115070',
   'price': {
     'amount': 22,

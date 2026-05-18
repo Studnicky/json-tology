@@ -39,7 +39,7 @@ import {
 export function runInstantiateBench(): BenchResult[] {
   const results: BenchResult[] = [];
 
-  const registry = new SchemaRegistry();
+  const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
   for (const schema of bookstoreBenchSchemas) {
     registry.set(schema as Record<string, unknown>);

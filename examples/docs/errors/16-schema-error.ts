@@ -11,6 +11,7 @@ import {
 } from '../../../src/index.js';
 
 try {
+  // doc example with synthetic fixture schemas (strict-graph default does not throw because no inline duplicates)
   JsonTology.create({
     'baseIRI': 'https://bookstore.example',
     'schemas': [{ 'type': 'object' }] as const

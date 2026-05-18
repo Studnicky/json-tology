@@ -42,7 +42,7 @@ function toBookView(book: BookV1): BookV1View {
 }
 
 const stored: BookV1 = {
-  'isbn': '9783522202008',
+  'isbn': '9783522128001',
   'legacySku': 'OLD-NES-001',
   'title': 'Die unendliche Geschichte'
 };

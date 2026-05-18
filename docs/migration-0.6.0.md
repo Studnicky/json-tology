@@ -6,6 +6,7 @@
 
 Async transitive `$ref` resolution moves to `JsonTology.prefetch`, which returns a snapshot. `JsonTology.create` is synchronous on every call site and accepts the snapshot through the new `prefetched` option.
 
+<!-- inline-ts-ok: demonstrates removed/legacy loader option on JsonTology.create (which was async); before/after preserved as migration context alongside current prefetch pattern. -->
 ```ts
 // Before
 const jt = await JsonTology.create({
@@ -35,6 +36,7 @@ When `prefetched` is supplied, schemas passed via `schemas` register first; entr
 
 Post-construction loader-driven registration is gone. Build a fresh snapshot with `JsonTology.prefetch` and construct a new instance.
 
+<!-- inline-ts-ok: demonstrates removed/legacy registerAsync method; before/after preserved as migration context. -->
 ```ts
 // Before
 const jt = await JsonTology.create({ baseIRI, loader });
@@ -51,6 +53,7 @@ const jt = JsonTology.create({ baseIRI, prefetched: snapshot });
 
 `register` is gone from `SchemaRegistryInterface`, `JsonTology`, and `FormatRegistryInterface`. The replacement is `set`. The schema is always the first argument; an explicit IRI follows as an optional second arg for non-canonical aliasing. Bulk writes accept an array where each entry is either a schema or a `[schema, iri]` tuple.
 
+<!-- inline-ts-ok: demonstrates removed/legacy register method on JsonTology, SchemaRegistry, and FormatRegistry; before/after preserved as migration context. -->
 ```ts
 // Before
 jt.register(UserSchema);
@@ -73,6 +76,7 @@ Semantics change: `set` replaces silently when the key already exists, matching 
 
 The facade methods `jt.has`, `jt.get`, and `jt.list` are removed. There is one path to registry reads — `jt.registry`, which exposes the read surface of a native `Map`.
 
+<!-- inline-ts-ok: demonstrates removed/legacy jt.has/jt.get/jt.list facade methods; before/after preserved as migration context. -->
 ```ts
 // Before
 jt.has(iri);
@@ -89,6 +93,7 @@ Additional Map-like access points: `jt.registry.values()`, `jt.registry.entries(
 
 Writes also follow `Map`:
 
+<!-- inline-ts-ok: demonstrates removed/legacy map-style jt.registry.set(key, value) overload; current signature is set(schema, iri?) with schema as first argument; preserved as migration context. -->
 ```ts
 jt.registry.set(UserSchema.$id, UserSchema);   // replace; key must equal schema.$id
 jt.registry.delete('urn:User');                 // returns boolean

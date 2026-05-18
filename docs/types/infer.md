@@ -37,7 +37,7 @@ The `addresses` array has `default: []` in the schema - at the type level it rem
 
 <<< ../../examples/docs/types/46-infertype-range-enum-const.ts
 
-Bounded `integer` schemas with both bounds in the 0-50 range automatically produce literal unions. See [Constraint Brands](/constraint-brands#structural-narrowing) for details on integer ranges and multipleOf ranges.
+Bounded `integer` schemas with both bounds in the 0-50 range automatically produce literal unions. See [Constraint Brands](/constraint-brands/narrowing#structural-narrowing) for details on integer ranges and multipleOf ranges.
 
 #### Example 3: Cross-schema `$ref` resolution
 

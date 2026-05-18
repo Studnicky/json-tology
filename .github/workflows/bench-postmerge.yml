@@ -40,16 +40,16 @@ jobs:
       - name: Capture environment metadata
         if: always()
         run: |
-          echo "Runner: ${RUNNER_OS}" > bench/results/run-meta.txt
-          echo "Workflow: ${GITHUB_WORKFLOW}" >> bench/results/run-meta.txt
-          echo "Commit: ${GITHUB_SHA}" >> bench/results/run-meta.txt
-          echo "Ref: ${GITHUB_REF}" >> bench/results/run-meta.txt
+          echo "Runner: ${RUNNER_OS}" > examples/docs/benchmarks/results/run-meta.txt
+          echo "Workflow: ${GITHUB_WORKFLOW}" >> examples/docs/benchmarks/results/run-meta.txt
+          echo "Commit: ${GITHUB_SHA}" >> examples/docs/benchmarks/results/run-meta.txt
+          echo "Ref: ${GITHUB_REF}" >> examples/docs/benchmarks/results/run-meta.txt
 
       - name: Upload bench report artifact
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: bench-results-${{ github.run_id }}
-          path: bench/results/
+          path: examples/docs/benchmarks/results/
           if-no-files-found: error
           retention-days: 90

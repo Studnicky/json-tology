@@ -16,6 +16,7 @@ The `subjectIRI` option on `toQuads` / `fromQuads` call sites is removed. Use `i
 
 The string, `'blank-node'`, and `SkolemizeFnType` overloads are identical - only the option name changes.
 
+<!-- inline-ts-ok: demonstrates removed/legacy subjectIRI option on toQuads; preserved as migration context. -->
 ```ts
 // Before
 jt.toQuads(CustomerSchema, data, { subjectIRI: 'https://example.com/customers/' });
@@ -26,6 +27,7 @@ jt.toQuads(CustomerSchema, data, { iriFor: 'https://example.com/customers/' });
 
 The same rename applies to the `JsonTology.create` constructor option:
 
+<!-- inline-ts-ok: demonstrates removed/legacy subjectIRI option on JsonTology.create; preserved as migration context. -->
 ```ts
 // Before
 JsonTology.create({ baseIRI: '...', subjectIRI: myFn });
@@ -38,6 +40,7 @@ JsonTology.create({ baseIRI: '...', iriFor: myFn });
 
 The `maxDepth` option alias is removed. Use `maxSchemaDepth`. The semantics are identical - the rename aligns the option name with its scope.
 
+<!-- inline-ts-ok: demonstrates removed/legacy maxDepth alias on JsonTology.create; preserved as migration context. -->
 ```ts
 // Before
 JsonTology.create({ baseIRI: '...', maxDepth: 10 });
@@ -60,6 +63,7 @@ The `MaterializationError` code `DATA_DEPTH_EXCEEDED` is removed alongside it.
 
 The `CoercionErrorCodeType` union type is removed. Use `InstantiationErrorCodeType`.
 
+<!-- inline-ts-ok: demonstrates removed/legacy CoercionErrorCodeType union type; compile-time import rename, not a runnable expression. -->
 ```ts
 // Before
 import type { CoercionErrorCodeType } from 'json-tology/types';
@@ -72,6 +76,7 @@ import type { InstantiationErrorCodeType } from 'json-tology/types';
 
 The `CoercionErrorCodeType` *type* is removed and replaced by `InstantiationErrorCodeType`. The `CoercionError` *class* continues to exist and throws code `'COERCION_FAILED'`: it has not been removed. No `CoercionErrorCode` constant object ever existed in the public API; use `InstantiationErrorCode` for code lookup if needed.
 
+<!-- inline-ts-ok: demonstrates removed/legacy CoercionErrorCodeType and non-existent CoercionErrorCode constant; preserved as migration context alongside current InstantiationErrorCode usage. -->
 ```ts
 // Before
 import type { CoercionErrorCodeType } from 'json-tology/types';
@@ -92,6 +97,7 @@ The `make*Schema` free functions are removed. The `BaseTypes` namespace replaces
 | `makeResultSchema(dataSchema)` | `BaseTypes.result(dataSchema)` |
 | `makePageSchema(dataSchema)` | `BaseTypes.page(dataSchema)` |
 
+<!-- inline-ts-ok: demonstrates removed/legacy makeResponseSchema/makeResultSchema/makePageSchema factory functions; BaseTypes.response now requires two arguments (body schema + $id string), so the After snippet is also not directly runnable as shown. -->
 ```ts
 // Before
 import { makeResponseSchema, makeResultSchema, makePageSchema } from 'json-tology';
@@ -106,6 +112,7 @@ const ApiResponse = BaseTypes.response(UserSchema);
 
 `JsonTology.dump`, `JsonTology.fromQuads`, `JsonTology.instantiate`, and `JsonTology.materialize` are now generic over the supplied schema and return the inferred type instead of `unknown`. Callers that previously cast the return value can remove the cast.
 
+<!-- inline-ts-ok: demonstrates removed/legacy unknown return type requiring manual cast; both Before/After shown as migration context illustrating the static generic inference introduced in 0.4.0. -->
 ```ts
 // Before — return was `unknown`, cast required
 const user = JsonTology.instantiate(UserSchema, raw) as User;

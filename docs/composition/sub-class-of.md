@@ -170,5 +170,5 @@ class EBook(Book):
 - [`Compose.extend`](/composition/extend) - property-merging extension (single parent, allOf+$ref shape, no explicit "subclass" semantic)
 - [`Compose.equivalent`](/composition/equivalent) - `owl:equivalentClass` for structurally identical types
 - [`Compose.intersection`](/composition/intersection) - generic `allOf` over multiple schemas
-- [OWL TBox output](/advanced/ontology#entities-totbox)
+- [OWL TBox output](/advanced/ontology#jt-totbox)
 - [Graph-native authoring](/advanced/graph-native-authoring)

@@ -19,7 +19,7 @@ type Book = InferType<typeof BookSchema>;
 //   type Customer = InferType<typeof CustomerSchema>;
 //   type Order    = InferType<typeof OrderSchema>;
 
-const sampleIsbn = '9783522202008';
+const sampleIsbn = '9783522128001';
 
 // At runtime we just hold a placeholder; the value of this example is
 // in the type derivation above.

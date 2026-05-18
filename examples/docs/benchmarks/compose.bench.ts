@@ -168,7 +168,7 @@ export function runComposeBench(): BenchResult[] {
     { 'properties': { 'pages': { 'type': 'integer' } } } as const,
     'urn:bench:ExtBookJt'
   );
-  const extReg = new SchemaRegistry();
+  const extReg = new SchemaRegistry({ 'enableStrictGraph': false });
 
   extReg.set(BaseBookJt);
   extReg.set(ExtBookJt);
@@ -207,7 +207,7 @@ export function runComposeBench(): BenchResult[] {
     ] as const,
     'urn:bench:Shape'
   );
-  const reg = new SchemaRegistry();
+  const reg = new SchemaRegistry({ 'enableStrictGraph': false });
 
   reg.set(CircleJt);
   reg.set(RectJt);
@@ -261,7 +261,7 @@ export function runComposeBench(): BenchResult[] {
     ],
     'urn:bench:BookTagged'
   );
-  const subReg = new SchemaRegistry();
+  const subReg = new SchemaRegistry({ 'enableStrictGraph': false });
 
   subReg.set(BaseBookJt);
   subReg.set(Tagged);

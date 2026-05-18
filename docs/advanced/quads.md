@@ -53,7 +53,7 @@ Set the `graph` field on every emitted quad with `graphIRI`:
 
 <<< ../../examples/docs/advanced/37-toquads-graph-iri.ts
 
-Both options can be paired with registry-level defaults via `JsonTology.create({ iriFor, defaultGraphIRI })`: see [getting started](/getting-started#graph-emission).
+Both options can be paired with registry-level defaults via `JsonTology.create({ iriFor, defaultGraphIRI })`: see [Static helpers - graph emission options](/static-helpers#graph-emission-options).
 
 ## `jt.fromQuads` {#jt-fromquads}
 

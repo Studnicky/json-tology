@@ -19,7 +19,7 @@ const _ok: Closed = {
 // compile error - 'extra' is never
 const _bad: Closed = {
   'extra': true,
-  'name': 'Bob'
+  'name': 'Carl Conrad Coreander'
 } as unknown as Closed;
 
 void 0 as unknown as [typeof _ok, typeof _bad];

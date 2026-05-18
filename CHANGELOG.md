@@ -7,11 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-05-18
+
+### Breaking
+
+- **`SchemaRegistry` defaults flipped to strict-by-default.** `enableStrictGraph`, `enableInlineWarnings`, and `enableDuplicateDetection` now default to `true`. Registering an inline primitive constraint or a structural duplicate of an already-registered schema raises `SchemaError` (`SCHEMA_STRUCTURE_INVALID` / `SCHEMA_DUPLICATE_SHAPE`) at registration time. Pass `'enableStrictGraph': false` to `JsonTology.create({...})` or `new SchemaRegistry({...})` to restore the historical permissive behaviour.
+
+- **`QuadInterface` now uses rdf/js Term objects.** The `subject`, `predicate`, and `graph` fields changed from bare strings to `IriTermType | BnodeTermType | DefaultGraphTermType` per the rdf/js data-model spec. Consumers reading IRI strings must access the new `.value` property: `quad.subject.value` instead of `quad.subject`. The `graph` field is now non-optional (defaults to the singleton `DefaultGraph` term). Use `Terms.iri(...)` / `Terms.blank(...)` / `Terms.literal(...)` / `Terms.defaultGraph()` to construct terms.
+
+- **`RdfJsQuadInterface` removed.** External rdf/js quads now interoperate directly through the updated `QuadInterface`; the legacy bridge type and `Lift.fromQuad` adapter are gone. Use `Lift.fromExternalQuad(rdfQuad)` for adapters that normalise non-prefixed quads coming from external libraries.
+
 ### Library
 
 - Added `JsonSchemaDocumentType` — a structural Draft-2020-12 schema document type (ported from nocturne and extended with json-tology's OWL property characteristics, class axioms, and `jt:*` directives). Replaces `JSONSchema7Definition` from the upstream `json-schema` package as the constraint for every public-API generic (`jt.materialize<TSchema>`, `jt.instantiate<TSchema>`, `Transform.create<TSchema>`, etc.). Schemas declaring `$schema: 'https://json-schema.org/draft/2020-12/schema'` or using post-Draft-07 keywords (`prefixItems`, `unevaluatedProperties`, `dependentSchemas` as a keyword) now satisfy the constraint.
 - Added `jt.addTransform<TSchema, TOut>(schema, fns)` — registry-aware variant of static `Transform.create`. Decode/encode lambda parameter types resolve through `InferSchemaType<TSchema, TSchema, TMap>` so cross-registry `$ref`s (e.g. `{ $ref: 'urn:bookstore:Customer' }` inside a wrapping schema) infer to the full referenced entity rather than `unknown`.
 - Added `Compose.subClassOf` / `Compose.extend` allOf-parent property propagation on `instantiate`. The compiler's `allowedKeysForStrip` now unions own properties with allOf-inherited keys (recursively, resolving cross-graph `$ref`), so coercion no longer silently drops parent fields from a subclass schema. The strict `additionalProperties: false` validation error continues to use the own-only set per JSON Schema semantics. The materializer walks the same effective-property set so `fillImplicitProperties` populates parent slots that were missing from the input.
+
+### Tooling
+
+- Added `@types/n3` as a devDependency for rdf/js typing across the ontology and SHACL serialization modules.
 
 ### Docs / examples
 
@@ -25,8 +39,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - New tests: `test/smoke/bookstoreFixtures.test.ts` validates every fixture against its schema and proves the invariant fires; `test/types/bookstore-axioms.test.ts` pins every OWL axiom at compile time via `AssertEqualType`.
 - Phase 3 docs conversion completed: every inline `\`\`\`ts` block across `docs/**/*.md` is now either a VitePress `<<<` include against a runnable file in `examples/docs/`, an explicitly-marked exemption (`<!-- inline-ts-ok: <reason> -->` for `.d.ts` module augmentation, pseudocode signatures, type-shape illustrations that can't be runnable code), or lives in a historical/meta file (`docs/migration-*.md`, `docs/example-suite-plan.md`, `docs/resume-handoff.md`). The ratchet at `scripts/check-docs-includes.mjs` now enforces a ceiling of **zero** inline blocks under the new exemption rules. Total: 480 runnable example files under `examples/docs/`.
 - Smoke suite `test/smoke/docExamples.test.ts` rewritten to register per-section describes from a synchronous scan, so all 480 example files are now individually verified to import without throwing. Tests run before: 1704 → after: 2002.
-- Bookstore registry exports `bookstoreSchemas` (the readonly schema array used to construct `bookstoreEntities`). An example that needs a relaxation (e.g. `enableTypeCast: true` to demonstrate coercion) seeds a separate registry from `bookstoreSchemas` rather than mutating the canonical one. The design intent is strict-by-default — every graph-integrity gate on, consumers opt out to relax — but the current `enableStrictGraph` / `enableInlineWarnings` / `enableDuplicateDetection` defaults remain `false` for backward compatibility; the flip is tracked as follow-up work because it requires restructuring schemas across tests/examples that rely on the registry silently accepting inline shapes or structural duplicates today.
+- Bookstore registry exports `bookstoreSchemas` (the readonly schema array used to construct `bookstoreEntities`). An example that needs a relaxation (e.g. `enableTypeCast: true` to demonstrate coercion) seeds a separate registry from `bookstoreSchemas` rather than mutating the canonical one.
 - Documented the example-suite contract as invariant #13 in `ARCHITECTURE.md`.
+- SEO stack: OG / Twitter Card meta tags, JSON-LD structured data, and favicon variants added to the docs site.
+- WCAG 2.1 AAA palette applied to the docs site. `npm run build:palette` generates the palette CSS from the source token file.
 
 ## [0.8.0] - 2026-05-15
 
@@ -74,45 +90,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 8 module-scope constant clusters relocated to `src/constants/` (`COMPOSITION`, `STRUCTURAL_HASH`, `SCHEMA_KEYWORDS` appended with `PRIMITIVE_CONSTRAINT_KEYWORDS` and `PRIMITIVE_TYPES`, `XSD_MAPS` appended with `XSD_COERCERS`, `ONTOLOGY_PREDICATES` appended with `CARDINALITY_KINDS`, `SIMPLE_LITERAL_PREDICATES`, `IRI_PREDICATES`).
 - 4 schema-keyword constants added to `src/constants/SCHEMA_KEYWORDS.ts` (`ID_KEYWORD`, `REF_KEYWORD`, `DEFS_KEYWORD`, `SCHEMA_KEYWORD`).
 - `ARCHITECTURE.md` rebuilt with current public API surface and file inventory (214 files enumerated across all modules).
-
-## [0.7.0] - 2026-05-15
-
-- `discriminated union` +39%, `extend + validate` +18%, `intersection` +18%, `extend build` +5%, `convert simple` +5%, `clone nested` +5%, broad +2-4% wins across validate/coerce/clean/diff/encode paths. Aggregate effect of caching production-code state that prior passes left re-allocating per call.
-- `GraphEngine.defaultResolutionContext` is hoisted to a constructor-built `private readonly cachedDefaultResolutionContext` field. Same pattern as Pass-2 `cachedVisitContext` — the per-call object literal with two arrow closures is gone.
-- `Materializer.run` caches two `cachedOverridesNoDefaults` / `cachedOverridesWithDefaults` variants as instance fields. The 6-field overrides object is built twice at construction instead of once per call.
-- `JsonTology.toSchema` holds `GraphSchemaSerializer` as a `private readonly` instance field (matches the `ontologySerializer` / `shaclSerializer` pattern). No more `new GraphSchemaSerializer()` per call.
-- `GraphEngine.validateObject` does one `propertyNodeMap.get(key)` + undefined check instead of `has(key)` then `get(key)`. The double Map lookup in the per-key validation loop is eliminated.
-- `GraphEngine.validateArray` uniqueItems uses a labeled inner loop scanning from `index + 1` instead of `workingValue.slice(index + 1).some(...)`. No per-element slice allocation.
-- `GraphEngine` hoists a module-scope `escape` alias for `SchemaGraphSupport.escapeJsonPointerSegment`, replacing six static-method-call paths inside per-property loops.
-- `SchemaRegistry.engine` hoists `lookupGraph` to a `private readonly` field built in the constructor. Conditional engine-options fields use direct guarded assignments instead of three nested object spreads.
-- `SchemaRegistry` adds `hasEmbeddedIds` and `hasComputedFields` flags on `SchemaRegistryEntryInterface`, computed once at registration. `engine()` returns a frozen `EMPTY_EMBEDDED_MAP` sentinel when `hasEmbeddedIds === false`. `instantiate` skips `computedStore.getMap` allocation when `hasComputedFields === false`.
-- `Curie.expand` memoizes the prefix-expansion result. Prefixes are constructor-injected and immutable; the cache is valid for the Curie's lifetime.
-- `SchemaCompilerPlan` hoists module-scope `ALWAYS_TRUE_CHECK`, `ALWAYS_FALSE_CHECK`, `TRUE_VALIDATOR`, `FALSE_VALIDATOR` singletons. Boolean-schema compile paths reference the singletons instead of allocating fresh `() => true` / `() => false` closures.
-- `SchemaCompilerPlan` replaces `[...sem.allOf, ...sem.anyOf, ...sem.oneOf]` with three sequential `for...of` loops in `nodeSupportsCompilation`.
-- `SchemaCompilerPlan` flat-object fast path uses `sem.required.includes(name)` and `sem.properties.has(key)` directly instead of materializing fresh Sets per compile-node.
-- `RefDecoder.walkAdditionalProperties` calls `semantics.properties.has(key)` directly on the Map instead of allocating a fresh Set from `.keys()`.
-- `GraphEngineDefaults.createImplicitDefaultValue` / `synthesizeZeroValue` split into public wrappers that own the single `Set<string>` cycle-guard allocation and internal recursive functions that take `visited` as a required parameter. Callers that don't need to seed allocate one Set per top-level call instead of one per recursion.
-- `SchemaGraphRelations.pushDependentRequiredRelations` iterates `Object.entries` with a length guard instead of `.filter().forEach()`. `extractRelations` computes `nonNullTypes` once and shares it across `pushPropertyTypeRelations` and `pushUnionTypeRelations`.
-
-### Performance (audit pass 3)
-
-- `intersection` and `extend + validate` benchmarks now measure steady-state validate, not registry construction. The corrected bench measures `intersection` at 1.84M ops/s (was 22K ops/s when the timing loop included `new SchemaRegistry()`) and `extend + validate` at 1.6M ops/s (was 30K).
-- `dumpJson` short-circuits to `JSON.stringify(value)` when the schema has no registered transform decoders and the options carry no active filters. Yields +49% on the `dumpJson nested` scenario.
-- `Dumper.dumpObject` allocates the `knownKeys` Set only when `excludeDefaults === true`.
-- `Predicates.satisfiesFormat` removed. The try/catch indirection exited V8 JIT optimization on the surrounding function and the validator call site was polymorphic. Built-in format validators are now invoked directly at the call site. User-supplied validators that throw are still caught at the single remaining trust boundary in `Scalars.validateFormat`.
-- `VisitComposition.anyOf` lazy-initializes `successfulResults` and pre-allocates the `collectErrors` options sentinel once per call instead of spreading per branch (six spread sites removed across `anyOf`, `oneOf`, `ifThenElse`, `not`).
-- `VisitComposition.oneOf` caches per-variant semantic descriptors in a module-scope `WeakMap` keyed on the oneOf node array. First call builds; subsequent calls read.
-- `Compose.extend` constants `EXTEND_SKIP_KEYS` and `CLASS_AXIOM_BODY_SKIP_KEYS` hoisted to `src/constants/COMPOSITION.ts`.
-- `Lift.findPropertyQuads` consumes a per-subject predicate index built once per `liftSubject` call when the subject has more than 3 properties, replacing two per-property `.filter()` passes with Map lookups.
-- `JsonLdFormatter` blank-node inlining uses a single-pass copy that skips `@id` during construction (no spread + delete).
-- `Skolemize` UUID fallback uses a 256-entry hex lookup table instead of `toString(16).padStart(2, '0')` per byte.
-
-### Internal (audit pass 3)
-
-- 2 inline interfaces moved to `src/interfaces/` (`RefDecoderRegistry`, `FetchLoaderOptions`).
-- 8 module-scope constant clusters relocated to `src/constants/` (`COMPOSITION`, `STRUCTURAL_HASH`, `SCHEMA_KEYWORDS` appended with `PRIMITIVE_CONSTRAINT_KEYWORDS` and `PRIMITIVE_TYPES`, `XSD_MAPS` appended with `XSD_COERCERS`, `ONTOLOGY_PREDICATES` appended with `CARDINALITY_KINDS`, `SIMPLE_LITERAL_PREDICATES`, `IRI_PREDICATES`).
-- 4 schema-keyword constants added to `src/constants/SCHEMA_KEYWORDS.ts` (`ID_KEYWORD`, `REF_KEYWORD`, `DEFS_KEYWORD`, `SCHEMA_KEYWORD`).
-- `ARCHITECTURE.md` rebuilt with current public API surface and file inventory across all `src/` modules.
 
 ## [0.7.0] - 2026-05-15
 

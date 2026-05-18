@@ -40,9 +40,9 @@ type SafeBook = NonDeprecatedSchemaType<typeof _BookV1Schema>;
 
 // Both resolve to the same object shape today.
 const sample: SafeBook = {
-  'isbn': '9783522202008',
+  'isbn': '9783522128001',
   'title': 'Die unendliche Geschichte'
 };
 const sampleAlt: SafeBookHandRolled = sample;
 
-console.assert(sampleAlt.isbn === '9783522202008');
+console.assert(sampleAlt.isbn === '9783522128001');

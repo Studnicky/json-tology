@@ -246,4 +246,4 @@ Add `## [Unreleased]` block with:
 2. Each phase ends with `npm run test:all` + `npm run type-check` + `npm run lint` green.
 3. Sub-agents (sonnet) handle individual items; parallel where the file sets are disjoint, serial where they touch the same file.
 4. After each item: commit with a conventional message (`perf:`, `refactor:`, `chore:`).
-5. The audit findings document is `docs/audit-2026-05-14-plan.md` (this file). It is the source of truth; updates happen in place (no deltas).
+5. The audit findings document is `planning/audit-2026-05-14-plan.md` (this file). It is the source of truth; updates happen in place (no deltas).

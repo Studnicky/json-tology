@@ -1,6 +1,6 @@
 {
   "name": "json-tology",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "One source of truth for TypeScript types, runtime validation, coercion, and OWL ontology output. Author in JSON Schema; share with any backend; reason over the graph.",
   "type": "module",
   "main": "./dist/index.js",
@@ -71,13 +71,17 @@
     "bench:flame": "0x --output-dir .flame -- node --import tsx/esm examples/docs/benchmarks/run.ts"
   },
   "keywords": [
+    "coercion",
+    "json-ld",
     "json-schema",
-    "validation",
-    "type-system",
     "ontology",
-    "semantic-web",
+    "owl",
     "rdf",
-    "jsonld"
+    "semantic-web",
+    "shacl",
+    "type-inference",
+    "type-system",
+    "validation"
   ],
   "author": "Studnicky (https://github.com/Studnicky)",
   "license": "MIT",

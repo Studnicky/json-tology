@@ -31,6 +31,7 @@ function registerChecked<T>(schema: DefaultAlignedType<T>): void {
   // DefaultAlignedType<T> ensures the schema never reaches this
   // function when its defaults are misaligned — the call site itself
   // becomes a compile error in that case.
+  // doc example with synthetic fixture schemas (strict-graph default does not throw because no inline duplicates)
   const jt = JsonTology.create({ 'baseIRI': 'https://bookstore.example' });
 
   jt.registry.set(schema as Record<string, unknown>);

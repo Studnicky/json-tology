@@ -1,7 +1,5 @@
 .flame
 .git
-*.d.ts.map
-*.js.map
 *.map
 dist
 node_modules

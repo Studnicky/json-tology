@@ -9,7 +9,7 @@
  * TypeScript example must originate from a runnable example file so
  * the docs and the runtime stay in lockstep.
  *
- * Three kinds of inline `\`\`\`ts` blocks are exempt from the count:
+ * Two kinds of inline `\`\`\`ts` blocks are exempt from the count:
  *
  *   1. Blocks inside a `::: code-group` ... `:::` block. These exist
  *      to compare json-tology with peer libraries (zod / valibot /
@@ -18,13 +18,15 @@
  *
  *   2. Blocks immediately preceded by an HTML comment of the form
  *      `<!-- inline-ts-ok: <reason> -->`. The marker carries a human
- *      rationale (`.d.ts module augmentation`, `pseudocode signature`,
- *      `type-shape illustration`, etc.) for why the block cannot be a
- *      runnable example file.
+ *      rationale for why the block cannot be a runnable example file —
+ *      e.g. `demonstrates removed/legacy <api>`, `pseudocode signature`,
+ *      `compile-time import rename, not a runnable expression`, etc.
+ *      Migration pages use this marker for every block: each before/after
+ *      pair references a removed API and cannot be compiled as-is.
  *
- *   3. Files matching `EXEMPT_FILE_PATTERNS` — historical migration
- *      guides and planning/handoff documents that describe a snapshot
- *      in time rather than the current API surface.
+ * There are no file-pattern exemptions. Every file in docs/ is subject
+ * to the ceiling; blocks that cannot be runnable carry the inline-ts-ok
+ * marker with an explicit rationale.
  *
  * Exit status:
  *   0 — under the ceiling
@@ -48,19 +50,15 @@ const REPO_ROOT = join(SCRIPT_DIR, '..');
 const DOCS_ROOT = join(REPO_ROOT, 'docs');
 
 // Ratchet ceiling: docs/**\/*.md may carry at most this many inline ```ts
-// blocks that are NOT inside a code-group, NOT carrying an
-// `inline-ts-ok` exemption marker, and NOT in an exempt file.
+// blocks that are NOT inside a code-group and NOT carrying an
+// `inline-ts-ok` exemption marker. There are no file-pattern exemptions —
+// every block in every file must be either a `<<<` include or marked.
 const INLINE_TS_CEILING = 0;
 
-// Files exempt from the count. Historical migration guides document past
-// API behaviour and pin to a specific release; their inline snippets are
-// not part of the current authoring surface. Planning/handoff documents
-// describe project state at a moment in time and are not API references.
-const EXEMPT_FILE_PATTERNS = [
-  /^docs\/migration-\d+\.\d+\.\d+\.md$/,
-  /^docs\/example-suite-plan\.md$/,
-  /^docs\/resume-handoff\.md$/
-];
+// No file-pattern exemptions. All migration pages have been processed:
+// every inline block either carries an `inline-ts-ok` marker (with rationale
+// naming the removed/legacy API) or was converted to a runnable example file.
+const EXEMPT_FILE_PATTERNS = [];
 
 const INLINE_OK_MARKER = /<!--\s*inline-ts-ok:\s*([^>]*?)\s*-->/;
 

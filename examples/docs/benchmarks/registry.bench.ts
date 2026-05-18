@@ -34,7 +34,7 @@ export function runRegistryBench(): BenchResult[] {
   section('registry — cold: register schemas + first validate');
 
   results.push(bench('cold first validate', 'json-tology', () => {
-    const reg = new SchemaRegistry();
+    const reg = new SchemaRegistry({ 'enableStrictGraph': false });
 
     for (const schema of bookstoreBenchSchemas) {
       reg.set(schema as Record<string, unknown>);
@@ -68,7 +68,7 @@ export function runRegistryBench(): BenchResult[] {
   section('registry — warm: cached validate (steady state)');
 
   // Warm registries
-  const reg = new SchemaRegistry();
+  const reg = new SchemaRegistry({ 'enableStrictGraph': false });
 
   for (const schema of bookstoreBenchSchemas) {
     reg.set(schema as Record<string, unknown>);

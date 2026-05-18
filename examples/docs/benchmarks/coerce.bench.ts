@@ -36,7 +36,10 @@ import {
 export function runCoerceBench(): BenchResult[] {
   const results: BenchResult[] = [];
 
-  const registry = new SchemaRegistry({ 'castTypes': true });
+  const registry = new SchemaRegistry({
+    'castTypes': true,
+    'enableStrictGraph': false
+  });
 
   for (const schema of bookstoreBenchSchemas) {
     registry.set(schema as Record<string, unknown>);

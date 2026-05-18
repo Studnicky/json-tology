@@ -21,6 +21,7 @@ const PrimaryIsbnSchema = Compose.equivalent(IsbnSchema, {
   'description': 'The canonical ISBN used for catalog indexing'
 });
 
+// doc example with synthetic fixture schemas (strict-graph default does not throw because no inline duplicates)
 const jt = JsonTology.create({
   'baseIRI': 'https://bookstore.example',
   'schemas': [

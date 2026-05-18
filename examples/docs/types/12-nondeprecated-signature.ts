@@ -37,9 +37,9 @@ const _BookV1Schema = {
 type BookView = NonDeprecatedSchemaType<typeof _BookV1Schema>;
 
 const view: BookView = {
-  'isbn': '9783522202008',
+  'isbn': '9783522128001',
   'title': 'Die unendliche Geschichte'
 };
 
-console.assert(view.isbn === '9783522202008');
+console.assert(view.isbn === '9783522128001');
 console.assert(!('legacySku' in view));

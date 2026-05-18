@@ -75,7 +75,7 @@ These options are configured via module augmentation in a `.d.ts` file, not thro
 |------|---------|---------|
 | `tightStringLengths` | `false` | <Badge type="info" text="Compile-time" /> Narrow strings with `minLength`/`maxLength` bounds within 8 to fixed-length template literals. Opt in with `declare module 'json-tology/types' { interface JsonTologyTypeConfigInterface { 'tightStringLengths': true } }`. |
 
-See [Constraint brands - tightStringLengths](/constraint-brands#tightstringlengths-opt-in-narrowing) for the full reference.
+See [Constraint brands - tightStringLengths](/constraint-brands/narrowing#tightstringlengths-opt-in-narrowing) for the full reference.
 
 ### Graph emission options
 

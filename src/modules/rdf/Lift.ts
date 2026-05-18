@@ -417,8 +417,12 @@ function liftInstancesImpl(
  * - XSD datatype full IRIs → `xsd:localName`
  * - Literal values are coerced from string by XSD datatype
  *
- * The returned object satisfies QuadInterface structurally; `equals()` methods
- * delegate to the external term objects if present or return simple value comparisons.
+ * All term slots on the returned quad are constructed through the project's
+ * `Terms` factory (`Terms.iri`, `Terms.blank`, `Terms.literal`, `Terms.defaultGraph`).
+ * Equality semantics therefore follow the rdf/js spec as implemented by
+ * `src/modules/rdf/Terms.ts` — `equals()` compares `termType` and `value`
+ * (plus `datatype` and `language` for literals) on the normalised term objects,
+ * not on whatever shape the external library originally produced.
  */
 interface ExternalRdfJsQuadShape {
   'object': { 'datatype'?: { 'value': string };

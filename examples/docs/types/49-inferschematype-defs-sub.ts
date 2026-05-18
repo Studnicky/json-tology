@@ -45,8 +45,8 @@ type FeaturedBook = InferSchemaType<
 
 const pick: FeaturedBook = {
   'badge': 'staff-pick',
-  'isbn': '9783522202008'
+  'isbn': '9783522128001'
 };
 
 console.assert(pick.badge === 'staff-pick');
-console.assert(pick.isbn === '9783522202008');
+console.assert(pick.isbn === '9783522128001');

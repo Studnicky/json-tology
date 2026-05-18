@@ -88,4 +88,4 @@ The `'blank-node'` registry-level default is re-instantiated on every call so th
 
 - [RDF round-trip with `toQuads` / `fromQuads`](/advanced/quads) - the projection API
 - [Graph concepts](/advanced/graph-concepts) - canonical graph structure
-- [Getting started - graph emission](/getting-started#graph-emission) - registry-level options
+- [Static helpers - graph emission options](/static-helpers#graph-emission-options) - registry-level options

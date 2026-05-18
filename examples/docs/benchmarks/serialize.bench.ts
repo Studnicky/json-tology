@@ -95,6 +95,7 @@ export function runSerializeBench(): BenchResult[] {
   // -------------------------------------------------------------------------
   const jt = JsonTology.create({
     'baseIRI': 'urn:bench:serialize',
+    'enableStrictGraph': false,
     'schemas': [
       ...bookstoreBenchSchemas,
       EventSchemaJt

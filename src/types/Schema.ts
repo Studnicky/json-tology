@@ -106,17 +106,22 @@ export type JsonSchemaTypeNameType
  * json-tology's OWL property characteristics, class axioms, and `jt:*`
  * directives.
  *
+ * Models the full Draft-2020-12 keyword set (`prefixItems`,
+ * `unevaluatedProperties`, `unevaluatedItems`, `dependentSchemas`,
+ * `dependentRequired`, `$dynamicAnchor`, `$dynamicRef`) plus
+ * json-tology extensions: OWL 2 property characteristics (`functional`,
+ * `inverseFunctional`, `transitive`, `symmetric`, `asymmetric`,
+ * `reflexive`, `irreflexive`, `inverseOf`), class axioms
+ * (`equivalentTo`, `disjointWith`), RDFS domain/range annotations, and
+ * `jt:*` directives (`jt:computed`, `jt:frozen`, `jt:strict`,
+ * `jt:config`, `jt:restrictions`). Draft-07 keywords removed in
+ * 2020-12 (`definitions`, `dependencies`, `additionalItems`, the array
+ * form of `items`, the boolean form of
+ * `exclusiveMaximum`/`exclusiveMinimum`) are intentionally absent.
+ *
  * Used as the constraint for public API generics
  * (`jt.materialize<TSchema>`, `Transform.create<TSchema>`,
- * `jt.instantiate<TSchema>`, etc.) so the type system accepts schemas
- * declaring `$schema: 'https://json-schema.org/draft/2020-12/schema'` or
- * using Draft-2020-12 keywords (`prefixItems`, `unevaluatedProperties`,
- * `dependentSchemas` as a keyword, etc.) that the upstream
- * `JSONSchema7Definition` interface from the `json-schema` package
- * doesn't model. Draft-07 carry-overs that 2020-12 removed
- * (`definitions`, `dependencies`, `additionalItems`, the array form of
- * `items`, the boolean form of `exclusiveMaximum`/`exclusiveMinimum`)
- * are intentionally absent.
+ * `jt.instantiate<TSchema>`, etc.).
  *
  * Specs:
  *   https://json-schema.org/draft/2020-12/json-schema-core
@@ -233,12 +238,11 @@ export interface JsonSchemaDocumentObjectType {
 }
 
 /**
- * A JSON Schema document — either the structural object above or one of
- * the boolean shortcuts (`true` accepts everything, `false` rejects
- * everything). Used as the public-API constraint for `TSchema` generics
- * in `JsonTology` methods so consumers can pass any Draft-2020-12 schema
- * literal without the upstream `JSONSchema7Definition` type rejecting
- * post-Draft-07 keywords.
+ * A JSON Schema document — either the structural object defined by
+ * `JsonSchemaDocumentObjectType` or one of the boolean shortcuts
+ * (`true` accepts every instance, `false` rejects every instance).
+ * Used as the public-API constraint for `TSchema` generics in
+ * `JsonTology` methods.
  *
  * The `& { readonly '$id': string }` intersection used in named-schema
  * overloads narrows this to the registered-schema case automatically;

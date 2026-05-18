@@ -19,6 +19,7 @@ const AddressSchema = {
   'type': 'object'
 } as const;
 
+// doc example with synthetic fixture schemas (strict-graph default does not throw because no inline duplicates)
 const jt = JsonTology.create({
   'baseIRI': 'https://bookstore.example',
   'schemas': [AddressSchema] as const

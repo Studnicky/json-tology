@@ -26,7 +26,7 @@ export function runCompiledBench(): BenchResult[] {
 
   // Compiled path via registry — register the full canonical bookstore
   // closure so every $ref (Isbn, Money, Address, etc.) resolves.
-  const registry = new SchemaRegistry();
+  const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
   for (const schema of bookstoreBenchSchemas) {
     registry.set(schema as Record<string, unknown>);

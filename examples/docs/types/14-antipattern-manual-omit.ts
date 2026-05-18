@@ -35,7 +35,7 @@ type BookV1ManualCurrent = Omit<InferType<typeof _BookV1Schema>, 'legacySku'>;
 type BookV1Current = NonDeprecatedSchemaType<typeof _BookV1Schema>;
 
 const fresh: BookV1Current = {
-  'isbn': '9783522202008',
+  'isbn': '9783522128001',
   'title': 'Die unendliche Geschichte'
 };
 const manual: BookV1ManualCurrent = fresh;
