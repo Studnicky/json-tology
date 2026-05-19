@@ -3,8 +3,10 @@ import type {
   InstantiationErrorCodeType,
   LoadErrorCodeType,
   MaterializationErrorCodeType,
+  OwlImportErrorCodeType,
   SchemaErrorCodeType
 } from '../types/ErrorCodes.js';
+
 
 export const SchemaErrorCode = {
   'COMPUTED_FN_MISSING': 'COMPUTED_FN_MISSING',
@@ -52,3 +54,11 @@ export const MaterializationErrorCode = {
   'CYCLIC_DATA': 'CYCLIC_DATA',
   'MATERIALIZATION_FAILED': 'MATERIALIZATION_FAILED'
 } as const satisfies Record<string, MaterializationErrorCodeType>;
+
+export const OwlImportErrorCode = {
+  'INVALID_DATATYPE': 'OWL_IMPORT_INVALID_DATATYPE',
+  'MALFORMED_CLASS': 'OWL_IMPORT_MALFORMED_CLASS',
+  'NOT_IMPLEMENTED': 'OWL_IMPORT_NOT_IMPLEMENTED',
+  'UNKNOWN_AXIOM': 'OWL_IMPORT_UNKNOWN_AXIOM',
+  'UNRESOLVED_REF': 'OWL_IMPORT_UNRESOLVED_REF'
+} as const satisfies Record<string, OwlImportErrorCodeType>;

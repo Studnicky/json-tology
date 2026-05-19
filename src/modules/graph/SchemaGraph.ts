@@ -5,10 +5,13 @@ import type {
 } from '../../interfaces/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugin.js';
+import type { QuadInterface } from '../../interfaces/Quad.js';
+import type { PrefixMap } from '../../interfaces/OwlImport.js';
 import { isRecord } from '../data/DataTypes.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { SchemaGraphRelations } from './SchemaGraphRelations.js';
 import { SchemaGraphSupport } from './SchemaGraphSupport.js';
+import { QuadBackedSchemaGraph } from './QuadBackedSchemaGraph.js';
 import type { JsonSchemaType } from '../../types/Schema.js';
 
 export class SchemaGraph implements SchemaGraphInterface {
@@ -175,6 +178,38 @@ export class SchemaGraph implements SchemaGraphInterface {
 
     return graph;
   }
+  /**
+   * fromQuads — structural inverse of OwlProjection.graph().
+   *
+   * Ingests a QuadInterface[] carrying an OWL 2 TBox ontology (JSON-LD quads,
+   * N-Quads, or any rdf/js-compatible source) and returns a SchemaGraphInterface
+   * populated from those quads.
+   *
+   * Axiom envelope:
+   * - Every IRI predicate that OwlProjection emits in the forward direction is
+   *   accepted here (forward-emit ⊆ inverse-accept).
+   * - Phase-1+ dispatchers may extend the inverse beyond what the forward
+   *   projector emits today — all incoming predicates are recorded in
+   *   allRelations() without filtering.
+   *
+   * Limitation:
+   * - Does NOT materialise JSON Schema objects from the quads — that is the
+   *   phase-1 dispatchers' responsibility.
+   * - semantics() returns an empty stub; dispatchers must traverse allRelations().
+   *
+   * @param quads  - Flat array of rdf/js-compatible quads (prefixed or full IRIs).
+   * @param options - Optional baseIRI and additional prefix mappings merged
+   *                  with DEFAULT_PREFIXES.
+   * @returns A SchemaGraphInterface backed by the supplied quads.
+   */
+  public static fromQuads(
+    quads: readonly QuadInterface[],
+    options?: { 'baseIRI'?: string;
+      'prefixes'?: PrefixMap }
+  ): SchemaGraphInterface {
+    return new QuadBackedSchemaGraph(quads, options);
+  }
+
   static resolvePointer(rootSchema: JsonSchemaType, pointer: string): JsonSchemaType {
     return SchemaGraphSupport.resolveSchemaAtPointer(rootSchema, pointer);
   }

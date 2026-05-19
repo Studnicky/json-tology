@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-05-18
+
+OWL 2 TBox importer: `fromTbox` / `JsonTology.fromTbox`.
+
+### Added
+
+- **`JsonTology.fromTbox(jsonLd, options)`** — static helper that reads an OWL 2 TBox (JSON-LD string, compact JSON-LD object, or `QuadInterface[]`) and returns an `OwlImportResult` with reconstructed JSON Schema objects for every declared class, along with invariants, property characteristics, `owl:sameAs` pairs, and named individuals. Uses a transient `OwlImporter` with no registry side-effects.
+
+- **`jt.fromTbox(jsonLd, { register? })`** — instance method equivalent. When `register: true` (the default), all produced schemas are passed to `registry.set()`, invariants and characteristics are applied, and `sameAs` pairs are stored, making the imported vocabulary immediately available for `validate()` / `instantiate()` / `materialize()` calls.
+
+- **`OwlImporter`** — public class (exported from `json-tology/ontology`) that orchestrates the OWL 2 import pipeline. Constructs once and accepts multiple `import()` / `importAsync()` calls. Stateless across calls.
+
+- **`OwlImportError`** — error class thrown when a dispatcher encounters a fatal import condition. Carries `axiomIri` and `subjectIri` for diagnostics. Code values: `OWL_IMPORT_ERROR`, `OWL_IMPORT_NOT_IMPLEMENTED`.
+
+- **`OwlImportResult`** interface — shape returned by both `fromTbox` variants. Fields: `schemas`, `invariants`, `characteristics`, `sameAs`, `individuals`, `unsupported`.
+
+- **Eight axiom dispatchers** under `src/modules/ontology/importDispatch/`:
+  - `ClassAxioms` — `owl:Class`, `rdfs:subClassOf`, `owl:equivalentClass`, `owl:disjointWith`, `owl:complementOf`, `owl:disjointUnionOf`
+  - `ClassExpressions` — `owl:intersectionOf`, `owl:unionOf`, anonymous class expression nodes
+  - `PropertyRestrictions` — `owl:Restriction` with `owl:someValuesFrom`, `owl:allValuesFrom`, `owl:minCardinality`, `owl:maxCardinality`
+  - `Properties` — `owl:ObjectProperty`, `owl:DatatypeProperty` with `rdfs:domain` / `rdfs:range` → JSON Schema `properties` entries
+  - `Characteristics` — `owl:FunctionalProperty`, `owl:InverseFunctionalProperty`, `owl:TransitiveProperty`, `owl:SymmetricProperty`, `owl:AsymmetricProperty`, `owl:ReflexiveProperty`, `owl:IrreflexiveProperty`
+  - `Datatypes` — `owl:oneOf` enumerations → `enum`, XSD datatype range mapping
+  - `Individuals` — `owl:NamedIndividual`, `rdf:type` assertions, data/object property assertions
+  - `Annotations` — `owl:sameAs`, `rdfs:subPropertyOf`
+
+- **Round-trip contract**: `fromTbox ∘ toTbox ≈ identity` on the supported OWL 2 axiom set. A TBox exported by `jt.toTbox()` re-imports with zero `unsupported` entries. Primitive type facets (XSD constraints like `minLength`, `minimum`, `format`) are not encoded in OWL class axioms and are not restored.
+
+- **`docs/advanced/owl-import.md`** — new docs page covering the `fromTbox` API, supported axiom table, limitations, and the round-trip fidelity contract.
+
+- **`examples/docs/advanced/90-owl-import-roundtrip.ts`** — runnable example demonstrating the full import pipeline against the canonical bookstore TBox.
+
+- **Tests**:
+  - `test/integration/owlRoundTrip.test.ts` (renamed from `owlRoundTripScaffold.test.ts`) — full bookstore round-trip with `structurallyEqual` helper; replaces the Phase 0 `it.skip`.
+  - `test/e2e/realWorldOntologyImport.test.ts` — in-line FOAF and DCAT-AP fixtures, validates imported schemas and runs `validate()` against hand-crafted instances.
 ## [0.9.2] - 2026-05-18
 
 OG card and README header visual fix.

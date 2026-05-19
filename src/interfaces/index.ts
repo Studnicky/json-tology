@@ -26,6 +26,7 @@ export type * from './Materializer.js';
 export type * from './MaterializerImpl.js';
 export type * from './ObjectResult.js';
 export type * from './Ontology.js';
+export type * from './OwlImport.js';
 export type * from './Prefetch.js';
 export type * from './PropCheck.js';
 export type * from './Quad.js';

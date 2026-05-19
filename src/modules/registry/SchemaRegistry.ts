@@ -47,6 +47,7 @@ import { Resolver } from '../data/Resolver.js';
 import { SchemaCompiler } from '../validation/SchemaCompiler.js';
 import { SchemaError } from '../../errors/SchemaError.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
+import { SchemaIri } from '../graph/SchemaIri.js';
 import { Transform } from '../transform/Transform.js';
 import { ValidationErrors } from '../../errors/ValidationErrors.js';
 
@@ -167,6 +168,86 @@ export class SchemaRegistry implements SchemaRegistryInterface {
           : undefined;
       }
     });
+  }
+
+  /**
+   * Apply an OWL 2 property characteristic to an already-registered class schema.
+   *
+   * Called by the fromTbox() registration path for each entry in
+   * OwlImportResult.characteristics. Parses the property IRI to locate the
+   * owning class and property name, then re-registers the class schema with
+   * the characteristic boolean flag added to the relevant property entry.
+   *
+   * No-ops when:
+   *   - The property IRI has no `#` fragment (cannot derive class + property name).
+   *   - The owning class is not registered.
+   *   - The characteristic name is not one of the seven OWL 2 property characteristics.
+   *
+   * The characteristic name must match one of the values emitted by the
+   * Characteristics dispatcher: 'Functional' | 'InverseFunctional' |
+   * 'Transitive' | 'Symmetric' | 'Asymmetric' | 'Reflexive' | 'Irreflexive'.
+   *
+   * @param propertyIri - Full property IRI, e.g. `urn:bookstore:Review#customerId`.
+   * @param characteristic - OWL 2 characteristic name string from the dispatcher.
+   */
+  public addCharacteristic(propertyIri: string, characteristic: string): void {
+    const CHARACTERISTIC_TO_KEY: Readonly<Partial<Record<string, string>>> = {
+      'Asymmetric': 'asymmetric',
+      'Functional': 'functional',
+      'InverseFunctional': 'inverseFunctional',
+      'Irreflexive': 'irreflexive',
+      'Reflexive': 'reflexive',
+      'Symmetric': 'symmetric',
+      'Transitive': 'transitive'
+    };
+
+    const schemaKey = CHARACTERISTIC_TO_KEY[characteristic];
+
+    if (schemaKey === undefined) {
+      return;
+    }
+
+    const parts = SchemaIri.splitSubject(propertyIri);
+
+    if (parts.fragment === null) {
+      return;
+    }
+
+    const classIri = parts.base;
+    const propertyName = parts.fragment;
+
+    const existing = this.get(classIri);
+
+    if (existing === undefined) {
+      return;
+    }
+
+    const existingProperties = isRecord(existing.properties) ? existing.properties : {};
+    const existingProp = isRecord(existingProperties[propertyName]) ? existingProperties[propertyName] : {};
+
+    // Skip if the characteristic is already set (idempotent)
+    if (existingProp[schemaKey] === true) {
+      return;
+    }
+
+    const patchedProp = {
+      ...existingProp,
+      [schemaKey]: true
+    };
+
+    const patchedProperties = {
+      ...existingProperties,
+      [propertyName]: patchedProp
+    };
+
+    const patchedSchema: Record<string, unknown> = {
+      ...existing,
+      'properties': patchedProperties
+    };
+
+    // Delete first so the re-registration doesn't trigger SCHEMA_DUPLICATE_ID.
+    this.delete(classIri);
+    this.set(patchedSchema);
   }
 
   public addInvariant(schemaId: string, invariant: InvariantInterface): void {

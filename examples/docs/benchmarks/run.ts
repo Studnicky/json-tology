@@ -29,6 +29,7 @@ import { runTransformBench } from './transform.bench.js';
 import { runComposeBench } from './compose.bench.js';
 import { runSerializeBench } from './serialize.bench.js';
 import { runRegistryBench } from './registry.bench.js';
+import { runOwlImportBench } from './owlImport.bench.js';
 
 interface SuiteEntry {
   'family': string;
@@ -88,6 +89,11 @@ const suites: SuiteEntry[] = [
     'family': 'Compiled vs Interpreted',
     'name': 'compiled',
     'results': runCompiledBench()
+  },
+  {
+    'family': 'OWL Import',
+    'name': 'owlImport',
+    'results': runOwlImportBench()
   }
 ];
 
