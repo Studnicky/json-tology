@@ -20,6 +20,7 @@ import {
 import {
   describe, it
 } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import { JsonTology } from '../../src/index.js';
 import { generateTypeScript } from '../../src/modules/codegen/OwlCodegen.js';
 import { bookstoreEntities } from '../../examples/docs/bookstore/index.js';
@@ -150,11 +151,11 @@ void describe('OwlCodegen round-trip integration', () => {
 
     writeFileSync(tsconfigPath, JSON.stringify(tsconfig, null, 2), 'utf8');
 
-    const projectRoot = resolve('/Users/studs/Workspace/json-tology');
+    const projectRoot = resolve(fileURLToPath(new URL('../..', import.meta.url)));
 
     try {
       execFileSync(
-        'node',
+        process.execPath,
         [
           '--import',
           'tsx',
