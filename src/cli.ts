@@ -32,6 +32,7 @@ import type { VizOptionsInterface } from './interfaces/VizOptions.js';
 import { DEFAULT_PREFIXES } from './constants/PREFIXES.js';
 import { SchemaError } from './errors/SchemaError.js';
 import { CliWriter } from './modules/cli/CliWriter.js';
+import { generateFromTbox } from './owl-gen.js';
 
 const writer = CliWriter.default;
 
@@ -401,6 +402,59 @@ program
     'output': string;
     'schema': string }) => {
     await runViz(opts);
+  });
+
+program
+  .command('owl-gen <input>')
+  .description('Generate TypeScript registry source from an OWL 2 TBox JSON-LD file')
+  .requiredOption('--out <file>', 'Output TypeScript file path')
+  .option('--name <registryConst>', 'Registry constant name (e.g. foaf → foafSchemas + foaf)')
+  .option('--base-iri <iri>', 'Base IRI override (default: derived from JSON-LD @context)')
+  .action((input: string, opts: { 'baseIri'?: string;
+    'name'?: string;
+    'out': string }) => {
+    const inputPath = resolve(input);
+
+    if (!existsSync(inputPath)) {
+      writer.err(`owl-gen: input file not found: ${inputPath}`);
+      writer.exit(1);
+    }
+
+    const raw = readFileSync(inputPath, 'utf8');
+    let parsedJsonLd: object | undefined;
+
+    try {
+      parsedJsonLd = JSON.parse(raw) as object;
+    } catch (error) {
+      writer.err(`owl-gen: failed to parse JSON-LD input: ${String(error)}`);
+      writer.exit(1);
+    }
+
+    if (parsedJsonLd === undefined) {
+      writer.exit(1);
+    }
+
+    const jsonLd: object = parsedJsonLd as object;
+    const outPath = resolve(opts.out);
+    const outDir = dirname(outPath);
+
+    if (!existsSync(outDir)) {
+      mkdirSync(outDir, { 'recursive': true });
+    }
+
+    try {
+      generateFromTbox({
+        'baseIRI': opts.baseIri,
+        'input': jsonLd,
+        'name': opts.name,
+        'output': outPath,
+        'sourceLabel': inputPath
+      });
+      writer.out(`owl-gen: wrote ${outPath}`);
+    } catch (error) {
+      writer.err(`owl-gen: code generation failed: ${String(error)}`);
+      writer.exit(1);
+    }
   });
 
 try {
