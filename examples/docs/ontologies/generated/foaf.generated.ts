@@ -1,6 +1,6 @@
 // ============================================================
 // AUTO-GENERATED — DO NOT EDIT
-// Generated: 2026-05-19T14:19:33.160Z
+// Generated: 2026-05-19T16:53:58.879Z
 // Source:    examples/docs/ontologies/foaf-subset.jsonld
 // ============================================================
 

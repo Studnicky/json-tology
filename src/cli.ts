@@ -406,13 +406,17 @@ program
 program
   .command('owl-gen <input>')
   .description('Generate TypeScript registry source from an OWL 2 JSON-LD ontology')
-  .requiredOption('--out <file>', 'Output .ts file path')
+  .requiredOption('--out <path>', 'Output path: a .ts file (single-file mode) or a directory without .ts extension (registry-directory mode)')
   .option('--name <name>', 'Registry constant name (defaults to the input filename basename)')
   .option('--base-iri <iri>', 'Override the base IRI used in the generated registry')
+  .option('--mode <mode>', 'Emission mode: "single" (default when --out ends in .ts) or "directory"')
   .action(async (input: string, opts: { 'baseIri'?: string;
+    'mode'?: string;
     'name'?: string;
     'out': string }) => {
-    const { generateFromTbox } = await import('./owl-gen.js');
+    const {
+      generateFromTbox, generateRegistryDirectory
+    } = await import('./owl-gen.js');
     const fs = await import('node:fs');
     const path = await import('node:path');
 
@@ -432,15 +436,33 @@ program
     const parsed = JSON.parse(jsonLdSource) as object;
     const inferredName = opts.name ?? basename(input, path.extname(input)).replaceAll(/[^a-zA-Z0-9]+/gu, '_');
 
-    generateFromTbox({
-      ...(opts.baseIri === undefined ? {} : { 'baseIRI': opts.baseIri }),
-      'input': parsed,
-      'name': inferredName,
-      'output': resolve(opts.out),
-      'sourceLabel': input
-    });
+    // Auto-detect mode: explicit --mode flag takes priority; else infer from --out extension.
+    const outPath = opts.out;
+    const isDirectoryMode = opts.mode === 'directory'
+      || (opts.mode !== 'single' && !outPath.endsWith('.ts'));
 
-    writer.out(`Generated ${opts.out} from ${input}`);
+    if (isDirectoryMode) {
+      const outDir = resolve(outPath);
+      const fileResult = generateRegistryDirectory({
+        ...(opts.baseIri === undefined ? {} : { 'baseIRI': opts.baseIri }),
+        'input': parsed,
+        'name': inferredName,
+        'outDir': outDir,
+        'sourceLabel': input
+      });
+
+      writer.out(`Generated registry directory (${fileResult.entityFiles.length} entities + index.ts) → ${outPath}`);
+    } else {
+      generateFromTbox({
+        ...(opts.baseIri === undefined ? {} : { 'baseIRI': opts.baseIri }),
+        'input': parsed,
+        'name': inferredName,
+        'output': resolve(outPath),
+        'sourceLabel': input
+      });
+
+      writer.out(`Generated ${opts.out} from ${input}`);
+    }
   });
 
 try {

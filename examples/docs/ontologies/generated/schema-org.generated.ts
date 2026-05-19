@@ -1,6 +1,6 @@
 // ============================================================
 // AUTO-GENERATED — DO NOT EDIT
-// Generated: 2026-05-19T14:19:33.163Z
+// Generated: 2026-05-19T16:53:58.883Z
 // Source:    examples/docs/ontologies/schema-org-subset.jsonld
 // ============================================================
 

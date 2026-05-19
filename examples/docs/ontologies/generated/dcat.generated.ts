@@ -1,6 +1,6 @@
 // ============================================================
 // AUTO-GENERATED — DO NOT EDIT
-// Generated: 2026-05-19T14:19:33.162Z
+// Generated: 2026-05-19T16:53:58.882Z
 // Source:    examples/docs/ontologies/dcat-subset.jsonld
 //
 // WARNING: IRI name collisions detected. Suffixed names used:

@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-05-19
+
+`owl-gen` now generates a full registry directory — one `entities/<Name>.ts` per OWL class plus an `index.ts` that mirrors the canonical bookstore layout.
+
+### Added
+
+- **CLI registry-directory mode**: `--out foo/` (no `.ts` suffix) or `--mode directory` flag on `owl-gen` triggers directory emission; `--out foo.ts` preserves existing single-file behaviour.
+- **`generateRegistryDirectory(options)`** programmatic API in `json-tology/owl-gen` — writes `entities/<Name>.ts` + `index.ts` to `outDir`, returns entity file metadata.
+- **`generateRegistryFiles(result, options)`** pure in-memory function in `src/modules/codegen/OwlCodegen.ts` — returns entity file sources + `indexSource` without touching the filesystem; shared core used by both single-file and directory modes.
+- **`examples/docs/ontologies/generated-dir/foaf/`**, **`dcat/`**, **`schema-org/`** — committed registry-directory fixtures for each of the three real-ontology subsets; produced by `npm run regen:ontology-fixtures`.
+- **`examples/docs/advanced/95-foaf-registry-dir.ts`**, **`96-dcat-registry-dir.ts`**, **`97-schema-org-registry-dir.ts`** — runnable round-trip examples for registry-directory mode.
+- **`examples/docs/benchmarks/owlCodegenDir.bench.ts`** — `generateRegistryFiles` throughput benchmark for bookstore TBox and minimal 3-class ontology.
+- **`docs/advanced/owl-import.md`** extended with a `## Generating a full registry directory` subsection covering CLI invocation, programmatic API, a `<<<` include of the FOAF registry-dir example, and entity file ↔ canonical bookstore symmetry notes.
+
 ## [0.11.1] - 2026-05-19
 
 Real-ontology codegen round-trip examples for FOAF, DCAT-AP, and schema.org.

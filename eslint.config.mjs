@@ -517,7 +517,8 @@ export default [
       'docs/.vitepress/cache/**',
       'docs/.vitepress/dist/**',
       'eslint.config.mjs',
-      'examples/docs/ontologies/generated/**'
+      'examples/docs/ontologies/generated/**',
+      'examples/docs/ontologies/generated-dir/**'
     ]
   },
 

@@ -172,6 +172,54 @@ This is the simplest option. Every `npm run build` re-generates the file first. 
 - **OWL-induced invariants are not serialised into the generated TypeScript.** Property characteristics (`owl:FunctionalProperty`, `owl:TransitiveProperty`, etc.) and cross-field invariants are recorded in `OwlImportResult.characteristics` and `OwlImportResult.invariants` at runtime. The code generator emits the structural schema only. Register characteristics and invariants programmatically after importing the generated module if you need them at runtime.
 - **Generated files are one-way.** When the source ontology changes, regenerate the TypeScript file and commit the update. Do not hand-edit generated files — they will be overwritten on the next generation run.
 
+## Generating a full registry directory <Badge type="tip" text="v0.12.0+" />
+
+For production canonical domains, the **registry-directory mode** generates the same layout as the canonical bookstore example: one `entities/<Name>.ts` file per OWL class, plus an `index.ts` that imports all entities, constructs the registry, and re-exports all types and schema constants.
+
+**When to use each mode:**
+
+| Mode | When to use |
+|------|-------------|
+| Single-file (`--out foo.ts`) | Quick demos, prototypes, CLI pipelines where one file is easier to handle |
+| Registry-directory (`--out foo/`) | Production canonical domains — mirrors the bookstore layout, each class gets its own file and type export |
+
+The registry-directory output is structurally identical to a hand-authored domain: entity files use `export const <Name>Schema = { ... } as const` and `export type <Name> = InferType<typeof <Name>Schema>`, while `index.ts` constructs `JsonTology.create({ baseIRI, schemas })` in dependency order.
+
+### CLI
+
+```bash
+# Auto-detect: trailing slash or no .ts extension → registry-directory mode
+npx json-tology owl-gen ./foaf.jsonld --out ./src/generated/foaf/
+
+# Explicit mode flag
+npx json-tology owl-gen ./foaf.jsonld --out ./src/generated/foaf --mode directory
+```
+
+### Programmatic API
+
+<!-- inline-ts-ok: API signature pseudocode — optional parameters use ?: syntax which is not runnable standalone -->
+```ts
+import { generateRegistryDirectory } from 'json-tology/owl-gen';
+
+const result = generateRegistryDirectory({
+  input: jsonLdStringOrObject,  // string | object | QuadInterface[]
+  outDir: './src/generated/foaf',
+  name?: string,                // registry constant name (e.g. 'foaf')
+  baseIRI?: string,
+  sourceLabel?: string,
+});
+// result.entityFiles — [{ path, iri, name }, ...]
+// result.indexFile  — absolute path of the written index.ts
+```
+
+### Runnable examples
+
+<<< ../../examples/docs/advanced/95-foaf-registry-dir.ts
+
+### Entity file ↔ canonical bookstore symmetry
+
+Each generated `entities/<Name>.ts` follows the same convention as `examples/docs/bookstore/entities/<Name>.ts`: a single `export const <Name>Schema = { ... } as const` plus a co-located `export type <Name> = InferType<typeof <Name>Schema>`. Cross-class `$ref`s remain as raw IRI strings inside the schema literal; the registry resolves them at construction time just as it does for hand-authored schemas.
+
 ## Real-ontology round-trip examples <Badge type="tip" text="v0.11.1+" /> {#real-ontology-examples}
 
 The examples below run the full `fromTbox → generateFromTbox → validate` pipeline against three real-world standard vocabularies. Each fixture is a hand-authored concise subset — not the full upstream ontology — so it fits on a page and compiles in milliseconds.
