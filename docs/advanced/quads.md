@@ -106,6 +106,60 @@ For repeated projections, hold onto a `JsonTology` instance.
 
 This capability is unique to json-tology because the runtime representation is already a graph - validation, materialization, and ABox projection all consume the same node and relation structure.
 
+## rdf/js ecosystem interop {#rdfjs-interop}
+
+json-tology produces rdf/js-spec quads directly. No conversion required.
+
+The quad terms produced by `toQuads`, `toTbox`, and `toShacl` are structurally
+compatible with the [rdf/js Data Model Spec](https://rdf.js.org/data-model-spec/):
+
+- `subject` and `predicate` are `NamedNode`-shaped objects (IRI, `.termType: "NamedNode"`, `.equals()`)
+- `graph` is a `NamedNode`-, `BlankNode`-, or `DefaultGraph`-shaped object
+- `object` is a `NamedNode`, `BlankNode`, or literal-shaped object in the common ABox case
+
+The `@rdfjs/types` package is a `dependency` of json-tology (types-only, zero runtime cost),
+so you can import rdf/js interfaces without a separate `npm install @rdfjs/types`.
+
+### Piping to n3.Writer
+
+<!-- inline-ts-ok: ecosystem-interop note — imports n3 and @rdfjs/types which are devDependencies; no runnable example file exists for this cross-package cast pattern -->
+```ts
+import { Writer } from 'n3';
+import type { Quad } from '@rdfjs/types';
+
+const jt = JsonTology.create({ baseIRI: 'https://bookstore.example', schemas: [CustomerSchema] as const });
+const quads = jt.toQuads(CustomerSchema, { id: 'cust-1', name: 'Alice', email: 'alice@example.com' });
+
+// The common ABox case (NamedNode/BlankNode/string literals) is directly compatible.
+// Cast needed only because LiteralTermType.value is `unknown` (project widening).
+const writer = new Writer();
+writer.addQuads(quads as unknown as Quad[]);
+writer.end((_err, result) => console.log(result));
+```
+
+### Terms factory
+
+The in-house `Terms` factory (`src/modules/rdf/Terms.ts`) produces objects that
+are structurally identical to the rdf/js spec with zero runtime indirection. It
+is a drop-in replacement for `@rdfjs/data-model` for the term types used in this
+package. To use a different DataFactory implementation (e.g. `n3.DataFactory`,
+`@rdfjs/data-model`), construct quads directly with that factory and pass them
+into `jt.fromQuads()` — they are accepted as-is because the project's accepted
+shape is the canonical rdf/js term structure.
+
+### Notes on LiteralTermType
+
+`LiteralTermType.value` is typed as `unknown` rather than `string`. This is an
+intentional widening: the internal `Terms.literal(value, options)` factory stores
+raw JS values (number, boolean, etc.) so that `fromQuads` can lift them back into
+typed JS objects without a second coercion step. At the rdf/js boundary, coerce
+with `String(literal.value)`.
+
+For quads produced by `toQuads` that will be piped to a triple store or serializer,
+the cast `as unknown as Quad[]` is safe: the actual runtime values are correct
+rdf/js-shaped objects whose literal `.value` fields contain the serialised string
+form appropriate for the declared XSD datatype.
+
 ## Related
 
 - [`toTbox`](/advanced/ontology#jt-totbox) - class and property declarations (TBox companion to ABox `toQuads`)

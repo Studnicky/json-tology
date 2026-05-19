@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-05-19
+
+### Breaking
+
+- `QuadInterface` (the canonical quad shape returned by `toQuads`, `toTbox`, and `toShacl`) is
+  now documented as structurally aligned with `@rdfjs/types#Quad`. The `IriTermType`,
+  `BnodeTermType`, and `DefaultGraphTermType` in the project's quad terms are now
+  structurally identical to `@rdfjs/types#NamedNode`, `BlankNode`, and `DefaultGraph`
+  respectively. Consumers that performed `instanceof`-checks or nominal-typing assertions
+  against the previous project-owned interfaces may need to update those assertions.
+  Structural consumers (the vast majority) are unaffected.
+
+### Changed
+
+- `@rdfjs/types` moved from `devDependencies` to `dependencies`. This is a types-only
+  package — zero runtime cost — but it is now installed alongside `json-tology` so
+  consumers can import `Quad`, `NamedNode`, etc. from `@rdfjs/types` without a separate
+  installation step.
+- `IriTermType`, `BnodeTermType`, and `DefaultGraphTermType` in `src/types/Quad.ts` are
+  now documented as structurally identical to the corresponding `@rdfjs/types` interfaces.
+  The internal shapes are unchanged; the JSDoc and type descriptions now make the alignment
+  explicit.
+- `LiteralTermType` remains project-owned with `value: unknown` (documented widening of
+  `@rdfjs/types#Literal.value: string`). The widening is required to support the
+  `Lift.fromExternalQuad` coercion path. Consumers piping quads to rdf/js tools should
+  coerce with `String(literal.value)`.
+- All `equals` function signatures in `src/modules/rdf/Terms.ts` updated to accept
+  `null | TermType | undefined` (adding `undefined`) to match the rdf/js spec contract.
+
+### Added
+
+- `docs/advanced/quads.md` — new "rdf/js ecosystem interop" section documenting direct
+  compatibility with n3, rdf-ext, jsonld, @graphy, and rdf-store-stream. Includes a code
+  example for `n3.Writer.addQuads` and notes on the `Terms` factory vs `@rdfjs/data-model`.
+
 ## [0.12.2] - 2026-05-19
 
 Lint zero-baseline follow-up to v0.12.1.

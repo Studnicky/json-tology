@@ -5,8 +5,15 @@
  * Literal, DefaultGraph, and the project-extension List) without requiring
  * @rdfjs/data-model at runtime.
  *
- * Each term carries an `equals(other)` method per the rdf/js Term contract
- * (https://rdf.js.org/data-model-spec/#term-interface).
+ * The factory produces objects assignable to `@rdfjs/types` term interfaces with
+ * zero runtime indirection. `IriTermType`, `BnodeTermType`, and `DefaultGraphTermType`
+ * are direct aliases of the corresponding `@rdfjs/types` interfaces, so the factory
+ * output is directly usable with any rdf/js-compatible library.
+ *
+ * To use a different rdf/js DataFactory implementation (e.g. `@rdfjs/data-model`,
+ * `n3.DataFactory`), construct quads directly with that factory and pass them into
+ * JsonTology methods — they are accepted as-is because the project's accepted
+ * shape is the canonical rdf/js type.
  *
  * Project divergence:
  * - LiteralTermType.value is `unknown` (raw JS value, not serialised string).
@@ -21,26 +28,29 @@ import type {
 
 // ---------------------------------------------------------------------------
 // Equality helpers
+//
+// The `equals` signature accepts `null | undefined` to match the rdf/js spec
+// (https://rdf.js.org/data-model-spec/#term-interface) and handles both.
 // ---------------------------------------------------------------------------
 
-function iriEquals(self: IriTermType, other: null | TermType): boolean {
-  if (other === null) {
+function iriEquals(self: IriTermType, other: null | TermType | undefined): boolean {
+  if (other === null || other === undefined) {
     return false;
   }
 
   return other.termType === 'NamedNode' && other.value === self.value;
 }
 
-function bnodeEquals(self: BnodeTermType, other: null | TermType): boolean {
-  if (other === null) {
+function bnodeEquals(self: BnodeTermType, other: null | TermType | undefined): boolean {
+  if (other === null || other === undefined) {
     return false;
   }
 
   return other.termType === 'BlankNode' && other.value === self.value;
 }
 
-function literalEquals(self: LiteralTermType, other: null | TermType): boolean {
-  if (other === null) {
+function literalEquals(self: LiteralTermType, other: null | TermType | undefined): boolean {
+  if (other === null || other === undefined) {
     return false;
   }
 
@@ -53,16 +63,16 @@ function literalEquals(self: LiteralTermType, other: null | TermType): boolean {
     && other.datatype.value === self.datatype.value;
 }
 
-function defaultGraphEquals(other: null | TermType): boolean {
-  if (other === null) {
+function defaultGraphEquals(other: null | TermType | undefined): boolean {
+  if (other === null || other === undefined) {
     return false;
   }
 
   return other.termType === 'DefaultGraph';
 }
 
-function listEquals(self: ListTermType, other: null | TermType): boolean {
-  if (other === null) {
+function listEquals(self: ListTermType, other: null | TermType | undefined): boolean {
+  if (other === null || other === undefined) {
     return false;
   }
 
@@ -96,7 +106,7 @@ const DEFAULT_GRAPH_SINGLETON: DefaultGraphTermType = Object.freeze({
 export const Terms = {
   blank(value: string): BnodeTermType {
     const term: BnodeTermType = {
-      'equals'(other: null | TermType): boolean {
+      'equals'(other: null | TermType | undefined): boolean {
         return bnodeEquals(term, other);
       },
       'termType': 'BlankNode',
@@ -112,7 +122,7 @@ export const Terms = {
 
   iri(value: string): IriTermType {
     const term: IriTermType = {
-      'equals'(other: null | TermType): boolean {
+      'equals'(other: null | TermType | undefined): boolean {
         return iriEquals(term, other);
       },
       'termType': 'NamedNode',
@@ -124,7 +134,7 @@ export const Terms = {
 
   list(items: readonly QuadObjectType[]): ListTermType {
     const term: ListTermType = {
-      'equals'(other: null | TermType): boolean {
+      'equals'(other: null | TermType | undefined): boolean {
         return listEquals(term, other);
       },
       'items': [...items],
@@ -143,7 +153,7 @@ export const Terms = {
     const language = options?.language ?? '';
     const term: LiteralTermType = {
       datatype,
-      'equals'(other: null | TermType): boolean {
+      'equals'(other: null | TermType | undefined): boolean {
         return literalEquals(term, other);
       },
       language,
