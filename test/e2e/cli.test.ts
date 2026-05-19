@@ -78,14 +78,17 @@ void describe('CLI', () => {
   let outputDir: string;
 
   before(() => {
-    execSync('npm run build', {
-      'cwd': ROOT,
-      'stdio': [
-        'ignore',
-        'pipe',
-        'pipe'
-      ]
-    });
+    // `dist/cli.js` is built by the `pretest:*` lifecycle hooks in
+    // package.json (which call `scripts/ensure-built.mjs`). The CLI tests
+    // assert it exists rather than running a build mid-suite — running
+    // `npm run build` here unconditionally would race against concurrent
+    // tiers in `test:all` because `npm run build` invokes `npm run clean`
+    // first (`rm -rf dist`), and the smoke tier's example imports resolve
+    // `json-tology` → `dist/index.js`.
+    assert.ok(
+      existsSync(join(ROOT, 'dist/cli.js')),
+      'dist/cli.js missing — run `npm run build` (or use `npm test` which runs the pretest hook automatically)'
+    );
   });
 
   beforeEach(() => {

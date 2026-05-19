@@ -18,7 +18,7 @@
 
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import type {
-  OwlImportContext, OwlImportFragment, OwlImportResult, PrefixMap
+  OwlImportContext, OwlImporterOptions, OwlImportFragment, OwlImportResult, PrefixMap
 } from '../../interfaces/OwlImport.js';
 import type { JsonSchemaDocumentObjectType } from '../../types/Schema.js';
 import type { InvariantInterface } from '../../interfaces/Invariant.js';
@@ -412,13 +412,6 @@ const DISPATCHERS: readonly DispatcherFn[] = [
 // ---------------------------------------------------------------------------
 // Public class
 // ---------------------------------------------------------------------------
-
-export interface OwlImporterOptions {
-  /** Base IRI for the import session. Used when building OwlImportContext. */
-  readonly 'baseIRI': string;
-  /** Additional prefix mappings merged with DEFAULT_PREFIXES. */
-  readonly 'prefixes'?: PrefixMap;
-}
 
 /**
  * OwlImporter — orchestrates the OWL 2 TBox import pipeline.

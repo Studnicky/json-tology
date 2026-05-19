@@ -16,7 +16,7 @@ import {
   Compose, Transform
 } from '../../../src/index.js';
 import {
-  aboxFixtures, bookstoreEntities, createBookstoreDocRegistry,
+  aboxFixtures, createBookstoreDocRegistry,
   PublicationDateSchema
 } from '../bookstore/index.js';
 

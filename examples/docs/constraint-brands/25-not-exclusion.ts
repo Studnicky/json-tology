@@ -27,7 +27,7 @@ const _NonNullStatusSchema = {
 type NonNullStatus = InferType<typeof _NonNullStatusSchema>;
 
 // not: { enum }  - removes a set of values
-const RestrictedSchema = {
+const _RestrictedSchema = {
   'enum': [
     'a',
     'b',
@@ -43,5 +43,5 @@ const RestrictedSchema = {
 } as const;
 
 // 'a' | 'd'
-type Restricted = InferType<typeof RestrictedSchema>;
+type Restricted = InferType<typeof _RestrictedSchema>;
 void 0 as unknown as [NonString, NonNullStatus, Restricted];

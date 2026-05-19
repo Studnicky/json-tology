@@ -10,7 +10,7 @@
 
 import { Transform } from '../../../src/index.js';
 import {
-  aboxFixtures, bookstoreEntities,
+  aboxFixtures,
   createBookstoreDocRegistry
 } from '../bookstore/index.js';
 

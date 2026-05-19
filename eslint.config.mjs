@@ -286,7 +286,7 @@ const typeScriptPluginRules = {
   '@typescript-eslint/no-unsafe-member-access': 'error',
   '@typescript-eslint/no-unsafe-return': 'error',
   '@typescript-eslint/no-unused-expressions': 'error',
-  '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_$', varsIgnorePattern: '^_$' }],
+  '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
   '@typescript-eslint/no-use-before-define': ['error', { classes: true, enums: true, functions: false, typedefs: false, variables: true }],
   '@typescript-eslint/no-useless-constructor': 'error',
   '@typescript-eslint/no-useless-empty-export': 'error',
@@ -537,7 +537,7 @@ export default [
       ...stylisticPluginRules,
       ...coreEslintRules,
       ...perfectionistPluginRules,
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_$', varsIgnorePattern: '^_$' }]
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }]
     }
   },
 

@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-05-19
+
+Tech-debt pass. No new features, no breaking changes.
+
+### Added
+
+- `scripts/ensure-built.mjs` + `pretest` / `pretest:smoke` / `pretest:e2e` / `pretest:all` lifecycle hooks. Cold `npm run test:all` from an empty `dist/` now builds once before any tier runs and 2228 / 2228 tests pass without the smoke tier racing the e2e tier's mid-suite `npm run build` invocation.
+- Three new canonical-location interface files (`src/interfaces/OwlImport.ts` carries `OwlImporterOptions`; new `src/interfaces/OwlCodegen.ts` carries `OwlCodegenOptions` / `RegistryFileEntry` / `RegistryFilesResult` / `OwlRegistryDirOptions`; new `src/interfaces/OwlGen.ts` carries `GenerateFromTboxOptions` / `GenerateRegistryDirectoryOptions` / `GenerateRegistryDirectoryEntityFile`). Interfaces previously declared inline in `src/modules/ontology/OwlImporter.ts`, `src/modules/codegen/OwlCodegen.ts`, and `src/owl-gen.ts` are now re-exported from their canonical location per the CLAUDE.md code-organization rule.
+- ARCHITECTURE invariants 14–17 codify the rdf/js Term-based `QuadInterface`, strict-by-default registry posture, the one-pipeline OWL importer contract, and the codegen one-way build-step contract.
+- README links to the OWL importer + codegen docs page and documents the optional `jsonld` peer dependency.
+- `docs/cli.md` documents the `owl-gen` subcommand (single-file and registry-directory modes).
+
+### Changed
+
+- `test/e2e/cli.test.ts` no longer invokes `npm run build` from its `before()` hook (it asserts `dist/cli.js` exists, and the lifecycle hook guarantees that).
+- `src/modules/ontology/OwlImporter.ts` and `src/modules/graph/QuadBackedSchemaGraph.ts` had their class-field declarations reordered so V8 builds a monomorphic shape on first instantiation.
+- `examples/docs/benchmarks/results/latest.md` regenerated; now carries OWL import (`~1.9k ops/s` bookstore TBox), OWL codegen (`~1.4k ops/s`), and OWL codegen directory (`~5.9k ops/s`) scenarios. Earlier scenarios refreshed against the current code.
+
+### Fixed
+
+- Duplicate `## [0.6.0] - 2026-05-14` heading in CHANGELOG.md collapsed.
+- `docs/advanced/owl-import.md` no longer includes `90-owl-import-roundtrip.ts` twice in the same section.
+- `CONTRIBUTING.md` release-workflow steps now describe the two-workflow split correctly: `publish.yml` handles npm + GPR publishing, `release.yml` fires on `v*` tag push to create the GitHub release.
+
+### Internal
+
+- Stash hygiene: three stale stashes from earlier recovery work purged.
+- Branch hygiene: 24 merged or worktree-agent branches deleted; only `main` remains locally between releases.
+
 ## [0.12.0] - 2026-05-19
 
 `owl-gen` now generates a full registry directory — one `entities/<Name>.ts` per OWL class plus an `index.ts` that mirrors the canonical bookstore layout.
@@ -265,63 +294,6 @@ Docs and release-pipeline polish.
 ### Docs
 
 - `docs/value/clone-hash.md`, `docs/value/diff.md`, `docs/value/index.md`, `docs/benchmarks.md`, `docs/getting-started.md`, and the bench scenario runner updated to the `Operations` / `Hash` API.
-
-## [0.6.0] - 2026-05-14
-
-- Interpreted-validation path is 3-4× faster. `compiled vs interpreted` benchmark now reports 250-330% throughput gains for the interpreted variant across simple-valid, simple-invalid, and nested-valid scenarios.
-- `SchemaRegistry.graphEntry(id)` returns `{ schema, graph }` in one lookup. `Dumper.dump()` and `Dumper.resolveRef()` collapse two sequential `resolve() + store.get()` round-trips into one — recovers most of the prior `dump nested` regression.
-- `GraphEngine.visitContext` is hoisted to a constructor-built `private readonly` field. The 12-closure object literal is no longer allocated per `visit()`.
-- `GraphEngine.execute()` reuses `this.options` directly when `overrides` is empty; the `{ ...this.options, ...overrides }` spread runs only when overrides carry keys.
-- `GraphEngine.validateObject` walks `Object.keys(workingValue)` once instead of three times.
-- `GraphEngine.resolveRef` uses a per-root cache map keyed by `ref` directly when the call targets the engine's own root graph, skipping per-call template-literal compound-key allocation.
-- `SchemaGraphSupport.emptySchemaGraphSemantics()` returns a frozen module-scope singleton. The 60-field object is no longer allocated per boolean-schema node.
-- `SchemaGraphSupport.extractSemantics()` returns a frozen `EMPTY_MAP` sentinel when a relation kind has no entries.
-- `Materializer.run()` guards re-registration: `set(schema)` only runs when `!registry.has(schema.$id)`.
-- `Materializer` `structuredClone`s eliminated on the two engine-output paths where ownership is already local; `SchemaRegistry.instantiate`/`cast`/`convert` gain an opt-out `clone: false` flag used by Materializer.
-- `FormatRegistry` date validation uses an integer-table day-in-month check + leap-year branch. The `new Date(...)` + `.toISOString()` allocations are gone.
-- `FormatRegistry` built-in validators no longer wrap each inner function in a `(value) => typeof === 'string' && fn(value)` closure — type guards inlined; call site is monomorphic.
-- `Projection.projectPropertyValue` no longer object-spreads the args struct per array element; `path` and `value` are explicit parameters.
-- `OwlProjection.canonicalPropertyIri` performs one IRI parse instead of two.
-- `VisitComposition` lazy-initializes `evaluatedProperties` / `evaluatedItems` Sets. `allOf`/`anyOf`/`oneOf`/`ifThenElse` branches that emit no evaluated members allocate no Set.
-
-### Changed (audit pass 2 — internal)
-
-- 2 type aliases moved from `RefDecoder.ts` to `src/types/`.
-- 7 module-scope constant clusters moved to `src/constants/` (`COMPOSITION`, `PATH`, `FORMAT_REGEXES`, `GRAPH_REGEXES`, `SHACL`, appended to `ONTOLOGY_PREDICATES` and `UUID`).
-- 10 inline schema definitions moved from `src/modules/data/BaseTypes.ts` to `src/constants/BASE_SCHEMAS.ts`.
-- ~32 JSDoc blocks on private/internal methods removed across `GraphEngine`, `SchemaIri`, `SchemaGraph`, `GraphEngineSupport`, `RefDecoder`.
-
-### Added (audit pass 2)
-
-- Direct unit tests for `SchemaEntryStore`, `SchemaRefWalker`, `RefResolutionLoader`, and `SchemaCompilerPlan` (+61 new tests; suite now 1596 pass).
-- Strict JSON Schema 2020-12 model types: `JsonSchema`, `JsonSchemaObject` (interface), and `JsonSchemaTypeName`. Coexists with the loose runtime-boundary `JsonSchemaType`.
-
-### Docs (audit pass 2)
-
-- `docs/value/clone-hash.md`, `docs/value/diff.md`, `docs/value/index.md`, `docs/benchmarks.md`, `docs/getting-started.md`, and the bench scenario file updated to the `Operations`/`Hash` API.
-
-### Changed
-
-- **BREAKING**: `Value.applyOp`, `Value.clone`, and `Value.hash` are removed. They were thin wrappers and now live where the work happens: `Operations.patch(value, op)` (renamed from `applyOp` so it does not collide with `Function.prototype.apply` in lint rules), `Operations.clone(value)`, and `Hash.value(value)`. `Operations` is exported from `json-tology/value`.
-- `SchemaCompiler` is collapsed from six files into two: `SchemaCompiler.ts` (entry, caching, hoisted exec contexts) and `SchemaCompilerPlan.ts` (single plan builder). Property and keyword traversal runs once per node, dispatched on `mode: 'check' | 'validate'`.
-- `SchemaRegistry` is decomposed. Entry storage moves to `SchemaEntryStore` (Map, hash index, revision counter, duplicate detection). Ref walking moves to `SchemaRefWalker` (embedded `$id`, ref collection, resolvability checks). Public API of `SchemaRegistry` unchanged.
-- `JsonTology` ref-resolution orchestration moves to `RefResolutionLoader`. Public API of `JsonTology` unchanged.
-
-### Performance
-
-- `SchemaRegistry.graphOf(schemaId)` is the single source for `SchemaGraph` construction. Prior duplicate construction in `SchemaCompiler`, `Materializer`, `RefResolver`, and `Dumper` is eliminated. `Materializer.graphCache` is deleted; it now reads through the registry cache.
-- `SchemaCompiler` hoists the recursive compile context (8 arrow closures per concern) into constructor-built `private readonly` fields. Recursive compile calls now pass a stable reference instead of allocating a fresh object literal.
-- Property-path prefix computed once per `validateProperties`/`validatePatternProperties`/`validatePropertyNames` call instead of per key. Eliminates the `path === ''` ternary from the per-property hot loop.
-- `validateProperties` returns the key count alongside its result; `validatePropertyCount` consumes the precomputed count, eliminating a second `Object.keys(obj)` walk for objects under min/maxProperties.
-- Composition fast-path: when a node has no `allOf`/`anyOf`/`oneOf`/`not`/`if`, the emitted validator skips the composition block entirely. No calls to `validateAllOf`/`validateAnyOf`/`validateOneOf`/`validateNot`/`validateIfThenElse`, no wrapper-object allocations on the dominant no-composition path.
-- Validation exec helpers (`Scalars`, `Arrays`, `Objects`, `Composition`) push into a caller-provided `errors[]` accumulator and return a boolean instead of allocating `{ valid, errors, value }` wrapper objects on every call. Ten helpers refactored.
-
-### Internal
-
-- Inline type and interface declarations moved to canonical `src/types/` and `src/interfaces/` locations: `NormalizedToQuadsOptionsType`, `BuildOptionsInterface`, `VizOptionsInterface`, `AboxOptionsType`, `SchemaRegistryForEachCallback`, `PassResultInterface`, `FailResultInterface`, `SimplePredicateEntry`, `SpecialHandlerFn`, `ProjectInstanceArgs`, `ProjectPropertyArgs`, `RawRestrictionDescriptorType`.
-- Public-contract interfaces declared for `SchemaIri`, `Unevaluated`, `Refs`, `VisitComposition`, `RefDecoder`.
-- Pagination constants (`DEFAULT_PAGE_SIZE`, `MAX_PAGE_SIZE`) centralized in `src/constants/PAGINATION.ts`; UUID constants in `src/constants/UUID.ts`.
-- Direct unit-test coverage added for `RefDecoder`, `SchemaGraphRelations`, `ShaclProjection`, `OwlProjection` (39 new tests).
 
 ## [0.6.0] - 2026-05-14
 
