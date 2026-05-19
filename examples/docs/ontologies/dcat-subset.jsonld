@@ -1,0 +1,71 @@
+{
+  "_comment": "DCAT-AP subset for json-tology codegen round-trip demo. Not a complete DCAT-AP projection. Covers Dataset, Distribution, Catalog classes; title, description, distribution, accessURL properties; rdfs:subClassOf chain reaching dcterms:Resource as an external IRI.",
+  "@context": {
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "dcat": "http://www.w3.org/ns/dcat#",
+    "dcterms": "http://purl.org/dc/terms/"
+  },
+  "@graph": [
+    {
+      "@id": "http://purl.org/dc/terms/Resource",
+      "@type": "owl:Class",
+      "rdfs:label": "Resource",
+      "rdfs:comment": "Anything described by RDF (external Dublin Core class, kept as a stub)."
+    },
+    {
+      "@id": "http://www.w3.org/ns/dcat#Dataset",
+      "@type": "owl:Class",
+      "rdfs:subClassOf": { "@id": "http://purl.org/dc/terms/Resource" },
+      "rdfs:label": "Dataset",
+      "rdfs:comment": "A collection of data, published or curated by a single agent."
+    },
+    {
+      "@id": "http://www.w3.org/ns/dcat#Distribution",
+      "@type": "owl:Class",
+      "rdfs:label": "Distribution",
+      "rdfs:comment": "A specific representation of a dataset."
+    },
+    {
+      "@id": "http://www.w3.org/ns/dcat#Catalog",
+      "@type": "owl:Class",
+      "rdfs:subClassOf": { "@id": "http://purl.org/dc/terms/Resource" },
+      "rdfs:label": "Catalog",
+      "rdfs:comment": "A curated collection of metadata about resources."
+    },
+    {
+      "@id": "http://www.w3.org/ns/dcat#title",
+      "@type": "owl:DatatypeProperty",
+      "rdfs:label": "title",
+      "rdfs:comment": "A name given to the resource.",
+      "rdfs:domain": { "@id": "http://purl.org/dc/terms/Resource" },
+      "rdfs:range": { "@id": "xsd:string" }
+    },
+    {
+      "@id": "http://www.w3.org/ns/dcat#description",
+      "@type": "owl:DatatypeProperty",
+      "rdfs:label": "description",
+      "rdfs:comment": "A free-text account of the resource.",
+      "rdfs:domain": { "@id": "http://purl.org/dc/terms/Resource" },
+      "rdfs:range": { "@id": "xsd:string" }
+    },
+    {
+      "@id": "http://www.w3.org/ns/dcat#distribution",
+      "@type": "owl:ObjectProperty",
+      "rdfs:label": "distribution",
+      "rdfs:comment": "An available distribution of the dataset.",
+      "rdfs:domain": { "@id": "http://www.w3.org/ns/dcat#Dataset" },
+      "rdfs:range": { "@id": "http://www.w3.org/ns/dcat#Distribution" }
+    },
+    {
+      "@id": "http://www.w3.org/ns/dcat#accessURL",
+      "@type": "owl:DatatypeProperty",
+      "rdfs:label": "access URL",
+      "rdfs:comment": "A URL of the resource that gives access to a distribution. Range is xsd:string in this subset (xsd:anyURI would produce a { format: uri } inline constraint that requires enableStrictGraph: false).",
+      "rdfs:domain": { "@id": "http://www.w3.org/ns/dcat#Distribution" },
+      "rdfs:range": { "@id": "xsd:string" }
+    }
+  ]
+}

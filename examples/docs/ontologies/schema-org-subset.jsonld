@@ -1,0 +1,81 @@
+{
+  "_comment": "schema.org subset for json-tology codegen round-trip demo. Not a complete schema.org projection. Covers Book, Person, Organization classes; author, publisher, name, isbn properties; rdfs:Datatype XSD-facet restriction on isbn (pattern ^\\d{13}$) that round-trips losslessly through fromTbox.",
+  "@context": {
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "schema": "https://schema.org/"
+  },
+  "@graph": [
+    {
+      "@id": "https://schema.org/Thing",
+      "@type": "owl:Class",
+      "rdfs:label": "Thing",
+      "rdfs:comment": "The most generic type."
+    },
+    {
+      "@id": "https://schema.org/Person",
+      "@type": "owl:Class",
+      "rdfs:subClassOf": { "@id": "https://schema.org/Thing" },
+      "rdfs:label": "Person",
+      "rdfs:comment": "A person (alive, dead, undead, or fictional)."
+    },
+    {
+      "@id": "https://schema.org/Organization",
+      "@type": "owl:Class",
+      "rdfs:subClassOf": { "@id": "https://schema.org/Thing" },
+      "rdfs:label": "Organization",
+      "rdfs:comment": "An organization such as a school, NGO, corporation, club, etc."
+    },
+    {
+      "@id": "https://schema.org/Book",
+      "@type": "owl:Class",
+      "rdfs:subClassOf": { "@id": "https://schema.org/Thing" },
+      "rdfs:label": "Book",
+      "rdfs:comment": "A book."
+    },
+    {
+      "@id": "https://schema.org/IsbnType",
+      "@type": "rdfs:Datatype",
+      "rdfs:label": "IsbnType",
+      "rdfs:comment": "A 13-digit ISBN string. XSD-facet restriction: pattern ^\\d{13}$.",
+      "owl:onDatatype": { "@id": "xsd:string" },
+      "owl:withRestrictions": {
+        "@list": [{ "xsd:pattern": "^\\d{13}$" }]
+      }
+    },
+    {
+      "@id": "https://schema.org/name",
+      "@type": "owl:DatatypeProperty",
+      "rdfs:label": "name",
+      "rdfs:comment": "The name of the item.",
+      "rdfs:domain": { "@id": "https://schema.org/Thing" },
+      "rdfs:range": { "@id": "xsd:string" }
+    },
+    {
+      "@id": "https://schema.org/Book#isbn",
+      "@type": "owl:ObjectProperty",
+      "rdfs:label": "isbn",
+      "rdfs:comment": "The ISBN of the book.",
+      "rdfs:domain": { "@id": "https://schema.org/Book" },
+      "rdfs:range": { "@id": "https://schema.org/IsbnType" }
+    },
+    {
+      "@id": "https://schema.org/author",
+      "@type": "owl:ObjectProperty",
+      "rdfs:label": "author",
+      "rdfs:comment": "The author of this content.",
+      "rdfs:domain": { "@id": "https://schema.org/Book" },
+      "rdfs:range": { "@id": "https://schema.org/Person" }
+    },
+    {
+      "@id": "https://schema.org/publisher",
+      "@type": "owl:ObjectProperty",
+      "rdfs:label": "publisher",
+      "rdfs:comment": "The publisher of the creative work.",
+      "rdfs:domain": { "@id": "https://schema.org/Book" },
+      "rdfs:range": { "@id": "https://schema.org/Organization" }
+    }
+  ]
+}

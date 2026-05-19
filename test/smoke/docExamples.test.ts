@@ -42,6 +42,7 @@ function findExamplesIn(dir: string): string[] {
       && !entry.name.endsWith('.zod.ts')
       && !entry.name.endsWith('.typebox.ts')
       && !entry.name.endsWith('.ajv.ts')
+      && !entry.name.endsWith('.generated.ts')
     ) {
       results.push(fullPath);
     }
