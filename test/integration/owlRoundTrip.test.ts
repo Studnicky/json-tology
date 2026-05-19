@@ -106,6 +106,21 @@ function sortedEnum(enumVal: unknown): unknown[] {
 }
 
 // ---------------------------------------------------------------------------
+// sortedKeys — stable key-order copy for primitive comparison
+// ---------------------------------------------------------------------------
+
+/** Return a copy of `obj` with keys sorted alphabetically. */
+function sortedKeys(obj: Record<string, unknown>): Record<string, unknown> {
+  const sorted: Record<string, unknown> = {};
+
+  for (const key of Object.keys(obj).sort()) {
+    sorted[key] = obj[key];
+  }
+
+  return sorted;
+}
+
+// ---------------------------------------------------------------------------
 // structurallyEqual — OWL-semantics comparison
 // ---------------------------------------------------------------------------
 
@@ -327,7 +342,6 @@ void describe('OWL round-trip', () => {
       `Expected at least ${bookstoreSize} schemas, got ${result.schemas.length}`
     );
 
-    // For every bookstore schema, verify OWL-preservable structural equality.
     const rtById = new Map<string, Record<string, unknown>>();
 
     for (const schema of result.schemas) {
@@ -336,19 +350,46 @@ void describe('OWL round-trip', () => {
 
     const failures: string[] = [];
 
+    // Scalar primitive types that round-trip losslessly via rdfs:Datatype.
+    const SCALAR_TYPES = new Set([
+      'boolean',
+      'integer',
+      'number',
+      'string'
+    ]);
+
     for (const origRaw of bookstoreSchemas) {
       const orig = origRaw as Record<string, unknown>;
-      const rtSchema = rtById.get(orig.$id as string);
+      const schemaId = orig.$id as string;
+      const rtSchema = rtById.get(schemaId);
 
       if (rtSchema === undefined) {
-        failures.push(`${orig.$id as string}: missing from round-trip result`);
+        failures.push(`${schemaId}: missing from round-trip result`);
         continue;
       }
 
+      const origType = orig.type as string | undefined;
+
+      // Scalar primitive schemas (string/number/integer/boolean) are emitted as
+      // rdfs:Datatype with XSD facets and jt: annotations — enforce deepStrictEqual.
+      if (origType !== undefined && SCALAR_TYPES.has(origType)) {
+        const origSorted = sortedKeys(orig);
+        const rtSorted = sortedKeys(rtSchema);
+
+        if (JSON.stringify(origSorted) !== JSON.stringify(rtSorted)) {
+          const msg = `${schemaId} [PRIMITIVE structural mismatch]: expected ${JSON.stringify(origSorted)}, got ${JSON.stringify(rtSorted)}`;
+
+          failures.push(msg);
+        }
+
+        continue;
+      }
+
+      // Object / complex schemas — tolerant OWL-preservable comparison.
       const mismatches = structurallyEqual(rtSchema, orig);
 
       for (const mismatch of mismatches) {
-        const msg = `${orig.$id as string} [${mismatch.field}]: expected ${JSON.stringify(mismatch.expected)}, got ${JSON.stringify(mismatch.actual)}`;
+        const msg = `${schemaId} [${mismatch.field}]: expected ${JSON.stringify(mismatch.expected)}, got ${JSON.stringify(mismatch.actual)}`;
 
         failures.push(msg);
       }

@@ -32,7 +32,6 @@ import type { VizOptionsInterface } from './interfaces/VizOptions.js';
 import { DEFAULT_PREFIXES } from './constants/PREFIXES.js';
 import { SchemaError } from './errors/SchemaError.js';
 import { CliWriter } from './modules/cli/CliWriter.js';
-import { generateFromTbox } from './owl-gen.js';
 
 const writer = CliWriter.default;
 
@@ -406,55 +405,42 @@ program
 
 program
   .command('owl-gen <input>')
-  .description('Generate TypeScript registry source from an OWL 2 TBox JSON-LD file')
-  .requiredOption('--out <file>', 'Output TypeScript file path')
-  .option('--name <registryConst>', 'Registry constant name (e.g. foaf → foafSchemas + foaf)')
-  .option('--base-iri <iri>', 'Base IRI override (default: derived from JSON-LD @context)')
-  .action((input: string, opts: { 'baseIri'?: string;
+  .description('Generate TypeScript registry source from an OWL 2 JSON-LD ontology')
+  .requiredOption('--out <file>', 'Output .ts file path')
+  .option('--name <name>', 'Registry constant name (defaults to the input filename basename)')
+  .option('--base-iri <iri>', 'Override the base IRI used in the generated registry')
+  .action(async (input: string, opts: { 'baseIri'?: string;
     'name'?: string;
     'out': string }) => {
-    const inputPath = resolve(input);
+    const { generateFromTbox } = await import('./owl-gen.js');
+    const fs = await import('node:fs');
+    const path = await import('node:path');
 
-    if (!existsSync(inputPath)) {
-      writer.err(`owl-gen: input file not found: ${inputPath}`);
-      writer.exit(1);
-    }
+    const jsonLdSource = input === '-'
+      ? await new Promise<string>((res) => {
+        const chunks: Buffer[] = [];
 
-    const raw = readFileSync(inputPath, 'utf8');
-    let parsedJsonLd: object | undefined;
+        process.stdin.on('data', (chunk: Buffer) => {
+          return chunks.push(chunk);
+        });
+        process.stdin.on('end', () => {
+          return res(Buffer.concat(chunks).toString('utf8'));
+        });
+      })
+      : fs.readFileSync(resolve(input), 'utf8');
 
-    try {
-      parsedJsonLd = JSON.parse(raw) as object;
-    } catch (error) {
-      writer.err(`owl-gen: failed to parse JSON-LD input: ${String(error)}`);
-      writer.exit(1);
-    }
+    const parsed = JSON.parse(jsonLdSource) as object;
+    const inferredName = opts.name ?? basename(input, path.extname(input)).replaceAll(/[^a-zA-Z0-9]+/gu, '_');
 
-    if (parsedJsonLd === undefined) {
-      writer.exit(1);
-    }
+    generateFromTbox({
+      ...(opts.baseIri === undefined ? {} : { 'baseIRI': opts.baseIri }),
+      'input': parsed,
+      'name': inferredName,
+      'output': resolve(opts.out),
+      'sourceLabel': input
+    });
 
-    const jsonLd: object = parsedJsonLd as object;
-    const outPath = resolve(opts.out);
-    const outDir = dirname(outPath);
-
-    if (!existsSync(outDir)) {
-      mkdirSync(outDir, { 'recursive': true });
-    }
-
-    try {
-      generateFromTbox({
-        'baseIRI': opts.baseIri,
-        'input': jsonLd,
-        'name': opts.name,
-        'output': outPath,
-        'sourceLabel': inputPath
-      });
-      writer.out(`owl-gen: wrote ${outPath}`);
-    } catch (error) {
-      writer.err(`owl-gen: code generation failed: ${String(error)}`);
-      writer.exit(1);
-    }
+    writer.out(`Generated ${opts.out} from ${input}`);
   });
 
 try {

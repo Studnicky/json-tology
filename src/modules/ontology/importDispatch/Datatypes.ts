@@ -60,6 +60,18 @@ const OWL_ONE_OF_IRIS: ReadonlySet<string> = new Set([
   'owl:oneOf'
 ]);
 
+const JT_NS = 'https://json-tology.dev/vocab#';
+
+const JT_MULTIPLE_OF_IRIS: ReadonlySet<string> = new Set([
+  `${JT_NS}multipleOf`,
+  'jt:multipleOf'
+]);
+
+const JT_FORMAT_IRIS: ReadonlySet<string> = new Set([
+  `${JT_NS}format`,
+  'jt:format'
+]);
+
 // ---------------------------------------------------------------------------
 // XSD facet predicate → JSON Schema keyword mapping
 // ---------------------------------------------------------------------------
@@ -252,12 +264,24 @@ const XSD_TO_SCHEMA_TYPE: ReadonlyMap<string, 'integer' | 'number' | 'string'> =
     'integer'
   ],
   [
+    'xsd:date',
+    'string'
+  ],
+  [
+    'xsd:dateTime',
+    'string'
+  ],
+  [
     'xsd:decimal',
     'number'
   ],
   [
     'xsd:double',
     'number'
+  ],
+  [
+    'xsd:duration',
+    'string'
   ],
   [
     'xsd:float',
@@ -332,6 +356,10 @@ const XSD_TO_SCHEMA_TYPE: ReadonlyMap<string, 'integer' | 'number' | 'string'> =
     'string'
   ],
   [
+    'xsd:time',
+    'string'
+  ],
+  [
     'xsd:token',
     'string'
   ],
@@ -363,6 +391,14 @@ const XSD_TO_SCHEMA_TYPE: ReadonlyMap<string, 'integer' | 'number' | 'string'> =
     `${XSD_NS}byte`,
     'integer'
   ],
+  [
+    `${XSD_NS}date`,
+    'string'
+  ],
+  [
+    `${XSD_NS}dateTime`,
+    'string'
+  ],
   // Numbers
   [
     `${XSD_NS}decimal`,
@@ -371,6 +407,10 @@ const XSD_TO_SCHEMA_TYPE: ReadonlyMap<string, 'integer' | 'number' | 'string'> =
   [
     `${XSD_NS}double`,
     'number'
+  ],
+  [
+    `${XSD_NS}duration`,
+    'string'
   ],
   [
     `${XSD_NS}float`,
@@ -443,6 +483,10 @@ const XSD_TO_SCHEMA_TYPE: ReadonlyMap<string, 'integer' | 'number' | 'string'> =
   ],
   [
     `${XSD_NS}string`,
+    'string'
+  ],
+  [
+    `${XSD_NS}time`,
     'string'
   ],
   [
@@ -803,6 +847,28 @@ function processDatatypeIri(
           }
         }
       }
+    }
+  }
+
+  // jt:multipleOf — json-tology extension annotation on the datatype node
+  const multipleOfQuads = quadsForPredicates(index, subjectIri, JT_MULTIPLE_OF_IRIS);
+
+  if (multipleOfQuads.length > 0) {
+    const moNum = literalNumber(multipleOfQuads[0].object);
+
+    if (moNum !== null) {
+      delta.multipleOf = moNum;
+    }
+  }
+
+  // jt:format — preserve JSON Schema format keyword
+  const formatQuads = quadsForPredicates(index, subjectIri, JT_FORMAT_IRIS);
+
+  if (formatQuads.length > 0) {
+    const fmtStr = literalString(formatQuads[0].object);
+
+    if (fmtStr !== null) {
+      delta.format = fmtStr;
     }
   }
 

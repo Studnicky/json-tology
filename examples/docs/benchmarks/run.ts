@@ -30,6 +30,7 @@ import { runComposeBench } from './compose.bench.js';
 import { runSerializeBench } from './serialize.bench.js';
 import { runRegistryBench } from './registry.bench.js';
 import { runOwlImportBench } from './owlImport.bench.js';
+import { runOwlCodegenBench } from './owlCodegen.bench.js';
 
 interface SuiteEntry {
   'family': string;
@@ -94,6 +95,11 @@ const suites: SuiteEntry[] = [
     'family': 'OWL Import',
     'name': 'owlImport',
     'results': runOwlImportBench()
+  },
+  {
+    'family': 'OWL Codegen',
+    'name': 'owlCodegen',
+    'results': runOwlCodegenBench()
   }
 ];
 

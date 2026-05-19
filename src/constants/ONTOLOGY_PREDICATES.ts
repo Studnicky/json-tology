@@ -14,6 +14,8 @@ export const RESTRICTION_PREDICATE: Partial<Record<string, string>> = {
 };
 
 export const OWL_CORE_PREDICATES: ReadonlySet<string> = new Set([
+  'jt:format',
+  'jt:multipleOf',
   'owl:AllDifferent',
   'owl:AsymmetricProperty',
   'owl:cardinality',
@@ -21,6 +23,7 @@ export const OWL_CORE_PREDICATES: ReadonlySet<string> = new Set([
   'owl:complementOf',
   'owl:DatatypeProperty',
   'owl:distinctMembers',
+  'owl:equivalentClass',
   'owl:FunctionalProperty',
   'owl:hasValue',
   'owl:intersectionOf',
@@ -30,6 +33,7 @@ export const OWL_CORE_PREDICATES: ReadonlySet<string> = new Set([
   'owl:maxCardinality',
   'owl:minCardinality',
   'owl:ObjectProperty',
+  'owl:onDatatype',
   'owl:oneOf',
   'owl:onProperty',
   'owl:ReflexiveProperty',
@@ -38,12 +42,14 @@ export const OWL_CORE_PREDICATES: ReadonlySet<string> = new Set([
   'owl:SymmetricProperty',
   'owl:TransitiveProperty',
   'owl:unionOf',
+  'owl:withRestrictions',
   'rdf:first',
   'rdf:nil',
   'rdf:rest',
   'rdf:type',
   'rdf:value',
   'rdfs:comment',
+  'rdfs:Datatype',
   'rdfs:domain',
   'rdfs:label',
   'rdfs:range',
@@ -115,6 +121,10 @@ export const SIMPLE_LITERAL_PREDICATES = new Map<string, SimplePredicateEntry>([
   ],
   [
     DCT.format,
+    { 'datatype': XSD.string }
+  ],
+  [
+    JT.format,
     { 'datatype': XSD.string }
   ],
   [

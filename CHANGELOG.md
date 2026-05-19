@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-05-19
+
+Compile-time TypeScript types for imported OWL 2 ontologies via code generation.
+
+### Added
+
+- **`json-tology owl-gen <input> --out <file>`** CLI subcommand. Reads an OWL 2 JSON-LD ontology, runs it through `JsonTology.fromTbox`, and emits a TypeScript source file with `as const` schema literals + a registered registry constant + `InferType`-backed per-class type aliases. Standard build-step usage: `prebuild` hook, vite plugin, husky pre-commit.
+- **`generateFromTbox(options)` programmatic API** exported from the new `json-tology/owl-gen` subpath. Same surface as the CLI, callable from build scripts. Returns the source string when `output` is omitted; writes to disk when provided.
+- **`src/modules/codegen/OwlCodegen.ts`** — pure `generateTypeScript(result, options)` function with topological dep-sort, IRI → PascalCase name derivation, collision detection with `_2` suffix, sameAs / `addCharacteristic` emission, and skip-filter for internal JSON-pointer scaffolds (`urn:x:Class#/allOf/1/if`).
+- New runnable example `examples/docs/advanced/91-owl-codegen-generated.ts` demonstrating the codegen → write-to-disk → re-import → `InferType` round-trip in a single file. Two new bench scenarios in `examples/docs/benchmarks/owlCodegen.bench.ts` (bookstore TBox + minimal 3-class).
+- Docs page `docs/advanced/owl-import.md` extended with a `## Compile-time types via codegen` section covering CLI usage, programmatic API, and build-time integration patterns.
+
+### Changed
+
+- **`OwlProjection`** (forward path) now emits primitive scalar schemas (`type: 'number'`, `'string'`, `'integer'`, `'boolean'`) as `rdfs:Datatype` declarations with `owl:onDatatype` (XSD base) + `owl:withRestrictions` (facets) + `jt:format` / `jt:multipleOf` annotations, instead of emitting them as `owl:Class`. Fixes lossy round-trip of bookstore primitives (Amount, Email, Isbn, etc.).
+- **`Datatypes` importer dispatcher** handles `jt:format`, `jt:multipleOf`, and the full XSD scalar set (`xsd:date`, `xsd:dateTime`, `xsd:duration`, `xsd:time` added).
+- **`OwlImporter` orchestrator** collects custom `rdfs:Datatype` IRIs into `ctx.isDatatype()` so property-range lookups against custom datatypes no longer surface as `OWL_IMPORT_NOT_IMPLEMENTED`.
+- **`JsonLdToQuads`** distinguishes plain string literals (`"email"`) from IRI references and handles inline blank-node restriction facets that `JsonLdFormatter` strips `@id` from.
+- **`test/integration/owlRoundTrip.test.ts`** strengthened: every bookstore primitive schema is now asserted structurally equal via `deepStrictEqual` after `fromTbox(toTbox(s).jsonLd())`. 33/33 scalar primitives + 62 total schemas round-trip losslessly.
+
 ## [0.10.1] - 2026-05-19
 
 Graph inspector moved below the canvas as a two-column in-flow panel.

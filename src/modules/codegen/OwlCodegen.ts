@@ -62,20 +62,49 @@ export interface OwlCodegenOptions {
 // ---------------------------------------------------------------------------
 
 /**
- * Extract the local name (after '#' or last '/') from an IRI and
- * convert it to PascalCase.
+ * Extract the local name from an IRI and return it capitalised.
+ *
+ * Resolution priority:
+ *   1. After '#' fragment identifier — `http://example.com/ns#Widget` → `Widget`
+ *   2. After last '/' segment — `http://example.com/Widget` → `Widget`
+ *   3. After last ':' (URN-style) — `urn:example:Widget` → `Widget`
+ *   4. Fallback: PascalCase the whole IRI stripped of non-word chars.
  */
 function localName(iri: string): string {
-  const afterHash = iri.split('#').at(-1) ?? iri;
-  const afterSlash = afterHash.split('/').at(-1) ?? afterHash;
+  const hashIdx = iri.indexOf('#');
 
-  // Strip non-word characters then PascalCase
-  const words = afterSlash
+  if (hashIdx !== -1) {
+    const fragment = iri.slice(hashIdx + 1);
+
+    if (fragment.length > 0) {
+      return fragment.charAt(0).toUpperCase() + fragment.slice(1);
+    }
+  }
+
+  const slashIdx = iri.lastIndexOf('/');
+
+  if (slashIdx !== -1) {
+    const segment = iri.slice(slashIdx + 1);
+
+    if (segment.length > 0) {
+      return segment.charAt(0).toUpperCase() + segment.slice(1);
+    }
+  }
+
+  const colonIdx = iri.lastIndexOf(':');
+
+  if (colonIdx !== -1) {
+    const segment = iri.slice(colonIdx + 1);
+
+    if (segment.length > 0) {
+      return segment.charAt(0).toUpperCase() + segment.slice(1);
+    }
+  }
+
+  return iri
     .replaceAll(/\W+/gu, ' ')
     .trim()
-    .split(/\s+/u);
-
-  return words
+    .split(/\s+/u)
     .map((word) => {
       return word.charAt(0).toUpperCase() + word.slice(1);
     })
@@ -364,7 +393,13 @@ export function generateTypeScript(
   } = options;
 
   const schemas = result.schemas.filter((schema) => {
-    return typeof schema.$id === 'string' && schema.$id.length > 0;
+    // Skip $ids carrying a JSON-pointer fragment (e.g. `urn:x:EBook#/allOf/1/if`).
+    // These are internal scaffolds the forward projector emits when serialising
+    // complex `allOf` / `if/then/else` structures; they are not consumer-facing
+    // classes and would produce invalid TypeScript identifiers if exported.
+    return typeof schema.$id === 'string'
+      && schema.$id.length > 0
+      && !schema.$id.includes('#/');
   });
 
   const iris = schemas.map((schema) => {

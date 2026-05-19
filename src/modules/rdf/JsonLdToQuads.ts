@@ -37,6 +37,35 @@ function expandIri(value: string, context: Record<string, string>): string {
   return prefix in context ? `${context[prefix]}${local}` : value;
 }
 
+/**
+ * Return true when a plain JSON string value should be treated as a literal
+ * rather than an IRI reference. A string is a literal when it cannot be a
+ * valid IRI or CURIE: no colon, not starting with `_:` / `http:` / `https:`
+ * / `urn:`. Covers JSON Schema format values (`email`, `date-time`, `uri`,
+ * `uuid`, `int32`) and other plain-string annotations produced by
+ * JsonLdFormatter.
+ */
+function isLiteralString(value: string, context: Record<string, string>): boolean {
+  if (
+    value.startsWith('_:')
+    || value.startsWith('http://')
+    || value.startsWith('https://')
+    || value.startsWith('urn:')
+  ) {
+    return false;
+  }
+
+  const colonIndex = value.indexOf(':');
+
+  if (colonIndex === -1) {
+    return true;
+  }
+
+  const prefix = value.slice(0, colonIndex);
+
+  return !(prefix in context);
+}
+
 // ---------------------------------------------------------------------------
 // Blank node state (per-call counter)
 // ---------------------------------------------------------------------------
@@ -63,6 +92,10 @@ function jsonLdValueToTerm(
   counter: ReturnType<typeof makeCounter>
 ): null | QuadObjectType {
   if (typeof value === 'string') {
+    if (isLiteralString(value, context)) {
+      return Terms.literal(value);
+    }
+
     return Terms.iri(expandIri(value, context));
   }
   if (typeof value === 'number' || typeof value === 'boolean') {
@@ -110,7 +143,30 @@ function jsonLdValueToTerm(
     return Terms.iri(expandIri(iriValue, context));
   }
 
-  // Bare object literal
+  // { @value: ... } — plain literal object emitted by JsonLdFormatter
+  if ('@value' in obj) {
+    return Terms.literal(obj['@value']);
+  }
+
+  // Anonymous inlined blank node — an object without @id / @list / @value
+  // whose keys are predicate IRIs. Produced by JsonLdFormatter.inlineBnodes()
+  // when it strips @id from a singly-referenced blank node. Facet descriptor
+  // bnodes inside owl:withRestrictions arrive in this form.
+  const objKeys = Object.keys(obj);
+
+  if (objKeys.length > 0 && !('@type' in obj)) {
+    const existingId = bnodeMap.get(obj);
+    const bnodeId = existingId ?? counter.next();
+
+    if (existingId === undefined) {
+      bnodeMap.set(obj, bnodeId);
+      emitNodeQuads(bnodeId, obj, context, bnodeMap, allQuads, counter);
+    }
+
+    return Terms.blank(bnodeId.slice(2));
+  }
+
+  // Bare object literal (structured literals, type-bearing nodes)
   return Terms.literal(value);
 }
 

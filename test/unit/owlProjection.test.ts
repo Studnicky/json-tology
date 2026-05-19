@@ -184,9 +184,18 @@ void describe('OwlProjection.graph()', { 'concurrency': true }, () => {
     } as const;
 
     const quads = project(schema);
-    const oneOfQuads = filterBySubjectAndPredicate(quads, schema.$id, OWL.oneOf);
 
-    assert.ok(oneOfQuads.length > 0, 'enum schema should produce owl:oneOf quad');
+    // Enum primitives are emitted as rdfs:Datatype + owl:equivalentClass + owl:oneOf
+    // (OWL 2 §9.4 DataTypeDefinition pattern), not owl:Class + owl:oneOf directly.
+    const equivClassQuads = filterBySubjectAndPredicate(quads, schema.$id, OWL.equivalentClass);
+
+    assert.ok(equivClassQuads.length > 0, 'enum schema should produce owl:equivalentClass quad');
+
+    const oneOfQuads = quads.filter((quad) => {
+      return quad.predicate.value === OWL.oneOf;
+    });
+
+    assert.ok(oneOfQuads.length > 0, 'enum schema should produce owl:oneOf quad (on equivalentClass bnode)');
   });
 
   void it('emits owl:Restriction bnode for a required property (cardinality)', () => {
