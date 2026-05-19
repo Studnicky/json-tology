@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-05-18
+
+OG card and README header visual fix.
+
+### Fixed
+
+- **OG card cluster (`docs/public/og-image.svg.template`)** — replaces the abstract color-coded hexes with letter labels (TS / JSON / VAL / RDF / W3C / NODE) with the actual seven node SVGs from `docs/public/nodes/`, matching the HexRing component shown in the docs-site sidebar. The center hex is now the teal JST glyph instead of a red placeholder.
+- **README header cluster (`docs/public/readme-header.svg.template`)** — same fix at compact scale (imgSize=78). Social previewers and the GitHub social-preview image now match the live docs site.
+- Both templates inline each node SVG body directly with per-node id and CSS-class prefixes (`jst-`, `ts-`, `json-`, `val-`, `rdf-`, `w3c-`, `node-`) to prevent gradient and filter id collisions. HexRing geometry (visualW = imgSize × 304.8/400, visualH = imgSize × 352/400, six ring offsets) is reproduced exactly.
+
 ## [0.9.1] - 2026-05-18
 
 Docs and release-pipeline polish.
