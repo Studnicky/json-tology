@@ -1,6 +1,6 @@
 {
   "name": "json-tology",
-  "version": "0.9.2",
+  "version": "0.10.0",
   "description": "One source of truth for TypeScript types, runtime validation, coercion, and OWL ontology output. Author in JSON Schema; share with any backend; reason over the graph.",
   "type": "module",
   "main": "./dist/index.js",
@@ -96,8 +96,17 @@
   "bugs": {
     "url": "https://github.com/Studnicky/json-tology/issues"
   },
+  "peerDependencies": {
+    "jsonld": "^8.0.0"
+  },
+  "peerDependenciesMeta": {
+    "jsonld": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "jsonld": "^8.3.3",
     "@rdfjs/types": "^2.0.1",
     "@sinclair/typebox": "^0.34.49",
     "@stylistic/eslint-plugin": "^5.10.0",

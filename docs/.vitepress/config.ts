@@ -138,7 +138,8 @@ const sidebar = [
       { link: '/advanced/schema-federation', text: 'Schema federation (prefetch + snapshot)' },
       { link: '/advanced/browser-usage', text: 'Browser usage' },
       { link: '/advanced/skolemization', text: 'Skolemization' },
-      { link: '/advanced/owl-property-characteristics', text: 'OWL 2 property characteristics' }
+      { link: '/advanced/owl-property-characteristics', text: 'OWL 2 property characteristics' },
+      { link: '/advanced/owl-import', text: 'OWL 2 TBox import (fromTbox)' }
     ]
   },
   {

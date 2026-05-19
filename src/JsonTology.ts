@@ -19,6 +19,7 @@
 
 import type { JsonSchemaDocumentType } from './types/Schema.js';
 
+import type { OwlImportResult } from './interfaces/OwlImport.js';
 import type { DumpOptionsInterface } from './interfaces/Dump.js';
 import type { InvariantInterface } from './interfaces/Invariant.js';
 import type { ComputedFnType } from './types/Computed.js';
@@ -48,6 +49,7 @@ import type { NormalizedToQuadsOptionsType } from './types/NormalizedToQuadsOpti
 
 import { RefResolutionLoader } from './modules/registry/RefResolutionLoader.js';
 import { Curie } from './modules/rdf/Curie.js';
+import { OwlImporter } from './modules/ontology/OwlImporter.js';
 import { Skolemize } from './modules/rdf/Skolemize.js';
 import { Terms } from './modules/rdf/Terms.js';
 import { Dumper } from './modules/data/Dumper.js';
@@ -336,6 +338,29 @@ export class JsonTology<TMap = Record<never, never>> {
     const jt = JsonTology.ephemeral(schema);
 
     return jt.fromQuads(schema, quads, options) as Array<InferSchemaType<TSchema>>;
+  }
+
+  /**
+   * FromTbox — static variant. Constructs a transient OwlImporter and returns
+   * the import result without retaining state.
+   *
+   * @param jsonLd - The OWL 2 TBox input as a QuadInterface array, a JSON-LD
+   *   object, or a JSON-LD string.
+   * @param options - Optional baseIRI and prefix overrides for the import session.
+   * @returns OwlImportResult with reconstructed schemas, invariants,
+   *   characteristics, sameAs pairs, individuals, and unsupported axiom log.
+   */
+  public static fromTbox(
+    jsonLd: object | QuadInterface[] | string,
+    options?: { 'baseIRI'?: string;
+      'prefixes'?: Record<string, string> }
+  ): OwlImportResult {
+    const importer = new OwlImporter({
+      'baseIRI': options?.baseIRI ?? STATIC_BASE_IRI,
+      ...(options?.prefixes === undefined ? {} : { 'prefixes': options.prefixes })
+    });
+
+    return importer.import(jsonLd);
   }
 
   /**
@@ -880,6 +905,58 @@ export class JsonTology<TMap = Record<never, never>> {
     });
   }
   /**
+   * FromTbox — instance variant. Imports an OWL 2 TBox document and optionally
+   * registers the produced schemas and derived artefacts into this instance's
+   * registry.
+   *
+   * When `register` is true (the default), the produced schemas are passed to
+   * `registry.set()` and invariants / characteristics / sameAs pairs are
+   * applied to the registry so subsequent `validate()` / `instantiate()` calls
+   * reflect the imported ontology.
+   *
+   * @param jsonLd - The OWL 2 TBox input as a QuadInterface array, a JSON-LD
+   *   object, or a JSON-LD string.
+   * @param options - Optional per-call overrides.
+   * @returns OwlImportResult (same shape as the static variant).
+   */
+  public fromTbox(
+    jsonLd: object | QuadInterface[] | string,
+    options?: { 'register'?: boolean }
+  ): OwlImportResult {
+    const register = options?.register !== false;
+    const importer = new OwlImporter({
+      'baseIRI': this.baseIRI,
+      'prefixes': this.prefixes
+    });
+    const result = importer.import(jsonLd);
+
+    if (register) {
+      for (const schema of result.schemas) {
+        if (typeof schema.$id === 'string') {
+          this.registry.set(schema as Record<string, unknown>);
+        }
+      }
+      for (const {
+        invariant, 'schemaId': schemaId
+      } of result.invariants) {
+        this.registry.addInvariant(schemaId, invariant);
+      }
+      for (const [
+        a,
+        b
+      ] of result.sameAs) {
+        this.registry.sameAsStore.add(a, b);
+      }
+      for (const {
+        characteristic, 'propertyIri': propertyIri
+      } of result.characteristics) {
+        this.registry.addCharacteristic(propertyIri, characteristic);
+      }
+    }
+
+    return result;
+  }
+  /**
    * Validates data against a registered schema, applying defaults and stripping unknown properties.
    *
    * Use `instantiate` when data crosses a trust boundary — HTTP request bodies, queue messages,
@@ -979,6 +1056,7 @@ export class JsonTology<TMap = Record<never, never>> {
       partial
     );
   }
+
   /**
    * Generates ontology output (OWL + SHACL) derived from all registered schemas.
    *

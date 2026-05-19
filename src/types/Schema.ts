@@ -186,6 +186,12 @@ export interface JsonSchemaDocumentObjectType {
   readonly 'jt:computed'?: boolean;
   readonly 'jt:config'?: Record<string, unknown>;
   readonly 'jt:frozen'?: boolean;
+  /**
+   * OWL 2 §9.5 — composite key uniqueness constraints declared via owl:hasKey.
+   * Each entry is an array of property IRIs that together form a composite key.
+   * At most one unique instance per (P1, P2, …) combination is allowed.
+   */
+  readonly 'jt:hasKey'?: ReadonlyArray<readonly string[]>;
   readonly 'jt:restrictions'?: ReadonlyArray<Record<string, unknown>>;
   readonly 'jt:strict'?: boolean;
 

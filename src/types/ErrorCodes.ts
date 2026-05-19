@@ -39,3 +39,10 @@ export type InstantiationErrorCodeType = 'EXTRA_FORBIDDEN' | 'INSTANTIATION_FAIL
 export type MaterializationErrorCodeType
   = | 'CYCLIC_DATA'
   | 'MATERIALIZATION_FAILED';
+
+export type OwlImportErrorCodeType
+  = | 'OWL_IMPORT_INVALID_DATATYPE'
+  | 'OWL_IMPORT_MALFORMED_CLASS'
+  | 'OWL_IMPORT_NOT_IMPLEMENTED'
+  | 'OWL_IMPORT_UNKNOWN_AXIOM'
+  | 'OWL_IMPORT_UNRESOLVED_REF';

@@ -9,6 +9,15 @@ import type { SameAsStore } from '../modules/registry/SameAsStore.js';
 import type { DuplicateReportEntryType } from '../modules/registry/SchemaRegistry.js';
 
 export interface SchemaRegistryInterface extends Iterable<[string, Record<string, unknown>]> {
+  /**
+   * Apply an OWL 2 property characteristic flag to an already-registered
+   * class schema. Used by the fromTbox() registration path.
+   *
+   * @param propertyIri - Full property IRI (`classIri#propertyName`).
+   * @param characteristic - OWL 2 name: Functional | InverseFunctional |
+   *   Transitive | Symmetric | Asymmetric | Reflexive | Irreflexive.
+   */
+  addCharacteristic(propertyIri: string, characteristic: string): void;
   addInvariant(schemaId: string, invariant: InvariantInterface): void;
   cast(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown, options?: { 'clone'?: boolean }): unknown;
   readonly 'castTypes': boolean;
