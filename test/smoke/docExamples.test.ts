@@ -27,6 +27,12 @@ import { fileURLToPath } from 'node:url';
 const CURRENT_DIR = fileURLToPath(new URL('.', import.meta.url));
 const EXAMPLES_ROOT = resolve(CURRENT_DIR, '../../examples/docs');
 
+// Directories that contain generated fixture outputs, not runnable doc examples.
+const EXCLUDED_DIRS = new Set([
+  'generated',
+  'generated-dir'
+]);
+
 function findExamplesIn(dir: string): string[] {
   const entries = readdirSync(dir, { 'withFileTypes': true });
   const results: string[] = [];
@@ -35,6 +41,10 @@ function findExamplesIn(dir: string): string[] {
     const fullPath = join(dir, entry.name);
 
     if (entry.isDirectory()) {
+      if (EXCLUDED_DIRS.has(entry.name)) {
+        continue;
+      }
+
       results.push(...findExamplesIn(fullPath));
     } else if (
       entry.isFile()

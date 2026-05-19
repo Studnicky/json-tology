@@ -31,6 +31,7 @@ import { runSerializeBench } from './serialize.bench.js';
 import { runRegistryBench } from './registry.bench.js';
 import { runOwlImportBench } from './owlImport.bench.js';
 import { runOwlCodegenBench } from './owlCodegen.bench.js';
+import { runOwlCodegenDirBench } from './owlCodegenDir.bench.js';
 
 interface SuiteEntry {
   'family': string;
@@ -100,6 +101,11 @@ const suites: SuiteEntry[] = [
     'family': 'OWL Codegen',
     'name': 'owlCodegen',
     'results': runOwlCodegenBench()
+  },
+  {
+    'family': 'OWL Codegen Directory',
+    'name': 'owlCodegenDir',
+    'results': runOwlCodegenDirBench()
   }
 ];
 
