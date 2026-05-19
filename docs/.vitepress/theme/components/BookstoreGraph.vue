@@ -436,6 +436,143 @@ function rerunLayout(): void {
 
 <template>
   <div class="bookstore-graph-container">
+    <!-- Color legend: explains node kinds (left) + edge kinds (right) -->
+    <div class="graph-legend">
+      <div class="graph-legend-body">
+        <!-- Left column: node kinds -->
+        <div class="graph-legend-col">
+          <h4 class="graph-legend-heading">Nodes</h4>
+          <ul class="graph-legend-list">
+            <li class="graph-legend-row">
+              <span class="graph-legend-swatch">
+                <svg width="80" height="24" aria-hidden="true">
+                  <rect x="1" y="1" width="78" height="22" rx="6" ry="6" fill="#005a9c" />
+                  <text x="40" y="16" text-anchor="middle" fill="#ffffff" font-size="11" font-family="sans-serif">Entity</text>
+                </svg>
+              </span>
+              <span class="graph-legend-label">
+                <strong>Entity</strong> — registered top-level class (Customer, Order, Book, Review, …)
+              </span>
+            </li>
+            <li class="graph-legend-row">
+              <span class="graph-legend-swatch">
+                <svg width="80" height="24" aria-hidden="true">
+                  <rect x="1" y="1" width="78" height="22" rx="6" ry="6" fill="#a8d1f0" />
+                  <text x="40" y="16" text-anchor="middle" fill="#003366" font-size="11" font-family="sans-serif">Primitive</text>
+                </svg>
+              </span>
+              <span class="graph-legend-label">
+                <strong>Primitive</strong> — named scalar / constrained type (Email, Iso8601, Amount, …)
+              </span>
+            </li>
+            <li class="graph-legend-row">
+              <span class="graph-legend-swatch">
+                <svg width="80" height="24" aria-hidden="true">
+                  <ellipse cx="40" cy="12" rx="38" ry="10" fill="#fbf3d4" stroke="#daa520" stroke-width="1.5" stroke-dasharray="3,2" />
+                  <text x="40" y="16" text-anchor="middle" fill="#5a4710" font-size="11" font-style="italic" font-family="sans-serif">Instance</text>
+                </svg>
+              </span>
+              <span class="graph-legend-label">
+                <strong>Instance</strong> — ABox individual (Bastian Bux, neverending-1979-thienemann, …)
+              </span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Right column: edge kinds -->
+        <div class="graph-legend-col">
+          <h4 class="graph-legend-heading">Edges</h4>
+          <ul class="graph-legend-list">
+            <li class="graph-legend-row">
+              <span class="graph-legend-swatch">
+                <svg width="64" height="16" aria-hidden="true">
+                  <line x1="2" y1="8" x2="54" y2="8" stroke="#888888" stroke-width="2" />
+                  <polygon points="54,4 62,8 54,12" fill="#888888" />
+                </svg>
+              </span>
+              <span class="graph-legend-label">
+                <strong>subClassOf</strong> — <code>rdfs:subClassOf</code> (taxonomic narrowing)
+              </span>
+            </li>
+            <li class="graph-legend-row">
+              <span class="graph-legend-swatch">
+                <svg width="64" height="16" aria-hidden="true">
+                  <line x1="2" y1="8" x2="62" y2="8" stroke="#28a745" stroke-width="2" stroke-dasharray="5,3" />
+                </svg>
+              </span>
+              <span class="graph-legend-label">
+                <strong>equivalentClass</strong> — <code>owl:equivalentClass</code> (alias / structural identity)
+              </span>
+            </li>
+            <li class="graph-legend-row">
+              <span class="graph-legend-swatch">
+                <svg width="64" height="16" aria-hidden="true">
+                  <line x1="2" y1="8" x2="54" y2="8" stroke="#0070c0" stroke-width="2" />
+                  <polyline points="54,3 62,8 54,13" fill="none" stroke="#0070c0" stroke-width="2" />
+                </svg>
+              </span>
+              <span class="graph-legend-label">
+                <strong>range</strong> — <code>rdfs:range</code> (property → typed target)
+              </span>
+            </li>
+            <li class="graph-legend-row">
+              <span class="graph-legend-swatch">
+                <svg width="64" height="16" aria-hidden="true">
+                  <line x1="2" y1="8" x2="54" y2="8" stroke="#cc7700" stroke-width="2" stroke-dasharray="1,3" />
+                  <polyline points="54,3 62,8 54,13" fill="none" stroke="#cc7700" stroke-width="2" />
+                </svg>
+              </span>
+              <span class="graph-legend-label">
+                <strong>domain</strong> — <code>rdfs:domain</code> (explicit override)
+              </span>
+            </li>
+            <li class="graph-legend-row">
+              <span class="graph-legend-swatch">
+                <svg width="64" height="16" aria-hidden="true">
+                  <line x1="2" y1="8" x2="62" y2="8" stroke="#d63a3a" stroke-width="2" stroke-dasharray="5,3" />
+                </svg>
+              </span>
+              <span class="graph-legend-label">
+                <strong>disjointWith</strong> — <code>owl:disjointWith</code> (no shared instances)
+              </span>
+            </li>
+            <li class="graph-legend-row">
+              <span class="graph-legend-swatch">
+                <svg width="64" height="16" aria-hidden="true">
+                  <line x1="2" y1="8" x2="56" y2="8" stroke="#8a2be2" stroke-width="2" />
+                  <line x1="56" y1="3" x2="56" y2="13" stroke="#8a2be2" stroke-width="2" />
+                </svg>
+              </span>
+              <span class="graph-legend-label">
+                <strong>complementOf</strong> — <code>owl:complementOf</code> (negation)
+              </span>
+            </li>
+            <li class="graph-legend-row">
+              <span class="graph-legend-swatch">
+                <svg width="64" height="16" aria-hidden="true">
+                  <line x1="2" y1="8" x2="54" y2="8" stroke="#08717a" stroke-width="2" stroke-dasharray="1,3" />
+                  <circle cx="58" cy="8" r="3" fill="none" stroke="#08717a" stroke-width="1.5" />
+                </svg>
+              </span>
+              <span class="graph-legend-label">
+                <strong>restriction</strong> — <code>owl:Restriction</code> (cardinality / hasValue / …)
+              </span>
+            </li>
+            <li class="graph-legend-row">
+              <span class="graph-legend-swatch">
+                <svg width="64" height="16" aria-hidden="true">
+                  <line x1="2" y1="8" x2="62" y2="8" stroke="#daa520" stroke-width="2" stroke-dasharray="5,3" />
+                </svg>
+              </span>
+              <span class="graph-legend-label">
+                <strong>sameAs</strong> — <code>owl:sameAs</code> (ABox identity)
+              </span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
     <!-- Graph wrapper: contracts when inspector is open -->
     <div
       ref="wrapperRef"
@@ -526,6 +663,72 @@ function rerunLayout(): void {
   border-radius: 8px;
   overflow: hidden;
   background: var(--vp-c-bg-soft);
+}
+
+/* Color legend — sits above the graph wrapper, visually connects via
+   border-bottom-only divider so it reads as part of the same composition. */
+.graph-legend {
+  width: 100%;
+  background: var(--vp-c-bg);
+  border-bottom: 1px solid var(--vp-c-divider);
+  padding: 12px 16px;
+  font-size: 12px;
+}
+
+.graph-legend-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 720px) {
+  .graph-legend-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.graph-legend-heading {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--vp-c-text-1);
+}
+
+.graph-legend-list {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.graph-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+.graph-legend-row:last-child {
+  margin-bottom: 0;
+}
+
+.graph-legend-swatch {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.graph-legend-label {
+  font-size: 12px;
+  color: var(--vp-c-text-1);
+}
+
+.graph-legend-label code {
+  font-size: 11px;
+  background: var(--vp-c-bg-soft);
+  padding: 1px 4px;
+  border-radius: 3px;
+  color: var(--vp-c-text-2);
 }
 
 /* Graph wrapper — transitions its height when the inspector opens/closes */
