@@ -1,6 +1,6 @@
 {
   "name": "json-tology",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "description": "One source of truth for TypeScript types, runtime validation, coercion, and OWL ontology output. Author in JSON Schema; share with any backend; reason over the graph.",
   "type": "module",
   "main": "./dist/index.js",
@@ -42,6 +42,10 @@
     "./viz": {
       "import": "./dist/viz.js",
       "types": "./dist/viz.d.ts"
+    },
+    "./owl-gen": {
+      "import": "./dist/owl-gen.js",
+      "types": "./dist/owl-gen.d.ts"
     }
   },
   "scripts": {

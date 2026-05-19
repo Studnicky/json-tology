@@ -7,6 +7,7 @@ import type { EdgeData, NodeData } from '../utils/bookstoreGraphData.js';
 // ---------------------------------------------------------------------------
 
 const containerRef = ref<HTMLDivElement | null>(null);
+const wrapperRef = ref<HTMLDivElement | null>(null);
 const loadError = ref<string | null>(null);
 const loading = ref(true);
 const selectedNode = ref<{ id: string; schema: unknown; edges: EdgeData[] } | null>(null);
@@ -344,7 +345,11 @@ onMounted(async () => {
   cyInstance.minZoom(fitZoom * 0.25);
   cyInstance.maxZoom(fitZoom * 6);
 
-  if (containerRef.value !== null && typeof ResizeObserver !== 'undefined') {
+  // Observe the wrapper so Cytoscape re-centres whenever the wrapper
+  // height transitions (e.g. inspector open/close).  containerRef covers
+  // canvas-only resizes; wrapperRef covers the height transition animation.
+  const observeTarget = wrapperRef.value ?? containerRef.value;
+  if (observeTarget !== null && typeof ResizeObserver !== 'undefined') {
     const resizeObserver = new ResizeObserver(() => {
       // resize() tells Cytoscape to re-read the container dimensions and
       // resize its internal canvas. Without this, fit() would compute zoom
@@ -352,7 +357,7 @@ onMounted(async () => {
       cyInstance?.resize();
       refit();
     });
-    resizeObserver.observe(containerRef.value);
+    resizeObserver.observe(observeTarget);
     onUnmounted(() => { resizeObserver.disconnect(); });
   }
 
@@ -431,85 +436,324 @@ function rerunLayout(): void {
 
 <template>
   <div class="bookstore-graph-container">
-    <!-- Loading indicator -->
-    <div v-if="loading" class="graph-loading">
-      Loading graph data...
+    <!-- Color legend: explains node kinds (left) + edge kinds (right) -->
+    <div class="graph-legend">
+      <div class="graph-legend-body">
+        <!-- Left column: node kinds -->
+        <div class="graph-legend-col">
+          <h4 class="graph-legend-heading">Nodes</h4>
+          <ul class="graph-legend-list">
+            <li class="graph-legend-row">
+              <span class="graph-legend-swatch">
+                <svg width="80" height="24" aria-hidden="true">
+                  <rect x="1" y="1" width="78" height="22" rx="6" ry="6" fill="#005a9c" />
+                  <text x="40" y="16" text-anchor="middle" fill="#ffffff" font-size="11" font-family="sans-serif">Entity</text>
+                </svg>
+              </span>
+              <span class="graph-legend-label">
+                <strong>Entity</strong> — registered top-level class (Customer, Order, Book, Review, …)
+              </span>
+            </li>
+            <li class="graph-legend-row">
+              <span class="graph-legend-swatch">
+                <svg width="80" height="24" aria-hidden="true">
+                  <rect x="1" y="1" width="78" height="22" rx="6" ry="6" fill="#a8d1f0" />
+                  <text x="40" y="16" text-anchor="middle" fill="#003366" font-size="11" font-family="sans-serif">Primitive</text>
+                </svg>
+              </span>
+              <span class="graph-legend-label">
+                <strong>Primitive</strong> — named scalar / constrained type (Email, Iso8601, Amount, …)
+              </span>
+            </li>
+            <li class="graph-legend-row">
+              <span class="graph-legend-swatch">
+                <svg width="80" height="24" aria-hidden="true">
+                  <ellipse cx="40" cy="12" rx="38" ry="10" fill="#fbf3d4" stroke="#daa520" stroke-width="1.5" stroke-dasharray="3,2" />
+                  <text x="40" y="16" text-anchor="middle" fill="#5a4710" font-size="11" font-style="italic" font-family="sans-serif">Instance</text>
+                </svg>
+              </span>
+              <span class="graph-legend-label">
+                <strong>Instance</strong> — ABox individual (Bastian Bux, neverending-1979-thienemann, …)
+              </span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Right column: edge kinds -->
+        <div class="graph-legend-col">
+          <h4 class="graph-legend-heading">Edges</h4>
+          <ul class="graph-legend-list">
+            <li class="graph-legend-row">
+              <span class="graph-legend-swatch">
+                <svg width="64" height="16" aria-hidden="true">
+                  <line x1="2" y1="8" x2="54" y2="8" stroke="#888888" stroke-width="2" />
+                  <polygon points="54,4 62,8 54,12" fill="#888888" />
+                </svg>
+              </span>
+              <span class="graph-legend-label">
+                <strong>subClassOf</strong> — <code>rdfs:subClassOf</code> (taxonomic narrowing)
+              </span>
+            </li>
+            <li class="graph-legend-row">
+              <span class="graph-legend-swatch">
+                <svg width="64" height="16" aria-hidden="true">
+                  <line x1="2" y1="8" x2="62" y2="8" stroke="#28a745" stroke-width="2" stroke-dasharray="5,3" />
+                </svg>
+              </span>
+              <span class="graph-legend-label">
+                <strong>equivalentClass</strong> — <code>owl:equivalentClass</code> (alias / structural identity)
+              </span>
+            </li>
+            <li class="graph-legend-row">
+              <span class="graph-legend-swatch">
+                <svg width="64" height="16" aria-hidden="true">
+                  <line x1="2" y1="8" x2="54" y2="8" stroke="#0070c0" stroke-width="2" />
+                  <polyline points="54,3 62,8 54,13" fill="none" stroke="#0070c0" stroke-width="2" />
+                </svg>
+              </span>
+              <span class="graph-legend-label">
+                <strong>range</strong> — <code>rdfs:range</code> (property → typed target)
+              </span>
+            </li>
+            <li class="graph-legend-row">
+              <span class="graph-legend-swatch">
+                <svg width="64" height="16" aria-hidden="true">
+                  <line x1="2" y1="8" x2="54" y2="8" stroke="#cc7700" stroke-width="2" stroke-dasharray="1,3" />
+                  <polyline points="54,3 62,8 54,13" fill="none" stroke="#cc7700" stroke-width="2" />
+                </svg>
+              </span>
+              <span class="graph-legend-label">
+                <strong>domain</strong> — <code>rdfs:domain</code> (explicit override)
+              </span>
+            </li>
+            <li class="graph-legend-row">
+              <span class="graph-legend-swatch">
+                <svg width="64" height="16" aria-hidden="true">
+                  <line x1="2" y1="8" x2="62" y2="8" stroke="#d63a3a" stroke-width="2" stroke-dasharray="5,3" />
+                </svg>
+              </span>
+              <span class="graph-legend-label">
+                <strong>disjointWith</strong> — <code>owl:disjointWith</code> (no shared instances)
+              </span>
+            </li>
+            <li class="graph-legend-row">
+              <span class="graph-legend-swatch">
+                <svg width="64" height="16" aria-hidden="true">
+                  <line x1="2" y1="8" x2="56" y2="8" stroke="#8a2be2" stroke-width="2" />
+                  <line x1="56" y1="3" x2="56" y2="13" stroke="#8a2be2" stroke-width="2" />
+                </svg>
+              </span>
+              <span class="graph-legend-label">
+                <strong>complementOf</strong> — <code>owl:complementOf</code> (negation)
+              </span>
+            </li>
+            <li class="graph-legend-row">
+              <span class="graph-legend-swatch">
+                <svg width="64" height="16" aria-hidden="true">
+                  <line x1="2" y1="8" x2="54" y2="8" stroke="#08717a" stroke-width="2" stroke-dasharray="1,3" />
+                  <circle cx="58" cy="8" r="3" fill="none" stroke="#08717a" stroke-width="1.5" />
+                </svg>
+              </span>
+              <span class="graph-legend-label">
+                <strong>restriction</strong> — <code>owl:Restriction</code> (cardinality / hasValue / …)
+              </span>
+            </li>
+            <li class="graph-legend-row">
+              <span class="graph-legend-swatch">
+                <svg width="64" height="16" aria-hidden="true">
+                  <line x1="2" y1="8" x2="62" y2="8" stroke="#daa520" stroke-width="2" stroke-dasharray="5,3" />
+                </svg>
+              </span>
+              <span class="graph-legend-label">
+                <strong>sameAs</strong> — <code>owl:sameAs</code> (ABox identity)
+              </span>
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
 
-    <!-- Error -->
-    <div v-if="loadError" class="graph-error">
-      <p><strong>Graph failed to load:</strong> {{ loadError }}</p>
-    </div>
-
-    <!-- Cytoscape container -->
+    <!-- Graph wrapper: contracts when inspector is open -->
     <div
-      v-show="!loading && !loadError"
-      ref="containerRef"
-      class="cy-container"
-      aria-label="Bookstore ontology graph"
-    />
-
-    <!-- Navigation pane: zoom + fit controls (bottom-right) -->
-    <div
-      v-show="!loading && !loadError"
-      class="graph-nav"
-      role="toolbar"
-      aria-label="Graph navigation"
+      ref="wrapperRef"
+      class="graph-wrapper"
+      :class="{ 'has-panel': selectedNode !== null }"
     >
-      <button class="graph-nav-btn" title="Zoom in" @click="zoomIn">＋</button>
-      <button class="graph-nav-btn" title="Zoom out" @click="zoomOut">－</button>
-      <button class="graph-nav-btn" title="Fit to view" @click="fitGraph">⤢</button>
-      <button class="graph-nav-btn" title="Re-run layout" @click="rerunLayout">⟳</button>
+      <!-- Loading indicator -->
+      <div v-if="loading" class="graph-loading">
+        Loading graph data...
+      </div>
+
+      <!-- Error -->
+      <div v-if="loadError" class="graph-error">
+        <p><strong>Graph failed to load:</strong> {{ loadError }}</p>
+      </div>
+
+      <!-- Cytoscape canvas -->
+      <div
+        v-show="!loading && !loadError"
+        ref="containerRef"
+        class="cy-container"
+        aria-label="Bookstore ontology graph"
+      />
+
+      <!-- Navigation pane: zoom + fit controls (bottom-right of wrapper) -->
+      <div
+        v-show="!loading && !loadError"
+        class="graph-nav"
+        role="toolbar"
+        aria-label="Graph navigation"
+      >
+        <button class="graph-nav-btn" title="Zoom in" @click="zoomIn">＋</button>
+        <button class="graph-nav-btn" title="Zoom out" @click="zoomOut">－</button>
+        <button class="graph-nav-btn" title="Fit to view" @click="fitGraph">⤢</button>
+        <button class="graph-nav-btn" title="Re-run layout" @click="rerunLayout">⟳</button>
+      </div>
     </div>
 
-    <!-- Side panel for selected node -->
-    <div v-if="selectedNode" class="graph-panel">
-      <div class="graph-panel-header">
-        <strong>{{ selectedNode.id.split(':').pop() }}</strong>
-        <button class="graph-panel-close" @click="closePanel">✕</button>
+    <!-- Inspector panel: appears BELOW the graph when a node is selected -->
+    <div v-if="selectedNode" class="graph-inspector">
+      <!-- Header: label + IRI + dismiss -->
+      <div class="graph-inspector-header">
+        <div class="graph-inspector-title">
+          <strong>{{ selectedNode.id.split(':').pop() }}</strong>
+          <code class="graph-inspector-iri">{{ selectedNode.id }}</code>
+        </div>
+        <button class="graph-inspector-close" aria-label="Close inspector" @click="closePanel">✕</button>
       </div>
-      <div class="graph-panel-iri">
-        <code>{{ selectedNode.id }}</code>
-      </div>
-      <div v-if="selectedNode.edges.length > 0" class="graph-panel-edges">
-        <p><strong>Relations:</strong></p>
-        <ul>
-          <li v-for="edge in selectedNode.edges" :key="edge.id">
-            <span class="edge-kind">{{ edge.kind }}</span>
-            {{ edge.label }} →
-            <code>{{ edge.source === selectedNode.id ? edge.target.split(':').pop() : edge.source.split(':').pop() }}</code>
-          </li>
-        </ul>
-      </div>
-      <div v-if="selectedNode.schema" class="graph-panel-schema">
-        <p><strong>Schema:</strong></p>
-        <pre>{{ schemaText(selectedNode.schema) }}</pre>
+
+      <!-- Two-column body: RDF | JSON Schema -->
+      <div class="graph-inspector-body">
+        <!-- Left column: RDF relations -->
+        <div class="graph-inspector-col">
+          <h4 class="graph-inspector-col-heading">RDF</h4>
+          <div class="graph-inspector-scroll">
+            <ul v-if="selectedNode.edges.length > 0" class="graph-inspector-edges">
+              <li v-for="edge in selectedNode.edges" :key="edge.id">
+                <span class="edge-kind">{{ edge.kind }}</span>
+                <span>{{ edge.label }}</span>
+                →
+                <code>{{ edge.source === selectedNode.id ? edge.target.split(':').pop() : edge.source.split(':').pop() }}</code>
+              </li>
+            </ul>
+            <p v-else class="graph-inspector-empty">No relations for this node.</p>
+          </div>
+        </div>
+
+        <!-- Right column: JSON Schema -->
+        <div class="graph-inspector-col">
+          <h4 class="graph-inspector-col-heading">JSON Schema</h4>
+          <div class="graph-inspector-scroll">
+            <pre v-if="selectedNode.schema" class="graph-inspector-pre">{{ schemaText(selectedNode.schema) }}</pre>
+            <p v-else class="graph-inspector-empty">(no schema registered for this node)</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+/* Outer container — flex column so inspector flows below the graph */
 .bookstore-graph-container {
-  position: relative;
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  min-height: 720px;
   border: 1px solid var(--vp-c-divider);
   border-radius: 8px;
   overflow: hidden;
   background: var(--vp-c-bg-soft);
 }
 
-.cy-container {
+/* Color legend — sits above the graph wrapper, visually connects via
+   border-bottom-only divider so it reads as part of the same composition. */
+.graph-legend {
+  width: 100%;
+  background: var(--vp-c-bg);
+  border-bottom: 1px solid var(--vp-c-divider);
+  padding: 12px 16px;
+  font-size: 12px;
+}
+
+.graph-legend-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 720px) {
+  .graph-legend-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.graph-legend-heading {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--vp-c-text-1);
+}
+
+.graph-legend-list {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.graph-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+.graph-legend-row:last-child {
+  margin-bottom: 0;
+}
+
+.graph-legend-swatch {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.graph-legend-label {
+  font-size: 12px;
+  color: var(--vp-c-text-1);
+}
+
+.graph-legend-label code {
+  font-size: 11px;
+  background: var(--vp-c-bg-soft);
+  padding: 1px 4px;
+  border-radius: 3px;
+  color: var(--vp-c-text-2);
+}
+
+/* Graph wrapper — transitions its height when the inspector opens/closes */
+.graph-wrapper {
+  position: relative;
   width: 100%;
   height: 720px;
+  transition: height 240ms ease;
+  flex-shrink: 0;
+}
+
+.graph-wrapper.has-panel {
+  height: 460px;
+}
+
+.cy-container {
+  width: 100%;
+  height: 100%;
 }
 
 .graph-loading {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 720px;
+  height: 100%;
   color: var(--vp-c-text-2);
   font-size: 14px;
 }
@@ -517,22 +761,6 @@ function rerunLayout(): void {
 .graph-error {
   padding: 16px;
   color: var(--vp-c-danger-1, #cc0000);
-}
-
-.graph-panel {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 280px;
-  max-height: 500px;
-  overflow-y: auto;
-  background: var(--vp-c-bg);
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 6px;
-  padding: 12px;
-  font-size: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  z-index: 10;
 }
 
 /* Navigation pane — bottom-right zoom / fit / rerun-layout controls */
@@ -580,40 +808,93 @@ function rerunLayout(): void {
   outline-offset: 1px;
 }
 
-.graph-panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-  font-size: 14px;
+/* Inspector panel — in-flow below the graph */
+.graph-inspector {
+  width: 100%;
+  background: var(--vp-c-bg);
+  border-top: 1px solid var(--vp-c-divider);
+  padding: 12px 16px 16px;
+  font-size: 12px;
 }
 
-.graph-panel-close {
+.graph-inspector-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.graph-inspector-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.graph-inspector-title strong {
+  font-size: 14px;
+  color: var(--vp-c-text-1);
+}
+
+.graph-inspector-iri {
+  font-size: 10px;
+  color: var(--vp-c-text-2);
+  word-break: break-all;
+}
+
+.graph-inspector-close {
   background: none;
   border: none;
   cursor: pointer;
   color: var(--vp-c-text-2);
   font-size: 14px;
   padding: 0 4px;
+  flex-shrink: 0;
+  line-height: 1;
 }
 
-.graph-panel-iri {
-  margin-bottom: 8px;
-  word-break: break-all;
+.graph-inspector-close:hover {
+  color: var(--vp-c-text-1);
 }
 
-.graph-panel-iri code {
-  font-size: 10px;
+/* Two-column grid body */
+.graph-inspector-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 720px) {
+  .graph-inspector-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.graph-inspector-col-heading {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   color: var(--vp-c-text-2);
 }
 
-.graph-panel-edges ul {
-  list-style: none;
-  padding: 0;
-  margin: 4px 0 8px;
+/* Scrollable inner body — ~16 lines tall */
+.graph-inspector-scroll {
+  max-height: 240px;
+  overflow-y: auto;
+  font-size: 11px;
+  line-height: 1.45;
 }
 
-.graph-panel-edges li {
+/* RDF column */
+.graph-inspector-edges {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.graph-inspector-edges li {
   margin-bottom: 4px;
 }
 
@@ -629,14 +910,22 @@ function rerunLayout(): void {
   letter-spacing: 0.04em;
 }
 
-.graph-panel-schema pre {
-  font-size: 10px;
-  max-height: 200px;
-  overflow: auto;
+/* JSON Schema column */
+.graph-inspector-pre {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
   background: var(--vp-c-bg-soft);
-  padding: 6px;
+  padding: 6px 8px;
   border-radius: 4px;
   white-space: pre-wrap;
   word-break: break-word;
+  overflow-x: auto;
+}
+
+.graph-inspector-empty {
+  margin: 0;
+  color: var(--vp-c-text-3, var(--vp-c-text-2));
+  font-style: italic;
 }
 </style>

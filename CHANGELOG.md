@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-05-19
+
+Graph inspector moved below the canvas as a two-column in-flow panel.
+
+### Fixed
+
+- `BookstoreGraph` node inspector no longer overlays the graph canvas. The panel now renders below the Cytoscape container as a full-width in-flow element.
+- Graph canvas contracts (720 px → 460 px) with a smooth height transition when a node is selected; expands back on dismiss. The existing `ResizeObserver` fires on the `graph-wrapper` height change, triggering `cytoscape.resize()` + `fit()` so the graph re-centres automatically.
+
+### Changed
+
+- Inspector layout redesigned as a two-column grid: **RDF** (left) lists all edges/relations for the selected node; **JSON Schema** (right) renders the registered schema as a pretty-printed scrollable block.
+- Each column body is capped at 240 px (`max-height`) with `overflow-y: auto` (~16 visible lines).
+- On viewports ≤ 720 px the two-column grid stacks into a single column.
+- Inspector header shows the local IRI label as a `<strong>` heading, the full IRI in a `<code>` element below it, and a dismiss button (`✕`) at the far right.
+- Clicking the graph background or the dismiss button both close the inspector (unchanged behaviour).
+
 ## [0.10.0] - 2026-05-18
 
 OWL 2 TBox importer: `fromTbox` / `JsonTology.fromTbox`.
