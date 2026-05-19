@@ -516,7 +516,8 @@ export default [
       '.claude',
       'docs/.vitepress/cache/**',
       'docs/.vitepress/dist/**',
-      'eslint.config.mjs'
+      'eslint.config.mjs',
+      'examples/docs/ontologies/generated/**'
     ]
   },
 

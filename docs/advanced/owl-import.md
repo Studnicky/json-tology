@@ -172,6 +172,60 @@ This is the simplest option. Every `npm run build` re-generates the file first. 
 - **OWL-induced invariants are not serialised into the generated TypeScript.** Property characteristics (`owl:FunctionalProperty`, `owl:TransitiveProperty`, etc.) and cross-field invariants are recorded in `OwlImportResult.characteristics` and `OwlImportResult.invariants` at runtime. The code generator emits the structural schema only. Register characteristics and invariants programmatically after importing the generated module if you need them at runtime.
 - **Generated files are one-way.** When the source ontology changes, regenerate the TypeScript file and commit the update. Do not hand-edit generated files — they will be overwritten on the next generation run.
 
+## Real-ontology round-trip examples <Badge type="tip" text="v0.11.1+" /> {#real-ontology-examples}
+
+The examples below run the full `fromTbox → generateFromTbox → validate` pipeline against three real-world standard vocabularies. Each fixture is a hand-authored concise subset — not the full upstream ontology — so it fits on a page and compiles in milliseconds.
+
+The committed generated files (`examples/docs/ontologies/generated/*.generated.ts`) are refreshed by running `npm run regen:ontology-fixtures` when the codegen output format changes.
+
+### FOAF — Friend of a Friend
+
+FOAF is a classic semantic-web vocabulary for describing people and their social relationships. The interesting round-trip detail: `owl:disjointWith` between `foaf:Person` and `foaf:Group` is encoded symmetrically — both class schemas carry `disjointWith` pointing at each other.
+
+**Input ontology fixture:**
+
+<<< ../../examples/docs/ontologies/foaf-subset.jsonld
+
+**Generated TypeScript (`npm run regen:ontology-fixtures`):**
+
+<<< ../../examples/docs/ontologies/generated/foaf.generated.ts
+
+**Runnable round-trip:**
+
+<<< ../../examples/docs/advanced/92-foaf-roundtrip.ts
+
+### DCAT-AP — Data Catalog Vocabulary
+
+DCAT is a W3C recommendation for describing data catalogs and datasets published on the Web. The interesting round-trip detail: the `rdfs:subClassOf` chain reaches `dcterms:Resource`, an external IRI not defined in this subset. `fromTbox` handles this gracefully — `dcterms:Resource` becomes a class stub, and `dcat:Dataset` and `dcat:Catalog` carry `allOf: [{ $ref: "http://purl.org/dc/terms/Resource" }]` pointing to it.
+
+**Input ontology fixture:**
+
+<<< ../../examples/docs/ontologies/dcat-subset.jsonld
+
+**Generated TypeScript:**
+
+<<< ../../examples/docs/ontologies/generated/dcat.generated.ts
+
+**Runnable round-trip:**
+
+<<< ../../examples/docs/advanced/93-dcat-roundtrip.ts
+
+### schema.org — Structured Data Vocabulary
+
+schema.org is a collaborative vocabulary for structured data on the Web, widely used for search-engine markup and data exchange. The interesting round-trip detail: `schema:IsbnType` is declared as an `rdfs:Datatype` with an `owl:withRestrictions` XSD pattern facet (`^\d{13}$`). This round-trips losslessly — the generated `IsbnTypeSchema` carries `type: 'string', pattern: '^\d{13}$'` and `BookSchema.properties.isbn` is a `$ref` pointing to `IsbnTypeSchema`.
+
+**Input ontology fixture:**
+
+<<< ../../examples/docs/ontologies/schema-org-subset.jsonld
+
+**Generated TypeScript:**
+
+<<< ../../examples/docs/ontologies/generated/schema-org.generated.ts
+
+**Runnable round-trip:**
+
+<<< ../../examples/docs/advanced/94-schema-org-roundtrip.ts
+
 ## Related
 
 - [`jt.toTbox()`](/advanced/ontology#jt-totbox) — OWL TBox emission (the inverse operation)

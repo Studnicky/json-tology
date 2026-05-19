@@ -1,0 +1,66 @@
+{
+  "_comment": "FOAF subset for json-tology codegen round-trip demo. Not a complete FOAF projection. Covers Agent, Person, Group classes; name, mbox, knows, member properties; domain/range; rdfs:label/rdfs:comment annotations; owl:disjointWith between Person and Group.",
+  "@context": {
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "foaf": "http://xmlns.com/foaf/0.1/"
+  },
+  "@graph": [
+    {
+      "@id": "http://xmlns.com/foaf/0.1/Agent",
+      "@type": "owl:Class",
+      "rdfs:label": "Agent",
+      "rdfs:comment": "An agent (e.g. a person, group, software or physical artifact)."
+    },
+    {
+      "@id": "http://xmlns.com/foaf/0.1/Person",
+      "@type": "owl:Class",
+      "rdfs:subClassOf": { "@id": "http://xmlns.com/foaf/0.1/Agent" },
+      "owl:disjointWith": { "@id": "http://xmlns.com/foaf/0.1/Group" },
+      "rdfs:label": "Person",
+      "rdfs:comment": "A person."
+    },
+    {
+      "@id": "http://xmlns.com/foaf/0.1/Group",
+      "@type": "owl:Class",
+      "rdfs:subClassOf": { "@id": "http://xmlns.com/foaf/0.1/Agent" },
+      "owl:disjointWith": { "@id": "http://xmlns.com/foaf/0.1/Person" },
+      "rdfs:label": "Group",
+      "rdfs:comment": "A class of Agents."
+    },
+    {
+      "@id": "http://xmlns.com/foaf/0.1/name",
+      "@type": "owl:DatatypeProperty",
+      "rdfs:label": "name",
+      "rdfs:comment": "A name for some thing.",
+      "rdfs:domain": { "@id": "http://xmlns.com/foaf/0.1/Agent" },
+      "rdfs:range": { "@id": "xsd:string" }
+    },
+    {
+      "@id": "http://xmlns.com/foaf/0.1/mbox",
+      "@type": "owl:DatatypeProperty",
+      "rdfs:label": "personal mailbox",
+      "rdfs:comment": "A personal mailbox, ie. an Internet mailbox associated with exactly one owner.",
+      "rdfs:domain": { "@id": "http://xmlns.com/foaf/0.1/Agent" },
+      "rdfs:range": { "@id": "xsd:string" }
+    },
+    {
+      "@id": "http://xmlns.com/foaf/0.1/knows",
+      "@type": "owl:ObjectProperty",
+      "rdfs:label": "knows",
+      "rdfs:comment": "A person known by this person (indicating some level of reciprocated interaction between the parties).",
+      "rdfs:domain": { "@id": "http://xmlns.com/foaf/0.1/Person" },
+      "rdfs:range": { "@id": "http://xmlns.com/foaf/0.1/Person" }
+    },
+    {
+      "@id": "http://xmlns.com/foaf/0.1/member",
+      "@type": "owl:ObjectProperty",
+      "rdfs:label": "member",
+      "rdfs:comment": "Indicates a member of a Group.",
+      "rdfs:domain": { "@id": "http://xmlns.com/foaf/0.1/Group" },
+      "rdfs:range": { "@id": "http://xmlns.com/foaf/0.1/Agent" }
+    }
+  ]
+}

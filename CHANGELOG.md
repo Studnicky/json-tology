@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-05-19
+
+Real-ontology codegen round-trip examples for FOAF, DCAT-AP, and schema.org.
+
+### Added
+
+- **`examples/docs/ontologies/foaf-subset.jsonld`** — hand-authored FOAF subset: `foaf:Agent`, `foaf:Person`, `foaf:Group` classes; `foaf:name`, `foaf:mbox`, `foaf:knows`, `foaf:member` properties; `owl:disjointWith` between Person and Group; `rdfs:label`/`rdfs:comment` annotations.
+- **`examples/docs/ontologies/dcat-subset.jsonld`** — hand-authored DCAT-AP subset: `dcat:Dataset`, `dcat:Distribution`, `dcat:Catalog` classes; `dcat:title`, `dcat:description`, `dcat:distribution`, `dcat:accessURL` properties; `rdfs:subClassOf` chain reaching `dcterms:Resource` as an external IRI stub.
+- **`examples/docs/ontologies/schema-org-subset.jsonld`** — hand-authored schema.org subset: `schema:Book`, `schema:Person`, `schema:Organization` classes; `schema:author`, `schema:publisher`, `schema:name`, `schema:isbn` properties; `schema:IsbnType` declared as `rdfs:Datatype` with XSD pattern facet (`^\d{13}$`) that round-trips losslessly.
+- **`examples/docs/ontologies/generated/foaf.generated.ts`**, **`dcat.generated.ts`**, **`schema-org.generated.ts`** — committed generated TypeScript fixtures produced by `generateFromTbox`. Consumers can inspect the codegen output without running the generator themselves.
+- **`scripts/regen-ontology-fixtures.mjs`** — maintainer script to refresh the committed generated fixtures after codegen format changes. Not wired into CI. Run via `npm run regen:ontology-fixtures`.
+- **`examples/docs/advanced/92-foaf-roundtrip.ts`**, **`93-dcat-roundtrip.ts`**, **`94-schema-org-roundtrip.ts`** — runnable round-trip examples demonstrating `fromTbox → generateFromTbox → validate → InferType` against each real ontology fixture.
+- **`docs/advanced/owl-import.md`** extended with a `## Real-ontology round-trip examples` section, one subsection per ontology with `<<<` includes for the input fixture, generated TypeScript, and runnable example.
+- `npm run regen:ontology-fixtures` script wired into `package.json`.
+
 ## [0.11.0] - 2026-05-19
 
 Compile-time TypeScript types for imported OWL 2 ontologies via code generation.
