@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.2] - 2026-05-19
+
+Lint zero-baseline follow-up to v0.12.1.
+
+### Fixed
+
+- `examples/docs/constraint-brands/08-named-format-brands.ts` — `sendEmail` and `trackEvent` were declared as functions whose `_to` / `_id` parameters carried the leading-underscore convention to mark them unused. The `@typescript-eslint/naming-convention` rule forbids the leading-underscore pattern on functions, so the example is restructured as `SendEmailFn` / `TrackEventFn` type aliases that preserve the original "brand types are not assignable from plain string" demonstration.
+
+### Internal
+
+- `eslint.config.mjs` already widened `varsIgnorePattern` / `argsIgnorePattern` from `^_$` (exact single underscore) to `^_` (starts with underscore) in v0.12.1; this release just finishes the trailing example-file restructure that the lint sweep agent surfaced.
+
 ## [0.12.1] - 2026-05-19
 
 Tech-debt pass. No new features, no breaking changes.

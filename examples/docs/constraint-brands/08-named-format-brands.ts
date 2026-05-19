@@ -3,12 +3,8 @@ import type {
 } from '../../../src/types/index.js';
 
 // Reject plain string — must come from instantiate/validate
-function sendEmail(_to: EmailBrandInterface): void {
-  // type-level demo — no runtime body needed
-}
+// These signatures demonstrate that brand types are not assignable from plain string.
+type SendEmailFn = (_to: EmailBrandInterface) => void;
+type TrackEventFn = (_id: UuidBrandInterface) => void;
 
-function trackEvent(_id: UuidBrandInterface): void {
-  // type-level demo — no runtime body needed
-}
-
-void 0 as unknown as [typeof sendEmail, typeof trackEvent];
+void 0 as unknown as [SendEmailFn, TrackEventFn];
