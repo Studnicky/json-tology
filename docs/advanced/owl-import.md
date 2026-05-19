@@ -94,9 +94,7 @@ If the input contains any of the above, the affected axiom IRI appears in `resul
 
 ## Round-trip fidelity
 
-Run `fromTbox(toTbox(schemas).jsonLd())` against the canonical bookstore registry to confirm the supported axiom set round-trips cleanly:
-
-<<< ../../examples/docs/advanced/90-owl-import-roundtrip.ts
+Run `fromTbox(toTbox(schemas).jsonLd())` against the canonical bookstore registry to confirm the supported axiom set round-trips cleanly. The example in the previous section demonstrates this: it exports the bookstore TBox, reimports it into a fresh registry, and asserts that every OWL class axiom (subClassOf, disjointWith, complementOf, equivalentClass, property domain + range) is reconstructed correctly. The full source is at `examples/docs/advanced/90-owl-import-roundtrip.ts`.
 
 ## Compile-time types via codegen
 

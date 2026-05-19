@@ -11,6 +11,16 @@ import type { SchemaGraphInterface } from './SchemaGraphImpl.js';
 import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
 
 /**
+ * Options accepted by the {@link OwlImporter} constructor.
+ */
+export interface OwlImporterOptions {
+  /** Base IRI for the import session. Used when building OwlImportContext. */
+  readonly 'baseIRI': string;
+  /** Additional prefix mappings merged with DEFAULT_PREFIXES. */
+  readonly 'prefixes'?: PrefixMap;
+}
+
+/**
  * A prefix-to-IRI map, identical in structure to the prefixes accepted by
  * JsonTology and Curie — a plain string record.
  */

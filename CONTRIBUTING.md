@@ -40,12 +40,13 @@ Doc pages must be in current tense, em-dash free, and emoji free. See [Reference
 
 ## Releases
 
-Patch (`0.8.x`) and minor (`0.x`) releases are cut from `main`:
+Patch (`0.x.y`) and minor (`0.x`) releases are cut from `main`:
 
 1. Bump `package.json#version`.
 2. Date the `[Unreleased]` section in `CHANGELOG.md` to `## [<version>] - YYYY-MM-DD`.
-3. Open a `release/<version>` PR.
-4. After merge, `publish.yml` triggers on the `main` push: it builds, validates, and publishes to npm if the version is not already present.
-5. After a successful publish, `publish.yml` creates a GitHub release with changelog notes as a post-publish artifact. No manual tag push is required.
+3. Run `npm run stamp-version` to stamp the version into `docs/public/readme-header.svg` and `docs/public/og-image.svg`.
+4. Open a `release/<version>` PR.
+5. After merge, `publish.yml` triggers on the `main` push: it verifies the stamped SVGs match the version, builds, type-checks, lints, and publishes to npm and GitHub Packages if the version is not already present.
+6. Push the `v<version>` tag. `release.yml` fires on the tag: it verifies the stamped SVGs again, extracts the matching `## [<version>]` section from `CHANGELOG.md`, and creates or updates the GitHub release with the changelog notes embedded in the body.
 
 Tags `v*` are protected against deletion and force-update by repository ruleset.

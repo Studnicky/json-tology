@@ -12,7 +12,7 @@ import {
   Compose, Transform
 } from '../../../src/index.js';
 import {
-  AmountSchema, bookstoreEntities,
+  AmountSchema,
   createBookstoreDocRegistry
 } from '../bookstore/index.js';
 

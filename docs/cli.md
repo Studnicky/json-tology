@@ -193,8 +193,62 @@ Edges connect schemas linked by `$ref`. Clicking a node opens a side panel with 
 
 The HTML file is fully self-contained. It loads Cytoscape.js from CDN and embeds all graph data inline -- no local server or additional assets required. Share the file directly or host it on any static file server.
 
+---
+
+## owl-gen <Badge type="tip" text="v0.11.0+" />
+
+`json-tology owl-gen` reads an OWL 2 TBox (JSON-LD file) and emits a TypeScript source module with `as const` schema literals, a registered registry constant, and `InferType`-backed per-class type aliases. The generated file is a standard build artefact: commit it alongside your source, or add it to `.gitignore` and regenerate in CI.
+
+### Usage
+
+```
+json-tology owl-gen <input> --out <path> [options]
+```
+
+**Required:**
+
+- `<input>` -- path to a JSON-LD OWL 2 TBox file
+
+**Options:**
+
+- `--out <path>` -- output path; omit the `.ts` extension (or append `/`) for registry-directory mode
+- `--name <id>` -- identifier prefix for namespace exports (defaults to the stem of `--out` or `"ontology"`)
+- `--base-iri <iri>` -- override `baseIRI` passed to `fromTbox`
+- `--mode directory` -- force registry-directory output even when `--out` has a `.ts` extension
+
+### Single-file mode
+
+Emits all schemas + one registry constant into a single `.ts` file:
+
+```bash
+json-tology owl-gen ./ontologies/foaf.jsonld --out ./src/generated/foaf.ts
+```
+
+### Registry-directory mode
+
+Emits one `entities/<Name>.ts` per OWL class plus an `index.ts` that mirrors the canonical bookstore layout. Triggered automatically when `--out` ends with `/` or has no `.ts` extension:
+
+```bash
+json-tology owl-gen ./ontologies/foaf.jsonld --out ./src/generated/foaf/
+```
+
+### Build-time integration
+
+Add a `prebuild` script so generated files are always current before `tsc` starts:
+
+```json
+{
+  "scripts": {
+    "gen:foaf": "json-tology owl-gen ./ontologies/foaf.jsonld --out ./src/generated/foaf.ts",
+    "prebuild": "npm run gen:foaf",
+    "build": "tsc"
+  }
+}
+```
+
 ## Related
 
+- [OWL 2 TBox import (`fromTbox`)](/advanced/owl-import) - full `fromTbox` API, codegen options, real-ontology examples
 - [Ontology and Graphs](/advanced/ontology) - the same `toTbox`, `toShacl`, `ontology` methods the CLI calls
 - [Schemas](/schemas) - schema registration used by the CLI loader
 

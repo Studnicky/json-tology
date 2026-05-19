@@ -9,10 +9,7 @@
  */
 
 import { Transform } from '../../../src/index.js';
-import {
-  bookstoreEntities,
-  createBookstoreDocRegistry
-} from '../bookstore/index.js';
+import { createBookstoreDocRegistry } from '../bookstore/index.js';
 
 // createBookstoreDocRegistry seeds a permissive copy of the bookstore — docs examples extend
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.

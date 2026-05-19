@@ -31,6 +31,10 @@ These rules govern every remaining workstream:
 11. Completion claims must reflect the code that exists now, not the intended direction.
 12. Vocabulary plugins extend ontology output without modifying core projection logic. Plugin prefixes merge into the active `Curie` instance; plugin relations are extracted after core extraction; plugin projection runs for non-core predicates.
 13. The canonical bookstore at `examples/docs/bookstore/` is the single source of truth for every docs page, every example file, and every benchmark scenario. Docs prose, runnable examples, and bench fixtures all draw from the same registered schemas and `aboxFixtures`. New example files import `bookstoreEntities` from the canonical registry; new docs pages include their code via VitePress `<<<` directives against a runnable file in `examples/docs/`. Standalone synthetic schemas, mini-registries, and `JsonTology.create({...})` calls inside example files are forbidden — if a surface needs structure the canonical domain doesn't provide, the canonical domain expands to accommodate it. When an example legitimately needs a registry with a non-default option set (e.g. `enableTypeCast: true`), it seeds the new registry from `bookstoreSchemas` so every transitive `$ref` resolves. The ratchet at `scripts/check-docs-includes.mjs` enforces this with a ceiling of zero inline `\`\`\`ts` blocks in `docs/**/*.md` outside two explicit exemption categories: comparator `::: code-group` sections (peer-library comparisons), and blocks preceded by `<!-- inline-ts-ok: <reason> -->` (the marker rationale documents why the block cannot be a runnable file — removed/legacy API migration context, `.d.ts` module augmentation, type-shape pseudocode, function-signature pseudocode). There are no file-pattern exemptions; migration pages carry the `inline-ts-ok` marker on every block that references a removed API. The canonical narrative is Bastian Balthazar Bux (the customer from the framing story of Michael Ende's *The Neverending Story*) ordering a rare 1979 first edition of *Die unendliche Geschichte* (Thienemann Verlag, ISBN-13 9783522128001); all fixture names are either real authors or characters from the book with realistic names. Pronouns referring to fixture personas are gender-neutral throughout.
+14. `QuadInterface` uses rdf/js Term objects. The `subject`, `predicate`, and `graph` fields are `IriTermType | BnodeTermType | DefaultGraphTermType` per the rdf/js data-model spec. Consumers reading IRI strings access `.value`. The `graph` field is non-optional (defaults to the singleton `DefaultGraph` term). Use `Terms.iri(...)` / `Terms.blank(...)` / `Terms.literal(...)` / `Terms.defaultGraph()` to construct terms.
+15. Schema registration is strict-by-default. `enableStrictGraph`, `enableInlineWarnings`, and `enableDuplicateDetection` default to `true`. Registering an inline primitive constraint or a structural duplicate raises `SchemaError` at registration time. Pass `enableStrictGraph: false` to `JsonTology.create({...})` or `new SchemaRegistry({...})` to restore permissive behaviour.
+16. `fromTbox` / `OwlImporter` is the inverse of `toTbox`. It reads an OWL 2 TBox and reconstructs JSON Schema objects for every declared class. There is one import pipeline (`OwlImporter` with axiom dispatchers in `src/modules/ontology/importDispatch/`); a second semantic model for OWL import is not acceptable. The round-trip contract is `fromTbox ∘ toTbox ≈ identity` on the supported OWL 2 axiom set.
+17. Codegen (`json-tology/owl-gen`) is a one-way build-step tool. It converts an OWL TBox into `as const` TypeScript schema literals via `generateFromTbox` (single-file) and `generateRegistryDirectory` (bookstore-layout directory). The generator is pure over the `OwlImporter` result; the generated source files are committed to the repo and not re-generated during `npm test` or `npm run build`.
 
 ## Verified Current State
 
@@ -62,7 +66,7 @@ Latest verified commands:
 
 Latest verified result:
 
-- runtime suite: 292 unit tests + 21 e2e tests passing
+- runtime suite: 1685 smoke + unit tests passing
 - compile-time type suite: clean
 - publish-surface check: clean
 - benchmark command: clean
@@ -123,14 +127,15 @@ It is only acceptable to claim completion for a workstream when:
 
 ## Public API Surface
 
-Six package entry points control what consumers import. Internal imports reference defining files directly, not entry-point barrels.
+Eight package entry points control what consumers import. Internal imports reference defining files directly, not entry-point barrels.
 
 | Entry point | Exports |
 |---|---|
-| `json-tology` | Error classes, error-code constants, `JsonTology`, `Compose`, `GraphEngine`, `Materializer`, `GraphOntologySerializer`, `OntologyBuilder`, `Curie`, `Lift`, `Projection`, `Skolemize`, `Transform`, `Changeset`, `Operations`, `Path`, `Resolver`, `Value`, `Hash`, `Loaders` |
+| `json-tology` | Error classes, error-code constants, `JsonTology`, `Compose`, `GraphEngine`, `Materializer`, `GraphOntologySerializer`, `OntologyBuilder`, `Curie`, `Lift`, `Projection`, `Skolemize`, `Transform`, `Changeset`, `Operations`, `Path`, `Resolver`, `Value`, `Hash`, `Loaders`, `OwlImportError`, `OwlImportErrorCode` |
 | `json-tology/value` | `Changeset`, `Operations`, `Value`, `Hash` |
 | `json-tology/schema` | `Compose`, `FormatRegistry`, `SchemaRegistry`, `Transform` |
 | `json-tology/ontology` | `GraphOntologySerializer`, `GraphSchemaSerializer`, `GraphShaclSerializer`, `OntologyBuilder` |
+| `json-tology/owl-gen` | `generateFromTbox`, `generateRegistryDirectory`, `GenerateFromTboxOptions`, `GenerateRegistryDirectoryOptions`, `GenerateRegistryDirectoryEntityFile` — build-tool entry, Node.js only |
 | `json-tology/viz` | `HtmlRenderer`, `TypeStringEmitter`, `VizDataCollector` |
 | `json-tology/types` | All type aliases (`FooType`) — compile-time only |
 | `json-tology/interfaces` | All interface contracts (`FooInterface`) — compile-time only |
@@ -145,6 +150,7 @@ All source files under `src/`. Organized by directory.
 - `index.ts` — main package entry (`json-tology`)
 - `JsonTology.ts` — top-level facade class; all public methods delegate to modules
 - `ontology.ts` — `json-tology/ontology` entry
+- `owl-gen.ts` — `json-tology/owl-gen` entry; `generateFromTbox` and `generateRegistryDirectory`; Node.js only (filesystem writes via `fs`)
 - `schema.ts` — `json-tology/schema` entry
 - `value.ts` — `json-tology/value` entry
 - `viz.ts` — `json-tology/viz` entry
@@ -188,6 +194,7 @@ All error classes extend `BaseError`. Internal imports reference each file direc
 - `InstantiationError.ts` — schema instantiation failures
 - `LoadError.ts` — filesystem and fetch load failures
 - `MaterializationError.ts` — materialization and ABox validation failures
+- `OwlImportError.ts` — OWL import fatal conditions; carries `axiomIri` and `subjectIri`; codes: `OWL_IMPORT_ERROR`, `OWL_IMPORT_NOT_IMPLEMENTED`
 - `SchemaError.ts` — registration, missing `$id`, structure validation
 - `ValidationErrors.ts` — collection class for accumulated validation errors
 
@@ -224,6 +231,7 @@ All interface declarations (`FooInterface`). Exported via `json-tology/interface
 - `MaterializerImpl.ts` — internal materializer implementation detail
 - `ObjectResult.ts` — object validation result shape
 - `Ontology.ts` — ontology builder interface
+- `OwlImport.ts` — `OwlImportResult` interface — shape returned by `fromTbox`; fields: `schemas`, `invariants`, `characteristics`, `sameAs`, `individuals`, `unsupported`
 - `Prefetch.ts` — prefetch loader interface
 - `Projection.ts` — RDF projection interface
 - `PropCheck.ts` — property check context
@@ -372,6 +380,12 @@ Materialization and ABox projection. `Materializer.ts` projects normalized graph
 
 - `Materializer.ts` — `Materializer` class; projects graph execution results into typed instances
 
+### Module: codegen (`src/modules/codegen/`)
+
+OWL TBox → TypeScript source code generation. Pure functions with no filesystem side-effects; used by both the `owl-gen` CLI and the `generateFromTbox` / `generateRegistryDirectory` programmatic API.
+
+- `OwlCodegen.ts` — `generateTypeScript(result, options)` — topological dep-sort, IRI → PascalCase name derivation, collision detection with `_2` suffix, sameAs / `addCharacteristic` emission
+
 ### Module: ontology (`src/modules/ontology/`)
 
 Serialization over the canonical graph. Ontology output is a serialization of the canonical graph, not a separate semantic derivation.
@@ -381,6 +395,20 @@ Serialization over the canonical graph. Ontology output is a serialization of th
 - `GraphSchemaSerializer.ts` — JSON Schema serializer from graph
 - `GraphShaclSerializer.ts` — SHACL JSON-LD serializer
 - `OntologyBuilder.ts` — high-level ontology construction facade
+- `OwlImporter.ts` — OWL 2 TBox import pipeline; constructs once, accepts multiple `import()` / `importAsync()` calls; stateless across calls
+
+#### Module: ontology/importDispatch (`src/modules/ontology/importDispatch/`)
+
+Axiom dispatchers for `OwlImporter`. Each dispatcher handles a subset of OWL 2 axioms and produces JSON Schema objects, invariants, characteristics, `sameAs` pairs, or individuals.
+
+- `Annotations.ts` — `owl:sameAs`, `rdfs:subPropertyOf`
+- `Characteristics.ts` — `owl:FunctionalProperty`, `owl:InverseFunctionalProperty`, `owl:TransitiveProperty`, `owl:SymmetricProperty`, `owl:AsymmetricProperty`, `owl:ReflexiveProperty`, `owl:IrreflexiveProperty`
+- `ClassAxioms.ts` — `owl:Class`, `rdfs:subClassOf`, `owl:equivalentClass`, `owl:disjointWith`, `owl:complementOf`, `owl:disjointUnionOf`
+- `ClassExpressions.ts` — `owl:intersectionOf`, `owl:unionOf`, anonymous class expression nodes
+- `Datatypes.ts` — `owl:oneOf` enumerations → `enum`; XSD datatype range mapping; `rdfs:Datatype` with `owl:withRestrictions` facets
+- `Individuals.ts` — `owl:NamedIndividual`, `rdf:type` assertions, data/object property assertions
+- `Properties.ts` — `owl:ObjectProperty`, `owl:DatatypeProperty` with `rdfs:domain` / `rdfs:range` → JSON Schema `properties` entries
+- `PropertyRestrictions.ts` — `owl:Restriction` with `owl:someValuesFrom`, `owl:allValuesFrom`, `owl:minCardinality`, `owl:maxCardinality`
 
 ### Module: rdf (`src/modules/rdf/`)
 
