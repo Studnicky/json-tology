@@ -20,6 +20,7 @@ export const OWL = {
   'minQualifiedCardinality': 'owl:minQualifiedCardinality',
   'ObjectProperty': 'owl:ObjectProperty',
   'onDataRange': 'owl:onDataRange',
+  'onDatatype': 'owl:onDatatype',
   'oneOf': 'owl:oneOf',
   'onProperty': 'owl:onProperty',
   'ReflexiveProperty': 'owl:ReflexiveProperty',
@@ -28,7 +29,8 @@ export const OWL = {
   'someValuesFrom': 'owl:someValuesFrom',
   'SymmetricProperty': 'owl:SymmetricProperty',
   'TransitiveProperty': 'owl:TransitiveProperty',
-  'unionOf': 'owl:unionOf'
+  'unionOf': 'owl:unionOf',
+  'withRestrictions': 'owl:withRestrictions'
 } as const;
 
 export const RDF = {
@@ -39,6 +41,7 @@ export const RDF = {
 
 export const RDFS = {
   'comment': 'rdfs:comment',
+  'Datatype': 'rdfs:Datatype',
   'domain': 'rdfs:domain',
   'label': 'rdfs:label',
   'member': 'rdfs:member',
@@ -98,6 +101,7 @@ export const DCT = { 'format': 'dct:format' } as const;
 export const JT = {
   'dependentRequired': 'jt:dependentRequired',
   'else': 'jt:else',
+  'format': 'jt:format',
   'if': 'jt:if',
   'multipleOf': 'jt:multipleOf',
   'thenBranch': 'jt:then'

@@ -15,7 +15,7 @@ import type { QuadObjectType } from '../../types/Quad.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
 import {
-  DASH, DCT, OWL, RDF, RDFS, SH, XSD
+  DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
 import {
   CARDINALITY_KINDS, RESTRICTION_PREDICATE
@@ -206,6 +206,177 @@ class OwlVocabProjection extends VocabProjection {
 const owlVocab = new OwlVocabProjection();
 
 // ---------------------------------------------------------------------------
+// Primitive schema detection and emission
+// ---------------------------------------------------------------------------
+
+/** SHACL predicate → XSD facet predicate for owl:withRestrictions emission. */
+const SHACL_TO_XSD_FACET: ReadonlyMap<string, string> = new Map([
+  [
+    SH.maxExclusive,
+    'xsd:maxExclusive'
+  ],
+  [
+    SH.maxInclusive,
+    'xsd:maxInclusive'
+  ],
+  [
+    SH.maxLength,
+    'xsd:maxLength'
+  ],
+  [
+    SH.minExclusive,
+    'xsd:minExclusive'
+  ],
+  [
+    SH.minInclusive,
+    'xsd:minInclusive'
+  ],
+  [
+    SH.minLength,
+    'xsd:minLength'
+  ],
+  [
+    SH.pattern,
+    'xsd:pattern'
+  ]
+]);
+
+/** XSD facet predicate → literal datatype for the facet value. */
+const XSD_FACET_DATATYPE: ReadonlyMap<string, string> = new Map([
+  [
+    'xsd:maxExclusive',
+    XSD.decimal
+  ],
+  [
+    'xsd:maxInclusive',
+    XSD.decimal
+  ],
+  [
+    'xsd:maxLength',
+    XSD.integer
+  ],
+  [
+    'xsd:minExclusive',
+    XSD.decimal
+  ],
+  [
+    'xsd:minInclusive',
+    XSD.decimal
+  ],
+  [
+    'xsd:minLength',
+    XSD.integer
+  ],
+  [
+    'xsd:pattern',
+    XSD.string
+  ]
+]);
+
+/**
+ * Return true when the projection-index entry represents a primitive (scalar)
+ * schema rather than an OWL 2 object class.
+ *
+ * A named-class entry is primitive when it carries a `sh:datatype` relation
+ * (XSD type was resolved for the root node) but has no `owl:Restriction`
+ * relations (no required-property constraints, which only appear on object
+ * classes).
+ */
+function isPrimitiveEntry(entry: RelationIndexInterface): boolean {
+  return entry.byPredicate.has(SH.datatype) && !entry.byPredicate.has(OWL.Restriction);
+}
+
+/**
+ * Emit OWL 2 rdfs:Datatype quads for a primitive (scalar) schema.
+ *
+ * Patterns emitted:
+ *   rdfs:Datatype + owl:onDatatype + owl:withRestrictions (for facets)
+ *   rdfs:Datatype + owl:equivalentClass owl:oneOf (for enum datatypes)
+ *   jt:multipleOf / jt:format literals (jt: extension annotations)
+ */
+function emitDatatypeQuads(
+  subject: string,
+  entry: RelationIndexInterface,
+  quads: QuadInterface[],
+  curie: CurieInterface | undefined
+): void {
+  quads.push(QuadFactory.quad(subject, RDF.type, QuadFactory.iri(RDFS.Datatype, { curie }), { curie }));
+
+  const datatypeRels = entry.byPredicate.get(SH.datatype) ?? [];
+  let xsdType: string | undefined;
+
+  if (datatypeRels.length > 0) {
+    xsdType = ProjectionIndex.relationTargetId(datatypeRels[0]);
+    quads.push(QuadFactory.quad(subject, OWL.onDatatype, QuadFactory.iri(xsdType, { curie }), { curie }));
+  }
+
+  const facetBnodes: QuadObjectType[] = [];
+
+  for (const [
+    shaclPred,
+    xsdFacet
+  ] of SHACL_TO_XSD_FACET) {
+    const rels = entry.byPredicate.get(shaclPred) ?? [];
+
+    for (const rel of rels) {
+      if (shaclPred === SH.pattern && rel.metadata?.fromFormat === true) {
+        continue;
+      }
+
+      const bnode = QuadFactory.nextBnode();
+      const rawValue = ProjectionIndex.relationTargetId(rel);
+      const facetDatatype = XSD_FACET_DATATYPE.get(xsdFacet) ?? XSD.string;
+      const isNumeric = facetDatatype === XSD.decimal || facetDatatype === XSD.integer;
+      const litValue: number | string = isNumeric ? Number(rawValue) : rawValue;
+
+      quads.push(QuadFactory.quad(bnode, xsdFacet, QuadFactory.literal(litValue, facetDatatype, { curie }), { curie }));
+      facetBnodes.push(QuadFactory.bnode(bnode));
+    }
+  }
+
+  if (facetBnodes.length > 0) {
+    quads.push(QuadFactory.quad(subject, OWL.withRestrictions, QuadFactory.rdfList(facetBnodes), { curie }));
+  }
+
+  const oneOfRels = entry.byPredicate.get(OWL.oneOf) ?? [];
+
+  if (oneOfRels.length > 0) {
+    const enumLiterals = oneOfRels.map((rel) => {
+      const val = ProjectionIndex.relationTargetId(rel);
+
+      return QuadFactory.literal(typedLiteralObject(val), RDF.JSON, { curie });
+    });
+    const equivBnode = QuadFactory.nextBnode();
+
+    quads.push(QuadFactory.quad(subject, OWL.equivalentClass, QuadFactory.bnode(equivBnode), { curie }));
+    quads.push(QuadFactory.quad(equivBnode, OWL.oneOf, QuadFactory.rdfList(enumLiterals), { curie }));
+  }
+
+  const multipleOfRels = entry.byPredicate.get(JT.multipleOf) ?? [];
+
+  if (multipleOfRels.length > 0) {
+    const moVal = Number(ProjectionIndex.relationTargetId(multipleOfRels[0]));
+
+    quads.push(QuadFactory.quad(subject, JT.multipleOf, QuadFactory.literal(moVal, XSD.decimal, { curie }), { curie }));
+  }
+
+  if (entry.all.length > 0) {
+    const rawSchema = entry.all[0].source.schema;
+
+    if (typeof rawSchema === 'object') {
+      const format = rawSchema.format;
+
+      if (typeof format === 'string') {
+        quads.push(QuadFactory.quad(subject, JT.format, QuadFactory.literal(format, XSD.string, { curie }), { curie }));
+      }
+    }
+  }
+
+  QuadFactory.emitLiterals(subject, entry, RDFS.label, RDFS.label, quads, { curie });
+  QuadFactory.emitLiterals(subject, entry, RDFS.comment, RDFS.comment, quads, { curie });
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -225,7 +396,11 @@ export const OwlProjection = {
       }
 
       if (entry.types.includes(OWL.Class)) {
-        emitClassQuads(sourceId, entry, index, quads, curie);
+        if (isPrimitiveEntry(entry)) {
+          emitDatatypeQuads(sourceId, entry, quads, curie);
+        } else {
+          emitClassQuads(sourceId, entry, index, quads, curie);
+        }
       }
 
       if (entry.types.includes(OWL.DatatypeProperty) || entry.types.includes(OWL.ObjectProperty)) {

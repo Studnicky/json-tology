@@ -167,6 +167,34 @@ function collectPropertyIris(quads: QuadInterface[]): ReadonlySet<string> {
 }
 
 /**
+ * Extract rdfs:Datatype subject IRIs from an array of quads.
+ * Used to extend ctx.isDatatype() with custom named datatypes.
+ */
+function collectDatatypeIris(quads: QuadInterface[]): ReadonlySet<string> {
+  const datatypeIris = new Set<string>();
+  const DATATYPE_TYPES = new Set([
+    'http://www.w3.org/2000/01/rdf-schema#Datatype',
+    'rdfs:Datatype'
+  ]);
+  const TYPE_PREDICATES_DT = new Set([
+    'http://www.w3.org/1999/02/22-rdf-syntax-ns#type',
+    'rdf:type'
+  ]);
+
+  for (const quad of quads) {
+    if (
+      TYPE_PREDICATES_DT.has(quad.predicate.value)
+      && quad.object.termType === 'NamedNode'
+      && DATATYPE_TYPES.has(quad.object.value)
+    ) {
+      datatypeIris.add(quad.subject.value);
+    }
+  }
+
+  return datatypeIris;
+}
+
+/**
  * Supported XSD and json-tology datatype IRIs (prefixed and full-IRI forms).
  */
 const SUPPORTED_DATATYPES = new Set<string>([
@@ -443,6 +471,7 @@ export class OwlImporter {
       'prefixes': this.prefixes
     });
     const allClassIris = collectClassIris(quads);
+    const allDatatypeIris = collectDatatypeIris(quads);
     const allPropertyIris = collectPropertyIris(quads);
 
     const unsupported: Array<{ 'axiomIri': string;
@@ -454,7 +483,9 @@ export class OwlImporter {
       'baseIRI': this.baseIRI,
       'curie': this.curie,
       graph,
-      isDatatype,
+      'isDatatype': (iri: string) => {
+        return isDatatype(iri) || allDatatypeIris.has(iri);
+      },
       'prefixes': this.prefixes,
       'reportUnsupported': (axiomIri: string, subjectIri: null | string) => {
         unsupported.push({

@@ -98,6 +98,80 @@ Run `fromTbox(toTbox(schemas).jsonLd())` against the canonical bookstore registr
 
 <<< ../../examples/docs/advanced/90-owl-import-roundtrip.ts
 
+## Compile-time types via codegen
+
+`JsonTology.fromTbox` (and the `OwlImporter` underneath it) resolve an OWL TBox at **runtime**. TypeScript's type system operates at **compile time** — it cannot reach into an external file, execute it, and derive types from the result. This means that even though `fromTbox` reconstructs accurate JSON Schema objects, the static type of those schemas is `JsonSchemaDocumentObjectType`, not a narrow `as const` literal from which `InferType<…>` can extract a meaningful compile-time type.
+
+The solution is a build-step code generator: run the ontology through a code generator once, write the resulting TypeScript module to disk, and then import that module as ordinary source. The generated module contains `as const` schema literals identical to what you would write by hand, so `InferType<typeof PersonSchema>` works exactly as it does for hand-authored schemas.
+
+### Codegen workflow
+
+```
+ontology JSON-LD → json-tology owl-gen → TypeScript source → consumer imports
+```
+
+1. **Input** — any JSON-LD string or file that `fromTbox` accepts.
+2. **Generator** — the `owl-gen` subcommand (or the `generateFromTbox` programmatic API).
+3. **Output** — a `.ts` module that exports one `as const` schema literal per OWL class, with a matching `export type` per class derived via `InferType`.
+4. **Consumption** — import the generated module in your application the same way you import hand-authored schemas.
+
+### CLI
+
+```bash
+npx json-tology owl-gen ./foaf.jsonld --out ./src/generated/foaf.ts
+```
+
+Options:
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--out <path>` | stdout | Write the generated TypeScript source to `<path>`. |
+| `--name <id>` | stem of `--out` or `"ontology"` | Identifier prefix used for namespace exports. |
+| `--base-iri <iri>` | — | Override `baseIRI` passed to `fromTbox`. |
+
+### Programmatic API
+
+<!-- inline-ts-ok: API signature pseudocode — generateFromTbox parameters use ?: syntax which is not runnable standalone -->
+```ts
+import { generateFromTbox } from 'json-tology/owl-gen';
+
+const source: string = generateFromTbox({
+  input: jsonLdStringOrObject,  // string | object
+  name?: string,                // identifier prefix (e.g. 'foaf')
+  baseIRI?: string,             // passed through to fromTbox
+});
+```
+
+`generateFromTbox` returns the generated TypeScript source as a string. Writing it to disk is the caller's responsibility — use `fs.writeFileSync` or pass `--out` on the CLI.
+
+### Runnable example
+
+<<< ../../examples/docs/advanced/91-owl-codegen-generated.ts
+
+### Build-time integration
+
+**`package.json` prebuild hook.** Run the generator before every TypeScript compilation so the generated file is always current before `tsc` or your bundler starts:
+
+```json
+{
+  "scripts": {
+    "gen:foaf": "json-tology owl-gen ./ontologies/foaf.jsonld --out ./src/generated/foaf.ts",
+    "prebuild": "npm run gen:foaf"
+  }
+}
+```
+
+This is the simplest option. Every `npm run build` re-generates the file first. CI receives the generated file baked into the source tree (commit it); or generate-on-CI and exclude it from the repo — either pattern works.
+
+**Vite plugin.** Wrap `generateFromTbox` in a Vite plugin's `buildStart` hook to integrate with the dev-server watch cycle. The plugin calls `generateFromTbox`, writes the result to disk, and invalidates the dependent module so HMR re-processes consumers. This is appropriate when the source ontology lives in `public/` or arrives via a remote URL that changes during development.
+
+**Husky pre-commit hook.** Add a pre-commit script that regenerates all `.ts` outputs and `git add`s them. If the generated file changed, the commit captures the update automatically. This is a lightweight "always fresh" guarantee that does not require separate CI steps for code generation.
+
+### Limitations
+
+- **OWL-induced invariants are not serialised into the generated TypeScript.** Property characteristics (`owl:FunctionalProperty`, `owl:TransitiveProperty`, etc.) and cross-field invariants are recorded in `OwlImportResult.characteristics` and `OwlImportResult.invariants` at runtime. The code generator emits the structural schema only. Register characteristics and invariants programmatically after importing the generated module if you need them at runtime.
+- **Generated files are one-way.** When the source ontology changes, regenerate the TypeScript file and commit the update. Do not hand-edit generated files — they will be overwritten on the next generation run.
+
 ## Related
 
 - [`jt.toTbox()`](/advanced/ontology#jt-totbox) — OWL TBox emission (the inverse operation)

@@ -4525,16 +4525,23 @@ import { Terms } from '../../src/modules/rdf/Terms.js';
       check, name
     } of scenarios) {
       void it(name, () => {
+        // Enum primitives are emitted as rdfs:Datatype with
+        // owl:equivalentClass pointing to a bnode that carries owl:oneOf.
         const enumNode = nodes.find((node) => {
-          return node['@id'] === 'https://example.com/StatusEnum'
-          && node['http://www.w3.org/2002/07/owl#oneOf'] !== undefined;
+          return node['@id'] === 'https://example.com/StatusEnum';
         });
 
-        assert.ok(enumNode !== undefined, 'enum — class with owl:oneOf exists');
+        assert.ok(enumNode !== undefined, 'enum — datatype node must exist');
+
+        const equivClass = enumNode['http://www.w3.org/2002/07/owl#equivalentClass'] as JsonLdNode | undefined;
+
+        assert.ok(equivClass !== undefined, 'enum — owl:equivalentClass must exist');
+
+        const oneOf = equivClass['http://www.w3.org/2002/07/owl#oneOf'] as JsonLdNode | undefined;
+
+        assert.ok(oneOf !== undefined, 'enum — owl:oneOf must exist on equivalentClass bnode');
 
         if (check === 'isList' || check === 'listLength') {
-          const oneOf = enumNode['http://www.w3.org/2002/07/owl#oneOf'] as JsonLdNode;
-
           assert.ok(oneOf['@list'] !== undefined, 'enum — owl:oneOf is @list');
 
           if (check === 'listLength') {

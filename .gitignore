@@ -1,4 +1,5 @@
 .flame
+.generated-tmp/
 .git
 *.map
 dist
