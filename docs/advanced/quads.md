@@ -110,55 +110,97 @@ This capability is unique to json-tology because the runtime representation is a
 
 json-tology produces rdf/js-spec quads directly. No conversion required.
 
-The quad terms produced by `toQuads`, `toTbox`, and `toShacl` are structurally
-compatible with the [rdf/js Data Model Spec](https://rdf.js.org/data-model-spec/):
+`QuadInterface` is a re-export of [`@rdfjs/types#Quad`](https://rdf.js.org/data-model-spec/#quad-interface).
+Quads carry the rdf/js-spec `termType: 'Quad'`, `value: ''`, and `equals(other)`.
 
-- `subject` and `predicate` are `NamedNode`-shaped objects (IRI, `.termType: "NamedNode"`, `.equals()`)
-- `graph` is a `NamedNode`-, `BlankNode`-, or `DefaultGraph`-shaped object
-- `object` is a `NamedNode`, `BlankNode`, or literal-shaped object in the common ABox case
+- `subject` is a `NamedNode` or `BlankNode`
+- `predicate` is a `NamedNode`
+- `object` is a `NamedNode`, `BlankNode`, or `Literal`
+- `graph` is a `NamedNode`, `BlankNode`, or `DefaultGraph`
+- `Literal.value` is `string` per the rdf/js spec; the JS type tag is carried
+  in `Literal.datatype.value` (`xsd:integer`, `xsd:boolean`, `xsd:dateTime`, etc.)
 
-The `@rdfjs/types` package is a `dependency` of json-tology (types-only, zero runtime cost),
-so you can import rdf/js interfaces without a separate `npm install @rdfjs/types`.
+`@rdfjs/types` is a runtime dependency of json-tology (types-only, zero runtime
+cost), so you can `import type { Quad } from '@rdfjs/types'` without a separate
+install.
 
 ### Piping to n3.Writer
 
-<!-- inline-ts-ok: ecosystem-interop note — imports n3 and @rdfjs/types which are devDependencies; no runnable example file exists for this cross-package cast pattern -->
 ```ts
 import { Writer } from 'n3';
-import type { Quad } from '@rdfjs/types';
 
 const jt = JsonTology.create({ baseIRI: 'https://bookstore.example', schemas: [CustomerSchema] as const });
 const quads = jt.toQuads(CustomerSchema, { id: 'cust-1', name: 'Alice', email: 'alice@example.com' });
 
-// The common ABox case (NamedNode/BlankNode/string literals) is directly compatible.
-// Cast needed only because LiteralTermType.value is `unknown` (project widening).
+// No cast required — QuadInterface is @rdfjs/types#Quad.
 const writer = new Writer();
-writer.addQuads(quads as unknown as Quad[]);
+writer.addQuads(quads);
 writer.end((_err, result) => console.log(result));
 ```
 
 ### Terms factory
 
-The in-house `Terms` factory (`src/modules/rdf/Terms.ts`) produces objects that
-are structurally identical to the rdf/js spec with zero runtime indirection. It
-is a drop-in replacement for `@rdfjs/data-model` for the term types used in this
-package. To use a different DataFactory implementation (e.g. `n3.DataFactory`,
-`@rdfjs/data-model`), construct quads directly with that factory and pass them
-into `jt.fromQuads()` — they are accepted as-is because the project's accepted
-shape is the canonical rdf/js term structure.
+The in-house `Terms` factory (`src/modules/rdf/Terms.ts`) produces rdf/js-spec
+term objects (`NamedNode`, `BlankNode`, `Literal`, `DefaultGraph`) and quads
+(`@rdfjs/types#Quad`) without requiring `@rdfjs/data-model` at runtime. To use
+a different DataFactory (e.g. `n3.DataFactory`, `@rdfjs/data-model`), construct
+quads with that factory and pass them into `jt.fromQuads()` — they are accepted
+as-is because the project's accepted shape is the canonical rdf/js spec.
 
-### Notes on LiteralTermType
+### Recovering typed JS values from literals
 
-`LiteralTermType.value` is typed as `unknown` rather than `string`. This is an
-intentional widening: the internal `Terms.literal(value, options)` factory stores
-raw JS values (number, boolean, etc.) so that `fromQuads` can lift them back into
-typed JS objects without a second coercion step. At the rdf/js boundary, coerce
-with `String(literal.value)`.
+`Literal.value` is `string` per the rdf/js spec. To recover the typed JS value
+(number, boolean, Date), use `decodeLiteral` from `src/modules/rdf/Terms.ts`:
 
-For quads produced by `toQuads` that will be piped to a triple store or serializer,
-the cast `as unknown as Quad[]` is safe: the actual runtime values are correct
-rdf/js-shaped objects whose literal `.value` fields contain the serialised string
-form appropriate for the declared XSD datatype.
+```ts
+import { decodeLiteral } from 'json-tology';
+
+const ageLit = quad.object;             // { termType: 'Literal', value: '30', datatype: { value: 'xsd:integer' }, ... }
+
+if (ageLit.termType === 'Literal') {
+  const age = decodeLiteral(ageLit);    // → 30 (number)
+}
+```
+
+`fromQuads`, the internal `Lift` pipeline, and the OWL import dispatchers call
+`decodeLiteral` automatically, so consumers using those entry points never have
+to hand-decode.
+
+### RDF lists
+
+RDF lists (used by `owl:unionOf`, `owl:oneOf`, `sh:or`, `sh:in`, etc.) are
+emitted as the standard `rdf:first` / `rdf:rest` / `rdf:nil` triple chain.
+There is no project-internal "list term" — the list head (a `BlankNode`) appears
+in the parent triple's object position and the chain materialises as additional
+quads.
+
+To assemble a list as the object of a quad, use `Lists.build`:
+
+```ts
+import { Lists, Terms } from 'json-tology';
+
+const { head, triples } = Lists.build([
+  Terms.iri('https://example.com/A'),
+  Terms.iri('https://example.com/B')
+]);
+
+const quads = [
+  Terms.quad(
+    Terms.iri('https://example.com/Shape'),
+    Terms.iri('http://www.w3.org/ns/shacl#or'),
+    head
+  ),
+  ...triples
+];
+```
+
+To walk a list chain back into an item array, use `Lists.collect`:
+
+```ts
+import { Lists } from 'json-tology';
+
+const items = Lists.collect(headTerm, allQuads);
+```
 
 ## Related
 

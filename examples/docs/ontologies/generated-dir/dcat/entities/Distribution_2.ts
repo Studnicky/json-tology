@@ -1,6 +1,6 @@
 // ============================================================
 // AUTO-GENERATED — DO NOT EDIT
-// Generated: 2026-05-19T16:53:58.882Z
+// Generated: 2026-05-20T04:39:50.520Z
 // Source:    examples/docs/ontologies/dcat-subset.jsonld
 // IRI:       http://www.w3.org/ns/dcat#distribution
 // ============================================================
