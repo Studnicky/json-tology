@@ -258,12 +258,11 @@ async function runBuild(options: BuildOptionsInterface): Promise<void> {
   if (format === 'ontology' || format === 'shacl') {
     if (format === 'ontology') {
       const serializer = new GraphOntologySerializer();
-      const result = serializer.serialize(graphs);
+      const quads = serializer.serializeQuads(graphs);
       const builder = new OntologyBuilder({
         baseIRI,
-        'graphSources': [result],
         'prefixes': CLI_PREFIXES
-      });
+      }).addFromQuads(quads);
       const outPath = resolveSingleOutputPath(output, outputFile, 'ontology.jsonld');
 
       writeFileSync(outPath, JSON.stringify(builder.jsonLdObject(), null, 2));
@@ -273,14 +272,11 @@ async function runBuild(options: BuildOptionsInterface): Promise<void> {
     }
 
     const serializer = new GraphShaclSerializer();
-    const result = serializer.serialize(graphs);
+    const shaclQuads = serializer.serializeQuads(graphs);
     const builder = new OntologyBuilder({
       baseIRI,
-      'graphSources': [],
       'prefixes': CLI_PREFIXES
-    });
-
-    builder.addShacl(result);
+    }).addShaclFromQuads(shaclQuads);
 
     const outPath = resolveSingleOutputPath(output, outputFile, 'shacl.jsonld');
 

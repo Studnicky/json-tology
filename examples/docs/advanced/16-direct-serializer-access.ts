@@ -22,20 +22,19 @@ const graphs = registry.listGraphs();
 
 // OWL
 const owlSerializer = new GraphOntologySerializer();
-const owlNodes = owlSerializer.serialize(graphs);
+const owlQuads = owlSerializer.serializeQuads(graphs);
 
 const builder = new OntologyBuilder({
   'baseIRI': 'https://bookstore.example',
-  'graphSources': [owlNodes],
   'prefixes': { 'bs': 'https://bookstore.example/' }
-});
+}).addFromQuads(owlQuads);
 const owlJson = builder.jsonLd();
 
 // SHACL
 const shaclSerializer = new GraphShaclSerializer();
-const shaclNodes = shaclSerializer.serialize(graphs);
+const shaclQuads = shaclSerializer.serializeQuads(graphs);
 
-builder.addShacl(shaclNodes);
+builder.addShaclFromQuads(shaclQuads);
 const shaclJson = JSON.stringify(builder.shaclObject(), null, 2);
 
 // Reconstruct schema from a single graph

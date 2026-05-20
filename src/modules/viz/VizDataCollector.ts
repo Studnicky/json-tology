@@ -69,8 +69,8 @@ export class VizDataCollector {
       schemas.push({
         'id': schemaId,
         'jsonSchema': schemaSerializer.serialize(graph),
-        'owl': owlSerializer.serialize([graph]),
-        'shacl': shaclSerializer.serialize([graph]),
+        'owl': owlSerializer.serializeQuads([graph]),
+        'shacl': shaclSerializer.serializeQuads([graph]),
         'typescript': emitter.emit()
       });
     }

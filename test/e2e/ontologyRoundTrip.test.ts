@@ -260,7 +260,7 @@ describe('ontology round-trip: multi-schema HR domain', () => {
 
     const ontology = jt.ontology();
 
-    owlNodes = ontology.raw() as JsonLdNode[];
+    owlNodes = ontology.jsonLdObject()['@graph'] as JsonLdNode[];
     const shaclObject = ontology.shaclObject() as Record<string, unknown>;
 
     shaclNodes = shaclObject['@graph'] as JsonLdNode[];

@@ -15,9 +15,9 @@ const shaclObject = shaclBuilder.shaclObject();
 // Prefix context (includes sh: prefix)
 const ctx = shaclBuilder.context();
 
-// The raw TBox graph is empty — toShacl() contains only SHACL
-const raw = shaclBuilder.raw();
+// The OWL quad store is empty — toShacl() contains only SHACL
+const owlQuads = shaclBuilder.quads();
 
 void shaclObject;
 void ctx;
-void raw;
+void owlQuads;

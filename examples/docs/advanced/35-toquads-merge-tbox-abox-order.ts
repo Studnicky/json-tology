@@ -16,15 +16,16 @@ const order = bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order);
 const tbox = bookstoreEntities.toTbox();
 const abox = bookstoreEntities.toQuads(OrderSchema, order);
 
-// tbox.raw() — class and property declarations.
+// tbox graph — class and property declarations via JSON-LD formatter.
 // abox — individual assertions (QuadInterface[]).
+const tboxGraph = tbox.jsonLdObject()['@graph'] as unknown[];
 const merged = {
   '@context': tbox.context(),
   '@graph': [
-    ...tbox.raw(),
+    ...tboxGraph,
     ...abox
   ]
 };
 
 console.assert(merged['@context'], 'context present');
-console.assert(merged['@graph'].length > tbox.raw().length, 'ABox extended TBox @graph');
+console.assert(merged['@graph'].length > tboxGraph.length, 'ABox extended TBox @graph');

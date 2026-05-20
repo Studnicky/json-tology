@@ -20,7 +20,7 @@ import { bookstoreEntities } from '../bookstore/index.js';
 
 const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
 
-const tbox = bookstoreEntities.toTbox().raw() as Array<{ '@id'?: unknown;
+const tbox = bookstoreEntities.toTbox().jsonLdObject()['@graph'] as Array<{ '@id'?: unknown;
   '@type'?: unknown }>;
 const store = new Store();
 

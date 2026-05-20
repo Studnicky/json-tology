@@ -17,10 +17,12 @@ import {
 // the contract being asserted; the public ontology() / toQuads() methods only
 // expose composed output, not the per-quad projection shape.
 import { Projection } from '../../src/modules/rdf/Projection.js';
+import { BaseGraphSerializer } from '../../src/modules/ontology/BaseGraphSerializer.js';
 import { GraphSchemaSerializer } from '../../src/modules/ontology/GraphSchemaSerializer.js';
 import { GraphShaclSerializer } from '../../src/modules/ontology/GraphShaclSerializer.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { Lists } from '../../src/modules/rdf/Lists.js';
+import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
 import {
   decodeLiteral, Terms
 } from '../../src/modules/rdf/Terms.js';
@@ -4175,16 +4177,25 @@ import {
 {
   type JsonLdNode = Record<string, unknown>;
 
+  const OWL_ARRAY_KEYS = ['http://www.w3.org/2000/01/rdf-schema#subClassOf'] as const;
+  const SHACL_PROP_KEYS = ['http://www.w3.org/ns/shacl#property'] as const;
+
   function owlNodes(registry: SchemaRegistryInterface): JsonLdNode[] {
     const serializer = new GraphOntologySerializer();
+    const nodes = JsonLdFormatter.fromQuads(serializer.serializeQuads(registry.listGraphs()));
 
-    return serializer.serialize(registry.listGraphs()) as JsonLdNode[];
+    BaseGraphSerializer.normalizeArrays(nodes, OWL_ARRAY_KEYS);
+
+    return nodes;
   }
 
   function shaclNodes(registry: SchemaRegistryInterface): JsonLdNode[] {
     const serializer = new GraphShaclSerializer();
+    const nodes = JsonLdFormatter.fromQuads(serializer.serializeQuads(registry.listGraphs()));
 
-    return serializer.serialize(registry.listGraphs()) as JsonLdNode[];
+    BaseGraphSerializer.normalizeArrays(nodes, SHACL_PROP_KEYS);
+
+    return nodes;
   }
 
   // -------------------------------------------------------------------------
@@ -5346,10 +5357,15 @@ import {
 
   const serializer = new GraphShaclSerializer();
 
+  const SERIALIZE_SHACL_KEYS = ['http://www.w3.org/ns/shacl#property'] as const;
+
   function serialize(schema: Record<string, unknown>): unknown[] {
     const graph = new SchemaGraph(schema);
+    const nodes = JsonLdFormatter.fromQuads(serializer.serializeQuads([graph]));
 
-    return serializer.serialize([graph]);
+    BaseGraphSerializer.normalizeArrays(nodes, SERIALIZE_SHACL_KEYS);
+
+    return nodes;
   }
 
   function findShape(shapes: unknown[], targetId: string): Record<string, unknown> | undefined {
@@ -5967,18 +5983,27 @@ import {
 {
   type JsonLdNode = Record<string, unknown>;
 
+  const OWL_SUB_CLASS_KEYS = ['http://www.w3.org/2000/01/rdf-schema#subClassOf'] as const;
+  const SHACL_PROP_ARRAY_KEYS = ['http://www.w3.org/ns/shacl#property'] as const;
+
   function serializeSchema(schema: Record<string, unknown>): JsonLdNode[] {
     const graph = new SchemaGraph(schema);
     const serializer = new GraphOntologySerializer();
+    const nodes = JsonLdFormatter.fromQuads(serializer.serializeQuads([graph]));
 
-    return serializer.serialize([graph]) as JsonLdNode[];
+    BaseGraphSerializer.normalizeArrays(nodes, OWL_SUB_CLASS_KEYS);
+
+    return nodes;
   }
 
   function serializeShaclSchema(schema: Record<string, unknown>): JsonLdNode[] {
     const graph = new SchemaGraph(schema);
     const serializer = new GraphShaclSerializer();
+    const nodes = JsonLdFormatter.fromQuads(serializer.serializeQuads([graph]));
 
-    return serializer.serialize([graph]) as JsonLdNode[];
+    BaseGraphSerializer.normalizeArrays(nodes, SHACL_PROP_ARRAY_KEYS);
+
+    return nodes;
   }
 
   // ---------------------------------------------------------------------------
@@ -5987,7 +6012,7 @@ import {
 
   void describe('OntologyBuilder', () => {
     const builderScenarios: Array<{
-      'check': () => void;
+      'check': () => Promise<void> | void;
       'name': string;
     }> = [
       {
@@ -5998,13 +6023,12 @@ import {
           };
           const builder = new OntologyBuilder({
             'baseIRI': 'https://example.io',
-            'graphSources': [],
             'prefixes': prefixes
           });
 
           assert.strictEqual(typeof builder, 'object');
           assert.deepStrictEqual(builder.context(), prefixes);
-          assert.strictEqual(builder.raw().length, 0);
+          assert.strictEqual(builder.quads().length, 0);
         },
         'name': 'constructs with prefixes/context/empty graph'
       },
@@ -6012,7 +6036,6 @@ import {
         'check': () => {
           const builder = new OntologyBuilder({
             'baseIRI': 'https://example.io',
-            'graphSources': [],
             'prefixes': {}
           });
 
@@ -6026,43 +6049,38 @@ import {
       },
       {
         'check': () => {
+          // Build via addFromQuads: two typed class quads
+          const owlClass = 'http://www.w3.org/2002/07/owl#Class';
+          const rdfType = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
+          const q1 = Terms.quad(Terms.iri('https://example.io/ns#Thing'), Terms.iri(rdfType), Terms.iri(owlClass));
+          const q2 = Terms.quad(Terms.iri('https://example.io/ns#SubThing'), Terms.iri(rdfType), Terms.iri(owlClass));
+
           const builder = new OntologyBuilder({
             'baseIRI': 'https://example.io',
-            'graphSources': [
-              [{
-                '@id': 'ex:Thing',
-                '@type': 'http://www.w3.org/2002/07/owl#Class',
-                'http://www.w3.org/2000/01/rdf-schema#label': 'Thing'
-              }],
-              () => {
-                return [{
-                  '@id': 'ex:SubThing',
-                  '@type': 'http://www.w3.org/2002/07/owl#Class',
-                  'http://www.w3.org/2000/01/rdf-schema#subClassOf': 'ex:Thing'
-                }];
-              }
-            ],
             'prefixes': { 'ex': 'https://example.io/ns#' }
-          });
+          }).addFromQuads([
+            q1,
+            q2
+          ]);
 
-          const graph = builder.raw();
+          const graph = builder.jsonLdObject()['@graph'] as Array<Record<string, unknown>>;
 
           assert.strictEqual(graph.length, 2);
-          assert.strictEqual(graph[0]['@id'], 'ex:Thing');
-          assert.strictEqual(graph[1]['@id'], 'ex:SubThing');
+          assert.strictEqual(graph[0]['@id'], 'https://example.io/ns#Thing');
+          assert.strictEqual(graph[1]['@id'], 'https://example.io/ns#SubThing');
         },
-        'name': 'builds graph from static and function sources'
+        'name': 'builds graph from addFromQuads'
       },
       {
         'check': () => {
+          const owlClass = 'http://www.w3.org/2002/07/owl#Class';
+          const rdfType = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
+          const quad = Terms.quad(Terms.iri('https://example.io/ns#Thing'), Terms.iri(rdfType), Terms.iri(owlClass));
+
           const builder = new OntologyBuilder({
             'baseIRI': 'https://example.io',
-            'graphSources': [[{
-              '@id': 'ex:Thing',
-              '@type': 'http://www.w3.org/2002/07/owl#Class'
-            }]],
             'prefixes': { 'ex': 'https://example.io/ns#' }
-          });
+          }).addFromQuads([quad]);
 
           const jsonLd = builder.jsonLdObject();
 
@@ -6074,14 +6092,14 @@ import {
       },
       {
         'check': () => {
+          const owlClass = 'http://www.w3.org/2002/07/owl#Class';
+          const rdfType = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
+          const quad = Terms.quad(Terms.iri('https://example.io/ns#Thing'), Terms.iri(rdfType), Terms.iri(owlClass));
+
           const builder = new OntologyBuilder({
             'baseIRI': 'https://example.io',
-            'graphSources': [[{
-              '@id': 'ex:Thing',
-              '@type': 'http://www.w3.org/2002/07/owl#Class'
-            }]],
             'prefixes': { 'ex': 'https://example.io/ns#' }
-          });
+          }).addFromQuads([quad]);
 
           const jsonLdString = builder.jsonLd();
 
@@ -6097,37 +6115,59 @@ import {
         'check': () => {
           const builder = new OntologyBuilder({
             'baseIRI': 'https://example.io',
-            'graphSources': [],
             'prefixes': { 'ex': 'https://example.io/ns#' }
           });
 
-          assert.strictEqual(builder.raw().length, 0);
+          assert.strictEqual(builder.quads().length, 0);
           const jsonLd = builder.jsonLdObject();
 
           assert.ok(jsonLd['@context'] !== undefined);
-          assert.strictEqual(jsonLd['@graph'].length, 0);
+          assert.strictEqual((jsonLd['@graph'] as unknown[]).length, 0);
         },
-        'name': 'empty graphSources produces empty raw graph and valid JSON-LD shell'
+        'name': 'empty builder produces empty quads and valid JSON-LD shell'
       },
       {
         'check': () => {
           const builder = new OntologyBuilder({
             'baseIRI': 'https://example.io',
-            'graphSources': [],
             'prefixes': {}
           });
 
           assert.deepStrictEqual(builder.context(), {});
         },
         'name': 'builder with no prefixes produces empty context'
+      },
+      {
+        'check': async () => {
+          const doc = {
+            '@context': { 'ex': 'https://example.io/ns#' },
+            '@id': 'ex:Fixture',
+            '@type': 'http://www.w3.org/2002/07/owl#Class'
+          };
+          const builder = await new OntologyBuilder({
+            'baseIRI': 'https://example.io',
+            'prefixes': { 'ex': 'https://example.io/ns#' }
+          }).addFromJsonLd(doc);
+
+          const qs = builder.quads();
+
+          assert.ok(qs.length > 0, 'expected quads from JSON-LD parse');
+
+          const typeQuad = qs.find((quad) => {
+            return quad.subject.value === 'https://example.io/ns#Fixture';
+          });
+
+          assert.ok(typeQuad !== undefined, 'expected type quad for ex:Fixture');
+        },
+        'name': 'addFromJsonLd parses JSON-LD document into quad store'
       }
     ];
 
     for (const {
       check, 'name': scenarioName
     } of builderScenarios) {
-      void it(scenarioName, () => {
-        check();
+      void it(scenarioName, async () => {
+        await check();
       });
     }
   });
@@ -6464,7 +6504,7 @@ import {
             'type': 'object'
           });
 
-          const nodes = serializer.serialize([graph]) as JsonLdNode[];
+          const nodes = JsonLdFormatter.fromQuads(serializer.serializeQuads([graph])) as JsonLdNode[];
 
           const idProp = nodes.find((node) => {
             return node['@id'] === 'https://example.com/Access#id';
@@ -6742,6 +6782,123 @@ import {
         check();
       });
     }
+  });
+}
+
+// ===========================================================================
+// toTbox().quads() and toShacl().shaclQuads() — end-to-end quad surface
+// ===========================================================================
+{
+  const PersonSchema = {
+    '$id': 'https://example.com/Person',
+    'properties': {
+      'age': { 'type': 'integer' },
+      'name': { 'type': 'string' }
+    },
+    'required': ['name'],
+    'type': 'object'
+  } as const;
+
+  void describe('JsonTology.toTbox().quads()', () => {
+    const jt = JsonTology.create({
+      'baseIRI': 'https://example.com',
+      'schemas': [PersonSchema]
+    });
+
+    void it('returns a non-empty quad array for a registered schema', () => {
+      const quads = jt.toTbox().quads();
+
+      assert.ok(quads.length > 0, 'TBox quads must not be empty');
+    });
+
+    void it('includes the owl:Class triple for Person', () => {
+      const quads = jt.toTbox().quads();
+      const classQuad = quads.find((quad) => {
+        return quad.subject.value === 'https://example.com/Person'
+          && quad.predicate.value === 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
+          && quad.object.termType === 'NamedNode'
+          && quad.object.value === 'http://www.w3.org/2002/07/owl#Class';
+      });
+
+      assert.ok(classQuad !== undefined, 'owl:Class quad must exist for Person');
+    });
+
+    void it('quad set is consistent with JSON-LD output', () => {
+      const builder = jt.toTbox();
+      const quads = builder.quads();
+      const raw = builder.jsonLdObject()['@graph'] as Array<Record<string, unknown>>;
+
+      const personNode = raw.find((node) => {
+        return node['@id'] === 'https://example.com/Person';
+      });
+
+      assert.ok(personNode !== undefined, 'Person node must appear in raw JSON-LD');
+
+      const personClassQuad = quads.find((quad) => {
+        return quad.subject.value === 'https://example.com/Person'
+          && quad.predicate.value === 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
+      });
+
+      assert.ok(personClassQuad !== undefined, 'rdf:type quad for Person must appear in quads');
+    });
+
+    void it('returns a fresh array each call', () => {
+      const builder = jt.toTbox();
+
+      assert.notEqual(builder.quads(), builder.quads());
+    });
+  });
+
+  void describe('JsonTology.toShacl().shaclQuads()', () => {
+    const jt = JsonTology.create({
+      'baseIRI': 'https://example.com',
+      'schemas': [PersonSchema]
+    });
+
+    void it('returns a non-empty quad array for a registered schema', () => {
+      const quads = jt.toShacl().shaclQuads();
+
+      assert.ok(quads.length > 0, 'SHACL quads must not be empty');
+    });
+
+    void it('includes a NodeShape triple for Person', () => {
+      const quads = jt.toShacl().shaclQuads();
+      const shapeQuad = quads.find((quad) => {
+        return quad.subject.value === 'https://example.com/Person'
+          && quad.predicate.value === 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
+          && quad.object.termType === 'NamedNode'
+          && quad.object.value === 'http://www.w3.org/ns/shacl#NodeShape';
+      });
+
+      assert.ok(shapeQuad !== undefined, 'sh:NodeShape quad must exist for Person');
+    });
+
+    void it('quad set is consistent with shaclObject() output', () => {
+      const builder = jt.toShacl();
+      const quads = builder.shaclQuads();
+      const obj = builder.shaclObject();
+      const graph = obj['@graph'] as Array<Record<string, unknown>>;
+
+      assert.ok(Array.isArray(graph) && graph.length > 0, 'shaclObject @graph must not be empty');
+
+      const personShape = graph.find((node) => {
+        return node['@id'] === 'https://example.com/Person';
+      });
+
+      assert.ok(personShape !== undefined, 'Person shape must appear in shaclObject');
+
+      const personTypeQuad = quads.find((quad) => {
+        return quad.subject.value === 'https://example.com/Person'
+          && quad.predicate.value === 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
+      });
+
+      assert.ok(personTypeQuad !== undefined, 'rdf:type quad for Person must appear in shaclQuads');
+    });
+
+    void it('toTbox().shaclQuads() returns empty; toShacl().quads() returns empty', () => {
+      assert.deepEqual(jt.toTbox().shaclQuads(), []);
+      assert.deepEqual(jt.toShacl().quads(), []);
+    });
   });
 }
 

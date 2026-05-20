@@ -8,7 +8,7 @@ import {
 import { JsonTology } from '../../src/index.js';
 // SchemaGraph + projectGraph are graph-projection internals not surfaced via the public API.
 // The cross-reference test below compares raw TBox QuadInterface[] (predicate/termType shape)
-// against ABox quads; OntologyBuilder.raw() returns JSON-LD nodes, not the QuadInterface form.
+// against ABox quads; OntologyBuilder.jsonLdObject()['@graph'] returns JSON-LD nodes, not the QuadInterface form.
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { Projection } from '../../src/modules/rdf/Projection.js';
 

@@ -589,21 +589,21 @@ import { listQuad } from '../helpers/listQuad.js';
   await describe('JsonTology.toTbox()', async () => {
     await it('returns an OntologyBuilder with non-empty raw quads', () => {
       const builder = entities.toTbox();
-      const raw = builder.raw();
+      const raw = builder.jsonLdObject()['@graph'] as unknown[];
 
       assert(raw.length > 0, 'toTbox() raw quads must be non-empty');
     });
 
     await it('raw output contains owl:Class declarations', () => {
       const builder = entities.toTbox();
-      const raw = builder.raw();
+      const raw = builder.jsonLdObject()['@graph'] as unknown[];
 
       assert.equal(hasType(raw, OWL_CLASS_IRI), true);
     });
 
     await it('raw output contains OWL property declarations (DatatypeProperty or ObjectProperty)', () => {
       const builder = entities.toTbox();
-      const raw = builder.raw();
+      const raw = builder.jsonLdObject()['@graph'] as unknown[];
 
       const hasDatatype = hasType(raw, OWL_DATATYPE_PROPERTY_IRI);
       const hasObjectProp = hasType(raw, 'http://www.w3.org/2002/07/owl#ObjectProperty');
@@ -613,21 +613,21 @@ import { listQuad } from '../helpers/listQuad.js';
 
     await it('raw output contains rdfs:domain triples', () => {
       const builder = entities.toTbox();
-      const raw = builder.raw();
+      const raw = builder.jsonLdObject()['@graph'] as unknown[];
 
       assert.equal(hasPredicate(raw, RDFS_DOMAIN_IRI), true);
     });
 
     await it('raw output does NOT contain sh:NodeShape triples (no SHACL)', () => {
       const builder = entities.toTbox();
-      const raw = builder.raw();
+      const raw = builder.jsonLdObject()['@graph'] as unknown[];
 
       assert.equal(hasType(raw, SH_NODE_SHAPE_IRI), false);
     });
 
     await it('raw output does NOT contain sh:property triples (no SHACL)', () => {
       const builder = entities.toTbox();
-      const raw = builder.raw();
+      const raw = builder.jsonLdObject()['@graph'] as unknown[];
 
       assert.equal(hasPredicate(raw, SH_PROPERTY_IRI), false);
     });
@@ -668,14 +668,14 @@ import { listQuad } from '../helpers/listQuad.js';
 
     await it('raw OWL output is empty — no owl:Class triples', () => {
       const builder = entities.toShacl();
-      const raw = builder.raw();
+      const raw = builder.jsonLdObject()['@graph'] as unknown[];
 
       assert.equal(hasType(raw, OWL_CLASS_IRI), false);
     });
 
     await it('raw OWL output is empty — no rdfs:domain triples', () => {
       const builder = entities.toShacl();
-      const raw = builder.raw();
+      const raw = builder.jsonLdObject()['@graph'] as unknown[];
 
       assert.equal(hasPredicate(raw, RDFS_DOMAIN_IRI), false);
     });
@@ -691,7 +691,7 @@ import { listQuad } from '../helpers/listQuad.js';
   await describe('JsonTology.ontology() regression', async () => {
     await it('returns an OntologyBuilder with owl:Class in raw output', () => {
       const builder = entities.ontology();
-      const raw = builder.raw();
+      const raw = builder.jsonLdObject()['@graph'] as unknown[];
 
       assert.equal(hasType(raw, OWL_CLASS_IRI), true);
     });

@@ -20,6 +20,27 @@ import { Terms } from './Terms.js';
 import { XSD } from '../../constants/IRI.js';
 
 // ---------------------------------------------------------------------------
+// jsonld dataset quad shape — the object shape emitted by jsonld.toRDF()
+// ---------------------------------------------------------------------------
+
+interface DatasetTerm {
+  'termType': string;
+  'value': string;
+}
+
+interface DatasetLiteralTerm extends DatasetTerm {
+  'datatype'?: DatasetTerm;
+  'language'?: string;
+}
+
+export interface JsonLdDatasetQuad {
+  'graph': DatasetTerm;
+  'object': DatasetLiteralTerm;
+  'predicate': DatasetTerm;
+  'subject': DatasetTerm;
+}
+
+// ---------------------------------------------------------------------------
 // Blank node counter
 // ---------------------------------------------------------------------------
 
@@ -108,6 +129,55 @@ export class QuadFactory {
         quads.push(QuadFactory.quad(subject, outputPredicate, litVal, { curie }));
       }
     }
+  }
+
+  /**
+   * Construct a `QuadInterface` from a jsonld dataset quad object.
+   *
+   * jsonld.toRDF() returns rdf/js-compatible term shapes. This method
+   * maps those shapes to the project's `Terms`-backed rdf/js quad.
+   *
+   * Blank-node handling: blank-node values from jsonld include the `_:` prefix
+   * in their `.value`; `Terms.blank` preserves that value as-is.
+   *
+   * Literal handling: datatype is preserved via the datatype NamedNode value.
+   * Language tags are carried through via `Terms.literal({ language })`.
+   */
+  static fromDatasetQuad(datasetQuad: JsonLdDatasetQuad): QuadInterface {
+    const subject = datasetQuad.subject.termType === 'BlankNode'
+      ? Terms.blank(datasetQuad.subject.value)
+      : Terms.iri(datasetQuad.subject.value);
+
+    const predicate = Terms.iri(datasetQuad.predicate.value);
+
+    let object: QuadObjectType;
+    const obj = datasetQuad.object;
+
+    if (obj.termType === 'BlankNode') {
+      object = Terms.blank(obj.value);
+    } else if (obj.termType === 'Literal') {
+      const datatypeIri = obj.datatype?.value ?? XSD.string;
+      const language = obj.language ?? '';
+
+      object = Terms.literal(obj.value, {
+        'datatype': Terms.iri(datatypeIri),
+        language
+      });
+    } else {
+      object = Terms.iri(obj.value);
+    }
+
+    let graph;
+
+    if (datasetQuad.graph.termType === 'DefaultGraph') {
+      graph = Terms.defaultGraph();
+    } else if (datasetQuad.graph.termType === 'BlankNode') {
+      graph = Terms.blank(datasetQuad.graph.value);
+    } else {
+      graph = Terms.iri(datasetQuad.graph.value);
+    }
+
+    return Terms.quad(subject, predicate, object, graph);
   }
 
   static iri(value: string, options?: { 'curie'?: CurieInterface | undefined }): QuadObjectType {

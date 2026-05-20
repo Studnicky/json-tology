@@ -787,7 +787,7 @@ import {
 
   await describe('XSD datatype precision — TBox rdfs:range', async () => {
     const jt = makeJt();
-    const raw = jt.toTbox().raw();
+    const raw = jt.toTbox().jsonLdObject()['@graph'] as unknown[];
     const ranges = collectValues(raw, RDFS_RANGE_IRI);
 
     await it('format:date emits xsd:date in rdfs:range', () => {

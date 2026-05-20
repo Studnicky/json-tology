@@ -1,7 +1,8 @@
 import type { SchemaGraphInterface } from './SchemaGraphImpl.js';
+import type { QuadInterface } from './Quad.js';
 
 export interface GraphSerializerInterface {
-  serialize(graphs: readonly SchemaGraphInterface[]): unknown[];
+  serializeQuads(graphs: readonly SchemaGraphInterface[]): QuadInterface[];
 }
 
 export interface GraphSchemaSerializerInterface {

@@ -25,6 +25,6 @@ console.assert(jsonLd.includes(IsbnSchema.$id), 'Isbn class in TBox (cross-schem
 console.assert(jsonLd.includes(TitleSchema.$id), 'Title class in TBox (cross-schema $ref)');
 
 // The graph is a directed graph: the $ref becomes a typed property edge
-const raw = tbox.raw();
+const tboxGraph = tbox.jsonLdObject()['@graph'] as unknown[];
 
-console.assert(raw.length > 0, 'TBox raw quads produced from cross-schema refs');
+console.assert(tboxGraph.length > 0, 'TBox graph produced from cross-schema refs');

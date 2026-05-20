@@ -3,7 +3,7 @@
  *
  * toQuads validates the order against OrderSchema, then projects each
  * field through the canonical graph and returns QuadInterface[]. The
- * resulting quads can be passed to an OntologyBuilder via addQuads to
+ * resulting quads can be passed to an OntologyBuilder via addFromQuads to
  * produce JSON-LD output.
  */
 
@@ -23,7 +23,7 @@ console.assert(typeof first.predicate.value === 'string', 'first quad carries pr
 
 // For richer output (JSON-LD, SHACL composition) pass the quads through
 // the ontology builder:
-const ontology = bookstoreEntities.ontology().addQuads(quads);
+const ontology = bookstoreEntities.ontology().addFromQuads(quads);
 const jsonLd = ontology.jsonLd();
 const jsonLdObject = ontology.jsonLdObject();
 
