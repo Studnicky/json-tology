@@ -31,7 +31,7 @@ These rules govern every remaining workstream:
 11. Completion claims must reflect the code that exists now, not the intended direction.
 12. Vocabulary plugins extend ontology output without modifying core projection logic. Plugin prefixes merge into the active `Curie` instance; plugin relations are extracted after core extraction; plugin projection runs for non-core predicates.
 13. The canonical bookstore at `examples/docs/bookstore/` is the single source of truth for every docs page, every example file, and every benchmark scenario. Docs prose, runnable examples, and bench fixtures all draw from the same registered schemas and `aboxFixtures`. New example files import `bookstoreEntities` from the canonical registry; new docs pages include their code via VitePress `<<<` directives against a runnable file in `examples/docs/`. Standalone synthetic schemas, mini-registries, and `JsonTology.create({...})` calls inside example files are forbidden — if a surface needs structure the canonical domain doesn't provide, the canonical domain expands to accommodate it. When an example legitimately needs a registry with a non-default option set (e.g. `enableTypeCast: true`), it seeds the new registry from `bookstoreSchemas` so every transitive `$ref` resolves. The ratchet at `scripts/check-docs-includes.mjs` enforces this with a ceiling of zero inline `\`\`\`ts` blocks in `docs/**/*.md` outside two explicit exemption categories: comparator `::: code-group` sections (peer-library comparisons), and blocks preceded by `<!-- inline-ts-ok: <reason> -->` (the marker rationale documents why the block cannot be a runnable file — removed/legacy API migration context, `.d.ts` module augmentation, type-shape pseudocode, function-signature pseudocode). There are no file-pattern exemptions; migration pages carry the `inline-ts-ok` marker on every block that references a removed API. The canonical narrative is Bastian Balthazar Bux (the customer from the framing story of Michael Ende's *The Neverending Story*) ordering a rare 1979 first edition of *Die unendliche Geschichte* (Thienemann Verlag, ISBN-13 9783522128001); all fixture names are either real authors or characters from the book with realistic names. Pronouns referring to fixture personas are gender-neutral throughout.
-14. `QuadInterface` uses rdf/js Term objects. The `subject`, `predicate`, and `graph` fields are `IriTermType | BnodeTermType | DefaultGraphTermType` per the rdf/js data-model spec. Consumers reading IRI strings access `.value`. The `graph` field is non-optional (defaults to the singleton `DefaultGraph` term). Use `Terms.iri(...)` / `Terms.blank(...)` / `Terms.literal(...)` / `Terms.defaultGraph()` to construct terms.
+14. `QuadInterface` is a re-export of `@rdfjs/types#Quad` (the rdf/js data-model spec). Quads carry the spec-required `termType: 'Quad'`, `value: ''`, and `equals(other)`. `subject` is a `NamedNode | BlankNode`; `predicate` is a `NamedNode`; `object` is a `NamedNode | BlankNode | Literal`; `graph` is a `NamedNode | BlankNode | DefaultGraph` (non-optional, defaults to the singleton `DefaultGraph` term). `Literal.value` is `string` per the rdf/js spec; the JS type tag is carried in `Literal.datatype.value` (`xsd:integer`, `xsd:boolean`, `xsd:dateTime`, etc.). Use `Terms.iri(...)` / `Terms.blank(...)` / `Terms.literal(...)` / `Terms.defaultGraph()` / `Terms.quad(s, p, o, g?)` to construct terms and quads; use `decodeLiteral(literal)` to recover the typed JS value from a literal. RDF lists are emitted as the standard `rdf:first` / `rdf:rest` / `rdf:nil` triple chain; `Lists.build(items)` constructs the chain and `Lists.collect(head, allQuads)` walks it back. There is no project-internal list-term abstraction. External quads produced by `n3`, `@rdfjs/data-model`, `@graphy/core.data.factory`, or any other rdf/js-aware library are accepted as-is by `fromQuads` and `OntologyBuilder.addQuads`; `Lists.narrowExternalQuads(quads)` drops quads containing `Variable` or quoted-triple terms that this project does not support.
 15. Schema registration is strict-by-default. `enableStrictGraph`, `enableInlineWarnings`, and `enableDuplicateDetection` default to `true`. Registering an inline primitive constraint or a structural duplicate raises `SchemaError` at registration time. Pass `enableStrictGraph: false` to `JsonTology.create({...})` or `new SchemaRegistry({...})` to restore permissive behaviour.
 16. `fromTbox` / `OwlImporter` is the inverse of `toTbox`. It reads an OWL 2 TBox and reconstructs JSON Schema objects for every declared class. There is one import pipeline (`OwlImporter` with axiom dispatchers in `src/modules/ontology/importDispatch/`); a second semantic model for OWL import is not acceptable. The round-trip contract is `fromTbox ∘ toTbox ≈ identity` on the supported OWL 2 axiom set.
 17. Codegen (`json-tology/owl-gen`) is a one-way build-step tool. It converts an OWL TBox into `as const` TypeScript schema literals via `generateFromTbox` (single-file) and `generateRegistryDirectory` (bookstore-layout directory). The generator is pure over the `OwlImporter` result; the generated source files are committed to the repo and not re-generated during `npm test` or `npm run build`.
@@ -131,7 +131,7 @@ Eight package entry points control what consumers import. Internal imports refer
 
 | Entry point | Exports |
 |---|---|
-| `json-tology` | Error classes, error-code constants, `JsonTology`, `Compose`, `GraphEngine`, `Materializer`, `GraphOntologySerializer`, `OntologyBuilder`, `Curie`, `Lift`, `Projection`, `Skolemize`, `Transform`, `Changeset`, `Operations`, `Path`, `Resolver`, `Value`, `Hash`, `Loaders`, `OwlImportError`, `OwlImportErrorCode` |
+| `json-tology` | Error classes, error-code constants, `JsonTology`, `Compose`, `GraphEngine`, `Materializer`, `GraphOntologySerializer`, `OntologyBuilder`, `Curie`, `Lift`, `Lists`, `Projection`, `Skolemize`, `Terms`, `decodeLiteral`, `Transform`, `Changeset`, `Operations`, `Path`, `Resolver`, `Value`, `Hash`, `Loaders`, `OwlImportError`, `OwlImportErrorCode` |
 | `json-tology/value` | `Changeset`, `Operations`, `Value`, `Hash` |
 | `json-tology/schema` | `Compose`, `FormatRegistry`, `SchemaRegistry`, `Transform` |
 | `json-tology/ontology` | `GraphOntologySerializer`, `GraphSchemaSerializer`, `GraphShaclSerializer`, `OntologyBuilder` |
@@ -235,8 +235,7 @@ All interface declarations (`FooInterface`). Exported via `json-tology/interface
 - `Prefetch.ts` — prefetch loader interface
 - `Projection.ts` — RDF projection interface
 - `PropCheck.ts` — property check context
-- `Quad.ts` — quad interface
-- `RdfJsQuad.ts` — RDF/JS quad interface
+- `Quad.ts` — `QuadInterface` — re-export of `@rdfjs/types#Quad`
 - `RefDecoder.ts` — ref decoder interface
 - `RefResolutionLoader.ts` — ref resolution loader interface
 - `Refs.ts` — ref visit context interface
@@ -415,14 +414,17 @@ Axiom dispatchers for `OwlImporter`. Each dispatcher handles a subset of OWL 2 a
 RDF/JSON-LD output. Projections read `graph.allRelations()` and emit vocabulary-specific quads.
 
 - `Curie.ts` — CURIE prefix manager
-- `JsonLdFormatter.ts` — converts quads to JSON-LD nodes
-- `Lift.ts` — lifts JSON-LD instances into RDF quads
+- `JsonLdFormatter.ts` — converts quads to JSON-LD nodes; detects rdf:first/rdf:rest list heads and emits `@list`
+- `JsonLdToQuads.ts` — inverse of `JsonLdFormatter`; converts compact JSON-LD back to `QuadInterface[]`
+- `Lift.ts` — lifts external rdf/js quads into typed JS objects; decodes literals via `decodeLiteral`
+- `Lists.ts` — RDF list construction (`Lists.build`), walking (`Lists.collect`), `Quad_Object` narrowing (`Lists.asQuadObject`), and external-quad narrowing (`Lists.narrowExternalQuads`)
 - `OwlProjection.ts` — OWL-specific quad projection
 - `Projection.ts` — shared RDF projection base; predicate and handler maps
 - `ProjectionIndex.ts` — relation-to-predicate index
 - `QuadFactory.ts` — quad construction helpers
 - `ShaclProjection.ts` — SHACL-specific quad projection
 - `Skolemize.ts` — blank-node skolemization
+- `Terms.ts` — rdf/js-spec term factory; produces `NamedNode` / `BlankNode` / `Literal` / `DefaultGraph` / `Quad` without requiring `@rdfjs/data-model` at runtime; exports `decodeLiteral(literal)` for typed-JS recovery
 - `VocabProjection.ts` — vocabulary plugin projection
 - `XsdTypes.ts` — XSD type resolution helpers
 

@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-05-20
+
+Documentation accuracy follow-up to v0.13.0. The v0.13.0 release notes
+advertised `Lists`, `Terms`, and `decodeLiteral` as part of the public API,
+but the entries were not actually exported from `json-tology`. This release
+adds the missing exports, updates the docs to import them from the public
+entry point, and refreshes `ARCHITECTURE.md` to describe the canonical
+fold accurately.
+
+### Added
+
+- `Lists`, `Terms`, and `decodeLiteral` are now exported from the top-level
+  `json-tology` entry point so consumers can construct rdf/js terms, walk
+  RDF lists, and decode literal values without reaching into internal paths.
+- `examples/docs/advanced/98-decode-literal-typed-values.ts` — runnable
+  example showing `decodeLiteral` recovering number / boolean / string
+  values from rdf/js `Literal` terms.
+- `examples/docs/advanced/99-lists-build-and-collect.ts` — runnable
+  example showing the `Lists.build` → emit → `Lists.collect` round-trip
+  for an `sh:or` list.
+
+### Changed
+
+- `docs/advanced/quads.md` rewritten to use `<<<` includes for the new
+  runnable examples; the inline `n3.Writer` block carries the required
+  `inline-ts-ok` marker per ARCHITECTURE invariant 13.
+- `ARCHITECTURE.md` invariant 14 rewritten to describe the canonical
+  fold: `QuadInterface = @rdfjs/types#Quad`, `Literal.value: string`,
+  `decodeLiteral`, `Lists.build` / `Lists.collect`, and ecosystem interop
+  via `Lists.narrowExternalQuads`. The `src/modules/rdf/` file inventory
+  is brought current — adds `Lists.ts`, `Terms.ts`, `JsonLdToQuads.ts`;
+  drops the removed `RdfJsQuad.ts` interface entry.
+
 ## [0.13.0] - 2026-05-19
 
 `QuadInterface` is now a re-export of `@rdfjs/types#Quad`. There is a single
