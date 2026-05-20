@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.2] - 2026-05-20
+
+Publish recovery for v0.13.1. The v0.13.1 tag was cut before the
+`stamp-version:check` CI step ran, so the Publish Package workflow failed
+on the version-stamped SVG drift and the v0.13.1 release was never
+published. v0.13.2 bundles the v0.13.1 docs accuracy content plus
+correctly stamped SVGs so the publish workflow can complete end-to-end.
+No code changes vs v0.13.1.
+
 ## [0.13.1] - 2026-05-20
 
 Documentation accuracy follow-up to v0.13.0. The v0.13.0 release notes
