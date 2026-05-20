@@ -369,10 +369,7 @@ export function importAnnotations(quads: QuadInterface[], ctx: OwlImportContext)
 
     if (DEPRECATED_PREDICATES.has(predicateIri)) {
       const raw = quad.object;
-      const isTrue = raw.termType === 'Literal' && (
-        raw.value === true
-        || String(raw.value).toLowerCase() === 'true'
-      );
+      const isTrue = raw.termType === 'Literal' && raw.value.toLowerCase() === 'true';
 
       if (isTrue) {
         getOrCreate(subjectIri).deprecated = true;

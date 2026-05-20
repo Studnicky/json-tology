@@ -31,7 +31,10 @@ import {
 
 import { RDF } from '../../constants/IRI.js';
 
-import { Terms } from './Terms.js';
+import { asQuadObject } from './Lists.js';
+import {
+  decodeLiteral, Terms
+} from './Terms.js';
 
 // ---------------------------------------------------------------------------
 // Lift internals
@@ -264,13 +267,21 @@ function liftSubject(
 
     if (isArray) {
       obj[propName] = matching.map((quad) => {
-        return liftSingleValue(quad.object, nestedNode, graph, allGroups, registry);
+        const narrowed = asQuadObject(quad.object);
+
+        return narrowed === undefined ? undefined : liftSingleValue(narrowed, nestedNode, graph, allGroups, registry);
       });
     } else if (matching.length === 1) {
-      obj[propName] = liftSingleValue(matching[0].object, resolvedNode, graph, allGroups, registry);
+      const narrowed = asQuadObject(matching[0].object);
+
+      obj[propName] = narrowed === undefined
+        ? undefined
+        : liftSingleValue(narrowed, resolvedNode, graph, allGroups, registry);
     } else {
       obj[propName] = matching.map((quad) => {
-        return liftSingleValue(quad.object, nestedNode, graph, allGroups, registry);
+        const narrowed = asQuadObject(quad.object);
+
+        return narrowed === undefined ? undefined : liftSingleValue(narrowed, nestedNode, graph, allGroups, registry);
       });
     }
   }
@@ -286,40 +297,34 @@ function liftSingleValue(
   registry: SchemaRegistryInterface
 ): unknown {
   if (obj.termType === 'Literal') {
-    return obj.value;
+    return decodeLiteral(obj);
   }
 
-  // Follow both NamedNode and BlankNode references
-  if (obj.termType === 'NamedNode' || obj.termType === 'BlankNode') {
-    const refQuads = allGroups.get(obj.value);
+  // Follow IRI / BlankNode references via the subject group index.
+  const refQuads = allGroups.get(obj.value);
 
-    if (refQuads) {
-      const refType = typeOf(refQuads);
+  if (refQuads) {
+    const refType = typeOf(refQuads);
 
-      if (refType !== undefined) {
-        // Try resolving via registry (handles pointer-based IDs too)
-        const resolved = resolveNodeForType(refType, registry);
+    if (refType !== undefined) {
+      // Try resolving via registry (handles pointer-based IDs too)
+      const resolved = resolveNodeForType(refType, registry);
 
-        if (resolved) {
-          return liftSubject(refQuads, refType, resolved.graph, resolved.node, allGroups, registry);
-        }
-      }
-
-      // No type or unresolved — try the target node from the parent schema
-      const targetSem = parentGraph.semantics(targetNode);
-
-      if (targetSem.properties.size > 0) {
-        return liftSubject(refQuads, targetNode.id, parentGraph, targetNode, allGroups, registry);
+      if (resolved) {
+        return liftSubject(refQuads, refType, resolved.graph, resolved.node, allGroups, registry);
       }
     }
 
-    // Plain IRI reference — return as string
-    return obj.value;
+    // No type or unresolved — try the target node from the parent schema
+    const targetSem = parentGraph.semantics(targetNode);
+
+    if (targetSem.properties.size > 0) {
+      return liftSubject(refQuads, targetNode.id, parentGraph, targetNode, allGroups, registry);
+    }
   }
 
-  return obj.items.map((item) => {
-    return liftSingleValue(item, targetNode, parentGraph, allGroups, registry);
-  });
+  // Plain IRI reference — return as string
+  return obj.value;
 }
 
 /**
@@ -455,12 +460,12 @@ function fromExternalRdfJsQuad(rdfQuad: ExternalRdfJsQuadShape): QuadInterface {
     objectTerm = Terms.iri(obj.value);
   }
 
-  return {
-    'graph': Terms.defaultGraph(),
-    'object': objectTerm,
-    'predicate': Terms.iri(normalizedPredicate),
-    'subject': Terms.iri(rdfQuad.subject.value)
-  };
+  return Terms.quad(
+    Terms.iri(rdfQuad.subject.value),
+    Terms.iri(normalizedPredicate),
+    objectTerm,
+    Terms.defaultGraph()
+  );
 }
 
 export const Lift = {

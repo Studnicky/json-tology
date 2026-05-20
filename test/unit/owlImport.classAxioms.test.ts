@@ -25,6 +25,7 @@ import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { Curie } from '../../src/modules/rdf/Curie.js';
 import { DEFAULT_PREFIXES } from '../../src/constants/PREFIXES.js';
 import { Terms } from '../../src/modules/rdf/Terms.js';
+import { listQuad } from '../helpers/listQuad.js';
 
 // ---------------------------------------------------------------------------
 // Full IRI constants matching what jsonLdNodesToQuads produces after expansion
@@ -189,25 +190,34 @@ void describe('importClassAxioms', () => {
     });
 
     void it('extracts $ref from owl:unionOf bnode-wrapped equivalent (forward path format)', () => {
-      // The forward OwlProjection wraps the equivalent IRI in an anonymous
-      // bnode class node: { '@type': 'owl:Class', 'owl:unionOf': { '@list': [{ '@id': iri }] } }
-      // The JSON-LD normaliser stores this as a Literal whose value is the object.
-      const wrappedValue = {
-        '@type': OWL_CLASS,
-        [OWL_UNION_OF]: { '@list': [{ '@id': CLASS_A }] }
-      };
+      // OwlProjection emits equivalentClass as a real anonymous bnode class
+      // node whose owl:unionOf points to the equivalent IRI list:
+      //   CLASS_B owl:equivalentClass _:b0 .
+      //   _:b0 rdf:type owl:Class .
+      //   _:b0 owl:unionOf ( CLASS_A ) .
+      const equivBnode = 'b0';
+      const RDF_TYPE_IRI = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
 
-      const equivalentQuad: QuadInterface = {
-        'graph': Terms.defaultGraph(),
-        'object': Terms.literal(wrappedValue),
-        'predicate': Terms.iri(OWL_EQUIVALENT_CLASS),
-        'subject': Terms.iri(CLASS_B)
-      };
-
-      const quads = [
+      const quads: QuadInterface[] = [
         typeQuad(CLASS_B),
         typeQuad(CLASS_A),
-        equivalentQuad
+        Terms.quad(
+          Terms.iri(CLASS_B),
+          Terms.iri(OWL_EQUIVALENT_CLASS),
+          Terms.blank(equivBnode),
+          Terms.defaultGraph()
+        ),
+        Terms.quad(
+          Terms.blank(equivBnode),
+          Terms.iri(RDF_TYPE_IRI),
+          Terms.iri(OWL_CLASS),
+          Terms.defaultGraph()
+        ),
+        ...listQuad(
+          Terms.blank(equivBnode),
+          Terms.iri(OWL_UNION_OF),
+          [Terms.iri(CLASS_A)]
+        )
       ];
       const ctx = makeCtx(quads);
       const fragment = importClassAxioms(quads, ctx);
@@ -238,22 +248,18 @@ void describe('importClassAxioms', () => {
 
   void describe('owl:disjointUnionOf', () => {
     void it('produces oneOf: [{ $ref: C1 }, { $ref: C2 }] for the union root', () => {
-      // disjointUnionOf with a List term object
-      const disjointUnionQuad: QuadInterface = {
-        'graph': Terms.defaultGraph(),
-        'object': Terms.list([
-          Terms.iri(CLASS_B),
-          Terms.iri(CLASS_C)
-        ]),
-        'predicate': Terms.iri(OWL_DISJOINT_UNION_OF),
-        'subject': Terms.iri(CLASS_A)
-      };
-
-      const quads = [
+      const quads: QuadInterface[] = [
         typeQuad(CLASS_A),
         typeQuad(CLASS_B),
         typeQuad(CLASS_C),
-        disjointUnionQuad
+        ...listQuad(
+          Terms.iri(CLASS_A),
+          Terms.iri(OWL_DISJOINT_UNION_OF),
+          [
+            Terms.iri(CLASS_B),
+            Terms.iri(CLASS_C)
+          ]
+        )
       ];
       const ctx = makeCtx(quads);
       const fragment = importClassAxioms(quads, ctx);

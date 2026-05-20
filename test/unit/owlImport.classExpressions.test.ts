@@ -21,6 +21,7 @@ import { importClassExpressions } from '../../src/modules/ontology/importDispatc
 import { Curie } from '../../src/modules/rdf/Curie.js';
 import { DEFAULT_PREFIXES } from '../../src/constants/PREFIXES.js';
 import { Terms } from '../../src/modules/rdf/Terms.js';
+import { listQuad } from '../helpers/listQuad.js';
 import type { QuadInterface } from '../../src/interfaces/Quad.js';
 import type { OwlImportContext } from '../../src/interfaces/OwlImport.js';
 import type { SchemaGraphInterface } from '../../src/interfaces/SchemaGraphImpl.js';
@@ -94,32 +95,36 @@ function makeTypeQuad(subject: string, typeIri: string): QuadInterface {
   };
 }
 
-/** Build a quad with a ListTermType object encoding an rdf:List of named-class IRIs. */
-function makeListQuad(subject: string, predicate: string, memberIris: string[]): QuadInterface {
-  return {
-    'graph': Terms.defaultGraph(),
-    'object': Terms.list(memberIris.map((iri) => {
+/**
+ * Build the parent quad + rdf:first/rdf:rest triples for an rdf:List of
+ * named-class IRIs. Splat the result into the test's quad array.
+ */
+function makeListQuad(subject: string, predicate: string, memberIris: string[]): QuadInterface[] {
+  return listQuad(
+    Terms.iri(subject),
+    Terms.iri(predicate),
+    memberIris.map((iri) => {
       return Terms.iri(iri);
-    })),
-    'predicate': Terms.iri(predicate),
-    'subject': Terms.iri(subject)
-  };
+    })
+  );
 }
 
-/** Build a quad with a ListTermType object encoding a list of blank-node members. */
+/**
+ * Build the parent quad + rdf:first/rdf:rest triples for an rdf:List of
+ * blank-node members. Splat the result into the test's quad array.
+ */
 function makeListQuadWithBnodes(
   subject: string,
   predicate: string,
   bnodeIds: string[]
-): QuadInterface {
-  return {
-    'graph': Terms.defaultGraph(),
-    'object': Terms.list(bnodeIds.map((id) => {
+): QuadInterface[] {
+  return listQuad(
+    Terms.iri(subject),
+    Terms.iri(predicate),
+    bnodeIds.map((id) => {
       return Terms.blank(id);
-    })),
-    'predicate': Terms.iri(predicate),
-    'subject': Terms.iri(subject)
-  };
+    })
+  );
 }
 
 /**
@@ -183,7 +188,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
 
     const quads: QuadInterface[] = [
       makeTypeQuad(subject, 'http://www.w3.org/2002/07/owl#Class'),
-      makeListQuad(subject, OWL_INTERSECTION_OF, [
+      ...makeListQuad(subject, OWL_INTERSECTION_OF, [
         classA,
         classB
       ])
@@ -218,7 +223,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
 
     const quads: QuadInterface[] = [
       makeTypeQuad(subject, 'http://www.w3.org/2002/07/owl#Class'),
-      makeListQuad(subject, OWL_UNION_OF, [
+      ...makeListQuad(subject, OWL_UNION_OF, [
         classC,
         classD
       ])
@@ -256,7 +261,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
 
     const quads: QuadInterface[] = [
       makeTypeQuad(subject, 'http://www.w3.org/2002/07/owl#Class'),
-      makeListQuadWithBnodes(subject, OWL_UNION_OF, [
+      ...makeListQuadWithBnodes(subject, OWL_UNION_OF, [
         bnodeA,
         bnodeB
       ]),
@@ -297,9 +302,10 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
     const subject = 'https://example.com/Color';
 
     // Individuals as literal-carrying list items (as OwlProjection emits them).
-    const listQuad: QuadInterface = {
-      'graph': Terms.defaultGraph(),
-      'object': Terms.list([
+    const oneOfQuads = listQuad(
+      Terms.iri(subject),
+      Terms.iri(OWL_ONE_OF),
+      [
         Terms.literal({
           '@type': 'http://www.w3.org/2001/XMLSchema#string',
           '@value': 'red'
@@ -312,14 +318,12 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
           '@type': 'http://www.w3.org/2001/XMLSchema#string',
           '@value': 'blue'
         })
-      ]),
-      'predicate': Terms.iri(OWL_ONE_OF),
-      'subject': Terms.iri(subject)
-    };
+      ]
+    );
 
     const quads: QuadInterface[] = [
       makeTypeQuad(subject, 'http://www.w3.org/2002/07/owl#Class'),
-      listQuad
+      ...oneOfQuads
     ];
 
     const ctx = makeCtx([subject]);
@@ -343,7 +347,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
 
     const quads: QuadInterface[] = [
       makeTypeQuad(subject, 'http://www.w3.org/2002/07/owl#Class'),
-      makeListQuad(subject, OWL_ONE_OF, [
+      ...makeListQuad(subject, OWL_ONE_OF, [
         i1,
         i2
       ])
@@ -377,32 +381,30 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
     const quads: QuadInterface[] = [
       makeTypeQuad(subject, 'http://www.w3.org/2002/07/owl#Class'),
       // subject intersectionOf [E, _:anon-union-1]
-      {
-        'graph': Terms.defaultGraph(),
-        'object': Terms.list([
+      ...listQuad(
+        Terms.iri(subject),
+        Terms.iri(OWL_INTERSECTION_OF),
+        [
           Terms.iri(classE),
           Terms.blank(unionBnodeId)
-        ]),
-        'predicate': Terms.iri(OWL_INTERSECTION_OF),
-        'subject': Terms.iri(subject)
-      },
+        ]
+      ),
       // _:anon-union-1 type owl:Class
-      {
-        'graph': Terms.defaultGraph(),
-        'object': Terms.iri('http://www.w3.org/2002/07/owl#Class'),
-        'predicate': Terms.iri(RDF_TYPE),
-        'subject': Terms.blank(unionBnodeId)
-      },
+      Terms.quad(
+        Terms.blank(unionBnodeId),
+        Terms.iri(RDF_TYPE),
+        Terms.iri('http://www.w3.org/2002/07/owl#Class'),
+        Terms.defaultGraph()
+      ),
       // _:anon-union-1 unionOf [F, G]
-      {
-        'graph': Terms.defaultGraph(),
-        'object': Terms.list([
+      ...listQuad(
+        Terms.blank(unionBnodeId),
+        Terms.iri(OWL_UNION_OF),
+        [
           Terms.iri(classF),
           Terms.iri(classG)
-        ]),
-        'predicate': Terms.iri(OWL_UNION_OF),
-        'subject': Terms.blank(unionBnodeId)
-      }
+        ]
+      )
     ];
 
     const ctx = makeCtx([
@@ -445,7 +447,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
     const nonClass = 'https://example.com/SomeProperty';
     const classH = 'https://example.com/H';
 
-    const quads: QuadInterface[] = [makeListQuad(nonClass, OWL_INTERSECTION_OF, [classH])];
+    const quads: QuadInterface[] = makeListQuad(nonClass, OWL_INTERSECTION_OF, [classH]);
 
     // nonClass is NOT in allClassIris
     const ctx = makeCtx([classH]);
@@ -465,15 +467,14 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
     const quads: QuadInterface[] = [
       makeTypeQuad(subject, 'http://www.w3.org/2002/07/owl#Class'),
       // Use prefixed form as QuadFactory emits
-      {
-        'graph': Terms.defaultGraph(),
-        'object': Terms.list([
+      ...listQuad(
+        Terms.iri(subject),
+        Terms.iri('owl:intersectionOf'),
+        [
           Terms.iri(classI),
           Terms.iri(classJ)
-        ]),
-        'predicate': Terms.iri('owl:intersectionOf'),
-        'subject': Terms.iri(subject)
-      }
+        ]
+      )
     ];
 
     const ctx = makeCtx([
@@ -495,19 +496,18 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
     // This test mimics what OwlProjection emits for a class with enum: ['in-print'].
     const subject = 'https://bookstore.example/InPrint';
 
-    const listQuad: QuadInterface = {
-      'graph': Terms.defaultGraph(),
-      'object': Terms.list([Terms.literal({
+    const oneOfQuads = listQuad(
+      Terms.iri(subject),
+      Terms.iri(OWL_ONE_OF),
+      [Terms.literal({
         '@type': 'http://www.w3.org/2001/XMLSchema#string',
         '@value': 'in-print'
-      })]),
-      'predicate': Terms.iri(OWL_ONE_OF),
-      'subject': Terms.iri(subject)
-    };
+      })]
+    );
 
     const quads: QuadInterface[] = [
       makeTypeQuad(subject, 'http://www.w3.org/2002/07/owl#Class'),
-      listQuad
+      ...oneOfQuads
     ];
 
     const ctx = makeCtx([subject]);

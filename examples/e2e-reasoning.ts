@@ -269,14 +269,14 @@ async function reason() {
 
     for (const quad of quads) {
       if (quad.predicate.value === `${FOAF}knows`) {
-        const targetName = nameOf[quad.object.value as string] ?? quad.object.value;
+        const targetName = nameOf[quad.object.value] ?? quad.object.value;
 
         console.log(`  ${personName} knows ${targetName}`);
       }
     }
     for (const quad of quads) {
       if (quad.predicate.value === `${FOAF}couldCollaborateWith`) {
-        const targetName = nameOf[quad.object.value as string] ?? quad.object.value;
+        const targetName = nameOf[quad.object.value] ?? quad.object.value;
 
         console.log(`  ${personName} could collaborate with ${targetName}`);
       }

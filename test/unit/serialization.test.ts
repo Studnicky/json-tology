@@ -22,6 +22,7 @@ import { bookstoreEntities as entities } from '../../examples/docs/bookstore/ind
 import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
 // Terms factory — produces rdf/js-compliant term objects for test quad construction.
 import { Terms } from '../../src/modules/rdf/Terms.js';
+import { listQuad } from '../helpers/listQuad.js';
 
 // ===========================================================================
 // Source: jsonLdFormatter.test.ts
@@ -229,18 +230,27 @@ import { Terms } from '../../src/modules/rdf/Terms.js';
     }> = [
       {
         'check': (result) => {
-          const orValue = result[0]['sh:or'] as { '@list': unknown[] };
+          const shape = result.find((node) => {
+            return node['@id'] === 'ex:Shape';
+          });
+
+          assert.ok(shape !== undefined, 'ex:Shape subject must be emitted');
+          const orValue = shape['sh:or'] as { '@list': unknown[] };
 
           assert.deepEqual(orValue['@list'], [
             { '@id': 'ex:Circle' },
             { '@id': 'ex:Square' }
           ]);
         },
-        'name': 'happy: List term becomes @list',
-        'quads': [quad('ex:Shape', 'sh:or', Terms.list([
-          named('ex:Circle'),
-          named('ex:Square')
-        ]))]
+        'name': 'happy: rdf:first/rdf:rest chain becomes @list',
+        'quads': listQuad(
+          Terms.iri('ex:Shape'),
+          Terms.iri('sh:or'),
+          [
+            named('ex:Circle'),
+            named('ex:Square')
+          ]
+        )
       },
       {
         'check': (result) => {

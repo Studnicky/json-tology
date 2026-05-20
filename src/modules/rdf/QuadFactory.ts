@@ -14,6 +14,7 @@ import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
 import type { RelationIndexInterface } from '../../interfaces/RelationIndex.js';
+import { Lists } from './Lists.js';
 import { ProjectionIndex } from './ProjectionIndex.js';
 import { Terms } from './Terms.js';
 import { XSD } from '../../constants/IRI.js';
@@ -141,16 +142,28 @@ export class QuadFactory {
       ? Terms.blank(expandedSubject)
       : Terms.iri(expandedSubject);
 
-    return {
-      'graph': Terms.defaultGraph(),
-      object,
-      'predicate': Terms.iri(expandedPredicate),
-      'subject': subjectTerm
-    };
+    return Terms.quad(subjectTerm, Terms.iri(expandedPredicate), object);
   }
 
-  static rdfList(items: QuadObjectType[]): QuadObjectType {
-    return Terms.list(items);
+  /**
+   * Construct an RDF list and push its `rdf:first` / `rdf:rest` triples to
+   * `quads`. Returns the list head (a `BlankNode` for non-empty lists, or
+   * `rdf:nil` for empty lists) to be used as the object position in the
+   * parent triple.
+   *
+   * Standard RDF list encoding — no project-internal `List` term. Every
+   * quad produced is a spec-compliant `@rdfjs/types#Quad`.
+   */
+  static rdfList(items: QuadObjectType[], quads: QuadInterface[]): QuadObjectType {
+    const {
+      head, triples
+    } = Lists.build(items);
+
+    for (const triple of triples) {
+      quads.push(triple);
+    }
+
+    return head;
   }
 
   static resetBnodeCounter(): void {

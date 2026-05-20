@@ -7,6 +7,88 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-05-19
+
+`QuadInterface` is now a re-export of `@rdfjs/types#Quad`. There is a single
+canonical quad type used both inside json-tology and at every public boundary.
+Consumers can pipe `toQuads()` / `toTbox()` / `toShacl()` output directly into
+`n3.Writer`, `@graphy/core.data.factory`, `rdf-ext`, `jsonld`, and any other
+rdf/js-aware tool with no adapter layer.
+
+### Breaking
+
+- `QuadInterface` is `@rdfjs/types#Quad`. Quads now carry the rdf/js-spec
+  `termType: 'Quad'`, `value: ''`, and `equals(other)` method.
+- `LiteralTermType.value` is `string` (rdf/js spec). The JS type tag is carried
+  in `datatype.value` (`xsd:integer`, `xsd:boolean`, `xsd:dateTime`, etc.).
+  Use `decodeLiteral(literal)` from `src/modules/rdf/Terms.ts` to recover the
+  typed JS value. `fromQuads`, `Lift`, and the OWL import pipeline call it
+  automatically.
+- `ListTermType` is removed. RDF lists are emitted as the standard
+  `rdf:first` / `rdf:rest` / `rdf:nil` triple chain. The list head (a
+  BlankNode or `rdf:nil` IRI) appears in the parent triple's object position.
+- `Terms.list()` is removed. Use `Lists.build(items)` (returns `{ head, triples }`
+  for the caller to assemble) or `Lists.collect(head, allQuads)` (walks a list
+  back into an item array).
+- `QuadFactory.rdfList(items, quads)` now takes the surrounding quad array
+  as a second argument and pushes the rdf:first/rdf:rest triples into it,
+  returning the list head as the object-position term.
+
+### Added
+
+- `@rdfjs/types` as a runtime dependency. Types-only — zero runtime cost — but
+  installed alongside `json-tology` so consumers can `import type { Quad } from '@rdfjs/types'`
+  with no separate install.
+- `Terms.quad(subject, predicate, object, graph?)` factory producing
+  rdf/js-spec `Quad` objects with `termType: 'Quad'`, `value: ''`, and
+  `equals(other)`.
+- `Lists.build(items)` constructs the standard rdf:first/rdf:rest/rdf:nil
+  triple sequence; returns `{ head, triples }`.
+- `Lists.collect(head, allQuads)` walks a list chain back into an item array.
+  Recognises both full IRI (`http://www.w3.org/1999/02/22-rdf-syntax-ns#first`)
+  and CURIE (`rdf:first`) predicate forms.
+- `Lists.asQuadObject(obj)` narrows an rdf/js `Quad_Object`
+  (`NamedNode | Literal | BlankNode | Quad | Variable`) to the project's
+  `QuadObjectType` (`NamedNode | BlankNode | Literal`). Returns `undefined`
+  for RDF\* quoted triples and SPARQL variables.
+- `Lists.narrowExternalQuads(quads)` filters a consumer-supplied `Quad[]`
+  down to the project's accepted shape (drops any quad whose terms include
+  `Variable` or quoted `Quad`).
+- `decodeLiteral(literal)` reverses the rdf/js literal encoding — reads
+  `datatype.value` and parses `literal.value` into a typed JS value.
+- `JsonLdFormatter` now detects bnode subjects that are heads of
+  rdf:first/rdf:rest chains and emits `{ '@list': [...items] }` in the
+  JSON-LD output, suppressing the internal list-segment bnodes from the
+  top-level node array.
+- `test/helpers/listQuad.ts` — test-side helper that returns the parent
+  quad + list triples as a single splattable array.
+
+### Changed
+
+- `Terms.literal(value, options?)` stringifies any JS value via
+  `String(rawValue)` (Dates use `toISOString()`); the produced Literal
+  carries the spec-required `value: string`. When `options.datatype` is
+  not provided, the datatype is inferred from the JS type (number → xsd:integer
+  or xsd:double, boolean → xsd:boolean, Date → xsd:dateTime, else xsd:string).
+  Inputs of the form `{ '@type': 'xsd:...', '@value': X }` are recognised as
+  JSON-LD value objects: the `@value` becomes the literal's string value and
+  `@type` becomes the datatype IRI.
+- `OntologyBuilder.addQuads(quads: QuadInterface[])` accepts rdf/js-spec
+  `Quad[]` directly. External quads with `Variable` or quoted `Quad` terms
+  are filtered out via `Lists.narrowExternalQuads`.
+- All `Terms.equals` signatures accept `null | TermType | undefined` per the
+  rdf/js spec. `Terms.quadEquals` accepts `null | Term | undefined`.
+- The OWL import pipeline (`ClassAxioms`, `ClassExpressions`, `Datatypes`,
+  `Individuals`, `PropertyRestrictions`) walks rdf:first/rdf:rest chains via
+  `Lists.collect` and decodes literals via `decodeLiteral` so typed JS values
+  round-trip correctly.
+- `extractListItems` in `ClassExpressions` and `Datatypes` walks the rdf list
+  via the subject quad index; legacy single-item passthrough is preserved for
+  inline blank nodes that are not list heads.
+- `equivalentClass` import accepts three encodings: direct NamedNode IRI, a
+  BlankNode wrapping `owl:unionOf [...]` (the shape OwlProjection emits), and
+  the legacy serialised-Literal form.
+
 ## [0.12.2] - 2026-05-19
 
 Lint zero-baseline follow-up to v0.12.1.

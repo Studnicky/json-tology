@@ -127,6 +127,20 @@ function blankNodeNameFor(iri: string): string {
  */
 function deskolemizeQuads(quads: readonly QuadInterface[]): QuadInterface[] {
   return quads.map((quad) => {
+    // Narrow rdf/js Quad_Subject (`NamedNode | BlankNode | Quad | Variable`)
+    // to the project pipeline subjects (`NamedNode | BlankNode`). RDF*
+    // (`Quad`) and `Variable` subjects pass through untouched — the project
+    // does not deskolemize them.
+    if (quad.subject.termType !== 'NamedNode' && quad.subject.termType !== 'BlankNode') {
+      return quad;
+    }
+    if (quad.predicate.termType !== 'NamedNode') {
+      return quad;
+    }
+    if (quad.graph.termType !== 'NamedNode' && quad.graph.termType !== 'BlankNode' && quad.graph.termType !== 'DefaultGraph') {
+      return quad;
+    }
+
     const subjectGenid = Skolemize.isWellKnownGenid(quad.subject.value);
     const objectGenid = quad.object.termType === 'NamedNode'
       && Skolemize.isWellKnownGenid(quad.object.value);
@@ -142,14 +156,14 @@ function deskolemizeQuads(quads: readonly QuadInterface[]): QuadInterface[] {
       ? Terms.blank(blankNodeNameFor(quad.object.value))
       : quad.object;
 
-    const rewritten: QuadInterface = {
-      'graph': quad.graph,
-      object,
-      'predicate': quad.predicate,
-      subject
-    };
+    // Object may still be a Variable or embedded Quad after the above narrow.
+    // In that case, fall back to the original quad rather than fabricating a
+    // shape the pipeline does not handle.
+    if (object.termType !== 'NamedNode' && object.termType !== 'BlankNode' && object.termType !== 'Literal') {
+      return quad;
+    }
 
-    return rewritten;
+    return Terms.quad(subject, quad.predicate, object, quad.graph);
   });
 }
 
@@ -180,21 +194,10 @@ function appendSameAsQuads(
     a,
     b
   ] of pairs) {
-    const forward: QuadInterface = {
-      'graph': graphTerm,
-      'object': Terms.iri(b),
-      'predicate': Terms.iri(expandedSameAs),
-      'subject': Terms.iri(a)
-    };
-    const reverse: QuadInterface = {
-      'graph': graphTerm,
-      'object': Terms.iri(a),
-      'predicate': Terms.iri(expandedSameAs),
-      'subject': Terms.iri(b)
-    };
+    const predicate = Terms.iri(expandedSameAs);
 
-    quads.push(forward);
-    quads.push(reverse);
+    quads.push(Terms.quad(Terms.iri(a), predicate, Terms.iri(b), graphTerm));
+    quads.push(Terms.quad(Terms.iri(b), predicate, Terms.iri(a), graphTerm));
   }
 }
 

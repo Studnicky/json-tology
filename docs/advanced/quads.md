@@ -106,6 +106,102 @@ For repeated projections, hold onto a `JsonTology` instance.
 
 This capability is unique to json-tology because the runtime representation is already a graph - validation, materialization, and ABox projection all consume the same node and relation structure.
 
+## rdf/js ecosystem interop {#rdfjs-interop}
+
+json-tology produces rdf/js-spec quads directly. No conversion required.
+
+`QuadInterface` is a re-export of [`@rdfjs/types#Quad`](https://rdf.js.org/data-model-spec/#quad-interface).
+Quads carry the rdf/js-spec `termType: 'Quad'`, `value: ''`, and `equals(other)`.
+
+- `subject` is a `NamedNode` or `BlankNode`
+- `predicate` is a `NamedNode`
+- `object` is a `NamedNode`, `BlankNode`, or `Literal`
+- `graph` is a `NamedNode`, `BlankNode`, or `DefaultGraph`
+- `Literal.value` is `string` per the rdf/js spec; the JS type tag is carried
+  in `Literal.datatype.value` (`xsd:integer`, `xsd:boolean`, `xsd:dateTime`, etc.)
+
+`@rdfjs/types` is a runtime dependency of json-tology (types-only, zero runtime
+cost), so you can `import type { Quad } from '@rdfjs/types'` without a separate
+install.
+
+### Piping to n3.Writer
+
+```ts
+import { Writer } from 'n3';
+
+const jt = JsonTology.create({ baseIRI: 'https://bookstore.example', schemas: [CustomerSchema] as const });
+const quads = jt.toQuads(CustomerSchema, { id: 'cust-1', name: 'Alice', email: 'alice@example.com' });
+
+// No cast required — QuadInterface is @rdfjs/types#Quad.
+const writer = new Writer();
+writer.addQuads(quads);
+writer.end((_err, result) => console.log(result));
+```
+
+### Terms factory
+
+The in-house `Terms` factory (`src/modules/rdf/Terms.ts`) produces rdf/js-spec
+term objects (`NamedNode`, `BlankNode`, `Literal`, `DefaultGraph`) and quads
+(`@rdfjs/types#Quad`) without requiring `@rdfjs/data-model` at runtime. To use
+a different DataFactory (e.g. `n3.DataFactory`, `@rdfjs/data-model`), construct
+quads with that factory and pass them into `jt.fromQuads()` — they are accepted
+as-is because the project's accepted shape is the canonical rdf/js spec.
+
+### Recovering typed JS values from literals
+
+`Literal.value` is `string` per the rdf/js spec. To recover the typed JS value
+(number, boolean, Date), use `decodeLiteral` from `src/modules/rdf/Terms.ts`:
+
+```ts
+import { decodeLiteral } from 'json-tology';
+
+const ageLit = quad.object;             // { termType: 'Literal', value: '30', datatype: { value: 'xsd:integer' }, ... }
+
+if (ageLit.termType === 'Literal') {
+  const age = decodeLiteral(ageLit);    // → 30 (number)
+}
+```
+
+`fromQuads`, the internal `Lift` pipeline, and the OWL import dispatchers call
+`decodeLiteral` automatically, so consumers using those entry points never have
+to hand-decode.
+
+### RDF lists
+
+RDF lists (used by `owl:unionOf`, `owl:oneOf`, `sh:or`, `sh:in`, etc.) are
+emitted as the standard `rdf:first` / `rdf:rest` / `rdf:nil` triple chain.
+There is no project-internal "list term" — the list head (a `BlankNode`) appears
+in the parent triple's object position and the chain materialises as additional
+quads.
+
+To assemble a list as the object of a quad, use `Lists.build`:
+
+```ts
+import { Lists, Terms } from 'json-tology';
+
+const { head, triples } = Lists.build([
+  Terms.iri('https://example.com/A'),
+  Terms.iri('https://example.com/B')
+]);
+
+const quads = [
+  Terms.quad(
+    Terms.iri('https://example.com/Shape'),
+    Terms.iri('http://www.w3.org/ns/shacl#or'),
+    head
+  ),
+  ...triples
+];
+```
+
+To walk a list chain back into an item array, use `Lists.collect`:
+
+```ts
+import { Lists } from 'json-tology';
+
+const items = Lists.collect(headTerm, allQuads);
+```
+
 ## Related
 
 - [`toTbox`](/advanced/ontology#jt-totbox) - class and property declarations (TBox companion to ABox `toQuads`)

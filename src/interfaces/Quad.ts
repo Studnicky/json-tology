@@ -1,21 +1,16 @@
-import type {
-  BnodeTermType, DefaultGraphTermType, IriTermType, QuadObjectType
-} from '../types/Quad.js';
-
 /**
- * RDF quad interface — compliant with the rdf/js DataModel spec
- * (https://rdf.js.org/data-model-spec/).
+ * `QuadInterface` is the canonical rdf/js spec quad — re-exported from
+ * `@rdfjs/types#Quad` as the project's public quad surface.
  *
- * - subject   IriTermType | BnodeTermType   (NamedNode | BlankNode)
- * - predicate IriTermType                   (NamedNode)
- * - object    QuadObjectType                (NamedNode | BlankNode | Literal | List†)
- * - graph     IriTermType | BnodeTermType | DefaultGraphTermType (always present)
+ * Quads produced by `toQuads`, `toTbox`, and `toShacl` are directly compatible
+ * with the broader Node.js RDF ecosystem (n3, rdf-ext, jsonld, @graphy,
+ * rdf-store-stream) — no cast required.
  *
- * † ListTermType is a project extension; not part of the rdf/js spec.
+ * Literal values are typed as `string` per the rdf/js spec, with the JS type
+ * tag carried in `.datatype.value` (e.g. `xsd:integer`, `xsd:boolean`,
+ * `xsd:dateTime`). To decode back to a typed JS value, use `decodeLiteral`
+ * from `src/modules/rdf/Terms.ts` — `fromQuads` does this automatically.
+ *
+ * @see {@link https://rdf.js.org/data-model-spec/#quad-interface rdf/js Quad spec}
  */
-export interface QuadInterface {
-  'graph': BnodeTermType | DefaultGraphTermType | IriTermType;
-  'object': QuadObjectType;
-  'predicate': IriTermType;
-  'subject': BnodeTermType | IriTermType;
-}
+export type { Quad as QuadInterface } from '@rdfjs/types';

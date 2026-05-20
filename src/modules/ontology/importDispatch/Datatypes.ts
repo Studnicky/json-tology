@@ -15,7 +15,11 @@
  */
 
 import type { QuadInterface } from '../../../interfaces/Quad.js';
-import type { QuadObjectType } from '../../../types/Quad.js';
+import type {
+  BnodeTermType, IriTermType, QuadObjectType
+} from '../../../types/Quad.js';
+import { Lists } from '../../rdf/Lists.js';
+import { decodeLiteral } from '../../rdf/Terms.js';
 import type {
   OwlImportContext, OwlImportFragment
 } from '../../../interfaces/OwlImport.js';
@@ -551,19 +555,71 @@ function quadsForPredicates(
 // ---------------------------------------------------------------------------
 
 /**
- * Extract items from a quad object that encodes an RDF list.
- * Handles both `ListTermType` (project shorthand) and a single item.
+ * Extract items from a quad object that points to an RDF list head.
+ *
+ * Walks the rdf:first/rdf:rest chain via `Lists.collect` when the head has
+ * rdf:first edges in `index`. Falls back to a single-item passthrough for
+ * inline blank nodes / named nodes that are not list heads.
  */
-function extractListItems(obj: QuadObjectType): QuadObjectType[] {
-  if (obj.termType === 'List') {
-    return [...obj.items];
+function extractListItems(
+  obj: QuadInterface['object'],
+  index: SubjectIndex
+): QuadObjectType[] {
+  const narrowed = Lists.asQuadObject(obj);
+
+  if (narrowed === undefined) {
+    return [];
+  }
+  if (narrowed.termType === 'Literal') {
+    return [narrowed];
   }
 
-  if (obj.termType === 'BlankNode' || obj.termType === 'NamedNode') {
-    return [obj];
+  const headQuads = index.get(narrowed.value) ?? [];
+  const hasFirst = headQuads.some((quad) => {
+    return quad.predicate.value === `${RDF_NS}first` || quad.predicate.value === 'rdf:first';
+  });
+
+  if (!hasFirst) {
+    return [narrowed];
   }
 
-  return [];
+  return Lists.collect(narrowed, walkableListQuads(narrowed, index));
+}
+
+function walkableListQuads(
+  head: BnodeTermType | IriTermType,
+  index: SubjectIndex
+): QuadInterface[] {
+  const collected: QuadInterface[] = [];
+  const seen = new Set<string>();
+  let cursor: string | undefined = head.value;
+
+  while (cursor !== undefined && !seen.has(cursor)) {
+    seen.add(cursor);
+    const quads = index.get(cursor) ?? [];
+    let next: string | undefined;
+
+    for (const quad of quads) {
+      const predValue = quad.predicate.value;
+      const isFirst = predValue === `${RDF_NS}first` || predValue === 'rdf:first';
+      const isRest = predValue === `${RDF_NS}rest` || predValue === 'rdf:rest';
+
+      if (isFirst) {
+        collected.push(quad);
+      } else if (isRest) {
+        collected.push(quad);
+
+        if ((quad.object.termType === 'BlankNode' || quad.object.termType === 'NamedNode')
+          && quad.object.value !== `${RDF_NS}nil`
+          && quad.object.value !== 'rdf:nil') {
+          next = quad.object.value;
+        }
+      }
+    }
+    cursor = next;
+  }
+
+  return collected;
 }
 
 // ---------------------------------------------------------------------------
@@ -574,7 +630,7 @@ function extractListItems(obj: QuadObjectType): QuadObjectType[] {
  * Extract a number from a literal quad object.
  * Returns null for non-literals or non-numeric values.
  */
-function literalNumber(obj: QuadObjectType): null | number {
+function literalNumber(obj: QuadInterface['object']): null | number {
   if (obj.termType !== 'Literal') {
     return null;
   }
@@ -594,7 +650,7 @@ function literalNumber(obj: QuadObjectType): null | number {
  * Extract a string from a literal quad object.
  * Returns null for non-literals.
  */
-function literalString(obj: QuadObjectType): null | string {
+function literalString(obj: QuadInterface['object']): null | string {
   if (obj.termType !== 'Literal') {
     return null;
   }
@@ -800,7 +856,7 @@ function processDatatypeIri(
   const withRestrictionsQuads = quadsForPredicates(index, subjectIri, OWL_WITH_RESTRICTIONS_IRIS);
 
   for (const wrQuad of withRestrictionsQuads) {
-    const listItems = extractListItems(wrQuad.object);
+    const listItems = extractListItems(wrQuad.object, index);
 
     for (const item of listItems) {
       if (item.termType === 'BlankNode') {
@@ -833,7 +889,7 @@ function processDatatypeIri(
     const oneOfQuads = quadsForPredicates(index, targetId, OWL_ONE_OF_IRIS);
 
     for (const ooQuad of oneOfQuads) {
-      const enumValues = extractEnumValues(ooQuad.object);
+      const enumValues = extractEnumValues(ooQuad.object, index);
 
       if (enumValues.length > 0) {
         delta.enum = enumValues;
@@ -888,24 +944,15 @@ function processDatatypeIri(
  *
  * Returns an array of raw JS values.
  */
-function extractEnumValues(listObj: QuadObjectType): unknown[] {
-  const items = extractListItems(listObj);
+function extractEnumValues(listObj: QuadInterface['object'], index: SubjectIndex): unknown[] {
+  const items = extractListItems(listObj, index);
   const values: unknown[] = [];
 
   for (const item of items) {
     if (item.termType === 'Literal') {
-      const raw = item.value;
-
-      // Structured literal: { '@type': xsd:..., '@value': ... }
-      if (
-        typeof raw === 'object'
-        && raw !== null
-        && '@value' in (raw as Record<string, unknown>)
-      ) {
-        values.push((raw as Record<string, unknown>)['@value']);
-      } else {
-        values.push(raw);
-      }
+      // Literal.value is `string` per rdf/js spec; decode to its typed JS
+      // value using the datatype tag.
+      values.push(decodeLiteral(item));
     } else if (item.termType === 'NamedNode') {
       values.push(item.value);
     }

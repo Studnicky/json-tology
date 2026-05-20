@@ -38,6 +38,7 @@ import {
 } from '../data/DataTypes.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { Hash } from '../hash/Hash.js';
+import { Lists } from './Lists.js';
 import { QuadFactory } from './QuadFactory.js';
 
 // ---------------------------------------------------------------------------
@@ -61,6 +62,7 @@ export const Projection = {
     const { curie } = options ?? {};
 
     QuadFactory.resetBnodeCounter();
+    Lists.resetListBnodeCounter();
     const quads: QuadInterface[] = [];
 
     const allRelations = graph.allRelations();
@@ -240,8 +242,10 @@ function projectStructuredRelation(
       const items = structure.members.map((member) => {
         return QuadFactory.iri(member, { curie });
       });
+      const list = Lists.build(items);
 
-      quads.push(QuadFactory.quad(subject, relation.predicate, QuadFactory.rdfList(items), { curie }));
+      quads.push(QuadFactory.quad(subject, relation.predicate, list.head, { curie }));
+      quads.push(...list.triples);
       break;
     }
     case 'restriction': {
@@ -547,7 +551,12 @@ function quadsToJsonLdNodes(quads: QuadInterface[]): Array<Record<string, unknow
       subjects.set(subjectValue, node);
     }
 
-    const value = quadObjectToJsonLd(entry.object);
+    const narrowed = Lists.asQuadObject(entry.object);
+
+    if (narrowed === undefined) {
+      continue;
+    }
+    const value = quadObjectToJsonLd(narrowed);
     const predicateValue = entry.predicate.value;
 
     if (predicateValue === RDF.type) {
@@ -570,20 +579,13 @@ function quadsToJsonLdNodes(quads: QuadInterface[]): Array<Record<string, unknow
 }
 
 function quadObjectToJsonLd(quadObject: QuadObjectType): unknown {
-  switch (quadObject.termType) {
-    case 'BlankNode':
-      return { [JSONLD.id]: quadObject.value };
-    case 'List':
-      return {
-        [JSONLD.list]: quadObject.items.map((item) => {
-          return quadObjectToJsonLd(item);
-        })
-      };
-    case 'Literal':
-      return quadObject.value;
-    case 'NamedNode':
-      return { [JSONLD.id]: quadObject.value };
+  if (quadObject.termType === 'BlankNode' || quadObject.termType === 'NamedNode') {
+    return { [JSONLD.id]: quadObject.value };
   }
 
-  return undefined;
+  // Literal — the rdf/js spec carries a string value plus datatype tag.
+  // TODO: list heads (bnode subjects with rdf:first/rdf:rest edges) should
+  // be detected upstream and emitted as `{ @list: [...] }`; until then they
+  // round-trip via their raw triples.
+  return quadObject.value;
 }

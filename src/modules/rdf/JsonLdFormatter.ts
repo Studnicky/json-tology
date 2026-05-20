@@ -13,8 +13,115 @@ import type { QuadObjectType } from '../../types/Quad.js';
 import { RDF_TYPE_IRI } from '../../constants/PREFIXES.js';
 import { RDF } from '../../constants/IRI.js';
 import { JSONLD } from '../../constants/JSONLD.js';
+import { Lists } from './Lists.js';
+import { decodeLiteral } from './Terms.js';
+
+const RDF_NS_FULL = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
+const RDF_FIRST_FULL = `${RDF_NS_FULL}first`;
+const RDF_REST_FULL = `${RDF_NS_FULL}rest`;
+const RDF_NIL_FULL = `${RDF_NS_FULL}nil`;
+
+function isRdfFirst(value: string): boolean {
+  return value === RDF.first || value === RDF_FIRST_FULL;
+}
+
+function isRdfRest(value: string): boolean {
+  return value === RDF.rest || value === RDF_REST_FULL;
+}
+
+function isRdfNil(value: string): boolean {
+  return value === RDF.nil || value === RDF_NIL_FULL;
+}
+
+/**
+ * Walk an `rdf:first` / `rdf:rest` chain rooted at `headValue` (the `.value`
+ * of a BlankNode or NamedNode that appears as a list head) and emit the items
+ * as JSON-LD values. Returns `undefined` when the chain is not a list
+ * (no rdf:first edge) or the head is `rdf:nil` (empty list — `[]` returned).
+ */
+function walkListHead(
+  headValue: string,
+  subjectQuads: ReadonlyMap<string, QuadInterface[]>,
+  visited: Set<string>
+): undefined | unknown[] {
+  if (isRdfNil(headValue)) {
+    return [];
+  }
+
+  const items: unknown[] = [];
+  let cursor: string | undefined = headValue;
+
+  while (!visited.has(cursor)) {
+    visited.add(cursor);
+    const segmentQuads: QuadInterface[] = subjectQuads.get(cursor) ?? [];
+    const firstQuad = segmentQuads.find((segment) => {
+      return isRdfFirst(segment.predicate.value);
+    });
+    const restQuad = segmentQuads.find((segment) => {
+      return isRdfRest(segment.predicate.value);
+    });
+
+    if (firstQuad === undefined) {
+      return undefined;
+    }
+
+    const narrowedItem = Lists.asQuadObject(firstQuad.object);
+
+    if (narrowedItem !== undefined) {
+      const itemValue = objectToJsonLd(narrowedItem);
+
+      items.push(itemValue);
+    }
+
+    if (restQuad === undefined) {
+      break;
+    }
+    const rest: QuadInterface['object'] = restQuad.object;
+
+    if (rest.termType === 'NamedNode' && isRdfNil(rest.value)) {
+      break;
+    }
+    if (rest.termType !== 'NamedNode' && rest.termType !== 'BlankNode') {
+      break;
+    }
+    cursor = rest.value;
+  }
+
+  return items;
+}
 
 function fromQuadsImpl(quads: QuadInterface[]): Array<Record<string, unknown>> {
+  // Pre-pass: identify list-segment bnodes (any subject with an rdf:first
+  // outgoing edge). These are consumed into `@list` arrays and must not
+  // appear as standalone top-level nodes in the output.
+  const subjectQuads = new Map<string, QuadInterface[]>();
+
+  for (const entry of quads) {
+    const key = entry.subject.value;
+    let list = subjectQuads.get(key);
+
+    if (list === undefined) {
+      list = [];
+      subjectQuads.set(key, list);
+    }
+    list.push(entry);
+  }
+
+  const listSegmentIds = new Set<string>();
+
+  for (const [
+    subjectId,
+    entries
+  ] of subjectQuads) {
+    const hasFirst = entries.some((quad) => {
+      return isRdfFirst(quad.predicate.value);
+    });
+
+    if (hasFirst) {
+      listSegmentIds.add(subjectId);
+    }
+  }
+
   // Phase 1: group quads by subject
   const subjects = new Map<string, Record<string, unknown>>();
 
@@ -31,7 +138,12 @@ function fromQuadsImpl(quads: QuadInterface[]): Array<Record<string, unknown>> {
 
     if (predicateValue === RDF.type || predicateValue === RDF_TYPE_IRI) {
       // @type values are plain strings, not { @id: ... } wrappers
-      const typeValue = entry.object.termType === 'NamedNode' ? entry.object.value : objectToJsonLd(entry.object);
+      const narrowedTypeObj = Lists.asQuadObject(entry.object);
+
+      if (narrowedTypeObj === undefined) {
+        continue;
+      }
+      const typeValue = narrowedTypeObj.termType === 'NamedNode' ? narrowedTypeObj.value : objectToJsonLd(narrowedTypeObj);
       const existing = node[JSONLD.type];
 
       if (existing === undefined) {
@@ -45,7 +157,27 @@ function fromQuadsImpl(quads: QuadInterface[]): Array<Record<string, unknown>> {
         ];
       }
     } else {
-      const value = objectToJsonLd(entry.object);
+      const narrowed = Lists.asQuadObject(entry.object);
+
+      if (narrowed === undefined) {
+        continue;
+      }
+      // If the predicate's object is a bnode/IRI that heads an rdf:first
+      // chain, emit `{ @list: [...items] }` instead of an `{ @id: bnode }`
+      // reference. The list-segment bnodes themselves are filtered out of
+      // the final output below.
+      let value: unknown;
+
+      if ((narrowed.termType === 'BlankNode' || narrowed.termType === 'NamedNode')
+        && listSegmentIds.has(narrowed.value)) {
+        const listItems = walkListHead(narrowed.value, subjectQuads, new Set());
+
+        value = listItems === undefined ? objectToJsonLd(narrowed) : { [JSONLD.list]: listItems };
+      } else if (narrowed.termType === 'NamedNode' && isRdfNil(narrowed.value)) {
+        value = { [JSONLD.list]: [] };
+      } else {
+        value = objectToJsonLd(narrowed);
+      }
       const existing = node[predicateValue];
 
       if (existing === undefined) {
@@ -65,7 +197,11 @@ function fromQuadsImpl(quads: QuadInterface[]): Array<Record<string, unknown>> {
   const bnodeRefCount = new Map<string, number>();
 
   for (const entry of quads) {
-    countBnodeRefs(entry.object, bnodeRefCount);
+    const narrowed = Lists.asQuadObject(entry.object);
+
+    if (narrowed !== undefined) {
+      countBnodeRefs(narrowed, bnodeRefCount);
+    }
   }
 
   // Phase 3: inline singly-referenced bnodes (bottom-up)
@@ -85,14 +221,16 @@ function fromQuadsImpl(quads: QuadInterface[]): Array<Record<string, unknown>> {
     inlineBnodes(node, subjects, inlinedIds);
   }
 
-  // Phase 4: emit only non-inlined nodes, preserving insertion order
+  // Phase 4: emit only non-inlined, non-list-segment nodes, preserving
+  // insertion order. List-segment bnodes are consumed into `@list` arrays
+  // by their parent edges and must not surface as standalone subjects.
   const result: Array<Record<string, unknown>> = [];
 
   for (const [
     id,
     node
   ] of subjects) {
-    if (!inlinedIds.has(id)) {
+    if (!inlinedIds.has(id) && !listSegmentIds.has(id)) {
       result.push(node);
     }
   }
@@ -101,31 +239,21 @@ function fromQuadsImpl(quads: QuadInterface[]): Array<Record<string, unknown>> {
 }
 
 function objectToJsonLd(obj: QuadObjectType): unknown {
-  switch (obj.termType) {
-    case 'BlankNode':
-      return { [JSONLD.id]: obj.value };
-    case 'List':
-      return {
-        [JSONLD.list]: obj.items.map((item) => {
-          return objectToJsonLd(item);
-        })
-      };
-    case 'Literal':
-      return obj.value;
-    case 'NamedNode':
-      return { [JSONLD.id]: obj.value };
+  if (obj.termType === 'BlankNode') {
+    return { [JSONLD.id]: obj.value };
+  }
+  if (obj.termType === 'NamedNode') {
+    return { [JSONLD.id]: obj.value };
   }
 
-  return undefined;
+  // Literal — decode the rdf/js spec `value: string` back to its typed JS
+  // value (number, boolean, Date) based on `datatype.value`.
+  return decodeLiteral(obj);
 }
 
 function countBnodeRefs(obj: QuadObjectType, counts: Map<string, number>): void {
   if (obj.termType === 'BlankNode') {
     counts.set(obj.value, (counts.get(obj.value) ?? 0) + 1);
-  } else if (obj.termType === 'List') {
-    for (const item of obj.items) {
-      countBnodeRefs(item, counts);
-    }
   }
 }
 

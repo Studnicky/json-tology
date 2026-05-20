@@ -20,7 +20,10 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
 import { GraphSchemaSerializer } from '../../src/modules/ontology/GraphSchemaSerializer.js';
 import { GraphShaclSerializer } from '../../src/modules/ontology/GraphShaclSerializer.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
-import { Terms } from '../../src/modules/rdf/Terms.js';
+import { Lists } from '../../src/modules/rdf/Lists.js';
+import {
+  decodeLiteral, Terms
+} from '../../src/modules/rdf/Terms.js';
 
 // ===========================================================================
 // Source: graphSchemaSerializer.test.ts
@@ -776,7 +779,7 @@ import { Terms } from '../../src/modules/rdf/Terms.js';
       return quad.subject.value === subject
     && quad.predicate.value === predicate
     && quad.object.termType === 'Literal'
-    && quad.object.value === value
+    && decodeLiteral(quad.object) === value
     && (datatype === undefined || quad.object.datatype.value === datatype);
     });
   }
@@ -1329,7 +1332,7 @@ import { Terms } from '../../src/modules/rdf/Terms.js';
               quads,
               'https://example.com/Strict',
               'sh:closed',
-              'true',
+              true,
               'xsd:boolean'
             ));
           },
@@ -1414,7 +1417,7 @@ import { Terms } from '../../src/modules/rdf/Terms.js';
         {
           'check': (quads) => {
             assert.ok(
-              hasLiteralQuad(quads, 'https://example.com/Old', 'owl:deprecated', 'true', 'xsd:boolean'),
+              hasLiteralQuad(quads, 'https://example.com/Old', 'owl:deprecated', true, 'xsd:boolean'),
               'expected owl:deprecated = true'
             );
           },
@@ -1470,21 +1473,22 @@ import { Terms } from '../../src/modules/rdf/Terms.js';
 
             assert.ok(unionOfQuads.length > 0, 'should have unionOf quad');
 
-            const listQuad = unionOfQuads.find((quad) => {
-              return quad.object.termType === 'List';
+            const headQuad = unionOfQuads.find((quad) => {
+              return quad.object.termType === 'BlankNode' || quad.object.termType === 'NamedNode';
             });
 
-            assert.ok(listQuad, 'should have list-type object');
+            assert.ok(headQuad, 'unionOf object should be a list head');
 
-            if (listQuad.object.termType === 'List') {
-              const items = listQuad.object.items;
+            const head = headQuad.object;
 
-              assert.equal(items.length, 2);
-              assert.equal(items[0].termType, 'NamedNode');
-              assert.equal(items[1].termType, 'NamedNode');
-              assert.equal(items[0].value, 'xsd:string');
-              assert.equal(items[1].value, 'xsd:decimal');
-            }
+            assert.ok(head.termType === 'BlankNode' || head.termType === 'NamedNode');
+            const items = Lists.collect(head, quads);
+
+            assert.equal(items.length, 2);
+            assert.equal(items[0].termType, 'NamedNode');
+            assert.equal(items[1].termType, 'NamedNode');
+            assert.equal(items[0].value, 'xsd:string');
+            assert.equal(items[1].value, 'xsd:decimal');
           },
           'name': 'multi-type produces owl:unionOf with RDF list',
           'schema': {
