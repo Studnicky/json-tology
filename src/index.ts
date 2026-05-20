@@ -51,6 +51,10 @@ export * from './modules/ontology/GraphOntologySerializer.js';
 export * from './modules/ontology/OntologyBuilder.js';
 export * from './modules/rdf/Curie.js';
 export * from './modules/rdf/Lift.js';
+export * from './modules/rdf/Lists.js';
 export * from './modules/rdf/Projection.js';
 export * from './modules/rdf/Skolemize.js';
+export {
+  decodeLiteral, Terms
+} from './modules/rdf/Terms.js';
 export * from './modules/transform/Transform.js';

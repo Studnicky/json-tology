@@ -126,6 +126,7 @@ install.
 
 ### Piping to n3.Writer
 
+<!-- inline-ts-ok: cross-package interop pattern — imports `n3` (a devDependency for this docs example); no runnable file because n3 is not in runtime dependencies -->
 ```ts
 import { Writer } from 'n3';
 
@@ -149,18 +150,12 @@ as-is because the project's accepted shape is the canonical rdf/js spec.
 
 ### Recovering typed JS values from literals
 
-`Literal.value` is `string` per the rdf/js spec. To recover the typed JS value
-(number, boolean, Date), use `decodeLiteral` from `src/modules/rdf/Terms.ts`:
+`Literal.value` is `string` per the rdf/js spec. The original JS type
+(number, boolean, Date) is carried in `Literal.datatype.value`
+(`xsd:integer`, `xsd:boolean`, `xsd:dateTime`, …). To recover the typed JS
+value, call `decodeLiteral(literal)`:
 
-```ts
-import { decodeLiteral } from 'json-tology';
-
-const ageLit = quad.object;             // { termType: 'Literal', value: '30', datatype: { value: 'xsd:integer' }, ... }
-
-if (ageLit.termType === 'Literal') {
-  const age = decodeLiteral(ageLit);    // → 30 (number)
-}
-```
+<<< ../../examples/docs/advanced/98-decode-literal-typed-values.ts
 
 `fromQuads`, the internal `Lift` pipeline, and the OWL import dispatchers call
 `decodeLiteral` automatically, so consumers using those entry points never have
@@ -174,33 +169,10 @@ There is no project-internal "list term" — the list head (a `BlankNode`) appea
 in the parent triple's object position and the chain materialises as additional
 quads.
 
-To assemble a list as the object of a quad, use `Lists.build`:
+Use `Lists.build(items)` to assemble a list as the object of a quad, and
+`Lists.collect(head, allQuads)` to walk the chain back into an item array:
 
-```ts
-import { Lists, Terms } from 'json-tology';
-
-const { head, triples } = Lists.build([
-  Terms.iri('https://example.com/A'),
-  Terms.iri('https://example.com/B')
-]);
-
-const quads = [
-  Terms.quad(
-    Terms.iri('https://example.com/Shape'),
-    Terms.iri('http://www.w3.org/ns/shacl#or'),
-    head
-  ),
-  ...triples
-];
-```
-
-To walk a list chain back into an item array, use `Lists.collect`:
-
-```ts
-import { Lists } from 'json-tology';
-
-const items = Lists.collect(headTerm, allQuads);
-```
+<<< ../../examples/docs/advanced/99-lists-build-and-collect.ts
 
 ## Related
 
