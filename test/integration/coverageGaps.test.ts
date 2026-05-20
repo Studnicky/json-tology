@@ -1046,8 +1046,8 @@ void describe('Compose.equivalent — chain transitivity in TBox', () => {
       SchemaC
     ]);
 
-    // raw() returns JSON-LD nodes with prefixed predicates (e.g. owl:equivalentClass).
-    const nodes = builder.raw() as Array<Record<string, unknown>>;
+    // jsonLdObject()['@graph'] returns JSON-LD nodes with prefixed predicates (e.g. owl:equivalentClass).
+    const nodes = builder.jsonLdObject()['@graph'] as Array<Record<string, unknown>>;
 
     const equivKeys = [
       'owl:equivalentClass',

@@ -30,7 +30,7 @@ function tboxNodes(schema: Record<string, unknown> & { '$id': string }): readonl
     'schemas': [schema] as const
   });
 
-  return jt.toTbox().raw() as readonly JsonLdNodeType[];
+  return jt.toTbox().jsonLdObject()['@graph'] as readonly JsonLdNodeType[];
 }
 
 function isRestrictionNode(node: JsonLdNodeType): boolean {

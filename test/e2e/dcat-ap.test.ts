@@ -11,6 +11,7 @@ import { strict as assert } from 'node:assert';
 import { JsonTology } from '../../src/JsonTology.js';
 import { GraphShaclSerializer } from '../../src/modules/ontology/GraphShaclSerializer.js';
 import { GraphOntologySerializer } from '../../src/modules/ontology/GraphOntologySerializer.js';
+import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
 import {
   AllSchemas
 } from '../fixtures/dcat-ap.js';
@@ -41,8 +42,8 @@ describe('DCAT-AP e2e: Semantic round-trip', () => {
     const shaclSerializer = new GraphShaclSerializer();
     const owlSerializer = new GraphOntologySerializer();
 
-    shaclQuads = shaclSerializer.serialize(graphs).flat();
-    owlQuads = owlSerializer.serialize(graphs).flat();
+    shaclQuads = JsonLdFormatter.fromQuads(shaclSerializer.serializeQuads(graphs));
+    owlQuads = JsonLdFormatter.fromQuads(owlSerializer.serializeQuads(graphs));
 
     assert.ok(shaclQuads.length > 0, 'SHACL quads generated');
     assert.ok(owlQuads.length > 0, 'OWL quads generated');

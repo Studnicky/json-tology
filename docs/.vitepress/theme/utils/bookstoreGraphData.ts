@@ -209,7 +209,7 @@ function resolveTopLevelClass(domainId: string, entityIds: Set<string>): string 
  * every $ref relation is captured as an edge.
  */
 export function toCytoscapeElements(): CytoscapeElements {
-  const tboxRaw = bookstoreEntities.toTbox().raw() as Array<Record<string, unknown>>;
+  const tboxRaw = bookstoreEntities.toTbox().jsonLdObject()['@graph'] as Array<Record<string, unknown>>;
   const registeredSchemas = bookstoreEntities.registry.list() as Array<Record<string, unknown>>;
 
   const entityIds = new Set<string>(

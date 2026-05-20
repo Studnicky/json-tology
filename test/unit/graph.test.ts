@@ -19,6 +19,7 @@ import { GraphEngine } from '../../src/modules/graph/GraphEngine.js';
 // GraphOntologySerializer/GraphShaclSerializer are projection internals consuming graph nodes directly.
 import { GraphOntologySerializer } from '../../src/modules/ontology/GraphOntologySerializer.js';
 import { GraphShaclSerializer } from '../../src/modules/ontology/GraphShaclSerializer.js';
+import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { SchemaIri } from '../../src/modules/graph/SchemaIri.js';
 // SchemaRegistry is the registration backbone wired into JsonTology; needed here for raw graph assertions.
@@ -1928,7 +1929,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     void it('uses explicit domain/range in OWL output', () => {
       const owlReg = makeRegistry();
       const serializer = new GraphOntologySerializer();
-      const nodes = serializer.serialize(owlReg.listGraphs()) as Array<Record<string, unknown>>;
+      const nodes = JsonLdFormatter.fromQuads(serializer.serializeQuads(owlReg.listGraphs()));
 
       const addressProp = nodes.find((node) => {
         return node['@id'] === 'https://example.io/Person#address';
@@ -1966,7 +1967,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     void it('uses explicit range for sh:class in SHACL output', () => {
       const shaclReg = makeRegistry();
       const serializer = new GraphShaclSerializer();
-      const shapes = serializer.serialize(shaclReg.listGraphs()) as Array<Record<string, unknown>>;
+      const shapes = JsonLdFormatter.fromQuads(serializer.serializeQuads(shaclReg.listGraphs()));
 
       const personShape = shapes.find((shape) => {
         return shape['@id'] === 'https://example.io/Person';
@@ -2026,7 +2027,8 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         'type': 'object' as const
       });
 
-      const nodes = new GraphOntologySerializer().serialize(registry.listGraphs()) as Array<Record<string, unknown>>;
+      const owlSer = new GraphOntologySerializer();
+      const nodes = JsonLdFormatter.fromQuads(owlSer.serializeQuads(registry.listGraphs()));
 
       const propTypes = (propIri: string): string[] => {
         const node = nodes.find((entry) => {
@@ -2089,7 +2091,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       });
 
       const owlSerializer = new GraphOntologySerializer();
-      const output = owlSerializer.serialize(registry.listGraphs()) as Array<Record<string, unknown>>;
+      const output = JsonLdFormatter.fromQuads(owlSerializer.serializeQuads(registry.listGraphs()));
 
       // disjointWith
       const dogClass = output.find((node) => {

@@ -1,23 +1,23 @@
 /**
- * toShacl() — shaclObject() not raw().
+ * toShacl() — shaclObject() not quads().
  *
  * `toShacl()` returns an `OntologyBuilder` containing only SHACL shapes.
- * For this builder `raw()` is empty — SHACL content lives in `shaclObject()`.
- * Calling `raw()` on a `toShacl()` result always returns an empty array.
+ * For this builder `quads()` is empty — SHACL content lives in `shaclObject()`.
+ * Calling `quads()` on a `toShacl()` result always returns an empty array.
  *
- * Demonstrates: raw() is empty for toShacl(); shaclObject() contains content.
+ * Demonstrates: quads() is empty for toShacl(); shaclObject() contains content.
  */
 
 import { bookstoreEntities } from '../bookstore/index.js';
 
 const shaclBuilder = bookstoreEntities.toShacl();
 
-// raw() is always empty for a toShacl() builder — SHACL lives in shaclObject()
-const rawQuads = shaclBuilder.raw();
+// quads() is always empty for a toShacl() builder — SHACL lives in shaclObject()
+const owlQuads = shaclBuilder.quads();
 
 console.assert(
-  rawQuads.length === 0,
-  'toShacl() raw() is empty — SHACL lives in shaclObject()'
+  owlQuads.length === 0,
+  'toShacl() quads() is empty — SHACL lives in shaclObject()'
 );
 
 // shaclObject() contains the SHACL shapes

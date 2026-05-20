@@ -26,7 +26,7 @@ const abox = bookstoreEntities.toQuads(CustomerSchema, {
 const merged = {
   '@context': tbox.context(),
   '@graph': [
-    ...tbox.raw(),
+    ...(tbox.jsonLdObject()['@graph'] as unknown[]),
     ...abox
   ]
 };

@@ -67,9 +67,10 @@ const jt = JsonTology.create({
 });
 
 const abox = jt.toQuads(EventSchema, event);
+const aboxBuilder = jt.ontology().addFromQuads(abox);
 
 console.log('--- ABox Instance (JSON-LD) ---');
-const aboxJsonLdObj = abox.jsonLdObject();
+const aboxJsonLdObj = aboxBuilder.jsonLdObject();
 const aboxJsonLd = JSON.stringify(aboxJsonLdObj, null, 2);
 
 console.log(aboxJsonLd);
@@ -79,7 +80,7 @@ console.log();
 // Inspect individual nodes
 // ---------------------------------------------------------------------------
 
-const nodes = abox.raw();
+const nodes = aboxJsonLdObj['@graph'];
 
 console.log('--- Instance nodes ---');
 for (const node of nodes) {

@@ -372,9 +372,9 @@ import {
 
           assert.ok(typeof onto.jsonLd === 'function');
           assert.ok(typeof onto.jsonLdObject === 'function');
-          assert.ok(typeof onto.raw === 'function');
+          assert.ok(typeof onto.quads === 'function');
         },
-        'name': 'returns OntologyBuilder with jsonLd, jsonLdObject, and raw methods'
+        'name': 'returns OntologyBuilder with jsonLd, jsonLdObject, and quads methods'
       },
       {
         'check': () => {
@@ -400,7 +400,7 @@ import {
           });
 
           jt.set(RoleSchema);
-          const graph = jt.ontology().raw() as Array<Record<string, unknown>>;
+          const graph = (jt.ontology().jsonLdObject()['@graph']) as Array<Record<string, unknown>>;
           const ids = graph.filter((node) => {
             return node['@type'] === 'http://www.w3.org/2002/07/owl#Class';
           }).map((node) => {
@@ -420,7 +420,7 @@ import {
               RoleSchema
             ]
           });
-          const graph = jt.ontology().raw() as Array<Record<string, unknown>>;
+          const graph = (jt.ontology().jsonLdObject()['@graph']) as Array<Record<string, unknown>>;
 
           const classNodes = graph.filter((node) => {
             return node['@type'] === 'http://www.w3.org/2002/07/owl#Class';
@@ -451,7 +451,7 @@ import {
               RoleSchema
             ]
           });
-          const graph = jt.ontology().raw() as Array<Record<string, unknown>>;
+          const graph = (jt.ontology().jsonLdObject()['@graph']) as Array<Record<string, unknown>>;
 
           const userClass = graph.find((node) => {
             return node['@id'] === UserSchema.$id;
@@ -484,7 +484,7 @@ import {
             'baseIRI': 'https://myapp.io',
             'schemas': [DirectorySchema]
           });
-          const graph = jt.ontology().raw() as Array<Record<string, unknown>>;
+          const graph = (jt.ontology().jsonLdObject()['@graph']) as Array<Record<string, unknown>>;
 
           const employeeClass = graph.find((node) => {
             return node['@id'] === 'https://myapp.io/Directory#/$defs/Employee' && node['@type'] === 'http://www.w3.org/2002/07/owl#Class';
@@ -545,18 +545,23 @@ import {
             'baseIRI': 'https://myapp.io',
             'schemas': [UserSchema]
           });
-          const graph = jt.ontology().addQuads(jt.toQuads(UserSchema, {
+          const graph = (jt.ontology().addFromQuads(jt.toQuads(UserSchema, {
             'active': true,
             'email': 'alice@example.com',
             'name': 'Alice'
           }))
-            .raw() as Array<Record<string, unknown>>;
+            .jsonLdObject()['@graph']) as Array<Record<string, unknown>>;
           const root = graph.find((node) => {
             return typeof node['@id'] === 'string' && String(node['@id']).includes('/instances/');
           });
 
           assert.ok(root !== undefined, 'root ABox node should exist');
-          assert.deepEqual(root['@type'], { '@id': UserSchema.$id });
+          const rootType = root['@type'];
+          const rootTypeId = typeof rootType === 'object' && rootType !== null
+            ? (rootType as Record<string, unknown>)['@id']
+            : rootType;
+
+          assert.equal(rootTypeId, UserSchema.$id);
           assert.equal(root['https://myapp.io/User#name'], 'Alice');
           assert.equal(root['https://myapp.io/User#email'], 'alice@example.com');
         },
@@ -587,13 +592,16 @@ import {
             'baseIRI': 'https://myapp.io',
             'schemas': [schema]
           });
-          const teamGraph = jt.ontology().addQuads(jt.toQuads(schema, {
+          const teamGraph = (jt.ontology().addFromQuads(jt.toQuads(schema, {
             'lead': { 'name': 'Dana' },
             'name': 'Platform'
           }))
-            .raw() as Array<Record<string, unknown>>;
+            .jsonLdObject()['@graph']) as Array<Record<string, unknown>>;
           const team = teamGraph.find((node) => {
-            return (node['@type'] as Record<string, unknown>)['@id'] === schema.$id;
+            const typeValue = node['@type'];
+            const typeId = typeof typeValue === 'object' && typeValue !== null ? (typeValue as Record<string, unknown>)['@id'] : typeValue;
+
+            return typeId === schema.$id;
           });
 
           assert.ok(team !== undefined, 'team ABox node should exist');
@@ -602,9 +610,20 @@ import {
             return node['@id'] === leadRef['@id'];
           });
 
-          assert.deepEqual(team['@type'], { '@id': schema.$id });
+          const teamType = team['@type'];
+          const teamTypeId = typeof teamType === 'object' && teamType !== null
+            ? (teamType as Record<string, unknown>)['@id']
+            : teamType;
+
+          assert.equal(teamTypeId, schema.$id);
           assert.ok(lead !== undefined, 'lead ABox node should exist');
-          assert.deepEqual(lead['@type'], { '@id': 'https://myapp.io/Team#/$defs/Person' });
+
+          const leadType = lead['@type'];
+          const leadTypeId = typeof leadType === 'object' && leadType !== null
+            ? (leadType as Record<string, unknown>)['@id']
+            : leadType;
+
+          assert.equal(leadTypeId, 'https://myapp.io/Team#/$defs/Person');
           assert.equal(lead['https://myapp.io/Team#/$defs/Person#name'], 'Dana');
         },
         'name': 'nested object references reuse canonical property and class identifiers'

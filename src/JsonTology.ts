@@ -1072,16 +1072,16 @@ export class JsonTology<TMap = Record<never, never>> {
       return this.ontologyCache.builder;
     }
 
-    const graph = this.ontologySerializer.serialize(this.registry.listGraphs());
-    const shaclShapes = this.shaclSerializer.serialize(this.registry.listGraphs());
+    const tboxQuads = this.ontologySerializer.serializeQuads(this.registry.listGraphs());
+    const shaclQuads = this.shaclSerializer.serializeQuads(this.registry.listGraphs());
 
     const builder = new OntologyBuilder({
       'baseIRI': this.baseIRI,
-      'graphSources': [graph],
       'prefixes': this.prefixes
-    });
+    })
+      .addFromQuads(tboxQuads)
+      .addShaclFromQuads(shaclQuads);
 
-    builder.addShacl(shaclShapes);
     this.ontologyCache = {
       builder,
       revision
@@ -1288,13 +1288,12 @@ export class JsonTology<TMap = Record<never, never>> {
    * @returns A fresh {@link OntologyBuilder} containing only SHACL shape quads (no OWL classes/properties).
    */
   public toShacl(): OntologyBuilder {
-    const shaclShapes = this.shaclSerializer.serialize(this.registry.listGraphs());
+    const shaclQuads = this.shaclSerializer.serializeQuads(this.registry.listGraphs());
 
     return new OntologyBuilder({
       'baseIRI': this.baseIRI,
-      'graphSources': [],
       'prefixes': this.prefixes
-    }).addShacl(shaclShapes);
+    }).addShaclFromQuads(shaclQuads);
   }
 
   // ---------------------------------------------------------------------------
@@ -1309,13 +1308,12 @@ export class JsonTology<TMap = Record<never, never>> {
    * @returns A fresh {@link OntologyBuilder} containing only OWL TBox quads (no SHACL shapes).
    */
   public toTbox(): OntologyBuilder {
-    const graph = this.ontologySerializer.serialize(this.registry.listGraphs());
+    const tboxQuads = this.ontologySerializer.serializeQuads(this.registry.listGraphs());
 
     return new OntologyBuilder({
       'baseIRI': this.baseIRI,
-      'graphSources': [graph],
       'prefixes': this.prefixes
-    });
+    }).addFromQuads(tboxQuads);
   }
 
   /**

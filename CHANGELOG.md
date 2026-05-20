@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-05-20
+
+`OntologyBuilder` is now quad-native end-to-end with explicit, labeled entry
+points. The canonical internal representation is the rdf/js `QuadInterface`
+established in v0.13.0; every output (`jsonLd`, `jsonLdObject`, `shaclObject`)
+is derived from that quad store via `JsonLdFormatter.fromQuads`. JSON-LD is
+just one input format alongside quads — consumers choose how data enters but
+the internals are uniform.
+
+The README header is also restored to the linked hex-node row that points to
+the canonical SVGs under `public/` (Node.js, JSON Schema, TypeScript, json-tology,
+RDF, W3C, Validation), matching the assets used on the github pages site.
+
+### Breaking
+
+- `OntologyBuilder.addQuads(quads)` is renamed to `addFromQuads(quads)`.
+- `OntologyBuilder.addShacl(jsonLdSource)` and `addShaclQuads(quads)` are
+  removed; use `addShaclFromQuads(quads)` or `addShaclFromJsonLd(doc)`.
+- `OntologyBuilder.raw()` and the private JSON-LD-stuffed `graphSources`
+  config option are removed. The constructor now takes only `baseIRI` and
+  `prefixes`; all graph data enters through the `addFrom*` methods.
+- `GraphSerializerInterface.serialize(graphs): unknown[]` is removed.
+  `GraphOntologySerializer` / `GraphShaclSerializer` expose
+  `serializeQuads(graphs): QuadInterface[]` only. Callers that need JSON-LD
+  output should feed the quads through `OntologyBuilder.addFromQuads` and
+  read `jsonLdObject()`.
+
+### Added
+
+- `OntologyBuilder.addFromQuads(quads)` — append rdf/js quads to the TBox
+  store.
+- `OntologyBuilder.addFromJsonLd(doc)` — parse a JSON-LD document via
+  `jsonld.toRDF` and append the resulting quads to the TBox store.
+- `OntologyBuilder.addShaclFromQuads(quads)` — same for the SHACL store.
+- `OntologyBuilder.addShaclFromJsonLd(doc)` — same for the SHACL store.
+- `OntologyBuilder.quads()` — read back all TBox quads as `QuadInterface[]`
+  without round-tripping through JSON-LD.
+- `OntologyBuilder.shaclQuads()` — read back all SHACL quads.
+- `QuadFactory.fromDatasetQuad(d)` — converts a `jsonld.toRDF` dataset
+  quad to the canonical `QuadInterface`.
+- `jsonld@^9.0.0` added to `dependencies` (consumers using
+  `addFromJsonLd` get the parser without a separate install).
+
+### Changed
+
+- `JsonTology.ontology()`, `toTbox()`, `toShacl()` are rewired to call
+  `serializeQuads` on the underlying serializer and pipe through
+  `addFromQuads` / `addShaclFromQuads`. The end-to-end data path is
+  graph → quads → JSON-LD, never graph → JSON-LD → ad-hoc.
+- `README.md` header reverted to the 7-node hex row using the canonical
+  `public/*.svg` assets, each linked to its source spec
+  (Node.js, JSON Schema, TypeScript, json-tology docs, RDF, W3C, Validation).
+
 ## [0.13.2] - 2026-05-20
 
 Publish recovery for v0.13.1. The v0.13.1 tag was cut before the

@@ -74,7 +74,7 @@ console.log();
 // Inspect the graph contents
 // ---------------------------------------------------------------------------
 
-const graph = ontology.raw();
+const graph = ontology.jsonLdObject()['@graph'];
 const classes = graph.filter((n) => {
   return n['@type'] === 'owl:Class';
 });

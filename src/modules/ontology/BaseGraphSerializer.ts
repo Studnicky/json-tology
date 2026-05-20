@@ -3,7 +3,6 @@ import type { GraphSerializerInterface } from '../../interfaces/Serializer.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
 import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugin.js';
 import type { QuadInterface } from '../../interfaces/Quad.js';
-import { JsonLdFormatter } from '../rdf/JsonLdFormatter.js';
 import { QuadFactory } from '../rdf/QuadFactory.js';
 import { Curie } from '../rdf/Curie.js';
 import { DEFAULT_PREFIXES } from '../../constants/PREFIXES.js';
@@ -83,7 +82,7 @@ export abstract class BaseGraphSerializer implements GraphSerializerInterface {
 
   protected abstract projectGraph(graph: SchemaGraphInterface): QuadInterface[];
 
-  public serialize(graphs: readonly SchemaGraphInterface[]): unknown[] {
+  public serializeQuads(graphs: readonly SchemaGraphInterface[]): QuadInterface[] {
     QuadFactory.resetBnodeCounter();
     const allQuads = graphs.flatMap((graph) => {
       return this.projectGraph(graph);
@@ -104,10 +103,6 @@ export abstract class BaseGraphSerializer implements GraphSerializerInterface {
       }
     }
 
-    const nodes = JsonLdFormatter.fromQuads(allQuads);
-
-    this.postProcessNodes(nodes);
-
-    return nodes;
+    return allQuads;
   }
 }

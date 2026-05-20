@@ -1,70 +1,91 @@
 /**
  * Ontology Builder
  *
- * Builds JSON-LD ontology and SHACL documents from parameterized configuration.
- * Accepts custom base IRIs, prefix maps, and graph node sources.
+ * Quad-native builder for JSON-LD ontology and SHACL documents.
+ * All graph data enters through labeled entry points that converge on
+ * an internal rdf/js quad store. Every output derives from that store.
  */
 
-import type { OntologyBuilderOptionsInterface } from '../../interfaces/Ontology.js';
+import type {
+  JsonLdDocInput,
+  OntologyBuilderOptionsInterface
+} from '../../interfaces/Ontology.js';
 import type { QuadInterface } from '../../interfaces/Quad.js';
+import type { JsonLdDatasetQuad } from '../rdf/QuadFactory.js';
+import jsonld from 'jsonld';
 import { JSONLD } from '../../constants/JSONLD.js';
-import { Projection } from '../rdf/Projection.js';
+import { RDFS_SUB_CLASS_OF_IRI } from '../../constants/PREFIXES.js';
+import { SHACL_ARRAY_KEYS } from '../../constants/SHACL.js';
+import { BaseGraphSerializer } from './BaseGraphSerializer.js';
+import { JsonLdFormatter } from '../rdf/JsonLdFormatter.js';
+import { QuadFactory } from '../rdf/QuadFactory.js';
 
 /**
  * Ontology Builder
  *
- * Builds JSON-LD representations from parameterized graph data.
+ * Builds JSON-LD representations from rdf/js quad stores.
+ * JSON-LD documents are parsed to quads via `jsonld.toRDF`.
+ * All outputs derive from the canonical internal quad store.
  */
 export class OntologyBuilder {
   private readonly baseIRI: string;
-  private graphSources: Array<() => readonly unknown[]>;
   private readonly prefixes: Record<string, string>;
-  private shaclSource: (() => readonly unknown[]) | readonly unknown[] | undefined;
+  private readonly quadStore: QuadInterface[] = [];
+  private readonly shaclStore: QuadInterface[] = [];
 
   /**
-   * Create an OntologyBuilder from a configuration with base IRI, prefixes, and graph sources.
-   *
-   * @param config - Builder configuration with baseIRI, prefixes, and graphSources
+   * Create an OntologyBuilder with base IRI and prefix map.
+   * Graph data enters through `addFromQuads` / `addFromJsonLd` and their SHACL variants.
    */
   public constructor(config: Readonly<OntologyBuilderOptionsInterface>) {
     this.baseIRI = config.baseIRI;
     this.prefixes = config.prefixes;
-    this.graphSources = config.graphSources.map((source) => {
-      if (typeof source === 'function') {
-        return source;
-      }
-
-      return () => {
-        return source;
-      };
-    });
   }
 
   /**
-   * Add an array of RDF quads to the builder. The quads are projected
-   * to JSON-LD nodes and appended to the graph sources. Use this when
-   * combining the output of `entities.toQuads(schema, data)` with a
-   * TBox or SHACL document.
+   * Parse a JSON-LD document to rdf/js quads via `jsonld.toRDF` and append
+   * them to the canonical ontology store.
    */
-  public addQuads(quads: QuadInterface[]): this {
-    const nodes = Projection.toJsonLdNodes(quads);
-    const source = (): readonly unknown[] => {
-      return nodes;
-    };
+  public async addFromJsonLd(doc: JsonLdDocInput): Promise<this> {
+    const dataset = await jsonld.toRDF(doc as object) as JsonLdDatasetQuad[];
+    const quads = dataset.map((datasetQuad) => {
+      return QuadFactory.fromDatasetQuad(datasetQuad);
+    });
 
-    this.graphSources = [
-      ...this.graphSources,
-      source
-    ];
+    return this.addFromQuads(quads);
+  }
+
+  /**
+   * Append rdf/js quads to the canonical ontology store.
+   */
+  public addFromQuads(quads: readonly QuadInterface[]): this {
+    for (const quad of quads) {
+      this.quadStore.push(quad);
+    }
 
     return this;
   }
 
   /**
-   * Set the SHACL graph source for SHACL output methods.
+   * Parse a JSON-LD document to rdf/js quads via `jsonld.toRDF` and append
+   * them to the SHACL store.
    */
-  public addShacl(source: (() => readonly unknown[]) | readonly unknown[]): this {
-    this.shaclSource = source;
+  public async addShaclFromJsonLd(doc: JsonLdDocInput): Promise<this> {
+    const dataset = await jsonld.toRDF(doc as object) as JsonLdDatasetQuad[];
+    const quads = dataset.map((datasetQuad) => {
+      return QuadFactory.fromDatasetQuad(datasetQuad);
+    });
+
+    return this.addShaclFromQuads(quads);
+  }
+
+  /**
+   * Append rdf/js quads to the SHACL store.
+   */
+  public addShaclFromQuads(quads: readonly QuadInterface[]): this {
+    for (const quad of quads) {
+      this.shaclStore.push(quad);
+    }
 
     return this;
   }
@@ -80,21 +101,27 @@ export class OntologyBuilder {
    * Generate JSON-LD as a JSON string.
    */
   public jsonLd(): string {
-    const obj = this.jsonLdObject();
-    const json = JSON.stringify(obj, undefined, 2);
-
-    return json;
+    return JSON.stringify(this.jsonLdObject(), undefined, 2);
   }
 
   /**
-   * Generate a full JSON-LD document.
+   * Generate a full JSON-LD document derived from the canonical quad store.
    *
-   * @returns JSON-LD object with @context, @graph, @id, @type
+   * Applies OWL array normalization (`rdfs:subClassOf` is always an array)
+   * consistent with the OWL serializer contract.
+   *
+   * @returns JSON-LD object with @context, @graph, @id, @type, rdfs:label
    */
   public jsonLdObject(): Record<string, unknown> {
+    const nodes = JsonLdFormatter.fromQuads(this.quadStore);
+
+    for (const node of nodes) {
+      BaseGraphSerializer.ensureArray(node, RDFS_SUB_CLASS_OF_IRI);
+    }
+
     return {
       [JSONLD.context]: this.prefixes,
-      [JSONLD.graph]: this.raw(),
+      [JSONLD.graph]: nodes,
       [JSONLD.id]: `${this.baseIRI}/ontology/`,
       [JSONLD.type]: 'owl:Ontology',
       'rdfs:label': 'Generated Ontology'
@@ -102,36 +129,39 @@ export class OntologyBuilder {
   }
 
   /**
-   * Get the raw graph data by resolving all graph node sources.
+   * Return a fresh array of all quads in the canonical ontology store.
    */
-  public raw(): unknown[] {
-    return this.graphSources.flatMap((graphSource) => {
-      return [...graphSource()];
-    });
-  }
-
-  private rawShacl(): unknown[] {
-    if (this.shaclSource === undefined) {
-      return [];
-    }
-
-    return typeof this.shaclSource === 'function'
-      ? [...this.shaclSource()]
-      : [...this.shaclSource];
+  public quads(): QuadInterface[] {
+    return [...this.quadStore];
   }
 
   /**
-   * Get raw SHACL shapes as a JSON-LD object.
+   * Get SHACL shapes as a JSON-LD object derived from the SHACL quad store.
+   *
+   * Applies SHACL array normalization (`sh:property` is always an array)
+   * consistent with the SHACL serializer contract.
    */
   public shaclObject(): Record<string, unknown> {
     const shaclPrefixes = {
       ...this.prefixes,
       'sh': 'http://www.w3.org/ns/shacl#'
     };
+    const nodes = JsonLdFormatter.fromQuads(this.shaclStore);
+
+    for (const node of nodes) {
+      BaseGraphSerializer.normalizeArrays(node, SHACL_ARRAY_KEYS);
+    }
 
     return {
       [JSONLD.context]: shaclPrefixes,
-      [JSONLD.graph]: this.rawShacl()
+      [JSONLD.graph]: nodes
     };
+  }
+
+  /**
+   * Return a fresh array of all quads in the SHACL store.
+   */
+  public shaclQuads(): QuadInterface[] {
+    return [...this.shaclStore];
   }
 }

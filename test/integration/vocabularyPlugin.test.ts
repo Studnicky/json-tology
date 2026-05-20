@@ -17,6 +17,7 @@ import {
 // after vocabulary merging. These graph + registry surfaces are not part of the
 // public JsonTology API and constitute the contract for vocabulary-plugin integration.
 import { GraphShaclSerializer } from '../../src/modules/ontology/GraphShaclSerializer.js';
+import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 // DEFAULT_PREFIXES is the canonical constant injected by JsonTology when constructing prefix maps; not re-exported.
@@ -239,7 +240,7 @@ void describe('VocabularyPlugin', () => {
             curie,
             'vocabularies': [plugin]
           });
-          const nodes = serializer.serialize(registry.listGraphs()) as Array<Record<string, unknown>>;
+          const nodes = JsonLdFormatter.fromQuads(serializer.serializeQuads(registry.listGraphs()));
 
           assert.ok(emittedQuads.length > 0);
 
@@ -304,7 +305,7 @@ void describe('VocabularyPlugin', () => {
             'vocabularies': [plugin]
           });
 
-          serializer.serialize(registry.listGraphs());
+          serializer.serializeQuads(registry.listGraphs());
 
           assert.ok(projectCalled.includes(`${ACME_NS}level`));
         },
@@ -428,7 +429,7 @@ void describe('VocabularyPlugin', () => {
             'curie': registry.curie,
             'vocabularies': [plugin]
           });
-          const nodes = serializer.serialize(graphs);
+          const nodes = serializer.serializeQuads(graphs);
 
           assert.ok(Array.isArray(nodes));
         },

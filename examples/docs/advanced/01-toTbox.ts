@@ -18,11 +18,11 @@ const owl = tbox.jsonLdObject();
 // Prefix context
 const ctx = tbox.context();
 
-// Raw OWL graph nodes
-const raw = tbox.raw();
+// OWL graph nodes as quad-derived JSON-LD
+const graph = tbox.jsonLdObject()['@graph'];
 
 // Inspect — not console output in production code, but fine for doc examples
 void jsonLd;
 void owl;
 void ctx;
-void raw;
+void graph;
