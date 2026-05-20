@@ -143,10 +143,12 @@ void describe('fromExternalQuad', { 'concurrency': true }, () => {
           assert.equal(result.object.termType, 'Literal', 'termType Literal');
           const literal = result.object as LiteralObj;
 
-          assert.equal(literal.value, 42, 'xsd:integer coerced to number');
+          // Per rdf/js spec, Literal.value is a string; the JS type is carried
+          // in `datatype.value`. Consumers decode via `decodeLiteral`.
+          assert.equal(literal.value, '42', 'xsd:integer value preserved as string');
           assert.equal(literal.datatype.value, 'xsd:integer', 'datatype normalized to xsd:integer');
         },
-        'name': 'coerces xsd:integer literal value to number',
+        'name': 'preserves xsd:integer literal as string with datatype tag',
         'quad': {
           'object': {
             'datatype': { 'value': 'http://www.w3.org/2001/XMLSchema#integer' },
@@ -161,9 +163,12 @@ void describe('fromExternalQuad', { 'concurrency': true }, () => {
         'check': (result) => {
           const literal = result.object as LiteralObj;
 
-          assert.equal(literal.value, true, 'xsd:boolean coerced to boolean true');
+          // Per rdf/js spec, Literal.value is `'true'` / `'false'`;
+          // boolean decoding is the consumer's responsibility via `decodeLiteral`.
+          assert.equal(literal.value, 'true', 'xsd:boolean value preserved as string');
+          assert.equal(literal.datatype.value, 'xsd:boolean', 'datatype normalized to xsd:boolean');
         },
-        'name': 'coerces xsd:boolean literal value to boolean',
+        'name': 'preserves xsd:boolean literal as string with datatype tag',
         'quad': {
           'object': {
             'datatype': { 'value': 'http://www.w3.org/2001/XMLSchema#boolean' },

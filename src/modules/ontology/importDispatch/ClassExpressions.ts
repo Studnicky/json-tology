@@ -16,11 +16,15 @@
  */
 
 import type { QuadInterface } from '../../../interfaces/Quad.js';
-import type { QuadObjectType } from '../../../types/Quad.js';
+import type {
+  BnodeTermType, IriTermType, QuadObjectType
+} from '../../../types/Quad.js';
 import type {
   OwlImportContext, OwlImportFragment
 } from '../../../interfaces/OwlImport.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
+import { Lists } from '../../rdf/Lists.js';
+import { decodeLiteral } from '../../rdf/Terms.js';
 
 // ---------------------------------------------------------------------------
 // OWL namespace constants — full IRIs for quad-level matching
@@ -97,22 +101,82 @@ function quadsForPredicates(
 // ---------------------------------------------------------------------------
 
 /**
- * Extract the items from a quad object that encodes an RDF list.
- * The QuadFactory produces a `ListTermType` (termType === 'List') as a
- * shorthand. The JsonLdToQuads walker also produces ListTermType from
- * `{ @list: [...] }` values.
+ * Extract the items from a quad object that points to an RDF list head.
+ *
+ * Lists are encoded as standard rdf:first/rdf:rest/rdf:nil triple chains.
+ * Walks the chain by looking up the head's subject quads in `index` and
+ * following rdf:first/rdf:rest. If the head is not a list (e.g. an inline
+ * class blank node without rdf:first), returns it as a single-item array
+ * for legacy passthrough.
  */
-function extractListItems(obj: QuadObjectType): QuadObjectType[] {
-  if (obj.termType === 'List') {
-    return [...obj.items];
+function extractListItems(
+  obj: QuadInterface['object'],
+  index: SubjectQuadIndex
+): QuadObjectType[] {
+  const narrowed = Lists.asQuadObject(obj);
+
+  if (narrowed === undefined) {
+    return [];
+  }
+  if (narrowed.termType === 'Literal') {
+    return [narrowed];
   }
 
-  // Not a list encoding — treat as a single item (blank-node inline class).
-  if (obj.termType === 'BlankNode' || obj.termType === 'NamedNode') {
-    return [obj];
+  // Look up the head's outgoing quads. If it has rdf:first, walk the list.
+  const headQuads = index.get(narrowed.value) ?? [];
+  const hasFirst = headQuads.some((entry) => {
+    return entry.predicate.value === `${RDF_NS}first` || entry.predicate.value === 'rdf:first';
+  });
+
+  if (!hasFirst) {
+    return [narrowed];
   }
 
-  return [];
+  // Build a synthetic quad list from the index so Lists.collect can walk
+  // both full-IRI and CURIE-prefixed rdf:first/rdf:rest predicates emitted
+  // by JsonLdToQuads and QuadFactory respectively.
+  const allListQuads = walkableQuads(narrowed, index);
+
+  return Lists.collect(narrowed, allListQuads);
+}
+
+/**
+ * Gather every quad reachable from `head` by following rdf:rest edges,
+ * including the rdf:first quads at each step. Used to feed `Lists.collect`
+ * which expects a flat readonly quad collection.
+ */
+function walkableQuads(
+  head: BnodeTermType | IriTermType,
+  index: SubjectQuadIndex
+): QuadInterface[] {
+  const collected: QuadInterface[] = [];
+  const seen = new Set<string>();
+  let cursor: string | undefined = head.value;
+
+  while (cursor !== undefined && !seen.has(cursor)) {
+    seen.add(cursor);
+    const quads = index.get(cursor) ?? [];
+    let next: string | undefined;
+
+    for (const quad of quads) {
+      const predValue = quad.predicate.value;
+      const isFirst = predValue === `${RDF_NS}first` || predValue === 'rdf:first';
+      const isRest = predValue === `${RDF_NS}rest` || predValue === 'rdf:rest';
+
+      if (isFirst) {
+        collected.push(quad);
+      } else if (isRest) {
+        collected.push(quad);
+
+        if ((quad.object.termType === 'BlankNode' || quad.object.termType === 'NamedNode') && quad.object.value !== `${RDF_NS}nil` && quad.object.value !== 'rdf:nil') {
+          next = quad.object.value;
+        }
+      }
+    }
+    cursor = next;
+  }
+
+  return collected;
 }
 
 // ---------------------------------------------------------------------------
@@ -222,12 +286,18 @@ function resolveBlankNodeExpression(
  * Filters out undefined results (blank nodes we cannot resolve).
  */
 function resolveListMembers(
-  listObj: QuadObjectType,
+  listObj: QuadInterface['object'],
   index: SubjectQuadIndex,
   allClassIris: ReadonlySet<string>,
   depth: number
 ): JsonSchemaDocumentObjectType[] {
-  const items = extractListItems(listObj);
+  const narrowed = Lists.asQuadObject(listObj);
+
+  if (narrowed === undefined) {
+    return [];
+  }
+
+  const items = extractListItems(narrowed, index);
   const result: JsonSchemaDocumentObjectType[] = [];
 
   for (const item of items) {
@@ -337,7 +407,7 @@ function extractHasValueDiscriminator(
 
   const valueObj = hasValueQuads[0].object;
 
-  if (valueObj.termType === 'List') {
+  if (valueObj.termType !== 'NamedNode' && valueObj.termType !== 'BlankNode' && valueObj.termType !== 'Literal') {
     return undefined;
   }
 
@@ -362,10 +432,10 @@ function extractHasValueDiscriminator(
  * Members that are blank nodes with owl:hasValue → the hasValue literal.
  */
 function extractEnumValues(
-  listObj: QuadObjectType,
+  listObj: QuadInterface['object'],
   index: SubjectQuadIndex
 ): unknown[] {
-  const items = extractListItems(listObj);
+  const items = extractListItems(listObj, index);
   const values: unknown[] = [];
 
   for (const item of items) {
@@ -378,42 +448,17 @@ function extractEnumValues(
           const hvObj = hvQuads[0].object;
 
           if (hvObj.termType === 'Literal') {
-            const raw = hvObj.value;
-
-            if (
-              typeof raw === 'object'
-              && raw !== null
-              && ('@value' in (raw as Record<string, unknown>))
-            ) {
-              values.push((raw as Record<string, unknown>)['@value']);
-            } else {
-              values.push(raw);
-            }
+            values.push(decodeLiteral(hvObj));
           } else if (hvObj.termType === 'NamedNode' || hvObj.termType === 'BlankNode') {
             values.push(hvObj.value);
           }
         }
         break;
       }
-      case 'List':
-        // Not a valid enum member — skip.
+      case 'Literal':
+        // Literal — decode to typed JS value via the rdf/js datatype tag.
+        values.push(decodeLiteral(item));
         break;
-      case 'Literal': {
-        // Literal carrying a typed value object or primitive.
-        const rawValue = item.value;
-
-        if (
-          typeof rawValue === 'object'
-          && rawValue !== null
-          && ('@value' in (rawValue as Record<string, unknown>))
-        ) {
-          // Structured literal: { '@type': xsd:..., '@value': ... }
-          values.push((rawValue as Record<string, unknown>)['@value']);
-        } else {
-          values.push(rawValue);
-        }
-        break;
-      }
       case 'NamedNode':
         // Named individual — emit its IRI.
         values.push(item.value);
@@ -498,7 +543,7 @@ export function importClassExpressions(
     });
 
     for (const uq of unionQuads) {
-      const listItems = extractListItems(uq.object);
+      const listItems = extractListItems(uq.object, index);
 
       // Discriminator detection runs unconditionally — even when all list
       // members are Restriction bnodes (and produce no resolved $ref members).

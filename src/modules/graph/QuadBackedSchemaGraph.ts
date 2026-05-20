@@ -45,6 +45,7 @@ import {
   OWL, RDF, RDFS
 } from '../../constants/IRI.js';
 import { DEFAULT_PREFIXES } from '../../constants/PREFIXES.js';
+import { decodeLiteral } from '../rdf/Terms.js';
 
 // ---------------------------------------------------------------------------
 // OWL term IRIs (full form) — used in normaliseIri expansion
@@ -309,12 +310,13 @@ function objectIriValue(quad: QuadInterface, expansionMap: Map<string, string>):
   if (quad.object.termType === 'BlankNode') {
     return quad.object.value;
   }
-  if (quad.object.termType === 'List') {
-    return '';
+  if (quad.object.termType === 'Literal') {
+    return quad.object.value;
   }
 
-  // Literal
-  return String((quad.object as { 'value': unknown }).value);
+  // Variable or embedded Quad (rdf/js RDF*) — neither has an IRI form,
+  // so return the empty string and let downstream dispatch ignore it.
+  return '';
 }
 
 function buildRelations(
@@ -505,13 +507,9 @@ function resolveRestrictionBnode(
 
         break;
 
-      case 'List':
-        // List — not a valid restriction value; skip this constraint
-        continue;
-
       case 'Literal':
-        value = constraintQuad.object.value;
-        targetIri = String(value);
+        value = decodeLiteral(constraintQuad.object);
+        targetIri = String(constraintQuad.object.value);
 
         break;
 
@@ -520,6 +518,11 @@ function resolveRestrictionBnode(
         value = targetIri;
 
         break;
+
+      case 'Quad':
+      case 'Variable':
+        // RDF* quoted-triple / SPARQL variable — not a valid restriction value.
+        continue;
     }
 
     return {

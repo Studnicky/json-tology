@@ -22,6 +22,7 @@ import type {
 } from '../../../interfaces/OwlImport.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
 import type { InvariantInterface } from '../../../interfaces/Invariant.js';
+import { Lists } from '../../rdf/Lists.js';
 
 // ---------------------------------------------------------------------------
 // Full IRI constants (quads arrive with fully-expanded IRIs after JSON-LD normalisation)
@@ -82,27 +83,71 @@ function extractUnionMembers(objectValue: unknown): string[] {
 
 /**
  * Extract member IRIs from an owl:disjointUnionOf quad object.
- * The object may be a project List term or a Literal wrapping an object.
+ *
+ * Supports two encodings:
+ *   1. Standard RDF list: `quad.object` is the head of an rdf:first/rdf:rest
+ *      chain that materialises elsewhere in `allQuads`. Walked via
+ *      `Lists.collect`.
+ *   2. Legacy Literal encoding: a serialised union string. Decoded via
+ *      `extractUnionMembers`.
  */
-function extractListMembers(quad: QuadInterface): string[] {
-  const obj = quad.object;
+/**
+ * Walk the bnode's `owl:unionOf` list and return the member IRIs.
+ *
+ * Given a blank-node identifier that OwlProjection emitted as an anonymous
+ * owl:Class with an owl:unionOf list, find its unionOf head among `allQuads`
+ * and return the NamedNode IRI of each list member.
+ */
+function extractEquivalentMembers(
+  bnodeId: string,
+  allQuads: readonly QuadInterface[]
+): string[] {
+  const unionPredicates: ReadonlySet<string> = new Set([
+    'http://www.w3.org/2002/07/owl#unionOf',
+    'owl:unionOf'
+  ]);
+  const unionQuad = allQuads.find((entry) => {
+    return entry.subject.termType === 'BlankNode'
+      && entry.subject.value === bnodeId
+      && unionPredicates.has(entry.predicate.value);
+  });
 
-  if (obj.termType === 'List') {
-    return obj.items
-      .filter((item) => {
-        return item.termType === 'NamedNode';
-      })
-      .map((item) => {
-        // item.termType === 'NamedNode' is guaranteed by the filter above
-        return (item as { 'value': string }).value;
-      });
+  if (unionQuad === undefined) {
+    return [];
   }
+
+  const head = unionQuad.object;
+
+  if (head.termType !== 'BlankNode' && head.termType !== 'NamedNode') {
+    return [];
+  }
+
+  return Lists.collect(head, allQuads)
+    .filter((item) => {
+      return item.termType === 'NamedNode';
+    })
+    .map((item) => {
+      return item.value;
+    });
+}
+
+function extractListMembers(quad: QuadInterface, allQuads: readonly QuadInterface[]): string[] {
+  const obj = quad.object;
 
   if (obj.termType === 'Literal') {
     return extractUnionMembers(obj.value);
   }
+  if (obj.termType !== 'BlankNode' && obj.termType !== 'NamedNode') {
+    return [];
+  }
 
-  return [];
+  return Lists.collect(obj, allQuads)
+    .filter((item) => {
+      return item.termType === 'NamedNode';
+    })
+    .map((item) => {
+      return item.value;
+    });
 }
 
 /**
@@ -169,7 +214,11 @@ export function importClassAxioms(quads: QuadInterface[], ctx: OwlImportContext)
       continue;
     }
 
-    const objValue = quad.object.termType === 'List' ? undefined : quad.object.value;
+    const objValue = quad.object.termType === 'NamedNode'
+      || quad.object.termType === 'BlankNode'
+      || quad.object.termType === 'Literal'
+      ? quad.object.value
+      : undefined;
 
     if (objValue === OWL_CLASS || objValue === RDFS_CLASS) {
       const classIri = quad.subject.value;
@@ -239,7 +288,7 @@ export function importClassAxioms(quads: QuadInterface[], ctx: OwlImportContext)
       case OWL_DISJOINT_UNION_OF:
         // disjointUnionOf → oneOf: [{ $ref: C1 }, { $ref: C2 }, ...].
         {
-          const members = extractListMembers(quad);
+          const members = extractListMembers(quad, quads);
 
           if (members.length > 0) {
             const oneOf = members.map((memberIri) => {
@@ -288,30 +337,57 @@ export function importClassAxioms(quads: QuadInterface[], ctx: OwlImportContext)
       case OWL_EQUIVALENT_CLASS:
         // equivalentClass → structural $ref equivalence wire shape.
         //
-        // The forward path serialises equivalentClass as an anonymous bnode wrapping
-        // owl:unionOf over the equivalent IRIs. The Literal quad object carries the
-        // full anonymous class node as a plain JS object.
+        // Two encodings are accepted:
+        //   1. Direct named-class equivalence: object is a NamedNode IRI.
+        //   2. Bnode-wrapped union: object is a BlankNode that carries
+        //      `owl:unionOf [...]` whose list members are the equivalent
+        //      class IRIs. This is what OwlProjection emits.
         //
         // Wire shape: { $ref: firstMember } — matches Compose.equivalent output.
-        if (objTermType === 'Literal') {
-          const members = extractUnionMembers(quad.object.value);
+        switch (objTermType) {
+          case 'BlankNode': {
+            const members = extractEquivalentMembers(quad.object.value, quads);
 
-          if (members.length > 0) {
+            if (members.length > 0) {
+              const existing = schemaDeltas.get(subjectIri) ?? {};
+
+              schemaDeltas.set(subjectIri, {
+                ...existing,
+                '$ref': members[0]
+              });
+            }
+
+            break;
+          }
+          case 'Literal': {
+          // Legacy: JSON-LD serialised wrapper carried as a Literal.
+            const members = extractUnionMembers(quad.object.value);
+
+            if (members.length > 0) {
+              const existing = schemaDeltas.get(subjectIri) ?? {};
+
+              schemaDeltas.set(subjectIri, {
+                ...existing,
+                '$ref': members[0]
+              });
+            }
+
+            break;
+          }
+          case 'NamedNode': {
             const existing = schemaDeltas.get(subjectIri) ?? {};
 
             schemaDeltas.set(subjectIri, {
               ...existing,
-              '$ref': members[0]
+              '$ref': quad.object.value
             });
-          }
-        } else if (objTermType === 'NamedNode') {
-          // Direct named-class equivalence (OWL 2 EquivalentClasses axiom, no bnode wrapper).
-          const existing = schemaDeltas.get(subjectIri) ?? {};
 
-          schemaDeltas.set(subjectIri, {
-            ...existing,
-            '$ref': quad.object.value
-          });
+            break;
+          }
+          case 'Quad':
+          case 'Variable':
+            // RDF* quoted-triple / SPARQL variable — not a valid equivalentClass value.
+            break;
         }
         break;
 

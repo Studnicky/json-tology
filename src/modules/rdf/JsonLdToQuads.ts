@@ -13,6 +13,7 @@
 
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { QuadObjectType } from '../../types/Quad.js';
+import { Lists } from './Lists.js';
 import { Terms } from './Terms.js';
 
 // ---------------------------------------------------------------------------
@@ -106,7 +107,8 @@ function jsonLdValueToTerm(
   }
   const obj = value as Record<string, unknown>;
 
-  // { @list: [...] }
+  // { @list: [...] } — expand to standard rdf:first / rdf:rest triple chain
+  // so the rest of the pipeline only sees spec-compliant rdf/js quads.
   if ('@list' in obj && Array.isArray(obj['@list'])) {
     const items = (obj['@list'] as unknown[])
       .map((item) => {
@@ -115,8 +117,15 @@ function jsonLdValueToTerm(
       .filter((item): item is QuadObjectType => {
         return item !== null;
       });
+    const {
+      head, triples
+    } = Lists.build(items);
 
-    return Terms.list(items);
+    for (const triple of triples) {
+      allQuads.push(triple);
+    }
+
+    return head;
   }
 
   // { @id: "..." } — named node or inlined blank node
@@ -149,12 +158,14 @@ function jsonLdValueToTerm(
   }
 
   // Anonymous inlined blank node — an object without @id / @list / @value
-  // whose keys are predicate IRIs. Produced by JsonLdFormatter.inlineBnodes()
-  // when it strips @id from a singly-referenced blank node. Facet descriptor
-  // bnodes inside owl:withRestrictions arrive in this form.
+  // whose remaining keys are predicate IRIs. Produced by
+  // `JsonLdFormatter.inlineBnodes()` when it strips @id from a
+  // singly-referenced blank node. Both `@type`-typed nodes (e.g. an
+  // inlined owl:Class wrapping owl:unionOf) and untyped facet bnodes
+  // arrive in this form.
   const objKeys = Object.keys(obj);
 
-  if (objKeys.length > 0 && !('@type' in obj)) {
+  if (objKeys.length > 0) {
     const existingId = bnodeMap.get(obj);
     const bnodeId = existingId ?? counter.next();
 
@@ -166,7 +177,7 @@ function jsonLdValueToTerm(
     return Terms.blank(bnodeId.slice(2));
   }
 
-  // Bare object literal (structured literals, type-bearing nodes)
+  // Bare object with no keys — fall back to literal stringification.
   return Terms.literal(value);
 }
 
@@ -202,12 +213,12 @@ function emitNodeQuads(
         if (typeof typeValue !== 'string') {
           continue;
         }
-        allQuads.push({
-          'graph': Terms.defaultGraph(),
-          'object': Terms.iri(expandIri(typeValue, context)),
-          'predicate': Terms.iri(rdfTypeIri),
-          'subject': subjectTerm
-        });
+        allQuads.push(Terms.quad(
+          subjectTerm,
+          Terms.iri(rdfTypeIri),
+          Terms.iri(expandIri(typeValue, context)),
+          Terms.defaultGraph()
+        ));
       }
       continue;
     }
@@ -222,12 +233,12 @@ function emitNodeQuads(
       if (objectTerm === null) {
         continue;
       }
-      allQuads.push({
-        'graph': Terms.defaultGraph(),
-        'object': objectTerm,
-        'predicate': predicateTerm,
-        'subject': subjectTerm
-      });
+      allQuads.push(Terms.quad(
+        subjectTerm,
+        predicateTerm,
+        objectTerm,
+        Terms.defaultGraph()
+      ));
     }
   }
 }
@@ -327,12 +338,12 @@ export function parseNQuads(nquads: string): QuadInterface[] {
       objectTerm = Terms.iri(objectToken.slice(1, -1));
     }
 
-    quads.push({
-      'graph': Terms.defaultGraph(),
-      'object': objectTerm,
-      'predicate': predicateTerm,
-      'subject': subjectTerm
-    });
+    quads.push(Terms.quad(
+      subjectTerm,
+      predicateTerm,
+      objectTerm,
+      Terms.defaultGraph()
+    ));
   }
 
   return quads;

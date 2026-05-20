@@ -16,6 +16,7 @@ import {
 } from 'node:test';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { ShaclProjection } from '../../src/modules/rdf/ShaclProjection.js';
+import { decodeLiteral } from '../../src/modules/rdf/Terms.js';
 import {
   RDF, SH
 } from '../../src/constants/IRI.js';
@@ -55,7 +56,7 @@ function objectLiteralValue(quad: QuadInterface): unknown {
   const obj = quad.object;
 
   if (obj.termType === 'Literal') {
-    return obj.value;
+    return decodeLiteral(obj);
   }
 
   return undefined;

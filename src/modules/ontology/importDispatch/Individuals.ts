@@ -18,6 +18,8 @@ import type { QuadInterface } from '../../../interfaces/Quad.js';
 import type {
   OwlImportContext, OwlImportFragment
 } from '../../../interfaces/OwlImport.js';
+import { Lists } from '../../rdf/Lists.js';
+import { decodeLiteral } from '../../rdf/Terms.js';
 import type { InvariantInterface } from '../../../interfaces/Invariant.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
 
@@ -122,31 +124,37 @@ function namedNodeValue(quad: QuadInterface): null | string {
  */
 function literalValue(quad: QuadInterface): unknown {
   if (quad.object.termType === 'Literal') {
-    return quad.object.value;
+    return decodeLiteral(quad.object);
   }
 
   return quad.object.termType === 'NamedNode' ? quad.object.value : undefined;
 }
 
 /**
- * Collect IRI members from a List-typed object term.
- * Returns an empty array if the object is not a List or contains no NamedNode items.
+ * Collect IRI members from a quad whose object is an RDF list head.
+ *
+ * Walks the standard `rdf:first` / `rdf:rest` chain rooted at the object
+ * via `Lists.collect` and returns the IRIs of every NamedNode item.
+ * Returns an empty array if the object is not a list head or no items
+ * are NamedNodes.
  */
-function listIris(quad: QuadInterface): string[] {
-  if (quad.object.termType !== 'List') {
+function listIris(quad: QuadInterface, allQuads: readonly QuadInterface[]): string[] {
+  const head = quad.object;
+
+  if (head.termType !== 'NamedNode' && head.termType !== 'BlankNode') {
     return [];
   }
 
-  return quad.object.items
-    .filter((item): item is typeof item & {
-      'termType': 'NamedNode';
-      'value': string;
-    } => {
-      return item.termType === 'NamedNode';
-    })
-    .map((item) => {
-      return item.value;
-    });
+  const items = Lists.collect(head, allQuads);
+  const iris: string[] = [];
+
+  for (const item of items) {
+    if (item.termType === 'NamedNode') {
+      iris.push(item.value);
+    }
+  }
+
+  return iris;
 }
 
 /**
@@ -481,7 +489,7 @@ export function importIndividuals(quads: QuadInterface[], ctx: OwlImportContext)
         continue;
       }
 
-      const memberIris = listIris(memberQuad);
+      const memberIris = listIris(memberQuad, quads);
 
       // Emit pairwise differentFrom invariants
       for (let i = 0; i < memberIris.length; i++) {
@@ -557,7 +565,7 @@ export function importIndividuals(quads: QuadInterface[], ctx: OwlImportContext)
     }
 
     const classIri = quad.subject.value;
-    const propertyIris = listIris(quad);
+    const propertyIris = listIris(quad, quads);
 
     if (propertyIris.length === 0) {
       // No property IRIs in key — report and skip

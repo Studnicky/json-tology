@@ -34,8 +34,11 @@ export const OWL = {
 } as const;
 
 export const RDF = {
+  'first': 'rdf:first',
   'JSON': 'rdf:JSON',
   'List': 'rdf:List',
+  'nil': 'rdf:nil',
+  'rest': 'rdf:rest',
   'type': 'rdf:type'
 } as const;
 
@@ -84,6 +87,8 @@ export const SH = {
 
 export const XSD = {
   'boolean': 'xsd:boolean',
+  'date': 'xsd:date',
+  'dateTime': 'xsd:dateTime',
   'decimal': 'xsd:decimal',
   'double': 'xsd:double',
   'integer': 'xsd:integer',

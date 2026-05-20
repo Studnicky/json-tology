@@ -85,14 +85,16 @@ class OwlVocabProjection extends VocabProjection {
       const interBnode = QuadFactory.nextBnode();
 
       quads.push(QuadFactory.quad(interBnode, RDF.type, QuadFactory.iri(OWL.Class, { curie }), { curie }));
-      quads.push(QuadFactory.quad(interBnode, OWL.intersectionOf, QuadFactory.rdfList(reqRestrictions), { curie }));
+      const interListHead = QuadFactory.rdfList(reqRestrictions, quads);
+
+      quads.push(QuadFactory.quad(interBnode, OWL.intersectionOf, interListHead, { curie }));
       unionMembers.push(QuadFactory.bnode(interBnode));
     }
 
     const unionBnode = QuadFactory.nextBnode();
 
     quads.push(QuadFactory.quad(unionBnode, RDF.type, QuadFactory.iri(OWL.Class, { curie }), { curie }));
-    quads.push(QuadFactory.quad(unionBnode, OWL.unionOf, QuadFactory.rdfList(unionMembers), { curie }));
+    quads.push(QuadFactory.quad(unionBnode, OWL.unionOf, QuadFactory.rdfList(unionMembers, quads), { curie }));
 
     return QuadFactory.bnode(unionBnode);
   }
@@ -114,7 +116,7 @@ class OwlVocabProjection extends VocabProjection {
     quads.push(QuadFactory.quad(branchBnode, OWL.intersectionOf, QuadFactory.rdfList([
       QuadFactory.bnode(complementBnode),
       QuadFactory.iri(elseRef, { curie })
-    ]), { curie }));
+    ], quads), { curie }));
 
     return QuadFactory.bnode(branchBnode);
   }
@@ -131,7 +133,7 @@ class OwlVocabProjection extends VocabProjection {
     quads.push(QuadFactory.quad(branchBnode, OWL.intersectionOf, QuadFactory.rdfList([
       QuadFactory.iri(ifRef, { curie }),
       QuadFactory.iri(thenRef, { curie })
-    ]), { curie }));
+    ], quads), { curie }));
 
     return QuadFactory.bnode(branchBnode);
   }
@@ -157,7 +159,7 @@ class OwlVocabProjection extends VocabProjection {
     quads.push(QuadFactory.quad(unionBnode, OWL.unionOf, QuadFactory.rdfList([
       QuadFactory.bnode(withoutTriggerBnode),
       QuadFactory.iri(thenRef, { curie })
-    ]), { curie }));
+    ], quads), { curie }));
 
     return QuadFactory.bnode(unionBnode);
   }
@@ -197,7 +199,7 @@ class OwlVocabProjection extends VocabProjection {
     const unionBnode = QuadFactory.nextBnode();
 
     quads.push(QuadFactory.quad(unionBnode, RDF.type, QuadFactory.iri(OWL.Class, { curie }), { curie }));
-    quads.push(QuadFactory.quad(unionBnode, OWL.unionOf, QuadFactory.rdfList(branches), { curie }));
+    quads.push(QuadFactory.quad(unionBnode, OWL.unionOf, QuadFactory.rdfList(branches, quads), { curie }));
 
     return [QuadFactory.bnode(unionBnode)];
   }
@@ -335,7 +337,7 @@ function emitDatatypeQuads(
   }
 
   if (facetBnodes.length > 0) {
-    quads.push(QuadFactory.quad(subject, OWL.withRestrictions, QuadFactory.rdfList(facetBnodes), { curie }));
+    quads.push(QuadFactory.quad(subject, OWL.withRestrictions, QuadFactory.rdfList(facetBnodes, quads), { curie }));
   }
 
   const oneOfRels = entry.byPredicate.get(OWL.oneOf) ?? [];
@@ -349,7 +351,7 @@ function emitDatatypeQuads(
     const equivBnode = QuadFactory.nextBnode();
 
     quads.push(QuadFactory.quad(subject, OWL.equivalentClass, QuadFactory.bnode(equivBnode), { curie }));
-    quads.push(QuadFactory.quad(equivBnode, OWL.oneOf, QuadFactory.rdfList(enumLiterals), { curie }));
+    quads.push(QuadFactory.quad(equivBnode, OWL.oneOf, QuadFactory.rdfList(enumLiterals, quads), { curie }));
   }
 
   const multipleOfRels = entry.byPredicate.get(JT.multipleOf) ?? [];
@@ -560,7 +562,7 @@ function emitClassQuads(
     quads.push(QuadFactory.quad(eqBnode, RDF.type, QuadFactory.iri(OWL.Class, { curie }), { curie }));
     quads.push(QuadFactory.quad(eqBnode, OWL.unionOf, QuadFactory.rdfList(equivRels.map((rel) => {
       return QuadFactory.iri(ProjectionIndex.relationTargetId(rel), { curie });
-    })), { curie }));
+    }), quads), { curie }));
   }
 
   const complementRels = entry.byPredicate.get(OWL.complementOf) ?? [];
@@ -588,7 +590,7 @@ function emitClassQuads(
       return QuadFactory.literal(typedLiteralObject(val), RDF.JSON, { curie });
     });
 
-    quads.push(QuadFactory.quad(subject, OWL.oneOf, QuadFactory.rdfList(typedLiterals), { curie }));
+    quads.push(QuadFactory.quad(subject, OWL.oneOf, QuadFactory.rdfList(typedLiterals, quads), { curie }));
   }
 
   if (oneOfRels.length === 0) {
@@ -598,7 +600,7 @@ function emitClassQuads(
       const val = ProjectionIndex.relationTargetId(hasValueRels[0]);
 
       const valueLit = QuadFactory.literal(typedLiteralObject(val), RDF.JSON, { curie });
-      const valueList = QuadFactory.rdfList([valueLit]);
+      const valueList = QuadFactory.rdfList([valueLit], quads);
 
       quads.push(QuadFactory.quad(subject, OWL.oneOf, valueList, { curie }));
     }
@@ -735,7 +737,7 @@ function emitPropertyQuads(
     }
     quads.push(QuadFactory.quad(canonicalId, OWL.unionOf, QuadFactory.rdfList(structure.members.map((member) => {
       return QuadFactory.iri(member, { curie });
-    })), { curie }));
+    }), quads), { curie }));
   }
 
   const inverseRels = entry.byPredicate.get(OWL.inverseOf) ?? [];

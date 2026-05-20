@@ -21,6 +21,7 @@ import type {
 } from '../../src/interfaces/OwlImport.js';
 import { importIndividuals } from '../../src/modules/ontology/importDispatch/Individuals.js';
 import { Terms } from '../../src/modules/rdf/Terms.js';
+import { listQuad } from '../helpers/listQuad.js';
 import { jsonLdNodesToQuads } from '../../src/modules/rdf/JsonLdToQuads.js';
 import { JsonTology } from '../../src/index.js';
 import { bookstoreEntities } from '../../examples/docs/bookstore/index.js';
@@ -60,15 +61,14 @@ function makeLiteralQuad(subject: string, predicate: string, value: unknown): Qu
   };
 }
 
-function makeListQuad(subject: string, predicate: string, members: string[]): QuadInterface {
-  return {
-    'graph': Terms.defaultGraph(),
-    'object': Terms.list(members.map((m) => {
+function makeListQuad(subject: string, predicate: string, members: string[]): QuadInterface[] {
+  return listQuad(
+    Terms.iri(subject),
+    Terms.iri(predicate),
+    members.map((m) => {
       return Terms.iri(m);
-    })),
-    'predicate': Terms.iri(predicate),
-    'subject': Terms.iri(subject)
-  };
+    })
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -367,16 +367,15 @@ void describe('importIndividuals — owl:AllDifferent', () => {
         'predicate': Terms.iri(RDF_TYPE),
         'subject': Terms.blank('allDiff1')
       },
-      {
-        'graph': Terms.defaultGraph(),
-        'object': Terms.list([
+      ...listQuad(
+        Terms.blank('allDiff1'),
+        Terms.iri(`${OWL_NS}distinctMembers`),
+        [
           Terms.iri(iriA),
           Terms.iri(iriB),
           Terms.iri(iriC)
-        ]),
-        'predicate': Terms.iri(`${OWL_NS}distinctMembers`),
-        'subject': Terms.blank('allDiff1')
-      }
+        ]
+      )
     ];
 
     const result = importIndividuals(quads, makeCtx());
@@ -500,10 +499,10 @@ void describe('importIndividuals — owl:hasKey', () => {
     const prop1 = 'urn:test:firstName';
     const prop2 = 'urn:test:lastName';
 
-    const result = importIndividuals([makeListQuad(classIri, `${OWL_NS}hasKey`, [
+    const result = importIndividuals(makeListQuad(classIri, `${OWL_NS}hasKey`, [
       prop1,
       prop2
-    ])], makeCtx());
+    ]), makeCtx());
 
     // Invariant
     assert.equal(result.invariants.length, 1);
@@ -541,11 +540,11 @@ void describe('importIndividuals — owl:hasKey', () => {
     const prop3 = 'urn:test:p3';
 
     const result = importIndividuals([
-      makeListQuad(classIri, `${OWL_NS}hasKey`, [
+      ...makeListQuad(classIri, `${OWL_NS}hasKey`, [
         prop1,
         prop2
       ]),
-      makeListQuad(classIri, `${OWL_NS}hasKey`, [prop3])
+      ...makeListQuad(classIri, `${OWL_NS}hasKey`, [prop3])
     ], makeCtx());
 
     assert.equal(result.invariants.length, 2);
@@ -567,12 +566,14 @@ void describe('importIndividuals — owl:hasKey', () => {
       captured.push(axiomIri);
     });
 
-    const result = importIndividuals([{
-      'graph': Terms.defaultGraph(),
-      'object': Terms.list([]),
-      'predicate': Terms.iri(`${OWL_NS}hasKey`),
-      'subject': Terms.iri(classIri)
-    }], ctx);
+    const result = importIndividuals(
+      listQuad(
+        Terms.iri(classIri),
+        Terms.iri(`${OWL_NS}hasKey`),
+        []
+      ),
+      ctx
+    );
 
     assert.equal(result.invariants.length, 0, 'no invariant for empty key');
     assert.ok(captured.includes('owl:hasKey'), 'empty hasKey reported as unsupported');

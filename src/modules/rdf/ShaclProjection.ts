@@ -129,7 +129,7 @@ class ShaclVocabProjection extends VocabProjection {
     quads.push(QuadFactory.quad(orBnode, SH.or, QuadFactory.rdfList([
       withoutTrigger,
       QuadFactory.bnode(reqBnode)
-    ]), { curie }));
+    ], quads), { curie }));
 
     return QuadFactory.bnode(orBnode);
   }
@@ -145,7 +145,7 @@ class ShaclVocabProjection extends VocabProjection {
     quads.push(QuadFactory.quad(orBnode, SH.or, QuadFactory.rdfList([
       QuadFactory.iri(ifRef, { curie }),
       QuadFactory.iri(elseRef, { curie })
-    ]), { curie }));
+    ], quads), { curie }));
 
     return QuadFactory.bnode(orBnode);
   }
@@ -165,7 +165,7 @@ class ShaclVocabProjection extends VocabProjection {
     quads.push(QuadFactory.quad(orBnode, SH.or, QuadFactory.rdfList([
       QuadFactory.bnode(complementBnode),
       QuadFactory.iri(thenRef, { curie })
-    ]), { curie }));
+    ], quads), { curie }));
 
     return QuadFactory.bnode(orBnode);
   }
@@ -230,7 +230,7 @@ class ShaclVocabProjection extends VocabProjection {
     quads.push(QuadFactory.quad(orBnode, SH.or, QuadFactory.rdfList([
       QuadFactory.bnode(withoutWrapperBnode),
       QuadFactory.bnode(depShapeBnode)
-    ]), { curie }));
+    ], quads), { curie }));
 
     return QuadFactory.bnode(orBnode);
   }
@@ -391,7 +391,7 @@ function emitNodeShape(
   andItems.push(...depReqItems, ...depSchemaItems, ...conditionalItems);
 
   if (andItems.length > 0) {
-    quads.push(QuadFactory.quad(subject, SH.and, QuadFactory.rdfList(andItems), { curie }));
+    quads.push(QuadFactory.quad(subject, SH.and, QuadFactory.rdfList(andItems, quads), { curie }));
   }
 
   const equivRels = entry.byPredicate.get(OWL.equivalentClass) ?? [];
@@ -401,7 +401,7 @@ function emitNodeShape(
       return QuadFactory.iri(resolveTargetRef(ProjectionIndex.relationTargetId(rel), index), { curie });
     });
 
-    quads.push(QuadFactory.quad(subject, SH.or, QuadFactory.rdfList(orItems), { curie }));
+    quads.push(QuadFactory.quad(subject, SH.or, QuadFactory.rdfList(orItems, quads), { curie }));
   }
 
   const complementRels = entry.byPredicate.get(OWL.complementOf) ?? [];
@@ -427,7 +427,7 @@ function emitNodeShape(
       return QuadFactory.literal(ProjectionIndex.relationTargetId(rel), XSD.string, { curie });
     });
 
-    quads.push(QuadFactory.quad(subject, SH.in, QuadFactory.rdfList(values), { curie }));
+    quads.push(QuadFactory.quad(subject, SH.in, QuadFactory.rdfList(values, quads), { curie }));
   }
 }
 

@@ -32,6 +32,7 @@ import { importDatatypes } from '../../src/modules/ontology/importDispatch/Datat
 import { Curie } from '../../src/modules/rdf/Curie.js';
 import { DEFAULT_PREFIXES } from '../../src/constants/PREFIXES.js';
 import { Terms } from '../../src/modules/rdf/Terms.js';
+import { listQuad } from '../helpers/listQuad.js';
 import type { JsonSchemaDocumentObjectType } from '../../src/types/Schema.js';
 import type { QuadInterface } from '../../src/interfaces/Quad.js';
 import type { QuadObjectType } from '../../src/types/Quad.js';
@@ -174,18 +175,17 @@ function setOnDatatype(subjectIri: string, xsdTypeIri: string): QuadInterface {
   return makeQuad(subjectIri, OWL_ON_DATATYPE, iri(xsdTypeIri));
 }
 
-/** Build a withRestrictions quad pointing to a ListTermType carrying facet bnodes. */
-function makeWithRestrictions(subjectIri: string, facetBnodes: string[]): QuadInterface {
+/** Build a withRestrictions quad + list triples carrying facet bnodes. */
+function makeWithRestrictions(subjectIri: string, facetBnodes: string[]): QuadInterface[] {
   const listItems: QuadObjectType[] = facetBnodes.map((bId) => {
     return Terms.blank(bId);
   });
 
-  return {
-    'graph': Terms.defaultGraph(),
-    'object': Terms.list(listItems),
-    'predicate': Terms.iri(OWL_WITH_RESTRICTIONS),
-    'subject': Terms.iri(subjectIri)
-  };
+  return listQuad(
+    Terms.iri(subjectIri),
+    Terms.iri(OWL_WITH_RESTRICTIONS),
+    listItems
+  );
 }
 
 /** Facet bnode quad: _:bnode xsd:facet numericValue. */
@@ -223,7 +223,7 @@ function makeEnumDatatypeQuads(
 
   return [
     makeQuad(subjectIri, OWL_EQUIVALENT_CLASS, Terms.blank(bnodeEquiv)),
-    blankQuad(bnodeEquiv, OWL_ONE_OF, Terms.list(literalItems))
+    ...listQuad(Terms.blank(bnodeEquiv), Terms.iri(OWL_ONE_OF), literalItems)
   ];
 }
 
@@ -316,7 +316,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
     const quads: QuadInterface[] = [
       declareDatatype(dt),
       setOnDatatype(dt, XSD_DECIMAL),
-      makeWithRestrictions(dt, [bnode]),
+      ...makeWithRestrictions(dt, [bnode]),
       facetNumeric(bnode, XSD_MIN_INCLUSIVE, 0)
     ];
     const delta = requireDelta(importDatatypes(quads, makeCtx()).schemaDeltas, dt);
@@ -333,7 +333,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
     const quads: QuadInterface[] = [
       declareDatatype(dt),
       setOnDatatype(dt, XSD_DECIMAL),
-      makeWithRestrictions(dt, [bnode]),
+      ...makeWithRestrictions(dt, [bnode]),
       facetNumeric(bnode, XSD_MAX_INCLUSIVE, 100)
     ];
     const delta = requireDelta(importDatatypes(quads, makeCtx()).schemaDeltas, dt);
@@ -349,7 +349,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
     const quads: QuadInterface[] = [
       declareDatatype(dt),
       setOnDatatype(dt, XSD_DECIMAL),
-      makeWithRestrictions(dt, [bnode]),
+      ...makeWithRestrictions(dt, [bnode]),
       facetNumeric(bnode, XSD_MIN_EXCLUSIVE, 0)
     ];
     const delta = requireDelta(importDatatypes(quads, makeCtx()).schemaDeltas, dt);
@@ -365,7 +365,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
     const quads: QuadInterface[] = [
       declareDatatype(dt),
       setOnDatatype(dt, XSD_DECIMAL),
-      makeWithRestrictions(dt, [bnode]),
+      ...makeWithRestrictions(dt, [bnode]),
       facetNumeric(bnode, XSD_MAX_EXCLUSIVE, 10)
     ];
     const delta = requireDelta(importDatatypes(quads, makeCtx()).schemaDeltas, dt);
@@ -381,7 +381,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
     const quads: QuadInterface[] = [
       declareDatatype(dt),
       setOnDatatype(dt, XSD_STRING),
-      makeWithRestrictions(dt, [bnode]),
+      ...makeWithRestrictions(dt, [bnode]),
       blankQuad(bnode, XSD_MIN_LENGTH, intLit(1))
     ];
     const delta = requireDelta(importDatatypes(quads, makeCtx()).schemaDeltas, dt);
@@ -398,7 +398,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
     const quads: QuadInterface[] = [
       declareDatatype(dt),
       setOnDatatype(dt, XSD_STRING),
-      makeWithRestrictions(dt, [bnode]),
+      ...makeWithRestrictions(dt, [bnode]),
       blankQuad(bnode, XSD_MAX_LENGTH, intLit(100))
     ];
     const delta = requireDelta(importDatatypes(quads, makeCtx()).schemaDeltas, dt);
@@ -414,7 +414,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
     const quads: QuadInterface[] = [
       declareDatatype(dt),
       setOnDatatype(dt, XSD_STRING),
-      makeWithRestrictions(dt, [bnode]),
+      ...makeWithRestrictions(dt, [bnode]),
       blankQuad(bnode, XSD_LENGTH, intLit(13))
     ];
     const delta = requireDelta(importDatatypes(quads, makeCtx()).schemaDeltas, dt);
@@ -431,7 +431,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
     const quads: QuadInterface[] = [
       declareDatatype(dt),
       setOnDatatype(dt, XSD_STRING),
-      makeWithRestrictions(dt, [bnode]),
+      ...makeWithRestrictions(dt, [bnode]),
       facetString(bnode, XSD_PATTERN, '^\\d{13}$')
     ];
     const delta = requireDelta(importDatatypes(quads, makeCtx()).schemaDeltas, dt);
@@ -447,7 +447,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
     const quads: QuadInterface[] = [
       declareDatatype(dt),
       setOnDatatype(dt, XSD_DECIMAL),
-      makeWithRestrictions(dt, [bnode]),
+      ...makeWithRestrictions(dt, [bnode]),
       blankQuad(bnode, XSD_FRACTION_DIGITS, intLit(2))
     ];
     const delta = requireDelta(importDatatypes(quads, makeCtx()).schemaDeltas, dt);
@@ -465,7 +465,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
     const quads: QuadInterface[] = [
       declareDatatype(dt),
       setOnDatatype(dt, XSD_DECIMAL),
-      makeWithRestrictions(dt, [bnode]),
+      ...makeWithRestrictions(dt, [bnode]),
       blankQuad(bnode, XSD_FRACTION_DIGITS, intLit(0))
     ];
     const delta = requireDelta(importDatatypes(quads, makeCtx()).schemaDeltas, dt);
@@ -483,7 +483,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
     const quads: QuadInterface[] = [
       declareDatatype(dt),
       setOnDatatype(dt, XSD_DECIMAL),
-      makeWithRestrictions(dt, [bnode]),
+      ...makeWithRestrictions(dt, [bnode]),
       blankQuad(bnode, XSD_TOTAL_DIGITS, intLit(10))
     ];
     const delta = requireDelta(importDatatypes(quads, ctx).schemaDeltas, dt);
@@ -505,7 +505,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
     const quads: QuadInterface[] = [
       declareDatatype(dt),
       setOnDatatype(dt, XSD_STRING),
-      makeWithRestrictions(dt, [bnode]),
+      ...makeWithRestrictions(dt, [bnode]),
       facetString(bnode, XSD_WHITE_SPACE, 'collapse')
     ];
     const delta = requireDelta(importDatatypes(quads, ctx).schemaDeltas, dt);
@@ -548,11 +548,11 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
     const quads: QuadInterface[] = [
       declareDatatype(dt),
       makeQuad(dt, OWL_EQUIVALENT_CLASS, Terms.blank(bEquiv)),
-      blankQuad(bEquiv, OWL_ONE_OF, Terms.list([
+      ...listQuad(Terms.blank(bEquiv), Terms.iri(OWL_ONE_OF), [
         intLit(1),
         intLit(2),
         intLit(3)
-      ]))
+      ])
     ];
     const delta = requireDelta(importDatatypes(quads, makeCtx()).schemaDeltas, dt);
 
@@ -575,7 +575,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
     const quads: QuadInterface[] = [
       declareDatatype(dt),
       setOnDatatype(dt, XSD_STRING),
-      makeWithRestrictions(dt, [
+      ...makeWithRestrictions(dt, [
         bRestr1,
         bRestr2,
         bRestr3
@@ -604,7 +604,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
     const quads: QuadInterface[] = [
       declareDatatype(dt),
       setOnDatatype(dt, XSD_INTEGER),
-      makeWithRestrictions(dt, [
+      ...makeWithRestrictions(dt, [
         bMin,
         bMax
       ]),
@@ -625,7 +625,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
     const quads: QuadInterface[] = [
       declareDatatype(dt),
       setOnDatatype(dt, XSD_STRING),
-      makeWithRestrictions(dt, [
+      ...makeWithRestrictions(dt, [
         bMin,
         bMax
       ]),
@@ -649,12 +649,12 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
     const quads: QuadInterface[] = [
       declareDatatype(dt1),
       setOnDatatype(dt1, XSD_STRING),
-      makeWithRestrictions(dt1, [bnode1]),
+      ...makeWithRestrictions(dt1, [bnode1]),
       facetString(bnode1, XSD_PATTERN, '^[A-Z]{2}$'),
 
       declareDatatype(dt2),
       setOnDatatype(dt2, XSD_INTEGER),
-      makeWithRestrictions(dt2, [bnode2]),
+      ...makeWithRestrictions(dt2, [bnode2]),
       facetNumeric(bnode2, XSD_MIN_INCLUSIVE, 0)
     ];
     const fragment = importDatatypes(quads, makeCtx());
@@ -700,7 +700,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       const quads: QuadInterface[] = [
         declareDatatype(dt),
         setOnDatatype(dt, XSD_DECIMAL),
-        makeWithRestrictions(dt, [bMin]),
+        ...makeWithRestrictions(dt, [bMin]),
         facetNumeric(bMin, XSD_MIN_INCLUSIVE, 0)
       ];
       const delta = requireDelta(importDatatypes(quads, makeCtx()).schemaDeltas, dt);
@@ -716,7 +716,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       const quads: QuadInterface[] = [
         declareDatatype(dt),
         setOnDatatype(dt, XSD_STRING),
-        makeWithRestrictions(dt, [
+        ...makeWithRestrictions(dt, [
           bMin,
           bMax
         ]),
@@ -736,7 +736,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       const quads: QuadInterface[] = [
         declareDatatype(dt),
         setOnDatatype(dt, XSD_STRING),
-        makeWithRestrictions(dt, [bPat]),
+        ...makeWithRestrictions(dt, [bPat]),
         facetString(bPat, XSD_PATTERN, '^[A-Z]{2}$')
       ];
       const delta = requireDelta(importDatatypes(quads, makeCtx()).schemaDeltas, dt);
@@ -772,7 +772,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       const quads: QuadInterface[] = [
         declareDatatype(dt),
         setOnDatatype(dt, XSD_STRING),
-        makeWithRestrictions(dt, [bPat]),
+        ...makeWithRestrictions(dt, [bPat]),
         facetString(bPat, XSD_PATTERN, '^\\d{13}$')
       ];
       const delta = requireDelta(importDatatypes(quads, makeCtx()).schemaDeltas, dt);
@@ -787,7 +787,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       const quads: QuadInterface[] = [
         declareDatatype(dt),
         setOnDatatype(dt, XSD_INTEGER),
-        makeWithRestrictions(dt, [bMin]),
+        ...makeWithRestrictions(dt, [bMin]),
         facetNumeric(bMin, XSD_MIN_INCLUSIVE, 0)
       ];
       const delta = requireDelta(importDatatypes(quads, makeCtx()).schemaDeltas, dt);
@@ -802,7 +802,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       const quads: QuadInterface[] = [
         declareDatatype(dt),
         setOnDatatype(dt, XSD_INTEGER),
-        makeWithRestrictions(dt, [bMin]),
+        ...makeWithRestrictions(dt, [bMin]),
         facetNumeric(bMin, XSD_MIN_INCLUSIVE, 1)
       ];
       const delta = requireDelta(importDatatypes(quads, makeCtx()).schemaDeltas, dt);
@@ -817,7 +817,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       const quads: QuadInterface[] = [
         declareDatatype(dt),
         setOnDatatype(dt, XSD_INTEGER),
-        makeWithRestrictions(dt, [bMin]),
+        ...makeWithRestrictions(dt, [bMin]),
         facetNumeric(bMin, XSD_MIN_INCLUSIVE, 1)
       ];
       const delta = requireDelta(importDatatypes(quads, makeCtx()).schemaDeltas, dt);
@@ -833,7 +833,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       const quads: QuadInterface[] = [
         declareDatatype(dt),
         setOnDatatype(dt, XSD_STRING),
-        makeWithRestrictions(dt, [
+        ...makeWithRestrictions(dt, [
           bMin,
           bMax
         ]),
@@ -854,7 +854,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       const quads: QuadInterface[] = [
         declareDatatype(dt),
         setOnDatatype(dt, XSD_STRING),
-        makeWithRestrictions(dt, [
+        ...makeWithRestrictions(dt, [
           bMin,
           bMax
         ]),
@@ -874,7 +874,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       const quads: QuadInterface[] = [
         declareDatatype(dt),
         setOnDatatype(dt, XSD_INTEGER),
-        makeWithRestrictions(dt, [bMin]),
+        ...makeWithRestrictions(dt, [bMin]),
         facetNumeric(bMin, XSD_MIN_INCLUSIVE, 1)
       ];
       const delta = requireDelta(importDatatypes(quads, makeCtx()).schemaDeltas, dt);
@@ -910,7 +910,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       const quads: QuadInterface[] = [
         declareDatatype(dt),
         setOnDatatype(dt, XSD_INTEGER),
-        makeWithRestrictions(dt, [bMin]),
+        ...makeWithRestrictions(dt, [bMin]),
         facetNumeric(bMin, XSD_MIN_INCLUSIVE, 1)
       ];
       const delta = requireDelta(importDatatypes(quads, makeCtx()).schemaDeltas, dt);
@@ -926,7 +926,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       const quads: QuadInterface[] = [
         declareDatatype(dt),
         setOnDatatype(dt, XSD_INTEGER),
-        makeWithRestrictions(dt, [
+        ...makeWithRestrictions(dt, [
           bMin,
           bMax
         ]),
@@ -950,7 +950,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       const quads: QuadInterface[] = [
         declareDatatype(dt),
         setOnDatatype(dt, XSD_INTEGER),
-        makeWithRestrictions(dt, [
+        ...makeWithRestrictions(dt, [
           bMin,
           bMax
         ]),
@@ -971,7 +971,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       const quads: QuadInterface[] = [
         declareDatatype(dt),
         setOnDatatype(dt, XSD_STRING),
-        makeWithRestrictions(dt, [
+        ...makeWithRestrictions(dt, [
           bMin,
           bMax
         ]),
@@ -992,7 +992,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       const quads: QuadInterface[] = [
         declareDatatype(dt),
         setOnDatatype(dt, XSD_STRING),
-        makeWithRestrictions(dt, [
+        ...makeWithRestrictions(dt, [
           bMin,
           bMax
         ]),
@@ -1012,7 +1012,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
       const quads: QuadInterface[] = [
         declareDatatype(dt),
         setOnDatatype(dt, XSD_DECIMAL),
-        makeWithRestrictions(dt, [bMin]),
+        ...makeWithRestrictions(dt, [bMin]),
         facetNumeric(bMin, XSD_MIN_INCLUSIVE, 0)
       ];
       const delta = requireDelta(importDatatypes(quads, makeCtx()).schemaDeltas, dt);

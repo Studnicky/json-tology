@@ -1,104 +1,70 @@
 /**
- * RDF term types — structurally compatible with `@rdfjs/types`.
+ * RDF term types — canonical re-exports from `@rdfjs/types`.
  *
- * `IriTermType`, `BnodeTermType`, and `DefaultGraphTermType` are structurally
- * identical to `@rdfjs/types#NamedNode`, `BlankNode`, and `DefaultGraph`
- * respectively. Instances produced by the `Terms` factory are assignable to
- * the corresponding rdf/js interfaces at runtime.
+ * The project's term types ARE the rdf/js spec types:
  *
- * `LiteralTermType` is a project-specific extension: it widens `value` to
- * `unknown` so that the internal Terms factory can store raw JS values (number,
- * boolean, etc.) without pre-serialisation. The `datatype` and `language`
- * fields follow the rdf/js spec exactly. External RDF/JS consumers must
- * coerce via `String(literal.value)` at the boundary.
+ *  - `IriTermType`           = `@rdfjs/types#NamedNode`
+ *  - `BnodeTermType`         = `@rdfjs/types#BlankNode`
+ *  - `LiteralTermType`       = `@rdfjs/types#Literal`        (`value: string`)
+ *  - `DefaultGraphTermType`  = `@rdfjs/types#DefaultGraph`
  *
- * `ListTermType` is a project extension for RDF list shorthand
- * (owl:unionOf / sh:or). It has no equivalent in the rdf/js spec.
+ * Every internal and public quad in the project is a `Quad` from `@rdfjs/types`.
+ * There is NO project-internal quad shape. RDF lists (used by `owl:unionOf`,
+ * `sh:or`, `sh:in`, `sh:and`, etc.) are emitted as standard
+ * `rdf:first` / `rdf:rest` / `rdf:nil` triple sequences by `src/modules/rdf/Lists.ts`
+ * at the point of construction — no intermediate list-term representation.
  *
- * All term types carry an `equals(other)` method per the rdf/js Term contract
- * (https://rdf.js.org/data-model-spec/#term-interface).
+ * Literal values are typed as `string` per the rdf/js spec, with the JS type
+ * tag carried in `.datatype.value`. To decode back to a typed JS value
+ * (number, boolean, Date), use `decodeLiteral` from `src/modules/rdf/Terms.ts`
+ * — `fromQuads` and the internal Lift pipeline call it automatically.
  *
  * @see {@link https://rdf.js.org/data-model-spec/ rdf/js Data Model Spec}
- * @see {@link https://www.npmjs.com/package/@rdfjs/types @rdfjs/types} — types-only
- *   package now in `dependencies` so consumers can import and use alongside this package.
  */
 
-export type TermType = BnodeTermType | DefaultGraphTermType | IriTermType | ListTermType | LiteralTermType;
+import type {
+  BlankNode, DefaultGraph, Literal, NamedNode
+} from '@rdfjs/types';
 
 /**
- * IriTermType — represents an IRI resource (NamedNode in rdf/js terminology).
- *
- * Structurally identical to `@rdfjs/types#NamedNode`. Instances produced by
- * `Terms.iri()` satisfy the `NamedNode` interface at runtime.
+ * IriTermType — canonical alias of `@rdfjs/types#NamedNode`.
+ * Represents an IRI resource in an RDF quad.
  */
-export interface IriTermType {
-  equals(other: null | TermType | undefined): boolean;
-  'termType': 'NamedNode';
-  'value': string;
-}
+export type IriTermType = NamedNode;
 
 /**
- * BnodeTermType — represents an RDF blank node.
- *
- * Structurally identical to `@rdfjs/types#BlankNode`. Instances produced by
- * `Terms.blank()` satisfy the `BlankNode` interface at runtime.
+ * BnodeTermType — canonical alias of `@rdfjs/types#BlankNode`.
+ * Represents a blank node in an RDF quad.
  */
-export interface BnodeTermType {
-  equals(other: null | TermType | undefined): boolean;
-  'termType': 'BlankNode';
-  'value': string;
-}
+export type BnodeTermType = BlankNode;
 
 /**
- * LiteralTermType — project-owned literal term with widened `value: unknown`.
+ * LiteralTermType — canonical alias of `@rdfjs/types#Literal`.
  *
- * Structurally similar to `@rdfjs/types#Literal` but widens `value` from
- * `string` to `unknown` to accommodate raw JS numbers, booleans, and structured
- * values stored internally without pre-serialisation. The `datatype` and
- * `language` fields follow the rdf/js spec exactly.
+ * Per the rdf/js spec, `value` is `string`. The JS type tag is carried in
+ * `datatype.value` (e.g. `xsd:integer`, `xsd:boolean`, `xsd:dateTime`).
  *
- * Divergence from `@rdfjs/types#Literal`:
- * - `value: unknown` (not `string`) — raw JS values stored as-is.
- *   External RDF/JS consumers must coerce via `String(literal.value)`.
- * - `equals` compares serialised string forms via `String(self.value)`.
+ * To decode back to a typed JS value, use `decodeLiteral(literal)` from
+ * `src/modules/rdf/Terms.ts` — `fromQuads` and the internal Lift pipeline
+ * call it automatically.
  */
-export interface LiteralTermType {
-  'datatype': IriTermType;
-  equals(other: null | TermType | undefined): boolean;
-  'language': string;
-  'termType': 'Literal';
-  /**
-   * Project widening: stores raw JS values (number, boolean, object, etc.)
-   * rather than serialised strings. External RDF/JS consumers must coerce via
-   * `String(literal.value)` at the boundary.
-   */
-  'value': unknown;
-}
+export type LiteralTermType = Literal;
 
 /**
- * DefaultGraphTermType — represents the default graph.
- *
- * Structurally identical to `@rdfjs/types#DefaultGraph`. The singleton
- * instance produced by `Terms.defaultGraph()` satisfies the `DefaultGraph`
- * interface at runtime.
+ * DefaultGraphTermType — canonical alias of `@rdfjs/types#DefaultGraph`.
+ * Represents the default graph position in an RDF quad.
  */
-export interface DefaultGraphTermType {
-  equals(other: null | TermType | undefined): boolean;
-  'termType': 'DefaultGraph';
-  'value': '';
-}
+export type DefaultGraphTermType = DefaultGraph;
 
 /**
- * ListTermType — project extension for RDF list shorthand.
- *
- * Used internally for owl:unionOf / sh:or list encoding. Not part of the
- * rdf/js spec; has no `@rdfjs/types` equivalent. Consumers piping quads
- * into standard rdf/js ecosystem tools should expand lists first.
+ * Union of every term type used by the project. Aligned with the rdf/js spec:
+ * `Term = NamedNode | BlankNode | Literal | DefaultGraph` (the project does
+ * not use `Variable`).
  */
-export interface ListTermType {
-  equals(other: null | TermType | undefined): boolean;
-  'items': QuadObjectType[];
-  'termType': 'List';
-}
+export type TermType = BnodeTermType | DefaultGraphTermType | IriTermType | LiteralTermType;
 
-export type QuadObjectType = BnodeTermType | IriTermType | ListTermType | LiteralTermType;
+/**
+ * Object-position term type for a quad. Aligned with the rdf/js spec
+ * `Quad_Object = NamedNode | Literal | BlankNode` (no `Variable`).
+ */
+export type QuadObjectType = BnodeTermType | IriTermType | LiteralTermType;
