@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.1] - 2026-05-24
+
+### Changed
+
+- Dependency bumps via dependabot:
+  - `qs` 6.15.0 → 6.15.2 (patch, runtime).
+  - `actions/upload-pages-artifact` 4 → 5 (CI infrastructure).
+  - `eslint-ecosystem` group (3 packages, dev tooling).
+  - `minor-and-patch` group (5 packages: `@types/node`, `cytoscape`,
+    `eyereasoner`, `tsx`, `vitepress-sidebar`).
+
+No source-code changes; tests, build, lint all green. Runtime and API
+surface identical to 0.15.0.
+
 ## [0.15.0] - 2026-05-24
 
 ### Added
