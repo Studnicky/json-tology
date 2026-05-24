@@ -44,9 +44,10 @@ import type {
 
 import { DECIMAL_RADIX } from '../../constants/FORMAT_VALIDATION.js';
 import { XSD } from '../../constants/IRI.js';
-import {
-  XSD_IRI_PREFIX, XSD_PREFIX
-} from '../../constants/PREFIXES.js';
+import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
+
+const XSD_IRI_PREFIX = STANDARD_PREFIXES.xsd;
+const XSD_COMPACT_PREFIX = 'xsd:';
 
 // ---------------------------------------------------------------------------
 // Equality helpers
@@ -288,7 +289,7 @@ function normaliseDatatypeIri(iri: string): string {
 function localXsdName(iri: string): string {
   const normalised = normaliseDatatypeIri(iri);
 
-  return normalised.startsWith(XSD_PREFIX) ? normalised.slice(XSD_PREFIX.length) : normalised;
+  return normalised.startsWith(XSD_COMPACT_PREFIX) ? normalised.slice(XSD_COMPACT_PREFIX.length) : normalised;
 }
 
 const INTEGER_XSD_NAMES: ReadonlySet<string> = new Set([

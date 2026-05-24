@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-05-24
+
+### Added
+
+- `JsonTology.toCurie(iri)` and `JsonTology.fromCurie(value)` — restore
+  the CURIE helpers using the registry's merged prefix map.
+
+### Changed
+
+- Docs: `errors/classes.md` updated for v0.15.0 constructor signatures
+  (BaseError, SchemaError, GraphError now take a single trailing options
+  bag); LoadError section removed.
+- Docs: `argument-conventions.md` canonicalizes the universal convention
+  (required positional, optional/overrides in single config object).
+  `advanced/utilities.md` adds coverage for `IdentifierIssuer` and
+  `STANDARD_PREFIXES`. `advanced/ontology.md` adds a section for the
+  experimental `JsonTology.validateWithShacl(shapes, data)` stub.
+  `static-helpers.md` references `STANDARD_PREFIXES` directly.
+
+### Removed
+
+- `src/constants/PREFIXES.ts` vestigial exports (`DEFAULT_PREFIXES`,
+  `XSD_PREFIX`, `RDF_TYPE_IRI`, `XSD_IRI_PREFIX`, `RDFS_IRI_PREFIX`,
+  `RDFS_DOMAIN_IRI`, `RDFS_RANGE_IRI`, `RDFS_SUB_CLASS_OF_IRI`). Use
+  `src/constants/IRI.ts` (`RDF.type`, `RDFS.domain`, `RDFS.range`,
+  `RDFS.subClassOf`, `XSD.*`) and `src/constants/STANDARD_PREFIXES.ts`
+  (canonical prefix-to-namespace map) as the single canonical source.
+
+### Docs
+
+- TSDoc coverage added for v0.15.0 new exports (validateWithShacl,
+  IdentifierIssuer, options/error types).
+
 ### Changed
 
 - **Error constructors aligned with the DX argument convention** —

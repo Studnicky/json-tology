@@ -414,7 +414,7 @@ void describe('H-1: jt:restrictions round-trip via OwlProjection + OwlImporter',
     const { OwlProjection } = await import('../../src/modules/rdf/OwlProjection.js');
     const { importPropertyRestrictions } = await import('../../src/modules/ontology/importDispatch/PropertyRestrictions.js');
     const { Curie } = await import('../../src/modules/rdf/Curie.js');
-    const { DEFAULT_PREFIXES } = await import('../../src/constants/PREFIXES.js');
+    const { STANDARD_PREFIXES } = await import('../../src/constants/STANDARD_PREFIXES.js');
 
     const CLASS_IRI = 'urn:test:H1Class';
     const PROP_IRI = `${CLASS_IRI}#items`;
@@ -434,7 +434,7 @@ void describe('H-1: jt:restrictions round-trip via OwlProjection + OwlImporter',
     const tbox = OwlProjection.graph(graph);
 
     const qbGraph = SchemaGraph.fromQuads(tbox, { 'baseIRI': 'urn:test' });
-    const curie = new Curie(DEFAULT_PREFIXES);
+    const curie = new Curie(STANDARD_PREFIXES);
     const ctx = {
       'allClassIris': new Set([CLASS_IRI]),
       'allPropertyIris': new Set<string>(),
@@ -444,7 +444,7 @@ void describe('H-1: jt:restrictions round-trip via OwlProjection + OwlImporter',
       'isDatatype': () => {
         return false;
       },
-      'prefixes': DEFAULT_PREFIXES,
+      'prefixes': STANDARD_PREFIXES,
       'reportUnsupported': () => { /* noop */ }
     };
 

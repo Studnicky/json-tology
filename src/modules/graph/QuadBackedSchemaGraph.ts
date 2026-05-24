@@ -45,7 +45,7 @@ import { GraphError } from '../../errors/GraphError.js';
 import {
   OWL, RDF, RDFS
 } from '../../constants/IRI.js';
-import { DEFAULT_PREFIXES } from '../../constants/PREFIXES.js';
+import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
 import { decodeLiteral } from '../rdf/Terms.js';
 import { Lists } from '../rdf/Lists.js';
 
@@ -677,7 +677,7 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
       'prefixes'?: PrefixMap }
   ) {
     const mergedPrefixes: PrefixMap = {
-      ...DEFAULT_PREFIXES,
+      ...STANDARD_PREFIXES,
       ...options?.prefixes
     };
     const expansionMap = buildExpansionMap(mergedPrefixes);

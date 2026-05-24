@@ -58,7 +58,7 @@ import {
 import {
   CURRENT_DIALECT_PREFIX, DRAFT_NAME
 } from '../../constants/DIALECT.js';
-import { DEFAULT_PREFIXES } from '../../constants/PREFIXES.js';
+import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
 import { SILENT_LOGGER } from '../../constants/LOGGER.js';
 
 const EMPTY_VALIDATION_ERRORS = new ValidationErrors([]);
@@ -151,7 +151,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     this.enableDuplicateDetection = this.enableStrictGraph || (options?.enableDuplicateDetection ?? true);
     this.vocabularies = options?.vocabularies ?? [];
 
-    const mergedPrefixes = { ...DEFAULT_PREFIXES };
+    const mergedPrefixes: Record<string, string> = { ...STANDARD_PREFIXES };
 
     for (const plugin of this.vocabularies) {
       Object.assign(mergedPrefixes, plugin.prefixes);

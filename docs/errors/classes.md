@@ -2,7 +2,9 @@
 
 > Validation modes: [Validation modes reference](/validation-modes)
 
-Every json-tology error extends `BaseError`. The base class carries a machine-readable `code`, a human `message`, a `retryable` flag, an optional `cause` chain, and two structured projections (`toJson()`, `flatten()`). Every subclass adds domain-specific fields - schema IDs, JSON Pointers, file paths, validation errors.
+Every json-tology error extends `BaseError`. The base class carries a machine-readable `code`, a human `message`, a `retryable` flag, an optional `cause` chain, and two structured projections (`toJson()`, `flatten()`). Every subclass adds domain-specific fields - schema IDs, JSON Pointers, validation errors.
+
+Error constructors follow the universal DX convention: required arguments are positional in canonical order; every optional or contextual field travels in a single trailing options bag typed by an `Interface` or `Type` alias. The instance fields described below are unchanged - only the constructor argument shape collapsed into a single options object.
 
 > Never throw a bare `new Error()` from json-tology code. Pick the appropriate subclass.
 
@@ -14,14 +16,22 @@ The bookstore schemas defined in the [Bookstore Domain](/bookstore-domain) appea
 
 **Defined in.** `src/errors/BaseError.ts`.
 
+**Constructor.** `new BaseError(code, message, options?: BaseErrorOptionsType)` where `BaseErrorOptionsType = { cause?: Error; retryable?: boolean }`. `retryable` defaults to `false` when omitted.
+
+```ts
+new BaseError('SOMETHING_FAILED', 'human description');
+new BaseError('SOMETHING_FAILED', 'human description', { retryable: true });
+new BaseError('SOMETHING_FAILED', 'human description', { cause: ioFailure, retryable: true });
+```
+
 **Public surface.**
 
 | Member        | Type                          | Notes                                                  |
 |---------------|-------------------------------|--------------------------------------------------------|
 | `code`        | `string`                      | Stable, machine-readable identifier                    |
 | `message`     | `string`                      | Inherited from `Error`                                 |
-| `retryable`   | `boolean`                     | Hint to callers about retry safety                     |
-| `cause`       | `Error \| undefined`          | Standard cause chain                                   |
+| `retryable`   | `boolean`                     | Hint to callers about retry safety; set via `options.retryable` (default `false`) |
+| `cause`       | `Error \| undefined`          | Standard cause chain; set via `options.cause`          |
 | `toJson()`    | `ErrorJsonInterface`          | JSON-safe object including the cause chain             |
 | `flatten()`   | `ErrorJsonInterface[]`        | Root-first array of every error in the cause chain     |
 
@@ -33,7 +43,15 @@ The `code` values are exported as constants from `src/constants/ERROR_CODES.ts` 
 
 **Thrown for.** Schema registration and structural problems - missing `$id`, duplicate anchors, unsupported dialect, structure validation failures.
 
-**Adds.** `schemaId?: string` (the offending schema, when known).
+**Constructor.** `new SchemaError(code, message, options?: SchemaErrorOptionsType)` where `SchemaErrorOptionsType = { cause?: Error; schemaId?: string }`.
+
+```ts
+throw new SchemaError(SchemaErrorCode.MISSING_ID, 'schema is missing $id');
+throw new SchemaError(SchemaErrorCode.STRUCTURE_INVALID, 'invalid structure', { schemaId });
+throw new SchemaError(SchemaErrorCode.DIALECT_UNSUPPORTED, 'unsupported dialect', { schemaId, cause });
+```
+
+**Adds.** `schemaId?: string` (the offending schema, when known) - exposed as an instance field and set via `options.schemaId`.
 
 **Codes.**
 
@@ -57,7 +75,14 @@ The `code` values are exported as constants from `src/constants/ERROR_CODES.ts` 
 
 **Thrown for.** Pointer resolution failures, anchor lookup failures, ref resolution failures, dialect or vocabulary issues, recursion-limit hits.
 
-**Adds.** `pointer?: string` (the JSON Pointer involved in the failure, when applicable).
+**Constructor.** `new GraphError(code, message, options?: GraphErrorOptionsType)` where `GraphErrorOptionsType = { cause?: Error; pointer?: string }`.
+
+```ts
+throw new GraphError(GraphErrorCode.POINTER_NOT_FOUND, 'pointer did not resolve', { pointer: '/foo/0' });
+throw new GraphError(GraphErrorCode.REF_UNRESOLVED, 'cross-schema $ref unresolved', { pointer, cause });
+```
+
+**Adds.** `pointer?: string` (the JSON Pointer involved in the failure, when applicable) - exposed as an instance field and set via `options.pointer`.
 
 **Codes.**
 
@@ -77,25 +102,6 @@ The `code` values are exported as constants from `src/constants/ERROR_CODES.ts` 
 | _(direct string)_                     | `GRAPH_INVALID_RESTRICTION` | Thrown by `OwlProjection` when a restriction entry is missing a required `kind`, `onProperty`, or `value` field. See `src/types/ErrorCodes.ts`. |
 
 <<< ../../examples/docs/errors/17-graph-error.ts
-
-## `LoadError` <Badge type="tip" text="Runtime" />
-
-**Thrown for.** File-loading failures when `stopOnError` is set - missing files, invalid JSON, duplicate `$id` across files, schema parse failures.
-
-**Adds.** `filePath: string` (the file the loader was processing). Marked `retryable: true` because IO failures are often transient.
-
-**Codes.**
-
-| Constant                          | Value                  |
-|-----------------------------------|------------------------|
-| `LoadErrorCode.MISSING_ID`        | `LOAD_MISSING_ID`      |
-| `LoadErrorCode.INVALID_JSON`      | `LOAD_INVALID_JSON`    |
-| `LoadErrorCode.INVALID_SCHEMA`    | `LOAD_INVALID_SCHEMA`  |
-| `LoadErrorCode.DUPLICATE_ID`      | `LOAD_DUPLICATE_ID`    |
-| `LoadErrorCode.DUPLICATE_ANCHOR`  | `LOAD_DUPLICATE_ANCHOR`|
-| `LoadErrorCode.IO_FAILURE`        | `LOAD_IO_FAILURE`      |
-
-<<< ../../examples/docs/errors/18-load-error.ts
 
 ## `InstantiationError` <Badge type="tip" text="Runtime" />
 

@@ -23,7 +23,7 @@ import {
 } from 'node:test';
 import { importAnnotations } from '../../src/modules/ontology/importDispatch/Annotations.js';
 import { Curie } from '../../src/modules/rdf/Curie.js';
-import { DEFAULT_PREFIXES } from '../../src/constants/PREFIXES.js';
+import { STANDARD_PREFIXES } from '../../src/constants/STANDARD_PREFIXES.js';
 import { Terms } from '../../src/modules/rdf/Terms.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import type { QuadInterface } from '../../src/interfaces/Quad.js';
@@ -35,7 +35,7 @@ import type {
 // Test helpers
 // ---------------------------------------------------------------------------
 
-const curie = new Curie(DEFAULT_PREFIXES);
+const curie = new Curie(STANDARD_PREFIXES);
 
 function makeCtx(quads: QuadInterface[] = []): OwlImportContext & { 'unsupportedLog': Array<{ 'axiomIri': string;
   'subjectIri': null | string }> } {
@@ -49,12 +49,12 @@ function makeCtx(quads: QuadInterface[] = []): OwlImportContext & { 'unsupported
     curie,
     'graph': SchemaGraph.fromQuads(quads, {
       'baseIRI': 'https://example.com/',
-      'prefixes': DEFAULT_PREFIXES
+      'prefixes': STANDARD_PREFIXES
     }),
     'isDatatype': () => {
       return false;
     },
-    'prefixes': DEFAULT_PREFIXES,
+    'prefixes': STANDARD_PREFIXES,
     'reportUnsupported': (axiomIri, subjectIri) => {
       unsupportedLog.push({
         axiomIri,

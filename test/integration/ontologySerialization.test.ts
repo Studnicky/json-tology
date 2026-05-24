@@ -27,9 +27,9 @@ import {
   decodeLiteral, Terms
 } from '../../src/modules/rdf/Terms.js';
 import { Curie } from '../../src/modules/rdf/Curie.js';
-import { DEFAULT_PREFIXES } from '../../src/constants/PREFIXES.js';
+import { STANDARD_PREFIXES } from '../../src/constants/STANDARD_PREFIXES.js';
 
-const TEST_CURIE = new Curie(DEFAULT_PREFIXES);
+const TEST_CURIE = new Curie(STANDARD_PREFIXES);
 
 function expandIri(value: string): string {
   return value.startsWith('http') || value.startsWith('urn:') || value.startsWith('_:')

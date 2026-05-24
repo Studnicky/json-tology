@@ -49,6 +49,7 @@ import type { NormalizedToQuadsOptionsType } from './types/NormalizedToQuadsOpti
 import type { ToQuadsOptionsType } from './types/ToQuadsOptions.js';
 
 import { RefResolutionLoader } from './modules/registry/RefResolutionLoader.js';
+import type { CurieInterface } from './interfaces/Curie.js';
 import { Curie } from './modules/rdf/Curie.js';
 import { OwlImporter } from './modules/ontology/OwlImporter.js';
 import { Skolemize } from './modules/rdf/Skolemize.js';
@@ -67,7 +68,7 @@ import { SchemaRegistry } from './modules/registry/SchemaRegistry.js';
 import { Transform } from './modules/transform/Transform.js';
 import { Value } from './modules/data/Value.js';
 
-import { DEFAULT_PREFIXES } from './constants/PREFIXES.js';
+import { STANDARD_PREFIXES } from './constants/STANDARD_PREFIXES.js';
 
 const STATIC_BASE_IRI = 'http://json-tology.dev/_/static';
 
@@ -538,6 +539,7 @@ export class JsonTology<TMap = Record<never, never>> {
   }
 
   private readonly baseIRI: string;
+  private readonly curie: CurieInterface;
   private readonly defaultDeskolemize: boolean;
   private readonly defaultGraphIRI: string | undefined;
   private readonly defaultIriForRaw: SkolemizeFnType | string | undefined;
@@ -598,7 +600,7 @@ export class JsonTology<TMap = Record<never, never>> {
     this.defaultIriForRaw = options.iriFor;
 
     this.prefixes = {
-      ...DEFAULT_PREFIXES,
+      ...STANDARD_PREFIXES,
       ...options.prefixes
     };
 
@@ -652,18 +654,38 @@ export class JsonTology<TMap = Record<never, never>> {
     this.materializer = new Materializer(this.registry, options.materializer);
 
     // Create Curie with merged prefixes from registry
-    const curie = this.registry.curie ?? new Curie(this.prefixes);
+    this.curie = this.registry.curie ?? new Curie(this.prefixes);
     const vocabularies = options.vocabularies ?? [];
 
     this.graphSchemaSerializer = new GraphSchemaSerializer();
     this.ontologySerializer = new GraphOntologySerializer({
-      curie,
+      'curie': this.curie,
       vocabularies
     });
     this.shaclSerializer = new GraphShaclSerializer({
-      curie,
+      'curie': this.curie,
       vocabularies
     });
+  }
+
+  /**
+   * Compact a full IRI to its CURIE form using the registry's merged prefix map.
+   *
+   * @param iri - A full IRI such as `http://www.w3.org/1999/02/22-rdf-syntax-ns#type`.
+   * @returns The CURIE form when a prefix matches (e.g. `rdf:type`); otherwise the input unchanged.
+   */
+  public toCurie(iri: string): string {
+    return this.curie.compact(iri);
+  }
+
+  /**
+   * Expand a CURIE to its full IRI using the registry's merged prefix map.
+   *
+   * @param value - A CURIE such as `rdf:type` (or any value; non-CURIE strings pass through).
+   * @returns The expanded full IRI when the prefix is known; otherwise the input unchanged.
+   */
+  public fromCurie(value: string): string {
+    return this.curie.expand(value);
   }
 
   // ---------------------------------------------------------------------------
@@ -1203,10 +1225,20 @@ export class JsonTology<TMap = Record<never, never>> {
    * Projects instance data to RDF quads and returns an {@link OntologyBuilder} for serialization.
    *
    * Inverse of {@link fromQuads}: `toQuads` lowers typed objects into ABox quads,
-   * `fromQuads` lifts quads back into typed objects.
+   * `fromQuads` lifts quads back into typed objects. Symmetric `owl:sameAs`
+   * assertions registered via {@link sameAs} are appended automatically.
    *
    * @param schema - The schema describing the data shape.
    * @param data - The instance data to project into quads.
+   * @param options - Per-call overrides typed as {@link ToQuadsOptionsType}:
+   *   - `graphIRI` — when set, every emitted quad's `graph` field is stamped
+   *     with this IRI. Falls back to the instance-level `defaultGraphIRI`.
+   *   - `iriFor` — overrides root subject IRI minting. If a string, sets the
+   *     depth-0 subject IRI. If the literal `'blank-node'`
+   *     ({@link BLANK_NODE_IRI_FOR}), every object subject is emitted as an
+   *     anonymous blank node. If a function `(ctx) => string | undefined`,
+   *     called once per object with `{ path, value, depth }`. Falls back to
+   *     the instance-level default.
    * @returns The projected RDF quads.
    *
    * If you want a richer wrapper (JSON-LD context, SHACL composition,
@@ -1306,7 +1338,10 @@ export class JsonTology<TMap = Record<never, never>> {
    *
    * @param schemaId - The `$id` of a registered schema, or a schema object with `$id`.
    * @param data - The data to validate.
-   * @param callOptions - Per-call option overrides.
+   * @param callOptions - Per-call option overrides:
+   *   - `enableDefaults` — when `true`, schema `default` values are applied during
+   *     validation (matching `instantiate()` semantics); when `false` or omitted,
+   *     defaults are not synthesized so validation reflects only the input data.
    * @returns A {@link ValidationErrors} instance (empty when data is valid).
    * @throws {SchemaError} code SCHEMA_NOT_FOUND when no schema is registered for the given ID.
    * @throws {SchemaError} code SCHEMA_INVALID_INPUT when schema is null or undefined.
@@ -1330,11 +1365,18 @@ export class JsonTology<TMap = Record<never, never>> {
   /**
    * Validates instance data quads against SHACL shapes produced from registered schemas.
    *
+   * Intended as the symmetric inverse of {@link JsonTology.toShacl}: `toShacl()`
+   * emits SHACL shape quads; `validateWithShacl()` will consume those shapes plus
+   * ABox data quads and return a structured validation report.
+   *
    * @experimental This method is not yet implemented. As a workaround, retrieve
    * shapes via `toShacl().shaclQuads()` and pass them to an external SHACL
    * processor (e.g. `rdf-validate-shacl`).
    *
-   * @throws {Error} NOT_IMPLEMENTED — always throws until this method is implemented.
+   * @param _shapes - SHACL shape quads or an {@link OntologyBuilder} produced by `toShacl()`.
+   * @param _data - ABox instance data quads to validate against the shapes.
+   * @returns Never returns — always throws while the method is unimplemented.
+   * @throws {Error} `NOT_IMPLEMENTED` — always throws until this method is implemented.
    */
   public validateWithShacl(
     _shapes: OntologyBuilder | readonly QuadInterface[],

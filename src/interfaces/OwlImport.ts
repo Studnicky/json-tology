@@ -17,7 +17,7 @@ import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
 export interface OwlImporterOptions {
   /** Base IRI for the import session. Used when building OwlImportContext. */
   readonly 'baseIRI': string;
-  /** Additional prefix mappings merged with DEFAULT_PREFIXES. */
+  /** Additional prefix mappings merged with STANDARD_PREFIXES. */
   readonly 'prefixes'?: PrefixMap;
 }
 

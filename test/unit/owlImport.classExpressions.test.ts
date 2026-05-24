@@ -19,7 +19,7 @@ import {
 } from 'node:test';
 import { importClassExpressions } from '../../src/modules/ontology/importDispatch/ClassExpressions.js';
 import { Curie } from '../../src/modules/rdf/Curie.js';
-import { DEFAULT_PREFIXES } from '../../src/constants/PREFIXES.js';
+import { STANDARD_PREFIXES } from '../../src/constants/STANDARD_PREFIXES.js';
 import { Terms } from '../../src/modules/rdf/Terms.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { listQuad } from '../helpers/listQuad.js';
@@ -43,7 +43,7 @@ const XSD_STRING = 'http://www.w3.org/2001/XMLSchema#string';
 // Context helpers
 // ---------------------------------------------------------------------------
 
-const curie = new Curie(DEFAULT_PREFIXES);
+const curie = new Curie(STANDARD_PREFIXES);
 
 function makeCtx(classIris: string[] = [], quads: QuadInterface[] = []): OwlImportContext & {
   'unsupportedLog': Array<{ 'axiomIri': string;
@@ -59,12 +59,12 @@ function makeCtx(classIris: string[] = [], quads: QuadInterface[] = []): OwlImpo
     curie,
     'graph': SchemaGraph.fromQuads(quads, {
       'baseIRI': 'https://example.com/',
-      'prefixes': DEFAULT_PREFIXES
+      'prefixes': STANDARD_PREFIXES
     }),
     'isDatatype': () => {
       return false;
     },
-    'prefixes': DEFAULT_PREFIXES,
+    'prefixes': STANDARD_PREFIXES,
     'reportUnsupported': (axiomIri, subjectIri) => {
       unsupportedLog.push({
         axiomIri,

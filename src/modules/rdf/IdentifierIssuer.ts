@@ -33,6 +33,12 @@ export class IdentifierIssuer implements IdentifierIssuerInterface {
    *
    * `existingMap` and `counter` are primarily used by `clone()` to fork
    * an issuer with the same prefix, issued history, and counter position.
+   *
+   * @param options - Optional bag typed as {@link IdentifierIssuerOptsInterface}:
+   *   - `prefix` — string prepended to every issued identifier (default `'_:b'`).
+   *   - `counter` — starting counter value (default `0`); used by `clone()`.
+   *   - `existingMap` — seed mapping from existing identifiers to issued ids;
+   *     used by `clone()` to preserve issuance history.
    */
   constructor(options?: IdentifierIssuerOptsInterface) {
     this.prefix = options?.prefix ?? '_:b';
@@ -44,6 +50,8 @@ export class IdentifierIssuer implements IdentifierIssuerInterface {
   /**
    * Create an independent copy with the same prefix, counter value, and
    * issued mappings. Mutations to the clone do not affect the original.
+   *
+   * @returns A new `IdentifierIssuer` snapshotting the current state.
    */
   clone(): IdentifierIssuer {
     return new IdentifierIssuer({
@@ -69,6 +77,16 @@ export class IdentifierIssuer implements IdentifierIssuerInterface {
    *
    * Calling without `existing` always issues a new identifier without
    * creating a mapping — suitable for anonymous blank nodes.
+   *
+   * @param existing - Optional key to record (or look up) a stable mapping for.
+   * @returns The mapped identifier when `existing` matches a prior call,
+   *   otherwise a newly minted `prefix + counter` identifier.
+   *
+   * @example
+   * const issuer = new IdentifierIssuer();
+   * issuer.getId('a'); // '_:b0' — new mapping for 'a'
+   * issuer.getId('a'); // '_:b0' — same identifier returned
+   * issuer.getId();    // '_:b1' — anonymous, no mapping recorded
    */
   getId(existing?: string): string {
     if (existing !== undefined) {

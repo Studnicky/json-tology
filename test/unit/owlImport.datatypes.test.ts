@@ -30,7 +30,7 @@ import {
 } from 'node:test';
 import { importDatatypes } from '../../src/modules/ontology/importDispatch/Datatypes.js';
 import { Curie } from '../../src/modules/rdf/Curie.js';
-import { DEFAULT_PREFIXES } from '../../src/constants/PREFIXES.js';
+import { STANDARD_PREFIXES } from '../../src/constants/STANDARD_PREFIXES.js';
 import { Terms } from '../../src/modules/rdf/Terms.js';
 import { listQuad } from '../helpers/listQuad.js';
 import type { JsonSchemaDocumentObjectType } from '../../src/types/Schema.js';
@@ -70,7 +70,7 @@ const XSD_ENUMERATION = 'http://www.w3.org/2001/XMLSchema#enumeration';
 // Stub context
 // ---------------------------------------------------------------------------
 
-const curie = new Curie(DEFAULT_PREFIXES);
+const curie = new Curie(STANDARD_PREFIXES);
 
 function makeCtx(quads: QuadInterface[] = []): OwlImportContext & {
   'unsupportedLog': Array<{ 'axiomIri': string;
@@ -86,12 +86,12 @@ function makeCtx(quads: QuadInterface[] = []): OwlImportContext & {
     curie,
     'graph': SchemaGraph.fromQuads(quads, {
       'baseIRI': 'https://example.com/',
-      'prefixes': DEFAULT_PREFIXES
+      'prefixes': STANDARD_PREFIXES
     }),
     'isDatatype': () => {
       return true;
     },
-    'prefixes': DEFAULT_PREFIXES,
+    'prefixes': STANDARD_PREFIXES,
     'reportUnsupported': (axiomIri, subjectIri) => {
       unsupportedLog.push({
         axiomIri,

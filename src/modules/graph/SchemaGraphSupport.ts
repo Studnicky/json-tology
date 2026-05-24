@@ -3,9 +3,7 @@ import type {
   SchemaGraphSemanticsInterface, StructureWarningInterface
 } from '../../interfaces/SchemaGraph.js';
 import { GraphError } from '../../errors/GraphError.js';
-import {
-  RDFS_DOMAIN_IRI, RDFS_RANGE_IRI
-} from '../../constants/PREFIXES.js';
+import { RDFS } from '../../constants/IRI.js';
 import { ALLOF_EXTENSION_RE } from '../../constants/GRAPH_REGEXES.js';
 import {
   DEFS_POINTER_PARTS_LENGTH, KNOWN_SCHEMA_KEYWORDS,
@@ -378,8 +376,8 @@ export const SchemaGraphSupport = {
       'prefixItems': graph.indexedChildren(node, 'prefixItems'),
       'properties': propertiesMap(graph.entries(node, 'properties')),
       'propertyNamesNode': graph.child(node, 'propertyNames'),
-      'rdfsDomain': (typeof node.schema['rdfs:domain'] === 'string' ? node.schema['rdfs:domain'] : undefined) ?? (typeof node.schema[RDFS_DOMAIN_IRI] === 'string' ? (node.schema[RDFS_DOMAIN_IRI] as string) : undefined),
-      'rdfsRange': (typeof node.schema['rdfs:range'] === 'string' ? node.schema['rdfs:range'] : undefined) ?? (typeof node.schema[RDFS_RANGE_IRI] === 'string' ? (node.schema[RDFS_RANGE_IRI] as string) : undefined),
+      'rdfsDomain': (typeof node.schema['rdfs:domain'] === 'string' ? node.schema['rdfs:domain'] : undefined) ?? (typeof node.schema[RDFS.domain] === 'string' ? (node.schema[RDFS.domain] as string) : undefined),
+      'rdfsRange': (typeof node.schema['rdfs:range'] === 'string' ? node.schema['rdfs:range'] : undefined) ?? (typeof node.schema[RDFS.range] === 'string' ? (node.schema[RDFS.range] as string) : undefined),
       'readOnly': node.schema.readOnly === true,
       'recursiveAnchor': node.schema.$recursiveAnchor === true,
       'recursiveRef': typeof node.schema.$recursiveRef === 'string' ? node.schema.$recursiveRef : undefined,

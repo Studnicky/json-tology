@@ -200,7 +200,7 @@ export class SchemaGraph implements SchemaGraphInterface {
    *
    * @param quads  - Flat array of rdf/js-compatible quads (prefixed or full IRIs).
    * @param options - Optional baseIRI and additional prefix mappings merged
-   *                  with DEFAULT_PREFIXES.
+   *                  with STANDARD_PREFIXES.
    * @returns A SchemaGraphInterface backed by the supplied quads.
    */
   public static fromQuads(

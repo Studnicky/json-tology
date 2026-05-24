@@ -6,7 +6,7 @@ import type { QuadInterface } from '../../interfaces/Quad.js';
 import { Curie } from '../rdf/Curie.js';
 import { IdentifierIssuer } from '../rdf/IdentifierIssuer.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
-import { DEFAULT_PREFIXES } from '../../constants/PREFIXES.js';
+import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
 
 export abstract class BaseGraphSerializer implements GraphSerializerInterface {
   /**
@@ -56,7 +56,7 @@ export abstract class BaseGraphSerializer implements GraphSerializerInterface {
 
   public constructor(options?: { 'curie'?: CurieInterface;
     'vocabularies'?: readonly VocabularyPluginInterface[] }) {
-    this.curie = options?.curie ?? new Curie(DEFAULT_PREFIXES);
+    this.curie = options?.curie ?? new Curie({ ...STANDARD_PREFIXES });
     this.vocabularies = options?.vocabularies ?? [];
   }
 

@@ -13,15 +13,15 @@ import {
 // Internal access: vocabulary-plugin behaviour is observed at the graph level
 // (SchemaGraph construction with the plugin attached) and at the SHACL
 // serializer level. SchemaRegistry direct construction is also needed for the
-// plugin-prefix-override-default test, since JsonTology re-injects DEFAULT_PREFIXES
+// plugin-prefix-override-default test, since JsonTology re-injects STANDARD_PREFIXES
 // after vocabulary merging. These graph + registry surfaces are not part of the
 // public JsonTology API and constitute the contract for vocabulary-plugin integration.
 import { GraphShaclSerializer } from '../../src/modules/ontology/GraphShaclSerializer.js';
 import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
-// DEFAULT_PREFIXES is the canonical constant injected by JsonTology when constructing prefix maps; not re-exported.
-import { DEFAULT_PREFIXES } from '../../src/constants/PREFIXES.js';
+// STANDARD_PREFIXES is the canonical constant injected by JsonTology when constructing prefix maps; not re-exported.
+import { STANDARD_PREFIXES } from '../../src/constants/STANDARD_PREFIXES.js';
 
 const ACME_NS = 'https://acme.org/vocab#';
 
@@ -85,7 +85,7 @@ void describe('VocabularyPlugin', () => {
       assertions, name, plugin
     } of scenarios) {
       void it(name, () => {
-        // Internal access: JsonTology merges DEFAULT_PREFIXES into its own
+        // Internal access: JsonTology merges STANDARD_PREFIXES into its own
         // prefixes field and forwards them to registry.prefixes, which
         // overrides plugin prefixes. To test plugin-overrides-default
         // semantics directly, the registry is constructed without that
@@ -233,7 +233,7 @@ void describe('VocabularyPlugin', () => {
           registry.set(AcmeSchema);
 
           const curie = new Curie({
-            ...DEFAULT_PREFIXES,
+            ...STANDARD_PREFIXES,
             'acme': ACME_NS
           });
           const serializer = new GraphOntologySerializer({
@@ -297,7 +297,7 @@ void describe('VocabularyPlugin', () => {
           registry.set(AcmeSchema);
 
           const curie = new Curie({
-            ...DEFAULT_PREFIXES,
+            ...STANDARD_PREFIXES,
             'acme': ACME_NS
           });
           const serializer = new GraphShaclSerializer({

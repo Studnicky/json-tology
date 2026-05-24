@@ -18,12 +18,14 @@ import { IdentifierIssuer } from './IdentifierIssuer.js';
 import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
-import { XSD_IRI_PREFIX } from '../../constants/PREFIXES.js';
+import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { QuadFactory } from './QuadFactory.js';
 import { ProjectionIndex } from './ProjectionIndex.js';
 import type { RelationIndexInterface } from '../../interfaces/RelationIndex.js';
 import { VocabProjection } from './VocabProjection.js';
+
+const XSD_IRI_PREFIX = STANDARD_PREFIXES.xsd;
 
 function resolveTargetRef(targetNodeId: string, index: Map<string, RelationIndexInterface>): string {
   const targetEntry = index.get(targetNodeId);

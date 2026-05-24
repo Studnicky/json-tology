@@ -29,7 +29,7 @@ import type { JsonSchemaDocumentObjectType } from '../../types/Schema.js';
 import type { InvariantInterface } from '../../interfaces/Invariant.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import { Curie } from '../rdf/Curie.js';
-import { DEFAULT_PREFIXES } from '../../constants/PREFIXES.js';
+import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
 import { OwlImportError } from '../../errors/OwlImportError.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
 import { Terms } from '../rdf/Terms.js';
@@ -450,7 +450,7 @@ export class OwlImporter {
   public constructor(options: OwlImporterOptions) {
     this.baseIRI = options.baseIRI;
     this.prefixes = {
-      ...DEFAULT_PREFIXES,
+      ...STANDARD_PREFIXES,
       ...options.prefixes
     };
     this.curie = new Curie(this.prefixes);

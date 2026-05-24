@@ -29,7 +29,7 @@ import type {
 import type { QuadInterface } from '../../src/interfaces/Quad.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { Curie } from '../../src/modules/rdf/Curie.js';
-import { DEFAULT_PREFIXES } from '../../src/constants/PREFIXES.js';
+import { STANDARD_PREFIXES } from '../../src/constants/STANDARD_PREFIXES.js';
 import { Compose } from '../../src/index.js';
 import { OwlProjection } from '../../src/modules/rdf/OwlProjection.js';
 
@@ -46,7 +46,7 @@ const RANGE_IRI = 'urn:example:Item';
  */
 function makeCtx(quads: QuadInterface[]): OwlImportContext {
   const graph = SchemaGraph.fromQuads(quads, { 'baseIRI': 'urn:example' });
-  const curie = new Curie(DEFAULT_PREFIXES);
+  const curie = new Curie(STANDARD_PREFIXES);
   const unsupported: Array<{
     'axiomIri': string;
     'subjectIri': null | string;
@@ -73,7 +73,7 @@ function makeCtx(quads: QuadInterface[]): OwlImportContext {
     'isDatatype': () => {
       return false;
     },
-    'prefixes': DEFAULT_PREFIXES,
+    'prefixes': STANDARD_PREFIXES,
     'reportUnsupported': (axiomIri, subjectIri) => {
       unsupported.push({
         axiomIri,

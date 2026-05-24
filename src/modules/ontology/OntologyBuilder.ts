@@ -15,7 +15,7 @@ import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { JsonLdDatasetQuad } from '../rdf/QuadFactory.js';
 import jsonld from 'jsonld';
 import { JSONLD } from '../../constants/JSONLD.js';
-import { RDFS_SUB_CLASS_OF_IRI } from '../../constants/PREFIXES.js';
+import { RDFS } from '../../constants/IRI.js';
 import { SHACL_ARRAY_KEYS } from '../../constants/SHACL.js';
 import { BaseGraphSerializer } from './BaseGraphSerializer.js';
 import { JsonLdFormatter } from '../rdf/JsonLdFormatter.js';
@@ -117,7 +117,7 @@ export class OntologyBuilder implements OntologyBuilderInterface {
     const nodes = JsonLdFormatter.fromQuads(this.quadStore);
 
     for (const node of nodes) {
-      BaseGraphSerializer.ensureArray(node, RDFS_SUB_CLASS_OF_IRI);
+      BaseGraphSerializer.ensureArray(node, RDFS.subClassOf);
     }
 
     return {

@@ -2,7 +2,7 @@ import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import { OwlProjection } from '../rdf/OwlProjection.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
-import { RDFS_SUB_CLASS_OF_IRI } from '../../constants/PREFIXES.js';
+import { RDFS } from '../../constants/IRI.js';
 import { OWL_CORE_PREDICATES } from '../../constants/ONTOLOGY_PREDICATES.js';
 import { BaseGraphSerializer } from './BaseGraphSerializer.js';
 
@@ -13,7 +13,7 @@ export class GraphOntologySerializer extends BaseGraphSerializer {
 
   protected postProcessNodes(nodes: Array<Record<string, unknown>>): void {
     for (const node of nodes) {
-      BaseGraphSerializer.ensureArray(node, RDFS_SUB_CLASS_OF_IRI);
+      BaseGraphSerializer.ensureArray(node, RDFS.subClassOf);
     }
   }
 

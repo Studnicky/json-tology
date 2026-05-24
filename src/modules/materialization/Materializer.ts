@@ -355,11 +355,16 @@ export class Materializer implements MaterializerInterface {
   /**
    * Project validated data into ABox RDF quads for ontology serialization.
    *
+   * Runs the engine, validates the result, then projects ABox quads. Internally
+   * calls `appendSameAsQuads` so direct callers receive the same symmetric
+   * `owl:sameAs` assertions emitted by the `JsonTology.toQuads()` facade —
+   * there is no bypass; both paths produce equivalent output.
+   *
    * @param schema - Schema object with $id
    * @param data - Data to project
    * @param baseIRI - Base IRI for generated quad subjects
-   * @param options - Optional overrides: iriFor mints subject IRIs per object;
-   *                  graphIRI sets the graph field on all quads
+   * @param options - Optional overrides: `iriFor` mints subject IRIs per object;
+   *                  `graphIRI` sets the graph field on all quads
    * @returns Array of RDF quads representing the ABox projection
    * @throws {@link MaterializationError} When the data fails validation
    */
