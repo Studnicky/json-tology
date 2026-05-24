@@ -23,9 +23,13 @@
  * CI matrix), every test in this file is skipped rather than failed.
  */
 
-import { describe, it } from 'node:test';
+import {
+  describe, it
+} from 'node:test';
 import assert from 'node:assert/strict';
-import { Parser, Writer } from 'n3';
+import {
+  Parser, Writer
+} from 'n3';
 import { Lists } from '../../src/index.js';
 import type { QuadInterface } from '../../src/interfaces/index.js';
 import {
@@ -37,16 +41,14 @@ import {
   ReviewSchema
 } from '../../examples/docs/bookstore/index.js';
 
-interface N3ReasonerFn {
-  (data: string, query: string): Promise<string>;
-}
+type N3ReasonerFn = (data: string, query: string) => Promise<string>;
 
 async function tryLoadN3Reasoner(): Promise<N3ReasonerFn | null> {
   try {
     const mod = await import('eyereasoner');
 
-    if (typeof (mod as { n3reasoner?: unknown }).n3reasoner === 'function') {
-      return (mod as { n3reasoner: N3ReasonerFn }).n3reasoner;
+    if (typeof (mod as { 'n3reasoner'?: unknown }).n3reasoner === 'function') {
+      return (mod as { 'n3reasoner': N3ReasonerFn }).n3reasoner;
     }
 
     return null;
@@ -124,18 +126,10 @@ async function runReasoner(): Promise<readonly QuadInterface[]> {
   }
 
   const allQuads: QuadInterface[] = [
-    ...bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer, {
-      'iriFor': bastianIri
-    }),
-    ...bookstoreEntities.toQuads(BookSchema, aboxFixtures.rareBook, {
-      'iriFor': rareBookIri
-    }),
-    ...bookstoreEntities.toQuads(OrderSchema, aboxFixtures.order, {
-      'iriFor': `urn:bookstore:order:${aboxFixtures.order.id}`
-    }),
-    ...bookstoreEntities.toQuads(ReviewSchema, aboxFixtures.review, {
-      'iriFor': `urn:bookstore:review:${aboxFixtures.review.id}`
-    })
+    ...bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer, { 'iriFor': bastianIri }),
+    ...bookstoreEntities.toQuads(BookSchema, aboxFixtures.rareBook, { 'iriFor': rareBookIri }),
+    ...bookstoreEntities.toQuads(OrderSchema, aboxFixtures.order, { 'iriFor': `urn:bookstore:order:${aboxFixtures.order.id}` }),
+    ...bookstoreEntities.toQuads(ReviewSchema, aboxFixtures.review, { 'iriFor': `urn:bookstore:review:${aboxFixtures.review.id}` })
   ];
 
   const factsN3 = await quadsToN3(allQuads);
@@ -144,7 +138,7 @@ async function runReasoner(): Promise<readonly QuadInterface[]> {
 
   const parser = new Parser({ 'format': 'N3' });
 
-  return Lists.narrowExternalQuads(parser.parse(resultN3) as readonly unknown[]);
+  return Lists.narrowExternalQuads(parser.parse(resultN3));
 }
 
 void describe('EYE reasoner — bookstore ABox e2e inference', async () => {
