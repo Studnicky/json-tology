@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.1] - 2026-05-24
+
+### Changed
+
+- `examples/e2e-reasoning.ts` rewritten end-to-end on the bookstore
+  domain. Validates the canonical Bastian/`Die unendliche Geschichte`
+  fixtures, emits TBox + SHACL, projects four fixtures to rdf/js quads
+  via `toQuads`, serialises them with the `n3` Writer, appends three N3
+  inference rules that chain through `Customer#id` / `Book#isbn` so
+  inferred predicates land on instance IRIs, and hands data + rules to
+  EYE (WASM). The demo now derives that Bastian is a verified reviewer
+  of the rare 1979 Thienemann printing — derived purely from
+  json-tology's ABox output plus the three rules, with no hand-rolled N3.
+- Dependency bumps via dependabot:
+  - `qs` 6.15.0 → 6.15.2 (patch, runtime).
+  - `actions/upload-pages-artifact` 4 → 5 (CI infrastructure).
+  - `eslint-ecosystem` group (3 packages, dev tooling).
+  - `minor-and-patch` group (5 packages: `@types/node`, `cytoscape`,
+    `eyereasoner`, `tsx`, `vitepress-sidebar`).
+
+No source-code changes; tests, build, lint all green. Runtime and API
+surface identical to 0.15.0.
+
 ## [0.15.0] - 2026-05-24
 
 ### Added

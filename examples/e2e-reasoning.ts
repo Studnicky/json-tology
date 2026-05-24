@@ -1,285 +1,279 @@
 /**
- * e2e-reasoning.ts — Graph + ABox + EYE reasoner + round-trip
+ * e2e-reasoning.ts — bookstore ABox + EYE reasoner end-to-end
  *
- * Demonstrates that the ontology output from json-tology feeds a real
- * N3 reasoner (EYE via WASM) to derive social-network inferences, and
- * that reasoner output can be rehydrated back into typed JS objects.
+ * Demonstrates that json-tology's ABox output drives a real OWL/N3 reasoner.
  *
  * Pipeline:
- *   1. Registers FOAF schemas, validates instances
- *   2. Extracts TBox (OWL) and SHACL shapes
- *   3. Projects ABox instances -> quads -> fromQuads round-trip
- *   4. Serializes to N3, runs EYE reasoner
- *   5. Prints derived social connections
+ *   1. Load the canonical bookstore registry and ABox fixtures.
+ *   2. Validate Bastian Balthazar Bux's customer record, his order of the
+ *      rare 1979 Thienemann printing of `Die unendliche Geschichte`, the
+ *      rare book itself, and his review.
+ *   3. Emit the TBox (OWL classes and properties) and SHACL shapes — display
+ *      the class IRIs and the property-shape paths that the registry produced.
+ *   4. Project each fixture to rdf/js quads via `toQuads()`.
+ *   5. Serialize those quads to N3 using the `n3` Writer.
+ *   6. Append three bookstore-natural N3 inference rules:
+ *        a. Order line items → customer purchased the book.
+ *        b. Review → customer reviewed the book.
+ *        c. Purchased ∧ reviewed → verified reviewer of the book.
+ *   7. Hand data + rules to EYE (WASM) via `n3reasoner`.
+ *   8. Parse the reasoner output back as rdf/js quads and display the
+ *      inferred predicates grouped by subject.
  *
  * Run: npm run build && tsx examples/e2e-reasoning.ts
  */
 
 import {
-  JsonTology, Lists
-} from '../src/index.js';
-import type { InferType } from '../src/types/index.js';
-import type { QuadInterface } from '../src/interfaces/index.js';
+  Parser, Writer
+} from 'n3';
 import { n3reasoner } from 'eyereasoner';
-import { Parser } from 'n3';
 import {
-  allSchemas, foafOrganizations, foafPersons,
-  OrganizationSchema, PersonSchema
-} from '../test/fixtures/foaf.js';
+  aboxFixtures,
+  BookSchema,
+  bookstoreEntities,
+  CustomerSchema,
+  OrderSchema,
+  ReviewSchema
+} from './docs/bookstore/index.js';
+import { Lists } from '../src/index.js';
+import type { QuadInterface } from '../src/interfaces/index.js';
 
 // ---------------------------------------------------------------------------
-// 1. Register and validate
+// 1. Validate every fixture against its registered schema.
 // ---------------------------------------------------------------------------
 
-const jt = JsonTology.create({
-  'baseIRI': 'http://xmlns.com/foaf',
-  'castTypes': true,
-  'schemas': allSchemas
-});
-
-// Validate persons
-for (const person of foafPersons) {
-  const errs = jt.validate(PersonSchema.$id, person);
-
-  if (errs.length > 0) {
-    const givenName = typeof person.givenName === 'string' ? person.givenName : 'unknown';
-
-    throw new Error(`Invalid person ${givenName}: ${errs.items.map((error) => {
-      return error.message;
-    }).join(', ')}`);
-  }
-}
-for (const org of foafOrganizations) {
-  const errs = jt.validate(OrganizationSchema.$id, org);
-
-  if (errs.length > 0) {
-    const name = typeof org.name === 'string' ? org.name : 'unknown';
-
-    throw new Error(`Invalid organization ${name}: ${errs.items.map((error) => {
-      return error.message;
-    }).join(', ')}`);
-  }
+interface ValidationTarget {
+  readonly 'data': unknown;
+  readonly 'label': string;
+  readonly 'schemaId': string;
 }
 
-console.log('All instances validated.\n');
+const validations: readonly ValidationTarget[] = [
+  {
+    'data': aboxFixtures.customer,
+    'label': 'customer',
+    'schemaId': CustomerSchema.$id
+  },
+  {
+    'data': aboxFixtures.rareBook,
+    'label': 'rareBook',
+    'schemaId': BookSchema.$id
+  },
+  {
+    'data': aboxFixtures.order,
+    'label': 'order',
+    'schemaId': OrderSchema.$id
+  },
+  {
+    'data': aboxFixtures.review,
+    'label': 'review',
+    'schemaId': ReviewSchema.$id
+  }
+];
+
+for (const target of validations) {
+  const errors = bookstoreEntities.validate(target.schemaId, target.data);
+
+  if (errors.length > 0) {
+    throw new Error(`Invalid ${target.label}: ${errors.items.map((error) => {
+      return error.message;
+    }).join('; ')}`);
+  }
+}
+
+console.log('All bookstore fixtures validated.\n');
 
 // ---------------------------------------------------------------------------
-// 2. TBox — OWL ontology
+// 2. TBox — list the OWL classes registered for the bookstore.
+//    JSON-LD output carries full IRIs in @type; filter accordingly.
 // ---------------------------------------------------------------------------
 
-const ontology = jt.ontology();
-const tbox = ontology.jsonLdObject();
-const tboxGraph = (tbox['@graph'] ?? []) as Array<Record<string, unknown>>;
+const OWL_CLASS = 'http://www.w3.org/2002/07/owl#Class';
+const SH_NODE_SHAPE = 'http://www.w3.org/ns/shacl#NodeShape';
+
+interface JsonLdNode {
+  readonly '@id'?: string;
+  readonly '@type'?: readonly string[] | string;
+}
+
+function hasType(node: JsonLdNode, target: string): boolean {
+  const value = node['@type'];
+
+  if (typeof value === 'string') {
+    return value === target;
+  }
+
+  if (Array.isArray(value)) {
+    return value.includes(target);
+  }
+
+  return false;
+}
+
+const ontology = bookstoreEntities.ontology();
+const tboxGraph = ontology.jsonLdObject()['@graph'] as readonly JsonLdNode[] | undefined;
 
 console.log('=== TBox (OWL classes) ===');
-for (const node of tboxGraph) {
-  if (node['@type'] === 'owl:Class') {
-    console.log(' ', node['@id']);
+for (const node of tboxGraph ?? []) {
+  if (hasType(node, OWL_CLASS) && typeof node['@id'] === 'string') {
+    console.log(` ${node['@id']}`);
   }
 }
 
 // ---------------------------------------------------------------------------
-// 3. SHACL shapes
+// 3. SHACL shapes — list the node-shape IRIs.
 // ---------------------------------------------------------------------------
 
-const shacl = ontology.shaclObject();
-const shaclGraph = (shacl['@graph'] ?? []) as Array<Record<string, unknown>>;
+const shaclGraph = ontology.shaclObject()['@graph'] as readonly JsonLdNode[] | undefined;
 
 console.log('\n=== SHACL shapes ===');
-for (const node of shaclGraph) {
-  const nodeType = node['@type'];
-
-  if (nodeType === 'sh:NodeShape' || (Array.isArray(nodeType) && nodeType.includes('sh:NodeShape'))) {
-    console.log(' ', node['@id']);
+for (const node of shaclGraph ?? []) {
+  if (hasType(node, SH_NODE_SHAPE) && typeof node['@id'] === 'string') {
+    console.log(` ${node['@id']}`);
   }
 }
 
 // ---------------------------------------------------------------------------
-// 4. ABox round-trip: JS -> quads -> fromQuads -> JS
+// 4. Project each fixture to rdf/js quads via toQuads.
+//    Use Skolemize.fromProperty to mint stable IRIs from each instance's
+//    primary identifier so the reasoner output references human-readable IRIs.
 // ---------------------------------------------------------------------------
 
-console.log('\n=== ABox round-trip ===');
+const customerQuads = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer, { 'iriFor': `urn:bookstore:customer:${aboxFixtures.customer.id}` });
 
-let allQuads: QuadInterface[] = [];
+const bookQuads = bookstoreEntities.toQuads(BookSchema, aboxFixtures.rareBook, { 'iriFor': `urn:bookstore:book:${aboxFixtures.rareBook.isbn}` });
 
-for (const person of foafPersons) {
-  const quads = jt.materializer.projectAbox(
-    PersonSchema,
-    person,
-    'http://xmlns.com/foaf'
-  );
+const orderQuads = bookstoreEntities.toQuads(OrderSchema, aboxFixtures.order, { 'iriFor': `urn:bookstore:order:${aboxFixtures.order.id}` });
 
-  allQuads = [
-    ...allQuads,
-    ...quads
-  ];
-}
+const reviewQuads = bookstoreEntities.toQuads(ReviewSchema, aboxFixtures.review, { 'iriFor': `urn:bookstore:review:${aboxFixtures.review.id}` });
 
-type Person = InferType<typeof PersonSchema>;
-const rehydrated = jt.fromQuads(PersonSchema.$id, allQuads) as Person[];
+const allQuads: QuadInterface[] = [
+  ...customerQuads,
+  ...bookQuads,
+  ...orderQuads,
+  ...reviewQuads
+];
 
-console.log('Original persons:', foafPersons.length);
-console.log('Rehydrated persons:', rehydrated.length);
-for (const person of rehydrated) {
-  const givenName = typeof person.givenName === 'string' ? person.givenName : 'Unknown';
-  const familyName = typeof person.familyName === 'string' ? person.familyName : 'Unknown';
-  const mbox = typeof person.mbox === 'string' ? person.mbox : 'Unknown';
-
-  console.log(`  ${givenName} ${familyName} (${mbox})`);
-}
+console.log(`\n=== ABox quads emitted ===\n ${allQuads.length} quads across 4 fixtures.`);
 
 // ---------------------------------------------------------------------------
-// 5. Serialize to N3, run EYE reasoner
+// 5. Serialize quads to N3 text.
+//    The n3 Writer accepts rdf/js quads directly.
 // ---------------------------------------------------------------------------
 
-const FOAF = 'http://xmlns.com/foaf/0.1/';
+async function quadsToN3(quads: readonly QuadInterface[]): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const writer = new Writer({ 'format': 'N3' });
 
-function factsToN3(): string {
-  const lines: string[] = [
-    `@prefix foaf: <${FOAF}>.`,
-    '@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.',
-    ''
-  ];
+    writer.addQuads([...quads] as never);
+    writer.end((err: Error | null, result: string) => {
+      if (err) {
+        reject(err);
 
-  for (const person of foafPersons) {
-    const givenName = typeof person.givenName === 'string' ? person.givenName : '';
-    const familyName = typeof person.familyName === 'string' ? person.familyName : '';
-    const knows = Array.isArray(person.knows) ? person.knows : [];
-    const pid = givenName.toLowerCase();
-
-    lines.push(`foaf:${pid} rdf:type foaf:Person.`);
-    lines.push(`foaf:${pid} foaf:givenName "${givenName}".`);
-    lines.push(`foaf:${pid} foaf:familyName "${familyName}".`);
-    for (const known of knows) {
-      const knownStr = typeof known === 'string' ? known : '';
-
-      lines.push(`foaf:${pid} foaf:knows foaf:${knownStr}.`);
-    }
-  }
-  lines.push('');
-  for (const org of foafOrganizations) {
-    const name = typeof org.name === 'string' ? org.name : '';
-    const member = Array.isArray(org.member) ? org.member : [];
-    const oid = name.toLowerCase().replaceAll(/\s+/gu, '-');
-
-    lines.push(`foaf:${oid} rdf:type foaf:Organization.`);
-    lines.push(`foaf:${oid} foaf:name "${name}".`);
-    for (const m of member) {
-      const memberStr = typeof m === 'string' ? m : '';
-
-      lines.push(`foaf:${oid} foaf:hasMember foaf:${memberStr}.`);
-    }
-  }
-
-  return lines.join('\n');
-}
-
-function rulesToN3(): string {
-  return `
-@prefix foaf: <${FOAF}>.
-@prefix log: <http://www.w3.org/2000/10/swap/log#>.
-
-{
-  ?a foaf:knows ?b.
-} => {
-  ?b foaf:knows ?a.
-}.
-
-{
-  ?a foaf:knows ?b.
-  ?b foaf:knows ?c.
-} => {
-  ?a foaf:couldCollaborateWith ?c.
-}.
-
-{
-  ?org foaf:hasMember ?a.
-  ?org foaf:hasMember ?b.
-  ?a log:notEqualTo ?b.
-} => {
-  ?a foaf:knows ?b.
-}.
-`;
-}
-
-function queryN3(): string {
-  return `
-@prefix foaf: <${FOAF}>.
-{ ?a foaf:knows ?b } => { ?a foaf:knows ?b }.
-{ ?a foaf:couldCollaborateWith ?b } => { ?a foaf:couldCollaborateWith ?b }.
-`;
-}
-
-// ---------------------------------------------------------------------------
-// 6. Print derived facts — inferred social connections
-// ---------------------------------------------------------------------------
-
-async function reason() {
-  const dataN3 = `${factsToN3()}\n${rulesToN3()}`;
-
-  console.log('\n=== Running EYE reasoner ===');
-  const resultN3 = await n3reasoner(dataN3, queryN3());
-
-  function parseN3Quads(n3Text: string): QuadInterface[] {
-    const N3Parser = Parser as unknown as new (opts: Record<string, string>) => { 'parse': (input: string) => unknown[] };
-    const parser = new N3Parser({ 'format': 'text/n3' });
-
-    return Lists.narrowExternalQuads(parser.parse(n3Text));
-  }
-
-  const moduleQuads = parseN3Quads(resultN3);
-
-  const bySubject = new Map<string, QuadInterface[]>();
-
-  for (const quad of moduleQuads) {
-    const subjectValue = quad.subject.value;
-    let list = bySubject.get(subjectValue);
-
-    if (!list) {
-      list = []; bySubject.set(subjectValue, list);
-    }
-    list.push(quad);
-  }
-
-  const nameOf: Record<string, string> = {};
-
-  for (const person of foafPersons) {
-    const givenName = typeof person.givenName === 'string' ? person.givenName : '';
-
-    nameOf[FOAF + givenName.toLowerCase()] = givenName;
-  }
-
-  console.log('\n=== Inferred social connections ===');
-  for (const [
-    subject,
-    quads
-  ] of bySubject) {
-    const personName = nameOf[subject] ?? subject;
-
-    for (const quad of quads) {
-      if (quad.predicate.value === `${FOAF}knows`) {
-        const targetName = nameOf[quad.object.value] ?? quad.object.value;
-
-        console.log(`  ${personName} knows ${targetName}`);
+        return;
       }
-    }
-    for (const quad of quads) {
-      if (quad.predicate.value === `${FOAF}couldCollaborateWith`) {
-        const targetName = nameOf[quad.object.value] ?? quad.object.value;
-
-        console.log(`  ${personName} could collaborate with ${targetName}`);
-      }
-    }
-  }
-
-  const carolKnowsBob = moduleQuads.some((quad) => {
-    return quad.subject.value === `${FOAF}carol`
-      && quad.predicate.value === `${FOAF}knows`
-      && quad.object.value === `${FOAF}bob`;
+      resolve(result);
+    });
   });
-
-  console.log(`\n  Carol ${carolKnowsBob ? 'DOES' : 'does NOT'} know Bob`);
-  console.log('  (Carol knows Alice+Bob explicitly; symmetric rule confirms reverse)');
 }
 
-await reason();
+// ---------------------------------------------------------------------------
+// 6. Bookstore-natural inference rules.
+//    Order#customerId / Review#customerId / OrderLine#bookIsbn carry literal
+//    foreign keys, not instance IRIs. Each rule joins those literals back to
+//    the corresponding Customer#id / Book#isbn instance predicate so the
+//    derived `:purchased`, `:reviewed`, and `:isVerifiedReviewerOf` triples
+//    land on instance IRIs (valid N3 subjects/objects).
+// ---------------------------------------------------------------------------
+
+const PURCHASED = 'urn:example:purchased';
+const REVIEWED = 'urn:example:reviewed';
+const VERIFIED = 'urn:example:isVerifiedReviewerOf';
+
+function rulesN3(): string {
+  return `
+{
+  ?customer <urn:bookstore:Customer#id>          ?customerId.
+  ?order    <urn:bookstore:Order#customerId>     ?customerId.
+  ?order    <urn:bookstore:Order#items>          ?line.
+  ?line     <urn:bookstore:OrderLine#bookIsbn>   ?isbn.
+  ?book     <urn:bookstore:Book#isbn>            ?isbn.
+} => {
+  ?customer <${PURCHASED}> ?book.
+}.
+
+{
+  ?customer <urn:bookstore:Customer#id>          ?customerId.
+  ?review   <urn:bookstore:Review#customerId>    ?customerId.
+  ?review   <urn:bookstore:Review#bookIsbn>      ?isbn.
+  ?book     <urn:bookstore:Book#isbn>            ?isbn.
+} => {
+  ?customer <${REVIEWED}> ?book.
+}.
+
+{
+  ?customer <${PURCHASED}> ?book.
+  ?customer <${REVIEWED}>  ?book.
+} => {
+  ?customer <${VERIFIED}> ?book.
+}.
+`;
+}
+
+// ---------------------------------------------------------------------------
+// 7. Run EYE with data + rules; ask it to surface every derived predicate.
+// ---------------------------------------------------------------------------
+
+const factsN3 = await quadsToN3(allQuads);
+const dataN3 = `${factsN3}\n${rulesN3()}`;
+
+const queryN3 = `
+@prefix ex: <urn:example:>.
+{ ?customer <${PURCHASED}> ?isbn } => { ?customer <${PURCHASED}> ?isbn }.
+{ ?customer <${REVIEWED}>  ?isbn } => { ?customer <${REVIEWED}>  ?isbn }.
+{ ?customer <${VERIFIED}>  ?isbn } => { ?customer <${VERIFIED}>  ?isbn }.
+`;
+
+console.log('\n=== Running EYE reasoner over toQuads ABox ===');
+const resultN3 = await n3reasoner(dataN3, queryN3);
+
+// ---------------------------------------------------------------------------
+// 8. Parse reasoner output and display the inferred facts.
+// ---------------------------------------------------------------------------
+
+const parser = new Parser({ 'format': 'N3' });
+const parsed = parser.parse(resultN3) as readonly unknown[];
+const inferredQuads = Lists.narrowExternalQuads(parsed);
+
+console.log('\n=== Inferred facts ===');
+for (const quad of inferredQuads) {
+  const predicate = quad.predicate.value;
+
+  if (predicate === PURCHASED || predicate === REVIEWED || predicate === VERIFIED) {
+    const labels: Record<string, string> = {
+      [PURCHASED]: 'purchased',
+      [REVIEWED]: 'reviewed',
+      [VERIFIED]: 'isVerifiedReviewerOf'
+    };
+    const label = labels[predicate];
+
+    console.log(`  ${quad.subject.value}  ${label}  ${quad.object.value}`);
+  }
+}
+
+const bastianIri = `urn:bookstore:customer:${aboxFixtures.customer.id}`;
+const rareBookIri = `urn:bookstore:book:${aboxFixtures.rareBook.isbn}`;
+
+const expectedVerified = inferredQuads.some((quad) => {
+  return quad.predicate.value === VERIFIED
+    && quad.subject.value === bastianIri
+    && quad.object.value === rareBookIri;
+});
+
+console.log(`\n  Bastian ${expectedVerified ? 'IS' : 'is NOT'} a verified reviewer of`
+  + ' the 1979 Thienemann printing — derived purely from json-tology ABox quads'
+  + ' + three N3 rules consumed by EYE.');
+
+if (!expectedVerified) {
+  process.exitCode = 1;
+}
