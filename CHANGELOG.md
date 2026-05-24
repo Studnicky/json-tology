@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.2] - 2026-05-24
+
+### Added
+
+- `test/e2e/eyeReasoner.test.ts` promotes the former
+  `examples/e2e-reasoning.ts` walkthrough into an asserted e2e test.
+  Verifies that json-tology's ABox output drives the EYE OWL/N3 reasoner
+  end-to-end against the canonical bookstore domain. Four `it` blocks
+  cover `:purchased`, `:reviewed`, `:isVerifiedReviewerOf`, and absence
+  of literal-subject leakage. Suite is skipped when the optional
+  `eyereasoner` peer dependency is absent.
+
+### Changed
+
+- `test/e2e/ontologyRoundTrip.test.ts` rewritten to use the canonical
+  bookstore domain instead of the inline HR domain. Every e2e test now
+  lives on the same bookstore narrative (Bastian Balthazar Bux's order
+  of the 1979 Thienemann printing of `Die unendliche Geschichte`). All
+  31 tests preserved and translated; file shrunk from 1,038 → 715 lines.
+- `eyereasoner` moved from `devDependencies` to optional `peerDependencies`
+  (`peerDependenciesMeta.optional: true`). Consumers who don't use the
+  reasoner pay no install cost; the e2e test dynamic-imports the package
+  and skips its suite when absent.
+
+### Removed
+
+- `examples/e2e-reasoning.ts` — promoted to an asserted e2e test
+  (see Added).
+
 ## [0.15.1] - 2026-05-24
 
 ### Changed
