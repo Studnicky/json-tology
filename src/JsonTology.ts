@@ -669,30 +669,6 @@ export class JsonTology<TMap = Record<never, never>> {
   }
 
   /**
-   * Compact a full IRI to its CURIE form using the registry's merged prefix map.
-   *
-   * @param iri - A full IRI such as `http://www.w3.org/1999/02/22-rdf-syntax-ns#type`.
-   * @returns The CURIE form when a prefix matches (e.g. `rdf:type`); otherwise the input unchanged.
-   */
-  public toCurie(iri: string): string {
-    return this.curie.compact(iri);
-  }
-
-  /**
-   * Expand a CURIE to its full IRI using the registry's merged prefix map.
-   *
-   * @param value - A CURIE such as `rdf:type` (or any value; non-CURIE strings pass through).
-   * @returns The expanded full IRI when the prefix is known; otherwise the input unchanged.
-   */
-  public fromCurie(value: string): string {
-    return this.curie.expand(value);
-  }
-
-  // ---------------------------------------------------------------------------
-  // Loader resolution (private)
-  // ---------------------------------------------------------------------------
-
-  /**
    * Registers a compute function for a property marked `jt:computed: true`.
    *
    * @param schemaId - The `$id` of the schema owning the computed property.
@@ -708,6 +684,11 @@ export class JsonTology<TMap = Record<never, never>> {
   public addComputed(schemaId: keyof TMap & string, name: string, fn: ComputedFnType): void {
     this.registry.computedStore.add(schemaId, name, fn);
   }
+
+  // ---------------------------------------------------------------------------
+  // Loader resolution (private)
+  // ---------------------------------------------------------------------------
+
   /**
    * Registers a cross-field invariant for a schema.
    *
@@ -846,6 +827,15 @@ export class JsonTology<TMap = Record<never, never>> {
    */
   public findDuplicates<TKey extends string = keyof TMap & string>(): ReadonlyArray<DuplicateReportEntryType<TKey>> {
     return this.registry.findDuplicates() as ReadonlyArray<DuplicateReportEntryType<TKey>>;
+  }
+  /**
+   * Expand a CURIE to its full IRI using the registry's merged prefix map.
+   *
+   * @param value - A CURIE such as `rdf:type` (or any value; non-CURIE strings pass through).
+   * @returns The expanded full IRI when the prefix is known; otherwise the input unchanged.
+   */
+  public fromCurie(value: string): string {
+    return this.curie.expand(value);
   }
   // ---------------------------------------------------------------------------
   // Validation
@@ -1057,7 +1047,6 @@ export class JsonTology<TMap = Record<never, never>> {
       partial
     );
   }
-
   /**
    * Generates ontology output (OWL + SHACL) derived from all registered schemas.
    *
@@ -1098,6 +1087,7 @@ export class JsonTology<TMap = Record<never, never>> {
   public registerAnonymous(schema: Record<string, unknown>): string {
     return this.registry.registerAnonymous(schema);
   }
+
   // ---------------------------------------------------------------------------
   // Materialization
   // ---------------------------------------------------------------------------
@@ -1129,7 +1119,6 @@ export class JsonTology<TMap = Record<never, never>> {
   private resolveAllRefs(loader: LoaderType): Promise<void> {
     return this.refLoader.resolveAll(loader);
   }
-
   /**
    * Record an `owl:sameAs` assertion between two individuals.
    *
@@ -1219,6 +1208,15 @@ export class JsonTology<TMap = Record<never, never>> {
     }
 
     return this.registry.subschemaAt(parentId, pointer);
+  }
+  /**
+   * Compact a full IRI to its CURIE form using the registry's merged prefix map.
+   *
+   * @param iri - A full IRI such as `http://www.w3.org/1999/02/22-rdf-syntax-ns#type`.
+   * @returns The CURIE form when a prefix matches (e.g. `rdf:type`); otherwise the input unchanged.
+   */
+  public toCurie(iri: string): string {
+    return this.curie.compact(iri);
   }
 
   /**
