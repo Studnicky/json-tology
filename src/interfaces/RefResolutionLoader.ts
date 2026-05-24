@@ -4,6 +4,9 @@
  * Walks all registered schemas, calls the loader for every unregistered
  * cross-schema IRI, and recurses until the registry is fully closed under
  * $ref. Throws `GraphError('REF_UNRESOLVED')` when the loader returns null.
+ *
+ * @internal — not part of the public package surface; consumers use
+ * `LoaderType` from `json-tology/types` and `JsonTology.prefetch` instead.
  */
 
 import type { LoaderType } from '../types/Loader.js';

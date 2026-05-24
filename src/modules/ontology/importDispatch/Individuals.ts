@@ -12,13 +12,22 @@
  *
  * Bucket strategy: registry-level (named individuals are collected into the
  * `individuals` array; owl:sameAs pairs flow into `sameAs`).
+ *
+ * Graph-native traversal:
+ * - rdf:type / property-assertion quads → `ctx.graph.allRelations()`
+ * - `owl:AllDifferent` / `owl:hasKey` list traversal → `ctx.graph.collectList`
+ * - `owl:NegativePropertyAssertion` blank-node sibling lookup →
+ *   `ctx.graph.relationsForSubject`
+ * - Literal language / datatype tags are read directly from the relation
+ *   (`relation.termType === 'Literal'`, `relation.datatype`, `relation.language`).
  */
 
 import type { QuadInterface } from '../../../interfaces/Quad.js';
 import type {
   OwlImportContext, OwlImportFragment
 } from '../../../interfaces/OwlImport.js';
-import { Lists } from '../../rdf/Lists.js';
+import type { SchemaGraphRelationInterface } from '../../../interfaces/SchemaGraph.js';
+import { Terms } from '../../rdf/Terms.js';
 import { decodeLiteral } from '../../rdf/Terms.js';
 import type { InvariantInterface } from '../../../interfaces/Invariant.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
@@ -91,191 +100,66 @@ const TYPE_PREDICATES: ReadonlySet<string> = new Set([
 ]);
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Helpers — read from graph relations
 // ---------------------------------------------------------------------------
 
 /**
- * Returns true when a quad's predicate matches any IRI in the given set.
+ * Returns true when the relation's predicate matches any IRI in the set.
  */
-function predicateIn(quad: QuadInterface, set: ReadonlySet<string>): boolean {
-  return set.has(quad.predicate.value);
+function predicateIn(relation: SchemaGraphRelationInterface, set: ReadonlySet<string>): boolean {
+  return set.has(relation.predicate);
 }
 
 /**
- * Returns true when a quad's object is a NamedNode matching any IRI in the set.
+ * Returns true when the relation's target is a NamedNode IRI in the set.
+ * Accepts both string and node-shape targets.
  */
-function objectIriIn(quad: QuadInterface, set: ReadonlySet<string>): boolean {
-  return quad.object.termType === 'NamedNode' && set.has(quad.object.value);
+function targetIriIn(relation: SchemaGraphRelationInterface, set: ReadonlySet<string>): boolean {
+  if (relation.termType !== 'NamedNode') {
+    return false;
+  }
+
+  const target = typeof relation.target === 'string' ? relation.target : relation.target.id;
+
+  return set.has(target);
 }
 
 /**
- * Collect the IRI string value of a named-node object, or null.
+ * Extract the IRI string of a NamedNode relation target, or null.
  */
-function namedNodeValue(quad: QuadInterface): null | string {
-  if (quad.object.termType === 'NamedNode') {
-    return quad.object.value;
+function namedNodeTarget(relation: SchemaGraphRelationInterface): null | string {
+  if (relation.termType !== 'NamedNode') {
+    return null;
   }
 
-  return null;
+  return typeof relation.target === 'string' ? relation.target : relation.target.id;
 }
 
 /**
- * Collect the raw JS value of a literal object.
+ * Extract the typed JS value of a Literal relation target. Reconstructs the
+ * literal from the relation's preserved `datatype` and `language` fields and
+ * decodes via the canonical `decodeLiteral` helper, returning a number /
+ * boolean / Date / string per the XSD datatype.
  */
-function literalValue(quad: QuadInterface): unknown {
-  if (quad.object.termType === 'Literal') {
-    return decodeLiteral(quad.object);
+function literalTarget(relation: SchemaGraphRelationInterface): unknown {
+  if (relation.termType === 'Literal') {
+    const rawValue = typeof relation.target === 'string' ? relation.target : relation.target.id;
+    const literalTerm = Terms.literal(rawValue, {
+      'datatype': Terms.iri(relation.datatype ?? ''),
+      'language': relation.language ?? ''
+    });
+
+    return decodeLiteral(literalTerm);
   }
 
-  return quad.object.termType === 'NamedNode' ? quad.object.value : undefined;
+  return undefined;
 }
 
 /**
- * Collect IRI members from a quad whose object is an RDF list head.
- *
- * Walks the standard `rdf:first` / `rdf:rest` chain rooted at the object
- * via `Lists.collect` and returns the IRIs of every NamedNode item.
- * Returns an empty array if the object is not a list head or no items
- * are NamedNodes.
+ * Resolve the IRI/bnode-id form of a relation target regardless of shape.
  */
-function listIris(quad: QuadInterface, allQuads: readonly QuadInterface[]): string[] {
-  const head = quad.object;
-
-  if (head.termType !== 'NamedNode' && head.termType !== 'BlankNode') {
-    return [];
-  }
-
-  const items = Lists.collect(head, allQuads);
-  const iris: string[] = [];
-
-  for (const item of items) {
-    if (item.termType === 'NamedNode') {
-      iris.push(item.value);
-    }
-  }
-
-  return iris;
-}
-
-/**
- * Build a map from subject IRI → all quads with that subject.
- */
-function indexBySubject(quads: QuadInterface[]): Map<string, QuadInterface[]> {
-  const index = new Map<string, QuadInterface[]>();
-
-  for (const quad of quads) {
-    const subjectIri = quad.subject.value;
-    let list = index.get(subjectIri);
-
-    if (list === undefined) {
-      list = [];
-      index.set(subjectIri, list);
-    }
-    list.push(quad);
-  }
-
-  return index;
-}
-
-// ---------------------------------------------------------------------------
-// Collect named individual IRIs
-// ---------------------------------------------------------------------------
-
-/**
- * Collect the set of subject IRIs that are declared as owl:NamedIndividual.
- */
-function collectNamedIndividualIris(quads: QuadInterface[]): Set<string> {
-  const iris = new Set<string>();
-
-  for (const quad of quads) {
-    if (
-      TYPE_PREDICATES.has(quad.predicate.value)
-      && objectIriIn(quad, NAMED_INDIVIDUAL_IRIS)
-      && quad.subject.termType === 'NamedNode'
-    ) {
-      iris.add(quad.subject.value);
-    }
-  }
-
-  return iris;
-}
-
-// ---------------------------------------------------------------------------
-// Collect type assertions on individuals
-// ---------------------------------------------------------------------------
-
-/**
- * Collect rdf:type assertions on an individual subject, filtering out the
- * NamedIndividual declaration itself and returning only class IRIs.
- */
-function collectIndividualTypes(
-  subjectQuads: QuadInterface[],
-  allClassIris: ReadonlySet<string>
-): string[] {
-  const types: string[] = [];
-
-  for (const quad of subjectQuads) {
-    if (!TYPE_PREDICATES.has(quad.predicate.value)) {
-      continue;
-    }
-
-    const objectIri = namedNodeValue(quad);
-
-    if (objectIri === null) {
-      continue;
-    }
-
-    // Skip the NamedIndividual declaration itself
-    if (NAMED_INDIVIDUAL_IRIS.has(objectIri)) {
-      continue;
-    }
-
-    // Only include IRIs that are registered as class IRIs
-    if (allClassIris.has(objectIri)) {
-      types.push(objectIri);
-    }
-  }
-
-  return types;
-}
-
-// ---------------------------------------------------------------------------
-// Collect property assertions on individuals
-// ---------------------------------------------------------------------------
-
-/**
- * Collect property assertions for a named individual, matching only predicates
- * that are registered object or datatype properties.
- */
-function collectPropertyAssertions(
-  subjectQuads: QuadInterface[],
-  allPropertyIris: ReadonlySet<string>
-): Record<string, unknown> {
-  const properties: Record<string, unknown> = {};
-
-  for (const quad of subjectQuads) {
-    const predicateIri = quad.predicate.value;
-
-    // Skip rdf:type — handled separately
-    if (TYPE_PREDICATES.has(predicateIri)) {
-      continue;
-    }
-
-    // Only register triples where the predicate is a known property IRI
-    if (!allPropertyIris.has(predicateIri)) {
-      continue;
-    }
-
-    const value = quad.object.termType === 'Literal'
-      ? literalValue(quad)
-      : namedNodeValue(quad);
-
-    if (value !== undefined && value !== null) {
-      properties[predicateIri] = value;
-    }
-  }
-
-  return properties;
+function targetValue(relation: SchemaGraphRelationInterface): string {
+  return typeof relation.target === 'string' ? relation.target : relation.target.id;
 }
 
 // ---------------------------------------------------------------------------
@@ -313,7 +197,7 @@ function differentFromInvariant(
 function negativePropertyAssertionInvariant(
   sourceIri: string,
   propertyIri: string,
-  targetValue: unknown
+  assertionValue: unknown
 ): InvariantInterface {
   return {
     'fn': () => {
@@ -321,7 +205,7 @@ function negativePropertyAssertionInvariant(
       // Downstream consumers inspect the name to enforce the constraint.
       return null;
     },
-    'name': `negativePropertyAssertion(${sourceIri},${propertyIri},${String(targetValue)})`
+    'name': `negativePropertyAssertion(${sourceIri},${propertyIri},${String(assertionValue)})`
   };
 }
 
@@ -361,11 +245,17 @@ function hasKeyInvariant(classIri: string, propertyIris: string[]): InvariantInt
  * - owl:NegativePropertyAssertion → fragment.invariants (negative assertion invariant)
  * - owl:hasKey on a class → fragment.invariants + jt:hasKey annotation in schemaDeltas
  *
- * @param quads - All quads from the input graph.
+ * Graph-native: reads `ctx.graph.allRelations()` for subject/predicate/object
+ * triples, `ctx.graph.collectList(head)` for `owl:distinctMembers` /
+ * `owl:hasKey` RDF lists, and `ctx.graph.relationsForSubject(bnode)` for
+ * `owl:NegativePropertyAssertion` sibling predicates.
+ *
+ * @param _quads - Retained for back-compat with the dispatcher signature; the
+ *                 implementation reads exclusively from `ctx.graph`.
  * @param ctx   - Shared import context (graph, curie, IRI sets, reporting helpers).
  * @returns OwlImportFragment with individuals, sameAs, invariants, and schemaDeltas populated.
  */
-export function importIndividuals(quads: QuadInterface[], ctx: OwlImportContext): OwlImportFragment {
+export function importIndividuals(_quads: QuadInterface[], ctx: OwlImportContext): OwlImportFragment {
   const sameAs: Array<readonly [string, string]> = [];
   const invariants: Array<{
     'invariant': InvariantInterface;
@@ -373,13 +263,23 @@ export function importIndividuals(quads: QuadInterface[], ctx: OwlImportContext)
   }> = [];
   const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
 
-  // Build subject index for blank-node look-ups (NegativePropertyAssertion, AllDifferent)
-  const bySubject = indexBySubject(quads);
+  const allRelations = ctx.graph.allRelations();
 
-  // Collect named individual IRIs
-  const namedIndividualIris = collectNamedIndividualIris(quads);
+  // ---- Collect named individual IRIs from rdf:type relations --------------
 
-  // ---- Named individuals with types + property assertions -----------------
+  const namedIndividualIris = new Set<string>();
+
+  for (const relation of allRelations) {
+    if (predicateIn(relation, TYPE_PREDICATES) && targetIriIn(relation, NAMED_INDIVIDUAL_IRIS)) {
+      const subject = relation.source.id;
+
+      if (!subject.startsWith('_:')) {
+        namedIndividualIris.add(subject);
+      }
+    }
+  }
+
+  // ---- Named individuals: types + property assertions ---------------------
 
   const individuals: Array<{
     'iri': string;
@@ -388,9 +288,42 @@ export function importIndividuals(quads: QuadInterface[], ctx: OwlImportContext)
   }> = [];
 
   for (const individualIri of namedIndividualIris) {
-    const subjectQuads = bySubject.get(individualIri) ?? [];
-    const types = collectIndividualTypes(subjectQuads, ctx.allClassIris);
-    const properties = collectPropertyAssertions(subjectQuads, ctx.allPropertyIris);
+    const subjectRelations = ctx.graph.relationsForSubject(individualIri);
+    const types: string[] = [];
+    const properties: Record<string, unknown> = {};
+
+    for (const relation of subjectRelations) {
+      if (predicateIn(relation, TYPE_PREDICATES)) {
+        const objectIri = namedNodeTarget(relation);
+
+        if (objectIri === null || NAMED_INDIVIDUAL_IRIS.has(objectIri)) {
+          continue;
+        }
+        if (ctx.allClassIris.has(objectIri)) {
+          types.push(objectIri);
+        }
+        continue;
+      }
+
+      // Property assertion — must be a registered property IRI
+      if (!ctx.allPropertyIris.has(relation.predicate)) {
+        continue;
+      }
+
+      let value: unknown;
+
+      if (relation.termType === 'Literal') {
+        value = literalTarget(relation);
+      } else if (relation.termType === 'NamedNode') {
+        value = namedNodeTarget(relation);
+      } else {
+        continue;
+      }
+
+      if (value !== undefined && value !== null) {
+        properties[relation.predicate] = value;
+      }
+    }
 
     individuals.push({
       'iri': individualIri,
@@ -400,98 +333,83 @@ export function importIndividuals(quads: QuadInterface[], ctx: OwlImportContext)
   }
 
   // ---- owl:sameAs pairs ---------------------------------------------------
-  // appendSameAsQuads emits both forward (a, b) and reverse (b, a) directions.
-  // Deduplicate using a canonical order key so each logical pair appears once.
+  // The forward projection emits both (a, b) and (b, a) directions;
+  // deduplicate using a canonical order key so each logical pair appears once.
 
   const seenSameAs = new Set<string>();
 
-  for (const quad of quads) {
-    if (
-      quad.subject.termType !== 'NamedNode'
-      || !predicateIn(quad, SAME_AS_IRIS)
-      || quad.object.termType !== 'NamedNode'
-    ) {
+  for (const relation of allRelations) {
+    if (!predicateIn(relation, SAME_AS_IRIS)) {
       continue;
     }
+    const iriA = relation.source.id;
+    const iriB = namedNodeTarget(relation);
 
-    const iriA = quad.subject.value;
-    const iriB = quad.object.value;
-
-    // Skip self-identity
-    if (iriA === iriB) {
+    if (iriB === null || iriA === iriB || iriA.startsWith('_:') || iriB.startsWith('_:')) {
       continue;
     }
-
-    // Canonical pair key (order-independent)
     const pairKey = iriA < iriB ? `${iriA}\0${iriB}` : `${iriB}\0${iriA}`;
 
     if (seenSameAs.has(pairKey)) {
       continue;
     }
     seenSameAs.add(pairKey);
-
-    // Always store in the original forward direction (subject, object)
-    const pair: readonly [string, string] = [
+    sameAs.push([
       iriA,
       iriB
-    ];
-
-    sameAs.push(pair);
+    ] as const);
   }
 
   // ---- owl:differentFrom --------------------------------------------------
 
   const seenDifferentFrom = new Set<string>();
 
-  for (const quad of quads) {
-    if (
-      quad.subject.termType !== 'NamedNode'
-      || !predicateIn(quad, DIFFERENT_FROM_IRIS)
-      || quad.object.termType !== 'NamedNode'
-    ) {
+  for (const relation of allRelations) {
+    if (!predicateIn(relation, DIFFERENT_FROM_IRIS)) {
       continue;
     }
+    const iriA = relation.source.id;
+    const iriB = namedNodeTarget(relation);
 
-    const iriA = quad.subject.value;
-    const iriB = quad.object.value;
-    // Canonical pair key (order-independent)
+    if (iriB === null || iriA.startsWith('_:') || iriB.startsWith('_:')) {
+      continue;
+    }
     const pairKey = iriA < iriB ? `${iriA}\0${iriB}` : `${iriB}\0${iriA}`;
 
     if (seenDifferentFrom.has(pairKey)) {
       continue;
     }
     seenDifferentFrom.add(pairKey);
-
     invariants.push({
       'invariant': differentFromInvariant(iriA, iriB),
-      // Use the first IRI as the schema anchor; downstream binds per-individual
       'schemaId': iriA
     });
   }
 
-  // ---- owl:AllDifferent + owl:distinctMembers ------------------------------
+  // ---- owl:AllDifferent + owl:distinctMembers (RDF list) ------------------
 
-  for (const quad of quads) {
-    // Find subjects typed as owl:AllDifferent
-    if (
-      !TYPE_PREDICATES.has(quad.predicate.value)
-      || !objectIriIn(quad, ALL_DIFFERENT_IRIS)
-    ) {
+  for (const relation of allRelations) {
+    if (!predicateIn(relation, TYPE_PREDICATES) || !targetIriIn(relation, ALL_DIFFERENT_IRIS)) {
       continue;
     }
 
-    const allDiffSubject = quad.subject.value;
-    const subjectQuads = bySubject.get(allDiffSubject) ?? [];
+    const allDiffSubject = relation.source.id;
+    const distinctRelations = ctx.graph.relationsForSubject(allDiffSubject);
 
-    // Collect owl:distinctMembers list
-    for (const memberQuad of subjectQuads) {
-      if (!predicateIn(memberQuad, DISTINCT_MEMBERS_IRIS)) {
+    for (const dmRelation of distinctRelations) {
+      if (!predicateIn(dmRelation, DISTINCT_MEMBERS_IRIS)) {
         continue;
       }
 
-      const memberIris = listIris(memberQuad, quads);
+      const listHead = targetValue(dmRelation);
+      const memberIris: string[] = [];
 
-      // Emit pairwise differentFrom invariants
+      for (const item of ctx.graph.collectList(listHead)) {
+        if (item.termType === 'NamedNode') {
+          memberIris.push(item.target);
+        }
+      }
+
       for (let i = 0; i < memberIris.length; i++) {
         for (let j = i + 1; j < memberIris.length; j++) {
           const iriA = memberIris[i];
@@ -502,7 +420,6 @@ export function importIndividuals(quads: QuadInterface[], ctx: OwlImportContext)
             continue;
           }
           seenDifferentFrom.add(pairKey);
-
           invariants.push({
             'invariant': differentFromInvariant(iriA, iriB),
             'schemaId': iriA
@@ -512,74 +429,74 @@ export function importIndividuals(quads: QuadInterface[], ctx: OwlImportContext)
     }
   }
 
-  // ---- owl:NegativePropertyAssertion --------------------------------------
+  // ---- owl:NegativePropertyAssertion (blank-node sibling predicates) ------
 
-  for (const quad of quads) {
-    // Find subjects typed as owl:NegativePropertyAssertion
-    if (
-      !TYPE_PREDICATES.has(quad.predicate.value)
-      || !objectIriIn(quad, NEGATIVE_PROPERTY_ASSERTION_IRIS)
-    ) {
+  for (const relation of allRelations) {
+    if (!predicateIn(relation, TYPE_PREDICATES) || !targetIriIn(relation, NEGATIVE_PROPERTY_ASSERTION_IRIS)) {
       continue;
     }
 
-    const negSubject = quad.subject.value;
-    const negQuads = bySubject.get(negSubject) ?? [];
+    const negSubject = relation.source.id;
+    const siblings = ctx.graph.relationsForSubject(negSubject);
 
     let sourceIndividual: null | string = null;
     let assertionProperty: null | string = null;
-    let targetValue: unknown = undefined;
+    let target: unknown;
 
-    for (const negQuad of negQuads) {
-      if (predicateIn(negQuad, SOURCE_INDIVIDUAL_IRIS)) {
-        sourceIndividual = namedNodeValue(negQuad);
-      } else if (predicateIn(negQuad, ASSERTION_PROPERTY_IRIS)) {
-        assertionProperty = namedNodeValue(negQuad);
-      } else if (predicateIn(negQuad, TARGET_INDIVIDUAL_IRIS)) {
-        targetValue = namedNodeValue(negQuad);
-      } else if (predicateIn(negQuad, TARGET_VALUE_IRIS)) {
-        targetValue = literalValue(negQuad);
+    for (const sibling of siblings) {
+      if (predicateIn(sibling, SOURCE_INDIVIDUAL_IRIS)) {
+        sourceIndividual = namedNodeTarget(sibling);
+      } else if (predicateIn(sibling, ASSERTION_PROPERTY_IRIS)) {
+        assertionProperty = namedNodeTarget(sibling);
+      } else if (predicateIn(sibling, TARGET_INDIVIDUAL_IRIS)) {
+        target = namedNodeTarget(sibling);
+      } else if (predicateIn(sibling, TARGET_VALUE_IRIS)) {
+        target = sibling.termType === 'Literal' ? literalTarget(sibling) : namedNodeTarget(sibling);
       }
     }
 
     if (sourceIndividual === null || assertionProperty === null) {
-      // Malformed NegativePropertyAssertion — skip
       ctx.reportUnsupported('owl:NegativePropertyAssertion', negSubject);
       continue;
     }
 
     invariants.push({
-      'invariant': negativePropertyAssertionInvariant(sourceIndividual, assertionProperty, targetValue),
+      'invariant': negativePropertyAssertionInvariant(sourceIndividual, assertionProperty, target),
       'schemaId': sourceIndividual
     });
   }
 
-  // ---- owl:hasKey ---------------------------------------------------------
+  // ---- owl:hasKey (RDF list of property IRIs on a class) ------------------
 
-  for (const quad of quads) {
-    if (
-      quad.subject.termType !== 'NamedNode'
-      || !predicateIn(quad, HAS_KEY_IRIS)
-    ) {
+  for (const relation of allRelations) {
+    if (!predicateIn(relation, HAS_KEY_IRIS)) {
+      continue;
+    }
+    const classIri = relation.source.id;
+
+    if (classIri.startsWith('_:')) {
       continue;
     }
 
-    const classIri = quad.subject.value;
-    const propertyIris = listIris(quad, quads);
+    const listHead = targetValue(relation);
+    const propertyIris: string[] = [];
+
+    for (const item of ctx.graph.collectList(listHead)) {
+      if (item.termType === 'NamedNode') {
+        propertyIris.push(item.target);
+      }
+    }
 
     if (propertyIris.length === 0) {
-      // No property IRIs in key — report and skip
       ctx.reportUnsupported('owl:hasKey', classIri);
       continue;
     }
 
-    // Register a runtime invariant for the composite key
     invariants.push({
       'invariant': hasKeyInvariant(classIri, propertyIris),
       'schemaId': classIri
     });
 
-    // Annotate the class schema delta with jt:hasKey so consumers can introspect
     const existing = schemaDeltas.get(classIri) ?? {};
     const existingKeys = existing['jt:hasKey'] ?? [];
 

@@ -29,7 +29,7 @@ export class MaterializationError extends BaseError {
     const message = options?.message ?? `Invalid ${schemaId}: ${validationErrors.join('; ')}`;
     const causeOptions = options?.cause === undefined ? undefined : { 'cause': options.cause };
 
-    super(code, message, false, causeOptions);
+    super(code, message, causeOptions);
     this.name = 'MaterializationError';
     this.schemaId = schemaId;
     this.validationErrors = validationErrors;

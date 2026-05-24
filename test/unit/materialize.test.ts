@@ -11,6 +11,9 @@ import { JsonTology } from '../../src/index.js';
 // against ABox quads; OntologyBuilder.jsonLdObject()['@graph'] returns JSON-LD nodes, not the QuadInterface form.
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { Projection } from '../../src/modules/rdf/Projection.js';
+import {
+  OWL, RDF
+} from '../../src/constants/IRI.js';
 
 // ===========================================================================
 // Source: materializer.test.ts
@@ -635,7 +638,7 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
 
         // --- rdf:type and property literals ---
         const typeQuad = abox.find((quad: Quad) => {
-          return quad.predicate.value === 'rdf:type' && quad.object.termType === 'NamedNode' && quad.object.value === ConfigSchema.$id;
+          return quad.predicate.value === RDF.type && quad.object.termType === 'NamedNode' && quad.object.value === ConfigSchema.$id;
         });
 
         assert.ok(typeQuad, 'ABox must contain rdf:type quad referencing schema $id');
@@ -681,10 +684,10 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
             const abox2 = tology.toQuads(ConfigSchema, d2);
 
             const subj1 = abox1.find((quad: Quad) => {
-              return quad.predicate.value === 'rdf:type';
+              return quad.predicate.value === RDF.type;
             })?.subject.value;
             const subj2 = abox2.find((quad: Quad) => {
-              return quad.predicate.value === 'rdf:type';
+              return quad.predicate.value === RDF.type;
             })?.subject.value;
 
             if (same) {
@@ -708,7 +711,7 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
 
         const tboxClasses = new Set(tbox
           .filter((quad: Quad) => {
-            return quad.predicate.value === 'rdf:type' && quad.object.termType === 'NamedNode' && quad.object.value === 'owl:Class';
+            return quad.predicate.value === RDF.type && quad.object.termType === 'NamedNode' && quad.object.value === OWL.Class;
           })
           .map((quad: Quad) => {
             return quad.subject.value;
@@ -716,7 +719,7 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
 
         const aboxTypes = abox
           .filter((quad: Quad) => {
-            return quad.predicate.value === 'rdf:type' && quad.object.termType === 'NamedNode';
+            return quad.predicate.value === RDF.type && quad.object.termType === 'NamedNode';
           })
           .map((quad: Quad) => {
             return quad.object.value;
@@ -1312,10 +1315,10 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
           'subject': { 'value': string } }
 
         const typeQuad1 = (quads1 as TypedQuad[]).find((quad) => {
-          return quad.predicate.value === 'rdf:type';
+          return quad.predicate.value === RDF.type;
         });
         const typeQuad2 = (quads2 as TypedQuad[]).find((quad) => {
-          return quad.predicate.value === 'rdf:type';
+          return quad.predicate.value === RDF.type;
         });
 
         assert.ok(typeQuad1, 'first projection must have rdf:type quad');
@@ -1337,10 +1340,10 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
         const quads2 = tology.toQuads(BaseSchema, { 'name': 'second' });
 
         const iri1 = (quads1 as TypedQuad[]).find((quad) => {
-          return quad.predicate.value === 'rdf:type';
+          return quad.predicate.value === RDF.type;
         })?.subject.value;
         const iri2 = (quads2 as TypedQuad[]).find((quad) => {
-          return quad.predicate.value === 'rdf:type';
+          return quad.predicate.value === RDF.type;
         })?.subject.value;
 
         assert.ok(iri1 !== undefined, 'first projection must have rdf:type quad');
@@ -1366,7 +1369,7 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
         });
 
         const typeQuad = (quads as TypedQuad[]).find((quad) => {
-          return quad.predicate.value === 'rdf:type';
+          return quad.predicate.value === RDF.type;
         });
 
         assert.ok(typeQuad, 'custom iriFor must produce a rdf:type quad');
@@ -1385,7 +1388,7 @@ import { Projection } from '../../src/modules/rdf/Projection.js';
 
         const quads = tology.toQuads(BaseSchema, { 'name': 'test' }, { 'iriFor': 'blank-node' });
         const typeQuad = (quads as TypedQuad[]).find((quad) => {
-          return quad.predicate.value === 'rdf:type';
+          return quad.predicate.value === RDF.type;
         });
 
         assert.ok(typeQuad, 'blank-node mode must produce a rdf:type quad');

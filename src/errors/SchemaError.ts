@@ -3,6 +3,7 @@
  */
 
 import type { SchemaErrorCodeType } from '../types/ErrorCodes.js';
+import type { SchemaErrorOptionsType } from '../types/ErrorOptions.js';
 import { BaseError } from './BaseError.js';
 
 export class SchemaError extends BaseError {
@@ -13,13 +14,12 @@ export class SchemaError extends BaseError {
    *
    * @param code - Schema-specific error code
    * @param message - Human-readable error description
-   * @param schemaId - The $id of the schema that caused the error
-   * @param options - Optional cause for error chaining
+   * @param options - Optional schemaId and cause for error chaining
    */
-  public constructor(code: SchemaErrorCodeType, message: string, schemaId?: string, options?: { 'cause'?: Error }) {
-    super(code, message, false, options);
+  public constructor(code: SchemaErrorCodeType, message: string, options?: SchemaErrorOptionsType) {
+    super(code, message, options?.cause === undefined ? undefined : { 'cause': options.cause });
     this.name = 'SchemaError';
-    this.schemaId = schemaId;
+    this.schemaId = options?.schemaId;
   }
 
   /**

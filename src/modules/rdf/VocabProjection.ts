@@ -13,6 +13,7 @@ import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
 import type { RelationIndexInterface } from '../../interfaces/RelationIndex.js';
+import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
 import { JT } from '../../constants/IRI.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 
@@ -26,7 +27,8 @@ export abstract class VocabProjection {
     withoutTrigger: QuadObjectType,
     reqRestrictions: QuadObjectType[],
     quads: QuadInterface[],
-    curie: CurieInterface | undefined
+    curie: CurieInterface | undefined,
+    issuer?: IdentifierIssuerInterface
   ): QuadObjectType;
 
   /**
@@ -38,7 +40,8 @@ export abstract class VocabProjection {
     ifRef: string,
     elseRef: string,
     quads: QuadInterface[],
-    curie: CurieInterface | undefined
+    curie: CurieInterface | undefined,
+    issuer?: IdentifierIssuerInterface
   ): QuadObjectType;
 
   /**
@@ -50,7 +53,8 @@ export abstract class VocabProjection {
     ifRef: string,
     thenRef: string,
     quads: QuadInterface[],
-    curie: CurieInterface | undefined
+    curie: CurieInterface | undefined,
+    issuer?: IdentifierIssuerInterface
   ): QuadObjectType;
 
   /**
@@ -63,7 +67,8 @@ export abstract class VocabProjection {
     ifRef: string,
     thenRef: string,
     quads: QuadInterface[],
-    curie: CurieInterface | undefined
+    curie: CurieInterface | undefined,
+    issuer?: IdentifierIssuerInterface
   ): QuadObjectType;
 
   /**
@@ -74,7 +79,8 @@ export abstract class VocabProjection {
   abstract emitNotTriggerBranch(
     triggerPropIri: string,
     quads: QuadInterface[],
-    curie: CurieInterface | undefined
+    curie: CurieInterface | undefined,
+    issuer?: IdentifierIssuerInterface
   ): QuadObjectType;
 
   /**
@@ -85,13 +91,15 @@ export abstract class VocabProjection {
   abstract emitRequiredPropertyBranch(
     propIri: string,
     quads: QuadInterface[],
-    curie: CurieInterface | undefined
+    curie: CurieInterface | undefined,
+    issuer?: IdentifierIssuerInterface
   ): QuadObjectType;
 
   processConditionals(
     entry: RelationIndexInterface,
     quads: QuadInterface[],
-    curie: CurieInterface | undefined
+    curie: CurieInterface | undefined,
+    issuer?: IdentifierIssuerInterface
   ): QuadObjectType[] {
     const results: QuadObjectType[] = [];
 
@@ -111,30 +119,27 @@ export abstract class VocabProjection {
       const branches: QuadObjectType[] = [];
 
       if (thenRef !== undefined) {
-        branches.push(this.emitConditionalThenBranch(ifRef, thenRef, quads, curie));
+        branches.push(this.emitConditionalThenBranch(ifRef, thenRef, quads, curie, issuer));
       }
 
       if (elseRef !== undefined) {
-        branches.push(this.emitConditionalElseBranch(ifRef, elseRef, quads, curie));
+        branches.push(this.emitConditionalElseBranch(ifRef, elseRef, quads, curie, issuer));
       }
 
       if (branches.length > 0) {
-        results.push(...this.wrapConditionalBranches(branches, quads, curie));
+        results.push(...this.wrapConditionalBranches(branches, quads, curie, issuer));
       }
     }
 
     return results;
   }
 
-  // -------------------------------------------------------------------------
-  // Template: processDependentRequired
-  // -------------------------------------------------------------------------
-
   processDependentRequired(
     subject: string,
     entry: RelationIndexInterface,
     quads: QuadInterface[],
-    curie: CurieInterface | undefined
+    curie: CurieInterface | undefined,
+    issuer?: IdentifierIssuerInterface
   ): QuadObjectType[] {
     const results: QuadObjectType[] = [];
     const depReqRels = entry.byPredicate.get(JT.dependentRequired) ?? [];
@@ -142,32 +147,29 @@ export abstract class VocabProjection {
     for (const rel of depReqRels) {
       const meta = rel.metadata ?? {};
       const trigger = typeof meta.trigger === 'string' ? meta.trigger : '';
-      const required = Array.isArray(meta.required) ? meta.required as string[] : [];
+      const required = Array.isArray(meta.required) ? (meta.required as string[]) : [];
 
       const triggerPropIri = SchemaIri.propertyIri(subject, trigger);
-      const withoutTrigger = this.emitNotTriggerBranch(triggerPropIri, quads, curie);
+      const withoutTrigger = this.emitNotTriggerBranch(triggerPropIri, quads, curie, issuer);
 
       const reqRestrictions: QuadObjectType[] = required.map((reqProp) => {
         const reqPropIri = SchemaIri.propertyIri(subject, reqProp);
 
-        return this.emitRequiredPropertyBranch(reqPropIri, quads, curie);
+        return this.emitRequiredPropertyBranch(reqPropIri, quads, curie, issuer);
       });
 
-      results.push(this.combineUnionBranches(withoutTrigger, reqRestrictions, quads, curie));
+      results.push(this.combineUnionBranches(withoutTrigger, reqRestrictions, quads, curie, issuer));
     }
 
     return results;
   }
 
-  // -------------------------------------------------------------------------
-  // Template: processDependentSchemas
-  // -------------------------------------------------------------------------
-
   processDependentSchemas(
     subject: string,
     entry: RelationIndexInterface,
     quads: QuadInterface[],
-    curie: CurieInterface | undefined
+    curie: CurieInterface | undefined,
+    issuer?: IdentifierIssuerInterface
   ): QuadObjectType[] {
     const results: QuadObjectType[] = [];
 
@@ -184,15 +186,11 @@ export abstract class VocabProjection {
         continue;
       }
 
-      results.push(this.emitDependentSchemaBranch(subject, ifRef, thenRef, quads, curie));
+      results.push(this.emitDependentSchemaBranch(subject, ifRef, thenRef, quads, curie, issuer));
     }
 
     return results;
   }
-
-  // -------------------------------------------------------------------------
-  // Template: processConditionals
-  // -------------------------------------------------------------------------
 
   /**
    * Wrap collected then+else branches for a single conditional.
@@ -202,6 +200,7 @@ export abstract class VocabProjection {
   abstract wrapConditionalBranches(
     branches: QuadObjectType[],
     quads: QuadInterface[],
-    curie: CurieInterface | undefined
+    curie: CurieInterface | undefined,
+    issuer?: IdentifierIssuerInterface
   ): QuadObjectType[];
 }

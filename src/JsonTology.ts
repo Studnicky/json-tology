@@ -46,6 +46,7 @@ import type {
 import type { SchemaRefType } from './types/SchemaRef.js';
 import type { SkolemizeFnType } from './types/Skolemize.js';
 import type { NormalizedToQuadsOptionsType } from './types/NormalizedToQuadsOptions.js';
+import type { ToQuadsOptionsType } from './types/ToQuadsOptions.js';
 
 import { RefResolutionLoader } from './modules/registry/RefResolutionLoader.js';
 import { Curie } from './modules/rdf/Curie.js';
@@ -61,7 +62,7 @@ import { Lift } from './modules/rdf/Lift.js';
 import { Materializer } from './modules/materialization/Materializer.js';
 import { OntologyBuilder } from './modules/ontology/OntologyBuilder.js';
 import { SchemaError } from './errors/SchemaError.js';
-import type { DuplicateReportEntryType } from './modules/registry/SchemaRegistry.js';
+import type { DuplicateReportEntryType } from './interfaces/SchemaEntryStore.js';
 import { SchemaRegistry } from './modules/registry/SchemaRegistry.js';
 import { Transform } from './modules/transform/Transform.js';
 import { Value } from './modules/data/Value.js';
@@ -76,24 +77,6 @@ const STATIC_BASE_IRI = 'http://json-tology.dev/_/static';
  * so consumers can spell the magic value without importing it inline.
  */
 export const BLANK_NODE_IRI_FOR = 'blank-node';
-
-/**
- * Per-call options accepted by `toQuads`.
- *
- * `iriFor` — if a string IRI, overrides the root subject IRI (depth 0);
- * nested objects fall through to the default minter. If the literal
- * `'blank-node'`, every object subject is emitted as an anonymous blank
- * node `_:b<n>` (counter scoped to the projectAbox call). If a function,
- * called once per object subject with `{ path, value, depth }` and returns
- * either an IRI or `undefined` to fall through.
- *
- * `graphIRI` — when set, every emitted quad has its `graph` field stamped
- * with this IRI.
- */
-export interface ToQuadsOptionsType {
-  readonly 'graphIRI'?: string | undefined;
-  readonly 'iriFor'?: SkolemizeFnType | string | undefined;
-}
 
 function rootIriOnly(iri: string): SkolemizeFnType {
   return (ctx) => {
@@ -177,28 +160,6 @@ function liftIriForOption(raw: SkolemizeFnType | string | undefined): SkolemizeF
   }
 
   return raw === BLANK_NODE_IRI_FOR ? blankNodeStrategy() : rootIriOnly(raw);
-}
-
-function appendSameAsQuads(
-  quads: QuadInterface[],
-  pairs: ReadonlyArray<readonly [string, string]>,
-  graphIRI: string | undefined
-): void {
-  if (pairs.length === 0) {
-    return;
-  }
-  const expandedSameAs = 'http://www.w3.org/2002/07/owl#sameAs';
-  const graphTerm = graphIRI === undefined ? Terms.defaultGraph() : Terms.iri(graphIRI);
-
-  for (const [
-    a,
-    b
-  ] of pairs) {
-    const predicate = Terms.iri(expandedSameAs);
-
-    quads.push(Terms.quad(Terms.iri(a), predicate, Terms.iri(b), graphTerm));
-    quads.push(Terms.quad(Terms.iri(b), predicate, Terms.iri(a), graphTerm));
-  }
 }
 
 function normalizeToQuadsOptions(options: ToQuadsOptionsType | undefined): NormalizedToQuadsOptionsType {
@@ -582,6 +543,15 @@ export class JsonTology<TMap = Record<never, never>> {
   private readonly defaultIriForRaw: SkolemizeFnType | string | undefined;
 
   private readonly graphSchemaSerializer: GraphSchemaSerializer;
+  /**
+   * Direct access to the underlying materializer for advanced use cases.
+   *
+   * `projectAbox` emits the same quads as `toQuads()` — including symmetric
+   * `owl:sameAs` assertions read from the registry's SameAsStore. Direct and
+   * facade access are equivalent; choose direct access when you need the
+   * materializer for engine-execution composition without going through the
+   * `JsonTology` facade.
+   */
   public readonly materializer: MaterializerInterface;
   private ontologyCache: null | {
     'builder': OntologyBuilder;
@@ -645,7 +615,7 @@ export class JsonTology<TMap = Record<never, never>> {
 
     const registryOptions: RegistryOptionsInterface = {
       'formatRegistry': formatRegistry,
-      'prefixes': this.prefixes,
+      ...(options.prefixes === undefined ? {} : { 'prefixes': options.prefixes }),
       ...(options.logger === undefined ? {} : { 'logger': options.logger }),
       ...(options.enableTypeCast === undefined ? {} : { 'enableTypeCast': options.enableTypeCast }),
       ...(options.keywords === undefined ? {} : { 'keywords': options.keywords }),
@@ -869,6 +839,8 @@ export class JsonTology<TMap = Record<never, never>> {
    * @param schemaRef - The `$id` of a registered schema, or a schema object with `$id`.
    * @param quads - RDF quads in the module's internal format.
    * @returns Array of validated, typed objects.
+   * @throws {SchemaError} code SCHEMA_NOT_REGISTERED when the schema is not registered.
+   * @throws {InstantiationError} code INSTANTIATION_FAILED when a lifted object fails validation.
    */
   public fromQuads<K extends keyof TMap & string>(
     schemaId: K,
@@ -895,7 +867,7 @@ export class JsonTology<TMap = Record<never, never>> {
       throw new SchemaError(
         'SCHEMA_NOT_REGISTERED',
         `Schema not registered: ${schemaId}. Call register() first.`,
-        schemaId
+        { schemaId }
       );
     }
 
@@ -921,6 +893,8 @@ export class JsonTology<TMap = Record<never, never>> {
    *   object, or a JSON-LD string.
    * @param options - Optional per-call overrides.
    * @returns OwlImportResult (same shape as the static variant).
+   * @throws {OwlImportError} code OWL_IMPORT_NOT_IMPLEMENTED when an axiom group has no dispatcher.
+   * @throws {GraphError} code DIALECT_UNSUPPORTED when the input contains an unsupported JSON Schema dialect.
    */
   public fromTbox(
     jsonLd: object | QuadInterface[] | string,
@@ -968,8 +942,9 @@ export class JsonTology<TMap = Record<never, never>> {
    * @param schemaId - The `$id` of a registered schema, or a schema object with `$id`.
    * @param data - The data to instantiate (deep-cloned before mutation).
    * @returns The validated and normalized value.
-   * @throws {@link InstantiationError} when the data fails validation.
-   * @throws {@link SchemaError} when no schema is registered for the given ID.
+   * @throws {InstantiationError} code INSTANTIATION_FAILED when the data fails validation.
+   * @throws {SchemaError} code SCHEMA_NOT_FOUND when no schema is registered for the given ID.
+   * @throws {SchemaError} code SCHEMA_INVALID_INPUT when schema is null or undefined.
    */
   public instantiate<K extends keyof TMap & string>(schemaId: K, data: unknown, callOptions?: { 'enableDefaults'?: boolean }): TMap[K];
   // ---------------------------------------------------------------------------
@@ -997,7 +972,8 @@ export class JsonTology<TMap = Record<never, never>> {
    * @param schemaId - The `$id` of a registered schema, or a schema object with `$id`.
    * @param data - The data to check.
    * @returns Whether the data conforms to the schema.
-   * @throws {@link SchemaError} when no schema is registered for the given ID.
+   * @throws {SchemaError} code SCHEMA_NOT_FOUND when no schema is registered for the given ID.
+   * @throws {SchemaError} code SCHEMA_INVALID_INPUT when schema is null or undefined.
    */
   public is<K extends keyof TMap & string>(schemaId: K, data: unknown): data is TMap[K];
   public is(schema: Record<string, unknown> & { '$id': string; }, data: unknown): boolean;
@@ -1194,8 +1170,9 @@ export class JsonTology<TMap = Record<never, never>> {
    * @param schemaRef - The `$id` of a registered schema, or a schema object with `$id`.
    * @param pointer - JSON Pointer path (e.g. `/properties/name`) into the schema.
    * @returns The resolved sub-schema with a synthesized `$id`.
-   * @throws {@link SchemaError} when no schema is registered for the given ID.
-   * @throws {@link GraphError} when the pointer cannot be resolved.
+   * @throws {SchemaError} code SCHEMA_NOT_FOUND when no schema is registered for the given ID.
+   * @throws {SchemaError} code SCHEMA_INVALID_INPUT when schema is null or undefined.
+   * @throws {GraphError} code POINTER_UNRESOLVED when the pointer cannot be resolved.
    */
   public subschemaAt<K extends keyof TMap & string>(
     schemaId: K,
@@ -1236,6 +1213,9 @@ export class JsonTology<TMap = Record<never, never>> {
    * raw vs prefixed projection), call {@link ontology} on the registry
    * and pass the quads through. `toQuads` returns the data, not a
    * builder, so the name matches the contract.
+   *
+   * @throws {SchemaError} code SCHEMA_NOT_FOUND when no schema is registered for the given ID.
+   * @throws {MaterializationError} code MATERIALIZATION_FAILED when the data cannot be projected.
    */
   public toQuads<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }>(
     schema: TSchema,
@@ -1248,16 +1228,12 @@ export class JsonTology<TMap = Record<never, never>> {
       'iriFor': normalized.iriFor ?? liftIriForOption(this.defaultIriForRaw)
     };
 
-    const quads = this.materializer.projectAbox(
+    return this.materializer.projectAbox(
       JsonTology.asNamedSchema(schema),
       data,
       this.baseIRI,
       effective
     );
-
-    appendSameAsQuads(quads, this.registry.sameAsStore.all(), effective.graphIRI);
-
-    return quads;
   }
   /**
    * Reconstructs a JSON Schema document from the canonical graph for a registered schema.
@@ -1284,6 +1260,12 @@ export class JsonTology<TMap = Record<never, never>> {
   /**
    * Generates SHACL shapes — node shapes and property shapes encoding
    * structural constraints — derived from all registered schemas.
+   *
+   * **Asymmetry note:** `toShacl()` produces SHACL shape quads for export or
+   * reasoning, but there is no built-in inverse yet. To validate instance data
+   * against SHACL shapes, retrieve the quads via `toShacl().shaclQuads()` and
+   * pass them to an external SHACL processor (e.g. `rdf-validate-shacl`).
+   * See {@link JsonTology.validateWithShacl} for the planned inverse.
    *
    * @returns A fresh {@link OntologyBuilder} containing only SHACL shape quads (no OWL classes/properties).
    */
@@ -1326,6 +1308,8 @@ export class JsonTology<TMap = Record<never, never>> {
    * @param data - The data to validate.
    * @param callOptions - Per-call option overrides.
    * @returns A {@link ValidationErrors} instance (empty when data is valid).
+   * @throws {SchemaError} code SCHEMA_NOT_FOUND when no schema is registered for the given ID.
+   * @throws {SchemaError} code SCHEMA_INVALID_INPUT when schema is null or undefined.
    */
   public validate<K extends keyof TMap & string>(schemaId: K, data: unknown, callOptions?: { 'enableDefaults'?: boolean }): ValidationErrors;
   public validate(schema: Record<string, unknown> & { '$id': string; }, data: unknown, callOptions?: { 'enableDefaults'?: boolean }): ValidationErrors;
@@ -1341,5 +1325,21 @@ export class JsonTology<TMap = Record<never, never>> {
     }
 
     return this.registry.validate(schemaId, data);
+  }
+
+  /**
+   * Validates instance data quads against SHACL shapes produced from registered schemas.
+   *
+   * @experimental This method is not yet implemented. As a workaround, retrieve
+   * shapes via `toShacl().shaclQuads()` and pass them to an external SHACL
+   * processor (e.g. `rdf-validate-shacl`).
+   *
+   * @throws {Error} NOT_IMPLEMENTED — always throws until this method is implemented.
+   */
+  public validateWithShacl(
+    _shapes: OntologyBuilder | readonly QuadInterface[],
+    _data: readonly QuadInterface[]
+  ): never {
+    throw new Error('NOT_IMPLEMENTED: validateWithShacl is not yet available. Retrieve shapes via toShacl().shaclQuads() and validate with an external SHACL processor.');
   }
 }

@@ -13,10 +13,12 @@ import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
+import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
+import { IdentifierIssuer } from './IdentifierIssuer.js';
 import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
-import { XSD_PREFIX } from '../../constants/PREFIXES.js';
+import { XSD_IRI_PREFIX } from '../../constants/PREFIXES.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { QuadFactory } from './QuadFactory.js';
 import { ProjectionIndex } from './ProjectionIndex.js';
@@ -100,10 +102,6 @@ function isSerializationCandidate(
   return false;
 }
 
-// ---------------------------------------------------------------------------
-// SHACL vocabulary projection
-// ---------------------------------------------------------------------------
-
 class ShaclVocabProjection extends VocabProjection {
   private readonly index: Map<string, RelationIndexInterface>;
 
@@ -116,20 +114,21 @@ class ShaclVocabProjection extends VocabProjection {
     withoutTrigger: QuadObjectType,
     reqRestrictions: QuadObjectType[],
     quads: QuadInterface[],
-    curie: CurieInterface | undefined
+    curie: CurieInterface | undefined,
+    issuer?: IdentifierIssuerInterface
   ): QuadObjectType {
-    const reqBnode = QuadFactory.nextBnode();
+    const reqBnode = QuadFactory.nextBnode(issuer);
 
     for (const reqItem of reqRestrictions) {
       quads.push(QuadFactory.quad(reqBnode, SH.property, reqItem, { curie }));
     }
 
-    const orBnode = QuadFactory.nextBnode();
+    const orBnode = QuadFactory.nextBnode(issuer);
 
     quads.push(QuadFactory.quad(orBnode, SH.or, QuadFactory.rdfList([
       withoutTrigger,
       QuadFactory.bnode(reqBnode)
-    ], quads), { curie }));
+    ], quads, issuer), { curie }));
 
     return QuadFactory.bnode(orBnode);
   }
@@ -138,14 +137,15 @@ class ShaclVocabProjection extends VocabProjection {
     ifRef: string,
     elseRef: string,
     quads: QuadInterface[],
-    curie: CurieInterface | undefined
+    curie: CurieInterface | undefined,
+    issuer?: IdentifierIssuerInterface
   ): QuadObjectType {
-    const orBnode = QuadFactory.nextBnode();
+    const orBnode = QuadFactory.nextBnode(issuer);
 
     quads.push(QuadFactory.quad(orBnode, SH.or, QuadFactory.rdfList([
       QuadFactory.iri(ifRef, { curie }),
       QuadFactory.iri(elseRef, { curie })
-    ], quads), { curie }));
+    ], quads, issuer), { curie }));
 
     return QuadFactory.bnode(orBnode);
   }
@@ -154,18 +154,19 @@ class ShaclVocabProjection extends VocabProjection {
     ifRef: string,
     thenRef: string,
     quads: QuadInterface[],
-    curie: CurieInterface | undefined
+    curie: CurieInterface | undefined,
+    issuer?: IdentifierIssuerInterface
   ): QuadObjectType {
-    const complementBnode = QuadFactory.nextBnode();
+    const complementBnode = QuadFactory.nextBnode(issuer);
 
     quads.push(QuadFactory.quad(complementBnode, SH.not, QuadFactory.iri(ifRef, { curie }), { curie }));
 
-    const orBnode = QuadFactory.nextBnode();
+    const orBnode = QuadFactory.nextBnode(issuer);
 
     quads.push(QuadFactory.quad(orBnode, SH.or, QuadFactory.rdfList([
       QuadFactory.bnode(complementBnode),
       QuadFactory.iri(thenRef, { curie })
-    ], quads), { curie }));
+    ], quads, issuer), { curie }));
 
     return QuadFactory.bnode(orBnode);
   }
@@ -175,27 +176,31 @@ class ShaclVocabProjection extends VocabProjection {
     ifRef: string,
     thenRef: string,
     quads: QuadInterface[],
-    curie: CurieInterface | undefined
+    curie: CurieInterface | undefined,
+    issuer?: IdentifierIssuerInterface
   ): QuadObjectType {
-    const withoutPsBnode = QuadFactory.nextBnode();
+    const withoutPsBnode = QuadFactory.nextBnode(issuer);
 
-    quads.push(QuadFactory.quad(withoutPsBnode, RDF.type, QuadFactory.iri(SH.PropertyShape, { curie }), { curie }));
-    quads.push(QuadFactory.quad(withoutPsBnode, SH.path, QuadFactory.iri(ifRef, { curie }), { curie }));
-    const minCountLit = QuadFactory.literal(1, XSD.integer, { curie });
+    const psTypeObj = QuadFactory.iri(SH.PropertyShape, { curie });
+    const ifPathObj = QuadFactory.iri(ifRef, { curie });
+    const minCountOne = QuadFactory.literal(1, XSD.integer, { curie });
 
-    quads.push(QuadFactory.quad(withoutPsBnode, SH.minCount, minCountLit, { curie }));
+    quads.push(QuadFactory.quad(withoutPsBnode, RDF.type, psTypeObj, { curie }));
+    quads.push(QuadFactory.quad(withoutPsBnode, SH.path, ifPathObj, { curie }));
+    quads.push(QuadFactory.quad(withoutPsBnode, SH.minCount, minCountOne, { curie }));
 
-    const withoutContainerBnode = QuadFactory.nextBnode();
+    const withoutContainerBnode = QuadFactory.nextBnode(issuer);
 
     quads.push(QuadFactory.quad(withoutContainerBnode, SH.property, QuadFactory.bnode(withoutPsBnode), { curie }));
 
-    const withoutWrapperBnode = QuadFactory.nextBnode();
+    const withoutWrapperBnode = QuadFactory.nextBnode(issuer);
 
     quads.push(QuadFactory.quad(withoutWrapperBnode, SH.not, QuadFactory.bnode(withoutContainerBnode), { curie }));
 
-    const depShapeBnode = QuadFactory.nextBnode();
+    const depShapeBnode = QuadFactory.nextBnode(issuer);
+    const nodeShapeTypeObj = QuadFactory.iri(SH.NodeShape, { curie });
 
-    quads.push(QuadFactory.quad(depShapeBnode, RDF.type, QuadFactory.iri(SH.NodeShape, { curie }), { curie }));
+    quads.push(QuadFactory.quad(depShapeBnode, RDF.type, nodeShapeTypeObj, { curie }));
 
     const depEntry = this.index.get(thenRef);
 
@@ -219,18 +224,18 @@ class ShaclVocabProjection extends VocabProjection {
         continue;
       }
 
-      const psBnode = QuadFactory.nextBnode();
+      const psBnode = QuadFactory.nextBnode(issuer);
 
-      emitPropertyShape(psBnode, propSubject, propEntry, subject, subject, quads, curie);
+      emitPropertyShape(psBnode, propSubject, propEntry, subject, subject, quads, curie, issuer);
       quads.push(QuadFactory.quad(depShapeBnode, SH.property, QuadFactory.bnode(psBnode), { curie }));
     }
 
-    const orBnode = QuadFactory.nextBnode();
+    const orBnode = QuadFactory.nextBnode(issuer);
 
     quads.push(QuadFactory.quad(orBnode, SH.or, QuadFactory.rdfList([
       QuadFactory.bnode(withoutWrapperBnode),
       QuadFactory.bnode(depShapeBnode)
-    ], quads), { curie }));
+    ], quads, issuer), { curie }));
 
     return QuadFactory.bnode(orBnode);
   }
@@ -238,25 +243,29 @@ class ShaclVocabProjection extends VocabProjection {
   emitNotTriggerBranch(
     triggerPropIri: string,
     quads: QuadInterface[],
-    curie: CurieInterface | undefined
+    curie: CurieInterface | undefined,
+    issuer?: IdentifierIssuerInterface
   ): QuadObjectType {
-    const withoutPsBnode = QuadFactory.nextBnode();
+    const withoutPsBnode = QuadFactory.nextBnode(issuer);
 
-    quads.push(QuadFactory.quad(withoutPsBnode, RDF.type, QuadFactory.iri(SH.PropertyShape, { curie }), { curie }));
-    quads.push(QuadFactory.quad(withoutPsBnode, SH.path, QuadFactory.iri(triggerPropIri, { curie }), { curie }));
-    const minCountLit = QuadFactory.literal(1, XSD.integer, { curie });
+    const psTypeObj2 = QuadFactory.iri(SH.PropertyShape, { curie });
+    const triggerPathObj = QuadFactory.iri(triggerPropIri, { curie });
+    const minCountOne2 = QuadFactory.literal(1, XSD.integer, { curie });
 
-    quads.push(QuadFactory.quad(withoutPsBnode, SH.minCount, minCountLit, { curie }));
+    quads.push(QuadFactory.quad(withoutPsBnode, RDF.type, psTypeObj2, { curie }));
+    quads.push(QuadFactory.quad(withoutPsBnode, SH.path, triggerPathObj, { curie }));
+    quads.push(QuadFactory.quad(withoutPsBnode, SH.minCount, minCountOne2, { curie }));
 
-    const complementBnode = QuadFactory.nextBnode();
+    const innerBnode = QuadFactory.nextBnode(issuer);
+    const complementBnode = QuadFactory.nextBnode(issuer);
 
-    quads.push(QuadFactory.quad(complementBnode, SH.not, QuadFactory.bnode(QuadFactory.nextBnode()), { curie }));
+    quads.push(QuadFactory.quad(complementBnode, SH.not, QuadFactory.bnode(innerBnode), { curie }));
 
-    const withoutContainerBnode = QuadFactory.nextBnode();
+    const withoutContainerBnode = QuadFactory.nextBnode(issuer);
 
     quads.push(QuadFactory.quad(withoutContainerBnode, SH.property, QuadFactory.bnode(withoutPsBnode), { curie }));
 
-    const withoutWrapperBnode = QuadFactory.nextBnode();
+    const withoutWrapperBnode = QuadFactory.nextBnode(issuer);
 
     quads.push(QuadFactory.quad(withoutWrapperBnode, SH.not, QuadFactory.bnode(withoutContainerBnode), { curie }));
 
@@ -266,14 +275,13 @@ class ShaclVocabProjection extends VocabProjection {
   emitRequiredPropertyBranch(
     propIri: string,
     quads: QuadInterface[],
-    curie: CurieInterface | undefined
+    curie: CurieInterface | undefined,
+    issuer?: IdentifierIssuerInterface
   ): QuadObjectType {
-    const reqPsBnode = QuadFactory.nextBnode();
+    const reqPsBnode = QuadFactory.nextBnode(issuer);
 
     quads.push(QuadFactory.quad(reqPsBnode, RDF.type, QuadFactory.iri(SH.PropertyShape, { curie }), { curie }));
-    const reqPathIri = QuadFactory.iri(propIri, { curie });
-
-    quads.push(QuadFactory.quad(reqPsBnode, SH.path, reqPathIri, { curie }));
+    quads.push(QuadFactory.quad(reqPsBnode, SH.path, QuadFactory.iri(propIri, { curie }), { curie }));
     quads.push(QuadFactory.quad(reqPsBnode, SH.minCount, QuadFactory.literal(1, XSD.integer, { curie }), { curie }));
 
     return QuadFactory.bnode(reqPsBnode);
@@ -284,13 +292,11 @@ class ShaclVocabProjection extends VocabProjection {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
-
 export const ShaclProjection = {
-  graph(graph: SchemaGraphInterface, options?: { 'curie'?: CurieInterface | undefined }): QuadInterface[] {
+  graph(graph: SchemaGraphInterface, options?: { 'curie'?: CurieInterface | undefined;
+    'issuer'?: IdentifierIssuerInterface | undefined }): QuadInterface[] {
     const { curie } = options ?? {};
+    const issuer = options?.issuer ?? new IdentifierIssuer();
     const quads: QuadInterface[] = [];
     const allRelations = graph.allRelations();
     const index = ProjectionIndex.build(allRelations);
@@ -323,7 +329,7 @@ export const ShaclProjection = {
         continue;
       }
 
-      emitNodeShape(subject, entry, index, propertyIndex, shaclVocab, quads, curie);
+      emitNodeShape(subject, entry, index, propertyIndex, shaclVocab, quads, curie, issuer);
     }
 
     return quads;
@@ -337,7 +343,8 @@ function emitNodeShape(
   propertyIndex: Map<string, string[]>,
   shaclVocab: ShaclVocabProjection,
   quads: QuadInterface[],
-  curie: CurieInterface | undefined
+  curie: CurieInterface | undefined,
+  issuer?: IdentifierIssuerInterface
 ): void {
   quads.push(QuadFactory.quad(subject, RDF.type, QuadFactory.iri(SH.NodeShape, { curie }), { curie }));
 
@@ -368,13 +375,13 @@ function emitNodeShape(
       continue;
     }
 
-    const psBnode = QuadFactory.nextBnode();
+    const psBnode = QuadFactory.nextBnode(issuer);
 
-    emitPropertyShape(psBnode, propSubject, propEntry, subject, undefined, quads, curie);
+    emitPropertyShape(psBnode, propSubject, propEntry, subject, undefined, quads, curie, issuer);
     quads.push(QuadFactory.quad(subject, SH.property, QuadFactory.bnode(psBnode), { curie }));
   }
 
-  emitContainsPropertyShape(subject, entry, quads, curie);
+  emitContainsPropertyShape(subject, entry, quads, curie, issuer);
 
   const andItems: QuadObjectType[] = [];
 
@@ -384,14 +391,14 @@ function emitNodeShape(
     andItems.push(QuadFactory.iri(ProjectionIndex.relationTargetId(rel), { curie }));
   }
 
-  const depReqItems = shaclVocab.processDependentRequired(subject, entry, quads, curie);
-  const depSchemaItems = shaclVocab.processDependentSchemas(subject, entry, quads, curie);
-  const conditionalItems = shaclVocab.processConditionals(entry, quads, curie);
+  const depReqItems = shaclVocab.processDependentRequired(subject, entry, quads, curie, issuer);
+  const depSchemaItems = shaclVocab.processDependentSchemas(subject, entry, quads, curie, issuer);
+  const conditionalItems = shaclVocab.processConditionals(entry, quads, curie, issuer);
 
   andItems.push(...depReqItems, ...depSchemaItems, ...conditionalItems);
 
   if (andItems.length > 0) {
-    quads.push(QuadFactory.quad(subject, SH.and, QuadFactory.rdfList(andItems, quads), { curie }));
+    quads.push(QuadFactory.quad(subject, SH.and, QuadFactory.rdfList(andItems, quads, issuer), { curie }));
   }
 
   const equivRels = entry.byPredicate.get(OWL.equivalentClass) ?? [];
@@ -401,7 +408,7 @@ function emitNodeShape(
       return QuadFactory.iri(resolveTargetRef(ProjectionIndex.relationTargetId(rel), index), { curie });
     });
 
-    quads.push(QuadFactory.quad(subject, SH.or, QuadFactory.rdfList(orItems, quads), { curie }));
+    quads.push(QuadFactory.quad(subject, SH.or, QuadFactory.rdfList(orItems, quads, issuer), { curie }));
   }
 
   const complementRels = entry.byPredicate.get(OWL.complementOf) ?? [];
@@ -427,7 +434,7 @@ function emitNodeShape(
       return QuadFactory.literal(ProjectionIndex.relationTargetId(rel), XSD.string, { curie });
     });
 
-    quads.push(QuadFactory.quad(subject, SH.in, QuadFactory.rdfList(values, quads), { curie }));
+    quads.push(QuadFactory.quad(subject, SH.in, QuadFactory.rdfList(values, quads, issuer), { curie }));
   }
 }
 
@@ -438,9 +445,12 @@ function emitPropertyShape(
   classId: string,
   overridePathClassId: string | undefined,
   quads: QuadInterface[],
-  curie: CurieInterface | undefined
+  curie: CurieInterface | undefined,
+  _issuer?: IdentifierIssuerInterface
 ): void {
-  quads.push(QuadFactory.quad(bnodeId, RDF.type, QuadFactory.iri(SH.PropertyShape, { curie }), { curie }));
+  const opts = { curie };
+
+  quads.push(QuadFactory.quad(bnodeId, RDF.type, QuadFactory.iri(SH.PropertyShape, opts), opts));
 
   const domainRels = entry.byPredicate.get(RDFS.domain) ?? [];
   const pathClassId = overridePathClassId
@@ -448,53 +458,51 @@ function emitPropertyShape(
   const propName = SchemaIri.lastSegment(subject);
   const canonicalId = SchemaIri.propertyIri(pathClassId, propName);
 
-  quads.push(QuadFactory.quad(bnodeId, SH.path, QuadFactory.iri(canonicalId, { curie }), { curie }));
+  quads.push(QuadFactory.quad(bnodeId, SH.path, QuadFactory.iri(canonicalId, opts), opts));
 
-  QuadFactory.emitLiterals(bnodeId, entry, RDFS.label, SH.name, quads, { curie });
+  QuadFactory.emitLiterals(bnodeId, entry, RDFS.label, SH.name, quads, opts);
 
   const datatypeRels = entry.byPredicate.get(SH.datatype) ?? [];
   const rangeRels = entry.byPredicate.get(RDFS.range) ?? [];
 
   if (datatypeRels.length > 0 && rangeRels.length === 0) {
-    const dtIri = QuadFactory.iri(ProjectionIndex.relationTargetId(datatypeRels[0]), { curie });
+    const datatypeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(datatypeRels[0]), opts);
 
-    quads.push(QuadFactory.quad(bnodeId, SH.datatype, dtIri, { curie }));
+    quads.push(QuadFactory.quad(bnodeId, SH.datatype, datatypeIri, opts));
   }
 
   const minCountRels = entry.byPredicate.get(SH.minCount) ?? [];
 
   if (minCountRels.length > 0) {
-    const minVal = Number(ProjectionIndex.relationTargetId(minCountRels[0]));
+    const minCount = QuadFactory.literal(Number(ProjectionIndex.relationTargetId(minCountRels[0])), XSD.integer, opts);
 
-    quads.push(QuadFactory.quad(bnodeId, SH.minCount, QuadFactory.literal(minVal, XSD.integer, { curie }), { curie }));
+    quads.push(QuadFactory.quad(bnodeId, SH.minCount, minCount, opts));
   }
 
   const maxCountRels = entry.byPredicate.get(SH.maxCount) ?? [];
 
   if (maxCountRels.length > 0) {
-    const maxVal = Number(ProjectionIndex.relationTargetId(maxCountRels[0]));
+    const maxCount = QuadFactory.literal(Number(ProjectionIndex.relationTargetId(maxCountRels[0])), XSD.integer, opts);
 
-    quads.push(QuadFactory.quad(bnodeId, SH.maxCount, QuadFactory.literal(maxVal, XSD.integer, { curie }), { curie }));
+    quads.push(QuadFactory.quad(bnodeId, SH.maxCount, maxCount, opts));
   }
 
   if (rangeRels.length > 0) {
+    const rangeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(rangeRels[0]), opts);
+
     if (datatypeRels.length > 0 || rangeRels.length > 1) {
-      const rangeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(rangeRels[0]), { curie });
-
-      quads.push(QuadFactory.quad(bnodeId, SH.class, rangeIri, { curie }));
+      quads.push(QuadFactory.quad(bnodeId, SH.class, rangeIri, opts));
     } else {
-      const rangeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(rangeRels[0]), { curie });
-
-      quads.push(QuadFactory.quad(bnodeId, SH.node, rangeIri, { curie }));
+      quads.push(QuadFactory.quad(bnodeId, SH.node, rangeIri, opts));
     }
   }
 
   const hasValueRels = entry.byPredicate.get(OWL.hasValue) ?? [];
 
   if (hasValueRels.length > 0) {
-    const hasValLit = QuadFactory.literal(ProjectionIndex.relationTargetId(hasValueRels[0]), XSD.string, { curie });
+    const hasValueLit = QuadFactory.literal(ProjectionIndex.relationTargetId(hasValueRels[0]), XSD.string, opts);
 
-    quads.push(QuadFactory.quad(bnodeId, SH.hasValue, hasValLit, { curie }));
+    quads.push(QuadFactory.quad(bnodeId, SH.hasValue, hasValueLit, opts));
   }
 
   const patternRels = entry.byPredicate.get(SH.pattern) ?? [];
@@ -503,43 +511,42 @@ function emitPropertyShape(
     if (rel.metadata?.patternProperty === true) {
       continue;
     }
+    const patternLit = QuadFactory.literal(ProjectionIndex.relationTargetId(rel), XSD.string, opts);
 
-    const patternLit = QuadFactory.literal(ProjectionIndex.relationTargetId(rel), XSD.string, { curie });
-
-    quads.push(QuadFactory.quad(bnodeId, SH.pattern, patternLit, { curie }));
+    quads.push(QuadFactory.quad(bnodeId, SH.pattern, patternLit, opts));
   }
 
-  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.minLength, XSD.integer, quads, { curie });
-  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.maxLength, XSD.integer, quads, { curie });
-  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.minInclusive, XSD.decimal, quads, { curie });
-  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.maxInclusive, XSD.decimal, quads, { curie });
-  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.minExclusive, XSD.decimal, quads, { curie });
-  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.maxExclusive, XSD.decimal, quads, { curie });
-  QuadFactory.emitConstraintLiteral(bnodeId, entry, JT.multipleOf, XSD.decimal, quads, { curie });
+  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.minLength, XSD.integer, quads, opts);
+  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.maxLength, XSD.integer, quads, opts);
+  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.minInclusive, XSD.decimal, quads, opts);
+  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.maxInclusive, XSD.decimal, quads, opts);
+  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.minExclusive, XSD.decimal, quads, opts);
+  QuadFactory.emitConstraintLiteral(bnodeId, entry, SH.maxExclusive, XSD.decimal, quads, opts);
+  QuadFactory.emitConstraintLiteral(bnodeId, entry, JT.multipleOf, XSD.decimal, quads, opts);
 
-  QuadFactory.emitLiterals(bnodeId, entry, RDFS.comment, SH.description, quads, { curie });
+  QuadFactory.emitLiterals(bnodeId, entry, RDFS.comment, SH.description, quads, opts);
 
   if (entry.byPredicate.has(DASH.readOnly)) {
-    quads.push(QuadFactory.quad(bnodeId, DASH.readOnly, QuadFactory.literal(true, XSD.boolean, { curie }), { curie }));
+    quads.push(QuadFactory.quad(bnodeId, DASH.readOnly, QuadFactory.literal(true, XSD.boolean, opts), opts));
   }
 
   if (entry.byPredicate.has(DASH.writeOnly)) {
-    quads.push(QuadFactory.quad(bnodeId, DASH.writeOnly, QuadFactory.literal(true, XSD.boolean, { curie }), { curie }));
+    quads.push(QuadFactory.quad(bnodeId, DASH.writeOnly, QuadFactory.literal(true, XSD.boolean, opts), opts));
   }
 
-  QuadFactory.emitLiterals(bnodeId, entry, DCT.format, DCT.format, quads, { curie });
+  QuadFactory.emitLiterals(bnodeId, entry, DCT.format, DCT.format, quads, opts);
 }
-
 
 function emitContainsPropertyShape(
   subject: string,
   entry: RelationIndexInterface,
   quads: QuadInterface[],
-  curie: CurieInterface | undefined
+  curie: CurieInterface | undefined,
+  issuer?: IdentifierIssuerInterface
 ): void {
   const containsRels = entry.all.filter((rel) => {
     return ProjectionIndex.isRestrictionStructure(rel.structure)
-    && rel.structure.constraint === OWL.someValuesFrom;
+      && rel.structure.constraint === OWL.someValuesFrom;
   });
 
   if (containsRels.length === 0) {
@@ -553,40 +560,36 @@ function emitContainsPropertyShape(
   }
 
   const containsTypeId = String(structure.value);
+  const psBnode = QuadFactory.nextBnode(issuer);
 
-  const psBnode = QuadFactory.nextBnode();
+  const containsIri = QuadFactory.iri(containsTypeId, { curie });
 
-  if (containsTypeId.startsWith(XSD_PREFIX)) {
-    const qvsBnode = QuadFactory.nextBnode();
+  if (containsTypeId.startsWith(XSD_IRI_PREFIX)) {
+    const qvsBnode = QuadFactory.nextBnode(issuer);
 
-    quads.push(QuadFactory.quad(qvsBnode, SH.datatype, QuadFactory.iri(containsTypeId, { curie }), { curie }));
+    quads.push(QuadFactory.quad(qvsBnode, SH.datatype, containsIri, { curie }));
     quads.push(QuadFactory.quad(psBnode, SH.qualifiedValueShape, QuadFactory.bnode(qvsBnode), { curie }));
   } else {
-    const containsIri = QuadFactory.iri(containsTypeId, { curie });
-
     quads.push(QuadFactory.quad(psBnode, SH.qualifiedValueShape, containsIri, { curie }));
   }
 
   const minQualRels = entry.byPredicate.get(OWL.minQualifiedCardinality) ?? [];
 
   if (minQualRels.length > 0) {
-    const minQualVal = Number(ProjectionIndex.relationTargetId(minQualRels[0]));
+    const minVal = Number(ProjectionIndex.relationTargetId(minQualRels[0]));
+    const minLit = QuadFactory.literal(minVal, XSD.integer, { curie });
 
-    const minQLit = QuadFactory.literal(minQualVal, XSD.integer, { curie });
-
-    quads.push(QuadFactory.quad(psBnode, SH.qualifiedMinCount, minQLit, { curie }));
+    quads.push(QuadFactory.quad(psBnode, SH.qualifiedMinCount, minLit, { curie }));
   }
 
   const maxQualRels = entry.byPredicate.get(OWL.maxQualifiedCardinality) ?? [];
 
   if (maxQualRels.length > 0) {
-    const maxQualVal = Number(ProjectionIndex.relationTargetId(maxQualRels[0]));
+    const maxVal = Number(ProjectionIndex.relationTargetId(maxQualRels[0]));
+    const maxLit = QuadFactory.literal(maxVal, XSD.integer, { curie });
 
-    const maxQLit = QuadFactory.literal(maxQualVal, XSD.integer, { curie });
-
-    quads.push(QuadFactory.quad(psBnode, SH.qualifiedMaxCount, maxQLit, { curie }));
+    quads.push(QuadFactory.quad(psBnode, SH.qualifiedMaxCount, maxLit, { curie }));
   }
 
   quads.push(QuadFactory.quad(subject, SH.property, QuadFactory.bnode(psBnode), { curie }));
 }
-

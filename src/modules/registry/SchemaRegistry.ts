@@ -65,6 +65,17 @@ const EMPTY_VALIDATION_ERRORS = new ValidationErrors([]);
 const EMPTY_EMBEDDED_MAP_MUTABLE = new Map<string, Record<string, unknown>>();
 const EMPTY_EMBEDDED_MAP: ReadonlyMap<string, Record<string, unknown>> = Object.freeze(EMPTY_EMBEDDED_MAP_MUTABLE);
 
+// Hoisted from addCharacteristic() — allocated once per module, not per call.
+const CHARACTERISTIC_TO_KEY: Readonly<Partial<Record<string, string>>> = Object.freeze({
+  'Asymmetric': 'asymmetric',
+  'Functional': 'functional',
+  'InverseFunctional': 'inverseFunctional',
+  'Irreflexive': 'irreflexive',
+  'Reflexive': 'reflexive',
+  'Symmetric': 'symmetric',
+  'Transitive': 'transitive'
+});
+
 function detectEmbeddedIds(node: unknown, isRoot: boolean): boolean {
   if (Array.isArray(node)) {
     for (const item of node) {
@@ -191,16 +202,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
    * @param characteristic - OWL 2 characteristic name string from the dispatcher.
    */
   public addCharacteristic(propertyIri: string, characteristic: string): void {
-    const CHARACTERISTIC_TO_KEY: Readonly<Partial<Record<string, string>>> = {
-      'Asymmetric': 'asymmetric',
-      'Functional': 'functional',
-      'InverseFunctional': 'inverseFunctional',
-      'Irreflexive': 'irreflexive',
-      'Reflexive': 'reflexive',
-      'Symmetric': 'symmetric',
-      'Transitive': 'transitive'
-    };
-
     const schemaKey = CHARACTERISTIC_TO_KEY[characteristic];
 
     if (schemaKey === undefined) {
@@ -289,7 +290,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
         throw new SchemaError(
           'PROPERTY_CHARACTERISTIC_CONFLICT',
           `Property "${propName}" in schema "${schemaId}" sets both symmetric:true and asymmetric:true, which are mutually exclusive OWL 2 characteristics`,
-          schemaId
+          { schemaId }
         );
       }
 
@@ -297,7 +298,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
         throw new SchemaError(
           'PROPERTY_CHARACTERISTIC_CONFLICT',
           `Property "${propName}" in schema "${schemaId}" sets both reflexive:true and irreflexive:true, which are mutually exclusive OWL 2 characteristics`,
-          schemaId
+          { schemaId }
         );
       }
 
@@ -305,7 +306,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
         throw new SchemaError(
           'PROPERTY_CHARACTERISTIC_CONFLICT',
           `Property "${propName}" in schema "${schemaId}" sets both asymmetric:true and reflexive:true; asymmetric implies irreflexive in OWL 2, so reflexive directly contradicts it`,
-          schemaId
+          { schemaId }
         );
       }
     }
@@ -351,7 +352,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const compiled = this.compiled(schemaId);
 
     if (compiled === undefined) {
-      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`, schemaId);
+      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`, { schemaId });
     }
 
     const input = options?.clone === false ? data : structuredClone(data);
@@ -434,7 +435,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const compiled = this.compiled(schemaId);
 
     if (compiled === undefined) {
-      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`, schemaId);
+      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`, { schemaId });
     }
 
     return compiled.validate(structuredClone(data), CLEAN_OPTIONS).value;
@@ -450,7 +451,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
         throw new SchemaError(
           'SCHEMA_DUPLICATE_ANCHOR',
           `Duplicate $anchor "${schema.$anchor}" in schema "${schemaId}"`,
-          schemaId
+          { schemaId }
         );
       }
       seen.add(schema.$anchor);
@@ -460,7 +461,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
         throw new SchemaError(
           'SCHEMA_DUPLICATE_ANCHOR',
           `Duplicate $dynamicAnchor "${schema.$dynamicAnchor}" in schema "${schemaId}"`,
-          schemaId
+          { schemaId }
         );
       }
       seen.add(schema.$dynamicAnchor);
@@ -516,7 +517,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const compiled = this.compiled(schemaId);
 
     if (compiled === undefined) {
-      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`, schemaId);
+      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`, { schemaId });
     }
 
     const input = options?.clone === false ? data : structuredClone(data);
@@ -528,7 +529,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const entry = this.store.get(this.resolve(schemaId));
 
     if (entry === undefined) {
-      throw new SchemaError('SCHEMA_NOT_REGISTERED', `No schema registered for: ${schemaId}`, schemaId);
+      throw new SchemaError('SCHEMA_NOT_REGISTERED', `No schema registered for: ${schemaId}`, { schemaId });
     }
 
     this.assertRefsResolvable(entry);
@@ -547,7 +548,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const entry = this.store.get(schemaId);
 
     if (entry === undefined) {
-      throw new SchemaError('SCHEMA_VALIDATOR_MISSING', `No validator registered for schema: ${schemaId}`, schemaId);
+      throw new SchemaError('SCHEMA_VALIDATOR_MISSING', `No validator registered for schema: ${schemaId}`, { schemaId });
     }
 
     if (entry.engine === undefined) {
@@ -694,12 +695,12 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
 
     const compiled = this.compiledFromEntry(entry);
-    const resolvedOptions = Resolver.merge(
-      { ...this.instantiateOptions },
-      callOptions?.enableDefaults === undefined
-        ? undefined
-        : { 'applyDefaults': callOptions.enableDefaults }
-    );
+    const resolvedOptions = callOptions?.enableDefaults === undefined
+      ? this.instantiateOptions
+      : Resolver.merge(
+        this.instantiateOptions,
+        { 'applyDefaults': callOptions.enableDefaults }
+      );
     const input = callOptions?.clone === false ? data : structuredClone(data);
     const result = compiled.validate(input, resolvedOptions);
 
@@ -796,7 +797,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const compiled = this.compiled(schemaId);
 
     if (compiled === undefined) {
-      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`, schemaId);
+      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`, { schemaId });
     }
 
     if (!compiled.check(data)) {
@@ -811,13 +812,13 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   }
 
   public list(): ReadonlyArray<Record<string, unknown>> {
-    return [...this.store.values()].map((entry) => {
+    return Array.from(this.store.values(), (entry) => {
       return entry.schema;
     });
   }
 
   public listGraphs(): readonly SchemaGraphInterface[] {
-    return [...this.store.values()].map((entry) => {
+    return Array.from(this.store.values(), (entry) => {
       return this.graphOf(entry);
     });
   }
@@ -852,7 +853,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       throw new SchemaError(
         'SCHEMA_DIALECT_UNSUPPORTED',
         `Strict mode requires draft ${DRAFT_NAME} but schema "${schemaId}" declares "${schema.$schema}"`,
-        schemaId
+        { schemaId }
       );
     }
 
@@ -887,7 +888,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       throw new SchemaError(
         'SCHEMA_DUPLICATE_ID',
         `Schema "${schemaId}" is already registered with different content. Unregister first or use the same schema object.`,
-        schemaId
+        { schemaId }
       );
     }
 
@@ -918,7 +919,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
         }).join('; ')}`;
 
         if (this.enableStrictGraph) {
-          throw new SchemaError('SCHEMA_STRUCTURE_INVALID', message, schemaId);
+          throw new SchemaError('SCHEMA_STRUCTURE_INVALID', message, { schemaId });
         }
         this.logger.warn(message);
       }
@@ -937,7 +938,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
         const message = `Duplicate schema shapes detected: ${dupMsg}`;
 
         if (this.enableStrictGraph) {
-          throw new SchemaError('SCHEMA_DUPLICATE_SHAPE', message, schemaId);
+          throw new SchemaError('SCHEMA_DUPLICATE_SHAPE', message, { schemaId });
         }
         this.logger.warn(message);
       }
@@ -1018,7 +1019,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       throw new SchemaError(
         'SCHEMA_INVALID_INPUT',
         `set() key "${iri}" does not match schema.$id "${schemaIdOnObject}"`,
-        iri
+        { 'schemaId': iri }
       );
     }
     this.delete(iri);
@@ -1056,7 +1057,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const entry = this.store.get(schemaId);
 
     if (!entry) {
-      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`, schemaId);
+      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`, { schemaId });
     }
 
     const graph = this.graphOf(entry);
@@ -1089,7 +1090,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const compiled = this.compiled(schemaId);
 
     if (compiled === undefined) {
-      throw new SchemaError('SCHEMA_NOT_REGISTERED', `No validator registered for schema: ${schemaId}`, schemaId);
+      throw new SchemaError('SCHEMA_NOT_REGISTERED', `No validator registered for schema: ${schemaId}`, { schemaId });
     }
 
     const result = compiled.validate(data, COLLECT_ERRORS_OPTIONS);
@@ -1117,7 +1118,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const compiled = this.compiled(schemaId);
 
     if (compiled === undefined) {
-      throw new SchemaError('SCHEMA_NOT_REGISTERED', `No schema registered for: ${schemaId}`, schemaId);
+      throw new SchemaError('SCHEMA_NOT_REGISTERED', `No schema registered for: ${schemaId}`, { schemaId });
     }
 
     return compiled;

@@ -158,6 +158,14 @@ void describe('computed fields', { 'concurrency': true }, () => {
           `expected error about computed field "total", got: ${messages.join('; ')}`
         );
 
+        // COMPUTED_INPUT_FORBIDDEN surfaces as the keyword on the validation error item
+        const forbiddenItem = (err).errors.items.find((item) => {
+          return item.keyword === 'COMPUTED_INPUT_FORBIDDEN';
+        });
+
+        assert.ok(forbiddenItem !== undefined, 'error item with keyword COMPUTED_INPUT_FORBIDDEN present');
+        assert.equal(forbiddenItem.keyword, 'COMPUTED_INPUT_FORBIDDEN', 'keyword === COMPUTED_INPUT_FORBIDDEN');
+
         return true;
       }
     );

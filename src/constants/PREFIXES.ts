@@ -1,25 +1,22 @@
-export const DEFAULT_PREFIXES: Record<string, string> = {
-  'dash': 'http://datashapes.org/dash#',
-  'dcat': 'http://www.w3.org/ns/dcat#',
-  'dct': 'http://purl.org/dc/terms/',
-  'dcterms': 'http://purl.org/dc/terms/',
-  'foaf': 'http://xmlns.com/foaf/0.1/',
-  'jt': 'https://json-tology.dev/vocab#',
-  'owl': 'http://www.w3.org/2002/07/owl#',
-  'prov': 'http://www.w3.org/ns/prov#',
-  'rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
-  'rdfs': 'http://www.w3.org/2000/01/rdf-schema#',
-  'schema': 'http://schema.org/',
-  'sh': 'http://www.w3.org/ns/shacl#',
-  'skos': 'http://www.w3.org/2004/02/skos/core#',
-  'vann': 'http://purl.org/vocab/vann/',
-  'xsd': 'http://www.w3.org/2001/XMLSchema#'
-};
+import { STANDARD_PREFIXES } from './STANDARD_PREFIXES.js';
+import {
+  RDF, RDFS, XSD
+} from './IRI.js';
 
+/**
+ * DEFAULT_PREFIXES — the prefix map used by project serializers and the Curie instance.
+ *
+ * Derived from STANDARD_PREFIXES (single source of truth). All namespace IRIs
+ * are full IRIs. Consumers that need compact-form display call Curie.compact()
+ * at presentation time; storage is always full IRI.
+ */
+export const DEFAULT_PREFIXES: Record<string, string> = { ...STANDARD_PREFIXES };
+
+/** @deprecated Use STANDARD_PREFIXES.xsd directly or XSD constants from IRI.ts */
 export const XSD_PREFIX = 'xsd:';
-export const RDF_TYPE_IRI = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
-export const XSD_IRI_PREFIX = 'http://www.w3.org/2001/XMLSchema#';
-export const RDFS_IRI_PREFIX = 'http://www.w3.org/2000/01/rdf-schema#';
-export const RDFS_DOMAIN_IRI = 'http://www.w3.org/2000/01/rdf-schema#domain';
-export const RDFS_RANGE_IRI = 'http://www.w3.org/2000/01/rdf-schema#range';
-export const RDFS_SUB_CLASS_OF_IRI = 'http://www.w3.org/2000/01/rdf-schema#subClassOf';
+export const RDF_TYPE_IRI = RDF.type;
+export const XSD_IRI_PREFIX = XSD.string.slice(0, XSD.string.lastIndexOf('#') + 1);
+export const RDFS_IRI_PREFIX = RDFS.label.slice(0, RDFS.label.lastIndexOf('#') + 1);
+export const RDFS_DOMAIN_IRI = RDFS.domain;
+export const RDFS_RANGE_IRI = RDFS.range;
+export const RDFS_SUB_CLASS_OF_IRI = RDFS.subClassOf;

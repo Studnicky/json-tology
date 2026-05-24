@@ -2,6 +2,9 @@
  * OWL codegen interfaces.
  *
  * Options and result contracts for the OWL 2 TBox → TypeScript code generator.
+ *
+ * @experimental This surface is subject to change before 1.0. Generated code
+ * shapes and option names may evolve as the codegen path matures.
  */
 
 /**

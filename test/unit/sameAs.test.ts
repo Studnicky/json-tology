@@ -124,4 +124,43 @@ void describe('JsonTology.sameAs() — Good/Bad/Ugly', () => {
       assert.equal(quad.graph.value, 'urn:example:graph1');
     }
   });
+
+  void it('direct materializer.projectAbox calls include sameAs quads (no facade bypass)', () => {
+    const jt = JsonTology.create({
+      'baseIRI': 'urn:example',
+      'schemas': [PersonSchema] as const
+    });
+
+    jt.sameAs('urn:example:alice', 'urn:example:alice2');
+
+    const directQuads = jt.materializer.projectAbox(
+      PersonSchema,
+      {
+        'id': 'a1',
+        'name': 'Alice'
+      },
+      'urn:example',
+      {
+        'iriFor': () => {
+          return 'urn:example:alice';
+        }
+      }
+    );
+
+    const directSameAs = directQuads.filter((quad) => {
+      return quad.predicate.value === OWL_SAME_AS;
+    });
+
+    assert.equal(directSameAs.length, 2, 'direct projectAbox emits symmetric sameAs pair');
+
+    const facadeQuads = jt.toQuads(PersonSchema, {
+      'id': 'a1',
+      'name': 'Alice'
+    }, { 'iriFor': 'urn:example:alice' });
+    const facadeSameAs = facadeQuads.filter((quad) => {
+      return quad.predicate.value === OWL_SAME_AS;
+    });
+
+    assert.equal(facadeSameAs.length, directSameAs.length, 'facade and direct emit equivalent sameAs quad count');
+  });
 });

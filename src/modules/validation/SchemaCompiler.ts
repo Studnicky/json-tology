@@ -17,7 +17,6 @@ import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js
 import type { GraphEngineInterface } from '../../interfaces/GraphEngineImpl.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { KeywordDefinitionInterface } from '../../interfaces/GraphEngine.js';
-import { SchemaGraph } from '../graph/SchemaGraph.js';
 import type {
   SchemaGraphNodeInterface, SchemaGraphSemanticsInterface
 } from '../../interfaces/SchemaGraph.js';
@@ -1357,7 +1356,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
    * @param engine - Graph engine holding the schema to compile
    * @returns Compiled validator with check and validate functions
    */
-  public compile(engine: GraphEngineInterface, graph?: SchemaGraphInterface): CompiledValidatorInterface {
+  public compile(engine: GraphEngineInterface, graph: SchemaGraphInterface): CompiledValidatorInterface {
     const rootSchema = engine.rootSchema;
 
     if (typeof rootSchema === 'boolean') {
@@ -1371,7 +1370,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
     const schema = rootSchema;
     const formatRegistry = engine.formatRegistry;
     const lookupSchema = engine.schemaLookup();
-    const resolvedGraph = graph ?? new SchemaGraph(schema);
+    const resolvedGraph = graph;
 
     this.activeCustomKeywords = engine.keywords();
     this.activeLookupGraph = engine.graphLookup();

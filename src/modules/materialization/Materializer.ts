@@ -17,6 +17,8 @@ import { Frozen } from '../data/Frozen.js';
 import { isRecord } from '../data/DataTypes.js';
 import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
 import { Projection } from '../rdf/Projection.js';
+import { Terms } from '../rdf/Terms.js';
+import { OWL } from '../../constants/IRI.js';
 import { ValidationErrors } from '../../errors/ValidationErrors.js';
 import { InstantiationError } from '../../errors/InstantiationError.js';
 
@@ -76,6 +78,14 @@ export class Materializer implements MaterializerInterface {
     readonly 'synthesizeDefaults': true;
   };
 
+  // Two-level WeakMap: graph → node → collected properties.
+  // Schema graphs and nodes are stable post-registration; the cache is always valid.
+  private readonly effectivePropertiesCache = new WeakMap<
+    SchemaGraphInterface,
+    WeakMap<SchemaGraphNodeInterface, Map<string, { 'graph': SchemaGraphInterface;
+      'node': SchemaGraphNodeInterface }>>
+  >();
+
   public constructor(
     private readonly registry: SchemaRegistryInterface,
     options: MaterializerOptionsInterface = {}
@@ -99,6 +109,29 @@ export class Materializer implements MaterializerInterface {
       'removeAdditionalProperties': false,
       'synthesizeDefaults': true
     };
+  }
+
+  /**
+   * Append symmetric owl:sameAs quads from the registry's SameAsStore to an
+   * ABox projection. Called automatically by projectAbox so direct callers and
+   * the JsonTology.toQuads facade emit equivalent output — there is no bypass.
+   */
+  private appendSameAsQuads(quads: QuadInterface[], graphIRI: string | undefined): void {
+    const pairs = this.registry.sameAsStore.all();
+
+    if (pairs.length === 0) {
+      return;
+    }
+    const graphTerm = graphIRI === undefined ? Terms.defaultGraph() : Terms.iri(graphIRI);
+    const predicate = Terms.iri(OWL.sameAs);
+
+    for (const [
+      a,
+      b
+    ] of pairs) {
+      quads.push(Terms.quad(Terms.iri(a), predicate, Terms.iri(b), graphTerm));
+      quads.push(Terms.quad(Terms.iri(b), predicate, Terms.iri(a), graphTerm));
+    }
   }
 
   private applyComputedFields(schemaId: string, value: Record<string, unknown>): void {
@@ -139,6 +172,16 @@ export class Materializer implements MaterializerInterface {
     node: SchemaGraphNodeInterface
   ): Map<string, { 'graph': SchemaGraphInterface;
     'node': SchemaGraphNodeInterface }> {
+    let graphCache = this.effectivePropertiesCache.get(graph);
+
+    if (graphCache !== undefined) {
+      const cached = graphCache.get(node);
+
+      if (cached !== undefined) {
+        return cached;
+      }
+    }
+
     const collected = new Map<string, { 'graph': SchemaGraphInterface;
       'node': SchemaGraphNodeInterface }>();
     const visited = new Set<SchemaGraphNodeInterface>();
@@ -173,6 +216,12 @@ export class Materializer implements MaterializerInterface {
     };
 
     walk(graph, node);
+
+    if (graphCache === undefined) {
+      graphCache = new WeakMap();
+      this.effectivePropertiesCache.set(graph, graphCache);
+    }
+    graphCache.set(node, collected);
 
     return collected;
   }
@@ -262,7 +311,6 @@ export class Materializer implements MaterializerInterface {
   private formatErrors(result: GraphExecutionResultInterface): string[] {
     return BaseError.formatErrors(result.errors);
   }
-
   /**
    * Materialize partial data against a schema, filling implicit properties and validating.
    *
@@ -297,6 +345,7 @@ export class Materializer implements MaterializerInterface {
 
     return value;
   }
+
   private materializeResult(result: GraphExecutionResultInterface): unknown {
     this.fillImplicitProperties(result.graph, result.entryNode, result.value);
 
@@ -338,8 +387,13 @@ export class Materializer implements MaterializerInterface {
     const quads = Projection.abox(execution.graph, materialized, baseIRI, {
       'entryNode': execution.entryNode,
       'graphIRI': options?.graphIRI,
-      'iriFor': options?.iriFor
+      'iriFor': options?.iriFor,
+      'lookupGraph': (schemaId) => {
+        return this.registry.graph(schemaId);
+      }
     });
+
+    this.appendSameAsQuads(quads, options?.graphIRI);
 
     return quads;
   }
@@ -377,7 +431,7 @@ export class Materializer implements MaterializerInterface {
     const targetGraph = this.registry.graph(parsed.id);
 
     if (targetGraph === undefined) {
-      throw new GraphError('REF_UNRESOLVED', `Unresolved schema reference: ${ref}`, ref);
+      throw new GraphError('REF_UNRESOLVED', `Unresolved schema reference: ${ref}`, { 'pointer': ref });
     }
 
     return [

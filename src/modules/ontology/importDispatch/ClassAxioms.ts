@@ -14,6 +14,16 @@
  *
  * Symmetric axioms: `disjointWith` is symmetric in OWL 2 — both directions are
  * emitted in the fragment so the resulting schemas are pairwise consistent.
+ *
+ * Graph-native traversal: all arms read from the graph.
+ * - Named-IRI arms (subClassOf NamedNode, complementOf NamedNode, etc.) walk
+ *   `ctx.graph.allRelations()`.
+ * - The `owl:equivalentClass [ owl:unionOf (…) ]` blank-node wrapper is
+ *   resolved through `ctx.graph.relationsForSubject(bnode)` to find the
+ *   union edge, then `ctx.graph.collectList` on the union's list head.
+ * - The legacy `owl:equivalentClass = <JSON-LD wrapper literal>` encoding
+ *   reads `relation.termType === 'Literal'` and parses the embedded list.
+ * - `owl:disjointUnionOf` lists are walked via `ctx.graph.collectList`.
  */
 
 import type { QuadInterface } from '../../../interfaces/Quad.js';
@@ -22,39 +32,81 @@ import type {
 } from '../../../interfaces/OwlImport.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
 import type { InvariantInterface } from '../../../interfaces/Invariant.js';
-import { Lists } from '../../rdf/Lists.js';
+import type { SchemaGraphRelationInterface } from '../../../interfaces/SchemaGraph.js';
+import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphImpl.js';
+import {
+  OWL, RDF, RDFS
+} from '../../../constants/IRI.js';
 
 // ---------------------------------------------------------------------------
-// Full IRI constants (quads arrive with fully-expanded IRIs after JSON-LD normalisation)
+// Predicate constants — accept full IRI and CURIE forms both
 // ---------------------------------------------------------------------------
 
-const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
-const OWL_CLASS = 'http://www.w3.org/2002/07/owl#Class';
-const OWL_COMPLEMENT_OF = 'http://www.w3.org/2002/07/owl#complementOf';
-const OWL_DISJOINT_UNION_OF = 'http://www.w3.org/2002/07/owl#disjointUnionOf';
-const OWL_DISJOINT_WITH = 'http://www.w3.org/2002/07/owl#disjointWith';
-const OWL_EQUIVALENT_CLASS = 'http://www.w3.org/2002/07/owl#equivalentClass';
-const OWL_UNION_OF = 'http://www.w3.org/2002/07/owl#unionOf';
-const RDFS_CLASS = 'http://www.w3.org/2000/01/rdf-schema#Class';
-const RDFS_SUBCLASSOF = 'http://www.w3.org/2000/01/rdf-schema#subClassOf';
+const COMPLEMENT_OF_PREDICATES: ReadonlySet<string> = new Set([
+  OWL.complementOf,
+  'owl:complementOf'
+]);
+
+const DISJOINT_UNION_OF_PREDICATES: ReadonlySet<string> = new Set([
+  OWL.disjointUnionOf,
+  'owl:disjointUnionOf'
+]);
+
+const DISJOINT_WITH_PREDICATES: ReadonlySet<string> = new Set([
+  OWL.disjointWith,
+  'owl:disjointWith'
+]);
+
+const EQUIVALENT_CLASS_PREDICATES: ReadonlySet<string> = new Set([
+  OWL.equivalentClass,
+  'owl:equivalentClass'
+]);
+
+const UNION_OF_PREDICATES: ReadonlySet<string> = new Set([
+  OWL.unionOf,
+  'owl:unionOf'
+]);
+
+const CLASS_TYPE_IRIS: ReadonlySet<string> = new Set([
+  'http://www.w3.org/2000/01/rdf-schema#Class',
+  OWL.Class,
+  'owl:Class',
+  'rdfs:Class'
+]);
 
 // ---------------------------------------------------------------------------
-// Internal helpers
+// Graph-native helpers
 // ---------------------------------------------------------------------------
+
+/** Resolve the IRI / bnode-id / lexical form of a relation target. */
+function targetValue(relation: SchemaGraphRelationInterface): string {
+  return typeof relation.target === 'string' ? relation.target : relation.target.id;
+}
 
 /**
- * Extract member IRIs from an owl:unionOf literal value.
- *
- * The forward path serialises equivalentClass as a Literal whose `.value` is
- * the anonymous class node object:
- *   `{ '@type': 'owl:Class', 'owl:unionOf': { '@list': [{ '@id': '...' }, ...] } }`.
+ * Parse the legacy `owl:equivalentClass = <JSON-LD wrapper literal>` form.
+ * Some forward projections serialise the equivalentClass union as a single
+ * Literal whose lexical string is JSON-encoded:
+ *   `{ "@type": "owl:Class", "owl:unionOf": { "@list": [{ "@id": "..." }, ...] } }`
+ * The quad-backed graph surfaces this as a Literal-typed relation whose
+ * `target` carries the lexical string. We parse it once here and return
+ * the embedded `@id` IRIs.
  */
-function extractUnionMembers(objectValue: unknown): string[] {
-  if (typeof objectValue !== 'object' || objectValue === null) {
+function parseUnionLiteralWrapper(lexical: string): string[] {
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(lexical);
+  } catch {
     return [];
   }
-  const obj = objectValue as Record<string, unknown>;
-  const unionOf = obj[OWL_UNION_OF];
+
+  if (typeof parsed !== 'object' || parsed === null) {
+    return [];
+  }
+
+  const wrapper = parsed as Record<string, unknown>;
+  const unionOf = wrapper[OWL.unionOf];
 
   if (typeof unionOf !== 'object' || unionOf === null) {
     return [];
@@ -82,72 +134,31 @@ function extractUnionMembers(objectValue: unknown): string[] {
 }
 
 /**
- * Extract member IRIs from an owl:disjointUnionOf quad object.
- *
- * Supports two encodings:
- *   1. Standard RDF list: `quad.object` is the head of an rdf:first/rdf:rest
- *      chain that materialises elsewhere in `allQuads`. Walked via
- *      `Lists.collect`.
- *   2. Legacy Literal encoding: a serialised union string. Decoded via
- *      `extractUnionMembers`.
+ * Walk the bnode's `owl:unionOf` list via the graph's RDF list helper and
+ * return the NamedNode IRIs of each member.
  */
-/**
- * Walk the bnode's `owl:unionOf` list and return the member IRIs.
- *
- * Given a blank-node identifier that OwlProjection emitted as an anonymous
- * owl:Class with an owl:unionOf list, find its unionOf head among `allQuads`
- * and return the NamedNode IRI of each list member.
- */
-function extractEquivalentMembers(
+function extractEquivalentMembersFromGraph(
   bnodeId: string,
-  allQuads: readonly QuadInterface[]
+  graph: SchemaGraphInterface
 ): string[] {
-  const unionPredicates: ReadonlySet<string> = new Set([
-    'http://www.w3.org/2002/07/owl#unionOf',
-    'owl:unionOf'
-  ]);
-  const unionQuad = allQuads.find((entry) => {
-    return entry.subject.termType === 'BlankNode'
-      && entry.subject.value === bnodeId
-      && unionPredicates.has(entry.predicate.value);
+  const unionRelations = graph.relationsForSubject(bnodeId).filter((rel) => {
+    return UNION_OF_PREDICATES.has(rel.predicate);
   });
 
-  if (unionQuad === undefined) {
+  if (unionRelations.length === 0) {
     return [];
   }
 
-  const head = unionQuad.object;
+  const listHead = targetValue(unionRelations[0]);
+  const members: string[] = [];
 
-  if (head.termType !== 'BlankNode' && head.termType !== 'NamedNode') {
-    return [];
+  for (const item of graph.collectList(listHead)) {
+    if (item.termType === 'NamedNode') {
+      members.push(item.target);
+    }
   }
 
-  return Lists.collect(head, allQuads)
-    .filter((item) => {
-      return item.termType === 'NamedNode';
-    })
-    .map((item) => {
-      return item.value;
-    });
-}
-
-function extractListMembers(quad: QuadInterface, allQuads: readonly QuadInterface[]): string[] {
-  const obj = quad.object;
-
-  if (obj.termType === 'Literal') {
-    return extractUnionMembers(obj.value);
-  }
-  if (obj.termType !== 'BlankNode' && obj.termType !== 'NamedNode') {
-    return [];
-  }
-
-  return Lists.collect(obj, allQuads)
-    .filter((item) => {
-      return item.termType === 'NamedNode';
-    })
-    .map((item) => {
-      return item.value;
-    });
+  return members;
 }
 
 /**
@@ -196,213 +207,266 @@ function mergeAllOfRef(
  * Process class-level OWL axioms (SubClassOf, EquivalentClasses, DisjointClasses,
  * DisjointUnion, ComplementOf) and return a partial import fragment.
  *
- * @param quads - All quads from the input graph.
+ * Graph-native: every arm reads from `ctx.graph`. NamedNode targets come
+ * from `allRelations()`; the `owl:equivalentClass` blank-node union wrapper
+ * is resolved via `relationsForSubject(bnode)` + `collectList`; the legacy
+ * `owl:equivalentClass = <JSON-LD wrapper literal>` form is detected via the
+ * relation's `termType === 'Literal'` and parsed from the lexical string;
+ * `owl:disjointUnionOf` lists are walked via `collectList`.
+ *
+ * @param _quads - Retained for back-compat with the dispatcher signature; the
+ *                 implementation reads exclusively from `ctx.graph`.
  * @param ctx   - Shared import context (graph, curie, IRI sets, reporting helpers).
  * @returns OwlImportFragment with schemaDeltas and/or invariants populated.
  */
-export function importClassAxioms(quads: QuadInterface[], ctx: OwlImportContext): OwlImportFragment {
+export function importClassAxioms(_quads: QuadInterface[], ctx: OwlImportContext): OwlImportFragment {
   const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
   const invariants: Array<{ 'invariant': InvariantInterface;
     'schemaId': string; }> = [];
 
+  // QuadBackedSchemaGraph compacts NamedNode IRI targets via the active prefix
+  // map. Expand them back so $ref / disjointWith values match the full-IRI
+  // schema $id form used throughout the importer.
+  function resolveTargetIri(target: string | { 'id': string }): string {
+    const raw = typeof target === 'string' ? target : target.id;
+
+    if (raw === '' || raw.startsWith('_:') || raw.startsWith('http://') || raw.startsWith('https://') || raw.startsWith('urn:')) {
+      return raw;
+    }
+
+    return ctx.curie.expand(raw);
+  }
+
   // ------------------------------------------------------------------
   // Pass 1: Emit a minimal stub for every named owl:Class / rdfs:Class.
-  // Axiom patches in Pass 2 merge on top of these stubs.
+  // Drive from graph rdf:type relations; relations carry the compacted
+  // target form (e.g. owl:Class) when the prefix is in scope.
   // ------------------------------------------------------------------
-  for (const quad of quads) {
-    if (quad.predicate.value !== RDF_TYPE || quad.subject.termType !== 'NamedNode') {
+  for (const relation of ctx.graph.allRelations()) {
+    if (relation.predicate !== RDF.type) {
+      continue;
+    }
+    if (typeof relation.target !== 'string') {
+      continue;
+    }
+    if (!CLASS_TYPE_IRIS.has(relation.target)) {
       continue;
     }
 
-    const objValue = quad.object.termType === 'NamedNode'
-      || quad.object.termType === 'BlankNode'
-      || quad.object.termType === 'Literal'
-      ? quad.object.value
-      : undefined;
+    const classIri = relation.source.id;
 
-    if (objValue === OWL_CLASS || objValue === RDFS_CLASS) {
-      const classIri = quad.subject.value;
-
-      if (!schemaDeltas.has(classIri)) {
-        schemaDeltas.set(classIri, {
-          'properties': {},
-          'required': [],
-          'type': 'object'
-        });
-      }
+    if (!schemaDeltas.has(classIri)) {
+      schemaDeltas.set(classIri, {
+        'properties': {},
+        'required': [],
+        'type': 'object'
+      });
     }
   }
 
   // ------------------------------------------------------------------
-  // Pass 2: Walk axiom predicates for each named class subject.
+  // Pass 2: Walk axiom relations on each named-class subject.
+  // The NamedNode arms (target resolves to a node or named IRI string)
+  // are read from ctx.graph.allRelations(). The BlankNode / Literal arms
+  // for equivalentClass and the disjointUnionOf list are read from the
+  // raw quads input because the graph layer is lossy for those shapes.
   // ------------------------------------------------------------------
-  for (const quad of quads) {
-    // Only named class subjects are in scope for class axioms.
-    if (quad.subject.termType !== 'NamedNode') {
-      continue;
-    }
-
-    const subjectIri = quad.subject.value;
+  for (const relation of ctx.graph.allRelations()) {
+    const subjectIri = relation.source.id;
 
     if (!ctx.allClassIris.has(subjectIri)) {
       continue;
     }
 
-    const predicate = quad.predicate.value;
-    const objTermType = quad.object.termType;
+    const predicate = relation.predicate;
+    const target = relation.target;
 
-    // Cases ordered alphabetically per perfectionist/sort-switch-case.
-    switch (predicate) {
-      case OWL_COMPLEMENT_OF:
-        // complementOf → not: { $ref: complementTarget } + runtime invariant.
-        // TypeScript has no complement type; the structural `not` keyword handles JSON Schema
-        // validation while the invariant documents the semantic for downstream tooling.
-        if (objTermType === 'NamedNode') {
-          const complementTarget = quad.object.value;
+    // ---- rdfs:subClassOf → allOf: [{ $ref: parent }] ----------------
+    if (predicate === RDFS.subClassOf) {
+      // Skip restriction structures — PropertyRestrictions dispatcher owns those.
+      if (relation.structure?.kind === 'restriction') {
+        continue;
+      }
+
+      const targetIri = resolveTargetIri(target);
+
+      // Skip blank-node references (anonymous classes); only NamedNode parents
+      // produce allOf entries.
+      if (targetIri.startsWith('_:')) {
+        continue;
+      }
+
+      mergeAllOfRef(schemaDeltas, subjectIri, targetIri);
+      continue;
+    }
+
+    // ---- owl:complementOf → not: { $ref } + invariant ---------------
+    if (COMPLEMENT_OF_PREDICATES.has(predicate)) {
+      const targetIri = resolveTargetIri(target);
+
+      if (targetIri.startsWith('_:')) {
+        continue;
+      }
+
+      const existing = schemaDeltas.get(subjectIri) ?? {};
+
+      schemaDeltas.set(subjectIri, {
+        ...existing,
+        'not': { '$ref': targetIri }
+      });
+
+      const capturedTarget = targetIri;
+      const capturedSubjectIri = subjectIri;
+      const inv: InvariantInterface = {
+        'fn': (_: unknown) => {
+          // Real enforcement is via JSON Schema `not` keyword.
+          // This invariant carries the complementOf signature for runtime tracing.
+          return null;
+        },
+        'name': `complementOf:${capturedSubjectIri}:not:${capturedTarget}`,
+        'pointer': ''
+      };
+
+      invariants.push({
+        'invariant': inv,
+        'schemaId': subjectIri
+      });
+      continue;
+    }
+
+    // ---- owl:disjointWith → disjointWith annotation (symmetric) -----
+    if (DISJOINT_WITH_PREDICATES.has(predicate)) {
+      const otherIri = resolveTargetIri(target);
+
+      if (otherIri.startsWith('_:')) {
+        continue;
+      }
+
+      // Forward direction: subject disjointWith other.
+      const existing = schemaDeltas.get(subjectIri) ?? {};
+
+      schemaDeltas.set(subjectIri, {
+        ...existing,
+        'disjointWith': otherIri
+      });
+
+      // Reverse direction: other disjointWith subject (symmetric closure).
+      if (ctx.allClassIris.has(otherIri)) {
+        const otherExisting = schemaDeltas.get(otherIri) ?? {};
+
+        if (!('disjointWith' in otherExisting)) {
+          schemaDeltas.set(otherIri, {
+            ...otherExisting,
+            'disjointWith': subjectIri
+          });
+        }
+      }
+      continue;
+    }
+
+    // ---- owl:equivalentClass NamedNode arm → $ref -------------------
+    // The BlankNode (union wrapper) and Literal (JSON-LD wrapper) arms
+    // are handled in the raw-quad fallback below; the graph erases the
+    // termType discrimination required to detect them.
+    if (EQUIVALENT_CLASS_PREDICATES.has(predicate)) {
+      const targetIri = resolveTargetIri(target);
+
+      if (targetIri.startsWith('_:')) {
+        continue;
+      }
+
+      const existing = schemaDeltas.get(subjectIri) ?? {};
+
+      schemaDeltas.set(subjectIri, {
+        ...existing,
+        '$ref': targetIri
+      });
+      continue;
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Graph-native pass for BlankNode and Literal arms of equivalentClass,
+  // plus disjointUnionOf RDF lists. relationsForSubject / collectList /
+  // relation.termType give us everything we need without scanning quads.
+  // ------------------------------------------------------------------
+  for (const relation of ctx.graph.allRelations()) {
+    const subjectIri = relation.source.id;
+
+    if (!ctx.allClassIris.has(subjectIri)) {
+      continue;
+    }
+    const predicate = relation.predicate;
+
+    // owl:equivalentClass with BlankNode (union wrapper) or Literal (JSON-LD wrapper)
+    if (EQUIVALENT_CLASS_PREDICATES.has(predicate)) {
+      if (relation.termType === 'BlankNode') {
+        const members = extractEquivalentMembersFromGraph(targetValue(relation), ctx.graph);
+
+        if (members.length > 1) {
+          const anyOf = members.map((memberIri) => {
+            return { '$ref': memberIri };
+          }) as readonly JsonSchemaDocumentObjectType[];
           const existing = schemaDeltas.get(subjectIri) ?? {};
 
           schemaDeltas.set(subjectIri, {
             ...existing,
-            'not': { '$ref': complementTarget }
+            'anyOf': anyOf
           });
+        } else if (members.length === 1) {
+          const existing = schemaDeltas.get(subjectIri) ?? {};
 
-          const capturedTarget = complementTarget;
-          const capturedSubjectIri = subjectIri;
-          const inv: InvariantInterface = {
-            'fn': (_: unknown) => {
-              // Real enforcement is via JSON Schema `not` keyword.
-              // This invariant carries the complementOf signature for runtime tracing.
-              return null;
-            },
-            'name': `complementOf:${capturedSubjectIri}:not:${capturedTarget}`,
-            'pointer': ''
-          };
-
-          invariants.push({
-            'invariant': inv,
-            'schemaId': subjectIri
+          schemaDeltas.set(subjectIri, {
+            ...existing,
+            '$ref': members[0]
           });
         }
-        break;
+        continue;
+      }
+      if (relation.termType === 'Literal') {
+        const members = parseUnionLiteralWrapper(targetValue(relation));
 
-      case OWL_DISJOINT_UNION_OF:
-        // disjointUnionOf → oneOf: [{ $ref: C1 }, { $ref: C2 }, ...].
-        {
-          const members = extractListMembers(quad, quads);
+        if (members.length > 0) {
+          const existing = schemaDeltas.get(subjectIri) ?? {};
 
-          if (members.length > 0) {
-            const oneOf = members.map((memberIri) => {
-              return { '$ref': memberIri };
-            }) as readonly JsonSchemaDocumentObjectType[];
-
-            const existing = schemaDeltas.get(subjectIri) ?? {};
-
-            schemaDeltas.set(subjectIri, {
-              ...existing,
-              'oneOf': oneOf
-            });
-          }
+          schemaDeltas.set(subjectIri, {
+            ...existing,
+            '$ref': members[0]
+          });
         }
-        break;
+        continue;
+      }
+      // NamedNode arm already handled above.
+      continue;
+    }
 
-      case OWL_DISJOINT_WITH:
-        // disjointWith is symmetric in OWL — emit both directions so pairwise schemas are consistent.
-        if (objTermType === 'NamedNode') {
-          const otherIri = quad.object.value;
+    // owl:disjointUnionOf → oneOf: [{ $ref: C1 }, ...] (RDF list)
+    if (DISJOINT_UNION_OF_PREDICATES.has(predicate)) {
+      // The list head may be a NamedNode (rare) or a BlankNode (typical).
+      if (relation.termType !== 'BlankNode' && relation.termType !== 'NamedNode') {
+        continue;
+      }
+      const listHead = targetValue(relation);
+      const members: string[] = [];
 
-          // Forward direction: subject disjointWith other.
-          {
-            const existing = schemaDeltas.get(subjectIri) ?? {};
-
-            schemaDeltas.set(subjectIri, {
-              ...existing,
-              'disjointWith': otherIri
-            });
-          }
-
-          // Reverse direction: other disjointWith subject (symmetric closure).
-          if (ctx.allClassIris.has(otherIri)) {
-            const otherExisting = schemaDeltas.get(otherIri) ?? {};
-
-            if (!('disjointWith' in otherExisting)) {
-              schemaDeltas.set(otherIri, {
-                ...otherExisting,
-                'disjointWith': subjectIri
-              });
-            }
-          }
+      for (const item of ctx.graph.collectList(listHead)) {
+        if (item.termType === 'NamedNode') {
+          members.push(item.target);
         }
-        break;
+      }
 
-      case OWL_EQUIVALENT_CLASS:
-        // equivalentClass → structural $ref equivalence wire shape.
-        //
-        // Two encodings are accepted:
-        //   1. Direct named-class equivalence: object is a NamedNode IRI.
-        //   2. Bnode-wrapped union: object is a BlankNode that carries
-        //      `owl:unionOf [...]` whose list members are the equivalent
-        //      class IRIs. This is what OwlProjection emits.
-        //
-        // Wire shape: { $ref: firstMember } — matches Compose.equivalent output.
-        switch (objTermType) {
-          case 'BlankNode': {
-            const members = extractEquivalentMembers(quad.object.value, quads);
+      if (members.length > 0) {
+        const oneOf = members.map((memberIri) => {
+          return { '$ref': memberIri };
+        }) as readonly JsonSchemaDocumentObjectType[];
+        const existing = schemaDeltas.get(subjectIri) ?? {};
 
-            if (members.length > 0) {
-              const existing = schemaDeltas.get(subjectIri) ?? {};
-
-              schemaDeltas.set(subjectIri, {
-                ...existing,
-                '$ref': members[0]
-              });
-            }
-
-            break;
-          }
-          case 'Literal': {
-          // Legacy: JSON-LD serialised wrapper carried as a Literal.
-            const members = extractUnionMembers(quad.object.value);
-
-            if (members.length > 0) {
-              const existing = schemaDeltas.get(subjectIri) ?? {};
-
-              schemaDeltas.set(subjectIri, {
-                ...existing,
-                '$ref': members[0]
-              });
-            }
-
-            break;
-          }
-          case 'NamedNode': {
-            const existing = schemaDeltas.get(subjectIri) ?? {};
-
-            schemaDeltas.set(subjectIri, {
-              ...existing,
-              '$ref': quad.object.value
-            });
-
-            break;
-          }
-          case 'Quad':
-          case 'Variable':
-            // RDF* quoted-triple / SPARQL variable — not a valid equivalentClass value.
-            break;
-        }
-        break;
-
-      case RDFS_SUBCLASSOF:
-        // subClassOf → allOf: [{ $ref: parentIri }].
-        // NamedNode objects are named parent classes; Literal/BlankNode objects are
-        // restriction blank nodes handled by the PropertyRestrictions dispatcher.
-        if (objTermType === 'NamedNode') {
-          mergeAllOfRef(schemaDeltas, subjectIri, quad.object.value);
-        }
-        break;
-
-      default:
-        // Not a class axiom predicate — leave for other dispatchers.
-        break;
+        schemaDeltas.set(subjectIri, {
+          ...existing,
+          'oneOf': oneOf
+        });
+      }
+      continue;
     }
   }
 

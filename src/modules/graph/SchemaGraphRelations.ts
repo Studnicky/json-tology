@@ -187,6 +187,61 @@ function pushFormatPatternRelations(
   }
 }
 
+function pushFormatAnnotationRelation(
+  node: SchemaGraphNodeInterface,
+  sem: SchemaGraphSemanticsInterface,
+  relations: SchemaGraphRelationInterface[]
+): void {
+  if (sem.format === undefined) {
+    return;
+  }
+
+  relations.push({
+    'predicate': JT.format,
+    'source': node,
+    'target': sem.format
+  });
+}
+
+const RESTRICTION_PREDICATE_MAP: Readonly<Partial<Record<string, string>>> = {
+  'allValuesFrom': OWL.allValuesFrom,
+  'cardinality': OWL.cardinality,
+  'hasValue': OWL.hasValue,
+  'maxCardinality': OWL.maxCardinality,
+  'minCardinality': OWL.minCardinality,
+  'someValuesFrom': OWL.someValuesFrom
+};
+
+function pushUserRestrictionRelations(
+  node: SchemaGraphNodeInterface,
+  sem: SchemaGraphSemanticsInterface,
+  relations: SchemaGraphRelationInterface[]
+): void {
+  if (sem.restrictions.length === 0) {
+    return;
+  }
+
+  for (const desc of sem.restrictions) {
+    const predicate = RESTRICTION_PREDICATE_MAP[desc.kind];
+
+    if (predicate === undefined) {
+      continue;
+    }
+
+    relations.push({
+      'predicate': RDFS.subClassOf,
+      'source': node,
+      'structure': {
+        'constraint': predicate,
+        'kind': 'restriction',
+        'onProperty': desc.onProperty,
+        'value': desc.value
+      },
+      'target': node.id
+    });
+  }
+}
+
 function pushPatternPropertyRelations(
   graph: GraphAccessorInterface,
   node: SchemaGraphNodeInterface,
@@ -532,14 +587,29 @@ export const SchemaGraphRelations = {
       }
     }
 
-    for (const branch of [
-      ...sem.anyOf,
-      ...sem.oneOf
-    ]) {
+    for (const branch of sem.anyOf) {
+      const branchSem = graph.semantics(branch);
+      const branchTarget = branchSem.ref === undefined
+        ? branch
+        : graph.resolveRefId(branchSem.ref);
+
       relations.push({
         'predicate': OWL.equivalentClass,
         'source': node,
-        'target': branch
+        'target': branchTarget
+      });
+    }
+
+    for (const branch of sem.oneOf) {
+      const branchSem = graph.semantics(branch);
+      const branchTarget = branchSem.ref === undefined
+        ? branch
+        : graph.resolveRefId(branchSem.ref);
+
+      relations.push({
+        'predicate': OWL.disjointUnionOf,
+        'source': node,
+        'target': branchTarget
       });
     }
 
@@ -703,6 +773,8 @@ export const SchemaGraphRelations = {
     pushUnionTypeRelations(node, sem, relations, nonNullTypes);
     pushDependentRequiredRelations(node, sem, relations);
     pushFormatPatternRelations(node, sem, relations);
+    pushFormatAnnotationRelation(node, sem, relations);
+    pushUserRestrictionRelations(node, sem, relations);
 
     return relations;
   }

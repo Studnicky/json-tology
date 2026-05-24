@@ -8,6 +8,7 @@
 
 import type {
   JsonLdDocInput,
+  OntologyBuilderInterface,
   OntologyBuilderOptionsInterface
 } from '../../interfaces/Ontology.js';
 import type { QuadInterface } from '../../interfaces/Quad.js';
@@ -27,7 +28,7 @@ import { QuadFactory } from '../rdf/QuadFactory.js';
  * JSON-LD documents are parsed to quads via `jsonld.toRDF`.
  * All outputs derive from the canonical internal quad store.
  */
-export class OntologyBuilder {
+export class OntologyBuilder implements OntologyBuilderInterface {
   private readonly baseIRI: string;
   private readonly prefixes: Record<string, string>;
   private readonly quadStore: QuadInterface[] = [];

@@ -16,7 +16,7 @@
  */
 
 import {
-  JsonTology, Lift
+  JsonTology, Lists
 } from '../src/index.js';
 import type { InferType } from '../src/types/index.js';
 import type { QuadInterface } from '../src/interfaces/index.js';
@@ -220,25 +220,14 @@ async function reason() {
   console.log('\n=== Running EYE reasoner ===');
   const resultN3 = await n3reasoner(dataN3, queryN3());
 
-  interface ExternalQuad {
-    'object': { 'datatype'?: { 'value': string };
-      'language'?: string;
-      'termType': string;
-      'value': string };
-    'predicate': { 'value': string };
-    'subject': { 'value': string };
-  }
-
-  function parseN3Quads(n3Text: string): ExternalQuad[] {
+  function parseN3Quads(n3Text: string): QuadInterface[] {
     const N3Parser = Parser as unknown as new (opts: Record<string, string>) => { 'parse': (input: string) => unknown[] };
     const parser = new N3Parser({ 'format': 'text/n3' });
 
-    return parser.parse(n3Text) as ExternalQuad[];
+    return Lists.narrowExternalQuads(parser.parse(n3Text));
   }
 
-  const moduleQuads = parseN3Quads(resultN3).map((rdfQuad) => {
-    return Lift.fromExternalQuad(rdfQuad);
-  });
+  const moduleQuads = parseN3Quads(resultN3);
 
   const bySubject = new Map<string, QuadInterface[]>();
 

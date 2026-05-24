@@ -1,8 +1,12 @@
 import type {
+
   RelationPredicateType, RelationStructure
 } from '../types/SchemaGraph.js';
+
+
 import type { JsonSchemaType } from '../types/Schema.js';
 import type { JtConfigType } from '../types/JtConfig.js';
+import type { RawRestrictionDescriptorType } from '../types/RawRestrictionDescriptor.js';
 
 export interface NormIRNodeInterface {
   readonly 'id': string;
@@ -94,6 +98,7 @@ export interface SchemaGraphSemanticsInterface {
   'reflexive': boolean;
   'refTargetNode': SchemaGraphNodeInterface | undefined;
   'required': string[];
+  'restrictions': readonly RawRestrictionDescriptorType[];
   'schemaAnchor': string | undefined;
   'schemaDialect': string | undefined;
   'schemaId': string | undefined;
@@ -110,11 +115,30 @@ export interface SchemaGraphSemanticsInterface {
 }
 
 export interface SchemaGraphRelationInterface {
+  /**
+   * XSD datatype IRI when `target` is a Literal — empty / undefined for
+   * NamedNode or BlankNode targets. Populated by the quad-backed graph from
+   * the source quad's `object.datatype.value`; the forward-projection graph
+   * leaves it undefined because datatype is computed at projection time.
+   */
+  readonly 'datatype'?: string;
+  /**
+   * BCP47 language tag when `target` is a language-tagged Literal — empty /
+   * undefined otherwise. Populated by the quad-backed graph from the source
+   * quad's `object.language`.
+   */
+  readonly 'language'?: string;
   'metadata'?: Record<string, unknown>;
   'predicate': RelationPredicateType;
   'source': SchemaGraphNodeInterface;
   'structure'?: RelationStructure;
   'target': SchemaGraphNodeInterface | string;
+  /**
+   * rdf/js term-type discriminator for the relation's target. Populated by
+   * the quad-backed graph during construction; left undefined by the
+   * forward-projection graph (whose targets are always graph nodes or IRIs).
+   */
+  readonly 'termType'?: 'BlankNode' | 'Literal' | 'NamedNode';
 }
 
 export interface StructureWarningInterface {
@@ -122,3 +146,5 @@ export interface StructureWarningInterface {
   'path': string;
   'rule': string;
 }
+
+export { type ListItemType } from '../types/SchemaGraph.js';

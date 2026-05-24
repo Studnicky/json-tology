@@ -23,7 +23,7 @@ export class CoercionError extends BaseError {
       return `${err.path || 'root'}: ${err.message}`;
     }).join('; ');
 
-    super('COERCION_FAILED', joinedMessages, false, options);
+    super('COERCION_FAILED', joinedMessages, options);
     this.name = 'CoercionError';
     this.errors = validationErrors;
   }

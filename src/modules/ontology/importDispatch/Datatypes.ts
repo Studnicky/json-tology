@@ -12,17 +12,26 @@
  * Bucket strategy: structural (facet restrictions produce schemaDeltas patches —
  * `minLength`, `maxLength`, `pattern`, `minimum`, `maximum`, etc. — on the
  * schema node that maps to the datatype IRI).
+ *
+ * Graph-native traversal: walks `ctx.graph.relationsForSubject(datatypeIri)`
+ * for the datatype subject, `ctx.graph.collectList(head)` for
+ * `owl:withRestrictions` and `owl:oneOf` lists, and
+ * `ctx.graph.relationsForSubject(facetBnode)` to read each blank-node
+ * facet descriptor's xsd:* predicate. Literal language/datatype tags are
+ * preserved on relations and list items.
  */
 
 import type { QuadInterface } from '../../../interfaces/Quad.js';
 import type {
-  BnodeTermType, IriTermType, QuadObjectType
-} from '../../../types/Quad.js';
-import { Lists } from '../../rdf/Lists.js';
-import { decodeLiteral } from '../../rdf/Terms.js';
-import type {
   OwlImportContext, OwlImportFragment
 } from '../../../interfaces/OwlImport.js';
+import type {
+  ListItemType,
+  SchemaGraphRelationInterface
+} from '../../../interfaces/SchemaGraph.js';
+import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphImpl.js';
+import { Terms } from '../../rdf/Terms.js';
+import { decodeLiteral } from '../../rdf/Terms.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
 
 // ---------------------------------------------------------------------------
@@ -516,146 +525,59 @@ const XSD_TO_SCHEMA_TYPE: ReadonlyMap<string, 'integer' | 'number' | 'string'> =
 ]);
 
 // ---------------------------------------------------------------------------
-// Subject quad index
+// Graph-native helpers
 // ---------------------------------------------------------------------------
 
-/** Map from subject IRI/bnode ID → all quads with that subject. */
-type SubjectIndex = Map<string, QuadInterface[]>;
-
-function buildSubjectIndex(quads: QuadInterface[]): SubjectIndex {
-  const index: SubjectIndex = new Map();
-
-  for (const quad of quads) {
-    const key = quad.subject.value;
-    let list = index.get(key);
-
-    if (list === undefined) {
-      list = [];
-      index.set(key, list);
-    }
-    list.push(quad);
-  }
-
-  return index;
+/** Resolve the IRI / bnode-id / lexical form of a relation target. */
+function targetValue(relation: SchemaGraphRelationInterface): string {
+  return typeof relation.target === 'string' ? relation.target : relation.target.id;
 }
 
-/** Return quads for a subject that match any predicate in the set. */
-function quadsForPredicates(
-  index: SubjectIndex,
+/** Filter outgoing relations on a subject by predicate set. */
+function relationsByPredicate(
+  graph: SchemaGraphInterface,
   subject: string,
   predicates: ReadonlySet<string>
-): QuadInterface[] {
-  return (index.get(subject) ?? []).filter((quad) => {
-    return predicates.has(quad.predicate.value);
+): readonly SchemaGraphRelationInterface[] {
+  return graph.relationsForSubject(subject).filter((rel) => {
+    return predicates.has(rel.predicate);
   });
 }
 
-// ---------------------------------------------------------------------------
-// RDF list extraction
-// ---------------------------------------------------------------------------
-
 /**
- * Extract items from a quad object that points to an RDF list head.
- *
- * Walks the rdf:first/rdf:rest chain via `Lists.collect` when the head has
- * rdf:first edges in `index`. Falls back to a single-item passthrough for
- * inline blank nodes / named nodes that are not list heads.
+ * Extract a number from a Literal-typed relation target.
+ * Returns null when the target is not a Literal or not numeric.
  */
-function extractListItems(
-  obj: QuadInterface['object'],
-  index: SubjectIndex
-): QuadObjectType[] {
-  const narrowed = Lists.asQuadObject(obj);
-
-  if (narrowed === undefined) {
-    return [];
-  }
-  if (narrowed.termType === 'Literal') {
-    return [narrowed];
-  }
-
-  const headQuads = index.get(narrowed.value) ?? [];
-  const hasFirst = headQuads.some((quad) => {
-    return quad.predicate.value === `${RDF_NS}first` || quad.predicate.value === 'rdf:first';
-  });
-
-  if (!hasFirst) {
-    return [narrowed];
-  }
-
-  return Lists.collect(narrowed, walkableListQuads(narrowed, index));
-}
-
-function walkableListQuads(
-  head: BnodeTermType | IriTermType,
-  index: SubjectIndex
-): QuadInterface[] {
-  const collected: QuadInterface[] = [];
-  const seen = new Set<string>();
-  let cursor: string | undefined = head.value;
-
-  while (cursor !== undefined && !seen.has(cursor)) {
-    seen.add(cursor);
-    const quads = index.get(cursor) ?? [];
-    let next: string | undefined;
-
-    for (const quad of quads) {
-      const predValue = quad.predicate.value;
-      const isFirst = predValue === `${RDF_NS}first` || predValue === 'rdf:first';
-      const isRest = predValue === `${RDF_NS}rest` || predValue === 'rdf:rest';
-
-      if (isFirst) {
-        collected.push(quad);
-      } else if (isRest) {
-        collected.push(quad);
-
-        if ((quad.object.termType === 'BlankNode' || quad.object.termType === 'NamedNode')
-          && quad.object.value !== `${RDF_NS}nil`
-          && quad.object.value !== 'rdf:nil') {
-          next = quad.object.value;
-        }
-      }
-    }
-    cursor = next;
-  }
-
-  return collected;
-}
-
-// ---------------------------------------------------------------------------
-// Literal value extraction
-// ---------------------------------------------------------------------------
-
-/**
- * Extract a number from a literal quad object.
- * Returns null for non-literals or non-numeric values.
- */
-function literalNumber(obj: QuadInterface['object']): null | number {
-  if (obj.termType !== 'Literal') {
+function literalNumber(relation: SchemaGraphRelationInterface): null | number {
+  if (relation.termType !== 'Literal') {
     return null;
   }
-
-  const raw = obj.value;
-
-  if (typeof raw === 'number') {
-    return raw;
-  }
-
+  const raw = targetValue(relation);
   const num = Number(raw);
 
   return Number.isFinite(num) ? num : null;
 }
 
 /**
- * Extract a string from a literal quad object.
- * Returns null for non-literals.
+ * Extract a string from a Literal-typed relation target.
+ * Returns null when the target is not a Literal.
  */
-function literalString(obj: QuadInterface['object']): null | string {
-  if (obj.termType !== 'Literal') {
+function literalString(relation: SchemaGraphRelationInterface): null | string {
+  if (relation.termType !== 'Literal') {
     return null;
   }
 
-  return String(obj.value);
+  return targetValue(relation);
+}
+
+/** Decode a Literal ListItemType back to its typed JS value. */
+function decodeListItemLiteral(item: ListItemType): unknown {
+  const literalTerm = Terms.literal(item.target, {
+    'datatype': Terms.iri(item.datatype ?? ''),
+    'language': item.language ?? ''
+  });
+
+  return decodeLiteral(literalTerm);
 }
 
 // ---------------------------------------------------------------------------
@@ -704,121 +626,81 @@ function inferEnumType(values: unknown[]): 'boolean' | 'integer' | 'number' | 's
 // ---------------------------------------------------------------------------
 
 /**
- * Given a blank-node ID from the `owl:withRestrictions` list, look up all
- * quads on that bnode in the subject index and convert each XSD facet
- * predicate to a JSON Schema keyword patch.
+ * Given a blank-node id from the `owl:withRestrictions` list, walk its
+ * outgoing relations via `graph.relationsForSubject` and convert each XSD
+ * facet predicate to a JSON Schema keyword patch.
  *
- * Multiple predicates on one blank node are all applied (e.g. a bnode could
- * theoretically carry more than one facet, though in practice each carries one).
+ * Multiple predicates on one blank node are all applied.
  */
 function extractFacetFromBnode(
   bnodeId: string,
-  index: SubjectIndex,
+  graph: SchemaGraphInterface,
   schemaType: 'integer' | 'number' | 'string' | undefined,
   reportUnsupported: (axiomIri: string, subjectIri: null | string) => void
 ): Partial<JsonSchemaDocumentObjectType> {
   const delta: Record<string, unknown> = {};
-  const bnodeQuads = index.get(bnodeId) ?? [];
+  const bnodeRelations = graph.relationsForSubject(bnodeId);
 
-  for (const fq of bnodeQuads) {
-    const facetPred = fq.predicate.value;
+  for (const fr of bnodeRelations) {
+    // The relation predicate may be compacted (xsd:minInclusive) or full IRI;
+    // FACET_MAP carries both forms.
+    const facetPred = fr.predicate;
     const descriptor = FACET_MAP.get(facetPred);
 
     if (descriptor === undefined) {
-      // Unknown facet predicate — report and skip
       reportUnsupported(facetPred, bnodeId);
       continue;
     }
 
     switch (descriptor.kind) {
       case 'fractionDigits': {
-        const num = literalNumber(fq.object);
+        const num = literalNumber(fr);
 
         if (num !== null && num >= 0) {
-          // 10^-N expressed as multipleOf
           delta.multipleOf = Math.pow(10, -num);
         }
-
         break;
       }
-
       case 'ignore':
-        // xsd:whiteSpace — no JSON Schema correlate; silent drop
         break;
-
-
       case 'length': {
-        const num = literalNumber(fq.object);
+        const num = literalNumber(fr);
 
         if (num !== null) {
           delta.minLength = num;
           delta.maxLength = num;
         }
-
         break;
       }
-
       case 'numeric': {
-        const num = literalNumber(fq.object);
+        const num = literalNumber(fr);
 
         if (num !== null) {
           delta[descriptor.key] = num;
         }
-
         break;
       }
-
       case 'string': {
-        const str = literalString(fq.object);
+        const str = literalString(fr);
 
         if (str !== null) {
           delta[descriptor.key] = str;
         }
-
         break;
       }
-
       case 'unsupported':
         reportUnsupported(descriptor.predicate, bnodeId);
-
         break;
     }
   }
 
-  // For integer-typed datatypes: when minInclusive/maxInclusive are present but
-  // fractional, clamp to integers (OWL semantics are additive/narrowing).
-  // This keeps the schema type consistent with the declared owl:onDatatype.
   void schemaType;
 
   return delta;
 }
 
 // ---------------------------------------------------------------------------
-// Collect rdfs:Datatype subject IRIs
-// ---------------------------------------------------------------------------
-
-/**
- * Return the set of subject IRIs declared as `rdfs:Datatype`.
- */
-function collectDatatypeIris(quads: QuadInterface[]): Set<string> {
-  const iris = new Set<string>();
-
-  for (const quad of quads) {
-    if (
-      TYPE_PREDICATES.has(quad.predicate.value)
-      && quad.object.termType === 'NamedNode'
-      && RDFS_DATATYPE_IRIS.has(quad.object.value)
-      && quad.subject.termType === 'NamedNode'
-    ) {
-      iris.add(quad.subject.value);
-    }
-  }
-
-  return iris;
-}
-
-// ---------------------------------------------------------------------------
-// Build delta for one datatype IRI
+// Process a single rdfs:Datatype subject
 // ---------------------------------------------------------------------------
 
 /**
@@ -826,75 +708,57 @@ function collectDatatypeIris(quads: QuadInterface[]): Set<string> {
  */
 function processDatatypeIri(
   subjectIri: string,
-  index: SubjectIndex,
+  graph: SchemaGraphInterface,
   reportUnsupported: (axiomIri: string, subjectIri: null | string) => void
 ): Partial<JsonSchemaDocumentObjectType> {
   const delta: Record<string, unknown> = {};
 
-  // ------------------------------------------------------------------
   // owl:onDatatype → JSON Schema type
-  // ------------------------------------------------------------------
-  const onDatatypeQuads = quadsForPredicates(index, subjectIri, OWL_ON_DATATYPE_IRIS);
+  const onDatatype = relationsByPredicate(graph, subjectIri, OWL_ON_DATATYPE_IRIS);
   let schemaType: 'integer' | 'number' | 'string' | undefined;
 
-  if (onDatatypeQuads.length > 0) {
-    const onDtObj = onDatatypeQuads[0].object;
+  if (onDatatype.length > 0 && onDatatype[0].termType === 'NamedNode') {
+    const onDt = targetValue(onDatatype[0]);
+    const mappedType = XSD_TO_SCHEMA_TYPE.get(onDt);
 
-    if (onDtObj.termType === 'NamedNode') {
-      const mappedType = XSD_TO_SCHEMA_TYPE.get(onDtObj.value);
-
-      if (mappedType !== undefined) {
-        schemaType = mappedType;
-        delta.type = mappedType;
-      }
+    if (mappedType !== undefined) {
+      schemaType = mappedType;
+      delta.type = mappedType;
     }
   }
 
-  // ------------------------------------------------------------------
-  // owl:withRestrictions → facet list
-  // ------------------------------------------------------------------
-  const withRestrictionsQuads = quadsForPredicates(index, subjectIri, OWL_WITH_RESTRICTIONS_IRIS);
+  // owl:withRestrictions → facet list of blank nodes
+  const withRestrictions = relationsByPredicate(graph, subjectIri, OWL_WITH_RESTRICTIONS_IRIS);
 
-  for (const wrQuad of withRestrictionsQuads) {
-    const listItems = extractListItems(wrQuad.object, index);
+  for (const wr of withRestrictions) {
+    const listHead = targetValue(wr);
+    const items = graph.collectList(listHead);
 
-    for (const item of listItems) {
+    for (const item of items) {
       if (item.termType === 'BlankNode') {
-        const facetDelta = extractFacetFromBnode(item.value, index, schemaType, reportUnsupported);
+        const facetDelta = extractFacetFromBnode(item.target, graph, schemaType, reportUnsupported);
 
         Object.assign(delta, facetDelta);
       }
     }
   }
 
-  // ------------------------------------------------------------------
-  // owl:equivalentClass owl:oneOf [...] → enum datatype
-  // ------------------------------------------------------------------
-  const equivClassQuads = quadsForPredicates(index, subjectIri, OWL_EQUIVALENT_CLASS_IRIS);
+  // owl:equivalentClass [ owl:oneOf [...] ] → enum datatype
+  const equivClass = relationsByPredicate(graph, subjectIri, OWL_EQUIVALENT_CLASS_IRIS);
 
-  for (const ecQuad of equivClassQuads) {
-    const ecObj = ecQuad.object;
-
-    // The equivalentClass value may be a blank node carrying owl:oneOf
-    let targetId: string | undefined;
-
-    if (ecObj.termType === 'BlankNode') {
-      targetId = ecObj.value;
-    }
-
-    if (targetId === undefined) {
+  for (const ec of equivClass) {
+    if (ec.termType !== 'BlankNode') {
       continue;
     }
+    const equivBnode = targetValue(ec);
+    const oneOfRelations = relationsByPredicate(graph, equivBnode, OWL_ONE_OF_IRIS);
 
-    const oneOfQuads = quadsForPredicates(index, targetId, OWL_ONE_OF_IRIS);
-
-    for (const ooQuad of oneOfQuads) {
-      const enumValues = extractEnumValues(ooQuad.object, index);
+    for (const oo of oneOfRelations) {
+      const enumValues = extractEnumValues(targetValue(oo), graph);
 
       if (enumValues.length > 0) {
         delta.enum = enumValues;
 
-        // Infer type from the enum values when not already set via owl:onDatatype
         if (!('type' in delta)) {
           const inferred = inferEnumType(enumValues);
 
@@ -907,10 +771,10 @@ function processDatatypeIri(
   }
 
   // jt:multipleOf — json-tology extension annotation on the datatype node
-  const multipleOfQuads = quadsForPredicates(index, subjectIri, JT_MULTIPLE_OF_IRIS);
+  const multipleOf = relationsByPredicate(graph, subjectIri, JT_MULTIPLE_OF_IRIS);
 
-  if (multipleOfQuads.length > 0) {
-    const moNum = literalNumber(multipleOfQuads[0].object);
+  if (multipleOf.length > 0) {
+    const moNum = literalNumber(multipleOf[0]);
 
     if (moNum !== null) {
       delta.multipleOf = moNum;
@@ -918,10 +782,10 @@ function processDatatypeIri(
   }
 
   // jt:format — preserve JSON Schema format keyword
-  const formatQuads = quadsForPredicates(index, subjectIri, JT_FORMAT_IRIS);
+  const formatRels = relationsByPredicate(graph, subjectIri, JT_FORMAT_IRIS);
 
-  if (formatQuads.length > 0) {
-    const fmtStr = literalString(formatQuads[0].object);
+  if (formatRels.length > 0) {
+    const fmtStr = literalString(formatRels[0]);
 
     if (fmtStr !== null) {
       delta.format = fmtStr;
@@ -936,27 +800,22 @@ function processDatatypeIri(
 // ---------------------------------------------------------------------------
 
 /**
- * Extract enum values from an RDF list object (owl:oneOf of literals).
+ * Extract enum values from an RDF list head (owl:oneOf of literals or IRIs).
  *
- * Each list item may be:
- *   - A Literal with a raw or structured value
- *   - A NamedNode (IRI-keyed enum value)
- *
- * Returns an array of raw JS values.
+ * - Literal item → typed JS value via decodeLiteral.
+ * - NamedNode item → IRI string.
+ * - BlankNode enum members are not standard OWL 2 — skipped.
  */
-function extractEnumValues(listObj: QuadInterface['object'], index: SubjectIndex): unknown[] {
-  const items = extractListItems(listObj, index);
+function extractEnumValues(listHead: string, graph: SchemaGraphInterface): unknown[] {
+  const items = graph.collectList(listHead);
   const values: unknown[] = [];
 
   for (const item of items) {
     if (item.termType === 'Literal') {
-      // Literal.value is `string` per rdf/js spec; decode to its typed JS
-      // value using the datatype tag.
-      values.push(decodeLiteral(item));
+      values.push(decodeListItemLiteral(item));
     } else if (item.termType === 'NamedNode') {
-      values.push(item.value);
+      values.push(item.target);
     }
-    // BlankNode enum members are not standard OWL 2 — skip
   }
 
   return values;
@@ -987,24 +846,33 @@ function emptyFragment(): OwlImportFragment {
  * Handles:
  * - `rdfs:Datatype` declarations → named datatype schema (keyed by datatype IRI)
  * - `owl:onDatatype` → JSON Schema `type` from XSD base type
- * - `owl:withRestrictions` list → XSD facets mapped to JSON Schema keywords:
- *     xsd:minInclusive → minimum, xsd:maxInclusive → maximum
- *     xsd:minExclusive → exclusiveMinimum, xsd:maxExclusive → exclusiveMaximum
- *     xsd:minLength → minLength, xsd:maxLength → maxLength
- *     xsd:length → minLength + maxLength (exact match)
- *     xsd:pattern → pattern
- *     xsd:fractionDigits → multipleOf (10^-N)
- *     xsd:totalDigits → reportUnsupported
- *     xsd:whiteSpace → ignored
+ * - `owl:withRestrictions` list → XSD facets mapped to JSON Schema keywords
  * - `owl:equivalentClass` + `owl:oneOf` of literals → enum datatype
  *
- * @param quads - All quads from the input graph.
+ * Graph-native: walks `ctx.graph.allRelations()` to discover `rdfs:Datatype`
+ * subjects via `rdf:type`, then `ctx.graph.relationsForSubject(datatypeIri)`
+ * for facet predicates and `ctx.graph.collectList(head)` for the
+ * `owl:withRestrictions` / `owl:oneOf` RDF lists.
+ *
+ * @param _quads - Retained for back-compat with the dispatcher signature; the
+ *                 implementation reads exclusively from `ctx.graph`.
  * @param ctx   - Shared import context (graph, curie, IRI sets, reporting helpers).
  * @returns OwlImportFragment with schemaDeltas populated.
  */
-export function importDatatypes(quads: QuadInterface[], ctx: OwlImportContext): OwlImportFragment {
-  const index = buildSubjectIndex(quads);
-  const datatypeIris = collectDatatypeIris(quads);
+export function importDatatypes(_quads: QuadInterface[], ctx: OwlImportContext): OwlImportFragment {
+  const graph = ctx.graph;
+  const datatypeIris = new Set<string>();
+
+  for (const relation of graph.allRelations()) {
+    if (
+      TYPE_PREDICATES.has(relation.predicate)
+      && relation.termType === 'NamedNode'
+      && RDFS_DATATYPE_IRIS.has(targetValue(relation))
+      && !relation.source.id.startsWith('_:')
+    ) {
+      datatypeIris.add(relation.source.id);
+    }
+  }
 
   if (datatypeIris.size === 0) {
     return emptyFragment();
@@ -1013,7 +881,7 @@ export function importDatatypes(quads: QuadInterface[], ctx: OwlImportContext): 
   const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
 
   for (const datatypeIri of datatypeIris) {
-    const delta = processDatatypeIri(datatypeIri, index, ctx.reportUnsupported);
+    const delta = processDatatypeIri(datatypeIri, graph, ctx.reportUnsupported);
 
     schemaDeltas.set(datatypeIri, delta);
   }

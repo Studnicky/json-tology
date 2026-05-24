@@ -15,6 +15,7 @@ import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import { Lists } from './Lists.js';
 import { Terms } from './Terms.js';
+import { IdentifierIssuer } from './IdentifierIssuer.js';
 
 // ---------------------------------------------------------------------------
 // IRI expansion
@@ -71,14 +72,8 @@ function isLiteralString(value: string, context: Record<string, string>): boolea
 // Blank node state (per-call counter)
 // ---------------------------------------------------------------------------
 
-function makeCounter(): { 'next': () => string } {
-  let counter = 0;
-
-  return {
-    next(): string {
-      return `_:jld${counter++}`;
-    }
-  };
+function makeCounter(): IdentifierIssuer {
+  return new IdentifierIssuer({ 'prefix': '_:jld' });
 }
 
 // ---------------------------------------------------------------------------
@@ -90,7 +85,7 @@ function jsonLdValueToTerm(
   context: Record<string, string>,
   bnodeMap: Map<Record<string, unknown>, string>,
   allQuads: QuadInterface[],
-  counter: ReturnType<typeof makeCounter>
+  counter: IdentifierIssuer
 ): null | QuadObjectType {
   if (typeof value === 'string') {
     if (isLiteralString(value, context)) {
@@ -119,7 +114,7 @@ function jsonLdValueToTerm(
       });
     const {
       head, triples
-    } = Lists.build(items);
+    } = Lists.build(items, counter);
 
     for (const triple of triples) {
       allQuads.push(triple);
@@ -139,7 +134,7 @@ function jsonLdValueToTerm(
     // Inlined blank node (has keys beyond @id)
     if (Object.keys(obj).length > 1) {
       const existingId = bnodeMap.get(obj);
-      const bnodeId = existingId ?? counter.next();
+      const bnodeId = existingId ?? counter.getId();
 
       if (existingId === undefined) {
         bnodeMap.set(obj, bnodeId);
@@ -167,7 +162,7 @@ function jsonLdValueToTerm(
 
   if (objKeys.length > 0) {
     const existingId = bnodeMap.get(obj);
-    const bnodeId = existingId ?? counter.next();
+    const bnodeId = existingId ?? counter.getId();
 
     if (existingId === undefined) {
       bnodeMap.set(obj, bnodeId);
@@ -191,7 +186,7 @@ function emitNodeQuads(
   context: Record<string, string>,
   bnodeMap: Map<Record<string, unknown>, string>,
   allQuads: QuadInterface[],
-  counter: ReturnType<typeof makeCounter>
+  counter: IdentifierIssuer
 ): void {
   const subjectTerm = subjectId.startsWith('_:')
     ? Terms.blank(subjectId.slice(2))

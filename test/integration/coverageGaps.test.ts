@@ -34,6 +34,7 @@ import {
   Skolemize,
   Transform
 } from '../../src/index.js';
+import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 
 // ---------------------------------------------------------------------------
 // Bookstore fixtures (used across multiple sections)
@@ -510,6 +511,66 @@ void describe('subschemaAt pointer errors', () => {
 
     assert.equal((inner as { 'type': string }).type, 'object');
     assert.equal(inner.$id, `${PARENT.$id}#/properties/inner`);
+  });
+
+  void it('POINTER_NOT_SCHEMA: pointer resolving to a non-schema value throws with correct code', () => {
+    // /properties/tag/type resolves to the string "string", not a schema object.
+    // SchemaGraph.resolvePointer → SchemaGraphSupport.resolveSchemaAtPointer throws
+    // POINTER_NOT_SCHEMA when the resolved value is neither a boolean nor a record.
+    assert.throws(
+      () => {
+        SchemaGraph.resolvePointer(PARENT, '/properties/tag/type');
+      },
+      (err: unknown) => {
+        assert.ok(err instanceof GraphError, 'expected GraphError');
+        assert.equal(err.code, 'POINTER_NOT_SCHEMA', 'err.code === POINTER_NOT_SCHEMA');
+
+        return true;
+      }
+    );
+  });
+});
+
+// ===========================================================================
+// H-8: ANCHOR_NOT_FOUND error code assertion
+// ===========================================================================
+
+void describe('ANCHOR_NOT_FOUND error code assertion', () => {
+  void it('resolving a non-existent anchor throws GraphError with code ANCHOR_NOT_FOUND', () => {
+    // SchemaGraph.resolveFragment throws ANCHOR_NOT_FOUND when the fragment is
+    // neither a pointer (no leading /) nor a key in the anchorMap.
+    // Build a graph that has $anchor 'TaggedDef' to confirm the map is populated,
+    // then request an anchor that was never declared.
+    const graph = new SchemaGraph({
+      '$defs': {
+        'Tagged': {
+          '$anchor': 'TaggedDef',
+          'properties': { 'tag': { 'type': 'string' } },
+          'type': 'object'
+        }
+      },
+      '$id': 'https://bookstore.io/WithAnchor',
+      'properties': { 'item': { '$ref': '#TaggedDef' } },
+      'type': 'object'
+    });
+
+    // Sanity: the declared anchor resolves correctly.
+    const taggedNode = graph.resolveFragment('TaggedDef');
+
+    assert.ok(taggedNode.pointer.length > 0, 'TaggedDef anchor resolved');
+
+    // The undeclared anchor throws ANCHOR_NOT_FOUND.
+    assert.throws(
+      () => {
+        graph.resolveFragment('NoSuchAnchor');
+      },
+      (err: unknown) => {
+        assert.ok(err instanceof GraphError, 'expected GraphError');
+        assert.equal(err.code, 'ANCHOR_NOT_FOUND', 'err.code === ANCHOR_NOT_FOUND');
+
+        return true;
+      }
+    );
   });
 });
 

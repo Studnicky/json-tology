@@ -1,9 +1,13 @@
 /**
  * QuadFactory — low-level quad construction primitives.
  *
- * Owns blank-node counter state and provides helpers for building
- * RDF quad objects: iri(), literal(), bnode(), rdfList(), quad(),
- * and the shared emitLiterals() helper used by OWL/SHACL projections.
+ * Provides helpers for building RDF quad objects: iri(), literal(), bnode(),
+ * rdfList(), quad(), and the shared emitLiterals() helper used by OWL/SHACL
+ * projections.
+ *
+ * Blank-node naming: callers SHOULD pass an IdentifierIssuerInterface for
+ * concurrent-safe serializations. When no issuer is supplied, a module-level
+ * counter is used (backward-compatible, not concurrent-safe).
  *
  * All quads are rdf/js-compliant: subject, predicate, and graph are
  * term objects (IriTermType | BnodeTermType | DefaultGraphTermType),
@@ -13,7 +17,14 @@
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
+import type {
+  QuadFactoryEmitOptsInterface,
+  QuadFactoryIriOptsInterface,
+  QuadFactoryLiteralOptsInterface,
+  QuadFactoryQuadOptsInterface
+} from '../../interfaces/QuadFactoryOpts.js';
 import type { RelationIndexInterface } from '../../interfaces/RelationIndex.js';
+import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
 import { Lists } from './Lists.js';
 import { ProjectionIndex } from './ProjectionIndex.js';
 import { Terms } from './Terms.js';
@@ -41,7 +52,7 @@ export interface JsonLdDatasetQuad {
 }
 
 // ---------------------------------------------------------------------------
-// Blank node counter
+// Module-level fallback bnode counter — used when no issuer is supplied.
 // ---------------------------------------------------------------------------
 
 let bnodeCounter = 0;
@@ -83,9 +94,6 @@ export class QuadFactory {
 
   /**
    * Emit a single numeric constraint literal for the first relation matching a predicate.
-   *
-   * Looks up `entry.byPredicate.get(predicate)`, coerces the first target to
-   * a number, and pushes one quad with the given datatype.
    */
   static emitConstraintLiteral(
     subject: string,
@@ -93,12 +101,12 @@ export class QuadFactory {
     predicate: string,
     datatype: string,
     quads: QuadInterface[],
-    options?: { 'curie'?: CurieInterface | undefined }
+    options?: QuadFactoryEmitOptsInterface
   ): void {
-    const { curie } = options ?? {};
     const rels = entry.byPredicate.get(predicate) ?? [];
 
     if (rels.length > 0) {
+      const curie = options?.curie;
       const numLit = QuadFactory.literal(Number(ProjectionIndex.relationTargetId(rels[0])), datatype, { curie });
 
       quads.push(QuadFactory.quad(subject, predicate, numLit, { curie }));
@@ -107,9 +115,6 @@ export class QuadFactory {
 
   /**
    * Emit string literal quads for all relations matching a predicate.
-   *
-   * Iterates `entry.byPredicate.get(predicate)` and pushes one quad per
-   * relation with the target value as an xsd:string literal.
    */
   static emitLiterals(
     subject: string,
@@ -117,12 +122,13 @@ export class QuadFactory {
     predicate: string,
     outputPredicate: string,
     quads: QuadInterface[],
-    options?: { 'curie'?: CurieInterface | undefined }
+    options?: QuadFactoryEmitOptsInterface
   ): void {
-    const { curie } = options ?? {};
     const rels = entry.byPredicate.get(predicate);
 
     if (rels !== undefined) {
+      const curie = options?.curie;
+
       for (const rel of rels) {
         const litVal = QuadFactory.literal(ProjectionIndex.relationTargetId(rel), XSD.string, { curie });
 
@@ -133,15 +139,6 @@ export class QuadFactory {
 
   /**
    * Construct a `QuadInterface` from a jsonld dataset quad object.
-   *
-   * jsonld.toRDF() returns rdf/js-compatible term shapes. This method
-   * maps those shapes to the project's `Terms`-backed rdf/js quad.
-   *
-   * Blank-node handling: blank-node values from jsonld include the `_:` prefix
-   * in their `.value`; `Terms.blank` preserves that value as-is.
-   *
-   * Literal handling: datatype is preserved via the datatype NamedNode value.
-   * Language tags are carried through via `Terms.literal({ language })`.
    */
   static fromDatasetQuad(datasetQuad: JsonLdDatasetQuad): QuadInterface {
     const subject = datasetQuad.subject.termType === 'BlankNode'
@@ -180,31 +177,64 @@ export class QuadFactory {
     return Terms.quad(subject, predicate, object, graph);
   }
 
-  static iri(value: string, options?: { 'curie'?: CurieInterface | undefined }): QuadObjectType {
-    const { curie } = options ?? {};
-    const expandedValue = curie ? expandCurieIfNeeded(value, curie) : value;
+  /**
+   * Build an IRI term. When `options.curie` is provided, compact CURIEs
+   * (`prefix:local`) are expanded against the shared `Curie` instance.
+   */
+  static iri(value: string, options?: QuadFactoryIriOptsInterface): QuadObjectType {
+    const curie = options?.curie;
+    const expandedValue = curie === undefined ? value : expandCurieIfNeeded(value, curie);
 
     return Terms.iri(expandedValue);
   }
 
-  static literal(value: unknown, datatype: string, options?: { 'curie'?: CurieInterface | undefined }): QuadObjectType {
-    const { curie } = options ?? {};
-    const expandedDatatype = curie ? expandCurieIfNeeded(datatype, curie) : datatype;
+  /**
+   * Build a typed literal term. `datatype` is expanded from compact CURIE
+   * form when `options.curie` is provided.
+   */
+  static literal(value: unknown, datatype: string, options?: QuadFactoryLiteralOptsInterface): QuadObjectType {
+    const curie = options?.curie;
+    const expandedDatatype = curie === undefined ? datatype : expandCurieIfNeeded(datatype, curie);
 
     return Terms.literal(value, { 'datatype': Terms.iri(expandedDatatype) });
   }
 
-  static nextBnode(): string {
+  /**
+   * Issue the next blank node identifier.
+   *
+   * When `issuer` is provided, uses the per-call issuer's counter (concurrent-safe).
+   * When omitted, falls back to a module-level counter (backward-compatible,
+   * not concurrent-safe across multiple serialization calls).
+   *
+   * IMPORTANT: If you call OwlProjection.graph() / ShaclProjection.graph() multiple
+   * times in the same serialization batch (e.g., in BaseGraphSerializer.serializeQuads),
+   * either pass the SAME issuer to all calls, OR call resetBnodeCounter() before
+   * the batch to avoid bnode ID collisions.
+   */
+  static nextBnode(issuerOrUndefined?: IdentifierIssuerInterface): string {
+    if (issuerOrUndefined !== undefined) {
+      return issuerOrUndefined.getId();
+    }
+
     return `_:b${bnodeCounter++}`;
   }
 
+  /**
+   * Construct a `QuadInterface` from string subject/predicate plus an already-
+   * built object term.
+   *
+   * The fourth parameter accepts an options bag `{ curie?, graph? }`.
+   * Wave 2 H-4 signature: `QuadFactory.quad(s, p, o, { graph: graphTerm })`.
+   */
   static quad(
     subject: string,
     predicate: string,
     object: QuadObjectType,
-    options?: { 'curie'?: CurieInterface | undefined }
+    options?: QuadFactoryQuadOptsInterface
   ): QuadInterface {
-    const { curie } = options ?? {};
+    const {
+      curie, graph
+    } = options ?? {};
     const expandedPredicate = curie ? expandCurieIfNeeded(predicate, curie) : predicate;
     const expandedSubject = curie ? expandCurieIfNeeded(subject, curie) : subject;
 
@@ -212,22 +242,25 @@ export class QuadFactory {
       ? Terms.blank(expandedSubject)
       : Terms.iri(expandedSubject);
 
-    return Terms.quad(subjectTerm, Terms.iri(expandedPredicate), object);
+    return Terms.quad(subjectTerm, Terms.iri(expandedPredicate), object, graph);
   }
 
   /**
-   * Construct an RDF list and push its `rdf:first` / `rdf:rest` triples to
-   * `quads`. Returns the list head (a `BlankNode` for non-empty lists, or
-   * `rdf:nil` for empty lists) to be used as the object position in the
-   * parent triple.
+   * Construct an RDF list and push its triples into `quads`.
+   * Returns the list head.
    *
-   * Standard RDF list encoding — no project-internal `List` term. Every
-   * quad produced is a spec-compliant `@rdfjs/types#Quad`.
+   * @param items - Term objects to encode as an RDF list.
+   * @param quads - Output array to push list triples into.
+   * @param issuer - Optional per-call identifier issuer.
    */
-  static rdfList(items: QuadObjectType[], quads: QuadInterface[]): QuadObjectType {
+  static rdfList(
+    items: QuadObjectType[],
+    quads: QuadInterface[],
+    issuer?: IdentifierIssuerInterface
+  ): QuadObjectType {
     const {
       head, triples
-    } = Lists.build(items);
+    } = Lists.build(items, issuer);
 
     for (const triple of triples) {
       quads.push(triple);
@@ -236,6 +269,10 @@ export class QuadFactory {
     return head;
   }
 
+  /**
+   * Reset the module-level bnode counter. Call before a serialization batch
+   * that involves multiple projectGraph() calls (when not using an IdentifierIssuer).
+   */
   static resetBnodeCounter(): void {
     bnodeCounter = 0;
   }

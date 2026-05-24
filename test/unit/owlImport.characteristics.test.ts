@@ -53,13 +53,13 @@ const OWL_IRREFLEXIVE_CURIE = 'owl:IrreflexiveProperty';
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeCtx(allPropertyIris?: ReadonlySet<string>): OwlImportContext {
+function makeCtx(allPropertyIris?: ReadonlySet<string>, quads: QuadInterface[] = []): OwlImportContext {
   const curie = new Curie(DEFAULT_PREFIXES);
   const unsupported: Array<{
     'axiomIri': string;
     'subjectIri': null | string;
   }> = [];
-  const graph = SchemaGraph.fromQuads([], { 'baseIRI': 'urn:test' });
+  const graph = SchemaGraph.fromQuads(quads, { 'baseIRI': 'urn:test' });
 
   return {
     'allClassIris': new Set<string>(),
@@ -138,7 +138,7 @@ void describe('importCharacteristics — full IRI characteristic detection', { '
   ] of fullIriCases) {
     void it(`detects ${characteristicName} from full IRI quad`, () => {
       const quads: QuadInterface[] = [typeQuad(PROPERTY_IRI, fullIri)];
-      const ctx = makeCtx();
+      const ctx = makeCtx(undefined, quads);
       const fragment = importCharacteristics(quads, ctx);
 
       assert.strictEqual(fragment.characteristics.length, 1);
@@ -190,7 +190,7 @@ void describe('importCharacteristics — curie IRI characteristic detection', { 
   ] of curieCases) {
     void it(`detects ${characteristicName} from curie form quad`, () => {
       const quads: QuadInterface[] = [typeQuad(PROPERTY_IRI, curieIri)];
-      const ctx = makeCtx();
+      const ctx = makeCtx(undefined, quads);
       const fragment = importCharacteristics(quads, ctx);
 
       assert.strictEqual(fragment.characteristics.length, 1);
@@ -210,7 +210,7 @@ void describe('importCharacteristics — multiple characteristics on one propert
       typeQuad(PROPERTY_IRI, OWL_SYMMETRIC),
       typeQuad(PROPERTY_IRI, OWL_REFLEXIVE)
     ];
-    const ctx = makeCtx();
+    const ctx = makeCtx(undefined, quads);
     const fragment = importCharacteristics(quads, ctx);
 
     assert.strictEqual(fragment.characteristics.length, 2);
@@ -235,7 +235,7 @@ void describe('importCharacteristics — deduplication', () => {
       typeQuad(PROPERTY_IRI, OWL_TRANSITIVE),
       typeQuad(PROPERTY_IRI, OWL_TRANSITIVE)
     ];
-    const ctx = makeCtx();
+    const ctx = makeCtx(undefined, quads);
     const fragment = importCharacteristics(quads, ctx);
 
     assert.strictEqual(fragment.characteristics.length, 1);
@@ -253,8 +253,9 @@ void describe('importCharacteristics — unknown property IRI', () => {
       'axiomIri': string;
       'subjectIri': null | string;
     }> = [];
+    const quads: QuadInterface[] = [typeQuad(unknownProp, OWL_FUNCTIONAL)];
     const ctx: OwlImportContext = {
-      ...makeCtx(new Set<string>()),
+      ...makeCtx(new Set<string>(), quads),
       'reportUnsupported': (axiomIri, subjectIri) => {
         collectedUnsupported.push({
           axiomIri,
@@ -262,7 +263,6 @@ void describe('importCharacteristics — unknown property IRI', () => {
         });
       }
     };
-    const quads: QuadInterface[] = [typeQuad(unknownProp, OWL_FUNCTIONAL)];
     const fragment = importCharacteristics(quads, ctx);
 
     assert.strictEqual(fragment.characteristics.length, 0);
@@ -302,7 +302,7 @@ void describe('importCharacteristics — non-type quads', () => {
       'subject': Terms.iri(PROPERTY_IRI)
     };
     const quads: QuadInterface[] = [subClassOfQuad];
-    const ctx = makeCtx();
+    const ctx = makeCtx(undefined, quads);
     const fragment = importCharacteristics(quads, ctx);
 
     assert.strictEqual(fragment.characteristics.length, 0);
@@ -439,7 +439,7 @@ void describe('importCharacteristics — bookstore round-trip patterns', () => {
   void it('Review.customerId — Functional round-trips via fragment.characteristics', () => {
     const propIri = 'urn:bookstore:Review#customerId';
     const quads: QuadInterface[] = [typeQuad(propIri, OWL_FUNCTIONAL)];
-    const ctx = makeCtx(new Set([propIri]));
+    const ctx = makeCtx(new Set([propIri]), quads);
     const fragment = importCharacteristics(quads, ctx);
 
     assert.strictEqual(fragment.characteristics.length, 1);
@@ -450,7 +450,7 @@ void describe('importCharacteristics — bookstore round-trip patterns', () => {
   void it('Customer.id — InverseFunctional round-trips via fragment.characteristics', () => {
     const propIri = 'urn:bookstore:Customer#id';
     const quads: QuadInterface[] = [typeQuad(propIri, OWL_INVERSE_FUNCTIONAL)];
-    const ctx = makeCtx(new Set([propIri]));
+    const ctx = makeCtx(new Set([propIri]), quads);
     const fragment = importCharacteristics(quads, ctx);
 
     assert.strictEqual(fragment.characteristics.length, 1);
@@ -463,7 +463,7 @@ void describe('importCharacteristics — bookstore round-trip patterns', () => {
       typeQuad(propIri, OWL_TRANSITIVE),
       typeQuad(propIri, OWL_IRREFLEXIVE)
     ];
-    const ctx = makeCtx(new Set([propIri]));
+    const ctx = makeCtx(new Set([propIri]), quads);
     const fragment = importCharacteristics(quads, ctx);
 
     assert.strictEqual(fragment.characteristics.length, 2);
@@ -483,7 +483,7 @@ void describe('importCharacteristics — bookstore round-trip patterns', () => {
       typeQuad(propIri, OWL_SYMMETRIC),
       typeQuad(propIri, OWL_REFLEXIVE)
     ];
-    const ctx = makeCtx(new Set([propIri]));
+    const ctx = makeCtx(new Set([propIri]), quads);
     const fragment = importCharacteristics(quads, ctx);
 
     assert.strictEqual(fragment.characteristics.length, 2);
@@ -500,7 +500,7 @@ void describe('importCharacteristics — bookstore round-trip patterns', () => {
   void it('Sequel.predecessor — Asymmetric round-trips', () => {
     const propIri = 'urn:bookstore:Sequel#predecessor';
     const quads: QuadInterface[] = [typeQuad(propIri, OWL_ASYMMETRIC)];
-    const ctx = makeCtx(new Set([propIri]));
+    const ctx = makeCtx(new Set([propIri]), quads);
     const fragment = importCharacteristics(quads, ctx);
 
     assert.strictEqual(fragment.characteristics.length, 1);

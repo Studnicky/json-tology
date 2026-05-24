@@ -1,7 +1,6 @@
 import type {
   GraphErrorCodeType,
   InstantiationErrorCodeType,
-  LoadErrorCodeType,
   MaterializationErrorCodeType,
   OwlImportErrorCodeType,
   SchemaErrorCodeType
@@ -25,7 +24,6 @@ export const GraphErrorCode = {
   'ANCHOR_NOT_FOUND': 'ANCHOR_NOT_FOUND',
   'ARTIFACT_INVALID': 'ARTIFACT_INVALID',
   'ARTIFACT_STALE': 'ARTIFACT_STALE',
-  'BOOLEAN_SCHEMA_FRAGMENT': 'BOOLEAN_SCHEMA_FRAGMENT',
   'DIALECT_UNSUPPORTED': 'DIALECT_UNSUPPORTED',
   'POINTER_INVALID': 'POINTER_INVALID',
   'POINTER_NOT_FOUND': 'POINTER_NOT_FOUND',
@@ -34,15 +32,6 @@ export const GraphErrorCode = {
   'REF_UNRESOLVED': 'REF_UNRESOLVED',
   'VOCABULARY_UNSUPPORTED': 'VOCABULARY_UNSUPPORTED'
 } as const satisfies Record<string, GraphErrorCodeType>;
-
-export const LoadErrorCode = {
-  'DUPLICATE_ANCHOR': 'LOAD_DUPLICATE_ANCHOR',
-  'DUPLICATE_ID': 'LOAD_DUPLICATE_ID',
-  'INVALID_JSON': 'LOAD_INVALID_JSON',
-  'INVALID_SCHEMA': 'LOAD_INVALID_SCHEMA',
-  'IO_FAILURE': 'LOAD_IO_FAILURE',
-  'MISSING_ID': 'LOAD_MISSING_ID'
-} as const satisfies Record<string, LoadErrorCodeType>;
 
 export const InstantiationErrorCode = {
   'EXTRA_FORBIDDEN': 'EXTRA_FORBIDDEN',
@@ -55,10 +44,4 @@ export const MaterializationErrorCode = {
   'MATERIALIZATION_FAILED': 'MATERIALIZATION_FAILED'
 } as const satisfies Record<string, MaterializationErrorCodeType>;
 
-export const OwlImportErrorCode = {
-  'INVALID_DATATYPE': 'OWL_IMPORT_INVALID_DATATYPE',
-  'MALFORMED_CLASS': 'OWL_IMPORT_MALFORMED_CLASS',
-  'NOT_IMPLEMENTED': 'OWL_IMPORT_NOT_IMPLEMENTED',
-  'UNKNOWN_AXIOM': 'OWL_IMPORT_UNKNOWN_AXIOM',
-  'UNRESOLVED_REF': 'OWL_IMPORT_UNRESOLVED_REF'
-} as const satisfies Record<string, OwlImportErrorCodeType>;
+export const OwlImportErrorCode = { 'NOT_IMPLEMENTED': 'OWL_IMPORT_NOT_IMPLEMENTED' } as const satisfies Record<string, OwlImportErrorCodeType>;

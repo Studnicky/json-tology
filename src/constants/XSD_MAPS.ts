@@ -1,4 +1,7 @@
 import { DECIMAL_RADIX } from './FORMAT_VALIDATION.js';
+import {
+  OWL, XSD
+} from './IRI.js';
 
 export const XSD_COERCERS: Map<string, (raw: string) => unknown> = new Map<string, (raw: string) => unknown>([
   [
@@ -52,43 +55,43 @@ export const XSD_COERCERS: Map<string, (raw: string) => unknown> = new Map<strin
 ]);
 
 export const BASE_TYPE_MAP: Readonly<Record<string, string>> = {
-  'boolean': 'xsd:boolean',
-  'integer': 'xsd:integer',
-  'null': 'owl:Nothing',
-  'number': 'xsd:decimal',
-  'string': 'xsd:string'
+  'boolean': XSD.boolean,
+  'integer': XSD.integer,
+  'null': OWL.Nothing,
+  'number': XSD.decimal,
+  'string': XSD.string
 };
 
 export const STRING_FORMAT_MAP: Readonly<Record<string, string>> = {
-  'binary': 'xsd:hexBinary',
-  'byte': 'xsd:base64Binary',
-  'date': 'xsd:date',
-  'date-time': 'xsd:dateTime',
-  'duration': 'xsd:duration',
-  'email': 'xsd:string',
-  'hostname': 'xsd:string',
-  'idn-email': 'xsd:string',
-  'idn-hostname': 'xsd:string',
-  'ipv4': 'xsd:string',
-  'ipv6': 'xsd:string',
-  'iri': 'xsd:anyURI',
-  'iri-reference': 'xsd:anyURI',
-  'json-pointer': 'xsd:string',
-  'password': 'xsd:string',
-  'regex': 'xsd:string',
-  'relative-json-pointer': 'xsd:string',
-  'time': 'xsd:time',
-  'uri': 'xsd:anyURI',
-  'uri-reference': 'xsd:anyURI',
-  'uri-template': 'xsd:anyURI',
-  'uuid': 'xsd:string'
+  'binary': XSD.hexBinary,
+  'byte': XSD.base64Binary,
+  'date': XSD.date,
+  'date-time': XSD.dateTime,
+  'duration': XSD.duration,
+  'email': XSD.string,
+  'hostname': XSD.string,
+  'idn-email': XSD.string,
+  'idn-hostname': XSD.string,
+  'ipv4': XSD.string,
+  'ipv6': XSD.string,
+  'iri': XSD.anyURI,
+  'iri-reference': XSD.anyURI,
+  'json-pointer': XSD.string,
+  'password': XSD.string,
+  'regex': XSD.string,
+  'relative-json-pointer': XSD.string,
+  'time': XSD.time,
+  'uri': XSD.anyURI,
+  'uri-reference': XSD.anyURI,
+  'uri-template': XSD.anyURI,
+  'uuid': XSD.string
 };
 
 export const NUMBER_FORMAT_MAP: Readonly<Record<string, string>> = {
-  'double': 'xsd:double',
-  'float': 'xsd:float',
-  'int32': 'xsd:int',
-  'int64': 'xsd:long'
+  'double': XSD.double,
+  'float': XSD.float,
+  'int32': XSD.int,
+  'int64': XSD.long
 };
 
 // ---------------------------------------------------------------------------

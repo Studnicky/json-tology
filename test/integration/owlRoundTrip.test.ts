@@ -402,3 +402,157 @@ void describe('OWL round-trip', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// H-1 round-trip: jt:restrictions survive fromTbox(toTbox())
+// ---------------------------------------------------------------------------
+
+void describe('H-1: jt:restrictions round-trip via OwlProjection + OwlImporter', () => {
+  void it('fromTbox(toTbox(schemaWithJtRestrictions)) reconstructs cardinality restrictions', async () => {
+    const { Compose } = await import('../../src/index.js');
+    const { SchemaGraph } = await import('../../src/modules/graph/SchemaGraph.js');
+    const { OwlProjection } = await import('../../src/modules/rdf/OwlProjection.js');
+    const { importPropertyRestrictions } = await import('../../src/modules/ontology/importDispatch/PropertyRestrictions.js');
+    const { Curie } = await import('../../src/modules/rdf/Curie.js');
+    const { DEFAULT_PREFIXES } = await import('../../src/constants/PREFIXES.js');
+
+    const CLASS_IRI = 'urn:test:H1Class';
+    const PROP_IRI = `${CLASS_IRI}#items`;
+
+    const schema = Compose.subClassOf(
+      Compose.maxCardinality(PROP_IRI, 2),
+      Compose.subClassOf(
+        Compose.minCardinality(PROP_IRI, 1),
+        {
+          '$id': CLASS_IRI,
+          'type': 'object' as const
+        }
+      )
+    );
+
+    const graph = new SchemaGraph(schema);
+    const tbox = OwlProjection.graph(graph);
+
+    const qbGraph = SchemaGraph.fromQuads(tbox, { 'baseIRI': 'urn:test' });
+    const curie = new Curie(DEFAULT_PREFIXES);
+    const ctx = {
+      'allClassIris': new Set([CLASS_IRI]),
+      'allPropertyIris': new Set<string>(),
+      'baseIRI': 'urn:test',
+      curie,
+      'graph': qbGraph,
+      'isDatatype': () => {
+        return false;
+      },
+      'prefixes': DEFAULT_PREFIXES,
+      'reportUnsupported': () => { /* noop */ }
+    };
+
+    const fragment = importPropertyRestrictions(tbox, ctx);
+    const delta = fragment.schemaDeltas.get(CLASS_IRI);
+    const itemsProp = delta?.properties?.items as Record<string, unknown> | undefined;
+
+    assert.ok(delta !== undefined, 'class delta must exist after round-trip');
+    assert.ok(itemsProp !== undefined, 'items property delta must exist');
+    assert.equal(itemsProp.minItems, 1, 'minCardinality → minItems: 1');
+    assert.equal(itemsProp.maxItems, 2, 'maxCardinality → maxItems: 2');
+  });
+
+  void it('fromTbox(toTbox(schemaWithSomeValuesFrom)) emits a someValuesFrom invariant', async () => {
+    const { Compose } = await import('../../src/index.js');
+    const { SchemaGraph } = await import('../../src/modules/graph/SchemaGraph.js');
+    const { OwlProjection } = await import('../../src/modules/rdf/OwlProjection.js');
+    const { OwlImporter } = await import('../../src/modules/ontology/OwlImporter.js');
+
+    const CLASS_IRI = 'urn:test:H1SomeClass';
+    const PROP_IRI = `${CLASS_IRI}#tags`;
+    const RANGE_IRI = 'urn:test:H1Tag';
+
+    const schema = Compose.subClassOf(
+      Compose.someValuesFrom(PROP_IRI, RANGE_IRI),
+      {
+        '$id': CLASS_IRI,
+        'type': 'object' as const
+      }
+    );
+
+    const graph = new SchemaGraph(schema);
+    const tbox = OwlProjection.graph(graph);
+    const result = new OwlImporter({ 'baseIRI': 'urn:test' }).import(tbox);
+
+    const invEntries = result.invariants.filter((entry) => {
+      return entry.schemaId === CLASS_IRI;
+    });
+
+    assert.ok(invEntries.length > 0, 'someValuesFrom invariant must be emitted after round-trip');
+    assert.ok(
+      invEntries.some((entry) => {
+        return entry.invariant.name.includes('someValuesFrom');
+      }),
+      'invariant name must reference someValuesFrom'
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// H-2 round-trip: primitive format survives toTbox → jt:format quad
+// ---------------------------------------------------------------------------
+
+void describe('H-2: primitive format annotation emitted as jt:format quad', () => {
+  void it('toTbox of { type: "string", format: "date-time" } emits jt:format quad', async () => {
+    const { SchemaGraph } = await import('../../src/modules/graph/SchemaGraph.js');
+    const { OwlProjection } = await import('../../src/modules/rdf/OwlProjection.js');
+    const { JT } = await import('../../src/constants/IRI.js');
+
+    const schema = {
+      '$id': 'urn:test:H2DateType',
+      'format': 'date-time',
+      'type': 'string' as const
+    };
+
+    const graph = new SchemaGraph(schema);
+    const tboxQuads = OwlProjection.graph(graph);
+
+    // The JT.format quad must appear in the emitted quads
+    const formatQuad = tboxQuads.find((quad) => {
+      return quad.predicate.value === JT.format;
+    });
+
+    assert.ok(formatQuad !== undefined, 'jt:format quad must be emitted for string schema with format');
+    assert.equal(formatQuad.object.value, 'date-time', 'jt:format object value must be "date-time"');
+  });
+
+  void it('jt:format is read from projection index (not raw schema) via graph relation', async () => {
+    const { SchemaGraph } = await import('../../src/modules/graph/SchemaGraph.js');
+    const { OwlProjection } = await import('../../src/modules/rdf/OwlProjection.js');
+    const { JT } = await import('../../src/constants/IRI.js');
+
+    // Schema with format=uri (xsd:anyURI maps cleanly to a non-string XSD type)
+    // pushFormatAnnotationRelation should still emit JT.format
+    const schema = {
+      '$id': 'urn:test:H2UriType',
+      'format': 'uri',
+      'type': 'string' as const
+    };
+
+    const graph = new SchemaGraph(schema);
+
+    // Verify the graph relation is present
+    const allRels = graph.allRelations();
+    const formatRel = allRels.find((relation) => {
+      return relation.predicate === JT.format;
+    });
+
+    assert.ok(formatRel !== undefined, 'JT.format relation must be emitted by SchemaGraphRelations');
+    assert.equal(String(formatRel.target), 'uri', 'JT.format relation target must be "uri"');
+
+    // The OwlProjection must pick it up from the index, not raw schema
+    const tboxQuads = OwlProjection.graph(graph);
+    const formatQuad = tboxQuads.find((quad) => {
+      return quad.predicate.value === JT.format;
+    });
+
+    assert.ok(formatQuad !== undefined, 'jt:format quad must be in tbox output');
+    assert.equal(formatQuad.object.value, 'uri', 'jt:format value must be "uri"');
+  });
+});

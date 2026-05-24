@@ -93,7 +93,7 @@ export class Dumper {
     const entry = registry.graphEntry(schemaId);
 
     if (entry === undefined) {
-      throw new GraphError('REF_UNRESOLVED', `Schema not registered: ${schemaId}`, schemaId);
+      throw new GraphError('REF_UNRESOLVED', `Schema not registered: ${schemaId}`, { 'pointer': schemaId });
     }
 
     const {
@@ -141,7 +141,7 @@ export class Dumper {
     const entry = registry.graphEntry(schemaId);
 
     if (entry === undefined) {
-      throw new GraphError('REF_UNRESOLVED', `Schema not registered: ${schemaId}`, schemaId);
+      throw new GraphError('REF_UNRESOLVED', `Schema not registered: ${schemaId}`, { 'pointer': schemaId });
     }
 
     if (!graphHasTransforms(entry.graph) && !hasActiveFilterOptions(options)) {
@@ -295,7 +295,7 @@ export class Dumper {
     const lookedUp = registry.graphEntry(parsed.id);
 
     if (lookedUp === undefined) {
-      throw new GraphError('REF_UNRESOLVED', `Unresolved schema reference: ${ref}`, ref);
+      throw new GraphError('REF_UNRESOLVED', `Unresolved schema reference: ${ref}`, { 'pointer': ref });
     }
 
     const {

@@ -137,8 +137,8 @@ void describe('BaseError cause chain edge cases', { 'concurrency': true }, () =>
       {
         'assertions': () => {
           const root = new SchemaError('ROOT', 'root error');
-          const mid = new SchemaError('MID', 'mid error', false, { 'cause': root });
-          const top = new SchemaError('TOP', 'top error', false, { 'cause': mid });
+          const mid = new SchemaError('MID', 'mid error', { 'cause': root });
+          const top = new SchemaError('TOP', 'top error', { 'cause': mid });
 
           const chain = top.flatten();
 

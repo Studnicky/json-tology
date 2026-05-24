@@ -1,4 +1,5 @@
 import type {
+  ListItemType,
   NormIRInterface,
   SchemaGraphNodeInterface, SchemaGraphRelationInterface,
   SchemaGraphSemanticsInterface, StructureWarningInterface
@@ -266,6 +267,19 @@ export class SchemaGraph implements SchemaGraphInterface {
     return this.childMap.get(node)?.get(key);
   }
 
+  /**
+   * The forward-projection graph does not retain `rdf:first`/`rdf:rest` chains
+   * — RDF lists are materialised at projection time by `OwlProjection` /
+   * `ShaclProjection` from the structural relations on each node. There is
+   * no list quad to walk here, so this method returns an empty array.
+   *
+   * The quad-backed graph (`QuadBackedSchemaGraph.collectList`) provides the
+   * real implementation for import-side dispatchers.
+   */
+  public collectList(_head: string): readonly ListItemType[] {
+    return [];
+  }
+
   public entries(node: SchemaGraphNodeInterface, key: string): Array<[string, SchemaGraphNodeInterface]> {
     return this.entryMap.get(node)?.get(key) ?? [];
   }
@@ -358,6 +372,15 @@ export class SchemaGraph implements SchemaGraphInterface {
     return this.indexedChildMap.get(node)?.get(key) ?? [];
   }
 
+  /**
+   * Returns the raw value of a JSON Schema keyword from `node.schema`.
+   *
+   * Only meaningful for nodes whose `schema` is a record (object schema);
+   * returns `undefined` for boolean schemas. This method performs a direct
+   * property lookup — it does not apply dialect resolution, $ref following,
+   * or any semantic transformation. Call it only when you need the literal
+   * authored value from the source schema, not a semantically-resolved value.
+   */
   public keywordValue(node: SchemaGraphNodeInterface, key: string): unknown {
     if (!isRecord(node.schema)) {
       return undefined;
@@ -459,7 +482,7 @@ export class SchemaGraph implements SchemaGraphInterface {
     const mapNode = this.nodeMap.get(pointer);
 
     if (mapNode === undefined) {
-      throw new GraphError('POINTER_NOT_FOUND', `Schema graph node not found for pointer: ${pointer}`, pointer);
+      throw new GraphError('POINTER_NOT_FOUND', `Schema graph node not found for pointer: ${pointer}`, { pointer });
     }
 
     return mapNode;
@@ -483,6 +506,12 @@ export class SchemaGraph implements SchemaGraphInterface {
     return relations;
   }
 
+  public relationsForSubject(subjectIri: string): readonly SchemaGraphRelationInterface[] {
+    return this.allRelations().filter((rel) => {
+      return rel.source.id === subjectIri;
+    });
+  }
+
   public resolveFragment(fragment: string): SchemaGraphNodeInterface {
     if (fragment === '') {
       return this.rootNode;
@@ -494,7 +523,7 @@ export class SchemaGraph implements SchemaGraphInterface {
     const anchored = this.anchorMap.get(fragment);
 
     if (anchored === undefined) {
-      throw new GraphError('ANCHOR_NOT_FOUND', `Unknown schema anchor: #${fragment}`, fragment);
+      throw new GraphError('ANCHOR_NOT_FOUND', `Unknown schema anchor: #${fragment}`, { 'pointer': fragment });
     }
 
     return anchored;
@@ -516,13 +545,13 @@ export class SchemaGraph implements SchemaGraphInterface {
       return this.rootNode;
     }
     if (!pointer.startsWith('/')) {
-      throw new GraphError('POINTER_INVALID', `Invalid JSON Pointer: ${pointer}`, pointer);
+      throw new GraphError('POINTER_INVALID', `Invalid JSON Pointer: ${pointer}`, { pointer });
     }
 
     const resolved = this.nodeMap.get(pointer);
 
     if (resolved === undefined) {
-      throw new GraphError('POINTER_NOT_FOUND', `Pointer not found: ${pointer}`, pointer);
+      throw new GraphError('POINTER_NOT_FOUND', `Pointer not found: ${pointer}`, { pointer });
     }
 
     return resolved;

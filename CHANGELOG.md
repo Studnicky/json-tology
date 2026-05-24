@@ -7,6 +7,309 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Error constructors aligned with the DX argument convention** —
+  `BaseError`, `SchemaError`, and `GraphError` now take their optional fields
+  through a single trailing options bag instead of mixed positional
+  parameters. `BaseError(code, message, options?: BaseErrorOptionsType)`
+  folds the prior `retryable` positional into `options.retryable` (default
+  `false`). `SchemaError(code, message, options?: SchemaErrorOptionsType)`
+  folds `schemaId` into the bag. `GraphError(code, message, options?:
+  GraphErrorOptionsType)` folds `pointer` into the bag. `MaterializationError`,
+  `InstantiationError`, `CoercionError`, and `OwlImportError` route their
+  `cause` chains through the new `BaseError` shape. The `instanceof`
+  semantics, `code` values, and `toJson()` / `flatten()` output are
+  unchanged.
+- **DX argument convention** — every callable surface aligns on a single
+  contract: required arguments stay positional in stable canonical order;
+  optional, override, or configuration values collapse into a single trailing
+  options object typed by an `Interface` or `Type` alias. `QuadFactory.iri`,
+  `QuadFactory.literal`, `QuadFactory.emitLiterals`,
+  `QuadFactory.emitConstraintLiteral`, and `QuadFactory.quad` accept their
+  optional `curie` (and `graph`, for `quad`) overrides via a single options
+  bag — `QuadFactoryIriOptsInterface`, `QuadFactoryLiteralOptsInterface`,
+  `QuadFactoryEmitOptsInterface`, and `QuadFactoryQuadOptsInterface`.
+  `IdentifierIssuer`'s constructor takes a single
+  `IdentifierIssuerOptsInterface` bag (`prefix`, `existingMap`, `counter`) in
+  place of three optional positionals; `clone()` and the `JsonLdToQuads`
+  internal counter construct via the bag. All OWL projection call sites in
+  `OwlProjection`, `ShaclProjection`, and `Projection` pass `curie` through
+  the options bag, restoring a single uniform signature shape across the
+  quad-factory surface.
+
+### Removed
+
+- **`LoadError` and `LoadErrorCode`** — dead public surface with no production
+  throw sites. The class, its error-code constant object, and the
+  `LoadErrorCodeType` union are gone from the public API along with the
+  `examples/docs/errors/18-load-error.ts` example. The unrelated
+  `SchemaLoadErrorSchema` JSON Schema in `src/constants/SCHEMAS.ts` (used by
+  loader-result reporting) is unaffected.
+
+### Added
+
+- **Graph-native list traversal, sibling indexing, and literal-tag
+  preservation** — `SchemaGraphInterface` exposes two new methods used by the
+  OWL import dispatchers to consume the canonical graph without falling back
+  to raw quad iteration:
+  - `collectList(head)` walks an `rdf:first` / `rdf:rest` / `rdf:nil` chain
+    rooted at a NamedNode IRI or blank-node id and returns each item as a
+    `ListItemType` (`{ termType, target, datatype?, language? }`).
+  - `relationsForSubject(subjectIri)` returns every outgoing relation for a
+    given subject — including blank-node subjects (restriction bnodes,
+    negative-property-assertion bnodes, list-head bnodes). The quad-backed
+    implementation builds a subject index lazily on first call.
+  `SchemaGraphRelationInterface` adds three optional fields populated by the
+  quad-backed graph: `termType: 'NamedNode' | 'BlankNode' | 'Literal'`,
+  `datatype` (XSD datatype IRI for Literal targets), and `language` (BCP47
+  language tag for langString literals). The forward-projection graph leaves
+  these fields undefined (its relation targets are always graph nodes or
+  IRIs); `SchemaGraph.collectList` returns `[]` because the projection graph
+  does not retain `rdf:List` chains.
+
+### Changed
+
+- **All OWL import dispatchers are now graph-native** — zero raw-quad
+  iteration remains in `src/modules/ontology/importDispatch/*`. The
+  `Annotations`, `ClassAxioms`, `ClassExpressions`, `Datatypes`, and
+  `Individuals` dispatchers were the last holdouts; each now reads its
+  axioms exclusively from `ctx.graph.allRelations()` and uses the new
+  `collectList` / `relationsForSubject` helpers plus the
+  `language` / `datatype` / `termType` fields on each relation to recover
+  the structural shapes (RDF list members, blank-node sibling predicates,
+  language-tagged literals, typed-literal facet values) that previously
+  required walking the source quad array. The `quads` parameter on each
+  dispatcher is retained as `_quads` for back-compat with
+  `DispatcherFnType`; the dispatcher table in `OwlImporter` still passes
+  it but no dispatcher reads from it.
+
+- **Graph-native OWL import dispatchers** — `Characteristics`,
+  `ClassAxioms`, `Properties`, and `PropertyRestrictions` dispatchers now drive
+  axiom detection from `ctx.graph.allRelations()` rather than scanning raw
+  quads. `QuadBackedSchemaGraph.NODE_TYPES` extends to the seven OWL 2 property
+  characteristic classes (`owl:FunctionalProperty`, `owl:TransitiveProperty`,
+  etc.) so properties declared solely via a characteristic axiom still surface
+  as graph nodes. Compacted CURIE targets emitted by the graph layer are
+  expanded back to full IRIs in each dispatcher before structural comparison.
+
+- **Correct OWL semantics for `anyOf` and `oneOf`** — `anyOf` branches now emit `owl:equivalentClass` + `owl:unionOf` (union of class expressions); `oneOf` branches emit `owl:disjointUnionOf` (disjoint union). Import round-trip reconstructs `anyOf` from `owl:unionOf` quads and `oneOf` from `owl:disjointUnionOf` quads symmetrically. `OWL.disjointUnionOf` added to `IRI_PREDICATES` for `Projection.graph()` emission. `$ref` targets in `anyOf`/`oneOf` branches are now resolved to their canonical IRI rather than the intermediate pointer node.
+
+- **Full-IRI wire format** — `src/constants/IRI.ts` now derives every constant
+  value from `STANDARD_PREFIXES` as a full IRI (e.g. `RDF.type` =
+  `'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'`). `XsdTypes.resolve` and
+  `XsdTypes.resolveSingle` return full XSD IRIs. `XSD_MAPS.ts` maps all JSON
+  Schema type/format pairs to full IRIs. `DEFAULT_PREFIXES` is now derived from
+  `STANDARD_PREFIXES` (single source of truth). `OWL.disjointUnionOf` is added.
+  All projection call sites (`OwlProjection`, `ShaclProjection`, `Projection`)
+  emit quads with full-IRI predicates and object terms — compact CURIEs no
+  longer appear in the quad stream.
+
+- **Per-serialization bnode isolation** — `BaseGraphSerializer.serializeQuads`
+  creates a single `IdentifierIssuer` shared across all graph projections in a
+  batch, preventing blank-node ID collisions when multiple schemas are serialized
+  together. Individual `OwlProjection.graph` / `ShaclProjection.graph` calls
+  still create their own issuer (deterministic per-call naming). The shared
+  issuer is threaded via an optional `issuer?` parameter on `projectGraph`.
+
+- **`QuadFactory.quad` H-4 signature** — accepts `{ curie?, graph? }` options
+  bag. The `graph` option stamps a named-graph term at construction time (Wave 2
+  H-4 will remove the second-pass mutation in `Projection.ts`).
+
+### Removed
+
+- **`Lift.fromExternalQuad` / `fromExternalRdfJsQuad` deprecated path** — both the internal
+  implementation and the exported wrapper are deleted. The sole caller in
+  `OwlImporter.fromJsonLdRdfOutput` now constructs `QuadInterface` values directly via `Terms`
+  factory methods, preserving full IRI datatypes and predicates throughout the pipeline.
+  `normalizeDatatype` and `coerceLiteralValue` (compact-CURIE conversion helpers) are removed
+  alongside them. The `typeOf()` dual-form check (`RDF.type || RDF_TYPE_IRI`) in `Lift.ts` is
+  collapsed to a single `RDF.type` comparison since both values are identical full IRIs after
+  the Phase 2 IRI normalisation.
+
+### Fixed
+
+- **Concurrent blank-node safety** — `QuadFactory`, `Lists`, and the projection
+  pipeline (`Projection`, `OwlProjection`, `ShaclProjection`) now use a
+  per-call `IdentifierIssuer` for all blank-node naming. The module-level
+  `bnodeCounter` in `QuadFactory` and `listBnodeCounter` in `Lists` are removed
+  entirely; `resetBnodeCounter()` and `resetListBnodeCounter()` are gone from
+  the public surface. Each call to a projection entry point creates its own
+  issuer that owns the counter for that call's lifetime, preventing
+  counter-corruption between overlapping serializations in concurrent server
+  environments. A new `IdentifierIssuer` class (ported from the
+  semantics/rdf-canonicalize package) and its `IdentifierIssuerInterface` are
+  introduced in `src/modules/rdf/IdentifierIssuer.ts` and
+  `src/interfaces/IdentifierIssuer.ts` respectively.
+
+### Performance
+
+- **H-9** `GraphEngine.execute()` — hoists `dynamicScope` to a per-engine reusable array
+  (never mutated in-place) and reuses a per-engine `refStack` Set (symmetric add/delete
+  per frame guarantees it is empty on re-entry). `evaluatedItems` / `evaluatedProperties`
+  fall back to module-level frozen empty sets instead of allocating `new Set()` at the
+  result boundary. Eliminates 4 short-lived allocations per validation call.
+- **H-10** `Curie.compact()` — adds a dedicated `compactCache: Map<string, string>`.
+  Prefixes are immutable post-construction so the cache is always valid. Eliminates an
+  O(prefixes) linear scan on every repeated `compact()` call.
+- **H-11** `Projection.ts` ABox path — hoists a single `quadOpts: QuadOptsInterface`
+  object in `projectAbox()` and threads it through `projectInstance()` and
+  `projectSingleValue()`. All `QuadFactory.quad(..., { curie, graph })` calls in the
+  ABox hot path reuse one allocation instead of creating a fresh object per quad.
+  `ProjectInstanceArgs` and `ProjectPropertyArgs` gain a `quadOpts` field.
+- **H-12** `GraphEngine.validateObject()` — caches the `patternPropertyEntries` mapped
+  array via `WeakMap<SchemaGraphNodeInterface, ...>`. Schema nodes are stable
+  post-registration; the cache is always valid. Eliminates a per-validation-call array
+  allocation for every object validated against a schema with `patternProperties`.
+- **M-F-2** `SchemaRegistry.instantiate()` — passes `this.instantiateOptions` directly
+  when `callOptions?.enableDefaults` is not set. Eliminates a spread allocation on the
+  common fast path.
+- **M-F-3** `SchemaRegistry.list()` / `listGraphs()` — uses `Array.from(values, mapper)`
+  to fuse the spread + map step into a single pass.
+- **M-F-4** `SchemaEntryStore.findDuplicates()` — caches `topLevelHashes` between calls;
+  invalidated on every `add()`, `delete()`, or `clear()`. The previously O(N) hash
+  rebuild per `findDuplicates()` call becomes O(1) on a warm cache.
+- **M-F-5** `Materializer.collectEffectiveProperties()` — memoizes via a two-level
+  `WeakMap<graph, WeakMap<node, result>>`. Graph and node objects are stable
+  post-registration. Eliminates repeated `Map` + `Set` allocations on repeated
+  `fillImplicitProperties` calls for the same schema node.
+- **M-F-6** `SchemaRegistry.addCharacteristic()` — hoists `CHARACTERISTIC_TO_KEY` to
+  module-level `Object.freeze()` constant. Eliminates a per-call object allocation.
+- **Phase 3 coordination** — completes Phase 3 issuer threading in `OwlProjection.ts`
+  and `ShaclProjection.ts`: all `QuadFactory.nextBnode()` and `QuadFactory.rdfList()`
+  call sites in `OwlVocabProjection` and `emitClassQuads` / `emitDatatypeQuads` /
+  `emitPropertyQuads` / `emitContainsQuads` / `emitPrefixItemQuads` /
+  `emitArrayItemQuads` receive the per-call `IdentifierIssuer`. `SpecialHandlerFn` type
+  updated to carry the issuer parameter.
+
+- **H-1: `jt:restrictions` enters the canonical graph** — `SchemaGraphSemanticsInterface`
+  gains a `restrictions: ReadonlyArray<RawRestrictionDescriptorType>` field. `SchemaGraphSupport.semantics()`
+  populates it from the `jt:restrictions` array on the raw schema. `SchemaGraphRelations.extractRelations`
+  emits each restriction entry as an `rdfs:subClassOf` relation with `structure.kind === 'restriction'`,
+  making user-declared OWL property restrictions visible to `graph.allRelations()`. `OwlProjection.emitClassQuads`
+  handles these restriction-structured subClassOf relations by emitting proper OWL restriction blank nodes.
+  `emitUserRestrictions` (the raw-schema bypass) is removed. `QuadBackedSchemaGraph.resolveRestrictionBnode`
+  now keeps constraint predicates as full IRIs so `PropertyRestrictions` dispatcher comparisons against
+  `OWL.*` constants succeed. Round-trip coverage added in `test/integration/owlRoundTrip.test.ts`.
+- **H-2: primitive `format` annotation enters the canonical graph** — `SchemaGraphRelations.extractRelations`
+  now emits a `JT.format` relation for every node where `sem.format` is defined. `OwlProjection.emitDatatypeQuads`
+  reads format from the projection index via `entry.byPredicate.get(JT.format)` instead of
+  `entry.all[0].source.schema.format`. The raw-schema bypass is removed. Round-trip coverage added in
+  `test/integration/owlRoundTrip.test.ts`.
+
+### Added
+
+- **`JsonTology.validateWithShacl` skeleton** — `validateWithShacl(shapes, data)` is added to
+  the facade with an `@experimental` TSDoc marker. Always throws `NOT_IMPLEMENTED` with a clear
+  message directing callers to `toShacl().shaclQuads()` + an external SHACL processor.
+  `toShacl()` gains an asymmetry note in its TSDoc pointing at the planned inverse.
+
+- **`IdentifierIssuerInterface` and `ValidateCallOptionsInterface` exported** — both are now
+  included in the `json-tology/interfaces` barrel. `IdentifierIssuerInterface` describes the
+  per-call blank-node issuer contract; `ValidateCallOptionsInterface` describes the per-call
+  options bag for `SchemaRegistryInterface.validate`.
+
+- **Subpath smoke test** — `test/smoke/subpathExports.test.ts` imports from every declared
+  `exports` subpath (`"."`, `"./value"`, `"./schema"`, `"./ontology"`, `"./types"`,
+  `"./interfaces"`, `"./owl-gen"`) and asserts top-level exports are present. Catches broken
+  `exports` map entries without a full pack/install cycle.
+
+- **`NormalizedToQuadsOptionsType` exported from `json-tology/types`** — was reachable
+  internally but absent from the public types barrel.
+
+### Changed
+
+- **`@internal` markers on unexported interface files** — `BuildOptions`, `RefResolutionLoader`,
+  `SchemaRefWalker`, `SimplePredicateEntry`, and `VizOptions` in `src/interfaces/` now carry a
+  `@internal` JSDoc tag at the top of the file so contributors know they are intentionally
+  absent from the public barrel.
+
+- **`JsonTology.materializer` trade-off documented** — the `public readonly materializer`
+  field gains a TSDoc warning: callers that invoke `projectAbox` directly bypass the
+  `owl:sameAs` quad emission that `toQuads()` performs.
+
+- **`@throws` TSDoc on facade methods** — `is`, `subschemaAt`, and the existing methods
+  that were using `{@link SchemaError}` are updated to the canonical `{SchemaError} code X`
+  format, matching the style used across the rest of the facade.
+
+- **`SchemaGraph.keywordValue` usage note** — TSDoc now documents that the method returns
+  the literal authored value, not a semantically-resolved value, and when it is correct
+  to call it.
+
+- **Blank-node identity trade-off in `SameAsStore`** — class TSDoc documents that
+  blank-node subjects are transient and meaningless to reasoners across serialization
+  boundaries; `sameAs` should only be called with stable named-node IRIs.
+
+- `bench/toQuads.bench.ts` — standalone ABox projection benchmark covering three schema
+  shapes (flat 5-property, 1-level nested, `patternProperties`). Baseline (before Phase 6
+  perf fixes) on Node 24 (Apple M-series): flat 171k ops/s (5.82 us), nested 135k ops/s
+  (7.39 us), pattern 227k ops/s (4.39 us). After Phase 6: flat 174k ops/s (5.76 us),
+  nested 139k ops/s (7.20 us), pattern 229k ops/s (4.36 us). Also adds cross-schema
+  ref resolution in `Projection.abox()` via optional `lookupGraph` callback; fixes
+  known C-4 failure (nested address property was dropped on cross-schema round-trip).
+
+- Error code `.code` assertions — every live public error code has at least one
+  test pinning `err.code === 'EXACT_VALUE'`. New tests added in `test/integration/coverageGaps.test.ts`:
+  `POINTER_NOT_SCHEMA` (via `SchemaGraph.resolvePointer` on a scalar leaf), and
+  `ANCHOR_NOT_FOUND` (via `SchemaGraph.resolveFragment` for an undeclared anchor name).
+  Existing coverage confirmed for `DIALECT_UNSUPPORTED`, `VOCABULARY_UNSUPPORTED`,
+  `COMPUTED_INPUT_FORBIDDEN`, `SCHEMA_VALIDATOR_MISSING`, and `OWL_IMPORT_NOT_IMPLEMENTED`.
+- C-4 cross-schema `$ref` round-trip test in `test/e2e/ontologyRoundTrip.test.ts` —
+  exercises `toQuads` → `fromQuads` for `Employee.address` (separately registered `Address`).
+  Root cause of failure documented: `Projection.abox` drops cross-schema `$ref` properties
+  because `resolveNode()` does not follow non-local refs into the registry
+  (`src/modules/rdf/Projection.ts` — Phase 6 scope).
+- `BOOLEAN_SCHEMA_FRAGMENT` and the four unreachable `OWL_IMPORT_*` codes confirmed
+  absent from `src/constants/ERROR_CODES.ts` and `src/types/ErrorCodes.ts` (cleaned prior).
+
+### Added
+
+- `OntologyBuilderInterface` in `src/interfaces/Ontology.ts` — `OntologyBuilder`
+  now declares `implements OntologyBuilderInterface`. Vocabulary-plugin authors
+  and test doubles can type against the interface.
+- `ComputedStoreInterface` and `SameAsStoreInterface` in `src/interfaces/` —
+  `SchemaRegistryInterface` fields `computedStore` and `sameAsStore` are now typed
+  against interfaces rather than concrete classes. `ComputedStore` and `SameAsStore`
+  carry `implements` clauses.
+- `TransformStageInterface`, `AnyTransformStageInterface`, `IriMinterInterface`,
+  `ProjectInstanceArgs`, and `ProjectPropertyArgs` exported from `json-tology/interfaces`.
+- `ToQuadsOptionsType` exported from `json-tology/types`.
+- `DispatcherFnType` and `SubjectIndexType` in `src/interfaces/OwlImport.ts` —
+  shared across all OWL import dispatcher modules; local duplicates removed.
+- `@experimental` tags on `VocabularyPluginInterface`, `OwlGen` interfaces, and
+  `OwlCodegen` interfaces to signal pre-1.0 surface stability.
+- `@throws` TSDoc lines on `JsonTology.validate`, `instantiate`, `toQuads`,
+  `fromQuads`, and `fromTbox` citing the error class and code value.
+
+### Changed
+
+- `ToQuadsOptionsType` moved from inline declaration in `src/JsonTology.ts` to
+  `src/types/ToQuadsOptions.ts`. Canonical placement per module rules.
+- `DuplicateReportEntryType` import in `src/JsonTology.ts` now references the
+  defining file `src/interfaces/SchemaEntryStore.ts` directly instead of the
+  module barrel `src/modules/registry/SchemaRegistry.ts`.
+- `RestrictionDescriptorInterface` renamed to `RestrictionDescriptorType` in
+  `src/types/Restriction.ts` — pure data shape in the `src/types/` directory
+  carries a `Type` suffix per naming convention.
+- `SchemaCompiler.compile()` and `SchemaCompilerInterface.compile()` — `graph`
+  parameter changed from optional to required. The registry always passes a graph;
+  the internal fallback `new SchemaGraph(schema)` is removed.
+- `Lift.fromExternalQuad` deprecation notice updated to reference the canonical
+  replacement: `Lists.narrowExternalQuads(quads)` + `Lift.instances()`.
+- `SubjectIndex` / `SubjectQuadIndex` local type aliases in
+  `importDispatch/Datatypes.ts` and `importDispatch/ClassExpressions.ts` replaced
+  with the shared `SubjectIndexType` import from `src/interfaces/OwlImport.ts`.
+- `DispatcherFn` local type in `OwlImporter.ts` replaced with `DispatcherFnType`
+  from `src/interfaces/OwlImport.ts`.
+
+### Removed
+
+- Dead error code `BOOLEAN_SCHEMA_FRAGMENT` removed from `GraphErrorCode` constant
+  and `GraphErrorCodeType` union — the code was never thrown in production.
+- Unreachable `OwlImportErrorCode` values `INVALID_DATATYPE`, `MALFORMED_CLASS`,
+  `UNKNOWN_AXIOM`, and `UNRESOLVED_REF` removed — only `OWL_IMPORT_NOT_IMPLEMENTED`
+  has active throw sites; the four removed codes were dead surface.
+
 ## [0.14.0] - 2026-05-20
 
 `OntologyBuilder` is now quad-native end-to-end with explicit, labeled entry
@@ -62,12 +365,12 @@ RDF, W3C, Validation), matching the assets used on the github pages site.
 
 ## [0.13.2] - 2026-05-20
 
-Publish recovery for v0.13.1. The v0.13.1 tag was cut before the
-`stamp-version:check` CI step ran, so the Publish Package workflow failed
-on the version-stamped SVG drift and the v0.13.1 release was never
-published. v0.13.2 bundles the v0.13.1 docs accuracy content plus
-correctly stamped SVGs so the publish workflow can complete end-to-end.
-No code changes vs v0.13.1.
+Publish recovery release. The v0.13.1 CI workflow failed on version-stamped
+SVG drift before the package was published. This release bundles the
+v0.13.1 documentation accuracy content with correctly stamped SVGs so the
+publish workflow completes end-to-end.
+
+All runtime code is identical to v0.13.1.
 
 ## [0.13.1] - 2026-05-20
 

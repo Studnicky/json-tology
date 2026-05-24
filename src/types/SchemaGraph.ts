@@ -1,3 +1,23 @@
+/**
+ * Item produced by `SchemaGraphInterface.collectList` when walking an
+ * `rdf:first` / `rdf:rest` / `rdf:nil` chain.
+ *
+ * Preserves the term shape from the underlying quad store so callers can
+ * distinguish blank nodes (anonymous class expressions / facet bnodes),
+ * named nodes (IRI references), and literals (with language tags / datatype
+ * IRIs) without having to walk raw quads themselves.
+ */
+export interface ListItemType {
+  /** XSD datatype IRI for Literal items (omitted for NamedNode / BlankNode). */
+  readonly 'datatype'?: string;
+  /** BCP47 language tag for Literal items (omitted for NamedNode / BlankNode). */
+  readonly 'language'?: string;
+  /** Target value: IRI for NamedNode, bnode id for BlankNode, lexical string for Literal. */
+  readonly 'target': string;
+  /** rdf/js term-type discriminator for the list item. */
+  readonly 'termType': 'BlankNode' | 'Literal' | 'NamedNode';
+}
+
 export type RelationPredicateType
   = | 'dash:readOnly'
   | 'dash:writeOnly'

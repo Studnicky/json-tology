@@ -21,13 +21,13 @@ export type RestrictionKindType
   | 'minCardinality'
   | 'someValuesFrom';
 
-export interface RestrictionDescriptorInterface {
+export interface RestrictionDescriptorType {
   readonly 'kind': RestrictionKindType;
   readonly 'onProperty': string;
   readonly 'value': boolean | number | string;
 }
 
-export type RestrictionRefType = Readonly<Record<'~jt:restriction', RestrictionDescriptorInterface>>;
+export type RestrictionRefType = Readonly<Record<'~jt:restriction', RestrictionDescriptorType>>;
 
 export { RESTRICTION_TAG } from '../constants/RESTRICTION.js';
 

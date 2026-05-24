@@ -1,12 +1,12 @@
 import type { CompiledValidatorInterface } from './Compiler.js';
+import type { ComputedStoreInterface } from './ComputedStore.js';
 import type { CurieInterface } from './Curie.js';
 import type { GraphEngineInterface } from './GraphEngineImpl.js';
 import type { InvariantInterface } from './Invariant.js';
+import type { SameAsStoreInterface } from './SameAsStore.js';
 import type { SchemaGraphInterface } from './SchemaGraphImpl.js';
 import type { ValidationErrors } from '../errors/ValidationErrors.js';
-import type { ComputedStore } from '../modules/registry/ComputedStore.js';
-import type { SameAsStore } from '../modules/registry/SameAsStore.js';
-import type { DuplicateReportEntryType } from '../modules/registry/SchemaRegistry.js';
+import type { DuplicateReportEntryType } from './SchemaEntryStore.js';
 
 export interface SchemaRegistryInterface extends Iterable<[string, Record<string, unknown>]> {
   /**
@@ -29,7 +29,7 @@ export interface SchemaRegistryInterface extends Iterable<[string, Record<string
    * that are not already registered.
    */
   collectUnresolvedRefIris(schema: Record<string, unknown>): ReadonlySet<string>;
-  readonly 'computedStore': ComputedStore;
+  readonly 'computedStore': ComputedStoreInterface;
   convert(schemaOrId: (Record<string, unknown> & { '$id': string }) | string, data: unknown, options?: { 'clone'?: boolean }): unknown;
   create(schemaId: string): unknown;
   readonly 'curie': CurieInterface | undefined;
@@ -64,7 +64,7 @@ export interface SchemaRegistryInterface extends Iterable<[string, Record<string
    * rebuilding when it advances.
    */
   readonly 'revision': number;
-  readonly 'sameAsStore': SameAsStore;
+  readonly 'sameAsStore': SameAsStoreInterface;
   /**
    * Add or replace a schema in the registry. The schema is always the first
    * argument; the iri is derived from `schema.$id` and may be overridden by

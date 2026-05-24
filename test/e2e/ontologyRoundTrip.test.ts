@@ -726,8 +726,11 @@ describe('ontology round-trip: multi-schema HR domain', () => {
     });
 
     it('round-trips an Employee scalar properties (cross-schema $ref excluded)', () => {
-      // Cross-schema $ref (Employee.address → Address, Employee.skills → Skill)
-      // requires multi-graph ABox projection. Test only scalar properties here.
+      // This test covers the materializer.projectAbox path directly.
+      // Cross-schema $ref properties (Employee.address → Address, Employee.skills → Skill)
+      // are not projected here because projectAbox via Projection.ts does not yet resolve
+      // cross-schema refs during ABox emission (POINTER_NOT_SCHEMA gap in Projection.ts).
+      // Full cross-schema round-trip coverage lives in C-4 (toQuads/fromQuads describe below).
       const input = {
         'active': true,
         'email': 'carol@example.com',
@@ -964,5 +967,72 @@ describe('ontology round-trip: multi-schema HR domain', () => {
 
       assert.ok(errors.length > 0, 'reconstructed schema rejects data missing required name');
     });
+  });
+});
+
+// =============================================================================
+// C-4: Cross-schema $ref round-trip — standalone (not dependent on shared jt)
+//
+// Employee.address → Address (separately registered schema).
+// Tests whether a nested object whose type is a cross-schema $ref survives
+// toQuads → fromQuads intact.
+//
+// ROOT CAUSE (KNOWN FAILURE — Phase 6 scope):
+// Projection.abox (src/modules/rdf/Projection.ts) does not resolve cross-schema
+// $ref nodes during ABox emission. resolveNode() only handles local (#) refs;
+// cross-schema refs remain as $ref stubs whose properties.size === 0 and whose
+// schemaTypes does not include 'object', causing projectSingleValue to return early
+// and drop the address property entirely from the quad output.
+// Fix requires updating resolveNode() in Projection.ts to look up the target graph
+// via registry when the ref is a full IRI. That file is owned by the Phase 6 perf agent.
+//
+// This describe block constructs its own JsonTology instance to avoid
+// dependency on the shared before() hook in the main suite.
+// =============================================================================
+
+describe('C-4: cross-schema $ref toQuads/fromQuads round-trip', () => {
+  it('Employee.address (cross-schema $ref) round-trips through toQuads/fromQuads', () => {
+    const localJt = JsonTology.create({
+      'baseIRI': BASE,
+      'enableStrictGraph': false,
+      'schemas': [
+        AddressSchema,
+        SkillSchema,
+        EmployeeSchema
+      ]
+    });
+
+    const input = {
+      'active': true,
+      'address': {
+        'city': 'Berlin',
+        'country': 'DE',
+        'street': 'Unter den Linden 1',
+        'zip': '10117'
+      },
+      'email': 'alice@example.com',
+      'name': 'Alice'
+    };
+
+    const quads = localJt.toQuads(EmployeeSchema, input);
+    const results = localJt.fromQuads(EmployeeSchema.$id, quads);
+
+    assert.equal(results.length, 1, 'one Employee instance lifted');
+    const output = results[0] as Record<string, unknown>;
+
+    // Scalar properties must survive
+    assert.equal(output.name, 'Alice', 'name round-trips');
+    assert.equal(output.email, 'alice@example.com', 'email round-trips');
+    assert.equal(output.active, true, 'active round-trips');
+
+    // Cross-schema nested object: address must be present and structurally intact
+    assert.ok(output.address !== undefined && output.address !== null, 'address is present after round-trip');
+
+    const address = output.address as Record<string, unknown>;
+
+    assert.equal(address.street, 'Unter den Linden 1', 'address.street round-trips');
+    assert.equal(address.city, 'Berlin', 'address.city round-trips');
+    assert.equal(address.country, 'DE', 'address.country round-trips');
+    assert.equal(address.zip, '10117', 'address.zip round-trips');
   });
 });

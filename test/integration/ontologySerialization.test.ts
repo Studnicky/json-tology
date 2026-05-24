@@ -26,6 +26,16 @@ import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
 import {
   decodeLiteral, Terms
 } from '../../src/modules/rdf/Terms.js';
+import { Curie } from '../../src/modules/rdf/Curie.js';
+import { DEFAULT_PREFIXES } from '../../src/constants/PREFIXES.js';
+
+const TEST_CURIE = new Curie(DEFAULT_PREFIXES);
+
+function expandIri(value: string): string {
+  return value.startsWith('http') || value.startsWith('urn:') || value.startsWith('_:')
+    ? value
+    : TEST_CURIE.expand(value);
+}
 
 // ===========================================================================
 // Source: graphSchemaSerializer.test.ts
@@ -755,41 +765,53 @@ import {
 // ---------------------------------------------------------------------------
 
   function findQuads(quads: QuadInterface[], predicate: string): QuadInterface[] {
+    const expandedPredicate = expandIri(predicate);
+
     return quads.filter((quad) => {
-      return quad.predicate.value === predicate;
+      return quad.predicate.value === expandedPredicate;
     });
   }
 
   function findQuadsForSubject(quads: QuadInterface[], subject: string, predicate: string): QuadInterface[] {
+    const expandedPredicate = expandIri(predicate);
+
     return quads.filter((quad) => {
-      return quad.subject.value === subject && quad.predicate.value === predicate;
+      return quad.subject.value === subject && quad.predicate.value === expandedPredicate;
     });
   }
 
   function hasIriQuad(quads: QuadInterface[], subject: string, predicate: string, objectIri: string): boolean {
+    const expandedPredicate = expandIri(predicate);
+    const expandedObject = expandIri(objectIri);
+
     return quads.some((quad) => {
       return quad.subject.value === subject
-    && quad.predicate.value === predicate
+    && quad.predicate.value === expandedPredicate
     && quad.object.termType === 'NamedNode'
-    && quad.object.value === objectIri;
+    && quad.object.value === expandedObject;
     });
   }
 
   // eslint-disable-next-line @stylistic/max-len
   function hasLiteralQuad(quads: QuadInterface[], subject: string, predicate: string, value: unknown, datatype?: string): boolean {
+    const expandedPredicate = expandIri(predicate);
+    const expandedDatatype = datatype === undefined ? undefined : expandIri(datatype);
+
     return quads.some((quad) => {
       return quad.subject.value === subject
-    && quad.predicate.value === predicate
+    && quad.predicate.value === expandedPredicate
     && quad.object.termType === 'Literal'
     && decodeLiteral(quad.object) === value
-    && (datatype === undefined || quad.object.datatype.value === datatype);
+    && (expandedDatatype === undefined || quad.object.datatype.value === expandedDatatype);
     });
   }
 
   function hasBnodeQuad(quads: QuadInterface[], subject: string, predicate: string): QuadInterface | undefined {
+    const expandedPredicate = expandIri(predicate);
+
     return quads.find((quad) => {
       return quad.subject.value === subject
-    && quad.predicate.value === predicate
+    && quad.predicate.value === expandedPredicate
     && quad.object.termType === 'BlankNode';
     });
   }
@@ -884,9 +906,9 @@ import {
             );
 
             const propQuads = quads.filter((quad) => {
-              return quad.predicate.value === 'rdf:type'
+              return quad.predicate.value === 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
               && quad.object.termType === 'NamedNode'
-              && (quad.object.value === 'owl:DatatypeProperty' || quad.object.value === 'owl:ObjectProperty');
+              && (quad.object.value === 'http://www.w3.org/2002/07/owl#DatatypeProperty' || quad.object.value === 'http://www.w3.org/2002/07/owl#ObjectProperty');
             });
 
             assert.equal(propQuads.length, 0, 'bare schema should not emit property type quads');
@@ -899,9 +921,9 @@ import {
             assert.ok(hasIriQuad(quads, 'https://example.com/NoProps', 'rdf:type', 'owl:Class'));
 
             const propQuads = quads.filter((quad) => {
-              return quad.predicate.value === 'rdf:type'
+              return quad.predicate.value === 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
               && quad.object.termType === 'NamedNode'
-              && (quad.object.value === 'owl:DatatypeProperty' || quad.object.value === 'owl:ObjectProperty');
+              && (quad.object.value === 'http://www.w3.org/2002/07/owl#DatatypeProperty' || quad.object.value === 'http://www.w3.org/2002/07/owl#ObjectProperty');
             });
 
             assert.equal(propQuads.length, 0, 'no-properties schema should not emit property type quads');
@@ -1094,11 +1116,11 @@ import {
         },
         {
           'check': (quads) => {
-            const eqQuads = findQuadsForSubject(quads, 'https://example.com/Exclusive', 'owl:equivalentClass');
+            const djQuads = findQuadsForSubject(quads, 'https://example.com/Exclusive', 'owl:disjointUnionOf');
 
-            assert.ok(eqQuads.length >= 2, 'expected >= 2 owl:equivalentClass quads for oneOf');
+            assert.ok(djQuads.length >= 2, 'expected >= 2 owl:disjointUnionOf quads for oneOf');
           },
-          'name': 'oneOf produces owl:equivalentClass',
+          'name': 'oneOf produces owl:disjointUnionOf',
           'schema': {
             '$id': 'https://example.com/Exclusive',
             'oneOf': [
@@ -1489,8 +1511,8 @@ import {
             assert.equal(items.length, 2);
             assert.equal(items[0].termType, 'NamedNode');
             assert.equal(items[1].termType, 'NamedNode');
-            assert.equal(items[0].value, 'xsd:string');
-            assert.equal(items[1].value, 'xsd:decimal');
+            assert.equal(items[0].value, 'http://www.w3.org/2001/XMLSchema#string');
+            assert.equal(items[1].value, 'http://www.w3.org/2001/XMLSchema#decimal');
           },
           'name': 'multi-type produces owl:unionOf with RDF list',
           'schema': {
@@ -1672,7 +1694,7 @@ import {
         {
           'check': (quads) => {
             const arrTypeQuad = quads.find((quad) => {
-              return quad.predicate.value === 'rdf:type';
+              return quad.predicate.value === 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
             });
 
             assert.ok(arrTypeQuad, 'should have rdf:type quad');
@@ -1715,7 +1737,7 @@ import {
         {
           'check': (quads) => {
             const nullTypeQuad = quads.find((quad) => {
-              return quad.predicate.value === 'rdf:type';
+              return quad.predicate.value === 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
             });
 
             assert.ok(nullTypeQuad, 'should have rdf:type quad');
@@ -1745,7 +1767,7 @@ import {
         {
           'check': (quads) => {
             const nonTypeQuads = quads.filter((quad) => {
-              return quad.predicate.value !== 'rdf:type';
+              return quad.predicate.value !== 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
             });
 
             assert.equal(nonTypeQuads.length, 0, 'empty instance should produce no property quads');
@@ -1793,7 +1815,7 @@ import {
       }> = [{
         'check': (quads) => {
           const parentTypeQuads = quads.filter((quad) => {
-            return quad.predicate.value === 'rdf:type'
+            return quad.predicate.value === 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
             && quad.object.termType === 'NamedNode'
             && quad.object.value === 'https://example.com/Parent';
           });
@@ -1866,7 +1888,7 @@ import {
         'check': (tbox, abox) => {
           const tboxClasses = new Set(tbox
             .filter((quad) => {
-              return quad.predicate.value === 'rdf:type' && quad.object.termType === 'NamedNode' && quad.object.value === 'owl:Class';
+              return quad.predicate.value === 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' && quad.object.termType === 'NamedNode' && quad.object.value === 'http://www.w3.org/2002/07/owl#Class';
             })
             .map((quad) => {
               return quad.subject.value;
@@ -1874,7 +1896,7 @@ import {
 
           const aboxTypes = abox
             .filter((quad) => {
-              return quad.predicate.value === 'rdf:type' && quad.object.termType === 'NamedNode';
+              return quad.predicate.value === 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type' && quad.object.termType === 'NamedNode';
             })
             .map((quad) => {
               return quad.object.termType === 'NamedNode' ? quad.object.value : '';
@@ -1889,7 +1911,7 @@ import {
 
           const aboxPropPredicates = abox
             .filter((quad) => {
-              return quad.predicate.value !== 'rdf:type';
+              return quad.predicate.value !== 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
             })
             .map((quad) => {
               return quad.predicate.value;

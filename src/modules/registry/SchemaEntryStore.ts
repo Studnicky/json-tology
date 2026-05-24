@@ -18,10 +18,13 @@ export class SchemaEntryStore implements SchemaEntryStoreInterface {
   private readonly byId = new Map<string, SchemaRegistryEntryInterface>();
   private readonly hashes = new Map<string, string>();
   private rev = 0;
+  /** Cached top-level hash → schemaId map for findDuplicates(). Invalidated on mutation. */
+  private topLevelHashCache: Map<string, string> | undefined = undefined;
 
   public add(schemaId: string, entry: SchemaRegistryEntryInterface): void {
     this.byId.set(schemaId, entry);
     this.hashes.set(entry.hash, schemaId);
+    this.topLevelHashCache = undefined;
     this.rev++;
   }
 
@@ -31,6 +34,7 @@ export class SchemaEntryStore implements SchemaEntryStoreInterface {
     }
     this.byId.clear();
     this.hashes.clear();
+    this.topLevelHashCache = undefined;
     this.rev++;
 
     return true;
@@ -44,6 +48,7 @@ export class SchemaEntryStore implements SchemaEntryStoreInterface {
     }
     this.byId.delete(schemaId);
     this.hashes.delete(entry.hash);
+    this.topLevelHashCache = undefined;
     this.rev++;
 
     return true;
@@ -54,14 +59,18 @@ export class SchemaEntryStore implements SchemaEntryStoreInterface {
   }
 
   public findDuplicates(): readonly DuplicateReportEntryType[] {
-    const topLevelHashes = new Map<string, string>();
+    if (this.topLevelHashCache === undefined) {
+      const cache = new Map<string, string>();
 
-    for (const [
-      schemaId,
-      entry
-    ] of this.byId) {
-      topLevelHashes.set(StructuralHash.of(entry.schema), schemaId);
+      for (const [
+        schemaId,
+        entry
+      ] of this.byId) {
+        cache.set(StructuralHash.of(entry.schema), schemaId);
+      }
+      this.topLevelHashCache = cache;
     }
+    const topLevelHashes = this.topLevelHashCache;
 
     const results: DuplicateReportEntryType[] = [];
 
