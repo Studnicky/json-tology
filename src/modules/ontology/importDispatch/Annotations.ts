@@ -17,14 +17,21 @@
  * `deprecated` in schemaDeltas; unrecognised annotation properties are silently
  * skipped via reportUnsupported so they surface in result.unsupported without
  * aborting the pipeline).
+ *
+ * Graph-native traversal: reads `ctx.graph.allRelations()` and uses the
+ * `language` / `datatype` / `termType` fields the quad-backed graph populates
+ * on each relation when the source quad's object is a Literal. The graph
+ * emits relations for every subject in the input (including ontology IRIs
+ * that are not registered classes or properties), so annotation reach is
+ * preserved without scanning raw quads.
  */
 
 import type { QuadInterface } from '../../../interfaces/Quad.js';
-import type { LiteralTermType } from '../../../types/Quad.js';
 import type {
   OwlImportContext, OwlImportFragment
 } from '../../../interfaces/OwlImport.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
+import type { SchemaGraphRelationInterface } from '../../../interfaces/SchemaGraph.js';
 
 // ---------------------------------------------------------------------------
 // Predicate IRI sets (compact and full-IRI forms accepted)
@@ -83,46 +90,47 @@ const ANNOTATION_PROPERTY_PREDICATES = new Set<string>([
 ]);
 
 // ---------------------------------------------------------------------------
-// Literal extraction helpers
+// Relation-target extraction helpers — read from graph relations
 // ---------------------------------------------------------------------------
 
-function isLiteralTerm(obj: QuadInterface['object']): obj is LiteralTermType {
-  return obj.termType === 'Literal';
-}
-
 /**
- * Extract the string value of a literal quad object.
- * Returns null for non-literals.
+ * Extract the string value of a Literal-typed relation target.
+ * Returns null when the relation does not carry a Literal target.
  */
-function literalString(obj: QuadInterface['object']): null | string {
-  if (!isLiteralTerm(obj)) {
+function literalString(relation: SchemaGraphRelationInterface): null | string {
+  if (relation.termType !== 'Literal') {
     return null;
   }
 
-  return String(obj.value);
+  return typeof relation.target === 'string'
+    ? relation.target
+    : relation.target.id;
 }
 
 /**
- * Extract the language tag of a literal (empty string if untagged).
+ * Extract the language tag of a Literal-typed relation target.
+ * Returns the empty string for untagged literals or non-literal targets.
  */
-function literalLanguage(obj: QuadInterface['object']): string {
-  if (!isLiteralTerm(obj)) {
+function literalLanguage(relation: SchemaGraphRelationInterface): string {
+  if (relation.termType !== 'Literal') {
     return '';
   }
 
-  return obj.language;
+  return relation.language ?? '';
 }
 
 /**
- * Extract the IRI value of a NamedNode object.
- * Returns null for non-IRIs.
+ * Extract the IRI of a NamedNode-typed relation target.
+ * Returns null when the relation does not carry a NamedNode target.
  */
-function namedNodeIri(obj: QuadInterface['object']): null | string {
-  if (obj.termType === 'NamedNode') {
-    return obj.value;
+function namedNodeIri(relation: SchemaGraphRelationInterface): null | string {
+  if (relation.termType !== 'NamedNode') {
+    return null;
   }
 
-  return null;
+  return typeof relation.target === 'string'
+    ? relation.target
+    : relation.target.id;
 }
 
 // ---------------------------------------------------------------------------
@@ -318,11 +326,17 @@ function buildDelta(acc: AnnotationAccumulator): Partial<JsonSchemaDocumentObjec
  * Process OWL 2 and RDFS annotation axioms (rdfs:label, rdfs:comment,
  * owl:deprecated, skos:definition, etc.) and return a partial import fragment.
  *
- * @param quads - All quads from the input graph scoped to annotation predicates.
+ * Reads `ctx.graph.allRelations()` exclusively. The quad-backed graph
+ * preserves literal language tags and datatype IRIs on each relation, and
+ * emits relations for every subject in the input quads — including ontology
+ * IRIs, property IRIs, and individual IRIs that are not registered classes.
+ *
+ * @param _quads - Retained for back-compat with the dispatcher signature; the
+ *                 implementation reads exclusively from `ctx.graph`.
  * @param ctx   - Shared import context (graph, curie, IRI sets, reporting helpers).
  * @returns OwlImportFragment with schemaDeltas patched for title/description/deprecated.
  */
-export function importAnnotations(quads: QuadInterface[], ctx: OwlImportContext): OwlImportFragment {
+export function importAnnotations(_quads: QuadInterface[], ctx: OwlImportContext): OwlImportFragment {
   // Per-entity accumulator map: subject IRI → accumulator
   const accumulators = new Map<string, AnnotationAccumulator>();
 
@@ -339,15 +353,15 @@ export function importAnnotations(quads: QuadInterface[], ctx: OwlImportContext)
     return acc;
   }
 
-  for (const quad of quads) {
-    const subjectIri = quad.subject.value;
-    const predicateIri = quad.predicate.value;
+  for (const relation of ctx.graph.allRelations()) {
+    const subjectIri = relation.source.id;
+    const predicateIri = relation.predicate;
 
     if (LABEL_PREDICATES.has(predicateIri)) {
-      const value = literalString(quad.object);
+      const value = literalString(relation);
 
       if (value !== null) {
-        const lang = literalLanguage(quad.object);
+        const lang = literalLanguage(relation);
         const acc = getOrCreate(subjectIri);
 
         appendLangValue(acc.labels, lang, value);
@@ -356,10 +370,10 @@ export function importAnnotations(quads: QuadInterface[], ctx: OwlImportContext)
     }
 
     if (COMMENT_PREDICATES.has(predicateIri)) {
-      const value = literalString(quad.object);
+      const value = literalString(relation);
 
       if (value !== null) {
-        const lang = literalLanguage(quad.object);
+        const lang = literalLanguage(relation);
         const acc = getOrCreate(subjectIri);
 
         appendLangValue(acc.comments, lang, value);
@@ -368,8 +382,8 @@ export function importAnnotations(quads: QuadInterface[], ctx: OwlImportContext)
     }
 
     if (DEPRECATED_PREDICATES.has(predicateIri)) {
-      const raw = quad.object;
-      const isTrue = raw.termType === 'Literal' && raw.value.toLowerCase() === 'true';
+      const value = literalString(relation);
+      const isTrue = value !== null && value.toLowerCase() === 'true';
 
       if (isTrue) {
         getOrCreate(subjectIri).deprecated = true;
@@ -378,7 +392,7 @@ export function importAnnotations(quads: QuadInterface[], ctx: OwlImportContext)
     }
 
     if (VERSION_INFO_PREDICATES.has(predicateIri)) {
-      const value = literalString(quad.object);
+      const value = literalString(relation);
 
       if (value !== null) {
         getOrCreate(subjectIri).versionInfo.push(value);
@@ -387,7 +401,7 @@ export function importAnnotations(quads: QuadInterface[], ctx: OwlImportContext)
     }
 
     if (IS_DEFINED_BY_PREDICATES.has(predicateIri)) {
-      const iri = namedNodeIri(quad.object) ?? literalString(quad.object);
+      const iri = namedNodeIri(relation) ?? literalString(relation);
 
       if (iri !== null) {
         getOrCreate(subjectIri).isDefinedBy.push(iri);
@@ -396,7 +410,7 @@ export function importAnnotations(quads: QuadInterface[], ctx: OwlImportContext)
     }
 
     if (SEE_ALSO_PREDICATES.has(predicateIri)) {
-      const iri = namedNodeIri(quad.object) ?? literalString(quad.object);
+      const iri = namedNodeIri(relation) ?? literalString(relation);
 
       if (iri !== null) {
         getOrCreate(subjectIri).seeAlso.push(iri);
@@ -406,10 +420,10 @@ export function importAnnotations(quads: QuadInterface[], ctx: OwlImportContext)
 
     if (ALT_LABEL_PREDICATES.has(predicateIri)) {
       // Metadata only — accumulate but do not surface in schema delta
-      const value = literalString(quad.object);
+      const value = literalString(relation);
 
       if (value !== null) {
-        const lang = literalLanguage(quad.object);
+        const lang = literalLanguage(relation);
         const acc = getOrCreate(subjectIri);
 
         appendLangValue(acc.altLabels, lang, value);
@@ -440,11 +454,6 @@ export function importAnnotations(quads: QuadInterface[], ctx: OwlImportContext)
       schemaDeltas.set(subjectIri, delta);
     }
   }
-
-  // ctx is intentionally available for future callers.
-  // Annotations can appear on ontology IRIs (owl:versionInfo, rdfs:label on the ontology
-  // itself) which may not be in allClassIris or allPropertyIris — deliberately lenient.
-  void ctx;
 
   return {
     'characteristics': [],

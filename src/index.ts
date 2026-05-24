@@ -11,7 +11,6 @@
 export {
   GraphErrorCode,
   InstantiationErrorCode,
-  LoadErrorCode,
   MaterializationErrorCode,
   OwlImportErrorCode,
   SchemaErrorCode
@@ -23,7 +22,6 @@ export * from './errors/BaseError.js';
 export * from './errors/CoercionError.js';
 export * from './errors/GraphError.js';
 export * from './errors/InstantiationError.js';
-export * from './errors/LoadError.js';
 export * from './errors/MaterializationError.js';
 export * from './errors/OwlImportError.js';
 export * from './errors/SchemaError.js';

@@ -17,6 +17,9 @@ import {
 // XsdTypes resolvers power schema-to-XSD mapping; no public surface.
 import { XsdTypes } from '../../src/modules/rdf/XsdTypes.js';
 import {
+  OWL, XSD
+} from '../../src/constants/IRI.js';
+import {
   Curie, JsonTology
 } from '../../src/index.js';
 
@@ -892,52 +895,52 @@ import {
         'type': string }> = [
         // Good: scalar type mappings
         {
-          'expected': 'xsd:string',
+          'expected': XSD.string,
           'label': 'string',
           'type': 'string'
         },
         {
-          'expected': 'xsd:dateTime',
+          'expected': XSD.dateTime,
           'format': 'date-time',
           'label': 'string+date-time',
           'type': 'string'
         },
         {
-          'expected': 'xsd:anyURI',
+          'expected': XSD.anyURI,
           'format': 'uri',
           'label': 'string+uri',
           'type': 'string'
         },
         {
-          'expected': 'xsd:string',
+          'expected': XSD.string,
           'format': 'unknown-format',
           'label': 'string+unknown format',
           'type': 'string'
         },
         {
-          'expected': 'xsd:decimal',
+          'expected': XSD.decimal,
           'label': 'number',
           'type': 'number'
         },
         {
-          'expected': 'xsd:float',
+          'expected': XSD.float,
           'format': 'float',
           'label': 'number+float',
           'type': 'number'
         },
         {
-          'expected': 'xsd:integer',
+          'expected': XSD.integer,
           'label': 'integer',
           'type': 'integer'
         },
         {
-          'expected': 'xsd:int',
+          'expected': XSD.int,
           'format': 'int32',
           'label': 'integer+int32',
           'type': 'integer'
         },
         {
-          'expected': 'xsd:boolean',
+          'expected': XSD.boolean,
           'label': 'boolean',
           'type': 'boolean'
         },
@@ -975,23 +978,23 @@ import {
         'types': string[] }> = [
         // Good
         {
-          'expected': 'xsd:string',
+          'expected': XSD.string,
           'label': 'single string',
           'types': ['string']
         },
         {
-          'expected': 'xsd:decimal',
+          'expected': XSD.decimal,
           'label': 'single number',
           'types': ['number']
         },
         {
-          'expected': 'xsd:date',
+          'expected': XSD.date,
           'format': 'date',
           'label': 'string with format',
           'types': ['string']
         },
         {
-          'expected': 'xsd:string',
+          'expected': XSD.string,
           'label': 'string+null (nullable)',
           'types': [
             'string',
@@ -1000,7 +1003,7 @@ import {
         },
         // Bad
         {
-          'expected': 'owl:Nothing',
+          'expected': OWL.Nothing,
           'label': 'null-only',
           'types': ['null']
         },

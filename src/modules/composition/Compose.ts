@@ -26,7 +26,7 @@ import type {
   ValidateSubClassOfBodyType
 } from '../../types/Compose.js';
 import type {
-  RestrictionDescriptorInterface, RestrictionRefType
+  RestrictionDescriptorType, RestrictionRefType
 } from '../../types/Restriction.js';
 import type { ValidateSchemaType } from '../../types/SchemaValidation.js';
 import {
@@ -41,7 +41,7 @@ import {
 } from '../../constants/COMPOSITION.js';
 
 function makeRestriction(
-  kind: RestrictionDescriptorInterface['kind'],
+  kind: RestrictionDescriptorType['kind'],
   onProperty: string,
   value: boolean | number | string
 ): RestrictionRefType {
@@ -649,8 +649,8 @@ export class Compose {
     if (isRestrictionRef(parent)) {
       const bodyCopy: Record<string, unknown> = { ...(body as Record<string, unknown>) };
       const existing = bodyCopy[RESTRICTIONS_KEY];
-      const list: RestrictionDescriptorInterface[] = Array.isArray(existing)
-        ? [...(existing as RestrictionDescriptorInterface[])]
+      const list: RestrictionDescriptorType[] = Array.isArray(existing)
+        ? [...(existing as RestrictionDescriptorType[])]
         : [];
 
       list.push(parent[RESTRICTION_TAG]);

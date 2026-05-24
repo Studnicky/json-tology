@@ -233,6 +233,7 @@ export const SIMPLE_LITERAL_PREDICATES = new Map<string, SimplePredicateEntry>([
 export const IRI_PREDICATES = new Set<string>([
   OWL.AsymmetricProperty,
   OWL.complementOf,
+  OWL.disjointUnionOf,
   OWL.disjointWith,
   OWL.equivalentClass,
   OWL.FunctionalProperty,

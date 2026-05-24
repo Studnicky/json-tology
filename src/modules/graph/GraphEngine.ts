@@ -35,6 +35,10 @@ const escape = (segment: string): string => {
   return SchemaGraphSupport.escapeJsonPointerSegment(segment);
 };
 
+// Module-level singletons for boundary results — never mutated, safe to share.
+const EMPTY_EVALUATED_ITEMS = new Set<number>();
+const EMPTY_EVALUATED_PROPERTIES = new Set<string>();
+
 export class GraphEngine implements GraphEngineInterface {
   private readonly cachedDefaultResolutionContext: DefaultResolutionContextInterface;
   private readonly cachedVisitContext: VisitContextInterface;
@@ -44,9 +48,16 @@ export class GraphEngine implements GraphEngineInterface {
   public readonly formatRegistry: FormatRegistryInterface;
   private readonly graphCache = new WeakMap<object, SchemaGraph>();
   private readonly options: Pick<GraphEngineOptionsInterface, 'lookupGraph' | 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupGraph' | 'lookupSchema'>>;
+  private readonly patternEntryCache = new WeakMap<SchemaGraphNodeInterface, Array<{ 'node': SchemaGraphNodeInterface;
+    'pattern': string;
+    'regex': RegExp }>>();
   private readonly refCache = new Map<string, RefTargetInterface>();
   private readonly refCacheOwn = new Map<string, RefTargetInterface>();
   private readonly regexCache = new Map<string, RegExp>();
+  /** Reusable per-engine dynamicScope — guaranteed empty at execute() entry; always reset before use. */
+  private readonly reusableDynamicScope: DynamicScopeEntryInterface[] = [];
+  /** Reusable per-engine refStack — guaranteed empty at execute() entry; add/delete are balanced. */
+  private readonly reusableRefStack = new Set<string>();
   private readonly rootId: string | undefined;
 
   public constructor(public readonly rootSchema: JsonSchemaDocumentType, options: GraphEngineOptionsInterface = {}) {
@@ -235,13 +246,13 @@ export class GraphEngine implements GraphEngineInterface {
       }
       : this.options;
 
-    const result = this.visit(entryNode, graph, value, '', effective, new Set(), []);
+    const result = this.visit(entryNode, graph, value, '', effective, this.reusableRefStack, this.reusableDynamicScope);
 
     return {
       entryNode,
       'errors': result.errors,
-      'evaluatedItems': result.evaluatedItems ?? new Set(),
-      'evaluatedProperties': result.evaluatedProperties ?? new Set(),
+      'evaluatedItems': result.evaluatedItems ?? EMPTY_EVALUATED_ITEMS,
+      'evaluatedProperties': result.evaluatedProperties ?? EMPTY_EVALUATED_PROPERTIES,
       graph,
       'valid': result.valid,
       'value': result.value
@@ -373,7 +384,7 @@ export class GraphEngine implements GraphEngineInterface {
           const embedded = this.embeddedSchemas.get(parsed.id);
 
           if (embedded === undefined) {
-            throw new GraphError('REF_UNRESOLVED', `Unresolved schema reference: ${ref}`, ref);
+            throw new GraphError('REF_UNRESOLVED', `Unresolved schema reference: ${ref}`, { 'pointer': ref });
           }
           graph = this.graphFor(embedded);
         }
@@ -572,16 +583,21 @@ export class GraphEngine implements GraphEngineInterface {
     const sem = graph.semantics(node);
     const propertyNodeMap = sem.properties;
     const required = sem.required;
-    const patternPropertyEntries = sem.patternPropertyEntries.map(([
-      pattern,
-      patternNode
-    ]) => {
-      return {
-        'node': patternNode,
+    let patternPropertyEntries = this.patternEntryCache.get(node);
+
+    if (patternPropertyEntries === undefined) {
+      patternPropertyEntries = sem.patternPropertyEntries.map(([
         pattern,
-        'regex': this.regexFor(pattern)
-      };
-    });
+        patternNode
+      ]) => {
+        return {
+          'node': patternNode,
+          pattern,
+          'regex': this.regexFor(pattern)
+        };
+      });
+      this.patternEntryCache.set(node, patternPropertyEntries);
+    }
     const dependentRequired = sem.dependentRequired;
     const dependentSchemaEntries = sem.dependentSchemaEntries;
     const workingValue = value;

@@ -33,7 +33,11 @@ export class InstantiationError extends BaseError {
       return `${err.path || 'root'}: ${err.message}`;
     }).join('; ');
 
-    super(options?.code ?? 'INSTANTIATION_FAILED', joinedMessages, false, options);
+    super(
+      options?.code ?? 'INSTANTIATION_FAILED',
+      joinedMessages,
+      options?.cause === undefined ? undefined : { 'cause': options.cause }
+    );
     this.name = 'InstantiationError';
     this.errors = validationErrors;
   }

@@ -23,33 +23,21 @@ import {
 } from 'node:test';
 import { importAnnotations } from '../../src/modules/ontology/importDispatch/Annotations.js';
 import { Curie } from '../../src/modules/rdf/Curie.js';
-import { DEFAULT_PREFIXES } from '../../src/constants/PREFIXES.js';
+import { STANDARD_PREFIXES } from '../../src/constants/STANDARD_PREFIXES.js';
 import { Terms } from '../../src/modules/rdf/Terms.js';
+import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import type { QuadInterface } from '../../src/interfaces/Quad.js';
-import type { OwlImportContext } from '../../src/interfaces/OwlImport.js';
-import type { SchemaGraphInterface } from '../../src/interfaces/SchemaGraphImpl.js';
+import type {
+  OwlImportContext, OwlImportFragment
+} from '../../src/interfaces/OwlImport.js';
 
 // ---------------------------------------------------------------------------
 // Test helpers
 // ---------------------------------------------------------------------------
 
-const curie = new Curie(DEFAULT_PREFIXES);
+const curie = new Curie(STANDARD_PREFIXES);
 
-/** Minimal stub SchemaGraphInterface — Annotations dispatcher does not use the graph. */
-const stubGraph: SchemaGraphInterface = {
-  'allRelations': () => {
-    return [];
-  },
-  'fromQuads': () => {
-    return stubGraph;
-  },
-  'nodes': () => {
-    return new Map();
-  },
-  'rootSchema': {}
-} as unknown as SchemaGraphInterface;
-
-function makeCtx(): OwlImportContext & { 'unsupportedLog': Array<{ 'axiomIri': string;
+function makeCtx(quads: QuadInterface[] = []): OwlImportContext & { 'unsupportedLog': Array<{ 'axiomIri': string;
   'subjectIri': null | string }> } {
   const unsupportedLog: Array<{ 'axiomIri': string;
     'subjectIri': null | string }> = [];
@@ -59,11 +47,14 @@ function makeCtx(): OwlImportContext & { 'unsupportedLog': Array<{ 'axiomIri': s
     'allPropertyIris': new Set(),
     'baseIRI': 'https://example.com/',
     curie,
-    'graph': stubGraph,
+    'graph': SchemaGraph.fromQuads(quads, {
+      'baseIRI': 'https://example.com/',
+      'prefixes': STANDARD_PREFIXES
+    }),
     'isDatatype': () => {
       return false;
     },
-    'prefixes': DEFAULT_PREFIXES,
+    'prefixes': STANDARD_PREFIXES,
     'reportUnsupported': (axiomIri, subjectIri) => {
       unsupportedLog.push({
         axiomIri,
@@ -72,6 +63,11 @@ function makeCtx(): OwlImportContext & { 'unsupportedLog': Array<{ 'axiomIri': s
     },
     unsupportedLog
   };
+}
+
+/** Run the Annotations dispatcher with a graph derived from the same quads. */
+function runAnnotations(quads: QuadInterface[]): OwlImportFragment {
+  return importAnnotations(quads, makeCtx(quads));
 }
 
 // ---------------------------------------------------------------------------
@@ -128,8 +124,7 @@ void describe('importAnnotations', { 'concurrency': true }, () => {
   // ── Empty input ──────────────────────────────────────────────────────────
 
   void it('returns an empty fragment for an empty quad array', () => {
-    const ctx = makeCtx();
-    const fragment = importAnnotations([], ctx);
+    const fragment = runAnnotations([]);
 
     assert.strictEqual(fragment.schemaDeltas.size, 0);
     assert.deepEqual(fragment.characteristics, []);
@@ -143,7 +138,7 @@ void describe('importAnnotations', { 'concurrency': true }, () => {
   void it('maps rdfs:label to title', () => {
     const subject = 'https://example.com/Person';
     const quads: QuadInterface[] = [makeLiteralQuad(subject, RDFS_LABEL, 'Person')];
-    const fragment = importAnnotations(quads, makeCtx());
+    const fragment = runAnnotations(quads);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined, 'delta must be present');
@@ -154,7 +149,7 @@ void describe('importAnnotations', { 'concurrency': true }, () => {
     const subject = 'https://example.com/Book';
     // Compact CURIE form (as stored in IRI.ts constants)
     const quads: QuadInterface[] = [makeLiteralQuad(subject, 'rdfs:label', 'Book')];
-    const fragment = importAnnotations(quads, makeCtx());
+    const fragment = runAnnotations(quads);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined, 'delta must be present for compact CURIE predicate');
@@ -166,7 +161,7 @@ void describe('importAnnotations', { 'concurrency': true }, () => {
   void it('maps rdfs:comment to description', () => {
     const subject = 'https://example.com/Person';
     const quads: QuadInterface[] = [makeLiteralQuad(subject, RDFS_COMMENT, 'A human person.')];
-    const fragment = importAnnotations(quads, makeCtx());
+    const fragment = runAnnotations(quads);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined);
@@ -179,7 +174,7 @@ void describe('importAnnotations', { 'concurrency': true }, () => {
       makeLiteralQuad(subject, RDFS_COMMENT, 'First comment.'),
       makeLiteralQuad(subject, RDFS_COMMENT, 'Second comment.')
     ];
-    const fragment = importAnnotations(quads, makeCtx());
+    const fragment = runAnnotations(quads);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined);
@@ -191,7 +186,7 @@ void describe('importAnnotations', { 'concurrency': true }, () => {
   void it('maps owl:deprecated true to deprecated: true', () => {
     const subject = 'https://example.com/OldClass';
     const quads: QuadInterface[] = [makeBooleanLiteralQuad(subject, OWL_DEPRECATED, true)];
-    const fragment = importAnnotations(quads, makeCtx());
+    const fragment = runAnnotations(quads);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined);
@@ -201,7 +196,7 @@ void describe('importAnnotations', { 'concurrency': true }, () => {
   void it('maps owl:deprecated "true" string literal to deprecated: true', () => {
     const subject = 'https://example.com/OldClass';
     const quads: QuadInterface[] = [makeLiteralQuad(subject, OWL_DEPRECATED, 'true')];
-    const fragment = importAnnotations(quads, makeCtx());
+    const fragment = runAnnotations(quads);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined);
@@ -211,7 +206,7 @@ void describe('importAnnotations', { 'concurrency': true }, () => {
   void it('does not emit deprecated for owl:deprecated false', () => {
     const subject = 'https://example.com/ActiveClass';
     const quads: QuadInterface[] = [makeBooleanLiteralQuad(subject, OWL_DEPRECATED, false)];
-    const fragment = importAnnotations(quads, makeCtx());
+    const fragment = runAnnotations(quads);
 
     // Should produce no delta (deprecated: false is the default and need not be stored)
     const delta = fragment.schemaDeltas.get(subject);
@@ -224,7 +219,7 @@ void describe('importAnnotations', { 'concurrency': true }, () => {
   void it('maps owl:versionInfo to $comment "version: ..."', () => {
     const subject = 'https://example.com/Ontology';
     const quads: QuadInterface[] = [makeLiteralQuad(subject, OWL_VERSION_INFO, '1.2.3')];
-    const fragment = importAnnotations(quads, makeCtx());
+    const fragment = runAnnotations(quads);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined);
@@ -237,7 +232,7 @@ void describe('importAnnotations', { 'concurrency': true }, () => {
     const subject = 'https://example.com/Person';
     const ontologyIri = 'https://example.com/ontology';
     const quads: QuadInterface[] = [makeIriQuad(subject, RDFS_IS_DEFINED_BY, ontologyIri)];
-    const fragment = importAnnotations(quads, makeCtx());
+    const fragment = runAnnotations(quads);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined);
@@ -253,7 +248,7 @@ void describe('importAnnotations', { 'concurrency': true }, () => {
     const subject = 'https://example.com/Book';
     const refIri = 'https://schema.org/Book';
     const quads: QuadInterface[] = [makeIriQuad(subject, RDFS_SEE_ALSO, refIri)];
-    const fragment = importAnnotations(quads, makeCtx());
+    const fragment = runAnnotations(quads);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined);
@@ -268,7 +263,7 @@ void describe('importAnnotations', { 'concurrency': true }, () => {
   void it('maps skos:prefLabel to title', () => {
     const subject = 'https://example.com/Concept';
     const quads: QuadInterface[] = [makeLiteralQuad(subject, SKOS_PREF_LABEL, 'My Concept')];
-    const fragment = importAnnotations(quads, makeCtx());
+    const fragment = runAnnotations(quads);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined);
@@ -280,7 +275,7 @@ void describe('importAnnotations', { 'concurrency': true }, () => {
   void it('maps skos:definition to description', () => {
     const subject = 'https://example.com/Concept';
     const quads: QuadInterface[] = [makeLiteralQuad(subject, SKOS_DEFINITION, 'A detailed definition.')];
-    const fragment = importAnnotations(quads, makeCtx());
+    const fragment = runAnnotations(quads);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined);
@@ -296,7 +291,7 @@ void describe('importAnnotations', { 'concurrency': true }, () => {
       makeLiteralQuad(subject, RDFS_LABEL, 'Person', 'en'),
       makeLiteralQuad(subject, RDFS_LABEL, 'Person', 'de')
     ];
-    const fragment = importAnnotations(quads, makeCtx());
+    const fragment = runAnnotations(quads);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined);
@@ -309,7 +304,7 @@ void describe('importAnnotations', { 'concurrency': true }, () => {
       makeLiteralQuad(subject, RDFS_LABEL, 'Item'),
       makeLiteralQuad(subject, RDFS_LABEL, 'Artikel', 'de')
     ];
-    const fragment = importAnnotations(quads, makeCtx());
+    const fragment = runAnnotations(quads);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined);
@@ -323,7 +318,7 @@ void describe('importAnnotations', { 'concurrency': true }, () => {
       makeLiteralQuad(subject, RDFS_LABEL, 'Personne', 'fr'),
       makeLiteralQuad(subject, RDFS_LABEL, 'Person', 'de')
     ];
-    const fragment = importAnnotations(quads, makeCtx());
+    const fragment = runAnnotations(quads);
     const deltaRaw = fragment.schemaDeltas.get(subject);
 
     assert.ok(deltaRaw !== undefined, 'delta must be present for multi-language labels');
@@ -340,7 +335,7 @@ void describe('importAnnotations', { 'concurrency': true }, () => {
   void it('does not emit jt:i18n when only one language is present', () => {
     const subject = 'https://example.com/Thing';
     const quads: QuadInterface[] = [makeLiteralQuad(subject, RDFS_LABEL, 'Thing', 'en')];
-    const fragment = importAnnotations(quads, makeCtx());
+    const fragment = runAnnotations(quads);
     const delta = fragment.schemaDeltas.get(subject) as Record<string, unknown> | undefined;
 
     assert.ok(delta !== undefined);
@@ -356,7 +351,7 @@ void describe('importAnnotations', { 'concurrency': true }, () => {
       makeLiteralQuad(subject, RDFS_COMMENT, 'This class is deprecated.'),
       makeBooleanLiteralQuad(subject, OWL_DEPRECATED, true)
     ];
-    const fragment = importAnnotations(quads, makeCtx());
+    const fragment = runAnnotations(quads);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined);
@@ -373,7 +368,7 @@ void describe('importAnnotations', { 'concurrency': true }, () => {
       makeLiteralQuad(s2, RDFS_LABEL, 'Class B'),
       makeLiteralQuad(s2, RDFS_COMMENT, 'B description.')
     ];
-    const fragment = importAnnotations(quads, makeCtx());
+    const fragment = runAnnotations(quads);
 
     const d1 = fragment.schemaDeltas.get(s1);
     const d2 = fragment.schemaDeltas.get(s2);
@@ -395,7 +390,7 @@ void describe('importAnnotations', { 'concurrency': true }, () => {
       makeIriQuad(subject, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://www.w3.org/2002/07/owl#Class'),
       makeIriQuad(subject, 'http://www.w3.org/2000/01/rdf-schema#subClassOf', 'https://example.com/Base')
     ];
-    const fragment = importAnnotations(quads, makeCtx());
+    const fragment = runAnnotations(quads);
 
     assert.strictEqual(fragment.schemaDeltas.size, 0, 'unrelated predicates must not produce schemaDeltas');
   });
@@ -405,7 +400,7 @@ void describe('importAnnotations', { 'concurrency': true }, () => {
   void it('accepts skos:altLabel without producing schema fields', () => {
     const subject = 'https://example.com/Person';
     const quads: QuadInterface[] = [makeLiteralQuad(subject, SKOS_ALT_LABEL, 'Human')];
-    const fragment = importAnnotations(quads, makeCtx());
+    const fragment = runAnnotations(quads);
 
     // altLabel alone should not produce title, description, or deprecated
     const delta = fragment.schemaDeltas.get(subject);
@@ -426,7 +421,7 @@ void describe('importAnnotations', { 'concurrency': true }, () => {
       makeIriQuad(subject, RDFS_IS_DEFINED_BY, 'https://example.com/ns'),
       makeIriQuad(subject, RDFS_SEE_ALSO, 'https://schema.org/')
     ];
-    const fragment = importAnnotations(quads, makeCtx());
+    const fragment = runAnnotations(quads);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined);
@@ -445,7 +440,7 @@ void describe('importAnnotations', { 'concurrency': true }, () => {
     const subject = 'urn:bookstore:AuthorName';
     const description = 'A person’s name in the book-authorship context. Validation is owned by PersonName; this is a domain-specific brand.';
     const quads: QuadInterface[] = [makeLiteralQuad(subject, RDFS_COMMENT, description)];
-    const fragment = importAnnotations(quads, makeCtx());
+    const fragment = runAnnotations(quads);
     const delta = fragment.schemaDeltas.get(subject);
 
     assert.ok(delta !== undefined, 'delta must be present for AuthorName');

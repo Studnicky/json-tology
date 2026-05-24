@@ -3,6 +3,9 @@
  *
  * Public API contracts for the owl-gen entry point — programmatic OWL 2 TBox
  * → TypeScript code generation.
+ *
+ * @experimental This surface is subject to change before 1.0. The generated
+ * output format and option shapes may evolve as the codegen path matures.
  */
 
 import type { QuadInterface } from './Quad.js';

@@ -1177,7 +1177,7 @@ import { Result } from '../../src/modules/data/Result.js';
     }> = [
       {
         'check': () => {
-          const simple = new BaseError('TEST_CODE', 'simple message', true);
+          const simple = new BaseError('TEST_CODE', 'simple message', { 'retryable': true });
           const json = simple.toJson();
 
           assert.equal(json.code, 'TEST_CODE');
@@ -1190,7 +1190,7 @@ import { Result } from '../../src/modules/data/Result.js';
       {
         'check': () => {
           const inner = new BaseError('INNER', 'inner error');
-          const outer = new BaseError('OUTER', 'outer error', false, { 'cause': inner });
+          const outer = new BaseError('OUTER', 'outer error', { 'cause': inner });
           const outerJson = outer.toJson();
 
           assert.equal(outerJson.cause.code, 'INNER');
@@ -1200,7 +1200,7 @@ import { Result } from '../../src/modules/data/Result.js';
       },
       {
         'check': () => {
-          const plain = new BaseError('WRAP', 'wrapped', false, { 'cause': new Error('plain') });
+          const plain = new BaseError('WRAP', 'wrapped', { 'cause': new Error('plain') });
           const plainJson = plain.toJson();
 
           assert.equal(plainJson.cause.code, 'UNKNOWN');
@@ -1210,7 +1210,7 @@ import { Result } from '../../src/modules/data/Result.js';
       },
       {
         'check': () => {
-          const deep = new BaseError('L1', 'level 1', false, { 'cause': new BaseError('L2', 'level 2', false, { 'cause': new BaseError('L3', 'level 3') }) });
+          const deep = new BaseError('L1', 'level 1', { 'cause': new BaseError('L2', 'level 2', { 'cause': new BaseError('L3', 'level 3') }) });
           const chain = deep.flatten();
 
           assert.equal(chain.length, 3);

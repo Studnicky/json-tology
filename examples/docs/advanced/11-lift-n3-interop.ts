@@ -1,19 +1,15 @@
 /**
- * Lift: adapt external n3 RDF/JS quads into json-tology's QuadInterface
+ * n3 RDF/JS quads consumed directly by fromQuads
  *
- * Parses Turtle for the canonical Bastian-rare-book IRI via the n3
- * library, then converts each rdf/js-shaped quad to json-tology's
- * `QuadInterface` via `Lift.fromExternalQuad`. The resulting array is in the
- * shape `fromQuads()` expects — any rdf/js-emitting parser (n3, rdflib, etc.)
- * can drive the registry through the same adapter.
- *
- * Note: if the external library already produces quads with term objects
- * (termType + value) and does not need datatype/rdf:type normalisation,
- * you can pass them directly to `fromQuads` without conversion.
+ * Parses Turtle for the canonical Bastian-rare-book IRI via the n3 library,
+ * narrows the result to spec-compliant rdf/js quads via
+ * `Lists.narrowExternalQuads`, and hands them to json-tology unchanged.
+ * Any rdf/js-emitting parser (n3, rdflib, etc.) can drive the registry
+ * through the same path — terms with full IRIs in `.value` pass through.
  */
 
 import { Parser } from 'n3';
-import { Lift } from '../../../src/index.js';
+import { Lists } from '../../../src/index.js';
 import type { QuadInterface } from '../../../src/interfaces/Quad.js';
 import { aboxFixtures } from '../bookstore/index.js';
 
@@ -26,13 +22,8 @@ const turtle = `
 `;
 
 const parser = new Parser();
-const rdfQuads = parser.parse(turtle) as unknown[];
-const internal: QuadInterface[] = (rdfQuads as Array<{ 'graph'?: string
-  'object'?: string;
-  'predicate'?: string;
-  'subject'?: string; }>).map((quad) => {
-  return Lift.fromExternalQuad(quad as Parameters<typeof Lift.fromExternalQuad>[0]);
-});
+const rdfQuads = parser.parse(turtle);
+const internal: QuadInterface[] = Lists.narrowExternalQuads(rdfQuads);
 
 console.assert(internal.length > 0);
 console.assert(typeof internal[0]?.subject.value === 'string');

@@ -1,9 +1,10 @@
 import type { ComputedFnType } from '../../types/Computed.js';
+import type { ComputedStoreInterface } from '../../interfaces/ComputedStore.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import { SchemaError } from '../../errors/SchemaError.js';
 import { isRecord } from '../data/DataTypes.js';
 
-export class ComputedStore {
+export class ComputedStore implements ComputedStoreInterface {
   private readonly store = new Map<string, Map<string, ComputedFnType>>();
 
   public add(schemaId: string, name: string, fn: ComputedFnType): void {
@@ -68,7 +69,7 @@ export class ComputedStore {
         throw new SchemaError(
           'COMPUTED_FN_MISSING',
           `Schema "${schemaId}" has jt:computed property "${propName}" but no compute function is registered. Call addComputed() before or provide computeds at construction time.`,
-          schemaId
+          { schemaId }
         );
       }
     }

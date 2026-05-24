@@ -10,11 +10,13 @@ import {
   describe, it
 } from 'node:test';
 import {
-  Compose, GraphEngine, InstantiationError, JsonTology, Resolver
+  Compose, GraphEngine, InstantiationError, JsonTology, Resolver, SchemaError
 } from '../../src/index.js';
 // Internal access: FormatRegistry's builtin() / register() mechanics are tested
 // directly; the public API exposes formats only as a config option.
 import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
+// SchemaRegistry is needed for SCHEMA_VALIDATOR_MISSING code assertion.
+import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
 // ===========================================================================
 // Source: configInheritance.test.ts
@@ -1034,3 +1036,40 @@ import { FormatRegistry } from '../../src/modules/format/FormatRegistry.js';
   });
 }
 
+// ===========================================================================
+// H-8: SchemaError .code assertions — registry error codes
+// ===========================================================================
+
+{
+  // -------------------------------------------------------------------------
+  // SCHEMA_VALIDATOR_MISSING
+  // Triggered when registry.engine() is called with a schema whose $id is not
+  // in the registry. This is a defensive throw — triggered by calling engine()
+  // with a schema that was never registered.
+  // -------------------------------------------------------------------------
+  void describe('SchemaError .code assertions', { 'concurrency': true }, () => {
+    void it('SCHEMA_VALIDATOR_MISSING: registry.engine() throws with correct code for unregistered schema', () => {
+      const registry = new SchemaRegistry({ 'enableStrictGraph': false });
+
+      const unregisteredSchema = {
+        '$id': 'https://err.code.test/NotRegistered',
+        'properties': { 'x': { 'type': 'string' } },
+        'type': 'object'
+      };
+
+      // registry.engine() checks the store by $id; since the schema was never
+      // passed to registry.set(), the entry is absent and SCHEMA_VALIDATOR_MISSING is thrown.
+      assert.throws(
+        () => {
+          registry.engine(unregisteredSchema);
+        },
+        (err: unknown) => {
+          assert.ok(err instanceof SchemaError, 'instanceof SchemaError');
+          assert.equal(err.code, 'SCHEMA_VALIDATOR_MISSING', 'err.code === SCHEMA_VALIDATOR_MISSING');
+
+          return true;
+        }
+      );
+    });
+  });
+}

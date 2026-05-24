@@ -1,5 +1,8 @@
 /**
  * SchemaRefWalker interface — stateless tree walker for $ref and $id collection.
+ *
+ * @internal — not part of the public package surface; consumed only by
+ * SchemaRegistry's ref-resolution pipeline.
  */
 
 export interface SchemaRefWalkerInterface {

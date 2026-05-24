@@ -14,33 +14,22 @@
  * `characteristics` array of the fragment; OwlImporter registers them
  * on the target property schema via the registry after merging).
  *
- * Detection pattern: quads of the form
- *   <propertyIri> rdf:type owl:FunctionalProperty
- * where the predicate is the full rdf:type IRI or the curie form, and the
- * object is one of the seven OWL 2 characteristic class IRIs in full or curie form.
- * The subject is always the property IRI.
+ * Detection pattern: walks `ctx.graph.allRelations()` and matches `rdf:type`
+ * relations whose target is one of the seven OWL 2 characteristic class IRIs
+ * (full or compact form). The relation source is the property IRI.
  */
 
 import type { QuadInterface } from '../../../interfaces/Quad.js';
 import type {
   OwlImportContext, OwlImportFragment
 } from '../../../interfaces/OwlImport.js';
-
-// ---------------------------------------------------------------------------
-// RDF type predicate — both full IRI and curie forms
-// ---------------------------------------------------------------------------
-
-const TYPE_PREDICATES = new Set<string>([
-  'http://www.w3.org/1999/02/22-rdf-syntax-ns#type',
-  'rdf:type'
-]);
+import { RDF } from '../../../constants/IRI.js';
 
 // ---------------------------------------------------------------------------
 // Characteristic IRI → characteristic name mapping
-// Both full-IRI and curie forms must be matched because QuadFactory expands
-// curies when a Curie handler is provided, but the synchronous JSON-LD walker
-// may produce either form depending on the input document's @context.
-// Keys are sorted lexicographically: full IRIs (http://…) before curie forms.
+// Both full-IRI and curie forms must be matched: QuadBackedSchemaGraph
+// compacts named-node targets via the active prefix map, but raw inputs
+// may still carry the full IRI form when no matching prefix exists.
 // ---------------------------------------------------------------------------
 
 const CHARACTERISTIC_IRI_MAP: ReadonlyMap<string, string> = new Map([
@@ -120,46 +109,47 @@ function emptyFragment(): OwlImportFragment {
  * Process OWL 2 property characteristic axioms (functional, transitive, symmetric,
  * etc.) and return a partial import fragment.
  *
- * Scans all quads for `<propertyIri> rdf:type owl:<CharacteristicProperty>` patterns.
- * For each match where the subject is a known property IRI, emits a
- * `{ propertyIri, characteristic }` tuple into `fragment.characteristics`.
+ * Walks `ctx.graph.allRelations()` and emits a
+ * `{ propertyIri, characteristic }` tuple for each `rdf:type` relation whose
+ * target is a recognised OWL 2 property characteristic IRI.
  *
  * Structural impact for FunctionalProperty (maxItems: 1 on array-typed
  * properties) is handled by the Properties dispatcher which owns schemaDeltas.
  * All seven characteristics are purely registry-level from this dispatcher's
  * perspective: no schemaDeltas are emitted here.
  *
- * @param quads - All quads from the input graph.
- * @param ctx   - Shared import context (graph, curie, IRI sets, reporting helpers).
+ * @param _quads - All quads from the input graph (unused; graph is traversed via ctx).
+ * @param ctx    - Shared import context (graph, curie, IRI sets, reporting helpers).
  * @returns OwlImportFragment with characteristics populated.
  */
-export function importCharacteristics(quads: QuadInterface[], ctx: OwlImportContext): OwlImportFragment {
+export function importCharacteristics(_quads: QuadInterface[], ctx: OwlImportContext): OwlImportFragment {
   const fragment = emptyFragment();
 
-  // Deduplicate: a single property may appear in multiple quads with the same
-  // characteristic (e.g., from different serialisation passes). Use a Set to
-  // track already-emitted (propertyIri, characteristic) pairs.
+  // Deduplicate: a single property may appear in multiple relations with the
+  // same characteristic. Use a Set to track already-emitted
+  // (propertyIri, characteristic) pairs.
   const seen = new Set<string>();
 
-  for (const quad of quads) {
-    // Only process rdf:type quads
-    if (!TYPE_PREDICATES.has(quad.predicate.value)) {
+  for (const relation of ctx.graph.allRelations()) {
+    // Only process rdf:type relations.
+    if (relation.predicate !== RDF.type) {
       continue;
     }
 
-    // Object must be a NamedNode (IRI), not a literal or blank node
-    if (quad.object.termType !== 'NamedNode') {
+    // Target must be a NamedNode IRI string (QuadBackedSchemaGraph encodes
+    // rdf:type targets as IRI strings rather than node objects).
+    if (typeof relation.target !== 'string') {
       continue;
     }
 
-    const characteristicName = CHARACTERISTIC_IRI_MAP.get(quad.object.value);
+    const characteristicName = CHARACTERISTIC_IRI_MAP.get(relation.target);
 
     if (characteristicName === undefined) {
-      // Not a characteristic type quad — leave it for other dispatchers
+      // Not a characteristic type relation — leave it for other dispatchers.
       continue;
     }
 
-    const propertyIri = quad.subject.value;
+    const propertyIri = relation.source.id;
 
     // Only record characteristics for IRIs that are known property subjects.
     // Try curie compaction as a fallback when the IRI is in full form but
@@ -168,7 +158,7 @@ export function importCharacteristics(quads: QuadInterface[], ctx: OwlImportCont
       const compacted = ctx.curie.compact(propertyIri);
 
       if (!ctx.allPropertyIris.has(compacted)) {
-        ctx.reportUnsupported(quad.object.value, propertyIri);
+        ctx.reportUnsupported(relation.target, propertyIri);
         continue;
       }
     }

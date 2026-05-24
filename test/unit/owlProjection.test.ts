@@ -243,3 +243,99 @@ void describe('OwlProjection.graph()', { 'concurrency': true }, () => {
     });
   });
 });
+
+// ===========================================================================
+// Full-IRI wire-format guard — acceptance criterion for Wave 1 (Phase 2)
+//
+// Every term `.value` emitted by OwlProjection.graph, ShaclProjection.graph,
+// and Projection.abox — called WITHOUT a `curie` option — must be a full IRI.
+// Compact CURIEs (e.g. 'xsd:string', 'owl:Class', 'rdf:type') must never
+// leak into the quad stream.
+// ===========================================================================
+
+import { ShaclProjection } from '../../src/modules/rdf/ShaclProjection.js';
+import { Projection } from '../../src/modules/rdf/Projection.js';
+
+const FULL_IRI_RE = /^(?:https?:|urn:|_:)/u;
+
+function assertAllTermsFullIri(quads: QuadInterface[], label: string): void {
+  for (const quad of quads) {
+    const terms: Array<{ 'termType': string;
+      'value': string }> = [
+      quad.subject,
+      quad.predicate
+    ];
+    const obj = quad.object;
+
+    if (obj.termType === 'NamedNode') {
+      terms.push(obj);
+    } else if (obj.termType === 'Literal') {
+      terms.push(obj.datatype);
+    }
+
+    if (quad.graph.termType !== 'DefaultGraph') {
+      terms.push(quad.graph);
+    }
+
+    for (const term of terms) {
+      if (term.termType === 'BlankNode') {
+        continue;
+      }
+      assert.ok(
+        FULL_IRI_RE.test(term.value),
+        `${label}: term type=${term.termType} value="${term.value}" is not a full IRI`
+      );
+    }
+  }
+}
+
+void describe('Full-IRI wire-format guard', () => {
+  const guardSchema = {
+    '$id': 'https://example.com/GuardTest',
+    'description': 'A test class',
+    'properties': {
+      'active': { 'type': 'boolean' },
+      'count': { 'type': 'integer' },
+      'name': {
+        'maxLength': 50,
+        'minLength': 1,
+        'type': 'string'
+      },
+      'score': {
+        'maximum': 100,
+        'minimum': 0,
+        'type': 'number'
+      }
+    },
+    'required': ['name'],
+    'title': 'GuardTest',
+    'type': 'object'
+  };
+
+  void it('OwlProjection.graph emits only full IRIs (no curie option)', () => {
+    const quads = OwlProjection.graph(new SchemaGraph(guardSchema));
+
+    assert.ok(quads.length > 0, 'should emit at least one quad');
+    assertAllTermsFullIri(quads, 'OwlProjection.graph');
+  });
+
+  void it('ShaclProjection.graph emits only full IRIs (no curie option)', () => {
+    const quads = ShaclProjection.graph(new SchemaGraph(guardSchema));
+
+    assert.ok(quads.length > 0, 'should emit at least one quad');
+    assertAllTermsFullIri(quads, 'ShaclProjection.graph');
+  });
+
+  void it('Projection.abox emits only full IRIs (no curie option)', () => {
+    const instance = {
+      'active': true,
+      'count': 3,
+      'name': 'Alice',
+      'score': 95.5
+    };
+    const quads = Projection.abox(new SchemaGraph(guardSchema), instance, 'https://example.com');
+
+    assert.ok(quads.length > 0, 'should emit at least one abox quad');
+    assertAllTermsFullIri(quads, 'Projection.abox');
+  });
+});

@@ -42,7 +42,7 @@ export class SchemaRefWalker implements SchemaRefWalkerInterface {
         throw new GraphError(
           'REF_UNRESOLVED',
           `unresolved $ref: ${ref} (referenced from ${parentSchemaId})`,
-          ref
+          { 'pointer': ref }
         );
       }
     }

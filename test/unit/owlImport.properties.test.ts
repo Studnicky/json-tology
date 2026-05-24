@@ -22,8 +22,11 @@ import type {
 import type { QuadInterface } from '../../src/interfaces/Quad.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { Curie } from '../../src/modules/rdf/Curie.js';
-import { DEFAULT_PREFIXES } from '../../src/constants/PREFIXES.js';
+import { STANDARD_PREFIXES } from '../../src/constants/STANDARD_PREFIXES.js';
 import { OwlProjection } from '../../src/modules/rdf/OwlProjection.js';
+import {
+  OWL, RDF, RDFS, XSD
+} from '../../src/constants/IRI.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -36,7 +39,7 @@ function makeCtx(
   extraClassIris: string[] = []
 ): OwlImportContext {
   const graph = SchemaGraph.fromQuads(quads, { 'baseIRI': BASE_IRI });
-  const curie = new Curie(DEFAULT_PREFIXES);
+  const curie = new Curie(STANDARD_PREFIXES);
   const unsupported: Array<{ 'axiomIri': string;
     'subjectIri': null | string }> = [];
 
@@ -53,16 +56,16 @@ function makeCtx(
 
       if (
         objectValue === owlClassFullIri
-        || objectValue === 'owl:Class'
+        || objectValue === OWL.Class
       ) {
         allClassIris.add(quad.subject.value);
       }
 
       if (
         objectValue === owlObjectPropertyFullIri
-        || objectValue === 'owl:ObjectProperty'
+        || objectValue === OWL.ObjectProperty
         || objectValue === owlDatatypePropertyFullIri
-        || objectValue === 'owl:DatatypeProperty'
+        || objectValue === OWL.DatatypeProperty
       ) {
         allPropertyIris.add(quad.subject.value);
       }
@@ -79,7 +82,7 @@ function makeCtx(
       return iri.startsWith('http://www.w3.org/2001/XMLSchema#')
         || iri.startsWith('xsd:');
     },
-    'prefixes': DEFAULT_PREFIXES,
+    'prefixes': STANDARD_PREFIXES,
     'reportUnsupported': (axiomIri, subjectIri) => {
       unsupported.push({
         axiomIri,
@@ -141,10 +144,10 @@ function buildObjectPropertyQuads(
   rangeIri: string
 ): QuadInterface[] {
   return [
-    makeQuad(domainIri, 'rdf:type', 'owl:Class'),
-    makeQuad(propIri, 'rdf:type', 'owl:ObjectProperty'),
-    makeQuad(propIri, 'rdfs:domain', domainIri),
-    makeQuad(propIri, 'rdfs:range', rangeIri)
+    makeQuad(domainIri, RDF.type, OWL.Class),
+    makeQuad(propIri, RDF.type, OWL.ObjectProperty),
+    makeQuad(propIri, RDFS.domain, domainIri),
+    makeQuad(propIri, RDFS.range, rangeIri)
   ];
 }
 
@@ -154,10 +157,10 @@ function buildDatatypePropertyQuads(
   rangeIri: string
 ): QuadInterface[] {
   return [
-    makeQuad(domainIri, 'rdf:type', 'owl:Class'),
-    makeQuad(propIri, 'rdf:type', 'owl:DatatypeProperty'),
-    makeQuad(propIri, 'rdfs:domain', domainIri),
-    makeQuad(propIri, 'rdfs:range', rangeIri)
+    makeQuad(domainIri, RDF.type, OWL.Class),
+    makeQuad(propIri, RDF.type, OWL.DatatypeProperty),
+    makeQuad(propIri, RDFS.domain, domainIri),
+    makeQuad(propIri, RDFS.range, rangeIri)
   ];
 }
 
@@ -227,7 +230,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
     });
 
     void it('produces type: "string" when range is xsd:string (prefixed)', () => {
-      const quads = buildDatatypePropertyQuads(TITLE_PROP, CLASS_IRI, 'xsd:string');
+      const quads = buildDatatypePropertyQuads(TITLE_PROP, CLASS_IRI, XSD.string);
       const ctx = makeCtx(quads);
       const fragment = importProperties(quads, ctx);
       const props = getProps(fragment, CLASS_IRI);
@@ -249,7 +252,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
 
     void it('produces type: "boolean" when range is xsd:boolean', () => {
       const FLAG_PROP = `${CLASS_IRI}#inStock`;
-      const quads = buildDatatypePropertyQuads(FLAG_PROP, CLASS_IRI, 'xsd:boolean');
+      const quads = buildDatatypePropertyQuads(FLAG_PROP, CLASS_IRI, XSD.boolean);
       const ctx = makeCtx(quads);
       const fragment = importProperties(quads, ctx);
       const props = getProps(fragment, CLASS_IRI);
@@ -260,7 +263,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
 
     void it('produces format: "date-time" when range is xsd:dateTime', () => {
       const TS_PROP = `${CLASS_IRI}#publishedOn`;
-      const quads = buildDatatypePropertyQuads(TS_PROP, CLASS_IRI, 'xsd:dateTime');
+      const quads = buildDatatypePropertyQuads(TS_PROP, CLASS_IRI, XSD.dateTime);
       const ctx = makeCtx(quads);
       const fragment = importProperties(quads, ctx);
       const props = getProps(fragment, CLASS_IRI);
@@ -272,7 +275,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
 
     void it('produces format: "date" when range is xsd:date', () => {
       const DATE_PROP = `${CLASS_IRI}#releaseDate`;
-      const quads = buildDatatypePropertyQuads(DATE_PROP, CLASS_IRI, 'xsd:date');
+      const quads = buildDatatypePropertyQuads(DATE_PROP, CLASS_IRI, XSD.date);
       const ctx = makeCtx(quads);
       const fragment = importProperties(quads, ctx);
       const props = getProps(fragment, CLASS_IRI);
@@ -283,7 +286,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
 
     void it('produces format: "uri" when range is xsd:anyURI', () => {
       const URL_PROP = `${CLASS_IRI}#homepage`;
-      const quads = buildDatatypePropertyQuads(URL_PROP, CLASS_IRI, 'xsd:anyURI');
+      const quads = buildDatatypePropertyQuads(URL_PROP, CLASS_IRI, XSD.anyURI);
       const ctx = makeCtx(quads);
       const fragment = importProperties(quads, ctx);
       const props = getProps(fragment, CLASS_IRI);
@@ -301,12 +304,12 @@ void describe('importProperties', { 'concurrency': false }, () => {
 
     void it('adds the property slot to every domain class', () => {
       const quads: QuadInterface[] = [
-        makeQuad(CLASS_A, 'rdf:type', 'owl:Class'),
-        makeQuad(CLASS_B, 'rdf:type', 'owl:Class'),
-        makeQuad(PROP_IRI, 'rdf:type', 'owl:DatatypeProperty'),
-        makeQuad(PROP_IRI, 'rdfs:domain', CLASS_A),
-        makeQuad(PROP_IRI, 'rdfs:domain', CLASS_B),
-        makeQuad(PROP_IRI, 'rdfs:range', 'xsd:string')
+        makeQuad(CLASS_A, RDF.type, OWL.Class),
+        makeQuad(CLASS_B, RDF.type, OWL.Class),
+        makeQuad(PROP_IRI, RDF.type, OWL.DatatypeProperty),
+        makeQuad(PROP_IRI, RDFS.domain, CLASS_A),
+        makeQuad(PROP_IRI, RDFS.domain, CLASS_B),
+        makeQuad(PROP_IRI, RDFS.range, XSD.string)
       ];
       const ctx = makeCtx(quads);
       const fragment = importProperties(quads, ctx);
@@ -322,21 +325,21 @@ void describe('importProperties', { 'concurrency': false }, () => {
     });
   });
 
-  void describe('rdfs:subPropertyOf', () => {
+  void describe(RDFS.subPropertyOf, () => {
     void it('emits a characteristics entry for the sub-property relation', () => {
       const CLASS_IRI = 'urn:example:Vehicle';
       const PARENT_PROP = 'urn:example:Vehicle#speed';
       const CHILD_PROP = 'urn:example:Vehicle#topSpeed';
 
       const quads: QuadInterface[] = [
-        makeQuad(CLASS_IRI, 'rdf:type', 'owl:Class'),
-        makeQuad(PARENT_PROP, 'rdf:type', 'owl:DatatypeProperty'),
-        makeQuad(PARENT_PROP, 'rdfs:domain', CLASS_IRI),
-        makeQuad(PARENT_PROP, 'rdfs:range', 'xsd:decimal'),
-        makeQuad(CHILD_PROP, 'rdf:type', 'owl:DatatypeProperty'),
-        makeQuad(CHILD_PROP, 'rdfs:domain', CLASS_IRI),
-        makeQuad(CHILD_PROP, 'rdfs:range', 'xsd:decimal'),
-        makeQuad(CHILD_PROP, 'rdfs:subPropertyOf', PARENT_PROP)
+        makeQuad(CLASS_IRI, RDF.type, OWL.Class),
+        makeQuad(PARENT_PROP, RDF.type, OWL.DatatypeProperty),
+        makeQuad(PARENT_PROP, RDFS.domain, CLASS_IRI),
+        makeQuad(PARENT_PROP, RDFS.range, XSD.decimal),
+        makeQuad(CHILD_PROP, RDF.type, OWL.DatatypeProperty),
+        makeQuad(CHILD_PROP, RDFS.domain, CLASS_IRI),
+        makeQuad(CHILD_PROP, RDFS.range, XSD.decimal),
+        makeQuad(CHILD_PROP, RDFS.subPropertyOf, PARENT_PROP)
       ];
       const ctx = makeCtx(quads);
       const fragment = importProperties(quads, ctx);
@@ -357,7 +360,7 @@ void describe('importProperties', { 'concurrency': false }, () => {
     });
   });
 
-  void describe('owl:inverseOf', () => {
+  void describe(OWL.inverseOf, () => {
     void it('emits a characteristics entry and no structural delta', () => {
       const BOOK_IRI = 'urn:example:Book';
       const AUTHOR_IRI = 'urn:example:Author';
@@ -365,15 +368,15 @@ void describe('importProperties', { 'concurrency': false }, () => {
       const WRITTEN_BY_PROP = `${BOOK_IRI}#writtenBy`;
 
       const quads: QuadInterface[] = [
-        makeQuad(BOOK_IRI, 'rdf:type', 'owl:Class'),
-        makeQuad(AUTHOR_IRI, 'rdf:type', 'owl:Class'),
-        makeQuad(WROTE_PROP, 'rdf:type', 'owl:ObjectProperty'),
-        makeQuad(WROTE_PROP, 'rdfs:domain', AUTHOR_IRI),
-        makeQuad(WROTE_PROP, 'rdfs:range', BOOK_IRI),
-        makeQuad(WRITTEN_BY_PROP, 'rdf:type', 'owl:ObjectProperty'),
-        makeQuad(WRITTEN_BY_PROP, 'rdfs:domain', BOOK_IRI),
-        makeQuad(WRITTEN_BY_PROP, 'rdfs:range', AUTHOR_IRI),
-        makeQuad(WROTE_PROP, 'owl:inverseOf', WRITTEN_BY_PROP)
+        makeQuad(BOOK_IRI, RDF.type, OWL.Class),
+        makeQuad(AUTHOR_IRI, RDF.type, OWL.Class),
+        makeQuad(WROTE_PROP, RDF.type, OWL.ObjectProperty),
+        makeQuad(WROTE_PROP, RDFS.domain, AUTHOR_IRI),
+        makeQuad(WROTE_PROP, RDFS.range, BOOK_IRI),
+        makeQuad(WRITTEN_BY_PROP, RDF.type, OWL.ObjectProperty),
+        makeQuad(WRITTEN_BY_PROP, RDFS.domain, BOOK_IRI),
+        makeQuad(WRITTEN_BY_PROP, RDFS.range, AUTHOR_IRI),
+        makeQuad(WROTE_PROP, OWL.inverseOf, WRITTEN_BY_PROP)
       ];
       const ctx = makeCtx(quads);
       const fragment = importProperties(quads, ctx);

@@ -3,6 +3,7 @@ import {
   describe, it
 } from 'node:test';
 import type { QuadInterface } from '../../src/interfaces/Quad.js';
+import { OwlImportError } from '../../src/errors/OwlImportError.js';
 import { OntologyBuilder } from '../../src/modules/ontology/OntologyBuilder.js';
 import { Terms } from '../../src/modules/rdf/Terms.js';
 
@@ -247,5 +248,101 @@ void describe('OntologyBuilder JSON-LD round-trip', () => {
 
     assert.ok(typeQuad !== undefined, 'expected type quad after round-trip');
     assert.equal(typeQuad.object.value, objectIri);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// addFromJsonLd — malformed document failure paths (M-S-1)
+// ---------------------------------------------------------------------------
+
+void describe('OntologyBuilder.addFromJsonLd() failure paths', () => {
+  void it('rejects a document with an unresolvable remote @context', async () => {
+    // An unresolvable remote context IRI causes jsonld.toRDF to reject.
+    const builder = emptyBuilder();
+    const badDoc = {
+      '@context': 'invalid://unreachable/context',
+      '@id': 'https://example.org/thing'
+    };
+
+    await assert.rejects(
+      async () => {
+        await builder.addFromJsonLd(badDoc);
+      },
+      (err: unknown) => {
+        assert.ok(err instanceof Error, 'expected an Error for unresolvable @context');
+
+        return true;
+      }
+    );
+  });
+
+  void it('rejects a document with a bad-protocol @context IRI', async () => {
+    const builder = emptyBuilder();
+    const badDoc = {
+      '@context': 'invalid://bad:context',
+      '@id': 'https://example.org/thing'
+    };
+
+    await assert.rejects(
+      async () => {
+        await builder.addFromJsonLd(badDoc);
+      },
+      (err: unknown) => {
+        assert.ok(err instanceof Error, 'expected an Error for bad protocol context IRI');
+
+        return true;
+      }
+    );
+  });
+});
+
+void describe('OntologyBuilder.addShaclFromJsonLd() failure paths', () => {
+  void it('rejects a SHACL document with an unresolvable @context', async () => {
+    const builder = emptyBuilder();
+    const badDoc = {
+      '@context': 'invalid://no-such-context',
+      '@id': 'https://example.org/PersonShape',
+      '@type': 'sh:NodeShape'
+    };
+
+    await assert.rejects(
+      async () => {
+        await builder.addShaclFromJsonLd(badDoc);
+      },
+      (err: unknown) => {
+        assert.ok(err instanceof Error, 'expected an Error for unresolvable SHACL context');
+
+        return true;
+      }
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// H-8: OwlImportError .code assertions
+//
+// OWL_IMPORT_NOT_IMPLEMENTED is the only live throw site (OntologyBuilder.addFromJsonLd
+// and OwlImporter.importAsync when jsonld peer dep is absent).
+// The four unreachable codes (INVALID_DATATYPE, MALFORMED_CLASS, UNKNOWN_AXIOM,
+// UNRESOLVED_REF) are never thrown in production code and are dead surface.
+//
+// The throw path for OWL_IMPORT_NOT_IMPLEMENTED requires jsonld to be absent;
+// since jsonld is installed in this environment, we assert the error class
+// carries the correct code by constructing it directly (verifying the error
+// contract without requiring the optional dependency to be uninstalled).
+// ---------------------------------------------------------------------------
+
+void describe('OwlImportError .code assertions', { 'concurrency': true }, () => {
+  void it('OWL_IMPORT_NOT_IMPLEMENTED: OwlImportError carries correct code', () => {
+    const err = new OwlImportError(
+      'OWL_IMPORT_NOT_IMPLEMENTED',
+      'addFromJsonLd() requires the optional jsonld peerDependency',
+      'https://www.w3.org/TR/json-ld/',
+      null
+    );
+
+    assert.ok(err instanceof OwlImportError, 'instanceof OwlImportError');
+    assert.equal(err.code, 'OWL_IMPORT_NOT_IMPLEMENTED', 'err.code === OWL_IMPORT_NOT_IMPLEMENTED');
+    assert.ok(err.message.length > 0, 'message is non-empty');
   });
 });

@@ -2,13 +2,14 @@
 
 A small set of utility classes is exported alongside `JsonTology` for advanced use - cases where you reach below the facade for graph, RDF, or hashing primitives. Each utility has one responsibility.
 
-| Class      | Module                                | Purpose                                                   |
-|------------|---------------------------------------|-----------------------------------------------------------|
-| `Curie`    | `src/modules/rdf/Curie.ts`            | Compact / expand IRIs against a prefix map                |
-| `Path`     | `src/modules/data/Path.ts`            | Convert JSON Pointers to JS access form                   |
-| `Resolver` | `src/modules/data/Resolver.ts`        | Merge per-call options with a base options object         |
-| `Hash`     | `src/modules/hash/Hash.ts`            | Deterministic FNV-1a hash of any JSON-serializable value  |
-| `Lift`     | `src/modules/rdf/Lift.ts`             | RDF interop helpers (RDF/JS quad conversion, lifting)     |
+| Class               | Module                                | Purpose                                                   |
+|---------------------|---------------------------------------|-----------------------------------------------------------|
+| `Curie`             | `src/modules/rdf/Curie.ts`            | Compact / expand IRIs against a prefix map                |
+| `Path`              | `src/modules/data/Path.ts`            | Convert JSON Pointers to JS access form                   |
+| `Resolver`          | `src/modules/data/Resolver.ts`        | Merge per-call options with a base options object         |
+| `Hash`              | `src/modules/hash/Hash.ts`            | Deterministic FNV-1a hash of any JSON-serializable value  |
+| `Lift`              | `src/modules/rdf/Lift.ts`             | RDF interop helpers (RDF/JS quad conversion, lifting)     |
+| `IdentifierIssuer`  | `src/modules/rdf/IdentifierIssuer.ts` | Per-call blank-node counter for projection isolation      |
 
 The bookstore domain in [Bookstore Domain](/bookstore-domain) supplies prefixes and IRIs in the snippets.
 
@@ -21,6 +22,8 @@ The bookstore domain in [Bookstore Domain](/bookstore-domain) supplies prefixes 
 <<< ../../examples/docs/advanced/07-utilities.ts
 
 When multiple prefixes share an overlap, `compact` picks the longest match.
+
+The default prefix map used across the package is `STANDARD_PREFIXES` (from `src/constants/STANDARD_PREFIXES.ts`) — the canonical prefix-to-namespace lookup for the well-known RDF vocabularies (`rdf`, `rdfs`, `owl`, `sh`, `xsd`, `schema`, `foaf`, `dc`, `dct`, `dcterms`, `dcat`, `skos`, `prov`, `time`, `geo`, `vann`, `dash`, `jt`). Every IRI constant in `src/constants/IRI.ts` derives from this map. Pass your own prefix map to `JsonTology.create({ prefixes })` to extend or override the defaults — your entries merge over `STANDARD_PREFIXES`.
 
 ## `Path`
 
@@ -51,6 +54,23 @@ The `Lift` module exposes interop helpers between RDF/JS quads (from libraries l
 <<< ../../examples/docs/advanced/11-lift-n3-interop.ts
 
 For the typed round-trip use the `JsonTology` facade ([RDF round-trip](/advanced/quads)). Reach for `Lift` only when integrating with an external RDF/JS library directly.
+
+## `IdentifierIssuer`
+
+Ported from the W3C RDF Dataset Canonicalization algorithm. Each projector call (`Projection.graph`, `Projection.abox`, `OwlProjection.graph`, `ShaclProjection.graph`) constructs its own `IdentifierIssuer` so concurrent serializations never share mutable counter state.
+
+Constructor: `new IdentifierIssuer(options?)` where `options` is `{ prefix?: string; counter?: number; existingMap?: ReadonlyMap<string, string> }`. The default `prefix` is `'_:b'` (RDF blank-node syntax); `counter` starts at zero; `existingMap` seeds a prior issuance history (used by `clone()`).
+
+Surface:
+
+- `getId(existing?)` — issue a new identifier, or return the previously issued one for `existing` if it has been mapped. Calling without `existing` always issues a fresh identifier without recording a mapping (anonymous blank nodes).
+- `hasId(existing)` — true if `existing` already has an issued identifier.
+- `getIssuedMap()` — read-only view of the current mapping.
+- `getIssuedIdentifiers()` — keys in issuance order.
+- `clone()` — fork an independent issuer with the same prefix, counter, and mappings.
+- `reset()` — clear counter and mappings.
+
+You only need to construct one directly if you are writing a custom projector or RDF serializer that participates in the same blank-node naming scheme. The built-in projectors manage their own.
 
 ---
 

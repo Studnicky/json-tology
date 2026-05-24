@@ -109,7 +109,7 @@ void describe('SchemaGraphRelations.extractRelations()', { 'concurrency': true }
     assert.ok(targetsPersonIri, 'rdfs:subClassOf should target the $ref IRI from allOf');
   });
 
-  void it('emits owl:equivalentClass for oneOf branches', () => {
+  void it('emits owl:disjointUnionOf for oneOf branches', () => {
     const schema = {
       '$id': 'https://example.io/Shape',
       'oneOf': [
@@ -119,9 +119,9 @@ void describe('SchemaGraphRelations.extractRelations()', { 'concurrency': true }
     } as const;
 
     const relations = graphRelations(schema);
-    const equivRels = filterByPredicate(relations, OWL.equivalentClass);
+    const disjointUnionRels = filterByPredicate(relations, OWL.disjointUnionOf);
 
-    assert.ok(equivRels.length > 0, 'oneOf should produce owl:equivalentClass relations');
+    assert.ok(disjointUnionRels.length > 0, 'oneOf should produce owl:disjointUnionOf relations');
   });
 
   void it('emits rdfs:range for a $ref typed property', () => {

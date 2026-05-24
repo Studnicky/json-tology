@@ -3,9 +3,10 @@ import type { GraphSerializerInterface } from '../../interfaces/Serializer.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
 import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugin.js';
 import type { QuadInterface } from '../../interfaces/Quad.js';
-import { QuadFactory } from '../rdf/QuadFactory.js';
 import { Curie } from '../rdf/Curie.js';
-import { DEFAULT_PREFIXES } from '../../constants/PREFIXES.js';
+import { IdentifierIssuer } from '../rdf/IdentifierIssuer.js';
+import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
+import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
 
 export abstract class BaseGraphSerializer implements GraphSerializerInterface {
   /**
@@ -55,7 +56,7 @@ export abstract class BaseGraphSerializer implements GraphSerializerInterface {
 
   public constructor(options?: { 'curie'?: CurieInterface;
     'vocabularies'?: readonly VocabularyPluginInterface[] }) {
-    this.curie = options?.curie ?? new Curie(DEFAULT_PREFIXES);
+    this.curie = options?.curie ?? new Curie({ ...STANDARD_PREFIXES });
     this.vocabularies = options?.vocabularies ?? [];
   }
 
@@ -80,12 +81,12 @@ export abstract class BaseGraphSerializer implements GraphSerializerInterface {
 
   protected abstract postProcessNodes(nodes: Array<Record<string, unknown>>): void;
 
-  protected abstract projectGraph(graph: SchemaGraphInterface): QuadInterface[];
+  protected abstract projectGraph(graph: SchemaGraphInterface, issuer?: IdentifierIssuerInterface): QuadInterface[];
 
   public serializeQuads(graphs: readonly SchemaGraphInterface[]): QuadInterface[] {
-    QuadFactory.resetBnodeCounter();
+    const issuer = new IdentifierIssuer();
     const allQuads = graphs.flatMap((graph) => {
-      return this.projectGraph(graph);
+      return this.projectGraph(graph, issuer);
     });
 
     // Emit plugin quads for non-core predicates

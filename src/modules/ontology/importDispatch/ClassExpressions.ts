@@ -3,9 +3,10 @@
  *
  * Responsible for:
  *   owl:intersectionOf  — conjunction class expressions  → allOf
- *   owl:unionOf         — disjunction class expressions  → oneOf
+ *   owl:unionOf         — disjunction class expressions  → anyOf
  *                         (discriminated variant when all members share a
  *                         distinct hasValue on the same property)
+ *   owl:disjointUnionOf — disjoint union class expressions → oneOf
  *   owl:oneOf           — enumerated class expressions   → enum
  *
  * Anonymous (blank-node) class expressions are resolved recursively so they
@@ -13,17 +14,28 @@
  *
  * Bucket strategy: structural — populates schemaDeltas with allOf/oneOf/enum
  * patches merged into the subject class by the orchestrator.
+ *
+ * Graph-native traversal:
+ * - Subject relations are read from `ctx.graph.relationsForSubject(subject)`.
+ * - RDF lists (`owl:intersectionOf`, `owl:unionOf`, `owl:disjointUnionOf`,
+ *   `owl:oneOf` member lists) are walked via `ctx.graph.collectList(head)`.
+ * - Blank-node class expressions are resolved recursively by treating their
+ *   bnode id as a subject and re-entering the same per-subject helpers.
+ * - Literal list items carry their typed JS value via `ListItemType.datatype`,
+ *   so `decodeLiteral` semantics survive through `Terms.literal` reconstruction.
  */
 
 import type { QuadInterface } from '../../../interfaces/Quad.js';
 import type {
-  BnodeTermType, IriTermType, QuadObjectType
-} from '../../../types/Quad.js';
-import type {
   OwlImportContext, OwlImportFragment
 } from '../../../interfaces/OwlImport.js';
+import type {
+  ListItemType,
+  SchemaGraphRelationInterface
+} from '../../../interfaces/SchemaGraph.js';
+import type { SchemaGraphInterface } from '../../../interfaces/SchemaGraphImpl.js';
 import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
-import { Lists } from '../../rdf/Lists.js';
+import { Terms } from '../../rdf/Terms.js';
 import { decodeLiteral } from '../../rdf/Terms.js';
 
 // ---------------------------------------------------------------------------
@@ -42,6 +54,10 @@ const UNION_OF_IRIS: ReadonlySet<string> = new Set([
   `${OWL_NS}unionOf`,
   'owl:unionOf'
 ]);
+const DISJOINT_UNION_OF_IRIS: ReadonlySet<string> = new Set([
+  `${OWL_NS}disjointUnionOf`,
+  'owl:disjointUnionOf'
+]);
 const ONE_OF_IRIS: ReadonlySet<string> = new Set([
   `${OWL_NS}oneOf`,
   'owl:oneOf'
@@ -58,125 +74,43 @@ const TYPE_IRIS: ReadonlySet<string> = new Set([
   `${RDF_NS}type`,
   'rdf:type'
 ]);
+const RESTRICTION_IRIS: ReadonlySet<string> = new Set([
+  `${OWL_NS}Restriction`,
+  'owl:Restriction'
+]);
 
 // ---------------------------------------------------------------------------
-// Quad index helpers
+// Graph-native helpers
 // ---------------------------------------------------------------------------
 
-/** Map from subject IRI/blank-node ID → all quads with that subject. */
-type SubjectQuadIndex = Map<string, QuadInterface[]>;
-
-function buildSubjectIndex(quads: QuadInterface[]): SubjectQuadIndex {
-  const index: SubjectQuadIndex = new Map();
-
-  for (const quad of quads) {
-    const key = quad.subject.value;
-    let list = index.get(key);
-
-    if (list === undefined) {
-      list = [];
-      index.set(key, list);
-    }
-    list.push(quad);
-  }
-
-  return index;
+/** Resolve the IRI / bnode-id form of a relation target. */
+function targetValue(relation: SchemaGraphRelationInterface): string {
+  return typeof relation.target === 'string' ? relation.target : relation.target.id;
 }
 
-/** Return quads for subject that match any of the given predicate IRIs. */
-function quadsForPredicates(
-  index: SubjectQuadIndex,
+/** Filter outgoing relations on a subject by predicate set. */
+function relationsByPredicate(
+  graph: SchemaGraphInterface,
   subject: string,
   predicates: ReadonlySet<string>
-): QuadInterface[] {
-  const all = index.get(subject) ?? [];
-
-  return all.filter((quad) => {
-    return predicates.has(quad.predicate.value);
+): readonly SchemaGraphRelationInterface[] {
+  return graph.relationsForSubject(subject).filter((rel) => {
+    return predicates.has(rel.predicate);
   });
 }
 
-// ---------------------------------------------------------------------------
-// List extraction — handles both ListTermType and chained bnode rdf:rest forms
-// ---------------------------------------------------------------------------
-
 /**
- * Extract the items from a quad object that points to an RDF list head.
- *
- * Lists are encoded as standard rdf:first/rdf:rest/rdf:nil triple chains.
- * Walks the chain by looking up the head's subject quads in `index` and
- * following rdf:first/rdf:rest. If the head is not a list (e.g. an inline
- * class blank node without rdf:first), returns it as a single-item array
- * for legacy passthrough.
+ * Decode a Literal ListItemType back to its typed JS value via the canonical
+ * Terms.literal / decodeLiteral round-trip. Preserves XSD-typed integers,
+ * booleans, Dates, etc.
  */
-function extractListItems(
-  obj: QuadInterface['object'],
-  index: SubjectQuadIndex
-): QuadObjectType[] {
-  const narrowed = Lists.asQuadObject(obj);
-
-  if (narrowed === undefined) {
-    return [];
-  }
-  if (narrowed.termType === 'Literal') {
-    return [narrowed];
-  }
-
-  // Look up the head's outgoing quads. If it has rdf:first, walk the list.
-  const headQuads = index.get(narrowed.value) ?? [];
-  const hasFirst = headQuads.some((entry) => {
-    return entry.predicate.value === `${RDF_NS}first` || entry.predicate.value === 'rdf:first';
+function decodeListItemLiteral(item: ListItemType): unknown {
+  const literalTerm = Terms.literal(item.target, {
+    'datatype': Terms.iri(item.datatype ?? ''),
+    'language': item.language ?? ''
   });
 
-  if (!hasFirst) {
-    return [narrowed];
-  }
-
-  // Build a synthetic quad list from the index so Lists.collect can walk
-  // both full-IRI and CURIE-prefixed rdf:first/rdf:rest predicates emitted
-  // by JsonLdToQuads and QuadFactory respectively.
-  const allListQuads = walkableQuads(narrowed, index);
-
-  return Lists.collect(narrowed, allListQuads);
-}
-
-/**
- * Gather every quad reachable from `head` by following rdf:rest edges,
- * including the rdf:first quads at each step. Used to feed `Lists.collect`
- * which expects a flat readonly quad collection.
- */
-function walkableQuads(
-  head: BnodeTermType | IriTermType,
-  index: SubjectQuadIndex
-): QuadInterface[] {
-  const collected: QuadInterface[] = [];
-  const seen = new Set<string>();
-  let cursor: string | undefined = head.value;
-
-  while (cursor !== undefined && !seen.has(cursor)) {
-    seen.add(cursor);
-    const quads = index.get(cursor) ?? [];
-    let next: string | undefined;
-
-    for (const quad of quads) {
-      const predValue = quad.predicate.value;
-      const isFirst = predValue === `${RDF_NS}first` || predValue === 'rdf:first';
-      const isRest = predValue === `${RDF_NS}rest` || predValue === 'rdf:rest';
-
-      if (isFirst) {
-        collected.push(quad);
-      } else if (isRest) {
-        collected.push(quad);
-
-        if ((quad.object.termType === 'BlankNode' || quad.object.termType === 'NamedNode') && quad.object.value !== `${RDF_NS}nil` && quad.object.value !== 'rdf:nil') {
-          next = quad.object.value;
-        }
-      }
-    }
-    cursor = next;
-  }
-
-  return collected;
+  return decodeLiteral(literalTerm);
 }
 
 // ---------------------------------------------------------------------------
@@ -184,60 +118,52 @@ function walkableQuads(
 // ---------------------------------------------------------------------------
 
 /**
- * Resolve a single quad object (NamedNode or BlankNode) into a JSON Schema
- * fragment.
+ * Resolve a single list item (NamedNode IRI or BlankNode id) into a JSON
+ * Schema fragment.
  *
  * - NamedNode → `{ $ref: <iri> }`
  * - BlankNode typed as owl:Class with owl:intersectionOf → nested allOf
- * - BlankNode typed as owl:Class with owl:unionOf → nested oneOf
- * - BlankNode typed as owl:Restriction with owl:hasValue → not emitted
- *   (property restrictions are handled by the PropertyRestrictions dispatcher;
- *   we return undefined to signal "skip this member in the class expression")
+ * - BlankNode typed as owl:Class with owl:unionOf       → nested anyOf
+ * - BlankNode typed as owl:Restriction                  → undefined (skipped;
+ *   PropertyRestrictions dispatcher owns these)
  * - BlankNode that cannot be resolved → undefined (skipped)
+ * - Literal at the member level → undefined (not a class expression)
  */
 function resolveClassExpressionMember(
-  obj: QuadObjectType,
-  index: SubjectQuadIndex,
+  item: ListItemType,
+  graph: SchemaGraphInterface,
   allClassIris: ReadonlySet<string>,
   depth: number
 ): JsonSchemaDocumentObjectType | undefined {
-  // Guard against infinite recursion in pathological graphs.
   if (depth > 20) {
     return undefined;
   }
 
-  if (obj.termType === 'NamedNode') {
-    // Emit $ref for named nodes — whether registered classes or external IRIs.
-    return { '$ref': obj.value };
+  if (item.termType === 'NamedNode') {
+    return { '$ref': item.target };
   }
 
-  if (obj.termType === 'BlankNode') {
-    return resolveBlankNodeExpression(obj.value, index, allClassIris, depth + 1);
+  if (item.termType === 'BlankNode') {
+    return resolveBlankNodeExpression(item.target, graph, allClassIris, depth + 1);
   }
 
-  // Literal or List at the member level — not a class expression.
   return undefined;
 }
 
 /**
- * Resolve a blank-node class expression to a JSON Schema fragment.
- *
- * Handles:
- * - owl:intersectionOf list → { allOf: [...] }
- * - owl:unionOf list       → { oneOf: [...] }
- * - owl:Restriction        → undefined (handled by PropertyRestrictions)
+ * Resolve a blank-node class expression to a JSON Schema fragment by
+ * inspecting its outgoing relations.
  */
 function resolveBlankNodeExpression(
   bnodeId: string,
-  index: SubjectQuadIndex,
+  graph: SchemaGraphInterface,
   allClassIris: ReadonlySet<string>,
   depth: number
 ): JsonSchemaDocumentObjectType | undefined {
-  const intersectionQuads = quadsForPredicates(index, bnodeId, INTERSECTION_OF_IRIS);
+  const intersection = relationsByPredicate(graph, bnodeId, INTERSECTION_OF_IRIS);
 
-  if (intersectionQuads.length > 0) {
-    const listObj = intersectionQuads[0].object;
-    const members = resolveListMembers(listObj, index, allClassIris, depth);
+  if (intersection.length > 0) {
+    const members = resolveListMembers(targetValue(intersection[0]), graph, allClassIris, depth);
 
     if (members.length === 0) {
       return undefined;
@@ -246,11 +172,10 @@ function resolveBlankNodeExpression(
     return { 'allOf': members };
   }
 
-  const unionQuads = quadsForPredicates(index, bnodeId, UNION_OF_IRIS);
+  const union = relationsByPredicate(graph, bnodeId, UNION_OF_IRIS);
 
-  if (unionQuads.length > 0) {
-    const listObj = unionQuads[0].object;
-    const members = resolveListMembers(listObj, index, allClassIris, depth);
+  if (union.length > 0) {
+    const members = resolveListMembers(targetValue(union[0]), graph, allClassIris, depth);
 
     if (members.length === 0) {
       return undefined;
@@ -260,48 +185,39 @@ function resolveBlankNodeExpression(
   }
 
   // owl:Restriction blank node — skip (PropertyRestrictions handles this).
-  // Detect by checking for owl:onProperty or rdf:type owl:Restriction.
-  const typeQuads = quadsForPredicates(index, bnodeId, TYPE_IRIS);
-  const isRestriction = typeQuads.some((typeQuad) => {
-    return typeQuad.object.termType === 'NamedNode'
-      && (typeQuad.object.value === `${OWL_NS}Restriction` || typeQuad.object.value === 'owl:Restriction');
+  const typeRelations = relationsByPredicate(graph, bnodeId, TYPE_IRIS);
+  const isRestriction = typeRelations.some((rel) => {
+    return rel.termType === 'NamedNode' && RESTRICTION_IRIS.has(targetValue(rel));
   });
 
   if (isRestriction) {
     return undefined;
   }
 
-  const onPropertyQuads = quadsForPredicates(index, bnodeId, ON_PROPERTY_IRIS);
-
-  if (onPropertyQuads.length > 0) {
+  // Has onProperty → also restriction-shaped.
+  if (relationsByPredicate(graph, bnodeId, ON_PROPERTY_IRIS).length > 0) {
     return undefined;
   }
 
-  // Unknown blank node shape — skip.
   return undefined;
 }
 
 /**
- * Resolve all members of a list-encoded object into JSON Schema fragments.
- * Filters out undefined results (blank nodes we cannot resolve).
+ * Walk an RDF list rooted at `listHead` and resolve each member into a JSON
+ * Schema fragment. Filters out undefined results (blank nodes we cannot
+ * resolve).
  */
 function resolveListMembers(
-  listObj: QuadInterface['object'],
-  index: SubjectQuadIndex,
+  listHead: string,
+  graph: SchemaGraphInterface,
   allClassIris: ReadonlySet<string>,
   depth: number
 ): JsonSchemaDocumentObjectType[] {
-  const narrowed = Lists.asQuadObject(listObj);
-
-  if (narrowed === undefined) {
-    return [];
-  }
-
-  const items = extractListItems(narrowed, index);
+  const items = graph.collectList(listHead);
   const result: JsonSchemaDocumentObjectType[] = [];
 
   for (const item of items) {
-    const fragment = resolveClassExpressionMember(item, index, allClassIris, depth);
+    const fragment = resolveClassExpressionMember(item, graph, allClassIris, depth);
 
     if (fragment !== undefined) {
       result.push(fragment);
@@ -319,30 +235,24 @@ function resolveListMembers(
  * Detect whether all union members share a common `owl:hasValue` on the same
  * `owl:onProperty`, with pairwise-distinct values.
  *
- * Returns the property name (as a local IRI fragment) if a discriminator is
- * found, or undefined if not.
- *
- * This only fires for blank-node union members that contain a Restriction with
- * owl:hasValue. In practice, when OwlProjection emits a discriminated union
- * it uses `oneOf` with plain named-class members whose `owl:hasValue` encodes
- * the discriminator literal.
+ * Returns the property local name if a discriminator is found, or undefined.
  */
 function detectDiscriminatorProperty(
-  memberObjects: QuadObjectType[],
-  index: SubjectQuadIndex
+  memberItems: readonly ListItemType[],
+  graph: SchemaGraphInterface
 ): string | undefined {
-  if (memberObjects.length < 2) {
+  if (memberItems.length < 2) {
     return undefined;
   }
 
   const memberDiscriminators: Array<{ 'property': string;
     'value': string }> = [];
 
-  for (const obj of memberObjects) {
-    if (obj.termType !== 'BlankNode') {
+  for (const item of memberItems) {
+    if (item.termType !== 'BlankNode') {
       return undefined;
     }
-    const disc = extractHasValueDiscriminator(obj.value, index);
+    const disc = extractHasValueDiscriminator(item.target, graph);
 
     if (disc === undefined) {
       return undefined;
@@ -350,7 +260,6 @@ function detectDiscriminatorProperty(
     memberDiscriminators.push(disc);
   }
 
-  // All must share the same property.
   const firstProp = memberDiscriminators[0]?.property;
   const allSameProperty = memberDiscriminators.every((disc) => {
     return disc.property === firstProp;
@@ -360,7 +269,6 @@ function detectDiscriminatorProperty(
     return undefined;
   }
 
-  // Values must be pairwise distinct.
   const values = memberDiscriminators.map((disc) => {
     return disc.value;
   });
@@ -379,43 +287,39 @@ function detectDiscriminatorProperty(
  */
 function extractHasValueDiscriminator(
   bnodeId: string,
-  index: SubjectQuadIndex
+  graph: SchemaGraphInterface
 ): undefined | { 'property': string;
   'value': string } {
-  const hasValueQuads = quadsForPredicates(index, bnodeId, HAS_VALUE_IRIS);
+  const hasValueRelations = relationsByPredicate(graph, bnodeId, HAS_VALUE_IRIS);
 
-  if (hasValueQuads.length === 0) {
+  if (hasValueRelations.length === 0) {
     return undefined;
   }
-  const onPropertyQuads = quadsForPredicates(index, bnodeId, ON_PROPERTY_IRIS);
+  const onPropertyRelations = relationsByPredicate(graph, bnodeId, ON_PROPERTY_IRIS);
 
-  if (onPropertyQuads.length === 0) {
-    return undefined;
-  }
-
-  const propertyObj = onPropertyQuads[0].object;
-
-  if (propertyObj.termType !== 'NamedNode') {
+  if (onPropertyRelations.length === 0) {
     return undefined;
   }
 
-  // Extract the local name from the property IRI.
-  const propertyIri = propertyObj.value;
+  const propertyRel = onPropertyRelations[0];
+
+  if (propertyRel.termType !== 'NamedNode') {
+    return undefined;
+  }
+  const propertyIri = targetValue(propertyRel);
   const localName = propertyIri.includes('#')
     ? propertyIri.split('#').pop() ?? propertyIri
     : propertyIri.split('/').pop() ?? propertyIri;
 
-  const valueObj = hasValueQuads[0].object;
+  const valueRel = hasValueRelations[0];
 
-  if (valueObj.termType !== 'NamedNode' && valueObj.termType !== 'BlankNode' && valueObj.termType !== 'Literal') {
+  if (valueRel.termType !== 'NamedNode' && valueRel.termType !== 'BlankNode' && valueRel.termType !== 'Literal') {
     return undefined;
   }
 
-  const value = String(valueObj.value);
-
   return {
     'property': localName,
-    value
+    'value': targetValue(valueRel)
   };
 }
 
@@ -427,41 +331,44 @@ function extractHasValueDiscriminator(
  * Extract enum values from an owl:oneOf list where members are named
  * individuals or literals.
  *
- * Members that carry a Literal value → raw JS value.
- * Members that are NamedNode IRIs → IRI string.
- * Members that are blank nodes with owl:hasValue → the hasValue literal.
+ * - Literal item → typed JS value via decodeLiteral.
+ * - NamedNode item → IRI string.
+ * - BlankNode item with owl:hasValue → the hasValue literal / IRI.
  */
 function extractEnumValues(
-  listObj: QuadInterface['object'],
-  index: SubjectQuadIndex
+  listHead: string,
+  graph: SchemaGraphInterface
 ): unknown[] {
-  const items = extractListItems(listObj, index);
+  const items = graph.collectList(listHead);
   const values: unknown[] = [];
 
   for (const item of items) {
     switch (item.termType) {
       case 'BlankNode': {
         // Blank-node individual with owl:hasValue.
-        const hvQuads = quadsForPredicates(index, item.value, HAS_VALUE_IRIS);
+        const hvRelations = relationsByPredicate(graph, item.target, HAS_VALUE_IRIS);
 
-        if (hvQuads.length > 0) {
-          const hvObj = hvQuads[0].object;
+        if (hvRelations.length > 0) {
+          const hv = hvRelations[0];
 
-          if (hvObj.termType === 'Literal') {
-            values.push(decodeLiteral(hvObj));
-          } else if (hvObj.termType === 'NamedNode' || hvObj.termType === 'BlankNode') {
-            values.push(hvObj.value);
+          if (hv.termType === 'Literal') {
+            const literalTerm = Terms.literal(targetValue(hv), {
+              'datatype': Terms.iri(hv.datatype ?? ''),
+              'language': hv.language ?? ''
+            });
+
+            values.push(decodeLiteral(literalTerm));
+          } else {
+            values.push(targetValue(hv));
           }
         }
         break;
       }
       case 'Literal':
-        // Literal — decode to typed JS value via the rdf/js datatype tag.
-        values.push(decodeLiteral(item));
+        values.push(decodeListItemLiteral(item));
         break;
       case 'NamedNode':
-        // Named individual — emit its IRI.
-        values.push(item.value);
+        values.push(item.target);
         break;
     }
   }
@@ -491,39 +398,33 @@ function emptyFragment(): OwlImportFragment {
  * Process OWL 2 class expression axioms (intersectionOf, unionOf, oneOf) and
  * return a partial import fragment with schemaDeltas populated.
  *
- * @param quads - All quads from the input graph.
+ * Graph-native: walks `ctx.graph.relationsForSubject(classIri)` for each
+ * named class and uses `ctx.graph.collectList(head)` to resolve the
+ * `owl:intersectionOf` / `owl:unionOf` / `owl:disjointUnionOf` / `owl:oneOf`
+ * RDF lists.
+ *
+ * @param _quads - Retained for back-compat with the dispatcher signature; the
+ *                 implementation reads exclusively from `ctx.graph`.
  * @param ctx   - Shared import context (graph, curie, IRI sets, reporting).
  * @returns OwlImportFragment with schemaDeltas for class expression subjects.
  */
 export function importClassExpressions(
-  quads: QuadInterface[],
+  _quads: QuadInterface[],
   ctx: OwlImportContext
 ): OwlImportFragment {
-  const index = buildSubjectIndex(quads);
   const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
+  const graph = ctx.graph;
 
-  for (const subjectId of index.keys()) {
-    // Only process named class IRIs (skip blank nodes; they are resolved inline).
+  for (const subjectId of ctx.allClassIris) {
     if (subjectId.startsWith('_:')) {
       continue;
     }
 
-    // Only process subjects that are owl:Class nodes.
-    if (!ctx.allClassIris.has(subjectId)) {
-      continue;
-    }
-
-    const subjectQuads = index.get(subjectId) ?? [];
-
-    // ------------------------------------------------------------------
     // owl:intersectionOf → allOf
-    // ------------------------------------------------------------------
-    const intersectionQuads = subjectQuads.filter((quad) => {
-      return INTERSECTION_OF_IRIS.has(quad.predicate.value);
-    });
+    const intersection = relationsByPredicate(graph, subjectId, INTERSECTION_OF_IRIS);
 
-    for (const iq of intersectionQuads) {
-      const members = resolveListMembers(iq.object, index, ctx.allClassIris, 0);
+    for (const iq of intersection) {
+      const members = resolveListMembers(targetValue(iq), graph, ctx.allClassIris, 0);
 
       if (members.length > 0) {
         const existing = schemaDeltas.get(subjectId) ?? {};
@@ -535,32 +436,22 @@ export function importClassExpressions(
       }
     }
 
-    // ------------------------------------------------------------------
-    // owl:unionOf → oneOf (with discriminator detection)
-    // ------------------------------------------------------------------
-    const unionQuads = subjectQuads.filter((quad) => {
-      return UNION_OF_IRIS.has(quad.predicate.value);
-    });
+    // owl:unionOf → anyOf (with discriminator detection)
+    const union = relationsByPredicate(graph, subjectId, UNION_OF_IRIS);
 
-    for (const uq of unionQuads) {
-      const listItems = extractListItems(uq.object, index);
-
-      // Discriminator detection runs unconditionally — even when all list
-      // members are Restriction bnodes (and produce no resolved $ref members).
-      const discriminatorProp = detectDiscriminatorProperty(listItems, index);
+    for (const uq of union) {
+      const listHead = targetValue(uq);
+      const listItems = graph.collectList(listHead);
+      const discriminatorProp = detectDiscriminatorProperty(listItems, graph);
 
       if (discriminatorProp !== undefined) {
-        // Record the discriminator property name via reportUnsupported so the
-        // orchestrator (and tests) can observe it. Since
-        // Partial<JsonSchemaDocumentObjectType> does not carry `discriminator`,
-        // this is the hook for callers to apply the annotation externally.
         ctx.reportUnsupported(
           `discriminator:${discriminatorProp}`,
           subjectId
         );
       }
 
-      const members = resolveListMembers(uq.object, index, ctx.allClassIris, 0);
+      const members = resolveListMembers(listHead, graph, ctx.allClassIris, 0);
 
       if (members.length > 0) {
         const existing = schemaDeltas.get(subjectId) ?? {};
@@ -572,18 +463,28 @@ export function importClassExpressions(
       }
     }
 
-    // ------------------------------------------------------------------
-    // owl:oneOf → enum
-    // ------------------------------------------------------------------
-    const oneOfQuads = subjectQuads.filter((quad) => {
-      return ONE_OF_IRIS.has(quad.predicate.value);
-    });
+    // owl:disjointUnionOf → oneOf
+    const disjointUnion = relationsByPredicate(graph, subjectId, DISJOINT_UNION_OF_IRIS);
 
-    // Only treat as an enum when there is no unionOf on the same subject
-    // (unionOf already handled above; a subject with both is not valid OWL).
-    if (oneOfQuads.length > 0 && unionQuads.length === 0) {
-      for (const oq of oneOfQuads) {
-        const enumValues = extractEnumValues(oq.object, index);
+    for (const duq of disjointUnion) {
+      const members = resolveListMembers(targetValue(duq), graph, ctx.allClassIris, 0);
+
+      if (members.length > 0) {
+        const existing = schemaDeltas.get(subjectId) ?? {};
+
+        schemaDeltas.set(subjectId, {
+          ...existing,
+          'oneOf': members
+        });
+      }
+    }
+
+    // owl:oneOf → enum (skip when unionOf / disjointUnionOf already covers the subject).
+    const oneOf = relationsByPredicate(graph, subjectId, ONE_OF_IRIS);
+
+    if (oneOf.length > 0 && union.length === 0 && disjointUnion.length === 0) {
+      for (const oq of oneOf) {
+        const enumValues = extractEnumValues(targetValue(oq), graph);
 
         if (enumValues.length > 0) {
           const existing = schemaDeltas.get(subjectId) ?? {};
@@ -597,7 +498,7 @@ export function importClassExpressions(
     }
   }
 
-  if (schemaDeltas.size === 0 && quads.length === 0) {
+  if (schemaDeltas.size === 0) {
     return emptyFragment();
   }
 

@@ -10,7 +10,6 @@
 
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { QuadObjectType } from '../../types/Quad.js';
-import { RDF_TYPE_IRI } from '../../constants/PREFIXES.js';
 import { RDF } from '../../constants/IRI.js';
 import { JSONLD } from '../../constants/JSONLD.js';
 import { Lists } from './Lists.js';
@@ -136,7 +135,7 @@ function fromQuadsImpl(quads: QuadInterface[]): Array<Record<string, unknown>> {
 
     const predicateValue = entry.predicate.value;
 
-    if (predicateValue === RDF.type || predicateValue === RDF_TYPE_IRI) {
+    if (predicateValue === RDF.type) {
       // @type values are plain strings, not { @id: ... } wrappers
       const narrowedTypeObj = Lists.asQuadObject(entry.object);
 

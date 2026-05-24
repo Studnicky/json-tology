@@ -21,6 +21,7 @@ import type {
 } from '../../src/interfaces/OwlImport.js';
 import { importIndividuals } from '../../src/modules/ontology/importDispatch/Individuals.js';
 import { Terms } from '../../src/modules/rdf/Terms.js';
+import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { listQuad } from '../helpers/listQuad.js';
 import { jsonLdNodesToQuads } from '../../src/modules/rdf/JsonLdToQuads.js';
 import { JsonTology } from '../../src/index.js';
@@ -93,66 +94,8 @@ function normalizePair(pair: readonly [string, string]): readonly [string, strin
 }
 
 // ---------------------------------------------------------------------------
-// Minimal OwlImportContext factory
+// OwlImportContext factory backed by a real quad-derived SchemaGraph
 // ---------------------------------------------------------------------------
-
-const STUB_GRAPH: OwlImportContext['graph'] = {
-  'allRelations': () => {
-    return [];
-  },
-  'child': () => {
-    return;
-  },
-  'entries': () => {
-    return [];
-  },
-  'getNormIR': () => {
-    return {
-      'anchors': {},
-      'children': {},
-      'entries': {},
-      'indexedChildren': {},
-      'nodes': [],
-      'rootSchema': {}
-    };
-  },
-  'indexedChildren': () => {
-    return [];
-  },
-  'keywordValue': () => {
-    return;
-  },
-  'node': () => {
-    return;
-  },
-  'nodes': () => {
-    return [];
-  },
-  'relations': () => {
-    return [];
-  },
-  'resolveFragment': () => {
-    throw new Error('not implemented');
-  },
-  'resolvePointer': () => {
-    throw new Error('not implemented');
-  },
-  'resolveRefId': (ref) => {
-    return ref;
-  },
-  'rootNode': {
-    'id': 'urn:test',
-    'pointer': '',
-    'schema': {}
-  },
-  'rootSchema': {},
-  'semantics': () => {
-    throw new Error('not implemented');
-  },
-  'validateStructure': () => {
-    return [];
-  }
-};
 
 function makeCtx(
   allClassIris: string[] = [],
@@ -172,7 +115,7 @@ function makeCtx(
       },
       'prefixes': {}
     },
-    'graph': STUB_GRAPH,
+    'graph': SchemaGraph.fromQuads([], { 'baseIRI': 'urn:test' }),
     'isDatatype': () => {
       return false;
     },
@@ -181,13 +124,33 @@ function makeCtx(
   };
 }
 
+/**
+ * Run the Individuals dispatcher with a real quad-backed graph constructed
+ * from the same `quads` array. Replaces ad-hoc `importIndividuals(quads,
+ * makeCtx(...))` calls so the graph and the quads stay in sync.
+ */
+function runIndividuals(
+  quads: QuadInterface[],
+  allClassIris: string[] = [],
+  allPropertyIris: string[] = [],
+  reportUnsupported: (axiomIri: string, subjectIri: null | string) => void = () => { /* no-op */ }
+): OwlImportFragment {
+  const ctx = makeCtx(allClassIris, allPropertyIris, reportUnsupported);
+  const withGraph: OwlImportContext = {
+    ...ctx,
+    'graph': SchemaGraph.fromQuads(quads, { 'baseIRI': 'urn:test' })
+  };
+
+  return importIndividuals(quads, withGraph);
+}
+
 // ---------------------------------------------------------------------------
 // Empty input — should return an empty fragment without throwing
 // ---------------------------------------------------------------------------
 
 void describe('importIndividuals — empty input', () => {
   void it('returns a valid empty fragment for no quads', () => {
-    const result: OwlImportFragment = importIndividuals([], makeCtx());
+    const result: OwlImportFragment = runIndividuals([]);
 
     assert.equal(result.individuals.length, 0);
     assert.equal(result.sameAs.length, 0);
@@ -213,8 +176,7 @@ void describe('importIndividuals — NamedIndividual with type and property asse
       makeLiteralQuad(individualIri, propIri, 'Alice')
     ];
 
-    const ctx = makeCtx([classIri], [propIri]);
-    const result = importIndividuals(quads, ctx);
+    const result = runIndividuals(quads, [classIri], [propIri]);
 
     assert.equal(result.individuals.length, 1, 'one individual collected');
     const ind = result.individuals.at(0);
@@ -234,7 +196,7 @@ void describe('importIndividuals — NamedIndividual with type and property asse
       makeTypeQuad(individualIri, classIri)
     ];
 
-    const result = importIndividuals(quads, makeCtx([classIri], []));
+    const result = runIndividuals(quads, [classIri], []);
     const ind = result.individuals.at(0);
 
     assert.ok(ind, 'individual present');
@@ -258,7 +220,7 @@ void describe('importIndividuals — NamedIndividual with type and property asse
       makeLiteralQuad(individualIri, unregisteredProp, 'surprise')
     ];
 
-    const result = importIndividuals(quads, makeCtx([classIri], [registeredProp]));
+    const result = runIndividuals(quads, [classIri], [registeredProp]);
     const ind = result.individuals.at(0);
 
     assert.ok(ind, 'individual present');
@@ -276,7 +238,7 @@ void describe('importIndividuals — owl:sameAs', () => {
     const iriA = 'urn:test:alice';
     const iriB = 'urn:test:alice-legacy';
 
-    const result = importIndividuals([makeIriQuad(iriA, OWL_SAME_AS, iriB)], makeCtx());
+    const result = runIndividuals([makeIriQuad(iriA, OWL_SAME_AS, iriB)]);
 
     assert.equal(result.sameAs.length, 1);
     const first = result.sameAs.at(0);
@@ -290,10 +252,10 @@ void describe('importIndividuals — owl:sameAs', () => {
     const iriA = 'urn:test:alice';
     const iriB = 'urn:test:alice-legacy';
 
-    const result = importIndividuals([
+    const result = runIndividuals([
       makeIriQuad(iriA, OWL_SAME_AS, iriB),
       makeIriQuad(iriB, OWL_SAME_AS, iriA)
-    ], makeCtx());
+    ]);
 
     assert.equal(result.sameAs.length, 1, 'forward and reverse produce one pair');
   });
@@ -301,16 +263,16 @@ void describe('importIndividuals — owl:sameAs', () => {
   void it('drops self-identity assertions', () => {
     const iriA = 'urn:test:alice';
 
-    const result = importIndividuals([makeIriQuad(iriA, OWL_SAME_AS, iriA)], makeCtx());
+    const result = runIndividuals([makeIriQuad(iriA, OWL_SAME_AS, iriA)]);
 
     assert.equal(result.sameAs.length, 0, 'self sameAs is dropped');
   });
 
   void it('collects two distinct sameAs pairs', () => {
-    const result = importIndividuals([
+    const result = runIndividuals([
       makeIriQuad('urn:a', OWL_SAME_AS, 'urn:b'),
       makeIriQuad('urn:c', OWL_SAME_AS, 'urn:d')
-    ], makeCtx());
+    ]);
 
     assert.equal(result.sameAs.length, 2);
   });
@@ -325,7 +287,7 @@ void describe('importIndividuals — owl:differentFrom', () => {
     const iriA = 'urn:test:alice';
     const iriB = 'urn:test:bob';
 
-    const result = importIndividuals([makeIriQuad(iriA, `${OWL_NS}differentFrom`, iriB)], makeCtx());
+    const result = runIndividuals([makeIriQuad(iriA, `${OWL_NS}differentFrom`, iriB)]);
 
     assert.equal(result.invariants.length, 1);
     const inv = result.invariants.at(0);
@@ -341,10 +303,10 @@ void describe('importIndividuals — owl:differentFrom', () => {
     const iriA = 'urn:test:alice';
     const iriB = 'urn:test:bob';
 
-    const result = importIndividuals([
+    const result = runIndividuals([
       makeIriQuad(iriA, `${OWL_NS}differentFrom`, iriB),
       makeIriQuad(iriB, `${OWL_NS}differentFrom`, iriA)
-    ], makeCtx());
+    ]);
 
     assert.equal(result.invariants.length, 1, 'symmetric pair is deduplicated');
   });
@@ -378,7 +340,7 @@ void describe('importIndividuals — owl:AllDifferent', () => {
       )
     ];
 
-    const result = importIndividuals(quads, makeCtx());
+    const result = runIndividuals(quads);
 
     // C(3, 2) = 3 pairs: (A,B), (A,C), (B,C)
     assert.equal(result.invariants.length, 3, 'three pairwise differentFrom invariants');
@@ -436,7 +398,7 @@ void describe('importIndividuals — owl:NegativePropertyAssertion', () => {
       }
     ];
 
-    const result = importIndividuals(quads, makeCtx());
+    const result = runIndividuals(quads);
 
     assert.equal(result.invariants.length, 1);
     const inv = result.invariants.at(0);
@@ -480,7 +442,7 @@ void describe('importIndividuals — owl:NegativePropertyAssertion', () => {
       }
     ];
 
-    const result = importIndividuals(quads, makeCtx());
+    const result = runIndividuals(quads);
     const inv = result.invariants.at(0);
 
     assert.ok(inv, 'invariant present');
@@ -499,10 +461,10 @@ void describe('importIndividuals — owl:hasKey', () => {
     const prop1 = 'urn:test:firstName';
     const prop2 = 'urn:test:lastName';
 
-    const result = importIndividuals(makeListQuad(classIri, `${OWL_NS}hasKey`, [
+    const result = runIndividuals(makeListQuad(classIri, `${OWL_NS}hasKey`, [
       prop1,
       prop2
-    ]), makeCtx());
+    ]));
 
     // Invariant
     assert.equal(result.invariants.length, 1);
@@ -539,13 +501,13 @@ void describe('importIndividuals — owl:hasKey', () => {
     const prop2 = 'urn:test:p2';
     const prop3 = 'urn:test:p3';
 
-    const result = importIndividuals([
+    const result = runIndividuals([
       ...makeListQuad(classIri, `${OWL_NS}hasKey`, [
         prop1,
         prop2
       ]),
       ...makeListQuad(classIri, `${OWL_NS}hasKey`, [prop3])
-    ], makeCtx());
+    ]);
 
     assert.equal(result.invariants.length, 2);
 
@@ -562,17 +524,17 @@ void describe('importIndividuals — owl:hasKey', () => {
     const classIri = 'urn:test:Ghost';
     const captured: string[] = [];
 
-    const ctx = makeCtx([], [], (axiomIri) => {
-      captured.push(axiomIri);
-    });
-
-    const result = importIndividuals(
+    const result = runIndividuals(
       listQuad(
         Terms.iri(classIri),
         Terms.iri(`${OWL_NS}hasKey`),
         []
       ),
-      ctx
+      [],
+      [],
+      (axiomIri) => {
+        captured.push(axiomIri);
+      }
     );
 
     assert.equal(result.invariants.length, 0, 'no invariant for empty key');

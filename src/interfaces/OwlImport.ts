@@ -7,6 +7,7 @@
 
 import type { InvariantInterface } from './Invariant.js';
 import type { CurieInterface } from './Curie.js';
+import type { QuadInterface } from './Quad.js';
 import type { SchemaGraphInterface } from './SchemaGraphImpl.js';
 import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
 
@@ -16,7 +17,7 @@ import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
 export interface OwlImporterOptions {
   /** Base IRI for the import session. Used when building OwlImportContext. */
   readonly 'baseIRI': string;
-  /** Additional prefix mappings merged with DEFAULT_PREFIXES. */
+  /** Additional prefix mappings merged with STANDARD_PREFIXES. */
   readonly 'prefixes'?: PrefixMap;
 }
 
@@ -25,6 +26,20 @@ export interface OwlImporterOptions {
  * JsonTology and Curie — a plain string record.
  */
 export type PrefixMap = Record<string, string>;
+
+/**
+ * Map from subject IRI / blank-node ID to all quads with that subject.
+ * Shared by the OwlImporter dispatcher modules to avoid re-building the index
+ * per dispatcher call.
+ */
+export type SubjectIndexType = Map<string, QuadInterface[]>;
+
+/**
+ * Signature of a per-axiom-group dispatcher function.
+ * Receives the full quad set for a subject and the import context,
+ * returns the fragment of import data it extracted.
+ */
+export type DispatcherFnType = (quads: QuadInterface[], ctx: OwlImportContext) => OwlImportFragment;
 
 /**
  * The value returned by each dispatcher after processing its axiom group.

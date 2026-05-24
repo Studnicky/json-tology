@@ -5,6 +5,7 @@
  */
 
 import type { GraphErrorCodeType } from '../types/ErrorCodes.js';
+import type { GraphErrorOptionsType } from '../types/ErrorOptions.js';
 import { BaseError } from './BaseError.js';
 
 export class GraphError extends BaseError {
@@ -15,13 +16,12 @@ export class GraphError extends BaseError {
    *
    * @param code - Graph-specific error code
    * @param message - Human-readable error description
-   * @param pointer - JSON Pointer where the error occurred
-   * @param options - Optional cause for error chaining
+   * @param options - Optional pointer and cause for error chaining
    */
-  public constructor(code: GraphErrorCodeType, message: string, pointer?: string, options?: { 'cause'?: Error }) {
-    super(code, message, false, options);
+  public constructor(code: GraphErrorCodeType, message: string, options?: GraphErrorOptionsType) {
+    super(code, message, options?.cause === undefined ? undefined : { 'cause': options.cause });
     this.name = 'GraphError';
-    this.pointer = pointer;
+    this.pointer = options?.pointer;
   }
 
   /**

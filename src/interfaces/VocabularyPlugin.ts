@@ -5,6 +5,9 @@
  * - Register custom vocabulary prefixes (prefix → base IRI mappings)
  * - Extract custom relations from schema extensions (unknown keywords)
  * - Project custom relations into RDF quads
+ *
+ * @experimental This interface is subject to change before 1.0. The hook points
+ * (`extractRelations`, `project`) are likely to grow as the plugin surface matures.
  */
 
 import type { SchemaGraphInterface } from './SchemaGraphImpl.js';

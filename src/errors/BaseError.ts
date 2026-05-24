@@ -7,6 +7,7 @@
  */
 
 import type { ErrorJsonInterface } from '../interfaces/Error.js';
+import type { BaseErrorOptionsType } from '../types/ErrorOptions.js';
 import type { ValidationErrorType } from '../types/Validation.js';
 
 export class BaseError extends Error {
@@ -63,17 +64,16 @@ export class BaseError extends Error {
   public readonly retryable: boolean;
 
   /**
-   * Create a BaseError with a machine-readable code, human message, retry flag, and optional cause.
+   * Create a BaseError with a machine-readable code, human message, and optional overrides.
    *
    * @param code - Machine-readable error code string
    * @param message - Human-readable error description
-   * @param retryable - Whether the operation that caused this error can be retried
-   * @param options - Optional cause for error chaining
+   * @param options - Optional retryable flag and cause for error chaining
    */
-  public constructor(code: string, message: string, retryable = false, options?: { 'cause'?: Error }) {
-    super(message, options);
+  public constructor(code: string, message: string, options?: BaseErrorOptionsType) {
+    super(message, options?.cause === undefined ? undefined : { 'cause': options.cause });
     this.code = code;
-    this.retryable = retryable;
+    this.retryable = options?.retryable ?? false;
     this.cause = options?.cause;
     Object.setPrototypeOf(this, new.target.prototype);
   }

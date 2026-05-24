@@ -30,11 +30,26 @@ export class Hash {
 
 function keySortReplacer(_: string, value: unknown): unknown {
   if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
-    const sorted: Record<string, unknown> = {};
-    const sortedKeys = Object.keys(value).sort();
+    const rec = value as Record<string, unknown>;
+    const keys = Object.keys(rec);
 
-    for (const sortedKey of sortedKeys) {
-      sorted[sortedKey] = (value as Record<string, unknown>)[sortedKey];
+    // Fast-path: already sorted (common case for compiled schemas).
+    let alreadySorted = true;
+
+    for (let i = 1; i < keys.length; i++) {
+      if (keys[i - 1] > keys[i]) {
+        alreadySorted = false;
+        break;
+      }
+    }
+    if (alreadySorted) {
+      return value;
+    }
+
+    const sorted: Record<string, unknown> = {};
+
+    for (const k of keys.sort()) {
+      sorted[k] = rec[k];
     }
 
     return sorted;

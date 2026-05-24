@@ -90,10 +90,27 @@ The bookstore schemas defined in the [Bookstore Domain](/bookstore-domain) are u
 
 - [`toTbox()`](#jt-totbox) - OWL TBox only
 - [`ontology()`](#jt-ontology) - combined TBox + SHACL (cached)
+- [`validateWithShacl()`](#jt-validatewithshacl) - planned SHACL validation inverse
 
 ### See also
 
 - [Bookstore domain](/bookstore-domain) - schemas used in examples
+
+---
+
+## `jt.validateWithShacl` {#jt-validatewithshacl} <Badge type="warning" text="Experimental" />
+
+**Declaration.** Intended inverse of [`toShacl()`](#jt-toshacl) — validate instance quads against SHACL shape quads. **Not yet implemented.** Always throws `Error('NOT_IMPLEMENTED: ...')`. The signature is published so that future implementations remain source-compatible.
+
+```ts
+jt.validateWithShacl(shapes, data);
+// shapes: OntologyBuilder | readonly QuadInterface[]
+// data:   readonly QuadInterface[]
+```
+
+**Workaround.** Retrieve shapes via `toShacl().shaclQuads()` and pass them to an external SHACL processor such as [`rdf-validate-shacl`](https://www.npmjs.com/package/rdf-validate-shacl). The shapes produced by `toShacl()` are standard SHACL and load into any compliant validator.
+
+The method exists today for API symmetry with `toShacl()` and to give consumers a stable name to depend on once the in-process validator lands.
 
 ---
 

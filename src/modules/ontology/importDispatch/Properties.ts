@@ -18,6 +18,11 @@
  * Coordination with PropertyRestrictions: that sibling produces property fragments
  * via owl:Restriction. Properties.ts produces fragments via rdfs:domain (the
  * "explicit" mode). Both are deep-merged by the orchestrator; later entries win.
+ *
+ * Graph-native traversal: all axioms are read from `ctx.graph.allRelations()`.
+ * The QuadBackedSchemaGraph compacts NamedNode IRI targets via the prefix map,
+ * so domain/range IRIs may surface in either full or compact form — both are
+ * accepted by the downstream XSD/datatype/class membership checks.
  */
 
 import type { QuadInterface } from '../../../interfaces/Quad.js';
@@ -196,42 +201,37 @@ function localNameOf(propertyIri: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Predicate constants
+// Predicate constants — accept full IRI and CURIE forms both
 // ---------------------------------------------------------------------------
 
-const TYPE_PREDICATES = new Set([
-  'http://www.w3.org/1999/02/22-rdf-syntax-ns#type',
-  RDF.type
+const OBJECT_PROPERTY_TYPES: ReadonlySet<string> = new Set([
+  OWL.ObjectProperty,
+  'owl:ObjectProperty'
 ]);
 
-const OBJECT_PROPERTY_TYPES = new Set([
-  'http://www.w3.org/2002/07/owl#ObjectProperty',
-  OWL.ObjectProperty
+const DATATYPE_PROPERTY_TYPES: ReadonlySet<string> = new Set([
+  OWL.DatatypeProperty,
+  'owl:DatatypeProperty'
 ]);
 
-const DATATYPE_PROPERTY_TYPES = new Set([
-  'http://www.w3.org/2002/07/owl#DatatypeProperty',
-  OWL.DatatypeProperty
+const DOMAIN_PREDICATES: ReadonlySet<string> = new Set([
+  RDFS.domain,
+  'rdfs:domain'
 ]);
 
-const DOMAIN_PREDICATES = new Set([
-  'http://www.w3.org/2000/01/rdf-schema#domain',
-  RDFS.domain
+const RANGE_PREDICATES: ReadonlySet<string> = new Set([
+  RDFS.range,
+  'rdfs:range'
 ]);
 
-const RANGE_PREDICATES = new Set([
-  'http://www.w3.org/2000/01/rdf-schema#range',
-  RDFS.range
+const SUB_PROPERTY_PREDICATES: ReadonlySet<string> = new Set([
+  RDFS.subPropertyOf,
+  'rdfs:subPropertyOf'
 ]);
 
-const SUB_PROPERTY_PREDICATES = new Set([
-  'http://www.w3.org/2000/01/rdf-schema#subPropertyOf',
-  RDFS.subPropertyOf
-]);
-
-const INVERSE_OF_PREDICATES = new Set([
-  'http://www.w3.org/2002/07/owl#inverseOf',
-  OWL.inverseOf
+const INVERSE_OF_PREDICATES: ReadonlySet<string> = new Set([
+  OWL.inverseOf,
+  'owl:inverseOf'
 ]);
 
 // ---------------------------------------------------------------------------
@@ -255,11 +255,11 @@ interface PropertyEntry {
  * Process OWL 2 object and data property axioms (declarations, domain, range,
  * subPropertyOf, inverseOf) and return a partial import fragment.
  *
- * @param quads - All quads from the input graph.
- * @param ctx   - Shared import context (graph, curie, IRI sets, reporting helpers).
+ * @param _quads - All quads from the input graph (unused; graph drives traversal).
+ * @param ctx    - Shared import context (graph, curie, IRI sets, reporting helpers).
  * @returns OwlImportFragment with schemaDeltas and characteristics populated.
  */
-export function importProperties(quads: QuadInterface[], ctx: OwlImportContext): OwlImportFragment {
+export function importProperties(_quads: QuadInterface[], ctx: OwlImportContext): OwlImportFragment {
   // Index property metadata keyed by property IRI.
   const propertyIndex = new Map<string, {
     'domains': string[];
@@ -269,66 +269,61 @@ export function importProperties(quads: QuadInterface[], ctx: OwlImportContext):
     'type': 'datatype' | 'object';
   }>();
 
-  // Collect domain and range by property IRI (indexed separately since they
-  // appear as <propertyIri> rdfs:domain <classIri> quads, not as type quads).
+  // Collect domain and range by property IRI.
   const domainsByProperty = new Map<string, string[]>();
   const rangeByProperty = new Map<string, string>();
   const subPropertyOf = new Map<string, string[]>();
   const inverseOf = new Map<string, string[]>();
 
-  // Pass 1: collect property type declarations.
-  for (const quad of quads) {
-    const subjectIri = quad.subject.value;
+  // QuadBackedSchemaGraph compacts NamedNode IRI targets via the active prefix
+  // map. Expand them back so downstream class-IRI / datatype membership checks
+  // (which operate on full IRIs) match the rest of the importer pipeline.
+  function resolveTargetIri(target: string | { 'id': string }): string {
+    const raw = typeof target === 'string' ? target : target.id;
 
-    if (quad.subject.termType !== 'NamedNode') {
-      continue;
+    if (raw === '' || raw.startsWith('_:') || raw.startsWith('http://') || raw.startsWith('https://') || raw.startsWith('urn:')) {
+      return raw;
     }
 
-    if (!TYPE_PREDICATES.has(quad.predicate.value)) {
-      continue;
-    }
+    // Treat as CURIE — expand. If no prefix matches, returns raw unchanged.
+    return ctx.curie.expand(raw);
+  }
 
-    if (quad.object.termType !== 'NamedNode') {
-      continue;
-    }
+  // Single pass over graph relations — collect type declarations alongside
+  // domain/range/subPropertyOf/inverseOf metadata.
+  for (const relation of ctx.graph.allRelations()) {
+    const subjectIri = relation.source.id;
+    const predicate = relation.predicate;
+    const target = relation.target;
+    const targetIri = resolveTargetIri(target);
 
-    const objectIri = quad.object.value;
-
-    if (OBJECT_PROPERTY_TYPES.has(objectIri)) {
-      if (!propertyIndex.has(subjectIri)) {
+    if (predicate === RDF.type) {
+      if (OBJECT_PROPERTY_TYPES.has(targetIri)) {
+        if (!propertyIndex.has(subjectIri)) {
+          propertyIndex.set(subjectIri, {
+            'domains': [],
+            'inverseOf': [],
+            'range': null,
+            'subPropertyOf': [],
+            'type': 'object'
+          });
+        }
+      } else if (DATATYPE_PROPERTY_TYPES.has(targetIri) && !propertyIndex.has(subjectIri)) {
         propertyIndex.set(subjectIri, {
           'domains': [],
           'inverseOf': [],
           'range': null,
           'subPropertyOf': [],
-          'type': 'object'
+          'type': 'datatype'
         });
       }
-    } else if (DATATYPE_PROPERTY_TYPES.has(objectIri) && !propertyIndex.has(subjectIri)) {
-      propertyIndex.set(subjectIri, {
-        'domains': [],
-        'inverseOf': [],
-        'range': null,
-        'subPropertyOf': [],
-        'type': 'datatype'
-      });
-    }
-  }
-
-  // Pass 2: collect domain, range, subPropertyOf, inverseOf.
-  for (const quad of quads) {
-    const subjectIri = quad.subject.value;
-
-    if (quad.subject.termType !== 'NamedNode') {
       continue;
     }
 
-    if (DOMAIN_PREDICATES.has(quad.predicate.value)) {
-      if (quad.object.termType !== 'NamedNode') {
+    if (DOMAIN_PREDICATES.has(predicate)) {
+      if (targetIri.startsWith('_:') || targetIri === '') {
         continue;
       }
-
-      const classIri = quad.object.value;
       let domains = domainsByProperty.get(subjectIri);
 
       if (domains === undefined) {
@@ -336,21 +331,24 @@ export function importProperties(quads: QuadInterface[], ctx: OwlImportContext):
         domainsByProperty.set(subjectIri, domains);
       }
 
-      if (!domains.includes(classIri)) {
-        domains.push(classIri);
+      if (!domains.includes(targetIri)) {
+        domains.push(targetIri);
       }
-    } else if (RANGE_PREDICATES.has(quad.predicate.value)) {
-      if (quad.object.termType !== 'NamedNode') {
+      continue;
+    }
+
+    if (RANGE_PREDICATES.has(predicate)) {
+      if (targetIri.startsWith('_:') || targetIri === '') {
         continue;
       }
+      rangeByProperty.set(subjectIri, targetIri);
+      continue;
+    }
 
-      rangeByProperty.set(subjectIri, quad.object.value);
-    } else if (SUB_PROPERTY_PREDICATES.has(quad.predicate.value)) {
-      if (quad.object.termType !== 'NamedNode') {
+    if (SUB_PROPERTY_PREDICATES.has(predicate)) {
+      if (targetIri.startsWith('_:') || targetIri === '') {
         continue;
       }
-
-      const parentIri = quad.object.value;
       let parents = subPropertyOf.get(subjectIri);
 
       if (parents === undefined) {
@@ -358,15 +356,16 @@ export function importProperties(quads: QuadInterface[], ctx: OwlImportContext):
         subPropertyOf.set(subjectIri, parents);
       }
 
-      if (!parents.includes(parentIri)) {
-        parents.push(parentIri);
+      if (!parents.includes(targetIri)) {
+        parents.push(targetIri);
       }
-    } else if (INVERSE_OF_PREDICATES.has(quad.predicate.value)) {
-      if (quad.object.termType !== 'NamedNode') {
+      continue;
+    }
+
+    if (INVERSE_OF_PREDICATES.has(predicate)) {
+      if (targetIri.startsWith('_:') || targetIri === '') {
         continue;
       }
-
-      const targetIri = quad.object.value;
       let targets = inverseOf.get(subjectIri);
 
       if (targets === undefined) {
@@ -377,6 +376,7 @@ export function importProperties(quads: QuadInterface[], ctx: OwlImportContext):
       if (!targets.includes(targetIri)) {
         targets.push(targetIri);
       }
+      continue;
     }
   }
 

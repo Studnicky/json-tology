@@ -25,6 +25,33 @@ import { SchemaIri } from '../../src/modules/graph/SchemaIri.js';
 // SchemaRegistry is the registration backbone wired into JsonTology; needed here for raw graph assertions.
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
+// Module-level IRI expansion helper for test predicates.
+const TEST_PREFIX_MAP: Record<string, string> = {
+  'dash': 'http://datashapes.org/dash#',
+  'dct': 'http://purl.org/dc/terms/',
+  'jt': 'https://json-tology.dev/vocab#',
+  'owl': 'http://www.w3.org/2002/07/owl#',
+  'rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+  'rdfs': 'http://www.w3.org/2000/01/rdf-schema#',
+  'sh': 'http://www.w3.org/ns/shacl#',
+  'xsd': 'http://www.w3.org/2001/XMLSchema#'
+};
+
+function expandCurie(value: string): string {
+  const colonIndex = value.indexOf(':');
+
+  if (colonIndex < 0) {
+    return value;
+  }
+  const prefix = value.slice(0, colonIndex);
+
+  if (!(prefix in TEST_PREFIX_MAP)) {
+    return value;
+  }
+
+  return TEST_PREFIX_MAP[prefix] + value.slice(colonIndex + 1);
+}
+
 // ===========================================================================
 // Source: schemaGraph.test.ts
 // ===========================================================================
@@ -397,7 +424,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         'target'?: unknown }> = [
         {
           'count': 2,
-          'predicate': 'rdfs:subClassOf',
+          'predicate': expandCurie('rdfs:subClassOf'),
           'schema': {
             'allOf': [
               { 'type': 'object' },
@@ -408,7 +435,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         },
         {
           'count': 2,
-          'predicate': 'owl:equivalentClass',
+          'predicate': expandCurie('owl:equivalentClass'),
           'schema': {
             'anyOf': [
               { 'type': 'string' },
@@ -418,12 +445,12 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         },
         {
           'count': 1,
-          'predicate': 'owl:complementOf',
+          'predicate': expandCurie('owl:complementOf'),
           'schema': { 'not': { 'type': 'array' } }
         },
         {
           'count': 2,
-          'predicate': 'owl:oneOf',
+          'predicate': expandCurie('owl:oneOf'),
           'schema': {
             'enum': [
               'active',
@@ -434,7 +461,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         },
         {
           'count': 1,
-          'predicate': 'rdfs:label',
+          'predicate': expandCurie('rdfs:label'),
           'schema': {
             'title': 'Person',
             'type': 'object'
@@ -443,7 +470,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         },
         {
           'count': 1,
-          'predicate': 'rdfs:comment',
+          'predicate': expandCurie('rdfs:comment'),
           'schema': {
             'description': 'A person',
             'type': 'object'
@@ -452,7 +479,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         },
         {
           'count': 1,
-          'predicate': 'owl:deprecated',
+          'predicate': expandCurie('owl:deprecated'),
           'schema': {
             'deprecated': true,
             'type': 'string'
@@ -460,7 +487,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         },
         {
           'count': 1,
-          'predicate': 'owl:disjointWith',
+          'predicate': expandCurie('owl:disjointWith'),
           'schema': {
             'disjointWith': 'https://example.com/Cat',
             'type': 'object'
@@ -469,7 +496,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         },
         {
           'count': 1,
-          'predicate': 'owl:equivalentClass',
+          'predicate': expandCurie('owl:equivalentClass'),
           'schema': {
             'equivalentTo': 'https://example.com/Human',
             'type': 'object'
@@ -508,7 +535,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       };
       const reqGraph = new SchemaGraph(reqSchema);
       const restrictions = reqGraph.relations(reqGraph.rootNode).filter((rel) => {
-        return rel.predicate === 'owl:Restriction';
+        return rel.predicate === expandCurie('owl:Restriction');
       });
 
       assert.equal(restrictions.length, 2);
@@ -524,10 +551,10 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       const drRels = drGraph.relations(drGraph.rootNode);
 
       assert.equal(drRels.filter((rel) => {
-        return rel.predicate === 'rdfs:domain';
+        return rel.predicate === expandCurie('rdfs:domain');
       }).length, 1);
       assert.equal(drRels.filter((rel) => {
-        return rel.predicate === 'rdfs:range';
+        return rel.predicate === expandCurie('rdfs:range');
       }).length, 1);
 
       // allRelations aggregates across all nodes
@@ -552,8 +579,8 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         return rel.predicate;
       }));
 
-      assert.equal(allPreds.has('owl:Restriction'), true);
-      assert.equal(allPreds.has('owl:oneOf'), true);
+      assert.equal(allPreds.has(expandCurie('owl:Restriction')), true);
+      assert.equal(allPreds.has(expandCurie('owl:oneOf')), true);
     });
 
     void it('produces property-level OWL relations', () => {
@@ -562,7 +589,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         'schema': Record<string, unknown>;
         'target'?: string }> = [
         {
-          'predicate': 'owl:inverseOf',
+          'predicate': expandCurie('owl:inverseOf'),
           'prop': 'owns',
           'schema': {
             'properties': {
@@ -576,7 +603,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
           'target': 'https://example.com/Thing#ownedBy'
         },
         {
-          'predicate': 'owl:TransitiveProperty',
+          'predicate': expandCurie('owl:TransitiveProperty'),
           'prop': 'ancestor',
           'schema': {
             'properties': {
@@ -589,7 +616,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
           }
         },
         {
-          'predicate': 'owl:SymmetricProperty',
+          'predicate': expandCurie('owl:SymmetricProperty'),
           'prop': 'sibling',
           'schema': {
             'properties': {
@@ -602,7 +629,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
           }
         },
         {
-          'predicate': 'owl:AsymmetricProperty',
+          'predicate': expandCurie('owl:AsymmetricProperty'),
           'prop': 'parentOf',
           'schema': {
             'properties': {
@@ -615,7 +642,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
           }
         },
         {
-          'predicate': 'owl:FunctionalProperty',
+          'predicate': expandCurie('owl:FunctionalProperty'),
           'prop': 'birthDate',
           'schema': {
             'properties': {
@@ -628,7 +655,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
           }
         },
         {
-          'predicate': 'owl:InverseFunctionalProperty',
+          'predicate': expandCurie('owl:InverseFunctionalProperty'),
           'prop': 'employeeId',
           'schema': {
             'properties': {
@@ -641,7 +668,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
           }
         },
         {
-          'predicate': 'owl:ReflexiveProperty',
+          'predicate': expandCurie('owl:ReflexiveProperty'),
           'prop': 'sameAge',
           'schema': {
             'properties': {
@@ -654,7 +681,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
           }
         },
         {
-          'predicate': 'owl:IrreflexiveProperty',
+          'predicate': expandCurie('owl:IrreflexiveProperty'),
           'prop': 'spouseOf',
           'schema': {
             'properties': {
@@ -861,7 +888,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       } of scenarios) {
         const rels = nodeRelations(schema);
 
-        const conditionals = findRelations(rels, 'owl:unionOf').filter((rel) => {
+        const conditionals = findRelations(rels, expandCurie('owl:unionOf')).filter((rel) => {
           return rel.metadata?.conditional === true;
         });
 
@@ -896,7 +923,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         'type': 'object'
       });
 
-      const depConditionals = findRelations(depRels, 'owl:unionOf').filter((rel) => {
+      const depConditionals = findRelations(depRels, expandCurie('owl:unionOf')).filter((rel) => {
         return rel.metadata?.dependentSchema === true;
       });
 
@@ -913,10 +940,10 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         'type': 'array'
       });
 
-      const svf = findRelations(containsRels, 'owl:someValuesFrom');
+      const svf = findRelations(containsRels, expandCurie('owl:someValuesFrom'));
 
       assert.equal(svf.length, 1);
-      assert.equal(svf[0].target, 'xsd:decimal');
+      assert.equal(svf[0].target, expandCurie('xsd:decimal'));
       assert.notStrictEqual(svf[0].structure, undefined);
       assert.equal(svf[0].structure.kind, 'restriction');
 
@@ -927,7 +954,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         'value': unknown;
       };
 
-      assert.equal(svfStruct.onProperty, 'rdfs:member');
+      assert.equal(svfStruct.onProperty, expandCurie('rdfs:member'));
 
       // minContains/maxContains → qualified cardinality
       const cardRels = nodeRelations({
@@ -938,8 +965,8 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         'type': 'array'
       });
 
-      const minCard = findRelations(cardRels, 'owl:minQualifiedCardinality');
-      const maxCard = findRelations(cardRels, 'owl:maxQualifiedCardinality');
+      const minCard = findRelations(cardRels, expandCurie('owl:minQualifiedCardinality'));
+      const maxCard = findRelations(cardRels, expandCurie('owl:maxQualifiedCardinality'));
 
       assert.equal(minCard.length, 1);
       assert.equal(minCard[0].target, '2');
@@ -957,7 +984,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         'type': 'array'
       });
 
-      const members = findRelations(tupleRels, 'rdfs:member');
+      const members = findRelations(tupleRels, expandCurie('rdfs:member'));
 
       assert.equal(members.length, 3);
 
@@ -965,17 +992,17 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         {
           'memberProperty': 'rdf:_1',
           'position': 0,
-          'target': 'xsd:string'
+          'target': expandCurie('xsd:string')
         },
         {
           'memberProperty': 'rdf:_2',
           'position': 1,
-          'target': 'xsd:decimal'
+          'target': expandCurie('xsd:decimal')
         },
         {
           'memberProperty': 'rdf:_3',
           'position': 2,
-          'target': 'xsd:boolean'
+          'target': expandCurie('xsd:boolean')
         }
       ] as const;
 
@@ -999,7 +1026,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         'type': 'object'
       });
 
-      const patterns = findRelations(patternRels, 'sh:pattern').filter((rel) => {
+      const patterns = findRelations(patternRels, expandCurie('sh:pattern')).filter((rel) => {
         return rel.metadata?.patternProperty === true;
       });
 
@@ -1040,7 +1067,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         schema,
         expected
       ] of constScenarios) {
-        const hasValue = findRelations(nodeRelations(schema), 'owl:hasValue');
+        const hasValue = findRelations(nodeRelations(schema), expandCurie('owl:hasValue'));
 
         assert.equal(hasValue.length, 1);
         assert.equal(hasValue[0].target, expected);
@@ -1052,8 +1079,8 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         'type': 'string'
       });
 
-      assert.strictEqual(findRelations(roRels, 'dash:readOnly').length, 1);
-      assert.strictEqual(findRelations(roRels, 'dash:readOnly')[0].target, 'true');
+      assert.strictEqual(findRelations(roRels, expandCurie('dash:readOnly')).length, 1);
+      assert.strictEqual(findRelations(roRels, expandCurie('dash:readOnly'))[0].target, 'true');
 
       // writeOnly → dash:writeOnly
       const woRels = nodeRelations({
@@ -1061,14 +1088,14 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         'writeOnly': true
       });
 
-      assert.strictEqual(findRelations(woRels, 'dash:writeOnly').length, 1);
-      assert.strictEqual(findRelations(woRels, 'dash:writeOnly')[0].target, 'true');
+      assert.strictEqual(findRelations(woRels, expandCurie('dash:writeOnly')).length, 1);
+      assert.strictEqual(findRelations(woRels, expandCurie('dash:writeOnly'))[0].target, 'true');
 
       // plain schema → no dash predicates
       const plainRels = nodeRelations({ 'type': 'string' });
 
-      assert.strictEqual(findRelations(plainRels, 'dash:readOnly').length, 0);
-      assert.strictEqual(findRelations(plainRels, 'dash:writeOnly').length, 0);
+      assert.strictEqual(findRelations(plainRels, expandCurie('dash:readOnly')).length, 0);
+      assert.strictEqual(findRelations(plainRels, expandCurie('dash:writeOnly')).length, 0);
 
       // additionalProperties: false → sh:closed
       const closedScenarios: Array<[Record<string, unknown>, number]> = [
@@ -1101,7 +1128,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         schema,
         expectedCount
       ] of closedScenarios) {
-        const closed = findRelations(nodeRelations(schema), 'sh:closed');
+        const closed = findRelations(nodeRelations(schema), expandCurie('sh:closed'));
 
         assert.equal(closed.length, expectedCount);
         if (expectedCount === 1) {
@@ -1116,27 +1143,27 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         [
           'name',
           { 'type': 'string' },
-          'owl:DatatypeProperty'
+          expandCurie('owl:DatatypeProperty')
         ],
         [
           'age',
           { 'type': 'number' },
-          'owl:DatatypeProperty'
+          expandCurie('owl:DatatypeProperty')
         ],
         [
           'count',
           { 'type': 'integer' },
-          'owl:DatatypeProperty'
+          expandCurie('owl:DatatypeProperty')
         ],
         [
           'active',
           { 'type': 'boolean' },
-          'owl:DatatypeProperty'
+          expandCurie('owl:DatatypeProperty')
         ],
         [
           'address',
           { 'type': 'object' },
-          'owl:ObjectProperty'
+          expandCurie('owl:ObjectProperty')
         ],
         [
           'tags',
@@ -1144,17 +1171,17 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             'items': { 'type': 'string' },
             'type': 'array'
           },
-          'owl:ObjectProperty'
+          expandCurie('owl:ObjectProperty')
         ],
         [
           'parent',
           { '$ref': 'https://example.com/T' },
-          'owl:ObjectProperty'
+          expandCurie('owl:ObjectProperty')
         ],
         [
           'meta',
           {},
-          'owl:ObjectProperty'
+          expandCurie('owl:ObjectProperty')
         ]
       ];
 
@@ -1169,7 +1196,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
           'type': 'object'
         }, `/properties/${propName}`);
 
-        const types = findRelations(rels, 'rdf:type');
+        const types = findRelations(rels, expandCurie('rdf:type'));
 
         assert.ok(types.some((rel) => {
           return rel.target === expected;
@@ -1182,8 +1209,8 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         'type': 'object'
       });
 
-      const propTypes = findRelations(rootRels, 'rdf:type').filter((rel) => {
-        return rel.target === 'owl:ObjectProperty' || rel.target === 'owl:DatatypeProperty';
+      const propTypes = findRelations(rootRels, expandCurie('rdf:type')).filter((rel) => {
+        return rel.target === expandCurie('owl:ObjectProperty') || rel.target === expandCurie('owl:DatatypeProperty');
       });
 
       assert.equal(propTypes.length, 0);
@@ -1195,7 +1222,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         'type': 'object'
       }, '/properties/parent');
 
-      const ranges = findRelations(refRels, 'rdfs:range');
+      const ranges = findRelations(refRels, expandCurie('rdfs:range'));
 
       assert.equal(ranges.length, 1);
       assert.equal(ranges[0].target, 'https://example.com/Other');
@@ -1208,7 +1235,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         'type': 'object'
       }, '/properties/friend');
 
-      const friendRanges = findRelations(friendRels, 'rdfs:range');
+      const friendRanges = findRelations(friendRels, expandCurie('rdfs:range'));
 
       assert.equal(friendRanges.length, 1);
       assert.equal(friendRanges[0].target, 'https://example.com/Person');
@@ -1223,22 +1250,22 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             'type': 'object'
           },
           '/properties/name',
-          'xsd:string'
+          expandCurie('xsd:string')
         ],
         [
           { 'type': 'integer' },
           '',
-          'xsd:integer'
+          expandCurie('xsd:integer')
         ],
         [
           { 'type': 'number' },
           '',
-          'xsd:decimal'
+          expandCurie('xsd:decimal')
         ],
         [
           { 'type': 'boolean' },
           '',
-          'xsd:boolean'
+          expandCurie('xsd:boolean')
         ],
         [
           {
@@ -1246,7 +1273,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             'type': 'string'
           },
           '',
-          'xsd:dateTime'
+          expandCurie('xsd:dateTime')
         ]
       ];
 
@@ -1255,16 +1282,16 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         pointer,
         expected
       ] of datatypeScenarios) {
-        const datatypes = findRelations(nodeRelations(schema, pointer), 'sh:datatype');
+        const datatypes = findRelations(nodeRelations(schema, pointer), expandCurie('sh:datatype'));
 
         assert.equal(datatypes.length, 1, `expected sh:datatype for ${JSON.stringify(schema)}`);
         assert.equal(datatypes[0].target, expected);
       }
 
       // No sh:datatype for $ref, object, or array
-      assert.equal(findRelations(nodeRelations({ '$ref': 'https://example.com/Other' }), 'sh:datatype').length, 0);
-      assert.equal(findRelations(nodeRelations({ 'type': 'object' }), 'sh:datatype').length, 0);
-      assert.equal(findRelations(nodeRelations({ 'type': 'array' }), 'sh:datatype').length, 0);
+      assert.equal(findRelations(nodeRelations({ '$ref': 'https://example.com/Other' }), expandCurie('sh:datatype')).length, 0);
+      assert.equal(findRelations(nodeRelations({ 'type': 'object' }), expandCurie('sh:datatype')).length, 0);
+      assert.equal(findRelations(nodeRelations({ 'type': 'array' }), expandCurie('sh:datatype')).length, 0);
     });
 
     void it('produces SHACL string and numeric constraints', () => {
@@ -1275,7 +1302,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             'pattern': '^[A-Z]+$',
             'type': 'string'
           },
-          'sh:pattern',
+          expandCurie('sh:pattern'),
           '^[A-Z]+$'
         ],
         [
@@ -1283,7 +1310,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             'minLength': 3,
             'type': 'string'
           },
-          'sh:minLength',
+          expandCurie('sh:minLength'),
           '3'
         ],
         [
@@ -1291,7 +1318,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             'maxLength': 100,
             'type': 'string'
           },
-          'sh:maxLength',
+          expandCurie('sh:maxLength'),
           '100'
         ],
         // Numeric constraints
@@ -1300,7 +1327,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             'minimum': 0,
             'type': 'number'
           },
-          'sh:minInclusive',
+          expandCurie('sh:minInclusive'),
           '0'
         ],
         [
@@ -1308,7 +1335,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             'maximum': 100,
             'type': 'number'
           },
-          'sh:maxInclusive',
+          expandCurie('sh:maxInclusive'),
           '100'
         ],
         [
@@ -1316,7 +1343,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             'exclusiveMinimum': -1,
             'type': 'number'
           },
-          'sh:minExclusive',
+          expandCurie('sh:minExclusive'),
           '-1'
         ],
         [
@@ -1324,7 +1351,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             'exclusiveMaximum': 200,
             'type': 'number'
           },
-          'sh:maxExclusive',
+          expandCurie('sh:maxExclusive'),
           '200'
         ]
       ];
@@ -1355,8 +1382,8 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         'type': 'object'
       }, '/properties/name');
 
-      assert.equal(findRelations(reqRels, 'sh:minCount').length, 1);
-      assert.equal(findRelations(reqRels, 'sh:minCount')[0].target, '1');
+      assert.equal(findRelations(reqRels, expandCurie('sh:minCount')).length, 1);
+      assert.equal(findRelations(reqRels, expandCurie('sh:minCount'))[0].target, '1');
 
       // Non-required → no sh:minCount, but sh:maxCount 1 for non-array
       const optRels = nodeRelations({
@@ -1365,9 +1392,9 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         'type': 'object'
       }, '/properties/name');
 
-      assert.equal(findRelations(optRels, 'sh:minCount').length, 0);
-      assert.equal(findRelations(optRels, 'sh:maxCount').length, 1);
-      assert.equal(findRelations(optRels, 'sh:maxCount')[0].target, '1');
+      assert.equal(findRelations(optRels, expandCurie('sh:minCount')).length, 0);
+      assert.equal(findRelations(optRels, expandCurie('sh:maxCount')).length, 1);
+      assert.equal(findRelations(optRels, expandCurie('sh:maxCount'))[0].target, '1');
 
       // Array property → no sh:maxCount
       const arrRels = nodeRelations({
@@ -1381,7 +1408,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         'type': 'object'
       }, '/properties/tags');
 
-      assert.equal(findRelations(arrRels, 'sh:maxCount').length, 0);
+      assert.equal(findRelations(arrRels, expandCurie('sh:maxCount')).length, 0);
     });
 
     void it('produces owl:unionOf for multi-type properties and handles edge cases', () => {
@@ -1393,8 +1420,8 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       }> = [
         {
           'expectedMembers': [
-            'xsd:string',
-            'xsd:decimal'
+            expandCurie('xsd:string'),
+            expandCurie('xsd:decimal')
           ],
           'label': 'multi-type produces union',
           'pointer': '/properties/value',
@@ -1423,8 +1450,8 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         },
         {
           'expectedMembers': [
-            'xsd:string',
-            'xsd:decimal'
+            expandCurie('xsd:string'),
+            expandCurie('xsd:decimal')
           ],
           'label': 'null filtered from union members',
           'pointer': '/properties/value',
@@ -1449,7 +1476,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       } of scenarios) {
         const rels = nodeRelations(schema, pointer);
 
-        const unions = findRelations(rels, 'owl:unionOf').filter((rel) => {
+        const unions = findRelations(rels, expandCurie('owl:unionOf')).filter((rel) => {
           return rel.structure?.kind === 'list';
         });
 
@@ -1474,7 +1501,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         {
           'assertions': (rels) => {
             const propTypes = rels.filter((rel) => {
-              return rel.target === 'owl:ObjectProperty' || rel.target === 'owl:DatatypeProperty';
+              return rel.target === expandCurie('owl:ObjectProperty') || rel.target === expandCurie('owl:DatatypeProperty');
             });
 
             assert.equal(propTypes.length, 0, 'edge: no properties — no property-type relations');
@@ -1487,7 +1514,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         },
         {
           'assertions': (rels) => {
-            const subClassRels = findRelations(rels, 'rdfs:subClassOf');
+            const subClassRels = findRelations(rels, expandCurie('rdfs:subClassOf'));
 
             assert.ok(subClassRels.length > 0, 'edge: boolean true subschema — produces subClassOf');
           },
@@ -1503,7 +1530,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         },
         {
           'assertions': (rels) => {
-            const equivRels = findRelations(rels, 'owl:equivalentClass');
+            const equivRels = findRelations(rels, expandCurie('owl:equivalentClass'));
 
             assert.equal(equivRels.length, 0, 'edge: empty oneOf — no equivalentClass relations');
           },
@@ -1532,7 +1559,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         'schema': Record<string, unknown>;
         'target'?: string }> = [
         {
-          'predicate': 'rdfs:label',
+          'predicate': expandCurie('rdfs:label'),
           'schema': {
             'title': 'MyClass',
             'type': 'object'
@@ -1540,7 +1567,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
           'target': 'MyClass'
         },
         {
-          'predicate': 'rdfs:comment',
+          'predicate': expandCurie('rdfs:comment'),
           'schema': {
             'description': 'A thing',
             'type': 'object'
@@ -1548,21 +1575,21 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
           'target': 'A thing'
         },
         {
-          'predicate': 'owl:deprecated',
+          'predicate': expandCurie('owl:deprecated'),
           'schema': {
             'deprecated': true,
             'type': 'string'
           }
         },
         {
-          'predicate': 'rdfs:subClassOf',
+          'predicate': expandCurie('rdfs:subClassOf'),
           'schema': {
             'allOf': [{ 'type': 'object' }],
             'type': 'object'
           }
         },
         {
-          'predicate': 'owl:equivalentClass',
+          'predicate': expandCurie('owl:equivalentClass'),
           'schema': {
             'anyOf': [
               { 'type': 'string' },
@@ -1571,11 +1598,11 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
           }
         },
         {
-          'predicate': 'owl:complementOf',
+          'predicate': expandCurie('owl:complementOf'),
           'schema': { 'not': { 'type': 'array' } }
         },
         {
-          'predicate': 'owl:Restriction',
+          'predicate': expandCurie('owl:Restriction'),
           'schema': {
             'properties': { 'name': { 'type': 'string' } },
             'required': ['name'],
@@ -1584,7 +1611,7 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
         },
         {
           'count': 2,
-          'predicate': 'owl:oneOf',
+          'predicate': expandCurie('owl:oneOf'),
           'schema': {
             'enum': [
               'a',
@@ -1594,28 +1621,28 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
           }
         },
         {
-          'predicate': 'owl:disjointWith',
+          'predicate': expandCurie('owl:disjointWith'),
           'schema': {
             'disjointWith': 'https://example.com/Other',
             'type': 'object'
           }
         },
         {
-          'predicate': 'owl:inverseOf',
+          'predicate': expandCurie('owl:inverseOf'),
           'schema': {
             'inverseOf': 'https://example.com/inverse',
             'type': 'string'
           }
         },
         {
-          'predicate': 'owl:TransitiveProperty',
+          'predicate': expandCurie('owl:TransitiveProperty'),
           'schema': {
             'transitive': true,
             'type': 'string'
           }
         },
         {
-          'predicate': 'owl:SymmetricProperty',
+          'predicate': expandCurie('owl:SymmetricProperty'),
           'schema': {
             'symmetric': true,
             'type': 'string'
@@ -1685,66 +1712,66 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
       // Root node has label, comment, closed, restriction, conditional
       assert.ok(allRels.some((rel) => {
-        return rel.predicate === 'rdfs:label' && rel.target === 'Person';
+        return rel.predicate === expandCurie('rdfs:label') && rel.target === 'Person';
       }));
       assert.ok(allRels.some((rel) => {
-        return rel.predicate === 'rdfs:comment' && rel.target === 'A person entity';
+        return rel.predicate === expandCurie('rdfs:comment') && rel.target === 'A person entity';
       }));
       assert.ok(allRels.some((rel) => {
-        return rel.predicate === 'sh:closed';
+        return rel.predicate === expandCurie('sh:closed');
       }));
       assert.ok(allRels.some((rel) => {
-        return rel.predicate === 'owl:Restriction';
+        return rel.predicate === expandCurie('owl:Restriction');
       }));
       assert.ok(allRels.some((rel) => {
-        return rel.predicate === 'owl:unionOf' && rel.metadata?.conditional === true;
+        return rel.predicate === expandCurie('owl:unionOf') && rel.metadata?.conditional === true;
       }));
 
       // Property nodes have type classification
       assert.ok(allRels.some((rel) => {
-        return rel.predicate === 'rdf:type' && rel.target === 'owl:DatatypeProperty';
+        return rel.predicate === expandCurie('rdf:type') && rel.target === expandCurie('owl:DatatypeProperty');
       }));
       assert.ok(allRels.some((rel) => {
-        return rel.predicate === 'rdf:type' && rel.target === 'owl:ObjectProperty';
+        return rel.predicate === expandCurie('rdf:type') && rel.target === expandCurie('owl:ObjectProperty');
       }));
 
       // String constraints on name
       assert.ok(allRels.some((rel) => {
-        return rel.predicate === 'sh:minLength' && rel.target === '1';
+        return rel.predicate === expandCurie('sh:minLength') && rel.target === '1';
       }));
       assert.ok(allRels.some((rel) => {
-        return rel.predicate === 'sh:maxLength' && rel.target === '100';
+        return rel.predicate === expandCurie('sh:maxLength') && rel.target === '100';
       }));
       assert.ok(allRels.some((rel) => {
-        return rel.predicate === 'sh:pattern' && rel.target === '^[A-Z]';
+        return rel.predicate === expandCurie('sh:pattern') && rel.target === '^[A-Z]';
       }));
 
       // Numeric constraints on age
       assert.ok(allRels.some((rel) => {
-        return rel.predicate === 'sh:minInclusive' && rel.target === '0';
+        return rel.predicate === expandCurie('sh:minInclusive') && rel.target === '0';
       }));
       assert.ok(allRels.some((rel) => {
-        return rel.predicate === 'sh:maxInclusive' && rel.target === '150';
+        return rel.predicate === expandCurie('sh:maxInclusive') && rel.target === '150';
       }));
 
       // $ref range on manager
       assert.ok(allRels.some((rel) => {
-        return rel.predicate === 'rdfs:range'
+        return rel.predicate === expandCurie('rdfs:range')
       && rel.target === 'https://example.com/Person'
       && rel.metadata?.fromRef === true;
       }));
 
       // const on status
       assert.ok(allRels.some((rel) => {
-        return rel.predicate === 'owl:hasValue' && rel.target === 'active';
+        return rel.predicate === expandCurie('owl:hasValue') && rel.target === 'active';
       }));
 
       // Cardinality
       assert.ok(allRels.some((rel) => {
-        return rel.predicate === 'sh:minCount' && rel.target === '1';
+        return rel.predicate === expandCurie('sh:minCount') && rel.target === '1';
       }));
       assert.ok(allRels.some((rel) => {
-        return rel.predicate === 'sh:maxCount' && rel.target === '1';
+        return rel.predicate === expandCurie('sh:maxCount') && rel.target === '1';
       }));
     });
   });
@@ -3294,21 +3321,21 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
     void describe('dialect and vocabulary rejection', { 'concurrency': true }, () => {
       const scenarios: Array<{
+        'code': string;
         'name': string;
-        'pattern': RegExp;
         'schema': Record<string, unknown>;
       }> = [
         {
+          'code': 'DIALECT_UNSUPPORTED',
           'name': 'rejects unsupported dialect (draft-07)',
-          'pattern': /Unsupported JSON Schema dialect/u,
           'schema': {
             '$schema': 'http://json-schema.org/draft-07/schema#',
             'type': 'string'
           }
         },
         {
+          'code': 'VOCABULARY_UNSUPPORTED',
           'name': 'rejects unknown required vocabulary',
-          'pattern': /Unsupported required JSON Schema vocabulary/u,
           'schema': {
             '$schema': 'https://json-schema.org/draft/2020-12/schema',
             '$vocabulary': { 'https://example.io/vocab/custom-required': true },
@@ -3318,12 +3345,20 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       ];
 
       for (const {
-        'name': n, 'pattern': pat, 'schema': sch
+        'code': expectedCode, 'name': n, 'schema': sch
       } of scenarios) {
         void it(n, () => {
-          assert.throws(() => {
-            new GraphEngine(sch);
-          }, pat);
+          assert.throws(
+            () => {
+              new GraphEngine(sch);
+            },
+            (err: unknown) => {
+              assert.ok(err instanceof GraphError, 'expected GraphError');
+              assert.equal(err.code, expectedCode);
+
+              return true;
+            }
+          );
         });
       }
     });

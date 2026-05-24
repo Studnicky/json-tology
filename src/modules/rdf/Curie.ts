@@ -7,6 +7,7 @@
 import type { CurieInterface } from '../../interfaces/Curie.js';
 
 export class Curie implements CurieInterface {
+  private readonly compactCache = new Map<string, string>();
   private readonly expandCache = new Map<string, string>();
   private readonly prefixes: Record<string, string>;
 
@@ -26,6 +27,12 @@ export class Curie implements CurieInterface {
    * @returns The compacted form if a matching prefix is found, otherwise the original IRI
    */
   public compact(iri: string): string {
+    const cached = this.compactCache.get(iri);
+
+    if (cached !== undefined) {
+      return cached;
+    }
+
     let bestPrefix = '';
     let bestNamespace = '';
 
@@ -39,11 +46,13 @@ export class Curie implements CurieInterface {
       }
     }
 
-    if (bestNamespace.length > 0) {
-      return `${bestPrefix}:${iri.slice(bestNamespace.length)}`;
-    }
+    const result = bestNamespace.length > 0
+      ? `${bestPrefix}:${iri.slice(bestNamespace.length)}`
+      : iri;
 
-    return iri;
+    this.compactCache.set(iri, result);
+
+    return result;
   }
 
   /**

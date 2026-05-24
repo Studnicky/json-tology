@@ -19,12 +19,12 @@ import {
 } from 'node:test';
 import { importClassExpressions } from '../../src/modules/ontology/importDispatch/ClassExpressions.js';
 import { Curie } from '../../src/modules/rdf/Curie.js';
-import { DEFAULT_PREFIXES } from '../../src/constants/PREFIXES.js';
+import { STANDARD_PREFIXES } from '../../src/constants/STANDARD_PREFIXES.js';
 import { Terms } from '../../src/modules/rdf/Terms.js';
+import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { listQuad } from '../helpers/listQuad.js';
 import type { QuadInterface } from '../../src/interfaces/Quad.js';
 import type { OwlImportContext } from '../../src/interfaces/OwlImport.js';
-import type { SchemaGraphInterface } from '../../src/interfaces/SchemaGraphImpl.js';
 
 // ---------------------------------------------------------------------------
 // OWL full IRI constants (JsonLdToQuads expands to full IRIs)
@@ -43,19 +43,9 @@ const XSD_STRING = 'http://www.w3.org/2001/XMLSchema#string';
 // Context helpers
 // ---------------------------------------------------------------------------
 
-const curie = new Curie(DEFAULT_PREFIXES);
+const curie = new Curie(STANDARD_PREFIXES);
 
-const stubGraph: SchemaGraphInterface = {
-  'allRelations': () => {
-    return [];
-  },
-  'nodes': () => {
-    return new Map();
-  },
-  'rootSchema': {}
-} as unknown as SchemaGraphInterface;
-
-function makeCtx(classIris: string[] = []): OwlImportContext & {
+function makeCtx(classIris: string[] = [], quads: QuadInterface[] = []): OwlImportContext & {
   'unsupportedLog': Array<{ 'axiomIri': string;
     'subjectIri': null | string }>;
 } {
@@ -67,11 +57,14 @@ function makeCtx(classIris: string[] = []): OwlImportContext & {
     'allPropertyIris': new Set(),
     'baseIRI': 'https://example.com/',
     curie,
-    'graph': stubGraph,
+    'graph': SchemaGraph.fromQuads(quads, {
+      'baseIRI': 'https://example.com/',
+      'prefixes': STANDARD_PREFIXES
+    }),
     'isDatatype': () => {
       return false;
     },
-    'prefixes': DEFAULT_PREFIXES,
+    'prefixes': STANDARD_PREFIXES,
     'reportUnsupported': (axiomIri, subjectIri) => {
       unsupportedLog.push({
         axiomIri,
@@ -198,7 +191,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
       subject,
       classA,
       classB
-    ]);
+    ], quads);
     const fragment = importClassExpressions(quads, ctx);
     const delta = fragment.schemaDeltas.get(subject);
 
@@ -233,7 +226,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
       subject,
       classC,
       classD
-    ]);
+    ], quads);
     const fragment = importClassExpressions(quads, ctx);
     const delta = fragment.schemaDeltas.get(subject);
 
@@ -270,7 +263,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
       ...makeRestrictionBnodeQuads(bnodeB, propIri, 'rect')
     ];
 
-    const ctx = makeCtx([subject]);
+    const ctx = makeCtx([subject], quads);
     const fragment = importClassExpressions(quads, ctx);
     const delta = fragment.schemaDeltas.get(subject);
 
@@ -326,7 +319,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
       ...oneOfQuads
     ];
 
-    const ctx = makeCtx([subject]);
+    const ctx = makeCtx([subject], quads);
     const fragment = importClassExpressions(quads, ctx);
     const delta = fragment.schemaDeltas.get(subject);
 
@@ -353,7 +346,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
       ])
     ];
 
-    const ctx = makeCtx([subject]);
+    const ctx = makeCtx([subject], quads);
     const fragment = importClassExpressions(quads, ctx);
     const delta = fragment.schemaDeltas.get(subject);
 
@@ -412,7 +405,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
       classE,
       classF,
       classG
-    ]);
+    ], quads);
     const fragment = importClassExpressions(quads, ctx);
     const delta = fragment.schemaDeltas.get(subject);
 
@@ -450,7 +443,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
     const quads: QuadInterface[] = makeListQuad(nonClass, OWL_INTERSECTION_OF, [classH]);
 
     // nonClass is NOT in allClassIris
-    const ctx = makeCtx([classH]);
+    const ctx = makeCtx([classH], quads);
     const fragment = importClassExpressions(quads, ctx);
     const delta = fragment.schemaDeltas.get(nonClass);
 
@@ -481,7 +474,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
       subject,
       classI,
       classJ
-    ]);
+    ], quads);
     const fragment = importClassExpressions(quads, ctx);
     const delta = fragment.schemaDeltas.get(subject);
 
@@ -510,7 +503,7 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
       ...oneOfQuads
     ];
 
-    const ctx = makeCtx([subject]);
+    const ctx = makeCtx([subject], quads);
     const fragment = importClassExpressions(quads, ctx);
     const delta = fragment.schemaDeltas.get(subject);
 

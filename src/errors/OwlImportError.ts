@@ -31,7 +31,7 @@ export class OwlImportError extends BaseError {
     subjectIri: null | string,
     options?: { 'cause'?: Error }
   ) {
-    super(code, message, false, options);
+    super(code, message, options);
     this.name = 'OwlImportError';
     this.axiomIri = axiomIri;
     this.subjectIri = subjectIri;

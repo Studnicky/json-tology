@@ -3,9 +3,7 @@ import type {
   SchemaGraphSemanticsInterface, StructureWarningInterface
 } from '../../interfaces/SchemaGraph.js';
 import { GraphError } from '../../errors/GraphError.js';
-import {
-  RDFS_DOMAIN_IRI, RDFS_RANGE_IRI
-} from '../../constants/PREFIXES.js';
+import { RDFS } from '../../constants/IRI.js';
 import { ALLOF_EXTENSION_RE } from '../../constants/GRAPH_REGEXES.js';
 import {
   DEFS_POINTER_PARTS_LENGTH, KNOWN_SCHEMA_KEYWORDS,
@@ -17,6 +15,8 @@ import { isRecord } from '../data/DataTypes.js';
 import type { JsonSchemaType } from '../../types/Schema.js';
 import type { GraphAccessorInterface } from '../../interfaces/GraphAccessor.js';
 import type { JtConfigType } from '../../types/JtConfig.js';
+import { RESTRICTIONS_KEY } from '../../constants/COMPOSITION.js';
+import type { RawRestrictionDescriptorType } from '../../types/RawRestrictionDescriptor.js';
 
 function unescapeJsonPointerSegment(segment: string): string {
   return segment.replaceAll('~1', '/').replaceAll('~0', '~');
@@ -35,6 +35,23 @@ function normalizeAliases(schema: Record<string, unknown>): readonly string[] {
   }
 
   return [];
+}
+
+function extractRestrictions(schema: Record<string, unknown>): readonly RawRestrictionDescriptorType[] {
+  const raw = schema[RESTRICTIONS_KEY];
+
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  return raw.filter((entry): entry is RawRestrictionDescriptorType => {
+    if (typeof entry !== 'object' || entry === null) {
+      return false;
+    }
+    const rec = entry as Record<string, unknown>;
+
+    return typeof rec.kind === 'string' && typeof rec.onProperty === 'string' && 'value' in rec;
+  });
 }
 
 function extractJtConfig(schema: Record<string, unknown>): JtConfigType | undefined {
@@ -138,6 +155,7 @@ const EMPTY_SEMANTICS: SchemaGraphSemanticsInterface = Object.freeze({
   'reflexive': false,
   'refTargetNode': undefined,
   'required': [],
+  'restrictions': [],
   'schemaAnchor': undefined,
   'schemaDialect': undefined,
   'schemaId': undefined,
@@ -358,8 +376,8 @@ export const SchemaGraphSupport = {
       'prefixItems': graph.indexedChildren(node, 'prefixItems'),
       'properties': propertiesMap(graph.entries(node, 'properties')),
       'propertyNamesNode': graph.child(node, 'propertyNames'),
-      'rdfsDomain': (typeof node.schema['rdfs:domain'] === 'string' ? node.schema['rdfs:domain'] : undefined) ?? (typeof node.schema[RDFS_DOMAIN_IRI] === 'string' ? node.schema[RDFS_DOMAIN_IRI] : undefined),
-      'rdfsRange': (typeof node.schema['rdfs:range'] === 'string' ? node.schema['rdfs:range'] : undefined) ?? (typeof node.schema[RDFS_RANGE_IRI] === 'string' ? node.schema[RDFS_RANGE_IRI] : undefined),
+      'rdfsDomain': (typeof node.schema['rdfs:domain'] === 'string' ? node.schema['rdfs:domain'] : undefined) ?? (typeof node.schema[RDFS.domain] === 'string' ? (node.schema[RDFS.domain] as string) : undefined),
+      'rdfsRange': (typeof node.schema['rdfs:range'] === 'string' ? node.schema['rdfs:range'] : undefined) ?? (typeof node.schema[RDFS.range] === 'string' ? (node.schema[RDFS.range] as string) : undefined),
       'readOnly': node.schema.readOnly === true,
       'recursiveAnchor': node.schema.$recursiveAnchor === true,
       'recursiveRef': typeof node.schema.$recursiveRef === 'string' ? node.schema.$recursiveRef : undefined,
@@ -371,6 +389,7 @@ export const SchemaGraphSupport = {
           return typeof entry === 'string';
         })
         : [],
+      'restrictions': typeof node.schema === 'object' ? extractRestrictions(node.schema) : [],
       'schemaAnchor': typeof node.schema.$anchor === 'string' ? node.schema.$anchor : undefined,
       'schemaDialect': typeof node.schema.$schema === 'string' ? node.schema.$schema : undefined,
       'schemaId': typeof node.schema.$id === 'string' ? node.schema.$id : undefined,
@@ -436,7 +455,7 @@ export const SchemaGraphSupport = {
       return rootSchema;
     }
     if (!pointer.startsWith('/')) {
-      throw new GraphError('POINTER_INVALID', `Invalid JSON Pointer: ${pointer}`, pointer);
+      throw new GraphError('POINTER_INVALID', `Invalid JSON Pointer: ${pointer}`, { pointer });
     }
 
     let current: unknown = rootSchema;
@@ -448,12 +467,12 @@ export const SchemaGraphSupport = {
 
     for (const segment of segments) {
       if (!isRecord(current) && !Array.isArray(current)) {
-        throw new GraphError('POINTER_NOT_FOUND', `Pointer not found: ${pointer}`, pointer);
+        throw new GraphError('POINTER_NOT_FOUND', `Pointer not found: ${pointer}`, { pointer });
       }
       current = (current as Record<string, unknown>)[segment];
     }
     if (typeof current !== 'boolean' && !isRecord(current)) {
-      throw new GraphError('POINTER_NOT_SCHEMA', `Pointer does not resolve to a schema: ${pointer}`, pointer);
+      throw new GraphError('POINTER_NOT_SCHEMA', `Pointer does not resolve to a schema: ${pointer}`, { pointer });
     }
 
     return current;

@@ -29,14 +29,14 @@ import { HtmlRenderer } from './modules/viz/HtmlRenderer.js';
 import type { SchemaGraphInterface } from './interfaces/SchemaGraphImpl.js';
 import type { BuildOptionsInterface } from './interfaces/BuildOptions.js';
 import type { VizOptionsInterface } from './interfaces/VizOptions.js';
-import { DEFAULT_PREFIXES } from './constants/PREFIXES.js';
+import { STANDARD_PREFIXES } from './constants/STANDARD_PREFIXES.js';
 import { SchemaError } from './errors/SchemaError.js';
 import { CliWriter } from './modules/cli/CliWriter.js';
 
 const writer = CliWriter.default;
 
 const CLI_PREFIXES: Record<string, string> = {
-  ...DEFAULT_PREFIXES,
+  ...STANDARD_PREFIXES,
   'jsonschema': 'https://json-schema.org/ontology#'
 };
 

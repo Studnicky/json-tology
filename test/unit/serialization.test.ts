@@ -23,12 +23,15 @@ import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
 // Terms factory — produces rdf/js-compliant term objects for test quad construction.
 import { Terms } from '../../src/modules/rdf/Terms.js';
 import { listQuad } from '../helpers/listQuad.js';
+import {
+  OWL, RDF, XSD
+} from '../../src/constants/IRI.js';
 
 // ===========================================================================
 // Source: jsonLdFormatter.test.ts
 // ===========================================================================
 {
-  function literal(value: unknown, datatype = 'xsd:string'): QuadInterface['object'] {
+  function literal(value: unknown, datatype = XSD.string): QuadInterface['object'] {
     return Terms.literal(value, { 'datatype': Terms.iri(datatype) });
   }
 
@@ -71,11 +74,11 @@ import { listQuad } from '../helpers/listQuad.js';
       },
       {
         'check': (result) => {
-          assert.equal(result[0]['@type'], 'owl:Class');
-          assert.equal(result[0]['rdf:type'], undefined);
+          assert.equal(result[0]['@type'], OWL.Class);
+          assert.equal(result[0][RDF.type], undefined);
         },
         'name': 'happy: converts rdf:type to @type',
-        'quads': [quad('ex:Person', 'rdf:type', named('owl:Class'))]
+        'quads': [quad('ex:Person', RDF.type, named(OWL.Class))]
       },
       {
         'check': (result) => {
@@ -93,14 +96,14 @@ import { listQuad } from '../helpers/listQuad.js';
       {
         'check': (result) => {
           assert.deepEqual(result[0]['@type'], [
-            'owl:Class',
-            'rdfs:Resource'
+            OWL.Class,
+            'http://www.w3.org/2000/01/rdf-schema#Resource'
           ]);
         },
         'name': 'happy: multiple rdf:type values become @type array',
         'quads': [
-          quad('ex:Person', 'rdf:type', named('owl:Class')),
-          quad('ex:Person', 'rdf:type', named('rdfs:Resource'))
+          quad('ex:Person', RDF.type, named(OWL.Class)),
+          quad('ex:Person', RDF.type, named('http://www.w3.org/2000/01/rdf-schema#Resource'))
         ]
       },
       {
@@ -345,17 +348,17 @@ import { listQuad } from '../helpers/listQuad.js';
 
     void it('extracts rdf:type relations into types array', () => {
       const relations = [
-        makeRelation('http://example.com/User', 'rdf:type', 'owl:Class'),
+        makeRelation('http://example.com/User', RDF.type, OWL.Class),
         makeRelation('http://example.com/User', 'rdfs:label', 'User'),
-        makeRelation('http://example.com/User', 'rdf:type', 'rdfs:Resource')
+        makeRelation('http://example.com/User', RDF.type, 'http://www.w3.org/2000/01/rdf-schema#Resource')
       ];
 
       const index = ProjectionIndex.build(relations);
       const entry = index.get('http://example.com/User');
 
       assert.deepEqual(entry?.types, [
-        'owl:Class',
-        'rdfs:Resource'
+        OWL.Class,
+        'http://www.w3.org/2000/01/rdf-schema#Resource'
       ]);
     });
   });

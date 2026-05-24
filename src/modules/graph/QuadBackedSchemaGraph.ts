@@ -33,6 +33,7 @@
  */
 
 import type {
+  ListItemType,
   NormIRInterface,
   SchemaGraphNodeInterface, SchemaGraphRelationInterface,
   SchemaGraphSemanticsInterface, StructureWarningInterface
@@ -44,8 +45,9 @@ import { GraphError } from '../../errors/GraphError.js';
 import {
   OWL, RDF, RDFS
 } from '../../constants/IRI.js';
-import { DEFAULT_PREFIXES } from '../../constants/PREFIXES.js';
+import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
 import { decodeLiteral } from '../rdf/Terms.js';
+import { Lists } from '../rdf/Lists.js';
 
 // ---------------------------------------------------------------------------
 // OWL term IRIs (full form) — used in normaliseIri expansion
@@ -55,21 +57,48 @@ const OWL_NS = 'http://www.w3.org/2002/07/owl#';
 const RDF_NS = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
 const RDFS_NS = 'http://www.w3.org/2000/01/rdf-schema#';
 
-/** OWL type IRIs that introduce a graph node. Full IRI and prefixed forms. */
+/** OWL type IRIs that introduce a graph node. Full IRI and prefixed forms.
+ *
+ * Includes OWL 2 property-characteristic classes (FunctionalProperty,
+ * TransitiveProperty, etc.) so that a property declared solely via a
+ * characteristic axiom (`<P> rdf:type owl:FunctionalProperty`) still becomes a
+ * node in the inverted graph — otherwise the characteristic rdf:type relation
+ * is dropped and the Characteristics dispatcher cannot see it. */
 const NODE_TYPES: ReadonlySet<string> = new Set([
+  `${OWL_NS}AsymmetricProperty`,
   `${OWL_NS}Class`,
   `${OWL_NS}DatatypeProperty`,
+  `${OWL_NS}FunctionalProperty`,
+  `${OWL_NS}InverseFunctionalProperty`,
+  `${OWL_NS}IrreflexiveProperty`,
   `${OWL_NS}NamedIndividual`,
   `${OWL_NS}ObjectProperty`,
+  `${OWL_NS}ReflexiveProperty`,
   `${OWL_NS}Restriction`,
+  `${OWL_NS}SymmetricProperty`,
+  `${OWL_NS}TransitiveProperty`,
   `${RDF_NS}Property`,
   `${RDFS_NS}Class`,
   `${RDFS_NS}Datatype`,
+  OWL.AsymmetricProperty,
   OWL.Class,
   OWL.DatatypeProperty,
+  OWL.FunctionalProperty,
+  OWL.InverseFunctionalProperty,
+  OWL.IrreflexiveProperty,
   OWL.ObjectProperty,
+  OWL.ReflexiveProperty,
   OWL.Restriction,
+  OWL.SymmetricProperty,
+  OWL.TransitiveProperty,
+  'owl:AsymmetricProperty',
+  'owl:FunctionalProperty',
+  'owl:InverseFunctionalProperty',
+  'owl:IrreflexiveProperty',
   'owl:NamedIndividual',
+  'owl:ReflexiveProperty',
+  'owl:SymmetricProperty',
+  'owl:TransitiveProperty',
   'rdf:Property',
   'rdfs:Class',
   'rdfs:Datatype'
@@ -239,6 +268,7 @@ const EMPTY_SEMANTICS: SchemaGraphSemanticsInterface = Object.freeze({
   'reflexive': false,
   'refTargetNode': undefined,
   'required': [],
+  'restrictions': [],
   'schemaAnchor': undefined,
   'schemaDialect': undefined,
   'schemaId': undefined,
@@ -319,11 +349,76 @@ function objectIriValue(quad: QuadInterface, expansionMap: Map<string, string>):
   return '';
 }
 
+/**
+ * Build the optional language / datatype / termType fields that ride along
+ * on a relation, preserving the source literal's tags when the target is a
+ * Literal. NamedNode and BlankNode targets carry only `termType`; the
+ * language/datatype tags are emitted strictly for Literal terms.
+ */
+function literalTagsForQuad(quad: QuadInterface): {
+  'datatype'?: string;
+  'language'?: string;
+  'termType'?: 'BlankNode' | 'Literal' | 'NamedNode';
+} {
+  switch (quad.object.termType) {
+    case 'BlankNode':
+      return { 'termType': 'BlankNode' };
+    case 'Literal':
+      return {
+        'datatype': quad.object.datatype.value,
+        'language': quad.object.language,
+        'termType': 'Literal'
+      };
+    case 'NamedNode':
+      return { 'termType': 'NamedNode' };
+    case 'Quad':
+    case 'Variable':
+      return {};
+    default:
+      return {};
+  }
+}
+
+/**
+ * Resolve or synthesise a node for `subject`. Subjects without a recognised
+ * OWL type (typically blank nodes carrying restriction / list / facet shapes)
+ * get a synthetic stub so their outgoing relations can be returned by
+ * `relationsForSubject` without scanning the full relation list.
+ */
+function nodeOrStub(
+  subject: string,
+  nodeMap: Map<string, SchemaGraphNodeInterface>,
+  stubMap: Map<string, SchemaGraphNodeInterface>
+): SchemaGraphNodeInterface {
+  const existing = nodeMap.get(subject);
+
+  if (existing !== undefined) {
+    return existing;
+  }
+
+  const cachedStub = stubMap.get(subject);
+
+  if (cachedStub !== undefined) {
+    return cachedStub;
+  }
+
+  const stub: SchemaGraphNodeInterface = {
+    'id': subject,
+    'pointer': '',
+    'schema': { '$id': subject }
+  };
+
+  stubMap.set(subject, stub);
+
+  return stub;
+}
+
 function buildRelations(
   nodeMap: Map<string, SchemaGraphNodeInterface>,
   predicateIndex: PredicateIndex,
   subjectIndex: SubjectIndex,
-  expansionMap: Map<string, string>
+  expansionMap: Map<string, string>,
+  stubMap: Map<string, SchemaGraphNodeInterface>
 ): SchemaGraphRelationInterface[] {
   const relations: SchemaGraphRelationInterface[] = [];
 
@@ -331,12 +426,8 @@ function buildRelations(
     subject,
     predicateMap
   ] of predicateIndex) {
-    const sourceNode = nodeMap.get(subject);
-
-    if (sourceNode === undefined) {
-      // Blank-node subject — handled inline when processing their parent class.
-      continue;
-    }
+    const sourceNode = nodeOrStub(subject, nodeMap, stubMap);
+    const isNamedSubject = nodeMap.has(subject);
 
     for (const [
       rawPredicate,
@@ -355,14 +446,18 @@ function buildRelations(
           relations.push({
             'predicate': RDF.type,
             'source': sourceNode,
-            'target': typeIri
+            'target': typeIri,
+            'termType': 'NamedNode'
           });
         }
         continue;
       }
 
       // rdfs:subClassOf — may point to a blank-node Restriction; resolve inline.
-      if (predicate === RDFS.subClassOf || rawPredicate === `${RDFS_NS}subClassOf`) {
+      // Only triggered for named-class subjects; bnode-sourced subClassOf is
+      // emitted via the generic branch below so its sibling predicates remain
+      // walkable via relationsForSubject().
+      if (isNamedSubject && (predicate === RDFS.subClassOf || rawPredicate === `${RDFS_NS}subClassOf`)) {
         for (const quad of quads) {
           if (quad.object.termType === 'BlankNode') {
             // Attempt to resolve the restriction blank node.
@@ -374,7 +469,8 @@ function buildRelations(
               relations.push({
                 'predicate': RDFS.subClassOf,
                 'source': sourceNode,
-                'target': bnodeId
+                'target': bnodeId,
+                'termType': 'BlankNode'
               });
             } else {
               relations.push({
@@ -382,7 +478,8 @@ function buildRelations(
                 'predicate': RDFS.subClassOf,
                 'source': sourceNode,
                 'structure': restriction.structure,
-                'target': restriction.targetIri
+                'target': restriction.targetIri,
+                'termType': 'BlankNode'
               });
             }
           } else if (quad.object.termType === 'NamedNode') {
@@ -392,19 +489,22 @@ function buildRelations(
             relations.push({
               'predicate': RDFS.subClassOf,
               'source': sourceNode,
-              'target': targetNode ?? targetIri
+              'target': targetNode ?? targetIri,
+              'termType': 'NamedNode'
             });
           }
         }
         continue;
       }
 
-      // All other predicates — emit a relation per quad.
+      // All other predicates — emit a relation per quad with literal-tag preservation.
       for (const quad of quads) {
         const targetValue = objectIriValue(quad, expansionMap);
         const targetNode = nodeMap.get(targetValue);
+        const tags = literalTagsForQuad(quad);
 
         relations.push({
+          ...tags,
           'predicate': predicate,
           'source': sourceNode,
           'target': targetNode ?? targetValue
@@ -490,7 +590,9 @@ function resolveRestrictionBnode(
     if (!RESTRICTION_CONSTRAINTS.has(rawPred)) {
       continue;
     }
-    const constraint = compactIri(rawPred, expansionMap);
+    // Keep constraint as full IRI — downstream importDispatch handlers compare
+    // against OWL.* constants from IRI.ts (full IRIs), not compact CURIEs.
+    const constraint = rawPred;
     const constraintQuad = constraintQuads.at(0);
 
     if (constraintQuad === undefined) {
@@ -514,7 +616,8 @@ function resolveRestrictionBnode(
         break;
 
       case 'NamedNode':
-        targetIri = compactIri(constraintQuad.object.value, expansionMap);
+        // Keep as full IRI — no compact form in restriction value targets.
+        targetIri = constraintQuad.object.value;
         value = targetIri;
 
         break;
@@ -560,7 +663,13 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
   private readonly _rootSchema: Record<string, unknown>;
   private readonly nodeList: SchemaGraphNodeInterface[];
   private readonly nodeMap: Map<string, SchemaGraphNodeInterface>;
+  /** Quads supplied to the constructor — retained so `collectList` can walk
+   * `rdf:first`/`rdf:rest` chains directly via the canonical Lists helper. */
+  private readonly quads: readonly QuadInterface[];
   private readonly relationList: SchemaGraphRelationInterface[];
+  /** Lazy subject → outgoing relations index. Built on first
+   * `relationsForSubject` call and cached. */
+  private relationsBySubject: Map<string, SchemaGraphRelationInterface[]> | undefined = undefined;
 
   public constructor(
     quads: readonly QuadInterface[],
@@ -568,16 +677,18 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
       'prefixes'?: PrefixMap }
   ) {
     const mergedPrefixes: PrefixMap = {
-      ...DEFAULT_PREFIXES,
+      ...STANDARD_PREFIXES,
       ...options?.prefixes
     };
     const expansionMap = buildExpansionMap(mergedPrefixes);
     const subjectIndex = buildSubjectIndex(quads);
     const predicateIndex = buildPredicateIndex(subjectIndex);
+    const stubMap = new Map<string, SchemaGraphNodeInterface>();
 
+    this.quads = quads;
     this.nodeMap = buildNodeMap(subjectIndex, predicateIndex, expansionMap);
     this.nodeList = [...this.nodeMap.values()];
-    this.relationList = buildRelations(this.nodeMap, predicateIndex, subjectIndex, expansionMap);
+    this.relationList = buildRelations(this.nodeMap, predicateIndex, subjectIndex, expansionMap, stubMap);
 
     // Root schema stub — carries the base IRI so callers can inspect it.
     this._rootSchema = { '$id': options?.baseIRI ?? '' };
@@ -592,6 +703,87 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
 
   public child(_node: SchemaGraphNodeInterface, _key: string): SchemaGraphNodeInterface | undefined {
     return undefined;
+  }
+
+  /**
+   * Walk the RDF list rooted at `head` using the canonical `Lists.collect`
+   * helper against the constructor-supplied quad store. `head` may be a
+   * NamedNode IRI (e.g. an explicit list head) or a blank-node id (the usual
+   * case when the list is the value of `owl:withRestrictions`, `owl:hasKey`,
+   * `owl:unionOf`, etc.).
+   *
+   * Returns the typed JS value for Literal items (via `decodeLiteral`) and
+   * the IRI / bnode-id string for NamedNode / BlankNode items, preserving
+   * the term-type so dispatchers can branch on the kind.
+   */
+  public collectList(head: string): readonly ListItemType[] {
+    if (head === '' || head === RDF.nil || head === 'rdf:nil') {
+      return [];
+    }
+
+    // Lists.collect calls `quad.subject.equals(cursor)`. The stored quad
+    // subjects carry spec-compliant `.equals` (compare termType + value),
+    // so the probe term only needs the correct `termType` and `value`
+    // fields. The probe's own `.equals` is never invoked.
+    //
+    // Discriminate term-type heuristically: a NamedNode head must be a full
+    // IRI (or compact CURIE) — anything else is treated as a blank node.
+    // The blank-node value is preserved verbatim (both `_:b0` and `b0` forms
+    // appear in the wild depending on the producer, so the relation target
+    // string we received is the authoritative match).
+    const looksLikeIri = !head.startsWith('_:')
+      && /^(?:[a-zA-Z][a-zA-Z0-9+.-]*:|#|\/)/u.test(head);
+    const headTerm = looksLikeIri
+      ? {
+        'equals': () => {
+          return false;
+        },
+        'termType': 'NamedNode' as const,
+        'value': head
+      }
+      : {
+        'equals': () => {
+          return false;
+        },
+        'termType': 'BlankNode' as const,
+        'value': head
+      };
+    const items = Lists.collect(headTerm, this.quads);
+    const result: ListItemType[] = [];
+
+    for (const item of items) {
+      switch (item.termType) {
+        case 'BlankNode':
+          result.push({
+            'target': item.value,
+            'termType': 'BlankNode'
+          });
+          break;
+        case 'Literal': {
+          const decoded = decodeLiteral(item);
+
+          // Encode the typed JS value via String() so the `target` field
+          // remains a plain string per the ListItemType contract; callers
+          // recover the typed value by re-applying decodeLiteral semantics
+          // through the `datatype` IRI we preserve below.
+          result.push({
+            'datatype': item.datatype.value,
+            'language': item.language,
+            'target': decoded === null || decoded === undefined ? item.value : String(decoded),
+            'termType': 'Literal'
+          });
+          break;
+        }
+        case 'NamedNode':
+          result.push({
+            'target': item.value,
+            'termType': 'NamedNode'
+          });
+          break;
+      }
+    }
+
+    return result;
   }
 
   public entries(_node: SchemaGraphNodeInterface, _key: string): Array<[string, SchemaGraphNodeInterface]> {
@@ -648,11 +840,31 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
     });
   }
 
+  public relationsForSubject(subjectIri: string): readonly SchemaGraphRelationInterface[] {
+    if (this.relationsBySubject === undefined) {
+      const index = new Map<string, SchemaGraphRelationInterface[]>();
+
+      for (const relation of this.relationList) {
+        const key = relation.source.id;
+        let list = index.get(key);
+
+        if (list === undefined) {
+          list = [];
+          index.set(key, list);
+        }
+        list.push(relation);
+      }
+      this.relationsBySubject = index;
+    }
+
+    return this.relationsBySubject.get(subjectIri) ?? [];
+  }
+
   public resolveFragment(fragment: string): SchemaGraphNodeInterface {
     const node = this.nodeMap.get(fragment);
 
     if (node === undefined) {
-      throw new GraphError('ANCHOR_NOT_FOUND', `Unknown fragment in quad-backed graph: #${fragment}`, fragment);
+      throw new GraphError('ANCHOR_NOT_FOUND', `Unknown fragment in quad-backed graph: #${fragment}`, { 'pointer': fragment });
     }
 
     return node;
@@ -662,7 +874,7 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
     const node = this.nodeMap.get(pointer);
 
     if (node === undefined) {
-      throw new GraphError('POINTER_NOT_FOUND', `Node not found for pointer in quad-backed graph: ${pointer}`, pointer);
+      throw new GraphError('POINTER_NOT_FOUND', `Node not found for pointer in quad-backed graph: ${pointer}`, { pointer });
     }
 
     return node;

@@ -18,15 +18,21 @@
 
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import type {
-  OwlImportContext, OwlImporterOptions, OwlImportFragment, OwlImportResult, PrefixMap
+  DispatcherFnType,
+  OwlImportContext,
+  OwlImporterOptions,
+  OwlImportFragment,
+  OwlImportResult,
+  PrefixMap
 } from '../../interfaces/OwlImport.js';
 import type { JsonSchemaDocumentObjectType } from '../../types/Schema.js';
 import type { InvariantInterface } from '../../interfaces/Invariant.js';
+import type { QuadObjectType } from '../../types/Quad.js';
 import { Curie } from '../rdf/Curie.js';
-import { DEFAULT_PREFIXES } from '../../constants/PREFIXES.js';
+import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
 import { OwlImportError } from '../../errors/OwlImportError.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
-import { Lift } from '../rdf/Lift.js';
+import { Terms } from '../rdf/Terms.js';
 import {
   jsonLdNodesToQuads,
   parseNQuads
@@ -311,7 +317,26 @@ function fromJsonLdRdfOutput(rdfOutput: unknown): QuadInterface[] {
       return typeof quad === 'object' && quad !== null;
     })
     .map((quad) => {
-      return Lift.fromExternalQuad(quad);
+      const obj = quad.object;
+      let objectTerm: QuadObjectType;
+
+      if (obj.termType === 'Literal') {
+        objectTerm = Terms.literal(obj.value, {
+          'datatype': Terms.iri(obj.datatype?.value ?? ''),
+          'language': obj.language ?? ''
+        });
+      } else if (obj.termType === 'BlankNode') {
+        objectTerm = Terms.blank(obj.value);
+      } else {
+        objectTerm = Terms.iri(obj.value);
+      }
+
+      return Terms.quad(
+        Terms.iri(quad.subject.value),
+        Terms.iri(quad.predicate.value),
+        objectTerm,
+        Terms.defaultGraph()
+      );
     });
 }
 
@@ -396,9 +421,7 @@ function normalizeInput(jsonLd: object | QuadInterface[] | string): QuadInterfac
 // Dispatcher table
 // ---------------------------------------------------------------------------
 
-type DispatcherFn = (quads: QuadInterface[], ctx: OwlImportContext) => OwlImportFragment;
-
-const DISPATCHERS: readonly DispatcherFn[] = [
+const DISPATCHERS: readonly DispatcherFnType[] = [
   importClassAxioms,
   importClassExpressions,
   importPropertyRestrictions,
@@ -427,7 +450,7 @@ export class OwlImporter {
   public constructor(options: OwlImporterOptions) {
     this.baseIRI = options.baseIRI;
     this.prefixes = {
-      ...DEFAULT_PREFIXES,
+      ...STANDARD_PREFIXES,
       ...options.prefixes
     };
     this.curie = new Curie(this.prefixes);

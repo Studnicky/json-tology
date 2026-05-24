@@ -12,11 +12,21 @@
  * sidesteps reasoner divergence — every reasoner sees both edges directly
  * without relying on its own symmetry inference.
  *
+ * **Blank-node trade-off:** blank-node subjects (e.g. `_:b0`) are transient
+ * identifiers scoped to a single serialization call. Recording a blank-node
+ * IRI here has no persistent meaning — the same blank node will get a
+ * different identifier on the next `toQuads()` call. Only use `sameAs` with
+ * stable named-node IRIs. Blank-node subjects silently produce quads that
+ * are meaningless to any reasoner that sees them across serialization
+ * boundaries.
+ *
  * Distinct from `Compose.equivalent` (which is `owl:equivalentClass`,
  * a TBox/class-level construct).
  */
 
-export class SameAsStore {
+import type { SameAsStoreInterface } from '../../interfaces/SameAsStore.js';
+
+export class SameAsStore implements SameAsStoreInterface {
   private readonly pairs: Array<readonly [string, string]> = [];
 
   /**

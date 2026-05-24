@@ -2,6 +2,73 @@
 
 > Validation modes: [Validation modes reference](/validation-modes)
 
+## The rule
+
+> **Required arguments are positional. Optional values, overrides, and configuration form a single config object as the last parameter.**
+
+This convention applies uniformly to every public and internal callable in the package — instance methods, static facade methods, constructors, and low-level RDF helpers. Once you learn it for `JsonTology`, you know the shape of every other entry point.
+
+### Why
+
+- **DX uniformity.** Every signature reads the same way. You never need to remember which positional was which option.
+- **Future-extensible.** Adding a new optional knob means adding a key to the options interface — never another positional, never a breaking change.
+- **Single trailing bag.** No "two-options-objects" ambiguity, no boolean flags spread across positions.
+
+### Shapes
+
+**Required-only positionals.** Methods with only required arguments take no trailing options bag.
+
+```ts
+curie.expand(value);                       // Curie instance method, single required positional
+Hash.value(input);                         // single required positional
+Path.toAccess(jsonPointer);                // single required positional
+```
+
+**Required positionals + options.** The options bag is the final parameter and is always optional.
+
+```ts
+jt.toQuads(schema, data, options?);
+QuadFactory.iri(value, options?);                                // { curie? }
+QuadFactory.literal(value, datatype, options?);                  // { curie? }
+QuadFactory.quad(subject, predicate, object, options?);          // { curie?, graph? }
+QuadFactory.emitLiterals(subject, predicate, relations, quads, options?);
+QuadFactory.emitConstraintLiteral(subject, predicate, datatype, relations, quads, options?);
+```
+
+**Constructors.** Same rule — required positionals first, options bag last.
+
+```ts
+new IdentifierIssuer(options?);                    // { prefix?, counter?, existingMap? }
+new SchemaError(code, message, options?);          // { schemaId?, cause? }
+new GraphError(code, message, options?);           // { pointer?, cause? }
+new BaseError(code, message, options?);            // { retryable?, cause? }
+```
+
+### v0.15.0 surface alignment
+
+v0.15.0 brings the entire public surface into compliance with this rule. The notable changes:
+
+- **`QuadFactory`** — `iri`, `literal`, `quad`, `emitLiterals`, and `emitConstraintLiteral` previously accepted a trailing `curie` positional. They now accept an options bag (`{ curie }`, plus `{ curie, graph }` for `quad`).
+- **`BaseError` / `SchemaError` / `GraphError`** — `retryable`, `schemaId`, and `pointer` moved from positional arguments into the constructor options bag (alongside `cause`).
+- **`IdentifierIssuer`** — new utility; its constructor takes a single optional options bag (`{ prefix?, counter?, existingMap? }`).
+
+All call sites in the package have been updated. External callers using positional forms must migrate to the options-bag form.
+
+### Option interface names
+
+Each options bag has a canonical interface declared in `src/interfaces/`. They are exported through `json-tology/interfaces` (type-only) so external callers can reference the exact shape they pass.
+
+| Bag | Interface | Source |
+|-----|-----------|--------|
+| `QuadFactory.iri` options | `QuadFactoryIriOptsInterface` | `src/interfaces/QuadFactoryOpts.ts` |
+| `QuadFactory.literal` options | `QuadFactoryLiteralOptsInterface` | `src/interfaces/QuadFactoryOpts.ts` |
+| `QuadFactory.quad` options | `QuadFactoryQuadOptsInterface` | `src/interfaces/QuadFactoryOpts.ts` |
+| `QuadFactory.emitLiterals` / `emitConstraintLiteral` options | `QuadFactoryEmitOptsInterface` | `src/interfaces/QuadFactoryOpts.ts` |
+| `IdentifierIssuer` constructor options | `IdentifierIssuerOptsInterface` | `src/interfaces/IdentifierIssuerOpts.ts` |
+| `BaseError` constructor options | `BaseErrorOptionsType` | `src/types/ErrorOptions.ts` |
+| `SchemaError` constructor options | `SchemaErrorOptionsType` | `src/types/ErrorOptions.ts` |
+| `GraphError` constructor options | `GraphErrorOptionsType` | `src/types/ErrorOptions.ts` |
+
 ## Universal SchemaRef
 
 Every method that accepts a schema reference accepts **both** a string ID and a schema object:
@@ -39,7 +106,9 @@ Available static methods:
 Static methods create a fresh ephemeral instance per call. Use instance methods when you have multiple schemas
 that reference each other, or when you need to register invariants and computeds.
 
-## Argument order rules
+## Compose argument order
+
+The `Compose.*` helpers mint new schemas from existing ones. The required source and the required new `$id` are positional; the optional `extras` object follows the universal rule.
 
 - **One source, minting a new ID**: `(source, newId, extras?)` - e.g. `Compose.extend(UserSchema, additions, 'NewId')`
 - **Many sources**: `(sources, newId, extras?)` - e.g. `Compose.intersection([A, B] as const, 'NewId')`
