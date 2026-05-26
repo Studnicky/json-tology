@@ -2,7 +2,9 @@ import {
   afterEach, before, beforeEach, describe, it
 } from 'node:test';
 import assert from 'node:assert/strict';
-import { execSync } from 'node:child_process';
+import {
+  execFileSync, execSync
+} from 'node:child_process';
 import {
   existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 } from 'node:fs';
@@ -26,7 +28,14 @@ interface ExecError {
 
 function run(args: string, cwd?: string): CliResult {
   try {
-    const stdout = execSync(`${process.execPath} ${CLI} ${args}`, {
+    const argv = args.match(/(?:[^\s"]|"[^"]*")+/gu)
+      ?.map((token) => {
+        return token.replaceAll(/^"|"$/gu, '');
+      }) ?? [];
+    const stdout = execFileSync(process.execPath, [
+      CLI,
+      ...argv
+    ], {
       'cwd': cwd ?? ROOT,
       'encoding': 'utf8',
       'stdio': [

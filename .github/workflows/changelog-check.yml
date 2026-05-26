@@ -9,6 +9,8 @@ jobs:
   changelog-check:
     if: github.actor != 'dependabot[bot]'
     name: Verify Changelog
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

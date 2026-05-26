@@ -11,6 +11,12 @@ import {
   isPlainObject, isRecord
 } from './DataTypes.js';
 
+const UNSAFE_KEYS = new Set([
+  '__proto__',
+  'constructor',
+  'prototype'
+]);
+
 export class Operations {
   /**
    * Apply a single diff operation (`set` or `delete`) to a value at the specified path.
@@ -49,6 +55,10 @@ export class Operations {
     for (let i = 0; i < segments.length - 1; i++) {
       const segment = segments[i];
 
+      if (UNSAFE_KEYS.has(segment)) {
+        return result;
+      }
+
       if (!isRecord(current)) {
         break;
       }
@@ -69,6 +79,10 @@ export class Operations {
     }
 
     const lastSegment: string = segments.at(-1) ?? '';
+
+    if (UNSAFE_KEYS.has(lastSegment)) {
+      return result;
+    }
 
     if (operation.op === 'set') {
       if (isRecord(current)) {
