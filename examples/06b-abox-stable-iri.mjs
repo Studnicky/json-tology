@@ -53,7 +53,9 @@ console.log('\nSubjects:', allSubjects);
 const expectedSubject = 'https://pokemontology.dev/species/bulbasaur';
 const expectedGraph = 'https://pokemontology.dev/graph/universal/species';
 
-if (!allSubjects.includes(expectedSubject)) {
+if (!allSubjects.some((subject) => {
+  return subject === expectedSubject;
+})) {
   throw new Error(`Expected subject IRI ${expectedSubject} not found. Got: ${allSubjects.join(', ')}`);
 }
 
@@ -82,7 +84,9 @@ const staticSubjects = [...new Set(staticQuads.map((quad) => {
   return quad.subject;
 }))];
 
-if (!staticSubjects.includes(expectedSubject)) {
+if (!staticSubjects.some((subject) => {
+  return subject === expectedSubject;
+})) {
   throw new Error(`Static toQuads: expected subject ${expectedSubject}. Got: ${staticSubjects.join(', ')}`);
 }
 console.log('Static toQuads: subject IRI correct.');

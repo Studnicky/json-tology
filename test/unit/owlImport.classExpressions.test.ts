@@ -353,8 +353,12 @@ void describe('importClassExpressions', { 'concurrency': true }, () => {
     assert.ok(delta !== undefined, 'delta must be present for subject');
     assert.ok(Array.isArray(delta.enum), 'delta must have enum');
     assert.strictEqual(delta.enum.length, 2, 'enum must have two values');
-    assert.ok(delta.enum.includes(i1), 'enum must include i1 IRI');
-    assert.ok(delta.enum.includes(i2), 'enum must include i2 IRI');
+    assert.ok(delta.enum.some((iri) => {
+      return iri === i1;
+    }), 'enum must include i1 IRI');
+    assert.ok(delta.enum.some((iri) => {
+      return iri === i2;
+    }), 'enum must include i2 IRI');
   });
 
   // ── Nested intersectionOf / unionOf ────────────────────────────────────────

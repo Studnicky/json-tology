@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.3] - 2026-05-25
+
+### Fixed
+
+- Prototype-polluting assignment in `Operations.patch()` — path segments
+  `__proto__`, `constructor`, and `prototype` are now rejected, preventing
+  property injection via crafted diff paths.
+- Shell command injection in `test/e2e/cli.test.ts` — replaced `execSync`
+  string interpolation with `execFileSync` using an argv array.
+- Incomplete URL substring sanitization across test and example files —
+  `String.includes()` replaced with `assert.match()` regex assertions,
+  `Array.includes()` replaced with `.some()` strict-equality checks.
+- Missing least-privilege `permissions` blocks on all CI workflow jobs —
+  `contents: read` added to `ci.yml`, `security.yml`, `coverage.yml`,
+  `changelog-check.yml`, and `publish.yml` (validate job).
+
 ## [0.15.2] - 2026-05-24
 
 ### Added

@@ -114,8 +114,9 @@ void describe('JsonTology.prefetch', () => {
       (err: unknown) => {
         assert.ok(err instanceof GraphError);
         assert.strictEqual(err.code, 'REF_UNRESOLVED');
-        assert.ok(
-          err.pointer?.includes('https://schema.example/Address') === true,
+        assert.match(
+          err.pointer ?? '',
+          /https:\/\/schema\.example\/Address/u,
           `pointer should contain the unresolved IRI, got: ${err.pointer}`
         );
 

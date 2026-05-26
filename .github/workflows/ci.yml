@@ -8,6 +8,8 @@ on:
 jobs:
   smoke-fast:
     name: Smoke (Fast)
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     env:
       TSX_CACHE: 1
@@ -44,6 +46,8 @@ jobs:
 
   unit-integration:
     name: Unit & Integration (${{ matrix.task }})
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -80,6 +84,8 @@ jobs:
 
   e2e-types:
     name: E2E & Types (${{ matrix.task }})
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -118,6 +124,8 @@ jobs:
 
   lint:
     name: Lint
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -137,6 +145,8 @@ jobs:
 
   static-analysis:
     name: Static Analysis
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -158,6 +168,8 @@ jobs:
     if: always()
     name: CI Gate
     needs: [smoke-fast, unit-integration, e2e-types, lint, static-analysis]
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Check job results

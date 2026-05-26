@@ -7,6 +7,8 @@ on:
 jobs:
   validate:
     name: Validate Before Publish
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

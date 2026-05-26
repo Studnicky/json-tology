@@ -98,7 +98,7 @@ void describe('HtmlRenderer good paths', () => {
     });
     const html = renderer.render(payload);
 
-    assert.ok(html.includes('https://example.io/User'), 'schema id should appear');
+    assert.match(html, /https:\/\/example\.io\/User/u, 'schema id should appear');
     assert.ok(html.includes('type User'), 'typescript content should appear');
   });
 
