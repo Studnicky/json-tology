@@ -44,16 +44,15 @@ const AuditedOrderSchema = Compose.intersection(
   'https://bookstore.example/AuditedOrder'
 );
 
-jt.set(AuditSchema);
-jt.set(AuditedOrderSchema);
+const jt2 = jt.set(AuditSchema).set(AuditedOrderSchema);
 
 // Bastian's order without audit metadata — AuditSchema required fields not met.
-const errors = jt.validate(AuditedOrderSchema.$id, aboxFixtures.order);
+const errors = jt2.validate(AuditedOrderSchema.$id, aboxFixtures.order);
 
 console.assert(errors.length > 0);
 
 // All fields present — passes.
-const valid = jt.validate(AuditedOrderSchema.$id, {
+const valid = jt2.validate(AuditedOrderSchema.$id, {
   ...aboxFixtures.order,
   'createdAt': aboxFixtures.order.placedAt,
   'updatedAt': aboxFixtures.order.placedAt

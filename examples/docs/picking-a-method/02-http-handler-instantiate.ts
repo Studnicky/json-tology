@@ -25,7 +25,7 @@ let order: null | Order = null;
 let statusCode = 200;
 
 try {
-  order = bookstoreEntities.instantiate(OrderSchema, rawPayload);
+  order = bookstoreEntities.instantiate(OrderSchema.$id, rawPayload);
 } catch (error) {
   if (error instanceof InstantiationError) {
     statusCode = 400;

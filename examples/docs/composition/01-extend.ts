@@ -38,9 +38,9 @@ const CustomerWithDiscountSchema = Compose.extend(
   'https://bookstore.example/CustomerWithDiscount'
 );
 
-jt.set(CustomerWithDiscountSchema);
+const jt2 = jt.set(CustomerWithDiscountSchema);
 
-const coercedCustomer = jt.instantiate(CustomerWithDiscountSchema.$id, {
+const coercedCustomer = jt2.instantiate(CustomerWithDiscountSchema.$id, {
   'discountRate': 0.15,
   'email': 'bastian.bux@bookstore.example',
   'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',

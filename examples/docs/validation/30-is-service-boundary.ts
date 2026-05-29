@@ -11,7 +11,8 @@ import {
 } from '../bookstore/index.js';
 
 function processOrder(data: unknown): string {
-  if (!bookstoreEntities.is(OrderSchema, data)) {
+  // Passing the schema $id selects the type-guard overload, narrowing `data`.
+  if (!bookstoreEntities.is(OrderSchema.$id, data)) {
     throw new TypeError('Expected an Order');
   }
 
@@ -20,7 +21,7 @@ function processOrder(data: unknown): string {
 }
 
 const validOrder: Order = bookstoreEntities.instantiate(
-  OrderSchema,
+  OrderSchema.$id,
   aboxFixtures.order
 );
 

@@ -19,8 +19,10 @@ import {
 // Emit the full graph: schema-level rules + sameAs assertions + ABox quads.
 // OrderSchema is used here because it references the full entity graph and
 // the sameAs pairs are registry-level — they appear regardless of which ABox
-// schema is projected.
-const quads = bookstoreEntities.toQuads(OrderSchema, aboxFixtures.order);
+// schema is projected. instantiate first to obtain the branded order value
+// toQuads's typed signature expects.
+const order = bookstoreEntities.instantiate(OrderSchema.$id, aboxFixtures.order);
+const quads = bookstoreEntities.toQuads(OrderSchema, order);
 
 console.assert(Array.isArray(quads));
 console.assert(quads.length > 0);

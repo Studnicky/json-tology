@@ -29,6 +29,7 @@ export type InstantiationErrorCodeType = 'EXTRA_FORBIDDEN' | 'INSTANTIATION_FAIL
 
 export type MaterializationErrorCodeType
   = | 'CYCLIC_DATA'
-  | 'MATERIALIZATION_FAILED';
+  | 'MATERIALIZATION_FAILED'
+  | 'MISSING_GRAPH_IRI';
 
 export type OwlImportErrorCodeType = 'OWL_IMPORT_NOT_IMPLEMENTED';

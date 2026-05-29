@@ -786,7 +786,7 @@ describe('ontology round-trip: bookstore domain', () => {
       const data = aboxFixtures.customer.addresses[0];
 
       const origErrors = jt.validate(AddressSchema.$id, data);
-      const reconErrors = altJt.validate(altId, data);
+      const reconErrors = altJt.validate(altSchema as Record<string, unknown> & { readonly '$id': string }, data);
 
       assert.equal(origErrors.ok, true, 'original validates');
       assert.equal(reconErrors.ok, true, 'reconstructed validates same data');
@@ -861,7 +861,7 @@ describe('ontology round-trip: bookstore domain', () => {
       altJt.set(altSchema as { readonly '$id': string });
 
       // Missing required "id", "email", "name" — should fail.
-      const errors = altJt.validate(altId, { 'addresses': [] });
+      const errors = altJt.validate(altSchema as Record<string, unknown> & { readonly '$id': string }, { 'addresses': [] });
 
       assert.ok(errors.length > 0, 'reconstructed schema rejects data missing required fields');
     });

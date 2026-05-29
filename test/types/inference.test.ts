@@ -8,6 +8,7 @@
  * intentional fallbacks where TypeScript cannot express the runtime rule.
  */
 
+import type { ContainsBrandInterface } from '../../src/types/ConstraintBrands.js';
 import type {
   InferSchemaType, InferType
 } from '../../src/types/Schema.js';
@@ -566,8 +567,10 @@ const _ContainsSchema = {
 void _ContainsSchema;
 
 type ContainsResult = InferType<typeof _ContainsSchema>;
-// Falls back to unknown[] — no items schema, contains is runtime-only
-assert<AssertEqual<ContainsResult, readonly unknown[]>>();
+// `contains` narrows the element type to the contains schema (number) and adds
+// the ContainsBrand carrying that element type — the runtime-only "at least one
+// match" constraint is reflected as a compile-time brand.
+assert<AssertEqual<ContainsResult, ContainsBrandInterface<number> & readonly number[]>>();
 
 /**
  * `propertyNames` — Constrains object keys at runtime. TypeScript cannot

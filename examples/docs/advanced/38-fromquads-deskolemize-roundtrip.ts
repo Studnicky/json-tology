@@ -13,7 +13,7 @@ import {
 
 const quads = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer, { 'iriFor': Skolemize.wellKnownGenid('https://shop.example.com') });
 
-// Round-trip back to blank-node semantics:
-const [restored] = bookstoreEntities.fromQuads(CustomerSchema, quads, { 'deskolemize': true });
+// Round-trip back to blank-node semantics — use the string key form for full type inference
+const [restored] = bookstoreEntities.fromQuads(CustomerSchema.$id, quads, { 'deskolemize': true });
 
 console.assert(restored.id === aboxFixtures.customer.id, 'customer id round-tripped');

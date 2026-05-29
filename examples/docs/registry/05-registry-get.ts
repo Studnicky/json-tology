@@ -7,7 +7,7 @@ const book = bookstoreEntities.registry.get(BookSchema.$id);
 
 console.assert(book !== undefined, 'BookSchema should be retrievable');
 console.assert(
-  book?.properties?.price !== undefined,
+  (book?.properties as Record<string, unknown> | undefined)?.price !== undefined,
   'BookSchema.properties.price should exist'
 );
 

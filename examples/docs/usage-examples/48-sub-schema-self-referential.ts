@@ -30,9 +30,9 @@ const ManagerSchema = {
   'type': 'object'
 } as const;
 
-jt.set(ManagerSchema);
+const jt2 = jt.set(ManagerSchema);
 
-const bastian = jt.instantiate(ManagerSchema.$id, {
+const bastian = jt2.instantiate(ManagerSchema.$id, {
   'manager': {
     'manager': { 'name': 'Carl Conrad Coreander' },
     'name': 'Carl Conrad Coreander'

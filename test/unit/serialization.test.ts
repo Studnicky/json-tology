@@ -4,6 +4,9 @@
 import assert from 'node:assert/strict';
 // QuadInterface is the canonical RDF triple shape; surfaced via toQuads but type-import is internal here.
 import type { QuadInterface } from '../../src/interfaces/Quad.js';
+// QuadObjectType is the project's narrow quad-object union (IRI | blank | literal),
+// matching what Terms.iri/Terms.literal return and what Terms.quad/listQuad accept.
+import type { QuadObjectType } from '../../src/types/Quad.js';
 // RelationStructure/SchemaGraphRelationInterface are graph-internal shapes used by projection tests.
 import type { RelationStructure } from '../../src/types/SchemaGraph.js';
 import type { SchemaGraphRelationInterface } from '../../src/interfaces/SchemaGraph.js';
@@ -31,21 +34,21 @@ import {
 // Source: jsonLdFormatter.test.ts
 // ===========================================================================
 {
-  function literal(value: unknown, datatype = XSD.string): QuadInterface['object'] {
+  function literal(value: unknown, datatype: string = XSD.string): QuadObjectType {
     return Terms.literal(value, { 'datatype': Terms.iri(datatype) });
   }
 
-  function named(value: string): QuadInterface['object'] {
+  function named(value: string): QuadObjectType {
     return Terms.iri(value);
   }
 
-  function quad(subject: string, predicate: string, object: QuadInterface['object']): QuadInterface {
-    return {
-      'graph': Terms.defaultGraph(),
+  function quad(subject: string, predicate: string, object: QuadObjectType): QuadInterface {
+    return Terms.quad(
+      subject.startsWith('_:') ? Terms.blank(subject) : Terms.iri(subject),
+      Terms.iri(predicate),
       object,
-      'predicate': Terms.iri(predicate),
-      'subject': subject.startsWith('_:') ? Terms.blank(subject) : Terms.iri(subject)
-    };
+      Terms.defaultGraph()
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -410,7 +413,9 @@ import {
     });
 
     void it('returns false for undefined', () => {
-      assert.equal(ProjectionIndex.isRestrictionStructure(), false);
+      const noStructure: RelationStructure | undefined = undefined;
+
+      assert.equal(ProjectionIndex.isRestrictionStructure(noStructure), false);
     });
   });
 
@@ -439,7 +444,9 @@ import {
     });
 
     void it('returns false for undefined', () => {
-      assert.equal(ProjectionIndex.isListStructure(), false);
+      const noStructure: RelationStructure | undefined = undefined;
+
+      assert.equal(ProjectionIndex.isListStructure(noStructure), false);
     });
   });
 }
@@ -893,11 +900,25 @@ import {
       assert.equal(inclOverExcl.name, 'Alice');
       assert.equal('age' in inclOverExcl, false);
 
-      // excludeUnset drops undefined-value props
-      const unset = jt.dump(PersonSchema.$id, {
+      // excludeUnset drops undefined-value props. The value deliberately carries an
+      // explicit age: undefined to exercise that path; exactOptionalPropertyTypes
+      // forbids undefined on the schema's optional-number field, so this malformed
+      // instance is widened at the ingestion boundary and the result is asserted.
+      const unsetInput = {
         'age': undefined,
         'name': 'Alice'
-      }, { 'excludeUnset': true }) as Record<string, unknown>;
+      } satisfies Record<string, unknown>;
+      // invalid-input edge: age: undefined violates exactOptionalPropertyTypes on
+      // the branded dump parameter; the cast simulates a value crossing the
+      // boundary with an explicit undefined to exercise excludeUnset behaviour.
+      const unset = jt.dump(
+        PersonSchema.$id,
+        unsetInput as unknown as {
+          readonly 'age'?: number;
+          readonly 'name': string;
+        },
+        { 'excludeUnset': true }
+      ) as Record<string, unknown>;
 
       assert.equal('age' in unset, false);
       assert.equal(unset.name, 'Alice');

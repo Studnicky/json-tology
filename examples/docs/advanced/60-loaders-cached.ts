@@ -9,12 +9,13 @@
  */
 
 import { Loaders } from '../../../src/index.js';
+import type { JsonSchemaType } from '../../../src/types/Schema.js';
 import {
   BookSchema,
   CustomerSchema
 } from '../bookstore/index.js';
 
-const inner = Loaders.memory(new Map([
+const inner = Loaders.memory(new Map<string, JsonSchemaType>([
   [
     BookSchema.$id,
     BookSchema

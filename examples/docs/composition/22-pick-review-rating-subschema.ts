@@ -22,14 +22,14 @@ const ReviewRatingSchema = Compose.pick(
   'https://bookstore.example/ReviewRating'
 );
 
-jt.set(ReviewRatingSchema);
+const jt2 = jt.set(ReviewRatingSchema);
 
 // A 5 passes — within 0..5.
-const okResult = jt.validate(ReviewRatingSchema.$id, { 'rating': 5 });
+const okResult = jt2.validate(ReviewRatingSchema.$id, { 'rating': 5 });
 
 console.assert(okResult.ok);
 
 // A 6 fails — exceeds the canonical rating cap.
-const overResult = jt.validate(ReviewRatingSchema.$id, { 'rating': 6 });
+const overResult = jt2.validate(ReviewRatingSchema.$id, { 'rating': 6 });
 
 console.assert(!overResult.ok);

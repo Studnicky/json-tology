@@ -13,7 +13,7 @@ import {
 const owl = bookstoreEntities.ontology().jsonLdObject();
 const shacl = bookstoreEntities.ontology().shaclObject();
 
-console.assert(AddressSchema.$id, 'address schema registered');
-console.assert(CustomerSchema.$id, 'customer schema registered');
-console.assert(owl, 'owl object present');
-console.assert(shacl, 'shacl object present');
+console.assert(Boolean(AddressSchema.$id), 'address schema registered');
+console.assert(Boolean(CustomerSchema.$id), 'customer schema registered');
+console.assert(Boolean(owl), 'owl object present');
+console.assert(Boolean(shacl), 'shacl object present');

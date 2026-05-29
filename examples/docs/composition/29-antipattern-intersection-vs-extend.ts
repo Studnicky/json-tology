@@ -24,9 +24,9 @@ const ExtendedBookSchema = Compose.extend(
   'https://bookstore.example/ExtendedBookCorrect'
 );
 
-jt.set(ExtendedBookSchema);
+const jt2 = jt.set(ExtendedBookSchema);
 
-const result = jt.validate(ExtendedBookSchema.$id, {
+const result = jt2.validate(ExtendedBookSchema.$id, {
   'authors': ['Michael Ende'],
   'badge': 'staff-pick',
   'inStock': true,

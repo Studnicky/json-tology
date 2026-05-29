@@ -26,7 +26,9 @@ import type {
 } from '../../types/Transform.js';
 import type { BrandedType } from '../../types/Brand.js';
 import { brand } from '../../types/Brand.js';
-import type { InferSchemaType } from '../../types/Infer.js';
+import type {
+  InferSchemaType, LooseInputType
+} from '../../types/Infer.js';
 import type { TransformFnsInterface } from '../../interfaces/TransformFns.js';
 import type {
   AnyTransformStageInterface,
@@ -113,7 +115,7 @@ export class Transform {
     schema: TSchema,
     fns: {
       'decode': (input: InferSchemaType<TSchema>) => TOut;
-      'encode': (output: TOut) => InferSchemaType<TSchema>;
+      'encode': (output: TOut) => LooseInputType<InferSchemaType<TSchema>>;
     }
   ): TransformedType<TSchema, TOut> {
     transformRegistry.set(schema, fns as TransformFnsInterface);

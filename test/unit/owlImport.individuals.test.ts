@@ -36,30 +36,15 @@ const OWL_NS = 'http://www.w3.org/2002/07/owl#';
 const OWL_SAME_AS = 'http://www.w3.org/2002/07/owl#sameAs';
 
 function makeTypeQuad(subject: string, typeIri: string): QuadInterface {
-  return {
-    'graph': Terms.defaultGraph(),
-    'object': Terms.iri(typeIri),
-    'predicate': Terms.iri(RDF_TYPE),
-    'subject': Terms.iri(subject)
-  };
+  return Terms.quad(Terms.iri(subject), Terms.iri(RDF_TYPE), Terms.iri(typeIri));
 }
 
 function makeIriQuad(subject: string, predicate: string, object: string): QuadInterface {
-  return {
-    'graph': Terms.defaultGraph(),
-    'object': Terms.iri(object),
-    'predicate': Terms.iri(predicate),
-    'subject': Terms.iri(subject)
-  };
+  return Terms.quad(Terms.iri(subject), Terms.iri(predicate), Terms.iri(object));
 }
 
 function makeLiteralQuad(subject: string, predicate: string, value: unknown): QuadInterface {
-  return {
-    'graph': Terms.defaultGraph(),
-    'object': Terms.literal(value),
-    'predicate': Terms.iri(predicate),
-    'subject': Terms.iri(subject)
-  };
+  return Terms.quad(Terms.iri(subject), Terms.iri(predicate), Terms.literal(value));
 }
 
 function makeListQuad(subject: string, predicate: string, members: string[]): QuadInterface[] {
@@ -112,8 +97,7 @@ function makeCtx(
       },
       'expand': (curie: string) => {
         return curie;
-      },
-      'prefixes': {}
+      }
     },
     'graph': SchemaGraph.fromQuads([], { 'baseIRI': 'urn:test' }),
     'isDatatype': () => {
@@ -323,12 +307,7 @@ void describe('importIndividuals — owl:AllDifferent', () => {
     const iriC = 'urn:test:i3';
 
     const quads: QuadInterface[] = [
-      {
-        'graph': Terms.defaultGraph(),
-        'object': Terms.iri(`${OWL_NS}AllDifferent`),
-        'predicate': Terms.iri(RDF_TYPE),
-        'subject': Terms.blank('allDiff1')
-      },
+      Terms.quad(Terms.blank('allDiff1'), Terms.iri(RDF_TYPE), Terms.iri(`${OWL_NS}AllDifferent`)),
       ...listQuad(
         Terms.blank('allDiff1'),
         Terms.iri(`${OWL_NS}distinctMembers`),
@@ -372,30 +351,10 @@ void describe('importIndividuals — owl:NegativePropertyAssertion', () => {
     const targetIri = 'urn:test:bob';
 
     const quads: QuadInterface[] = [
-      {
-        'graph': Terms.defaultGraph(),
-        'object': Terms.iri(`${OWL_NS}NegativePropertyAssertion`),
-        'predicate': Terms.iri(RDF_TYPE),
-        'subject': Terms.blank('npa1')
-      },
-      {
-        'graph': Terms.defaultGraph(),
-        'object': Terms.iri(sourceIri),
-        'predicate': Terms.iri(`${OWL_NS}sourceIndividual`),
-        'subject': Terms.blank('npa1')
-      },
-      {
-        'graph': Terms.defaultGraph(),
-        'object': Terms.iri(propIri),
-        'predicate': Terms.iri(`${OWL_NS}assertionProperty`),
-        'subject': Terms.blank('npa1')
-      },
-      {
-        'graph': Terms.defaultGraph(),
-        'object': Terms.iri(targetIri),
-        'predicate': Terms.iri(`${OWL_NS}targetIndividual`),
-        'subject': Terms.blank('npa1')
-      }
+      Terms.quad(Terms.blank('npa1'), Terms.iri(RDF_TYPE), Terms.iri(`${OWL_NS}NegativePropertyAssertion`)),
+      Terms.quad(Terms.blank('npa1'), Terms.iri(`${OWL_NS}sourceIndividual`), Terms.iri(sourceIri)),
+      Terms.quad(Terms.blank('npa1'), Terms.iri(`${OWL_NS}assertionProperty`), Terms.iri(propIri)),
+      Terms.quad(Terms.blank('npa1'), Terms.iri(`${OWL_NS}targetIndividual`), Terms.iri(targetIri))
     ];
 
     const result = runIndividuals(quads);
@@ -416,30 +375,10 @@ void describe('importIndividuals — owl:NegativePropertyAssertion', () => {
     const propIri = 'urn:test:age';
 
     const quads: QuadInterface[] = [
-      {
-        'graph': Terms.defaultGraph(),
-        'object': Terms.iri(`${OWL_NS}NegativePropertyAssertion`),
-        'predicate': Terms.iri(RDF_TYPE),
-        'subject': Terms.blank('npa2')
-      },
-      {
-        'graph': Terms.defaultGraph(),
-        'object': Terms.iri(sourceIri),
-        'predicate': Terms.iri(`${OWL_NS}sourceIndividual`),
-        'subject': Terms.blank('npa2')
-      },
-      {
-        'graph': Terms.defaultGraph(),
-        'object': Terms.iri(propIri),
-        'predicate': Terms.iri(`${OWL_NS}assertionProperty`),
-        'subject': Terms.blank('npa2')
-      },
-      {
-        'graph': Terms.defaultGraph(),
-        'object': Terms.literal(99),
-        'predicate': Terms.iri(`${OWL_NS}targetValue`),
-        'subject': Terms.blank('npa2')
-      }
+      Terms.quad(Terms.blank('npa2'), Terms.iri(RDF_TYPE), Terms.iri(`${OWL_NS}NegativePropertyAssertion`)),
+      Terms.quad(Terms.blank('npa2'), Terms.iri(`${OWL_NS}sourceIndividual`), Terms.iri(sourceIri)),
+      Terms.quad(Terms.blank('npa2'), Terms.iri(`${OWL_NS}assertionProperty`), Terms.iri(propIri)),
+      Terms.quad(Terms.blank('npa2'), Terms.iri(`${OWL_NS}targetValue`), Terms.literal(99))
     ];
 
     const result = runIndividuals(quads);

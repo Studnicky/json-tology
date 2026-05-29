@@ -56,7 +56,9 @@ void describe('SchemaError on registration', { 'concurrency': true }, () => {
       });
 
       try {
-        jt.set(schema);
+        // Negative-test boundary: scenarios deliberately omit $id / carry
+        // duplicate anchors to assert registration rejects malformed schemas.
+        jt.set(schema as unknown as { readonly '$id': string });
         assert.fail(`${name}: should throw`);
       } catch (error) {
         assert.ok(error instanceof SchemaError, `${name}: instanceof SchemaError`);
@@ -100,7 +102,8 @@ void describe('SchemaError on registration', { 'concurrency': true }, () => {
     });
 
     try {
-      jt.set({ 'type': 'object' });
+      // Negative-test boundary: schema deliberately omits $id to assert throw.
+      jt.set({ 'type': 'object' } as unknown as { readonly '$id': string });
       assert.fail('should throw');
     } catch (error) {
       assert.ok(error instanceof SchemaError, 'instanceof SchemaError');
@@ -125,7 +128,7 @@ void describe('BaseError cause chain edge cases', { 'concurrency': true }, () =>
     }> = [
       {
         'assertions': () => {
-          const error = new SchemaError('TEST_CODE', 'no cause');
+          const error = new SchemaError('SCHEMA_INVALID_INPUT', 'no cause');
 
           assert.equal(error.cause, undefined, 'edge: undefined cause — cause is undefined');
           const json = error.toJson();
@@ -136,26 +139,26 @@ void describe('BaseError cause chain edge cases', { 'concurrency': true }, () =>
       },
       {
         'assertions': () => {
-          const root = new SchemaError('ROOT', 'root error');
-          const mid = new SchemaError('MID', 'mid error', { 'cause': root });
-          const top = new SchemaError('TOP', 'top error', { 'cause': mid });
+          const root = new SchemaError('SCHEMA_MISSING_ID', 'root error');
+          const mid = new SchemaError('SCHEMA_DUPLICATE_ID', 'mid error', { 'cause': root });
+          const top = new SchemaError('SCHEMA_STRUCTURE_INVALID', 'top error', { 'cause': mid });
 
           const chain = top.flatten();
 
           assert.equal(chain.length, 3, 'edge: nested cause chain — 3 deep');
-          assert.equal(chain[0].code, 'TOP', 'edge: nested cause chain — first is top');
-          assert.equal(chain[1].code, 'MID', 'edge: nested cause chain — second is mid');
-          assert.equal(chain[2].code, 'ROOT', 'edge: nested cause chain — third is root');
+          assert.equal(chain[0].code, 'SCHEMA_STRUCTURE_INVALID', 'edge: nested cause chain — first is top');
+          assert.equal(chain[1].code, 'SCHEMA_DUPLICATE_ID', 'edge: nested cause chain — second is mid');
+          assert.equal(chain[2].code, 'SCHEMA_MISSING_ID', 'edge: nested cause chain — third is root');
         },
         'name': 'edge: error with nested cause chain (3 deep) flattens correctly'
       },
       {
         'assertions': () => {
-          const single = new SchemaError('SINGLE', 'single error');
+          const single = new SchemaError('SCHEMA_NOT_REGISTERED', 'single error');
           const chain = single.flatten();
 
           assert.equal(chain.length, 1, 'edge: single error flatten — length 1');
-          assert.equal(chain[0].code, 'SINGLE', 'edge: single error flatten — code matches');
+          assert.equal(chain[0].code, 'SCHEMA_NOT_REGISTERED', 'edge: single error flatten — code matches');
           assert.equal(chain[0].message, 'single error', 'edge: single error flatten — message matches');
         },
         'name': 'edge: error flatten with single error returns one-element array'

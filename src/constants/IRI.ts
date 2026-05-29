@@ -133,6 +133,7 @@ export const DASH = {
 export const DCT = { 'format': `${DCT_NS}format` } as const;
 
 export const JT = {
+  'annotatedEdge': `${JT_NS}annotatedEdge`,
   'dependentRequired': `${JT_NS}dependentRequired`,
   'else': `${JT_NS}else`,
   'format': `${JT_NS}format`,

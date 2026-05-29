@@ -49,6 +49,7 @@ export const KNOWN_SCHEMA_KEYWORDS = new Set([
   'irreflexive',
   'items',
   'jt:alias',
+  'jt:annotatedEdge',
   'jt:computed',
   'jt:config',
   'jt:frozen',

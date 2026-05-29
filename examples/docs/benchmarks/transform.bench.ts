@@ -140,7 +140,10 @@ export function runTransformBench(): BenchResult[] {
   }));
 
   results.push(bench('encode date', 'typebox', () => {
-    Value.Encode(DateSchemaTypebox, decodedValue as DateOut);
+    // interop: TypeBox's Transform Encode expects a statically-decoded DateOut
+    // type, but decodedValue is a plain Date without the Transform brand.
+    // TypeBox has no typed path from a plain Date to its encoded form here.
+    Value.Encode(DateSchemaTypebox, decodedValue as unknown as DateOut);
   }));
 
   results.push(bench('encode date', 'io-ts', () => {

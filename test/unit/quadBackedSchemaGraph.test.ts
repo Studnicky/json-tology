@@ -106,18 +106,12 @@ void describe('QuadBackedSchemaGraph.relationsForSubject', { 'concurrency': true
   void it('returns every outgoing relation for a named subject', () => {
     const classIri = 'urn:test:Person';
     const quads: QuadInterface[] = [
-      {
-        'graph': Terms.defaultGraph(),
-        'object': Terms.iri(OWL_CLASS),
-        'predicate': Terms.iri(RDF_TYPE),
-        'subject': Terms.iri(classIri)
-      },
-      {
-        'graph': Terms.defaultGraph(),
-        'object': Terms.literal('Person', { 'datatype': Terms.iri(XSD_STRING) }),
-        'predicate': Terms.iri(RDFS_LABEL),
-        'subject': Terms.iri(classIri)
-      }
+      Terms.quad(Terms.iri(classIri), Terms.iri(RDF_TYPE), Terms.iri(OWL_CLASS)),
+      Terms.quad(
+        Terms.iri(classIri),
+        Terms.iri(RDFS_LABEL),
+        Terms.literal('Person', { 'datatype': Terms.iri(XSD_STRING) })
+      )
     ];
 
     const graph = SchemaGraph.fromQuads(quads, { 'baseIRI': 'urn:test' });
@@ -138,24 +132,13 @@ void describe('QuadBackedSchemaGraph.relationsForSubject', { 'concurrency': true
     const valueLit = 'circle';
 
     const quads: QuadInterface[] = [
-      {
-        'graph': Terms.defaultGraph(),
-        'object': Terms.iri(OWL_RESTRICTION),
-        'predicate': Terms.iri(RDF_TYPE),
-        'subject': Terms.blank(bnodeId)
-      },
-      {
-        'graph': Terms.defaultGraph(),
-        'object': Terms.iri(propIri),
-        'predicate': Terms.iri(OWL_ON_PROPERTY),
-        'subject': Terms.blank(bnodeId)
-      },
-      {
-        'graph': Terms.defaultGraph(),
-        'object': Terms.literal(valueLit, { 'datatype': Terms.iri(XSD_STRING) }),
-        'predicate': Terms.iri(OWL_HAS_VALUE),
-        'subject': Terms.blank(bnodeId)
-      }
+      Terms.quad(Terms.blank(bnodeId), Terms.iri(RDF_TYPE), Terms.iri(OWL_RESTRICTION)),
+      Terms.quad(Terms.blank(bnodeId), Terms.iri(OWL_ON_PROPERTY), Terms.iri(propIri)),
+      Terms.quad(
+        Terms.blank(bnodeId),
+        Terms.iri(OWL_HAS_VALUE),
+        Terms.literal(valueLit, { 'datatype': Terms.iri(XSD_STRING) })
+      )
     ];
 
     const graph = SchemaGraph.fromQuads(quads, { 'baseIRI': 'urn:test' });
@@ -187,24 +170,22 @@ void describe('QuadBackedSchemaGraph literal-tag preservation', { 'concurrency':
   void it('exposes language tags on rdfs:label relations', () => {
     const subject = 'urn:test:Subject';
     const quads: QuadInterface[] = [
-      {
-        'graph': Terms.defaultGraph(),
-        'object': Terms.literal('Bonjour', {
+      Terms.quad(
+        Terms.iri(subject),
+        Terms.iri(RDFS_LABEL),
+        Terms.literal('Bonjour', {
           'datatype': Terms.iri('http://www.w3.org/1999/02/22-rdf-syntax-ns#langString'),
           'language': 'fr'
-        }),
-        'predicate': Terms.iri(RDFS_LABEL),
-        'subject': Terms.iri(subject)
-      },
-      {
-        'graph': Terms.defaultGraph(),
-        'object': Terms.literal('Hello', {
+        })
+      ),
+      Terms.quad(
+        Terms.iri(subject),
+        Terms.iri(RDFS_LABEL),
+        Terms.literal('Hello', {
           'datatype': Terms.iri('http://www.w3.org/1999/02/22-rdf-syntax-ns#langString'),
           'language': 'en'
-        }),
-        'predicate': Terms.iri(RDFS_LABEL),
-        'subject': Terms.iri(subject)
-      }
+        })
+      )
     ];
 
     const graph = SchemaGraph.fromQuads(quads, { 'baseIRI': 'urn:test' });
@@ -227,12 +208,11 @@ void describe('QuadBackedSchemaGraph literal-tag preservation', { 'concurrency':
   void it('exposes datatype IRIs on typed-literal relations', () => {
     const subject = 'urn:test:Datatype';
     const facetPred = 'http://www.w3.org/2001/XMLSchema#minInclusive';
-    const quads: QuadInterface[] = [{
-      'graph': Terms.defaultGraph(),
-      'object': Terms.literal(5, { 'datatype': Terms.iri(XSD_INTEGER) }),
-      'predicate': Terms.iri(facetPred),
-      'subject': Terms.iri(subject)
-    }];
+    const quads: QuadInterface[] = [Terms.quad(
+      Terms.iri(subject),
+      Terms.iri(facetPred),
+      Terms.literal(5, { 'datatype': Terms.iri(XSD_INTEGER) })
+    )];
 
     const graph = SchemaGraph.fromQuads(quads, { 'baseIRI': 'urn:test' });
     const relations = graph.relationsForSubject(subject);

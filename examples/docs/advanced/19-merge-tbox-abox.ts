@@ -31,5 +31,5 @@ const merged = {
   ]
 };
 
-console.assert(merged['@context'], 'context present');
+console.assert(Boolean(merged['@context']), 'context present');
 console.assert(merged['@graph'].length > 0, 'graph has triples');

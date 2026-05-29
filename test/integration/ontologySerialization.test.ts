@@ -738,9 +738,9 @@ function expandIri(value: string): string {
             'baseIRI': 'https://example.com',
             'schemas': []
           });
-          const result = jt.toSchema('https://example.com/nonexistent');
 
-          assert.equal(result, undefined);
+          // An unregistered $id has no canonical graph, so toSchema yields undefined.
+          assert.equal(jt.registry.graph('https://example.com/nonexistent'), undefined);
         },
         'name': 'toSchema() returns undefined for unregistered $id'
       }
@@ -1617,24 +1617,24 @@ function expandIri(value: string): string {
       },
       'name': 'preserves stable blank node identifiers without double-prefixing',
       'quads': [
-        {
-          'graph': Terms.defaultGraph(),
-          'object': Terms.blank('_:b1'),
-          'predicate': Terms.iri('ex:child'),
-          'subject': Terms.iri('https://example.com/Thing')
-        },
-        {
-          'graph': Terms.defaultGraph(),
-          'object': Terms.iri('ex:Nested'),
-          'predicate': Terms.iri('rdf:type'),
-          'subject': Terms.blank('_:b1')
-        },
-        {
-          'graph': Terms.defaultGraph(),
-          'object': Terms.literal('nested', { 'datatype': Terms.iri('xsd:string') }),
-          'predicate': Terms.iri('ex:value'),
-          'subject': Terms.blank('_:b1')
-        }
+        Terms.quad(
+          Terms.iri('https://example.com/Thing'),
+          Terms.iri('ex:child'),
+          Terms.blank('_:b1'),
+          Terms.defaultGraph()
+        ),
+        Terms.quad(
+          Terms.blank('_:b1'),
+          Terms.iri('rdf:type'),
+          Terms.iri('ex:Nested'),
+          Terms.defaultGraph()
+        ),
+        Terms.quad(
+          Terms.blank('_:b1'),
+          Terms.iri('ex:value'),
+          Terms.literal('nested', { 'datatype': Terms.iri('xsd:string') }),
+          Terms.defaultGraph()
+        )
       ]
     }];
 
@@ -2121,7 +2121,7 @@ function expandIri(value: string): string {
   ): unknown[] {
     const quads = jt.materializer.projectAbox(schema, data, BASE_IRI);
 
-    return jt.fromQuads(schema.$id, quads);
+    return jt.fromQuads(schema, quads);
   }
 
   // ---------------------------------------------------------------------------
@@ -2133,7 +2133,7 @@ function expandIri(value: string): string {
     'input': Record<string, unknown>;
     'name': string;
     'schema': Record<string, unknown> & { readonly '$id': string };
-    'schemas': ReadonlyArray<Record<string, unknown>>;
+    'schemas': ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>;
   }
 
   const simpleRoundTripScenarios: SimpleRoundTripScenario[] = [
@@ -2198,7 +2198,7 @@ function expandIri(value: string): string {
     'input': Record<string, unknown>;
     'name': string;
     'schema': Record<string, unknown> & { readonly '$id': string };
-    'schemas': ReadonlyArray<Record<string, unknown>>;
+    'schemas': ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>;
   }
 
   const nestedRoundTripScenarios: NestedRoundTripScenario[] = [
@@ -2287,7 +2287,7 @@ function expandIri(value: string): string {
     'input': Record<string, unknown>;
     'name': string;
     'schema': Record<string, unknown> & { readonly '$id': string };
-    'schemas': ReadonlyArray<Record<string, unknown>>;
+    'schemas': ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>;
     'useMaterialize'?: boolean;
   }
 
@@ -2392,22 +2392,21 @@ function expandIri(value: string): string {
   interface MultiEnumScenario {
     'check': (jt: JsonTology) => void;
     'name': string;
-    'schemas': ReadonlyArray<Record<string, unknown>>;
+    'schemas': ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>;
   }
 
   const multiEnumScenarios: MultiEnumScenario[] = [
     {
       'check': (jt) => {
-        const schemaRef = SimpleSchema as unknown as Record<string, unknown> & { '$id': string };
-        const quads1 = jt.materializer.projectAbox(schemaRef, { 'label': 'first' }, BASE_IRI);
-        const quads2 = jt.materializer.projectAbox(schemaRef, { 'label': 'second' }, BASE_IRI);
-        const quads3 = jt.materializer.projectAbox(schemaRef, { 'label': 'third' }, BASE_IRI);
+        const quads1 = jt.materializer.projectAbox(SimpleSchema, { 'label': 'first' }, BASE_IRI);
+        const quads2 = jt.materializer.projectAbox(SimpleSchema, { 'label': 'second' }, BASE_IRI);
+        const quads3 = jt.materializer.projectAbox(SimpleSchema, { 'label': 'third' }, BASE_IRI);
         const allQuads = [
           ...quads1,
           ...quads2,
           ...quads3
         ];
-        const results = jt.fromQuads(SimpleSchema.$id, allQuads);
+        const results = jt.fromQuads(SimpleSchema, allQuads);
 
         assert.equal(results.length, 3, 'multi-instance — result count');
         const labels = (results as Array<Record<string, unknown>>)

@@ -207,7 +207,7 @@ import { Logger } from '../utils/Logger.js';
     'valid': boolean }
 
   function assertValidationScenarios(
-    registry: JsonTology,
+    registry: JsonTology<Record<string, unknown>>,
     schemaId: string,
     scenarios: ValidationScenario[]
   ): void {
@@ -697,7 +697,7 @@ import { Logger } from '../utils/Logger.js';
 
       // Build 12 separate schemas, each referencing the next via $ref
       // Level 0 is the leaf, levels 1..11 wrap it
-      const schemas: Array<Record<string, unknown>> = [];
+      const schemas: Array<Record<string, unknown> & { readonly '$id': string }> = [];
 
       schemas.push({
         '$id': `${baseUrl}/Level0`,
@@ -1203,7 +1203,7 @@ import { Logger } from '../utils/Logger.js';
         'enableStrictGraph': false
       });
 
-      registry.set(WithDefaultSchema as unknown as Record<string, unknown>);
+      registry.set(WithDefaultSchema);
 
       const result = registry.instantiate(WithDefaultSchema.$id, { 'name': 'Alice' }) as Record<string, unknown>;
 
@@ -1217,7 +1217,7 @@ import { Logger } from '../utils/Logger.js';
         'enableStrictGraph': false
       });
 
-      registry.set(WithDefaultSchema as unknown as Record<string, unknown>);
+      registry.set(WithDefaultSchema);
 
       const result = registry.instantiate(WithDefaultSchema.$id, { 'name': 'Alice' }) as Record<string, unknown>;
 
@@ -1230,7 +1230,7 @@ import { Logger } from '../utils/Logger.js';
         'enableStrictGraph': false
       });
 
-      registry.set(WithDefaultSchema as unknown as Record<string, unknown>);
+      registry.set(WithDefaultSchema);
 
       const result = registry.instantiate(
         WithDefaultSchema.$id,
@@ -1248,7 +1248,7 @@ import { Logger } from '../utils/Logger.js';
         'enableStrictGraph': false
       });
 
-      registry.set(WithDefaultSchema as unknown as Record<string, unknown>);
+      registry.set(WithDefaultSchema);
 
       const result = registry.instantiate(
         WithDefaultSchema.$id,
@@ -1265,7 +1265,7 @@ import { Logger } from '../utils/Logger.js';
         'enableStrictGraph': false
       });
 
-      registry.set(WithDefaultSchema as unknown as Record<string, unknown>);
+      registry.set(WithDefaultSchema);
 
       registry.instantiate(WithDefaultSchema.$id, { 'name': 'Alice' }, { 'enableDefaults': false });
 
@@ -1338,7 +1338,7 @@ import { Logger } from '../utils/Logger.js';
         }
       });
 
-      registry.set(InlineObjectSchema as unknown as Record<string, unknown>);
+      registry.set(InlineObjectSchema);
       assert.ok(warns.length > 0, 'warning emitted');
       assert.ok(warns.some((msg) => {
         return msg.includes('inline');
@@ -1375,7 +1375,7 @@ import { Logger } from '../utils/Logger.js';
         }
       });
 
-      registry.set(InlineObjectSchema as unknown as Record<string, unknown>);
+      registry.set(InlineObjectSchema);
       const inlineWarns = warns.filter((msg) => {
         return msg.includes('inline');
       });
@@ -1393,7 +1393,7 @@ import { Logger } from '../utils/Logger.js';
 
       assert.throws(
         () => {
-          registry.set(InlineObjectSchema as unknown as Record<string, unknown>);
+          registry.set(InlineObjectSchema);
         },
         (err: unknown) => {
           return err instanceof SchemaError && err.code === 'SCHEMA_STRUCTURE_INVALID';
@@ -1409,7 +1409,7 @@ import { Logger } from '../utils/Logger.js';
 
       assert.throws(
         () => {
-          registry.set(InlinePrimitiveSchema as unknown as Record<string, unknown>);
+          registry.set(InlinePrimitiveSchema);
         },
         (err: unknown) => {
           return err instanceof SchemaError && err.code === 'SCHEMA_STRUCTURE_INVALID';
@@ -1424,7 +1424,7 @@ import { Logger } from '../utils/Logger.js';
       });
 
       assert.doesNotThrow(() => {
-        registry.set(CleanSchema as unknown as Record<string, unknown>);
+        registry.set(CleanSchema);
       });
     });
 
@@ -1436,10 +1436,10 @@ import { Logger } from '../utils/Logger.js';
       });
 
       assert.throws(() => {
-        strictRegistry.set(InlineObjectSchema as unknown as Record<string, unknown>);
+        strictRegistry.set(InlineObjectSchema);
       });
       assert.throws(() => {
-        strictRegistry.set(InlinePrimitiveSchema as unknown as Record<string, unknown>);
+        strictRegistry.set(InlinePrimitiveSchema);
       });
     });
 
@@ -1452,7 +1452,7 @@ import { Logger } from '../utils/Logger.js';
         'type': 'object'
       } as const;
 
-      const ChildSchema = Compose.extend(ParentSchema, { 'role': { 'type': 'string' } } as const, 'urn:test:StrictChild') as unknown as Record<string, unknown>;
+      const ChildSchema = Compose.extend(ParentSchema, { 'role': { 'type': 'string' } } as const, 'urn:test:StrictChild');
 
       const registry = JsonTology.create({
         'baseIRI': 'urn:test:',
@@ -1460,7 +1460,7 @@ import { Logger } from '../utils/Logger.js';
       });
 
       assert.doesNotThrow(() => {
-        registry.set(ParentSchema as unknown as Record<string, unknown>);
+        registry.set(ParentSchema);
         registry.set(ChildSchema);
       });
     });

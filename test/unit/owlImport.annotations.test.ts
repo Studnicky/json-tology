@@ -87,33 +87,30 @@ const XSD_STRING = 'http://www.w3.org/2001/XMLSchema#string';
 const XSD_BOOLEAN = 'http://www.w3.org/2001/XMLSchema#boolean';
 
 function makeLiteralQuad(subject: string, predicate: string, value: unknown, lang = ''): QuadInterface {
-  return {
-    'graph': Terms.defaultGraph(),
-    'object': Terms.literal(value, {
+  return Terms.quad(
+    Terms.iri(subject),
+    Terms.iri(predicate),
+    Terms.literal(value, {
       'datatype': Terms.iri(XSD_STRING),
       'language': lang
-    }),
-    'predicate': Terms.iri(predicate),
-    'subject': Terms.iri(subject)
-  };
+    })
+  );
 }
 
 function makeBooleanLiteralQuad(subject: string, predicate: string, value: boolean): QuadInterface {
-  return {
-    'graph': Terms.defaultGraph(),
-    'object': Terms.literal(value, { 'datatype': Terms.iri(XSD_BOOLEAN) }),
-    'predicate': Terms.iri(predicate),
-    'subject': Terms.iri(subject)
-  };
+  return Terms.quad(
+    Terms.iri(subject),
+    Terms.iri(predicate),
+    Terms.literal(value, { 'datatype': Terms.iri(XSD_BOOLEAN) })
+  );
 }
 
 function makeIriQuad(subject: string, predicate: string, objectIri: string): QuadInterface {
-  return {
-    'graph': Terms.defaultGraph(),
-    'object': Terms.iri(objectIri),
-    'predicate': Terms.iri(predicate),
-    'subject': Terms.iri(subject)
-  };
+  return Terms.quad(
+    Terms.iri(subject),
+    Terms.iri(predicate),
+    Terms.iri(objectIri)
+  );
 }
 
 // ---------------------------------------------------------------------------

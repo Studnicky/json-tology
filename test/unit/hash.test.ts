@@ -333,8 +333,10 @@ void describe('Hash.value()', { 'concurrency': true }, () => {
   }
 
   void it('unhappy: throws on undefined (not JSON-serializable)', () => {
+    const notJsonSerializable: unknown = undefined;
+
     assert.throws(() => {
-      (Hash.value)();
+      Hash.value(notJsonSerializable);
     });
   });
 });

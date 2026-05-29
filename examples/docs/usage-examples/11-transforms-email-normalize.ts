@@ -32,7 +32,7 @@ const NormalizedEmailSchema = {
 
 jt.set(NormalizedEmailSchema);
 
-Transform.create<typeof NormalizedEmailSchema, string>(NormalizedEmailSchema, {
+const NormalizedEmailTransform = Transform.create<typeof NormalizedEmailSchema, string>(NormalizedEmailSchema, {
   'decode': (raw) => {
     return raw.trim().toLowerCase();
   },
@@ -42,10 +42,10 @@ Transform.create<typeof NormalizedEmailSchema, string>(NormalizedEmailSchema, {
 });
 
 const wire = `  ${aboxFixtures.customer.email.toUpperCase()}  `;
-const decoded = jt.instantiate(NormalizedEmailSchema, wire);
+const decoded = jt.instantiate(NormalizedEmailTransform, wire);
 
 console.assert(decoded === aboxFixtures.customer.email);
 
-const reEncoded = jt.encode(NormalizedEmailSchema, aboxFixtures.customer.email);
+const reEncoded = jt.encode(NormalizedEmailTransform, aboxFixtures.customer.email);
 
 console.assert(reEncoded === aboxFixtures.customer.email);

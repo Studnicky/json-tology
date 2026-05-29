@@ -210,13 +210,13 @@ void describe('toQuads — iriFor function ctx + registry-level config — Good/
       return entry.depth === 0;
     });
 
-    assert.notEqual(root, undefined, 'root call has depth 0');
+    assert.ok(root !== undefined, 'root call has depth 0');
     assert.equal(root.path, '');
     const lead = recorded.find((entry) => {
       return entry.path === '/lead';
     });
 
-    assert.notEqual(lead, undefined, 'lead path observed');
+    assert.ok(lead !== undefined, 'lead path observed');
     assert.equal(lead.depth, 1, 'lead depth is 1');
 
     // memoization: 4 distinct object subjects → 4 calls

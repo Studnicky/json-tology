@@ -23,8 +23,8 @@ const customerData = {
 // Project to quads — toQuads returns QuadInterface[] directly
 const abox = bookstoreEntities.toQuads(CustomerSchema, customerData);
 
-// Lift back to typed objects
-const customers = bookstoreEntities.fromQuads(CustomerSchema, abox);
+// Lift back to typed objects — use the string key form for full type inference
+const customers = bookstoreEntities.fromQuads(CustomerSchema.$id, abox);
 // customers: Customer[] — each element validated through coerce
 
 console.assert(Array.isArray(customers), 'customers is array');

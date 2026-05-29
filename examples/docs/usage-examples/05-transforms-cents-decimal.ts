@@ -24,7 +24,7 @@ const PriceCentsSchema = Compose.equivalent(AmountSchema, { '$id': 'https://book
 
 jt.set(PriceCentsSchema);
 
-Transform.create<typeof PriceCentsSchema, number>(PriceCentsSchema, {
+const PriceCentsTransform = Transform.create<typeof PriceCentsSchema, number>(PriceCentsSchema, {
   'decode': (cents) => {
     return (cents as number) / 100;
   },
@@ -34,10 +34,10 @@ Transform.create<typeof PriceCentsSchema, number>(PriceCentsSchema, {
 });
 
 const wireCents = 1499;
-const decoded = jt.instantiate(PriceCentsSchema, wireCents);
+const decoded = jt.instantiate(PriceCentsTransform, wireCents);
 
 console.assert(decoded === 14.99);
 
-const reEncoded = jt.encode(PriceCentsSchema, decoded as number);
+const reEncoded = jt.encode(PriceCentsTransform, decoded);
 
 console.assert(reEncoded === wireCents);

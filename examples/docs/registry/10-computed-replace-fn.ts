@@ -11,15 +11,10 @@ import {
   aboxFixtures, bookstoreEntities, OrderSchema
 } from '../bookstore/index.js';
 
-interface OrderWithTotal {
-  'derivedTotal': number;
-  'items': ReadonlyArray<{ 'quantity': number;
-    'unitPrice': { 'amount': number } }>;
-}
-
-// Register standard totaliser.
-bookstoreEntities.addComputed<OrderWithTotal>(
-  OrderSchema,
+// Register standard totaliser, then replace it with a discounted one. Each
+// addComputed returns a registry whose `Order` type carries `derivedTotal`.
+const withTotal = bookstoreEntities.addComputed(
+  OrderSchema.$id,
   'derivedTotal',
   (order) => {
     return order.items.reduce((sum, line) => {
@@ -28,26 +23,20 @@ bookstoreEntities.addComputed<OrderWithTotal>(
   }
 );
 
-// Remove the existing totaliser.
-bookstoreEntities.removeComputed(OrderSchema, 'derivedTotal');
+// Remove the existing totaliser, then register a discounted one (10% off).
+withTotal.removeComputed(OrderSchema.$id, 'derivedTotal');
 
-// Register a discounted totaliser (10% off for gold-tier customers).
-bookstoreEntities.addComputed<OrderWithTotal>(
-  OrderSchema,
+const withDiscounted = withTotal.addComputed(
+  OrderSchema.$id,
   'derivedTotal',
   (order) => {
-    const raw = order.items.reduce(
-      (sum, line) => {
-        return sum + (line.unitPrice.amount * line.quantity);
-      },
-      0
-    );
-
-    return raw * 0.9;
+    return order.items.reduce((sum, line) => {
+      return sum + (line.unitPrice.amount * line.quantity);
+    }, 0) * 0.9;
   }
 );
 
-const order = bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order);
+const order = withDiscounted.instantiate(OrderSchema.$id, aboxFixtures.order);
 const rawTotal = aboxFixtures.order.items.reduce(
   (sum, line) => {
     return sum + (line.unitPrice.amount * line.quantity);
@@ -57,7 +46,7 @@ const rawTotal = aboxFixtures.order.items.reduce(
 
 const expected = rawTotal * 0.9;
 
-console.assert(Math.abs((order as { 'derivedTotal': number }).derivedTotal - expected) < 0.005);
+console.assert(Math.abs(order.derivedTotal - expected) < 0.005);
 
 // Cleanup.
-bookstoreEntities.removeComputed(OrderSchema, 'derivedTotal');
+withDiscounted.removeComputed(OrderSchema.$id, 'derivedTotal');

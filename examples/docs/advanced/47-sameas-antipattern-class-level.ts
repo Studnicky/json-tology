@@ -21,5 +21,9 @@ bookstoreEntities.sameAs(
 // RIGHT — use Compose.equivalent for class-level identity.
 const CatalogItemSchema = Compose.equivalent(BookSchema, { '$id': 'https://bookstore.example/CatalogItem' });
 
-console.assert(CatalogItemSchema.$id === 'https://bookstore.example/CatalogItem', 'class alias defined');
-console.assert(CatalogItemSchema.$ref === BookSchema.$id, 'thin $ref alias of Book');
+// Widen to string to avoid no-unnecessary-condition on literal-typed $id/$ref.
+const catalogId: string = CatalogItemSchema.$id;
+const catalogRef: string | undefined = CatalogItemSchema.$ref;
+
+console.assert(catalogId === 'https://bookstore.example/CatalogItem', 'class alias defined');
+console.assert(catalogRef === BookSchema.$id, 'thin $ref alias of Book');

@@ -14,6 +14,7 @@
  * not bare strings. Use `.value` to extract the IRI string.
  */
 
+import type { Quad } from '@rdfjs/types';
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
@@ -88,6 +89,26 @@ function expandCurieIfNeeded(value: string, curie: CurieInterface): string {
 // ---------------------------------------------------------------------------
 
 export class QuadFactory {
+  /**
+   * Construct an annotation quad whose subject is an RDF 1.2 triple term.
+   *
+   * Emits `<< s p o >> annotationPredicate annotationValue` stamped with the
+   * supplied `graph`. The inner triple term is built via {@link QuadFactory.tripleTerm}.
+   */
+  static annotationQuad(
+    tripleTerm: Quad,
+    annotationPredicate: string,
+    annotationValue: QuadObjectType,
+    options?: QuadFactoryQuadOptsInterface
+  ): QuadInterface {
+    const {
+      curie, graph
+    } = options ?? {};
+    const expandedPredicate = curie ? expandCurieIfNeeded(annotationPredicate, curie) : annotationPredicate;
+
+    return Terms.quad(tripleTerm, Terms.iri(expandedPredicate), annotationValue, graph);
+  }
+
   static bnode(id: string): QuadObjectType {
     return Terms.blank(id);
   }
@@ -275,5 +296,32 @@ export class QuadFactory {
    */
   static resetBnodeCounter(): void {
     bnodeCounter = 0;
+  }
+
+  /**
+   * Build an RDF 1.2 triple term (quoted triple) from string subject/predicate
+   * plus an already-built object term. The returned `Quad` carries
+   * `termType: 'Quad'` and is intended for use as the subject of an annotation
+   * quad (see {@link QuadFactory.annotationQuad}).
+   *
+   * A triple term is a value with no graph membership — its `graph` is the
+   * default-graph singleton. Graph membership is carried by the outer
+   * annotation quad.
+   */
+  static tripleTerm(
+    subject: string,
+    predicate: string,
+    object: QuadObjectType,
+    options?: QuadFactoryQuadOptsInterface
+  ): Quad {
+    const { curie } = options ?? {};
+    const expandedPredicate = curie ? expandCurieIfNeeded(predicate, curie) : predicate;
+    const expandedSubject = curie ? expandCurieIfNeeded(subject, curie) : subject;
+
+    const subjectTerm = expandedSubject.startsWith('_:')
+      ? Terms.blank(expandedSubject)
+      : Terms.iri(expandedSubject);
+
+    return Terms.tripleTerm(subjectTerm, Terms.iri(expandedPredicate), object);
   }
 }

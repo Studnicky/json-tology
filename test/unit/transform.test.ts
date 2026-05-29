@@ -42,6 +42,21 @@ const UserSchema = {
   'type': 'object'
 } as const;
 
+const IdentitySchema = Transform.create(
+  {
+    '$id': 'https://myapp.io/Identity',
+    'type': 'string'
+  } as const,
+  {
+    'decode': (raw: string) => {
+      return raw;
+    },
+    'encode': (val: string) => {
+      return val;
+    }
+  }
+);
+
 // ---------------------------------------------------------------------------
 // Transform.create()
 // ---------------------------------------------------------------------------
@@ -67,10 +82,10 @@ void describe('Transform.create()', () => {
     },
     {
       'check': (jt) => {
-        const result = jt.instantiate(TransformedDateSchema.$id, '2024-06-01T00:00:00.000Z');
+        const result = jt.instantiate(TransformedDateSchema, '2024-06-01T00:00:00.000Z');
 
         assert.ok(result instanceof Date);
-        assert.equal((result as Date).getFullYear(), 2024);
+        assert.equal(result.getFullYear(), 2024);
       },
       'name': 'happy: coerce() applies decode to produce Date',
       'setup': () => {
@@ -84,7 +99,7 @@ void describe('Transform.create()', () => {
       'check': (jt) => {
         assert.throws(
           () => {
-            return jt.instantiate(TransformedDateSchema.$id, 'not-a-date');
+            return jt.instantiate(TransformedDateSchema, 'not-a-date');
           },
           (err: unknown) => {
             return (err as Error).constructor.name === 'InstantiationError';
@@ -139,27 +154,12 @@ void describe('Transform.create()', () => {
     },
     {
       'check': (jt) => {
-        const parsed = jt.instantiate('https://myapp.io/Identity', 'unchanged');
+        const parsed = jt.instantiate(IdentitySchema, 'unchanged');
 
         assert.equal(parsed, 'unchanged');
       },
       'name': 'edge: identity transform decode/encode round-trips unchanged',
       'setup': () => {
-        const IdentitySchema = Transform.create(
-          {
-            '$id': 'https://myapp.io/Identity',
-            'type': 'string'
-          } as const,
-          {
-            'decode': (raw: string) => {
-              return raw;
-            },
-            'encode': (val: string) => {
-              return val;
-            }
-          }
-        );
-
         return JsonTology.create({
           'baseIRI': 'https://myapp.io',
           'schemas': [IdentitySchema] as const
@@ -270,10 +270,10 @@ void describe('Transform contract alignment', () => {
   }> = [
     {
       'check': (jt) => {
-        const parsed = jt.instantiate(TransformedDateSchema.$id, '2024-06-01T00:00:00.000Z');
+        const parsed = jt.instantiate(TransformedDateSchema, '2024-06-01T00:00:00.000Z');
 
         assert.ok(parsed instanceof Date);
-        assert.equal((parsed as Date).toISOString(), '2024-06-01T00:00:00.000Z');
+        assert.equal(parsed.toISOString(), '2024-06-01T00:00:00.000Z');
       },
       'name': 'happy: coerce() returns decoded output'
     },

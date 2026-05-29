@@ -23,7 +23,7 @@ const PublishedAtSchema = Compose.equivalent(PublicationDateSchema, { '$id': 'ht
 
 jt.set(PublishedAtSchema);
 
-Transform.create<typeof PublishedAtSchema, Date>(PublishedAtSchema, {
+const PublishedAtTransform = Transform.create<typeof PublishedAtSchema, Date>(PublishedAtSchema, {
   'decode': (wire) => {
     return new Date(`${wire as string}T00:00:00Z`);
   },
@@ -33,7 +33,7 @@ Transform.create<typeof PublishedAtSchema, Date>(PublishedAtSchema, {
 });
 
 const wire = aboxFixtures.rareBook.publishedOn;
-const decoded = jt.instantiate(PublishedAtSchema, wire);
+const decoded = jt.instantiate(PublishedAtTransform, wire);
 
 if (!(decoded instanceof Date)) {
   throw new TypeError('PublishedAt transform did not return a Date');
@@ -43,6 +43,6 @@ const date: Date = decoded;
 
 console.assert(date.getUTCFullYear() === 1979);
 
-const reEncoded = jt.encode(PublishedAtSchema, date);
+const reEncoded = jt.encode(PublishedAtTransform, date);
 
 console.assert(reEncoded === wire);

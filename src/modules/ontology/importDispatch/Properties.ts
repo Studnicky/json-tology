@@ -45,6 +45,10 @@ interface JsonSchemaPrimitive {
 }
 
 const XSD_TO_JSON_SCHEMA: ReadonlyMap<string, JsonSchemaPrimitive> = new Map([
+  [
+    'http://www.w3.org/1999/02/22-rdf-syntax-ns#langString',
+    { 'type': 'string' }
+  ],
   // Full IRIs
   [
     'http://www.w3.org/2001/XMLSchema#anyURI',
@@ -101,6 +105,10 @@ const XSD_TO_JSON_SCHEMA: ReadonlyMap<string, JsonSchemaPrimitive> = new Map([
   ],
   [
     'http://www.w3.org/2001/XMLSchema#string',
+    { 'type': 'string' }
+  ],
+  [
+    'rdf:langString',
     { 'type': 'string' }
   ],
   // Prefixed (curie) forms

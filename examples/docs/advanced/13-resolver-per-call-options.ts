@@ -20,7 +20,7 @@ console.assert(!strictOpts.enableDefaults, 'defaults disabled');
 console.assert(strictOpts.enableValidation, 'validation enabled');
 console.assert(!strictOpts.enableThrow, 'throw disabled');
 
-// undefined does not erase base values
-const sameAsDefault = Resolver.merge(defaultOpts, { 'enableDefaults': undefined });
+// undefined does not erase base values — pass an empty partial to leave enableDefaults intact
+const sameAsDefault = Resolver.merge(defaultOpts, {});
 
 console.assert(sameAsDefault.enableDefaults, 'base value used when override is undefined');

@@ -28,7 +28,14 @@ class OrderWithToJson {
   declare public shippingAddress: OrderWire['shippingAddress'];
   declare public total: OrderWire['total'];
 
-  public toJSON(): OrderWire {
+  public toJSON(): {
+    readonly 'customerId': string;
+    readonly 'id': string;
+    readonly 'items': OrderWire['items'];
+    readonly 'placedAt': OrderWire['placedAt'];
+    readonly 'shippingAddress': OrderWire['shippingAddress'];
+    readonly 'total': OrderWire['total'];
+  } {
     return {
       'customerId': this.customerId,
       'id': this.id,
@@ -47,7 +54,7 @@ const ToJsonOrderSchema = Compose.equivalent(
 
 jt.set(ToJsonOrderSchema);
 
-Transform.create<typeof ToJsonOrderSchema, OrderWithToJson>(ToJsonOrderSchema, {
+const ToJsonOrderTransform = Transform.create<typeof ToJsonOrderSchema, OrderWithToJson>(ToJsonOrderSchema, {
   'decode': (plain) => {
     return Object.assign(Reflect.construct(OrderWithToJson, []), plain);
   },
@@ -57,11 +64,11 @@ Transform.create<typeof ToJsonOrderSchema, OrderWithToJson>(ToJsonOrderSchema, {
 });
 
 const hydrated = jt.instantiate(
-  ToJsonOrderSchema.$id,
+  ToJsonOrderTransform,
   aboxFixtures.order
-) as OrderWithToJson;
+);
 
-const wire = bookstoreEntities.encode(ToJsonOrderSchema, hydrated) as Record<string, unknown>;
+const wire = bookstoreEntities.encode(ToJsonOrderTransform, hydrated) as Record<string, unknown>;
 
 console.assert(wire.id === aboxFixtures.order.id);
 // JSON.stringify will use the same toJSON shape.

@@ -33,11 +33,10 @@ const CustomerWithRequiredTierSchema = Compose.intersection(
   'https://bookstore.example/CustomerWithRequiredTier'
 );
 
-jt.set(WithRequiredTierSchema);
-jt.set(CustomerWithRequiredTierSchema);
+const jt2 = jt.set(WithRequiredTierSchema).set(CustomerWithRequiredTierSchema);
 
 // Without tier, validation fails — the intersection requires it.
-const missingTier = jt.validate(CustomerWithRequiredTierSchema.$id, {
+const missingTier = jt2.validate(CustomerWithRequiredTierSchema.$id, {
   'addresses': [],
   'email': 'bastian.bux@bookstore.example',
   'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',

@@ -13,10 +13,12 @@ console.assert(
 
 // Guard pattern:
 function validateIfPresent(schemaId: string, data: unknown) {
-  if (!bookstoreEntities.registry.has(schemaId)) {
+  const schema = bookstoreEntities.registry.get(schemaId);
+
+  if (!schema) {
     return `Schema '${schemaId}' not registered`;
   }
-  const errs = bookstoreEntities.validate(schemaId, data);
+  const errs = bookstoreEntities.validate(schema as Record<string, unknown> & { '$id': string }, data);
 
   return errs.ok ? null : `Validation failed with ${errs.items.length} errors`;
 }

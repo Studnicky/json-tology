@@ -7,12 +7,10 @@
  * 1979 Thienemann Neverending Story first edition is used as the fixture.
  */
 
-import type { InferType } from '../../../src/types/index.js';
+import type { Review } from '../bookstore/index.js';
 import {
   aboxFixtures, bookstoreEntities, ReviewSchema
 } from '../bookstore/index.js';
-
-type Review = InferType<typeof ReviewSchema>;
 
 const INVARIANT_NAME = 'promotionalBodyLength';
 

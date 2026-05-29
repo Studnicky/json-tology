@@ -7,6 +7,7 @@
  */
 
 import type {
+  AnnotatedEdgeSchemaInterface,
   ComplementOfSchemaInterface,
   DiscriminatedUnionSchemaInterface,
   DisjointWithSchemaInterface,
@@ -26,7 +27,7 @@ import type {
   ValidateSubClassOfBodyType
 } from '../../types/Compose.js';
 import type {
-  RestrictionDescriptorType, RestrictionRefType
+  RestrictionDescriptorType, RestrictionKindType, RestrictionRefType, TypedRestrictionRefType
 } from '../../types/Restriction.js';
 import type { ValidateSchemaType } from '../../types/SchemaValidation.js';
 import {
@@ -40,11 +41,15 @@ import {
   RESTRICTIONS_KEY
 } from '../../constants/COMPOSITION.js';
 
-function makeRestriction(
-  kind: RestrictionDescriptorType['kind'],
-  onProperty: string,
-  value: boolean | number | string
-): RestrictionRefType {
+function makeRestriction<
+  TKind extends RestrictionKindType,
+  TProp extends string,
+  TValue extends boolean | number | string
+>(
+  kind: TKind,
+  onProperty: TProp,
+  value: TValue
+): TypedRestrictionRefType<TKind, TProp, TValue> {
   return {
     [RESTRICTION_TAG]: {
       kind,
@@ -62,8 +67,52 @@ export class Compose {
    * OWL TBox emits `_:b{n} rdf:type owl:Restriction; owl:onProperty <propIRI>;
    * owl:allValuesFrom <rangeClassIRI>` and links the class via `rdfs:subClassOf`.
    */
-  public static allValuesFrom(propIRI: string, rangeClassIRI: string): RestrictionRefType {
+  public static allValuesFrom<TProp extends string, TRange extends string>(
+    propIRI: TProp,
+    rangeClassIRI: TRange
+  ): TypedRestrictionRefType<'allValuesFrom', TProp, TRange> {
     return makeRestriction('allValuesFrom', propIRI, rangeClassIRI);
+  }
+
+  /**
+   * Declare a property as an annotated edge (RDF 1.2 triple-term pattern).
+   *
+   * An annotated edge carries a base triple `s predicate o` plus one annotation
+   * quad per entry in `annotations`. Each annotation quad has the base triple as
+   * its subject (a Quad-typed term / `<< s p o >>`), an annotation predicate,
+   * and an annotation value. All quads share the same named graph.
+   *
+   * ABox emission requires a `graphIRI` — supplying none raises an error.
+   *
+   * `predicate` and every `$ref` in `annotations` are preserved as literal types
+   * so `$ref` resolution and graph keying operate on the concrete IRI.
+   *
+   * @example
+   * const EvolvesFrom = Compose.annotatedEdge({
+   *   predicate: 'pkm:directEvolvesFrom',
+   *   targetRef: PokemonSchema.$id,
+   *   annotations: {
+   *     evolutionTimeOfDay: { $ref: TimeOfDaySchema.$id },
+   *     evolutionMinLevel:  { $ref: LevelSchema.$id },
+   *   },
+   * });
+   */
+  public static annotatedEdge<
+    const TPredicate extends string,
+    const TTargetRef extends string,
+    const TAnnotations extends Record<string, { readonly '$ref': string }>
+  >(options: {
+    readonly 'annotations': TAnnotations;
+    readonly 'predicate': TPredicate;
+    readonly 'targetRef': TTargetRef;
+  }): AnnotatedEdgeSchemaInterface<TPredicate, TTargetRef, TAnnotations> {
+    return {
+      'jt:annotatedEdge': {
+        'annotations': options.annotations,
+        'predicate': options.predicate,
+        'targetRef': options.targetRef
+      }
+    };
   }
 
   /**
@@ -73,7 +122,10 @@ export class Compose {
    * OWL TBox emits `_:b{n} rdf:type owl:Restriction; owl:onProperty <propIRI>;
    * owl:cardinality "n"^^xsd:nonNegativeInteger`.
    */
-  public static cardinality(propIRI: string, n: number): RestrictionRefType {
+  public static cardinality<TProp extends string, TN extends number>(
+    propIRI: TProp,
+    n: TN
+  ): TypedRestrictionRefType<'cardinality', TProp, TN> {
     return makeRestriction('cardinality', propIRI, n);
   }
 
@@ -200,7 +252,7 @@ export class Compose {
    */
   public static equivalent<
     TSource extends { readonly '$id': string },
-    TOptions extends {
+    const TOptions extends {
       readonly '$id': string;
       readonly 'description'?: string;
       readonly 'examples'?: readonly unknown[];
@@ -210,8 +262,8 @@ export class Compose {
     source: TSource,
     options: TOptions & ValidateEquivalentOptionsType<TSource, TOptions>
   ): {
-    readonly '$id': string;
-    readonly '$ref': string;
+    readonly '$id': TOptions['$id'];
+    readonly '$ref': TSource['$id'];
     readonly 'description'?: string;
     readonly 'examples'?: readonly unknown[];
     readonly 'title'?: string;
@@ -232,8 +284,8 @@ export class Compose {
     }
 
     return result as {
-      readonly '$id': string;
-      readonly '$ref': string;
+      readonly '$id': TOptions['$id'];
+      readonly '$ref': TSource['$id'];
       readonly 'description'?: string;
       readonly 'examples'?: readonly unknown[];
       readonly 'title'?: string;
@@ -381,7 +433,10 @@ export class Compose {
    * owl:hasValue <literal>`. Strings, numbers, and booleans are emitted as
    * typed literals.
    */
-  public static hasValue(propIRI: string, value: boolean | number | string): RestrictionRefType {
+  public static hasValue<TProp extends string, TValue extends boolean | number | string>(
+    propIRI: TProp,
+    value: TValue
+  ): TypedRestrictionRefType<'hasValue', TProp, TValue> {
     return makeRestriction('hasValue', propIRI, value);
   }
 
@@ -414,14 +469,20 @@ export class Compose {
   /**
    * Restrict a property to at most `n` values (`owl:maxCardinality`).
    */
-  public static maxCardinality(propIRI: string, n: number): RestrictionRefType {
+  public static maxCardinality<TProp extends string, TN extends number>(
+    propIRI: TProp,
+    n: TN
+  ): TypedRestrictionRefType<'maxCardinality', TProp, TN> {
     return makeRestriction('maxCardinality', propIRI, n);
   }
 
   /**
    * Restrict a property to at least `n` values (`owl:minCardinality`).
    */
-  public static minCardinality(propIRI: string, n: number): RestrictionRefType {
+  public static minCardinality<TProp extends string, TN extends number>(
+    propIRI: TProp,
+    n: TN
+  ): TypedRestrictionRefType<'minCardinality', TProp, TN> {
     return makeRestriction('minCardinality', propIRI, n);
   }
 
@@ -599,7 +660,10 @@ export class Compose {
    * OWL TBox emits `_:b{n} rdf:type owl:Restriction; owl:onProperty <propIRI>;
    * owl:someValuesFrom <rangeClassIRI>`.
    */
-  public static someValuesFrom(propIRI: string, rangeClassIRI: string): RestrictionRefType {
+  public static someValuesFrom<TProp extends string, TRange extends string>(
+    propIRI: TProp,
+    rangeClassIRI: TRange
+  ): TypedRestrictionRefType<'someValuesFrom', TProp, TRange> {
     return makeRestriction('someValuesFrom', propIRI, rangeClassIRI);
   }
 
@@ -631,8 +695,29 @@ export class Compose {
    * );
    */
   public static subClassOf<
+    TKind extends RestrictionKindType,
+    TProp extends string,
+    TValue extends boolean | number | string,
     TBody extends Record<string, unknown> & { readonly '$id': string }
-  >(parent: RestrictionRefType, body: ValidateSchemaType<TBody>): TBody;
+  >(
+    parent: TypedRestrictionRefType<TKind, TProp, TValue>,
+    body: ValidateSchemaType<TBody>
+  ): TBody extends { readonly 'jt:restrictions': infer TExisting extends readonly unknown[] }
+    ? Omit<TBody, 'jt:restrictions'> & {
+      readonly 'jt:restrictions': readonly [
+        ...TExisting,
+        { readonly 'kind': TKind;
+          readonly 'onProperty': TProp;
+          readonly 'value': TValue }
+      ];
+    }
+    : TBody & {
+      readonly 'jt:restrictions': readonly [
+        { readonly 'kind': TKind;
+          readonly 'onProperty': TProp;
+          readonly 'value': TValue }
+      ];
+    };
   public static subClassOf<
     TParent extends ReadonlyArray<{ readonly '$id': string }> | { readonly '$id': string },
     TBody extends Record<string, unknown> & { readonly '$id': string }

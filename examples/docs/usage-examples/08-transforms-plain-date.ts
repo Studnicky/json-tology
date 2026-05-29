@@ -62,9 +62,9 @@ const ReleaseDateSchema = Compose.equivalent(
 
 jt.set(ReleaseDateSchema);
 
-Transform.create<typeof ReleaseDateSchema, PlainDate>(ReleaseDateSchema, {
+const ReleaseDateTransform = Transform.create<typeof ReleaseDateSchema, PlainDate>(ReleaseDateSchema, {
   'decode': (wire) => {
-    return PlainDate.from(wire);
+    return PlainDate.from(wire as string);
   },
   'encode': (date) => {
     return date.toString();
@@ -72,7 +72,7 @@ Transform.create<typeof ReleaseDateSchema, PlainDate>(ReleaseDateSchema, {
 });
 
 const wire = aboxFixtures.rareBook.publishedOn;
-const decoded = jt.instantiate(ReleaseDateSchema, wire);
+const decoded = jt.instantiate(ReleaseDateTransform, wire);
 
 if (!(decoded instanceof PlainDate)) {
   throw new TypeError('ReleaseDate transform did not return a PlainDate');
@@ -82,6 +82,6 @@ console.assert(decoded.year === 1979);
 console.assert(decoded.month === 9);
 console.assert(decoded.day === 1);
 
-const reEncoded = jt.encode(ReleaseDateSchema, decoded);
+const reEncoded = jt.encode(ReleaseDateTransform, decoded);
 
 console.assert(reEncoded === wire);

@@ -38,8 +38,7 @@ const orderInvariantErr = tamperedErrs.find((err) => {
 });
 
 console.assert(orderInvariantErr !== undefined);
-console.assert((orderInvariantErr as { 'params': { 'invariant': string } }).params.invariant
-    === 'orderTotalMatchesItems');
+console.assert(orderInvariantErr?.params.invariant === 'orderTotalMatchesItems');
 
 // SignedFirstEdition with two authors — co-author cross-field rule fires.
 const twoAuthorSigned = {
@@ -57,5 +56,4 @@ const signedInvariantErr = signedErrs.find((err) => {
 });
 
 console.assert(signedInvariantErr !== undefined);
-console.assert((signedInvariantErr as { 'params': { 'invariant': string } }).params.invariant
-    === 'signedFirstEditionIsSoloAuthored');
+console.assert(signedInvariantErr?.params.invariant === 'signedFirstEditionIsSoloAuthored');

@@ -9,14 +9,15 @@
  */
 
 import { Loaders } from '../../../src/index.js';
+import type { JsonSchemaType } from '../../../src/types/Schema.js';
 import {
   BookSchema,
   CustomerSchema,
   IsbnSchema
 } from '../bookstore/index.js';
 
-// Build an in-memory Map keyed by $id IRI — Map avoids the index-signature cast
-const memLoader = Loaders.memory(new Map([
+// Build an in-memory Map keyed by $id IRI — explicit type annotation satisfies Loaders.memory
+const memLoader = Loaders.memory(new Map<string, JsonSchemaType>([
   [
     BookSchema.$id,
     BookSchema

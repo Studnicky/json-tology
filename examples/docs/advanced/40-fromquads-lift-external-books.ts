@@ -16,7 +16,8 @@ import {
 const externalQuads = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer);
 
 // fromQuads returns Customer[] — validated, typed, defaults applied.
-const customers = bookstoreEntities.fromQuads(CustomerSchema, externalQuads);
+// Use the string key form for full type inference on the returned array.
+const customers = bookstoreEntities.fromQuads(CustomerSchema.$id, externalQuads);
 
 console.assert(customers.length > 0, 'lifted at least one Customer individual');
 for (const customer of customers) {

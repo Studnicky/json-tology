@@ -10,12 +10,12 @@ import {
 
 type Book = InferType<typeof BookSchema>;
 
-const blank: Book = bookstoreEntities.value.create(BookSchema.$id) as Book;
+const blank: Book = bookstoreEntities.value.create(BookSchema.$id);
 
 // Required fields with no default get zero-values
 console.assert((blank as { 'isbn': string }).isbn === '');
 console.assert((blank as { 'title': string }).title === '');
-console.assert(Array.isArray((blank as { 'authors': string[] }).authors));
+console.assert(Array.isArray((blank as Record<string, unknown>).authors));
 
 // Explicit defaults are preserved
 console.assert((blank as { 'inStock': boolean }).inStock);

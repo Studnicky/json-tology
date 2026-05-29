@@ -26,7 +26,7 @@ const OrderSummarySchema = Compose.omit(
 
 type OrderSummary = InferType<typeof OrderSummarySchema>;
 
-jt.set(OrderSummarySchema);
+const jt2 = jt.set(OrderSummarySchema);
 
 const summary: OrderSummary = {
   'customerId': aboxFixtures.order.customerId,
@@ -36,7 +36,7 @@ const summary: OrderSummary = {
   'total': aboxFixtures.order.total
 };
 
-const result = jt.validate(OrderSummarySchema.$id, summary);
+const result = jt2.validate(OrderSummarySchema.$id, summary);
 
 console.assert(result.ok);
 console.assert(!('items' in summary));

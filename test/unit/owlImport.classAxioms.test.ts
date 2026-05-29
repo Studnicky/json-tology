@@ -50,22 +50,20 @@ const CLASS_C = 'urn:example:C';
 
 /** Produce a minimal type quad: `<subject> rdf:type owl:Class`. */
 function typeQuad(subjectIri: string): QuadInterface {
-  return {
-    'graph': Terms.defaultGraph(),
-    'object': Terms.iri(OWL_CLASS),
-    'predicate': Terms.iri(RDF_TYPE),
-    'subject': Terms.iri(subjectIri)
-  };
+  return Terms.quad(
+    Terms.iri(subjectIri),
+    Terms.iri(RDF_TYPE),
+    Terms.iri(OWL_CLASS)
+  );
 }
 
 /** Produce a quad with a NamedNode object. */
 function namedQuad(subjectIri: string, predicateIri: string, objectIri: string): QuadInterface {
-  return {
-    'graph': Terms.defaultGraph(),
-    'object': Terms.iri(objectIri),
-    'predicate': Terms.iri(predicateIri),
-    'subject': Terms.iri(subjectIri)
-  };
+  return Terms.quad(
+    Terms.iri(subjectIri),
+    Terms.iri(predicateIri),
+    Terms.iri(objectIri)
+  );
 }
 
 /**

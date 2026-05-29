@@ -345,7 +345,9 @@ void describe('OWL round-trip', () => {
     const rtById = new Map<string, Record<string, unknown>>();
 
     for (const schema of result.schemas) {
-      rtById.set(schema.$id, schema as Record<string, unknown>);
+      if (typeof schema.$id === 'string') {
+        rtById.set(schema.$id, schema as Record<string, unknown>);
+      }
     }
 
     const failures: string[] = [];

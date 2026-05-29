@@ -2,10 +2,15 @@
 // Phase-1 mechanical consolidation per .audits/test-consolidation-2026-05.md
 
 import assert from 'node:assert/strict';
+// InferSchemaType derives the instance wire type from a schema; used to type valid
+// instance data fed into toQuads (which infers its data parameter from the schema).
+import type { InferSchemaType } from '../../src/types/index.js';
 import {
   describe, it
 } from 'node:test';
-import { JsonTology } from '../../src/index.js';
+import {
+  JsonTology, MaterializationError
+} from '../../src/index.js';
 // SchemaGraph + projectGraph are graph-projection internals not surfaced via the public API.
 // The cross-reference test below compares raw TBox QuadInterface[] (predicate/termType shape)
 // against ABox quads; OntologyBuilder.jsonLdObject()['@graph'] returns JSON-LD nodes, not the QuadInterface form.
@@ -80,7 +85,7 @@ import {
         'expected': Record<string, unknown>;
         'input': Record<string, unknown>;
         'name': string;
-        'schema': Record<string, unknown>;
+        'schema': Record<string, unknown> & { readonly '$id': string };
       }> = [
         {
           'expected': {
@@ -189,7 +194,7 @@ import {
         'expectedKeys': readonly string[];
         'input': Record<string, unknown>;
         'name': string;
-        'schema': Record<string, unknown>;
+        'schema': Record<string, unknown> & { readonly '$id': string };
       }> = [
         {
           'expectedKeys': [
@@ -253,7 +258,7 @@ import {
       const scenarios: Array<{
         'input': Record<string, unknown>;
         'name': string;
-        'schema': Record<string, unknown>;
+        'schema': Record<string, unknown> & { readonly '$id': string };
       }> = [
         {
           'input': { 'name': 123 },
@@ -652,8 +657,8 @@ import {
 
       void describe('deterministic identity', () => {
         const scenarios: Array<{
-          'data1': Record<string, unknown>;
-          'data2': Record<string, unknown>;
+          'data1': InferSchemaType<typeof ConfigSchema>;
+          'data2': InferSchemaType<typeof ConfigSchema>;
           'expectSame': boolean;
           'name': string;
         }> = [
@@ -726,9 +731,13 @@ import {
           });
 
         for (const aboxType of aboxTypes) {
+          assert.equal(typeof aboxType, 'string');
+          if (typeof aboxType !== 'string') {
+            throw new TypeError('unreachable');
+          }
           assert.ok(
             tboxClasses.has(aboxType),
-            `ABox type ${String(aboxType)} should be declared as owl:Class in TBox`
+            `ABox type ${aboxType} should be declared as owl:Class in TBox`
           );
         }
       });
@@ -1209,10 +1218,10 @@ import {
       const result = tology.materialize(StrictSchema, {
         'extra': 'allowed',
         'name': 'test'
-      });
+      } satisfies Record<string, unknown>) as Record<string, unknown>;
 
       assert.strictEqual(result.name, 'test', 'passAdditionalProperties — name');
-      assert.strictEqual((result as Record<string, unknown>).extra, 'allowed', 'passAdditionalProperties — extra');
+      assert.strictEqual(result.extra, 'allowed', 'passAdditionalProperties — extra');
     });
   });
 }
@@ -1278,15 +1287,16 @@ import {
             'enableStrictGraph': false,
             'schemas': [BaseSchema] as const
           });
-          const data = build();
+          // Cyclic, invalid instance data deliberately fed into toQuads to assert rejection.
+          const data = build() as InferSchemaType<typeof BaseSchema>;
 
           assert.throws(
             () => {
               tology.toQuads(BaseSchema, data);
             },
-            (err: Error) => {
-              assert.equal(err.constructor.name, 'MaterializationError', `${n}: expected MaterializationError`);
-              assert.equal((err as { 'code': string }).code, 'CYCLIC_DATA', `${n}: expected code CYCLIC_DATA`);
+            (err: unknown) => {
+              assert.ok(err instanceof MaterializationError, `${n}: expected MaterializationError`);
+              assert.equal(err.code, 'CYCLIC_DATA', `${n}: expected code CYCLIC_DATA`);
               assert.ok(
                 err.message.toLowerCase().includes('cyclic'),
                 `${n}: message should mention cyclic`

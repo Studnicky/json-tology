@@ -6,11 +6,14 @@
  * a sibling title to the canonical Neverending Story rare-book fixture.
  */
 
+import type { Book } from '../bookstore/index.js';
 import {
   BookSchema, bookstoreEntities
 } from '../bookstore/index.js';
 
 // Materialize with required fields supplied — defaults filled automatically.
+// The partial input carries plain (unbranded) literals — branding happens
+// during materialization — so the result is typed via the registry's Book.
 const book = bookstoreEntities.materialize(BookSchema, {
   'authors': ['Michael Ende'],
   'isbn': '9783522115056',
@@ -20,7 +23,7 @@ const book = bookstoreEntities.materialize(BookSchema, {
   },
   'printStatus': 'inPrint',
   'title': 'Momo'
-});
+}) as Book;
 
 console.assert(book.inStock === true);
 console.assert(book.isbn === '9783522115056');

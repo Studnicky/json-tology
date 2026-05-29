@@ -71,12 +71,26 @@ export type RelationPredicateType
  * - restriction: OWL restriction blank node (onProperty + constraint predicates)
  * - list: RDF list (rdf:first/rdf:rest chain of IRIs or blank nodes)
  * - conditional: material conditional (union of intersections for if/then/else)
+ * - annotatedEdge: RDF 1.2 triple-term — base triple plus one annotation per entry.
+ *   `edgePredicate` is the predicate IRI of the base triple;
+ *   `edgeTarget` is the IRI of the base triple object;
+ *   `edgeAnnotations` maps annotation property names to their predicate IRIs and range IRIs.
  */
 export type RelationStructure
   = | { 'constraint': RelationPredicateType;
     'kind': 'restriction';
     'onProperty': string;
     'value': unknown }
+  | {
+    'edgeAnnotations': ReadonlyArray<{
+      readonly 'annotationPredicate': string;
+      readonly 'propertyName': string;
+      readonly 'rangeRef': string;
+    }>;
+    'edgePredicate': string;
+    'edgeTarget': string;
+    'kind': 'annotatedEdge';
+  }
   | { 'elseRef'?: string
     'ifRef': string;
     'kind': 'conditional';

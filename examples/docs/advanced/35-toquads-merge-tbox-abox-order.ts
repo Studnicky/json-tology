@@ -27,5 +27,5 @@ const merged = {
   ]
 };
 
-console.assert(merged['@context'], 'context present');
+console.assert(Boolean(merged['@context']), 'context present');
 console.assert(merged['@graph'].length > tboxGraph.length, 'ABox extended TBox @graph');

@@ -32,6 +32,12 @@ export type * from './Skolemize.js';
 export type * from './SubjectGroup.js';
 export type * from './ToQuadsOptions.js';
 export type * from './Transform.js';
+// Explicit named re-export so consumer module augmentation
+// (`declare module 'json-tology/types' { interface JsonTologyTypeConfigInterface }`)
+// merges into the canonical declaration. A bare `export type *` star re-export
+// does not create an augmentable named binding, so brand-disable config from
+// consumers would never reach IsEnabledType.
+export type { JsonTologyTypeConfigInterface } from './TypeConfig.js';
 export type * from './TypeConfig.js';
 export type * from './TypeErrors.js';
 export type * from './Validation.js';

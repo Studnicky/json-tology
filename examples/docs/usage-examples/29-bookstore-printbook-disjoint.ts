@@ -32,5 +32,8 @@ const printNode = graphNodes.find((node) => {
 const OWL_DISJOINT_WITH = 'http://www.w3.org/2002/07/owl#disjointWith';
 const disjointWith = printNode?.[OWL_DISJOINT_WITH] as undefined | { readonly '@id': string };
 
-console.assert(disjointWith !== undefined);
+if (disjointWith === undefined) {
+  throw new TypeError('PrintBook node is missing owl:disjointWith');
+}
+
 console.assert(disjointWith['@id'] === 'urn:bookstore:EBook');

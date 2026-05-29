@@ -25,7 +25,7 @@ const BigIdSchema = {
 
 jt.set(BigIdSchema);
 
-Transform.create<typeof BigIdSchema, bigint>(BigIdSchema, {
+const BigIdTransform = Transform.create<typeof BigIdSchema, bigint>(BigIdSchema, {
   'decode': BigInt,
   'encode': (value) => {
     return value.toString();
@@ -33,11 +33,11 @@ Transform.create<typeof BigIdSchema, bigint>(BigIdSchema, {
 });
 
 const wire = '9783522128001';
-const decoded = jt.instantiate(BigIdSchema, wire);
+const decoded = jt.instantiate(BigIdTransform, wire);
 
 console.assert(typeof decoded === 'bigint');
 console.assert(decoded === 9_783_522_128_001n);
 
-const reEncoded = jt.encode(BigIdSchema, decoded);
+const reEncoded = jt.encode(BigIdTransform, decoded);
 
 console.assert(reEncoded === wire);

@@ -265,6 +265,10 @@ const FACET_MAP: ReadonlyMap<string, FacetDescriptor> = new Map([
  */
 const XSD_TO_SCHEMA_TYPE: ReadonlyMap<string, 'integer' | 'number' | 'string'> = new Map([
   [
+    'rdf:langString',
+    'string'
+  ],
+  [
     'xsd:anyURI',
     'string'
   ],
@@ -391,6 +395,10 @@ const XSD_TO_SCHEMA_TYPE: ReadonlyMap<string, 'integer' | 'number' | 'string'> =
   [
     'xsd:unsignedShort',
     'integer'
+  ],
+  [
+    `${RDF_NS}langString`,
+    'string'
   ],
   [
     `${XSD_NS}anyURI`,

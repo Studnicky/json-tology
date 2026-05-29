@@ -10,7 +10,7 @@ import {
   aboxFixtures, BookSchema, bookstoreEntities
 } from '../bookstore/index.js';
 
-const book = bookstoreEntities.instantiate(BookSchema, {
+const book = bookstoreEntities.instantiate(BookSchema.$id, {
   'authors': ['Michael Ende'],
   'isbn': aboxFixtures.rareBook.isbn,
   'price': aboxFixtures.rareBook.price,

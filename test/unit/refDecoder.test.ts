@@ -144,11 +144,16 @@ void describe('RefDecoder.run()', { 'concurrency': true }, () => {
       ] as const
     });
 
+    // interop: instantiate() return type reflects the schema's string field;
+    // the Transform decoder converts to Date at runtime but the static type
+    // has no typed path to the decoded Date shape.
     const result = jt.instantiate(EventSchema.$id, {
       'name': 'Launch',
       'startedAt': '2024-06-01T00:00:00.000Z'
-    }) as { 'name': string;
-      'startedAt': Date };
+    }) as unknown as {
+      'name': string;
+      'startedAt': Date;
+    };
 
     assert.ok(result.startedAt instanceof Date, 'decoder should have converted string to Date');
     assert.equal(result.startedAt.getFullYear(), 2024);
@@ -204,13 +209,20 @@ void describe('RefDecoder.run()', { 'concurrency': true }, () => {
       ] as const
     });
 
+    // interop: instantiate() return type reflects the schema's string fields;
+    // the cross-schema Transform decoder converts startedAt to Date at runtime
+    // but the static type has no typed path to the decoded nested Date shape.
     const result = jt.instantiate(WrapperSchema.$id, {
       'event': {
         'name': 'Demo',
         'startedAt': '2025-01-15T12:00:00.000Z'
       }
-    }) as { 'event': { 'name': string;
-      'startedAt': Date } };
+    }) as unknown as {
+      'event': {
+        'name': string;
+        'startedAt': Date;
+      };
+    };
 
     assert.ok(result.event.startedAt instanceof Date, 'nested cross-schema decoder should fire through wrapper');
     assert.equal(result.event.startedAt.getFullYear(), 2025);

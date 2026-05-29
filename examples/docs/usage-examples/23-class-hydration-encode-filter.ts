@@ -44,7 +44,10 @@ const FilterEncodeOrderSchema = Compose.equivalent(
 
 jt.set(FilterEncodeOrderSchema);
 
-Transform.create<typeof FilterEncodeOrderSchema, OrderWithInstanceMethod>(FilterEncodeOrderSchema, {
+const FilterEncodeOrderTransform = Transform.create<
+  typeof FilterEncodeOrderSchema,
+  OrderWithInstanceMethod
+>(FilterEncodeOrderSchema, {
   'decode': (plain) => {
     return Object.assign(Reflect.construct(OrderWithInstanceMethod, []), plain);
   },
@@ -60,13 +63,13 @@ Transform.create<typeof FilterEncodeOrderSchema, OrderWithInstanceMethod>(Filter
 });
 
 const hydrated = jt.instantiate(
-  FilterEncodeOrderSchema.$id,
+  FilterEncodeOrderTransform,
   aboxFixtures.order
-) as OrderWithInstanceMethod;
+);
 
 console.assert(typeof hydrated.summarize === 'function');
 
-const wire = bookstoreEntities.encode(FilterEncodeOrderSchema, hydrated) as Record<string, unknown>;
+const wire = bookstoreEntities.encode(FilterEncodeOrderTransform, hydrated) as Record<string, unknown>;
 
 console.assert(wire.summarize === undefined);
 console.assert(wire.id === aboxFixtures.order.id);

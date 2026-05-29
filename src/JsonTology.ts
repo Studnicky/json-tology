@@ -35,7 +35,7 @@ import type { SnapshotInterface } from './interfaces/Snapshot.js';
 import type { ValueInterface } from './interfaces/ValueImpl.js';
 import type { ValidationErrors } from './errors/ValidationErrors.js';
 import type {
-  InferSchemaType, MaterializedSchemaType, SchemaPointerPathsType
+  InferSchemaType, LooseInputType, MaterializedSchemaType, SchemaPointerPathsType
 } from './types/Infer.js';
 import type {
   ParseOutputType, TransformedType
@@ -675,14 +675,27 @@ export class JsonTology<TMap = Record<never, never>> {
    * @param name - The property name.
    * @param fn - Function receiving the instantiated/materialized object and returning the computed value.
    */
-  public addComputed<T>(
-    schemaId: keyof TMap & string, name: keyof T & string, fn: (data: T) => unknown
-  ): void;
-  // ---------------------------------------------------------------------------
-  // Invariants
-  // ---------------------------------------------------------------------------
-  public addComputed(schemaId: keyof TMap & string, name: string, fn: ComputedFnType): void {
-    this.registry.computedStore.add(schemaId, name, fn);
+  public addComputed<
+    K extends keyof TMap & string,
+    const TName extends string,
+    TValue
+  >(
+    schemaId: K,
+    name: TName,
+    fn: (data: TMap[K]) => TValue
+  ): JsonTology<Readonly<Record<K, Readonly<Record<TName, TValue>> & TMap[K]>> & TMap>;
+  public addComputed(schemaId: keyof TMap & string, name: string, fn: (data: never) => unknown): JsonTology<TMap> {
+    // interop: the public overload types `fn` over the schema's inferred type, but
+    // the runtime computed store is type-erased over `Record<string, unknown>`
+    // (it invokes `fn` with the materialized object). Bridging the typed public
+    // surface to the erased store is the one boundary that needs an assertion.
+    this.registry.computedStore.add(schemaId, name, fn as ComputedFnType);
+
+    // The typed overload augments `TMap[K]` with the computed field so a
+    // subsequent `instantiate(schemaId, …)` returns it. The runtime instance is
+    // unchanged (computed values are produced at instantiate time), so the impl
+    // returns `this` typed as the base map — same pattern as `set()`.
+    return this;
   }
 
   // ---------------------------------------------------------------------------
@@ -725,7 +738,7 @@ export class JsonTology<TMap = Record<never, never>> {
       schema,
       fns as unknown as {
         'decode': (input: InferSchemaType<TSchema>) => TOut;
-        'encode': (output: TOut) => InferSchemaType<TSchema>;
+        'encode': (output: TOut) => LooseInputType<InferSchemaType<TSchema>>;
       }
     );
 

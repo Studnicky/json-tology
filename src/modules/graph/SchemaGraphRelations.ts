@@ -10,6 +10,7 @@ import { FORMAT_PATTERNS } from '../../constants/FORMAT_PATTERNS.js';
 import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
+import { isRecord } from '../data/DataTypes.js';
 
 function resolveNodeRef(
   graph: GraphAccessorInterface,
@@ -387,6 +388,66 @@ function pushUnionTypeRelations(
       'target': node.id
     });
   }
+}
+
+function pushAnnotatedEdgeRelations(
+  graph: GraphAccessorInterface,
+  node: SchemaGraphNodeInterface,
+  relations: SchemaGraphRelationInterface[]
+): void {
+  if (!isRecord(node.schema)) {
+    return;
+  }
+
+  const raw = node.schema['jt:annotatedEdge'];
+
+  if (!isRecord(raw)) {
+    return;
+  }
+
+  const edgePredicate = typeof raw.predicate === 'string' ? raw.predicate : undefined;
+  const targetRef = typeof raw.targetRef === 'string' ? raw.targetRef : undefined;
+
+  if (edgePredicate === undefined || targetRef === undefined) {
+    return;
+  }
+
+  const edgeTarget = graph.resolveRefId(targetRef);
+  const rawAnnotations = raw.annotations;
+  const edgeAnnotations: Array<{
+    readonly 'annotationPredicate': string;
+    readonly 'propertyName': string;
+    readonly 'rangeRef': string;
+  }> = [];
+
+  if (isRecord(rawAnnotations)) {
+    for (const [
+      propName,
+      propSchema
+    ] of Object.entries(rawAnnotations)) {
+      if (!isRecord(propSchema) || typeof propSchema.$ref !== 'string') {
+        continue;
+      }
+
+      edgeAnnotations.push({
+        'annotationPredicate': `${node.id}#${propName}`,
+        'propertyName': propName,
+        'rangeRef': graph.resolveRefId(propSchema.$ref)
+      });
+    }
+  }
+
+  relations.push({
+    'predicate': JT.annotatedEdge,
+    'source': node,
+    'structure': {
+      edgeAnnotations,
+      'edgePredicate': graph.resolveRefId(edgePredicate),
+      edgeTarget,
+      'kind': 'annotatedEdge'
+    },
+    'target': edgeTarget
+  });
 }
 
 export const SchemaGraphRelations = {
@@ -775,6 +836,7 @@ export const SchemaGraphRelations = {
     pushFormatPatternRelations(node, sem, relations);
     pushFormatAnnotationRelation(node, sem, relations);
     pushUserRestrictionRelations(node, sem, relations);
+    pushAnnotatedEdgeRelations(graph, node, relations);
 
     return relations;
   }

@@ -26,7 +26,7 @@ const JsonBlobSchema = {
 
 jt.set(JsonBlobSchema);
 
-Transform.create<typeof JsonBlobSchema, unknown>(JsonBlobSchema, {
+const JsonBlobTransform = Transform.create<typeof JsonBlobSchema, unknown>(JsonBlobSchema, {
   'decode': (wire) => {
     return JSON.parse(wire) as unknown;
   },
@@ -36,11 +36,11 @@ Transform.create<typeof JsonBlobSchema, unknown>(JsonBlobSchema, {
 });
 
 const wire = JSON.stringify(aboxFixtures.rareBook);
-const decoded = jt.instantiate(JsonBlobSchema, wire);
+const decoded = jt.instantiate(JsonBlobTransform, wire);
 
 console.assert(typeof decoded === 'object');
 console.assert((decoded as { 'isbn': string }).isbn === aboxFixtures.rareBook.isbn);
 
-const reEncoded = jt.encode(JsonBlobSchema, decoded);
+const reEncoded = jt.encode(JsonBlobTransform, decoded);
 
 console.assert(reEncoded === wire);

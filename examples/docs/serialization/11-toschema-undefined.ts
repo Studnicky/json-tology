@@ -9,6 +9,6 @@ import {
   bookstoreEntities
 } from '../bookstore/index.js';
 
-const missing = bookstoreEntities.toSchema('https://bookstore.example/NonExistent');
+const missing = (bookstoreEntities.toSchema as (id: string) => Record<string, unknown> | undefined)('https://bookstore.example/NonExistent');
 
 console.assert(missing === undefined, 'Unregistered schema should return undefined');

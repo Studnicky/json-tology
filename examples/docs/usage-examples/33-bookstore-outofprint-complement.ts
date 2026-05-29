@@ -25,5 +25,8 @@ console.assert(outNode !== undefined);
 const OWL_COMPLEMENT_OF = 'http://www.w3.org/2002/07/owl#complementOf';
 const complementOf = outNode?.[OWL_COMPLEMENT_OF] as undefined | { readonly '@id': string };
 
-console.assert(complementOf !== undefined);
+if (complementOf === undefined) {
+  throw new TypeError('OutOfPrintBook node is missing owl:complementOf');
+}
+
 console.assert(complementOf['@id'] === 'urn:bookstore:InPrintBook');

@@ -10,6 +10,7 @@
  */
 
 import { Loaders } from '../../../src/index.js';
+import type { JsonSchemaType } from '../../../src/types/Schema.js';
 import {
   BookSchema,
   CustomerSchema,
@@ -18,7 +19,7 @@ import {
 
 const composed = Loaders.compose(
   // Locally-known schemas served from memory — no network for known IRIs
-  Loaders.memory(new Map([
+  Loaders.memory(new Map<string, JsonSchemaType>([
     [
       BookSchema.$id,
       BookSchema

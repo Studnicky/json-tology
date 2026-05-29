@@ -158,7 +158,7 @@ import {
     }> = [
       {
         'check': (jt) => {
-          assert.ok(jt.validate(UserSchema.$id, {
+          assert.ok(jt.validate(UserSchema, {
             'email': 'a@b.com',
             'name': 'Alice'
           }).ok);
@@ -172,7 +172,7 @@ import {
       },
       {
         'check': (jt) => {
-          assert.ok(jt.validate(UserSchema.$id, {
+          assert.ok(jt.validate(UserSchema, {
             'email': 'a@b.com',
             'name': 42
           }).length > 0);
@@ -186,7 +186,7 @@ import {
       },
       {
         'check': (jt) => {
-          assert.ok(jt.validate(UserSchema.$id, { 'name': 'Alice' }).length > 0);
+          assert.ok(jt.validate(UserSchema, { 'name': 'Alice' }).length > 0);
         },
         'data': { 'name': 'Alice' },
         'method': 'validate',
@@ -194,7 +194,7 @@ import {
       },
       {
         'check': (jt) => {
-          const errs = jt.validate(UserSchema.$id, { 'name': 'Alice' });
+          const errs = jt.validate(UserSchema, { 'name': 'Alice' });
 
           assert.ok(errs.length > 0);
           assert.ok(typeof errs.items[0].path === 'string');
@@ -206,7 +206,7 @@ import {
       },
       {
         'check': (jt) => {
-          const ok = jt.validate(UserSchema.$id, {
+          const ok = jt.validate(UserSchema, {
             'email': 'a@b.com',
             'name': 'Alice'
           });
@@ -271,7 +271,7 @@ import {
       },
       {
         'check': (jt) => {
-          assert.ok(jt.validate(UserSchema.$id, 'not-an-object').length > 0);
+          assert.ok(jt.validate(UserSchema, 'not-an-object').length > 0);
         },
         'data': 'not-an-object',
         'method': 'validate',
@@ -690,7 +690,8 @@ import {
             ] as const
           });
 
-          assert.equal(jt.toSchema('https://nonexistent.io/Missing'), undefined);
+          // An unregistered $id has no canonical graph, so toSchema yields undefined.
+          assert.equal(jt.registry.graph('https://nonexistent.io/Missing'), undefined);
 
           const schema = jt.toSchema(UserSchema.$id);
 
@@ -961,7 +962,8 @@ import {
         'enableDefaults': true,
         'enableValidation': false
       };
-      const result = Resolver.merge(base);
+      const noOverride: Partial<typeof base> | undefined = undefined;
+      const result = Resolver.merge(base, noOverride);
 
       assert.equal(result, base);
     });
@@ -978,7 +980,8 @@ import {
     });
 
     void it('does not apply undefined override keys', () => {
-      const base = {
+      const base: { 'enableDefaults': boolean | undefined;
+        'enableValidation': boolean | undefined } = {
         'enableDefaults': true,
         'enableValidation': false
       };

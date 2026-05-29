@@ -7,11 +7,16 @@
  * at the type level via format and pattern brands.
  */
 
-import type { InferType } from '../../../src/types/index.js';
+import type {
+  InferType, SchemaReferencesMapType
+} from '../../../src/types/index.js';
 import { bookstoreEntities } from '../bookstore/index.js';
 import type {
-  BookSchema, CustomerSchema, EmailSchema, IsbnSchema
+  BookSchema, bookstoreSchemas, CustomerSchema, EmailSchema,
+  IsbnSchema
 } from '../bookstore/index.js';
+
+type BookstoreRefs = SchemaReferencesMapType<typeof bookstoreSchemas>;
 
 type AssertEqualType<TLeft, TRight>
   = [TLeft] extends [TRight] ? [TRight] extends [TLeft] ? true : false : false;
@@ -29,15 +34,16 @@ type Email = InferType<typeof EmailSchema>;
 // Resolves to: string & FormatBrandInterface<'email'>
 
 // When IsbnSchema is referenced within BookSchema via $ref,
-// the inferred book.isbn property narrows to the branded type
-type Book = InferType<typeof BookSchema>;
+// the inferred book.isbn property narrows to the branded type.
+// BookstoreRefs resolves $ref fields to their named datatype types.
+type Book = InferType<typeof BookSchema, BookstoreRefs>;
 type BookIsbn = Book extends { readonly 'isbn': infer I } ? I : never;
 // BookIsbn carries the same PatternBrandInterface<'^\\d{13}$'>
 
 assert<AssertEqualType<BookIsbn extends string ? true : false, true>>();
 
 // Similarly, CustomerSchema.$ref EmailSchema produces a branded email type
-type Customer = InferType<typeof CustomerSchema>;
+type Customer = InferType<typeof CustomerSchema, BookstoreRefs>;
 type CustomerEmail = Customer extends { readonly 'email': infer E } ? E : never;
 // CustomerEmail carries FormatBrandInterface<'email'>
 

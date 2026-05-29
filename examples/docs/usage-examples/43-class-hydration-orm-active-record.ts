@@ -45,7 +45,10 @@ const ActiveRecordCustomerSchema = Compose.equivalent(
 
 jt.set(ActiveRecordCustomerSchema);
 
-Transform.create<typeof ActiveRecordCustomerSchema, CustomerRecord>(ActiveRecordCustomerSchema, {
+const ActiveRecordCustomerTransform = Transform.create<
+  typeof ActiveRecordCustomerSchema,
+  CustomerRecord
+>(ActiveRecordCustomerSchema, {
   'decode': (plain) => {
     return Object.assign(Reflect.construct(CustomerRecord, []), plain);
   },
@@ -61,9 +64,9 @@ Transform.create<typeof ActiveRecordCustomerSchema, CustomerRecord>(ActiveRecord
 });
 
 const customer = jt.instantiate(
-  ActiveRecordCustomerSchema.$id,
+  ActiveRecordCustomerTransform,
   aboxFixtures.customer
-) as CustomerRecord;
+);
 
 // Active-record method available immediately on the hydrated value.
 const saved = await customer.save();

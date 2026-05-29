@@ -40,7 +40,14 @@ class OrderWithToPlain {
     return this.#internalCacheKey.length > 0;
   }
 
-  public toPlain(): OrderWire {
+  public toPlain(): {
+    readonly 'customerId': string;
+    readonly 'id': string;
+    readonly 'items': OrderWire['items'];
+    readonly 'placedAt': OrderWire['placedAt'];
+    readonly 'shippingAddress': OrderWire['shippingAddress'];
+    readonly 'total': OrderWire['total'];
+  } {
     return {
       'customerId': this.customerId,
       'id': this.id,
@@ -59,7 +66,7 @@ const ToPlainOrderSchema = Compose.equivalent(
 
 jt.set(ToPlainOrderSchema);
 
-Transform.create<typeof ToPlainOrderSchema, OrderWithToPlain>(ToPlainOrderSchema, {
+const ToPlainOrderTransform = Transform.create<typeof ToPlainOrderSchema, OrderWithToPlain>(ToPlainOrderSchema, {
   'decode': (plain) => {
     // fromPlain pattern: real `new` keeps the # field initialized.
     const built = new OrderWithToPlain();
@@ -72,14 +79,14 @@ Transform.create<typeof ToPlainOrderSchema, OrderWithToPlain>(ToPlainOrderSchema
 });
 
 const hydrated = jt.instantiate(
-  ToPlainOrderSchema.$id,
+  ToPlainOrderTransform,
   aboxFixtures.order
-) as OrderWithToPlain;
+);
 
 hydrated.cacheTouch();
 console.assert(hydrated.cacheTouched());
 
-const wire = bookstoreEntities.encode(ToPlainOrderSchema, hydrated) as Record<string, unknown>;
+const wire = bookstoreEntities.encode(ToPlainOrderTransform, hydrated) as Record<string, unknown>;
 
 console.assert(wire.id === aboxFixtures.order.id);
 // internalCacheKey is deliberately omitted from the wire shape.

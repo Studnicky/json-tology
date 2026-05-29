@@ -44,7 +44,7 @@ const graph = registry.graph(BookSchema.$id);
 if (graph) {
   const schema = schemaSerializer.serialize(graph);
 
-  console.assert(schema, 'schema reconstructed');
+  console.assert(Boolean(schema), 'schema reconstructed');
 }
 
 void owlJson;

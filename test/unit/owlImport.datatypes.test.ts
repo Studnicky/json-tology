@@ -145,21 +145,11 @@ function strLit(value: string): QuadObjectType {
 }
 
 function makeQuad(subject: string, predicate: string, object: QuadObjectType): QuadInterface {
-  return {
-    'graph': Terms.defaultGraph(),
-    object,
-    'predicate': Terms.iri(predicate),
-    'subject': Terms.iri(subject)
-  };
+  return Terms.quad(Terms.iri(subject), Terms.iri(predicate), object);
 }
 
 function blankQuad(subject: string, predicate: string, object: QuadObjectType): QuadInterface {
-  return {
-    'graph': Terms.defaultGraph(),
-    object,
-    'predicate': Terms.iri(predicate),
-    'subject': Terms.blank(subject)
-  };
+  return Terms.quad(Terms.blank(subject), Terms.iri(predicate), object);
 }
 
 /** Declare a subject as rdfs:Datatype. */
@@ -673,12 +663,7 @@ void describe('importDatatypes', { 'concurrency': true }, () => {
 
   void it('accepts rdfs:Datatype in compact prefixed form', () => {
     const dt = 'https://ex.com/CompactDT';
-    const quads: QuadInterface[] = [{
-      'graph': Terms.defaultGraph(),
-      'object': Terms.iri('rdfs:Datatype'),
-      'predicate': Terms.iri('rdf:type'),
-      'subject': Terms.iri(dt)
-    }];
+    const quads: QuadInterface[] = [Terms.quad(Terms.iri(dt), Terms.iri('rdf:type'), Terms.iri('rdfs:Datatype'))];
     const fragment = importDatatypes(quads, makeCtx(quads));
 
     assert.strictEqual(fragment.schemaDeltas.size, 1);

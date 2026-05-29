@@ -7,12 +7,10 @@
  * registered imperatively against the already-constructed bookstore registry.
  */
 
-import type { InferType } from '../../../src/types/index.js';
+import type { Review } from '../bookstore/index.js';
 import {
   aboxFixtures, bookstoreEntities, ReviewSchema
 } from '../bookstore/index.js';
-
-type Review = InferType<typeof ReviewSchema>;
 
 bookstoreEntities.addInvariant<Review>(ReviewSchema.$id, {
   'fn': (review) => {

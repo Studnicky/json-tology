@@ -74,7 +74,7 @@ const NestedOrderSchema = {
 
 jt.set(NestedOrderSchema);
 
-Transform.create<typeof NestedOrderSchema, OrderWithBuyer>(NestedOrderSchema, {
+const NestedOrderTransform = Transform.create<typeof NestedOrderSchema, OrderWithBuyer>(NestedOrderSchema, {
   'decode': (plain) => {
     return Object.assign(Reflect.construct(OrderWithBuyer, []), plain);
   },
@@ -88,7 +88,7 @@ const wire = {
   'id': aboxFixtures.order.id
 };
 
-const hydrated = jt.instantiate(NestedOrderSchema.$id, wire) as OrderWithBuyer;
+const hydrated = jt.instantiate(NestedOrderTransform, wire);
 
 console.assert(hydrated instanceof OrderWithBuyer);
 console.assert(hydrated.buyer instanceof CustomerRecord);

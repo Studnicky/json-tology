@@ -54,8 +54,7 @@ import type {
   MultipleOfBrandInterface,
   PatternBrandInterface,
   SchemaIdBrandInterface,
-  UniqueArrayBrandInterface,
-  UniqueItemsBrandInterface
+  UniqueArrayBrandInterface
 } from './ConstraintBrands.js';
 import type {
   BuildAtLeastTupleType,
@@ -345,7 +344,7 @@ type InferArrayBrandsType<T, TRoot, TReferences>
       & (T extends { readonly 'uniqueItems': true }
         ? T extends { readonly 'items': infer I }
           ? UniqueArrayBrandInterface<InferSchemaType<I, TRoot, TReferences>>
-          : UniqueItemsBrandInterface
+          : unknown
         : unknown)
     : unknown;
 
@@ -368,11 +367,13 @@ type InferPrimitiveType<T>
       // Guard against never bounds (no bound or Sub1(0))
       ? [NormalizeMinType<T>] extends [never] ? InferNumberBrandsType<T> & number
         : [NormalizeMaxType<T>] extends [never] ? InferNumberBrandsType<T> & number
-          : NormalizeMinType<T> extends infer TMin extends number
-            ? NormalizeMaxType<T> extends infer TMax extends number
-              ? T extends { readonly 'multipleOf': infer TStep extends number }
-                ? MultipleOfRangeType<TMin, TMax, TStep>
-                : IntegerRangeType<TMin, TMax>
+          : IsEnabledType<'tightIntegerRanges'> extends true
+            ? NormalizeMinType<T> extends infer TMin extends number
+              ? NormalizeMaxType<T> extends infer TMax extends number
+                ? T extends { readonly 'multipleOf': infer TStep extends number }
+                  ? MultipleOfRangeType<TMin, TMax, TStep>
+                  : IntegerRangeType<TMin, TMax>
+                : InferNumberBrandsType<T> & number
               : InferNumberBrandsType<T> & number
             : InferNumberBrandsType<T> & number
       : T extends { readonly 'type': 'number' } ? InferNumberBrandsType<T> & number
@@ -430,25 +431,40 @@ type UniqueTuplePairwiseType<TTuple, TPrev extends readonly unknown[] = []>
   = TTuple extends readonly [infer THead, ...infer TRest]
     ? TPrev['length'] extends 8
       ? TTuple
-      : THead extends TPrev[number]
-        ? never
-        : TPrev[number] extends THead
+      : [TPrev[number]] extends [never]
+        // Empty accumulated set — no prior elements to compare against; recurse.
+        ? UniqueTuplePairwiseType<TRest, [THead]> extends never
           ? never
-          : UniqueTuplePairwiseType<TRest, [...TPrev, THead]> extends never
+          : TTuple
+        : THead extends TPrev[number]
+          ? never
+          : TPrev[number] extends THead
             ? never
-            : TTuple
+            : UniqueTuplePairwiseType<TRest, [...TPrev, THead]> extends never
+              ? never
+              : TTuple
     : TTuple;
 
 /**
  * Apply tuple distinctness narrowing when `uniqueItems: true`. Tuples whose
  * elements are all literals (length ≤ 8) collapse to `never` if any pair shares
- * a type. Non-tuple arrays pass through unchanged (the brand on
- * `InferArrayBrandsType` already prevents raw arrays from satisfying the type).
+ * a type. Tuples with more than 8 elements exceed the pairwise cap — pairwise
+ * narrowing is skipped and a `UniqueArrayBrandInterface<unknown>` brand is
+ * applied instead so the compile-time constraint is preserved. Non-tuple arrays
+ * pass through unchanged (the brand on `InferArrayBrandsType` already prevents
+ * raw arrays from satisfying the type).
  */
 type ApplyUniqueItemsTupleNarrowingType<T, TArr>
   = T extends { readonly 'uniqueItems': true }
     ? TArr extends readonly [unknown, ...unknown[]]
-      ? UniqueTuplePairwiseType<TArr>
+      // 9+ elements exceed the pairwise cap — add brand as fallback constraint.
+      ? TArr extends readonly [
+        unknown, unknown, unknown, unknown, unknown, unknown, unknown, unknown, unknown,
+        ...unknown[]
+      ]
+        ? TArr & UniqueArrayBrandInterface<unknown>
+        // ≤ 8 elements — apply pairwise distinctness narrowing.
+        : UniqueTuplePairwiseType<TArr>
       : TArr
     : TArr;
 
@@ -498,17 +514,10 @@ type InferObjectTypePropsType<TProps, TRequired extends string, TRoot, TReferenc
 >;
 
 type InferAdditionalType<T, TRoot, TReferences>
-  = T extends {
-    readonly 'additionalProperties': false;
-    readonly 'properties': infer P;
-  }
-    ? IsEnabledType<'objectBrands'> extends true
-      ? Readonly<Partial<Record<Exclude<string, keyof P & string>, never>>>
-      : unknown
-    : T extends { readonly 'additionalProperties': false } ? unknown
-      : T extends { readonly 'additionalProperties': infer A }
-        ? { readonly [key: string]: InferSchemaType<A, TRoot, TReferences> }
-        : unknown;
+  = T extends { readonly 'additionalProperties': false } ? unknown
+    : T extends { readonly 'additionalProperties': infer A }
+      ? { readonly [key: string]: InferSchemaType<A, TRoot, TReferences> }
+      : unknown;
 
 /**
  * Infer typed keys from patternProperties using template literal conversion.
@@ -721,7 +730,13 @@ type InferRefType<T, TRoot, TReferences>
         // External ref with fragment: someUri#fragment
         : T extends { readonly '$ref': `${infer TBase}#${string}` }
           ? ResolveRefBaseSchemaType<TBase, TRoot, TReferences> extends infer TBaseSchema
-            ? InferSchemaType<SplitFragmentRefType<T['$ref'], TRoot, TReferences>, TBaseSchema, TReferences>
+            ? SplitFragmentRefType<T['$ref'], TRoot, TReferences> extends infer TResolved
+              ? TResolved extends RefNotFoundInterface<string>
+                ? TResolved
+                : TResolved extends AnchorNotFoundInterface<string, string>
+                  ? TResolved
+                  : InferSchemaType<TResolved, TBaseSchema, TReferences>
+              : unknown
             : unknown
           // Absolute/external ref without fragment
           : T extends { readonly '$ref': infer TRef extends string }
@@ -775,11 +790,13 @@ type InferSingleTypeType<U extends string, T, TRoot, TReferences>
     : U extends 'integer'
       ? [NormalizeMinType<T>] extends [never] ? InferNumberBrandsType<T> & number
         : [NormalizeMaxType<T>] extends [never] ? InferNumberBrandsType<T> & number
-          : NormalizeMinType<T> extends infer TMin extends number
-            ? NormalizeMaxType<T> extends infer TMax extends number
-              ? T extends { readonly 'multipleOf': infer TStep extends number }
-                ? MultipleOfRangeType<TMin, TMax, TStep>
-                : IntegerRangeType<TMin, TMax>
+          : IsEnabledType<'tightIntegerRanges'> extends true
+            ? NormalizeMinType<T> extends infer TMin extends number
+              ? NormalizeMaxType<T> extends infer TMax extends number
+                ? T extends { readonly 'multipleOf': infer TStep extends number }
+                  ? MultipleOfRangeType<TMin, TMax, TStep>
+                  : IntegerRangeType<TMin, TMax>
+                : InferNumberBrandsType<T> & number
               : InferNumberBrandsType<T> & number
             : InferNumberBrandsType<T> & number
       : U extends 'number' ? InferNumberBrandsType<T> & number
@@ -879,6 +896,31 @@ type InferConditionalType<T, TRoot, TReferences>
     : never;
 
 // ---------------------------------------------------------------------------
+// Annotated edge (RDF 1.2 triple-term) inference
+// ---------------------------------------------------------------------------
+
+/**
+ * Infer the wire type of a `Compose.annotatedEdge` schema.
+ *
+ * The schema shape is `{ 'jt:annotatedEdge': { predicate, targetRef, annotations } }`.
+ * `targetRef` and each annotation `$ref` are resolved against the references map
+ * (or root schema) via `InferRefType`, so they surface as their branded class /
+ * datatype types rather than `unknown`.
+ */
+type InferAnnotatedEdgeType<TEdge, TRoot, TReferences>
+  = TEdge extends {
+    readonly 'annotations': infer TAnnotations;
+    readonly 'targetRef': infer TTargetRef extends string;
+  }
+    ? {
+      readonly 'annotations': {
+        readonly [K in keyof TAnnotations]: InferSchemaType<TAnnotations[K], TRoot, TReferences>
+      };
+      readonly 'target': InferRefType<{ readonly '$ref': TTargetRef }, TRoot, TReferences>;
+    }
+    : unknown;
+
+// ---------------------------------------------------------------------------
 // Master dispatcher
 // ---------------------------------------------------------------------------
 
@@ -886,26 +928,35 @@ type InferConditionalType<T, TRoot, TReferences>
 type InferSchemaTypeCoreType<T, TRoot = T, TReferences = Record<never, never>>
   // Bail out for boolean schemas and broad types
   = [T] extends [boolean] ? unknown
-  // Phase 1: Transform brands do not change the wire-form schema type.
-    : T extends TransformBrandInterface<unknown>
-      ? InferSchemaType<Omit<T, keyof TransformBrandInterface<unknown>>, TRoot, TReferences>
-    // Phase 2: Const/Enum literals
-      : T extends { readonly 'const': unknown } ? InferConstType<T>
-        : T extends { readonly 'enum': readonly unknown[] } ? InferEnumType<T>
-        // Phase 3: $ref / $dynamicRef / $recursiveRef
-          : T extends { readonly '$ref': string } ? InferRefType<T, TRoot, TReferences>
-            : T extends { readonly '$dynamicRef': string } ? InferDynamicRefType<T, TRoot, TReferences>
-              : T extends { readonly '$recursiveRef': string } ? InferRecursiveRefType<T, TRoot, TReferences>
-              // Phase 4: Composition
-                : T extends { readonly 'allOf': readonly unknown[] } ? InferAllOfType<T, TRoot, TReferences>
-                  : T extends { readonly 'anyOf': readonly unknown[] } ? InferAnyOfType<T, TRoot, TReferences>
-                    : T extends { readonly 'oneOf': readonly unknown[] } ? InferOneOfType<T, TRoot, TReferences>
-                      : T extends { readonly 'if': unknown } ? InferConditionalType<T, TRoot, TReferences>
-                      // Phase 5: Type-based
-                        : T extends { readonly 'type': readonly unknown[] } ? InferTypeArrayType<T, TRoot, TReferences>
-                          : T extends { readonly 'type': 'array' } ? InferArrayBrandsType<T, TRoot, TReferences> & InferArrayType<T, TRoot, TReferences>
-                            : T extends { readonly 'type': 'object' } ? InferObjectType<T, TRoot, TReferences>
-                              : InferPrimitiveType<T> extends never ? unknown : InferPrimitiveType<T>;
+  // Phase 0: Annotated edge (RDF 1.2 triple-term) — distinctive marker key.
+    : T extends { readonly 'jt:annotatedEdge': infer TEdge }
+      ? InferAnnotatedEdgeType<TEdge, TRoot, TReferences>
+    // Phase 1: Transform brands do not change the wire-form schema type.
+      : T extends TransformBrandInterface<unknown>
+        ? InferSchemaType<Omit<T, keyof TransformBrandInterface<unknown>>, TRoot, TReferences>
+      // Phase 2: Const/Enum literals
+        : T extends { readonly 'const': unknown } ? InferConstType<T>
+          : T extends { readonly 'enum': readonly unknown[] } ? InferEnumType<T>
+          // Phase 3: $ref / $dynamicRef / $recursiveRef
+            : T extends { readonly '$ref': string } ? InferRefType<T, TRoot, TReferences>
+              : T extends { readonly '$dynamicRef': string } ? InferDynamicRefType<T, TRoot, TReferences>
+                : T extends { readonly '$recursiveRef': string } ? InferRecursiveRefType<T, TRoot, TReferences>
+                // Phase 4: Composition
+                // When a schema has both `allOf` and `type: 'object'`, intersect
+                // the allOf-inferred type with the schema's own object shape. This
+                // handles schemas like `{ allOf: [...], type: 'object', properties: {...} }`.
+                  : T extends { readonly 'allOf': readonly unknown[];
+                    readonly 'type': 'object' }
+                    ? InferAllOfType<T, TRoot, TReferences> & InferObjectType<T, TRoot, TReferences>
+                    : T extends { readonly 'allOf': readonly unknown[] } ? InferAllOfType<T, TRoot, TReferences>
+                      : T extends { readonly 'anyOf': readonly unknown[] } ? InferAnyOfType<T, TRoot, TReferences>
+                        : T extends { readonly 'oneOf': readonly unknown[] } ? InferOneOfType<T, TRoot, TReferences>
+                          : T extends { readonly 'if': unknown } ? InferConditionalType<T, TRoot, TReferences>
+                          // Phase 5: Type-based
+                            : T extends { readonly 'type': readonly unknown[] } ? InferTypeArrayType<T, TRoot, TReferences>
+                              : T extends { readonly 'type': 'array' } ? InferArrayBrandsType<T, TRoot, TReferences> & InferArrayType<T, TRoot, TReferences>
+                                : T extends { readonly 'type': 'object' } ? InferObjectType<T, TRoot, TReferences>
+                                  : InferPrimitiveType<T> extends never ? unknown : InferPrimitiveType<T>;
 
 /**
  * Infer a TypeScript type from a JSON Schema literal type.
@@ -1162,11 +1213,11 @@ type BuildIntegerRangeType<
   TMin extends number, TMax extends number,
   TAccum extends unknown[] = [], TStarted extends boolean = false
 >
-  = TAccum['length'] extends IntegerRangeCap ? number
-    : TAccum['length'] extends TMax
-      ? TStarted extends true ? TMax
-        : TAccum['length'] extends TMin ? TMax
-          : never
+  = TAccum['length'] extends TMax
+    ? TStarted extends true ? TMax
+      : TAccum['length'] extends TMin ? TMax
+        : never
+    : TAccum['length'] extends IntegerRangeCap ? number
       : TStarted extends true
         ? BuildIntegerRangeType<TMin, TMax, [...TAccum, unknown], true> | TAccum['length']
         : TAccum['length'] extends TMin
@@ -1174,15 +1225,21 @@ type BuildIntegerRangeType<
           : BuildIntegerRangeType<TMin, TMax, [...TAccum, unknown]>;
 
 /**
- * Test whether `TMax` fits within {@link IntegerRangeCap}. The tuple builder
- * walks 0..TMax linearly, so the practical cap is on `TMax` rather than the
- * range delta. A `TMax` above the cap collapses the union to `number`.
+ * Test whether `TMax` fits within {@link IntegerRangeCap}. Walks 0,1,2,…
+ * counting up: if `TMax` is reached before the cap the range is enumerable
+ * (`true`); if the cap is reached first `TMax` is too large (`false`). The
+ * walk is bounded by `min(TMax, IntegerRangeCap)` steps, so an out-of-cap
+ * `TMax` collapses to `number` without deep instantiation (no TS2589).
+ *
+ * A plain tuple-length comparison cannot be used here: {@link BuildTupleType}
+ * saturates at the cap, making every `TMax >= IntegerRangeCap` indistinguishable
+ * from the cap itself and defeating the guard.
  */
-type RangeWithinCapType<TMax extends number>
+type RangeWithinCapType<TMax extends number, T extends unknown[] = []>
   = number extends TMax ? false
-    : BuildTupleType<IntegerRangeCap> extends [...BuildTupleType<TMax>, ...unknown[]]
-      ? true
-      : false;
+    : T['length'] extends TMax ? true
+      : T['length'] extends IntegerRangeCap ? false
+        : RangeWithinCapType<TMax, [...T, unknown]>;
 
 /**
  * Produce a union of integer literals from Min to Max (inclusive).
@@ -1236,7 +1293,9 @@ export type MultipleOfRangeType<
   = number extends TMin ? number
     : number extends TMax ? number
       : number extends TStep ? number
-        : BuildMultipleOfRangeType<TMin, TMax, TStep>;
+        : RangeWithinCapType<TMax> extends true
+          ? BuildMultipleOfRangeType<TMin, TMax, TStep>
+          : number;
 
 // ---------------------------------------------------------------------------
 // Default alignment — resolves to never when defaults mismatch declared type

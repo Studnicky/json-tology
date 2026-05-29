@@ -36,10 +36,13 @@ const passCheck: CheckFnType = () => {
 };
 
 const stubFormatRegistry: FormatRegistryInterface = {
-  'get': (_) => {
+  'get': () => {
     return;
   },
-  'register': (_) => {
+  'has': () => {
+    return false;
+  },
+  'set': () => {
     // no-op
   }
 };

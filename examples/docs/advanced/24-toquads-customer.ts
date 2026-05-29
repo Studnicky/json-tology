@@ -23,4 +23,4 @@ const abox = bookstoreEntities.toQuads(CustomerSchema, {
 
 // abox is QuadInterface[] — iterate, filter, or pass to OntologyBuilder
 console.assert(abox.length > 0, 'quads generated');
-console.assert(abox[0], 'first quad present');
+console.assert(Boolean(abox[0]), 'first quad present');

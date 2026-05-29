@@ -40,7 +40,7 @@ const RoundTripOrderSchema = Compose.equivalent(
 
 jt.set(RoundTripOrderSchema);
 
-Transform.create<typeof RoundTripOrderSchema, RoundTripOrder>(RoundTripOrderSchema, {
+const RoundTripOrderTransform = Transform.create<typeof RoundTripOrderSchema, RoundTripOrder>(RoundTripOrderSchema, {
   'decode': (plain) => {
     return Object.assign(Reflect.construct(RoundTripOrder, []), plain);
   },
@@ -50,10 +50,10 @@ Transform.create<typeof RoundTripOrderSchema, RoundTripOrder>(RoundTripOrderSche
 });
 
 const wire = aboxFixtures.order;
-const instance = jt.instantiate(RoundTripOrderSchema, wire);
+const instance = jt.instantiate(RoundTripOrderTransform, wire);
 
 assert.ok(instance instanceof RoundTripOrder);
 
-const reEncoded = bookstoreEntities.encode(RoundTripOrderSchema, instance);
+const reEncoded = bookstoreEntities.encode(RoundTripOrderTransform, instance);
 
 assert.deepStrictEqual(reEncoded, wire);

@@ -9,8 +9,9 @@ import {
   aboxFixtures, bookstoreEntities, CustomerSchema
 } from '../bookstore/index.js';
 
-// Instantiate with fixture values; strip extra fields
-const customer = bookstoreEntities.instantiate(CustomerSchema, {
+// Instantiate by schema $id so the return type resolves $ref fields to their
+// named datatypes; strip extra fields.
+const customer = bookstoreEntities.instantiate(CustomerSchema.$id, {
   'email': aboxFixtures.customer.email,
   // Not in schema — stripped on instantiate.
   'extra': 'stripped',
@@ -23,9 +24,10 @@ console.assert(customer.id === aboxFixtures.customer.id);
 console.assert(customer.email === aboxFixtures.customer.email);
 console.assert(customer.name === aboxFixtures.customer.name);
 
-// Default value applied (addresses defaults to [])
+// Default value applied (addresses defaults to []). The field is optional in
+// the type, but instantiate fills the schema default at runtime.
 console.assert(Array.isArray(customer.addresses));
-console.assert(customer.addresses.length === 0);
+console.assert((customer.addresses ?? []).length === 0);
 
 // Extra field was stripped
 console.assert(!('extra' in customer));

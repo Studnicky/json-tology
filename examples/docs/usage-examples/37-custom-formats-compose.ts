@@ -80,14 +80,16 @@ const StrictBookSchema = {
   'type': 'object'
 } as const;
 
+const formats: Record<string, (value: unknown) => boolean> = {
+  'isbn-10': isIsbn10,
+  'slug': isSlug
+};
+
 const jt = JsonTology.create({
   'baseIRI': 'https://bookstore.example',
   // doc example with synthetic fixture schemas
   'enableStrictGraph': false,
-  'formats': {
-    'isbn-10': isIsbn10,
-    'slug': isSlug
-  },
+  formats,
   'schemas': [
     AddressSchema,
     CustomerSchema,

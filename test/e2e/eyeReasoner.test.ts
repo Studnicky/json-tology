@@ -125,10 +125,12 @@ async function runReasoner(): Promise<readonly QuadInterface[]> {
     return [];
   }
 
+  const rareBook = bookstoreEntities.instantiate(BookSchema, aboxFixtures.rareBook);
+  const order = bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order);
   const allQuads: QuadInterface[] = [
     ...bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer, { 'iriFor': bastianIri }),
-    ...bookstoreEntities.toQuads(BookSchema, aboxFixtures.rareBook, { 'iriFor': rareBookIri }),
-    ...bookstoreEntities.toQuads(OrderSchema, aboxFixtures.order, { 'iriFor': `urn:bookstore:order:${aboxFixtures.order.id}` }),
+    ...bookstoreEntities.toQuads(BookSchema, rareBook, { 'iriFor': rareBookIri }),
+    ...bookstoreEntities.toQuads(OrderSchema, order, { 'iriFor': `urn:bookstore:order:${aboxFixtures.order.id}` }),
     ...bookstoreEntities.toQuads(ReviewSchema, aboxFixtures.review, { 'iriFor': `urn:bookstore:review:${aboxFixtures.review.id}` })
   ];
 

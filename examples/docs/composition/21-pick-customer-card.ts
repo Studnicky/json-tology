@@ -26,9 +26,9 @@ const CustomerCardSchema = Compose.pick(
   'https://bookstore.example/CustomerCard'
 );
 
-jt.set(CustomerCardSchema);
+const jt2 = jt.set(CustomerCardSchema);
 
-const card = jt.instantiate(CustomerCardSchema.$id, {
+const card = jt2.instantiate(CustomerCardSchema.$id, {
   'email': aboxFixtures.customer.email,
   'id': aboxFixtures.customer.id,
   'name': aboxFixtures.customer.name

@@ -9,12 +9,15 @@ import {
   bookstoreEntities, type Customer, CustomerSchema
 } from '../bookstore/index.js';
 
-const validCustomer: Customer = {
+// instantiate validates the raw input against the branded schema and returns
+// the branded Customer value — a plain object literal lacks the format/length
+// brands the type carries.
+const validCustomer: Customer = bookstoreEntities.instantiate(CustomerSchema.$id, {
   'addresses': [],
   'email': 'cornelia.funke@bookstore.example',
   'id': 'b2c3d4e5-f6a7-4901-8def-012345678901',
   'name': 'Cornelia Funke'
-};
+});
 
 const mixed: unknown[] = [
   validCustomer,

@@ -19,6 +19,6 @@ const customer = bookstoreEntities.materialize(CustomerSchema, {
 });
 
 // Declared default [] is applied automatically.
-console.assert(Array.isArray((customer as { 'addresses': unknown[] }).addresses));
-console.assert((customer as { 'addresses': unknown[] }).addresses.length === 0);
-console.assert((customer as { 'email': string }).email === aboxFixtures.customer.email);
+console.assert(Array.isArray(customer.addresses));
+console.assert(customer.addresses.length === 0);
+console.assert(customer.email === aboxFixtures.customer.email);

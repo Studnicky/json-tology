@@ -46,8 +46,7 @@ const MultiAuthoredBookSchema = Compose.subClassOf(
   )
 );
 
-jt.set(OneAuthorBookSchema);
-jt.set(MultiAuthoredBookSchema);
+const jt2 = jt.set(OneAuthorBookSchema).set(MultiAuthoredBookSchema);
 
 // A solo-authored Michael Ende title passes OneAuthorBook.
 const momo = {
@@ -62,7 +61,7 @@ const momo = {
   'title': 'Momo'
 } as const;
 
-const oneAuthorErrs = jt.validate(OneAuthorBookSchema.$id, momo);
+const oneAuthorErrs = jt2.validate(OneAuthorBookSchema.$id, momo);
 
 console.assert(oneAuthorErrs.length === 0);
 
@@ -83,6 +82,6 @@ const anthology = {
   'title': 'Märchen-Sammelband'
 } as const;
 
-const multiErrs = jt.validate(MultiAuthoredBookSchema.$id, anthology);
+const multiErrs = jt2.validate(MultiAuthoredBookSchema.$id, anthology);
 
 console.assert(multiErrs.length === 0);

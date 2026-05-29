@@ -25,7 +25,7 @@ function assertParityScenarios(
   for (const {
     data, name, valid
   } of scenarios) {
-    const validateResult = registry.validate(schemaId, data);
+    const validateResult = registry.registry.validate(schemaId, data);
     const schemaObj = registry.registry.get(schemaId) as Record<string, unknown>;
     const errorsResult = registry.registry.engine(schemaObj).errors(data);
 
@@ -196,7 +196,7 @@ void describe('compiled/interpreted parity', () => {
   void it('keyword: if/then/else', () => {
     const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
-    const ifThenElseSchema: Record<string, unknown> = {
+    const ifThenElseSchema: Record<string, unknown> & { readonly '$id': string } = {
       '$id': 'https://parity.test/if-then-else',
       'else': {
         'properties': { 'reason': { 'type': 'string' } },

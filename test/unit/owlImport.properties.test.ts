@@ -21,6 +21,7 @@ import type {
 } from '../../src/interfaces/OwlImport.js';
 import type { QuadInterface } from '../../src/interfaces/Quad.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
+import { Terms } from '../../src/modules/rdf/Terms.js';
 import { Curie } from '../../src/modules/rdf/Curie.js';
 import { STANDARD_PREFIXES } from '../../src/constants/STANDARD_PREFIXES.js';
 import { OwlProjection } from '../../src/modules/rdf/OwlProjection.js';
@@ -102,38 +103,16 @@ function getProps(fragment: OwlImportFragment, classIri: string): Record<string,
 // Manual quad builder (for axioms that OwlProjection does not emit)
 // ---------------------------------------------------------------------------
 
-function namedNode(value: string): QuadInterface['subject'] & { 'termType': 'NamedNode' } {
-  return {
-    'equals': (other) => {
-      return other !== null && other.termType === 'NamedNode' && other.value === value;
-    },
-    'termType': 'NamedNode' as const,
-    value
-  };
-}
-
 function makeQuad(
   subject: string,
   predicate: string,
   objectValue: string
 ): QuadInterface {
-  const subj = namedNode(subject);
-  const pred = namedNode(predicate);
-  const obj = namedNode(objectValue);
-  const graph: QuadInterface['graph'] = {
-    'equals': () => {
-      return false;
-    },
-    'termType': 'DefaultGraph' as const,
-    'value': '' as const
-  };
-
-  return {
-    'graph': graph,
-    'object': obj,
-    'predicate': pred,
-    'subject': subj
-  };
+  return Terms.quad(
+    Terms.iri(subject),
+    Terms.iri(predicate),
+    Terms.iri(objectValue)
+  );
 }
 
 // Build a minimal set of quads: declare P as owl:ObjectProperty,
@@ -237,6 +216,27 @@ void describe('importProperties', { 'concurrency': false }, () => {
       const propSchema = props.title as Record<string, unknown>;
 
       assert.equal(propSchema.type, 'string', 'prefixed xsd:string → type: string');
+    });
+
+    void it('produces type: "string" when range is rdf:langString (full IRI)', () => {
+      const quads = buildDatatypePropertyQuads(TITLE_PROP, CLASS_IRI, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#langString');
+      const ctx = makeCtx(quads);
+      const fragment = importProperties(quads, ctx);
+      const props = getProps(fragment, CLASS_IRI);
+      const propSchema = props.title as Record<string, unknown>;
+
+      assert.equal(propSchema.type, 'string', 'rdf:langString (full IRI) → type: string');
+      assert.equal(propSchema.$ref, undefined, 'no $ref for rdf:langString');
+    });
+
+    void it('produces type: "string" when range is rdf:langString (prefixed)', () => {
+      const quads = buildDatatypePropertyQuads(TITLE_PROP, CLASS_IRI, 'rdf:langString');
+      const ctx = makeCtx(quads);
+      const fragment = importProperties(quads, ctx);
+      const props = getProps(fragment, CLASS_IRI);
+      const propSchema = props.title as Record<string, unknown>;
+
+      assert.equal(propSchema.type, 'string', 'rdf:langString (prefixed) → type: string');
     });
 
     void it('produces type: "integer" when range is xsd:integer (full IRI)', () => {

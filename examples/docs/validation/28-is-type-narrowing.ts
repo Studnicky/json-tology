@@ -10,7 +10,8 @@ import {
 } from '../bookstore/index.js';
 
 function describeCustomer(data: unknown): string {
-  if (bookstoreEntities.is(CustomerSchema, data)) {
+  // Passing the schema $id selects the type-guard overload, narrowing `data`.
+  if (bookstoreEntities.is(CustomerSchema.$id, data)) {
     // data is narrowed to Customer here
     return `${String(data.name)} <${String(data.email)}>`;
   }

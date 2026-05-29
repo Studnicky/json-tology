@@ -22,7 +22,7 @@ const DisplayPriceSchema = {
 
 // Decode: A.decode → B.decode → C.decode = domain (number)
 // Encode: C.encode → B.encode → A.encode = wire (string)
-const ChainedPriceSchema = Transform.chain<typeof DisplayPriceSchema, number>(
+const ChainedPriceSchema = Transform.chain(
   DisplayPriceSchema,
   [
     // Step A: strip "Price: " prefix

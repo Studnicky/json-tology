@@ -19,15 +19,16 @@ const rawBody = {
 };
 
 // Anti-pattern: is() does not apply defaults
-// Don't do this
-if (bookstoreEntities.is(CustomerSchema, rawBody)) {
+// Don't do this. Passing the schema $id narrows rawBody to Customer, where
+// addresses is optional — but is() never fills the default, so it is undefined.
+if (bookstoreEntities.is(CustomerSchema.$id, rawBody)) {
   // rawBody.addresses is undefined here — default [] was never applied
   // Calling rawBody.addresses.forEach(...) would throw at runtime
   console.assert(rawBody.addresses === undefined || Array.isArray(rawBody.addresses));
 }
 
 // Correct approach: instantiate() to get defaults applied
-const customer = bookstoreEntities.instantiate(CustomerSchema, rawBody);
+const customer = bookstoreEntities.instantiate(CustomerSchema.$id, rawBody);
 
 console.assert(Array.isArray(customer.addresses));
 // addresses is always present after instantiate (default [])

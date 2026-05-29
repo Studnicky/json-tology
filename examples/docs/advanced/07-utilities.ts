@@ -74,7 +74,7 @@ const mergedOptions = Resolver.merge(baseOptions, overrideOptions);
 console.assert(!mergedOptions.enableDefaults);
 console.assert(mergedOptions.enableValidation);
 
-const undefinedOverride = { 'enableDefaults': undefined };
+const undefinedOverride: Partial<typeof baseOptions> = {};
 const mergedWithUndefined = Resolver.merge(baseOptions, undefinedOverride);
 
 console.assert(mergedWithUndefined.enableDefaults);

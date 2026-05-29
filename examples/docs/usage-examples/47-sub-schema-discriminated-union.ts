@@ -65,12 +65,13 @@ const OrderWithPaymentSchema = Compose.extend(
   'https://bookstore.example/OrderWithPayment'
 );
 
-jt.set(CreditCardPaymentSchema);
-jt.set(InvoicePaymentSchema);
-jt.set(PaymentSchema);
-jt.set(OrderWithPaymentSchema);
+const jt2 = jt
+  .set(CreditCardPaymentSchema)
+  .set(InvoicePaymentSchema)
+  .set(PaymentSchema)
+  .set(OrderWithPaymentSchema);
 
-const errs = jt.validate(OrderWithPaymentSchema.$id, {
+const errs = jt2.validate(OrderWithPaymentSchema.$id, {
   ...aboxFixtures.order,
   'payment': {
     'cardLast4': '4242',

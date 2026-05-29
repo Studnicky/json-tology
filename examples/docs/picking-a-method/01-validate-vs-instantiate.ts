@@ -29,7 +29,7 @@ try {
   bookstoreEntities.instantiate(OrderSchema, invalidOrder);
 } catch (error) {
   caught = true;
-  console.assert(error.name === 'InstantiationError');
+  console.assert(error instanceof Error && error.name === 'InstantiationError');
 }
 
 console.assert(caught);

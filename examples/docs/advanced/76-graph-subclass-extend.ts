@@ -49,7 +49,7 @@ console.assert(
 );
 
 // A valid PremiumCustomer validates against its own schema.
-const result = bookstoreEntities.validate(PremiumCustomerSchema.$id, {
+const result = bookstoreEntities.validate(PremiumCustomerSchema, {
   'addresses': [],
   'email': 'cornelia.funke@bookstore.example',
   'id': 'a1b2c3d4-0000-1111-2222-333344445555',

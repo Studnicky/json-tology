@@ -19,7 +19,7 @@ import {
 const customerById: Customer = bookstoreEntities.instantiate(
   CustomerSchema.$id,
   aboxFixtures.customer
-) as Customer;
+);
 
 // By schema object — idempotent registration then run.
 const customerByObj = bookstoreEntities.instantiate(

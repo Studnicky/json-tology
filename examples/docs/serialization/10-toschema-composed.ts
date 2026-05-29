@@ -27,9 +27,9 @@ const BookSummarySchema = Compose.pick(
   'https://bookstore.example/BookSummaryToSchema'
 );
 
-jt.set(BookSummarySchema);
+const jt2 = jt.set(BookSummarySchema);
 
-const roundTripped = jt.toSchema('https://bookstore.example/BookSummaryToSchema');
+const roundTripped = jt2.toSchema(BookSummarySchema.$id);
 
 console.assert(roundTripped !== undefined, 'Composed schema should be retrievable');
 

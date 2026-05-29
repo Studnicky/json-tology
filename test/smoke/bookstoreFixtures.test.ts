@@ -49,7 +49,7 @@ void describe('bookstore aboxFixtures', () => {
 
     assert.ok(invariantErr, 'expected jt:invariant error in collection');
     assert.equal(
-      (invariantErr as { 'params': { 'invariant': string } }).params.invariant,
+      invariantErr.params.invariant,
       'orderTotalMatchesItems'
     );
     assert.match(invariantErr.message, /does not equal/u);

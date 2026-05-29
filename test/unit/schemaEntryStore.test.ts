@@ -19,6 +19,8 @@ import { StructuralHash } from '../../src/modules/data/StructuralHash.js';
 
 function makeEntry(schema: Record<string, unknown>) {
   return {
+    'hasComputedFields': false,
+    'hasEmbeddedIds': false,
     'hash': StructuralHash.of(schema),
     schema
   };
@@ -63,7 +65,10 @@ void describe('SchemaEntryStore', { 'concurrency': true }, () => {
 
     const result = store.get('https://example.io/B');
 
-    assert.ok(result !== undefined);
+    assert.notStrictEqual(result, undefined);
+    if (result === undefined) {
+      throw new Error('unreachable');
+    }
     assert.deepEqual(result.schema, schema);
   });
 
@@ -158,7 +163,10 @@ void describe('SchemaEntryStore', { 'concurrency': true }, () => {
 
     const stored = store.get('https://example.io/E');
 
-    assert.ok(stored !== undefined);
+    assert.notStrictEqual(stored, undefined);
+    if (stored === undefined) {
+      throw new Error('unreachable');
+    }
     assert.equal(stored.schema.description, 'v2');
   });
 

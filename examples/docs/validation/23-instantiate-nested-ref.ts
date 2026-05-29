@@ -11,7 +11,7 @@ import {
   aboxFixtures, bookstoreEntities, OrderSchema
 } from '../bookstore/index.js';
 
-const order = bookstoreEntities.instantiate(OrderSchema, {
+const order = bookstoreEntities.instantiate(OrderSchema.$id, {
   'customerId': aboxFixtures.customer.id,
   'id': aboxFixtures.order.id,
   'items': [{

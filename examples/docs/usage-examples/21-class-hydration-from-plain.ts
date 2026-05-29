@@ -46,7 +46,14 @@ class OrderViaFromPlain {
     public readonly customerId: string
   ) {}
 
-  public toPlain(): OrderWire {
+  public toPlain(): {
+    readonly 'customerId': string;
+    readonly 'id': string;
+    readonly 'items': OrderWire['items'];
+    readonly 'placedAt': OrderWire['placedAt'];
+    readonly 'shippingAddress': OrderWire['shippingAddress'];
+    readonly 'total': OrderWire['total'];
+  } {
     return {
       'customerId': this.customerId,
       'id': this.id,
@@ -65,7 +72,7 @@ const FromPlainOrderSchema = Compose.equivalent(
 
 jt.set(FromPlainOrderSchema);
 
-Transform.create<typeof FromPlainOrderSchema, OrderViaFromPlain>(FromPlainOrderSchema, {
+const FromPlainOrderTransform = Transform.create<typeof FromPlainOrderSchema, OrderViaFromPlain>(FromPlainOrderSchema, {
   'decode': (plain) => {
     return OrderViaFromPlain.fromPlain(plain as OrderWire);
   },
@@ -74,7 +81,7 @@ Transform.create<typeof FromPlainOrderSchema, OrderViaFromPlain>(FromPlainOrderS
   }
 });
 
-const hydrated = jt.instantiate(FromPlainOrderSchema, aboxFixtures.order);
+const hydrated = jt.instantiate(FromPlainOrderTransform, aboxFixtures.order);
 
 console.assert(hydrated instanceof OrderViaFromPlain);
-console.assert((hydrated as OrderViaFromPlain).customerId === aboxFixtures.order.customerId);
+console.assert(hydrated.customerId === aboxFixtures.order.customerId);

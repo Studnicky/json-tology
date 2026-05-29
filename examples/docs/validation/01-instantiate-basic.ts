@@ -10,7 +10,7 @@ import {
   aboxFixtures, bookstoreEntities, CustomerSchema
 } from '../bookstore/index.js';
 
-const customer = bookstoreEntities.instantiate(CustomerSchema, {
+const customer = bookstoreEntities.instantiate(CustomerSchema.$id, {
   'email': aboxFixtures.customer.email,
   'id': aboxFixtures.customer.id,
   'internalNotes': 'vip',
@@ -21,5 +21,6 @@ const customer = bookstoreEntities.instantiate(CustomerSchema, {
 // customer is typed as Customer
 console.assert(customer.name === aboxFixtures.customer.name);
 console.assert(Array.isArray(customer.addresses));
-console.assert(customer.addresses.length === 0);
+// addresses is optional in the type; instantiate fills the schema default at runtime.
+console.assert((customer.addresses ?? []).length === 0);
 console.assert(!('internalNotes' in customer));

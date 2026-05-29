@@ -30,7 +30,7 @@ import { Type } from '@sinclair/typebox';
 import {
   Ajv, type ValidateFunction
 } from 'ajv';
-import addFormats from 'ajv-formats';
+import addFormatsNs from 'ajv-formats';
 import {
   array as iotArray,
   literal as iotLiteral,
@@ -121,7 +121,7 @@ import { aboxFixtures } from '../bookstore/aboxFixtures.js';
 // ---------------------------------------------------------------------------
 
 export const ajvInstance = new Ajv({ 'allErrors': true });
-addFormats(ajvInstance);
+addFormatsNs.default(ajvInstance);
 
 // ---------------------------------------------------------------------------
 // Bookstore schemas to register on every bench SchemaRegistry.

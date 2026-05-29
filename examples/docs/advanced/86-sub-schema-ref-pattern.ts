@@ -48,10 +48,10 @@ const invalidResult = bookstoreEntities.validate(CustomerSchema.$id, invalidCust
 console.assert(!invalidResult.ok, 'customer with invalid email fails validation');
 
 const hasEmailPointer = invalidResult.items.some((item) => {
-  return item.pointer === '/email';
+  return item.path === '/email';
 });
 
 console.assert(
   hasEmailPointer,
-  'error pointer targets /email — the $ref slot in CustomerSchema'
+  'error path targets /email — the $ref slot in CustomerSchema'
 );

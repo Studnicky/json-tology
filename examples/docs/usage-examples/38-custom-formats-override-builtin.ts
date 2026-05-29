@@ -12,16 +12,18 @@
 import { JsonTology } from '../../../src/index.js';
 import { EmailSchema } from '../bookstore/index.js';
 
+const formats: Record<string, (value: unknown) => boolean> = {
+  // Replace the built-in 'email' with a stricter rule that requires
+  // a two-letter-plus TLD.
+  'email': (value) => {
+    return typeof value === 'string'
+      && /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/iu.test(value);
+  }
+};
+
 const jt = JsonTology.create({
   'baseIRI': 'https://bookstore.example',
-  'formats': {
-    // Replace the built-in 'email' with a stricter rule that requires
-    // a two-letter-plus TLD.
-    'email': (value) => {
-      return typeof value === 'string'
-        && /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/iu.test(value);
-    }
-  },
+  formats,
   'schemas': [EmailSchema] as const
 });
 

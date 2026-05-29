@@ -50,7 +50,7 @@ const OrderRecordSchema = Compose.equivalent(
 
 jt.set(OrderRecordSchema);
 
-Transform.create<typeof OrderRecordSchema, OrderRecord>(OrderRecordSchema, {
+const OrderRecordTransform = Transform.create<typeof OrderRecordSchema, OrderRecord>(OrderRecordSchema, {
   'decode': (input) => {
     const wire = input as OrderWire;
 
@@ -76,15 +76,15 @@ Transform.create<typeof OrderRecordSchema, OrderRecord>(OrderRecordSchema, {
 });
 
 const hydrated = jt.instantiate(
-  OrderRecordSchema,
+  OrderRecordTransform,
   aboxFixtures.order
 );
 
 console.assert(hydrated instanceof OrderRecord);
-console.assert((hydrated as OrderRecord).totalWithTax() > aboxFixtures.order.total.amount);
+console.assert(hydrated.totalWithTax() > aboxFixtures.order.total.amount);
 
 // Encoder round-trips back to wire shape.
-const wire = bookstoreEntities.encode(OrderRecordSchema, hydrated as OrderRecord) as Record<string, unknown>;
+const wire = bookstoreEntities.encode(OrderRecordTransform, hydrated) as Record<string, unknown>;
 
 console.assert(typeof wire.id === 'string');
 console.assert(Array.isArray(wire.items));

@@ -104,11 +104,9 @@ console.log('Codegen output matches committed fixture (modulo timestamp): true')
 
 // The committed generated file exports `PersonSchema`, `AgentSchema`, and a `foaf`
 // registry. We load them here via a dynamic import.
-const generated = await import('../ontologies/generated/foaf.generated.js') as {
-  'AgentSchema': Record<string, unknown> & { '$id': string };
-  'foaf': ReturnType<typeof JsonTology.create>;
-  'PersonSchema': Record<string, unknown> & { '$id': string };
-};
+// TypeScript resolves the generated .ts file's exports directly via the .js
+// import path — no cast needed.
+const generated = await import('../ontologies/generated/foaf.generated.js');
 
 const {
   AgentSchema, foaf, 'PersonSchema': CommittedPersonSchema

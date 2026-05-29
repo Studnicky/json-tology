@@ -36,10 +36,13 @@ const PlacedAtDbSchema = Transform.create(
 
 jt.set(PlacedAtDbSchema);
 
+// PlacedAtDbSchema was registered at runtime via set(), so it is not part of
+// the registry's compile-time schema-ID union — pass the schema object. The
+// transform decodes the ISO string into a domain Date.
 const placedDate = jt.instantiate(
-  PlacedAtDbSchema.$id,
+  PlacedAtDbSchema,
   aboxFixtures.order.placedAt
-) as Date;
+);
 
 // Before writing to DB — encode back to ISO string.
 const placedAtWire = jt.encode(PlacedAtDbSchema, placedDate);

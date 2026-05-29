@@ -30,8 +30,8 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     return target;
   }
 
-  // eslint-disable-next-line @stylistic/max-len
-  function makeThenElseSchema(id: string, ifSchema: unknown, thenSchema: unknown, elseSchema?: unknown): Record<string, unknown> {
+
+  function makeThenElseSchema(id: string, ifSchema: unknown, thenSchema: unknown, elseSchema?: unknown): Record<string, unknown> & { readonly '$id': string } {
     const schema: Record<string, unknown> = {
       '$id': id,
       'if': ifSchema,
@@ -43,7 +43,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       setSchemaKey(schema, 'else', elseSchema);
     }
 
-    return schema;
+    return schema as Record<string, unknown> & { readonly '$id': string };
   }
 
   // ---------------------------------------------------------------------------
@@ -547,7 +547,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     void it('validates uniqueItems scenarios', () => {
       const scenarios: Array<{ 'data': unknown;
         'name': string;
-        'schema': Record<string, unknown>;
+        'schema': Record<string, unknown> & { readonly '$id': string };
         'valid': boolean }> = [
         {
           'data': {
@@ -619,7 +619,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
         registry.set(schema);
-        assert.equal(registry.validate(schema.$id as string, data).length === 0, valid, name);
+        assert.equal(registry.validate(schema.$id, data).length === 0, valid, name);
       }
     });
   });
@@ -1190,7 +1190,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     void it('validates boolean contains scenarios', () => {
       const scenarios: Array<{ 'data': unknown;
         'name': string;
-        'schema': Record<string, unknown>;
+        'schema': Record<string, unknown> & { readonly '$id': string };
         'valid': boolean }> = [
         {
           'data': {
@@ -1268,7 +1268,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
         const registry = JsonTology.create({ 'baseIRI': 'urn:test:' });
 
         registry.set(schema);
-        assert.equal(registry.validate(schema.$id as string, data).length === 0, valid, name);
+        assert.equal(registry.validate(schema.$id, data).length === 0, valid, name);
       }
     });
   });
@@ -3539,7 +3539,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
     const scenarios: Array<{
       'check': (jt: ReturnType<typeof JsonTology.create>) => void;
       'name': string;
-      'schemas': ReadonlyArray<Record<string, unknown>>;
+      'schemas': ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>;
     }> = [
       {
         'check': (jt) => {
@@ -4751,7 +4751,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
   void describe('Composition — Good/Bad/Ugly', () => {
     void it('validateAllOf: undefined, all-pass, earlyExit, collect-errors', () => {
       const e1: ValidationErrorType[] = [];
-      const r1 = Composition.validateAllOf('test', '', undefined, e1, true, false, false, false);
+      const r1 = Composition.validateAllOf('test', '', undefined, e1, true, false, false);
 
       assert.equal(r1.valid, true);
       assert.equal(r1.earlyExit, false);
@@ -4761,7 +4761,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const r2 = Composition.validateAllOf('test', '', [
         passingValidator(),
         passingValidator()
-      ], e2, true, false, false, false);
+      ], e2, true, false, false);
 
       assert.equal(r2.valid, true);
       assert.equal(r2.earlyExit, false);
@@ -4770,7 +4770,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const r3 = Composition.validateAllOf('test', '/root', [
         passingValidator(),
         failingValidator()
-      ], e3, false, false, false, false);
+      ], e3, false, false, false);
 
       assert.equal(r3.valid, false);
       assert.equal(r3.earlyExit, true);
@@ -4779,7 +4779,7 @@ import { Scalars } from '../../src/modules/validation/exec/Scalars.js';
       const r4 = Composition.validateAllOf('test', '/root', [
         passingValidator(),
         failingValidator()
-      ], e4, true, false, false, false);
+      ], e4, true, false, false);
 
       assert.equal(r4.valid, false);
       assert.equal(r4.earlyExit, false);

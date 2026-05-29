@@ -17,6 +17,11 @@ import type {
   SchemaGraphRelationInterface
 } from '../../interfaces/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { RelationStructure } from '../../types/SchemaGraph.js';
+import type {
+  DefaultGraphTermType, IriTermType
+} from '../../types/Quad.js';
+import type { IriMinterInterface } from '../../interfaces/Projection.js';
 import type { SkolemizeFnType } from '../../types/Skolemize.js';
 import type { SpecialHandlerFn } from '../../types/SpecialHandlerFn.js';
 import type {
@@ -220,6 +225,10 @@ function projectStructuredRelation(
   }
 
   switch (structure.kind) {
+    case 'annotatedEdge':
+      // Annotated edges are ABox triple-term emissions, projected separately via
+      // findAnnotatedEdgeStructure/projectAnnotatedEdge — not a TBox structure here.
+      break;
     case 'conditional': {
       const condBnode = QuadFactory.nextBnode(issuer);
 
@@ -447,6 +456,24 @@ function projectInstance(args: ProjectInstanceArgs): string {
         continue;
       }
 
+      const annotatedEdge = findAnnotatedEdgeStructure(graph, propertyNode);
+
+      if (annotatedEdge !== undefined) {
+        projectAnnotatedEdge({
+          curie,
+          'edge': annotatedEdge,
+          graphTerm,
+          'instanceIri': instIRI,
+          minter,
+          'path': `${path}/${propertyName}`,
+          quads,
+          'sourceId': node.id,
+          value
+        });
+
+        continue;
+      }
+
       const propertyIRI = `${node.id}#${propertyName}`;
       const resolved = resolveNode(graph, propertyNode, lookupGraph);
       const propertySemantics = resolved.graph.semantics(resolved.node);
@@ -473,6 +500,173 @@ function projectInstance(args: ProjectInstanceArgs): string {
     return instIRI;
   } finally {
     visited.delete(data);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Annotated edge (RDF 1.2 triple-term) projection
+// ---------------------------------------------------------------------------
+
+type AnnotatedEdgeStructure = Extract<RelationStructure, { 'kind': 'annotatedEdge' }>;
+
+interface ProjectAnnotatedEdgeArgs {
+  readonly 'curie': CurieInterface | undefined;
+  readonly 'edge': AnnotatedEdgeStructure;
+  readonly 'graphTerm': DefaultGraphTermType | IriTermType;
+  readonly 'instanceIri': string;
+  readonly 'minter': IriMinterInterface;
+  readonly 'path': string;
+  readonly 'quads': QuadInterface[];
+  readonly 'sourceId': string;
+  readonly 'value': unknown;
+}
+
+/**
+ * Find the `annotatedEdge` structure relation attached to a property node, if any.
+ */
+function findAnnotatedEdgeStructure(
+  graph: SchemaGraphInterface,
+  propertyNode: SchemaGraphNodeInterface
+): AnnotatedEdgeStructure | undefined {
+  for (const relation of graph.relations(propertyNode)) {
+    if (relation.structure?.kind === 'annotatedEdge') {
+      return relation.structure;
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * Resolve the target term IRI for an annotated edge value.
+ *
+ * The value may be:
+ * - a string IRI (`{ target: '...rockruff' }`),
+ * - an object carrying an `@id` / `id` IRI, or
+ * - a nested instance object — minted via the IRI minter.
+ */
+function resolveEdgeTargetIri(
+  target: unknown,
+  edge: AnnotatedEdgeStructure,
+  minter: IriMinterInterface,
+  path: string
+): string {
+  if (typeof target === 'string') {
+    return target;
+  }
+
+  if (isRecord(target)) {
+    const idValue = target['@id'] ?? target.id;
+
+    if (typeof idValue === 'string') {
+      return idValue;
+    }
+
+    return minter.mint(edge.edgeTarget, target, `${path}/target`, 0);
+  }
+
+  return String(target);
+}
+
+/**
+ * Build a `QuadObjectType` term for an annotation value.
+ * Strings/numbers/booleans/Dates become typed literals; IRI-valued targets
+ * (string starting with a scheme) are emitted as NamedNode references when the
+ * annotation range resolves to a class IRI.
+ */
+function annotationValueTerm(value: unknown, rangeRef: string): QuadObjectType {
+  if (typeof value === 'string' && isIriReference(value) && isClassRange(rangeRef)) {
+    return Terms.iri(value);
+  }
+
+  if (typeof value === 'string') {
+    return Terms.literal(value, { 'datatype': Terms.iri(XSD.string) });
+  }
+
+  if (typeof value === 'number') {
+    return Terms.literal(value, { 'datatype': Terms.iri(Number.isInteger(value) ? XSD.integer : XSD.double) });
+  }
+
+  if (typeof value === 'boolean') {
+    return Terms.literal(value, { 'datatype': Terms.iri(XSD.boolean) });
+  }
+
+  if (value instanceof Date) {
+    return Terms.literal(value, { 'datatype': Terms.iri(XSD.dateTime) });
+  }
+
+  return Terms.literal(String(value), { 'datatype': Terms.iri(XSD.string) });
+}
+
+function isIriReference(value: string): boolean {
+  return value.startsWith('http://') || value.startsWith('https://') || value.startsWith('urn:');
+}
+
+function isClassRange(rangeRef: string): boolean {
+  return isIriReference(rangeRef);
+}
+
+/**
+ * Emit the base triple and one annotation quad per annotation for an annotated edge.
+ *
+ * Base triple: `s edgePredicate o` (graph = graphIRI).
+ * Annotation quads: `<< s edgePredicate o >> annotationPredicate value` (graph = graphIRI).
+ * All quads share the SAME named graph — a triple term carries no graph membership,
+ * so the base and annotation triples MUST be asserted in one named graph.
+ *
+ * Raises a MaterializationError when no `graphIRI` was supplied (the default
+ * graph is not a valid home for an annotated edge).
+ */
+function projectAnnotatedEdge(args: ProjectAnnotatedEdgeArgs): void {
+  const {
+    curie, edge, graphTerm, instanceIri, minter, path, quads, sourceId, value
+  } = args;
+
+  if (graphTerm.termType === 'DefaultGraph') {
+    throw new MaterializationError(
+      sourceId,
+      [`annotated edge ${edge.edgePredicate} requires an explicit graphIRI`],
+      {
+        'code': 'MISSING_GRAPH_IRI',
+        'message': `Annotated edge ${edge.edgePredicate} at ${path} requires a graphIRI: a triple term carries no graph membership, so the base triple and its annotations must share one named graph. Pass { graphIRI } to toQuads.`
+      }
+    );
+  }
+
+  if (!isRecord(value)) {
+    throw new MaterializationError(
+      sourceId,
+      [`annotated edge ${edge.edgePredicate} value must be an object with target + annotations`],
+      {
+        'code': 'MATERIALIZATION_FAILED',
+        'message': `Annotated edge ${edge.edgePredicate} at ${path} expects { target, annotations }, received ${typeof value}.`
+      }
+    );
+  }
+
+  const targetIri = resolveEdgeTargetIri(value.target, edge, minter, path);
+  const objectTerm = Terms.iri(targetIri);
+  const quadOpts = {
+    curie,
+    'graph': graphTerm
+  };
+
+  // Base triple: s edgePredicate o
+  quads.push(QuadFactory.quad(instanceIri, edge.edgePredicate, objectTerm, quadOpts));
+
+  const annotationValues = isRecord(value.annotations) ? value.annotations : {};
+
+  for (const annotation of edge.edgeAnnotations) {
+    const annotationValue = annotationValues[annotation.propertyName];
+
+    if (annotationValue === undefined || annotationValue === null) {
+      continue;
+    }
+
+    const tripleTerm = QuadFactory.tripleTerm(instanceIri, edge.edgePredicate, objectTerm, { curie });
+    const valueTerm = annotationValueTerm(annotationValue, annotation.rangeRef);
+
+    quads.push(QuadFactory.annotationQuad(tripleTerm, annotation.annotationPredicate, valueTerm, quadOpts));
   }
 }
 
