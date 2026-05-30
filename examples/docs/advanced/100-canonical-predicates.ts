@@ -43,11 +43,15 @@ const canonicalPredicates = canonicalQuads.map((quad) => {
 
 // Flat: shared across all classes — every 'name' or 'email' in the vocabulary uses this predicate.
 console.assert(
-  canonicalPredicates.includes('https://bookstore.example/name'),
+  canonicalPredicates.some((predicate) => {
+    return predicate === 'https://bookstore.example/name';
+  }),
   'canonical: name predicate is flat https://bookstore.example/name'
 );
 console.assert(
-  canonicalPredicates.includes('https://bookstore.example/email'),
+  canonicalPredicates.some((predicate) => {
+    return predicate === 'https://bookstore.example/email';
+  }),
   'canonical: email predicate is flat https://bookstore.example/email'
 );
 

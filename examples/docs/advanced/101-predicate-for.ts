@@ -45,17 +45,23 @@ const predicates = quads.map((quad) => {
 
 // Overridden properties use the custom vocabulary IRI.
 console.assert(
-  predicates.includes('https://schema.org/name'),
+  predicates.some((predicate) => {
+    return predicate === 'https://schema.org/name';
+  }),
   'name mapped to https://schema.org/name'
 );
 console.assert(
-  predicates.includes('https://schema.org/email'),
+  predicates.some((predicate) => {
+    return predicate === 'https://schema.org/email';
+  }),
   'email mapped to https://schema.org/email'
 );
 
 // Properties not covered by predicateFor use the flat canonical form.
 console.assert(
-  predicates.includes('https://bookstore.example/customerId'),
+  predicates.some((predicate) => {
+    return predicate === 'https://bookstore.example/customerId';
+  }),
   'customerId falls through to canonical flat https://bookstore.example/customerId'
 );
 

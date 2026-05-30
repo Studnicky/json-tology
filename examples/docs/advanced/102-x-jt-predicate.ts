@@ -62,13 +62,17 @@ const predicates = quads.map((quad) => {
 
 // isbn uses the pinned Schema.org predicate — not the flat canonical form.
 console.assert(
-  predicates.includes('https://schema.org/isbn'),
+  predicates.some((predicate) => {
+    return predicate === 'https://schema.org/isbn';
+  }),
   'isbn emitted as https://schema.org/isbn (x-jt-predicate)'
 );
 
 // title uses the default flat canonical form (no x-jt-predicate set).
 console.assert(
-  predicates.includes('https://bookstore.example/title'),
+  predicates.some((predicate) => {
+    return predicate === 'https://bookstore.example/title';
+  }),
   'title emitted as https://bookstore.example/title (default canonical)'
 );
 
