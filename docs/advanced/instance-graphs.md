@@ -2,7 +2,9 @@
 
 `jt.aboxGraph(quads)` builds an in-memory typed graph view over a set of ABox quads and exposes a fluent cursor API for navigating it. The mental model is an ORM for graphs: entities are typed by their registered schemas, associations derive from the TBox that those schemas already emit (`rdfs:domain`, `rdfs:range`, `owl:InverseFunctionalProperty`), and navigation is left-to-right dot-chaining over a lazy cursor — no query language, no nested calls, no path strings to parse.
 
-<<< ../../examples/docs/advanced/106-abox-graph.ts
+The example below runs for real in your browser — it is the verbatim source of the gate-verified `examples/docs/advanced/106-abox-graph.ts`. Edit it and press Run to execute it against the actual library and see the true output.
+
+<RunnableExample id="abox-graph" />
 
 ## Concepts
 

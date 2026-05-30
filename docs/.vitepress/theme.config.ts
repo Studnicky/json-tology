@@ -11,4 +11,4 @@ export const themeConfig = {
     text: 'Edit this page on GitHub'
   },
   docFooter: { next: 'Next', prev: 'Previous' }
-} satisfies Partial<DefaultTheme.Config>;
+} satisfies Partial<DefaultTheme.Config> & { appearance: boolean };

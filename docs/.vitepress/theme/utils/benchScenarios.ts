@@ -384,14 +384,17 @@ function yupClean(data: unknown, build: (yup: typeof import('yup')) => { cast: (
   };
 }
 
-function joiClean(data: unknown, build: (Joi: { object: (s: unknown) => { unknown: (b: boolean) => unknown } } & Record<string, (...a: unknown[]) => unknown>) => { validate: (d: unknown, opts: unknown) => unknown }): Setup {
+function joiClean(data: unknown, build: (Joi: { object: (s: unknown) => { unknown: (b: boolean) => JoiCleanSchema; validate: (d: unknown, opts: unknown) => unknown } } & Record<string, (...a: unknown[]) => unknown>) => { validate: (d: unknown, opts: unknown) => unknown }): Setup {
   return async () => {
     const joiMod = (await importOnce('https://esm.sh/joi@17')) as { default?: unknown };
-    const Joi = (joiMod.default ?? joiMod) as { object: (s: unknown) => { unknown: (b: boolean) => unknown } } & Record<string, (...a: unknown[]) => unknown>;
+    const Joi = (joiMod.default ?? joiMod) as { object: (s: unknown) => { unknown: (b: boolean) => JoiCleanSchema; validate: (d: unknown, opts: unknown) => unknown } } & Record<string, (...a: unknown[]) => unknown>;
     const Customer = build(Joi);
     return () => { void Customer.validate(data, { stripUnknown: true }); };
   };
 }
+
+interface JoiCleanSchema { unknown: (b: boolean) => JoiCleanSchema; validate: (d: unknown, opts: unknown) => unknown }
+interface JoiFlatStringSchema { uuid(): JoiFlatStringSchema; email(): JoiFlatStringSchema; required(): JoiFlatStringSchema }
 
 // JSON-round-trip clone: universal fallback every JS user has access to.
 function jsonRoundTripClone(data: unknown): Setup {
@@ -526,7 +529,7 @@ function joiFlatValidate(data: unknown): Setup {
     const joiMod = (await importOnce('https://esm.sh/joi@17')) as { default?: unknown };
     const Joi = (joiMod.default ?? joiMod) as {
       object: (s: unknown) => { validate: (d: unknown, opts: unknown) => unknown };
-      string: () => { uuid: () => unknown; email: () => unknown; required: () => unknown };
+      string: () => JoiFlatStringSchema;
     };
     const Customer = Joi.object({
       id: Joi.string().uuid().required(),
