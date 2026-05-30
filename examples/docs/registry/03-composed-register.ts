@@ -24,3 +24,7 @@ console.assert(
   jt.registry.has('https://bookstore.example/BookSummary'),
   'BookSummarySchema should be registered'
 );
+
+console.log('BookSummary $id:', BookSummarySchema.$id);
+console.log('registered in registry:', jt.registry.has(BookSummarySchema.$id));
+console.log('picked properties:', Object.keys(BookSummarySchema.properties));

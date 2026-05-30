@@ -35,3 +35,6 @@ const result = createCustomer({
 console.assert(typeof result === 'object' && result !== null);
 console.assert((result as { 'status': number }).status === 422);
 console.assert(typeof (result as { 'body': unknown }).body === 'object');
+
+console.log('status:', (result as { 'status': number }).status);
+console.log('body:', JSON.stringify((result as { 'body': unknown }).body, null, 2));

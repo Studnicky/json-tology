@@ -23,3 +23,13 @@ const shouldFail = dups.length > 0;
 
 console.assert(typeof shouldFail === 'boolean', 'CI gate result is a boolean');
 console.assert(Array.isArray(lines), 'lines is the array a CI script would print');
+
+console.log('duplicates found:', dups.length);
+console.log('CI gate would fail:', shouldFail);
+if (lines.length > 0) {
+  for (const line of lines) {
+    console.log(line);
+  }
+} else {
+  console.log('no duplicates - registry is clean');
+}

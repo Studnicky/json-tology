@@ -25,6 +25,7 @@ if (bookstoreEntities.is(CustomerSchema.$id, rawBody)) {
   // rawBody.addresses is undefined here — default [] was never applied
   // Calling rawBody.addresses.forEach(...) would throw at runtime
   console.assert(rawBody.addresses === undefined || Array.isArray(rawBody.addresses));
+  console.log('is() passes, addresses after is():', rawBody.addresses);
 }
 
 // Correct approach: instantiate() to get defaults applied
@@ -32,3 +33,4 @@ const customer = bookstoreEntities.instantiate(CustomerSchema.$id, rawBody);
 
 console.assert(Array.isArray(customer.addresses));
 // addresses is always present after instantiate (default [])
+console.log('addresses after instantiate():', customer.addresses);

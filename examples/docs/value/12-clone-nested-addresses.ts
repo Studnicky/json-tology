@@ -25,3 +25,6 @@ const copyAddresses = (copy as Record<string, unknown>).addresses;
 console.assert(copyAddresses !== custAddresses);
 console.assert(Array.isArray(copyAddresses));
 console.assert((copy as { 'name': string }).name === aboxFixtures.customer.name);
+
+console.log('copy.name:', (copy as { 'name': string }).name);
+console.log('addresses are distinct references:', copyAddresses !== custAddresses);

@@ -35,5 +35,8 @@ const expectedTotal = aboxFixtures.order.orderLines.reduce(
 
 console.assert(Math.abs(order.discountedTotal - expectedTotal) < 0.005);
 
+console.log('expected discountedTotal:', expectedTotal);
+console.log('computed discountedTotal:', order.discountedTotal);
+
 // Cleanup so subsequent tests are not affected.
 withDiscount.removeComputed(OrderSchema.$id, 'discountedTotal');

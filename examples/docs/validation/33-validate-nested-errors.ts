@@ -39,5 +39,10 @@ console.assert(!errs.ok);
 console.assert(messages.length >= 2);
 // At least one error should reference a nested JSON Pointer path
 console.assert(messages.some((msg) => {
-  return msg.includes('/total') || msg.includes('/items');
+  return msg.includes('/orderTotal') || msg.includes('/orderLines');
 }));
+
+console.log('error count:', messages.length);
+for (const msg of messages) {
+  console.log(' ', msg);
+}

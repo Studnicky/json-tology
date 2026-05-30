@@ -48,5 +48,9 @@ const expected = rawTotal * 0.9;
 
 console.assert(Math.abs(order.derivedTotal - expected) < 0.005);
 
+console.log('raw order total:', rawTotal);
+console.log('10% discounted derivedTotal:', order.derivedTotal);
+console.log('expected (raw * 0.9):', expected);
+
 // Cleanup.
 withDiscounted.removeComputed(OrderSchema.$id, 'derivedTotal');

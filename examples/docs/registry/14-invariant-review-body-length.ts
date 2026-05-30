@@ -32,7 +32,7 @@ console.assert(validResult.ok);
 // A terse 5-star review triggers the invariant.
 const shortReview = {
   ...aboxFixtures.review,
-  'body': 'Perfect.',
+  'body': 'Great read, loved it.',
   'rating': 5
 };
 
@@ -42,6 +42,12 @@ console.assert(!failResult.ok);
 console.assert(failResult.items.some((errItem) => {
   return errItem.keyword === 'jt:invariant';
 }));
+
+console.log('valid review passes:', validResult.ok);
+console.log('short 5-star review passes:', failResult.ok);
+console.log('invariant error:', failResult.items.find((errItem) => {
+  return errItem.keyword === 'jt:invariant';
+})?.message);
 
 // Cleanup.
 bookstoreEntities.removeInvariant(ReviewSchema.$id, 'highRatingRequiresDetailedReview');

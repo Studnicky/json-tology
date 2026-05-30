@@ -18,7 +18,7 @@ Returns a report of inline shapes that structurally match a registered top-level
 
 You want to audit an existing schema set for inline shapes that duplicate a named schema. The output drives an extract-and-`$ref`-replace refactor: each entry tells you exactly which schema, which JSON pointer, and which named schema the inline shape would be equivalent to.
 
-<<< ../../examples/docs/registry/11-find-duplicates-oneshot.ts
+<RunnableExample src="examples/docs/registry/11-find-duplicates-oneshot" />
 
 ## Don't use this when
 
@@ -28,11 +28,11 @@ You want continuous enforcement at registration time - prefer [`enableDuplicateD
 
 ### Example 1: One-shot audit
 
-<<< ../../examples/docs/registry/11-find-duplicates-oneshot.ts
+<RunnableExample src="examples/docs/registry/11-find-duplicates-oneshot" />
 
 ### Example 2: CI gate
 
-<<< ../../examples/docs/registry/12-find-duplicates-ci-gate.ts
+<RunnableExample src="examples/docs/registry/12-find-duplicates-ci-gate" />
 
 ## Comparison
 

@@ -27,9 +27,12 @@ const errs = bookstoreEntities.validate(OrderSchema.$id, {
 console.assert(!errs.ok);
 console.assert(errs.length >= 2);
 
+console.log('ok:', errs.ok, ', error count:', errs.length);
+
 for (const err of errs) {
   console.assert(typeof err.path === 'string');
   console.assert(typeof err.keyword === 'string');
   console.assert(typeof err.message === 'string');
   console.assert(typeof err.params === 'object');
+  console.log(`  path="${err.path}" keyword="${err.keyword}" message="${err.message}"`);
 }

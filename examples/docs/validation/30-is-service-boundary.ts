@@ -30,12 +30,15 @@ const result = processOrder(validOrder);
 console.assert(result.includes(aboxFixtures.order.orderId));
 console.assert(result.includes(aboxFixtures.customer.customerId));
 
+console.log(result);
+
 let threw = false;
 
 try {
   processOrder({ 'id': 'not-an-order' });
 } catch (error) {
   threw = error instanceof TypeError;
+  console.log('invalid input threw TypeError:', threw);
 }
 
 console.assert(threw);

@@ -47,3 +47,8 @@ console.assert(newHash !== prevHash);
 const cloned = Operations.clone(order);
 
 console.assert(Hash.value(cloned) === prevHash);
+
+console.log('original hash:', prevHash);
+console.log('updated hash:', newHash);
+console.log('hash changed after update:', newHash !== prevHash);
+console.log('clone hash matches original:', Hash.value(cloned) === prevHash);

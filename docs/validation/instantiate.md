@@ -16,33 +16,33 @@
 
 Valid input: unknown properties are stripped, defaults are filled, the return type is `Customer`.
 
-<<< ../../examples/docs/validation/01-instantiate-basic.ts
+<RunnableExample src="examples/docs/validation/01-instantiate-basic" />
 
 ### Example 2: Coerce as part of a request handler
 
 Catch `InstantiationError` and convert to an RFC 7807 Problem Details response (built on [`errors.report`](/errors/views#validationerrors-report)).
 
-<<< ../../examples/docs/validation/22-instantiate-request-handler.ts
+<RunnableExample src="examples/docs/validation/22-instantiate-request-handler" />
 
 ### Example 3: Coerce a nested schema with $ref
 
 `OrderSchema` contains `items: [OrderLine]` via `$ref`. Each `OrderLine` is coerced independently. See the [bookstore domain](/bookstore-domain) for schema definitions.
 
-<<< ../../examples/docs/validation/23-instantiate-nested-ref.ts
+<RunnableExample src="examples/docs/validation/23-instantiate-nested-ref" />
 
 ## Bad examples - what NOT to do
 
 ### Anti-pattern 1: Catching InstantiationError silently
 
-<<< ../../examples/docs/validation/24-instantiate-antipattern-swallow.ts
+<RunnableExample src="examples/docs/validation/24-instantiate-antipattern-swallow" />
 
 ### Anti-pattern 2: Coercing already-coerced values
 
-<<< ../../examples/docs/validation/25-instantiate-antipattern-double-coerce.ts
+<RunnableExample src="examples/docs/validation/25-instantiate-antipattern-double-coerce" />
 
 ### Anti-pattern 3: Building partial shapes by hand instead of using derived schemas
 
-<<< ../../examples/docs/validation/26-instantiate-antipattern-manual-partial.ts
+<RunnableExample src="examples/docs/validation/26-instantiate-antipattern-manual-partial" />
 
 ## Comparison
 
@@ -198,6 +198,6 @@ except ValidationError as e:
 
 Useful for PATCH endpoints where missing fields mean "no change" rather than "use default":
 
-<<< ../../examples/docs/validation/27-instantiate-no-defaults-patch.ts
+<RunnableExample src="examples/docs/validation/27-instantiate-no-defaults-patch" />
 
 The registry's global `enableDefaults` setting is unchanged by per-call options.

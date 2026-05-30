@@ -32,6 +32,7 @@ for (const err of structured) {
   console.assert(typeof err.path === 'string');
   console.assert(typeof err.keyword === 'string');
   console.assert(typeof err.message === 'string');
+  console.log(`path="${err.path}" keyword="${err.keyword}" message="${err.message}"`);
 }
 
 console.assert(!structured.ok);

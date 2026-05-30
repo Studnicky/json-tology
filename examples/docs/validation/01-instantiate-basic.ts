@@ -24,3 +24,7 @@ console.assert(Array.isArray(customer.addresses));
 // addresses is optional in the type; instantiate fills the schema default at runtime.
 console.assert((customer.addresses ?? []).length === 0);
 console.assert(!('internalNotes' in customer));
+
+console.log('name:', customer.name);
+console.log('addresses (default applied):', customer.addresses);
+console.log('internalNotes stripped:', !('internalNotes' in customer));

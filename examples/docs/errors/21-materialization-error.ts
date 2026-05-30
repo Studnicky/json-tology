@@ -20,5 +20,9 @@ try {
     console.assert(error.code === 'MATERIALIZATION_FAILED');
     console.assert(error.schemaId === OrderSchema.$id);
     console.assert(Array.isArray(error.validationErrors));
+
+    console.log('error.code:', error.code);
+    console.log('error.schemaId:', error.schemaId);
+    console.log('error.validationErrors:', error.validationErrors);
   }
 }

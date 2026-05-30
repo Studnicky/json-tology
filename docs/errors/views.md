@@ -18,15 +18,15 @@ Common shapes for projecting `errs.items` into the format a caller wants.
 
 ### Path-prefixed message strings
 
-<<< ../../examples/docs/errors/07-path-prefixed-messages.ts
+<RunnableExample src="examples/docs/errors/07-path-prefixed-messages" />
 
 ### Group by path
 
-<<< ../../examples/docs/errors/08-group-by-path.ts
+<RunnableExample src="examples/docs/errors/08-group-by-path" />
 
 ### Field vs form errors
 
-<<< ../../examples/docs/errors/09-field-vs-form-errors.ts
+<RunnableExample src="examples/docs/errors/09-field-vs-form-errors" />
 
 ---
 
@@ -54,15 +54,15 @@ Common shapes for projecting `errs.items` into the format a caller wants.
 
 #### Example 1: Structured log
 
-<<< ../../examples/docs/errors/02-format.ts
+<RunnableExample src="examples/docs/errors/02-format" />
 
 #### Example 2: Metric recording
 
-<<< ../../examples/docs/errors/10-metric-recording.ts
+<RunnableExample src="examples/docs/errors/10-metric-recording" />
 
 #### Example 3: JSON Pointer paths (use items, not aggregate)
 
-<<< ../../examples/docs/errors/11-json-pointer-paths.ts
+<RunnableExample src="examples/docs/errors/11-json-pointer-paths" />
 
 ### Comparison
 
@@ -189,17 +189,17 @@ keywords = sorted(set(e['type'] for e in errors))
 
 #### Example 1: Express/Fastify/Hono request handler
 
-<<< ../../examples/docs/errors/12-express-handler.ts
+<RunnableExample src="examples/docs/errors/12-express-handler" />
 
 #### Example 2: Override defaults
 
-<<< ../../examples/docs/errors/13-override-defaults.ts
+<RunnableExample src="examples/docs/errors/13-override-defaults" />
 
 ### Bad examples - what NOT to do
 
 #### Anti-pattern: Constructing RFC 7807 manually
 
-<<< ../../examples/docs/errors/14-antipattern-manual-rfc7807.ts
+<RunnableExample src="examples/docs/errors/14-antipattern-manual-rfc7807" />
 
 ### Comparison
 

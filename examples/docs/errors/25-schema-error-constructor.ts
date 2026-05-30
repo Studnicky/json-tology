@@ -23,3 +23,7 @@ const dialect = new SchemaError(SchemaErrorCode.DIALECT_UNSUPPORTED, 'unsupporte
 console.assert(missingId.code === 'SCHEMA_MISSING_ID');
 console.assert(structure.schemaId === schemaId);
 console.assert(dialect.cause === cause);
+
+console.log('missingId.code:', missingId.code);
+console.log('structure.schemaId:', structure.schemaId);
+console.log('dialect.cause.message:', dialect.cause?.message);

@@ -20,3 +20,5 @@ const errs = bookstoreEntities.validate(BookSchema.$id, {
 
 console.assert(errs.ok);
 console.assert(errs.length === 0);
+
+console.log('ok:', errs.ok, ', errors:', errs.length);

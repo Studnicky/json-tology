@@ -27,6 +27,9 @@ if (caught) {
   console.assert(caught.code === 'POINTER_INVALID');
 }
 
+console.log('bare pointer error code:', caught?.code);
+
 const isbnSchema = bookstoreEntities.subschemaAt(BookSchema.$id, '/properties/isbn');
 
 console.assert(typeof isbnSchema === 'object');
+console.log('valid pointer resolves $id:', isbnSchema.$id);

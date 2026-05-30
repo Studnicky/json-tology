@@ -37,3 +37,8 @@ for (const operation of changes.operations) {
 }
 
 console.assert((reconstructed as Customer).email === 'bastian.balthazar.bux@bookstore.example');
+
+console.log('changed fields:', changes.operations.map((op) => {
+  return op.path;
+}));
+console.log('reconstructed email:', (reconstructed as Customer).email);

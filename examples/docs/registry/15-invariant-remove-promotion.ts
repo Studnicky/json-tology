@@ -36,8 +36,12 @@ const shortReview = {
 // Fails while invariant is active.
 console.assert(!bookstoreEntities.is(ReviewSchema.$id, shortReview));
 
+console.log('before removal - short review valid:', bookstoreEntities.is(ReviewSchema.$id, shortReview));
+
 // Remove during promotional event (relax minimum body length).
 bookstoreEntities.removeInvariant(ReviewSchema.$id, INVARIANT_NAME);
 
 // Passes after removal — short 5-star review is now acceptable.
 console.assert(bookstoreEntities.is(ReviewSchema.$id, shortReview));
+
+console.log('after removal - short review valid:', bookstoreEntities.is(ReviewSchema.$id, shortReview));

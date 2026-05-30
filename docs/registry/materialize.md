@@ -18,17 +18,17 @@
 
 ### Example 2: Materialize a Customer - addresses default is empty array
 
-<<< ../../examples/docs/registry/16-materialize-customer-defaults.ts
+<RunnableExample src="examples/docs/registry/16-materialize-customer-defaults" />
 
 ### Example 3: Contrast with coerce and value.create
 
-<<< ../../examples/docs/registry/17-materialize-vs-create-vs-coerce.ts
+<RunnableExample src="examples/docs/registry/17-materialize-vs-create-vs-coerce" />
 
 ## Bad examples - what NOT to do
 
 ### Anti-pattern 1: Using materialize for untrusted API input
 
-<<< ../../examples/docs/registry/17-materialize-vs-create-vs-coerce.ts
+<RunnableExample src="examples/docs/registry/17-materialize-vs-create-vs-coerce" />
 
 ## Comparison
 

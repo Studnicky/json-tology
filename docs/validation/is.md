@@ -12,25 +12,25 @@
 
 ### Example 1: Type narrowing in a conditional branch
 
-<<< ../../examples/docs/validation/28-is-type-narrowing.ts
+<RunnableExample src="examples/docs/validation/28-is-type-narrowing" />
 
 ### Example 2: Filtering an array of unknowns
 
-<<< ../../examples/docs/validation/29-is-array-filter.ts
+<RunnableExample src="examples/docs/validation/29-is-array-filter" />
 
 ### Example 3: Guards at a service boundary
 
-<<< ../../examples/docs/validation/30-is-service-boundary.ts
+<RunnableExample src="examples/docs/validation/30-is-service-boundary" />
 
 ## Bad examples - what NOT to do
 
 ### Anti-pattern 1: Using `is` when you need the coerced (defaults-filled) value
 
-<<< ../../examples/docs/validation/31-is-antipattern-no-defaults.ts
+<RunnableExample src="examples/docs/validation/31-is-antipattern-no-defaults" />
 
 ### Anti-pattern 2: Checking `is` and then immediately coercing
 
-<<< ../../examples/docs/validation/32-is-antipattern-double-validate.ts
+<RunnableExample src="examples/docs/validation/32-is-antipattern-double-validate" />
 
 ## Comparison
 

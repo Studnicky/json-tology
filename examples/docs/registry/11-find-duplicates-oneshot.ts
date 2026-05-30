@@ -20,3 +20,6 @@ for (const dup of dups) {
 console.assert(Array.isArray(dups));
 // A well-structured registry with all shapes extracted should have zero duplicates.
 console.assert(dups.length === 0);
+
+console.log('duplicate count:', dups.length);
+console.log('registry is clean:', dups.length === 0);

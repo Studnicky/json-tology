@@ -27,5 +27,8 @@ const expectedLineCount = aboxFixtures.order.orderLines.length;
 
 console.assert(Math.abs(order.lineCount - expectedLineCount) < 0.001);
 
+console.log('input orderLines count:', aboxFixtures.order.orderLines.length);
+console.log('computed lineCount:', order.lineCount);
+
 // Cleanup: remove the computed field so other examples are unaffected.
 withLineCount.removeComputed(OrderSchema.$id, 'lineCount');

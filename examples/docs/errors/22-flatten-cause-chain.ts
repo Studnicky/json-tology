@@ -22,12 +22,9 @@ try {
 
     console.assert(entries.length > 0);
 
+    console.log('flatten() entry count:', entries.length);
     for (const entry of entries) {
-      void [
-        entry.code,
-        entry.message,
-        entry.retryable
-      ];
+      console.log(`  code=${entry.code}  retryable=${entry.retryable}  message=${entry.message}`);
     }
   }
 }

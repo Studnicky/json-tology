@@ -10,33 +10,33 @@
 
 ### Example 1: Validate a single field on blur
 
-<<< ../../examples/docs/validation/09-subschema-field-blur.ts
+<RunnableExample src="examples/docs/validation/09-subschema-field-blur" />
 
 ### Example 2: Instantiate an array item sub-schema
 
-<<< ../../examples/docs/validation/10-subschema-array-item.ts
+<RunnableExample src="examples/docs/validation/10-subschema-array-item" />
 
 ### Example 3: Compose subschemaAt with is()
 
-<<< ../../examples/docs/validation/11-subschema-is-guard.ts
+<RunnableExample src="examples/docs/validation/11-subschema-is-guard" />
 
 ### Example 4: Static variant (no instance required)
 
-<<< ../../examples/docs/validation/12-subschema-static.ts
+<RunnableExample src="examples/docs/validation/12-subschema-static" />
 
 ## Bad examples: what NOT to do
 
 ### Anti-pattern 1: Passing the raw property value instead of the JSON Pointer
 
-<<< ../../examples/docs/validation/13-antipattern-wrong-pointer.ts
+<RunnableExample src="examples/docs/validation/13-antipattern-wrong-pointer" />
 
 ### Anti-pattern 2: Calling subschemaAt repeatedly inside a loop
 
-<<< ../../examples/docs/validation/14-antipattern-loop.ts
+<RunnableExample src="examples/docs/validation/14-antipattern-loop" />
 
 ### Anti-pattern 3: Using subschemaAt when you want the full object validated
 
-<<< ../../examples/docs/validation/15-antipattern-full-object.ts
+<RunnableExample src="examples/docs/validation/15-antipattern-full-object" />
 
 ## Comparison
 
@@ -125,7 +125,7 @@ result = ta.validate_python('978014044913')
 
 The returned object has a synthesized `$id` of the form `<parent.$id>#<pointer>`:
 
-<<< ../../examples/docs/validation/16-subschema-return-type.ts
+<RunnableExample src="examples/docs/validation/16-subschema-return-type" />
 
 The schema is automatically registered in the calling registry. Subsequent calls to `validate`, `is`, `instantiate`, or `materialize` with the same synthesized ID will resolve immediately without re-walking the graph.
 

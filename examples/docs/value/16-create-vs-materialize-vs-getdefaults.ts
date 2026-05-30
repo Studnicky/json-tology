@@ -44,3 +44,8 @@ const materialized = bookstoreEntities.materialize(BookSchema, {
 
 console.assert((materialized as { 'isbn': string }).isbn === aboxFixtures.rareBook.isbn);
 console.assert((materialized as { 'inStock': boolean }).inStock);
+
+console.log('create isbn (zero-value):', (fromCreate as { 'isbn': string }).isbn);
+console.log('create inStock (default):', (fromCreate as { 'inStock': boolean }).inStock);
+console.log('getDefaults keys:', Object.keys(defaults));
+console.log('materialize isbn (from data):', (materialized as { 'isbn': string }).isbn);

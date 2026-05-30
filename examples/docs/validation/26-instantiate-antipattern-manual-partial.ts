@@ -49,3 +49,6 @@ const signup = jt.instantiate(SignupSchema, signupBody);
 
 console.assert(signup.email === signupBody.email);
 console.assert(signup.name === signupBody.name);
+
+console.log('signup schema id:', SignupSchema.$id);
+console.log('coerced signup:', signup.name, '-', signup.email);

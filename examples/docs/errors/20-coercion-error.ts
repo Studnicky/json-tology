@@ -19,4 +19,12 @@ const synthetic = new CoercionError([{
 if (synthetic instanceof CoercionError) {
   console.assert(synthetic.code === 'COERCION_FAILED');
   console.assert(synthetic.errors.length === 1);
+
+  console.log('synthetic.code:', synthetic.code);
+  console.log('synthetic.errors.length:', synthetic.errors.length);
+  const first = synthetic.errors.items[0];
+
+  console.log('errors[0].path:', first.path);
+  console.log('errors[0].keyword:', first.keyword);
+  console.log('errors[0].message:', first.message);
 }

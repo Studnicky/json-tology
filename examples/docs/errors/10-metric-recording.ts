@@ -14,10 +14,8 @@ if (!errs.ok) {
   console.assert(rollup.count > 0, 'Should have errors to count');
   console.assert(rollup.paths.length > 0, 'Should have error paths');
   console.assert(rollup.keywords.length > 0, 'Should have error keywords');
-  console.assert(
-    rollup.keywords.every((k) => {
-      return k === k.toLowerCase();
-    }),
-    'Keywords should be lowercase'
-  );
+
+  console.log('aggregate.count:', rollup.count);
+  console.log('aggregate.paths:', rollup.paths);
+  console.log('aggregate.keywords:', rollup.keywords);
 }

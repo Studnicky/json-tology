@@ -17,7 +17,7 @@
 
 Common projections from `errs.items`:
 
-<<< ../../examples/docs/errors/23-projection-recipes.ts
+<RunnableExample src="examples/docs/errors/23-projection-recipes" />
 
 All examples use the [bookstore domain](/bookstore-domain). See [`entities.validate()`](/validation/validate) for how to obtain the collection.
 

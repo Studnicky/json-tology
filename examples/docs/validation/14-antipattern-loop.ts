@@ -29,4 +29,5 @@ for (const rawIsbn of candidateIsbns) {
   if (typeof result === 'object') {
     console.assert(true, 'Each validation should complete');
   }
+  console.log(`isbn ${rawIsbn}: ok = ${result.ok}, errors = ${result.length}`);
 }

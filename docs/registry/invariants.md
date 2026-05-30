@@ -20,11 +20,11 @@ Invariants are cross-field validation rules that run after structural validation
 
 #### Example 2: Invariant failure surfaces in validate(), instantiate(), is()
 
-<<< ../../examples/docs/registry/13-invariant-failure-surfaces.ts
+<RunnableExample src="examples/docs/registry/13-invariant-failure-surfaces" />
 
 #### Example 3: Imperative add after construction
 
-<<< ../../examples/docs/registry/14-invariant-review-body-length.ts
+<RunnableExample src="examples/docs/registry/14-invariant-review-body-length" />
 
 ### Behaviour table
 
@@ -41,7 +41,7 @@ Invariants do not run when structural validation already failed - this prevents 
 
 #### Anti-pattern 1: Using an invariant for a constraint that JSON Schema can express
 
-<<< ../../examples/docs/registry/14-invariant-review-body-length.ts
+<RunnableExample src="examples/docs/registry/14-invariant-review-body-length" />
 
 ### Comparison
 
@@ -161,7 +161,7 @@ class Order(BaseModel):
 
 #### Example 1: Remove a review length requirement during a promotion
 
-<<< ../../examples/docs/registry/15-invariant-remove-promotion.ts
+<RunnableExample src="examples/docs/registry/15-invariant-remove-promotion" />
 
 ### Related
 

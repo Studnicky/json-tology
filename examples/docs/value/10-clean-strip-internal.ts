@@ -34,3 +34,8 @@ console.assert(!('_cacheKey' in (cleaned as object)));
 // Declared fields are preserved.
 console.assert((cleaned as { 'isbn': string }).isbn === aboxFixtures.rareBook.isbn);
 console.assert((cleaned as { 'title': string }).title === aboxFixtures.rareBook.title);
+
+console.log('_internalId removed:', !('_internalId' in cleaned));
+console.log('_cacheKey removed:', !('_cacheKey' in cleaned));
+console.log('isbn preserved:', (cleaned as { 'isbn': string }).isbn);
+console.log('title preserved:', (cleaned as { 'title': string }).title);

@@ -21,11 +21,14 @@ function describeCustomer(data: unknown): string {
 
 const valid = {
   'addresses': [],
+  'customerId': 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   'email': 'walter.moers@bookstore.example',
-  'id': 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   'name': 'Walter Moers'
 };
 
 console.assert(describeCustomer(valid) === 'Walter Moers <walter.moers@bookstore.example>');
 console.assert(describeCustomer('not-a-customer') === 'not a customer');
 console.assert(describeCustomer(null) === 'not a customer');
+
+console.log('valid customer:', describeCustomer(valid));
+console.log('invalid input:', describeCustomer('not-a-customer'));

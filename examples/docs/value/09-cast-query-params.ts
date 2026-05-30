@@ -35,3 +35,5 @@ const params = castEntities.value.cast(ReviewSchema.$id, {
 
 console.assert((params as { 'rating': number }).rating === 4);
 console.assert(typeof (params as { 'rating': number }).rating === 'number');
+
+console.log('query param "4" cast to:', (params as { 'rating': number }).rating, typeof (params as { 'rating': number }).rating);

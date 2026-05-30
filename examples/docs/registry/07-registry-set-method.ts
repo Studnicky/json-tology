@@ -35,3 +35,7 @@ jt.set(SummaryCustomerSchema);
 
 console.assert(jt.registry.has(PatchCustomerSchema.$id));
 console.assert(jt.registry.has(SummaryCustomerSchema.$id));
+
+console.log('PatchCustomer $id:', PatchCustomerSchema.$id);
+console.log('SummaryCustomer $id:', SummaryCustomerSchema.$id);
+console.log('both registered:', jt.registry.has(PatchCustomerSchema.$id) && jt.registry.has(SummaryCustomerSchema.$id));

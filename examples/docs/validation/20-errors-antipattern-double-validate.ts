@@ -26,6 +26,7 @@ try {
   const customer = bookstoreEntities.instantiate(CustomerSchema, aboxFixtures.customer);
 
   console.assert(customer.name === aboxFixtures.customer.name);
+  console.log('instantiate succeeded:', customer.name);
 } catch (error) {
   if (error instanceof InstantiationError) {
     // same ValidationErrors on InstantiationError

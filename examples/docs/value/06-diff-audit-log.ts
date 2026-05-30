@@ -67,3 +67,12 @@ for (const op of changes.operations) {
 }
 
 console.assert((reconstructed as Customer).email === 'bastian.balthazar.bux@bookstore.example');
+
+console.log('log entries emitted:', logEntries.length);
+console.log('changed paths:', logEntries[0]?.ops instanceof Array
+  ? (logEntries[0].ops as Array<{ 'path': string }>).map((op) => {
+    return op.path;
+  })
+  : []);
+console.log('no-op emits entry:', !noChanges.isEmpty);
+console.log('reconstructed email:', (reconstructed as Customer).email);

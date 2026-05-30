@@ -26,15 +26,15 @@ See [`Value.diff`](#value-diff) for usage examples and [`Operations.patch`](#ope
 
 #### Example 1: Detect email change on a customer update
 
-<<< ../../examples/docs/value/02-diff.ts
+<RunnableExample src="examples/docs/value/02-diff" />
 
 #### Example 2: Track order line additions
 
-<<< ../../examples/docs/value/05-diff-order-lines.ts
+<RunnableExample src="examples/docs/value/05-diff-order-lines" />
 
 #### Example 3: Audit log entry
 
-<<< ../../examples/docs/value/06-diff-audit-log.ts
+<RunnableExample src="examples/docs/value/06-diff-audit-log" />
 
 ### Comparison
 
@@ -126,7 +126,7 @@ changes = {k: v for k, v in after_dict.items() if before_dict.get(k) != v}
 
 The project lint rules block direct calls to methods named `.apply()` (to prevent accidental use of `Function.prototype.apply`). To apply a full changeset, loop over `.operations` manually:
 
-<<< ../../examples/docs/value/07-diff-apply-loop.ts
+<RunnableExample src="examples/docs/value/07-diff-apply-loop" />
 
 :::
 
@@ -134,7 +134,7 @@ The project lint rules block direct calls to methods named `.apply()` (to preven
 
 #### Example 1: Apply a single price update
 
-<<< ../../examples/docs/value/08-patch-single-price.ts
+<RunnableExample src="examples/docs/value/08-patch-single-price" />
 
 ### Comparison
 

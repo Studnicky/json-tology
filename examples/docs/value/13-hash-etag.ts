@@ -36,3 +36,6 @@ const h2 = Hash.value({
 });
 
 console.assert(h1 === h2);
+
+console.log('book etag:', etag);
+console.log('key-order invariant:', h1 === h2);

@@ -37,3 +37,10 @@ console.assert(result.ok, 'Valid coupon should pass');
 const invalid = jt.registry.validate(syntheticId, { 'couponCode': 'SAVE10' });
 
 console.assert(!invalid.ok, 'Missing discount should fail');
+
+console.log('syntheticId:', syntheticId);
+console.log('valid coupon result.ok:', result.ok);
+console.log('missing discount result.ok:', invalid.ok);
+console.log('missing discount errors:', invalid.items.map((err) => {
+  return `${err.path}: ${err.message}`;
+}));

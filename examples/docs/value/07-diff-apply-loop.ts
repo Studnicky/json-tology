@@ -51,3 +51,6 @@ for (const op of changes.operations) {
 const resultTotal = (result as { 'orderTotal': { 'amount': number } }).orderTotal.amount;
 
 console.assert(Math.abs(resultTotal - updatedTotal.amount) < 0.001);
+
+console.log('operations applied:', changes.operations.length);
+console.log('patched orderTotal:', resultTotal);

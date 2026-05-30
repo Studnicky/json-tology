@@ -16,7 +16,7 @@ import {
 
 const badOrder = {
   ...aboxFixtures.order,
-  'total': {
+  'orderTotal': {
     // wrong — items sum to 850
     'amount': 1000,
     'currency': 'EUR'
@@ -47,3 +47,14 @@ try {
 }
 
 console.assert(threw);
+
+const invariantErrors = errs.items.filter((errItem) => {
+  return errItem.keyword === 'jt:invariant';
+});
+
+console.log('validate() ok:', errs.ok);
+console.log('invariant errors:', invariantErrors.map((errItem) => {
+  return errItem.message;
+}));
+console.log('is() result:', bookstoreEntities.is(OrderSchema.$id, badOrder));
+console.log('instantiate() threw InstantiationError:', threw);

@@ -22,5 +22,9 @@ try {
     console.assert(typeof error.code === 'string');
     console.assert(typeof error.toJson() === 'object');
     console.assert(Array.isArray(error.flatten()));
+
+    console.log('error.code:', error.code);
+    console.log('error.toJson():', JSON.stringify(error.toJson(), null, 2));
+    console.log('error.flatten() count:', error.flatten().length);
   }
 }

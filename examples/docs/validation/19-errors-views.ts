@@ -30,6 +30,7 @@ const messages = errs.items.map((err) => {
 
 console.assert(Array.isArray(messages));
 console.assert(messages.length > 0);
+console.log('field errors:', messages);
 
 // Aggregate rollup for logs and metrics
 const agg = errs.aggregate();
@@ -37,9 +38,11 @@ const agg = errs.aggregate();
 console.assert(typeof agg.count === 'number' && agg.count > 0);
 console.assert(Array.isArray(agg.paths));
 console.assert(Array.isArray(agg.keywords));
+console.log('aggregate: count =', agg.count, ', paths =', agg.paths, ', keywords =', agg.keywords);
 
 // RFC 7807 Problem Details payload
 const problem = errs.report();
 
 console.assert(typeof problem === 'object');
 console.assert('status' in problem && (problem as { 'status': number }).status === 422);
+console.log('report status:', (problem as { 'status': number }).status);

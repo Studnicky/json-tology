@@ -32,3 +32,8 @@ console.assert(fieldErrors.length >= 2);
 console.assert(fieldErrors.items.some((err) => {
   return err.path.includes('rating') || err.path.includes('body');
 }));
+
+console.log('field error count:', fieldErrors.length);
+for (const err of fieldErrors.items) {
+  console.log(`  ${err.path}: ${err.message}`);
+}

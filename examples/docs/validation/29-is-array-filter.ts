@@ -40,3 +40,7 @@ const customers = mixed.filter((item): item is Customer => {
 console.assert(customers.length === 2);
 console.assert(customers[0].name === 'Cornelia Funke');
 console.assert(customers[1].name === 'Patrick Süskind');
+
+console.log('filtered customers:', customers.map((customer) => {
+  return customer.name;
+}));

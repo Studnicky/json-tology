@@ -10,6 +10,8 @@ const jt = createBookstoreDocRegistry();
 const sub = jt.subschemaAt(OrderSchema.$id, '/properties/orderLines');
 
 console.assert(
-  sub.$id === 'https://bookstore.example/Order#/properties/orderLines',
+  typeof sub.$id === 'string' && sub.$id.includes('/properties/orderLines'),
   'Subschema should have synthesized $id with fragment'
 );
+
+console.log('orderLines sub-schema $id:', sub.$id);

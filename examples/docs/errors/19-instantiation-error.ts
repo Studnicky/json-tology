@@ -41,12 +41,10 @@ try {
     console.assert(error.code === 'INSTANTIATION_FAILED');
     console.assert(error.errors.length > 0);
 
+    console.log('error.code:', error.code);
+    console.log('error.errors.length:', error.errors.length);
     for (const item of error.errors) {
-      void [
-        item.path,
-        item.keyword,
-        item.message
-      ];
+      console.log(`  path=${item.path}  keyword=${item.keyword}  message=${item.message}`);
     }
   }
 }
