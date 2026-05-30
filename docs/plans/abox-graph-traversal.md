@@ -47,60 +47,77 @@ A read-only association index built from the existing TBox, per registered schem
 Open: ambiguity (two classes sharing one identity primitive) and cross-graph references may need an
 explicit override — see "Optional explicit override" below.
 
-## Piece 2 — Typed traversal API (RDF access paths)
+## Piece 2 — Typed traversal API (a fluent RDF cursor)
 
 Operate over a projected ABox (quads from `toQuads`, unioned), indexed once. Associations (Piece 1)
 make object-property edges and identity foreign keys traversable uniformly; `fromQuads` makes
-results typed. The conceptual model is ORM-like (typed entities + their relationships), but the
-**access paths use proper RDF terminology** — subjects, predicates, objects, inverse, property
-paths, and Concise Bounded Description — not ORM verbs.
+results typed. The conceptual model is ORM-like (typed entities + their relationships); the **access
+paths use RDF terminology** (subjects/predicates/objects, domain/range/subClassOf); and navigation is
+**fluent dot-chaining over a lazy `Cursor`** — read left-to-right, not nested calls, not a
+path-expression DSL.
 
-The view spans **both layers**: instance access paths over the projected ABox quads, and schema
-access paths over the registry's TBox (which already carries `rdfs:domain`/`rdfs:range`/
-`rdfs:subClassOf`/inverse-functional as quads). Schema and data are traversable through the same
-surface.
+The view spans **both layers**: instance paths over the projected ABox quads, and schema paths over
+the registry's TBox (which already carries `rdfs:domain`/`rdfs:range`/`rdfs:subClassOf`/
+inverse-functional as quads).
 
 ```ts
 const g = jt.aboxGraph(quads);              // RDF graph view: ABox quads + the registry TBox
                                             // (also accepts external n3 / eyereasoner quads)
 
-// ── ABox (instance) access paths ──
-g.resource(iri)                              // the resource at iri, typed via fromQuads
-g.objects(subject, predicate)                // objects of (subject, predicate) — forward; resolves identity FKs to the typed target
-g.subjects(predicate, object)                // subjects of (predicate, object) — the inverse path (^predicate)
-g.predicates(subject)                        // predicates asserted with subject in subject position
-g.instances(classIri)                        // resources whose rdf:type is classIri
-g.path(fromIri, toIri)                       // a connecting property path between two resources, if any
+// Entry points → a Cursor (a lazy, typed selection of resources):
+g.resource(iri)                              // Cursor over { iri }
+g.instances(classIri)                        // Cursor over all resources of rdf:type classIri
 
-// ── TBox (schema) access paths ── over rdfs:domain / rdfs:range / rdfs:subClassOf
-g.domain(predicate)                          // the rdfs:domain class(es) of a predicate (typed schema)
-g.range(predicate)                           // the rdfs:range class(es) / datatype of a predicate
-g.subClassOf(classIri)                       // direct rdfs:subClassOf superclasses (use a property path for transitive)
+// Chainable navigation (Cursor → Cursor), dot-chained left → right:
+cursor.objects(predicate)                    // forward: objects of each resource via predicate (identity FKs resolved)
+cursor.subjects(predicate)                   // inverse (^predicate): resources that point at each via predicate
+cursor.subgraph(depth)                       // expand to the bounded N-hop neighbourhood
+cursor.filter(classIri)                      // keep only resources whose rdf:type is classIri
 
-// ── Bounded neighbourhoods ──
-g.subgraph(iri, depth)                       // the subgraph within `depth` hops of iri (BFS bound), nodes typed
-g.describe(iri)                              // Concise Bounded Description (CBD) — the canonical RDF resource description
+// Terminals (Cursor → typed values):
+cursor.one()                                 // the single typed instance (throws if 0 or >1); .first() for lenient
+cursor.all()                                 // typed instance[]  (alias: .resources())
+cursor.iris()                                // the underlying IRIs
+cursor.count()
 
-// ── Property paths (SPARQL 1.1 style) for multi-hop access, across ABox AND schema predicates ──
-g.traverse(subject, 'orderLines/bookIsbn')   // sequence: Order → OrderLine → Book (FK resolved), typed
-g.traverse(customerIri, '^customerId')        // inverse: subjects whose customerId identifies this Customer
-g.traverse(predicate, 'rdfs:range/rdfs:subClassOf*')  // schema walk: a predicate's range, then up its class hierarchy
+// Schema (TBox) paths — also return a Cursor (over classes / predicates), chainable:
+g.predicate(name).domain()                   // the rdfs:domain class(es) of a predicate
+g.predicate(name).range()                    // the rdfs:range class / datatype
+g.class(classIri).subClassOf()               // direct superclasses (.subClassOf({ transitive: true }) walks up)
+g.class(classIri).properties()               // declared properties (predicates whose domain is this class)
 ```
 
-- Predicates are addressable by IRI/CURIE **or** the authored property name, resolved to the
-  canonical predicate via `PredicateResolver` (e.g. `'customerId'` → its flat predicate IRI).
-- `objects(order, 'customerId')` resolves the inverse-functional identity foreign key and returns
-  the typed `Customer` (not the raw UUID); `subjects('customerId', customer)` is the inverse.
-- `domain`/`range` read the TBox the registry already holds — `range('orderLines')` → the
-  `OrderLine` class schema — so you can walk schema and data with one vocabulary.
-- `subgraph(iri, depth)` expands a bounded N-hop neighbourhood (BFS to `depth`); `describe` is the
-  stricter Concise Bounded Description. Both lift nodes to their type via `fromQuads`.
-- `traverse` accepts SPARQL-style property paths (sequence `/`, inverse `^`, alternative `|`,
-  repetition `*`/`+`/`?`) and works over ABox predicates and schema predicates (`rdfs:range`,
-  `rdfs:subClassOf`, …) alike.
-- Results are **typed** through `fromQuads` and the schema map.
+Dot-chaining gives multi-hop without a DSL:
+
+```ts
+// Order → its OrderLines → the Books they reference, as typed Book[]:
+g.resource(orderIri).objects('orderLines').objects('bookIsbn').all();
+
+// Everything that references this Customer (Orders + Reviews, via the customerId FK):
+g.resource(customerIri).subjects('customerId').all();
+
+// The schema side, same vocabulary:
+g.predicate('orderLines').range().one();     // → the OrderLine class schema
+```
+
+- Predicates are addressable by IRI/CURIE **or** the authored property name, resolved via
+  `PredicateResolver` (`'customerId'` → its flat predicate IRI).
+- `.objects('customerId')` resolves the inverse-functional identity foreign key to the typed
+  `Customer` (not the raw UUID); `.subjects('customerId')` is the inverse.
+- `g.predicate('orderLines').range()` reads the TBox the registry already holds, so schema and data
+  are walked with one cursor vocabulary.
+- Cursors are lazy: navigation builds an IRI set; terminals materialize and type via `fromQuads`.
 - Read-only, in-memory, index-backed: subject→(predicate,object), object→(predicate,subject),
   identity→subject (inverse-functional), rdf:type→subjects, plus the TBox domain/range/subClassOf index.
+
+### Scope boundary — simple fluent helpers, not a query engine
+Each cursor step is one plain hop (`.objects`/`.subjects`), plus a depth-bounded `.subgraph`.
+**Multi-hop is fluent dot-chaining** (`g.resource(order).objects('orderLines').objects('bookIsbn')`)
+— read left to right, no nested calls, and crucially **no path-expression string to parse**. We
+deliberately do **not** ship SPARQL property paths, a query language, or a general RDF
+store/reasoner — that is reimplementing n3.js / Comunica, the opposite of the goal. The aim is
+ergonomic, typed navigation of an already-projected graph. If a richer query surface is ever wanted,
+hand the quads to a dedicated engine rather than grow one here.
 
 ## Foreign-key round-trip (resolved decision)
 
@@ -135,19 +152,21 @@ prerequisite. The bookstore needs none of it — its inverse-functional `custome
 ## Phasing
 1. **Phase 1 — association index + lazy traversal (ABox + schema paths).** Read object-property +
    inverse-functional identity + `rdfs:domain`/`range`/`subClassOf` associations from the TBox; build
-   `aboxGraph(quads)` with the RDF access paths — instance (`resource` / `objects` / `subjects` /
-   `predicates` / `instances` / `path`), schema (`domain` / `range` / `subClassOf`), and bounded
-   (`subgraph(iri, depth)` / `describe`) — with lazy FK resolution via the identity index (no
-   `toQuads` change yet). Typed via `fromQuads`. Unit + e2e over the bookstore (`objects(order,
-   'customerId')` → typed Customer; `range('orderLines')` → OrderLine; `subgraph(order, 2)`) +
-   type-assertion tests. The docs ABox tab then renders the FK-resolved edges from the same
-   association index — connected, no heuristic.
-2. **Phase 2 — property paths + Concise Bounded Description + optional edge materialization.**
-   `traverse(subject, '<property-path>')` (sequence / inverse / repetition) and `describe` depth/
-   predicate selection; evaluate `enableReferenceFallback` projection mode (A/B) if materialized FK
-   edges prove preferable to lazy resolution.
-3. **Phase 3 — `Compose.ref` override** for the non-derivable cases, + docs guide
-   ("instance graphs in Node").
+   `aboxGraph(quads)` returning a fluent typed `Cursor`: entry points (`resource` / `instances`),
+   chainable hops (`.objects` / `.subjects` / `.subgraph` / `.filter`), terminals (`.one` / `.all` /
+   `.iris` / `.count`), and schema cursors (`g.predicate(p).domain()/.range()`,
+   `g.class(c).subClassOf()/.properties()`) — with lazy FK resolution via the identity index (no
+   `toQuads` change yet). Typed via `fromQuads`. Unit + e2e over the bookstore
+   (`g.resource(order).objects('customerId').one()` → typed Customer;
+   `g.predicate('orderLines').range().one()` → OrderLine; `g.resource(order).subgraph(2)`) +
+   type-assertion tests.
+   The docs ABox tab then renders the FK-resolved edges from the same association index — connected,
+   no heuristic.
+2. **Phase 2 (only if needed) — optional FK edge materialization + docs guide.** If lazy resolution
+   proves insufficient, evaluate `enableReferenceFallback` projection mode (A/B) to materialize FK
+   edges into `toQuads` output. Ship the "instance graphs in Node" docs guide.
+3. **Phase 3 (deferred) — `Compose.ref` override** for the non-derivable references (cross-graph,
+   ambiguous identity primitive). Not needed by the bookstore.
 
 ## Impact on shipped docs work
 The merged TBox/ABox tabs, fcose layout, readable labels, and inspector are independent. Once Phase 1
