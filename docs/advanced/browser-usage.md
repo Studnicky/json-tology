@@ -26,11 +26,11 @@ The shape is two steps: prefetch the snapshot once (async), then construct the i
 
 ## Bundler (Vite, esbuild, webpack)
 
-<<< ../../examples/docs/advanced/71-prefetch-bundler-compose.ts
+<RunnableExample src="examples/docs/advanced/71-prefetch-bundler-compose" />
 
 ## Node (same API)
 
-<<< ../../examples/docs/advanced/72-prefetch-node-cached.ts
+<RunnableExample src="examples/docs/advanced/72-prefetch-node-cached" />
 
 For local file loading, write a four-line fs loader:
 
@@ -40,7 +40,7 @@ For local file loading, write a four-line fs loader:
 
 If all schemas are known at build time and have no external `$ref`s, skip `prefetch` entirely:
 
-<<< ../../examples/docs/advanced/73-schema-only-no-prefetch.ts
+<RunnableExample src="examples/docs/advanced/73-schema-only-no-prefetch" />
 
 ## Key points
 

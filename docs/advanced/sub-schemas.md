@@ -12,7 +12,7 @@ All examples use the [bookstore domain](/bookstore-domain).
 
 ## Pattern: name a value, reference it everywhere
 
-<<< ../../examples/docs/advanced/86-sub-schema-ref-pattern.ts
+<RunnableExample src="examples/docs/advanced/86-sub-schema-ref-pattern" />
 
 `EmailSchema` is the canonical definition of the value type "email." Any schema that wants an email field references its `$id`. The reference is symbolic, not structural - changing `EmailSchema` changes every consumer at once, and `findDuplicates()` will not flag two `$ref` slots as redundant.
 

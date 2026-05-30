@@ -22,3 +22,6 @@ const secondSubject = secondPass[0]?.subject.value ?? '';
 console.assert(firstSubject.startsWith('urn:uuid:'), 'first emission uses urn:uuid');
 console.assert(secondSubject.startsWith('urn:uuid:'), 'second emission uses urn:uuid');
 console.assert(firstSubject !== secondSubject, 'each call mints a fresh UUID');
+
+console.log('first UUID IRI:', firstSubject);
+console.log('second UUID IRI:', secondSubject);

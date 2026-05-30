@@ -20,7 +20,7 @@ All seven keywords are registered in `KNOWN_SCHEMA_KEYWORDS` (`src/constants/SCH
 
 Declare a characteristic on the property's schema body. The keyword is set at the property-schema level, not the class level.
 
-<<< ../../examples/docs/advanced/26-owl-property-characteristics-tbox.ts
+<RunnableExample src="examples/docs/advanced/26-owl-property-characteristics-tbox" />
 
 The TBox output for `KnowsSchema` includes:
 
@@ -55,29 +55,29 @@ Three combinations are logically impossible under OWL 2 semantics. Setting them 
 
 ### symmetric + asymmetric
 
-<<< ../../examples/docs/advanced/27-owl-conflict-symmetric-asymmetric.ts
+<RunnableExample src="examples/docs/advanced/27-owl-conflict-symmetric-asymmetric" />
 
 ### reflexive + irreflexive
 
-<<< ../../examples/docs/advanced/28-owl-conflict-reflexive-irreflexive.ts
+<RunnableExample src="examples/docs/advanced/28-owl-conflict-reflexive-irreflexive" />
 
 ### asymmetric + reflexive
 
-<<< ../../examples/docs/advanced/29-owl-conflict-asymmetric-reflexive.ts
+<RunnableExample src="examples/docs/advanced/29-owl-conflict-asymmetric-reflexive" />
 
 The brand interface shape is:
 
-<<< ../../examples/docs/advanced/30-owl-conflict-brand-shape.ts
+<RunnableExample src="examples/docs/advanced/30-owl-conflict-brand-shape" />
 
 IDE hover on the failing assignment surfaces `kind`, `property`, and `conflicts` directly, making the offending property and characteristics visible without reading a stack trace.
 
 ## Examples
 
-<<< ../../examples/docs/advanced/31-owl-good-patterns.ts
+<RunnableExample src="examples/docs/advanced/31-owl-good-patterns" />
 
 ## Bad examples: what NOT to do
 
-<<< ../../examples/docs/advanced/32-owl-bad-patterns.ts
+<RunnableExample src="examples/docs/advanced/32-owl-bad-patterns" />
 
 ## Comparison
 
@@ -89,7 +89,7 @@ IDE hover on the failing assignment surfaces `kind`, `property`, and `conflicts`
 
 The IRI constants are exported from `src/constants/IRI.ts`:
 
-<<< ../../examples/docs/advanced/33-owl-iri-constants.ts
+<RunnableExample src="examples/docs/advanced/33-owl-iri-constants" />
 
 ## Related
 

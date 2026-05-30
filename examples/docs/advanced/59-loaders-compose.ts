@@ -45,3 +45,5 @@ console.assert(
   (customer as Record<string, string>).$id === CustomerSchema.$id,
   'resolved schema is the CustomerSchema'
 );
+
+console.log('Loaders.compose: resolved from memory, $id:', (customer as Record<string, string>).$id);

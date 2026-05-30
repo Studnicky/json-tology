@@ -31,3 +31,4 @@ console.assert(
   rootIri === `https://shop.example.com/orders/${aboxFixtures.order.orderId}`,
   `custom function minted root from id: ${rootIri}`
 );
+console.log('custom function root IRI:', rootIri);

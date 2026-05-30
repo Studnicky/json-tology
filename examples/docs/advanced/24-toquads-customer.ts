@@ -24,3 +24,11 @@ const abox = bookstoreEntities.toQuads(CustomerSchema, {
 // abox is QuadInterface[] — iterate, filter, or pass to OntologyBuilder
 console.assert(abox.length > 0, 'quads generated');
 console.assert(Boolean(abox[0]), 'first quad present');
+
+console.log('ABox quad count:', abox.length);
+console.log('First quad subject:', abox[0]?.subject.value);
+const predicates = [...new Set(abox.map((quad) => {
+  return quad.predicate.value;
+}))].sort();
+
+console.log('Predicates emitted:', predicates.join(', '));

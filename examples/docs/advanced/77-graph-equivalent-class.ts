@@ -47,3 +47,5 @@ const primaryInvalid = jt.validate(PrimaryIsbnSchema.$id, invalid);
 
 console.assert(!isbnInvalid.ok, 'Isbn rejects invalid input');
 console.assert(!primaryInvalid.ok, 'PrimaryIsbn (equivalent) also rejects invalid input');
+
+console.log('equivalentClass: Isbn valid:', isbnResult.ok, '| PrimaryIsbn valid:', primaryResult.ok, '| both reject invalid:', !isbnInvalid.ok && !primaryInvalid.ok);

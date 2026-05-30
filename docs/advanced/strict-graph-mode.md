@@ -14,7 +14,7 @@ Three modes operate on the canonical graph and all rely on the same structural-e
 
 Emits `logger.warn` at registration when inline-object or inline-primitive shapes are found. When `enableStrictGraph` is `true` (the default), both warnings and throws are active. When strict mode is off, warnings are the only signal. Requires a logger to be set.
 
-<<< ../../examples/docs/advanced/78-strict-inline-warnings.ts
+<RunnableExample src="examples/docs/advanced/78-strict-inline-warnings" />
 
 Pass `enableInlineWarnings: false` explicitly to suppress warnings when strict mode is also off.
 
@@ -24,7 +24,7 @@ Pass `enableInlineWarnings: false` explicitly to suppress warnings when strict m
 
 Runs `findDuplicates()` after each schema is registered and emits `logger.warn` if duplicates are found. Active by default alongside strict mode.
 
-<<< ../../examples/docs/advanced/79-strict-duplicate-detection.ts
+<RunnableExample src="examples/docs/advanced/79-strict-duplicate-detection" />
 
 Pass `enableDuplicateDetection: false` to disable automatic duplicate scanning at registration time.
 
@@ -40,7 +40,7 @@ Promotes duplicate and inline-constraint detection to `SchemaError` throws. Ever
 
 Inline constrained shapes - objects with `properties`, primitives with `pattern`/`format`/`minimum`/etc., array items with constraints - are all registration errors.
 
-<<< ../../examples/docs/advanced/06-strict-graph-mode.ts
+<RunnableExample src="examples/docs/advanced/06-strict-graph-mode" />
 
 **What's allowed inline in strict mode:**
 
@@ -59,7 +59,7 @@ Pass `enableStrictGraph: false` to restore permissive behaviour and downgrade er
 
 To disable strict enforcement entirely:
 
-<<< ../../examples/docs/advanced/81-strict-opt-out.ts
+<RunnableExample src="examples/docs/advanced/81-strict-opt-out" />
 
 With `enableStrictGraph: false`, inline shapes and duplicates emit `logger.warn` rather than throwing, unless the individual warning flags are also set to `false`.
 

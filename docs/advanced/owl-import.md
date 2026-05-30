@@ -73,7 +73,7 @@ When `register: true` (the default), all produced schemas are passed to `registr
 
 ## Example
 
-<<< ../../examples/docs/advanced/90-owl-import-roundtrip.ts
+<RunnableExample src="examples/docs/advanced/90-owl-import-roundtrip" />
 
 ## Limitations
 

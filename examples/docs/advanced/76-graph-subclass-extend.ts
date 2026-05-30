@@ -51,11 +51,13 @@ console.assert(
 // A valid PremiumCustomer validates against its own schema.
 const result = bookstoreEntities.validate(PremiumCustomerSchema, {
   'addresses': [],
+  'customerId': 'a1b2c3d4-e5f6-4890-abcd-ef1234567890',
   'email': 'cornelia.funke@bookstore.example',
-  'id': 'a1b2c3d4-0000-1111-2222-333344445555',
   'name': 'Cornelia Funke',
   'tier': 'gold'
 });
 
 // ok is true when the ValidationErrors collection is empty (no errors).
 console.assert(result.ok, 'valid PremiumCustomer passes validation');
+
+console.log('Customer in TBox:', tboxJson.includes(CustomerSchema.$id), '| PremiumCustomer subclass valid:', result.ok);

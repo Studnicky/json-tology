@@ -26,3 +26,4 @@ const sameAsQuads = quads.filter((quad) => {
 });
 
 console.assert(sameAsQuads.length >= 2, 'symmetric owl:sameAs emitted');
+console.log('owl:sameAs quads emitted:', sameAsQuads.length);

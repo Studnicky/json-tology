@@ -6,25 +6,27 @@
  */
 
 import {
-  aboxFixtures, bookstoreEntities, CustomerSchema
+  aboxFixtures, createBookstoreDocRegistry, CustomerSchema
 } from '../bookstore/index.js';
 
-bookstoreEntities.sameAs(
+const registry = createBookstoreDocRegistry();
+
+registry.sameAs(
   'urn:bookstore:customer:bastian-bux',
   'urn:legacy-crm:cust-00042'
 );
 // No-op — pair already recorded.
-bookstoreEntities.sameAs(
+registry.sameAs(
   'urn:legacy-crm:cust-00042',
   'urn:bookstore:customer:bastian-bux'
 );
 // No-op — self-pair.
-bookstoreEntities.sameAs(
+registry.sameAs(
   'urn:bookstore:customer:bastian-bux',
   'urn:bookstore:customer:bastian-bux'
 );
 
-const quads = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer);
+const quads = registry.toQuads(CustomerSchema, aboxFixtures.customer);
 
 // Only the single recorded pair contributes quads (forward + reverse = 2).
 const sameAsQuads = quads.filter((quad) => {
@@ -33,3 +35,4 @@ const sameAsQuads = quads.filter((quad) => {
 });
 
 console.assert(sameAsQuads.length === 2, 'idempotent — only forward + reverse emitted');
+console.log('sameAs quad count (idempotent):', sameAsQuads.length, '(duplicate and reverse pair dropped)');

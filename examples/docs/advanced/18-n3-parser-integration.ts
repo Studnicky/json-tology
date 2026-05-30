@@ -42,4 +42,6 @@ const predicate = DataFactory.namedNode(RDF_TYPE);
 const classObject = DataFactory.namedNode('http://www.w3.org/2002/07/owl#Class');
 const owlClasses = store.getQuads(null, predicate, classObject, null);
 
-console.assert(owlClasses.length > 0);
+console.assert(owlClasses.length > 0, 'OWL classes found in N3 store');
+console.log('OWL class triples added to N3 store:', owlClasses.length);
+console.log('First class IRI:', owlClasses[0]?.subject.value);

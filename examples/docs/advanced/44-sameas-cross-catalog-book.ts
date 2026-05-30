@@ -24,3 +24,4 @@ bookstoreEntities.sameAs(
 // internal catalog and any partner reasoner that consults WorldCat.
 // The pair is recorded in the registry's sameAsStore.
 console.assert(true, 'cross-catalog sameAs pair recorded');
+console.log('cross-catalog sameAs pair recorded: urn:bookstore:rarebook:unendlichegeschichte-1979-klett ↔ http://www.worldcat.org/oclc/644849');

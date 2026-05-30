@@ -37,6 +37,8 @@ const shaclQuads = shaclSerializer.serializeQuads(graphs);
 builder.addShaclFromQuads(shaclQuads);
 const shaclJson = JSON.stringify(builder.shaclObject(), null, 2);
 
+console.log('SHACL JSON-LD (first 60 chars):', shaclJson.slice(0, 60));
+
 // Reconstruct schema from a single graph
 const schemaSerializer = new GraphSchemaSerializer();
 const graph = registry.graph(BookSchema.$id);
@@ -45,7 +47,9 @@ if (graph) {
   const schema = schemaSerializer.serialize(graph);
 
   console.assert(Boolean(schema), 'schema reconstructed');
+  console.log('Schema reconstructed from graph:', schema.$id);
 }
 
-void owlJson;
-void shaclJson;
+console.log('OWL quads count:', owlQuads.length);
+console.log('OWL JSON-LD byte length:', owlJson.length);
+console.log('SHACL quads count:', shaclQuads.length);

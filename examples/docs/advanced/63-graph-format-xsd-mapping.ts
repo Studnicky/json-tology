@@ -30,3 +30,5 @@ console.assert(
   jsonLd.includes('XMLSchema'),
   'TBox carries XSD namespace reference for date ranges'
 );
+
+console.log('XSD mapping: PublicationDate in TBox:', jsonLd.includes(PublicationDateSchema.$id), '| Iso8601 in TBox:', jsonLd.includes(Iso8601Schema.$id), '| XSD in TBox:', jsonLd.includes('XMLSchema'));

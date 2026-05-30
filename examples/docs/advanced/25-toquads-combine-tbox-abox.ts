@@ -36,3 +36,9 @@ const merged = {
 
 console.assert(Boolean(merged['@context']), 'context present');
 console.assert(merged['@graph'].length > 0, 'graph has content');
+
+console.log('Merged @graph node count:', merged['@graph'].length);
+console.log('ABox quads count:', abox.length);
+const ctxKeys = Object.keys(tbox.context());
+
+console.log('Context prefix count:', ctxKeys.length);

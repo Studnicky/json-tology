@@ -46,3 +46,5 @@ console.assert(
 const miss = await cached('urn:bookstore:NoSuchSchema');
 
 console.assert(miss === null, 'unknown IRI returns null');
+
+console.log('Loaders.cached: first call $id:', (first as Record<string, string>).$id, '| miss (null):', miss);

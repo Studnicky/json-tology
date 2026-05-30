@@ -23,3 +23,4 @@ console.assert(
   rootIri === `https://shop.example.com/customers/by-id/${aboxFixtures.customer.customerId}`,
   `root IRI minted from customerId property: ${rootIri}`
 );
+console.log('fromProperty root IRI:', rootIri);

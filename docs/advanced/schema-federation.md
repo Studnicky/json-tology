@@ -4,7 +4,7 @@ json-tology resolves `$ref` IRIs at registration time. By default, all reference
 
 The **loader hook** is a single async function that fetches schemas on demand:
 
-<<< ../../examples/docs/advanced/89-loaders-type-signature.ts
+<RunnableExample src="examples/docs/advanced/89-loaders-type-signature" />
 
 Async work is isolated to a single entry point: `JsonTology.prefetch`, which builds a snapshot. `JsonTology.create` is synchronous on every call site and consumes the snapshot through the `prefetched` option.
 
@@ -12,7 +12,7 @@ Async work is isolated to a single entry point: `JsonTology.prefetch`, which bui
 
 `JsonTology.prefetch` walks transitive `$ref`s via the loader and returns a snapshot. The snapshot is loader-agnostic; pass it to `create()` via the `prefetched` option for sync consumption.
 
-<<< ../../examples/docs/advanced/71-prefetch-bundler-compose.ts
+<RunnableExample src="examples/docs/advanced/71-prefetch-bundler-compose" />
 
 `prefetch` accepts:
 - `loader`: required.
@@ -37,25 +37,25 @@ The `Loaders` namespace ships four universal helpers that work in Node ≥ 18, B
 
 Uses `globalThis.fetch`. Works anywhere. 4xx/5xx → `null`. Network errors propagate.
 
-<<< ../../examples/docs/advanced/87-loaders-fetch-options.ts
+<RunnableExample src="examples/docs/advanced/87-loaders-fetch-options" />
 
 ### `Loaders.memory`
 
 In-memory lookup. Accepts a `Map` or plain object. Zero I/O.
 
-<<< ../../examples/docs/advanced/58-loaders-memory.ts
+<RunnableExample src="examples/docs/advanced/58-loaders-memory" />
 
 ### `Loaders.compose`
 
 Chains multiple loaders. Returns the first non-null result.
 
-<<< ../../examples/docs/advanced/59-loaders-compose.ts
+<RunnableExample src="examples/docs/advanced/59-loaders-compose" />
 
 ### `Loaders.cached`
 
 Wraps any loader with an LRU cache (default: 1024 entries). Both resolved schemas and `null` results are cached so the inner loader is called at most once per IRI.
 
-<<< ../../examples/docs/advanced/60-loaders-cached.ts
+<RunnableExample src="examples/docs/advanced/60-loaders-cached" />
 
 ## Write your own loader
 

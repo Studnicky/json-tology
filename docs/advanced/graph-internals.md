@@ -42,7 +42,7 @@ Properties in OWL have `rdfs:domain` (the class the property belongs to) and `rd
 
 json-tology derives these from the schema graph:
 
-<<< ../../examples/docs/advanced/62-graph-domain-range.ts
+<RunnableExample src="examples/docs/advanced/62-graph-domain-range" />
 
 This emits (in the TBox):
 
@@ -53,7 +53,7 @@ https://bookstore.example/isbn  rdfs:range   urn:bookstore:Isbn .
 
 For primitive string properties with a `format` hint, the range is an XSD datatype:
 
-<<< ../../examples/docs/advanced/63-graph-format-xsd-mapping.ts
+<RunnableExample src="examples/docs/advanced/63-graph-format-xsd-mapping" />
 
 These emit:
 
@@ -72,12 +72,12 @@ Formats without an XSD equivalent (`email`, `uuid`, `hostname`, etc.) stay `xsd:
 
 The schema graph is a **directed graph**, not a tree. `$ref` creates edges between nodes.
 
-<<< ../../examples/docs/advanced/64-graph-ref-resolution.ts
+<RunnableExample src="examples/docs/advanced/64-graph-ref-resolution" />
 
 `$defs` entries live in the **same namespace** as their parent schema. They are part of
 that schema's ontology surface:
 
-<<< ../../examples/docs/advanced/88-graph-defs-namespace.ts
+<RunnableExample src="examples/docs/advanced/88-graph-defs-namespace" />
 
 Here `LineItem` is accessible as `urn:bookstore:Order#/$defs/LineItem` - a node in the graph
 whose parent is `urn:bookstore:Order`.
@@ -111,7 +111,7 @@ ABox projection round-trips typed data through RDF quads - see [RDF round-trip](
 The bookstore example uses `urn:bookstore:{PascalCase}` - e.g. `urn:bookstore:Isbn`,
 `urn:bookstore:Book`.
 
-<<< ../../examples/docs/advanced/65-graph-base-iri.ts
+<RunnableExample src="examples/docs/advanced/65-graph-base-iri" />
 
 `baseIRI` is used by the serializers to expand CURIE prefixes and anchor relative IRIs. It does
 not need to match the `$id` prefixes of the registered schemas - it is the base for the

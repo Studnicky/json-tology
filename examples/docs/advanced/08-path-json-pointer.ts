@@ -33,4 +33,5 @@ for (const [
   const result = Path.toAccess(pointer);
 
   console.assert(result === expected, `${pointer} -> ${result}`);
+  console.log(`Path.toAccess(${JSON.stringify(pointer)}) => ${JSON.stringify(result)}`);
 }

@@ -95,3 +95,17 @@ export function runInstantiateBench(): BenchResult[] {
 
   return results;
 }
+
+// Standalone demo — shows registry.instantiate on a flat and a nested schema.
+// Run: npx tsx examples/docs/benchmarks/instantiate.bench.ts
+const demoRegistry = new SchemaRegistry({ 'enableStrictGraph': false });
+
+for (const schema of bookstoreBenchSchemas) {
+  demoRegistry.set(schema as Record<string, unknown>);
+}
+
+const parsedReview = demoRegistry.instantiate(ReviewSchema, reviewValid);
+const parsedOrder = demoRegistry.instantiate(OrderSchema, orderValid);
+
+console.log('instantiate (review):', JSON.stringify(parsedReview));
+console.log('instantiate (order):', JSON.stringify(parsedOrder));

@@ -58,3 +58,5 @@ const missingQty = { 'bookIsbn': '9783522128001' };
 const invalid = registry.validate(OrderWithDefs.$id, { 'items': [missingQty] });
 
 console.assert(!invalid.ok, 'missing required quantity fails validation');
+
+console.log('$defs namespace: OrderWithDefs registered:', registry.has(OrderWithDefs.$id), '| valid item ok:', valid.ok, '| missing field ok:', invalid.ok);

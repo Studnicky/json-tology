@@ -65,3 +65,5 @@ console.assert(
   warnings.length > 0,
   'logger.warn was called for the inline constrained shape'
 );
+
+console.log('enableInlineWarnings: registered:', registry.has(BookWithInlineIsbn.$id), '| warnings emitted:', warnings.length);

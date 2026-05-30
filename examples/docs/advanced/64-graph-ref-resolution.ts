@@ -28,3 +28,5 @@ console.assert(jsonLd.includes(TitleSchema.$id), 'Title class in TBox (cross-sch
 const tboxGraph = tbox.jsonLdObject()['@graph'] as unknown[];
 
 console.assert(tboxGraph.length > 0, 'TBox graph produced from cross-schema refs');
+
+console.log('$ref resolution: Book in TBox:', jsonLd.includes(BookSchema.$id), '| Isbn in TBox:', jsonLd.includes(IsbnSchema.$id), '| graph nodes:', tboxGraph.length);

@@ -73,3 +73,7 @@ const _bad3: ValidatePropertyCharacteristicsType<{
 void _bad1;
 void _bad2;
 void _bad3;
+
+// Each @ts-expect-error above confirms the conflict brand fires at the definition site.
+// All three pairs are OWL 2 logical impossibilities detected at compile time.
+console.log('bad patterns: symmetric+asymmetric, reflexive+irreflexive, asymmetric+reflexive all rejected at compile time');

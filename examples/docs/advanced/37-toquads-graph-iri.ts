@@ -20,3 +20,6 @@ console.assert(
   }),
   'every quad carries the configured named graph'
 );
+
+console.log('quad count:', quads.length);
+console.log('graph IRI:', quads[0]?.graph.value);

@@ -33,17 +33,17 @@ A `SubjectGroup` is a convenience wrapper that groups all quads sharing the same
 
 #### Example 1: Project an order to ABox quads
 
-<<< ../../examples/docs/advanced/34-toquads-order-abox.ts
+<RunnableExample src="examples/docs/advanced/34-toquads-order-abox" />
 
 #### Example 2: Merge ABox with TBox in a single document
 
-<<< ../../examples/docs/advanced/35-toquads-merge-tbox-abox-order.ts
+<RunnableExample src="examples/docs/advanced/35-toquads-merge-tbox-abox-order" />
 
 ### Subject minting with `iriFor`
 
 The default minter assigns `<baseIRI>/instances/<classId>-<contentHash>` to every projected object. To override that, pass `iriFor` to `toQuads`:
 
-<<< ../../examples/docs/advanced/36-toquads-irifor-strategies.ts
+<RunnableExample src="examples/docs/advanced/36-toquads-irifor-strategies" />
 
 See [skolemization](/advanced/skolemization) for the strategy reference.
 
@@ -51,7 +51,7 @@ See [skolemization](/advanced/skolemization) for the strategy reference.
 
 Set the `graph` field on every emitted quad with `graphIRI`:
 
-<<< ../../examples/docs/advanced/37-toquads-graph-iri.ts
+<RunnableExample src="examples/docs/advanced/37-toquads-graph-iri" />
 
 Both options can be paired with registry-level defaults via `JsonTology.create({ iriFor, defaultGraphIRI })`: see [Static helpers - graph emission options](/static-helpers#graph-emission-options).
 
@@ -67,7 +67,7 @@ Both options can be paired with registry-level defaults via `JsonTology.create({
 
 Pass `{ deskolemize: true }` to treat IRIs matching the W3C well-known genid pattern (`*/.well-known/genid/<hash>`) as blank nodes during reconstruction. This pairs with `Skolemize.wellKnownGenid` on `toQuads`:
 
-<<< ../../examples/docs/advanced/38-fromquads-deskolemize-roundtrip.ts
+<RunnableExample src="examples/docs/advanced/38-fromquads-deskolemize-roundtrip" />
 
 The registry-level `defaultDeskolemize: true` flips this on for every `fromQuads` call without per-call overrides.
 
@@ -75,17 +75,17 @@ The registry-level `defaultDeskolemize: true` flips this on for every `fromQuads
 
 #### Example 1: Round-trip an order
 
-<<< ../../examples/docs/advanced/39-fromquads-order-roundtrip.ts
+<RunnableExample src="examples/docs/advanced/39-fromquads-order-roundtrip" />
 
 #### Example 2: Lift quads from a triple store
 
-<<< ../../examples/docs/advanced/40-fromquads-lift-external-books.ts
+<RunnableExample src="examples/docs/advanced/40-fromquads-lift-external-books" />
 
 ## Static counterparts
 
 Both methods have static counterparts on `JsonTology` for one-shot use without a long-lived registry. The static variants build an ephemeral registry containing only the supplied schema, run the operation, and discard the registry.
 
-<<< ../../examples/docs/advanced/41-toquads-fromquads-static.ts
+<RunnableExample src="examples/docs/advanced/41-toquads-fromquads-static" />
 
 Use the static form when:
 
@@ -155,7 +155,7 @@ as-is because the project's accepted shape is the canonical rdf/js spec.
 (`xsd:integer`, `xsd:boolean`, `xsd:dateTime`, …). To recover the typed JS
 value, call `decodeLiteral(literal)`:
 
-<<< ../../examples/docs/advanced/98-decode-literal-typed-values.ts
+<RunnableExample src="examples/docs/advanced/98-decode-literal-typed-values" />
 
 `fromQuads`, the internal `Lift` pipeline, and the OWL import dispatchers call
 `decodeLiteral` automatically, so consumers using those entry points never have
@@ -172,7 +172,7 @@ quads.
 Use `Lists.build(items)` to assemble a list as the object of a quad, and
 `Lists.collect(head, allQuads)` to walk the chain back into an item array:
 
-<<< ../../examples/docs/advanced/99-lists-build-and-collect.ts
+<RunnableExample src="examples/docs/advanced/99-lists-build-and-collect" />
 
 ## Related
 

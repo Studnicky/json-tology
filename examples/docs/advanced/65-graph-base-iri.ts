@@ -21,3 +21,5 @@ const jsonLd = tbox.jsonLd();
 
 console.assert(typeof jsonLd === 'string', 'TBox serializes to a JSON-LD string');
 console.assert(jsonLd.length > 0, 'JSON-LD output is non-empty');
+
+console.log('baseIRI: context keys:', Object.keys(context), '| JSON-LD length:', jsonLd.length);

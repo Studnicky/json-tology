@@ -111,7 +111,7 @@ Prefer `jt:config: { frozen: true }` when you also need `extra` or `strict`. Use
 
 **Use this when** a single property must align to an external vocabulary IRI (for example, a Schema.org predicate) without a registry-level `predicateFor` callback.
 
-<<< ../../examples/docs/advanced/102-x-jt-predicate.ts
+<RunnableExample src="examples/docs/advanced/102-x-jt-predicate" />
 
 See [RDF predicates: priority order](/advanced/predicates#x-jt-predicate) for the full precedence chain.
 
@@ -125,7 +125,7 @@ See [RDF predicates: priority order](/advanced/predicates#x-jt-predicate) for th
 
 **Use this when** the property value is an IRI and you want it to participate in graph traversal as a named node rather than appear as a string literal.
 
-<<< ../../examples/docs/advanced/103-x-jt-iriref-language.ts
+<RunnableExample src="examples/docs/advanced/103-x-jt-iriref-language" />
 
 The `DownloadUrl` schema in the bookstore domain (`x-jt-iriRef: true`) and the `Provenance` schema (`x-jt-language: 'de'`) are both exercised in that example.
 
@@ -156,7 +156,7 @@ Both the base triple and all annotation quads share the same named graph. A `gra
 
 **Use this when** a relationship between two individuals carries metadata that belongs to the edge itself rather than to either endpoint: ratings on a review-to-book link, weights on a similarity edge, timestamps on a provenance arc.
 
-<<< ../../examples/docs/advanced/104-annotated-edge-rdfstar.ts
+<RunnableExample src="examples/docs/advanced/104-annotated-edge-rdfstar" />
 
 See [RDF round-trip](/advanced/quads) for `toQuads` / `fromQuads` documentation.
 

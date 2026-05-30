@@ -70,3 +70,5 @@ const orderResult = registry.validate(OrderWithRef.$id, {
 });
 
 console.assert(orderResult.ok, 'OrderRef validates with the same named IsbnSchema constraint');
+
+console.log('Named entity: duplicates:', duplicates.length, '| BookRef valid:', bookResult.ok, '| OrderRef valid:', orderResult.ok);

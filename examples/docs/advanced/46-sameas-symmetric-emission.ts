@@ -7,15 +7,17 @@
  */
 
 import {
-  aboxFixtures, bookstoreEntities, CustomerSchema
+  aboxFixtures, createBookstoreDocRegistry, CustomerSchema
 } from '../bookstore/index.js';
 
-bookstoreEntities.sameAs(
+const registry = createBookstoreDocRegistry();
+
+registry.sameAs(
   'urn:bookstore:customer:bastian-bux',
   'urn:legacy-crm:cust-00042'
 );
 
-const quads = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer);
+const quads = registry.toQuads(CustomerSchema, aboxFixtures.customer);
 
 const sameAsQuads = quads.filter((quad) => {
   return quad.predicate.value === 'http://www.w3.org/2002/07/owl#sameAs';
@@ -29,3 +31,4 @@ const subjects = new Set(sameAsQuads.map((quad) => {
 
 console.assert(subjects.has('urn:bookstore:customer:bastian-bux'), 'forward subject present');
 console.assert(subjects.has('urn:legacy-crm:cust-00042'), 'reverse subject present');
+console.log('symmetric owl:sameAs subjects:', [...subjects]);

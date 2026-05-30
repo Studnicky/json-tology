@@ -22,8 +22,8 @@ import {
 // Valid: includes all required fields
 const baseCustomer = {
   'addresses': [],
+  'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'email': 'bastian.bux@bookstore.example',
-  'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'name': 'Bastian Balthazar Bux'
 };
 
@@ -43,3 +43,5 @@ const extendedResult = bookstoreEntities.validate(CustomerSchema.$id, extendedCu
 
 // Under OWA the extra property does not cause a validation failure
 console.assert(extendedResult.ok, 'extra property is allowed under open-world assumption');
+
+console.log('OWA: base valid:', baseResult.ok, '| with extra property:', extendedResult.ok);

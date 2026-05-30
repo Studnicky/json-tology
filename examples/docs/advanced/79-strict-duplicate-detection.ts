@@ -75,3 +75,5 @@ console.assert(
   duplicates[0].equivalentTo === IsbnSchema.$id,
   'duplicate points back to the named IsbnSchema'
 );
+
+console.log('enableDuplicateDetection: warnings:', warnings.length, '| duplicates:', duplicates.length, '| equivalentTo:', duplicates[0]?.equivalentTo);

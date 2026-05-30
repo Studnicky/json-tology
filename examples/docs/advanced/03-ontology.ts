@@ -26,10 +26,13 @@ const ctx = builder.context();
 const cached = bookstoreEntities.ontology();
 
 // true — ontology() is cached
-void (builder === cached);
+console.assert(builder === cached, 'ontology() is cached');
+console.log('ontology() cached:', builder === cached);
 
-void owlJsonLd;
-void owl;
-void shacl;
-void ctx;
-void cached;
+const owlGraph = (owl as { '@graph'?: unknown[] })['@graph'];
+const shaclGraph = (shacl as { '@graph'?: unknown[] })['@graph'];
+
+console.log('TBox classes + properties in @graph:', Array.isArray(owlGraph) ? owlGraph.length : 0);
+console.log('SHACL shapes in @graph:', Array.isArray(shaclGraph) ? shaclGraph.length : 0);
+console.log('JSON-LD byte length:', owlJsonLd.length);
+console.log('owl: prefix:', ctx.owl);

@@ -29,3 +29,6 @@ const jsonLdObject = ontology.jsonLdObject();
 
 console.assert(typeof jsonLd === 'string', 'JSON-LD string emitted');
 console.assert(typeof jsonLdObject === 'object', 'JSON-LD object emitted');
+
+console.log('order quad count:', quads.length);
+console.log('first quad subject:', first.subject.value);

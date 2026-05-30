@@ -149,3 +149,27 @@ export function runSerializeBench(): BenchResult[] {
 
   return results;
 }
+
+// Standalone demo — shows dump, dumpJson, and encode on registered schemas.
+// Run: npx tsx examples/docs/benchmarks/serialize.bench.ts
+const demoJt = JsonTology.create({
+  'baseIRI': 'urn:bench:serialize',
+  'enableStrictGraph': false,
+  'schemas': [
+    ...bookstoreBenchSchemas,
+    EventSchemaJt
+  ]
+});
+
+const demoOrder = demoJt.instantiate(OrderSchema, orderValid);
+const dumped = demoJt.dump(OrderSchema, demoOrder);
+const dumpedJson = demoJt.dumpJson(OrderSchema, demoOrder);
+const demoEvent = {
+  'at': new Date('2024-06-01T12:00:00.000Z'),
+  'name': 'Launch'
+};
+const encodedEvent = demoJt.encode(EventSchemaJt, demoEvent);
+
+console.log('dump (order):', JSON.stringify(dumped).slice(0, 60));
+console.log('dumpJson (order, first 60 chars):', dumpedJson.slice(0, 60));
+console.log('encode (event):', JSON.stringify(encodedEvent));

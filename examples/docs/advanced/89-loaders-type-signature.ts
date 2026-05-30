@@ -41,3 +41,5 @@ console.assert(typeof resolved === 'object', 'resolved schema is an object');
 const unknown = await loader('urn:bookstore:Unknown');
 
 console.assert(unknown === null, 'unknown IRI returns null per LoaderType contract');
+
+console.log('LoaderType: resolved schema $id:', (resolved as Record<string, string>).$id, '| unknown IRI returns null:', unknown === null);

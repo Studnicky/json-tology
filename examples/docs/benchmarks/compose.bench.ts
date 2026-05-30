@@ -293,3 +293,38 @@ export function runComposeBench(): BenchResult[] {
 
   return results;
 }
+
+// Standalone demo — shows Compose.extend, discriminatedUnion, and intersection.
+// Run: npx tsx examples/docs/benchmarks/compose.bench.ts
+const demoReg = new SchemaRegistry({ 'enableStrictGraph': false });
+
+const ExtBookDemo = Compose.extend(
+  BaseBookJt,
+  { 'properties': { 'pages': { 'type': 'integer' } } } as const,
+  'urn:bench:ExtBookDemo'
+);
+
+demoReg.set(BaseBookJt);
+demoReg.set(ExtBookDemo);
+
+const extId = (ExtBookDemo as { '$id': string }).$id;
+const extValid = {
+  ...validBook,
+  'pages': 350
+};
+const extResult = demoReg.validate(extId, extValid);
+
+const ShapeDemo = Compose.discriminatedUnion('kind', [
+  CircleJt,
+  RectJt
+] as const, 'urn:bench:ShapeDemo');
+const shapeReg = new SchemaRegistry({ 'enableStrictGraph': false });
+
+shapeReg.set(CircleJt);
+shapeReg.set(RectJt);
+shapeReg.set({ ...ShapeDemo });
+
+const shapeResult = shapeReg.validate((ShapeDemo as { '$id': string }).$id, validCircle);
+
+console.log('extend + validate (book with pages):', extResult);
+console.log('discriminatedUnion validate (circle):', shapeResult);

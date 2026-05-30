@@ -19,3 +19,7 @@ console.assert(
   }),
   'hash-minted root carries the configured baseIRI prefix'
 );
+
+const rootIri = quads[0]?.subject.value ?? '';
+
+console.log('hash-minted IRI:', rootIri);

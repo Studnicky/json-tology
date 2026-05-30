@@ -99,3 +99,20 @@ export function runRegistryBench(): BenchResult[] {
 
   return results;
 }
+
+// Standalone demo — shows cold (first validate) vs warm (cached) registry cost.
+// Run: npx tsx examples/docs/benchmarks/registry.bench.ts
+const coldReg = new SchemaRegistry({ 'enableStrictGraph': false });
+
+for (const schema of bookstoreBenchSchemas) {
+  coldReg.set(schema as Record<string, unknown>);
+}
+
+const coldResult = coldReg.validate(OrderSchema.$id, orderValid);
+
+console.log('cold first validate (order, valid):', coldResult);
+
+// Second call hits the warm (compiled) path.
+const warmResult = coldReg.validate(OrderSchema.$id, orderValid);
+
+console.log('warm validate (order, valid):', warmResult);

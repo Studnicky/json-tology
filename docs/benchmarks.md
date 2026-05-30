@@ -48,7 +48,7 @@ npm run bench:flame   # 0x flame graph profiling under .flame/
 
 Source:
 
-<<< ../examples/docs/benchmarks/validate.bench.ts
+<RunnableExample src="examples/docs/benchmarks/validate.bench" />
 
 ### simple valid
 
@@ -82,7 +82,7 @@ Nested object with `$ref` sub-schemas; the cross-schema reference case.
 
 Source:
 
-<<< ../examples/docs/benchmarks/instantiate.bench.ts
+<RunnableExample src="examples/docs/benchmarks/instantiate.bench" />
 
 ### instantiate simple
 
@@ -108,7 +108,7 @@ Parse + normalize a nested object.
 
 Source:
 
-<<< ../examples/docs/benchmarks/coerce.bench.ts
+<RunnableExample src="examples/docs/benchmarks/coerce.bench" />
 
 ### coerce valid
 
@@ -134,7 +134,7 @@ Apply default values during instantiate.
 
 Source:
 
-<<< ../examples/docs/benchmarks/valueOps.bench.ts
+<RunnableExample src="examples/docs/benchmarks/valueOps.bench" />
 
 ### clean simple
 
@@ -184,7 +184,7 @@ Compute a changeset between two nested objects.
 
 Source:
 
-<<< ../examples/docs/benchmarks/transform.bench.ts
+<RunnableExample src="examples/docs/benchmarks/transform.bench" />
 
 ### decode date
 
@@ -206,7 +206,7 @@ Encode a `Date` instance back to a wire-format ISO-8601 string.
 
 Source:
 
-<<< ../examples/docs/benchmarks/compose.bench.ts
+<RunnableExample src="examples/docs/benchmarks/compose.bench" />
 
 ### extend build
 
@@ -240,7 +240,7 @@ Build an intersection schema, register the parts and the merged form, validate o
 
 Source:
 
-<<< ../examples/docs/benchmarks/serialize.bench.ts
+<RunnableExample src="examples/docs/benchmarks/serialize.bench" />
 
 ### dump nested
 
@@ -272,7 +272,7 @@ Cold-vs-warm validate timing. The cold scenario measures the cost of *registerin
 
 Source:
 
-<<< ../examples/docs/benchmarks/registry.bench.ts
+<RunnableExample src="examples/docs/benchmarks/registry.bench" />
 
 ### cold first validate
 
@@ -296,7 +296,7 @@ A json-tology-internal A/B between `SchemaCompiler` and `GraphEngine.execute` on
 
 Source:
 
-<<< ../examples/docs/benchmarks/compiled.bench.ts
+<RunnableExample src="examples/docs/benchmarks/compiled.bench" />
 
 ### compiled simple valid
 

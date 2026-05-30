@@ -148,3 +148,33 @@ export function runValueOpsBench(): BenchResult[] {
 
   return results;
 }
+
+// Standalone demo — shows Operations.clone, Value.diff, registry.clean, registry.convert.
+// Run: npx tsx examples/docs/benchmarks/valueOps.bench.ts
+const demoRegistry = new SchemaRegistry({ 'enableStrictGraph': false });
+
+for (const schema of bookstoreBenchSchemas) {
+  demoRegistry.set(schema as Record<string, unknown>);
+}
+
+const dirty = {
+  ...reviewValid,
+  'extra1': 'junk',
+  'extra2': 42
+};
+const cleaned = demoRegistry.clean(ReviewSchema.$id, dirty);
+const converted = demoRegistry.convert(ReviewSchema.$id, reviewCoercible);
+const cloned = Operations.clone(orderValid);
+const modified = {
+  ...orderValid,
+  'orderTotal': {
+    ...orderValid.orderTotal,
+    'amount': 999
+  }
+};
+const diff = Value.diff(orderValid, modified);
+
+console.log('clean (review, extra keys stripped):', JSON.stringify(cleaned));
+console.log('convert (review, coercible rating):', JSON.stringify(converted));
+console.log('clone (order) orderId:', cloned.orderId);
+console.log('diff (order, modified total):', JSON.stringify(diff));

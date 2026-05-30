@@ -25,13 +25,13 @@ The rest of this page covers:
 
 When you write the same constrained shape inline in two different schemas, the graph sees them as two separate, unrelated nodes:
 
-<<< ../../examples/docs/advanced/81-graph-native-antipattern-inline.ts
+<RunnableExample src="examples/docs/advanced/81-graph-native-antipattern-inline" />
 
 The OWL output produces two anonymous DatatypeProperty ranges. Fix the ISBN regex once, and you have to find and update every copy. SHACL constraint propagation and rdfs:range reasoning work per-node - the two "isbn" properties have no declared relationship.
 
 ### The named-entity solution
 
-<<< ../../examples/docs/advanced/82-graph-native-named-entity.ts
+<RunnableExample src="examples/docs/advanced/82-graph-native-named-entity" />
 
 Now:
 - Change the ISBN pattern in one place - both schemas update.
@@ -54,7 +54,7 @@ entities/
 
 Inside `Book.ts`:
 
-<<< ../../examples/docs/advanced/83-graph-native-per-entity-file.ts
+<RunnableExample src="examples/docs/advanced/83-graph-native-per-entity-file" />
 
 Always show the import that defines the referenced shape - never use a bare string `$ref` pointing to an undocumented IRI.
 

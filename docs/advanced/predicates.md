@@ -23,7 +23,7 @@ https://bookstore.example/email
 
 The predicate is vocabulary-wide: every class that declares a `title` property uses the same `https://bookstore.example/title` predicate. This is the most interoperable form and matches how shared vocabularies like Schema.org assign predicates.
 
-<<< ../../examples/docs/advanced/100-canonical-predicates.ts
+<RunnableExample src="examples/docs/advanced/100-canonical-predicates" />
 
 ---
 
@@ -56,7 +56,7 @@ predicateFor: (ctx: { classId: string; propertyName: string }) => string | undef
 
 **Use this when** a consuming vocabulary already mints predicates under a different namespace, for example aligning selected bookstore properties to Schema.org IRIs, and you want the mapping in one place without touching individual schemas.
 
-<<< ../../examples/docs/advanced/101-predicate-for.ts
+<RunnableExample src="examples/docs/advanced/101-predicate-for" />
 
 ---
 
@@ -66,7 +66,7 @@ Add `x-jt-predicate: '<IRI>'` directly to a property schema to pin it to a speci
 
 **Use this when** a single property must align to an external vocabulary IRI without a registry-level callback.
 
-<<< ../../examples/docs/advanced/102-x-jt-predicate.ts
+<RunnableExample src="examples/docs/advanced/102-x-jt-predicate" />
 
 ---
 

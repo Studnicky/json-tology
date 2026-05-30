@@ -17,3 +17,8 @@ const ctx = shaclBuilder.context();
 
 console.assert(Boolean(shacl), 'shacl object present');
 console.assert(Boolean(ctx.sh), 'sh prefix defined');
+
+const shaclGraph = (shacl as { '@graph'?: unknown[] })['@graph'];
+
+console.log('SHACL shapes in @graph:', Array.isArray(shaclGraph) ? shaclGraph.length : 0);
+console.log('sh: prefix:', ctx.sh);

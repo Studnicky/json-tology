@@ -19,13 +19,13 @@ Hashes the value with FNV-1a and emits `<baseIRI>/instances/<contentHash>`. Dete
 
 This is **not** identical to the projection's built-in default IRI minter. The default minter (`defaultInstanceIri`) additionally prefixes the escaped class identifier, emitting `<baseIRI>/instances/<classId>-<contentHash>`. `Skolemize.hash` omits the classId segment, so its output differs from the projection default even for identical input values.
 
-<<< ../../examples/docs/advanced/50-skolemize-hash.ts
+<RunnableExample src="examples/docs/advanced/50-skolemize-hash" />
 
 ### `Skolemize.wellKnownGenid(baseIRI)`
 
 Mints IRIs matching the [RDF 1.1 §3.5 well-known genid pattern](https://www.w3.org/TR/rdf11-concepts/#section-skolemization): `<baseIRI>/.well-known/genid/<hash>`. These IRIs are intentionally reversible - `fromQuads({ deskolemize: true })` recognizes the pattern and rewrites the IRIs back to blank nodes during lift.
 
-<<< ../../examples/docs/advanced/51-skolemize-well-known-genid.ts
+<RunnableExample src="examples/docs/advanced/51-skolemize-well-known-genid" />
 
 Use this strategy when you want to publish RDF over the wire (which requires named subjects) but preserve blank-node identity on the receiving end.
 
@@ -33,13 +33,13 @@ Use this strategy when you want to publish RDF over the wire (which requires nam
 
 Mints `urn:uuid:<v4>`. Non-deterministic - every emission gets a fresh identity. Useful when you want unique IRIs and don't care about content addressing or external joins.
 
-<<< ../../examples/docs/advanced/52-skolemize-uuid.ts
+<RunnableExample src="examples/docs/advanced/52-skolemize-uuid" />
 
 ### `Skolemize.fromProperty(name, { baseIRI, fallback })`
 
 Mints `<baseIRI>/<value[name]>` when the value has a non-empty string at `value[name]`. Otherwise delegates to `fallback` (defaults to `Skolemize.hash`).
 
-<<< ../../examples/docs/advanced/53-skolemize-from-property.ts
+<RunnableExample src="examples/docs/advanced/53-skolemize-from-property" />
 
 The fallback runs whenever the property is missing or not a non-empty string, so heterogeneous instance trees still produce IRIs for every object.
 
@@ -47,17 +47,17 @@ The fallback runs whenever the property is missing or not a non-empty string, so
 
 Tries each strategy in order; the first non-`undefined` return wins. Use this to build per-class minting policies:
 
-<<< ../../examples/docs/advanced/54-skolemize-compose.ts
+<RunnableExample src="examples/docs/advanced/54-skolemize-compose" />
 
 ## Custom strategies
 
 `iriFor` accepts any function with the `SkolemizeFnType` signature:
 
-<<< ../../examples/docs/advanced/55-skolemize-fn-type.ts
+<RunnableExample src="examples/docs/advanced/55-skolemize-fn-type" />
 
 Returning `undefined` falls through to the default `Skolemize.hash` minter. Within a single `projectAbox` call, results are memoized by value reference: the same input object always produces the same IRI within one emission.
 
-<<< ../../examples/docs/advanced/56-skolemize-custom-function.ts
+<RunnableExample src="examples/docs/advanced/56-skolemize-custom-function" />
 
 ## Two shorthand strings
 
@@ -70,7 +70,7 @@ For the most common cases, `iriFor` accepts a string literal:
 
 `JsonTology.create` accepts the same options as call sites, applied as defaults that per-call options override:
 
-<<< ../../examples/docs/advanced/57-skolemize-registry-defaults-override.ts
+<RunnableExample src="examples/docs/advanced/57-skolemize-registry-defaults-override" />
 
 The `'blank-node'` registry-level default is re-instantiated on every call so the per-call counter starts fresh.
 

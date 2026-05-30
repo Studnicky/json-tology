@@ -27,3 +27,7 @@ const internal: QuadInterface[] = Lists.narrowExternalQuads(rdfQuads);
 
 console.assert(internal.length > 0);
 console.assert(typeof internal[0]?.subject.value === 'string');
+
+console.log('Lists.narrowExternalQuads — quad count:', internal.length);
+console.log('First quad subject:', internal[0]?.subject.value);
+console.log('First quad predicate:', internal[0]?.predicate.value);
