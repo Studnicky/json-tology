@@ -4,7 +4,7 @@
 
 The example below runs for real in your browser. It is the verbatim source of the gate-verified `examples/docs/advanced/106-abox-graph.ts`. Edit it and press Run to execute it against the actual library and see the true output.
 
-<RunnableExample id="abox-graph" />
+<RunnableExample src="examples/docs/advanced/106-abox-graph" />
 
 ## Concepts
 

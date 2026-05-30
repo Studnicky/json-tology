@@ -110,6 +110,7 @@
     "url": "https://github.com/Studnicky/json-tology/issues"
   },
   "devDependencies": {
+    "@codemirror/lang-javascript": "^6.2.5",
     "@eslint/js": "^10.0.1",
     "@sinclair/typebox": "^0.34.49",
     "@stylistic/eslint-plugin": "^5.10.0",
@@ -122,6 +123,7 @@
     "0x": "^6.0.0",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
+    "codemirror": "^6.0.2",
     "cytoscape": "^3.33.4",
     "cytoscape-fcose": "^2.2.0",
     "eslint": "^10.4.0",
