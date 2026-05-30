@@ -109,17 +109,3 @@ export function runCoerceBench(): BenchResult[] {
 
   return results;
 }
-
-// Standalone demo — shows instantiate on already-valid data and with default application.
-// Run: npx tsx examples/docs/benchmarks/coerce.bench.ts
-const demoRegistry = new SchemaRegistry({ 'enableStrictGraph': false });
-
-for (const schema of bookstoreBenchSchemas) {
-  demoRegistry.set(schema as Record<string, unknown>);
-}
-
-const parsedReview = demoRegistry.instantiate(ReviewSchema, reviewValid);
-const parsedWithDefaults = demoRegistry.instantiate(CustomerSchema, customerDefaultsInput);
-
-console.log('instantiate (review, valid):', JSON.stringify(parsedReview));
-console.log('instantiate (customer, defaults applied):', JSON.stringify(parsedWithDefaults));

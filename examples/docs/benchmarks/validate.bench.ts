@@ -116,15 +116,3 @@ export function runValidateBench(): BenchResult[] {
 
   return results;
 }
-
-// Standalone demo — shows json-tology validate API for a flat and a nested schema.
-// Run: npx tsx examples/docs/benchmarks/validate.bench.ts
-const demoRegistry = new SchemaRegistry({ 'enableStrictGraph': false });
-
-for (const schema of bookstoreBenchSchemas) {
-  demoRegistry.set(schema as Record<string, unknown>);
-}
-
-console.log('validate (review, valid):', demoRegistry.validate(ReviewSchema.$id, reviewValid));
-console.log('validate (review, invalid):', demoRegistry.validate(ReviewSchema.$id, reviewInvalid));
-console.log('validate (order, valid):', demoRegistry.validate(OrderSchema.$id, orderValid));

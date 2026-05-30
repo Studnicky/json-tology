@@ -48,7 +48,7 @@ npm run bench:flame   # 0x flame graph profiling under .flame/
 
 Source:
 
-<RunnableExample src="examples/docs/benchmarks/validate.bench" />
+<<< ../examples/docs/benchmarks/validate.bench.ts
 
 ### simple valid
 
@@ -82,7 +82,7 @@ Nested object with `$ref` sub-schemas; the cross-schema reference case.
 
 Source:
 
-<RunnableExample src="examples/docs/benchmarks/instantiate.bench" />
+<<< ../examples/docs/benchmarks/instantiate.bench.ts
 
 ### instantiate simple
 
@@ -108,7 +108,7 @@ Parse + normalize a nested object.
 
 Source:
 
-<RunnableExample src="examples/docs/benchmarks/coerce.bench" />
+<<< ../examples/docs/benchmarks/coerce.bench.ts
 
 ### coerce valid
 
@@ -134,7 +134,7 @@ Apply default values during instantiate.
 
 Source:
 
-<RunnableExample src="examples/docs/benchmarks/valueOps.bench" />
+<<< ../examples/docs/benchmarks/valueOps.bench.ts
 
 ### clean simple
 
@@ -184,7 +184,7 @@ Compute a changeset between two nested objects.
 
 Source:
 
-<RunnableExample src="examples/docs/benchmarks/transform.bench" />
+<<< ../examples/docs/benchmarks/transform.bench.ts
 
 ### decode date
 
@@ -206,7 +206,7 @@ Encode a `Date` instance back to a wire-format ISO-8601 string.
 
 Source:
 
-<RunnableExample src="examples/docs/benchmarks/compose.bench" />
+<<< ../examples/docs/benchmarks/compose.bench.ts
 
 ### extend build
 
@@ -240,7 +240,7 @@ Build an intersection schema, register the parts and the merged form, validate o
 
 Source:
 
-<RunnableExample src="examples/docs/benchmarks/serialize.bench" />
+<<< ../examples/docs/benchmarks/serialize.bench.ts
 
 ### dump nested
 
@@ -272,7 +272,7 @@ Cold-vs-warm validate timing. The cold scenario measures the cost of *registerin
 
 Source:
 
-<RunnableExample src="examples/docs/benchmarks/registry.bench" />
+<<< ../examples/docs/benchmarks/registry.bench.ts
 
 ### cold first validate
 
@@ -296,7 +296,7 @@ A json-tology-internal A/B between `SchemaCompiler` and `GraphEngine.execute` on
 
 Source:
 
-<RunnableExample src="examples/docs/benchmarks/compiled.bench" />
+<<< ../examples/docs/benchmarks/compiled.bench.ts
 
 ### compiled simple valid
 

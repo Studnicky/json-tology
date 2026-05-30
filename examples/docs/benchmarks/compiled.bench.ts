@@ -92,23 +92,3 @@ export function runCompiledBench(): BenchResult[] {
 
   return results;
 }
-
-// Standalone demo — shows SchemaCompiler (compiled) vs GraphEngine (interpreted) paths.
-// Run: npx tsx examples/docs/benchmarks/compiled.bench.ts
-const demoRegistry = new SchemaRegistry({ 'enableStrictGraph': false });
-
-for (const schema of bookstoreBenchSchemas) {
-  demoRegistry.set(schema as Record<string, unknown>);
-}
-
-const compiledResult = demoRegistry.validate(ReviewSchema.$id, reviewValid);
-
-const demoEngine = new GraphEngine(ReviewSchema, {
-  'lookupSchema': (id) => {
-    return demoRegistry.get(id);
-  }
-});
-const interpretedResult = demoEngine.execute(reviewValid);
-
-console.log('compiled validate (review, valid):', compiledResult);
-console.log('interpreted execute (review, valid):', interpretedResult.valid);

@@ -155,17 +155,3 @@ export function runTransformBench(): BenchResult[] {
   // and TypeBox in this fixture.
   return results;
 }
-
-// Standalone demo — shows Transform.create decode and encode round-trip.
-// Run: npx tsx examples/docs/benchmarks/transform.bench.ts
-const demoJt = JsonTology.create({
-  'baseIRI': 'urn:bench:transform',
-  'schemas': [DateSchemaJt]
-});
-
-const demoWireValue = '2024-01-15T10:30:00.000Z';
-const decoded = demoJt.instantiate(DateSchemaJt, demoWireValue);
-const reEncoded = demoJt.encode(DateSchemaJt, decoded);
-
-console.log('decode (string → Date):', decoded);
-console.log('encode (Date → string):', reEncoded);
