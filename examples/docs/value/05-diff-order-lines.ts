@@ -4,7 +4,7 @@
  *
  * Bastian Balthazar Bux's order for the 1979 Thienemann Neverending Story
  * gains a second line — a Walter Moers paperback. The diff reports the two
- * changed paths: the new items entry and the updated total.
+ * changed paths: the new orderLines entry and the updated orderTotal.
  */
 
 import {
@@ -20,8 +20,8 @@ const moersPrice = 24.9;
 
 const afterOrder = bookstoreEntities.instantiate(OrderSchema, {
   ...aboxFixtures.order,
-  'items': [
-    ...aboxFixtures.order.items,
+  'orderLines': [
+    ...aboxFixtures.order.orderLines,
     // Walter Moers — Die Stadt der Träumenden Bücher (Piper, 2004).
     {
       'bookIsbn': '9783492045490',
@@ -32,8 +32,8 @@ const afterOrder = bookstoreEntities.instantiate(OrderSchema, {
       }
     }
   ],
-  'total': {
-    'amount': aboxFixtures.order.total.amount + moersPrice,
+  'orderTotal': {
+    'amount': aboxFixtures.order.orderTotal.amount + moersPrice,
     'currency': 'EUR'
   }
 });
@@ -41,7 +41,7 @@ const afterOrder = bookstoreEntities.instantiate(OrderSchema, {
 const changes = Value.diff(beforeOrder, afterOrder);
 
 console.assert(!changes.isEmpty);
-// At minimum: new items[1] entry and updated total
+// At minimum: new orderLines[1] entry and updated orderTotal
 console.assert(changes.length >= 2);
 
 // Replay the changeset to reconstruct afterOrder from beforeOrder.
@@ -51,6 +51,6 @@ for (const op of changes.operations) {
   reconstructed = Operations.patch(reconstructed, op);
 }
 
-const reconstructedTotal = (reconstructed as { 'total': { 'amount': number } }).total.amount;
+const reconstructedTotal = (reconstructed as { 'orderTotal': { 'amount': number } }).orderTotal.amount;
 
-console.assert(Math.abs(reconstructedTotal - (aboxFixtures.order.total.amount + moersPrice)) < 0.001);
+console.assert(Math.abs(reconstructedTotal - (aboxFixtures.order.orderTotal.amount + moersPrice)) < 0.001);

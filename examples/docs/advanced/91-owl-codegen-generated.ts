@@ -85,6 +85,11 @@ type GenerateFromTboxFn = (options: {
   'name'?: string;
 }) => string;
 
+/** Narrows a fromTbox schema to the validate() call shape. */
+function hasId(schema: { '$id'?: string }): schema is Record<string, unknown> & { '$id': string } {
+  return typeof schema.$id === 'string' && schema.$id.length > 0;
+}
+
 interface SchemaLiteral {
   '$id': string;
   'properties'?: Record<string, unknown>;
@@ -140,10 +145,10 @@ if (generateFromTbox === null) {
   }));
 
   // Validate a Neverending-Story fixture against the runtime-imported schema.
-  if (PersonSchema !== undefined) {
+  if (PersonSchema !== undefined && hasId(PersonSchema)) {
     const bastian = { 'name': 'Bastian Balthazar Bux' };
     const validationResult = jt.validate(
-      PersonSchema as Record<string, unknown> & { '$id': string },
+      PersonSchema,
       bastian
     );
 
@@ -209,18 +214,19 @@ if (generateFromTbox === null) {
   // Step 5: validate a Neverending-Story fixture.
   // Bastian Balthazar Bux is a Person; we validate against the generated schema.
   if (PersonSchema !== undefined) {
+    // interop: SchemaLiteral comes from a dynamically-loaded generated module;
+    // it lacks an index signature so it cannot widen to Record<string,unknown>
+    // without the unknown intermediate.
+    const personSchemaWithId = PersonSchema as unknown as Record<string, unknown> & { '$id': string };
     const jt = JsonTology.create({
       'baseIRI': 'https://neverending.example/',
       'enableStrictGraph': false,
-      'schemas': [PersonSchema as Record<string, unknown> & { '$id': string }]
+      'schemas': [personSchemaWithId]
     });
 
     const bastian = { 'name': 'Bastian Balthazar Bux' };
 
-    const result = jt.validate(
-      PersonSchema as Record<string, unknown> & { '$id': string },
-      bastian
-    );
+    const result = jt.validate(personSchemaWithId, bastian);
 
     console.assert(
       result.ok,

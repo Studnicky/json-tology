@@ -104,7 +104,7 @@ Parse + normalize a nested object.
 
 ## Coerce
 
-`registry.instantiate` with `castTypes: true` against Zod's `z.coerce.*`.
+`registry.instantiate` with `enableTypeCast: true` against Zod's `z.coerce.*`.
 
 Source:
 

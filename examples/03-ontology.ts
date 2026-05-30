@@ -1,14 +1,15 @@
 /**
- * 03-ontology.mjs — OWL ontology generation
+ * 03-ontology — OWL ontology generation
  *
  * Demonstrates: generating a JSON-LD ontology from schemas.
  * Classes, properties, domain/range, and cardinality restrictions
  * are all derived automatically from schema definitions.
  *
- * Run: npm run build && node examples/03-ontology.mjs
+ * Run: npm run build && npx tsx examples/03-ontology.ts
  */
 
-import { JsonTology } from '../dist/index.js';
+import { JsonTology } from '../src/index.js';
+import { isRecord } from '../src/modules/data/DataTypes.js';
 
 // ---------------------------------------------------------------------------
 // Schemas with $ref relationships
@@ -28,7 +29,7 @@ const PersonSchema = {
   'required': ['name'],
   'title': 'Person',
   'type': 'object'
-};
+} as const;
 
 const OrganizationSchema = {
   '$id': 'https://example.com/Organization',
@@ -47,14 +48,17 @@ const OrganizationSchema = {
   'required': ['name'],
   'title': 'Organization',
   'type': 'object'
-};
+} as const;
 
 // ---------------------------------------------------------------------------
 // Generate ontology
 // ---------------------------------------------------------------------------
 
+// enableStrictGraph: false — self-contained demo with constrained primitives
+// (format, minimum) kept inline for brevity rather than extracted to $ref'd schemas.
 const jt = JsonTology.create({
   'baseIRI': 'https://example.com',
+  'enableStrictGraph': false,
   'schemas': [
     PersonSchema,
     OrganizationSchema
@@ -65,34 +69,36 @@ const ontology = jt.ontology();
 const jsonLd = ontology.jsonLdObject();
 
 console.log('--- OWL Ontology (JSON-LD) ---');
-const jsonLdStr = JSON.stringify(jsonLd, null, 2);
-
-console.log(jsonLdStr);
+console.log(JSON.stringify(jsonLd, null, 2));
 console.log();
 
 // ---------------------------------------------------------------------------
 // Inspect the graph contents
 // ---------------------------------------------------------------------------
 
-const graph = ontology.jsonLdObject()['@graph'];
-const classes = graph.filter((n) => {
-  return n['@type'] === 'owl:Class';
+const rawGraph = jsonLd['@graph'];
+const graph = Array.isArray(rawGraph) ? rawGraph : [];
+
+const classes = graph.filter((n): n is Record<string, unknown> => {
+  return isRecord(n) && n['@type'] === 'owl:Class';
 });
-const properties = graph.filter((n) => {
-  return n['@type'] === 'owl:DatatypeProperty' || n['@type'] === 'owl:ObjectProperty';
+const properties = graph.filter((n): n is Record<string, unknown> => {
+  return isRecord(n) && (n['@type'] === 'owl:DatatypeProperty' || n['@type'] === 'owl:ObjectProperty');
 });
 
 console.log('--- Derived classes ---');
 for (const cls of classes) {
-  console.log(' ', cls['@id'], '-', cls['rdfs:label'] || '(no label)');
+  const label = isRecord(cls['rdfs:label']) ? String(cls['rdfs:label']) : cls['rdfs:label'];
+
+  console.log(' ', cls['@id'], '-', label ?? '(no label)');
 }
 console.log();
 
 console.log('--- Derived properties ---');
 for (const prop of properties) {
-  const domain = prop['rdfs:domain']?.['@id'] || '(none)';
-  const range = prop['rdfs:range']?.['@id'] || '(none)';
+  const domain = isRecord(prop['rdfs:domain']) ? prop['rdfs:domain']['@id'] : undefined;
+  const range = isRecord(prop['rdfs:range']) ? prop['rdfs:range']['@id'] : undefined;
 
-  console.log(`  ${prop['@id']}  [${prop['@type']}]`);
-  console.log(`    domain: ${domain}  range: ${range}`);
+  console.log(`  ${String(prop['@id'])}  [${String(prop['@type'])}]`);
+  console.log(`    domain: ${String(domain ?? '(none)')}  range: ${String(range ?? '(none)')}`);
 }

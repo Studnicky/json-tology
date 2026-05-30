@@ -19,7 +19,7 @@ import {
 const customerById: Customer = bookstoreEntities.instantiate(
   CustomerSchema.$id,
   aboxFixtures.customer
-) as Customer;
+);
 
 // By schema object — idempotent registration then run.
 const customerByObj = bookstoreEntities.instantiate(
@@ -27,7 +27,7 @@ const customerByObj = bookstoreEntities.instantiate(
   aboxFixtures.customer
 );
 
-console.assert(customerById.id === customerByObj.id);
+console.assert(customerById.customerId === customerByObj.customerId);
 console.assert(customerById.name === customerByObj.name);
 
 // Validate also accepts both forms.

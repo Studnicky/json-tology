@@ -14,13 +14,13 @@ import {
   aboxFixtures, bookstoreEntities, CustomerSchema
 } from '../bookstore/index.js';
 
-const customer = bookstoreEntities.instantiate(CustomerSchema, aboxFixtures.customer);
+const customer = bookstoreEntities.instantiate(CustomerSchema.$id, aboxFixtures.customer);
 
 const copy = Operations.clone(customer);
 
 // Deep copy — arrays are distinct references.
-const custAddresses = (customer as { 'addresses': unknown[] }).addresses;
-const copyAddresses = (copy as { 'addresses': unknown[] }).addresses;
+const custAddresses = (customer as Record<string, unknown>).addresses;
+const copyAddresses = (copy as Record<string, unknown>).addresses;
 
 console.assert(copyAddresses !== custAddresses);
 console.assert(Array.isArray(copyAddresses));

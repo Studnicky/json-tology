@@ -23,7 +23,7 @@ const TagListSchema = {
 
 jt.set(TagListSchema);
 
-Transform.create<typeof TagListSchema, readonly string[]>(TagListSchema, {
+const TagListTransform = Transform.create<typeof TagListSchema, readonly string[]>(TagListSchema, {
   'decode': (raw) => {
     return raw
       .split(',')
@@ -38,12 +38,12 @@ Transform.create<typeof TagListSchema, readonly string[]>(TagListSchema, {
 });
 
 const wire = 'fantasy, rare, first-edition, hardcover';
-const tags = jt.instantiate(TagListSchema, wire);
+const tags = jt.instantiate(TagListTransform, wire);
 
 console.assert(Array.isArray(tags));
-console.assert((tags as readonly string[])[0] === 'fantasy');
-console.assert((tags as readonly string[]).length === 4);
+console.assert(tags[0] === 'fantasy');
+console.assert(tags.length === 4);
 
-const reEncoded = jt.encode(TagListSchema, tags as readonly string[]);
+const reEncoded = jt.encode(TagListTransform, tags);
 
 console.assert(reEncoded === wire);

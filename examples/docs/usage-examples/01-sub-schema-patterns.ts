@@ -33,15 +33,17 @@ console.assert(formatErr !== undefined);
 
 // 2. Defaults from $ref'd primitives flow through instantiate.
 const created = bookstoreEntities.instantiate(CustomerSchema.$id, {
+  'customerId': aboxFixtures.customer.customerId,
   'email': aboxFixtures.customer.email,
-  'id': aboxFixtures.customer.id,
   'name': aboxFixtures.customer.name
   // addresses omitted — default `[]` from CustomerSchema
-}) as { 'addresses': readonly unknown[] };
+});
 
 console.assert(Array.isArray(created.addresses) && created.addresses.length === 0);
 
-// 3. Dump round-trips through the same $ref graph.
-const wire = bookstoreEntities.dump(CustomerSchema.$id, aboxFixtures.customer);
+// 3. Dump round-trips through the same $ref graph. instantiate first to
+// obtain the branded value dump's typed overload expects.
+const customer = bookstoreEntities.instantiate(CustomerSchema.$id, aboxFixtures.customer);
+const wire = bookstoreEntities.dump(CustomerSchema.$id, customer);
 
 console.assert(typeof wire === 'object' && wire !== null);

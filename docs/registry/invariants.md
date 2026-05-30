@@ -6,7 +6,7 @@ Invariants are cross-field validation rules that run after structural validation
 
 ## `JsonTology.addInvariant` {#jsonntology-addinvariant}
 
-**Declaration.** Registers an `InvariantInterface<T>` for the schema identified by `schemaId`. The invariant's `fn` function receives a fully structural-validated (clean, defaults-applied) object and returns `null` on success or an error message string on failure. An optional `pointer` JSON Pointer string pins the error to a specific field path. Invariants run in registration order after structural validation passes.
+**Declaration.** Registers an `InvariantInterface<T>` for the schema identified by `schemaId`. The invariant's `fn` function receives a fully structural-validated (clean, defaults-applied) object and returns `null` or `undefined` on success, or an error message string on failure. An optional `pointer` JSON Pointer string pins the error to a specific field path. Invariants run in registration order after structural validation passes.
 
 **Use this when** a business rule involves two or more fields and cannot be expressed as a single-field JSON Schema keyword. Examples: `total` must equal `sum(items[].unitPrice * quantity)`, a date range must have `start <= end`, a 5-star review requires a long body.
 
@@ -50,10 +50,10 @@ Invariants do not run when structural validation already failed - this prevents 
 ```ts [json-tology]
 jt.addInvariant<Order>('https://bookstore.example/Order', {
   name:    'totalMatchesItems',
-  pointer: '/total',
+  pointer: '/orderTotal',
   fn: (order) => {
-    const computed = order.items.reduce((s, l) => s + l.unitPrice * l.quantity, 0);
-    return Math.abs(order.total - computed) < 0.01 ? null : 'total mismatch';
+    const computed = order.orderLines.reduce((s, l) => s + l.unitPrice * l.quantity, 0);
+    return Math.abs(order.orderTotal - computed) < 0.01 ? null : 'total mismatch';
   },
 });
 ```

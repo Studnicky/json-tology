@@ -4,6 +4,8 @@ import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraph.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
 import { isRecord } from './DataTypes.js';
 import { Transform } from '../transform/Transform.js';
+import { EncodeError } from '../../errors/EncodeError.js';
+import { TransformError } from '../../errors/TransformError.js';
 import { GraphError } from '../../errors/GraphError.js';
 import { GraphEngineSupport } from '../graph/GraphEngineSupport.js';
 
@@ -181,7 +183,37 @@ export class Dumper {
 
     // Apply Transform encoder at this schema node if one is registered
     const encoder = Transform.getDecoder(nodeSchema);
-    let projected = encoder === undefined ? value : encoder.encode(value);
+    let projected: unknown;
+
+    if (encoder === undefined) {
+      projected = value;
+    } else {
+      try {
+        projected = encoder.encode(value);
+      } catch (error) {
+        if (error instanceof TransformError) {
+          throw error;
+        }
+
+        const causeError = error instanceof Error ? error : new Error(String(error));
+        const schemaId = nodeSchema.$id as string | undefined;
+        const opts: { 'cause': Error;
+          'path': string;
+          'schemaId'?: string } = {
+          'cause': causeError,
+          'path': node.pointer
+        };
+
+        if (schemaId !== undefined) {
+          opts.schemaId = schemaId;
+        }
+
+        throw new EncodeError(
+          `transform encoder failed at ${node.pointer}: ${causeError.message}`,
+          opts
+        );
+      }
+    }
 
     // Recurse into object properties
     if (isRecord(projected) && semantics.properties.size > 0) {

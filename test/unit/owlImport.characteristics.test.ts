@@ -84,12 +84,11 @@ function makeCtx(allPropertyIris?: ReadonlySet<string>, quads: QuadInterface[] =
  * Build a minimal quad: `<propertyIri> rdf:type <characteristicIri>`
  */
 function typeQuad(propertyIri: string, characteristicIri: string): QuadInterface {
-  return {
-    'graph': Terms.defaultGraph(),
-    'object': Terms.iri(characteristicIri),
-    'predicate': Terms.iri(RDF_TYPE),
-    'subject': Terms.iri(propertyIri)
-  };
+  return Terms.quad(
+    Terms.iri(propertyIri),
+    Terms.iri(RDF_TYPE),
+    Terms.iri(characteristicIri)
+  );
 }
 
 function registry(): SchemaRegistry {
@@ -295,12 +294,11 @@ void describe('importCharacteristics — empty input', () => {
 
 void describe('importCharacteristics — non-type quads', () => {
   void it('ignores quads with predicates other than rdf:type', () => {
-    const subClassOfQuad: QuadInterface = {
-      'graph': Terms.defaultGraph(),
-      'object': Terms.iri(OWL_FUNCTIONAL),
-      'predicate': Terms.iri('http://www.w3.org/2000/01/rdf-schema#subClassOf'),
-      'subject': Terms.iri(PROPERTY_IRI)
-    };
+    const subClassOfQuad: QuadInterface = Terms.quad(
+      Terms.iri(PROPERTY_IRI),
+      Terms.iri('http://www.w3.org/2000/01/rdf-schema#subClassOf'),
+      Terms.iri(OWL_FUNCTIONAL)
+    );
     const quads: QuadInterface[] = [subClassOfQuad];
     const ctx = makeCtx(undefined, quads);
     const fragment = importCharacteristics(quads, ctx);

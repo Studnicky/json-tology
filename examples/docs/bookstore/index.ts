@@ -1,5 +1,7 @@
 import { JsonTology } from '../../../src/index.js';
-import type { InferType } from '../../../src/types/index.js';
+import type {
+  InferType, SchemaReferencesMapType
+} from '../../../src/types/index.js';
 
 // Primitives — named, single source of truth per concept
 import { AmountSchema } from './entities/Amount.js';
@@ -218,28 +220,28 @@ export function createBookstoreDocRegistry(): typeof bookstoreEntities {
 // Invariant: an Order's `total.amount` must equal Σ items[i].unitPrice.amount × items[i].quantity.
 // Demonstrates `addInvariant` on the real OrderSchema (not a docs-only variant).
 bookstoreEntities.addInvariant<{
-  'items'?: ReadonlyArray<{ 'quantity'?: number;
+  'orderLines'?: ReadonlyArray<{ 'quantity'?: number;
     'unitPrice'?: { 'amount'?: number } }>;
-  'total'?: { 'amount'?: number };
+  'orderTotal'?: { 'amount'?: number };
 }>(OrderSchema.$id, {
   'fn': (order) => {
-    const items = order.items ?? [];
-    const computed = items.reduce((sum, line) => {
+    const lines = order.orderLines ?? [];
+    const computed = lines.reduce((sum, line) => {
       const quantity = line.quantity ?? 0;
       const unitAmount = line.unitPrice?.amount ?? 0;
 
       return sum + (unitAmount * quantity);
     }, 0);
-    const reported = order.total?.amount ?? 0;
+    const reported = order.orderTotal?.amount ?? 0;
 
     if (Math.abs(reported - computed) < 0.005) {
       return null;
     }
 
-    return `Order total ${reported} does not equal Σ items[i].unitPrice.amount × quantity = ${computed}`;
+    return `Order total ${reported} does not equal Σ orderLines[i].unitPrice.amount × quantity = ${computed}`;
   },
   'name': 'orderTotalMatchesItems',
-  'pointer': '/total/amount'
+  'pointer': '/orderTotal/amount'
 });
 
 // Invariant: a SignedFirstEdition has exactly one author. The OWL parent
@@ -276,13 +278,19 @@ bookstoreEntities.sameAs(
 // without dragging in the registry construction.
 export { aboxFixtures } from './aboxFixtures.js';
 
-// Entity types derived from schemas
-export type Address = InferType<typeof AddressSchema>;
-export type Book = InferType<typeof BookSchema>;
-export type Customer = InferType<typeof CustomerSchema>;
-export type Order = InferType<typeof OrderSchema>;
-export type OrderLine = InferType<typeof OrderLineSchema>;
-export type Review = InferType<typeof ReviewSchema>;
+// Entity types derived from schemas. Inferred WITH the registry's reference
+// map so `$ref` property ranges resolve to their named datatypes (e.g.
+// `Book.title` → the branded `Title` primitive) rather than `unknown`. The
+// map is built directly from the schema tuple (not extracted from the live
+// registry instance) so resolution cost scales with ref-chain depth, not
+// registry size.
+type BookstoreRefs = SchemaReferencesMapType<typeof bookstoreSchemas>;
+export type Address = InferType<typeof AddressSchema, BookstoreRefs>;
+export type Book = InferType<typeof BookSchema, BookstoreRefs>;
+export type Customer = InferType<typeof CustomerSchema, BookstoreRefs>;
+export type Order = InferType<typeof OrderSchema, BookstoreRefs>;
+export type OrderLine = InferType<typeof OrderLineSchema, BookstoreRefs>;
+export type Review = InferType<typeof ReviewSchema, BookstoreRefs>;
 
 // Re-export all schemas — sorted by module specifier (perfectionist/sort-exports)
 export { AddressSchema } from './entities/Address.js';

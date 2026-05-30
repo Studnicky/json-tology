@@ -9,7 +9,7 @@
  */
 
 import {
-  Hash, InstantiationError, JsonTology, Value
+  Hash, InstantiationError, JsonTology, Transform, Value
 } from '../src/index.js';
 import {
   allSchemas, DateTimeSchema, foafPersons,
@@ -152,14 +152,27 @@ console.log('Equal:', h1 === h2);
 // ===== 9. Transform roundtrip =============================================
 
 console.log('\n=== 9. Transform roundtrip ===');
-const date = jt.instantiate(DateTimeSchema.$id, '2026-03-15T10:30:00.000Z') as unknown;
+// Attach decode/encode so the schema is a TransformedType — decode yields a
+// Date, encode yields the ISO string. Registered via the schema object.
+const DateTimeTransform = Transform.create(DateTimeSchema, {
+  'decode': (isoString) => {
+    return new Date(isoString);
+  },
+  'encode': (dateValue: Date) => {
+    return dateValue.toISOString();
+  }
+});
+
+jt.set(DateTimeTransform);
+
+const date = jt.instantiate(DateTimeTransform, '2026-03-15T10:30:00.000Z');
 
 if (date instanceof Date) {
   console.log('Decoded:', date.constructor.name, date.toISOString());
 } else {
   console.log('Decoded:', typeof date);
 }
-const wire = jt.encode(DateTimeSchema, date);
+const wire = jt.encode(DateTimeTransform, date);
 
 console.log('Encoded:', wire);
 

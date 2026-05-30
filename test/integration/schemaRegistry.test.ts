@@ -156,7 +156,7 @@ void describe('SchemaRegistry registration', () => {
         const second = registry.graph(TestSchema.$id);
         const listed = registry.listGraphs();
 
-        assert.notStrictEqual(first, undefined);
+        assert.ok(first !== undefined);
         assert.strictEqual(first, second);
         assert.equal(listed.includes(first), true);
         assert.equal(listed.length, 2);
@@ -583,7 +583,7 @@ const ParseTestSchema = {
 
 void describe('coerce / is / errors', () => {
   const coerceScenarios: Array<{
-    'check': (registry: SchemaRegistryInterface, data: unknown) => void;
+    'check': (registry: SchemaRegistryInterface) => void;
     'data': unknown;
     'name': string;
   }> = [

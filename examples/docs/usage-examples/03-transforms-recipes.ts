@@ -26,7 +26,7 @@ const PlacedAtSchema = Compose.equivalent(Iso8601Schema, { '$id': 'https://books
 
 jt.set(PlacedAtSchema);
 
-Transform.create<typeof PlacedAtSchema, Date>(PlacedAtSchema, {
+const PlacedAtTransform = Transform.create<typeof PlacedAtSchema, Date>(PlacedAtSchema, {
   'decode': (wire) => {
     return new Date(wire as string);
   },
@@ -36,7 +36,7 @@ Transform.create<typeof PlacedAtSchema, Date>(PlacedAtSchema, {
 });
 
 const wire: string = aboxFixtures.order.placedAt;
-const decoded = jt.instantiate(PlacedAtSchema, wire);
+const decoded = jt.instantiate(PlacedAtTransform, wire);
 
 if (!(decoded instanceof Date)) {
   throw new TypeError('PlacedAt transform did not return a Date');
@@ -48,7 +48,7 @@ console.assert(date.getUTCFullYear() === 2026);
 // April is month 3 (0-indexed)
 console.assert(date.getUTCMonth() === 3);
 
-const reEncoded = jt.encode(PlacedAtSchema, date);
+const reEncoded = jt.encode(PlacedAtTransform, date);
 
 console.assert(typeof reEncoded === 'string');
 // Round-trip equality on the wire-format precision.

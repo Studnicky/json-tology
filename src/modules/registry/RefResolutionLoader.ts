@@ -1,7 +1,7 @@
 /**
  * RefResolutionLoader — transitive $ref resolution walker.
  *
- * Extracted from JsonTology._resolveAllRefs. Takes a SchemaRegistryInterface
+ * Extracted from JsonTology.resolveAllRefs. Takes a SchemaRegistryInterface
  * and a LoaderType; has no dependency on JsonTology itself.
  */
 

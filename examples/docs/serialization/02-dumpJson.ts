@@ -9,7 +9,7 @@ import {
   aboxFixtures, bookstoreEntities, CustomerSchema
 } from '../bookstore/index.js';
 
-const customer = bookstoreEntities.instantiate(CustomerSchema, aboxFixtures.customer);
+const customer = bookstoreEntities.instantiate(CustomerSchema.$id, aboxFixtures.customer);
 
 const json = bookstoreEntities.dumpJson(CustomerSchema.$id, customer);
 
@@ -17,7 +17,7 @@ console.assert(typeof json === 'string');
 
 const parsed = JSON.parse(json) as Record<string, unknown>;
 
-console.assert(parsed.id === aboxFixtures.customer.id);
+console.assert(parsed.customerId === aboxFixtures.customer.customerId);
 console.assert(parsed.email === aboxFixtures.customer.email);
 console.assert(Array.isArray(parsed.addresses));
 console.assert((parsed.addresses as unknown[]).length === 1);

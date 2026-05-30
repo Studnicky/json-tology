@@ -35,11 +35,10 @@ const PublicBookSchema = Compose.omit(
   'https://bookstore.example/PublicBook'
 );
 
-jt.set(BookSummarySchema);
-jt.set(PublicBookSchema);
+const jt2 = jt.set(BookSummarySchema).set(PublicBookSchema);
 
 // BookSummary — only picked fields survive
-const summary = jt.instantiate(BookSummarySchema, {
+const summary = jt2.instantiate(BookSummarySchema, {
   'inStock': aboxFixtures.rareBook.inStock,
   'isbn': aboxFixtures.rareBook.isbn,
   'price': aboxFixtures.rareBook.price,
@@ -50,7 +49,7 @@ console.assert(!('authors' in summary));
 console.assert(summary.isbn === aboxFixtures.rareBook.isbn);
 
 // PublicBook — inStock removed, printStatus still required
-const pub = jt.validate(PublicBookSchema.$id, {
+const pub = jt2.validate(PublicBookSchema.$id, {
   'authors': aboxFixtures.rareBook.authors,
   'isbn': aboxFixtures.rareBook.isbn,
   'price': aboxFixtures.rareBook.price,

@@ -28,7 +28,7 @@ const BinarySchema = {
 
 jt.set(BinarySchema);
 
-Transform.create<typeof BinarySchema, Uint8Array>(BinarySchema, {
+const BinaryTransform = Transform.create<typeof BinarySchema, Uint8Array>(BinarySchema, {
   'decode': (wire) => {
     return new Uint8Array(Buffer.from(wire, 'base64'));
   },
@@ -39,7 +39,7 @@ Transform.create<typeof BinarySchema, Uint8Array>(BinarySchema, {
 
 const original = new TextEncoder().encode(aboxFixtures.customer.name);
 const wire = Buffer.from(original).toString('base64');
-const decoded = jt.instantiate(BinarySchema, wire);
+const decoded = jt.instantiate(BinaryTransform, wire);
 
 if (!(decoded instanceof Uint8Array)) {
   throw new TypeError('Binary transform did not return a Uint8Array');
@@ -47,6 +47,6 @@ if (!(decoded instanceof Uint8Array)) {
 
 console.assert(new TextDecoder().decode(decoded) === aboxFixtures.customer.name);
 
-const reEncoded = jt.encode(BinarySchema, decoded);
+const reEncoded = jt.encode(BinaryTransform, decoded);
 
 console.assert(reEncoded === wire);

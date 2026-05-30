@@ -220,8 +220,11 @@ function expandCurie(value: string): string {
       const addressPropNode = rootSemantics.properties.get('address');
 
       assert.notStrictEqual(addressPropNode, undefined);
+      if (addressPropNode === undefined) {
+        throw new Error('unreachable');
+      }
       assert.equal(addressPropNode.pointer, '/properties/address');
-      assert.equal(addressPropNode.schema.$ref, '#/$defs/Address');
+      assert.equal((addressPropNode.schema as Record<string, unknown>).$ref, '#/$defs/Address');
       assert.deepEqual(rootSemantics.dependentRequired, { 'name': ['address'] });
       assert.equal(rootSemantics.dependentSchemaEntries[0]?.[0], 'address');
       assert.equal(rootSemantics.dependentSchemaEntries[0]?.[1].pointer, '/dependentSchemas/address');
@@ -294,6 +297,9 @@ function expandCurie(value: string): string {
       const nameNode = rootSem.properties.get('name');
 
       assert.notStrictEqual(nameNode, undefined);
+      if (nameNode === undefined) {
+        throw new Error('unreachable');
+      }
       const nameSem = graph.semantics(nameNode);
 
       assert.equal(nameSem.minLength, 1);
@@ -308,6 +314,9 @@ function expandCurie(value: string): string {
       const ageNode = rootSem.properties.get('age');
 
       assert.notStrictEqual(ageNode, undefined);
+      if (ageNode === undefined) {
+        throw new Error('unreachable');
+      }
       const ageSem = graph.semantics(ageNode);
 
       assert.equal(ageSem.minimum, 0);
@@ -319,6 +328,9 @@ function expandCurie(value: string): string {
       const tagsNode = rootSem.properties.get('tags');
 
       assert.notStrictEqual(tagsNode, undefined);
+      if (tagsNode === undefined) {
+        throw new Error('unreachable');
+      }
       const tagsSem = graph.semantics(tagsNode);
 
       assert.equal(tagsSem.minItems, 1);
@@ -328,6 +340,9 @@ function expandCurie(value: string): string {
       const statusNode = rootSem.properties.get('status');
 
       assert.notStrictEqual(statusNode, undefined);
+      if (statusNode === undefined) {
+        throw new Error('unreachable');
+      }
       const statusSem = graph.semantics(statusNode);
 
       assert.deepEqual(statusSem.enumValues, [
@@ -342,6 +357,9 @@ function expandCurie(value: string): string {
       const bioNode = rootSem.properties.get('bio');
 
       assert.notStrictEqual(bioNode, undefined);
+      if (bioNode === undefined) {
+        throw new Error('unreachable');
+      }
       const bioSem = graph.semantics(bioNode);
 
       assert.equal(bioSem.contentEncoding, 'base64');
@@ -364,7 +382,7 @@ function expandCurie(value: string): string {
       assert.equal(sem.maximum, undefined);
       assert.equal(sem.uniqueItems, false);
       assert.equal(sem.additionalPropertiesNode, undefined);
-      assert.equal(sem.notNode, undefined);
+      assert.equal(sem.complementNode, undefined);
       assert.equal(sem.readOnly, false);
       assert.equal(sem.writeOnly, false);
       assert.equal(sem.deprecated, false);
@@ -402,12 +420,21 @@ function expandCurie(value: string): string {
       const byAnchorNode = rootSemantics.properties.get('byAnchor');
 
       assert.notStrictEqual(byAnchorNode, undefined);
+      if (byAnchorNode === undefined) {
+        throw new Error('unreachable');
+      }
       const byPointerNode = rootSemantics.properties.get('byPointer');
 
       assert.notStrictEqual(byPointerNode, undefined);
+      if (byPointerNode === undefined) {
+        throw new Error('unreachable');
+      }
       const selfNode = rootSemantics.properties.get('self');
 
       assert.notStrictEqual(selfNode, undefined);
+      if (selfNode === undefined) {
+        throw new Error('unreachable');
+      }
       const byAnchor = graph.semantics(byAnchorNode);
       const byPointer = graph.semantics(byPointerNode);
       const self = graph.semantics(selfNode);
@@ -781,6 +808,9 @@ function expandCurie(value: string): string {
       assert.notStrictEqual(iteSem.ifNode, undefined);
       assert.notStrictEqual(iteSem.thenNode, undefined);
       assert.notStrictEqual(iteSem.elseNode, undefined);
+      if (iteSem.ifNode === undefined || iteSem.thenNode === undefined || iteSem.elseNode === undefined) {
+        throw new Error('unreachable');
+      }
       assert.deepEqual(iteGraph.semantics(iteSem.ifNode).schemaTypes, ['string']);
       assert.equal(iteGraph.semantics(iteSem.thenNode).minLength, 1);
       assert.deepEqual(iteGraph.semantics(iteSem.elseNode).schemaTypes, ['number']);
@@ -929,8 +959,14 @@ function expandCurie(value: string): string {
 
       assert.equal(depConditionals.length, 1);
       assert.notStrictEqual(depConditionals[0].metadata, undefined);
+      if (depConditionals[0].metadata === undefined) {
+        throw new Error('unreachable');
+      }
       assert.equal(depConditionals[0].metadata.propertyName, 'address');
       assert.notStrictEqual(depConditionals[0].structure, undefined);
+      if (depConditionals[0].structure === undefined) {
+        throw new Error('unreachable');
+      }
       assert.equal(depConditionals[0].structure.kind, 'conditional');
 
       // contains → someValuesFrom restriction
@@ -945,14 +981,12 @@ function expandCurie(value: string): string {
       assert.equal(svf.length, 1);
       assert.equal(svf[0].target, expandCurie('xsd:decimal'));
       assert.notStrictEqual(svf[0].structure, undefined);
+      if (svf[0].structure === undefined) {
+        throw new Error('unreachable');
+      }
       assert.equal(svf[0].structure.kind, 'restriction');
 
-      const svfStruct = svf[0].structure as {
-        'constraint': string;
-        'kind': 'restriction';
-        'onProperty': string;
-        'value': unknown;
-      };
+      const svfStruct = svf[0].structure;
 
       assert.equal(svfStruct.onProperty, expandCurie('rdfs:member'));
 
@@ -1010,9 +1044,14 @@ function expandCurie(value: string): string {
         i,
         expected
       ] of expectedMembers.entries()) {
-        assert.notStrictEqual(members[i].metadata, undefined);
-        assert.equal(members[i].metadata.position, expected.position);
-        assert.equal(members[i].metadata.memberProperty, expected.memberProperty);
+        const memberMeta = members[i].metadata;
+
+        assert.notStrictEqual(memberMeta, undefined);
+        if (memberMeta === undefined) {
+          throw new Error('unreachable');
+        }
+        assert.equal(memberMeta.position, expected.position);
+        assert.equal(memberMeta.memberProperty, expected.memberProperty);
         assert.equal(members[i].target, expected.target);
       }
 
@@ -1032,8 +1071,14 @@ function expandCurie(value: string): string {
 
       assert.equal(patterns.length, 2);
       assert.notStrictEqual(patterns[0].metadata, undefined);
+      if (patterns[0].metadata === undefined) {
+        throw new Error('unreachable');
+      }
       assert.equal(patterns[0].metadata.pattern, '^x-');
       assert.notStrictEqual(patterns[1].metadata, undefined);
+      if (patterns[1].metadata === undefined) {
+        throw new Error('unreachable');
+      }
       assert.equal(patterns[1].metadata.pattern, '^y-');
     });
 

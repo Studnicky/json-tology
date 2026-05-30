@@ -27,18 +27,17 @@ const StrictCustomerSchema = Compose.required(
   'https://bookstore.example/StrictCustomer'
 );
 
-jt.set(PatchCustomerSchema);
-jt.set(StrictCustomerSchema);
+const jt2 = jt.set(PatchCustomerSchema).set(StrictCustomerSchema);
 
 // PatchCustomer accepts a partial body — name alone is enough.
-const patchErrors = jt.validate(PatchCustomerSchema.$id, { 'name': aboxFixtures.customer.name });
+const patchErrors = jt2.validate(PatchCustomerSchema.$id, { 'name': aboxFixtures.customer.name });
 
 console.assert(patchErrors.length === 0);
 
 // StrictCustomer requires every field, including addresses.
-const strictErrors = jt.validate(StrictCustomerSchema.$id, {
+const strictErrors = jt2.validate(StrictCustomerSchema.$id, {
+  'customerId': aboxFixtures.customer.customerId,
   'email': aboxFixtures.customer.email,
-  'id': aboxFixtures.customer.id,
   'name': aboxFixtures.customer.name
   // addresses missing — required by StrictCustomer
 });
@@ -46,7 +45,7 @@ const strictErrors = jt.validate(StrictCustomerSchema.$id, {
 console.assert(strictErrors.length > 0);
 
 // Full Bastian fixture passes StrictCustomer.
-const strictOk = jt.validate(
+const strictOk = jt2.validate(
   StrictCustomerSchema.$id,
   aboxFixtures.customer
 );

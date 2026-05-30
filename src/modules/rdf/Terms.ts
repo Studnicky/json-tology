@@ -247,9 +247,12 @@ export const Terms = {
    * The returned quad carries the spec-required `termType: 'Quad'`,
    * `value: ''`, and the `equals(other)` method. `graph` defaults to the
    * default-graph singleton when not supplied.
+   *
+   * The subject may itself be a `Quad` (an RDF 1.2 triple term / quoted
+   * triple), per the rdf/js data model `Quad_Subject` union.
    */
   quad(
-    subject: BnodeTermType | IriTermType,
+    subject: BnodeTermType | IriTermType | Quad,
     predicate: IriTermType,
     object: QuadObjectType,
     graph?: BnodeTermType | DefaultGraphTermType | IriTermType
@@ -267,6 +270,36 @@ export const Terms = {
     };
 
     return quad;
+  },
+
+  /**
+   * Construct an RDF 1.2 triple term (quoted triple) — a `Quad`-typed term
+   * usable as the subject of an annotation quad.
+   *
+   * The inner triple carries the spec-required `termType: 'Quad'`, `value: ''`,
+   * and the `equals(other)` method. A triple term is a value with no graph
+   * membership: its `graph` is always the default-graph singleton. The graph
+   * membership is carried by the OUTER annotation quad that uses this term as
+   * its subject.
+   */
+  tripleTerm(
+    subject: BnodeTermType | IriTermType,
+    predicate: IriTermType,
+    object: QuadObjectType
+  ): Quad {
+    const term: Quad = {
+      'equals'(other: null | TermType | undefined): boolean {
+        return quadEquals(term, other);
+      },
+      'graph': DEFAULT_GRAPH_SINGLETON,
+      object,
+      predicate,
+      subject,
+      'termType': 'Quad',
+      'value': ''
+    };
+
+    return term;
   }
 } as const;
 
@@ -337,10 +370,14 @@ export function decodeLiteral(literal: LiteralTermType): unknown {
 
     return Number.isFinite(num) ? num : raw;
   }
-  if (dt === 'dateTime' || dt === 'date') {
-    const parsed = new Date(raw);
-
-    return Number.isFinite(parsed.getTime()) ? parsed : raw;
+  // Return the original lexical string for temporal types.
+  // Schemas represent dates/times as `type: 'string'` with a `format`
+  // validator; returning a Date object would fail the format check inside
+  // fromQuads→instantiate. Preserving the raw lexical value guarantees an
+  // exact round-trip (e.g. '1979-09-01' stays '1979-09-01', not
+  // '1979-09-01T00:00:00.000Z').
+  if (dt === 'dateTime' || dt === 'date' || dt === 'time') {
+    return raw;
   }
 
   return raw;

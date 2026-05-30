@@ -103,8 +103,12 @@ console.log('Codegen output matches committed fixture (modulo timestamp): true')
 // ---------------------------------------------------------------------------
 
 // The committed generated file exports `PersonSchema`, `AgentSchema`, and a `foaf`
-// registry. We load them here via a dynamic import.
-const generated = await import('../ontologies/generated/foaf.generated.js') as {
+// registry. We load them via a dynamic import. The generated fixture lives outside
+// the type-check program, so the module resolves to `any` without this annotation;
+// the cast restores the concrete export types for safe access. Routed through
+// `unknown` so it holds whether the generated module resolves to concrete types
+// (in-program) or to `any` (out-of-program, as under the lint TS service).
+const generated = await import('../ontologies/generated/foaf.generated.js') as unknown as {
   'AgentSchema': Record<string, unknown> & { '$id': string };
   'foaf': ReturnType<typeof JsonTology.create>;
   'PersonSchema': Record<string, unknown> & { '$id': string };

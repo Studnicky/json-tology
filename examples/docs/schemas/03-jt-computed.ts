@@ -18,13 +18,13 @@ import {
   aboxFixtures, bookstoreEntities, OrderSchema
 } from '../bookstore/index.js';
 
-// Valid order fixture — `total` is structurally present in the fixture,
-// but the invariant verifies total matches the computed sum.
+// Valid order fixture — `orderTotal` is structurally present in the fixture,
+// but the invariant verifies the total matches the computed sum.
 const errs = bookstoreEntities.validate(OrderSchema.$id, aboxFixtures.order);
 
 console.assert(errs.length === 0);
 
-const totalAmount: number = aboxFixtures.order.total.amount;
+const totalAmount: number = aboxFixtures.order.orderTotal.amount;
 
 console.assert(totalAmount === 850);
 

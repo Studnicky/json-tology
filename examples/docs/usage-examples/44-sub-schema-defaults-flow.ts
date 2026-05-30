@@ -45,10 +45,9 @@ const ProfileSchema = {
   'type': 'object'
 } as const;
 
-jt.set(PreferencesSchema);
-jt.set(ProfileSchema);
+const jt2 = jt.set(PreferencesSchema).set(ProfileSchema);
 
-const profile = jt.instantiate(ProfileSchema.$id, {
+const profile = jt2.instantiate(ProfileSchema.$id, {
   'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'preferences': {}
 }, { 'enableDefaults': true }) as {

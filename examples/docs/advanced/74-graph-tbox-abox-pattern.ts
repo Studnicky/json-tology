@@ -28,7 +28,8 @@ const abox = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer);
 console.assert(abox.length > 0, 'ABox quad projection emits quads');
 
 // fromQuads — lift ABox quads back to typed Customer objects
-const recovered = bookstoreEntities.fromQuads(CustomerSchema, abox);
+// Use the string key form for full type inference on the returned array.
+const recovered = bookstoreEntities.fromQuads(CustomerSchema.$id, abox);
 
 console.assert(recovered.length > 0, 'fromQuads recovers at least one Customer');
 console.assert(

@@ -13,32 +13,27 @@ import {
   aboxFixtures, bookstoreEntities, OrderSchema
 } from '../bookstore/index.js';
 
-interface OrderWithDiscount {
-  'discountedTotal': number;
-  'items': ReadonlyArray<{ 'quantity': number;
-    'unitPrice': { 'amount': number } }>;
-}
-
-// Imperative add: register after construction.
-bookstoreEntities.addComputed<OrderWithDiscount>(
-  OrderSchema,
+// Imperative add after construction. addComputed returns a registry whose
+// `Order` type is augmented with the computed `discountedTotal`.
+const withDiscount = bookstoreEntities.addComputed(
+  OrderSchema.$id,
   'discountedTotal',
   (order) => {
-    return order.items.reduce((sum, line) => {
+    return order.orderLines.reduce((sum, line) => {
       return sum + (line.unitPrice.amount * line.quantity);
     }, 0);
   }
 );
 
-const order = bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order);
-const expectedTotal = aboxFixtures.order.items.reduce(
+const order = withDiscount.instantiate(OrderSchema.$id, aboxFixtures.order);
+const expectedTotal = aboxFixtures.order.orderLines.reduce(
   (sum, line) => {
     return sum + (line.unitPrice.amount * line.quantity);
   },
   0
 );
 
-console.assert(Math.abs((order as { 'discountedTotal': number }).discountedTotal - expectedTotal) < 0.005);
+console.assert(Math.abs(order.discountedTotal - expectedTotal) < 0.005);
 
 // Cleanup so subsequent tests are not affected.
-bookstoreEntities.removeComputed(OrderSchema, 'discountedTotal');
+withDiscount.removeComputed(OrderSchema.$id, 'discountedTotal');

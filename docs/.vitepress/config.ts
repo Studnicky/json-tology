@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitepress';
+import { defineConfig, type HeadConfig } from 'vitepress';
 import { jtBrandPlugin } from './plugins/jt-brand.mjs';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -156,6 +156,7 @@ const sidebar = [
       { link: '/advanced/ontology#jt-toshacl', text: 'toShacl' },
       { link: '/advanced/ontology#jt-ontology', text: 'ontology' },
       { link: '/advanced/quads', text: 'RDF round-trip (toQuads / fromQuads)' },
+      { link: '/advanced/predicates', text: 'RDF predicates (canonical / custom)' },
       { link: '/advanced/sameas', text: 'sameAs (ABox identity)' },
       { link: '/advanced/strict-graph-mode', text: 'Strict graph mode' }
     ]
@@ -296,8 +297,8 @@ export default defineConfig({
     /* Search-console verification meta tags. Empty content suppresses the
        tag at build time; once the verification value is in package.json,
        the next deploy emits the tag and the property activates. */
-    ...(VERIFY_GOOGLE !== '' ? [['meta', { name: 'google-site-verification', content: VERIFY_GOOGLE }] as const] : []),
-    ...(VERIFY_BING !== '' ? [['meta', { name: 'msvalidate.01', content: VERIFY_BING }] as const] : []),
+    ...(VERIFY_GOOGLE !== '' ? [['meta', { name: 'google-site-verification', content: VERIFY_GOOGLE }] satisfies HeadConfig] : []),
+    ...(VERIFY_BING !== '' ? [['meta', { name: 'msvalidate.01', content: VERIFY_BING }] satisfies HeadConfig] : []),
 
     // ── Open Graph (FB, Slack, Discord, LinkedIn). Per-page overrides in transformPageData.
     ['meta', { property: 'og:type', content: 'website' }],
@@ -320,8 +321,8 @@ export default defineConfig({
     ['meta', { name: 'twitter:image', content: SITE_OG_IMAGE }],
     ['meta', { name: 'twitter:image:alt', content: `${SITE_TITLE} — ${SITE_TAGLINE}` }],
     ...(SITE_TWITTER_HANDLE !== '' ? [
-      ['meta', { name: 'twitter:site', content: SITE_TWITTER_HANDLE }] as const,
-      ['meta', { name: 'twitter:creator', content: SITE_TWITTER_HANDLE }] as const
+      ['meta', { name: 'twitter:site', content: SITE_TWITTER_HANDLE }] satisfies HeadConfig,
+      ['meta', { name: 'twitter:creator', content: SITE_TWITTER_HANDLE }] satisfies HeadConfig
     ] : []),
 
     // ── JSON-LD: SoftwareSourceCode for code-discovery results
@@ -519,6 +520,12 @@ export default defineConfig({
     writeFileSync(resolve(siteConfig.outDir, 'feed.xml'), feed);
   },
   appearance: themeConfig.appearance,
+  // Internal planning documents — excluded from the published site.
+  // These files contain <LIST>, <your test files> and similar template
+  // placeholders that the Vue compiler in VitePress treats as unclosed HTML
+  // tags, causing build failures. Plans are development artifacts; they are
+  // not user documentation and must not appear on the published site.
+  srcExclude: ['plans/**/*.md'],
   srcDir: '.',
   themeConfig: {
     ...themeConfig,

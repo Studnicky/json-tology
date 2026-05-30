@@ -10,16 +10,19 @@ Build the project before running any example:
 npm run build
 ```
 
+Examples are strict TypeScript and run with `tsx`.
+
 ## Examples
 
 | File | Description |
 |------|-------------|
-| `01-validation.mjs` | Registers schemas and validates data with `validate()`, `is()`, and `errors()` |
-| `02-parse-and-materialize.mjs` | Coerces with defaults applied, materializes full objects from partials |
-| `03-ontology.mjs` | Generates an OWL ontology (JSON-LD) from schemas with `$ref` relationships |
-| `04-shacl.mjs` | Generates SHACL shapes with constraint predicates from schema keywords |
-| `05-abox.mjs` | Projects validated instance data to ABox RDF quads (JSON-LD) |
-| `06-composition.mjs` | Extends, picks, and partials schemas with the `Compose` utility |
+| `01-validation.ts` | Registers schemas and validates data with `validate()`, `is()`, and `errors()` |
+| `02-parse-and-materialize.ts` | Instantiates with defaults applied, materializes full objects from partials |
+| `03-ontology.ts` | Generates an OWL ontology (JSON-LD) from schemas with `$ref` relationships |
+| `04-shacl.ts` | Generates SHACL shapes with constraint predicates from schema keywords |
+| `05-abox.ts` | Projects validated instance data to ABox RDF quads (JSON-LD) |
+| `06-composition.ts` | Extends, picks, and partials schemas with the `Compose` utility |
+| `06b-abox-stable-iri.ts` | Projects ABox quads with stable canonical IRIs via `iriFor`/`graphIRI` |
 
 ### End-to-end walkthroughs
 
@@ -34,13 +37,13 @@ These TypeScript examples use a shared FOAF (Friend of a Friend) domain fixture 
 ## Run a single example
 
 ```bash
-node examples/01-validation.mjs
+tsx examples/01-validation.ts
 tsx examples/e2e-types.ts
 ```
 
 ## Run all examples
 
 ```bash
-for f in examples/*.mjs; do echo "=== $f ==="; node "$f"; echo; done
+for f in examples/*.ts; do echo "=== $f ==="; tsx "$f"; echo; done
 for f in examples/e2e-*.ts; do echo "=== $f ==="; tsx "$f"; echo; done
 ```

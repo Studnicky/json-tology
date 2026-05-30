@@ -12,6 +12,6 @@ import {
 // Ship SHACL to a downstream SHACL processor — no OWL leakage
 const shapes = bookstoreEntities.toShacl().shaclObject();
 
-console.assert(shapes, 'shacl shapes present');
-console.assert(BookSchema.$id, 'book schema registered');
-console.assert(CustomerSchema.$id, 'customer schema registered');
+console.assert(Boolean(shapes), 'shacl shapes present');
+console.assert(Boolean(BookSchema.$id), 'book schema registered');
+console.assert(Boolean(CustomerSchema.$id), 'customer schema registered');

@@ -30,7 +30,7 @@ import { Type } from '@sinclair/typebox';
 import {
   Ajv, type ValidateFunction
 } from 'ajv';
-import addFormats from 'ajv-formats';
+import addFormatsNs from 'ajv-formats';
 import {
   array as iotArray,
   literal as iotLiteral,
@@ -121,7 +121,7 @@ import { aboxFixtures } from '../bookstore/aboxFixtures.js';
 // ---------------------------------------------------------------------------
 
 export const ajvInstance = new Ajv({ 'allErrors': true });
-addFormats(ajvInstance);
+addFormatsNs.default(ajvInstance);
 
 // ---------------------------------------------------------------------------
 // Bookstore schemas to register on every bench SchemaRegistry.
@@ -205,9 +205,9 @@ export const reviewInvalid = {
   'body': 42,
   'bookIsbn': 'not-an-isbn',
   'customerId': 'not-a-uuid',
-  'id': 99,
   'postedAt': 'not-a-date',
-  'rating': 'not-a-number'
+  'rating': 'not-a-number',
+  'reviewId': 99
 };
 
 // `reviewCoercible` ships scalars as strings with one extra field —
@@ -218,9 +218,9 @@ export const reviewCoercible = {
   'bookIsbn': aboxFixtures.review.bookIsbn,
   'customerId': aboxFixtures.review.customerId,
   'extra': 'should be removed',
-  'id': aboxFixtures.review.id,
   'postedAt': aboxFixtures.review.postedAt,
-  'rating': '5'
+  'rating': '5',
+  'reviewId': aboxFixtures.review.reviewId
 };
 
 // `orderValid` is the canonical Bastian order — the deepest $ref graph
@@ -233,15 +233,15 @@ export const customerValid = aboxFixtures.customer;
 // Customer record with `addresses` omitted so the coerce bench can trigger
 // the `default: []` projection registered on CustomerSchema.
 export const customerDefaultsInput = {
+  'customerId': aboxFixtures.customer.customerId,
   'email': aboxFixtures.customer.email,
-  'id': aboxFixtures.customer.id,
   'name': aboxFixtures.customer.name
 };
 
 // ---------------------------------------------------------------------------
 // Comparator schemas — Review wire shape
 //
-//   { id: uuid, bookIsbn: ^\\d{13}$, customerId: uuid,
+//   { reviewId: uuid, bookIsbn: ^\\d{13}$, customerId: uuid,
 //     rating: integer 1..5, body: string minLength 10,
 //     postedAt: ISO 8601 date-time }
 // ---------------------------------------------------------------------------
@@ -254,32 +254,32 @@ export const ReviewSchemaTypebox = Type.Object({
   'body': Type.String({ 'minLength': 10 }),
   'bookIsbn': Type.String({ 'pattern': '^\\d{13}$' }),
   'customerId': Type.String({ 'format': 'uuid' }),
-  'id': Type.String({ 'format': 'uuid' }),
   'postedAt': Type.String({ 'format': 'date-time' }),
   'rating': Type.Integer({
     'maximum': 5,
     'minimum': 1
-  })
+  }),
+  'reviewId': Type.String({ 'format': 'uuid' })
 });
 
 export const ReviewSchemaZod = z.object({
   'body': z.string().min(10),
   'bookIsbn': z.string().regex(ISBN_PATTERN),
   'customerId': z.string().uuid(),
-  'id': z.string().uuid(),
   'postedAt': z.string().datetime(),
   'rating': z.number().int()
     .min(1)
-    .max(5)
+    .max(5),
+  'reviewId': z.string().uuid()
 });
 
 export const ReviewSchemaValibot = vObject({
   'body': vPipe(vString(), vMinLength(10)),
   'bookIsbn': vPipe(vString(), vRegex(ISBN_PATTERN)),
   'customerId': vPipe(vString(), vUuid()),
-  'id': vPipe(vString(), vUuid()),
   'postedAt': vPipe(vString(), vIsoTimestamp()),
-  'rating': vPipe(vNumber(), vInteger(), vMinValue(1), vMaxValue(5))
+  'rating': vPipe(vNumber(), vInteger(), vMinValue(1), vMaxValue(5)),
+  'reviewId': vPipe(vString(), vUuid())
 });
 
 const ioTsIntegerCodec = iotRefinement(iotNumber, (value) => {
@@ -310,9 +310,9 @@ export const ReviewSchemaIoTs = iotType({
   'body': ioTsReviewBodyCodec,
   'bookIsbn': ioTsIsbnCodec,
   'customerId': ioTsUuidCodec,
-  'id': ioTsUuidCodec,
   'postedAt': ioTsIsoDateTimeCodec,
-  'rating': ioTsRatingCodec
+  'rating': ioTsRatingCodec,
+  'reviewId': ioTsUuidCodec
 });
 
 // AJV inline-form schema — no shared registry with json-tology.
@@ -331,10 +331,6 @@ const ReviewSchemaAjv = {
       'format': 'uuid',
       'type': 'string'
     },
-    'id': {
-      'format': 'uuid',
-      'type': 'string'
-    },
     'postedAt': {
       'format': 'date-time',
       'type': 'string'
@@ -343,10 +339,14 @@ const ReviewSchemaAjv = {
       'maximum': 5,
       'minimum': 1,
       'type': 'integer'
+    },
+    'reviewId': {
+      'format': 'uuid',
+      'type': 'string'
     }
   },
   'required': [
-    'id',
+    'reviewId',
     'bookIsbn',
     'customerId',
     'rating',
@@ -361,8 +361,8 @@ export const ajvValidateReview: ValidateFunction = ajvInstance.compile(ReviewSch
 // ---------------------------------------------------------------------------
 // Comparator schemas — Order wire shape
 //
-//   { id: uuid, customerId: uuid, placedAt: ISO,
-//     items: OrderLine[] minItems 1, total: Money, shippingAddress: Address }
+//   { orderId: uuid, customerId: uuid, placedAt: ISO,
+//     orderLines: OrderLine[] minItems 1, orderTotal: Money, shippingAddress: Address }
 //
 // OrderLine: { bookIsbn: ^\\d{13}$, quantity: int32 ≥ 1, unitPrice: Money }
 // Money:     { amount: number ≥ 0, currency: enum(USD|EUR|GBP|JPY|CAD|AUD) }
@@ -409,11 +409,11 @@ const OrderLineTb = Type.Object({
 
 export const OrderSchemaTypebox = Type.Object({
   'customerId': Type.String({ 'format': 'uuid' }),
-  'id': Type.String({ 'format': 'uuid' }),
-  'items': Type.Array(OrderLineTb, { 'minItems': 1 }),
+  'orderId': Type.String({ 'format': 'uuid' }),
+  'orderLines': Type.Array(OrderLineTb, { 'minItems': 1 }),
+  'orderTotal': MoneyTb,
   'placedAt': Type.String({ 'format': 'date-time' }),
-  'shippingAddress': AddressTb,
-  'total': MoneyTb
+  'shippingAddress': AddressTb
 });
 
 const MoneyZod = z.object({
@@ -440,11 +440,11 @@ const OrderLineZod = z.object({
 
 export const OrderSchemaZod = z.object({
   'customerId': z.string().uuid(),
-  'id': z.string().uuid(),
-  'items': z.array(OrderLineZod).min(1),
+  'orderId': z.string().uuid(),
+  'orderLines': z.array(OrderLineZod).min(1),
+  'orderTotal': MoneyZod,
   'placedAt': z.string().datetime(),
-  'shippingAddress': AddressZod,
-  'total': MoneyZod
+  'shippingAddress': AddressZod
 });
 
 const MoneyVb = vObject({
@@ -467,11 +467,11 @@ const OrderLineVb = vObject({
 
 export const OrderSchemaValibot = vObject({
   'customerId': vPipe(vString(), vUuid()),
-  'id': vPipe(vString(), vUuid()),
-  'items': vPipe(vArray(OrderLineVb), vMinLength(1)),
+  'orderId': vPipe(vString(), vUuid()),
+  'orderLines': vPipe(vArray(OrderLineVb), vMinLength(1)),
+  'orderTotal': MoneyVb,
   'placedAt': vPipe(vString(), vIsoTimestamp()),
-  'shippingAddress': AddressVb,
-  'total': MoneyVb
+  'shippingAddress': AddressVb
 });
 
 const ioTsCountryCodec = iotRefinement(iotString, (value) => {
@@ -531,11 +531,11 @@ const ioTsItemsCodec = iotRefinement(iotArray(ioTsOrderLineCodec), (value) => {
 
 export const OrderSchemaIoTs = iotType({
   'customerId': ioTsUuidCodec,
-  'id': ioTsUuidCodec,
-  'items': ioTsItemsCodec,
+  'orderId': ioTsUuidCodec,
+  'orderLines': ioTsItemsCodec,
+  'orderTotal': ioTsMoneyCodec,
   'placedAt': ioTsIsoDateTimeCodec,
-  'shippingAddress': ioTsAddressCodec,
-  'total': ioTsMoneyCodec
+  'shippingAddress': ioTsAddressCodec
 });
 
 // AJV inline-form schema for the Order wire shape.
@@ -601,11 +601,11 @@ const OrderSchemaAjv = {
       'format': 'uuid',
       'type': 'string'
     },
-    'id': {
+    'orderId': {
       'format': 'uuid',
       'type': 'string'
     },
-    'items': {
+    'orderLines': {
       'items': {
         'properties': {
           'bookIsbn': {
@@ -628,18 +628,18 @@ const OrderSchemaAjv = {
       'minItems': 1,
       'type': 'array'
     },
+    'orderTotal': { '$ref': '#/definitions/money' },
     'placedAt': {
       'format': 'date-time',
       'type': 'string'
     },
-    'shippingAddress': { '$ref': '#/definitions/address' },
-    'total': { '$ref': '#/definitions/money' }
+    'shippingAddress': { '$ref': '#/definitions/address' }
   },
   'required': [
-    'id',
+    'orderId',
     'customerId',
-    'items',
-    'total',
+    'orderLines',
+    'orderTotal',
     'placedAt',
     'shippingAddress'
   ],

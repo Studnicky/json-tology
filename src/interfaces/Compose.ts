@@ -2,6 +2,32 @@ import type {
   ExtractPropertiesType, ExtractRequiredType
 } from '../types/Compose.js';
 
+/**
+ * Schema shape produced by `Compose.annotatedEdge`.
+ *
+ * Carries the edge predicate IRI, a `$ref` to the target class, and a map of
+ * annotation property names to their `$ref`-valued subschemas. The `jt:annotatedEdge`
+ * keyword signals to the graph translator and ABox projector that this property
+ * is an annotated edge — i.e. a base triple plus one quad per annotation where
+ * the subject is a triple term (RDF 1.2 `<< s p o >>`).
+ *
+ * Literal field types are preserved as the narrowest literal string so that
+ * `$ref` resolution, graph keying, and type inference all operate on the concrete
+ * IRI rather than widened `string`.
+ */
+export interface AnnotatedEdgeSchemaInterface<
+  TPredicate extends string,
+  TTargetRef extends string,
+  TAnnotations extends Record<string, { readonly '$ref': string }>
+> {
+  readonly '$id'?: string;
+  readonly 'jt:annotatedEdge': {
+    readonly 'annotations': TAnnotations;
+    readonly 'predicate': TPredicate;
+    readonly 'targetRef': TTargetRef;
+  };
+}
+
 export interface IntersectionSchemaInterface<
   TSchemas extends ReadonlyArray<Record<string, unknown>>,
   TId extends string
@@ -42,11 +68,11 @@ export interface OmitSchemaInterface<
   readonly 'type': 'object';
 }
 
-type SubClassOfAllOfType<TParent>
-  = TParent extends ReadonlyArray<{ readonly '$id': string }>
-    ? ReadonlyArray<Record<string, unknown>>
+type SubClassOfAllOfType<TParent, TBody>
+  = TParent extends ReadonlyArray<infer TItem>
+    ? readonly [...readonly TItem[], Omit<TBody, '$id'>]
     : TParent extends { readonly '$id': string }
-      ? ReadonlyArray<Record<string, unknown>>
+      ? readonly [TParent, Omit<TBody, '$id'>]
       : ReadonlyArray<Record<string, unknown>>;
 
 export type SubClassOfSchemaInterface<
@@ -55,7 +81,7 @@ export type SubClassOfSchemaInterface<
 >
   = Omit<TBody, '$id'> & {
     readonly '$id': TBody['$id'];
-    readonly 'allOf': SubClassOfAllOfType<TParent>;
+    readonly 'allOf': SubClassOfAllOfType<TParent, TBody>;
   };
 
 export type DisjointWithSchemaInterface<

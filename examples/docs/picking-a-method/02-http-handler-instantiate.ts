@@ -25,7 +25,7 @@ let order: null | Order = null;
 let statusCode = 200;
 
 try {
-  order = bookstoreEntities.instantiate(OrderSchema, rawPayload);
+  order = bookstoreEntities.instantiate(OrderSchema.$id, rawPayload);
 } catch (error) {
   if (error instanceof InstantiationError) {
     statusCode = 400;
@@ -42,9 +42,9 @@ if (order !== null) {
   console.assert(order.customerId === aboxFixtures.order.customerId);
 }
 
-// Tampered payload — missing required `id`.
+// Tampered payload — missing required `orderId`.
 const {
-  'id': _omit, ...payloadWithoutId
+  'orderId': _omit, ...payloadWithoutId
 } = aboxFixtures.order;
 
 void _omit;
@@ -66,4 +66,4 @@ console.assert(caughtBad);
 // subsequent call without re-compiling.
 const staticOrder = bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order);
 
-console.assert(staticOrder.id === aboxFixtures.order.id);
+console.assert(staticOrder.orderId === aboxFixtures.order.orderId);

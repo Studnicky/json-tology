@@ -23,6 +23,9 @@ import {
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
+// Restriction onProperty is the property IDENTIFIER (`Class#prop`); the
+// projection resolves it to the flat `https://bookstore.example/authors`
+// predicate in the emitted TBox/SHACL, matching the property declaration.
 const AUTHORS_PROP = 'urn:bookstore:Book#authors';
 
 // cardinality — Book with exactly one author.
@@ -46,8 +49,7 @@ const MultiAuthoredBookSchema = Compose.subClassOf(
   )
 );
 
-jt.set(OneAuthorBookSchema);
-jt.set(MultiAuthoredBookSchema);
+const jt2 = jt.set(OneAuthorBookSchema).set(MultiAuthoredBookSchema);
 
 // A solo-authored Michael Ende title passes OneAuthorBook.
 const momo = {
@@ -62,7 +64,7 @@ const momo = {
   'title': 'Momo'
 } as const;
 
-const oneAuthorErrs = jt.validate(OneAuthorBookSchema.$id, momo);
+const oneAuthorErrs = jt2.validate(OneAuthorBookSchema.$id, momo);
 
 console.assert(oneAuthorErrs.length === 0);
 
@@ -83,6 +85,6 @@ const anthology = {
   'title': 'Märchen-Sammelband'
 } as const;
 
-const multiErrs = jt.validate(MultiAuthoredBookSchema.$id, anthology);
+const multiErrs = jt2.validate(MultiAuthoredBookSchema.$id, anthology);
 
 console.assert(multiErrs.length === 0);

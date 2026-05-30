@@ -4,7 +4,7 @@ title: Your Types Are Already a Graph
 
 # Your types are already a graph
 
-Every non-trivial type system has a graph hiding in it. Here's the bookstore domain - six entity classes (`Customer`, `Order`, `Book`, `OrderLine`, `Address`, `Review`), seventeen atomic primitives (`Isbn`, `Email`, `Money`, …), every property a typed edge from one entity to another.
+Every non-trivial type system has a graph hiding in it. Here's the bookstore domain - six entity classes (`Customer`, `Order`, `Book`, `OrderLine`, `Address`, `Review`), eighteen atomic primitives (`Isbn`, `Email`, `Money`, …), every property a typed edge from one entity to another.
 
 You don't need json-tology to have this graph. **You already do** - it's there in your TypeScript interfaces, your Pydantic models, your Zod schemas, your protobuf definitions, your JSON Schema documents. The shape of your domain is a directed graph of types referencing types, whether you draw it or not.
 
@@ -30,7 +30,7 @@ The result: one compiled validator (no duplication), three class IRIs, and `owl:
 
 ## What this means
 
-**You don't have to use the graph features to use json-tology.** Most consumers will use `validate()` and `coerce()` and never look at the TBox. That's fine - the graph is metadata, not the runtime.
+**You don't have to use the graph features to use json-tology.** Most consumers will use `validate()` and `instantiate()` and never look at the TBox. That's fine - the graph is metadata, not the runtime.
 
 But the graph is *there* either way. When you decide to query it (with `entities.toTbox()`), or visualize it in a different tool (with `entities.toTbox().jsonLd()`), or reason over it with an OWL inferrer, the same model that drives validation drives those workflows too. You don't get a second model. There's just one.
 

@@ -16,6 +16,6 @@ const merged = Resolver.merge(base, { 'enableDefaults': false });
 console.assert(!merged.enableDefaults, 'override takes precedence');
 console.assert(merged.enableValidation, 'base value preserved');
 
-const sameAsBase = Resolver.merge(base, { 'enableDefaults': undefined });
+const sameAsBase = Resolver.merge(base, {});
 
 console.assert(sameAsBase.enableDefaults, 'undefined does not erase');

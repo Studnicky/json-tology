@@ -12,6 +12,9 @@ import {
   describe, it
 } from 'node:test';
 
+import type {
+  MaximumBrandInterface, MinimumBrandInterface
+} from '../../src/types/ConstraintBrands.js';
 import type { InferType } from '../../src/types/Schema.js';
 
 type AssertEqualType<TLeft, TRight>
@@ -88,7 +91,10 @@ void _s100;
 void _s999;
 
 // ---------------------------------------------------------------------------
-// 3. Single-bound integers stay as `number`
+// 3. Single-bound integers stay numeric, carrying the relevant bound brand
+//
+// With only one of `minimum` / `maximum`, no finite literal union can be built,
+// so the type is `number` intersected with the corresponding constraint brand.
 // ---------------------------------------------------------------------------
 
 const _MinOnlySchema = {
@@ -97,9 +103,7 @@ const _MinOnlySchema = {
 } as const;
 
 void _MinOnlySchema;
-const _mo: InferType<typeof _MinOnlySchema> = 999;
-
-void _mo;
+assert<AssertEqualType<InferType<typeof _MinOnlySchema>, MinimumBrandInterface<1> & number>>();
 
 const _MaxOnlySchema = {
   'maximum': 5,
@@ -107,9 +111,7 @@ const _MaxOnlySchema = {
 } as const;
 
 void _MaxOnlySchema;
-const _mxo: InferType<typeof _MaxOnlySchema> = -100;
-
-void _mxo;
+assert<AssertEqualType<InferType<typeof _MaxOnlySchema>, MaximumBrandInterface<5> & number>>();
 
 void describe('IntegerRange auto-application (Finding 21)', () => {
   void it('compiles - all assertions are static', () => {

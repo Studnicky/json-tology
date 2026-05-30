@@ -20,8 +20,8 @@ type StoredCustomer = InferType<typeof CustomerSchema>;
 
 const stored: StoredCustomer = {
   'addresses': [],
+  'customerId': '09f8e7d6-c5b4-4321-9876-543210fedcba',
   'email': 'bastian@neverending.example',
-  'id': '09f8e7d6-c5b4-4321-9876-543210fedcba',
   'name': 'Bastian Balthazar Bux'
 };
 const widened: StoredCustomerLoose = stored;

@@ -25,9 +25,9 @@ console.assert(!validOrder.items.some((errItem) => {
 // Now tamper with the total — claim €1000 when items sum to €850.
 const tamperedOrder = {
   ...aboxFixtures.order,
-  'total': {
+  'orderTotal': {
     'amount': 1000,
-    'currency': aboxFixtures.order.total.currency
+    'currency': aboxFixtures.order.orderTotal.currency
   }
 };
 

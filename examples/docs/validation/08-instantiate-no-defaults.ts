@@ -12,8 +12,8 @@ import {
 
 // Full coerce — fills defaults including addresses: [].
 const full = bookstoreEntities.instantiate(CustomerSchema.$id, {
+  'customerId': aboxFixtures.customer.customerId,
   'email': aboxFixtures.customer.email,
-  'id': aboxFixtures.customer.id,
   'name': aboxFixtures.customer.name
 }) as Record<string, unknown>;
 
@@ -21,8 +21,8 @@ console.assert(Array.isArray(full.addresses) && (full.addresses as unknown[]).le
 
 // Patch coerce — missing fields stay missing (no defaults filled).
 const patch = bookstoreEntities.instantiate(CustomerSchema.$id, {
+  'customerId': aboxFixtures.customer.customerId,
   'email': aboxFixtures.customer.email,
-  'id': aboxFixtures.customer.id,
   'name': aboxFixtures.customer.name
 }, { 'enableDefaults': false }) as Record<string, unknown>;
 

@@ -1,57 +1,59 @@
 /**
- * 06b-abox-stable-iri.mjs
+ * 06b-abox-stable-iri
  *
  * Demonstrates toQuads() with iriFor and graphIRI overrides.
  * Stable canonical IRIs instead of hash-based instance IRIs.
+ *
+ * Run: npm run build && npx tsx examples/06b-abox-stable-iri.ts
  */
 
-import { JsonTology } from '../dist/index.js';
+import { JsonTology } from '../src/index.js';
 
-const SpeciesSchema = {
-  '$id': 'https://pokemontology.dev/schema/Species',
+const BookSchema = {
+  '$id': 'https://bookstore.example/schema/Book',
   'properties': {
-    'name': { 'type': 'string' },
-    'ndex': { 'type': 'integer' }
+    'pageCount': { 'type': 'integer' },
+    'title': { 'type': 'string' }
   },
   'required': [
-    'name',
-    'ndex'
+    'title',
+    'pageCount'
   ],
   'type': 'object'
-};
+} as const;
 
 const jt = JsonTology.create({
-  'baseIRI': 'https://pokemontology.dev',
-  'schemas': [SpeciesSchema]
+  'baseIRI': 'https://bookstore.example',
+  'schemas': [BookSchema]
 });
 
-const bulbasaur = {
-  'name': 'Bulbasaur',
-  'ndex': 1
+const gatsby = {
+  'pageCount': 180,
+  'title': 'The Great Gatsby'
 };
 
-const quads = jt.toQuads(SpeciesSchema, bulbasaur, {
-  'graphIRI': 'https://pokemontology.dev/graph/universal/species',
-  'iriFor': 'https://pokemontology.dev/species/bulbasaur'
+const quads = jt.toQuads(BookSchema, gatsby, {
+  'graphIRI': 'https://bookstore.example/graph/catalog/books',
+  'iriFor': 'https://bookstore.example/book/the-great-gatsby'
 });
 
 console.log('Quad count:', quads.length);
 for (const quad of quads) {
-  console.log(`  subject:   ${quad.subject}`);
-  console.log(`  predicate: ${quad.predicate}`);
-  console.log(`  graph:     ${quad.graph ?? '(default)'}`);
+  console.log(`  subject:   ${quad.subject.value}`);
+  console.log(`  predicate: ${quad.predicate.value}`);
+  console.log(`  graph:     ${quad.graph.value === '' ? '(default)' : quad.graph.value}`);
   console.log('  ---');
 }
 
 // Verify subject IRI is the canonical one (not hash-based)
 const allSubjects = [...new Set(quads.map((quad) => {
-  return quad.subject;
+  return quad.subject.value;
 }))];
 
 console.log('\nSubjects:', allSubjects);
 
-const expectedSubject = 'https://pokemontology.dev/species/bulbasaur';
-const expectedGraph = 'https://pokemontology.dev/graph/universal/species';
+const expectedSubject = 'https://bookstore.example/book/the-great-gatsby';
+const expectedGraph = 'https://bookstore.example/graph/catalog/books';
 
 if (!allSubjects.some((subject) => {
   return subject === expectedSubject;
@@ -60,7 +62,7 @@ if (!allSubjects.some((subject) => {
 }
 
 const allGraphs = [...new Set(quads.map((quad) => {
-  return quad.graph;
+  return quad.graph.value;
 }))];
 
 if (!allGraphs.every((graph) => {
@@ -74,14 +76,14 @@ console.log('  iriFor:    ', expectedSubject);
 console.log('  graphIRI:  ', expectedGraph);
 
 // Also verify static variant works the same way
-const staticQuads = JsonTology.toQuads(SpeciesSchema, bulbasaur, {
-  'graphIRI': 'https://pokemontology.dev/graph/universal/species',
-  'iriFor': 'https://pokemontology.dev/species/bulbasaur'
+const staticQuads = JsonTology.toQuads(BookSchema, gatsby, {
+  'graphIRI': 'https://bookstore.example/graph/catalog/books',
+  'iriFor': 'https://bookstore.example/book/the-great-gatsby'
 });
 
 console.log('\nStatic toQuads quad count:', staticQuads.length);
 const staticSubjects = [...new Set(staticQuads.map((quad) => {
-  return quad.subject;
+  return quad.subject.value;
 }))];
 
 if (!staticSubjects.some((subject) => {

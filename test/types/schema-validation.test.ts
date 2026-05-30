@@ -272,8 +272,8 @@ void _GoodExtend;
 if (false as boolean) {
   Compose.extend(
     ParentSchema,
+    // @ts-expect-error — dependentRequired key 'unknownKey' is not in properties
     {
-      // @ts-expect-error — dependentRequired key 'unknownKey' is not in properties
       'dependentRequired': { 'unknownKey': ['something'] },
       'properties': { 'something': { 'type': 'string' } }
     } as const,

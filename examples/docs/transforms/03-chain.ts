@@ -23,7 +23,7 @@ const FormattedPriceSchema = {
   'type': 'string'
 } as const;
 
-const PricedSchema = Transform.chain<typeof FormattedPriceSchema, number>(
+const PricedSchema = Transform.chain(
   FormattedPriceSchema,
   [
     // Step 1: strip currency symbol and thousands separators.

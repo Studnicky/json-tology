@@ -11,23 +11,24 @@ import {
 } from '../bookstore/index.js';
 
 function processOrder(data: unknown): string {
-  if (!bookstoreEntities.is(OrderSchema, data)) {
+  // Passing the schema $id selects the type-guard overload, narrowing `data`.
+  if (!bookstoreEntities.is(OrderSchema.$id, data)) {
     throw new TypeError('Expected an Order');
   }
 
   // data is Order from here — no explicit cast needed
-  return `Processing order ${String(data.id)} for customer ${String(data.customerId)}`;
+  return `Processing order ${String(data.orderId)} for customer ${String(data.customerId)}`;
 }
 
 const validOrder: Order = bookstoreEntities.instantiate(
-  OrderSchema,
+  OrderSchema.$id,
   aboxFixtures.order
 );
 
 const result = processOrder(validOrder);
 
-console.assert(result.includes(aboxFixtures.order.id));
-console.assert(result.includes(aboxFixtures.customer.id));
+console.assert(result.includes(aboxFixtures.order.orderId));
+console.assert(result.includes(aboxFixtures.customer.customerId));
 
 let threw = false;
 

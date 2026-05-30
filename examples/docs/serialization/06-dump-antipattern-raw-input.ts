@@ -20,14 +20,15 @@ const rawInput = {
   'title': aboxFixtures.rareBook.title
 };
 
-// Casting as Book bypasses type safety — dump applies encode, not coercion
-const antipatternWire = bookstoreEntities.dump(BookSchema.$id, rawInput as Book);
+// invalid-input edge: raw object is cast to Book to demonstrate the anti-pattern —
+// dump expects an instantiated (branded) value; this bypass is the point of the example.
+const antipatternWire = bookstoreEntities.dump(BookSchema.$id, rawInput as unknown as Book);
 
 void antipatternWire;
 
 // Correct approach: instantiate first so coercion and defaults are applied,
 // then dump to produce the wire form
-const book = bookstoreEntities.instantiate(BookSchema, rawInput);
+const book = bookstoreEntities.instantiate(BookSchema.$id, rawInput);
 const wireBook = bookstoreEntities.dump(BookSchema.$id, book);
 
 console.assert(typeof wireBook === 'object' && wireBook !== null);

@@ -10,12 +10,13 @@ export const OrderSchema = {
   '$id': 'urn:bookstore:Order',
   'properties': {
     'customerId': { '$ref': CustomerIdSchema.$id },
-    'id': { '$ref': OrderIdSchema.$id },
-    'items': {
+    'orderId': { '$ref': OrderIdSchema.$id },
+    'orderLines': {
       'items': { '$ref': OrderLineSchema.$id },
       'minItems': 1,
       'type': 'array'
     },
+    'orderTotal': { '$ref': MoneySchema.$id },
     // transitive: true — timestamp ordering is transitive: if order A was
     // placed before B and B before C, then A was placed before C.
     // irreflexive: true — an order cannot be placed before itself; the
@@ -26,14 +27,13 @@ export const OrderSchema = {
       'irreflexive': true,
       'transitive': true
     },
-    'shippingAddress': { '$ref': AddressSchema.$id },
-    'total': { '$ref': MoneySchema.$id }
+    'shippingAddress': { '$ref': AddressSchema.$id }
   },
   'required': [
-    'id',
+    'orderId',
     'customerId',
-    'items',
-    'total',
+    'orderLines',
+    'orderTotal',
     'placedAt',
     'shippingAddress'
   ],

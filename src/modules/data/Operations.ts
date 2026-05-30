@@ -12,6 +12,11 @@ import {
 } from './DataTypes.js';
 
 export class Operations {
+  /** Deep clone a value using `structuredClone`. */
+  static clone<T>(value: T): T {
+    return structuredClone(value);
+  }
+
   /**
    * Apply a single diff operation (`set` or `delete`) to a value at the specified path.
    *
@@ -22,11 +27,6 @@ export class Operations {
    * @param operation - The diff operation containing `op`, `path`, and optionally `value`.
    * @returns The patched value.
    */
-  /** Deep clone a value using `structuredClone`. */
-  static clone<T>(value: T): T {
-    return structuredClone(value);
-  }
-
   static patch(root: unknown, operation: DiffOpType): unknown {
     const path = operation.path === '/' ? '' : operation.path;
     const segments = path.split('/').filter(Boolean);

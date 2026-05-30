@@ -18,6 +18,7 @@ This convention applies uniformly to every public and internal callable in the p
 
 **Required-only positionals.** Methods with only required arguments take no trailing options bag.
 
+<!-- inline-ts-ok: call-signature illustration with placeholder arguments; documents argument shape, not a runnable scenario -->
 ```ts
 curie.expand(value);                       // Curie instance method, single required positional
 Hash.value(input);                         // single required positional
@@ -26,6 +27,7 @@ Path.toAccess(jsonPointer);                // single required positional
 
 **Required positionals + options.** The options bag is the final parameter and is always optional.
 
+<!-- inline-ts-ok: call-signature illustration using `options?` pseudo-syntax; documents argument shape, not a runnable scenario -->
 ```ts
 jt.toQuads(schema, data, options?);
 QuadFactory.iri(value, options?);                                // { curie? }
@@ -37,6 +39,7 @@ QuadFactory.emitConstraintLiteral(subject, predicate, datatype, relations, quads
 
 **Constructors.** Same rule — required positionals first, options bag last.
 
+<!-- inline-ts-ok: constructor-signature illustration using `options?` pseudo-syntax; documents argument shape, not a runnable scenario -->
 ```ts
 new IdentifierIssuer(options?);                    // { prefix?, counter?, existingMap? }
 new SchemaError(code, message, options?);          // { schemaId?, cause? }
@@ -108,10 +111,10 @@ that reference each other, or when you need to register invariants and computeds
 
 ## Compose argument order
 
-The `Compose.*` helpers mint new schemas from existing ones. The required source and the required new `$id` are positional; the optional `extras` object follows the universal rule.
+The `Compose.*` helpers mint new schemas from existing ones. All positional arguments are required — there is no optional trailing options bag.
 
-- **One source, minting a new ID**: `(source, newId, extras?)` - e.g. `Compose.extend(UserSchema, additions, 'NewId')`
-- **Many sources**: `(sources, newId, extras?)` - e.g. `Compose.intersection([A, B] as const, 'NewId')`
+- **One source, minting a new ID**: `(source, <required middle arg>, newId)` — the middle argument is the operation-specific required input (e.g. `additionalProperties` for `extend`, `keys` for `pick`/`omit`). Example: `Compose.extend(UserSchema, additions, 'NewId')`
+- **Many sources**: `(sources, newId)` — exactly two arguments, no extras. Example: `Compose.intersection([A, B] as const, 'NewId')`
 
 ## `subschemaAt` - composable pointer resolution
 

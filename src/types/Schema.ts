@@ -77,6 +77,8 @@ type ApplyRestrictionsToInferredType<TSchema, TInferred>
  * @example
  * type User = InferType<typeof UserSchema>;
  */
+export type { InferSchemaType } from './Infer.js';
+
 export type InferType<TSchema, TReferences = Record<never, never>>
   = ApplyComplementBrandType<TSchema,
     ApplyDisjointBrandType<TSchema,

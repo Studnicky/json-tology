@@ -37,9 +37,9 @@ const BigCentsSchema = Compose.equivalent(
 
 jt.set(BigCentsSchema);
 
-Transform.create<typeof BigCentsSchema, BigCents>(BigCentsSchema, {
+const BigCentsTransform = Transform.create<typeof BigCentsSchema, BigCents>(BigCentsSchema, {
   'decode': (cents) => {
-    return new BigCents(BigInt(cents));
+    return new BigCents(BigInt(cents as number));
   },
   'encode': (value) => {
     return Number(value.cents);
@@ -47,7 +47,7 @@ Transform.create<typeof BigCentsSchema, BigCents>(BigCentsSchema, {
 });
 
 const wireCents = 85_000;
-const decoded = jt.instantiate(BigCentsSchema, wireCents);
+const decoded = jt.instantiate(BigCentsTransform, wireCents);
 
 if (!(decoded instanceof BigCents)) {
   throw new TypeError('BigCents transform did not return a BigCents');
@@ -55,6 +55,6 @@ if (!(decoded instanceof BigCents)) {
 
 console.assert(decoded.toMajorUnits() === 850);
 
-const reEncoded = jt.encode(BigCentsSchema, decoded);
+const reEncoded = jt.encode(BigCentsTransform, decoded);
 
 console.assert(reEncoded === wireCents);

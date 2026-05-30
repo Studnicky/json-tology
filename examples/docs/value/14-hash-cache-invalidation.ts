@@ -20,8 +20,8 @@ const prevHash = Hash.value(order);
 // Simulate a total update — add a second line item price.
 const updatedOrder = bookstoreEntities.instantiate(OrderSchema, {
   ...aboxFixtures.order,
-  'items': [
-    ...aboxFixtures.order.items,
+  'orderLines': [
+    ...aboxFixtures.order.orderLines,
     // Hermann Hesse — Siddhartha (Suhrkamp, 1951)
     {
       'bookIsbn': '9783518366820',
@@ -32,8 +32,8 @@ const updatedOrder = bookstoreEntities.instantiate(OrderSchema, {
       }
     }
   ],
-  'total': {
-    'amount': aboxFixtures.order.total.amount + 12,
+  'orderTotal': {
+    'amount': aboxFixtures.order.orderTotal.amount + 12,
     'currency': 'EUR'
   }
 });

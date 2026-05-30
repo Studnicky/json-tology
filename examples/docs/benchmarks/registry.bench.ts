@@ -51,12 +51,12 @@ export function runRegistryBench(): BenchResult[] {
   results.push(bench('cold first validate', 'zod', () => {
     // Zod has no compile step; reconstruct the schema each time
     const fresh = z.object({
-      'id': z.string().uuid(),
+      'orderId': z.string().uuid(),
       'placedAt': z.string().datetime()
     });
 
     fresh.safeParse({
-      'id': orderValid.id as string,
+      'orderId': orderValid.orderId as string,
       'placedAt': orderValid.placedAt as string
     });
   }, { 'iterations': 5000 }));

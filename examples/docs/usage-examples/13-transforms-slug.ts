@@ -28,7 +28,7 @@ const SlugSchema = {
 
 jt.set(SlugSchema);
 
-Transform.create<typeof SlugSchema, string>(SlugSchema, {
+const SlugTransform = Transform.create<typeof SlugSchema, string>(SlugSchema, {
   'decode': (raw) => {
     return raw
       .trim()
@@ -42,10 +42,10 @@ Transform.create<typeof SlugSchema, string>(SlugSchema, {
 });
 
 const wire = `  ${aboxFixtures.rareBook.title}!  `;
-const slug = jt.instantiate(SlugSchema, wire);
+const slug = jt.instantiate(SlugTransform, wire);
 
 console.assert(slug === 'die-unendliche-geschichte');
 
-const reEncoded = jt.encode(SlugSchema, slug);
+const reEncoded = jt.encode(SlugTransform, slug);
 
 console.assert(reEncoded === slug);

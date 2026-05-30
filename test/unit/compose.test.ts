@@ -97,6 +97,8 @@ import { Result } from '../../src/modules/data/Result.js';
     }> = [
       {
         'check': () => {
+          // interop: Compose.extend returns a branded type without index signature;
+          // ExtResult is the structural test view — no overlap without unknown.
           const schema = Compose.extend(
             PersonSchema,
             { 'role': { 'type': 'string' } } as const,
@@ -129,6 +131,7 @@ import { Result } from '../../src/modules/data/Result.js';
       },
       {
         'check': () => {
+          // interop: branded return type lacks index signature; unknown intermediate required.
           const schema = Compose.extend(
             PersonSchema,
             {} as const,
@@ -142,6 +145,7 @@ import { Result } from '../../src/modules/data/Result.js';
       },
       {
         'check': () => {
+          // interop: branded return type lacks index signature; unknown intermediate required.
           const schema = Compose.extend(
             UserSchema,
             { 'phone': { 'type': 'string' } } as const,
@@ -230,6 +234,7 @@ import { Result } from '../../src/modules/data/Result.js';
       void it(scenarioName, () => {
         const result = Compose.intersection(schemaList, id);
 
+        // interop: IntersectionSchemaInterface lacks index signature; no direct widening to Record.
         checkFn(result as unknown as Record<string, unknown>);
       });
     }
@@ -973,7 +978,12 @@ import { Result } from '../../src/modules/data/Result.js';
 
     const fromValidatorScenarios: Array<{
       'check': (mapped: ValidationErrors) => void;
-      'input': unknown;
+      'input': Array<{
+        'instancePath': string;
+        'keyword': string;
+        'message'?: string;
+        'params': Record<string, unknown>;
+      }> | null | undefined;
       'name': string;
     }> = [
       {
@@ -1028,9 +1038,7 @@ import { Result } from '../../src/modules/data/Result.js';
       'check': checkFn, 'input': inp, 'name': scenarioName
     } of fromValidatorScenarios) {
       void it(scenarioName, () => {
-        const mapped = inp === undefined
-          ? ValidationErrors.fromValidatorErrors()
-          : ValidationErrors.fromValidatorErrors(inp as Array<Record<string, unknown>> | null);
+        const mapped = ValidationErrors.fromValidatorErrors(inp);
 
         checkFn(mapped);
       });
@@ -1193,6 +1201,10 @@ import { Result } from '../../src/modules/data/Result.js';
           const outer = new BaseError('OUTER', 'outer error', { 'cause': inner });
           const outerJson = outer.toJson();
 
+          assert.notStrictEqual(outerJson.cause, undefined);
+          if (outerJson.cause === undefined) {
+            throw new Error('unreachable');
+          }
           assert.equal(outerJson.cause.code, 'INNER');
           assert.equal(outerJson.cause.message, 'inner error');
         },
@@ -1203,6 +1215,10 @@ import { Result } from '../../src/modules/data/Result.js';
           const plain = new BaseError('WRAP', 'wrapped', { 'cause': new Error('plain') });
           const plainJson = plain.toJson();
 
+          assert.notStrictEqual(plainJson.cause, undefined);
+          if (plainJson.cause === undefined) {
+            throw new Error('unreachable');
+          }
           assert.equal(plainJson.cause.code, 'UNKNOWN');
           assert.equal(plainJson.cause.message, 'plain');
         },
@@ -1390,6 +1406,7 @@ import { Result } from '../../src/modules/data/Result.js';
   void describe('Compose.extend() edge cases', { 'concurrency': true }, () => {
     for (const scenario of extendScenarios) {
       void it(scenario.name, () => {
+        // interop: branded return type lacks index signature; unknown intermediate required.
         const result = Compose.extend(
           BaseSchema,
           scenario.additionalProps as Record<string, never>,
@@ -1457,6 +1474,8 @@ import { Result } from '../../src/modules/data/Result.js';
   void describe('Compose.pick() edge cases', { 'concurrency': true }, () => {
     for (const scenario of pickScenarios) {
       void it(scenario.name, () => {
+        // interop: keys is string[] from scenario data; pick() requires a constrained
+        // key type derived from the schema — no typed path from string[] to never[].
         const result = Compose.pick(
           BaseSchema,
           scenario.keys as unknown as readonly never[],
@@ -1518,6 +1537,8 @@ import { Result } from '../../src/modules/data/Result.js';
   void describe('Compose.omit() edge cases', { 'concurrency': true }, () => {
     for (const scenario of omitScenarios) {
       void it(scenario.name, () => {
+        // interop: keys is string[] from scenario data; omit() requires a constrained
+        // key type derived from the schema — no typed path from string[] to never[].
         const result = Compose.omit(
           BaseSchema,
           scenario.keys as unknown as readonly never[],
@@ -1563,6 +1584,7 @@ import { Result } from '../../src/modules/data/Result.js';
       'assertions': (result) => {
         assert.equal('required' in result, false, 'partial then required — partial removes required');
 
+        // interop: branded return type lacks index signature; unknown intermediate required.
         const restored = Compose.required(result, 'https://example.io/restored-base') as unknown as ComposeResult;
 
         assert.deepStrictEqual(
@@ -1586,6 +1608,7 @@ import { Result } from '../../src/modules/data/Result.js';
   void describe('Compose.partial() edge cases', { 'concurrency': true }, () => {
     for (const scenario of partialScenarios) {
       void it(scenario.name, () => {
+        // interop: branded return type lacks index signature; unknown intermediate required.
         const result = Compose.partial(
           scenario.schema as never,
           scenario.newId
@@ -1685,8 +1708,9 @@ import { Result } from '../../src/modules/data/Result.js';
   void describe('Compose.intersection() edge cases', { 'concurrency': true }, () => {
     for (const scenario of intersectionScenarios) {
       void it(scenario.name, () => {
+        // interop: IntersectionSchemaInterface lacks index signature; unknown intermediate required.
         const result = Compose.intersection(
-          scenario.schemas as unknown as readonly never[],
+          scenario.schemas,
           scenario.newId
         ) as unknown as IntersectionResult;
 
@@ -1777,6 +1801,9 @@ import { Result } from '../../src/modules/data/Result.js';
   void describe('Compose.discriminatedUnion() edge cases', { 'concurrency': true }, () => {
     for (const scenario of discriminatedUnionScenarios) {
       void it(scenario.name, () => {
+        // interop: variants is ReadonlyArray<Record<string,unknown>> from scenario data;
+        // discriminatedUnion() requires validated variant types — no typed path from the
+        // scenario's structural array to the branded never[] constraint.
         const result = Compose.discriminatedUnion(
           scenario.discriminator,
           scenario.variants as unknown as readonly never[],
@@ -1830,14 +1857,14 @@ import { Result } from '../../src/modules/data/Result.js';
         'enableStrictGraph': false
       });
 
-      registry.set(IsbnSchema as unknown as Record<string, unknown>);
+      registry.set(IsbnSchema);
 
       const PrimaryIsbn = Compose.equivalent(IsbnSchema, {
         '$id': 'urn:bookstore:PrimaryIsbn',
         'description': 'Primary ISBN'
       });
 
-      registry.set(PrimaryIsbn as unknown as Record<string, unknown>);
+      registry.set(PrimaryIsbn);
 
       const validIsbn = '9780306406157';
       const invalidIsbn = 'not-an-isbn';
@@ -1869,16 +1896,20 @@ import { Result } from '../../src/modules/data/Result.js';
       });
 
       assert.notStrictEqual(equivQuad, undefined, 'equivalentClass quad should be emitted');
+      if (equivQuad === undefined) {
+        throw new Error('unreachable');
+      }
       assert.match(equivQuad.subject.value, /PrimaryIsbn/u);
     });
 
     void it('fails gracefully if no $id on source', () => {
-    // TypeScript constraint enforces $id at compile time; runtime test documents behavior
+      // invalid-input edge: object deliberately omits $id to test runtime guard;
+      // TypeScript enforces $id at compile time so the cast simulates untyped input.
       const noId = {
         'pattern': '^\\d+$',
         'type': 'string'
-      } as unknown as { readonly '$id': string };
-      const result = Compose.equivalent(noId, { '$id': 'urn:test:NoId' });
+      } as unknown as { readonly '$id': 'urn:test:Source' };
+      const result = Compose.equivalent(noId, { '$id': 'urn:test:NoId' } as const);
 
       assert.strictEqual(result.$ref, undefined);
     });
@@ -1901,6 +1932,7 @@ import { Result } from '../../src/modules/data/Result.js';
 
   void describe('Compose.extend() allOf+$ref shape', { 'concurrency': true }, () => {
     void it('emits allOf with $ref to parent as first member', () => {
+      // interop: branded return type lacks index signature; unknown intermediate required.
       const result = Compose.extend(PersonSchema, { 'role': { 'type': 'string' } } as const, 'https://example.io/Employee') as unknown as {
         '$id': string;
         'allOf': Array<Record<string, unknown>>;
@@ -1911,6 +1943,7 @@ import { Result } from '../../src/modules/data/Result.js';
     });
 
     void it('additions block has type:object and new properties', () => {
+      // interop: branded return type lacks index signature; unknown intermediate required.
       const result = Compose.extend(PersonSchema, { 'role': { 'type': 'string' } } as const, 'https://example.io/Employee') as unknown as {
         '$id': string;
         'allOf': Array<Record<string, unknown>>;
@@ -1932,8 +1965,8 @@ import { Result } from '../../src/modules/data/Result.js';
         'enableStrictGraph': false
       });
 
-      jt.set(PersonSchema as unknown as Record<string, unknown>);
-      jt.set(EmployeeSchema as unknown as Record<string, unknown>);
+      jt.set(PersonSchema);
+      jt.set(EmployeeSchema);
 
       const validEmployee = {
         'name': 'Alice',
@@ -1956,9 +1989,9 @@ import { Result } from '../../src/modules/data/Result.js';
         'enableStrictGraph': false
       });
 
-      jt.set(PersonSchema as unknown as Record<string, unknown>);
-      jt.set(ManagerSchema as unknown as Record<string, unknown>);
-      jt.set(SeniorManagerSchema as unknown as Record<string, unknown>);
+      jt.set(PersonSchema);
+      jt.set(ManagerSchema);
+      jt.set(SeniorManagerSchema);
 
       const senior = jt.registry.get('https://example.io/SeniorManager');
 
@@ -2014,6 +2047,7 @@ import { Result } from '../../src/modules/data/Result.js';
 
   void describe('Compose.subClassOf()', { 'concurrency': true }, () => {
     void it('single parent emits allOf with $ref to parent + body keywords block', () => {
+      // interop: SubClassOfSchemaInterface lacks index signature; unknown intermediate required.
       const Weapon = Compose.subClassOf(EquipmentSchema, {
         '$id': 'aonprd:WeaponSub',
         'properties': { 'damage': { 'type': 'string' } },
@@ -2034,6 +2068,7 @@ import { Result } from '../../src/modules/data/Result.js';
     });
 
     void it('multiple parents emit one $ref per parent in allOf', () => {
+      // interop: SubClassOfSchemaInterface lacks index signature; unknown intermediate required.
       const Scoped = Compose.subClassOf(
         [
           BearerTokenSchema,
@@ -2056,6 +2091,7 @@ import { Result } from '../../src/modules/data/Result.js';
     });
 
     void it('omits body block when only $id is supplied', () => {
+      // interop: SubClassOfSchemaInterface lacks index signature; unknown intermediate required.
       const result = Compose.subClassOf(EquipmentSchema, { '$id': 'aonprd:BareEquipmentSub' } as const) as unknown as {
         '$id': string;
         'allOf': Array<Record<string, unknown>>;
@@ -2110,6 +2146,7 @@ import { Result } from '../../src/modules/data/Result.js';
 
   void describe('Compose.disjointWith()', { 'concurrency': true }, () => {
     void it('emits disjointWith annotation pointing at other.$id', () => {
+      // interop: DisjointWithSchemaInterface lacks index signature; unknown intermediate required.
       const Armor = Compose.disjointWith(WeaponSchema, {
         '$id': 'aonprd:Armor',
         'properties': { 'ac': { 'type': 'integer' } },
@@ -2179,6 +2216,8 @@ import { Result } from '../../src/modules/data/Result.js';
 
       // Value matches BOTH Armor and Weapon (same shape) — must fail.
       const both = { 'damage': '1d8' };
+      // interop: DisjointWithSchemaInterface lacks index signature; validate() requires
+      // Record<string,unknown> & { '$id': string } — unknown intermediate required.
       const errs = jt.validate(Armor as unknown as { '$id': string }, both);
 
       assert.strictEqual(errs.length, 1, 'one disjointWith error expected');
@@ -2231,6 +2270,8 @@ import { Result } from '../../src/modules/data/Result.js';
         'ac': 14,
         'kind': 'armor'
       };
+      // interop: DisjointWithSchemaInterface lacks index signature; validate() requires
+      // Record<string,unknown> & { '$id': string } — unknown intermediate required.
       const errs = jt.validate(ArmorB as unknown as { '$id': string }, armorOnly);
 
       assert.strictEqual(errs.length, 0, 'pure armor must validate cleanly');
@@ -2239,6 +2280,7 @@ import { Result } from '../../src/modules/data/Result.js';
 
   void describe('Compose.complementOf()', { 'concurrency': true }, () => {
     void it('emits not: { $ref: other.$id } and carries body keywords', () => {
+      // interop: ComplementOfSchemaInterface lacks index signature; unknown intermediate required.
       const NonHuman = Compose.complementOf(HumanRaceSchema, {
         '$id': 'aonprd:NonHumanRace',
         'type': 'object'

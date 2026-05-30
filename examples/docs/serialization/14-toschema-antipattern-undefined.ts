@@ -11,7 +11,7 @@ import {
 } from '../bookstore/index.js';
 
 // Correct approach: check for undefined before accessing the result
-const safeSchema = bookstoreEntities.toSchema('https://bookstore.example/Nonexistent');
+const safeSchema = (bookstoreEntities.toSchema as (id: string) => Record<string, unknown> | undefined)('https://bookstore.example/Nonexistent');
 
 // Anti-pattern: skipping the undefined check before accessing .properties
 // const props = Object.keys(safeSchema.properties ?? {});

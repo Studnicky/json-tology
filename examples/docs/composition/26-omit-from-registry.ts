@@ -25,9 +25,9 @@ if (retrieved !== undefined) {
     'https://bookstore.example/BookWithoutStock'
   );
 
-  jt.set(BookWithoutStockSchema);
+  const jt2 = jt.set(BookWithoutStockSchema);
 
-  const result = jt.validate(BookWithoutStockSchema.$id, {
+  const result = jt2.validate(BookWithoutStockSchema.$id, {
     'authors': ['Michael Ende'],
     'isbn': '9783522115056',
     'price': {

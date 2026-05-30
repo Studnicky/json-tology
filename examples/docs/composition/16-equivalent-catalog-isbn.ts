@@ -22,13 +22,13 @@ const CatalogIsbnSchema = Compose.equivalent(IsbnSchema, {
   'description': 'ISBN as used in the public catalog feed.'
 } as const);
 
-jt.set(CatalogIsbnSchema);
+const jt2 = jt.set(CatalogIsbnSchema);
 
 // Both IDs validate the canonical Neverending Story ISBN identically.
 const isbn = aboxFixtures.rareBook.isbn;
 
-const sourceResult = jt.validate(IsbnSchema.$id, isbn);
-const aliasResult = jt.validate(CatalogIsbnSchema.$id, isbn);
+const sourceResult = jt2.validate(IsbnSchema.$id, isbn);
+const aliasResult = jt2.validate(CatalogIsbnSchema.$id, isbn);
 
 console.assert(sourceResult.ok);
 console.assert(aliasResult.ok);

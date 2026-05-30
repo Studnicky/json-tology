@@ -6,12 +6,11 @@
  * accept any string before validation.
  */
 
-import type {
-  InferType, LooseInputType
-} from '../../../src/types/index.js';
-import type { ReviewSchema } from '../bookstore/index.js';
+import type { LooseInputType } from '../../../src/types/index.js';
+import type { Review } from '../bookstore/index.js';
 
-type Review = InferType<typeof ReviewSchema>;
+// Review is exported from bookstore/index.ts inferred with the registry's
+// reference map, so `body` resolves to its branded named datatype.
 type ReviewBody = Review['body'];
 // string & MinLengthBrand<10>
 

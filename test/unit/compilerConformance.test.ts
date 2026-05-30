@@ -56,13 +56,15 @@ void describe('Compiler conformance', () => {
       'enableStrictGraph': false
     });
 
+    // Conformance fixtures are dynamically built Record schemas whose `$id`
+    // is computed at runtime by id(); narrow to the registration shape here.
     if (deps) {
       for (const dep of deps) {
-        registry.set(dep);
+        registry.set(dep as Record<string, unknown> & { readonly '$id': string });
       }
     }
 
-    registry.set(schema);
+    registry.set(schema as Record<string, unknown> & { readonly '$id': string });
     const schemaId = schema.$id as string;
 
     // Compiled path (may fall back to engine internally)

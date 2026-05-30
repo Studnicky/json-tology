@@ -43,8 +43,8 @@ const decoded = jt.instantiate(PlacedAtDumpSchema, raw);
 // instantiate applies the decode function — result is a Date
 console.assert(decoded instanceof Date, 'instantiate should decode string → Date');
 
-// dump applies the encode function — result is the original ISO string
-const wire = jt.dump(PlacedAtDumpSchema.$id, decoded);
+// encode applies the encode function — result is the original ISO string
+const wire = jt.encode(PlacedAtDumpSchema, decoded);
 
-console.assert(wire === raw, 'dump should re-encode Date → original ISO string');
+console.assert(wire === raw, 'encode should re-encode Date → original ISO string');
 console.assert(typeof wire === 'string');

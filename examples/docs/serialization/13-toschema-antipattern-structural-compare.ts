@@ -27,4 +27,4 @@ void originalStr;
 // Use the original schema or validate data for structural correctness
 const order = bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order);
 
-console.assert(order.id === aboxFixtures.order.id);
+console.assert(order.orderId === aboxFixtures.order.orderId);

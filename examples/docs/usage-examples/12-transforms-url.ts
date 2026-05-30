@@ -28,7 +28,7 @@ const HrefSchema = {
 
 jt.set(HrefSchema);
 
-Transform.create<typeof HrefSchema, URL>(HrefSchema, {
+const HrefTransform = Transform.create<typeof HrefSchema, URL>(HrefSchema, {
   'decode': (wire) => {
     return new URL(wire);
   },
@@ -38,7 +38,7 @@ Transform.create<typeof HrefSchema, URL>(HrefSchema, {
 });
 
 const wire = `https://bookstore.example/catalogue/${aboxFixtures.rareBook.isbn}`;
-const decoded = jt.instantiate(HrefSchema, wire);
+const decoded = jt.instantiate(HrefTransform, wire);
 
 if (!(decoded instanceof URL)) {
   throw new TypeError('Href transform did not return a URL');
@@ -46,6 +46,6 @@ if (!(decoded instanceof URL)) {
 
 console.assert(decoded.pathname.endsWith(aboxFixtures.rareBook.isbn));
 
-const reEncoded = jt.encode(HrefSchema, decoded);
+const reEncoded = jt.encode(HrefTransform, decoded);
 
 console.assert(reEncoded === wire);

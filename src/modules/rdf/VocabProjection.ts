@@ -14,8 +14,14 @@ import type { QuadObjectType } from '../../types/Quad.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
 import type { RelationIndexInterface } from '../../interfaces/RelationIndex.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
+import type { PredicateResolverFnType } from '../../types/PredicateResolverFn.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import { JT } from '../../constants/IRI.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
+import {
+  propertySubjectIri,
+  resolvePropertySchema
+} from './ProjectionHelpers.js';
 
 export abstract class VocabProjection {
   /**
@@ -139,7 +145,9 @@ export abstract class VocabProjection {
     entry: RelationIndexInterface,
     quads: QuadInterface[],
     curie: CurieInterface | undefined,
-    issuer?: IdentifierIssuerInterface
+    issuer?: IdentifierIssuerInterface,
+    graph?: SchemaGraphInterface,
+    predicateResolver?: PredicateResolverFnType
   ): QuadObjectType[] {
     const results: QuadObjectType[] = [];
     const depReqRels = entry.byPredicate.get(JT.dependentRequired) ?? [];
@@ -149,11 +157,11 @@ export abstract class VocabProjection {
       const trigger = typeof meta.trigger === 'string' ? meta.trigger : '';
       const required = Array.isArray(meta.required) ? (meta.required as string[]) : [];
 
-      const triggerPropIri = SchemaIri.propertyIri(subject, trigger);
+      const triggerPropIri = this.resolvePredicateIri(subject, trigger, graph, predicateResolver);
       const withoutTrigger = this.emitNotTriggerBranch(triggerPropIri, quads, curie, issuer);
 
       const reqRestrictions: QuadObjectType[] = required.map((reqProp) => {
-        const reqPropIri = SchemaIri.propertyIri(subject, reqProp);
+        const reqPropIri = this.resolvePredicateIri(subject, reqProp, graph, predicateResolver);
 
         return this.emitRequiredPropertyBranch(reqPropIri, quads, curie, issuer);
       });
@@ -190,6 +198,35 @@ export abstract class VocabProjection {
     }
 
     return results;
+  }
+
+  /**
+   * Resolve the flat property IRI for a given property name on `subject`.
+   *
+   * When `predicateResolver` is available (OWL/SHACL projection with
+   * canonical-predicate mode), delegates to the resolver so that flat
+   * base-IRI predicates (e.g. `https://bookstore.example/customerId`) are
+   * emitted instead of class-scoped `<ClassIRI>#<propName>` IRIs.
+   * Falls back to the class-scoped form when no resolver is supplied.
+   */
+  protected resolvePredicateIri(
+    subject: string,
+    propertyName: string,
+    graph: SchemaGraphInterface | undefined,
+    predicateResolver: PredicateResolverFnType | undefined
+  ): string {
+    if (predicateResolver === undefined || graph === undefined) {
+      return SchemaIri.propertyIri(subject, propertyName);
+    }
+
+    const propSubject = propertySubjectIri(subject, propertyName);
+    const propertySchema = resolvePropertySchema(graph, propSubject);
+
+    return predicateResolver({
+      'classId': subject,
+      'propertyName': propertyName,
+      'propertySchema': propertySchema
+    });
   }
 
   /**

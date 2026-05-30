@@ -39,23 +39,20 @@ const dirtyReview = {
 const dirtyOrder = {
   ...orderValid,
   'extraTop': 'remove me',
+  'orderTotal': {
+    ...orderValid.orderTotal,
+    'hackField': 'bad'
+  },
   'shippingAddress': {
     ...orderValid.shippingAddress,
     'extra': 'x'
-  },
-  'total': {
-    ...orderValid.total,
-    'hackField': 'bad'
   }
 };
 
 export function runValueOpsBench(): BenchResult[] {
   const results: BenchResult[] = [];
 
-  const registry = new SchemaRegistry({
-    'castTypes': true,
-    'enableStrictGraph': false
-  });
+  const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
   for (const schema of bookstoreBenchSchemas) {
     registry.set(schema as Record<string, unknown>);
@@ -127,13 +124,13 @@ export function runValueOpsBench(): BenchResult[] {
 
   const orderModified = {
     ...orderValid,
+    'orderTotal': {
+      ...orderValid.orderTotal,
+      'amount': 999
+    },
     'shippingAddress': {
       ...orderValid.shippingAddress,
       'city': 'Berlin'
-    },
-    'total': {
-      ...orderValid.total,
-      'amount': 999
     }
   };
 

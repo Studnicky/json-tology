@@ -28,10 +28,10 @@ const PremiumBookSchema = Compose.extend(
   'https://bookstore.example/PremiumBook'
 );
 
-jt.set(PremiumBookSchema);
+const jt2 = jt.set(PremiumBookSchema);
 
 // A book priced at 14.99 fails the additional minimum: 25 constraint.
-const cheap = jt.validate(PremiumBookSchema.$id, {
+const cheap = jt2.validate(PremiumBookSchema.$id, {
   'authors': ['Michael Ende'],
   'inStock': true,
   'isbn': '9783522128001',

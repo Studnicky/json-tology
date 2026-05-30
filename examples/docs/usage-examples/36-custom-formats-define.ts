@@ -67,12 +67,14 @@ const ReviewSlugSchema = {
   'type': 'string'
 } as const;
 
+const formats: Record<string, (value: unknown) => boolean> = {
+  'isbn-10': isIsbn10,
+  'slug': isSlug
+};
+
 const jt = JsonTology.create({
   'baseIRI': 'https://bookstore.example',
-  'formats': {
-    'isbn-10': isIsbn10,
-    'slug': isSlug
-  },
+  formats,
   'schemas': [
     BookSchema,
     Isbn10Schema,

@@ -5,21 +5,66 @@
  * `prop` in `required`. A well-formed variant set lets
  * `Compose.discriminatedUnion` build a sound union.
  *
- * The canonical `InPrintBookSchema` and `OutOfPrintBookSchema` both
- * declare `printStatus` as a const literal — the discriminator
- * machinery uses that contract to route validation.
+ * Variants must directly expose `properties[discriminator].const` at the
+ * top level for the compile-time validator to accept them. These schemas
+ * satisfy the contract explicitly.
  */
 
 import { Compose } from '../../../src/index.js';
-import {
-  InPrintBookSchema, OutOfPrintBookSchema
-} from '../bookstore/index.js';
+
+const InPrintVariantSchema = {
+  '$id': 'https://bookstore.example/InPrintVariant3',
+  'properties': {
+    'authors': {
+      'items': { 'type': 'string' },
+      'minItems': 1,
+      'type': 'array'
+    },
+    'inStock': { 'type': 'boolean' },
+    'isbn': { 'type': 'string' },
+    'price': { 'type': 'object' },
+    'printStatus': { 'const': 'inPrint' },
+    'title': { 'type': 'string' }
+  },
+  'required': [
+    'isbn',
+    'title',
+    'authors',
+    'price',
+    'printStatus',
+    'inStock'
+  ],
+  'type': 'object'
+} as const;
+
+const OutOfPrintVariantSchema = {
+  '$id': 'https://bookstore.example/OutOfPrintVariant3',
+  'properties': {
+    'authors': {
+      'items': { 'type': 'string' },
+      'minItems': 1,
+      'type': 'array'
+    },
+    'isbn': { 'type': 'string' },
+    'price': { 'type': 'object' },
+    'printStatus': { 'const': 'outOfPrint' },
+    'title': { 'type': 'string' }
+  },
+  'required': [
+    'isbn',
+    'title',
+    'authors',
+    'price',
+    'printStatus'
+  ],
+  'type': 'object'
+} as const;
 
 const PrintStatusUnionSchema = Compose.discriminatedUnion(
   'printStatus',
   [
-    InPrintBookSchema,
-    OutOfPrintBookSchema
+    InPrintVariantSchema,
+    OutOfPrintVariantSchema
   ] as const,
   'https://bookstore.example/PrintStatusUnion'
 );

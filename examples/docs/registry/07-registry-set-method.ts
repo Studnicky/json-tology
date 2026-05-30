@@ -24,7 +24,7 @@ const PatchCustomerSchema = Compose.partial(
 const SummaryCustomerSchema = Compose.pick(
   CustomerSchema,
   [
-    'id',
+    'customerId',
     'name'
   ] as const,
   'https://bookstore.example/RegistrySetSummary'

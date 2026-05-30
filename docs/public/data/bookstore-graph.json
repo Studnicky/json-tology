@@ -20,330 +20,6 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:Money__amount__urn:bookstore:Amount",
-        "kind": "range",
-        "label": "amount",
-        "source": "urn:bookstore:Money",
-        "target": "urn:bookstore:Amount"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Money__currency__urn:bookstore:CurrencyCode",
-        "kind": "range",
-        "label": "currency",
-        "source": "urn:bookstore:Money",
-        "target": "urn:bookstore:CurrencyCode"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Address__city__urn:bookstore:CityName",
-        "kind": "range",
-        "label": "city",
-        "source": "urn:bookstore:Address",
-        "target": "urn:bookstore:CityName"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Address__country__urn:bookstore:CountryCode",
-        "kind": "range",
-        "label": "country",
-        "source": "urn:bookstore:Address",
-        "target": "urn:bookstore:CountryCode"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Address__postalCode__urn:bookstore:PostalCode",
-        "kind": "range",
-        "label": "postalCode",
-        "source": "urn:bookstore:Address",
-        "target": "urn:bookstore:PostalCode"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Address__street__urn:bookstore:StreetLine",
-        "kind": "range",
-        "label": "street",
-        "source": "urn:bookstore:Address",
-        "target": "urn:bookstore:StreetLine"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:BookCatalogEntry__isbn__urn:bookstore:Isbn",
-        "kind": "range",
-        "label": "isbn",
-        "source": "urn:bookstore:BookCatalogEntry",
-        "target": "urn:bookstore:Isbn"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Book__annotations__urn:bookstore:BookAnnotations",
-        "kind": "range",
-        "label": "annotations",
-        "source": "urn:bookstore:Book",
-        "target": "urn:bookstore:BookAnnotations"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Book__isbn__urn:bookstore:Isbn",
-        "kind": "range",
-        "label": "isbn",
-        "source": "urn:bookstore:Book",
-        "target": "urn:bookstore:Isbn"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Book__price__urn:bookstore:Money",
-        "kind": "range",
-        "label": "price",
-        "source": "urn:bookstore:Book",
-        "target": "urn:bookstore:Money"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Book__printStatus__urn:bookstore:PrintStatus",
-        "kind": "range",
-        "label": "printStatus",
-        "source": "urn:bookstore:Book",
-        "target": "urn:bookstore:PrintStatus"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Book__publishedOn__urn:bookstore:PublicationDate",
-        "kind": "range",
-        "label": "publishedOn",
-        "source": "urn:bookstore:Book",
-        "target": "urn:bookstore:PublicationDate"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Book__ratings__urn:bookstore:BookRatingHistogram",
-        "kind": "range",
-        "label": "ratings",
-        "source": "urn:bookstore:Book",
-        "target": "urn:bookstore:BookRatingHistogram"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Book__stockLevel__urn:bookstore:StockLevel",
-        "kind": "range",
-        "label": "stockLevel",
-        "source": "urn:bookstore:Book",
-        "target": "urn:bookstore:StockLevel"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Book__title__urn:bookstore:Title",
-        "kind": "range",
-        "label": "title",
-        "source": "urn:bookstore:Book",
-        "target": "urn:bookstore:Title"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Customer__email__urn:bookstore:Email",
-        "kind": "range",
-        "label": "email",
-        "source": "urn:bookstore:Customer",
-        "target": "urn:bookstore:Email"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Customer__id__urn:bookstore:CustomerId",
-        "kind": "range",
-        "label": "id",
-        "source": "urn:bookstore:Customer",
-        "target": "urn:bookstore:CustomerId"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Customer__name__urn:bookstore:CustomerName",
-        "kind": "range",
-        "label": "name",
-        "source": "urn:bookstore:Customer",
-        "target": "urn:bookstore:CustomerName"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:OrderLine__bookIsbn__urn:bookstore:Isbn",
-        "kind": "range",
-        "label": "bookIsbn",
-        "source": "urn:bookstore:OrderLine",
-        "target": "urn:bookstore:Isbn"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:OrderLine__quantity__urn:bookstore:Quantity",
-        "kind": "range",
-        "label": "quantity",
-        "source": "urn:bookstore:OrderLine",
-        "target": "urn:bookstore:Quantity"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:OrderLine__unitPrice__urn:bookstore:Money",
-        "kind": "range",
-        "label": "unitPrice",
-        "source": "urn:bookstore:OrderLine",
-        "target": "urn:bookstore:Money"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Order__customerId__urn:bookstore:CustomerId",
-        "kind": "range",
-        "label": "customerId",
-        "source": "urn:bookstore:Order",
-        "target": "urn:bookstore:CustomerId"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Order__id__urn:bookstore:OrderId",
-        "kind": "range",
-        "label": "id",
-        "source": "urn:bookstore:Order",
-        "target": "urn:bookstore:OrderId"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Order__placedAt__urn:bookstore:Iso8601",
-        "kind": "range",
-        "label": "placedAt",
-        "source": "urn:bookstore:Order",
-        "target": "urn:bookstore:Iso8601"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Order__shippingAddress__urn:bookstore:Address",
-        "kind": "range",
-        "label": "shippingAddress",
-        "source": "urn:bookstore:Order",
-        "target": "urn:bookstore:Address"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Order__total__urn:bookstore:Money",
-        "kind": "range",
-        "label": "total",
-        "source": "urn:bookstore:Order",
-        "target": "urn:bookstore:Money"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Review__body__urn:bookstore:ReviewBody",
-        "kind": "range",
-        "label": "body",
-        "source": "urn:bookstore:Review",
-        "target": "urn:bookstore:ReviewBody"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Review__bookIsbn__urn:bookstore:Isbn",
-        "kind": "range",
-        "label": "bookIsbn",
-        "source": "urn:bookstore:Review",
-        "target": "urn:bookstore:Isbn"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Review__customerId__urn:bookstore:CustomerId",
-        "kind": "range",
-        "label": "customerId",
-        "source": "urn:bookstore:Review",
-        "target": "urn:bookstore:CustomerId"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Review__id__urn:bookstore:ReviewId",
-        "kind": "range",
-        "label": "id",
-        "source": "urn:bookstore:Review",
-        "target": "urn:bookstore:ReviewId"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Review__postedAt__urn:bookstore:Iso8601",
-        "kind": "range",
-        "label": "postedAt",
-        "source": "urn:bookstore:Review",
-        "target": "urn:bookstore:Iso8601"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Review__rating__urn:bookstore:RatingScore",
-        "kind": "range",
-        "label": "rating",
-        "source": "urn:bookstore:Review",
-        "target": "urn:bookstore:RatingScore"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:BookListPage__page__urn:bookstore:PageNumber",
-        "kind": "range",
-        "label": "page",
-        "source": "urn:bookstore:BookListPage",
-        "target": "urn:bookstore:PageNumber"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:BookListPage__pageSize__urn:bookstore:PageSize",
-        "kind": "range",
-        "label": "pageSize",
-        "source": "urn:bookstore:BookListPage",
-        "target": "urn:bookstore:PageSize"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:BookListPage__total__urn:bookstore:PageCount",
-        "kind": "range",
-        "label": "total",
-        "source": "urn:bookstore:BookListPage",
-        "target": "urn:bookstore:PageCount"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:BookListPage__totalPages__urn:bookstore:PageCount",
-        "kind": "range",
-        "label": "totalPages",
-        "source": "urn:bookstore:BookListPage",
-        "target": "urn:bookstore:PageCount"
-      }
-    },
-    {
-      "data": {
         "id": "urn:bookstore:EBook__subClassOf__urn:bookstore:Book",
         "kind": "subClassOf",
         "label": "subClassOf",
@@ -416,38 +92,65 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:SimilarBook__a__urn:bookstore:Book",
+        "id": "urn:bookstore:Money__amount__urn:bookstore:Amount",
         "kind": "range",
-        "label": "a",
-        "source": "urn:bookstore:SimilarBook",
-        "target": "urn:bookstore:Book"
+        "label": "amount",
+        "source": "urn:bookstore:Money",
+        "target": "urn:bookstore:Amount"
       }
     },
     {
       "data": {
-        "id": "urn:bookstore:SimilarBook__b__urn:bookstore:Book",
+        "id": "urn:bookstore:Money__currency__urn:bookstore:CurrencyCode",
         "kind": "range",
-        "label": "b",
-        "source": "urn:bookstore:SimilarBook",
-        "target": "urn:bookstore:Book"
+        "label": "currency",
+        "source": "urn:bookstore:Money",
+        "target": "urn:bookstore:CurrencyCode"
       }
     },
     {
       "data": {
-        "id": "urn:bookstore:Sequel__book__urn:bookstore:Book",
+        "id": "urn:bookstore:Address__city__urn:bookstore:CityName",
         "kind": "range",
-        "label": "book",
-        "source": "urn:bookstore:Sequel",
-        "target": "urn:bookstore:Book"
+        "label": "city",
+        "source": "urn:bookstore:Address",
+        "target": "urn:bookstore:CityName"
       }
     },
     {
       "data": {
-        "id": "urn:bookstore:Sequel__predecessor__urn:bookstore:Book",
+        "id": "urn:bookstore:Address__country__urn:bookstore:CountryCode",
         "kind": "range",
-        "label": "predecessor",
-        "source": "urn:bookstore:Sequel",
-        "target": "urn:bookstore:Book"
+        "label": "country",
+        "source": "urn:bookstore:Address",
+        "target": "urn:bookstore:CountryCode"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Address__postalCode__urn:bookstore:PostalCode",
+        "kind": "range",
+        "label": "postalCode",
+        "source": "urn:bookstore:Address",
+        "target": "urn:bookstore:PostalCode"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Address__street__urn:bookstore:StreetLine",
+        "kind": "range",
+        "label": "street",
+        "source": "urn:bookstore:Address",
+        "target": "urn:bookstore:StreetLine"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:BookCatalogEntry__isbn__urn:bookstore:Isbn",
+        "kind": "range",
+        "label": "isbn",
+        "source": "urn:bookstore:BookCatalogEntry",
+        "target": "urn:bookstore:Isbn"
       }
     },
     {
@@ -461,11 +164,83 @@
     },
     {
       "data": {
+        "id": "urn:bookstore:Book__annotations__urn:bookstore:BookAnnotations",
+        "kind": "range",
+        "label": "annotations",
+        "source": "urn:bookstore:Book",
+        "target": "urn:bookstore:BookAnnotations"
+      }
+    },
+    {
+      "data": {
         "id": "urn:bookstore:Book__authors__urn:bookstore:AuthorName",
         "kind": "range",
         "label": "authors",
         "source": "urn:bookstore:Book",
         "target": "urn:bookstore:AuthorName"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Book__isbn__urn:bookstore:Isbn",
+        "kind": "range",
+        "label": "isbn",
+        "source": "urn:bookstore:Book",
+        "target": "urn:bookstore:Isbn"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Book__price__urn:bookstore:Money",
+        "kind": "range",
+        "label": "price",
+        "source": "urn:bookstore:Book",
+        "target": "urn:bookstore:Money"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Book__printStatus__urn:bookstore:PrintStatus",
+        "kind": "range",
+        "label": "printStatus",
+        "source": "urn:bookstore:Book",
+        "target": "urn:bookstore:PrintStatus"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Book__publishedOn__urn:bookstore:PublicationDate",
+        "kind": "range",
+        "label": "publishedOn",
+        "source": "urn:bookstore:Book",
+        "target": "urn:bookstore:PublicationDate"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Book__ratings__urn:bookstore:BookRatingHistogram",
+        "kind": "range",
+        "label": "ratings",
+        "source": "urn:bookstore:Book",
+        "target": "urn:bookstore:BookRatingHistogram"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Book__stockLevel__urn:bookstore:StockLevel",
+        "kind": "range",
+        "label": "stockLevel",
+        "source": "urn:bookstore:Book",
+        "target": "urn:bookstore:StockLevel"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Book__title__urn:bookstore:Title",
+        "kind": "range",
+        "label": "title",
+        "source": "urn:bookstore:Book",
+        "target": "urn:bookstore:Title"
       }
     },
     {
@@ -479,20 +254,209 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:Order__items__urn:bookstore:OrderLine",
+        "id": "urn:bookstore:Customer__customerId__urn:bookstore:CustomerId",
         "kind": "range",
-        "label": "items",
+        "label": "customerId",
+        "source": "urn:bookstore:Customer",
+        "target": "urn:bookstore:CustomerId"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Customer__email__urn:bookstore:Email",
+        "kind": "range",
+        "label": "email",
+        "source": "urn:bookstore:Customer",
+        "target": "urn:bookstore:Email"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Customer__name__urn:bookstore:CustomerName",
+        "kind": "range",
+        "label": "name",
+        "source": "urn:bookstore:Customer",
+        "target": "urn:bookstore:CustomerName"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:OrderLine__bookIsbn__urn:bookstore:Isbn",
+        "kind": "range",
+        "label": "bookIsbn",
+        "source": "urn:bookstore:OrderLine",
+        "target": "urn:bookstore:Isbn"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:OrderLine__quantity__urn:bookstore:Quantity",
+        "kind": "range",
+        "label": "quantity",
+        "source": "urn:bookstore:OrderLine",
+        "target": "urn:bookstore:Quantity"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:OrderLine__unitPrice__urn:bookstore:Money",
+        "kind": "range",
+        "label": "unitPrice",
+        "source": "urn:bookstore:OrderLine",
+        "target": "urn:bookstore:Money"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Order__customerId__urn:bookstore:CustomerId",
+        "kind": "range",
+        "label": "customerId",
+        "source": "urn:bookstore:Order",
+        "target": "urn:bookstore:CustomerId"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Order__orderId__urn:bookstore:OrderId",
+        "kind": "range",
+        "label": "orderId",
+        "source": "urn:bookstore:Order",
+        "target": "urn:bookstore:OrderId"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Order__orderLines__urn:bookstore:OrderLine",
+        "kind": "range",
+        "label": "orderLines",
         "source": "urn:bookstore:Order",
         "target": "urn:bookstore:OrderLine"
       }
     },
     {
       "data": {
-        "id": "urn:bookstore:BookListPage__items__urn:bookstore:Book",
+        "id": "urn:bookstore:Order__orderTotal__urn:bookstore:Money",
         "kind": "range",
-        "label": "items",
+        "label": "orderTotal",
+        "source": "urn:bookstore:Order",
+        "target": "urn:bookstore:Money"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Order__placedAt__urn:bookstore:Iso8601",
+        "kind": "range",
+        "label": "placedAt",
+        "source": "urn:bookstore:Order",
+        "target": "urn:bookstore:Iso8601"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Order__shippingAddress__urn:bookstore:Address",
+        "kind": "range",
+        "label": "shippingAddress",
+        "source": "urn:bookstore:Order",
+        "target": "urn:bookstore:Address"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Review__body__urn:bookstore:ReviewBody",
+        "kind": "range",
+        "label": "body",
+        "source": "urn:bookstore:Review",
+        "target": "urn:bookstore:ReviewBody"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Review__bookIsbn__urn:bookstore:Isbn",
+        "kind": "range",
+        "label": "bookIsbn",
+        "source": "urn:bookstore:Review",
+        "target": "urn:bookstore:Isbn"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Review__customerId__urn:bookstore:CustomerId",
+        "kind": "range",
+        "label": "customerId",
+        "source": "urn:bookstore:Review",
+        "target": "urn:bookstore:CustomerId"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Review__postedAt__urn:bookstore:Iso8601",
+        "kind": "range",
+        "label": "postedAt",
+        "source": "urn:bookstore:Review",
+        "target": "urn:bookstore:Iso8601"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Review__rating__urn:bookstore:RatingScore",
+        "kind": "range",
+        "label": "rating",
+        "source": "urn:bookstore:Review",
+        "target": "urn:bookstore:RatingScore"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Review__reviewId__urn:bookstore:ReviewId",
+        "kind": "range",
+        "label": "reviewId",
+        "source": "urn:bookstore:Review",
+        "target": "urn:bookstore:ReviewId"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:BookListPage__books__urn:bookstore:Book",
+        "kind": "range",
+        "label": "books",
         "source": "urn:bookstore:BookListPage",
         "target": "urn:bookstore:Book"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:BookListPage__page__urn:bookstore:PageNumber",
+        "kind": "range",
+        "label": "page",
+        "source": "urn:bookstore:BookListPage",
+        "target": "urn:bookstore:PageNumber"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:BookListPage__pageSize__urn:bookstore:PageSize",
+        "kind": "range",
+        "label": "pageSize",
+        "source": "urn:bookstore:BookListPage",
+        "target": "urn:bookstore:PageSize"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:BookListPage__resultCount__urn:bookstore:PageCount",
+        "kind": "range",
+        "label": "resultCount",
+        "source": "urn:bookstore:BookListPage",
+        "target": "urn:bookstore:PageCount"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:BookListPage__totalPages__urn:bookstore:PageCount",
+        "kind": "range",
+        "label": "totalPages",
+        "source": "urn:bookstore:BookListPage",
+        "target": "urn:bookstore:PageCount"
       }
     },
     {
@@ -587,6 +551,42 @@
     },
     {
       "data": {
+        "id": "urn:bookstore:SimilarBook__a__urn:bookstore:Book",
+        "kind": "range",
+        "label": "a",
+        "source": "urn:bookstore:SimilarBook",
+        "target": "urn:bookstore:Book"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:SimilarBook__b__urn:bookstore:Book",
+        "kind": "range",
+        "label": "b",
+        "source": "urn:bookstore:SimilarBook",
+        "target": "urn:bookstore:Book"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Sequel__book__urn:bookstore:Book",
+        "kind": "range",
+        "label": "book",
+        "source": "urn:bookstore:Sequel",
+        "target": "urn:bookstore:Book"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Sequel__predecessor__urn:bookstore:Book",
+        "kind": "range",
+        "label": "predecessor",
+        "source": "urn:bookstore:Sequel",
+        "target": "urn:bookstore:Book"
+      }
+    },
+    {
+      "data": {
         "id": "urn:bookstore:RareBook__authors ∃__urn:bookstore:AuthorName",
         "kind": "restriction",
         "label": "authors ∃",
@@ -596,20 +596,20 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:RareBook__authors card ≤ 1__urn:bookstore:Book#authors",
+        "id": "urn:bookstore:RareBook__authors card ≤ 1__https://bookstore.example/authors",
         "kind": "restriction",
         "label": "authors card ≤ 1",
         "source": "urn:bookstore:RareBook",
-        "target": "urn:bookstore:Book#authors"
+        "target": "https://bookstore.example/authors"
       }
     },
     {
       "data": {
-        "id": "urn:bookstore:InPrintBook__printStatus = inPrint__urn:bookstore:Book#printStatus",
+        "id": "urn:bookstore:InPrintBook__printStatus = inPrint__https://bookstore.example/printStatus",
         "kind": "restriction",
         "label": "printStatus = inPrint",
         "source": "urn:bookstore:InPrintBook",
-        "target": "urn:bookstore:Book#printStatus"
+        "target": "https://bookstore.example/printStatus"
       }
     },
     {
@@ -628,6 +628,1365 @@
         "label": "sameAs",
         "source": "urn:bookstore:rarebook:neverending-1979-thienemann",
         "target": "http://www.worldcat.org/oclc/5705614"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ACustomer-f4f88158__a__urn:bookstore:Customer",
+        "kind": "instanceType",
+        "label": "a",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ACustomer-f4f88158",
+        "target": "urn:bookstore:Customer"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d__a__urn:bookstore:Address",
+        "kind": "instanceType",
+        "label": "a",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d",
+        "target": "urn:bookstore:Address"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AOrder-3e279b30__a__urn:bookstore:Order",
+        "kind": "instanceType",
+        "label": "a",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AOrder-3e279b30",
+        "target": "urn:bookstore:Order"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AOrderLine-7c2b5698__a__urn:bookstore:OrderLine",
+        "kind": "instanceType",
+        "label": "a",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AOrderLine-7c2b5698",
+        "target": "urn:bookstore:OrderLine"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7__a__urn:bookstore:Money",
+        "kind": "instanceType",
+        "label": "a",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7",
+        "target": "urn:bookstore:Money"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80__a__urn:bookstore:RareBook",
+        "kind": "instanceType",
+        "label": "a",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80",
+        "target": "urn:bookstore:RareBook"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c__a__urn:bookstore:EBook",
+        "kind": "instanceType",
+        "label": "a",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c",
+        "target": "urn:bookstore:EBook"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-d94f29ff__a__urn:bookstore:Money",
+        "kind": "instanceType",
+        "label": "a",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-d94f29ff",
+        "target": "urn:bookstore:Money"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4__a__urn:bookstore:PrintBook",
+        "kind": "instanceType",
+        "label": "a",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4",
+        "target": "urn:bookstore:PrintBook"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020__a__urn:bookstore:SignedFirstEdition",
+        "kind": "instanceType",
+        "label": "a",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020",
+        "target": "urn:bookstore:SignedFirstEdition"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ASimilarBook-a6c95874__a__urn:bookstore:SimilarBook",
+        "kind": "instanceType",
+        "label": "a",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ASimilarBook-a6c95874",
+        "target": "urn:bookstore:SimilarBook"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258__a__urn:bookstore:Book",
+        "kind": "instanceType",
+        "label": "a",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258",
+        "target": "urn:bookstore:Book"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1__a__urn:bookstore:Book",
+        "kind": "instanceType",
+        "label": "a",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1",
+        "target": "urn:bookstore:Book"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-778c69d8__a__urn:bookstore:Money",
+        "kind": "instanceType",
+        "label": "a",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-778c69d8",
+        "target": "urn:bookstore:Money"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ASequel-44648563__a__urn:bookstore:Sequel",
+        "kind": "instanceType",
+        "label": "a",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ASequel-44648563",
+        "target": "urn:bookstore:Sequel"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff__a__urn:bookstore:BookListPage",
+        "kind": "instanceType",
+        "label": "a",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff",
+        "target": "urn:bookstore:BookListPage"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8__a__urn:bookstore:Review",
+        "kind": "instanceType",
+        "label": "a",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8",
+        "target": "urn:bookstore:Review"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d__city__literal:https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d#city#0",
+        "kind": "instanceProperty",
+        "label": "city",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d#city#0"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d__country__literal:https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d#country#1",
+        "kind": "instanceProperty",
+        "label": "country",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d#country#1"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d__postalCode__literal:https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d#postalCode#2",
+        "kind": "instanceProperty",
+        "label": "postalCode",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d#postalCode#2"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d__street__literal:https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d#street#3",
+        "kind": "instanceProperty",
+        "label": "street",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d#street#3"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ACustomer-f4f88158__addresses__https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d",
+        "kind": "instanceProperty",
+        "label": "addresses",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ACustomer-f4f88158",
+        "target": "https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ACustomer-f4f88158__customerId__literal:https://bookstore.example/instances/urn%3Abookstore%3ACustomer-f4f88158#customerId#4",
+        "kind": "instanceProperty",
+        "label": "customerId",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ACustomer-f4f88158",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ACustomer-f4f88158#customerId#4"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ACustomer-f4f88158__email__literal:https://bookstore.example/instances/urn%3Abookstore%3ACustomer-f4f88158#email#5",
+        "kind": "instanceProperty",
+        "label": "email",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ACustomer-f4f88158",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ACustomer-f4f88158#email#5"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ACustomer-f4f88158__name__literal:https://bookstore.example/instances/urn%3Abookstore%3ACustomer-f4f88158#name#6",
+        "kind": "instanceProperty",
+        "label": "name",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ACustomer-f4f88158",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ACustomer-f4f88158#name#6"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AOrder-3e279b30__customerId__literal:https://bookstore.example/instances/urn%3Abookstore%3AOrder-3e279b30#customerId#7",
+        "kind": "instanceProperty",
+        "label": "customerId",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AOrder-3e279b30",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AOrder-3e279b30#customerId#7"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AOrder-3e279b30__orderId__literal:https://bookstore.example/instances/urn%3Abookstore%3AOrder-3e279b30#orderId#8",
+        "kind": "instanceProperty",
+        "label": "orderId",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AOrder-3e279b30",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AOrder-3e279b30#orderId#8"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AOrderLine-7c2b5698__bookIsbn__literal:https://bookstore.example/instances/urn%3Abookstore%3AOrderLine-7c2b5698#bookIsbn#9",
+        "kind": "instanceProperty",
+        "label": "bookIsbn",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AOrderLine-7c2b5698",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AOrderLine-7c2b5698#bookIsbn#9"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AOrderLine-7c2b5698__quantity__literal:https://bookstore.example/instances/urn%3Abookstore%3AOrderLine-7c2b5698#quantity#10",
+        "kind": "instanceProperty",
+        "label": "quantity",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AOrderLine-7c2b5698",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AOrderLine-7c2b5698#quantity#10"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7__amount__literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#amount#11",
+        "kind": "instanceProperty",
+        "label": "amount",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#amount#11"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7__currency__literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#currency#12",
+        "kind": "instanceProperty",
+        "label": "currency",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#currency#12"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AOrderLine-7c2b5698__unitPrice__https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7",
+        "kind": "instanceProperty",
+        "label": "unitPrice",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AOrderLine-7c2b5698",
+        "target": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AOrder-3e279b30__orderLines__https://bookstore.example/instances/urn%3Abookstore%3AOrderLine-7c2b5698",
+        "kind": "instanceProperty",
+        "label": "orderLines",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AOrder-3e279b30",
+        "target": "https://bookstore.example/instances/urn%3Abookstore%3AOrderLine-7c2b5698"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7__amount__literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#amount#13",
+        "kind": "instanceProperty",
+        "label": "amount",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#amount#13"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7__currency__literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#currency#14",
+        "kind": "instanceProperty",
+        "label": "currency",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#currency#14"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AOrder-3e279b30__orderTotal__https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7",
+        "kind": "instanceProperty",
+        "label": "orderTotal",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AOrder-3e279b30",
+        "target": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AOrder-3e279b30__placedAt__literal:https://bookstore.example/instances/urn%3Abookstore%3AOrder-3e279b30#placedAt#15",
+        "kind": "instanceProperty",
+        "label": "placedAt",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AOrder-3e279b30",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AOrder-3e279b30#placedAt#15"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d__city__literal:https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d#city#16",
+        "kind": "instanceProperty",
+        "label": "city",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d#city#16"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d__country__literal:https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d#country#17",
+        "kind": "instanceProperty",
+        "label": "country",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d#country#17"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d__postalCode__literal:https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d#postalCode#18",
+        "kind": "instanceProperty",
+        "label": "postalCode",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d#postalCode#18"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d__street__literal:https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d#street#19",
+        "kind": "instanceProperty",
+        "label": "street",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d#street#19"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AOrder-3e279b30__shippingAddress__https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d",
+        "kind": "instanceProperty",
+        "label": "shippingAddress",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AOrder-3e279b30",
+        "target": "https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80__authors__literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#authors#20",
+        "kind": "instanceProperty",
+        "label": "authors",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#authors#20"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80__inStock__literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#inStock#21",
+        "kind": "instanceProperty",
+        "label": "inStock",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#inStock#21"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80__isbn__literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#isbn#22",
+        "kind": "instanceProperty",
+        "label": "isbn",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#isbn#22"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7__amount__literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#amount#23",
+        "kind": "instanceProperty",
+        "label": "amount",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#amount#23"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7__currency__literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#currency#24",
+        "kind": "instanceProperty",
+        "label": "currency",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#currency#24"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80__price__https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7",
+        "kind": "instanceProperty",
+        "label": "price",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80",
+        "target": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80__printStatus__literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#printStatus#25",
+        "kind": "instanceProperty",
+        "label": "printStatus",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#printStatus#25"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80__publishedOn__literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#publishedOn#26",
+        "kind": "instanceProperty",
+        "label": "publishedOn",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#publishedOn#26"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80__stockLevel__literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#stockLevel#27",
+        "kind": "instanceProperty",
+        "label": "stockLevel",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#stockLevel#27"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80__title__literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#title#28",
+        "kind": "instanceProperty",
+        "label": "title",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#title#28"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80__binding__literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#binding#29",
+        "kind": "instanceProperty",
+        "label": "binding",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#binding#29"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80__pageCount__literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#pageCount#30",
+        "kind": "instanceProperty",
+        "label": "pageCount",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#pageCount#30"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80__weightGrams__literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#weightGrams#31",
+        "kind": "instanceProperty",
+        "label": "weightGrams",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#weightGrams#31"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80__estimatedAgeYears__literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#estimatedAgeYears#32",
+        "kind": "instanceProperty",
+        "label": "estimatedAgeYears",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#estimatedAgeYears#32"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80__firstEditionYear__literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#firstEditionYear#33",
+        "kind": "instanceProperty",
+        "label": "firstEditionYear",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#firstEditionYear#33"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c__authors__literal:https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c#authors#34",
+        "kind": "instanceProperty",
+        "label": "authors",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c#authors#34"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c__inStock__literal:https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c#inStock#35",
+        "kind": "instanceProperty",
+        "label": "inStock",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c#inStock#35"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c__isbn__literal:https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c#isbn#36",
+        "kind": "instanceProperty",
+        "label": "isbn",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c#isbn#36"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-d94f29ff__amount__literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-d94f29ff#amount#37",
+        "kind": "instanceProperty",
+        "label": "amount",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-d94f29ff",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-d94f29ff#amount#37"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-d94f29ff__currency__literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-d94f29ff#currency#38",
+        "kind": "instanceProperty",
+        "label": "currency",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-d94f29ff",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-d94f29ff#currency#38"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c__price__https://bookstore.example/instances/urn%3Abookstore%3AMoney-d94f29ff",
+        "kind": "instanceProperty",
+        "label": "price",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c",
+        "target": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-d94f29ff"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c__printStatus__literal:https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c#printStatus#39",
+        "kind": "instanceProperty",
+        "label": "printStatus",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c#printStatus#39"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c__title__literal:https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c#title#40",
+        "kind": "instanceProperty",
+        "label": "title",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c#title#40"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c__downloadUrl__https://bookstore.example/downloads/9783522128001.epub",
+        "kind": "instanceProperty",
+        "label": "downloadUrl",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c",
+        "target": "https://bookstore.example/downloads/9783522128001.epub"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c__fileFormat__literal:https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c#fileFormat#41",
+        "kind": "instanceProperty",
+        "label": "fileFormat",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c#fileFormat#41"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c__fileSizeBytes__literal:https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c#fileSizeBytes#42",
+        "kind": "instanceProperty",
+        "label": "fileSizeBytes",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c#fileSizeBytes#42"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c__epubVersion__literal:https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c#epubVersion#43",
+        "kind": "instanceProperty",
+        "label": "epubVersion",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c#epubVersion#43"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4__authors__literal:https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4#authors#44",
+        "kind": "instanceProperty",
+        "label": "authors",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4#authors#44"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4__inStock__literal:https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4#inStock#45",
+        "kind": "instanceProperty",
+        "label": "inStock",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4#inStock#45"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4__isbn__literal:https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4#isbn#46",
+        "kind": "instanceProperty",
+        "label": "isbn",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4#isbn#46"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7__amount__literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#amount#47",
+        "kind": "instanceProperty",
+        "label": "amount",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#amount#47"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7__currency__literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#currency#48",
+        "kind": "instanceProperty",
+        "label": "currency",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#currency#48"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4__price__https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7",
+        "kind": "instanceProperty",
+        "label": "price",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4",
+        "target": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4__printStatus__literal:https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4#printStatus#49",
+        "kind": "instanceProperty",
+        "label": "printStatus",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4#printStatus#49"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4__title__literal:https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4#title#50",
+        "kind": "instanceProperty",
+        "label": "title",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4#title#50"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4__binding__literal:https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4#binding#51",
+        "kind": "instanceProperty",
+        "label": "binding",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4#binding#51"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4__pageCount__literal:https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4#pageCount#52",
+        "kind": "instanceProperty",
+        "label": "pageCount",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4#pageCount#52"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4__weightGrams__literal:https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4#weightGrams#53",
+        "kind": "instanceProperty",
+        "label": "weightGrams",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4#weightGrams#53"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020__authors__literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#authors#54",
+        "kind": "instanceProperty",
+        "label": "authors",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#authors#54"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020__inStock__literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#inStock#55",
+        "kind": "instanceProperty",
+        "label": "inStock",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#inStock#55"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020__isbn__literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#isbn#56",
+        "kind": "instanceProperty",
+        "label": "isbn",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#isbn#56"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7__amount__literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#amount#57",
+        "kind": "instanceProperty",
+        "label": "amount",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#amount#57"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7__currency__literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#currency#58",
+        "kind": "instanceProperty",
+        "label": "currency",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#currency#58"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020__price__https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7",
+        "kind": "instanceProperty",
+        "label": "price",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020",
+        "target": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020__printStatus__literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#printStatus#59",
+        "kind": "instanceProperty",
+        "label": "printStatus",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#printStatus#59"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020__title__literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#title#60",
+        "kind": "instanceProperty",
+        "label": "title",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#title#60"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020__binding__literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#binding#61",
+        "kind": "instanceProperty",
+        "label": "binding",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#binding#61"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020__pageCount__literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#pageCount#62",
+        "kind": "instanceProperty",
+        "label": "pageCount",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#pageCount#62"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020__weightGrams__literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#weightGrams#63",
+        "kind": "instanceProperty",
+        "label": "weightGrams",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#weightGrams#63"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020__estimatedAgeYears__literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#estimatedAgeYears#64",
+        "kind": "instanceProperty",
+        "label": "estimatedAgeYears",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#estimatedAgeYears#64"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020__firstEditionYear__literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#firstEditionYear#65",
+        "kind": "instanceProperty",
+        "label": "firstEditionYear",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#firstEditionYear#65"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020__provenance__literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#provenance#66",
+        "kind": "instanceProperty",
+        "label": "provenance",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#provenance#66"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020__signedBy__literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#signedBy#67",
+        "kind": "instanceProperty",
+        "label": "signedBy",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#signedBy#67"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258__authors__literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#authors#68",
+        "kind": "instanceProperty",
+        "label": "authors",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#authors#68"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258__inStock__literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#inStock#69",
+        "kind": "instanceProperty",
+        "label": "inStock",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#inStock#69"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258__isbn__literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#isbn#70",
+        "kind": "instanceProperty",
+        "label": "isbn",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#isbn#70"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7__amount__literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#amount#71",
+        "kind": "instanceProperty",
+        "label": "amount",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#amount#71"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7__currency__literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#currency#72",
+        "kind": "instanceProperty",
+        "label": "currency",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#currency#72"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258__price__https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7",
+        "kind": "instanceProperty",
+        "label": "price",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258",
+        "target": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258__printStatus__literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#printStatus#73",
+        "kind": "instanceProperty",
+        "label": "printStatus",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#printStatus#73"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258__title__literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#title#74",
+        "kind": "instanceProperty",
+        "label": "title",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#title#74"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ASimilarBook-a6c95874__a__https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258",
+        "kind": "instanceProperty",
+        "label": "a",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ASimilarBook-a6c95874",
+        "target": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1__authors__literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#authors#75",
+        "kind": "instanceProperty",
+        "label": "authors",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#authors#75"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1__inStock__literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#inStock#76",
+        "kind": "instanceProperty",
+        "label": "inStock",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#inStock#76"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1__isbn__literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#isbn#77",
+        "kind": "instanceProperty",
+        "label": "isbn",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#isbn#77"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-778c69d8__amount__literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-778c69d8#amount#78",
+        "kind": "instanceProperty",
+        "label": "amount",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-778c69d8",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-778c69d8#amount#78"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-778c69d8__currency__literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-778c69d8#currency#79",
+        "kind": "instanceProperty",
+        "label": "currency",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-778c69d8",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-778c69d8#currency#79"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1__price__https://bookstore.example/instances/urn%3Abookstore%3AMoney-778c69d8",
+        "kind": "instanceProperty",
+        "label": "price",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1",
+        "target": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-778c69d8"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1__printStatus__literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#printStatus#80",
+        "kind": "instanceProperty",
+        "label": "printStatus",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#printStatus#80"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1__title__literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#title#81",
+        "kind": "instanceProperty",
+        "label": "title",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#title#81"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ASimilarBook-a6c95874__b__https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1",
+        "kind": "instanceProperty",
+        "label": "b",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ASimilarBook-a6c95874",
+        "target": "https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258__authors__literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#authors#82",
+        "kind": "instanceProperty",
+        "label": "authors",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#authors#82"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258__inStock__literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#inStock#83",
+        "kind": "instanceProperty",
+        "label": "inStock",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#inStock#83"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258__isbn__literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#isbn#84",
+        "kind": "instanceProperty",
+        "label": "isbn",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#isbn#84"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7__amount__literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#amount#85",
+        "kind": "instanceProperty",
+        "label": "amount",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#amount#85"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7__currency__literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#currency#86",
+        "kind": "instanceProperty",
+        "label": "currency",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#currency#86"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258__printStatus__literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#printStatus#87",
+        "kind": "instanceProperty",
+        "label": "printStatus",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#printStatus#87"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258__title__literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#title#88",
+        "kind": "instanceProperty",
+        "label": "title",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#title#88"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ASequel-44648563__book__https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258",
+        "kind": "instanceProperty",
+        "label": "book",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ASequel-44648563",
+        "target": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1__authors__literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#authors#89",
+        "kind": "instanceProperty",
+        "label": "authors",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#authors#89"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1__inStock__literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#inStock#90",
+        "kind": "instanceProperty",
+        "label": "inStock",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#inStock#90"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1__isbn__literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#isbn#91",
+        "kind": "instanceProperty",
+        "label": "isbn",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#isbn#91"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-778c69d8__amount__literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-778c69d8#amount#92",
+        "kind": "instanceProperty",
+        "label": "amount",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-778c69d8",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-778c69d8#amount#92"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-778c69d8__currency__literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-778c69d8#currency#93",
+        "kind": "instanceProperty",
+        "label": "currency",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-778c69d8",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-778c69d8#currency#93"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1__printStatus__literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#printStatus#94",
+        "kind": "instanceProperty",
+        "label": "printStatus",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#printStatus#94"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1__title__literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#title#95",
+        "kind": "instanceProperty",
+        "label": "title",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#title#95"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ASequel-44648563__predecessor__https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1",
+        "kind": "instanceProperty",
+        "label": "predecessor",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ASequel-44648563",
+        "target": "https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258__authors__literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#authors#96",
+        "kind": "instanceProperty",
+        "label": "authors",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#authors#96"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258__inStock__literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#inStock#97",
+        "kind": "instanceProperty",
+        "label": "inStock",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#inStock#97"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258__isbn__literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#isbn#98",
+        "kind": "instanceProperty",
+        "label": "isbn",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#isbn#98"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7__amount__literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#amount#99",
+        "kind": "instanceProperty",
+        "label": "amount",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#amount#99"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7__currency__literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#currency#100",
+        "kind": "instanceProperty",
+        "label": "currency",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#currency#100"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258__printStatus__literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#printStatus#101",
+        "kind": "instanceProperty",
+        "label": "printStatus",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#printStatus#101"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258__title__literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#title#102",
+        "kind": "instanceProperty",
+        "label": "title",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#title#102"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff__books__https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258",
+        "kind": "instanceProperty",
+        "label": "books",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff",
+        "target": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff__hasNext__literal:https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff#hasNext#103",
+        "kind": "instanceProperty",
+        "label": "hasNext",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff#hasNext#103"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff__hasPrev__literal:https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff#hasPrev#104",
+        "kind": "instanceProperty",
+        "label": "hasPrev",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff#hasPrev#104"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff__page__literal:https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff#page#105",
+        "kind": "instanceProperty",
+        "label": "page",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff#page#105"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff__pageSize__literal:https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff#pageSize#106",
+        "kind": "instanceProperty",
+        "label": "pageSize",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff#pageSize#106"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff__resultCount__literal:https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff#resultCount#107",
+        "kind": "instanceProperty",
+        "label": "resultCount",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff#resultCount#107"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff__totalPages__literal:https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff#totalPages#108",
+        "kind": "instanceProperty",
+        "label": "totalPages",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff#totalPages#108"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8__body__literal:https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8#body#109",
+        "kind": "instanceProperty",
+        "label": "body",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8#body#109"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8__bookIsbn__literal:https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8#bookIsbn#110",
+        "kind": "instanceProperty",
+        "label": "bookIsbn",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8#bookIsbn#110"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8__customerId__literal:https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8#customerId#111",
+        "kind": "instanceProperty",
+        "label": "customerId",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8#customerId#111"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8__postedAt__literal:https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8#postedAt#112",
+        "kind": "instanceProperty",
+        "label": "postedAt",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8#postedAt#112"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8__rating__literal:https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8#rating#113",
+        "kind": "instanceProperty",
+        "label": "rating",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8#rating#113"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8__reviewId__literal:https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8#reviewId#114",
+        "kind": "instanceProperty",
+        "label": "reviewId",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8",
+        "target": "literal:https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8#reviewId#114"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8__reviews__https://bookstore.example/books/9783522128001",
+        "kind": "instanceProperty",
+        "label": "reviews",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8",
+        "target": "https://bookstore.example/books/9783522128001"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8__reviews {ratingGiven=5}__https://bookstore.example/books/9783522128001",
+        "kind": "annotatedEdge",
+        "label": "reviews {ratingGiven=5}",
+        "source": "https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8",
+        "target": "https://bookstore.example/books/9783522128001"
       }
     }
   ],
@@ -662,6 +2021,139 @@
     },
     {
       "data": {
+        "id": "urn:bookstore:Address",
+        "kind": "entity",
+        "label": "Address"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:BookAnnotations",
+        "kind": "entity",
+        "label": "BookAnnotations"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:BookCatalogEntry",
+        "kind": "entity",
+        "label": "BookCatalogEntry"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:BookCatalogEntryVariant",
+        "kind": "primitive",
+        "label": "BookCatalogEntryVariant"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:BookRatingHistogram",
+        "kind": "primitive",
+        "label": "BookRatingHistogram"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Book",
+        "kind": "entity",
+        "label": "Book"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Customer",
+        "kind": "entity",
+        "label": "Customer"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:OrderLine",
+        "kind": "entity",
+        "label": "OrderLine"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Order",
+        "kind": "entity",
+        "label": "Order"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Review",
+        "kind": "entity",
+        "label": "Review"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:BookListPage",
+        "kind": "entity",
+        "label": "BookListPage"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:EBook",
+        "kind": "primitive",
+        "label": "EBook"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:PrintBook",
+        "kind": "primitive",
+        "label": "PrintBook"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:RareBook",
+        "kind": "primitive",
+        "label": "RareBook"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:InPrintBook",
+        "kind": "primitive",
+        "label": "InPrintBook"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:OutOfPrintBook",
+        "kind": "entity",
+        "label": "OutOfPrintBook"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:SignedFirstEdition",
+        "kind": "primitive",
+        "label": "SignedFirstEdition"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:SimilarBook",
+        "kind": "entity",
+        "label": "SimilarBook"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Sequel",
+        "kind": "entity",
+        "label": "Sequel"
+      }
+    },
+    {
+      "data": {
         "id": "urn:bookstore:Amount",
         "kind": "primitive",
         "label": "Amount"
@@ -672,13 +2164,6 @@
         "id": "urn:bookstore:CurrencyCode",
         "kind": "primitive",
         "label": "CurrencyCode"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Address",
-        "kind": "entity",
-        "label": "Address"
       }
     },
     {
@@ -711,44 +2196,9 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:BookAnnotations",
-        "kind": "entity",
-        "label": "BookAnnotations"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:BookCatalogEntry",
-        "kind": "entity",
-        "label": "BookCatalogEntry"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:BookCatalogEntryVariant",
-        "kind": "primitive",
-        "label": "BookCatalogEntryVariant"
-      }
-    },
-    {
-      "data": {
         "id": "urn:bookstore:Isbn",
         "kind": "primitive",
         "label": "Isbn"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:BookRatingHistogram",
-        "kind": "primitive",
-        "label": "BookRatingHistogram"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Book",
-        "kind": "entity",
-        "label": "Book"
       }
     },
     {
@@ -781,9 +2231,9 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:Customer",
-        "kind": "entity",
-        "label": "Customer"
+        "id": "urn:bookstore:CustomerId",
+        "kind": "primitive",
+        "label": "CustomerId"
       }
     },
     {
@@ -795,30 +2245,9 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:CustomerId",
-        "kind": "primitive",
-        "label": "CustomerId"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:OrderLine",
-        "kind": "entity",
-        "label": "OrderLine"
-      }
-    },
-    {
-      "data": {
         "id": "urn:bookstore:Quantity",
         "kind": "primitive",
         "label": "Quantity"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Order",
-        "kind": "entity",
-        "label": "Order"
       }
     },
     {
@@ -837,23 +2266,9 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:Review",
-        "kind": "entity",
-        "label": "Review"
-      }
-    },
-    {
-      "data": {
         "id": "urn:bookstore:ReviewBody",
         "kind": "primitive",
         "label": "ReviewBody"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:ReviewId",
-        "kind": "primitive",
-        "label": "ReviewId"
       }
     },
     {
@@ -865,9 +2280,9 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:BookListPage",
-        "kind": "entity",
-        "label": "BookListPage"
+        "id": "urn:bookstore:ReviewId",
+        "kind": "primitive",
+        "label": "ReviewId"
       }
     },
     {
@@ -893,13 +2308,6 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:EBook",
-        "kind": "primitive",
-        "label": "EBook"
-      }
-    },
-    {
-      "data": {
         "id": "urn:bookstore:DownloadUrl",
         "kind": "primitive",
         "label": "DownloadUrl"
@@ -917,13 +2325,6 @@
         "id": "urn:bookstore:FileSizeBytes",
         "kind": "primitive",
         "label": "FileSizeBytes"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:PrintBook",
-        "kind": "primitive",
-        "label": "PrintBook"
       }
     },
     {
@@ -949,13 +2350,6 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:RareBook",
-        "kind": "primitive",
-        "label": "RareBook"
-      }
-    },
-    {
-      "data": {
         "id": "urn:bookstore:EstimatedAgeYears",
         "kind": "primitive",
         "label": "EstimatedAgeYears"
@@ -970,27 +2364,6 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:InPrintBook",
-        "kind": "primitive",
-        "label": "InPrintBook"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:OutOfPrintBook",
-        "kind": "entity",
-        "label": "OutOfPrintBook"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:SignedFirstEdition",
-        "kind": "primitive",
-        "label": "SignedFirstEdition"
-      }
-    },
-    {
-      "data": {
         "id": "urn:bookstore:Provenance",
         "kind": "primitive",
         "label": "Provenance"
@@ -998,28 +2371,14 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:SimilarBook",
-        "kind": "entity",
-        "label": "SimilarBook"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Sequel",
-        "kind": "entity",
-        "label": "Sequel"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Book#authors",
+        "id": "https://bookstore.example/authors",
         "kind": "primitive",
         "label": "authors"
       }
     },
     {
       "data": {
-        "id": "urn:bookstore:Book#printStatus",
+        "id": "https://bookstore.example/printStatus",
         "kind": "primitive",
         "label": "printStatus"
       }
@@ -1050,6 +2409,944 @@
         "id": "http://www.worldcat.org/oclc/5705614",
         "kind": "instance",
         "label": "5705614"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ACustomer-f4f88158",
+        "kind": "instance",
+        "label": "urn%3Abookstore%3ACustomer-f4f88158"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d",
+        "kind": "instance",
+        "label": "urn%3Abookstore%3AAddress-6b1d701d"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AOrder-3e279b30",
+        "kind": "instance",
+        "label": "urn%3Abookstore%3AOrder-3e279b30"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AOrderLine-7c2b5698",
+        "kind": "instance",
+        "label": "urn%3Abookstore%3AOrderLine-7c2b5698"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7",
+        "kind": "instance",
+        "label": "urn%3Abookstore%3AMoney-efdad5a7"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80",
+        "kind": "instance",
+        "label": "urn%3Abookstore%3ARareBook-aa825f80"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c",
+        "kind": "instance",
+        "label": "urn%3Abookstore%3AEBook-cb358f2c"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-d94f29ff",
+        "kind": "instance",
+        "label": "urn%3Abookstore%3AMoney-d94f29ff"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4",
+        "kind": "instance",
+        "label": "urn%3Abookstore%3APrintBook-9fe303f4"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020",
+        "kind": "instance",
+        "label": "urn%3Abookstore%3ASignedFirstEdition-bdac2020"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ASimilarBook-a6c95874",
+        "kind": "instance",
+        "label": "urn%3Abookstore%3ASimilarBook-a6c95874"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258",
+        "kind": "instance",
+        "label": "urn%3Abookstore%3ABook-146f0258"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1",
+        "kind": "instance",
+        "label": "urn%3Abookstore%3ABook-749638c1"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AMoney-778c69d8",
+        "kind": "instance",
+        "label": "urn%3Abookstore%3AMoney-778c69d8"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ASequel-44648563",
+        "kind": "instance",
+        "label": "urn%3Abookstore%3ASequel-44648563"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff",
+        "kind": "instance",
+        "label": "urn%3Abookstore%3ABookListPage-a0e109ff"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8",
+        "kind": "instance",
+        "label": "urn%3Abookstore%3AReview-124496a8"
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d#city#0",
+        "kind": "literal",
+        "label": "\"München\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d#country#1",
+        "kind": "literal",
+        "label": "\"DE\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d#postalCode#2",
+        "kind": "literal",
+        "label": "\"80331\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d#street#3",
+        "kind": "literal",
+        "label": "\"Reichenbachstraße 14\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ACustomer-f4f88158#customerId#4",
+        "kind": "literal",
+        "label": "\"c1a2b3d4-e5f6-7890-ab…\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ACustomer-f4f88158#email#5",
+        "kind": "literal",
+        "label": "\"bastian.bux@bookstore…\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ACustomer-f4f88158#name#6",
+        "kind": "literal",
+        "label": "\"Bastian Balthazar Bux\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AOrder-3e279b30#customerId#7",
+        "kind": "literal",
+        "label": "\"c1a2b3d4-e5f6-7890-ab…\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AOrder-3e279b30#orderId#8",
+        "kind": "literal",
+        "label": "\"09f8e7d6-c5b4-3210-98…\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AOrderLine-7c2b5698#bookIsbn#9",
+        "kind": "literal",
+        "label": "\"9783522128001\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AOrderLine-7c2b5698#quantity#10",
+        "kind": "literal",
+        "label": "\"1\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#amount#11",
+        "kind": "literal",
+        "label": "\"850\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#currency#12",
+        "kind": "literal",
+        "label": "\"EUR\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#amount#13",
+        "kind": "literal",
+        "label": "\"850\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#currency#14",
+        "kind": "literal",
+        "label": "\"EUR\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AOrder-3e279b30#placedAt#15",
+        "kind": "literal",
+        "label": "\"2026-04-12T14:23:11Z\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d#city#16",
+        "kind": "literal",
+        "label": "\"München\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d#country#17",
+        "kind": "literal",
+        "label": "\"DE\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d#postalCode#18",
+        "kind": "literal",
+        "label": "\"80331\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AAddress-6b1d701d#street#19",
+        "kind": "literal",
+        "label": "\"Reichenbachstraße 14\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#authors#20",
+        "kind": "literal",
+        "label": "\"Michael Ende\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#inStock#21",
+        "kind": "literal",
+        "label": "\"true\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#isbn#22",
+        "kind": "literal",
+        "label": "\"9783522128001\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#amount#23",
+        "kind": "literal",
+        "label": "\"850\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#currency#24",
+        "kind": "literal",
+        "label": "\"EUR\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#printStatus#25",
+        "kind": "literal",
+        "label": "\"outOfPrint\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#publishedOn#26",
+        "kind": "literal",
+        "label": "\"1979-09-01\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#stockLevel#27",
+        "kind": "literal",
+        "label": "\"5\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#title#28",
+        "kind": "literal",
+        "label": "\"Die unendliche Geschi…\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#binding#29",
+        "kind": "literal",
+        "label": "\"hardcover\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#pageCount#30",
+        "kind": "literal",
+        "label": "\"428\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#weightGrams#31",
+        "kind": "literal",
+        "label": "\"980\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#estimatedAgeYears#32",
+        "kind": "literal",
+        "label": "\"47\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ARareBook-aa825f80#firstEditionYear#33",
+        "kind": "literal",
+        "label": "\"1979\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c#authors#34",
+        "kind": "literal",
+        "label": "\"Michael Ende\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c#inStock#35",
+        "kind": "literal",
+        "label": "\"true\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c#isbn#36",
+        "kind": "literal",
+        "label": "\"9783522128001\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-d94f29ff#amount#37",
+        "kind": "literal",
+        "label": "\"699\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-d94f29ff#currency#38",
+        "kind": "literal",
+        "label": "\"EUR\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c#printStatus#39",
+        "kind": "literal",
+        "label": "\"outOfPrint\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c#title#40",
+        "kind": "literal",
+        "label": "\"Die unendliche Geschi…\""
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/downloads/9783522128001.epub",
+        "kind": "instance",
+        "label": "9783522128001.epub"
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c#fileFormat#41",
+        "kind": "literal",
+        "label": "\"epub\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c#fileSizeBytes#42",
+        "kind": "literal",
+        "label": "\"3145728\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AEBook-cb358f2c#epubVersion#43",
+        "kind": "literal",
+        "label": "\"3.2\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4#authors#44",
+        "kind": "literal",
+        "label": "\"Michael Ende\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4#inStock#45",
+        "kind": "literal",
+        "label": "\"true\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4#isbn#46",
+        "kind": "literal",
+        "label": "\"9783522128001\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#amount#47",
+        "kind": "literal",
+        "label": "\"850\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#currency#48",
+        "kind": "literal",
+        "label": "\"EUR\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4#printStatus#49",
+        "kind": "literal",
+        "label": "\"outOfPrint\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4#title#50",
+        "kind": "literal",
+        "label": "\"Die unendliche Geschi…\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4#binding#51",
+        "kind": "literal",
+        "label": "\"hardcover\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4#pageCount#52",
+        "kind": "literal",
+        "label": "\"428\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3APrintBook-9fe303f4#weightGrams#53",
+        "kind": "literal",
+        "label": "\"980\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#authors#54",
+        "kind": "literal",
+        "label": "\"Michael Ende\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#inStock#55",
+        "kind": "literal",
+        "label": "\"true\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#isbn#56",
+        "kind": "literal",
+        "label": "\"9783522128001\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#amount#57",
+        "kind": "literal",
+        "label": "\"850\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#currency#58",
+        "kind": "literal",
+        "label": "\"EUR\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#printStatus#59",
+        "kind": "literal",
+        "label": "\"outOfPrint\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#title#60",
+        "kind": "literal",
+        "label": "\"Die unendliche Geschi…\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#binding#61",
+        "kind": "literal",
+        "label": "\"hardcover\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#pageCount#62",
+        "kind": "literal",
+        "label": "\"428\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#weightGrams#63",
+        "kind": "literal",
+        "label": "\"980\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#estimatedAgeYears#64",
+        "kind": "literal",
+        "label": "\"47\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#firstEditionYear#65",
+        "kind": "literal",
+        "label": "\"1979\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#provenance#66",
+        "kind": "literal",
+        "label": "\"Erworben aus dem Nach…\"@de"
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ASignedFirstEdition-bdac2020#signedBy#67",
+        "kind": "literal",
+        "label": "\"Michael Ende\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#authors#68",
+        "kind": "literal",
+        "label": "\"Michael Ende\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#inStock#69",
+        "kind": "literal",
+        "label": "\"true\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#isbn#70",
+        "kind": "literal",
+        "label": "\"9783522128001\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#amount#71",
+        "kind": "literal",
+        "label": "\"850\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#currency#72",
+        "kind": "literal",
+        "label": "\"EUR\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#printStatus#73",
+        "kind": "literal",
+        "label": "\"outOfPrint\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#title#74",
+        "kind": "literal",
+        "label": "\"Die unendliche Geschi…\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#authors#75",
+        "kind": "literal",
+        "label": "\"Michael Ende\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#inStock#76",
+        "kind": "literal",
+        "label": "\"true\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#isbn#77",
+        "kind": "literal",
+        "label": "\"9783522129503\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-778c69d8#amount#78",
+        "kind": "literal",
+        "label": "\"380\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-778c69d8#currency#79",
+        "kind": "literal",
+        "label": "\"EUR\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#printStatus#80",
+        "kind": "literal",
+        "label": "\"inPrint\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#title#81",
+        "kind": "literal",
+        "label": "\"Momo\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#authors#82",
+        "kind": "literal",
+        "label": "\"Michael Ende\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#inStock#83",
+        "kind": "literal",
+        "label": "\"true\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#isbn#84",
+        "kind": "literal",
+        "label": "\"9783522128001\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#amount#85",
+        "kind": "literal",
+        "label": "\"850\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#currency#86",
+        "kind": "literal",
+        "label": "\"EUR\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#printStatus#87",
+        "kind": "literal",
+        "label": "\"outOfPrint\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#title#88",
+        "kind": "literal",
+        "label": "\"Die unendliche Geschi…\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#authors#89",
+        "kind": "literal",
+        "label": "\"Michael Ende\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#inStock#90",
+        "kind": "literal",
+        "label": "\"true\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#isbn#91",
+        "kind": "literal",
+        "label": "\"9783522129503\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-778c69d8#amount#92",
+        "kind": "literal",
+        "label": "\"380\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-778c69d8#currency#93",
+        "kind": "literal",
+        "label": "\"EUR\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#printStatus#94",
+        "kind": "literal",
+        "label": "\"inPrint\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-749638c1#title#95",
+        "kind": "literal",
+        "label": "\"Momo\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#authors#96",
+        "kind": "literal",
+        "label": "\"Michael Ende\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#inStock#97",
+        "kind": "literal",
+        "label": "\"true\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#isbn#98",
+        "kind": "literal",
+        "label": "\"9783522128001\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#amount#99",
+        "kind": "literal",
+        "label": "\"850\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AMoney-efdad5a7#currency#100",
+        "kind": "literal",
+        "label": "\"EUR\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#printStatus#101",
+        "kind": "literal",
+        "label": "\"outOfPrint\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABook-146f0258#title#102",
+        "kind": "literal",
+        "label": "\"Die unendliche Geschi…\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff#hasNext#103",
+        "kind": "literal",
+        "label": "\"false\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff#hasPrev#104",
+        "kind": "literal",
+        "label": "\"false\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff#page#105",
+        "kind": "literal",
+        "label": "\"1\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff#pageSize#106",
+        "kind": "literal",
+        "label": "\"10\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff#resultCount#107",
+        "kind": "literal",
+        "label": "\"1\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3ABookListPage-a0e109ff#totalPages#108",
+        "kind": "literal",
+        "label": "\"1\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8#body#109",
+        "kind": "literal",
+        "label": "\"Ende's framing of a r…\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8#bookIsbn#110",
+        "kind": "literal",
+        "label": "\"9783522128001\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8#customerId#111",
+        "kind": "literal",
+        "label": "\"c1a2b3d4-e5f6-7890-ab…\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8#postedAt#112",
+        "kind": "literal",
+        "label": "\"2026-04-20T09:15:00Z\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8#rating#113",
+        "kind": "literal",
+        "label": "\"5\""
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/instances/urn%3Abookstore%3AReview-124496a8#reviewId#114",
+        "kind": "literal",
+        "label": "\"a4d3c2b1-a098-7654-a2…\""
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/books/9783522128001",
+        "kind": "instance",
+        "label": "9783522128001"
       }
     }
   ]

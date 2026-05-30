@@ -36,9 +36,9 @@ const FeaturedBookSchema = Compose.extend(
   'https://bookstore.example/FeaturedBook'
 );
 
-jt.set(FeaturedBookSchema);
+const jt2 = jt.set(FeaturedBookSchema);
 
-const featured = jt.instantiate(FeaturedBookSchema.$id, {
+const featured = jt2.instantiate(FeaturedBookSchema.$id, {
   'authors': ['Michael Ende'],
   'badge': 'bestseller',
   'inStock': true,

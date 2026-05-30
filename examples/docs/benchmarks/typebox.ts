@@ -25,7 +25,7 @@ export class TypeBoxValue {
   /**
    * Generates a structural diff between two values.
    */
-  public static diff<T extends TSchema>(schema: T, left: unknown, right: unknown): unknown[] {
-    return [...Value.Diff(schema, left, right)];
+  public static diff(left: unknown, right: unknown): unknown[] {
+    return [...Value.Diff(left, right)];
   }
 }

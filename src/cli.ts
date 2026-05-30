@@ -18,6 +18,7 @@ import {
   basename, dirname, resolve
 } from 'node:path';
 import { Command } from 'commander';
+import pkg from '../package.json' with { 'type': 'json' };
 import { SchemaRegistry } from './modules/registry/SchemaRegistry.js';
 import { GraphArtifact } from './modules/graph/GraphArtifact.js';
 import { GraphSchemaSerializer } from './modules/ontology/GraphSchemaSerializer.js';
@@ -369,7 +370,7 @@ const program = new Command();
 program
   .name('json-tology')
   .description('Ontology-native type system with declarative JSON Schema authoring')
-  .version('0.1.0');
+  .version(pkg.version);
 
 program
   .command('build')

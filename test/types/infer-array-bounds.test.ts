@@ -2,15 +2,33 @@
  * Compile-time tuple narrowing for raw `minItems` / `maxItems`.
  *
  * Mirrors the OWL `cardinality` / `minCardinality` / `maxCardinality`
- * narrowing path, but applied to plain JSON Schema arrays. Each
- * `@ts-expect-error` block proves the negative side (a value of the
- * wrong arity is rejected by the type system, not just the runtime).
+ * narrowing path, but applied to plain JSON Schema arrays.
  *
- * Cap behaviour: bounds at or beyond `TupleCapType = 16` fall through
- * to `ReadonlyArray<T>` so that recursion stays within TS limits.
+ * The inferred type is the narrowed tuple shape intersected with the
+ * `maxItems` / `minItems` constraint brands. Because the brands carry phantom
+ * keys, a plain array literal is not directly assignable to the inferred type —
+ * only runtime-coerced values carry them. The positive contract is therefore
+ * asserted at the type level (exact branded-type equality), and the negative
+ * side (a value of the wrong arity) is proved with `@ts-expect-error`.
+ *
+ * Cap behaviour: bounds at or beyond `TupleCapType = 16` fall through to
+ * `ReadonlyArray<T>` so that recursion stays within TS limits — the brands are
+ * still applied.
  */
 
+import type {
+  MaxItemsBrandInterface, MinItemsBrandInterface
+} from '../../src/types/ConstraintBrands.js';
 import type { InferType } from '../../src/types/Schema.js';
+
+type AssertEqualType<TLeft, TRight>
+  = [TLeft] extends [TRight] ? [TRight] extends [TLeft] ? true : false : false;
+
+function assert<T extends true>(): void {
+  // interop: void 0 as unknown as T is the compile-time type-test idiom; no
+  // typed path exists from void to an arbitrary constraint-bounded type T.
+  void 0 as unknown as T;
+}
 
 // ---------------------------------------------------------------------------
 // 1. Exact length — minItems === maxItems → BuildExactTupleType
@@ -27,13 +45,11 @@ void _ExactThreeSchema;
 
 type ExactThree = InferType<typeof _ExactThreeSchema>;
 
-const _exactOk: ExactThree = [
-  'a',
-  'b',
-  'c'
-];
-
-void _exactOk;
+// Exactly three strings, carrying both item-count brands.
+assert<AssertEqualType<
+  ExactThree,
+  MaxItemsBrandInterface<3> & MinItemsBrandInterface<3> & readonly [string, string, string]
+>>();
 
 // @ts-expect-error — length 2 is rejected, must be exactly 3
 const _exactShort: ExactThree = [
@@ -67,20 +83,11 @@ void _AtLeastTwoSchema;
 
 type AtLeastTwo = InferType<typeof _AtLeastTwoSchema>;
 
-const _atLeastMin: AtLeastTwo = [
-  1,
-  2
-];
-const _atLeastMore: AtLeastTwo = [
-  1,
-  2,
-  3,
-  4,
-  5
-];
-
-void _atLeastMin;
-void _atLeastMore;
+// At least two numbers (non-empty prefix + variadic tail), carrying the minItems brand.
+assert<AssertEqualType<
+  AtLeastTwo,
+  MinItemsBrandInterface<2> & readonly [number, number, ...number[]]
+>>();
 
 // @ts-expect-error — length 1 is rejected, requires at least 2
 const _atLeastShort: AtLeastTwo = [1];
@@ -106,22 +113,16 @@ void _AtMostThreeSchema;
 
 type AtMostThree = InferType<typeof _AtMostThreeSchema>;
 
-const _atMostEmpty: AtMostThree = [];
-const _atMostOne: AtMostThree = [true];
-const _atMostTwo: AtMostThree = [
-  true,
-  false
-];
-const _atMostThree: AtMostThree = [
-  true,
-  false,
-  true
-];
-
-void _atMostEmpty;
-void _atMostOne;
-void _atMostTwo;
-void _atMostThree;
+// Union of boolean tuples length 0..3, carrying the maxItems brand.
+assert<AssertEqualType<
+  AtMostThree,
+  MaxItemsBrandInterface<3> & (
+    | readonly []
+    | readonly [boolean, boolean, boolean]
+    | readonly [boolean, boolean]
+    | readonly [boolean]
+  )
+>>();
 
 // @ts-expect-error — length 4 is rejected, must be at most 3
 const _atMostLong: AtMostThree = [
@@ -148,25 +149,14 @@ void _RangeTwoToFourSchema;
 
 type RangeTwoToFour = InferType<typeof _RangeTwoToFourSchema>;
 
-const _rangeTwo: RangeTwoToFour = [
-  'a',
-  'b'
-];
-const _rangeThree: RangeTwoToFour = [
-  'a',
-  'b',
-  'c'
-];
-const _rangeFour: RangeTwoToFour = [
-  'a',
-  'b',
-  'c',
-  'd'
-];
-
-void _rangeTwo;
-void _rangeThree;
-void _rangeFour;
+// Bounded union of string tuples across the 2..4 range, carrying both brands.
+assert<AssertEqualType<
+  RangeTwoToFour,
+  MaxItemsBrandInterface<4> & MinItemsBrandInterface<2> & (
+    | readonly [string, string, string, string]
+    | readonly [string, string]
+  )
+>>();
 
 // @ts-expect-error — length 1 is below minItems
 const _rangeShort: RangeTwoToFour = ['a'];
@@ -186,7 +176,7 @@ void _rangeLong;
 
 // ---------------------------------------------------------------------------
 // 5. Beyond cap — bounds at or beyond TupleCapType = 16 fall through to
-//    ReadonlyArray<T>; recursion stays bounded.
+//    ReadonlyArray<T>; the brands are still applied.
 // ---------------------------------------------------------------------------
 
 const _BeyondCapSchema = {
@@ -200,20 +190,15 @@ void _BeyondCapSchema;
 
 type BeyondCap = InferType<typeof _BeyondCapSchema>;
 
-// Above the cap, narrowing falls through to ReadonlyArray<number>.
-const _beyondShort: BeyondCap = [1];
-const _beyondLong: BeyondCap = [
-  1,
-  2,
-  3,
-  4
-];
-
-void _beyondShort;
-void _beyondLong;
+// Above the cap, narrowing falls through to ReadonlyArray<number> + both brands.
+assert<AssertEqualType<
+  BeyondCap,
+  MaxItemsBrandInterface<20> & MinItemsBrandInterface<20> & readonly number[]
+>>();
 
 // ---------------------------------------------------------------------------
-// 6. Sanity — `items` only (no bounds) keeps the existing ReadonlyArray path.
+// 6. Sanity — `items` only (no bounds) keeps the existing ReadonlyArray path
+//    with no item-count brands.
 // ---------------------------------------------------------------------------
 
 const _UnboundedSchema = {
@@ -241,7 +226,7 @@ void _unboundedMany;
 
 // ---------------------------------------------------------------------------
 // 7. Raw bounds without `items` — element type defaults to `unknown` but
-//    the tuple shape is still narrowed.
+//    the tuple shape is still narrowed and the brands are applied.
 // ---------------------------------------------------------------------------
 
 const _RawExactSchema = {
@@ -254,12 +239,11 @@ void _RawExactSchema;
 
 type RawExact = InferType<typeof _RawExactSchema>;
 
-const _rawOk: RawExact = [
-  'anything',
-  42
-];
-
-void _rawOk;
+// Exactly two unknown elements, carrying both item-count brands.
+assert<AssertEqualType<
+  RawExact,
+  MaxItemsBrandInterface<2> & MinItemsBrandInterface<2> & readonly [unknown, unknown]
+>>();
 
 // @ts-expect-error — length 1 is rejected, must be exactly 2
 const _rawShort: RawExact = ['only-one'];

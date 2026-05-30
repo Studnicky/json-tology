@@ -25,16 +25,16 @@ type OrderWire = typeof aboxFixtures.order;
 
 class OrderWithInstanceMethod {
   declare public customerId: string;
-  declare public id: string;
-  declare public items: OrderWire['items'];
+  declare public orderId: string;
+  declare public orderLines: OrderWire['orderLines'];
+  declare public orderTotal: OrderWire['orderTotal'];
   declare public placedAt: OrderWire['placedAt'];
   declare public shippingAddress: OrderWire['shippingAddress'];
   // Instance-field method (enumerable own-property). The filter
   // below is what drops this on the way back to wire.
   public summarize = (): string => {
-    return `order ${this.id}`;
+    return `order ${this.orderId}`;
   };
-  declare public total: OrderWire['total'];
 }
 
 const FilterEncodeOrderSchema = Compose.equivalent(
@@ -44,7 +44,10 @@ const FilterEncodeOrderSchema = Compose.equivalent(
 
 jt.set(FilterEncodeOrderSchema);
 
-Transform.create<typeof FilterEncodeOrderSchema, OrderWithInstanceMethod>(FilterEncodeOrderSchema, {
+const FilterEncodeOrderTransform = Transform.create<
+  typeof FilterEncodeOrderSchema,
+  OrderWithInstanceMethod
+>(FilterEncodeOrderSchema, {
   'decode': (plain) => {
     return Object.assign(Reflect.construct(OrderWithInstanceMethod, []), plain);
   },
@@ -60,13 +63,13 @@ Transform.create<typeof FilterEncodeOrderSchema, OrderWithInstanceMethod>(Filter
 });
 
 const hydrated = jt.instantiate(
-  FilterEncodeOrderSchema.$id,
+  FilterEncodeOrderTransform,
   aboxFixtures.order
-) as OrderWithInstanceMethod;
+);
 
 console.assert(typeof hydrated.summarize === 'function');
 
-const wire = bookstoreEntities.encode(FilterEncodeOrderSchema, hydrated) as Record<string, unknown>;
+const wire = bookstoreEntities.encode(FilterEncodeOrderTransform, hydrated) as Record<string, unknown>;
 
 console.assert(wire.summarize === undefined);
-console.assert(wire.id === aboxFixtures.order.id);
+console.assert(wire.orderId === aboxFixtures.order.orderId);

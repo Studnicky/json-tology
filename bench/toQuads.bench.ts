@@ -119,11 +119,18 @@ const jt = JsonTology.create({
   ]
 });
 
+// Branded, validated instances — obtained via the validation API, the only
+// source of branded values. Done once here, outside the measured loops, so the
+// toQuads benchmark measures projection only (not instantiation).
+const flatInstance = jt.instantiate(FlatSchema.$id, flatData);
+const nestedInstance = jt.instantiate(NestedSchema.$id, nestedData);
+const patternInstance = jt.instantiate(PatternSchema.$id, patternData);
+
 // Warm up — ensure V8 JIT compiles the hot paths before measuring.
 for (let i = 0; i < 500; i++) {
-  jt.toQuads(FlatSchema, flatData);
-  jt.toQuads(NestedSchema, nestedData);
-  jt.toQuads(PatternSchema, patternData);
+  jt.toQuads(FlatSchema, flatInstance);
+  jt.toQuads(NestedSchema, nestedInstance);
+  jt.toQuads(PatternSchema, patternInstance);
 }
 
 // ---------------------------------------------------------------------------
@@ -167,13 +174,13 @@ function bench(label: string, fn: () => void, iterations = 50_000): BenchResult 
 
 const results: BenchResult[] = [
   bench('toQuads flat (5 props)', () => {
-    jt.toQuads(FlatSchema, flatData);
+    jt.toQuads(FlatSchema, flatInstance);
   }),
   bench('toQuads nested (1 level)', () => {
-    jt.toQuads(NestedSchema, nestedData);
+    jt.toQuads(NestedSchema, nestedInstance);
   }),
   bench('toQuads patternProperties', () => {
-    jt.toQuads(PatternSchema, patternData);
+    jt.toQuads(PatternSchema, patternInstance);
   })
 ];
 

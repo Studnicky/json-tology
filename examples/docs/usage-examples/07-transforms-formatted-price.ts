@@ -28,7 +28,7 @@ const FormattedPriceSchema = {
 
 jt.set(FormattedPriceSchema);
 
-const decoded = Transform.chain(FormattedPriceSchema, [
+const FormattedPriceTransform = Transform.chain(FormattedPriceSchema, [
   {
     'decode': (raw: string) => {
       return raw.replaceAll(/[$,]/gu, '');
@@ -47,15 +47,13 @@ const decoded = Transform.chain(FormattedPriceSchema, [
   }
 ] as const);
 
-void decoded;
-
 const wireAmount = aboxFixtures.rareBook.price.amount;
 const wire = `$${wireAmount.toFixed(2)}`;
-const parsed = jt.instantiate(FormattedPriceSchema, wire);
+const parsed = jt.instantiate(FormattedPriceTransform, wire);
 
 console.assert(parsed === wireAmount);
 
-const reEncoded = jt.encode(FormattedPriceSchema, wireAmount);
+const reEncoded = jt.encode(FormattedPriceTransform, wireAmount);
 
 // Encoder collapses thousands separators by design; round-trip is
 // numerically faithful, formatting-wise lossy (no thousand-separator

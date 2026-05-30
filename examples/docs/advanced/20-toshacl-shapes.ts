@@ -15,5 +15,5 @@ const shacl = shaclBuilder.shaclObject();
 // Prefix map
 const ctx = shaclBuilder.context();
 
-console.assert(shacl, 'shacl object present');
-console.assert(ctx.sh, 'sh prefix defined');
+console.assert(Boolean(shacl), 'shacl object present');
+console.assert(Boolean(ctx.sh), 'sh prefix defined');

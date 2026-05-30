@@ -102,19 +102,22 @@ export function runSerializeBench(): BenchResult[] {
     ]
   });
 
+  // Instantiate raw fixture to get the branded order type required by dump/dumpJson
+  const orderInstantiated = jt.instantiate(OrderSchema, orderValid);
+
   // Warm
-  jt.dump(OrderSchema, orderValid);
-  jt.dumpJson(OrderSchema, orderValid);
+  jt.dump(OrderSchema, orderInstantiated);
+  jt.dumpJson(OrderSchema, orderInstantiated);
   jt.encode(EventSchemaJt, richEvent);
 
   section('serialize — dump Order (validated → wire), no transforms');
 
   results.push(bench('dump order', 'json-tology', () => {
-    jt.dump(OrderSchema, orderValid);
+    jt.dump(OrderSchema, orderInstantiated);
   }));
 
   results.push(bench('dump order', 'structuredClone', () => {
-    structuredClone(orderValid);
+    structuredClone(orderInstantiated);
   }));
 
   results.push(bench('dump order', 'typebox', () => {
@@ -124,7 +127,7 @@ export function runSerializeBench(): BenchResult[] {
   section('serialize — dumpJson Order (validated → JSON string)');
 
   results.push(bench('dumpJson order', 'json-tology', () => {
-    jt.dumpJson(OrderSchema, orderValid);
+    jt.dumpJson(OrderSchema, orderInstantiated);
   }));
 
   results.push(bench('dumpJson order', 'JSON.stringify', () => {
@@ -138,7 +141,10 @@ export function runSerializeBench(): BenchResult[] {
   }));
 
   results.push(bench('encode event', 'typebox', () => {
-    Value.Encode(EventSchemaTb, richEvent as EventTb);
+    // interop: TypeBox's Transform Encode expects a statically-decoded EventTb
+    // type, but richEvent is a plain object literal without the Transform brand.
+    // TypeBox has no typed path from a plain object to its encoded form here.
+    Value.Encode(EventSchemaTb, richEvent as unknown as EventTb);
   }));
 
   return results;

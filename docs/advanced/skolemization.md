@@ -15,7 +15,9 @@ Relevant standards:
 
 ### `Skolemize.hash({ baseIRI })`
 
-Default-equivalent. Hashes the value with FNV-1a and emits `<baseIRI>/instances/<hash>`. Deterministic - equal values produce equal IRIs across calls and processes.
+Hashes the value with FNV-1a and emits `<baseIRI>/instances/<contentHash>`. Deterministic — equal values produce equal IRIs across calls and processes.
+
+This is **not** identical to the projection's built-in default IRI minter. The default minter (`defaultInstanceIri`) additionally prefixes the escaped class identifier, emitting `<baseIRI>/instances/<classId>-<contentHash>`. `Skolemize.hash` omits the classId segment, so its output differs from the projection default even for identical input values.
 
 <<< ../../examples/docs/advanced/50-skolemize-hash.ts
 
@@ -76,7 +78,7 @@ The `'blank-node'` registry-level default is re-instantiated on every call so th
 
 | Situation | Strategy |
 |-----------|----------|
-| Content-addressed identity (deterministic, dedup-safe) | `Skolemize.hash` (default) |
+| Content-addressed identity (deterministic, dedup-safe, no classId prefix) | `Skolemize.hash` |
 | Domain identifier on the value | `Skolemize.fromProperty` |
 | Wire transport with blank-node round-trip | `Skolemize.wellKnownGenid` + `fromQuads({ deskolemize: true })` |
 | Fresh anonymous identity, every time | `Skolemize.uuid` |

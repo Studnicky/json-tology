@@ -15,14 +15,16 @@ import {
 
 const incoming: unknown = { ...aboxFixtures.order };
 
-if (bookstoreEntities.is(OrderSchema, incoming)) {
+// Passing the schema $id selects the type-guard overload, which narrows
+// `incoming` to the registry's Order type within the block.
+if (bookstoreEntities.is(OrderSchema.$id, incoming)) {
   // Within this block, `incoming` is narrowed to `Order`.
   const order: Order = incoming;
 
-  console.assert(order.id === aboxFixtures.order.id);
+  console.assert(order.orderId === aboxFixtures.order.orderId);
 }
 
 // Invalid shape — is returns false.
 const notAnOrder: unknown = { 'customerId': 'foo' };
 
-console.assert(!bookstoreEntities.is(OrderSchema, notAnOrder));
+console.assert(!bookstoreEntities.is(OrderSchema.$id, notAnOrder));

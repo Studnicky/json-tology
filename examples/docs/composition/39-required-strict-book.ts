@@ -25,10 +25,10 @@ const CreateBookSchema = Compose.required(
 
 type CreateBook = InferType<typeof CreateBookSchema>;
 
-jt.set(CreateBookSchema);
+const jt2 = jt.set(CreateBookSchema);
 
 // Missing inStock — fails because Compose.required promotes it.
-const missingInStock = jt.validate(CreateBookSchema.$id, {
+const missingInStock = jt2.validate(CreateBookSchema.$id, {
   'authors': ['Michael Ende'],
   'isbn': '9783522128001',
   'price': {

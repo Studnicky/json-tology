@@ -62,7 +62,9 @@ console.assert(wire === raw);
 let threw = false;
 
 try {
-  jt.instantiate(PlacedAtSchema.$id, 'not-a-date');
+  // PlacedAtSchema was registered at runtime via set(), so it is not part of
+  // the registry's compile-time schema-ID union — pass the schema object.
+  jt.instantiate(PlacedAtSchema, 'not-a-date');
 } catch (error) {
   threw = error instanceof InstantiationError;
 }

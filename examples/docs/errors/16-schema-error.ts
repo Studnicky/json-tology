@@ -11,10 +11,13 @@ import {
 } from '../../../src/index.js';
 
 try {
-  // doc example with synthetic fixture schemas (strict-graph default does not throw because no inline duplicates)
+  // invalid-input edge: schema literal intentionally omits `$id` to trigger the
+  // SCHEMA_MISSING_ID runtime guard. `create` requires `$id` at the type level;
+  // the cast simulates untyped data (e.g. a schema loaded from disk) crossing
+  // the registration boundary — no typed path exists for this negative test.
   JsonTology.create({
     'baseIRI': 'https://bookstore.example',
-    'schemas': [{ 'type': 'object' }] as const
+    'schemas': [{ 'type': 'object' }] as unknown as readonly [{ readonly '$id': string }]
   });
 } catch (error) {
   if (error instanceof SchemaError) {

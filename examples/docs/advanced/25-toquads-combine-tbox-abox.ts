@@ -18,8 +18,8 @@ const abox = bookstoreEntities.toQuads(CustomerSchema, {
     'postalCode': '80538',
     'street': 'Reichenbachstraße 14'
   }],
+  'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'email': 'bastian.bux@bookstore.example',
-  'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'name': 'Bastian Balthazar Bux'
 });
 
@@ -34,5 +34,5 @@ const merged = {
   ]
 };
 
-console.assert(merged['@context'], 'context present');
+console.assert(Boolean(merged['@context']), 'context present');
 console.assert(merged['@graph'].length > 0, 'graph has content');

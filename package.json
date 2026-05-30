@@ -1,6 +1,6 @@
 {
   "name": "json-tology",
-  "version": "0.15.3",
+  "version": "0.16.0",
   "description": "One source of truth for TypeScript types, runtime validation, coercion, and OWL ontology output. Author in JSON Schema; share with any backend; reason over the graph.",
   "type": "module",
   "main": "./dist/index.js",
@@ -52,7 +52,10 @@
     "build": "npm run clean && tsc",
     "ensure-built": "node ./scripts/ensure-built.mjs",
     "type-check": "tsc --noEmit",
+    "type-check:examples": "tsc --noEmit -p tsconfig.examples.json",
     "type-check:tests": "tsc --noEmit -p tsconfig.types-test.json",
+    "type-check:tests:all": "tsc --noEmit -p tsconfig.tests.json",
+    "type-check:all": "npm run type-check && npm run type-check:examples && npm run type-check:tests:all",
     "pretest": "npm run ensure-built",
     "test": "tsx --test --test-concurrency=4 'test/smoke/**/*.test.ts' 'test/unit/**/*.test.ts'",
     "pretest:smoke": "npm run ensure-built",

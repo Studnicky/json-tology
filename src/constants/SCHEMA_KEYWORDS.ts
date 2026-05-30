@@ -49,6 +49,7 @@ export const KNOWN_SCHEMA_KEYWORDS = new Set([
   'irreflexive',
   'items',
   'jt:alias',
+  'jt:annotatedEdge',
   'jt:computed',
   'jt:config',
   'jt:frozen',
@@ -84,7 +85,10 @@ export const KNOWN_SCHEMA_KEYWORDS = new Set([
   'unevaluatedItems',
   'unevaluatedProperties',
   'uniqueItems',
-  'writeOnly'
+  'writeOnly',
+  'x-jt-iriRef',
+  'x-jt-language',
+  'x-jt-predicate'
 ]);
 
 export const PRIMITIVE_CONSTRAINT_KEYWORDS = new Set<string>([

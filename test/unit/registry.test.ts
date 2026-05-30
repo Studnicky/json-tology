@@ -174,11 +174,13 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     });
 
     void it('pick() carries jt:config from source schema', () => {
+      // jt:config is a runtime-carried directive not modelled on PickSchemaInterface;
+      // read it through a widened view to assert it survives the pick.
       const PickedSchema = Compose.pick(
         BaseSchema,
         ['name'] as const,
         'https://ex.io/Picked'
-      ) as Record<string, unknown>;
+      ) as unknown as Record<string, unknown>;
 
       const config = PickedSchema['jt:config'] as Record<string, unknown>;
 
@@ -186,11 +188,13 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     });
 
     void it('omit() carries jt:config from source schema', () => {
+      // jt:config is a runtime-carried directive not modelled on OmitSchemaInterface;
+      // read it through a widened view to assert it survives the omit.
       const OmittedSchema = Compose.omit(
         BaseSchema,
         ['score'] as const,
         'https://ex.io/Omitted'
-      ) as Record<string, unknown>;
+      ) as unknown as Record<string, unknown>;
 
       const config = OmittedSchema['jt:config'] as Record<string, unknown>;
 
@@ -771,15 +775,16 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
     }
 
     void it('unhappy: range keyword error message contains min bound', () => {
-      const rangeEngine = new GraphEngine(
-        {
-          '$id': 'https://test.com/RangeMsg',
-          'customRange': {
-            'max': 100,
-            'min': 10
-          },
-          'type': 'number'
+      const rangeSchema: Record<string, unknown> = {
+        '$id': 'https://test.com/RangeMsg',
+        'customRange': {
+          'max': 100,
+          'min': 10
         },
+        'type': 'number'
+      };
+      const rangeEngine = new GraphEngine(
+        rangeSchema,
         { 'keywords': [rangeKeyword] }
       );
 
@@ -876,6 +881,11 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
             'type': 'number'
           } as const);
           const graph = reg2.graph('urn:test:graph-kw');
+
+          assert.notStrictEqual(graph, undefined);
+          if (graph === undefined) {
+            throw new Error('unreachable');
+          }
           const sem = graph.semantics(graph.rootNode);
 
           assert.equal(sem.extensions.evenNumber, true);
@@ -884,12 +894,13 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
       },
       {
         'check': () => {
+          const kwSchema: Record<string, unknown> = {
+            '$id': 'urn:test:graph-kw-2',
+            'evenNumber': true,
+            'type': 'number'
+          };
           const engine = new GraphEngine(
-            {
-              '$id': 'urn:test:graph-kw-2',
-              'evenNumber': true,
-              'type': 'number'
-            },
+            kwSchema,
             { 'keywords': [evenNumberKeyword] }
           );
 
@@ -957,7 +968,8 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
           'castTypes': false,
           'collectErrors': true
         };
-        const result = Resolver.merge(base);
+        const noOverride: Partial<typeof base> | undefined = undefined;
+        const result = Resolver.merge(base, noOverride);
 
         assert.deepEqual(result, base, 'no override: result equals base');
       }
@@ -980,7 +992,10 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
           'applyDefaults': true,
           'castTypes': false
         };
-        const override: Partial<typeof base> = { 'applyDefaults': undefined };
+        // Deliberately passes an explicit-undefined override value to assert merge
+        // ignores it; exactOptionalPropertyTypes rejects undefined in Partial<T>, so
+        // the value is widened at this call boundary and the result is asserted.
+        const override = { 'applyDefaults': undefined } as unknown as Partial<typeof base>;
         const result = Resolver.merge(base, override);
 
         assert.equal(result.applyDefaults, true, 'undefined override does not overwrite base');
@@ -1000,8 +1015,14 @@ import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 
       // Ugly: nested objects are NOT deep-merged (shallow only)
       {
-        interface NestedRecord { 'nested': { 'a': number;
-          'b'?: number } }
+        interface NestedShape {
+          'a': number;
+          'b'?: number;
+        }
+        interface NestedRecord {
+          [key: string]: NestedShape;
+          'nested': NestedShape;
+        }
         const base: NestedRecord = {
           'nested': {
             'a': 1,

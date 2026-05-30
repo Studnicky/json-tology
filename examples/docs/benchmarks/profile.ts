@@ -27,10 +27,7 @@ interface Scenario {
   'setup': () => () => void;
 }
 
-const registry = new SchemaRegistry({
-  'castTypes': true,
-  'enableStrictGraph': false
-});
+const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
 registry.set(SimpleSchema);
 registry.set(AddressSchema);

@@ -18,14 +18,14 @@ import {
 const before = bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order);
 
 const updatedTotal = {
-  'amount': aboxFixtures.order.total.amount + 12.99,
+  'amount': aboxFixtures.order.orderTotal.amount + 12.99,
   'currency': 'EUR'
 };
 
 const after = bookstoreEntities.instantiate(OrderSchema, {
   ...aboxFixtures.order,
-  'items': [
-    ...aboxFixtures.order.items,
+  'orderLines': [
+    ...aboxFixtures.order.orderLines,
     // Cornelia Funke — Tintenherz (Cecilie Dressler Verlag, 2003)
     {
       'bookIsbn': '9783791504100',
@@ -36,7 +36,7 @@ const after = bookstoreEntities.instantiate(OrderSchema, {
       }
     }
   ],
-  'total': updatedTotal
+  'orderTotal': updatedTotal
 });
 
 const changes = Value.diff(before, after);
@@ -48,6 +48,6 @@ for (const op of changes.operations) {
   result = Operations.patch(result, op);
 }
 
-const resultTotal = (result as { 'total': { 'amount': number } }).total.amount;
+const resultTotal = (result as { 'orderTotal': { 'amount': number } }).orderTotal.amount;
 
 console.assert(Math.abs(resultTotal - updatedTotal.amount) < 0.001);

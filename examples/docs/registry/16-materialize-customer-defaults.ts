@@ -12,13 +12,13 @@ import {
 } from '../bookstore/index.js';
 
 const customer = bookstoreEntities.materialize(CustomerSchema, {
+  'customerId': aboxFixtures.customer.customerId,
   'email': aboxFixtures.customer.email,
-  'id': aboxFixtures.customer.id,
   'name': aboxFixtures.customer.name
   // addresses omitted — declared default [] applied
 });
 
 // Declared default [] is applied automatically.
-console.assert(Array.isArray((customer as { 'addresses': unknown[] }).addresses));
-console.assert((customer as { 'addresses': unknown[] }).addresses.length === 0);
-console.assert((customer as { 'email': string }).email === aboxFixtures.customer.email);
+console.assert(Array.isArray(customer.addresses));
+console.assert(customer.addresses.length === 0);
+console.assert(customer.email === aboxFixtures.customer.email);

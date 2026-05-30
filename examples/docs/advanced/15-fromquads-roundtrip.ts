@@ -15,16 +15,16 @@ const customerData = {
     'postalCode': '80538',
     'street': 'Reichenbachstraße 14'
   }],
+  'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'email': 'bastian.bux@bookstore.example',
-  'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'name': 'Bastian Balthazar Bux'
 };
 
 // Project to quads — toQuads returns QuadInterface[] directly
 const abox = bookstoreEntities.toQuads(CustomerSchema, customerData);
 
-// Lift back to typed objects
-const customers = bookstoreEntities.fromQuads(CustomerSchema, abox);
+// Lift back to typed objects — use the string key form for full type inference
+const customers = bookstoreEntities.fromQuads(CustomerSchema.$id, abox);
 // customers: Customer[] — each element validated through coerce
 
 console.assert(Array.isArray(customers), 'customers is array');

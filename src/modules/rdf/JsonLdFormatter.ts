@@ -143,17 +143,23 @@ function fromQuadsImpl(quads: QuadInterface[]): Array<Record<string, unknown>> {
         continue;
       }
       const typeValue = narrowedTypeObj.termType === 'NamedNode' ? narrowedTypeObj.value : objectToJsonLd(narrowedTypeObj);
-      const existing = node[JSONLD.type];
 
-      if (existing === undefined) {
-        node[JSONLD.type] = typeValue;
-      } else if (Array.isArray(existing)) {
-        (existing as unknown[]).push(typeValue);
+      // Use Object.hasOwn to guard against prototype-traversal: a predicate IRI of
+      // "__proto__" or "constructor" would otherwise read Object.prototype via
+      // node[JSONLD.type] and corrupt the accumulator.
+      if (Object.hasOwn(node, JSONLD.type)) {
+        const existing = node[JSONLD.type];
+
+        if (Array.isArray(existing)) {
+          (existing as unknown[]).push(typeValue);
+        } else {
+          node[JSONLD.type] = [
+            existing,
+            typeValue
+          ];
+        }
       } else {
-        node[JSONLD.type] = [
-          existing,
-          typeValue
-        ];
+        node[JSONLD.type] = typeValue;
       }
     } else {
       const narrowed = Lists.asQuadObject(entry.object);
@@ -177,17 +183,23 @@ function fromQuadsImpl(quads: QuadInterface[]): Array<Record<string, unknown>> {
       } else {
         value = objectToJsonLd(narrowed);
       }
-      const existing = node[predicateValue];
 
-      if (existing === undefined) {
-        node[predicateValue] = value;
-      } else if (Array.isArray(existing)) {
-        (existing as unknown[]).push(value);
+      // Use Object.hasOwn to guard against prototype-traversal: a predicate IRI of
+      // "__proto__" or "constructor" would otherwise read Object.prototype via
+      // node[predicateValue] and corrupt the accumulator.
+      if (Object.hasOwn(node, predicateValue)) {
+        const existing = node[predicateValue];
+
+        if (Array.isArray(existing)) {
+          (existing as unknown[]).push(value);
+        } else {
+          node[predicateValue] = [
+            existing,
+            value
+          ];
+        }
       } else {
-        node[predicateValue] = [
-          existing,
-          value
-        ];
+        node[predicateValue] = value;
       }
     }
   }

@@ -35,6 +35,7 @@ console.assert(
 const formState = {
   ...bookDefaults,
   'authors': [] as readonly string[],
+  'inStock': true,
   'isbn': '',
   'price': {
     'amount': 0,
@@ -44,7 +45,7 @@ const formState = {
   'title': ''
 };
 
-console.assert(formState.inStock === true);
+console.assert(formState.inStock);
 console.assert(formState.title === '');
 console.assert(formState.authors.length === 0);
 console.assert(formState.isbn === '');

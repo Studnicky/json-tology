@@ -30,16 +30,16 @@ type OrderWire = typeof aboxFixtures.order;
 
 class OrderRecord {
   public constructor(
-    public readonly id: string,
+    public readonly orderId: string,
     public readonly customerId: string,
-    public readonly items: OrderWire['items'],
-    public readonly total: OrderWire['total'],
+    public readonly orderLines: OrderWire['orderLines'],
+    public readonly orderTotal: OrderWire['orderTotal'],
     public readonly shippingAddress: OrderWire['shippingAddress'],
     public readonly placedAt: string
   ) {}
 
   public totalWithTax(rate = 0.19): number {
-    return this.total.amount * (1 + rate);
+    return this.orderTotal.amount * (1 + rate);
   }
 }
 
@@ -50,15 +50,15 @@ const OrderRecordSchema = Compose.equivalent(
 
 jt.set(OrderRecordSchema);
 
-Transform.create<typeof OrderRecordSchema, OrderRecord>(OrderRecordSchema, {
+const OrderRecordTransform = Transform.create<typeof OrderRecordSchema, OrderRecord>(OrderRecordSchema, {
   'decode': (input) => {
     const wire = input as OrderWire;
 
     return new OrderRecord(
-      wire.id,
+      wire.orderId,
       wire.customerId,
-      wire.items,
-      wire.total,
+      wire.orderLines,
+      wire.orderTotal,
       wire.shippingAddress,
       wire.placedAt
     );
@@ -66,25 +66,25 @@ Transform.create<typeof OrderRecordSchema, OrderRecord>(OrderRecordSchema, {
   'encode': (record) => {
     return {
       'customerId': record.customerId,
-      'id': record.id,
-      'items': record.items,
+      'orderId': record.orderId,
+      'orderLines': record.orderLines,
+      'orderTotal': record.orderTotal,
       'placedAt': record.placedAt,
-      'shippingAddress': record.shippingAddress,
-      'total': record.total
+      'shippingAddress': record.shippingAddress
     };
   }
 });
 
 const hydrated = jt.instantiate(
-  OrderRecordSchema,
+  OrderRecordTransform,
   aboxFixtures.order
 );
 
 console.assert(hydrated instanceof OrderRecord);
-console.assert((hydrated as OrderRecord).totalWithTax() > aboxFixtures.order.total.amount);
+console.assert(hydrated.totalWithTax() > aboxFixtures.order.orderTotal.amount);
 
 // Encoder round-trips back to wire shape.
-const wire = bookstoreEntities.encode(OrderRecordSchema, hydrated as OrderRecord) as Record<string, unknown>;
+const wire = bookstoreEntities.encode(OrderRecordTransform, hydrated) as Record<string, unknown>;
 
-console.assert(typeof wire.id === 'string');
-console.assert(Array.isArray(wire.items));
+console.assert(typeof wire.orderId === 'string');
+console.assert(Array.isArray(wire.orderLines));

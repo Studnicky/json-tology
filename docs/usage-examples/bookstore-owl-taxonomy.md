@@ -18,7 +18,7 @@ Beyond the structural entities, the bookstore registry carries seven additional 
 | `SignedFirstEditionSchema` | `Compose.subClassOf(RareBook)` + registered `signedFirstEditionIsSoloAuthored` invariant | `subClassOf` → RareBook (the cardinality axiom lives off-graph as an invariant) |
 | `InPrintBookSchema`   | `Compose.subClassOf(Book)` + `Compose.hasValue(printStatus, 'inPrint')`                       | `subClassOf` → Book, `restriction` on `printStatus` |
 | `OutOfPrintBookSchema`| `Compose.complementOf(InPrintBook)` with body `allOf` bounding to Book                        | `subClassOf` → Book, `complementOf` → InPrintBook |
-| `orderTotalMatchesItems` | `bookstoreEntities.addInvariant(OrderSchema, ...)`                                         | runtime cross-field rule on `Order.total` |
+| `orderTotalMatchesItems` | `bookstoreEntities.addInvariant(OrderSchema, ...)`                                         | runtime cross-field rule on `Order.orderTotal` |
 | `signedFirstEditionIsSoloAuthored` | `bookstoreEntities.addInvariant(SignedFirstEditionSchema, ...)`                  | runtime cardinality rule on `SignedFirstEdition.authors` |
 | `sameAs(bastian-bux, cust-00042)` | `JsonTology.prototype.sameAs` — customer migration (ABox)                         | `sameAs` between two customer-individual nodes |
 | `sameAs(neverending-1979-thienemann, oclc/5705614)` | `JsonTology.prototype.sameAs` — cross-catalog rare-book identity (ABox)    | `sameAs` between two book-individual nodes |

@@ -8,7 +8,7 @@
  */
 
 import {
-  Compose, Hash, JsonTology, Value
+  Compose, Hash, JsonTology, Transform, Value
 } from '../src/index.js';
 import type {
   EnumValuesType, InferType, LooseInputType
@@ -83,7 +83,9 @@ if (jt.is(PersonSchema.$id, incoming)) {
 // Branded types — Mbox is branded, not a plain string
 // ---------------------------------------------------------------------------
 
-const mbox = jt.instantiate(MboxSchema.$id, 'alice@example.org') as Mbox;
+// MboxSchema is not a top-level registry schema, so instantiate by passing the
+// schema object (it auto-registers) rather than a schema-ID string.
+const mbox = jt.instantiate(MboxSchema, 'alice@example.org');
 
 console.log('\n--- Branded Mbox ---');
 console.log('Mbox:', mbox);
@@ -92,8 +94,21 @@ console.log('Mbox:', mbox);
 // Transform roundtrip — parse yields Date, encode yields string
 // ---------------------------------------------------------------------------
 
-const date = jt.instantiate(DateTimeSchema.$id, '2026-03-15T12:00:00.000Z') as unknown;
-const wire = jt.encode(DateTimeSchema, date);
+// Attach decode/encode so the schema is a TransformedType — decode yields a
+// Date, encode yields the ISO string. Registered via the schema object.
+const DateTimeTransform = Transform.create(DateTimeSchema, {
+  'decode': (isoString) => {
+    return new Date(isoString);
+  },
+  'encode': (dateValue: Date) => {
+    return dateValue.toISOString();
+  }
+});
+
+jt.set(DateTimeTransform);
+
+const date = jt.instantiate(DateTimeTransform, '2026-03-15T12:00:00.000Z');
+const wire = jt.encode(DateTimeTransform, date);
 
 console.log('\n--- Transform roundtrip ---');
 if (date instanceof Date) {
@@ -107,11 +122,14 @@ console.log('Encoded back:', wire);
 // Composed schemas
 // ---------------------------------------------------------------------------
 
-const personName = jt.instantiate(PersonName.$id, {
+// PersonName and PatchPerson are derived schemas registered at runtime, so
+// they are not part of the registry's compile-time schema-ID union — pass the
+// schema objects.
+const personName = jt.instantiate(PersonName, {
   'familyName': 'Jones',
   'givenName': 'Bob'
 });
-const patch = jt.instantiate(PatchPerson.$id, { 'givenName': 'Robert' });
+const patch = jt.instantiate(PatchPerson, { 'givenName': 'Robert' });
 
 console.log('\n--- Composed schemas ---');
 console.log('PersonName:', personName);
@@ -151,6 +169,7 @@ type Rating = InferType<typeof RatingSchema>;
 
 // EnumValuesType extracts enum members as a union
 const StatusSchema = {
+  '$id': 'http://xmlns.com/foaf/0.1/Status',
   'enum': [
     'active',
     'inactive',

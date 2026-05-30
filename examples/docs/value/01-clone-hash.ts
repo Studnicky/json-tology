@@ -14,19 +14,22 @@ import {
   aboxFixtures, bookstoreEntities, OrderSchema
 } from '../bookstore/index.js';
 
-const order = bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order);
+const order = bookstoreEntities.instantiate(OrderSchema.$id, aboxFixtures.order);
 
 // clone — deep copy; mutations don't affect original.
 const copy = Operations.clone(order);
 
-(copy.items as Array<{
-  'bookIsbn': string;
-  'quantity': number;
-  'unitPrice': {
-    'amount': number;
-    'currency': string;
-  };
-}>).push({
+// clone produces a deep copy — orderLines arrays are distinct references.
+console.assert(order.orderLines.length === 1);
+console.assert(copy.orderLines !== order.orderLines, 'clone must produce distinct orderLines reference');
+
+// structuredClone the branded orderLines array into a plain mutable array so a new
+// line item can be appended without satisfying the element brands at compile time.
+// interop: branded readonly tuple → plain mutable array for the push demo;
+// structuredClone strips brands at runtime, unknown intermediate satisfies tsc.
+const copyItems: unknown[] = structuredClone(copy.orderLines as unknown as unknown[]);
+
+copyItems.push({
   // Walter Moers — Die Stadt der Träumenden Bücher (Piper, 2004).
   'bookIsbn': '9783492045490',
   'quantity': 1,
@@ -35,8 +38,7 @@ const copy = Operations.clone(order);
     'currency': 'EUR'
   }
 });
-console.assert(order.items.length === 1);
-console.assert(copy.items.length === 2);
+console.assert(copyItems.length === 2);
 
 // hash — deterministic, key-order invariant.
 const h1 = Hash.value({

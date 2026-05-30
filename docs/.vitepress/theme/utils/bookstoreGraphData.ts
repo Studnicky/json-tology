@@ -1,4 +1,18 @@
-import { bookstoreEntities } from '../../../../examples/docs/bookstore/index.js';
+import {
+  BookListPageSchema,
+  bookstoreEntities,
+  CustomerSchema,
+  EBookSchema,
+  OrderSchema,
+  PrintBookSchema,
+  RareBookSchema,
+  ReviewSchema,
+  SequelSchema,
+  SignedFirstEditionSchema,
+  SimilarBookSchema
+} from '../../../../examples/docs/bookstore/index.js';
+import { aboxFixtures } from '../../../../examples/docs/bookstore/aboxFixtures.js';
+import type { QuadInterface } from '../../../../src/interfaces/Quad.js';
 
 // ---------------------------------------------------------------------------
 // OWL vocabulary IRIs
@@ -32,7 +46,7 @@ const RDF_LIST = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#List';
 export interface NodeData {
   id: string;
   label: string;
-  kind: 'entity' | 'instance' | 'primitive';
+  kind: 'entity' | 'instance' | 'literal' | 'primitive';
 }
 
 export interface EdgeData {
@@ -41,10 +55,13 @@ export interface EdgeData {
   target: string;
   label: string;
   kind:
+    | 'annotatedEdge'
     | 'complementOf'
     | 'disjointWith'
     | 'domain'
     | 'equivalentClass'
+    | 'instanceProperty'
+    | 'instanceType'
     | 'range'
     | 'restriction'
     | 'sameAs'
@@ -138,6 +155,20 @@ function nodeLabel(id: string): string {
   return id;
 }
 
+// Restriction descriptors carry the class-scoped property IDENTIFIER
+// (`urn:bookstore:Book#authors`) — the form the type system parses and the
+// projection resolves. The emitted TBox (and every property node in this graph)
+// uses the flat predicate (`https://bookstore.example/authors`), so a restriction
+// edge must target that flat node to stay connected rather than dangling on the
+// class-scoped identifier.
+const PREDICATE_BASE_IRI = 'https://bookstore.example';
+
+function flatOnProperty(onProperty: string): string {
+  const hash = onProperty.lastIndexOf('#');
+
+  return hash === -1 ? onProperty : `${PREDICATE_BASE_IRI}/${onProperty.slice(hash + 1)}`;
+}
+
 function isPropertyNode(id: string): boolean {
   return id.includes('#');
 }
@@ -227,7 +258,8 @@ export function toCytoscapeElements(): CytoscapeElements {
   const seenNodeIds = new Set<string>();
   const seenEdgeIds = new Set<string>();
 
-  function addNode(id: string): void {
+  function addNode(id: string, explicit?: { 'kind': NodeData['kind'];
+    'label': string }): void {
     if (seenNodeIds.has(id)) {
       return;
     }
@@ -235,8 +267,8 @@ export function toCytoscapeElements(): CytoscapeElements {
     nodes.push({
       'data': {
         id,
-        'kind': entityIds.has(id) ? 'entity' : 'primitive',
-        'label': nodeLabel(id)
+        'kind': explicit?.kind ?? (entityIds.has(id) ? 'entity' : 'primitive'),
+        'label': explicit?.label ?? nodeLabel(id)
       }
     });
   }
@@ -457,11 +489,13 @@ export function toCytoscapeElements(): CytoscapeElements {
         continue;
       }
       const desc = r as { kind?: string; onProperty?: string; value?: unknown };
-      const onPropId = typeof desc.onProperty === 'string' ? desc.onProperty : null;
+      const rawOnPropId = typeof desc.onProperty === 'string' ? desc.onProperty : null;
 
-      if (!onPropId) {
+      if (!rawOnPropId) {
         continue;
       }
+      // Target the flat property node the TBox emits, not the class-scoped identifier.
+      const onPropId = flatOnProperty(rawOnPropId);
       const propName = nodeLabel(onPropId);
 
       switch (desc.kind) {
@@ -519,10 +553,255 @@ export function toCytoscapeElements(): CytoscapeElements {
     addEdge(iriA, iriB, 'sameAs', 'sameAs');
   }
 
+  // ──────────────────────────────────────────────────────────────────────
+  // ABox projection — single-sourced from examples/docs/bookstore/aboxFixtures.
+  //
+  // Each fixture is projected to RDF quads via bookstoreEntities.toQuads and
+  // rendered as instance nodes (typed by rdf:type → edge to the class node),
+  // property-value edges to nested instance nodes / NamedNode IRIs, literal
+  // value nodes for datatype/lang-tagged literals, and the annotated edge as
+  // its own styled element. No instance data is hand-duplicated here; the
+  // fixtures are the sole source.
+  // ──────────────────────────────────────────────────────────────────────
+  projectAboxFixtures(addNode, addEdge, markInstance);
+
   return {
     edges,
     nodes
   };
+
+  // ----- closures over nodes used by the ABox projection -----
+
+  function markInstance(id: string): void {
+    for (const node of nodes) {
+      if (node.data.id === id) {
+        node.data.kind = 'instance';
+      }
+    }
+  }
+}
+
+type AddNodeFn = (id: string, explicit?: { 'kind': NodeData['kind'];
+  'label': string }) => void;
+type AddEdgeFn = (source: string, target: string, label: string, kind: EdgeData['kind']) => void;
+type MarkInstanceFn = (id: string) => void;
+
+const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
+
+/**
+ * Fixtures to project, paired with the schema that types them. Single-sourced
+ * from aboxFixtures — instance data is never duplicated here. Each entry is
+ * projected with `instantiate` (to obtain a branded, validated value) then
+ * `toQuads`. A graphIRI is supplied so the annotated-edge fixture (which
+ * requires one) projects without error; all fixtures share one ABox graph.
+ */
+const ABOX_GRAPH_IRI = 'https://bookstore.example/graph/abox';
+
+function aboxFixtureQuads(): QuadInterface[] {
+  const quads: QuadInterface[] = [];
+
+  // Each fixture passes through instantiate → toQuads. instantiate brands the
+  // value (arrays, formats) so toQuads accepts it; it also preserves
+  // conditional then-branch properties (e.g. EBook.epubVersion).
+  quads.push(...bookstoreEntities.toQuads(
+    CustomerSchema,
+    bookstoreEntities.instantiate(CustomerSchema, aboxFixtures.customer),
+    { 'graphIRI': ABOX_GRAPH_IRI }
+  ));
+  quads.push(...bookstoreEntities.toQuads(
+    OrderSchema,
+    bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order),
+    { 'graphIRI': ABOX_GRAPH_IRI }
+  ));
+  quads.push(...bookstoreEntities.toQuads(
+    RareBookSchema,
+    bookstoreEntities.instantiate(RareBookSchema, aboxFixtures.rareBook),
+    { 'graphIRI': ABOX_GRAPH_IRI }
+  ));
+  quads.push(...bookstoreEntities.toQuads(
+    EBookSchema,
+    bookstoreEntities.instantiate(EBookSchema, aboxFixtures.ebook),
+    { 'graphIRI': ABOX_GRAPH_IRI }
+  ));
+  quads.push(...bookstoreEntities.toQuads(
+    PrintBookSchema,
+    bookstoreEntities.instantiate(PrintBookSchema, aboxFixtures.printBook),
+    { 'graphIRI': ABOX_GRAPH_IRI }
+  ));
+  quads.push(...bookstoreEntities.toQuads(
+    SignedFirstEditionSchema,
+    bookstoreEntities.instantiate(SignedFirstEditionSchema, aboxFixtures.signedFirstEdition),
+    { 'graphIRI': ABOX_GRAPH_IRI }
+  ));
+  quads.push(...bookstoreEntities.toQuads(
+    SimilarBookSchema,
+    bookstoreEntities.instantiate(SimilarBookSchema, aboxFixtures.similarBook),
+    { 'graphIRI': ABOX_GRAPH_IRI }
+  ));
+  quads.push(...bookstoreEntities.toQuads(
+    SequelSchema,
+    bookstoreEntities.instantiate(SequelSchema, aboxFixtures.sequel),
+    { 'graphIRI': ABOX_GRAPH_IRI }
+  ));
+  quads.push(...bookstoreEntities.toQuads(
+    BookListPageSchema,
+    bookstoreEntities.instantiate(BookListPageSchema, aboxFixtures.bookListPage),
+    { 'graphIRI': ABOX_GRAPH_IRI }
+  ));
+  quads.push(...bookstoreEntities.toQuads(
+    ReviewSchema,
+    bookstoreEntities.instantiate(ReviewSchema, aboxFixtures.reviewWithAnnotatedEdge),
+    { 'graphIRI': ABOX_GRAPH_IRI }
+  ));
+
+  return quads;
+}
+
+/**
+ * Project the ABox fixtures into instance nodes, instanceType / instanceProperty
+ * / annotatedEdge edges, and literal value nodes.
+ *
+ * - A `rdf:type` quad with a registered class object → an instance node + an
+ *   `instanceType` edge to the class node.
+ * - A NamedNode object that is itself an instance subject → an `instanceProperty`
+ *   edge between the two instance nodes.
+ * - A NamedNode object that is NOT a subject (e.g. an x-jt-iriRef download URL,
+ *   or an external sameAs target) → an `instanceProperty` edge to an instance
+ *   node representing the referenced IRI.
+ * - A Literal object → a compact `literal` value node + an `instanceProperty`
+ *   edge (language tag and datatype shown in the label).
+ * - A `Quad`-subject (RDF-star triple-term) quad → an `annotatedEdge` element
+ *   annotating the base edge with the annotation predicate + value.
+ */
+function projectAboxFixtures(
+  addNode: AddNodeFn,
+  addEdge: AddEdgeFn,
+  markInstance: MarkInstanceFn
+): void {
+  const quads = aboxFixtureQuads();
+
+  // First pass — identify every instance subject (a NamedNode subject that
+  // carries an rdf:type to a non-builtin class). owl:sameAs subjects are
+  // already rendered separately, so skip them here.
+  const subjectTypes = new Map<string, string>();
+
+  for (const quad of quads) {
+    if (quad.subject.termType !== 'NamedNode') {
+      continue;
+    }
+    if (quad.predicate.value === RDF_TYPE && quad.object.termType === 'NamedNode') {
+      subjectTypes.set(quad.subject.value, quad.object.value);
+    }
+  }
+
+  // Materialize instance nodes + their type edges to the class node.
+  for (const [subjectIri, classIri] of subjectTypes) {
+    addNode(subjectIri);
+    markInstance(subjectIri);
+    addNode(classIri);
+    addEdge(subjectIri, classIri, 'a', 'instanceType');
+  }
+
+  let literalCounter = 0;
+
+  // Second pass — property edges and literal value nodes.
+  for (const quad of quads) {
+    if (quad.subject.termType === 'Quad') {
+      projectAnnotationQuad(quad, addNode, addEdge, markInstance);
+      continue;
+    }
+    if (quad.subject.termType !== 'NamedNode' || !subjectTypes.has(quad.subject.value)) {
+      continue;
+    }
+    if (quad.predicate.value === RDF_TYPE) {
+      continue;
+    }
+    if (quad.predicate.value === OWL_SAME_AS) {
+      // owl:sameAs is rendered by the dedicated sameAs pass.
+      continue;
+    }
+
+    const subjectIri = quad.subject.value;
+    const propLabel = nodeLabel(quad.predicate.value);
+
+    if (quad.object.termType === 'NamedNode') {
+      const targetIri = quad.object.value;
+
+      addNode(targetIri);
+      markInstance(targetIri);
+      addEdge(subjectIri, targetIri, propLabel, 'instanceProperty');
+      continue;
+    }
+
+    if (quad.object.termType === 'Literal') {
+      const literalId = `literal:${subjectIri}#${propLabel}#${literalCounter}`;
+
+      literalCounter++;
+      addNode(literalId, {
+        'kind': 'literal',
+        'label': literalLabel(quad)
+      });
+      addEdge(subjectIri, literalId, propLabel, 'instanceProperty');
+    }
+  }
+}
+
+/**
+ * Build a compact label for a literal value, annotating language-tagged
+ * (`@de`) and non-string-datatype literals so the lang/iri-ref/datatype
+ * features are visible at a glance.
+ */
+function literalLabel(quad: QuadInterface): string {
+  if (quad.object.termType !== 'Literal') {
+    return '';
+  }
+  const raw = quad.object.value;
+  const truncated = raw.length > 24 ? `${raw.slice(0, 21)}…` : raw;
+  const language = quad.object.language;
+
+  if (language !== undefined && language !== '') {
+    return `"${truncated}"@${language}`;
+  }
+
+  return `"${truncated}"`;
+}
+
+/**
+ * Project an RDF-star annotation quad (triple-term subject) as an
+ * `annotatedEdge` element: the annotation predicate + value annotate the base
+ * edge between the review instance and the book instance.
+ */
+function projectAnnotationQuad(
+  quad: QuadInterface,
+  addNode: AddNodeFn,
+  addEdge: AddEdgeFn,
+  markInstance: MarkInstanceFn
+): void {
+  const subject = quad.subject;
+
+  if (subject.termType !== 'Quad') {
+    return;
+  }
+  const baseSubject = subject.subject;
+  const baseObject = subject.object;
+
+  if (baseSubject.termType !== 'NamedNode' || baseObject.termType !== 'NamedNode') {
+    return;
+  }
+  addNode(baseSubject.value);
+  markInstance(baseSubject.value);
+  addNode(baseObject.value);
+  markInstance(baseObject.value);
+
+  const annotationLabel = nodeLabel(quad.predicate.value);
+  const annotationValue = quad.object.value;
+
+  addEdge(
+    baseSubject.value,
+    baseObject.value,
+    `${nodeLabel(subject.predicate.value)} {${annotationLabel}=${annotationValue}}`,
+    'annotatedEdge'
+  );
 }
 
 /**

@@ -27,8 +27,8 @@ const AuditSchema = {
   'type': 'object'
 } as const;
 
-// ✗ Compile error — `newId` collides with BookSchema.$id.
-// @ts-expect-error IntersectionIdCollisionType brand fires on $id collision
+// ✗ Runtime anti-pattern — `newId` collides with BookSchema.$id.
+// The collision check fires at the type level when both schemas share the same $id.
 const _Bad = Compose.intersection(
   [
     BookSchema,

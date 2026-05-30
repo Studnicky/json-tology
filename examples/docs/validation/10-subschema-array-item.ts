@@ -3,7 +3,7 @@
  *
  * `subschemaAt` walks the JSON Pointer into the canonical OrderSchema
  * and returns the OrderLine schema reachable at
- * `/properties/items/items`. The Bastian-ordered fixture's first line
+ * `/properties/orderLines/items`. The Bastian-ordered fixture's first line
  * round-trips cleanly through that subschema.
  */
 
@@ -18,14 +18,14 @@ const jt = createBookstoreDocRegistry();
 
 const orderLineSubschema = jt.subschemaAt(
   OrderSchema.$id,
-  '/properties/items/items'
+  '/properties/orderLines/items'
 );
 
 const line = jt.instantiate(
   orderLineSubschema,
-  aboxFixtures.order.items[0]
+  aboxFixtures.order.orderLines[0]
 ) as { 'bookIsbn': string;
   'quantity': number };
 
-console.assert(line.bookIsbn === aboxFixtures.order.items[0].bookIsbn);
-console.assert(line.quantity === aboxFixtures.order.items[0].quantity);
+console.assert(line.bookIsbn === aboxFixtures.order.orderLines[0].bookIsbn);
+console.assert(line.quantity === aboxFixtures.order.orderLines[0].quantity);

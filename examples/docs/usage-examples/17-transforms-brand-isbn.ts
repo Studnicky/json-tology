@@ -30,14 +30,14 @@ const BrandedIsbnBase = Compose.equivalent(
   { '$id': 'https://bookstore.example/BrandedIsbn' } as const
 );
 
-jt.set(BrandedIsbnBase);
+const jt2 = jt.set(BrandedIsbnBase);
 
 const BrandedIsbnSchema = Transform.brand(BrandedIsbnBase, 'BrandedIsbn');
 
 type BrandedIsbn = BrandedType<string, 'BrandedIsbn'>;
 
 const wire = aboxFixtures.rareBook.isbn;
-const decoded = jt.instantiate(BrandedIsbnBase.$id, wire) as BrandedIsbn;
+const decoded = jt2.instantiate(BrandedIsbnBase.$id, wire) as BrandedIsbn;
 
 console.assert(typeof decoded === 'string');
 console.assert((decoded as unknown as string) === wire);

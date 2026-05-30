@@ -21,14 +21,14 @@ const DraftReviewSchema = Compose.partial(
   'https://bookstore.example/DraftReview'
 );
 
-jt.set(DraftReviewSchema);
+const jt2 = jt.set(DraftReviewSchema);
 
 // An empty draft passes — every field is optional.
-const empty = jt.validate(DraftReviewSchema.$id, {});
+const empty = jt2.validate(DraftReviewSchema.$id, {});
 
 console.assert(empty.ok);
 
 // A partial draft also passes.
-const partial = jt.validate(DraftReviewSchema.$id, { 'rating': 4 });
+const partial = jt2.validate(DraftReviewSchema.$id, { 'rating': 4 });
 
 console.assert(partial.ok);

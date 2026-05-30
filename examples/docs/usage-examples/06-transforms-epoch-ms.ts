@@ -29,7 +29,7 @@ const TimestampSchema = {
 
 jt.set(TimestampSchema);
 
-Transform.create<typeof TimestampSchema, Date>(TimestampSchema, {
+const TimestampTransform = Transform.create<typeof TimestampSchema, Date>(TimestampSchema, {
   'decode': (wire) => {
     return new Date(wire);
   },
@@ -39,7 +39,7 @@ Transform.create<typeof TimestampSchema, Date>(TimestampSchema, {
 });
 
 const wireMs = new Date(aboxFixtures.order.placedAt).getTime();
-const decoded = jt.instantiate(TimestampSchema, wireMs);
+const decoded = jt.instantiate(TimestampTransform, wireMs);
 
 if (!(decoded instanceof Date)) {
   throw new TypeError('Timestamp transform did not return a Date');
@@ -47,6 +47,6 @@ if (!(decoded instanceof Date)) {
 
 console.assert(decoded.getUTCFullYear() === 2026);
 
-const reEncoded = jt.encode(TimestampSchema, decoded);
+const reEncoded = jt.encode(TimestampTransform, decoded);
 
 console.assert(reEncoded === wireMs);

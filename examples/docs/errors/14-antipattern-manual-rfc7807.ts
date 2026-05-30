@@ -21,6 +21,10 @@ if (!errs.ok) {
     'type': 'validation-error'
   };
 
+  // The manual shape above is intentionally unused — it exists only to
+  // contrast with the report() call below. void marks it as deliberate.
+  void _problemWrong;
+
   // Correct approach: use report() for RFC 7807 compliance
   const problem = errs.report({ 'instance': '/reviews' });
 

@@ -12,10 +12,16 @@
  */
 
 import type {
+  bookstoreSchemas,
   CustomerSchema, EBookSchema, InPrintBookSchema, OutOfPrintBookSchema,
   PrintBookSchema, PrintStatusSchema, RareBookSchema, SignedFirstEditionSchema
 } from '../../examples/docs/bookstore/index.js';
-import type { InferType } from '../../src/types/index.js';
+import type {
+  InferType, SchemaReferencesMapType
+} from '../../src/types/index.js';
+
+/** Ref map so $ref properties resolve to their named primitive types. */
+type BookstoreRefs = SchemaReferencesMapType<typeof bookstoreSchemas>;
 
 type AssertEqualType<TLeft, TRight>
   = [TLeft] extends [TRight] ? [TRight] extends [TLeft] ? true : false : false;
@@ -28,28 +34,31 @@ function assert<T extends true>(): void {
 // PrintStatus is the closed enum 'inPrint' | 'outOfPrint' | 'limitedRun'.
 // ---------------------------------------------------------------------------
 
-type PrintStatus = InferType<typeof PrintStatusSchema>;
+type PrintStatus = InferType<typeof PrintStatusSchema, BookstoreRefs>;
 
 assert<AssertEqualType<PrintStatus, 'inPrint' | 'limitedRun' | 'outOfPrint'>>();
 
 // ---------------------------------------------------------------------------
-// Customer.id carries the inverseFunctional brand and is required.
+// Customer.customerId carries the inverseFunctional brand and is required.
+// customerId resolves to FormatBrandInterface<'uuid'> & string via BookstoreRefs.
 // ---------------------------------------------------------------------------
 
-type Customer = InferType<typeof CustomerSchema>;
+type Customer = InferType<typeof CustomerSchema, BookstoreRefs>;
 
-assert<AssertEqualType<Customer['id'] extends string ? true : false, true>>();
-assert<AssertEqualType<undefined extends Customer['id'] ? true : false, false>>();
+assert<AssertEqualType<Customer['customerId'] extends string ? true : false, true>>();
+assert<AssertEqualType<undefined extends Customer['customerId'] ? true : false, false>>();
 
 // ---------------------------------------------------------------------------
 // PrintBook disjointWith EBook — no value can satisfy both.
 // ---------------------------------------------------------------------------
 
-type PrintBook = InferType<typeof PrintBookSchema>;
-type EBook = InferType<typeof EBookSchema>;
+type PrintBook = InferType<typeof PrintBookSchema, BookstoreRefs>;
+type EBook = InferType<typeof EBookSchema, BookstoreRefs>;
 
 // PrintBook has `binding`, EBook has `fileFormat` — the discriminating
 // required fields make the intersection structurally distinct.
+// binding resolves to 'hardcover' | 'paperback' (BindingType enum via refs).
+// fileFormat resolves to the EBookFormat enum string via refs.
 assert<AssertEqualType<PrintBook['binding'] extends string ? true : false, true>>();
 assert<AssertEqualType<EBook['fileFormat'] extends string ? true : false, true>>();
 
@@ -58,8 +67,9 @@ assert<AssertEqualType<EBook['fileFormat'] extends string ? true : false, true>>
 // adding firstEditionYear and estimatedAgeYears.
 // ---------------------------------------------------------------------------
 
-type RareBook = InferType<typeof RareBookSchema>;
+type RareBook = InferType<typeof RareBookSchema, BookstoreRefs>;
 
+// firstEditionYear resolves to a positive integer type via refs.
 assert<AssertEqualType<RareBook['firstEditionYear'] extends number ? true : false, true>>();
 // RareBook inherits binding (PrintBook) and printStatus (Book).
 assert<AssertEqualType<RareBook['binding'] extends string ? true : false, true>>();
@@ -70,8 +80,9 @@ assert<AssertEqualType<RareBook['printStatus'] extends PrintStatus ? true : fals
 // keeps every RareBook field.
 // ---------------------------------------------------------------------------
 
-type SignedFirstEdition = InferType<typeof SignedFirstEditionSchema>;
+type SignedFirstEdition = InferType<typeof SignedFirstEditionSchema, BookstoreRefs>;
 
+// signedBy resolves to a string (PersonName) via refs.
 assert<AssertEqualType<SignedFirstEdition['signedBy'] extends string ? true : false, true>>();
 assert<AssertEqualType<SignedFirstEdition['firstEditionYear'] extends number ? true : false, true>>();
 assert<AssertEqualType<SignedFirstEdition['printStatus'] extends PrintStatus ? true : false, true>>();
@@ -81,8 +92,8 @@ assert<AssertEqualType<SignedFirstEdition['printStatus'] extends PrintStatus ? t
 // the Book printStatus field through their allOf chain.
 // ---------------------------------------------------------------------------
 
-type InPrintBook = InferType<typeof InPrintBookSchema>;
-type OutOfPrintBook = InferType<typeof OutOfPrintBookSchema>;
+type InPrintBook = InferType<typeof InPrintBookSchema, BookstoreRefs>;
+type OutOfPrintBook = InferType<typeof OutOfPrintBookSchema, BookstoreRefs>;
 
 assert<AssertEqualType<InPrintBook['printStatus'] extends PrintStatus ? true : false, true>>();
 assert<AssertEqualType<OutOfPrintBook['printStatus'] extends PrintStatus ? true : false, true>>();

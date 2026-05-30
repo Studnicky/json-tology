@@ -27,21 +27,21 @@ const PrimaryIsbnSchema = Compose.equivalent(IsbnSchema, {
   'description': 'The canonical ISBN used for catalog lookup and ordering.'
 } as const);
 
-jt.set(PrimaryIsbnSchema);
+const jt2 = jt.set(PrimaryIsbnSchema);
 
 // The canonical Bastian-ordered ISBN validates against both schemas.
 const isbn = aboxFixtures.rareBook.isbn;
 
-const sourceErrs = jt.validate(IsbnSchema.$id, isbn);
-const aliasErrs = jt.validate(PrimaryIsbnSchema.$id, isbn);
+const sourceErrs = jt2.validate(IsbnSchema.$id, isbn);
+const aliasErrs = jt2.validate(PrimaryIsbnSchema.$id, isbn);
 
 console.assert(sourceErrs.length === 0);
 console.assert(aliasErrs.length === 0);
 
 // A malformed ISBN fails identically through both names.
 const badIsbn = 'not-an-isbn';
-const sourceBad = jt.validate(IsbnSchema.$id, badIsbn);
-const aliasBad = jt.validate(PrimaryIsbnSchema.$id, badIsbn);
+const sourceBad = jt2.validate(IsbnSchema.$id, badIsbn);
+const aliasBad = jt2.validate(PrimaryIsbnSchema.$id, badIsbn);
 
 console.assert(sourceBad.length === aliasBad.length);
 console.assert(sourceBad.length > 0);

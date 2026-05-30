@@ -17,7 +17,10 @@ import type {
 import type { InferType } from '../../../src/types/index.js';
 import type { LoggerInterface } from '../../../src/interfaces/index.js';
 
+// InferType is generic — apply it to a sample schema to verify the import.
+type SampleInferred = InferType<{ readonly 'type': 'string' }>;
+
 void 0 as unknown as [
   JsonTology, Compose, Transform, Value, V, Hash, Changeset,
-  SchemaRegistry, FormatRegistry, InferType, LoggerInterface
+  SchemaRegistry, FormatRegistry, SampleInferred, LoggerInterface
 ];

@@ -43,11 +43,10 @@ const AuditedOrderSchema = Compose.intersection(
   'https://bookstore.example/AuditedOrderFails'
 );
 
-jt.set(AuditSchema);
-jt.set(AuditedOrderSchema);
+const jt2 = jt.set(AuditSchema).set(AuditedOrderSchema);
 
 // Missing createdAt and updatedAt — fails AuditSchema constraints.
-const errors = jt.validate(AuditedOrderSchema.$id, aboxFixtures.order);
+const errors = jt2.validate(AuditedOrderSchema.$id, aboxFixtures.order);
 
 console.assert(!errors.ok);
 console.assert(errors.length > 0);

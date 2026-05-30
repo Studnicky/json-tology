@@ -1,14 +1,18 @@
 import type { DuplicateSchemaIdInterface } from './TypeErrors.js';
 import type { ParseOutputType } from './Transform.js';
 
-/** Build a cross-schema references map: `{ [$id]: SchemaType }` for $ref resolution. */
-
+/** Build a cross-schema references map: `{ [$id]: SchemaType }` for $ref resolution.
+ *
+ *  Constructed as a single mapped type over the tuple's element union rather
+ *  than by head/tail recursion. Recursion depth is O(1) in the number of
+ *  schemas, so the map scales to large ontologies/registries without tripping
+ *  TypeScript's instantiation-depth ceiling (TS2589) when forced. Values are
+ *  the raw schema types — `$ref` resolution infers them on demand, so traversal
+ *  cost is bounded by ref-chain depth, not registry size. */
 export type SchemaReferencesMapType<T extends readonly unknown[]>
-  = T extends readonly [infer First, ...infer Rest]
-    ? First extends { readonly '$id': infer Id extends string }
-      ? Record<Id, First> & SchemaReferencesMapType<Rest>
-      : SchemaReferencesMapType<Rest>
-    : Record<never, never>;
+  = {
+    [K in T[number] as K extends { readonly '$id': infer Id extends string } ? Id : never]: K
+  };
 
 /** Extract `{ [$id]: ParseOutputType<T> }` from a single schema.
  *  Uses ParseOutputType so that transformed schemas map to the decoded type
@@ -34,39 +38,85 @@ export type SchemaMapFromTupleType<
   T extends readonly unknown[],
   TRefs = SchemaReferencesMapType<T>
 >
-  = T extends readonly [infer First, ...infer Rest]
-    ? SchemaEntryType<First, TRefs>
-      & SchemaMapFromTupleType<Rest, TRefs>
-    : Record<never, never>;
+  = {
+    [K in T[number] as K extends { readonly '$id': infer Id extends string } ? Id : never]:
+    ParseOutputType<K, TRefs>
+  };
+
+/** Per-position `$id` projection of a schema tuple. Mapped over the tuple's
+ *  index keys (depth O(1)); `never` at positions without a string `$id`. */
+type SchemaIdsTupleType<T extends readonly unknown[]>
+  = { [I in keyof T]: T[I] extends { readonly '$id': infer Id extends string } ? Id : never };
+
+/** Distributive `$id` projection of a single schema element. Written as a naked
+ *  type parameter so the conditional distributes over a union *and* collapses to
+ *  `never` for the `never` member — the property that makes {@link IdsUnionType}
+ *  correct for empty sub-tuples. */
+type IdOfType<TElement>
+  = TElement extends { readonly '$id': infer Id extends string } ? Id : never;
+
+/** Union of `$id`s present in a sub-tuple. Distributes over the element union via
+ *  {@link IdOfType}, so depth is O(1) regardless of sub-tuple length.
+ *
+ *  For an empty tuple `T[number]` is `never`; distributing `IdOfType` over the
+ *  empty union yields `never`. A non-distributive
+ *  `T[number] extends … ? Id : never` would instead vacuously match (`never`
+ *  satisfies every constraint) and resolve `Id` to its `string` upper bound,
+ *  contaminating any downstream `IdsUnionType<[]> & TSeen` with `TSeen`. */
+type IdsUnionType<T extends readonly unknown[]>
+  = IdOfType<T[number]>;
+
+/** Duplicate `$id`s within a SMALL chunk (≤ 8): the N×N position scan is bounded
+ *  to the chunk size, so this is cheap. Both directions of `extends` must hold
+ *  so the wide `string` type never falsely matches a string literal. */
+type ChunkDuplicateIdsType<TIds extends readonly unknown[]>
+  = {
+    [I in keyof TIds]: {
+      [J in keyof TIds]: J extends I ? never
+        : [TIds[J]] extends [TIds[I]] ? [TIds[I]] extends [TIds[J]] ? TIds[I] : never : never
+    }[number]
+  }[number];
+
+/** Collect every `$id` that appears at more than one position, by folding the
+ *  tuple eight elements per recursion frame.
+ *
+ *  Recursion depth is ⌈N/8⌉ rather than N, so detection scales to large
+ *  ontology registries without tripping TypeScript's instantiation ceiling
+ *  (TS2589). Each frame contributes, as a union: ids duplicated *within* the
+ *  current 8-element chunk, plus ids shared *between* the chunk and the ids
+ *  already seen (`IdsUnionType<chunk> & TSeen`); recursion then continues over
+ *  the remainder with the seen-set widened. Duplicate ids accumulate as a plain
+ *  union — no nested conditional dispatch. */
+type DuplicateIdsType<T extends readonly unknown[], TSeen = never>
+  = T extends readonly [
+    infer A, infer B, infer C, infer D, infer E, infer F, infer G, infer H, ...infer Rest
+  ]
+    ? ChunkDuplicateIdsType<SchemaIdsTupleType<[A, B, C, D, E, F, G, H]>>
+      | DuplicateIdsType<Rest, IdsUnionType<[A, B, C, D, E, F, G, H]> | TSeen>
+      | (IdsUnionType<[A, B, C, D, E, F, G, H]> & TSeen)
+    : ChunkDuplicateIdsType<SchemaIdsTupleType<T>> | (IdsUnionType<T> & TSeen);
 
 /** True when a tuple contains two or more schemas with the same `$id`. */
-type HasDuplicateIdsType<T extends readonly unknown[], TSeen = never>
-  = T extends readonly [infer First, ...infer Rest]
-    ? First extends { readonly '$id': infer Id extends string }
-      ? Id extends TSeen ? true : HasDuplicateIdsType<Rest, Id | TSeen>
-      : HasDuplicateIdsType<Rest, TSeen>
-    : false;
+type HasDuplicateIdsType<T extends readonly unknown[]>
+  = [DuplicateIdsType<T>] extends [never] ? false : true;
 
-/** Collect `$id` values that appear more than once in a tuple. */
-type DuplicateIdsType<T extends readonly unknown[], TSeen = never, TDupes = never>
-  = T extends readonly [infer First, ...infer Rest]
-    ? First extends { readonly '$id': infer Id extends string }
-      ? Id extends TSeen
-        ? DuplicateIdsType<Rest, TSeen, Id | TDupes>
-        : DuplicateIdsType<Rest, Id | TSeen, TDupes>
-      : DuplicateIdsType<Rest, TSeen, TDupes>
-    : TDupes;
+/** Homomorphic projection: brand positions whose `$id` is a duplicate. */
+type BrandedDuplicatesType<T extends readonly unknown[]>
+  = { readonly [I in keyof T]: T[I] extends { readonly '$id': infer Id extends string }
+    ? Id extends DuplicateIdsType<T> ? DuplicateSchemaIdInterface<Id> : T[I]
+    : T[I]
+  };
 
 /** Enforces unique `$id` values across a schema tuple at compile time.
  *
- *  When two or more entries share an `$id`, the offending tuple slots are
- *  branded with `DuplicateSchemaIdInterface<TId>`. Assignment fails at
- *  compile time and the editor surfaces the duplicated IRI by name. */
+ *  Positions sharing a `$id` are branded with `DuplicateSchemaIdInterface<TId>`,
+ *  making the tuple incompatible with the expected parameter type and surfacing
+ *  the offending IRI in editor diagnostics. Detection uses the chunked fold in
+ *  {@link DuplicateIdsType}, so it scales to large registries. Dispatch is a
+ *  single indexed-access on the stringified `HasDuplicateIdsType` tag — no
+ *  conditional chain. */
 export type UniqueSchemaIdsType<T extends readonly unknown[]>
-  = true extends HasDuplicateIdsType<T>
-    ? { [K in keyof T]: T[K] extends { readonly '$id': infer Id extends string }
-      ? Id extends DuplicateIdsType<T>
-        ? DuplicateSchemaIdInterface<Id> & T[K] & { readonly '$id': `DUPLICATE $id: ${Id}` }
-        : T[K]
-      : T[K] }
-    : T;
+  = {
+    'false': T;
+    'true': BrandedDuplicatesType<T>;
+  }[`${HasDuplicateIdsType<T>}`];

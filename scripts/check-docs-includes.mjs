@@ -74,8 +74,17 @@ async function listMarkdownFiles(root) {
       const full = join(dir, entry.name);
 
       if (entry.isDirectory()) {
-        // Skip generated assets — they are not authored docs.
-        if (entry.name === '.vitepress' || entry.name === 'public' || entry.name === '_examples') {
+        // Skip generated assets and internal planning material — they are not
+        // authored user docs. `plans/` holds development planning artifacts
+        // (excluded from the published site via `srcExclude` in the VitePress
+        // config); its before/after code references removed/in-progress APIs
+        // and is not subject to the runnable-example invariant.
+        if (
+          entry.name === '.vitepress'
+          || entry.name === 'public'
+          || entry.name === '_examples'
+          || entry.name === 'plans'
+        ) {
           continue;
         }
         stack.push(full);

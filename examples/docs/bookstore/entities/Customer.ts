@@ -11,18 +11,18 @@ export const CustomerSchema = {
       'items': { '$ref': AddressSchema.$id },
       'type': 'array'
     },
-    'email': { '$ref': EmailSchema.$id },
     // inverseFunctional: true — each Customer ID (UUID) uniquely identifies at
     // most one Customer individual. No two distinct customers share the same id.
-    // OWL 2: owl:InverseFunctionalProperty on id.
-    'id': {
+    // OWL 2: owl:InverseFunctionalProperty on customerId.
+    'customerId': {
       '$ref': CustomerIdSchema.$id,
       'inverseFunctional': true
     },
+    'email': { '$ref': EmailSchema.$id },
     'name': { '$ref': CustomerNameSchema.$id }
   },
   'required': [
-    'id',
+    'customerId',
     'email',
     'name'
   ],

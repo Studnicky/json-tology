@@ -32,7 +32,16 @@ console.assert(errsPersonName.length === 0);
 console.assert(errsCustomerName.length === 0);
 console.assert(errsAuthorName.length === 0);
 
-// Three distinct IRIs — three class nodes in the TBox.
-console.assert(PersonNameSchema.$id !== CustomerNameSchema.$id);
-console.assert(PersonNameSchema.$id !== AuthorNameSchema.$id);
-console.assert(CustomerNameSchema.$id !== AuthorNameSchema.$id);
+// Three distinct IRIs — three class nodes in the TBox. Each `$id` is a
+// distinct string literal type, so distinctness is guaranteed at compile time:
+// `extends` between any pair resolves to `false`.
+type PersonVsCustomer = typeof PersonNameSchema.$id extends typeof CustomerNameSchema.$id ? false : true;
+type PersonVsAuthor = typeof PersonNameSchema.$id extends typeof AuthorNameSchema.$id ? false : true;
+type CustomerVsAuthor = typeof CustomerNameSchema.$id extends typeof AuthorNameSchema.$id ? false : true;
+const _distinctIds: [PersonVsCustomer, PersonVsAuthor, CustomerVsAuthor] = [
+  true,
+  true,
+  true
+];
+
+console.assert(_distinctIds.every(Boolean));

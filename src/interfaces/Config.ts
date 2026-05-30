@@ -6,6 +6,7 @@ import type { SnapshotInterface } from './Snapshot.js';
 import type { VocabularyPluginInterface } from './VocabularyPlugin.js';
 import type { BuiltinFormatNameType } from '../types/Format.js';
 import type { ComputedFnType } from '../types/Computed.js';
+import type { PredicateForType } from '../types/PredicateFor.js';
 import type { SkolemizeFnType } from '../types/Skolemize.js';
 
 export interface JsonTologyOptionsInterface<TSchemas extends readonly unknown[] = readonly unknown[]> {
@@ -22,6 +23,18 @@ export interface JsonTologyOptionsInterface<TSchemas extends readonly unknown[] 
    * without a per-call `graphIRI`.
    */
   readonly 'defaultGraphIRI'?: string;
+  /**
+   * When true (the default), property predicates are derived as flat shared
+   * IRIs (canonical form). Set to `false` to derive class-scoped
+   * `{classId}#{propertyName}` predicates instead, where each class owns its own
+   * predicate namespace. Analogous to `enableStrictGraph`: the default is the
+   * most interoperable option; the class-scoped form is for DTO bundles where two
+   * structurally-unrelated classes coincidentally share a property name and must
+   * keep distinct predicates.
+   *
+   * @default true
+   */
+  'enableCanonicalPredicates'?: boolean;
   'enableDebug'?: boolean;
   'enableDefaults'?: boolean;
   /**
@@ -81,6 +94,15 @@ export interface JsonTologyOptionsInterface<TSchemas extends readonly unknown[] 
    * exceeded. Defaults to no limit.
    */
   'maxSchemaDepth'?: number;
+  /**
+   * Vocabulary resolver returning a predicate IRI for a property. When the
+   * function returns a string, that IRI is used as the property's predicate
+   * across all projection contexts (ABox, TBox, SHACL). When `undefined` is
+   * returned, derivation falls through to the default logic. Analogous to the
+   * subject `iriFor` option: `iriFor` customises subject IRI minting,
+   * `predicateFor` customises predicate IRI derivation.
+   */
+  readonly 'predicateFor'?: PredicateForType;
   /**
    * Pre-resolved schema bundle produced by {@link JsonTology.prefetch}. Schemas
    * passed via `schemas` register first; entries from the snapshot then fill any

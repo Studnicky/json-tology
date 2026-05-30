@@ -22,20 +22,27 @@ type OrderWire = typeof aboxFixtures.order;
 
 class OrderWithToJson {
   declare public customerId: string;
-  declare public id: string;
-  declare public items: OrderWire['items'];
+  declare public orderId: string;
+  declare public orderLines: OrderWire['orderLines'];
+  declare public orderTotal: OrderWire['orderTotal'];
   declare public placedAt: OrderWire['placedAt'];
   declare public shippingAddress: OrderWire['shippingAddress'];
-  declare public total: OrderWire['total'];
 
-  public toJSON(): OrderWire {
+  public toJSON(): {
+    readonly 'customerId': string;
+    readonly 'orderId': string;
+    readonly 'orderLines': OrderWire['orderLines'];
+    readonly 'orderTotal': OrderWire['orderTotal'];
+    readonly 'placedAt': OrderWire['placedAt'];
+    readonly 'shippingAddress': OrderWire['shippingAddress'];
+  } {
     return {
       'customerId': this.customerId,
-      'id': this.id,
-      'items': this.items,
+      'orderId': this.orderId,
+      'orderLines': this.orderLines,
+      'orderTotal': this.orderTotal,
       'placedAt': this.placedAt,
-      'shippingAddress': this.shippingAddress,
-      'total': this.total
+      'shippingAddress': this.shippingAddress
     };
   }
 }
@@ -47,7 +54,7 @@ const ToJsonOrderSchema = Compose.equivalent(
 
 jt.set(ToJsonOrderSchema);
 
-Transform.create<typeof ToJsonOrderSchema, OrderWithToJson>(ToJsonOrderSchema, {
+const ToJsonOrderTransform = Transform.create<typeof ToJsonOrderSchema, OrderWithToJson>(ToJsonOrderSchema, {
   'decode': (plain) => {
     return Object.assign(Reflect.construct(OrderWithToJson, []), plain);
   },
@@ -57,13 +64,13 @@ Transform.create<typeof ToJsonOrderSchema, OrderWithToJson>(ToJsonOrderSchema, {
 });
 
 const hydrated = jt.instantiate(
-  ToJsonOrderSchema.$id,
+  ToJsonOrderTransform,
   aboxFixtures.order
-) as OrderWithToJson;
+);
 
-const wire = bookstoreEntities.encode(ToJsonOrderSchema, hydrated) as Record<string, unknown>;
+const wire = bookstoreEntities.encode(ToJsonOrderTransform, hydrated) as Record<string, unknown>;
 
-console.assert(wire.id === aboxFixtures.order.id);
+console.assert(wire.orderId === aboxFixtures.order.orderId);
 // JSON.stringify will use the same toJSON shape.
 const cloned: unknown = structuredClone(hydrated.toJSON());
 

@@ -110,7 +110,9 @@ console.log('Codegen output matches committed fixture (modulo timestamp): true')
 // Step 3: import committed generated registry and validate schema:Book instances
 // ---------------------------------------------------------------------------
 
-const generated = await import('../ontologies/generated/schema-org.generated.js') as {
+// interop: dynamic import() returns an opaque module type; the generated file's
+// exports are not visible to the static type system at this call site.
+const generated = await import('../ontologies/generated/schema-org.generated.js') as unknown as {
   'BookSchema': Record<string, unknown> & { '$id': string };
   'IsbnTypeSchema': Record<string, unknown> & { '$id': string };
   'OrganizationSchema': Record<string, unknown> & { '$id': string };
@@ -184,7 +186,10 @@ type IsbnType = InferType<{
   readonly 'type': 'string';
 }>;
 
-const isbnValue: IsbnType = '9783551551672';
+// interop: IsbnType carries a PatternBrandInterface brand; a plain string literal
+// cannot satisfy the brand without going through instantiate(). The cast
+// demonstrates the type narrows to string at the compile-time annotation level.
+const isbnValue: IsbnType = '9783551551672' as unknown as IsbnType;
 
 console.assert(
   typeof isbnValue === 'string',

@@ -462,11 +462,13 @@ const _idField: UuidBrandInterface = _u.id;
 void _emailField;
 void _idField;
 
-// Raw object with plain strings cannot be assigned to a branded User
+// Raw object with plain strings cannot be assigned to a branded User —
+// each field is rejected because the plain string lacks its format brand.
 if (false as boolean) {
-  // @ts-expect-error — plain strings lack the brands required by User
   const _bad: User = {
+    // @ts-expect-error — plain string lacks FormatBrand<'email'>
     'email': 'a@b.com',
+    // @ts-expect-error — plain string lacks FormatBrand<'uuid'>
     'id': '12345678-1234-4123-8123-123456789abc'
   };
 

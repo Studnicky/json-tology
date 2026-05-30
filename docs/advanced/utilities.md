@@ -49,7 +49,7 @@ Used internally by `registerAnonymous` to mint synthetic `$id` values from schem
 
 ## `Lift`
 
-The `Lift` module exposes interop helpers between RDF/JS quads (from libraries like `n3` or `eyereasoner`) and json-tology's internal quad shape, plus the `liftInstances` function that powers `JsonTology.fromQuads`.
+The `Lift` module exposes interop helpers between RDF/JS quads (from libraries like `n3` or `eyereasoner`) and json-tology's internal quad shape, plus the `Lift.instances` method that powers `JsonTology.fromQuads`.
 
 <<< ../../examples/docs/advanced/11-lift-n3-interop.ts
 

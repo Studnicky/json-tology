@@ -38,8 +38,9 @@ const step2 = {
   }
 };
 
-// Correct — string → number → Date (pairwise types align)
-const EpochDateSchema = Transform.chain<typeof EpochMsSchema, Date>(
+// Correct — string → number → Date (pairwise types align). The stage tuple
+// and terminal output type are inferred from the transforms argument.
+const EpochDateSchema = Transform.chain(
   EpochMsSchema,
   [
     step1,

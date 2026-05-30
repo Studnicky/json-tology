@@ -3,7 +3,9 @@
  *
  * Each static method returns a {@link SkolemizeFnType} suitable for the
  * `iriFor` option on `toQuads`. Strategies can be composed via
- * `Skolemize.compose(...)` — the first non-undefined return wins.
+ * `Skolemize.compose(...)` — the first non-undefined return wins. When a
+ * strategy returns `undefined`, the projection's built-in default IRI minter
+ * takes over, emitting `<baseIRI>/instances/<classId>-<contentHash>`.
  *
  * Background: in RDF, a node without an explicit IRI is typically a
  * blank node. Skolemization replaces blank nodes with deterministic
@@ -108,8 +110,9 @@ export class Skolemize {
    * Mint an IRI from a property of the value object.
    *
    * If `value[name]` is a non-empty string, returns
-   * `<baseIRI>/<value[name]>`. Otherwise, delegates to `fallback`
-   * (defaults to `Skolemize.hash()`).
+   * `<baseIRI>/<value[name]>` where the property value is
+   * percent-encoded via `encodeURIComponent` before being appended.
+   * Otherwise, delegates to `fallback` (defaults to `Skolemize.hash()`).
    */
   public static fromProperty(
     name: string,

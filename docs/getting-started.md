@@ -86,7 +86,7 @@ Import only what you need. Every sub-path is tree-shakable.
 | Error views | `aggregate`, `report` | <Badge type="tip" text="Runtime" /> |
 | Composition | `Compose.extend`, `pick`, `omit`, `partial`, `required`, `intersection`, `equivalent`, `discriminatedUnion` | <Badge type="warning" text="Compile-time + Runtime" /> |
 | Value utilities | `Operations.clone`, `Hash.value`, `Value.diff`, `Operations.patch`, `value.cast`, `clean`, `convert`, `create` | <Badge type="tip" text="Runtime" /> |
-| Transforms | `Transform.create`, `brand`, `pipe`, `jt.encode` | <Badge type="warning" text="Compile-time + Runtime" /> |
+| Transforms | `Transform.create`, `brand`, `chain`, `jt.encode` | <Badge type="warning" text="Compile-time + Runtime" /> |
 | Serialization | `dump`, `dumpJson` | <Badge type="tip" text="Runtime" /> |
 | Computed fields | `addComputed`, `removeComputed` | <Badge type="tip" text="Runtime" /> |
 | Cross-field invariants | `addInvariant`, `removeInvariant` | <Badge type="tip" text="Runtime" /> |

@@ -19,11 +19,12 @@ const rareBook = bookstoreEntities.instantiate(RareBookSchema, aboxFixtures.rare
 console.assert(typeof rareBook === 'object');
 
 // Validate Bastian's order containing one line for that rare book.
+// The branded instantiate result feeds toQuads's typed signature directly.
 const order = bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order);
 
 console.assert(typeof order === 'object');
 
 // Emit the full RDF graph: schema-level rules + sameAs assertions + ABox quads.
-const quads = bookstoreEntities.toQuads(OrderSchema, aboxFixtures.order);
+const quads = bookstoreEntities.toQuads(OrderSchema, order);
 
 console.assert(quads.length > 0);

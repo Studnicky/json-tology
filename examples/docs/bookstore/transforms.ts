@@ -30,9 +30,7 @@
  *   → parseIsbn        : string → ParsedIsbnInterface (extracts EAN prefix, group code, etc.)
  */
 
-import {
-  Compose, Transform
-} from '../../../src/index.js';
+import { Transform } from '../../../src/index.js';
 import type { TransformStageInterface } from '../../../src/interfaces/TransformStage.js';
 import { IsbnSchema } from './entities/Isbn.js';
 
@@ -134,11 +132,11 @@ const parseIsbnSegments: TransformStageInterface<string, ParsedIsbnInterface> = 
 /**
  * Full ISBN chain composed via `Transform.chain`.
  *
- * The chain is attached to a `Compose.equivalent` sibling of `IsbnSchema` so
- * the canonical `IsbnSchema` object remains transform-free. Any example that
- * instantiates `IsbnSchema` directly (or via `$ref: urn:bookstore:Isbn`) sees
- * the plain string wire format — the decode pipeline only fires when callers
- * explicitly use `IsbnPipelineSchema.$id`.
+ * The chain is attached to a distinct string-typed sibling of `IsbnSchema`
+ * (`IsbnPipelineBase`) so the canonical `IsbnSchema` object remains
+ * transform-free. Any example that instantiates `IsbnSchema` directly (or via
+ * `$ref: urn:bookstore:Isbn`) sees the plain string wire format — the decode
+ * pipeline only fires when callers explicitly use `IsbnPipelineSchema.$id`.
  *
  * `ParseOutputType<typeof IsbnPipelineSchema>` resolves to `ParsedIsbnInterface`.
  * Pass this schema to `jt.instantiate()` to get a structured `ParsedIsbnInterface`
@@ -152,7 +150,17 @@ const parseIsbnSegments: TransformStageInterface<string, ParsedIsbnInterface> = 
  * `ChainMismatchInterface` brand error because `ParsedIsbnInterface` is not
  * assignable to validateIsbnLength's `string` parameter.
  */
-const IsbnPipelineBase = Compose.equivalent(IsbnSchema, { '$id': 'urn:bookstore:_IsbnPipeline' } as const);
+// A self-contained string schema mirroring IsbnSchema's wire shape, with a
+// distinct $id. Transform.chain infers the schema's wire type via
+// InferSchemaType<TSchema> against the schema itself (no registry references),
+// so the base must resolve to `string` directly — a `Compose.equivalent`
+// `$ref` to IsbnSchema would resolve to `unknown` and break the pairwise
+// chain-compatibility check on the first stage's `string` decode input.
+const IsbnPipelineBase = {
+  '$id': 'urn:bookstore:_IsbnPipeline',
+  'pattern': IsbnSchema.pattern,
+  'type': 'string'
+} as const;
 
 export const IsbnPipelineSchema = Transform.chain(IsbnPipelineBase, [
   validateIsbnLength,

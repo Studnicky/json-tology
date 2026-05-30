@@ -30,10 +30,9 @@ const BSchema = Compose.extend(
 );
 
 // ✓ Register before use — only then is the derived schema reachable.
-jt.set(ASchema);
-jt.set(BSchema);
+const jt2 = jt.set(ASchema).set(BSchema);
 
-const result = jt.validate(BSchema.$id, {
+const result = jt2.validate(BSchema.$id, {
   'addresses': [],
   'email': 'bastian.bux@bookstore.example',
   'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',

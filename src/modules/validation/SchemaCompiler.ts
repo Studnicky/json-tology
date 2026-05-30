@@ -1,9 +1,8 @@
 /**
- * Schema Compiler — Phases 6.2-6.5
+ * Schema Compiler — compiles JSON Schema into optimized closure validators.
  *
- * Compiles JSON Schema into optimized closure validators. Each schema node
- * becomes a captured closure with all constants pre-resolved. Falls back to
- * GraphEngine for unsupported constructs.
+ * Each schema node becomes a captured closure with all constants pre-resolved.
+ * Falls back to GraphEngine for unsupported constructs.
  *
  * All field reads come from graph semantics — never from schema[key].
  */
@@ -1354,6 +1353,7 @@ export class SchemaCompiler implements SchemaCompilerInterface {
    * Compile a schema from a GraphEngine into an optimized closure validator.
    *
    * @param engine - Graph engine holding the schema to compile
+   * @param graph - Pre-built schema graph for the engine's root schema
    * @returns Compiled validator with check and validate functions
    */
   public compile(engine: GraphEngineInterface, graph: SchemaGraphInterface): CompiledValidatorInterface {

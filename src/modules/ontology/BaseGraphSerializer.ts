@@ -3,6 +3,7 @@ import type { GraphSerializerInterface } from '../../interfaces/Serializer.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
 import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugin.js';
 import type { QuadInterface } from '../../interfaces/Quad.js';
+import type { PredicateResolverFnType } from '../../types/PredicateResolverFn.js';
 import { Curie } from '../rdf/Curie.js';
 import { IdentifierIssuer } from '../rdf/IdentifierIssuer.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
@@ -52,11 +53,14 @@ export abstract class BaseGraphSerializer implements GraphSerializerInterface {
   }
 
   protected readonly curie: CurieInterface;
+  protected readonly predicateResolver: PredicateResolverFnType | undefined;
   protected readonly vocabularies: readonly VocabularyPluginInterface[];
 
   public constructor(options?: { 'curie'?: CurieInterface;
+    'predicateResolver'?: PredicateResolverFnType | undefined;
     'vocabularies'?: readonly VocabularyPluginInterface[] }) {
     this.curie = options?.curie ?? new Curie({ ...STANDARD_PREFIXES });
+    this.predicateResolver = options?.predicateResolver;
     this.vocabularies = options?.vocabularies ?? [];
   }
 

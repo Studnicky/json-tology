@@ -33,141 +33,19 @@ import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
 import {
   OWL, RDF, RDFS
 } from '../../../constants/IRI.js';
+import { XSD_TO_JSON_SCHEMA } from '../../../constants/XSD_REVERSE_MAPS.js';
+import type { XsdJsonSchemaPrimitiveInterface } from '../../../interfaces/XsdJsonSchemaPrimitiveInterface.js';
 import { SchemaIri } from '../../graph/SchemaIri.js';
 
 // ---------------------------------------------------------------------------
-// XSD IRI → JSON Schema { type, format? } reverse map
+// XSD IRI → JSON Schema { type, format? } reverse map — imported from constants
 // ---------------------------------------------------------------------------
-
-interface JsonSchemaPrimitive {
-  readonly 'format'?: string;
-  readonly 'type': string;
-}
-
-const XSD_TO_JSON_SCHEMA: ReadonlyMap<string, JsonSchemaPrimitive> = new Map([
-  // Full IRIs
-  [
-    'http://www.w3.org/2001/XMLSchema#anyURI',
-    {
-      'format': 'uri',
-      'type': 'string'
-    }
-  ],
-  [
-    'http://www.w3.org/2001/XMLSchema#boolean',
-    { 'type': 'boolean' }
-  ],
-  [
-    'http://www.w3.org/2001/XMLSchema#date',
-    {
-      'format': 'date',
-      'type': 'string'
-    }
-  ],
-  [
-    'http://www.w3.org/2001/XMLSchema#dateTime',
-    {
-      'format': 'date-time',
-      'type': 'string'
-    }
-  ],
-  [
-    'http://www.w3.org/2001/XMLSchema#decimal',
-    { 'type': 'number' }
-  ],
-  [
-    'http://www.w3.org/2001/XMLSchema#double',
-    { 'type': 'number' }
-  ],
-  [
-    'http://www.w3.org/2001/XMLSchema#float',
-    { 'type': 'number' }
-  ],
-  [
-    'http://www.w3.org/2001/XMLSchema#int',
-    { 'type': 'integer' }
-  ],
-  [
-    'http://www.w3.org/2001/XMLSchema#integer',
-    { 'type': 'integer' }
-  ],
-  [
-    'http://www.w3.org/2001/XMLSchema#long',
-    { 'type': 'integer' }
-  ],
-  [
-    'http://www.w3.org/2001/XMLSchema#nonNegativeInteger',
-    { 'type': 'integer' }
-  ],
-  [
-    'http://www.w3.org/2001/XMLSchema#string',
-    { 'type': 'string' }
-  ],
-  // Prefixed (curie) forms
-  [
-    'xsd:anyURI',
-    {
-      'format': 'uri',
-      'type': 'string'
-    }
-  ],
-  [
-    'xsd:boolean',
-    { 'type': 'boolean' }
-  ],
-  [
-    'xsd:date',
-    {
-      'format': 'date',
-      'type': 'string'
-    }
-  ],
-  [
-    'xsd:dateTime',
-    {
-      'format': 'date-time',
-      'type': 'string'
-    }
-  ],
-  [
-    'xsd:decimal',
-    { 'type': 'number' }
-  ],
-  [
-    'xsd:double',
-    { 'type': 'number' }
-  ],
-  [
-    'xsd:float',
-    { 'type': 'number' }
-  ],
-  [
-    'xsd:int',
-    { 'type': 'integer' }
-  ],
-  [
-    'xsd:integer',
-    { 'type': 'integer' }
-  ],
-  [
-    'xsd:long',
-    { 'type': 'integer' }
-  ],
-  [
-    'xsd:nonNegativeInteger',
-    { 'type': 'integer' }
-  ],
-  [
-    'xsd:string',
-    { 'type': 'string' }
-  ]
-]);
 
 /**
  * Resolve an XSD datatype IRI (full or prefixed) to its JSON Schema primitive.
  * Returns null when the IRI is not a recognised XSD primitive.
  */
-function xsdToJsonSchema(iri: string): JsonSchemaPrimitive | null {
+function xsdToJsonSchema(iri: string): null | XsdJsonSchemaPrimitiveInterface {
   return XSD_TO_JSON_SCHEMA.get(iri) ?? null;
 }
 

@@ -17,8 +17,8 @@ const isbn = aboxFixtures.rareBook.isbn;
 const turtle = `
   <urn:bookstore:rarebook:neverending-1979-thienemann>
     a <urn:bookstore:Book> ;
-    <urn:bookstore:Book#isbn> "${isbn}" ;
-    <urn:bookstore:Book#title> "Die unendliche Geschichte" .
+    <https://bookstore.example/isbn> "${isbn}" ;
+    <https://bookstore.example/title> "Die unendliche Geschichte" .
 `;
 
 const parser = new Parser();

@@ -49,16 +49,16 @@ Computed fields are properties derived from other fields at instantiate/material
 // Schema authoring:
 const schema = {
   properties: {
-    total: { type: 'number', 'jt:computed': true },
+    orderTotal: { type: 'number', 'jt:computed': true },
   },
 } as const;
 
 // Function registration:
-jt.addComputed(ComputedOrderSchema.$id, 'total',
-  (order) => order.items.reduce((s, l) => s + l.unitPrice * l.quantity, 0)
+jt.addComputed(ComputedOrderSchema.$id, 'orderTotal',
+  (order) => order.orderLines.reduce((s, l) => s + l.unitPrice * l.quantity, 0)
 );
 // Or at construction:
-JsonTology.create({ computeds: { [schemaId]: { total: fn } } })
+JsonTology.create({ computeds: { [schemaId]: { orderTotal: fn } } })
 ```
 
 ```ts [Zod]

@@ -28,9 +28,9 @@ const params = castEntities.value.cast(ReviewSchema.$id, {
   'body': aboxFixtures.review.body,
   'bookIsbn': aboxFixtures.review.bookIsbn,
   'customerId': aboxFixtures.review.customerId,
-  'id': aboxFixtures.review.id,
   'postedAt': aboxFixtures.review.postedAt,
-  'rating': '4'
+  'rating': '4',
+  'reviewId': aboxFixtures.review.reviewId
 }) as Record<string, unknown>;
 
 console.assert((params as { 'rating': number }).rating === 4);

@@ -29,6 +29,23 @@ export interface RestrictionDescriptorType {
 
 export type RestrictionRefType = Readonly<Record<'~jt:restriction', RestrictionDescriptorType>>;
 
+/**
+ * Typed variant of `RestrictionRefType` that carries the specific
+ * `kind`, `onProperty`, and `value` as literal-type parameters. Produced by
+ * the restriction factory methods (`Compose.hasValue`, `Compose.cardinality`,
+ * etc.) so that `Compose.subClassOf(restriction, body)` can propagate
+ * the restriction descriptor into the body's `jt:restrictions` type.
+ */
+export type TypedRestrictionRefType<
+  TKind extends RestrictionKindType,
+  TProp extends string,
+  TValue extends boolean | number | string
+> = Readonly<Record<'~jt:restriction', {
+  readonly 'kind': TKind;
+  readonly 'onProperty': TProp;
+  readonly 'value': TValue;
+}>>;
+
 export { RESTRICTION_TAG } from '../constants/RESTRICTION.js';
 
 /**

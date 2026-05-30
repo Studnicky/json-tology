@@ -17,12 +17,19 @@ import type {
   SchemaGraphRelationInterface
 } from '../../interfaces/SchemaGraph.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { RelationStructure } from '../../types/SchemaGraph.js';
+import type {
+  DefaultGraphTermType, IriTermType
+} from '../../types/Quad.js';
+import type { IriMinterInterface } from '../../interfaces/Projection.js';
+import type { PredicateResolverFnType } from '../../types/PredicateResolverFn.js';
 import type { SkolemizeFnType } from '../../types/Skolemize.js';
 import type { SpecialHandlerFn } from '../../types/SpecialHandlerFn.js';
 import type {
   ProjectInstanceArgs, ProjectPropertyArgs
 } from '../../interfaces/Projection.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
+import type { QuadFactoryQuadOptsInterface } from '../../interfaces/QuadFactoryOpts.js';
 import { Terms } from './Terms.js';
 
 import {
@@ -37,6 +44,7 @@ import { MaterializationError } from '../../errors/MaterializationError.js';
 import {
   hasCycle, isRecord
 } from '../data/DataTypes.js';
+import { PredicateResolver } from '../graph/PredicateResolver.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { Hash } from '../hash/Hash.js';
 import { Lists } from './Lists.js';
@@ -56,7 +64,8 @@ export const Projection = {
       'entryNode'?: SchemaGraphNodeInterface | undefined;
       'graphIRI'?: string | undefined;
       'iriFor'?: SkolemizeFnType | undefined;
-      'lookupGraph'?: ((schemaId: string) => SchemaGraphInterface | undefined) | undefined }
+      'lookupGraph'?: ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
+      'predicateResolver'?: PredicateResolverFnType | undefined }
   ): QuadInterface[] {
     return projectAbox(graph, data, baseIRI, options);
   },
@@ -220,6 +229,10 @@ function projectStructuredRelation(
   }
 
   switch (structure.kind) {
+    case 'annotatedEdge':
+      // Annotated edges are ABox triple-term emissions, projected separately via
+      // findAnnotatedEdgeStructure/projectAnnotatedEdge — not a TBox structure here.
+      break;
     case 'conditional': {
       const condBnode = QuadFactory.nextBnode(issuer);
 
@@ -313,10 +326,11 @@ function projectAbox(
     'entryNode'?: SchemaGraphNodeInterface | undefined;
     'graphIRI'?: string | undefined;
     'iriFor'?: SkolemizeFnType | undefined;
-    'lookupGraph'?: ((schemaId: string) => SchemaGraphInterface | undefined) | undefined }
+    'lookupGraph'?: ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
+    'predicateResolver'?: PredicateResolverFnType | undefined }
 ): QuadInterface[] {
   const {
-    curie, entryNode, graphIRI, iriFor, lookupGraph
+    curie, entryNode, graphIRI, iriFor, lookupGraph, predicateResolver
   } = options ?? {};
 
   const quads: QuadInterface[] = [];
@@ -344,6 +358,11 @@ function projectAbox(
     curie,
     'graph': graphTerm
   };
+  const resolvePredicate = predicateResolver ?? PredicateResolver.forConfig({
+    'baseIRI': baseIRI,
+    'enableCanonicalPredicates': undefined,
+    'predicateFor': undefined
+  });
 
   projectInstance({
     curie,
@@ -355,6 +374,7 @@ function projectAbox(
     minter,
     'node': resolved.node,
     'path': '',
+    'predicateResolver': resolvePredicate,
     quadOpts,
     quads,
     'visited': new WeakSet()
@@ -391,8 +411,9 @@ function resolveNode(
     };
   }
 
+  const refId = graph.resolveRefId(nodeSemantics.ref);
+
   if (lookupGraph !== undefined) {
-    const refId = graph.resolveRefId(nodeSemantics.ref);
     const targetGraph = lookupGraph(refId);
 
     if (targetGraph !== undefined) {
@@ -403,10 +424,43 @@ function resolveNode(
     }
   }
 
+  // Embedded `$defs` `$id`: a $ref whose target is an embedded `$id` declared
+  // inside this same graph's `$defs` is not a separately-registered schema, so
+  // lookupGraph cannot find it. Resolve it within the current graph by matching
+  // the node whose id equals the ref. Without this, ABox projection of such a
+  // ref leaves the node unresolved (its `$ref` never followed), which surfaces
+  // downstream as REF_UNRESOLVED.
+  const embedded = findNodeById(graph, refId);
+
+  if (embedded !== undefined) {
+    return {
+      graph,
+      'node': embedded
+    };
+  }
+
   return {
     graph,
     node
   };
+}
+
+/**
+ * Find a node within `graph` whose `id` matches `id`, if any. Used to resolve a
+ * `$ref` that targets an embedded `$defs` `$id` declared in the same graph
+ * (rather than a separately-registered schema).
+ */
+function findNodeById(
+  graph: SchemaGraphInterface,
+  id: string
+): SchemaGraphNodeInterface | undefined {
+  for (const candidate of graph.nodes()) {
+    if (candidate.id === id) {
+      return candidate;
+    }
+  }
+
+  return undefined;
 }
 
 interface ResolvedNodeInterface {
@@ -414,9 +468,114 @@ interface ResolvedNodeInterface {
   'node': SchemaGraphNodeInterface;
 }
 
+/**
+ * Collect every property an instance node effectively carries: its own
+ * `properties` plus those reachable through `allOf` members (recursively,
+ * resolving `$ref` parents that point to other graphs in the registry).
+ *
+ * `Compose.subClassOf(Parent, body)` schemas declare their fields inside
+ * `allOf[N]` members — the body's own `properties` block carries only the
+ * subclass-specific fields, and the parent fields live behind a `$ref`
+ * member. Without this walk, ABox projection emits only the body's own
+ * properties (and the `rdf:type` triple), dropping every inherited field
+ * even though it was validated and materialized. This mirrors
+ * `Materializer.collectEffectiveProperties`, which already flattens `allOf`
+ * for the materialized JS value; ABox projection must flatten the same way
+ * so the canonical graph and the JS value agree.
+ *
+ * Returns a map keyed by property name, value `{ graph, node }` giving the
+ * graph and node where that property's semantics live (which may differ from
+ * the instance's own graph when the property is inherited through a $ref).
+ * First declaration wins (own properties shadow inherited ones).
+ */
+// Per-node cache for collectProjectionProperties. The collected property map is
+// node-identity-stable for a given (node, lookupGraph) pair, so memoizing it
+// avoids re-walking allOf/then/else chains on every projected instance. The
+// inner Map is keyed by the lookupGraph closure (or a sentinel for the
+// no-lookupGraph case) because cross-graph resolution depends on which registry
+// the closure consults — caching across distinct closures would be unsafe.
+type LookupGraphFn = (schemaId: string) => SchemaGraphInterface | undefined;
+
+const NO_LOOKUP_GRAPH = Symbol('no-lookup-graph');
+const collectProjectionPropertiesCache = new WeakMap<
+  SchemaGraphNodeInterface,
+  Map<LookupGraphFn | typeof NO_LOOKUP_GRAPH, Map<string, ResolvedNodeInterface>>
+>();
+
+function collectProjectionProperties(
+  graph: SchemaGraphInterface,
+  node: SchemaGraphNodeInterface,
+  lookupGraph?: LookupGraphFn
+): Map<string, ResolvedNodeInterface> {
+  const cacheKey = lookupGraph ?? NO_LOOKUP_GRAPH;
+  let byLookup = collectProjectionPropertiesCache.get(node);
+
+  if (byLookup === undefined) {
+    byLookup = new Map();
+    collectProjectionPropertiesCache.set(node, byLookup);
+  } else {
+    const cached = byLookup.get(cacheKey);
+
+    if (cached !== undefined) {
+      return cached;
+    }
+  }
+
+  const collected = new Map<string, ResolvedNodeInterface>();
+  const visited = new Set<SchemaGraphNodeInterface>();
+
+  const walk = (currentGraph: SchemaGraphInterface, current: SchemaGraphNodeInterface): void => {
+    if (visited.has(current)) {
+      return;
+    }
+    visited.add(current);
+
+    const resolved = resolveNode(currentGraph, current, lookupGraph);
+
+    // A $ref hop lands on resolved.node; mark it visited too so a later sibling
+    // edge that resolves to the same node does not re-walk its members.
+    visited.add(resolved.node);
+    const semantics = resolved.graph.semantics(resolved.node);
+
+    for (const [
+      name,
+      propNode
+    ] of semantics.properties) {
+      if (!collected.has(name)) {
+        collected.set(name, {
+          'graph': resolved.graph,
+          'node': propNode
+        });
+      }
+    }
+
+    for (const member of semantics.allOf) {
+      walk(resolved.graph, member);
+    }
+
+    // if/then/else conditional-branch properties (e.g. EBook requires
+    // epubVersion when fileFormat === 'epub') are real properties of the
+    // instance. Walk both branches: projection only emits a property when its
+    // value is actually present in `data`, so including the inactive branch's
+    // keys here cannot fabricate quads — it only ensures the active branch's
+    // value is projected (and thus survives the fromQuads round-trip).
+    if (semantics.thenNode !== undefined) {
+      walk(resolved.graph, semantics.thenNode);
+    }
+    if (semantics.elseNode !== undefined) {
+      walk(resolved.graph, semantics.elseNode);
+    }
+  };
+
+  walk(graph, node);
+  byLookup.set(cacheKey, collected);
+
+  return collected;
+}
+
 function projectInstance(args: ProjectInstanceArgs): string {
   const {
-    curie, data, depth, graph, graphTerm, lookupGraph, minter, node, path, quadOpts, quads, visited
+    curie, data, depth, graph, graphTerm, lookupGraph, minter, node, path, predicateResolver, quadOpts, quads, visited
   } = args;
 
   if (visited.has(data)) {
@@ -433,22 +592,52 @@ function projectInstance(args: ProjectInstanceArgs): string {
 
   try {
     const instIRI = minter.mint(node.id, data, path, depth);
-    const nodeSemantics = graph.semantics(node);
 
     quads.push(QuadFactory.quad(instIRI, RDF.type, QuadFactory.iri(node.id), quadOpts));
 
+    // Flatten own `properties` plus every `allOf` member's properties so
+    // subclass instances (Compose.subClassOf bodies carry inherited fields
+    // behind a $ref allOf member) project their inherited fields too, not
+    // just the body-local ones. Mirrors Materializer.collectEffectiveProperties.
+    const effectiveProperties = collectProjectionProperties(graph, node, lookupGraph);
+
     for (const [
       propertyName,
-      propertyNode
-    ] of nodeSemantics.properties) {
+      propertyEntry
+    ] of effectiveProperties) {
       const value = data[propertyName];
 
       if (value === undefined || value === null) {
         continue;
       }
 
-      const propertyIRI = `${node.id}#${propertyName}`;
-      const resolved = resolveNode(graph, propertyNode, lookupGraph);
+      const propertyNode = propertyEntry.node;
+      const propertyGraph = propertyEntry.graph;
+      const annotatedEdge = findAnnotatedEdgeStructure(propertyGraph, propertyNode);
+
+      if (annotatedEdge !== undefined) {
+        projectAnnotatedEdge({
+          curie,
+          'edge': annotatedEdge,
+          graphTerm,
+          'instanceIri': instIRI,
+          minter,
+          'path': `${path}/${propertyName}`,
+          quadOpts,
+          quads,
+          'sourceId': node.id,
+          value
+        });
+
+        continue;
+      }
+
+      const propertyIRI = predicateResolver({
+        'classId': node.id,
+        propertyName,
+        'propertySchema': propertyNode.schema
+      });
+      const resolved = resolveNode(propertyGraph, propertyNode, lookupGraph);
       const propertySemantics = resolved.graph.semantics(resolved.node);
 
       projectPropertyValue({
@@ -460,6 +649,7 @@ function projectInstance(args: ProjectInstanceArgs): string {
         lookupGraph,
         minter,
         'path': `${path}/${propertyName}`,
+        predicateResolver,
         propertyIRI,
         'propertyNode': resolved.node,
         propertySemantics,
@@ -473,6 +663,204 @@ function projectInstance(args: ProjectInstanceArgs): string {
     return instIRI;
   } finally {
     visited.delete(data);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Annotated edge (RDF 1.2 triple-term) projection
+// ---------------------------------------------------------------------------
+
+type AnnotatedEdgeStructure = Extract<RelationStructure, { 'kind': 'annotatedEdge' }>;
+
+interface ProjectAnnotatedEdgeArgs {
+  readonly 'curie': CurieInterface | undefined;
+  readonly 'edge': AnnotatedEdgeStructure;
+  readonly 'graphTerm': DefaultGraphTermType | IriTermType;
+  readonly 'instanceIri': string;
+  readonly 'minter': IriMinterInterface;
+  readonly 'path': string;
+  readonly 'quadOpts': QuadFactoryQuadOptsInterface;
+  readonly 'quads': QuadInterface[];
+  readonly 'sourceId': string;
+  readonly 'value': unknown;
+}
+
+/**
+ * Find the `annotatedEdge` structure relation attached to a property node, if any.
+ */
+function findAnnotatedEdgeStructure(
+  graph: SchemaGraphInterface,
+  propertyNode: SchemaGraphNodeInterface
+): AnnotatedEdgeStructure | undefined {
+  for (const relation of graph.relations(propertyNode)) {
+    if (relation.structure?.kind === 'annotatedEdge') {
+      return relation.structure;
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * Resolve the target term IRI for an annotated edge value.
+ *
+ * The value may be:
+ * - a string IRI (`{ target: '...rockruff' }`),
+ * - an object carrying an `@id` / `id` IRI, or
+ * - a nested instance object — minted via the IRI minter.
+ */
+function resolveEdgeTargetIri(
+  target: unknown,
+  edge: AnnotatedEdgeStructure,
+  minter: IriMinterInterface,
+  path: string
+): string {
+  if (typeof target === 'string') {
+    return target;
+  }
+
+  if (isRecord(target)) {
+    const idValue = target['@id'] ?? target.id;
+
+    if (typeof idValue === 'string') {
+      return idValue;
+    }
+
+    return minter.mint(edge.edgeTarget, target, `${path}/target`, 0);
+  }
+
+  return String(target);
+}
+
+/**
+ * Build a `QuadObjectType` term for an annotation value.
+ * Strings/numbers/booleans/Dates become typed literals; IRI-valued targets
+ * (string starting with a scheme) are emitted as NamedNode references when the
+ * annotation range resolves to a class IRI.
+ */
+function annotationValueTerm(value: unknown, rangeRef: string): QuadObjectType {
+  if (typeof value === 'string' && isIriReference(value) && isClassRange(rangeRef)) {
+    return Terms.iri(value);
+  }
+
+  if (typeof value === 'string') {
+    return Terms.literal(value, { 'datatype': Terms.iri(XSD.string) });
+  }
+
+  if (typeof value === 'number') {
+    // Annotated-edge annotations carry only a `$ref`-resolved class/type IRI
+    // (`rangeRef`), not a JSON Schema `type`+`format` pair, so the declared
+    // numeric precision is not available here the way it is on the standard
+    // property path (projectSingleValue reads propertySemantics.schemaTypes).
+    // The runtime heuristic is retained for this distinct code path.
+    return Terms.literal(value, { 'datatype': Terms.iri(Number.isInteger(value) ? XSD.integer : XSD.double) });
+  }
+
+  if (typeof value === 'boolean') {
+    return Terms.literal(value, { 'datatype': Terms.iri(XSD.boolean) });
+  }
+
+  if (value instanceof Date) {
+    return Terms.literal(value, { 'datatype': Terms.iri(XSD.dateTime) });
+  }
+
+  return Terms.literal(String(value), { 'datatype': Terms.iri(XSD.string) });
+}
+
+function isIriReference(value: string): boolean {
+  return value.startsWith('http://') || value.startsWith('https://') || value.startsWith('urn:');
+}
+
+// Allowed absolute-IRI schemes for x-jt-iriRef property values. Rejects
+// dangerous schemes (e.g. `javascript:`, `data:`); alternatives are kept
+// alphabetically sorted.
+const ALLOWED_IRI_SCHEME_RE = /^(?:file|ftp|https?|urn):/u;
+const DEL_CODE_POINT = 0x7F;
+const FIRST_PRINTABLE_CODE_POINT = 0x21;
+
+// An absolute IRI must start with an allowed scheme and contain no ASCII control
+// characters (U+0000-U+001F), space (U+0020), or DEL (U+007F). The codepoint
+// scan avoids embedding raw control characters in a regular expression.
+function isAbsoluteIri(value: string): boolean {
+  if (!ALLOWED_IRI_SCHEME_RE.test(value)) {
+    return false;
+  }
+
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.codePointAt(index) ?? 0;
+
+    if (code < FIRST_PRINTABLE_CODE_POINT || code === DEL_CODE_POINT) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function isClassRange(rangeRef: string): boolean {
+  return isIriReference(rangeRef);
+}
+
+/**
+ * Emit the base triple and one annotation quad per annotation for an annotated edge.
+ *
+ * Base triple: `s edgePredicate o` (graph = graphIRI).
+ * Annotation quads: `<< s edgePredicate o >> annotationPredicate value` (graph = graphIRI).
+ * All quads share the SAME named graph — a triple term carries no graph membership,
+ * so the base and annotation triples MUST be asserted in one named graph.
+ *
+ * Raises a MaterializationError when no `graphIRI` was supplied (the default
+ * graph is not a valid home for an annotated edge).
+ */
+function projectAnnotatedEdge(args: ProjectAnnotatedEdgeArgs): void {
+  const {
+    curie, edge, graphTerm, instanceIri, minter, path, quadOpts, quads, sourceId, value
+  } = args;
+
+  if (graphTerm.termType === 'DefaultGraph') {
+    throw new MaterializationError(
+      sourceId,
+      [`annotated edge ${edge.edgePredicate} requires an explicit graphIRI`],
+      {
+        'code': 'MISSING_GRAPH_IRI',
+        'message': `Annotated edge ${edge.edgePredicate} at ${path} requires a graphIRI: a triple term carries no graph membership, so the base triple and its annotations must share one named graph. Pass { graphIRI } to toQuads.`
+      }
+    );
+  }
+
+  if (!isRecord(value)) {
+    throw new MaterializationError(
+      sourceId,
+      [`annotated edge ${edge.edgePredicate} value must be an object with target + annotations`],
+      {
+        'code': 'MATERIALIZATION_FAILED',
+        'message': `Annotated edge ${edge.edgePredicate} at ${path} expects { target, annotations }, received ${typeof value}.`
+      }
+    );
+  }
+
+  const targetIri = resolveEdgeTargetIri(value.target, edge, minter, path);
+  const objectTerm = Terms.iri(targetIri);
+
+  // Base triple: s edgePredicate o. Reuse the caller's quadOpts (same curie +
+  // named graph) instead of rebuilding the bag per edge.
+  quads.push(QuadFactory.quad(instanceIri, edge.edgePredicate, objectTerm, quadOpts));
+
+  // The triple term `<< s edgePredicate o >>` is loop-invariant across all
+  // annotations on this edge — build it once above the loop.
+  const tripleTerm = QuadFactory.tripleTerm(instanceIri, edge.edgePredicate, objectTerm, { curie });
+  const annotationValues = isRecord(value.annotations) ? value.annotations : {};
+
+  for (const annotation of edge.edgeAnnotations) {
+    const annotationValue = annotationValues[annotation.propertyName];
+
+    if (annotationValue === undefined || annotationValue === null) {
+      continue;
+    }
+
+    const valueTerm = annotationValueTerm(annotationValue, annotation.rangeRef);
+
+    quads.push(QuadFactory.annotationQuad(tripleTerm, annotation.annotationPredicate, valueTerm, quadOpts));
   }
 }
 
@@ -497,10 +885,37 @@ function projectPropertyValue(args: ProjectPropertyArgs): void {
   projectSingleValue(args, path, value);
 }
 
+/**
+ * Resolve the XSD datatype for a numeric ABox literal from the property's
+ * DECLARED schema type (canonical-graph mandate). Prefers the declared numeric
+ * type ('integer' or 'number') resolved through XsdTypes with the declared
+ * `format`, so the ABox literal datatype matches the TBox/SHACL declaration.
+ * Falls back to runtime inference only when no numeric type is declared.
+ */
+function numericDatatype(value: number, schemaTypes: readonly string[], format: string | undefined): string {
+  const runtimeFallback = Number.isInteger(value) ? XSD.integer : XSD.double;
+
+  let declaredNumericType: string | undefined;
+
+  if (schemaTypes.includes('integer')) {
+    declaredNumericType = 'integer';
+  } else if (schemaTypes.includes('number')) {
+    declaredNumericType = 'number';
+  }
+
+  if (declaredNumericType === undefined) {
+    return runtimeFallback;
+  }
+
+  const formatOption = format === undefined ? undefined : { 'format': format };
+
+  return XsdTypes.resolveSingle(declaredNumericType, formatOption) ?? runtimeFallback;
+}
+
 function projectSingleValue(args: ProjectPropertyArgs, path: string, value: unknown): void {
   const {
     curie, depth, graph, graphTerm, instanceIri, lookupGraph, minter,
-    propertyIRI, propertyNode, propertySemantics, quadOpts, quads, visited
+    predicateResolver, propertyIRI, propertyNode, propertySemantics, quadOpts, quads, visited
   } = args;
 
   if (value === null || value === undefined) {
@@ -508,6 +923,35 @@ function projectSingleValue(args: ProjectPropertyArgs, path: string, value: unkn
   }
 
   if (typeof value === 'string') {
+    if (propertySemantics.iriRef) {
+      // Validate that the runtime value is a syntactically safe absolute IRI
+      // before emitting it as a NamedNode. Reject control characters, spaces,
+      // and dangerous schemes (e.g. `javascript:`) to prevent taint propagation
+      // into the quad stream.
+      if (!isAbsoluteIri(value)) {
+        throw new MaterializationError(
+          propertyNode.id,
+          [`invalid IRI value at ${path}: ${value}`],
+          {
+            'code': 'INVALID_IRI_VALUE',
+            'message': `Property ${propertyIRI} (x-jt-iriRef) received an invalid IRI: "${value}". Expected an absolute IRI with an allowed scheme (http/https/urn/ftp/file) and no control characters or spaces.`
+          }
+        );
+      }
+
+      quads.push(QuadFactory.quad(instanceIri, propertyIRI, QuadFactory.iri(value), quadOpts));
+
+      return;
+    }
+
+    if (propertySemantics.language !== undefined && propertySemantics.language !== '') {
+      const langLiteral = QuadFactory.literal(value, XSD.string, { 'language': propertySemantics.language });
+
+      quads.push(QuadFactory.quad(instanceIri, propertyIRI, langLiteral, quadOpts));
+
+      return;
+    }
+
     const xsdDatatype = XsdTypes.resolveSingle(
       'string',
       propertySemantics.format === undefined ? undefined : { 'format': propertySemantics.format }
@@ -519,7 +963,24 @@ function projectSingleValue(args: ProjectPropertyArgs, path: string, value: unkn
   }
 
   if (typeof value === 'number') {
-    const datatype = Number.isInteger(value) ? XSD.integer : XSD.double;
+    // Reject non-finite values: NaN/Infinity are not valid RDF/XSD literals
+    // (e.g. "NaN"^^xsd:decimal is invalid in XSD). Throw early so the caller
+    // receives a clear MaterializationError instead of an invalid quad stream.
+    if (!Number.isFinite(value)) {
+      throw new MaterializationError(
+        propertyNode.id,
+        [`non-finite numeric value at ${path}`],
+        {
+          'code': 'NON_FINITE_NUMBER',
+          'message': `Non-finite numeric value (${String(value)}) at ${path} cannot be serialized as an RDF literal. Supply a finite number.`
+        }
+      );
+    }
+
+    // Derive datatype from the DECLARED schema type (canonical-graph mandate)
+    // so ABox matches TBox/SHACL; fall back to runtime inference only when no
+    // numeric type is declared (e.g. freeform / untyped value).
+    const datatype = numericDatatype(value, propertySemantics.schemaTypes, propertySemantics.format);
 
     quads.push(QuadFactory.quad(instanceIri, propertyIRI, QuadFactory.literal(value, datatype), quadOpts));
 
@@ -527,6 +988,7 @@ function projectSingleValue(args: ProjectPropertyArgs, path: string, value: unkn
   }
 
   if (typeof value === 'boolean') {
+    // boolean has no XSD format variants — emit XSD.boolean directly.
     quads.push(QuadFactory.quad(instanceIri, propertyIRI, QuadFactory.literal(value, XSD.boolean), quadOpts));
 
     return;
@@ -559,6 +1021,7 @@ function projectSingleValue(args: ProjectPropertyArgs, path: string, value: unkn
       minter,
       'node': targetNode,
       path,
+      predicateResolver,
       quadOpts,
       quads,
       visited

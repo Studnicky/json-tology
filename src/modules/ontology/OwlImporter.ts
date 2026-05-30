@@ -6,14 +6,11 @@
  * characteristics, owl:sameAs pairs, named individuals, and an unsupported-
  * axiom log for anything no dispatcher could handle.
  *
- * Phase 0: all eight dispatchers throw OWL_IMPORT_NOT_IMPLEMENTED.
- * The orchestrator catches those errors and accumulates them into
- * result.unsupported so the pipeline can complete end-to-end against
- * an empty or non-empty input without panicking.
- *
- * Phase 0.5: normalizeInput now resolves JSON-LD string/object inputs via the
- * optional `jsonld` peer dependency. SchemaGraph.fromQuads (the structural inverse
- * of OwlProjection.graph) is used to populate the import context graph from quads.
+ * normalizeInput resolves JSON-LD string/object inputs via the synchronous
+ * compact-walker (no external dependency for OwlProjection output). For arbitrary
+ * JSON-LD, importAsync() delegates to the optional `jsonld` peerDependency.
+ * SchemaGraph.fromQuads (the structural inverse of OwlProjection.graph) populates
+ * the import context graph so dispatchers can traverse it via allRelations() and nodes().
  */
 
 import type { QuadInterface } from '../../interfaces/Quad.js';
@@ -30,6 +27,7 @@ import type { InvariantInterface } from '../../interfaces/Invariant.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import { Curie } from '../rdf/Curie.js';
 import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
+import { SUPPORTED_XSD_DATATYPES } from '../../constants/XSD_REVERSE_MAPS.js';
 import { OwlImportError } from '../../errors/OwlImportError.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
 import { Terms } from '../rdf/Terms.js';
@@ -200,52 +198,8 @@ function collectDatatypeIris(quads: QuadInterface[]): ReadonlySet<string> {
   return datatypeIris;
 }
 
-/**
- * Supported XSD and json-tology datatype IRIs (prefixed and full-IRI forms).
- */
-const SUPPORTED_DATATYPES = new Set<string>([
-  'http://www.w3.org/2001/XMLSchema#anyURI',
-  'http://www.w3.org/2001/XMLSchema#base64Binary',
-  'http://www.w3.org/2001/XMLSchema#boolean',
-  'http://www.w3.org/2001/XMLSchema#date',
-  'http://www.w3.org/2001/XMLSchema#dateTime',
-  'http://www.w3.org/2001/XMLSchema#decimal',
-  'http://www.w3.org/2001/XMLSchema#double',
-  'http://www.w3.org/2001/XMLSchema#duration',
-  'http://www.w3.org/2001/XMLSchema#float',
-  'http://www.w3.org/2001/XMLSchema#hexBinary',
-  'http://www.w3.org/2001/XMLSchema#int',
-  'http://www.w3.org/2001/XMLSchema#integer',
-  'http://www.w3.org/2001/XMLSchema#long',
-  'http://www.w3.org/2001/XMLSchema#nonNegativeInteger',
-  // XSD full IRIs
-  'http://www.w3.org/2001/XMLSchema#string',
-  'http://www.w3.org/2001/XMLSchema#time',
-  'http://www.w3.org/2002/07/owl#Nothing',
-  // owl:Nothing for null-like types
-  'owl:Nothing',
-  'xsd:anyURI',
-  'xsd:base64Binary',
-  'xsd:boolean',
-  'xsd:date',
-  'xsd:dateTime',
-  'xsd:decimal',
-  'xsd:double',
-  'xsd:duration',
-  'xsd:float',
-  'xsd:hexBinary',
-  'xsd:int',
-  'xsd:integer',
-  'xsd:long',
-  'xsd:nonNegativeInteger',
-  'xsd:short',
-  // XSD prefixed
-  'xsd:string',
-  'xsd:time'
-]);
-
 function isDatatype(iri: string): boolean {
-  return SUPPORTED_DATATYPES.has(iri);
+  return SUPPORTED_XSD_DATATYPES.has(iri);
 }
 
 // ---------------------------------------------------------------------------
@@ -459,14 +413,13 @@ export class OwlImporter {
   /**
    * Import an OWL 2 TBox document and return a structured result.
    *
-   * Phase 0.5+: quads are normalised via the synchronous JSON-LD compact walker
-   * (handles OwlProjection output without external dependencies) and then
-   * ingested into a SchemaGraph via SchemaGraph.fromQuads — the structural inverse
-   * of OwlProjection.graph(). The populated graph is threaded into the import
-   * context so phase-1 dispatchers can traverse it.
-   *
-   * Phase 0 dispatchers throw NOT_IMPLEMENTED; those errors are caught and
-   * surfaced in result.unsupported so the pipeline completes cleanly.
+   * Quads are normalised via the synchronous JSON-LD compact walker (handles
+   * OwlProjection output without external dependencies) and then ingested into a
+   * SchemaGraph via SchemaGraph.fromQuads — the structural inverse of
+   * OwlProjection.graph(). The populated graph is threaded into the import context
+   * so dispatchers can traverse it via allRelations() and nodes(). If a dispatcher
+   * encounters an unsupported axiom it calls ctx.reportUnsupported(); errors that
+   * do not originate from a dispatcher bubble up normally.
    *
    * @param jsonLd - The input in one of three forms:
    *   - `QuadInterface[]` — already-parsed quads (pass-through).
@@ -603,9 +556,9 @@ export class OwlImporter {
  * Convert the merged schemaDeltas map into final JsonSchemaDocumentObjectType
  * objects, resolving cross-class $ref IRIs where possible.
  *
- * Phase 0: all class IRIs from the input graph receive a minimal schema
- * object `{ $id: classIri }`. Phase 1 dispatchers will populate the deltas
- * with real structural data before this function runs.
+ * All class IRIs from the input graph receive a minimal schema object
+ * `{ $id: classIri }` as a baseline. Dispatcher-populated deltas are merged
+ * in before the final schema objects are emitted.
  */
 function resolveSchemaDeltas(
   merged: OwlImportFragment,

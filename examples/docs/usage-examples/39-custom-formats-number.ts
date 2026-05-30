@@ -20,9 +20,11 @@ function isPositiveInt(value: unknown): boolean {
   return typeof value === 'number' && Number.isInteger(value) && value > 0;
 }
 
+const formats: Record<string, (value: unknown) => boolean> = { 'positive-int': isPositiveInt };
+
 const jt = JsonTology.create({
   'baseIRI': 'https://bookstore.example',
-  'formats': { 'positive-int': isPositiveInt },
+  formats,
   'schemas': [
     PositiveCountSchema,
     QuantitySchema

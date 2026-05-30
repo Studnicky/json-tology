@@ -9,82 +9,55 @@ import assert from 'node:assert/strict';
 import {
   Hash, Operations, Transform, Value
 } from '../../src/index.js';
-
 // ---------------------------------------------------------------------------
 // Transform edge cases
 // ---------------------------------------------------------------------------
 
-interface TransformGetDecoderScenario {
-  'assertions': (fns: ReturnType<typeof Transform.getDecoder>) => void;
-  'name': string;
-  'schema': { readonly '$id': string;
-    readonly 'type': string };
-  'setup': (schema: { readonly '$id': string;
-    readonly 'type': string }) => void;
-}
-
-const getDecoderScenarios: TransformGetDecoderScenario[] = [
-  {
-    'assertions': (fns) => {
-      assert.equal(fns, undefined, 'no transform — decoder undefined');
-    },
-    'name': 'returns undefined when schema has no registered transform',
-    'schema': {
+void describe('Transform.getDecoder scenarios', () => {
+  void it('returns undefined when schema has no registered transform', () => {
+    const schema = {
       '$id': 'urn:test:plain-no-transform',
       'type': 'string'
-    },
-    'setup': () => {
-      // No setup needed — no transform registered
-    }
-  },
-  {
-    'assertions': (fns) => {
-      assert.ok(fns !== undefined, 'empty pipe — decoder exists');
-      assert.equal(fns.decode('hello'), 'hello', 'empty pipe — decode identity');
-      assert.equal(fns.encode('hello'), 'hello', 'empty pipe — encode identity');
-    },
-    'name': 'acts as a no-op identity transform with empty chain',
-    'schema': {
+    } as const;
+    const fns = Transform.getDecoder(schema);
+
+    assert.equal(fns, undefined, 'no transform — decoder undefined');
+  });
+
+  void it('acts as a no-op identity transform with empty chain', () => {
+    const schema = {
       '$id': 'urn:test:empty-chain',
       'type': 'string'
-    },
-    'setup': (schema) => {
-      Transform.chain(schema, []);
-    }
-  },
-  {
-    'assertions': (fns) => {
-      assert.ok(fns !== undefined, 'single chain — decoder exists');
-      assert.equal(fns.decode(5), 10, 'single chain — decode');
-      assert.equal(fns.encode(10), 5, 'single chain — encode');
-    },
-    'name': 'single chain is equivalent to that transform alone',
-    'schema': {
+    } as const;
+
+    Transform.chain(schema, []);
+    const fns = Transform.getDecoder(schema);
+
+    assert.ok(fns !== undefined, 'empty pipe — decoder exists');
+    assert.equal(fns.decode('hello'), 'hello', 'empty pipe — decode identity');
+    assert.equal(fns.encode('hello'), 'hello', 'empty pipe — encode identity');
+  });
+
+  void it('single chain is equivalent to that transform alone', () => {
+    const schema = {
       '$id': 'urn:test:single-chain',
       'type': 'number'
-    },
-    'setup': (schema) => {
-      Transform.chain(schema, [{
-        'decode': (value: number) => {
-          return value * 2;
-        },
-        'encode': (value: number) => {
-          return value / 2;
-        }
-      }]);
-    }
-  }
-];
+    } as const;
 
-void describe('Transform.getDecoder scenarios', () => {
-  for (const scenario of getDecoderScenarios) {
-    void it(scenario.name, () => {
-      scenario.setup(scenario.schema);
-      const fns = Transform.getDecoder(scenario.schema);
+    Transform.chain(schema, [{
+      'decode': (value: number) => {
+        return value * 2;
+      },
+      'encode': (value: number) => {
+        return value / 2;
+      }
+    }]);
+    const fns = Transform.getDecoder(schema);
 
-      scenario.assertions(fns);
-    });
-  }
+    assert.ok(fns !== undefined, 'single chain — decoder exists');
+    assert.equal(fns.decode(5), 10, 'single chain — decode');
+    assert.equal(fns.encode(10), 5, 'single chain — encode');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -163,12 +136,12 @@ const transformScenarios: TransformScenario[] = [
       } as const;
 
       Transform.create(PointSchema, {
-        'decode': (raw: { 'x': number;
-          'y': number }) => {
+        'decode': (raw: { 'x'?: number;
+          'y'?: number }) => {
           return {
-            'magnitude': Math.hypot(raw.x, raw.y),
-            'x': raw.x,
-            'y': raw.y
+            'magnitude': Math.hypot(raw.x ?? 0, raw.y ?? 0),
+            'x': raw.x ?? 0,
+            'y': raw.y ?? 0
           };
         },
         'encode': (enriched: { 'magnitude': number;

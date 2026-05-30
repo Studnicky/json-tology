@@ -14,7 +14,7 @@ import {
 } from '../bookstore/index.js';
 
 type Customer = InferType<typeof CustomerSchema>;
-//   { readonly id: string & FormatBrand<'uuid'>;
+//   { readonly customerId: string & FormatBrand<'uuid'>;
 //     readonly email: string & FormatBrand<'email'>;
 //     readonly name: string;
 //     readonly addresses?: readonly Address[]; }
@@ -30,13 +30,13 @@ function createCustomerFromForm(raw: CustomerInput): Customer {
 
 // A form payload — plain primitives, no brands required from the caller.
 const formPayload: CustomerInput = {
+  'customerId': '09f8e7d6-c5b4-4321-9876-543210fedcba',
   'email': 'bastian@neverending.example',
-  'id': '09f8e7d6-c5b4-4321-9876-543210fedcba',
   'name': 'Bastian Balthazar Bux'
 };
 
 const customer = createCustomerFromForm(formPayload);
 
-console.assert(customer.id === formPayload.id);
+console.assert(customer.customerId === formPayload.customerId);
 console.assert(customer.email === formPayload.email);
 console.assert(customer.name === 'Bastian Balthazar Bux');

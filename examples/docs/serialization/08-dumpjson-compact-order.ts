@@ -11,7 +11,7 @@ import {
   aboxFixtures, bookstoreEntities, OrderSchema
 } from '../bookstore/index.js';
 
-const order = bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order);
+const order = bookstoreEntities.instantiate(OrderSchema.$id, aboxFixtures.order);
 
 // Full JSON — all fields including any schema defaults
 const fullJson = bookstoreEntities.dumpJson(OrderSchema.$id, order);
@@ -28,6 +28,6 @@ console.assert(compactJson.length <= fullJson.length);
 const compact = JSON.parse(compactJson) as Record<string, unknown>;
 
 // Required fields are always present
-console.assert(typeof compact.id === 'string');
+console.assert(typeof compact.orderId === 'string');
 console.assert(typeof compact.customerId === 'string');
-console.assert(Array.isArray(compact.items));
+console.assert(Array.isArray(compact.orderLines));

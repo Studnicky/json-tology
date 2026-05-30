@@ -11,17 +11,17 @@ import {
 } from '../bookstore/index.js';
 
 const errs = bookstoreEntities.validate(OrderSchema.$id, {
-  'customerId': aboxFixtures.customer.id,
-  'id': aboxFixtures.order.id,
+  'customerId': aboxFixtures.customer.customerId,
+  'orderId': aboxFixtures.order.orderId,
   // minItems: 1 violated
-  'items': [],
-  'placedAt': '2026-01-15T10:30:00Z',
-  'shippingAddress': aboxFixtures.order.shippingAddress,
-  'total': {
+  'orderLines': [],
+  'orderTotal': {
     // exclusiveMinimum: 0 violated
     'amount': -5,
     'currency': 'EUR'
-  }
+  },
+  'placedAt': '2026-01-15T10:30:00Z',
+  'shippingAddress': aboxFixtures.order.shippingAddress
 });
 
 console.assert(!errs.ok);

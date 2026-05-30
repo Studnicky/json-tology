@@ -18,38 +18,31 @@ import {
   aboxFixtures, bookstoreEntities, OrderSchema
 } from '../bookstore/index.js';
 
-interface OrderItems {
-  'items': ReadonlyArray<{
-    'quantity': number;
-    'unitPrice': { 'amount': number };
-  }>;
-}
+const computeSubtotal = (items: ReadonlyArray<{ 'quantity': number;
+  'unitPrice': { 'amount': number } }>): number => {
+  return items.reduce((sum, line) => {
+    return sum + (line.unitPrice.amount * line.quantity);
+  }, 0);
+};
 
-bookstoreEntities.addComputed<OrderItems & { 'subtotal': number }>(
-  OrderSchema,
+// addComputed returns a registry whose `Order` type is AUGMENTED with the
+// computed `subtotal`, so subsequent `instantiate(OrderSchema.$id, …)` returns
+// it fully typed — no cast needed to read the computed field.
+const withSubtotal = bookstoreEntities.addComputed(
+  OrderSchema.$id,
   'subtotal',
   (order) => {
-    return order.items.reduce(
-      (sum, line) => {
-        return sum + (line.unitPrice.amount * line.quantity);
-      },
-      0
-    );
+    return computeSubtotal(order.orderLines);
   }
 );
 
-const materialized = bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order);
-const expected = aboxFixtures.order.items.reduce(
-  (sum, line) => {
-    return sum + (line.unitPrice.amount * line.quantity);
-  },
-  0
-);
+const materialized = withSubtotal.instantiate(OrderSchema.$id, aboxFixtures.order);
+const expected = computeSubtotal(aboxFixtures.order.orderLines);
 
-console.assert(Math.abs((materialized as { 'subtotal': number }).subtotal - expected) < 0.005);
+console.assert(Math.abs(materialized.subtotal - expected) < 0.005);
 
 // removeComputed unregisters the fn; further instantiate() calls drop the field.
-bookstoreEntities.removeComputed(OrderSchema, 'subtotal');
-const after = bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order);
+withSubtotal.removeComputed(OrderSchema.$id, 'subtotal');
+const after = withSubtotal.instantiate(OrderSchema.$id, aboxFixtures.order);
 
-console.assert(!('subtotal' in (after as object)));
+console.assert(!Reflect.has(after, 'subtotal'));

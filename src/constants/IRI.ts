@@ -56,6 +56,7 @@ export const OWL = {
 export const RDF = {
   'first': `${RDF_NS}first`,
   'JSON': `${RDF_NS}JSON`,
+  'langString': `${RDF_NS}langString`,
   'List': `${RDF_NS}List`,
   'nil': `${RDF_NS}nil`,
   'rest': `${RDF_NS}rest`,
@@ -133,6 +134,7 @@ export const DASH = {
 export const DCT = { 'format': `${DCT_NS}format` } as const;
 
 export const JT = {
+  'annotatedEdge': `${JT_NS}annotatedEdge`,
   'dependentRequired': `${JT_NS}dependentRequired`,
   'else': `${JT_NS}else`,
   'format': `${JT_NS}format`,

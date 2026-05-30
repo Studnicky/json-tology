@@ -58,6 +58,19 @@ import type {
 import type { InferType } from '../../src/types/Schema.js';
 
 // ---------------------------------------------------------------------------
+// Type-level assertion helpers
+// ---------------------------------------------------------------------------
+
+type AssertEqualType<TLeft, TRight>
+  = [TLeft] extends [TRight] ? [TRight] extends [TLeft] ? true : false : false;
+
+function assert<T extends true>(): void {
+  // interop: void 0 as unknown as T is the compile-time type-test idiom; no
+  // typed path exists from void to an arbitrary constraint-bounded type T.
+  void 0 as unknown as T;
+}
+
+// ---------------------------------------------------------------------------
 // Test schemas
 // ---------------------------------------------------------------------------
 
@@ -292,12 +305,13 @@ const _DupB = {
 } as const;
 
 if (false as boolean) {
-  // @ts-expect-error — duplicate $id: both schemas share 'https://example.io/Dup'
   JsonTology.create({
     'baseIRI': 'https://example.io',
     'enableStrictGraph': false,
     'schemas': [
+      // @ts-expect-error — duplicate $id: both schemas share 'https://example.io/Dup'
       _DupA,
+      // @ts-expect-error — duplicate $id: both schemas share 'https://example.io/Dup'
       _DupB
     ] as const
   });
@@ -441,14 +455,14 @@ void _FixedArraySchema;
 
 type FixedArray = InferType<typeof _FixedArraySchema>;
 
-// Fixed-length tuple: exactly 3 strings
-const _fa1: FixedArray = [
-  'a',
-  'b',
-  'c'
-];
-
-void _fa1;
+// Fixed-length tuple: exactly 3 strings, intersected with the maxItems/minItems
+// brands. The brands make the type unsatisfiable by a plain array literal —
+// only runtime-coerced values carry them — so the contract is verified at the
+// type level rather than by a literal assignment.
+assert<AssertEqualType<
+  FixedArray,
+  MaxItemsBrandInterface<3> & MinItemsBrandInterface<3> & readonly [string, string, string]
+>>();
 
 const _MinArraySchema = {
   'items': { 'type': 'number' },
@@ -460,21 +474,11 @@ void _MinArraySchema;
 
 type MinArray = InferType<typeof _MinArraySchema>;
 
-// Min-length tuple: at least 2 numbers, then rest
-const _ma1: MinArray = [
-  1,
-  2
-];
-const _ma2: MinArray = [
-  1,
-  2,
-  3,
-  4,
-  5
-];
-
-void _ma1;
-void _ma2;
+// Min-length tuple: at least 2 numbers, then rest — carries the minItems brand.
+assert<AssertEqualType<
+  MinArray,
+  MinItemsBrandInterface<2> & readonly [number, number, ...number[]]
+>>();
 
 // ---------------------------------------------------------------------------
 // 13. patternProperties type inference
@@ -489,9 +493,10 @@ void _PatternSchema;
 
 type PatternProps = InferType<typeof _PatternSchema>;
 
-// Index signature gives number for any string key
+// Pattern property keys are optional in the inferred shape, so the value type
+// is `number | undefined` for any matching key.
 const _pp4: PatternProps = { 'x-count': 42 };
-const _ppVal: number = _pp4['x-count'];
+const _ppVal: number | undefined = _pp4['x-count'];
 
 void _ppVal;
 
@@ -1543,6 +1548,8 @@ void _MinItemsArraySchema;
 
 type MinItemsArr = InferType<typeof _MinItemsArraySchema>;
 
+// interop: MinItemsBrandInterface carries a phantom brand key; null cannot
+// be assigned to the branded type without the unknown intermediate.
 const _mia: MinItemsBrandInterface<2> = null as unknown as MinItemsArr;
 
 void _mia;
@@ -1561,6 +1568,8 @@ void _MaxItemsArraySchema;
 
 type MaxItemsArr = InferType<typeof _MaxItemsArraySchema>;
 
+// interop: MaxItemsBrandInterface carries a phantom brand key; null cannot
+// be assigned to the branded type without the unknown intermediate.
 const _mxa: MaxItemsBrandInterface<5> = null as unknown as MaxItemsArr;
 
 void _mxa;
@@ -1575,6 +1584,7 @@ void _OtherMaxItemsSchema;
 
 type OtherMaxArr = InferType<typeof _OtherMaxItemsSchema>;
 
+// interop: phantom brand key; unknown intermediate required for the negative brand test.
 // @ts-expect-error — maxItems: 5 vs maxItems: 10 are incompatible brands
 const _mxBad: MaxItemsBrandInterface<5> = null as unknown as OtherMaxArr;
 
@@ -1715,6 +1725,8 @@ const _sk: StrictKeys = {
 void _sk;
 
 // Access a valid key
+// interop: StrictKeys carries phantom brand keys; {} cannot satisfy the branded
+// type — unknown intermediate used to exercise the indexed-access type shape.
 const _skv: number | undefined = ({} as unknown as StrictKeys).x;
 
 void _skv;
@@ -2083,8 +2095,8 @@ const _closed1: Closed = {
 
 void _closed1;
 
-// @ts-expect-error — excess property 'extra' is flagged as never
 const _closedBad: Closed = {
+  // @ts-expect-error — excess property 'extra' is rejected (not a known key)
   'extra': true,
   'name': 'Bob'
 };

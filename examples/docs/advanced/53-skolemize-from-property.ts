@@ -6,7 +6,7 @@
  * (defaults to Skolemize.hash), so heterogeneous instance trees still
  * produce IRIs for every object.
  *
- * Bastian Balthazar Bux's customer record has an `id` field, so the
+ * Bastian Balthazar Bux's customer record has a `customerId` field, so the
  * minter resolves the root subject from that property directly.
  */
 
@@ -15,11 +15,11 @@ import {
   aboxFixtures, bookstoreEntities, CustomerSchema
 } from '../bookstore/index.js';
 
-const quads = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer, { 'iriFor': Skolemize.fromProperty('id', { 'baseIRI': 'https://shop.example.com/customers/by-id' }) });
+const quads = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer, { 'iriFor': Skolemize.fromProperty('customerId', { 'baseIRI': 'https://shop.example.com/customers/by-id' }) });
 
 const rootIri = quads[0]?.subject.value ?? '';
 
 console.assert(
-  rootIri === `https://shop.example.com/customers/by-id/${aboxFixtures.customer.id}`,
-  `root IRI minted from id property: ${rootIri}`
+  rootIri === `https://shop.example.com/customers/by-id/${aboxFixtures.customer.customerId}`,
+  `root IRI minted from customerId property: ${rootIri}`
 );

@@ -311,37 +311,37 @@ void describe('null/undefined schema guard on public API', () => {
     'name': string }> = [
     {
       'fn': () => {
-        jt.validate(null as unknown as string, {});
+        jt.validate(null as unknown as 'urn:hardening:guard', {});
       },
       'name': 'validate() throws SchemaError for null'
     },
     {
       'fn': () => {
-        jt.validate(undefined as unknown as string, {});
+        jt.validate(undefined as unknown as 'urn:hardening:guard', {});
       },
       'name': 'validate() throws SchemaError for undefined'
     },
     {
       'fn': () => {
-        jt.instantiate(null as unknown as string, {});
+        jt.instantiate(null as unknown as 'urn:hardening:guard', {});
       },
       'name': 'coerce() throws SchemaError for null'
     },
     {
       'fn': () => {
-        jt.validate(null as unknown as string, {});
+        jt.validate(null as unknown as 'urn:hardening:guard', {});
       },
       'name': 'validate() throws SchemaError for null'
     },
     {
       'fn': () => {
-        jt.is(null as unknown as string, {});
+        jt.is(null as unknown as 'urn:hardening:guard', {});
       },
       'name': 'is() throws SchemaError for null'
     },
     {
       'fn': () => {
-        jt.subschemaAt(null as unknown as string, '/properties/x');
+        jt.subschemaAt(null as unknown as 'urn:hardening:guard', '/properties/x');
       },
       'name': 'subschemaAt() throws SchemaError for null'
     }

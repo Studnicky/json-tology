@@ -26,34 +26,41 @@ type OrderWire = typeof aboxFixtures.order;
 
 class OrderViaFromPlain {
   public static fromPlain(plain: OrderWire): OrderViaFromPlain {
-    const built = new OrderViaFromPlain(plain.id, plain.customerId);
+    const built = new OrderViaFromPlain(plain.orderId, plain.customerId);
 
-    built.items = plain.items;
-    built.total = plain.total;
+    built.orderLines = plain.orderLines;
+    built.orderTotal = plain.orderTotal;
     built.shippingAddress = plain.shippingAddress;
     built.placedAt = plain.placedAt;
 
     return built;
   }
 
-  declare public items: OrderWire['items'];
+  declare public orderLines: OrderWire['orderLines'];
+  declare public orderTotal: OrderWire['orderTotal'];
   declare public placedAt: OrderWire['placedAt'];
   declare public shippingAddress: OrderWire['shippingAddress'];
-  declare public total: OrderWire['total'];
 
   public constructor(
-    public readonly id: string,
+    public readonly orderId: string,
     public readonly customerId: string
   ) {}
 
-  public toPlain(): OrderWire {
+  public toPlain(): {
+    readonly 'customerId': string;
+    readonly 'orderId': string;
+    readonly 'orderLines': OrderWire['orderLines'];
+    readonly 'orderTotal': OrderWire['orderTotal'];
+    readonly 'placedAt': OrderWire['placedAt'];
+    readonly 'shippingAddress': OrderWire['shippingAddress'];
+  } {
     return {
       'customerId': this.customerId,
-      'id': this.id,
-      'items': this.items,
+      'orderId': this.orderId,
+      'orderLines': this.orderLines,
+      'orderTotal': this.orderTotal,
       'placedAt': this.placedAt,
-      'shippingAddress': this.shippingAddress,
-      'total': this.total
+      'shippingAddress': this.shippingAddress
     };
   }
 }
@@ -65,7 +72,7 @@ const FromPlainOrderSchema = Compose.equivalent(
 
 jt.set(FromPlainOrderSchema);
 
-Transform.create<typeof FromPlainOrderSchema, OrderViaFromPlain>(FromPlainOrderSchema, {
+const FromPlainOrderTransform = Transform.create<typeof FromPlainOrderSchema, OrderViaFromPlain>(FromPlainOrderSchema, {
   'decode': (plain) => {
     return OrderViaFromPlain.fromPlain(plain as OrderWire);
   },
@@ -74,7 +81,8 @@ Transform.create<typeof FromPlainOrderSchema, OrderViaFromPlain>(FromPlainOrderS
   }
 });
 
-const hydrated = jt.instantiate(FromPlainOrderSchema, aboxFixtures.order);
+const hydrated = jt.instantiate(FromPlainOrderTransform, aboxFixtures.order);
 
 console.assert(hydrated instanceof OrderViaFromPlain);
-console.assert((hydrated as OrderViaFromPlain).customerId === aboxFixtures.order.customerId);
+console.assert(hydrated.orderId === aboxFixtures.order.orderId);
+console.assert(hydrated.customerId === aboxFixtures.order.customerId);

@@ -111,7 +111,9 @@ console.log('Codegen output matches committed fixture (modulo timestamp): true')
 // reflects how a consumer would use the generated vocabulary in practice.
 // ---------------------------------------------------------------------------
 
-const generated = await import('../ontologies/generated/dcat.generated.js') as {
+// interop: dynamic import() returns an opaque module type; the generated file's
+// exports are not visible to the static type system at this call site.
+const generated = await import('../ontologies/generated/dcat.generated.js') as unknown as {
   'DatasetSchema': Record<string, unknown> & { '$id': string };
   'dcat': ReturnType<typeof JsonTology.create>;
   'DistributionSchema': Record<string, unknown> & { '$id': string };

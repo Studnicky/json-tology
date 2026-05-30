@@ -15,6 +15,8 @@ import { strict as assert } from 'node:assert';
 import {
   Compose, Transform
 } from '../../../src/index.js';
+import type { JsonSchemaDocumentType } from '../../../src/types/index.js';
+import type { TransformedType } from '../../../src/types/Transform.js';
 import {
   aboxFixtures, createBookstoreDocRegistry,
   Iso8601Schema
@@ -31,17 +33,20 @@ const RoundTripPlacedAtSchema = Compose.equivalent(
 
 jt.set(RoundTripPlacedAtSchema);
 
-Transform.create<typeof RoundTripPlacedAtSchema, Date>(RoundTripPlacedAtSchema, {
+const RoundTripPlacedAtTransform = Transform.create<typeof RoundTripPlacedAtSchema, Date>(RoundTripPlacedAtSchema, {
   'decode': (wire) => {
-    return new Date(wire);
+    return new Date(wire as string);
   },
   'encode': (date) => {
     return date.toISOString();
   }
 });
 
-function roundTrip<T extends { readonly '$id': string }>(
-  schema: T,
+function roundTrip<
+  TSchema extends JsonSchemaDocumentType & { readonly '$id': string },
+  TOut
+>(
+  schema: TransformedType<TSchema, TOut>,
   samples: readonly string[]
 ): void {
   for (const wire of samples) {
@@ -57,7 +62,7 @@ function roundTrip<T extends { readonly '$id': string }>(
 // is normalized to the same form for the round-trip.
 const normalizedPlacedAt = new Date(aboxFixtures.order.placedAt).toISOString();
 
-roundTrip(RoundTripPlacedAtSchema, [
+roundTrip(RoundTripPlacedAtTransform, [
   normalizedPlacedAt,
   '2026-01-15T10:30:00.000Z',
   '1979-09-01T00:00:00.000Z'

@@ -18,6 +18,7 @@ import {
 // public JsonTology API and constitute the contract for vocabulary-plugin integration.
 import { GraphShaclSerializer } from '../../src/modules/ontology/GraphShaclSerializer.js';
 import { JsonLdFormatter } from '../../src/modules/rdf/JsonLdFormatter.js';
+import { Terms } from '../../src/modules/rdf/Terms.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
 import { SchemaRegistry } from '../../src/modules/registry/SchemaRegistry.js';
 // STANDARD_PREFIXES is the canonical constant injected by JsonTology when constructing prefix maps; not re-exported.
@@ -205,19 +206,14 @@ void describe('VocabularyPlugin', () => {
             'prefixes': { 'acme': ACME_NS },
             project(relation, emit) {
               if (relation.predicate === `${ACME_NS}category`) {
-                const quad: QuadInterface = {
-                  'object': {
-                    'datatype': {
-                      'termType': 'NamedNode',
-                      'value': 'http://www.w3.org/2001/XMLSchema#string'
-                    },
-                    'language': '',
-                    'termType': 'Literal',
-                    'value': relation.target
-                  },
-                  'predicate': `${ACME_NS}category`,
-                  'subject': relation.source.id
-                };
+                const targetValue = typeof relation.target === 'string'
+                  ? relation.target
+                  : relation.target.id;
+                const quad: QuadInterface = Terms.quad(
+                  Terms.iri(relation.source.id),
+                  Terms.iri(`${ACME_NS}category`),
+                  Terms.literal(targetValue, { 'datatype': Terms.iri('http://www.w3.org/2001/XMLSchema#string') })
+                );
 
                 emittedQuads.push(quad);
                 emit(quad);
@@ -272,19 +268,15 @@ void describe('VocabularyPlugin', () => {
             project(relation, emit) {
               if (relation.predicate.startsWith(ACME_NS)) {
                 projectCalled.push(relation.predicate);
-                emit({
-                  'object': {
-                    'datatype': {
-                      'termType': 'NamedNode',
-                      'value': 'http://www.w3.org/2001/XMLSchema#string'
-                    },
-                    'language': '',
-                    'termType': 'Literal',
-                    'value': relation.target
-                  },
-                  'predicate': relation.predicate,
-                  'subject': relation.source.id
-                });
+                const targetValue = typeof relation.target === 'string'
+                  ? relation.target
+                  : relation.target.id;
+
+                emit(Terms.quad(
+                  Terms.iri(relation.source.id),
+                  Terms.iri(relation.predicate),
+                  Terms.literal(targetValue, { 'datatype': Terms.iri('http://www.w3.org/2001/XMLSchema#string') })
+                ));
               }
             }
           };
@@ -426,7 +418,7 @@ void describe('VocabularyPlugin', () => {
           assert.ok(graphs.length > 0);
 
           const serializer = new GraphOntologySerializer({
-            'curie': registry.curie,
+            ...(registry.curie === undefined ? {} : { 'curie': registry.curie }),
             'vocabularies': [plugin]
           });
           const nodes = serializer.serializeQuads(graphs);
@@ -517,19 +509,15 @@ void describe('VocabularyPlugin', () => {
             project(relation, emit) {
               if (relation.predicate.startsWith(ACME_NS)) {
                 projectCalled.push(relation.predicate);
-                emit({
-                  'object': {
-                    'datatype': {
-                      'termType': 'NamedNode',
-                      'value': 'http://www.w3.org/2001/XMLSchema#string'
-                    },
-                    'language': '',
-                    'termType': 'Literal',
-                    'value': relation.target
-                  },
-                  'predicate': relation.predicate,
-                  'subject': relation.source.id
-                });
+                const targetValue = typeof relation.target === 'string'
+                  ? relation.target
+                  : relation.target.id;
+
+                emit(Terms.quad(
+                  Terms.iri(relation.source.id),
+                  Terms.iri(relation.predicate),
+                  Terms.literal(targetValue, { 'datatype': Terms.iri('http://www.w3.org/2001/XMLSchema#string') })
+                ));
               }
             }
           };

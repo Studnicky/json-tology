@@ -25,12 +25,12 @@ type OrderWire = typeof aboxFixtures.order;
 
 class OrderViaNew {
   declare public customerId: string;
-  declare public id: string;
-  declare public items: OrderWire['items'];
-  declare public total: OrderWire['total'];
+  declare public orderId: string;
+  declare public orderLines: OrderWire['orderLines'];
+  declare public orderTotal: OrderWire['orderTotal'];
 
   public summary(): string {
-    return `order ${this.id}`;
+    return `order ${this.orderId}`;
   }
 }
 

@@ -80,12 +80,11 @@ function makeCtx(classIris: string[] = [], quads: QuadInterface[] = []): OwlImpo
 // ---------------------------------------------------------------------------
 
 function makeTypeQuad(subject: string, typeIri: string): QuadInterface {
-  return {
-    'graph': Terms.defaultGraph(),
-    'object': Terms.iri(typeIri),
-    'predicate': Terms.iri(RDF_TYPE),
-    'subject': Terms.iri(subject)
-  };
+  return Terms.quad(
+    Terms.iri(subject),
+    Terms.iri(RDF_TYPE),
+    Terms.iri(typeIri)
+  );
 }
 
 /**
@@ -133,24 +132,9 @@ function makeRestrictionBnodeQuads(
   const bTerm = Terms.blank(bnodeId);
 
   return [
-    {
-      'graph': Terms.defaultGraph(),
-      'object': Terms.iri(OWL_RESTRICTION),
-      'predicate': Terms.iri(RDF_TYPE),
-      'subject': bTerm
-    },
-    {
-      'graph': Terms.defaultGraph(),
-      'object': Terms.iri(onPropertyIri),
-      'predicate': Terms.iri(OWL_ON_PROPERTY),
-      'subject': bTerm
-    },
-    {
-      'graph': Terms.defaultGraph(),
-      'object': Terms.literal(hasValue, { 'datatype': Terms.iri(datatypeIri) }),
-      'predicate': Terms.iri(OWL_HAS_VALUE),
-      'subject': bTerm
-    }
+    Terms.quad(bTerm, Terms.iri(RDF_TYPE), Terms.iri(OWL_RESTRICTION)),
+    Terms.quad(bTerm, Terms.iri(OWL_ON_PROPERTY), Terms.iri(onPropertyIri)),
+    Terms.quad(bTerm, Terms.iri(OWL_HAS_VALUE), Terms.literal(hasValue, { 'datatype': Terms.iri(datatypeIri) }))
   ];
 }
 

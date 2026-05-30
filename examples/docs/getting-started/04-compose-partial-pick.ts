@@ -24,7 +24,7 @@ const PatchCustomerSchema = Compose.partial(
 const CustomerSummarySchema = Compose.pick(
   CustomerSchema,
   [
-    'id',
+    'customerId',
     'name'
   ] as const,
   'https://bookstore.example/CustomerSummary'
@@ -33,15 +33,18 @@ const CustomerSummarySchema = Compose.pick(
 jt.set(PatchCustomerSchema);
 jt.set(CustomerSummarySchema);
 
-const patchErrs = jt.validate(PatchCustomerSchema.$id, { 'name': aboxFixtures.customer.name });
+// These derived schemas are not part of the registry's compile-time schema-ID
+// union (registered at runtime via set()), so validate/instantiate receive the
+// schema object itself.
+const patchErrs = jt.validate(PatchCustomerSchema, { 'name': aboxFixtures.customer.name });
 
 console.assert(patchErrs.length === 0);
 
-const summary = jt.instantiate(CustomerSummarySchema.$id, {
-  'id': aboxFixtures.customer.id,
+const summary = jt.instantiate(CustomerSummarySchema, {
+  'customerId': aboxFixtures.customer.customerId,
   'name': aboxFixtures.customer.name
-}) as { 'id': string;
+}) as { 'customerId': string;
   'name': string };
 
-console.assert(summary.id === aboxFixtures.customer.id);
+console.assert(summary.customerId === aboxFixtures.customer.customerId);
 console.assert(summary.name === aboxFixtures.customer.name);

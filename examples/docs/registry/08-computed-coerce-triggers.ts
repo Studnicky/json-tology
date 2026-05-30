@@ -11,24 +11,21 @@ import {
   aboxFixtures, bookstoreEntities, OrderSchema
 } from '../bookstore/index.js';
 
-interface OrderWithLineCount {
-  'items': readonly unknown[];
-  'lineCount': number;
-}
-
-bookstoreEntities.addComputed<OrderWithLineCount>(
-  OrderSchema,
+// addComputed returns a registry whose `Order` type is augmented with the
+// computed `lineCount`, so `instantiate(OrderSchema.$id, …)` returns it typed.
+const withLineCount = bookstoreEntities.addComputed(
+  OrderSchema.$id,
   'lineCount',
   (order) => {
-    return order.items.length;
+    return order.orderLines.length;
   }
 );
 
-const order = bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order);
-// lineCount omitted from input — computed from items.length.
-const expectedLineCount = aboxFixtures.order.items.length;
+const order = withLineCount.instantiate(OrderSchema.$id, aboxFixtures.order);
+// lineCount omitted from input — computed from orderLines.length.
+const expectedLineCount = aboxFixtures.order.orderLines.length;
 
-console.assert(Math.abs((order as { 'lineCount': number }).lineCount - expectedLineCount) < 0.001);
+console.assert(Math.abs(order.lineCount - expectedLineCount) < 0.001);
 
 // Cleanup: remove the computed field so other examples are unaffected.
-bookstoreEntities.removeComputed(OrderSchema, 'lineCount');
+withLineCount.removeComputed(OrderSchema.$id, 'lineCount');

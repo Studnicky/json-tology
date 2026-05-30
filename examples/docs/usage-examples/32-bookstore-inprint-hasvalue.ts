@@ -32,7 +32,7 @@ const okErrs = bookstoreEntities.validate(InPrintBookSchema.$id, inPrint);
 console.assert(okErrs.length === 0);
 
 // The TBox carries an owl:Restriction with owl:hasValue 'inPrint' on
-// urn:bookstore:Book#printStatus.
+// https://bookstore.example/printStatus.
 const owl = bookstoreEntities.ontology().jsonLdObject();
 const graphNodes = owl['@graph'] as ReadonlyArray<Record<string, unknown>>;
 const inPrintNode = graphNodes.find((node) => {

@@ -22,9 +22,9 @@ const PublicBookSchema = Compose.omit(
   'https://bookstore.example/PublicBookNoStatus'
 );
 
-jt.set(PublicBookSchema);
+const jt2 = jt.set(PublicBookSchema);
 
-const errors = jt.validate(PublicBookSchema.$id, {
+const errors = jt2.validate(PublicBookSchema.$id, {
   'authors': aboxFixtures.rareBook.authors,
   'inStock': aboxFixtures.rareBook.inStock,
   'isbn': aboxFixtures.rareBook.isbn,

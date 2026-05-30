@@ -211,7 +211,7 @@ export function runComposeBench(): BenchResult[] {
 
   reg.set(CircleJt);
   reg.set(RectJt);
-  reg.set(ShapeJt as Record<string, unknown>);
+  reg.set({ ...ShapeJt });
   reg.validate((ShapeJt as { '$id': string }).$id, validCircle);
 
   const ShapeTbCompiled = TypeCompiler.Compile(ShapeTb);
@@ -265,7 +265,7 @@ export function runComposeBench(): BenchResult[] {
 
   subReg.set(BaseBookJt);
   subReg.set(Tagged);
-  subReg.set(BookTaggedInter as Record<string, unknown>);
+  subReg.set({ ...BookTaggedInter });
 
   const bookTaggedId = (BookTaggedInter as { '$id': string }).$id;
   const bookTaggedValid = {

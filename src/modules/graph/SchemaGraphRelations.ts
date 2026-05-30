@@ -389,6 +389,49 @@ function pushUnionTypeRelations(
   }
 }
 
+function pushAnnotatedEdgeRelations(
+  graph: GraphAccessorInterface,
+  node: SchemaGraphNodeInterface,
+  sem: SchemaGraphSemanticsInterface,
+  relations: SchemaGraphRelationInterface[]
+): void {
+  const descriptor = sem.annotatedEdge;
+
+  if (descriptor === undefined) {
+    return;
+  }
+
+  const edgeTarget = graph.resolveRefId(descriptor.targetRef);
+  const edgeAnnotations: Array<{
+    readonly 'annotationPredicate': string;
+    readonly 'propertyName': string;
+    readonly 'rangeRef': string;
+  }> = [];
+
+  for (const [
+    propName,
+    propSchema
+  ] of Object.entries(descriptor.annotations)) {
+    edgeAnnotations.push({
+      'annotationPredicate': `${node.id}#${propName}`,
+      'propertyName': propName,
+      'rangeRef': graph.resolveRefId(propSchema.$ref)
+    });
+  }
+
+  relations.push({
+    'predicate': JT.annotatedEdge,
+    'source': node,
+    'structure': {
+      edgeAnnotations,
+      'edgePredicate': graph.resolveRefId(descriptor.predicate),
+      edgeTarget,
+      'kind': 'annotatedEdge'
+    },
+    'target': edgeTarget
+  });
+}
+
 export const SchemaGraphRelations = {
   extractRelations(
     graph: GraphAccessorInterface,
@@ -633,7 +676,8 @@ export const SchemaGraphRelations = {
       relations.push({
         'metadata': {
           'minCardinality': 1,
-          'onProperty': propIRI
+          'onProperty': propIRI,
+          'propertyName': propertyName
         },
         'predicate': OWL.Restriction,
         'source': node,
@@ -775,6 +819,7 @@ export const SchemaGraphRelations = {
     pushFormatPatternRelations(node, sem, relations);
     pushFormatAnnotationRelation(node, sem, relations);
     pushUserRestrictionRelations(node, sem, relations);
+    pushAnnotatedEdgeRelations(graph, node, sem, relations);
 
     return relations;
   }

@@ -25,6 +25,6 @@ const schemaType: string = CustomerSchema.type;
 
 console.assert(schemaId === 'urn:bookstore:Customer');
 console.assert(schemaType === 'object');
-console.assert(CustomerSchema.required.includes('id'));
+console.assert(CustomerSchema.required.includes('customerId'));
 console.assert(CustomerSchema.required.includes('email'));
 console.assert(CustomerSchema.required.includes('name'));

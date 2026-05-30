@@ -26,6 +26,7 @@ import {
 } from 'node:test';
 import {
   Compose,
+  DecodeError,
   GraphError,
   InstantiationError,
   JsonTology,
@@ -35,6 +36,7 @@ import {
   Transform
 } from '../../src/index.js';
 import { SchemaGraph } from '../../src/modules/graph/SchemaGraph.js';
+import { Terms } from '../../src/modules/rdf/Terms.js';
 
 // ---------------------------------------------------------------------------
 // Bookstore fixtures (used across multiple sections)
@@ -117,16 +119,18 @@ void describe('dump / dumpJson failure modes', () => {
       );
     }
 
-    // unregistered $id
+    // unregistered $id — string-ref path looks up the registry without
+    // registering, so an unknown id surfaces REF_UNRESOLVED from the Dumper.
     {
       const jt = JsonTology.create({
         'baseIRI': 'https://bookstore.io',
         'schemas': [AuthorSchema] as const
       });
+      const unknownId = 'https://bookstore.io/Unknown' as typeof AuthorSchema.$id;
 
       assert.throws(
         () => {
-          return jt.dump('https://bookstore.io/Unknown', { 'name': 'x' });
+          return jt.dump(unknownId, { 'name': 'x' });
         },
         (err: unknown) => {
           return err instanceof GraphError && (err).code === 'REF_UNRESOLVED';
@@ -347,14 +351,11 @@ void describe('toQuads / fromQuads boundaries', () => {
       'baseIRI': 'https://bookstore.io',
       'schemas': [AuthorSchema] as const
     });
-    const stray = [{
-      'object': {
-        'termType': 'Literal' as const,
-        'value': 'Asimov'
-      },
-      'predicate': 'https://bookstore.io/Author/name',
-      'subject': 'https://bookstore.io/Author/instances/anon'
-    }];
+    const stray = [Terms.quad(
+      Terms.iri('https://bookstore.io/Author/instances/anon'),
+      Terms.iri('https://bookstore.io/Author/name'),
+      Terms.literal('Asimov', { 'datatype': Terms.iri('http://www.w3.org/2001/XMLSchema#string') })
+    )];
     const lifted = jt.fromQuads(AuthorSchema.$id, stray);
 
     assert.deepStrictEqual(lifted, []);
@@ -509,7 +510,7 @@ void describe('subschemaAt pointer errors', () => {
     // nested pointer resolves sub-schema
     const inner = jt.subschemaAt(PARENT.$id, '/properties/inner');
 
-    assert.equal((inner as { 'type': string }).type, 'object');
+    assert.equal(inner.type, 'object');
     assert.equal(inner.$id, `${PARENT.$id}#/properties/inner`);
   });
 
@@ -579,7 +580,7 @@ void describe('ANCHOR_NOT_FOUND error code assertion', () => {
 // ===========================================================================
 
 void describe('static counterparts — failure modes', () => {
-  void it('JsonTology.instantiate wraps a Transform decoder error as InstantiationError TRANSFORM_DECODE_FAILED', () => {
+  void it('JsonTology.instantiate wraps a Transform decoder error as DecodeError TRANSFORM_DECODE_FAILED', () => {
     const ExplodingSchema = Transform.create(
       {
         '$id': 'urn:test:Exploding',
@@ -595,12 +596,17 @@ void describe('static counterparts — failure modes', () => {
       }
     );
 
+    const explodingJt = JsonTology.create({
+      'baseIRI': 'urn:test:',
+      'schemas': [ExplodingSchema] as const
+    });
+
     assert.throws(
       () => {
-        return JsonTology.instantiate(ExplodingSchema, 'whatever');
+        return explodingJt.instantiate(ExplodingSchema, 'whatever');
       },
       (err: unknown) => {
-        return err instanceof InstantiationError
+        return err instanceof DecodeError
           && err.code === 'TRANSFORM_DECODE_FAILED'
           && err.cause instanceof Error
           && err.cause.message === 'decoder failure';
@@ -683,9 +689,14 @@ void describe('static counterparts — failure modes', () => {
         }
       );
 
+      const explosiveJt = JsonTology.create({
+        'baseIRI': 'urn:test:',
+        'schemas': [ExplosiveSchema] as const
+      });
+
       assert.throws(
         () => {
-          return JsonTology.dump(ExplosiveSchema, 'value');
+          return explosiveJt.dump(ExplosiveSchema, 'value');
         },
         (err: unknown) => {
           return err instanceof Error && err.message.includes('static encoder boom');
@@ -920,9 +931,9 @@ void describe('Mixed-tuple registration order — order independence', () => {
       ] as const) {
       const jt = JsonTology.create({
         'baseIRI': 'https://bookstore.io',
-        'schemas': schemas as Array<typeof OrderSchema>
+        'schemas': schemas
       });
-      const result = jt.instantiate(OrderSchema.$id, {
+      const result = jt.instantiate(OrderSchema, {
         'customer': { 'name': 'Alice' },
         'orderId': orderId
       }) as Record<string, unknown>;
@@ -1002,9 +1013,9 @@ void describe('Default propagation through nested $refs', () => {
 // ===========================================================================
 
 void describe('Transform decode errors at root-level coercion', () => {
-  void it('decoder throw at root wraps as InstantiationError TRANSFORM_DECODE_FAILED with original cause', () => {
+  void it('decoder throw at root wraps as DecodeError TRANSFORM_DECODE_FAILED with original cause', () => {
     // Transform decode runs after compiled validation succeeds; failures wrap
-    // as InstantiationError with code TRANSFORM_DECODE_FAILED and the original
+    // as DecodeError with code TRANSFORM_DECODE_FAILED and the original
     // Error attached as cause.
     const HostileSchema = Transform.create(
       {
@@ -1034,7 +1045,7 @@ void describe('Transform decode errors at root-level coercion', () => {
         return jt.instantiate(HostileSchema.$id, 'bad');
       },
       (err: unknown) => {
-        return err instanceof InstantiationError
+        return err instanceof DecodeError
           && err.code === 'TRANSFORM_DECODE_FAILED'
           && err.cause instanceof Error
           && err.cause.message === 'decoder rejects "bad"';

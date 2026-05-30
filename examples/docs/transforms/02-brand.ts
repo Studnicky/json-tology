@@ -40,11 +40,11 @@ jt.set(BrandedCustomerIdSchema);
 jt.set(BrandedOrderIdSchema);
 
 // Both are strings at runtime — Bastian's customer + order UUIDs.
-const cid = jt.instantiate(BrandedCustomerIdSchema, aboxFixtures.customer.id);
-const oid = jt.instantiate(BrandedOrderIdSchema, aboxFixtures.order.id);
+const cid = jt.instantiate(BrandedCustomerIdSchema, aboxFixtures.customer.customerId);
+const oid = jt.instantiate(BrandedOrderIdSchema, aboxFixtures.order.orderId);
 
 console.assert(typeof cid === 'string');
 console.assert(typeof oid === 'string');
-console.assert(cid === aboxFixtures.customer.id);
-console.assert(oid === aboxFixtures.order.id);
+console.assert(cid === aboxFixtures.customer.customerId);
+console.assert(oid === aboxFixtures.order.orderId);
 // At compile time: CustomerId ≠ OrderId — type-level protection.

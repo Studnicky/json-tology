@@ -54,7 +54,7 @@ export interface UniqueItemsBrandInterface { readonly [UNIQUE_ITEMS]: true }
 /**
  * Generic uniqueness brand parameterised by element type. Lets downstream APIs
  * assume distinctness post-validation. Produced by `JsonTology.instantiate`
- * (and `coerce` / `materialize`) when the source schema declares
+ * and `JsonTology.materialize` when the source schema declares
  * `uniqueItems: true`. Plain arrays cannot satisfy this brand without going
  * through the validation API.
  */
@@ -71,7 +71,7 @@ export interface UniqueArrayBrandInterface<T> extends UniqueItemsBrandInterface 
  * `string` arguments at compile time.
  *
  * A value carrying these brands is only obtainable via the validation API
- * (`JsonTology.instantiate`, `JsonTology.coerce`, `JsonTology.materialize`,
+ * (`JsonTology.instantiate`, `JsonTology.materialize`,
  * `JsonTology.is`). Plain string literals are not assignable.
  *
  * The full set of standard JSON Schema 2020-12 string formats is covered:

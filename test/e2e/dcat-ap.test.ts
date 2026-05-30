@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, @typescript-eslint/strict-boolean-expressions */
+/* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/strict-boolean-expressions */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
@@ -17,7 +17,7 @@ import {
 } from '../fixtures/dcat-ap.js';
 
 describe('DCAT-AP e2e: Semantic round-trip', () => {
-  let jt: InstanceType<typeof JsonTology>;
+  let jt: ReturnType<typeof JsonTology.create>;
   let shaclQuads: unknown[];
   let owlQuads: unknown[];
 
@@ -303,9 +303,9 @@ describe('DCAT-AP e2e: Semantic round-trip', () => {
     });
 
     it('compares datatype constraints for string properties', async () => {
-      const datasetShape = shaclQuads.find((node: Record<string, unknown>) => {
-        return node['@id'] === 'http://www.w3.org/ns/dcat#Dataset';
-      });
+      const datasetShape = shaclQuads.find((node) => {
+        return (node as Record<string, unknown>)['@id'] === 'http://www.w3.org/ns/dcat#Dataset';
+      }) as Record<string, unknown> | undefined;
 
       if (!datasetShape) {
         assert.ok(false, 'Dataset shape should exist in SHACL output');
@@ -340,9 +340,9 @@ describe('DCAT-AP e2e: Semantic round-trip', () => {
     });
 
     it('compares class reference constraints for properties', async () => {
-      const datasetShape = shaclQuads.find((node: Record<string, unknown>) => {
-        return node['@id'] === 'http://www.w3.org/ns/dcat#Dataset';
-      });
+      const datasetShape = shaclQuads.find((node) => {
+        return (node as Record<string, unknown>)['@id'] === 'http://www.w3.org/ns/dcat#Dataset';
+      }) as Record<string, unknown> | undefined;
 
       if (!datasetShape) {
         assert.ok(false, 'Dataset shape should exist');
