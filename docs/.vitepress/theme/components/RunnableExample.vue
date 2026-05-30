@@ -31,8 +31,11 @@ const running = ref(false);
 const hasRun = ref(false);
 const edited = ref(false);
 const editorHost = ref<HTMLElement | null>(null);
+const root = ref<HTMLElement | null>(null);
+const cmReady = ref(false);
 
 let view: EditorView | undefined;
+let observer: IntersectionObserver | undefined;
 
 // Mid-tone token colors chosen to read on both the light and dark VitePress
 // backgrounds, so no theme observer is needed.
@@ -88,10 +91,11 @@ function makeConsole(sink: OutputLineType[]): Console {
   };
 }
 
-onMounted(() => {
-  if (!editorHost.value) {
+function mountEditor(): void {
+  if (cmReady.value || !editorHost.value) {
     return;
   }
+  cmReady.value = true;
 
   view = new EditorView({
     parent: editorHost.value,
@@ -115,9 +119,30 @@ onMounted(() => {
       ]
     })
   });
+}
+
+// Lazy-mount: only instantiate CodeMirror once the example scrolls near the
+// viewport, so a page with dozens of examples does not build dozens of editors
+// up front. Until then the source renders as a static <pre> (also SSR-visible).
+onMounted(() => {
+  if (!root.value || typeof IntersectionObserver === 'undefined') {
+    mountEditor();
+
+    return;
+  }
+
+  observer = new IntersectionObserver((entries) => {
+    if (entries.some((entry) => entry.isIntersecting)) {
+      mountEditor();
+      observer?.disconnect();
+    }
+  }, { rootMargin: '300px' });
+
+  observer.observe(root.value);
 });
 
 onBeforeUnmount(() => {
+  observer?.disconnect();
   view?.destroy();
 });
 
@@ -153,8 +178,10 @@ function reset(): void {
   <div v-if="!original" class="runnable runnable--error">
     <strong>Unknown example:</strong> {{ src }}
   </div>
-  <div v-else class="runnable">
-    <div ref="editorHost" class="runnable__editor" />
+  <div v-else ref="root" class="runnable">
+    <div ref="editorHost" class="runnable__editor">
+      <pre v-if="!cmReady" class="runnable__pre">{{ original }}</pre>
+    </div>
 
     <div class="runnable__exec">
       <div class="runnable__controls">
@@ -204,6 +231,18 @@ function reset(): void {
 }
 .runnable__editor :deep(.cm-editor) {
   padding: 0.35rem 0.25rem;
+}
+
+.runnable__pre {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  max-height: 32rem;
+  overflow: auto;
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--vp-c-text-1);
+  white-space: pre;
 }
 
 .runnable__exec {
