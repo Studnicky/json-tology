@@ -3,20 +3,28 @@
  *
  * When the same constrained shape is inlined in multiple schemas, the graph
  * sees them as two separate, unrelated nodes. The OWL output emits two
- * anonymous DatatypeProperty ranges. `findDuplicates()` flags the pair.
+ * anonymous DatatypeProperty ranges. `findDuplicates()` flags the inline
+ * shapes that match the named IsbnSchema as redundant.
  *
  * Demonstrates: inline duplication — findDuplicates returns the offending
- * pair; `equivalentTo` points at the first occurrence.
+ * pair; `equivalentTo` points at the named IsbnSchema.
  */
 
 import { SchemaRegistry } from '../../../src/modules/registry/SchemaRegistry.js';
+
+// The named canonical form — this should be the single source of truth
+const IsbnSchemaCanonical = {
+  '$id': 'urn:bookstore:IsbnCanonical',
+  'pattern': '^\\d{13}$',
+  'type': 'string'
+} as const;
 
 // BAD — two separate ISBN nodes in the graph, unrelated to each other
 const BookInlineIsbn = {
   '$id': 'urn:bookstore:BookInline',
   'properties': {
     'isbn': {
-      // node 1 — inline ISBN constraint
+      // node 1 — inline ISBN constraint, structurally identical to IsbnSchemaCanonical
       'pattern': '^\\d{13}$',
       'type': 'string'
     },
@@ -42,19 +50,22 @@ const OrderInlineIsbn = {
 // with inline duplicate shapes to demonstrate findDuplicates() detection.
 const registry = new SchemaRegistry({ 'enableStrictGraph': false });
 
+registry.set(IsbnSchemaCanonical);
 registry.set(BookInlineIsbn);
 registry.set(OrderInlineIsbn);
 
-// findDuplicates reveals the two inline ISBN shapes as redundant
+// findDuplicates reveals inline shapes that match the named IsbnSchemaCanonical
 const duplicates = registry.findDuplicates();
 
 console.assert(
   duplicates.length > 0,
-  'findDuplicates detects structurally identical inline ISBN shapes'
+  'findDuplicates detects inline ISBN shapes matching the named canonical schema'
 );
 console.assert(
   duplicates.some((dup) => {
-    return dup.schemaId === OrderInlineIsbn.$id || dup.schemaId === BookInlineIsbn.$id;
+    return dup.equivalentTo === IsbnSchemaCanonical.$id;
   }),
-  'at least one duplicate is attributed to an inline schema'
+  'duplicates point back to the named IsbnSchemaCanonical'
 );
+
+console.log('Anti-pattern: inline duplicate count:', duplicates.length, '| equivalent to:', duplicates[0]?.equivalentTo);

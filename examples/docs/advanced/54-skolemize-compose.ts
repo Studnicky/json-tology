@@ -28,3 +28,4 @@ console.assert(
   rootIri === `https://shop.example.com/by-id/${aboxFixtures.customer.customerId}`,
   `composed strategy resolved through customerId property: ${rootIri}`
 );
+console.log('composed strategy root IRI:', rootIri);

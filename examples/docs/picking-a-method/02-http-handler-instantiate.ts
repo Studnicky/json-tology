@@ -42,6 +42,8 @@ if (order !== null) {
   console.assert(order.customerId === aboxFixtures.order.customerId);
 }
 
+console.log('valid payload → status', statusCode, '| orderId:', order?.orderId);
+
 // Tampered payload — missing required `orderId`.
 const {
   'orderId': _omit, ...payloadWithoutId
@@ -50,16 +52,19 @@ const {
 void _omit;
 
 let caughtBad = false;
+let badStatus = 200;
 
 try {
   bookstoreEntities.instantiate(OrderSchema, payloadWithoutId);
 } catch (error) {
   if (error instanceof InstantiationError) {
     caughtBad = true;
+    badStatus = 400;
   }
 }
 
 console.assert(caughtBad);
+console.log('missing orderId → status', badStatus);
 
 // Instance form reuse — bookstoreEntities resolves all transitive $refs
 // (CustomerId, OrderLine, Money, etc.), so the same registry handles every
@@ -67,3 +72,4 @@ console.assert(caughtBad);
 const staticOrder = bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order);
 
 console.assert(staticOrder.orderId === aboxFixtures.order.orderId);
+console.log('reuse instantiate → orderId:', staticOrder.orderId);

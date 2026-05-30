@@ -42,4 +42,8 @@ if ('body' in response && typeof response.body === 'object') {
 
   console.assert(problem.status === 422, 'Problem should have 422 status');
   console.assert(Array.isArray(problem.errors), 'Problem should have errors array');
+
+  console.log('status:', response.status);
+  console.log('Content-Type:', response.contentType);
+  console.log('problem body:', JSON.stringify(problem, null, 2));
 }

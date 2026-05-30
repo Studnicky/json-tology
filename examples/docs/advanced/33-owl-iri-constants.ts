@@ -1,17 +1,19 @@
 /**
- * OWL and RDFS CURIE constants used by the canonical graph.
+ * OWL and RDFS IRI constants used by the canonical graph.
  *
- * The constants in src/constants/IRI.ts carry the prefixed (CURIE) form;
- * the prefix map declared on the OntologyBuilder expands them to full IRIs
- * at serialization time. Importing them directly lets consumers reference
- * the same property identifiers used by the TBox projection.
+ * The constants in src/constants/IRI.ts carry full absolute IRIs in the
+ * standard OWL and RDFS namespaces. Importing them directly lets consumers
+ * reference the same property identifiers used by the TBox projection.
  */
 
 import {
   OWL, RDFS
 } from '../../../src/constants/IRI.js';
 
-const curies: Record<string, string> = {
+const OWL_NS = 'http://www.w3.org/2002/07/owl#';
+const RDFS_NS = 'http://www.w3.org/2000/01/rdf-schema#';
+
+const iris: Record<string, string> = {
   'AsymmetricProperty': OWL.AsymmetricProperty,
   'FunctionalProperty': OWL.FunctionalProperty,
   'InverseFunctionalProperty': OWL.InverseFunctionalProperty,
@@ -24,9 +26,13 @@ const curies: Record<string, string> = {
 
 for (const [
   name,
-  curie
-] of Object.entries(curies)) {
-  const expected = name.startsWith('subProperty') ? 'rdfs:' : 'owl:';
+  iri
+] of Object.entries(iris)) {
+  const expectedNs = name.startsWith('subProperty') ? RDFS_NS : OWL_NS;
 
-  console.assert(curie.startsWith(expected), `${name} carries ${expected} prefix: ${curie}`);
+  console.assert(iri.startsWith(expectedNs), `${name} is in ${expectedNs} namespace: ${iri}`);
 }
+
+console.log('OWL.SymmetricProperty:', OWL.SymmetricProperty);
+console.log('OWL.TransitiveProperty:', OWL.TransitiveProperty);
+console.log('RDFS.subPropertyOf:', RDFS.subPropertyOf);

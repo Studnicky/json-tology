@@ -64,3 +64,7 @@ try {
 }
 
 console.assert(caughtExtra);
+
+console.log('instantiated address:', address);
+console.log('address is frozen (jt:config.frozen: true):', Object.isFrozen(address));
+console.log('unknown property rejected (jt:config.extra: forbid):', caughtExtra);

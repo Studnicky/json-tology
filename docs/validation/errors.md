@@ -37,27 +37,27 @@ type ValidationErrorType = {
 
 ### Example 1: Check validity, iterate errors
 
-<<< ../../examples/docs/validation/17-errors-iterate.ts
+<RunnableExample src="examples/docs/validation/17-errors-iterate" />
 
 ### Example 2: Valid data returns empty collection
 
-<<< ../../examples/docs/validation/18-errors-ok-empty.ts
+<RunnableExample src="examples/docs/validation/18-errors-ok-empty" />
 
 ### Example 3: Combine with the structured views
 
 See [`Error views`](/errors/views) for full documentation of each view.
 
-<<< ../../examples/docs/validation/19-errors-views.ts
+<RunnableExample src="examples/docs/validation/19-errors-views" />
 
 ## Bad examples - what NOT to do
 
 ### Anti-pattern 1: Calling validate() and then instantiate() separately
 
-<<< ../../examples/docs/validation/20-errors-antipattern-double-validate.ts
+<RunnableExample src="examples/docs/validation/20-errors-antipattern-double-validate" />
 
 ### Anti-pattern 2: Re-implementing a built-in view
 
-<<< ../../examples/docs/validation/21-errors-antipattern-manual-grouping.ts
+<RunnableExample src="examples/docs/validation/21-errors-antipattern-manual-grouping" />
 
 ## Comparison
 

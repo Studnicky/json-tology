@@ -40,4 +40,8 @@ if (!errs.ok) {
     Array.isArray(problem.errors) && problem.errors.length > 0,
     'Should have errors array with standard structure'
   );
+
+  console.log('report() type:', problem.type);
+  console.log('report() status:', problem.status);
+  console.log('report() errors count:', (problem.errors as unknown[]).length);
 }

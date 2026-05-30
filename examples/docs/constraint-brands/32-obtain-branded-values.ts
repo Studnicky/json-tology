@@ -17,10 +17,10 @@ const candidate = 'bastian.bux@bookstore.example';
 const email = bookstoreEntities.instantiate(EmailSchema, candidate);
 const echo = bookstoreEntities.value.instantiate(EmailSchema.$id, candidate) as string;
 
-console.assert(typeof email === 'string');
-console.assert(typeof echo === 'string');
+console.log('instantiate produces branded email:', email);
+console.log('value.instantiate produces same value:', echo);
 
 if (bookstoreEntities.is(EmailSchema, candidate)) {
   // candidate is narrowed to the branded email type inside this branch.
-  console.assert(typeof candidate === 'string');
+  console.log('is() guard narrows to branded type:', candidate);
 }

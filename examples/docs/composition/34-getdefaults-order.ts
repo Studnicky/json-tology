@@ -12,8 +12,9 @@ import { OrderSchema } from '../bookstore/index.js';
 const defaults = Compose.getDefaults(OrderSchema);
 
 console.assert(typeof defaults === 'object');
-// id, customerId, items, total, placedAt, shippingAddress have no
+// orderId, customerId, orderLines, orderTotal, placedAt, shippingAddress have no
 // declared default — none appear in the result.
-console.assert(!('id' in defaults));
+console.assert(!('orderId' in defaults));
 console.assert(!('customerId' in defaults));
-console.assert(!('total' in defaults));
+console.assert(!('orderTotal' in defaults));
+console.log('OrderSchema defaults (empty — all fields are user-supplied):', defaults);

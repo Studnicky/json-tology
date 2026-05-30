@@ -15,3 +15,9 @@ const shapes = bookstoreEntities.toShacl().shaclObject();
 console.assert(Boolean(shapes), 'shacl shapes present');
 console.assert(Boolean(BookSchema.$id), 'book schema registered');
 console.assert(Boolean(CustomerSchema.$id), 'customer schema registered');
+
+const shaclGraph = (shapes as { '@graph'?: unknown[] })['@graph'];
+
+console.log('SHACL shapes exported:', Array.isArray(shaclGraph) ? shaclGraph.length : 0);
+console.log('BookSchema registered at:', BookSchema.$id);
+console.log('CustomerSchema registered at:', CustomerSchema.$id);

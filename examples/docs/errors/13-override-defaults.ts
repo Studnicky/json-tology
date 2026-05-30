@@ -26,4 +26,9 @@ if (!errs.ok) {
     problem.status === 400,
     'Custom status should be set'
   );
+
+  console.log('type:', problem.type);
+  console.log('title:', problem.title);
+  console.log('status:', problem.status);
+  console.log('detail:', problem.detail);
 }

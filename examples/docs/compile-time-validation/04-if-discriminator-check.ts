@@ -77,3 +77,9 @@ const errsDigital = jt.validate(BookKindSchemaBase.$id, {
 });
 
 console.assert(errsDigital.length === 0);
+
+// Log: if.properties discriminator compile-time check passed; runtime enforces conditional.
+console.log('ValidateSchemaType<BookKindSchema> accepted — if.properties keys present in properties');
+console.log(`physical book without isbn: ${errsPhysicalNoIsbn.length} error(s) (expected >0)`);
+console.log(`  violation: ${errsPhysicalNoIsbn.items[0]?.message ?? '(none)'}`);
+console.log(`digital book without isbn: ${errsDigital.length} error(s) (expected 0)`);

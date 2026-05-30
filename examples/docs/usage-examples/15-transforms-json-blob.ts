@@ -40,7 +40,13 @@ const decoded = jt.instantiate(JsonBlobTransform, wire);
 
 console.assert(typeof decoded === 'object');
 console.assert((decoded as { 'isbn': string }).isbn === aboxFixtures.rareBook.isbn);
+// same ISBN as fixture
+console.log('decoded isbn:', (decoded as { 'isbn': string }).isbn);
+// 'object' — JSON.parse returns the structure
+console.log('decoded type:', typeof decoded);
 
 const reEncoded = jt.encode(JsonBlobTransform, decoded);
 
 console.assert(reEncoded === wire);
+// true — JSON.stringify is deterministic here
+console.log('round-trip equal:', reEncoded === wire);

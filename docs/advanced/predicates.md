@@ -4,10 +4,10 @@
 
 Every property in a registered schema is assigned a predicate IRI at projection time. json-tology provides four layers of control, evaluated in priority order (first match wins):
 
-1. **`x-jt-predicate`** — an explicit IRI annotated directly on the property schema.
-2. **Absolute property `$id`** — when the property schema carries a `$id` that contains `://`, that IRI is used as-is.
-3. **`predicateFor` callback** — a registry-level function that can return a custom IRI for selected properties.
-4. **Default derivation** — flat canonical (`baseIRI/propertyName`) or class-scoped (`classId#propertyName`).
+1. **`x-jt-predicate`**: an explicit IRI annotated directly on the property schema.
+2. **Absolute property `$id`**: when the property schema carries a `$id` that contains `://`, that IRI is used as-is.
+3. **`predicateFor` callback**: a registry-level function that can return a custom IRI for selected properties.
+4. **Default derivation**: flat canonical (`baseIRI/propertyName`) or class-scoped (`classId#propertyName`).
 
 ---
 
@@ -21,9 +21,9 @@ https://bookstore.example/isbn
 https://bookstore.example/email
 ```
 
-The predicate is vocabulary-wide — every class that declares a `title` property uses the same `https://bookstore.example/title` predicate. This is the most interoperable form and matches how shared vocabularies like Schema.org assign predicates.
+The predicate is vocabulary-wide: every class that declares a `title` property uses the same `https://bookstore.example/title` predicate. This is the most interoperable form and matches how shared vocabularies like Schema.org assign predicates.
 
-<<< ../../examples/docs/advanced/100-canonical-predicates.ts
+<RunnableExample src="examples/docs/advanced/100-canonical-predicates" />
 
 ---
 
@@ -49,14 +49,14 @@ The `predicateFor` option on `JsonTology.create` is a function invoked once per 
 
 **Declaration.**
 
-<!-- inline-ts-ok: type signature for the predicateFor callback — not a runnable expression -->
+<!-- inline-ts-ok: type signature for the predicateFor callback; not a runnable expression -->
 ```ts
 predicateFor: (ctx: { classId: string; propertyName: string }) => string | undefined
 ```
 
-**Use this when** a consuming vocabulary already mints predicates under a different namespace — for example, aligning selected bookstore properties to Schema.org IRIs — and you want the mapping in one place without touching individual schemas.
+**Use this when** a consuming vocabulary already mints predicates under a different namespace, for example aligning selected bookstore properties to Schema.org IRIs, and you want the mapping in one place without touching individual schemas.
 
-<<< ../../examples/docs/advanced/101-predicate-for.ts
+<RunnableExample src="examples/docs/advanced/101-predicate-for" />
 
 ---
 
@@ -66,13 +66,13 @@ Add `x-jt-predicate: '<IRI>'` directly to a property schema to pin it to a speci
 
 **Use this when** a single property must align to an external vocabulary IRI without a registry-level callback.
 
-<<< ../../examples/docs/advanced/102-x-jt-predicate.ts
+<RunnableExample src="examples/docs/advanced/102-x-jt-predicate" />
 
 ---
 
 ## Union-domain TBox {#union-domain}
 
-When `enableCanonicalPredicates: true` (the default), each flat predicate IRI appears once in the TBox. Multiple classes that share a property name emit the predicate declaration once — under a `rdfs:domain` of the union of all owning classes. This is the standard OWL 2 pattern for shared vocabulary predicates.
+When `enableCanonicalPredicates: true` (the default), each flat predicate IRI appears once in the TBox. Multiple classes that share a property name emit the predicate declaration once, under a `rdfs:domain` of the union of all owning classes. This is the standard OWL 2 pattern for shared vocabulary predicates.
 
 With `enableCanonicalPredicates: false`, each class-scoped predicate carries its own independent `rdfs:domain` declaration (the per-class model).
 
@@ -85,19 +85,19 @@ With `enableCanonicalPredicates: false`, each class-scoped predicate carries its
 | 1 | `x-jt-predicate` on the property schema | Explicit IRI string |
 | 2 | Absolute `$id` on the property schema (`includes('://')`) | Property `$id` value |
 | 3 | `predicateFor(ctx)` returning a string | Custom IRI string |
-| 4a | Default — canonical flat (`enableCanonicalPredicates !== false`) | `baseIRI/propertyName` |
-| 4b | Default — class-scoped (`enableCanonicalPredicates: false`) | `classId#propertyName` |
+| 4a | Default, canonical flat (`enableCanonicalPredicates !== false`) | `baseIRI/propertyName` |
+| 4b | Default, class-scoped (`enableCanonicalPredicates: false`) | `classId#propertyName` |
 
 ---
 
 ## Related
 
-- [`toQuads`](/advanced/quads#jt-toquads) — ABox quad projection
-- [`x-jt-predicate` keyword](/schemas/jt-keywords#x-jt-predicate) — per-property explicit predicate
-- [`x-jt-iriRef` keyword](/schemas/jt-keywords#x-jt-iriref) — emit string as NamedNode
-- [`x-jt-language` keyword](/schemas/jt-keywords#x-jt-language) — tag string as rdf:langString
+- [`toQuads`](/advanced/quads#jt-toquads): ABox quad projection
+- [`x-jt-predicate` keyword](/schemas/jt-keywords#x-jt-predicate): per-property explicit predicate
+- [`x-jt-iriRef` keyword](/schemas/jt-keywords#x-jt-iriref): emit string as NamedNode
+- [`x-jt-language` keyword](/schemas/jt-keywords#x-jt-language): tag string as rdf:langString
 
 ## See also
 
-- [Bookstore domain](/bookstore-domain) — schema definitions used in examples
-- [Graph concepts](/advanced/graph-concepts) — TBox / ABox structure
+- [Bookstore domain](/bookstore-domain): schema definitions used in examples
+- [Graph concepts](/advanced/graph-concepts): TBox / ABox structure

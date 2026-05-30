@@ -30,3 +30,7 @@ if (complementOf === undefined) {
 }
 
 console.assert(complementOf['@id'] === 'urn:bookstore:InPrintBook');
+// urn:bookstore:OutOfPrintBook
+console.log('OutOfPrintBook $id:', OutOfPrintBookSchema.$id);
+// 'urn:bookstore:InPrintBook'
+console.log('complementOf:', complementOf['@id']);

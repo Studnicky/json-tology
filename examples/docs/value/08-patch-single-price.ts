@@ -25,3 +25,6 @@ const updated = Operations.patch(Operations.clone(book), {
 console.assert((updated as { 'price': { 'amount': number } }).price.amount === 795);
 // Original is unchanged.
 console.assert((book as { 'price': { 'amount': number } }).price.amount === 850);
+
+console.log('original price:', (book as { 'price': { 'amount': number } }).price.amount);
+console.log('patched price:', (updated as { 'price': { 'amount': number } }).price.amount);

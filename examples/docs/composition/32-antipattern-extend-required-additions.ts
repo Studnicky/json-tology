@@ -44,3 +44,4 @@ const missingTier = jt2.validate(CustomerWithRequiredTierSchema.$id, {
 });
 
 console.assert(!missingTier.ok);
+console.log('CustomerWithRequiredTier rejects missing tier:', !missingTier.ok, '| intersection enforces required on additions');

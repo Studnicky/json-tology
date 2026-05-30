@@ -26,3 +26,7 @@ jt.set([
 
 console.assert(jt.registry.has(AddressSchema.$id), 'AddressSchema should be registered');
 console.assert(jt.registry.has(CustomerSchema.$id), 'CustomerSchema should be registered');
+
+console.log('AddressSchema registered:', jt.registry.has(AddressSchema.$id));
+console.log('CustomerSchema registered:', jt.registry.has(CustomerSchema.$id));
+console.log('registered schema count:', jt.registry.size);

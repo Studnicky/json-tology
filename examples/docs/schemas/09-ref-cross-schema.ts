@@ -26,3 +26,9 @@ const quantity: number = line.quantity;
 
 console.assert(bookIsbn === '9783522128001');
 console.assert(quantity === 1);
+
+console.log('OrderLineSchema.$id:', OrderLineSchema.$id);
+console.log('line.bookIsbn ($ref -> IsbnSchema):', bookIsbn);
+console.log('line.quantity:', quantity);
+console.log('line.unitPrice ($ref -> MoneySchema):', line.unitPrice);
+console.log('Validation errors (expect 0):', errs.length);

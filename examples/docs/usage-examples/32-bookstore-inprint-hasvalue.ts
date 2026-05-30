@@ -30,6 +30,8 @@ const inPrint = {
 const okErrs = bookstoreEntities.validate(InPrintBookSchema.$id, inPrint);
 
 console.assert(okErrs.length === 0);
+// 0 — inPrint book passes hasValue constraint
+console.log('validation errors:', okErrs.length);
 
 // The TBox carries an owl:Restriction with owl:hasValue 'inPrint' on
 // https://bookstore.example/printStatus.
@@ -48,3 +50,7 @@ const hasValueRestriction = subClassEntries.find((entry) => {
 });
 
 console.assert(hasValueRestriction !== undefined);
+// urn:bookstore:InPrintBook
+console.log('InPrintBook $id:', InPrintBookSchema.$id);
+// true — OWL axiom emitted
+console.log('hasValue restriction found:', hasValueRestriction !== undefined);

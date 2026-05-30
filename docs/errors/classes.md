@@ -18,7 +18,7 @@ The bookstore schemas defined in the [Bookstore Domain](/bookstore-domain) appea
 
 **Constructor.** `new BaseError(code, message, options?: BaseErrorOptionsType)` where `BaseErrorOptionsType = { cause?: Error; retryable?: boolean }`. `retryable` defaults to `false` when omitted.
 
-<<< ../../examples/docs/errors/24-base-error-constructor.ts
+<RunnableExample src="examples/docs/errors/24-base-error-constructor" />
 
 **Public surface.**
 
@@ -33,7 +33,7 @@ The bookstore schemas defined in the [Bookstore Domain](/bookstore-domain) appea
 
 The `code` values are exported as constants from `src/constants/ERROR_CODES.ts` for each subclass.
 
-<<< ../../examples/docs/errors/15-base-error-shape.ts
+<RunnableExample src="examples/docs/errors/15-base-error-shape" />
 
 ## `SchemaError` <Badge type="tip" text="Runtime" />
 
@@ -41,7 +41,7 @@ The `code` values are exported as constants from `src/constants/ERROR_CODES.ts` 
 
 **Constructor.** `new SchemaError(code, message, options?: SchemaErrorOptionsType)` where `SchemaErrorOptionsType = { cause?: Error; schemaId?: string }`.
 
-<<< ../../examples/docs/errors/25-schema-error-constructor.ts
+<RunnableExample src="examples/docs/errors/25-schema-error-constructor" />
 
 **Adds.** `schemaId?: string` (the offending schema, when known) - exposed as an instance field and set via `options.schemaId`.
 
@@ -61,7 +61,7 @@ The `code` values are exported as constants from `src/constants/ERROR_CODES.ts` 
 | _(direct string)_                       | `SCHEMA_DUPLICATE_ID`          | Thrown by `SchemaRegistry` when two schemas with the same `$id` are registered. Detected during `set()` with `enableDuplicateDetection` enabled. See `src/types/ErrorCodes.ts`. |
 | _(direct string)_                       | `SCHEMA_DUPLICATE_SHAPE`       | Thrown by `SchemaRegistry` when a schema with a duplicate canonical shape (same structural hash) is registered. See `src/types/ErrorCodes.ts`. |
 
-<<< ../../examples/docs/errors/16-schema-error.ts
+<RunnableExample src="examples/docs/errors/16-schema-error" />
 
 ## `GraphError` <Badge type="tip" text="Runtime" />
 
@@ -69,7 +69,7 @@ The `code` values are exported as constants from `src/constants/ERROR_CODES.ts` 
 
 **Constructor.** `new GraphError(code, message, options?: GraphErrorOptionsType)` where `GraphErrorOptionsType = { cause?: Error; pointer?: string }`.
 
-<<< ../../examples/docs/errors/26-graph-error-constructor.ts
+<RunnableExample src="examples/docs/errors/26-graph-error-constructor" />
 
 **Adds.** `pointer?: string` (the JSON Pointer involved in the failure, when applicable) - exposed as an instance field and set via `options.pointer`.
 
@@ -89,7 +89,7 @@ The `code` values are exported as constants from `src/constants/ERROR_CODES.ts` 
 | `GraphErrorCode.ARTIFACT_STALE`       | `ARTIFACT_STALE`            | |
 | _(direct string)_                     | `GRAPH_INVALID_RESTRICTION` | Thrown by `OwlProjection` when a restriction entry is missing a required `kind`, `onProperty`, or `value` field. See `src/types/ErrorCodes.ts`. |
 
-<<< ../../examples/docs/errors/17-graph-error.ts
+<RunnableExample src="examples/docs/errors/17-graph-error" />
 
 ## `InstantiationError` <Badge type="tip" text="Runtime" />
 
@@ -103,13 +103,13 @@ The `code` values are exported as constants from `src/constants/ERROR_CODES.ts` 
 |----------|-------|---------------|
 | `InstantiationErrorCode.EXTRA_FORBIDDEN` | `EXTRA_FORBIDDEN` | `jt:config.extra: 'forbid'` rejects unknown properties |
 
-<<< ../../examples/docs/errors/19-instantiation-error.ts
+<RunnableExample src="examples/docs/errors/19-instantiation-error" />
 
 The `errors` collection is the same `ValidationErrors` used by `validate()` - see [ValidationErrors views](/errors/views) for the full surface.
 
 ## `CoercionError` <Badge type="tip" text="Runtime" />
 
-**Thrown for.** Coercion failure — raised by `value.cast()`, `value.convert()`, and their registry equivalents (`registry.cast`, `registry.convert`) when the coerced data does not satisfy the schema. Carries the full structured error list.
+**Thrown for.** Coercion failure, raised by `value.cast()`, `value.convert()`, and their registry equivalents (`registry.cast`, `registry.convert`) when the coerced data does not satisfy the schema. Carries the full structured error list.
 
 **Adds.** `errors: ValidationErrors` (the full `ValidationErrors` collection describing every constraint that coercion could not satisfy).
 
@@ -119,11 +119,11 @@ The `errors` collection is the same `ValidationErrors` used by `validate()` - se
 |----------|-------|-------|
 | `CoercionErrorCode.COERCION_FAILED` | `COERCION_FAILED` | Always emitted at the wrapper level |
 
-<<< ../../examples/docs/errors/20-coercion-error.ts
+<RunnableExample src="examples/docs/errors/20-coercion-error" />
 
 ## `TransformError` <Badge type="tip" text="Runtime" />
 
-**Thrown for.** Base class for directional transform failures. Not thrown directly by the library — see `DecodeError` and `EncodeError`.
+**Thrown for.** Base class for directional transform failures. Not thrown directly by the library. See `DecodeError` and `EncodeError`.
 
 **Extends.** `BaseError`.
 
@@ -144,7 +144,7 @@ The `errors` collection is the same `ValidationErrors` used by `validate()` - se
 
 ## `DecodeError` <Badge type="tip" text="Runtime" />
 
-**Thrown for.** Failure inside a `decode` transform function — raised by `jt.instantiate()` when the registered decode function throws. The original throw is preserved on `cause`.
+**Thrown for.** Failure inside a `decode` transform function, raised by `jt.instantiate()` when the registered decode function throws. The original throw is preserved on `cause`.
 
 **Extends.** `TransformError` → `BaseError`.
 
@@ -152,13 +152,13 @@ The `errors` collection is the same `ValidationErrors` used by `validate()` - se
 
 **Fields.** `code === 'TRANSFORM_DECODE_FAILED'`, `direction === 'decode'`, plus `schemaId?`, `path?`, `cause?` inherited from `TransformError`.
 
-**Consumer use.** Custom decode handlers may `throw new DecodeError('message', { path: '/field' })`. The library propagates the thrown instance unchanged — message, code, `path`, and any other fields set by the caller are preserved. Missing `schemaId` context is filled in automatically.
+**Consumer use.** Custom decode handlers may `throw new DecodeError('message', { path: '/field' })`. The library propagates the thrown instance unchanged: message, code, `path`, and any other fields set by the caller are preserved. Missing `schemaId` context is filled in automatically.
 
-<<< ../../examples/docs/transforms/13-transform-errors.ts
+<RunnableExample src="examples/docs/transforms/13-transform-errors" />
 
 ## `EncodeError` <Badge type="tip" text="Runtime" />
 
-**Thrown for.** Failure inside an `encode` transform function — raised by `jt.encode()` (and `dump`) when the registered encode function throws. The original throw is preserved on `cause`.
+**Thrown for.** Failure inside an `encode` transform function, raised by `jt.encode()` (and `dump`) when the registered encode function throws. The original throw is preserved on `cause`.
 
 **Extends.** `TransformError` → `BaseError`.
 
@@ -181,13 +181,13 @@ The `errors` collection is the same `ValidationErrors` used by `validate()` - se
 | `MATERIALIZATION_FAILED` | Default materialization failure |
 | `CYCLIC_DATA` | Circular reference detected during ABox projection (`toQuads`). Thrown by `Projection` when a data object contains a cycle that would loop indefinitely during RDF quad emission. See `src/types/ErrorCodes.ts`. |
 
-<<< ../../examples/docs/errors/21-materialization-error.ts
+<RunnableExample src="examples/docs/errors/21-materialization-error" />
 
 ## Inspecting the cause chain
 
 Every error supports `flatten()`, which walks the cause chain and returns a root-first array of plain objects suitable for structured logging.
 
-<<< ../../examples/docs/errors/22-flatten-cause-chain.ts
+<RunnableExample src="examples/docs/errors/22-flatten-cause-chain" />
 
 `InstantiationError.flatten()` and `CoercionError.flatten()` additionally append every item in their `errors` collection, so a single call surfaces both the wrapper and each underlying validation issue.
 

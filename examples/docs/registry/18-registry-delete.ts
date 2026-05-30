@@ -40,3 +40,7 @@ const second = jt.registry.delete(BookSummarySchema.$id);
 
 console.assert(!second);
 console.assert(!jt.registry.has(BookSummarySchema.$id));
+
+console.log('first delete (schema existed):', first);
+console.log('second delete (already removed):', second);
+console.log('schema present after deletion:', jt.registry.has(BookSummarySchema.$id));

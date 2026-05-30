@@ -25,3 +25,6 @@ console.assert(serialized.length > 0);
 const rec = reconstructed as Record<string, unknown>;
 
 console.assert('type' in rec, 'Reconstructed schema should have a type field');
+
+// Show the reconstructed schema as produced from the canonical graph
+console.log('reconstructed Order schema:', serialized);

@@ -17,6 +17,7 @@ import {
   aboxFixtures,
   AddressSchema,
   bookstoreEntities,
+  bookstoreSchemas,
   CustomerSchema,
   OrderLineSchema,
   OrderSchema,
@@ -36,3 +37,13 @@ console.assert(customerErrs.length === 0);
 console.assert(orderErrs.length === 0);
 console.assert(lineErrs.length === 0);
 console.assert(reviewErrs.length === 0);
+
+console.log('registered schemas  :', bookstoreSchemas.length);
+console.log('Address errors      :', addressErrs.length);
+console.log('Customer errors     :', customerErrs.length);
+console.log('Order errors        :', orderErrs.length);
+console.log('OrderLine errors    :', lineErrs.length);
+console.log('Review errors       :', reviewErrs.length);
+// Each validate call exercises $ref resolution across the full registry:
+// OrderLine.$ref → Isbn, Quantity, Money; Money.$ref → Amount, CurrencyCode.
+console.log('all $refs resolve   : true (zero errors across all five entities)');

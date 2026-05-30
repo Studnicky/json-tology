@@ -30,7 +30,7 @@ const jt = JsonTology.create({
 
 The `prefetch` walker accepts `schemas` (seed schemas whose refs are followed), `rootIds` (IRIs to load directly), and optional `baseIRI`. It returns a `SnapshotInterface { version: 1; schemas: ReadonlyMap<string, JsonSchemaType>; provenance? }` keyed by `$id`.
 
-When `prefetched` is supplied, schemas passed via `schemas` register first; entries from the snapshot then fill any IRIs not already in the registry — `schemas` wins on collision.
+When `prefetched` is supplied, schemas passed via `schemas` register first; entries from the snapshot then fill any IRIs not already in the registry. `schemas` wins on collision.
 
 ## `jt.registerAsync(schema)` removed
 
@@ -70,11 +70,11 @@ jt.registry.set(UserSchema);                        // registry-level, no wideni
 formatRegistry.set('phone', validator);             // FormatRegistry keeps (name, validator)
 ```
 
-Semantics change: `set` replaces silently when the key already exists, matching `Map.set`. The previous `register`-with-different-content throw is gone. `registerAnonymous` stays — it computes a hash key, a different verb.
+Semantics change: `set` replaces silently when the key already exists, matching `Map.set`. The previous `register`-with-different-content throw is gone. `registerAnonymous` stays; it computes a hash key, a different verb.
 
 ## Registry reads go through `jt.registry`
 
-The facade methods `jt.has`, `jt.get`, and `jt.list` are removed. There is one path to registry reads — `jt.registry`, which exposes the read surface of a native `Map`.
+The facade methods `jt.has`, `jt.get`, and `jt.list` are removed. There is one path to registry reads: `jt.registry`, which exposes the read surface of a native `Map`.
 
 <!-- inline-ts-ok: demonstrates removed/legacy jt.has/jt.get/jt.list facade methods; before/after preserved as migration context. -->
 ```ts
@@ -100,6 +100,6 @@ jt.registry.delete('urn:User');                 // returns boolean
 jt.registry.clear();                            // wipe
 ```
 
-`jt.set(schema)` remains as the type-accumulating wrapper around `set` — use it when you want the new schema's static type reflected in subsequent `validate`/`instantiate` calls; use `set` directly for hot-reload or test-fixture replacement where the static type doesn't need to follow.
+`jt.set(schema)` remains as the type-accumulating wrapper around `set`. Use it when you want the new schema's static type reflected in subsequent `validate`/`instantiate` calls; use `set` directly for hot-reload or test-fixture replacement where the static type doesn't need to follow.
 
 `jt.registry.revision` is bumped on every mutation. External code that caches derived views (ontology builders, compiled graphs) snapshots the revision and rebuilds when it advances; `jt.ontology()` uses this internally so it no longer needs explicit invalidation.

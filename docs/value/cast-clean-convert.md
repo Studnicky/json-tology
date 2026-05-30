@@ -16,11 +16,11 @@ Schema-aware instance methods on `jt.value`. All three operate against the regis
 
 #### Example 1: Cast form input with string numbers
 
-<<< ../../examples/docs/value/03-cast-clean-convert.ts
+<RunnableExample src="examples/docs/value/03-cast-clean-convert" />
 
 #### Example 2: Cast URL query params for a Review filter
 
-<<< ../../examples/docs/value/09-cast-query-params.ts
+<RunnableExample src="examples/docs/value/09-cast-query-params" />
 
 ### Comparison
 
@@ -122,7 +122,7 @@ book = Book.model_validate(raw_data)  # '14.99' → 14.99
 
 #### Example 1: Strip internal fields from an API response
 
-<<< ../../examples/docs/value/10-clean-strip-internal.ts
+<RunnableExample src="examples/docs/value/10-clean-strip-internal" />
 
 ### Comparison
 
@@ -208,7 +208,7 @@ cleaned = Book.model_validate(data)
 
 #### Example 1: Convert types for a partial review without filling defaults
 
-<<< ../../examples/docs/value/11-convert-types-no-defaults.ts
+<RunnableExample src="examples/docs/value/11-convert-types-no-defaults" />
 
 ## Related
 

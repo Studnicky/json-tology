@@ -40,3 +40,7 @@ const coerced = bookstoreEntities.instantiate(BookSchema, {
 });
 
 console.assert((coerced as { 'isbn': string }).isbn === aboxFixtures.rareBook.isbn);
+
+console.log('materialize inStock (default applied):', (materialized as { 'inStock': boolean }).inStock);
+console.log('value.create isbn (zero-value):', (blank as { 'isbn': string }).isbn);
+console.log('instantiate isbn:', (coerced as { 'isbn': string }).isbn);

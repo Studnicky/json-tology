@@ -24,7 +24,13 @@ export const BookSchema = {
       'default': true,
       'type': 'boolean'
     },
-    'isbn': { '$ref': IsbnSchema.$id },
+    // OWL 2: owl:InverseFunctionalProperty on isbn — an ISBN uniquely
+    // identifies a Book, so foreign keys (Review.bookIsbn, OrderLine.bookIsbn)
+    // resolve to the Book they reference via the identity index.
+    'isbn': {
+      '$ref': IsbnSchema.$id,
+      'inverseFunctional': true
+    },
     'price': { '$ref': MoneySchema.$id },
     // Editorial state from the publisher — `inPrint` | `outOfPrint` |
     // `limitedRun`. Independent of `inStock`. Drives the InPrintBook /

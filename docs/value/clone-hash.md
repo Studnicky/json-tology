@@ -16,11 +16,11 @@ Pure static utilities that work on any value without a schema.
 
 #### Example 1: Clone an order before adding a line item
 
-<<< ../../examples/docs/value/01-clone-hash.ts
+<RunnableExample src="examples/docs/value/01-clone-hash" />
 
 #### Example 2: Clone nested addresses
 
-<<< ../../examples/docs/value/12-clone-nested-addresses.ts
+<RunnableExample src="examples/docs/value/12-clone-nested-addresses" />
 
 ### Comparison
 
@@ -96,11 +96,11 @@ copy = order.model_copy(deep=True)
 
 #### Example 1: Generate an ETag for a book
 
-<<< ../../examples/docs/value/13-hash-etag.ts
+<RunnableExample src="examples/docs/value/13-hash-etag" />
 
 #### Example 2: Cache invalidation
 
-<<< ../../examples/docs/value/14-hash-cache-invalidation.ts
+<RunnableExample src="examples/docs/value/14-hash-cache-invalidation" />
 
 ### Comparison
 

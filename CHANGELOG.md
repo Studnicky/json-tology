@@ -7,23 +7,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-05-30
+
+### Added
+
+- **Typed ABox graph traversal: `jt.aboxGraph(quads)`.** A fluent, dot-chained
+  RDF cursor over projected ABox quads. Navigation reads the associations the
+  TBox already emits (`rdfs:domain`, `rdfs:range`, `rdfs:subClassOf`,
+  `owl:InverseFunctionalProperty`): `objects`/`subjects` traverse forward and
+  inverse, `ofType`/`where`/`having` filter, `closure`/`subgraph` walk by hops,
+  set operations and `orderBy`/`limit` shape the selection, and terminals
+  (`one`/`first`/`all`/`iris`/`count`/`some`/`none`) lift each IRI to its typed
+  instance. Foreign keys resolve through inverse-functional identity: a scalar
+  key resolves to the entity it identifies whenever its range primitive backs an
+  identity on a target class, including differently-named keys (`Review.bookIsbn`
+  to `Book` via the shared `Isbn` range) and subclass-typed targets.
+- **`json-tology/owl-gen-node`** entry point with `writeFromTbox` and
+  `writeRegistryDirectory` for Node file output over the browser-safe codegen core.
+- **Runnable, editable code examples across the documentation site.** Every
+  runnable doc example renders as an in-browser playground: a CodeMirror editor
+  with TypeScript syntax highlighting and an Execute button that transpiles and
+  runs the edited code against the real library, showing the captured output.
+
+### Changed
+
+- **BREAKING: `json-tology/owl-gen` is now fully browser-safe and returns
+  strings/data only.** `generateFromTbox` always returns the generated source
+  string (the `output` write overload is removed), and `generateRegistryDirectory`
+  returns the entity files as data (relative `path` plus `source`) and `indexSource`
+  without writing to disk. File-writing moves to `json-tology/owl-gen-node`
+  (`writeFromTbox`, `writeRegistryDirectory`), which preserves the prior
+  disk-writing behaviour. Consumers writing to disk import from `owl-gen-node`.
+- The library is now fully browser-safe: nothing a browser imports pulls in a
+  `node:` builtin. The CLI binary is the only Node-specific surface, by design.
+- Documentation prose is cleaned of em-dashes and filler vocabulary.
+
+### Fixed
+
+- Foreign-key resolution generalizes to differently-named keys sharing an
+  identity range primitive and to subclass-typed targets that inherit a parent
+  class identity.
+- Many stale documentation examples are corrected to the current API: customer
+  identity is `customerId`, the order schema uses `orderLines` and `orderTotal`,
+  IRIs use the `urn:bookstore:` prefix, and `ValidationErrors` is accessed via
+  `.items`. Every runnable example executes cleanly with no failing assertions.
+
 ## [0.16.0] - 2026-05-29
 
 ### Changed
 
-- **BREAKING — a failing decode transform now throws `DecodeError` instead of
+- **BREAKING: a failing decode transform now throws `DecodeError` instead of
   `InstantiationError`.** The `.code` value `TRANSFORM_DECODE_FAILED` is
   unchanged, but it moves out of the `InstantiationError` code union into the
   new `TransformError` code union. Catch blocks for decode-transform failures
   must switch from `instanceof InstantiationError` to `instanceof DecodeError`.
-- **BREAKING — a failing encode transform now throws `EncodeError` instead of
+- **BREAKING: a failing encode transform now throws `EncodeError` instead of
   leaking a raw `Error`.** `jt.encode()` and `dump` wrap any raw throw from a
   registered encode function in `EncodeError` (code `TRANSFORM_ENCODE_FAILED`,
   direction `'encode'`).
-- **BREAKING — `value.cast()` / `value.convert()` are now strict.** When
+- **BREAKING: `value.cast()` / `value.convert()` are now strict.** When
   coerced data does not satisfy the schema these methods throw `CoercionError`
   instead of returning a best-effort value.
-- **BREAKING — RDF property predicates are now flat, shared canonical IRIs by
+- **BREAKING: RDF property predicates are now flat, shared canonical IRIs by
   default.** A property's predicate is derived as `${baseIRI}/${propertyName}`
   (a single resource shared across every class that declares that property),
   replacing the previous class-scoped `${ClassIRI}#${propertyName}` form. This
@@ -32,9 +77,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   alignment, and cross-class reasoning. Predicate derivation lives in a single
   authority, `PredicateResolver`, consumed by ABox, TBox, SHACL, and `fromQuads`
   alike. Set `enableCanonicalPredicates: false` to derive class-scoped
-  `${ClassIRI}#${propertyName}` predicates instead — for DTO bundles where
+  `${ClassIRI}#${propertyName}` predicates instead, for DTO bundles where
   coincidentally same-named properties must stay distinct.
-- **BREAKING — bookstore example domain redesigned as a coordinated vocabulary.**
+- **BREAKING: bookstore example domain redesigned as a coordinated vocabulary.**
   Properties whose name collided across entities with differing ranges were
   renamed so each carries a distinct predicate: `Customer.id`→`customerId`,
   `Order.id`→`orderId`, `Order.total`→`orderTotal`, `Order.items`→`orderLines`,
@@ -53,7 +98,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `TRANSFORM_ENCODE_FAILED`). Decode and encode transform failures now raise
   typed, catchable errors with a stable `code`, a `direction` field
   (`'decode'`/`'encode'`), and an optional `path`/`schemaId` context.
-  Consumers may throw `DecodeError` or `EncodeError` from custom handlers — the
+  Consumers may throw `DecodeError` or `EncodeError` from custom handlers. The
   library propagates the thrown instance unchanged, preserving message and code.
 - `CoercionError` (code `COERCION_FAILED`) is now an enumerated, documented
   error thrown by `value.cast()` / `value.convert()` (and the equivalent
@@ -80,7 +125,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `string` via a distributive `IdOfType` naked-parameter conditional.
 - ABox projection (`toQuads`) now emits `allOf`-inherited (subclass) and
   `if/then/else` conditional-branch properties, not just the entry node's own
-  properties — e.g. a `PrintBook` instance now projects its inherited `Book`
+  properties, e.g. a `PrintBook` instance now projects its inherited `Book`
   fields. `fromQuads` was fixed symmetrically (lifting own + inherited +
   branch properties), and `isStructurallyCompatible` no longer treats an
   `allOf`-based subclass with an empty root as compatible with every candidate.
@@ -89,13 +134,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   validator runs.
 - ABox literal datatypes are now read from the property's declared graph
   type+format (via `XsdTypes`) instead of being inferred from the JavaScript
-  runtime value — so `toQuads` and `toTbox`/`toShacl` agree on `xsd:int`,
+  runtime value, so `toQuads` and `toTbox`/`toShacl` agree on `xsd:int`,
   `xsd:float`, `xsd:decimal`, etc. (runtime inference remains only the fallback
   for untyped values).
 - The XSD↔JSON-Schema reverse type mapping (previously three divergent tables in
   `importDispatch/Properties`, `importDispatch/Datatypes`, and `OwlImporter`) is
   consolidated into one `src/constants/XSD_REVERSE_MAPS.ts`, and the SHACL/XSD
-  facet correspondence into one bidirectional `src/constants/XSD_FACETS.ts` — a
+  facet correspondence into one bidirectional `src/constants/XSD_FACETS.ts`, a
   single source for each, eliminating drift.
 - `jt:annotatedEdge` is now a `SchemaGraphSemanticsInterface` field populated
   during semantics extraction; relation building reads it via `graph.semantics()`
@@ -105,7 +150,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   property predicate through `PredicateResolver`, so they reference the SAME IRI
   the property declaration and ABox use (flat by default, class-scoped under
   `enableCanonicalPredicates: false`) instead of always emitting the class-scoped
-  form — cardinality/value restrictions are no longer orphaned from instances for
+  form. Cardinality/value restrictions are no longer orphaned from instances for
   reasoners.
 - `fromQuads` round-trips losslessly for temporal and decimal data:
   `xsd:dateTime`/`xsd:date`/`xsd:time` lift back to their original ISO string
@@ -127,15 +172,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Prototype-polluting assignment in `Operations.patch()` — path segments
+- Prototype-polluting assignment in `Operations.patch()`: path segments
   `__proto__`, `constructor`, and `prototype` are now rejected, preventing
   property injection via crafted diff paths.
-- Shell command injection in `test/e2e/cli.test.ts` — replaced `execSync`
+- Shell command injection in `test/e2e/cli.test.ts`: replaced `execSync`
   string interpolation with `execFileSync` using an argv array.
-- Incomplete URL substring sanitization across test and example files —
+- Incomplete URL substring sanitization across test and example files:
   `String.includes()` replaced with `assert.match()` regex assertions,
   `Array.includes()` replaced with `.some()` strict-equality checks.
-- Missing least-privilege `permissions` blocks on all CI workflow jobs —
+- Missing least-privilege `permissions` blocks on all CI workflow jobs:
   `contents: read` added to `ci.yml`, `security.yml`, `coverage.yml`,
   `changelog-check.yml`, and `publish.yml` (validate job).
 
@@ -165,7 +210,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- `examples/e2e-reasoning.ts` — promoted to an asserted e2e test
+- `examples/e2e-reasoning.ts`, promoted to an asserted e2e test
   (see Added).
 
 ## [0.15.1] - 2026-05-24
@@ -179,7 +224,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   inference rules that chain through `Customer#id` / `Book#isbn` so
   inferred predicates land on instance IRIs, and hands data + rules to
   EYE (WASM). The demo now derives that Bastian is a verified reviewer
-  of the rare 1979 Thienemann printing — derived purely from
+  of the rare 1979 Thienemann printing, derived purely from
   json-tology's ABox output plus the three rules, with no hand-rolled N3.
 - Dependency bumps via dependabot:
   - `qs` 6.15.0 → 6.15.2 (patch, runtime).
@@ -195,7 +240,7 @@ surface identical to 0.15.0.
 
 ### Added
 
-- `JsonTology.toCurie(iri)` and `JsonTology.fromCurie(value)` — restore
+- `JsonTology.toCurie(iri)` and `JsonTology.fromCurie(value)`: restore
   the CURIE helpers using the registry's merged prefix map.
 
 ### Changed
@@ -226,7 +271,7 @@ surface identical to 0.15.0.
 
 ### Changed
 
-- **Error constructors aligned with the DX argument convention** —
+- **Error constructors aligned with the DX argument convention:**
   `BaseError`, `SchemaError`, and `GraphError` now take their optional fields
   through a single trailing options bag instead of mixed positional
   parameters. `BaseError(code, message, options?: BaseErrorOptionsType)`
@@ -238,14 +283,14 @@ surface identical to 0.15.0.
   `cause` chains through the new `BaseError` shape. The `instanceof`
   semantics, `code` values, and `toJson()` / `flatten()` output are
   unchanged.
-- **DX argument convention** — every callable surface aligns on a single
+- **DX argument convention:** every callable surface aligns on a single
   contract: required arguments stay positional in stable canonical order;
   optional, override, or configuration values collapse into a single trailing
   options object typed by an `Interface` or `Type` alias. `QuadFactory.iri`,
   `QuadFactory.literal`, `QuadFactory.emitLiterals`,
   `QuadFactory.emitConstraintLiteral`, and `QuadFactory.quad` accept their
   optional `curie` (and `graph`, for `quad`) overrides via a single options
-  bag — `QuadFactoryIriOptsInterface`, `QuadFactoryLiteralOptsInterface`,
+  bag: `QuadFactoryIriOptsInterface`, `QuadFactoryLiteralOptsInterface`,
   `QuadFactoryEmitOptsInterface`, and `QuadFactoryQuadOptsInterface`.
   `IdentifierIssuer`'s constructor takes a single
   `IdentifierIssuerOptsInterface` bag (`prefix`, `existingMap`, `counter`) in
@@ -257,7 +302,7 @@ surface identical to 0.15.0.
 
 ### Removed
 
-- **`LoadError` and `LoadErrorCode`** — dead public surface with no production
+- **`LoadError` and `LoadErrorCode`:** dead public surface with no production
   throw sites. The class, its error-code constant object, and the
   `LoadErrorCodeType` union are gone from the public API along with the
   `examples/docs/errors/18-load-error.ts` example. The unrelated
@@ -267,14 +312,14 @@ surface identical to 0.15.0.
 ### Added
 
 - **Graph-native list traversal, sibling indexing, and literal-tag
-  preservation** — `SchemaGraphInterface` exposes two new methods used by the
+  preservation:** `SchemaGraphInterface` exposes two new methods used by the
   OWL import dispatchers to consume the canonical graph without falling back
   to raw quad iteration:
   - `collectList(head)` walks an `rdf:first` / `rdf:rest` / `rdf:nil` chain
     rooted at a NamedNode IRI or blank-node id and returns each item as a
     `ListItemType` (`{ termType, target, datatype?, language? }`).
   - `relationsForSubject(subjectIri)` returns every outgoing relation for a
-    given subject — including blank-node subjects (restriction bnodes,
+    given subject, including blank-node subjects (restriction bnodes,
     negative-property-assertion bnodes, list-head bnodes). The quad-backed
     implementation builds a subject index lazily on first call.
   `SchemaGraphRelationInterface` adds three optional fields populated by the
@@ -287,7 +332,7 @@ surface identical to 0.15.0.
 
 ### Changed
 
-- **All OWL import dispatchers are now graph-native** — zero raw-quad
+- **All OWL import dispatchers are now graph-native:** zero raw-quad
   iteration remains in `src/modules/ontology/importDispatch/*`. The
   `Annotations`, `ClassAxioms`, `ClassExpressions`, `Datatypes`, and
   `Individuals` dispatchers were the last holdouts; each now reads its
@@ -301,7 +346,7 @@ surface identical to 0.15.0.
   `DispatcherFnType`; the dispatcher table in `OwlImporter` still passes
   it but no dispatcher reads from it.
 
-- **Graph-native OWL import dispatchers** — `Characteristics`,
+- **Graph-native OWL import dispatchers:** `Characteristics`,
   `ClassAxioms`, `Properties`, and `PropertyRestrictions` dispatchers now drive
   axiom detection from `ctx.graph.allRelations()` rather than scanning raw
   quads. `QuadBackedSchemaGraph.NODE_TYPES` extends to the seven OWL 2 property
@@ -310,32 +355,32 @@ surface identical to 0.15.0.
   as graph nodes. Compacted CURIE targets emitted by the graph layer are
   expanded back to full IRIs in each dispatcher before structural comparison.
 
-- **Correct OWL semantics for `anyOf` and `oneOf`** — `anyOf` branches now emit `owl:equivalentClass` + `owl:unionOf` (union of class expressions); `oneOf` branches emit `owl:disjointUnionOf` (disjoint union). Import round-trip reconstructs `anyOf` from `owl:unionOf` quads and `oneOf` from `owl:disjointUnionOf` quads symmetrically. `OWL.disjointUnionOf` added to `IRI_PREDICATES` for `Projection.graph()` emission. `$ref` targets in `anyOf`/`oneOf` branches are now resolved to their canonical IRI rather than the intermediate pointer node.
+- **Correct OWL semantics for `anyOf` and `oneOf`:** `anyOf` branches now emit `owl:equivalentClass` + `owl:unionOf` (union of class expressions); `oneOf` branches emit `owl:disjointUnionOf` (disjoint union). Import round-trip reconstructs `anyOf` from `owl:unionOf` quads and `oneOf` from `owl:disjointUnionOf` quads symmetrically. `OWL.disjointUnionOf` added to `IRI_PREDICATES` for `Projection.graph()` emission. `$ref` targets in `anyOf`/`oneOf` branches are now resolved to their canonical IRI rather than the intermediate pointer node.
 
-- **Full-IRI wire format** — `src/constants/IRI.ts` now derives every constant
+- **Full-IRI wire format:** `src/constants/IRI.ts` now derives every constant
   value from `STANDARD_PREFIXES` as a full IRI (e.g. `RDF.type` =
   `'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'`). `XsdTypes.resolve` and
   `XsdTypes.resolveSingle` return full XSD IRIs. `XSD_MAPS.ts` maps all JSON
   Schema type/format pairs to full IRIs. `DEFAULT_PREFIXES` is now derived from
   `STANDARD_PREFIXES` (single source of truth). `OWL.disjointUnionOf` is added.
   All projection call sites (`OwlProjection`, `ShaclProjection`, `Projection`)
-  emit quads with full-IRI predicates and object terms — compact CURIEs no
+  emit quads with full-IRI predicates and object terms. Compact CURIEs no
   longer appear in the quad stream.
 
-- **Per-serialization bnode isolation** — `BaseGraphSerializer.serializeQuads`
+- **Per-serialization bnode isolation:** `BaseGraphSerializer.serializeQuads`
   creates a single `IdentifierIssuer` shared across all graph projections in a
   batch, preventing blank-node ID collisions when multiple schemas are serialized
   together. Individual `OwlProjection.graph` / `ShaclProjection.graph` calls
   still create their own issuer (deterministic per-call naming). The shared
   issuer is threaded via an optional `issuer?` parameter on `projectGraph`.
 
-- **`QuadFactory.quad` H-4 signature** — accepts `{ curie?, graph? }` options
+- **`QuadFactory.quad` H-4 signature:** accepts `{ curie?, graph? }` options
   bag. The `graph` option stamps a named-graph term at construction time (Wave 2
   H-4 will remove the second-pass mutation in `Projection.ts`).
 
 ### Removed
 
-- **`Lift.fromExternalQuad` / `fromExternalRdfJsQuad` deprecated path** — both the internal
+- **`Lift.fromExternalQuad` / `fromExternalRdfJsQuad` deprecated path:** both the internal
   implementation and the exported wrapper are deleted. The sole caller in
   `OwlImporter.fromJsonLdRdfOutput` now constructs `QuadInterface` values directly via `Terms`
   factory methods, preserving full IRI datatypes and predicates throughout the pipeline.
@@ -346,7 +391,7 @@ surface identical to 0.15.0.
 
 ### Fixed
 
-- **Concurrent blank-node safety** — `QuadFactory`, `Lists`, and the projection
+- **Concurrent blank-node safety:** `QuadFactory`, `Lists`, and the projection
   pipeline (`Projection`, `OwlProjection`, `ShaclProjection`) now use a
   per-call `IdentifierIssuer` for all blank-node naming. The module-level
   `bnodeCounter` in `QuadFactory` and `listBnodeCounter` in `Lists` are removed
@@ -361,45 +406,45 @@ surface identical to 0.15.0.
 
 ### Performance
 
-- **H-9** `GraphEngine.execute()` — hoists `dynamicScope` to a per-engine reusable array
+- **H-9** `GraphEngine.execute()`: hoists `dynamicScope` to a per-engine reusable array
   (never mutated in-place) and reuses a per-engine `refStack` Set (symmetric add/delete
   per frame guarantees it is empty on re-entry). `evaluatedItems` / `evaluatedProperties`
   fall back to module-level frozen empty sets instead of allocating `new Set()` at the
   result boundary. Eliminates 4 short-lived allocations per validation call.
-- **H-10** `Curie.compact()` — adds a dedicated `compactCache: Map<string, string>`.
+- **H-10** `Curie.compact()`: adds a dedicated `compactCache: Map<string, string>`.
   Prefixes are immutable post-construction so the cache is always valid. Eliminates an
   O(prefixes) linear scan on every repeated `compact()` call.
-- **H-11** `Projection.ts` ABox path — hoists a single `quadOpts: QuadOptsInterface`
+- **H-11** `Projection.ts` ABox path: hoists a single `quadOpts: QuadOptsInterface`
   object in `projectAbox()` and threads it through `projectInstance()` and
   `projectSingleValue()`. All `QuadFactory.quad(..., { curie, graph })` calls in the
   ABox hot path reuse one allocation instead of creating a fresh object per quad.
   `ProjectInstanceArgs` and `ProjectPropertyArgs` gain a `quadOpts` field.
-- **H-12** `GraphEngine.validateObject()` — caches the `patternPropertyEntries` mapped
+- **H-12** `GraphEngine.validateObject()`: caches the `patternPropertyEntries` mapped
   array via `WeakMap<SchemaGraphNodeInterface, ...>`. Schema nodes are stable
   post-registration; the cache is always valid. Eliminates a per-validation-call array
   allocation for every object validated against a schema with `patternProperties`.
-- **M-F-2** `SchemaRegistry.instantiate()` — passes `this.instantiateOptions` directly
+- **M-F-2** `SchemaRegistry.instantiate()`: passes `this.instantiateOptions` directly
   when `callOptions?.enableDefaults` is not set. Eliminates a spread allocation on the
   common fast path.
-- **M-F-3** `SchemaRegistry.list()` / `listGraphs()` — uses `Array.from(values, mapper)`
+- **M-F-3** `SchemaRegistry.list()` / `listGraphs()`: uses `Array.from(values, mapper)`
   to fuse the spread + map step into a single pass.
-- **M-F-4** `SchemaEntryStore.findDuplicates()` — caches `topLevelHashes` between calls;
+- **M-F-4** `SchemaEntryStore.findDuplicates()`: caches `topLevelHashes` between calls;
   invalidated on every `add()`, `delete()`, or `clear()`. The previously O(N) hash
   rebuild per `findDuplicates()` call becomes O(1) on a warm cache.
-- **M-F-5** `Materializer.collectEffectiveProperties()` — memoizes via a two-level
+- **M-F-5** `Materializer.collectEffectiveProperties()`: memoizes via a two-level
   `WeakMap<graph, WeakMap<node, result>>`. Graph and node objects are stable
   post-registration. Eliminates repeated `Map` + `Set` allocations on repeated
   `fillImplicitProperties` calls for the same schema node.
-- **M-F-6** `SchemaRegistry.addCharacteristic()` — hoists `CHARACTERISTIC_TO_KEY` to
+- **M-F-6** `SchemaRegistry.addCharacteristic()`: hoists `CHARACTERISTIC_TO_KEY` to
   module-level `Object.freeze()` constant. Eliminates a per-call object allocation.
-- **Phase 3 coordination** — completes Phase 3 issuer threading in `OwlProjection.ts`
+- **Phase 3 coordination:** completes Phase 3 issuer threading in `OwlProjection.ts`
   and `ShaclProjection.ts`: all `QuadFactory.nextBnode()` and `QuadFactory.rdfList()`
   call sites in `OwlVocabProjection` and `emitClassQuads` / `emitDatatypeQuads` /
   `emitPropertyQuads` / `emitContainsQuads` / `emitPrefixItemQuads` /
   `emitArrayItemQuads` receive the per-call `IdentifierIssuer`. `SpecialHandlerFn` type
   updated to carry the issuer parameter.
 
-- **H-1: `jt:restrictions` enters the canonical graph** — `SchemaGraphSemanticsInterface`
+- **H-1: `jt:restrictions` enters the canonical graph:** `SchemaGraphSemanticsInterface`
   gains a `restrictions: ReadonlyArray<RawRestrictionDescriptorType>` field. `SchemaGraphSupport.semantics()`
   populates it from the `jt:restrictions` array on the raw schema. `SchemaGraphRelations.extractRelations`
   emits each restriction entry as an `rdfs:subClassOf` relation with `structure.kind === 'restriction'`,
@@ -408,7 +453,7 @@ surface identical to 0.15.0.
   `emitUserRestrictions` (the raw-schema bypass) is removed. `QuadBackedSchemaGraph.resolveRestrictionBnode`
   now keeps constraint predicates as full IRIs so `PropertyRestrictions` dispatcher comparisons against
   `OWL.*` constants succeed. Round-trip coverage added in `test/integration/owlRoundTrip.test.ts`.
-- **H-2: primitive `format` annotation enters the canonical graph** — `SchemaGraphRelations.extractRelations`
+- **H-2: primitive `format` annotation enters the canonical graph:** `SchemaGraphRelations.extractRelations`
   now emits a `JT.format` relation for every node where `sem.format` is defined. `OwlProjection.emitDatatypeQuads`
   reads format from the projection index via `entry.byPredicate.get(JT.format)` instead of
   `entry.all[0].source.schema.format`. The raw-schema bypass is removed. Round-trip coverage added in
@@ -416,48 +461,48 @@ surface identical to 0.15.0.
 
 ### Added
 
-- **`JsonTology.validateWithShacl` skeleton** — `validateWithShacl(shapes, data)` is added to
+- **`JsonTology.validateWithShacl` skeleton:** `validateWithShacl(shapes, data)` is added to
   the facade with an `@experimental` TSDoc marker. Always throws `NOT_IMPLEMENTED` with a clear
   message directing callers to `toShacl().shaclQuads()` + an external SHACL processor.
   `toShacl()` gains an asymmetry note in its TSDoc pointing at the planned inverse.
 
-- **`IdentifierIssuerInterface` and `ValidateCallOptionsInterface` exported** — both are now
+- **`IdentifierIssuerInterface` and `ValidateCallOptionsInterface` exported:** both are now
   included in the `json-tology/interfaces` barrel. `IdentifierIssuerInterface` describes the
   per-call blank-node issuer contract; `ValidateCallOptionsInterface` describes the per-call
   options bag for `SchemaRegistryInterface.validate`.
 
-- **Subpath smoke test** — `test/smoke/subpathExports.test.ts` imports from every declared
+- **Subpath smoke test:** `test/smoke/subpathExports.test.ts` imports from every declared
   `exports` subpath (`"."`, `"./value"`, `"./schema"`, `"./ontology"`, `"./types"`,
   `"./interfaces"`, `"./owl-gen"`) and asserts top-level exports are present. Catches broken
   `exports` map entries without a full pack/install cycle.
 
-- **`NormalizedToQuadsOptionsType` exported from `json-tology/types`** — was reachable
+- **`NormalizedToQuadsOptionsType` exported from `json-tology/types`:** was reachable
   internally but absent from the public types barrel.
 
 ### Changed
 
-- **`@internal` markers on unexported interface files** — `BuildOptions`, `RefResolutionLoader`,
+- **`@internal` markers on unexported interface files:** `BuildOptions`, `RefResolutionLoader`,
   `SchemaRefWalker`, `SimplePredicateEntry`, and `VizOptions` in `src/interfaces/` now carry a
   `@internal` JSDoc tag at the top of the file so contributors know they are intentionally
   absent from the public barrel.
 
-- **`JsonTology.materializer` trade-off documented** — the `public readonly materializer`
+- **`JsonTology.materializer` trade-off documented:** the `public readonly materializer`
   field gains a TSDoc warning: callers that invoke `projectAbox` directly bypass the
   `owl:sameAs` quad emission that `toQuads()` performs.
 
-- **`@throws` TSDoc on facade methods** — `is`, `subschemaAt`, and the existing methods
+- **`@throws` TSDoc on facade methods:** `is`, `subschemaAt`, and the existing methods
   that were using `{@link SchemaError}` are updated to the canonical `{SchemaError} code X`
   format, matching the style used across the rest of the facade.
 
-- **`SchemaGraph.keywordValue` usage note** — TSDoc now documents that the method returns
+- **`SchemaGraph.keywordValue` usage note:** TSDoc now documents that the method returns
   the literal authored value, not a semantically-resolved value, and when it is correct
   to call it.
 
-- **Blank-node identity trade-off in `SameAsStore`** — class TSDoc documents that
+- **Blank-node identity trade-off in `SameAsStore`:** class TSDoc documents that
   blank-node subjects are transient and meaningless to reasoners across serialization
   boundaries; `sameAs` should only be called with stable named-node IRIs.
 
-- `bench/toQuads.bench.ts` — standalone ABox projection benchmark covering three schema
+- `bench/toQuads.bench.ts`: standalone ABox projection benchmark covering three schema
   shapes (flat 5-property, 1-level nested, `patternProperties`). Baseline (before Phase 6
   perf fixes) on Node 24 (Apple M-series): flat 171k ops/s (5.82 us), nested 135k ops/s
   (7.39 us), pattern 227k ops/s (4.39 us). After Phase 6: flat 174k ops/s (5.76 us),
@@ -465,33 +510,33 @@ surface identical to 0.15.0.
   ref resolution in `Projection.abox()` via optional `lookupGraph` callback; fixes
   known C-4 failure (nested address property was dropped on cross-schema round-trip).
 
-- Error code `.code` assertions — every live public error code has at least one
+- Error code `.code` assertions: every live public error code has at least one
   test pinning `err.code === 'EXACT_VALUE'`. New tests added in `test/integration/coverageGaps.test.ts`:
   `POINTER_NOT_SCHEMA` (via `SchemaGraph.resolvePointer` on a scalar leaf), and
   `ANCHOR_NOT_FOUND` (via `SchemaGraph.resolveFragment` for an undeclared anchor name).
   Existing coverage confirmed for `DIALECT_UNSUPPORTED`, `VOCABULARY_UNSUPPORTED`,
   `COMPUTED_INPUT_FORBIDDEN`, `SCHEMA_VALIDATOR_MISSING`, and `OWL_IMPORT_NOT_IMPLEMENTED`.
-- C-4 cross-schema `$ref` round-trip test in `test/e2e/ontologyRoundTrip.test.ts` —
+- C-4 cross-schema `$ref` round-trip test in `test/e2e/ontologyRoundTrip.test.ts`:
   exercises `toQuads` → `fromQuads` for `Employee.address` (separately registered `Address`).
   Root cause of failure documented: `Projection.abox` drops cross-schema `$ref` properties
   because `resolveNode()` does not follow non-local refs into the registry
-  (`src/modules/rdf/Projection.ts` — Phase 6 scope).
+  (`src/modules/rdf/Projection.ts`, Phase 6 scope).
 - `BOOLEAN_SCHEMA_FRAGMENT` and the four unreachable `OWL_IMPORT_*` codes confirmed
   absent from `src/constants/ERROR_CODES.ts` and `src/types/ErrorCodes.ts` (cleaned prior).
 
 ### Added
 
-- `OntologyBuilderInterface` in `src/interfaces/Ontology.ts` — `OntologyBuilder`
+- `OntologyBuilderInterface` in `src/interfaces/Ontology.ts`: `OntologyBuilder`
   now declares `implements OntologyBuilderInterface`. Vocabulary-plugin authors
   and test doubles can type against the interface.
-- `ComputedStoreInterface` and `SameAsStoreInterface` in `src/interfaces/` —
+- `ComputedStoreInterface` and `SameAsStoreInterface` in `src/interfaces/`:
   `SchemaRegistryInterface` fields `computedStore` and `sameAsStore` are now typed
   against interfaces rather than concrete classes. `ComputedStore` and `SameAsStore`
   carry `implements` clauses.
 - `TransformStageInterface`, `AnyTransformStageInterface`, `IriMinterInterface`,
   `ProjectInstanceArgs`, and `ProjectPropertyArgs` exported from `json-tology/interfaces`.
 - `ToQuadsOptionsType` exported from `json-tology/types`.
-- `DispatcherFnType` and `SubjectIndexType` in `src/interfaces/OwlImport.ts` —
+- `DispatcherFnType` and `SubjectIndexType` in `src/interfaces/OwlImport.ts`:
   shared across all OWL import dispatcher modules; local duplicates removed.
 - `@experimental` tags on `VocabularyPluginInterface`, `OwlGen` interfaces, and
   `OwlCodegen` interfaces to signal pre-1.0 surface stability.
@@ -506,9 +551,9 @@ surface identical to 0.15.0.
   defining file `src/interfaces/SchemaEntryStore.ts` directly instead of the
   module barrel `src/modules/registry/SchemaRegistry.ts`.
 - `RestrictionDescriptorInterface` renamed to `RestrictionDescriptorType` in
-  `src/types/Restriction.ts` — pure data shape in the `src/types/` directory
+  `src/types/Restriction.ts`: pure data shape in the `src/types/` directory
   carries a `Type` suffix per naming convention.
-- `SchemaCompiler.compile()` and `SchemaCompilerInterface.compile()` — `graph`
+- `SchemaCompiler.compile()` and `SchemaCompilerInterface.compile()`: `graph`
   parameter changed from optional to required. The registry always passes a graph;
   the internal fallback `new SchemaGraph(schema)` is removed.
 - `Lift.fromExternalQuad` deprecation notice updated to reference the canonical
@@ -522,9 +567,9 @@ surface identical to 0.15.0.
 ### Removed
 
 - Dead error code `BOOLEAN_SCHEMA_FRAGMENT` removed from `GraphErrorCode` constant
-  and `GraphErrorCodeType` union — the code was never thrown in production.
+  and `GraphErrorCodeType` union. The code was never thrown in production.
 - Unreachable `OwlImportErrorCode` values `INVALID_DATATYPE`, `MALFORMED_CLASS`,
-  `UNKNOWN_AXIOM`, and `UNRESOLVED_REF` removed — only `OWL_IMPORT_NOT_IMPLEMENTED`
+  `UNKNOWN_AXIOM`, and `UNRESOLVED_REF` removed. Only `OWL_IMPORT_NOT_IMPLEMENTED`
   has active throw sites; the four removed codes were dead surface.
 
 ## [0.14.0] - 2026-05-20
@@ -533,7 +578,7 @@ surface identical to 0.15.0.
 points. The canonical internal representation is the rdf/js `QuadInterface`
 established in v0.13.0; every output (`jsonLd`, `jsonLdObject`, `shaclObject`)
 is derived from that quad store via `JsonLdFormatter.fromQuads`. JSON-LD is
-just one input format alongside quads — consumers choose how data enters but
+just one input format alongside quads. Consumers choose how data enters but
 the internals are uniform.
 
 The README header is also restored to the linked hex-node row that points to
@@ -556,16 +601,16 @@ RDF, W3C, Validation), matching the assets used on the github pages site.
 
 ### Added
 
-- `OntologyBuilder.addFromQuads(quads)` — append rdf/js quads to the TBox
+- `OntologyBuilder.addFromQuads(quads)`: append rdf/js quads to the TBox
   store.
-- `OntologyBuilder.addFromJsonLd(doc)` — parse a JSON-LD document via
+- `OntologyBuilder.addFromJsonLd(doc)`: parse a JSON-LD document via
   `jsonld.toRDF` and append the resulting quads to the TBox store.
-- `OntologyBuilder.addShaclFromQuads(quads)` — same for the SHACL store.
-- `OntologyBuilder.addShaclFromJsonLd(doc)` — same for the SHACL store.
-- `OntologyBuilder.quads()` — read back all TBox quads as `QuadInterface[]`
+- `OntologyBuilder.addShaclFromQuads(quads)`: same for the SHACL store.
+- `OntologyBuilder.addShaclFromJsonLd(doc)`: same for the SHACL store.
+- `OntologyBuilder.quads()`: read back all TBox quads as `QuadInterface[]`
   without round-tripping through JSON-LD.
-- `OntologyBuilder.shaclQuads()` — read back all SHACL quads.
-- `QuadFactory.fromDatasetQuad(d)` — converts a `jsonld.toRDF` dataset
+- `OntologyBuilder.shaclQuads()`: read back all SHACL quads.
+- `QuadFactory.fromDatasetQuad(d)`: converts a `jsonld.toRDF` dataset
   quad to the canonical `QuadInterface`.
 - `jsonld@^9.0.0` added to `dependencies` (consumers using
   `addFromJsonLd` get the parser without a separate install).
@@ -603,10 +648,10 @@ fold accurately.
 - `Lists`, `Terms`, and `decodeLiteral` are now exported from the top-level
   `json-tology` entry point so consumers can construct rdf/js terms, walk
   RDF lists, and decode literal values without reaching into internal paths.
-- `examples/docs/advanced/98-decode-literal-typed-values.ts` — runnable
+- `examples/docs/advanced/98-decode-literal-typed-values.ts`: runnable
   example showing `decodeLiteral` recovering number / boolean / string
   values from rdf/js `Literal` terms.
-- `examples/docs/advanced/99-lists-build-and-collect.ts` — runnable
+- `examples/docs/advanced/99-lists-build-and-collect.ts`: runnable
   example showing the `Lists.build` → emit → `Lists.collect` round-trip
   for an `sh:or` list.
 
@@ -619,8 +664,8 @@ fold accurately.
   fold: `QuadInterface = @rdfjs/types#Quad`, `Literal.value: string`,
   `decodeLiteral`, `Lists.build` / `Lists.collect`, and ecosystem interop
   via `Lists.narrowExternalQuads`. The `src/modules/rdf/` file inventory
-  is brought current — adds `Lists.ts`, `Terms.ts`, `JsonLdToQuads.ts`;
-  drops the removed `RdfJsQuad.ts` interface entry.
+  is brought current, adding `Lists.ts`, `Terms.ts`, `JsonLdToQuads.ts` and
+  dropping the removed `RdfJsQuad.ts` interface entry.
 
 ## [0.13.0] - 2026-05-19
 
@@ -651,7 +696,7 @@ rdf/js-aware tool with no adapter layer.
 
 ### Added
 
-- `@rdfjs/types` as a runtime dependency. Types-only — zero runtime cost — but
+- `@rdfjs/types` as a runtime dependency. Types-only, zero runtime cost, but
   installed alongside `json-tology` so consumers can `import type { Quad } from '@rdfjs/types'`
   with no separate install.
 - `Terms.quad(subject, predicate, object, graph?)` factory producing
@@ -669,13 +714,13 @@ rdf/js-aware tool with no adapter layer.
 - `Lists.narrowExternalQuads(quads)` filters a consumer-supplied `Quad[]`
   down to the project's accepted shape (drops any quad whose terms include
   `Variable` or quoted `Quad`).
-- `decodeLiteral(literal)` reverses the rdf/js literal encoding — reads
+- `decodeLiteral(literal)` reverses the rdf/js literal encoding: reads
   `datatype.value` and parses `literal.value` into a typed JS value.
 - `JsonLdFormatter` now detects bnode subjects that are heads of
   rdf:first/rdf:rest chains and emits `{ '@list': [...items] }` in the
   JSON-LD output, suppressing the internal list-segment bnodes from the
   top-level node array.
-- `test/helpers/listQuad.ts` — test-side helper that returns the parent
+- `test/helpers/listQuad.ts`: test-side helper that returns the parent
   quad + list triples as a single splattable array.
 
 ### Changed
@@ -710,7 +755,7 @@ Lint zero-baseline follow-up to v0.12.1.
 
 ### Fixed
 
-- `examples/docs/constraint-brands/08-named-format-brands.ts` — `sendEmail` and `trackEvent` were declared as functions whose `_to` / `_id` parameters carried the leading-underscore convention to mark them unused. The `@typescript-eslint/naming-convention` rule forbids the leading-underscore pattern on functions, so the example is restructured as `SendEmailFn` / `TrackEventFn` type aliases that preserve the original "brand types are not assignable from plain string" demonstration.
+- `examples/docs/constraint-brands/08-named-format-brands.ts`: `sendEmail` and `trackEvent` were declared as functions whose `_to` / `_id` parameters carried the leading-underscore convention to mark them unused. The `@typescript-eslint/naming-convention` rule forbids the leading-underscore pattern on functions, so the example is restructured as `SendEmailFn` / `TrackEventFn` type aliases that preserve the original "brand types are not assignable from plain string" demonstration.
 
 ### Internal
 
@@ -724,7 +769,7 @@ Tech-debt pass. No new features, no breaking changes.
 
 - `scripts/ensure-built.mjs` + `pretest` / `pretest:smoke` / `pretest:e2e` / `pretest:all` lifecycle hooks. Cold `npm run test:all` from an empty `dist/` now builds once before any tier runs and 2228 / 2228 tests pass without the smoke tier racing the e2e tier's mid-suite `npm run build` invocation.
 - Three new canonical-location interface files (`src/interfaces/OwlImport.ts` carries `OwlImporterOptions`; new `src/interfaces/OwlCodegen.ts` carries `OwlCodegenOptions` / `RegistryFileEntry` / `RegistryFilesResult` / `OwlRegistryDirOptions`; new `src/interfaces/OwlGen.ts` carries `GenerateFromTboxOptions` / `GenerateRegistryDirectoryOptions` / `GenerateRegistryDirectoryEntityFile`). Interfaces previously declared inline in `src/modules/ontology/OwlImporter.ts`, `src/modules/codegen/OwlCodegen.ts`, and `src/owl-gen.ts` are now re-exported from their canonical location per the CLAUDE.md code-organization rule.
-- ARCHITECTURE invariants 14–17 codify the rdf/js Term-based `QuadInterface`, strict-by-default registry posture, the one-pipeline OWL importer contract, and the codegen one-way build-step contract.
+- ARCHITECTURE invariants 14 to 17 codify the rdf/js Term-based `QuadInterface`, strict-by-default registry posture, the one-pipeline OWL importer contract, and the codegen one-way build-step contract.
 - README links to the OWL importer + codegen docs page and documents the optional `jsonld` peer dependency.
 - `docs/cli.md` documents the `owl-gen` subcommand (single-file and registry-directory modes).
 
@@ -747,16 +792,16 @@ Tech-debt pass. No new features, no breaking changes.
 
 ## [0.12.0] - 2026-05-19
 
-`owl-gen` now generates a full registry directory — one `entities/<Name>.ts` per OWL class plus an `index.ts` that mirrors the canonical bookstore layout.
+`owl-gen` now generates a full registry directory: one `entities/<Name>.ts` per OWL class plus an `index.ts` that mirrors the canonical bookstore layout.
 
 ### Added
 
 - **CLI registry-directory mode**: `--out foo/` (no `.ts` suffix) or `--mode directory` flag on `owl-gen` triggers directory emission; `--out foo.ts` preserves existing single-file behaviour.
-- **`generateRegistryDirectory(options)`** programmatic API in `json-tology/owl-gen` — writes `entities/<Name>.ts` + `index.ts` to `outDir`, returns entity file metadata.
-- **`generateRegistryFiles(result, options)`** pure in-memory function in `src/modules/codegen/OwlCodegen.ts` — returns entity file sources + `indexSource` without touching the filesystem; shared core used by both single-file and directory modes.
-- **`examples/docs/ontologies/generated-dir/foaf/`**, **`dcat/`**, **`schema-org/`** — committed registry-directory fixtures for each of the three real-ontology subsets; produced by `npm run regen:ontology-fixtures`.
-- **`examples/docs/advanced/95-foaf-registry-dir.ts`**, **`96-dcat-registry-dir.ts`**, **`97-schema-org-registry-dir.ts`** — runnable round-trip examples for registry-directory mode.
-- **`examples/docs/benchmarks/owlCodegenDir.bench.ts`** — `generateRegistryFiles` throughput benchmark for bookstore TBox and minimal 3-class ontology.
+- **`generateRegistryDirectory(options)`** programmatic API in `json-tology/owl-gen`: writes `entities/<Name>.ts` + `index.ts` to `outDir`, returns entity file metadata.
+- **`generateRegistryFiles(result, options)`** pure in-memory function in `src/modules/codegen/OwlCodegen.ts`: returns entity file sources + `indexSource` without touching the filesystem; shared core used by both single-file and directory modes.
+- **`examples/docs/ontologies/generated-dir/foaf/`**, **`dcat/`**, **`schema-org/`**: committed registry-directory fixtures for each of the three real-ontology subsets; produced by `npm run regen:ontology-fixtures`.
+- **`examples/docs/advanced/95-foaf-registry-dir.ts`**, **`96-dcat-registry-dir.ts`**, **`97-schema-org-registry-dir.ts`**: runnable round-trip examples for registry-directory mode.
+- **`examples/docs/benchmarks/owlCodegenDir.bench.ts`**: `generateRegistryFiles` throughput benchmark for bookstore TBox and minimal 3-class ontology.
 - **`docs/advanced/owl-import.md`** extended with a `## Generating a full registry directory` subsection covering CLI invocation, programmatic API, a `<<<` include of the FOAF registry-dir example, and entity file ↔ canonical bookstore symmetry notes.
 
 ## [0.11.1] - 2026-05-19
@@ -765,12 +810,12 @@ Real-ontology codegen round-trip examples for FOAF, DCAT-AP, and schema.org.
 
 ### Added
 
-- **`examples/docs/ontologies/foaf-subset.jsonld`** — hand-authored FOAF subset: `foaf:Agent`, `foaf:Person`, `foaf:Group` classes; `foaf:name`, `foaf:mbox`, `foaf:knows`, `foaf:member` properties; `owl:disjointWith` between Person and Group; `rdfs:label`/`rdfs:comment` annotations.
-- **`examples/docs/ontologies/dcat-subset.jsonld`** — hand-authored DCAT-AP subset: `dcat:Dataset`, `dcat:Distribution`, `dcat:Catalog` classes; `dcat:title`, `dcat:description`, `dcat:distribution`, `dcat:accessURL` properties; `rdfs:subClassOf` chain reaching `dcterms:Resource` as an external IRI stub.
-- **`examples/docs/ontologies/schema-org-subset.jsonld`** — hand-authored schema.org subset: `schema:Book`, `schema:Person`, `schema:Organization` classes; `schema:author`, `schema:publisher`, `schema:name`, `schema:isbn` properties; `schema:IsbnType` declared as `rdfs:Datatype` with XSD pattern facet (`^\d{13}$`) that round-trips losslessly.
-- **`examples/docs/ontologies/generated/foaf.generated.ts`**, **`dcat.generated.ts`**, **`schema-org.generated.ts`** — committed generated TypeScript fixtures produced by `generateFromTbox`. Consumers can inspect the codegen output without running the generator themselves.
-- **`scripts/regen-ontology-fixtures.mjs`** — maintainer script to refresh the committed generated fixtures after codegen format changes. Not wired into CI. Run via `npm run regen:ontology-fixtures`.
-- **`examples/docs/advanced/92-foaf-roundtrip.ts`**, **`93-dcat-roundtrip.ts`**, **`94-schema-org-roundtrip.ts`** — runnable round-trip examples demonstrating `fromTbox → generateFromTbox → validate → InferType` against each real ontology fixture.
+- **`examples/docs/ontologies/foaf-subset.jsonld`**: hand-authored FOAF subset: `foaf:Agent`, `foaf:Person`, `foaf:Group` classes; `foaf:name`, `foaf:mbox`, `foaf:knows`, `foaf:member` properties; `owl:disjointWith` between Person and Group; `rdfs:label`/`rdfs:comment` annotations.
+- **`examples/docs/ontologies/dcat-subset.jsonld`**: hand-authored DCAT-AP subset: `dcat:Dataset`, `dcat:Distribution`, `dcat:Catalog` classes; `dcat:title`, `dcat:description`, `dcat:distribution`, `dcat:accessURL` properties; `rdfs:subClassOf` chain reaching `dcterms:Resource` as an external IRI stub.
+- **`examples/docs/ontologies/schema-org-subset.jsonld`**: hand-authored schema.org subset: `schema:Book`, `schema:Person`, `schema:Organization` classes; `schema:author`, `schema:publisher`, `schema:name`, `schema:isbn` properties; `schema:IsbnType` declared as `rdfs:Datatype` with XSD pattern facet (`^\d{13}$`) that round-trips losslessly.
+- **`examples/docs/ontologies/generated/foaf.generated.ts`**, **`dcat.generated.ts`**, **`schema-org.generated.ts`**: committed generated TypeScript fixtures produced by `generateFromTbox`. Consumers can inspect the codegen output without running the generator themselves.
+- **`scripts/regen-ontology-fixtures.mjs`**: maintainer script to refresh the committed generated fixtures after codegen format changes. Not wired into CI. Run via `npm run regen:ontology-fixtures`.
+- **`examples/docs/advanced/92-foaf-roundtrip.ts`**, **`93-dcat-roundtrip.ts`**, **`94-schema-org-roundtrip.ts`**: runnable round-trip examples demonstrating `fromTbox → generateFromTbox → validate → InferType` against each real ontology fixture.
 - **`docs/advanced/owl-import.md`** extended with a `## Real-ontology round-trip examples` section, one subsection per ontology with `<<<` includes for the input fixture, generated TypeScript, and runnable example.
 - `npm run regen:ontology-fixtures` script wired into `package.json`.
 
@@ -782,7 +827,7 @@ Compile-time TypeScript types for imported OWL 2 ontologies via code generation.
 
 - **`json-tology owl-gen <input> --out <file>`** CLI subcommand. Reads an OWL 2 JSON-LD ontology, runs it through `JsonTology.fromTbox`, and emits a TypeScript source file with `as const` schema literals + a registered registry constant + `InferType`-backed per-class type aliases. Standard build-step usage: `prebuild` hook, vite plugin, husky pre-commit.
 - **`generateFromTbox(options)` programmatic API** exported from the new `json-tology/owl-gen` subpath. Same surface as the CLI, callable from build scripts. Returns the source string when `output` is omitted; writes to disk when provided.
-- **`src/modules/codegen/OwlCodegen.ts`** — pure `generateTypeScript(result, options)` function with topological dep-sort, IRI → PascalCase name derivation, collision detection with `_2` suffix, sameAs / `addCharacteristic` emission, and skip-filter for internal JSON-pointer scaffolds (`urn:x:Class#/allOf/1/if`).
+- **`src/modules/codegen/OwlCodegen.ts`**: pure `generateTypeScript(result, options)` function with topological dep-sort, IRI → PascalCase name derivation, collision detection with `_2` suffix, sameAs / `addCharacteristic` emission, and skip-filter for internal JSON-pointer scaffolds (`urn:x:Class#/allOf/1/if`).
 - New runnable example `examples/docs/advanced/91-owl-codegen-generated.ts` demonstrating the codegen → write-to-disk → re-import → `InferType` round-trip in a single file. Two new bench scenarios in `examples/docs/benchmarks/owlCodegen.bench.ts` (bookstore TBox + minimal 3-class).
 - Docs page `docs/advanced/owl-import.md` extended with a `## Compile-time types via codegen` section covering CLI usage, programmatic API, and build-time integration patterns.
 
@@ -817,43 +862,43 @@ OWL 2 TBox importer: `fromTbox` / `JsonTology.fromTbox`.
 
 ### Added
 
-- **`JsonTology.fromTbox(jsonLd, options)`** — static helper that reads an OWL 2 TBox (JSON-LD string, compact JSON-LD object, or `QuadInterface[]`) and returns an `OwlImportResult` with reconstructed JSON Schema objects for every declared class, along with invariants, property characteristics, `owl:sameAs` pairs, and named individuals. Uses a transient `OwlImporter` with no registry side-effects.
+- **`JsonTology.fromTbox(jsonLd, options)`:** static helper that reads an OWL 2 TBox (JSON-LD string, compact JSON-LD object, or `QuadInterface[]`) and returns an `OwlImportResult` with reconstructed JSON Schema objects for every declared class, along with invariants, property characteristics, `owl:sameAs` pairs, and named individuals. Uses a transient `OwlImporter` with no registry side-effects.
 
-- **`jt.fromTbox(jsonLd, { register? })`** — instance method equivalent. When `register: true` (the default), all produced schemas are passed to `registry.set()`, invariants and characteristics are applied, and `sameAs` pairs are stored, making the imported vocabulary immediately available for `validate()` / `instantiate()` / `materialize()` calls.
+- **`jt.fromTbox(jsonLd, { register? })`:** instance method equivalent. When `register: true` (the default), all produced schemas are passed to `registry.set()`, invariants and characteristics are applied, and `sameAs` pairs are stored, making the imported vocabulary immediately available for `validate()` / `instantiate()` / `materialize()` calls.
 
-- **`OwlImporter`** — public class (exported from `json-tology/ontology`) that orchestrates the OWL 2 import pipeline. Constructs once and accepts multiple `import()` / `importAsync()` calls. Stateless across calls.
+- **`OwlImporter`:** public class (exported from `json-tology/ontology`) that orchestrates the OWL 2 import pipeline. Constructs once and accepts multiple `import()` / `importAsync()` calls. Stateless across calls.
 
-- **`OwlImportError`** — error class thrown when a dispatcher encounters a fatal import condition. Carries `axiomIri` and `subjectIri` for diagnostics. Code values: `OWL_IMPORT_ERROR`, `OWL_IMPORT_NOT_IMPLEMENTED`.
+- **`OwlImportError`:** error class thrown when a dispatcher encounters a fatal import condition. Carries `axiomIri` and `subjectIri` for diagnostics. Code values: `OWL_IMPORT_ERROR`, `OWL_IMPORT_NOT_IMPLEMENTED`.
 
-- **`OwlImportResult`** interface — shape returned by both `fromTbox` variants. Fields: `schemas`, `invariants`, `characteristics`, `sameAs`, `individuals`, `unsupported`.
+- **`OwlImportResult`** interface: shape returned by both `fromTbox` variants. Fields: `schemas`, `invariants`, `characteristics`, `sameAs`, `individuals`, `unsupported`.
 
 - **Eight axiom dispatchers** under `src/modules/ontology/importDispatch/`:
-  - `ClassAxioms` — `owl:Class`, `rdfs:subClassOf`, `owl:equivalentClass`, `owl:disjointWith`, `owl:complementOf`, `owl:disjointUnionOf`
-  - `ClassExpressions` — `owl:intersectionOf`, `owl:unionOf`, anonymous class expression nodes
-  - `PropertyRestrictions` — `owl:Restriction` with `owl:someValuesFrom`, `owl:allValuesFrom`, `owl:minCardinality`, `owl:maxCardinality`
-  - `Properties` — `owl:ObjectProperty`, `owl:DatatypeProperty` with `rdfs:domain` / `rdfs:range` → JSON Schema `properties` entries
-  - `Characteristics` — `owl:FunctionalProperty`, `owl:InverseFunctionalProperty`, `owl:TransitiveProperty`, `owl:SymmetricProperty`, `owl:AsymmetricProperty`, `owl:ReflexiveProperty`, `owl:IrreflexiveProperty`
-  - `Datatypes` — `owl:oneOf` enumerations → `enum`, XSD datatype range mapping
-  - `Individuals` — `owl:NamedIndividual`, `rdf:type` assertions, data/object property assertions
-  - `Annotations` — `owl:sameAs`, `rdfs:subPropertyOf`
+  - `ClassAxioms`: `owl:Class`, `rdfs:subClassOf`, `owl:equivalentClass`, `owl:disjointWith`, `owl:complementOf`, `owl:disjointUnionOf`
+  - `ClassExpressions`: `owl:intersectionOf`, `owl:unionOf`, anonymous class expression nodes
+  - `PropertyRestrictions`: `owl:Restriction` with `owl:someValuesFrom`, `owl:allValuesFrom`, `owl:minCardinality`, `owl:maxCardinality`
+  - `Properties`: `owl:ObjectProperty`, `owl:DatatypeProperty` with `rdfs:domain` / `rdfs:range` → JSON Schema `properties` entries
+  - `Characteristics`: `owl:FunctionalProperty`, `owl:InverseFunctionalProperty`, `owl:TransitiveProperty`, `owl:SymmetricProperty`, `owl:AsymmetricProperty`, `owl:ReflexiveProperty`, `owl:IrreflexiveProperty`
+  - `Datatypes`: `owl:oneOf` enumerations → `enum`, XSD datatype range mapping
+  - `Individuals`: `owl:NamedIndividual`, `rdf:type` assertions, data/object property assertions
+  - `Annotations`: `owl:sameAs`, `rdfs:subPropertyOf`
 
 - **Round-trip contract**: `fromTbox ∘ toTbox ≈ identity` on the supported OWL 2 axiom set. A TBox exported by `jt.toTbox()` re-imports with zero `unsupported` entries. Primitive type facets (XSD constraints like `minLength`, `minimum`, `format`) are not encoded in OWL class axioms and are not restored.
 
-- **`docs/advanced/owl-import.md`** — new docs page covering the `fromTbox` API, supported axiom table, limitations, and the round-trip fidelity contract.
+- **`docs/advanced/owl-import.md`**: new docs page covering the `fromTbox` API, supported axiom table, limitations, and the round-trip fidelity contract.
 
-- **`examples/docs/advanced/90-owl-import-roundtrip.ts`** — runnable example demonstrating the full import pipeline against the canonical bookstore TBox.
+- **`examples/docs/advanced/90-owl-import-roundtrip.ts`**: runnable example demonstrating the full import pipeline against the canonical bookstore TBox.
 
 - **Tests**:
-  - `test/integration/owlRoundTrip.test.ts` (renamed from `owlRoundTripScaffold.test.ts`) — full bookstore round-trip with `structurallyEqual` helper; replaces the Phase 0 `it.skip`.
-  - `test/e2e/realWorldOntologyImport.test.ts` — in-line FOAF and DCAT-AP fixtures, validates imported schemas and runs `validate()` against hand-crafted instances.
+  - `test/integration/owlRoundTrip.test.ts` (renamed from `owlRoundTripScaffold.test.ts`): full bookstore round-trip with `structurallyEqual` helper; replaces the Phase 0 `it.skip`.
+  - `test/e2e/realWorldOntologyImport.test.ts`: in-line FOAF and DCAT-AP fixtures, validates imported schemas and runs `validate()` against hand-crafted instances.
 ## [0.9.2] - 2026-05-18
 
 OG card and README header visual fix.
 
 ### Fixed
 
-- **OG card cluster (`docs/public/og-image.svg.template`)** — replaces the abstract color-coded hexes with letter labels (TS / JSON / VAL / RDF / W3C / NODE) with the actual seven node SVGs from `docs/public/nodes/`, matching the HexRing component shown in the docs-site sidebar. The center hex is now the teal JST glyph instead of a red placeholder.
-- **README header cluster (`docs/public/readme-header.svg.template`)** — same fix at compact scale (imgSize=78). Social previewers and the GitHub social-preview image now match the live docs site.
+- **OG card cluster (`docs/public/og-image.svg.template`):** replaces the abstract color-coded hexes with letter labels (TS / JSON / VAL / RDF / W3C / NODE) with the actual seven node SVGs from `docs/public/nodes/`, matching the HexRing component shown in the docs-site sidebar. The center hex is now the teal JST glyph instead of a red placeholder.
+- **README header cluster (`docs/public/readme-header.svg.template`):** same fix at compact scale (imgSize=78). Social previewers and the GitHub social-preview image now match the live docs site.
 - Both templates inline each node SVG body directly with per-node id and CSS-class prefixes (`jst-`, `ts-`, `json-`, `val-`, `rdf-`, `w3c-`, `node-`) to prevent gradient and filter id collisions. HexRing geometry (visualW = imgSize × 304.8/400, visualH = imgSize × 352/400, six ring offsets) is reproduced exactly.
 
 ## [0.9.1] - 2026-05-18
@@ -863,7 +908,7 @@ Docs and release-pipeline polish.
 ### Added
 
 - **Versioned README header.** Replaces the static node-ring banner with a brand-styled 7-cluster hex SVG that carries the current release version in a pill beside the wordmark. The SVG is referenced via `raw.githubusercontent.com` so it renders on the README on GitHub and inside release-note bodies. The 7-cluster matches the sidebar `HexRing` motif on the docs site so the social-preview card, the GitHub README banner, and the live site share one visual identity.
-- **`docs/public/og-image.svg.template`** + **`docs/public/readme-header.svg.template`** — version-stamped sources for the social preview and the README header. Both render the 7-cluster + a version pill that reads the current `package.json#version`.
+- **`docs/public/og-image.svg.template`** + **`docs/public/readme-header.svg.template`**: version-stamped sources for the social preview and the README header. Both render the 7-cluster + a version pill that reads the current `package.json#version`.
 - **`scripts/stamp-version.mjs`** reads `package.json#version` and stamps every `docs/public/*.svg.template` into its sibling `.svg` with the current version. `--check` flag is the CI drift guard wired into `publish.yml`'s validate step. The stamp runs automatically before `docs:build` via `predocs:build`.
 - **Release-publish workflow** (`.github/workflows/release.yml`). Fires on any `v*` tag push: verifies each stamped SVG matches the tag, extracts the matching `## [<version>]` section from `CHANGELOG.md`, and creates or updates the GitHub release with a body that embeds the per-tag stamped SVG URL. Historical release pages render the version that was stamped at tag time rather than always-latest. Supports `workflow_dispatch` for manual republish.
 
@@ -883,8 +928,8 @@ Docs and release-pipeline polish.
 
 ### Library
 
-- Added `JsonSchemaDocumentType` — a structural Draft-2020-12 schema document type (ported from nocturne and extended with json-tology's OWL property characteristics, class axioms, and `jt:*` directives). Replaces `JSONSchema7Definition` from the upstream `json-schema` package as the constraint for every public-API generic (`jt.materialize<TSchema>`, `jt.instantiate<TSchema>`, `Transform.create<TSchema>`, etc.). Schemas declaring `$schema: 'https://json-schema.org/draft/2020-12/schema'` or using post-Draft-07 keywords (`prefixItems`, `unevaluatedProperties`, `dependentSchemas` as a keyword) now satisfy the constraint.
-- Added `jt.addTransform<TSchema, TOut>(schema, fns)` — registry-aware variant of static `Transform.create`. Decode/encode lambda parameter types resolve through `InferSchemaType<TSchema, TSchema, TMap>` so cross-registry `$ref`s (e.g. `{ $ref: 'urn:bookstore:Customer' }` inside a wrapping schema) infer to the full referenced entity rather than `unknown`.
+- Added `JsonSchemaDocumentType`: a structural Draft-2020-12 schema document type (ported from nocturne and extended with json-tology's OWL property characteristics, class axioms, and `jt:*` directives). Replaces `JSONSchema7Definition` from the upstream `json-schema` package as the constraint for every public-API generic (`jt.materialize<TSchema>`, `jt.instantiate<TSchema>`, `Transform.create<TSchema>`, etc.). Schemas declaring `$schema: 'https://json-schema.org/draft/2020-12/schema'` or using post-Draft-07 keywords (`prefixItems`, `unevaluatedProperties`, `dependentSchemas` as a keyword) now satisfy the constraint.
+- Added `jt.addTransform<TSchema, TOut>(schema, fns)`: registry-aware variant of static `Transform.create`. Decode/encode lambda parameter types resolve through `InferSchemaType<TSchema, TSchema, TMap>` so cross-registry `$ref`s (e.g. `{ $ref: 'urn:bookstore:Customer' }` inside a wrapping schema) infer to the full referenced entity rather than `unknown`.
 - Added `Compose.subClassOf` / `Compose.extend` allOf-parent property propagation on `instantiate`. The compiler's `allowedKeysForStrip` now unions own properties with allOf-inherited keys (recursively, resolving cross-graph `$ref`), so coercion no longer silently drops parent fields from a subclass schema. The strict `additionalProperties: false` validation error continues to use the own-only set per JSON Schema semantics. The materializer walks the same effective-property set so `fillImplicitProperties` populates parent slots that were missing from the input.
 
 ### Tooling
@@ -894,7 +939,7 @@ Docs and release-pipeline polish.
 ### Docs / examples
 
 - The canonical bookstore at `examples/docs/bookstore/` is now the single source of truth for every docs page, example file, and benchmark scenario.
-  - Dropped `SoloAuthoredBookSchema` and `AnthologyBookSchema` as registered schemas — single-authorship is a cross-field rule on `Book.authors`, not a distinct OWL class. The new `signedFirstEditionIsSoloAuthored` invariant on `SignedFirstEditionSchema` enforces it through `ValidationErrors` with `keyword: 'jt:invariant'`.
+  - Dropped `SoloAuthoredBookSchema` and `AnthologyBookSchema` as registered schemas. Single-authorship is a cross-field rule on `Book.authors`, not a distinct OWL class. The new `signedFirstEditionIsSoloAuthored` invariant on `SignedFirstEditionSchema` enforces it through `ValidationErrors` with `keyword: 'jt:invariant'`.
   - Added `PrintStatusSchema` primitive (`'inPrint' | 'outOfPrint' | 'limitedRun'`). `Book.printStatus` is required. `InPrintBookSchema` / `OutOfPrintBookSchema` discriminate on publisher state (`printStatus`) rather than inventory state (`inStock`), so a book can be in stock and out of print at the same time.
   - `SignedFirstEditionSchema` simplifies to single-parent `subClassOf(RareBook)` plus the registered invariant.
   - Concrete instances live in `examples/docs/bookstore/aboxFixtures.ts`: customer Bastian Balthazar Bux orders a rare 1979 Thienemann first edition of Michael Ende's *Die unendliche Geschichte* (ISBN 9783522128001). Two `owl:sameAs` pairs (customer-migration + cross-catalog book) thread through the docs.
@@ -916,7 +961,7 @@ Docs and release-pipeline polish.
 - `SchemaRegistry.instantiate` / `cast` / `convert` accept an opt-out `clone: false` flag. Used internally by `Materializer` on engine-output paths where ownership is already local.
 - `hasEmbeddedIds` and `hasComputedFields` flags on `SchemaRegistryEntryInterface`, computed once at registration. Drive sentinel + flag-gated fast paths in `engine()` and `instantiate()`.
 
-### Performance — production "build once, reuse many"
+### Performance: production "build once, reuse many"
 
 - `discriminated union` +58% vs 0.7.0; `extend + validate` and `intersection` corrected from measurement artifacts to steady-state 1.89M and 2.18M ops/s; `dumpJson nested` +41% via no-transform fast path; broad +2-5% across validate/coerce/clean/diff/encode paths.
 - `GraphEngine.cachedDefaultResolutionContext` and `cachedVisitContext` are constructor-built `private readonly` fields. The 12-closure visit context and the two-closure default-resolution context are no longer allocated per call.
@@ -988,7 +1033,7 @@ Docs and release-pipeline polish.
 - `SchemaGraphSupport.extractSemantics()` returns a frozen `EMPTY_MAP` sentinel when a relation kind has no entries.
 - `Materializer.run()` guards re-registration: `set(schema)` only runs when `!registry.has(schema.$id)`. `structuredClone`s eliminated on the two engine-output paths where ownership is already local.
 - `FormatRegistry` date validation uses an integer-table day-in-month check + leap-year branch. The `new Date(...)` + `.toISOString()` allocations are gone.
-- `FormatRegistry` built-in validators no longer wrap each inner function in a `(value) => typeof === 'string' && fn(value)` closure — type guards inlined; call site is monomorphic.
+- `FormatRegistry` built-in validators no longer wrap each inner function in a `(value) => typeof === 'string' && fn(value)` closure. Type guards are inlined; call site is monomorphic.
 - `Projection.projectPropertyValue` no longer object-spreads the args struct per array element; `path` and `value` are explicit parameters.
 - `OwlProjection.canonicalPropertyIri` performs one IRI parse instead of two.
 - `VisitComposition` lazy-initializes `evaluatedProperties` / `evaluatedItems` Sets. `allOf` / `anyOf` / `oneOf` / `ifThenElse` branches that emit no evaluated members allocate no Set.
@@ -1009,12 +1054,12 @@ Docs and release-pipeline polish.
 ### Added
 
 - `JsonTology.prefetch({ loader, schemas?, rootIds?, baseIRI? })` walks transitive `$ref` IRIs via a loader and returns a `SnapshotInterface { version: 1; schemas: ReadonlyMap<string, JsonSchemaType>; provenance? }` keyed by `$id`. Throws `GraphError('REF_UNRESOLVED')` when the loader returns `null` for a required IRI; loader-thrown errors propagate.
-- `prefetched?: SnapshotInterface` option on `JsonTology.create`. Schemas passed via `schemas` register first; entries from the snapshot then fill any IRIs not already in the registry — `schemas` wins on collision.
+- `prefetched?: SnapshotInterface` option on `JsonTology.create`. Schemas passed via `schemas` register first; entries from the snapshot then fill any IRIs not already in the registry. `schemas` wins on collision.
 - `SchemaRegistryInterface` mirrors the surface of a native `Map<string, Schema>`. Reads: `has`, `get`, `keys`, `values`, `entries`, `forEach`, `size`, `[Symbol.iterator]`. Writes: `set(schema, iri?)` and `set([schema | [schema, iri], ...])` (schema-first ordering, replace on collision per `Map.set`), `delete(iri)` (returns boolean), `clear()`.
-- `SchemaRegistryInterface.revision` — monotonic counter bumped on every mutation. Drives the ontology cache and is available for external consumers that cache derived views.
+- `SchemaRegistryInterface.revision`: monotonic counter bumped on every mutation. Drives the ontology cache and is available for external consumers that cache derived views.
 - `SnapshotInterface`, `SnapshotProvenanceInterface`, and `PrefetchOptionsInterface` exported from `json-tology/interfaces`.
-- Docs: `/comparisons` — capability matrix across 11 comparator libraries (Zod, Valibot, TypeBox, AJV, Pydantic, Yup, Joi, io-ts, Effect Schema, ArkType, Runtypes).
-- Docs: `/benchmarks` — per-scenario in-browser runner. Every scenario shows the source code (via vitepress includes), a Run-in-browser button that loads each comparator from its esm.sh CDN entry on demand (json-tology imports from local `src/` via Vite alias so the page measures HEAD), and the canonical Node-side results. Every library has a row in every scenario; where a library lacks a primitive the row runs the userland equivalent the library's consumers would actually write.
+- Docs: `/comparisons`: capability matrix across 11 comparator libraries (Zod, Valibot, TypeBox, AJV, Pydantic, Yup, Joi, io-ts, Effect Schema, ArkType, Runtypes).
+- Docs: `/benchmarks`: per-scenario in-browser runner. Every scenario shows the source code (via vitepress includes), a Run-in-browser button that loads each comparator from its esm.sh CDN entry on demand (json-tology imports from local `src/` via Vite alias so the page measures HEAD), and the canonical Node-side results. Every library has a row in every scenario; where a library lacks a primitive the row runs the userland equivalent the library's consumers would actually write.
 - The bench suite now lives at `examples/docs/benchmarks/` as runnable examples linked to GitHub source. `npm run bench:report` writes the consolidated `results/latest.md` and per-scenario fragments under `results/scenarios/`.
 
 ### Changed
@@ -1026,7 +1071,7 @@ Docs and release-pipeline polish.
 
 - **BREAKING**: `jt.registerAsync(schema)` is gone. Federation runs through `JsonTology.prefetch` only; `jt.set(schema)` remains for sync registration of schemas whose refs are already resolved.
 - **BREAKING**: `jt.has(iri)`, `jt.get(iri)`, and `jt.list()` facade methods removed. There is one path to registry reads: `jt.registry.has(iri)`, `jt.registry.get(iri)`, `[...jt.registry.keys()]`. The registry exposes the full Map-like read surface.
-- **BREAKING**: `register()` removed from `SchemaRegistryInterface`, `JsonTology`, and `FormatRegistryInterface`. Replaced by `set` (see Changed). `registerAnonymous` stays because it generates a hash key — distinct verb from `Map.set`.
+- **BREAKING**: `register()` removed from `SchemaRegistryInterface`, `JsonTology`, and `FormatRegistryInterface`. Replaced by `set` (see Changed). `registerAnonymous` stays because it generates a hash key, a distinct verb from `Map.set`.
 
 ### Security
 
@@ -1036,16 +1081,16 @@ Docs and release-pipeline polish.
 
 ### Added
 
-- `LoaderType = (iri: string) => Promise<JsonSchemaType | null>` — pluggable async schema-fetch hook exported from `json-tology/types`.
-- `Loaders` namespace (exported from `json-tology`) with four universal helpers: `Loaders.fetch({ base?, init? })` (uses `globalThis.fetch`, works in Node ≥ 18, Bun, Deno, browsers), `Loaders.compose(...loaders)` (first non-null wins), `Loaders.cached(loader, { maxSize? })` (LRU, default 1024, caches null too), `Loaders.memory(map)` (in-memory lookup for tests / bundled schemas). No Node-only built-ins — zero new runtime dependencies.
+- `LoaderType = (iri: string) => Promise<JsonSchemaType | null>`: pluggable async schema-fetch hook exported from `json-tology/types`.
+- `Loaders` namespace (exported from `json-tology`) with four universal helpers: `Loaders.fetch({ base?, init? })` (uses `globalThis.fetch`, works in Node ≥ 18, Bun, Deno, browsers), `Loaders.compose(...loaders)` (first non-null wins), `Loaders.cached(loader, { maxSize? })` (LRU, default 1024, caches null too), `Loaders.memory(map)` (in-memory lookup for tests / bundled schemas). No Node-only built-ins, zero new runtime dependencies.
 - `loader?: LoaderType` on `JsonTologyOptionsInterface`. When provided, `JsonTology.create()` returns `Promise<JsonTology>` and eagerly resolves all transitive `$ref` IRIs before yielding a fully-warmed instance. If the loader returns `null` for a required IRI, throws `GraphError('REF_UNRESOLVED')` with the IRI. Without a loader the existing sync API is unchanged.
-- `jt.registerAsync(schema)` — post-construction async registration that walks transitive refs via the configured loader. Requires a loader at construction time.
-- Docs: `docs/advanced/schema-federation.md` — how the loader hook integrates with `$ref` resolution, write-your-own loader examples, performance notes, error handling, comparison with AJV `loadSchema` and SPARQL `SERVICE`.
-- Docs: `docs/advanced/browser-usage.md` — universal (CDN, bundler, Node) usage guide using the loader hook as the central federation primitive. No environment-specific export paths.
+- `jt.registerAsync(schema)`: post-construction async registration that walks transitive refs via the configured loader. Requires a loader at construction time.
+- Docs: `docs/advanced/schema-federation.md`: how the loader hook integrates with `$ref` resolution, write-your-own loader examples, performance notes, error handling, comparison with AJV `loadSchema` and SPARQL `SERVICE`.
+- Docs: `docs/advanced/browser-usage.md`: universal (CDN, bundler, Node) usage guide using the loader hook as the central federation primitive. No environment-specific export paths.
 
 ### Removed
 
-- **BREAKING**: `SchemaLoader` class (`src/modules/registry/SchemaLoader.ts`) — the Node-only file reader was the sole reason for any browser/node conditional export complexity. Migration: read the JSON file yourself with `node:fs` and pass the parsed schemas to `JsonTology.create({ schemas: [...] })`, or supply `loader: async (iri) => { const content = await fs.promises.readFile(path); return JSON.parse(content); }` to resolve on demand.
+- **BREAKING**: `SchemaLoader` class (`src/modules/registry/SchemaLoader.ts`): the Node-only file reader was the sole reason for any browser/node conditional export complexity. Migration: read the JSON file yourself with `node:fs` and pass the parsed schemas to `JsonTology.create({ schemas: [...] })`, or supply `loader: async (iri) => { const content = await fs.promises.readFile(path); return JSON.parse(content); }` to resolve on demand.
 - `SchemaLoaderInterface` removed from `src/interfaces/`.
 - `SchemaLoadErrorType` and `SchemaLoadResultType` remain exported from `json-tology/types` (they are inferred from the SCHEMAS constants and not load-bearing on SchemaLoader).
 
@@ -1065,7 +1110,7 @@ Docs and release-pipeline polish.
 
 - **BREAKING**: `Transform.pipe()` renamed to `Transform.chain()`. The previous name conflicted with the Node.js stream `.pipe()` convention. The supporting types are similarly renamed: `PipeChainMismatchInterface` → `ChainMismatchInterface`; `PipeChainSchemaMismatchInterface` → `ChainSchemaMismatchInterface`; `ValidatePipeChainType` → `ValidateChainType`; `PipeChainOutputType` → `ChainOutputType`; `PipeChainRecursionCap` → `ChainRecursionCap`. Migrate by replacing every `Transform.pipe` call site with `Transform.chain` and renaming any type imports.
 - Docs style: every `{ decode, encode }` transform-stage literal is now formatted with `decode` and `encode` on separate lines (project convention).
-- Docs IA: 7 reference pages split for scope — `types.md` → `types/{infer,utility,ranges}.md`; `constraint-brands.md` → `constraint-brands/{keywords,narrowing}.md`; `bookstore-domain.md` → extracted OWL taxonomy to `usage-examples/bookstore-owl-taxonomy.md`; `advanced/graph-concepts.md` → `graph-concepts.md` (fundamentals) + `graph-internals.md` (implementation); `schemas.md` deduplicated against registry pages (673 → 176 LOC); `usage-examples/sparql-queries.md` folded into `advanced/ontology.md`; `references/benchmarks.md` folded into `references.md`.
+- Docs IA: 7 reference pages split for scope. `types.md` → `types/{infer,utility,ranges}.md`; `constraint-brands.md` → `constraint-brands/{keywords,narrowing}.md`; `bookstore-domain.md` → extracted OWL taxonomy to `usage-examples/bookstore-owl-taxonomy.md`; `advanced/graph-concepts.md` → `graph-concepts.md` (fundamentals) + `graph-internals.md` (implementation); `schemas.md` deduplicated against registry pages (673 → 176 LOC); `usage-examples/sparql-queries.md` folded into `advanced/ontology.md`; `references/benchmarks.md` folded into `references.md`.
 
 ## [0.4.2] - 2026-05-13
 
@@ -1080,11 +1125,11 @@ Docs and release-pipeline polish.
 
 - Bookstore demo (β): new `examples/docs/bookstore/transforms.ts` (Transform.create + Transform.pipe pairwise compatibility), `examples/docs/bookstore/antiPatterns.ts` (Compose brand-error documentation via @ts-expect-error), and `scripts/bookstore-static.ts` (parametrised JsonTology static facade).
 - Bookstore demo (α): five new entities (`StockLevel`, `PublicationDate`, `BookAnnotations`, `BookListPage`, `BookCatalogEntry`) and updates to `Book.authors` (uniqueItems), `EBook.fileFormat` (if/then/else), `Quantity` (int32 format brand) to demonstrate bounded multipleOf narrowing, the `date` format brand, patternProperties template-literal expansion, `BaseTypes.page()` factory, embedded-`$id` $ref resolution, `UniqueArrayBrandInterface`, generalised if/then/else inference, and a numeric format brand.
-- Bookstore demo (γ): OWL 2 property-characteristic annotations on natural relations — `Review.customerId` (`functional`), `Customer.id` (`inverseFunctional`), `Order.placedAt` (`transitive` + `irreflexive`); new `SimilarBook` entity (`symmetric` + `reflexive`) and `Sequel` entity (`asymmetric`); `ValidateSchemaType<T>` opt-in compile-time self-checks on `OrderSchema` and `ReviewSchema`.
+- Bookstore demo (γ): OWL 2 property-characteristic annotations on natural relations. `Review.customerId` (`functional`), `Customer.id` (`inverseFunctional`), `Order.placedAt` (`transitive` + `irreflexive`); new `SimilarBook` entity (`symmetric` + `reflexive`) and `Sequel` entity (`asymmetric`); `ValidateSchemaType<T>` opt-in compile-time self-checks on `OrderSchema` and `ReviewSchema`.
 
 ### Fixed
 
-- 0.4.0 doc audit remediation: 11 critical + 17 high findings across `getting-started`, `schemas`, `constraint-brands`, `argument-conventions`, `composition/*`, `advanced/*`, `errors/*`, `migration-0.4.0`, `bookstore-domain`, and `validation-modes`. Fixes: wrong return type for `toQuads` (now correctly `QuadInterface[]`, not `OntologyBuilder`); `value.cast` (not `value.coerce`); brand interface names use the `...Interface` suffix throughout; `Lift.fromQuad` (not `fromRdfQuad`); `subschemaAt` documented as 2-arg; 5 previously-undocumented error codes added (`GRAPH_INVALID_RESTRICTION`, `SCHEMA_DUPLICATE_ID`, `SCHEMA_DUPLICATE_SHAPE`, `TRANSFORM_DECODE_FAILED`, `CYCLIC_DATA`); validation-mode badges corrected for `getDefaults` (Runtime), `complementOf` (split out from group badge), `sameAs` (badge added); bookstore folder layout aligned to actual entities. Two code changes: error-code constants (`SchemaErrorCode`, `GraphErrorCode`, etc.) now publicly exported from `'json-tology'`; `SchemaRefType` now publicly exported from `'json-tology/types'` — both unblock import patterns the docs claim work.
+- 0.4.0 doc audit remediation: 11 critical + 17 high findings across `getting-started`, `schemas`, `constraint-brands`, `argument-conventions`, `composition/*`, `advanced/*`, `errors/*`, `migration-0.4.0`, `bookstore-domain`, and `validation-modes`. Fixes: wrong return type for `toQuads` (now correctly `QuadInterface[]`, not `OntologyBuilder`); `value.cast` (not `value.coerce`); brand interface names use the `...Interface` suffix throughout; `Lift.fromQuad` (not `fromRdfQuad`); `subschemaAt` documented as 2-arg; 5 previously-undocumented error codes added (`GRAPH_INVALID_RESTRICTION`, `SCHEMA_DUPLICATE_ID`, `SCHEMA_DUPLICATE_SHAPE`, `TRANSFORM_DECODE_FAILED`, `CYCLIC_DATA`); validation-mode badges corrected for `getDefaults` (Runtime), `complementOf` (split out from group badge), `sameAs` (badge added); bookstore folder layout aligned to actual entities. Two code changes: error-code constants (`SchemaErrorCode`, `GraphErrorCode`, etc.) now publicly exported from `'json-tology'`; `SchemaRefType` now publicly exported from `'json-tology/types'`, unblocking import patterns the docs claim work.
 
 ## [0.4.0] - 2026-05-12
 
@@ -1106,35 +1151,35 @@ Docs and release-pipeline polish.
 
 - `GraphEngine.resolveRef` failed to resolve a schema's `$ref` to its own `$id` when the engine was obtained via `registry.engine(schemaObj)` and `.errors(data)` was called directly. The compiled fast-path (`registry.validate`) was unaffected. Now the interpreted path recognises the root schema's own `$id` and resolves self-references consistently with the compiled path, restoring parity. Surfaced by a new compiled/interpreted parity test.
 - `GraphEngine.resolveRef` failed to resolve `$ref` targets that pointed at embedded `$id` declarations inside a schema's `$defs` (or any nested sub-schema) when accessed via `registry.engine(schemaObj)`. The engine path now performs the same embedded-id walk on construction and `SchemaRegistry.engine()` extends the `lookupSchema` callback to return embedded sub-schemas, so the compiled validate path and the engine path both resolve embedded `$id` refs and agree on validation results.
-- `docs/schemas.md` TypeBox snippets in the "Define and Register a Schema", "Anonymous registration", and "Lookup by `$id` or symbol" sections. The earlier text routed TypeBox through AJV (`import Ajv from 'ajv'; ajv.validate(schema, …)`), which understated TypeBox by ignoring its own runtime. The corrected snippets use `@sinclair/typebox/value` (`import { Value } from '@sinclair/typebox/value'; Value.Check(schema, data)`) and note that `Type.Ref(target)` resolves against a user-maintained `$defs` map at compile time. No behaviour change — comparison-table accuracy only.
+- `docs/schemas.md` TypeBox snippets in the "Define and Register a Schema", "Anonymous registration", and "Lookup by `$id` or symbol" sections. The earlier text routed TypeBox through AJV (`import Ajv from 'ajv'; ajv.validate(schema, …)`), which understated TypeBox by ignoring its own runtime. The corrected snippets use `@sinclair/typebox/value` (`import { Value } from '@sinclair/typebox/value'; Value.Check(schema, data)`) and note that `Type.Ref(target)` resolves against a user-maintained `$defs` map at compile time. No behaviour change, comparison-table accuracy only.
 
 ### Added
 
 - Test-coverage closures: new suites for `Value` Bad paths, `viz/HtmlRenderer`, `viz/VizDataCollector`. Extended GBU coverage for `Hash` (cycles / BigInt / Symbol keys), `Transform` (encoder/decoder throws / pipe arity / empty pipe), and `Materializer` (cycles / depth / IRI collision / missing skolemizer).
 - New `CliWriter` domain module (`src/modules/cli/CliWriter.ts`) owns all CLI stdout/stderr output. Replaces the inline `console.log`/`console.error` calls in `src/cli.ts` with explicit `writer.out()`/`writer.err()`/`writer.exit()` methods, removing the project's only `console.*` call sites and enabling test injection of CLI output.
-- Compile-time tuple-distinctness narrowing for `uniqueItems: true`. `InferType<typeof Schema>` now folds `uniqueItems: true` into the inferred type two ways: (1) for homogeneous arrays, the inferred type carries `UniqueArrayBrandInterface<T>` (a generic uniqueness brand parameterised by element type, in `src/types/ConstraintBrands.ts`) so a plain `T[]` cannot satisfy it — values must come through `JsonTology.instantiate` / `coerce` / `materialize`; (2) for literal-typed tuples (≤ 8 elements, declared via `prefixItems`), `UniqueTuplePairwiseType` runs a pairwise overlap check at the type level and collapses the tuple to `never` when any pair of element types overlaps, so `{ prefixItems: [{const:'red'},{const:'red'}], uniqueItems: true }` is a compile-time error. Above the 8-element cap the tuple passes through unchanged and runtime validation still enforces `uniqueItems`. Closes Finding 25 of `designs/0002-total-compile-time-enforcement.md`.
+- Compile-time tuple-distinctness narrowing for `uniqueItems: true`. `InferType<typeof Schema>` now folds `uniqueItems: true` into the inferred type two ways: (1) for homogeneous arrays, the inferred type carries `UniqueArrayBrandInterface<T>` (a generic uniqueness brand parameterised by element type, in `src/types/ConstraintBrands.ts`) so a plain `T[]` cannot satisfy it. Values must come through `JsonTology.instantiate` / `coerce` / `materialize`; (2) for literal-typed tuples (≤ 8 elements, declared via `prefixItems`), `UniqueTuplePairwiseType` runs a pairwise overlap check at the type level and collapses the tuple to `never` when any pair of element types overlaps, so `{ prefixItems: [{const:'red'},{const:'red'}], uniqueItems: true }` is a compile-time error. Above the 8-element cap the tuple passes through unchanged and runtime validation still enforces `uniqueItems`. Closes Finding 25 of `designs/0002-total-compile-time-enforcement.md`.
 - 25 named format-brand aliases in `src/types/ConstraintBrands.ts` covering the full JSON Schema 2020-12 standard format set plus json-tology built-ins: `EmailBrandInterface`, `IdnEmailBrandInterface`, `UriBrandInterface`, `UriReferenceBrandInterface`, `UriTemplateBrandInterface`, `IriBrandInterface`, `IriReferenceBrandInterface`, `UuidBrandInterface`, `DateBrandInterface`, `DateTimeBrandInterface`, `TimeBrandInterface`, `DurationBrandInterface`, `HostnameBrandInterface`, `IdnHostnameBrandInterface`, `Ipv4BrandInterface`, `Ipv6BrandInterface`, `RegexBrandInterface`, `JsonPointerBrandInterface`, `RelativeJsonPointerBrandInterface`, `BinaryBrandInterface`, `ByteBrandInterface`, `Int32BrandInterface`, `Int64BrandInterface`, `FloatBrandInterface`, `DoubleBrandInterface`. Each alias specialises `FormatBrandInterface<F>` to a single format string so a consumer can write `function send(to: EmailBrandInterface): void` and reject plain `string` arguments at compile time. The brand-first intersection ordering (`FormatBrandInterface<F> & string`) keeps the named brand visible in IDE hovers instead of being hidden behind `string`. Closes Finding 23 of `designs/0002-total-compile-time-enforcement.md`.
 - Compile-time test coverage for `multipleOf` bounded-range literal-union narrowing (`test/types/multiple-of-bounded.test.ts`). The narrowing itself (`MultipleOfRangeType<TMin, TMax, TStep>` in `src/types/Infer.ts`) was already wired into the integer-typed branch of `InferType`: when `type: 'integer'` is combined with literal `minimum`, `maximum`, and `multipleOf` and `(max - min) / multipleOf ≤ 50` (the `IntegerRangeCap`), the inferred type is the literal union of in-range multiples (e.g. `{type:'integer',min:0,max:10,multipleOf:2}` → `0|2|4|6|8|10`). Above the cap the type falls through to `number`; bounded integer ranges without `multipleOf` continue to use the existing `IntegerRangeType` path; offset minima emit only multiples within the bounds (e.g. `min:7,max:20,multipleOf:5` → `10|15|20`). Closes Finding 24 of `designs/0002-total-compile-time-enforcement.md`.
 - Canonical JSON Schema dialect declaration on every user-facing docs page. `docs/getting-started.md`, `docs/index.md`, `docs/references.md`, and `docs/schemas.md` now state explicitly that json-tology targets **JSON Schema draft 2020-12** (`https://json-schema.org/draft/2020-12/schema`). `docs/references.md` gains a new "Supported dialect" section as the canonical home for the statement; other pages link or echo it. This removes ambiguity for users coming from older drafts and surfaces the IETF JSON Schema Working Group standardization track on the schema page.
 - **Full OWL 2 property-characteristic vocabulary.** Five new schema keywords (`asymmetric`, `functional`, `inverseFunctional`, `irreflexive`, `reflexive`) join the existing `symmetric` / `transitive` keywords and round out the OWL 2 property characteristics. Setting a keyword to `true` on a property schema emits the corresponding `rdf:type owl:*Property` quad through the canonical graph and the OWL TBox projection (`GraphOntologySerializer`). The constants `OWL.AsymmetricProperty`, `OWL.FunctionalProperty`, `OWL.InverseFunctionalProperty`, `OWL.IrreflexiveProperty`, `OWL.ReflexiveProperty` (in `src/constants/IRI.ts`) and `RDFS.subPropertyOf` are exposed alongside the keywords; `OWL_CORE_PREDICATES` in `src/constants/ONTOLOGY_PREDICATES.ts` now lists the full set. `SchemaGraphSemanticsInterface` carries each characteristic as a boolean field so consumers can inspect them on the canonical graph without re-reading the source schema. `RelationPredicateType` (`src/types/SchemaGraph.ts`) widens to cover the five new property types.
 - Docs: external-references integration. New "Tooling and ecosystem" section in `docs/references.md` covering [sourcemeta/jsonschema](https://github.com/sourcemeta/jsonschema) (peer JSON Schema CLI), the Sourcemeta essay [AI only speaks JSON Schema](https://www.sourcemeta.com/blog/ai-only-speaks-json-schema/) (LLM convergence on JSON Schema as the lingua franca for structured outputs and tool calling), and the [IETF JSON Schema Working Group](https://datatracker.ietf.org/wg/jsonschema/about/) (Proposed Standard track). Inline links from `docs/index.md` (LLM consumer angle in the cross-language interop section), `docs/getting-started.md` (sourcemeta/jsonschema as peer ecosystem tooling), and `docs/schemas.md` (IETF WG as the standardization track for draft-2020-12).
-- `ValidateSchemaType<T>` (in `src/types/SchemaValidation.ts`) and structured error brands `RequiredKeyNotInPropertiesInterface`, `DependentRequiredKeyNotInPropertiesInterface`, `IfDiscriminatorNotInPropertiesInterface` (in `src/types/TypeErrors.ts`) — compile-time cross-keyword schema validator for Cluster B of `designs/0002-total-compile-time-enforcement.md` (Findings 7, 8, 9). Catches `required` entries that are not keys of `properties`, `dependentRequired` map keys or value-array entries that are not keys of `properties`, and `if.properties` discriminator keys that are not keys of the parent `properties`. Applied as a parameter constraint inside `Compose.subClassOf`, `Compose.complementOf`, `Compose.disjointWith`, and `Compose.extend` so Compose-built schemas are correct by construction. Hand-written schemas can opt in via `const _ok: ValidateSchemaType<typeof MySchema> = MySchema;`.
+- `ValidateSchemaType<T>` (in `src/types/SchemaValidation.ts`) and structured error brands `RequiredKeyNotInPropertiesInterface`, `DependentRequiredKeyNotInPropertiesInterface`, `IfDiscriminatorNotInPropertiesInterface` (in `src/types/TypeErrors.ts`): compile-time cross-keyword schema validator for Cluster B of `designs/0002-total-compile-time-enforcement.md` (Findings 7, 8, 9). Catches `required` entries that are not keys of `properties`, `dependentRequired` map keys or value-array entries that are not keys of `properties`, and `if.properties` discriminator keys that are not keys of the parent `properties`. Applied as a parameter constraint inside `Compose.subClassOf`, `Compose.complementOf`, `Compose.disjointWith`, and `Compose.extend` so Compose-built schemas are correct by construction. Hand-written schemas can opt in via `const _ok: ValidateSchemaType<typeof MySchema> = MySchema;`.
 - Compile-time argument validation for `Compose.*` builders (Cluster A of `designs/0002-total-compile-time-enforcement.md`):
-  - `Compose.pick(schema, keys, newId)` — `keys` are now bound to `keyof properties`; passing a non-existent key is a type error rather than a silent empty-properties result.
-  - `Compose.omit(schema, keys, newId)` — same `keyof properties` constraint as `pick`.
-  - `Compose.subClassOf(parent, body)` — body's `$id` cannot match the parent's `$id` (or any element's `$id` when the parent is a tuple of schemas). Self-subclass surfaces a `SelfSubClassType` brand error.
-  - `Compose.discriminatedUnion(prop, variants, newId)` — every variant must declare `properties[prop]` as `const` and list `prop` in `required`. Missing or non-const discriminators surface a `DiscriminatorMissingType` brand error.
-  - `Compose.equivalent(source, options)` — `options.$id` cannot equal `source.$id`; self-equivalent surfaces a `SelfEquivalentType` brand error.
-  - `Compose.intersection(schemas, newId)` — `newId` cannot collide with any input schema's `$id`; collision surfaces an `IntersectionIdCollisionType` brand error.
+  - `Compose.pick(schema, keys, newId)`: `keys` are now bound to `keyof properties`; passing a non-existent key is a type error rather than a silent empty-properties result.
+  - `Compose.omit(schema, keys, newId)`: same `keyof properties` constraint as `pick`.
+  - `Compose.subClassOf(parent, body)`: body's `$id` cannot match the parent's `$id` (or any element's `$id` when the parent is a tuple of schemas). Self-subclass surfaces a `SelfSubClassType` brand error.
+  - `Compose.discriminatedUnion(prop, variants, newId)`: every variant must declare `properties[prop]` as `const` and list `prop` in `required`. Missing or non-const discriminators surface a `DiscriminatorMissingType` brand error.
+  - `Compose.equivalent(source, options)`: `options.$id` cannot equal `source.$id`; self-equivalent surfaces a `SelfEquivalentType` brand error.
+  - `Compose.intersection(schemas, newId)`: `newId` cannot collide with any input schema's `$id`; collision surfaces an `IntersectionIdCollisionType` brand error.
   - The named brand error types live in `src/types/TypeErrors.ts` (alongside Cluster B's validator-result interfaces) so IDE hovers describe the failure rather than reporting a generic "not assignable to never".
-- `Compose.someValuesFrom` / `Compose.allValuesFrom` / `Compose.hasValue` / `Compose.cardinality` / `Compose.minCardinality` / `Compose.maxCardinality` — opaque restriction descriptors that compose with `Compose.subClassOf(restriction, body)` to attach OWL property restrictions to a class. The TBox projection emits anonymous `owl:Restriction` blank nodes (`_:b{n} rdf:type owl:Restriction; owl:onProperty <prop>; owl:<predicate> <value>`) linked via `rdfs:subClassOf`. New `Compose.subClassOf` overload accepts a `RestrictionRefType` parent and stores descriptors under the body's `jt:restrictions` annotation.
-- `JsonTology.sameAs` — declare ABox identity between two named individuals. `SameAsStore` accumulates the assertions; the OWL ABox projection emits `owl:sameAs` triples in both directions.
+- `Compose.someValuesFrom` / `Compose.allValuesFrom` / `Compose.hasValue` / `Compose.cardinality` / `Compose.minCardinality` / `Compose.maxCardinality`: opaque restriction descriptors that compose with `Compose.subClassOf(restriction, body)` to attach OWL property restrictions to a class. The TBox projection emits anonymous `owl:Restriction` blank nodes (`_:b{n} rdf:type owl:Restriction; owl:onProperty <prop>; owl:<predicate> <value>`) linked via `rdfs:subClassOf`. New `Compose.subClassOf` overload accepts a `RestrictionRefType` parent and stores descriptors under the body's `jt:restrictions` annotation.
+- `JsonTology.sameAs`: declare ABox identity between two named individuals. `SameAsStore` accumulates the assertions; the OWL ABox projection emits `owl:sameAs` triples in both directions.
 - Doc pages: `docs/composition/restrictions.md` (OWL restrictions reference) and `docs/advanced/sameas.md` (sameAs identity reference).
 - Bookstore demo extended with seven new entities to exercise every `Compose` class-axiom and OWL restriction: `EBookSchema` (subClassOf), `PrintBookSchema` (subClassOf + disjointWith EBook), `RareBookSchema` (subClassOf PrintBook + someValuesFrom + maxCardinality), `SoloAuthoredBookSchema` (subClassOf Book + cardinality), `AnthologyBookSchema` (subClassOf Book + minCardinality + allValuesFrom), `InPrintBookSchema` (subClassOf Book + hasValue), and `OutOfPrintBookSchema` (complementOf InPrintBook, body `allOf` bounded to Book so the OWL complement is restricted to the Book universe rather than spanning ⊤). The `bookstoreEntities` registry also records an `owl:sameAs` between two customer IRIs.
-- `BookstoreGraph` Vue component now reads user-authored restrictions directly from each schema's `jt:restrictions` annotation (one edge per descriptor) instead of walking inlined `owl:Restriction` blank nodes from the OWL projection — that path was emitting auto-derived `minCardinality 1` for every `required` field and `allValuesFrom` for every `items.$ref`, both of which were structural noise. The new path renders six clean edges, one per user-authored restriction, with labels `prop ∃` / `prop ∀` / `prop = literal` / `prop card =N` / `prop card ≥N` / `prop card ≤N`.
+- `BookstoreGraph` Vue component now reads user-authored restrictions directly from each schema's `jt:restrictions` annotation (one edge per descriptor) instead of walking inlined `owl:Restriction` blank nodes from the OWL projection. That path was emitting auto-derived `minCardinality 1` for every `required` field and `allValuesFrom` for every `items.$ref`, both of which were structural noise. The new path renders six clean edges, one per user-authored restriction, with labels `prop ∃` / `prop ∀` / `prop = literal` / `prop card =N` / `prop card ≥N` / `prop card ≤N`.
 - `BookstoreGraph` also gains a navigation pane (zoom in / zoom out / fit-to-view / re-run-layout) docked bottom-right of the container, plus relaxed zoom limits so the user can back out for an overview as well as zoom in to read labels.
 - Brand wordmark gradient reshaped to dark → mid → dark (was light → mid → dark) for stronger contrast against both light and dark page backgrounds while staying within the teal family.
-- `bookstore-domain.md` rewritten to show the full generating code (one `entities/*.ts` listing per axiom kind) plus a graph-edge legend table — every declaration that produces an edge in the live `BookstoreGraph` is reproduced verbatim, so the docs page is the single reference for what the graph depicts.
+- `bookstore-domain.md` rewritten to show the full generating code (one `entities/*.ts` listing per axiom kind) plus a graph-edge legend table. Every declaration that produces an edge in the live `BookstoreGraph` is reproduced verbatim, so the docs page is the single reference for what the graph depicts.
 - **Compile-time enforcement of OWL class axioms and property restrictions**. `InferType<typeof Schema>` now folds the schema's OWL annotations into the inferred TypeScript type so violations are caught by the compiler, not just at runtime:
   - `disjointWith: X` adds a `~jt:disjointWith` brand naming X. Symmetric declarations (both classes naming each other) make the cross-assignment a type error in either direction; asymmetric declarations cover one direction at compile time and the other at runtime.
   - `not: { $ref: X }` (from `Compose.complementOf`) adds a `~jt:complementOf` brand naming X.
@@ -1164,8 +1209,8 @@ Docs and release-pipeline polish.
   - `TransformStageInterface<TIn, TOut>` (in `src/interfaces/TransformStage.ts`) types each pipe stage's `decode: (TIn) => TOut` and `encode: (TOut) => TIn`. The variance-friendly `AnyTransformStageInterface` upper bound lets generic constraints accept any concrete stage specialisation under strict function types.
   - `ValidatePipeChainType<TStages, TWire>` (in `src/types/Transform.ts`) walks the stage tuple pairwise and replaces incompatible elements with a `PipeChainMismatchInterface<index, produced, expected>` brand. The first stage is also checked against the schema's wire type and replaced with `PipeChainSchemaMismatchInterface<wire, firstStageIn>` on mismatch. Both error brands live in `src/types/TypeErrors.ts` alongside the Cluster B brands. Recursion is capped at 10 stages, matching `TupleRecursionCap`.
   - `PipeChainOutputType<TStages>` extracts the chain's terminal decoded type so `Transform.pipe`'s return value carries the correct `ParseOutputType` brand without manual generic threading.
-  - The `pipe` parameter is typed `TStages & ValidatePipeChainType<TStages, InferSchemaType<TSchema>>`. When validation fires, the intersection collapses incompatible positions to `never`, and the user's literal stages are not assignable — the call site is rejected with the offending stage type pointed out by the compiler. New positive + negative type-level tests cover (a) well-typed chains of length 1–4, (b) two-stage pairwise mismatches, (c) three-stage middle-of-chain mismatches, (d) wire-type-vs-first-stage mismatches.
-  - Audit of `Transform.encode` (Finding 11): the existing signature on `JsonTology.encode(schema, value)` already constrains `value` to the schema's decoded type via `TransformedType<TSchema, TOut>`. New positive + negative tests pin the contract — passing a wire-form string or an unrelated type to `jt.encode(transformedDateSchema, ...)` fails compilation.
+  - The `pipe` parameter is typed `TStages & ValidatePipeChainType<TStages, InferSchemaType<TSchema>>`. When validation fires, the intersection collapses incompatible positions to `never`, and the user's literal stages are not assignable. The call site is rejected with the offending stage type pointed out by the compiler. New positive + negative type-level tests cover (a) well-typed chains of length 1 to 4, (b) two-stage pairwise mismatches, (c) three-stage middle-of-chain mismatches, (d) wire-type-vs-first-stage mismatches.
+  - Audit of `Transform.encode` (Finding 11): the existing signature on `JsonTology.encode(schema, value)` already constrains `value` to the schema's decoded type via `TransformedType<TSchema, TOut>`. New positive + negative tests pin the contract. Passing a wire-form string or an unrelated type to `jt.encode(transformedDateSchema, ...)` fails compilation.
 - **Compile-time tuple narrowing for raw `minItems` / `maxItems`** (designs/0002 Cluster C / Finding 17). `InferType` on an array schema now folds raw JSON Schema bounds into the inferred shape, mirroring the OWL `cardinality` / `minCardinality` / `maxCardinality` narrowing path:
   - `minItems === maxItems === N` → `BuildExactTupleType<T, N>` (length exactly `N`).
   - `minItems > 0` with no `maxItems` → `BuildAtLeastTupleType<T, minItems>` (`[T, ..., T, ...T[]]`).
@@ -1173,16 +1218,16 @@ Docs and release-pipeline polish.
   - `minItems < maxItems` → `BuildBoundedTupleType<T, minItems, maxItems>` (union of tuples length `minItems..maxItems`).
   - Bounds without `items` narrow the tuple shape over an `unknown` element. Cap at `TupleCapType = 16`; bounds at or beyond the cap fall through to `readonly T[]` to keep recursion within TS limits. Existing `BuildFixedTupleType` / `BuildMinTupleType` helpers (length cap 10) in `Infer.ts` are removed in favour of the unified `RestrictionInfer.ts` builders so the OWL and raw paths share one implementation. New `test/types/infer-array-bounds.test.ts` covers exact / min-only / max-only / bounded-range / beyond-cap / no-bounds / raw-without-items cases.
 - **Compile-time enforcement for the registry and cross-schema references** (designs/0002 Cluster E / Findings 12-16):
-  - **Finding 12** — `JsonTology.create({ schemas: [A, B, ...] })` now brands offending tuple slots with `DuplicateSchemaIdInterface<TId>` (in `src/types/TypeErrors.ts`) when two schemas share an `$id`, so the duplicate IRI is named in editor diagnostics and the call fails to compile.
-  - **Finding 13** — `JsonTology.addComputed` and `JsonTology.addInvariant` now take `schemaId: keyof TMap & string`, rejecting unregistered IRIs at compile time. Existing `addInvariant<T>(schemaId, invariant)` call sites continue to work because the data-type generic is preserved.
-  - **Finding 14** — `JsonTology.findDuplicates()` (a new typed facade over `registry.findDuplicates()`) returns `readonly DuplicateReportEntryType<keyof TMap & string>[]`. The underlying `DuplicateReportEntryType` interface gained an optional `TEquivalentTo extends string = string` parameter so the literal-IRI variant is opt-in and the existing untyped call site is unchanged.
-  - **Finding 15** — `InferType<S, TReferences>` now resolves an absolute `$ref` whose IRI is missing from a non-empty `TReferences` map to `RefNotFoundInterface<TRef>` (in `src/types/TypeErrors.ts`) instead of silent `unknown`. With no references map in scope (`Record<never, never>`) the historical `unknown` fallback is preserved, so non-registry consumers are unaffected.
-  - **Finding 16** — Cross-schema fragment refs (`<base>#<anchor>`) emit `RefNotFoundInterface<base>` when the base IRI is absent and `AnchorNotFoundInterface<base, anchor>` when the base resolves but the anchor / `$defs` / pointer fragment doesn't. Local `#anchor` refs against the root schema are unchanged.
+  - **Finding 12:** `JsonTology.create({ schemas: [A, B, ...] })` now brands offending tuple slots with `DuplicateSchemaIdInterface<TId>` (in `src/types/TypeErrors.ts`) when two schemas share an `$id`, so the duplicate IRI is named in editor diagnostics and the call fails to compile.
+  - **Finding 13:** `JsonTology.addComputed` and `JsonTology.addInvariant` now take `schemaId: keyof TMap & string`, rejecting unregistered IRIs at compile time. Existing `addInvariant<T>(schemaId, invariant)` call sites continue to work because the data-type generic is preserved.
+  - **Finding 14:** `JsonTology.findDuplicates()` (a new typed facade over `registry.findDuplicates()`) returns `readonly DuplicateReportEntryType<keyof TMap & string>[]`. The underlying `DuplicateReportEntryType` interface gained an optional `TEquivalentTo extends string = string` parameter so the literal-IRI variant is opt-in and the existing untyped call site is unchanged.
+  - **Finding 15:** `InferType<S, TReferences>` now resolves an absolute `$ref` whose IRI is missing from a non-empty `TReferences` map to `RefNotFoundInterface<TRef>` (in `src/types/TypeErrors.ts`) instead of silent `unknown`. With no references map in scope (`Record<never, never>`) the historical `unknown` fallback is preserved, so non-registry consumers are unaffected.
+  - **Finding 16:** Cross-schema fragment refs (`<base>#<anchor>`) emit `RefNotFoundInterface<base>` when the base IRI is absent and `AnchorNotFoundInterface<base, anchor>` when the base resolves but the anchor / `$defs` / pointer fragment doesn't. Local `#anchor` refs against the root schema are unchanged.
   - New `test/types/cross-schema-resolution.test.ts` covers Findings 15 / 16 (positive resolution, missing base, missing anchor, missing pointer, no-references-map fallback). `test/types/registry-inference.test.ts` extended with Findings 12 / 13 / 14 positive + `@ts-expect-error` negative cases.
 
 ### Changed
 
-- Bumped TypeScript to 6.0 (was 5.9). Required adding explicit `types: ["node"]` to `tsconfig.json` so node built-in modules resolve under the new default. Code paths that previously relied on `as unknown as Foo` casts in places where TS5 still required a hint now use direct assignment — the casts were dead weight under TS6's improved inference.
+- Bumped TypeScript to 6.0 (was 5.9). Required adding explicit `types: ["node"]` to `tsconfig.json` so node built-in modules resolve under the new default. Code paths that previously relied on `as unknown as Foo` casts in places where TS5 still required a hint now use direct assignment. The casts were dead weight under TS6's improved inference.
 - Bumped `@rdfjs/types` to 2.0 (was 1.1). Compatible at our consumption surface; eyereasoner's peer pins `@rdfjs/types@^1.1.0`, but its actual usage is purely consuming the existing interfaces v2 retains, so the resolution is sound.
 - ESLint ecosystem refresh: `@typescript-eslint/eslint-plugin` 8.59, `eslint` 10.3, `eslint-plugin-perfectionist` 5.9, `eslint-plugin-unicorn` 64. The unicorn 64 `consistent-function-scoping` rule surfaced two test-file factory closures whose inner arrow function was hoistable; refactored to top-level `*Impl` constants returned by the factory.
 - GitHub Actions ecosystem refresh: `actions/setup-node@v6`, `actions/upload-artifact@v7`, `actions/github-script@v9`, `actions/deploy-pages@v5`, `actions/configure-pages@v6`. All on Node 24 runtime to match `engines.node >=24.0.0`.
@@ -1235,7 +1280,7 @@ Docs and release-pipeline polish.
 
 ### Changed
 
-- Docs: full polish pass across all 50+ pages. Em-dashes and en-dashes removed and replaced with direct prose equivalents. AI-isms (leverage, robust, seamlessly, note that, etc.) replaced with factual prose. Comparator code-group blocks updated to show workaround attempts with explicit Limitation notes where a library cannot fully support the concept. Related and See also sections added to every operator page. Homepage switched from layout: home to layout: doc with HomeFeaturesHero component, making the sidebar visible on the landing page.
+- Docs: full polish pass across all 50+ pages. Em-dashes and en-dashes replaced with direct prose equivalents. Filler words replaced with factual prose. Comparator code-group blocks updated to show workaround attempts with explicit Limitation notes where a library cannot fully support the concept. Related and See also sections added to every operator page. Homepage switched from layout: home to layout: doc with HomeFeaturesHero component, making the sidebar visible on the landing page.
 
 ### BREAKING
 
@@ -1260,7 +1305,7 @@ Docs and release-pipeline polish.
 
 ### Changed
 
-- Docs: full polish pass across all 50+ pages. Em-dashes and en-dashes removed and replaced with direct prose equivalents. AI-isms (leverage, robust, seamlessly, note that, etc.) replaced with factual prose. Comparator code-group blocks updated to show workaround attempts with explicit Limitation notes where a library cannot fully support the concept. Related and See also sections added to every operator page. Homepage switched from layout: home to layout: doc with HomeFeaturesHero component, making the sidebar visible on the landing page.
+- Docs: full polish pass across all 50+ pages. Em-dashes and en-dashes replaced with direct prose equivalents. Filler words replaced with factual prose. Comparator code-group blocks updated to show workaround attempts with explicit Limitation notes where a library cannot fully support the concept. Related and See also sections added to every operator page. Homepage switched from layout: home to layout: doc with HomeFeaturesHero component, making the sidebar visible on the landing page.
 
 ### BREAKING (prior)
 

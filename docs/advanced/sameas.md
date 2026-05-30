@@ -2,7 +2,7 @@
 
 **Declaration.** Records an `owl:sameAs` assertion between two individuals (ABox-level identity). Both IRIs denote the same real-world entity. Emitted at `toQuads()` time as a pair of symmetric quads.
 
-<<< ../../examples/docs/advanced/42-sameas-signature.ts
+<RunnableExample src="examples/docs/advanced/42-sameas-signature" />
 
 **Use this when** you want to declare that two distinct IRIs refer to the same real-world entity. The canonical use is linking a current stable IRI to a legacy IRI after a system migration, or linking identifiers across two authoritative sources (e.g. an internal customer ID alongside a third-party marketplace ID). This is the ABox counterpart to `Compose.equivalent` (which is class-level via `owl:equivalentClass`).
 
@@ -12,41 +12,41 @@
 
 ### Example 1: Link a legacy CRM identifier to a stable customer IRI
 
-The bookstore migrated from a legacy CRM in 2024. Customer Bastian Balthazar Bux carries the current bookstore IRI alongside the legacy CRM ID (`cust-00042`) the bookstore inherited from the old system. Declaring `sameAs` lets a reasoner merge facts about both — the new email from the bookstore and the old purchase history from the CRM resolve to one logical individual.
+The bookstore migrated from a legacy CRM in 2024. Customer Bastian Balthazar Bux carries the current bookstore IRI alongside the legacy CRM ID (`cust-00042`) the bookstore inherited from the old system. Declaring `sameAs` lets a reasoner merge facts about both. The new email from the bookstore and the old purchase history from the CRM resolve to one logical individual.
 
-<<< ../../examples/docs/advanced/43-sameas-legacy-crm.ts
+<RunnableExample src="examples/docs/advanced/43-sameas-legacy-crm" />
 
 ### Example 2: Cross-catalog book identity
 
 Bastian ordered a rare first-edition Michael Ende's *Die unendliche Geschichte* (Klett Books, 1979). The bookstore catalogs it under one IRI; WorldCat's union catalog references the same physical edition under an OCLC record IRI. Declaring `sameAs` lets a bibliographic reasoner unify metadata (publisher, page count, ISBN-13) regardless of which authority the fact came from.
 
-<<< ../../examples/docs/advanced/44-sameas-cross-catalog-book.ts
+<RunnableExample src="examples/docs/advanced/44-sameas-cross-catalog-book" />
 
 ### Example 3: Idempotence: duplicate and reverse pairs are no-ops
 
 Recording the same pair twice, or in reverse order, is a no-op. Self-pairs are silently dropped.
 
-<<< ../../examples/docs/advanced/45-sameas-idempotence.ts
+<RunnableExample src="examples/docs/advanced/45-sameas-idempotence" />
 
 ### Example 4: Symmetric emission
 
 `owl:sameAs` is symmetric by definition, but reasoners differ in whether they materialize the symmetric edge. `sameAs` emits both directions so consumers see the relation regardless of reasoner behaviour.
 
-<<< ../../examples/docs/advanced/46-sameas-symmetric-emission.ts
+<RunnableExample src="examples/docs/advanced/46-sameas-symmetric-emission" />
 
 ## Bad examples: what NOT to do
 
 ### Anti-pattern 1: Using sameAs for class-level identity
 
-<<< ../../examples/docs/advanced/47-sameas-antipattern-class-level.ts
+<RunnableExample src="examples/docs/advanced/47-sameas-antipattern-class-level" />
 
 ### Anti-pattern 2: Declaring sameAs between two editions of the same title
 
-<<< ../../examples/docs/advanced/48-sameas-antipattern-two-editions.ts
+<RunnableExample src="examples/docs/advanced/48-sameas-antipattern-two-editions" />
 
 ### Anti-pattern 3: Calling sameAs after toQuads instead of before
 
-<<< ../../examples/docs/advanced/49-sameas-antipattern-after-toquads.ts
+<RunnableExample src="examples/docs/advanced/49-sameas-antipattern-after-toquads" />
 
 ## Comparison
 

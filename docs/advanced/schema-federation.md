@@ -1,31 +1,31 @@
 # Schema federation
 
-json-tology resolves `$ref` IRIs at registration time. By default, all referenced schemas must be registered before first use — the registry throws `GraphError('REF_UNRESOLVED')` if a non-fragment IRI points to an unregistered schema.
+json-tology resolves `$ref` IRIs at registration time. By default, all referenced schemas must be registered before first use. The registry throws `GraphError('REF_UNRESOLVED')` if a non-fragment IRI points to an unregistered schema.
 
 The **loader hook** is a single async function that fetches schemas on demand:
 
-<<< ../../examples/docs/advanced/89-loaders-type-signature.ts
+<RunnableExample src="examples/docs/advanced/89-loaders-type-signature" />
 
 Async work is isolated to a single entry point: `JsonTology.prefetch`, which builds a snapshot. `JsonTology.create` is synchronous on every call site and consumes the snapshot through the `prefetched` option.
 
 ## Prefetch + sync create
 
-`JsonTology.prefetch` walks transitive `$ref`s via the loader and returns a snapshot. The snapshot is loader-agnostic — pass it to `create()` via the `prefetched` option for sync consumption.
+`JsonTology.prefetch` walks transitive `$ref`s via the loader and returns a snapshot. The snapshot is loader-agnostic; pass it to `create()` via the `prefetched` option for sync consumption.
 
-<<< ../../examples/docs/advanced/71-prefetch-bundler-compose.ts
+<RunnableExample src="examples/docs/advanced/71-prefetch-bundler-compose" />
 
 `prefetch` accepts:
-- `loader` — required.
-- `schemas` — seed schemas whose refs are followed.
-- `rootIds` — IRIs to load directly from the loader (no local seed required).
-- `baseIRI` — used by the ephemeral walker; defaults to a static placeholder when omitted.
+- `loader`: required.
+- `schemas`: seed schemas whose refs are followed.
+- `rootIds`: IRIs to load directly from the loader (no local seed required).
+- `baseIRI`: used by the ephemeral walker; defaults to a static placeholder when omitted.
 
 ## How the resolution walk works
 
 1. `prefetch` registers any `schemas` provided as seeds, then loads each `rootIds` IRI.
 2. The walker iterates registered schemas and collects every non-fragment cross-schema `$ref` IRI not yet present.
 3. Each unresolved IRI is passed to the loader. If the loader returns `null`, the walk throws `GraphError('REF_UNRESOLVED')` with the offending IRI in `err.pointer`.
-4. Returned schemas are registered and recursed into — their own `$ref`s are added to the queue.
+4. Returned schemas are registered and recursed into; their own `$ref`s are added to the queue.
 5. A `Set<string>` of visited IRIs prevents calling the loader twice for the same IRI.
 6. The walker captures every resolved schema into `snapshot.schemas` keyed by `$id`.
 
@@ -37,31 +37,31 @@ The `Loaders` namespace ships four universal helpers that work in Node ≥ 18, B
 
 Uses `globalThis.fetch`. Works anywhere. 4xx/5xx → `null`. Network errors propagate.
 
-<<< ../../examples/docs/advanced/87-loaders-fetch-options.ts
+<RunnableExample src="examples/docs/advanced/87-loaders-fetch-options" />
 
 ### `Loaders.memory`
 
 In-memory lookup. Accepts a `Map` or plain object. Zero I/O.
 
-<<< ../../examples/docs/advanced/58-loaders-memory.ts
+<RunnableExample src="examples/docs/advanced/58-loaders-memory" />
 
 ### `Loaders.compose`
 
 Chains multiple loaders. Returns the first non-null result.
 
-<<< ../../examples/docs/advanced/59-loaders-compose.ts
+<RunnableExample src="examples/docs/advanced/59-loaders-compose" />
 
 ### `Loaders.cached`
 
 Wraps any loader with an LRU cache (default: 1024 entries). Both resolved schemas and `null` results are cached so the inner loader is called at most once per IRI.
 
-<<< ../../examples/docs/advanced/60-loaders-cached.ts
+<RunnableExample src="examples/docs/advanced/60-loaders-cached" />
 
 ## Write your own loader
 
 Any function with the signature `(iri: string) => Promise<JsonSchemaType | null>` is a valid loader. Node `fs` example:
 
-<<< ../../examples/docs/advanced/61-loaders-fs-custom.ts
+<RunnableExample src="examples/docs/advanced/61-loaders-fs-custom" />
 
 ## Adding schemas after construction
 
@@ -78,7 +78,7 @@ Any function with the signature `(iri: string) => Promise<JsonSchemaType | null>
 | Condition | Result |
 |-----------|--------|
 | Loader returns `null` for a required IRI | `GraphError('REF_UNRESOLVED')` with the IRI in `err.pointer` |
-| Loader throws (network error) | Error propagates — callers see the real failure |
+| Loader throws (network error) | Error propagates; callers see the real failure |
 | Loader returns a schema with new unresolved `$ref`s | Those IRIs are queued and resolved transitively |
 | Same IRI encountered twice in one walk | Loader called at most once (visited-set dedup) |
 

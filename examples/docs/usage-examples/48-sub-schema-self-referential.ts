@@ -45,3 +45,7 @@ const bastian = jt2.instantiate(ManagerSchema.$id, {
 
 console.assert(bastian.name === 'Bastian Balthazar Bux');
 console.assert(bastian.manager.name === 'Carl Conrad Coreander');
+// 'Bastian Balthazar Bux' — root node
+console.log('name:', bastian.name);
+// 'Carl Conrad Coreander' — nested via $ref cycle
+console.log('manager name:', bastian.manager.name);

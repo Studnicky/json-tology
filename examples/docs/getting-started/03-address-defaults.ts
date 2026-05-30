@@ -38,4 +38,8 @@ const address = jt2.instantiate(AddressSchema.$id, {
 
 // { street: '12 Elm Lane', city: 'Bookham', postalCode: '94107', country: 'US' }
 console.assert(address.country === 'US');
+
+console.log('street:', address.street);
+console.log('city:', address.city);
+console.log('country (default applied):', address.country);
 void 0 as unknown as typeof address;

@@ -7,6 +7,7 @@ import BenchmarkScenario from './components/BenchmarkScenario.vue';
 import BookstoreGraph from './components/BookstoreGraph.vue';
 import HexRing from './components/HexRing.vue';
 import HomeFeaturesHero from './components/HomeFeaturesHero.vue';
+import RunnableExample from './components/RunnableExample.vue';
 import VersionBadge from './components/VersionBadge.vue';
 
 export const theme: Theme = {
@@ -21,6 +22,7 @@ export const theme: Theme = {
     app.component('BenchmarkScenario', BenchmarkScenario);
     app.component('BookstoreGraph', BookstoreGraph);
     app.component('HomeFeaturesHero', HomeFeaturesHero);
+    app.component('RunnableExample', RunnableExample);
   }
 };
 export default theme;

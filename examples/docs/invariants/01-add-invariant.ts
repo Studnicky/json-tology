@@ -22,6 +22,9 @@ console.assert(!validOrder.items.some((errItem) => {
   return errItem.keyword === 'jt:invariant';
 }));
 
+console.log('valid order result:', validOrder.ok ? 'ok' : 'invalid');
+console.log('valid order error count:', validOrder.items.length);
+
 // Now tamper with the total — claim €1000 when items sum to €850.
 const tamperedOrder = {
   ...aboxFixtures.order,
@@ -39,5 +42,15 @@ console.assert(errs.items.some((errItem) => {
   return errItem.keyword === 'jt:invariant';
 }));
 
+const invariantErr = errs.items.find((errItem) => {
+  return errItem.keyword === 'jt:invariant';
+});
+
+console.log('tampered order result:', errs.ok ? 'ok' : 'invalid');
+console.log('invariant keyword:', invariantErr?.keyword);
+console.log('invariant message:', invariantErr?.message);
+
 // is() returns false for the tampered order.
 console.assert(!bookstoreEntities.is(OrderSchema.$id, tamperedOrder));
+
+console.log('is() on tampered order:', bookstoreEntities.is(OrderSchema.$id, tamperedOrder));

@@ -29,3 +29,6 @@ const line = jt.instantiate(
 
 console.assert(line.bookIsbn === aboxFixtures.order.orderLines[0].bookIsbn);
 console.assert(line.quantity === aboxFixtures.order.orderLines[0].quantity);
+
+console.log('orderLine sub-schema id:', orderLineSubschema.$id);
+console.log('coerced line isbn:', line.bookIsbn, ', quantity:', line.quantity);

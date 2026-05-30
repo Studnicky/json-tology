@@ -30,3 +30,6 @@ if (!cache.has(key)) {
   cache.set(key, { 'computed': true });
 }
 console.assert(cache.has(key), 'cache keyed by hash');
+
+console.log('Hash.value (key-order-stable):', hashA === hashB);
+console.log('Hash.value sample:', hashA);

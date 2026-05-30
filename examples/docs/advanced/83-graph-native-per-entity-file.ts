@@ -36,3 +36,5 @@ console.assert(
   duplicates.length === 0,
   'per-entity file convention produces zero inline duplicates'
 );
+
+console.log('Per-entity file: registry size:', registry.size, '| duplicates:', duplicates.length);

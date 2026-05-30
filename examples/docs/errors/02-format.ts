@@ -33,3 +33,12 @@ console.assert(Array.isArray(grouped['/body']));
 console.assert((grouped['/rating'] ?? []).every((err) => {
   return typeof err.message === 'string';
 }));
+
+for (const [
+  path,
+  items
+] of Object.entries(grouped)) {
+  console.log(`${path}: [${items.map((entry) => {
+    return entry.message;
+  }).join(', ')}]`);
+}

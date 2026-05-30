@@ -22,3 +22,7 @@ const customer = bookstoreEntities.materialize(CustomerSchema, {
 console.assert(Array.isArray(customer.addresses));
 console.assert(customer.addresses.length === 0);
 console.assert(customer.email === aboxFixtures.customer.email);
+
+console.log('customer name:', customer.name);
+console.log('customer email:', customer.email);
+console.log('addresses (default applied):', customer.addresses);

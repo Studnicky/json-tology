@@ -54,7 +54,13 @@ if (!(decoded instanceof BigCents)) {
 }
 
 console.assert(decoded.toMajorUnits() === 850);
+// 85000
+console.log('wire cents:', wireCents);
+// 850 — bigint precision
+console.log('BigCents.toMajorUnits():', decoded.toMajorUnits());
 
 const reEncoded = jt.encode(BigCentsTransform, decoded);
 
 console.assert(reEncoded === wireCents);
+// 85000 — round-trip
+console.log('re-encoded cents:', reEncoded);

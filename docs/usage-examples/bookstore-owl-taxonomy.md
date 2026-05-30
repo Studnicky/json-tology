@@ -8,7 +8,7 @@ This page extends the bookstore domain with OWL-style class taxonomy - subClassO
 
 ## Book taxonomy and OWL axioms
 
-Beyond the structural entities, the bookstore registry carries seven additional schemas plus two ABox identity assertions that together exercise every `Compose` class-axiom, every OWL restriction the library supports, and the runtime `sameAs` surface. These are the declarations that drive the live `BookstoreGraph` visualization below — the **TBox** tab shows this class taxonomy; the **ABox** tab shows the instance data typed by it.
+Beyond the structural entities, the bookstore registry carries seven additional schemas plus two ABox identity assertions that together exercise every `Compose` class-axiom, every OWL restriction the library supports, and the runtime `sameAs` surface. These are the declarations that drive the live `BookstoreGraph` visualization below: the **TBox** tab shows this class taxonomy; the **ABox** tab shows the instance data typed by it.
 
 <BookstoreGraph />
 
@@ -22,8 +22,8 @@ Beyond the structural entities, the bookstore registry carries seven additional 
 | `OutOfPrintBookSchema`| `Compose.complementOf(InPrintBook)` with body `allOf` bounding to Book                        | `subClassOf` → Book, `complementOf` → InPrintBook |
 | `orderTotalMatchesItems` | `bookstoreEntities.addInvariant(OrderSchema, ...)`                                         | runtime cross-field rule on `Order.orderTotal` |
 | `signedFirstEditionIsSoloAuthored` | `bookstoreEntities.addInvariant(SignedFirstEditionSchema, ...)`                  | runtime cardinality rule on `SignedFirstEdition.authors` |
-| `sameAs(bastian-bux, cust-00042)` | `JsonTology.prototype.sameAs` — customer migration (ABox)                         | `sameAs` between two customer-individual nodes |
-| `sameAs(neverending-1979-thienemann, oclc/5705614)` | `JsonTology.prototype.sameAs` — cross-catalog rare-book identity (ABox)    | `sameAs` between two book-individual nodes |
+| `sameAs(bastian-bux, cust-00042)` | `JsonTology.prototype.sameAs`, customer migration (ABox)                         | `sameAs` between two customer-individual nodes |
+| `sameAs(neverending-1979-thienemann, oclc/5705614)` | `JsonTology.prototype.sameAs`, cross-catalog rare-book identity (ABox)    | `sameAs` between two book-individual nodes |
 
 Each `entities/*.ts` file is the single source of truth for one schema.
 
@@ -40,7 +40,7 @@ Each `entities/*.ts` file is the single source of truth for one schema.
 - You want every field to become optional - use [`Compose.partial`](/composition/partial-required).
 - You only want a structural alias (no parent-child semantic) - use [`Compose.equivalent`](/composition/equivalent).
 
-<<< ../../examples/docs/usage-examples/28-bookstore-ebook-subclass.ts
+<RunnableExample src="examples/docs/usage-examples/28-bookstore-ebook-subclass" />
 
 → See: [`Compose.subClassOf` reference](/composition/sub-class-of) · [`Compose.extend`](/composition/extend) (property-merge alternative) · [Graph concepts (TBox / ABox)](/advanced/graph-concepts)
 
@@ -55,7 +55,7 @@ Each `entities/*.ts` file is the single source of truth for one schema.
 - The two classes overlap intentionally - use plain `Compose.subClassOf` for both without `disjointWith`.
 - You want one class to be the negation of another - use [`Compose.complementOf`](/composition/sub-class-of) instead.
 
-<<< ../../examples/docs/usage-examples/29-bookstore-printbook-disjoint.ts
+<RunnableExample src="examples/docs/usage-examples/29-bookstore-printbook-disjoint" />
 
 → See: [`Compose.disjointWith` reference](/composition/sub-class-of) · [Graph concepts (TBox / ABox)](/advanced/graph-concepts)
 
@@ -71,23 +71,23 @@ Each `entities/*.ts` file is the single source of truth for one schema.
 - You only want to enforce array length at validation time - JSON Schema's native `minItems` / `maxItems` already cover that. Restrictions are for TBox semantic content that reasoners read.
 - You want to require *every* value to satisfy a class - use [`Compose.allValuesFrom`](/composition/restrictions) (see `AnthologyBook` below).
 
-<<< ../../examples/docs/usage-examples/30-bookstore-rarebook-restrictions.ts
+<RunnableExample src="examples/docs/usage-examples/30-bookstore-rarebook-restrictions" />
 
 → See: [OWL class restrictions](/composition/restrictions) · [`Compose.subClassOf` reference](/composition/sub-class-of) · [Graph concepts (TBox / ABox)](/advanced/graph-concepts)
 
 ### `entities/SignedFirstEdition.ts` + invariant: subclass with a cross-field axiom
 
-**In plain English:** a `SignedFirstEdition` is a `RareBook` (it inherits every RareBook restriction) plus two new fields, `signedBy` and `provenance`. The "exactly one author" rule isn't a structural shape — it's a relation between two properties — so it's registered as an invariant on the schema, not encoded as a separate OWL class. Invariants surface in `ValidationErrors` with `keyword: 'jt:invariant'`, in the same collection as structural errors.
+**In plain English:** a `SignedFirstEdition` is a `RareBook` (it inherits every RareBook restriction) plus two new fields, `signedBy` and `provenance`. The "exactly one author" rule isn't a structural shape (it's a relation between two properties), so it's registered as an invariant on the schema, not encoded as a separate OWL class. Invariants surface in `ValidationErrors` with `keyword: 'jt:invariant'`, in the same collection as structural errors.
 
 **Use this when:**
 - Your subclass adds fields *and* a cross-field rule. The `subClassOf` declaration carries the OWL TBox; the invariant carries the rule that has no structural form.
 - Pairing one schema's structure with a cardinality rule that doesn't earn its own OWL class identity (single-authorship is a fact about the `authors` array, not a separate `Kind`).
 
 **Don't use this when:**
-- The constraint *is* structural — use `minItems`/`maxItems` on the array directly.
-- The constraint is fixing a property to a literal value — use `Compose.hasValue` (an OWL class axiom).
+- The constraint *is* structural: use `minItems`/`maxItems` on the array directly.
+- The constraint is fixing a property to a literal value: use `Compose.hasValue` (an OWL class axiom).
 
-<<< ../../examples/docs/usage-examples/31-bookstore-signed-first-edition-invariant.ts
+<RunnableExample src="examples/docs/usage-examples/31-bookstore-signed-first-edition-invariant" />
 
 The pair encodes the full domain rule: the OWL TBox sees a clean `rdfs:subClassOf RareBook` triple, and `validate()` rejects any candidate `SignedFirstEdition` that fails the cross-field check.
 
@@ -97,7 +97,7 @@ The pair encodes the full domain rule: the OWL TBox sees a clean `rdfs:subClassO
 
 **In plain English:** an `InPrintBook` is a `Book` whose `printStatus` property is fixed to the literal `'inPrint'`. `Compose.hasValue(prop, literal)` pins a property to a specific scalar (string, number, or boolean). It's the TBox way of saying "every member of this class has property X equal to value Y".
 
-`printStatus` is the publisher-state primitive (`'inPrint' | 'outOfPrint' | 'limitedRun'`) — editorial state that changes rarely. Inventory state (`inStock`) is orthogonal and daily-mutable, so the InPrint/OutOfPrint axis discriminates on `printStatus`, not `inStock`.
+`printStatus` is the publisher-state primitive (`'inPrint' | 'outOfPrint' | 'limitedRun'`), editorial state that changes rarely. Inventory state (`inStock`) is orthogonal and daily-mutable, so the InPrint/OutOfPrint axis discriminates on `printStatus`, not `inStock`.
 
 **Use this when:**
 - You want a class defined by a fixed scalar value on a property (status flag, fixed currency code, role enum value).
@@ -106,7 +106,7 @@ The pair encodes the full domain rule: the OWL TBox sees a clean `rdfs:subClassO
 - The fixed value is a class instance - use `Compose.someValuesFrom` or `Compose.allValuesFrom` (those work with class IRIs, not literals).
 - The constraint should only apply at runtime - JSON Schema's native `const` keyword is simpler.
 
-<<< ../../examples/docs/usage-examples/32-bookstore-inprint-hasvalue.ts
+<RunnableExample src="examples/docs/usage-examples/32-bookstore-inprint-hasvalue" />
 
 → See: [OWL class restrictions](/composition/restrictions) · [`Compose.subClassOf` reference](/composition/sub-class-of)
 
@@ -121,15 +121,15 @@ The pair encodes the full domain rule: the OWL TBox sees a clean `rdfs:subClassO
 - You want the unbounded OWL complement (every non-X in the universe). Pass the body without `allOf` and document the open-world semantic clearly.
 - You want a runtime "not these specific values" check - JSON Schema's `not` at the top level (without OWL annotations) is simpler.
 
-<<< ../../examples/docs/usage-examples/33-bookstore-outofprint-complement.ts
+<RunnableExample src="examples/docs/usage-examples/33-bookstore-outofprint-complement" />
 
 The body's `allOf: [{ $ref: Book }]` is what bounds the OWL complement to the Book universe. Without it, OWL's open-world `complementOf` would match anything that is not an `InPrintBook`: including non-books - which is the right OWL semantic but rarely what authors want.
 
 → See: [`Compose.complementOf` reference](/composition/sub-class-of) · [Graph concepts (TBox / ABox)](/advanced/graph-concepts)
 
-### `index.ts`: ABox identity — a customer who ordered a rare book
+### `index.ts`: ABox identity, a customer who ordered a rare book
 
-All the schemas above are TBox declarations — they describe *kinds of thing*. `sameAs` is different: it operates on individuals (concrete records, the ABox), and asserts "these two IRIs name the same person/object/thing". The bookstore demonstrates two such assertions tied to one coherent narrative.
+All the schemas above are TBox declarations: they describe *kinds of thing*. `sameAs` is different: it operates on individuals (concrete records, the ABox), and asserts "these two IRIs name the same person/object/thing". The bookstore demonstrates two such assertions tied to one coherent narrative.
 
 **The scenario.** Customer Bastian Balthazar Bux placed an order on 2026-04-12 containing a single line item: a rare first edition of Michael Ende's *Die unendliche Geschichte* (Thienemann Verlag, Stuttgart, 1979, ISBN-13 9783522128001). Two identity assertions register against this scenario:
 
@@ -140,14 +140,14 @@ All the schemas above are TBox declarations — they describe *kinds of thing*. 
 - Two IRIs in your data refer to the same real-world entity (records merged after a migration, alias systems, cross-org identifiers).
 
 **Don't use this when:**
-- You want class-level identity (two *classes* that have the same instances) — use [`Compose.equivalent`](/composition/equivalent) instead. `sameAs` is for individuals, not classes.
+- You want class-level identity (two *classes* that have the same instances): use [`Compose.equivalent`](/composition/equivalent) instead. `sameAs` is for individuals, not classes.
 - You want to express "these two records *should* be merged" as a workflow step. `sameAs` is an OWL *assertion* that they already refer to one entity; downstream reasoners will treat their property values as belonging to a single individual.
 
-<<< ../../examples/docs/usage-examples/34-bookstore-sameas-identity.ts
+<RunnableExample src="examples/docs/usage-examples/34-bookstore-sameas-identity" />
 
 The order Bastian placed, the customer record, the rare-book metadata, and their later review are all defined as runtime values on the `aboxFixtures` export. `instantiate()` and `toQuads()` accept those fixtures directly so the same scenario can be used end-to-end across docs pages and integration tests.
 
-<<< ../../examples/docs/usage-examples/35-bookstore-abox-fixtures.ts
+<RunnableExample src="examples/docs/usage-examples/35-bookstore-abox-fixtures" />
 
 → See: [`sameAs` (ABox identity) reference](/advanced/sameas) · [`Compose.equivalent`](/composition/equivalent) (the class-level counterpart) · [Graph concepts (TBox / ABox)](/advanced/graph-concepts)
 

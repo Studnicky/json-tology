@@ -38,3 +38,14 @@ console.assert(
   }) === undefined,
   'nested falls through to default'
 );
+
+console.log('root IRI from strategy:', strategy({
+  'depth': 0,
+  'path': '',
+  'value': {}
+}));
+console.log('nested returns:', strategy({
+  'depth': 1,
+  'path': '/nested',
+  'value': {}
+}));

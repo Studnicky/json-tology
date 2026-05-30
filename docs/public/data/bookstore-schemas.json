@@ -344,7 +344,8 @@
         "type": "boolean"
       },
       "isbn": {
-        "$ref": "urn:bookstore:Isbn"
+        "$ref": "urn:bookstore:Isbn",
+        "inverseFunctional": true
       },
       "price": {
         "$ref": "urn:bookstore:Money"

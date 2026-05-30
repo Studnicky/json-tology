@@ -36,11 +36,14 @@ type LooseCustomer = LooseInputType<Customer>;
 type LooseRating = LooseInputType<Review['rating']>;
 
 const looseCustomer: LooseCustomer = {
+  'customerId': '09f8e7d6-c5b4-4321-9876-543210fedcba',
   'email': 'bastian@neverending.example',
-  'id': '00000000-0000-0000-0000-000000000001',
   'name': 'Bastian Balthazar Bux'
 };
 const looseRating: LooseRating = 5;
 
 console.assert(typeof looseCustomer === 'object');
 console.assert(typeof looseRating === 'number');
+
+console.log('LooseInputType<Customer>:', typeof looseCustomer, '(Record<string, unknown> — brands stripped)');
+console.log('LooseInputType<Review["rating"]>:', typeof looseRating, '(plain number — brand stripped)');

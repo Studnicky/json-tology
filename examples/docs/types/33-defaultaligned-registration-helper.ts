@@ -39,4 +39,8 @@ function registerChecked<T>(schema: DefaultAlignedType<T>): void {
 
 registerChecked(_BookSchema);
 
-void _BookSchema;
+// The helper accepted the schema — DefaultAlignedType<T> resolved to
+// the schema literal (not never) because every default matches its type.
+console.log('registered schema $id:', _BookSchema.$id);
+console.log('currency default:', _BookSchema.properties.currency.default);
+console.log('inStock default:', _BookSchema.properties.inStock.default);

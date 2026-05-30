@@ -20,4 +20,8 @@ type EvenInRange = MultipleOfRangeType<0, 10, 2>;
 
 const value: EvenInRange = 6;
 
-void value;
+// EvenInRange is 0 | 2 | 4 | 6 | 8 | 10. Step 2 keeps the recursion
+// bounded to 6 iterations. Step 0 would be an infinite loop in the type
+// system and must never be used.
+console.log('even value:', value);
+console.log('type:', typeof value);

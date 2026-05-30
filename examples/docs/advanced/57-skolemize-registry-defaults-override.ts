@@ -40,3 +40,4 @@ console.assert(
   }),
   'root subject reflects the per-call override'
 );
+console.log('per-call override root IRI:', named[0]?.subject.value);

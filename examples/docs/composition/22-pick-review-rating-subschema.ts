@@ -28,8 +28,10 @@ const jt2 = jt.set(ReviewRatingSchema);
 const okResult = jt2.validate(ReviewRatingSchema.$id, { 'rating': 5 });
 
 console.assert(okResult.ok);
+console.log('ReviewRating validates rating=5:', okResult.ok);
 
 // A 6 fails — exceeds the canonical rating cap.
 const overResult = jt2.validate(ReviewRatingSchema.$id, { 'rating': 6 });
 
 console.assert(!overResult.ok);
+console.log('ReviewRating rejects rating=6:', !overResult.ok, '(exceeds max 5)');

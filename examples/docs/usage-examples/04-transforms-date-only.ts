@@ -42,7 +42,13 @@ if (!(decoded instanceof Date)) {
 const date: Date = decoded;
 
 console.assert(date.getUTCFullYear() === 1979);
+// '1979-09-01'
+console.log('wire:', wire);
+// 1979 — pinned to midnight UTC
+console.log('decoded UTC year:', date.getUTCFullYear());
 
 const reEncoded = jt.encode(PublishedAtTransform, date);
 
 console.assert(reEncoded === wire);
+// '1979-09-01' — time component stripped on encode
+console.log('round-trip:', reEncoded);

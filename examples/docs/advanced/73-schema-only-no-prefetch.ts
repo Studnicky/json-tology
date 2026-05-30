@@ -21,9 +21,12 @@ import { CustomerSchema } from '../bookstore/index.js';
 // any loader.
 const result = bookstoreEntities.validate(CustomerSchema.$id, {
   'addresses': [],
+  'customerId': 'a1b2c3d4-e5f6-4890-abcd-ef1234567890',
   'email': 'walter.moers@bookstore.example',
-  'id': 'b2c3d4e5-1111-2222-3333-444455556666',
   'name': 'Walter Moers'
 });
 
-console.assert(typeof result === 'object', 'validate returns a result object');
+console.assert(result.ok, 'validate returns ok result');
+
+console.log('Schema-only (no prefetch) — validate ok:', result.ok);
+console.log('ValidationErrors count:', result.items.length);

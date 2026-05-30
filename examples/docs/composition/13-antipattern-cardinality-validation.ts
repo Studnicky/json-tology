@@ -17,16 +17,18 @@ const jt = JsonTology.create({
   'schemas': [_StrictBook] as const
 });
 
-jt.validate('https://bookstore.example/StrictBook', {
+const restrictionResult = jt.validate('https://bookstore.example/StrictBook', {
   'authors': [
     'A',
     'B'
   ]
 });
+
 // Does NOT fail — restrictions are TBox-only, not checked at validate/instantiate time
+console.log('owl:cardinality does NOT enforce at validate time:', restrictionResult.ok, '(passes even with 2 authors)');
 
 // ✓ Do this — use JSON Schema keywords for instance validation
-const _StrictBook2 = {
+const StrictBook2Schema = {
   '$id': 'https://bookstore.example/StrictBook2',
   'properties': {
     'authors': {
@@ -38,4 +40,4 @@ const _StrictBook2 = {
   'type': 'object'
 } as const;
 
-void 0 as unknown as [typeof jt, typeof _StrictBook2];
+console.log('maxItems/minItems enforce at validate time:', StrictBook2Schema.$id);

@@ -14,29 +14,29 @@
 
 Both `Order` and `Audit` required arrays must be satisfied.
 
-<<< ../../examples/docs/composition/04-intersection.ts
+<RunnableExample src="examples/docs/composition/04-intersection" />
 
 ### Example 2: Validation fails if any constituent schema fails
 
-<<< ../../examples/docs/composition/27-intersection-validation-failure.ts
+<RunnableExample src="examples/docs/composition/27-intersection-validation-failure" />
 
 ### Example 3: getDefaults on an intersection schema
 
 Build on [`Compose.getDefaults`](/composition/get-defaults) - extracting defaults from an intersection walks each constituent.
 
-<<< ../../examples/docs/composition/28-intersection-get-defaults.ts
+<RunnableExample src="examples/docs/composition/28-intersection-get-defaults" />
 
 ## ID collision prevention <Badge type="info" text="Compile-time" />
 
 `newId` cannot collide with any input schema's `$id`. A collision surfaces an `IntersectionIdCollisionType` brand error at the call site.
 
-<<< ../../examples/docs/composition/46-antipattern-intersection-id-collision.ts
+<RunnableExample src="examples/docs/composition/46-antipattern-intersection-id-collision" />
 
 ## Bad examples - what NOT to do
 
 ### Anti-pattern 1: Using intersection when extend is simpler
 
-<<< ../../examples/docs/composition/29-antipattern-intersection-vs-extend.ts
+<RunnableExample src="examples/docs/composition/29-antipattern-intersection-vs-extend" />
 
 ## Comparison
 

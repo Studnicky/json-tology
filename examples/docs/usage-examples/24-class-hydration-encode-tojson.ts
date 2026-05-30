@@ -75,3 +75,7 @@ console.assert(wire.orderId === aboxFixtures.order.orderId);
 const cloned: unknown = structuredClone(hydrated.toJSON());
 
 console.assert(typeof cloned === 'object');
+// same as fixture — toJSON() is the encode source
+console.log('wire orderId:', wire.orderId);
+// 'object' — structuredClone works on toJSON output
+console.log('cloned type:', typeof cloned);

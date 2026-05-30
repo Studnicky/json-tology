@@ -31,3 +31,6 @@ console.assert(
   Array.isArray(graphArray) && graphArray.length > 0,
   'shaclObject() @graph contains SHACL node shapes'
 );
+
+console.log('toShacl() quads() length:', owlQuads.length);
+console.log('shaclObject() @graph length:', Array.isArray(graphArray) ? graphArray.length : 0);

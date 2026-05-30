@@ -115,3 +115,5 @@ const description = rare.printStatus === 'inPrint'
   : `Rare: ${rare.title}`;
 
 console.assert(description.startsWith('Rare: Die unendliche Geschichte'));
+console.log('Discriminated union narrowed on printStatus:', description);
+console.log('OutOfPrint variant validates:', outOfPrintErrs.length === 0, '| InPrint variant validates:', inPrintErrs.length === 0);

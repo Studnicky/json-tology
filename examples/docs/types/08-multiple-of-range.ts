@@ -10,7 +10,15 @@ import type { MultipleOfRangeType } from '../../../src/types/index.js';
 type EvenQuantity = MultipleOfRangeType<0, 10, 2>;
 // 0 | 2 | 4 | 6 | 8 | 10
 
-// OK — 6 is divisible by 2, within 0–10
-const qty: EvenQuantity = 6;
+// All valid members of the literal union: 0, 2, 4, 6, 8, 10
+const validQuantities: EvenQuantity[] = [
+  0,
+  2,
+  4,
+  6,
+  8,
+  10
+];
 
-void qty;
+console.log('MultipleOfRangeType<0, 10, 2> members:', validQuantities.join(' | '));
+console.log('sample value:', validQuantities[3], '(6 is even, in 0..10)');

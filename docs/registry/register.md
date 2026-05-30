@@ -1,6 +1,6 @@
 # `set`, `registerAnonymous`, registry access
 
-Schema management — adding, inspecting, and introspecting the schema registry.
+Schema management: adding, inspecting, and introspecting the schema registry.
 
 ---
 
@@ -8,9 +8,9 @@ Schema management — adding, inspecting, and introspecting the schema registry.
 
 **Declaration.** Adds or replaces one or more schemas and returns `this` with the schema types accumulated into the type map. The schema is always the first argument:
 
-- `set(schema)` — single; key derived from `schema.$id`.
-- `set(schema, iri)` — explicit key; for non-canonical aliasing.
-- `set([schema | [schema, iri], ...])` — bulk; each entry is a schema or `[schema, iri]` tuple.
+- `set(schema)`: single; key derived from `schema.$id`.
+- `set(schema, iri)`: explicit key; for non-canonical aliasing.
+- `set([schema | [schema, iri], ...])`: bulk; each entry is a schema or `[schema, iri]` tuple.
 
 Schemas with `$ref` that reference other schemas must have those other schemas in the registry first (or supplied in the same `set` call). Replaces silently on `$id` collision, per `Map.set` semantics.
 
@@ -22,15 +22,15 @@ Returns `JsonTology<merged TMap>` so the new schema's static type is visible to 
 
 #### Example 1: Construction-time registration (preferred)
 
-<<< ../../examples/docs/registry/01-register.ts
+<RunnableExample src="examples/docs/registry/01-register" />
 
 #### Example 2: Post-construction registration
 
-<<< ../../examples/docs/registry/02-register-post-construction.ts
+<RunnableExample src="examples/docs/registry/02-register-post-construction" />
 
 #### Example 3: Register a composed schema immediately
 
-<<< ../../examples/docs/registry/03-composed-register.ts
+<RunnableExample src="examples/docs/registry/03-composed-register" />
 
 ### Comparison
 
@@ -105,11 +105,11 @@ ajv.addSchema(bookSchema);
 
 ### Examples
 
-<<< ../../examples/docs/errors/06-register-anonymous.ts
+<RunnableExample src="examples/docs/errors/06-register-anonymous" />
 
 ---
 
-## `jt.registry` — the Map-native interface {#registry-access}
+## `jt.registry`: the Map-native interface {#registry-access}
 
 `jt.registry` mirrors the surface of a native `Map<string, Schema>`. Reads (`has`, `get`, `keys`, `values`, `entries`, `forEach`, `size`, `for...of`) and writes (`set`, `delete`, `clear`) are spelled exactly as on `Map`. No facade aliases on `JsonTology` itself; everything goes through the registry.
 
@@ -119,25 +119,25 @@ ajv.addSchema(bookSchema);
 
 `O(1)` lookup. Returns `true` if a schema with the given `$id` is registered.
 
-<<< ../../examples/docs/registry/04-registry-has.ts
+<RunnableExample src="examples/docs/registry/04-registry-has" />
 
 ### `jt.registry.get(iri)` {#registry-get}
 
 Retrieves the original schema object by `$id`. Returns `Record<string, unknown> | undefined`.
 
-<<< ../../examples/docs/registry/05-registry-get.ts
+<RunnableExample src="examples/docs/registry/05-registry-get" />
 
 ### `jt.registry.keys()` / `values()` / `entries()` {#registry-iteration}
 
 Standard Map iterators. `keys()` yields `$id` strings, `values()` yields schema objects, `entries()` yields `[iri, schema]` pairs.
 
-<<< ../../examples/docs/registry/06-registry-iteration.ts
+<RunnableExample src="examples/docs/registry/06-registry-iteration" />
 
 ### `jt.registry.set(schema, iri?)` {#registry-set-method}
 
-Map-style write. Schema is always the first argument; key is derived from `schema.$id`. Pass an explicit `iri` only for non-canonical aliasing — passing one that disagrees with `schema.$id` throws `SchemaError('SCHEMA_INVALID_INPUT')`. Bulk writes accept an array of schemas or `[schema, iri]` tuples. Replaces silently on collision per `Map.set`. Returns the registry for chaining.
+Map-style write. Schema is always the first argument; key is derived from `schema.$id`. Pass an explicit `iri` only for non-canonical aliasing; passing one that disagrees with `schema.$id` throws `SchemaError('SCHEMA_INVALID_INPUT')`. Bulk writes accept an array of schemas or `[schema, iri]` tuples. Replaces silently on collision per `Map.set`. Returns the registry for chaining.
 
-<<< ../../examples/docs/registry/07-registry-set-method.ts
+<RunnableExample src="examples/docs/registry/07-registry-set-method" />
 
 `jt.set(schema)` is the type-accumulating wrapper that calls `registry.set` internally and widens the TypeScript type map. Use `jt.set` when you want the new schema's shape reflected in subsequent `validate`/`instantiate`/`is` calls; use `jt.registry.set` for hot-reload or test-fixture replacement where the static type doesn't need to follow.
 
@@ -145,7 +145,7 @@ Map-style write. Schema is always the first argument; key is derived from `schem
 
 Returns `true` if a schema was removed, `false` if `iri` wasn't registered. Subsequent `$ref` resolution to the deleted IRI throws `GraphError('REF_UNRESOLVED')` on the next validate/instantiate call against any schema that points to it.
 
-<<< ../../examples/docs/registry/18-registry-delete.ts
+<RunnableExample src="examples/docs/registry/18-registry-delete" />
 
 ### `jt.registry.clear()` {#registry-clear}
 

@@ -32,3 +32,6 @@ console.assert('title' in (listing as object));
 console.assert('price' in (listing as object));
 console.assert(!('authors' in (listing as object)));
 console.assert(!('inStock' in (listing as object)));
+
+// Show the projected listing payload — isbn, title, price only
+console.log('projected listing payload:', JSON.stringify(listing, null, 2));

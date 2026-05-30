@@ -27,3 +27,5 @@ const catalogRef: string | undefined = CatalogItemSchema.$ref;
 
 console.assert(catalogId === 'https://bookstore.example/CatalogItem', 'class alias defined');
 console.assert(catalogRef === BookSchema.$id, 'thin $ref alias of Book');
+console.log('CatalogItem $id:', catalogId);
+console.log('CatalogItem $ref (resolves to Book):', catalogRef);

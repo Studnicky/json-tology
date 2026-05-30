@@ -18,17 +18,17 @@
 
 #### Example 1: ISO datetime to Date - full round-trip
 
-<<< ../../examples/docs/transforms/01-decode-encode.ts
+<RunnableExample src="examples/docs/transforms/01-decode-encode" />
 
 #### Example 2: Price in cents to decimal
 
-<<< ../../examples/docs/transforms/04-price-cents-transform.ts
+<RunnableExample src="examples/docs/transforms/04-price-cents-transform" />
 
 ### Bad examples - what NOT to do
 
 #### Anti-pattern 1: Applying transform after the schema was registered
 
-<<< ../../examples/docs/transforms/05-encode-roundtrip.ts
+<RunnableExample src="examples/docs/transforms/05-encode-roundtrip" />
 
 ### Comparison
 
@@ -150,11 +150,11 @@ class Order(BaseModel):
 
 #### Example 1: Round-trip a placement timestamp
 
-<<< ../../examples/docs/transforms/05-encode-roundtrip.ts
+<RunnableExample src="examples/docs/transforms/05-encode-roundtrip" />
 
 #### Example 2: Serialize before database write
 
-<<< ../../examples/docs/transforms/06-encode-before-db-write.ts
+<RunnableExample src="examples/docs/transforms/06-encode-before-db-write" />
 
 ### Comparison
 
@@ -235,9 +235,9 @@ wire = order.model_dump(mode='json')['placed_at']  # str
 
 When a decode transform throws, `jt.instantiate` wraps the failure in a `DecodeError` (code `TRANSFORM_DECODE_FAILED`, direction `'decode'`). When an encode transform throws, `jt.encode` wraps it in an `EncodeError` (code `TRANSFORM_ENCODE_FAILED`, direction `'encode'`). Both extend `TransformError`, which extends `BaseError`, so every field on the base class (`code`, `message`, `cause`, `retryable`) is available.
 
-Custom decode or encode functions may throw `DecodeError` or `EncodeError` directly. The library propagates the thrown instance unchanged — message, code, and any `path` or `schemaId` set by the caller are preserved. The library fills in missing `schemaId` context automatically.
+Custom decode or encode functions may throw `DecodeError` or `EncodeError` directly. The library propagates the thrown instance unchanged: message, code, and any `path` or `schemaId` set by the caller are preserved. The library fills in missing `schemaId` context automatically.
 
-<<< ../../examples/docs/transforms/13-transform-errors.ts
+<RunnableExample src="examples/docs/transforms/13-transform-errors" />
 
 See [Error class hierarchy](/errors/classes) for the full reference on `TransformError`, `DecodeError`, `EncodeError`, and `CoercionError`.
 

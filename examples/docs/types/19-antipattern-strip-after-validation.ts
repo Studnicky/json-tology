@@ -34,3 +34,6 @@ const loose: LooseInputType<Customer> = customer;
 const stillBranded: Customer = customer;
 
 console.assert(loose.customerId === stillBranded.customerId);
+
+console.log('branded Customer.name:', stillBranded.name);
+console.log('LooseInputType loses brand — prefer keeping the branded Customer after instantiate()');

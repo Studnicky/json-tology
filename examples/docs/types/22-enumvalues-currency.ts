@@ -22,6 +22,12 @@ const _CurrencySchema = {
 type Currency = EnumValuesType<typeof _CurrencySchema>;
 // 'USD' | 'EUR' | 'GBP' | 'JPY'
 
-const eur: Currency = 'EUR';
+const currencies: Currency[] = [
+  'USD',
+  'EUR',
+  'GBP',
+  'JPY'
+];
 
-void eur;
+console.log('EnumValuesType<CurrencySchema>:', currencies.join(' | '));
+console.log('sample value:', currencies[1], '(derived from schema enum array, stays in sync)');

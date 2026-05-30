@@ -22,4 +22,6 @@ const _bad: Closed = {
   'name': 'Carl Conrad Coreander'
 } as unknown as Closed;
 
-void 0 as unknown as [typeof _ok, typeof _bad];
+console.log('Valid closed object:', _ok);
+// _bad is held via `as unknown as Closed` — at runtime it is a plain object.
+console.log('Invalid (excess key "extra") assigned via cast:', _bad);

@@ -30,3 +30,10 @@ console.assert(ReviewSchema.required.includes('customerId'));
 console.assert(ReviewSchema.required.includes('rating'));
 console.assert(ReviewSchema.required.includes('body'));
 console.assert(ReviewSchema.required.includes('postedAt'));
+
+console.log('ReviewSchema.$id    :', reviewId);
+console.log('ReviewSchema.type   :', reviewType);
+console.log('required fields     :', ReviewSchema.required.join(', '));
+// The validate call above exercises $ref resolution: each property range is
+// looked up by $id in the registry, not re-declared inline.
+console.log('validation errors   :', errs.length, '(fixture conforms to all six required fields)');

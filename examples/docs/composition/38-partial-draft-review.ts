@@ -27,8 +27,10 @@ const jt2 = jt.set(DraftReviewSchema);
 const empty = jt2.validate(DraftReviewSchema.$id, {});
 
 console.assert(empty.ok);
+console.log('DraftReview accepts empty body:', empty.ok, '| all fields optional after partial');
 
 // A partial draft also passes.
-const partial = jt2.validate(DraftReviewSchema.$id, { 'rating': 4 });
+const draftPartial = jt2.validate(DraftReviewSchema.$id, { 'rating': 4 });
 
-console.assert(partial.ok);
+console.assert(draftPartial.ok);
+console.log('DraftReview accepts rating-only draft:', draftPartial.ok);

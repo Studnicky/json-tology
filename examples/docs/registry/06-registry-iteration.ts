@@ -2,7 +2,7 @@ import { bookstoreEntities } from '../bookstore/index.js';
 
 const ids = [...bookstoreEntities.registry.keys()];
 const bookstoreSchemas = ids.filter((id) => {
-  return id.startsWith('https://bookstore.example/');
+  return id.startsWith('urn:bookstore:');
 });
 
 console.assert(bookstoreSchemas.length > 0, 'Should have bookstore schemas');
@@ -31,3 +31,7 @@ for (const [
 }
 
 console.assert(sizes.length === bookstoreEntities.registry.size, 'forEach count should match size');
+
+console.log('total registered schemas:', bookstoreEntities.registry.size);
+console.log('bookstore schemas:', bookstoreSchemas.length);
+console.log('bookstore schema ids:', bookstoreSchemas);

@@ -51,6 +51,10 @@ import type { NormalizedToQuadsOptionsType } from './types/NormalizedToQuadsOpti
 import type { ToQuadsOptionsType } from './types/ToQuadsOptions.js';
 
 import { RefResolutionLoader } from './modules/registry/RefResolutionLoader.js';
+import { AboxGraph } from './modules/graph/AboxGraph.js';
+import type { AboxGraphInterface } from './interfaces/AboxGraphInterface.js';
+import type { AboxIdentityDescriptorType } from './types/AboxGraph.js';
+import { isRecord } from './modules/data/DataTypes.js';
 import type { CurieInterface } from './interfaces/Curie.js';
 import { Curie } from './modules/rdf/Curie.js';
 import { OwlImporter } from './modules/ontology/OwlImporter.js';
@@ -686,6 +690,73 @@ export class JsonTology<TMap = Record<never, never>> {
     });
   }
 
+  /**
+   * Build a typed, lazy graph view over ABox instance data.
+   *
+   * The supplied quads (from {@link toQuads}, a reasoner, or any rdf/js source)
+   * are unioned with the registry's TBox quads ({@link toTbox}) and indexed once.
+   * The returned {@link AboxGraphInterface} exposes fluent navigation cursors:
+   * `resource(iri)` / `instances(classIri)` seed a selection; `.objects` /
+   * `.subjects` walk associations (inverse-functional foreign keys resolved to
+   * the owning entity); `.where` / `.filter` / `.having` refine; `.one` /
+   * `.all` / `.iris` / `.count` materialize typed instances.
+   *
+   * @param quads - ABox instance-data quads (also accepts external rdf/js quads).
+   * @returns A graph view over the ABox + TBox quad union.
+   */
+  public aboxGraph(quads: QuadInterface[]): AboxGraphInterface {
+    const tboxQuads = this.toTbox().quads();
+
+    // Identity associations are derived from the registry schemas, not the flat
+    // TBox: a property declared `inverseFunctional` is the identity of the class
+    // that declares it (the flat predicate's union domain cannot say which one).
+    const identities: AboxIdentityDescriptorType[] = [];
+    const schemaById = new Map<string, unknown>();
+
+    for (const schema of this.registry.list() as Array<Record<string, unknown> & { '$id': string }>) {
+      schemaById.set(schema.$id, schema);
+
+      const properties = schema.properties;
+
+      if (!isRecord(properties)) {
+        continue;
+      }
+
+      for (const [
+        propertyName,
+        rawPropertySchema
+      ] of Object.entries(properties)) {
+        if (!isRecord(rawPropertySchema) || rawPropertySchema.inverseFunctional !== true) {
+          continue;
+        }
+
+        const range = typeof rawPropertySchema.$ref === 'string' ? rawPropertySchema.$ref : propertyName;
+
+        identities.push({
+          'owningClass': schema.$id,
+          'predicate': this.predicateResolver({
+            'classId': schema.$id,
+            propertyName,
+            'propertySchema': rawPropertySchema
+          }),
+          range
+        });
+      }
+    }
+
+    return new AboxGraph(
+      quads,
+      tboxQuads,
+      identities,
+      (classId, subjectQuads) => {
+        return this.fromQuads(classId as keyof TMap & string, subjectQuads);
+      },
+      this.predicateResolver,
+      (classIri) => {
+        return schemaById.get(classIri) ?? null;
+      }
+    );
+  }
   /**
    * Registers a compute function for a property marked `jt:computed: true`.
    *

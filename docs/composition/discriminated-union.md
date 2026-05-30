@@ -16,23 +16,23 @@
 
 ### Example 1: Payment method union
 
-<<< ../../examples/docs/composition/05-discriminated-union.ts
+<RunnableExample src="examples/docs/composition/05-discriminated-union" />
 
 ### Example 2: Validate each variant
 
-<<< ../../examples/docs/composition/40-discriminated-union-validate.ts
+<RunnableExample src="examples/docs/composition/40-discriminated-union-validate" />
 
 ### Example 3: Order with a discriminated payment field (builds on extend)
 
 Extend `OrderSchema` with a `payment` field typed as the union, register the composite, then validate against it.
 
-<<< ../../examples/docs/composition/41-discriminated-union-order-payment.ts
+<RunnableExample src="examples/docs/composition/41-discriminated-union-order-payment" />
 
 ### Discriminator argument validation <Badge type="info" text="Compile-time" />
 
 Every variant must declare `properties[prop]` as `const` and list `prop` in `required`. Missing or non-const discriminators surface a `DiscriminatorMissingType` brand error at the call site - a compile error rather than a runtime surprise.
 
-<<< ../../examples/docs/composition/42-discriminator-validation.ts
+<RunnableExample src="examples/docs/composition/42-discriminator-validation" />
 
 ## `Compose.narrow` {#compose-narrow} <Badge type="info" text="Compile-time" />
 
@@ -46,11 +46,11 @@ Every variant must declare `properties[prop]` as `const` and list `prop` in `req
 
 #### Example 1: Narrow a Payment to access variant-specific fields
 
-<<< ../../examples/docs/composition/43-narrow-payment.ts
+<RunnableExample src="examples/docs/composition/43-narrow-payment" />
 
 #### Example 2: Exhaustive switch with Compose.narrow
 
-<<< ../../examples/docs/composition/44-narrow-exhaustive-switch.ts
+<RunnableExample src="examples/docs/composition/44-narrow-exhaustive-switch" />
 
 ## Comparison (discriminatedUnion)
 

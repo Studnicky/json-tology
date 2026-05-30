@@ -12,3 +12,6 @@ import {
 const missing = (bookstoreEntities.toSchema as (id: string) => Record<string, unknown> | undefined)('https://bookstore.example/NonExistent');
 
 console.assert(missing === undefined, 'Unregistered schema should return undefined');
+
+// Show the undefined return value for an unregistered schema ID
+console.log('toSchema for unregistered ID:', missing);

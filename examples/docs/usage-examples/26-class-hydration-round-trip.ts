@@ -9,7 +9,6 @@
  * rows, or HTTP responses.
  */
 
-import { strict as assert } from 'node:assert';
 import {
   Compose, Transform
 } from '../../../src/index.js';
@@ -17,6 +16,21 @@ import {
   aboxFixtures, bookstoreEntities, createBookstoreDocRegistry,
   OrderSchema
 } from '../bookstore/index.js';
+
+// Browser-safe strict assertions (same shape as node:assert's strict mode),
+// so this round-trip test runs anywhere, not just under Node.
+const assert = {
+  deepStrictEqual(actual: unknown, expected: unknown, message?: string): void {
+    if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+      throw new Error(message ?? 'values are not deep-equal');
+    }
+  },
+  ok(value: boolean, message?: string): void {
+    if (!value) {
+      throw new Error(message ?? 'expected a truthy value');
+    }
+  }
+};
 
 // createBookstoreDocRegistry seeds a permissive copy of the bookstore — docs examples extend
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
@@ -57,3 +71,6 @@ assert.ok(instance instanceof RoundTripOrder);
 const reEncoded = bookstoreEntities.encode(RoundTripOrderTransform, instance);
 
 assert.deepStrictEqual(reEncoded, wire);
+
+console.log('hydrated instance is RoundTripOrder:', instance instanceof RoundTripOrder);
+console.log('round-trip encode(decode(wire)) deep-equals wire:', JSON.stringify(reEncoded) === JSON.stringify(wire));

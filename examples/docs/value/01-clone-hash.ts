@@ -52,3 +52,8 @@ const h2 = Hash.value({
 
 console.assert(h1 === h2);
 console.assert(typeof h1 === 'string' && h1.length > 0);
+
+console.log('original orderLines:', order.orderLines.length);
+console.log('copy orderLines after push:', copyItems.length);
+console.log('hash (key-order invariant):', h1);
+console.log('hashes equal:', h1 === h2);

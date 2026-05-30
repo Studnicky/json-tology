@@ -33,6 +33,14 @@ const _BadCountSchema = {
 type Good = DefaultAlignedType<typeof _GoodCountSchema>;
 type Bad = DefaultAlignedType<typeof _BadCountSchema>;
 
-// Good keeps the schema shape; Bad collapses to never.
-void 0 as unknown as Good;
-void 0 as unknown as [Bad] extends [never] ? true : false;
+// Good keeps the schema type; Bad collapses to never.
+// The check is entirely compile-time: Good === typeof _GoodCountSchema,
+// Bad === never (the string default mismatches the number property type).
+type GoodIsSchema = Good extends typeof _GoodCountSchema ? true : false;
+type BadIsNever = [Bad] extends [never] ? true : false;
+
+const goodIsSchema: GoodIsSchema = true;
+const badIsNever: BadIsNever = true;
+
+console.log('Good matches schema shape (default 0 aligns with number type):', goodIsSchema);
+console.log('Bad collapses to never (default "zero" mismatches number type):', badIsNever);

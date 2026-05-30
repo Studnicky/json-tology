@@ -67,3 +67,8 @@ const syntheticId = jt.registerAnonymous({
 
 console.assert(typeof syntheticId === 'string' && syntheticId.length > 0);
 console.assert(jt.registry.has(syntheticId));
+
+console.log('canonical schemas present:', jt.registry.has(CustomerSchema.$id), jt.registry.has(BookSchema.$id));
+console.log('gift certificate registered:', jt.registry.has(CoreanderGiftCertificateSchema.$id));
+console.log('anonymous schema id:', syntheticId);
+console.log('total registered schemas:', jt.registry.size);

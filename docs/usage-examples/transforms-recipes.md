@@ -12,7 +12,7 @@ All recipes use the [bookstore domain](/bookstore-domain). For the underlying AP
 
 Wire format: `'2026-01-15T10:30:00Z'`. Decoded type: `Date`.
 
-<<< ../../examples/docs/usage-examples/03-transforms-recipes.ts
+<RunnableExample src="examples/docs/usage-examples/03-transforms-recipes" />
 
 Symmetric and lossless: `encode(decode(x)) === x` for any RFC 3339 string.
 
@@ -20,13 +20,13 @@ Symmetric and lossless: `encode(decode(x)) === x` for any RFC 3339 string.
 
 Wire format: `'2026-01-15'`. The bare date format does not carry a time zone, so the decoder pins it to UTC midnight; the encoder strips the time component on the way out.
 
-<<< ../../examples/docs/usage-examples/04-transforms-date-only.ts
+<RunnableExample src="examples/docs/usage-examples/04-transforms-date-only" />
 
 ### Unix epoch milliseconds to `Date`
 
 Wire format: integer milliseconds since the epoch.
 
-<<< ../../examples/docs/usage-examples/06-transforms-epoch-ms.ts
+<RunnableExample src="examples/docs/usage-examples/06-transforms-epoch-ms" />
 
 For seconds-since-epoch swap `* 1000` and `/ 1000`.
 
@@ -34,7 +34,7 @@ For seconds-since-epoch swap `* 1000` and `/ 1000`.
 
 If your runtime ships [`Temporal`](https://tc39.es/proposal-temporal/), prefer `Temporal.PlainDate` over `Date` for calendar values - it has no time zone and no time component, so it round-trips cleanly without the UTC-midnight workaround. The runnable example below uses a hand-rolled `PlainDate` analogue because the `Temporal` global is not yet a stable Node.js builtin; swap the class for `Temporal.PlainDate` once your runtime ships it.
 
-<<< ../../examples/docs/usage-examples/08-transforms-plain-date.ts
+<RunnableExample src="examples/docs/usage-examples/08-transforms-plain-date" />
 
 ---
 
@@ -44,7 +44,7 @@ If your runtime ships [`Temporal`](https://tc39.es/proposal-temporal/), prefer `
 
 Storing money as integer cents avoids floating-point error. Decode to a `Decimal` from your library of choice (e.g. `decimal.js`), encode back to cents. The runnable example below uses a `bigint`-backed `BigCents` wrapper so it has no external dependency; swap the wrapper for `Decimal` (or your own arbitrary-precision type) when integrating.
 
-<<< ../../examples/docs/usage-examples/09-transforms-cents-bigcents.ts
+<RunnableExample src="examples/docs/usage-examples/09-transforms-cents-bigcents" />
 
 If you prefer the project's built-in [Money composite](/bookstore-domain#money), keep cents as the wire format and use Money for the decoded slot.
 
@@ -52,7 +52,7 @@ If you prefer the project's built-in [Money composite](/bookstore-domain#money),
 
 Wire format: `'$1,234.56'`. Two decoders run left to right; encoders run right to left.
 
-<<< ../../examples/docs/usage-examples/07-transforms-formatted-price.ts
+<RunnableExample src="examples/docs/usage-examples/07-transforms-formatted-price" />
 
 `jt.instantiate(..., '$1,234.56')` yields `1234.56`; `jt.encode(..., 1234.56)` yields `'$1234.56'`. (Note the encoder does not re-insert thousands separators - that is a one-way concern; add a third stage if your wire format requires it on the way out.)
 
@@ -60,7 +60,7 @@ Wire format: `'$1,234.56'`. Two decoders run left to right; encoders run right t
 
 JSON cannot natively represent `BigInt`. Stringify on the wire; parse on decode.
 
-<<< ../../examples/docs/usage-examples/10-transforms-bigint-id.ts
+<RunnableExample src="examples/docs/usage-examples/10-transforms-bigint-id" />
 
 ---
 
@@ -70,17 +70,17 @@ JSON cannot natively represent `BigInt`. Stringify on the wire; parse on decode.
 
 Validation alone does not normalize. Use a transform when you want the canonical form on every read.
 
-<<< ../../examples/docs/usage-examples/11-transforms-email-normalize.ts
+<RunnableExample src="examples/docs/usage-examples/11-transforms-email-normalize" />
 
 The encoder is the identity, so the wire form preserves whatever the decoder produced. If you need to track the original, register a sibling property.
 
 ### URL string to `URL` object
 
-<<< ../../examples/docs/usage-examples/12-transforms-url.ts
+<RunnableExample src="examples/docs/usage-examples/12-transforms-url" />
 
 ### Slug normalization
 
-<<< ../../examples/docs/usage-examples/13-transforms-slug.ts
+<RunnableExample src="examples/docs/usage-examples/13-transforms-slug" />
 
 Pair with the [custom `slug` format](/usage-examples/custom-formats) if you also want validation.
 
@@ -90,13 +90,13 @@ Pair with the [custom `slug` format](/usage-examples/custom-formats) if you also
 
 ### Base64 string to `Uint8Array`
 
-<<< ../../examples/docs/usage-examples/14-transforms-base64.ts
+<RunnableExample src="examples/docs/usage-examples/14-transforms-base64" />
 
 For browsers, swap `Buffer.from(b64, 'base64')` for `Uint8Array.from(atob(b64), c => c.charCodeAt(0))` and the encoder for `btoa(String.fromCharCode(...bytes))`.
 
 ### JSON string to a parsed object
 
-<<< ../../examples/docs/usage-examples/15-transforms-json-blob.ts
+<RunnableExample src="examples/docs/usage-examples/15-transforms-json-blob" />
 
 Validation runs against the wire `string`. If you want the decoded value validated too, register the inner schema separately and use a `$ref` rather than a transform.
 
@@ -108,7 +108,7 @@ Validation runs against the wire `string`. If you want the decoded value validat
 
 Wire format: `'fiction, paperback, bestseller'`. Decoded type: `string[]`.
 
-<<< ../../examples/docs/usage-examples/16-transforms-csv-tags.ts
+<RunnableExample src="examples/docs/usage-examples/16-transforms-csv-tags" />
 
 If both ends of the wire are an array, prefer a plain `type: 'array'` schema with no transform.
 
@@ -120,7 +120,7 @@ If both ends of the wire are an array, prefer a plain `type: 'array'` schema wit
 
 `Transform.brand` attaches a phantom brand to the inferred type without changing the wire format. Compose it with `Transform.create` when you also need a runtime conversion.
 
-<<< ../../examples/docs/usage-examples/17-transforms-brand-isbn.ts
+<RunnableExample src="examples/docs/usage-examples/17-transforms-brand-isbn" />
 
 To brand AND convert, chain via `Transform.create` on the branded schema.
 
@@ -141,7 +141,7 @@ If your recipe is lossy, document which direction loses information and what the
 
 ### Property test pattern
 
-<<< ../../examples/docs/usage-examples/18-transforms-property-test.ts
+<RunnableExample src="examples/docs/usage-examples/18-transforms-property-test" />
 
 ---
 

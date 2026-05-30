@@ -20,3 +20,8 @@ const chained = new BaseError('SOMETHING_FAILED', 'human description', {
 console.assert(!bare.retryable);
 console.assert(retryable.retryable);
 console.assert(chained.cause === ioFailure);
+
+console.log('bare.retryable:', bare.retryable);
+console.log('retryable.retryable:', retryable.retryable);
+console.log('chained.code:', chained.code);
+console.log('chained.cause.message:', (chained.cause as Error).message);

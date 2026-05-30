@@ -17,7 +17,7 @@ Compose.equivalent(source, options): { $id, $ref, description?, title?, examples
 
 `options.$id` cannot equal `source.$id`. A self-equivalent declaration surfaces a `SelfEquivalentType` brand error at the call site.
 
-<<< ../../examples/docs/composition/45-antipattern-self-equivalent.ts
+<RunnableExample src="examples/docs/composition/45-antipattern-self-equivalent" />
 
 ## Examples
 
@@ -25,7 +25,7 @@ Compose.equivalent(source, options): { $id, $ref, description?, title?, examples
 
 Give the shared `IsbnSchema` a catalog-specific name. The two schemas validate identically; the alias carries the catalog-facing description.
 
-<<< ../../examples/docs/composition/06-equivalent.ts
+<RunnableExample src="examples/docs/composition/06-equivalent" />
 
 In the OWL TBox:
 
@@ -37,25 +37,25 @@ In the OWL TBox:
 
 Register the alias alongside the source so both IDs are available to `validate` and `instantiate`.
 
-<<< ../../examples/docs/composition/16-equivalent-catalog-isbn.ts
+<RunnableExample src="examples/docs/composition/16-equivalent-catalog-isbn" />
 
 ### Example 3: OWL equivalence in the emitted TBox
 
-<<< ../../examples/docs/composition/17-equivalent-tbox.ts
+<RunnableExample src="examples/docs/composition/17-equivalent-tbox" />
 
 ## Bad examples: what NOT to do
 
 ### Anti-pattern 1: Using equivalent when the new schema adds a constraint
 
-<<< ../../examples/docs/composition/18-antipattern-equivalent-with-constraint.ts
+<RunnableExample src="examples/docs/composition/18-antipattern-equivalent-with-constraint" />
 
 ### Anti-pattern 2: Registering only the alias, not the source
 
-<<< ../../examples/docs/composition/19-antipattern-equivalent-without-source.ts
+<RunnableExample src="examples/docs/composition/19-antipattern-equivalent-without-source" />
 
 ### Anti-pattern 3: Using equivalent to rename a class in place
 
-<<< ../../examples/docs/composition/20-antipattern-equivalent-rename.ts
+<RunnableExample src="examples/docs/composition/20-antipattern-equivalent-rename" />
 
 ## Comparison
 

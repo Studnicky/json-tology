@@ -33,3 +33,7 @@ const merged = {
 
 console.assert(Boolean(merged['@context']), 'context present');
 console.assert(merged['@graph'].length > 0, 'graph has triples');
+
+console.log('Merged @graph count:', merged['@graph'].length);
+console.log('TBox quads count:', tbox.quads().length);
+console.log('ABox quads count:', abox.length);

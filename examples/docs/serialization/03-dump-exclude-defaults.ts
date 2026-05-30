@@ -40,3 +40,7 @@ console.assert('title' in (compact as object));
 
 // inStock: true equals the schema default, so it should be absent
 console.assert(!('inStock' in (compact as object)), 'inStock should be omitted (equals default)');
+
+// Show the two wire forms side by side
+console.log('full dump (inStock included):', JSON.stringify(full, null, 2));
+console.log('compact dump (inStock omitted):', JSON.stringify(compact, null, 2));

@@ -24,3 +24,7 @@ console.assert(badErrs.length > 0);
 for (const err of badErrs) {
   console.assert(err.keyword === 'required');
 }
+
+console.log('valid customer errors:', errs.length);
+console.log('invalid customer errors:', badErrs.length);
+console.log('first error keyword:', badErrs.items[0]?.keyword);

@@ -52,3 +52,6 @@ console.assert(formState.isbn === '');
 console.assert(formState.price.amount === 0);
 console.assert(formState.price.currency === 'EUR');
 console.assert(typeof formState.printStatus === 'string');
+console.log('Book defaults:', bookDefaults);
+console.log('Customer defaults:', customerDefaults);
+console.log('Form state seeded from defaults:', formState);

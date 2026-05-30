@@ -32,3 +32,8 @@ console.assert(errs.length === 0);
 const title: string = aboxFixtures.rareBook.title;
 
 console.assert(title === 'Die unendliche Geschichte');
+
+// Log: required-key check passed — all required keys exist in properties.
+console.log('ValidateSchemaType<BookSchema> accepted — required keys present in properties');
+console.log(`runtime validation errors: ${errs.length} (expected 0)`);
+console.log(`book title: ${title}`);

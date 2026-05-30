@@ -53,3 +53,23 @@ console.assert(Array.isArray(messages));
 console.assert(typeof grouped === 'object');
 console.assert(Array.isArray(fieldErrors));
 console.assert(Array.isArray(formErrors));
+
+// Path-prefixed message strings.
+console.log('path-prefixed messages:');
+for (const msg of messages) {
+  console.log(' ', msg);
+}
+
+// Group by path.
+console.log('grouped by path:');
+for (const [
+  path,
+  items
+] of Object.entries(grouped)) {
+  console.log(`  ${path}: [${items.map((entry) => {
+    return entry.message;
+  }).join(', ')}]`);
+}
+
+// Field vs form.
+console.log('field errors:', fieldErrors.length, '  form errors:', formErrors.length);

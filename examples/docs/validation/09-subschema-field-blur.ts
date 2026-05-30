@@ -20,3 +20,6 @@ console.assert(
   }),
   'Should have pattern error'
 );
+
+console.log('isbn sub-schema id:', isbnSchema.$id);
+console.log('invalid isbn: ok =', errors.ok, ', error =', errors.items[0]?.message);

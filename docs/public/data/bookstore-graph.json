@@ -1988,6 +1988,78 @@
         "source": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc",
         "target": "https://bookstore.example/books/9783522128001"
       }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/09f8e7d6-c5b4-3210-9876-543210fedcba__19lda5__customerId__https://bookstore.example/id/bastian-balthazar-bux__uf8uei",
+        "kind": "instanceProperty",
+        "label": "customerId",
+        "source": "https://bookstore.example/id/09f8e7d6-c5b4-3210-9876-543210fedcba__19lda5",
+        "target": "https://bookstore.example/id/bastian-balthazar-bux__uf8uei"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/node__1nuweb__bookIsbn__https://bookstore.example/id/die-unendliche-geschichte__ds4s0n",
+        "kind": "instanceProperty",
+        "label": "bookIsbn",
+        "source": "https://bookstore.example/id/node__1nuweb",
+        "target": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__qcyop8__isbn__https://bookstore.example/id/die-unendliche-geschichte__ds4s0n",
+        "kind": "instanceProperty",
+        "label": "isbn",
+        "source": "https://bookstore.example/id/die-unendliche-geschichte__qcyop8",
+        "target": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4__isbn__https://bookstore.example/id/die-unendliche-geschichte__ds4s0n",
+        "kind": "instanceProperty",
+        "label": "isbn",
+        "source": "https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4",
+        "target": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__hxov0h__isbn__https://bookstore.example/id/die-unendliche-geschichte__ds4s0n",
+        "kind": "instanceProperty",
+        "label": "isbn",
+        "source": "https://bookstore.example/id/die-unendliche-geschichte__hxov0h",
+        "target": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__1dmq3g__isbn__https://bookstore.example/id/die-unendliche-geschichte__ds4s0n",
+        "kind": "instanceProperty",
+        "label": "isbn",
+        "source": "https://bookstore.example/id/die-unendliche-geschichte__1dmq3g",
+        "target": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc__customerId__https://bookstore.example/id/bastian-balthazar-bux__uf8uei",
+        "kind": "instanceProperty",
+        "label": "customerId",
+        "source": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc",
+        "target": "https://bookstore.example/id/bastian-balthazar-bux__uf8uei"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc__bookIsbn__https://bookstore.example/id/die-unendliche-geschichte__ds4s0n",
+        "kind": "instanceProperty",
+        "label": "bookIsbn",
+        "source": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc",
+        "target": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n"
+      }
     }
   ],
   "nodes": [

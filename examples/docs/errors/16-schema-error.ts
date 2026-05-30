@@ -23,5 +23,9 @@ try {
   if (error instanceof SchemaError) {
     console.assert(error.code === 'SCHEMA_MISSING_ID');
     console.assert(error.schemaId === undefined);
+
+    console.log('error.code:', error.code);
+    console.log('error.message:', error.message);
+    console.log('error.schemaId:', error.schemaId);
   }
 }

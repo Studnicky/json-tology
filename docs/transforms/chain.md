@@ -12,11 +12,11 @@
 
 ### Example 1: Formatted price string to float (two steps)
 
-<<< ../../examples/docs/transforms/03-chain.ts
+<RunnableExample src="examples/docs/transforms/03-chain" />
 
 ### Example 2: Decode direction is left-to-right, encode is right-to-left
 
-<<< ../../examples/docs/transforms/10-chain-direction.ts
+<RunnableExample src="examples/docs/transforms/10-chain-direction" />
 
 ## Pairwise chain compatibility <Badge type="info" text="Compile-time" />
 
@@ -24,7 +24,7 @@
 
 The first stage is also checked against the schema's wire type. A mismatch surfaces `ChainSchemaMismatchInterface<wire, firstStageIn>`.
 
-<<< ../../examples/docs/transforms/11-chain-type-safety.ts
+<RunnableExample src="examples/docs/transforms/11-chain-type-safety" />
 
 The chain parameter is typed as `TStages & ValidateChainType<TStages, InferSchemaType<TSchema>>`. When validation fires, the intersection collapses incompatible positions to `never` and the user's literal stages are not assignable - the call site is rejected.
 
@@ -34,7 +34,7 @@ Chains are checked up to 10 stages (`TupleRecursionCap`).
 
 ### Anti-pattern 1: Using chain for a single transformation step
 
-<<< ../../examples/docs/transforms/12-chain-use-create-for-one-step.ts
+<RunnableExample src="examples/docs/transforms/12-chain-use-create-for-one-step" />
 
 ## Comparison
 

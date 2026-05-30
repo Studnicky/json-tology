@@ -31,3 +31,7 @@ const widened: {
 console.assert(widened.kind === 'PropertyCharacteristicConflict', 'kind discriminator');
 console.assert(widened.property === 'relates', 'property name surfaced');
 console.assert(widened.conflicts.length === 2, 'conflicts tuple');
+
+console.log('brand.kind:', widened.kind);
+console.log('brand.property:', widened.property);
+console.log('brand.conflicts:', widened.conflicts.join(', '));

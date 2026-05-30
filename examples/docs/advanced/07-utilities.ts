@@ -113,3 +113,12 @@ const ctx = bookstoreEntities.ontology().context();
 console.assert(typeof ctx === 'object');
 
 void aboxFixtures;
+
+// Output demonstrating each utility's result
+console.log('Curie.expand("bookstore:Customer"):', expandedCustomer);
+console.log('Curie.compact("https://bookstore.example/Customer"):', compactCustomer);
+console.log('Path.toAccess("/items/0/quantity"):', itemQuantityAccess);
+console.log('Path.toAccess("/customer/name"):', customerNameAccess);
+console.log('Resolver.merge result — enableDefaults:', mergedOptions.enableDefaults, '| enableValidation:', mergedOptions.enableValidation);
+console.log('Hash.value (same objects equal):', bookHash1 === bookHash2);
+console.log('Hash.value sample:', bookHash1);

@@ -412,8 +412,8 @@ program
     'name'?: string;
     'out': string }) => {
     const {
-      generateFromTbox, generateRegistryDirectory
-    } = await import('./owl-gen.js');
+      writeFromTbox, writeRegistryDirectory
+    } = await import('./owl-gen-node.js');
     const fs = await import('node:fs');
     const path = await import('node:path');
 
@@ -440,7 +440,7 @@ program
 
     if (isDirectoryMode) {
       const outDir = resolve(outPath);
-      const fileResult = generateRegistryDirectory({
+      const fileResult = writeRegistryDirectory({
         ...(opts.baseIri === undefined ? {} : { 'baseIRI': opts.baseIri }),
         'input': parsed,
         'name': inferredName,
@@ -450,7 +450,7 @@ program
 
       writer.out(`Generated registry directory (${fileResult.entityFiles.length} entities + index.ts) → ${outPath}`);
     } else {
-      generateFromTbox({
+      writeFromTbox({
         ...(opts.baseIri === undefined ? {} : { 'baseIRI': opts.baseIri }),
         'input': parsed,
         'name': inferredName,

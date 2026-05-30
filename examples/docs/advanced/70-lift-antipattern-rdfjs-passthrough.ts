@@ -36,3 +36,8 @@ console.assert(
   first.predicate.value.startsWith('http') || first.predicate.value.startsWith('urn'),
   'predicate.value is a full IRI, not a compact CURIE'
 );
+
+console.log('toQuads — quad count:', internalQuads.length);
+console.log('First quad subject termType:', first.subject.termType);
+console.log('First quad predicate (full IRI):', first.predicate.value);
+console.log('fromQuads recovered object count:', lifted.length);

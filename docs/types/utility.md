@@ -32,27 +32,27 @@ json-tology exports six utility types for working with schema-derived types. Eac
 
 ### Signature
 
-<<< ../../examples/docs/types/09-deprecatedkeys-signature.ts
+<RunnableExample src="examples/docs/types/09-deprecatedkeys-signature" />
 
 ### Examples
 
 #### Example 1: Extract deprecated keys from a schema
 
-<<< ../../examples/docs/types/02-utility-types.ts
+<RunnableExample src="examples/docs/types/02-utility-types" />
 
 #### Example 2: Compile-time assertion that a key is deprecated
 
-<<< ../../examples/docs/types/04-deprecated-assertion.ts
+<RunnableExample src="examples/docs/types/04-deprecated-assertion" />
 
 ### Bad examples
 
 #### Anti-pattern 1: Manual string union
 
-<<< ../../examples/docs/types/10-antipattern-manual-deprecated-union.ts
+<RunnableExample src="examples/docs/types/10-antipattern-manual-deprecated-union" />
 
 #### Anti-pattern 2: Using it where NonDeprecatedSchemaType is the right tool
 
-<<< ../../examples/docs/types/11-antipattern-omit-vs-nondeprecated.ts
+<RunnableExample src="examples/docs/types/11-antipattern-omit-vs-nondeprecated" />
 
 ### Comparison
 
@@ -157,23 +157,23 @@ class BookV1(BaseModel):
 
 ### Signature
 
-<<< ../../examples/docs/types/12-nondeprecated-signature.ts
+<RunnableExample src="examples/docs/types/12-nondeprecated-signature" />
 
 ### Examples
 
 #### Example 1: Schema with a deprecated field
 
-<<< ../../examples/docs/types/05-nondeprecated-basic.ts
+<RunnableExample src="examples/docs/types/05-nondeprecated-basic" />
 
 #### Example 2: Using as a return type for a view layer function
 
-<<< ../../examples/docs/types/13-nondeprecated-view-function.ts
+<RunnableExample src="examples/docs/types/13-nondeprecated-view-function" />
 
 ### Bad examples
 
 #### Anti-pattern 1: Manual Omit with a string literal
 
-<<< ../../examples/docs/types/14-antipattern-manual-omit.ts
+<RunnableExample src="examples/docs/types/14-antipattern-manual-omit" />
 
 ### Comparison
 
@@ -267,31 +267,31 @@ data.model_dump(exclude_deprecated=True)
 
 ### Signature
 
-<<< ../../examples/docs/types/15-looseinput-signature.ts
+<RunnableExample src="examples/docs/types/15-looseinput-signature" />
 
 ### Examples
 
 #### Example 1: Accepting unvalidated customer input
 
-<<< ../../examples/docs/types/16-looseinput-form-handler.ts
+<RunnableExample src="examples/docs/types/16-looseinput-form-handler" />
 
 #### Example 2: Stripping brands from a single field type
 
-<<< ../../examples/docs/types/17-looseinput-single-field.ts
+<RunnableExample src="examples/docs/types/17-looseinput-single-field" />
 
 #### Example 3: Test helpers that produce fixture data
 
-<<< ../../examples/docs/types/18-looseinput-test-fixture.ts
+<RunnableExample src="examples/docs/types/18-looseinput-test-fixture" />
 
 ### Bad examples
 
 #### Anti-pattern 1: Stripping brands after validation
 
-<<< ../../examples/docs/types/19-antipattern-strip-after-validation.ts
+<RunnableExample src="examples/docs/types/19-antipattern-strip-after-validation" />
 
 #### Anti-pattern 2: Using it as a permanent storage type
 
-<<< ../../examples/docs/types/20-antipattern-loose-storage-type.ts
+<RunnableExample src="examples/docs/types/20-antipattern-loose-storage-type" />
 
 ### Comparison
 
@@ -383,31 +383,31 @@ CustomerInput = dict[str, Any]
 
 ### Signature
 
-<<< ../../examples/docs/types/21-enumvalues-signature.ts
+<RunnableExample src="examples/docs/types/21-enumvalues-signature" />
 
 ### Examples
 
 #### Example 1: Currency enum from an inline schema
 
-<<< ../../examples/docs/types/22-enumvalues-currency.ts
+<RunnableExample src="examples/docs/types/22-enumvalues-currency" />
 
 #### Example 2: With `ExhaustiveType` for an exhaustive switch
 
-<<< ../../examples/docs/types/06-enum-exhaustive.ts
+<RunnableExample src="examples/docs/types/06-enum-exhaustive" />
 
 #### Example 3: As a function parameter type
 
-<<< ../../examples/docs/types/23-enumvalues-function-param.ts
+<RunnableExample src="examples/docs/types/23-enumvalues-function-param" />
 
 ### Bad examples
 
 #### Anti-pattern 1: Hand-rolled duplicate union
 
-<<< ../../examples/docs/types/24-antipattern-handrolled-enum-union.ts
+<RunnableExample src="examples/docs/types/24-antipattern-handrolled-enum-union" />
 
 #### Anti-pattern 2: Unsafe index access
 
-<<< ../../examples/docs/types/25-antipattern-unsafe-enum-index.ts
+<RunnableExample src="examples/docs/types/25-antipattern-unsafe-enum-index" />
 
 ### Comparison
 
@@ -506,27 +506,27 @@ Currency = Literal['USD', 'EUR', 'GBP']
 
 ### Signature
 
-<<< ../../examples/docs/types/26-exhaustive-signature.ts
+<RunnableExample src="examples/docs/types/26-exhaustive-signature" />
 
 ### Examples
 
 #### Example 1: Exhaustive switch over a Review rating
 
-<<< ../../examples/docs/types/07-integer-range-rating.ts
+<RunnableExample src="examples/docs/types/07-integer-range-rating" />
 
 #### Example 2: Pairing with `EnumValuesType` for a string enum
 
-<<< ../../examples/docs/types/27-exhaustive-order-status.ts
+<RunnableExample src="examples/docs/types/27-exhaustive-order-status" />
 
 ### Bad examples
 
 #### Anti-pattern 1: Using `never` directly instead of the named alias
 
-<<< ../../examples/docs/types/28-antipattern-never-directly.ts
+<RunnableExample src="examples/docs/types/28-antipattern-never-directly" />
 
 #### Anti-pattern 2: Omitting the default branch entirely
 
-<<< ../../examples/docs/types/29-antipattern-no-default-branch.ts
+<RunnableExample src="examples/docs/types/29-antipattern-no-default-branch" />
 
 ### Comparison
 
@@ -630,27 +630,27 @@ match status:
 
 ### Signature
 
-<<< ../../examples/docs/types/30-defaultaligned-signature.ts
+<RunnableExample src="examples/docs/types/30-defaultaligned-signature" />
 
 ### Examples
 
 #### Example 1: A well-aligned schema passes through
 
-<<< ../../examples/docs/types/31-defaultaligned-passes-through.ts
+<RunnableExample src="examples/docs/types/31-defaultaligned-passes-through" />
 
 #### Example 2: A misaligned default resolves to `never`
 
-<<< ../../examples/docs/types/32-defaultaligned-misaligned-never.ts
+<RunnableExample src="examples/docs/types/32-defaultaligned-misaligned-never" />
 
 #### Example 3: Using as a generic constraint on a registration helper
 
-<<< ../../examples/docs/types/33-defaultaligned-registration-helper.ts
+<RunnableExample src="examples/docs/types/33-defaultaligned-registration-helper" />
 
 ### Bad examples
 
 #### Anti-pattern 1: Runtime-only default validation
 
-<<< ../../examples/docs/types/34-antipattern-runtime-default-check.ts
+<RunnableExample src="examples/docs/types/34-antipattern-runtime-default-check" />
 
 ### Comparison
 

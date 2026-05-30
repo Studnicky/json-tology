@@ -23,13 +23,16 @@ const itemSchema = bookstoreEntities.subschemaAt(
 // The returned schema has a synthesized $id.
 console.assert(typeof itemSchema.$id === 'string');
 console.assert(itemSchema.$id.startsWith(OrderSchema.$id));
+console.log('subschema $id:', itemSchema.$id);
 
 // Validate a concrete order line item against the resolved sub-schema.
 const line = aboxFixtures.order.orderLines[0];
 const errs = bookstoreEntities.validate(itemSchema, line);
 
 console.assert(errs.length === 0);
+console.log('order line validate errors:', errs.length);
 
 const bookIsbn: string = line.bookIsbn;
 
 console.assert(bookIsbn === '9783522128001');
+console.log('order line bookIsbn:', bookIsbn);

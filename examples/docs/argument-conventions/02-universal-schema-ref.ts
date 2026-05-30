@@ -29,6 +29,7 @@ const customerByObj = bookstoreEntities.instantiate(
 
 console.assert(customerById.customerId === customerByObj.customerId);
 console.assert(customerById.name === customerByObj.name);
+console.log('instantiate by $id and by object agree → customerId:', customerById.customerId);
 
 // Validate also accepts both forms.
 const errsByStr = bookstoreEntities.validate(CustomerSchema.$id, aboxFixtures.customer);
@@ -36,3 +37,4 @@ const errsByObj = bookstoreEntities.validate(CustomerSchema, aboxFixtures.custom
 
 console.assert(errsByStr.length === 0);
 console.assert(errsByObj.length === 0);
+console.log('validate by $id errors:', errsByStr.length, '| by object errors:', errsByObj.length);

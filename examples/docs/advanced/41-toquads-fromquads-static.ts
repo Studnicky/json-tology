@@ -25,3 +25,5 @@ console.assert(quads.length >= 0, 'static toQuads returned a quad array');
 const restored = JsonTology.fromQuads(IsbnSchema, quads);
 
 console.assert(Array.isArray(restored), 'static fromQuads returned an array');
+console.log('static toQuads quad count:', quads.length);
+console.log('static fromQuads result:', restored[0]);

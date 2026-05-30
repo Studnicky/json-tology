@@ -22,15 +22,15 @@ The bookstore schemas defined in the [Bookstore Domain](/bookstore-domain) are u
 
 #### Example 1: Generate OWL TBox JSON-LD from bookstore schemas
 
-<<< ../../examples/docs/advanced/03-ontology.ts
+<RunnableExample src="examples/docs/advanced/03-ontology" />
 
 #### Example 2: Merge TBox with separately sourced ABox
 
-<<< ../../examples/docs/advanced/19-merge-tbox-abox.ts
+<RunnableExample src="examples/docs/advanced/19-merge-tbox-abox" />
 
 ### Bad examples
 
-<<< ../../examples/docs/advanced/84-ontology-totbox-not-cached.ts
+<RunnableExample src="examples/docs/advanced/84-ontology-totbox-not-cached" />
 
 ### Comparison
 
@@ -66,15 +66,15 @@ The bookstore schemas defined in the [Bookstore Domain](/bookstore-domain) are u
 
 #### Example 1: Generate SHACL shapes JSON-LD from bookstore schemas
 
-<<< ../../examples/docs/advanced/20-toshacl-shapes.ts
+<RunnableExample src="examples/docs/advanced/20-toshacl-shapes" />
 
 #### Example 2: SHACL-only export for a validation pipeline
 
-<<< ../../examples/docs/advanced/21-toshacl-validation-pipeline.ts
+<RunnableExample src="examples/docs/advanced/21-toshacl-validation-pipeline" />
 
 ### Bad examples
 
-<<< ../../examples/docs/advanced/85-ontology-toshacl-shaclObject.ts
+<RunnableExample src="examples/docs/advanced/85-ontology-toshacl-shaclObject" />
 
 ### Comparison
 
@@ -100,7 +100,7 @@ The bookstore schemas defined in the [Bookstore Domain](/bookstore-domain) are u
 
 ## `jt.validateWithShacl` {#jt-validatewithshacl} <Badge type="warning" text="Experimental" />
 
-**Declaration.** Intended inverse of [`toShacl()`](#jt-toshacl) — validate instance quads against SHACL shape quads. **Not yet implemented.** Always throws `GraphError` with code `NOT_IMPLEMENTED`. The signature is published so that future implementations remain source-compatible.
+**Declaration.** Intended inverse of [`toShacl()`](#jt-toshacl): validate instance quads against SHACL shape quads. **Not yet implemented.** Always throws `GraphError` with code `NOT_IMPLEMENTED`. The signature is published so that future implementations remain source-compatible.
 
 <!-- inline-ts-ok: signature illustration of a not-yet-implemented method (always throws NOT_IMPLEMENTED); cannot be a runnable example -->
 ```ts
@@ -127,13 +127,13 @@ The method exists today for API symmetry with `toShacl()` and to give consumers 
 
 #### Example 1: Generate OWL JSON-LD for all bookstore schemas
 
-<<< ../../examples/docs/advanced/22-ontology-both-tbox-shacl.ts
+<RunnableExample src="examples/docs/advanced/22-ontology-both-tbox-shacl" />
 
 #### Example 2: OWL and SHACL from cross-referenced schemas
 
 `CustomerSchema` has `addresses: [Address]` via `$ref`. The ontology output produces `rdfs:domain` and `rdfs:range` relations between the Customer class and the Address class.
 
-<<< ../../examples/docs/advanced/12-ontology-cross-refs.ts
+<RunnableExample src="examples/docs/advanced/12-ontology-cross-refs" />
 
 ---
 
@@ -147,11 +147,11 @@ The method exists today for API symmetry with `toShacl()` and to give consumers 
 
 #### Example 1: Project a customer to ABox quads
 
-<<< ../../examples/docs/advanced/24-toquads-customer.ts
+<RunnableExample src="examples/docs/advanced/24-toquads-customer" />
 
 #### Example 2: Combine TBox and ABox
 
-<<< ../../examples/docs/advanced/25-toquads-combine-tbox-abox.ts
+<RunnableExample src="examples/docs/advanced/25-toquads-combine-tbox-abox" />
 
 ---
 
@@ -165,7 +165,7 @@ The method exists today for API symmetry with `toShacl()` and to give consumers 
 
 #### Example 1: Round-trip a customer through quads
 
-<<< ../../examples/docs/advanced/15-fromquads-roundtrip.ts
+<RunnableExample src="examples/docs/advanced/15-fromquads-roundtrip" />
 
 ---
 
@@ -179,11 +179,11 @@ See [`jt.toSchema`](/serialization/toSchema) in the Serialization guide - it rec
 
 For advanced use cases without the `JsonTology` facade, serializers are importable from `json-tology/ontology`:
 
-<<< ../../examples/docs/advanced/16-direct-serializer-access.ts
+<RunnableExample src="examples/docs/advanced/16-direct-serializer-access" />
 
 ## Custom prefixes and vocabulary plugins
 
-<<< ../../examples/docs/advanced/17-custom-vocabulary-plugin.ts
+<RunnableExample src="examples/docs/advanced/17-custom-vocabulary-plugin" />
 
 ## Querying the TBox {#querying-the-tbox}
 
@@ -209,7 +209,7 @@ SELECT ?cls WHERE {
 
 ### Usage with N3.js {#usage-with-n3js}
 
-<<< ../../examples/docs/advanced/18-n3-parser-integration.ts
+<RunnableExample src="examples/docs/advanced/18-n3-parser-integration" />
 
 ## Related
 

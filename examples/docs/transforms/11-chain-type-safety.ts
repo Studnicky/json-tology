@@ -58,3 +58,6 @@ if (!(decoded instanceof Date)) {
 }
 
 console.assert(decoded.getFullYear() === 2026);
+// string → number (ms) → Date: each stage output feeds the next stage input.
+console.log('epoch ms string  :', orderMs);
+console.log('decoded Date     :', decoded.toISOString());

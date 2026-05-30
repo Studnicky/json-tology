@@ -19,7 +19,7 @@ Derives a TypeScript type from an `as const` JSON Schema literal.
 
 ### Signature
 
-<<< ../../examples/docs/types/45-infertype-signature.ts
+<RunnableExample src="examples/docs/types/45-infertype-signature" />
 
 ### When to use
 
@@ -29,13 +29,13 @@ Use `InferType<T>` everywhere you need the TypeScript type corresponding to a sc
 
 #### Example 1: Object schema with required and optional fields
 
-<<< ../../examples/docs/types/01-infer-type.ts
+<RunnableExample src="examples/docs/types/01-infer-type" />
 
 The `addresses` array has `default: []` in the schema - at the type level it remains optional because `default` is a runtime concept; at runtime `instantiate()` always fills it in.
 
 #### Example 2: Integer range, enum, and const
 
-<<< ../../examples/docs/types/46-infertype-range-enum-const.ts
+<RunnableExample src="examples/docs/types/46-infertype-range-enum-const" />
 
 Bounded `integer` schemas with both bounds in the 0-50 range automatically produce literal unions. See [Constraint Brands](/constraint-brands/narrowing#structural-narrowing) for details on integer ranges and multipleOf ranges.
 
@@ -43,7 +43,7 @@ Bounded `integer` schemas with both bounds in the 0-50 range automatically produ
 
 When a schema references another by absolute IRI, pass a reference map as the second type argument.
 
-<<< ../../examples/docs/types/47-infertype-cross-schema-refs.ts
+<RunnableExample src="examples/docs/types/47-infertype-cross-schema-refs" />
 
 Without the reference map, `items` would resolve to `unknown` at the element level.
 
@@ -148,7 +148,7 @@ Lower-level inference with explicit `Root` and `Refs` parameters. Resolves `$ref
 
 ### Signature
 
-<<< ../../examples/docs/types/48-inferschematype-signature.ts
+<RunnableExample src="examples/docs/types/48-inferschematype-signature" />
 
 ### When to use
 
@@ -158,7 +158,7 @@ Use when you need to infer the type of a sub-schema that uses `$ref: '#/$defs/..
 
 #### Example 1: Infer a sub-schema type from $defs
 
-<<< ../../examples/docs/types/49-inferschematype-defs-sub.ts
+<RunnableExample src="examples/docs/types/49-inferschematype-defs-sub" />
 
 ### Comparison
 
@@ -231,17 +231,17 @@ See [Constraint Brands](/constraint-brands) for the full reference, configuratio
 
 #### Example 1: Format brands prevent mixing email and UUID strings
 
-<<< ../../examples/docs/types/50-brands-format-incompatible.ts
+<RunnableExample src="examples/docs/types/50-brands-format-incompatible" />
 
 #### Example 2: Integer range as literal union
 
-<<< ../../examples/docs/types/51-brands-integer-range-literal.ts
+<RunnableExample src="examples/docs/types/51-brands-integer-range-literal" />
 
 #### Example 3: Disable brands for a project
 
 Create a `.d.ts` anywhere in your `tsconfig include` path:
 
-<<< ../../examples/docs/types/52-brands-disable-config.ts
+<RunnableExample src="examples/docs/types/52-brands-disable-config" />
 
 All `InferType` results revert to plain TypeScript primitives. Runtime validation is unaffected.
 

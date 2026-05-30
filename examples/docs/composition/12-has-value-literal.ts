@@ -3,7 +3,7 @@ import { Compose } from '../../../src/index.js';
 const IN_STOCK = 'https://bookstore.example/inStock';
 
 // TypeScript narrows the inStock property type to the literal `true`
-const _InPrintBook = Compose.subClassOf(
+const InPrintBookSchema = Compose.subClassOf(
   Compose.hasValue(IN_STOCK, true),
   {
     '$id': 'https://bookstore.example/InPrintBook',
@@ -11,4 +11,5 @@ const _InPrintBook = Compose.subClassOf(
   } as const
 );
 
-void 0 as unknown as typeof _InPrintBook;
+console.log('InPrintBook schema $id:', InPrintBookSchema.$id);
+console.log('hasValue restriction on inStock:', (InPrintBookSchema as Record<string, unknown>)['jt:restrictions']);

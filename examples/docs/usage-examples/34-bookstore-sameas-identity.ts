@@ -34,3 +34,9 @@ const sameAsQuads = quads.filter((quad) => {
 
 // Four quads = two pairs × two directions (sameAs is symmetric).
 console.assert(sameAsQuads.length >= 2);
+// ABox + TBox quads
+console.log('total quads:', quads.length);
+// >= 2 (both directions of at least one pair)
+console.log('sameAs quads:', sameAsQuads.length);
+// one of the paired IRIs
+console.log('sample sameAs subject:', sameAsQuads[0]?.subject.value);

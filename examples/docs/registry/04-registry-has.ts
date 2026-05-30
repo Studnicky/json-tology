@@ -1,5 +1,5 @@
 import {
-  bookstoreEntities, CustomerSchema
+  aboxFixtures, bookstoreEntities, CustomerSchema
 } from '../bookstore/index.js';
 
 console.assert(
@@ -7,7 +7,7 @@ console.assert(
   'CustomerSchema should be registered'
 );
 console.assert(
-  !bookstoreEntities.registry.has('https://bookstore.example/NonExistent'),
+  !bookstoreEntities.registry.has('urn:bookstore:NonExistent'),
   'NonExistent schema should not be registered'
 );
 
@@ -24,9 +24,10 @@ function validateIfPresent(schemaId: string, data: unknown) {
 }
 
 console.assert(
-  validateIfPresent(CustomerSchema.$id, {
-    'id': '1',
-    'name': 'Test'
-  }) === null,
+  validateIfPresent(CustomerSchema.$id, aboxFixtures.customer) === null,
   'Valid customer should pass'
 );
+
+console.log('has CustomerSchema:', bookstoreEntities.registry.has(CustomerSchema.$id));
+console.log('has urn:bookstore:NonExistent:', bookstoreEntities.registry.has('urn:bookstore:NonExistent'));
+console.log('validateIfPresent(Customer, valid fixture):', validateIfPresent(CustomerSchema.$id, aboxFixtures.customer));

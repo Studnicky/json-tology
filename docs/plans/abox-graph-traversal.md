@@ -1,166 +1,197 @@
-# Plan: ABox reference semantics + typed graph traversal
+# Plan: typed ABox graph traversal — "an ORM for graphs"
 
 Status: proposed — design under review. Targets a minor release (0.x breaking allowed).
 Owner: (json-tology agent)
-Consumer: Node applications working with instance data as a connected, navigable graph —
-"give me this Order, walk to its Customer and the Books it references, all typed."
+Consumer: Node applications that want to work with instance data as a connected, navigable,
+**typed** graph — "load this Order, walk to its Customer and the Books it references."
 
-## Motivation
+## Key realization: the associations already exist in the TBox
 
-`CLAUDE.md` states the canonical graph is *"lossless execution data intended to support TBox/ABox
-reasoning **and graph exploration**."* Reasoning and serialization exist; **exploration does not**.
+json-tology already derives, from authored schemas, everything an ORM calls an *association*:
 
-Today `toQuads` projects each instance independently. Relationships modeled as **scalar foreign
-keys** (`order.customerId`, `review.bookIsbn`) emit as datatype-property *literals*, not
-object-property edges — so a projected ABox is a set of disconnected per-fixture islands (the
-bookstore demo lifts to 5 components). Even where instances link (nesting, `x-jt-iriRef`), there is
-no API to *walk* the graph; a consumer filters quads by hand.
+- **Object-property associations** — a property whose range is another registered class emits
+  `owl:ObjectProperty` + `rdfs:domain`/`rdfs:range` in the TBox (verified: the bookstore TBox emits
+  all three). `$ref`-to-entity references (`Order.shippingAddress → Address`, `Order.orderLines →
+  OrderLine`, `Order.orderTotal → Money`) **already project as object-property edges and already
+  connect in the ABox.** This part works today.
+- **Identity** — `Customer.customerId` is declared `owl:InverseFunctionalProperty` and `required`
+  (verified in the TBox). That *is* the statement "`customerId` uniquely identifies a `Customer`."
 
-Two gaps, two fixes — separable, and composable:
+So this is **not** a "model the data differently / add a keyword" feature. The schema layer already
+knows the relationships. What is missing is a layer that **reads those associations and uses them to
+navigate the ABox** — the ORM/query surface. Two gaps remain:
 
-1. **Reference semantics** — make foreign keys first-class references so the projected graph is
-   *connected*.
-2. **Traversal API** — make the connected graph *navigable*, yielding *typed* instances.
+1. **Identity-keyed foreign keys are not resolved.** `Order.customerId` is `$ref: CustomerId` — the
+   *same primitive type* as `Customer`'s inverse-functional identity — but its value projects as a
+   scalar, not a link. Nothing joins `Order.customerId` to the `Customer` it identifies, even though
+   the TBox has the inverse-functional declaration to do so. (This, not object-refs, is why the
+   bookstore ABox shows islands.)
+2. **No traversal API.** Even where instances link, a consumer filters quads by hand.
 
-Composed with the existing `fromQuads`, the result is a typed, ontology-backed, traversable instance
-graph in Node — a capability few JSON-Schema toolkits offer.
+"Models = schemas (have). Associations = TBox object-properties + inverse-functional identities
+(have). Query / eager-load = the new layer."
 
-## Piece 1 — Reference semantics (`x-jt-ref`)
+## Piece 1 — Association model (derive, don't re-declare)
 
-### Problem
-A scalar property may be a foreign key to another entity's identity. JSON Schema cannot express
-this; `$ref` is structural (inlines a subschema) and `x-jt-iriRef` only marks a value that already
-*is* an IRI. Neither says "`customerId` identifies a `Customer` by its `customerId`."
+A read-only association index built from the existing TBox, per registered schema:
 
-### Keyword
-A property-level keyword declaring a reference target and the key it matches:
+- **Object associations**: for each `owl:ObjectProperty`, `{ property, from: domainClass,
+  to: rangeClass, cardinality }` (cardinality from array vs scalar + restrictions). Already emitted.
+- **Identity**: for each `owl:InverseFunctionalProperty` (+ `required`), the class's identity
+  property and its primitive type (e.g. `Customer` ← `customerId : CustomerId`).
+- **Foreign-key associations (derived)**: a property typed as some class C's identity primitive,
+  on a *different* class, is a foreign key to C. `Order.customerId : CustomerId` ⇒ `Order` →
+  `Customer` by identity. Derivable purely from existing constructs (inverse-functional + shared
+  `$ref` primitive). No new authoring required for the common case.
 
-```jsonc
-"customerId": {
-  "type": "string",
-  "x-jt-ref": { "schema": "urn:bookstore:Customer", "key": "customerId" }
-}
-```
+Open: ambiguity (two classes sharing one identity primitive) and cross-graph references may need an
+explicit override — see "Optional explicit override" below.
 
-- `schema` — the `$id` of the referenced schema (the target entity class).
-- `key` — the identity property on the target whose value this property matches
-  (default: the target's declared identity / `$id`-bearing key).
+## Piece 2 — Typed traversal API (a fluent RDF cursor)
 
-### Projection behaviour (`toQuads`)
-When a property carries `x-jt-ref`, projection emits an **object-property edge** to the referenced
-instance's IRI instead of (or in addition to) the scalar literal:
+Operate over a projected ABox (quads from `toQuads`, unioned), indexed once. Associations (Piece 1)
+make object-property edges and identity foreign keys traversable uniformly; `fromQuads` makes
+results typed. The conceptual model is ORM-like (typed entities + their relationships); the **access
+paths use RDF terminology** (subjects/predicates/objects, domain/range/subClassOf); and navigation is
+**fluent dot-chaining over a lazy `Cursor`** — read left-to-right, not nested calls, not a
+path-expression DSL.
 
-- Resolve the target IRI via the same `iriFor` / `PredicateResolver` machinery the target instance
-  was minted under (so the edge points at the *same* IRI the target projects to).
-- Emits `<subject> <predicate> <targetIRI>` (NamedNode object) — a real RDF object property,
-  reversible by `fromQuads`.
-- Open decision: keep the scalar literal too (lossless, but duplicative) or replace it (clean graph,
-  but the raw key is no longer in the quads). Leaning **replace**, with the key recoverable from the
-  target instance.
-
-### `fromQuads` behaviour
-Lift the object-property edge back to the foreign-key scalar (or to a nested/linked instance,
-depending on a `resolveRefs` option) so round-trips stay lossless under the schema contract.
-
-### Why not just require IRI modeling?
-`x-jt-iriRef` already connects authors who model references as IRIs. But real-world / relational /
-DTO data overwhelmingly carries opaque scalar keys. `x-jt-ref` is the bridge that turns that data
-into a graph **without rewriting the source shape** — the differentiator.
-
-### Authoring ergonomics — composition helpers (REQUIRED)
-Authors must never hand-write the `x-jt-ref` object. References are declared through the existing
-`Compose` static-helper family (precedent: `Compose.subClassOf`, `Compose.extend`,
-`Compose.intersection`, `Compose.equivalent`), so a reference reads as a first-class schema
-operation and the keyword shape stays an implementation detail:
+The view spans **both layers**: instance paths over the projected ABox quads, and schema paths over
+the registry's TBox (which already carries `rdfs:domain`/`rdfs:range`/`rdfs:subClassOf`/
+inverse-functional as quads).
 
 ```ts
-const OrderSchema = {
-  $id: 'urn:bookstore:Order',
-  type: 'object',
-  properties: {
-    orderId: { type: 'string' },
-    // references the Customer entity by its identity key; the helper emits the
-    // correct scalar type (matching the target key) + the x-jt-ref keyword.
-    customerId: Compose.ref(CustomerSchema),
-    // array-valued reference (one edge per element):
-    bookIsbns: Compose.refs(BookSchema, { key: 'isbn' })
-  }
-} as const;
+const g = jt.aboxGraph(quads);              // RDF graph view: ABox quads + the registry TBox
+                                            // (also accepts external n3 / eyereasoner quads)
+
+// Entry points → a Cursor (a lazy, typed selection of resources):
+g.resource(iri)                              // Cursor over { iri }
+g.instances(classIri)                        // Cursor over all resources of rdf:type classIri
+
+// Chainable navigation (Cursor → Cursor), dot-chained left → right:
+cursor.objects(predicate)                    // forward: objects of each resource via predicate (identity FKs resolved)
+cursor.subjects(predicate)                   // inverse (^predicate): resources that point at each via predicate
+cursor.subgraph(depth)                       // expand to the bounded N-hop neighbourhood
+cursor.ofType(classIri)                     // keep only resources whose rdf:type is classIri
+
+// Terminals (Cursor → typed values):
+cursor.one()                                 // the single typed instance (throws if 0 or >1); .first() for lenient
+cursor.all()                                 // typed instance[]  (alias: .resources())
+cursor.iris()                                // the underlying IRIs
+cursor.count()
+
+// Schema (TBox) paths — also return a Cursor (over classes / predicates), chainable:
+g.predicate(name).domain()                   // the rdfs:domain class(es) of a predicate
+g.predicate(name).range()                    // the rdfs:range class / datatype
+g.class(classIri).subClassOf()               // direct superclasses (.subClassOf({ transitive: true }) walks up)
+g.class(classIri).properties()               // declared properties (predicates whose domain is this class)
 ```
 
-Helpers (names provisional, to mirror the `Compose` surface):
-- `Compose.ref(target, options?)` — a single reference property to `target` (a schema with `$id`),
-  matching `target`'s declared identity key (or `options.key`). Returns the property subschema
-  `{ type: <target-key-type>, 'x-jt-ref': { schema: target.$id, key } }`.
-- `Compose.refs(target, options?)` — array-valued variant (`type: 'array'`, `items` carrying the
-  `x-jt-ref`).
-- `Compose.identity(schema, key)` (or an `x-jt-identity` keyword) — declares which property is a
-  schema's identity, so `Compose.ref(target)` needs no explicit `key` and traversal/`fromQuads`
-  know the join column. Open: keyword vs. helper-only.
+Dot-chaining gives multi-hop without a DSL:
 
-Type inference must flow through: `InferType` of a `Compose.ref(CustomerSchema)` property is the
-target key's scalar type (e.g. `string`), and the traversal API resolves it to the typed
-`Customer`. Compile-time chain checks follow the `Transform.chain` precedent (reject a `ref` whose
-declared `key` is not a property of `target`).
-
-## Piece 2 — Typed traversal API
-
-### Substrate
-Operate over a projected ABox (the quads from `toQuads`, unioned across instances) — the RDF graph
-is the natural index. Build it once, expose navigation. References (Piece 1, `x-jt-iriRef`, `$ref`,
-nesting) all become traversable edges uniformly.
-
-### Surface (sketch — names provisional)
 ```ts
-const graph = jt.aboxGraph(quads);          // or jt.toQuads(...).graph()
+// Order → its OrderLines → the Books they reference, as typed Book[]:
+g.resource(orderIri).objects('orderLines').objects('bookIsbn').all();
 
-graph.node(iri)                              // the instance at iri (typed via fromQuads)
-graph.out(iri, predicate?)                   // outgoing edges → { predicate, target }
-graph.in(iri, predicate?)                    // incoming edges (who references iri)
-graph.neighbors(iri)                         // both directions
-graph.path(fromIri, toIri)                   // shortest path, if any
-graph.subgraph(iri, depth)                   // bounded neighborhood
-graph.instancesOf(schemaId)                  // all instances of a type
+// Everything that references this Customer (Orders + Reviews, via the customerId FK):
+g.resource(customerIri).subjects('customerId').all();
+
+// The schema side, same vocabulary:
+g.predicate('orderLines').range().one();     // → the OrderLine class schema
 ```
 
-- Results are **typed**: `node()` / traversal targets lift through `fromQuads` to the instance's
-  inferred type (keyed by the schema map), not raw quads.
-- Predicate arguments accept the canonical predicate IRI **or** the authored property name (resolved
-  through `PredicateResolver`).
-- Read-only and in-memory; backed by indexes (subject→edges, object→edges, type→subjects).
+- Predicates are addressable by IRI/CURIE **or** the authored property name, resolved via
+  `PredicateResolver` (`'customerId'` → its flat predicate IRI).
+- `.objects('customerId')` resolves the inverse-functional identity foreign key to the typed
+  `Customer` (not the raw UUID); `.subjects('customerId')` is the inverse.
+- `g.predicate('orderLines').range()` reads the TBox the registry already holds, so schema and data
+  are walked with one cursor vocabulary.
+- Cursors are lazy: navigation builds an IRI set; terminals materialize and type via `fromQuads`.
+- Read-only, in-memory, index-backed: subject→(predicate,object), object→(predicate,subject),
+  identity→subject (inverse-functional), rdf:type→subjects, plus the TBox domain/range/subClassOf index.
 
-### Composition
-`x-jt-ref` (connect) + traversal (navigate) + `fromQuads` (type) is the whole story:
-`graph.out(order, 'customer')` returns a typed `Customer`.
+### Tier 1 (ACCEPTED — build now) · Tier 2 (REJECTED)
 
-## Non-goals (for this iteration)
-- No persistent store / external graph DB — in-memory over projected quads only.
-- No SPARQL/Cypher surface — a focused navigation API, not a query language.
+**Tier 1** is the full cursor — paths-via-chaining, typed-JS filters, set ops, aggregates — and is
+what Phase 1 ships. Complete method surface:
+
+- **Entry**: `g.resource(iri)`, `g.instances(classIri)`, `g.predicate(name)`, `g.class(classIri)`.
+- **Navigate** (Cursor→Cursor): `.objects(predicate | predicate[])` (forward; FK-resolved; an array
+  is the SPARQL `a|b` alternative), `.subjects(predicate | predicate[])` (inverse `^`),
+  `.closure(predicate)` (transitive `p+`/`p*`, lazy bounded BFS), `.subgraph(depth)`.
+- **Refine**: `.ofType(classIri)` (rdf:type), `.where(fn)` (typed JS predicate over the lifted
+  instance — the DX win), `.having(predicate, value)` (value match).
+- **Set / modifiers**: `.union(cursor)`, `.intersect(cursor)`, `.distinct()`, `.orderBy(fn)`,
+  `.limit(n)`.
+- **Terminals**: `.one()`, `.first()`, `.all()` (`.resources()`), `.iris()`, `.count()`, `.some()`,
+  `.none()`.
+- **Schema cursors**: `g.predicate(p).domain()` / `.range()`; `g.class(c).subClassOf({ transitive })`
+  / `.properties()`.
+
+**Tier 2 (rejected): no multi-variable `.match()` / bindings-rows API.** Multi-pattern joins,
+OPTIONAL, GROUP-BY-over-bindings stay out — that abstraction's DX is awkward and chasing it rebuilds
+a query engine. For those, hand the standard rdf/js quads to a dedicated SPARQL engine. This keeps
+the surface JS-native and the cursor a clean set-of-resources.
+
+### Scope boundary — simple fluent helpers, not a query engine
+Each cursor step is one plain hop (`.objects`/`.subjects`), plus a depth-bounded `.subgraph`.
+**Multi-hop is fluent dot-chaining** (`g.resource(order).objects('orderLines').objects('bookIsbn')`)
+— read left to right, no nested calls, and crucially **no path-expression string to parse**. We
+deliberately do **not** ship SPARQL property paths, a query language, or a general RDF
+store/reasoner — that is reimplementing n3.js / Comunica, the opposite of the goal. The aim is
+ergonomic, typed navigation of an already-projected graph. If a richer query surface is ever wanted,
+hand the quads to a dedicated engine rather than grow one here.
+
+## Foreign-key round-trip (resolved decision)
+
+When a derived foreign key is *materialized into the graph as an edge* (so traversal/connectivity
+works without a separate resolution step):
+
+- **Default = A (edge-only), strict.** Project the FK as an object-property edge to the target IRI;
+  `fromQuads` reconstructs the scalar by reading the target instance's identity. Strict-by-default
+  (`feedback_strict_by_default`): the graph carries no redundant scalar. If `fromQuads` cannot
+  reconstruct (target absent from the quad set), it raises a structured error — no silent loss.
+- **Opt-in fallback = B**, via `enableReferenceFallback: false` default (strict). Set `true` to also
+  emit the scalar literal alongside the edge, guaranteeing lossless round-trips even when the target
+  is absent (partial graphs, streaming) at the cost of a redundant value.
+
+Note this materialization is *optional* — `graph.related()` can also resolve foreign keys lazily at
+traversal time from the inverse-functional index without rewriting projection. Phase 1 evaluates
+lazy-resolution-first (least invasive) before changing `toQuads` output.
+
+## Optional explicit override (NOT the foundation)
+
+For references the TBox cannot derive (cross-graph, ambiguous identity primitive, or a scalar that
+*is not* a `$ref` to an identity type), an explicit declaration via the existing `Compose` family:
+`Compose.ref(targetSchema, { key })` → marks a property as a foreign key to `targetSchema`'s
+identity. This is a convenience/disambiguator layered *on top of* the derived model, not a
+prerequisite. The bookstore needs none of it — its inverse-functional `customerId` already suffices.
+
+## Non-goals (this iteration)
+- No persistent store / external graph DB — in-memory over projected quads.
+- No SPARQL/Cypher surface — a focused navigation/eager-load API.
 - No write/mutation traversal — read-only exploration.
 
-## Open decisions
-- `x-jt-ref` literal-vs-edge: replace the scalar or keep both (leaning replace).
-- Traversal entry point: a method on `JsonTology` (`aboxGraph(quads)`) vs a returned object from
-  `toQuads`. Leaning a standalone `aboxGraph` so it also accepts externally-sourced quads (n3,
-  eyereasoner) symmetric with `fromQuads`.
-- Identity declaration: does `x-jt-ref.key` default to a per-schema declared identity property
-  (a new `x-jt-identity`?) or stay explicit per reference.
-- Cardinality: array-valued references (`orderLines[].bookIsbn`) — natural (one edge per element).
-
 ## Phasing
-1. **Phase 1 — reference semantics + composition helpers.** `x-jt-ref` keyword + type;
-   `Compose.ref` / `Compose.refs` (and identity declaration) as the authoring surface; projection
-   emits object-property edges; `fromQuads` reverses. Unit + round-trip + type-assertion tests
-   (`InferType` of a `ref` property, compile-time bad-key rejection). The bookstore domain adopts
-   `Compose.ref` for `customerId` / `bookIsbn`, so its ABox connects natively (and the docs graph
-   demo becomes a true connected graph — no viz heuristic).
-2. **Phase 2 — traversal API.** `aboxGraph(quads)` + navigation methods, typed via `fromQuads`.
-   Unit tests over the now-connected bookstore ABox; e2e walking Order→Customer→…→Book.
-3. **Phase 3 — docs.** "Working with instance graphs in Node" guide; the `BookstoreGraph` ABox tab
-   showcases real traversal instead of per-fixture islands.
+1. **Phase 1 — association index + lazy traversal (ABox + schema paths).** Read object-property +
+   inverse-functional identity + `rdfs:domain`/`range`/`subClassOf` associations from the TBox; build
+   `aboxGraph(quads)` returning a fluent typed `Cursor`: entry points (`resource` / `instances`),
+   chainable hops (`.objects` / `.subjects` / `.subgraph` / `.ofType`), terminals (`.one` / `.all` /
+   `.iris` / `.count`), and schema cursors (`g.predicate(p).domain()/.range()`,
+   `g.class(c).subClassOf()/.properties()`) — with lazy FK resolution via the identity index (no
+   `toQuads` change yet). Typed via `fromQuads`. Unit + e2e over the bookstore
+   (`g.resource(order).objects('customerId').one()` → typed Customer;
+   `g.predicate('orderLines').range().one()` → OrderLine; `g.resource(order).subgraph(2)`) +
+   type-assertion tests.
+   The docs ABox tab then renders the FK-resolved edges from the same association index — connected,
+   no heuristic.
+2. **Phase 2 (only if needed) — optional FK edge materialization + docs guide.** If lazy resolution
+   proves insufficient, evaluate `enableReferenceFallback` projection mode (A/B) to materialize FK
+   edges into `toQuads` output. Ship the "instance graphs in Node" docs guide.
+3. **Phase 3 (deferred) — `Compose.ref` override** for the non-derivable references (cross-graph,
+   ambiguous identity primitive). Not needed by the bookstore.
 
-## Impact on the current docs work
-The shipped TBox/ABox tabs, fcose layout, readable labels, and the multi-representation inspector
-are independent of this plan and commit on their own. Once Phase 1 lands, the docs ABox connects via
-real object properties (no docs-side foreign-key heuristic) — the demo then *demonstrates* the
-capability rather than faking it.
+## Impact on shipped docs work
+The merged TBox/ABox tabs, fcose layout, readable labels, and inspector are independent. Once Phase 1
+lands, the docs ABox connects via the association index (real associations, no viz heuristic) and the
+demo *demonstrates* the ORM-for-graphs capability.

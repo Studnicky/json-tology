@@ -19,3 +19,7 @@ console.assert(merged.enableValidation, 'base value preserved');
 const sameAsBase = Resolver.merge(base, {});
 
 console.assert(sameAsBase.enableDefaults, 'undefined does not erase');
+
+console.log('Resolver.merge — override wins:', merged.enableDefaults, '(was true, overridden to false)');
+console.log('Resolver.merge — base preserved:', merged.enableValidation);
+console.log('Resolver.merge — undefined does not erase:', sameAsBase.enableDefaults);

@@ -43,7 +43,8 @@ const cheap = jt2.validate(PremiumBookSchema.$id, {
   'title': 'Die unendliche Geschichte'
 });
 
-void cheap;
+console.log('PremiumBook rejects price < 25:', !cheap.ok, cheap.length, 'error(s)');
 const premiumId: string = PremiumBookSchema.$id;
 
 console.assert(premiumId.endsWith('/PremiumBook'));
+console.log('PremiumBook schema id:', premiumId);

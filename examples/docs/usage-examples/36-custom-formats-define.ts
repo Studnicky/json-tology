@@ -95,6 +95,14 @@ console.assert(jt.validate(Isbn10Schema.$id, validIsbn).length === 0);
 console.assert(jt.validate(Isbn10Schema.$id, '0140449131').length > 0);
 console.assert(jt.validate(ReviewSlugSchema.$id, 'die-unendliche-geschichte').length === 0);
 console.assert(jt.validate(ReviewSlugSchema.$id, 'NotASlug').length > 0);
+// 0
+console.log('valid ISBN-10 errors:', jt.validate(Isbn10Schema.$id, validIsbn).length);
+// > 0
+console.log('bad ISBN-10 errors:', jt.validate(Isbn10Schema.$id, '0140449131').length);
+// 0
+console.log('valid slug errors:', jt.validate(ReviewSlugSchema.$id, 'die-unendliche-geschichte').length);
+// > 0
+console.log('bad slug errors:', jt.validate(ReviewSlugSchema.$id, 'NotASlug').length);
 
 // Compile-time witness that the inferred types are reachable.
 void (validIsbn as unknown as Isbn10);

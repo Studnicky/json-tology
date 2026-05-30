@@ -53,3 +53,9 @@ console.assert(errsWithCard.length > 0);
 const errsWithout = jt.validate(PaymentSchema.$id, { 'amount': 850 });
 
 console.assert(errsWithout.length === 0);
+
+// Log: dependentRequired compile-time check passed; runtime enforces the constraint.
+console.log('ValidateSchemaType<PaymentSchema> accepted — dependentRequired keys in properties');
+console.log(`credit_card without billing_address: ${errsWithCard.length} error(s) (expected >0)`);
+console.log(`  violation: ${errsWithCard.items[0]?.message ?? '(none)'}`);
+console.log(`amount only (no credit_card): ${errsWithout.length} error(s) (expected 0)`);

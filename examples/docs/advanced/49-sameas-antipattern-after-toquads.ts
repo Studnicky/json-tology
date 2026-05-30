@@ -7,13 +7,15 @@
  */
 
 import {
-  aboxFixtures, bookstoreEntities, CustomerSchema
+  aboxFixtures, createBookstoreDocRegistry, CustomerSchema
 } from '../bookstore/index.js';
 
-// WRONG — record the assertion AFTER projecting.
-const tooEarly = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer);
+const registry = createBookstoreDocRegistry();
 
-bookstoreEntities.sameAs(
+// WRONG — record the assertion AFTER projecting.
+const tooEarly = registry.toQuads(CustomerSchema, aboxFixtures.customer);
+
+registry.sameAs(
   'urn:bookstore:customer:bastian-bux',
   'urn:legacy-crm:cust-00042'
 );
@@ -23,12 +25,14 @@ const tooEarlySameAs = tooEarly.filter((quad) => {
 });
 
 console.assert(tooEarlySameAs.length === 0, 'first projection missed the sameAs link');
+console.log('sameAs quads in early projection (should be 0):', tooEarlySameAs.length);
 
 // RIGHT — record sameAs assertions BEFORE calling toQuads.
-const onTime = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer);
+const onTime = registry.toQuads(CustomerSchema, aboxFixtures.customer);
 
 const onTimeSameAs = onTime.filter((quad) => {
   return quad.predicate.value === 'http://www.w3.org/2002/07/owl#sameAs';
 });
 
 console.assert(onTimeSameAs.length >= 2, 'second projection includes the sameAs link');
+console.log('sameAs quads in on-time projection:', onTimeSameAs.length);

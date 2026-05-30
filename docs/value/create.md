@@ -10,21 +10,21 @@
 
 ### Example 1: Blank Book form state
 
-<<< ../../examples/docs/value/04-create.ts
+<RunnableExample src="examples/docs/value/04-create" />
 
 ### Example 2: Blank Customer for testing
 
-<<< ../../examples/docs/value/15-create-blank-customer.ts
+<RunnableExample src="examples/docs/value/15-create-blank-customer" />
 
 ### Example 3: Contrast with materialize and Compose.getDefaults
 
-<<< ../../examples/docs/value/16-create-vs-materialize-vs-getdefaults.ts
+<RunnableExample src="examples/docs/value/16-create-vs-materialize-vs-getdefaults" />
 
 ## Bad examples - what NOT to do
 
 ### Anti-pattern 1: Using value.create to generate valid instances for tests
 
-<<< ../../examples/docs/value/16-create-vs-materialize-vs-getdefaults.ts
+<RunnableExample src="examples/docs/value/16-create-vs-materialize-vs-getdefaults" />
 
 ## Comparison
 

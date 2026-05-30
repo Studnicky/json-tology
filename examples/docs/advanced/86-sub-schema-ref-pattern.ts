@@ -23,8 +23,8 @@ import {
 const validEmail = 'bastian.bux@bookstore.example';
 const customer = {
   'addresses': [],
+  'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'email': validEmail,
-  'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'name': 'Bastian Balthazar Bux'
 };
 
@@ -55,3 +55,8 @@ console.assert(
   hasEmailPointer,
   'error path targets /email — the $ref slot in CustomerSchema'
 );
+
+console.log('Valid customer — validation ok:', customerResult.ok);
+console.log('EmailSchema direct validation ok:', emailResult.ok);
+console.log('Invalid email — validation fails:', !invalidResult.ok);
+console.log('Error path targets $ref slot /email:', hasEmailPointer);

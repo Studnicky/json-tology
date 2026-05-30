@@ -33,3 +33,5 @@ const converted = castEntities.value.convert(ReviewSchema.$id, {
 
 console.assert((converted as { 'rating': number }).rating === 5);
 console.assert(typeof (converted as { 'rating': number }).rating === 'number');
+
+console.log('string "5" converted to:', (converted as { 'rating': number }).rating, typeof (converted as { 'rating': number }).rating);

@@ -35,6 +35,10 @@ const errs = bookstoreEntities.validate(BookSchema.$id, {
 console.assert(errs.length === 0);
 
 // The $id is always the canonical IRI — aliases do not change identity.
-const id: string = BookSchema.$id;
+const canonicalId: string = BookSchema.$id;
 
-console.assert(id === 'urn:bookstore:Book');
+console.assert(canonicalId === 'urn:bookstore:Book');
+
+console.log('BookSchema.$id:', canonicalId);
+console.log('Validation errors (expect 0):', errs.length);
+console.log('jt:alias does not affect validation — validation errors are zero regardless of alias metadata.');

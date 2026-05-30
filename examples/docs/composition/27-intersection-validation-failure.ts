@@ -50,3 +50,4 @@ const errors = jt2.validate(AuditedOrderSchema.$id, aboxFixtures.order);
 
 console.assert(!errors.ok);
 console.assert(errors.length > 0);
+console.log('AuditedOrderFails rejects order without audit fields:', errors.length, 'error(s) — all constituents must pass');

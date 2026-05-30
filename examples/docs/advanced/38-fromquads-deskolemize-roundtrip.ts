@@ -17,3 +17,4 @@ const quads = bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer, {
 const [restored] = bookstoreEntities.fromQuads(CustomerSchema.$id, quads, { 'deskolemize': true });
 
 console.assert(restored.customerId === aboxFixtures.customer.customerId, 'customer id round-tripped');
+console.log('round-tripped customerId:', restored.customerId);

@@ -33,3 +33,4 @@ bookstoreEntities.sameAs(
 // (called from any later page that emits ABox quads) will emit both
 // directions of the owl:sameAs link symmetrically.
 console.assert(true, 'sameAs assertion recorded against authoritative pair');
+console.log('sameAs recorded: urn:bookstore:rarebook:neverending-1979-thienemann ↔ http://www.worldcat.org/oclc/5705614');

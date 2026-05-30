@@ -46,3 +46,9 @@ console.assert(
   curie.expand('bk:Customer') === 'https://bookstore.example/Customer',
   'bk:Customer expands to full IRI'
 );
+
+console.log('Curie.compact(Book IRI):', curie.compact(bookIri));
+console.log('Curie.compact(Customer IRI):', curie.compact(customerIri));
+console.log('Curie.compact(Order IRI):', curie.compact(orderIri));
+console.log('Curie.compact(owl:Class):', curie.compact('http://www.w3.org/2002/07/owl#Class'));
+console.log('Curie.expand("bk:Customer"):', curie.expand('bk:Customer'));

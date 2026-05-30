@@ -32,3 +32,7 @@ const order = bookstoreEntities.instantiate(OrderSchema.$id, {
 console.assert(order.orderLines.length === 1);
 console.assert(!('extra' in order.orderLines[0]));
 console.assert(!('unexpectedField' in order));
+
+console.log('orderLines count:', order.orderLines.length);
+console.log('extra field stripped from line:', !('extra' in order.orderLines[0]));
+console.log('unexpectedField stripped from order:', !('unexpectedField' in order));

@@ -1,65 +1,61 @@
 /**
- * Custom fs loader — read schemas from disk via node:fs/promises.
+ * Custom in-memory loader — resolve schemas from a pre-built map.
  *
  * Any function with signature `(iri: string) => Promise<JsonSchemaType | null>`
- * is a valid loader. This example uses `node:fs/promises` to resolve a known
- * bookstore IRI to the on-disk entity file that backs it.
+ * is a valid loader. This example builds a small in-memory map of schema IRI
+ * to schema object and a loader function that resolves from it — no disk I/O,
+ * no Node built-ins, runs identically in browsers, workers, and Node.
  *
- * In a real setup the loader would serve a directory of JSON Schema files;
- * here we check file accessibility so the example runs without hitting the
- * real filesystem schema layout.
+ * In a real setup the map would be populated from a bundled import or a prior
+ * fetch; here we use the bookstore schemas directly so the example is
+ * self-contained and verifiable.
  *
- * Demonstrates: custom loader function, `null` on miss, Node fs pattern.
+ * Demonstrates: custom loader function, `null` on miss, in-memory pattern.
  */
-
-import { access } from 'node:fs/promises';
-import {
-  join,
-  resolve
-} from 'node:path';
 
 import {
   CustomerSchema,
   IsbnSchema
 } from '../bookstore/index.js';
 
-// Directory where hypothetical on-disk schemas live (relative to this file)
-const SCHEMA_DIR = resolve(import.meta.dirname, '../bookstore/entities');
+/** In-memory schema store keyed by schema $id. */
+const schemaMap = new Map<string, Record<string, unknown>>([
+  [
+    CustomerSchema.$id,
+    CustomerSchema
+  ],
+  [
+    IsbnSchema.$id,
+    IsbnSchema
+  ]
+]);
 
 /**
- * Loader: maps schema IRI to a `.ts` file in the entities directory.
- * Returns `null` for IRIs that do not resolve to an on-disk file.
+ * Loader: resolves a schema IRI from the in-memory map.
+ * Returns `null` for IRIs that have no registered entry.
  */
-const fsLoader = async (iri: string): Promise<null | Record<string, unknown>> => {
-  // Map urn:bookstore:<Name> → entities/<Name>.ts
-  const name = iri.replace('urn:bookstore:', '');
-  const filename = join(SCHEMA_DIR, `${name}.ts`);
-
-  try {
-    await access(filename);
-
-    // Return a minimal shape so the resolver can follow $id links
-    return { '$id': iri };
-  } catch {
-    return null;
-  }
+const memoryLoader = async (iri: string): Promise<null | Record<string, unknown>> => {
+  return schemaMap.get(iri) ?? null;
 };
 
-// Loader resolves a known schema IRI to a non-null stub
-const customerResult = await fsLoader(CustomerSchema.$id);
+// Loader resolves a known schema IRI
+const customerResult = await memoryLoader(CustomerSchema.$id);
 
-console.assert(customerResult !== null, 'known schema IRI resolves via fs loader');
+console.assert(customerResult !== null, 'known schema IRI resolves via memory loader');
 console.assert(
   customerResult !== null && customerResult.$id === CustomerSchema.$id,
-  'resolved stub carries correct $id'
+  'resolved schema carries correct $id'
 );
+console.log('customerResult.$id:', customerResult?.$id);
 
-// Isbn.ts exists in the entities dir — also resolves
-const isbnResult = await fsLoader(IsbnSchema.$id);
+// IsbnSchema also resolves
+const isbnResult = await memoryLoader(IsbnSchema.$id);
 
-console.assert(isbnResult !== null, 'Isbn entity file resolves');
+console.assert(isbnResult !== null, 'Isbn schema resolves from map');
+console.log('isbnResult.$id:', isbnResult?.$id);
 
 // Unknown IRI returns null without throwing
-const unknown = await fsLoader('urn:bookstore:NoSuchThing');
+const unknown = await memoryLoader('urn:bookstore:NoSuchThing');
 
 console.assert(unknown === null, 'unknown IRI returns null');
+console.log('unknown IRI returns null:', unknown === null);

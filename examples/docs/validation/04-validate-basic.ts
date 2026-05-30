@@ -13,6 +13,7 @@ import {
 const ok = bookstoreEntities.validate(CustomerSchema.$id, aboxFixtures.customer);
 
 console.assert(ok.length === 0);
+console.log('valid input: ok =', ok.ok, ', errors =', ok.length);
 
 // Missing required fields — only email present.
 const bad = bookstoreEntities.validate(CustomerSchema.$id, {
@@ -22,5 +23,7 @@ const bad = bookstoreEntities.validate(CustomerSchema.$id, {
 
 console.assert(bad.length > 0);
 console.assert(bad.items.some((err) => {
-  return err.message.includes('id') || err.path.includes('id');
+  return err.message.toLowerCase().includes('id') || err.path.toLowerCase().includes('id');
 }));
+console.log('missing fields: ok =', bad.ok, ', error count =', bad.length);
+console.log('first error:', bad.items[0]?.path, '-', bad.items[0]?.message);

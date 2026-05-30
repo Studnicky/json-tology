@@ -22,3 +22,8 @@ const quads = bookstoreEntities.toQuads(CustomerSchema, customer, { 'iriFor': Sk
 const [restored] = bookstoreEntities.fromQuads(CustomerSchema.$id, quads, { 'deskolemize': true });
 
 console.assert(restored.customerId === customer.customerId, 'customer id round-tripped through genid');
+
+const genidIri = quads[0]?.subject.value ?? '';
+
+console.log('well-known genid IRI:', genidIri);
+console.log('round-tripped customerId:', restored.customerId);

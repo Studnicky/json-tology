@@ -13,29 +13,29 @@
 
 ### Example 1: Basic valid and invalid cases
 
-<<< ../../examples/docs/validation/04-validate-basic.ts
+<RunnableExample src="examples/docs/validation/04-validate-basic" />
 
 ### Example 2: Nested schema errors with JSON Pointer paths
 
 `OrderSchema` contains `items: [OrderLine]` via `$ref`. Errors on nested fields include the full JSON Pointer path.
 
-<<< ../../examples/docs/validation/33-validate-nested-errors.ts
+<RunnableExample src="examples/docs/validation/33-validate-nested-errors" />
 
 ### Example 3: Use as a lightweight form validator
 
 Validate on blur before attempting a full instantiate.
 
-<<< ../../examples/docs/validation/34-validate-form-validator.ts
+<RunnableExample src="examples/docs/validation/34-validate-form-validator" />
 
 ## Bad examples - what NOT to do
 
 ### Anti-pattern 1: Checking the return length and then re-instantiating
 
-<<< ../../examples/docs/validation/35-validate-antipattern-double-work.ts
+<RunnableExample src="examples/docs/validation/35-validate-antipattern-double-work" />
 
 ### Anti-pattern 2: Re-parsing message strings to extract field paths
 
-<<< ../../examples/docs/validation/36-validate-antipattern-string-parsing.ts
+<RunnableExample src="examples/docs/validation/36-validate-antipattern-string-parsing" />
 
 ## Comparison
 

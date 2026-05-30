@@ -6,12 +6,12 @@
 
 > **Required arguments are positional. Optional values, overrides, and configuration form a single config object as the last parameter.**
 
-This convention applies uniformly to every public and internal callable in the package — instance methods, static facade methods, constructors, and low-level RDF helpers. Once you learn it for `JsonTology`, you know the shape of every other entry point.
+This convention applies uniformly to every public and internal callable in the package: instance methods, static facade methods, constructors, and low-level RDF helpers. Once you learn it for `JsonTology`, you know the shape of every other entry point.
 
 ### Why
 
 - **DX uniformity.** Every signature reads the same way. You never need to remember which positional was which option.
-- **Future-extensible.** Adding a new optional knob means adding a key to the options interface — never another positional, never a breaking change.
+- **Future-extensible.** Adding a new optional knob means adding a key to the options interface, never another positional, never a breaking change.
 - **Single trailing bag.** No "two-options-objects" ambiguity, no boolean flags spread across positions.
 
 ### Shapes
@@ -37,7 +37,7 @@ QuadFactory.emitLiterals(subject, predicate, relations, quads, options?);
 QuadFactory.emitConstraintLiteral(subject, predicate, datatype, relations, quads, options?);
 ```
 
-**Constructors.** Same rule — required positionals first, options bag last.
+**Constructors.** Same rule: required positionals first, options bag last.
 
 <!-- inline-ts-ok: constructor-signature illustration using `options?` pseudo-syntax; documents argument shape, not a runnable scenario -->
 ```ts
@@ -51,9 +51,9 @@ new BaseError(code, message, options?);            // { retryable?, cause? }
 
 v0.15.0 brings the entire public surface into compliance with this rule. The notable changes:
 
-- **`QuadFactory`** — `iri`, `literal`, `quad`, `emitLiterals`, and `emitConstraintLiteral` previously accepted a trailing `curie` positional. They now accept an options bag (`{ curie }`, plus `{ curie, graph }` for `quad`).
-- **`BaseError` / `SchemaError` / `GraphError`** — `retryable`, `schemaId`, and `pointer` moved from positional arguments into the constructor options bag (alongside `cause`).
-- **`IdentifierIssuer`** — new utility; its constructor takes a single optional options bag (`{ prefix?, counter?, existingMap? }`).
+- **`QuadFactory`**: `iri`, `literal`, `quad`, `emitLiterals`, and `emitConstraintLiteral` previously accepted a trailing `curie` positional. They now accept an options bag (`{ curie }`, plus `{ curie, graph }` for `quad`).
+- **`BaseError` / `SchemaError` / `GraphError`**: `retryable`, `schemaId`, and `pointer` moved from positional arguments into the constructor options bag (alongside `cause`).
+- **`IdentifierIssuer`**: new utility; its constructor takes a single optional options bag (`{ prefix?, counter?, existingMap? }`).
 
 All call sites in the package have been updated. External callers using positional forms must migrate to the options-bag form.
 
@@ -76,7 +76,7 @@ Each options bag has a canonical interface declared in `src/interfaces/`. They a
 
 Every method that accepts a schema reference accepts **both** a string ID and a schema object:
 
-<<< ../examples/docs/argument-conventions/02-universal-schema-ref.ts
+<RunnableExample src="examples/docs/argument-conventions/02-universal-schema-ref" />
 
 Resolution rule: if a string, look up in the registry; if an object with `$id`, register it (idempotent) then run against it.
 
@@ -86,7 +86,7 @@ The static facade methods (`JsonTology.dump`, `JsonTology.fromQuads`, `JsonTolog
 
 Every instance method has a static counterpart on `JsonTology` that creates an ephemeral registry, registers the schema, runs the operation, and returns. No shared state. No setup required.
 
-<<< ../examples/docs/argument-conventions/03-static-counterparts.ts
+<RunnableExample src="examples/docs/argument-conventions/03-static-counterparts" />
 
 Available static methods:
 
@@ -111,17 +111,17 @@ that reference each other, or when you need to register invariants and computeds
 
 ## Compose argument order
 
-The `Compose.*` helpers mint new schemas from existing ones. All positional arguments are required — there is no optional trailing options bag.
+The `Compose.*` helpers mint new schemas from existing ones. All positional arguments are required; there is no optional trailing options bag.
 
-- **One source, minting a new ID**: `(source, <required middle arg>, newId)` — the middle argument is the operation-specific required input (e.g. `additionalProperties` for `extend`, `keys` for `pick`/`omit`). Example: `Compose.extend(UserSchema, additions, 'NewId')`
-- **Many sources**: `(sources, newId)` — exactly two arguments, no extras. Example: `Compose.intersection([A, B] as const, 'NewId')`
+- **One source, minting a new ID**: `(source, <required middle arg>, newId)`, where the middle argument is the operation-specific required input (e.g. `additionalProperties` for `extend`, `keys` for `pick`/`omit`). Example: `Compose.extend(UserSchema, additions, 'NewId')`
+- **Many sources**: `(sources, newId)`, exactly two arguments, no extras. Example: `Compose.intersection([A, B] as const, 'NewId')`
 
 ## `subschemaAt` - composable pointer resolution
 
 `subschemaAt` resolves a JSON Pointer within a parent schema and returns the sub-schema as
 a registerable schema object. The result can be passed directly to any of the four core methods:
 
-<<< ../examples/docs/argument-conventions/04-subschema-at.ts
+<RunnableExample src="examples/docs/argument-conventions/04-subschema-at" />
 
 The returned schema has a synthesized `$id` of the form `<parent.$id>#<pointer>` and is
 automatically registered in the calling registry so subsequent operations work directly.

@@ -25,3 +25,5 @@ const customer = bookstoreEntities.instantiate(CustomerSchema, aboxFixtures.cust
 console.assert(customer.name === aboxFixtures.customer.name);
 console.assert(customer.email === aboxFixtures.customer.email);
 console.assert(Array.isArray(customer.addresses));
+
+console.log('name:', customer.name, ', email:', customer.email);

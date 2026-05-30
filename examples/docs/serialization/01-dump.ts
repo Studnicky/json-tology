@@ -45,3 +45,8 @@ const projected = bookstoreEntities.dump(BookSchema.$id, book, {
 
 console.assert('isbn' in (projected as object));
 console.assert(!('authors' in (projected as object)));
+
+// Show what each dump variant produces
+console.log('wire (all fields):', JSON.stringify(wire, null, 2));
+console.log('compact (excludeDefaults):', JSON.stringify(compact, null, 2));
+console.log('projected (isbn, title, price only):', JSON.stringify(projected, null, 2));

@@ -54,3 +54,7 @@ const hydrated = jt.instantiate(NewOrderSchema, aboxFixtures.order);
 
 console.assert(hydrated instanceof OrderViaNew);
 console.assert((hydrated as OrderViaNew).summary().startsWith('order '));
+// true
+console.log('instanceof:', hydrated instanceof OrderViaNew);
+// 'order <orderId>'
+console.log('summary():', (hydrated as OrderViaNew).summary());

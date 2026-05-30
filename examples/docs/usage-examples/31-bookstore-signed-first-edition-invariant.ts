@@ -38,6 +38,8 @@ const signed = {
 const okErrs = bookstoreEntities.validate(SignedFirstEditionSchema.$id, signed);
 
 console.assert(okErrs.length === 0);
+// 0 — solo-authored passes invariant
+console.log('valid signed edition errors:', okErrs.length);
 
 // Multi-author candidate breaks the invariant.
 const badErrs = [...bookstoreEntities.validate(SignedFirstEditionSchema.$id, {
@@ -54,3 +56,7 @@ const invariantErr = badErrs.find((err) => {
 
 console.assert(invariantErr !== undefined);
 console.assert(invariantErr?.path === '/authors');
+// 'jt:invariant'
+console.log('invariant error keyword:', invariantErr?.keyword);
+// '/authors' — cross-field rule fired
+console.log('invariant error path:', invariantErr?.path);

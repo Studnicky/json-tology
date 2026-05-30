@@ -40,3 +40,4 @@ const result = jt2.validate(OrderSummarySchema.$id, summary);
 
 console.assert(result.ok);
 console.assert(!('orderLines' in summary));
+console.log('OrderSummary fields:', Object.keys(summary), '| orderLines omitted:', !('orderLines' in summary));

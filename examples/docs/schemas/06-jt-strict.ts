@@ -61,3 +61,7 @@ const errsStrict = jt.validate(StrictIsbnSchema.$id, {
 });
 
 console.assert(errsStrict.length > 0);
+
+console.log('correct types — validation errors (expect 0):', errsOk.length);
+console.log('string price on jt:strict schema — validation errors (expect >0):', errsStrict.length);
+console.log('jt:strict rejects string-to-number coercion per-schema, even when global enableStrictTypes is false.');

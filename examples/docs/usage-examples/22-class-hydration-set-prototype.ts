@@ -56,3 +56,7 @@ const hydrated = jt.instantiate(ProtoOrderSchema, { ...aboxFixtures.order });
 
 console.assert(hydrated instanceof OrderViaProto);
 console.assert((hydrated as OrderViaProto).lineCount() === aboxFixtures.order.orderLines.length);
+// true — prototype swapped in place
+console.log('instanceof:', hydrated instanceof OrderViaProto);
+// same as orderLines.length
+console.log('lineCount():', (hydrated as OrderViaProto).lineCount());

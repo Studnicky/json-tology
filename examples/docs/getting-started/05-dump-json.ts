@@ -15,3 +15,5 @@ const wire = bookstoreEntities.dumpJson(CustomerSchema.$id, customer);
 
 console.assert(typeof wire === 'string' && wire.length > 0);
 console.assert(wire.includes('Bastian Balthazar Bux'));
+
+console.log('wire JSON:', wire);

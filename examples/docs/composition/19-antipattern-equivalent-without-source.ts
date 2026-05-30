@@ -25,3 +25,4 @@ const jt = JsonTology.create({
 const result = jt.validate(CatalogIsbnSchema.$id, '9783522128001');
 
 console.assert(result.ok);
+console.log('CatalogIsbn validates when source Isbn is registered alongside it:', result.ok);

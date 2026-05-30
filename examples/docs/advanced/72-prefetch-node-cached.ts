@@ -43,9 +43,12 @@ const jt = JsonTology.create({
 // Synchronous validate after async prefetch
 const valid = jt.validate(CustomerSchema.$id, {
   'addresses': [],
+  'customerId': 'f1e2d3c4-b5a6-4789-8abc-def012345678',
   'email': 'cornelia.funke@bookstore.example',
-  'id': 'a1b2c3d4-0000-1111-2222-333344445555',
   'name': 'Cornelia Funke'
 });
 
-console.assert(typeof valid === 'object', 'validate result is an object');
+console.assert(valid.ok, 'validate result is ok');
+
+console.log('Node pattern — prefetch + cached loader + validate ok:', valid.ok);
+console.log('Schemas in cached loader:', bookstoreSchemas.length);

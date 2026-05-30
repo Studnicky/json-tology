@@ -16,15 +16,15 @@ Computed fields are properties derived from other fields at instantiate/material
 
 #### Example 1: Order total derived from line items (construction time)
 
-<<< ../../examples/docs/computed/01-add-computed.ts
+<RunnableExample src="examples/docs/computed/01-add-computed" />
 
 #### Example 2: Coerce triggers the compute function
 
-<<< ../../examples/docs/registry/08-computed-coerce-triggers.ts
+<RunnableExample src="examples/docs/registry/08-computed-coerce-triggers" />
 
 #### Example 3: Imperative registration after construction
 
-<<< ../../examples/docs/registry/09-computed-imperative-add.ts
+<RunnableExample src="examples/docs/registry/09-computed-imperative-add" />
 
 ### Behaviour table
 
@@ -39,7 +39,7 @@ Computed fields are properties derived from other fields at instantiate/material
 
 #### Anti-pattern 1: Using computed for validation logic
 
-<<< ../../examples/docs/registry/09-computed-imperative-add.ts
+<RunnableExample src="examples/docs/registry/09-computed-imperative-add" />
 
 ### Comparison
 
@@ -172,7 +172,7 @@ class Order(BaseModel):
 
 #### Example 1: Replace a compute function
 
-<<< ../../examples/docs/registry/10-computed-replace-fn.ts
+<RunnableExample src="examples/docs/registry/10-computed-replace-fn" />
 
 ### Related
 

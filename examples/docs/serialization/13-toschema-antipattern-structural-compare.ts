@@ -28,3 +28,8 @@ void originalStr;
 const order = bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order);
 
 console.assert(order.orderId === aboxFixtures.order.orderId);
+
+// Show that the two JSON.stringify forms may differ (key order is not guaranteed)
+console.log('reconstructed keys match original?', reconstructedStr === originalStr);
+// Validate data against the original schema instead of comparing reconstructed forms
+console.log('order.orderId (validated):', order.orderId);

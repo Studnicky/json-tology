@@ -32,3 +32,4 @@ const aliasResult = jt2.validate(CatalogIsbnSchema.$id, isbn);
 
 console.assert(sourceResult.ok);
 console.assert(aliasResult.ok);
+console.log('Isbn validates:', sourceResult.ok, '| CatalogIsbn validates:', aliasResult.ok, '| isbn:', isbn);

@@ -2,6 +2,7 @@
  * Types Module
  */
 
+export type * from './AboxGraph.js';
 export * from './BaseTypes.js';
 export type * from './Brand.js';
 export type * from './Compose.js';

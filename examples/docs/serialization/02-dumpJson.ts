@@ -21,3 +21,6 @@ console.assert(parsed.customerId === aboxFixtures.customer.customerId);
 console.assert(parsed.email === aboxFixtures.customer.email);
 console.assert(Array.isArray(parsed.addresses));
 console.assert((parsed.addresses as unknown[]).length === 1);
+
+// Show the JSON string produced for an HTTP response
+console.log('dumpJson output:', json);

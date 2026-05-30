@@ -36,3 +36,7 @@ console.assert(okErrs.length === 0);
 const badErrs = jt.validate(EmailSchema.$id, 'bastian@localhost');
 
 console.assert(badErrs.length > 0);
+// 0 — .example TLD satisfies stricter rule
+console.log('valid email errors:', okErrs.length);
+// > 0 — no TLD fails custom validator
+console.log('localhost email errors:', badErrs.length);

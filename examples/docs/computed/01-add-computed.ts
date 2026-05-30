@@ -41,8 +41,14 @@ const expected = computeSubtotal(aboxFixtures.order.orderLines);
 
 console.assert(Math.abs(materialized.subtotal - expected) < 0.005);
 
+console.log('order lines:', JSON.stringify(aboxFixtures.order.orderLines));
+console.log('expected subtotal:', expected);
+console.log('computed subtotal:', materialized.subtotal);
+
 // removeComputed unregisters the fn; further instantiate() calls drop the field.
 withSubtotal.removeComputed(OrderSchema.$id, 'subtotal');
 const after = withSubtotal.instantiate(OrderSchema.$id, aboxFixtures.order);
 
 console.assert(!Reflect.has(after, 'subtotal'));
+
+console.log('subtotal after removeComputed:', Reflect.has(after, 'subtotal') ? after : '(field absent)');

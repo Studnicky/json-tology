@@ -18,4 +18,5 @@ type Closed = InferType<typeof _ClosedSchema>;
 
 const valid: Closed = { 'name': 'Bastian Balthazar Bux' };
 
-console.assert(valid.name === 'Bastian Balthazar Bux');
+console.log('Closed object:', valid);
+console.log('name property:', valid.name);

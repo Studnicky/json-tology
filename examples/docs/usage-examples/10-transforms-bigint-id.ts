@@ -37,7 +37,13 @@ const decoded = jt.instantiate(BigIdTransform, wire);
 
 console.assert(typeof decoded === 'bigint');
 console.assert(decoded === 9_783_522_128_001n);
+// '9783522128001' — ISBN-13 as string
+console.log('wire string:', wire);
+// 9783522128001n — native BigInt
+console.log('decoded bigint:', decoded);
 
 const reEncoded = jt.encode(BigIdTransform, decoded);
 
 console.assert(reEncoded === wire);
+// '9783522128001' — toString() on encode
+console.log('re-encoded:', reEncoded);

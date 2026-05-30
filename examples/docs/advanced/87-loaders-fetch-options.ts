@@ -26,3 +26,5 @@ const withHeaders = Loaders.fetch({ 'init': { 'headers': { 'X-Api-Key': 'demo-ke
 console.assert(typeof direct === 'function', 'Loaders.fetch() returns a function');
 console.assert(typeof withBase === 'function', 'Loaders.fetch({ base }) returns a function');
 console.assert(typeof withHeaders === 'function', 'Loaders.fetch({ init }) returns a function');
+
+console.log('Loaders.fetch variants: direct:', typeof direct, '| withBase:', typeof withBase, '| withHeaders:', typeof withHeaders);

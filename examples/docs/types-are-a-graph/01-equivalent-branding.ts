@@ -32,6 +32,10 @@ console.assert(errsPersonName.length === 0);
 console.assert(errsCustomerName.length === 0);
 console.assert(errsAuthorName.length === 0);
 
+console.log('PersonName validates:', errsPersonName.length === 0);
+console.log('CustomerName validates:', errsCustomerName.length === 0);
+console.log('AuthorName validates:', errsAuthorName.length === 0);
+
 // Three distinct IRIs — three class nodes in the TBox. Each `$id` is a
 // distinct string literal type, so distinctness is guaranteed at compile time:
 // `extends` between any pair resolves to `false`.
@@ -45,3 +49,8 @@ const _distinctIds: [PersonVsCustomer, PersonVsAuthor, CustomerVsAuthor] = [
 ];
 
 console.assert(_distinctIds.every(Boolean));
+
+console.log('PersonNameSchema.$id:', PersonNameSchema.$id);
+console.log('CustomerNameSchema.$id:', CustomerNameSchema.$id);
+console.log('AuthorNameSchema.$id:', AuthorNameSchema.$id);
+console.log('distinct IRI types:', _distinctIds);

@@ -47,3 +47,9 @@ const custom = bookstoreEntities.toQuads(OrderSchema, order, {
 });
 
 console.assert(custom.length > 0, 'custom function strategy emitted quads');
+
+console.log('root override subject:', rootOverride[0]?.subject.value);
+console.log('blank-node subject:', blankNodes[0]?.subject.value);
+console.log('fromProperty (customerId) subject:', fromCustomerId[0]?.subject.value);
+console.log('wellKnownGenid subject:', genid[0]?.subject.value);
+console.log('custom fn subject:', custom[0]?.subject.value);

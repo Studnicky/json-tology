@@ -61,3 +61,7 @@ const errs = registry.validate(FeaturedBookSchema.$id, {
 });
 
 console.assert(errs.length === 0);
+
+// Log: Compose.extend applies ValidateSchemaType automatically; no manual _check needed.
+console.log(`Compose.extend produced $id: ${FeaturedBookSchema.$id}`);
+console.log(`featured book validation errors: ${errs.length} (expected 0)`);

@@ -32,3 +32,5 @@ const primaryNode = graph.find((node) => {
 });
 
 console.assert(primaryNode !== undefined);
+console.log('PrimaryIsbn node in TBox:', primaryNode?.['@id']);
+console.log('equivalentClass:', primaryNode?.['owl:equivalentClass']);

@@ -28,3 +28,7 @@ console.assert(schemaType === 'object');
 console.assert(CustomerSchema.required.includes('customerId'));
 console.assert(CustomerSchema.required.includes('email'));
 console.assert(CustomerSchema.required.includes('name'));
+
+console.log('$id:', schemaId);
+console.log('type:', schemaType);
+console.log('required:', CustomerSchema.required.join(', '));

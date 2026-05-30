@@ -45,7 +45,13 @@ const wire = `  ${aboxFixtures.rareBook.title}!  `;
 const slug = jt.instantiate(SlugTransform, wire);
 
 console.assert(slug === 'die-unendliche-geschichte');
+// 'Die unendliche Geschichte!' — messy input
+console.log('wire:', wire.trim());
+// 'die-unendliche-geschichte' — URL-safe
+console.log('slug:', slug);
 
 const reEncoded = jt.encode(SlugTransform, slug);
 
 console.assert(reEncoded === slug);
+// true — slug is its own wire form
+console.log('encode is identity:', reEncoded === slug);

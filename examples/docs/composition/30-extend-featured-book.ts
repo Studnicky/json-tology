@@ -55,3 +55,8 @@ const featured = jt2.instantiate(FeaturedBookSchema.$id, {
 console.assert(featured.badge === 'bestseller');
 console.assert(featured.isbn === '9783522128001');
 console.assert(featured.position === 1);
+console.log('FeaturedBook:', {
+  'badge': featured.badge,
+  'position': featured.position,
+  'title': featured.title
+});

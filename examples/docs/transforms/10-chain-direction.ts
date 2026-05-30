@@ -61,6 +61,11 @@ const price = jt.instantiate(ChainedPriceSchema, 'Price: €24.95');
 
 console.assert(price === 24.95);
 
+// decoded (A→B→C): 24.95
+console.log('decoded (A→B→C):', price);
+
 const wire = jt.encode(ChainedPriceSchema, price);
 
 console.assert(wire === 'Price: €24.95');
+// encoded (C→B→A): Price: €24.95
+console.log('encoded (C→B→A):', wire);

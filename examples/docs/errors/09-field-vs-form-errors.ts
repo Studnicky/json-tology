@@ -24,4 +24,13 @@ if (!errs.ok) {
     fieldErrors.length + formErrors.length === errs.items.length,
     'All errors should be classified'
   );
+
+  console.log('field errors:', fieldErrors.length);
+  console.log('form errors:', formErrors.length);
+  for (const err of fieldErrors) {
+    console.log(`  field  path=${err.path}  message=${err.message}`);
+  }
+  for (const err of formErrors) {
+    console.log(`  form   message=${err.message}`);
+  }
 }

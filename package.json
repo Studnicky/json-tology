@@ -1,6 +1,6 @@
 {
   "name": "json-tology",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "description": "One source of truth for TypeScript types, runtime validation, coercion, and OWL ontology output. Author in JSON Schema; share with any backend; reason over the graph.",
   "type": "module",
   "main": "./dist/index.js",
@@ -42,6 +42,10 @@
     "./owl-gen": {
       "import": "./dist/owl-gen.js",
       "types": "./dist/owl-gen.d.ts"
+    },
+    "./owl-gen-node": {
+      "import": "./dist/owl-gen-node.js",
+      "types": "./dist/owl-gen-node.d.ts"
     },
     "./viz": {
       "import": "./dist/viz.js",
@@ -110,6 +114,7 @@
     "url": "https://github.com/Studnicky/json-tology/issues"
   },
   "devDependencies": {
+    "@codemirror/lang-javascript": "^6.2.5",
     "@eslint/js": "^10.0.1",
     "@sinclair/typebox": "^0.34.49",
     "@stylistic/eslint-plugin": "^5.10.0",
@@ -122,6 +127,7 @@
     "0x": "^6.0.0",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
+    "codemirror": "^6.0.2",
     "cytoscape": "^3.33.4",
     "cytoscape-fcose": "^2.2.0",
     "eslint": "^10.4.0",
@@ -136,6 +142,7 @@
     "license-checker": "^25.0.1",
     "madge": "^8.0.0",
     "n3": "^2.0.3",
+    "sucrase": "^3.35.1",
     "tsx": "^4.22.3",
     "typescript": "^6.0.3",
     "valibot": "^1.4.0",

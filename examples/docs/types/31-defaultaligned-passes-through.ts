@@ -33,4 +33,8 @@ type AlignedBook = DefaultAlignedType<typeof _BookSchema>;
 
 const aligned: AlignedBook = _BookSchema;
 
-void aligned;
+// The schema resolves to AlignedBook (the schema literal itself) because
+// every default matches its declared type: 'USD' is a string, true is boolean.
+console.log('schema $id:', aligned.$id);
+console.log('currency default:', aligned.properties.currency.default);
+console.log('inStock default:', aligned.properties.inStock.default);

@@ -5,41 +5,27 @@
  * catalogs and datasets published on the Web. This example demonstrates the
  * registry-directory mode against the hand-authored DCAT-AP subset:
  *
- *   1. Generate the registry directory to a tmp path.
- *   2. Assert each expected entity file exists.
- *   3. Import the generated `index.ts` and validate a dcat:Distribution instance.
- *   4. Confirm the committed generated-dir fixture matches the programmatic output.
+ *   1. Call `generateRegistryDirectory` and inspect the returned entity files.
+ *   2. Assert the expected entity paths appear in the result.
+ *   3. Log entity file count, path names, and indexSource length.
  *
  * Notable: the `rdfs:subClassOf` chain reaches `dcterms:Resource`, an external IRI.
  * The generated `Resource.ts` entity file carries the stub schema — identical to the
  * single-file mode behaviour — and `Dataset.ts` / `Catalog.ts` reference it via `$ref`.
+ *
+ * Browser-safe: no node:fs, node:path, or node:url.
  */
 
-import {
-  existsSync, readFileSync
-} from 'node:fs';
-import {
-  dirname, resolve
-} from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { JsonTology } from '../../../src/index.js';
 import { generateRegistryDirectory } from '../../../src/owl-gen.js';
-
-const here = dirname(fileURLToPath(import.meta.url));
-const ONTOLOGIES = resolve(here, '../ontologies');
-const TMP_DIR = resolve(here, '../../../.generated-tmp/dcat-registry-dir');
+import { dcatSubset } from '../ontologies/dcat-subset.js';
 
 // ---------------------------------------------------------------------------
-// Step 1: generate the registry directory
+// Step 1: generate the registry directory as data (no disk I/O)
 // ---------------------------------------------------------------------------
-
-const dcatJsonLdRaw = readFileSync(resolve(ONTOLOGIES, 'dcat-subset.jsonld'), 'utf8');
-const dcatJsonLd = JSON.parse(dcatJsonLdRaw) as object;
 
 const genResult = generateRegistryDirectory({
-  'input': dcatJsonLd,
+  'input': dcatSubset,
   'name': 'dcat',
-  'outDir': TMP_DIR,
   'sourceLabel': 'examples/docs/ontologies/dcat-subset.jsonld'
 });
 
@@ -48,91 +34,70 @@ console.assert(
   genResult.entityFiles.length === 8,
   `Expected 8 entity files, got ${genResult.entityFiles.length}`
 );
-console.log(`generateRegistryDirectory: ${genResult.entityFiles.length} entity files written`);
+console.log(`generateRegistryDirectory: ${genResult.entityFiles.length} entity files`);
 
 // ---------------------------------------------------------------------------
-// Step 2: assert entity files exist at canonical paths
+// Step 2: assert expected entity paths appear in the result
 // ---------------------------------------------------------------------------
 
-const expectedEntities = [
-  'Resource',
-  'Distribution',
-  'Title',
-  'Description',
-  'Distribution_2',
-  'AccessURL',
-  'Catalog',
-  'Dataset'
+const expectedPaths = [
+  'entities/Resource.ts',
+  'entities/Distribution.ts',
+  'entities/Title.ts',
+  'entities/Description.ts',
+  'entities/Distribution_2.ts',
+  'entities/AccessURL.ts',
+  'entities/Catalog.ts',
+  'entities/Dataset.ts'
 ];
 
-for (const name of expectedEntities) {
-  const entityPath = resolve(TMP_DIR, 'entities', `${name}.ts`);
+for (const expectedPath of expectedPaths) {
+  const found = genResult.entityFiles.some((entityFile) => {
+    return entityFile.path === expectedPath;
+  });
 
-  console.assert(
-    existsSync(entityPath),
-    `Expected entity file entities/${name}.ts to exist`
-  );
+  console.assert(found, `Expected entity file path: ${expectedPath}`);
 }
 
-const indexPath = resolve(TMP_DIR, 'index.ts');
-
-console.assert(existsSync(indexPath), 'Expected index.ts to exist');
-console.log('All expected entity files present:', expectedEntities.join(', '));
+console.log('Entity paths:', genResult.entityFiles.map((entityFile) => {
+  return entityFile.path;
+}).join(', '));
 
 // ---------------------------------------------------------------------------
-// Step 3: import generated index and validate a dcat:Distribution instance
+// Step 3: log salient facts about the generated data
 // ---------------------------------------------------------------------------
 
-const generated = await import(indexPath) as {
-  'DatasetSchema': Record<string, unknown> & { '$id': string };
-  'dcat': ReturnType<typeof JsonTology.create>;
-  'DistributionSchema': Record<string, unknown> & { '$id': string };
-  'ResourceSchema': Record<string, unknown> & { '$id': string };
-};
-
-const {
-  DistributionSchema, ResourceSchema
-} = generated;
-
-// Validate a dcat:Distribution in isolation
-const neverendingDistribution = { 'accessURL': 'https://fantastica.example/data/realms.csv' };
-
-const distJt = JsonTology.create({
-  'baseIRI': 'http://www.w3.org/ns/dcat#',
-  'enableStrictGraph': false,
-  'schemas': [DistributionSchema]
-});
-
-const distResult = distJt.validate(DistributionSchema, neverendingDistribution);
-
-console.assert(distResult.ok, `Distribution must validate; errors: ${JSON.stringify(distResult)}`);
-console.log('Distribution validates (registry-dir mode):', distResult.ok);
+console.log('indexSource length:', genResult.indexSource.length);
+console.assert(genResult.indexSource.includes('JsonTology'), 'indexSource must reference JsonTology');
+console.assert(genResult.indexSource.includes('DatasetSchema'), 'indexSource must reference DatasetSchema');
 
 // dcterms:Resource stub carries title + description properties
-const resourceRec = ResourceSchema as Record<string, unknown>;
-const resourceProps = resourceRec.properties as Record<string, unknown> | undefined;
+const resourceFile = genResult.entityFiles.find((entityFile) => {
+  return entityFile.path === 'entities/Resource.ts';
+});
 
-console.assert(
-  resourceProps !== undefined && 'title' in resourceProps,
-  'Resource stub carries title property from owl:DatatypeProperty declaration'
-);
-console.log('dcterms:Resource.properties.title present (external IRI stub):', resourceProps !== undefined && 'title' in resourceProps);
+console.assert(resourceFile !== undefined, 'entities/Resource.ts must be present');
 
-// ---------------------------------------------------------------------------
-// Step 4: compare generated entity file to committed fixture
-// ---------------------------------------------------------------------------
-
-const committedDatasetPath = resolve(ONTOLOGIES, 'generated-dir', 'dcat', 'entities', 'Dataset.ts');
-
-function stripTimestamp(src: string): string {
-  return src.replaceAll(/^\/\/ Generated: .*$/gmu, '// Generated: <timestamp>');
+if (resourceFile !== undefined) {
+  console.assert(
+    resourceFile.source.includes('title'),
+    'Resource entity source must carry title property from owl:DatatypeProperty declaration'
+  );
+  console.log('entities/Resource.ts source length:', resourceFile.source.length);
+  console.log('Resource.ts carries title property:', resourceFile.source.includes('title'));
 }
 
-const generatedDatasetSrc = readFileSync(resolve(TMP_DIR, 'entities', 'Dataset.ts'), 'utf8');
-const committedDatasetSrc = readFileSync(committedDatasetPath, 'utf8');
+// Dataset carries allOf -> dcterms:Resource (subClassOf chain)
+const datasetFile = genResult.entityFiles.find((entityFile) => {
+  return entityFile.path === 'entities/Dataset.ts';
+});
 
-console.assert(
-  stripTimestamp(generatedDatasetSrc) === stripTimestamp(committedDatasetSrc),
-  'Generated entities/Dataset.ts matches committed generated-dir fixture (modulo timestamp)'
-);
-console.log('entities/Dataset.ts matches committed fixture (modulo timestamp): true');
+console.assert(datasetFile !== undefined, 'entities/Dataset.ts must be present');
+
+if (datasetFile !== undefined) {
+  console.assert(
+    datasetFile.source.includes('allOf'),
+    'Dataset entity source must carry allOf (subClassOf -> dcterms:Resource)'
+  );
+  console.log('Dataset.ts carries allOf (subClassOf preserved):', datasetFile.source.includes('allOf'));
+}

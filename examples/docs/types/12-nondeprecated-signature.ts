@@ -43,3 +43,6 @@ const view: BookView = {
 
 console.assert(view.isbn === '9783522128001');
 console.assert(!('legacySku' in view));
+
+console.log('BookView (NonDeprecatedSchemaType) keys:', Object.keys(view).join(', '));
+console.log('isbn:', view.isbn, '| legacySku present:', 'legacySku' in view);

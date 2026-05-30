@@ -59,9 +59,11 @@ const jt = JsonTology.create({
 // validate is synchronous — async work was isolated to prefetch
 const result = jt.validate(CustomerSchema.$id, {
   'addresses': [],
+  'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'email': 'bastian.bux@bookstore.example',
-  'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'name': 'Bastian Balthazar Bux'
 });
 
-console.assert(typeof result === 'object', 'validate returns a result object');
+console.assert(result.ok, 'Customer validates against prefetched registry');
+
+console.log('Prefetch + sync create: snapshot schemas:', snapshot.schemas.size, '| validate ok:', result.ok);

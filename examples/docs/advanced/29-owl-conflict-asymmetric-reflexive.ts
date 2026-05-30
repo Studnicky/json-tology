@@ -29,3 +29,7 @@ const _bad: ValidatePropertyCharacteristicsType<{
 } as const;
 
 void _bad;
+
+// The @ts-expect-error above confirms the brand fires at the definition site.
+// At runtime the object is structurally valid; the conflict is a compile-time guarantee.
+console.log('asymmetric+reflexive conflict detected at compile time (PropertyCharacteristicConflictInterface)');

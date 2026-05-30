@@ -23,4 +23,6 @@ if (!errs.ok) {
     }),
     'Paths should be in JSON Pointer format'
   );
+
+  console.log('JSON Pointer paths:', jsonPointerPaths);
 }

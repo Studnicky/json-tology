@@ -24,3 +24,9 @@ console.assert(tboxJsonLd.includes('SymmetricProperty'), 'symmetric axioms prese
 console.assert(tboxJsonLd.includes('AsymmetricProperty'), 'asymmetric axioms present');
 console.assert(tboxJsonLd.includes('TransitiveProperty'), 'transitive axioms present');
 console.assert(tboxJsonLd.includes('InverseFunctionalProperty'), 'inverseFunctional axioms present');
+
+console.log('TBox JSON-LD byte length:', tboxJsonLd.length);
+console.log('SymmetricProperty present:', tboxJsonLd.includes('SymmetricProperty'));
+console.log('AsymmetricProperty present:', tboxJsonLd.includes('AsymmetricProperty'));
+console.log('TransitiveProperty present:', tboxJsonLd.includes('TransitiveProperty'));
+console.log('InverseFunctionalProperty present:', tboxJsonLd.includes('InverseFunctionalProperty'));

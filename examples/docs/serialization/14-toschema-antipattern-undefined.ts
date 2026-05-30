@@ -29,3 +29,6 @@ if (safeSchema === undefined) {
 }
 
 console.assert(safeSchema === undefined);
+
+// Show that toSchema for an unregistered ID returns undefined (no throw)
+console.log('safeSchema for unregistered ID:', safeSchema);

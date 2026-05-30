@@ -72,3 +72,7 @@ const customer = jt.instantiate(
 const saved = await customer.save();
 
 console.assert(saved.savedId === aboxFixtures.customer.customerId);
+// true
+console.log('instanceof CustomerRecord:', customer instanceof CustomerRecord);
+// same customerId as fixture — no separate hydrate step
+console.log('saved.savedId:', saved.savedId);

@@ -57,3 +57,8 @@ const converted = bookstoreEntities.value.convert(BookSchema.$id, {
 }) as Record<string, unknown>;
 
 console.assert(typeof (converted as { 'price': { 'amount': number } }).price.amount === 'number');
+
+console.log('cast price.amount:', (casted as { 'price': { 'amount': number } }).price.amount);
+console.log('clean stripped _internalId:', !('_internalId' in cleaned));
+console.log('clean stripped _cacheKey:', !('_cacheKey' in cleaned));
+console.log('convert price.amount type:', typeof (converted as { 'price': { 'amount': number } }).price.amount);

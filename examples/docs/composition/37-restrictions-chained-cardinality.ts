@@ -29,3 +29,5 @@ const AdultSchema = Compose.subClassOf(
 const adultId: string = AdultSchema.$id;
 
 console.assert(adultId.endsWith('Adult'));
+console.log('Adult schema with chained min/max cardinality restrictions:', adultId);
+console.log('restrictions:', (AdultSchema as Record<string, unknown>)['jt:restrictions']);

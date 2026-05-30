@@ -48,3 +48,7 @@ const summary = jt.instantiate(CustomerSummarySchema, {
 
 console.assert(summary.customerId === aboxFixtures.customer.customerId);
 console.assert(summary.name === aboxFixtures.customer.name);
+
+console.log('patch validation errors:', patchErrs.length);
+console.log('summary customerId:', summary.customerId);
+console.log('summary name:', summary.name);

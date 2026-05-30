@@ -24,3 +24,6 @@ console.assert(!strictOpts.enableThrow, 'throw disabled');
 const sameAsDefault = Resolver.merge(defaultOpts, {});
 
 console.assert(sameAsDefault.enableDefaults, 'base value used when override is undefined');
+
+console.log('strictOpts.enableDefaults:', strictOpts.enableDefaults, '| strictOpts.enableValidation:', strictOpts.enableValidation);
+console.log('sameAsDefault.enableDefaults:', sameAsDefault.enableDefaults);

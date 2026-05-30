@@ -24,3 +24,7 @@ const errs = JsonTology.validate(IsbnSchema, '9783522128001');
 // IsbnSchema validates a raw string (type: 'string'), not an object.
 // An empty collection confirms the ISBN-13 format passes.
 console.assert(errs.length === 0);
+
+console.log('direct entity $id:', isbnId);
+console.log('valid ISBN-13 errors:', errs.length);
+console.log('rejected non-ISBN errors:', JsonTology.validate(IsbnSchema, 'not-an-isbn').length);

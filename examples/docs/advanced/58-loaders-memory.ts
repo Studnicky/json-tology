@@ -45,3 +45,5 @@ console.assert(
 const unknown = await memLoader('urn:bookstore:NoSuchSchema');
 
 console.assert(unknown === null, 'unknown IRI returns null');
+
+console.log('Loaders.memory: resolved $id:', (resolved as Record<string, string>).$id, '| unknown IRI:', unknown);

@@ -19,4 +19,13 @@ if (!errs.ok) {
     grouped['/rating'] !== undefined || grouped['/body'] !== undefined,
     'Should have field-level errors'
   );
+
+  for (const [
+    path,
+    items
+  ] of Object.entries(grouped)) {
+    console.log(`${path}: [${items?.map((entry) => {
+      return entry.message;
+    }).join(', ')}]`);
+  }
 }

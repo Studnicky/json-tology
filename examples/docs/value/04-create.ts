@@ -19,3 +19,8 @@ console.assert(Array.isArray((blank as Record<string, unknown>).authors));
 
 // Explicit defaults are preserved
 console.assert((blank as { 'inStock': boolean }).inStock);
+
+console.log('blank isbn:', (blank as { 'isbn': string }).isbn);
+console.log('blank title:', (blank as { 'title': string }).title);
+console.log('blank authors:', (blank as Record<string, unknown>).authors);
+console.log('blank inStock (default true):', (blank as { 'inStock': boolean }).inStock);

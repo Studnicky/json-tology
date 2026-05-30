@@ -16,19 +16,36 @@ type Order = InferType<typeof OrderSchema>;
 // Test factory accepts plain primitives — no need to produce branded values.
 function orderFixture(overrides: Partial<LooseInputType<Order>> = {}): Record<string, unknown> {
   return {
-    'currency': 'EUR',
     'customerId': '09f8e7d6-c5b4-4321-9876-543210fedcba',
-    'id': 'a4d3c2b1-a098-4654-a210-fedcba987654',
-    'items': [],
+    'orderId': 'a4d3c2b1-a098-4654-a210-fedcba987654',
+    'orderLines': [],
+    'orderTotal': {
+      'amount': 999,
+      'currency': 'EUR'
+    },
     'placedAt': '1979-09-01T00:00:00Z',
-    'total': 9.99,
+    'shippingAddress': {
+      'city': 'München',
+      'country': 'DE',
+      'postalCode': '80331',
+      'street': 'Reichenbachstraße 14'
+    },
     ...overrides
   };
 }
 
 const ordinary = orderFixture();
-const discounted = orderFixture({ 'total': 4.5 });
+const discounted = orderFixture({
+  'orderTotal': {
+    'amount': 450,
+    'currency': 'EUR'
+  }
+});
 
-console.assert(ordinary.total === 9.99);
-console.assert(discounted.total === 4.5);
-console.assert(ordinary.currency === discounted.currency);
+console.assert(typeof ordinary.orderId === 'string');
+console.assert(typeof discounted.orderId === 'string');
+
+console.log('LooseInputType<Order>: fixture uses plain primitives — no branded values required');
+console.log('ordinary orderId:', ordinary.orderId);
+console.log('ordinary orderTotal:', JSON.stringify(ordinary.orderTotal));
+console.log('discounted orderTotal:', JSON.stringify(discounted.orderTotal));

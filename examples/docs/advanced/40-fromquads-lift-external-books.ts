@@ -24,3 +24,5 @@ for (const customer of customers) {
   console.assert(typeof customer.name === 'string', 'customer.name lifted as string');
   console.assert(typeof customer.email === 'string', 'customer.email lifted as string');
 }
+console.log('lifted customers:', customers.length);
+console.log('first customer name:', customers[0]?.name);

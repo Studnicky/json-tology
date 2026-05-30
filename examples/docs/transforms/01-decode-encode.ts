@@ -53,10 +53,15 @@ console.assert(date.getFullYear() === 2026);
 // Same instant as `aboxFixtures.order.placedAt`.
 console.assert(date.toISOString() === new Date(aboxFixtures.order.placedAt).toISOString());
 
+// decoded: 2026-04-12T14:23:11.000Z
+console.log('decoded :', date.toISOString());
+
 // Domain → Wire (encode reversal).
 const wire = jt.encode(PlacedAtSchema, date);
 
 console.assert(wire === raw);
+// encoded: 2026-04-12T14:23:11.000Z (exact round-trip)
+console.log('encoded :', wire);
 
 // Invalid input still throws InstantiationError.
 let threw = false;
@@ -69,3 +74,4 @@ try {
   threw = error instanceof InstantiationError;
 }
 console.assert(threw);
+console.log('invalid input threw InstantiationError:', threw);

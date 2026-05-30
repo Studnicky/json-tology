@@ -16,3 +16,4 @@ const sameAs: (instanceIriA: string, instanceIriB: string) => void = (instanceIr
 sameAs('urn:bookstore:demo:a', 'urn:bookstore:demo:b');
 
 console.assert(typeof sameAs === 'function', 'sameAs is callable with the documented signature');
+console.log('sameAs type:', typeof sameAs);

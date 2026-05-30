@@ -46,7 +46,13 @@ if (!(decoded instanceof Uint8Array)) {
 }
 
 console.assert(new TextDecoder().decode(decoded) === aboxFixtures.customer.name);
+// base64 of "Bastian Balthazar Bux"
+console.log('wire (base64):', wire);
+// 'Bastian Balthazar Bux'
+console.log('decoded text:', new TextDecoder().decode(decoded));
 
 const reEncoded = jt.encode(BinaryTransform, decoded);
 
 console.assert(reEncoded === wire);
+// true — Uint8Array → base64
+console.log('round-trip:', reEncoded === wire);

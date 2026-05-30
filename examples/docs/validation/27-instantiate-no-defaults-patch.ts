@@ -35,3 +35,6 @@ console.assert(
   !('addresses' in patchedRecord) || patchedRecord.addresses === undefined,
   'addresses should not be default-filled on a PATCH call'
 );
+
+console.log('name:', patched.name);
+console.log('addresses present after PATCH instantiate:', 'addresses' in patchedRecord);

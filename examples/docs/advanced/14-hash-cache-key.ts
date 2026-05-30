@@ -35,3 +35,7 @@ if (!cache.has(key)) {
   cache.set(key, { 'computedResult': 'expensive computation' });
 }
 console.assert(cache.has(key), 'cache entry present');
+
+console.log('Hash.value (structurally equal schemas):', hashA === hashB);
+console.log('Cache key:', key);
+console.log('Cache hit:', cache.has(key));

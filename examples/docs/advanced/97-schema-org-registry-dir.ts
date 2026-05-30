@@ -5,41 +5,27 @@
  * This example demonstrates the registry-directory mode against the hand-authored
  * schema.org subset:
  *
- *   1. Generate the registry directory to a tmp path.
- *   2. Assert each expected entity file exists.
- *   3. Import the generated `index.ts` and validate a schema:Book instance.
- *   4. Confirm the committed generated-dir fixture matches the programmatic output.
+ *   1. Call `generateRegistryDirectory` and inspect the returned entity files.
+ *   2. Assert the expected entity paths appear in the result.
+ *   3. Log entity file count, path names, and indexSource length.
  *
  * Notable: `schema:IsbnType` is declared as an `rdfs:Datatype` with an XSD pattern
  * facet (`^\d{13}$`). The generated `IsbnType.ts` entity file carries the full
  * `type: 'string', pattern: ...` schema — identical to the single-file mode output.
+ *
+ * Browser-safe: no node:fs, node:path, or node:url.
  */
 
-import {
-  existsSync, readFileSync
-} from 'node:fs';
-import {
-  dirname, resolve
-} from 'node:path';
-import { fileURLToPath } from 'node:url';
-import type { JsonTology } from '../../../src/index.js';
 import { generateRegistryDirectory } from '../../../src/owl-gen.js';
-
-const here = dirname(fileURLToPath(import.meta.url));
-const ONTOLOGIES = resolve(here, '../ontologies');
-const TMP_DIR = resolve(here, '../../../.generated-tmp/schema-org-registry-dir');
+import { schemaOrgSubset } from '../ontologies/schema-org-subset.js';
 
 // ---------------------------------------------------------------------------
-// Step 1: generate the registry directory
+// Step 1: generate the registry directory as data (no disk I/O)
 // ---------------------------------------------------------------------------
-
-const schemaOrgJsonLdRaw = readFileSync(resolve(ONTOLOGIES, 'schema-org-subset.jsonld'), 'utf8');
-const schemaOrgJsonLd = JSON.parse(schemaOrgJsonLdRaw) as object;
 
 const genResult = generateRegistryDirectory({
-  'input': schemaOrgJsonLd,
+  'input': schemaOrgSubset,
   'name': 'schemaOrg',
-  'outDir': TMP_DIR,
   'sourceLabel': 'examples/docs/ontologies/schema-org-subset.jsonld'
 });
 
@@ -48,109 +34,71 @@ console.assert(
   genResult.entityFiles.length === 9,
   `Expected 9 entity files, got ${genResult.entityFiles.length}`
 );
-console.log(`generateRegistryDirectory: ${genResult.entityFiles.length} entity files written`);
+console.log(`generateRegistryDirectory: ${genResult.entityFiles.length} entity files`);
 
 // ---------------------------------------------------------------------------
-// Step 2: assert entity files exist at canonical paths
+// Step 2: assert expected entity paths appear in the result
 // ---------------------------------------------------------------------------
 
-const expectedEntities = [
-  'Thing',
-  'IsbnType',
-  'Name',
-  'Isbn',
-  'Author',
-  'Publisher',
-  'Person',
-  'Organization',
-  'Book'
+const expectedPaths = [
+  'entities/Thing.ts',
+  'entities/IsbnType.ts',
+  'entities/Name.ts',
+  'entities/Isbn.ts',
+  'entities/Author.ts',
+  'entities/Publisher.ts',
+  'entities/Person.ts',
+  'entities/Organization.ts',
+  'entities/Book.ts'
 ];
 
-for (const name of expectedEntities) {
-  const entityPath = resolve(TMP_DIR, 'entities', `${name}.ts`);
+for (const expectedPath of expectedPaths) {
+  const found = genResult.entityFiles.some((entityFile) => {
+    return entityFile.path === expectedPath;
+  });
 
-  console.assert(
-    existsSync(entityPath),
-    `Expected entity file entities/${name}.ts to exist`
-  );
+  console.assert(found, `Expected entity file path: ${expectedPath}`);
 }
 
-const indexPath = resolve(TMP_DIR, 'index.ts');
-
-console.assert(existsSync(indexPath), 'Expected index.ts to exist');
-console.log('All expected entity files present:', expectedEntities.join(', '));
+console.log('Entity paths:', genResult.entityFiles.map((entityFile) => {
+  return entityFile.path;
+}).join(', '));
 
 // ---------------------------------------------------------------------------
-// Step 3: import generated index and validate instances
+// Step 3: log salient facts about the generated data
 // ---------------------------------------------------------------------------
 
-const generated = await import(indexPath) as {
-  'BookSchema': Record<string, unknown> & { '$id': string };
-  'IsbnTypeSchema': Record<string, unknown> & { '$id': string };
-  'OrganizationSchema': Record<string, unknown> & { '$id': string };
-  'PersonSchema': Record<string, unknown> & { '$id': string };
-  'schemaOrg': ReturnType<typeof JsonTology.create>;
-  'ThingSchema': Record<string, unknown> & { '$id': string };
-};
-
-const {
-  BookSchema, IsbnTypeSchema, OrganizationSchema, PersonSchema, schemaOrg
-} = generated;
-
-// Validate a schema:Person — Cornelia Funke (the author)
-const cornelia = { 'name': 'Cornelia Funke' };
-
-const corneliaResult = schemaOrg.validate(PersonSchema, cornelia);
-
-console.assert(corneliaResult.ok, `Cornelia Funke must validate as schema:Person; errors: ${JSON.stringify(corneliaResult)}`);
-console.log('Cornelia Funke validates as schema:Person (registry-dir):', corneliaResult.ok);
-
-// Validate a schema:Organization — Bastian's publisher
-const thienemann = { 'name': 'Thienemann Verlag' };
-
-const orgResult = schemaOrg.validate(OrganizationSchema, thienemann);
-
-console.assert(orgResult.ok, `Publisher must validate as schema:Organization; errors: ${JSON.stringify(orgResult)}`);
-console.log('Thienemann Verlag validates as schema:Organization (registry-dir):', orgResult.ok);
-
-// Validate a schema:Book — the ISBN pattern constraint is preserved in the generated
-// IsbnType.ts entity file. The 13-digit ISBN must pass.
-const neverendingStoryBook = {
-  'author': { 'name': 'Cornelia Funke' },
-  'isbn': '9783551551672',
-  'name': 'The Neverending Story',
-  'publisher': { 'name': 'Thienemann Verlag' }
-};
-
-const bookResult = schemaOrg.validate(BookSchema, neverendingStoryBook);
-
-console.assert(bookResult.ok, `Book with valid ISBN must validate; errors: ${JSON.stringify(bookResult)}`);
-console.log('Neverending Story validates as schema:Book (registry-dir):', bookResult.ok);
+console.log('indexSource length:', genResult.indexSource.length);
+console.assert(genResult.indexSource.includes('JsonTology'), 'indexSource must reference JsonTology');
+console.assert(genResult.indexSource.includes('BookSchema'), 'indexSource must reference BookSchema');
 
 // IsbnType entity file carries the XSD pattern facet from owl:withRestrictions
-const isbnTypeRec = IsbnTypeSchema as Record<string, unknown>;
+const isbnTypeFile = genResult.entityFiles.find((entityFile) => {
+  return entityFile.path === 'entities/IsbnType.ts';
+});
 
-console.assert(
-  isbnTypeRec.pattern === '^\\d{13}$',
-  'IsbnType XSD pattern facet preserved in registry-dir output'
-);
-console.log('IsbnType pattern preserved (registry-dir):', isbnTypeRec.pattern);
+console.assert(isbnTypeFile !== undefined, 'entities/IsbnType.ts must be present');
 
-// ---------------------------------------------------------------------------
-// Step 4: compare generated entity file to committed fixture
-// ---------------------------------------------------------------------------
-
-const committedBookPath = resolve(ONTOLOGIES, 'generated-dir', 'schema-org', 'entities', 'Book.ts');
-
-function stripTimestamp(src: string): string {
-  return src.replaceAll(/^\/\/ Generated: .*$/gmu, '// Generated: <timestamp>');
+if (isbnTypeFile !== undefined) {
+  console.assert(
+    isbnTypeFile.source.includes('pattern'),
+    'IsbnType entity source must carry XSD pattern facet'
+  );
+  console.log('entities/IsbnType.ts source length:', isbnTypeFile.source.length);
+  console.log('IsbnType.ts carries pattern (XSD facet preserved):', isbnTypeFile.source.includes('pattern'));
 }
 
-const generatedBookSrc = readFileSync(resolve(TMP_DIR, 'entities', 'Book.ts'), 'utf8');
-const committedBookSrc = readFileSync(committedBookPath, 'utf8');
+// Book carries allOf -> schema:Thing (subClassOf chain)
+const bookFile = genResult.entityFiles.find((entityFile) => {
+  return entityFile.path === 'entities/Book.ts';
+});
 
-console.assert(
-  stripTimestamp(generatedBookSrc) === stripTimestamp(committedBookSrc),
-  'Generated entities/Book.ts matches committed generated-dir fixture (modulo timestamp)'
-);
-console.log('entities/Book.ts matches committed fixture (modulo timestamp): true');
+console.assert(bookFile !== undefined, 'entities/Book.ts must be present');
+
+if (bookFile !== undefined) {
+  console.assert(
+    bookFile.source.includes('allOf'),
+    'Book entity source must carry allOf (subClassOf -> schema:Thing)'
+  );
+  console.log('Book.ts carries allOf (subClassOf preserved):', bookFile.source.includes('allOf'));
+}

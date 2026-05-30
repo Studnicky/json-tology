@@ -37,5 +37,5 @@ type DeprecatedBookKeysCorrect = DeprecatedKeysType<typeof _BookV1Schema>;
 const manualKey: DeprecatedBookKeysManual = 'legacySku';
 const derivedKey: DeprecatedBookKeysCorrect = 'legacySku';
 
-void manualKey;
-void derivedKey;
+console.log('manual union:', manualKey, '(drifts if schema changes)');
+console.log('derived union:', derivedKey, '(stays in sync with schema literal)');

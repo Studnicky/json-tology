@@ -22,3 +22,7 @@ const refUnresolved = new GraphError(GraphErrorCode.REF_UNRESOLVED, 'cross-schem
 console.assert(notFound.code === 'POINTER_NOT_FOUND');
 console.assert(notFound.pointer === '/foo/0');
 console.assert(refUnresolved.cause === cause);
+
+console.log('notFound.code:', notFound.code);
+console.log('notFound.pointer:', notFound.pointer);
+console.log('refUnresolved.cause.message:', refUnresolved.cause?.message);

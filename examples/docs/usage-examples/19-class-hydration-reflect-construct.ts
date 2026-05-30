@@ -57,3 +57,7 @@ const hydrated = jt.instantiate(ReflectOrderSchema, aboxFixtures.order);
 
 console.assert(hydrated instanceof OrderViaReflect);
 console.assert((hydrated as OrderViaReflect).status().startsWith('shipped:'));
+// true
+console.log('instanceof:', hydrated instanceof OrderViaReflect);
+// 'shipped:<orderId>'
+console.log('status():', (hydrated as OrderViaReflect).status());

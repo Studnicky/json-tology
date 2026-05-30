@@ -109,3 +109,15 @@ const errs = jt.validate(StrictBookSchema.$id, {
 });
 
 console.assert(errs.length === 0);
+// 0 — ISBN-10 format check passes
+console.log('StrictBook validation errors:', errs.length);
+
+const isbn13Errs = jt.validate(StrictBookSchema.$id, {
+  'authors': ['Hermann Hesse'],
+  'isbn': '9780141182490',
+  'price': 18.99,
+  'title': 'Steppenwolf'
+});
+
+// > 0 — wrong length fails
+console.log('ISBN-13 on ISBN-10 schema errors:', isbn13Errs.length);

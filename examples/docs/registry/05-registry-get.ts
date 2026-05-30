@@ -23,4 +23,7 @@ if (book) {
   );
 
   console.assert(typeof BookSummary.$id === 'string', 'Composed schema should have $id');
+  console.log('retrieved schema $id:', book.$id);
+  console.log('BookSummary $id:', BookSummary.$id);
+  console.log('BookSummary properties:', Object.keys(BookSummary.properties));
 }

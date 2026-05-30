@@ -30,6 +30,7 @@ if (!errs.ok) {
 
   console.assert(Array.isArray(messages));
   console.assert(messages.length > 0);
+  console.log('validation errors:', messages);
 }
 
 console.assert(!errs.ok);

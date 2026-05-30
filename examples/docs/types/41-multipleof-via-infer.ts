@@ -27,4 +27,7 @@ type EvenQuantityManual = MultipleOfRangeType<0, 10, 2>;
 const fromSchema: EvenQuantity = 4;
 const fromManual: EvenQuantityManual = fromSchema;
 
-void fromManual;
+// Both hold the same value: InferType and MultipleOfRangeType produce
+// the same literal union 0 | 2 | 4 | 6 | 8 | 10 for these parameters.
+console.log('from schema (InferType):', fromSchema);
+console.log('from manual (MultipleOfRangeType):', fromManual);

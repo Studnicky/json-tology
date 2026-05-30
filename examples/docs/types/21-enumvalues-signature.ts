@@ -18,6 +18,11 @@ import type { PrintStatusSchema } from '../bookstore/index.js';
 type PrintStatus = EnumValuesType<typeof PrintStatusSchema>;
 // 'inPrint' | 'limitedRun' | 'outOfPrint'
 
-const status: PrintStatus = 'inPrint';
+const statuses: PrintStatus[] = [
+  'inPrint',
+  'limitedRun',
+  'outOfPrint'
+];
 
-void status;
+console.log('EnumValuesType<PrintStatusSchema>:', statuses.join(' | '));
+console.log('sample value:', statuses[0]);

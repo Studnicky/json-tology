@@ -35,3 +35,7 @@ console.assert(
   Array.isArray(jsonLdObj['@graph']),
   'TBox JSON-LD contains a @graph array'
 );
+
+const graphNodes = jsonLdObj['@graph'] as unknown[];
+
+console.log('TBox domain/range: Book in TBox:', jsonLd.includes(BookSchema.$id), '| Isbn in TBox:', jsonLd.includes(IsbnSchema.$id), '| graph nodes:', graphNodes.length);

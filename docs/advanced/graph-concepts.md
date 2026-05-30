@@ -17,7 +17,7 @@ The semantic web distinguishes two kinds of knowledge:
 
 In json-tology:
 
-<<< ../../examples/docs/advanced/74-graph-tbox-abox-pattern.ts
+<RunnableExample src="examples/docs/advanced/74-graph-tbox-abox-pattern" />
 
 `entities.toTbox()` emits the TBox.
 `entities.toQuads(schema, data)` emits the ABox for a given data instance.
@@ -36,7 +36,7 @@ JSON Schema describes what is *required* and *constrained*, not what is *exhaust
 This is the **open-world assumption (OWA)**: a schema does not claim to enumerate all properties
 that may ever exist on an instance.
 
-<<< ../../examples/docs/advanced/75-graph-open-world-assumption.ts
+<RunnableExample src="examples/docs/advanced/75-graph-open-world-assumption" />
 
 This schema says: every Customer *must* have `id`, `email`, and `name`. It does not say those
 are the *only* properties allowed.
@@ -66,7 +66,7 @@ More constraints = more specific type = subclass.
 Every `PremiumCustomer` schema that extends `Customer` describes a *narrower* set of valid
 instances. In OWL terms: the class `PremiumCustomer` is a subclass of `Customer`.
 
-<<< ../../examples/docs/advanced/76-graph-subclass-extend.ts
+<RunnableExample src="examples/docs/advanced/76-graph-subclass-extend" />
 
 In the TBox, this emits:
 
@@ -90,7 +90,7 @@ See [Compose.extend](../composition/extend.md) for full API documentation.
 
 Two schemas can describe structurally identical data while carrying domain-distinct names.
 
-<<< ../../examples/docs/advanced/77-graph-equivalent-class.ts
+<RunnableExample src="examples/docs/advanced/77-graph-equivalent-class" />
 
 In the TBox, this emits:
 

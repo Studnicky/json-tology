@@ -39,4 +39,5 @@ type DeprecatedBookKeys = DeprecatedKeysType<typeof _BookV1Schema>;
 // 'legacySku' is the only deprecated key in the schema above
 const deprecatedKey: DeprecatedBookKeys = 'legacySku';
 
-void deprecatedKey;
+console.log('DeprecatedKeysType<BookV1Schema>:', deprecatedKey);
+console.log('schema property count:', Object.keys(_BookV1Schema.properties).length, '| deprecated count: 1');

@@ -54,3 +54,8 @@ for (const op of changes.operations) {
 const reconstructedTotal = (reconstructed as { 'orderTotal': { 'amount': number } }).orderTotal.amount;
 
 console.assert(Math.abs(reconstructedTotal - (aboxFixtures.order.orderTotal.amount + moersPrice)) < 0.001);
+
+console.log('changed paths:', changes.operations.map((op) => {
+  return op.path;
+}));
+console.log('reconstructed orderTotal:', reconstructedTotal);

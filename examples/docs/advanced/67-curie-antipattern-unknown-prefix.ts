@@ -31,3 +31,6 @@ console.assert(
   curieWithSchema.expand('schema:Book') === 'https://schema.org/Book',
   'registered prefix: expand resolves to full IRI'
 );
+
+console.log('Unknown prefix — expand returns input unchanged:', unexpanded);
+console.log('Registered prefix — expand resolves correctly:', curieWithSchema.expand('schema:Book'));

@@ -35,10 +35,19 @@ const agg = errs.aggregate();
 console.assert(agg.count === errs.length);
 console.assert(agg.paths.length <= errs.length);
 
-// The aggregate paths cover the same fields as manual grouping
+// The aggregate paths cover the same fields as manual grouping.
+// agg.paths strips the leading slash; manualGrouped keys retain it from item.path.
 console.assert(
   agg.paths.every((path) => {
-    return Object.keys(manualGrouped).includes(path) || path === '_root';
+    const withSlash = `/${path}`;
+
+    return (
+      Object.keys(manualGrouped).includes(path)
+      || Object.keys(manualGrouped).includes(withSlash)
+      || path === '_root'
+    );
   }),
   'aggregate paths should correspond to the manually grouped paths'
 );
+
+console.log('aggregate count:', agg.count, ', paths:', agg.paths);

@@ -34,3 +34,9 @@ const tboxJsonLd = bookstoreEntities.toTbox().jsonLd();
 console.assert(tboxJsonLd.includes('SymmetricProperty'), 'SymmetricProperty emitted');
 console.assert(tboxJsonLd.includes('AsymmetricProperty'), 'AsymmetricProperty emitted');
 console.assert(tboxJsonLd.includes('TransitiveProperty'), 'TransitiveProperty emitted');
+
+console.log('SimilarBook.b symmetric:', SimilarBookSchema.properties.b.symmetric);
+console.log('Sequel.predecessor asymmetric:', SequelSchema.properties.predecessor.asymmetric);
+console.log('Order.placedAt transitive:', OrderSchema.properties.placedAt.transitive);
+console.log('Order.placedAt irreflexive:', OrderSchema.properties.placedAt.irreflexive);
+console.log('All three characteristics emitted in TBox: true');

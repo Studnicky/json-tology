@@ -14,21 +14,21 @@
 
 `BookSchema` has `currency: 'USD'` and `inStock: true`. `isbn`, `title`, `authors`, and `price` have no declared defaults - they are omitted from the result.
 
-<<< ../../examples/docs/composition/07-get-defaults.ts
+<RunnableExample src="examples/docs/composition/07-get-defaults" />
 
 ### Example 2: Pre-populate an Order form
 
-<<< ../../examples/docs/composition/34-getdefaults-order.ts
+<RunnableExample src="examples/docs/composition/34-getdefaults-order" />
 
 ### Example 3: Nested defaults are traversed
 
-<<< ../../examples/docs/composition/35-getdefaults-nested.ts
+<RunnableExample src="examples/docs/composition/35-getdefaults-nested" />
 
 ## Bad examples - what NOT to do
 
 ### Anti-pattern 1: Using getDefaults as a substitute for coerce/materialize
 
-<<< ../../examples/docs/composition/36-antipattern-getdefaults-as-coerce.ts
+<RunnableExample src="examples/docs/composition/36-antipattern-getdefaults-as-coerce" />
 
 ## Comparison
 

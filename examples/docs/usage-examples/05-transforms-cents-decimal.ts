@@ -37,7 +37,13 @@ const wireCents = 1499;
 const decoded = jt.instantiate(PriceCentsTransform, wireCents);
 
 console.assert(decoded === 14.99);
+// 1499
+console.log('wire cents:', wireCents);
+// 14.99 — no floating-point error
+console.log('decoded decimal:', decoded);
 
 const reEncoded = jt.encode(PriceCentsTransform, decoded);
 
 console.assert(reEncoded === wireCents);
+// 1499 — round-trip
+console.log('re-encoded cents:', reEncoded);

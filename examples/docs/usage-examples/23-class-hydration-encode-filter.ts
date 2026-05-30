@@ -73,3 +73,9 @@ const wire = bookstoreEntities.encode(FilterEncodeOrderTransform, hydrated) as R
 
 console.assert(wire.summarize === undefined);
 console.assert(wire.orderId === aboxFixtures.order.orderId);
+// 'function'
+console.log('instance has summarize fn:', typeof hydrated.summarize);
+// false — filtered out by encoder
+console.log('wire has summarize?', 'summarize' in wire);
+// clean wire value
+console.log('wire orderId:', wire.orderId);

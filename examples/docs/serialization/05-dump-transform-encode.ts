@@ -48,3 +48,8 @@ const wire = jt.encode(PlacedAtDumpSchema, decoded);
 
 console.assert(wire === raw, 'encode should re-encode Date → original ISO string');
 console.assert(typeof wire === 'string');
+
+// Show the round-trip: ISO string → Date → ISO string
+console.log('raw ISO string:', raw);
+console.log('decoded (Date):', decoded.toUTCString());
+console.log('re-encoded (wire):', wire);

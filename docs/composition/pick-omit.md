@@ -18,27 +18,27 @@
 
 #### Example 1: Book catalog summary - only display fields
 
-<<< ../../examples/docs/composition/02-pick-omit.ts
+<RunnableExample src="examples/docs/composition/02-pick-omit" />
 
 #### Example 2: Customer card for embedding in order responses
 
-<<< ../../examples/docs/composition/21-pick-customer-card.ts
+<RunnableExample src="examples/docs/composition/21-pick-customer-card" />
 
 #### Example 3: Build sub-schema for partial validation (builds on subschemaAt)
 
-<<< ../../examples/docs/composition/22-pick-review-rating-subschema.ts
+<RunnableExample src="examples/docs/composition/22-pick-review-rating-subschema" />
 
 ### Argument validation <Badge type="info" text="Compile-time" />
 
 `keys` are bound to `keyof properties`. Passing a key that does not exist in the source schema's `properties` is a compile-time error rather than a silent empty-properties result.
 
-<<< ../../examples/docs/composition/47-antipattern-pick-unknown-key.ts
+<RunnableExample src="examples/docs/composition/47-antipattern-pick-unknown-key" />
 
 ### Bad examples - what NOT to do
 
 #### Anti-pattern 1: Forgetting `as const` on the keys array
 
-<<< ../../examples/docs/composition/23-antipattern-pick-without-as-const.ts
+<RunnableExample src="examples/docs/composition/23-antipattern-pick-without-as-const" />
 
 ### Comparison
 
@@ -136,15 +136,15 @@ class BookSummary(BaseModel):
 
 #### Example 1: Public book without internal currency field
 
-<<< ../../examples/docs/composition/24-omit-public-book.ts
+<RunnableExample src="examples/docs/composition/24-omit-public-book" />
 
 #### Example 2: Order summary without line items
 
-<<< ../../examples/docs/composition/25-omit-order-summary.ts
+<RunnableExample src="examples/docs/composition/25-omit-order-summary" />
 
 #### Example 3: Build a derived schema from a retrieved schema (builds on get)
 
-<<< ../../examples/docs/composition/26-omit-from-registry.ts
+<RunnableExample src="examples/docs/composition/26-omit-from-registry" />
 
 ### Comparison
 

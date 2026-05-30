@@ -19,17 +19,17 @@ The bookstore domain in [Bookstore Domain](/bookstore-domain) supplies prefixes 
 
 `new Curie(prefixes)` returns a CURIE handler. `compact(iri)` shrinks a full IRI; `expand(curie)` resolves a compact form back to a full IRI.
 
-<<< ../../examples/docs/advanced/07-utilities.ts
+<RunnableExample src="examples/docs/advanced/07-utilities" />
 
 When multiple prefixes share an overlap, `compact` picks the longest match.
 
-The default prefix map used across the package is `STANDARD_PREFIXES` (from `src/constants/STANDARD_PREFIXES.ts`) — the canonical prefix-to-namespace lookup for the well-known RDF vocabularies (`rdf`, `rdfs`, `owl`, `sh`, `xsd`, `schema`, `foaf`, `dc`, `dct`, `dcterms`, `dcat`, `skos`, `prov`, `time`, `geo`, `vann`, `dash`, `jt`). Every IRI constant in `src/constants/IRI.ts` derives from this map. Pass your own prefix map to `JsonTology.create({ prefixes })` to extend or override the defaults — your entries merge over `STANDARD_PREFIXES`.
+The default prefix map used across the package is `STANDARD_PREFIXES` (from `src/constants/STANDARD_PREFIXES.ts`), the canonical prefix-to-namespace lookup for the well-known RDF vocabularies (`rdf`, `rdfs`, `owl`, `sh`, `xsd`, `schema`, `foaf`, `dc`, `dct`, `dcterms`, `dcat`, `skos`, `prov`, `time`, `geo`, `vann`, `dash`, `jt`). Every IRI constant in `src/constants/IRI.ts` derives from this map. Pass your own prefix map to `JsonTology.create({ prefixes })` to extend or override the defaults; your entries merge over `STANDARD_PREFIXES`.
 
 ## `Path`
 
 `Path.toAccess(jsonPointer)` converts a JSON Pointer into JS access form - the path you would write to read the value out of the object. Useful when surfacing validation errors in UIs that expect access notation.
 
-<<< ../../examples/docs/advanced/08-path-json-pointer.ts
+<RunnableExample src="examples/docs/advanced/08-path-json-pointer" />
 
 Numeric segments become `[N]`; identifier-shaped segments become `.name`; non-identifier segments are quoted with bracket notation.
 
@@ -37,13 +37,13 @@ Numeric segments become `[N]`; identifier-shaped segments become `.name`; non-id
 
 `Resolver.merge(base, override)` returns a fresh object with `override`'s defined keys overwriting `base`. `undefined` keys in `override` do not erase base values - this is the per-call option-merge pattern used throughout json-tology.
 
-<<< ../../examples/docs/advanced/09-resolver-merge.ts
+<RunnableExample src="examples/docs/advanced/09-resolver-merge" />
 
 ## `Hash`
 
 `Hash.value(input)` returns a hex FNV-1a hash. Object keys are sorted before serialization, so two objects that differ only in key order produce the same hash.
 
-<<< ../../examples/docs/advanced/10-hash-fnv1a.ts
+<RunnableExample src="examples/docs/advanced/10-hash-fnv1a" />
 
 Used internally by `registerAnonymous` to mint synthetic `$id` values from schema content. Use it directly when you need a stable cache key for a structured value.
 
@@ -51,7 +51,7 @@ Used internally by `registerAnonymous` to mint synthetic `$id` values from schem
 
 The `Lift` module exposes interop helpers between RDF/JS quads (from libraries like `n3` or `eyereasoner`) and json-tology's internal quad shape, plus the `Lift.instances` method that powers `JsonTology.fromQuads`.
 
-<<< ../../examples/docs/advanced/11-lift-n3-interop.ts
+<RunnableExample src="examples/docs/advanced/11-lift-n3-interop" />
 
 For the typed round-trip use the `JsonTology` facade ([RDF round-trip](/advanced/quads)). Reach for `Lift` only when integrating with an external RDF/JS library directly.
 
@@ -63,12 +63,12 @@ Constructor: `new IdentifierIssuer(options?)` where `options` is `{ prefix?: str
 
 Surface:
 
-- `getId(existing?)` — issue a new identifier, or return the previously issued one for `existing` if it has been mapped. Calling without `existing` always issues a fresh identifier without recording a mapping (anonymous blank nodes).
-- `hasId(existing)` — true if `existing` already has an issued identifier.
-- `getIssuedMap()` — read-only view of the current mapping.
-- `getIssuedIdentifiers()` — keys in issuance order.
-- `clone()` — fork an independent issuer with the same prefix, counter, and mappings.
-- `reset()` — clear counter and mappings.
+- `getId(existing?)`: issue a new identifier, or return the previously issued one for `existing` if it has been mapped. Calling without `existing` always issues a fresh identifier without recording a mapping (anonymous blank nodes).
+- `hasId(existing)`: true if `existing` already has an issued identifier.
+- `getIssuedMap()`: read-only view of the current mapping.
+- `getIssuedIdentifiers()`: keys in issuance order.
+- `clone()`: fork an independent issuer with the same prefix, counter, and mappings.
+- `reset()`: clear counter and mappings.
 
 You only need to construct one directly if you are writing a custom projector or RDF serializer that participates in the same blank-node naming scheme. The built-in projectors manage their own.
 
@@ -80,49 +80,49 @@ You only need to construct one directly if you are writing a custom projector or
 
 Shrink full IRIs to CURIE form for readable output in debug logs or ontology tooling.
 
-<<< ../../examples/docs/advanced/66-curie-compact-bookstore.ts
+<RunnableExample src="examples/docs/advanced/66-curie-compact-bookstore" />
 
 ### Example 2: Path: surface validation error paths in a form UI
 
 Convert JSON Pointer paths from `ValidationErrors` into JS access notation for a form library that uses dot/bracket paths.
 
-<<< ../../examples/docs/advanced/23-path-error-form-ui.ts
+<RunnableExample src="examples/docs/advanced/23-path-error-form-ui" />
 
 ### Example 3: Resolver: merge per-call options without mutating the base
 
 Override a single flag for one call without constructing a full options object each time.
 
-<<< ../../examples/docs/advanced/13-resolver-per-call-options.ts
+<RunnableExample src="examples/docs/advanced/13-resolver-per-call-options" />
 
 ### Example 4: Hash: stable cache key for a schema content fingerprint
 
 Use `Hash.value` to produce a deterministic fingerprint for a schema object. Two structurally identical schemas with different key order produce the same hash.
 
-<<< ../../examples/docs/advanced/14-hash-cache-key.ts
+<RunnableExample src="examples/docs/advanced/14-hash-cache-key" />
 
 ### Example 5: Lift: integrate an external n3 RDF/JS source
 
 Convert quads produced by the `n3` parser into json-tology's internal quad shape for `fromQuads`.
 
-<<< ../../examples/docs/advanced/11-lift-n3-interop.ts
+<RunnableExample src="examples/docs/advanced/11-lift-n3-interop" />
 
 ## Bad examples: what NOT to do
 
 ### Anti-pattern 1: Curie: expanding a prefix that is not registered
 
-<<< ../../examples/docs/advanced/67-curie-antipattern-unknown-prefix.ts
+<RunnableExample src="examples/docs/advanced/67-curie-antipattern-unknown-prefix" />
 
 ### Anti-pattern 2: Path: using toAccess on a non-JSON Pointer string
 
-<<< ../../examples/docs/advanced/68-path-antipattern-non-pointer.ts
+<RunnableExample src="examples/docs/advanced/68-path-antipattern-non-pointer" />
 
 ### Anti-pattern 3: Hash: using Hash.value as a cryptographic hash
 
-<<< ../../examples/docs/advanced/69-hash-antipattern-cryptographic.ts
+<RunnableExample src="examples/docs/advanced/69-hash-antipattern-cryptographic" />
 
 ### Anti-pattern 4: Lift: passing Lift quads directly to a native RDF/JS consumer
 
-<<< ../../examples/docs/advanced/70-lift-antipattern-rdfjs-passthrough.ts
+<RunnableExample src="examples/docs/advanced/70-lift-antipattern-rdfjs-passthrough" />
 
 ## Comparison
 

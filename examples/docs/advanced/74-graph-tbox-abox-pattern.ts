@@ -36,3 +36,5 @@ console.assert(
   recovered[0].email === aboxFixtures.customer.email,
   'recovered Customer has correct email'
 );
+
+console.log('TBox/ABox: ABox quads:', abox.length, '| fromQuads recovered:', recovered.length, '| email:', recovered[0]?.email);
