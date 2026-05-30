@@ -9,14 +9,18 @@
  * The bookstore scenario: customer Bastian Balthazar Bux places an order.
  * The Order carries customerId as a scalar foreign key — the same UUID that
  * inverseFunctionally identifies the Customer. The cursor resolves that FK
- * to the typed Customer without any explicit join.
+ * to the typed Customer without any explicit join. A Review carries bookIsbn —
+ * a differently-named foreign key whose Isbn range backs Book's inverse-
+ * functional identity — and resolves to the (subclassed) Book all the same.
  */
 
 import {
   aboxFixtures,
   bookstoreEntities,
   CustomerSchema,
-  OrderSchema
+  OrderSchema,
+  RareBookSchema,
+  ReviewSchema
 } from '../bookstore/index.js';
 import type { QuadInterface } from '../../../src/interfaces/Quad.js';
 
@@ -41,6 +45,18 @@ function bookstoreAboxQuads(): QuadInterface[] {
   quads.push(...bookstoreEntities.toQuads(
     OrderSchema,
     bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order),
+    { 'graphIRI': ABOX_GRAPH_IRI }
+  ));
+  // A RareBook (subclass of Book) and a Review that references it via bookIsbn —
+  // a differently-named FK that resolves through Book's inverse-functional isbn.
+  quads.push(...bookstoreEntities.toQuads(
+    RareBookSchema,
+    bookstoreEntities.instantiate(RareBookSchema, aboxFixtures.rareBook),
+    { 'graphIRI': ABOX_GRAPH_IRI }
+  ));
+  quads.push(...bookstoreEntities.toQuads(
+    ReviewSchema,
+    bookstoreEntities.instantiate(ReviewSchema, aboxFixtures.review),
     { 'graphIRI': ABOX_GRAPH_IRI }
   ));
 
@@ -111,12 +127,28 @@ const rangeSchema = record(graph.predicate('shippingAddress').range()
 console.log('Schema cursor — range $id:', rangeSchema.$id);
 
 // ---------------------------------------------------------------------------
-// 5. Schema cursor — transitive subClassOf.
+// 5. Differently-named FK across a shared identity range: Review → Book.
+//    Review.bookIsbn is NOT named `isbn`, but its Isbn range is the same
+//    primitive that backs Book's inverse-functional `isbn` identity — so the
+//    cursor resolves bookIsbn to the Book it identifies, with no join and no
+//    matching key name. The resolved Book is actually a RareBook (a subclass);
+//    subclass instances inherit the parent's identity, so resolution still hits.
+// ---------------------------------------------------------------------------
+
+const reviewIri = graph.instances(ReviewSchema.$id)
+  .iris()
+  .at(0) ?? '';
+
+const book = record(graph.resource(reviewIri).objects('bookIsbn')
+  .first());
+
+console.log('Differently-named FK — review→book title:', book.title);
+console.log('Differently-named FK — review→book isbn :', book.isbn);
+
+// ---------------------------------------------------------------------------
+// 6. Schema cursor — transitive subClassOf.
 //    RareBook → PrintBook → Book (two hops). The transitive walk bubbles up
 //    through the entire superclass chain.
-//    Note: foreign keys resolve only where an inverseFunctional identity is
-//    declared, so customerId→Customer resolves; bookIsbn references are a
-//    future enhancement pending a declared Book identity property.
 // ---------------------------------------------------------------------------
 
 const transitiveSupers = graph.class('urn:bookstore:RareBook')
