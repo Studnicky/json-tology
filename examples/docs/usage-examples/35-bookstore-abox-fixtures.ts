@@ -17,14 +17,20 @@ import {
 const rareBook = bookstoreEntities.instantiate(RareBookSchema, aboxFixtures.rareBook);
 
 console.assert(typeof rareBook === 'object');
+// 'Die unendliche Geschichte'
+console.log('rareBook title:', (rareBook as { 'title': string }).title);
 
 // Validate Bastian's order containing one line for that rare book.
 // The branded instantiate result feeds toQuads's typed signature directly.
 const order = bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order);
 
 console.assert(typeof order === 'object');
+// fixture customerId
+console.log('order customerId:', (order as { 'customerId': string }).customerId);
 
 // Emit the full RDF graph: schema-level rules + sameAs assertions + ABox quads.
 const quads = bookstoreEntities.toQuads(OrderSchema, order);
 
 console.assert(quads.length > 0);
+// all quads including sameAs pairs
+console.log('ABox quad count:', quads.length);

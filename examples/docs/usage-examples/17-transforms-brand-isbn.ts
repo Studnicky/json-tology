@@ -41,5 +41,11 @@ const decoded = jt2.instantiate(BrandedIsbnBase.$id, wire) as BrandedIsbn;
 
 console.assert(typeof decoded === 'string');
 console.assert((decoded as unknown as string) === wire);
+// '9783522128001'
+console.log('wire ISBN:', wire);
+// same string — brand is compile-time only
+console.log('decoded (branded):', decoded);
+// 'string' — no runtime difference
+console.log('typeof decoded:', typeof decoded);
 
 void BrandedIsbnSchema;

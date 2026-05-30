@@ -42,3 +42,7 @@ const emailRangeProperty = graphNodes.find((node) => {
 });
 
 console.assert(emailRangeProperty !== undefined);
+// https://bookstore.example/Email
+console.log('Email $id:', EmailSchema.$id);
+// e.g. https://bookstore.example/email
+console.log('property with email range:', emailRangeProperty?.['@id']);

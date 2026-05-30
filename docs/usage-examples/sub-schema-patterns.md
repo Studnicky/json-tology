@@ -8,7 +8,7 @@ All examples use the [bookstore domain](/bookstore-domain).
 
 ## Validation reaches into `$ref`s
 
-<<< ../../examples/docs/usage-examples/01-sub-schema-patterns.ts
+<RunnableExample src="examples/docs/usage-examples/01-sub-schema-patterns" />
 
 The validator follows the `$ref` to `EmailSchema` and applies its `format: 'email'` constraint. The error path points at the parent's slot (`/email`), not at the referenced schema. Callers see one validation surface per request.
 
@@ -16,7 +16,7 @@ The validator follows the `$ref` to `EmailSchema` and applies its `format: 'emai
 
 ## Defaults from sub-schemas flow through `instantiate`
 
-<<< ../../examples/docs/usage-examples/44-sub-schema-defaults-flow.ts
+<RunnableExample src="examples/docs/usage-examples/44-sub-schema-defaults-flow" />
 
 Defaults declared inside a referenced schema apply when the parent's value reaches that slot. The registry walks the `$ref` graph, so transitive defaults (a `$ref` to a schema that itself has a `$ref`) all resolve in a single pass.
 
@@ -24,7 +24,7 @@ Defaults declared inside a referenced schema apply when the parent's value reach
 
 ## Coercion respects sub-schema constraints and Transforms
 
-<<< ../../examples/docs/usage-examples/45-sub-schema-coercion-transforms.ts
+<RunnableExample src="examples/docs/usage-examples/45-sub-schema-coercion-transforms" />
 
 Format constraints on the referenced schema apply on the parent's slot. `Transform` decoders registered against the sub-schema's `$id` run on the parent's value too - one decoder, every reference.
 
@@ -32,7 +32,7 @@ Format constraints on the referenced schema apply on the parent's slot. `Transfo
 
 ## TBox emits a typed property edge per `$ref`
 
-<<< ../../examples/docs/usage-examples/46-sub-schema-tbox-property-edges.ts
+<RunnableExample src="examples/docs/usage-examples/46-sub-schema-tbox-property-edges" />
 
 Every `$ref` in the TypeScript-side schema becomes a typed property edge in the canonical graph. The OWL projection emits `rdfs:domain` and `rdfs:range` for the parent class and the referenced class respectively. SHACL emits `sh:node` or `sh:datatype` constraints on the property shape. The same graph drives both projections.
 
@@ -40,7 +40,7 @@ Every `$ref` in the TypeScript-side schema becomes a typed property edge in the 
 
 ## Composition through `$ref`s: a discriminated union as a sub-schema
 
-<<< ../../examples/docs/usage-examples/47-sub-schema-discriminated-union.ts
+<RunnableExample src="examples/docs/usage-examples/47-sub-schema-discriminated-union" />
 
 The composite (`OrderWithPaymentSchema`) is what the caller validates. Its `payment` slot is a `$ref` to the discriminated union. The validator descends through both layers automatically: variant selection happens inside the `$ref`, the rest of the order is checked at the top level.
 
@@ -50,7 +50,7 @@ The composite (`OrderWithPaymentSchema`) is what the caller validates. Its `paym
 
 A sub-schema may `$ref` itself or any ancestor. The graph is allowed to be cyclic; the registry resolves a cycle by short-circuiting on the second visit, so type inference and runtime traversal both terminate.
 
-<<< ../../examples/docs/usage-examples/48-sub-schema-self-referential.ts
+<RunnableExample src="examples/docs/usage-examples/48-sub-schema-self-referential" />
 
 `PersonSchema.manager` references `PersonSchema` itself. Validation, instantiation, and TBox emission all handle the cycle without special configuration. The OWL output emits a single class with an `rdfs:domain` / `rdfs:range` self-edge.
 

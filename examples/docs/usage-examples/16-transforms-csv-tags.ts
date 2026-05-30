@@ -43,7 +43,13 @@ const tags = jt.instantiate(TagListTransform, wire);
 console.assert(Array.isArray(tags));
 console.assert(tags[0] === 'fantasy');
 console.assert(tags.length === 4);
+// 'fantasy, rare, first-edition, hardcover'
+console.log('wire:', wire);
+// ['fantasy', 'rare', 'first-edition', 'hardcover']
+console.log('tags:', tags);
 
 const reEncoded = jt.encode(TagListTransform, tags);
 
 console.assert(reEncoded === wire);
+// 'fantasy, rare, first-edition, hardcover'
+console.log('round-trip:', reEncoded);

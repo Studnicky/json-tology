@@ -19,26 +19,26 @@ Where does the data come from?
 
 ### HTTP request handler
 
-<<< ../examples/docs/picking-a-method/02-http-handler-instantiate.ts
+<RunnableExample src="examples/docs/picking-a-method/02-http-handler-instantiate" />
 
 ### Test fixture
 
-<<< ../examples/docs/picking-a-method/03-test-fixture-materialize.ts
+<RunnableExample src="examples/docs/picking-a-method/03-test-fixture-materialize" />
 
 ### Lenient partial construction
 
-<<< ../examples/docs/picking-a-method/04-partial-materialize.ts
+<RunnableExample src="examples/docs/picking-a-method/04-partial-materialize" />
 
 ### Logging / analytics (no throw needed)
 
-<<< ../examples/docs/picking-a-method/05-validate-no-throw.ts
+<RunnableExample src="examples/docs/picking-a-method/05-validate-no-throw" />
 
 ## When to use `is`
 
 `is` is a TypeScript type guard. Use it when you need to narrow a union type or check
 unknown input without triggering a throw:
 
-<<< ../examples/docs/picking-a-method/06-is-type-guard.ts
+<RunnableExample src="examples/docs/picking-a-method/06-is-type-guard" />
 
 ## Related
 

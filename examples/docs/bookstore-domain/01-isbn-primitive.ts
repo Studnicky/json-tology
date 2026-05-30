@@ -19,3 +19,10 @@ console.assert(isbnId === 'urn:bookstore:Isbn');
 console.assert(isbnType === 'string');
 // Pattern enforces ISBN-13 format: exactly 13 decimal digits.
 console.assert(isbnPattern === '^\\d{13}$');
+
+console.log('IsbnSchema.$id      :', isbnId);
+console.log('IsbnSchema.type     :', isbnType);
+console.log('IsbnSchema.pattern  :', isbnPattern);
+// A named primitive is a single schema constant that every entity references
+// via { $ref: IsbnSchema.$id } — never a repeated inline shape.
+console.log('single source of truth: $ref targets this $id');

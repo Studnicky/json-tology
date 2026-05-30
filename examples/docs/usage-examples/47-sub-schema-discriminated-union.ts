@@ -80,3 +80,16 @@ const errs = jt2.validate(OrderWithPaymentSchema.$id, {
 });
 
 console.assert(errs.length === 0);
+// 0 — variant selected by discriminator
+console.log('credit_card payment errors:', errs.length);
+
+const invoiceErrs = jt2.validate(OrderWithPaymentSchema.$id, {
+  ...aboxFixtures.order,
+  'payment': {
+    'method': 'invoice',
+    'purchaseOrder': 'PO-2026-001'
+  }
+});
+
+// 0 — other variant also valid
+console.log('invoice payment errors:', invoiceErrs.length);

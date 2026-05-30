@@ -22,9 +22,11 @@ if (bookstoreEntities.is(OrderSchema.$id, incoming)) {
   const order: Order = incoming;
 
   console.assert(order.orderId === aboxFixtures.order.orderId);
+  console.log('is(Order) → true | orderId:', order.orderId);
 }
 
 // Invalid shape — is returns false.
 const notAnOrder: unknown = { 'customerId': 'foo' };
 
 console.assert(!bookstoreEntities.is(OrderSchema.$id, notAnOrder));
+console.log('is(Order) on bare {customerId} →', bookstoreEntities.is(OrderSchema.$id, notAnOrder));

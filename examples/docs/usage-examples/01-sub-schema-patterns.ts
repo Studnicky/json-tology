@@ -18,8 +18,9 @@ import {
 const okErrs = bookstoreEntities.validate(CustomerSchema.$id, aboxFixtures.customer);
 
 console.assert(okErrs.length === 0);
-
+// 0 — valid fixture passes
 // A malformed email surfaces a `format` error at the parent slot path.
+console.log('validate ok errors:', okErrs.length);
 const badErrs = [...bookstoreEntities.validate(CustomerSchema.$id, {
   ...aboxFixtures.customer,
   'email': 'not-an-email'
@@ -30,8 +31,9 @@ const formatErr = badErrs.find((err) => {
 });
 
 console.assert(formatErr !== undefined);
-
+// /email — reached through $ref
 // 2. Defaults from $ref'd primitives flow through instantiate.
+console.log('format error path:', formatErr?.path);
 const created = bookstoreEntities.instantiate(CustomerSchema.$id, {
   'customerId': aboxFixtures.customer.customerId,
   'email': aboxFixtures.customer.email,
@@ -40,10 +42,13 @@ const created = bookstoreEntities.instantiate(CustomerSchema.$id, {
 });
 
 console.assert(Array.isArray(created.addresses) && created.addresses.length === 0);
-
+// [] — default filled via $ref
 // 3. Dump round-trips through the same $ref graph. instantiate first to
+console.log('addresses default:', created.addresses);
 // obtain the branded value dump's typed overload expects.
 const customer = bookstoreEntities.instantiate(CustomerSchema.$id, aboxFixtures.customer);
 const wire = bookstoreEntities.dump(CustomerSchema.$id, customer);
 
 console.assert(typeof wire === 'object' && wire !== null);
+// round-tripped through $ref graph
+console.log('dump email:', (wire as { 'email': string }).email);

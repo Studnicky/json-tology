@@ -20,6 +20,8 @@ import {
 const errs = bookstoreEntities.validate(RareBookSchema.$id, aboxFixtures.rareBook);
 
 console.assert(errs.length === 0);
+// 0 — sole-author first edition passes restrictions
+console.log('validation errors:', errs.length);
 
 // The TBox carries two anonymous owl:Restriction blank nodes referenced
 // via rdfs:subClassOf, one per restriction.
@@ -30,3 +32,7 @@ const rareNode = graphNodes.find((node) => {
 });
 
 console.assert(rareNode !== undefined);
+// urn:bookstore:RareBook
+console.log('RareBook $id:', RareBookSchema.$id);
+// true — restrictions emitted
+console.log('TBox node found:', rareNode !== undefined);

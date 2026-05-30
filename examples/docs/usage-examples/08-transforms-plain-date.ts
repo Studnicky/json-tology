@@ -81,7 +81,13 @@ if (!(decoded instanceof PlainDate)) {
 console.assert(decoded.year === 1979);
 console.assert(decoded.month === 9);
 console.assert(decoded.day === 1);
+// '1979-09-01'
+console.log('wire:', wire);
+// 1979 9 1 — no time zone
+console.log('PlainDate:', decoded.year, decoded.month, decoded.day);
 
 const reEncoded = jt.encode(ReleaseDateTransform, decoded);
 
 console.assert(reEncoded === wire);
+// '1979-09-01' — toString() on encode
+console.log('re-encoded:', reEncoded);

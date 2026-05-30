@@ -18,6 +18,7 @@ import {
 const errors = bookstoreEntities.validate(OrderSchema.$id, aboxFixtures.order);
 
 console.assert(errors.length === 0);
+console.log('valid order → error count:', errors.length);
 
 // Invalid order — missing required `orderId`.
 const invalid = {
@@ -31,3 +32,4 @@ const invalidErrors = bookstoreEntities.validate(OrderSchema.$id, invalid);
 
 // `orderId` is required — at least one error reported.
 console.assert(invalidErrors.length > 0);
+console.log('missing orderId → error count:', invalidErrors.length, '| first keyword:', invalidErrors.items[0]?.keyword);

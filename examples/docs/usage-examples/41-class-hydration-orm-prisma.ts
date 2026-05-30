@@ -56,3 +56,7 @@ const order = jt.instantiate(
 
 console.assert(order instanceof PrismaOrder);
 console.assert((order as PrismaOrder).orderId === aboxFixtures.order.orderId);
+// true
+console.log('instanceof PrismaOrder:', order instanceof PrismaOrder);
+// same UUID as fixture
+console.log('orderId:', (order as PrismaOrder).orderId);

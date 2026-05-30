@@ -12,7 +12,7 @@ The bookstore domain in the [Bookstore Domain](/bookstore-domain) is the running
 
 Pass a `formats` map to `JsonTology.create`. Keys are format names; values are predicates.
 
-<<< ../../examples/docs/usage-examples/36-custom-formats-define.ts
+<RunnableExample src="examples/docs/usage-examples/36-custom-formats-define" />
 
 `isIsbn10` and `isSlug` accept `unknown` because `FormatRegistry` calls them with the raw value. Always check the type before doing format-specific work - the same validator can be reached for non-string fields if a schema misuses the format.
 
@@ -20,19 +20,19 @@ Pass a `formats` map to `JsonTology.create`. Keys are format names; values are p
 
 The standard `BookSchema` declares ISBN with a 13-digit pattern. Swap the pattern for the new format on a refined schema and reuse the rest of the bookstore registration:
 
-<<< ../../examples/docs/usage-examples/37-custom-formats-compose.ts
+<RunnableExample src="examples/docs/usage-examples/37-custom-formats-compose" />
 
 ## Replacing a built-in format
 
 Built-ins live under the same names (`date`, `email`, `uuid`, ...). Registering a custom validator under one of those names replaces the built-in for this `JsonTology` instance only. Other instances retain the built-ins.
 
-<<< ../../examples/docs/usage-examples/38-custom-formats-override-builtin.ts
+<RunnableExample src="examples/docs/usage-examples/38-custom-formats-override-builtin" />
 
 ## Number formats
 
 The `formats` map handles number formats too. The validator receives the number.
 
-<<< ../../examples/docs/usage-examples/39-custom-formats-number.ts
+<RunnableExample src="examples/docs/usage-examples/39-custom-formats-number" />
 
 ## Related
 

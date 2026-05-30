@@ -17,6 +17,8 @@ import {
 const okErrs = bookstoreEntities.validate(OrderSchema.$id, aboxFixtures.order);
 
 console.assert(okErrs.length === 0);
+// 0 — ISO 8601 format satisfied via $ref
+console.log('valid order errors:', okErrs.length);
 
 const badErrs = [...bookstoreEntities.validate(OrderSchema.$id, {
   ...aboxFixtures.order,
@@ -28,3 +30,7 @@ const formatErr = badErrs.find((err) => {
 });
 
 console.assert(formatErr !== undefined);
+// 'format' — sub-schema constraint reached
+console.log('format error keyword:', formatErr?.keyword);
+// '/placedAt' — slot in parent schema
+console.log('format error path:', formatErr?.path);

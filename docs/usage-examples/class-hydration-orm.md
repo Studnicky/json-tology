@@ -12,7 +12,7 @@ Recipes for hydrating into ORM entity classes (TypeORM, Prisma, Sequelize, etc.)
 
 ### TypeORM `@Entity()`
 
-<<< ../../examples/docs/usage-examples/40-class-hydration-orm-typeorm.ts
+<RunnableExample src="examples/docs/usage-examples/40-class-hydration-orm-typeorm" />
 
 TypeORM entity classes have parameterless constructors by design, so `Reflect.construct` is the right strategy. The hydrated value is a fully-decorated entity that the repository will persist.
 
@@ -20,7 +20,7 @@ TypeORM entity classes have parameterless constructors by design, so `Reflect.co
 
 `prisma generate` emits TypeScript classes with the same field shape as the database row. Treat them exactly like TypeORM entities:
 
-<<< ../../examples/docs/usage-examples/41-class-hydration-orm-prisma.ts
+<RunnableExample src="examples/docs/usage-examples/41-class-hydration-orm-prisma" />
 
 If the generated class is a type rather than a runtime value (some Prisma configurations), define your own thin class with the same shape and methods, and use it as the decode target.
 
@@ -30,13 +30,13 @@ Same pattern. Mikro-ORM `@Entity` and Drizzle's `InferModel`-derived classes bot
 
 ### DDD value object
 
-<<< ../../examples/docs/usage-examples/42-class-hydration-orm-ddd-money.ts
+<RunnableExample src="examples/docs/usage-examples/42-class-hydration-orm-ddd-money" />
 
 `fromPlain` is the right strategy here because `Money`'s constructor enforces invariants. Bypassing it via prototype swap would silently allow negative amounts.
 
 ### Active Record
 
-<<< ../../examples/docs/usage-examples/43-class-hydration-orm-active-record.ts
+<RunnableExample src="examples/docs/usage-examples/43-class-hydration-orm-active-record" />
 
 Whatever flows out of `instantiate` is ready to call `.save()`, `.delete()`, or any other instance method. There is no separate "hydrate" step in the call site.
 

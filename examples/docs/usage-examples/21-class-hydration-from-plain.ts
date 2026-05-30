@@ -86,3 +86,9 @@ const hydrated = jt.instantiate(FromPlainOrderTransform, aboxFixtures.order);
 console.assert(hydrated instanceof OrderViaFromPlain);
 console.assert(hydrated.orderId === aboxFixtures.order.orderId);
 console.assert(hydrated.customerId === aboxFixtures.order.customerId);
+// true
+console.log('instanceof:', hydrated instanceof OrderViaFromPlain);
+// same orderId as fixture
+console.log('orderId:', hydrated.orderId);
+// true
+console.log('round-trip:', hydrated.toPlain().orderId === aboxFixtures.order.orderId);

@@ -59,3 +59,7 @@ const profile = jt2.instantiate(ProfileSchema.$id, {
 
 console.assert(profile.preferences.locale === 'en-US');
 console.assert(profile.preferences.notifications);
+// 'en-US' — filled via $ref
+console.log('locale default:', profile.preferences.locale);
+// true — filled via $ref
+console.log('notifications default:', profile.preferences.notifications);

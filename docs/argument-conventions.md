@@ -76,7 +76,7 @@ Each options bag has a canonical interface declared in `src/interfaces/`. They a
 
 Every method that accepts a schema reference accepts **both** a string ID and a schema object:
 
-<<< ../examples/docs/argument-conventions/02-universal-schema-ref.ts
+<RunnableExample src="examples/docs/argument-conventions/02-universal-schema-ref" />
 
 Resolution rule: if a string, look up in the registry; if an object with `$id`, register it (idempotent) then run against it.
 
@@ -86,7 +86,7 @@ The static facade methods (`JsonTology.dump`, `JsonTology.fromQuads`, `JsonTolog
 
 Every instance method has a static counterpart on `JsonTology` that creates an ephemeral registry, registers the schema, runs the operation, and returns. No shared state. No setup required.
 
-<<< ../examples/docs/argument-conventions/03-static-counterparts.ts
+<RunnableExample src="examples/docs/argument-conventions/03-static-counterparts" />
 
 Available static methods:
 
@@ -121,7 +121,7 @@ The `Compose.*` helpers mint new schemas from existing ones. All positional argu
 `subschemaAt` resolves a JSON Pointer within a parent schema and returns the sub-schema as
 a registerable schema object. The result can be passed directly to any of the four core methods:
 
-<<< ../examples/docs/argument-conventions/04-subschema-at.ts
+<RunnableExample src="examples/docs/argument-conventions/04-subschema-at" />
 
 The returned schema has a synthesized `$id` of the form `<parent.$id>#<pointer>` and is
 automatically registered in the calling registry so subsequent operations work directly.

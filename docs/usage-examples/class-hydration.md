@@ -8,7 +8,7 @@ All examples use the [bookstore domain](/bookstore-domain). For the underlying A
 
 ## The pattern in one block
 
-<<< ../../examples/docs/usage-examples/02-class-hydration.ts
+<RunnableExample src="examples/docs/usage-examples/02-class-hydration" />
 
 That is the whole pattern. The remainder of this page is variations, tradeoffs, and recipes for real frameworks.
 
@@ -32,7 +32,7 @@ There are three idiomatic ways to turn a validated plain object into a class ins
 
 ### `Object.assign(Reflect.construct(Order, []), plain)`
 
-<<< ../../examples/docs/usage-examples/19-class-hydration-reflect-construct.ts
+<RunnableExample src="examples/docs/usage-examples/19-class-hydration-reflect-construct" />
 
 **When to use.** Default for most cases. Works whether or not the constructor takes arguments, because `Reflect.construct(Order, [])` calls it with `[]`.
 
@@ -40,7 +40,7 @@ There are three idiomatic ways to turn a validated plain object into a class ins
 
 ### `Object.assign(new Order(), plain)`
 
-<<< ../../examples/docs/usage-examples/20-class-hydration-new-instance.ts
+<RunnableExample src="examples/docs/usage-examples/20-class-hydration-new-instance" />
 
 **When to use.** Same case as `Reflect.construct`, but the syntax is more familiar. Only valid when the constructor is parameterless or all parameters are optional.
 
@@ -48,7 +48,7 @@ There are three idiomatic ways to turn a validated plain object into a class ins
 
 ### `Order.fromPlain(plain)`
 
-<<< ../../examples/docs/usage-examples/21-class-hydration-from-plain.ts
+<RunnableExample src="examples/docs/usage-examples/21-class-hydration-from-plain" />
 
 **When to use.** Recommended for classes with `#privateFields`, non-trivial constructors, derived state, or invariants the class needs to enforce on construction.
 
@@ -56,7 +56,7 @@ There are three idiomatic ways to turn a validated plain object into a class ins
 
 ### `Object.setPrototypeOf(plain, Order.prototype)`
 
-<<< ../../examples/docs/usage-examples/22-class-hydration-set-prototype.ts
+<RunnableExample src="examples/docs/usage-examples/22-class-hydration-set-prototype" />
 
 **When to use.** Hot paths where allocation is the bottleneck. Skips the constructor entirely; reuses the validated object as the instance backing store.
 
@@ -70,19 +70,19 @@ There are three idiomatic ways to turn a validated plain object into a class ins
 
 ### Filter methods automatically
 
-<<< ../../examples/docs/usage-examples/23-class-hydration-encode-filter.ts
+<RunnableExample src="examples/docs/usage-examples/23-class-hydration-encode-filter" />
 
 This is the default in the headline example. It works because prototype methods are not enumerable own-properties: `Object.entries(instance)` only sees the data assigned by `decode`, so the filter does its real work when the class assigns methods as instance fields (`this.foo = () => ...`).
 
 ### `instance.toJSON()`
 
-<<< ../../examples/docs/usage-examples/24-class-hydration-encode-tojson.ts
+<RunnableExample src="examples/docs/usage-examples/24-class-hydration-encode-tojson" />
 
 **When to use.** The class already defines `toJSON` for `JSON.stringify` integration. Reusing it as the encode body keeps one source of truth for serialization shape.
 
 ### Explicit `instance.toPlain()`
 
-<<< ../../examples/docs/usage-examples/25-class-hydration-encode-toplain.ts
+<RunnableExample src="examples/docs/usage-examples/25-class-hydration-encode-toplain" />
 
 **When to use.** The class needs to omit derived fields, hide private state, or apply transforms before serialization. `toPlain` is also a useful convention when the class's `toJSON` is reserved for a different output format (e.g. an external API representation).
 
@@ -108,7 +108,7 @@ For TypeORM, Prisma, and Sequelize patterns, see [Class hydration: ORM recipes](
 
 When one class-attached schema `$ref`s another class-attached schema, the registry walks references and applies each schema's decoder bottom-up.
 
-<<< ../../examples/docs/usage-examples/27-class-hydration-nested.ts
+<RunnableExample src="examples/docs/usage-examples/27-class-hydration-nested" />
 
 When `jt.instantiate(OrderSchema.$id, raw)` runs, the registry first decodes `raw.buyer` through `CustomerSchema`'s decoder (producing a `Customer` instance), then runs `OrderSchema`'s decoder over the now-mixed plain-object/`Customer` payload. The result: `order.buyer` is a `Customer` and `order` is an `Order`. `order.buyer.greet()` is callable directly.
 

@@ -52,6 +52,10 @@ const wire = `$${wireAmount.toFixed(2)}`;
 const parsed = jt.instantiate(FormattedPriceTransform, wire);
 
 console.assert(parsed === wireAmount);
+// e.g. '$850.00'
+console.log('wire string:', wire);
+// 850 — stage 1 strips '$', stage 2 parses
+console.log('parsed number:', parsed);
 
 const reEncoded = jt.encode(FormattedPriceTransform, wireAmount);
 
@@ -59,3 +63,5 @@ const reEncoded = jt.encode(FormattedPriceTransform, wireAmount);
 // numerically faithful, formatting-wise lossy (no thousand-separator
 // re-insertion on the way out).
 console.assert(reEncoded === `$${wireAmount.toFixed(2)}`);
+// '$850.00' — encoders run right-to-left
+console.log('re-encoded:', reEncoded);

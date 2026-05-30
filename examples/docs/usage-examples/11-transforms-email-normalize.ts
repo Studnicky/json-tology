@@ -45,7 +45,13 @@ const wire = `  ${aboxFixtures.customer.email.toUpperCase()}  `;
 const decoded = jt.instantiate(NormalizedEmailTransform, wire);
 
 console.assert(decoded === aboxFixtures.customer.email);
+// uppercased with surrounding spaces
+console.log('wire (dirty):', wire.trim());
+// lowercase, trimmed
+console.log('decoded (canonical):', decoded);
 
 const reEncoded = jt.encode(NormalizedEmailTransform, aboxFixtures.customer.email);
 
 console.assert(reEncoded === aboxFixtures.customer.email);
+// true — encoder preserves canonical form
+console.log('encode is identity:', reEncoded === decoded);

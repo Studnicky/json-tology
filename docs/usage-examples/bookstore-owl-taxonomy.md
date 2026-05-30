@@ -40,7 +40,7 @@ Each `entities/*.ts` file is the single source of truth for one schema.
 - You want every field to become optional - use [`Compose.partial`](/composition/partial-required).
 - You only want a structural alias (no parent-child semantic) - use [`Compose.equivalent`](/composition/equivalent).
 
-<<< ../../examples/docs/usage-examples/28-bookstore-ebook-subclass.ts
+<RunnableExample src="examples/docs/usage-examples/28-bookstore-ebook-subclass" />
 
 → See: [`Compose.subClassOf` reference](/composition/sub-class-of) · [`Compose.extend`](/composition/extend) (property-merge alternative) · [Graph concepts (TBox / ABox)](/advanced/graph-concepts)
 
@@ -55,7 +55,7 @@ Each `entities/*.ts` file is the single source of truth for one schema.
 - The two classes overlap intentionally - use plain `Compose.subClassOf` for both without `disjointWith`.
 - You want one class to be the negation of another - use [`Compose.complementOf`](/composition/sub-class-of) instead.
 
-<<< ../../examples/docs/usage-examples/29-bookstore-printbook-disjoint.ts
+<RunnableExample src="examples/docs/usage-examples/29-bookstore-printbook-disjoint" />
 
 → See: [`Compose.disjointWith` reference](/composition/sub-class-of) · [Graph concepts (TBox / ABox)](/advanced/graph-concepts)
 
@@ -71,7 +71,7 @@ Each `entities/*.ts` file is the single source of truth for one schema.
 - You only want to enforce array length at validation time - JSON Schema's native `minItems` / `maxItems` already cover that. Restrictions are for TBox semantic content that reasoners read.
 - You want to require *every* value to satisfy a class - use [`Compose.allValuesFrom`](/composition/restrictions) (see `AnthologyBook` below).
 
-<<< ../../examples/docs/usage-examples/30-bookstore-rarebook-restrictions.ts
+<RunnableExample src="examples/docs/usage-examples/30-bookstore-rarebook-restrictions" />
 
 → See: [OWL class restrictions](/composition/restrictions) · [`Compose.subClassOf` reference](/composition/sub-class-of) · [Graph concepts (TBox / ABox)](/advanced/graph-concepts)
 
@@ -87,7 +87,7 @@ Each `entities/*.ts` file is the single source of truth for one schema.
 - The constraint *is* structural: use `minItems`/`maxItems` on the array directly.
 - The constraint is fixing a property to a literal value: use `Compose.hasValue` (an OWL class axiom).
 
-<<< ../../examples/docs/usage-examples/31-bookstore-signed-first-edition-invariant.ts
+<RunnableExample src="examples/docs/usage-examples/31-bookstore-signed-first-edition-invariant" />
 
 The pair encodes the full domain rule: the OWL TBox sees a clean `rdfs:subClassOf RareBook` triple, and `validate()` rejects any candidate `SignedFirstEdition` that fails the cross-field check.
 
@@ -106,7 +106,7 @@ The pair encodes the full domain rule: the OWL TBox sees a clean `rdfs:subClassO
 - The fixed value is a class instance - use `Compose.someValuesFrom` or `Compose.allValuesFrom` (those work with class IRIs, not literals).
 - The constraint should only apply at runtime - JSON Schema's native `const` keyword is simpler.
 
-<<< ../../examples/docs/usage-examples/32-bookstore-inprint-hasvalue.ts
+<RunnableExample src="examples/docs/usage-examples/32-bookstore-inprint-hasvalue" />
 
 → See: [OWL class restrictions](/composition/restrictions) · [`Compose.subClassOf` reference](/composition/sub-class-of)
 
@@ -121,7 +121,7 @@ The pair encodes the full domain rule: the OWL TBox sees a clean `rdfs:subClassO
 - You want the unbounded OWL complement (every non-X in the universe). Pass the body without `allOf` and document the open-world semantic clearly.
 - You want a runtime "not these specific values" check - JSON Schema's `not` at the top level (without OWL annotations) is simpler.
 
-<<< ../../examples/docs/usage-examples/33-bookstore-outofprint-complement.ts
+<RunnableExample src="examples/docs/usage-examples/33-bookstore-outofprint-complement" />
 
 The body's `allOf: [{ $ref: Book }]` is what bounds the OWL complement to the Book universe. Without it, OWL's open-world `complementOf` would match anything that is not an `InPrintBook`: including non-books - which is the right OWL semantic but rarely what authors want.
 
@@ -143,11 +143,11 @@ All the schemas above are TBox declarations: they describe *kinds of thing*. `sa
 - You want class-level identity (two *classes* that have the same instances): use [`Compose.equivalent`](/composition/equivalent) instead. `sameAs` is for individuals, not classes.
 - You want to express "these two records *should* be merged" as a workflow step. `sameAs` is an OWL *assertion* that they already refer to one entity; downstream reasoners will treat their property values as belonging to a single individual.
 
-<<< ../../examples/docs/usage-examples/34-bookstore-sameas-identity.ts
+<RunnableExample src="examples/docs/usage-examples/34-bookstore-sameas-identity" />
 
 The order Bastian placed, the customer record, the rare-book metadata, and their later review are all defined as runtime values on the `aboxFixtures` export. `instantiate()` and `toQuads()` accept those fixtures directly so the same scenario can be used end-to-end across docs pages and integration tests.
 
-<<< ../../examples/docs/usage-examples/35-bookstore-abox-fixtures.ts
+<RunnableExample src="examples/docs/usage-examples/35-bookstore-abox-fixtures" />
 
 → See: [`sameAs` (ABox identity) reference](/advanced/sameas) · [`Compose.equivalent`](/composition/equivalent) (the class-level counterpart) · [Graph concepts (TBox / ABox)](/advanced/graph-concepts)
 

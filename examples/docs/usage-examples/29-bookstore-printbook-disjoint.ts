@@ -20,6 +20,8 @@ import {
 const errs = bookstoreEntities.validate(PrintBookSchema.$id, aboxFixtures.rareBook);
 
 console.assert(errs.length === 0);
+// 0 — rare book passes PrintBook constraints
+console.log('validation errors:', errs.length);
 
 // The TBox emits `urn:bookstore:PrintBook owl:disjointWith
 // urn:bookstore:EBook`. Verify via the OWL JSON-LD projection.
@@ -37,3 +39,5 @@ if (disjointWith === undefined) {
 }
 
 console.assert(disjointWith['@id'] === 'urn:bookstore:EBook');
+// 'urn:bookstore:EBook' — physical XOR digital
+console.log('disjointWith:', disjointWith['@id']);

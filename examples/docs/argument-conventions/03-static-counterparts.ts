@@ -22,6 +22,7 @@ import {
 const errs = bookstoreEntities.validate(CustomerSchema.$id, aboxFixtures.customer);
 
 console.assert(errs.length === 0);
+console.log('instance validate → errors:', errs.length);
 
 // Static (one-shot) form — builds an ephemeral registry, registers the
 // supplied schema, runs the operation, then discards the registry.
@@ -30,11 +31,13 @@ console.assert(errs.length === 0);
 const isbnErrs = JsonTology.validate(IsbnSchema, aboxFixtures.rareBook.isbn);
 
 console.assert(isbnErrs.length === 0);
+console.log('static validate isbn →', aboxFixtures.rareBook.isbn, '| errors:', isbnErrs.length);
 
 // One-shot instantiate — same pattern: self-contained schema only.
 const isbn = JsonTology.instantiate(IsbnSchema, aboxFixtures.rareBook.isbn);
 
 console.assert(isbn === aboxFixtures.rareBook.isbn);
+console.log('static instantiate isbn →', isbn);
 
 // One-shot toTbox — ontology from multiple schemas, no registry.
 // The returned builder object is always defined; calling .jsonLd() on it
@@ -44,4 +47,6 @@ const tbox = JsonTology.toTbox([
   OrderSchema
 ]);
 
-void tbox;
+const tboxJson = tbox.jsonLd();
+
+console.log('static toTbox serialized length:', tboxJson.length, 'chars');

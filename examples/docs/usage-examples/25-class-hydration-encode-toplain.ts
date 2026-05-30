@@ -91,3 +91,9 @@ const wire = bookstoreEntities.encode(ToPlainOrderTransform, hydrated) as Record
 console.assert(wire.orderId === aboxFixtures.order.orderId);
 // internalCacheKey is deliberately omitted from the wire shape.
 console.assert(!('internalCacheKey' in wire));
+// true — # field lives in the instance
+console.log('cacheTouched:', hydrated.cacheTouched());
+// present — toPlain() includes it
+console.log('wire orderId:', wire.orderId);
+// false — omitted by toPlain()
+console.log('wire has private key?', 'internalCacheKey' in wire);

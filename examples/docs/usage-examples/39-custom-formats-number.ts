@@ -35,3 +35,9 @@ const jt = JsonTology.create({
 console.assert(jt.validate(PositiveCountSchema.$id, 1).length === 0);
 console.assert(jt.validate(PositiveCountSchema.$id, 0).length > 0);
 console.assert(jt.validate(PositiveCountSchema.$id, -3).length > 0);
+// 0
+console.log('quantity 1 errors:', jt.validate(PositiveCountSchema.$id, 1).length);
+// > 0 — not positive
+console.log('quantity 0 errors:', jt.validate(PositiveCountSchema.$id, 0).length);
+// > 0 — negative
+console.log('quantity -3 errors:', jt.validate(PositiveCountSchema.$id, -3).length);

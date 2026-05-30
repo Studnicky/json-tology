@@ -27,3 +27,7 @@ console.assert(errs.length === 0);
 const customerName: string = aboxFixtures.customer.name;
 
 console.assert(customerName === 'Bastian Balthazar Bux');
+
+console.log('shared registry size:', bookstoreEntities.registry.size);
+console.log('customer validates against shared CustomerSchema, errors:', errs.length);
+console.log('shared fixture name:', customerName);

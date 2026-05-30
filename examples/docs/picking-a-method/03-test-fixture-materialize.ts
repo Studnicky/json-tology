@@ -22,3 +22,4 @@ import {
 const order = bookstoreEntities.materialize(OrderSchema, { ...aboxFixtures.order }) as Order;
 
 console.assert(order.customerId === aboxFixtures.order.customerId);
+console.log('materialize succeeded → orderId:', order.orderId, '| customerId:', order.customerId);

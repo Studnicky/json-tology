@@ -82,9 +82,15 @@ const hydrated = jt.instantiate(
 
 console.assert(hydrated instanceof OrderRecord);
 console.assert(hydrated.totalWithTax() > aboxFixtures.order.orderTotal.amount);
+// true
+console.log('instanceof OrderRecord:', hydrated instanceof OrderRecord);
+// amount * 1.19
+console.log('totalWithTax (19%):', hydrated.totalWithTax());
 
 // Encoder round-trips back to wire shape.
 const wire = bookstoreEntities.encode(OrderRecordTransform, hydrated) as Record<string, unknown>;
 
 console.assert(typeof wire.orderId === 'string');
 console.assert(Array.isArray(wire.orderLines));
+// same UUID as fixture
+console.log('re-encoded orderId:', wire.orderId);

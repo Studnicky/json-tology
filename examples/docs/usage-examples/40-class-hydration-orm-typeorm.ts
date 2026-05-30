@@ -66,3 +66,9 @@ const entity = jt.instantiate(
 entity.markShipped();
 console.assert(entity.status === 'shipped');
 console.assert(entity instanceof OrderEntity);
+// true
+console.log('instanceof OrderEntity:', entity instanceof OrderEntity);
+// 'shipped'
+console.log('status after markShipped():', entity.status);
+// hydrated from fixture
+console.log('orderId:', entity.orderId);

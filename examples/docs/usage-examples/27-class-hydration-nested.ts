@@ -93,3 +93,9 @@ const hydrated = jt.instantiate(NestedOrderTransform, wire);
 console.assert(hydrated instanceof OrderWithBuyer);
 console.assert(hydrated.buyer instanceof CustomerRecord);
 console.assert(hydrated.buyer.greet() === `hello ${aboxFixtures.customer.name}`);
+// true
+console.log('OrderWithBuyer instanceof:', hydrated instanceof OrderWithBuyer);
+// true — inner decoder ran first
+console.log('buyer instanceof CustomerRecord:', hydrated.buyer instanceof CustomerRecord);
+// 'hello Bastian Balthazar Bux'
+console.log('buyer.greet():', hydrated.buyer.greet());

@@ -46,7 +46,13 @@ if (!(decoded instanceof Date)) {
 }
 
 console.assert(decoded.getUTCFullYear() === 2026);
+// epoch ms for the order timestamp
+console.log('wire ms:', wireMs);
+// same instant as placedAt
+console.log('decoded ISO:', decoded.toISOString());
 
 const reEncoded = jt.encode(TimestampTransform, decoded);
 
 console.assert(reEncoded === wireMs);
+// true — lossless
+console.log('round-trip equal:', reEncoded === wireMs);

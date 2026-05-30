@@ -65,7 +65,7 @@ Examples: `urn:bookstore:Isbn`, `urn:bookstore:Customer`, `urn:bookstore:Order`.
 
 ### Isbn
 
-<<< ../examples/docs/bookstore-domain/01-isbn-primitive.ts
+<RunnableExample src="examples/docs/bookstore-domain/01-isbn-primitive" />
 
 ### CustomerId
 
@@ -103,13 +103,13 @@ Examples: `urn:bookstore:Isbn`, `urn:bookstore:Customer`, `urn:bookstore:Order`.
 
 ### Review
 
-<<< ../examples/docs/bookstore-domain/02-review-schema.ts
+<RunnableExample src="examples/docs/bookstore-domain/02-review-schema" />
 
 ## Registering everything at once
 
 The orchestrator `examples/docs/bookstore/index.ts` creates the shared `jt` instance with all 31 schemas pre-registered. Primitives register first (required by `$ref` resolution):
 
-<<< ../examples/docs/bookstore-domain/03-registry-orchestrator.ts
+<RunnableExample src="examples/docs/bookstore-domain/03-registry-orchestrator" />
 
 `as const` is required so TypeScript preserves the literal types needed for `InferType<T>` inference.
 
@@ -121,11 +121,11 @@ The bookstore domain extends to an OWL-style class hierarchy with subClassOf and
 
 All subsequent guide pages import from the shared orchestrator:
 
-<<< ../examples/docs/bookstore-domain/04-import-from-orchestrator.ts
+<RunnableExample src="examples/docs/bookstore-domain/04-import-from-orchestrator" />
 
 Or import directly from the specific entity file when only one is needed:
 
-<<< ../examples/docs/bookstore-domain/05-import-direct-entity.ts
+<RunnableExample src="examples/docs/bookstore-domain/05-import-direct-entity" />
 
 ## What comes next
 

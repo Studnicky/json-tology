@@ -45,7 +45,13 @@ if (!(decoded instanceof URL)) {
 }
 
 console.assert(decoded.pathname.endsWith(aboxFixtures.rareBook.isbn));
+// 'bookstore.example'
+console.log('decoded hostname:', decoded.hostname);
+// '/catalogue/<isbn>'
+console.log('decoded pathname:', decoded.pathname);
 
 const reEncoded = jt.encode(HrefTransform, decoded);
 
 console.assert(reEncoded === wire);
+// true — URL.toString() is the identity
+console.log('round-trip:', reEncoded === wire);

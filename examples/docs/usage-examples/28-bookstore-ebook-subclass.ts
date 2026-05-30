@@ -35,6 +35,8 @@ const ebook = {
 const ebookErrs = bookstoreEntities.validate(EBookSchema.$id, ebook);
 
 console.assert(ebookErrs.length === 0);
+// 0 — epub ebook passes EBook constraints
+console.log('validation errors:', ebookErrs.length);
 
 // The TBox emits `urn:bookstore:EBook rdfs:subClassOf urn:bookstore:Book`.
 // Materialize the OWL JSON-LD and verify the subClassOf assertion lives
@@ -52,5 +54,11 @@ const subClassOf = ebookNode?.[RDFS_SUB_CLASS_OF] as ReadonlyArray<{ readonly '@
 
 console.assert(Array.isArray(subClassOf));
 console.assert(subClassOf.some((ref) => {
+  return ref['@id'] === 'urn:bookstore:Book';
+}));
+// urn:bookstore:EBook
+console.log('EBook $id:', EBookSchema.$id);
+// true
+console.log('subClassOf Book:', subClassOf.some((ref) => {
   return ref['@id'] === 'urn:bookstore:Book';
 }));
