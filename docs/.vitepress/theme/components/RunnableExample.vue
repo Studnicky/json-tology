@@ -133,16 +133,6 @@ function onTab(event: KeyboardEvent): void {
     <strong>Unknown example:</strong> {{ id }}
   </div>
   <div v-else class="runnable">
-    <div class="runnable__bar">
-      <button type="button" class="runnable__run" :disabled="running" @click="run">
-        {{ running ? 'Running…' : '▶ Run' }}
-      </button>
-      <button v-if="edited" type="button" class="runnable__reset" @click="reset">
-        Reset
-      </button>
-      <span class="runnable__hint">Editable — change the code and run it.</span>
-    </div>
-
     <textarea
       v-model="code"
       class="runnable__editor"
@@ -154,16 +144,30 @@ function onTab(event: KeyboardEvent): void {
       @keydown.tab="onTab"
     />
 
-    <div v-if="hasRun" class="runnable__output">
-      <div class="runnable__output-label">Output</div>
-      <pre v-if="output.length === 0 && !errorText" class="runnable__empty">(no console output)</pre>
-      <pre
-        v-for="(line, index) in output"
-        :key="index"
-        class="runnable__line"
-        :class="`runnable__line--${line.stream}`"
-      >{{ line.text }}</pre>
-      <pre v-if="errorText" class="runnable__line runnable__line--error">{{ errorText }}</pre>
+    <div class="runnable__exec">
+      <div class="runnable__controls">
+        <button type="button" class="runnable__run" :disabled="running" @click="run">
+          {{ running ? 'Running…' : '▶ Execute' }}
+        </button>
+        <button v-if="edited" type="button" class="runnable__reset" @click="reset">
+          Reset
+        </button>
+      </div>
+
+      <div class="runnable__output" :class="{ 'runnable__output--error': errorText }">
+        <div class="runnable__output-label">Output</div>
+        <span v-if="!hasRun" class="runnable__placeholder">Press Execute to run this example against the real library.</span>
+        <span v-else-if="output.length === 0 && !errorText" class="runnable__placeholder">(no console output)</span>
+        <template v-else>
+          <pre
+            v-for="(line, index) in output"
+            :key="index"
+            class="runnable__line"
+            :class="`runnable__line--${line.stream}`"
+          >{{ line.text }}</pre>
+          <pre v-if="errorText" class="runnable__line runnable__line--error">{{ errorText }}</pre>
+        </template>
+      </div>
     </div>
   </div>
 </template>
@@ -183,13 +187,20 @@ function onTab(event: KeyboardEvent): void {
   padding: 0.75rem 1rem;
 }
 
-.runnable__bar {
+.runnable__exec {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid var(--vp-c-divider);
-  flex-wrap: wrap;
+  align-items: stretch;
+  border-top: 1px solid var(--vp-c-divider);
+}
+
+.runnable__controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.6rem 0.7rem;
+  border-right: 1px solid var(--vp-c-divider);
+  background: var(--vp-c-bg-soft);
+  flex: 0 0 auto;
 }
 
 .runnable__run {
@@ -207,19 +218,18 @@ function onTab(event: KeyboardEvent): void {
   cursor: not-allowed;
 }
 
+.runnable__run {
+  white-space: nowrap;
+}
+
 .runnable__reset {
   background: transparent;
   color: var(--vp-c-text-2);
   border: 1px solid var(--vp-c-divider);
   padding: 0.3rem 0.7rem;
   border-radius: 4px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   cursor: pointer;
-}
-
-.runnable__hint {
-  color: var(--vp-c-text-3, var(--vp-c-text-2));
-  font-size: 0.78rem;
 }
 
 .runnable__editor {
@@ -242,9 +252,20 @@ function onTab(event: KeyboardEvent): void {
 }
 
 .runnable__output {
-  border-top: 1px solid var(--vp-c-divider);
-  padding: 0.6rem 1rem 0.85rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0.6rem 1rem;
   background: var(--vp-c-bg);
+  overflow-x: auto;
+}
+.runnable__output--error {
+  background: var(--vp-c-danger-soft);
+}
+
+.runnable__placeholder {
+  color: var(--vp-c-text-3, var(--vp-c-text-2));
+  font-style: italic;
+  font-size: 0.82rem;
 }
 
 .runnable__output-label {
@@ -270,10 +291,15 @@ function onTab(event: KeyboardEvent): void {
 .runnable__line--error {
   color: var(--vp-c-danger-1);
 }
-.runnable__empty {
-  margin: 0;
-  color: var(--vp-c-text-3, var(--vp-c-text-2));
-  font-style: italic;
-  font-size: 0.82rem;
+
+@media (max-width: 640px) {
+  .runnable__exec {
+    flex-direction: column;
+  }
+  .runnable__controls {
+    flex-direction: row;
+    border-right: none;
+    border-bottom: 1px solid var(--vp-c-divider);
+  }
 }
 </style>
