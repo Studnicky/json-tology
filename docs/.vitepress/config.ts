@@ -158,7 +158,8 @@ const sidebar = [
       { link: '/advanced/quads', text: 'RDF round-trip (toQuads / fromQuads)' },
       { link: '/advanced/predicates', text: 'RDF predicates (canonical / custom)' },
       { link: '/advanced/sameas', text: 'sameAs (ABox identity)' },
-      { link: '/advanced/strict-graph-mode', text: 'Strict graph mode' }
+      { link: '/advanced/strict-graph-mode', text: 'Strict graph mode' },
+      { link: '/advanced/instance-graphs', text: 'Instance graphs (aboxGraph)' }
     ]
   },
   {

@@ -5,7 +5,9 @@ import {
   aboxFixtures,
   bookstoreEntities,
   CustomerSchema,
-  OrderSchema
+  OrderSchema,
+  RareBookSchema,
+  ReviewSchema
 } from '../../examples/docs/bookstore/index.js';
 import type { QuadInterface } from '../../src/interfaces/Quad.js';
 
@@ -169,4 +171,27 @@ void test('aboxGraph: schema cursors walk rdfs:domain / range / subClassOf', () 
   assert.ok(properties.some((predicate) => {
     return predicate.endsWith('customerId');
   }), 'Customer declares customerId');
+});
+
+void test('aboxGraph: a differently-named foreign key resolves via the shared identity range', () => {
+  const jt = bookstoreEntities;
+  const quads: QuadInterface[] = [
+    ...jt.toQuads(RareBookSchema, jt.instantiate(RareBookSchema, aboxFixtures.rareBook), { 'graphIRI': ABOX_GRAPH_IRI }),
+    ...jt.toQuads(ReviewSchema, jt.instantiate(ReviewSchema, aboxFixtures.review), { 'graphIRI': ABOX_GRAPH_IRI })
+  ];
+  const graph = jt.aboxGraph(quads);
+  const reviewIri = graph.instances(ReviewSchema.$id).iris()[0];
+
+  // Review.bookIsbn (range Isbn) resolves to the Book identified by its
+  // inverse-functional isbn (also range Isbn), despite the different key name —
+  // and the book is a RareBook (subclass), inheriting Book's identity.
+  const book = record(graph.resource(reviewIri).objects('bookIsbn')
+    .one());
+
+  assert.equal(book.isbn, record(aboxFixtures.review).bookIsbn);
+
+  const referrers = graph.resource(graph.instances(RareBookSchema.$id).iris()[0]).subjects('bookIsbn')
+    .iris();
+
+  assert.ok(referrers.includes(reviewIri), 'the Review references the Book via bookIsbn (inverse)');
 });

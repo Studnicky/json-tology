@@ -593,6 +593,40 @@ export function toCytoscapeElements(): CytoscapeElements {
   projectAboxFixtures(addNode, addEdge, markInstance);
 
   // ──────────────────────────────────────────────────────────────────────
+  // ABox foreign-key edges — resolved via the real association index, not a
+  // value heuristic. aboxGraph's inverse-functional identity index resolves a
+  // scalar foreign key to the entity it identifies: customerId → Customer (the
+  // shared identity predicate) and bookIsbn → Book (a differently-named key whose
+  // range, Isbn, backs Book's identity). For every instance and every property
+  // it carries, if the property resolves to a DIFFERENT existing instance node,
+  // emit an instanceProperty edge. Object-property edges already drawn by
+  // projectAboxFixtures are re-resolved here but deduped by addEdge; only the
+  // foreign keys (previously dangling literals) are genuinely new.
+  // ──────────────────────────────────────────────────────────────────────
+  const aboxQuads = aboxFixtureQuads();
+  const fkGraph = bookstoreEntities.aboxGraph(aboxQuads);
+  const instanceNodeIds = new Set<string>(
+    rawNodes
+      .filter((rawNode) => { return rawNode.data.kind === 'instance'; })
+      .map((rawNode) => { return rawNode.data.id; })
+  );
+  const propertyPredicateNames = new Set<string>(
+    aboxQuads
+      .filter((quad) => { return quad.predicate.value !== RDF_TYPE; })
+      .map((quad) => { return nodeLabel(quad.predicate.value); })
+  );
+
+  for (const instanceIri of instanceNodeIds) {
+    for (const predicateName of propertyPredicateNames) {
+      for (const targetIri of fkGraph.resource(instanceIri).objects(predicateName).iris()) {
+        if (targetIri !== instanceIri && instanceNodeIds.has(targetIri)) {
+          addEdge(instanceIri, targetIri, predicateName, 'instanceProperty');
+        }
+      }
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────────────────
   // Post-processing: assign layer, position, and definitionId to every node.
   // Layout is computed separately per layer using the fully-collected node
   // and edge sets, then applied to produce the final CytoscapeElements shape.

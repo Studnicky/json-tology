@@ -129,13 +129,12 @@ export class AboxGraph implements AboxGraphInterface {
     // declares it, so the TBox alone cannot tell which class the identity owns.
     this.indexIdentities(identities);
     this.indexAbox(aboxQuads);
-    this.indexEntityIdentities(aboxQuads);
+    // TBox before entity-identities: indexEntityIdentities is subclass-aware
+    // (a RareBook instance is identified by the inverse-functional `isbn` it
+    // inherits from Book), which needs the superclass index built first.
     this.indexTbox(tboxQuads);
+    this.indexEntityIdentities(aboxQuads);
   }
-
-  // ---------------------------------------------------------------------------
-  // Private helpers
-  // ---------------------------------------------------------------------------
 
   /**
    * Return a SchemaCursor seeded with the class IRI(s) that are the
@@ -152,6 +151,10 @@ export class AboxGraph implements AboxGraphInterface {
   public classProperties(classIri: string): string[] {
     return [...(this.predicatesOfClass.get(classIri) ?? [])];
   }
+
+  // ---------------------------------------------------------------------------
+  // Private helpers
+  // ---------------------------------------------------------------------------
 
   /**
    * Direct (or transitive) superclass IRIs of `classIri` via `rdfs:subClassOf`.
@@ -225,25 +228,73 @@ export class AboxGraph implements AboxGraphInterface {
   }
 
   /**
+   * Find the identity descriptor that governs an instance of the given
+   * `types` — matching an owning class directly OR a transitive superclass
+   * (so subclass-typed instances inherit their parent's inverse-functional
+   * identity, e.g. a `RareBook` is identified by `Book`'s `isbn`).
+   */
+  private findIdentityDescriptor(types: readonly string[]): AboxIdentityDescriptorType | undefined {
+    for (const type of types) {
+      const direct = this.identityOf.get(type);
+
+      if (direct !== undefined) {
+        return direct;
+      }
+
+      for (const superClass of this.classSuperclasses(type, true)) {
+        const inherited = this.identityOf.get(superClass);
+
+        if (inherited !== undefined) {
+          return inherited;
+        }
+      }
+    }
+
+    return undefined;
+  }
+
+  /**
+   * The identity-primitive range a literal under `predicateIri` resolves
+   * against: the predicate's own identity range if it is itself an identity
+   * predicate, else any declared `rdfs:range` of the predicate that backs an
+   * inverse-functional identity. This lets a foreign key (`bookIsbn`, range
+   * `Isbn`) resolve to the entity identified by a differently-named identity
+   * property of the same range (`Book.isbn`).
+   */
+  private foreignKeyRange(predicateIri: string): string | undefined {
+    const identityRange = this.identityPredicateRange.get(predicateIri);
+
+    if (identityRange !== undefined) {
+      return identityRange;
+    }
+
+    for (const range of this.rangeOfPredicate.get(predicateIri) ?? []) {
+      if (this.entityByIdentity.has(range)) {
+        return range;
+      }
+    }
+
+    return undefined;
+  }
+
+  /**
    * The identity literal value carried by `entityIri`, if it owns one. Used by
    * inverse FK navigation to find the literal that references this entity.
    */
   private identityValueOf(entityIri: string): string | undefined {
-    for (const type of this.typesOf(entityIri)) {
-      const descriptor = this.identityOf.get(type);
+    const descriptor = this.findIdentityDescriptor(this.typesOf(entityIri));
 
-      if (descriptor === undefined) {
-        continue;
-      }
+    if (descriptor === undefined) {
+      return undefined;
+    }
 
-      for (const quad of this.allQuads) {
-        if (
-          quad.subject.value === entityIri
-          && quad.predicate.value === descriptor.predicate
-          && quad.object.termType === 'Literal'
-        ) {
-          return quad.object.value;
-        }
+    for (const quad of this.allQuads) {
+      if (
+        quad.subject.value === entityIri
+        && quad.predicate.value === descriptor.predicate
+        && quad.object.termType === 'Literal'
+      ) {
+        return quad.object.value;
       }
     }
 
@@ -312,24 +363,22 @@ export class AboxGraph implements AboxGraphInterface {
       subjectIri,
       types
     ] of this.typeOf) {
-      for (const type of types) {
-        const descriptor = this.identityOf.get(type);
+      const descriptor = this.findIdentityDescriptor(types);
 
-        if (descriptor === undefined) {
-          continue;
-        }
+      if (descriptor === undefined) {
+        continue;
+      }
 
-        for (const quad of aboxQuads) {
-          if (
-            quad.subject.value === subjectIri
-            && quad.predicate.value === descriptor.predicate
-            && quad.object.termType === 'Literal'
-          ) {
-            const valueMap = this.entityByIdentity.get(descriptor.range) ?? new Map<string, string>();
+      for (const quad of aboxQuads) {
+        if (
+          quad.subject.value === subjectIri
+          && quad.predicate.value === descriptor.predicate
+          && quad.object.termType === 'Literal'
+        ) {
+          const valueMap = this.entityByIdentity.get(descriptor.range) ?? new Map<string, string>();
 
-            valueMap.set(quad.object.value, subjectIri);
-            this.entityByIdentity.set(descriptor.range, valueMap);
-          }
+          valueMap.set(quad.object.value, subjectIri);
+          this.entityByIdentity.set(descriptor.range, valueMap);
         }
       }
     }
@@ -484,7 +533,7 @@ export class AboxGraph implements AboxGraphInterface {
       return [];
     }
     const results: string[] = [];
-    const rangePrimitive = this.identityPredicateRange.get(predicateIri);
+    const rangePrimitive = this.foreignKeyRange(predicateIri);
 
     for (const entry of entries) {
       if (entry.predicate !== predicateIri) {
@@ -582,7 +631,7 @@ export class AboxGraph implements AboxGraphInterface {
 
     // Inverse foreign-key: find the identity value(s) that `objectIri` carries,
     // then every subject whose literal value for `predicateIri` matches.
-    const rangePrimitive = this.identityPredicateRange.get(predicateIri);
+    const rangePrimitive = this.foreignKeyRange(predicateIri);
 
     if (rangePrimitive !== undefined) {
       const identityValue = this.identityValueOf(objectIri);
