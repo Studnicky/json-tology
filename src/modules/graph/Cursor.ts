@@ -38,8 +38,39 @@ export class Cursor implements CursorInterface {
     });
   }
 
+  public closure(predicate: string | string[]): CursorInterface {
+    const predicateIris = this.resolvePredicates(predicate);
+    const visited = new Set<string>(this.iriList);
+    const queue = [...this.iriList];
+    const accumulated = new Set<string>(this.iriList);
+
+    while (queue.length > 0) {
+      const current = queue.shift();
+
+      if (current === undefined) {
+        continue;
+      }
+
+      for (const predicateIri of predicateIris) {
+        for (const object of this.graph.objectsVia(current, predicateIri)) {
+          if (!visited.has(object)) {
+            visited.add(object);
+            accumulated.add(object);
+            queue.push(object);
+          }
+        }
+      }
+    }
+
+    return new Cursor([...accumulated], this.graph, this.lift);
+  }
+
   public count(): number {
     return this.iriList.length;
+  }
+
+  public distinct(): CursorInterface {
+    return new Cursor([...new Set(this.iriList)], this.graph, this.lift);
   }
 
   public first(): unknown {
@@ -61,8 +92,21 @@ export class Cursor implements CursorInterface {
     return new Cursor(next, this.graph, this.lift);
   }
 
+  public intersect(other: CursorInterface): CursorInterface {
+    const otherSet = new Set(other.iris());
+    const next = this.iriList.filter((iri) => {
+      return otherSet.has(iri);
+    });
+
+    return new Cursor(next, this.graph, this.lift);
+  }
+
   public iris(): string[] {
     return [...this.iriList];
+  }
+
+  public limit(n: number): CursorInterface {
+    return new Cursor(this.iriList.slice(0, n), this.graph, this.lift);
   }
 
   public none(): boolean {
@@ -103,6 +147,14 @@ export class Cursor implements CursorInterface {
     return this.lift(this.iriList[0]);
   }
 
+  public orderBy(compare: (left: unknown, right: unknown) => number): CursorInterface {
+    const sorted = [...this.iriList].sort((leftIri, rightIri) => {
+      return compare(this.lift(leftIri), this.lift(rightIri));
+    });
+
+    return new Cursor(sorted, this.graph, this.lift);
+  }
+
   private resolvePredicates(predicate: string | string[]): string[] {
     const tokens = Array.isArray(predicate) ? predicate : [predicate];
 
@@ -119,6 +171,32 @@ export class Cursor implements CursorInterface {
     return this.iriList.length > 0;
   }
 
+  public subgraph(depth: number): CursorInterface {
+    const visited = new Set<string>(this.iriList);
+    let frontier = [...this.iriList];
+
+    for (let hop = 0; hop < depth; hop++) {
+      const nextFrontier: string[] = [];
+
+      for (const iri of frontier) {
+        for (const neighbour of this.graph.neighboursOf(iri)) {
+          if (!visited.has(neighbour)) {
+            visited.add(neighbour);
+            nextFrontier.push(neighbour);
+          }
+        }
+      }
+
+      frontier = nextFrontier;
+
+      if (frontier.length === 0) {
+        break;
+      }
+    }
+
+    return new Cursor([...visited], this.graph, this.lift);
+  }
+
   public subjects(predicate: string | string[]): CursorInterface {
     const predicateIris = this.resolvePredicates(predicate);
     const next = new Set<string>();
@@ -132,6 +210,13 @@ export class Cursor implements CursorInterface {
     }
 
     return new Cursor([...next], this.graph, this.lift);
+  }
+
+  public union(other: CursorInterface): CursorInterface {
+    return new Cursor([
+      ...this.iriList,
+      ...other.iris()
+    ], this.graph, this.lift);
   }
 
   public where(fn: (instance: unknown) => boolean): CursorInterface {

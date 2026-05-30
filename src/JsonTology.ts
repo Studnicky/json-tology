@@ -711,8 +711,11 @@ export class JsonTology<TMap = Record<never, never>> {
     // TBox: a property declared `inverseFunctional` is the identity of the class
     // that declares it (the flat predicate's union domain cannot say which one).
     const identities: AboxIdentityDescriptorType[] = [];
+    const schemaById = new Map<string, unknown>();
 
     for (const schema of this.registry.list() as Array<Record<string, unknown> & { '$id': string }>) {
+      schemaById.set(schema.$id, schema);
+
       const properties = schema.properties;
 
       if (!isRecord(properties)) {
@@ -748,7 +751,10 @@ export class JsonTology<TMap = Record<never, never>> {
       (classId, subjectQuads) => {
         return this.fromQuads(classId as keyof TMap & string, subjectQuads);
       },
-      this.predicateResolver
+      this.predicateResolver,
+      (classIri) => {
+        return schemaById.get(classIri) ?? null;
+      }
     );
   }
   /**

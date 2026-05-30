@@ -14,11 +14,17 @@
  * - Inverse-functional identities (`owl:InverseFunctionalProperty` + domain +
  *   range) build a `value → owning-entity-IRI` index. A foreign-key literal
  *   (e.g. `Order.customerId`) is resolved to the `Customer` it identifies.
+ *
+ * TBox indexes expose schema-level navigation:
+ * - `domainsOfPredicate` / `rangeOfPredicate` — rdfs:domain / rdfs:range per predicate.
+ * - `superClassesOf` — rdfs:subClassOf per class.
+ * - `predicatesOfClass` — inverse of domain (predicates whose domain is a class).
  */
 
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { AboxGraphInterface } from '../../interfaces/AboxGraphInterface.js';
 import type { CursorInterface } from '../../interfaces/CursorInterface.js';
+import type { SchemaCursorInterface } from '../../interfaces/SchemaCursorInterface.js';
 import type {
   AboxIdentityDescriptorType,
   AboxLiftFnType,
@@ -27,8 +33,11 @@ import type {
 } from '../../types/AboxGraph.js';
 import type { PredicateResolverFnType } from '../../types/PredicateResolverFn.js';
 
+import {
+  RDF, RDFS
+} from '../../constants/IRI.js';
 import { Cursor } from './Cursor.js';
-import { RDF } from '../../constants/IRI.js';
+import { SchemaCursor } from './SchemaCursor.js';
 import { decodeLiteral } from '../rdf/Terms.js';
 
 /**
@@ -58,6 +67,8 @@ export class AboxGraph implements AboxGraphInterface {
   private readonly allQuads: QuadInterface[];
   private readonly byObject = new Map<string, AboxPredicateSubjectType[]>();
   private readonly bySubject = new Map<string, AboxPredicateObjectType[]>();
+  /** predicate IRI → class IRIs that are its rdfs:domain */
+  private readonly domainsOfPredicate = new Map<string, Set<string>>();
   /**
    * range-primitive IRI → (identity value → owning entity IRI). One entry per
    * primitive type that backs an inverse-functional identity, so a foreign-key
@@ -74,6 +85,14 @@ export class AboxGraph implements AboxGraphInterface {
   private readonly liftCache = new Map<string, unknown>();
   private readonly liftSubject: AboxLiftSubjectFnType;
   private readonly predicateResolver: PredicateResolverFnType;
+  /** class IRI → Set of predicate IRIs whose rdfs:domain includes that class */
+  private readonly predicatesOfClass = new Map<string, Set<string>>();
+  /** predicate IRI → class IRIs that are its rdfs:range */
+  private readonly rangeOfPredicate = new Map<string, Set<string>>();
+  /** Lifts a class IRI to its authored JSON Schema object. */
+  private readonly schemaOf: (classIri: string) => unknown;
+  /** class IRI → Set of direct superclass IRIs (rdfs:subClassOf) */
+  private readonly superClassesOf = new Map<string, Set<string>>();
   /** subject IRI → its rdf:type class IRI(s) */
   private readonly typeOf = new Map<string, string[]>();
 
@@ -86,16 +105,19 @@ export class AboxGraph implements AboxGraphInterface {
    *   canonical schema graph (owning class + identity predicate + range primitive).
    * @param liftSubject - Lifts a class's quads to typed instances (the facade's `fromQuads`).
    * @param predicateResolver - Resolves an authored property name to its predicate IRI.
+   * @param schemaOf - Lifts a class IRI to its authored JSON Schema object.
    */
   public constructor(
     aboxQuads: readonly QuadInterface[],
     tboxQuads: readonly QuadInterface[],
     identities: readonly AboxIdentityDescriptorType[],
     liftSubject: AboxLiftSubjectFnType,
-    predicateResolver: PredicateResolverFnType
+    predicateResolver: PredicateResolverFnType,
+    schemaOf: (classIri: string) => unknown
   ) {
     this.liftSubject = liftSubject;
     this.predicateResolver = predicateResolver;
+    this.schemaOf = schemaOf;
     this.allQuads = [
       ...aboxQuads,
       ...tboxQuads
@@ -108,6 +130,62 @@ export class AboxGraph implements AboxGraphInterface {
     this.indexIdentities(identities);
     this.indexAbox(aboxQuads);
     this.indexEntityIdentities(aboxQuads);
+    this.indexTbox(tboxQuads);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Private helpers
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Return a SchemaCursor seeded with the class IRI(s) that are the
+   * `rdfs:range` of `predicateIri`.
+   */
+  public class(classIri: string): SchemaCursorInterface {
+    return new SchemaCursor([classIri], this, this.schemaOf);
+  }
+
+  /**
+   * Predicate IRIs whose `rdfs:domain` includes `classIri`. Used by
+   * `SchemaCursor.properties()`.
+   */
+  public classProperties(classIri: string): string[] {
+    return [...(this.predicatesOfClass.get(classIri) ?? [])];
+  }
+
+  /**
+   * Direct (or transitive) superclass IRIs of `classIri` via `rdfs:subClassOf`.
+   * Only NamedNode superclasses are returned (blank-node OWL restrictions are
+   * excluded). When `transitive` is `false`, only the direct parents are returned.
+   */
+  public classSuperclasses(classIri: string, transitive: boolean): string[] {
+    if (!transitive) {
+      return [...(this.superClassesOf.get(classIri) ?? [])];
+    }
+
+    // BFS up the superclass chain, cycle-guarded.
+    const visited = new Set<string>([classIri]);
+    const queue = [classIri];
+    const result = new Set<string>();
+
+    while (queue.length > 0) {
+      const current = queue.shift();
+
+      if (current === undefined) {
+        continue;
+      }
+
+      for (const superClass of this.superClassesOf.get(current) ?? []) {
+        result.add(superClass);
+
+        if (!visited.has(superClass)) {
+          visited.add(superClass);
+          queue.push(superClass);
+        }
+      }
+    }
+
+    return [...result];
   }
 
   /**
@@ -171,10 +249,6 @@ export class AboxGraph implements AboxGraphInterface {
 
     return undefined;
   }
-
-  // ---------------------------------------------------------------------------
-  // Internal navigation surface — consumed by Cursor
-  // ---------------------------------------------------------------------------
 
   /**
    * Index the ABox quads: bySubject, byObject, typeOf, instancesByType.
@@ -261,6 +335,10 @@ export class AboxGraph implements AboxGraphInterface {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Public navigation surface — consumed by Cursor and SchemaCursor
+  // ---------------------------------------------------------------------------
+
   /**
    * Record the supplied identity descriptors: owning class → descriptor, and
    * identity predicate → range primitive (the key used to resolve a foreign-key
@@ -275,6 +353,61 @@ export class AboxGraph implements AboxGraphInterface {
     for (const descriptor of identities) {
       this.identityOf.set(descriptor.owningClass, descriptor);
       this.identityPredicateRange.set(descriptor.predicate, descriptor.range);
+    }
+  }
+
+  /**
+   * Index the TBox quads for schema-level navigation:
+   * - rdfs:domain  → domainsOfPredicate, predicatesOfClass
+   * - rdfs:range   → rangeOfPredicate
+   * - rdfs:subClassOf → superClassesOf (NamedNode objects only; skips restrictions)
+   */
+  private indexTbox(tboxQuads: readonly QuadInterface[]): void {
+    for (const quad of tboxQuads) {
+      const predIri = quad.predicate.value;
+      const subjectIri = quad.subject.value;
+      const objectIri = quad.object.termType === 'NamedNode' ? quad.object.value : undefined;
+
+      if (objectIri === undefined) {
+        continue;
+      }
+
+      switch (predIri) {
+        case RDFS.domain: {
+        // subject = predicate IRI, object = class IRI
+          const domains = this.domainsOfPredicate.get(subjectIri) ?? new Set<string>();
+
+          domains.add(objectIri);
+          this.domainsOfPredicate.set(subjectIri, domains);
+
+          const preds = this.predicatesOfClass.get(objectIri) ?? new Set<string>();
+
+          preds.add(subjectIri);
+          this.predicatesOfClass.set(objectIri, preds);
+
+          break;
+        }
+        case RDFS.range: {
+        // subject = predicate IRI, object = class/datatype IRI
+          const ranges = this.rangeOfPredicate.get(subjectIri) ?? new Set<string>();
+
+          ranges.add(objectIri);
+          this.rangeOfPredicate.set(subjectIri, ranges);
+
+          break;
+        }
+        case RDFS.subClassOf: {
+        // subject = subclass IRI, object = superclass IRI
+        // Only record NamedNode superclasses (skip blank-node restrictions)
+          const supers = this.superClassesOf.get(subjectIri) ?? new Set<string>();
+
+          supers.add(objectIri);
+          this.superClassesOf.set(subjectIri, supers);
+
+          break;
+        }
+      // No default
+      }
     }
   }
 
@@ -318,9 +451,27 @@ export class AboxGraph implements AboxGraphInterface {
     };
   }
 
-  // ---------------------------------------------------------------------------
-  // Index construction
-  // ---------------------------------------------------------------------------
+  /**
+   * All outgoing NamedNode/BlankNode neighbours of `iri` in the ABox (all
+   * predicates). Used by `Cursor.subgraph` to expand to the N-hop neighbourhood.
+   */
+  public neighboursOf(iri: string): string[] {
+    const entries = this.bySubject.get(iri);
+
+    if (entries === undefined) {
+      return [];
+    }
+
+    const result: string[] = [];
+
+    for (const entry of entries) {
+      if (entry.objectTermType === 'NamedNode' || entry.objectTermType === 'BlankNode') {
+        result.push(entry.object);
+      }
+    }
+
+    return result;
+  }
 
   /**
    * Forward navigation: objects of `subjectIri` via `predicateIri`, with
@@ -351,6 +502,40 @@ export class AboxGraph implements AboxGraphInterface {
     }
 
     return results;
+  }
+
+  /**
+   * Return an object with `domain()` and `range()` accessors that each return a
+   * `SchemaCursor` over the class IRIs in the respective TBox role for the resolved
+   * predicate. The predicate token (authored name or full IRI) is resolved via
+   * `resolvePredicate`.
+   */
+  public predicate(name: string): { domain(): SchemaCursorInterface;
+    range(): SchemaCursorInterface } {
+    const predicateIri = this.resolvePredicate(name);
+
+    return {
+      'domain': (): SchemaCursorInterface => {
+        return new SchemaCursor([...(this.domainsOfPredicate.get(predicateIri) ?? [])], this, this.schemaOf);
+      },
+      'range': (): SchemaCursorInterface => {
+        return new SchemaCursor([...(this.rangeOfPredicate.get(predicateIri) ?? [])], this, this.schemaOf);
+      }
+    };
+  }
+
+  /**
+   * Predicate domain class IRIs for `predicateIri`. Used by schema-path navigation.
+   */
+  public predicateDomain(predicateIri: string): string[] {
+    return [...(this.domainsOfPredicate.get(predicateIri) ?? [])];
+  }
+
+  /**
+   * Predicate range class/datatype IRIs for `predicateIri`. Used by schema-path navigation.
+   */
+  public predicateRange(predicateIri: string): string[] {
+    return [...(this.rangeOfPredicate.get(predicateIri) ?? [])];
   }
 
   /**
