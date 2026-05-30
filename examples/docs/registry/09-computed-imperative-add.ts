@@ -19,14 +19,14 @@ const withDiscount = bookstoreEntities.addComputed(
   OrderSchema.$id,
   'discountedTotal',
   (order) => {
-    return order.items.reduce((sum, line) => {
+    return order.orderLines.reduce((sum, line) => {
       return sum + (line.unitPrice.amount * line.quantity);
     }, 0);
   }
 );
 
 const order = withDiscount.instantiate(OrderSchema.$id, aboxFixtures.order);
-const expectedTotal = aboxFixtures.order.items.reduce(
+const expectedTotal = aboxFixtures.order.orderLines.reduce(
   (sum, line) => {
     return sum + (line.unitPrice.amount * line.quantity);
   },

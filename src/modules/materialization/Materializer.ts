@@ -37,8 +37,8 @@ import { InstantiationError } from '../../errors/InstantiationError.js';
  *    RDF quads that can be serialized with the same ontology tooling as TBox output.
  *
  * `createDefault()` uses the same execution engine with `synthesizeDefaults: true`,
- * which generates zero values for required properties without explicit defaults
- * instead of reporting validation errors. This is `materialize(schema)` with no args.
+ * generating zero values for required properties that lack explicit defaults instead
+ * of reporting validation errors. `materialize()` runs with `synthesizeDefaults: false`.
  */
 export class Materializer implements MaterializerInterface {
   private static isEffectivelyFrozen(schema: Record<string, unknown>): boolean {
@@ -54,12 +54,6 @@ export class Materializer implements MaterializerInterface {
     return false;
   }
 
-  /**
-   * Create a Materializer bound to a schema registry.
-   *
-   * @param registry - Schema registry for engine and schema lookups
-   * @param options - Materializer options (e.g. passAdditionalProperties)
-   */
   private readonly cachedOverridesNoDefaults: {
     readonly 'allowAdditionalProperties': boolean;
     readonly 'applyDefaults': true;
@@ -86,6 +80,12 @@ export class Materializer implements MaterializerInterface {
       'node': SchemaGraphNodeInterface }>>
   >();
 
+  /**
+   * Create a Materializer bound to a schema registry.
+   *
+   * @param registry - Schema registry for engine and schema lookups
+   * @param options - Materializer options (e.g. passAdditionalProperties)
+   */
   public constructor(
     private readonly registry: SchemaRegistryInterface,
     options: MaterializerOptionsInterface = {}
@@ -364,7 +364,9 @@ export class Materializer implements MaterializerInterface {
    * @param data - Data to project
    * @param baseIRI - Base IRI for generated quad subjects
    * @param options - Optional overrides: `iriFor` mints subject IRIs per object;
-   *                  `graphIRI` sets the graph field on all quads
+   *                  `graphIRI` sets the graph field on all quads;
+   *                  `curie` expands CURIE prefixes in predicates;
+   *                  `predicateResolver` overrides predicate IRI resolution
    * @returns Array of RDF quads representing the ABox projection
    * @throws {@link MaterializationError} When the data fails validation
    */
@@ -390,12 +392,14 @@ export class Materializer implements MaterializerInterface {
     options?: AboxOptionsType
   ): QuadInterface[] {
     const quads = Projection.abox(execution.graph, materialized, baseIRI, {
+      'curie': options?.curie,
       'entryNode': execution.entryNode,
       'graphIRI': options?.graphIRI,
       'iriFor': options?.iriFor,
       'lookupGraph': (schemaId) => {
         return this.registry.graph(schemaId);
-      }
+      },
+      'predicateResolver': options?.predicateResolver
     });
 
     this.appendSameAsQuads(quads, options?.graphIRI);
@@ -435,14 +439,30 @@ export class Materializer implements MaterializerInterface {
     const parsed = GraphEngineSupport.parseRef(ref);
     const targetGraph = this.registry.graph(parsed.id);
 
-    if (targetGraph === undefined) {
-      throw new GraphError('REF_UNRESOLVED', `Unresolved schema reference: ${ref}`, { 'pointer': ref });
+    if (targetGraph !== undefined) {
+      return [
+        targetGraph,
+        targetGraph.resolveFragment(parsed.fragment)
+      ];
     }
 
-    return [
-      targetGraph,
-      targetGraph.resolveFragment(parsed.fragment)
-    ];
+    // Embedded `$defs` `$id`: a non-fragment `$ref` whose target is an `$id`
+    // declared inside this same graph's `$defs` (e.g. `urn:bookstore:BookCatalogEntryVariant`)
+    // is not a separately-registered schema, so the registry lookup misses it.
+    // Resolve it within the current graph by matching the node whose id equals
+    // the ref target. Mirrors the same-graph embedded-$id fallback in
+    // Projection.resolveNode. Without this, ABox projection of such a ref
+    // throws REF_UNRESOLVED.
+    for (const candidate of graph.nodes()) {
+      if (candidate.id === parsed.id) {
+        return [
+          graph,
+          candidate
+        ];
+      }
+    }
+
+    throw new GraphError('REF_UNRESOLVED', `Unresolved schema reference: ${ref}`, { 'pointer': ref });
   }
 
   private run(

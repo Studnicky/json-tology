@@ -26,6 +26,7 @@ All examples use the [bookstore domain](/bookstore-domain). See [`entities.valid
 - [`validate`](/validation/validate) - returns the `ValidationErrors` collection
 - [`instantiate`](/validation/instantiate) - `InstantiationError.errors` carries the same collection
 - [`ValidationErrors` views](/errors/views) - `aggregate`, `report`
+- [Error class hierarchy](/errors/classes) - `BaseError`, `InstantiationError`, `CoercionError`, `TransformError`, `DecodeError`, `EncodeError`, `SchemaError`, `GraphError`, `MaterializationError`
 
 ## See also
 

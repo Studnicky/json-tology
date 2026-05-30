@@ -9,22 +9,27 @@
 // from the constants subpath. Exported here so callers can do
 // `import { InstantiationErrorCode } from 'json-tology'` as documented.
 export {
+  CoercionErrorCode,
   GraphErrorCode,
   InstantiationErrorCode,
   MaterializationErrorCode,
   OwlImportErrorCode,
-  SchemaErrorCode
+  SchemaErrorCode,
+  TransformErrorCode
 } from './constants/ERROR_CODES.js';
 // Errors are runtime classes: tests catch them by class identity, callers
 // throw them, instances cross the package boundary through the public API.
 // They belong here, not under a subpath.
 export * from './errors/BaseError.js';
 export * from './errors/CoercionError.js';
+export * from './errors/DecodeError.js';
+export * from './errors/EncodeError.js';
 export * from './errors/GraphError.js';
 export * from './errors/InstantiationError.js';
 export * from './errors/MaterializationError.js';
 export * from './errors/OwlImportError.js';
 export * from './errors/SchemaError.js';
+export * from './errors/TransformError.js';
 export * from './errors/ValidationErrors.js';
 // Runtime classes only.
 //

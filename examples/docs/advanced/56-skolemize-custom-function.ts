@@ -17,7 +17,7 @@ const quads = bookstoreEntities.toQuads(OrderSchema, order, {
   // non-record values fall through to the default hash minter.
   'iriFor': (ctx) => {
     const isRootRecord = ctx.depth === 0 && typeof ctx.value === 'object' && ctx.value !== null;
-    const id = isRootRecord ? (ctx.value as { 'id'?: string }).id : undefined;
+    const id = isRootRecord ? (ctx.value as { 'orderId'?: string }).orderId : undefined;
 
     return typeof id === 'string'
       ? `https://shop.example.com/orders/${id}`
@@ -28,6 +28,6 @@ const quads = bookstoreEntities.toQuads(OrderSchema, order, {
 const rootIri = quads[0]?.subject.value ?? '';
 
 console.assert(
-  rootIri === `https://shop.example.com/orders/${aboxFixtures.order.id}`,
+  rootIri === `https://shop.example.com/orders/${aboxFixtures.order.orderId}`,
   `custom function minted root from id: ${rootIri}`
 );

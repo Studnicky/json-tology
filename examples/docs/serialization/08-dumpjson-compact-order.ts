@@ -28,6 +28,6 @@ console.assert(compactJson.length <= fullJson.length);
 const compact = JSON.parse(compactJson) as Record<string, unknown>;
 
 // Required fields are always present
-console.assert(typeof compact.id === 'string');
+console.assert(typeof compact.orderId === 'string');
 console.assert(typeof compact.customerId === 'string');
-console.assert(Array.isArray(compact.items));
+console.assert(Array.isArray(compact.orderLines));

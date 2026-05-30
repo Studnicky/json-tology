@@ -42,92 +42,92 @@ function assert<T extends true>(): void {
 // Referenced named primitives — each carries a constraint that produces a brand
 // ---------------------------------------------------------------------------
 
-const PokemonSchema = {
-  '$id': 'https://pokemontology.dev/Pokemon',
-  'properties': { 'name': { 'type': 'string' } },
-  'required': ['name'],
+const BookSchema = {
+  '$id': 'urn:bookstore:Book',
+  'properties': { 'title': { 'type': 'string' } },
+  'required': ['title'],
   'type': 'object'
 } as const;
 
-void PokemonSchema;
+void BookSchema;
 
 // A branded datatype: string with a format → FormatBrandInterface<'…'>.
-const TimeOfDaySchema = {
-  '$id': 'https://pokemontology.dev/TimeOfDay',
-  'format': 'time',
+const ReviewIdSchema = {
+  '$id': 'urn:bookstore:ReviewId',
+  'format': 'uuid',
   'type': 'string'
 } as const;
 
-void TimeOfDaySchema;
+void ReviewIdSchema;
 
-// A numeric datatype: integer with a 1..100 span. The span exceeds the tight
+// A numeric datatype: integer with a 0..100 span. The span exceeds the tight
 // integer-range cap (50), so it resolves to plain `number` (a precise datatype,
 // not `unknown`) rather than a literal union.
-const LevelSchema = {
-  '$id': 'https://pokemontology.dev/Level',
+const RatingScoreSchema = {
+  '$id': 'urn:bookstore:RatingScore',
   'maximum': 100,
-  'minimum': 1,
+  'minimum': 0,
   'type': 'integer'
 } as const;
 
-void LevelSchema;
+void RatingScoreSchema;
 
 interface RefsMap {
-  readonly 'https://pokemontology.dev/Level': typeof LevelSchema;
-  readonly 'https://pokemontology.dev/Pokemon': typeof PokemonSchema;
-  readonly 'https://pokemontology.dev/TimeOfDay': typeof TimeOfDaySchema;
+  readonly 'urn:bookstore:Book': typeof BookSchema;
+  readonly 'urn:bookstore:RatingScore': typeof RatingScoreSchema;
+  readonly 'urn:bookstore:ReviewId': typeof ReviewIdSchema;
 }
 
 // ---------------------------------------------------------------------------
 // The annotated-edge schema under test
 // ---------------------------------------------------------------------------
 
-const EvolvesFromSchema = Compose.annotatedEdge({
+const ReviewsBookSchema = Compose.annotatedEdge({
   'annotations': {
-    'evolutionMinLevel': { '$ref': 'https://pokemontology.dev/Level' },
-    'evolutionTimeOfDay': { '$ref': 'https://pokemontology.dev/TimeOfDay' }
+    'ratingGiven': { '$ref': 'urn:bookstore:RatingScore' },
+    'reviewIdRef': { '$ref': 'urn:bookstore:ReviewId' }
   },
-  'predicate': 'https://pokemontology.dev/directEvolvesFrom',
-  'targetRef': 'https://pokemontology.dev/Pokemon'
+  'predicate': 'https://bookstore.example/reviews',
+  'targetRef': 'urn:bookstore:Book'
 });
 
-void EvolvesFromSchema;
+void ReviewsBookSchema;
 
-type EvolvesFrom = InferType<typeof EvolvesFromSchema, RefsMap>;
-
-// ---------------------------------------------------------------------------
-// Shape: { target; annotations: { evolutionTimeOfDay; evolutionMinLevel } }
-// ---------------------------------------------------------------------------
-
-assert<AssertAssignable<EvolvesFrom, { readonly 'target': unknown }>>();
-assert<AssertAssignable<EvolvesFrom, { readonly 'annotations': unknown }>>();
+type ReviewsBook = InferType<typeof ReviewsBookSchema, RefsMap>;
 
 // ---------------------------------------------------------------------------
-// Target resolves to the branded Pokemon class (has a required `name: string`)
+// Shape: { target; annotations: { ratingGiven; reviewIdRef } }
 // ---------------------------------------------------------------------------
 
-type Target = EvolvesFrom['target'];
-assert<AssertAssignable<Target, { readonly 'name': string }>>();
+assert<AssertAssignable<ReviewsBook, { readonly 'target': unknown }>>();
+assert<AssertAssignable<ReviewsBook, { readonly 'annotations': unknown }>>();
+
+// ---------------------------------------------------------------------------
+// Target resolves to the branded Book class (has a required `title: string`)
+// ---------------------------------------------------------------------------
+
+type Target = ReviewsBook['target'];
+assert<AssertAssignable<Target, { readonly 'title': string }>>();
 
 // ---------------------------------------------------------------------------
 // Annotation ranges resolve to branded datatypes — NOT `unknown`.
 // ---------------------------------------------------------------------------
 
-type Annotations = EvolvesFrom['annotations'];
+type Annotations = ReviewsBook['annotations'];
 
-type TimeOfDayRange = Annotations['evolutionTimeOfDay'];
-type LevelRange = Annotations['evolutionMinLevel'];
+type ReviewIdRange = Annotations['reviewIdRef'];
+type RatingRange = Annotations['ratingGiven'];
 
-// The time-of-day range carries the format brand (string is branded).
-assert<AssertAssignable<TimeOfDayRange, FormatBrandInterface<'time'>>>();
-assert<AssertAssignable<TimeOfDayRange, string>>();
+// The reviewId range carries the format brand (string is branded).
+assert<AssertAssignable<ReviewIdRange, FormatBrandInterface<'uuid'>>>();
+assert<AssertAssignable<ReviewIdRange, string>>();
 
-// The level range resolves to a precise numeric datatype — NOT `unknown`.
-// The 1..100 span exceeds the tight integer-range cap (50), so it resolves to
+// The rating range resolves to a precise numeric datatype — NOT `unknown`.
+// The 0..100 span exceeds the tight integer-range cap (50), so it resolves to
 // plain `number` rather than a literal union or numeric brands.
-assert<AssertAssignable<LevelRange, number>>();
-assert<AssertEqual<LevelRange, number>>();
+assert<AssertAssignable<RatingRange, number>>();
+assert<AssertEqual<RatingRange, number>>();
 
 // A bare `unknown` value must NOT be assignable to a branded range.
-// @ts-expect-error — unknown is not a branded TimeOfDay range
-assert<AssertAssignable<unknown, TimeOfDayRange>>();
+// @ts-expect-error — unknown is not a branded ReviewId range
+assert<AssertAssignable<unknown, ReviewIdRange>>();

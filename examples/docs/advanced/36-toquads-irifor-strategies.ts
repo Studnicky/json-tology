@@ -28,7 +28,7 @@ const blankNodes = bookstoreEntities.toQuads(OrderSchema, order, { 'iriFor': 'bl
 console.assert(blankNodes.length > 0, 'blank-node strategy emitted quads');
 
 // 3. Mint from a property of the value (Customer has an id field):
-const fromCustomerId = bookstoreEntities.toQuads(CustomerSchema, customer, { 'iriFor': Skolemize.fromProperty('id', { 'baseIRI': 'https://shop.example.com/customers' }) });
+const fromCustomerId = bookstoreEntities.toQuads(CustomerSchema, customer, { 'iriFor': Skolemize.fromProperty('customerId', { 'baseIRI': 'https://shop.example.com/customers' }) });
 
 console.assert(fromCustomerId.length > 0, 'fromProperty strategy emitted quads');
 
@@ -41,7 +41,7 @@ console.assert(genid.length > 0, 'wellKnownGenid strategy emitted quads');
 const custom = bookstoreEntities.toQuads(OrderSchema, order, {
   'iriFor': (ctx) => {
     return ctx.depth === 0
-      ? `https://shop.example.com/orders/${(ctx.value as { 'id': string }).id}`
+      ? `https://shop.example.com/orders/${(ctx.value as { 'orderId': string }).orderId}`
       : undefined;
   }
 });

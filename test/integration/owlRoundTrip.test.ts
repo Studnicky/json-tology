@@ -109,11 +109,31 @@ function sortedEnum(enumVal: unknown): unknown[] {
 // sortedKeys — stable key-order copy for primitive comparison
 // ---------------------------------------------------------------------------
 
-/** Return a copy of `obj` with keys sorted alphabetically. */
+/**
+ * ABox-projection hint keywords that have no OWL datatype representation.
+ * `x-jt-iriRef` (emit value as a NamedNode) and `x-jt-language` (emit value as
+ * an `rdf:langString` with a language tag) steer `toQuads` ABox emission; they
+ * are not XSD datatype facets, so the OWL TBox export of a scalar primitive
+ * does not carry them and `fromTbox` cannot reconstruct them. They are stripped
+ * before the primitive structural comparison, consistent with the other
+ * non-OWL-preservable filler keys documented in the file header.
+ */
+const ABOX_HINT_KEYS = new Set([
+  'x-jt-iriRef',
+  'x-jt-language'
+]);
+
+/**
+ * Return a copy of `obj` with keys sorted alphabetically and ABox-projection
+ * hint keywords removed (they have no OWL datatype round-trip).
+ */
 function sortedKeys(obj: Record<string, unknown>): Record<string, unknown> {
   const sorted: Record<string, unknown> = {};
 
   for (const key of Object.keys(obj).sort()) {
+    if (ABOX_HINT_KEYS.has(key)) {
+      continue;
+    }
     sorted[key] = obj[key];
   }
 

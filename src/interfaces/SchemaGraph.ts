@@ -1,7 +1,7 @@
 import type {
-
   RelationPredicateType, RelationStructure
 } from '../types/SchemaGraph.js';
+import type { AnnotatedEdgeDescriptorInterface } from './AnnotatedEdgeDescriptorInterface.js';
 
 
 import type { JsonSchemaType } from '../types/Schema.js';
@@ -33,6 +33,7 @@ export interface SchemaGraphSemanticsInterface {
   'additionalPropertiesNode': boolean | SchemaGraphNodeInterface | undefined;
   'aliases': readonly string[];
   'allOf': SchemaGraphNodeInterface[];
+  'annotatedEdge': AnnotatedEdgeDescriptorInterface | undefined;
   'anyOf': SchemaGraphNodeInterface[];
   'asymmetric': boolean;
   'comment': string | undefined;
@@ -67,11 +68,13 @@ export interface SchemaGraphSemanticsInterface {
   'ifNode': SchemaGraphNodeInterface | undefined;
   'inverseFunctional': boolean;
   'inverseOf': string | undefined;
+  'iriRef': boolean;
   'irreflexive': boolean;
   'itemsNode': SchemaGraphNodeInterface | undefined;
   'jtConfig': JtConfigType | undefined;
   'jtFrozen': boolean;
   'jtStrict': boolean | undefined;
+  'language': string | undefined;
   'maxContains': number | undefined;
   'maximum': number | undefined;
   'maxItems': number | undefined;

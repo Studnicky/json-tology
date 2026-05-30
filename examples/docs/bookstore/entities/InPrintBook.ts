@@ -9,8 +9,11 @@ import { BookSchema } from './Book.js';
  * Wire shape: `{ $id, allOf: [{ $ref: Book }, body], 'jt:restrictions': [{ kind: 'hasValue', ... }] }`.
  *
  * The TBox emits an anonymous `owl:Restriction` referenced via `rdfs:subClassOf`:
+ * `printStatus` (the `Class#prop` form is the property IDENTIFIER the restriction
+ * binds to; the projection resolves it to the flat `https://bookstore.example/printStatus`
+ * predicate in the emitted TBox so the restriction connects to instances):
  *   _:b1 a owl:Restriction ;
- *        owl:onProperty   urn:bookstore:Book#printStatus ;
+ *        owl:onProperty   https://bookstore.example/printStatus ;
  *        owl:hasValue     "inPrint" .
  */
 

@@ -6,11 +6,12 @@
  * sh:and/sh:or for composition, sh:qualifiedValueShape for contains.
  *
  * Groups properties by structural parent (pointer path), not rdfs:domain.
- * The output quads can be passed directly to JsonLdFormatter.quadsToJsonLd().
+ * The output quads can be passed directly to JsonLdFormatter.fromQuads().
  */
 
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { QuadObjectType } from '../../types/Quad.js';
+import type { PredicateResolverFnType } from '../../types/PredicateResolverFn.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
@@ -21,6 +22,7 @@ import {
 import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
 import { SchemaIri } from '../graph/SchemaIri.js';
 import { QuadFactory } from './QuadFactory.js';
+import { resolvePropertySchema } from './ProjectionHelpers.js';
 import { ProjectionIndex } from './ProjectionIndex.js';
 import type { RelationIndexInterface } from '../../interfaces/RelationIndex.js';
 import { VocabProjection } from './VocabProjection.js';
@@ -105,11 +107,19 @@ function isSerializationCandidate(
 }
 
 class ShaclVocabProjection extends VocabProjection {
+  private readonly graph: SchemaGraphInterface;
   private readonly index: Map<string, RelationIndexInterface>;
+  private readonly predicateResolver: PredicateResolverFnType | undefined;
 
-  constructor(index: Map<string, RelationIndexInterface>) {
+  constructor(
+    index: Map<string, RelationIndexInterface>,
+    graph: SchemaGraphInterface,
+    predicateResolver: PredicateResolverFnType | undefined
+  ) {
     super();
+    this.graph = graph;
     this.index = index;
+    this.predicateResolver = predicateResolver;
   }
 
   combineUnionBranches(
@@ -228,7 +238,18 @@ class ShaclVocabProjection extends VocabProjection {
 
       const psBnode = QuadFactory.nextBnode(issuer);
 
-      emitPropertyShape(psBnode, propSubject, propEntry, subject, subject, quads, curie, issuer);
+      emitPropertyShape(
+        psBnode,
+        propSubject,
+        propEntry,
+        subject,
+        subject,
+        this.graph,
+        this.predicateResolver,
+        quads,
+        curie,
+        issuer
+      );
       quads.push(QuadFactory.quad(depShapeBnode, SH.property, QuadFactory.bnode(psBnode), { curie }));
     }
 
@@ -296,8 +317,10 @@ class ShaclVocabProjection extends VocabProjection {
 
 export const ShaclProjection = {
   graph(graph: SchemaGraphInterface, options?: { 'curie'?: CurieInterface | undefined;
-    'issuer'?: IdentifierIssuerInterface | undefined }): QuadInterface[] {
+    'issuer'?: IdentifierIssuerInterface | undefined;
+    'predicateResolver'?: PredicateResolverFnType | undefined }): QuadInterface[] {
     const { curie } = options ?? {};
+    const { predicateResolver } = options ?? {};
     const issuer = options?.issuer ?? new IdentifierIssuer();
     const quads: QuadInterface[] = [];
     const allRelations = graph.allRelations();
@@ -317,7 +340,7 @@ export const ShaclProjection = {
       propertyIndex.set(parentId, list);
     }
 
-    const shaclVocab = new ShaclVocabProjection(index);
+    const shaclVocab = new ShaclVocabProjection(index, graph, predicateResolver);
 
     for (const [
       subject,
@@ -331,7 +354,7 @@ export const ShaclProjection = {
         continue;
       }
 
-      emitNodeShape(subject, entry, index, propertyIndex, shaclVocab, quads, curie, issuer);
+      emitNodeShape(subject, entry, index, propertyIndex, shaclVocab, graph, predicateResolver, quads, curie, issuer);
     }
 
     return quads;
@@ -344,6 +367,8 @@ function emitNodeShape(
   index: Map<string, RelationIndexInterface>,
   propertyIndex: Map<string, string[]>,
   shaclVocab: ShaclVocabProjection,
+  graph: SchemaGraphInterface,
+  predicateResolver: PredicateResolverFnType | undefined,
   quads: QuadInterface[],
   curie: CurieInterface | undefined,
   issuer?: IdentifierIssuerInterface
@@ -379,7 +404,18 @@ function emitNodeShape(
 
     const psBnode = QuadFactory.nextBnode(issuer);
 
-    emitPropertyShape(psBnode, propSubject, propEntry, subject, undefined, quads, curie, issuer);
+    emitPropertyShape(
+      psBnode,
+      propSubject,
+      propEntry,
+      subject,
+      undefined,
+      graph,
+      predicateResolver,
+      quads,
+      curie,
+      issuer
+    );
     quads.push(QuadFactory.quad(subject, SH.property, QuadFactory.bnode(psBnode), { curie }));
   }
 
@@ -393,7 +429,15 @@ function emitNodeShape(
     andItems.push(QuadFactory.iri(ProjectionIndex.relationTargetId(rel), { curie }));
   }
 
-  const depReqItems = shaclVocab.processDependentRequired(subject, entry, quads, curie, issuer);
+  const depReqItems = shaclVocab.processDependentRequired(
+    subject,
+    entry,
+    quads,
+    curie,
+    issuer,
+    graph,
+    predicateResolver
+  );
   const depSchemaItems = shaclVocab.processDependentSchemas(subject, entry, quads, curie, issuer);
   const conditionalItems = shaclVocab.processConditionals(entry, quads, curie, issuer);
 
@@ -446,6 +490,8 @@ function emitPropertyShape(
   entry: RelationIndexInterface,
   classId: string,
   overridePathClassId: string | undefined,
+  graph: SchemaGraphInterface,
+  predicateResolver: PredicateResolverFnType | undefined,
   quads: QuadInterface[],
   curie: CurieInterface | undefined,
   _issuer?: IdentifierIssuerInterface
@@ -458,7 +504,15 @@ function emitPropertyShape(
   const pathClassId = overridePathClassId
     ?? (domainRels.length > 0 ? ProjectionIndex.relationTargetId(domainRels[0]) : classId);
   const propName = SchemaIri.lastSegment(subject);
-  const canonicalId = SchemaIri.propertyIri(pathClassId, propName);
+  const propertySchema = resolvePropertySchema(graph, subject);
+
+  const canonicalId = predicateResolver === undefined
+    ? SchemaIri.propertyIri(pathClassId, propName)
+    : predicateResolver({
+      'classId': pathClassId,
+      'propertyName': propName,
+      'propertySchema': propertySchema
+    });
 
   quads.push(QuadFactory.quad(bnodeId, SH.path, QuadFactory.iri(canonicalId, opts), opts));
 

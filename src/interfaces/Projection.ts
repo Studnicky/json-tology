@@ -3,6 +3,7 @@ import type { QuadInterface } from './Quad.js';
 import type {
   DefaultGraphTermType, IriTermType
 } from '../types/Quad.js';
+import type { PredicateResolverFnType } from '../types/PredicateResolverFn.js';
 import type { SchemaGraphNodeInterface } from './SchemaGraph.js';
 import type { SchemaGraphInterface } from './SchemaGraphImpl.js';
 
@@ -27,6 +28,8 @@ export interface ProjectInstanceArgs {
   readonly 'minter': IriMinterInterface;
   readonly 'node': SchemaGraphNodeInterface;
   readonly 'path': string;
+  /** Single predicate-derivation authority — resolves each property's RDF predicate IRI. */
+  readonly 'predicateResolver': PredicateResolverFnType;
   /** Pre-built `{ curie, graph: graphTerm }` — reused across all quads in this projection. */
   readonly 'quadOpts': QuadOptsInterface;
   readonly 'quads': QuadInterface[];
@@ -43,10 +46,15 @@ export interface ProjectPropertyArgs {
   readonly 'lookupGraph'?: ((schemaId: string) => SchemaGraphInterface | undefined) | undefined;
   readonly 'minter': IriMinterInterface;
   readonly 'path': string;
+  /** Single predicate-derivation authority — forwarded to the recursive nested-instance projection. */
+  readonly 'predicateResolver': PredicateResolverFnType;
   readonly 'propertyIRI': string;
   readonly 'propertyNode': SchemaGraphNodeInterface;
   readonly 'propertySemantics': { 'format': string | undefined;
-    'itemsNode': SchemaGraphNodeInterface | undefined };
+    'iriRef': boolean;
+    'itemsNode': SchemaGraphNodeInterface | undefined;
+    'language': string | undefined;
+    'schemaTypes': string[] };
   /** Pre-built `{ curie, graph: graphTerm }` — reused across all quads in this projection. */
   readonly 'quadOpts': QuadOptsInterface;
   readonly 'quads': QuadInterface[];

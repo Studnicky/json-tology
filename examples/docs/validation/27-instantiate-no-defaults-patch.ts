@@ -12,8 +12,8 @@ import {
 } from '../bookstore/index.js';
 
 const incomingPatchBody = {
+  'customerId': 'a2b3c4d5-e6f7-8901-bcde-f12345678901',
   'email': 'hermann.hesse@bookstore.example',
-  'id': 'a2b3c4d5-e6f7-8901-bcde-f12345678901',
   // addresses intentionally absent — PATCH means "don't change"
   'name': 'Hermann Hesse'
 };

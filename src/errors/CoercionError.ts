@@ -1,10 +1,9 @@
 /**
- * CoercionError — thrown by coerce() on validation failure
- *
- * Carries a ValidationErrors collection with the full structured error list.
+ * CoercionError — carries a {@link ValidationErrors} collection describing why a value could not be coerced to its schema.
  */
 
 import type { ValidationErrorType } from '../types/Validation.js';
+import { CoercionErrorCode } from '../constants/ERROR_CODES.js';
 import { ValidationErrors } from './ValidationErrors.js';
 import { BaseError } from './BaseError.js';
 
@@ -23,7 +22,7 @@ export class CoercionError extends BaseError {
       return `${err.path || 'root'}: ${err.message}`;
     }).join('; ');
 
-    super('COERCION_FAILED', joinedMessages, options);
+    super(CoercionErrorCode.COERCION_FAILED, joinedMessages, options);
     this.name = 'CoercionError';
     this.errors = validationErrors;
   }

@@ -220,28 +220,28 @@ export function createBookstoreDocRegistry(): typeof bookstoreEntities {
 // Invariant: an Order's `total.amount` must equal Σ items[i].unitPrice.amount × items[i].quantity.
 // Demonstrates `addInvariant` on the real OrderSchema (not a docs-only variant).
 bookstoreEntities.addInvariant<{
-  'items'?: ReadonlyArray<{ 'quantity'?: number;
+  'orderLines'?: ReadonlyArray<{ 'quantity'?: number;
     'unitPrice'?: { 'amount'?: number } }>;
-  'total'?: { 'amount'?: number };
+  'orderTotal'?: { 'amount'?: number };
 }>(OrderSchema.$id, {
   'fn': (order) => {
-    const items = order.items ?? [];
-    const computed = items.reduce((sum, line) => {
+    const lines = order.orderLines ?? [];
+    const computed = lines.reduce((sum, line) => {
       const quantity = line.quantity ?? 0;
       const unitAmount = line.unitPrice?.amount ?? 0;
 
       return sum + (unitAmount * quantity);
     }, 0);
-    const reported = order.total?.amount ?? 0;
+    const reported = order.orderTotal?.amount ?? 0;
 
     if (Math.abs(reported - computed) < 0.005) {
       return null;
     }
 
-    return `Order total ${reported} does not equal Σ items[i].unitPrice.amount × quantity = ${computed}`;
+    return `Order total ${reported} does not equal Σ orderLines[i].unitPrice.amount × quantity = ${computed}`;
   },
   'name': 'orderTotalMatchesItems',
-  'pointer': '/total/amount'
+  'pointer': '/orderTotal/amount'
 });
 
 // Invariant: a SignedFirstEdition has exactly one author. The OWL parent

@@ -26,6 +26,7 @@ import {
 } from 'node:test';
 import {
   Compose,
+  DecodeError,
   GraphError,
   InstantiationError,
   JsonTology,
@@ -579,7 +580,7 @@ void describe('ANCHOR_NOT_FOUND error code assertion', () => {
 // ===========================================================================
 
 void describe('static counterparts — failure modes', () => {
-  void it('JsonTology.instantiate wraps a Transform decoder error as InstantiationError TRANSFORM_DECODE_FAILED', () => {
+  void it('JsonTology.instantiate wraps a Transform decoder error as DecodeError TRANSFORM_DECODE_FAILED', () => {
     const ExplodingSchema = Transform.create(
       {
         '$id': 'urn:test:Exploding',
@@ -605,7 +606,7 @@ void describe('static counterparts — failure modes', () => {
         return explodingJt.instantiate(ExplodingSchema, 'whatever');
       },
       (err: unknown) => {
-        return err instanceof InstantiationError
+        return err instanceof DecodeError
           && err.code === 'TRANSFORM_DECODE_FAILED'
           && err.cause instanceof Error
           && err.cause.message === 'decoder failure';
@@ -1012,9 +1013,9 @@ void describe('Default propagation through nested $refs', () => {
 // ===========================================================================
 
 void describe('Transform decode errors at root-level coercion', () => {
-  void it('decoder throw at root wraps as InstantiationError TRANSFORM_DECODE_FAILED with original cause', () => {
+  void it('decoder throw at root wraps as DecodeError TRANSFORM_DECODE_FAILED with original cause', () => {
     // Transform decode runs after compiled validation succeeds; failures wrap
-    // as InstantiationError with code TRANSFORM_DECODE_FAILED and the original
+    // as DecodeError with code TRANSFORM_DECODE_FAILED and the original
     // Error attached as cause.
     const HostileSchema = Transform.create(
       {
@@ -1044,7 +1045,7 @@ void describe('Transform decode errors at root-level coercion', () => {
         return jt.instantiate(HostileSchema.$id, 'bad');
       },
       (err: unknown) => {
-        return err instanceof InstantiationError
+        return err instanceof DecodeError
           && err.code === 'TRANSFORM_DECODE_FAILED'
           && err.cause instanceof Error
           && err.cause.message === 'decoder rejects "bad"';

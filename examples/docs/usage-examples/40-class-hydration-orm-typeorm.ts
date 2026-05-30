@@ -29,12 +29,12 @@ type OrderWire = typeof aboxFixtures.order;
 // Stand-in for `@Entity()` + `@Column(...)` decorated TypeORM class.
 class OrderEntity {
   declare public customerId: string;
-  declare public id: string;
-  declare public items: OrderWire['items'];
+  declare public orderId: string;
+  declare public orderLines: OrderWire['orderLines'];
+  declare public orderTotal: OrderWire['orderTotal'];
   declare public placedAt: OrderWire['placedAt'];
   declare public shippingAddress: OrderWire['shippingAddress'];
   public status: 'pending' | 'shipped' = 'pending';
-  declare public total: OrderWire['total'];
 
   public markShipped(): void {
     this.status = 'shipped';

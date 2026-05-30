@@ -15,5 +15,5 @@ const original = bookstoreEntities.instantiate(CustomerSchema, aboxFixtures.cust
 const quads = bookstoreEntities.toQuads(CustomerSchema, original);
 const [restored] = bookstoreEntities.fromQuads(CustomerSchema.$id, quads);
 
-console.assert(restored.id === original.id, 'customer id round-tripped');
+console.assert(restored.customerId === original.customerId, 'customer id round-tripped');
 console.assert(restored.name === original.name, 'customer name round-tripped');

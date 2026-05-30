@@ -2,9 +2,9 @@ import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { SchemaGraphNodeInterface } from '../../interfaces/SchemaGraph.js';
 import type { RefDecoderRegistryInterface } from '../../interfaces/RefDecoderRegistry.js';
 
-import { InstantiationError } from '../../errors/InstantiationError.js';
+import { DecodeError } from '../../errors/DecodeError.js';
+import { TransformError } from '../../errors/TransformError.js';
 import { Transform } from '../transform/Transform.js';
-import { ValidationErrors } from '../../errors/ValidationErrors.js';
 import { isRecord } from '../data/DataTypes.js';
 import { GraphEngineSupport } from './GraphEngineSupport.js';
 
@@ -13,7 +13,6 @@ export type { RefDecoderRegistryInterface } from '../../interfaces/RefDecoderReg
 export class RefDecoder {
   private static decodeWithSchema(
     schema: Record<string, unknown>,
-    refTarget: string,
     inner: unknown
   ): unknown {
     const decoder = Transform.getDecoder(schema);
@@ -24,7 +23,25 @@ export class RefDecoder {
     try {
       return decoder.decode(inner);
     } catch (error) {
-      throw RefDecoder.wrapDecodeError(refTarget, error);
+      if (error instanceof TransformError) {
+        throw error;
+      }
+      const causeError = error instanceof Error ? error : new Error(String(error));
+      const schemaId = typeof schema.$id === 'string' ? schema.$id : undefined;
+
+      throw new DecodeError(
+        `transform decoder failed${schemaId === undefined ? '' : ` for ${schemaId}`}: ${causeError.message}`,
+        schemaId === undefined
+          ? {
+            'cause': causeError,
+            'path': ''
+          }
+          : {
+            'cause': causeError,
+            'path': '',
+            'schemaId': schemaId
+          }
+      );
     }
   }
 
@@ -251,7 +268,7 @@ export class RefDecoder {
     if (targetGraph === undefined) {
       // The registry knows about the schema but cannot produce a graph for
       // it — fall back to applying the root decoder for that schema only.
-      return RefDecoder.decodeWithSchema(targetSchema, refTarget, value);
+      return RefDecoder.decodeWithSchema(targetSchema, value);
     }
 
     const targetNode = parsed.fragment === ''
@@ -260,25 +277,6 @@ export class RefDecoder {
 
     const inner = RefDecoder.walk(targetGraph, targetNode, value, registry, visited);
 
-    return RefDecoder.decodeWithSchema(targetSchema, refTarget, inner);
-  }
-
-  private static wrapDecodeError(refTarget: string, error: unknown): InstantiationError {
-    const causeError = error instanceof Error ? error : new Error(String(error));
-
-    return new InstantiationError(
-      new ValidationErrors([{
-        'keyword': 'TRANSFORM_DECODE_FAILED',
-        'message': `transform decoder failed for $ref "${refTarget}": ${causeError.message}`,
-        'params': { '$ref': refTarget },
-        'path': ''
-      }]),
-      {
-        'cause': causeError,
-        'code': 'TRANSFORM_DECODE_FAILED',
-        'message': `transform decoder failed for $ref "${refTarget}": ${causeError.message}`
-      }
-    );
+    return RefDecoder.decodeWithSchema(targetSchema, inner);
   }
 }
-

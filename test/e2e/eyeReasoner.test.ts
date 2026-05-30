@@ -34,10 +34,10 @@ import { Lists } from '../../src/index.js';
 import type { QuadInterface } from '../../src/interfaces/index.js';
 import {
   aboxFixtures,
-  BookSchema,
   bookstoreEntities,
   CustomerSchema,
   OrderSchema,
+  RareBookSchema,
   ReviewSchema
 } from '../../examples/docs/bookstore/index.js';
 
@@ -60,8 +60,16 @@ async function tryLoadN3Reasoner(): Promise<N3ReasonerFn | null> {
 const PURCHASED = 'urn:example:purchased';
 const REVIEWED = 'urn:example:reviewed';
 const VERIFIED = 'urn:example:isVerifiedReviewerOf';
+// New derivation (Part C): a customer who purchased a book typed as a
+// RareBook subclass is inferred to be a rare-book collector. This exercises
+// BOTH the subclass rdf:type assertion (urn:bookstore:RareBook) AND the
+// union-domain shared `customerId` predicate (the Order→Customer link rides
+// the same flat customerId IRI used by Customer and Review).
+const RARE_BOOK_COLLECTOR = 'urn:example:isRareBookCollector';
+const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
+const RARE_BOOK_CLASS = 'urn:bookstore:RareBook';
 
-const bastianIri = `urn:bookstore:customer:${aboxFixtures.customer.id}`;
+const bastianIri = `urn:bookstore:customer:${aboxFixtures.customer.customerId}`;
 const rareBookIri = `urn:bookstore:book:${aboxFixtures.rareBook.isbn}`;
 
 async function quadsToN3(quads: readonly QuadInterface[]): Promise<string> {
@@ -83,20 +91,20 @@ async function quadsToN3(quads: readonly QuadInterface[]): Promise<string> {
 function rulesN3(): string {
   return `
 {
-  ?customer <urn:bookstore:Customer#id>          ?customerId.
-  ?order    <urn:bookstore:Order#customerId>     ?customerId.
-  ?order    <urn:bookstore:Order#items>          ?line.
-  ?line     <urn:bookstore:OrderLine#bookIsbn>   ?isbn.
-  ?book     <urn:bookstore:Book#isbn>            ?isbn.
+  ?customer <https://bookstore.example/customerId>  ?customerId.
+  ?order    <https://bookstore.example/customerId>  ?customerId.
+  ?order    <https://bookstore.example/orderLines>  ?line.
+  ?line     <https://bookstore.example/bookIsbn>    ?isbn.
+  ?book     <https://bookstore.example/isbn>        ?isbn.
 } => {
   ?customer <${PURCHASED}> ?book.
 }.
 
 {
-  ?customer <urn:bookstore:Customer#id>          ?customerId.
-  ?review   <urn:bookstore:Review#customerId>    ?customerId.
-  ?review   <urn:bookstore:Review#bookIsbn>      ?isbn.
-  ?book     <urn:bookstore:Book#isbn>            ?isbn.
+  ?customer <https://bookstore.example/customerId>  ?customerId.
+  ?review   <https://bookstore.example/customerId>  ?customerId.
+  ?review   <https://bookstore.example/bookIsbn>    ?isbn.
+  ?book     <https://bookstore.example/isbn>        ?isbn.
 } => {
   ?customer <${REVIEWED}> ?book.
 }.
@@ -107,6 +115,13 @@ function rulesN3(): string {
 } => {
   ?customer <${VERIFIED}> ?book.
 }.
+
+{
+  ?customer <${PURCHASED}> ?book.
+  ?book     <${RDF_TYPE}>  <${RARE_BOOK_CLASS}>.
+} => {
+  ?customer <${RARE_BOOK_COLLECTOR}> ?book.
+}.
 `;
 }
 
@@ -115,6 +130,7 @@ function queryN3(): string {
 { ?customer <${PURCHASED}> ?book } => { ?customer <${PURCHASED}> ?book }.
 { ?customer <${REVIEWED}>  ?book } => { ?customer <${REVIEWED}>  ?book }.
 { ?customer <${VERIFIED}>  ?book } => { ?customer <${VERIFIED}>  ?book }.
+{ ?customer <${RARE_BOOK_COLLECTOR}> ?book } => { ?customer <${RARE_BOOK_COLLECTOR}> ?book }.
 `;
 }
 
@@ -125,13 +141,17 @@ async function runReasoner(): Promise<readonly QuadInterface[]> {
     return [];
   }
 
-  const rareBook = bookstoreEntities.instantiate(BookSchema, aboxFixtures.rareBook);
+  // Project the rare book through RareBookSchema (not BookSchema) so the ABox
+  // carries the subclass `rdf:type urn:bookstore:RareBook` assertion the new
+  // rare-book-collector rule keys on. The `:purchased` / `:reviewed` rules
+  // chain through `isbn` (which RareBook still emits) so they continue to fire.
+  const rareBook = bookstoreEntities.instantiate(RareBookSchema, aboxFixtures.rareBook);
   const order = bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order);
   const allQuads: QuadInterface[] = [
     ...bookstoreEntities.toQuads(CustomerSchema, aboxFixtures.customer, { 'iriFor': bastianIri }),
-    ...bookstoreEntities.toQuads(BookSchema, rareBook, { 'iriFor': rareBookIri }),
-    ...bookstoreEntities.toQuads(OrderSchema, order, { 'iriFor': `urn:bookstore:order:${aboxFixtures.order.id}` }),
-    ...bookstoreEntities.toQuads(ReviewSchema, aboxFixtures.review, { 'iriFor': `urn:bookstore:review:${aboxFixtures.review.id}` })
+    ...bookstoreEntities.toQuads(RareBookSchema, rareBook, { 'iriFor': rareBookIri }),
+    ...bookstoreEntities.toQuads(OrderSchema, order, { 'iriFor': `urn:bookstore:order:${aboxFixtures.order.orderId}` }),
+    ...bookstoreEntities.toQuads(ReviewSchema, aboxFixtures.review, { 'iriFor': `urn:bookstore:review:${aboxFixtures.review.reviewId}` })
   ];
 
   const factsN3 = await quadsToN3(allQuads);
@@ -198,11 +218,50 @@ void describe('EYE reasoner — bookstore ABox e2e inference', async () => {
     assert.ok(hit !== undefined, 'Bastian should be inferred as a verified reviewer of the rare book');
   });
 
+  void it('derives :isRareBookCollector from purchased ∧ rdf:type RareBook (subclass + union-domain)', () => {
+    // New derivation exercising the subclass rdf:type assertion AND the
+    // union-domain shared customerId predicate: the :purchased fact that
+    // feeds this rule is itself derived from the Order→Customer link, which
+    // rides the flat customerId IRI shared across Customer, Order, and Review.
+    const collector = inferredQuads.filter((quad) => {
+      return quad.predicate.value === RARE_BOOK_COLLECTOR;
+    });
+
+    assert.ok(collector.length > 0, ':isRareBookCollector triple should be inferred');
+
+    const hit = collector.find((quad) => {
+      return quad.subject.value === bastianIri && quad.object.value === rareBookIri;
+    });
+
+    assert.ok(
+      hit !== undefined,
+      `Bastian (${bastianIri}) should be inferred as a rare-book collector of the RareBook (${rareBookIri})`
+    );
+  });
+
+  void it('rare-book-collector inference requires the RareBook subclass type (sanity: rule keyed on subclass)', () => {
+    // The rare-book-collector fact must NOT be derived for any book that is
+    // not typed as RareBook. Since only one book is in the ABox and it is a
+    // RareBook, assert every collector triple targets the rare book IRI.
+    const collector = inferredQuads.filter((quad) => {
+      return quad.predicate.value === RARE_BOOK_COLLECTOR;
+    });
+
+    for (const quad of collector) {
+      assert.equal(
+        quad.object.value,
+        rareBookIri,
+        `rare-book-collector object must be the RareBook IRI, got ${quad.object.value}`
+      );
+    }
+  });
+
   void it('every inferred triple has named-node subject and object (no literal-subject leakage)', () => {
     const triples = inferredQuads.filter((quad) => {
       return quad.predicate.value === PURCHASED
         || quad.predicate.value === REVIEWED
-        || quad.predicate.value === VERIFIED;
+        || quad.predicate.value === VERIFIED
+        || quad.predicate.value === RARE_BOOK_COLLECTOR;
     });
 
     for (const quad of triples) {

@@ -22,27 +22,27 @@ type OrderWire = typeof aboxFixtures.order;
 
 class OrderWithToJson {
   declare public customerId: string;
-  declare public id: string;
-  declare public items: OrderWire['items'];
+  declare public orderId: string;
+  declare public orderLines: OrderWire['orderLines'];
+  declare public orderTotal: OrderWire['orderTotal'];
   declare public placedAt: OrderWire['placedAt'];
   declare public shippingAddress: OrderWire['shippingAddress'];
-  declare public total: OrderWire['total'];
 
   public toJSON(): {
     readonly 'customerId': string;
-    readonly 'id': string;
-    readonly 'items': OrderWire['items'];
+    readonly 'orderId': string;
+    readonly 'orderLines': OrderWire['orderLines'];
+    readonly 'orderTotal': OrderWire['orderTotal'];
     readonly 'placedAt': OrderWire['placedAt'];
     readonly 'shippingAddress': OrderWire['shippingAddress'];
-    readonly 'total': OrderWire['total'];
   } {
     return {
       'customerId': this.customerId,
-      'id': this.id,
-      'items': this.items,
+      'orderId': this.orderId,
+      'orderLines': this.orderLines,
+      'orderTotal': this.orderTotal,
       'placedAt': this.placedAt,
-      'shippingAddress': this.shippingAddress,
-      'total': this.total
+      'shippingAddress': this.shippingAddress
     };
   }
 }
@@ -70,7 +70,7 @@ const hydrated = jt.instantiate(
 
 const wire = bookstoreEntities.encode(ToJsonOrderTransform, hydrated) as Record<string, unknown>;
 
-console.assert(wire.id === aboxFixtures.order.id);
+console.assert(wire.orderId === aboxFixtures.order.orderId);
 // JSON.stringify will use the same toJSON shape.
 const cloned: unknown = structuredClone(hydrated.toJSON());
 

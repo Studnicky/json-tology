@@ -19,7 +19,7 @@ const jt = createBookstoreDocRegistry();
 const CustomerCardSchema = Compose.pick(
   CustomerSchema,
   [
-    'id',
+    'customerId',
     'name',
     'email'
   ] as const,
@@ -29,11 +29,11 @@ const CustomerCardSchema = Compose.pick(
 const jt2 = jt.set(CustomerCardSchema);
 
 const card = jt2.instantiate(CustomerCardSchema.$id, {
+  'customerId': aboxFixtures.customer.customerId,
   'email': aboxFixtures.customer.email,
-  'id': aboxFixtures.customer.id,
   'name': aboxFixtures.customer.name
 }) as Record<string, unknown>;
 
-console.assert(card.id === aboxFixtures.customer.id);
+console.assert(card.customerId === aboxFixtures.customer.customerId);
 console.assert(card.name === 'Bastian Balthazar Bux');
 console.assert(!('addresses' in card));

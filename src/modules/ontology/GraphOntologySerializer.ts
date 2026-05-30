@@ -20,7 +20,8 @@ export class GraphOntologySerializer extends BaseGraphSerializer {
   protected projectGraph(graph: SchemaGraphInterface, issuer?: IdentifierIssuerInterface): QuadInterface[] {
     return OwlProjection.graph(graph, {
       'curie': this.curie,
-      issuer
+      issuer,
+      'predicateResolver': this.predicateResolver
     });
   }
 }

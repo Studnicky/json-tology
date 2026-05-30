@@ -24,7 +24,7 @@ const emailNode = graphNodes.find((node) => {
 
 console.assert(emailNode !== undefined);
 
-// Some property whose range is EmailSchema (e.g. urn:bookstore:Customer#email)
+// Some property whose range is EmailSchema (e.g. https://bookstore.example/email)
 // resolves via the typed property edge.
 const RDFS_RANGE = 'http://www.w3.org/2000/01/rdf-schema#range';
 

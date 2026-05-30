@@ -11,8 +11,8 @@ import {
 } from '../bookstore/index.js';
 
 const customer = bookstoreEntities.instantiate(CustomerSchema.$id, {
+  'customerId': aboxFixtures.customer.customerId,
   'email': aboxFixtures.customer.email,
-  'id': aboxFixtures.customer.id,
   'internalNotes': 'vip',
   'name': aboxFixtures.customer.name
   // addresses omitted — default [] will be applied

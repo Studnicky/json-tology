@@ -1,7 +1,7 @@
 /**
  * Schema transforms
  *
- * Attach decode/encode functions to a schema so parse() automatically
+ * Attach decode/encode functions to a schema so instantiate() automatically
  * transforms validated data into a richer type (e.g. string → Date).
  *
  * The schema object is never mutated — transforms are stored in a WeakMap.
@@ -15,7 +15,7 @@
  *     encode: (d: Date) => d.toISOString(),
  *   },
  * );
- * const date = jt.parse(DateSchema.$id, '2026-01-01'); // typed as Date
+ * const date = jt.instantiate(DateSchema.$id, '2026-01-01'); // typed as Date
  */
 
 import type { JsonSchemaDocumentType } from '../../types/Schema.js';
@@ -102,11 +102,11 @@ export class Transform {
   /**
    * Attach decode and encode functions to a schema.
    *
-   * - `decode` is called by parse() after validation succeeds.
+   * - `decode` is called by instantiate() after validation succeeds.
    * - `encode` converts a decoded value back to the wire representation.
    *
    * The schema object is returned unchanged at runtime; only the TypeScript
-   * return type is widened so `parse()` returns the decoded type.
+   * return type is widened so `instantiate()` returns the decoded type.
    */
   public static create<
     TSchema extends JsonSchemaDocumentType & { readonly '$id': string; },

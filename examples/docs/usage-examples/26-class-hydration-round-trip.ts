@@ -26,11 +26,11 @@ type OrderWire = typeof aboxFixtures.order;
 
 class RoundTripOrder {
   declare public customerId: string;
-  declare public id: string;
-  declare public items: OrderWire['items'];
+  declare public orderId: string;
+  declare public orderLines: OrderWire['orderLines'];
+  declare public orderTotal: OrderWire['orderTotal'];
   declare public placedAt: OrderWire['placedAt'];
   declare public shippingAddress: OrderWire['shippingAddress'];
-  declare public total: OrderWire['total'];
 }
 
 const RoundTripOrderSchema = Compose.equivalent(

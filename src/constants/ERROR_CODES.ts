@@ -1,11 +1,14 @@
 import type {
+  CoercionErrorCodeType,
   GraphErrorCodeType,
   InstantiationErrorCodeType,
   MaterializationErrorCodeType,
   OwlImportErrorCodeType,
-  SchemaErrorCodeType
+  SchemaErrorCodeType,
+  TransformErrorCodeType
 } from '../types/ErrorCodes.js';
 
+export const CoercionErrorCode = { 'COERCION_FAILED': 'COERCION_FAILED' } as const satisfies Record<string, CoercionErrorCodeType>;
 
 export const SchemaErrorCode = {
   'COMPUTED_FN_MISSING': 'COMPUTED_FN_MISSING',
@@ -35,8 +38,7 @@ export const GraphErrorCode = {
 
 export const InstantiationErrorCode = {
   'EXTRA_FORBIDDEN': 'EXTRA_FORBIDDEN',
-  'INSTANTIATION_FAILED': 'INSTANTIATION_FAILED',
-  'TRANSFORM_DECODE_FAILED': 'TRANSFORM_DECODE_FAILED'
+  'INSTANTIATION_FAILED': 'INSTANTIATION_FAILED'
 } as const satisfies Record<string, InstantiationErrorCodeType>;
 
 export const MaterializationErrorCode = {
@@ -45,3 +47,8 @@ export const MaterializationErrorCode = {
 } as const satisfies Record<string, MaterializationErrorCodeType>;
 
 export const OwlImportErrorCode = { 'NOT_IMPLEMENTED': 'OWL_IMPORT_NOT_IMPLEMENTED' } as const satisfies Record<string, OwlImportErrorCodeType>;
+
+export const TransformErrorCode = {
+  'TRANSFORM_DECODE_FAILED': 'TRANSFORM_DECODE_FAILED',
+  'TRANSFORM_ENCODE_FAILED': 'TRANSFORM_ENCODE_FAILED'
+} as const satisfies Record<string, TransformErrorCodeType>;

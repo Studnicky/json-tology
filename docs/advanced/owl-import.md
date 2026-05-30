@@ -124,7 +124,7 @@ Options:
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--out <path>` | stdout | Write the generated TypeScript source to `<path>`. |
-| `--name <id>` | stem of `--out` or `"ontology"` | Identifier prefix used for namespace exports. |
+| `--name <id>` | input filename basename (sanitized) | Identifier prefix used for namespace exports. |
 | `--base-iri <iri>` | — | Override `baseIRI` passed to `fromTbox`. |
 
 ### Programmatic API

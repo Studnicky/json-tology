@@ -25,12 +25,12 @@ type OrderWire = typeof aboxFixtures.order;
 
 class OrderViaProto {
   declare public customerId: string;
-  declare public id: string;
-  declare public items: OrderWire['items'];
-  declare public total: OrderWire['total'];
+  declare public orderId: string;
+  declare public orderLines: OrderWire['orderLines'];
+  declare public orderTotal: OrderWire['orderTotal'];
 
   public lineCount(): number {
-    return this.items.length;
+    return this.orderLines.length;
   }
 }
 
@@ -55,4 +55,4 @@ Transform.create<typeof ProtoOrderSchema, OrderViaProto>(ProtoOrderSchema, {
 const hydrated = jt.instantiate(ProtoOrderSchema, { ...aboxFixtures.order });
 
 console.assert(hydrated instanceof OrderViaProto);
-console.assert((hydrated as OrderViaProto).lineCount() === aboxFixtures.order.items.length);
+console.assert((hydrated as OrderViaProto).lineCount() === aboxFixtures.order.orderLines.length);

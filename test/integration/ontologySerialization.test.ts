@@ -1671,9 +1671,9 @@ function expandIri(value: string): string {
 
             assert.ok(instIRI.startsWith('https://data.example.com/'));
             assert.ok(hasIriQuad(quads, instIRI, 'rdf:type', 'https://example.com/User'));
-            assert.ok(hasLiteralQuad(quads, instIRI, 'https://example.com/User#name', 'Alice', 'xsd:string'));
-            assert.ok(hasLiteralQuad(quads, instIRI, 'https://example.com/User#age', 30, 'xsd:integer'));
-            assert.ok(hasLiteralQuad(quads, instIRI, 'https://example.com/User#active', true, 'xsd:boolean'));
+            assert.ok(hasLiteralQuad(quads, instIRI, 'https://data.example.com/name', 'Alice', 'xsd:string'));
+            assert.ok(hasLiteralQuad(quads, instIRI, 'https://data.example.com/age', 30, 'xsd:integer'));
+            assert.ok(hasLiteralQuad(quads, instIRI, 'https://data.example.com/active', true, 'xsd:boolean'));
           },
           'instance': {
             'active': true,
@@ -1699,7 +1699,7 @@ function expandIri(value: string): string {
 
             assert.ok(arrTypeQuad, 'should have rdf:type quad');
             const arrInstIRI = arrTypeQuad.subject.value;
-            const tagQuads = findQuadsForSubject(quads, arrInstIRI, 'https://example.com/Tags#tags');
+            const tagQuads = findQuadsForSubject(quads, arrInstIRI, 'https://data.example.com/tags');
 
             assert.equal(tagQuads.length, 3);
 
@@ -1743,9 +1743,9 @@ function expandIri(value: string): string {
             assert.ok(nullTypeQuad, 'should have rdf:type quad');
             const nullInstIRI = nullTypeQuad.subject.value;
 
-            assert.ok(hasLiteralQuad(quads, nullInstIRI, 'https://example.com/Nullable#name', 'Alice'));
+            assert.ok(hasLiteralQuad(quads, nullInstIRI, 'https://data.example.com/name', 'Alice'));
 
-            const nickQuads = findQuadsForSubject(quads, nullInstIRI, 'https://example.com/Nullable#nickname');
+            const nickQuads = findQuadsForSubject(quads, nullInstIRI, 'https://data.example.com/nickname');
 
             assert.equal(nickQuads.length, 0);
           },
@@ -1823,7 +1823,7 @@ function expandIri(value: string): string {
           assert.equal(parentTypeQuads.length, 1);
           const parentIRI = parentTypeQuads[0].subject.value;
 
-          const addrQuads = findQuadsForSubject(quads, parentIRI, 'https://example.com/Parent#address');
+          const addrQuads = findQuadsForSubject(quads, parentIRI, 'https://data.example.com/address');
 
           assert.equal(addrQuads.length, 1);
           assert.equal(addrQuads[0].object.termType, 'NamedNode');
@@ -1831,8 +1831,8 @@ function expandIri(value: string): string {
           const nestedIRI = addrQuads[0].object.value;
 
           assert.ok(
-            hasLiteralQuad(quads, nestedIRI, 'https://example.com/Parent#/properties/address#street', 'Springfield', 'xsd:string')
-            || hasLiteralQuad(quads, nestedIRI, 'https://example.com/Parent#/properties/address#city', 'Springfield', 'xsd:string')
+            hasLiteralQuad(quads, nestedIRI, 'https://data.example.com/street', 'Springfield', 'xsd:string')
+            || hasLiteralQuad(quads, nestedIRI, 'https://data.example.com/city', 'Springfield', 'xsd:string')
             || quads.some((quad) => {
               return quad.subject.value === nestedIRI
               && quad.predicate.value.includes('city')
@@ -1919,8 +1919,8 @@ function expandIri(value: string): string {
 
           for (const pred of aboxPropPredicates) {
             assert.ok(
-              pred.startsWith('https://example.com/Item'),
-              `ABox property predicate ${pred} should reference the schema class`
+              pred.startsWith('https://example.com/') || pred.startsWith('https://data.example.com/'),
+              `ABox property predicate ${pred} should be a flat IRI`
             );
           }
         },

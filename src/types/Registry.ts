@@ -48,10 +48,23 @@ export type SchemaMapFromTupleType<
 type SchemaIdsTupleType<T extends readonly unknown[]>
   = { [I in keyof T]: T[I] extends { readonly '$id': infer Id extends string } ? Id : never };
 
-/** Union of `$id`s present in a sub-tuple. Distributes over the element union,
- *  so depth is O(1) regardless of sub-tuple length. */
+/** Distributive `$id` projection of a single schema element. Written as a naked
+ *  type parameter so the conditional distributes over a union *and* collapses to
+ *  `never` for the `never` member — the property that makes {@link IdsUnionType}
+ *  correct for empty sub-tuples. */
+type IdOfType<TElement>
+  = TElement extends { readonly '$id': infer Id extends string } ? Id : never;
+
+/** Union of `$id`s present in a sub-tuple. Distributes over the element union via
+ *  {@link IdOfType}, so depth is O(1) regardless of sub-tuple length.
+ *
+ *  For an empty tuple `T[number]` is `never`; distributing `IdOfType` over the
+ *  empty union yields `never`. A non-distributive
+ *  `T[number] extends … ? Id : never` would instead vacuously match (`never`
+ *  satisfies every constraint) and resolve `Id` to its `string` upper bound,
+ *  contaminating any downstream `IdsUnionType<[]> & TSeen` with `TSeen`. */
 type IdsUnionType<T extends readonly unknown[]>
-  = T[number] extends { readonly '$id': infer Id extends string } ? Id : never;
+  = IdOfType<T[number]>;
 
 /** Duplicate `$id`s within a SMALL chunk (≤ 8): the N×N position scan is bounded
  *  to the chunk size, so this is cheap. Both directions of `extends` must hold

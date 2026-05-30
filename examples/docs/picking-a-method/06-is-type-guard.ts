@@ -21,7 +21,7 @@ if (bookstoreEntities.is(OrderSchema.$id, incoming)) {
   // Within this block, `incoming` is narrowed to `Order`.
   const order: Order = incoming;
 
-  console.assert(order.id === aboxFixtures.order.id);
+  console.assert(order.orderId === aboxFixtures.order.orderId);
 }
 
 // Invalid shape — is returns false.

@@ -1,3 +1,4 @@
+export type * from './AnnotatedEdgeDescriptorInterface.js';
 export type * from './ArrayResult.js';
 export type * from './Changeset.js';
 export type * from './CliWriter.js';
@@ -24,6 +25,7 @@ export type * from './IdentifierIssuerOpts.js';
 export type * from './InternalExecutionResult.js';
 export type * from './Invariant.js';
 export type * from './JsonSchemaObject.js';
+export type * from './LiftOptionsInterface.js';
 export type * from './Logger.js';
 export type * from './Materializer.js';
 export type * from './MaterializerImpl.js';
@@ -77,3 +79,4 @@ export type * from './VocabularyPlugin.js';
 // - SchemaRefWalker   (internal ref traversal; not a consumer-facing callable)
 // - SimplePredicateEntry (internal OWL predicate helper shape)
 // - VizOptions        (internal visualization options; consumed only by the viz subpath)
+// - XsdJsonSchemaPrimitiveInterface (internal XSD→JSON-Schema reverse-map shape; consumed by constants + import dispatch)

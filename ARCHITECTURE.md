@@ -23,7 +23,7 @@ These rules govern every remaining workstream:
 3. The graph remains the shared runtime artifact.
 4. Validation semantics come from graph semantics, not serializer-specific logic.
 5. RDF semantics are emitted as JSON-LD only in-core.
-6. `materialize()`, `parse()`, `create()`, and `toQuads()` remain views over one runtime execution model.
+6. `materialize()`, `instantiate()`, `create()`, and `toQuads()` remain views over one runtime execution model.
 7. Schema round-trip must stay lossless for the supported keyword surface.
 8. Type inference must either model behavior correctly or fall back explicitly. Silent misresolution is not acceptable.
 9. Versioning happens in git and releases, not in production runtime code.
@@ -49,7 +49,7 @@ Completed and verified:
 4. Transform contracts are aligned. `parse()` is decoded, while `materialize()` and `encode()` are typed and implemented as wire-form.
 5. Public docs and exported surfaces were aligned. README examples use supported APIs, stale `json-schema-to-ts` claims were removed, and public API smoke coverage exists in `test/types`.
 6. The shipped CLI is the CLI that is tested. Integration coverage runs the built `dist/cli.js`, verifies the published bin path, and locks the supported schema-path behavior in place.
-7. Logger and loader posture is intentional. Routine trace logging no longer emits stack traces, and `SchemaLoader` is explicitly documented and tested as a lightweight filesystem loader rather than a standards validator.
+7. Logger and loader posture is intentional. Routine trace logging no longer emits stack traces, and `Loaders` is explicitly documented and tested as a lightweight filesystem loader rather than a standards validator.
 8. Compile-time inference was expanded where the improvement is materially useful. External `$ref` resolution now supports explicit references maps, and `if/then/else` uses a documented sound branch-union approximation instead of collapsing to `unknown`.
 9. SHACL JSON-LD coverage was expanded for graph semantics that SHACL Core cannot express directly. The serializer now emits explicit `jt:*` annotations for `multipleOf`, `minItems`, `maxItems`, and `uniqueItems`.
 10. Artifact hardening expanded beyond the original corpus. Round-trip coverage now includes richer graphs with anchors, dynamic anchors, `contains`, `patternProperties`, and conditionals.
@@ -60,7 +60,7 @@ Latest verified commands:
 - `npm run build`
 - `npm run type-check`
 - `npm run test`
-- `node ./node_modules/typescript/bin/tsc --noEmit --project tsconfig.test-types.json`
+- `npm run type-check:tests:all`
 - `npm run pack:check`
 - `npm run bench`
 
@@ -109,7 +109,7 @@ These are mandatory before claiming any future workstream is complete:
 - `npm run build`
 - `npm run type-check`
 - `npm run test`
-- `node ./node_modules/typescript/bin/tsc --noEmit --project tsconfig.test-types.json`
+- `npm run type-check:tests:all`
 - `npm run pack:check`
 - `npm run bench` for any work that touches benchmarked paths or introduces
   performance / ergonomics claims
@@ -192,9 +192,9 @@ All error classes extend `BaseError`. Internal imports reference each file direc
 - `CoercionError.ts` — coercion failures; carries `ValidationErrors` collection
 - `GraphError.ts` — pointer resolution, anchor lookup, ref resolution, dialect issues
 - `InstantiationError.ts` — schema instantiation failures
-- `LoadError.ts` — filesystem and fetch load failures
+- _(no LoadError class)_ — loader failures use `SchemaLoadErrorType` in `src/types/Loader.ts` (a discriminated union type, not an error class)
 - `MaterializationError.ts` — materialization and ABox validation failures
-- `OwlImportError.ts` — OWL import fatal conditions; carries `axiomIri` and `subjectIri`; codes: `OWL_IMPORT_ERROR`, `OWL_IMPORT_NOT_IMPLEMENTED`
+- `OwlImportError.ts` — OWL import fatal conditions; carries `axiomIri` and `subjectIri`; codes: `OWL_IMPORT_NOT_IMPLEMENTED`
 - `SchemaError.ts` — registration, missing `$id`, structure validation
 - `ValidationErrors.ts` — collection class for accumulated validation errors
 

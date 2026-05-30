@@ -27,7 +27,10 @@ import type { ValidationErrorType } from '../../types/Validation.js';
 import type { VocabularyPluginInterface } from '../../interfaces/VocabularyPlugin.js';
 import type { SchemaRegistryForEachCallback } from '../../types/SchemaRegistryForEachCallback.js';
 
+import { CoercionError } from '../../errors/CoercionError.js';
+import { DecodeError } from '../../errors/DecodeError.js';
 import { InstantiationError } from '../../errors/InstantiationError.js';
+import { TransformError } from '../../errors/TransformError.js';
 import { ComputedStore } from './ComputedStore.js';
 import { SchemaEntryStore } from './SchemaEntryStore.js';
 import { SchemaRefWalker } from './SchemaRefWalker.js';
@@ -352,12 +355,22 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const compiled = this.compiled(schemaId);
 
     if (compiled === undefined) {
-      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`, { schemaId });
+      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Register it first.`, { schemaId });
     }
 
     const input = options?.clone === false ? data : structuredClone(data);
+    const result = compiled.validate(input, CAST_OPTIONS);
 
-    return compiled.validate(input, CAST_OPTIONS).value;
+    if (!result.valid) {
+      const diagnostic = compiled.validate(structuredClone(data), {
+        ...CAST_OPTIONS,
+        'collectErrors': true
+      });
+
+      throw new CoercionError(new ValidationErrors(diagnostic.errors));
+    }
+
+    return result.value;
   }
 
   /**
@@ -435,7 +448,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const compiled = this.compiled(schemaId);
 
     if (compiled === undefined) {
-      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`, { schemaId });
+      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Register it first.`, { schemaId });
     }
 
     return compiled.validate(structuredClone(data), CLEAN_OPTIONS).value;
@@ -476,7 +489,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
   /**
    * Collect all non-fragment cross-schema $ref IRIs reachable from the given schema
-   * that are not yet registered. Used by the loader walker in JsonTology._resolveAllRefs.
+   * that are not yet registered. Used by the loader walker in JsonTology.resolveAllRefs.
    */
   public collectUnresolvedRefIris(schema: Record<string, unknown>): ReadonlySet<string> {
     return this.refs.collectUnresolved(
@@ -517,12 +530,22 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const compiled = this.compiled(schemaId);
 
     if (compiled === undefined) {
-      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`, { schemaId });
+      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Register it first.`, { schemaId });
     }
 
     const input = options?.clone === false ? data : structuredClone(data);
+    const result = compiled.validate(input, CONVERT_OPTIONS);
 
-    return compiled.validate(input, CONVERT_OPTIONS).value;
+    if (!result.valid) {
+      const diagnostic = compiled.validate(structuredClone(data), {
+        ...CONVERT_OPTIONS,
+        'collectErrors': true
+      });
+
+      throw new CoercionError(new ValidationErrors(diagnostic.errors));
+    }
+
+    return result.value;
   }
 
   public create(schemaId: string): unknown {
@@ -665,7 +688,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const entry = this.store.get(schemaId);
 
     if (entry === undefined) {
-      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`);
+      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Register it first.`);
     }
 
     if (!entry.hasComputedFields && this.computedStore.has(schemaId)) {
@@ -765,19 +788,17 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       try {
         decoded = decoder.decode(refDecoded);
       } catch (error) {
+        if (error instanceof TransformError) {
+          throw error;
+        }
         const causeError = error instanceof Error ? error : new Error(String(error));
 
-        throw new InstantiationError(
-          new ValidationErrors([{
-            'keyword': 'TRANSFORM_DECODE_FAILED',
-            'message': `transform decoder failed at root: ${causeError.message}`,
-            'params': {},
-            'path': ''
-          }]),
+        throw new DecodeError(
+          `transform decoder failed at root: ${causeError.message}`,
           {
             'cause': causeError,
-            'code': 'TRANSFORM_DECODE_FAILED',
-            'message': `transform decoder failed at root: ${causeError.message}`
+            'path': '',
+            'schemaId': schemaId
           }
         );
       }
@@ -797,7 +818,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const compiled = this.compiled(schemaId);
 
     if (compiled === undefined) {
-      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`, { schemaId });
+      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Register it first.`, { schemaId });
     }
 
     if (!compiled.check(data)) {
@@ -1057,7 +1078,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const entry = this.store.get(schemaId);
 
     if (!entry) {
-      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Call register() first.`, { schemaId });
+      throw new SchemaError('SCHEMA_NOT_REGISTERED', `Schema not registered: ${schemaId}. Register it first.`, { schemaId });
     }
 
     const graph = this.graphOf(entry);

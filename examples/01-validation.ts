@@ -1,14 +1,14 @@
 /**
- * 01-validation.mjs — Basic schema validation
+ * 01-validation — Basic schema validation
  *
  * Demonstrates: registering schemas and validating data against them.
  * Shows validate() for error collection, is() as a type guard, and
  * errors() for structured error details.
  *
- * Run: npm run build && node examples/01-validation.mjs
+ * Run: npm run build && npx tsx examples/01-validation.ts
  */
 
-import { JsonTology } from '../dist/index.js';
+import { JsonTology } from '../src/index.js';
 
 // ---------------------------------------------------------------------------
 // Schema definition
@@ -32,14 +32,18 @@ const UserSchema = {
     'email'
   ],
   'type': 'object'
-};
+} as const;
 
 // ---------------------------------------------------------------------------
 // Create instance and register
 // ---------------------------------------------------------------------------
 
+// enableStrictGraph: false — this is a self-contained demo whose schema keeps
+// constrained primitives (minimum, format) inline for brevity. The strict-graph
+// default would require extracting each into its own $ref'd schema.
 const jt = JsonTology.create({
   'baseIRI': 'https://example.com',
+  'enableStrictGraph': false,
   'schemas': [UserSchema]
 });
 

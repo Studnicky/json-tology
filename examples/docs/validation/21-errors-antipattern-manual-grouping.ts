@@ -13,10 +13,10 @@ import {
 const errs = bookstoreEntities.validate(ReviewSchema.$id, {
   'body': 'hi',
   'bookIsbn': aboxFixtures.rareBook.isbn,
-  'customerId': aboxFixtures.customer.id,
-  'id': aboxFixtures.review.id,
+  'customerId': aboxFixtures.customer.customerId,
   'postedAt': '2026-04-20T09:15:00Z',
-  'rating': 6
+  'rating': 6,
+  'reviewId': aboxFixtures.review.reviewId
 });
 
 // Anti-pattern: rolling your own path-to-messages accumulator

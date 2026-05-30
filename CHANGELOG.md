@@ -7,6 +7,122 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-05-29
+
+### Changed
+
+- **BREAKING — a failing decode transform now throws `DecodeError` instead of
+  `InstantiationError`.** The `.code` value `TRANSFORM_DECODE_FAILED` is
+  unchanged, but it moves out of the `InstantiationError` code union into the
+  new `TransformError` code union. Catch blocks for decode-transform failures
+  must switch from `instanceof InstantiationError` to `instanceof DecodeError`.
+- **BREAKING — a failing encode transform now throws `EncodeError` instead of
+  leaking a raw `Error`.** `jt.encode()` and `dump` wrap any raw throw from a
+  registered encode function in `EncodeError` (code `TRANSFORM_ENCODE_FAILED`,
+  direction `'encode'`).
+- **BREAKING — `value.cast()` / `value.convert()` are now strict.** When
+  coerced data does not satisfy the schema these methods throw `CoercionError`
+  instead of returning a best-effort value.
+- **BREAKING — RDF property predicates are now flat, shared canonical IRIs by
+  default.** A property's predicate is derived as `${baseIRI}/${propertyName}`
+  (a single resource shared across every class that declares that property),
+  replacing the previous class-scoped `${ClassIRI}#${propertyName}` form. This
+  makes `rdfs:domain` a monotonic entailment over the union of binding classes
+  and enables property hierarchies, characteristics, `owl:equivalentProperty`
+  alignment, and cross-class reasoning. Predicate derivation lives in a single
+  authority, `PredicateResolver`, consumed by ABox, TBox, SHACL, and `fromQuads`
+  alike. Set `enableCanonicalPredicates: false` to derive class-scoped
+  `${ClassIRI}#${propertyName}` predicates instead — for DTO bundles where
+  coincidentally same-named properties must stay distinct.
+- **BREAKING — bookstore example domain redesigned as a coordinated vocabulary.**
+  Properties whose name collided across entities with differing ranges were
+  renamed so each carries a distinct predicate: `Customer.id`→`customerId`,
+  `Order.id`→`orderId`, `Order.total`→`orderTotal`, `Order.items`→`orderLines`,
+  `Review.id`→`reviewId`, `BookListPage.total`→`resultCount`,
+  `BookListPage.items`→`books`, `BookCatalogEntryVariant.price`→`variantPrice`.
+  Genuinely shared concepts (`customerId`, `bookIsbn`, `isbn`) intentionally
+  share one flat predicate.
+- Runnable `examples/*.mjs` are now strict TypeScript (`examples/*.ts`).
+  `examples/**` and `scripts/**` are covered by the type-check gate
+  (`npm run type-check:all`).
+
+### Added
+
+- New exported error types `TransformError`, `DecodeError`, `EncodeError`, and
+  the `TransformErrorCode` constant (`TRANSFORM_DECODE_FAILED`,
+  `TRANSFORM_ENCODE_FAILED`). Decode and encode transform failures now raise
+  typed, catchable errors with a stable `code`, a `direction` field
+  (`'decode'`/`'encode'`), and an optional `path`/`schemaId` context.
+  Consumers may throw `DecodeError` or `EncodeError` from custom handlers — the
+  library propagates the thrown instance unchanged, preserving message and code.
+- `CoercionError` (code `COERCION_FAILED`) is now an enumerated, documented
+  error thrown by `value.cast()` / `value.convert()` (and the equivalent
+  registry methods) when coerced data does not satisfy the schema. It carries a
+  `ValidationErrors` collection on `.errors`.
+- `enableCanonicalPredicates` (default `true`) and `predicateFor` options on
+  `JsonTology.create`, mirroring the `enableStrictGraph` / `iriFor` precedents.
+- `x-jt-predicate` (bind a property to an explicit predicate IRI), `x-jt-iriRef`
+  (serialize an IRI-valued string property as a `NamedNode` rather than a
+  literal), and `x-jt-language` (emit a language-tagged literal) schema keywords.
+- TBox emits flat `owl:ObjectProperty`/`owl:DatatypeProperty` declarations; K
+  classes binding one predicate yield a single property with a union
+  `rdfs:domain`. `fromQuads` reverses flat predicates with subject-type-aware
+  resolution, disambiguating shared predicates by the subject's `rdf:type`.
+- CURIE-valued predicate bindings (`x-jt-predicate`/`predicateFor` returning a
+  compact `prefix:local`) are expanded to full IRIs on `toQuads` emit and
+  matched on `fromQuads` lift via the active prefix map, like subject/object
+  IRIs.
+
+### Fixed
+
+- `DuplicateIdsType` no longer flags schema tuples of distinct `$id`s as
+  duplicates; `IdsUnionType<readonly []>` now resolves to `never` instead of
+  `string` via a distributive `IdOfType` naked-parameter conditional.
+- ABox projection (`toQuads`) now emits `allOf`-inherited (subclass) and
+  `if/then/else` conditional-branch properties, not just the entry node's own
+  properties — e.g. a `PrintBook` instance now projects its inherited `Book`
+  fields. `fromQuads` was fixed symmetrically (lifting own + inherited +
+  branch properties), and `isStructurallyCompatible` no longer treats an
+  `allOf`-based subclass with an empty root as compatible with every candidate.
+- `SchemaCompiler` no longer strips conditional-branch-only properties (e.g. a
+  property that exists only under an `if/then` branch) before the branch
+  validator runs.
+- ABox literal datatypes are now read from the property's declared graph
+  type+format (via `XsdTypes`) instead of being inferred from the JavaScript
+  runtime value — so `toQuads` and `toTbox`/`toShacl` agree on `xsd:int`,
+  `xsd:float`, `xsd:decimal`, etc. (runtime inference remains only the fallback
+  for untyped values).
+- The XSD↔JSON-Schema reverse type mapping (previously three divergent tables in
+  `importDispatch/Properties`, `importDispatch/Datatypes`, and `OwlImporter`) is
+  consolidated into one `src/constants/XSD_REVERSE_MAPS.ts`, and the SHACL/XSD
+  facet correspondence into one bidirectional `src/constants/XSD_FACETS.ts` — a
+  single source for each, eliminating drift.
+- `jt:annotatedEdge` is now a `SchemaGraphSemanticsInterface` field populated
+  during semantics extraction; relation building reads it via `graph.semantics()`
+  rather than re-reading the raw schema, closing the last keyword that bypassed
+  the canonical-graph semantics API.
+- OWL restriction / axiom `owl:onProperty` and SHACL `sh:path` now resolve the
+  property predicate through `PredicateResolver`, so they reference the SAME IRI
+  the property declaration and ABox use (flat by default, class-scoped under
+  `enableCanonicalPredicates: false`) instead of always emitting the class-scoped
+  form — cardinality/value restrictions are no longer orphaned from instances for
+  reasoners.
+- `fromQuads` round-trips losslessly for temporal and decimal data:
+  `xsd:dateTime`/`xsd:date`/`xsd:time` lift back to their original ISO string
+  (not a `Date`), `xsd:decimal`/`double`/`float` to `number`, and quads are
+  de-duplicated per subject (RDF set semantics) so a shared nested node
+  (e.g. one `Money` referenced twice) no longer lifts as spurious arrays.
+- `$ref`s targeting an embedded `$defs` `$id` now resolve in both `toQuads`
+  projection and `fromQuads` lift instead of throwing `REF_UNRESOLVED`.
+- Input hardening: empty / control-character / unresolved-CURIE predicate IRIs
+  (`x-jt-predicate`, `$id`, `predicateFor`), non-finite numbers, invalid
+  `x-jt-iriRef` IRI values, and non-BCP-47 `x-jt-language` tags are now rejected
+  with structured `GraphError`/`MaterializationError`s; `JsonLdFormatter` and the
+  annotated-edge lift no longer let a `__proto__`/`constructor` predicate or
+  annotation key traverse the prototype chain.
+- `JsonTology.validateWithShacl` throws a structured `GraphError('NOT_IMPLEMENTED')`
+  instead of a bare `Error`.
+
 ## [0.15.3] - 2026-05-25
 
 ### Fixed

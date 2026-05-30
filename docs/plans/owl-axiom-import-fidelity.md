@@ -2,19 +2,18 @@
 
 Status: proposed
 Owner: (json-tology agent)
-Consumer: Pokemontology migration — bootstrap json-tology schemas FROM an existing 493-class
-hand-authored OWL TBox, then regenerate the TBox from those schemas with no loss. Goal: the
-schemas are the *sole* canonical source; `fromTbox` → schemas → `toTbox` is semantically
-idempotent.
+Consumer: OWL TBox bootstrap migration — import json-tology schemas FROM an existing
+hand-authored OWL TBox (e.g. the bookstore domain), then regenerate the TBox from those schemas
+with no loss. Goal: the schemas are the *sole* canonical source; `fromTbox` → schemas → `toTbox`
+is semantically idempotent.
 
 ## Why
 
-A real-world bootstrap of a 493-class / 904-property OWL TBox through
-`JsonTology.fromTbox(quads)` round-trips the structural backbone well (classes, `subClassOf`,
-properties, functional characteristics) but DROPS four formal OWL-2 axiom categories. The
-**emit** path (`toTbox` / `OwlProjection`) can already produce three of them; the **import**
-path cannot reconstruct them. Closing the import gaps makes "schemas as single source of truth"
-fully achievable without any hand-authored supplement.
+A real-world bootstrap of a large OWL TBox through `JsonTology.fromTbox(quads)` round-trips
+the structural backbone well (classes, `subClassOf`, properties, functional characteristics) but
+DROPS four formal OWL-2 axiom categories. The **emit** path (`toTbox` / `OwlProjection`) can
+already produce three of them; the **import** path cannot reconstruct them. Closing the import
+gaps makes "schemas as single source of truth" fully achievable without any hand-authored supplement.
 
 ## Current state (verified, file:line)
 
@@ -71,12 +70,12 @@ path that special-cases these outside the graph. This mirrors the constraint pla
 triple-term plan.
 
 ## Acceptance criteria — idempotent round-trip
-Add `test/` fixtures derived from the Pokemontology `ontology/schema/core.ttl` patterns:
-- `owl:AllDisjointClasses ( Species Move Item )`
-- a class with `owl:disjointWith` to 3+ partners
-- `pkm:level` datatype range `xsd:integer [minInclusive 1; maxInclusive 100]`, `pkm:ivHP`
-  `[0..31]`, a string `maxLength`/`pattern`
-- `owl:equivalentClass obo:BFO_0000004` (external)
+Add `test/` fixtures derived from bookstore domain TBox patterns:
+- `owl:AllDisjointClasses ( Book EBook PrintBook )`
+- a class with `owl:disjointWith` to 3+ partners (e.g. `EBook disjointWith PrintBook, RareBook, SignedFirstEdition`)
+- `bk:rating` datatype range `xsd:integer [minInclusive 1; maxInclusive 5]`, `bk:pageCount`
+  `[1..9999]`, a string `maxLength`/`pattern` (e.g. `bk:isbn`)
+- `owl:equivalentClass schema:Book` (external — Schema.org alignment)
 
 For each: assert `fromTbox(ttl) → schemas → toTbox().quads()` reproduces the SAME axiom set
 (compare triple sets modulo bnode labels and list ordering). The 4 categories must show ZERO

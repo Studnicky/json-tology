@@ -17,8 +17,8 @@ import {
 type Customer = InferType<typeof CustomerSchema>;
 
 const raw = {
+  'customerId': '09f8e7d6-c5b4-4321-9876-543210fedcba',
   'email': 'bastian@neverending.example',
-  'id': '09f8e7d6-c5b4-4321-9876-543210fedcba',
   'name': 'Bastian Balthazar Bux'
 };
 
@@ -33,4 +33,4 @@ const loose: LooseInputType<Customer> = customer;
 // ✓ Do this — preserve the branded type after validation.
 const stillBranded: Customer = customer;
 
-console.assert(loose.id === stillBranded.id);
+console.assert(loose.customerId === stillBranded.customerId);

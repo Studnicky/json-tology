@@ -32,12 +32,12 @@ const withSubtotal = bookstoreEntities.addComputed(
   OrderSchema.$id,
   'subtotal',
   (order) => {
-    return computeSubtotal(order.items);
+    return computeSubtotal(order.orderLines);
   }
 );
 
 const materialized = withSubtotal.instantiate(OrderSchema.$id, aboxFixtures.order);
-const expected = computeSubtotal(aboxFixtures.order.items);
+const expected = computeSubtotal(aboxFixtures.order.orderLines);
 
 console.assert(Math.abs(materialized.subtotal - expected) < 0.005);
 

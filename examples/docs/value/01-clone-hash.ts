@@ -19,15 +19,15 @@ const order = bookstoreEntities.instantiate(OrderSchema.$id, aboxFixtures.order)
 // clone — deep copy; mutations don't affect original.
 const copy = Operations.clone(order);
 
-// clone produces a deep copy — items arrays are distinct references.
-console.assert(order.items.length === 1);
-console.assert(copy.items !== order.items, 'clone must produce distinct items reference');
+// clone produces a deep copy — orderLines arrays are distinct references.
+console.assert(order.orderLines.length === 1);
+console.assert(copy.orderLines !== order.orderLines, 'clone must produce distinct orderLines reference');
 
-// structuredClone the branded items array into a plain mutable array so a new
+// structuredClone the branded orderLines array into a plain mutable array so a new
 // line item can be appended without satisfying the element brands at compile time.
 // interop: branded readonly tuple → plain mutable array for the push demo;
 // structuredClone strips brands at runtime, unknown intermediate satisfies tsc.
-const copyItems: unknown[] = structuredClone(copy.items as unknown as unknown[]);
+const copyItems: unknown[] = structuredClone(copy.orderLines as unknown as unknown[]);
 
 copyItems.push({
   // Walter Moers — Die Stadt der Träumenden Bücher (Piper, 2004).

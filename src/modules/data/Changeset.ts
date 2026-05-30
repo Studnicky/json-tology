@@ -18,7 +18,7 @@ import { Operations } from './Operations.js';
  * changes.length      // number of operations
  * changes.isEmpty     // true when a and b are structurally equal
  * changes.operations  // ReadonlyArray<DiffOpType>
- * const b = apply(changes, a)    // produce b from a without mutating a
+ * const b = changes.apply(a)     // produce b from a without mutating a
  */
 export class Changeset implements ChangesetInterface {
   public readonly operations: readonly DiffOpType[];

@@ -11,9 +11,9 @@ import {
 } from '../bookstore/index.js';
 
 const errs = bookstoreEntities.validate(OrderSchema.$id, {
-  'customerId': aboxFixtures.customer.id,
-  'id': aboxFixtures.order.id,
-  'items': [{
+  'customerId': aboxFixtures.customer.customerId,
+  'orderId': aboxFixtures.order.orderId,
+  'orderLines': [{
     'bookIsbn': aboxFixtures.rareBook.isbn,
     // minimum: 1 violated
     'quantity': 0,
@@ -22,13 +22,13 @@ const errs = bookstoreEntities.validate(OrderSchema.$id, {
       'currency': 'EUR'
     }
   }],
-  'placedAt': '2026-01-15T10:30:00Z',
-  'shippingAddress': aboxFixtures.order.shippingAddress,
-  'total': {
+  'orderTotal': {
     // exclusiveMinimum: 0 violated
     'amount': -5,
     'currency': 'EUR'
-  }
+  },
+  'placedAt': '2026-01-15T10:30:00Z',
+  'shippingAddress': aboxFixtures.order.shippingAddress
 });
 
 const messages = errs.items.map((err) => {

@@ -88,12 +88,12 @@ export class Compose {
    * so `$ref` resolution and graph keying operate on the concrete IRI.
    *
    * @example
-   * const EvolvesFrom = Compose.annotatedEdge({
-   *   predicate: 'pkm:directEvolvesFrom',
-   *   targetRef: PokemonSchema.$id,
+   * const ReviewsBook = Compose.annotatedEdge({
+   *   predicate: 'https://bookstore.example/reviews',
+   *   targetRef: BookSchema.$id,
    *   annotations: {
-   *     evolutionTimeOfDay: { $ref: TimeOfDaySchema.$id },
-   *     evolutionMinLevel:  { $ref: LevelSchema.$id },
+   *     ratingGiven:       { $ref: RatingScoreSchema.$id },
+   *     verifiedPurchase:  { $ref: VerifiedPurchaseSchema.$id },
    *   },
    * });
    */

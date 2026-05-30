@@ -12,15 +12,15 @@ import {
 // Instantiate by schema $id so the return type resolves $ref fields to their
 // named datatypes; strip extra fields.
 const customer = bookstoreEntities.instantiate(CustomerSchema.$id, {
+  'customerId': aboxFixtures.customer.customerId,
   'email': aboxFixtures.customer.email,
   // Not in schema — stripped on instantiate.
   'extra': 'stripped',
-  'id': aboxFixtures.customer.id,
   'name': aboxFixtures.customer.name
 });
 
 // Result has expected fields
-console.assert(customer.id === aboxFixtures.customer.id);
+console.assert(customer.customerId === aboxFixtures.customer.customerId);
 console.assert(customer.email === aboxFixtures.customer.email);
 console.assert(customer.name === aboxFixtures.customer.name);
 

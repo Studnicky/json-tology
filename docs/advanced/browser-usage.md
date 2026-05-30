@@ -47,4 +47,4 @@ If all schemas are known at build time and have no external `$ref`s, skip `prefe
 - No `browser`/`node`/`default` conditional export paths on any json-tology subpath.
 - `Loaders` helpers use only `globalThis.fetch` and `Promise` — no Node built-ins.
 - `JsonTology.create` is synchronous. Async fetching is isolated to `JsonTology.prefetch`.
-- The library has zero runtime dependencies beyond `commander` (CLI only).
+- Runtime dependencies: `commander` (CLI only — not pulled into browser bundles) and `jsonld` (used by ontology building). `@rdfjs/types` is types-only and carries zero runtime cost.

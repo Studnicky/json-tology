@@ -17,7 +17,7 @@ const withTotal = bookstoreEntities.addComputed(
   OrderSchema.$id,
   'derivedTotal',
   (order) => {
-    return order.items.reduce((sum, line) => {
+    return order.orderLines.reduce((sum, line) => {
       return sum + (line.unitPrice.amount * line.quantity);
     }, 0);
   }
@@ -30,14 +30,14 @@ const withDiscounted = withTotal.addComputed(
   OrderSchema.$id,
   'derivedTotal',
   (order) => {
-    return order.items.reduce((sum, line) => {
+    return order.orderLines.reduce((sum, line) => {
       return sum + (line.unitPrice.amount * line.quantity);
     }, 0) * 0.9;
   }
 );
 
 const order = withDiscounted.instantiate(OrderSchema.$id, aboxFixtures.order);
-const rawTotal = aboxFixtures.order.items.reduce(
+const rawTotal = aboxFixtures.order.orderLines.reduce(
   (sum, line) => {
     return sum + (line.unitPrice.amount * line.quantity);
   },

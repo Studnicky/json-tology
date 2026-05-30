@@ -85,7 +85,7 @@ const NestedOrderTransform = Transform.create<typeof NestedOrderSchema, OrderWit
 
 const wire = {
   'buyer': aboxFixtures.customer,
-  'id': aboxFixtures.order.id
+  'id': aboxFixtures.order.orderId
 };
 
 const hydrated = jt.instantiate(NestedOrderTransform, wire);

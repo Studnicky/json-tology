@@ -16,7 +16,7 @@ import {
 } from '../bookstore/index.js';
 
 // The fixture order line has bookIsbn and unitPrice — both are $ref fields.
-const line = aboxFixtures.order.items[0];
+const line = aboxFixtures.order.orderLines[0];
 const errs = bookstoreEntities.validate(OrderLineSchema.$id, line);
 
 console.assert(errs.length === 0);

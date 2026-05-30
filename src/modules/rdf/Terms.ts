@@ -370,10 +370,14 @@ export function decodeLiteral(literal: LiteralTermType): unknown {
 
     return Number.isFinite(num) ? num : raw;
   }
-  if (dt === 'dateTime' || dt === 'date') {
-    const parsed = new Date(raw);
-
-    return Number.isFinite(parsed.getTime()) ? parsed : raw;
+  // Return the original lexical string for temporal types.
+  // Schemas represent dates/times as `type: 'string'` with a `format`
+  // validator; returning a Date object would fail the format check inside
+  // fromQuads→instantiate. Preserving the raw lexical value guarantees an
+  // exact round-trip (e.g. '1979-09-01' stays '1979-09-01', not
+  // '1979-09-01T00:00:00.000Z').
+  if (dt === 'dateTime' || dt === 'date' || dt === 'time') {
+    return raw;
   }
 
   return raw;

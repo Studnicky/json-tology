@@ -29,7 +29,7 @@ function assert<T extends true>(): void {
 }
 
 assert<AssertExtendsType<
-  Order['items'] extends readonly unknown[] ? true : false,
+  Order['orderLines'] extends readonly unknown[] ? true : false,
   true
 >>();
 

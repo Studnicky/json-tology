@@ -17,13 +17,13 @@ const withLineCount = bookstoreEntities.addComputed(
   OrderSchema.$id,
   'lineCount',
   (order) => {
-    return order.items.length;
+    return order.orderLines.length;
   }
 );
 
 const order = withLineCount.instantiate(OrderSchema.$id, aboxFixtures.order);
-// lineCount omitted from input — computed from items.length.
-const expectedLineCount = aboxFixtures.order.items.length;
+// lineCount omitted from input — computed from orderLines.length.
+const expectedLineCount = aboxFixtures.order.orderLines.length;
 
 console.assert(Math.abs(order.lineCount - expectedLineCount) < 0.001);
 

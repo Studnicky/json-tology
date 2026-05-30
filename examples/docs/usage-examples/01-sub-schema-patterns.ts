@@ -33,8 +33,8 @@ console.assert(formatErr !== undefined);
 
 // 2. Defaults from $ref'd primitives flow through instantiate.
 const created = bookstoreEntities.instantiate(CustomerSchema.$id, {
+  'customerId': aboxFixtures.customer.customerId,
   'email': aboxFixtures.customer.email,
-  'id': aboxFixtures.customer.id,
   'name': aboxFixtures.customer.name
   // addresses omitted — default `[]` from CustomerSchema
 });

@@ -27,10 +27,10 @@ Node.js >= 24 (matches `engines.node` in `package.json`).
 npm install json-tology
 ```
 
-`jsonld` is a peer dependency required for OWL import and codegen (`fromTbox`, `owl-gen`):
+`jsonld` is a bundled dependency (installed automatically with `json-tology`). The optional peer dependency is `eyereasoner`, required only for EYE-reasoner integration:
 
 ```bash
-npm install json-tology jsonld
+npm install json-tology eyereasoner   # only if using the EYE reasoner
 ```
 
 The package is also mirrored to GitHub Packages as `@studnicky/json-tology`:

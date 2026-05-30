@@ -212,7 +212,7 @@ json-tology owl-gen <input> --out <path> [options]
 **Options:**
 
 - `--out <path>` -- output path; omit the `.ts` extension (or append `/`) for registry-directory mode
-- `--name <id>` -- identifier prefix for namespace exports (defaults to the stem of `--out` or `"ontology"`)
+- `--name <id>` -- identifier prefix for namespace exports (defaults to the input filename basename, with non-alphanumeric characters replaced by underscores)
 - `--base-iri <iri>` -- override `baseIRI` passed to `fromTbox`
 - `--mode directory` -- force registry-directory output even when `--out` has a `.ts` extension
 

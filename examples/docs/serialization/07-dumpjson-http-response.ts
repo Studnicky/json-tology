@@ -12,8 +12,8 @@ import {
 
 const customer = bookstoreEntities.instantiate(CustomerSchema.$id, {
   'addresses': [aboxFixtures.order.shippingAddress],
+  'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'email': 'bastian.bux@bookstore.example',
-  'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'name': 'Bastian Balthazar Bux'
 });
 
@@ -24,7 +24,7 @@ console.assert(typeof json === 'string');
 
 const parsed = JSON.parse(json) as Record<string, unknown>;
 
-console.assert(parsed.id === 'c1a2b3d4-e5f6-7890-abcd-ef1234567890');
+console.assert(parsed.customerId === 'c1a2b3d4-e5f6-7890-abcd-ef1234567890');
 console.assert(parsed.email === 'bastian.bux@bookstore.example');
 console.assert(parsed.name === 'Bastian Balthazar Bux');
 console.assert(Array.isArray(parsed.addresses));

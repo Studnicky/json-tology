@@ -21,4 +21,4 @@ const quads = bookstoreEntities.toQuads(CustomerSchema, customer, { 'iriFor': Sk
 // Round-trip back to blank-node semantics — use the string key form for full type inference
 const [restored] = bookstoreEntities.fromQuads(CustomerSchema.$id, quads, { 'deskolemize': true });
 
-console.assert(restored.id === customer.id, 'customer id round-tripped through genid');
+console.assert(restored.customerId === customer.customerId, 'customer id round-tripped through genid');

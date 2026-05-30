@@ -28,7 +28,7 @@ import {
 const addressErrs = bookstoreEntities.validate(AddressSchema.$id, aboxFixtures.customer.addresses[0]);
 const customerErrs = bookstoreEntities.validate(CustomerSchema.$id, aboxFixtures.customer);
 const orderErrs = bookstoreEntities.validate(OrderSchema.$id, aboxFixtures.order);
-const lineErrs = bookstoreEntities.validate(OrderLineSchema.$id, aboxFixtures.order.items[0]);
+const lineErrs = bookstoreEntities.validate(OrderLineSchema.$id, aboxFixtures.order.orderLines[0]);
 const reviewErrs = bookstoreEntities.validate(ReviewSchema.$id, aboxFixtures.review);
 
 console.assert(addressErrs.length === 0);

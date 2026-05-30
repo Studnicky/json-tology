@@ -19,8 +19,8 @@ import {
 // materialize takes a schema object (not a $id string) as its first argument.
 const scaffold = bookstoreEntities.materialize(
   OrderSchema,
-  { 'customerId': aboxFixtures.customer.id },
+  { 'customerId': aboxFixtures.customer.customerId },
   { 'enablePartial': true }
 );
 
-console.assert(scaffold.customerId === aboxFixtures.customer.id);
+console.assert(scaffold.customerId === aboxFixtures.customer.customerId);

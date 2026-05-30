@@ -47,8 +47,8 @@ json-tology derives these from the schema graph:
 This emits (in the TBox):
 
 ```turtle
-urn:bookstore:Book#isbn  rdfs:domain  urn:bookstore:Book .
-urn:bookstore:Book#isbn  rdfs:range   urn:bookstore:Isbn .
+https://bookstore.example/isbn  rdfs:domain  urn:bookstore:Book .
+https://bookstore.example/isbn  rdfs:range   urn:bookstore:Isbn .
 ```
 
 For primitive string properties with a `format` hint, the range is an XSD datatype:
@@ -133,7 +133,6 @@ concepts has no standard counterpart and is represented using the `jt:` prefix:
 | Keyword | Why `jt:` is needed |
 |---|---|
 | `jt:multipleOf` | Divisibility constraint - XSD and SHACL have no modulo predicate |
-| `jt:if`, `jt:then`, `jt:else` | JSON Schema conditionals - SHACL Core lacks native if/then/else (SHACL 1.2 draft adds them; not yet finalized) |
 | `jt:dependentRequired` | Same SHACL gap - no standard property for co-required fields |
 | `jt:alias` | Input-key normalization - a runtime concern for coercion, not an ontology property |
 | `jt:computed` | Runtime-derived property - no standard predicate for "computed at materialize time" |
@@ -144,6 +143,8 @@ concepts has no standard counterpart and is represented using the `jt:` prefix:
 Whenever a JSON Schema concept can be expressed in standard RDFS, OWL, SHACL, or XSD
 vocabulary, json-tology emits it that way. The `jt:*` predicates are reserved for the
 irreducibles.
+
+JSON Schema `if`/`then`/`else` fragments are not currently emitted by either `ShaclProjection` or `OwlProjection` — these fragments are explicitly skipped during graph serialization.
 
 ## See also
 

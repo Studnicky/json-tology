@@ -125,6 +125,117 @@ function collectInheritedAllOfPropertyKeys(
   return inherited;
 }
 
+/**
+ * Collect property names declared in the `then` / `else` branches of an
+ * if/then/else conditional (recursively, including any `allOf` or `$ref`
+ * inside those branches). A property that exists ONLY inside an active
+ * conditional branch (e.g. `EBook` requires `epubVersion` when
+ * `fileFormat === 'epub'`) is a legitimately-evaluated property; without
+ * including it here, `removeAdditionalProperties: true` strips it before the
+ * branch validator runs, and the subsequent branch re-check then fails on the
+ * now-missing required property. Used solely to widen `allowedKeysForStrip`
+ * (strip-protection); the strict `additionalProperties: false` check still
+ * uses the own-only `allowedKeys` set per JSON Schema semantics.
+ */
+function collectConditionalPropertyKeys(
+  sem: SchemaGraphSemanticsInterface,
+  graph: SchemaGraphInterface,
+  lookupGraph?: (id: string) => SchemaGraphInterface | undefined
+): Set<string> {
+  const conditional = new Set<string>();
+  const collectVisited = new Set<SchemaGraphNodeInterface>();
+  const scanVisited = new Set<SchemaGraphNodeInterface>();
+
+  // Collect every property name reachable from a branch node — its own
+  // properties plus those behind `allOf` / `$ref` / nested then/else.
+  const collect = (currentGraph: SchemaGraphInterface, node: SchemaGraphNodeInterface): void => {
+    if (collectVisited.has(node)) {
+      return;
+    }
+    collectVisited.add(node);
+
+    const nodeSem = currentGraph.semantics(node);
+
+    if (nodeSem.ref !== undefined) {
+      const ref = nodeSem.ref;
+
+      if (ref.startsWith('#')) {
+        collect(currentGraph, currentGraph.resolveFragment(ref.slice(1)));
+      } else if (lookupGraph !== undefined) {
+        const hashIndex = ref.indexOf('#');
+        const id = hashIndex < 0 ? ref : ref.slice(0, hashIndex);
+        const fragment = hashIndex < 0 ? '' : ref.slice(hashIndex + 1);
+        const targetGraph = lookupGraph(id);
+
+        if (targetGraph !== undefined) {
+          collect(targetGraph, targetGraph.resolveFragment(fragment));
+        }
+      }
+
+      return;
+    }
+
+    for (const name of nodeSem.properties.keys()) {
+      conditional.add(name);
+    }
+    for (const member of nodeSem.allOf) {
+      collect(currentGraph, member);
+    }
+    if (nodeSem.thenNode !== undefined) {
+      collect(currentGraph, nodeSem.thenNode);
+    }
+    if (nodeSem.elseNode !== undefined) {
+      collect(currentGraph, nodeSem.elseNode);
+    }
+  };
+
+  // Scan the schema (and its allOf / $ref members) for if/then/else nodes —
+  // `Compose.subClassOf` lowers the conditional onto an allOf member body, so
+  // the then/else nodes are not on the root semantics. `scanSem` is the
+  // semantics of the node currently being scanned.
+  const scan = (currentGraph: SchemaGraphInterface, scanSem: SchemaGraphSemanticsInterface): void => {
+    if (scanSem.thenNode !== undefined) {
+      collect(currentGraph, scanSem.thenNode);
+    }
+    if (scanSem.elseNode !== undefined) {
+      collect(currentGraph, scanSem.elseNode);
+    }
+    for (const member of scanSem.allOf) {
+      if (scanVisited.has(member)) {
+        continue;
+      }
+      scanVisited.add(member);
+
+      const memberSem = currentGraph.semantics(member);
+
+      if (memberSem.ref !== undefined) {
+        const ref = memberSem.ref;
+
+        if (ref.startsWith('#')) {
+          scan(currentGraph, currentGraph.semantics(currentGraph.resolveFragment(ref.slice(1))));
+        } else if (lookupGraph !== undefined) {
+          const hashIndex = ref.indexOf('#');
+          const id = hashIndex < 0 ? ref : ref.slice(0, hashIndex);
+          const fragment = hashIndex < 0 ? '' : ref.slice(hashIndex + 1);
+          const targetGraph = lookupGraph(id);
+
+          if (targetGraph !== undefined) {
+            scan(targetGraph, targetGraph.semantics(targetGraph.resolveFragment(fragment)));
+          }
+        }
+
+        continue;
+      }
+
+      scan(currentGraph, memberSem);
+    }
+  };
+
+  scan(graph, sem);
+
+  return conditional;
+}
+
 function canUseFlatObjectFastPath(
   context: SchemaCompilerGraphContextInterface,
   sem: SchemaGraphSemanticsInterface
@@ -983,10 +1094,15 @@ export function buildNodePlan(
   // strict `allowedKeys` set per JSON Schema semantics, where allOf-
   // contributed properties do not count as own properties.
   const inheritedKeys = collectInheritedAllOfPropertyKeys(sem, graph, lookupGraph);
-  const allowedKeysForStrip = inheritedKeys.size > 0
+  // Conditional branch properties (if/then/else) are evaluated when their
+  // branch is active, so they must survive removeAdditionalProperties stripping
+  // even though they are not in the base `properties` block.
+  const conditionalKeys = collectConditionalPropertyKeys(sem, graph, lookupGraph);
+  const allowedKeysForStrip = inheritedKeys.size > 0 || conditionalKeys.size > 0
     ? new Set<string>([
       ...allowedKeys ?? [],
-      ...inheritedKeys
+      ...inheritedKeys,
+      ...conditionalKeys
     ])
     : allowedKeys;
 

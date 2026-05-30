@@ -10,7 +10,6 @@ import { FORMAT_PATTERNS } from '../../constants/FORMAT_PATTERNS.js';
 import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
-import { isRecord } from '../data/DataTypes.js';
 
 function resolveNodeRef(
   graph: GraphAccessorInterface,
@@ -393,48 +392,31 @@ function pushUnionTypeRelations(
 function pushAnnotatedEdgeRelations(
   graph: GraphAccessorInterface,
   node: SchemaGraphNodeInterface,
+  sem: SchemaGraphSemanticsInterface,
   relations: SchemaGraphRelationInterface[]
 ): void {
-  if (!isRecord(node.schema)) {
+  const descriptor = sem.annotatedEdge;
+
+  if (descriptor === undefined) {
     return;
   }
 
-  const raw = node.schema['jt:annotatedEdge'];
-
-  if (!isRecord(raw)) {
-    return;
-  }
-
-  const edgePredicate = typeof raw.predicate === 'string' ? raw.predicate : undefined;
-  const targetRef = typeof raw.targetRef === 'string' ? raw.targetRef : undefined;
-
-  if (edgePredicate === undefined || targetRef === undefined) {
-    return;
-  }
-
-  const edgeTarget = graph.resolveRefId(targetRef);
-  const rawAnnotations = raw.annotations;
+  const edgeTarget = graph.resolveRefId(descriptor.targetRef);
   const edgeAnnotations: Array<{
     readonly 'annotationPredicate': string;
     readonly 'propertyName': string;
     readonly 'rangeRef': string;
   }> = [];
 
-  if (isRecord(rawAnnotations)) {
-    for (const [
-      propName,
-      propSchema
-    ] of Object.entries(rawAnnotations)) {
-      if (!isRecord(propSchema) || typeof propSchema.$ref !== 'string') {
-        continue;
-      }
-
-      edgeAnnotations.push({
-        'annotationPredicate': `${node.id}#${propName}`,
-        'propertyName': propName,
-        'rangeRef': graph.resolveRefId(propSchema.$ref)
-      });
-    }
+  for (const [
+    propName,
+    propSchema
+  ] of Object.entries(descriptor.annotations)) {
+    edgeAnnotations.push({
+      'annotationPredicate': `${node.id}#${propName}`,
+      'propertyName': propName,
+      'rangeRef': graph.resolveRefId(propSchema.$ref)
+    });
   }
 
   relations.push({
@@ -442,7 +424,7 @@ function pushAnnotatedEdgeRelations(
     'source': node,
     'structure': {
       edgeAnnotations,
-      'edgePredicate': graph.resolveRefId(edgePredicate),
+      'edgePredicate': graph.resolveRefId(descriptor.predicate),
       edgeTarget,
       'kind': 'annotatedEdge'
     },
@@ -694,7 +676,8 @@ export const SchemaGraphRelations = {
       relations.push({
         'metadata': {
           'minCardinality': 1,
-          'onProperty': propIRI
+          'onProperty': propIRI,
+          'propertyName': propertyName
         },
         'predicate': OWL.Restriction,
         'source': node,
@@ -836,7 +819,7 @@ export const SchemaGraphRelations = {
     pushFormatPatternRelations(node, sem, relations);
     pushFormatAnnotationRelation(node, sem, relations);
     pushUserRestrictionRelations(node, sem, relations);
-    pushAnnotatedEdgeRelations(graph, node, relations);
+    pushAnnotatedEdgeRelations(graph, node, sem, relations);
 
     return relations;
   }

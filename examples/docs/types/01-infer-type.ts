@@ -28,10 +28,10 @@ function assert<T extends true>(): void {
   void 0 as unknown as T;
 }
 
-// Customer — id, email, name required; addresses optional with default.
+// Customer — customerId, email, name required; addresses optional with default.
 // Imported from bookstore/index.ts which resolves $ref fields via BookstoreRefs.
 
-assert<AssertEqualType<Customer['id'] extends string ? true : false, true>>();
+assert<AssertEqualType<Customer['customerId'] extends string ? true : false, true>>();
 assert<AssertEqualType<Customer['email'] extends string ? true : false, true>>();
 assert<AssertEqualType<Customer['name'] extends string ? true : false, true>>();
 
@@ -47,9 +47,9 @@ assert<AssertEqualType<
   'inPrint' | 'limitedRun' | 'outOfPrint'
 >>();
 
-// Order — items is an array of OrderLine.
+// Order — orderLines is an array of OrderLine.
 
-assert<AssertEqualType<Order['items'] extends readonly unknown[] ? true : false, true>>();
+assert<AssertEqualType<Order['orderLines'] extends readonly unknown[] ? true : false, true>>();
 
 // Reference all imported types in type position to keep imports live.
 // interop: void-cast keeps compile-time-only type imports from being flagged as

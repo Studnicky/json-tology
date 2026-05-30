@@ -1,10 +1,9 @@
 /**
  * Unit tests for RDF 1.2 triple-term (edge-annotation) emission.
  *
- * Exercises the plan's exact fixture: Lycanroc-Midday `directEvolvesFrom`
- * Rockruff, annotated with `evolutionTimeOfDay "day"` and `evolutionMinLevel 25`,
- * all asserted in the named graph
- * `https://pokemontology.dev/graph/universal/evolutions`.
+ * Exercises a bookstore fixture: a Review `reviews` a Book, annotated with
+ * `ratingGiven 5` and `verifiedPurchase true`, all asserted in the named graph
+ * `https://bookstore.example/graph/reviews`.
  *
  * Covers:
  * - `toQuads` emits the base triple plus one `Quad`-subject (triple-term)
@@ -33,70 +32,72 @@ type TripleTermQuad = QuadInterface & { 'subject': QuadInterface };
 // Fixture schemas
 // ---------------------------------------------------------------------------
 
-const EVOLUTIONS_GRAPH = 'https://pokemontology.dev/graph/universal/evolutions';
-const ROCKRUFF_IRI = 'https://pokemontology.dev/instances/Rockruff';
+const REVIEWS_GRAPH = 'https://bookstore.example/graph/reviews';
+const BOOK_IRI = 'urn:bookstore:instances/book/978-0-06-112008-4';
 
-const PokemonSchema = {
-  '$id': 'https://pokemontology.dev/Pokemon',
-  'properties': { 'name': { 'type': 'string' } },
-  'required': ['name'],
+const BookSchema = {
+  '$id': 'urn:bookstore:Book',
+  'properties': { 'title': { 'type': 'string' } },
+  'required': ['title'],
   'type': 'object'
 } as const;
 
-const TimeOfDaySchema = {
-  '$id': 'https://pokemontology.dev/TimeOfDay',
-  'type': 'string'
-} as const;
-
-const LevelSchema = {
-  '$id': 'https://pokemontology.dev/Level',
+const RatingScoreSchema = {
+  '$id': 'urn:bookstore:RatingScore',
+  'maximum': 5,
+  'minimum': 1,
   'type': 'integer'
 } as const;
 
-const EvolvesFromEdge = Compose.annotatedEdge({
+const VerifiedPurchaseSchema = {
+  '$id': 'urn:bookstore:VerifiedPurchase',
+  'type': 'boolean'
+} as const;
+
+const ReviewsBookEdge = Compose.annotatedEdge({
   'annotations': {
-    'evolutionMinLevel': { '$ref': 'https://pokemontology.dev/Level' },
-    'evolutionTimeOfDay': { '$ref': 'https://pokemontology.dev/TimeOfDay' }
+    'ratingGiven': { '$ref': 'urn:bookstore:RatingScore' },
+    'verifiedPurchase': { '$ref': 'urn:bookstore:VerifiedPurchase' }
   },
-  'predicate': 'https://pokemontology.dev/directEvolvesFrom',
-  'targetRef': 'https://pokemontology.dev/Pokemon'
+  'predicate': 'https://bookstore.example/reviews',
+  'targetRef': 'urn:bookstore:Book'
 });
 
-const LycanrocSchema = {
-  '$id': 'https://pokemontology.dev/Lycanroc-Midday',
+const ReviewSchema = {
+  '$id': 'urn:bookstore:Review',
   'properties': {
-    'evolvesFrom': EvolvesFromEdge,
-    'name': { 'type': 'string' }
+    'book': ReviewsBookEdge,
+    'reviewId': { 'type': 'string' }
   },
-  'required': ['name'],
+  'required': ['reviewId'],
   'type': 'object'
 } as const;
 
-const EDGE_PREDICATE = 'https://pokemontology.dev/directEvolvesFrom';
-const TIME_PREDICATE = 'https://pokemontology.dev/Lycanroc-Midday#/properties/evolvesFrom#evolutionTimeOfDay';
-const LEVEL_PREDICATE = 'https://pokemontology.dev/Lycanroc-Midday#/properties/evolvesFrom#evolutionMinLevel';
+const EDGE_PREDICATE = 'https://bookstore.example/reviews';
+const RATING_PREDICATE = 'urn:bookstore:Review#/properties/book#ratingGiven';
+const VERIFIED_PREDICATE = 'urn:bookstore:Review#/properties/book#verifiedPurchase';
 
-const lycanrocInstance = {
-  'evolvesFrom': {
+const reviewInstance = {
+  'book': {
     'annotations': {
-      'evolutionMinLevel': 25,
-      'evolutionTimeOfDay': 'day'
+      'ratingGiven': 5,
+      'verifiedPurchase': true
     },
-    'target': ROCKRUFF_IRI
+    'target': BOOK_IRI
   },
-  'name': 'Lycanroc-Midday'
+  'reviewId': 'rev-001'
 };
 
 function freshJt(): ReturnType<typeof JsonTology.create> {
   const jt = JsonTology.create({
-    'baseIRI': 'https://pokemontology.dev',
+    'baseIRI': 'https://bookstore.example',
     'enableStrictGraph': false
   });
 
-  jt.set(PokemonSchema);
-  jt.set(TimeOfDaySchema);
-  jt.set(LevelSchema);
-  jt.set(LycanrocSchema);
+  jt.set(BookSchema);
+  jt.set(RatingScoreSchema);
+  jt.set(VerifiedPurchaseSchema);
+  jt.set(ReviewSchema);
 
   return jt;
 }
@@ -112,14 +113,14 @@ function isTripleTermSubject(quad: QuadInterface): quad is TripleTermQuad {
 void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
   void it('emits the base triple plus one Quad-subject quad per annotation', () => {
     const jt = freshJt();
-    const quads = jt.toQuads(LycanrocSchema, lycanrocInstance, { 'graphIRI': EVOLUTIONS_GRAPH });
+    const quads = jt.toQuads(ReviewSchema, reviewInstance, { 'graphIRI': REVIEWS_GRAPH });
 
     const baseTriples = quads.filter((quad) => {
       return quad.predicate.value === EDGE_PREDICATE && quad.subject.termType === 'NamedNode';
     });
 
     assert.equal(baseTriples.length, 1, 'exactly one base triple');
-    assert.equal(baseTriples[0].object.value, ROCKRUFF_IRI);
+    assert.equal(baseTriples[0].object.value, BOOK_IRI);
 
     const annotationQuads = quads.filter((quad) => {
       return isTripleTermSubject(quad);
@@ -134,18 +135,18 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
       ] as const;
     }));
 
-    const timeQuad = byPredicate.get(TIME_PREDICATE);
-    const levelQuad = byPredicate.get(LEVEL_PREDICATE);
+    const ratingQuad = byPredicate.get(RATING_PREDICATE);
+    const verifiedQuad = byPredicate.get(VERIFIED_PREDICATE);
 
-    assert.ok(timeQuad, 'evolutionTimeOfDay annotation present');
-    assert.ok(levelQuad, 'evolutionMinLevel annotation present');
-    assert.equal(timeQuad.object.value, 'day');
-    assert.equal(levelQuad.object.value, '25');
+    assert.ok(ratingQuad, 'ratingGiven annotation present');
+    assert.ok(verifiedQuad, 'verifiedPurchase annotation present');
+    assert.equal(ratingQuad.object.value, '5');
+    assert.equal(verifiedQuad.object.value, 'true');
   });
 
   void it('stamps the base triple AND every annotation quad with the same graphIRI', () => {
     const jt = freshJt();
-    const quads = jt.toQuads(LycanrocSchema, lycanrocInstance, { 'graphIRI': EVOLUTIONS_GRAPH });
+    const quads = jt.toQuads(ReviewSchema, reviewInstance, { 'graphIRI': REVIEWS_GRAPH });
 
     const edgeRelatedQuads = quads.filter((quad) => {
       return (quad.predicate.value === EDGE_PREDICATE && quad.subject.termType === 'NamedNode')
@@ -156,13 +157,13 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
 
     for (const quad of edgeRelatedQuads) {
       assert.equal(quad.graph.termType, 'NamedNode', 'edge quad is in a named graph');
-      assert.equal(quad.graph.value, EVOLUTIONS_GRAPH, 'same-graph invariant: all edge quads share graphIRI');
+      assert.equal(quad.graph.value, REVIEWS_GRAPH, 'same-graph invariant: all edge quads share graphIRI');
     }
   });
 
   void it('the inner triple term of every annotation quad equals the base triple', () => {
     const jt = freshJt();
-    const quads = jt.toQuads(LycanrocSchema, lycanrocInstance, { 'graphIRI': EVOLUTIONS_GRAPH });
+    const quads = jt.toQuads(ReviewSchema, reviewInstance, { 'graphIRI': REVIEWS_GRAPH });
 
     const annotationQuads = quads.filter((quad) => {
       return isTripleTermSubject(quad);
@@ -173,16 +174,16 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
 
       assert.equal(subject.termType, 'Quad');
       assert.equal(subject.predicate.value, EDGE_PREDICATE);
-      assert.equal(subject.object.value, ROCKRUFF_IRI);
+      assert.equal(subject.object.value, BOOK_IRI);
       assert.equal(subject.subject.termType, 'NamedNode');
     }
   });
 
   void it('round-trips through fromQuads back to the instance shape', () => {
     const jt = freshJt();
-    const quads = jt.toQuads(LycanrocSchema, lycanrocInstance, { 'graphIRI': EVOLUTIONS_GRAPH });
+    const quads = jt.toQuads(ReviewSchema, reviewInstance, { 'graphIRI': REVIEWS_GRAPH });
 
-    const lifted = jt.fromQuads(LycanrocSchema, quads);
+    const lifted = jt.fromQuads(ReviewSchema, quads);
 
     assert.equal(lifted.length, 1, 'one lifted instance');
 
@@ -190,32 +191,32 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
 
     assert.ok(isRecord(instance), 'lifted instance is a record');
 
-    const edge = instance.evolvesFrom;
+    const edge = instance.book;
 
-    assert.ok(isRecord(edge), 'evolvesFrom edge present');
-    assert.equal(edge.target, ROCKRUFF_IRI);
+    assert.ok(isRecord(edge), 'book edge present');
+    assert.equal(edge.target, BOOK_IRI);
 
     const annotations = edge.annotations;
 
     assert.ok(isRecord(annotations), 'annotations present');
-    assert.equal(annotations.evolutionTimeOfDay, 'day');
-    assert.equal(annotations.evolutionMinLevel, 25);
+    assert.equal(annotations.ratingGiven, 5);
+    assert.equal(annotations.verifiedPurchase, true);
   });
 
   void it('round-trips through instantiate (validate passes)', () => {
     const jt = freshJt();
-    const quads = jt.toQuads(LycanrocSchema, lycanrocInstance, { 'graphIRI': EVOLUTIONS_GRAPH });
-    const lifted = jt.fromQuads(LycanrocSchema, quads);
+    const quads = jt.toQuads(ReviewSchema, reviewInstance, { 'graphIRI': REVIEWS_GRAPH });
+    const lifted = jt.fromQuads(ReviewSchema, quads);
 
-    const validated = jt.instantiate(LycanrocSchema, lifted[0]);
+    const validated = jt.instantiate(ReviewSchema, lifted[0]);
 
     assert.ok(isRecord(validated), 'validated instance is a record');
-    assert.equal(validated.name, 'Lycanroc-Midday');
+    assert.equal(validated.reviewId, 'rev-001');
 
-    const edge = validated.evolvesFrom;
+    const edge = validated.book;
 
-    assert.ok(isRecord(edge), 'evolvesFrom edge present');
-    assert.equal(edge.target, ROCKRUFF_IRI);
+    assert.ok(isRecord(edge), 'book edge present');
+    assert.equal(edge.target, BOOK_IRI);
   });
 
   void it('raises an intelligible error when graphIRI is absent for an annotated edge', () => {
@@ -223,7 +224,7 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
 
     assert.throws(
       () => {
-        jt.toQuads(LycanrocSchema, lycanrocInstance);
+        jt.toQuads(ReviewSchema, reviewInstance);
       },
       (error: unknown) => {
         assert.ok(error instanceof MaterializationError);
@@ -237,7 +238,7 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
 
   void it('serializes Quad-subject quads as Turtle 1.2 << s p o >> via the N3 v2 Writer', async () => {
     const jt = freshJt();
-    const quads = jt.toQuads(LycanrocSchema, lycanrocInstance, { 'graphIRI': EVOLUTIONS_GRAPH });
+    const quads = jt.toQuads(ReviewSchema, reviewInstance, { 'graphIRI': REVIEWS_GRAPH });
 
     const annotationQuads = quads.filter((quad) => {
       return isTripleTermSubject(quad);
@@ -271,21 +272,21 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
 
     const quotedTriple = turtle.slice(quoteStart, quoteEnd);
 
-    assert.ok(quotedTriple.includes('Lycanroc-Midday'), 'quoted triple references the subject');
+    assert.ok(quotedTriple.includes('Review'), 'quoted triple references the subject');
     assert.ok(
-      quotedTriple.includes('<https://pokemontology.dev/directEvolvesFrom>'),
+      quotedTriple.includes('<https://bookstore.example/reviews>'),
       'quoted triple references the edge predicate'
     );
     assert.ok(
-      quotedTriple.includes('<https://pokemontology.dev/instances/Rockruff>'),
+      quotedTriple.includes('<urn:bookstore:instances/book/978-0-06-112008-4>'),
       'quoted triple references the target object'
     );
 
     // Both the named graph and the annotation predicates are present.
     assert.ok(
-      turtle.includes('<https://pokemontology.dev/graph/universal/evolutions>'),
+      turtle.includes('<https://bookstore.example/graph/reviews>'),
       'named graph IRI is present'
     );
-    assert.match(turtle, /evolutionTimeOfDay>\s+"day"/u);
+    assert.match(turtle, /ratingGiven>\s+5\b/u);
   });
 });

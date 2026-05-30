@@ -18,11 +18,7 @@ The bookstore schemas defined in the [Bookstore Domain](/bookstore-domain) appea
 
 **Constructor.** `new BaseError(code, message, options?: BaseErrorOptionsType)` where `BaseErrorOptionsType = { cause?: Error; retryable?: boolean }`. `retryable` defaults to `false` when omitted.
 
-```ts
-new BaseError('SOMETHING_FAILED', 'human description');
-new BaseError('SOMETHING_FAILED', 'human description', { retryable: true });
-new BaseError('SOMETHING_FAILED', 'human description', { cause: ioFailure, retryable: true });
-```
+<<< ../../examples/docs/errors/24-base-error-constructor.ts
 
 **Public surface.**
 
@@ -45,11 +41,7 @@ The `code` values are exported as constants from `src/constants/ERROR_CODES.ts` 
 
 **Constructor.** `new SchemaError(code, message, options?: SchemaErrorOptionsType)` where `SchemaErrorOptionsType = { cause?: Error; schemaId?: string }`.
 
-```ts
-throw new SchemaError(SchemaErrorCode.MISSING_ID, 'schema is missing $id');
-throw new SchemaError(SchemaErrorCode.STRUCTURE_INVALID, 'invalid structure', { schemaId });
-throw new SchemaError(SchemaErrorCode.DIALECT_UNSUPPORTED, 'unsupported dialect', { schemaId, cause });
-```
+<<< ../../examples/docs/errors/25-schema-error-constructor.ts
 
 **Adds.** `schemaId?: string` (the offending schema, when known) - exposed as an instance field and set via `options.schemaId`.
 
@@ -66,7 +58,7 @@ throw new SchemaError(SchemaErrorCode.DIALECT_UNSUPPORTED, 'unsupported dialect'
 | `SchemaErrorCode.VALIDATOR_MISSING`     | `SCHEMA_VALIDATOR_MISSING`     | |
 | `SchemaErrorCode.COMPUTED_FN_MISSING`   | `COMPUTED_FN_MISSING`          | |
 | `SchemaErrorCode.COMPUTED_INPUT_FORBIDDEN` | `COMPUTED_INPUT_FORBIDDEN`  | |
-| _(direct string)_                       | `SCHEMA_DUPLICATE_ID`          | Thrown by `SchemaRegistry` when two schemas with the same `$id` are registered. Detected during `register()` with `enableDuplicateDetection` enabled. See `src/types/ErrorCodes.ts`. |
+| _(direct string)_                       | `SCHEMA_DUPLICATE_ID`          | Thrown by `SchemaRegistry` when two schemas with the same `$id` are registered. Detected during `set()` with `enableDuplicateDetection` enabled. See `src/types/ErrorCodes.ts`. |
 | _(direct string)_                       | `SCHEMA_DUPLICATE_SHAPE`       | Thrown by `SchemaRegistry` when a schema with a duplicate canonical shape (same structural hash) is registered. See `src/types/ErrorCodes.ts`. |
 
 <<< ../../examples/docs/errors/16-schema-error.ts
@@ -77,10 +69,7 @@ throw new SchemaError(SchemaErrorCode.DIALECT_UNSUPPORTED, 'unsupported dialect'
 
 **Constructor.** `new GraphError(code, message, options?: GraphErrorOptionsType)` where `GraphErrorOptionsType = { cause?: Error; pointer?: string }`.
 
-```ts
-throw new GraphError(GraphErrorCode.POINTER_NOT_FOUND, 'pointer did not resolve', { pointer: '/foo/0' });
-throw new GraphError(GraphErrorCode.REF_UNRESOLVED, 'cross-schema $ref unresolved', { pointer, cause });
-```
+<<< ../../examples/docs/errors/26-graph-error-constructor.ts
 
 **Adds.** `pointer?: string` (the JSON Pointer involved in the failure, when applicable) - exposed as an instance field and set via `options.pointer`.
 
@@ -96,7 +85,6 @@ throw new GraphError(GraphErrorCode.REF_UNRESOLVED, 'cross-schema $ref unresolve
 | `GraphErrorCode.RECURSION_LIMIT`      | `RECURSION_LIMIT`           | |
 | `GraphErrorCode.DIALECT_UNSUPPORTED`  | `DIALECT_UNSUPPORTED`       | |
 | `GraphErrorCode.VOCABULARY_UNSUPPORTED` | `VOCABULARY_UNSUPPORTED`  | |
-| `GraphErrorCode.BOOLEAN_SCHEMA_FRAGMENT` | `BOOLEAN_SCHEMA_FRAGMENT`| |
 | `GraphErrorCode.ARTIFACT_INVALID`     | `ARTIFACT_INVALID`          | |
 | `GraphErrorCode.ARTIFACT_STALE`       | `ARTIFACT_STALE`            | |
 | _(direct string)_                     | `GRAPH_INVALID_RESTRICTION` | Thrown by `OwlProjection` when a restriction entry is missing a required `kind`, `onProperty`, or `value` field. See `src/types/ErrorCodes.ts`. |
@@ -114,7 +102,6 @@ throw new GraphError(GraphErrorCode.REF_UNRESOLVED, 'cross-schema $ref unresolve
 | Constant | Value | When recorded |
 |----------|-------|---------------|
 | `InstantiationErrorCode.EXTRA_FORBIDDEN` | `EXTRA_FORBIDDEN` | `jt:config.extra: 'forbid'` rejects unknown properties |
-| `InstantiationErrorCode.TRANSFORM_DECODE_FAILED` | `TRANSFORM_DECODE_FAILED` | A `Transform.chain` decode stage throws during `instantiate`. Thrown by `RefDecoder` and `SchemaRegistry` when a transform stage fails mid-decode. See `src/types/ErrorCodes.ts`. |
 
 <<< ../../examples/docs/errors/19-instantiation-error.ts
 
@@ -122,13 +109,64 @@ The `errors` collection is the same `ValidationErrors` used by `validate()` - se
 
 ## `CoercionError` <Badge type="tip" text="Runtime" />
 
-**Thrown for.** Coerce-time validation failure - the same shape as `InstantiationError` but raised by the coercion path.
+**Thrown for.** Coercion failure — raised by `value.cast()`, `value.convert()`, and their registry equivalents (`registry.cast`, `registry.convert`) when the coerced data does not satisfy the schema. Carries the full structured error list.
 
-**Adds.** `errors: ValidationErrors`.
+**Adds.** `errors: ValidationErrors` (the full `ValidationErrors` collection describing every constraint that coercion could not satisfy).
 
-**Codes.** Always `COERCION_FAILED` at the wrapper level. The constant `InstantiationErrorCode.EXTRA_FORBIDDEN` (`EXTRA_FORBIDDEN`) appears inside `errors.items` when extras are forbidden.
+**Codes.**
+
+| Constant | Value | Notes |
+|----------|-------|-------|
+| `CoercionErrorCode.COERCION_FAILED` | `COERCION_FAILED` | Always emitted at the wrapper level |
 
 <<< ../../examples/docs/errors/20-coercion-error.ts
+
+## `TransformError` <Badge type="tip" text="Runtime" />
+
+**Thrown for.** Base class for directional transform failures. Not thrown directly by the library — see `DecodeError` and `EncodeError`.
+
+**Extends.** `BaseError`.
+
+**Adds.**
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `direction` | `'decode' \| 'encode'` | Which direction the transform was running when it failed |
+| `schemaId` | `string \| undefined` | The `$id` of the schema whose transform failed; filled in by the library when absent |
+| `path` | `string \| undefined` | JSON Pointer to the field being decoded/encoded, when known |
+
+**Codes.**
+
+| Constant | Value | Subclass |
+|----------|-------|----------|
+| `TransformErrorCode.TRANSFORM_DECODE_FAILED` | `TRANSFORM_DECODE_FAILED` | `DecodeError` |
+| `TransformErrorCode.TRANSFORM_ENCODE_FAILED` | `TRANSFORM_ENCODE_FAILED` | `EncodeError` |
+
+## `DecodeError` <Badge type="tip" text="Runtime" />
+
+**Thrown for.** Failure inside a `decode` transform function — raised by `jt.instantiate()` when the registered decode function throws. The original throw is preserved on `cause`.
+
+**Extends.** `TransformError` → `BaseError`.
+
+**Constructor.** `new DecodeError(message: string, options?: { schemaId?, path?, cause?, retryable? })`.
+
+**Fields.** `code === 'TRANSFORM_DECODE_FAILED'`, `direction === 'decode'`, plus `schemaId?`, `path?`, `cause?` inherited from `TransformError`.
+
+**Consumer use.** Custom decode handlers may `throw new DecodeError('message', { path: '/field' })`. The library propagates the thrown instance unchanged — message, code, `path`, and any other fields set by the caller are preserved. Missing `schemaId` context is filled in automatically.
+
+<<< ../../examples/docs/transforms/13-transform-errors.ts
+
+## `EncodeError` <Badge type="tip" text="Runtime" />
+
+**Thrown for.** Failure inside an `encode` transform function — raised by `jt.encode()` (and `dump`) when the registered encode function throws. The original throw is preserved on `cause`.
+
+**Extends.** `TransformError` → `BaseError`.
+
+**Constructor.** `new EncodeError(message: string, options?: { schemaId?, path?, cause?, retryable? })`.
+
+**Fields.** `code === 'TRANSFORM_ENCODE_FAILED'`, `direction === 'encode'`, plus `schemaId?`, `path?`, `cause?` inherited from `TransformError`.
+
+**Consumer use.** Custom encode handlers may `throw new EncodeError('message')`. The library propagates the thrown instance unchanged.
 
 ## `MaterializationError` <Badge type="tip" text="Runtime" />
 

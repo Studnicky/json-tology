@@ -27,11 +27,11 @@ export const BookCatalogEntrySchema = {
           ],
           'type': 'string'
         },
-        'price': { 'type': 'number' }
+        'variantPrice': { 'type': 'number' }
       },
       'required': [
         'kind',
-        'price'
+        'variantPrice'
       ],
       'type': 'object'
     }

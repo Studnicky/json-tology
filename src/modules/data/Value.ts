@@ -52,7 +52,8 @@ export class Value implements ValueInterface {
    * @param schemaId - The $id of the schema to cast against
    * @param data - Data to cast
    * @returns Coerced value
-   * @throws {@link CoercionError} When data cannot be cast to the schema
+   * @throws {@link SchemaError} When the schema is not registered
+   * @throws {@link CoercionError} When the data cannot be coerced to satisfy the schema
    */
   public cast(schemaId: string, data: unknown): unknown {
     return this.registry.cast(schemaId, data);
@@ -64,7 +65,7 @@ export class Value implements ValueInterface {
    * @param schemaId - The $id of the schema to clean against
    * @param data - Data to clean
    * @returns Data with unknown properties removed
-   * @throws {@link CoercionError} When data fails validation after cleaning
+   * @throws {@link SchemaError} When the schema is not registered
    */
   public clean(schemaId: string, data: unknown): unknown {
     return this.registry.clean(schemaId, data);
@@ -76,7 +77,8 @@ export class Value implements ValueInterface {
    * @param schemaId - The $id of the schema to convert against
    * @param data - Data to convert
    * @returns Converted value with coercion and defaults applied
-   * @throws {@link CoercionError} When data cannot be converted to the schema
+   * @throws {@link SchemaError} When the schema is not registered
+   * @throws {@link CoercionError} When the data cannot be coerced to satisfy the schema
    */
   public convert(schemaId: string, data: unknown): unknown {
     return this.registry.convert(schemaId, data);
@@ -99,7 +101,8 @@ export class Value implements ValueInterface {
    * @param schemaId - The $id of the schema to coerce against
    * @param data - Data to coerce
    * @returns Coerced and validated value
-   * @throws {@link CoercionError} When data fails validation
+   * @throws {@link InstantiationError} When data fails validation
+   * @throws {@link DecodeError} When a decode transform fails
    */
   public instantiate(schemaId: string, data: unknown): unknown {
     return this.registry.instantiate(schemaId, data);

@@ -13,7 +13,7 @@ import { Path } from '../modules/data/Path.js';
 /**
  * An ordered collection of ValidationErrorType items.
  *
- * Returned by `entities.validate()` and carried on `CoercionError`.
+ * Returned by `JsonTology.validate()` and carried on `CoercionError`.
  * Iterable so it works in for-of loops.
  *
  * Three views over the same error data:
@@ -34,7 +34,7 @@ import { Path } from '../modules/data/Path.js';
  * ```
  *
  * @example
- * const errs = entities.validate(UserSchema.$id, data);
+ * const errs = jt.validate(UserSchema.$id, data);
  * errs.length;                     // number of errors
  * errs.items;                      // ValidationErrorType[] — raw items
  * errs.aggregate();                // { count: 2, paths: ['name'], keywords: ['type'] }

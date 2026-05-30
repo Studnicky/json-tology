@@ -11,6 +11,13 @@ const PERSON_IRI = 'urn:example:Person';
 const PARENT_IRI = 'urn:example:Person#parent';
 const NAME_IRI = 'urn:example:Person#name';
 
+// Restrictions author onProperty in the class-scoped form above, but the TBox
+// projection resolves onProperty to the FLAT canonical predicate IRI (baseIRI +
+// propertyName) so restrictions stay connected to the flat property declarations
+// and ABox assertions. baseIRI is `urn:example`, so `parent`/`name` flatten to:
+const PARENT_FLAT_IRI = 'urn:example/parent';
+const NAME_FLAT_IRI = 'urn:example/name';
+
 const OWL_RESTRICTION = 'http://www.w3.org/2002/07/owl#Restriction';
 const OWL_ON_PROPERTY = 'http://www.w3.org/2002/07/owl#onProperty';
 const OWL_ALL_VALUES_FROM = 'http://www.w3.org/2002/07/owl#allValuesFrom';
@@ -191,7 +198,7 @@ void describe('Compose OWL restrictions', () => {
       );
 
       const nodes = tboxNodes(schema);
-      const restrictions = findRestrictionsOnProperty(nodes, PARENT_IRI);
+      const restrictions = findRestrictionsOnProperty(nodes, PARENT_FLAT_IRI);
 
       assert.equal(restrictions.length, 1, 'one owl:Restriction node emitted');
       assert.equal(literalValue(restrictions[0], OWL_CARDINALITY), 2);
@@ -216,7 +223,7 @@ void describe('Compose OWL restrictions', () => {
         )
       );
       const nodes = tboxNodes(schema);
-      const restrictions = findRestrictionsOnProperty(nodes, PARENT_IRI);
+      const restrictions = findRestrictionsOnProperty(nodes, PARENT_FLAT_IRI);
 
       assert.equal(restrictions.length, 2);
 
@@ -245,7 +252,7 @@ void describe('Compose OWL restrictions', () => {
         )
       );
       const nodes = tboxNodes(schema);
-      const restrictions = findRestrictionsOnProperty(nodes, PARENT_IRI);
+      const restrictions = findRestrictionsOnProperty(nodes, PARENT_FLAT_IRI);
 
       const someNode = restrictions.find((restriction) => {
         return OWL_SOME_VALUES_FROM in restriction;
@@ -269,7 +276,7 @@ void describe('Compose OWL restrictions', () => {
         } as const
       );
       const nodes = tboxNodes(schema);
-      const restrictions = findRestrictionsOnProperty(nodes, NAME_IRI);
+      const restrictions = findRestrictionsOnProperty(nodes, NAME_FLAT_IRI);
 
       assert.equal(restrictions.length, 1);
       assert.equal(literalValue(restrictions[0], OWL_HAS_VALUE), 'Alice');

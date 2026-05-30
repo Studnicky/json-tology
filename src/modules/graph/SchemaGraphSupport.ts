@@ -17,9 +17,33 @@ import type { GraphAccessorInterface } from '../../interfaces/GraphAccessor.js';
 import type { JtConfigType } from '../../types/JtConfig.js';
 import { RESTRICTIONS_KEY } from '../../constants/COMPOSITION.js';
 import type { RawRestrictionDescriptorType } from '../../types/RawRestrictionDescriptor.js';
+import type { AnnotatedEdgeDescriptorInterface } from '../../interfaces/AnnotatedEdgeDescriptorInterface.js';
+
+// BCP-47 shape: one or more subtags of 1–8 ASCII alpha/alphanum chars, hyphen-separated.
+const BCP47_TAG_RE = /^[A-Za-z]{1,8}(?:-[A-Za-z0-9]{1,8})*$/u;
 
 function unescapeJsonPointerSegment(segment: string): string {
   return segment.replaceAll('~1', '/').replaceAll('~0', '~');
+}
+
+/**
+ * Validate and normalize the `x-jt-language` annotation. Returns the tag when it
+ * matches the BCP-47 shape, `undefined` when absent, and throws a GraphError for
+ * a malformed tag (e.g. `"\n"`, `"INVALID!!!"`).
+ */
+function normalizeLanguageTag(rawLang: unknown): string | undefined {
+  if (typeof rawLang !== 'string') {
+    return undefined;
+  }
+
+  if (!BCP47_TAG_RE.test(rawLang)) {
+    throw new GraphError(
+      'INVALID_LANGUAGE_TAG',
+      `x-jt-language value is not a valid BCP-47 language tag: ${JSON.stringify(rawLang)}`
+    );
+  }
+
+  return rawLang;
 }
 
 function normalizeAliases(schema: Record<string, unknown>): readonly string[] {
@@ -52,6 +76,40 @@ function extractRestrictions(schema: Record<string, unknown>): readonly RawRestr
 
     return typeof rec.kind === 'string' && typeof rec.onProperty === 'string' && 'value' in rec;
   });
+}
+
+function extractAnnotatedEdgeDescriptor(schema: Record<string, unknown>): AnnotatedEdgeDescriptorInterface | undefined {
+  const raw = schema['jt:annotatedEdge'];
+
+  if (!isRecord(raw)) {
+    return undefined;
+  }
+
+  const predicate = typeof raw.predicate === 'string' ? raw.predicate : undefined;
+  const targetRef = typeof raw.targetRef === 'string' ? raw.targetRef : undefined;
+
+  if (predicate === undefined || targetRef === undefined) {
+    return undefined;
+  }
+
+  const annotations: Record<string, { readonly '$ref': string }> = {};
+
+  if (isRecord(raw.annotations)) {
+    for (const [
+      propName,
+      propSchema
+    ] of Object.entries(raw.annotations)) {
+      if (isRecord(propSchema) && typeof propSchema.$ref === 'string') {
+        annotations[propName] = { '$ref': propSchema.$ref };
+      }
+    }
+  }
+
+  return {
+    annotations,
+    predicate,
+    targetRef
+  };
 }
 
 function extractJtConfig(schema: Record<string, unknown>): JtConfigType | undefined {
@@ -90,6 +148,7 @@ const EMPTY_SEMANTICS: SchemaGraphSemanticsInterface = Object.freeze({
   'additionalPropertiesNode': undefined,
   'aliases': [],
   'allOf': [],
+  'annotatedEdge': undefined,
   'anyOf': [],
   'asymmetric': false,
   'comment': undefined,
@@ -124,11 +183,13 @@ const EMPTY_SEMANTICS: SchemaGraphSemanticsInterface = Object.freeze({
   'ifNode': undefined,
   'inverseFunctional': false,
   'inverseOf': undefined,
+  'iriRef': false,
   'irreflexive': false,
   'itemsNode': undefined,
   'jtConfig': undefined,
   'jtFrozen': false,
   'jtStrict': undefined,
+  'language': undefined,
   'maxContains': undefined,
   'maximum': undefined,
   'maxItems': undefined,
@@ -320,6 +381,7 @@ export const SchemaGraphSupport = {
       }, 'additionalProperties'),
       aliases,
       'allOf': graph.indexedChildren(node, 'allOf'),
+      'annotatedEdge': extractAnnotatedEdgeDescriptor(node.schema),
       'anyOf': graph.indexedChildren(node, 'anyOf'),
       'asymmetric': node.schema.asymmetric === true,
       'comment': typeof node.schema.$comment === 'string' ? node.schema.$comment : undefined,
@@ -354,11 +416,13 @@ export const SchemaGraphSupport = {
       'ifNode': graph.child(node, 'if'),
       'inverseFunctional': node.schema.inverseFunctional === true,
       'inverseOf': typeof node.schema.inverseOf === 'string' ? node.schema.inverseOf : undefined,
+      'iriRef': node.schema['x-jt-iriRef'] === true || (typeof node.schema.format === 'string' && node.schema.format === 'iri'),
       'irreflexive': node.schema.irreflexive === true,
       'itemsNode': graph.child(node, 'items'),
       jtConfig,
       'jtFrozen': jtFrozen,
       'jtStrict': jtStrict,
+      'language': normalizeLanguageTag(node.schema['x-jt-language']),
       'maxContains': typeof node.schema.maxContains === 'number' ? node.schema.maxContains : undefined,
       'maximum': typeof node.schema.maximum === 'number' ? node.schema.maximum : undefined,
       'maxItems': typeof node.schema.maxItems === 'number' ? node.schema.maxItems : undefined,

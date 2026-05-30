@@ -27,7 +27,7 @@ const customerByObj = bookstoreEntities.instantiate(
   aboxFixtures.customer
 );
 
-console.assert(customerById.id === customerByObj.id);
+console.assert(customerById.customerId === customerByObj.customerId);
 console.assert(customerById.name === customerByObj.name);
 
 // Validate also accepts both forms.

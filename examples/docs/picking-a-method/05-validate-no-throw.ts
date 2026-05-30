@@ -19,15 +19,15 @@ const errors = bookstoreEntities.validate(OrderSchema.$id, aboxFixtures.order);
 
 console.assert(errors.length === 0);
 
-// Invalid order — missing required `id`.
+// Invalid order — missing required `orderId`.
 const invalid = {
-  'customerId': aboxFixtures.customer.id,
-  'items': aboxFixtures.order.items,
+  'customerId': aboxFixtures.customer.customerId,
+  'orderLines': aboxFixtures.order.orderLines,
+  'orderTotal': aboxFixtures.order.orderTotal,
   'placedAt': aboxFixtures.order.placedAt,
-  'shippingAddress': aboxFixtures.order.shippingAddress,
-  'total': aboxFixtures.order.total
+  'shippingAddress': aboxFixtures.order.shippingAddress
 };
 const invalidErrors = bookstoreEntities.validate(OrderSchema.$id, invalid);
 
-// `id` is required — at least one error reported.
+// `orderId` is required — at least one error reported.
 console.assert(invalidErrors.length > 0);

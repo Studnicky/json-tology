@@ -26,9 +26,9 @@ const converted = castEntities.value.convert(ReviewSchema.$id, {
   'body': aboxFixtures.review.body,
   'bookIsbn': aboxFixtures.review.bookIsbn,
   'customerId': aboxFixtures.review.customerId,
-  'id': aboxFixtures.review.id,
   'postedAt': aboxFixtures.review.postedAt,
-  'rating': '5'
+  'rating': '5',
+  'reviewId': aboxFixtures.review.reviewId
 }) as Record<string, unknown>;
 
 console.assert((converted as { 'rating': number }).rating === 5);

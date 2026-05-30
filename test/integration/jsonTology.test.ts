@@ -463,20 +463,20 @@ import {
           assert.ok(Array.isArray(subClassOf));
           const emailRestriction = subClassOf.find((restriction) => {
             return restriction['@type'] === 'http://www.w3.org/2002/07/owl#Restriction'
-                 && (restriction['http://www.w3.org/2002/07/owl#onProperty'] as Record<string, unknown>)['@id'] === 'https://myapp.io/User#email';
+                 && (restriction['http://www.w3.org/2002/07/owl#onProperty'] as Record<string, unknown>)['@id'] === 'https://myapp.io/email';
           });
 
           assert.ok(emailRestriction !== undefined, 'email restriction should exist');
           assert.equal(emailRestriction['http://www.w3.org/2002/07/owl#minCardinality'], 1);
 
           const emailProp = graph.find((node) => {
-            return node['@id'] === 'https://myapp.io/User#email';
+            return node['@id'] === 'https://myapp.io/email';
           });
 
           assert.ok(emailProp !== undefined, 'emailProp should exist');
           assert.equal(emailProp['@type'], 'http://www.w3.org/2002/07/owl#DatatypeProperty');
         },
-        'name': 'owl:Restriction for required fields and property nodes with class-scoped IRIs'
+        'name': 'owl:Restriction for required fields and property nodes with flat predicate IRIs'
       },
       {
         'check': () => {
@@ -494,7 +494,7 @@ import {
           assert.equal(employeeClass['http://www.w3.org/2000/01/rdf-schema#label'], 'Employee');
 
           const employeeProp = graph.find((node) => {
-            return node['@id'] === 'https://myapp.io/Directory#primaryEmployee';
+            return node['@id'] === 'https://myapp.io/primaryEmployee';
           });
 
           assert.ok(employeeProp !== undefined, 'employeeProp should exist');
@@ -510,7 +510,7 @@ import {
           assert.ok(Array.isArray(subs));
           const avf = subs.find((restriction: Record<string, unknown>) => {
             return restriction['@type'] === 'http://www.w3.org/2002/07/owl#Restriction'
-          && (restriction['http://www.w3.org/2002/07/owl#onProperty'] as Record<string, unknown>)['@id'] === 'https://myapp.io/Directory#employees'
+          && (restriction['http://www.w3.org/2002/07/owl#onProperty'] as Record<string, unknown>)['@id'] === 'https://myapp.io/employees'
           && restriction['http://www.w3.org/2002/07/owl#allValuesFrom'] !== undefined;
           });
 
@@ -562,8 +562,8 @@ import {
             : rootType;
 
           assert.equal(rootTypeId, UserSchema.$id);
-          assert.equal(root['https://myapp.io/User#name'], 'Alice');
-          assert.equal(root['https://myapp.io/User#email'], 'alice@example.com');
+          assert.equal(root['https://myapp.io/name'], 'Alice');
+          assert.equal(root['https://myapp.io/email'], 'alice@example.com');
         },
         'name': 'projects validated instance data into ABox nodes'
       },
@@ -605,7 +605,7 @@ import {
           });
 
           assert.ok(team !== undefined, 'team ABox node should exist');
-          const leadRef = team['https://myapp.io/Team#lead'] as Record<string, unknown>;
+          const leadRef = team['https://myapp.io/lead'] as Record<string, unknown>;
           const lead = teamGraph.find((node) => {
             return node['@id'] === leadRef['@id'];
           });
@@ -624,7 +624,7 @@ import {
             : leadType;
 
           assert.equal(leadTypeId, 'https://myapp.io/Team#/$defs/Person');
-          assert.equal(lead['https://myapp.io/Team#/$defs/Person#name'], 'Dana');
+          assert.equal(lead['https://myapp.io/name'], 'Dana');
         },
         'name': 'nested object references reuse canonical property and class identifiers'
       }

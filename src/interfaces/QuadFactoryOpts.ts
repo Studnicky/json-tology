@@ -29,6 +29,12 @@ export interface QuadFactoryIriOptsInterface {
  */
 export interface QuadFactoryLiteralOptsInterface {
   'curie'?: CurieInterface | undefined;
+  /**
+   * BCP47 language tag. When a non-empty string is supplied the literal is
+   * emitted as a language-tagged literal (`rdf:langString`) and the positional
+   * `datatype` argument is ignored.
+   */
+  'language'?: string | undefined;
 }
 
 /**

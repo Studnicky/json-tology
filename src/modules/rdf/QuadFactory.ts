@@ -18,6 +18,7 @@ import type { Quad } from '@rdfjs/types';
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
+import { GraphError } from '../../errors/GraphError.js';
 import type {
   QuadFactoryEmitOptsInterface,
   QuadFactoryIriOptsInterface,
@@ -29,7 +30,9 @@ import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssue
 import { Lists } from './Lists.js';
 import { ProjectionIndex } from './ProjectionIndex.js';
 import { Terms } from './Terms.js';
-import { XSD } from '../../constants/IRI.js';
+import {
+  RDF, XSD
+} from '../../constants/IRI.js';
 
 // ---------------------------------------------------------------------------
 // jsonld dataset quad shape — the object shape emitted by jsonld.toRDF()
@@ -84,6 +87,25 @@ function expandCurieIfNeeded(value: string, curie: CurieInterface): string {
   }
 }
 
+/**
+ * Validate that a finalized predicate IRI is absolute. A predicate that is
+ * still a compact CURIE (`prefix:local` with an unregistered prefix) after
+ * expansion would otherwise be emitted as an invalid IRI. Absolute forms
+ * recognised: `://` (with a non-empty scheme) or a `urn:` namespace.
+ *
+ * Predicates may never be blank nodes, so a `_:` value is also rejected.
+ */
+function assertAbsolutePredicate(predicate: string): void {
+  if (predicate.indexOf('://') > 0 || predicate.startsWith('urn:')) {
+    return;
+  }
+
+  throw new GraphError(
+    'INVALID_PREDICATE_IRI',
+    `Predicate is not an absolute IRI (unresolved CURIE prefix or relative reference): ${JSON.stringify(predicate)}`
+  );
+}
+
 // ---------------------------------------------------------------------------
 // QuadFactory — static-only class
 // ---------------------------------------------------------------------------
@@ -105,6 +127,8 @@ export class QuadFactory {
       curie, graph
     } = options ?? {};
     const expandedPredicate = curie ? expandCurieIfNeeded(annotationPredicate, curie) : annotationPredicate;
+
+    assertAbsolutePredicate(expandedPredicate);
 
     return Terms.quad(tripleTerm, Terms.iri(expandedPredicate), annotationValue, graph);
   }
@@ -215,6 +239,15 @@ export class QuadFactory {
    */
   static literal(value: unknown, datatype: string, options?: QuadFactoryLiteralOptsInterface): QuadObjectType {
     const curie = options?.curie;
+    const language = options?.language;
+
+    if (typeof language === 'string' && language !== '') {
+      return Terms.literal(value, {
+        'datatype': Terms.iri(RDF.langString),
+        language
+      });
+    }
+
     const expandedDatatype = curie === undefined ? datatype : expandCurieIfNeeded(datatype, curie);
 
     return Terms.literal(value, { 'datatype': Terms.iri(expandedDatatype) });
@@ -259,6 +292,8 @@ export class QuadFactory {
     const expandedPredicate = curie ? expandCurieIfNeeded(predicate, curie) : predicate;
     const expandedSubject = curie ? expandCurieIfNeeded(subject, curie) : subject;
 
+    assertAbsolutePredicate(expandedPredicate);
+
     const subjectTerm = expandedSubject.startsWith('_:')
       ? Terms.blank(expandedSubject)
       : Terms.iri(expandedSubject);
@@ -292,7 +327,8 @@ export class QuadFactory {
 
   /**
    * Reset the module-level bnode counter. Call before a serialization batch
-   * that involves multiple projectGraph() calls (when not using an IdentifierIssuer).
+   * that involves multiple OwlProjection.graph() / ShaclProjection.graph() calls
+   * (when not using an IdentifierIssuer).
    */
   static resetBnodeCounter(): void {
     bnodeCounter = 0;
@@ -317,6 +353,8 @@ export class QuadFactory {
     const { curie } = options ?? {};
     const expandedPredicate = curie ? expandCurieIfNeeded(predicate, curie) : predicate;
     const expandedSubject = curie ? expandCurieIfNeeded(subject, curie) : subject;
+
+    assertAbsolutePredicate(expandedPredicate);
 
     const subjectTerm = expandedSubject.startsWith('_:')
       ? Terms.blank(expandedSubject)

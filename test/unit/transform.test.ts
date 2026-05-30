@@ -7,7 +7,7 @@ import {
 } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  JsonTology, Transform
+  BaseError, DecodeError, EncodeError, JsonTology, Transform, TransformError
 } from '../../src/index.js';
 
 // ---------------------------------------------------------------------------
@@ -437,7 +437,7 @@ void describe('Transform.chain()', () => {
 
 void describe('Transform bad paths', () => {
   // --- decoder throws ---
-  void it('unhappy: decoder that throws propagates as InstantiationError(TRANSFORM_DECODE_FAILED)', () => {
+  void it('unhappy: decoder that throws propagates as DecodeError(TRANSFORM_DECODE_FAILED)', () => {
     const BoomDecodeSchema = {
       '$id': 'https://myapp.io/BoomDecode',
       'type': 'string'
@@ -462,9 +462,12 @@ void describe('Transform bad paths', () => {
         jt.instantiate(transformed.$id, 'hello');
       },
       (err: unknown) => {
-        assert.equal((err as Error).constructor.name, 'InstantiationError', `expected InstantiationError, got ${(err as Error).constructor.name}`);
-        assert.equal((err as { 'code': string }).code, 'TRANSFORM_DECODE_FAILED');
-        assert.ok((err as Error).message.includes('decode boom'));
+        assert.ok(err instanceof DecodeError, `expected DecodeError, got ${(err as Error).constructor.name}`);
+        assert.ok(err instanceof TransformError, 'expected DecodeError to extend TransformError');
+        assert.equal((err).code, 'TRANSFORM_DECODE_FAILED');
+        assert.ok((err).message.includes('decode boom'));
+        assert.equal((err).cause?.message, 'decode boom');
+        assert.equal((err).direction, 'decode');
 
         return true;
       }
@@ -500,14 +503,14 @@ void describe('Transform bad paths', () => {
 
     assert.equal(result, 'HELLO');
 
-    // Bad input throws InstantiationError
+    // Bad input throws DecodeError
     assert.throws(
       () => {
         jt.instantiate(transformed.$id, 'bad');
       },
       (err: unknown) => {
-        assert.equal((err as Error).constructor.name, 'InstantiationError');
-        assert.equal((err as { 'code': string }).code, 'TRANSFORM_DECODE_FAILED');
+        assert.ok(err instanceof DecodeError, `expected DecodeError, got ${(err as Error).constructor.name}`);
+        assert.equal((err).code, 'TRANSFORM_DECODE_FAILED');
 
         return true;
       }
@@ -515,7 +518,7 @@ void describe('Transform bad paths', () => {
   });
 
   // --- encoder throws ---
-  void it('unhappy: encoder that throws propagates the raw error (not wrapped)', () => {
+  void it('unhappy: encoder that throws raises EncodeError', () => {
     const BoomEncodeSchema = {
       '$id': 'https://myapp.io/BoomEncode',
       'type': 'string'
@@ -535,15 +538,17 @@ void describe('Transform bad paths', () => {
       'schemas': [transformed] as const
     });
 
-    // BEHAVIOURAL NOTE: encoder throws propagate as the raw Error, not wrapped in
-    // an InstantiationError. This differs from decoder failures.
+    // BEHAVIOURAL NOTE: encoder throws wrap in EncodeError (code TRANSFORM_ENCODE_FAILED)
+    // with the original error preserved as cause.
     assert.throws(
       () => {
         jt.encode(transformed, 'some-value');
       },
       (err: unknown) => {
-        assert.ok(err instanceof Error, `expected Error, got ${String(err)}`);
-        assert.ok((err).message.includes('encode boom'));
+        assert.ok(err instanceof EncodeError, `expected EncodeError, got ${(err as Error).constructor.name}`);
+        assert.equal((err).code, 'TRANSFORM_ENCODE_FAILED');
+        assert.equal((err).cause?.message, 'encode boom');
+        assert.equal((err).direction, 'encode');
 
         return true;
       }
@@ -629,5 +634,95 @@ void describe('Transform bad paths', () => {
     // Identity semantics: decode and encode are both pass-through
     assert.equal(fns.decode('input-value'), 'input-value');
     assert.equal(fns.encode('output-value'), 'output-value');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// New error-taxonomy coverage (A–D)
+// ---------------------------------------------------------------------------
+
+void describe('Transform error taxonomy — new contract coverage', () => {
+  // A. Consumer-thrown DecodeError propagates as-is (not re-wrapped)
+  void it('A: consumer DecodeError thrown in decode propagates with message and code intact', () => {
+    const CustomDecodeSchema = {
+      '$id': 'https://myapp.io/CustomDecode',
+      'type': 'string'
+    } as const;
+
+    const transformed = Transform.create(CustomDecodeSchema, {
+      'decode': (_: string) => {
+        throw new DecodeError('custom decode msg', { 'path': '/x' });
+      },
+      'encode': (val: string) => {
+        return val;
+      }
+    });
+
+    const jt = JsonTology.create({
+      'baseIRI': 'https://myapp.io',
+      'schemas': [transformed] as const
+    });
+
+    assert.throws(
+      () => {
+        jt.instantiate(transformed.$id, 'hello');
+      },
+      (err: unknown) => {
+        assert.ok(err instanceof DecodeError, `expected DecodeError, got ${(err as Error).constructor.name}`);
+        assert.ok((err).message.includes('custom decode msg'));
+        assert.equal((err).code, 'TRANSFORM_DECODE_FAILED');
+
+        return true;
+      }
+    );
+  });
+
+  // B. Consumer-thrown EncodeError propagates as-is (not re-wrapped)
+  void it('B: consumer EncodeError thrown in encode propagates with message and code intact', () => {
+    const CustomEncodeSchema = {
+      '$id': 'https://myapp.io/CustomEncode',
+      'type': 'string'
+    } as const;
+
+    const transformed = Transform.create(CustomEncodeSchema, {
+      'decode': (raw: string) => {
+        return raw;
+      },
+      'encode': (_: string) => {
+        throw new EncodeError('custom encode msg');
+      }
+    });
+
+    const jt = JsonTology.create({
+      'baseIRI': 'https://myapp.io',
+      'schemas': [transformed] as const
+    });
+
+    assert.throws(
+      () => {
+        jt.encode(transformed, 'some-value');
+      },
+      (err: unknown) => {
+        assert.ok(err instanceof EncodeError, `expected EncodeError, got ${(err as Error).constructor.name}`);
+        assert.ok((err).message.includes('custom encode msg'));
+
+        return true;
+      }
+    );
+  });
+
+  // D. instanceof chain: DecodeError → TransformError → BaseError; EncodeError → TransformError → BaseError
+  void it('D: DecodeError and EncodeError satisfy full instanceof chain', () => {
+    const decodeErr = new DecodeError('x');
+
+    assert.ok(decodeErr instanceof DecodeError);
+    assert.ok(decodeErr instanceof TransformError);
+    assert.ok(decodeErr instanceof BaseError);
+
+    const encodeErr = new EncodeError('y');
+
+    assert.ok(encodeErr instanceof EncodeError);
+    assert.ok(encodeErr instanceof TransformError);
+    assert.ok(encodeErr instanceof BaseError);
   });
 });

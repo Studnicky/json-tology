@@ -12,7 +12,7 @@ import {
 // Valid order — instantiate returns coerced value
 const validOrder = bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order);
 
-console.assert(validOrder.id === aboxFixtures.order.id);
+console.assert(validOrder.orderId === aboxFixtures.order.orderId);
 console.assert(validOrder.customerId === aboxFixtures.order.customerId);
 
 // Invalid order — tamper one field

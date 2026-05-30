@@ -1,3 +1,5 @@
+export type CoercionErrorCodeType = 'COERCION_FAILED';
+
 export type SchemaErrorCodeType
   = | 'COMPUTED_FN_MISSING'
   | 'COMPUTED_INPUT_FORBIDDEN'
@@ -18,6 +20,9 @@ export type GraphErrorCodeType
   | 'ARTIFACT_STALE'
   | 'DIALECT_UNSUPPORTED'
   | 'GRAPH_INVALID_RESTRICTION'
+  | 'INVALID_LANGUAGE_TAG'
+  | 'INVALID_PREDICATE_IRI'
+  | 'NOT_IMPLEMENTED'
   | 'POINTER_INVALID'
   | 'POINTER_NOT_FOUND'
   | 'POINTER_NOT_SCHEMA'
@@ -25,11 +30,15 @@ export type GraphErrorCodeType
   | 'REF_UNRESOLVED'
   | 'VOCABULARY_UNSUPPORTED';
 
-export type InstantiationErrorCodeType = 'EXTRA_FORBIDDEN' | 'INSTANTIATION_FAILED' | 'TRANSFORM_DECODE_FAILED';
+export type InstantiationErrorCodeType = 'EXTRA_FORBIDDEN' | 'INSTANTIATION_FAILED';
+
+export type TransformErrorCodeType = 'TRANSFORM_DECODE_FAILED' | 'TRANSFORM_ENCODE_FAILED';
 
 export type MaterializationErrorCodeType
   = | 'CYCLIC_DATA'
+  | 'INVALID_IRI_VALUE'
   | 'MATERIALIZATION_FAILED'
-  | 'MISSING_GRAPH_IRI';
+  | 'MISSING_GRAPH_IRI'
+  | 'NON_FINITE_NUMBER';
 
 export type OwlImportErrorCodeType = 'OWL_IMPORT_NOT_IMPLEMENTED';

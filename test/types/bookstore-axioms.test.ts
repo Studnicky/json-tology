@@ -39,14 +39,14 @@ type PrintStatus = InferType<typeof PrintStatusSchema, BookstoreRefs>;
 assert<AssertEqualType<PrintStatus, 'inPrint' | 'limitedRun' | 'outOfPrint'>>();
 
 // ---------------------------------------------------------------------------
-// Customer.id carries the inverseFunctional brand and is required.
-// id resolves to FormatBrandInterface<'uuid'> & string via BookstoreRefs.
+// Customer.customerId carries the inverseFunctional brand and is required.
+// customerId resolves to FormatBrandInterface<'uuid'> & string via BookstoreRefs.
 // ---------------------------------------------------------------------------
 
 type Customer = InferType<typeof CustomerSchema, BookstoreRefs>;
 
-assert<AssertEqualType<Customer['id'] extends string ? true : false, true>>();
-assert<AssertEqualType<undefined extends Customer['id'] ? true : false, false>>();
+assert<AssertEqualType<Customer['customerId'] extends string ? true : false, true>>();
+assert<AssertEqualType<undefined extends Customer['customerId'] ? true : false, false>>();
 
 // ---------------------------------------------------------------------------
 // PrintBook disjointWith EBook — no value can satisfy both.

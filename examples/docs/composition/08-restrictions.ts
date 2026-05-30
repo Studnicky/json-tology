@@ -23,6 +23,9 @@ import {
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
+// Restriction onProperty is the property IDENTIFIER (`Class#prop`); the
+// projection resolves it to the flat `https://bookstore.example/authors`
+// predicate in the emitted TBox/SHACL, matching the property declaration.
 const AUTHORS_PROP = 'urn:bookstore:Book#authors';
 
 // cardinality — Book with exactly one author.

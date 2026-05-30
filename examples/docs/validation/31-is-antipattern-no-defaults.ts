@@ -12,8 +12,8 @@ import {
 } from '../bookstore/index.js';
 
 const rawBody = {
+  'customerId': aboxFixtures.customer.customerId,
   'email': aboxFixtures.customer.email,
-  'id': aboxFixtures.customer.id,
   'name': aboxFixtures.customer.name
   // addresses omitted — schema default is []
 };

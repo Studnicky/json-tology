@@ -1,8 +1,9 @@
 import type { MaterializationResultInterface } from './Materializer.js';
 import type { QuadInterface } from './Quad.js';
 import type { InferSchemaType } from '../types/Infer.js';
-import type { SkolemizeFnType } from '../types/Skolemize.js';
+
 import type { JsonSchemaDocumentType } from '../types/Schema.js';
+import type { AboxOptionsType } from '../types/AboxOptions.js';
 
 export interface MaterializerInterface {
   createDefault(schema: Record<string, unknown> & { '$id': string }): unknown;
@@ -24,7 +25,6 @@ export interface MaterializerInterface {
     schema: Record<string, unknown> & { '$id': string },
     data: unknown,
     baseIRI: string,
-    options?: { 'graphIRI'?: string | undefined;
-      'iriFor'?: SkolemizeFnType | undefined }
+    options?: AboxOptionsType
   ): QuadInterface[];
 }

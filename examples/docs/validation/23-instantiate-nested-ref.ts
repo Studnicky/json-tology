@@ -12,23 +12,23 @@ import {
 } from '../bookstore/index.js';
 
 const order = bookstoreEntities.instantiate(OrderSchema.$id, {
-  'customerId': aboxFixtures.customer.id,
-  'id': aboxFixtures.order.id,
-  'items': [{
+  'customerId': aboxFixtures.customer.customerId,
+  'orderId': aboxFixtures.order.orderId,
+  'orderLines': [{
     // unknown field — stripped from OrderLine
     'bookIsbn': aboxFixtures.rareBook.isbn,
     'extra': 'gone',
     'quantity': 1,
     'unitPrice': aboxFixtures.rareBook.price
   }],
+  // 850 EUR × 1 — satisfies invariant
+  'orderTotal': aboxFixtures.rareBook.price,
   'placedAt': '2026-01-15T10:30:00Z',
   'shippingAddress': aboxFixtures.order.shippingAddress,
-  // 850 EUR × 1 — satisfies invariant
-  'total': aboxFixtures.rareBook.price,
   // unknown field — stripped from Order
   'unexpectedField': 'stripped'
 });
 
-console.assert(order.items.length === 1);
-console.assert(!('extra' in order.items[0]));
+console.assert(order.orderLines.length === 1);
+console.assert(!('extra' in order.orderLines[0]));
 console.assert(!('unexpectedField' in order));

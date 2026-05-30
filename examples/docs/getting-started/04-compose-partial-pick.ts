@@ -24,7 +24,7 @@ const PatchCustomerSchema = Compose.partial(
 const CustomerSummarySchema = Compose.pick(
   CustomerSchema,
   [
-    'id',
+    'customerId',
     'name'
   ] as const,
   'https://bookstore.example/CustomerSummary'
@@ -41,10 +41,10 @@ const patchErrs = jt.validate(PatchCustomerSchema, { 'name': aboxFixtures.custom
 console.assert(patchErrs.length === 0);
 
 const summary = jt.instantiate(CustomerSummarySchema, {
-  'id': aboxFixtures.customer.id,
+  'customerId': aboxFixtures.customer.customerId,
   'name': aboxFixtures.customer.name
-}) as { 'id': string;
+}) as { 'customerId': string;
   'name': string };
 
-console.assert(summary.id === aboxFixtures.customer.id);
+console.assert(summary.customerId === aboxFixtures.customer.customerId);
 console.assert(summary.name === aboxFixtures.customer.name);

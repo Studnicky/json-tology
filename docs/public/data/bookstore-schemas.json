@@ -43,7 +43,8 @@
   "urn:bookstore:DownloadUrl": {
     "$id": "urn:bookstore:DownloadUrl",
     "format": "uri",
-    "type": "string"
+    "type": "string",
+    "x-jt-iriRef": true
   },
   "urn:bookstore:EBookFormat": {
     "$id": "urn:bookstore:EBookFormat",
@@ -134,7 +135,8 @@
   "urn:bookstore:Provenance": {
     "$id": "urn:bookstore:Provenance",
     "minLength": 1,
-    "type": "string"
+    "type": "string",
+    "x-jt-language": "de"
   },
   "urn:bookstore:PublicationDate": {
     "$id": "urn:bookstore:PublicationDate",
@@ -266,13 +268,13 @@
             ],
             "type": "string"
           },
-          "price": {
+          "variantPrice": {
             "type": "number"
           }
         },
         "required": [
           "kind",
-          "price"
+          "variantPrice"
         ],
         "type": "object"
       }
@@ -372,34 +374,6 @@
     ],
     "type": "object"
   },
-  "urn:bookstore:Customer": {
-    "$id": "urn:bookstore:Customer",
-    "properties": {
-      "addresses": {
-        "default": [],
-        "items": {
-          "$ref": "urn:bookstore:Address"
-        },
-        "type": "array"
-      },
-      "email": {
-        "$ref": "urn:bookstore:Email"
-      },
-      "id": {
-        "$ref": "urn:bookstore:CustomerId",
-        "inverseFunctional": true
-      },
-      "name": {
-        "$ref": "urn:bookstore:CustomerName"
-      }
-    },
-    "required": [
-      "id",
-      "email",
-      "name"
-    ],
-    "type": "object"
-  },
   "urn:bookstore:OrderLine": {
     "$id": "urn:bookstore:OrderLine",
     "properties": {
@@ -420,21 +394,82 @@
     ],
     "type": "object"
   },
+  "urn:bookstore:InPrintBook": {
+    "$id": "urn:bookstore:InPrintBook",
+    "allOf": [
+      {
+        "$ref": "urn:bookstore:Book"
+      },
+      {
+        "type": "object"
+      }
+    ],
+    "jt:restrictions": [
+      {
+        "kind": "hasValue",
+        "onProperty": "urn:bookstore:Book#printStatus",
+        "value": "inPrint"
+      }
+    ]
+  },
+  "urn:bookstore:OutOfPrintBook": {
+    "$id": "urn:bookstore:OutOfPrintBook",
+    "not": {
+      "$ref": "urn:bookstore:InPrintBook"
+    },
+    "allOf": [
+      {
+        "$ref": "urn:bookstore:Book"
+      }
+    ],
+    "type": "object"
+  },
+  "urn:bookstore:Customer": {
+    "$id": "urn:bookstore:Customer",
+    "properties": {
+      "addresses": {
+        "default": [],
+        "items": {
+          "$ref": "urn:bookstore:Address"
+        },
+        "type": "array"
+      },
+      "customerId": {
+        "$ref": "urn:bookstore:CustomerId",
+        "inverseFunctional": true
+      },
+      "email": {
+        "$ref": "urn:bookstore:Email"
+      },
+      "name": {
+        "$ref": "urn:bookstore:CustomerName"
+      }
+    },
+    "required": [
+      "customerId",
+      "email",
+      "name"
+    ],
+    "type": "object"
+  },
   "urn:bookstore:Order": {
     "$id": "urn:bookstore:Order",
     "properties": {
       "customerId": {
         "$ref": "urn:bookstore:CustomerId"
       },
-      "id": {
+      "orderId": {
         "$ref": "urn:bookstore:OrderId"
       },
-      "items": {
+      "orderLines": {
         "items": {
           "$ref": "urn:bookstore:OrderLine"
         },
         "minItems": 1,
         "type": "array"
+      },
+      "orderTotal": {
+        "$ref": "urn:bookstore:Money"
       },
       "placedAt": {
         "$ref": "urn:bookstore:Iso8601",
@@ -443,96 +478,51 @@
       },
       "shippingAddress": {
         "$ref": "urn:bookstore:Address"
-      },
-      "total": {
-        "$ref": "urn:bookstore:Money"
       }
     },
     "required": [
-      "id",
+      "orderId",
       "customerId",
-      "items",
-      "total",
+      "orderLines",
+      "orderTotal",
       "placedAt",
       "shippingAddress"
     ],
     "type": "object"
   },
-  "urn:bookstore:Review": {
-    "$id": "urn:bookstore:Review",
-    "properties": {
-      "body": {
-        "$ref": "urn:bookstore:ReviewBody"
+  "urn:bookstore:RareBook": {
+    "$id": "urn:bookstore:RareBook",
+    "allOf": [
+      {
+        "$ref": "urn:bookstore:PrintBook"
       },
-      "bookIsbn": {
-        "$ref": "urn:bookstore:Isbn"
-      },
-      "customerId": {
-        "$ref": "urn:bookstore:CustomerId",
-        "functional": true
-      },
-      "id": {
-        "$ref": "urn:bookstore:ReviewId"
-      },
-      "postedAt": {
-        "$ref": "urn:bookstore:Iso8601"
-      },
-      "rating": {
-        "$ref": "urn:bookstore:RatingScore"
-      }
-    },
-    "required": [
-      "id",
-      "bookIsbn",
-      "customerId",
-      "rating",
-      "body",
-      "postedAt"
-    ],
-    "type": "object"
-  },
-  "urn:bookstore:BookListPage": {
-    "$id": "urn:bookstore:BookListPage",
-    "description": "A page of Book results with pagination metadata",
-    "properties": {
-      "hasNext": {
-        "type": "boolean"
-      },
-      "hasPrev": {
-        "type": "boolean"
-      },
-      "items": {
-        "items": {
-          "$ref": "urn:bookstore:Book"
+      {
+        "properties": {
+          "estimatedAgeYears": {
+            "$ref": "urn:bookstore:EstimatedAgeYears"
+          },
+          "firstEditionYear": {
+            "$ref": "urn:bookstore:FirstEditionYear"
+          }
         },
-        "type": "array"
-      },
-      "nextCursor": {
-        "type": "string"
-      },
-      "page": {
-        "$ref": "urn:bookstore:PageNumber"
-      },
-      "pageSize": {
-        "$ref": "urn:bookstore:PageSize"
-      },
-      "prevCursor": {
-        "type": "string"
-      },
-      "total": {
-        "$ref": "urn:bookstore:PageCount"
-      },
-      "totalPages": {
-        "$ref": "urn:bookstore:PageCount"
+        "required": [
+          "firstEditionYear"
+        ],
+        "type": "object"
       }
-    },
-    "required": [
-      "items",
-      "total",
-      "page",
-      "pageSize"
     ],
-    "type": "object"
+    "jt:restrictions": [
+      {
+        "kind": "someValuesFrom",
+        "onProperty": "urn:bookstore:Book#authors",
+        "value": "urn:bookstore:AuthorName"
+      },
+      {
+        "kind": "maxCardinality",
+        "onProperty": "urn:bookstore:Book#authors",
+        "value": 1
+      }
+    ]
   },
   "urn:bookstore:EBook": {
     "$id": "urn:bookstore:EBook",
@@ -620,70 +610,6 @@
       }
     ]
   },
-  "urn:bookstore:RareBook": {
-    "$id": "urn:bookstore:RareBook",
-    "allOf": [
-      {
-        "$ref": "urn:bookstore:PrintBook"
-      },
-      {
-        "properties": {
-          "estimatedAgeYears": {
-            "$ref": "urn:bookstore:EstimatedAgeYears"
-          },
-          "firstEditionYear": {
-            "$ref": "urn:bookstore:FirstEditionYear"
-          }
-        },
-        "required": [
-          "firstEditionYear"
-        ],
-        "type": "object"
-      }
-    ],
-    "jt:restrictions": [
-      {
-        "kind": "someValuesFrom",
-        "onProperty": "urn:bookstore:Book#authors",
-        "value": "urn:bookstore:AuthorName"
-      },
-      {
-        "kind": "maxCardinality",
-        "onProperty": "urn:bookstore:Book#authors",
-        "value": 1
-      }
-    ]
-  },
-  "urn:bookstore:InPrintBook": {
-    "$id": "urn:bookstore:InPrintBook",
-    "allOf": [
-      {
-        "$ref": "urn:bookstore:Book"
-      },
-      {
-        "type": "object"
-      }
-    ],
-    "jt:restrictions": [
-      {
-        "kind": "hasValue",
-        "onProperty": "urn:bookstore:Book#printStatus",
-        "value": "inPrint"
-      }
-    ]
-  },
-  "urn:bookstore:OutOfPrintBook": {
-    "$id": "urn:bookstore:OutOfPrintBook",
-    "not": {
-      "$ref": "urn:bookstore:InPrintBook"
-    },
-    "allOf": [
-      {
-        "$ref": "urn:bookstore:Book"
-      }
-    ],
-    "type": "object"
-  },
   "urn:bookstore:SignedFirstEdition": {
     "$id": "urn:bookstore:SignedFirstEdition",
     "allOf": [
@@ -738,6 +664,93 @@
     "required": [
       "book",
       "predecessor"
+    ],
+    "type": "object"
+  },
+  "urn:bookstore:BookListPage": {
+    "$id": "urn:bookstore:BookListPage",
+    "description": "A page of Book results with pagination metadata",
+    "properties": {
+      "books": {
+        "items": {
+          "$ref": "urn:bookstore:Book"
+        },
+        "type": "array"
+      },
+      "hasNext": {
+        "type": "boolean"
+      },
+      "hasPrev": {
+        "type": "boolean"
+      },
+      "nextCursor": {
+        "type": "string"
+      },
+      "page": {
+        "$ref": "urn:bookstore:PageNumber"
+      },
+      "pageSize": {
+        "$ref": "urn:bookstore:PageSize"
+      },
+      "prevCursor": {
+        "type": "string"
+      },
+      "resultCount": {
+        "$ref": "urn:bookstore:PageCount"
+      },
+      "totalPages": {
+        "$ref": "urn:bookstore:PageCount"
+      }
+    },
+    "required": [
+      "books",
+      "resultCount",
+      "page",
+      "pageSize"
+    ],
+    "type": "object"
+  },
+  "urn:bookstore:Review": {
+    "$id": "urn:bookstore:Review",
+    "properties": {
+      "body": {
+        "$ref": "urn:bookstore:ReviewBody"
+      },
+      "bookIsbn": {
+        "$ref": "urn:bookstore:Isbn"
+      },
+      "customerId": {
+        "$ref": "urn:bookstore:CustomerId",
+        "functional": true
+      },
+      "postedAt": {
+        "$ref": "urn:bookstore:Iso8601"
+      },
+      "rating": {
+        "$ref": "urn:bookstore:RatingScore"
+      },
+      "reviewId": {
+        "$ref": "urn:bookstore:ReviewId"
+      },
+      "reviewsBook": {
+        "jt:annotatedEdge": {
+          "annotations": {
+            "ratingGiven": {
+              "$ref": "urn:bookstore:RatingScore"
+            }
+          },
+          "predicate": "https://bookstore.example/reviews",
+          "targetRef": "urn:bookstore:Book"
+        }
+      }
+    },
+    "required": [
+      "reviewId",
+      "bookIsbn",
+      "customerId",
+      "rating",
+      "body",
+      "postedAt"
     ],
     "type": "object"
   }

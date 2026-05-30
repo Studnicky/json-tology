@@ -649,10 +649,10 @@ import {
         assert.ok(typeQuad, 'ABox must contain rdf:type quad referencing schema $id');
 
         const nameQuad = abox.find((quad: Quad) => {
-          return quad.predicate.value.endsWith('#name') && quad.object.termType === 'Literal' && quad.object.value === 'test';
+          return quad.predicate.value.endsWith('name') && quad.object.termType === 'Literal' && quad.object.value === 'test';
         });
 
-        assert.ok(nameQuad, 'ABox must contain name property quad');
+        assert.ok(nameQuad, 'ABox must contain name property quad (flat canonical predicate)');
       });
 
       void describe('deterministic identity', () => {

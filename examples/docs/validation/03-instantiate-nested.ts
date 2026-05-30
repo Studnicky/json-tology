@@ -13,9 +13,9 @@ import {
 } from '../bookstore/index.js';
 
 const order = bookstoreEntities.instantiate(OrderSchema.$id, {
-  'customerId': aboxFixtures.customer.id,
-  'id': aboxFixtures.order.id,
-  'items': [
+  'customerId': aboxFixtures.customer.customerId,
+  'orderId': aboxFixtures.order.orderId,
+  'orderLines': [
     {
       // Canonical rare Neverending Story fixture — 850 EUR × 1.
       'bookIsbn': aboxFixtures.rareBook.isbn,
@@ -33,17 +33,17 @@ const order = bookstoreEntities.instantiate(OrderSchema.$id, {
       }
     }
   ],
-  'placedAt': aboxFixtures.order.placedAt,
-  'shippingAddress': aboxFixtures.order.shippingAddress,
   // 850 × 1 + 16.99 × 1 = 866.99 — satisfies `orderTotalMatchesItems`.
-  'total': {
+  'orderTotal': {
     'amount': 866.99,
     'currency': 'EUR'
   },
+  'placedAt': aboxFixtures.order.placedAt,
+  'shippingAddress': aboxFixtures.order.shippingAddress,
   'unexpectedField': 'stripped'
 });
 
-console.assert(order.items.length === 2);
-console.assert(!('extra' in order.items[0]));
+console.assert(order.orderLines.length === 2);
+console.assert(!('extra' in order.orderLines[0]));
 console.assert(!('unexpectedField' in order));
-console.assert((order.items[0] as { 'bookIsbn': string }).bookIsbn === aboxFixtures.rareBook.isbn);
+console.assert((order.orderLines[0] as { 'bookIsbn': string }).bookIsbn === aboxFixtures.rareBook.isbn);

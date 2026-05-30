@@ -22,8 +22,8 @@ function describeCustomer(data: unknown): string {
 }
 
 const result = describeCustomer({
+  'customerId': aboxFixtures.customer.customerId,
   'email': aboxFixtures.customer.email,
-  'id': aboxFixtures.customer.id,
   'name': aboxFixtures.customer.name
 });
 
@@ -36,14 +36,14 @@ console.assert(invalid === 'not a customer');
 // Array filtering: Bastian and Coreander both pass; the bare {foo:bar} does not.
 const mixed: unknown[] = [
   {
+    'customerId': aboxFixtures.customer.customerId,
     'email': aboxFixtures.customer.email,
-    'id': aboxFixtures.customer.id,
     'name': aboxFixtures.customer.name
   },
   { 'foo': 'bar' },
   {
+    'customerId': 'b2c3d4e5-f6a7-4901-9cde-f12345678901',
     'email': 'carl.coreander@bookstore.example',
-    'id': 'b2c3d4e5-f6a7-4901-9cde-f12345678901',
     'name': 'Carl Conrad Coreander'
   }
 ];

@@ -42,7 +42,7 @@ jt.set(BrandedCustIdSchema);
 jt.set(BrandedOrdIdSchema);
 
 // The only way to obtain a branded value — go through instantiate.
-const cid = jt.instantiate(BrandedCustIdSchema, aboxFixtures.customer.id);
+const cid = jt.instantiate(BrandedCustIdSchema, aboxFixtures.customer.customerId);
 
 // At compile time: CustomerId ≠ OrderId — the types are nominally distinct.
 function lookupCustomer(_: CustomerId): void {
@@ -52,4 +52,4 @@ function lookupCustomer(_: CustomerId): void {
 lookupCustomer(cid as CustomerId);
 
 console.assert(typeof cid === 'string');
-console.assert(cid === aboxFixtures.customer.id);
+console.assert(cid === aboxFixtures.customer.customerId);

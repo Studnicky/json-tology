@@ -1,9 +1,9 @@
 /**
  * Compose.omit — Example 2: Order summary without line items
  *
- * Drops the `items` array from the canonical OrderSchema to produce a
+ * Drops the `orderLines` array from the canonical OrderSchema to produce a
  * compact summary suitable for dashboard rows. The derived type still
- * carries `id`, `customerId`, `total`, `placedAt`, and the shipping
+ * carries `orderId`, `customerId`, `orderTotal`, `placedAt`, and the shipping
  * address.
  */
 
@@ -20,7 +20,7 @@ const jt = createBookstoreDocRegistry();
 
 const OrderSummarySchema = Compose.omit(
   OrderSchema,
-  ['items'] as const,
+  ['orderLines'] as const,
   'https://bookstore.example/OrderSummary'
 );
 
@@ -30,13 +30,13 @@ const jt2 = jt.set(OrderSummarySchema);
 
 const summary: OrderSummary = {
   'customerId': aboxFixtures.order.customerId,
-  'id': aboxFixtures.order.id,
+  'orderId': aboxFixtures.order.orderId,
+  'orderTotal': aboxFixtures.order.orderTotal,
   'placedAt': aboxFixtures.order.placedAt,
-  'shippingAddress': aboxFixtures.order.shippingAddress,
-  'total': aboxFixtures.order.total
+  'shippingAddress': aboxFixtures.order.shippingAddress
 };
 
 const result = jt2.validate(OrderSummarySchema.$id, summary);
 
 console.assert(result.ok);
-console.assert(!('items' in summary));
+console.assert(!('orderLines' in summary));

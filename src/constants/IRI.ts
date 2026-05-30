@@ -56,6 +56,7 @@ export const OWL = {
 export const RDF = {
   'first': `${RDF_NS}first`,
   'JSON': `${RDF_NS}JSON`,
+  'langString': `${RDF_NS}langString`,
   'List': `${RDF_NS}List`,
   'nil': `${RDF_NS}nil`,
   'rest': `${RDF_NS}rest`,

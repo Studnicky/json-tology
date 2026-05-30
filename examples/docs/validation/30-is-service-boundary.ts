@@ -17,7 +17,7 @@ function processOrder(data: unknown): string {
   }
 
   // data is Order from here — no explicit cast needed
-  return `Processing order ${String(data.id)} for customer ${String(data.customerId)}`;
+  return `Processing order ${String(data.orderId)} for customer ${String(data.customerId)}`;
 }
 
 const validOrder: Order = bookstoreEntities.instantiate(
@@ -27,8 +27,8 @@ const validOrder: Order = bookstoreEntities.instantiate(
 
 const result = processOrder(validOrder);
 
-console.assert(result.includes(aboxFixtures.order.id));
-console.assert(result.includes(aboxFixtures.customer.id));
+console.assert(result.includes(aboxFixtures.order.orderId));
+console.assert(result.includes(aboxFixtures.customer.customerId));
 
 let threw = false;
 

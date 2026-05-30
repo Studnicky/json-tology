@@ -39,13 +39,13 @@ const dirtyReview = {
 const dirtyOrder = {
   ...orderValid,
   'extraTop': 'remove me',
+  'orderTotal': {
+    ...orderValid.orderTotal,
+    'hackField': 'bad'
+  },
   'shippingAddress': {
     ...orderValid.shippingAddress,
     'extra': 'x'
-  },
-  'total': {
-    ...orderValid.total,
-    'hackField': 'bad'
   }
 };
 
@@ -124,13 +124,13 @@ export function runValueOpsBench(): BenchResult[] {
 
   const orderModified = {
     ...orderValid,
+    'orderTotal': {
+      ...orderValid.orderTotal,
+      'amount': 999
+    },
     'shippingAddress': {
       ...orderValid.shippingAddress,
       'city': 'Berlin'
-    },
-    'total': {
-      ...orderValid.total,
-      'amount': 999
     }
   };
 

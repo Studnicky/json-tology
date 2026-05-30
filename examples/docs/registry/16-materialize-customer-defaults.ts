@@ -12,8 +12,8 @@ import {
 } from '../bookstore/index.js';
 
 const customer = bookstoreEntities.materialize(CustomerSchema, {
+  'customerId': aboxFixtures.customer.customerId,
   'email': aboxFixtures.customer.email,
-  'id': aboxFixtures.customer.id,
   'name': aboxFixtures.customer.name
   // addresses omitted — declared default [] applied
 });

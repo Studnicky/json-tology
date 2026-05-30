@@ -1,13 +1,13 @@
 /**
- * 02-parse-and-materialize.mjs — Parsing with defaults, materialization
+ * 02-parse-and-materialize — Parsing with defaults, materialization
  *
  * Demonstrates: parse (validate + apply defaults), materialize (build from partial).
  * parse() throws on invalid data; materialize() fills in all schema defaults.
  *
- * Run: npm run build && node examples/02-parse-and-materialize.mjs
+ * Run: npm run build && npx tsx examples/02-parse-and-materialize.ts
  */
 
-import { JsonTology } from '../dist/index.js';
+import { JsonTology } from '../src/index.js';
 
 // ---------------------------------------------------------------------------
 // Schema with defaults
@@ -35,7 +35,7 @@ const ConfigSchema = {
   },
   'required': [],
   'type': 'object'
-};
+} as const;
 
 const jt = JsonTology.create({
   'baseIRI': 'https://example.com',
@@ -47,13 +47,11 @@ const jt = JsonTology.create({
 // ---------------------------------------------------------------------------
 
 const incoming = { 'theme': 'dark' };
-const parsed = jt.coerce(ConfigSchema, incoming);
+const parsed = jt.instantiate(ConfigSchema, incoming);
 
 console.log('--- Parse with defaults ---');
 console.log('Input:', JSON.stringify(incoming));
-const parsedJson = JSON.stringify(parsed, null, 2);
-
-console.log('Parsed:', parsedJson);
+console.log('Parsed:', JSON.stringify(parsed, null, 2));
 console.log();
 
 // ---------------------------------------------------------------------------
@@ -62,9 +60,11 @@ console.log();
 
 console.log('--- Parse invalid data ---');
 try {
-  jt.coerce(ConfigSchema, { 'pageSize': 'many' });
-} catch (err) {
-  console.log('Caught error:', err.message);
+  jt.instantiate(ConfigSchema, { 'pageSize': 'many' });
+} catch (error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+
+  console.log('Caught error:', message);
 }
 console.log();
 
@@ -75,9 +75,7 @@ console.log();
 const fromEmpty = jt.materialize(ConfigSchema);
 
 console.log('--- Materialize from empty ---');
-const fromEmptyJson = JSON.stringify(fromEmpty, null, 2);
-
-console.log('Result:', fromEmptyJson);
+console.log('Result:', JSON.stringify(fromEmpty, null, 2));
 console.log();
 
 // ---------------------------------------------------------------------------
@@ -94,6 +92,4 @@ console.log('Input:', JSON.stringify({
   'debug': true,
   'locale': 'fr'
 }));
-const fromPartialJson = JSON.stringify(fromPartial, null, 2);
-
-console.log('Result:', fromPartialJson);
+console.log('Result:', JSON.stringify(fromPartial, null, 2));

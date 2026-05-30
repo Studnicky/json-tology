@@ -82,7 +82,7 @@ For runnable performance numbers see [Benchmarks](/benchmarks). For inline side-
 | Capability | json-tology | Zod | Valibot | TypeBox | AJV | Pydantic | Yup | Joi | io-ts | Effect Schema | ArkType | Runtypes |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Browser runtime | Yes | Yes | Yes | Yes | Yes (bundle) | No (Python) | Yes | Limited | Yes | Yes | Yes | Yes |
-| Node ≥ 18 | Yes | Yes | Yes | Yes | Yes | N/A | Yes | Yes | Yes | Yes | Yes | Yes |
+| Node ≥ 24 | Yes | Yes | Yes | Yes | Yes | N/A | Yes | Yes | Yes | Yes | Yes | Yes |
 | Bun / Deno | Yes | Yes | Yes | Yes | Yes | N/A | Yes | Limited | Yes | Yes | Yes | Yes |
 | Tree-shakable | Limited | Limited | **Yes** | Yes | Limited | N/A | Yes | No | Yes | Limited | Yes | Yes |
 | Zero runtime dependencies | Limited (`commander` for CLI only) | Yes | Yes | Yes | No | N/A | No | No | Yes | No (Effect runtime) | Yes | Yes |

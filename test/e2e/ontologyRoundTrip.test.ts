@@ -287,7 +287,7 @@ describe('ontology round-trip: bookstore domain', () => {
     });
 
     it('emits owl:Restriction with owl:minCardinality for required properties', () => {
-      // Order has required: ['id', 'customerId', 'items', 'total', 'placedAt', 'shippingAddress']
+      // Order has required: ['orderId', 'customerId', 'orderLines', 'orderTotal', 'placedAt', 'shippingAddress']
       const orderNode = findNode(owlNodes, OrderSchema.$id);
 
       assert.ok(orderNode !== undefined, 'Order node exists');
@@ -304,41 +304,44 @@ describe('ontology round-trip: bookstore domain', () => {
 
       assert.ok(restrictions.length > 0, 'Order has restriction subClassOf entries');
 
-      // At least one restriction should reference the "id" property with minCardinality.
+      // At least one restriction should reference the "orderId" property with
+      // minCardinality. The onProperty must be the FLAT canonical predicate IRI
+      // (https://bookstore.example/orderId) — the same IRI carried by the property
+      // declaration and ABox assertions — never a class-scoped `#orderId` form.
       const idRestriction = restrictions.find((restriction) => {
         const restrictionNode = restriction as JsonLdNode;
         const onProp = restrictionNode[OWL_ON_PROPERTY];
         const onPropId = getIdRef(onProp);
 
-        return onPropId?.endsWith('#id') === true;
+        return onPropId === `${BOOKSTORE_BASE_IRI}/orderId`;
       });
 
-      assert.ok(idRestriction !== undefined, 'restriction exists for id property');
+      assert.ok(idRestriction !== undefined, 'restriction exists for orderId property');
 
       const minCard = (idRestriction as JsonLdNode)[OWL_MIN_CARDINALITY];
 
-      assert.ok(minCard !== undefined, 'minCardinality set on id restriction');
+      assert.ok(minCard !== undefined, 'minCardinality set on orderId restriction');
       assert.equal(Number(minCard), 1, 'minCardinality is 1');
     });
 
     it('emits owl:ObjectProperty for array $ref properties', () => {
-      // Order.items → array of OrderLine
+      // Order.orderLines → array of OrderLine
       const orderProps = findPropertyNodes(owlNodes, RDFS_DOMAIN, OrderSchema.$id);
-      const itemsProp = orderProps.find((node) => {
+      const orderLinesProp = orderProps.find((node) => {
         const id = node['@id'] as string;
 
-        return id.includes('items');
+        return id.includes('orderLines');
       });
 
-      assert.ok(itemsProp !== undefined, 'items property node exists');
+      assert.ok(orderLinesProp !== undefined, 'orderLines property node exists');
       assert.ok(
-        hasType(itemsProp, OWL_OBJECT_PROPERTY),
-        'items typed as owl:ObjectProperty'
+        hasType(orderLinesProp, OWL_OBJECT_PROPERTY),
+        'orderLines typed as owl:ObjectProperty'
       );
 
-      const itemsRange = getIdRef(itemsProp[RDFS_RANGE]);
+      const orderLinesRange = getIdRef(orderLinesProp[RDFS_RANGE]);
 
-      assert.ok(itemsRange !== undefined, 'items property has rdfs:range');
+      assert.ok(orderLinesRange !== undefined, 'orderLines property has rdfs:range');
     });
   });
 
@@ -508,21 +511,21 @@ describe('ontology round-trip: bookstore domain', () => {
 
       assert.ok(orderShape !== undefined, 'Order shape exists');
 
-      const itemsShape = findPropertyShape(orderShape, 'items');
+      const orderLinesShape = findPropertyShape(orderShape, 'orderLines');
 
-      assert.ok(itemsShape !== undefined, 'items property shape exists');
+      assert.ok(orderLinesShape !== undefined, 'orderLines property shape exists');
 
-      // OrderSchema.items has minItems: 1 (no maxItems).
-      const minCount = itemsShape[SH_MIN_COUNT];
-      const maxCount = itemsShape[SH_MAX_COUNT];
+      // OrderSchema.orderLines has minItems: 1 (no maxItems).
+      const minCount = orderLinesShape[SH_MIN_COUNT];
+      const maxCount = orderLinesShape[SH_MAX_COUNT];
 
       if (minCount !== undefined) {
-        assert.ok(Number(minCount) >= 1, 'items sh:minCount is at least 1');
+        assert.ok(Number(minCount) >= 1, 'orderLines sh:minCount is at least 1');
       }
 
       assert.ok(
         minCount !== undefined || maxCount !== undefined,
-        'items has at least one cardinality constraint'
+        'orderLines has at least one cardinality constraint'
       );
     });
 
@@ -632,8 +635,8 @@ describe('ontology round-trip: bookstore domain', () => {
       // array of cross-schema $ref Address objects is exercised in the
       // dedicated C-4 cross-schema describe below.
       const input = {
+        'customerId': aboxFixtures.customer.customerId,
         'email': aboxFixtures.customer.email,
-        'id': aboxFixtures.customer.id,
         'name': aboxFixtures.customer.name
       };
       const quads = jt.materializer.projectAbox(
@@ -646,7 +649,7 @@ describe('ontology round-trip: bookstore domain', () => {
       assert.equal(results.length, 1);
       const output = results[0] as Record<string, unknown>;
 
-      assert.equal(output.id, input.id);
+      assert.equal(output.customerId, input.customerId);
       assert.equal(output.email, input.email);
       assert.equal(output.name, input.name);
     });
@@ -740,9 +743,8 @@ describe('ontology round-trip: bookstore domain', () => {
 
     it('round-trips scalar types: string, number, integer, boolean', () => {
       // Use an OrderLine fixture to cover string ($ref Isbn), integer
-      // ($ref Quantity), and nested object ($ref Money). Avoids the
-      // date-time literal lifting concern of Review.postedAt.
-      const input = aboxFixtures.order.items[0];
+      // ($ref Quantity), and nested object ($ref Money).
+      const input = aboxFixtures.order.orderLines[0];
       const quads = jt.materializer.projectAbox(
         OrderLineSchema,
         input,
@@ -757,6 +759,30 @@ describe('ontology round-trip: bookstore domain', () => {
       assert.equal(typeof output.quantity, 'number');
       assert.equal(output.bookIsbn, input.bookIsbn);
       assert.equal(output.quantity, 1);
+    });
+
+    it('round-trips a full Order including xsd:dateTime placedAt and nested Money', () => {
+      // placedAt (xsd:dateTime) lifts back to its original ISO string; nested
+      // Money (amount xsd:decimal → number, currency enum → string) lifts to
+      // scalars and survives fromQuads' instantiate() validation step.
+      const input = aboxFixtures.order;
+      const quads = jt.toQuads(OrderSchema, jt.instantiate(OrderSchema, input));
+      const results = jt.fromQuads(OrderSchema.$id, quads);
+
+      assert.equal(results.length, 1, 'one order lifted');
+      const output = results[0] as Record<string, unknown>;
+
+      assert.equal(output.orderId, input.orderId, 'orderId round-trips');
+      assert.equal(output.placedAt, input.placedAt, 'placedAt round-trips as the original ISO string');
+
+      assert.deepEqual(
+        output.orderTotal,
+        {
+          'amount': input.orderTotal.amount,
+          'currency': input.orderTotal.currency
+        },
+        'orderTotal Money round-trips: amount number + currency enum'
+      );
     });
   });
 
@@ -800,10 +826,10 @@ describe('ontology round-trip: bookstore domain', () => {
       const required = reconstructed.required as string[];
 
       assert.ok(Array.isArray(required), 'required is array');
-      assert.ok(required.includes('id'), 'id is required');
+      assert.ok(required.includes('orderId'), 'orderId is required');
       assert.ok(required.includes('customerId'), 'customerId is required');
-      assert.ok(required.includes('items'), 'items is required');
-      assert.ok(required.includes('total'), 'total is required');
+      assert.ok(required.includes('orderLines'), 'orderLines is required');
+      assert.ok(required.includes('orderTotal'), 'orderTotal is required');
     });
 
     it('reconstructs Order schema preserving $ref properties', () => {
@@ -831,18 +857,18 @@ describe('ontology round-trip: bookstore domain', () => {
       assert.ok(reconstructed !== undefined, 'reconstructed schema exists');
 
       const properties = reconstructed.properties as Partial<Record<string, Record<string, unknown>>> | undefined;
-      const items = properties?.items;
+      const orderLines = properties?.orderLines;
 
-      assert.ok(items !== undefined, 'items property exists');
-      assert.equal(items.type, 'array', 'items type is array');
+      assert.ok(orderLines !== undefined, 'orderLines property exists');
+      assert.equal(orderLines.type, 'array', 'orderLines type is array');
 
-      const itemsItems = items.items as Record<string, unknown> | undefined;
+      const orderLinesItems = orderLines.items as Record<string, unknown> | undefined;
 
-      assert.ok(itemsItems !== undefined, 'items.items exists');
+      assert.ok(orderLinesItems !== undefined, 'orderLines.items exists');
       assert.equal(
-        itemsItems.$ref,
+        orderLinesItems.$ref,
         OrderLineSchema.$id,
-        'items items $ref preserved'
+        'orderLines items $ref preserved'
       );
     });
 
@@ -900,7 +926,7 @@ describe('C-4: cross-schema $ref toQuads/fromQuads round-trip', () => {
     const output = results[0] as Record<string, unknown>;
 
     // Scalar properties must survive.
-    assert.equal(output.id, input.id, 'id round-trips');
+    assert.equal(output.customerId, input.customerId, 'customerId round-trips');
     assert.equal(output.email, input.email, 'email round-trips');
     assert.equal(output.name, input.name, 'name round-trips');
 

@@ -7,7 +7,7 @@ import {
 } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  Changeset, Hash, JsonTology, Operations, Value
+  Changeset, CoercionError, Hash, JsonTology, Operations, Value
 } from '../../src/index.js';
 
 type SchemaWithId = Record<string, unknown> & { '$id': string };
@@ -693,11 +693,34 @@ void describe('Value.cast()', () => {
     });
   }
 
-  void it('casts null to an object for object schemas', () => {
-    const result = value.cast('urn:test:item', null);
+  void it('casting null to an object schema throws CoercionError', () => {
+    assert.throws(
+      () => {
+        value.cast('urn:test:item', null);
+      },
+      (err: unknown) => {
+        assert.ok(err instanceof CoercionError, `expected CoercionError, got ${(err as Error).constructor.name}`);
+        assert.equal((err).code, 'COERCION_FAILED');
 
-    assert.equal(typeof result, 'object');
-    assert.equal(result, null);
+        return true;
+      }
+    );
+  });
+
+  // C. CoercionError carries non-empty errors (diagnostic re-validation guard)
+  void it('C: CoercionError from failed cast carries non-empty .errors.items with path details', () => {
+    assert.throws(
+      () => {
+        // 'urn:test:number' expects a number; passing an object forces coercion failure
+        value.cast('urn:test:number', { 'not': 'a number' });
+      },
+      (err: unknown) => {
+        assert.ok(err instanceof CoercionError, `expected CoercionError, got ${(err as Error).constructor.name}`);
+        assert.ok((err).errors.items.length > 0, 'expected non-empty validation errors');
+
+        return true;
+      }
+    );
   });
 });
 

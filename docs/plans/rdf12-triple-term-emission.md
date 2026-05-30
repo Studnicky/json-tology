@@ -2,7 +2,7 @@
 
 Status: accepted — design finalized (Opus review 2026-05-28). Ready to implement.
 Owner: (json-tology agent)
-Consumer: Pokemontology pipeline migration (edge annotations on `pkm:directEvolvesFrom` and similar)
+Consumer: Annotated-edge emission pipeline (edge annotations on `bk:reviews` and similar)
 
 ## Resolved design decisions (Opus review)
 
@@ -15,12 +15,12 @@ corrections below.
    constraints), and the keyword alternative would require schema-compiler +
    graph-node-kind work anyway, so it is strictly more surface for no gain.
    ```ts
-   const EvolvesFrom = Compose.annotatedEdge({
-     predicate: 'pkm:directEvolvesFrom',
-     targetRef: PokemonSchema.$id,                       // $ref to a named class
+   const ReviewsBook = Compose.annotatedEdge({
+     predicate: 'https://bookstore.example/reviews',
+     targetRef: BookSchema.$id,                          // $ref to a named class
      annotations: {
-       evolutionTimeOfDay: { $ref: TimeOfDaySchema.$id }, // $ref to named datatypes
-       evolutionMinLevel:  { $ref: LevelSchema.$id },
+       ratingGiven:      { $ref: RatingScoreSchema.$id }, // $ref to named datatypes
+       verifiedPurchase: { $ref: VerifiedPurchaseSchema.$id },
      },
    });
    ```
@@ -61,12 +61,12 @@ Annotation ranges are `$ref`s to named datatypes, so (after the branded-type
 work) they infer as branded primitives. The inferred shape must be specified and
 guarded by `test/types` assertions, e.g.:
 ```ts
-type EvolvesFrom = InferType<typeof EvolvesFromSchema, Refs>;
+type ReviewsBook = InferType<typeof ReviewsBookSchema, Refs>;
 // ≅ {
-//   readonly target: Pokemon;                       // branded class type
+//   readonly target: Book;                          // branded class type
 //   readonly annotations: {
-//     readonly evolutionTimeOfDay: TimeOfDay;        // branded datatype
-//     readonly evolutionMinLevel: Level;             // branded datatype
+//     readonly ratingGiven:      RatingScore;        // branded datatype
+//     readonly verifiedPurchase: VerifiedPurchase;   // branded datatype
 //   };
 // }
 ```
@@ -78,17 +78,17 @@ dispatch-map idiom, not a nested-ternary arm, when adding the dispatcher branch.
 ## Motivation
 
 Consumers need to annotate a *relationship* (an edge), not just a node. The canonical case is
-Pokémon evolution conditions: the fact "Lycanroc-Midday evolves from Rockruff" carries
-edge-level metadata (time of day, level, held item, …) that cannot be modeled as binary
+a bookstore review relationship: the fact "Review rev-001 reviews Book 978-0-06-112008-4" carries
+edge-level metadata (rating given, verified purchase flag, …) that cannot be modeled as binary
 predicates on either endpoint. RDF 1.2 expresses this with a **triple term** as the subject of
 the annotation triples:
 
 ```turtle
-# all in the SAME named graph (e.g. pkm:graph/universal/evolutions):
-<.../lycanroc-midday> pkm:directEvolvesFrom <.../rockruff> .                 # base triple
-<< <.../lycanroc-midday> pkm:directEvolvesFrom <.../rockruff> >>
-    pkm:evolutionTimeOfDay "day"^^xsd:string ;
-    pkm:evolutionMinLevel  25 .
+# all in the SAME named graph (e.g. https://bookstore.example/graph/reviews):
+<urn:bookstore:instances/review/rev-001> bk:reviews <urn:bookstore:instances/book/978-0-06-112008-4> .  # base triple
+<< <urn:bookstore:instances/review/rev-001> bk:reviews <urn:bookstore:instances/book/978-0-06-112008-4> >>
+    bk:ratingGiven      5 ;
+    bk:verifiedPurchase true .
 ```
 
 **Critical invariant (named graphs):** a triple term `<< s p o >>` is a *value*; it carries no
@@ -154,15 +154,15 @@ caller serializes via a different writer, document the requirement (rdf/js Quad-
 2. `toQuads(schema, instance, { graphIRI })` emits the base triple + each annotation as a
    `Quad`-subject quad, ALL stamped with `graphIRI`.
 3. Serializing those quads with N3 `Writer` yields valid Turtle 1.2 reproducing the
-   Lycanroc/Rockruff example above (byte-compatible modulo prefix/spacing).
+   bookstore review/book example above (byte-compatible modulo prefix/spacing).
 4. `fromQuads` round-trips the emitted quads back to the instance shape; `validate` passes.
 5. Unit tests cover: single annotation, multiple annotations, IRI-valued annotation
-   (`pkm:evolutionRequiresItem` → Item IRI), and the same-graph invariant (annotation quads
+   (`bk:featuredEdition` → Book IRI), and the same-graph invariant (annotation quads
    never land in a different graph than the base triple).
 
 ## Test fixture (use this exact case)
-`Lycanroc-Midday directEvolvesFrom Rockruff` annotated with `evolutionTimeOfDay "day"` and
-`evolutionMinLevel 25`, in graph `https://pokemontology.dev/graph/universal/evolutions`.
+`Review rev-001 reviews Book 978-0-06-112008-4` annotated with `ratingGiven 5` and
+`verifiedPurchase true`, in graph `https://bookstore.example/graph/reviews`.
 
 ## Pointers
 - Public API surface: `JsonTology.toQuads` / `JsonTology.fromQuads`.

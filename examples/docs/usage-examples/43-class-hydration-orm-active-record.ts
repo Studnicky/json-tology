@@ -23,18 +23,18 @@ type CustomerWire = typeof aboxFixtures.customer;
 
 class CustomerRecord {
   declare public addresses: CustomerWire['addresses'];
+  declare public customerId: string;
   declare public email: string;
-  declare public id: string;
   declare public name: string;
 
   public async delete(): Promise<{ readonly 'deletedId': string }> {
-    // Stand-in for `DELETE WHERE id = this.id`.
-    return { 'deletedId': this.id };
+    // Stand-in for `DELETE WHERE customerId = this.customerId`.
+    return { 'deletedId': this.customerId };
   }
 
   public async save(): Promise<{ readonly 'savedId': string }> {
-    // Stand-in for `INSERT OR UPDATE id = this.id`.
-    return { 'savedId': this.id };
+    // Stand-in for `INSERT OR UPDATE customerId = this.customerId`.
+    return { 'savedId': this.customerId };
   }
 }
 
@@ -71,4 +71,4 @@ const customer = jt.instantiate(
 // Active-record method available immediately on the hydrated value.
 const saved = await customer.save();
 
-console.assert(saved.savedId === aboxFixtures.customer.id);
+console.assert(saved.savedId === aboxFixtures.customer.customerId);

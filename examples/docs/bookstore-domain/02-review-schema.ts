@@ -24,7 +24,7 @@ const reviewType: string = ReviewSchema.type;
 
 console.assert(reviewId === 'urn:bookstore:Review');
 console.assert(reviewType === 'object');
-console.assert(ReviewSchema.required.includes('id'));
+console.assert(ReviewSchema.required.includes('reviewId'));
 console.assert(ReviewSchema.required.includes('bookIsbn'));
 console.assert(ReviewSchema.required.includes('customerId'));
 console.assert(ReviewSchema.required.includes('rating'));

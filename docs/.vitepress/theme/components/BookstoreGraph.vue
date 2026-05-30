@@ -161,6 +161,27 @@ onMounted(async () => {
           'text-max-width': '80px'
         }
       },
+      // Literal value nodes — small gray tag carrying a datatype/lang literal
+      {
+        selector: 'node[kind = "literal"]',
+        style: {
+          'background-color': '#f3f3f3',
+          'border-color': '#bdbdbd',
+          'border-width': 1,
+          'border-style': 'solid',
+          'color': '#555555',
+          'label': 'data(label)',
+          'font-size': '9px',
+          'font-family': 'monospace',
+          'text-valign': 'center',
+          'text-halign': 'center',
+          'width': '72px',
+          'height': '22px',
+          'shape': 'round-tag',
+          'text-wrap': 'ellipsis',
+          'text-max-width': '66px'
+        }
+      },
       // Selected node
       {
         selector: 'node:selected',
@@ -303,6 +324,57 @@ onMounted(async () => {
           'text-rotation': 'autorotate',
           'text-margin-y': '-8px',
           'width': 2
+        }
+      },
+      // instanceType edges (ABox) — gold solid arrow: individual → its class
+      {
+        selector: 'edge[kind = "instanceType"]',
+        style: {
+          'line-color': '#b8860b',
+          'target-arrow-color': '#b8860b',
+          'target-arrow-shape': 'triangle',
+          'curve-style': 'bezier',
+          'line-style': 'solid',
+          'label': 'data(label)',
+          'font-size': '9px',
+          'color': '#b8860b',
+          'text-rotation': 'autorotate',
+          'text-margin-y': '-8px',
+          'width': 1.5
+        }
+      },
+      // instanceProperty edges (ABox) — light-gold solid: individual → value
+      {
+        selector: 'edge[kind = "instanceProperty"]',
+        style: {
+          'line-color': '#cdb35a',
+          'target-arrow-color': '#cdb35a',
+          'target-arrow-shape': 'vee',
+          'curve-style': 'bezier',
+          'line-style': 'solid',
+          'label': 'data(label)',
+          'font-size': '8px',
+          'color': '#9a8230',
+          'text-rotation': 'autorotate',
+          'text-margin-y': '-6px',
+          'width': 1
+        }
+      },
+      // annotatedEdge (RDF-star) — magenta solid, thicker, with annotation in label
+      {
+        selector: 'edge[kind = "annotatedEdge"]',
+        style: {
+          'line-color': '#c2185b',
+          'target-arrow-color': '#c2185b',
+          'target-arrow-shape': 'vee',
+          'curve-style': 'bezier',
+          'line-style': 'solid',
+          'label': 'data(label)',
+          'font-size': '9px',
+          'color': '#c2185b',
+          'text-rotation': 'autorotate',
+          'text-margin-y': '-8px',
+          'width': 2.5
         }
       }
     ]

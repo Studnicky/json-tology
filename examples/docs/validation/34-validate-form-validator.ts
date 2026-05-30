@@ -19,11 +19,11 @@ const fieldErrors = validateReviewForm({
   // minLength: 10 violated
   'body': 'hi',
   'bookIsbn': aboxFixtures.rareBook.isbn,
-  'customerId': aboxFixtures.customer.id,
-  'id': aboxFixtures.review.id,
+  'customerId': aboxFixtures.customer.customerId,
   'postedAt': '2026-04-20T09:15:00Z',
   // maximum: 5 violated
-  'rating': 6
+  'rating': 6,
+  'reviewId': aboxFixtures.review.reviewId
 });
 
 console.assert(!fieldErrors.ok);

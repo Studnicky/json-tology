@@ -36,8 +36,8 @@ console.assert(patchErrors.length === 0);
 
 // StrictCustomer requires every field, including addresses.
 const strictErrors = jt2.validate(StrictCustomerSchema.$id, {
+  'customerId': aboxFixtures.customer.customerId,
   'email': aboxFixtures.customer.email,
-  'id': aboxFixtures.customer.id,
   'name': aboxFixtures.customer.name
   // addresses missing — required by StrictCustomer
 });
