@@ -7,16 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-05-30
+
+### Added
+
+- **Typed ABox graph traversal: `jt.aboxGraph(quads)`.** A fluent, dot-chained
+  RDF cursor over projected ABox quads. Navigation reads the associations the
+  TBox already emits (`rdfs:domain`, `rdfs:range`, `rdfs:subClassOf`,
+  `owl:InverseFunctionalProperty`): `objects`/`subjects` traverse forward and
+  inverse, `ofType`/`where`/`having` filter, `closure`/`subgraph` walk by hops,
+  set operations and `orderBy`/`limit` shape the selection, and terminals
+  (`one`/`first`/`all`/`iris`/`count`/`some`/`none`) lift each IRI to its typed
+  instance. Foreign keys resolve through inverse-functional identity: a scalar
+  key resolves to the entity it identifies whenever its range primitive backs an
+  identity on a target class, including differently-named keys (`Review.bookIsbn`
+  to `Book` via the shared `Isbn` range) and subclass-typed targets.
+- **`json-tology/owl-gen-node`** entry point with `writeFromTbox` and
+  `writeRegistryDirectory` for Node file output over the browser-safe codegen core.
+- **Runnable, editable code examples across the documentation site.** Every
+  runnable doc example renders as an in-browser playground: a CodeMirror editor
+  with TypeScript syntax highlighting and an Execute button that transpiles and
+  runs the edited code against the real library, showing the captured output.
+
 ### Changed
 
 - **BREAKING: `json-tology/owl-gen` is now fully browser-safe and returns
   strings/data only.** `generateFromTbox` always returns the generated source
   string (the `output` write overload is removed), and `generateRegistryDirectory`
   returns the entity files as data (relative `path` plus `source`) and `indexSource`
-  without writing to disk. File-writing moves to the new Node-only entry
-  `json-tology/owl-gen-node` (`writeFromTbox`, `writeRegistryDirectory`), which
-  preserves the prior disk-writing behaviour. Browser and bundler consumers can
-  now run OWL TBox to TypeScript codegen without pulling in `node:fs`.
+  without writing to disk. File-writing moves to `json-tology/owl-gen-node`
+  (`writeFromTbox`, `writeRegistryDirectory`), which preserves the prior
+  disk-writing behaviour. Consumers writing to disk import from `owl-gen-node`.
+- The library is now fully browser-safe: nothing a browser imports pulls in a
+  `node:` builtin. The CLI binary is the only Node-specific surface, by design.
+- Documentation prose is cleaned of em-dashes and filler vocabulary.
+
+### Fixed
+
+- Foreign-key resolution generalizes to differently-named keys sharing an
+  identity range primitive and to subclass-typed targets that inherit a parent
+  class identity.
+- Many stale documentation examples are corrected to the current API: customer
+  identity is `customerId`, the order schema uses `orderLines` and `orderTotal`,
+  IRIs use the `urn:bookstore:` prefix, and `ValidationErrors` is accessed via
+  `.items`. Every runnable example executes cleanly with no failing assertions.
 
 ## [0.16.0] - 2026-05-29
 
