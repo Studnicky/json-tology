@@ -1,0 +1,2188 @@
+{
+  "urn:bookstore:Amount": {
+    "@id": "urn:bookstore:Amount",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#decimal"
+    },
+    "http://www.w3.org/2002/07/owl#withRestrictions": {
+      "@list": [
+        {
+          "http://www.w3.org/2001/XMLSchema#minInclusive": 0
+        }
+      ]
+    }
+  },
+  "urn:bookstore:BindingType": {
+    "@id": "urn:bookstore:BindingType",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#string"
+    },
+    "http://www.w3.org/2002/07/owl#equivalentClass": {
+      "http://www.w3.org/2002/07/owl#oneOf": {
+        "@list": [
+          "hardcover",
+          "paperback"
+        ]
+      }
+    }
+  },
+  "urn:bookstore:CityName": {
+    "@id": "urn:bookstore:CityName",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#string"
+    },
+    "http://www.w3.org/2002/07/owl#withRestrictions": {
+      "@list": [
+        {
+          "http://www.w3.org/2001/XMLSchema#maxLength": 100
+        },
+        {
+          "http://www.w3.org/2001/XMLSchema#minLength": 1
+        }
+      ]
+    }
+  },
+  "urn:bookstore:CountryCode": {
+    "@id": "urn:bookstore:CountryCode",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#string"
+    },
+    "http://www.w3.org/2002/07/owl#withRestrictions": {
+      "@list": [
+        {
+          "http://www.w3.org/2001/XMLSchema#pattern": "^[A-Z]{2}$"
+        }
+      ]
+    }
+  },
+  "urn:bookstore:CurrencyCode": {
+    "@id": "urn:bookstore:CurrencyCode",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#string"
+    },
+    "http://www.w3.org/2002/07/owl#equivalentClass": {
+      "http://www.w3.org/2002/07/owl#oneOf": {
+        "@list": [
+          "USD",
+          "EUR",
+          "GBP",
+          "JPY",
+          "CAD",
+          "AUD"
+        ]
+      }
+    }
+  },
+  "urn:bookstore:CustomerId": {
+    "@id": "urn:bookstore:CustomerId",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#string"
+    },
+    "https://json-tology.dev/vocab#format": "uuid"
+  },
+  "urn:bookstore:DownloadUrl": {
+    "@id": "urn:bookstore:DownloadUrl",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#anyURI"
+    },
+    "https://json-tology.dev/vocab#format": "uri"
+  },
+  "urn:bookstore:EBookFormat": {
+    "@id": "urn:bookstore:EBookFormat",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#string"
+    },
+    "http://www.w3.org/2002/07/owl#equivalentClass": {
+      "http://www.w3.org/2002/07/owl#oneOf": {
+        "@list": [
+          "epub",
+          "pdf",
+          "mobi"
+        ]
+      }
+    }
+  },
+  "urn:bookstore:Email": {
+    "@id": "urn:bookstore:Email",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#string"
+    },
+    "https://json-tology.dev/vocab#format": "email"
+  },
+  "urn:bookstore:EstimatedAgeYears": {
+    "@id": "urn:bookstore:EstimatedAgeYears",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#integer"
+    },
+    "http://www.w3.org/2002/07/owl#withRestrictions": {
+      "@list": [
+        {
+          "http://www.w3.org/2001/XMLSchema#minInclusive": 0
+        }
+      ]
+    }
+  },
+  "urn:bookstore:FileSizeBytes": {
+    "@id": "urn:bookstore:FileSizeBytes",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#integer"
+    },
+    "http://www.w3.org/2002/07/owl#withRestrictions": {
+      "@list": [
+        {
+          "http://www.w3.org/2001/XMLSchema#minInclusive": 0
+        }
+      ]
+    }
+  },
+  "urn:bookstore:FirstEditionYear": {
+    "@id": "urn:bookstore:FirstEditionYear",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#integer"
+    },
+    "http://www.w3.org/2002/07/owl#withRestrictions": {
+      "@list": [
+        {
+          "http://www.w3.org/2001/XMLSchema#maxInclusive": 2100
+        },
+        {
+          "http://www.w3.org/2001/XMLSchema#minInclusive": 1450
+        }
+      ]
+    }
+  },
+  "urn:bookstore:Isbn": {
+    "@id": "urn:bookstore:Isbn",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#string"
+    },
+    "http://www.w3.org/2002/07/owl#withRestrictions": {
+      "@list": [
+        {
+          "http://www.w3.org/2001/XMLSchema#pattern": "^\\d{13}$"
+        }
+      ]
+    }
+  },
+  "urn:bookstore:Iso8601": {
+    "@id": "urn:bookstore:Iso8601",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#dateTime"
+    },
+    "https://json-tology.dev/vocab#format": "date-time"
+  },
+  "urn:bookstore:OrderId": {
+    "@id": "urn:bookstore:OrderId",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#string"
+    },
+    "https://json-tology.dev/vocab#format": "uuid"
+  },
+  "urn:bookstore:PageCount": {
+    "@id": "urn:bookstore:PageCount",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#integer"
+    },
+    "http://www.w3.org/2002/07/owl#withRestrictions": {
+      "@list": [
+        {
+          "http://www.w3.org/2001/XMLSchema#minInclusive": 0
+        }
+      ]
+    }
+  },
+  "urn:bookstore:PageNumber": {
+    "@id": "urn:bookstore:PageNumber",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#integer"
+    },
+    "http://www.w3.org/2002/07/owl#withRestrictions": {
+      "@list": [
+        {
+          "http://www.w3.org/2001/XMLSchema#minInclusive": 1
+        }
+      ]
+    }
+  },
+  "urn:bookstore:PageSize": {
+    "@id": "urn:bookstore:PageSize",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#integer"
+    },
+    "http://www.w3.org/2002/07/owl#withRestrictions": {
+      "@list": [
+        {
+          "http://www.w3.org/2001/XMLSchema#minInclusive": 1
+        }
+      ]
+    }
+  },
+  "urn:bookstore:PersonName": {
+    "@id": "urn:bookstore:PersonName",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#string"
+    },
+    "http://www.w3.org/2002/07/owl#withRestrictions": {
+      "@list": [
+        {
+          "http://www.w3.org/2001/XMLSchema#maxLength": 200
+        },
+        {
+          "http://www.w3.org/2001/XMLSchema#minLength": 1
+        }
+      ]
+    }
+  },
+  "urn:bookstore:PostalCode": {
+    "@id": "urn:bookstore:PostalCode",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#string"
+    },
+    "http://www.w3.org/2002/07/owl#withRestrictions": {
+      "@list": [
+        {
+          "http://www.w3.org/2001/XMLSchema#maxLength": 12
+        },
+        {
+          "http://www.w3.org/2001/XMLSchema#minLength": 3
+        }
+      ]
+    }
+  },
+  "urn:bookstore:PrintPageCount": {
+    "@id": "urn:bookstore:PrintPageCount",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#integer"
+    },
+    "http://www.w3.org/2002/07/owl#withRestrictions": {
+      "@list": [
+        {
+          "http://www.w3.org/2001/XMLSchema#minInclusive": 1
+        }
+      ]
+    }
+  },
+  "urn:bookstore:PrintStatus": {
+    "@id": "urn:bookstore:PrintStatus",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#string"
+    },
+    "http://www.w3.org/2002/07/owl#equivalentClass": {
+      "http://www.w3.org/2002/07/owl#oneOf": {
+        "@list": [
+          "inPrint",
+          "outOfPrint",
+          "limitedRun"
+        ]
+      }
+    }
+  },
+  "urn:bookstore:Provenance": {
+    "@id": "urn:bookstore:Provenance",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#string"
+    },
+    "http://www.w3.org/2002/07/owl#withRestrictions": {
+      "@list": [
+        {
+          "http://www.w3.org/2001/XMLSchema#minLength": 1
+        }
+      ]
+    }
+  },
+  "urn:bookstore:PublicationDate": {
+    "@id": "urn:bookstore:PublicationDate",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#date"
+    },
+    "https://json-tology.dev/vocab#format": "date"
+  },
+  "urn:bookstore:Quantity": {
+    "@id": "urn:bookstore:Quantity",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#int"
+    },
+    "http://www.w3.org/2002/07/owl#withRestrictions": {
+      "@list": [
+        {
+          "http://www.w3.org/2001/XMLSchema#minInclusive": 1
+        }
+      ]
+    },
+    "https://json-tology.dev/vocab#format": "int32"
+  },
+  "urn:bookstore:RatingCount": {
+    "@id": "urn:bookstore:RatingCount",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#integer"
+    },
+    "http://www.w3.org/2002/07/owl#withRestrictions": {
+      "@list": [
+        {
+          "http://www.w3.org/2001/XMLSchema#minInclusive": 0
+        }
+      ]
+    }
+  },
+  "urn:bookstore:RatingScore": {
+    "@id": "urn:bookstore:RatingScore",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#integer"
+    },
+    "http://www.w3.org/2002/07/owl#withRestrictions": {
+      "@list": [
+        {
+          "http://www.w3.org/2001/XMLSchema#maxInclusive": 5
+        },
+        {
+          "http://www.w3.org/2001/XMLSchema#minInclusive": 1
+        }
+      ]
+    }
+  },
+  "urn:bookstore:ReviewBody": {
+    "@id": "urn:bookstore:ReviewBody",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#string"
+    },
+    "http://www.w3.org/2002/07/owl#withRestrictions": {
+      "@list": [
+        {
+          "http://www.w3.org/2001/XMLSchema#minLength": 10
+        }
+      ]
+    }
+  },
+  "urn:bookstore:ReviewId": {
+    "@id": "urn:bookstore:ReviewId",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#string"
+    },
+    "https://json-tology.dev/vocab#format": "uuid"
+  },
+  "urn:bookstore:StockLevel": {
+    "@id": "urn:bookstore:StockLevel",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#integer"
+    },
+    "http://www.w3.org/2002/07/owl#withRestrictions": {
+      "@list": [
+        {
+          "http://www.w3.org/2001/XMLSchema#maxInclusive": 100
+        },
+        {
+          "http://www.w3.org/2001/XMLSchema#minInclusive": 0
+        }
+      ]
+    },
+    "https://json-tology.dev/vocab#multipleOf": 5
+  },
+  "urn:bookstore:StreetLine": {
+    "@id": "urn:bookstore:StreetLine",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#string"
+    },
+    "http://www.w3.org/2002/07/owl#withRestrictions": {
+      "@list": [
+        {
+          "http://www.w3.org/2001/XMLSchema#maxLength": 200
+        },
+        {
+          "http://www.w3.org/2001/XMLSchema#minLength": 1
+        }
+      ]
+    }
+  },
+  "urn:bookstore:Title": {
+    "@id": "urn:bookstore:Title",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#string"
+    },
+    "http://www.w3.org/2002/07/owl#withRestrictions": {
+      "@list": [
+        {
+          "http://www.w3.org/2001/XMLSchema#maxLength": 500
+        },
+        {
+          "http://www.w3.org/2001/XMLSchema#minLength": 1
+        }
+      ]
+    }
+  },
+  "urn:bookstore:WeightGrams": {
+    "@id": "urn:bookstore:WeightGrams",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#decimal"
+    },
+    "http://www.w3.org/2002/07/owl#withRestrictions": {
+      "@list": [
+        {
+          "http://www.w3.org/2001/XMLSchema#minInclusive": 0
+        }
+      ]
+    }
+  },
+  "urn:bookstore:AuthorName": {
+    "@id": "urn:bookstore:AuthorName",
+    "@type": "http://www.w3.org/2002/07/owl#Class",
+    "http://www.w3.org/2000/01/rdf-schema#comment": "A person’s name in the book-authorship context. Validation is owned by PersonName; this is a domain-specific brand.",
+    "http://www.w3.org/2002/07/owl#equivalentClass": {
+      "@type": "http://www.w3.org/2002/07/owl#Class",
+      "http://www.w3.org/2002/07/owl#unionOf": {
+        "@list": [
+          {
+            "@id": "urn:bookstore:PersonName"
+          }
+        ]
+      }
+    }
+  },
+  "urn:bookstore:CustomerName": {
+    "@id": "urn:bookstore:CustomerName",
+    "@type": "http://www.w3.org/2002/07/owl#Class",
+    "http://www.w3.org/2000/01/rdf-schema#comment": "A person’s name in the customer-identity context. Validation is owned by PersonName; this is a domain-specific brand.",
+    "http://www.w3.org/2002/07/owl#equivalentClass": {
+      "@type": "http://www.w3.org/2002/07/owl#Class",
+      "http://www.w3.org/2002/07/owl#unionOf": {
+        "@list": [
+          {
+            "@id": "urn:bookstore:PersonName"
+          }
+        ]
+      }
+    }
+  },
+  "urn:bookstore:Money": {
+    "@id": "urn:bookstore:Money",
+    "@type": "http://www.w3.org/2002/07/owl#Class",
+    "http://www.w3.org/2000/01/rdf-schema#subClassOf": [
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/amount"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/currency"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      }
+    ]
+  },
+  "https://bookstore.example/amount": {
+    "@id": "https://bookstore.example/amount",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Money"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:Amount"
+    }
+  },
+  "https://bookstore.example/currency": {
+    "@id": "https://bookstore.example/currency",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Money"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:CurrencyCode"
+    }
+  },
+  "urn:bookstore:Address": {
+    "@id": "urn:bookstore:Address",
+    "@type": "http://www.w3.org/2002/07/owl#Class",
+    "http://www.w3.org/2000/01/rdf-schema#subClassOf": [
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/street"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/city"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/postalCode"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      }
+    ]
+  },
+  "https://bookstore.example/city": {
+    "@id": "https://bookstore.example/city",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Address"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:CityName"
+    }
+  },
+  "https://bookstore.example/country": {
+    "@id": "https://bookstore.example/country",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Address"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:CountryCode"
+    }
+  },
+  "https://bookstore.example/postalCode": {
+    "@id": "https://bookstore.example/postalCode",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Address"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:PostalCode"
+    }
+  },
+  "https://bookstore.example/street": {
+    "@id": "https://bookstore.example/street",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Address"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:StreetLine"
+    }
+  },
+  "urn:bookstore:BookAnnotations": {
+    "@id": "urn:bookstore:BookAnnotations",
+    "@type": "http://www.w3.org/2002/07/owl#Class"
+  },
+  "https://bookstore.example/^note_": {
+    "@id": "https://bookstore.example/^note_",
+    "@type": "http://www.w3.org/2002/07/owl#DatatypeProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:BookAnnotations"
+    },
+    "http://www.w3.org/ns/shacl#pattern": "^note_",
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "http://www.w3.org/2001/XMLSchema#string"
+    }
+  },
+  "https://bookstore.example/^tag_": {
+    "@id": "https://bookstore.example/^tag_",
+    "@type": "http://www.w3.org/2002/07/owl#DatatypeProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:BookAnnotations"
+    },
+    "http://www.w3.org/ns/shacl#pattern": "^tag_",
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "http://www.w3.org/2001/XMLSchema#string"
+    }
+  },
+  "urn:bookstore:BookCatalogEntry": {
+    "@id": "urn:bookstore:BookCatalogEntry",
+    "@type": "http://www.w3.org/2002/07/owl#Class",
+    "http://www.w3.org/2000/01/rdf-schema#subClassOf": [
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/isbn"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/variants"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/variants"
+        },
+        "http://www.w3.org/2002/07/owl#allValuesFrom": {
+          "@id": "urn:bookstore:BookCatalogEntryVariant"
+        }
+      }
+    ]
+  },
+  "urn:bookstore:BookCatalogEntryVariant": {
+    "@id": "urn:bookstore:BookCatalogEntryVariant",
+    "@type": "http://www.w3.org/2002/07/owl#Class",
+    "http://www.w3.org/2000/01/rdf-schema#subClassOf": [
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/kind"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/variantPrice"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      }
+    ]
+  },
+  "https://bookstore.example/kind": {
+    "@id": "https://bookstore.example/kind",
+    "@type": "http://www.w3.org/2002/07/owl#DatatypeProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:BookCatalogEntryVariant"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "http://www.w3.org/2001/XMLSchema#string"
+    }
+  },
+  "https://bookstore.example/variantPrice": {
+    "@id": "https://bookstore.example/variantPrice",
+    "@type": "http://www.w3.org/2002/07/owl#DatatypeProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:BookCatalogEntryVariant"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "http://www.w3.org/2001/XMLSchema#decimal"
+    }
+  },
+  "https://bookstore.example/isbn": {
+    "@id": "https://bookstore.example/isbn",
+    "@type": [
+      "http://www.w3.org/2002/07/owl#ObjectProperty",
+      "http://www.w3.org/2002/07/owl#ObjectProperty"
+    ],
+    "http://www.w3.org/2000/01/rdf-schema#domain": [
+      {
+        "@id": "urn:bookstore:BookCatalogEntry"
+      },
+      {
+        "@id": "urn:bookstore:Book"
+      }
+    ],
+    "http://www.w3.org/2000/01/rdf-schema#range": [
+      {
+        "@id": "urn:bookstore:Isbn"
+      },
+      {
+        "@id": "urn:bookstore:Isbn"
+      }
+    ]
+  },
+  "https://bookstore.example/variants": {
+    "@id": "https://bookstore.example/variants",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:BookCatalogEntry"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "http://www.w3.org/1999/02/22-rdf-syntax-ns#List"
+    }
+  },
+  "urn:bookstore:BookRatingHistogram": {
+    "@id": "urn:bookstore:BookRatingHistogram",
+    "@type": "http://www.w3.org/2002/07/owl#Class",
+    "http://www.w3.org/2000/01/rdf-schema#comment": "Five-element histogram of star-rating counts: [1-star, 2-star, 3-star, 4-star, 5-star]",
+    "http://www.w3.org/2000/01/rdf-schema#subClassOf": [
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "http://www.w3.org/1999/02/22-rdf-syntax-ns#_1"
+        },
+        "http://www.w3.org/2002/07/owl#allValuesFrom": {
+          "@id": "urn:bookstore:RatingCount"
+        }
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "http://www.w3.org/1999/02/22-rdf-syntax-ns#_2"
+        },
+        "http://www.w3.org/2002/07/owl#allValuesFrom": {
+          "@id": "urn:bookstore:RatingCount"
+        }
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "http://www.w3.org/1999/02/22-rdf-syntax-ns#_3"
+        },
+        "http://www.w3.org/2002/07/owl#allValuesFrom": {
+          "@id": "urn:bookstore:RatingCount"
+        }
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "http://www.w3.org/1999/02/22-rdf-syntax-ns#_4"
+        },
+        "http://www.w3.org/2002/07/owl#allValuesFrom": {
+          "@id": "urn:bookstore:RatingCount"
+        }
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "http://www.w3.org/1999/02/22-rdf-syntax-ns#_5"
+        },
+        "http://www.w3.org/2002/07/owl#allValuesFrom": {
+          "@id": "urn:bookstore:RatingCount"
+        }
+      }
+    ]
+  },
+  "urn:bookstore:Book": {
+    "@id": "urn:bookstore:Book",
+    "@type": "http://www.w3.org/2002/07/owl#Class",
+    "http://www.w3.org/2000/01/rdf-schema#subClassOf": [
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/isbn"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/title"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/authors"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/price"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/printStatus"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/authors"
+        },
+        "http://www.w3.org/2002/07/owl#allValuesFrom": {
+          "@id": "urn:bookstore:AuthorName"
+        }
+      }
+    ]
+  },
+  "https://bookstore.example/annotations": {
+    "@id": "https://bookstore.example/annotations",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Book"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:BookAnnotations"
+    }
+  },
+  "https://bookstore.example/authors": {
+    "@id": "https://bookstore.example/authors",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Book"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "http://www.w3.org/1999/02/22-rdf-syntax-ns#List"
+    }
+  },
+  "https://bookstore.example/inStock": {
+    "@id": "https://bookstore.example/inStock",
+    "@type": "http://www.w3.org/2002/07/owl#DatatypeProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Book"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "http://www.w3.org/2001/XMLSchema#boolean"
+    }
+  },
+  "https://bookstore.example/price": {
+    "@id": "https://bookstore.example/price",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Book"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:Money"
+    }
+  },
+  "https://bookstore.example/printStatus": {
+    "@id": "https://bookstore.example/printStatus",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Book"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:PrintStatus"
+    }
+  },
+  "https://bookstore.example/publishedOn": {
+    "@id": "https://bookstore.example/publishedOn",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Book"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:PublicationDate"
+    }
+  },
+  "https://bookstore.example/ratings": {
+    "@id": "https://bookstore.example/ratings",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Book"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:BookRatingHistogram"
+    }
+  },
+  "https://bookstore.example/stockLevel": {
+    "@id": "https://bookstore.example/stockLevel",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Book"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:StockLevel"
+    }
+  },
+  "https://bookstore.example/title": {
+    "@id": "https://bookstore.example/title",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Book"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:Title"
+    }
+  },
+  "urn:bookstore:OrderLine": {
+    "@id": "urn:bookstore:OrderLine",
+    "@type": "http://www.w3.org/2002/07/owl#Class",
+    "http://www.w3.org/2000/01/rdf-schema#subClassOf": [
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/bookIsbn"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/quantity"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/unitPrice"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      }
+    ]
+  },
+  "https://bookstore.example/bookIsbn": {
+    "@id": "https://bookstore.example/bookIsbn",
+    "@type": [
+      "http://www.w3.org/2002/07/owl#ObjectProperty",
+      "http://www.w3.org/2002/07/owl#ObjectProperty"
+    ],
+    "http://www.w3.org/2000/01/rdf-schema#domain": [
+      {
+        "@id": "urn:bookstore:OrderLine"
+      },
+      {
+        "@id": "urn:bookstore:Review"
+      }
+    ],
+    "http://www.w3.org/2000/01/rdf-schema#range": [
+      {
+        "@id": "urn:bookstore:Isbn"
+      },
+      {
+        "@id": "urn:bookstore:Isbn"
+      }
+    ]
+  },
+  "https://bookstore.example/quantity": {
+    "@id": "https://bookstore.example/quantity",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:OrderLine"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:Quantity"
+    }
+  },
+  "https://bookstore.example/unitPrice": {
+    "@id": "https://bookstore.example/unitPrice",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:OrderLine"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:Money"
+    }
+  },
+  "urn:bookstore:InPrintBook": {
+    "@id": "urn:bookstore:InPrintBook",
+    "@type": "http://www.w3.org/2002/07/owl#Class",
+    "http://www.w3.org/2000/01/rdf-schema#subClassOf": [
+      {
+        "@id": "urn:bookstore:Book"
+      },
+      {
+        "@id": "urn:bookstore:InPrintBook#/allOf/1"
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/printStatus"
+        },
+        "http://www.w3.org/2002/07/owl#hasValue": "inPrint"
+      }
+    ]
+  },
+  "urn:bookstore:OutOfPrintBook": {
+    "@id": "urn:bookstore:OutOfPrintBook",
+    "@type": "http://www.w3.org/2002/07/owl#Class",
+    "http://www.w3.org/2000/01/rdf-schema#subClassOf": [
+      {
+        "@id": "urn:bookstore:Book"
+      }
+    ],
+    "http://www.w3.org/2002/07/owl#complementOf": {
+      "@id": "urn:bookstore:InPrintBook"
+    }
+  },
+  "urn:bookstore:Customer": {
+    "@id": "urn:bookstore:Customer",
+    "@type": "http://www.w3.org/2002/07/owl#Class",
+    "http://www.w3.org/2000/01/rdf-schema#subClassOf": [
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/customerId"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/email"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/name"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/addresses"
+        },
+        "http://www.w3.org/2002/07/owl#allValuesFrom": {
+          "@id": "urn:bookstore:Address"
+        }
+      }
+    ]
+  },
+  "https://bookstore.example/addresses": {
+    "@id": "https://bookstore.example/addresses",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Customer"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "http://www.w3.org/1999/02/22-rdf-syntax-ns#List"
+    }
+  },
+  "https://bookstore.example/customerId": {
+    "@id": "https://bookstore.example/customerId",
+    "@type": [
+      "http://www.w3.org/2002/07/owl#ObjectProperty",
+      "http://www.w3.org/2002/07/owl#InverseFunctionalProperty",
+      "http://www.w3.org/2002/07/owl#ObjectProperty",
+      "http://www.w3.org/2002/07/owl#ObjectProperty",
+      "http://www.w3.org/2002/07/owl#FunctionalProperty"
+    ],
+    "http://www.w3.org/2000/01/rdf-schema#domain": [
+      {
+        "@id": "urn:bookstore:Customer"
+      },
+      {
+        "@id": "urn:bookstore:Order"
+      },
+      {
+        "@id": "urn:bookstore:Review"
+      }
+    ],
+    "http://www.w3.org/2000/01/rdf-schema#range": [
+      {
+        "@id": "urn:bookstore:CustomerId"
+      },
+      {
+        "@id": "urn:bookstore:CustomerId"
+      },
+      {
+        "@id": "urn:bookstore:CustomerId"
+      }
+    ]
+  },
+  "https://bookstore.example/email": {
+    "@id": "https://bookstore.example/email",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Customer"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:Email"
+    }
+  },
+  "https://bookstore.example/name": {
+    "@id": "https://bookstore.example/name",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Customer"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:CustomerName"
+    }
+  },
+  "urn:bookstore:Order": {
+    "@id": "urn:bookstore:Order",
+    "@type": "http://www.w3.org/2002/07/owl#Class",
+    "http://www.w3.org/2000/01/rdf-schema#subClassOf": [
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/orderId"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/customerId"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/orderLines"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/orderTotal"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/placedAt"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/shippingAddress"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/orderLines"
+        },
+        "http://www.w3.org/2002/07/owl#allValuesFrom": {
+          "@id": "urn:bookstore:OrderLine"
+        }
+      }
+    ]
+  },
+  "https://bookstore.example/orderId": {
+    "@id": "https://bookstore.example/orderId",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Order"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:OrderId"
+    }
+  },
+  "https://bookstore.example/orderLines": {
+    "@id": "https://bookstore.example/orderLines",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Order"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "http://www.w3.org/1999/02/22-rdf-syntax-ns#List"
+    }
+  },
+  "https://bookstore.example/orderTotal": {
+    "@id": "https://bookstore.example/orderTotal",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Order"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:Money"
+    }
+  },
+  "https://bookstore.example/placedAt": {
+    "@id": "https://bookstore.example/placedAt",
+    "@type": [
+      "http://www.w3.org/2002/07/owl#ObjectProperty",
+      "http://www.w3.org/2002/07/owl#TransitiveProperty",
+      "http://www.w3.org/2002/07/owl#IrreflexiveProperty"
+    ],
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Order"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:Iso8601"
+    }
+  },
+  "https://bookstore.example/shippingAddress": {
+    "@id": "https://bookstore.example/shippingAddress",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Order"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:Address"
+    }
+  },
+  "urn:bookstore:RareBook": {
+    "@id": "urn:bookstore:RareBook",
+    "@type": "http://www.w3.org/2002/07/owl#Class",
+    "http://www.w3.org/2000/01/rdf-schema#subClassOf": [
+      {
+        "@id": "urn:bookstore:PrintBook"
+      },
+      {
+        "@id": "urn:bookstore:RareBook#/allOf/1"
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/authors"
+        },
+        "http://www.w3.org/2002/07/owl#someValuesFrom": {
+          "@id": "urn:bookstore:AuthorName"
+        }
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/authors"
+        },
+        "http://www.w3.org/2002/07/owl#maxCardinality": 1
+      }
+    ]
+  },
+  "https://bookstore.example/estimatedAgeYears": {
+    "@id": "https://bookstore.example/estimatedAgeYears",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:RareBook#/allOf/1"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:EstimatedAgeYears"
+    }
+  },
+  "https://bookstore.example/firstEditionYear": {
+    "@id": "https://bookstore.example/firstEditionYear",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:RareBook#/allOf/1"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:FirstEditionYear"
+    }
+  },
+  "urn:bookstore:EBook": {
+    "@id": "urn:bookstore:EBook",
+    "@type": "http://www.w3.org/2002/07/owl#Class",
+    "http://www.w3.org/2000/01/rdf-schema#subClassOf": [
+      {
+        "@id": "urn:bookstore:Book"
+      },
+      {
+        "@id": "urn:bookstore:EBook#/allOf/1"
+      }
+    ]
+  },
+  "https://bookstore.example/pdfVersion": {
+    "@id": "https://bookstore.example/pdfVersion",
+    "@type": "http://www.w3.org/2002/07/owl#DatatypeProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:EBook#/allOf/1/else"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "http://www.w3.org/2001/XMLSchema#string"
+    }
+  },
+  "https://bookstore.example/fileFormat": {
+    "@id": "https://bookstore.example/fileFormat",
+    "@type": [
+      "http://www.w3.org/2002/07/owl#ObjectProperty",
+      "http://www.w3.org/2002/07/owl#ObjectProperty"
+    ],
+    "http://www.w3.org/2000/01/rdf-schema#domain": [
+      {
+        "@id": "urn:bookstore:EBook#/allOf/1/if"
+      },
+      {
+        "@id": "urn:bookstore:EBook#/allOf/1"
+      }
+    ],
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:EBookFormat"
+    }
+  },
+  "https://bookstore.example/downloadUrl": {
+    "@id": "https://bookstore.example/downloadUrl",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:EBook#/allOf/1"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:DownloadUrl"
+    }
+  },
+  "https://bookstore.example/fileSizeBytes": {
+    "@id": "https://bookstore.example/fileSizeBytes",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:EBook#/allOf/1"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:FileSizeBytes"
+    }
+  },
+  "https://bookstore.example/epubVersion": {
+    "@id": "https://bookstore.example/epubVersion",
+    "@type": "http://www.w3.org/2002/07/owl#DatatypeProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:EBook#/allOf/1/then"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "http://www.w3.org/2001/XMLSchema#string"
+    }
+  },
+  "urn:bookstore:PrintBook": {
+    "@id": "urn:bookstore:PrintBook",
+    "@type": "http://www.w3.org/2002/07/owl#Class",
+    "http://www.w3.org/2000/01/rdf-schema#subClassOf": [
+      {
+        "@id": "urn:bookstore:Book"
+      },
+      {
+        "@id": "urn:bookstore:PrintBook#/allOf/1"
+      }
+    ],
+    "http://www.w3.org/2002/07/owl#disjointWith": {
+      "@id": "urn:bookstore:EBook"
+    }
+  },
+  "https://bookstore.example/binding": {
+    "@id": "https://bookstore.example/binding",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:PrintBook#/allOf/1"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:BindingType"
+    }
+  },
+  "https://bookstore.example/pageCount": {
+    "@id": "https://bookstore.example/pageCount",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:PrintBook#/allOf/1"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:PrintPageCount"
+    }
+  },
+  "https://bookstore.example/weightGrams": {
+    "@id": "https://bookstore.example/weightGrams",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:PrintBook#/allOf/1"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:WeightGrams"
+    }
+  },
+  "urn:bookstore:SignedFirstEdition": {
+    "@id": "urn:bookstore:SignedFirstEdition",
+    "@type": "http://www.w3.org/2002/07/owl#Class",
+    "http://www.w3.org/2000/01/rdf-schema#subClassOf": [
+      {
+        "@id": "urn:bookstore:RareBook"
+      },
+      {
+        "@id": "urn:bookstore:SignedFirstEdition#/allOf/1"
+      }
+    ]
+  },
+  "https://bookstore.example/provenance": {
+    "@id": "https://bookstore.example/provenance",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:SignedFirstEdition#/allOf/1"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:Provenance"
+    }
+  },
+  "https://bookstore.example/signedBy": {
+    "@id": "https://bookstore.example/signedBy",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:SignedFirstEdition#/allOf/1"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:AuthorName"
+    }
+  },
+  "urn:bookstore:SimilarBook": {
+    "@id": "urn:bookstore:SimilarBook",
+    "@type": "http://www.w3.org/2002/07/owl#Class",
+    "http://www.w3.org/2000/01/rdf-schema#subClassOf": [
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/a"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/b"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      }
+    ]
+  },
+  "https://bookstore.example/a": {
+    "@id": "https://bookstore.example/a",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:SimilarBook"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:Book"
+    }
+  },
+  "https://bookstore.example/b": {
+    "@id": "https://bookstore.example/b",
+    "@type": [
+      "http://www.w3.org/2002/07/owl#ObjectProperty",
+      "http://www.w3.org/2002/07/owl#SymmetricProperty",
+      "http://www.w3.org/2002/07/owl#ReflexiveProperty"
+    ],
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:SimilarBook"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:Book"
+    }
+  },
+  "urn:bookstore:Sequel": {
+    "@id": "urn:bookstore:Sequel",
+    "@type": "http://www.w3.org/2002/07/owl#Class",
+    "http://www.w3.org/2000/01/rdf-schema#subClassOf": [
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/book"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/predecessor"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      }
+    ]
+  },
+  "https://bookstore.example/book": {
+    "@id": "https://bookstore.example/book",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Sequel"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:Book"
+    }
+  },
+  "https://bookstore.example/predecessor": {
+    "@id": "https://bookstore.example/predecessor",
+    "@type": [
+      "http://www.w3.org/2002/07/owl#ObjectProperty",
+      "http://www.w3.org/2002/07/owl#AsymmetricProperty"
+    ],
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Sequel"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:Book"
+    }
+  },
+  "urn:bookstore:BookListPage": {
+    "@id": "urn:bookstore:BookListPage",
+    "@type": "http://www.w3.org/2002/07/owl#Class",
+    "http://www.w3.org/2000/01/rdf-schema#comment": "A page of Book results with pagination metadata",
+    "http://www.w3.org/2000/01/rdf-schema#subClassOf": [
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/books"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/resultCount"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/page"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/pageSize"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/books"
+        },
+        "http://www.w3.org/2002/07/owl#allValuesFrom": {
+          "@id": "urn:bookstore:Book"
+        }
+      }
+    ]
+  },
+  "https://bookstore.example/books": {
+    "@id": "https://bookstore.example/books",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:BookListPage"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "http://www.w3.org/1999/02/22-rdf-syntax-ns#List"
+    }
+  },
+  "https://bookstore.example/hasNext": {
+    "@id": "https://bookstore.example/hasNext",
+    "@type": "http://www.w3.org/2002/07/owl#DatatypeProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:BookListPage"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "http://www.w3.org/2001/XMLSchema#boolean"
+    }
+  },
+  "https://bookstore.example/hasPrev": {
+    "@id": "https://bookstore.example/hasPrev",
+    "@type": "http://www.w3.org/2002/07/owl#DatatypeProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:BookListPage"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "http://www.w3.org/2001/XMLSchema#boolean"
+    }
+  },
+  "https://bookstore.example/nextCursor": {
+    "@id": "https://bookstore.example/nextCursor",
+    "@type": "http://www.w3.org/2002/07/owl#DatatypeProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:BookListPage"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "http://www.w3.org/2001/XMLSchema#string"
+    }
+  },
+  "https://bookstore.example/page": {
+    "@id": "https://bookstore.example/page",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:BookListPage"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:PageNumber"
+    }
+  },
+  "https://bookstore.example/pageSize": {
+    "@id": "https://bookstore.example/pageSize",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:BookListPage"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:PageSize"
+    }
+  },
+  "https://bookstore.example/prevCursor": {
+    "@id": "https://bookstore.example/prevCursor",
+    "@type": "http://www.w3.org/2002/07/owl#DatatypeProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:BookListPage"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "http://www.w3.org/2001/XMLSchema#string"
+    }
+  },
+  "https://bookstore.example/resultCount": {
+    "@id": "https://bookstore.example/resultCount",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:BookListPage"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:PageCount"
+    }
+  },
+  "https://bookstore.example/totalPages": {
+    "@id": "https://bookstore.example/totalPages",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:BookListPage"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:PageCount"
+    }
+  },
+  "urn:bookstore:Review": {
+    "@id": "urn:bookstore:Review",
+    "@type": "http://www.w3.org/2002/07/owl#Class",
+    "http://www.w3.org/2000/01/rdf-schema#subClassOf": [
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/reviewId"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/bookIsbn"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/customerId"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/rating"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/body"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      },
+      {
+        "@type": "http://www.w3.org/2002/07/owl#Restriction",
+        "http://www.w3.org/2002/07/owl#onProperty": {
+          "@id": "https://bookstore.example/postedAt"
+        },
+        "http://www.w3.org/2002/07/owl#minCardinality": 1
+      }
+    ]
+  },
+  "https://bookstore.example/body": {
+    "@id": "https://bookstore.example/body",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Review"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:ReviewBody"
+    }
+  },
+  "https://bookstore.example/postedAt": {
+    "@id": "https://bookstore.example/postedAt",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Review"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:Iso8601"
+    }
+  },
+  "https://bookstore.example/rating": {
+    "@id": "https://bookstore.example/rating",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Review"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:RatingScore"
+    }
+  },
+  "https://bookstore.example/reviewId": {
+    "@id": "https://bookstore.example/reviewId",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Review"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:ReviewId"
+    }
+  },
+  "https://bookstore.example/reviewsBook": {
+    "@id": "https://bookstore.example/reviewsBook",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:Review"
+    }
+  },
+  "https://bookstore.example/id/bastian-balthazar-bux__uf8uei": {
+    "@id": "https://bookstore.example/id/bastian-balthazar-bux__uf8uei",
+    "@type": "urn:bookstore:Customer",
+    "https://bookstore.example/addresses": {
+      "@id": "https://bookstore.example/id/reichenbachstra-e-14__165q9l"
+    },
+    "https://bookstore.example/customerId": "c1a2b3d4-e5f6-7890-abcd-ef1234567890",
+    "https://bookstore.example/email": "bastian.bux@bookstore.example",
+    "https://bookstore.example/name": "Bastian Balthazar Bux"
+  },
+  "https://bookstore.example/id/reichenbachstra-e-14__165q9l": {
+    "@id": "https://bookstore.example/id/reichenbachstra-e-14__165q9l",
+    "@type": [
+      "urn:bookstore:Address",
+      "urn:bookstore:Address"
+    ],
+    "https://bookstore.example/city": [
+      "München",
+      "München"
+    ],
+    "https://bookstore.example/country": [
+      "DE",
+      "DE"
+    ],
+    "https://bookstore.example/postalCode": [
+      "80331",
+      "80331"
+    ],
+    "https://bookstore.example/street": [
+      "Reichenbachstraße 14",
+      "Reichenbachstraße 14"
+    ]
+  },
+  "urn:bookstore:customer:bastian-bux": {
+    "@id": "urn:bookstore:customer:bastian-bux",
+    "http://www.w3.org/2002/07/owl#sameAs": [
+      {
+        "@id": "urn:coreander-antiquariat:cust-00042"
+      },
+      {
+        "@id": "urn:coreander-antiquariat:cust-00042"
+      },
+      {
+        "@id": "urn:coreander-antiquariat:cust-00042"
+      },
+      {
+        "@id": "urn:coreander-antiquariat:cust-00042"
+      },
+      {
+        "@id": "urn:coreander-antiquariat:cust-00042"
+      },
+      {
+        "@id": "urn:coreander-antiquariat:cust-00042"
+      },
+      {
+        "@id": "urn:coreander-antiquariat:cust-00042"
+      },
+      {
+        "@id": "urn:coreander-antiquariat:cust-00042"
+      },
+      {
+        "@id": "urn:coreander-antiquariat:cust-00042"
+      },
+      {
+        "@id": "urn:coreander-antiquariat:cust-00042"
+      }
+    ]
+  },
+  "urn:coreander-antiquariat:cust-00042": {
+    "@id": "urn:coreander-antiquariat:cust-00042",
+    "http://www.w3.org/2002/07/owl#sameAs": [
+      {
+        "@id": "urn:bookstore:customer:bastian-bux"
+      },
+      {
+        "@id": "urn:bookstore:customer:bastian-bux"
+      },
+      {
+        "@id": "urn:bookstore:customer:bastian-bux"
+      },
+      {
+        "@id": "urn:bookstore:customer:bastian-bux"
+      },
+      {
+        "@id": "urn:bookstore:customer:bastian-bux"
+      },
+      {
+        "@id": "urn:bookstore:customer:bastian-bux"
+      },
+      {
+        "@id": "urn:bookstore:customer:bastian-bux"
+      },
+      {
+        "@id": "urn:bookstore:customer:bastian-bux"
+      },
+      {
+        "@id": "urn:bookstore:customer:bastian-bux"
+      },
+      {
+        "@id": "urn:bookstore:customer:bastian-bux"
+      }
+    ]
+  },
+  "urn:bookstore:rarebook:neverending-1979-thienemann": {
+    "@id": "urn:bookstore:rarebook:neverending-1979-thienemann",
+    "http://www.w3.org/2002/07/owl#sameAs": [
+      {
+        "@id": "http://www.worldcat.org/oclc/5705614"
+      },
+      {
+        "@id": "http://www.worldcat.org/oclc/5705614"
+      },
+      {
+        "@id": "http://www.worldcat.org/oclc/5705614"
+      },
+      {
+        "@id": "http://www.worldcat.org/oclc/5705614"
+      },
+      {
+        "@id": "http://www.worldcat.org/oclc/5705614"
+      },
+      {
+        "@id": "http://www.worldcat.org/oclc/5705614"
+      },
+      {
+        "@id": "http://www.worldcat.org/oclc/5705614"
+      },
+      {
+        "@id": "http://www.worldcat.org/oclc/5705614"
+      },
+      {
+        "@id": "http://www.worldcat.org/oclc/5705614"
+      },
+      {
+        "@id": "http://www.worldcat.org/oclc/5705614"
+      }
+    ]
+  },
+  "http://www.worldcat.org/oclc/5705614": {
+    "@id": "http://www.worldcat.org/oclc/5705614",
+    "http://www.w3.org/2002/07/owl#sameAs": [
+      {
+        "@id": "urn:bookstore:rarebook:neverending-1979-thienemann"
+      },
+      {
+        "@id": "urn:bookstore:rarebook:neverending-1979-thienemann"
+      },
+      {
+        "@id": "urn:bookstore:rarebook:neverending-1979-thienemann"
+      },
+      {
+        "@id": "urn:bookstore:rarebook:neverending-1979-thienemann"
+      },
+      {
+        "@id": "urn:bookstore:rarebook:neverending-1979-thienemann"
+      },
+      {
+        "@id": "urn:bookstore:rarebook:neverending-1979-thienemann"
+      },
+      {
+        "@id": "urn:bookstore:rarebook:neverending-1979-thienemann"
+      },
+      {
+        "@id": "urn:bookstore:rarebook:neverending-1979-thienemann"
+      },
+      {
+        "@id": "urn:bookstore:rarebook:neverending-1979-thienemann"
+      },
+      {
+        "@id": "urn:bookstore:rarebook:neverending-1979-thienemann"
+      }
+    ]
+  },
+  "https://bookstore.example/id/09f8e7d6-c5b4-3210-9876-543210fedcba__19lda5": {
+    "@id": "https://bookstore.example/id/09f8e7d6-c5b4-3210-9876-543210fedcba__19lda5",
+    "@type": "urn:bookstore:Order",
+    "https://bookstore.example/customerId": "c1a2b3d4-e5f6-7890-abcd-ef1234567890",
+    "https://bookstore.example/orderId": "09f8e7d6-c5b4-3210-9876-543210fedcba",
+    "https://bookstore.example/orderLines": {
+      "@id": "https://bookstore.example/id/node__1nuweb"
+    },
+    "https://bookstore.example/orderTotal": {
+      "@id": "https://bookstore.example/id/850-eur__ero9c3"
+    },
+    "https://bookstore.example/placedAt": "2026-04-12T14:23:11Z",
+    "https://bookstore.example/shippingAddress": {
+      "@id": "https://bookstore.example/id/reichenbachstra-e-14__165q9l"
+    }
+  },
+  "https://bookstore.example/id/node__1nuweb": {
+    "@id": "https://bookstore.example/id/node__1nuweb",
+    "@type": "urn:bookstore:OrderLine",
+    "https://bookstore.example/bookIsbn": "9783522128001",
+    "https://bookstore.example/quantity": 1,
+    "https://bookstore.example/unitPrice": {
+      "@id": "https://bookstore.example/id/850-eur__ero9c3"
+    }
+  },
+  "https://bookstore.example/id/850-eur__ero9c3": {
+    "@id": "https://bookstore.example/id/850-eur__ero9c3",
+    "@type": [
+      "urn:bookstore:Money",
+      "urn:bookstore:Money",
+      "urn:bookstore:Money",
+      "urn:bookstore:Money",
+      "urn:bookstore:Money",
+      "urn:bookstore:Money",
+      "urn:bookstore:Money",
+      "urn:bookstore:Money"
+    ],
+    "https://bookstore.example/amount": [
+      850,
+      850,
+      850,
+      850,
+      850,
+      850,
+      850,
+      850
+    ],
+    "https://bookstore.example/currency": [
+      "EUR",
+      "EUR",
+      "EUR",
+      "EUR",
+      "EUR",
+      "EUR",
+      "EUR",
+      "EUR"
+    ]
+  },
+  "https://bookstore.example/id/die-unendliche-geschichte__qcyop8": {
+    "@id": "https://bookstore.example/id/die-unendliche-geschichte__qcyop8",
+    "@type": "urn:bookstore:RareBook",
+    "https://bookstore.example/authors": "Michael Ende",
+    "https://bookstore.example/inStock": true,
+    "https://bookstore.example/isbn": "9783522128001",
+    "https://bookstore.example/price": {
+      "@id": "https://bookstore.example/id/850-eur__ero9c3"
+    },
+    "https://bookstore.example/printStatus": "outOfPrint",
+    "https://bookstore.example/publishedOn": "1979-09-01",
+    "https://bookstore.example/stockLevel": 5,
+    "https://bookstore.example/title": "Die unendliche Geschichte",
+    "https://bookstore.example/binding": "hardcover",
+    "https://bookstore.example/pageCount": 428,
+    "https://bookstore.example/weightGrams": 980,
+    "https://bookstore.example/estimatedAgeYears": 47,
+    "https://bookstore.example/firstEditionYear": 1979
+  },
+  "https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4": {
+    "@id": "https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4",
+    "@type": "urn:bookstore:EBook",
+    "https://bookstore.example/authors": "Michael Ende",
+    "https://bookstore.example/inStock": true,
+    "https://bookstore.example/isbn": "9783522128001",
+    "https://bookstore.example/price": {
+      "@id": "https://bookstore.example/id/699-eur__19793r"
+    },
+    "https://bookstore.example/printStatus": "outOfPrint",
+    "https://bookstore.example/title": "Die unendliche Geschichte (eBook)",
+    "https://bookstore.example/downloadUrl": {
+      "@id": "https://bookstore.example/downloads/9783522128001.epub"
+    },
+    "https://bookstore.example/fileFormat": "epub",
+    "https://bookstore.example/fileSizeBytes": 3145728,
+    "https://bookstore.example/epubVersion": "3.2"
+  },
+  "https://bookstore.example/id/699-eur__19793r": {
+    "@id": "https://bookstore.example/id/699-eur__19793r",
+    "@type": "urn:bookstore:Money",
+    "https://bookstore.example/amount": 699,
+    "https://bookstore.example/currency": "EUR"
+  },
+  "https://bookstore.example/id/die-unendliche-geschichte__hxov0h": {
+    "@id": "https://bookstore.example/id/die-unendliche-geschichte__hxov0h",
+    "@type": "urn:bookstore:PrintBook",
+    "https://bookstore.example/authors": "Michael Ende",
+    "https://bookstore.example/inStock": true,
+    "https://bookstore.example/isbn": "9783522128001",
+    "https://bookstore.example/price": {
+      "@id": "https://bookstore.example/id/850-eur__ero9c3"
+    },
+    "https://bookstore.example/printStatus": "outOfPrint",
+    "https://bookstore.example/title": "Die unendliche Geschichte",
+    "https://bookstore.example/binding": "hardcover",
+    "https://bookstore.example/pageCount": 428,
+    "https://bookstore.example/weightGrams": 980
+  },
+  "https://bookstore.example/id/die-unendliche-geschichte__1dmq3g": {
+    "@id": "https://bookstore.example/id/die-unendliche-geschichte__1dmq3g",
+    "@type": "urn:bookstore:SignedFirstEdition",
+    "https://bookstore.example/authors": "Michael Ende",
+    "https://bookstore.example/inStock": true,
+    "https://bookstore.example/isbn": "9783522128001",
+    "https://bookstore.example/price": {
+      "@id": "https://bookstore.example/id/850-eur__ero9c3"
+    },
+    "https://bookstore.example/printStatus": "outOfPrint",
+    "https://bookstore.example/title": "Die unendliche Geschichte",
+    "https://bookstore.example/binding": "hardcover",
+    "https://bookstore.example/pageCount": 428,
+    "https://bookstore.example/weightGrams": 980,
+    "https://bookstore.example/estimatedAgeYears": 47,
+    "https://bookstore.example/firstEditionYear": 1979,
+    "https://bookstore.example/provenance": "Erworben aus dem Nachlass von Carl Conrad Coreander, München, 1994. Signiert M.E. in blauer Tinte auf der Schmutztitelseite.",
+    "https://bookstore.example/signedBy": "Michael Ende"
+  },
+  "https://bookstore.example/id/node__qnfgjo": {
+    "@id": "https://bookstore.example/id/node__qnfgjo",
+    "@type": "urn:bookstore:SimilarBook",
+    "https://bookstore.example/a": {
+      "@id": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n"
+    },
+    "https://bookstore.example/b": {
+      "@id": "https://bookstore.example/id/momo__1hjwff"
+    }
+  },
+  "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n": {
+    "@id": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n",
+    "@type": [
+      "urn:bookstore:Book",
+      "urn:bookstore:Book",
+      "urn:bookstore:Book"
+    ],
+    "https://bookstore.example/authors": [
+      "Michael Ende",
+      "Michael Ende",
+      "Michael Ende"
+    ],
+    "https://bookstore.example/inStock": [
+      true,
+      true,
+      true
+    ],
+    "https://bookstore.example/isbn": [
+      "9783522128001",
+      "9783522128001",
+      "9783522128001"
+    ],
+    "https://bookstore.example/price": [
+      {
+        "@id": "https://bookstore.example/id/850-eur__ero9c3"
+      },
+      {
+        "@id": "https://bookstore.example/id/850-eur__ero9c3"
+      },
+      {
+        "@id": "https://bookstore.example/id/850-eur__ero9c3"
+      }
+    ],
+    "https://bookstore.example/printStatus": [
+      "outOfPrint",
+      "outOfPrint",
+      "outOfPrint"
+    ],
+    "https://bookstore.example/title": [
+      "Die unendliche Geschichte",
+      "Die unendliche Geschichte",
+      "Die unendliche Geschichte"
+    ]
+  },
+  "https://bookstore.example/id/momo__1hjwff": {
+    "@id": "https://bookstore.example/id/momo__1hjwff",
+    "@type": [
+      "urn:bookstore:Book",
+      "urn:bookstore:Book"
+    ],
+    "https://bookstore.example/authors": [
+      "Michael Ende",
+      "Michael Ende"
+    ],
+    "https://bookstore.example/inStock": [
+      true,
+      true
+    ],
+    "https://bookstore.example/isbn": [
+      "9783522129503",
+      "9783522129503"
+    ],
+    "https://bookstore.example/price": [
+      {
+        "@id": "https://bookstore.example/id/380-eur__mgbvsv"
+      },
+      {
+        "@id": "https://bookstore.example/id/380-eur__mgbvsv"
+      }
+    ],
+    "https://bookstore.example/printStatus": [
+      "inPrint",
+      "inPrint"
+    ],
+    "https://bookstore.example/title": [
+      "Momo",
+      "Momo"
+    ]
+  },
+  "https://bookstore.example/id/380-eur__mgbvsv": {
+    "@id": "https://bookstore.example/id/380-eur__mgbvsv",
+    "@type": [
+      "urn:bookstore:Money",
+      "urn:bookstore:Money"
+    ],
+    "https://bookstore.example/amount": [
+      380,
+      380
+    ],
+    "https://bookstore.example/currency": [
+      "EUR",
+      "EUR"
+    ]
+  },
+  "https://bookstore.example/id/node__10bfcz": {
+    "@id": "https://bookstore.example/id/node__10bfcz",
+    "@type": "urn:bookstore:Sequel",
+    "https://bookstore.example/book": {
+      "@id": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n"
+    },
+    "https://bookstore.example/predecessor": {
+      "@id": "https://bookstore.example/id/momo__1hjwff"
+    }
+  },
+  "https://bookstore.example/id/node__10gi8w": {
+    "@id": "https://bookstore.example/id/node__10gi8w",
+    "@type": "urn:bookstore:BookListPage",
+    "https://bookstore.example/books": {
+      "@id": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n"
+    },
+    "https://bookstore.example/hasNext": false,
+    "https://bookstore.example/hasPrev": false,
+    "https://bookstore.example/page": 1,
+    "https://bookstore.example/pageSize": 10,
+    "https://bookstore.example/resultCount": 1,
+    "https://bookstore.example/totalPages": 1
+  },
+  "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc": {
+    "@id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc",
+    "@type": "urn:bookstore:Review",
+    "https://bookstore.example/body": "Ende's framing of a reader who reads themself into a story is craftsmanship of the highest order; this Thienemann first edition with the red and green ink intact is the only way to read it.",
+    "https://bookstore.example/bookIsbn": "9783522128001",
+    "https://bookstore.example/customerId": "c1a2b3d4-e5f6-7890-abcd-ef1234567890",
+    "https://bookstore.example/postedAt": "2026-04-20T09:15:00Z",
+    "https://bookstore.example/rating": 5,
+    "https://bookstore.example/reviewId": "a4d3c2b1-a098-7654-a210-fedcba987654",
+    "https://bookstore.example/reviews": {
+      "@id": "https://bookstore.example/books/9783522128001"
+    }
+  },
+  "": {
+    "@id": "",
+    "urn:bookstore:Review#/properties/reviewsBook#ratingGiven": 5
+  }
+}

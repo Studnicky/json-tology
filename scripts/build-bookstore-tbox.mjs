@@ -30,10 +30,11 @@ const UTILS_PATH = join(ROOT, 'docs', '.vitepress', 'theme', 'utils', 'bookstore
 
 const tmpFile = join(tmpdir(), `bookstore-extract-${randomUUID()}.ts`);
 const extractorContent = `
-import { toCytoscapeElements, toJsonLd, toSchemaMap } from ${JSON.stringify(UTILS_PATH)};
+import { toCytoscapeElements, toJsonLd, toJsonLdMap, toSchemaMap } from ${JSON.stringify(UTILS_PATH)};
 process.stdout.write(JSON.stringify({
   cytoscape: toCytoscapeElements(),
   jsonLd: toJsonLd(),
+  jsonLdMap: toJsonLdMap(),
   schemaMap: toSchemaMap()
 }));
 `;
@@ -73,11 +74,14 @@ mkdirSync(DATA_DIR, { 'recursive': true });
 writeFileSync(join(DATA_DIR, 'bookstore-tbox.jsonld'), JSON.stringify(payload.jsonLd, null, 2));
 writeFileSync(join(DATA_DIR, 'bookstore-graph.json'), JSON.stringify(payload.cytoscape, null, 2));
 writeFileSync(join(DATA_DIR, 'bookstore-schemas.json'), JSON.stringify(payload.schemaMap, null, 2));
+writeFileSync(join(DATA_DIR, 'bookstore-jsonld.json'), JSON.stringify(payload.jsonLdMap, null, 2));
 
 const nodeCount = payload.cytoscape.nodes.length;
 const edgeCount = payload.cytoscape.edges.length;
 const schemaCount = Object.keys(payload.schemaMap).length;
+const jsonLdCount = Object.keys(payload.jsonLdMap).length;
 
 console.log(`bookstore-graph.json:   ${nodeCount} nodes, ${edgeCount} edges`);
 console.log(`bookstore-schemas.json: ${schemaCount} schemas`);
+console.log(`bookstore-jsonld.json:  ${jsonLdCount} node fragments`);
 console.log('bookstore-tbox.jsonld:  written for WebVOWL');

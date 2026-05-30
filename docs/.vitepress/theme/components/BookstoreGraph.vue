@@ -10,47 +10,259 @@ const containerRef = ref<HTMLDivElement | null>(null);
 const wrapperRef = ref<HTMLDivElement | null>(null);
 const loadError = ref<string | null>(null);
 const loading = ref(true);
-const selectedNode = ref<{ id: string; schema: unknown; edges: EdgeData[] } | null>(null);
+
+// Tab state
+const activeLayer = ref<'tbox' | 'abox'>('tbox');
+
+// Inspector state — extended with definitionId/layer from node data
+interface SelectedNode {
+  id: string;
+  label: string;
+  kind: NodeData['kind'];
+  layer: 'tbox' | 'abox';
+  schema: unknown;
+  jsonLd: unknown;
+  definitionId: string | undefined;
+  definitionLabel: string | undefined;
+  definitionSchema: unknown;
+  definitionJsonLd: unknown;
+  edges: EdgeData[];
+}
+const selectedNode = ref<SelectedNode | null>(null);
+
+// Inspector representation sub-tab: 'schema' | 'jsonld'
+const inspectorTab = ref<'schema' | 'jsonld'>('schema');
 
 // Keep a reference to destroy on unmount
 interface CyLayoutHandle {
   run(): void;
 }
+
+interface CyElement {
+  id(): string;
+  data(): NodeData | EdgeData;
+  group(): string;
+  position(pos?: { x: number; y: number }): { x: number; y: number };
+  select(): void;
+  pan(): void;
+}
+
+interface CyCollection {
+  [Symbol.iterator](): Iterator<CyElement>;
+  length: number;
+  nodes(): CyCollection;
+  edges(): CyCollection;
+  filter(selector: string | ((el: CyElement) => boolean)): CyCollection;
+  map<T>(fn: (el: CyElement) => T): T[];
+}
+
 interface CyHandle {
   destroy(): void;
   fit(elements?: unknown, padding?: number): void;
   resize(): void;
   zoom(): number;
+  zoom(opts: { level: number; renderedPosition: { x: number; y: number } }): void;
+  maxZoom(): number;
   minZoom(level: number): void;
   maxZoom(level: number): void;
+  width(): number;
+  height(): number;
   userZoomingEnabled(enabled: boolean): void;
   on(event: string, selector: string | ((event: unknown) => void), handler?: (event: unknown) => void): void;
   one(event: string, handler: () => void): void;
   layout(options: Record<string, unknown>): CyLayoutHandle;
+  add(elements: unknown): void;
+  remove(selector: string): void;
+  elements(): CyCollection;
+  $id(id: string): CyElementSingle;
+  center(elements?: unknown): void;
 }
+
+interface CyElementSingle {
+  length: number;
+  data(): NodeData;
+  select(): void;
+  pan(): void;
+}
+
 let cyInstance: CyHandle | null = null;
+
+// Loaded data — kept in module-level refs so tab switching can rebuild elements
+let allNodes: Array<{ data: NodeData; position: { x: number; y: number } }> = [];
+let allEdges: Array<{ data: EdgeData }> = [];
+let schemaMap: Record<string, unknown> = {};
+let jsonLdMap: Record<string, unknown> = {};
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function schemaText(schema: unknown): string {
+  return JSON.stringify(schema, null, 2);
+}
+
+function jsonLdText(fragment: unknown): string {
+  return JSON.stringify(fragment, null, 2);
+}
+
+function nodeLabel(id: string): string {
+  const hash = id.lastIndexOf('#');
+  if (hash !== -1) {
+    const after = id.slice(hash + 1);
+    const slash = after.lastIndexOf('/');
+    return slash !== -1 ? after.slice(slash + 1) : after;
+  }
+  const slash = id.lastIndexOf('/');
+  if (slash !== -1) return id.slice(slash + 1);
+  const colon = id.lastIndexOf(':');
+  if (colon !== -1) return id.slice(colon + 1);
+  return id;
+}
+
+/** Returns the label for a node id from the loaded allNodes array, or derives it. */
+function labelForId(id: string): string {
+  const found = allNodes.find(n => n.data.id === id);
+  return found ? found.data.label : nodeLabel(id);
+}
+
+/** Build the cytoscape elements for the given layer, filtering cross-layer edges. */
+function buildLayerElements(layer: 'tbox' | 'abox'): Array<{ data: NodeData | EdgeData; position?: { x: number; y: number } }> {
+  const layerNodeIds = new Set(
+    allNodes
+      .filter(n => n.data.layer === layer)
+      .map(n => n.data.id)
+  );
+
+  const nodes = allNodes
+    .filter(n => n.data.layer === layer)
+    .map(n => ({ data: n.data, position: n.position }));
+
+  // Keep an edge only when both endpoints are in the active layer.
+  // instanceType edges connect abox→tbox; drop them from both views
+  // (they are cross-layer) to avoid dangling edges. A "Defined by" link is
+  // shown in the inspector instead.
+  const edges = allEdges
+    .filter(e => layerNodeIds.has(e.data.source) && layerNodeIds.has(e.data.target))
+    .map(e => ({ data: e.data }));
+
+  return [...nodes, ...edges] as Array<{ data: NodeData | EdgeData; position?: { x: number; y: number } }>;
+}
+
+/**
+ * Run the fcose force-directed layout for the current layer and fit. fcose
+ * with `nodeDimensionsIncludeLabels` separates nodes so labels do not overlap,
+ * and `randomize: false` seeds from the baked positions so the result is
+ * deterministic — the same readable layout is computed before every paint.
+ */
+function applyLayout(): void {
+  if (!cyInstance) return;
+  // The ABox has ~3x the nodes and many disconnected instance clusters joined
+  // only by long sameAs edges. Pull it tighter (shorter ideal edges, lower
+  // repulsion, stronger gravity, packed components) so it does not sprawl into
+  // empty space; keep the TBox looser so its class hierarchy stays legible.
+  const isAbox = activeLayer.value === 'abox';
+  cyInstance.layout({
+    name: 'fcose',
+    animate: false,
+    fit: true,
+    padding: 50,
+    quality: 'proof',
+    nodeDimensionsIncludeLabels: true,
+    nodeRepulsion: () => (isAbox ? 4500 : 7000),
+    idealEdgeLength: () => (isAbox ? 55 : 95),
+    edgeElasticity: () => 0.45,
+    gravity: isAbox ? 0.5 : 0.25,
+    gravityRange: isAbox ? 2.8 : 3.8,
+    numIter: 2500,
+    randomize: false,
+    packComponents: true,
+    componentSpacing: isAbox ? 50 : 120,
+    tile: false
+  } as Record<string, unknown>).run();
+  // Fit the whole layer into view (the user zooms in to read individual labels;
+  // the tighter ABox params above keep the fitted graph compact rather than
+  // sprawling into empty space).
+  cyInstance.fit(undefined, 50);
+}
+
+/** Build and render elements for the given layer into the existing cytoscape instance. */
+function switchLayer(layer: 'tbox' | 'abox'): void {
+  if (!cyInstance) return;
+  // Clear current elements
+  cyInstance.remove('node');
+  cyInstance.remove('edge');
+  // Add new layer elements
+  cyInstance.add(buildLayerElements(layer));
+  applyLayout();
+  // Reset zoom bounds for the new layout
+  const fitZoom = cyInstance.zoom();
+  cyInstance.minZoom(fitZoom * 0.25);
+  cyInstance.maxZoom(fitZoom * 6);
+}
+
+/** Resolve the full SelectedNode shape for a given node id. */
+function resolveSelectedNode(nodeId: string): SelectedNode | null {
+  const nodeEl = allNodes.find(n => n.data.id === nodeId);
+  if (!nodeEl) return null;
+  const nd = nodeEl.data;
+
+  // Schema: TBox → own schema; ABox → its definition's schema
+  const schema = nd.layer === 'tbox'
+    ? (schemaMap[nodeId] ?? null)
+    : (nd.definitionId ? (schemaMap[nd.definitionId] ?? null) : null);
+
+  const jsonLd = jsonLdMap[nodeId] ?? null;
+
+  const definitionId = nd.definitionId;
+  const definitionLabel = definitionId ? labelForId(definitionId) : undefined;
+  const definitionSchema = definitionId ? (schemaMap[definitionId] ?? null) : null;
+  const definitionJsonLd = definitionId ? (jsonLdMap[definitionId] ?? null) : null;
+
+  const allEdgeData = allEdges.map(e => e.data);
+  const related = allEdgeData.filter(e => e.source === nodeId || e.target === nodeId);
+
+  return {
+    id: nodeId,
+    label: nd.label,
+    kind: nd.kind,
+    layer: nd.layer,
+    schema,
+    jsonLd,
+    definitionId,
+    definitionLabel,
+    definitionSchema,
+    definitionJsonLd,
+    edges: related
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Lifecycle
 // ---------------------------------------------------------------------------
 
 onMounted(async () => {
-  // Import graph utilities (client-only — never runs during SSR)
-  let graphData: { nodes: Array<{ data: NodeData }>; edges: Array<{ data: EdgeData }> };
-  let schemaMap: Record<string, unknown>;
-
   try {
     const base = import.meta.env.BASE_URL;
-    const [graphResp, schemaResp] = await Promise.all([
+    const [graphResp, schemaResp, jsonLdResp] = await Promise.all([
       fetch(`${base}data/bookstore-graph.json`),
-      fetch(`${base}data/bookstore-schemas.json`)
+      fetch(`${base}data/bookstore-schemas.json`),
+      fetch(`${base}data/bookstore-jsonld.json`)
     ]);
     if (!graphResp.ok) throw new Error(`graph fetch ${graphResp.status}`);
     if (!schemaResp.ok) throw new Error(`schema fetch ${schemaResp.status}`);
-    [graphData, schemaMap] = await Promise.all([
-      graphResp.json() as Promise<typeof graphData>,
-      schemaResp.json() as Promise<typeof schemaMap>
+    if (!jsonLdResp.ok) throw new Error(`jsonld fetch ${jsonLdResp.status}`);
+
+    type GraphData = { nodes: Array<{ data: NodeData; position: { x: number; y: number } }>; edges: Array<{ data: EdgeData }> };
+    const [graphData, schemaData, jsonLdData] = await Promise.all([
+      graphResp.json() as Promise<GraphData>,
+      schemaResp.json() as Promise<Record<string, unknown>>,
+      jsonLdResp.json() as Promise<Record<string, unknown>>
     ]);
+
+    allNodes = graphData.nodes;
+    allEdges = graphData.edges;
+    schemaMap = schemaData;
+    jsonLdMap = jsonLdData;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     loadError.value = `Could not load graph data: ${msg}. Did you run \`npm run build:bookstore-tbox\` (or \`docs:build\`)?`;
@@ -66,7 +278,6 @@ onMounted(async () => {
       import('cytoscape'),
       import('cytoscape-fcose')
     ]);
-
     cytoscape = cytoscapeModule.default;
     cytoscape.use(fcoseModule.default);
   } catch (err) {
@@ -95,15 +306,12 @@ onMounted(async () => {
   }
   await waitForContainerSize(containerRef.value);
 
-  // Build Cytoscape elements
-  const elements = [
-    ...graphData.nodes.map(n => ({ data: n.data })),
-    ...graphData.edges.map(e => ({ data: e.data }))
-  ];
+  // Build initial elements for the default 'tbox' layer
+  const initialElements = buildLayerElements('tbox');
 
   cyInstance = cytoscape({
     container: containerRef.value,
-    elements,
+    elements: initialElements,
     style: [
       // Entity nodes — W3C blue
       {
@@ -378,39 +586,10 @@ onMounted(async () => {
         }
       }
     ]
-    // No layout option here — fcose runs synchronously below so re-layout
-    // and fit are guaranteed to fire IMMEDIATELY after the cytoscape render
-    // returns, rather than racing the constructor's deferred layoutstop.
   });
 
-  // Run fcose synchronously (animate: false) and fit the viewport in the
-  // same tick as the cytoscape render, so the first paint already shows
-  // the laid-out graph instead of clustered pre-layout positions.
-  function refit(): void {
-    if (cyInstance === null) return;
-    cyInstance.fit(undefined, 50);
-  }
-  cyInstance.layout({
-    name: 'fcose',
-    animate: false,
-    fit: true,
-    padding: 50,
-    quality: 'proof',
-    nodeDimensionsIncludeLabels: true,
-    nodeRepulsion: () => 6500,
-    idealEdgeLength: () => 80,
-    edgeElasticity: () => 0.45,
-    gravity: 0.3,
-    gravityRangeCompound: 1.5,
-    gravityCompound: 1.0,
-    gravityRange: 3.8,
-    numIter: 2500,
-    randomize: false,
-    uniformNodeDimensions: false,
-    packComponents: true,
-    tile: false
-  }).run();
-  refit();
+  // Run the fcose layout for the initial layer and fit.
+  applyLayout();
 
   // Clamp zoom range to the just-settled fit value.
   const fitZoom = cyInstance.zoom();
@@ -418,7 +597,7 @@ onMounted(async () => {
   cyInstance.maxZoom(fitZoom * 6);
 
   // Observe the wrapper so Cytoscape re-centres whenever the wrapper
-  // height transitions (e.g. inspector open/close).  containerRef covers
+  // height transitions (e.g. inspector open/close). containerRef covers
   // canvas-only resizes; wrapperRef covers the height transition animation.
   const observeTarget = wrapperRef.value ?? containerRef.value;
   if (observeTarget !== null && typeof ResizeObserver !== 'undefined') {
@@ -427,23 +606,20 @@ onMounted(async () => {
       // resize its internal canvas. Without this, fit() would compute zoom
       // against stale dimensions and the graph stays clipped.
       cyInstance?.resize();
-      refit();
+      cyInstance?.fit(undefined, 50);
     });
     resizeObserver.observe(observeTarget);
     onUnmounted(() => { resizeObserver.disconnect(); });
   }
 
   // Click handler: open side panel
-  const allEdges = graphData.edges.map(e => e.data);
-
   cyInstance.on('tap', 'node', (event: { target: { data(): NodeData } }) => {
     const nodeData = event.target.data();
-    const nodeId = nodeData.id;
-    const schema = schemaMap[nodeId] ?? null;
-    const related = allEdges.filter(
-      e => e.source === nodeId || e.target === nodeId
-    );
-    selectedNode.value = { id: nodeId, schema, edges: related };
+    const resolved = resolveSelectedNode(nodeData.id);
+    if (resolved) {
+      selectedNode.value = resolved;
+      inspectorTab.value = 'schema';
+    }
   });
 
   // Click on background — deselect
@@ -459,13 +635,48 @@ onUnmounted(() => {
   cyInstance = null;
 });
 
+// ---------------------------------------------------------------------------
+// Tab switching
+// ---------------------------------------------------------------------------
+
+function selectLayer(layer: 'tbox' | 'abox'): void {
+  if (activeLayer.value === layer) return;
+  activeLayer.value = layer;
+  selectedNode.value = null;
+  inspectorTab.value = 'schema';
+  switchLayer(layer);
+}
+
+// ---------------------------------------------------------------------------
+// Inspector actions
+// ---------------------------------------------------------------------------
+
 function closePanel(): void {
   selectedNode.value = null;
 }
 
-function schemaText(schema: unknown): string {
-  return JSON.stringify(schema, null, 2);
+function viewDefinitionInTbox(definitionId: string): void {
+  selectLayer('tbox');
+  // After tab switch rebuilds the graph, select and centre the definition node.
+  // Use requestAnimationFrame to let the DOM + cytoscape update settle.
+  requestAnimationFrame(() => {
+    if (!cyInstance) return;
+    const el = cyInstance.$id(definitionId);
+    if (el.length > 0) {
+      el.select();
+      cyInstance.center(el);
+      const resolved = resolveSelectedNode(definitionId);
+      if (resolved) {
+        selectedNode.value = resolved;
+        inspectorTab.value = 'schema';
+      }
+    }
+  });
 }
+
+// ---------------------------------------------------------------------------
+// Nav controls
+// ---------------------------------------------------------------------------
 
 function zoomIn(): void {
   if (!cyInstance) return;
@@ -482,164 +693,222 @@ function zoomOut(): void {
 function fitGraph(): void {
   cyInstance?.fit(undefined, 60);
 }
-
-function rerunLayout(): void {
-  if (!cyInstance) return;
-  const layout = cyInstance.layout({
-    name: 'fcose',
-    animate: false,
-    quality: 'proof',
-    nodeRepulsion: () => 8000,
-    idealEdgeLength: () => 90,
-    gravity: 0.25,
-    gravityRangeCompound: 1.5,
-    gravityCompound: 1.0,
-    gravityRange: 3.8,
-    numIter: 2500,
-    randomize: true,
-    uniformNodeDimensions: false,
-    packComponents: true,
-    tile: false
-  } as Record<string, unknown>);
-  layout.run();
-  cyInstance.fit(undefined, 60);
-}
 </script>
 
 <template>
   <div class="bookstore-graph-container">
+    <!-- Tab bar: TBox / ABox -->
+    <div class="graph-tabs" role="tablist" aria-label="Graph layer">
+      <button
+        class="graph-tab"
+        :class="{ 'graph-tab--active': activeLayer === 'tbox' }"
+        role="tab"
+        :aria-selected="activeLayer === 'tbox'"
+        aria-controls="graph-layer-panel"
+        @click="selectLayer('tbox')"
+      >
+        TBox <span class="graph-tab-sub">(schema)</span>
+      </button>
+      <button
+        class="graph-tab"
+        :class="{ 'graph-tab--active': activeLayer === 'abox' }"
+        role="tab"
+        :aria-selected="activeLayer === 'abox'"
+        aria-controls="graph-layer-panel"
+        @click="selectLayer('abox')"
+      >
+        ABox <span class="graph-tab-sub">(data)</span>
+      </button>
+    </div>
+
     <!-- Color legend: explains node kinds (left) + edge kinds (right) -->
     <div class="graph-legend">
       <div class="graph-legend-body">
-        <!-- Left column: node kinds -->
+        <!-- Left column: node kinds (filtered by active layer) -->
         <div class="graph-legend-col">
           <h4 class="graph-legend-heading">Nodes</h4>
           <ul class="graph-legend-list">
-            <li class="graph-legend-row">
-              <span class="graph-legend-swatch">
-                <svg width="80" height="24" aria-hidden="true">
-                  <rect x="1" y="1" width="78" height="22" rx="6" ry="6" fill="#005a9c" />
-                  <text x="40" y="16" text-anchor="middle" fill="#ffffff" font-size="11" font-family="sans-serif">Entity</text>
-                </svg>
-              </span>
-              <span class="graph-legend-label">
-                <strong>Entity</strong> — registered top-level class (Customer, Order, Book, Review, …)
-              </span>
-            </li>
-            <li class="graph-legend-row">
-              <span class="graph-legend-swatch">
-                <svg width="80" height="24" aria-hidden="true">
-                  <rect x="1" y="1" width="78" height="22" rx="6" ry="6" fill="#a8d1f0" />
-                  <text x="40" y="16" text-anchor="middle" fill="#003366" font-size="11" font-family="sans-serif">Primitive</text>
-                </svg>
-              </span>
-              <span class="graph-legend-label">
-                <strong>Primitive</strong> — named scalar / constrained type (Email, Iso8601, Amount, …)
-              </span>
-            </li>
-            <li class="graph-legend-row">
-              <span class="graph-legend-swatch">
-                <svg width="80" height="24" aria-hidden="true">
-                  <ellipse cx="40" cy="12" rx="38" ry="10" fill="#fbf3d4" stroke="#daa520" stroke-width="1.5" stroke-dasharray="3,2" />
-                  <text x="40" y="16" text-anchor="middle" fill="#5a4710" font-size="11" font-style="italic" font-family="sans-serif">Instance</text>
-                </svg>
-              </span>
-              <span class="graph-legend-label">
-                <strong>Instance</strong> — ABox individual (Bastian Bux, neverending-1979-thienemann, …)
-              </span>
-            </li>
+            <!-- TBox nodes -->
+            <template v-if="activeLayer === 'tbox'">
+              <li class="graph-legend-row">
+                <span class="graph-legend-swatch">
+                  <svg width="80" height="24" aria-hidden="true">
+                    <rect x="1" y="1" width="78" height="22" rx="6" ry="6" fill="#005a9c" />
+                    <text x="40" y="16" text-anchor="middle" fill="#ffffff" font-size="11" font-family="sans-serif">Entity</text>
+                  </svg>
+                </span>
+                <span class="graph-legend-label">
+                  <strong>Entity</strong> — registered top-level class (Customer, Order, Book, Review, …)
+                </span>
+              </li>
+              <li class="graph-legend-row">
+                <span class="graph-legend-swatch">
+                  <svg width="80" height="24" aria-hidden="true">
+                    <rect x="1" y="1" width="78" height="22" rx="6" ry="6" fill="#a8d1f0" />
+                    <text x="40" y="16" text-anchor="middle" fill="#003366" font-size="11" font-family="sans-serif">Primitive</text>
+                  </svg>
+                </span>
+                <span class="graph-legend-label">
+                  <strong>Primitive</strong> — named scalar / constrained type (Email, Iso8601, Amount, …)
+                </span>
+              </li>
+            </template>
+            <!-- ABox nodes -->
+            <template v-if="activeLayer === 'abox'">
+              <li class="graph-legend-row">
+                <span class="graph-legend-swatch">
+                  <svg width="80" height="24" aria-hidden="true">
+                    <ellipse cx="40" cy="12" rx="38" ry="10" fill="#fbf3d4" stroke="#daa520" stroke-width="1.5" stroke-dasharray="3,2" />
+                    <text x="40" y="16" text-anchor="middle" fill="#5a4710" font-size="11" font-style="italic" font-family="sans-serif">Instance</text>
+                  </svg>
+                </span>
+                <span class="graph-legend-label">
+                  <strong>Instance</strong> — ABox individual (Bastian Bux, neverending-1979-thienemann, …)
+                </span>
+              </li>
+              <li class="graph-legend-row">
+                <span class="graph-legend-swatch">
+                  <svg width="80" height="24" aria-hidden="true">
+                    <rect x="1" y="1" width="78" height="22" rx="6" ry="6" fill="#f3f3f3" stroke="#bdbdbd" stroke-width="1" />
+                    <text x="40" y="16" text-anchor="middle" fill="#555555" font-size="9" font-family="monospace">"literal"</text>
+                  </svg>
+                </span>
+                <span class="graph-legend-label">
+                  <strong>Literal</strong> — datatype / language-tagged value node
+                </span>
+              </li>
+            </template>
           </ul>
         </div>
 
-        <!-- Right column: edge kinds -->
+        <!-- Right column: edge kinds (filtered by active layer) -->
         <div class="graph-legend-col">
           <h4 class="graph-legend-heading">Edges</h4>
           <ul class="graph-legend-list">
-            <li class="graph-legend-row">
-              <span class="graph-legend-swatch">
-                <svg width="64" height="16" aria-hidden="true">
-                  <line x1="2" y1="8" x2="54" y2="8" stroke="#888888" stroke-width="2" />
-                  <polygon points="54,4 62,8 54,12" fill="#888888" />
-                </svg>
-              </span>
-              <span class="graph-legend-label">
-                <strong>subClassOf</strong> — <code>rdfs:subClassOf</code> (taxonomic narrowing)
-              </span>
-            </li>
-            <li class="graph-legend-row">
-              <span class="graph-legend-swatch">
-                <svg width="64" height="16" aria-hidden="true">
-                  <line x1="2" y1="8" x2="62" y2="8" stroke="#28a745" stroke-width="2" stroke-dasharray="5,3" />
-                </svg>
-              </span>
-              <span class="graph-legend-label">
-                <strong>equivalentClass</strong> — <code>owl:equivalentClass</code> (alias / structural identity)
-              </span>
-            </li>
-            <li class="graph-legend-row">
-              <span class="graph-legend-swatch">
-                <svg width="64" height="16" aria-hidden="true">
-                  <line x1="2" y1="8" x2="54" y2="8" stroke="#0070c0" stroke-width="2" />
-                  <polyline points="54,3 62,8 54,13" fill="none" stroke="#0070c0" stroke-width="2" />
-                </svg>
-              </span>
-              <span class="graph-legend-label">
-                <strong>range</strong> — <code>rdfs:range</code> (property → typed target)
-              </span>
-            </li>
-            <li class="graph-legend-row">
-              <span class="graph-legend-swatch">
-                <svg width="64" height="16" aria-hidden="true">
-                  <line x1="2" y1="8" x2="54" y2="8" stroke="#cc7700" stroke-width="2" stroke-dasharray="1,3" />
-                  <polyline points="54,3 62,8 54,13" fill="none" stroke="#cc7700" stroke-width="2" />
-                </svg>
-              </span>
-              <span class="graph-legend-label">
-                <strong>domain</strong> — <code>rdfs:domain</code> (explicit override)
-              </span>
-            </li>
-            <li class="graph-legend-row">
-              <span class="graph-legend-swatch">
-                <svg width="64" height="16" aria-hidden="true">
-                  <line x1="2" y1="8" x2="62" y2="8" stroke="#d63a3a" stroke-width="2" stroke-dasharray="5,3" />
-                </svg>
-              </span>
-              <span class="graph-legend-label">
-                <strong>disjointWith</strong> — <code>owl:disjointWith</code> (no shared instances)
-              </span>
-            </li>
-            <li class="graph-legend-row">
-              <span class="graph-legend-swatch">
-                <svg width="64" height="16" aria-hidden="true">
-                  <line x1="2" y1="8" x2="56" y2="8" stroke="#8a2be2" stroke-width="2" />
-                  <line x1="56" y1="3" x2="56" y2="13" stroke="#8a2be2" stroke-width="2" />
-                </svg>
-              </span>
-              <span class="graph-legend-label">
-                <strong>complementOf</strong> — <code>owl:complementOf</code> (negation)
-              </span>
-            </li>
-            <li class="graph-legend-row">
-              <span class="graph-legend-swatch">
-                <svg width="64" height="16" aria-hidden="true">
-                  <line x1="2" y1="8" x2="54" y2="8" stroke="#08717a" stroke-width="2" stroke-dasharray="1,3" />
-                  <circle cx="58" cy="8" r="3" fill="none" stroke="#08717a" stroke-width="1.5" />
-                </svg>
-              </span>
-              <span class="graph-legend-label">
-                <strong>restriction</strong> — <code>owl:Restriction</code> (cardinality / hasValue / …)
-              </span>
-            </li>
-            <li class="graph-legend-row">
-              <span class="graph-legend-swatch">
-                <svg width="64" height="16" aria-hidden="true">
-                  <line x1="2" y1="8" x2="62" y2="8" stroke="#daa520" stroke-width="2" stroke-dasharray="5,3" />
-                </svg>
-              </span>
-              <span class="graph-legend-label">
-                <strong>sameAs</strong> — <code>owl:sameAs</code> (ABox identity)
-              </span>
-            </li>
+            <!-- TBox edges -->
+            <template v-if="activeLayer === 'tbox'">
+              <li class="graph-legend-row">
+                <span class="graph-legend-swatch">
+                  <svg width="64" height="16" aria-hidden="true">
+                    <line x1="2" y1="8" x2="54" y2="8" stroke="#888888" stroke-width="2" />
+                    <polygon points="54,4 62,8 54,12" fill="#888888" />
+                  </svg>
+                </span>
+                <span class="graph-legend-label">
+                  <strong>subClassOf</strong> — <code>rdfs:subClassOf</code> (taxonomic narrowing)
+                </span>
+              </li>
+              <li class="graph-legend-row">
+                <span class="graph-legend-swatch">
+                  <svg width="64" height="16" aria-hidden="true">
+                    <line x1="2" y1="8" x2="62" y2="8" stroke="#28a745" stroke-width="2" stroke-dasharray="5,3" />
+                  </svg>
+                </span>
+                <span class="graph-legend-label">
+                  <strong>equivalentClass</strong> — <code>owl:equivalentClass</code> (alias / structural identity)
+                </span>
+              </li>
+              <li class="graph-legend-row">
+                <span class="graph-legend-swatch">
+                  <svg width="64" height="16" aria-hidden="true">
+                    <line x1="2" y1="8" x2="54" y2="8" stroke="#0070c0" stroke-width="2" />
+                    <polyline points="54,3 62,8 54,13" fill="none" stroke="#0070c0" stroke-width="2" />
+                  </svg>
+                </span>
+                <span class="graph-legend-label">
+                  <strong>range</strong> — <code>rdfs:range</code> (property → typed target)
+                </span>
+              </li>
+              <li class="graph-legend-row">
+                <span class="graph-legend-swatch">
+                  <svg width="64" height="16" aria-hidden="true">
+                    <line x1="2" y1="8" x2="54" y2="8" stroke="#cc7700" stroke-width="2" stroke-dasharray="1,3" />
+                    <polyline points="54,3 62,8 54,13" fill="none" stroke="#cc7700" stroke-width="2" />
+                  </svg>
+                </span>
+                <span class="graph-legend-label">
+                  <strong>domain</strong> — <code>rdfs:domain</code> (explicit override)
+                </span>
+              </li>
+              <li class="graph-legend-row">
+                <span class="graph-legend-swatch">
+                  <svg width="64" height="16" aria-hidden="true">
+                    <line x1="2" y1="8" x2="62" y2="8" stroke="#d63a3a" stroke-width="2" stroke-dasharray="5,3" />
+                  </svg>
+                </span>
+                <span class="graph-legend-label">
+                  <strong>disjointWith</strong> — <code>owl:disjointWith</code> (no shared instances)
+                </span>
+              </li>
+              <li class="graph-legend-row">
+                <span class="graph-legend-swatch">
+                  <svg width="64" height="16" aria-hidden="true">
+                    <line x1="2" y1="8" x2="56" y2="8" stroke="#8a2be2" stroke-width="2" />
+                    <line x1="56" y1="3" x2="56" y2="13" stroke="#8a2be2" stroke-width="2" />
+                  </svg>
+                </span>
+                <span class="graph-legend-label">
+                  <strong>complementOf</strong> — <code>owl:complementOf</code> (negation)
+                </span>
+              </li>
+              <li class="graph-legend-row">
+                <span class="graph-legend-swatch">
+                  <svg width="64" height="16" aria-hidden="true">
+                    <line x1="2" y1="8" x2="54" y2="8" stroke="#08717a" stroke-width="2" stroke-dasharray="1,3" />
+                    <circle cx="58" cy="8" r="3" fill="none" stroke="#08717a" stroke-width="1.5" />
+                  </svg>
+                </span>
+                <span class="graph-legend-label">
+                  <strong>restriction</strong> — <code>owl:Restriction</code> (cardinality / hasValue / …)
+                </span>
+              </li>
+            </template>
+            <!-- ABox edges -->
+            <template v-if="activeLayer === 'abox'">
+              <li class="graph-legend-row">
+                <span class="graph-legend-swatch">
+                  <svg width="64" height="16" aria-hidden="true">
+                    <line x1="2" y1="8" x2="54" y2="8" stroke="#b8860b" stroke-width="2" />
+                    <polygon points="54,4 62,8 54,12" fill="#b8860b" />
+                  </svg>
+                </span>
+                <span class="graph-legend-label">
+                  <strong>instanceType</strong> — <code>rdf:type</code> (individual → its class)
+                </span>
+              </li>
+              <li class="graph-legend-row">
+                <span class="graph-legend-swatch">
+                  <svg width="64" height="16" aria-hidden="true">
+                    <line x1="2" y1="8" x2="54" y2="8" stroke="#cdb35a" stroke-width="1.5" />
+                    <polyline points="54,3 62,8 54,13" fill="none" stroke="#cdb35a" stroke-width="1.5" />
+                  </svg>
+                </span>
+                <span class="graph-legend-label">
+                  <strong>instanceProperty</strong> — property assertion (individual → value)
+                </span>
+              </li>
+              <li class="graph-legend-row">
+                <span class="graph-legend-swatch">
+                  <svg width="64" height="16" aria-hidden="true">
+                    <line x1="2" y1="8" x2="62" y2="8" stroke="#daa520" stroke-width="2" stroke-dasharray="5,3" />
+                  </svg>
+                </span>
+                <span class="graph-legend-label">
+                  <strong>sameAs</strong> — <code>owl:sameAs</code> (ABox identity)
+                </span>
+              </li>
+              <li class="graph-legend-row">
+                <span class="graph-legend-swatch">
+                  <svg width="64" height="16" aria-hidden="true">
+                    <line x1="2" y1="8" x2="54" y2="8" stroke="#c2185b" stroke-width="2.5" />
+                    <polyline points="54,3 62,8 54,13" fill="none" stroke="#c2185b" stroke-width="2" />
+                  </svg>
+                </span>
+                <span class="graph-legend-label">
+                  <strong>annotatedEdge</strong> — RDF-star annotation on a property assertion
+                </span>
+              </li>
+            </template>
           </ul>
         </div>
       </div>
@@ -647,9 +916,12 @@ function rerunLayout(): void {
 
     <!-- Graph wrapper: contracts when inspector is open -->
     <div
+      id="graph-layer-panel"
       ref="wrapperRef"
       class="graph-wrapper"
       :class="{ 'has-panel': selectedNode !== null }"
+      role="tabpanel"
+      :aria-label="activeLayer === 'tbox' ? 'TBox schema graph' : 'ABox data graph'"
     >
       <!-- Loading indicator -->
       <div v-if="loading" class="graph-loading">
@@ -679,26 +951,43 @@ function rerunLayout(): void {
         <button class="graph-nav-btn" title="Zoom in" @click="zoomIn">＋</button>
         <button class="graph-nav-btn" title="Zoom out" @click="zoomOut">－</button>
         <button class="graph-nav-btn" title="Fit to view" @click="fitGraph">⤢</button>
-        <button class="graph-nav-btn" title="Re-run layout" @click="rerunLayout">⟳</button>
       </div>
     </div>
 
     <!-- Inspector panel: appears BELOW the graph when a node is selected -->
     <div v-if="selectedNode" class="graph-inspector">
-      <!-- Header: label + IRI + dismiss -->
+      <!-- Header: label + kind/layer badge + dismiss -->
       <div class="graph-inspector-header">
         <div class="graph-inspector-title">
-          <strong>{{ selectedNode.id.split(':').pop() }}</strong>
+          <span class="graph-inspector-name-row">
+            <strong>{{ selectedNode.label }}</strong>
+            <span class="graph-inspector-badge" :class="`graph-inspector-badge--${selectedNode.kind}`">
+              {{ selectedNode.kind }} · {{ selectedNode.layer }}
+            </span>
+          </span>
           <code class="graph-inspector-iri">{{ selectedNode.id }}</code>
         </div>
         <button class="graph-inspector-close" aria-label="Close inspector" @click="closePanel">✕</button>
       </div>
 
-      <!-- Two-column body: RDF | JSON Schema -->
+      <!-- "Defined by" section for ABox nodes -->
+      <div v-if="selectedNode.layer === 'abox' && selectedNode.definitionId" class="graph-inspector-defined-by">
+        <span class="graph-inspector-defined-label">Defined by:</span>
+        <strong>{{ selectedNode.definitionLabel }}</strong>
+        <code class="graph-inspector-iri">{{ selectedNode.definitionId }}</code>
+        <button
+          class="graph-inspector-view-tbox-btn"
+          @click="viewDefinitionInTbox(selectedNode.definitionId!)"
+        >
+          View in TBox
+        </button>
+      </div>
+
+      <!-- Body: relations + the selected node's OWN representation -->
       <div class="graph-inspector-body">
-        <!-- Left column: RDF relations -->
+        <!-- Left column: relations -->
         <div class="graph-inspector-col">
-          <h4 class="graph-inspector-col-heading">RDF</h4>
+          <h4 class="graph-inspector-col-heading">Relations</h4>
           <div class="graph-inspector-scroll">
             <ul v-if="selectedNode.edges.length > 0" class="graph-inspector-edges">
               <li v-for="edge in selectedNode.edges" :key="edge.id">
@@ -712,13 +1001,49 @@ function rerunLayout(): void {
           </div>
         </div>
 
-        <!-- Right column: JSON Schema -->
+        <!-- Right column: the node's own representation -->
         <div class="graph-inspector-col">
-          <h4 class="graph-inspector-col-heading">JSON Schema</h4>
-          <div class="graph-inspector-scroll">
-            <pre v-if="selectedNode.schema" class="graph-inspector-pre">{{ schemaText(selectedNode.schema) }}</pre>
-            <p v-else class="graph-inspector-empty">(no schema registered for this node)</p>
-          </div>
+          <!-- TBox node IS a type → show its JSON Schema / OWL JSON-LD -->
+          <template v-if="selectedNode.layer === 'tbox'">
+            <h4 class="graph-inspector-col-heading">This {{ selectedNode.kind }} — {{ selectedNode.label }}</h4>
+            <div class="graph-inspector-reptabs" role="tablist" aria-label="Representation">
+              <button class="graph-inspector-reptab" :class="{ 'graph-inspector-reptab--active': inspectorTab === 'schema' }" role="tab" :aria-selected="inspectorTab === 'schema'" @click="inspectorTab = 'schema'">JSON Schema</button>
+              <button class="graph-inspector-reptab" :class="{ 'graph-inspector-reptab--active': inspectorTab === 'jsonld' }" role="tab" :aria-selected="inspectorTab === 'jsonld'" @click="inspectorTab = 'jsonld'">JSON-LD (OWL)</button>
+            </div>
+            <div class="graph-inspector-scroll">
+              <pre v-if="inspectorTab === 'schema' && selectedNode.schema" class="graph-inspector-pre">{{ schemaText(selectedNode.schema) }}</pre>
+              <pre v-else-if="inspectorTab === 'jsonld' && selectedNode.jsonLd" class="graph-inspector-pre">{{ jsonLdText(selectedNode.jsonLd) }}</pre>
+              <p v-else class="graph-inspector-empty">No {{ inspectorTab === 'schema' ? 'JSON Schema' : 'JSON-LD' }} for this node.</p>
+            </div>
+          </template>
+
+          <!-- ABox node is an individual → show its instance data as JSON-LD -->
+          <template v-else>
+            <h4 class="graph-inspector-col-heading">Individual data — JSON-LD</h4>
+            <p class="graph-inspector-caption">The RDF this value projects to via <code>toQuads</code>.</p>
+            <div class="graph-inspector-scroll">
+              <pre v-if="selectedNode.jsonLd" class="graph-inspector-pre">{{ jsonLdText(selectedNode.jsonLd) }}</pre>
+              <p v-else class="graph-inspector-empty">No JSON-LD fragment for this individual.</p>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- ABox only: the TYPE DEFINITION (shown once), clearly separated from the individual above -->
+      <div v-if="selectedNode.layer === 'abox' && selectedNode.definitionId" class="graph-inspector-definition-detail">
+        <h4 class="graph-inspector-col-heading">
+          Type definition — {{ selectedNode.definitionLabel }}
+          <span class="graph-inspector-badge graph-inspector-badge--entity">TBox</span>
+        </h4>
+        <p class="graph-inspector-caption">The schema and ontology that types the individual above.</p>
+        <div class="graph-inspector-reptabs" role="tablist" aria-label="Definition representation">
+          <button class="graph-inspector-reptab" :class="{ 'graph-inspector-reptab--active': inspectorTab === 'schema' }" role="tab" :aria-selected="inspectorTab === 'schema'" @click="inspectorTab = 'schema'">JSON Schema</button>
+          <button class="graph-inspector-reptab" :class="{ 'graph-inspector-reptab--active': inspectorTab === 'jsonld' }" role="tab" :aria-selected="inspectorTab === 'jsonld'" @click="inspectorTab = 'jsonld'">JSON-LD (OWL)</button>
+        </div>
+        <div class="graph-inspector-scroll">
+          <pre v-if="inspectorTab === 'schema' && selectedNode.definitionSchema" class="graph-inspector-pre">{{ schemaText(selectedNode.definitionSchema) }}</pre>
+          <pre v-else-if="inspectorTab === 'jsonld' && selectedNode.definitionJsonLd" class="graph-inspector-pre">{{ jsonLdText(selectedNode.definitionJsonLd) }}</pre>
+          <p v-else class="graph-inspector-empty">No {{ inspectorTab === 'schema' ? 'JSON Schema' : 'JSON-LD' }} for this type.</p>
         </div>
       </div>
     </div>
@@ -737,8 +1062,45 @@ function rerunLayout(): void {
   background: var(--vp-c-bg-soft);
 }
 
-/* Color legend — sits above the graph wrapper, visually connects via
-   border-bottom-only divider so it reads as part of the same composition. */
+/* Tab bar */
+.graph-tabs {
+  display: flex;
+  background: var(--vp-c-bg);
+  border-bottom: 1px solid var(--vp-c-divider);
+  padding: 0 12px;
+  gap: 2px;
+}
+
+.graph-tab {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--vp-c-text-2);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  line-height: 1.4;
+  transition: color 0.12s ease, border-color 0.12s ease;
+  margin-bottom: -1px;
+}
+
+.graph-tab:hover {
+  color: var(--vp-c-text-1);
+}
+
+.graph-tab--active {
+  color: var(--vp-c-brand-1);
+  border-bottom-color: var(--vp-c-brand-1);
+}
+
+.graph-tab-sub {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--vp-c-text-3, var(--vp-c-text-2));
+}
+
+/* Color legend — sits above the graph wrapper */
 .graph-legend {
   width: 100%;
   background: var(--vp-c-bg);
@@ -835,7 +1197,7 @@ function rerunLayout(): void {
   color: var(--vp-c-danger-1, #cc0000);
 }
 
-/* Navigation pane — bottom-right zoom / fit / rerun-layout controls */
+/* Navigation pane — bottom-right zoom / fit controls */
 .graph-nav {
   position: absolute;
   bottom: 12px;
@@ -894,7 +1256,7 @@ function rerunLayout(): void {
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .graph-inspector-title {
@@ -903,9 +1265,49 @@ function rerunLayout(): void {
   gap: 2px;
 }
 
-.graph-inspector-title strong {
+.graph-inspector-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.graph-inspector-name-row strong {
   font-size: 14px;
   color: var(--vp-c-text-1);
+}
+
+/* Kind/layer badge */
+.graph-inspector-badge {
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.graph-inspector-badge--entity {
+  background: #005a9c22;
+  color: #005a9c;
+}
+
+.graph-inspector-badge--primitive {
+  background: #a8d1f022;
+  color: #003366;
+}
+
+.graph-inspector-badge--instance {
+  background: #fbf3d4;
+  color: #5a4710;
+  border: 1px dashed #daa520;
+}
+
+.graph-inspector-badge--literal {
+  background: #f3f3f3;
+  color: #555555;
+  border: 1px solid #bdbdbd;
 }
 
 .graph-inspector-iri {
@@ -929,11 +1331,86 @@ function rerunLayout(): void {
   color: var(--vp-c-text-1);
 }
 
+/* "Defined by" section (ABox nodes) */
+.graph-inspector-defined-by {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  background: var(--vp-c-bg-soft);
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.graph-inspector-defined-label {
+  color: var(--vp-c-text-2);
+  font-weight: 500;
+}
+
+.graph-inspector-view-tbox-btn {
+  margin-left: auto;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--vp-c-brand-soft);
+  color: var(--vp-c-brand-1);
+  border: 1px solid var(--vp-c-brand-3);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.graph-inspector-view-tbox-btn:hover {
+  background: var(--vp-c-brand-3);
+  color: var(--vp-c-bg);
+}
+
+/* Representation sub-tabs */
+.graph-inspector-reptabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--vp-c-divider);
+}
+
+.graph-inspector-reptab {
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--vp-c-text-2);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  margin-bottom: -1px;
+  transition: color 0.12s ease, border-color 0.12s ease;
+}
+
+.graph-inspector-reptab:hover {
+  color: var(--vp-c-text-1);
+}
+
+.graph-inspector-reptab--active {
+  color: var(--vp-c-brand-1);
+  border-bottom-color: var(--vp-c-brand-1);
+}
+
+/* Caption under sub-tab heading (ABox schema note) */
+.graph-inspector-caption {
+  margin: 0 0 4px;
+  font-size: 10px;
+  color: var(--vp-c-text-2);
+  font-style: italic;
+}
+
 /* Two-column grid body */
 .graph-inspector-body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+  margin-bottom: 12px;
 }
 
 @media (max-width: 720px) {
@@ -949,6 +1426,15 @@ function rerunLayout(): void {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--vp-c-text-2);
+}
+
+.graph-inspector-col-subheading {
+  margin: 0 0 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--vp-c-text-3, var(--vp-c-text-2));
 }
 
 /* Scrollable inner body — ~16 lines tall */
@@ -982,7 +1468,7 @@ function rerunLayout(): void {
   letter-spacing: 0.04em;
 }
 
-/* JSON Schema column */
+/* JSON Schema / JSON-LD column */
 .graph-inspector-pre {
   margin: 0;
   font-size: 11px;
@@ -999,5 +1485,25 @@ function rerunLayout(): void {
   margin: 0;
   color: var(--vp-c-text-3, var(--vp-c-text-2));
   font-style: italic;
+}
+
+/* ABox definition detail panel */
+.graph-inspector-definition-detail {
+  border-top: 1px solid var(--vp-c-divider);
+  padding-top: 10px;
+  margin-top: 4px;
+}
+
+.graph-inspector-definition-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 6px;
+}
+
+@media (max-width: 720px) {
+  .graph-inspector-definition-cols {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
