@@ -10,7 +10,7 @@ See [Validation modes](/validation-modes) for the badge system used across this 
 
 Apply it as an assignment constraint to opt in for hand-written schemas:
 
-<<< ../examples/docs/compile-time-validation/01-validate-schema-type.ts
+<RunnableExample src="examples/docs/compile-time-validation/01-validate-schema-type" />
 
 Schemas passed to `Compose.subClassOf`, `Compose.complementOf`, `Compose.disjointWith`, and `Compose.extend` are validated automatically - correct-by-construction without a manual `_check` variable.
 
@@ -20,19 +20,19 @@ Schemas passed to `Compose.subClassOf`, `Compose.complementOf`, `Compose.disjoin
 
 Every key in `required` must appear in `properties`. A `required` entry that references a non-existent property surfaces a `RequiredKeyNotInPropertiesInterface` brand error at the call site.
 
-<<< ../examples/docs/compile-time-validation/02-required-key-check.ts
+<RunnableExample src="examples/docs/compile-time-validation/02-required-key-check" />
 
 ### `dependentRequired` key presence <Badge type="info" text="Compile-time" />
 
 Every trigger key and every entry in the dependent key arrays in `dependentRequired` must appear in `properties`. Violations surface a `DependentRequiredKeyNotInPropertiesInterface` brand error.
 
-<<< ../examples/docs/compile-time-validation/03-dependent-required-check.ts
+<RunnableExample src="examples/docs/compile-time-validation/03-dependent-required-check" />
 
 ### `if.properties` discriminator presence <Badge type="info" text="Compile-time" />
 
 Every property key in `if.properties` must appear in the parent schema's `properties`. Discriminator keys that are absent from `properties` surface an `IfDiscriminatorNotInPropertiesInterface` brand error.
 
-<<< ../examples/docs/compile-time-validation/04-if-discriminator-check.ts
+<RunnableExample src="examples/docs/compile-time-validation/04-if-discriminator-check" />
 
 ## Brand error types
 
@@ -50,7 +50,7 @@ IDE hovers on a failing assignment show the specific brand type and the offendin
 
 Compose methods that accept a schema body (`subClassOf`, `complementOf`, `disjointWith`, `extend`) apply `ValidateSchemaType` as a parameter constraint. This means any schema passed to these methods is validated automatically:
 
-<<< ../examples/docs/compile-time-validation/05-compose-integration.ts
+<RunnableExample src="examples/docs/compile-time-validation/05-compose-integration" />
 
 ## Related
 

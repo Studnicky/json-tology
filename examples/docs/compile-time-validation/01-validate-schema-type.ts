@@ -28,3 +28,7 @@ import { aboxFixtures } from '../bookstore/index.js';
 const errs = bookstoreEntities.validate(ReviewSchema.$id, aboxFixtures.review);
 
 console.assert(errs.length === 0);
+
+// Log: ValidateSchemaType accepted ReviewSchema (all required keys present in properties).
+console.log('ValidateSchemaType<ReviewSchema> accepted — compile-time check passed');
+console.log(`runtime validation errors: ${errs.length} (expected 0)`);
