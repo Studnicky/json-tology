@@ -26,4 +26,7 @@ type EvenQuantity = MultipleOfRangeType<0, 10, 2>;
 
 const quantity: EvenQuantity = 6;
 
-void quantity;
+// EvenQuantity is the literal union 0 | 2 | 4 | 6 | 8 | 10. Odd values
+// and values outside the range are rejected at compile time.
+console.log('even quantity:', quantity);
+console.log('type:', typeof quantity);

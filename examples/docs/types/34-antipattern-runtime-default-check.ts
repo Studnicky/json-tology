@@ -37,4 +37,8 @@ function assert<T extends true>(): void {
 
 assert<AssertEqualType<GuardedBadSchema, never>>();
 
-void _BadSchema;
+// GuardedBadSchema resolves to never: default 42 is incompatible with
+// type 'string'. The schema object still exists at runtime; the guard
+// prevents it from reaching a registration function without compile error.
+console.log('schema $id:', _BadSchema.$id);
+console.log('problematic default (42, type string):', _BadSchema.properties.currency.default);

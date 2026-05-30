@@ -10,7 +10,7 @@ Beyond phantom brands on individual keywords, the type system narrows structural
 
 Bounded `integer` schemas with both bounds in the 0-50 range automatically produce literal union types:
 
-<<< ../../examples/docs/constraint-brands/01-narrowing.ts
+<RunnableExample src="examples/docs/constraint-brands/01-narrowing" />
 
 Exclusive bounds are normalized automatically: `exclusiveMinimum: 0` becomes inclusive minimum `1`, `exclusiveMaximum: 6` becomes inclusive maximum `5`.
 
@@ -18,7 +18,7 @@ Exclusive bounds are normalized automatically: `exclusiveMinimum: 0` becomes inc
 
 When `multipleOf` is present alongside bounds, only multiples within the range are included:
 
-<<< ../../examples/docs/constraint-brands/14-multipleof-range.ts
+<RunnableExample src="examples/docs/constraint-brands/14-multipleof-range" />
 
 Use `MultipleOfRangeType<Min, Max, Step>` as a standalone utility for arbitrary stepped ranges.
 
@@ -26,13 +26,13 @@ Use `MultipleOfRangeType<Min, Max, Step>` as a standalone utility for arbitrary 
 
 Simple `not` clauses narrow the inferred type:
 
-<<< ../../examples/docs/constraint-brands/25-not-exclusion.ts
+<RunnableExample src="examples/docs/constraint-brands/25-not-exclusion" />
 
 ### `propertyNames: { enum }` strict keys <Badge type="info" text="Compile-time" />
 
 When `propertyNames` specifies an enum, the object keys are narrowed to that union:
 
-<<< ../../examples/docs/constraint-brands/16-property-names-enum.ts
+<RunnableExample src="examples/docs/constraint-brands/16-property-names-enum" />
 
 ### `patternProperties` template literal keys <Badge type="info" text="Compile-time" />
 
@@ -48,7 +48,7 @@ Anchored regex patterns are converted to TypeScript template literal types. Four
 | `^.{N}$` (N ≤ 8) | length-N template literal |
 | Other patterns | `string` (fallback) |
 
-<<< ../../examples/docs/constraint-brands/17-pattern-properties.ts
+<RunnableExample src="examples/docs/constraint-brands/17-pattern-properties" />
 
 Multiple `patternProperties` entries are intersected so each pattern enforces its own value type.
 
@@ -58,17 +58,17 @@ Multiple `patternProperties` entries are intersected so each pattern enforces it
 
 For a single const discriminator:
 
-<<< ../../examples/docs/constraint-brands/18-ifthenelse-discriminator.ts
+<RunnableExample src="examples/docs/constraint-brands/18-ifthenelse-discriminator" />
 
 Multi-property discriminator example:
 
-<<< ../../examples/docs/constraint-brands/19-multi-discriminator.ts
+<RunnableExample src="examples/docs/constraint-brands/19-multi-discriminator" />
 
 ### `dependentRequired` conditional typing <Badge type="warning" text="Compile-time + Runtime" />
 
 Modeled as a per-trigger union. When the trigger key is present, all its dependents become required:
 
-<<< ../../examples/docs/constraint-brands/20-dependent-required.ts
+<RunnableExample src="examples/docs/constraint-brands/20-dependent-required" />
 
 ## `uniqueItems` tuple distinctness <Badge type="warning" text="Compile-time + Runtime" />
 
@@ -82,7 +82,7 @@ Above 8 elements the pairwise check is skipped and runtime validation still enfo
 
 > **Note:** Compile-time tuple pairwise checking applies only to literal-typed tuples declared via `prefixItems` with ≤ 8 elements. Homogeneous arrays (e.g. `string[]`) receive only the `UniqueArrayBrandInterface<T>` brand and rely on runtime enforcement for actual uniqueness - there is no compile-time element-by-element comparison for homogeneous arrays.
 
-<<< ../../examples/docs/constraint-brands/21-unique-items-tuple.ts
+<RunnableExample src="examples/docs/constraint-brands/21-unique-items-tuple" />
 
 ## `tightStringLengths` opt-in narrowing <Badge type="info" text="Compile-time" />
 
@@ -96,8 +96,8 @@ declare module 'json-tology/types' {
 }
 ```
 
-<<< ../../examples/docs/constraint-brands/22-three-char-template.ts
-<<< ../../examples/docs/constraint-brands/23-variable-length-template.ts
+<RunnableExample src="examples/docs/constraint-brands/22-three-char-template" />
+<RunnableExample src="examples/docs/constraint-brands/23-variable-length-template" />
 
 Bounds above the cap (or with the flag disabled) fall back to plain `string`. The flag is default-off so existing schemas pay no compile cost.
 

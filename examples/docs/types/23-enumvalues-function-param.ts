@@ -34,3 +34,7 @@ const gbp = formatPrice(19.99, 'GBP');
 
 console.assert(eur === '€19.99');
 console.assert(gbp === '£19.99');
+
+console.log('formatPrice(19.99, "EUR"):', eur);
+console.log('formatPrice(19.99, "GBP"):', gbp);
+console.log('formatPrice(19.99, "USD"):', formatPrice(19.99, 'USD'));

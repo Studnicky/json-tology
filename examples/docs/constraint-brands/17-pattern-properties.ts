@@ -19,4 +19,6 @@ const _ok: Metadata = {
 // @ts-expect-error number is not assignable to the string-typed `data_` pattern key
 const _bad: Metadata = { 'data_age': 99 };
 
-void 0 as unknown as [typeof _ok, typeof _bad];
+console.log('patternProperties — valid object:', _ok);
+// _bad is held via @ts-expect-error — the runtime value is { data_age: 99 }.
+console.log('patternProperties — invalid (number under data_ key):', _bad);

@@ -29,6 +29,6 @@ type DeprecatedBookKeys = DeprecatedKeysType<typeof _BookV1Schema>;
 
 // Compile-time guard - narrows to never if the key is not deprecated.
 // OK: 'legacySku' is in DeprecatedBookKeys
-const _check: DeprecatedBookKeys = 'legacySku';
+const deprecatedKey: DeprecatedBookKeys = 'legacySku';
 
-void _check;
+console.log('DeprecatedKeysType<BookV1Schema>:', deprecatedKey, '(only key with deprecated: true)');

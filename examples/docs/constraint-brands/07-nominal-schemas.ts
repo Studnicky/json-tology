@@ -16,4 +16,14 @@ type User = NominalSchemaType<typeof _UserSchema>;
 type Employee = NominalSchemaType<typeof _EmployeeSchema>;
 
 // Structurally identical but nominally distinct  - cannot assign one to the other
-void 0 as unknown as [User, Employee];
+// The $id brands make User and Employee incompatible at compile time.
+type UserIsNotEmployee = User extends Employee ? false : true;
+type EmployeeIsNotUser = Employee extends User ? false : true;
+const brandCheck: [UserIsNotEmployee, EmployeeIsNotUser] = [
+  true,
+  true
+];
+
+console.log('User $id:', _UserSchema.$id);
+console.log('Employee $id:', _EmployeeSchema.$id);
+console.log('Nominal incompatibility (User !extends Employee, Employee !extends User):', brandCheck);

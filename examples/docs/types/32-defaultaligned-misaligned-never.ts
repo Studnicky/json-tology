@@ -32,4 +32,8 @@ function assert<T extends true>(): void {
 
 assert<AssertEqualType<MisalignedBook, never>>();
 
-void (null as unknown as MisalignedBook);
+// MisalignedBook resolves to never at compile time: the schema has
+// default: 42 for a property declared type: 'string', which is a mismatch.
+// At runtime the schema object still exists; the guard only affects the type.
+console.log('schema type property:', _BadSchema.properties.currency.type);
+console.log('schema default (mismatched):', _BadSchema.properties.currency.default);

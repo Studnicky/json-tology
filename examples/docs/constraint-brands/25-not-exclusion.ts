@@ -1,3 +1,11 @@
+/**
+ * `not` exclusion — removes primitives or values from the inferred type.
+ *
+ * `not: { type }` excludes a primitive from a union.
+ * `not: { const }` removes a specific value from an enum.
+ * `not: { enum }` removes a set of values from an enum.
+ */
+
 import type { InferType } from '../../../src/types/index.js';
 
 // not: { type }  - removes primitives from unions
@@ -44,4 +52,12 @@ const _RestrictedSchema = {
 
 // 'a' | 'd'
 type Restricted = InferType<typeof _RestrictedSchema>;
-void 0 as unknown as [NonString, NonNullStatus, Restricted];
+
+// Runtime demonstration: values that satisfy each narrowed type
+const nonString: NonString = 42;
+const nonNullStatus: NonNullStatus = 'active';
+const restricted: Restricted = 'a';
+
+console.log('NonString (boolean | number):', nonString);
+console.log('NonNullStatus (active | inactive):', nonNullStatus);
+console.log('Restricted (a | d):', restricted);

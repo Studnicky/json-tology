@@ -8,7 +8,7 @@ json-tology surfaces JSON Schema constraint keywords as compile-time phantom bra
 
 Without brands, `{ type: 'string', format: 'email' }` and `{ type: 'string', format: 'uri' }` both infer as `string`. Any string can flow between them silently. With brands enabled (the default), each constraint keyword intersects a phantom brand onto the base type. The types become structurally incompatible.
 
-<<< ../../examples/docs/constraint-brands/02-keywords.ts
+<RunnableExample src="examples/docs/constraint-brands/02-keywords" />
 
 | | Brands ON (default) | Brands OFF |
 |---|---|---|
@@ -33,7 +33,7 @@ The only way to obtain a branded value is through the validation API (`instantia
 | `contentMediaType` | `ContentMediaTypeBrandInterface<T>` | `contentBrands` | `contentMediaType: 'image/png'` brands as `ContentMediaTypeBrandInterface<'image/png'>` |
 | `contentEncoding` | `ContentEncodingBrandInterface<T>` | `contentBrands` | `contentEncoding: 'base64'` brands as `ContentEncodingBrandInterface<'base64'>` |
 
-<<< ../../examples/docs/constraint-brands/03-password-constraints.ts
+<RunnableExample src="examples/docs/constraint-brands/03-password-constraints" />
 
 ### Number constraints <Badge type="warning" text="Compile-time + Runtime" />
 
@@ -46,7 +46,7 @@ The only way to obtain a branded value is through the validation API (`instantia
 | `exclusiveMaximum` | `ExclusiveMaximumBrandInterface<N>` | `numericBrands` | `exclusiveMaximum: 100` brands as `ExclusiveMaximumBrandInterface<100>` |
 | `multipleOf` | `MultipleOfBrandInterface<N>` | `numericBrands` | `multipleOf: 5` brands as `MultipleOfBrandInterface<5>` |
 
-<<< ../../examples/docs/constraint-brands/04-numeric-brands.ts
+<RunnableExample src="examples/docs/constraint-brands/04-numeric-brands" />
 
 ### Array constraints <Badge type="warning" text="Compile-time + Runtime" />
 
@@ -59,7 +59,7 @@ The only way to obtain a branded value is through the validation API (`instantia
 
 When `contains` is present without `items`, the array element type narrows to the contains schema type.
 
-<<< ../../examples/docs/constraint-brands/05-array-brands.ts
+<RunnableExample src="examples/docs/constraint-brands/05-array-brands" />
 
 ### Object constraints <Badge type="warning" text="Compile-time + Runtime" />
 
@@ -70,7 +70,7 @@ When `contains` is present without `items`, the array element type narrows to th
 
 When `additionalProperties: false` and properties are declared, excess property keys are flagged as `never` at compile time (requires `objectBrands` enabled):
 
-<<< ../../examples/docs/constraint-brands/06-object-properties-closed.ts
+<RunnableExample src="examples/docs/constraint-brands/06-object-properties-closed" />
 
 ### Nominal constraints <Badge type="info" text="Compile-time" />
 
@@ -81,7 +81,7 @@ When `additionalProperties: false` and properties are declared, excess property 
 
 Nominal brands make structurally identical schemas produce incompatible types when they have different `$id` values. Use `NominalSchemaType<T>` to access the branded type:
 
-<<< ../../examples/docs/constraint-brands/07-nominal-schemas.ts
+<RunnableExample src="examples/docs/constraint-brands/07-nominal-schemas" />
 
 ## Named format brands <Badge type="info" text="Compile-time" />
 
@@ -89,7 +89,7 @@ Nominal brands make structurally identical schemas produce incompatible types wh
 
 The brand-first intersection ordering (`FormatBrandInterface<F> & string`) keeps the named brand visible in IDE hovers instead of being hidden behind `string`.
 
-<<< ../../examples/docs/constraint-brands/08-named-format-brands.ts
+<RunnableExample src="examples/docs/constraint-brands/08-named-format-brands" />
 
 ### Standard format aliases
 
@@ -131,13 +131,13 @@ Brands compose naturally through JSON Schema composition keywords.
 
 Intersection merges brands from all branches:
 
-<<< ../../examples/docs/constraint-brands/09-allof-composition.ts
+<RunnableExample src="examples/docs/constraint-brands/09-allof-composition" />
 
 ### anyOf / oneOf <Badge type="warning" text="Compile-time + Runtime" />
 
 Union preserves each branch's brands independently:
 
-<<< ../../examples/docs/constraint-brands/10-oneof-union.ts
+<RunnableExample src="examples/docs/constraint-brands/10-oneof-union" />
 
 ## Utility types
 
@@ -145,13 +145,13 @@ Union preserves each branch's brands independently:
 
 Filter deprecated properties from a schema type:
 
-<<< ../../examples/docs/constraint-brands/11-deprecated-keys.ts
+<RunnableExample src="examples/docs/constraint-brands/11-deprecated-keys" />
 
 ### `LooseInputType<T>`
 
 Strips brands to the base primitive. Useful for function parameters that accept pre-validation input:
 
-<<< ../../examples/docs/constraint-brands/12-loose-input-type.ts
+<RunnableExample src="examples/docs/constraint-brands/12-loose-input-type" />
 
 `LooseInputType` is a standalone utility - it is not applied to library method signatures.
 
@@ -159,19 +159,19 @@ Strips brands to the base primitive. Useful for function parameters that accept 
 
 Extract enum values and enforce exhaustive handling:
 
-<<< ../../examples/docs/constraint-brands/27-enum-values-exhaustive.ts
+<RunnableExample src="examples/docs/constraint-brands/27-enum-values-exhaustive" />
 
 ### `DefaultAlignedType<T>`
 
 Validates that `default` values match the declared type. Resolves to `never` when a default mismatches:
 
-<<< ../../examples/docs/constraint-brands/28-default-aligned.ts
+<RunnableExample src="examples/docs/constraint-brands/28-default-aligned" />
 
 ### `IntegerRangeType<Min, Max>` / `MultipleOfRangeType<Min, Max, Step>`
 
 Manual utilities for generating literal union types from integer ranges:
 
-<<< ../../examples/docs/constraint-brands/29-integer-range-types.ts
+<RunnableExample src="examples/docs/constraint-brands/29-integer-range-types" />
 
 Practical for ranges in 0-50. Larger ranges fall back to `number`.
 
@@ -219,7 +219,7 @@ The master `brands` flag takes precedence. When `brands: false`, all other flags
 
 ### Before and after: format brands
 
-<<< ../../examples/docs/constraint-brands/30-email-format-brand.ts
+<RunnableExample src="examples/docs/constraint-brands/30-email-format-brand" />
 
 | `formatBrands` | `Email` resolves to | Plain `string` assignable? |
 |---|---|---|
@@ -228,7 +228,7 @@ The master `brands` flag takes precedence. When `brands: false`, all other flags
 
 ### Before and after: numeric brands
 
-<<< ../../examples/docs/constraint-brands/24-score-numeric.ts
+<RunnableExample src="examples/docs/constraint-brands/24-score-numeric" />
 
 | `numericBrands` | `Score` resolves to | Plain `number` assignable? |
 |---|---|---|
@@ -237,7 +237,7 @@ The master `brands` flag takes precedence. When `brands: false`, all other flags
 
 ### Before and after: string brands
 
-<<< ../../examples/docs/constraint-brands/15-code-string-length.ts
+<RunnableExample src="examples/docs/constraint-brands/15-code-string-length" />
 
 | `stringBrands` | `Code` resolves to | Plain `string` assignable? |
 |---|---|---|
@@ -246,7 +246,7 @@ The master `brands` flag takes precedence. When `brands: false`, all other flags
 
 ### Before and after: array brands
 
-<<< ../../examples/docs/constraint-brands/26-set-unique-items.ts
+<RunnableExample src="examples/docs/constraint-brands/26-set-unique-items" />
 
 | `arrayBrands` | `Set` resolves to | `readonly string[]` assignable? |
 |---|---|---|
@@ -255,7 +255,7 @@ The master `brands` flag takes precedence. When `brands: false`, all other flags
 
 ### Before and after: object brands
 
-<<< ../../examples/docs/constraint-brands/31-closed-object.ts
+<RunnableExample src="examples/docs/constraint-brands/31-closed-object" />
 
 | `objectBrands` | Excess property `{ name: 'x', extra: 1 }` | Plain object assignable? |
 |---|---|---|
@@ -293,7 +293,7 @@ declare module 'json-tology/types' {
 
 Branded types enforce that data goes through validation. The validation API returns branded types automatically:
 
-<<< ../../examples/docs/constraint-brands/32-obtain-branded-values.ts
+<RunnableExample src="examples/docs/constraint-brands/32-obtain-branded-values" />
 
 ## See also
 

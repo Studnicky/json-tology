@@ -41,3 +41,6 @@ const fresh: BookV1Current = {
 const manual: BookV1ManualCurrent = fresh;
 
 console.assert(manual.isbn === fresh.isbn);
+
+console.log('NonDeprecatedSchemaType keys:', Object.keys(fresh).join(', '));
+console.log('both shapes have same isbn:', manual.isbn === fresh.isbn, '(derived form auto-tracks future deprecations)');

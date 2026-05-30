@@ -22,3 +22,6 @@ const draftBody: LooseBody
 
 console.assert(typeof draftBody === 'string');
 console.assert(draftBody.length >= 10);
+
+console.log('ReviewBody branded type -> LooseInputType strips brand to plain string');
+console.log('draftBody type:', typeof draftBody, '| length:', draftBody.length);

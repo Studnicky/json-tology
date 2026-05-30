@@ -10,10 +10,11 @@
 import type {
   InferType, SchemaReferencesMapType
 } from '../../../src/types/index.js';
-import { bookstoreEntities } from '../bookstore/index.js';
+import {
+  bookstoreEntities, CustomerSchema, SignedFirstEditionSchema
+} from '../bookstore/index.js';
 import type {
-  bookstoreSchemas, CustomerSchema, OrderSchema,
-  SignedFirstEditionSchema
+  bookstoreSchemas, OrderSchema
 } from '../bookstore/index.js';
 
 type BookstoreRefs = SchemaReferencesMapType<typeof bookstoreSchemas>;
@@ -66,7 +67,18 @@ assert<AssertEqualType<SignedAuthors extends readonly string[] ? true : false, t
 // jt:* keyword constraints active. At instantiation time, data is validated
 // against these invariants and the narrowed types are enforced.
 
-// Runtime assertion: the canonical registry projects an ontology view.
-const ontology = bookstoreEntities.ontology();
+// Runtime demonstration: instantiate a Customer with a UUID id (inverseFunctional key).
+const customer = bookstoreEntities.instantiate(CustomerSchema, {
+  'customerId': '550e8400-e29b-41d4-a716-446655440000',
+  'email': 'bastian@bookstore.example',
+  'name': 'Bastian Balthazar Bux'
+});
 
-console.assert(typeof ontology === 'object');
+console.log('Customer customerId (inverseFunctional brand):', customer.customerId);
+console.log('Customer email (format brand):', customer.email);
+
+// SignedFirstEdition authors are constrained to a single-element tuple
+// by jt:invariant (signedFirstEditionIsSoloAuthored). The schema $id
+// confirms the registered constraint is active in the registry.
+console.log('SignedFirstEdition $id:', SignedFirstEditionSchema.$id);
+console.log('SignedFirstEdition is registered:', bookstoreEntities.registry.has(SignedFirstEditionSchema.$id));

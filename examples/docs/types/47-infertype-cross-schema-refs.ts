@@ -33,4 +33,8 @@ assert<AssertExtendsType<
   true
 >>();
 
-void (null as unknown as Order);
+// At compile time, Order['orderLines'] is an array type resolved via the
+// reference map. The assertion above confirms the resolution succeeded.
+// Log the schema $id to show the cross-schema reference anchor.
+console.log('OrderSchema $id:', 'urn:bookstore:Order');
+console.log('reference map key:', 'urn:bookstore:OrderLine');

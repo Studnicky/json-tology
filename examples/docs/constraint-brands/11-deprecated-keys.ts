@@ -18,4 +18,15 @@ const _UserSchema = {
 type DepKeys = DeprecatedKeysType<typeof _UserSchema>;
 // { name: string }  - no legacyId
 type User = NonDeprecatedSchemaType<typeof _UserSchema>;
-void 0 as unknown as [DepKeys, User];
+
+// DepKeys is a union of deprecated property names. User omits them.
+type DepKeysIsLegacyId = DepKeys extends 'legacyId' ? true : false;
+type UserHasNoLegacyId = User extends { 'legacyId': unknown } ? false : true;
+
+const check: [DepKeysIsLegacyId, UserHasNoLegacyId] = [
+  true,
+  true
+];
+
+console.log('Deprecated key is "legacyId":', check[0]);
+console.log('NonDeprecated type omits legacyId:', check[1]);

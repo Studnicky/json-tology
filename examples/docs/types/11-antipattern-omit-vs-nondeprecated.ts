@@ -46,3 +46,6 @@ const sample: SafeBook = {
 const sampleAlt: SafeBookHandRolled = sample;
 
 console.assert(sampleAlt.isbn === '9783522128001');
+
+console.log('SafeBook (NonDeprecatedSchemaType) keys:', Object.keys(sample).join(', '));
+console.log('both shapes equivalent:', sampleAlt.isbn === sample.isbn);

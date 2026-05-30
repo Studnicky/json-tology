@@ -8,4 +8,13 @@ const _OneToThreeSchema = {
 
 type OneToThree = InferType<typeof _OneToThreeSchema>;
 // `${string}` | `${string}${string}` | `${string}${string}${string}`
-void 0 as unknown as OneToThree;
+
+// Each length within the 1..3 bound produces a separate template literal member.
+const one: OneToThree = 'A' as OneToThree;
+const two: OneToThree = 'AB' as OneToThree;
+const three: OneToThree = 'ABC' as OneToThree;
+
+console.log('1-char member:', one);
+console.log('2-char member:', two);
+console.log('3-char member:', three);
+console.log('minLength:', _OneToThreeSchema.minLength, 'maxLength:', _OneToThreeSchema.maxLength);

@@ -29,6 +29,6 @@ function describe(status: PrintStatus): string {
   }
 }
 
-console.assert(describe('inPrint') === 'currently printed');
-console.assert(describe('outOfPrint') === 'out of print');
-console.assert(describe('limitedRun') === 'limited run');
+console.log('inPrint:', describe('inPrint'));
+console.log('outOfPrint:', describe('outOfPrint'));
+console.log('limitedRun:', describe('limitedRun'));

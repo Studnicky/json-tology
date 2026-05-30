@@ -6,10 +6,6 @@
  * no code generation, no separate `.d.ts`. Pass the same schema
  * literal that you registered into `bookstoreEntities` and you get
  * the TypeScript view of the wire shape for free.
- *
- * Compile-time only: the asserts run through `tsc --noEmit` (matching
- * `test/types/bookstore-axioms.test.ts`). The runtime body just holds
- * a `void` so the file is importable from `docExamples.test.ts`.
  */
 
 import type {
@@ -52,7 +48,30 @@ assert<AssertEqualType<
 assert<AssertEqualType<Order['orderLines'] extends readonly unknown[] ? true : false, true>>();
 
 // Reference all imported types in type position to keep imports live.
-// interop: void-cast keeps compile-time-only type imports from being flagged as
-// unused; no value-producing typed path exists for a pure type-reference sentinel.
 void (null as unknown as typeof AddressSchema | typeof BookSchema | typeof CustomerSchema | typeof OrderSchema);
 void (null as unknown as Address | Book | Customer | Order);
+
+// Log the inferred schema field names — demonstrating what InferType exposes at
+// compile time. keyof gives us the property names the type system knows about.
+const customerFields: Array<keyof Customer> = [
+  'customerId',
+  'email',
+  'name',
+  'addresses'
+];
+const bookFields: Array<keyof Book> = [
+  'isbn',
+  'title',
+  'printStatus',
+  'authors'
+];
+const addressFields: Array<keyof Address> = [
+  'street',
+  'city',
+  'country',
+  'postalCode'
+];
+
+console.log('InferType<CustomerSchema> fields:', customerFields.join(', '));
+console.log('InferType<BookSchema> fields:', bookFields.join(', '));
+console.log('InferType<AddressSchema> fields:', addressFields.join(', '));

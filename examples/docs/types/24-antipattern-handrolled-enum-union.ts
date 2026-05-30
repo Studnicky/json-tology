@@ -26,5 +26,8 @@ type Currency = EnumValuesType<typeof _CurrencySchema>;
 const manual: CurrencyManual = 'USD';
 const derived: Currency = 'USD';
 
-void manual;
-void derived;
+// Both resolve to the same runtime value; the difference is that
+// CurrencyManual will drift when a new currency is added to the schema,
+// while Currency tracks the schema literal automatically.
+console.log('manual (hand-rolled):', manual);
+console.log('derived (schema-driven):', derived);

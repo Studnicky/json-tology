@@ -24,4 +24,7 @@ type StarRating = IntegerRangeType<1, 5>;
 
 const rating: StarRating = 4;
 
-void rating;
+// StarRating is the literal union 1 | 2 | 3 | 4 | 5. At runtime it is
+// just a number, but only values 1..5 are assignable at compile time.
+console.log('star rating:', rating);
+console.log('type:', typeof rating);

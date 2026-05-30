@@ -52,3 +52,6 @@ const view = toBookView(stored);
 console.assert(view.isbn === stored.isbn);
 console.assert(view.title === stored.title);
 console.assert(!('legacySku' in view));
+
+console.log('stored (BookV1) keys:', Object.keys(stored).join(', '));
+console.log('view (BookV1View) keys:', Object.keys(view).join(', '), '(legacySku stripped)');

@@ -27,5 +27,8 @@ type Currency = EnumValuesType<typeof _CurrencySchema>;
 const unsafe: CurrencyUnsafe = 'USD';
 const derived: Currency = 'USD';
 
-void unsafe;
-void derived;
+// Both resolve to the same runtime value; the difference is that
+// CurrencyUnsafe via index access is fragile for non-const arrays and
+// mixed-type enums, while EnumValuesType handles those shapes correctly.
+console.log('unsafe (index access):', unsafe);
+console.log('derived (EnumValuesType):', derived);

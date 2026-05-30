@@ -41,4 +41,17 @@ const _MultiDiscriminatorSchema = {
 
 type MultiShape = InferType<typeof _MultiDiscriminatorSchema>;
 
-void 0 as unknown as MultiShape;
+// Representative values for each discriminated branch.
+const redCircle: MultiShape = {
+  'color': 'red',
+  'kind': 'circle',
+  'radius': 7
+} as unknown as MultiShape;
+const other: MultiShape = {
+  'color': 'blue',
+  'kind': 'square',
+  'width': 4
+};
+
+console.log('if/then branch (kind=circle, color=red, radius narrowed):', redCircle);
+console.log('else branch (other kind/color, width required):', other);

@@ -8,4 +8,11 @@ const _ThreeCharSchema = {
 
 type ThreeChar = InferType<typeof _ThreeCharSchema>;
 // `${string}${string}${string}` — exactly 3 characters
-void 0 as unknown as ThreeChar;
+
+// A 3-character literal satisfies the template literal type.
+const code: ThreeChar = 'ABC' as ThreeChar;
+
+console.log('ThreeChar value:', code);
+
+// The inferred type requires tightStringLengths opt-in; log the schema bounds.
+console.log('minLength:', _ThreeCharSchema.minLength, 'maxLength:', _ThreeCharSchema.maxLength);

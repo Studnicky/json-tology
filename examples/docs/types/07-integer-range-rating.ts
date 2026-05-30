@@ -27,8 +27,15 @@ function ratingLabel(rating: StarRating): string {
   }
 }
 
-// Compile-time verification
-const rating1: StarRating = 3;
-const label = ratingLabel(rating1);
+// Demonstrate the exhaustive switch across the literal union.
+const ratings: StarRating[] = [
+  1,
+  2,
+  3,
+  4,
+  5
+];
 
-void label;
+for (const rating of ratings) {
+  console.log(`rating ${rating} ->`, ratingLabel(rating));
+}

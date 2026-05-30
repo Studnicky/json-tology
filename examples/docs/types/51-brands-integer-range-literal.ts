@@ -23,5 +23,8 @@ const top: Rating = 5;
 // const bad: Rating = 0; // compile error — 0 is not in 1..5
 // const bad2: Rating = 6; // compile error — 6 is not in 1..5
 
-void fine;
-void top;
+// Rating is the literal union 1 | 2 | 3 | 4 | 5 — derived from
+// RatingScoreSchema's minimum/maximum bounds. Only values in that range
+// are assignable; out-of-range values fail at compile time.
+console.log('fine rating:', fine);
+console.log('top rating:', top);

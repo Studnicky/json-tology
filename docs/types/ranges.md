@@ -21,31 +21,31 @@ See also [Primary inference](./infer.md), [Utility types](./utility.md).
 
 ### Signature
 
-<<< ../../examples/docs/types/35-integerrange-signature.ts
+<RunnableExample src="examples/docs/types/35-integerrange-signature" />
 
 ### Examples
 
 #### Example 1: Star rating range
 
-<<< ../../examples/docs/types/07-integer-range-rating.ts
+<RunnableExample src="examples/docs/types/07-integer-range-rating" />
 
 #### Example 2: Deriving automatically via `InferType`
 
-<<< ../../examples/docs/types/36-integerrange-via-infer.ts
+<RunnableExample src="examples/docs/types/36-integerrange-via-infer" />
 
 #### Example 3: Small page-size range for a paginated query
 
-<<< ../../examples/docs/types/37-integerrange-pagesize.ts
+<RunnableExample src="examples/docs/types/37-integerrange-pagesize" />
 
 ### Bad examples
 
 #### Anti-pattern 1: Large ranges
 
-<<< ../../examples/docs/types/38-antipattern-integerrange-large.ts
+<RunnableExample src="examples/docs/types/38-antipattern-integerrange-large" />
 
 #### Anti-pattern 2: Floating-point bounds
 
-<<< ../../examples/docs/types/39-antipattern-integerrange-floats.ts
+<RunnableExample src="examples/docs/types/39-antipattern-integerrange-floats" />
 
 ### Comparison
 
@@ -140,31 +140,31 @@ StarRating = Annotated[int, Field(ge=1, le=5)]
 
 ### Signature
 
-<<< ../../examples/docs/types/40-multipleof-signature.ts
+<RunnableExample src="examples/docs/types/40-multipleof-signature" />
 
 ### Examples
 
 #### Example 1: Even numbers in a range
 
-<<< ../../examples/docs/types/08-multiple-of-range.ts
+<RunnableExample src="examples/docs/types/08-multiple-of-range" />
 
 #### Example 2: Deriving automatically via `InferType`
 
-<<< ../../examples/docs/types/41-multipleof-via-infer.ts
+<RunnableExample src="examples/docs/types/41-multipleof-via-infer" />
 
 #### Example 3: Discount tiers in 5% increments
 
-<<< ../../examples/docs/types/42-multipleof-discount-tiers.ts
+<RunnableExample src="examples/docs/types/42-multipleof-discount-tiers" />
 
 ### Bad examples
 
 #### Anti-pattern 1: Stepped range that exceeds the cap
 
-<<< ../../examples/docs/types/43-antipattern-multipleof-large.ts
+<RunnableExample src="examples/docs/types/43-antipattern-multipleof-large" />
 
 #### Anti-pattern 2: Step of zero
 
-<<< ../../examples/docs/types/44-antipattern-multipleof-zero-step.ts
+<RunnableExample src="examples/docs/types/44-antipattern-multipleof-zero-step" />
 
 ### Comparison
 

@@ -45,6 +45,8 @@ const _check: [PercentIsNotTemperature, TemperatureIsNotPercent] = [
   true
 ];
 
-void _percent;
-void _temp;
-void _check;
+// Both are numbers at runtime but carry incompatible brands at compile time.
+console.log('Percent value:', _percent, '(brand: minimum 0, maximum 100)');
+console.log('Temperature value:', _temp, '(brand: minimum -273)');
+// Percent does not extend Temperature — the brands are structurally distinct.
+console.log('Brand incompatibility check [true, true]:', _check);

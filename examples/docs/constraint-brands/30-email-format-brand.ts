@@ -7,14 +7,25 @@
  * through the validation API.
  */
 
+import { JsonTology } from '../../../src/index.js';
 import type { InferType } from '../../../src/types/index.js';
 
-const _EmailSchema = {
+const EmailSchema = {
+  '$id': 'urn:brands:Email',
   'format': 'email',
   'type': 'string'
 } as const;
 
-type Email = InferType<typeof _EmailSchema>;
+type Email = InferType<typeof EmailSchema>;
+// Email: string & FormatBrandInterface<'email'>
 
-// Email is structurally a string with the email format brand.
-void 0 as unknown as Email;
+const jt = JsonTology.create({
+  'baseIRI': 'urn:brands:',
+  'enableStrictGraph': false,
+  'schemas': [EmailSchema]
+});
+
+const email: Email = jt.instantiate(EmailSchema.$id, 'bastian@bookstore.example');
+
+console.log('Email (format brand):', email);
+console.log('Email is string:', typeof email === 'string');

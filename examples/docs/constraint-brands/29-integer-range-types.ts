@@ -14,4 +14,11 @@ import type {
 type Rating = IntegerRangeType<1, 5>;
 type EvenDigit = MultipleOfRangeType<0, 8, 2>;
 
-void 0 as unknown as [Rating, EvenDigit];
+// Both are literal union types at compile time.
+// Rating: 1 | 2 | 3 | 4 | 5
+// EvenDigit: 0 | 2 | 4 | 6 | 8
+const rating: Rating = 4;
+const evenDigit: EvenDigit = 6;
+
+console.log('Rating (1 | 2 | 3 | 4 | 5):', rating);
+console.log('EvenDigit (0 | 2 | 4 | 6 | 8):', evenDigit);

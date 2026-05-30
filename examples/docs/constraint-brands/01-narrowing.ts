@@ -10,10 +10,11 @@
 import type {
   InferType, SchemaReferencesMapType
 } from '../../../src/types/index.js';
-import { bookstoreEntities } from '../bookstore/index.js';
+import {
+  bookstoreEntities, EmailSchema, IsbnSchema
+} from '../bookstore/index.js';
 import type {
-  BookSchema, bookstoreSchemas, CustomerSchema, EmailSchema,
-  IsbnSchema
+  BookSchema, bookstoreSchemas, CustomerSchema
 } from '../bookstore/index.js';
 
 type BookstoreRefs = SchemaReferencesMapType<typeof bookstoreSchemas>;
@@ -58,7 +59,11 @@ assert<AssertEqualType<Email extends Isbn ? false : true, true>>();
 // receive the branded type at runtime. The bookstoreEntities registry
 // validates data against these branded schemas.
 
-// Runtime assertion: the canonical registry produces an ontology context.
-const ctx = bookstoreEntities.ontology().context();
+const isbn = bookstoreEntities.instantiate(IsbnSchema, '9780525559474');
+const email = bookstoreEntities.instantiate(EmailSchema, 'bastian@bookstore.example');
 
-console.assert(typeof ctx === 'object');
+// Both are strings at runtime, but carry incompatible brands at compile time.
+console.log('Isbn brand (pattern ^\\d{13}$):', isbn);
+console.log('Email brand (format email):', email);
+console.log('Isbn extends string:', typeof isbn === 'string');
+console.log('Email extends string:', typeof email === 'string');

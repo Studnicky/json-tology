@@ -26,4 +26,16 @@ type Shape = InferType<typeof ShapeSchemaBase & { 'then': typeof thenBranch }>;
 // Union of:
 //   { kind: 'circle'; radius: number; ... }     - then branch, kind narrowed to 'circle'
 // | { kind: string; width: number; ... }         - else branch
-void 0 as unknown as Shape;
+
+// Representative runtime values for each discriminated branch.
+const circle: Shape = {
+  'kind': 'circle',
+  'radius': 5
+} as unknown as Shape;
+const rectangle: Shape = {
+  'kind': 'rect',
+  'width': 10
+};
+
+console.log('if/then branch (circle, radius narrowed):', circle);
+console.log('else branch (rect, width required):', rectangle);

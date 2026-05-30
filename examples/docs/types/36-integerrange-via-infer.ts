@@ -24,4 +24,7 @@ type RatingManual = IntegerRangeType<1, 5>;
 const fromSchema: Rating = 3;
 const fromManual: RatingManual = fromSchema;
 
-void fromManual;
+// Both variables hold the same value: InferType and IntegerRangeType
+// produce the same literal union 1 | 2 | 3 | 4 | 5 for these bounds.
+console.log('from schema (InferType):', fromSchema);
+console.log('from manual (IntegerRangeType):', fromManual);

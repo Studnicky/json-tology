@@ -40,3 +40,7 @@ const customer = createCustomerFromForm(formPayload);
 console.assert(customer.customerId === formPayload.customerId);
 console.assert(customer.email === formPayload.email);
 console.assert(customer.name === 'Bastian Balthazar Bux');
+
+console.log('LooseInputType<Customer>: accepts plain Record — no brands required at the boundary');
+console.log('instantiated customer.name:', customer.name);
+console.log('instantiated customer.email:', customer.email);

@@ -51,3 +51,17 @@ assert<AssertEqualType<
 >>();
 
 void (null as unknown as BookV1Current | BookV1Full);
+
+// Runtime demonstration: the filtered type omits legacySku.
+const bookCurrent: BookV1Current = {
+  'isbn': '9783522128001',
+  'title': 'Die unendliche Geschichte'
+};
+const bookFull: BookV1Full = {
+  'isbn': '9783522128001',
+  'legacySku': 'OLD-NES-001',
+  'title': 'Die unendliche Geschichte'
+};
+
+console.log('InferType (full) keys:', Object.keys(bookFull).join(', '));
+console.log('NonDeprecatedSchemaType keys:', Object.keys(bookCurrent).join(', '), '(legacySku omitted)');

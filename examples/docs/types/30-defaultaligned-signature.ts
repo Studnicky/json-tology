@@ -37,4 +37,8 @@ type Aligned = DefaultAlignedType<typeof _AlignedSchema>;
 
 const aligned: Aligned = _AlignedSchema;
 
-void aligned;
+// The schema passes through the guard: its default values match their
+// declared types, so Aligned resolves to the schema literal itself.
+console.log('aligned schema $id (no $id here):', typeof aligned);
+console.log('currency default:', aligned.properties.currency.default);
+console.log('inStock default:', aligned.properties.inStock.default);

@@ -30,5 +30,8 @@ type Currency = InferType<typeof _CurrencySchema>;
 const rating: Rating = 4;
 const currency: Currency = 'EUR';
 
-void rating;
-void currency;
+// Rating is the literal union 1 | 2 | 3 | 4 | 5 — derived from the
+// schema's minimum/maximum bounds. Currency is 'USD' | 'EUR' | 'GBP' | 'JPY'
+// — derived from the schema's enum array.
+console.log('rating (1..5 literal union):', rating);
+console.log('currency (enum union):', currency);

@@ -35,7 +35,7 @@ function currencySymbol(cur: Currency): string {
   }
 }
 
-// Test the switch
-const usd = currencySymbol('USD');
-
-void usd;
+// Demonstrate the exhaustive switch for all three enum values.
+console.log('USD ->', currencySymbol('USD'));
+console.log('EUR ->', currencySymbol('EUR'));
+console.log('GBP ->', currencySymbol('GBP'));
