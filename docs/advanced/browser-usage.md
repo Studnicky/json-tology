@@ -34,7 +34,7 @@ The shape is two steps: prefetch the snapshot once (async), then construct the i
 
 For local file loading, write a four-line fs loader:
 
-<<< ../../examples/docs/advanced/61-loaders-fs-custom.ts
+<RunnableExample src="examples/docs/advanced/61-loaders-fs-custom" />
 
 ## Schema-only (no $ref federation)
 

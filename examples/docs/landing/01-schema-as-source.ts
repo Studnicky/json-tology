@@ -37,3 +37,7 @@ const asJson = JSON.stringify(CustomerSchema);
 
 console.assert(asJson.includes('"$id"'));
 console.assert(asJson.includes('urn:bookstore:Customer'));
+
+console.log('schema $id:', schemaId);
+console.log('validate error count:', errs.length);
+console.log('serialized includes $id:', asJson.includes('"$id"'));

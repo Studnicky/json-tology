@@ -1,46 +1,33 @@
 /**
  * FOAF subset — registry-directory codegen round-trip.
  *
- * Demonstrates `generateRegistryDirectory` producing a canonical directory layout:
- *   entities/<Name>.ts  — one file per OWL class
- *   index.ts            — imports all entities, constructs the registry
+ * Demonstrates `generateRegistryDirectory` producing a canonical directory layout
+ * as data (no disk I/O):
+ *   entities/<Name>.ts  — one file per OWL class (as source strings)
+ *   index.ts source     — imports all entities, constructs the registry
  *
  * Steps:
- *   1. Generate the registry directory to a tmp path inside the project.
- *   2. Assert each expected entity file exists at its canonical path.
- *   3. Import the generated `index.ts` and validate a foaf:Agent instance.
- *   4. Confirm the committed generated-dir fixture matches the programmatic output.
+ *   1. Call `generateRegistryDirectory` and inspect the returned entity files.
+ *   2. Assert the expected entity paths appear in the result.
+ *   3. Log entity file count, path names, and indexSource length.
  *
  * Entity files mirror the canonical bookstore layout (`entities/<Name>.ts`):
  * each file exports `<Name>Schema as const` and `type <Name> = InferType<...>`.
  * The index re-exports all schemas and types, and constructs the registry.
+ *
+ * Browser-safe: no node:fs, node:path, or node:url.
  */
 
-import {
-  existsSync, readFileSync
-} from 'node:fs';
-import {
-  dirname, resolve
-} from 'node:path';
-import { fileURLToPath } from 'node:url';
-import type { JsonTology } from '../../../src/index.js';
-import { writeRegistryDirectory } from '../../../src/owl-gen-node.js';
-
-const here = dirname(fileURLToPath(import.meta.url));
-const ONTOLOGIES = resolve(here, '../ontologies');
-const TMP_DIR = resolve(here, '../../../.generated-tmp/foaf-registry-dir');
+import { generateRegistryDirectory } from '../../../src/owl-gen.js';
+import { foafSubset } from '../ontologies/foaf-subset.js';
 
 // ---------------------------------------------------------------------------
-// Step 1: generate the registry directory
+// Step 1: generate the registry directory as data (no disk I/O)
 // ---------------------------------------------------------------------------
 
-const foafJsonLdRaw = readFileSync(resolve(ONTOLOGIES, 'foaf-subset.jsonld'), 'utf8');
-const foafJsonLd = JSON.parse(foafJsonLdRaw) as object;
-
-const genResult = writeRegistryDirectory({
-  'input': foafJsonLd,
+const genResult = generateRegistryDirectory({
+  'input': foafSubset,
   'name': 'foaf',
-  'outDir': TMP_DIR,
   'sourceLabel': 'examples/docs/ontologies/foaf-subset.jsonld'
 });
 
@@ -49,86 +36,54 @@ console.assert(
   genResult.entityFiles.length === 7,
   `Expected 7 entity files, got ${genResult.entityFiles.length}`
 );
-console.log(`generateRegistryDirectory: ${genResult.entityFiles.length} entity files written`);
+console.log(`generateRegistryDirectory: ${genResult.entityFiles.length} entity files`);
 
 // ---------------------------------------------------------------------------
-// Step 2: assert entity files exist at canonical paths
+// Step 2: assert expected entity paths appear in the result
 // ---------------------------------------------------------------------------
 
-const expectedEntities = [
-  'Agent',
-  'Name',
-  'Mbox',
-  'Knows',
-  'Member',
-  'Group',
-  'Person'
+const expectedPaths = [
+  'entities/Agent.ts',
+  'entities/Name.ts',
+  'entities/Mbox.ts',
+  'entities/Knows.ts',
+  'entities/Member.ts',
+  'entities/Group.ts',
+  'entities/Person.ts'
 ];
 
-for (const name of expectedEntities) {
-  const entityPath = resolve(TMP_DIR, 'entities', `${name}.ts`);
+for (const expectedPath of expectedPaths) {
+  const found = genResult.entityFiles.some((entityFile) => {
+    return entityFile.path === expectedPath;
+  });
 
+  console.assert(found, `Expected entity file path: ${expectedPath}`);
+}
+
+console.log('Entity paths:', genResult.entityFiles.map((entityFile) => {
+  return entityFile.path;
+}).join(', '));
+
+// ---------------------------------------------------------------------------
+// Step 3: log salient facts about the generated data
+// ---------------------------------------------------------------------------
+
+console.log('indexSource length:', genResult.indexSource.length);
+console.assert(genResult.indexSource.includes('JsonTology'), 'indexSource must reference JsonTology');
+console.assert(genResult.indexSource.includes('AgentSchema'), 'indexSource must reference AgentSchema');
+
+// PersonSchema carries disjointWith — verify it is preserved in the generated source
+const personFile = genResult.entityFiles.find((entityFile) => {
+  return entityFile.path === 'entities/Person.ts';
+});
+
+console.assert(personFile !== undefined, 'entities/Person.ts must be present');
+
+if (personFile !== undefined) {
   console.assert(
-    existsSync(entityPath),
-    `Expected entity file entities/${name}.ts to exist`
+    personFile.source.includes('disjointWith'),
+    'Person entity source must preserve disjointWith annotation'
   );
+  console.log('entities/Person.ts source length:', personFile.source.length);
+  console.log('disjointWith preserved in Person.ts:', personFile.source.includes('disjointWith'));
 }
-
-const indexPath = resolve(TMP_DIR, 'index.ts');
-
-console.assert(existsSync(indexPath), 'Expected index.ts to exist');
-console.log('All expected entity files present:', expectedEntities.join(', '));
-
-// ---------------------------------------------------------------------------
-// Step 3: import generated index and validate a foaf:Agent instance
-// ---------------------------------------------------------------------------
-
-const generated = await import(indexPath) as {
-  'AgentSchema': Record<string, unknown> & { '$id': string };
-  'foaf': ReturnType<typeof JsonTology.create>;
-  'PersonSchema': Record<string, unknown> & { '$id': string };
-};
-
-const {
-  AgentSchema, foaf, 'PersonSchema': GeneratedPersonSchema
-} = generated;
-
-// Bastian Balthazar Bux as a foaf:Agent — name + mbox are owl:DatatypeProperty
-// on foaf:Agent, so they appear as string properties on AgentSchema.
-const bastian = {
-  'mbox': 'bastian@fantastica.example',
-  'name': 'Bastian Balthazar Bux'
-};
-
-const bastianResult = foaf.validate(AgentSchema, bastian);
-
-console.assert(bastianResult.ok, `Bastian must validate as foaf:Agent; errors: ${JSON.stringify(bastianResult)}`);
-console.log('Bastian Balthazar Bux validates as foaf:Agent (registry-dir):', bastianResult.ok);
-
-// PersonSchema carries disjointWith — preserved through directory-mode codegen
-const personRec = GeneratedPersonSchema as Record<string, unknown>;
-
-console.assert(
-  personRec.disjointWith === 'http://xmlns.com/foaf/0.1/Group',
-  'PersonSchema.disjointWith preserved in registry-dir output'
-);
-console.log('PersonSchema.disjointWith preserved (registry-dir):', personRec.disjointWith);
-
-// ---------------------------------------------------------------------------
-// Step 4: compare generated entity file content to the committed fixture
-// ---------------------------------------------------------------------------
-
-const committedPersonPath = resolve(ONTOLOGIES, 'generated-dir', 'foaf', 'entities', 'Person.ts');
-
-function stripTimestamp(src: string): string {
-  return src.replaceAll(/^\/\/ Generated: .*$/gmu, '// Generated: <timestamp>');
-}
-
-const generatedPersonSrc = readFileSync(resolve(TMP_DIR, 'entities', 'Person.ts'), 'utf8');
-const committedPersonSrc = readFileSync(committedPersonPath, 'utf8');
-
-console.assert(
-  stripTimestamp(generatedPersonSrc) === stripTimestamp(committedPersonSrc),
-  'Generated entities/Person.ts matches committed generated-dir fixture (modulo timestamp)'
-);
-console.log('entities/Person.ts matches committed fixture (modulo timestamp): true');

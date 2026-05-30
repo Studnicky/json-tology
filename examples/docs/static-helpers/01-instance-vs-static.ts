@@ -36,3 +36,8 @@ console.assert(errs2.length === 0);
 // Both return empty ValidationErrors for valid data.
 console.assert(errs.length === 0);
 console.assert(errs2.length === 0);
+
+console.log('instance validate error count (CustomerSchema):', errs.length);
+console.log('static validate error count (IsbnSchema):', errs2.length);
+console.log('customer name:', aboxFixtures.customer.name);
+console.log('isbn validated:', aboxFixtures.rareBook.isbn);

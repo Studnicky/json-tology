@@ -53,3 +53,7 @@ const customer: Customer = jt.instantiate(CustomerSchema.$id, {
 // Typed, validated, defaults applied.
 console.assert(customer.name === 'Bastian Balthazar Bux');
 console.assert(Array.isArray(customer.addresses));
+
+console.log('customer.name:', customer.name);
+console.log('customer.email:', customer.email);
+console.log('customer.addresses (default):', JSON.stringify(customer.addresses));

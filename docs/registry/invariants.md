@@ -16,7 +16,7 @@ Invariants are cross-field validation rules that run after structural validation
 
 #### Example 1: Order total must match line items
 
-<<< ../../examples/docs/invariants/01-add-invariant.ts
+<RunnableExample src="examples/docs/invariants/01-add-invariant" />
 
 #### Example 2: Invariant failure surfaces in validate(), instantiate(), is()
 

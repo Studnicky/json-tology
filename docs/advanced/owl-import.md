@@ -144,7 +144,7 @@ const source: string = generateFromTbox({
 
 ### Runnable example
 
-<<< ../../examples/docs/advanced/91-owl-codegen-generated.ts
+<RunnableExample src="examples/docs/advanced/91-owl-codegen-generated" />
 
 ### Build-time integration
 
@@ -212,7 +212,7 @@ const result = generateRegistryDirectory({
 
 ### Runnable examples
 
-<<< ../../examples/docs/advanced/95-foaf-registry-dir.ts
+<RunnableExample src="examples/docs/advanced/95-foaf-registry-dir" />
 
 ### Entity file ↔ canonical bookstore symmetry
 
@@ -238,7 +238,7 @@ FOAF is a classic semantic-web vocabulary for describing people and their social
 
 **Runnable round-trip:**
 
-<<< ../../examples/docs/advanced/92-foaf-roundtrip.ts
+<RunnableExample src="examples/docs/advanced/92-foaf-roundtrip" />
 
 ### DCAT-AP (Data Catalog Vocabulary)
 
@@ -254,7 +254,7 @@ DCAT is a W3C recommendation for describing data catalogs and datasets published
 
 **Runnable round-trip:**
 
-<<< ../../examples/docs/advanced/93-dcat-roundtrip.ts
+<RunnableExample src="examples/docs/advanced/93-dcat-roundtrip" />
 
 ### schema.org (Structured Data Vocabulary)
 
@@ -270,7 +270,7 @@ schema.org is a collaborative vocabulary for structured data on the Web, widely 
 
 **Runnable round-trip:**
 
-<<< ../../examples/docs/advanced/94-schema-org-roundtrip.ts
+<RunnableExample src="examples/docs/advanced/94-schema-org-roundtrip" />
 
 ## Related
 

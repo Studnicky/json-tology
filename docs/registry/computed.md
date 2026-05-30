@@ -16,7 +16,7 @@ Computed fields are properties derived from other fields at instantiate/material
 
 #### Example 1: Order total derived from line items (construction time)
 
-<<< ../../examples/docs/computed/01-add-computed.ts
+<RunnableExample src="examples/docs/computed/01-add-computed" />
 
 #### Example 2: Coerce triggers the compute function
 

@@ -11,7 +11,7 @@ Most TypeScript validation libraries treat JSON Schema as a side-effect. You wri
 
 json-tology inverts this. The JSON Schema literal **is** the schema. Type inference is derived from it. Validation reads it. Coercion reads it. The OWL TBox reads it. The same `as const` object you authored in TypeScript is also a wire-format-compatible JSON Schema document, ready to ship to any consumer in any language.
 
-<<< ../examples/docs/landing/01-schema-as-source.ts
+<RunnableExample src="examples/docs/landing/01-schema-as-source" />
 
 That literal is:
 
@@ -58,7 +58,7 @@ Every TypeScript type system has a graph hiding in it. Below is the bookstore do
 
 If you're coming from Pydantic, Zod, or TypeBox, json-tology gives you the same authoring ergonomics with **JSON Schema as the source of truth** - your schema works in TypeScript, in JSON Schema validators, in OpenAPI, in IDE auto-complete, and as a wire-format contract, all from one declaration.
 
-<<< ../examples/docs/landing/02-core-workflow.ts
+<RunnableExample src="examples/docs/landing/02-core-workflow" />
 
 That's the entire core. Validation, type inference, coercion, defaults - all from one schema literal.
 

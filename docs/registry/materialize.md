@@ -14,7 +14,7 @@
 
 `currency` and `inStock` have declared defaults - they are filled in automatically.
 
-<<< ../../examples/docs/materialization/01-materialize.ts
+<RunnableExample src="examples/docs/materialization/01-materialize" />
 
 ### Example 2: Materialize a Customer - addresses default is empty array
 

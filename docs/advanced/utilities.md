@@ -118,7 +118,7 @@ Convert quads produced by the `n3` parser into json-tology's internal quad shape
 
 ### Anti-pattern 3: Hash: using Hash.value as a cryptographic hash
 
-<<< ../../examples/docs/advanced/69-hash-antipattern-cryptographic.ts
+<RunnableExample src="examples/docs/advanced/69-hash-antipattern-cryptographic" />
 
 ### Anti-pattern 4: Lift: passing Lift quads directly to a native RDF/JS consumer
 

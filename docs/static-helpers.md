@@ -37,7 +37,7 @@ A static call rebuilds the canonical graph for every invocation. An instance reu
 
 ## Comparison: instance vs static for `validate`
 
-<<< ../examples/docs/static-helpers/01-instance-vs-static.ts
+<RunnableExample src="examples/docs/static-helpers/01-instance-vs-static" />
 
 The two forms return the same `ValidationErrors` collection. Pick the static form for one-off scripts, examples, and self-contained schemas; pick the instance form for everything else.
 

@@ -22,7 +22,7 @@ Below is the bookstore TBox rendered with [Cytoscape](https://js.cytoscape.org/)
 
 `Compose.equivalent` creates each as a thin `$ref` over `PersonName`:
 
-<<< ../examples/docs/types-are-a-graph/01-equivalent-branding.ts
+<RunnableExample src="examples/docs/types-are-a-graph/01-equivalent-branding" />
 
 The result: one compiled validator (no duplication), three class IRIs, and `owl:equivalentClass` arcs in the TBox - visible as the green dashed edges in the graph above. Ontology-aware tools can infer that any `CustomerName` or `AuthorName` is also a valid `PersonName` and vice versa, while your TypeScript types keep the three concepts nominally distinct.
 

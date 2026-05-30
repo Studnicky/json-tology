@@ -75,7 +75,7 @@ If you have an existing codebase with inline shapes that cannot be refactored at
 
 ## CI script example
 
-<<< ../../examples/docs/advanced/80-strict-ci-findduplicates.ts
+<RunnableExample src="examples/docs/advanced/80-strict-ci-findduplicates" />
 
 ## When inline is OK {#when-inline-is-ok}
 

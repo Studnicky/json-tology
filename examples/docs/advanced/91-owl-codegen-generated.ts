@@ -13,26 +13,16 @@
  *      (foaf:Person and foaf:Group, Neverending-Story flavoured).
  *   2. Call `generateFromTbox` to produce the TypeScript source string.
  *   3. Assert the generated source contains expected export declarations.
- *   4. Write the source to /tmp/neverending-generated.ts, load via tsx,
- *      and validate a Neverending-Story fixture against the exported schema.
- *   5. Use a locally-authored `InferType` annotation to show compile-time
+ *   4. Use a locally-authored `InferType` annotation to show compile-time
  *      type derivation from the same schema shape.
  *
- * The sibling agent's `src/owl-gen.ts` / `json-tology/owl-gen` export
- * provides `generateFromTbox`. If that module has not yet landed in the
- * working tree, the example falls back to the runtime `fromTbox` path
- * with a clear "sibling not landed yet" message so CI does not fail.
+ * Browser-safe: no node:fs, node:path, or node:url. The source string is
+ * inspected in-memory; no disk writes or dynamic imports are performed.
  */
 
-import {
-  mkdirSync, writeFileSync
-} from 'node:fs';
-import {
-  dirname, resolve
-} from 'node:path';
-import { fileURLToPath } from 'node:url';
 import type { InferType } from '../../../src/types/index.js';
 import { JsonTology } from '../../../src/index.js';
+import { generateFromTbox } from '../../../src/owl-gen.js';
 import { bookstoreEntities } from '../bookstore/index.js';
 
 // ---------------------------------------------------------------------------
@@ -76,193 +66,98 @@ const syntheticTboxJsonLd = JSON.stringify({
 });
 
 // ---------------------------------------------------------------------------
-// Step 1: load generateFromTbox — sibling's module, may not be landed yet
+// Step 1: generate TypeScript source from the inline TBox
 // ---------------------------------------------------------------------------
 
-type GenerateFromTboxFn = (options: {
-  'baseIRI'?: string;
-  'input': object | string;
-  'name'?: string;
-}) => string;
-
-/** Narrows a fromTbox schema to the validate() call shape. */
-function hasId(schema: { '$id'?: string }): schema is Record<string, unknown> & { '$id': string } {
-  return typeof schema.$id === 'string' && schema.$id.length > 0;
-}
-
-interface SchemaLiteral {
-  '$id': string;
-  'properties'?: Record<string, unknown>;
-  'type': string;
-}
-
-const owlGenModule: null | Record<string, unknown> = await (
-  import('json-tology/owl-gen') as Promise<Record<string, unknown>>
-).catch((): null => {
-  return null;
+const generatedSrc = generateFromTbox({
+  'input': syntheticTboxJsonLd,
+  'name': 'neverending'
 });
 
-const generateFromTbox: GenerateFromTboxFn | null = (
-  owlGenModule !== null && typeof owlGenModule.generateFromTbox === 'function'
-)
-  ? owlGenModule.generateFromTbox as GenerateFromTboxFn
-  : null;
-
 // ---------------------------------------------------------------------------
-// Step 2: generate TypeScript source (or use the runtime path as a fallback)
+// Step 2: verify the generated source structure
 // ---------------------------------------------------------------------------
 
-if (generateFromTbox === null) {
-  // ── SIBLING NOT YET LANDED ───────────────────────────────────────────────
-  // The json-tology/owl-gen subpath export hasn't been merged yet.
-  // Fall back to the runtime fromTbox path so the rest of the example
-  // remains executable and CI does not fail.
+console.assert(
+  generatedSrc.includes('export const PersonSchema'),
+  'Generated source must export PersonSchema'
+);
+console.assert(
+  generatedSrc.includes('export const GroupSchema'),
+  'Generated source must export GroupSchema'
+);
+console.assert(
+  generatedSrc.includes('as const'),
+  'Generated source must use as const literals'
+);
+console.assert(
+  generatedSrc.includes('InferType'),
+  'Generated source must re-export InferType-derived types'
+);
 
-  console.log('[sibling not landed yet] generateFromTbox not available — running runtime fromTbox path instead.');
-  console.log('Once src/owl-gen.ts is merged, this example will use the full codegen round-trip.');
+console.log('generateFromTbox source check passed — all expected exports present.');
+console.log('Generated source length:', generatedSrc.length);
+console.log('Contains PersonSchema export:', generatedSrc.includes('export const PersonSchema'));
+console.log('Contains GroupSchema export:', generatedSrc.includes('export const GroupSchema'));
 
-  // Demonstrate what the generated module would look like at runtime.
-  const jt = JsonTology.create({
-    'baseIRI': 'https://neverending.example/',
-    'enableStrictGraph': false
-  });
+// ---------------------------------------------------------------------------
+// Step 3: validate a Neverending-Story fixture against the runtime-imported schema
+// ---------------------------------------------------------------------------
 
-  const result = jt.fromTbox(syntheticTboxJsonLd);
+// Use the runtime fromTbox path to validate (no disk I/O needed).
+const jt = JsonTology.create({
+  'baseIRI': 'https://neverending.example/',
+  'enableStrictGraph': false
+});
 
-  const PersonSchema = result.schemas.find((schema) => {
-    return schema.$id === 'https://neverending.example/Person';
-  });
+const result = jt.fromTbox(syntheticTboxJsonLd);
 
-  const GroupSchema = result.schemas.find((schema) => {
-    return schema.$id === 'https://neverending.example/Group';
-  });
+const PersonSchema = result.schemas.find((schema) => {
+  return schema.$id === 'https://neverending.example/Person';
+});
 
-  console.assert(PersonSchema !== undefined, 'Person schema must be present after fromTbox');
-  console.assert(GroupSchema !== undefined, 'Group schema must be present after fromTbox');
+console.assert(PersonSchema !== undefined, 'Person schema must be present after fromTbox');
 
-  console.log('Imported schemas (runtime path):', result.schemas.map((schema) => {
-    return schema.$id;
-  }));
-
-  // Validate a Neverending-Story fixture against the runtime-imported schema.
-  if (PersonSchema !== undefined && hasId(PersonSchema)) {
-    const bastian = { 'name': 'Bastian Balthazar Bux' };
-    const validationResult = jt.validate(
-      PersonSchema,
-      bastian
-    );
-
-    console.assert(
-      validationResult.ok,
-      `Bastian fixture must validate; errors: ${JSON.stringify(validationResult)}`
-    );
-    console.log('Bastian validates against runtime-imported PersonSchema:', validationResult.ok);
-  }
-} else {
-  // ── SIBLING IS PRESENT ───────────────────────────────────────────────────
-  // Full codegen round-trip.
-
-  const generatedSrc = generateFromTbox({
-    'input': syntheticTboxJsonLd,
-    'name': 'neverending'
-  });
-
-  // Step 3: verify the generated source structure.
-  console.assert(
-    generatedSrc.includes('export const PersonSchema'),
-    'Generated source must export PersonSchema'
-  );
-  console.assert(
-    generatedSrc.includes('export const GroupSchema'),
-    'Generated source must export GroupSchema'
-  );
-  console.assert(
-    generatedSrc.includes('as const'),
-    'Generated source must use as const literals'
-  );
-  console.assert(
-    generatedSrc.includes('InferType'),
-    'Generated source must re-export InferType-derived types'
+if (PersonSchema !== undefined && typeof PersonSchema.$id === 'string') {
+  const bastian = { 'name': 'Bastian Balthazar Bux' };
+  const validationResult = jt.validate(
+    PersonSchema as Record<string, unknown> & { '$id': string },
+    bastian
   );
 
-  console.log('generateFromTbox source check passed — all expected exports present.');
-
-  // Step 4: write to a temp directory inside the project so bare-specifier
-  // imports in the generated file (e.g. 'json-tology/types') resolve via the
-  // project's node_modules. A data: URL cannot resolve bare specifiers.
-  const here = dirname(fileURLToPath(import.meta.url));
-  const tmpDir = resolve(here, '../../../.generated-tmp');
-  const tmpPath = resolve(tmpDir, 'neverending-generated.ts');
-
-  mkdirSync(tmpDir, { 'recursive': true });
-  writeFileSync(tmpPath, generatedSrc, 'utf8');
-
-  const generated = await import(tmpPath) as Record<string, unknown>;
-
-  const PersonSchema = generated.PersonSchema as SchemaLiteral | undefined;
-  const GroupSchema = generated.GroupSchema as SchemaLiteral | undefined;
-
   console.assert(
-    PersonSchema !== undefined,
-    'PersonSchema must be present in the loaded generated module'
+    validationResult.ok,
+    `Bastian fixture must validate; errors: ${JSON.stringify(validationResult)}`
   );
-  console.assert(
-    GroupSchema !== undefined,
-    'GroupSchema must be present in the loaded generated module'
-  );
-
-  // Step 5: validate a Neverending-Story fixture.
-  // Bastian Balthazar Bux is a Person; we validate against the generated schema.
-  if (PersonSchema !== undefined) {
-    // interop: SchemaLiteral comes from a dynamically-loaded generated module;
-    // it lacks an index signature so it cannot widen to Record<string,unknown>
-    // without the unknown intermediate.
-    const personSchemaWithId = PersonSchema as unknown as Record<string, unknown> & { '$id': string };
-    const jt = JsonTology.create({
-      'baseIRI': 'https://neverending.example/',
-      'enableStrictGraph': false,
-      'schemas': [personSchemaWithId]
-    });
-
-    const bastian = { 'name': 'Bastian Balthazar Bux' };
-
-    const result = jt.validate(personSchemaWithId, bastian);
-
-    console.assert(
-      result.ok,
-      `Bastian fixture must validate against generated PersonSchema; errors: ${JSON.stringify(result)}`
-    );
-    console.log('Bastian validates against generated PersonSchema:', result.ok);
-  }
-
-  // Compile-time type demonstration — InferType on the generated schema shape.
-  // Because the generated module emits `as const` literals, the type narrows
-  // correctly. Here we annotate with a locally-authored type for illustration;
-  // in a real consumer, this comes directly from the generated module's exports.
-  if (PersonSchema !== undefined) {
-    type GeneratedPerson = InferType<{
-      readonly '$id': 'https://neverending.example/Person';
-      readonly 'properties': {
-        readonly 'name': { readonly 'type': 'string' };
-      };
-      readonly 'type': 'object';
-    }>;
-
-    const cornelia: GeneratedPerson = { 'name': 'Cornelia Funke' };
-
-    console.assert(
-      typeof cornelia.name === 'string',
-      'Cornelia Funke fixture must satisfy GeneratedPerson compile-time type'
-    );
-    console.log('Cornelia Funke type-check passes:', typeof cornelia.name === 'string');
-  }
+  console.log('Bastian validates against runtime-imported PersonSchema:', validationResult.ok);
 }
+
+// ---------------------------------------------------------------------------
+// Step 4: compile-time type demonstration — InferType on a schema shape
+// ---------------------------------------------------------------------------
+
+// Because `generateFromTbox` emits `as const` literals, `InferType<…>` works
+// correctly. We annotate with a locally-authored shape that mirrors the output;
+// in a real consumer this comes directly from the generated module's exports.
+type GeneratedPerson = InferType<{
+  readonly '$id': 'https://neverending.example/Person';
+  readonly 'properties': {
+    readonly 'name': { readonly 'type': 'string' };
+  };
+  readonly 'type': 'object';
+}>;
+
+const cornelia: GeneratedPerson = { 'name': 'Cornelia Funke' };
+
+console.assert(
+  typeof cornelia.name === 'string',
+  'Cornelia Funke fixture must satisfy GeneratedPerson compile-time type'
+);
+console.log('Cornelia Funke type-check passes:', typeof cornelia.name === 'string');
 
 // ---------------------------------------------------------------------------
 // Bonus: bookstore TBox — show what a larger codegen input looks like
 // ---------------------------------------------------------------------------
-// The bookstore TBox has ~62 classes. generateFromTbox handles it in a single
-// pass; once the sibling lands, replace this section with a full codegen call.
 
 const bookstoreTboxJsonLd = bookstoreEntities.toTbox().jsonLd();
 const bookstoreImport = JsonTology.fromTbox(bookstoreTboxJsonLd);

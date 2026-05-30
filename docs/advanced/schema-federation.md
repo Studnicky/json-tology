@@ -61,7 +61,7 @@ Wraps any loader with an LRU cache (default: 1024 entries). Both resolved schema
 
 Any function with the signature `(iri: string) => Promise<JsonSchemaType | null>` is a valid loader. Node `fs` example:
 
-<<< ../../examples/docs/advanced/61-loaders-fs-custom.ts
+<RunnableExample src="examples/docs/advanced/61-loaders-fs-custom" />
 
 ## Adding schemas after construction
 
