@@ -13,6 +13,10 @@ import {
 } from '../../../../examples/docs/bookstore/index.js';
 import { aboxFixtures } from '../../../../examples/docs/bookstore/aboxFixtures.js';
 import type { QuadInterface } from '../../../../src/interfaces/Quad.js';
+import type { SkolemizeFnType } from '../../../../src/types/Skolemize.js';
+import { JsonLdFormatter } from '../../../../src/modules/rdf/JsonLdFormatter.js';
+import { layoutLayer } from './graphLayout.js';
+import type { LayoutPosition } from './graphLayout.js';
 
 // ---------------------------------------------------------------------------
 // OWL vocabulary IRIs
@@ -47,6 +51,9 @@ export interface NodeData {
   id: string;
   label: string;
   kind: 'entity' | 'instance' | 'literal' | 'primitive';
+  layer: 'abox' | 'tbox';
+  position: LayoutPosition;
+  definitionId?: string;
 }
 
 export interface EdgeData {
@@ -69,7 +76,7 @@ export interface EdgeData {
 }
 
 export interface CytoscapeElements {
-  nodes: Array<{ data: NodeData }>;
+  nodes: Array<{ data: NodeData; position: LayoutPosition }>;
   edges: Array<{ data: EdgeData }>;
 }
 
@@ -132,6 +139,19 @@ function equivalentClassTargets(val: unknown): string[] {
   return [];
 }
 
+function decodeSegment(segment: string): string {
+  // Strip the `__<hash>` uniqueness suffix that aboxIriFor appends, then decode
+  // any percent-encoding so the display label reads cleanly.
+  const separator = segment.indexOf('__');
+  const base = separator !== -1 ? segment.slice(0, separator) : segment;
+
+  try {
+    return decodeURIComponent(base);
+  } catch {
+    return base;
+  }
+}
+
 function nodeLabel(id: string): string {
   const hash = id.lastIndexOf('#');
 
@@ -139,17 +159,17 @@ function nodeLabel(id: string): string {
     const after = id.slice(hash + 1);
     const slash = after.lastIndexOf('/');
 
-    return slash !== -1 ? after.slice(slash + 1) : after;
+    return decodeSegment(slash !== -1 ? after.slice(slash + 1) : after);
   }
   const slash = id.lastIndexOf('/');
 
   if (slash !== -1) {
-    return id.slice(slash + 1);
+    return decodeSegment(id.slice(slash + 1));
   }
   const colon = id.lastIndexOf(':');
 
   if (colon !== -1) {
-    return id.slice(colon + 1);
+    return decodeSegment(id.slice(colon + 1));
   }
 
   return id;
@@ -253,7 +273,14 @@ export function toCytoscapeElements(): CytoscapeElements {
       })
   );
 
-  const nodes: Array<{ data: NodeData }> = [];
+  // Build phase uses a mutable intermediate shape (no layer/position yet).
+  interface RawNodeData {
+    id: string;
+    kind: NodeData['kind'];
+    label: string;
+  }
+
+  const rawNodes: Array<{ data: RawNodeData }> = [];
   const edges: Array<{ data: EdgeData }> = [];
   const seenNodeIds = new Set<string>();
   const seenEdgeIds = new Set<string>();
@@ -264,7 +291,7 @@ export function toCytoscapeElements(): CytoscapeElements {
       return;
     }
     seenNodeIds.add(id);
-    nodes.push({
+    rawNodes.push({
       'data': {
         id,
         'kind': explicit?.kind ?? (entityIds.has(id) ? 'entity' : 'primitive'),
@@ -545,9 +572,9 @@ export function toCytoscapeElements(): CytoscapeElements {
     addNode(iriA);
     addNode(iriB);
     // Override kind to 'instance' even if the node was already added.
-    for (const node of nodes) {
-      if (node.data.id === iriA || node.data.id === iriB) {
-        node.data.kind = 'instance';
+    for (const rawNode of rawNodes) {
+      if (rawNode.data.id === iriA || rawNode.data.id === iriB) {
+        rawNode.data.kind = 'instance';
       }
     }
     addEdge(iriA, iriB, 'sameAs', 'sameAs');
@@ -565,17 +592,83 @@ export function toCytoscapeElements(): CytoscapeElements {
   // ──────────────────────────────────────────────────────────────────────
   projectAboxFixtures(addNode, addEdge, markInstance);
 
+  // ──────────────────────────────────────────────────────────────────────
+  // Post-processing: assign layer, position, and definitionId to every node.
+  // Layout is computed separately per layer using the fully-collected node
+  // and edge sets, then applied to produce the final CytoscapeElements shape.
+  // ──────────────────────────────────────────────────────────────────────
+  const edgeInputs = edges.map((edgeEl) => {
+    return { 'source': edgeEl.data.source, 'target': edgeEl.data.target };
+  });
+
+  const tboxRawNodes = rawNodes.filter((rawNode) => {
+    return rawNode.data.kind === 'entity' || rawNode.data.kind === 'primitive';
+  });
+  const aboxRawNodes = rawNodes.filter((rawNode) => {
+    return rawNode.data.kind === 'instance' || rawNode.data.kind === 'literal';
+  });
+
+  const tboxPositions = layoutLayer(
+    tboxRawNodes.map((rawNode) => {
+      return { 'id': rawNode.data.id, 'kind': rawNode.data.kind };
+    }),
+    edgeInputs,
+    'tbox'
+  );
+
+  const aboxPositions = layoutLayer(
+    aboxRawNodes.map((rawNode) => {
+      return { 'id': rawNode.data.id, 'kind': rawNode.data.kind };
+    }),
+    edgeInputs,
+    'abox'
+  );
+
+  // Build instanceType map: instance id → its TBox class id (target of instanceType edge)
+  const instanceTypeMap = new Map<string, string>();
+
+  for (const edgeEl of edges) {
+    if (edgeEl.data.kind === 'instanceType') {
+      instanceTypeMap.set(edgeEl.data.source, edgeEl.data.target);
+    }
+  }
+
+  const FALLBACK_POSITION: LayoutPosition = { 'x': 0, 'y': 0 };
+
+  const nodes: Array<{ data: NodeData; position: LayoutPosition }> = rawNodes.map((rawNode) => {
+    const nodeId = rawNode.data.id;
+    const nodeKind = rawNode.data.kind;
+    const isTbox = nodeKind === 'entity' || nodeKind === 'primitive';
+    const layer: NodeData['layer'] = isTbox ? 'tbox' : 'abox';
+    const position = (isTbox ? tboxPositions : aboxPositions).get(nodeId) ?? FALLBACK_POSITION;
+    const definitionId = nodeKind === 'instance' ? instanceTypeMap.get(nodeId) : undefined;
+
+    const nodeData: NodeData = {
+      'id': nodeId,
+      'kind': nodeKind,
+      'label': rawNode.data.label,
+      layer,
+      position
+    };
+
+    if (definitionId !== undefined) {
+      nodeData.definitionId = definitionId;
+    }
+
+    return { 'data': nodeData, position };
+  });
+
   return {
     edges,
     nodes
   };
 
-  // ----- closures over nodes used by the ABox projection -----
+  // ----- closures over rawNodes used by the ABox projection -----
 
   function markInstance(id: string): void {
-    for (const node of nodes) {
-      if (node.data.id === id) {
-        node.data.kind = 'instance';
+    for (const rawNode of rawNodes) {
+      if (rawNode.data.id === id) {
+        rawNode.data.kind = 'instance';
       }
     }
   }
@@ -596,6 +689,82 @@ const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
  * requires one) projects without error; all fixtures share one ABox graph.
  */
 const ABOX_GRAPH_IRI = 'https://bookstore.example/graph/abox';
+const ABOX_INSTANCE_BASE = 'https://bookstore.example/id';
+const UUID_LABEL = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
+
+// Identifying fields in priority order — the first present scalar becomes the
+// instance's readable IRI slug. Human-readable fields (title, name) win over
+// opaque UUID identifiers so labels read "the-neverending-story", not a UUID.
+const ABOX_ID_FIELDS = [
+  'title',
+  'name',
+  'isbn',
+  'street',
+  'reviewId',
+  'orderId',
+  'customerId',
+  'amount',
+  'sku',
+  'id'
+] as const;
+
+function slugify(value: string | number): string {
+  return String(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/gu, '-')
+    .replace(/^-+|-+$/gu, '')
+    .slice(0, 48);
+}
+
+// Deterministic 6-char content hash (FNV-1a → base36). Disambiguates the
+// readable slug so two distinct instances never collide onto one IRI, while
+// genuinely identical value nodes still dedupe (correct RDF set semantics).
+function shortHash(input: string): string {
+  let hash = 0x811c9dc5;
+
+  for (let index = 0; index < input.length; index += 1) {
+    hash ^= input.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+
+  return (hash >>> 0).toString(36).padStart(6, '0').slice(0, 6);
+}
+
+/**
+ * Readable ABox subject IRIs. Derives a slug from the instance's most
+ * human-readable field and appends a short content hash for uniqueness, so
+ * projected quads — and the graph labels and JSON-LD that read from them — are
+ * legible (`/id/the-neverending-story__a3f1k2`) instead of opaque skolem
+ * hashes. The display label strips the `__hash` suffix (see {@link nodeLabel}).
+ */
+const aboxIriFor: SkolemizeFnType = (ctx) => {
+  const value = ctx.value;
+
+  if (value === null || typeof value !== 'object') {
+    return undefined;
+  }
+  const record = value as Record<string, unknown>;
+  let slug = '';
+
+  // Money-shaped value (amount + currency) → "850-eur" so the node reads as a
+  // priced amount rather than a bare number.
+  if (typeof record['amount'] === 'number' && typeof record['currency'] === 'string') {
+    slug = `${slugify(record['amount'])}-${slugify(record['currency'])}`;
+  }
+
+  if (slug === '') {
+    for (const field of ABOX_ID_FIELDS) {
+      const candidate = record[field];
+
+      if (typeof candidate === 'string' || typeof candidate === 'number') {
+        slug = slugify(candidate);
+        break;
+      }
+    }
+  }
+
+  return `${ABOX_INSTANCE_BASE}/${slug === '' ? 'node' : slug}__${shortHash(JSON.stringify(value))}`;
+};
 
 function aboxFixtureQuads(): QuadInterface[] {
   const quads: QuadInterface[] = [];
@@ -606,52 +775,52 @@ function aboxFixtureQuads(): QuadInterface[] {
   quads.push(...bookstoreEntities.toQuads(
     CustomerSchema,
     bookstoreEntities.instantiate(CustomerSchema, aboxFixtures.customer),
-    { 'graphIRI': ABOX_GRAPH_IRI }
+    { 'graphIRI': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
   ));
   quads.push(...bookstoreEntities.toQuads(
     OrderSchema,
     bookstoreEntities.instantiate(OrderSchema, aboxFixtures.order),
-    { 'graphIRI': ABOX_GRAPH_IRI }
+    { 'graphIRI': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
   ));
   quads.push(...bookstoreEntities.toQuads(
     RareBookSchema,
     bookstoreEntities.instantiate(RareBookSchema, aboxFixtures.rareBook),
-    { 'graphIRI': ABOX_GRAPH_IRI }
+    { 'graphIRI': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
   ));
   quads.push(...bookstoreEntities.toQuads(
     EBookSchema,
     bookstoreEntities.instantiate(EBookSchema, aboxFixtures.ebook),
-    { 'graphIRI': ABOX_GRAPH_IRI }
+    { 'graphIRI': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
   ));
   quads.push(...bookstoreEntities.toQuads(
     PrintBookSchema,
     bookstoreEntities.instantiate(PrintBookSchema, aboxFixtures.printBook),
-    { 'graphIRI': ABOX_GRAPH_IRI }
+    { 'graphIRI': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
   ));
   quads.push(...bookstoreEntities.toQuads(
     SignedFirstEditionSchema,
     bookstoreEntities.instantiate(SignedFirstEditionSchema, aboxFixtures.signedFirstEdition),
-    { 'graphIRI': ABOX_GRAPH_IRI }
+    { 'graphIRI': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
   ));
   quads.push(...bookstoreEntities.toQuads(
     SimilarBookSchema,
     bookstoreEntities.instantiate(SimilarBookSchema, aboxFixtures.similarBook),
-    { 'graphIRI': ABOX_GRAPH_IRI }
+    { 'graphIRI': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
   ));
   quads.push(...bookstoreEntities.toQuads(
     SequelSchema,
     bookstoreEntities.instantiate(SequelSchema, aboxFixtures.sequel),
-    { 'graphIRI': ABOX_GRAPH_IRI }
+    { 'graphIRI': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
   ));
   quads.push(...bookstoreEntities.toQuads(
     BookListPageSchema,
     bookstoreEntities.instantiate(BookListPageSchema, aboxFixtures.bookListPage),
-    { 'graphIRI': ABOX_GRAPH_IRI }
+    { 'graphIRI': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
   ));
   quads.push(...bookstoreEntities.toQuads(
     ReviewSchema,
     bookstoreEntities.instantiate(ReviewSchema, aboxFixtures.reviewWithAnnotatedEdge),
-    { 'graphIRI': ABOX_GRAPH_IRI }
+    { 'graphIRI': ABOX_GRAPH_IRI, 'iriFor': aboxIriFor }
   ));
 
   return quads;
@@ -696,7 +865,18 @@ function projectAboxFixtures(
 
   // Materialize instance nodes + their type edges to the class node.
   for (const [subjectIri, classIri] of subjectTypes) {
-    addNode(subjectIri);
+    // Prefer the readable slug; fall back to the class name for relationship
+    // instances (SimilarBook, Sequel) and opaque UUID-keyed instances (Order)
+    // so no node renders as a bare "node" or raw UUID.
+    const slugLabel = nodeLabel(subjectIri);
+    const label = slugLabel === 'node' || UUID_LABEL.test(slugLabel)
+      ? nodeLabel(classIri)
+      : slugLabel;
+
+    addNode(subjectIri, {
+      'kind': 'instance',
+      label
+    });
     markInstance(subjectIri);
     addNode(classIri);
     addEdge(subjectIri, classIri, 'a', 'instanceType');
@@ -821,6 +1001,39 @@ export function toSchemaMap(): Record<string, unknown> {
   for (const schema of bookstoreEntities.registry.list() as Array<Record<string, unknown>>) {
     if (schema && typeof schema === 'object' && typeof schema['$id'] === 'string') {
       map[schema['$id']] = schema;
+    }
+  }
+
+  return map;
+}
+
+/**
+ * Per-node JSON-LD fragment map keyed by graph node id. TBox nodes resolve to
+ * their OWL class / datatype node from the emitted TBox `@graph`; ABox nodes
+ * resolve to their RDF node from the projected fixture quads. Powers the
+ * inspector's JSON-LD view so the RDF form of every concept can be read next
+ * to its JSON Schema, and so an ABox value links to its TBox definition.
+ */
+export function toJsonLdMap(): Record<string, unknown> {
+  const map: Record<string, unknown> = {};
+
+  const tboxGraph = (bookstoreEntities.toTbox().jsonLdObject()['@graph'] ?? []) as Array<Record<string, unknown>>;
+
+  for (const tboxNode of tboxGraph) {
+    const id = tboxNode['@id'];
+
+    if (typeof id === 'string') {
+      map[id] = tboxNode;
+    }
+  }
+
+  const aboxNodes = JsonLdFormatter.fromQuads(aboxFixtureQuads());
+
+  for (const aboxNode of aboxNodes) {
+    const id = aboxNode['@id'];
+
+    if (typeof id === 'string') {
+      map[id] = aboxNode;
     }
   }
 

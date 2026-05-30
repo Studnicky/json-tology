@@ -8,7 +8,9 @@ This page extends the bookstore domain with OWL-style class taxonomy - subClassO
 
 ## Book taxonomy and OWL axioms
 
-Beyond the structural entities, the bookstore registry carries seven additional schemas plus two ABox identity assertions that together exercise every `Compose` class-axiom, every OWL restriction the library supports, and the runtime `sameAs` surface. These are the declarations that drive the live `BookstoreGraph` visualization shown on [Your Types Are a Graph](/your-types-are-a-graph) and the home page.
+Beyond the structural entities, the bookstore registry carries seven additional schemas plus two ABox identity assertions that together exercise every `Compose` class-axiom, every OWL restriction the library supports, and the runtime `sameAs` surface. These are the declarations that drive the live `BookstoreGraph` visualization below — the **TBox** tab shows this class taxonomy; the **ABox** tab shows the instance data typed by it.
+
+<BookstoreGraph />
 
 | Schema or axiom | Surface used | Edge / effect in graph |
 |---|---|---|
