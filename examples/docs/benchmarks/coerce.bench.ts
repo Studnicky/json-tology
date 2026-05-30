@@ -95,8 +95,8 @@ export function runCoerceBench(): BenchResult[] {
       }),
       { 'default': [] }
     ),
+    'customerId': Type.String({ 'format': 'uuid' }),
     'email': Type.String({ 'format': 'email' }),
-    'id': Type.String({ 'format': 'uuid' }),
     'name': Type.String({
       'maxLength': 200,
       'minLength': 1
