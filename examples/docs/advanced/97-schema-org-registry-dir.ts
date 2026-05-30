@@ -23,7 +23,7 @@ import {
 } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { JsonTology } from '../../../src/index.js';
-import { generateRegistryDirectory } from '../../../src/owl-gen.js';
+import { writeRegistryDirectory } from '../../../src/owl-gen-node.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const ONTOLOGIES = resolve(here, '../ontologies');
@@ -36,7 +36,7 @@ const TMP_DIR = resolve(here, '../../../.generated-tmp/schema-org-registry-dir')
 const schemaOrgJsonLdRaw = readFileSync(resolve(ONTOLOGIES, 'schema-org-subset.jsonld'), 'utf8');
 const schemaOrgJsonLd = JSON.parse(schemaOrgJsonLdRaw) as object;
 
-const genResult = generateRegistryDirectory({
+const genResult = writeRegistryDirectory({
   'input': schemaOrgJsonLd,
   'name': 'schemaOrg',
   'outDir': TMP_DIR,

@@ -43,6 +43,10 @@
       "import": "./dist/owl-gen.js",
       "types": "./dist/owl-gen.d.ts"
     },
+    "./owl-gen-node": {
+      "import": "./dist/owl-gen-node.js",
+      "types": "./dist/owl-gen-node.d.ts"
+    },
     "./viz": {
       "import": "./dist/viz.js",
       "types": "./dist/viz.d.ts"

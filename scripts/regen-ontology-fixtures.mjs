@@ -26,9 +26,8 @@ const __here = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__here, '..');
 
 // Import from the built dist.
-const {
-  generateFromTbox, generateRegistryDirectory
-} = await import(join(REPO_ROOT, 'dist', 'owl-gen.js'));
+const { generateFromTbox } = await import(join(REPO_ROOT, 'dist', 'owl-gen.js'));
+const { writeRegistryDirectory } = await import(join(REPO_ROOT, 'dist', 'owl-gen-node.js'));
 
 const ONTOLOGIES_DIR = join(REPO_ROOT, 'examples', 'docs', 'ontologies');
 const GENERATED_DIR = join(ONTOLOGIES_DIR, 'generated');
@@ -79,7 +78,7 @@ for (const fixture of fixtures) {
 
   // ── Registry-directory mode ───────────────────────────────────────────────
   const outDir = join(GENERATED_DIR_DIR, fixture.dirName);
-  const dirResult = generateRegistryDirectory({
+  const dirResult = writeRegistryDirectory({
     input,
     'name': fixture.name,
     'outDir': outDir,

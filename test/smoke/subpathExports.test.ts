@@ -64,10 +64,18 @@ void describe('subpath exports', () => {
     assert.equal(typeof mod, 'object', 'interfaces subpath must resolve to a module object');
   });
 
-  void it('dist/owl-gen.js — exports generateFromTbox', async () => {
+  void it('dist/owl-gen.js — exports generateFromTbox (browser-safe, no node imports)', async () => {
     const mod = await import(`${PACKAGE_ROOT}/dist/owl-gen.js`) as ModuleShape;
 
     assert.equal(typeof mod.generateFromTbox, 'function', 'generateFromTbox must be exported from "./owl-gen"');
+    assert.equal(typeof mod.generateRegistryDirectory, 'function', 'generateRegistryDirectory must be exported from "./owl-gen"');
+  });
+
+  void it('dist/owl-gen-node.js — exports the Node file-writing skin', async () => {
+    const mod = await import(`${PACKAGE_ROOT}/dist/owl-gen-node.js`) as ModuleShape;
+
+    assert.equal(typeof mod.writeFromTbox, 'function', 'writeFromTbox must be exported from "./owl-gen-node"');
+    assert.equal(typeof mod.writeRegistryDirectory, 'function', 'writeRegistryDirectory must be exported from "./owl-gen-node"');
   });
 
   void it('package.json exports map contains expected subpaths', () => {
@@ -81,6 +89,7 @@ void describe('subpath exports', () => {
       './types',
       './interfaces',
       './owl-gen',
+      './owl-gen-node',
       './viz'
     ]) {
       assert.ok(subpaths.includes(expected), `exports map must include "${expected}"`);

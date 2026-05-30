@@ -20,6 +20,7 @@ import { transform } from 'sucrase';
 
 import * as jtIndex from '../../../../src/index.js';
 import * as jtTypes from '../../../../src/types/index.js';
+import * as jtOwlGen from '../../../../src/owl-gen.js';
 import * as jtSchema from '../../../../src/schema.js';
 import * as jtValue from '../../../../src/value.js';
 import * as jtOntology from '../../../../src/ontology.js';
@@ -42,6 +43,7 @@ const STATIC_MODULES: Readonly<Record<string, unknown>> = {
   'json-tology': jtIndex,
   'json-tology/interfaces': jtInterfaces,
   'json-tology/ontology': jtOntology,
+  'json-tology/owl-gen': jtOwlGen,
   'json-tology/schema': jtSchema,
   'json-tology/types': jtTypes,
   'json-tology/value': jtValue,
@@ -50,6 +52,7 @@ const STATIC_MODULES: Readonly<Record<string, unknown>> = {
   'src/interfaces/index': jtInterfaces,
   'src/modules/registry/SchemaRegistry': schemaRegistry,
   'src/ontology': jtOntology,
+  'src/owl-gen': jtOwlGen,
   'src/schema': jtSchema,
   'src/types/index': jtTypes,
   'src/value': jtValue,

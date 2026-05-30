@@ -1,33 +1,46 @@
 /**
- * owl-gen — programmatic API for OWL TBox → TypeScript codegen.
+ * owl-gen — browser-safe programmatic API for OWL TBox → TypeScript codegen.
  *
- * Import this entry point from build scripts, vite plugins, tsup hooks,
- * or any Node.js tooling that needs to generate typed registry source.
+ * This entry point is fully browser-safe: it has no `node:` imports and returns
+ * generated source as strings/data. File-writing is in the Node-only skin:
+ * `json-tology/owl-gen-node` (`writeFromTbox` / `writeRegistryDirectory`).
  *
- * Two modes:
- *   - Single-file: `generateFromTbox` → all schemas + registry in one `.ts` file.
- *   - Registry-directory: `generateRegistryDirectory` → `entities/<Name>.ts` per class
- *     plus an `index.ts` that imports all entities and constructs the registry.
+ * Two functions:
+ *   - Single-file: `generateFromTbox` → all schemas + registry in one TS string.
+ *   - Registry-directory: `generateRegistryDirectory` → per-entity source files
+ *     plus an `index.ts` source, returned as data (no disk I/O).
  *
  * @example
+ * // Browser / bundler / Vite plugin — string return only
  * import { generateFromTbox } from 'json-tology/owl-gen';
- * const src = generateFromTbox({ input: myJsonLd, name: 'acl' });
- * fs.writeFileSync('src/acl-registry.ts', src);
+ * const source = generateFromTbox({ input: myJsonLd, name: 'acl' });
+ * // pass `source` to your virtual-module plugin, a Blob, or a Node writer
  *
  * @example
+ * // Node.js — use the node skin for disk I/O
+ * import { writeFromTbox } from 'json-tology/owl-gen-node';
+ * writeFromTbox({ input: myJsonLd, name: 'acl', output: './src/acl-registry.ts' });
+ *
+ * @example
+ * // Registry-directory — browser-safe data return
  * import { generateRegistryDirectory } from 'json-tology/owl-gen';
- * generateRegistryDirectory({ input: myJsonLd, name: 'acl', outDir: './src/generated/acl' });
+ * const result = generateRegistryDirectory({ input: myJsonLd, name: 'acl' });
+ * for (const file of result.entityFiles) {
+ *   console.log(file.path, file.source.length); // relative path + source string
+ * }
+ *
+ * @example
+ * // Registry-directory — Node.js disk I/O
+ * import { writeRegistryDirectory } from 'json-tology/owl-gen-node';
+ * const written = writeRegistryDirectory({ input: myJsonLd, name: 'acl', outDir: './src/generated/acl' });
+ * console.log(written.indexFile); // absolute path
  */
 
-import {
-  mkdirSync, writeFileSync
-} from 'node:fs';
-import { join } from 'node:path';
 import { JsonTology } from './JsonTology.js';
 import type {
   GenerateFromTboxOptions,
-  GenerateRegistryDirectoryEntityFile,
-  GenerateRegistryDirectoryOptions
+  GenerateRegistryDirectoryOptions,
+  GenerateRegistryDirectoryResult
 } from './interfaces/OwlGen.js';
 import type {
   OwlCodegenOptions,
@@ -41,31 +54,30 @@ import {
 export type {
   GenerateFromTboxOptions,
   GenerateRegistryDirectoryEntityFile,
-  GenerateRegistryDirectoryOptions
+  GenerateRegistryDirectoryOptions,
+  GenerateRegistryDirectoryResult,
+  WrittenEntityFile
 } from './interfaces/OwlGen.js';
 
 /**
  * Generate TypeScript source from an OWL 2 TBox.
  *
- * When `options.output` is provided the source is written to disk and
- * the function returns `void`. When omitted the source string is returned.
+ * Browser-safe: always returns the generated source string. No disk I/O.
+ * For file writing, use `writeFromTbox` from `json-tology/owl-gen-node`.
  *
- * @param options - Input source, optional output path, and codegen knobs.
- * @returns The generated TS source string when `output` is not set; `void` otherwise.
+ * @param options - Input source and codegen knobs.
+ * @returns The generated TypeScript source string.
+ *
+ * @example
+ * const source = generateFromTbox({ input: myJsonLd, name: 'acl' });
+ * fs.writeFileSync('src/acl-registry.ts', source);
  */
-export function generateFromTbox(
-  options: GenerateFromTboxOptions & { 'output': string }
-): void;
-export function generateFromTbox(
-  options: Omit<GenerateFromTboxOptions, 'output'> & { 'output'?: undefined }
-): string;
-export function generateFromTbox(options: GenerateFromTboxOptions): string | void {
+export function generateFromTbox(options: GenerateFromTboxOptions): string {
   const {
     baseIRI,
     header,
     input,
     name,
-    output,
     sourceLabel
   } = options;
 
@@ -80,15 +92,7 @@ export function generateFromTbox(options: GenerateFromTboxOptions): string | voi
     'sourceLabel': sourceLabel ?? defaultSourceLabel
   };
 
-  const source = generateTypeScript(result, codegenOptions);
-
-  if (output === undefined) {
-    return source;
-  }
-
-  writeFileSync(output, source, 'utf8');
-
-  return undefined;
+  return generateTypeScript(result, codegenOptions);
 }
 
 // ---------------------------------------------------------------------------
@@ -96,26 +100,34 @@ export function generateFromTbox(options: GenerateFromTboxOptions): string | voi
 // ---------------------------------------------------------------------------
 
 /**
- * Generate a full registry directory from an OWL 2 TBox.
+ * Generate a full registry directory source from an OWL 2 TBox.
  *
- * Writes:
- *   - `<outDir>/entities/<Name>.ts` — one file per OWL class.
- *   - `<outDir>/index.ts` — imports all entities, constructs the registry,
- *     and re-exports all types and schema constants.
+ * Browser-safe: returns generated files as data — relative paths and source
+ * strings — without writing to disk. For file writing, use
+ * `writeRegistryDirectory` from `json-tology/owl-gen-node`.
  *
- * @param options - Input source, output directory, and codegen knobs.
- * @returns Metadata about the written entity files and the `index.ts` path.
+ * The returned `entityFiles` array contains one entry per OWL class with:
+ *   - `iri` — full class IRI
+ *   - `name` — PascalCase class name
+ *   - `path` — relative path, e.g. `entities/Person.ts`
+ *   - `source` — TypeScript source string
+ *
+ * @param options - Input source and codegen knobs (no `outDir`).
+ * @returns Generated entity files (relative paths + source) and `indexSource`.
+ *
+ * @example
+ * const result = generateRegistryDirectory({ input: myJsonLd, name: 'acl' });
+ * for (const f of result.entityFiles) {
+ *   fs.writeFileSync(join(outDir, f.path), f.source, 'utf8');
+ * }
+ * fs.writeFileSync(join(outDir, 'index.ts'), result.indexSource, 'utf8');
  */
-export function generateRegistryDirectory(options: GenerateRegistryDirectoryOptions): {
-  readonly 'entityFiles': readonly GenerateRegistryDirectoryEntityFile[];
-  readonly 'indexFile': string;
-} {
+export function generateRegistryDirectory(options: GenerateRegistryDirectoryOptions): GenerateRegistryDirectoryResult {
   const {
     baseIRI,
     header,
     input,
     name,
-    outDir,
     sourceLabel
   } = options;
 
@@ -130,35 +142,7 @@ export function generateRegistryDirectory(options: GenerateRegistryDirectoryOpti
     'sourceLabel': sourceLabel ?? defaultSourceLabel
   };
 
-  const filesResult = generateRegistryFiles(result, codegenOptions);
-
-  // Write entities/ subdirectory
-  const entitiesDir = join(outDir, 'entities');
-
-  mkdirSync(entitiesDir, { 'recursive': true });
-
-  const writtenEntityFiles: GenerateRegistryDirectoryEntityFile[] = [];
-
-  for (const entityFile of filesResult.entityFiles) {
-    const absPath = join(outDir, entityFile.path);
-
-    writeFileSync(absPath, entityFile.source, 'utf8');
-    writtenEntityFiles.push({
-      'iri': entityFile.iri,
-      'name': entityFile.name,
-      'path': absPath
-    });
-  }
-
-  // Write index.ts
-  const indexPath = join(outDir, 'index.ts');
-
-  writeFileSync(indexPath, filesResult.indexSource, 'utf8');
-
-  return {
-    'entityFiles': writtenEntityFiles,
-    'indexFile': indexPath
-  };
+  return generateRegistryFiles(result, codegenOptions);
 }
 
 export type {

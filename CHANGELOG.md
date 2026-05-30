@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **BREAKING: `json-tology/owl-gen` is now fully browser-safe and returns
+  strings/data only.** `generateFromTbox` always returns the generated source
+  string (the `output` write overload is removed), and `generateRegistryDirectory`
+  returns the entity files as data (relative `path` plus `source`) and `indexSource`
+  without writing to disk. File-writing moves to the new Node-only entry
+  `json-tology/owl-gen-node` (`writeFromTbox`, `writeRegistryDirectory`), which
+  preserves the prior disk-writing behaviour. Browser and bundler consumers can
+  now run OWL TBox to TypeScript codegen without pulling in `node:fs`.
+
 ## [0.16.0] - 2026-05-29
 
 ### Changed
