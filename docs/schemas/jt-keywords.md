@@ -107,19 +107,19 @@ Prefer `jt:config: { frozen: true }` when you also need `extra` or `strict`. Use
 
 **Semantics.** Pins the property to an explicit predicate IRI. `toQuads` uses this IRI as the predicate for the property's quad regardless of the registry `baseIRI`, `enableCanonicalPredicates`, or `predicateFor` settings. It is the highest-precedence predicate binding after an absolute `$id` on the property schema.
 
-**Read by.** `PredicateResolver.resolve()` in `src/modules/graph/PredicateResolver.ts:53` — step 1 in the five-step precedence chain.
+**Read by.** `PredicateResolver.resolve()` in `src/modules/graph/PredicateResolver.ts:53`, step 1 in the five-step precedence chain.
 
 **Use this when** a single property must align to an external vocabulary IRI (for example, a Schema.org predicate) without a registry-level `predicateFor` callback.
 
 <<< ../../examples/docs/advanced/102-x-jt-predicate.ts
 
-See [RDF predicates — priority order](/advanced/predicates#x-jt-predicate) for the full precedence chain.
+See [RDF predicates: priority order](/advanced/predicates#x-jt-predicate) for the full precedence chain.
 
 ## `x-jt-iriRef` {#x-jt-iriref}
 
 **Payload.** Literal `true`.
 
-**Semantics.** Instructs `toQuads` to emit the string value as an RDF `NamedNode` rather than an `xsd:string` literal. Use it on string properties whose value is a dereferenceable IRI — URLs, URNs, or any identifier that should be treated as a node in the graph rather than a data value.
+**Semantics.** Instructs `toQuads` to emit the string value as an RDF `NamedNode` rather than an `xsd:string` literal. Use it on string properties whose value is a dereferenceable IRI: URLs, URNs, or any identifier that should be treated as a node in the graph rather than a data value.
 
 **Read by.** `Projection` reads `propertySemantics.iriRef` in `src/modules/rdf/Projection.ts` and routes the value through `Terms.iri(value)` instead of the literal path.
 
@@ -137,24 +137,24 @@ The `DownloadUrl` schema in the bookstore domain (`x-jt-iriRef: true`) and the `
 
 **Read by.** `Projection` reads `propertySemantics.language` in `src/modules/rdf/Projection.ts` and passes the tag to `QuadFactory.literal(value, XSD.string, { language })`.
 
-**Use this when** the string property contains natural-language text in a known language — provenance descriptions, titles in a specific locale, editorial notes — and you want downstream reasoners or search engines to treat the language information as part of the triple.
+**Use this when** the string property contains natural-language text in a known language (provenance descriptions, titles in a specific locale, editorial notes) and you want downstream reasoners or search engines to treat the language information as part of the triple.
 
 The example above (example 103) also shows `x-jt-language` in action via the `signedFirstEdition` fixture's `provenance` field.
 
 ## `jt:annotatedEdge` {#jt-annotated-edge}
 
-**Payload.** The shape produced by `Compose.annotatedEdge({ predicate, targetRef, annotations })`. Do not write this keyword directly — use the `Compose.annotatedEdge` builder, which produces the correct internal structure.
+**Payload.** The shape produced by `Compose.annotatedEdge({ predicate, targetRef, annotations })`. Do not write this keyword directly. Use the `Compose.annotatedEdge` builder, which produces the correct internal structure.
 
 **Semantics.** Declares a property as an RDF-star annotated edge. `toQuads` emits two things for the property:
 
 1. A **base triple**: `<subject> <edgePredicate> <targetIRI>`
 2. One **annotation quad** per declared annotation, whose subject is a triple-term (a `Quad`-subject quad per the RDF 1.2 / RDF-star specification): `<< subject edgePredicate targetIRI >> <annotationPredicate> <value>`
 
-Both the base triple and all annotation quads share the same named graph. A `graphIRI` option is required when calling `toQuads` — the default graph cannot carry triple-term quads.
+Both the base triple and all annotation quads share the same named graph. A `graphIRI` option is required when calling `toQuads`; the default graph cannot carry triple-term quads.
 
 **Read by.** `Projection` in `src/modules/rdf/Projection.ts` dispatches to `projectAnnotatedEdge` when the property structure kind is `'annotatedEdge'`.
 
-**Use this when** a relationship between two individuals carries metadata that belongs to the edge itself rather than to either endpoint — ratings on a review-to-book link, weights on a similarity edge, timestamps on a provenance arc.
+**Use this when** a relationship between two individuals carries metadata that belongs to the edge itself rather than to either endpoint: ratings on a review-to-book link, weights on a similarity edge, timestamps on a provenance arc.
 
 <<< ../../examples/docs/advanced/104-annotated-edge-rdfstar.ts
 

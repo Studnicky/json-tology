@@ -126,7 +126,7 @@ install.
 
 ### Piping to n3.Writer
 
-<!-- inline-ts-ok: cross-package interop pattern — imports `n3` (a devDependency for this docs example); no runnable file because n3 is not in runtime dependencies -->
+<!-- inline-ts-ok: cross-package interop pattern - imports `n3` (a devDependency for this docs example); no runnable file because n3 is not in runtime dependencies -->
 ```ts
 import { Writer } from 'n3';
 
@@ -145,7 +145,7 @@ The in-house `Terms` factory (`src/modules/rdf/Terms.ts`) produces rdf/js-spec
 term objects (`NamedNode`, `BlankNode`, `Literal`, `DefaultGraph`) and quads
 (`@rdfjs/types#Quad`) without requiring `@rdfjs/data-model` at runtime. To use
 a different DataFactory (e.g. `n3.DataFactory`, `@rdfjs/data-model`), construct
-quads with that factory and pass them into `jt.fromQuads()` — they are accepted
+quads with that factory and pass them into `jt.fromQuads()`. They are accepted
 as-is because the project's accepted shape is the canonical rdf/js spec.
 
 ### Recovering typed JS values from literals
@@ -165,7 +165,7 @@ to hand-decode.
 
 RDF lists (used by `owl:unionOf`, `owl:oneOf`, `sh:or`, `sh:in`, etc.) are
 emitted as the standard `rdf:first` / `rdf:rest` / `rdf:nil` triple chain.
-There is no project-internal "list term" — the list head (a `BlankNode`) appears
+There is no project-internal "list term". The list head (a `BlankNode`) appears
 in the parent triple's object position and the chain materialises as additional
 quads.
 

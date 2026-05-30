@@ -23,7 +23,7 @@ The bookstore domain in [Bookstore Domain](/bookstore-domain) supplies prefixes 
 
 When multiple prefixes share an overlap, `compact` picks the longest match.
 
-The default prefix map used across the package is `STANDARD_PREFIXES` (from `src/constants/STANDARD_PREFIXES.ts`) — the canonical prefix-to-namespace lookup for the well-known RDF vocabularies (`rdf`, `rdfs`, `owl`, `sh`, `xsd`, `schema`, `foaf`, `dc`, `dct`, `dcterms`, `dcat`, `skos`, `prov`, `time`, `geo`, `vann`, `dash`, `jt`). Every IRI constant in `src/constants/IRI.ts` derives from this map. Pass your own prefix map to `JsonTology.create({ prefixes })` to extend or override the defaults — your entries merge over `STANDARD_PREFIXES`.
+The default prefix map used across the package is `STANDARD_PREFIXES` (from `src/constants/STANDARD_PREFIXES.ts`), the canonical prefix-to-namespace lookup for the well-known RDF vocabularies (`rdf`, `rdfs`, `owl`, `sh`, `xsd`, `schema`, `foaf`, `dc`, `dct`, `dcterms`, `dcat`, `skos`, `prov`, `time`, `geo`, `vann`, `dash`, `jt`). Every IRI constant in `src/constants/IRI.ts` derives from this map. Pass your own prefix map to `JsonTology.create({ prefixes })` to extend or override the defaults; your entries merge over `STANDARD_PREFIXES`.
 
 ## `Path`
 
@@ -63,12 +63,12 @@ Constructor: `new IdentifierIssuer(options?)` where `options` is `{ prefix?: str
 
 Surface:
 
-- `getId(existing?)` — issue a new identifier, or return the previously issued one for `existing` if it has been mapped. Calling without `existing` always issues a fresh identifier without recording a mapping (anonymous blank nodes).
-- `hasId(existing)` — true if `existing` already has an issued identifier.
-- `getIssuedMap()` — read-only view of the current mapping.
-- `getIssuedIdentifiers()` — keys in issuance order.
-- `clone()` — fork an independent issuer with the same prefix, counter, and mappings.
-- `reset()` — clear counter and mappings.
+- `getId(existing?)`: issue a new identifier, or return the previously issued one for `existing` if it has been mapped. Calling without `existing` always issues a fresh identifier without recording a mapping (anonymous blank nodes).
+- `hasId(existing)`: true if `existing` already has an issued identifier.
+- `getIssuedMap()`: read-only view of the current mapping.
+- `getIssuedIdentifiers()`: keys in issuance order.
+- `clone()`: fork an independent issuer with the same prefix, counter, and mappings.
+- `reset()`: clear counter and mappings.
 
 You only need to construct one directly if you are writing a custom projector or RDF serializer that participates in the same blank-node naming scheme. The built-in projectors manage their own.
 

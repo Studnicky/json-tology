@@ -12,7 +12,7 @@
 
 ### Example 1: Link a legacy CRM identifier to a stable customer IRI
 
-The bookstore migrated from a legacy CRM in 2024. Customer Bastian Balthazar Bux carries the current bookstore IRI alongside the legacy CRM ID (`cust-00042`) the bookstore inherited from the old system. Declaring `sameAs` lets a reasoner merge facts about both — the new email from the bookstore and the old purchase history from the CRM resolve to one logical individual.
+The bookstore migrated from a legacy CRM in 2024. Customer Bastian Balthazar Bux carries the current bookstore IRI alongside the legacy CRM ID (`cust-00042`) the bookstore inherited from the old system. Declaring `sameAs` lets a reasoner merge facts about both. The new email from the bookstore and the old purchase history from the CRM resolve to one logical individual.
 
 <<< ../../examples/docs/advanced/43-sameas-legacy-crm.ts
 

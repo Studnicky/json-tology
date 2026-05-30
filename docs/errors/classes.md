@@ -109,7 +109,7 @@ The `errors` collection is the same `ValidationErrors` used by `validate()` - se
 
 ## `CoercionError` <Badge type="tip" text="Runtime" />
 
-**Thrown for.** Coercion failure — raised by `value.cast()`, `value.convert()`, and their registry equivalents (`registry.cast`, `registry.convert`) when the coerced data does not satisfy the schema. Carries the full structured error list.
+**Thrown for.** Coercion failure, raised by `value.cast()`, `value.convert()`, and their registry equivalents (`registry.cast`, `registry.convert`) when the coerced data does not satisfy the schema. Carries the full structured error list.
 
 **Adds.** `errors: ValidationErrors` (the full `ValidationErrors` collection describing every constraint that coercion could not satisfy).
 
@@ -123,7 +123,7 @@ The `errors` collection is the same `ValidationErrors` used by `validate()` - se
 
 ## `TransformError` <Badge type="tip" text="Runtime" />
 
-**Thrown for.** Base class for directional transform failures. Not thrown directly by the library — see `DecodeError` and `EncodeError`.
+**Thrown for.** Base class for directional transform failures. Not thrown directly by the library. See `DecodeError` and `EncodeError`.
 
 **Extends.** `BaseError`.
 
@@ -144,7 +144,7 @@ The `errors` collection is the same `ValidationErrors` used by `validate()` - se
 
 ## `DecodeError` <Badge type="tip" text="Runtime" />
 
-**Thrown for.** Failure inside a `decode` transform function — raised by `jt.instantiate()` when the registered decode function throws. The original throw is preserved on `cause`.
+**Thrown for.** Failure inside a `decode` transform function, raised by `jt.instantiate()` when the registered decode function throws. The original throw is preserved on `cause`.
 
 **Extends.** `TransformError` → `BaseError`.
 
@@ -152,13 +152,13 @@ The `errors` collection is the same `ValidationErrors` used by `validate()` - se
 
 **Fields.** `code === 'TRANSFORM_DECODE_FAILED'`, `direction === 'decode'`, plus `schemaId?`, `path?`, `cause?` inherited from `TransformError`.
 
-**Consumer use.** Custom decode handlers may `throw new DecodeError('message', { path: '/field' })`. The library propagates the thrown instance unchanged — message, code, `path`, and any other fields set by the caller are preserved. Missing `schemaId` context is filled in automatically.
+**Consumer use.** Custom decode handlers may `throw new DecodeError('message', { path: '/field' })`. The library propagates the thrown instance unchanged: message, code, `path`, and any other fields set by the caller are preserved. Missing `schemaId` context is filled in automatically.
 
 <<< ../../examples/docs/transforms/13-transform-errors.ts
 
 ## `EncodeError` <Badge type="tip" text="Runtime" />
 
-**Thrown for.** Failure inside an `encode` transform function — raised by `jt.encode()` (and `dump`) when the registered encode function throws. The original throw is preserved on `cause`.
+**Thrown for.** Failure inside an `encode` transform function, raised by `jt.encode()` (and `dump`) when the registered encode function throws. The original throw is preserved on `cause`.
 
 **Extends.** `TransformError` → `BaseError`.
 

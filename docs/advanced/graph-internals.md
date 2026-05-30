@@ -144,7 +144,7 @@ Whenever a JSON Schema concept can be expressed in standard RDFS, OWL, SHACL, or
 vocabulary, json-tology emits it that way. The `jt:*` predicates are reserved for the
 irreducibles.
 
-JSON Schema `if`/`then`/`else` fragments are not currently emitted by either `ShaclProjection` or `OwlProjection` — these fragments are explicitly skipped during graph serialization.
+JSON Schema `if`/`then`/`else` fragments are not currently emitted by either `ShaclProjection` or `OwlProjection`. These fragments are explicitly skipped during graph serialization.
 
 ## See also
 

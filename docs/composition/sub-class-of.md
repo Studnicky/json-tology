@@ -56,13 +56,13 @@ Output wire shape:
 
 ### Example 2: subclass + invariant for axioms TypeScript can't express
 
-A `SignedFirstEdition` is a `RareBook` whose sole author signed the copy. The structural OWL contract — "subclass of RareBook, adds `signedBy` and `provenance`" — is expressed by single-parent `subClassOf`. The "exactly one author" axiom is registered as a runtime invariant (`signedFirstEditionIsSoloAuthored`) on the schema, surfaced through the same `ValidationErrors` shape as structural errors. Single-authorship is a predicate over `authors`, not a distinct OWL class identity, so it deliberately stays out of the TBox.
+A `SignedFirstEdition` is a `RareBook` whose sole author signed the copy. The structural OWL contract ("subclass of RareBook, adds `signedBy` and `provenance`") is expressed by single-parent `subClassOf`. The "exactly one author" axiom is registered as a runtime invariant (`signedFirstEditionIsSoloAuthored`) on the schema, surfaced through the same `ValidationErrors` shape as structural errors. Single-authorship is a predicate over `authors`, not a distinct OWL class identity, so it deliberately stays out of the TBox.
 
 <<< ../../examples/docs/bookstore/entities/SignedFirstEdition.ts
 
 ### Example 3: disjoint classes
 
-`PrintBook` is a `Book` that **cannot also be** an `EBook` — a single book copy is either a physical artefact or a digital download, never both at once.
+`PrintBook` is a `Book` that **cannot also be** an `EBook`. A single book copy is either a physical artefact or a digital download, never both at once.
 
 <<< ../../examples/docs/bookstore/entities/PrintBook.ts
 
@@ -85,7 +85,7 @@ urn:bookstore:OutOfPrintBook  owl:complementOf  urn:bookstore:InPrintBook .
 urn:bookstore:OutOfPrintBook  rdfs:subClassOf   urn:bookstore:Book .
 ```
 
-JSON Schema runtime: validates as `Book AND NOT InPrintBook` — only `Book`-shaped values that fail the `InPrintBook` constraint pass.
+JSON Schema runtime: validates as `Book AND NOT InPrintBook`; only `Book`-shaped values that fail the `InPrintBook` constraint pass.
 
 ## Comparison
 

@@ -49,7 +49,7 @@ Options marked <Badge type="info" text="Compile-time" /> affect type inference o
 |--------|------|---------|---------|
 | `baseIRI` | `string` | _(required)_ | Base URI for the canonical graph and ontology output. |
 | `schemas` | `readonly Schema[]` | `[]` | Schemas to register at construction. Order matters when using `$ref`: register referenced schemas before referencing schemas. |
-| `prefetched` | `SnapshotInterface` | _(none)_ | Pre-resolved schema bundle produced by `JsonTology.prefetch`. Schemas passed via `schemas` register first; entries from the snapshot then fill any IRIs not already in the registry — `schemas` wins on `$id` collision. See [Schema federation](/advanced/schema-federation). |
+| `prefetched` | `SnapshotInterface` | _(none)_ | Pre-resolved schema bundle produced by `JsonTology.prefetch`. Schemas passed via `schemas` register first; entries from the snapshot then fill any IRIs not already in the registry. `schemas` wins on `$id` collision. See [Schema federation](/advanced/schema-federation). |
 | `prefixes` | `Record<string, string>` | `STANDARD_PREFIXES` | Vocabulary prefix → IRI mappings, merged with built-in defaults (`rdf`, `rdfs`, `owl`, `sh`, `xsd`, `schema`, `foaf`, `dc`, `dcterms`, `dcat`, `skos`, `prov`, `time`, `geo`, `vann`, `dash`, `jt`). |
 | `formats` | `Record<string, FormatValidatorFn>` | `{}` | Custom format validators. Keys are format names (`'isbn'`), values are `(value: unknown) => boolean`. |
 | `enableTypeCast` | `boolean` | `false` | Enable string→number/boolean coercion at validation time. |

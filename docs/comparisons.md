@@ -91,20 +91,20 @@ For runnable performance numbers see [Benchmarks](/benchmarks). For inline side-
 
 ## When to reach for each
 
-- **json-tology** — your schemas need to act as both a TypeScript type source *and* a knowledge graph (OWL/SHACL/RDF). You author in JSON Schema once and project from there.
-- **Zod** — pure runtime validation with first-class TS inference and a friendly DSL. The default reach for TS-first apps with no graph requirements.
-- **Valibot** — same niche as Zod but tree-shakable and roughly 10× smaller bundle on minimal use.
-- **TypeBox** — you want JSON Schema as the canonical artifact but author in a TS-typed DSL. The closest comparator to json-tology on the schema-as-output axis.
-- **AJV** — pure JSON Schema validation, no TS inference, fastest in cold-path validation throughput. Pair with TypeBox for typed authoring.
-- **Pydantic** — Python. Sets the bar for type-first runtime validation in the Python ecosystem; cross-language reference.
-- **Yup / Joi** — older DSL-first validators; common in legacy forms / web APIs. Yup is TS-friendly; Joi is JS-first.
-- **io-ts** — pure functional codec library. Decoder/encoder symmetry is its strength; fp-ts integration is its tax.
-- **Effect Schema** — codec library inside the Effect ecosystem. Strong when the rest of the app already uses Effect; heavy import otherwise.
-- **ArkType** — DSL is a string with TS-typed grammar (literal-types magic). Speed-competitive; novel ergonomics.
-- **Runtypes** — combinator library. Smaller and simpler than io-ts; less powerful codec story.
+- **json-tology**: your schemas need to act as both a TypeScript type source *and* a knowledge graph (OWL/SHACL/RDF). You author in JSON Schema once and project from there.
+- **Zod**: pure runtime validation with first-class TS inference and a friendly DSL. The default choice for TS-first apps with no graph requirements.
+- **Valibot**: same niche as Zod but tree-shakable and roughly 10× smaller bundle on minimal use.
+- **TypeBox**: you want JSON Schema as the canonical artifact but author in a TS-typed DSL. The closest comparator to json-tology on the schema-as-output axis.
+- **AJV**: pure JSON Schema validation, no TS inference, fastest in cold-path validation throughput. Pair with TypeBox for typed authoring.
+- **Pydantic**: Python. Sets the bar for type-first runtime validation in the Python ecosystem; cross-language reference.
+- **Yup / Joi**: older DSL-first validators; common in legacy forms / web APIs. Yup is TS-friendly; Joi is JS-first.
+- **io-ts**: pure functional codec library. Decoder/encoder symmetry is its strength; fp-ts integration is its tax.
+- **Effect Schema**: codec library inside the Effect ecosystem. Strong when the rest of the app already uses Effect; heavy import otherwise.
+- **ArkType**: DSL is a string with TS-typed grammar (literal-types magic). Speed-competitive; novel ergonomics.
+- **Runtypes**: combinator library. Smaller and simpler than io-ts; less capable codec story.
 
 ## See also
 
-- [Benchmarks](/benchmarks) — runnable performance comparisons.
-- [References](/references) — links to every library's docs.
-- [Picking a method](/picking-a-method) — choosing between `validate` / `instantiate` / `is` inside json-tology.
+- [Benchmarks](/benchmarks): runnable performance comparisons.
+- [References](/references): links to every library's docs.
+- [Picking a method](/picking-a-method): choosing between `validate` / `instantiate` / `is` inside json-tology.

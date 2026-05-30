@@ -12,9 +12,9 @@ fromTbox ∘ toTbox ≈ identity   (on the supported OWL 2 axiom set)
 
 ## API
 
-### Static helper — no registry state
+### Static helper (no registry state)
 
-<!-- inline-ts-ok: API signature pseudocode — optional parameters use ?: syntax which is not runnable standalone -->
+<!-- inline-ts-ok: API signature pseudocode; optional parameters use ?: syntax which is not runnable standalone -->
 ```ts
 import { JsonTology } from 'json-tology';
 
@@ -24,11 +24,11 @@ const result: OwlImportResult = JsonTology.fromTbox(
 );
 ```
 
-The static helper is stateless — it constructs a transient `OwlImporter` and discards it. Use it when you only need the reconstructed schemas as plain objects.
+The static helper is stateless: it constructs a transient `OwlImporter` and discards it. Use it when you only need the reconstructed schemas as plain objects.
 
-### Instance method — registers into the live registry
+### Instance method (registers into the live registry)
 
-<!-- inline-ts-ok: API signature pseudocode — optional parameters use ?: syntax which is not runnable standalone -->
+<!-- inline-ts-ok: API signature pseudocode; optional parameters use ?: syntax which is not runnable standalone -->
 ```ts
 const jt = JsonTology.create({ baseIRI: 'https://example.org' });
 const result: OwlImportResult = jt.fromTbox(
@@ -39,7 +39,7 @@ const result: OwlImportResult = jt.fromTbox(
 
 When `register: true` (the default), all produced schemas are passed to `registry.set()`, invariants are registered, `sameAs` pairs are applied, and property characteristics are recorded. This makes the imported vocabulary immediately available for `validate()` / `instantiate()` / `materialize()` calls.
 
-### Return type — `OwlImportResult`
+### Return type: `OwlImportResult`
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -98,7 +98,7 @@ Run `fromTbox(toTbox(schemas).jsonLd())` against the canonical bookstore registr
 
 ## Compile-time types via codegen
 
-`JsonTology.fromTbox` (and the `OwlImporter` underneath it) resolve an OWL TBox at **runtime**. TypeScript's type system operates at **compile time** — it cannot reach into an external file, execute it, and derive types from the result. This means that even though `fromTbox` reconstructs accurate JSON Schema objects, the static type of those schemas is `JsonSchemaDocumentObjectType`, not a narrow `as const` literal from which `InferType<…>` can extract a meaningful compile-time type.
+`JsonTology.fromTbox` (and the `OwlImporter` underneath it) resolve an OWL TBox at **runtime**. TypeScript's type system operates at **compile time**: it cannot reach into an external file, execute it, and derive types from the result. This means that even though `fromTbox` reconstructs accurate JSON Schema objects, the static type of those schemas is `JsonSchemaDocumentObjectType`, not a narrow `as const` literal from which `InferType<…>` can extract a meaningful compile-time type.
 
 The solution is a build-step code generator: run the ontology through a code generator once, write the resulting TypeScript module to disk, and then import that module as ordinary source. The generated module contains `as const` schema literals identical to what you would write by hand, so `InferType<typeof PersonSchema>` works exactly as it does for hand-authored schemas.
 
@@ -108,10 +108,10 @@ The solution is a build-step code generator: run the ontology through a code gen
 ontology JSON-LD → json-tology owl-gen → TypeScript source → consumer imports
 ```
 
-1. **Input** — any JSON-LD string or file that `fromTbox` accepts.
-2. **Generator** — the `owl-gen` subcommand (or the `generateFromTbox` programmatic API).
-3. **Output** — a `.ts` module that exports one `as const` schema literal per OWL class, with a matching `export type` per class derived via `InferType`.
-4. **Consumption** — import the generated module in your application the same way you import hand-authored schemas.
+1. **Input**: any JSON-LD string or file that `fromTbox` accepts.
+2. **Generator**: the `owl-gen` subcommand (or the `generateFromTbox` programmatic API).
+3. **Output**: a `.ts` module that exports one `as const` schema literal per OWL class, with a matching `export type` per class derived via `InferType`.
+4. **Consumption**: import the generated module in your application the same way you import hand-authored schemas.
 
 ### CLI
 
@@ -125,11 +125,11 @@ Options:
 |------|---------|-------------|
 | `--out <path>` | stdout | Write the generated TypeScript source to `<path>`. |
 | `--name <id>` | input filename basename (sanitized) | Identifier prefix used for namespace exports. |
-| `--base-iri <iri>` | — | Override `baseIRI` passed to `fromTbox`. |
+| `--base-iri <iri>` | (none) | Override `baseIRI` passed to `fromTbox`. |
 
 ### Programmatic API
 
-<!-- inline-ts-ok: API signature pseudocode — generateFromTbox parameters use ?: syntax which is not runnable standalone -->
+<!-- inline-ts-ok: API signature pseudocode; generateFromTbox parameters use ?: syntax which is not runnable standalone -->
 ```ts
 import { generateFromTbox } from 'json-tology/owl-gen';
 
@@ -140,7 +140,7 @@ const source: string = generateFromTbox({
 });
 ```
 
-`generateFromTbox` returns the generated TypeScript source as a string. Writing it to disk is the caller's responsibility — use `fs.writeFileSync` or pass `--out` on the CLI.
+`generateFromTbox` returns the generated TypeScript source as a string. Writing it to disk is the caller's responsibility: use `fs.writeFileSync` or pass `--out` on the CLI.
 
 ### Runnable example
 
@@ -159,7 +159,7 @@ const source: string = generateFromTbox({
 }
 ```
 
-This is the simplest option. Every `npm run build` re-generates the file first. CI receives the generated file baked into the source tree (commit it); or generate-on-CI and exclude it from the repo — either pattern works.
+This is the simplest option. Every `npm run build` re-generates the file first. CI receives the generated file baked into the source tree (commit it); or generate-on-CI and exclude it from the repo. Either pattern works.
 
 **Vite plugin.** Wrap `generateFromTbox` in a Vite plugin's `buildStart` hook to integrate with the dev-server watch cycle. The plugin calls `generateFromTbox`, writes the result to disk, and invalidates the dependent module so HMR re-processes consumers. This is appropriate when the source ontology lives in `public/` or arrives via a remote URL that changes during development.
 
@@ -168,7 +168,7 @@ This is the simplest option. Every `npm run build` re-generates the file first. 
 ### Limitations
 
 - **OWL-induced invariants are not serialised into the generated TypeScript.** Property characteristics (`owl:FunctionalProperty`, `owl:TransitiveProperty`, etc.) and cross-field invariants are recorded in `OwlImportResult.characteristics` and `OwlImportResult.invariants` at runtime. The code generator emits the structural schema only. Register characteristics and invariants programmatically after importing the generated module if you need them at runtime.
-- **Generated files are one-way.** When the source ontology changes, regenerate the TypeScript file and commit the update. Do not hand-edit generated files — they will be overwritten on the next generation run.
+- **Generated files are one-way.** When the source ontology changes, regenerate the TypeScript file and commit the update. Do not hand-edit generated files; they will be overwritten on the next generation run.
 
 ## Generating a full registry directory <Badge type="tip" text="v0.12.0+" />
 
@@ -179,7 +179,7 @@ For production canonical domains, the **registry-directory mode** generates the 
 | Mode | When to use |
 |------|-------------|
 | Single-file (`--out foo.ts`) | Quick demos, prototypes, CLI pipelines where one file is easier to handle |
-| Registry-directory (`--out foo/`) | Production canonical domains — mirrors the bookstore layout, each class gets its own file and type export |
+| Registry-directory (`--out foo/`) | Production canonical domains: mirrors the bookstore layout, each class gets its own file and type export |
 
 The registry-directory output is structurally identical to a hand-authored domain: entity files use `export const <Name>Schema = { ... } as const` and `export type <Name> = InferType<typeof <Name>Schema>`, while `index.ts` constructs `JsonTology.create({ baseIRI, schemas })` in dependency order.
 
@@ -195,7 +195,7 @@ npx json-tology owl-gen ./foaf.jsonld --out ./src/generated/foaf --mode director
 
 ### Programmatic API
 
-<!-- inline-ts-ok: API signature pseudocode — optional parameters use ?: syntax which is not runnable standalone -->
+<!-- inline-ts-ok: API signature pseudocode; optional parameters use ?: syntax which is not runnable standalone -->
 ```ts
 import { generateRegistryDirectory } from 'json-tology/owl-gen';
 
@@ -220,13 +220,13 @@ Each generated `entities/<Name>.ts` follows the same convention as `examples/doc
 
 ## Real-ontology round-trip examples <Badge type="tip" text="v0.11.1+" /> {#real-ontology-examples}
 
-The examples below run the full `fromTbox → generateFromTbox → validate` pipeline against three real-world standard vocabularies. Each fixture is a hand-authored concise subset — not the full upstream ontology — so it fits on a page and compiles in milliseconds.
+The examples below run the full `fromTbox → generateFromTbox → validate` pipeline against three real-world standard vocabularies. Each fixture is a hand-authored concise subset, not the full upstream ontology, so it fits on a page and compiles in milliseconds.
 
 The committed generated files (`examples/docs/ontologies/generated/*.generated.ts`) are refreshed by running `npm run regen:ontology-fixtures` when the codegen output format changes.
 
-### FOAF — Friend of a Friend
+### FOAF (Friend of a Friend)
 
-FOAF is a classic semantic-web vocabulary for describing people and their social relationships. The interesting round-trip detail: `owl:disjointWith` between `foaf:Person` and `foaf:Group` is encoded symmetrically — both class schemas carry `disjointWith` pointing at each other.
+FOAF is a classic semantic-web vocabulary for describing people and their social relationships. The interesting round-trip detail: `owl:disjointWith` between `foaf:Person` and `foaf:Group` is encoded symmetrically; both class schemas carry `disjointWith` pointing at each other.
 
 **Input ontology fixture:**
 
@@ -240,9 +240,9 @@ FOAF is a classic semantic-web vocabulary for describing people and their social
 
 <<< ../../examples/docs/advanced/92-foaf-roundtrip.ts
 
-### DCAT-AP — Data Catalog Vocabulary
+### DCAT-AP (Data Catalog Vocabulary)
 
-DCAT is a W3C recommendation for describing data catalogs and datasets published on the Web. The interesting round-trip detail: the `rdfs:subClassOf` chain reaches `dcterms:Resource`, an external IRI not defined in this subset. `fromTbox` handles this gracefully — `dcterms:Resource` becomes a class stub, and `dcat:Dataset` and `dcat:Catalog` carry `allOf: [{ $ref: "http://purl.org/dc/terms/Resource" }]` pointing to it.
+DCAT is a W3C recommendation for describing data catalogs and datasets published on the Web. The interesting round-trip detail: the `rdfs:subClassOf` chain reaches `dcterms:Resource`, an external IRI not defined in this subset. `fromTbox` handles this gracefully: `dcterms:Resource` becomes a class stub, and `dcat:Dataset` and `dcat:Catalog` carry `allOf: [{ $ref: "http://purl.org/dc/terms/Resource" }]` pointing to it.
 
 **Input ontology fixture:**
 
@@ -256,9 +256,9 @@ DCAT is a W3C recommendation for describing data catalogs and datasets published
 
 <<< ../../examples/docs/advanced/93-dcat-roundtrip.ts
 
-### schema.org — Structured Data Vocabulary
+### schema.org (Structured Data Vocabulary)
 
-schema.org is a collaborative vocabulary for structured data on the Web, widely used for search-engine markup and data exchange. The interesting round-trip detail: `schema:IsbnType` is declared as an `rdfs:Datatype` with an `owl:withRestrictions` XSD pattern facet (`^\d{13}$`). This round-trips losslessly — the generated `IsbnTypeSchema` carries `type: 'string', pattern: '^\d{13}$'` and `BookSchema.properties.isbn` is a `$ref` pointing to `IsbnTypeSchema`.
+schema.org is a collaborative vocabulary for structured data on the Web, widely used for search-engine markup and data exchange. The interesting round-trip detail: `schema:IsbnType` is declared as an `rdfs:Datatype` with an `owl:withRestrictions` XSD pattern facet (`^\d{13}$`). This round-trips losslessly: the generated `IsbnTypeSchema` carries `type: 'string', pattern: '^\d{13}$'` and `BookSchema.properties.isbn` is a `$ref` pointing to `IsbnTypeSchema`.
 
 **Input ontology fixture:**
 
@@ -274,7 +274,7 @@ schema.org is a collaborative vocabulary for structured data on the Web, widely 
 
 ## Related
 
-- [`jt.toTbox()`](/advanced/ontology#jt-totbox) — OWL TBox emission (the inverse operation)
-- [`jt.toShacl()`](/advanced/ontology#jt-toshacl) — SHACL shapes emission
-- [RDF round-trip (toQuads / fromQuads)](/advanced/quads) — ABox data round-trip
-- `OwlImporter` (`src/modules/ontology/OwlImporter.ts`) — low-level class if you need to reuse a single importer across multiple inputs
+- [`jt.toTbox()`](/advanced/ontology#jt-totbox): OWL TBox emission (the inverse operation)
+- [`jt.toShacl()`](/advanced/ontology#jt-toshacl): SHACL shapes emission
+- [RDF round-trip (toQuads / fromQuads)](/advanced/quads): ABox data round-trip
+- `OwlImporter` (`src/modules/ontology/OwlImporter.ts`): low-level class if you need to reuse a single importer across multiple inputs

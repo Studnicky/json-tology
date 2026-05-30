@@ -2,7 +2,7 @@
 
 > Validation modes: [Validation modes reference](/validation-modes)
 
-**Declaration.** Attaches a compile-time nominal brand to a schema's TypeScript type. Returns the same schema object at runtime — no WeakMap entry is created, no runtime effect. The TypeScript return type becomes `BrandedType<TSchema, TBrand>`, which intersects `TSchema` with a unique-symbol-keyed tag `{ readonly [BRAND]: TBrand }` — not a string field. The string-keyed shape `{ readonly brand: TBrand }` is on `BrandOutputType` (the inferred value-level type), not on `BrandedType` (the schema-level type). Access the branded value type via `BrandOutputType<typeof schema>`.
+**Declaration.** Attaches a compile-time nominal brand to a schema's TypeScript type. Returns the same schema object at runtime, no WeakMap entry is created, no runtime effect. The TypeScript return type becomes `BrandedType<TSchema, TBrand>`, which intersects `TSchema` with a unique-symbol-keyed tag `{ readonly [BRAND]: TBrand }` (not a string field). The string-keyed shape `{ readonly brand: TBrand }` is on `BrandOutputType` (the inferred value-level type), not on `BrandedType` (the schema-level type). Access the branded value type via `BrandOutputType<typeof schema>`.
 
 **Use this when** you need nominally distinct types for identifiers that are structurally identical at runtime - `CustomerId` and `OrderId` are both UUID strings, but TypeScript should refuse to let you pass one where the other is expected. This prevents mixing up ID fields from different entity types.
 

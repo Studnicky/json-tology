@@ -1,6 +1,6 @@
 # Browser usage
 
-json-tology has no environment-specific export paths. The same `import` works in Node, Bun, Deno, and browsers — no conditional `browser`/`node` exports to navigate. Async schema fetching runs through the **loader hook** consumed by `JsonTology.prefetch`, which uses `globalThis.fetch` and therefore runs identically everywhere.
+json-tology has no environment-specific export paths. The same `import` works in Node, Bun, Deno, and browsers, with no conditional `browser`/`node` exports to navigate. Async schema fetching runs through the **loader hook** consumed by `JsonTology.prefetch`, which uses `globalThis.fetch` and therefore runs identically everywhere.
 
 The shape is two steps: prefetch the snapshot once (async), then construct the instance synchronously anywhere from the snapshot.
 
@@ -45,6 +45,6 @@ If all schemas are known at build time and have no external `$ref`s, skip `prefe
 ## Key points
 
 - No `browser`/`node`/`default` conditional export paths on any json-tology subpath.
-- `Loaders` helpers use only `globalThis.fetch` and `Promise` — no Node built-ins.
+- `Loaders` helpers use only `globalThis.fetch` and `Promise`, with no Node built-ins.
 - `JsonTology.create` is synchronous. Async fetching is isolated to `JsonTology.prefetch`.
-- Runtime dependencies: `commander` (CLI only — not pulled into browser bundles) and `jsonld` (used by ontology building). `@rdfjs/types` is types-only and carries zero runtime cost.
+- Runtime dependencies: `commander` (CLI only, not pulled into browser bundles) and `jsonld` (used by ontology building). `@rdfjs/types` is types-only and carries zero runtime cost.

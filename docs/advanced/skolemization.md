@@ -15,7 +15,7 @@ Relevant standards:
 
 ### `Skolemize.hash({ baseIRI })`
 
-Hashes the value with FNV-1a and emits `<baseIRI>/instances/<contentHash>`. Deterministic — equal values produce equal IRIs across calls and processes.
+Hashes the value with FNV-1a and emits `<baseIRI>/instances/<contentHash>`. Deterministic: equal values produce equal IRIs across calls and processes.
 
 This is **not** identical to the projection's built-in default IRI minter. The default minter (`defaultInstanceIri`) additionally prefixes the escaped class identifier, emitting `<baseIRI>/instances/<classId>-<contentHash>`. `Skolemize.hash` omits the classId segment, so its output differs from the projection default even for identical input values.
 

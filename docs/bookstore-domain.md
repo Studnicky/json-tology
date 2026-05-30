@@ -1,6 +1,6 @@
 # The Bookstore Domain
 
-Every example throughout this documentation uses a single running domain — an eCommerce bookstore. This page defines the folder structure and the schemas that appear in all subsequent guides. Later guides build on this foundation, and examples reference these types by name without re-defining them.
+Every example throughout this documentation uses a single running domain: an eCommerce bookstore. This page defines the folder structure and the schemas that appear in all subsequent guides. Later guides build on this foundation, and examples reference these types by name without re-defining them.
 
 > **Source:** the full domain (TBox schemas, ABox seed data, transforms, anti-pattern fixtures) lives at [`examples/docs/bookstore/`](https://github.com/Studnicky/json-tology/tree/main/examples/docs/bookstore). Every code block on this page is excerpted from those files; clone the repo and run them directly.
 
@@ -47,7 +47,7 @@ examples/docs/bookstore/
     └── OutOfPrintBook.ts         # complementOf InPrintBook, allOf-bounded to Book
 ```
 
-Cross-field rules that JSON Schema and TypeScript can't express structurally — like "a `SignedFirstEdition` has exactly one author" — are registered on the schema as invariants (`bookstoreEntities.addInvariant`). The invariant function runs after structural validation and surfaces failures in the same `ValidationErrors` shape as any structural error, with `keyword: 'jt:invariant'`. This is how json-tology augments TypeScript: schema declarations carry not just shape but the runtime axioms that shape can't express, and the inferred TS type tracks both.
+Cross-field rules that JSON Schema and TypeScript can't express structurally (like "a `SignedFirstEdition` has exactly one author") are registered on the schema as invariants (`bookstoreEntities.addInvariant`). The invariant function runs after structural validation and surfaces failures in the same `ValidationErrors` shape as any structural error, with `keyword: 'jt:invariant'`. This is how json-tology augments TypeScript: schema declarations carry not just shape but the runtime axioms that shape can't express, and the inferred TS type tracks both.
 
 Each primitive file exports a single schema constant with a stable `$id` using the `urn:bookstore:` IRI pattern. Entity files import only the primitives they reference - every `$ref` is `{ $ref: SourceSchema.$id }` with an explicit named import at the top of the file.
 

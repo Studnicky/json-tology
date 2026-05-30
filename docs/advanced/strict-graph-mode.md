@@ -4,9 +4,9 @@ json-tology enforces strict inline-shape detection at the registry boundary by d
 
 Three modes operate on the canonical graph and all rely on the same structural-equality test that drives [`findDuplicates`](/registry/find-duplicates):
 
-- **Strict throw** — any inline constrained shape or structural duplicate is a `SchemaError` at registration time (default).
-- **Warn-on-register** — emits `logger.warn` instead of throwing; active alongside strict mode and also as the standalone mode when strict is off.
-- **On-demand audit** — `registry.findDuplicates()` is available at any time regardless of mode.
+- **Strict throw**: any inline constrained shape or structural duplicate is a `SchemaError` at registration time (default).
+- **Warn-on-register**: emits `logger.warn` instead of throwing; active alongside strict mode and also as the standalone mode when strict is off.
+- **On-demand audit**: `registry.findDuplicates()` is available at any time regardless of mode.
 
 ---
 

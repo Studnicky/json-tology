@@ -1,6 +1,6 @@
 # `set`, `registerAnonymous`, registry access
 
-Schema management — adding, inspecting, and introspecting the schema registry.
+Schema management: adding, inspecting, and introspecting the schema registry.
 
 ---
 
@@ -8,9 +8,9 @@ Schema management — adding, inspecting, and introspecting the schema registry.
 
 **Declaration.** Adds or replaces one or more schemas and returns `this` with the schema types accumulated into the type map. The schema is always the first argument:
 
-- `set(schema)` — single; key derived from `schema.$id`.
-- `set(schema, iri)` — explicit key; for non-canonical aliasing.
-- `set([schema | [schema, iri], ...])` — bulk; each entry is a schema or `[schema, iri]` tuple.
+- `set(schema)`: single; key derived from `schema.$id`.
+- `set(schema, iri)`: explicit key; for non-canonical aliasing.
+- `set([schema | [schema, iri], ...])`: bulk; each entry is a schema or `[schema, iri]` tuple.
 
 Schemas with `$ref` that reference other schemas must have those other schemas in the registry first (or supplied in the same `set` call). Replaces silently on `$id` collision, per `Map.set` semantics.
 
@@ -109,7 +109,7 @@ ajv.addSchema(bookSchema);
 
 ---
 
-## `jt.registry` — the Map-native interface {#registry-access}
+## `jt.registry`: the Map-native interface {#registry-access}
 
 `jt.registry` mirrors the surface of a native `Map<string, Schema>`. Reads (`has`, `get`, `keys`, `values`, `entries`, `forEach`, `size`, `for...of`) and writes (`set`, `delete`, `clear`) are spelled exactly as on `Map`. No facade aliases on `JsonTology` itself; everything goes through the registry.
 
@@ -135,7 +135,7 @@ Standard Map iterators. `keys()` yields `$id` strings, `values()` yields schema 
 
 ### `jt.registry.set(schema, iri?)` {#registry-set-method}
 
-Map-style write. Schema is always the first argument; key is derived from `schema.$id`. Pass an explicit `iri` only for non-canonical aliasing — passing one that disagrees with `schema.$id` throws `SchemaError('SCHEMA_INVALID_INPUT')`. Bulk writes accept an array of schemas or `[schema, iri]` tuples. Replaces silently on collision per `Map.set`. Returns the registry for chaining.
+Map-style write. Schema is always the first argument; key is derived from `schema.$id`. Pass an explicit `iri` only for non-canonical aliasing; passing one that disagrees with `schema.$id` throws `SchemaError('SCHEMA_INVALID_INPUT')`. Bulk writes accept an array of schemas or `[schema, iri]` tuples. Replaces silently on collision per `Map.set`. Returns the registry for chaining.
 
 <<< ../../examples/docs/registry/07-registry-set-method.ts
 

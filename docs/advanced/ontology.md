@@ -100,7 +100,7 @@ The bookstore schemas defined in the [Bookstore Domain](/bookstore-domain) are u
 
 ## `jt.validateWithShacl` {#jt-validatewithshacl} <Badge type="warning" text="Experimental" />
 
-**Declaration.** Intended inverse of [`toShacl()`](#jt-toshacl) — validate instance quads against SHACL shape quads. **Not yet implemented.** Always throws `GraphError` with code `NOT_IMPLEMENTED`. The signature is published so that future implementations remain source-compatible.
+**Declaration.** Intended inverse of [`toShacl()`](#jt-toshacl): validate instance quads against SHACL shape quads. **Not yet implemented.** Always throws `GraphError` with code `NOT_IMPLEMENTED`. The signature is published so that future implementations remain source-compatible.
 
 <!-- inline-ts-ok: signature illustration of a not-yet-implemented method (always throws NOT_IMPLEMENTED); cannot be a runnable example -->
 ```ts
