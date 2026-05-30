@@ -54,6 +54,11 @@ const price = jt.instantiate(PricedSchema, '€850.00');
 console.assert(price === 850);
 console.assert(price === aboxFixtures.rareBook.price.amount);
 
+// decoded price: 850 (float)
+console.log('decoded price :', price);
+
 const wire = jt.encode(PricedSchema, price);
 
 console.assert(wire === '€850.00');
+// encoded wire: €850.00
+console.log('encoded wire  :', wire);

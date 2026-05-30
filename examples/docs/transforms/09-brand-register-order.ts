@@ -30,9 +30,12 @@ jt.set(BrandedAuthorId);
 
 // The branded schema is retrievable from the registry.
 console.assert(jt.registry.has(BrandedAuthorId.$id));
+console.log('registered schema ID:', BrandedAuthorId.$id);
 
 // Instantiate produces a value typed as AuthorId at compile time.
 const authorId = jt.instantiate(BrandedAuthorId, 'walter-moers');
 
 console.assert(typeof authorId === 'string');
 console.assert(authorId === 'walter-moers');
+// AuthorId branded value: walter-moers
+console.log('AuthorId branded value:', authorId);

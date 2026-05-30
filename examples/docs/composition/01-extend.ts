@@ -51,3 +51,8 @@ const coercedCustomer = jt2.instantiate(CustomerWithDiscountSchema.$id, {
 console.assert(coercedCustomer.discountRate === 0.15);
 console.assert(coercedCustomer.tier === 'silver');
 console.assert(coercedCustomer.name === 'Bastian Balthazar Bux');
+console.log('CustomerWithDiscount:', {
+  'discountRate': coercedCustomer.discountRate,
+  'name': coercedCustomer.name,
+  'tier': coercedCustomer.tier
+});

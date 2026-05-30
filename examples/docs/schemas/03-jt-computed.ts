@@ -32,3 +32,7 @@ console.assert(totalAmount === 850);
 const schemaId: string = OrderSchema.$id;
 
 console.assert(schemaId === 'urn:bookstore:Order');
+
+console.log('OrderSchema.$id:', schemaId);
+console.log('orderTotal.amount (jt:computed field, derived from orderLines):', totalAmount);
+console.log('Validation errors (expect 0):', errs.length);

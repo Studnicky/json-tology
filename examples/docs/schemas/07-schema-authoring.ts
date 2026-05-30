@@ -26,9 +26,13 @@ console.assert(Array.isArray(CustomerSchema.required));
 // Validate Bastian Balthazar Bux against the registered schema.
 const errs = bookstoreEntities.validate(CustomerSchema.$id, {
   'addresses': [],
+  'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'email': 'bastian.bux@bookstore.example',
-  'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'name': 'Bastian Balthazar Bux'
 });
 
 console.assert(errs.length === 0);
+
+console.log('CustomerSchema.$id:', id);
+console.log('CustomerSchema.type:', schemaType);
+console.log('Validation errors (expect 0):', errs.length);

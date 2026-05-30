@@ -10,29 +10,29 @@
 
 ### Example 1: Round-trip an Order schema
 
-<<< ../../examples/docs/serialization/09-toschema-roundtrip.ts
+<RunnableExample src="examples/docs/serialization/09-toschema-roundtrip" />
 
 ### Example 2: Verify a composed schema round-trips correctly
 
-<<< ../../examples/docs/serialization/10-toschema-composed.ts
+<RunnableExample src="examples/docs/serialization/10-toschema-composed" />
 
 ### Example 3: Undefined for unregistered schemas
 
-<<< ../../examples/docs/serialization/11-toschema-undefined.ts
+<RunnableExample src="examples/docs/serialization/11-toschema-undefined" />
 
 ## Bad examples: what NOT to do
 
 ### Anti-pattern 1: Using toSchema when you need the original authored object
 
-<<< ../../examples/docs/serialization/12-toschema-antipattern-original-object.ts
+<RunnableExample src="examples/docs/serialization/12-toschema-antipattern-original-object" />
 
 ### Anti-pattern 2: Using the reconstructed schema as a source of truth for structural comparison
 
-<<< ../../examples/docs/serialization/13-toschema-antipattern-structural-compare.ts
+<RunnableExample src="examples/docs/serialization/13-toschema-antipattern-structural-compare" />
 
 ### Anti-pattern 3: Calling toSchema for an unregistered schema without handling undefined
 
-<<< ../../examples/docs/serialization/14-toschema-antipattern-undefined.ts
+<RunnableExample src="examples/docs/serialization/14-toschema-antipattern-undefined" />
 
 ## Comparison
 

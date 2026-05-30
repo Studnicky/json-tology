@@ -18,11 +18,11 @@
 
 #### Example 1: PATCH customer endpoint
 
-<<< ../../examples/docs/composition/03-partial-required.ts
+<RunnableExample src="examples/docs/composition/03-partial-required" />
 
 #### Example 2: Form initial state for a Review
 
-<<< ../../examples/docs/composition/38-partial-draft-review.ts
+<RunnableExample src="examples/docs/composition/38-partial-draft-review" />
 
 ### Comparison
 
@@ -111,7 +111,7 @@ class PatchCustomer(BaseModel):
 
 `BookSchema` declares `inStock` with a default (so it is effectively optional in the base schema). A strict create schema requires every declared property explicitly.
 
-<<< ../../examples/docs/composition/39-required-strict-book.ts
+<RunnableExample src="examples/docs/composition/39-required-strict-book" />
 
 ### Comparison
 

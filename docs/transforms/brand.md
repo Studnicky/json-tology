@@ -12,17 +12,17 @@
 
 ### Example 1: Nominally distinct Customer and Order IDs
 
-<<< ../../examples/docs/transforms/07-brand-nominal-ids.ts
+<RunnableExample src="examples/docs/transforms/07-brand-nominal-ids" />
 
 ### Example 2: Branded ISBN for books
 
-<<< ../../examples/docs/transforms/08-brand-isbn.ts
+<RunnableExample src="examples/docs/transforms/08-brand-isbn" />
 
 ## Bad examples - what NOT to do
 
 ### Anti-pattern 1: Applying brand after the schema has been registered
 
-<<< ../../examples/docs/transforms/09-brand-register-order.ts
+<RunnableExample src="examples/docs/transforms/09-brand-register-order" />
 
 ## Comparison
 

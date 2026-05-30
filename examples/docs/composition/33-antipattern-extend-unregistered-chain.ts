@@ -34,11 +34,12 @@ const jt2 = jt.set(ASchema).set(BSchema);
 
 const result = jt2.validate(BSchema.$id, {
   'addresses': [],
+  'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'email': 'bastian.bux@bookstore.example',
-  'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'memberSince': '2019-04-01',
   'name': 'Bastian Balthazar Bux',
   'pointsBalance': 240
 });
 
 console.assert(result.ok);
+console.log('CustomerB validates with inherited + added fields:', result.ok, '| schema chain: Customer -> CustomerA -> CustomerB');

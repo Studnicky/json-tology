@@ -28,3 +28,7 @@ console.assert(bastian.name === 'Bastian Balthazar Bux');
 console.assert(typeof bastian.customerId === 'string');
 console.assert(typeof bastian.email === 'string');
 console.assert(Array.isArray(bastian.addresses));
+
+console.log('name:', bastian.name);
+console.log('email:', bastian.email);
+console.log('addresses:', (bastian.addresses ?? []).length);

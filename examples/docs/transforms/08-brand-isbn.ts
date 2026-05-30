@@ -45,3 +45,7 @@ const result = lookupBook(isbn as ISBN13);
 
 console.assert(result === aboxFixtures.rareBook.isbn);
 console.assert(typeof isbn === 'string');
+// ISBN13 branded value: 9783522128001
+console.log('ISBN13 (branded):', isbn);
+// A plain string literal cannot be passed to lookupBook without going through instantiate
+console.log('accepted by lookupBook:', result);

@@ -21,3 +21,7 @@ const schemaFormat: string = CustomerIdSchema.format;
 
 console.assert(schemaType === 'string');
 console.assert(schemaFormat === 'uuid');
+
+console.log('$id:', id);
+console.log('type:', schemaType);
+console.log('format:', schemaFormat);

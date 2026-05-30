@@ -15,3 +15,4 @@ const defaults = Compose.getDefaults(OrderSchema);
 // Order properties carry $ref to primitives but no top-level default keys,
 // so getDefaults returns no recognised default fields.
 console.assert(typeof defaults === 'object');
+console.log('OrderSchema getDefaults (no declared defaults):', defaults);

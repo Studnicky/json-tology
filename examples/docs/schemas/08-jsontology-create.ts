@@ -29,8 +29,8 @@ console.assert(addressErrs.length === 0);
 // Validate the canonical fixtures to confirm the other schemas are registered.
 const customerErrs = bookstoreEntities.validate(CustomerSchema.$id, {
   'addresses': [],
+  'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'email': 'bastian.bux@bookstore.example',
-  'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'name': 'Bastian Balthazar Bux'
 });
 
@@ -51,3 +51,8 @@ const bookErrs = bookstoreEntities.validate(BookSchema.$id, {
 });
 
 console.assert(bookErrs.length === 0);
+
+console.log('AddressSchema.$id:', AddressSchema.$id, '— address validation errors:', addressErrs.length);
+console.log('CustomerSchema.$id:', CustomerSchema.$id, '— customer validation errors:', customerErrs.length);
+console.log('BookSchema.$id:', BookSchema.$id, '— book validation errors:', bookErrs.length);
+console.log('All three schemas registered in bookstoreEntities — cross-schema $ref resolution active.');

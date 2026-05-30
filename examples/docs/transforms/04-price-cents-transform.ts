@@ -36,6 +36,10 @@ const price = jt.instantiate(PriceCentsSchema, 1499);
 
 console.assert(price === 14.99);
 
+// 1499 cents decoded to EUR: 14.99
+console.log('1499 cents decoded to EUR:', price);
+
 const wire = jt.encode(PriceCentsSchema, price);
 
 console.assert(wire === 1499);
+console.log('14.99 EUR encoded to cents:', wire);

@@ -43,3 +43,7 @@ const wire = jt.encode(PlacedAtRoundTripSchema, date);
 
 console.assert(wire === raw);
 console.assert(typeof wire === 'string');
+console.log('wire   :', raw);
+console.log('domain :', date.toISOString());
+// exact round-trip
+console.log('re-encoded === wire:', wire === raw);

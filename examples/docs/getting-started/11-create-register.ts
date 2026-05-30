@@ -26,9 +26,12 @@ const jt = JsonTology.create({
 // Validate Bastian Balthazar Bux — zero errors confirms schema is registered.
 const errs = jt.validate(CustomerSchema.$id, {
   'addresses': [],
+  'customerId': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'email': 'bastian.bux@bookstore.example',
-  'id': 'c1a2b3d4-e5f6-7890-abcd-ef1234567890',
   'name': 'Bastian Balthazar Bux'
 });
 
 console.assert(errs.length === 0);
+
+console.log('schema $id:', CustomerSchema.$id);
+console.log('validation errors:', errs.length);

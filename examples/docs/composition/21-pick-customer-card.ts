@@ -37,3 +37,4 @@ const card = jt2.instantiate(CustomerCardSchema.$id, {
 console.assert(card.customerId === aboxFixtures.customer.customerId);
 console.assert(card.name === 'Bastian Balthazar Bux');
 console.assert(!('addresses' in card));
+console.log('CustomerCard picked fields:', Object.keys(card), '| addresses omitted:', !('addresses' in card));

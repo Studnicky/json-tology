@@ -27,3 +27,7 @@ console.assert(original !== undefined, 'BookSchema should be registered');
 
 // original is the exact object reference passed to JsonTology.create
 console.assert(original === BookSchema, 'registry.get returns the original schema reference');
+
+// Show that registry.get returns the original $id unchanged
+console.log('original.$id:', original?.$id);
+console.log('registry.get === BookSchema:', original === BookSchema);

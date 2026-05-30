@@ -20,23 +20,23 @@ Schemas are plain JSON Schema objects with `$id` and `as const`. They are intero
 
 Primitives are named, reusable schemas with a `urn:` IRI:
 
-<<< ../examples/docs/getting-started/08-primitive-schema.ts
+<RunnableExample src="examples/docs/getting-started/08-primitive-schema" />
 
 Entities compose primitives via `$ref: SourceSchema.$id` - never bare string literals:
 
-<<< ../examples/docs/getting-started/09-entity-schema.ts
+<RunnableExample src="examples/docs/getting-started/09-entity-schema" />
 
 `as const` is required. Without it TypeScript widens every string literal and `InferType<T>` cannot produce the right type.
 
 ## Derive the TypeScript type
 
-<<< ../examples/docs/getting-started/10-infer-type.ts
+<RunnableExample src="examples/docs/getting-started/10-infer-type" />
 
 No code generation. No separate type declaration file. The type comes directly from the schema literal at compile time.
 
 ## Create an instance and register schemas
 
-<<< ../examples/docs/getting-started/11-create-register.ts
+<RunnableExample src="examples/docs/getting-started/11-create-register" />
 
 `JsonTology.create()` registers all schemas, compiles the validation graph, and builds the type map. Every method that accepts a schema `$id` returns typed results from that map.
 
@@ -44,7 +44,7 @@ No code generation. No separate type declaration file. The type comes directly f
 
 `validate()` returns a `ValidationErrors` collection. An empty collection (`errs.ok === true`) means valid.
 
-<<< ../examples/docs/getting-started/01-validate.ts
+<RunnableExample src="examples/docs/getting-started/01-validate" />
 
 See [Validation](/validation/instantiate) for `is()`, `validate()`, `subschemaAt()`, and the structured error views.
 
@@ -52,13 +52,13 @@ See [Validation](/validation/instantiate) for `is()`, `validate()`, `subschemaAt
 
 `instantiate()` validates, applies defaults, strips unknown properties, and returns a typed value. Throws `InstantiationError` on failure.
 
-<<< ../examples/docs/getting-started/03-address-defaults.ts
+<RunnableExample src="examples/docs/getting-started/03-address-defaults" />
 
 ## Compose schemas
 
 `Compose` derives new schemas from existing ones. All composition runs at compile time and produces correct JSON Schema objects.
 
-<<< ../examples/docs/getting-started/04-compose-partial-pick.ts
+<RunnableExample src="examples/docs/getting-started/04-compose-partial-pick" />
 
 The full set of combinators (`extend`, `omit`, `required`, `intersection`, `discriminatedUnion`) is covered in [Composition](/composition/extend).
 
@@ -66,7 +66,7 @@ The full set of combinators (`extend`, `omit`, `required`, `intersection`, `disc
 
 `dump()` walks the validation graph and applies any registered `Transform` encoders. It is the Pydantic `model_dump()` equivalent.
 
-<<< ../examples/docs/getting-started/05-dump-json.ts
+<RunnableExample src="examples/docs/getting-started/05-dump-json" />
 
 Filtering options (`exclude`, `include`, `excludeDefaults`) are documented in [Serialization](/serialization/dump).
 
@@ -74,7 +74,7 @@ Filtering options (`exclude`, `include`, `excludeDefaults`) are documented in [S
 
 Import only what you need. Every sub-path is tree-shakable.
 
-<<< ../examples/docs/getting-started/07-subpath-imports.ts
+<RunnableExample src="examples/docs/getting-started/07-subpath-imports" />
 
 ## What's in the box
 

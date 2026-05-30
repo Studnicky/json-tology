@@ -39,4 +39,5 @@ if (retrieved !== undefined) {
   });
 
   console.assert(result.ok);
+  console.log('BookWithoutStock derived from registry and validates without inStock:', result.ok);
 }

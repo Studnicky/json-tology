@@ -81,6 +81,7 @@ const jt2 = jt.set(BookStatusVariantSchema);
 const outOfPrint = jt2.validate(BookStatusVariantSchema.$id, aboxFixtures.rareBook);
 
 console.assert(outOfPrint.ok);
+console.log('OutOfPrint variant validates:', outOfPrint.ok);
 
 // In-print variant — Momo (still printed by Thienemann).
 const inPrint = jt2.validate(BookStatusVariantSchema.$id, {
@@ -96,3 +97,4 @@ const inPrint = jt2.validate(BookStatusVariantSchema.$id, {
 });
 
 console.assert(inPrint.ok);
+console.log('InPrint variant validates:', inPrint.ok, '| discriminator:', 'printStatus');

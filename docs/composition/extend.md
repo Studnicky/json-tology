@@ -19,27 +19,27 @@ Reach for `subClassOf` when you want the ontology to read as taxonomy and you ma
 
 Building on `CustomerSchema` from the [bookstore domain](/bookstore-domain):
 
-<<< ../../examples/docs/composition/01-extend.ts
+<RunnableExample src="examples/docs/composition/01-extend" />
 
 ### Example 2: Extend Book with featured display info
 
-<<< ../../examples/docs/composition/30-extend-featured-book.ts
+<RunnableExample src="examples/docs/composition/30-extend-featured-book" />
 
 ### Example 3: Tighten a property in the additions side of the allOf
 
 `Compose.extend` does not flatten `properties` over the base. The additions appear as a second `allOf` entry, so a property declared in the additions becomes an *additional* constraint that must hold alongside the base's constraint. Both must be satisfied, which is how `allOf` works in JSON Schema. Use this when you want to add a stricter constraint on top of the base.
 
-<<< ../../examples/docs/composition/31-extend-tightened-property.ts
+<RunnableExample src="examples/docs/composition/31-extend-tightened-property" />
 
 ## Bad examples - what NOT to do
 
 ### Anti-pattern 1: Using extend when you need required on the new fields
 
-<<< ../../examples/docs/composition/32-antipattern-extend-required-additions.ts
+<RunnableExample src="examples/docs/composition/32-antipattern-extend-required-additions" />
 
 ### Anti-pattern 2: Chaining extend to build a history of derivations without registering intermediates
 
-<<< ../../examples/docs/composition/33-antipattern-extend-unregistered-chain.ts
+<RunnableExample src="examples/docs/composition/33-antipattern-extend-unregistered-chain" />
 
 ## Comparison
 

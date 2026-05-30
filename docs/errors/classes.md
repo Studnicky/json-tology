@@ -154,7 +154,7 @@ The `errors` collection is the same `ValidationErrors` used by `validate()` - se
 
 **Consumer use.** Custom decode handlers may `throw new DecodeError('message', { path: '/field' })`. The library propagates the thrown instance unchanged: message, code, `path`, and any other fields set by the caller are preserved. Missing `schemaId` context is filled in automatically.
 
-<<< ../../examples/docs/transforms/13-transform-errors.ts
+<RunnableExample src="examples/docs/transforms/13-transform-errors" />
 
 ## `EncodeError` <Badge type="tip" text="Runtime" />
 

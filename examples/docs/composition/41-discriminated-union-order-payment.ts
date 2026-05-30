@@ -88,3 +88,4 @@ const result = jt2.validate(OrderWithPaymentSchema.$id, {
 });
 
 console.assert(result.ok);
+console.log('OrderWithPayment validates credit-card payment union:', result.ok);

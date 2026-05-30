@@ -63,3 +63,7 @@ const errsBad = jt.validate(OrderSchema.$id, {
 });
 
 console.assert(errsBad.length > 0);
+
+console.log('valid order (status from $defs/Status enum, note via #shipping-note anchor) — errors:', errsOk.length);
+console.log('invalid status ("unknown-status" not in enum) — errors:', errsBad.length);
+console.log('$defs sub-schemas accessible via JSON Pointer (#/$defs/Status) and anchor (#shipping-note).');

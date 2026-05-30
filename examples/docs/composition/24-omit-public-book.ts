@@ -34,3 +34,4 @@ const errors = jt2.validate(PublicBookSchema.$id, {
 });
 
 console.assert(errors.ok);
+console.log('PublicBookNoStatus validates without printStatus:', errors.ok, '| omitted fields:', ['printStatus']);

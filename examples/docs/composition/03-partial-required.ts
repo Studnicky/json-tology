@@ -33,6 +33,7 @@ const jt2 = jt.set(PatchCustomerSchema).set(StrictCustomerSchema);
 const patchErrors = jt2.validate(PatchCustomerSchema.$id, { 'name': aboxFixtures.customer.name });
 
 console.assert(patchErrors.length === 0);
+console.log('PatchCustomer accepts name-only:', patchErrors.length === 0, '| required stripped by partial');
 
 // StrictCustomer requires every field, including addresses.
 const strictErrors = jt2.validate(StrictCustomerSchema.$id, {
@@ -43,6 +44,7 @@ const strictErrors = jt2.validate(StrictCustomerSchema.$id, {
 });
 
 console.assert(strictErrors.length > 0);
+console.log('StrictCustomer rejects missing addresses:', strictErrors.length, 'error(s)');
 
 // Full Bastian fixture passes StrictCustomer.
 const strictOk = jt2.validate(
@@ -51,3 +53,4 @@ const strictOk = jt2.validate(
 );
 
 console.assert(strictOk.length === 0);
+console.log('StrictCustomer accepts full fixture:', strictOk.length === 0);

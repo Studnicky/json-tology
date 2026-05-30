@@ -10,11 +10,11 @@ All examples use the [bookstore domain](/bookstore-domain). See [Getting Started
 
 Schemas are declared as TypeScript `const` objects so the compiler can read the literal types. The minimal shape is:
 
-<<< ../examples/docs/schemas/07-schema-authoring.ts
+<RunnableExample src="examples/docs/schemas/07-schema-authoring" />
 
 **`$id` is required.** Every schema registered with `set()` must carry a fully-qualified IRI as its `$id`. The IRI is the stable identity used by `registry.has`, `registry.get`, `validate`, `instantiate`, `materialize`, and cross-schema `$ref`. Use the project's `baseIRI` as the namespace:
 
-<<< ../examples/docs/schemas/08-jsontology-create.ts
+<RunnableExample src="examples/docs/schemas/08-jsontology-create" />
 
 **`as const` is required for type inference.** Without it, TypeScript widens string literals to `string` and `InferType` cannot derive precise property types.
 
@@ -24,7 +24,7 @@ Schemas are declared as TypeScript `const` objects so the compiler can read the 
 
 Use `$ref` to point one schema at another by IRI. The runtime resolves the reference against the registry.
 
-<<< ../examples/docs/schemas/09-ref-cross-schema.ts
+<RunnableExample src="examples/docs/schemas/09-ref-cross-schema" />
 
 **Local fragment refs** (`#`, `#/properties/foo`, `#anchor`) resolve within the same schema document and do not require registry lookup.
 
@@ -36,7 +36,7 @@ Use `$ref` to point one schema at another by IRI. The runtime resolves the refer
 
 Use `$defs` to define reusable sub-schemas inline within a parent schema. They are accessible via `$ref` with a JSON Pointer fragment (`#/$defs/Name`) or via a named `$anchor`.
 
-<<< ../examples/docs/schemas/10-defs-anchor.ts
+<RunnableExample src="examples/docs/schemas/10-defs-anchor" />
 
 ---
 
@@ -63,7 +63,7 @@ Local fragment refs (`#`, `#/foo`, `#anchor`) are unaffected by the strict check
 
 The walk runs at most once per schema entry - subsequent calls against the same schema use the cached result.
 
-<<< ../examples/docs/schemas/11-ref-unresolved-error.ts
+<RunnableExample src="examples/docs/schemas/11-ref-unresolved-error" />
 
 See [Error class hierarchy](/errors/classes) for the full `GraphError` surface.
 

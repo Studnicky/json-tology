@@ -28,3 +28,6 @@ console.assert(parsed.customerId === 'c1a2b3d4-e5f6-7890-abcd-ef1234567890');
 console.assert(parsed.email === 'bastian.bux@bookstore.example');
 console.assert(parsed.name === 'Bastian Balthazar Bux');
 console.assert(Array.isArray(parsed.addresses));
+
+// Show the JSON string as it would appear in an HTTP response body
+console.log('HTTP response body:', json);

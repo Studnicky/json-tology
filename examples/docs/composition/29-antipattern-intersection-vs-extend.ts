@@ -40,3 +40,4 @@ const result = jt2.validate(ExtendedBookSchema.$id, {
 });
 
 console.assert(result.ok);
+console.log('Compose.extend is simpler for single property addition:', result.ok, '| schema:', ExtendedBookSchema.$id);

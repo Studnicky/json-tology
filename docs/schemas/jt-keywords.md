@@ -31,7 +31,7 @@ The bookstore schemas defined in the [Bookstore Domain](/bookstore-domain) are u
 
 **Use this when** you publish RDF that needs to interoperate with externally minted IRIs for the same concept.
 
-<<< ../../examples/docs/schemas/02-jt-alias.ts
+<RunnableExample src="examples/docs/schemas/02-jt-alias" />
 
 ## `jt:computed`
 
@@ -43,7 +43,7 @@ The bookstore schemas defined in the [Bookstore Domain](/bookstore-domain) are u
 
 **Use this when** a property is mechanically derivable from other fields - an order `total` from line items, a `displayName` concatenating fields, a hash of canonical content. Pair it with `addComputed` (or the `computeds` constructor option) to register the function.
 
-<<< ../../examples/docs/schemas/03-jt-computed.ts
+<RunnableExample src="examples/docs/schemas/03-jt-computed" />
 
 See [`addComputed`](/registry/computed) for the function-side contract.
 
@@ -63,7 +63,7 @@ See [`addComputed`](/registry/computed) for the function-side contract.
 
 **Use this when** you want to colocate several runtime policy bits without scattering individual keywords across the schema.
 
-<<< ../../examples/docs/schemas/04-jt-config.ts
+<RunnableExample src="examples/docs/schemas/04-jt-config" />
 
 The three `extra` values:
 
@@ -85,7 +85,7 @@ The three `extra` values:
 
 **Use this when** every materialized value of this schema should be immutable - configuration objects, value objects, snapshot records.
 
-<<< ../../examples/docs/schemas/05-jt-frozen.ts
+<RunnableExample src="examples/docs/schemas/05-jt-frozen" />
 
 Prefer `jt:config: { frozen: true }` when you also need `extra` or `strict`. Use the standalone form when freeze is the only policy.
 
@@ -99,7 +99,7 @@ Prefer `jt:config: { frozen: true }` when you also need `extra` or `strict`. Use
 
 **Use this when** one schema in a registry needs the opposite policy from the rest - for example, a wire-facing payload that must reject coercions even though the rest of the system allows them.
 
-<<< ../../examples/docs/schemas/06-jt-strict.ts
+<RunnableExample src="examples/docs/schemas/06-jt-strict" />
 
 ## `x-jt-predicate` {#x-jt-predicate}
 

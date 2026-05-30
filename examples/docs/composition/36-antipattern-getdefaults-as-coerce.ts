@@ -15,6 +15,12 @@ import {
 const blank = bookstoreEntities.value.create(CustomerSchema.$id) as Record<string, unknown>;
 
 console.assert(Array.isArray(blank.addresses));
-console.assert(typeof blank.id === 'string');
+console.assert(typeof blank.customerId === 'string');
 console.assert(typeof blank.email === 'string');
 console.assert(typeof blank.name === 'string');
+console.log('value.create synthesises all required fields:', {
+  'addresses': blank.addresses,
+  'customerId': blank.customerId,
+  'email': blank.email,
+  'name': blank.name
+});

@@ -44,3 +44,6 @@ if (!(decoded instanceof Date)) {
 const wire = jt.encode(CorrectSchema, decoded);
 
 console.assert(wire === raw);
+// Transform.create is the correct API for a single decode/encode pair.
+console.log('decoded Date :', decoded.toISOString());
+console.log('re-encoded   :', wire);

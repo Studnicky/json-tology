@@ -53,3 +53,6 @@ lookupCustomer(cid as CustomerId);
 
 console.assert(typeof cid === 'string');
 console.assert(cid === aboxFixtures.customer.customerId);
+console.log('CustomerId (branded):', cid);
+// Both are plain strings at runtime; the brand is compile-time only.
+console.log('runtime typeof cid  :', typeof cid);

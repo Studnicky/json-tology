@@ -36,6 +36,7 @@ const jt = JsonTology.create({
 });
 
 let caught = false;
+let errorCode = '';
 
 try {
   jt.validate(OrderLineSchema.$id, {
@@ -45,7 +46,12 @@ try {
 } catch (error) {
   if (error instanceof GraphError && error.code === 'REF_UNRESOLVED') {
     caught = true;
+    errorCode = error.code;
   }
 }
 
 console.assert(caught);
+
+console.log('Unresolved $ref throws GraphError — caught:', caught);
+console.log('error.code:', errorCode);
+console.log('$ref to urn:docs-schemas-11:Book raises REF_UNRESOLVED because BookSchema was not registered.');

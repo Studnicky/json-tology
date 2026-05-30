@@ -22,7 +22,7 @@ Compose.subClassOf(restriction, body): typeof body
 
 You want to express OWL property-restriction class axioms - anonymous classes that constrain how a property is used. Each restriction becomes an `owl:Restriction` blank node in the TBox, referenced from the body class via `rdfs:subClassOf`. Restrictions compose: chaining `Compose.subClassOf` accumulates `jt:restrictions` on the body schema.
 
-<<< ../../examples/docs/composition/08-restrictions.ts
+<RunnableExample src="examples/docs/composition/08-restrictions" />
 
 The TBox emits:
 
@@ -57,7 +57,7 @@ The compile-time narrowing applies to the property named in the restriction. `ca
 
 `Compose.subClassOf` is composable. Each call appends to the body's `jt:restrictions`:
 
-<<< ../../examples/docs/composition/37-restrictions-chained-cardinality.ts
+<RunnableExample src="examples/docs/composition/37-restrictions-chained-cardinality" />
 
 The TBox carries two `owl:Restriction` blank nodes attached via `rdfs:subClassOf`.
 
@@ -71,33 +71,33 @@ The TBox carries two `owl:Restriction` blank nodes attached via `rdfs:subClassOf
 
 ### Example 1: Exact cardinality: PersonWithExactlyTwoParents
 
-<<< ../../examples/docs/composition/09-cardinality-two-parents.ts
+<RunnableExample src="examples/docs/composition/09-cardinality-two-parents" />
 
 ### Example 2: someValuesFrom: book authored by at least one author
 
-<<< ../../examples/docs/composition/10-some-values-from.ts
+<RunnableExample src="examples/docs/composition/10-some-values-from" />
 
 ### Example 3: Chaining restrictions: at least one author, all authors are Author instances
 
-<<< ../../examples/docs/composition/11-chained-restrictions.ts
+<RunnableExample src="examples/docs/composition/11-chained-restrictions" />
 
 ### Example 4: hasValue: mark in-print books
 
-<<< ../../examples/docs/composition/12-has-value-literal.ts
+<RunnableExample src="examples/docs/composition/12-has-value-literal" />
 
 ## Bad examples: what NOT to do
 
 ### Anti-pattern 1: Using cardinality restrictions to drive instance validation
 
-<<< ../../examples/docs/composition/13-antipattern-cardinality-validation.ts
+<RunnableExample src="examples/docs/composition/13-antipattern-cardinality-validation" />
 
 ### Anti-pattern 2: Using Compose.equivalent to express a property restriction
 
-<<< ../../examples/docs/composition/14-antipattern-equivalent.ts
+<RunnableExample src="examples/docs/composition/14-antipattern-equivalent" />
 
 ### Anti-pattern 3: Confusing minCardinality and JSON Schema minItems
 
-<<< ../../examples/docs/composition/15-antipattern-mincardinality.ts
+<RunnableExample src="examples/docs/composition/15-antipattern-mincardinality" />
 
 ## Comparison
 

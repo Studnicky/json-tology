@@ -50,3 +50,6 @@ const price = jt.instantiate(MoneySchema.$id, {
 console.assert(Object.isFrozen(price));
 console.assert(price.amount === 850);
 console.assert(price.currency === 'EUR');
+
+console.log('instantiated price:', price);
+console.log('price is frozen (jt:frozen: true):', Object.isFrozen(price));

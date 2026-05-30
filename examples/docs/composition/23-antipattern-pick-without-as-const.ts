@@ -22,3 +22,4 @@ const BookSummarySchema = Compose.pick(
 const summaryId: string = BookSummarySchema.$id;
 
 console.assert(summaryId.endsWith('BookSummaryConst'));
+console.log('pick with as const preserves literal key types:', Object.keys(BookSummarySchema.properties));

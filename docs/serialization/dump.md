@@ -26,27 +26,27 @@
 
 #### Example 1: Basic serialization of a coerced book
 
-<<< ../../examples/docs/serialization/01-dump.ts
+<RunnableExample src="examples/docs/serialization/01-dump" />
 
 #### Example 2: Compact payload - exclude default-valued fields
 
-<<< ../../examples/docs/serialization/03-dump-exclude-defaults.ts
+<RunnableExample src="examples/docs/serialization/03-dump-exclude-defaults" />
 
 #### Example 3: Project to specific fields
 
-<<< ../../examples/docs/serialization/04-dump-include-projection.ts
+<RunnableExample src="examples/docs/serialization/04-dump-include-projection" />
 
 #### Example 4: Transform integration - `encode` applied automatically
 
 If the schema has a `Transform` encoder registered (see [Transforms](/transforms/decode-encode)), `dump` applies the `encode` function at each transformed node. A `instantiate` → `dump` round-trip recovers the original wire value.
 
-<<< ../../examples/docs/serialization/05-dump-transform-encode.ts
+<RunnableExample src="examples/docs/serialization/05-dump-transform-encode" />
 
 ### Bad examples - what NOT to do
 
 #### Anti-pattern 1: Calling dump on raw (uninstantiated) input
 
-<<< ../../examples/docs/serialization/06-dump-antipattern-raw-input.ts
+<RunnableExample src="examples/docs/serialization/06-dump-antipattern-raw-input" />
 
 ### Comparison
 
@@ -135,11 +135,11 @@ book.model_dump(exclude_none=True)
 
 #### Example 1: Serialize a customer for an HTTP response
 
-<<< ../../examples/docs/serialization/07-dumpjson-http-response.ts
+<RunnableExample src="examples/docs/serialization/07-dumpjson-http-response" />
 
 #### Example 2: Compact order payload
 
-<<< ../../examples/docs/serialization/08-dumpjson-compact-order.ts
+<RunnableExample src="examples/docs/serialization/08-dumpjson-compact-order" />
 
 ### Comparison
 

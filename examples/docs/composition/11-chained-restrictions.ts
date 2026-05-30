@@ -4,7 +4,7 @@ const AUTHORED_BY = 'https://bookstore.example/authoredBy';
 const AUTHOR_IRI = 'https://bookstore.example/Author';
 
 // TBox carries two owl:Restriction blank nodes on rdfs:subClassOf
-const _VerifiedAuthoredBook = Compose.subClassOf(
+const VerifiedAuthoredBookSchema = Compose.subClassOf(
   Compose.minCardinality(AUTHORED_BY, 1),
   Compose.subClassOf(
     Compose.allValuesFrom(AUTHORED_BY, AUTHOR_IRI),
@@ -15,4 +15,5 @@ const _VerifiedAuthoredBook = Compose.subClassOf(
   )
 );
 
-void 0 as unknown as typeof _VerifiedAuthoredBook;
+console.log('VerifiedAuthoredBook schema $id:', VerifiedAuthoredBookSchema.$id);
+console.log('chained restrictions:', (VerifiedAuthoredBookSchema as Record<string, unknown>)['jt:restrictions']);

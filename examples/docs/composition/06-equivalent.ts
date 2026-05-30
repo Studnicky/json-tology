@@ -45,3 +45,4 @@ const aliasBad = jt2.validate(PrimaryIsbnSchema.$id, badIsbn);
 
 console.assert(sourceBad.length === aliasBad.length);
 console.assert(sourceBad.length > 0);
+console.log('Isbn and PrimaryIsbn validate identically:', sourceErrs.length === aliasErrs.length, '| bad ISBN fails both:', sourceBad.length, 'error(s)');

@@ -24,3 +24,12 @@ void 0 as unknown as [
   JsonTology, Compose, Transform, Value, V, Hash, Changeset,
   SchemaRegistry, FormatRegistry, SampleInferred, LoggerInterface
 ];
+
+// All imports are compile-time only — log the sub-path names as documentation.
+console.log('sub-paths available:', [
+  'json-tology',
+  'json-tology/value',
+  'json-tology/schema',
+  'json-tology/types',
+  'json-tology/interfaces'
+].join(', '));

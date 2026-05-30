@@ -47,6 +47,7 @@ const summary = jt2.instantiate(BookSummarySchema, {
 
 console.assert(!('authors' in summary));
 console.assert(summary.isbn === aboxFixtures.rareBook.isbn);
+console.log('BookSummary picked keys:', Object.keys(summary));
 
 // PublicBook — inStock removed, printStatus still required
 const pub = jt2.validate(PublicBookSchema.$id, {
@@ -58,3 +59,4 @@ const pub = jt2.validate(PublicBookSchema.$id, {
 });
 
 console.assert(pub.length === 0);
+console.log('PublicBook valid without inStock:', pub.length === 0, '| omitted inStock from properties');

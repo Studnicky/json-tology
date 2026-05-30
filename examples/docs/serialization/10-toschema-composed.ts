@@ -42,3 +42,6 @@ console.assert(props.includes('title'), 'title should be in reconstructed proper
 console.assert(props.includes('price'), 'price should be in reconstructed properties');
 console.assert(!props.includes('authors'), 'authors should not be in projected schema');
 console.assert(!props.includes('inStock'), 'inStock should not be in projected schema');
+
+// Show the reconstructed BookSummary schema with only the three picked properties
+console.log('reconstructed BookSummary schema:', JSON.stringify(roundTripped, null, 2));

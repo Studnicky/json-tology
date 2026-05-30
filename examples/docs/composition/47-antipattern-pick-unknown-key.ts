@@ -18,4 +18,5 @@ const _Bad = Compose.pick(
   'https://bookstore.example/BookIsbnOnly'
 );
 
+console.log('pick unknown key anti-pattern: compile-time error for keys not in BookSchema.properties | valid keys:', Object.keys(BookSchema.properties));
 void 0 as unknown as typeof _Bad;

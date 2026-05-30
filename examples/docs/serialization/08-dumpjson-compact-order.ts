@@ -31,3 +31,7 @@ const compact = JSON.parse(compactJson) as Record<string, unknown>;
 console.assert(typeof compact.orderId === 'string');
 console.assert(typeof compact.customerId === 'string');
 console.assert(Array.isArray(compact.orderLines));
+
+// Show both JSON strings
+console.log('full JSON:', fullJson);
+console.log('compact JSON (excludeDefaults):', compactJson);

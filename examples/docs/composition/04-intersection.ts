@@ -50,6 +50,7 @@ const jt2 = jt.set(AuditSchema).set(AuditedOrderSchema);
 const errors = jt2.validate(AuditedOrderSchema.$id, aboxFixtures.order);
 
 console.assert(errors.length > 0);
+console.log('AuditedOrder rejects missing audit fields:', errors.length, 'error(s)');
 
 // All fields present — passes.
 const valid = jt2.validate(AuditedOrderSchema.$id, {
@@ -59,3 +60,4 @@ const valid = jt2.validate(AuditedOrderSchema.$id, {
 });
 
 console.assert(valid.length === 0);
+console.log('AuditedOrder accepts order + audit fields:', valid.length === 0);

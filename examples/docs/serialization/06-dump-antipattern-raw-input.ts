@@ -34,3 +34,6 @@ const wireBook = bookstoreEntities.dump(BookSchema.$id, book);
 console.assert(typeof wireBook === 'object' && wireBook !== null);
 console.assert('isbn' in (wireBook as object));
 console.assert('title' in (wireBook as object));
+
+// Show the correctly-instantiated wire form (anti-pattern omitted from output)
+console.log('correct wire (instantiate then dump):', JSON.stringify(wireBook, null, 2));

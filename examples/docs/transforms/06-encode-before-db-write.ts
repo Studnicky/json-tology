@@ -49,3 +49,7 @@ const placedAtWire = jt.encode(PlacedAtDbSchema, placedDate);
 
 console.assert(typeof placedAtWire === 'string');
 console.assert(placedAtWire === new Date(aboxFixtures.order.placedAt).toISOString());
+console.log('domain Date  :', placedDate.toISOString());
+// ISO string ready for persistence
+console.log('db-ready wire:', placedAtWire);
+

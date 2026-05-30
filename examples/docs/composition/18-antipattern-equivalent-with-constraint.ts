@@ -20,3 +20,4 @@ const Isbn978Schema = Compose.extend(
 const isbn978Id: string = Isbn978Schema.$id;
 
 console.assert(isbn978Id.endsWith('Isbn978'));
+console.log('Isbn978 extends Isbn with pattern constraint:', isbn978Id);

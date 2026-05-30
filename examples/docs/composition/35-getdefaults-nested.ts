@@ -42,3 +42,4 @@ const defaults = Compose.getDefaults(NotificationSettingsSchema) as {
 console.assert(defaults.theme === 'light');
 console.assert(defaults.notifications?.email === true);
 console.assert(defaults.notifications?.push === false);
+console.log('NotificationSettings defaults (nested recursion):', defaults);

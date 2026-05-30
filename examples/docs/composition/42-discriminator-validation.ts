@@ -72,3 +72,8 @@ const PrintStatusUnionSchema = Compose.discriminatedUnion(
 const unionId: string = PrintStatusUnionSchema.$id;
 
 console.assert(unionId.endsWith('PrintStatusUnion'));
+console.log('PrintStatusUnion discriminated on printStatus:', unionId);
+console.log('variants:', [
+  'InPrintVariant3',
+  'OutOfPrintVariant3'
+]);

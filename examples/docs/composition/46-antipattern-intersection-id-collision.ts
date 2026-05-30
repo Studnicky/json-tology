@@ -37,4 +37,5 @@ const _Bad = Compose.intersection(
   'https://bookstore.example/Book'
 );
 
+console.log('Intersection $id collision anti-pattern: newId must not match any input schema $id | BookSchema.$id:', BookSchema.$id);
 void 0 as unknown as typeof _Bad;

@@ -18,3 +18,4 @@ import { IsbnSchema } from '../bookstore/index.js';
 const canonicalId: string = IsbnSchema.$id;
 
 console.assert(canonicalId.length > 0);
+console.log('Use the canonical $id directly, do not create a rename alias:', canonicalId);

@@ -67,6 +67,7 @@ const momo = {
 const oneAuthorErrs = jt2.validate(OneAuthorBookSchema.$id, momo);
 
 console.assert(oneAuthorErrs.length === 0);
+console.log('OneAuthorBook accepts Momo (1 author):', oneAuthorErrs.length === 0, '| cardinality(authors, 1)');
 
 // A multi-author anthology (two authors) passes MultiAuthoredBook.
 const anthology = {
@@ -88,3 +89,4 @@ const anthology = {
 const multiErrs = jt2.validate(MultiAuthoredBookSchema.$id, anthology);
 
 console.assert(multiErrs.length === 0);
+console.log('MultiAuthoredBook accepts anthology (2 authors):', multiErrs.length === 0, '| minCardinality(authors, 2)');
