@@ -72,7 +72,7 @@ g.instances(classIri)                        // Cursor over all resources of rdf
 cursor.objects(predicate)                    // forward: objects of each resource via predicate (identity FKs resolved)
 cursor.subjects(predicate)                   // inverse (^predicate): resources that point at each via predicate
 cursor.subgraph(depth)                       // expand to the bounded N-hop neighbourhood
-cursor.filter(classIri)                      // keep only resources whose rdf:type is classIri
+cursor.ofType(classIri)                     // keep only resources whose rdf:type is classIri
 
 // Terminals (Cursor → typed values):
 cursor.one()                                 // the single typed instance (throws if 0 or >1); .first() for lenient
@@ -109,6 +109,29 @@ g.predicate('orderLines').range().one();     // → the OrderLine class schema
 - Cursors are lazy: navigation builds an IRI set; terminals materialize and type via `fromQuads`.
 - Read-only, in-memory, index-backed: subject→(predicate,object), object→(predicate,subject),
   identity→subject (inverse-functional), rdf:type→subjects, plus the TBox domain/range/subClassOf index.
+
+### Tier 1 (ACCEPTED — build now) · Tier 2 (REJECTED)
+
+**Tier 1** is the full cursor — paths-via-chaining, typed-JS filters, set ops, aggregates — and is
+what Phase 1 ships. Complete method surface:
+
+- **Entry**: `g.resource(iri)`, `g.instances(classIri)`, `g.predicate(name)`, `g.class(classIri)`.
+- **Navigate** (Cursor→Cursor): `.objects(predicate | predicate[])` (forward; FK-resolved; an array
+  is the SPARQL `a|b` alternative), `.subjects(predicate | predicate[])` (inverse `^`),
+  `.closure(predicate)` (transitive `p+`/`p*`, lazy bounded BFS), `.subgraph(depth)`.
+- **Refine**: `.ofType(classIri)` (rdf:type), `.where(fn)` (typed JS predicate over the lifted
+  instance — the DX win), `.having(predicate, value)` (value match).
+- **Set / modifiers**: `.union(cursor)`, `.intersect(cursor)`, `.distinct()`, `.orderBy(fn)`,
+  `.limit(n)`.
+- **Terminals**: `.one()`, `.first()`, `.all()` (`.resources()`), `.iris()`, `.count()`, `.some()`,
+  `.none()`.
+- **Schema cursors**: `g.predicate(p).domain()` / `.range()`; `g.class(c).subClassOf({ transitive })`
+  / `.properties()`.
+
+**Tier 2 (rejected): no multi-variable `.match()` / bindings-rows API.** Multi-pattern joins,
+OPTIONAL, GROUP-BY-over-bindings stay out — that abstraction's DX is awkward and chasing it rebuilds
+a query engine. For those, hand the standard rdf/js quads to a dedicated SPARQL engine. This keeps
+the surface JS-native and the cursor a clean set-of-resources.
 
 ### Scope boundary — simple fluent helpers, not a query engine
 Each cursor step is one plain hop (`.objects`/`.subjects`), plus a depth-bounded `.subgraph`.
@@ -153,7 +176,7 @@ prerequisite. The bookstore needs none of it — its inverse-functional `custome
 1. **Phase 1 — association index + lazy traversal (ABox + schema paths).** Read object-property +
    inverse-functional identity + `rdfs:domain`/`range`/`subClassOf` associations from the TBox; build
    `aboxGraph(quads)` returning a fluent typed `Cursor`: entry points (`resource` / `instances`),
-   chainable hops (`.objects` / `.subjects` / `.subgraph` / `.filter`), terminals (`.one` / `.all` /
+   chainable hops (`.objects` / `.subjects` / `.subgraph` / `.ofType`), terminals (`.one` / `.all` /
    `.iris` / `.count`), and schema cursors (`g.predicate(p).domain()/.range()`,
    `g.class(c).subClassOf()/.properties()`) — with lazy FK resolution via the identity index (no
    `toQuads` change yet). Typed via `fromQuads`. Unit + e2e over the bookstore

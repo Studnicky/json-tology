@@ -46,6 +46,7 @@ export * from './modules/data/Operations.js';
 export * from './modules/data/Path.js';
 export * from './modules/data/Resolver.js';
 export * from './modules/data/Value.js';
+export * from './modules/graph/AboxGraph.js';
 export * from './modules/graph/GraphEngine.js';
 export * from './modules/hash/Hash.js';
 export * from './modules/loaders/Loaders.js';

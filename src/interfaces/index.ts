@@ -1,3 +1,4 @@
+export type * from './AboxGraphInterface.js';
 export type * from './AnnotatedEdgeDescriptorInterface.js';
 export type * from './ArrayResult.js';
 export type * from './Changeset.js';
@@ -9,6 +10,7 @@ export type * from './CompositionAccumulator.js';
 export type * from './ComputedStore.js';
 export type * from './Config.js';
 export type * from './Curie.js';
+export type * from './CursorInterface.js';
 export type * from './CustomKeywordEntry.js';
 export type * from './DefaultResolutionContext.js';
 export type * from './Dump.js';
