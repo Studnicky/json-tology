@@ -11,7 +11,6 @@
  * two neighbouring instants to exercise non-trivial inputs.
  */
 
-import { strict as assert } from 'node:assert';
 import {
   Compose, Transform
 } from '../../../src/index.js';
@@ -21,6 +20,16 @@ import {
   aboxFixtures, createBookstoreDocRegistry,
   Iso8601Schema
 } from '../bookstore/index.js';
+
+// Browser-safe strict equality assertion (same shape as node:assert.strict),
+// so this property test runs anywhere, not just under Node.
+const assert = {
+  equal(actual: unknown, expected: unknown, message?: string): void {
+    if (actual !== expected) {
+      throw new Error(message ?? `expected ${String(actual)} to equal ${String(expected)}`);
+    }
+  }
+};
 
 // createBookstoreDocRegistry seeds a permissive copy of the bookstore — docs examples extend
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
@@ -62,10 +71,13 @@ function roundTrip<
 // is normalized to the same form for the round-trip.
 const normalizedPlacedAt = new Date(aboxFixtures.order.placedAt).toISOString();
 
-roundTrip(RoundTripPlacedAtTransform, [
+const samples = [
   normalizedPlacedAt,
   '2026-01-15T10:30:00.000Z',
   '1979-09-01T00:00:00.000Z'
-]);
+];
 
-console.assert(true);
+roundTrip(RoundTripPlacedAtTransform, samples);
+
+console.log('round-trip samples checked:', samples.length);
+console.log('all encode(decode(x)) === x:', true);

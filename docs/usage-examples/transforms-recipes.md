@@ -141,7 +141,7 @@ If your recipe is lossy, document which direction loses information and what the
 
 ### Property test pattern
 
-<<< ../../examples/docs/usage-examples/18-transforms-property-test.ts
+<RunnableExample src="examples/docs/usage-examples/18-transforms-property-test" />
 
 ---
 

@@ -92,7 +92,7 @@ This is the default in the headline example. It works because prototype methods 
 
 Class hydration is correct only if `encode(instantiate(s, x))` deep-equals `x`. Validate that with an assert:
 
-<<< ../../examples/docs/usage-examples/26-class-hydration-round-trip.ts
+<RunnableExample src="examples/docs/usage-examples/26-class-hydration-round-trip" />
 
 This matters because `decode` and `encode` are independent functions; nothing forces them to be inverses. A round-trip test is the cheapest way to catch drift the moment it happens, before it propagates into queue payloads, database rows, or HTTP responses.
 
