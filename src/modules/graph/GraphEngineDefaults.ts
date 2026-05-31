@@ -158,6 +158,39 @@ function synthesizeZeroValueInternal(
     return {};
   }
 
+  // allOf-composed schema: no own type/properties but has allOf members.
+  // Synthesize each member and merge — later members override earlier on key
+  // conflict (in practice keys are disjoint). Handles Compose.subClassOf and
+  // Compose.extend wire shapes whose top-level carries only { $id, allOf }.
+  if (sem.allOf.length > 0) {
+    const merged: Record<string, unknown> = {};
+    let hasObjectMember = false;
+
+    for (const memberNode of sem.allOf) {
+      const memberValue = synthesizeZeroValueInternal(
+        context,
+        memberNode,
+        graph,
+        dynamicScope,
+        visited,
+        depth + 1
+      );
+
+      if (memberValue !== null && memberValue !== undefined && typeof memberValue === 'object' && !Array.isArray(memberValue)) {
+        hasObjectMember = true;
+
+        for (const [
+          key,
+          val
+        ] of Object.entries(memberValue as Record<string, unknown>)) {
+          merged[key] = val;
+        }
+      }
+    }
+
+    return hasObjectMember ? merged : null;
+  }
+
   return null;
 }
 

@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-05-31
+
+### Fixed
+
+- **`allOf`-composed schemas are first-class across the engine.** Schemas built
+  with `Compose.subClassOf` / `Compose.extend` (an `allOf` whose members carry
+  the properties) are now handled wherever the engine previously read only a
+  schema's own top-level `properties`:
+  - ABox projection (`toQuads`) no longer drops `$ref`-targets whose schema is
+    `allOf`-composed, so instances referencing a composed type round-trip
+    through `fromQuads`.
+  - `rdfs:domain` for a property declared inside an `allOf` member now resolves
+    to the named owning class rather than the anonymous member node.
+  - `jt.value.create` synthesizes a full instance across all `allOf` members
+    (inherited + own fields), and `Compose.getDefaults` collects declared
+    defaults from every member.
+
+### Added
+
+- **Bibliographic / retail split in the bookstore domain.**
+  `urn:bookstore:BibliographicRecord` (isbn / title / authors / publishedOn) is
+  the bibliographic base; `urn:bookstore:Book` now extends it via
+  `Compose.subClassOf`, layering retail state (price, printStatus, inventory).
+  `Book`'s effective type and validation are unchanged; the TBox emits
+  `Book rdfs:subClassOf BibliographicRecord`.
+- **Multi-format ETL example and guide.** A runnable usage example
+  (`examples/docs/usage-examples/49-multi-format-codecs.ts`) and docs page
+  (`docs/usage-examples/multi-format-etl.md`) that fan in three live book APIs
+  (Google Books, OpenLibrary, Wikipedia) to the canonical
+  `urn:bookstore:BibliographicRecord` via one `Transform.create` pivot codec per
+  source. Demonstrates per-source wire schemas, a tag-keyed fan-in router,
+  dual-boundary validation (wire-in via the wire schema, canonical-out via
+  `jt.validate`), `owl:sameAs` cross-source provenance projected through
+  `jt.toQuads`, enrichment-only sources, and a directional fan-out re-encode via
+  `jt.encode`.
+
 ## [0.17.0] - 2026-05-30
 
 ### Added

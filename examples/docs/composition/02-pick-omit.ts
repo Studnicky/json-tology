@@ -2,6 +2,14 @@
  * Compose.pick / omit — Example 1: BookSummary and PublicBook
  * Demonstrates: pick keeps fields, omit removes fields, required adjusted
  *
+ * Book is now a Compose.subClassOf(BibliographicRecordSchema, …) — it is an
+ * allOf composition, so `Compose.pick` sees only Book's OWN (retail) keys:
+ * annotations, inStock, price, printStatus, ratings, stockLevel. Bibliographic
+ * fields (isbn, title, authors, publishedOn) live on BibliographicRecordSchema.
+ *
+ * Pick the bibliographic summary from BibliographicRecordSchema; omit the
+ * inventory field from BookSchema (retail view). Both lessons remain intact.
+ *
  * Derived schemas register onto the canonical bookstore via
  * `jt.set()`. Every validate/instantiate call goes
  * through the same registry the rest of the docs reference, using
@@ -10,7 +18,7 @@
 
 import { Compose } from '../../../src/index.js';
 import {
-  aboxFixtures, BookSchema,
+  aboxFixtures, BibliographicRecordSchema, BookSchema,
   createBookstoreDocRegistry
 } from '../bookstore/index.js';
 
@@ -18,17 +26,19 @@ import {
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
+// pick — select only the bibliographic identity fields from BibliographicRecordSchema.
+// isbn and title are NOT on BookSchema's own properties (they live on the base),
+// so we target the base schema directly.
 const BookSummarySchema = Compose.pick(
-  BookSchema,
+  BibliographicRecordSchema,
   [
     'isbn',
-    'title',
-    'price',
-    'inStock'
+    'title'
   ] as const,
   'https://bookstore.example/BookSummary'
 );
 
+// omit — derive a public-facing Book view by removing the operational inventory field.
 const PublicBookSchema = Compose.omit(
   BookSchema,
   ['inStock'] as const,
@@ -39,9 +49,7 @@ const jt2 = jt.set(BookSummarySchema).set(PublicBookSchema);
 
 // BookSummary — only picked fields survive
 const summary = jt2.instantiate(BookSummarySchema, {
-  'inStock': aboxFixtures.rareBook.inStock,
   'isbn': aboxFixtures.rareBook.isbn,
-  'price': aboxFixtures.rareBook.price,
   'title': aboxFixtures.rareBook.title
 });
 

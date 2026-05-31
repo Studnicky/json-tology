@@ -6,34 +6,60 @@
  * Compose.getDefaults (declared defaults only), and materialize (partial
  * trusted data + defaults). The canonical Neverending Story rare-book
  * fixture provides the required fields for materialize.
+ *
+ * value.create on an allOf-composed schema (Compose.subClassOf):
+ *   Traverses all allOf members, resolves $ref parents recursively,
+ *   synthesizes zero-values for required fields, and applies declared
+ *   defaults. The result carries inherited + own fields merged.
+ *
+ * Compose.getDefaults on an allOf-composed schema:
+ *   Traverses inline allOf members that carry properties. $ref-only members
+ *   are skipped (no registry available for resolution). Returns declared
+ *   defaults from all reachable inline members merged.
  */
 
 import {
   Compose
 } from '../../../src/index.js';
 import {
-  aboxFixtures, BookSchema, bookstoreEntities
+  aboxFixtures, BibliographicRecordSchema, BookSchema, bookstoreEntities
 } from '../bookstore/index.js';
 
-// value.create — zero-values + explicit defaults, ALL required fields present.
+// value.create on BookSchema — allOf-composed (Compose.subClassOf).
+// Inherits isbn/title/authors from BibliographicRecordSchema via $ref,
+// adds own retail fields, and applies inStock: true declared default.
 const fromCreate = bookstoreEntities.value.create(BookSchema.$id) as Record<string, unknown>;
 
-console.assert((fromCreate as { 'isbn': string }).isbn === '');
-console.assert((fromCreate as { 'title': string }).title === '');
-console.assert(Array.isArray((fromCreate as { 'authors': string[] }).authors));
-// inStock has a declared default of true.
-console.assert((fromCreate as { 'inStock': boolean }).inStock);
+// Inherited required fields synthesized with zero-values
+console.assert(fromCreate.isbn === '');
+console.assert(fromCreate.title === '');
+console.assert(Array.isArray(fromCreate.authors));
+
+// Own field with declared default applied
+console.assert(fromCreate.inStock === true);
+
+// BibliographicRecordSchema is flat — behavior unchanged.
+const fromBiblio = bookstoreEntities.value.create(BibliographicRecordSchema.$id) as Record<string, unknown>;
+
+console.assert(fromBiblio.isbn === '');
+console.assert(fromBiblio.title === '');
 
 // Compose.getDefaults — only declared defaults (no zero-values).
+// BookSchema allOf member body carries inStock: {default: true};
+// the $ref-pointing allOf member (BibliographicRecord) has no defaults.
 const defaults = Compose.getDefaults(BookSchema);
 
-// isbn, title, authors, price absent — they have no declared defaults.
-console.assert(!('isbn' in defaults));
-console.assert(!('title' in defaults));
-// inStock and currency have declared defaults.
-console.assert('inStock' in defaults);
+console.assert(defaults.inStock === true);
+
+// BibliographicRecord has no declared defaults on any property.
+const bibDefaults = Compose.getDefaults(BibliographicRecordSchema);
+
+console.assert(!('isbn' in bibDefaults));
+console.assert(!('title' in bibDefaults));
+console.assert(!('authors' in bibDefaults));
 
 // materialize — fill declared defaults, partial is trusted, throws if required missing.
+// Works correctly with composed schemas; resolves inherited + own required fields.
 const materialized = bookstoreEntities.materialize(BookSchema, {
   'authors': aboxFixtures.rareBook.authors,
   'isbn': aboxFixtures.rareBook.isbn,
@@ -45,7 +71,9 @@ const materialized = bookstoreEntities.materialize(BookSchema, {
 console.assert((materialized as { 'isbn': string }).isbn === aboxFixtures.rareBook.isbn);
 console.assert((materialized as { 'inStock': boolean }).inStock);
 
-console.log('create isbn (zero-value):', (fromCreate as { 'isbn': string }).isbn);
-console.log('create inStock (default):', (fromCreate as { 'inStock': boolean }).inStock);
-console.log('getDefaults keys:', Object.keys(defaults));
+console.log('create isbn (zero-value):', fromCreate.isbn);
+console.log('create inStock (default applied):', fromCreate.inStock);
+console.log('getDefaults inStock (declared):', defaults.inStock);
+console.log('getDefaults BibliographicRecord keys (none declared):', Object.keys(bibDefaults));
 console.log('materialize isbn (from data):', (materialized as { 'isbn': string }).isbn);
+console.log('materialize inStock (default true applied):', (materialized as { 'inStock': boolean }).inStock);

@@ -4,11 +4,16 @@
  *
  * The Book here is Michael Ende's Momo (Thienemann Verlag, 1973),
  * a sibling title to the canonical Neverending Story rare-book fixture.
+ *
+ * BookSchema is an allOf-composed schema (Compose.subClassOf). Both materialize
+ * and value.create handle composition correctly: materialize validates and fills
+ * declared defaults from partial data; value.create synthesizes a full zero-value
+ * instance for all required fields across inherited and own properties.
  */
 
 import type { Book } from '../bookstore/index.js';
 import {
-  BookSchema, bookstoreEntities
+  BibliographicRecordSchema, BookSchema, bookstoreEntities
 } from '../bookstore/index.js';
 
 // Materialize with required fields supplied — defaults filled automatically.
@@ -35,8 +40,19 @@ console.log('book.inStock (default):', book.inStock);
 console.log('book.price:', JSON.stringify(book.price));
 
 // value.create synthesizes zero-values for ALL required fields + explicit defaults.
-const blank = bookstoreEntities.value.create(BookSchema.$id) as Record<string, unknown>;
+// BookSchema is allOf-composed — value.create traverses $ref parents and inline
+// members, merging inherited (isbn, title, authors) with own (inStock default, etc.).
+const bookBlank = bookstoreEntities.value.create(BookSchema.$id) as Record<string, unknown>;
 
-console.assert((blank as { 'isbn': string }).isbn === '');
+console.assert(bookBlank.isbn === '');
+console.assert(bookBlank.inStock === true);
 
-console.log('blank.isbn (zero-value):', (blank as { 'isbn': string }).isbn);
+console.log('bookBlank.isbn (zero-value from inherited BibliographicRecord):', bookBlank.isbn);
+console.log('bookBlank.inStock (declared default from Book):', bookBlank.inStock);
+
+// Flat schema — value.create works as before.
+const biblioBlank = bookstoreEntities.value.create(BibliographicRecordSchema.$id) as Record<string, unknown>;
+
+console.assert((biblioBlank as { 'isbn': string }).isbn === '');
+
+console.log('biblioBlank.isbn (zero-value from BibliographicRecordSchema):', (biblioBlank as { 'isbn': string }).isbn);

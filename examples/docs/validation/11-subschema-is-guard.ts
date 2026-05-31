@@ -7,7 +7,8 @@ import {
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
-const priceSub = jt.subschemaAt(BookSchema.$id, '/properties/price');
+// price is Book's own retail property; under the allOf composition it lives at /allOf/1/properties/price
+const priceSub = jt.subschemaAt(BookSchema.$id, '/allOf/1/properties/price');
 
 const candidatePrice = 29.99;
 

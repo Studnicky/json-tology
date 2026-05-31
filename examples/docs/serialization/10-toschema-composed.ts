@@ -2,14 +2,17 @@
  * toSchema — Example 2: Verify a composed schema round-trips correctly
  * Demonstrates: Compose.pick, jt.set, toSchema on a derived schema
  *
- * A BookSummary schema is derived from BookSchema via Compose.pick, registered
- * with jt.set, then reconstructed to confirm it contains only
- * the picked properties.
+ * BookSchema is an allOf composition of BibliographicRecordSchema (isbn, title,
+ * authors, publishedOn) extended with retail fields (price, printStatus, etc.).
+ * isbn and title live on BibliographicRecordSchema, so BookSummarySchema is
+ * derived from BibliographicRecordSchema via Compose.pick. The picked schema is
+ * registered with jt.set, then reconstructed via toSchema to confirm it contains
+ * only the picked properties.
  */
 
 import { Compose } from '../../../src/index.js';
 import {
-  BookSchema,
+  BibliographicRecordSchema,
   createBookstoreDocRegistry
 } from '../bookstore/index.js';
 
@@ -18,11 +21,11 @@ import {
 const jt = createBookstoreDocRegistry();
 
 const BookSummarySchema = Compose.pick(
-  BookSchema,
+  BibliographicRecordSchema,
   [
     'isbn',
     'title',
-    'price'
+    'publishedOn'
   ] as const,
   'https://bookstore.example/BookSummaryToSchema'
 );
@@ -39,7 +42,7 @@ const props = Object.keys(rec.properties as Record<string, unknown>);
 // Only the three picked properties should appear
 console.assert(props.includes('isbn'), 'isbn should be in reconstructed properties');
 console.assert(props.includes('title'), 'title should be in reconstructed properties');
-console.assert(props.includes('price'), 'price should be in reconstructed properties');
+console.assert(props.includes('publishedOn'), 'publishedOn should be in reconstructed properties');
 console.assert(!props.includes('authors'), 'authors should not be in projected schema');
 console.assert(!props.includes('inStock'), 'inStock should not be in projected schema');
 

@@ -1007,7 +1007,16 @@ function projectSingleValue(args: ProjectPropertyArgs, path: string, value: unkn
 
     const targetSemantics = targetGraph.semantics(targetNode);
 
-    if (targetSemantics.properties.size === 0 && !targetSemantics.schemaTypes.includes('object')) {
+    // Allow allOf-composed schemas (e.g. Compose.subClassOf) through: their
+    // own `properties` map is empty and they carry no top-level `type:object`,
+    // but their `allOf` members do. Without this guard, any $ref-targeted
+    // schema built by Compose.subClassOf would be silently skipped, losing
+    // all nested object data from the ABox quad stream.
+    if (
+      targetSemantics.properties.size === 0
+      && targetSemantics.allOf.length === 0
+      && !targetSemantics.schemaTypes.includes('object')
+    ) {
       return;
     }
 

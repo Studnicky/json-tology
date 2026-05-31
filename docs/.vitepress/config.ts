@@ -170,7 +170,8 @@ const sidebar = [
       { link: '/usage-examples/class-hydration', text: 'Class hydration' },
       { link: '/usage-examples/class-hydration-orm', text: 'Class hydration: ORM recipes' },
       { link: '/usage-examples/sub-schema-patterns', text: 'Sub-schema patterns' },
-      { link: '/usage-examples/bookstore-owl-taxonomy', text: 'Bookstore OWL taxonomy' }
+      { link: '/usage-examples/bookstore-owl-taxonomy', text: 'Bookstore OWL taxonomy' },
+      { link: '/usage-examples/multi-format-etl', text: 'Multi-format ETL' }
     ]
   },
   {
