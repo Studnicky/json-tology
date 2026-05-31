@@ -71,6 +71,22 @@ export class SchemaIri {
 
     const parentPointer = parts.fragment.slice(0, propsIdx);
 
-    return parentPointer === '' ? parts.base : `${parts.base}#${parentPointer}`;
+    if (parentPointer === '') {
+      return parts.base;
+    }
+
+    // Properties declared directly inside an `allOf/N` member (e.g. those
+    // produced by `Compose.subClassOf`) belong to the parent class, not to the
+    // anonymous allOf member node. When the parent pointer is purely `/allOf/N`
+    // segments, strip them so the domain emitted in the TBox is the named class
+    // IRI (`<ClassId>`) rather than the internal fragment `<ClassId>#/allOf/N`.
+    // A pointer that descends into a nested object (`/allOf/N/properties/x`) is
+    // left intact — its structural parent is that nested object, not the class.
+    // Kept consistent with the domain logic in SchemaGraphRelations.
+    const strippedPointer = /^(?:\/allOf\/\d+)+$/u.test(parentPointer)
+      ? parentPointer.replace(/^(?:\/allOf\/\d+)+/u, '')
+      : parentPointer;
+
+    return strippedPointer === '' ? parts.base : `${parts.base}#${strippedPointer}`;
   }
 }

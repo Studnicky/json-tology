@@ -1,5 +1,5 @@
 import {
-  BookSchema,
+  BibliographicRecordSchema, BookSchema,
   createBookstoreDocRegistry
 } from '../bookstore/index.js';
 
@@ -8,8 +8,8 @@ import {
 const jt = createBookstoreDocRegistry();
 
 // Anti-pattern: sub-schema validation ignores sibling constraints
-// Don't do this - sub-schema validation ignores sibling constraints
-const isbnSub = jt.subschemaAt(BookSchema.$id, '/properties/isbn');
+// isbn lives on BibliographicRecordSchema; Don't do this - sub-schema validation ignores sibling constraints
+const isbnSub = jt.subschemaAt(BibliographicRecordSchema.$id, '/properties/isbn');
 const rawBook = { 'isbn': '978014044913' };
 const validateSub = jt.validate(isbnSub, rawBook);
 

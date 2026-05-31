@@ -1,52 +1,44 @@
-import { AuthorNameSchema } from './AuthorName.js';
+import { Compose } from '../../../../src/index.js';
+import { BibliographicRecordSchema } from './BibliographicRecord.js';
 import { BookAnnotationsSchema } from './BookAnnotations.js';
 import { BookRatingHistogramSchema } from './BookRatingHistogram.js';
-import { IsbnSchema } from './Isbn.js';
 import { MoneySchema } from './Money.js';
 import { PrintStatusSchema } from './PrintStatus.js';
-import { PublicationDateSchema } from './PublicationDate.js';
 import { StockLevelSchema } from './StockLevel.js';
-import { TitleSchema } from './Title.js';
 
-export const BookSchema = {
+/**
+ * Book — a {@link BibliographicRecordSchema} offered for sale. The retail
+ * listing extends the bibliographic core (isbn / title / authors / publishedOn)
+ * with commercial state via `Compose.subClassOf`:
+ *
+ *   - `price`       — the asking price (required to be on sale).
+ *   - `printStatus` — publisher editorial state (`inPrint` | `outOfPrint` |
+ *     `limitedRun`); drives the InPrintBook / OutOfPrintBook OWL classes.
+ *   - `inStock` / `stockLevel` — operational inventory state, changing daily as
+ *     copies sell or restock arrives. Orthogonal to `printStatus`.
+ *   - `ratings` / `annotations` — merchandising metadata.
+ *
+ * The TBox emits `urn:bookstore:Book rdfs:subClassOf
+ * urn:bookstore:BibliographicRecord`. Book inherits the `isbn` inverse-
+ * functional identity from the bibliographic record.
+ */
+
+export const BookSchema = Compose.subClassOf(BibliographicRecordSchema, {
   '$id': 'urn:bookstore:Book',
   'properties': {
     'annotations': { '$ref': BookAnnotationsSchema.$id },
-    'authors': {
-      'items': { '$ref': AuthorNameSchema.$id },
-      'minItems': 1,
-      'type': 'array',
-      'uniqueItems': true
-    },
-    // Operational inventory state — changes daily as copies sell or
-    // restock arrives. Orthogonal to `printStatus` (publisher state).
     'inStock': {
       'default': true,
       'type': 'boolean'
     },
-    // OWL 2: owl:InverseFunctionalProperty on isbn — an ISBN uniquely
-    // identifies a Book, so foreign keys (Review.bookIsbn, OrderLine.bookIsbn)
-    // resolve to the Book they reference via the identity index.
-    'isbn': {
-      '$ref': IsbnSchema.$id,
-      'inverseFunctional': true
-    },
     'price': { '$ref': MoneySchema.$id },
-    // Editorial state from the publisher — `inPrint` | `outOfPrint` |
-    // `limitedRun`. Independent of `inStock`. Drives the InPrintBook /
-    // OutOfPrintBook OWL class membership.
     'printStatus': { '$ref': PrintStatusSchema.$id },
-    'publishedOn': { '$ref': PublicationDateSchema.$id },
     'ratings': { '$ref': BookRatingHistogramSchema.$id },
-    'stockLevel': { '$ref': StockLevelSchema.$id },
-    'title': { '$ref': TitleSchema.$id }
+    'stockLevel': { '$ref': StockLevelSchema.$id }
   },
   'required': [
-    'isbn',
-    'title',
-    'authors',
     'price',
     'printStatus'
   ],
   'type': 'object'
-} as const;
+} as const);

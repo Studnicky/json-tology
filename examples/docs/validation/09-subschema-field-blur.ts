@@ -1,5 +1,5 @@
 import {
-  BookSchema,
+  BibliographicRecordSchema,
   createBookstoreDocRegistry
 } from '../bookstore/index.js';
 
@@ -7,8 +7,8 @@ import {
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
-// Resolve the isbn sub-schema once
-const isbnSchema = jt.subschemaAt(BookSchema.$id, '/properties/isbn');
+// Resolve the isbn sub-schema once — isbn lives on BibliographicRecordSchema, not Book
+const isbnSchema = jt.subschemaAt(BibliographicRecordSchema.$id, '/properties/isbn');
 
 // isbn must match ^\d{13}$ — 12 digits fails, requires 13
 const errors = jt.validate(isbnSchema, '978014044913');

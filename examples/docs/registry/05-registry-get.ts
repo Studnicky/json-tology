@@ -1,29 +1,40 @@
 import { Compose } from '../../../src/index.js';
 import {
-  BookSchema, bookstoreEntities
+  BibliographicRecordSchema,
+  BookSchema,
+  bookstoreEntities
 } from '../bookstore/index.js';
 
+// BookSchema is a Compose.subClassOf composition: the registry stores the allOf
+// form, so retrieving it gives back { $id, allOf } rather than a flat properties
+// map. Flat schemas like BibliographicRecordSchema round-trip cleanly.
+const bibliographic = bookstoreEntities.registry.get(BibliographicRecordSchema.$id);
 const book = bookstoreEntities.registry.get(BookSchema.$id);
 
+console.assert(bibliographic !== undefined, 'BibliographicRecordSchema should be retrievable');
 console.assert(book !== undefined, 'BookSchema should be retrievable');
 console.assert(
-  (book?.properties as Record<string, unknown> | undefined)?.price !== undefined,
-  'BookSchema.properties.price should exist'
+  (bibliographic?.properties as Record<string, unknown> | undefined)?.isbn !== undefined,
+  'BibliographicRecordSchema.properties.isbn should exist'
 );
 
-if (book) {
-  const BookSummary = Compose.pick(
-    book as typeof BookSchema,
+if (bibliographic) {
+  // Compose.pick on a flat schema — picks from its own properties.
+  const BibliographicSummary = Compose.pick(
+    bibliographic as typeof BibliographicRecordSchema,
     [
       'isbn',
-      'title',
-      'price'
+      'title'
     ] as const,
-    'https://bookstore.example/BookSummary'
+    'https://bookstore.example/BibliographicSummary'
   );
 
-  console.assert(typeof BookSummary.$id === 'string', 'Composed schema should have $id');
-  console.log('retrieved schema $id:', book.$id);
-  console.log('BookSummary $id:', BookSummary.$id);
-  console.log('BookSummary properties:', Object.keys(BookSummary.properties));
+  console.assert(typeof BibliographicSummary.$id === 'string', 'Composed schema should have $id');
+  console.log('retrieved bibliographic $id:', bibliographic.$id);
+  console.log('BibliographicSummary $id:', BibliographicSummary.$id);
+  console.log('BibliographicSummary properties:', Object.keys(BibliographicSummary.properties));
 }
+
+// Composed schemas are stored as-is: Book's registry entry has allOf, not properties.
+console.log('retrieved Book $id:', book?.$id);
+console.log('Book registry shape keys:', book ? Object.keys(book) : '—');

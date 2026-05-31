@@ -461,7 +461,18 @@ export const SchemaGraphRelations = {
       const parentPtr = SchemaGraphSupport.parentPropertiesPointer(node.pointer);
 
       if (parentPtr !== undefined) {
-        const parentNode = nodeMap.get(parentPtr);
+        // Properties defined inside an `allOf/N` member belong to the parent
+        // class, not to the anonymous intermediate node. When the direct parent
+        // pointer is an allOf member (e.g. `/allOf/1`), climb up to the nearest
+        // named ancestor so the emitted `rdfs:domain` carries the class IRI
+        // (e.g. `urn:bookstore:Book`) rather than the internal fragment
+        // (`urn:bookstore:Book#/allOf/1`). This mirrors how domain is computed
+        // for flat (non-allOf) schemas and keeps TBox domain IRIs stable across
+        // composition strategies.
+        const domainPtr = /^(?:\/allOf\/\d+)+$/u.test(parentPtr)
+          ? parentPtr.replace(/^(?:\/allOf\/\d+)+/u, '')
+          : parentPtr;
+        const parentNode = nodeMap.get(domainPtr);
 
         if (parentNode !== undefined) {
           relations.push({

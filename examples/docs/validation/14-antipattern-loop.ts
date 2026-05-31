@@ -1,5 +1,5 @@
 import {
-  BookSchema,
+  BibliographicRecordSchema,
   createBookstoreDocRegistry
 } from '../bookstore/index.js';
 
@@ -13,15 +13,15 @@ const candidateIsbns = [
 ];
 
 // Anti-pattern: re-resolves and re-registers the sub-schema on every iteration
-// Don't do this
+// isbn lives on BibliographicRecordSchema; the pointer targets it there — Don't do this
 for (const rawIsbn of candidateIsbns) {
-  const sub = jt.subschemaAt(BookSchema.$id, '/properties/isbn');
+  const sub = jt.subschemaAt(BibliographicRecordSchema.$id, '/properties/isbn');
 
   jt.validate(sub, rawIsbn);
 }
 
 // Correct approach: resolve once, reuse across calls
-const isbnSchema = jt.subschemaAt(BookSchema.$id, '/properties/isbn');
+const isbnSchema = jt.subschemaAt(BibliographicRecordSchema.$id, '/properties/isbn');
 
 for (const rawIsbn of candidateIsbns) {
   const result = jt.validate(isbnSchema, rawIsbn);

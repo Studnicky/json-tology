@@ -9,7 +9,7 @@
 
 import { Compose } from '../../../src/index.js';
 import {
-  BookSchema,
+  BibliographicRecordSchema,
   createBookstoreDocRegistry
 } from '../bookstore/index.js';
 
@@ -17,9 +17,10 @@ import {
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
-// Register a temporary summary schema.
+// Register a temporary summary schema. isbn and title are bibliographic fields
+// that live on BibliographicRecordSchema; Compose.pick reads own `properties`.
 const BookSummarySchema = Compose.pick(
-  BookSchema,
+  BibliographicRecordSchema,
   [
     'isbn',
     'title'

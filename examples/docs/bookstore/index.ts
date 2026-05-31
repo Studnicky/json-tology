@@ -49,6 +49,7 @@ import { MoneySchema } from './entities/Money.js';
 import { AddressSchema } from './entities/Address.js';
 import { BookAnnotationsSchema } from './entities/BookAnnotations.js';
 import { BookCatalogEntrySchema } from './entities/BookCatalogEntry.js';
+import { BibliographicRecordSchema } from './entities/BibliographicRecord.js';
 import { BookRatingHistogramSchema } from './entities/BookRatingHistogram.js';
 import { BookSchema } from './entities/Book.js';
 import { CustomerSchema } from './entities/Customer.js';
@@ -134,6 +135,8 @@ export const bookstoreSchemas = [
   BookCatalogEntrySchema,
   // BookRatingHistogram $refs RatingCount — must register after RatingCount above
   BookRatingHistogramSchema,
+  // BibliographicRecord is the bibliographic base; Book subClassOf-extends it
+  BibliographicRecordSchema,
   BookSchema,
   CustomerSchema,
   OrderLineSchema,
@@ -296,6 +299,7 @@ export type Review = InferType<typeof ReviewSchema, BookstoreRefs>;
 export { AddressSchema } from './entities/Address.js';
 export { AmountSchema } from './entities/Amount.js';
 export { AuthorNameSchema } from './entities/AuthorName.js';
+export { BibliographicRecordSchema } from './entities/BibliographicRecord.js';
 export { BindingTypeSchema } from './entities/BindingType.js';
 export { BookSchema } from './entities/Book.js';
 export { BookAnnotationsSchema } from './entities/BookAnnotations.js';

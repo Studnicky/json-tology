@@ -8,7 +8,7 @@
  */
 
 import {
-  BookSchema, bookstoreEntities
+  BibliographicRecordSchema, BookSchema, bookstoreEntities
 } from '../bookstore/index.js';
 import { GraphError } from '../../../src/index.js';
 
@@ -29,7 +29,8 @@ if (caught) {
 
 console.log('bare pointer error code:', caught?.code);
 
-const isbnSchema = bookstoreEntities.subschemaAt(BookSchema.$id, '/properties/isbn');
+// isbn lives on BibliographicRecordSchema; the valid pointer targets it there
+const isbnSchema = bookstoreEntities.subschemaAt(BibliographicRecordSchema.$id, '/properties/isbn');
 
 console.assert(typeof isbnSchema === 'object');
 console.log('valid pointer resolves $id:', isbnSchema.$id);

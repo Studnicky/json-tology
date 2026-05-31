@@ -1,6 +1,6 @@
 import { Compose } from '../../../src/index.js';
 import {
-  BookSchema,
+  BibliographicRecordSchema,
   createBookstoreDocRegistry
 } from '../bookstore/index.js';
 
@@ -8,12 +8,16 @@ import {
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
 const jt = createBookstoreDocRegistry();
 
+// Compose.pick reads the schema's own `properties` key, so picking from flat
+// schemas (like BibliographicRecordSchema) works directly. BookSchema is a
+// Compose.subClassOf composition (allOf): pick bibliographic fields from
+// BibliographicRecordSchema rather than from BookSchema.
 const BookSummarySchema = Compose.pick(
-  BookSchema,
+  BibliographicRecordSchema,
   [
     'isbn',
     'title',
-    'price'
+    'authors'
   ] as const,
   'https://bookstore.example/BookSummary'
 );

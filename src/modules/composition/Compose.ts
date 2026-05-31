@@ -396,6 +396,37 @@ export class Compose {
   public static getDefaults(schema: Record<string, unknown>): Record<string, unknown> {
     const props = schema.properties;
 
+    // allOf-composed schema: no own properties — collect from each inline member.
+    // $ref-only members (e.g. { $ref: 'urn:...' }) cannot be resolved without a
+    // registry and are skipped; only inline members with a `properties` key are
+    // traversed. Later members override earlier on key conflict.
+    if ((props === null || typeof props !== 'object' || Array.isArray(props)) && Array.isArray(schema.allOf)) {
+      const merged: Record<string, unknown> = {};
+
+      for (const member of schema.allOf as unknown[]) {
+        if (member === null || typeof member !== 'object' || Array.isArray(member)) {
+          continue;
+        }
+        const memberSchema = member as Record<string, unknown>;
+
+        // Skip pure $ref members — no properties to traverse without a registry.
+        if (typeof memberSchema.$ref === 'string' && memberSchema.properties === undefined) {
+          continue;
+        }
+
+        const memberDefaults = Compose.getDefaults(memberSchema);
+
+        for (const [
+          key,
+          val
+        ] of Object.entries(memberDefaults)) {
+          merged[key] = val;
+        }
+      }
+
+      return merged;
+    }
+
     if (props === null || typeof props !== 'object' || Array.isArray(props)) {
       return {};
     }
