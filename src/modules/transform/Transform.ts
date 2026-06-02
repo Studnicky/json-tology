@@ -18,7 +18,9 @@
  * const date = jt.instantiate(DateSchema.$id, '2026-01-01'); // typed as Date
  */
 
-import type { JsonSchemaDocumentType } from '../../types/Schema.js';
+import type {
+  JsonSchemaDocumentObjectType, JsonSchemaDocumentType
+} from '../../types/Schema.js';
 import type {
   ChainOutputType,
   TransformedType,
@@ -146,13 +148,32 @@ export class Transform {
       'encode': (output: TOut) => LooseInputType<InferSchemaType<TSchema>>;
     }
   ): TransformedType<TSchema, TOut> {
-    transformRegistry.set(schema, fns as TransformFnsInterface);
+    Transform.register(schema, fns as TransformFnsInterface);
 
     return brand<TransformedType<TSchema, TOut>>(schema);
   }
 
-  /** Returns the decode/encode functions registered for a schema, or undefined. */
-  public static getDecoder(schema: Record<string, unknown>): TransformFnsInterface | undefined {
+  /**
+   * Return the decode/encode functions registered for a schema, or `undefined`.
+   *
+   * @param schema - The schema object to look up.
+   * @returns The registered decode/encode pair, or `undefined` if none.
+   */
+  public static getDecoder(schema: JsonSchemaDocumentObjectType): TransformFnsInterface | undefined {
     return transformRegistry.get(schema);
+  }
+
+  /**
+   * Store decode/encode functions for a schema in the transform registry.
+   *
+   * The single type-erasure boundary for transforms: typed public callers
+   * ({@link create}, `JsonTology.addTransform`) keep their precise lambda types
+   * and pass the erased {@link TransformFnsInterface} here.
+   *
+   * @param schema - The schema object the decode/encode pair is keyed against.
+   * @param fns - The decode/encode functions to store.
+   */
+  public static register(schema: JsonSchemaDocumentObjectType, fns: TransformFnsInterface): void {
+    transformRegistry.set(schema, fns);
   }
 }

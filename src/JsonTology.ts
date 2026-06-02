@@ -32,6 +32,7 @@ import type { QuadInterface } from './interfaces/Quad.js';
 import type { RegistryOptionsInterface } from './interfaces/Registry.js';
 import type { SchemaRegistryInterface } from './interfaces/SchemaRegistry.js';
 import type { SnapshotInterface } from './interfaces/Snapshot.js';
+import type { TransformFnsInterface } from './interfaces/TransformFns.js';
 import type { ValueInterface } from './interfaces/ValueImpl.js';
 import type { ValidationErrors } from './errors/ValidationErrors.js';
 import type {
@@ -76,6 +77,7 @@ import { SchemaError } from './errors/SchemaError.js';
 import type { DuplicateReportEntryType } from './interfaces/SchemaEntryStore.js';
 import { SchemaRegistry } from './modules/registry/SchemaRegistry.js';
 import { Transform } from './modules/transform/Transform.js';
+import { brand } from './types/Brand.js';
 import { Value } from './modules/data/Value.js';
 
 import { STANDARD_PREFIXES } from './constants/STANDARD_PREFIXES.js';
@@ -916,18 +918,16 @@ export class JsonTology<TMap = Record<never, never>, TRefs = Record<never, never
     schema: TSchema,
     fns: {
       'decode': (input: InferSchemaType<TSchema, TSchema, TRefs>) => TOut;
-      'encode': (output: TOut) => InferSchemaType<TSchema, TSchema, TRefs>;
+      'encode': (output: TOut) => LooseInputType<InferSchemaType<TSchema, TSchema, TRefs>>;
     }
   ): TransformedType<TSchema, TOut> {
-    Transform.create<TSchema, TOut>(
-      schema,
-      fns as unknown as {
-        'decode': (input: InferSchemaType<TSchema>) => TOut;
-        'encode': (output: TOut) => LooseInputType<InferSchemaType<TSchema>>;
-      }
-    );
+    // `decode` receives the validated, branded OutputType; `encode` produces the
+    // brand-free InputType (wire shape) — brands are validation artifacts and do
+    // not exist on raw wire data. The single cast is the type-erasure boundary
+    // into the transform registry (identical to Transform.create), not a widening.
+    Transform.register(schema, fns as TransformFnsInterface);
 
-    return schema as unknown as TransformedType<TSchema, TOut>;
+    return brand<TransformedType<TSchema, TOut>>(schema);
   }
   /**
    * Build the ABox identity descriptor list and schema-by-IRI index for `aboxGraph`.
@@ -1081,10 +1081,7 @@ export class JsonTology<TMap = Record<never, never>, TRefs = Record<never, never
     schema: TransformedType<TSchema, TOut>,
     value: TOut
   ): InferSchemaType<TSchema> {
-    // JsonSchemaDocumentType includes boolean, but the { '$id': string } constraint on TSchema
-    // excludes boolean at runtime. TypeScript cannot reduce this intersection structurally,
-    // so a double cast is required to bridge TransformedType to Record<string, unknown>.
-    const decoder = Transform.getDecoder(schema as unknown as Record<string, unknown>);
+    const decoder = Transform.getDecoder(schema);
 
     if (decoder === undefined) {
       return value as InferSchemaType<TSchema>;
@@ -1098,7 +1095,7 @@ export class JsonTology<TMap = Record<never, never>, TRefs = Record<never, never
       }
 
       const causeError = error instanceof Error ? error : new Error(String(error));
-      const schemaId = (schema as unknown as Record<string, unknown>).$id as string;
+      const schemaId = schema.$id;
 
       throw new EncodeError(
         `transform encoder failed at root: ${causeError.message}`,
