@@ -46,6 +46,7 @@ unknown input without triggering a throw:
 - [`materialize`](/registry/materialize) - construction helper for trusted data
 - [`validate`](/validation/validate) - structured errors without a throw
 - [`is`](/validation/is) - boolean type guard
+- [instantiate vs materialize](/instantiate-vs-materialize) - decision table with Transform decoder detail
 
 ## See also
 

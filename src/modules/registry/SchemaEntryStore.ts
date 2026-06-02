@@ -14,6 +14,32 @@ import type { SchemaRegistryEntryInterface } from '../../interfaces/SchemaRegist
 import { isRecord } from '../data/DataTypes.js';
 import { StructuralHash } from '../data/StructuralHash.js';
 
+/**
+ * Suffixes appended to the structural hash to express nominal identity.
+ *
+ * A transform-bearing schema has different nominal identity from a structurally
+ * identical plain schema — their hashes must not collide in the duplicate-
+ * detection cache. Anonymous inline sub-shapes always use the PLAIN suffix,
+ * which aligns them with plain (non-transform) top-level schemas only.
+ */
+const TRANSFORM_SUFFIX = ':t';
+const PLAIN_SUFFIX = ':p';
+
+/**
+ * Compute a nominal-aware hash for a top-level registry entry.
+ *
+ * The hash is `StructuralHash.of(entry.schema) + suffix` where suffix is `:t`
+ * for transform-bearing schemas and `:p` for plain ones.  This ensures that
+ * a decoder-carrying primitive (e.g. `IriString` with a URL decoder) cannot
+ * collide in the duplicate-detection cache with a plain `{ type: 'string' }`
+ * schema that happens to share the same JSON body.
+ */
+function nominalAwareHash(entry: SchemaRegistryEntryInterface): string {
+  const base = StructuralHash.of(entry.schema);
+
+  return entry.hasTransform ? base + TRANSFORM_SUFFIX : base + PLAIN_SUFFIX;
+}
+
 export class SchemaEntryStore implements SchemaEntryStoreInterface {
   private readonly byId = new Map<string, SchemaRegistryEntryInterface>();
   private readonly hashes = new Map<string, string>();
@@ -60,13 +86,46 @@ export class SchemaEntryStore implements SchemaEntryStoreInterface {
 
   public findDuplicates(): readonly DuplicateReportEntryType[] {
     if (this.topLevelHashCache === undefined) {
-      const cache = new Map<string, string>();
+      // Phase 1: compute a nominal-aware structural hash for each top-level
+      // schema and group by hash to detect "nominally contested" entries.
+      //
+      // Nominal-aware hash = StructuralHash.of(schema) + transform suffix.
+      // Two top-level schemas that share the SAME nominal-aware hash are
+      // intentionally distinct named classes (e.g. IriString vs Slug, both
+      // { type: 'string' }). Reporting an inline sub-shape as a duplicate of
+      // one of them would be a false positive — the consumer cannot know which
+      // named class is "the right one" to reference.
+      //
+      // Hashes that appear for exactly ONE top-level schema remain valid
+      // duplicate-detection anchors (e.g. a unique EmailSchema shape).
+      const hashToIds = new Map<string, string[]>();
 
       for (const [
         schemaId,
         entry
       ] of this.byId) {
-        cache.set(StructuralHash.of(entry.schema), schemaId);
+        const hash = nominalAwareHash(entry);
+        const existing = hashToIds.get(hash);
+
+        if (existing === undefined) {
+          hashToIds.set(hash, [schemaId]);
+        } else {
+          existing.push(schemaId);
+        }
+      }
+
+      // Phase 2: build the effective match cache from uncontested hashes only.
+      const cache = new Map<string, string>();
+
+      for (const [
+        hash,
+        ids
+      ] of hashToIds) {
+        if (ids.length === 1) {
+          cache.set(hash, ids[0]);
+        }
+        // Multiple top-level schemas share this nominal hash → nominally
+        // contested → omit from the cache so inline shapes are not flagged.
       }
       this.topLevelHashCache = cache;
     }
@@ -134,7 +193,9 @@ export class SchemaEntryStore implements SchemaEntryStoreInterface {
         const propPointer = `${pointer}/properties/${propName}`;
 
         if (typeof propSchema.$id !== 'string' && !('$ref' in propSchema)) {
-          const leafHash = StructuralHash.of(propSchema);
+          // Inline anonymous sub-shapes never carry a transform, so they are
+          // keyed with PLAIN_SUFFIX to align with the nominal-aware cache.
+          const leafHash = StructuralHash.of(propSchema) + PLAIN_SUFFIX;
           const matchId = topLevelHashes.get(leafHash);
 
           if (matchId !== undefined && matchId !== schemaId) {

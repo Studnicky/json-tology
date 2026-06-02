@@ -56,6 +56,7 @@ const sidebar = [
       { link: '/your-types-are-a-graph', text: 'Your types are a graph' },
       { link: '/validation-modes', text: 'Validation modes' },
       { link: '/picking-a-method', text: 'Picking a method' },
+      { link: '/instantiate-vs-materialize', text: 'instantiate vs materialize' },
       { link: '/argument-conventions', text: 'Argument conventions' }
     ]
   },
@@ -159,6 +160,7 @@ const sidebar = [
       { link: '/advanced/predicates', text: 'RDF predicates (canonical / custom)' },
       { link: '/advanced/sameas', text: 'sameAs (ABox identity)' },
       { link: '/advanced/strict-graph-mode', text: 'Strict graph mode' },
+      { link: '/advanced/duplicate-detection', text: 'Duplicate shape detection' },
       { link: '/advanced/instance-graphs', text: 'Instance graphs (aboxGraph)' }
     ]
   },
@@ -199,6 +201,7 @@ const sidebar = [
       { link: '/static-helpers', text: 'Static helpers' },
       { link: '/constraint-brands/keywords', text: 'Constraint brands (keywords)' },
       { link: '/constraint-brands/narrowing', text: 'Constraint brands (narrowing)' },
+      { link: '/package-exports', text: 'Package exports map' },
       { link: '/cli', text: 'CLI' },
       { link: '/comparisons', text: 'Library comparisons' },
       { link: '/benchmarks', text: 'Benchmarks' },

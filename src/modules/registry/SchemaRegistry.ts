@@ -528,6 +528,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     if (existing.schema !== canonicalSchema && hasNewDecoder && lacksExistingDecoder) {
       existing.schema = canonicalSchema;
+      existing.hasTransform = true;
     }
     this.logger.trace(`Schema already registered (identical): ${schemaId}`);
 
@@ -1148,6 +1149,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       'hasComputedFields': false,
       'hasEmbeddedIds': detectEmbeddedIds(canonicalSchema, true),
       hash,
+      'hasTransform': Transform.getDecoder(canonicalSchema) !== undefined,
       'schema': canonicalSchema
     };
     const graph = this.graphOf(entry);
