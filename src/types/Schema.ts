@@ -60,25 +60,36 @@ type ApplyRestrictionsToInferredType<TSchema, TInferred>
       : TInferred
     : TInferred;
 
+export type { InferSchemaType } from './Infer.js';
+
 /**
- * Derive the TypeScript wire type from a JSON Schema.
+ * Derive the TypeScript wire type from a JSON Schema, including OWL class-axiom brands and property restriction narrowing.
  *
+ * @remarks
  * Beyond the structural keywords (`type`, `properties`, `required`, etc.)
  * `InferType` also folds in OWL class-axiom brands and property restrictions:
  *
- *   • `disjointWith: X` → result type carries a brand that conflicts with
- *     X's brand, so values typed as both are rejected at compile time.
- *   • `not: { $ref: X }` → result type carries the complementOf brand.
- *   • `jt:restrictions` → property types are narrowed (literal value for
- *     `hasValue`, fixed-length tuple for `cardinality`, non-empty tuple for
- *     `minCardinality(1+)` / `someValuesFrom`, bounded tuple for
- *     `maxCardinality`, element-class refinement for `allValuesFrom`).
+ * - `disjointWith: X` → result type carries a brand that conflicts with
+ *   X's brand, so values typed as both are rejected at compile time.
+ * - `not: { $ref: X }` → result type carries the complementOf brand.
+ * - `jt:restrictions` → property types are narrowed (literal value for
+ *   `hasValue`, fixed-length tuple for `cardinality`, non-empty tuple for
+ *   `minCardinality(1+)` / `someValuesFrom`, bounded tuple for
+ *   `maxCardinality`, element-class refinement for `allValuesFrom`).
  *
  * @example
+ * ```ts
  * type User = InferType<typeof UserSchema>;
+ * ```
+ *
+ * @category Type Inference
+ * @since 0.10.0
+ * @see {@link InferSchemaType}
+ * @group Type Inference
+ *
+ * @typeParam TSchema - The JSON Schema literal to derive the TypeScript type from.
+ * @typeParam TReferences - Optional map of additional referenced schema literals for cross-schema inference.
  */
-export type { InferSchemaType } from './Infer.js';
-
 export type InferType<TSchema, TReferences = Record<never, never>>
   = ApplyComplementBrandType<TSchema,
     ApplyDisjointBrandType<TSchema,
@@ -88,10 +99,46 @@ export type InferType<TSchema, TReferences = Record<never, never>>
     >
   >;
 
+/**
+ * Loose JSON Schema value — either a boolean shorthand or an object schema.
+ *
+ * @remarks
+ * Used as a permissive type at loader and registry boundaries where the schema
+ * has not yet been narrowed to the full {@link JsonSchemaDocumentType} shape.
+ * `true` accepts every instance; `false` rejects every instance; an object
+ * carries the keyword map. Prefer {@link JsonSchemaDocumentObjectType} once
+ * the value is known to be non-boolean.
+ *
+ * @example
+ * ```ts
+ * const schema: JsonSchemaType = { type: 'string', minLength: 1 };
+ * ```
+ *
+ * @category Schema Utilities
+ * @since 0.10.0
+ * @see {@link JsonSchemaDocumentType}
+ * @group Schema Utilities
+ */
 export type JsonSchemaType = boolean | Record<string, unknown>;
 
 /**
  * Primitive type names supported by JSON Schema's `type` keyword.
+ *
+ * @remarks
+ * Matches the string values permitted by the `type` keyword in JSON Schema
+ * Draft-2020-12 §6.1.1. The `integer` member is distinct from `number` — it
+ * constrains the value to have no fractional part. Used as the element type of
+ * the `type` field on {@link JsonSchemaDocumentObjectType}.
+ *
+ * @example
+ * ```ts
+ * const t: JsonSchemaTypeNameType = 'string';
+ * ```
+ *
+ * @category Schema Utilities
+ * @since 0.10.0
+ * @see {@link JsonSchemaDocumentObjectType}
+ * @group Schema Utilities
  */
 export type JsonSchemaTypeNameType
   = | 'array'
@@ -108,6 +155,7 @@ export type JsonSchemaTypeNameType
  * json-tology's OWL property characteristics, class axioms, and `jt:*`
  * directives.
  *
+ * @remarks
  * Models the full Draft-2020-12 keyword set (`prefixItems`,
  * `unevaluatedProperties`, `unevaluatedItems`, `dependentSchemas`,
  * `dependentRequired`, `$dynamicAnchor`, `$dynamicRef`) plus
@@ -128,6 +176,21 @@ export type JsonSchemaTypeNameType
  * Specs:
  *   https://json-schema.org/draft/2020-12/json-schema-core
  *   https://json-schema.org/draft/2020-12/json-schema-validation
+ *
+ * @example
+ * ```ts
+ * const schema: JsonSchemaDocumentObjectType = {
+ *   $id: 'https://example.com/User',
+ *   type: 'object',
+ *   properties: { id: { type: 'string' } },
+ *   required: ['id'],
+ * };
+ * ```
+ *
+ * @category Schema Utilities
+ * @since 0.10.0
+ * @see {@link JsonSchemaDocumentType}
+ * @group Schema Utilities
  */
 export interface JsonSchemaDocumentObjectType {
   readonly '$anchor'?: string;
@@ -189,7 +252,9 @@ export interface JsonSchemaDocumentObjectType {
   readonly 'jt:config'?: Record<string, unknown>;
   readonly 'jt:frozen'?: boolean;
   /**
-   * OWL 2 §9.5 — composite key uniqueness constraints declared via owl:hasKey.
+   * OWL 2 §9.5 — composite key uniqueness constraints declared via `owl:hasKey`.
+   *
+   * @remarks
    * Each entry is an array of property IRIs that together form a composite key.
    * At most one unique instance per (P1, P2, …) combination is allowed.
    */
@@ -246,14 +311,28 @@ export interface JsonSchemaDocumentObjectType {
 }
 
 /**
- * A JSON Schema document — either the structural object defined by
- * `JsonSchemaDocumentObjectType` or one of the boolean shortcuts
- * (`true` accepts every instance, `false` rejects every instance).
- * Used as the public-API constraint for `TSchema` generics in
- * `JsonTology` methods.
+ * A JSON Schema document — either the structural object or one of the boolean shortcuts.
+ *
+ * @remarks
+ * Either the structural object defined by {@link JsonSchemaDocumentObjectType}
+ * or one of the boolean shortcuts (`true` accepts every instance, `false`
+ * rejects every instance). Used as the public-API constraint for `TSchema`
+ * generics in `JsonTology` methods.
  *
  * The `& { readonly '$id': string }` intersection used in named-schema
  * overloads narrows this to the registered-schema case automatically;
  * boolean shortcuts have no `$id` and drop out of the intersection.
+ *
+ * @example
+ * ```ts
+ * const always: JsonSchemaDocumentType = true;
+ * const never: JsonSchemaDocumentType = false;
+ * const obj: JsonSchemaDocumentType = { type: 'string' };
+ * ```
+ *
+ * @category Schema Utilities
+ * @since 0.10.0
+ * @see {@link JsonSchemaDocumentObjectType}
+ * @group Schema Utilities
  */
 export type JsonSchemaDocumentType = boolean | JsonSchemaDocumentObjectType;

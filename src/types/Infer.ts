@@ -74,10 +74,15 @@ import type { TransformBrandInterface } from '../interfaces/TransformBrand.js';
 // Recursion limits (type-level caps to prevent infinite expansion)
 // ---------------------------------------------------------------------------
 
-type SchemaPointerDepthCap = 5;
-type DeepPropertyDepthCap = 4;
-type IntegerRangeCap = 50;
-type StringLengthCap = 8;
+declare const _SCHEMA_POINTER_DEPTH_CAP: 5;
+declare const _DEEP_PROPERTY_DEPTH_CAP: 4;
+declare const _INTEGER_RANGE_CAP: 50;
+declare const _STRING_LENGTH_CAP: 8;
+
+type SchemaPointerDepthCap = typeof _SCHEMA_POINTER_DEPTH_CAP;
+type DeepPropertyDepthCap = typeof _DEEP_PROPERTY_DEPTH_CAP;
+type IntegerRangeCap = typeof _INTEGER_RANGE_CAP;
+type StringLengthCap = typeof _STRING_LENGTH_CAP;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -429,7 +434,7 @@ type NarrowArrayByItemsBoundsType<TItem, T>
  */
 type UniqueTuplePairwiseType<TTuple, TPrev extends readonly unknown[] = []>
   = TTuple extends readonly [infer THead, ...infer TRest]
-    ? TPrev['length'] extends 8
+    ? TPrev['length'] extends StringLengthCap
       ? TTuple
       : [TPrev[number]] extends [never]
         // Empty accumulated set — no prior elements to compare against; recurse.
@@ -964,8 +969,26 @@ type InferSchemaTypeCoreType<T, TRoot = T, TReferences = Record<never, never>>
  * Wraps the core dispatcher with `not` keyword exclusion so that
  * `not: { type }`, `not: { const }`, and `not: { enum }` narrow the result.
  *
+ * @remarks
+ * This is the primary public entry point for compile-time type inference.
+ * Pass a schema literal (with `as const`) to obtain the TypeScript type that
+ * the schema describes. For cross-schema `$ref` resolution, pass the full
+ * references map as `TReferences`.
+ *
+ * @example
+ * ```ts
+ * const UserSchema = { type: 'object', properties: { name: { type: 'string' } } } as const;
+ * type User = InferSchemaType<typeof UserSchema>;  // { name?: string }
+ * ```
+ *
+ * @category Type Inference
+ * @since 0.18.0
+ * @see {@link NominalSchemaType}
+ * @group Type Inference
+ *
  * @typeParam T - The schema type (should be `as const`).
  * @typeParam TRoot - The root schema for $ref resolution (defaults to T).
+ * @typeParam TReferences - Map of external schema IRIs to their types.
  */
 export type InferSchemaType<T, TRoot = T, TReferences = Record<never, never>>
   = ApplyNotExclusionType<T, InferSchemaTypeCoreType<T, TRoot, TReferences>>;
@@ -977,6 +1000,26 @@ export type InferSchemaType<T, TRoot = T, TReferences = Record<never, never>>
  * Schemas with different `$id` values produce incompatible types even when
  * structurally identical. Use this for top-level schemas that need nominal
  * distinction; sub-schemas without `$id` remain structural.
+ *
+ * @remarks
+ * Only active when `nominalBrands` is enabled in the type config (the
+ * default). Disable via module augmentation of `JsonTologyTypeConfigInterface`
+ * when structural compatibility across schemas is preferred.
+ *
+ * @example
+ * ```ts
+ * const UserSchema = { $id: 'https://example.com/User', type: 'object' } as const;
+ * type User = NominalSchemaType<typeof UserSchema>;  // branded with SchemaIdBrandInterface
+ * ```
+ *
+ * @category Type Inference
+ * @since 0.18.0
+ * @see {@link InferSchemaType}
+ * @group Type Inference
+ *
+ * @typeParam T - The schema type (should be `as const`).
+ * @typeParam TRoot - The root schema for $ref resolution (defaults to T).
+ * @typeParam TReferences - Map of external schema IRIs to their types.
  */
 export type NominalSchemaType<T, TRoot = T, TReferences = Record<never, never>>
   = InferSchemaType<T, TRoot, TReferences>
@@ -1000,7 +1043,27 @@ type PrefixPointerType<TPrefix extends string, TSuffix>
 
 /**
  * Derive valid JSON Pointer paths from a schema type.
- * Provides IDE autocomplete for `subschemaAt()` pointer arguments.
+ *
+ * Provides IDE autocomplete for `subschemaAt()` pointer arguments by
+ * enumerating every reachable JSON Pointer path within the schema.
+ *
+ * @remarks
+ * Recursion is limited to `SchemaPointerDepthCap` levels. Paths deeper than
+ * the cap are silently omitted (the runtime `subschemaAt` still accepts them).
+ * Covers `$defs`, `allOf`, `anyOf`, `oneOf`, `properties`, `items`,
+ * `prefixItems`, `patternProperties`, `additionalProperties`, `contains`,
+ * `dependentSchemas`, `not`, `if`, `then`, `else`, and `propertyNames`.
+ *
+ * @example
+ * ```ts
+ * const S = { $defs: { User: { type: 'object' } } } as const;
+ * type Paths = SchemaPointerPathsType<typeof S>;  // '/$defs/User'
+ * ```
+ *
+ * @category Schema Utilities
+ * @since 0.18.0
+ * @see {@link InferSchemaType}
+ * @group Schema Utilities
  *
  * @typeParam T - The schema type (should be `as const`).
  * @typeParam TDepth - Internal recursion limiter (do not set manually).
@@ -1095,6 +1158,30 @@ type PropertiesWithDefaultType<TProps>
 /**
  * Type returned by `materialize()` — required fields and fields with defaults
  * are non-optional, all others remain optional.
+ *
+ * @remarks
+ * Differs from `InferSchemaType` in that properties listed in `required` or
+ * carrying a `default` value are promoted from optional (`?:`) to required.
+ * Non-object schemas fall through to plain `InferSchemaType`.
+ *
+ * @example
+ * ```ts
+ * const S = {
+ *   type: 'object',
+ *   properties: { name: { type: 'string', default: 'anon' }, age: { type: 'number' } },
+ *   required: ['age'],
+ * } as const;
+ * type M = MaterializedSchemaType<typeof S>;  // { name: string; age: number; }
+ * ```
+ *
+ * @category Type Inference
+ * @since 0.18.0
+ * @see {@link InferSchemaType}
+ * @group Type Inference
+ *
+ * @typeParam T - The schema type (should be `as const`).
+ * @typeParam TRoot - The root schema for $ref resolution (defaults to T).
+ * @typeParam TReferences - Map of external schema IRIs to their types.
  */
 export type MaterializedSchemaType<T, TRoot = T, TReferences = Record<never, never>>
   = T extends { readonly 'properties': infer TProps;
@@ -1113,13 +1200,56 @@ export type MaterializedSchemaType<T, TRoot = T, TReferences = Record<never, nev
 // Property paths — dot-notation paths for utility work
 // ---------------------------------------------------------------------------
 
-/** Extract top-level property names from a schema. */
+/**
+ * Extract top-level property names from a schema.
+ *
+ * @remarks
+ * Returns the union of all keys in the schema's `properties` map as string
+ * literals. Schemas without `properties` resolve to `never`.
+ *
+ * @example
+ * ```ts
+ * const S = { type: 'object', properties: { id: {}, name: {} } } as const;
+ * type Keys = PropertyPathsType<typeof S>;  // 'id' | 'name'
+ * ```
+ *
+ * @category Schema Utilities
+ * @since 0.18.0
+ * @see {@link DeepPropertyPathsType}
+ * @group Schema Utilities
+ *
+ * @typeParam T - The schema type (should be `as const`).
+ */
 export type PropertyPathsType<T>
   = T extends { readonly 'properties': infer P }
     ? keyof P & string
     : never;
 
-/** Extract nested property paths (dot-notation) from a schema, depth-limited. */
+/**
+ * Extract nested property paths (dot-notation) from a schema, depth-limited.
+ *
+ * @remarks
+ * Recursively walks `properties` maps, joining keys with `.` to form paths
+ * like `'address.city'`. Recursion stops at `DeepPropertyDepthCap` levels.
+ * Paths deeper than the cap are omitted.
+ *
+ * @example
+ * ```ts
+ * const S = {
+ *   type: 'object',
+ *   properties: { address: { type: 'object', properties: { city: {} } } },
+ * } as const;
+ * type Paths = DeepPropertyPathsType<typeof S>;  // 'address' | 'address.city'
+ * ```
+ *
+ * @category Schema Utilities
+ * @since 0.18.0
+ * @see {@link PropertyPathsType}
+ * @group Schema Utilities
+ *
+ * @typeParam T - The schema type (should be `as const`).
+ * @typeParam TDepth - Internal recursion limiter (do not set manually).
+ */
 export type DeepPropertyPathsType<T, TDepth extends unknown[] = []>
   = TDepth['length'] extends DeepPropertyDepthCap ? never
     : T extends { readonly 'properties': infer P }
@@ -1135,28 +1265,124 @@ export type DeepPropertyPathsType<T, TDepth extends unknown[] = []>
 // readOnly / writeOnly filtering
 // ---------------------------------------------------------------------------
 
-/** Extract keys of properties marked `readOnly: true`. */
+/**
+ * Extract keys of properties marked `readOnly: true`.
+ *
+ * @remarks
+ * Returns a union of property keys whose schemas carry `readOnly: true`.
+ * Used by `InputSchemaType` to strip server-generated fields from API input
+ * types. Schemas without `properties` resolve to `never`.
+ *
+ * @example
+ * ```ts
+ * const S = {
+ *   type: 'object',
+ *   properties: { id: { type: 'string', readOnly: true }, name: { type: 'string' } },
+ * } as const;
+ * type RO = ReadOnlyKeysType<typeof S>;  // 'id'
+ * ```
+ *
+ * @category Schema Utilities
+ * @since 0.18.0
+ * @see {@link InputSchemaType}
+ * @group Schema Utilities
+ *
+ * @typeParam T - The schema type (should be `as const`).
+ */
 export type ReadOnlyKeysType<T>
   = T extends { readonly 'properties': infer P }
     ? { [K in keyof P & string]: P[K] extends { readonly 'readOnly': true } ? K : never
     }[keyof P & string]
     : never;
 
-/** Extract keys of properties marked `writeOnly: true`. */
+/**
+ * Extract keys of properties marked `writeOnly: true`.
+ *
+ * @remarks
+ * Returns a union of property keys whose schemas carry `writeOnly: true`.
+ * Used by `OutputSchemaType` to strip client-only fields from API output
+ * types. Schemas without `properties` resolve to `never`.
+ *
+ * @example
+ * ```ts
+ * const S = {
+ *   type: 'object',
+ *   properties: { password: { type: 'string', writeOnly: true }, name: { type: 'string' } },
+ * } as const;
+ * type WO = WriteOnlyKeysType<typeof S>;  // 'password'
+ * ```
+ *
+ * @category Schema Utilities
+ * @since 0.18.0
+ * @see {@link OutputSchemaType}
+ * @group Schema Utilities
+ *
+ * @typeParam T - The schema type (should be `as const`).
+ */
 export type WriteOnlyKeysType<T>
   = T extends { readonly 'properties': infer P }
     ? { [K in keyof P & string]: P[K] extends { readonly 'writeOnly': true } ? K : never
     }[keyof P & string]
     : never;
 
-/** Schema type for API input — excludes readOnly properties (server-generated). */
+/**
+ * Schema type for API input — excludes readOnly properties (server-generated).
+ *
+ * @remarks
+ * Strips all properties marked `readOnly: true` from the inferred type. This
+ * is the shape that a client submits when creating or updating a resource.
+ * Non-object schemas fall through to plain `InferSchemaType`.
+ *
+ * @example
+ * ```ts
+ * const S = {
+ *   type: 'object',
+ *   properties: { id: { type: 'string', readOnly: true }, name: { type: 'string' } },
+ * } as const;
+ * type Input = InputSchemaType<typeof S>;  // { name?: string }
+ * ```
+ *
+ * @category Schema Utilities
+ * @since 0.18.0
+ * @see {@link OutputSchemaType}
+ * @group Schema Utilities
+ *
+ * @typeParam T - The schema type (should be `as const`).
+ * @typeParam TRoot - The root schema for $ref resolution (defaults to T).
+ * @typeParam TReferences - Map of external schema IRIs to their types.
+ */
 export type InputSchemaType<T, TRoot = T, TReferences = Record<never, never>>
   = T extends { readonly 'properties': unknown;
     readonly 'type': 'object' }
     ? SimplifyType<Omit<InferSchemaType<T, TRoot, TReferences>, ReadOnlyKeysType<T>>>
     : InferSchemaType<T, TRoot, TReferences>;
 
-/** Schema type for API output — excludes writeOnly properties (client-only input). */
+/**
+ * Schema type for API output — excludes writeOnly properties (client-only input).
+ *
+ * @remarks
+ * Strips all properties marked `writeOnly: true` from the inferred type. This
+ * is the shape that a server returns when reading a resource. Non-object
+ * schemas fall through to plain `InferSchemaType`.
+ *
+ * @example
+ * ```ts
+ * const S = {
+ *   type: 'object',
+ *   properties: { password: { type: 'string', writeOnly: true }, name: { type: 'string' } },
+ * } as const;
+ * type Output = OutputSchemaType<typeof S>;  // { name?: string }
+ * ```
+ *
+ * @category Schema Utilities
+ * @since 0.18.0
+ * @see {@link InputSchemaType}
+ * @group Schema Utilities
+ *
+ * @typeParam T - The schema type (should be `as const`).
+ * @typeParam TRoot - The root schema for $ref resolution (defaults to T).
+ * @typeParam TReferences - Map of external schema IRIs to their types.
+ */
 export type OutputSchemaType<T, TRoot = T, TReferences = Record<never, never>>
   = T extends { readonly 'properties': unknown;
     readonly 'type': 'object' }
@@ -1167,14 +1393,61 @@ export type OutputSchemaType<T, TRoot = T, TReferences = Record<never, never>>
 // Deprecated property filtering
 // ---------------------------------------------------------------------------
 
-/** Extract keys of properties marked `deprecated: true`. */
+/**
+ * Extract keys of properties marked `deprecated: true`.
+ *
+ * @remarks
+ * Returns a union of property keys whose schemas carry `deprecated: true`.
+ * Used by `NonDeprecatedSchemaType` to strip deprecated fields from the
+ * inferred type.
+ *
+ * @example
+ * ```ts
+ * const S = {
+ *   type: 'object',
+ *   properties: { legacyId: { type: 'string', deprecated: true }, name: { type: 'string' } },
+ * } as const;
+ * type Dep = DeprecatedKeysType<typeof S>;  // 'legacyId'
+ * ```
+ *
+ * @category Schema Utilities
+ * @since 0.18.0
+ * @see {@link NonDeprecatedSchemaType}
+ * @group Schema Utilities
+ *
+ * @typeParam T - The schema type (should be `as const`).
+ */
 export type DeprecatedKeysType<T>
   = T extends { readonly 'properties': infer P }
     ? { [K in keyof P & string]: P[K] extends { readonly 'deprecated': true } ? K : never
     }[keyof P & string]
     : never;
 
-/** Schema type excluding deprecated properties. */
+/**
+ * Schema type excluding deprecated properties.
+ *
+ * @remarks
+ * Strips all properties marked `deprecated: true` from the inferred type.
+ * Non-object schemas fall through to plain `InferSchemaType`.
+ *
+ * @example
+ * ```ts
+ * const S = {
+ *   type: 'object',
+ *   properties: { legacyId: { type: 'string', deprecated: true }, name: { type: 'string' } },
+ * } as const;
+ * type Current = NonDeprecatedSchemaType<typeof S>;  // { name?: string }
+ * ```
+ *
+ * @category Schema Utilities
+ * @since 0.18.0
+ * @see {@link DeprecatedKeysType}
+ * @group Schema Utilities
+ *
+ * @typeParam T - The schema type (should be `as const`).
+ * @typeParam TRoot - The root schema for $ref resolution (defaults to T).
+ * @typeParam TReferences - Map of external schema IRIs to their types.
+ */
 export type NonDeprecatedSchemaType<T, TRoot = T, TReferences = Record<never, never>>
   = T extends { readonly 'properties': unknown;
     readonly 'type': 'object' }
@@ -1185,7 +1458,27 @@ export type NonDeprecatedSchemaType<T, TRoot = T, TReferences = Record<never, ne
 // Discriminator property extraction
 // ---------------------------------------------------------------------------
 
-/** Extract the discriminator property name from a schema with `discriminator.propertyName`. */
+/**
+ * Extract the discriminator property name from a schema with `discriminator.propertyName`.
+ *
+ * @remarks
+ * Returns the string literal for the `discriminator.propertyName` value, or
+ * `never` when the schema does not declare a discriminator. Used to derive
+ * narrow union key types at compile time.
+ *
+ * @example
+ * ```ts
+ * const S = { discriminator: { propertyName: 'kind' }, oneOf: [] } as const;
+ * type D = DiscriminatorPropertyType<typeof S>;  // 'kind'
+ * ```
+ *
+ * @category Schema Utilities
+ * @since 0.18.0
+ * @see {@link InferSchemaType}
+ * @group Schema Utilities
+ *
+ * @typeParam T - The schema type (should be `as const`).
+ */
 export type DiscriminatorPropertyType<T>
   = T extends { readonly 'discriminator': { readonly 'propertyName': infer P extends string } }
     ? P : never;
@@ -1243,11 +1536,27 @@ type RangeWithinCapType<TMax extends number, T extends unknown[] = []>
 
 /**
  * Produce a union of integer literals from Min to Max (inclusive).
- * Only practical for small non-negative ranges (Max ≤ 50). Above the cap,
- * falls back to `number`.
+ *
+ * Only practical for small non-negative ranges (Max ≤ `IntegerRangeCap`).
+ * Above the cap, falls back to `number`.
+ *
+ * @remarks
+ * Used internally by `InferSchemaType` when `tightIntegerRanges` is enabled.
+ * The cap prevents TypeScript from hitting TS2589 (type instantiation depth)
+ * when compiling schemas with large bounded integer ranges.
  *
  * @example
+ * ```ts
  * type Rating = IntegerRangeType<1, 5>;  // 1 | 2 | 3 | 4 | 5
+ * ```
+ *
+ * @category Type Inference
+ * @since 0.18.0
+ * @see {@link MultipleOfRangeType}
+ * @group Type Inference
+ *
+ * @typeParam TMin - Inclusive lower bound (non-negative integer literal).
+ * @typeParam TMax - Inclusive upper bound (non-negative integer literal).
  */
 export type IntegerRangeType<TMin extends number, TMax extends number>
   = number extends TMin ? number
@@ -1284,8 +1593,24 @@ type BuildMultipleOfRangeType<
 /**
  * Produce a union of integer literals that are multiples of TStep within [TMin, TMax].
  *
+ * @remarks
+ * Used internally by `InferSchemaType` when `tightIntegerRanges` is enabled
+ * and the schema declares `multipleOf`. Above `IntegerRangeCap`, falls back
+ * to `number` to avoid TS2589.
+ *
  * @example
+ * ```ts
  * type Evens = MultipleOfRangeType<0, 10, 2>;  // 0 | 2 | 4 | 6 | 8 | 10
+ * ```
+ *
+ * @category Type Inference
+ * @since 0.18.0
+ * @see {@link IntegerRangeType}
+ * @group Type Inference
+ *
+ * @typeParam TMin - Inclusive lower bound (non-negative integer literal).
+ * @typeParam TMax - Inclusive upper bound (non-negative integer literal).
+ * @typeParam TStep - The step size (positive integer literal from `multipleOf`).
  */
 export type MultipleOfRangeType<
   TMin extends number, TMax extends number, TStep extends number
@@ -1322,7 +1647,33 @@ type CheckPropertyDefaultsType<TP>
           : true
   } extends { [K in keyof TP]: true } ? true : false;
 
-/** Resolves to the schema type T when all defaults match, otherwise never. */
+/**
+ * Resolves to the schema type T when all defaults match, otherwise never.
+ *
+ * @remarks
+ * Used as a builder parameter constraint to surface default-type mismatches
+ * at compile time. When a `default` value does not match the property's
+ * declared `type`, the schema resolves to `never`, causing an assignment
+ * error at the call site.
+ *
+ * @example
+ * ```ts
+ * // Valid — default matches type:
+ * const S = { type: 'object', properties: { count: { type: 'number', default: 0 } } } as const;
+ * type D = DefaultAlignedType<typeof S>;  // typeof S
+ *
+ * // Invalid — default mismatches type:
+ * const Bad = { type: 'object', properties: { count: { type: 'number', default: 'zero' } } } as const;
+ * type E = DefaultAlignedType<typeof Bad>;  // never
+ * ```
+ *
+ * @category Schema Utilities
+ * @since 0.18.0
+ * @see {@link MaterializedSchemaType}
+ * @group Schema Utilities
+ *
+ * @typeParam T - The full schema object to validate.
+ */
 export type DefaultAlignedType<T>
   = T extends { readonly 'properties': infer TP }
     ? CheckPropertyDefaultsType<TP> extends true ? T : never
@@ -1332,11 +1683,56 @@ export type DefaultAlignedType<T>
 // Enum exhaustiveness
 // ---------------------------------------------------------------------------
 
-/** Extract the union of literal values from an enum schema. */
+/**
+ * Extract the union of literal values from an enum schema.
+ *
+ * @remarks
+ * Returns the union of every literal in the schema's `enum` array. Schemas
+ * without an `enum` keyword resolve to `never`.
+ *
+ * @example
+ * ```ts
+ * const S = { enum: ['red', 'green', 'blue'] } as const;
+ * type Colors = EnumValuesType<typeof S>;  // 'red' | 'green' | 'blue'
+ * ```
+ *
+ * @category Schema Utilities
+ * @since 0.18.0
+ * @see {@link ExhaustiveType}
+ * @group Schema Utilities
+ *
+ * @typeParam T - The schema type (should be `as const`).
+ */
 export type EnumValuesType<T>
   = T extends { readonly 'enum': ReadonlyArray<infer V> } ? V : never;
 
-/** Marker type for exhaustiveness checks — only accepts `never`. */
+/**
+ * Marker type for exhaustiveness checks — only accepts `never`.
+ *
+ * @remarks
+ * Assign the remainder of a discriminated union to `ExhaustiveType` to get a
+ * compile error if any variant is not handled. TypeScript narrows the
+ * remaining union to `never` when all cases are covered.
+ *
+ * @example
+ * ```ts
+ * type Color = 'red' | 'green' | 'blue';
+ * function paint(c: Color): string {
+ *   if (c === 'red') return '#f00';
+ *   if (c === 'green') return '#0f0';
+ *   if (c === 'blue') return '#00f';
+ *   const _exhaustive: ExhaustiveType<typeof c> = c;
+ *   return _exhaustive;
+ * }
+ * ```
+ *
+ * @category Schema Utilities
+ * @since 0.18.0
+ * @see {@link EnumValuesType}
+ * @group Schema Utilities
+ *
+ * @typeParam T - Must be `never`; a non-never type causes a compile error.
+ */
 export type ExhaustiveType<T extends never> = T;
 
 // ---------------------------------------------------------------------------
@@ -1345,9 +1741,27 @@ export type ExhaustiveType<T extends never> = T;
 
 /**
  * Strip constraint brands, returning the base primitive type.
- * Exported as a standalone utility — NOT applied to method signatures.
  *
+ * Exported as a standalone utility — NOT applied to method signatures.
  * Uses `[T] extends [X]` to prevent distribution over unions.
+ *
+ * @remarks
+ * Useful when a function must accept both a branded type (obtained via the
+ * validation API) and an unvalidated primitive at the same call site.
+ * Use sparingly — prefer branded types at API boundaries.
+ *
+ * @example
+ * ```ts
+ * type T = LooseInputType<EmailBrandInterface>;  // string
+ * type N = LooseInputType<Int32BrandInterface>;  // number
+ * ```
+ *
+ * @category Type Inference
+ * @since 0.18.0
+ * @see {@link InferSchemaType}
+ * @group Type Inference
+ *
+ * @typeParam T - The branded or primitive type to strip.
  */
 export type LooseInputType<T>
   = [T] extends [string] ? string

@@ -792,7 +792,6 @@ function expandIri(value: string): string {
     });
   }
 
-  // eslint-disable-next-line @stylistic/max-len
   function hasLiteralQuad(quads: QuadInterface[], subject: string, predicate: string, value: unknown, datatype?: string): boolean {
     const expandedPredicate = expandIri(predicate);
     const expandedDatatype = datatype === undefined ? undefined : expandIri(datatype);

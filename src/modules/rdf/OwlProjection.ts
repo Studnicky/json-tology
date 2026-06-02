@@ -14,6 +14,7 @@ import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import type { PredicateResolverFnType } from '../../types/PredicateResolverFn.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { SchemaGraphRelationInterface } from '../../interfaces/SchemaGraph.js';
 import type { CurieInterface } from '../../interfaces/Curie.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
 import {
@@ -37,14 +38,28 @@ import {
   resolveRestrictionOnProperty
 } from './ProjectionHelpers.js';
 
-function emitRestriction(
-  onProperty: string,
-  constraint: string,
-  constraintValue: QuadObjectType,
-  quads: QuadInterface[],
-  curie: CurieInterface | undefined,
-  issuer?: IdentifierIssuerInterface
-): string {
+interface EmitQualifiedCardinalityRestrictionArgs {
+  readonly 'cardinalityPredicate': string;
+  readonly 'containsIriObject': ReturnType<typeof QuadFactory.iri>;
+  readonly 'ctx': OwlEmitContextInterface;
+  readonly 'onProp': string;
+  readonly 'rels': readonly SchemaGraphRelationInterface[];
+  readonly 'subject': string;
+}
+
+interface EmitRestrictionArgs {
+  readonly 'constraint': string;
+  readonly 'constraintValue': QuadObjectType;
+  readonly 'curie': CurieInterface | undefined;
+  readonly 'issuer'?: IdentifierIssuerInterface | undefined;
+  readonly 'onProperty': string;
+  readonly 'quads': QuadInterface[];
+}
+
+function emitRestriction(args: EmitRestrictionArgs): string {
+  const {
+    constraint, constraintValue, curie, issuer, onProperty, quads
+  } = args;
   const rBnode = QuadFactory.nextBnode(issuer);
 
   quads.push(QuadFactory.quad(rBnode, RDF.type, QuadFactory.iri(OWL.Restriction, { curie }), { curie }));
@@ -138,7 +153,14 @@ class OwlVocabProjection extends VocabProjection {
     issuer?: IdentifierIssuerInterface
   ): QuadObjectType {
     const minOne = QuadFactory.literal(1, XSD.nonNegativeInteger, { curie });
-    const restrictionBnode = emitRestriction(ifRef, OWL.minCardinality, minOne, quads, curie, issuer);
+    const restrictionBnode = emitRestriction({
+      'constraint': OWL.minCardinality,
+      'constraintValue': minOne,
+      curie,
+      issuer,
+      'onProperty': ifRef,
+      quads
+    });
 
     const withoutTriggerBnode = QuadFactory.nextBnode(issuer);
 
@@ -163,7 +185,14 @@ class OwlVocabProjection extends VocabProjection {
     issuer?: IdentifierIssuerInterface
   ): QuadObjectType {
     const minOne = QuadFactory.literal(1, XSD.nonNegativeInteger, { curie });
-    const restrictionBnode = emitRestriction(triggerPropIri, OWL.minCardinality, minOne, quads, curie, issuer);
+    const restrictionBnode = emitRestriction({
+      'constraint': OWL.minCardinality,
+      'constraintValue': minOne,
+      curie,
+      issuer,
+      'onProperty': triggerPropIri,
+      quads
+    });
 
     const withoutTriggerBnode = QuadFactory.nextBnode(issuer);
 
@@ -180,7 +209,14 @@ class OwlVocabProjection extends VocabProjection {
     issuer?: IdentifierIssuerInterface
   ): QuadObjectType {
     const minOne = QuadFactory.literal(1, XSD.nonNegativeInteger, { curie });
-    const reqBnode = emitRestriction(propIri, OWL.minCardinality, minOne, quads, curie, issuer);
+    const reqBnode = emitRestriction({
+      'constraint': OWL.minCardinality,
+      'constraintValue': minOne,
+      curie,
+      issuer,
+      'onProperty': propIri,
+      quads
+    });
 
     return QuadFactory.bnode(reqBnode);
   }
@@ -213,39 +249,51 @@ function isPrimitiveEntry(entry: RelationIndexInterface): boolean {
   return entry.byPredicate.has(SH.datatype) && !entry.byPredicate.has(OWL.Restriction);
 }
 
+const OWL_CARDINALITY_PREDICATES = new Set<string>([
+  OWL.cardinality,
+  OWL.maxCardinality,
+  OWL.maxQualifiedCardinality,
+  OWL.minCardinality,
+  OWL.minQualifiedCardinality
+]);
+
+function cardinalityConstraintValue(value: unknown, curie: CurieInterface | undefined): OptionalQuadObjectType {
+  const n = typeof value === 'number' ? value : Number(value);
+
+  if (!Number.isFinite(n)) {
+    return undefined;
+  }
+
+  return QuadFactory.literal(n, XSD.nonNegativeInteger, { curie });
+}
+
+function hasValueConstraintValue(value: unknown, curie: CurieInterface | undefined): OptionalQuadObjectType {
+  if (typeof value === 'boolean') {
+    return QuadFactory.literal(value, XSD.boolean, { curie });
+  }
+
+  if (typeof value === 'number') {
+    return QuadFactory.literal(value, XSD.decimal, { curie });
+  }
+
+  if (typeof value === 'string') {
+    return QuadFactory.literal(value, XSD.string, { curie });
+  }
+
+  return undefined;
+}
+
 function restrictionConstraintValue(
   constraint: string,
   value: unknown,
   curie: CurieInterface | undefined
-): QuadObjectType | undefined {
-  const isCardinality = constraint === OWL.cardinality
-    || constraint === OWL.minCardinality
-    || constraint === OWL.maxCardinality
-    || constraint === OWL.minQualifiedCardinality
-    || constraint === OWL.maxQualifiedCardinality;
-
-  if (isCardinality) {
-    const n = typeof value === 'number' ? value : Number(value);
-
-    if (!Number.isFinite(n)) {
-      return undefined;
-    }
-
-    return QuadFactory.literal(n, XSD.nonNegativeInteger, { curie });
+): OptionalQuadObjectType {
+  if (OWL_CARDINALITY_PREDICATES.has(constraint)) {
+    return cardinalityConstraintValue(value, curie);
   }
 
   if (constraint === OWL.hasValue) {
-    if (typeof value === 'boolean') {
-      return QuadFactory.literal(value, XSD.boolean, { curie });
-    }
-    if (typeof value === 'number') {
-      return QuadFactory.literal(value, XSD.decimal, { curie });
-    }
-    if (typeof value === 'string') {
-      return QuadFactory.literal(value, XSD.string, { curie });
-    }
-
-    return undefined;
+    return hasValueConstraintValue(value, curie);
   }
 
   if (typeof value !== 'string' || value === '') {
@@ -258,10 +306,12 @@ function restrictionConstraintValue(
 function emitDatatypeQuads(
   subject: string,
   entry: RelationIndexInterface,
-  quads: QuadInterface[],
-  curie: CurieInterface | undefined,
-  issuer?: IdentifierIssuerInterface
+  ctx: OwlEmitContextInterface
 ): void {
+  const {
+    curie, quads
+  } = ctx;
+
   quads.push(QuadFactory.quad(subject, RDF.type, QuadFactory.iri(RDFS.Datatype, { curie }), { curie }));
 
   const datatypeRels = entry.byPredicate.get(SH.datatype) ?? [];
@@ -272,15 +322,26 @@ function emitDatatypeQuads(
     quads.push(QuadFactory.quad(subject, OWL.onDatatype, QuadFactory.iri(xsdType, { curie }), { curie }));
   }
 
+  emitDatatypeFacetBnodes(subject, entry, ctx);
+  emitDatatypeEnumeration(subject, entry, ctx);
+  emitDatatypeMetadata(subject, entry, ctx);
+}
+
+function emitDatatypeFacetBnodes(
+  subject: string,
+  entry: RelationIndexInterface,
+  ctx: OwlEmitContextInterface
+): void {
+  const {
+    curie, issuer, quads
+  } = ctx;
   const facetBnodes: QuadObjectType[] = [];
 
   for (const [
     shaclPred,
     xsdFacet
   ] of SHACL_TO_XSD_FACET) {
-    const rels = entry.byPredicate.get(shaclPred) ?? [];
-
-    for (const rel of rels) {
+    for (const rel of entry.byPredicate.get(shaclPred) ?? []) {
       if (shaclPred === SH.pattern && rel.metadata?.fromFormat === true) {
         continue;
       }
@@ -297,41 +358,65 @@ function emitDatatypeQuads(
   }
 
   if (facetBnodes.length > 0) {
-    const listHead = QuadFactory.rdfList(facetBnodes, quads, issuer);
-
-    quads.push(QuadFactory.quad(subject, OWL.withRestrictions, listHead, { curie }));
+    quads.push(QuadFactory.quad(
+      subject,
+      OWL.withRestrictions,
+      QuadFactory.rdfList(facetBnodes, quads, issuer),
+      { curie }
+    ));
   }
+}
 
+function emitDatatypeEnumeration(
+  subject: string,
+  entry: RelationIndexInterface,
+  ctx: OwlEmitContextInterface
+): void {
+  const {
+    curie, issuer, quads
+  } = ctx;
   const oneOfRels = entry.byPredicate.get(OWL.oneOf) ?? [];
 
   if (oneOfRels.length > 0) {
-    const enumLiterals = oneOfRels.map((rel) => {
-      const val = ProjectionIndex.relationTargetId(rel);
-
-      return QuadFactory.literal(typedLiteralObject(val), RDF.JSON, { curie });
+    const enumLiterals = oneOfRels.map((rel: SchemaGraphRelationInterface): ReturnType<typeof QuadFactory.literal> => {
+      return QuadFactory.literal(typedLiteralObject(ProjectionIndex.relationTargetId(rel)), RDF.JSON, { curie });
     });
     const equivBnode = QuadFactory.nextBnode(issuer);
 
     quads.push(QuadFactory.quad(subject, OWL.equivalentClass, QuadFactory.bnode(equivBnode), { curie }));
     quads.push(QuadFactory.quad(equivBnode, OWL.oneOf, QuadFactory.rdfList(enumLiterals, quads, issuer), { curie }));
   }
+}
 
+function emitDatatypeMetadata(
+  subject: string,
+  entry: RelationIndexInterface,
+  ctx: OwlEmitContextInterface
+): void {
+  const {
+    curie, quads
+  } = ctx;
   const multipleOfRels = entry.byPredicate.get(JT.multipleOf) ?? [];
 
   if (multipleOfRels.length > 0) {
-    const moVal = Number(ProjectionIndex.relationTargetId(multipleOfRels[0]));
-
-    quads.push(QuadFactory.quad(subject, JT.multipleOf, QuadFactory.literal(moVal, XSD.decimal, { curie }), { curie }));
+    quads.push(QuadFactory.quad(
+      subject,
+      JT.multipleOf,
+      QuadFactory.literal(Number(ProjectionIndex.relationTargetId(multipleOfRels[0])), XSD.decimal, { curie }),
+      { curie }
+    ));
   }
 
   // H-2: read format from JT.format graph relation, not from source.schema.format
   const formatRels = entry.byPredicate.get(JT.format) ?? [];
 
   if (formatRels.length > 0) {
-    const formatValue = ProjectionIndex.relationTargetId(formatRels[0]);
-    const formatLiteral = QuadFactory.literal(formatValue, XSD.string, { curie });
-
-    quads.push(QuadFactory.quad(subject, JT.format, formatLiteral, { curie }));
+    quads.push(QuadFactory.quad(
+      subject,
+      JT.format,
+      QuadFactory.literal(ProjectionIndex.relationTargetId(formatRels[0]), XSD.string, { curie }),
+      { curie }
+    ));
   }
 
   QuadFactory.emitLiterals(subject, entry, RDFS.label, RDFS.label, quads, { curie });
@@ -339,9 +424,50 @@ function emitDatatypeQuads(
 }
 
 // ---------------------------------------------------------------------------
+// Shared emit context
+// ---------------------------------------------------------------------------
+
+/** Shared context for OWL quad emission — bundles curie, graph, index, issuer, predicateResolver, quads. */
+interface OwlEmitContextInterface {
+  readonly 'curie': CurieInterface | undefined;
+  readonly 'graph': SchemaGraphInterface;
+  readonly 'index': Map<string, RelationIndexInterface>;
+  readonly 'issuer': IdentifierIssuerInterface;
+  readonly 'predicateResolver': PredicateResolverFnType | undefined;
+  readonly 'quads': QuadInterface[];
+}
+
+/** Optional quad-object term — undefined when a constraint value cannot be represented. */
+type OptionalQuadObjectType = QuadObjectType | undefined;
+
+/** A typed literal object for JSON-LD `@value`/`@type` encoding, or null when unsupported. */
+type TypedLiteralObjectType = null | Record<string, unknown>;
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
+/**
+ * Projects SchemaGraph relations into OWL-vocabulary RDF quads.
+ *
+ * @remarks
+ * Iterates `graph.allRelations()` and emits complete OWL patterns:
+ * `owl:Class`, `owl:DatatypeProperty`/`owl:ObjectProperty`, `owl:Restriction`,
+ * `owl:unionOf`/`owl:intersectionOf` for conditionals, `owl:someValuesFrom` for
+ * contains constraints, etc. Property IRI canonicalization (pointer → Class#name)
+ * happens here. The output quads can be passed directly to `JsonLdFormatter.fromQuads()`.
+ *
+ * @example
+ * ```ts
+ * const quads = OwlProjection.graph(graph, { curie, predicateResolver });
+ * ```
+ *
+ * @defaultValue Uses a fresh `IdentifierIssuer` when no `issuer` option is provided.
+ * @category RDF
+ * @since 0.1.0
+ * @see {@link ShaclProjection}
+ * @group OwlProjection
+ */
 export const OwlProjection = {
   graph(graph: SchemaGraphInterface, options?: { 'curie'?: CurieInterface | undefined;
     'issuer'?: IdentifierIssuerInterface | undefined;
@@ -352,6 +478,14 @@ export const OwlProjection = {
     const quads: QuadInterface[] = [];
     const allRelations = graph.allRelations();
     const index = ProjectionIndex.build(allRelations);
+    const ctx: OwlEmitContextInterface = {
+      curie,
+      graph,
+      index,
+      issuer,
+      predicateResolver,
+      quads
+    };
 
     for (const [
       sourceId,
@@ -363,14 +497,14 @@ export const OwlProjection = {
 
       if (entry.types.includes(OWL.Class)) {
         if (isPrimitiveEntry(entry)) {
-          emitDatatypeQuads(sourceId, entry, quads, curie, issuer);
+          emitDatatypeQuads(sourceId, entry, ctx);
         } else {
-          emitClassQuads(sourceId, entry, index, graph, predicateResolver, quads, curie, issuer);
+          emitClassQuads(sourceId, entry, ctx);
         }
       }
 
       if (entry.types.includes(OWL.DatatypeProperty) || entry.types.includes(OWL.ObjectProperty)) {
-        emitPropertyQuads(sourceId, entry, graph, predicateResolver, quads, curie, issuer);
+        emitPropertyQuads(sourceId, entry, ctx);
       }
     }
 
@@ -379,19 +513,183 @@ export const OwlProjection = {
 } as const;
 
 // ---------------------------------------------------------------------------
+// Class node emission helpers
+// ---------------------------------------------------------------------------
+
+function emitClassSubClassRelations(
+  subject: string,
+  entry: RelationIndexInterface,
+  ctx: OwlEmitContextInterface
+): void {
+  const {
+    curie, graph, issuer, predicateResolver, quads
+  } = ctx;
+
+  // H-1: RDFS.subClassOf relations with restriction structure → restriction bnodes.
+  // Plain subClassOf relations → direct IRI triples.
+  for (const rel of entry.byPredicate.get(RDFS.subClassOf) ?? []) {
+    if (ProjectionIndex.isRestrictionStructure(rel.structure)) {
+      const {
+        constraint, onProperty, value
+      } = rel.structure;
+      const constraintValue = restrictionConstraintValue(constraint, value, curie);
+
+      if (constraintValue !== undefined) {
+        const flatOnProperty = resolveRestrictionOnProperty(onProperty, graph, predicateResolver);
+        const rBnode = emitRestriction({
+          constraint,
+          'constraintValue': constraintValue,
+          curie,
+          issuer,
+          'onProperty': flatOnProperty,
+          quads
+        });
+
+        quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(rBnode), { curie }));
+      }
+    } else {
+      const targetIri = QuadFactory.iri(ProjectionIndex.relationTargetId(rel), { curie });
+
+      quads.push(QuadFactory.quad(subject, RDFS.subClassOf, targetIri, { curie }));
+    }
+  }
+}
+
+function emitClassRestrictionRelations(
+  subject: string,
+  entry: RelationIndexInterface,
+  ctx: OwlEmitContextInterface
+): void {
+  const {
+    curie, graph, issuer, predicateResolver, quads
+  } = ctx;
+
+  // Site 4: OWL.Restriction relations carry metadata.propertyName — resolve flat predicate IRI.
+  for (const rel of entry.byPredicate.get(OWL.Restriction) ?? []) {
+    const meta = rel.metadata ?? {};
+    const minCard = typeof meta.minCardinality === 'number' ? meta.minCardinality : 1;
+    let onProperty: string;
+
+    if (predicateResolver !== undefined && typeof meta.propertyName === 'string') {
+      const propSubject = propertySubjectIri(subject, meta.propertyName);
+
+      onProperty = predicateResolver({
+        'classId': subject,
+        'propertyName': meta.propertyName,
+        'propertySchema': resolvePropertySchema(graph, propSubject)
+      });
+    } else {
+      onProperty = typeof meta.onProperty === 'string' ? meta.onProperty : '';
+    }
+
+    const minCardLit = QuadFactory.literal(minCard, XSD.nonNegativeInteger, { curie });
+    const rBnode = emitRestriction({
+      'constraint': OWL.minCardinality,
+      'constraintValue': minCardLit,
+      curie,
+      issuer,
+      onProperty,
+      quads
+    });
+
+    quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(rBnode), { curie }));
+  }
+}
+
+function emitClassEquivalencesAndDisjoint(
+  subject: string,
+  entry: RelationIndexInterface,
+  ctx: OwlEmitContextInterface
+): void {
+  const {
+    curie, issuer, quads
+  } = ctx;
+  const equivRels = entry.byPredicate.get(OWL.equivalentClass) ?? [];
+
+  if (equivRels.length > 0) {
+    const eqBnode = QuadFactory.nextBnode(issuer);
+
+    quads.push(QuadFactory.quad(subject, OWL.equivalentClass, QuadFactory.bnode(eqBnode), { curie }));
+    quads.push(QuadFactory.quad(eqBnode, RDF.type, QuadFactory.iri(OWL.Class, { curie }), { curie }));
+    const equivIris = equivRels.map((rel: SchemaGraphRelationInterface): ReturnType<typeof QuadFactory.iri> => {
+      return QuadFactory.iri(ProjectionIndex.relationTargetId(rel), { curie });
+    });
+
+    quads.push(QuadFactory.quad(eqBnode, OWL.unionOf, QuadFactory.rdfList(equivIris, quads, issuer), { curie }));
+  }
+
+  const complementRels = entry.byPredicate.get(OWL.complementOf) ?? [];
+
+  if (complementRels.length > 0) {
+    const complementIri = QuadFactory.iri(ProjectionIndex.relationTargetId(complementRels[0]), { curie });
+
+    quads.push(QuadFactory.quad(subject, OWL.complementOf, complementIri, { curie }));
+  }
+
+  const disjointRels = entry.byPredicate.get(OWL.disjointWith) ?? [];
+
+  if (disjointRels.length > 0) {
+    const disjointIri = QuadFactory.iri(ProjectionIndex.relationTargetId(disjointRels[0]), { curie });
+
+    quads.push(QuadFactory.quad(subject, OWL.disjointWith, disjointIri, { curie }));
+  }
+
+  const disjointUnionRels = entry.byPredicate.get(OWL.disjointUnionOf) ?? [];
+
+  if (disjointUnionRels.length > 0) {
+    type IriTerm = ReturnType<typeof QuadFactory.iri>;
+    const disjointUnionIris = disjointUnionRels.map((rel: SchemaGraphRelationInterface): IriTerm => {
+      return QuadFactory.iri(ProjectionIndex.relationTargetId(rel), { curie });
+    });
+    const disjointUnionList = QuadFactory.rdfList(disjointUnionIris, quads, issuer);
+
+    quads.push(QuadFactory.quad(subject, OWL.disjointUnionOf, disjointUnionList, { curie }));
+  }
+}
+
+function emitClassEnumerations(
+  subject: string,
+  entry: RelationIndexInterface,
+  ctx: OwlEmitContextInterface
+): void {
+  const {
+    curie, issuer, quads
+  } = ctx;
+  const oneOfRels = entry.byPredicate.get(OWL.oneOf) ?? [];
+
+  if (oneOfRels.length > 0) {
+    const typedLiterals = oneOfRels.map((rel: SchemaGraphRelationInterface): ReturnType<typeof QuadFactory.literal> => {
+      return QuadFactory.literal(typedLiteralObject(ProjectionIndex.relationTargetId(rel)), RDF.JSON, { curie });
+    });
+
+    quads.push(QuadFactory.quad(subject, OWL.oneOf, QuadFactory.rdfList(typedLiterals, quads, issuer), { curie }));
+
+    return;
+  }
+
+  const hasValueRels = entry.byPredicate.get(OWL.hasValue) ?? [];
+
+  if (hasValueRels.length > 0) {
+    const hasValueTarget = typedLiteralObject(ProjectionIndex.relationTargetId(hasValueRels[0]));
+    const valueLit = QuadFactory.literal(hasValueTarget, RDF.JSON, { curie });
+
+    quads.push(QuadFactory.quad(subject, OWL.oneOf, QuadFactory.rdfList([valueLit], quads, issuer), { curie }));
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Class node emission
 // ---------------------------------------------------------------------------
 
 function emitClassQuads(
   subject: string,
   entry: RelationIndexInterface,
-  index: Map<string, RelationIndexInterface>,
-  graph: SchemaGraphInterface,
-  predicateResolver: PredicateResolverFnType | undefined,
-  quads: QuadInterface[],
-  curie: CurieInterface | undefined,
-  issuer?: IdentifierIssuerInterface
+  ctx: OwlEmitContextInterface
 ): void {
+  const {
+    curie, graph, issuer, predicateResolver, quads
+  } = ctx;
+
   quads.push(QuadFactory.quad(subject, RDF.type, QuadFactory.iri(OWL.Class, { curie }), { curie }));
 
   QuadFactory.emitLiterals(subject, entry, RDFS.label, RDFS.label, quads, { curie });
@@ -403,126 +701,10 @@ function emitClassQuads(
     quads.push(QuadFactory.quad(subject, OWL.deprecated, QuadFactory.literal(true, XSD.boolean, { curie }), { curie }));
   }
 
-  // H-1: RDFS.subClassOf relations with restriction structure → restriction bnodes.
-  // Plain subClassOf relations → direct IRI triples.
-  const subClassRels = entry.byPredicate.get(RDFS.subClassOf) ?? [];
-
-  for (const rel of subClassRels) {
-    if (ProjectionIndex.isRestrictionStructure(rel.structure)) {
-      const restriction = rel.structure;
-      const {
-        constraint, onProperty, value
-      } = restriction;
-      const constraintValue = restrictionConstraintValue(constraint, value, curie);
-
-      if (constraintValue !== undefined) {
-        // User-declared restrictions carry a class-scoped onProperty (e.g.
-        // `urn:bookstore:Book#authors`). Resolve it to the flat canonical
-        // predicate IRI so the restriction stays connected to instances.
-        const flatOnProperty = resolveRestrictionOnProperty(onProperty, graph, predicateResolver);
-        const rBnode = emitRestriction(flatOnProperty, constraint, constraintValue, quads, curie, issuer);
-
-        quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(rBnode), { curie }));
-      }
-    } else {
-      const target = QuadFactory.iri(ProjectionIndex.relationTargetId(rel), { curie });
-
-      quads.push(QuadFactory.quad(subject, RDFS.subClassOf, target, { curie }));
-    }
-  }
-
-  // Site 4 fix: OWL.Restriction relations carry metadata.propertyName (set at
-  // graph-build time). Resolve the flat predicate IRI via predicateResolver when
-  // available so restriction onProperty matches the flat canonical property IRI
-  // used in property declarations and ABox assertions. Falls back to the stored
-  // metadata.onProperty when no resolver is present (Projection.ts compat path).
-  const restrictionRels = entry.byPredicate.get(OWL.Restriction) ?? [];
-
-  for (const rel of restrictionRels) {
-    const meta = rel.metadata ?? {};
-    const minCard = typeof meta.minCardinality === 'number' ? meta.minCardinality : 1;
-
-    let onProperty: string;
-
-    if (predicateResolver !== undefined && typeof meta.propertyName === 'string') {
-      const propertyName = meta.propertyName;
-      const propSubject = propertySubjectIri(subject, propertyName);
-      const propertySchema = resolvePropertySchema(graph, propSubject);
-
-      onProperty = predicateResolver({
-        'classId': subject,
-        'propertyName': propertyName,
-        'propertySchema': propertySchema
-      });
-    } else {
-      onProperty = typeof meta.onProperty === 'string' ? meta.onProperty : '';
-    }
-
-    const minCardLit = QuadFactory.literal(minCard, XSD.nonNegativeInteger, { curie });
-    const rBnode = emitRestriction(onProperty, OWL.minCardinality, minCardLit, quads, curie, issuer);
-
-    quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(rBnode), { curie }));
-  }
-
-  const equivRels = entry.byPredicate.get(OWL.equivalentClass) ?? [];
-
-  if (equivRels.length > 0) {
-    const eqBnode = QuadFactory.nextBnode(issuer);
-
-    quads.push(QuadFactory.quad(subject, OWL.equivalentClass, QuadFactory.bnode(eqBnode), { curie }));
-    quads.push(QuadFactory.quad(eqBnode, RDF.type, QuadFactory.iri(OWL.Class, { curie }), { curie }));
-    quads.push(QuadFactory.quad(eqBnode, OWL.unionOf, QuadFactory.rdfList(equivRels.map((rel) => {
-      return QuadFactory.iri(ProjectionIndex.relationTargetId(rel), { curie });
-    }), quads, issuer), { curie }));
-  }
-
-  const complementRels = entry.byPredicate.get(OWL.complementOf) ?? [];
-
-  if (complementRels.length > 0) {
-    const complementTarget = QuadFactory.iri(ProjectionIndex.relationTargetId(complementRels[0]), { curie });
-
-    quads.push(QuadFactory.quad(subject, OWL.complementOf, complementTarget, { curie }));
-  }
-
-  const disjointRels = entry.byPredicate.get(OWL.disjointWith) ?? [];
-
-  if (disjointRels.length > 0) {
-    const disjointTarget = QuadFactory.iri(ProjectionIndex.relationTargetId(disjointRels[0]), { curie });
-
-    quads.push(QuadFactory.quad(subject, OWL.disjointWith, disjointTarget, { curie }));
-  }
-
-  const disjointUnionRels = entry.byPredicate.get(OWL.disjointUnionOf) ?? [];
-
-  if (disjointUnionRels.length > 0) {
-    quads.push(QuadFactory.quad(subject, OWL.disjointUnionOf, QuadFactory.rdfList(disjointUnionRels.map((rel) => {
-      return QuadFactory.iri(ProjectionIndex.relationTargetId(rel), { curie });
-    }), quads, issuer), { curie }));
-  }
-
-  const oneOfRels = entry.byPredicate.get(OWL.oneOf) ?? [];
-
-  if (oneOfRels.length > 0) {
-    const typedLiterals = oneOfRels.map((rel) => {
-      const val = ProjectionIndex.relationTargetId(rel);
-
-      return QuadFactory.literal(typedLiteralObject(val), RDF.JSON, { curie });
-    });
-
-    quads.push(QuadFactory.quad(subject, OWL.oneOf, QuadFactory.rdfList(typedLiterals, quads, issuer), { curie }));
-  }
-
-  if (oneOfRels.length === 0) {
-    const hasValueRels = entry.byPredicate.get(OWL.hasValue) ?? [];
-
-    if (hasValueRels.length > 0) {
-      const val = ProjectionIndex.relationTargetId(hasValueRels[0]);
-      const valueLit = QuadFactory.literal(typedLiteralObject(val), RDF.JSON, { curie });
-      const valueList = QuadFactory.rdfList([valueLit], quads, issuer);
-
-      quads.push(QuadFactory.quad(subject, OWL.oneOf, valueList, { curie }));
-    }
-  }
+  emitClassSubClassRelations(subject, entry, ctx);
+  emitClassRestrictionRelations(subject, entry, ctx);
+  emitClassEquivalencesAndDisjoint(subject, entry, ctx);
+  emitClassEnumerations(subject, entry, ctx);
 
   const conditionalItems = owlVocab.processConditionals(entry, quads, curie, issuer);
   const depSchemaItems = owlVocab.processDependentSchemas(subject, entry, quads, curie, issuer);
@@ -536,13 +718,13 @@ function emitClassQuads(
     quads.push(QuadFactory.quad(subject, RDFS.subClassOf, item, { curie }));
   }
 
-  emitContainsQuads(subject, entry, graph, predicateResolver, quads, curie, issuer);
-  emitPrefixItemQuads(subject, entry, quads, curie, issuer);
-  emitArrayItemQuads(subject, index, graph, predicateResolver, quads, curie, issuer);
-  emitPatternPropertyQuads(subject, entry, index, graph, predicateResolver, quads, curie);
+  emitContainsQuads(subject, entry, ctx);
+  emitPrefixItemQuads(subject, entry, ctx);
+  emitArrayItemQuads(subject, entry, ctx);
+  emitPatternPropertyQuads(subject, entry, ctx);
 }
 
-function typedLiteralObject(value: unknown): null | Record<string, unknown> {
+function typedLiteralObject(value: unknown): TypedLiteralObjectType {
   const jsType = typeof value;
 
   if (jsType === 'string' || jsType === 'boolean') {
@@ -565,18 +747,128 @@ function typedLiteralObject(value: unknown): null | Record<string, unknown> {
 }
 
 // ---------------------------------------------------------------------------
+// Property node emission helpers
+// ---------------------------------------------------------------------------
+
+const OWL_PROPERTY_CHARACTERISTICS: readonly string[] = [
+  OWL.TransitiveProperty,
+  OWL.SymmetricProperty,
+  OWL.AsymmetricProperty,
+  OWL.FunctionalProperty,
+  OWL.InverseFunctionalProperty,
+  OWL.ReflexiveProperty,
+  OWL.IrreflexiveProperty
+];
+
+function emitPropertyCharacteristics(
+  canonicalId: string,
+  entry: RelationIndexInterface,
+  ctx: OwlEmitContextInterface
+): void {
+  const {
+    curie, quads
+  } = ctx;
+
+  if (entry.types.includes(OWL.ObjectProperty)) {
+    quads.push(QuadFactory.quad(canonicalId, RDF.type, QuadFactory.iri(OWL.ObjectProperty, { curie }), { curie }));
+  } else if (entry.types.includes(OWL.DatatypeProperty)) {
+    quads.push(QuadFactory.quad(canonicalId, RDF.type, QuadFactory.iri(OWL.DatatypeProperty, { curie }), { curie }));
+  }
+
+  for (const characteristic of OWL_PROPERTY_CHARACTERISTICS) {
+    if (entry.byPredicate.has(characteristic)) {
+      quads.push(QuadFactory.quad(canonicalId, RDF.type, QuadFactory.iri(characteristic, { curie }), { curie }));
+    }
+  }
+}
+
+function emitPropertyRangeAndUnion(
+  canonicalId: string,
+  entry: RelationIndexInterface,
+  ctx: OwlEmitContextInterface
+): void {
+  const {
+    curie, issuer, quads
+  } = ctx;
+  const hasMaxCount = entry.byPredicate.has(SH.maxCount);
+  const rangeRels = entry.byPredicate.get(RDFS.range) ?? [];
+  const datatypeRels = entry.byPredicate.get(SH.datatype) ?? [];
+
+  if (!hasMaxCount) {
+    quads.push(QuadFactory.quad(canonicalId, RDFS.range, QuadFactory.iri(RDF.List, { curie }), { curie }));
+  } else if (rangeRels.length > 0) {
+    const rangeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(rangeRels[0]), { curie });
+
+    quads.push(QuadFactory.quad(canonicalId, RDFS.range, rangeIri, { curie }));
+  } else if (datatypeRels.length > 0) {
+    const datatypeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(datatypeRels[0]), { curie });
+
+    quads.push(QuadFactory.quad(canonicalId, RDFS.range, datatypeIri, { curie }));
+  }
+
+  for (const rel of entry.all.filter((relation: SchemaGraphRelationInterface): boolean => {
+    return relation.predicate === OWL.unionOf && relation.structure?.kind === 'list';
+  })) {
+    const structure = rel.structure;
+
+    if (!ProjectionIndex.isListStructure(structure)) {
+      continue;
+    }
+    const memberIris = structure.members.map((member: string): ReturnType<typeof QuadFactory.iri> => {
+      return QuadFactory.iri(member, { curie });
+    });
+
+    quads.push(QuadFactory.quad(canonicalId, OWL.unionOf, QuadFactory.rdfList(memberIris, quads, issuer), { curie }));
+  }
+
+  const inverseRels = entry.byPredicate.get(OWL.inverseOf) ?? [];
+
+  if (inverseRels.length > 0) {
+    const inverseIri = QuadFactory.iri(ProjectionIndex.relationTargetId(inverseRels[0]), { curie });
+
+    quads.push(QuadFactory.quad(canonicalId, OWL.inverseOf, inverseIri, { curie }));
+  }
+}
+
+function emitPropertyAnnotations(
+  canonicalId: string,
+  entry: RelationIndexInterface,
+  ctx: OwlEmitContextInterface
+): void {
+  const {
+    curie, quads
+  } = ctx;
+
+  QuadFactory.emitLiterals(canonicalId, entry, RDFS.comment, RDFS.comment, quads, { curie });
+
+  if (entry.byPredicate.has(DASH.readOnly)) {
+    const readOnlyLit = QuadFactory.literal(true, XSD.boolean, { curie });
+
+    quads.push(QuadFactory.quad(canonicalId, DASH.readOnly, readOnlyLit, { curie }));
+  }
+
+  if (entry.byPredicate.has(DASH.writeOnly)) {
+    const writeOnlyLit = QuadFactory.literal(true, XSD.boolean, { curie });
+
+    quads.push(QuadFactory.quad(canonicalId, DASH.writeOnly, writeOnlyLit, { curie }));
+  }
+
+  QuadFactory.emitLiterals(canonicalId, entry, DCT.format, DCT.format, quads, { curie });
+}
+
+// ---------------------------------------------------------------------------
 // Property node emission
 // ---------------------------------------------------------------------------
 
 function emitPropertyQuads(
   subject: string,
   entry: RelationIndexInterface,
-  graph: SchemaGraphInterface,
-  predicateResolver: PredicateResolverFnType | undefined,
-  quads: QuadInterface[],
-  curie: CurieInterface | undefined,
-  issuer?: IdentifierIssuerInterface
+  ctx: OwlEmitContextInterface
 ): void {
+  const {
+    curie, graph, predicateResolver, quads
+  } = ctx;
+
   if (SchemaIri.fragmentContains(subject, '/patternProperties/')) {
     return;
   }
@@ -600,100 +892,10 @@ function emitPropertyQuads(
       'propertySchema': propertySchema
     });
 
-  if (entry.types.includes(OWL.ObjectProperty)) {
-    quads.push(QuadFactory.quad(canonicalId, RDF.type, QuadFactory.iri(OWL.ObjectProperty, { curie }), { curie }));
-  } else if (entry.types.includes(OWL.DatatypeProperty)) {
-    quads.push(QuadFactory.quad(canonicalId, RDF.type, QuadFactory.iri(OWL.DatatypeProperty, { curie }), { curie }));
-  }
-
-  if (entry.byPredicate.has(OWL.TransitiveProperty)) {
-    quads.push(QuadFactory.quad(canonicalId, RDF.type, QuadFactory.iri(OWL.TransitiveProperty, { curie }), { curie }));
-  }
-
-  if (entry.byPredicate.has(OWL.SymmetricProperty)) {
-    quads.push(QuadFactory.quad(canonicalId, RDF.type, QuadFactory.iri(OWL.SymmetricProperty, { curie }), { curie }));
-  }
-
-  if (entry.byPredicate.has(OWL.AsymmetricProperty)) {
-    quads.push(QuadFactory.quad(canonicalId, RDF.type, QuadFactory.iri(OWL.AsymmetricProperty, { curie }), { curie }));
-  }
-
-  if (entry.byPredicate.has(OWL.FunctionalProperty)) {
-    quads.push(QuadFactory.quad(canonicalId, RDF.type, QuadFactory.iri(OWL.FunctionalProperty, { curie }), { curie }));
-  }
-
-  if (entry.byPredicate.has(OWL.InverseFunctionalProperty)) {
-    const iri = QuadFactory.iri(OWL.InverseFunctionalProperty, { curie });
-
-    quads.push(QuadFactory.quad(canonicalId, RDF.type, iri, { curie }));
-  }
-
-  if (entry.byPredicate.has(OWL.ReflexiveProperty)) {
-    quads.push(QuadFactory.quad(canonicalId, RDF.type, QuadFactory.iri(OWL.ReflexiveProperty, { curie }), { curie }));
-  }
-
-  if (entry.byPredicate.has(OWL.IrreflexiveProperty)) {
-    quads.push(QuadFactory.quad(canonicalId, RDF.type, QuadFactory.iri(OWL.IrreflexiveProperty, { curie }), { curie }));
-  }
-
+  emitPropertyCharacteristics(canonicalId, entry, ctx);
   quads.push(QuadFactory.quad(canonicalId, RDFS.domain, QuadFactory.iri(classId, { curie }), { curie }));
-
-  const hasMaxCount = entry.byPredicate.has(SH.maxCount);
-  const rangeRels = entry.byPredicate.get(RDFS.range) ?? [];
-  const datatypeRels = entry.byPredicate.get(SH.datatype) ?? [];
-
-  if (!hasMaxCount) {
-    const listIri = QuadFactory.iri(RDF.List, { curie });
-
-    quads.push(QuadFactory.quad(canonicalId, RDFS.range, listIri, { curie }));
-  } else if (rangeRels.length > 0) {
-    const rangeTarget = QuadFactory.iri(ProjectionIndex.relationTargetId(rangeRels[0]), { curie });
-
-    quads.push(QuadFactory.quad(canonicalId, RDFS.range, rangeTarget, { curie }));
-  } else if (datatypeRels.length > 0) {
-    const dtTarget = QuadFactory.iri(ProjectionIndex.relationTargetId(datatypeRels[0]), { curie });
-
-    quads.push(QuadFactory.quad(canonicalId, RDFS.range, dtTarget, { curie }));
-  }
-
-  const unionStructured = entry.all.filter((rel) => {
-    return rel.predicate === OWL.unionOf && rel.structure?.kind === 'list';
-  });
-
-  for (const rel of unionStructured) {
-    const structure = rel.structure;
-
-    if (!ProjectionIndex.isListStructure(structure)) {
-      continue;
-    }
-    quads.push(QuadFactory.quad(canonicalId, OWL.unionOf, QuadFactory.rdfList(structure.members.map((member) => {
-      return QuadFactory.iri(member, { curie });
-    }), quads, issuer), { curie }));
-  }
-
-  const inverseRels = entry.byPredicate.get(OWL.inverseOf) ?? [];
-
-  if (inverseRels.length > 0) {
-    const inverseTarget = QuadFactory.iri(ProjectionIndex.relationTargetId(inverseRels[0]), { curie });
-
-    quads.push(QuadFactory.quad(canonicalId, OWL.inverseOf, inverseTarget, { curie }));
-  }
-
-  QuadFactory.emitLiterals(canonicalId, entry, RDFS.comment, RDFS.comment, quads, { curie });
-
-  if (entry.byPredicate.has(DASH.readOnly)) {
-    const trueLit = QuadFactory.literal(true, XSD.boolean, { curie });
-
-    quads.push(QuadFactory.quad(canonicalId, DASH.readOnly, trueLit, { curie }));
-  }
-
-  if (entry.byPredicate.has(DASH.writeOnly)) {
-    const trueLit = QuadFactory.literal(true, XSD.boolean, { curie });
-
-    quads.push(QuadFactory.quad(canonicalId, DASH.writeOnly, trueLit, { curie }));
-  }
-
-  QuadFactory.emitLiterals(canonicalId, entry, DCT.format, DCT.format, quads, { curie });
+  emitPropertyRangeAndUnion(canonicalId, entry, ctx);
+  emitPropertyAnnotations(canonicalId, entry, ctx);
 }
 
 // ---------------------------------------------------------------------------
@@ -725,18 +927,47 @@ function canonicalPropertyIri(subject: string): string {
 // Contains emission (owl:someValuesFrom)
 // ---------------------------------------------------------------------------
 
+/**
+ * Emit an optional qualified-cardinality restriction for a contains property.
+ * Emits a subClassOf restriction bnode and attaches the onDataRange triple.
+ */
+function emitQualifiedCardinalityRestriction(args: EmitQualifiedCardinalityRestrictionArgs): void {
+  const {
+    cardinalityPredicate, containsIriObject, ctx, onProp, rels, subject
+  } = args;
+
+  if (rels.length === 0) {
+    return;
+  }
+  const {
+    curie, issuer, quads
+  } = ctx;
+  const val = Number(ProjectionIndex.relationTargetId(rels[0]));
+  const lit = QuadFactory.literal(val, XSD.nonNegativeInteger, { curie });
+  const rBnode = emitRestriction({
+    'constraint': cardinalityPredicate,
+    'constraintValue': lit,
+    curie,
+    issuer,
+    'onProperty': onProp,
+    quads
+  });
+
+  quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(rBnode), { curie }));
+  quads.push(QuadFactory.quad(rBnode, OWL.onDataRange, containsIriObject, { curie }));
+}
+
 function emitContainsQuads(
   subject: string,
   entry: RelationIndexInterface,
-  graph: SchemaGraphInterface,
-  predicateResolver: PredicateResolverFnType | undefined,
-  quads: QuadInterface[],
-  curie: CurieInterface | undefined,
-  issuer?: IdentifierIssuerInterface
+  ctx: OwlEmitContextInterface
 ): void {
+  const {
+    curie, graph, issuer, predicateResolver, quads
+  } = ctx;
   // Only pick up `contains` keyword restrictions (predicate = OWL.someValuesFrom),
   // not user-declared restrictions which use RDFS.subClassOf predicate.
-  const containsRels = entry.all.filter((rel) => {
+  const containsRels = entry.all.filter((rel: SchemaGraphRelationInterface): boolean => {
     return rel.predicate === OWL.someValuesFrom
       && ProjectionIndex.isRestrictionStructure(rel.structure)
       && rel.structure.constraint === OWL.someValuesFrom;
@@ -752,32 +983,35 @@ function emitContainsQuads(
     const onProp = resolveRestrictionOnProperty(structure.onProperty, graph, predicateResolver);
     const containsTypeRef = String(structure.value);
     const containsIri = QuadFactory.iri(containsTypeRef, { curie });
-    const rBnode = emitRestriction(onProp, OWL.someValuesFrom, containsIri, quads, curie, issuer);
+    const rBnode = emitRestriction({
+      'constraint': OWL.someValuesFrom,
+      'constraintValue': containsIri,
+      curie,
+      issuer,
+      'onProperty': onProp,
+      quads
+    });
 
     quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(rBnode), { curie }));
 
-    const minQualRels = entry.byPredicate.get(OWL.minQualifiedCardinality) ?? [];
-    const maxQualRels = entry.byPredicate.get(OWL.maxQualifiedCardinality) ?? [];
-
     const containsIriObject = QuadFactory.iri(containsTypeRef, { curie });
 
-    if (minQualRels.length > 0) {
-      const minVal = Number(ProjectionIndex.relationTargetId(minQualRels[0]));
-      const minLit = QuadFactory.literal(minVal, XSD.nonNegativeInteger, { curie });
-      const minRBnode = emitRestriction(onProp, OWL.minQualifiedCardinality, minLit, quads, curie, issuer);
-
-      quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(minRBnode), { curie }));
-      quads.push(QuadFactory.quad(minRBnode, OWL.onDataRange, containsIriObject, { curie }));
-    }
-
-    if (maxQualRels.length > 0) {
-      const maxVal = Number(ProjectionIndex.relationTargetId(maxQualRels[0]));
-      const maxLit = QuadFactory.literal(maxVal, XSD.nonNegativeInteger, { curie });
-      const maxRBnode = emitRestriction(onProp, OWL.maxQualifiedCardinality, maxLit, quads, curie, issuer);
-
-      quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(maxRBnode), { curie }));
-      quads.push(QuadFactory.quad(maxRBnode, OWL.onDataRange, containsIriObject, { curie }));
-    }
+    emitQualifiedCardinalityRestriction({
+      'cardinalityPredicate': OWL.minQualifiedCardinality,
+      containsIriObject,
+      ctx,
+      onProp,
+      'rels': entry.byPredicate.get(OWL.minQualifiedCardinality) ?? [],
+      subject
+    });
+    emitQualifiedCardinalityRestriction({
+      'cardinalityPredicate': OWL.maxQualifiedCardinality,
+      containsIriObject,
+      ctx,
+      onProp,
+      'rels': entry.byPredicate.get(OWL.maxQualifiedCardinality) ?? [],
+      subject
+    });
   }
 }
 
@@ -788,10 +1022,11 @@ function emitContainsQuads(
 function emitPrefixItemQuads(
   subject: string,
   entry: RelationIndexInterface,
-  quads: QuadInterface[],
-  curie: CurieInterface | undefined,
-  issuer?: IdentifierIssuerInterface
+  ctx: OwlEmitContextInterface
 ): void {
+  const {
+    curie, issuer, quads
+  } = ctx;
   const memberRels = entry.byPredicate.get(RDFS.member) ?? [];
 
   for (const [
@@ -799,7 +1034,14 @@ function emitPrefixItemQuads(
     memberRel
   ] of memberRels.entries()) {
     const typeRef = ProjectionIndex.relationTargetId(memberRel);
-    const rBnode = emitRestriction(`rdf:_${i + 1}`, OWL.allValuesFrom, QuadFactory.iri(typeRef, { curie }), quads, curie, issuer);
+    const rBnode = emitRestriction({
+      'constraint': OWL.allValuesFrom,
+      'constraintValue': QuadFactory.iri(typeRef, { curie }),
+      curie,
+      issuer,
+      'onProperty': `rdf:_${i + 1}`,
+      quads
+    });
 
     quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(rBnode), { curie }));
   }
@@ -809,18 +1051,82 @@ function emitPrefixItemQuads(
 // Array item restriction emission (owl:allValuesFrom)
 // ---------------------------------------------------------------------------
 
+/** Resolve the item type IRI for an array property, checking direct range first then /items entry. */
+function resolveItemTypeId(
+  propSubject: string,
+  propEntry: RelationIndexInterface,
+  index: Map<string, RelationIndexInterface>
+): null | string {
+  const propRangeRels = propEntry.byPredicate.get(RDFS.range) ?? [];
+
+  if (propRangeRels.length > 0) {
+    return ProjectionIndex.relationTargetId(propRangeRels[0]);
+  }
+
+  const itemsSubject = `${propSubject}/items`;
+  const itemsEntry = index.get(itemsSubject);
+
+  if (itemsEntry === undefined) {
+    return null;
+  }
+
+  const rangeRels = itemsEntry.byPredicate.get(RDFS.range) ?? [];
+  const dtRels = itemsEntry.byPredicate.get(SH.datatype) ?? [];
+
+  if (rangeRels.length > 0) {
+    return ProjectionIndex.relationTargetId(rangeRels[0]);
+  }
+
+  if (dtRels.length > 0) {
+    return ProjectionIndex.relationTargetId(dtRels[0]);
+  }
+
+  return itemsSubject;
+}
+
+interface ResolveArrayPropertyCanonicalIdArgs {
+  readonly 'graph': SchemaGraphInterface;
+  readonly 'predicateResolver': PredicateResolverFnType | undefined;
+  readonly 'propEntry': RelationIndexInterface;
+  readonly 'propSubject': string;
+}
+
+/** Resolve the canonical predicate IRI for an array-item property. */
+function resolveArrayPropertyCanonicalId(args: ResolveArrayPropertyCanonicalIdArgs): string {
+  const {
+    graph, predicateResolver, propEntry, propSubject
+  } = args;
+
+  if (predicateResolver === undefined) {
+    return canonicalPropertyIri(propSubject);
+  }
+
+  const domainRels = propEntry.byPredicate.get(RDFS.domain) ?? [];
+  const classId = domainRels.length > 0
+    ? ProjectionIndex.relationTargetId(domainRels[0])
+    : SchemaIri.structuralParent(propSubject);
+  const propName = SchemaIri.lastSegment(propSubject);
+  const propertySchema = resolvePropertySchema(graph, propSubject);
+
+  return predicateResolver({
+    'classId': classId,
+    'propertyName': propName,
+    'propertySchema': propertySchema
+  });
+}
+
 // Site 1 fix: resolve the property IRI via predicateResolver when available
 // so array-item restriction onProperty uses the flat canonical IRI rather than
 // the class-scoped form produced by canonicalPropertyIri().
 function emitArrayItemQuads(
   subject: string,
-  index: Map<string, RelationIndexInterface>,
-  graph: SchemaGraphInterface,
-  predicateResolver: PredicateResolverFnType | undefined,
-  quads: QuadInterface[],
-  curie: CurieInterface | undefined,
-  issuer?: IdentifierIssuerInterface
+  _entry: RelationIndexInterface,
+  ctx: OwlEmitContextInterface
 ): void {
+  const {
+    curie, graph, index, issuer, predicateResolver, quads
+  } = ctx;
+
   for (const [
     propSubject,
     propEntry
@@ -841,57 +1147,27 @@ function emitArrayItemQuads(
       continue;
     }
 
-    let itemTypeId: null | string = null;
-
-    const propRangeRels = propEntry.byPredicate.get(RDFS.range) ?? [];
-
-    if (propRangeRels.length > 0) {
-      itemTypeId = ProjectionIndex.relationTargetId(propRangeRels[0]);
-    }
-
-    if (itemTypeId === null) {
-      const itemsSubject = `${propSubject}/items`;
-      const itemsEntry = index.get(itemsSubject);
-
-      if (itemsEntry !== undefined) {
-        const rangeRels = itemsEntry.byPredicate.get(RDFS.range) ?? [];
-        const dtRels = itemsEntry.byPredicate.get(SH.datatype) ?? [];
-
-        if (rangeRels.length > 0) {
-          itemTypeId = ProjectionIndex.relationTargetId(rangeRels[0]);
-        } else if (dtRels.length > 0) {
-          itemTypeId = ProjectionIndex.relationTargetId(dtRels[0]);
-        } else {
-          itemTypeId = itemsSubject;
-        }
-      }
-    }
+    const itemTypeId = resolveItemTypeId(propSubject, propEntry, index);
 
     if (itemTypeId === null) {
       continue;
     }
 
-    let canonicalId: string;
-
-    if (predicateResolver === undefined) {
-      canonicalId = canonicalPropertyIri(propSubject);
-    } else {
-      const domainRels = propEntry.byPredicate.get(RDFS.domain) ?? [];
-      const classId = domainRels.length > 0
-        ? ProjectionIndex.relationTargetId(domainRels[0])
-        : SchemaIri.structuralParent(propSubject);
-      const propName = SchemaIri.lastSegment(propSubject);
-      const propertySchema = resolvePropertySchema(graph, propSubject);
-
-      canonicalId = predicateResolver({
-        'classId': classId,
-        'propertyName': propName,
-        'propertySchema': propertySchema
-      });
-    }
-
+    const canonicalId = resolveArrayPropertyCanonicalId({
+      graph,
+      predicateResolver,
+      propEntry,
+      propSubject
+    });
     const itemTypeIri = QuadFactory.iri(itemTypeId, { curie });
-    const rBnode = emitRestriction(canonicalId, OWL.allValuesFrom, itemTypeIri, quads, curie, issuer);
+    const rBnode = emitRestriction({
+      'constraint': OWL.allValuesFrom,
+      'constraintValue': itemTypeIri,
+      curie,
+      issuer,
+      'onProperty': canonicalId,
+      quads
+    });
 
     quads.push(QuadFactory.quad(subject, RDFS.subClassOf, QuadFactory.bnode(rBnode), { curie }));
   }
@@ -901,17 +1177,66 @@ function emitArrayItemQuads(
 // Pattern property emission
 // ---------------------------------------------------------------------------
 
+interface EmitPatternPropertyEntryArgs {
+  readonly 'ctx': OwlEmitContextInterface;
+  readonly 'pattern': string;
+  readonly 'patternEntry': RelationIndexInterface | undefined;
+  readonly 'subject': string;
+}
+
+/** Emit OWL quads for a single pattern-property entry. */
+function emitPatternPropertyEntry(args: EmitPatternPropertyEntryArgs): void {
+  const {
+    ctx, pattern, patternEntry, subject
+  } = args;
+  const {
+    curie, graph, predicateResolver, quads
+  } = ctx;
+  const patternSubject = `${SchemaIri.splitSubject(subject).base}#/patternProperties/${pattern}`;
+
+  const datatypeRels = patternEntry?.byPredicate.get(SH.datatype) ?? [];
+  const rangeRels = patternEntry?.byPredicate.get(RDFS.range) ?? [];
+  const hasDatatype = datatypeRels.length > 0;
+  const hasRange = rangeRels.length > 0;
+  const rdfType = !hasDatatype && !hasRange ? OWL.ObjectProperty : OWL.DatatypeProperty;
+
+  const propIri = predicateResolver === undefined
+    ? SchemaIri.propertyIri(subject, pattern)
+    : predicateResolver({
+      'classId': subject,
+      'propertyName': pattern,
+      'propertySchema': resolvePropertySchema(graph, patternSubject)
+    });
+
+  quads.push(QuadFactory.quad(propIri, RDF.type, QuadFactory.iri(rdfType, { curie }), { curie }));
+  quads.push(QuadFactory.quad(propIri, RDFS.domain, QuadFactory.iri(subject, { curie }), { curie }));
+  quads.push(QuadFactory.quad(propIri, SH.pattern, QuadFactory.literal(pattern, XSD.string, { curie }), { curie }));
+
+  if (hasDatatype) {
+    const datatypeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(datatypeRels[0]), { curie });
+
+    quads.push(QuadFactory.quad(propIri, RDFS.range, datatypeIri, { curie }));
+  }
+
+  if (hasRange) {
+    const rangeIri = QuadFactory.iri(ProjectionIndex.relationTargetId(rangeRels[0]), { curie });
+
+    quads.push(QuadFactory.quad(propIri, RDFS.range, rangeIri, { curie }));
+  }
+
+  if (patternEntry !== undefined) {
+    QuadFactory.emitLiterals(propIri, patternEntry, RDFS.comment, RDFS.comment, quads, { curie });
+  }
+}
+
 // Site 2 fix: resolve the pattern-property IRI via predicateResolver when
 // available so sh:path / owl:onProperty use the flat canonical IRI.
 function emitPatternPropertyQuads(
   subject: string,
   entry: RelationIndexInterface,
-  index: Map<string, RelationIndexInterface>,
-  graph: SchemaGraphInterface,
-  predicateResolver: PredicateResolverFnType | undefined,
-  quads: QuadInterface[],
-  curie: CurieInterface | undefined
+  ctx: OwlEmitContextInterface
 ): void {
+  const { index } = ctx;
   const patternRels = entry.byPredicate.get(SH.pattern) ?? [];
 
   for (const rel of patternRels) {
@@ -922,46 +1247,12 @@ function emitPatternPropertyQuads(
     const pattern = rel.metadata.pattern;
     const { base } = SchemaIri.splitSubject(subject);
     const patternSubject = `${base}#/patternProperties/${pattern}`;
-    const patternEntry = index.get(patternSubject);
 
-    const datatypeRels = patternEntry?.byPredicate.get(SH.datatype) ?? [];
-    const rangeRels = patternEntry?.byPredicate.get(RDFS.range) ?? [];
-    const hasDatatype = datatypeRels.length > 0;
-    const hasRange = rangeRels.length > 0;
-    const rdfType = !hasDatatype && !hasRange ? OWL.ObjectProperty : OWL.DatatypeProperty;
-
-    let propIri: string;
-
-    if (predicateResolver === undefined) {
-      propIri = SchemaIri.propertyIri(subject, pattern);
-    } else {
-      const propertySchema = resolvePropertySchema(graph, patternSubject);
-
-      propIri = predicateResolver({
-        'classId': subject,
-        'propertyName': pattern,
-        'propertySchema': propertySchema
-      });
-    }
-
-    quads.push(QuadFactory.quad(propIri, RDF.type, QuadFactory.iri(rdfType, { curie }), { curie }));
-    quads.push(QuadFactory.quad(propIri, RDFS.domain, QuadFactory.iri(subject, { curie }), { curie }));
-    quads.push(QuadFactory.quad(propIri, SH.pattern, QuadFactory.literal(pattern, XSD.string, { curie }), { curie }));
-
-    if (hasDatatype) {
-      const dtRange = QuadFactory.iri(ProjectionIndex.relationTargetId(datatypeRels[0]), { curie });
-
-      quads.push(QuadFactory.quad(propIri, RDFS.range, dtRange, { curie }));
-    }
-
-    if (hasRange) {
-      const rangeTarget = QuadFactory.iri(ProjectionIndex.relationTargetId(rangeRels[0]), { curie });
-
-      quads.push(QuadFactory.quad(propIri, RDFS.range, rangeTarget, { curie }));
-    }
-
-    if (patternEntry !== undefined) {
-      QuadFactory.emitLiterals(propIri, patternEntry, RDFS.comment, RDFS.comment, quads, { curie });
-    }
+    emitPatternPropertyEntry({
+      ctx,
+      pattern,
+      'patternEntry': index.get(patternSubject),
+      subject
+    });
   }
 }

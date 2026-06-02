@@ -67,12 +67,41 @@ const UNION_OF_PREDICATES: ReadonlySet<string> = new Set([
   'owl:unionOf'
 ]);
 
+/** Full IRI for rdfs:Class — W3C RDF Schema class IRI. */
+const RDFS_CLASS_IRI = 'http://www.w3.org/2000/01/rdf-schema#Class';
+
 const CLASS_TYPE_IRIS: ReadonlySet<string> = new Set([
-  'http://www.w3.org/2000/01/rdf-schema#Class',
   OWL.Class,
   'owl:Class',
-  'rdfs:Class'
+  'rdfs:Class',
+  RDFS_CLASS_IRI
 ]);
+
+// ---------------------------------------------------------------------------
+// Options interfaces for helper functions
+// ---------------------------------------------------------------------------
+
+/** Shared mutable state threaded through axiom-arm helpers. */
+interface AxiomContext {
+  readonly 'allClassIris': ReadonlySet<string>;
+  readonly 'invariants': Array<{ 'invariant': InvariantInterface;
+    'schemaId': string }>;
+  readonly 'resolveIri': (target: string | { 'id': string }) => string;
+  readonly 'schemaDeltas': Map<string, Partial<JsonSchemaDocumentObjectType>>;
+}
+
+/** Options for applying a single relation to the delta map. */
+interface ApplyRelationOptions {
+  readonly 'axiomCtx': AxiomContext;
+  readonly 'relation': SchemaGraphRelationInterface;
+  readonly 'subjectIri': string;
+}
+
+/** Options for the bnode/literal equivalentClass arm. */
+interface ApplyBnodeLiteralOptions {
+  readonly 'axiomCtx': AxiomContext;
+  readonly 'graph': SchemaGraphInterface;
+}
 
 // ---------------------------------------------------------------------------
 // Graph-native helpers
@@ -118,6 +147,11 @@ function parseUnionLiteralWrapper(lexical: string): string[] {
     return [];
   }
 
+  return extractIdsFromList(list);
+}
+
+/** Extract `@id` string values from a JSON-LD `@list` array. */
+function extractIdsFromList(list: unknown[]): string[] {
   const members: string[] = [];
 
   for (const item of list) {
@@ -141,7 +175,7 @@ function extractEquivalentMembersFromGraph(
   bnodeId: string,
   graph: SchemaGraphInterface
 ): string[] {
-  const unionRelations = graph.relationsForSubject(bnodeId).filter((rel) => {
+  const unionRelations = graph.relationsForSubject(bnodeId).filter((rel: SchemaGraphRelationInterface): boolean => {
     return UNION_OF_PREDICATES.has(rel.predicate);
   });
 
@@ -180,7 +214,7 @@ function mergeAllOfRef(
     ? (existing.allOf as Array<Partial<JsonSchemaDocumentObjectType>>)
     : [];
 
-  const alreadyPresent = existingAllOf.some((entry) => {
+  const alreadyPresent = existingAllOf.some((entry: Partial<JsonSchemaDocumentObjectType>): boolean => {
     return (entry as Record<string, unknown>).$ref === refIri;
   });
 
@@ -200,48 +234,17 @@ function mergeAllOfRef(
 }
 
 // ---------------------------------------------------------------------------
-// Public dispatcher
+// Named-class stub emission
 // ---------------------------------------------------------------------------
 
 /**
- * Process class-level OWL axioms (SubClassOf, EquivalentClasses, DisjointClasses,
- * DisjointUnion, ComplementOf) and return a partial import fragment.
- *
- * Graph-native: every arm reads from `ctx.graph`. NamedNode targets come
- * from `allRelations()`; the `owl:equivalentClass` blank-node union wrapper
- * is resolved via `relationsForSubject(bnode)` + `collectList`; the legacy
- * `owl:equivalentClass = <JSON-LD wrapper literal>` form is detected via the
- * relation's `termType === 'Literal'` and parsed from the lexical string;
- * `owl:disjointUnionOf` lists are walked via `collectList`.
- *
- * @param _quads - Retained for back-compat with the dispatcher signature; the
- *                 implementation reads exclusively from `ctx.graph`.
- * @param ctx   - Shared import context (graph, curie, IRI sets, reporting helpers).
- * @returns OwlImportFragment with schemaDeltas and/or invariants populated.
+ * Pass 1: emit a minimal `{ type: 'object', properties: {}, required: [] }`
+ * stub for every named owl:Class or rdfs:Class found in the graph.
  */
-export function importClassAxioms(_quads: QuadInterface[], ctx: OwlImportContext): OwlImportFragment {
-  const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
-  const invariants: Array<{ 'invariant': InvariantInterface;
-    'schemaId': string; }> = [];
-
-  // QuadBackedSchemaGraph compacts NamedNode IRI targets via the active prefix
-  // map. Expand them back so $ref / disjointWith values match the full-IRI
-  // schema $id form used throughout the importer.
-  function resolveTargetIri(target: string | { 'id': string }): string {
-    const raw = typeof target === 'string' ? target : target.id;
-
-    if (raw === '' || raw.startsWith('_:') || raw.startsWith('http://') || raw.startsWith('https://') || raw.startsWith('urn:')) {
-      return raw;
-    }
-
-    return ctx.curie.expand(raw);
-  }
-
-  // ------------------------------------------------------------------
-  // Pass 1: Emit a minimal stub for every named owl:Class / rdfs:Class.
-  // Drive from graph rdf:type relations; relations carry the compacted
-  // target form (e.g. owl:Class) when the prefix is in scope.
-  // ------------------------------------------------------------------
+function emitClassStubs(
+  ctx: OwlImportContext,
+  schemaDeltas: Map<string, Partial<JsonSchemaDocumentObjectType>>
+): void {
   for (const relation of ctx.graph.allRelations()) {
     if (relation.predicate !== RDF.type) {
       continue;
@@ -263,14 +266,124 @@ export function importClassAxioms(_quads: QuadInterface[], ctx: OwlImportContext
       });
     }
   }
+}
 
-  // ------------------------------------------------------------------
-  // Pass 2: Walk axiom relations on each named-class subject.
-  // The NamedNode arms (target resolves to a node or named IRI string)
-  // are read from ctx.graph.allRelations(). The BlankNode / Literal arms
-  // for equivalentClass and the disjointUnionOf list are read from the
-  // raw quads input because the graph layer is lossy for those shapes.
-  // ------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Axiom arm helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Apply `rdfs:subClassOf` NamedNode target → `allOf: [{ $ref }]` on the subject.
+ */
+function applySubClassOf(options: ApplyRelationOptions): void {
+  const {
+    axiomCtx, relation, subjectIri
+  } = options;
+
+  if (relation.structure?.kind === 'restriction') {
+    return;
+  }
+
+  const targetIri = axiomCtx.resolveIri(relation.target);
+
+  if (targetIri.startsWith('_:')) {
+    return;
+  }
+
+  mergeAllOfRef(axiomCtx.schemaDeltas, subjectIri, targetIri);
+}
+
+/**
+ * Apply `owl:complementOf` NamedNode target → `not: { $ref }` + invariant.
+ */
+function applyComplementOf(options: ApplyRelationOptions): void {
+  const {
+    axiomCtx, relation, subjectIri
+  } = options;
+  const targetIri = axiomCtx.resolveIri(relation.target);
+
+  if (targetIri.startsWith('_:')) {
+    return;
+  }
+
+  const existing = axiomCtx.schemaDeltas.get(subjectIri) ?? {};
+
+  axiomCtx.schemaDeltas.set(subjectIri, {
+    ...existing,
+    'not': { '$ref': targetIri }
+  });
+
+  const inv: InvariantInterface = {
+    'fn': (_: unknown): null => {
+      return null;
+    },
+    'name': `complementOf:${subjectIri}:not:${targetIri}`,
+    'pointer': ''
+  };
+
+  axiomCtx.invariants.push({
+    'invariant': inv,
+    'schemaId': subjectIri
+  });
+}
+
+/**
+ * Apply `owl:disjointWith` NamedNode target → symmetric disjointWith annotation.
+ */
+function applyDisjointWith(options: ApplyRelationOptions): void {
+  const {
+    axiomCtx, relation, subjectIri
+  } = options;
+  const otherIri = axiomCtx.resolveIri(relation.target);
+
+  if (otherIri.startsWith('_:')) {
+    return;
+  }
+
+  const existing = axiomCtx.schemaDeltas.get(subjectIri) ?? {};
+
+  axiomCtx.schemaDeltas.set(subjectIri, {
+    ...existing,
+    'disjointWith': otherIri
+  });
+
+  if (axiomCtx.allClassIris.has(otherIri)) {
+    const otherExisting = axiomCtx.schemaDeltas.get(otherIri) ?? {};
+
+    if (!('disjointWith' in otherExisting)) {
+      axiomCtx.schemaDeltas.set(otherIri, {
+        ...otherExisting,
+        'disjointWith': subjectIri
+      });
+    }
+  }
+}
+
+/**
+ * Apply `owl:equivalentClass` NamedNode target → `$ref` on subject.
+ */
+function applyEquivalentClassNamed(options: ApplyRelationOptions): void {
+  const {
+    axiomCtx, relation, subjectIri
+  } = options;
+  const targetIri = axiomCtx.resolveIri(relation.target);
+
+  if (targetIri.startsWith('_:')) {
+    return;
+  }
+
+  const existing = axiomCtx.schemaDeltas.get(subjectIri) ?? {};
+
+  axiomCtx.schemaDeltas.set(subjectIri, {
+    ...existing,
+    '$ref': targetIri
+  });
+}
+
+/**
+ * Pass 2: walk all relations on class subjects and apply named-node axiom arms.
+ */
+function applyNamedNodeAxioms(ctx: OwlImportContext, axiomCtx: AxiomContext): void {
   for (const relation of ctx.graph.allRelations()) {
     const subjectIri = relation.source.id;
 
@@ -279,196 +392,224 @@ export function importClassAxioms(_quads: QuadInterface[], ctx: OwlImportContext
     }
 
     const predicate = relation.predicate;
-    const target = relation.target;
+    const relOpts: ApplyRelationOptions = {
+      axiomCtx,
+      relation,
+      subjectIri
+    };
 
-    // ---- rdfs:subClassOf → allOf: [{ $ref: parent }] ----------------
     if (predicate === RDFS.subClassOf) {
-      // Skip restriction structures — PropertyRestrictions dispatcher owns those.
-      if (relation.structure?.kind === 'restriction') {
-        continue;
-      }
-
-      const targetIri = resolveTargetIri(target);
-
-      // Skip blank-node references (anonymous classes); only NamedNode parents
-      // produce allOf entries.
-      if (targetIri.startsWith('_:')) {
-        continue;
-      }
-
-      mergeAllOfRef(schemaDeltas, subjectIri, targetIri);
+      applySubClassOf(relOpts);
       continue;
     }
 
-    // ---- owl:complementOf → not: { $ref } + invariant ---------------
     if (COMPLEMENT_OF_PREDICATES.has(predicate)) {
-      const targetIri = resolveTargetIri(target);
-
-      if (targetIri.startsWith('_:')) {
-        continue;
-      }
-
-      const existing = schemaDeltas.get(subjectIri) ?? {};
-
-      schemaDeltas.set(subjectIri, {
-        ...existing,
-        'not': { '$ref': targetIri }
-      });
-
-      const capturedTarget = targetIri;
-      const capturedSubjectIri = subjectIri;
-      const inv: InvariantInterface = {
-        'fn': (_: unknown) => {
-          // Real enforcement is via JSON Schema `not` keyword.
-          // This invariant carries the complementOf signature for runtime tracing.
-          return null;
-        },
-        'name': `complementOf:${capturedSubjectIri}:not:${capturedTarget}`,
-        'pointer': ''
-      };
-
-      invariants.push({
-        'invariant': inv,
-        'schemaId': subjectIri
-      });
+      applyComplementOf(relOpts);
       continue;
     }
 
-    // ---- owl:disjointWith → disjointWith annotation (symmetric) -----
     if (DISJOINT_WITH_PREDICATES.has(predicate)) {
-      const otherIri = resolveTargetIri(target);
-
-      if (otherIri.startsWith('_:')) {
-        continue;
-      }
-
-      // Forward direction: subject disjointWith other.
-      const existing = schemaDeltas.get(subjectIri) ?? {};
-
-      schemaDeltas.set(subjectIri, {
-        ...existing,
-        'disjointWith': otherIri
-      });
-
-      // Reverse direction: other disjointWith subject (symmetric closure).
-      if (ctx.allClassIris.has(otherIri)) {
-        const otherExisting = schemaDeltas.get(otherIri) ?? {};
-
-        if (!('disjointWith' in otherExisting)) {
-          schemaDeltas.set(otherIri, {
-            ...otherExisting,
-            'disjointWith': subjectIri
-          });
-        }
-      }
+      applyDisjointWith(relOpts);
       continue;
     }
 
-    // ---- owl:equivalentClass NamedNode arm → $ref -------------------
-    // The BlankNode (union wrapper) and Literal (JSON-LD wrapper) arms
-    // are handled in the raw-quad fallback below; the graph erases the
-    // termType discrimination required to detect them.
     if (EQUIVALENT_CLASS_PREDICATES.has(predicate)) {
-      const targetIri = resolveTargetIri(target);
+      applyEquivalentClassNamed(relOpts);
+    }
+  }
+}
 
-      if (targetIri.startsWith('_:')) {
-        continue;
-      }
+// ---------------------------------------------------------------------------
+// BlankNode / Literal equivalentClass arms and disjointUnionOf
+// ---------------------------------------------------------------------------
 
-      const existing = schemaDeltas.get(subjectIri) ?? {};
+/**
+ * Apply the BlankNode arm of `owl:equivalentClass`: resolves the union list via
+ * the graph and emits `anyOf` (multiple members) or `$ref` (single member).
+ */
+function applyEquivalentClassBlankNode(
+  options: ApplyBnodeLiteralOptions,
+  relation: SchemaGraphRelationInterface,
+  subjectIri: string
+): void {
+  const members = extractEquivalentMembersFromGraph(targetValue(relation), options.graph);
 
-      schemaDeltas.set(subjectIri, {
-        ...existing,
-        '$ref': targetIri
-      });
-      continue;
+  if (members.length > 1) {
+    const anyOf = members.map((memberIri: string): { '$ref': string } => {
+      return { '$ref': memberIri };
+    }) as readonly JsonSchemaDocumentObjectType[];
+    const existing = options.axiomCtx.schemaDeltas.get(subjectIri) ?? {};
+
+    options.axiomCtx.schemaDeltas.set(subjectIri, {
+      ...existing,
+      'anyOf': anyOf
+    });
+  } else if (members.length === 1) {
+    const existing = options.axiomCtx.schemaDeltas.get(subjectIri) ?? {};
+
+    options.axiomCtx.schemaDeltas.set(subjectIri, {
+      ...existing,
+      '$ref': members[0]
+    });
+  }
+}
+
+/**
+ * Apply the Literal arm of `owl:equivalentClass`: parses the JSON-LD wrapper
+ * literal and emits `$ref` for the first embedded IRI.
+ */
+function applyEquivalentClassLiteral(
+  schemaDeltas: Map<string, Partial<JsonSchemaDocumentObjectType>>,
+  relation: SchemaGraphRelationInterface,
+  subjectIri: string
+): void {
+  const members = parseUnionLiteralWrapper(targetValue(relation));
+
+  if (members.length > 0) {
+    const existing = schemaDeltas.get(subjectIri) ?? {};
+
+    schemaDeltas.set(subjectIri, {
+      ...existing,
+      '$ref': members[0]
+    });
+  }
+}
+
+/**
+ * Apply `owl:disjointUnionOf` RDF list → `oneOf: [{ $ref }]` on the subject.
+ */
+function applyDisjointUnionOf(
+  options: ApplyBnodeLiteralOptions,
+  relation: SchemaGraphRelationInterface,
+  subjectIri: string
+): void {
+  if (relation.termType !== 'BlankNode' && relation.termType !== 'NamedNode') {
+    return;
+  }
+
+  const listHead = targetValue(relation);
+  const members: string[] = [];
+
+  for (const item of options.graph.collectList(listHead)) {
+    if (item.termType === 'NamedNode') {
+      members.push(item.target);
     }
   }
 
-  // ------------------------------------------------------------------
-  // Graph-native pass for BlankNode and Literal arms of equivalentClass,
-  // plus disjointUnionOf RDF lists. relationsForSubject / collectList /
-  // relation.termType give us everything we need without scanning quads.
-  // ------------------------------------------------------------------
+  if (members.length > 0) {
+    const oneOf = members.map((memberIri: string): { '$ref': string } => {
+      return { '$ref': memberIri };
+    }) as readonly JsonSchemaDocumentObjectType[];
+    const existing = options.axiomCtx.schemaDeltas.get(subjectIri) ?? {};
+
+    options.axiomCtx.schemaDeltas.set(subjectIri, {
+      ...existing,
+      'oneOf': oneOf
+    });
+  }
+}
+
+/**
+ * Pass 3: graph-native handling of BlankNode/Literal equivalentClass arms and
+ * disjointUnionOf lists.
+ */
+function applyBnodeLiteralAxioms(ctx: OwlImportContext, axiomCtx: AxiomContext): void {
+  const bnodeOpts: ApplyBnodeLiteralOptions = {
+    axiomCtx,
+    'graph': ctx.graph
+  };
+
   for (const relation of ctx.graph.allRelations()) {
     const subjectIri = relation.source.id;
 
     if (!ctx.allClassIris.has(subjectIri)) {
       continue;
     }
+
     const predicate = relation.predicate;
 
-    // owl:equivalentClass with BlankNode (union wrapper) or Literal (JSON-LD wrapper)
     if (EQUIVALENT_CLASS_PREDICATES.has(predicate)) {
       if (relation.termType === 'BlankNode') {
-        const members = extractEquivalentMembersFromGraph(targetValue(relation), ctx.graph);
-
-        if (members.length > 1) {
-          const anyOf = members.map((memberIri) => {
-            return { '$ref': memberIri };
-          }) as readonly JsonSchemaDocumentObjectType[];
-          const existing = schemaDeltas.get(subjectIri) ?? {};
-
-          schemaDeltas.set(subjectIri, {
-            ...existing,
-            'anyOf': anyOf
-          });
-        } else if (members.length === 1) {
-          const existing = schemaDeltas.get(subjectIri) ?? {};
-
-          schemaDeltas.set(subjectIri, {
-            ...existing,
-            '$ref': members[0]
-          });
-        }
+        applyEquivalentClassBlankNode(bnodeOpts, relation, subjectIri);
         continue;
       }
       if (relation.termType === 'Literal') {
-        const members = parseUnionLiteralWrapper(targetValue(relation));
-
-        if (members.length > 0) {
-          const existing = schemaDeltas.get(subjectIri) ?? {};
-
-          schemaDeltas.set(subjectIri, {
-            ...existing,
-            '$ref': members[0]
-          });
-        }
-        continue;
+        applyEquivalentClassLiteral(axiomCtx.schemaDeltas, relation, subjectIri);
       }
-      // NamedNode arm already handled above.
       continue;
     }
 
-    // owl:disjointUnionOf → oneOf: [{ $ref: C1 }, ...] (RDF list)
     if (DISJOINT_UNION_OF_PREDICATES.has(predicate)) {
-      // The list head may be a NamedNode (rare) or a BlankNode (typical).
-      if (relation.termType !== 'BlankNode' && relation.termType !== 'NamedNode') {
-        continue;
-      }
-      const listHead = targetValue(relation);
-      const members: string[] = [];
-
-      for (const item of ctx.graph.collectList(listHead)) {
-        if (item.termType === 'NamedNode') {
-          members.push(item.target);
-        }
-      }
-
-      if (members.length > 0) {
-        const oneOf = members.map((memberIri) => {
-          return { '$ref': memberIri };
-        }) as readonly JsonSchemaDocumentObjectType[];
-        const existing = schemaDeltas.get(subjectIri) ?? {};
-
-        schemaDeltas.set(subjectIri, {
-          ...existing,
-          'oneOf': oneOf
-        });
-      }
-      continue;
+      applyDisjointUnionOf(bnodeOpts, relation, subjectIri);
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Public dispatcher
+// ---------------------------------------------------------------------------
+
+/**
+ * Process class-level OWL axioms (SubClassOf, EquivalentClasses, DisjointClasses,
+ * DisjointUnion, ComplementOf) and return a partial import fragment.
+ *
+ * Graph-native: every arm reads from `ctx.graph`. NamedNode targets come
+ * from `allRelations()`; the `owl:equivalentClass` blank-node union wrapper
+ * is resolved via `relationsForSubject(bnode)` + `collectList`; the legacy
+ * `owl:equivalentClass = <JSON-LD wrapper literal>` form is detected via the
+ * relation's `termType === 'Literal'` and parsed from the lexical string;
+ * `owl:disjointUnionOf` lists are walked via `collectList`.
+ *
+ * @param _quads - Retained for back-compat with the dispatcher signature; the
+ *                 implementation reads exclusively from `ctx.graph`.
+ * @param ctx   - Shared import context (graph, curie, IRI sets, reporting helpers).
+ * @returns OwlImportFragment with schemaDeltas and/or invariants populated.
+ *
+ * @remarks
+ * Implements the OWL 2 §9.1 class expression axiom set. Each axiom arm is
+ * isolated in a named helper to keep complexity low. Symmetric axioms
+ * (disjointWith) emit both directions so the resulting schemas are pairwise
+ * consistent without a second traversal pass.
+ *
+ * @example
+ * ```ts
+ * const fragment = importClassAxioms(quads, ctx);
+ * // fragment.schemaDeltas contains $ref / allOf / not / disjointWith patches
+ * ```
+ *
+ * @category OWL Import
+ * @since 0.1.0
+ * @see OwlImportContext
+ * @group importDispatch
+ */
+export function importClassAxioms(_quads: QuadInterface[], ctx: OwlImportContext): OwlImportFragment {
+  const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
+  const invariants: Array<{ 'invariant': InvariantInterface;
+    'schemaId': string; }> = [];
+
+  // QuadBackedSchemaGraph compacts NamedNode IRI targets via the active prefix
+  // map. Expand them back so $ref / disjointWith values match the full-IRI
+  // schema $id form used throughout the importer.
+  function resolveTargetIri(target: string | { 'id': string }): string {
+    const raw = typeof target === 'string' ? target : target.id;
+
+    if (raw === '' || raw.startsWith('_:') || raw.startsWith('http://') || raw.startsWith('https://') || raw.startsWith('urn:')) {
+      return raw;
+    }
+
+    return ctx.curie.expand(raw);
+  }
+
+  const axiomCtx: AxiomContext = {
+    'allClassIris': ctx.allClassIris,
+    invariants,
+    'resolveIri': resolveTargetIri,
+    schemaDeltas
+  };
+
+  emitClassStubs(ctx, schemaDeltas);
+  applyNamedNodeAxioms(ctx, axiomCtx);
+  applyBnodeLiteralAxioms(ctx, axiomCtx);
 
   return {
     'characteristics': [],

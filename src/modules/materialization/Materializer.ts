@@ -39,6 +39,23 @@ import { InstantiationError } from '../../errors/InstantiationError.js';
  * `createDefault()` uses the same execution engine with `synthesizeDefaults: true`,
  * generating zero values for required properties that lack explicit defaults instead
  * of reporting validation errors. `materialize()` runs with `synthesizeDefaults: false`.
+ *
+ * @remarks
+ * The Materializer is bound to a {@link SchemaRegistryInterface} at construction time.
+ * Execution overrides (`cachedOverridesNoDefaults`, `cachedOverridesWithDefaults`) and
+ * the `lookupGraphFn` are pre-allocated in the constructor to avoid per-call allocations
+ * on the hot materialization path.
+ *
+ * @example
+ * ```ts
+ * const mat = new Materializer(registry);
+ * const user = mat.materialize(UserSchema, { name: 'Alice' });
+ * ```
+ *
+ * @category Materialization
+ * @since 0.1.0
+ * @see {@link SchemaRegistryInterface}
+ * @group Runtime
  */
 export class Materializer implements MaterializerInterface {
   private static isEffectivelyFrozen(schema: Record<string, unknown>): boolean {
@@ -80,6 +97,10 @@ export class Materializer implements MaterializerInterface {
       'node': SchemaGraphNodeInterface }>>
   >();
 
+  // Bound once in the constructor; passed as `lookupGraph` to avoid a trivial
+  // per-call arrow allocation in projectAboxFromExecution.
+  private readonly lookupGraphFn: (schemaId: string) => SchemaGraphInterface | undefined;
+
   /**
    * Create a Materializer bound to a schema registry.
    *
@@ -108,6 +129,9 @@ export class Materializer implements MaterializerInterface {
       'collectErrors': true,
       'removeAdditionalProperties': false,
       'synthesizeDefaults': true
+    };
+    this.lookupGraphFn = (schemaId: string): SchemaGraphInterface | undefined => {
+      return registry.graph(schemaId);
     };
   }
 
@@ -186,36 +210,7 @@ export class Materializer implements MaterializerInterface {
       'node': SchemaGraphNodeInterface }>();
     const visited = new Set<SchemaGraphNodeInterface>();
 
-    const walk = (currentGraph: SchemaGraphInterface, current: SchemaGraphNodeInterface): void => {
-      if (visited.has(current)) {
-        return;
-      }
-      visited.add(current);
-
-      const [
-        resolvedGraph,
-        resolvedNode
-      ] = this.resolveTargetGraphAndNode(currentGraph, current);
-      const semantics = resolvedGraph.semantics(resolvedNode);
-
-      for (const [
-        name,
-        propNode
-      ] of semantics.properties) {
-        if (!collected.has(name)) {
-          collected.set(name, {
-            'graph': resolvedGraph,
-            'node': propNode
-          });
-        }
-      }
-
-      for (const member of semantics.allOf) {
-        walk(resolvedGraph, member);
-      }
-    };
-
-    walk(graph, node);
+    this.walkPropertyTree(graph, node, collected, visited);
 
     if (graphCache === undefined) {
       graphCache = new WeakMap();
@@ -261,10 +256,7 @@ export class Materializer implements MaterializerInterface {
     value: unknown,
     visited = new WeakSet()
   ): void {
-    if (!isRecord(value)) {
-      return;
-    }
-    if (visited.has(value)) {
+    if (!isRecord(value) || visited.has(value)) {
       return;
     }
     visited.add(value);
@@ -290,27 +282,37 @@ export class Materializer implements MaterializerInterface {
         propertyTargetNode
       ] = this.resolveTargetGraphAndNode(entry.graph, entry.node);
 
-      if (Array.isArray(propertyValue)) {
-        const itemsNode = propertyGraph.semantics(propertyTargetNode).itemsNode;
+      this.fillImplicitProperty(propertyGraph, propertyTargetNode, propertyValue, visited);
+    }
+  }
 
-        if (itemsNode === undefined) {
-          continue;
-        }
+  private fillImplicitProperty(
+    propertyGraph: SchemaGraphInterface,
+    propertyTargetNode: SchemaGraphNodeInterface,
+    propertyValue: unknown,
+    visited: WeakSet<WeakKey>
+  ): void {
+    if (Array.isArray(propertyValue)) {
+      const itemsNode = propertyGraph.semantics(propertyTargetNode).itemsNode;
 
-        for (const item of propertyValue) {
-          this.fillImplicitProperties(propertyGraph, itemsNode, item, visited);
-        }
-
-        continue;
+      if (itemsNode === undefined) {
+        return;
       }
 
-      this.fillImplicitProperties(propertyGraph, propertyTargetNode, propertyValue, visited);
+      for (const item of propertyValue) {
+        this.fillImplicitProperties(propertyGraph, itemsNode, item, visited);
+      }
+
+      return;
     }
+
+    this.fillImplicitProperties(propertyGraph, propertyTargetNode, propertyValue, visited);
   }
 
   private formatErrors(result: GraphExecutionResultInterface): string[] {
     return BaseError.formatErrors(result.errors);
   }
+
   /**
    * Materialize partial data against a schema, filling implicit properties and validating.
    *
@@ -345,7 +347,6 @@ export class Materializer implements MaterializerInterface {
 
     return value;
   }
-
   private materializeResult(result: GraphExecutionResultInterface): unknown {
     this.fillImplicitProperties(result.graph, result.entryNode, result.value);
 
@@ -396,9 +397,7 @@ export class Materializer implements MaterializerInterface {
       'entryNode': execution.entryNode,
       'graphIRI': options?.graphIRI,
       'iriFor': options?.iriFor,
-      'lookupGraph': (schemaId) => {
-        return this.registry.graph(schemaId);
-      },
+      'lookupGraph': this.lookupGraphFn,
       'predicateResolver': options?.predicateResolver
     });
 
@@ -494,5 +493,40 @@ export class Materializer implements MaterializerInterface {
       'valid': execution.valid,
       'value': materialized
     };
+  }
+
+  private walkPropertyTree(
+    currentGraph: SchemaGraphInterface,
+    current: SchemaGraphNodeInterface,
+    collected: Map<string, { 'graph': SchemaGraphInterface;
+      'node': SchemaGraphNodeInterface }>,
+    visited: Set<SchemaGraphNodeInterface>
+  ): void {
+    if (visited.has(current)) {
+      return;
+    }
+    visited.add(current);
+
+    const [
+      resolvedGraph,
+      resolvedNode
+    ] = this.resolveTargetGraphAndNode(currentGraph, current);
+    const semantics = resolvedGraph.semantics(resolvedNode);
+
+    for (const [
+      name,
+      propNode
+    ] of semantics.properties) {
+      if (!collected.has(name)) {
+        collected.set(name, {
+          'graph': resolvedGraph,
+          'node': propNode
+        });
+      }
+    }
+
+    for (const member of semantics.allOf) {
+      this.walkPropertyTree(resolvedGraph, member, collected, visited);
+    }
   }
 }

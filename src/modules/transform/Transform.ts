@@ -46,6 +46,34 @@ const transformRegistry = new WeakMap<object, TransformFnsInterface>();
 // Transform class
 // ---------------------------------------------------------------------------
 
+/**
+ * Attaches decode/encode transform functions to a JSON Schema so that
+ * `instantiate()` automatically converts validated data into a richer runtime
+ * type (e.g. `string` → `Date`).
+ *
+ * @remarks
+ * Schema objects are never mutated — transforms are stored in a `WeakMap`
+ * keyed on the schema reference. The output type is tracked via a phantom
+ * brand on the schema's TypeScript type so that `instantiate()` returns the
+ * fully-decoded type without any runtime cast.
+ *
+ * @example
+ * ```ts
+ * const DateSchema = Transform.create(
+ *   { $id: 'Date', type: 'string', format: 'date-time' } as const,
+ *   {
+ *     decode: (s: string) => new Date(s),
+ *     encode: (d: Date) => d.toISOString(),
+ *   },
+ * );
+ * const date = jt.instantiate(DateSchema.$id, '2026-01-01'); // typed as Date
+ * ```
+ *
+ * @category Transform
+ * @since 0.1.0
+ * @see {@link TransformFnsInterface}
+ * @group Transform
+ */
 export class Transform {
   /**
    * Attach a compile-time brand name to a schema.
@@ -82,13 +110,13 @@ export class Transform {
   ): TransformedType<TSchema, ChainOutputType<TStages>> {
     const stages = transforms as ReadonlyArray<TransformStageInterface<unknown, unknown>>;
     const composed: TransformFnsInterface = {
-      'decode': (value: unknown) => {
-        return stages.reduce<unknown>((accumulator, transform) => {
+      'decode': (value: unknown): unknown => {
+        return stages.reduce<unknown>((accumulator: unknown, transform: TransformStageInterface<unknown, unknown>): unknown => {
           return transform.decode(accumulator);
         }, value);
       },
-      'encode': (value: unknown) => {
-        return [...stages].reverse().reduce<unknown>((accumulator, transform) => {
+      'encode': (value: unknown): unknown => {
+        return [...stages].reverse().reduce<unknown>((accumulator: unknown, transform: TransformStageInterface<unknown, unknown>): unknown => {
           return transform.encode(accumulator);
         }, value);
       }

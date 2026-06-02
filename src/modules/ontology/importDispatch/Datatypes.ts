@@ -40,49 +40,52 @@ import { XSD_TO_SCHEMA_TYPE } from '../../../constants/XSD_REVERSE_MAPS.js';
 // OWL / RDF / XSD IRI constants — full and prefixed forms
 // ---------------------------------------------------------------------------
 
-const OWL_NS = 'http://www.w3.org/2002/07/owl#';
-const RDF_NS = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
-const RDFS_NS = 'http://www.w3.org/2000/01/rdf-schema#';
+const OWL_VOCAB = 'http://www.w3.org/2002/07/owl#';
+const RDF_VOCAB = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
+const RDFS_VOCAB = 'http://www.w3.org/2000/01/rdf-schema#';
+
+/** Base for decimal fraction-digit multipleOf calculation (10^-n). */
+const DECIMAL_BASE = 10;
 
 const TYPE_PREDICATES: ReadonlySet<string> = new Set([
-  `${RDF_NS}type`,
+  `${RDF_VOCAB}type`,
   'rdf:type'
 ]);
 
 const RDFS_DATATYPE_IRIS: ReadonlySet<string> = new Set([
-  `${RDFS_NS}Datatype`,
+  `${RDFS_VOCAB}Datatype`,
   'rdfs:Datatype'
 ]);
 
 const OWL_ON_DATATYPE_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_NS}onDatatype`,
+  `${OWL_VOCAB}onDatatype`,
   'owl:onDatatype'
 ]);
 
 const OWL_WITH_RESTRICTIONS_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_NS}withRestrictions`,
+  `${OWL_VOCAB}withRestrictions`,
   'owl:withRestrictions'
 ]);
 
 const OWL_EQUIVALENT_CLASS_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_NS}equivalentClass`,
+  `${OWL_VOCAB}equivalentClass`,
   'owl:equivalentClass'
 ]);
 
 const OWL_ONE_OF_IRIS: ReadonlySet<string> = new Set([
-  `${OWL_NS}oneOf`,
+  `${OWL_VOCAB}oneOf`,
   'owl:oneOf'
 ]);
 
-const JT_NS = 'https://json-tology.dev/vocab#';
+const JT_VOCAB = 'https://json-tology.dev/vocab#';
 
 const JT_MULTIPLE_OF_IRIS: ReadonlySet<string> = new Set([
-  `${JT_NS}multipleOf`,
+  `${JT_VOCAB}multipleOf`,
   'jt:multipleOf'
 ]);
 
 const JT_FORMAT_IRIS: ReadonlySet<string> = new Set([
-  `${JT_NS}format`,
+  `${JT_VOCAB}format`,
   'jt:format'
 ]);
 
@@ -90,6 +93,27 @@ const JT_FORMAT_IRIS: ReadonlySet<string> = new Set([
 // XSD facet predicate → JSON Schema keyword mapping and XSD base type mapping
 // are imported from src/constants/XSD_FACETS.ts and src/constants/XSD_REVERSE_MAPS.ts.
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Options interfaces
+// ---------------------------------------------------------------------------
+
+/** Options for extracting a facet patch from one blank-node descriptor. */
+interface ExtractFacetOptions {
+  'bnodeId': string;
+  'graph': SchemaGraphInterface;
+  'reportUnsupported': (axiomIri: string, subjectIri: null | string) => void;
+  'schemaType': 'boolean' | 'integer' | 'number' | 'string' | undefined;
+}
+
+/** Options for applying facet restrictions to the delta record. */
+interface ApplyRestrictionsOptions {
+  readonly 'delta': Record<string, unknown>;
+  readonly 'graph': SchemaGraphInterface;
+  readonly 'reportUnsupported': (axiomIri: string, subjectIri: null | string) => void;
+  readonly 'schemaType': 'boolean' | 'integer' | 'number' | 'string' | undefined;
+  readonly 'subjectIri': string;
+}
 
 // ---------------------------------------------------------------------------
 // Graph-native helpers
@@ -106,7 +130,7 @@ function relationsByPredicate(
   subject: string,
   predicates: ReadonlySet<string>
 ): readonly SchemaGraphRelationInterface[] {
-  return graph.relationsForSubject(subject).filter((rel) => {
+  return graph.relationsForSubject(subject).filter((rel: SchemaGraphRelationInterface): boolean => {
     return predicates.has(rel.predicate);
   });
 }
@@ -151,6 +175,30 @@ function decodeListItemLiteral(item: ListItemType): unknown {
 // Infer type from enum values
 // ---------------------------------------------------------------------------
 
+/** Infer the JSON Schema primitive type for a single value. */
+function inferValueType(val: unknown): 'boolean' | 'integer' | 'number' | 'string' {
+  if (typeof val === 'boolean') {
+    return 'boolean';
+  }
+  if (typeof val === 'number') {
+    return Number.isInteger(val) ? 'integer' : 'number';
+  }
+
+  return 'string';
+}
+
+/** Promote two numeric types when they are compatible (integer/number blend). */
+function promoteNumericTypes(
+  first: 'boolean' | 'integer' | 'number' | 'string',
+  second: 'boolean' | 'integer' | 'number' | 'string'
+): 'number' | undefined {
+  if ((first === 'integer' && second === 'number') || (first === 'number' && second === 'integer')) {
+    return 'number';
+  }
+
+  return undefined;
+}
+
 /**
  * Infer the JSON Schema type from a homogeneous array of enum values.
  * Returns undefined when the array is empty or heterogeneous.
@@ -163,34 +211,120 @@ function inferEnumType(values: unknown[]): 'boolean' | 'integer' | 'number' | 's
   let seenType: 'boolean' | 'integer' | 'number' | 'string' | undefined;
 
   for (const val of values) {
-    let valType: 'boolean' | 'integer' | 'number' | 'string';
-
-    if (typeof val === 'boolean') {
-      valType = 'boolean';
-    } else if (typeof val === 'number') {
-      valType = Number.isInteger(val) ? 'integer' : 'number';
-    } else {
-      valType = 'string';
-    }
+    const valType = inferValueType(val);
 
     if (seenType === undefined) {
       seenType = valType;
-    } else if (seenType !== valType) {
-      // Promote integer to number when mixed
-      if ((seenType === 'integer' && valType === 'number') || (seenType === 'number' && valType === 'integer')) {
-        seenType = 'number';
-      } else {
-        return undefined;
-      }
+      continue;
     }
+
+    if (seenType === valType) {
+      continue;
+    }
+
+    const promoted = promoteNumericTypes(seenType, valType);
+
+    if (promoted === undefined) {
+      return undefined;
+    }
+    seenType = promoted;
   }
 
   return seenType;
 }
 
 // ---------------------------------------------------------------------------
+// Facet kind handlers — one per descriptor.kind
+// ---------------------------------------------------------------------------
+
+/** Apply a `fractionDigits` facet: multipleOf = 10^-n. */
+function applyFractionDigits(fr: SchemaGraphRelationInterface, delta: Record<string, unknown>): void {
+  const num = literalNumber(fr);
+
+  if (num !== null && num >= 0) {
+    delta.multipleOf = Math.pow(DECIMAL_BASE, -num);
+  }
+}
+
+/** Apply a `length` facet: minLength = maxLength = n. */
+function applyLengthFacet(fr: SchemaGraphRelationInterface, delta: Record<string, unknown>): void {
+  const num = literalNumber(fr);
+
+  if (num !== null) {
+    delta.minLength = num;
+    delta.maxLength = num;
+  }
+}
+
+/** Apply a `numeric` facet: delta[key] = n. */
+function applyNumericFacet(
+  fr: SchemaGraphRelationInterface,
+  delta: Record<string, unknown>,
+  key: string
+): void {
+  const num = literalNumber(fr);
+
+  if (num !== null) {
+    delta[key] = num;
+  }
+}
+
+/** Apply a `string` facet: delta[key] = str. */
+function applyStringFacet(
+  fr: SchemaGraphRelationInterface,
+  delta: Record<string, unknown>,
+  key: string
+): void {
+  const str = literalString(fr);
+
+  if (str !== null) {
+    delta[key] = str;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Extract facet delta from a single blank-node facet descriptor
 // ---------------------------------------------------------------------------
+
+/**
+ * Apply a single facet relation to the delta record.
+ */
+function applyFacetRelation(options: { 'bnodeId': string
+  'delta': Record<string, unknown>;
+  'fr': SchemaGraphRelationInterface;
+  'reportUnsupported': (axiomIri: string, subjectIri: null | string) => void; }): void {
+  const {
+    bnodeId, delta, fr, reportUnsupported
+  } = options;
+  const facetPred = fr.predicate;
+  const descriptor = FACET_MAP.get(facetPred);
+
+  if (descriptor === undefined) {
+    reportUnsupported(facetPred, bnodeId);
+
+    return;
+  }
+
+  switch (descriptor.kind) {
+    case 'fractionDigits':
+      applyFractionDigits(fr, delta);
+      break;
+    case 'ignore':
+      break;
+    case 'length':
+      applyLengthFacet(fr, delta);
+      break;
+    case 'numeric':
+      applyNumericFacet(fr, delta, descriptor.key);
+      break;
+    case 'string':
+      applyStringFacet(fr, delta, descriptor.key);
+      break;
+    case 'unsupported':
+      reportUnsupported(descriptor.predicate, bnodeId);
+      break;
+  }
+}
 
 /**
  * Given a blank-node id from the `owl:withRestrictions` list, walk its
@@ -199,69 +333,21 @@ function inferEnumType(values: unknown[]): 'boolean' | 'integer' | 'number' | 's
  *
  * Multiple predicates on one blank node are all applied.
  */
-function extractFacetFromBnode(
-  bnodeId: string,
-  graph: SchemaGraphInterface,
-  schemaType: 'boolean' | 'integer' | 'number' | 'string' | undefined,
-  reportUnsupported: (axiomIri: string, subjectIri: null | string) => void
-): Partial<JsonSchemaDocumentObjectType> {
+function extractFacetFromBnode(options: ExtractFacetOptions): Partial<JsonSchemaDocumentObjectType> {
+  const {
+    bnodeId, graph, reportUnsupported
+  } = options;
   const delta: Record<string, unknown> = {};
   const bnodeRelations = graph.relationsForSubject(bnodeId);
 
   for (const fr of bnodeRelations) {
-    // The relation predicate may be compacted (xsd:minInclusive) or full IRI;
-    // FACET_MAP carries both forms.
-    const facetPred = fr.predicate;
-    const descriptor = FACET_MAP.get(facetPred);
-
-    if (descriptor === undefined) {
-      reportUnsupported(facetPred, bnodeId);
-      continue;
-    }
-
-    switch (descriptor.kind) {
-      case 'fractionDigits': {
-        const num = literalNumber(fr);
-
-        if (num !== null && num >= 0) {
-          delta.multipleOf = Math.pow(10, -num);
-        }
-        break;
-      }
-      case 'ignore':
-        break;
-      case 'length': {
-        const num = literalNumber(fr);
-
-        if (num !== null) {
-          delta.minLength = num;
-          delta.maxLength = num;
-        }
-        break;
-      }
-      case 'numeric': {
-        const num = literalNumber(fr);
-
-        if (num !== null) {
-          delta[descriptor.key] = num;
-        }
-        break;
-      }
-      case 'string': {
-        const str = literalString(fr);
-
-        if (str !== null) {
-          delta[descriptor.key] = str;
-        }
-        break;
-      }
-      case 'unsupported':
-        reportUnsupported(descriptor.predicate, bnodeId);
-        break;
-    }
+    applyFacetRelation({
+      bnodeId,
+      delta,
+      fr,
+      reportUnsupported
+    });
   }
-
-  void schemaType;
 
   return delta;
 }
@@ -269,6 +355,130 @@ function extractFacetFromBnode(
 // ---------------------------------------------------------------------------
 // Process a single rdfs:Datatype subject
 // ---------------------------------------------------------------------------
+
+/**
+ * Apply `owl:onDatatype` → JSON Schema `type` from XSD base type.
+ */
+function applyOnDatatype(
+  subjectIri: string,
+  graph: SchemaGraphInterface,
+  delta: Record<string, unknown>
+): 'boolean' | 'integer' | 'number' | 'string' | undefined {
+  const onDatatype = relationsByPredicate(graph, subjectIri, OWL_ON_DATATYPE_IRIS);
+
+  if (onDatatype.length === 0 || onDatatype[0].termType !== 'NamedNode') {
+    return undefined;
+  }
+
+  const onDt = targetValue(onDatatype[0]);
+  const mappedType = XSD_TO_SCHEMA_TYPE.get(onDt);
+
+  if (mappedType !== undefined) {
+    delta.type = mappedType;
+  }
+
+  return mappedType;
+}
+
+/**
+ * Apply `owl:withRestrictions` facet list to the delta.
+ */
+function applyWithRestrictions(options: ApplyRestrictionsOptions): void {
+  const {
+    delta, graph, reportUnsupported, schemaType, subjectIri
+  } = options;
+  const withRestrictions = relationsByPredicate(graph, subjectIri, OWL_WITH_RESTRICTIONS_IRIS);
+
+  for (const wr of withRestrictions) {
+    const listHead = targetValue(wr);
+    const items = graph.collectList(listHead);
+
+    for (const item of items) {
+      if (item.termType === 'BlankNode') {
+        const facetDelta = extractFacetFromBnode({
+          'bnodeId': item.target,
+          graph,
+          reportUnsupported,
+          schemaType
+        });
+
+        Object.assign(delta, facetDelta);
+      }
+    }
+  }
+}
+
+/** Apply enum values from one equivalentClass bnode's oneOf list. */
+function applyOneOfEnum(
+  equivBnode: string,
+  graph: SchemaGraphInterface,
+  delta: Record<string, unknown>
+): void {
+  const oneOfRelations = relationsByPredicate(graph, equivBnode, OWL_ONE_OF_IRIS);
+
+  for (const oo of oneOfRelations) {
+    const enumValues = extractEnumValues(targetValue(oo), graph);
+
+    if (enumValues.length > 0) {
+      delta.enum = enumValues;
+
+      if (!('type' in delta)) {
+        const inferred = inferEnumType(enumValues);
+
+        if (inferred !== undefined) {
+          delta.type = inferred;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Apply `owl:equivalentClass [ owl:oneOf [...] ]` → enum datatype.
+ */
+function applyEquivClassEnum(
+  subjectIri: string,
+  graph: SchemaGraphInterface,
+  delta: Record<string, unknown>
+): void {
+  const equivClass = relationsByPredicate(graph, subjectIri, OWL_EQUIVALENT_CLASS_IRIS);
+
+  for (const ec of equivClass) {
+    if (ec.termType !== 'BlankNode') {
+      continue;
+    }
+    applyOneOfEnum(targetValue(ec), graph, delta);
+  }
+}
+
+/**
+ * Apply jt:multipleOf and jt:format extension annotations.
+ */
+function applyExtensionAnnotations(
+  subjectIri: string,
+  graph: SchemaGraphInterface,
+  delta: Record<string, unknown>
+): void {
+  const multipleOf = relationsByPredicate(graph, subjectIri, JT_MULTIPLE_OF_IRIS);
+
+  if (multipleOf.length > 0) {
+    const moNum = literalNumber(multipleOf[0]);
+
+    if (moNum !== null) {
+      delta.multipleOf = moNum;
+    }
+  }
+
+  const formatRels = relationsByPredicate(graph, subjectIri, JT_FORMAT_IRIS);
+
+  if (formatRels.length > 0) {
+    const fmtStr = literalString(formatRels[0]);
+
+    if (fmtStr !== null) {
+      delta.format = fmtStr;
+    }
+  }
+}
 
 /**
  * Process a single `rdfs:Datatype` subject and return its schema delta.
@@ -280,84 +490,17 @@ function processDatatypeIri(
 ): Partial<JsonSchemaDocumentObjectType> {
   const delta: Record<string, unknown> = {};
 
-  // owl:onDatatype → JSON Schema type
-  const onDatatype = relationsByPredicate(graph, subjectIri, OWL_ON_DATATYPE_IRIS);
-  let schemaType: 'boolean' | 'integer' | 'number' | 'string' | undefined;
+  const schemaType = applyOnDatatype(subjectIri, graph, delta);
 
-  if (onDatatype.length > 0 && onDatatype[0].termType === 'NamedNode') {
-    const onDt = targetValue(onDatatype[0]);
-    const mappedType = XSD_TO_SCHEMA_TYPE.get(onDt);
-
-    if (mappedType !== undefined) {
-      schemaType = mappedType;
-      delta.type = mappedType;
-    }
-  }
-
-  // owl:withRestrictions → facet list of blank nodes
-  const withRestrictions = relationsByPredicate(graph, subjectIri, OWL_WITH_RESTRICTIONS_IRIS);
-
-  for (const wr of withRestrictions) {
-    const listHead = targetValue(wr);
-    const items = graph.collectList(listHead);
-
-    for (const item of items) {
-      if (item.termType === 'BlankNode') {
-        const facetDelta = extractFacetFromBnode(item.target, graph, schemaType, reportUnsupported);
-
-        Object.assign(delta, facetDelta);
-      }
-    }
-  }
-
-  // owl:equivalentClass [ owl:oneOf [...] ] → enum datatype
-  const equivClass = relationsByPredicate(graph, subjectIri, OWL_EQUIVALENT_CLASS_IRIS);
-
-  for (const ec of equivClass) {
-    if (ec.termType !== 'BlankNode') {
-      continue;
-    }
-    const equivBnode = targetValue(ec);
-    const oneOfRelations = relationsByPredicate(graph, equivBnode, OWL_ONE_OF_IRIS);
-
-    for (const oo of oneOfRelations) {
-      const enumValues = extractEnumValues(targetValue(oo), graph);
-
-      if (enumValues.length > 0) {
-        delta.enum = enumValues;
-
-        if (!('type' in delta)) {
-          const inferred = inferEnumType(enumValues);
-
-          if (inferred !== undefined) {
-            delta.type = inferred;
-          }
-        }
-      }
-    }
-  }
-
-  // jt:multipleOf — json-tology extension annotation on the datatype node
-  const multipleOf = relationsByPredicate(graph, subjectIri, JT_MULTIPLE_OF_IRIS);
-
-  if (multipleOf.length > 0) {
-    const moNum = literalNumber(multipleOf[0]);
-
-    if (moNum !== null) {
-      delta.multipleOf = moNum;
-    }
-  }
-
-  // jt:format — preserve JSON Schema format keyword
-  const formatRels = relationsByPredicate(graph, subjectIri, JT_FORMAT_IRIS);
-
-  if (formatRels.length > 0) {
-    const fmtStr = literalString(formatRels[0]);
-
-    if (fmtStr !== null) {
-      delta.format = fmtStr;
-    }
-  }
+  applyWithRestrictions({
+    delta,
+    graph,
+    reportUnsupported,
+    schemaType,
+    subjectIri
+  });
+  applyEquivClassEnum(subjectIri, graph, delta);
+  applyExtensionAnnotations(subjectIri, graph, delta);
 
   return delta;
 }
@@ -425,6 +568,25 @@ function emptyFragment(): OwlImportFragment {
  *                 implementation reads exclusively from `ctx.graph`.
  * @param ctx   - Shared import context (graph, curie, IRI sets, reporting helpers).
  * @returns OwlImportFragment with schemaDeltas populated.
+ *
+ * @remarks
+ * Implements OWL 2 §9.4 Datatype Definitions and §4.7 Facet Restrictions.
+ * Each datatype IRI found via `rdf:type rdfs:Datatype` is processed
+ * independently. XSD facets are mapped to JSON Schema keywords via the
+ * `FACET_MAP` constant; unsupported predicates are passed to
+ * `ctx.reportUnsupported`. The `jt:multipleOf` and `jt:format` extension
+ * predicates are also honoured.
+ *
+ * @example
+ * ```ts
+ * const fragment = importDatatypes(quads, ctx);
+ * // fragment.schemaDeltas maps datatype IRI → { type, minLength, pattern, … }
+ * ```
+ *
+ * @category OWL Import
+ * @since 0.1.0
+ * @see OwlImportContext
+ * @group importDispatch
  */
 export function importDatatypes(_quads: QuadInterface[], ctx: OwlImportContext): OwlImportFragment {
   const graph = ctx.graph;

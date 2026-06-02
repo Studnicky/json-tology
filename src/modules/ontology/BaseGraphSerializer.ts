@@ -9,6 +9,34 @@ import { IdentifierIssuer } from '../rdf/IdentifierIssuer.js';
 import type { IdentifierIssuerInterface } from '../../interfaces/IdentifierIssuer.js';
 import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
 
+/**
+ * Abstract base class for graph-to-RDF serializers.
+ *
+ * Provides shared utilities (`ensureArray`, `normalizeArrays`), common
+ * constructor wiring (Curie, predicateResolver, vocabulary plugins), and the
+ * `serializeQuads` orchestration method. Subclasses implement `projectGraph`,
+ * `postProcessNodes`, and `corePredicates`.
+ *
+ * @remarks
+ * The `serializeQuads` method calls `projectGraph` for each input graph to
+ * produce core quads, then iterates over relations to emit plugin quads for
+ * predicates not owned by the core vocabulary. Vocabulary plugins are matched
+ * by IRI prefix against their declared `prefixes` map.
+ *
+ * @example
+ * ```ts
+ * class MySerializer extends BaseGraphSerializer {
+ *   protected corePredicates() { return new Set(['rdf:type']); }
+ *   protected projectGraph(graph, issuer) { return []; }
+ *   protected postProcessNodes(nodes) { }
+ * }
+ * ```
+ *
+ * @category Serializer
+ * @since 0.12.0
+ * @see {@link GraphSerializerInterface}
+ * @group Ontology
+ */
 export abstract class BaseGraphSerializer implements GraphSerializerInterface {
   /**
    * Ensures the value at `key` in `node` is wrapped in an array.
@@ -73,7 +101,7 @@ export abstract class BaseGraphSerializer implements GraphSerializerInterface {
 
     // Find plugin that owns this predicate
     for (const plugin of this.vocabularies) {
-      if (Object.values(plugin.prefixes).some((prefix) => {
+      if (Object.values(plugin.prefixes).some((prefix: string): boolean => {
         return predicate.startsWith(prefix);
       })) {
         return plugin;
@@ -89,7 +117,7 @@ export abstract class BaseGraphSerializer implements GraphSerializerInterface {
 
   public serializeQuads(graphs: readonly SchemaGraphInterface[]): QuadInterface[] {
     const issuer = new IdentifierIssuer();
-    const allQuads = graphs.flatMap((graph) => {
+    const allQuads = graphs.flatMap((graph: SchemaGraphInterface): QuadInterface[] => {
       return this.projectGraph(graph, issuer);
     });
 
@@ -101,7 +129,7 @@ export abstract class BaseGraphSerializer implements GraphSerializerInterface {
         const plugin = this.findPluginForPredicate(relation.predicate);
 
         if (plugin?.project) {
-          plugin.project(relation, (emittedQuad) => {
+          plugin.project(relation, (emittedQuad: QuadInterface): void => {
             allQuads.push(emittedQuad);
           });
         }

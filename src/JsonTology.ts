@@ -41,7 +41,7 @@ import type {
   ParseOutputType, TransformedType
 } from './types/Transform.js';
 import type {
-  SchemaEntryType, SchemaMapFromTupleType, UniqueSchemaIdsType
+  SchemaEntryType, SchemaMapFromTupleType, SchemaReferencesMapType, UniqueSchemaIdsType
 } from './types/Registry.js';
 import type { PredicateForType } from './types/PredicateFor.js';
 import type { PredicateResolverFnType } from './types/PredicateResolverFn.js';
@@ -86,11 +86,28 @@ const STATIC_BASE_IRI = 'http://json-tology.dev/_/static';
  * The literal string `'blank-node'` requests anonymous-node subjects
  * for every object in the projection. Exposed as a separate constant
  * so consumers can spell the magic value without importing it inline.
+ *
+ * @remarks
+ * Pass as the `iriFor` option to `toQuads()` or the constructor to enable blank-node
+ * subjects for every projected object, rather than minting well-known genid IRIs.
+ *
+ * @example
+ * ```ts
+ * const quads = jt.toQuads(UserSchema, user, { iriFor: BLANK_NODE_IRI_FOR });
+ * ```
+ *
+ * @defaultValue `'blank-node'`
+ * @category Skolemization
+ * @since 0.1.0
+ * @see {@link SkolemizeFnType}
+ * @group Constants
  */
 export const BLANK_NODE_IRI_FOR = 'blank-node';
 
 function rootIriOnly(iri: string): SkolemizeFnType {
-  return (ctx) => {
+  return (ctx: { 'depth': number;
+    'path': string;
+    'value': unknown }): string | undefined => {
     return ctx.depth === 0 ? iri : undefined;
   };
 }
@@ -98,7 +115,9 @@ function rootIriOnly(iri: string): SkolemizeFnType {
 function blankNodeStrategy(): SkolemizeFnType {
   let counter = 0;
 
-  return () => {
+  return (_ctx: { 'depth': number;
+    'path': string;
+    'value': unknown }): string => {
     const name = `_:b${counter}`;
 
     counter++;
@@ -114,50 +133,58 @@ function blankNodeNameFor(iri: string): string {
 }
 
 /**
+ * Rewrite a single quad's subject and/or object from well-known genid IRIs
+ * to blank nodes. Returns the original quad when no deskolemization is needed.
+ * Named function so the complexity is separate from `deskolemizeQuads`.
+ */
+function deskolemizeQuad(quad: QuadInterface): QuadInterface {
+  // Narrow rdf/js Quad_Subject (`NamedNode | BlankNode | Quad | Variable`)
+  // to the project pipeline subjects (`NamedNode | BlankNode`). RDF*
+  // (`Quad`) and `Variable` subjects pass through untouched.
+  if (quad.subject.termType !== 'NamedNode' && quad.subject.termType !== 'BlankNode') {
+    return quad;
+  }
+  if (quad.predicate.termType !== 'NamedNode') {
+    return quad;
+  }
+  if (quad.graph.termType !== 'NamedNode' && quad.graph.termType !== 'BlankNode' && quad.graph.termType !== 'DefaultGraph') {
+    return quad;
+  }
+
+  const subjectGenid = Skolemize.isWellKnownGenid(quad.subject.value);
+  const objectGenid = quad.object.termType === 'NamedNode'
+    && Skolemize.isWellKnownGenid(quad.object.value);
+
+  if (!subjectGenid && !objectGenid) {
+    return quad;
+  }
+
+  const subject = subjectGenid
+    ? Terms.blank(blankNodeNameFor(quad.subject.value))
+    : quad.subject;
+  const object = objectGenid && quad.object.termType === 'NamedNode'
+    ? Terms.blank(blankNodeNameFor(quad.object.value))
+    : quad.object;
+
+  // Object may still be a Variable or embedded Quad after the above narrow.
+  // In that case, fall back to the original quad rather than fabricating a
+  // shape the pipeline does not handle.
+  if (object.termType !== 'NamedNode' && object.termType !== 'BlankNode' && object.termType !== 'Literal') {
+    return quad;
+  }
+
+  return Terms.quad(subject, quad.predicate, object, quad.graph);
+}
+
+/**
  * Reconstructs blank-node-style references from well-known genid IRIs.
  * Quads whose subject or object is a NamedNode matching the well-known
  * genid pattern are rewritten to BlankNode terms so downstream lifting
  * sees them as anonymous nodes.
  */
 function deskolemizeQuads(quads: readonly QuadInterface[]): QuadInterface[] {
-  return quads.map((quad) => {
-    // Narrow rdf/js Quad_Subject (`NamedNode | BlankNode | Quad | Variable`)
-    // to the project pipeline subjects (`NamedNode | BlankNode`). RDF*
-    // (`Quad`) and `Variable` subjects pass through untouched — the project
-    // does not deskolemize them.
-    if (quad.subject.termType !== 'NamedNode' && quad.subject.termType !== 'BlankNode') {
-      return quad;
-    }
-    if (quad.predicate.termType !== 'NamedNode') {
-      return quad;
-    }
-    if (quad.graph.termType !== 'NamedNode' && quad.graph.termType !== 'BlankNode' && quad.graph.termType !== 'DefaultGraph') {
-      return quad;
-    }
-
-    const subjectGenid = Skolemize.isWellKnownGenid(quad.subject.value);
-    const objectGenid = quad.object.termType === 'NamedNode'
-      && Skolemize.isWellKnownGenid(quad.object.value);
-
-    if (!subjectGenid && !objectGenid) {
-      return quad;
-    }
-
-    const subject = subjectGenid
-      ? Terms.blank(blankNodeNameFor(quad.subject.value))
-      : quad.subject;
-    const object = objectGenid && quad.object.termType === 'NamedNode'
-      ? Terms.blank(blankNodeNameFor(quad.object.value))
-      : quad.object;
-
-    // Object may still be a Variable or embedded Quad after the above narrow.
-    // In that case, fall back to the original quad rather than fabricating a
-    // shape the pipeline does not handle.
-    if (object.termType !== 'NamedNode' && object.termType !== 'BlankNode' && object.termType !== 'Literal') {
-      return quad;
-    }
-
-    return Terms.quad(subject, quad.predicate, object, quad.graph);
+  return quads.map((quad: QuadInterface): QuadInterface => {
+    return deskolemizeQuad(quad);
   });
 }
 
@@ -197,10 +224,31 @@ function normalizeToQuadsOptions(options: ToQuadsOptionsType | undefined): Norma
 /**
  * JsonTology — unified type system, validation, materialization, and ontology.
  *
+ * Declare your schemas once and get types, runtime validation, materialization,
+ * and a data ontology for free — all from a single registry.
+ *
+ * @remarks
+ * The facade centralises schema registration, validation (`validate`, `is`, `instantiate`),
+ * RDF projection (`toQuads`, `fromQuads`, `toTbox`, `toShacl`), and ontology export
+ * (`ontology()`). All operations share the same canonical schema graph so the
+ * TBox, validation, and ABox projection are always consistent.
+ *
+ * @example
+ * ```ts
+ * const jt = JsonTology.create({ baseIRI: 'https://myapp.io', schemas: [UserSchema] as const });
+ * type User = InferType<typeof UserSchema>;
+ * const user = jt.instantiate(UserSchema.$id, data);
+ * ```
+ *
  * @typeParam TMap — accumulated schema type map. Built automatically via
  * `create()` or chained `set()` calls.
+ *
+ * @category Core
+ * @since 0.1.0
+ * @see {@link SchemaRegistryInterface}
+ * @group Core
  */
-export class JsonTology<TMap = Record<never, never>> {
+export class JsonTology<TMap = Record<never, never>, TRefs = Record<never, never>> {
   /**
    * Narrows a JsonSchemaDocumentType to a named-schema object.
    * Throws SchemaError if the value is a boolean schema or lacks `$id`.
@@ -214,6 +262,72 @@ export class JsonTology<TMap = Record<never, never>> {
   }
 
   /**
+   * Assign non-boolean fields that are defined in the options onto an existing partial.
+   */
+  private static assignDefinedRegistryFields(
+    partial: Partial<RegistryOptionsInterface>,
+    options: JsonTologyOptionsInterface
+  ): void {
+    if (options.prefixes !== undefined) {
+      partial.prefixes = options.prefixes;
+    }
+    if (options.logger !== undefined) {
+      partial.logger = options.logger;
+    }
+    if (options.keywords !== undefined) {
+      partial.keywords = options.keywords;
+    }
+    if (options.vocabularies !== undefined) {
+      partial.vocabularies = options.vocabularies;
+    }
+    if (options.maxSchemaDepth !== undefined) {
+      partial.maxSchemaDepth = options.maxSchemaDepth;
+    }
+    if (options.invariants !== undefined) {
+      partial.invariants = options.invariants;
+    }
+  }
+
+  /**
+   * Build a `FormatRegistry` with the built-in formats plus any user-supplied validators.
+   */
+  private static buildFormatRegistry(formats: JsonTologyOptionsInterface['formats']): FormatRegistry {
+    const registry = FormatRegistry.builtin();
+
+    if (formats !== undefined) {
+      for (const [
+        name,
+        validator
+      ] of Object.entries(formats)) {
+        registry.set(name, validator);
+      }
+    }
+
+    return registry;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Static counterparts — ephemeral registry, one-shot execution
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Build the `RegistryOptionsInterface` object from the public `JsonTologyOptionsInterface`.
+   * Only defined options are forwarded; undefined values are omitted so `SchemaRegistry`
+   * defaults are applied naturally.
+   */
+  private static buildRegistryOptions(
+    options: JsonTologyOptionsInterface,
+    formatRegistry: FormatRegistry
+  ): RegistryOptionsInterface {
+    const base: RegistryOptionsInterface = { 'formatRegistry': formatRegistry };
+    const partial = JsonTology.pickDefinedRegistryFlags(options);
+
+    JsonTology.assignDefinedRegistryFields(partial, options);
+
+    return Object.assign(base, partial);
+  }
+
+  /**
    * Creates a {@link JsonTology} instance with constructor-time schemas and full
    * type inference.
    *
@@ -223,7 +337,7 @@ export class JsonTology<TMap = Record<never, never>> {
    *
    * @param options - `baseIRI`, optional `schemas`, optional `prefetched`, prefixes, dialect.
    */
-  public static create<const TSchemas extends ReadonlyArray<{ readonly '$id': string; }>>(options: JsonTologyOptionsInterface<TSchemas> & { 'schemas'?: UniqueSchemaIdsType<TSchemas> }): JsonTology<SchemaMapFromTupleType<TSchemas>> {
+  public static create<const TSchemas extends ReadonlyArray<{ readonly '$id': string; }>>(options: JsonTologyOptionsInterface<TSchemas> & { 'schemas'?: UniqueSchemaIdsType<TSchemas> }): JsonTology<SchemaMapFromTupleType<TSchemas>, SchemaReferencesMapType<TSchemas>> {
     const jt = new JsonTology(options);
 
     if (options.schemas) {
@@ -243,7 +357,13 @@ export class JsonTology<TMap = Record<never, never>> {
       }
     }
 
-    return jt as unknown as JsonTology<SchemaMapFromTupleType<TSchemas>>;
+    // The instance carries TWO type maps: TMap (the registered schemas' inferred
+    // OUTPUT types, for instantiate/set/dump) and TRefs (the registered schemas'
+    // RAW shapes keyed by $id, for $ref resolution inside addTransform's decode
+    // input). SchemaMapFromTupleType already pre-inferred TMap; SchemaReferences-
+    // MapType keeps the raw schemas so InferSchemaType can resolve a wire schema's
+    // cross-$ref leaves to readable types with no caller-supplied references.
+    return jt as unknown as JsonTology<SchemaMapFromTupleType<TSchemas>, SchemaReferencesMapType<TSchemas>>;
   }
 
   /**
@@ -263,10 +383,6 @@ export class JsonTology<TMap = Record<never, never>> {
 
     return jt.dump(schema as JsonSchemaDocumentType & { readonly '$id': string }, value, options);
   }
-
-  // ---------------------------------------------------------------------------
-  // Static counterparts — ephemeral registry, one-shot execution
-  // ---------------------------------------------------------------------------
 
   /**
    * DumpJson — ephemeral registry variant. No instance required.
@@ -404,6 +520,34 @@ export class JsonTology<TMap = Record<never, never>> {
   }
 
   /**
+   * Pick defined boolean flags from the options into a `Partial<RegistryOptionsInterface>`.
+   */
+  private static pickDefinedRegistryFlags(options: JsonTologyOptionsInterface): Partial<RegistryOptionsInterface> {
+    const partial: Partial<RegistryOptionsInterface> = {};
+
+    if (options.enableTypeCast !== undefined) {
+      partial.enableTypeCast = options.enableTypeCast;
+    }
+    if (options.enableStrictTypes !== undefined) {
+      partial.enableStrictTypes = options.enableStrictTypes;
+    }
+    if (options.enableDefaults !== undefined) {
+      partial.enableDefaults = options.enableDefaults;
+    }
+    if (options.enableInlineWarnings !== undefined) {
+      partial.enableInlineWarnings = options.enableInlineWarnings;
+    }
+    if (options.enableDuplicateDetection !== undefined) {
+      partial.enableDuplicateDetection = options.enableDuplicateDetection;
+    }
+    if (options.enableStrictGraph !== undefined) {
+      partial.enableStrictGraph = options.enableStrictGraph;
+    }
+
+    return partial;
+  }
+
+  /**
    * Walks transitive `$ref` IRIs via the loader and returns a {@link SnapshotInterface}.
    *
    * Seeds the walk from `rootIds` (loaded directly) and `schemas` (followed for their
@@ -492,7 +636,6 @@ export class JsonTology<TMap = Record<never, never>> {
 
     return jt.toSchema(schema);
   }
-
   /**
    * ToShacl — ephemeral registry variant. No instance required.
    *
@@ -513,7 +656,6 @@ export class JsonTology<TMap = Record<never, never>> {
 
     return jt.toShacl();
   }
-
   /**
    * ToTbox — ephemeral registry variant. No instance required.
    *
@@ -534,7 +676,6 @@ export class JsonTology<TMap = Record<never, never>> {
 
     return jt.toTbox();
   }
-
   /**
    * Validate — ephemeral registry variant. No instance required.
    *
@@ -547,10 +688,35 @@ export class JsonTology<TMap = Record<never, never>> {
 
     return jt.validate(schema, data);
   }
+  /**
+   * Wire pre-registered computed field functions from the options into the registry's
+   * computed store. Expands CURIE schema IDs using the provided `curie` instance.
+   */
+  private static wireComputedFields(
+    registry: SchemaRegistryInterface,
+    curie: CurieInterface,
+    computeds: JsonTologyOptionsInterface['computeds']
+  ): void {
+    if (computeds === undefined) {
+      return;
+    }
 
+    for (const [
+      schemaId,
+      propMap
+    ] of Object.entries(computeds)) {
+      for (const [
+        propName,
+        fn
+      ] of Object.entries(propMap)) {
+        registry.computedStore.add(curie.expand(schemaId), propName, fn);
+      }
+    }
+  }
   private readonly baseIRI: string;
   private readonly curie: CurieInterface;
   private readonly defaultDeskolemize: boolean;
+
   private readonly defaultGraphIRI: string | undefined;
   private readonly defaultIriForRaw: SkolemizeFnType | string | undefined;
   private readonly enableCanonicalPredicates: boolean | undefined;
@@ -565,16 +731,20 @@ export class JsonTology<TMap = Record<never, never>> {
    * `JsonTology` facade.
    */
   public readonly materializer: MaterializerInterface;
-
   private ontologyCache: null | {
     'builder': OntologyBuilder;
     'revision': number;
   } = null;
   private readonly ontologySerializer: GraphOntologySerializer;
+
   private readonly predicateFor: PredicateForType | undefined;
+
   private readonly predicateResolver: PredicateResolverFnType;
+
   private readonly prefixes: Record<string, string>;
+
   private readonly refLoader: RefResolutionLoader;
+
   /**
    * Direct access to the underlying schema registry for advanced use cases.
    *
@@ -624,70 +794,25 @@ export class JsonTology<TMap = Record<never, never>> {
       ...options.prefixes
     };
 
-    const formatRegistry = FormatRegistry.builtin();
-
-    if (options.formats) {
-      for (const [
-        name,
-        validator
-      ] of Object.entries(options.formats)) {
-        formatRegistry.set(name, validator);
-      }
-    }
-
-    const registryOptions: RegistryOptionsInterface = {
-      'formatRegistry': formatRegistry,
-      ...(options.prefixes === undefined ? {} : { 'prefixes': options.prefixes }),
-      ...(options.logger === undefined ? {} : { 'logger': options.logger }),
-      ...(options.enableTypeCast === undefined ? {} : { 'enableTypeCast': options.enableTypeCast }),
-      ...(options.keywords === undefined ? {} : { 'keywords': options.keywords }),
-      ...(options.enableStrictTypes === undefined ? {} : { 'enableStrictTypes': options.enableStrictTypes }),
-      ...(options.enableDefaults === undefined ? {} : { 'enableDefaults': options.enableDefaults }),
-      ...(options.enableInlineWarnings === undefined ? {} : { 'enableInlineWarnings': options.enableInlineWarnings }),
-      ...(options.enableDuplicateDetection === undefined ? {} : { 'enableDuplicateDetection': options.enableDuplicateDetection }),
-      ...(options.enableStrictGraph === undefined ? {} : { 'enableStrictGraph': options.enableStrictGraph }),
-      ...(options.vocabularies === undefined ? {} : { 'vocabularies': options.vocabularies }),
-      ...(options.maxSchemaDepth === undefined ? {} : { 'maxSchemaDepth': options.maxSchemaDepth }),
-      ...(options.invariants === undefined ? {} : { 'invariants': options.invariants })
-    };
+    const formatRegistry = JsonTology.buildFormatRegistry(options.formats);
+    const registryOptions = JsonTology.buildRegistryOptions(options, formatRegistry);
 
     this.registry = new SchemaRegistry(registryOptions);
     this.refLoader = new RefResolutionLoader(this.registry);
 
-    // Wire pre-registered compute functions
-    if (options.computeds) {
-      for (const [
-        schemaId,
-        propMap
-      ] of Object.entries(options.computeds)) {
-        for (const [
-          propName,
-          fn
-        ] of Object.entries(propMap)) {
-          this.registry.computedStore.add(schemaId, propName, fn);
-        }
-      }
-    }
+    // Curie with merged prefixes from registry. Assigned before any CURIE
+    // expansion below (computed-field wiring) so every site uses this.curie.
+    this.curie = this.registry.curie ?? new Curie(this.prefixes);
+
+    JsonTology.wireComputedFields(this.registry, this.curie, options.computeds);
 
     // Cast needed: Value is unparameterized at runtime; aligns with compile-time generic TMap
     this.value = new Value(this.registry) as unknown as ValueInterface<TMap>;
     this.materializer = new Materializer(this.registry, options.materializer);
 
-    // Create Curie with merged prefixes from registry
-    this.curie = this.registry.curie ?? new Curie(this.prefixes);
-    const vocabularies = options.vocabularies ?? [];
-
     this.graphSchemaSerializer = new GraphSchemaSerializer();
-    this.ontologySerializer = new GraphOntologySerializer({
-      'curie': this.curie,
-      'predicateResolver': this.predicateResolver,
-      vocabularies
-    });
-    this.shaclSerializer = new GraphShaclSerializer({
-      'curie': this.curie,
-      'predicateResolver': this.predicateResolver,
-      vocabularies
-    });
+    this.ontologySerializer = this.buildOntologySerializer(options.vocabularies);
+    this.shaclSerializer = this.buildShaclSerializer(options.vocabularies);
   }
 
   /**
@@ -710,6 +835,109 @@ export class JsonTology<TMap = Record<never, never>> {
     // Identity associations are derived from the registry schemas, not the flat
     // TBox: a property declared `inverseFunctional` is the identity of the class
     // that declares it (the flat predicate's union domain cannot say which one).
+    const {
+      identities, schemaById
+    } = this.buildAboxIdentities();
+
+    return new AboxGraph(
+      quads,
+      tboxQuads,
+      identities,
+      (classId: string, subjectQuads: QuadInterface[]): unknown[] => {
+        return this.fromQuads(classId as keyof TMap & string, subjectQuads);
+      },
+      this.predicateResolver,
+      (classIri: string): unknown => {
+        return schemaById.get(classIri) ?? null;
+      }
+    );
+  }
+
+  /**
+   * Registers a compute function for a property marked `jt:computed: true`.
+   *
+   * @param schemaId - The `$id` of the schema owning the computed property.
+   * @param name - The property name.
+   * @param fn - Function receiving the instantiated/materialized object and returning the computed value.
+   */
+  public addComputed<
+    K extends keyof TMap & string,
+    const TName extends string,
+    TValue
+  >(
+    schemaId: K,
+    name: TName,
+    fn: (data: TMap[K]) => TValue
+  ): JsonTology<Readonly<Record<K, Readonly<Record<TName, TValue>> & TMap[K]>> & TMap, TRefs>;
+  public addComputed(
+    schemaId: keyof TMap & string,
+    name: string,
+    fn: (data: never) => unknown
+  ): JsonTology<TMap, TRefs> {
+    // interop: the public overload types `fn` over the schema's inferred type, but
+    // the runtime computed store is type-erased over `Record<string, unknown>`
+    // (it invokes `fn` with the materialized object). Bridging the typed public
+    // surface to the erased store is the one boundary that needs an assertion.
+    this.registry.computedStore.add(this.curie.expand(schemaId), name, fn as ComputedFnType);
+
+    // The typed overload augments `TMap[K]` with the computed field so a
+    // subsequent `instantiate(schemaId, …)` returns it. The runtime instance is
+    // unchanged (computed values are produced at instantiate time), so the impl
+    // returns `this` typed as the base map — same pattern as `set()`.
+    return this;
+  }
+
+  /**
+   * Registers a cross-field invariant for a schema.
+   *
+   * @param schemaId - The `$id` of the target schema. Must be a registered key
+   *   of the typed schema map; unregistered IRIs are rejected at compile time.
+   * @param invariant - The invariant to add. Runs after structural validation succeeds.
+   */
+  public addInvariant<T extends object>(schemaId: keyof TMap & string, invariant: InvariantInterface<T>): void {
+    this.registry.addInvariant(schemaId, invariant as InvariantInterface);
+  }
+  /**
+   * Attach a decode/encode pair to a registered schema. Registry-aware
+   * variant of {@link Transform.create}: the lambda parameter types
+   * resolve cross-registry `$ref`s through this instance's schema map,
+   * so a schema like `{ $ref: 'urn:bookstore:Customer' }` infers as the
+   * Customer entity rather than as `unknown`.
+   *
+   * @param schema - A registered schema with `$id`. Any `$ref` in the
+   *   schema or its sub-properties is resolved against `TMap`.
+   * @param fns - `decode` runs after validation succeeds; `encode`
+   *   round-trips the decoded value back to the wire shape.
+   */
+  public addTransform<
+    TSchema extends JsonSchemaDocumentType & { readonly '$id': string; },
+    TOut extends NonNullable<unknown>
+  >(
+    schema: TSchema,
+    fns: {
+      'decode': (input: InferSchemaType<TSchema, TSchema, TRefs>) => TOut;
+      'encode': (output: TOut) => InferSchemaType<TSchema, TSchema, TRefs>;
+    }
+  ): TransformedType<TSchema, TOut> {
+    Transform.create<TSchema, TOut>(
+      schema,
+      fns as unknown as {
+        'decode': (input: InferSchemaType<TSchema>) => TOut;
+        'encode': (output: TOut) => LooseInputType<InferSchemaType<TSchema>>;
+      }
+    );
+
+    return schema as unknown as TransformedType<TSchema, TOut>;
+  }
+  /**
+   * Build the ABox identity descriptor list and schema-by-IRI index for `aboxGraph`.
+   * Walks the registry to locate `inverseFunctional` property declarations
+   * and collects them as identity predicates.
+   */
+  private buildAboxIdentities(): {
+    'identities': AboxIdentityDescriptorType[];
+    'schemaById': Map<string, unknown>;
+  } {
     const identities: AboxIdentityDescriptorType[] = [];
     const schemaById = new Map<string, unknown>();
 
@@ -744,47 +972,10 @@ export class JsonTology<TMap = Record<never, never>> {
       }
     }
 
-    return new AboxGraph(
-      quads,
-      tboxQuads,
+    return {
       identities,
-      (classId, subjectQuads) => {
-        return this.fromQuads(classId as keyof TMap & string, subjectQuads);
-      },
-      this.predicateResolver,
-      (classIri) => {
-        return schemaById.get(classIri) ?? null;
-      }
-    );
-  }
-  /**
-   * Registers a compute function for a property marked `jt:computed: true`.
-   *
-   * @param schemaId - The `$id` of the schema owning the computed property.
-   * @param name - The property name.
-   * @param fn - Function receiving the instantiated/materialized object and returning the computed value.
-   */
-  public addComputed<
-    K extends keyof TMap & string,
-    const TName extends string,
-    TValue
-  >(
-    schemaId: K,
-    name: TName,
-    fn: (data: TMap[K]) => TValue
-  ): JsonTology<Readonly<Record<K, Readonly<Record<TName, TValue>> & TMap[K]>> & TMap>;
-  public addComputed(schemaId: keyof TMap & string, name: string, fn: (data: never) => unknown): JsonTology<TMap> {
-    // interop: the public overload types `fn` over the schema's inferred type, but
-    // the runtime computed store is type-erased over `Record<string, unknown>`
-    // (it invokes `fn` with the materialized object). Bridging the typed public
-    // surface to the erased store is the one boundary that needs an assertion.
-    this.registry.computedStore.add(schemaId, name, fn as ComputedFnType);
-
-    // The typed overload augments `TMap[K]` with the computed field so a
-    // subsequent `instantiate(schemaId, …)` returns it. The runtime instance is
-    // unchanged (computed values are produced at instantiate time), so the impl
-    // returns `this` typed as the base map — same pattern as `set()`.
-    return this;
+      schemaById
+    };
   }
 
   // ---------------------------------------------------------------------------
@@ -792,46 +983,24 @@ export class JsonTology<TMap = Record<never, never>> {
   // ---------------------------------------------------------------------------
 
   /**
-   * Registers a cross-field invariant for a schema.
-   *
-   * @param schemaId - The `$id` of the target schema. Must be a registered key
-   *   of the typed schema map; unregistered IRIs are rejected at compile time.
-   * @param invariant - The invariant to add. Runs after structural validation succeeds.
+   * Build the OWL TBox serializer with the current curie and predicateResolver.
    */
-  public addInvariant<T>(schemaId: keyof TMap & string, invariant: InvariantInterface<T>): void {
-    this.registry.addInvariant(schemaId, invariant as InvariantInterface);
+  private buildOntologySerializer(vocabularies: JsonTologyOptionsInterface['vocabularies']): GraphOntologySerializer {
+    return new GraphOntologySerializer({
+      'curie': this.curie,
+      'predicateResolver': this.predicateResolver,
+      'vocabularies': vocabularies ?? []
+    });
   }
   /**
-   * Attach a decode/encode pair to a registered schema. Registry-aware
-   * variant of {@link Transform.create}: the lambda parameter types
-   * resolve cross-registry `$ref`s through this instance's schema map,
-   * so a schema like `{ $ref: 'urn:bookstore:Customer' }` infers as the
-   * Customer entity rather than as `unknown`.
-   *
-   * @param schema - A registered schema with `$id`. Any `$ref` in the
-   *   schema or its sub-properties is resolved against `TMap`.
-   * @param fns - `decode` runs after validation succeeds; `encode`
-   *   round-trips the decoded value back to the wire shape.
+   * Build the SHACL serializer with the current curie and predicateResolver.
    */
-  public addTransform<
-    TSchema extends JsonSchemaDocumentType & { readonly '$id': string; },
-    TOut
-  >(
-    schema: TSchema,
-    fns: {
-      'decode': (input: InferSchemaType<TSchema, TSchema, TMap>) => TOut;
-      'encode': (output: TOut) => InferSchemaType<TSchema, TSchema, TMap>;
-    }
-  ): TransformedType<TSchema, TOut> {
-    Transform.create<TSchema, TOut>(
-      schema,
-      fns as unknown as {
-        'decode': (input: InferSchemaType<TSchema>) => TOut;
-        'encode': (output: TOut) => LooseInputType<InferSchemaType<TSchema>>;
-      }
-    );
-
-    return schema as unknown as TransformedType<TSchema, TOut>;
+  private buildShaclSerializer(vocabularies: JsonTologyOptionsInterface['vocabularies']): GraphShaclSerializer {
+    return new GraphShaclSerializer({
+      'curie': this.curie,
+      'predicateResolver': this.predicateResolver,
+      'vocabularies': vocabularies ?? []
+    });
   }
   /**
    * Serialize a value to its wire representation.
@@ -1015,7 +1184,7 @@ export class JsonTology<TMap = Record<never, never>> {
       'predicateResolver': this.predicateResolver
     });
 
-    return raw.map((instance) => {
+    return raw.map((instance: unknown): unknown => {
       return this.registry.instantiate(schemaId, instance);
     });
   }
@@ -1227,7 +1396,7 @@ export class JsonTology<TMap = Record<never, never>> {
    * @param name - The property name to deregister.
    */
   public removeComputed(schemaId: string, name: string): void {
-    this.registry.computedStore.remove(schemaId, name);
+    this.registry.computedStore.remove(this.curie.expand(schemaId), name);
   }
   /**
    * Removes a previously registered invariant by name.
@@ -1258,7 +1427,10 @@ export class JsonTology<TMap = Record<never, never>> {
    * @param instanceIriB - Second individual IRI
    */
   public sameAs(instanceIriA: string, instanceIriB: string): void {
-    this.registry.sameAsStore.add(instanceIriA, instanceIriB);
+    // ABox individual IRIs may be authored as CURIEs; expand to canonical so the
+    // emitted owl:sameAs quads carry absolute IRI terms and self-pair dedup
+    // compares canonical forms.
+    this.registry.sameAsStore.add(this.curie.expand(instanceIriA), this.curie.expand(instanceIriB));
   }
 
   /**
@@ -1274,16 +1446,16 @@ export class JsonTology<TMap = Record<never, never>> {
   public set<const T extends { readonly '$id': string; }>(
     schema: T,
     iri?: string
-  ): JsonTology<SchemaEntryType<T> & TMap>;
+  ): JsonTology<SchemaEntryType<T> & TMap, SchemaReferencesMapType<readonly [T]> & TRefs>;
   public set<const T extends ReadonlyArray<{ readonly '$id': string; }>>(
     entries: T & UniqueSchemaIdsType<T>
-  ): JsonTology<SchemaMapFromTupleType<T> & TMap>;
+  ): JsonTology<SchemaMapFromTupleType<T> & TMap, SchemaReferencesMapType<T> & TRefs>;
   public set(
     first:
       | ReadonlyArray<readonly [{ readonly '$id': string; }, string] | { readonly '$id': string; }>
       | { readonly '$id': string; },
     second?: string
-  ): JsonTology<TMap> {
+  ): JsonTology<TMap, TRefs> {
     if (Array.isArray(first)) {
       this.registry.set(first as ReadonlyArray<Record<string, unknown>>);
     } else if (second === undefined) {

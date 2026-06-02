@@ -20,6 +20,7 @@ import type {
   DuplicateReportEntryType, SchemaEntryStoreInterface
 } from '../../interfaces/SchemaEntryStore.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { StructureWarningInterface } from '../../interfaces/SchemaGraph.js';
 import type { SchemaRefWalkerInterface } from '../../interfaces/SchemaRefWalker.js';
 import type { SchemaRegistryEntryInterface } from '../../interfaces/SchemaRegistryEntry.js';
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
@@ -79,6 +80,10 @@ const CHARACTERISTIC_TO_KEY: Readonly<Partial<Record<string, string>>> = Object.
   'Transitive': 'transitive'
 });
 
+function isStringItem(value: unknown): boolean {
+  return typeof value === 'string';
+}
+
 function detectEmbeddedIds(node: unknown, isRoot: boolean): boolean {
   if (Array.isArray(node)) {
     for (const item of node) {
@@ -111,12 +116,74 @@ function detectEmbeddedIds(node: unknown, isRoot: boolean): boolean {
 export type { DuplicateReportEntryType } from '../../interfaces/SchemaEntryStore.js';
 
 
+/**
+ * Central registry for JSON Schemas used by validation, instantiation, materialization,
+ * and ontology generation.
+ *
+ * Schemas are registered by their canonical `$id` IRI. Registration normalizes CURIEs
+ * to absolute IRIs and validates structural integrity (duplicate detection, anchor uniqueness,
+ * property characteristic conflicts). Compiled validators are cached per entry and invalidated
+ * on re-registration.
+ *
+ * @remarks
+ * The registry is the single source of truth for the canonical schema graph. All read paths
+ * (validate, instantiate, materialize, graph) resolve through the same store, ensuring
+ * consistent behavior across the lifecycle.
+ *
+ * @example
+ * ```ts
+ * const registry = new SchemaRegistry({ enableStrictGraph: true });
+ * registry.set(UserSchema);
+ * const errors = registry.validate(UserSchema.$id, data);
+ * ```
+ *
+ * @category Registry
+ * @since 0.1.0
+ * @see {@link SchemaRegistryInterface}
+ * @group Core
+ */
 export class SchemaRegistry implements SchemaRegistryInterface {
+  /**
+   * Resolve registry option booleans to their effective values.
+   * Centralises the defaults so the constructor complexity is reduced.
+   */
+  private static resolveOptions(options: RegistryOptionsInterface | undefined): {
+    'castTypes': boolean;
+    'enableDuplicateDetection': boolean;
+    'enableInlineWarnings': boolean;
+    'enableStrictGraph': boolean;
+    'enableStrictTypes': boolean;
+    'instantiateOptions': Readonly<Record<string, boolean>>;
+    'maxSchemaDepth': number | undefined;
+    'vocabularies': readonly VocabularyPluginInterface[];
+  } {
+    const castTypes = options?.enableTypeCast ?? false;
+    const enableStrictGraph = options?.enableStrictGraph ?? true;
+    const vocabularies = options?.vocabularies ?? [];
+    const enableInlineWarnings = enableStrictGraph || (options?.enableInlineWarnings ?? true);
+    const enableDuplicateDetection = enableStrictGraph || (options?.enableDuplicateDetection ?? true);
+
+    return {
+      castTypes,
+      enableDuplicateDetection,
+      enableInlineWarnings,
+      enableStrictGraph,
+      'enableStrictTypes': options?.enableStrictTypes ?? false,
+      'instantiateOptions': Object.freeze({
+        'applyDefaults': options?.enableDefaults ?? true,
+        castTypes,
+        'collectErrors': true,
+        'removeAdditionalProperties': true
+      }),
+      'maxSchemaDepth': options?.maxSchemaDepth,
+      vocabularies
+    };
+  }
   public readonly castTypes: boolean;
   private readonly compiler: SchemaCompilerInterface;
   public readonly computedStore: ComputedStore;
-  public readonly curie: CurieInterface | undefined;
 
+  public readonly curie: CurieInterface | undefined;
   private readonly enableDuplicateDetection: boolean;
   private readonly enableInlineWarnings: boolean;
   private readonly enableStrictGraph: boolean;
@@ -131,37 +198,24 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   private readonly refs: SchemaRefWalkerInterface;
   public readonly sameAsStore: SameAsStore;
   private readonly store: SchemaEntryStoreInterface;
+
   private readonly vocabularies: readonly VocabularyPluginInterface[];
 
   public constructor(options?: RegistryOptionsInterface) {
     this.logger = options?.logger ?? SILENT_LOGGER;
-    this.castTypes = options?.enableTypeCast ?? false;
-    this.instantiateOptions = Object.freeze({
-      'applyDefaults': options?.enableDefaults ?? true,
-      'castTypes': this.castTypes,
-      'collectErrors': true,
-      'removeAdditionalProperties': true
-    });
-    this.maxSchemaDepth = options?.maxSchemaDepth;
-    this.enableStrictTypes = options?.enableStrictTypes ?? false;
-    // Strict-by-default: every graph-integrity gate is on unless the consumer
-    // explicitly opts out. Inline primitive constraints and structural
-    // duplicates of an existing registered schema are both registration
-    // errors. A schema that legitimately needs the historical permissive
-    // behaviour passes the relevant flag as `false`.
-    this.enableStrictGraph = options?.enableStrictGraph ?? true;
-    this.enableInlineWarnings = this.enableStrictGraph || (options?.enableInlineWarnings ?? true);
-    this.enableDuplicateDetection = this.enableStrictGraph || (options?.enableDuplicateDetection ?? true);
-    this.vocabularies = options?.vocabularies ?? [];
 
-    const mergedPrefixes: Record<string, string> = { ...STANDARD_PREFIXES };
+    const config = SchemaRegistry.resolveOptions(options);
 
-    for (const plugin of this.vocabularies) {
-      Object.assign(mergedPrefixes, plugin.prefixes);
-    }
-    if (options?.prefixes) {
-      Object.assign(mergedPrefixes, options.prefixes);
-    }
+    this.castTypes = config.castTypes;
+    this.enableStrictTypes = config.enableStrictTypes;
+    this.enableStrictGraph = config.enableStrictGraph;
+    this.enableInlineWarnings = config.enableInlineWarnings;
+    this.enableDuplicateDetection = config.enableDuplicateDetection;
+    this.vocabularies = config.vocabularies;
+    this.maxSchemaDepth = config.maxSchemaDepth;
+    this.instantiateOptions = config.instantiateOptions;
+
+    const mergedPrefixes = this.buildMergedPrefixes(this.vocabularies, options?.prefixes);
 
     this.curie = Object.keys(mergedPrefixes).length > 0 ? new Curie(mergedPrefixes) : undefined;
     this.computedStore = new ComputedStore();
@@ -176,7 +230,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     };
     this.compiler = new SchemaCompiler({
       'logger': this.logger,
-      'lookupCompiled': (schemaId) => {
+      'lookupCompiled': (schemaId: string): CompiledValidatorInterface | undefined => {
         return this.store.has(schemaId)
           ? this.compiled(schemaId)
           : undefined;
@@ -255,7 +309,95 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   }
 
   public addInvariant(schemaId: string, invariant: InvariantInterface): void {
-    this.invariants.add(schemaId, invariant);
+    this.invariants.add(this.resolve(schemaId), invariant);
+  }
+
+  /**
+   * Apply registered compute functions to a validated and coerced record.
+   * Throws `InstantiationError` if any compute function throws.
+   */
+  private applyComputedFields(
+    computedNames: string[],
+    computedMap: Record<string, (data: Record<string, unknown>) => unknown>,
+    coerced: unknown
+  ): void {
+    if (computedNames.length === 0 || !isRecord(coerced)) {
+      return;
+    }
+
+    for (const [
+      name,
+      fn
+    ] of Object.entries(computedMap)) {
+      try {
+        coerced[name] = fn(coerced);
+      } catch (error) {
+        const causeError = error instanceof Error ? error : new Error(String(error));
+
+        throw new InstantiationError(
+          new ValidationErrors([{
+            'keyword': 'COMPUTED_FN_MISSING',
+            'message': `Compute function for "${name}" threw: ${causeError.message}`,
+            'params': {},
+            'path': `/${name}`
+          }]),
+          { 'cause': causeError }
+        );
+      }
+    }
+  }
+
+  /**
+   * Deep-freeze the decoded value when the schema declares `jt:frozen: true`
+   * or `jt:config.frozen: true`. Returns the value unchanged otherwise.
+   */
+  private applyFrozenSeal(schemaObj: Record<string, unknown>, decoded: unknown): unknown {
+    const isFrozen = schemaObj['jt:frozen'] === true
+      || (isRecord(schemaObj['jt:config']) && schemaObj['jt:config'].frozen === true);
+
+    return isFrozen ? Frozen.deepFreeze(decoded) : decoded;
+  }
+
+  /**
+   * Assert that all registered invariants pass for a validated value.
+   * Throws `InstantiationError` when any invariant fails.
+   */
+  private assertInvariantsPass(schemaId: string, result: { 'errors': ValidationErrorType[];
+    'value': unknown }): void {
+    const invariantErrors = this.invariants.runAll(schemaId, result.value);
+
+    if (invariantErrors.length > 0) {
+      throw new InstantiationError(new ValidationErrors([
+        ...result.errors,
+        ...invariantErrors
+      ]));
+    }
+  }
+
+  /**
+   * Run duplicate shape detection after a schema has been added to the store.
+   * Throws `SchemaError('SCHEMA_DUPLICATE_SHAPE')` in strict mode; logs a warning otherwise.
+   */
+  private assertNoDuplicateShapes(schemaId: string): void {
+    if (!this.enableDuplicateDetection) {
+      return;
+    }
+
+    const duplicates = this.findDuplicates();
+
+    if (duplicates.length === 0) {
+      return;
+    }
+
+    const dupMsg = duplicates.map((dup: DuplicateReportEntryType): string => {
+      return `"${dup.schemaId}#${dup.pointer}" duplicates "${dup.equivalentTo}"`;
+    }).join('; ');
+    const message = `Duplicate schema shapes detected: ${dupMsg}`;
+
+    if (this.enableStrictGraph) {
+      throw new SchemaError('SCHEMA_DUPLICATE_SHAPE', message, { schemaId });
+    }
+    this.logger.warn(message);
   }
 
   /**
@@ -340,14 +482,163 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       entry.schema,
       schemaId,
       embeddedIds,
-      (id) => {
+      (id: string): boolean => {
         return this.store.has(id);
       },
-      (id) => {
+      (id: string): string => {
         return this.resolve(id);
       }
     );
     entry.refsChecked = true;
+  }
+
+  /**
+   * Check whether a schema with `schemaId` is already registered and handle
+   * the identity / conflict rules.
+   *
+   * Returns `true` when the schema is already registered with an identical hash
+   * (caller should return early). Throws `SchemaError('SCHEMA_DUPLICATE_ID')` when
+   * a schema with the same `$id` but different content is already registered.
+   */
+  private assertSchemaNotDuplicate(
+    schemaId: string,
+    canonicalSchema: Record<string, unknown>,
+    hash: string
+  ): boolean {
+    if (!this.store.has(schemaId)) {
+      return false;
+    }
+
+    const existing = this.store.get(schemaId);
+
+    if (existing === undefined) {
+      return true;
+    }
+
+    if (existing.hash !== hash) {
+      throw new SchemaError(
+        'SCHEMA_DUPLICATE_ID',
+        `Schema "${schemaId}" is already registered with different content. Unregister first or use the same schema object.`,
+        { schemaId }
+      );
+    }
+
+    const hasNewDecoder = Transform.getDecoder(canonicalSchema) !== undefined;
+    const lacksExistingDecoder = Transform.getDecoder(existing.schema) === undefined;
+
+    if (existing.schema !== canonicalSchema && hasNewDecoder && lacksExistingDecoder) {
+      existing.schema = canonicalSchema;
+    }
+    this.logger.trace(`Schema already registered (identical): ${schemaId}`);
+
+    return true;
+  }
+
+  /**
+   * Validate the graph structure for inline shape warnings.
+   * Throws `SchemaError('SCHEMA_STRUCTURE_INVALID')` in strict mode; logs a warning otherwise.
+   */
+  private assertStructureValid(graph: SchemaGraphInterface, schemaId: string): void {
+    if (!this.enableInlineWarnings) {
+      return;
+    }
+
+    const warnings = graph.validateStructure();
+
+    if (warnings.length === 0) {
+      return;
+    }
+
+    const message = `Schema "${schemaId}" contains inline shapes: ${warnings.map((warning: StructureWarningInterface): string => {
+      return warning.message;
+    }).join('; ')}`;
+
+    if (this.enableStrictGraph) {
+      throw new SchemaError('SCHEMA_STRUCTURE_INVALID', message, { schemaId });
+    }
+    this.logger.warn(message);
+  }
+
+  /**
+   * Build the merged prefix map from standard prefixes, vocabulary plugins, and user overrides.
+   * Standard prefixes are the base; vocabulary plugins extend them; explicit `prefixes` option wins last.
+   */
+  private buildMergedPrefixes(
+    vocabularies: readonly VocabularyPluginInterface[],
+    extraPrefixes: Record<string, string> | undefined
+  ): Record<string, string> {
+    const merged: Record<string, string> = { ...STANDARD_PREFIXES };
+
+    for (const plugin of vocabularies) {
+      Object.assign(merged, plugin.prefixes);
+    }
+
+    if (extraPrefixes !== undefined) {
+      Object.assign(merged, extraPrefixes);
+    }
+
+    return merged;
+  }
+
+  /**
+   * Build the `RefDecoderRegistryInterface` object used by `RefDecoder.run`.
+   * Centralises the three store-backed lookup callbacks.
+   */
+  private buildRefDecoderRegistry(): {
+    'getGraph': (target: Record<string, unknown>) => SchemaGraphInterface | undefined;
+    'getSchema': (targetId: string) => Record<string, unknown> | undefined;
+    'resolveSchemaId': (rawId: string) => string;
+  } {
+    return {
+      'getGraph': (target: Record<string, unknown>): SchemaGraphInterface | undefined => {
+        const found = this.store.get(target.$id as string);
+
+        return found === undefined ? undefined : this.graphOf(found);
+      },
+      'getSchema': (targetId: string): Record<string, unknown> | undefined => {
+        return this.store.get(targetId)?.schema;
+      },
+      'resolveSchemaId': (rawId: string): string => {
+        return this.resolve(rawId);
+      }
+    };
+  }
+
+  /**
+   * Expand the raw `$id` to its canonical absolute IRI (CURIE → absolute).
+   * Returns both the canonical schema (with the expanded `$id`) and the expanded schemaId.
+   * Throws `SchemaError('SCHEMA_DIALECT_UNSUPPORTED')` in strict-types mode when the declared
+   * `$schema` dialect does not match the required draft.
+   */
+  private canonicalizeSchema(
+    schema: Record<string, unknown>,
+    rawId: string
+  ): { 'canonicalSchema': Record<string, unknown>;
+    'schemaId': string } {
+    // CURIEs are authoring shorthand; the canonical graph is keyed by absolute
+    // IRIs. Expand the $id once at the registration boundary so the store key,
+    // the stored schema's $id, and every CURIE-expanding read path
+    // (get/has/instantiate/$ref via lookupGraph) all agree on one canonical key.
+    const schemaId = this.resolve(rawId);
+    const canonicalSchema = schemaId === rawId
+      ? schema
+      : {
+        ...schema,
+        '$id': schemaId
+      };
+
+    if (this.enableStrictTypes && typeof canonicalSchema.$schema === 'string' && !canonicalSchema.$schema.startsWith(CURRENT_DIALECT_PREFIX)) {
+      throw new SchemaError(
+        'SCHEMA_DIALECT_UNSUPPORTED',
+        `Strict mode requires draft ${DRAFT_NAME} but schema "${schemaId}" declares "${canonicalSchema.$schema}"`,
+        { schemaId }
+      );
+    }
+
+    return {
+      canonicalSchema,
+      schemaId
+    };
   }
 
   public cast(schemaOrId: (Record<string, unknown> & { '$id': string; }) | string, data: unknown, options?: { 'clone'?: boolean }): unknown {
@@ -389,58 +680,65 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     if (entry === undefined) {
       return [];
     }
-    const raw = entry.schema.disjointWith;
-    let disjointTargets: string[] = [];
 
-    if (typeof raw === 'string') {
-      disjointTargets = [raw];
-    } else if (Array.isArray(raw)) {
-      disjointTargets = raw.filter((target): target is string => {
-        return typeof target === 'string';
-      });
-    }
+    const disjointTargets = this.resolveDisjointTargets(entry.schema.disjointWith);
 
     if (disjointTargets.length === 0) {
       return [];
     }
+
     const errors: ValidationErrorType[] = [];
 
     for (const targetId of disjointTargets) {
-      const resolved = this.resolve(targetId);
-      const targetCompiled = this.compiled(resolved);
+      const disjointError = this.checkSingleDisjointTarget(schemaId, targetId, data);
 
-      if (targetCompiled === undefined) {
-        // Disjoint target not registered — surface as a structural violation
-        // rather than silently passing; the annotation references an unknown
-        // class and the contract can't be checked.
-        errors.push({
-          'keyword': 'disjointWith',
-          'message': `disjointWith target '${targetId}' is not registered; cannot enforce disjointness`,
-          'params': {
-            'disjointTarget': targetId,
-            'schemaId': schemaId
-          },
-          'path': ''
-        });
-        continue;
-      }
-
-      const targetResult = targetCompiled.validate(data, COLLECT_ERRORS_OPTIONS);
-
-      if (targetResult.errors.length === 0) {
-        errors.push({
-          'keyword': 'disjointWith',
-          'message': `value satisfies '${schemaId}' and '${targetId}', but they are declared disjoint`,
-          'params': {
-            'disjointTarget': targetId,
-            'schemaId': schemaId
-          },
-          'path': ''
-        });
+      if (disjointError !== null) {
+        errors.push(disjointError);
       }
     }
 
     return errors;
+  }
+
+  /**
+   * Check whether `data` also satisfies a single disjoint target schema.
+   * Returns a `ValidationErrorType` if the disjointness constraint is violated
+   * (or if the target is not registered), or `null` when the check passes.
+   */
+  private checkSingleDisjointTarget(schemaId: string, targetId: string, data: unknown): null | ValidationErrorType {
+    const resolved = this.resolve(targetId);
+    const targetCompiled = this.compiled(resolved);
+
+    if (targetCompiled === undefined) {
+      // Disjoint target not registered — surface as a structural violation
+      // rather than silently passing; the annotation references an unknown
+      // class and the contract can't be checked.
+      return {
+        'keyword': 'disjointWith',
+        'message': `disjointWith target '${targetId}' is not registered; cannot enforce disjointness`,
+        'params': {
+          'disjointTarget': targetId,
+          'schemaId': schemaId
+        },
+        'path': ''
+      };
+    }
+
+    const targetResult = targetCompiled.validate(data, COLLECT_ERRORS_OPTIONS);
+
+    if (targetResult.errors.length === 0) {
+      return {
+        'keyword': 'disjointWith',
+        'message': `value satisfies '${schemaId}' and '${targetId}', but they are declared disjoint`,
+        'params': {
+          'disjointTarget': targetId,
+          'schemaId': schemaId
+        },
+        'path': ''
+      };
+    }
+
+    return null;
   }
 
   public clean(schemaOrId: (Record<string, unknown> & { '$id': string; }) | string, data: unknown): unknown {
@@ -487,6 +785,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
   }
 
+
   /**
    * Collect all non-fragment cross-schema $ref IRIs reachable from the given schema
    * that are not yet registered. Used by the loader walker in JsonTology.resolveAllRefs.
@@ -494,10 +793,10 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   public collectUnresolvedRefIris(schema: Record<string, unknown>): ReadonlySet<string> {
     return this.refs.collectUnresolved(
       schema,
-      (id) => {
+      (id: string): boolean => {
         return this.store.has(id);
       },
-      (id) => {
+      (id: string): string => {
         return this.resolve(id);
       }
     );
@@ -562,12 +861,43 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return materializer.createDefault(entry.schema as Record<string, unknown> & { '$id': string });
   }
 
+  /**
+   * Run the optional schema transform decoder on a ref-decoded value.
+   * Throws `DecodeError` when the decoder throws an unexpected error,
+   * or re-throws `TransformError` when the decoder surfaces a known failure.
+   */
+  private decodeWithTransform(schemaObj: Record<string, unknown>, value: unknown, schemaId: string): unknown {
+    const decoder = Transform.getDecoder(schemaObj);
+
+    if (decoder === undefined) {
+      return value;
+    }
+
+    try {
+      return decoder.decode(value);
+    } catch (error) {
+      if (error instanceof TransformError) {
+        throw error;
+      }
+      const causeError = error instanceof Error ? error : new Error(String(error));
+
+      throw new DecodeError(
+        `transform decoder failed at root: ${causeError.message}`,
+        {
+          'cause': causeError,
+          'path': '',
+          schemaId
+        }
+      );
+    }
+  }
+
   public delete(schemaId: string): boolean {
     return this.store.delete(this.resolve(schemaId));
   }
 
   public engine(schema: Record<string, unknown>): GraphEngineInterface {
-    const schemaId = schema.$id as string;
+    const schemaId = this.resolve(schema.$id as string);
     const entry = this.store.get(schemaId);
 
     if (entry === undefined) {
@@ -582,7 +912,17 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       const engineOptions: GraphEngineOptionsInterface = {
         'lookupGraph': this.lookupGraphFn,
         'lookupSchema': (lookupSchemaId: string): Record<string, unknown> | undefined => {
-          return this.store.get(lookupSchemaId)?.schema ?? embeddedSchemas.get(lookupSchemaId);
+          // Resolve CURIE refs against the canonical store key. The embedded
+          // fallback is tried under both the raw and resolved id so a $ref to an
+          // embedded $id authored as either form still resolves. This mirrors
+          // lookupGraph (registry.graph) so direct engine execution
+          // (materialize/createDefault) resolves CURIE $refs the same way the
+          // compiled validate/instantiate path already does.
+          const resolvedId = this.resolve(lookupSchemaId);
+
+          return this.store.get(resolvedId)?.schema
+            ?? embeddedSchemas.get(lookupSchemaId)
+            ?? embeddedSchemas.get(resolvedId);
         }
       };
 
@@ -601,7 +941,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     return entry.engine;
   }
-
 
   public *entries(): IterableIterator<[string, Record<string, unknown>]> {
     for (const [
@@ -642,10 +981,8 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return this.graphOf(entry);
   }
 
-  public graphEntry(schemaId: string): undefined | {
-    'graph': SchemaGraphInterface;
-    'schema': Record<string, unknown>;
-  } {
+  public graphEntry(schemaId: string): undefined | { readonly 'graph': SchemaGraphInterface;
+    readonly 'schema': Record<string, unknown> } {
     const entry = this.store.get(this.resolve(schemaId));
 
     if (entry === undefined) {
@@ -684,7 +1021,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       'enableDefaults'?: boolean;
     }
   ): unknown {
-    const schemaId = typeof schema === 'string' ? this.resolve(schema) : schema.$id;
+    const schemaId = this.resolve(typeof schema === 'string' ? schema : schema.$id);
     const entry = this.store.get(schemaId);
 
     if (entry === undefined) {
@@ -698,32 +1035,10 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     const computedMap = entry.hasComputedFields ? this.computedStore.getMap(schemaId) : {};
     const computedNames = Object.keys(computedMap);
 
-    if (computedNames.length > 0 && isRecord(data)) {
-      const forbidden = computedNames.filter((name) => {
-        return name in (data);
-      });
-
-      if (forbidden.length > 0) {
-        const errors = forbidden.map((name) => {
-          return {
-            'keyword': 'COMPUTED_INPUT_FORBIDDEN',
-            'message': `"${name}" is a computed field and must not be supplied in input`,
-            'params': {},
-            'path': `/${name}`
-          };
-        });
-
-        throw new InstantiationError(new ValidationErrors(errors));
-      }
-    }
+    this.validateComputedInput(computedNames, data);
 
     const compiled = this.compiledFromEntry(entry);
-    const resolvedOptions = callOptions?.enableDefaults === undefined
-      ? this.instantiateOptions
-      : Resolver.merge(
-        this.instantiateOptions,
-        { 'applyDefaults': callOptions.enableDefaults }
-      );
+    const resolvedOptions = this.resolveInstantiateOptions(callOptions?.enableDefaults);
     const input = callOptions?.clone === false ? data : structuredClone(data);
     const result = compiled.validate(input, resolvedOptions);
 
@@ -731,90 +1046,24 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       throw new InstantiationError(new ValidationErrors(result.errors));
     }
 
-    const invariantErrors = this.invariants.runAll(schemaId, result.value);
-
-    if (invariantErrors.length > 0) {
-      throw new InstantiationError(new ValidationErrors([
-        ...result.errors,
-        ...invariantErrors
-      ]));
-    }
+    this.assertInvariantsPass(schemaId, result);
 
     const coerced = result.value;
 
-    if (computedNames.length > 0 && isRecord(coerced)) {
-      for (const [
-        name,
-        fn
-      ] of Object.entries(computedMap)) {
-        try {
-          coerced[name] = fn(coerced);
-        } catch (error) {
-          const causeError = error instanceof Error ? error : new Error(String(error));
-
-          throw new InstantiationError(
-            new ValidationErrors([{
-              'keyword': 'COMPUTED_FN_MISSING',
-              'message': `Compute function for "${name}" threw: ${causeError.message}`,
-              'params': {},
-              'path': `/${name}`
-            }]),
-            { 'cause': causeError }
-          );
-        }
-      }
-    }
+    this.applyComputedFields(computedNames, computedMap, coerced);
 
     const schemaObj = typeof schema === 'string' ? entry.schema : schema;
-    const refDecoded = RefDecoder.run(this.graphOf(entry), coerced, {
-      'getGraph': (target) => {
-        const found = this.store.get(target.$id as string);
+    const refDecoded = RefDecoder.run(this.graphOf(entry), coerced, this.buildRefDecoderRegistry());
+    const decoded = this.decodeWithTransform(schemaObj, refDecoded, schemaId);
 
-        return found === undefined ? undefined : this.graphOf(found);
-      },
-      'getSchema': (targetId) => {
-        return this.store.get(targetId)?.schema;
-      },
-      'resolveSchemaId': (rawId) => {
-        return this.resolve(rawId);
-      }
-    });
-    const decoder = Transform.getDecoder(schemaObj);
-    let decoded: unknown;
-
-    if (decoder === undefined) {
-      decoded = refDecoded;
-    } else {
-      try {
-        decoded = decoder.decode(refDecoded);
-      } catch (error) {
-        if (error instanceof TransformError) {
-          throw error;
-        }
-        const causeError = error instanceof Error ? error : new Error(String(error));
-
-        throw new DecodeError(
-          `transform decoder failed at root: ${causeError.message}`,
-          {
-            'cause': causeError,
-            'path': '',
-            'schemaId': schemaId
-          }
-        );
-      }
-    }
-    const isFrozen = isRecord(schemaObj)
-      && (schemaObj['jt:frozen'] === true
-        || (isRecord(schemaObj['jt:config']) && schemaObj['jt:config'].frozen === true));
-
-    return isFrozen ? Frozen.deepFreeze(decoded) : decoded;
+    return this.applyFrozenSeal(schemaObj, decoded);
   }
 
   public is(
     schema: (Record<string, unknown> & { '$id': string; }) | string,
     data: unknown
   ): boolean {
-    const schemaId = typeof schema === 'string' ? this.resolve(schema) : schema.$id;
+    const schemaId = this.resolve(typeof schema === 'string' ? schema : schema.$id);
     const compiled = this.compiled(schemaId);
 
     if (compiled === undefined) {
@@ -833,13 +1082,13 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   }
 
   public list(): ReadonlyArray<Record<string, unknown>> {
-    return Array.from(this.store.values(), (entry) => {
+    return Array.from(this.store.values(), (entry: SchemaRegistryEntryInterface): Record<string, unknown> => {
       return entry.schema;
     });
   }
 
   public listGraphs(): readonly SchemaGraphInterface[] {
-    return Array.from(this.store.values(), (entry) => {
+    return Array.from(this.store.values(), (entry: SchemaRegistryEntryInterface): SchemaGraphInterface => {
       return this.graphOf(entry);
     });
   }
@@ -848,7 +1097,9 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     if (typeof schema.$id === 'string' && schema.$id !== '') {
       this.setOne(schema);
 
-      return schema.$id;
+      // Return the canonical key the schema is actually stored under, so the
+      // caller can use the returned id for any subsequent lookup.
+      return this.resolve(schema.$id);
     }
 
     const hash = this.hashSchema(schema);
@@ -864,112 +1115,52 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   }
 
   private registerSingle(schema: Record<string, unknown>): void {
-    const schemaId = schema.$id as string | undefined;
+    const rawId = schema.$id as string | undefined;
 
-    if (schemaId === undefined || schemaId === '') {
+    if (rawId === undefined || rawId === '') {
       throw new SchemaError('SCHEMA_MISSING_ID', 'Schema must have a $id property');
     }
 
-    if (this.enableStrictTypes && typeof schema.$schema === 'string' && !schema.$schema.startsWith(CURRENT_DIALECT_PREFIX)) {
-      throw new SchemaError(
-        'SCHEMA_DIALECT_UNSUPPORTED',
-        `Strict mode requires draft ${DRAFT_NAME} but schema "${schemaId}" declares "${schema.$schema}"`,
-        { schemaId }
-      );
+    const {
+      canonicalSchema, schemaId
+    } = this.canonicalizeSchema(schema, rawId);
+
+    this.assertNoPropertyCharacteristicConflicts(canonicalSchema, schemaId);
+
+    const anchors = new Set<string>();
+
+    this.collectAnchors(canonicalSchema, anchors, schemaId);
+
+    const hash = this.hashSchema(canonicalSchema);
+    const isAlreadyRegistered = this.assertSchemaNotDuplicate(schemaId, canonicalSchema, hash);
+
+    if (isAlreadyRegistered) {
+      return;
     }
 
-    this.assertNoPropertyCharacteristicConflicts(schema, schemaId);
+    this.warnOnHashConflict(hash, schemaId);
 
-    if (typeof schema === 'object') {
-      const anchors = new Set<string>();
-
-      this.collectAnchors(schema, anchors, schemaId);
-    }
-
-    const hash = this.hashSchema(schema);
-
-    if (this.store.has(schemaId)) {
-      const existing = this.store.get(schemaId);
-
-      if (existing === undefined) {
-        return;
-      }
-
-      if (existing.hash === hash) {
-        const hasNewDecoder = Transform.getDecoder(schema) !== undefined;
-        const lacksExistingDecoder = Transform.getDecoder(existing.schema) === undefined;
-
-        if (existing.schema !== schema && hasNewDecoder && lacksExistingDecoder) {
-          existing.schema = schema;
-        }
-        this.logger.trace(`Schema already registered (identical): ${schemaId}`);
-
-        return;
-      }
-      throw new SchemaError(
-        'SCHEMA_DUPLICATE_ID',
-        `Schema "${schemaId}" is already registered with different content. Unregister first or use the same schema object.`,
-        { schemaId }
-      );
-    }
-
-    const existingId = this.store.getByHash(hash);
-
-    if (existingId !== undefined && existingId !== schemaId) {
-      this.logger.warn(`Schema content already registered under different ID: existing="${existingId}" new="${schemaId}"`);
-    }
-
-    if (!Object.isFrozen(schema)) {
-      deepFreeze(schema);
+    if (!Object.isFrozen(canonicalSchema)) {
+      deepFreeze(canonicalSchema);
     }
 
     const entry: SchemaRegistryEntryInterface = {
       'hasComputedFields': false,
-      'hasEmbeddedIds': detectEmbeddedIds(schema, true),
+      'hasEmbeddedIds': detectEmbeddedIds(canonicalSchema, true),
       hash,
-      schema
+      'schema': canonicalSchema
     };
     const graph = this.graphOf(entry);
 
-    if (this.enableInlineWarnings) {
-      const warnings = graph.validateStructure();
-
-      if (warnings.length > 0) {
-        const message = `Schema "${schemaId}" contains inline shapes: ${warnings.map((warning) => {
-          return warning.message;
-        }).join('; ')}`;
-
-        if (this.enableStrictGraph) {
-          throw new SchemaError('SCHEMA_STRUCTURE_INVALID', message, { schemaId });
-        }
-        this.logger.warn(message);
-      }
-    }
-
+    this.assertStructureValid(graph, schemaId);
     this.store.add(schemaId, entry);
     this.computedStore.validateAgainstGraph(graph);
-
-    if (this.enableDuplicateDetection) {
-      const duplicates = this.findDuplicates();
-
-      if (duplicates.length > 0) {
-        const dupMsg = duplicates.map((dup) => {
-          return `"${dup.schemaId}#${dup.pointer}" duplicates "${dup.equivalentTo}"`;
-        }).join('; ');
-        const message = `Duplicate schema shapes detected: ${dupMsg}`;
-
-        if (this.enableStrictGraph) {
-          throw new SchemaError('SCHEMA_DUPLICATE_SHAPE', message, { schemaId });
-        }
-        this.logger.warn(message);
-      }
-    }
-
+    this.assertNoDuplicateShapes(schemaId);
     this.logger.trace(`Schema registered: ${schemaId}`);
   }
 
   public removeInvariant(schemaId: string, name: string): void {
-    this.invariants.remove(schemaId, name);
+    this.invariants.remove(this.resolve(schemaId), name);
   }
 
   private resolve(schemaId: string): string {
@@ -978,6 +1169,35 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     }
 
     return this.curie.expand(schemaId);
+  }
+
+  /**
+   * Resolve the `disjointWith` annotation value to a flat array of target IRI strings.
+   */
+  private resolveDisjointTargets(raw: unknown): string[] {
+    if (typeof raw === 'string') {
+      return [raw];
+    }
+
+    if (Array.isArray(raw)) {
+      return (raw as unknown[]).filter((item): item is string => {
+        return isStringItem(item);
+      });
+    }
+
+    return [];
+  }
+
+  /**
+   * Resolve the instantiate call options into execution options.
+   * When `enableDefaults` is undefined, returns the pre-built `instantiateOptions` directly.
+   */
+  private resolveInstantiateOptions(enableDefaults: boolean | undefined): Readonly<Record<string, boolean>> {
+    if (enableDefaults === undefined) {
+      return this.instantiateOptions;
+    }
+
+    return Resolver.merge(this.instantiateOptions, { 'applyDefaults': enableDefaults });
   }
 
   private resolveSchemaId(schemaOrId: (Record<string, unknown> & { '$id': string; }) | string): string {
@@ -1028,7 +1248,6 @@ export class SchemaRegistry implements SchemaRegistryInterface {
 
     return this;
   }
-
   private setKeyed(iri: string, schema: Record<string, unknown>): void {
     const schemaIdOnObject = schema.$id;
 
@@ -1036,7 +1255,9 @@ export class SchemaRegistry implements SchemaRegistryInterface {
       throw new SchemaError('SCHEMA_MISSING_ID', 'Schema must have a $id property');
     }
 
-    if (schemaIdOnObject !== iri) {
+    // Compare canonical forms so a CURIE key and an absolute-IRI $id (or vice
+    // versa) that denote the same schema are accepted as a match.
+    if (this.resolve(schemaIdOnObject) !== this.resolve(iri)) {
       throw new SchemaError(
         'SCHEMA_INVALID_INPUT',
         `set() key "${iri}" does not match schema.$id "${schemaIdOnObject}"`,
@@ -1046,14 +1267,14 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     this.delete(iri);
     this.registerSingle(schema);
   }
-
   private setOne(schema: Record<string, unknown>): void {
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime guard for JS callers
-    if (schema === null || typeof schema !== 'object' || Array.isArray(schema)) {
+    // Defensive guard for untyped (JS) callers that bypass the typed `set()`
+    // surface. `isRecord` is a type predicate, so no suppression is needed and
+    // the parameter keeps its honest `Record<string, unknown>` type.
+    if (!isRecord(schema)) {
       throw new SchemaError(
         'SCHEMA_INVALID_INPUT',
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- error message reflects actual runtime value
-        `set() requires plain objects, received ${schema === null ? 'null' : typeof schema}`
+        `set() requires a plain object schema, received ${Array.isArray(schema) ? 'array' : typeof schema}`
       );
     }
 
@@ -1074,7 +1295,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     schema: (Record<string, unknown> & { '$id': string; }) | string,
     pointer: string
   ): Record<string, unknown> & { '$id': string } {
-    const schemaId = typeof schema === 'string' ? this.resolve(schema) : schema.$id;
+    const schemaId = this.resolve(typeof schema === 'string' ? schema : schema.$id);
     const entry = this.store.get(schemaId);
 
     if (!entry) {
@@ -1107,7 +1328,7 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     schema: (Record<string, unknown> & { '$id': string; }) | string,
     data: unknown
   ): ValidationErrors {
-    const schemaId = typeof schema === 'string' ? this.resolve(schema) : schema.$id;
+    const schemaId = this.resolve(typeof schema === 'string' ? schema : schema.$id);
     const compiled = this.compiled(schemaId);
 
     if (compiled === undefined) {
@@ -1135,8 +1356,35 @@ export class SchemaRegistry implements SchemaRegistryInterface {
     return new ValidationErrors(invariantErrors);
   }
 
+  /**
+   * Guard computed field names against user-supplied input data.
+   * Throws `InstantiationError` if any computed property name is present in `data`.
+   */
+  private validateComputedInput(computedNames: string[], data: unknown): void {
+    if (computedNames.length === 0 || !isRecord(data)) {
+      return;
+    }
+
+    const forbidden = computedNames.filter((name: string): boolean => {
+      return name in (data);
+    });
+
+    if (forbidden.length > 0) {
+      const errors = forbidden.map((name: string): ValidationErrorType => {
+        return {
+          'keyword': 'COMPUTED_INPUT_FORBIDDEN',
+          'message': `"${name}" is a computed field and must not be supplied in input`,
+          'params': {},
+          'path': `/${name}`
+        };
+      });
+
+      throw new InstantiationError(new ValidationErrors(errors));
+    }
+  }
+
   public validator(schemaId: string): CompiledValidatorInterface {
-    const compiled = this.compiled(schemaId);
+    const compiled = this.compiled(this.resolve(schemaId));
 
     if (compiled === undefined) {
       throw new SchemaError('SCHEMA_NOT_REGISTERED', `No schema registered for: ${schemaId}`, { schemaId });
@@ -1148,6 +1396,18 @@ export class SchemaRegistry implements SchemaRegistryInterface {
   public *values(): IterableIterator<Record<string, unknown>> {
     for (const entry of this.store.values()) {
       yield entry.schema;
+    }
+  }
+
+  /**
+   * Warn when a schema's content hash is already registered under a different IRI.
+   * This is a non-strict duplicate detection that logs rather than throws.
+   */
+  private warnOnHashConflict(hash: string, schemaId: string): void {
+    const existingId = this.store.getByHash(hash);
+
+    if (existingId !== undefined && existingId !== schemaId) {
+      this.logger.warn(`Schema content already registered under different ID: existing="${existingId}" new="${schemaId}"`);
     }
   }
 }

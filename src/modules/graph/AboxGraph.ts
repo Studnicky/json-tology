@@ -41,11 +41,24 @@ import { SchemaCursor } from './SchemaCursor.js';
 import { decodeLiteral } from '../rdf/Terms.js';
 
 /**
- * Lifts a set of quads to typed instances of a single schema. Injected by
- * `JsonTology.aboxGraph` so the graph reuses the same `fromQuads` path the
- * facade exposes (predicate resolver, curie, validation via `instantiate`).
+ * Lifts a set of quads to typed instances of a single schema.
+ *
+ * @remarks
+ * Injected by `JsonTology.aboxGraph` so the graph reuses the same `fromQuads`
+ * path the facade exposes (predicate resolver, curie, validation via
+ * `instantiate`).
+ *
+ * @example
+ * ```ts
+ * const lift: AboxLiftSubjectFnInterface = (classId: string, quads: QuadInterface[]) => registry.fromQuads(classId, quads);
+ * ```
+ *
+ * @category Graph
+ * @since 0.1.0
+ * @see {@link AboxGraphInterface}
+ * @group Graph
  */
-export type AboxLiftSubjectFnType = (classId: string, quads: QuadInterface[]) => unknown[];
+export type AboxLiftSubjectFnInterface = (classId: string, quads: QuadInterface[]) => unknown[];
 
 function isLiteralObject(termType: AboxPredicateObjectType['objectTermType']): boolean {
   return termType === 'Literal';
@@ -63,6 +76,28 @@ function quadObjectValue(quad: QuadInterface): unknown {
   return quad.object.value;
 }
 
+/**
+ * AboxGraph — lazy, typed, in-memory graph view over projected ABox quads
+ * unioned with the registry's TBox quads.
+ *
+ * @remarks
+ * Indexes the quad union once on construction, then exposes two entry points
+ * (`resource`, `instances`) returning a fluent {@link CursorInterface}. TBox
+ * indexes expose schema-level navigation via `class`, `predicate`, and
+ * `classSuperclasses`. Inverse-functional identity resolution maps foreign-key
+ * literals back to the owning entity IRI.
+ *
+ * @example
+ * ```ts
+ * const graph = new AboxGraph(aboxQuads, tboxQuads, identities, liftSubject, predicateResolver, schemaOf);
+ * const cursor = graph.instances('https://example.com/Book');
+ * ```
+ *
+ * @category Graph
+ * @since 0.1.0
+ * @see {@link AboxGraphInterface}
+ * @group Graph
+ */
 export class AboxGraph implements AboxGraphInterface {
   private readonly allQuads: QuadInterface[];
   private readonly byObject = new Map<string, AboxPredicateSubjectType[]>();
@@ -83,7 +118,7 @@ export class AboxGraph implements AboxGraphInterface {
   private readonly instancesByType = new Map<string, string[]>();
 
   private readonly liftCache = new Map<string, unknown>();
-  private readonly liftSubject: AboxLiftSubjectFnType;
+  private readonly liftSubject: AboxLiftSubjectFnInterface;
   private readonly predicateResolver: PredicateResolverFnType;
   /** class IRI → Set of predicate IRIs whose rdfs:domain includes that class */
   private readonly predicatesOfClass = new Map<string, Set<string>>();
@@ -111,7 +146,7 @@ export class AboxGraph implements AboxGraphInterface {
     aboxQuads: readonly QuadInterface[],
     tboxQuads: readonly QuadInterface[],
     identities: readonly AboxIdentityDescriptorType[],
-    liftSubject: AboxLiftSubjectFnType,
+    liftSubject: AboxLiftSubjectFnInterface,
     predicateResolver: PredicateResolverFnType,
     schemaOf: (classIri: string) => unknown
   ) {
@@ -228,6 +263,39 @@ export class AboxGraph implements AboxGraphInterface {
   }
 
   /**
+   * Collect inverse foreign-key subjects: all NamedNode subjects (other than
+   * `ownerIri` itself) whose literal value for `predicateIri` equals
+   * `identityValue`.
+   */
+  private collectInverseFkSubjects(
+    predicateIri: string,
+    ownerIri: string,
+    identityValue: string
+  ): string[] {
+    const found: string[] = [];
+
+    for (const quad of this.allQuads) {
+      if (quad.predicate.value !== predicateIri) {
+        continue;
+      }
+      if (quad.object.termType !== 'Literal') {
+        continue;
+      }
+      // Skip the entity's own identity literal — it identifies, it does not
+      // reference. Only foreign-key holders count as inverse subjects.
+      if (
+        quad.object.value === identityValue
+        && quad.subject.termType === 'NamedNode'
+        && quad.subject.value !== ownerIri
+      ) {
+        found.push(quad.subject.value);
+      }
+    }
+
+    return found;
+  }
+
+  /**
    * Find the identity descriptor that governs an instance of the given
    * `types` — matching an owning class directly OR a transitive superclass
    * (so subclass-typed instances inherit their parent's inverse-functional
@@ -313,42 +381,43 @@ export class AboxGraph implements AboxGraphInterface {
       const predicateValue = quad.predicate.value;
 
       if (predicateValue === RDF.type && quad.object.termType === 'NamedNode') {
-        const types = this.typeOf.get(subjectValue) ?? [];
-
-        types.push(quad.object.value);
-        this.typeOf.set(subjectValue, types);
-
-        const instances = this.instancesByType.get(quad.object.value) ?? [];
-
-        instances.push(subjectValue);
-        this.instancesByType.set(quad.object.value, instances);
+        this.indexTypeQuad(subjectValue, quad.object.value);
         continue;
       }
 
-      const objectTermType = quad.object.termType;
+      this.indexEdgeQuad(subjectValue, predicateValue, quad);
+    }
+  }
 
-      if (objectTermType !== 'NamedNode' && objectTermType !== 'BlankNode' && objectTermType !== 'Literal') {
-        continue;
-      }
+  /** Index a single edge quad into bySubject (and byObject for NamedNode/BlankNode objects). */
+  private indexEdgeQuad(
+    subjectValue: string,
+    predicateValue: string,
+    quad: QuadInterface
+  ): void {
+    const objectTermType = quad.object.termType;
 
-      const subjectEntries = this.bySubject.get(subjectValue) ?? [];
+    if (objectTermType !== 'NamedNode' && objectTermType !== 'BlankNode' && objectTermType !== 'Literal') {
+      return;
+    }
 
-      subjectEntries.push({
-        'object': quad.object.value,
-        objectTermType,
-        'predicate': predicateValue
+    const subjectEntries = this.bySubject.get(subjectValue) ?? [];
+
+    subjectEntries.push({
+      'object': quad.object.value,
+      objectTermType,
+      'predicate': predicateValue
+    });
+    this.bySubject.set(subjectValue, subjectEntries);
+
+    if (objectTermType === 'NamedNode' || objectTermType === 'BlankNode') {
+      const objectEntries = this.byObject.get(quad.object.value) ?? [];
+
+      objectEntries.push({
+        'predicate': predicateValue,
+        'subject': subjectValue
       });
-      this.bySubject.set(subjectValue, subjectEntries);
-
-      if (objectTermType === 'NamedNode' || objectTermType === 'BlankNode') {
-        const objectEntries = this.byObject.get(quad.object.value) ?? [];
-
-        objectEntries.push({
-          'predicate': predicateValue,
-          'subject': subjectValue
-        });
-        this.byObject.set(quad.object.value, objectEntries);
-      }
+      this.byObject.set(quad.object.value, objectEntries);
     }
   }
 
@@ -422,42 +491,72 @@ export class AboxGraph implements AboxGraphInterface {
       }
 
       switch (predIri) {
-        case RDFS.domain: {
-        // subject = predicate IRI, object = class IRI
-          const domains = this.domainsOfPredicate.get(subjectIri) ?? new Set<string>();
-
-          domains.add(objectIri);
-          this.domainsOfPredicate.set(subjectIri, domains);
-
-          const preds = this.predicatesOfClass.get(objectIri) ?? new Set<string>();
-
-          preds.add(subjectIri);
-          this.predicatesOfClass.set(objectIri, preds);
+        case RDFS.domain:
+          this.indexTboxDomain(subjectIri, objectIri);
 
           break;
-        }
-        case RDFS.range: {
-        // subject = predicate IRI, object = class/datatype IRI
-          const ranges = this.rangeOfPredicate.get(subjectIri) ?? new Set<string>();
 
-          ranges.add(objectIri);
-          this.rangeOfPredicate.set(subjectIri, ranges);
+        case RDFS.range:
+          this.indexTboxRange(subjectIri, objectIri);
 
           break;
-        }
-        case RDFS.subClassOf: {
-        // subject = subclass IRI, object = superclass IRI
-        // Only record NamedNode superclasses (skip blank-node restrictions)
-          const supers = this.superClassesOf.get(subjectIri) ?? new Set<string>();
 
-          supers.add(objectIri);
-          this.superClassesOf.set(subjectIri, supers);
+        case RDFS.subClassOf:
+          this.indexTboxSubClassOf(subjectIri, objectIri);
 
           break;
-        }
+
       // No default
       }
     }
+  }
+
+  /**
+   * Index the TBox quads for schema-level navigation:
+   * - rdfs:domain  → domainsOfPredicate, predicatesOfClass
+   * - rdfs:range   → rangeOfPredicate
+   * - rdfs:subClassOf → superClassesOf (NamedNode objects only; skips restrictions)
+   */
+  /** Index an rdfs:domain quad: predicate → class (domain), class → predicate (predicatesOfClass). */
+  private indexTboxDomain(predicateIri: string, classIri: string): void {
+    const domains = this.domainsOfPredicate.get(predicateIri) ?? new Set<string>();
+
+    domains.add(classIri);
+    this.domainsOfPredicate.set(predicateIri, domains);
+
+    const preds = this.predicatesOfClass.get(classIri) ?? new Set<string>();
+
+    preds.add(predicateIri);
+    this.predicatesOfClass.set(classIri, preds);
+  }
+
+  /** Index an rdfs:range quad: predicate → class/datatype IRI. */
+  private indexTboxRange(predicateIri: string, rangeIri: string): void {
+    const ranges = this.rangeOfPredicate.get(predicateIri) ?? new Set<string>();
+
+    ranges.add(rangeIri);
+    this.rangeOfPredicate.set(predicateIri, ranges);
+  }
+
+  /** Index an rdfs:subClassOf quad: subclass → superclass (NamedNode only). */
+  private indexTboxSubClassOf(subclassIri: string, superclassIri: string): void {
+    const supers = this.superClassesOf.get(subclassIri) ?? new Set<string>();
+
+    supers.add(superclassIri);
+    this.superClassesOf.set(subclassIri, supers);
+  }
+
+  /** Index a single rdf:type quad into typeOf and instancesByType. */
+  private indexTypeQuad(subjectValue: string, objectValue: string): void {
+    const types = this.typeOf.get(subjectValue) ?? [];
+
+    types.push(objectValue);
+    this.typeOf.set(subjectValue, types);
+
+    const instances = this.instancesByType.get(objectValue) ?? [];
+
+    instances.push(subjectValue);
+    this.instancesByType.set(objectValue, instances);
   }
 
   public instances(classIri: string): CursorInterface {
@@ -637,23 +736,7 @@ export class AboxGraph implements AboxGraphInterface {
       const identityValue = this.identityValueOf(objectIri);
 
       if (identityValue !== undefined) {
-        for (const quad of this.allQuads) {
-          if (quad.predicate.value !== predicateIri) {
-            continue;
-          }
-          if (quad.object.termType !== 'Literal') {
-            continue;
-          }
-          // Skip the entity's own identity literal — it identifies, it does not
-          // reference. Only foreign-key holders count as inverse subjects.
-          if (
-            quad.object.value === identityValue
-            && quad.subject.termType === 'NamedNode'
-            && quad.subject.value !== objectIri
-          ) {
-            results.push(quad.subject.value);
-          }
-        }
+        results.push(...this.collectInverseFkSubjects(predicateIri, objectIri, identityValue));
       }
     }
 

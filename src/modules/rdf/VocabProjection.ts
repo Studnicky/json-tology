@@ -23,6 +23,30 @@ import {
   resolvePropertySchema
 } from './ProjectionHelpers.js';
 
+/**
+ * Abstract base class for vocabulary-specific RDF quad emission.
+ *
+ * @remarks
+ * Owns the shared iteration and metadata extraction for `dependentRequired`,
+ * `dependentSchemas`, and `if/then/else` conditionals. Subclasses override
+ * the abstract template methods to emit OWL or SHACL quad patterns.
+ *
+ * Template methods return `QuadObjectType[]` — the caller decides how to
+ * attach them (OWL: `rdfs:subClassOf`; SHACL: push to `andItems`).
+ *
+ * @example
+ * ```ts
+ * class MyProjection extends VocabProjection {
+ *   combineUnionBranches(...) { ... }
+ *   // ... implement remaining abstract methods
+ * }
+ * ```
+ *
+ * @category RDF
+ * @since 0.1.0
+ * @see {@link QuadFactory}
+ * @group VocabProjection
+ */
 export abstract class VocabProjection {
   /**
    * Combine the "without trigger" branch with required-property restrictions.
@@ -160,7 +184,7 @@ export abstract class VocabProjection {
       const triggerPropIri = this.resolvePredicateIri(subject, trigger, graph, predicateResolver);
       const withoutTrigger = this.emitNotTriggerBranch(triggerPropIri, quads, curie, issuer);
 
-      const reqRestrictions: QuadObjectType[] = required.map((reqProp) => {
+      const reqRestrictions: QuadObjectType[] = required.map((reqProp: string): QuadObjectType => {
         const reqPropIri = this.resolvePredicateIri(subject, reqProp, graph, predicateResolver);
 
         return this.emitRequiredPropertyBranch(reqPropIri, quads, curie, issuer);

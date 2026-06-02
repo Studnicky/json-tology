@@ -9,6 +9,8 @@ import type {
 } from '../../interfaces/SchemaGraph.js';
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
+import type { EffectiveOptionsType } from '../../types/EffectiveOptions.js';
+
 import {
   deepEqual, isRecord
 } from '../data/DataTypes.js';
@@ -39,6 +41,34 @@ const escape = (segment: string): string => {
 const EMPTY_EVALUATED_ITEMS = new Set<number>();
 const EMPTY_EVALUATED_PROPERTIES = new Set<string>();
 
+/**
+ * Core validation and execution engine for compiled JSON Schema graphs.
+ *
+ * `GraphEngine` traverses the canonical schema graph produced by `SchemaGraph`
+ * and evaluates an input value against it, returning errors, coerced values,
+ * and evaluated-property/item sets.  It is the runtime peer of `SchemaGraph`:
+ * where `SchemaGraph` constructs the graph, `GraphEngine` walks it.
+ *
+ * @remarks
+ * Instantiate once per root schema and reuse across calls.  The engine caches
+ * the compiled graph, regex patterns, and ref resolutions internally so repeated
+ * `execute` / `check` / `errors` calls on the same schema are cheap.
+ *
+ * Customise behaviour via `GraphEngineOptionsInterface`: plug in a custom
+ * `FormatRegistry`, register additional keywords, enable coercion, control
+ * default application, and supply cross-schema lookup callbacks.
+ *
+ * @example
+ * ```ts
+ * const engine = new GraphEngine({ $id: 'https://example.com/Book', type: 'object', required: ['title'] });
+ * const { valid, errors } = engine.execute({ title: 'Dune' });
+ * ```
+ *
+ * @category Validation
+ * @since 0.1.0
+ * @see {@link GraphEngineInterface}
+ * @group Graph
+ */
 export class GraphEngine implements GraphEngineInterface {
   private readonly cachedDefaultResolutionContext: DefaultResolutionContextInterface;
   private readonly cachedVisitContext: VisitContextInterface;
@@ -47,7 +77,7 @@ export class GraphEngine implements GraphEngineInterface {
   private readonly embeddedSchemas: Map<string, JsonSchemaDocumentType>;
   public readonly formatRegistry: FormatRegistryInterface;
   private readonly graphCache = new WeakMap<object, SchemaGraph>();
-  private readonly options: Pick<GraphEngineOptionsInterface, 'lookupGraph' | 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupGraph' | 'lookupSchema'>>;
+  private readonly options: EffectiveOptionsType;
   private readonly patternEntryCache = new WeakMap<SchemaGraphNodeInterface, Array<{ 'node': SchemaGraphNodeInterface;
     'pattern': string;
     'regex': RegExp }>>();
@@ -79,12 +109,112 @@ export class GraphEngine implements GraphEngineInterface {
     this.cachedVisitContext = this.visitContext();
   }
 
+  private applyAdditionalProperty(
+    key: string,
+    additionalPropertiesNode: boolean | SchemaGraphNodeInterface | undefined,
+    graph: SchemaGraphInterface,
+    workingValue: Record<string, unknown>,
+    path: string,
+    options: EffectiveOptionsType,
+    refStack: Set<string>,
+    dynamicScope: DynamicScopeEntryInterface[],
+    evaluatedProperties: Set<string>,
+    errors: ValidationErrorType[],
+    depth: number
+  ): void {
+    if (options.allowAdditionalProperties) {
+      return;
+    }
+    if (additionalPropertiesNode === false) {
+      if (options.removeAdditionalProperties) {
+        delete workingValue[key];
+      } else {
+        errors.push(this.createError(`${path}/${escape(key)}`, 'additionalProperties', 'must NOT have additional properties', { 'additionalProperty': key }));
+      }
+
+      return;
+    }
+    if (additionalPropertiesNode === undefined || additionalPropertiesNode === true) {
+      if (options.enforceSchemaProperties) {
+        delete workingValue[key];
+      }
+
+      return;
+    }
+    const child = this.visit(additionalPropertiesNode, graph, workingValue[key], `${path}/${escape(key)}`, options, refStack, dynamicScope, depth + 1);
+
+    if (child.valid) {
+      workingValue[key] = child.value;
+      evaluatedProperties.add(key);
+    } else {
+      errors.push(...child.errors);
+    }
+  }
+
+  private applyPropertyDefaults(
+    propertyNodeMap: ReadonlyMap<string, SchemaGraphNodeInterface>,
+    workingValue: Record<string, unknown>,
+    graph: SchemaGraphInterface,
+    dynamicScope: DynamicScopeEntryInterface[]
+  ): void {
+    for (const [
+      key,
+      propNode
+    ] of propertyNodeMap) {
+      if (key in workingValue) {
+        continue;
+      }
+      const prepared = this.createImplicitDefault(propNode, graph, dynamicScope);
+
+      if (prepared !== undefined) {
+        workingValue[key] = prepared;
+      }
+    }
+  }
+
+  private applyRequiredDefaults(
+    required: readonly string[],
+    propertyNodeMap: ReadonlyMap<string, SchemaGraphNodeInterface>,
+    workingValue: Record<string, unknown>,
+    graph: SchemaGraphInterface,
+    dynamicScope: DynamicScopeEntryInterface[],
+    options: EffectiveOptionsType,
+    errors: ValidationErrorType[],
+    path: string
+  ): void {
+    for (const key of required) {
+      if (!(key in workingValue)) {
+        const propNode = propertyNodeMap.get(key);
+
+        if (options.applyDefaults && propNode !== undefined) {
+          const prepared = this.createImplicitDefault(propNode, graph, dynamicScope);
+
+          if (prepared !== undefined) {
+            workingValue[key] = prepared;
+          }
+        }
+      }
+      if (!(key in workingValue)) {
+        if (options.synthesizeDefaults) {
+          const propNode = propertyNodeMap.get(key);
+          const zeroValue = propNode === undefined
+            ? null
+            : this.synthesizeZeroValue(propNode, graph, dynamicScope);
+
+          workingValue[key] = zeroValue;
+        } else {
+          errors.push(this.createError(path, 'required', `must have required property '${key}'`, { 'missingProperty': key }));
+        }
+      }
+    }
+  }
+
   private applyUnevaluatedItems(
     node: SchemaGraphNodeInterface,
     graph: SchemaGraphInterface,
     value: unknown[],
     path: string,
-    options: Pick<GraphEngineOptionsInterface, 'lookupGraph' | 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupGraph' | 'lookupSchema'>>,
+    options: EffectiveOptionsType,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntryInterface[],
     alreadyEvaluated: Set<number>,
@@ -135,7 +265,7 @@ export class GraphEngine implements GraphEngineInterface {
     graph: SchemaGraphInterface,
     value: Record<string, unknown>,
     path: string,
-    options: Pick<GraphEngineOptionsInterface, 'lookupGraph' | 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupGraph' | 'lookupSchema'>>,
+    options: EffectiveOptionsType,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntryInterface[],
     alreadyEvaluated: Set<string>,
@@ -181,6 +311,31 @@ export class GraphEngine implements GraphEngineInterface {
     };
   }
 
+  private buildPatternPropertyEntries(node: SchemaGraphNodeInterface, sem: SchemaGraphSemanticsInterface): Array<{ 'node': SchemaGraphNodeInterface;
+    'pattern': string;
+    'regex': RegExp }> {
+    let patternPropertyEntries = this.patternEntryCache.get(node);
+
+    if (patternPropertyEntries === undefined) {
+      patternPropertyEntries = sem.patternPropertyEntries.map(([
+        pattern,
+        patternNode
+      ]: readonly [string, SchemaGraphNodeInterface
+      ]): { 'node': SchemaGraphNodeInterface;
+        'pattern': string;
+        'regex': RegExp } => {
+        return {
+          'node': patternNode,
+          pattern,
+          'regex': this.regexFor(pattern)
+        };
+      });
+      this.patternEntryCache.set(node, patternPropertyEntries);
+    }
+
+    return patternPropertyEntries;
+  }
+
   public check(value: unknown, options?: { 'pointer'?: string }): boolean {
     return this.execute(value, {
       'overrides': { 'collectErrors': false },
@@ -213,10 +368,10 @@ export class GraphEngine implements GraphEngineInterface {
 
   private defaultResolutionContext(): DefaultResolutionContextInterface {
     return {
-      'resolveDynamicRef': (ref, currentGraph, dynamicScope) => {
+      'resolveDynamicRef': (ref: string, currentGraph: SchemaGraphInterface, dynamicScope: DynamicScopeEntryInterface[]): RefTargetInterface => {
         return this.resolveDynamicRef(ref, currentGraph, dynamicScope);
       },
-      'resolveRef': (ref, currentGraph) => {
+      'resolveRef': (ref: string, currentGraph: SchemaGraphInterface): RefTargetInterface => {
         return this.resolveRef(ref, currentGraph);
       }
     };
@@ -307,6 +462,29 @@ export class GraphEngine implements GraphEngineInterface {
     return compiled;
   }
 
+  private resolveAliases(
+    propertyNodeMap: ReadonlyMap<string, SchemaGraphNodeInterface>,
+    workingValue: Record<string, unknown>,
+    graph: SchemaGraphInterface
+  ): void {
+    for (const [
+      canonicalKey,
+      propNode
+    ] of propertyNodeMap) {
+      const propSem = graph.semantics(propNode);
+
+      for (const alias of propSem.aliases) {
+        if (alias in workingValue) {
+          if (!(canonicalKey in workingValue)) {
+            workingValue[canonicalKey] = workingValue[alias];
+          }
+          delete workingValue[alias];
+          break;
+        }
+      }
+    }
+  }
+
   private resolveDynamicRef(
     ref: string,
     currentGraph: SchemaGraphInterface,
@@ -346,23 +524,10 @@ export class GraphEngine implements GraphEngineInterface {
 
   private resolveRef(ref: string, currentGraph: SchemaGraphInterface): RefTargetInterface {
     const isOwnRoot = currentGraph.rootSchema === this.rootSchema;
+    const cached = this.resolveRefFromCache(ref, isOwnRoot, currentGraph);
 
-    if (isOwnRoot) {
-      const cached = this.refCacheOwn.get(ref);
-
-      if (cached !== undefined) {
-        return cached;
-      }
-    }
-
-    if (!isOwnRoot) {
-      const currentRootId = GraphEngineSupport.schemaId(currentGraph.rootSchema);
-      const cacheKey = `${currentRootId ?? '<anonymous>'}::${ref}`;
-      const cached = this.refCache.get(cacheKey);
-
-      if (cached !== undefined) {
-        return cached;
-      }
+    if (cached !== undefined) {
+      return cached;
     }
 
     let graph = currentGraph;
@@ -374,23 +539,7 @@ export class GraphEngine implements GraphEngineInterface {
       const parsed = GraphEngineSupport.parseRef(ref);
 
       fragment = parsed.fragment;
-
-      const lookedUp = this.options.lookupSchema?.(parsed.id);
-
-      if (lookedUp === undefined) {
-        if (this.rootId !== undefined && parsed.id === this.rootId) {
-          graph = this.graphFor(this.rootSchema);
-        } else {
-          const embedded = this.embeddedSchemas.get(parsed.id);
-
-          if (embedded === undefined) {
-            throw new GraphError('REF_UNRESOLVED', `Unresolved schema reference: ${ref}`, { 'pointer': ref });
-          }
-          graph = this.graphFor(embedded);
-        }
-      } else {
-        graph = this.graphFor(lookedUp);
-      }
+      graph = this.resolveRefGraph(ref, parsed);
     }
 
     const node = graph.resolveFragment(fragment);
@@ -399,16 +548,42 @@ export class GraphEngine implements GraphEngineInterface {
       node
     };
 
-    if (isOwnRoot) {
-      this.refCacheOwn.set(ref, target);
-    } else {
-      const currentRootId = GraphEngineSupport.schemaId(currentGraph.rootSchema);
-      const cacheKey = `${currentRootId ?? '<anonymous>'}::${ref}`;
-
-      this.refCache.set(cacheKey, target);
-    }
+    this.storeRefInCache(ref, isOwnRoot, currentGraph, target);
 
     return target;
+  }
+
+  private resolveRefFromCache(
+    ref: string,
+    isOwnRoot: boolean,
+    currentGraph: SchemaGraphInterface
+  ): RefTargetInterface | undefined {
+    if (isOwnRoot) {
+      return this.refCacheOwn.get(ref);
+    }
+    const currentRootId = GraphEngineSupport.schemaId(currentGraph.rootSchema);
+    const cacheKey = `${currentRootId ?? '<anonymous>'}::${ref}`;
+
+    return this.refCache.get(cacheKey);
+  }
+
+  private resolveRefGraph(ref: string, parsed: { 'fragment': string;
+    'id': string }): SchemaGraphInterface {
+    const lookedUp = this.options.lookupSchema?.(parsed.id);
+
+    if (lookedUp !== undefined) {
+      return this.graphFor(lookedUp);
+    }
+    if (this.rootId !== undefined && parsed.id === this.rootId) {
+      return this.graphFor(this.rootSchema);
+    }
+    const embedded = this.embeddedSchemas.get(parsed.id);
+
+    if (embedded === undefined) {
+      throw new GraphError('REF_UNRESOLVED', `Unresolved schema reference: ${ref}`, { 'pointer': ref });
+    }
+
+    return this.graphFor(embedded);
   }
 
   public rootSchemaId(): string | undefined {
@@ -417,6 +592,23 @@ export class GraphEngine implements GraphEngineInterface {
 
   public schemaLookup(): ((schemaId: string) => Record<string, unknown> | undefined) | undefined {
     return this.options.lookupSchema;
+  }
+
+  private storeRefInCache(
+    ref: string,
+    isOwnRoot: boolean,
+    currentGraph: SchemaGraphInterface,
+    target: RefTargetInterface
+  ): void {
+    if (isOwnRoot) {
+      this.refCacheOwn.set(ref, target);
+
+      return;
+    }
+    const currentRootId = GraphEngineSupport.schemaId(currentGraph.rootSchema);
+    const cacheKey = `${currentRootId ?? '<anonymous>'}::${ref}`;
+
+    this.refCache.set(cacheKey, target);
   }
 
   private synthesizeZeroValue(
@@ -431,7 +623,7 @@ export class GraphEngine implements GraphEngineInterface {
     graph: SchemaGraphInterface,
     value: unknown[],
     path: string,
-    options: Pick<GraphEngineOptionsInterface, 'lookupGraph' | 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupGraph' | 'lookupSchema'>>,
+    options: EffectiveOptionsType,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntryInterface[],
     sem: SchemaGraphSemanticsInterface,
@@ -441,113 +633,64 @@ export class GraphEngine implements GraphEngineInterface {
     const evaluatedItems = new Set<number>();
     const workingValue = value;
     const {
-      containsNode,
       itemsNode,
-      maxContains,
       maxItems,
-      minContains,
       minItems,
-      'prefixItems': prefixItemNodes,
+      prefixItems,
       uniqueItems
     } = sem;
 
-    if (typeof minItems === 'number' && workingValue.length < minItems) {
-      errors.push(this.createError(path, 'minItems', `must have at least ${minItems} items`, { 'limit': minItems }));
+    this.validateArrayCardinality(path, workingValue, minItems, maxItems, errors);
+    this.validateArrayUniqueness(path, workingValue, uniqueItems, errors);
+
+    const prefixEarlyReturn = this.validateArrayPrefixItems(
+      graph,
+      path,
+      options,
+      refStack,
+      dynamicScope,
+      sem,
+      workingValue,
+      evaluatedItems,
+      errors,
+      depth
+    );
+
+    if (prefixEarlyReturn !== undefined) {
+      return prefixEarlyReturn;
     }
-    if (typeof maxItems === 'number' && workingValue.length > maxItems) {
-      errors.push(this.createError(path, 'maxItems', `must have at most ${maxItems} items`, { 'limit': maxItems }));
-    }
-    if (uniqueItems) {
-      outer: for (let index = 0; index < workingValue.length; index++) {
-        const item = workingValue[index];
 
-        for (let j = index + 1; j < workingValue.length; j++) {
-          if (deepEqual(item, workingValue[j])) {
-            errors.push(this.createError(path, 'uniqueItems', 'must NOT have duplicate items'));
+    if (prefixItems.length === 0) {
+      const itemsEarlyReturn = this.validateArrayItems(
+        graph,
+        path,
+        options,
+        refStack,
+        dynamicScope,
+        itemsNode,
+        workingValue,
+        evaluatedItems,
+        errors,
+        depth
+      );
 
-            break outer;
-          }
-        }
-      }
-    }
-
-    if (prefixItemNodes.length > 0) {
-      for (const [
-        index,
-        itemNode
-      ] of prefixItemNodes.entries()) {
-        if (index >= workingValue.length) {
-          break;
-        }
-        const child = this.visit(itemNode, graph, workingValue[index], `${path}/${index}`, options, refStack, dynamicScope, depth + 1);
-
-        if (!child.valid && !options.collectErrors) {
-          return child;
-        }
-        workingValue[index] = child.value;
-        evaluatedItems.add(index);
-        errors.push(...child.errors);
-      }
-
-      const extraStart = prefixItemNodes.length;
-
-      if (itemsNode?.schema === false && workingValue.length > extraStart) {
-        errors.push(this.createError(path, 'items', 'must NOT have items beyond prefixItems'));
-      } else if (itemsNode !== undefined && itemsNode.schema !== true && itemsNode.schema !== false) {
-        for (let index = extraStart; index < workingValue.length; index++) {
-          const child = this.visit(itemsNode, graph, workingValue[index], `${path}/${index}`, options, refStack, dynamicScope, depth + 1);
-
-          if (!child.valid && !options.collectErrors) {
-            return child;
-          }
-          workingValue[index] = child.value;
-          evaluatedItems.add(index);
-          errors.push(...child.errors);
-        }
-      }
-    } else {
-      if (itemsNode !== undefined) {
-        for (let index = 0; index < workingValue.length; index++) {
-          const child = this.visit(itemsNode, graph, workingValue[index], `${path}/${index}`, options, refStack, dynamicScope, depth + 1);
-
-          if (!child.valid && !options.collectErrors) {
-            return child;
-          }
-          workingValue[index] = child.value;
-          evaluatedItems.add(index);
-          errors.push(...child.errors);
-        }
+      if (itemsEarlyReturn !== undefined) {
+        return itemsEarlyReturn;
       }
     }
 
-    if (containsNode !== undefined) {
-      let matches = 0;
-
-      for (const [
-        index,
-        element
-      ] of workingValue.entries()) {
-        const candidate = this.visit(containsNode, graph, GraphEngineSupport.cloneCandidate(element), `${path}/${index}`, {
-          ...options,
-          'collectErrors': true
-        }, refStack, dynamicScope, depth + 1);
-
-        if (candidate.valid) {
-          matches++;
-          evaluatedItems.add(index);
-        }
-      }
-
-      const minimumContains = typeof minContains === 'number' ? minContains : 1;
-      const maximumContains = typeof maxContains === 'number' ? maxContains : undefined;
-
-      if (matches < minimumContains) {
-        errors.push(this.createError(path, 'contains', 'must contain required matching items', { 'minContains': minimumContains }));
-      }
-      if (maximumContains !== undefined && matches > maximumContains) {
-        errors.push(this.createError(path, 'maxContains', 'must not contain too many matching items', { 'maxContains': maximumContains }));
-      }
-    }
+    this.validateArrayContains(
+      graph,
+      path,
+      options,
+      refStack,
+      dynamicScope,
+      sem,
+      workingValue,
+      evaluatedItems,
+      errors,
+      depth
+    );
 
     return {
       errors,
@@ -556,6 +699,271 @@ export class GraphEngine implements GraphEngineInterface {
       'valid': errors.length === 0,
       'value': workingValue
     };
+  }
+
+  private validateArrayCardinality(
+    path: string,
+    workingValue: unknown[],
+    minItems: number | undefined,
+    maxItems: number | undefined,
+    errors: ValidationErrorType[]
+  ): void {
+    if (typeof minItems === 'number' && workingValue.length < minItems) {
+      errors.push(this.createError(path, 'minItems', `must have at least ${minItems} items`, { 'limit': minItems }));
+    }
+    if (typeof maxItems === 'number' && workingValue.length > maxItems) {
+      errors.push(this.createError(path, 'maxItems', `must have at most ${maxItems} items`, { 'limit': maxItems }));
+    }
+  }
+
+  private validateArrayContains(
+    graph: SchemaGraphInterface,
+    path: string,
+    options: EffectiveOptionsType,
+    refStack: Set<string>,
+    dynamicScope: DynamicScopeEntryInterface[],
+    sem: SchemaGraphSemanticsInterface,
+    workingValue: unknown[],
+    evaluatedItems: Set<number>,
+    errors: ValidationErrorType[],
+    depth: number
+  ): void {
+    const {
+      containsNode, maxContains, minContains
+    } = sem;
+
+    if (containsNode === undefined) {
+      return;
+    }
+    let matches = 0;
+
+    for (const [
+      index,
+      element
+    ] of workingValue.entries()) {
+      const candidate = this.visit(containsNode, graph, GraphEngineSupport.cloneCandidate(element), `${path}/${index}`, {
+        ...options,
+        'collectErrors': true
+      }, refStack, dynamicScope, depth + 1);
+
+      if (candidate.valid) {
+        matches++;
+        evaluatedItems.add(index);
+      }
+    }
+
+    const minimumContains = typeof minContains === 'number' ? minContains : 1;
+    const maximumContains = typeof maxContains === 'number' ? maxContains : undefined;
+
+    if (matches < minimumContains) {
+      errors.push(this.createError(path, 'contains', 'must contain required matching items', { 'minContains': minimumContains }));
+    }
+    if (maximumContains !== undefined && matches > maximumContains) {
+      errors.push(this.createError(path, 'maxContains', 'must not contain too many matching items', { 'maxContains': maximumContains }));
+    }
+  }
+
+  private validateArrayItems(
+    graph: SchemaGraphInterface,
+    path: string,
+    options: EffectiveOptionsType,
+    refStack: Set<string>,
+    dynamicScope: DynamicScopeEntryInterface[],
+    itemsNode: SchemaGraphNodeInterface | undefined,
+    workingValue: unknown[],
+    evaluatedItems: Set<number>,
+    errors: ValidationErrorType[],
+    depth: number
+  ): InternalExecutionResultInterface | undefined {
+    if (itemsNode === undefined) {
+      return undefined;
+    }
+    for (let index = 0; index < workingValue.length; index++) {
+      const child = this.visit(itemsNode, graph, workingValue[index], `${path}/${index}`, options, refStack, dynamicScope, depth + 1);
+
+      if (!child.valid && !options.collectErrors) {
+        return child;
+      }
+      workingValue[index] = child.value;
+      evaluatedItems.add(index);
+      errors.push(...child.errors);
+    }
+
+    return undefined;
+  }
+
+  private validateArrayPrefixItems(
+    graph: SchemaGraphInterface,
+    path: string,
+    options: EffectiveOptionsType,
+    refStack: Set<string>,
+    dynamicScope: DynamicScopeEntryInterface[],
+    sem: SchemaGraphSemanticsInterface,
+    workingValue: unknown[],
+    evaluatedItems: Set<number>,
+    errors: ValidationErrorType[],
+    depth: number
+  ): InternalExecutionResultInterface | undefined {
+    const {
+      itemsNode, 'prefixItems': prefixItemNodes
+    } = sem;
+
+    if (prefixItemNodes.length === 0) {
+      return undefined;
+    }
+
+    for (const [
+      index,
+      itemNode
+    ] of prefixItemNodes.entries()) {
+      if (index >= workingValue.length) {
+        break;
+      }
+      const child = this.visit(itemNode, graph, workingValue[index], `${path}/${index}`, options, refStack, dynamicScope, depth + 1);
+
+      if (!child.valid && !options.collectErrors) {
+        return child;
+      }
+      workingValue[index] = child.value;
+      evaluatedItems.add(index);
+      errors.push(...child.errors);
+    }
+
+    return this.validateExtraItemsAfterPrefix(
+      graph,
+      path,
+      options,
+      refStack,
+      dynamicScope,
+      itemsNode,
+      prefixItemNodes.length,
+      workingValue,
+      evaluatedItems,
+      errors,
+      depth
+    );
+  }
+
+  private validateArrayUniqueness(
+    path: string,
+    workingValue: unknown[],
+    uniqueItems: boolean | undefined,
+    errors: ValidationErrorType[]
+  ): void {
+    if (uniqueItems !== true) {
+      return;
+    }
+    outer: for (let index = 0; index < workingValue.length; index++) {
+      const item = workingValue[index];
+
+      for (let j = index + 1; j < workingValue.length; j++) {
+        if (deepEqual(item, workingValue[j])) {
+          errors.push(this.createError(path, 'uniqueItems', 'must NOT have duplicate items'));
+
+          break outer;
+        }
+      }
+    }
+  }
+
+  private validateDependentRequired(
+    dependentRequired: Record<string, string[]>,
+    workingValue: Record<string, unknown>,
+    path: string,
+    errors: ValidationErrorType[]
+  ): void {
+    if (Object.keys(dependentRequired).length === 0) {
+      return;
+    }
+    for (const [
+      key,
+      dependencies
+    ] of Object.entries(dependentRequired)) {
+      if (!(key in workingValue)) {
+        continue;
+      }
+      for (const dependency of dependencies) {
+        if (!(dependency in workingValue)) {
+          errors.push(this.createError(path, 'dependentRequired', `must have property '${dependency}' when '${key}' is present`, {
+            dependency,
+            key
+          }));
+        }
+      }
+    }
+  }
+
+  private validateDependentSchemas(
+    dependentSchemaEntries: ReadonlyArray<readonly [string, SchemaGraphNodeInterface]>,
+    workingValue: Record<string, unknown>,
+    graph: SchemaGraphInterface,
+    path: string,
+    options: EffectiveOptionsType,
+    refStack: Set<string>,
+    dynamicScope: DynamicScopeEntryInterface[],
+    evaluatedProperties: Set<string>,
+    errors: ValidationErrorType[],
+    depth: number
+  ): InternalExecutionResultInterface | undefined {
+    if (dependentSchemaEntries.length === 0) {
+      return undefined;
+    }
+    for (const [
+      key,
+      dependencyNode
+    ] of dependentSchemaEntries) {
+      if (!(key in workingValue)) {
+        continue;
+      }
+      const child = this.visit(dependencyNode, graph, workingValue, path, options, refStack, dynamicScope, depth + 1);
+
+      if (!child.valid && !options.collectErrors) {
+        return child;
+      }
+      errors.push(...child.errors);
+      if (child.evaluatedProperties !== undefined) {
+        for (const evaluated of child.evaluatedProperties) {
+          evaluatedProperties.add(evaluated);
+        }
+      }
+    }
+
+    return undefined;
+  }
+
+  private validateExtraItemsAfterPrefix(
+    graph: SchemaGraphInterface,
+    path: string,
+    options: EffectiveOptionsType,
+    refStack: Set<string>,
+    dynamicScope: DynamicScopeEntryInterface[],
+    itemsNode: SchemaGraphNodeInterface | undefined,
+    extraStart: number,
+    workingValue: unknown[],
+    evaluatedItems: Set<number>,
+    errors: ValidationErrorType[],
+    depth: number
+  ): InternalExecutionResultInterface | undefined {
+    if (itemsNode?.schema === false && workingValue.length > extraStart) {
+      errors.push(this.createError(path, 'items', 'must NOT have items beyond prefixItems'));
+
+      return undefined;
+    }
+    if (itemsNode === undefined || itemsNode.schema === true || itemsNode.schema === false) {
+      return undefined;
+    }
+    for (let index = extraStart; index < workingValue.length; index++) {
+      const child = this.visit(itemsNode, graph, workingValue[index], `${path}/${index}`, options, refStack, dynamicScope, depth + 1);
+
+      if (!child.valid && !options.collectErrors) {
+        return child;
+      }
+      workingValue[index] = child.value;
+      evaluatedItems.add(index);
+      errors.push(...child.errors);
+    }
+
+    return undefined;
   }
 
   private validateNumber(
@@ -573,7 +981,7 @@ export class GraphEngine implements GraphEngineInterface {
     graph: SchemaGraphInterface,
     value: Record<string, unknown>,
     path: string,
-    options: Pick<GraphEngineOptionsInterface, 'lookupGraph' | 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupGraph' | 'lookupSchema'>>,
+    options: EffectiveOptionsType,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntryInterface[],
     depth: number
@@ -581,120 +989,168 @@ export class GraphEngine implements GraphEngineInterface {
     const errors: ValidationErrorType[] = [];
     const evaluatedProperties = new Set<string>();
     const sem = graph.semantics(node);
-    const propertyNodeMap = sem.properties;
-    const required = sem.required;
-    let patternPropertyEntries = this.patternEntryCache.get(node);
-
-    if (patternPropertyEntries === undefined) {
-      patternPropertyEntries = sem.patternPropertyEntries.map(([
-        pattern,
-        patternNode
-      ]) => {
-        return {
-          'node': patternNode,
-          pattern,
-          'regex': this.regexFor(pattern)
-        };
-      });
-      this.patternEntryCache.set(node, patternPropertyEntries);
-    }
-    const dependentRequired = sem.dependentRequired;
-    const dependentSchemaEntries = sem.dependentSchemaEntries;
+    const patternPropertyEntries = this.buildPatternPropertyEntries(node, sem);
     const workingValue = value;
 
-    for (const [
-      canonicalKey,
-      propNode
-    ] of propertyNodeMap) {
-      const propSem = graph.semantics(propNode);
+    this.resolveAliases(sem.properties, workingValue, graph);
+    this.validateObjectCardinality(path, Object.keys(workingValue), sem.minProperties, sem.maxProperties, errors);
 
-      for (const alias of propSem.aliases) {
-        if (alias in workingValue) {
-          if (!(canonicalKey in workingValue)) {
-            workingValue[canonicalKey] = workingValue[alias];
-          }
-          delete workingValue[alias];
-          break;
-        }
+    if (options.applyDefaults) {
+      this.applyPropertyDefaults(sem.properties, workingValue, graph, dynamicScope);
+    }
+    this.applyRequiredDefaults(sem.required, sem.properties, workingValue, graph, dynamicScope, options, errors, path);
+
+    const iterKeys = Object.keys(workingValue);
+    const constraintEarlyReturn = this.validateObjectConstraints(
+      sem,
+      graph,
+      workingValue,
+      path,
+      options,
+      refStack,
+      dynamicScope,
+      evaluatedProperties,
+      errors,
+      iterKeys,
+      patternPropertyEntries,
+      depth
+    );
+
+    if (constraintEarlyReturn !== undefined) {
+      return constraintEarlyReturn;
+    }
+
+    for (const key of iterKeys) {
+      if (!evaluatedProperties.has(key)) {
+        this.applyAdditionalProperty(
+          key,
+          sem.additionalPropertiesNode,
+          graph,
+          workingValue,
+          path,
+          options,
+          refStack,
+          dynamicScope,
+          evaluatedProperties,
+          errors,
+          depth
+        );
       }
     }
-    const {
-      additionalPropertiesNode,
-      maxProperties,
-      minProperties
-    } = sem;
-    const propertyNamesNode = sem.propertyNamesNode;
 
-    const objectKeys = Object.keys(workingValue);
+    return {
+      errors,
+      'evaluatedItems': undefined,
+      evaluatedProperties,
+      'valid': errors.length === 0,
+      'value': workingValue
+    };
+  }
 
+  private validateObjectCardinality(
+    path: string,
+    objectKeys: string[],
+    minProperties: number | undefined,
+    maxProperties: number | undefined,
+    errors: ValidationErrorType[]
+  ): void {
     if (typeof minProperties === 'number' && objectKeys.length < minProperties) {
       errors.push(this.createError(path, 'minProperties', `must NOT have fewer than ${minProperties} properties`, { 'limit': minProperties }));
     }
     if (typeof maxProperties === 'number' && objectKeys.length > maxProperties) {
       errors.push(this.createError(path, 'maxProperties', `must NOT have more than ${maxProperties} properties`, { 'limit': maxProperties }));
     }
+  }
 
-    if (options.applyDefaults) {
-      for (const [
-        key,
-        propNode
-      ] of propertyNodeMap) {
-        if (key in workingValue) {
-          continue;
-        }
-        const prepared = this.createImplicitDefault(propNode, graph, dynamicScope);
+  private validateObjectConstraints(
+    sem: SchemaGraphSemanticsInterface,
+    graph: SchemaGraphInterface,
+    workingValue: Record<string, unknown>,
+    path: string,
+    options: EffectiveOptionsType,
+    refStack: Set<string>,
+    dynamicScope: DynamicScopeEntryInterface[],
+    evaluatedProperties: Set<string>,
+    errors: ValidationErrorType[],
+    iterKeys: string[],
+    patternPropertyEntries: Array<{ 'node': SchemaGraphNodeInterface;
+      'pattern': string;
+      'regex': RegExp }>,
+    depth: number
+  ): InternalExecutionResultInterface | undefined {
+    const {
+      dependentRequired,
+      dependentSchemaEntries,
+      properties,
+      propertyNamesNode
+    } = sem;
+    const propEarlyReturn = this.validateObjectProperties(
+      iterKeys,
+      properties,
+      patternPropertyEntries,
+      propertyNamesNode,
+      graph,
+      workingValue,
+      path,
+      options,
+      refStack,
+      dynamicScope,
+      evaluatedProperties,
+      errors,
+      depth
+    );
 
-        if (prepared !== undefined) {
-          workingValue[key] = prepared;
-        }
-      }
+    if (propEarlyReturn !== undefined) {
+      return propEarlyReturn;
     }
+    this.validateDependentRequired(dependentRequired, workingValue, path, errors);
 
-    for (const key of required) {
-      if (!(key in workingValue)) {
-        const propNode = propertyNodeMap.get(key);
+    return this.validateDependentSchemas(
+      dependentSchemaEntries,
+      workingValue,
+      graph,
+      path,
+      options,
+      refStack,
+      dynamicScope,
+      evaluatedProperties,
+      errors,
+      depth
+    );
+  }
 
-        if (options.applyDefaults && propNode !== undefined) {
-          const prepared = this.createImplicitDefault(propNode, graph, dynamicScope);
-
-          if (prepared !== undefined) {
-            workingValue[key] = prepared;
-          }
-        }
-      }
-      if (!(key in workingValue)) {
-        if (options.synthesizeDefaults) {
-          const propNode = propertyNodeMap.get(key);
-          const zeroValue = propNode === undefined
-            ? null
-            : this.synthesizeZeroValue(propNode, graph, dynamicScope);
-
-          workingValue[key] = zeroValue;
-        } else {
-          errors.push(this.createError(path, 'required', `must have required property '${key}'`, { 'missingProperty': key }));
-        }
-      }
-    }
-
-    const iterKeys = Object.keys(workingValue);
-
+  private validateObjectProperties(
+    iterKeys: string[],
+    propertyNodeMap: ReadonlyMap<string, SchemaGraphNodeInterface>,
+    patternPropertyEntries: Array<{ 'node': SchemaGraphNodeInterface;
+      'pattern': string;
+      'regex': RegExp }>,
+    propertyNamesNode: SchemaGraphNodeInterface | undefined,
+    graph: SchemaGraphInterface,
+    workingValue: Record<string, unknown>,
+    path: string,
+    options: EffectiveOptionsType,
+    refStack: Set<string>,
+    dynamicScope: DynamicScopeEntryInterface[],
+    evaluatedProperties: Set<string>,
+    errors: ValidationErrorType[],
+    depth: number
+  ): InternalExecutionResultInterface | undefined {
     for (const key of iterKeys) {
-      if (propertyNamesNode !== undefined) {
-        const propertyNameResult = this.visit(propertyNamesNode, graph, key, path, {
-          ...options,
-          'applyDefaults': false,
-          'removeAdditionalProperties': false
-        }, refStack, dynamicScope, depth + 1);
+      const nameCheckResult = this.validatePropertyKey(
+        key,
+        propertyNamesNode,
+        graph,
+        path,
+        options,
+        refStack,
+        dynamicScope,
+        errors,
+        depth
+      );
 
-        if (!propertyNameResult.valid && !options.collectErrors) {
-          return propertyNameResult;
-        }
-        errors.push(...propertyNameResult.errors.map((error) => {
-          return {
-            ...error,
-            'path': `${path}/${escape(key)}`
-          };
-        }));
+      if (nameCheckResult !== undefined) {
+        return nameCheckResult;
       }
 
       const propNode = propertyNodeMap.get(key);
@@ -710,109 +1166,91 @@ export class GraphEngine implements GraphEngineInterface {
         errors.push(...child.errors);
       }
 
-      for (const patternEntry of patternPropertyEntries) {
-        if (patternEntry.regex.test(key)) {
-          const child = this.visit(patternEntry.node, graph, workingValue[key], `${path}/${escape(key)}`, options, refStack, dynamicScope, depth + 1);
-
-          if (!child.valid && !options.collectErrors) {
-            return child;
-          }
-          workingValue[key] = child.value;
-          evaluatedProperties.add(key);
-          errors.push(...child.errors);
-        }
-      }
-    }
-
-    if (Object.keys(dependentRequired).length > 0) {
-      for (const [
+      const patternResult = this.validatePatternProperties(
         key,
-        dependencies
-      ] of Object.entries(dependentRequired)) {
-        if (!(key in workingValue)) {
-          continue;
-        }
-        for (const dependency of dependencies) {
-          if (!(dependency in workingValue)) {
-            errors.push(this.createError(path, 'dependentRequired', `must have property '${dependency}' when '${key}' is present`, {
-              dependency,
-              key
-            }));
-          }
-        }
+        patternPropertyEntries,
+        graph,
+        workingValue,
+        path,
+        options,
+        refStack,
+        dynamicScope,
+        evaluatedProperties,
+        errors,
+        depth
+      );
+
+      if (patternResult !== undefined) {
+        return patternResult;
       }
     }
 
-    if (dependentSchemaEntries.length > 0) {
-      for (const [
-        key,
-        dependencyNode
-      ] of dependentSchemaEntries) {
-        if (!(key in workingValue)) {
-          continue;
-        }
-        const child = this.visit(dependencyNode, graph, workingValue, path, options, refStack, dynamicScope, depth + 1);
+    return undefined;
+  }
 
-        if (!child.valid && !options.collectErrors) {
-          return child;
-        }
-        errors.push(...child.errors);
-        if (child.evaluatedProperties !== undefined) {
-          for (const evaluated of child.evaluatedProperties) {
-            evaluatedProperties.add(evaluated);
-          }
-        }
+  private validatePatternProperties(
+    key: string,
+    patternPropertyEntries: Array<{ 'node': SchemaGraphNodeInterface;
+      'pattern': string;
+      'regex': RegExp }>,
+    graph: SchemaGraphInterface,
+    workingValue: Record<string, unknown>,
+    path: string,
+    options: EffectiveOptionsType,
+    refStack: Set<string>,
+    dynamicScope: DynamicScopeEntryInterface[],
+    evaluatedProperties: Set<string>,
+    errors: ValidationErrorType[],
+    depth: number
+  ): InternalExecutionResultInterface | undefined {
+    for (const patternEntry of patternPropertyEntries) {
+      if (!patternEntry.regex.test(key)) {
+        continue;
       }
+      const child = this.visit(patternEntry.node, graph, workingValue[key], `${path}/${escape(key)}`, options, refStack, dynamicScope, depth + 1);
+
+      if (!child.valid && !options.collectErrors) {
+        return child;
+      }
+      workingValue[key] = child.value;
+      evaluatedProperties.add(key);
+      errors.push(...child.errors);
     }
 
-    const applyAdditional = (key: string): void => {
-      if (options.allowAdditionalProperties) {
-        return;
-      }
+    return undefined;
+  }
 
-      const additionalProperties = additionalPropertiesNode;
-
-      if (additionalProperties === false) {
-        if (options.removeAdditionalProperties) {
-          delete workingValue[key];
-        } else {
-          errors.push(this.createError(`${path}/${escape(key)}`, 'additionalProperties', 'must NOT have additional properties', { 'additionalProperty': key }));
-        }
-
-        return;
-      }
-
-      if (additionalProperties === undefined || additionalProperties === true) {
-        if (options.enforceSchemaProperties) {
-          delete workingValue[key];
-        }
-
-        return;
-      }
-
-      const child = this.visit(additionalProperties, graph, workingValue[key], `${path}/${escape(key)}`, options, refStack, dynamicScope, depth + 1);
-
-      if (child.valid) {
-        workingValue[key] = child.value;
-        evaluatedProperties.add(key);
-      } else {
-        errors.push(...child.errors);
-      }
-    };
-
-    for (const key of iterKeys) {
-      if (!evaluatedProperties.has(key)) {
-        applyAdditional(key);
-      }
+  private validatePropertyKey(
+    key: string,
+    propertyNamesNode: SchemaGraphNodeInterface | undefined,
+    graph: SchemaGraphInterface,
+    path: string,
+    options: EffectiveOptionsType,
+    refStack: Set<string>,
+    dynamicScope: DynamicScopeEntryInterface[],
+    errors: ValidationErrorType[],
+    depth: number
+  ): InternalExecutionResultInterface | undefined {
+    if (propertyNamesNode === undefined) {
+      return undefined;
     }
+    const propertyNameResult = this.visit(propertyNamesNode, graph, key, path, {
+      ...options,
+      'applyDefaults': false,
+      'removeAdditionalProperties': false
+    }, refStack, dynamicScope, depth + 1);
 
-    return {
-      errors,
-      'evaluatedItems': undefined,
-      evaluatedProperties,
-      'valid': errors.length === 0,
-      'value': workingValue
-    };
+    if (!propertyNameResult.valid && !options.collectErrors) {
+      return propertyNameResult;
+    }
+    errors.push(...propertyNameResult.errors.map((error: ValidationErrorType): ValidationErrorType => {
+      return {
+        ...error,
+        'path': `${path}/${escape(key)}`
+      };
+    }));
+
+    return undefined;
   }
 
   private validateString(
@@ -824,7 +1262,7 @@ export class GraphEngine implements GraphEngineInterface {
       path,
       value,
       sem,
-      (pattern) => {
+      (pattern: string): RegExp => {
         return this.regexFor(pattern);
       },
       this.formatRegistry,
@@ -837,7 +1275,7 @@ export class GraphEngine implements GraphEngineInterface {
     graph: SchemaGraphInterface,
     value: unknown,
     path: string,
-    options: Pick<GraphEngineOptionsInterface, 'lookupGraph' | 'lookupSchema'> & Required<Omit<GraphEngineOptionsInterface, 'formatRegistry' | 'keywords' | 'lookupGraph' | 'lookupSchema'>>,
+    options: EffectiveOptionsType,
     refStack: Set<string>,
     dynamicScope: DynamicScopeEntryInterface[],
     depth = 0
@@ -849,44 +1287,110 @@ export class GraphEngine implements GraphEngineInterface {
 
   private visitContext(): VisitContextInterface {
     return {
-      'applyUnevaluatedItems': (...args) => {
-        return this.applyUnevaluatedItems(...args);
-      },
-      'applyUnevaluatedProperties': (node, graph, value, path, opts, refStack, dynScope, evaluated, depth) => {
-        return this.applyUnevaluatedProperties(node, graph, value, path, opts, refStack, dynScope, evaluated, depth);
-      },
-      'coerceValue': (schemaTypes, value, materializeContainers) => {
+      ...this.visitContextResolution(),
+      ...this.visitContextUnevaluated(),
+      ...this.visitContextValidators()
+    };
+  }
+
+  private visitContextResolution(): Pick<VisitContextInterface, 'coerceValue' | 'createError' | 'customKeywords' | 'graphFor' | 'matchesType' | 'resolveDynamicRef' | 'resolveRef' | 'synthesizeZeroValue'> {
+    return {
+      'coerceValue': (schemaTypes: string[], value: unknown, materializeContainers: boolean): unknown => {
         return this.coerceValue(schemaTypes, value, materializeContainers);
       },
-      'createError': (path, keyword, message, params) => {
+      'createError': (path: string, keyword: string, message: string, params?: Record<string, unknown>): ValidationErrorType => {
         return this.createError(path, keyword, message, params);
       },
       'customKeywords': this.customKeywords,
-      'graphFor': (rootSchema) => {
+      'graphFor': (rootSchema: boolean | Record<string, unknown>): SchemaGraphInterface => {
         return this.graphFor(rootSchema);
       },
-      'matchesType': (schemaTypes, value) => {
+      'matchesType': (schemaTypes: string[], value: unknown): boolean => {
         return this.matchesType(schemaTypes, value);
       },
-      'resolveDynamicRef': (ref, currentGraph, dynamicScope) => {
+      'resolveDynamicRef': (ref: string, currentGraph: SchemaGraphInterface, dynamicScope: DynamicScopeEntryInterface[]): RefTargetInterface => {
         return this.resolveDynamicRef(ref, currentGraph, dynamicScope);
       },
-      'resolveRef': (ref, currentGraph) => {
+      'resolveRef': (ref: string, currentGraph: SchemaGraphInterface): RefTargetInterface => {
         return this.resolveRef(ref, currentGraph);
       },
-      'synthesizeZeroValue': (node, graph, dynamicScope) => {
+      'synthesizeZeroValue': (node: SchemaGraphNodeInterface, graph: SchemaGraphInterface, dynamicScope: DynamicScopeEntryInterface[]): unknown => {
         return this.synthesizeZeroValue(node, graph, dynamicScope);
+      }
+    };
+  }
+
+  private visitContextUnevaluated(): Pick<VisitContextInterface, 'applyUnevaluatedItems' | 'applyUnevaluatedProperties'> {
+    return {
+      'applyUnevaluatedItems': (
+        node: SchemaGraphNodeInterface,
+        graph: SchemaGraphInterface,
+        value: unknown[],
+        path: string,
+        options: EffectiveOptionsType,
+        refStack: Set<string>,
+        dynamicScope: DynamicScopeEntryInterface[],
+        alreadyEvaluated: Set<number>,
+        depth: number
+      ): InternalExecutionResultInterface => {
+        return this.applyUnevaluatedItems(
+          node,
+          graph,
+          value,
+          path,
+          options,
+          refStack,
+          dynamicScope,
+          alreadyEvaluated,
+          depth
+        );
       },
-      'validateArray': (graph, value, path, options, refStack, dynamicScope, sem, depth) => {
+      'applyUnevaluatedProperties': (
+        node: SchemaGraphNodeInterface,
+        graph: SchemaGraphInterface,
+        value: Record<string, unknown>,
+        path: string,
+        opts: EffectiveOptionsType,
+        refStack: Set<string>,
+        dynScope: DynamicScopeEntryInterface[],
+        evaluated: Set<string>,
+        depth: number
+      ): InternalExecutionResultInterface => {
+        return this.applyUnevaluatedProperties(node, graph, value, path, opts, refStack, dynScope, evaluated, depth);
+      }
+    };
+  }
+
+  private visitContextValidators(): Pick<VisitContextInterface, 'validateArray' | 'validateNumber' | 'validateObject' | 'validateString'> {
+    return {
+      'validateArray': (
+        graph: SchemaGraphInterface,
+        value: unknown[],
+        path: string,
+        options: EffectiveOptionsType,
+        refStack: Set<string>,
+        dynamicScope: DynamicScopeEntryInterface[],
+        sem: SchemaGraphSemanticsInterface,
+        depth: number
+      ): InternalExecutionResultInterface => {
         return this.validateArray(graph, value, path, options, refStack, dynamicScope, sem, depth);
       },
-      'validateNumber': (path, value, sem) => {
+      'validateNumber': (path: string, value: number, sem: SchemaGraphSemanticsInterface): ValidationErrorType[] => {
         return this.validateNumber(path, value, sem);
       },
-      'validateObject': (node, graph, value, path, options, refStack, dynamicScope, depth) => {
+      'validateObject': (
+        node: SchemaGraphNodeInterface,
+        graph: SchemaGraphInterface,
+        value: Record<string, unknown>,
+        path: string,
+        options: EffectiveOptionsType,
+        refStack: Set<string>,
+        dynamicScope: DynamicScopeEntryInterface[],
+        depth: number
+      ): InternalExecutionResultInterface => {
         return this.validateObject(node, graph, value, path, options, refStack, dynamicScope, depth);
       },
-      'validateString': (path, value, sem) => {
+      'validateString': (path: string, value: string, sem: SchemaGraphSemanticsInterface): ValidationErrorType[] => {
         return this.validateString(path, value, sem);
       }
     };

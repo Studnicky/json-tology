@@ -83,7 +83,10 @@ const stylisticPluginRules = {
   '@stylistic/keyword-spacing': ['error', { after: true, before: true }],
   '@stylistic/line-comment-position': ['error', { position: 'above' }],
   '@stylistic/linebreak-style': ['error', 'unix'],
-  '@stylistic/max-len': ['error', { code: 120, ignoreComments: true, ignoreStrings: true, ignoreTemplateLiterals: true, ignoreUrls: true }],
+  // Line width is owned by `litany format` (the canonical formatter), which reflows
+  // hot-path call sites onto single lines it will not wrap; an eslint max-len would
+  // conflict with the formatter. Deferred to the formatter per the validator audit (§5).
+  '@stylistic/max-len': 'off',
   '@stylistic/multiline-ternary': ['error', 'always-multiline'],
   '@stylistic/newline-per-chained-call': ['error', { ignoreChainWithDepth: 2 }],
   '@stylistic/no-extra-parens': ['error', 'functions'],
@@ -166,6 +169,7 @@ const coreEslintRules = {
   'no-new-func': 'error',
   'no-new-object': 'error',
   'no-new-wrappers': 'error',
+  'no-param-reassign': 'error',
   'no-promise-executor-return': 'error',
   'no-prototype-builtins': 'error',
   'no-restricted-exports': ['error', { restrictDefaultExports: { defaultFrom: true, direct: true, named: true, namedFrom: true, namespaceFrom: true } }],

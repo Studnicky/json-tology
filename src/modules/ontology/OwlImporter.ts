@@ -15,7 +15,7 @@
 
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import type {
-  DispatcherFnType,
+  DispatcherFnInterface,
   OwlImportContext,
   OwlImporterOptions,
   OwlImportFragment,
@@ -27,6 +27,9 @@ import type { InvariantInterface } from '../../interfaces/Invariant.js';
 import type { QuadObjectType } from '../../types/Quad.js';
 import { Curie } from '../rdf/Curie.js';
 import { STANDARD_PREFIXES } from '../../constants/STANDARD_PREFIXES.js';
+import {
+  OWL, RDF, RDFS
+} from '../../constants/IRI.js';
 import { SUPPORTED_XSD_DATATYPES } from '../../constants/XSD_REVERSE_MAPS.js';
 import { OwlImportError } from '../../errors/OwlImportError.js';
 import { SchemaGraph } from '../graph/SchemaGraph.js';
@@ -45,6 +48,25 @@ import { importProperties } from './importDispatch/Properties.js';
 import { importPropertyRestrictions } from './importDispatch/PropertyRestrictions.js';
 
 // ---------------------------------------------------------------------------
+// IRI constants — derive from STANDARD_PREFIXES to avoid embedded literal values
+// ---------------------------------------------------------------------------
+
+const OWL_NS = STANDARD_PREFIXES.owl;
+const RDFS_NS_IRI = STANDARD_PREFIXES.rdfs;
+const RDF_NS_IRI = STANDARD_PREFIXES.rdf;
+
+/** Full-IRI forms of owl:Class and rdfs:Class. */
+const OWL_CLASS_IRI = `${OWL_NS}Class`;
+const RDFS_CLASS_IRI = `${RDFS_NS_IRI}Class`;
+
+/** Full-IRI form of rdf:Property. */
+const RDF_PROPERTY_IRI = `${RDF_NS_IRI}Property`;
+
+/** Full-IRI forms of OWL property types. */
+const OWL_OBJECT_PROPERTY_IRI = `${OWL_NS}ObjectProperty`;
+const OWL_DATATYPE_PROPERTY_IRI = `${OWL_NS}DatatypeProperty`;
+
+// ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
 
@@ -55,18 +77,13 @@ function isOwlImportNotImplemented(err: unknown): err is OwlImportError {
   );
 }
 
-function mergeFragments(fragments: OwlImportFragment[]): OwlImportFragment {
+// ---------------------------------------------------------------------------
+// mergeFragments helpers
+// ---------------------------------------------------------------------------
+
+/** Merge all schema deltas from a list of fragments into a single map. */
+function mergeSchemaDeltas(fragments: OwlImportFragment[]): Map<string, Partial<JsonSchemaDocumentObjectType>> {
   const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
-  const invariants: Array<{ 'invariant': InvariantInterface;
-    'schemaId': string; }> = [];
-  const characteristics: Array<{ 'characteristic': string;
-    'propertyIri': string; }> = [];
-  const sameAs: Array<readonly [string, string]> = [];
-  const individuals: Array<{
-    'iri': string;
-    'properties': Record<string, unknown>;
-    'types': readonly string[];
-  }> = [];
 
   for (const fragment of fragments) {
     for (const [
@@ -84,19 +101,36 @@ function mergeFragments(fragments: OwlImportFragment[]): OwlImportFragment {
         });
       }
     }
-    for (const inv of fragment.invariants) {
-      invariants.push(inv);
-    }
-    for (const ch of fragment.characteristics) {
-      characteristics.push(ch);
-    }
-    for (const pair of fragment.sameAs) {
-      sameAs.push(pair);
-    }
-    for (const ind of fragment.individuals) {
-      individuals.push(ind);
+  }
+
+  return schemaDeltas;
+}
+
+/** Flatten a list of fragment arrays into a single array. */
+function flattenFragmentArrays<T>(fragments: OwlImportFragment[], key: keyof OwlImportFragment): T[] {
+  const result: T[] = [];
+
+  for (const fragment of fragments) {
+    for (const item of fragment[key] as Iterable<T>) {
+      result.push(item);
     }
   }
+
+  return result;
+}
+
+function mergeFragments(fragments: OwlImportFragment[]): OwlImportFragment {
+  const schemaDeltas = mergeSchemaDeltas(fragments);
+  const invariants = flattenFragmentArrays<{ 'invariant': InvariantInterface;
+    'schemaId': string; }>(fragments, 'invariants');
+  const characteristics = flattenFragmentArrays<{ 'characteristic': string;
+    'propertyIri': string; }>(fragments, 'characteristics');
+  const sameAs = flattenFragmentArrays<readonly [string, string]>(fragments, 'sameAs');
+  const individuals = flattenFragmentArrays<{
+    'iri': string;
+    'properties': Record<string, unknown>;
+    'types': readonly string[];
+  }>(fragments, 'individuals');
 
   return {
     characteristics,
@@ -115,13 +149,14 @@ function mergeFragments(fragments: OwlImportFragment[]): OwlImportFragment {
 function collectClassIris(quads: QuadInterface[]): ReadonlySet<string> {
   const classIris = new Set<string>();
   const CLASS_TYPES = new Set([
-    'http://www.w3.org/2000/01/rdf-schema#Class',
-    'http://www.w3.org/2002/07/owl#Class',
+    OWL.Class,
     'owl:Class',
-    'rdfs:Class'
+    OWL_CLASS_IRI,
+    'rdfs:Class',
+    RDFS_CLASS_IRI
   ]);
   const TYPE_PREDICATES = new Set([
-    'http://www.w3.org/1999/02/22-rdf-syntax-ns#type',
+    RDF.type,
     'rdf:type'
   ]);
 
@@ -145,15 +180,17 @@ function collectClassIris(quads: QuadInterface[]): ReadonlySet<string> {
 function collectPropertyIris(quads: QuadInterface[]): ReadonlySet<string> {
   const propertyIris = new Set<string>();
   const PROPERTY_TYPES = new Set([
-    'http://www.w3.org/1999/02/22-rdf-syntax-ns#Property',
-    'http://www.w3.org/2002/07/owl#DatatypeProperty',
-    'http://www.w3.org/2002/07/owl#ObjectProperty',
+    OWL.DatatypeProperty,
+    OWL.ObjectProperty,
     'owl:DatatypeProperty',
     'owl:ObjectProperty',
-    'rdf:Property'
+    OWL_DATATYPE_PROPERTY_IRI,
+    OWL_OBJECT_PROPERTY_IRI,
+    'rdf:Property',
+    RDF_PROPERTY_IRI
   ]);
   const TYPE_PREDICATES = new Set([
-    'http://www.w3.org/1999/02/22-rdf-syntax-ns#type',
+    RDF.type,
     'rdf:type'
   ]);
 
@@ -177,11 +214,12 @@ function collectPropertyIris(quads: QuadInterface[]): ReadonlySet<string> {
 function collectDatatypeIris(quads: QuadInterface[]): ReadonlySet<string> {
   const datatypeIris = new Set<string>();
   const DATATYPE_TYPES = new Set([
-    'http://www.w3.org/2000/01/rdf-schema#Datatype',
+    `${RDFS_NS_IRI}Datatype`,
+    RDFS.Datatype,
     'rdfs:Datatype'
   ]);
   const TYPE_PREDICATES_DT = new Set([
-    'http://www.w3.org/1999/02/22-rdf-syntax-ns#type',
+    RDF.type,
     'rdf:type'
   ]);
 
@@ -198,7 +236,7 @@ function collectDatatypeIris(quads: QuadInterface[]): ReadonlySet<string> {
   return datatypeIris;
 }
 
-function isDatatype(iri: string): boolean {
+function isDatatypeIri(iri: string): boolean {
   return SUPPORTED_XSD_DATATYPES.has(iri);
 }
 
@@ -220,15 +258,18 @@ interface JsonLdModule {
 
 async function tryLoadJsonLd(): Promise<JsonLdModule | null> {
   try {
-    // jsonld is an optional peerDependency — resolve via an indirect specifier
-    // string to avoid a hard compile-time dependency.
-    // TypeScript does not know about this package; the cast is structurally safe
-    // because we only use toRDF() which is declared in JsonLdModule above.
-    // eslint-disable-next-line @typescript-eslint/no-implied-eval, no-new-func
-    const loadFn = new Function('id', 'return import(id)') as (id: string) => Promise<unknown>;
-    const mod = await loadFn('jsonld');
+    // jsonld is an optional peerDependency. Dynamic import is used so that
+    // the missing package is caught at runtime rather than compile time.
+    // The `catch` returns null, which the caller handles gracefully.
+    const mod = await import('jsonld').catch((): null => {
+      return null;
+    });
 
-    return mod as JsonLdModule;
+    if (mod === null) {
+      return null;
+    }
+
+    return mod as unknown as JsonLdModule;
   } catch {
     return null;
   }
@@ -245,6 +286,30 @@ interface ExternalRdfJsQuad {
     'value': string };
   'predicate': { 'value': string };
   'subject': { 'value': string }
+}
+
+/** Build a single QuadInterface from an external RDF/JS quad shape. */
+function buildQuadFromExternal(quad: ExternalRdfJsQuad): QuadInterface {
+  const obj = quad.object;
+  let objectTerm: QuadObjectType;
+
+  if (obj.termType === 'Literal') {
+    objectTerm = Terms.literal(obj.value, {
+      'datatype': Terms.iri(obj.datatype?.value ?? ''),
+      'language': obj.language ?? ''
+    });
+  } else if (obj.termType === 'BlankNode') {
+    objectTerm = Terms.blank(obj.value);
+  } else {
+    objectTerm = Terms.iri(obj.value);
+  }
+
+  return Terms.quad(
+    Terms.iri(quad.subject.value),
+    Terms.iri(quad.predicate.value),
+    objectTerm,
+    Terms.defaultGraph()
+  );
 }
 
 /**
@@ -267,30 +332,11 @@ function fromJsonLdRdfOutput(rdfOutput: unknown): QuadInterface[] {
   }
 
   return defaultGraph
-    .filter((quad): quad is ExternalRdfJsQuad => {
+    .filter((quad: unknown): quad is ExternalRdfJsQuad => {
       return typeof quad === 'object' && quad !== null;
     })
-    .map((quad) => {
-      const obj = quad.object;
-      let objectTerm: QuadObjectType;
-
-      if (obj.termType === 'Literal') {
-        objectTerm = Terms.literal(obj.value, {
-          'datatype': Terms.iri(obj.datatype?.value ?? ''),
-          'language': obj.language ?? ''
-        });
-      } else if (obj.termType === 'BlankNode') {
-        objectTerm = Terms.blank(obj.value);
-      } else {
-        objectTerm = Terms.iri(obj.value);
-      }
-
-      return Terms.quad(
-        Terms.iri(quad.subject.value),
-        Terms.iri(quad.predicate.value),
-        objectTerm,
-        Terms.defaultGraph()
-      );
+    .map((quad: ExternalRdfJsQuad): QuadInterface => {
+      return buildQuadFromExternal(quad);
     });
 }
 
@@ -302,7 +348,7 @@ function fromJsonLdRdfOutput(rdfOutput: unknown): QuadInterface[] {
  * Normalise a JSON-LD object (already parsed from string) to QuadInterface[].
  *
  * Handles the compact JSON-LD format that OntologyBuilder produces:
- * - @context: prefix map (prefix → namespace IRI)
+ * - @context: prefix-to-IRI map (prefix label to IRI prefix string)
  * - @graph: array of subject nodes with @id, @type, and predicate entries
  *
  * For arbitrary JSON-LD documents, use importAsync() with jsonld.toRDF.
@@ -375,7 +421,7 @@ function normalizeInput(jsonLd: object | QuadInterface[] | string): QuadInterfac
 // Dispatcher table
 // ---------------------------------------------------------------------------
 
-const DISPATCHERS: readonly DispatcherFnType[] = [
+const DISPATCHERS: readonly DispatcherFnInterface[] = [
   importClassAxioms,
   importClassExpressions,
   importPropertyRestrictions,
@@ -393,8 +439,23 @@ const DISPATCHERS: readonly DispatcherFnType[] = [
 /**
  * OwlImporter — orchestrates the OWL 2 TBox import pipeline.
  *
+ * @remarks
  * Construct once and call `import()` for each input document.
- * The importer is stateless across calls.
+ * The importer is stateless across calls. For synchronous use pass a
+ * `QuadInterface[]` or a compact JSON-LD string/object produced by
+ * `OntologyBuilder`. For arbitrary JSON-LD, call `importAsync()` which
+ * requires the optional `jsonld` peerDependency.
+ *
+ * @example
+ * ```ts
+ * const importer = new OwlImporter({ baseIRI: 'https://example.com/' });
+ * const result = importer.import(jsonLdDoc);
+ * ```
+ *
+ * @category OWL Import
+ * @since 0.18.0
+ * @see {@link OwlImportResult}
+ * @group OWL Import
  */
 export class OwlImporter {
   private readonly baseIRI: string;
@@ -432,9 +493,6 @@ export class OwlImporter {
    */
   public import(jsonLd: object | QuadInterface[] | string): OwlImportResult {
     const quads = normalizeInput(jsonLd);
-    // SchemaGraph.fromQuads is the structural inverse of OwlProjection.graph().
-    // It ingests OWL-vocabulary quads and produces a SchemaGraphInterface that
-    // phase-1 dispatchers can traverse via allRelations() and nodes().
     const graph = SchemaGraph.fromQuads(quads, {
       'baseIRI': this.baseIRI,
       'prefixes': this.prefixes
@@ -452,11 +510,11 @@ export class OwlImporter {
       'baseIRI': this.baseIRI,
       'curie': this.curie,
       graph,
-      'isDatatype': (iri: string) => {
-        return isDatatype(iri) || allDatatypeIris.has(iri);
+      'isDatatype': (iri: string): boolean => {
+        return isDatatypeIri(iri) || allDatatypeIris.has(iri);
       },
       'prefixes': this.prefixes,
-      'reportUnsupported': (axiomIri: string, subjectIri: null | string) => {
+      'reportUnsupported': (axiomIri: string, subjectIri: null | string): void => {
         unsupported.push({
           axiomIri,
           subjectIri
@@ -471,7 +529,6 @@ export class OwlImporter {
         fragments.push(dispatcher(quads, ctx));
       } catch (error) {
         if (isOwlImportNotImplemented(error)) {
-          // Dispatcher stub — record as unsupported and continue.
           unsupported.push({
             'axiomIri': error.axiomIri,
             'subjectIri': error.subjectIri
@@ -515,13 +572,11 @@ export class OwlImporter {
     if (Array.isArray(jsonLd)) {
       quads = jsonLd as QuadInterface[];
     } else {
-      // Attempt synchronous compact walker first (no dependency required).
       const syncResult = normalizeInput(jsonLd);
 
       if (syncResult.length > 0) {
         quads = syncResult;
       } else {
-        // Fall back to jsonld.toRDF for arbitrary JSON-LD documents.
         const jsonLdModule = await tryLoadJsonLd();
 
         if (jsonLdModule === null) {
@@ -543,7 +598,6 @@ export class OwlImporter {
       }
     }
 
-    // Delegate to the synchronous pipeline with the resolved quads.
     return this.import(quads);
   }
 }

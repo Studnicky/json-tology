@@ -48,6 +48,26 @@ interface DatasetLiteralTerm extends DatasetTerm {
   'language'?: string;
 }
 
+/**
+ * Shape of a single quad as emitted by `jsonld.toRDF()` dataset iteration.
+ *
+ * @remarks
+ * Each property holds a `DatasetTerm` with a `termType` discriminator and a
+ * `value` string. The `object` additionally carries an optional `datatype`
+ * and `language` for RDF literals. This interface is used exclusively by
+ * {@link QuadFactory.fromDatasetQuad} to convert jsonld dataset quads into
+ * the project-canonical `QuadInterface` representation.
+ *
+ * @example
+ * ```ts
+ * const quad = QuadFactory.fromDatasetQuad(datasetQuad);
+ * ```
+ *
+ * @category RDF
+ * @since 0.1.0
+ * @see {@link QuadFactory}
+ * @group QuadFactory
+ */
 export interface JsonLdDatasetQuad {
   'graph': DatasetTerm;
   'object': DatasetLiteralTerm;
@@ -110,6 +130,33 @@ function assertAbsolutePredicate(predicate: string): void {
 // QuadFactory — static-only class
 // ---------------------------------------------------------------------------
 
+/**
+ * Low-level quad construction primitives for RDF 1.1 and RDF 1.2.
+ *
+ * @remarks
+ * All factory methods return rdf/js-compliant term objects — subjects,
+ * predicates, and graphs are `IriTermType | BnodeTermType | DefaultGraphTermType`,
+ * never bare strings. Use `.value` to extract the underlying IRI string.
+ *
+ * Blank-node naming: callers should pass an `IdentifierIssuerInterface` for
+ * concurrent-safe serializations. When no issuer is supplied, a module-level
+ * counter is used (backward-compatible, not concurrent-safe across multiple
+ * serialization calls).
+ *
+ * @example
+ * ```ts
+ * const q = QuadFactory.quad(
+ *   'https://example.com/Subject',
+ *   'https://example.com/predicate',
+ *   QuadFactory.literal('hello', XSD.string),
+ * );
+ * ```
+ *
+ * @category RDF
+ * @since 0.1.0
+ * @see {@link Terms}
+ * @group QuadFactory
+ */
 export class QuadFactory {
   /**
    * Construct an annotation quad whose subject is an RDF 1.2 triple term.

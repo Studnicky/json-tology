@@ -30,8 +30,16 @@ import type { QuadInterface } from '../../../interfaces/Quad.js';
 import type {
   OwlImportContext, OwlImportFragment
 } from '../../../interfaces/OwlImport.js';
-import type { JsonSchemaDocumentObjectType } from '../../../types/Schema.js';
 import type { SchemaGraphRelationInterface } from '../../../interfaces/SchemaGraph.js';
+import { STANDARD_PREFIXES } from '../../../constants/STANDARD_PREFIXES.js';
+
+// ---------------------------------------------------------------------------
+// IRI constants — derived from STANDARD_PREFIXES to avoid embedded literals
+// ---------------------------------------------------------------------------
+
+const RDFS_NS = STANDARD_PREFIXES.rdfs;
+const OWL_NS = STANDARD_PREFIXES.owl;
+const SKOS_NS = STANDARD_PREFIXES.skos;
 
 // ---------------------------------------------------------------------------
 // Predicate IRI sets (compact and full-IRI forms accepted)
@@ -39,53 +47,53 @@ import type { SchemaGraphRelationInterface } from '../../../interfaces/SchemaGra
 
 // Predicates that map to `title` (last one wins if both present; English preferred)
 const LABEL_PREDICATES = new Set<string>([
-  'http://www.w3.org/2000/01/rdf-schema#label',
-  'http://www.w3.org/2004/02/skos/core#prefLabel',
+  `${RDFS_NS}label`,
+  `${SKOS_NS}prefLabel`,
   'rdfs:label',
   'skos:prefLabel'
 ]);
 
 // Predicates that map to `description`
 const COMMENT_PREDICATES = new Set<string>([
-  'http://www.w3.org/2000/01/rdf-schema#comment',
-  'http://www.w3.org/2004/02/skos/core#definition',
+  `${RDFS_NS}comment`,
+  `${SKOS_NS}definition`,
   'rdfs:comment',
   'skos:definition'
 ]);
 
 // Predicate for `deprecated`
 const DEPRECATED_PREDICATES = new Set<string>([
-  'http://www.w3.org/2002/07/owl#deprecated',
+  `${OWL_NS}deprecated`,
   'owl:deprecated'
 ]);
 
 // Predicate for `owl:versionInfo` → $comment "version: ..."
 const VERSION_INFO_PREDICATES = new Set<string>([
-  'http://www.w3.org/2002/07/owl#versionInfo',
+  `${OWL_NS}versionInfo`,
   'owl:versionInfo'
 ]);
 
 // Predicate for `rdfs:isDefinedBy` → $comment "definedBy: <iri>"
 const IS_DEFINED_BY_PREDICATES = new Set<string>([
-  'http://www.w3.org/2000/01/rdf-schema#isDefinedBy',
+  `${RDFS_NS}isDefinedBy`,
   'rdfs:isDefinedBy'
 ]);
 
 // Predicate for `rdfs:seeAlso` → $comment "seeAlso: <iri>"
 const SEE_ALSO_PREDICATES = new Set<string>([
-  'http://www.w3.org/2000/01/rdf-schema#seeAlso',
+  `${RDFS_NS}seeAlso`,
   'rdfs:seeAlso'
 ]);
 
 // skos:altLabel — record as metadata only (no direct schema field)
 const ALT_LABEL_PREDICATES = new Set<string>([
-  'http://www.w3.org/2004/02/skos/core#altLabel',
+  `${SKOS_NS}altLabel`,
   'skos:altLabel'
 ]);
 
 // owl:AnnotationProperty declarations — silently accepted
 const ANNOTATION_PROPERTY_PREDICATES = new Set<string>([
-  'http://www.w3.org/2002/07/owl#AnnotationProperty',
+  `${OWL_NS}AnnotationProperty`,
   'owl:AnnotationProperty'
 ]);
 
@@ -228,7 +236,7 @@ function resolveLangValue(map: Map<string, string[]>): null | string {
 function buildI18nRecord(map: Map<string, string[]>): null | Record<string, string> {
   // Only emit i18n when there are values in more than one language bucket
   // (exclude the untagged bucket from the count — it is absorbed into the primary field)
-  const taggedKeys = [...map.keys()].filter((k) => {
+  const taggedKeys = [...map.keys()].filter((k: string): boolean => {
     return k !== '';
   });
 
@@ -251,15 +259,11 @@ function buildI18nRecord(map: Map<string, string[]>): null | Record<string, stri
 }
 
 // ---------------------------------------------------------------------------
-// Delta builder
+// Delta builder helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Convert an AnnotationAccumulator into a partial schema delta.
- */
-function buildDelta(acc: AnnotationAccumulator): Partial<JsonSchemaDocumentObjectType> {
-  const delta: Record<string, unknown> = {};
-
+/** Apply title and description fields to a delta record from accumulators. */
+function applyLabelFields(delta: Record<string, unknown>, acc: AnnotationAccumulator): void {
   const title = resolveLangValue(acc.labels);
 
   if (title !== null) {
@@ -275,8 +279,10 @@ function buildDelta(acc: AnnotationAccumulator): Partial<JsonSchemaDocumentObjec
   if (acc.deprecated) {
     delta.deprecated = true;
   }
+}
 
-  // $comment — combine versionInfo, isDefinedBy, seeAlso entries
+/** Build the $comment string from versionInfo, isDefinedBy, and seeAlso arrays. */
+function buildCommentString(acc: AnnotationAccumulator): string {
   const commentParts: string[] = [];
 
   for (const versionStr of acc.versionInfo) {
@@ -289,11 +295,11 @@ function buildDelta(acc: AnnotationAccumulator): Partial<JsonSchemaDocumentObjec
     commentParts.push(`seeAlso: ${iri}`);
   }
 
-  if (commentParts.length > 0) {
-    delta.$comment = commentParts.join('; ');
-  }
+  return commentParts.join('; ');
+}
 
-  // jt:i18n for labels (when multiple languages present)
+/** Apply i18n label and description records to a delta. */
+function applyI18nFields(delta: Record<string, unknown>, acc: AnnotationAccumulator): void {
   const labelI18n = buildI18nRecord(acc.labels);
 
   if (labelI18n !== null) {
@@ -303,7 +309,6 @@ function buildDelta(acc: AnnotationAccumulator): Partial<JsonSchemaDocumentObjec
     };
   }
 
-  // jt:i18n for descriptions (when multiple languages present)
   const commentI18n = buildI18nRecord(acc.comments);
 
   if (commentI18n !== null) {
@@ -314,8 +319,188 @@ function buildDelta(acc: AnnotationAccumulator): Partial<JsonSchemaDocumentObjec
       'description': commentI18n
     };
   }
+}
+
+// ---------------------------------------------------------------------------
+// Delta builder
+// ---------------------------------------------------------------------------
+
+/**
+ * Convert an AnnotationAccumulator into a partial schema delta.
+ */
+function buildDelta(acc: AnnotationAccumulator): Record<string, unknown> {
+  const delta: Record<string, unknown> = {};
+
+  applyLabelFields(delta, acc);
+
+  const commentStr = buildCommentString(acc);
+
+  if (commentStr !== '') {
+    delta.$comment = commentStr;
+  }
+
+  applyI18nFields(delta, acc);
 
   return delta;
+}
+
+// ---------------------------------------------------------------------------
+// importAnnotations — relation processing helpers
+// ---------------------------------------------------------------------------
+
+/** Get or create an AnnotationAccumulator for a subject IRI. */
+function getOrCreateAccumulator(
+  accumulators: Map<string, AnnotationAccumulator>,
+  subjectIri: string
+): AnnotationAccumulator {
+  const existing = accumulators.get(subjectIri);
+
+  if (existing !== undefined) {
+    return existing;
+  }
+  const acc = makeAccumulator();
+
+  accumulators.set(subjectIri, acc);
+
+  return acc;
+}
+
+/** Process a single label relation and append to the accumulator. */
+function processLabelRelation(
+  relation: SchemaGraphRelationInterface,
+  acc: AnnotationAccumulator
+): void {
+  const value = literalString(relation);
+
+  if (value !== null) {
+    appendLangValue(acc.labels, literalLanguage(relation), value);
+  }
+}
+
+/** Process a single comment relation and append to the accumulator. */
+function processCommentRelation(
+  relation: SchemaGraphRelationInterface,
+  acc: AnnotationAccumulator
+): void {
+  const value = literalString(relation);
+
+  if (value !== null) {
+    appendLangValue(acc.comments, literalLanguage(relation), value);
+  }
+}
+
+/** Dispatch one relation to the appropriate accumulator update based on predicate sets. */
+function dispatchLiteralRelation(
+  relation: SchemaGraphRelationInterface,
+  predicateIri: string,
+  acc: AnnotationAccumulator
+): void {
+  if (LABEL_PREDICATES.has(predicateIri)) {
+    processLabelRelation(relation, acc);
+
+    return;
+  }
+  if (COMMENT_PREDICATES.has(predicateIri)) {
+    processCommentRelation(relation, acc);
+
+    return;
+  }
+  if (DEPRECATED_PREDICATES.has(predicateIri)) {
+    const value = literalString(relation);
+
+    if (value !== null && value.toLowerCase() === 'true') {
+      acc.deprecated = true;
+    }
+
+    return;
+  }
+  if (VERSION_INFO_PREDICATES.has(predicateIri)) {
+    const value = literalString(relation);
+
+    if (value !== null) {
+      acc.versionInfo.push(value);
+    }
+  }
+}
+
+/** Dispatch one relation to accumulate IRI-typed annotation values. */
+function dispatchIriRelation(
+  relation: SchemaGraphRelationInterface,
+  predicateIri: string,
+  acc: AnnotationAccumulator
+): void {
+  if (IS_DEFINED_BY_PREDICATES.has(predicateIri)) {
+    const iri = namedNodeIri(relation) ?? literalString(relation);
+
+    if (iri !== null) {
+      acc.isDefinedBy.push(iri);
+    }
+
+    return;
+  }
+  if (SEE_ALSO_PREDICATES.has(predicateIri)) {
+    const iri = namedNodeIri(relation) ?? literalString(relation);
+
+    if (iri !== null) {
+      acc.seeAlso.push(iri);
+    }
+
+    return;
+  }
+  if (ALT_LABEL_PREDICATES.has(predicateIri)) {
+    const value = literalString(relation);
+
+    if (value !== null) {
+      appendLangValue(acc.altLabels, literalLanguage(relation), value);
+    }
+  }
+}
+
+/** Dispatch one graph relation to the matching accumulator update. */
+function dispatchRelation(
+  relation: SchemaGraphRelationInterface,
+  accumulators: Map<string, AnnotationAccumulator>
+): void {
+  const predicateIri = relation.predicate;
+
+  // owl:AnnotationProperty declarations — silently accepted, no schema field.
+  if (ANNOTATION_PROPERTY_PREDICATES.has(predicateIri)) {
+    return;
+  }
+
+  const subjectIri = relation.source.id;
+  const acc = getOrCreateAccumulator(accumulators, subjectIri);
+
+  dispatchLiteralRelation(relation, predicateIri, acc);
+  dispatchIriRelation(relation, predicateIri, acc);
+}
+
+/** Process all graph relations and populate the accumulator map. */
+function collectAnnotations(
+  ctx: OwlImportContext,
+  accumulators: Map<string, AnnotationAccumulator>
+): void {
+  for (const relation of ctx.graph.allRelations()) {
+    dispatchRelation(relation, accumulators);
+  }
+}
+
+/** Build the schemaDeltas map from populated accumulators. */
+function buildSchemaDeltas(accumulators: Map<string, AnnotationAccumulator>): Map<string, Record<string, unknown>> {
+  const schemaDeltas = new Map<string, Record<string, unknown>>();
+
+  for (const [
+    subjectIri,
+    acc
+  ] of accumulators) {
+    const delta = buildDelta(acc);
+
+    if (Object.keys(delta).length > 0) {
+      schemaDeltas.set(subjectIri, delta);
+    }
+  }
+
+  return schemaDeltas;
 }
 
 // ---------------------------------------------------------------------------
@@ -326,140 +511,37 @@ function buildDelta(acc: AnnotationAccumulator): Partial<JsonSchemaDocumentObjec
  * Process OWL 2 and RDFS annotation axioms (rdfs:label, rdfs:comment,
  * owl:deprecated, skos:definition, etc.) and return a partial import fragment.
  *
+ * @remarks
  * Reads `ctx.graph.allRelations()` exclusively. The quad-backed graph
  * preserves literal language tags and datatype IRIs on each relation, and
  * emits relations for every subject in the input quads — including ontology
  * IRIs, property IRIs, and individual IRIs that are not registered classes.
  *
+ * @example
+ * ```ts
+ * const fragment = importAnnotations(quads, ctx);
+ * ```
+ *
  * @param _quads - Retained for back-compat with the dispatcher signature; the
  *                 implementation reads exclusively from `ctx.graph`.
  * @param ctx   - Shared import context (graph, curie, IRI sets, reporting helpers).
  * @returns OwlImportFragment with schemaDeltas patched for title/description/deprecated.
+ *
+ * @category OWL Import
+ * @since 0.18.0
+ * @see {@link OwlImportFragment}
+ * @group OWL Import
  */
 export function importAnnotations(_quads: QuadInterface[], ctx: OwlImportContext): OwlImportFragment {
-  // Per-entity accumulator map: subject IRI → accumulator
   const accumulators = new Map<string, AnnotationAccumulator>();
 
-  function getOrCreate(subjectIri: string): AnnotationAccumulator {
-    const existing = accumulators.get(subjectIri);
-
-    if (existing !== undefined) {
-      return existing;
-    }
-    const acc = makeAccumulator();
-
-    accumulators.set(subjectIri, acc);
-
-    return acc;
-  }
-
-  for (const relation of ctx.graph.allRelations()) {
-    const subjectIri = relation.source.id;
-    const predicateIri = relation.predicate;
-
-    if (LABEL_PREDICATES.has(predicateIri)) {
-      const value = literalString(relation);
-
-      if (value !== null) {
-        const lang = literalLanguage(relation);
-        const acc = getOrCreate(subjectIri);
-
-        appendLangValue(acc.labels, lang, value);
-      }
-      continue;
-    }
-
-    if (COMMENT_PREDICATES.has(predicateIri)) {
-      const value = literalString(relation);
-
-      if (value !== null) {
-        const lang = literalLanguage(relation);
-        const acc = getOrCreate(subjectIri);
-
-        appendLangValue(acc.comments, lang, value);
-      }
-      continue;
-    }
-
-    if (DEPRECATED_PREDICATES.has(predicateIri)) {
-      const value = literalString(relation);
-      const isTrue = value !== null && value.toLowerCase() === 'true';
-
-      if (isTrue) {
-        getOrCreate(subjectIri).deprecated = true;
-      }
-      continue;
-    }
-
-    if (VERSION_INFO_PREDICATES.has(predicateIri)) {
-      const value = literalString(relation);
-
-      if (value !== null) {
-        getOrCreate(subjectIri).versionInfo.push(value);
-      }
-      continue;
-    }
-
-    if (IS_DEFINED_BY_PREDICATES.has(predicateIri)) {
-      const iri = namedNodeIri(relation) ?? literalString(relation);
-
-      if (iri !== null) {
-        getOrCreate(subjectIri).isDefinedBy.push(iri);
-      }
-      continue;
-    }
-
-    if (SEE_ALSO_PREDICATES.has(predicateIri)) {
-      const iri = namedNodeIri(relation) ?? literalString(relation);
-
-      if (iri !== null) {
-        getOrCreate(subjectIri).seeAlso.push(iri);
-      }
-      continue;
-    }
-
-    if (ALT_LABEL_PREDICATES.has(predicateIri)) {
-      // Metadata only — accumulate but do not surface in schema delta
-      const value = literalString(relation);
-
-      if (value !== null) {
-        const lang = literalLanguage(relation);
-        const acc = getOrCreate(subjectIri);
-
-        appendLangValue(acc.altLabels, lang, value);
-      }
-      continue;
-    }
-
-    if (ANNOTATION_PROPERTY_PREDICATES.has(predicateIri)) {
-      // owl:AnnotationProperty declarations — known but not mapped to schema
-      // keywords. Silently accept; do not reportUnsupported.
-      continue;
-    }
-
-    // Non-annotation predicate — skip silently (the other dispatchers own it).
-  }
-
-  // Build schemaDeltas for every entity that accumulated annotations
-  const schemaDeltas = new Map<string, Partial<JsonSchemaDocumentObjectType>>();
-
-  for (const [
-    subjectIri,
-    acc
-  ] of accumulators) {
-    const delta = buildDelta(acc);
-
-    // Only emit a delta when there is actually something to merge
-    if (Object.keys(delta).length > 0) {
-      schemaDeltas.set(subjectIri, delta);
-    }
-  }
+  collectAnnotations(ctx, accumulators);
 
   return {
     'characteristics': [],
     'individuals': [],
     'invariants': [],
     'sameAs': [],
-    'schemaDeltas': schemaDeltas
+    'schemaDeltas': buildSchemaDeltas(accumulators)
   };
 }

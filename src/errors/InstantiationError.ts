@@ -1,16 +1,34 @@
-/**
- * InstantiationError — thrown by instantiate() on validation failure
- *
- * Carries a ValidationErrors collection with the full structured error list.
- * Thrown when data crosses a trust boundary (HTTP bodies, queue messages,
- * file imports) and fails validation.
- */
-
+import type { ErrorJsonInterface } from '../interfaces/Error.js';
 import type { InstantiationErrorCodeType } from '../types/ErrorCodes.js';
 import type { ValidationErrorType } from '../types/Validation.js';
 import { ValidationErrors } from './ValidationErrors.js';
 import { BaseError } from './BaseError.js';
 
+/**
+ * InstantiationError — thrown by instantiate() on validation failure.
+ *
+ * @remarks
+ * Carries a {@link ValidationErrors} collection with the full structured error list.
+ * Thrown when data crosses a trust boundary (HTTP bodies, queue messages,
+ * file imports) and fails validation. The `errors` property exposes per-field
+ * failures for structured error handling.
+ *
+ * @example
+ * ```ts
+ * try {
+ *   registry.instantiate(UserSchema, rawBody);
+ * } catch (err) {
+ *   if (err instanceof InstantiationError) {
+ *     console.error(err.errors.items); // ValidationErrorType[]
+ *   }
+ * }
+ * ```
+ *
+ * @category Errors
+ * @since 0.1.0
+ * @see {@link ValidationErrors}
+ * @group Errors
+ */
 export class InstantiationError extends BaseError {
   public readonly errors: ValidationErrors;
 
@@ -29,7 +47,7 @@ export class InstantiationError extends BaseError {
     }
   ) {
     const validationErrors = errors instanceof ValidationErrors ? errors : new ValidationErrors(errors);
-    const joinedMessages = options?.message ?? validationErrors.items.map((err) => {
+    const joinedMessages = options?.message ?? validationErrors.items.map((err: ValidationErrorType): string => {
       return `${err.path || 'root'}: ${err.message}`;
     }).join('; ');
 
@@ -47,10 +65,10 @@ export class InstantiationError extends BaseError {
    *
    * @returns Flat array of error JSON objects including per-field validation details
    */
-  public override flatten() {
+  public override flatten(): ErrorJsonInterface[] {
     return [
       ...super.flatten(),
-      ...this.errors.items.map((item) => {
+      ...this.errors.items.map((item: ValidationErrorType): ErrorJsonInterface => {
         return {
           'code': item.keyword,
           'message': `${item.path || 'root'}: ${item.message}`,
@@ -68,7 +86,7 @@ export class InstantiationError extends BaseError {
   public override toJson() {
     return {
       ...super.toJson(),
-      'errors': this.errors.items.map((item) => {
+      'errors': this.errors.items.map((item: ValidationErrorType): ValidationErrorType => {
         return { ...item };
       })
     };

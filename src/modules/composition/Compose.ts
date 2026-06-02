@@ -59,6 +59,30 @@ function makeRestriction<
   };
 }
 
+/**
+ * Schema composition utilities.
+ *
+ * Static methods that derive new JSON Schema documents from existing ones.
+ * Every method produces a valid JSON Schema at runtime so the runtime schema
+ * stays in sync with the TypeScript return type — no manual annotation needed.
+ *
+ * @remarks
+ * All composition operations are pure functions. They do not mutate their
+ * inputs and produce plain JSON-serialisable objects. The resulting schemas
+ * are compatible with JSON Schema 2020-12 and may be registered with
+ * {@link SchemaRegistry} directly.
+ *
+ * @example
+ * ```ts
+ * const AdminSchema = Compose.extend(UserSchema, { role: { type: 'string' } } as const, 'https://myapp.io/Admin');
+ * const PublicSchema = Compose.omit(UserSchema, ['passwordHash'] as const, 'https://myapp.io/PublicUser');
+ * ```
+ *
+ * @category Composition
+ * @since 0.1.0
+ * @see {@link SchemaRegistry}
+ * @group Composition
+ */
 export class Compose {
   /**
    * Restrict a property so all values satisfy `rangeClassIRI`.
@@ -116,6 +140,41 @@ export class Compose {
   }
 
   /**
+   * Derive a schema with additional properties merged in via allOf + $ref.
+   * The parent schema is referenced via $ref in the first allOf entry;
+   * the additions are the second entry with type: 'object' and any new properties.
+   * When both parent and child carry `jt:config`, child keys win per-key.
+   *
+   * @example
+   * const AdminSchema = Compose.extend(
+   *   UserSchema,
+   *   { role: { type: 'string', enum: ['admin', 'superadmin'] } } as const,
+   *   'https://myapp.io/Admin'
+   * );
+   */
+  private static buildAdditionsProperties(additions: Record<string, unknown>): Record<string, unknown> | undefined {
+    if (isRecord(additions.properties)) {
+      return additions.properties;
+    }
+
+    const propKeys = Object.keys(additions).filter((k: string): boolean => {
+      return k !== '$id' && k !== 'type' && k !== 'required' && k !== 'jt:config';
+    });
+
+    if (propKeys.length === 0) {
+      return undefined;
+    }
+
+    const props: Record<string, unknown> = {};
+
+    for (const k of propKeys) {
+      props[k] = additions[k];
+    }
+
+    return props;
+  }
+
+  /**
    * Restrict a property to exactly `n` values.
    *
    * Compose with `Compose.subClassOf` to attach the restriction to a class. The
@@ -127,6 +186,80 @@ export class Compose {
     n: TN
   ): TypedRestrictionRefType<'cardinality', TProp, TN> {
     return makeRestriction('cardinality', propIRI, n);
+  }
+
+  /**
+   * Extract default values from a schema without building an instance.
+   *
+   * Recursively walks the schema's properties and returns a plain object
+   * containing the `default` values declared on each property.
+   * Properties with no `default` are omitted from the result.
+   *
+   * Note: $ref properties are not traversed — this operates on inline schemas only.
+   *
+   * @example
+   * const schema = {
+   *   type: 'object',
+   *   properties: {
+   *     name:   { type: 'string', default: 'Alice' },
+   *     active: { type: 'boolean', default: true },
+   *   }
+   * } as const;
+   *
+   * Compose.getDefaults(schema);
+   * // => { name: 'Alice', active: true }
+   */
+  private static collectAllOfDefaults(allOf: unknown[]): Record<string, unknown> {
+    const merged: Record<string, unknown> = {};
+
+    for (const member of allOf) {
+      if (member === null || typeof member !== 'object' || Array.isArray(member)) {
+        continue;
+      }
+      const memberSchema = member as Record<string, unknown>;
+
+      // Skip pure $ref members — no properties to traverse without a registry.
+      if (typeof memberSchema.$ref === 'string' && memberSchema.properties === undefined) {
+        continue;
+      }
+
+      const memberDefaults = Compose.getDefaults(memberSchema);
+
+      for (const [
+        key,
+        val
+      ] of Object.entries(memberDefaults)) {
+        merged[key] = val;
+      }
+    }
+
+    return merged;
+  }
+
+  private static collectPropertyDefaults(props: Record<string, unknown>): Record<string, unknown> {
+    const result: Record<string, unknown> = {};
+
+    for (const [
+      key,
+      propSchema
+    ] of Object.entries(props)) {
+      if (typeof propSchema !== 'object' || propSchema === null) {
+        continue;
+      }
+      const propertySchema = propSchema as Record<string, unknown>;
+
+      if ('default' in propertySchema) {
+        result[key] = structuredClone(propertySchema.default);
+      } else if (propertySchema.type === 'object' && propertySchema.properties !== undefined) {
+        const nested = Compose.getDefaults(propertySchema);
+
+        if (Object.keys(nested).length > 0) {
+          result[key] = nested;
+        }
+      }
+    }
+
+    return result;
   }
 
   /**
@@ -147,7 +280,7 @@ export class Compose {
    */
   public static complementOf<
     TOther extends { readonly '$id': string },
-    TBody extends Record<string, unknown> & { readonly '$id': string }
+    const TBody extends Record<string, unknown> & { readonly '$id': string }
   >(other: TOther, body: ValidateSchemaType<TBody>): ComplementOfSchemaInterface<TOther, TBody> {
     const result: Record<string, unknown> = {
       '$id': body.$id,
@@ -218,7 +351,7 @@ export class Compose {
    */
   public static disjointWith<
     TOther extends { readonly '$id': string },
-    TBody extends Record<string, unknown> & { readonly '$id': string }
+    const TBody extends Record<string, unknown> & { readonly '$id': string }
   >(other: TOther, body: ValidateSchemaType<TBody>): DisjointWithSchemaInterface<TOther, TBody> {
     const result: Record<string, unknown> = {
       '$id': body.$id,
@@ -292,19 +425,6 @@ export class Compose {
     };
   }
 
-  /**
-   * Derive a schema with additional properties merged in via allOf + $ref.
-   * The parent schema is referenced via $ref in the first allOf entry;
-   * the additions are the second entry with type: 'object' and any new properties.
-   * When both parent and child carry `jt:config`, child keys win per-key.
-   *
-   * @example
-   * const AdminSchema = Compose.extend(
-   *   UserSchema,
-   *   { role: { type: 'string', enum: ['admin', 'superadmin'] } } as const,
-   *   'https://myapp.io/Admin'
-   * );
-   */
   public static extend<
     TSchema extends Record<string, unknown> & { readonly '$id': string; },
     TAdditional extends Record<string, unknown>,
@@ -320,37 +440,17 @@ export class Compose {
 
     // Build the additions sub-schema (the child's own structure declaration)
     const additionsSchema: Record<string, unknown> = { 'type': 'object' };
+    const addedProps = Compose.buildAdditionsProperties(additions);
 
-    if (isRecord(additions.properties)) {
-      additionsSchema.properties = additions.properties;
-    } else {
-      const propKeys = Object.keys(additions).filter((k) => {
-        return k !== '$id' && k !== 'type' && k !== 'required' && k !== 'jt:config';
-      });
-
-      if (propKeys.length > 0) {
-        const props: Record<string, unknown> = {};
-
-        for (const k of propKeys) {
-          props[k] = additions[k];
-        }
-        additionsSchema.properties = props;
-      }
+    if (addedProps !== undefined) {
+      additionsSchema.properties = addedProps;
     }
 
     if (Array.isArray(additions.required)) {
       additionsSchema.required = additions.required;
     }
 
-    const parentConfig = source['jt:config'];
-    const childConfig = additions['jt:config'];
-
-    if (isRecord(parentConfig) || isRecord(childConfig)) {
-      additionsSchema['jt:config'] = {
-        ...(isRecord(parentConfig) ? parentConfig : {}),
-        ...(isRecord(childConfig) ? childConfig : {})
-      };
-    }
+    Compose.mergeJtConfig(source, additions, additionsSchema);
 
     const child: Record<string, unknown> = {
       '$id': newId,
@@ -372,88 +472,23 @@ export class Compose {
     return brand<ExtendSchemaType<TSchema, TAdditional, TId>>(child);
   }
 
-  /**
-   * Extract default values from a schema without building an instance.
-   *
-   * Recursively walks the schema's properties and returns a plain object
-   * containing the `default` values declared on each property.
-   * Properties with no `default` are omitted from the result.
-   *
-   * Note: $ref properties are not traversed — this operates on inline schemas only.
-   *
-   * @example
-   * const schema = {
-   *   type: 'object',
-   *   properties: {
-   *     name:   { type: 'string', default: 'Alice' },
-   *     active: { type: 'boolean', default: true },
-   *   }
-   * } as const;
-   *
-   * Compose.getDefaults(schema);
-   * // => { name: 'Alice', active: true }
-   */
   public static getDefaults(schema: Record<string, unknown>): Record<string, unknown> {
     const props = schema.properties;
+    const hasNoOwnProperties = props === null || typeof props !== 'object' || Array.isArray(props);
 
     // allOf-composed schema: no own properties — collect from each inline member.
     // $ref-only members (e.g. { $ref: 'urn:...' }) cannot be resolved without a
     // registry and are skipped; only inline members with a `properties` key are
     // traversed. Later members override earlier on key conflict.
-    if ((props === null || typeof props !== 'object' || Array.isArray(props)) && Array.isArray(schema.allOf)) {
-      const merged: Record<string, unknown> = {};
-
-      for (const member of schema.allOf as unknown[]) {
-        if (member === null || typeof member !== 'object' || Array.isArray(member)) {
-          continue;
-        }
-        const memberSchema = member as Record<string, unknown>;
-
-        // Skip pure $ref members — no properties to traverse without a registry.
-        if (typeof memberSchema.$ref === 'string' && memberSchema.properties === undefined) {
-          continue;
-        }
-
-        const memberDefaults = Compose.getDefaults(memberSchema);
-
-        for (const [
-          key,
-          val
-        ] of Object.entries(memberDefaults)) {
-          merged[key] = val;
-        }
-      }
-
-      return merged;
+    if (hasNoOwnProperties && Array.isArray(schema.allOf)) {
+      return Compose.collectAllOfDefaults(schema.allOf as unknown[]);
     }
 
-    if (props === null || typeof props !== 'object' || Array.isArray(props)) {
+    if (hasNoOwnProperties) {
       return {};
     }
 
-    const result: Record<string, unknown> = {};
-
-    for (const [
-      key,
-      propSchema
-    ] of Object.entries(props as Record<string, unknown>)) {
-      if (typeof propSchema !== 'object' || propSchema === null) {
-        continue;
-      }
-      const propertySchema = propSchema as Record<string, unknown>;
-
-      if ('default' in propertySchema) {
-        result[key] = structuredClone(propertySchema.default);
-      } else if (propertySchema.type === 'object' && propertySchema.properties !== undefined) {
-        const nested = Compose.getDefaults(propertySchema);
-
-        if (Object.keys(nested).length > 0) {
-          result[key] = nested;
-        }
-      }
-    }
-
-    return result;
+    return Compose.collectPropertyDefaults(props as Record<string, unknown>);
   }
 
   /**
@@ -505,6 +540,22 @@ export class Compose {
     n: TN
   ): TypedRestrictionRefType<'maxCardinality', TProp, TN> {
     return makeRestriction('maxCardinality', propIRI, n);
+  }
+
+  private static mergeJtConfig(
+    source: Record<string, unknown>,
+    additions: Record<string, unknown>,
+    additionsSchema: Record<string, unknown>
+  ): void {
+    const parentConfig = source['jt:config'];
+    const childConfig = additions['jt:config'];
+
+    if (isRecord(parentConfig) || isRecord(childConfig)) {
+      additionsSchema['jt:config'] = {
+        ...(isRecord(parentConfig) ? parentConfig : {}),
+        ...(isRecord(childConfig) ? childConfig : {})
+      };
+    }
   }
 
   /**
@@ -569,7 +620,7 @@ export class Compose {
     for (const key of keys) {
       delete sourceProps[key];
     }
-    const remainingRequired = sourceRequired.filter((requiredKey) => {
+    const remainingRequired = sourceRequired.filter((requiredKey: string): boolean => {
       return !keysToOmit.has(requiredKey);
     });
 
@@ -639,7 +690,7 @@ export class Compose {
       }
     }
 
-    const pickedRequired = sourceRequired.filter((requiredKey) => {
+    const pickedRequired = sourceRequired.filter((requiredKey: string): boolean => {
       return (keys as readonly string[]).includes(requiredKey);
     });
 
@@ -729,7 +780,7 @@ export class Compose {
     TKind extends RestrictionKindType,
     TProp extends string,
     TValue extends boolean | number | string,
-    TBody extends Record<string, unknown> & { readonly '$id': string }
+    const TBody extends Record<string, unknown> & { readonly '$id': string }
   >(
     parent: TypedRestrictionRefType<TKind, TProp, TValue>,
     body: ValidateSchemaType<TBody>
@@ -751,7 +802,7 @@ export class Compose {
     };
   public static subClassOf<
     TParent extends ReadonlyArray<{ readonly '$id': string }> | { readonly '$id': string },
-    TBody extends Record<string, unknown> & { readonly '$id': string }
+    const TBody extends Record<string, unknown> & { readonly '$id': string }
   >(
     parent: TParent,
     body: ValidateSchemaType<TBody> & ValidateSubClassOfBodyType<TParent, TBody>

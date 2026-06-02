@@ -41,6 +41,22 @@ import type {
 import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 import type { QuadInterface } from '../../interfaces/Quad.js';
 import type { PrefixMap } from '../../interfaces/OwlImport.js';
+import type {
+  BuildRelationsOptionsInterface,
+  CollectedListType,
+  ExpansionMapType,
+  LiteralTagsType,
+  NodeEntriesType,
+  NodeMapType,
+  OptionalChildNodeType,
+  OptionalNodeType,
+  OptionalRestrictionType,
+  PredicateIndexType,
+  ResolveRestrictionOptionsInterface,
+  RootSchemaRecordType,
+  SubjectIndexType,
+  SubjectRelationsType
+} from '../../types/QuadBackedSchemaGraph.js';
 import { GraphError } from '../../errors/GraphError.js';
 import {
   OWL, RDF, RDFS
@@ -115,8 +131,8 @@ const TYPE_PREDICATES: ReadonlySet<string> = new Set([
 // Handles both full IRI input and already-prefixed input.
 // ---------------------------------------------------------------------------
 
-function buildExpansionMap(prefixes: PrefixMap): Map<string, string> {
-  const map = new Map<string, string>();
+function buildExpansionMap(prefixes: PrefixMap): ExpansionMapType {
+  const map: ExpansionMapType = new Map<string, string>();
 
   for (const [
     prefix,
@@ -128,7 +144,7 @@ function buildExpansionMap(prefixes: PrefixMap): Map<string, string> {
   return map;
 }
 
-function compactIri(iri: string, expansionMap: Map<string, string>): string {
+function compactIri(iri: string, expansionMap: ExpansionMapType): string {
   for (const [
     ns,
     prefixColon
@@ -141,18 +157,8 @@ function compactIri(iri: string, expansionMap: Map<string, string>): string {
   return iri;
 }
 
-// ---------------------------------------------------------------------------
-// Internal quad index types
-// ---------------------------------------------------------------------------
-
-/** All quads grouped by subject IRI. */
-type SubjectIndex = Map<string, QuadInterface[]>;
-
-/** Per-subject predicate-to-object groups. */
-type PredicateIndex = Map<string, Map<string, QuadInterface[]>>;
-
-function buildSubjectIndex(quads: readonly QuadInterface[]): SubjectIndex {
-  const index: SubjectIndex = new Map();
+function buildSubjectIndex(quads: readonly QuadInterface[]): SubjectIndexType {
+  const index: SubjectIndexType = new Map();
 
   for (const quad of quads) {
     const subjectIri = quad.subject.value;
@@ -168,8 +174,8 @@ function buildSubjectIndex(quads: readonly QuadInterface[]): SubjectIndex {
   return index;
 }
 
-function buildPredicateIndex(subjectIndex: SubjectIndex): PredicateIndex {
-  const index: PredicateIndex = new Map();
+function buildPredicateIndex(subjectIndex: SubjectIndexType): PredicateIndexType {
+  const index: PredicateIndexType = new Map();
 
   for (const [
     subject,
@@ -292,11 +298,11 @@ const EMPTY_SEMANTICS: SchemaGraphSemanticsInterface = Object.freeze({
 // ---------------------------------------------------------------------------
 
 function buildNodeMap(
-  subjectIndex: SubjectIndex,
-  predicateIndex: PredicateIndex,
-  expansionMap: Map<string, string>
-): Map<string, SchemaGraphNodeInterface> {
-  const nodeMap = new Map<string, SchemaGraphNodeInterface>();
+  subjectIndex: SubjectIndexType,
+  predicateIndex: PredicateIndexType,
+  expansionMap: ExpansionMapType
+): NodeMapType {
+  const nodeMap: NodeMapType = new Map();
 
   for (const [
     subject,
@@ -304,7 +310,7 @@ function buildNodeMap(
   ] of predicateIndex) {
     // Only create a node when the subject has a recognised OWL type assertion.
     const typeQuads = predicateMap.get(`${RDF_NS}type`) ?? predicateMap.get(RDF.type) ?? [];
-    const hasOWLType = typeQuads.some((typeQuad) => {
+    const hasOWLType = typeQuads.some((typeQuad: QuadInterface): boolean => {
       return typeQuad.object.termType === 'NamedNode'
         && (NODE_TYPES.has(typeQuad.object.value) || NODE_TYPES.has(compactIri(typeQuad.object.value, expansionMap)));
     });
@@ -358,11 +364,7 @@ function objectIriValue(quad: QuadInterface, expansionMap: Map<string, string>):
  * Literal. NamedNode and BlankNode targets carry only `termType`; the
  * language/datatype tags are emitted strictly for Literal terms.
  */
-function literalTagsForQuad(quad: QuadInterface): {
-  'datatype'?: string;
-  'language'?: string;
-  'termType'?: 'BlankNode' | 'Literal' | 'NamedNode';
-} {
+function literalTagsForQuad(quad: QuadInterface): LiteralTagsType {
   switch (quad.object.termType) {
     case 'BlankNode':
       return { 'termType': 'BlankNode' };
@@ -416,13 +418,13 @@ function nodeOrStub(
   return stub;
 }
 
-function buildRelations(
-  nodeMap: Map<string, SchemaGraphNodeInterface>,
-  predicateIndex: PredicateIndex,
-  subjectIndex: SubjectIndex,
-  expansionMap: Map<string, string>,
-  stubMap: Map<string, SchemaGraphNodeInterface>
-): SchemaGraphRelationInterface[] {
+function buildRelations(opts: BuildRelationsOptionsInterface): SchemaGraphRelationInterface[] {
+  const {
+    expansionMap,
+    nodeMap,
+    predicateIndex,
+    stubMap
+  } = opts;
   const relations: SchemaGraphRelationInterface[] = [];
 
   for (const [
@@ -466,7 +468,11 @@ function buildRelations(
             // Attempt to resolve the restriction blank node.
             const bnodeId = quad.object.value;
             const bnodePredicateMap = predicateIndex.get(bnodeId);
-            const restriction = resolveRestrictionBnode(bnodeId, bnodePredicateMap, subjectIndex, expansionMap);
+            const restriction = resolveRestrictionBnode({
+              bnodeId,
+              'bnodePredicateMap': bnodePredicateMap,
+              expansionMap
+            });
 
             if (restriction === undefined) {
               relations.push({
@@ -523,16 +529,6 @@ function buildRelations(
 // Restriction blank-node resolver
 // ---------------------------------------------------------------------------
 
-interface RestrictionResult {
-  'metadata': Record<string, unknown>;
-  'structure': {
-    'constraint': string;
-    'kind': 'restriction';
-    'onProperty': string;
-    'value': unknown;
-  };
-  'targetIri': string;
-}
 
 const RESTRICTION_CONSTRAINTS: ReadonlySet<string> = new Set([
   `${OWL_NS}allValuesFrom`,
@@ -553,12 +549,13 @@ const RESTRICTION_CONSTRAINTS: ReadonlySet<string> = new Set([
   OWL.someValuesFrom
 ]);
 
-function resolveRestrictionBnode(
-  bnodeId: string,
-  bnodePredicateMap: Map<string, QuadInterface[]> | undefined,
-  _subjectIndex: SubjectIndex,
-  expansionMap: Map<string, string>
-): RestrictionResult | undefined {
+function resolveRestrictionBnode(opts: ResolveRestrictionOptionsInterface): OptionalRestrictionType {
+  const {
+    bnodeId,
+    bnodePredicateMap,
+    expansionMap
+  } = opts;
+
   if (bnodePredicateMap === undefined) {
     return undefined;
   }
@@ -691,7 +688,13 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
     this.quads = quads;
     this.nodeMap = buildNodeMap(subjectIndex, predicateIndex, expansionMap);
     this.nodeList = [...this.nodeMap.values()];
-    this.relationList = buildRelations(this.nodeMap, predicateIndex, subjectIndex, expansionMap, stubMap);
+    this.relationList = buildRelations({
+      'expansionMap': expansionMap,
+      'nodeMap': this.nodeMap,
+      'predicateIndex': predicateIndex,
+      'stubMap': stubMap,
+      'subjectIndex': subjectIndex
+    });
 
     // Root schema stub — carries the base IRI so callers can inspect it.
     this._rootSchema = { '$id': options?.baseIRI ?? '' };
@@ -704,7 +707,7 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
   // SchemaGraphInterface shape methods — not meaningful for quad-backed graphs;
   // dispatchers traverse allRelations() and nodes() directly.
 
-  public child(_node: SchemaGraphNodeInterface, _key: string): SchemaGraphNodeInterface | undefined {
+  public child(_node: SchemaGraphNodeInterface, _key: string): OptionalChildNodeType {
     return undefined;
   }
 
@@ -719,7 +722,7 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
    * the IRI / bnode-id string for NamedNode / BlankNode items, preserving
    * the term-type so dispatchers can branch on the kind.
    */
-  public collectList(head: string): readonly ListItemType[] {
+  public collectList(head: string): CollectedListType {
     if (head === '' || head === RDF.nil || head === 'rdf:nil') {
       return [];
     }
@@ -789,7 +792,7 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
     return result;
   }
 
-  public entries(_node: SchemaGraphNodeInterface, _key: string): Array<[string, SchemaGraphNodeInterface]> {
+  public entries(_node: SchemaGraphNodeInterface, _key: string): NodeEntriesType {
     return [];
   }
 
@@ -823,7 +826,7 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
     return schema[key];
   }
 
-  public node(schema: Record<string, unknown>): SchemaGraphNodeInterface | undefined {
+  public node(schema: Record<string, unknown>): OptionalNodeType {
     const id = schema.$id;
 
     if (typeof id !== 'string') {
@@ -843,7 +846,7 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
     });
   }
 
-  public relationsForSubject(subjectIri: string): readonly SchemaGraphRelationInterface[] {
+  public relationsForSubject(subjectIri: string): SubjectRelationsType {
     if (this.relationsBySubject === undefined) {
       const index = new Map<string, SchemaGraphRelationInterface[]>();
 
@@ -904,7 +907,7 @@ export class QuadBackedSchemaGraph implements SchemaGraphInterface {
     };
   }
 
-  public get rootSchema(): Record<string, unknown> {
+  public get rootSchema(): RootSchemaRecordType {
     return this._rootSchema;
   }
 

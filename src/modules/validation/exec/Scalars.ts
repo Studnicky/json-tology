@@ -2,6 +2,27 @@ import type { ValidationErrorType } from '../../../types/Validation.js';
 import { BaseError } from '../../../errors/BaseError.js';
 import { Predicates } from '../Predicates.js';
 
+/**
+ * Compiled scalar-keyword validators used by the hot-path schema executor.
+ *
+ * All methods mutate the caller-supplied `errors` array in place and return
+ * a boolean indicating whether validation passed. This avoids per-call
+ * allocations on the hot validation path.
+ *
+ * @remarks
+ * Called directly from closures compiled by {@link SchemaCompiler}. Signatures
+ * are intentionally flat (no options objects) to keep V8 call-site shapes
+ * monomorphic and avoid hidden-class transitions.
+ *
+ * @category Validation
+ * @since 0.1.0
+ * @see {@link SchemaCompiler}
+ * @group Internal
+ * @example
+ * ```ts
+ * const ok = Scalars.validateType('/age', ['number'], 42, errors);
+ * ```
+ */
 export class Scalars {
   static validateConst(
     path: string,
@@ -79,18 +100,8 @@ export class Scalars {
   ): boolean {
     const pre = errors.length;
 
-    if (minimum !== undefined && !Predicates.satisfiesMinimum(value, minimum)) {
-      errors.push(BaseError.validationError(path, 'minimum', `must be >= ${minimum}`));
-    }
-    if (maximum !== undefined && !Predicates.satisfiesMaximum(value, maximum)) {
-      errors.push(BaseError.validationError(path, 'maximum', `must be <= ${maximum}`));
-    }
-    if (exclusiveMinimum !== undefined && !Predicates.satisfiesExclusiveMinimum(value, exclusiveMinimum)) {
-      errors.push(BaseError.validationError(path, 'exclusiveMinimum', `must be > ${exclusiveMinimum}`));
-    }
-    if (exclusiveMaximum !== undefined && !Predicates.satisfiesExclusiveMaximum(value, exclusiveMaximum)) {
-      errors.push(BaseError.validationError(path, 'exclusiveMaximum', `must be < ${exclusiveMaximum}`));
-    }
+    pushNumberBoundErrors(path, value, minimum, maximum, exclusiveMinimum, exclusiveMaximum, errors);
+
     if (multipleOf !== undefined && !Predicates.satisfiesMultipleOf(value, multipleOf)) {
       errors.push(BaseError.validationError(path, 'multipleOf', `must be a multiple of ${multipleOf}`));
     }
@@ -146,5 +157,28 @@ export class Scalars {
     ));
 
     return false;
+  }
+}
+
+function pushNumberBoundErrors(
+  path: string,
+  value: number,
+  minimum: number | undefined,
+  maximum: number | undefined,
+  exclusiveMinimum: number | undefined,
+  exclusiveMaximum: number | undefined,
+  errors: ValidationErrorType[]
+): void {
+  if (minimum !== undefined && !Predicates.satisfiesMinimum(value, minimum)) {
+    errors.push(BaseError.validationError(path, 'minimum', `must be >= ${minimum}`));
+  }
+  if (maximum !== undefined && !Predicates.satisfiesMaximum(value, maximum)) {
+    errors.push(BaseError.validationError(path, 'maximum', `must be <= ${maximum}`));
+  }
+  if (exclusiveMinimum !== undefined && !Predicates.satisfiesExclusiveMinimum(value, exclusiveMinimum)) {
+    errors.push(BaseError.validationError(path, 'exclusiveMinimum', `must be > ${exclusiveMinimum}`));
+  }
+  if (exclusiveMaximum !== undefined && !Predicates.satisfiesExclusiveMaximum(value, exclusiveMaximum)) {
+    errors.push(BaseError.validationError(path, 'exclusiveMaximum', `must be < ${exclusiveMaximum}`));
   }
 }

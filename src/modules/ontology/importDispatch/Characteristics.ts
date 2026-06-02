@@ -26,41 +26,16 @@ import type {
 import { RDF } from '../../../constants/IRI.js';
 
 // ---------------------------------------------------------------------------
-// Characteristic IRI → characteristic name mapping
+// OWL 2 IRI prefix for characteristic class URIs.
 // Both full-IRI and curie forms must be matched: QuadBackedSchemaGraph
 // compacts named-node targets via the active prefix map, but raw inputs
 // may still carry the full IRI form when no matching prefix exists.
 // ---------------------------------------------------------------------------
 
+/** OWL 2 vocabulary IRI prefix. */
+const OWL_VOCAB_PREFIX = 'http://www.w3.org/2002/07/owl#';
+
 const CHARACTERISTIC_IRI_MAP: ReadonlyMap<string, string> = new Map([
-  [
-    'http://www.w3.org/2002/07/owl#AsymmetricProperty',
-    'Asymmetric'
-  ],
-  [
-    'http://www.w3.org/2002/07/owl#FunctionalProperty',
-    'Functional'
-  ],
-  [
-    'http://www.w3.org/2002/07/owl#InverseFunctionalProperty',
-    'InverseFunctional'
-  ],
-  [
-    'http://www.w3.org/2002/07/owl#IrreflexiveProperty',
-    'Irreflexive'
-  ],
-  [
-    'http://www.w3.org/2002/07/owl#ReflexiveProperty',
-    'Reflexive'
-  ],
-  [
-    'http://www.w3.org/2002/07/owl#SymmetricProperty',
-    'Symmetric'
-  ],
-  [
-    'http://www.w3.org/2002/07/owl#TransitiveProperty',
-    'Transitive'
-  ],
   [
     'owl:AsymmetricProperty',
     'Asymmetric'
@@ -88,6 +63,34 @@ const CHARACTERISTIC_IRI_MAP: ReadonlyMap<string, string> = new Map([
   [
     'owl:TransitiveProperty',
     'Transitive'
+  ],
+  [
+    `${OWL_VOCAB_PREFIX}AsymmetricProperty`,
+    'Asymmetric'
+  ],
+  [
+    `${OWL_VOCAB_PREFIX}FunctionalProperty`,
+    'Functional'
+  ],
+  [
+    `${OWL_VOCAB_PREFIX}InverseFunctionalProperty`,
+    'InverseFunctional'
+  ],
+  [
+    `${OWL_VOCAB_PREFIX}IrreflexiveProperty`,
+    'Irreflexive'
+  ],
+  [
+    `${OWL_VOCAB_PREFIX}ReflexiveProperty`,
+    'Reflexive'
+  ],
+  [
+    `${OWL_VOCAB_PREFIX}SymmetricProperty`,
+    'Symmetric'
+  ],
+  [
+    `${OWL_VOCAB_PREFIX}TransitiveProperty`,
+    'Transitive'
   ]
 ]);
 
@@ -103,6 +106,67 @@ function emptyFragment(): OwlImportFragment {
     'sameAs': [],
     'schemaDeltas': new Map()
   };
+}
+
+// ---------------------------------------------------------------------------
+// Options interfaces
+// ---------------------------------------------------------------------------
+
+/** Options for recording one characteristic tuple into the fragment. */
+interface RecordCharacteristicOptions {
+  readonly 'characteristicName': string;
+  readonly 'characteristicTarget': string;
+  readonly 'ctx': OwlImportContext;
+  readonly 'fragment': OwlImportFragment;
+  readonly 'propertyIri': string;
+  readonly 'seen': Set<string>;
+}
+
+// ---------------------------------------------------------------------------
+// Characteristic record accumulator
+// ---------------------------------------------------------------------------
+
+/**
+ * Attempt to record a characteristic for the relation's source property.
+ * Skips when the source IRI is not a known property subject (even after
+ * curie compaction), reporting it as unsupported.
+ */
+function recordCharacteristic(options: RecordCharacteristicOptions): void {
+  const {
+    characteristicName,
+    characteristicTarget,
+    ctx,
+    fragment,
+    propertyIri,
+    seen
+  } = options;
+
+  if (!ctx.allPropertyIris.has(propertyIri)) {
+    const compacted = ctx.curie.compact(propertyIri);
+
+    if (!ctx.allPropertyIris.has(compacted)) {
+      ctx.reportUnsupported(characteristicTarget, propertyIri);
+
+      return;
+    }
+  }
+
+  const key = `${propertyIri}::${characteristicName}`;
+
+  if (seen.has(key)) {
+    return;
+  }
+  seen.add(key);
+
+  const mutableCharacteristics = fragment.characteristics as Array<{
+    'characteristic': string;
+    'propertyIri': string;
+  }>;
+
+  mutableCharacteristics.push({
+    'characteristic': characteristicName,
+    'propertyIri': propertyIri
+  });
 }
 
 /**
@@ -121,23 +185,34 @@ function emptyFragment(): OwlImportFragment {
  * @param _quads - All quads from the input graph (unused; graph is traversed via ctx).
  * @param ctx    - Shared import context (graph, curie, IRI sets, reporting helpers).
  * @returns OwlImportFragment with characteristics populated.
+ *
+ * @remarks
+ * Implements OWL 2 §9.2.1–9.2.8. The seven characteristic class IRIs are
+ * matched in both full-IRI and curie forms. Duplicate (propertyIri,
+ * characteristic) pairs are deduplicated via a local Set. Unsupported property
+ * IRIs (not found in `ctx.allPropertyIris` even after compaction) are reported
+ * via `ctx.reportUnsupported` and skipped.
+ *
+ * @example
+ * ```ts
+ * const fragment = importCharacteristics(quads, ctx);
+ * // fragment.characteristics contains { propertyIri, characteristic } entries
+ * ```
+ *
+ * @category OWL Import
+ * @since 0.1.0
+ * @see OwlImportContext
+ * @group importDispatch
  */
 export function importCharacteristics(_quads: QuadInterface[], ctx: OwlImportContext): OwlImportFragment {
   const fragment = emptyFragment();
-
-  // Deduplicate: a single property may appear in multiple relations with the
-  // same characteristic. Use a Set to track already-emitted
-  // (propertyIri, characteristic) pairs.
   const seen = new Set<string>();
 
   for (const relation of ctx.graph.allRelations()) {
-    // Only process rdf:type relations.
     if (relation.predicate !== RDF.type) {
       continue;
     }
 
-    // Target must be a NamedNode IRI string (QuadBackedSchemaGraph encodes
-    // rdf:type targets as IRI strings rather than node objects).
     if (typeof relation.target !== 'string') {
       continue;
     }
@@ -145,39 +220,16 @@ export function importCharacteristics(_quads: QuadInterface[], ctx: OwlImportCon
     const characteristicName = CHARACTERISTIC_IRI_MAP.get(relation.target);
 
     if (characteristicName === undefined) {
-      // Not a characteristic type relation — leave it for other dispatchers.
       continue;
     }
 
-    const propertyIri = relation.source.id;
-
-    // Only record characteristics for IRIs that are known property subjects.
-    // Try curie compaction as a fallback when the IRI is in full form but
-    // allPropertyIris was populated with curie strings.
-    if (!ctx.allPropertyIris.has(propertyIri)) {
-      const compacted = ctx.curie.compact(propertyIri);
-
-      if (!ctx.allPropertyIris.has(compacted)) {
-        ctx.reportUnsupported(relation.target, propertyIri);
-        continue;
-      }
-    }
-
-    const key = `${propertyIri}::${characteristicName}`;
-
-    if (seen.has(key)) {
-      continue;
-    }
-    seen.add(key);
-
-    const mutableCharacteristics = fragment.characteristics as Array<{
-      'characteristic': string;
-      'propertyIri': string;
-    }>;
-
-    mutableCharacteristics.push({
-      'characteristic': characteristicName,
-      'propertyIri': propertyIri
+    recordCharacteristic({
+      characteristicName,
+      'characteristicTarget': relation.target,
+      ctx,
+      fragment,
+      'propertyIri': relation.source.id,
+      seen
     });
   }
 

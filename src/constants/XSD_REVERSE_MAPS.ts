@@ -271,9 +271,24 @@ const ENTRIES: readonly XsdEntry[] = [
  *
  * Used by Properties.ts and anywhere a range IRI must be converted to a
  * JSON Schema primitive shape.
+ *
+ * @remarks
+ * Both the prefixed (`xsd:string`) and full-IRI forms map to the same
+ * `XsdJsonSchemaPrimitiveInterface` so callers never need to normalise before lookup.
+ *
+ * @example
+ * ```ts
+ * XSD_TO_JSON_SCHEMA.get('xsd:dateTime'); // { type: 'string', format: 'date-time' }
+ * ```
+ *
+ * @category Constants
+ * @since 0.10.0
+ * @see {@link XSD_TO_SCHEMA_TYPE}
+ * @group XsdReverseMaps
+ * @defaultValue Derived from all `ENTRIES` (prefixed + full IRI forms)
  */
 export const XSD_TO_JSON_SCHEMA: ReadonlyMap<string, XsdJsonSchemaPrimitiveInterface>
-  = new Map(ENTRIES.flatMap((entry) => {
+  = new Map(ENTRIES.flatMap((entry: XsdEntry): Array<[string, XsdJsonSchemaPrimitiveInterface]> => {
     return [
       [
         entry.prefixed,
@@ -291,8 +306,23 @@ export const XSD_TO_JSON_SCHEMA: ReadonlyMap<string, XsdJsonSchemaPrimitiveInter
  *
  * Used by Datatypes.ts where only the base type is needed (facet processing
  * derives format separately via jt:format).
+ *
+ * @remarks
+ * Returns the bare `type` string without any `format` property; use
+ * {@link XSD_TO_JSON_SCHEMA} when both `type` and `format` are needed.
+ *
+ * @example
+ * ```ts
+ * XSD_TO_SCHEMA_TYPE.get('xsd:integer'); // 'integer'
+ * ```
+ *
+ * @category Constants
+ * @since 0.10.0
+ * @see {@link XSD_TO_JSON_SCHEMA}
+ * @group XsdReverseMaps
+ * @defaultValue Derived from all `ENTRIES` (prefixed + full IRI forms)
  */
-export const XSD_TO_SCHEMA_TYPE: ReadonlyMap<string, 'boolean' | 'integer' | 'number' | 'string'> = new Map(ENTRIES.flatMap((entry) => {
+export const XSD_TO_SCHEMA_TYPE: ReadonlyMap<string, 'boolean' | 'integer' | 'number' | 'string'> = new Map(ENTRIES.flatMap((entry: XsdEntry): Array<[string, 'boolean' | 'integer' | 'number' | 'string']> => {
   return [
     [
       entry.prefixed,
@@ -312,6 +342,23 @@ export const XSD_TO_SCHEMA_TYPE: ReadonlyMap<string, 'boolean' | 'integer' | 'nu
  * datatype IRIs during the import pipeline.
  *
  * owl:Nothing is included for null-like type declarations.
+ *
+ * @remarks
+ * Both prefixed and full-IRI forms of each supported type are included so
+ * membership checks never need to normalise the IRI form first.
+ * `owl:Nothing` (both prefixed and full) is always included for null-like declarations.
+ *
+ * @example
+ * ```ts
+ * SUPPORTED_XSD_DATATYPES.has('xsd:string');  // true
+ * SUPPORTED_XSD_DATATYPES.has('xsd:ID');       // false (not supported)
+ * ```
+ *
+ * @category Constants
+ * @since 0.10.0
+ * @see {@link XSD_TO_JSON_SCHEMA}
+ * @group XsdReverseMaps
+ * @defaultValue Derived from `ENTRIES` where `supported === true`, plus `owl:Nothing`
  */
 export const SUPPORTED_XSD_DATATYPES: ReadonlySet<string> = new Set([
   // owl:Nothing for null-like types
@@ -319,10 +366,10 @@ export const SUPPORTED_XSD_DATATYPES: ReadonlySet<string> = new Set([
   'owl:Nothing',
   // XSD types marked supported in ENTRIES (both prefixed and full forms)
   ...ENTRIES
-    .filter((entry) => {
+    .filter((entry: XsdEntry): boolean => {
       return entry.supported;
     })
-    .flatMap((entry) => {
+    .flatMap((entry: XsdEntry): string[] => {
       return [
         entry.prefixed,
         entry.full
