@@ -11,6 +11,46 @@ import {
 } from '../../data/DataTypes.js';
 import { Predicates } from '../../validation/Predicates.js';
 
+/**
+ * Visit a value against a range schema and push any errors via the callback.
+ */
+function visitRangeValue(
+  context: VisitContextInterface,
+  rangeSchema: Record<string, unknown>,
+  item: unknown,
+  itemPath: string,
+  options: EffectiveOptionsType,
+  refStack: Set<string>,
+  depth: number,
+  visitNode: VisitFnType,
+  pushErrors: (errors: ValidationErrorType[]) => void
+): void {
+  const rangeGraph = context.graphFor(rangeSchema);
+  const res = visitNode(context, rangeGraph.rootNode, rangeGraph, item, itemPath, options, refStack, [], depth + 1);
+
+  if (!res.valid) {
+    pushErrors(res.errors);
+  }
+}
+
+/**
+ * Unevaluated — handlers for custom-keyword and rdfs:range validation steps.
+ *
+ * @remarks
+ * Provides two static methods consumed by `GraphEngineVisit` during schema
+ * validation: `customKeywords` dispatches user-defined keyword validators, and
+ * `rdfsRange` validates a value against the range schema declared on a property.
+ *
+ * @example
+ * ```ts
+ * const result = Unevaluated.customKeywords(ctx, kws, exts, value, path, opts, errors, items, props);
+ * ```
+ *
+ * @category Graph
+ * @since 0.1.0
+ * @see {@link UnevaluatedInterface}
+ * @group Graph
+ */
 export class Unevaluated {
   static customKeywords(
     context: VisitContextInterface,
@@ -40,17 +80,14 @@ export class Unevaluated {
           continue;
         }
       }
+
       const kwContext: KeywordContextInterface = {
         'parentData': undefined,
         'parentKey': '',
         'path': path,
         'rootData': workingValue
       };
-      const kwResult = kw.validate(
-        extensions[kw.keyword],
-        workingValue,
-        kwContext
-      );
+      const kwResult = kw.validate(extensions[kw.keyword], workingValue, kwContext);
 
       if (kwResult === false) {
         const kwError = context.createError(path, kw.keyword, `must pass "${kw.keyword}" validation`);
@@ -114,28 +151,14 @@ export class Unevaluated {
     refStack.add(rangeRefKey);
 
     if (isRecord(workingValue)) {
-      const rangeGraph = context.graphFor(rangeSchema);
-      const rangeRoot = rangeGraph.rootNode;
-      const res = visitNode(context, rangeRoot, rangeGraph, workingValue, path, options, refStack, [], depth + 1);
-
-      if (!res.valid) {
-        pushErrors(res.errors);
-      }
+      visitRangeValue(context, rangeSchema, workingValue, path, options, refStack, depth, visitNode, pushErrors);
     } else if (Array.isArray(workingValue)) {
-      const rangeGraph = context.graphFor(rangeSchema);
-      const rangeRoot = rangeGraph.rootNode;
-
       for (const [
         i,
         item
       ] of workingValue.entries()) {
         if (isRecord(item) || Array.isArray(item)) {
-          const itemPath = `${path}/${i}`;
-          const res = visitNode(context, rangeRoot, rangeGraph, item, itemPath, options, refStack, [], depth + 1);
-
-          if (!res.valid) {
-            pushErrors(res.errors);
-          }
+          visitRangeValue(context, rangeSchema, item, `${path}/${i}`, options, refStack, depth, visitNode, pushErrors);
         }
       }
     }

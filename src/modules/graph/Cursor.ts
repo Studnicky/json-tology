@@ -1,21 +1,35 @@
-/**
- * Cursor — a lazy, immutable selection of resource IRIs over an {@link AboxGraph}.
- *
- * Navigation (`objects`/`subjects`) and refinement (`ofType`/`where`/`having`)
- * return a NEW Cursor; terminals (`one`/`all`/`iris`/`count`/…) materialize the
- * current selection into typed instances or scalar results.
- *
- * The owning graph is held by a type-only reference (no runtime import cycle):
- * the Cursor calls the graph's public navigation surface (`objectsVia`,
- * `subjectsVia`, `typesOf`, `valuesVia`, `resolvePredicate`).
- */
-
 import type { AboxGraph } from './AboxGraph.js';
 import type { CursorInterface } from '../../interfaces/CursorInterface.js';
 import type { AboxLiftFnType } from '../../types/AboxGraph.js';
 
 import { GraphError } from '../../errors/GraphError.js';
 
+/**
+ * Lazy, immutable selection of resource IRIs over an {@link AboxGraph}.
+ *
+ * Navigation (`objects`/`subjects`) and refinement (`ofType`/`where`/`having`)
+ * return a new Cursor; terminals (`one`/`all`/`iris`/`count`) materialize the
+ * current selection into typed instances or scalar results.  The owning graph
+ * is held by a type-only reference — the Cursor calls the graph's public
+ * navigation surface (`objectsVia`, `subjectsVia`, `typesOf`, `valuesVia`,
+ * `resolvePredicate`) without creating a runtime import cycle.
+ *
+ * @remarks
+ * All Cursor instances are immutable: every navigation or refinement operation
+ * returns a new Cursor backed by the same graph and lift function.  Terminals
+ * materialize eagerly — repeated calls re-lift each IRI.
+ *
+ * @example
+ * ```ts
+ * const people = graph.cursor().ofType('schema:Person');
+ * const manager = people.having('schema:name', 'Alice').one();
+ * ```
+ *
+ * @category Graph
+ * @since 0.17.0
+ * @see {@link CursorInterface}
+ * @group Graph
+ */
 export class Cursor implements CursorInterface {
   private readonly graph: AboxGraph;
   private readonly iriList: readonly string[];
@@ -33,7 +47,7 @@ export class Cursor implements CursorInterface {
   }
 
   public all(): unknown[] {
-    return this.iriList.map((iri) => {
+    return this.iriList.map((iri: string): unknown => {
       return this.lift(iri);
     });
   }
@@ -83,8 +97,8 @@ export class Cursor implements CursorInterface {
 
   public having(predicate: string, value: unknown): CursorInterface {
     const predicateIri = this.graph.resolvePredicate(predicate);
-    const next = this.iriList.filter((iri) => {
-      return this.graph.valuesVia(iri, predicateIri).some((candidate) => {
+    const next = this.iriList.filter((iri: string): boolean => {
+      return this.graph.valuesVia(iri, predicateIri).some((candidate: unknown): boolean => {
         return candidate === value;
       });
     });
@@ -94,7 +108,7 @@ export class Cursor implements CursorInterface {
 
   public intersect(other: CursorInterface): CursorInterface {
     const otherSet = new Set(other.iris());
-    const next = this.iriList.filter((iri) => {
+    const next = this.iriList.filter((iri: string): boolean => {
       return otherSet.has(iri);
     });
 
@@ -129,7 +143,7 @@ export class Cursor implements CursorInterface {
   }
 
   public ofType(classIri: string): CursorInterface {
-    const next = this.iriList.filter((iri) => {
+    const next = this.iriList.filter((iri: string): boolean => {
       return this.graph.typesOf(iri).includes(classIri);
     });
 
@@ -148,7 +162,7 @@ export class Cursor implements CursorInterface {
   }
 
   public orderBy(compare: (left: unknown, right: unknown) => number): CursorInterface {
-    const sorted = [...this.iriList].sort((leftIri, rightIri) => {
+    const sorted = [...this.iriList].sort((leftIri: string, rightIri: string): number => {
       return compare(this.lift(leftIri), this.lift(rightIri));
     });
 
@@ -158,7 +172,7 @@ export class Cursor implements CursorInterface {
   private resolvePredicates(predicate: string | string[]): string[] {
     const tokens = Array.isArray(predicate) ? predicate : [predicate];
 
-    return tokens.map((token) => {
+    return tokens.map((token: string): string => {
       return this.graph.resolvePredicate(token);
     });
   }
@@ -220,7 +234,7 @@ export class Cursor implements CursorInterface {
   }
 
   public where(fn: (instance: unknown) => boolean): CursorInterface {
-    const next = this.iriList.filter((iri) => {
+    const next = this.iriList.filter((iri: string): boolean => {
       return fn(this.lift(iri));
     });
 

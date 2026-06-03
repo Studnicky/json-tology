@@ -9,7 +9,6 @@
  */
 
 import { JsonTology } from '../../../src/index.js';
-import type { InferType } from '../../../src/types/index.js';
 import { BookSchema } from '../bookstore/index.js';
 
 function isIsbn10(value: unknown): boolean {
@@ -82,9 +81,6 @@ const jt = JsonTology.create({
   ] as const
 });
 
-type Isbn10 = InferType<typeof Isbn10Schema>;
-type ReviewSlug = InferType<typeof ReviewSlugSchema>;
-
 // "0140449132" passes the ISBN-10 checksum (Penguin printing of
 // "War and Peace" — the same edition the original docs example
 // referenced).
@@ -104,6 +100,3 @@ console.log('valid slug errors:', jt.validate(ReviewSlugSchema.$id, 'die-unendli
 // > 0
 console.log('bad slug errors:', jt.validate(ReviewSlugSchema.$id, 'NotASlug').length);
 
-// Compile-time witness that the inferred types are reachable.
-void (validIsbn as unknown as Isbn10);
-void ('die-unendliche-geschichte' as unknown as ReviewSlug);

@@ -56,6 +56,6 @@ const reEncoded = jt.encode(PlacedAtTransform, date);
 
 console.assert(typeof reEncoded === 'string');
 // Round-trip equality on the wire-format precision.
-console.assert(new Date(reEncoded as string).getTime() === date.getTime());
+console.assert(new Date(reEncoded).getTime() === date.getTime());
 // true — lossless
 console.log('round-trip equal:', reEncoded === wire);

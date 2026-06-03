@@ -11,6 +11,23 @@ import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
 
+/**
+ * Common context bundle for relation-push helpers that need graph + node + semantics.
+ * Satisfies the 3-parameter limit by packing the trio into one options object.
+ */
+interface RelationsContextInterface {
+  readonly 'graph': GraphAccessorInterface;
+  readonly 'node': SchemaGraphNodeInterface;
+  readonly 'sem': SchemaGraphSemanticsInterface;
+}
+
+/**
+ * Extended context that also carries the mutable accumulator.
+ */
+interface RelationsPushContextInterface extends RelationsContextInterface {
+  readonly 'relations': SchemaGraphRelationInterface[];
+}
+
 function resolveNodeRef(
   graph: GraphAccessorInterface,
   node: SchemaGraphNodeInterface
@@ -30,12 +47,11 @@ function resolveNodeRef(
   return node.id;
 }
 
-function pushConditionalRelations(
-  graph: GraphAccessorInterface,
-  node: SchemaGraphNodeInterface,
-  sem: SchemaGraphSemanticsInterface,
-  relations: SchemaGraphRelationInterface[]
-): void {
+function pushConditionalRelations(ctx: RelationsPushContextInterface): void {
+  const {
+    graph, node, relations, sem
+  } = ctx;
+
   if (sem.ifNode === undefined) {
     return;
   }
@@ -65,12 +81,11 @@ function pushConditionalRelations(
   });
 }
 
-function pushContainsRelations(
-  graph: GraphAccessorInterface,
-  node: SchemaGraphNodeInterface,
-  sem: SchemaGraphSemanticsInterface,
-  relations: SchemaGraphRelationInterface[]
-): void {
+function pushContainsRelations(ctx: RelationsPushContextInterface): void {
+  const {
+    graph, node, relations, sem
+  } = ctx;
+
   if (sem.containsNode === undefined) {
     return;
   }
@@ -131,12 +146,11 @@ function pushDependentRequiredRelations(
   }
 }
 
-function pushDependentSchemaRelations(
-  graph: GraphAccessorInterface,
-  node: SchemaGraphNodeInterface,
-  sem: SchemaGraphSemanticsInterface,
-  relations: SchemaGraphRelationInterface[]
-): void {
+function pushDependentSchemaRelations(ctx: RelationsPushContextInterface): void {
+  const {
+    graph, node, relations, sem
+  } = ctx;
+
   for (const [
     propName,
     schemaNode
@@ -242,12 +256,11 @@ function pushUserRestrictionRelations(
   }
 }
 
-function pushPatternPropertyRelations(
-  graph: GraphAccessorInterface,
-  node: SchemaGraphNodeInterface,
-  sem: SchemaGraphSemanticsInterface,
-  relations: SchemaGraphRelationInterface[]
-): void {
+function pushPatternPropertyRelations(ctx: RelationsPushContextInterface): void {
+  const {
+    graph, node, relations, sem
+  } = ctx;
+
   for (const [
     pattern,
     schemaNode
@@ -266,12 +279,11 @@ function pushPatternPropertyRelations(
   }
 }
 
-function pushPrefixItemRelations(
-  graph: GraphAccessorInterface,
-  node: SchemaGraphNodeInterface,
-  sem: SchemaGraphSemanticsInterface,
-  relations: SchemaGraphRelationInterface[]
-): void {
+function pushPrefixItemRelations(ctx: RelationsPushContextInterface): void {
+  const {
+    graph, node, relations, sem
+  } = ctx;
+
   for (const [
     index,
     itemNode
@@ -290,13 +302,16 @@ function pushPrefixItemRelations(
   }
 }
 
-function pushPropertyCardinalityRelations(
-  graph: GraphAccessorInterface,
-  node: SchemaGraphNodeInterface,
-  sem: SchemaGraphSemanticsInterface,
-  relations: SchemaGraphRelationInterface[],
-  nodeMap: Map<string, SchemaGraphNodeInterface>
-): void {
+/** Extended context for cardinality resolution, which also needs the node map. */
+interface CardinalityContextInterface extends RelationsPushContextInterface {
+  readonly 'nodeMap': Map<string, SchemaGraphNodeInterface>;
+}
+
+function pushPropertyCardinalityRelations(ctx: CardinalityContextInterface): void {
+  const {
+    graph, node, nodeMap, relations, sem
+  } = ctx;
+
   if (!SchemaGraphSupport.isPropertyPointer(node.pointer)) {
     return;
   }
@@ -329,12 +344,16 @@ function pushPropertyCardinalityRelations(
   }
 }
 
-function pushPropertyTypeRelations(
-  node: SchemaGraphNodeInterface,
-  sem: SchemaGraphSemanticsInterface,
-  relations: SchemaGraphRelationInterface[],
-  nonNullTypes: string[]
-): void {
+/** Extended context for union/type relations, which also needs the pre-filtered non-null types. */
+interface TypeRelationsContextInterface extends RelationsPushContextInterface {
+  readonly 'nonNullTypes': string[];
+}
+
+function pushPropertyTypeRelations(ctx: TypeRelationsContextInterface): void {
+  const {
+    node, nonNullTypes, relations, sem
+  } = ctx;
+
   if (!SchemaGraphSupport.isPropertyPointer(node.pointer)) {
     return;
   }
@@ -352,12 +371,11 @@ function pushPropertyTypeRelations(
   });
 }
 
-function pushUnionTypeRelations(
-  node: SchemaGraphNodeInterface,
-  sem: SchemaGraphSemanticsInterface,
-  relations: SchemaGraphRelationInterface[],
-  nonNullTypes: string[]
-): void {
+function pushUnionTypeRelations(ctx: TypeRelationsContextInterface): void {
+  const {
+    node, nonNullTypes, relations, sem
+  } = ctx;
+
   if (!SchemaGraphSupport.isPropertyPointer(node.pointer)) {
     return;
   }
@@ -389,12 +407,10 @@ function pushUnionTypeRelations(
   }
 }
 
-function pushAnnotatedEdgeRelations(
-  graph: GraphAccessorInterface,
-  node: SchemaGraphNodeInterface,
-  sem: SchemaGraphSemanticsInterface,
-  relations: SchemaGraphRelationInterface[]
-): void {
+function pushAnnotatedEdgeRelations(ctx: RelationsPushContextInterface): void {
+  const {
+    graph, node, relations, sem
+  } = ctx;
   const descriptor = sem.annotatedEdge;
 
   if (descriptor === undefined) {
@@ -814,23 +830,38 @@ export const SchemaGraphRelations = {
       });
     }
 
-    const nonNullTypes = sem.schemaTypes.filter((schemaType) => {
+    const nonNullTypes = sem.schemaTypes.filter((schemaType: string): boolean => {
       return schemaType !== 'null';
     });
 
-    pushPropertyTypeRelations(node, sem, relations, nonNullTypes);
-    pushPropertyCardinalityRelations(graph, node, sem, relations, nodeMap);
-    pushConditionalRelations(graph, node, sem, relations);
-    pushDependentSchemaRelations(graph, node, sem, relations);
-    pushContainsRelations(graph, node, sem, relations);
-    pushPrefixItemRelations(graph, node, sem, relations);
-    pushPatternPropertyRelations(graph, node, sem, relations);
-    pushUnionTypeRelations(node, sem, relations, nonNullTypes);
+    const ctx: RelationsPushContextInterface = {
+      graph,
+      node,
+      relations,
+      sem
+    };
+    const typeCtx: TypeRelationsContextInterface = {
+      ...ctx,
+      nonNullTypes
+    };
+    const cardCtx: CardinalityContextInterface = {
+      ...ctx,
+      nodeMap
+    };
+
+    pushPropertyTypeRelations(typeCtx);
+    pushPropertyCardinalityRelations(cardCtx);
+    pushConditionalRelations(ctx);
+    pushDependentSchemaRelations(ctx);
+    pushContainsRelations(ctx);
+    pushPrefixItemRelations(ctx);
+    pushPatternPropertyRelations(ctx);
+    pushUnionTypeRelations(typeCtx);
     pushDependentRequiredRelations(node, sem, relations);
     pushFormatPatternRelations(node, sem, relations);
     pushFormatAnnotationRelation(node, sem, relations);
     pushUserRestrictionRelations(node, sem, relations);
-    pushAnnotatedEdgeRelations(graph, node, sem, relations);
+    pushAnnotatedEdgeRelations(ctx);
 
     return relations;
   }

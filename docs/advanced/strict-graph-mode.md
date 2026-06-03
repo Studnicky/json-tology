@@ -90,5 +90,6 @@ The cost of inline shapes is borne only by graph users: OWL/SHACL output is less
 ## Related
 
 - [`findDuplicates`](/registry/find-duplicates) - on-demand audit
+- [Duplicate shape detection](/advanced/duplicate-detection) - nominal-subclass pairs, escape hatches, `format` as semantic typing
 - [Graph-native authoring](/advanced/graph-native-authoring) - the drift problem these modes address
 - [Ontology and Graphs](/advanced/ontology) - what graph users get from clean named schemas

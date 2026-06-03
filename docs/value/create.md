@@ -1,6 +1,6 @@
 # `value.create`
 
-**Declaration.** Synthesizes a zero-value default instance for a schema by filling every declared property with its `default` value if present, or with a type-based zero value if no default is declared (`''` for string, `0` for number/integer, `false` for boolean, `[]` for array, `{}` for object). Returns `unknown` - cast to the schema type for type-safe access.
+**Declaration.** Synthesizes a zero-value default instance for a schema by filling every declared property with its `default` value if present, or with a type-based zero value if no default is declared (`''` for string, `0` for number/integer, `false` for boolean, `[]` for array, `{}` for object). Called with a registered `$id`, it returns the schema's inferred type (`ParseOutputType<TRefs[K], TRefs>`) directly — no cast needed; an unregistered string `$id` returns `unknown`.
 
 **Use this when** you need a blank structural skeleton for a schema - for example, pre-populating a form's initial state where every field should have a zero value. Contrast with `materialize(schema)` which only fills declared defaults (leaves undeclared fields absent) and throws if required fields without defaults are missing.
 

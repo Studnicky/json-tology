@@ -49,6 +49,6 @@ console.log('addresses default:', created.addresses);
 const customer = bookstoreEntities.instantiate(CustomerSchema.$id, aboxFixtures.customer);
 const wire = bookstoreEntities.dump(CustomerSchema.$id, customer);
 
-console.assert(typeof wire === 'object' && wire !== null);
+console.assert('email' in wire);
 // round-tripped through $ref graph
 console.log('dump email:', (wire as { 'email': string }).email);

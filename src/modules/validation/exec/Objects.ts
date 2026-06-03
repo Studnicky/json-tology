@@ -86,20 +86,23 @@ export class Objects {
     };
   }
 
-  private static validateKnownProperty(
-    childPath: string,
-    key: string,
-    obj: Record<string, unknown>,
-    propValidator: ValidateWithErrorsFnType,
-    propertyDefaults: Map<string, { 'defaultValue': unknown;
-      'hasDefault': boolean }>,
-    errors: ValidationErrorType[],
-    collectErrors: boolean,
-    applyDefaults: boolean,
-    doCoerce: boolean,
-    stripUnknown: boolean
-  ): { 'earlyExit': boolean;
+  private static validateKnownProperty(opts: {
+    'applyDefaults': boolean;
+    'childPath': string;
+    'collectErrors': boolean;
+    'doCoerce': boolean;
+    'errors': ValidationErrorType[];
+    'key': string;
+    'obj': Record<string, unknown>;
+    'propertyDefaults': Map<string, { 'defaultValue': unknown;
+      'hasDefault': boolean }>;
+    'propValidator': ValidateWithErrorsFnType;
+    'stripUnknown': boolean;
+  }): { 'earlyExit': boolean;
     'valid': boolean } {
+    const {
+      applyDefaults, childPath, collectErrors, doCoerce, errors, key, obj, propertyDefaults, propValidator, stripUnknown
+    } = opts;
     let propValue = obj[key];
 
     if (applyDefaults && propValue === undefined) {
@@ -173,21 +176,21 @@ export class Objects {
       const childPath = pathPrefix + key;
 
       if (propValidator === undefined) {
-        const patternResult = Objects.validateUnknownProperty(
-          childPath,
-          key,
-          obj,
-          patternPropValidators,
-          additionalIsFalse,
-          additionalValidator,
-          allowedKeys,
-          stripUnknown,
-          errors,
-          collectErrors,
-          applyDefaults,
-          doCoerce,
-          allowedKeysForStrip ?? allowedKeys
-        );
+        const patternResult = Objects.validateUnknownProperty({
+          'additionalIsFalse': additionalIsFalse,
+          'additionalValidator': additionalValidator,
+          'allowedKeys': allowedKeys,
+          'allowedKeysForStrip': allowedKeysForStrip ?? allowedKeys,
+          'applyDefaults': applyDefaults,
+          'childPath': childPath,
+          'collectErrors': collectErrors,
+          'doCoerce': doCoerce,
+          'errors': errors,
+          'key': key,
+          'obj': obj,
+          'patternPropValidators': patternPropValidators,
+          'stripUnknown': stripUnknown
+        });
 
         if (patternResult.earlyExit) {
           return {
@@ -200,18 +203,18 @@ export class Objects {
           valid = false;
         }
       } else {
-        const knownResult = Objects.validateKnownProperty(
-          childPath,
-          key,
-          obj,
-          propValidator,
-          propertyDefaults,
-          errors,
-          collectErrors,
-          applyDefaults,
-          doCoerce,
-          stripUnknown
-        );
+        const knownResult = Objects.validateKnownProperty({
+          'applyDefaults': applyDefaults,
+          'childPath': childPath,
+          'collectErrors': collectErrors,
+          'doCoerce': doCoerce,
+          'errors': errors,
+          'key': key,
+          'obj': obj,
+          'propertyDefaults': propertyDefaults,
+          'propValidator': propValidator,
+          'stripUnknown': stripUnknown
+        });
 
         if (knownResult.earlyExit) {
           return {
@@ -317,23 +320,26 @@ export class Objects {
     return errors.length === pre;
   }
 
-  private static validateUnknownProperty(
-    childPath: string,
-    key: string,
-    obj: Record<string, unknown>,
-    patternPropValidators: Array<{ 'regex': RegExp;
-      'validator': ValidateWithErrorsFnType }> | undefined,
-    additionalIsFalse: boolean,
-    additionalValidator: undefined | ValidateWithErrorsFnType,
-    allowedKeys: Set<string> | undefined,
-    stripUnknown: boolean,
-    errors: ValidationErrorType[],
-    collectErrors: boolean,
-    applyDefaults: boolean,
-    doCoerce: boolean,
-    allowedKeysForStrip?: Set<string>
-  ): { 'earlyExit': boolean;
+  private static validateUnknownProperty(opts: {
+    'additionalIsFalse': boolean;
+    'additionalValidator': undefined | ValidateWithErrorsFnType;
+    'allowedKeys': Set<string> | undefined;
+    'allowedKeysForStrip': Set<string> | undefined;
+    'applyDefaults': boolean;
+    'childPath': string;
+    'collectErrors': boolean;
+    'doCoerce': boolean;
+    'errors': ValidationErrorType[];
+    'key': string;
+    'obj': Record<string, unknown>;
+    'patternPropValidators': Array<{ 'regex': RegExp;
+      'validator': ValidateWithErrorsFnType }> | undefined;
+    'stripUnknown': boolean;
+  }): { 'earlyExit': boolean;
     'valid': boolean } {
+    const {
+      additionalIsFalse, additionalValidator, allowedKeys, allowedKeysForStrip, applyDefaults, childPath, collectErrors, doCoerce, errors, key, obj, patternPropValidators, stripUnknown
+    } = opts;
     let matchedPattern = false;
     let valid = true;
 

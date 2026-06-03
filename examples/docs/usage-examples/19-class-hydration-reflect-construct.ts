@@ -44,7 +44,7 @@ const ReflectOrderSchema = Compose.equivalent(
 
 jt.set(ReflectOrderSchema);
 
-Transform.create<typeof ReflectOrderSchema, OrderViaReflect>(ReflectOrderSchema, {
+const ReflectOrderTransform = Transform.create<typeof ReflectOrderSchema, OrderViaReflect>(ReflectOrderSchema, {
   'decode': (plain) => {
     return Object.assign(Reflect.construct(OrderViaReflect, []), plain);
   },
@@ -53,11 +53,11 @@ Transform.create<typeof ReflectOrderSchema, OrderViaReflect>(ReflectOrderSchema,
   }
 });
 
-const hydrated = jt.instantiate(ReflectOrderSchema, aboxFixtures.order);
+const hydrated = jt.instantiate(ReflectOrderTransform, aboxFixtures.order);
 
 console.assert(hydrated instanceof OrderViaReflect);
-console.assert((hydrated as OrderViaReflect).status().startsWith('shipped:'));
+console.assert(hydrated.status().startsWith('shipped:'));
 // true
 console.log('instanceof:', hydrated instanceof OrderViaReflect);
 // 'shipped:<orderId>'
-console.log('status():', (hydrated as OrderViaReflect).status());
+console.log('status():', hydrated.status());

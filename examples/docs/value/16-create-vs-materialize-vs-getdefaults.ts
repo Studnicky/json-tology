@@ -24,6 +24,7 @@ import {
 import {
   aboxFixtures, BibliographicRecordSchema, BookSchema, bookstoreEntities
 } from '../bookstore/index.js';
+import type { Book } from '../bookstore/index.js';
 
 // value.create on BookSchema — allOf-composed (Compose.subClassOf).
 // Inherits isbn/title/authors from BibliographicRecordSchema via $ref,
@@ -60,20 +61,23 @@ console.assert(!('authors' in bibDefaults));
 
 // materialize — fill declared defaults, partial is trusted, throws if required missing.
 // Works correctly with composed schemas; resolves inherited + own required fields.
+// materialize resolves inherited + own required fields at runtime; the static
+// MaterializedSchemaType surfaces own properties only, so view the result as the
+// fully-resolved Book to read the inherited `isbn` precisely.
 const materialized = bookstoreEntities.materialize(BookSchema, {
   'authors': aboxFixtures.rareBook.authors,
   'isbn': aboxFixtures.rareBook.isbn,
   'price': aboxFixtures.rareBook.price,
   'printStatus': aboxFixtures.rareBook.printStatus,
   'title': aboxFixtures.rareBook.title
-});
+}) as Book;
 
-console.assert((materialized as { 'isbn': string }).isbn === aboxFixtures.rareBook.isbn);
-console.assert((materialized as { 'inStock': boolean }).inStock);
+console.assert(materialized.isbn === aboxFixtures.rareBook.isbn);
+console.assert(materialized.inStock === true);
 
 console.log('create isbn (zero-value):', fromCreate.isbn);
 console.log('create inStock (default applied):', fromCreate.inStock);
 console.log('getDefaults inStock (declared):', defaults.inStock);
 console.log('getDefaults BibliographicRecord keys (none declared):', Object.keys(bibDefaults));
-console.log('materialize isbn (from data):', (materialized as { 'isbn': string }).isbn);
-console.log('materialize inStock (default true applied):', (materialized as { 'inStock': boolean }).inStock);
+console.log('materialize isbn (from data):', materialized.isbn);
+console.log('materialize inStock (default true applied):', materialized.inStock);

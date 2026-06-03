@@ -29,6 +29,9 @@ type BookViaSchema = InferSchemaType<
   typeof BookSchema,
   typeof BookSchema
 >;
+// Confirm the inferred type carries the expected isbn field.
+const _bookVia: Partial<BookViaSchema> = {};
 
-void (null as unknown as BookViaSchema);
+void _bookVia;
+
 console.assert(typeof BookSchema.$id === 'string');

@@ -8,7 +8,6 @@
  */
 
 import { Compose } from '../../../src/index.js';
-import type { InferType } from '../../../src/types/index.js';
 import {
   BookSchema,
   createBookstoreDocRegistry
@@ -22,8 +21,6 @@ const CreateBookSchema = Compose.required(
   BookSchema,
   'https://bookstore.example/CreateBook'
 );
-
-type CreateBook = InferType<typeof CreateBookSchema>;
 
 const jt2 = jt.set(CreateBookSchema);
 
@@ -41,5 +38,3 @@ const missingInStock = jt2.validate(CreateBookSchema.$id, {
 
 console.assert(!missingInStock.ok);
 console.log('CreateBook rejects missing inStock:', !missingInStock.ok, missingInStock.length, 'error(s) | Compose.required promotes all declared properties');
-
-void 0 as unknown as CreateBook;

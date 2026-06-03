@@ -2,7 +2,7 @@
 
 > Validation modes: [Validation modes reference](/validation-modes)
 
-**Declaration.** Validates data against a registered schema and returns a boolean. When the schema is registered via `JsonTology.create({ schemas })`, the return type is a TypeScript type predicate (`data is TMap[K]`), which narrows the type of `data` to the schema's inferred type inside the `if` block. Does not mutate input. Does not throw on validation failure.
+**Declaration.** Validates data against a registered schema and returns a boolean. When the schema is registered via `JsonTology.create({ schemas })`, the return type is a TypeScript type predicate (`data is ParseOutputType<TRefs[K], TRefs>`), which narrows the type of `data` to the schema's inferred type inside the `if` block. Does not mutate input. Does not throw on validation failure.
 
 **Use this when** you need a boolean check and you want TypeScript to narrow the type inside the truthy branch - for example, in union-narrowing guards, array filters, middleware checks. This is the idiomatic pattern when you need "is this data the right shape?" without wanting errors or a coerced value.
 
@@ -127,5 +127,5 @@ except ValidationError:
 
 ## See also
 
-- [Type Inference](/types/infer) - how the type predicate works with `TMap`
+- [Type Inference](/types/infer) - how the type predicate works with `TRefs`
 - [Bookstore domain](/bookstore-domain) - schema definitions used in examples

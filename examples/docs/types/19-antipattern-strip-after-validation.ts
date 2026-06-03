@@ -13,8 +13,9 @@ import type {
 import {
   bookstoreEntities, CustomerSchema
 } from '../bookstore/index.js';
+import type { BookstoreRefs } from '../bookstore/index.js';
 
-type Customer = InferType<typeof CustomerSchema>;
+type Customer = InferType<typeof CustomerSchema, BookstoreRefs>;
 
 const raw = {
   'customerId': '09f8e7d6-c5b4-4321-9876-543210fedcba',

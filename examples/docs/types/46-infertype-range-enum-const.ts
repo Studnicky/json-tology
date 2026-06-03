@@ -7,10 +7,12 @@
  */
 
 import type { InferType } from '../../../src/types/index.js';
-import type { ReviewSchema } from '../bookstore/index.js';
+import type {
+  BookstoreRefs, ReviewSchema
+} from '../bookstore/index.js';
 
 // rating: minimum 1, maximum 5 — auto-generates a literal union.
-type Rating = InferType<typeof ReviewSchema>['rating'];
+type Rating = InferType<typeof ReviewSchema, BookstoreRefs>['rating'];
 // 1 | 2 | 3 | 4 | 5
 
 const _CurrencySchema = {

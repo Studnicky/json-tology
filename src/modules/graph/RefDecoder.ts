@@ -10,6 +10,25 @@ import { GraphEngineSupport } from './GraphEngineSupport.js';
 
 export type { RefDecoderRegistryInterface } from '../../interfaces/RefDecoderRegistry.js';
 
+/**
+ * RefDecoder — walks a schema graph and applies Transform decoders at every `$ref` boundary.
+ *
+ * @remarks
+ * Traverses the canonical graph rooted at a `SchemaGraphInterface`, following
+ * `$ref`, composition keywords (`oneOf`, `anyOf`, `allOf`), `properties`,
+ * `items`/`prefixItems`, and `additionalProperties`. At each cross-schema
+ * `$ref` boundary the target schema's registered Transform decoder is applied.
+ *
+ * @example
+ * ```ts
+ * const decoded = RefDecoder.run(graph, value, registry);
+ * ```
+ *
+ * @category Graph
+ * @since 0.1.0
+ * @see {@link RefDecoderInterface}
+ * @group Graph
+ */
 export class RefDecoder {
   private static decodeWithSchema(
     schema: Record<string, unknown>,

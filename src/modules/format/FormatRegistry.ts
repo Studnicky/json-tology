@@ -1,4 +1,7 @@
 import type { FormatRegistryInterface } from '../../interfaces/FormatRegistry.js';
+import type {
+  CheckFnType, OptionalCheckFnType
+} from '../../types/Validation.js';
 import {
   IPV6_FULL, IPV6_MIXED, IPV6_MIXED_COMPRESSED, IPV6_WITH_DOUBLE_COLON
 } from '../../constants/FORMAT_REGEXES.js';
@@ -7,7 +10,11 @@ import {
   DATE_DAY_OFFSET_1, DATE_DAY_OFFSET_2, DATE_DAY_SEPARATOR_OFFSET,
   DATE_MONTH_MAX, DATE_MONTH_OFFSET_1, DATE_MONTH_OFFSET_2,
   DATE_STRING_LENGTH, DATE_YEAR_DIGIT_COUNT, DATETIME_MIN_LENGTH,
+  DAYS_IN_APR, DAYS_IN_AUG, DAYS_IN_DEC, DAYS_IN_FEB_COMMON,
+  DAYS_IN_JAN, DAYS_IN_JUL, DAYS_IN_JUN, DAYS_IN_MAR,
+  DAYS_IN_MAY, DAYS_IN_NOV, DAYS_IN_OCT, DAYS_IN_SEP,
   DECIMAL_RADIX, HOSTNAME_LABEL_MAX_LENGTH,
+  IPV4_OCTET_MAX_LENGTH, IPV4_OCTET_MAX_VALUE, IPV4_PARTS_COUNT, IPV6_MAX_GROUPS,
   TIME_BASE_LENGTH, TIME_HOUR_MAX, TIME_MINUTE_MAX,
   TIME_OFFSET_COLON, TIME_OFFSET_HOUR1, TIME_OFFSET_HOUR2,
   TIME_OFFSET_MIN1, TIME_OFFSET_MIN2, TIME_SECOND_MAX,
@@ -54,6 +61,27 @@ function codeAt(value: string, index: number): number {
   return value.codePointAt(index) ?? 0;
 }
 
+// ---------------------------------------------------------------------------
+// Hostname validation helpers
+// ---------------------------------------------------------------------------
+
+function isLabelSeparator(value: string, i: number, labelLen: number): boolean {
+  if (labelLen === 0) {
+    return false;
+  }
+
+  return isAlphanumeric(codeAt(value, i - 1));
+}
+
+function isValidLabelChar(charCode: number, labelLen: number): boolean {
+  if (labelLen === 0) {
+    return isAlphanumeric(charCode);
+  }
+
+  // '-'
+  return isAlphanumeric(charCode) || charCode === 0x2D;
+}
+
 function isAsciiHostname(value: string): boolean {
   if (value.length === 0) {
     return false;
@@ -63,22 +91,14 @@ function isAsciiHostname(value: string): boolean {
   for (let i = 0; i < value.length; i++) {
     const charCode = codeAt(value, i);
 
-    // '.'
     if (charCode === 0x2E) {
-      if (labelLen === 0) {
-        return false;
-      }
-      if (!isAlphanumeric(codeAt(value, i - 1))) {
+      if (!isLabelSeparator(value, i, labelLen)) {
         return false;
       }
       labelLen = 0;
       continue;
     }
-    if (labelLen === 0 && !isAlphanumeric(charCode)) {
-      return false;
-    }
-    // not alphanumeric or '-'
-    if (!isAlphanumeric(charCode) && charCode !== 0x2D) {
+    if (!isValidLabelChar(charCode, labelLen)) {
       return false;
     }
     labelLen++;
@@ -124,26 +144,28 @@ function isUriReference(value: string): boolean {
 // Browser-compatible IP and IDN helpers (no node:net / node:url)
 // ---------------------------------------------------------------------------
 
+function validateIPv4Octet(part: string): boolean {
+  if (part.length === 0 || part.length > IPV4_OCTET_MAX_LENGTH) {
+    return false;
+  }
+  if (part.length > 1 && part.startsWith('0')) {
+    return false;
+  }
+  if (!/^\d+$/u.test(part)) {
+    return false;
+  }
+
+  return Number(part) <= IPV4_OCTET_MAX_VALUE;
+}
+
 function isIPv4(value: string): boolean {
   const parts = value.split('.');
 
-  if (parts.length !== 4) {
+  if (parts.length !== IPV4_PARTS_COUNT) {
     return false;
   }
   for (const part of parts) {
-    if (part.length === 0 || part.length > 3) {
-      return false;
-    }
-    // no leading zeros
-    if (part.length > 1 && part.startsWith('0')) {
-      return false;
-    }
-    if (!/^\d+$/u.test(part)) {
-      return false;
-    }
-    const n = Number(part);
-
-    if (n > 255) {
+    if (!validateIPv4Octet(part)) {
       return false;
     }
   }
@@ -151,31 +173,29 @@ function isIPv4(value: string): boolean {
   return true;
 }
 
+function countIPv6Groups(value: string): number {
+  const withoutDC = value.replaceAll('::', ':').replaceAll(/^:|:$/gu, '');
+
+  return withoutDC.length === 0 ? 0 : withoutDC.split(':').length;
+}
 
 function isIPv6(value: string): boolean {
   if (value.length === 0) {
     return false;
   }
-  // Fully-expanded 8-group form
   if (IPV6_FULL.test(value)) {
     return true;
   }
-  // Mixed IPv4-in-IPv6 (e.g. ::ffff:192.0.2.1)
   if (IPV6_MIXED.test(value) || IPV6_MIXED_COMPRESSED.test(value)) {
     return true;
   }
-  // "::" collapsed form: at most one "::" allowed
   const doubleColonCount = (value.match(/::/gu) ?? []).length;
 
   if (doubleColonCount > 1) {
     return false;
   }
   if (IPV6_WITH_DOUBLE_COLON.test(value)) {
-    // Count groups to ensure total ≤ 8
-    const withoutDC = value.replaceAll('::', ':').replaceAll(/^:|:$/gu, '');
-    const groups = withoutDC.length === 0 ? 0 : withoutDC.split(':').length;
-
-    return groups <= 8;
+    return countIPv6Groups(value) <= IPV6_MAX_GROUPS;
   }
 
   return false;
@@ -198,10 +218,7 @@ function isBase64Char(code: number): boolean {
   return isAlphanumeric(code) || code === 0x2B || code === 0x2F;
 }
 
-function validateDate(value: string, offset: number): boolean {
-  if (offset + DATE_STRING_LENGTH > value.length) {
-    return false;
-  }
+function validateDateDigitsAndSeparators(value: string, offset: number): boolean {
   for (let i = 0; i < DATE_YEAR_DIGIT_COUNT; i++) {
     if (!isDigit(codeAt(value, offset + i))) {
       return false;
@@ -217,7 +234,15 @@ function validateDate(value: string, offset: number): boolean {
   if (codeAt(value, offset + DATE_DAY_SEPARATOR_OFFSET) !== 0x2D) {
     return false;
   }
-  if (!isDigit(codeAt(value, offset + DATE_DAY_OFFSET_1)) || !isDigit(codeAt(value, offset + DATE_DAY_OFFSET_2))) {
+
+  return isDigit(codeAt(value, offset + DATE_DAY_OFFSET_1)) && isDigit(codeAt(value, offset + DATE_DAY_OFFSET_2));
+}
+
+function validateDate(value: string, offset: number): boolean {
+  if (offset + DATE_STRING_LENGTH > value.length) {
+    return false;
+  }
+  if (!validateDateDigitsAndSeparators(value, offset)) {
     return false;
   }
   const month
@@ -230,10 +255,7 @@ function validateDate(value: string, offset: number): boolean {
   return month >= 1 && month <= DATE_MONTH_MAX && day >= 1 && day <= DATE_DAY_MAX;
 }
 
-function validateTime(value: string, offset: number): boolean {
-  if (offset + TIME_BASE_LENGTH > value.length) {
-    return false;
-  }
+function validateTimeHM(value: string, offset: number): false | number {
   const h1 = codeAt(value, offset); const
     h2 = codeAt(value, offset + 1);
 
@@ -258,6 +280,11 @@ function validateTime(value: string, offset: number): boolean {
   if ((m1 - 0x30) * DECIMAL_RADIX + (m2 - 0x30) > TIME_MINUTE_MAX) {
     return false;
   }
+
+  return (m1 - 0x30) * DECIMAL_RADIX + (m2 - 0x30);
+}
+
+function validateTimeSeconds(value: string, offset: number): boolean {
   if (codeAt(value, offset + TIME_SECONDS_COLON_OFFSET) !== 0x3A) {
     return false;
   }
@@ -267,21 +294,39 @@ function validateTime(value: string, offset: number): boolean {
   if (!isDigit(s1) || !isDigit(s2)) {
     return false;
   }
+
   // 60 for leap second
-  if ((s1 - 0x30) * DECIMAL_RADIX + (s2 - 0x30) > TIME_SECOND_MAX) {
+  return (s1 - 0x30) * DECIMAL_RADIX + (s2 - 0x30) <= TIME_SECOND_MAX;
+}
+
+function advancePastFractionalSeconds(value: string, pos: number): false | number {
+  if (pos >= value.length || !isDigit(codeAt(value, pos))) {
+    return false;
+  }
+
+  return consumeDigits(value, pos);
+}
+
+function validateTime(value: string, offset: number): boolean {
+  if (offset + TIME_BASE_LENGTH > value.length) {
+    return false;
+  }
+  if (validateTimeHM(value, offset) === false) {
+    return false;
+  }
+  if (!validateTimeSeconds(value, offset)) {
     return false;
   }
   let pos = offset + TIME_BASE_LENGTH;
 
   // fractional seconds
   if (pos < value.length && codeAt(value, pos) === 0x2E) {
-    pos++;
-    if (pos >= value.length || !isDigit(codeAt(value, pos))) {
+    const advanced = advancePastFractionalSeconds(value, pos + 1);
+
+    if (advanced === false) {
       return false;
     }
-    while (pos < value.length && isDigit(codeAt(value, pos))) {
-      pos++;
-    }
+    pos = advanced;
   }
 
   // no timezone required for bare time check
@@ -335,18 +380,18 @@ function validateByte(value: string): boolean {
 }
 
 const DAYS_IN_MONTH: readonly number[] = Object.freeze([
-  31,
-  28,
-  31,
-  30,
-  31,
-  30,
-  31,
-  31,
-  30,
-  31,
-  30,
-  31
+  DAYS_IN_JAN,
+  DAYS_IN_FEB_COMMON,
+  DAYS_IN_MAR,
+  DAYS_IN_APR,
+  DAYS_IN_MAY,
+  DAYS_IN_JUN,
+  DAYS_IN_JUL,
+  DAYS_IN_AUG,
+  DAYS_IN_SEP,
+  DAYS_IN_OCT,
+  DAYS_IN_NOV,
+  DAYS_IN_DEC
 ]);
 
 function validateDateFormat(value: string): boolean {
@@ -367,6 +412,46 @@ function validateDateFormat(value: string): boolean {
 
 function validateDateTime(value: string): boolean {
   return value.length > DATETIME_MIN_LENGTH && value.includes('T') && !Number.isNaN(Date.parse(value));
+}
+
+function consumeDigits(value: string, start: number): number {
+  let cur = start;
+
+  while (cur < value.length && isDigit(codeAt(value, cur))) {
+    cur++;
+  }
+
+  return cur;
+}
+
+function validateFractionalSeconds(value: string, afterDot: number): false | number {
+  if (afterDot >= value.length || !isDigit(codeAt(value, afterDot))) {
+    return false;
+  }
+  const cur = consumeDigits(value, afterDot);
+
+  // 'S'
+  if (cur >= value.length || codeAt(value, cur) !== 0x53) {
+    return false;
+  }
+
+  return cur + 1;
+}
+
+function validateDurationUnit(value: string, pos: number, inTime: boolean): false | number {
+  const cur = consumeDigits(value, pos);
+
+  if (cur >= value.length) {
+    return false;
+  }
+  const unit = codeAt(value, cur);
+
+  // '.' for fractional seconds
+  if (unit === 0x2E && inTime) {
+    return validateFractionalSeconds(value, cur + 1);
+  }
+
+  return cur + 1;
 }
 
 function validateDuration(value: string): boolean {
@@ -390,29 +475,12 @@ function validateDuration(value: string): boolean {
     if (!isDigit(charCode)) {
       return false;
     }
-    while (pos < value.length && isDigit(codeAt(value, pos))) {
-      pos++;
-    }
-    if (pos >= value.length) {
+    const next = validateDurationUnit(value, pos, inTime);
+
+    if (next === false) {
       return false;
     }
-    const unit = codeAt(value, pos);
-
-    // '.' for fractional seconds
-    if (unit === 0x2E && inTime) {
-      pos++;
-      if (pos >= value.length || !isDigit(codeAt(value, pos))) {
-        return false;
-      }
-      while (pos < value.length && isDigit(codeAt(value, pos))) {
-        pos++;
-      }
-      // 'S'
-      if (pos >= value.length || codeAt(value, pos) !== 0x53) {
-        return false;
-      }
-    }
-    pos++;
+    pos = next;
     hasContent = true;
   }
 
@@ -486,27 +554,11 @@ function validateJsonPointer(value: string): boolean {
   return true;
 }
 
-function validateTimeFormat(value: string): boolean {
-  if (value.length < TIME_BASE_LENGTH) {
-    return false;
-  }
-  if (!validateTime(value, 0)) {
-    return false;
-  }
-  // Check optional timezone after time portion
-  let pos = TIME_BASE_LENGTH;
+function advancePastFractionalSecondsInFormat(value: string, startPos: number): number {
+  return consumeDigits(value, startPos);
+}
 
-  // skip fractional seconds
-  if (pos < value.length && codeAt(value, pos) === 0x2E) {
-    pos++;
-    while (pos < value.length && isDigit(codeAt(value, pos))) {
-      pos++;
-    }
-  }
-  // no timezone is valid
-  if (pos === value.length) {
-    return true;
-  }
+function validateTimeOffset(value: string, pos: number): boolean {
   const tzChar = codeAt(value, pos);
 
   // 'Z'
@@ -527,36 +579,32 @@ function validateTimeFormat(value: string): boolean {
   if (codeAt(value, pos + TIME_OFFSET_COLON) !== 0x3A) {
     return false;
   }
-  if (!isDigit(codeAt(value, pos + TIME_OFFSET_MIN1)) || !isDigit(codeAt(value, pos + TIME_OFFSET_MIN2))) {
-    return false;
-  }
 
-  return true;
+  return isDigit(codeAt(value, pos + TIME_OFFSET_MIN1)) && isDigit(codeAt(value, pos + TIME_OFFSET_MIN2));
 }
 
-function validateUuid(value: string): boolean {
-  if (value.length !== UUID_STRING_LENGTH) {
+function validateTimeFormat(value: string): boolean {
+  if (value.length < TIME_BASE_LENGTH) {
     return false;
   }
-  // Check dash positions: 8, 13, 18, 23
-  if (codeAt(value, UUID_DASH_POS_1) !== 0x2D || codeAt(value, UUID_DASH_POS_2) !== 0x2D
-    || codeAt(value, UUID_DASH_POS_3) !== 0x2D || codeAt(value, UUID_DASH_POS_4) !== 0x2D) {
+  if (!validateTime(value, 0)) {
     return false;
   }
-  // Version digit at position 14 must be 1-8
-  const version = codeAt(value, UUID_VERSION_POS);
+  let pos = TIME_BASE_LENGTH;
 
-  if (version < 0x31 || version > 0x38) {
-    return false;
+  // skip fractional seconds
+  if (pos < value.length && codeAt(value, pos) === 0x2E) {
+    pos = advancePastFractionalSecondsInFormat(value, pos + 1);
   }
-  // Variant digit at position 19 must be 8, 9, a, or b
-  const variant = codeAt(value, UUID_VARIANT_POS);
+  // no timezone is valid
+  if (pos === value.length) {
+    return true;
+  }
 
-  if (!((variant >= 0x38 && variant <= 0x39) || variant === 0x61 || variant === 0x62
-    || variant === 0x41 || variant === 0x42)) {
-    return false;
-  }
-  // All other positions must be hex
+  return validateTimeOffset(value, pos);
+}
+
+function validateUuidHexPositions(value: string): boolean {
   for (let i = 0; i < UUID_STRING_LENGTH; i++) {
     if (i === UUID_DASH_POS_1 || i === UUID_DASH_POS_2 || i === UUID_DASH_POS_3 || i === UUID_DASH_POS_4) {
       continue;
@@ -569,6 +617,38 @@ function validateUuid(value: string): boolean {
   return true;
 }
 
+function validateUuidVersion(value: string): boolean {
+  const version = codeAt(value, UUID_VERSION_POS);
+
+  return version >= 0x31 && version <= 0x38;
+}
+
+function validateUuidVariant(value: string): boolean {
+  const variant = codeAt(value, UUID_VARIANT_POS);
+
+  return (variant >= 0x38 && variant <= 0x39)
+    || variant === 0x61 || variant === 0x62
+    || variant === 0x41 || variant === 0x42;
+}
+
+function validateUuid(value: string): boolean {
+  if (value.length !== UUID_STRING_LENGTH) {
+    return false;
+  }
+  if (codeAt(value, UUID_DASH_POS_1) !== 0x2D || codeAt(value, UUID_DASH_POS_2) !== 0x2D
+    || codeAt(value, UUID_DASH_POS_3) !== 0x2D || codeAt(value, UUID_DASH_POS_4) !== 0x2D) {
+    return false;
+  }
+  if (!validateUuidVersion(value)) {
+    return false;
+  }
+  if (!validateUuidVariant(value)) {
+    return false;
+  }
+
+  return validateUuidHexPositions(value);
+}
+
 function validateRegex(value: string): boolean {
   try {
     new RegExp(value, 'u');
@@ -579,67 +659,67 @@ function validateRegex(value: string): boolean {
   }
 }
 
-const STRING_FORMAT_VALIDATORS: Record<string, (value: unknown) => boolean> = {
-  'binary': (value) => {
+const STRING_FORMAT_VALIDATORS: Record<string, CheckFnType> = {
+  'binary': (value: unknown): boolean => {
     return typeof value === 'string' && validateBinary(value);
   },
-  'byte': (value) => {
+  'byte': (value: unknown): boolean => {
     return typeof value === 'string' && validateByte(value);
   },
-  'date': (value) => {
+  'date': (value: unknown): boolean => {
     return typeof value === 'string' && validateDateFormat(value);
   },
-  'duration': (value) => {
+  'duration': (value: unknown): boolean => {
     return typeof value === 'string' && validateDuration(value);
   },
-  'email': (value) => {
+  'email': (value: unknown): boolean => {
     return typeof value === 'string' && validateEmail(value);
   },
-  'hostname': (value) => {
+  'hostname': (value: unknown): boolean => {
     return typeof value === 'string' && isAsciiHostname(value);
   },
-  'ipv4': (value) => {
+  'ipv4': (value: unknown): boolean => {
     return typeof value === 'string' && isIPv4(value);
   },
-  'ipv6': (value) => {
+  'ipv6': (value: unknown): boolean => {
     return typeof value === 'string' && isIPv6(value);
   },
-  'iri': (value) => {
+  'iri': (value: unknown): boolean => {
     return typeof value === 'string' && isUriLike(value);
   },
-  'regex': (value) => {
+  'regex': (value: unknown): boolean => {
     return typeof value === 'string' && validateRegex(value);
   },
-  'time': (value) => {
+  'time': (value: unknown): boolean => {
     return typeof value === 'string' && validateTimeFormat(value);
   },
-  'uri': (value) => {
+  'uri': (value: unknown): boolean => {
     return typeof value === 'string' && isUriLike(value);
   },
-  'uuid': (value) => {
+  'uuid': (value: unknown): boolean => {
     return typeof value === 'string' && validateUuid(value);
   }
 };
 
-STRING_FORMAT_VALIDATORS['date-time'] = (value) => {
+STRING_FORMAT_VALIDATORS['date-time'] = (value: unknown): boolean => {
   return typeof value === 'string' && validateDateTime(value);
 };
-STRING_FORMAT_VALIDATORS['idn-email'] = (value) => {
+STRING_FORMAT_VALIDATORS['idn-email'] = (value: unknown): boolean => {
   return typeof value === 'string' && validateIdnEmail(value);
 };
-STRING_FORMAT_VALIDATORS['idn-hostname'] = (value) => {
+STRING_FORMAT_VALIDATORS['idn-hostname'] = (value: unknown): boolean => {
   return typeof value === 'string' && domainToAscii(value).length > 0;
 };
-STRING_FORMAT_VALIDATORS['iri-reference'] = (value) => {
+STRING_FORMAT_VALIDATORS['iri-reference'] = (value: unknown): boolean => {
   return typeof value === 'string' && isUriReference(value);
 };
-STRING_FORMAT_VALIDATORS['json-pointer'] = (value) => {
+STRING_FORMAT_VALIDATORS['json-pointer'] = (value: unknown): boolean => {
   return typeof value === 'string' && validateJsonPointer(value);
 };
-STRING_FORMAT_VALIDATORS['uri-reference'] = (value) => {
+STRING_FORMAT_VALIDATORS['uri-reference'] = (value: unknown): boolean => {
   return typeof value === 'string' && isUriReference(value);
 };
-STRING_FORMAT_VALIDATORS['uri-template'] = (value) => {
+STRING_FORMAT_VALIDATORS['uri-template'] = (value: unknown): boolean => {
   return typeof value === 'string' && isUriReference(value) && hasBalancedBraces(value);
 };
 
@@ -647,17 +727,17 @@ STRING_FORMAT_VALIDATORS['uri-template'] = (value) => {
 // Built-in number format validators
 // ---------------------------------------------------------------------------
 
-const NUMBER_FORMAT_VALIDATORS: Record<string, (value: unknown) => boolean> = {
-  'double': (value) => {
+const NUMBER_FORMAT_VALIDATORS: Record<string, CheckFnType> = {
+  'double': (value: unknown): boolean => {
     return typeof value === 'number' && Number.isFinite(value);
   },
-  'float': (value) => {
+  'float': (value: unknown): boolean => {
     return typeof value === 'number' && Number.isFinite(value) && Math.fround(value) === value;
   },
-  'int32': (value) => {
+  'int32': (value: unknown): boolean => {
     return typeof value === 'number' && Number.isInteger(value) && value >= -2_147_483_648 && value <= 2_147_483_647;
   },
-  'int64': (value) => {
+  'int64': (value: unknown): boolean => {
     return typeof value === 'number' && Number.isInteger(value) && Number.isSafeInteger(value);
   }
 };
@@ -668,12 +748,30 @@ const NUMBER_FORMAT_VALIDATORS: Record<string, (value: unknown) => boolean> = {
  * Each validator receives `unknown` so it can handle both string and number
  * formats in one map.  Built-in validators are registered by
  * `FormatRegistry.builtin()`.
+ *
+ * @remarks
+ * Extend the registry at runtime by calling `set` with a custom validator.
+ * The registry is consumed by `GraphEngine` during validation when
+ * `formatAssertions` is enabled in the dialect plan.
+ *
+ * @example
+ * ```ts
+ * const registry = FormatRegistry.builtin();
+ * registry.set('my-format', (value) => typeof value === 'string' && /^\d+$/u.test(value));
+ * ```
+ *
+ * @category Validation
+ * @since 0.1.0
+ * @see {@link FormatRegistryInterface}
+ * @group Format
  */
 export class FormatRegistry implements FormatRegistryInterface {
   /**
    * Create a `FormatRegistry` pre-loaded with all built-in JSON Schema format
    * validators (string formats like `date`, `email`, `uri`, etc. and number
    * formats like `int32`, `float`, etc.).
+   *
+   * @returns A new `FormatRegistry` instance with all built-in validators registered.
    */
   static builtin(): FormatRegistry {
     const registry = new FormatRegistry();
@@ -695,7 +793,7 @@ export class FormatRegistry implements FormatRegistryInterface {
     return registry;
   }
 
-  private readonly validators = new Map<string, (value: unknown) => boolean>();
+  private readonly validators = new Map<string, CheckFnType>();
 
   /**
    * Look up a format validator by name.
@@ -703,7 +801,7 @@ export class FormatRegistry implements FormatRegistryInterface {
    * @param name - Format name (e.g. "email", "uri", "int32")
    * @returns Validator function, or undefined if the format is not registered
    */
-  get(name: string): ((value: unknown) => boolean) | undefined {
+  get(name: string): OptionalCheckFnType {
     return this.validators.get(name);
   }
 
@@ -723,7 +821,7 @@ export class FormatRegistry implements FormatRegistryInterface {
    * @param name - Format name to register
    * @param validator - Validation function that returns true when the value matches the format
    */
-  set(name: string, validator: (value: unknown) => boolean): void {
+  set(name: string, validator: CheckFnType): void {
     this.validators.set(name, validator);
   }
 }

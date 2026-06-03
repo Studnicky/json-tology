@@ -37,7 +37,10 @@ const PremiumCustomerSchema = Compose.extend(
   'urn:bookstore:PremiumCustomer'
 );
 
-bookstoreEntities.set(PremiumCustomerSchema);
+// Capture the widened instance so PremiumCustomer is a known `$id` key — the
+// precise string-id `validate` form resolves it without re-checking the
+// `Compose.extend` schema object against the document-type constraint.
+const withPremium = bookstoreEntities.set(PremiumCustomerSchema);
 
 // Both classes appear in the TBox.
 const tboxJson = bookstoreEntities.toTbox().jsonLd();
@@ -49,7 +52,7 @@ console.assert(
 );
 
 // A valid PremiumCustomer validates against its own schema.
-const result = bookstoreEntities.validate(PremiumCustomerSchema, {
+const result = withPremium.validate(PremiumCustomerSchema.$id, {
   'addresses': [],
   'customerId': 'a1b2c3d4-e5f6-4890-abcd-ef1234567890',
   'email': 'cornelia.funke@bookstore.example',

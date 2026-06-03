@@ -156,12 +156,27 @@ const FACET_ENTRIES: readonly FacetEntry[] = [
  *
  * Used by OwlProjection.emitDatatypeQuads to convert SHACL constraint
  * predicates to XSD facet IRIs when emitting owl:withRestrictions lists.
+ *
+ * @remarks
+ * Only facets with a corresponding SHACL predicate appear in this map; purely
+ * XSD-only facets (e.g. `xsd:length`, `xsd:fractionDigits`) are excluded.
+ *
+ * @example
+ * ```ts
+ * SHACL_TO_XSD_FACET.get('http://www.w3.org/ns/shacl#maxInclusive'); // 'xsd:maxInclusive'
+ * ```
+ *
+ * @category Constants
+ * @since 0.10.0
+ * @see {@link XSD_FACET_DATATYPE}
+ * @group XsdFacets
+ * @defaultValue Derived from `FACET_ENTRIES` where `shaclPredicate !== null`
  */
 export const SHACL_TO_XSD_FACET: ReadonlyMap<string, string> = new Map(FACET_ENTRIES
-  .filter((entry) => {
+  .filter((entry: FacetEntry): boolean => {
     return entry.shaclPredicate !== null;
   })
-  .map((entry) => {
+  .map((entry: FacetEntry): [string, string] => {
     return [
       entry.shaclPredicate as string,
       entry.facetPrefixed
@@ -172,8 +187,23 @@ export const SHACL_TO_XSD_FACET: ReadonlyMap<string, string> = new Map(FACET_ENT
  * XSD_FACET_DATATYPE — XSD facet prefixed name → XSD datatype IRI for the facet value literal.
  *
  * Used by OwlProjection.emitDatatypeQuads to type the facet value literals correctly.
+ *
+ * @remarks
+ * Numeric facets (bounds, length) map to `xsd:decimal` or `xsd:integer`;
+ * pattern and whitespace facets map to `xsd:string`.
+ *
+ * @example
+ * ```ts
+ * XSD_FACET_DATATYPE.get('xsd:maxInclusive'); // 'http://www.w3.org/2001/XMLSchema#decimal'
+ * ```
+ *
+ * @category Constants
+ * @since 0.10.0
+ * @see {@link SHACL_TO_XSD_FACET}
+ * @group XsdFacets
+ * @defaultValue Derived from all `FACET_ENTRIES`
  */
-export const XSD_FACET_DATATYPE: ReadonlyMap<string, string> = new Map(FACET_ENTRIES.map((entry) => {
+export const XSD_FACET_DATATYPE: ReadonlyMap<string, string> = new Map(FACET_ENTRIES.map((entry: FacetEntry): [string, string] => {
   return [
     entry.facetPrefixed,
     entry.facetValueDatatype
@@ -185,8 +215,23 @@ export const XSD_FACET_DATATYPE: ReadonlyMap<string, string> = new Map(FACET_ENT
  *
  * Used by Datatypes.ts importDispatch to convert XSD facet predicates read
  * from owl:withRestrictions blank nodes into JSON Schema keyword patches.
+ *
+ * @remarks
+ * Both the prefixed (`xsd:minLength`) and full-IRI forms are included so
+ * callers never need to normalise before lookup.
+ *
+ * @example
+ * ```ts
+ * FACET_MAP.get('xsd:minLength'); // { key: 'minLength', kind: 'numeric' }
+ * ```
+ *
+ * @category Constants
+ * @since 0.10.0
+ * @see {@link XSD_FACET_DATATYPE}
+ * @group XsdFacets
+ * @defaultValue Derived from all `FACET_ENTRIES` (prefixed + full IRI forms)
  */
-export const FACET_MAP: ReadonlyMap<string, FacetDescriptorType> = new Map(FACET_ENTRIES.flatMap((entry) => {
+export const FACET_MAP: ReadonlyMap<string, FacetDescriptorType> = new Map(FACET_ENTRIES.flatMap((entry: FacetEntry): Array<[string, FacetDescriptorType]> => {
   return [
     [
       entry.facetPrefixed,

@@ -26,16 +26,13 @@ const book = bookstoreEntities.instantiate(BookSchema.$id, {
 // Full dump includes inStock: true (the default was applied by instantiate)
 const full = bookstoreEntities.dump(BookSchema.$id, book);
 
-console.assert(typeof full === 'object' && full !== null);
-console.assert('isbn' in (full as object));
+console.assert('isbn' in full);
 
 // excludeDefaults drops inStock: true because it equals the schema default
 const compact = bookstoreEntities.dump(BookSchema.$id, book, { 'excludeDefaults': true });
 
-console.assert(typeof compact === 'object' && compact !== null);
-
 // isbn, title, authors are required fields — always present
-console.assert('isbn' in (compact as object));
+console.assert('isbn' in compact);
 console.assert('title' in (compact as object));
 
 // inStock: true equals the schema default, so it should be absent

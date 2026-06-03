@@ -1,7 +1,7 @@
 import type { ValidationErrorType } from '../../../types/Validation.js';
 import type { KeywordContextInterface } from '../../../interfaces/GraphEngine.js';
 import type {
-  CheckFnType, ValidateWithErrorsFnType
+  CheckFnType, ValidateWithErrorsFnType, ValidateWithErrorsResultType
 } from '../../../types/Validation.js';
 import type { CustomKeywordEntryInterface } from '../../../interfaces/CustomKeywordEntry.js';
 import { BaseError } from '../../../errors/BaseError.js';
@@ -10,7 +10,136 @@ import {
 } from '../../data/DataTypes.js';
 import { Predicates } from '../Predicates.js';
 
+/**
+ * Composition — validation helpers for JSON Schema composition keywords.
+ *
+ * Implements `allOf`, `anyOf`, `oneOf`, `not`, `if/then/else`,
+ * `dependentSchemas`, and custom keyword dispatch. All methods are pure
+ * static and allocation-free on the hot path.
+ *
+ * @remarks
+ * Called directly from compiled validator closures. Methods accept positional
+ * parameters rather than options objects so V8 can maintain monomorphic call
+ * sites and inline cache entries across the hot validation path.
+ *
+ * @category Validation
+ * @since 0.1.0
+ * @see {@link Objects}
+ * @group exec
+ *
+ * @example
+ * ```ts
+ * const result = Composition.validateAllOf(value, path, validators, errors, true, false, false);
+ * ```
+ */
 export class Composition {
+  private static applyAllOfMember(
+    current: unknown,
+    path: string,
+    validator: ValidateWithErrorsFnType,
+    errors: ValidationErrorType[],
+    collectErrors: boolean,
+    applyDefaults: boolean,
+    doCoerce: boolean
+  ): ValidateWithErrorsResultType & { 'earlyExit': boolean } {
+    const result = validator(current, path, errors, collectErrors, applyDefaults, doCoerce, false);
+
+    if (!result.valid && !collectErrors) {
+      return {
+        'earlyExit': true,
+        'valid': false,
+        'value': result.value
+      };
+    }
+
+    return {
+      'earlyExit': false,
+      'valid': result.valid,
+      'value': result.value
+    };
+  }
+
+  private static applyDependentSchemaMember(
+    current: unknown,
+    path: string,
+    validator: ValidateWithErrorsFnType,
+    errors: ValidationErrorType[],
+    collectErrors: boolean,
+    applyDefaults: boolean,
+    doCoerce: boolean,
+    stripUnknown: boolean
+  ): ValidateWithErrorsResultType & { 'earlyExit': boolean } {
+    const result = validator(current, path, errors, collectErrors, applyDefaults, doCoerce, stripUnknown);
+
+    if (!result.valid && !collectErrors) {
+      return {
+        'earlyExit': true,
+        'valid': false,
+        'value': result.value
+      };
+    }
+
+    return {
+      'earlyExit': false,
+      'valid': result.valid,
+      'value': result.value
+    };
+  }
+
+  private static applyElseBranch(
+    workingValue: unknown,
+    path: string,
+    elseValidator: ValidateWithErrorsFnType,
+    errors: ValidationErrorType[],
+    collectErrors: boolean,
+    applyDefaults: boolean,
+    doCoerce: boolean,
+    stripUnknown: boolean
+  ): ValidateWithErrorsResultType & { 'earlyExit': boolean } {
+    const elseResult = elseValidator(workingValue, path, errors, collectErrors, applyDefaults, doCoerce, stripUnknown);
+
+    if (!elseResult.valid && !collectErrors) {
+      return {
+        'earlyExit': true,
+        'valid': false,
+        'value': elseResult.value
+      };
+    }
+
+    return {
+      'earlyExit': false,
+      'valid': elseResult.valid,
+      'value': elseResult.value
+    };
+  }
+
+  private static applyThenBranch(
+    workingValue: unknown,
+    path: string,
+    thenValidator: ValidateWithErrorsFnType,
+    errors: ValidationErrorType[],
+    collectErrors: boolean,
+    applyDefaults: boolean,
+    doCoerce: boolean,
+    stripUnknown: boolean
+  ): ValidateWithErrorsResultType & { 'earlyExit': boolean } {
+    const thenResult = thenValidator(workingValue, path, errors, collectErrors, applyDefaults, doCoerce, stripUnknown);
+
+    if (!thenResult.valid && !collectErrors) {
+      return {
+        'earlyExit': true,
+        'valid': false,
+        'value': thenResult.value
+      };
+    }
+
+    return {
+      'earlyExit': false,
+      'valid': thenResult.valid,
+      'value': thenResult.value
+    };
+  }
+
   static validateAllOf(
     workingValue: unknown,
     path: string,
@@ -40,27 +169,15 @@ export class Composition {
     // validator performs the final strip against `allowedKeysForStrip`,
     // which is the union of own + allOf-inherited property names.
     for (const allOfValidator of allOfValidators) {
-      const allOfResult = allOfValidator(
-        current,
-        path,
-        errors,
-        collectErrors,
-        applyDefaults,
-        doCoerce,
-        false
-      );
+      const step = Composition.applyAllOfMember(current, path, allOfValidator, errors, collectErrors, applyDefaults, doCoerce);
 
-      if (!allOfResult.valid) {
-        if (!collectErrors) {
-          return {
-            'earlyExit': true,
-            'valid': false,
-            'value': allOfResult.value
-          };
-        }
+      if (step.earlyExit) {
+        return step;
+      }
+      if (!step.valid) {
         valid = false;
       }
-      current = allOfResult.value;
+      current = step.value;
     }
 
     return {
@@ -80,7 +197,7 @@ export class Composition {
       return true;
     }
 
-    const matched = anyOfChecks.some((check) => {
+    const matched = anyOfChecks.some((check: CheckFnType) => {
       return check(value);
     });
 
@@ -156,27 +273,15 @@ export class Composition {
 
     for (const dep of depSchemaValidators) {
       if (dep.trigger in obj) {
-        const depResult = dep.validator(
-          current,
-          path,
-          errors,
-          collectErrors,
-          applyDefaults,
-          doCoerce,
-          stripUnknown
-        );
+        const step = Composition.applyDependentSchemaMember(current, path, dep.validator, errors, collectErrors, applyDefaults, doCoerce, stripUnknown);
 
-        if (!depResult.valid) {
-          if (!collectErrors) {
-            return {
-              'earlyExit': true,
-              'valid': false,
-              'value': depResult.value
-            };
-          }
+        if (step.earlyExit) {
+          return step;
+        }
+        if (!step.valid) {
           valid = false;
         }
-        current = depResult.value;
+        current = step.value;
       }
     }
 
@@ -211,70 +316,10 @@ export class Composition {
 
     if (ifCheck(workingValue)) {
       if (thenValidator !== undefined) {
-        const thenResult = thenValidator(
-          workingValue,
-          path,
-          errors,
-          collectErrors,
-          applyDefaults,
-          doCoerce,
-          stripUnknown
-        );
-
-        if (!thenResult.valid) {
-          if (!collectErrors) {
-            return {
-              'earlyExit': true,
-              'valid': false,
-              'value': thenResult.value
-            };
-          }
-
-          return {
-            'earlyExit': false,
-            'valid': false,
-            'value': thenResult.value
-          };
-        }
-
-        return {
-          'earlyExit': false,
-          'valid': true,
-          'value': thenResult.value
-        };
+        return Composition.applyThenBranch(workingValue, path, thenValidator, errors, collectErrors, applyDefaults, doCoerce, stripUnknown);
       }
     } else if (elseValidator !== undefined) {
-      const elseResult = elseValidator(
-        workingValue,
-        path,
-        errors,
-        collectErrors,
-        applyDefaults,
-        doCoerce,
-        stripUnknown
-      );
-
-      if (!elseResult.valid) {
-        if (!collectErrors) {
-          return {
-            'earlyExit': true,
-            'valid': false,
-            'value': elseResult.value
-          };
-        }
-
-        return {
-          'earlyExit': false,
-          'valid': false,
-          'value': elseResult.value
-        };
-      }
-
-      return {
-        'earlyExit': false,
-        'valid': true,
-        'value': elseResult.value
-      };
+      return Composition.applyElseBranch(workingValue, path, elseValidator, errors, collectErrors, applyDefaults, doCoerce, stripUnknown);
     }
 
     return {

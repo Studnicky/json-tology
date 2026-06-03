@@ -1,4 +1,3 @@
-/** Collects visualization data from a schema registry. */
 import type { SchemaRegistryInterface } from '../../interfaces/SchemaRegistry.js';
 import type {
   VizEdgeInterface, VizNodeInterface, VizPayloadInterface, VizSchemaDataInterface
@@ -8,7 +7,29 @@ import { GraphSchemaSerializer } from '../ontology/GraphSchemaSerializer.js';
 import { GraphShaclSerializer } from '../ontology/GraphShaclSerializer.js';
 import { RDFS } from '../../constants/IRI.js';
 import { TypeStringEmitter } from './TypeStringEmitter.js';
+import type { SchemaGraphInterface } from '../../interfaces/SchemaGraphImpl.js';
 
+/**
+ * Collects visualization data — nodes, edges, and per-schema serializations — from a
+ * registered schema set and projects them into a {@link VizPayloadInterface}.
+ *
+ * @remarks
+ * Each registered graph becomes one node in the visualization. Cross-schema `$ref`
+ * relations that resolve to another registered schema become directed edges.
+ * Per-schema data includes the raw JSON Schema, OWL quads, SHACL quads, and a
+ * TypeScript type-string representation.
+ *
+ * @example
+ * ```ts
+ * const collector = new VizDataCollector(registry);
+ * const payload = collector.collect();
+ * ```
+ *
+ * @category Viz
+ * @since 0.16.0
+ * @see {@link VizPayloadInterface}
+ * @group Classes
+ */
 export class VizDataCollector {
   private readonly registry: SchemaRegistryInterface;
 
@@ -18,7 +39,7 @@ export class VizDataCollector {
 
   public collect(): VizPayloadInterface {
     const graphs = this.registry.listGraphs();
-    const registeredIds = new Set(this.registry.list().map((schema) => {
+    const registeredIds = new Set(this.registry.list().map((schema: Record<string, unknown>): string => {
       return schema.$id as string;
     }));
 
@@ -41,38 +62,11 @@ export class VizDataCollector {
         'schemaTypes': sem.schemaTypes
       });
 
-      for (const rel of graph.allRelations()) {
-        if (rel.predicate === RDFS.range
-          && rel.metadata?.fromRef === true
-          && typeof rel.target === 'string'
-          && registeredIds.has(rel.target)) {
-          const parts = rel.source.pointer.split('/');
-          let propName = parts.at(-1) ?? '';
-
-          if (propName === 'items' || propName === 'prefixItems' || propName === 'additionalItems') {
-            propName = parts.at(-2) ?? propName;
-          }
-
-          edges.push({
-            'label': propName,
-            'source': schemaId,
-            'target': rel.target
-          });
-        }
+      for (const edge of collectEdges(graph, schemaId, registeredIds)) {
+        edges.push(edge);
       }
 
-      const emitter = new TypeStringEmitter(graph);
-      const schemaSerializer = new GraphSchemaSerializer();
-      const owlSerializer = new GraphOntologySerializer();
-      const shaclSerializer = new GraphShaclSerializer();
-
-      schemas.push({
-        'id': schemaId,
-        'jsonSchema': schemaSerializer.serialize(graph),
-        'owl': owlSerializer.serializeQuads([graph]),
-        'shacl': shaclSerializer.serializeQuads([graph]),
-        'typescript': emitter.emit()
-      });
+      schemas.push(collectSchemaData(graph, schemaId));
     }
 
     return {
@@ -81,6 +75,60 @@ export class VizDataCollector {
       schemas
     };
   }
+}
+
+function collectEdges(
+  graph: SchemaGraphInterface,
+  schemaId: string,
+  registeredIds: Set<string>
+): VizEdgeInterface[] {
+  const result: VizEdgeInterface[] = [];
+
+  for (const rel of graph.allRelations()) {
+    if (rel.predicate !== RDFS.range) {
+      continue;
+    }
+    if (rel.metadata?.fromRef !== true) {
+      continue;
+    }
+    if (typeof rel.target !== 'string') {
+      continue;
+    }
+    if (!registeredIds.has(rel.target)) {
+      continue;
+    }
+
+    result.push({
+      'label': resolveEdgeLabel(rel.source.pointer),
+      'source': schemaId,
+      'target': rel.target
+    });
+  }
+
+  return result;
+}
+
+function resolveEdgeLabel(pointer: string): string {
+  const parts = pointer.split('/');
+  const last = parts.at(-1) ?? '';
+  const isArrayKeyword = last === 'items' || last === 'prefixItems' || last === 'additionalItems';
+
+  return isArrayKeyword ? (parts.at(-2) ?? last) : last;
+}
+
+function collectSchemaData(graph: SchemaGraphInterface, schemaId: string): VizSchemaDataInterface {
+  const emitter = new TypeStringEmitter(graph);
+  const schemaSerializer = new GraphSchemaSerializer();
+  const owlSerializer = new GraphOntologySerializer();
+  const shaclSerializer = new GraphShaclSerializer();
+
+  return {
+    'id': schemaId,
+    'jsonSchema': schemaSerializer.serialize(graph),
+    'owl': owlSerializer.serializeQuads([graph]),
+    'shacl': shaclSerializer.serializeQuads([graph]),
+    'typescript': emitter.emit()
+  };
 }
 
 function labelFromId(schemaId: string): string {

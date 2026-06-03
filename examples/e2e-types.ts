@@ -56,7 +56,7 @@ jt.set(PersonName).set(PatchPerson);
 // Type-safe parse — return type is Person, not unknown
 // ---------------------------------------------------------------------------
 
-const alice = jt.instantiate(PersonSchema.$id, foafPersons[0]) as Person;
+const alice: Person = jt.instantiate(PersonSchema.$id, foafPersons[0]);
 
 console.log('--- Type-safe parse ---');
 const givenName = typeof alice.givenName === 'string' ? alice.givenName : 'Unknown';
@@ -73,7 +73,7 @@ const incoming: unknown = foafPersons[1];
 
 console.log('\n--- Type guard: is() ---');
 if (jt.is(PersonSchema.$id, incoming)) {
-  const incomingPerson = incoming as Person;
+  const incomingPerson = incoming;
   const knowsLen = Array.isArray(incomingPerson.knows) ? incomingPerson.knows.length : 0;
 
   console.log('Valid person:', incomingPerson.givenName, incomingPerson.familyName, 'knows', knowsLen, 'person(s)');

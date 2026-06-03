@@ -18,7 +18,7 @@ function graphHasTransforms(graph: SchemaGraphInterface): boolean {
     return cached;
   }
 
-  const result = graph.nodes().some((n) => {
+  const result = graph.nodes().some((n: SchemaGraphNodeInterface): boolean => {
     const s = n.schema;
 
     return isRecord(s) && Transform.getDecoder(s) !== undefined;
@@ -49,13 +49,55 @@ function hasActiveFilterOptions(options: Omit<DumpOptionsInterface, 'mode'> | un
  * and applies any registered Transform encoder at each node.
  */
 export class Dumper {
+  private static applyEncoder(
+    nodeSchema: Record<string, unknown>,
+    node: SchemaGraphNodeInterface,
+    value: unknown
+  ): unknown {
+    const encoder = Transform.getDecoder(nodeSchema);
+
+    if (encoder === undefined) {
+      return value;
+    }
+
+    try {
+      return encoder.encode(value);
+    } catch (error) {
+      if (error instanceof TransformError) {
+        throw error;
+      }
+
+      const causeError = error instanceof Error ? error : new Error(String(error));
+      const schemaId = nodeSchema.$id as string | undefined;
+      const encOpts: { 'cause': Error;
+        'path': string;
+        'schemaId'?: string } = {
+        'cause': causeError,
+        'path': node.pointer
+      };
+
+      if (schemaId !== undefined) {
+        encOpts.schemaId = schemaId;
+      }
+
+      throw new EncodeError(
+        `transform encoder failed at ${node.pointer}: ${causeError.message}`,
+        encOpts
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Internal helpers
+  // ---------------------------------------------------------------------------
+
   private static applyJsonMode(value: unknown): unknown {
     if (value instanceof Date) {
       return value.toISOString();
     }
 
     if (Array.isArray(value)) {
-      return value.map((item) => {
+      return value.map((item: unknown): unknown => {
         return Dumper.applyJsonMode(item);
       });
     }
@@ -72,10 +114,6 @@ export class Dumper {
 
     return value;
   }
-
-  // ---------------------------------------------------------------------------
-  // Internal helpers
-  // ---------------------------------------------------------------------------
 
   /**
    * Serialize `value` to wire (or JSON-safe) form according to the schema graph.
@@ -104,27 +142,38 @@ export class Dumper {
     } = entry;
     const rootNode = graph.rootNode;
 
-    return Dumper.dumpNode(registry, graph, rootNode, schema, value, options);
+    return Dumper.dumpNode({
+      graph,
+      'node': rootNode,
+      'nodeSchema': schema,
+      options,
+      registry,
+      value
+    });
   }
 
-  private static dumpArray(
-    registry: SchemaRegistryInterface,
-    graph: SchemaGraphInterface,
-    itemsNode: SchemaGraphNodeInterface,
-    value: unknown[],
-    options?: DumpOptionsInterface
-  ): unknown[] {
+  private static dumpArray(opts: {
+    'graph': SchemaGraphInterface;
+    'itemsNode': SchemaGraphNodeInterface;
+    'options': DumpOptionsInterface | undefined;
+    'registry': SchemaRegistryInterface;
+    'value': unknown[];
+  }): unknown[] {
+    const {
+      graph, itemsNode, options, registry, value
+    } = opts;
     const itemSchema = itemsNode.schema;
+    const nodeSchema = isRecord(itemSchema) ? itemSchema : {};
 
-    return value.map((item) => {
-      return Dumper.dumpNode(
-        registry,
+    return value.map((item: unknown): unknown => {
+      return Dumper.dumpNode({
         graph,
-        itemsNode,
-        isRecord(itemSchema) ? itemSchema : {},
-        item,
-        options
-      );
+        'node': itemsNode,
+        nodeSchema,
+        options,
+        registry,
+        'value': item
+      });
     });
   }
 
@@ -150,114 +199,98 @@ export class Dumper {
       return JSON.stringify(value);
     }
 
-    return JSON.stringify(Dumper.dumpNode(
-      registry,
-      entry.graph,
-      entry.graph.rootNode,
-      entry.schema,
-      value,
-      {
+    return JSON.stringify(Dumper.dumpNode({
+      'graph': entry.graph,
+      'node': entry.graph.rootNode,
+      'nodeSchema': entry.schema,
+      'options': {
         ...options,
         'mode': 'json'
-      }
-    ));
+      },
+      registry,
+      value
+    }));
   }
 
-  private static dumpNode(
-    registry: SchemaRegistryInterface,
-    graph: SchemaGraphInterface,
-    node: SchemaGraphNodeInterface,
-    nodeSchema: Record<string, unknown>,
-    value: unknown,
-    options?: DumpOptionsInterface
-  ): unknown {
+  private static dumpNode(opts: {
+    'graph': SchemaGraphInterface;
+    'node': SchemaGraphNodeInterface;
+    'nodeSchema': Record<string, unknown>;
+    'options': DumpOptionsInterface | undefined;
+    'registry': SchemaRegistryInterface;
+    'value': unknown;
+  }): unknown {
+    const {
+      graph, node, nodeSchema, options, registry, value
+    } = opts;
+
     // Resolve $ref — follow to the target schema and graph
     const semantics = graph.semantics(node);
 
     if (semantics.ref !== undefined) {
-      const ref = semantics.ref;
-      const resolved = Dumper.resolveRef(registry, graph, ref);
+      const resolved = Dumper.resolveRef(registry, graph, semantics.ref);
 
-      return Dumper.dumpNode(resolved.registry, resolved.graph, resolved.node, resolved.schema, value, options);
+      return Dumper.dumpNode({
+        'graph': resolved.graph,
+        'node': resolved.node,
+        'nodeSchema': resolved.schema,
+        options,
+        'registry': resolved.registry,
+        value
+      });
     }
 
-    // Apply Transform encoder at this schema node if one is registered
-    const encoder = Transform.getDecoder(nodeSchema);
-    let projected: unknown;
-
-    if (encoder === undefined) {
-      projected = value;
-    } else {
-      try {
-        projected = encoder.encode(value);
-      } catch (error) {
-        if (error instanceof TransformError) {
-          throw error;
-        }
-
-        const causeError = error instanceof Error ? error : new Error(String(error));
-        const schemaId = nodeSchema.$id as string | undefined;
-        const opts: { 'cause': Error;
-          'path': string;
-          'schemaId'?: string } = {
-          'cause': causeError,
-          'path': node.pointer
-        };
-
-        if (schemaId !== undefined) {
-          opts.schemaId = schemaId;
-        }
-
-        throw new EncodeError(
-          `transform encoder failed at ${node.pointer}: ${causeError.message}`,
-          opts
-        );
-      }
-    }
+    const projected = Dumper.applyEncoder(nodeSchema, node, value);
 
     // Recurse into object properties
     if (isRecord(projected) && semantics.properties.size > 0) {
-      projected = Dumper.dumpObject(registry, graph, node, nodeSchema, projected, options);
-    } else if (Array.isArray(projected) && semantics.itemsNode !== undefined) {
-      projected = Dumper.dumpArray(registry, graph, semantics.itemsNode, projected, options);
-    } else if (options?.mode === 'json') {
-      projected = Dumper.applyJsonMode(projected);
+      return Dumper.dumpObject({
+        graph,
+        node,
+        options,
+        registry,
+        'value': projected
+      });
+    }
+    if (Array.isArray(projected) && semantics.itemsNode !== undefined) {
+      return Dumper.dumpArray({
+        graph,
+        'itemsNode': semantics.itemsNode,
+        options,
+        registry,
+        'value': projected
+      });
+    }
+    if (options?.mode === 'json') {
+      return Dumper.applyJsonMode(projected);
     }
 
     return projected;
   }
 
-  private static dumpObject(
-    registry: SchemaRegistryInterface,
-    graph: SchemaGraphInterface,
-    node: SchemaGraphNodeInterface,
-    _nodeSchema: Record<string, unknown>,
-    value: Record<string, unknown>,
-    options?: DumpOptionsInterface
-  ): Record<string, unknown> {
+  private static dumpObject(opts: {
+    'graph': SchemaGraphInterface;
+    'node': SchemaGraphNodeInterface;
+    'options': DumpOptionsInterface | undefined;
+    'registry': SchemaRegistryInterface;
+    'value': Record<string, unknown>;
+  }): Record<string, unknown> {
+    const {
+      graph, node, options, registry, value
+    } = opts;
     const semantics = graph.semantics(node);
     const include = options?.include;
     const exclude = options?.exclude;
     const excludeUnset = options?.excludeUnset === true;
     const excludeDefaults = options?.excludeDefaults === true;
     const mode = options?.mode;
-
     const out: Record<string, unknown> = {};
 
     // Only allocated when excludeDefaults is active — used for O(1) membership test
     const knownKeys = excludeDefaults ? new Set<string>(semantics.properties.keys()) : undefined;
 
-    // Determine effective property set to output
-    const allValueKeys = Object.keys(value);
-
-    for (const key of allValueKeys) {
-      // include filter: if set, only include listed keys
-      if (include !== undefined && include.length > 0 && !include.includes(key)) {
-        continue;
-      }
-
-      // exclude filter: only when include is not set
-      if (include === undefined && exclude?.includes(key) === true) {
+    for (const key of Object.keys(value)) {
+      if (Dumper.isKeyFiltered(key, include, exclude)) {
         continue;
       }
 
@@ -267,16 +300,8 @@ export class Dumper {
         continue;
       }
 
-      if (excludeDefaults && knownKeys?.has(key) === true) {
-        const propNode = semantics.properties.get(key);
-
-        if (propNode !== undefined) {
-          const propSemantics = graph.semantics(propNode);
-
-          if (propSemantics.hasDefault && raw === propSemantics.defaultValue) {
-            continue;
-          }
-        }
+      if (excludeDefaults && Dumper.isDefaultValue(graph, semantics, knownKeys, key, raw)) {
+        continue;
       }
 
       const propNode = semantics.properties.get(key);
@@ -284,14 +309,14 @@ export class Dumper {
       if (propNode !== undefined) {
         const propSchema = propNode.schema;
 
-        out[key] = Dumper.dumpNode(
-          registry,
+        out[key] = Dumper.dumpNode({
           graph,
-          propNode,
-          isRecord(propSchema) ? propSchema : {},
-          raw,
-          options
-        );
+          'node': propNode,
+          'nodeSchema': isRecord(propSchema) ? propSchema : {},
+          options,
+          registry,
+          'value': raw
+        });
       } else if (mode === 'json') {
         out[key] = Dumper.applyJsonMode(raw);
       } else {
@@ -300,6 +325,40 @@ export class Dumper {
     }
 
     return out;
+  }
+
+  private static isDefaultValue(
+    graph: SchemaGraphInterface,
+    semantics: ReturnType<SchemaGraphInterface['semantics']>,
+    knownKeys: Set<string> | undefined,
+    key: string,
+    raw: unknown
+  ): boolean {
+    if (knownKeys?.has(key) !== true) {
+      return false;
+    }
+
+    const propNode = semantics.properties.get(key);
+
+    if (propNode === undefined) {
+      return false;
+    }
+
+    const propSemantics = graph.semantics(propNode);
+
+    return propSemantics.hasDefault && raw === propSemantics.defaultValue;
+  }
+
+  private static isKeyFiltered(
+    key: string,
+    include: readonly string[] | undefined,
+    exclude: readonly string[] | undefined
+  ): boolean {
+    if (include !== undefined && include.length > 0) {
+      return !include.includes(key);
+    }
+
+    return exclude?.includes(key) === true;
   }
 
   private static resolveRef(

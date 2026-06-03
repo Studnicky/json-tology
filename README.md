@@ -9,7 +9,9 @@
 The full documentation is published at **https://studnicky.github.io/json-tology/**.
 
 - [Getting Started](https://studnicky.github.io/json-tology/getting-started)
+- [Package exports map](https://studnicky.github.io/json-tology/package-exports) - what lives behind each `json-tology/*` subpath
 - [Picking a method](https://studnicky.github.io/json-tology/picking-a-method)
+- [instantiate vs materialize](https://studnicky.github.io/json-tology/instantiate-vs-materialize) - wire-decode vs default-fill, Transform decoder detail
 - [Argument conventions](https://studnicky.github.io/json-tology/argument-conventions)
 - [Bookstore domain](https://studnicky.github.io/json-tology/bookstore-domain) - the running example used throughout the docs
 - [Validation](https://studnicky.github.io/json-tology/validation/instantiate), [Composition](https://studnicky.github.io/json-tology/composition/extend), [Serialization](https://studnicky.github.io/json-tology/serialization/dump)

@@ -88,7 +88,7 @@ console.log('instanceof OrderRecord:', hydrated instanceof OrderRecord);
 console.log('totalWithTax (19%):', hydrated.totalWithTax());
 
 // Encoder round-trips back to wire shape.
-const wire = bookstoreEntities.encode(OrderRecordTransform, hydrated) as Record<string, unknown>;
+const wire = bookstoreEntities.encode(OrderRecordTransform, hydrated);
 
 console.assert(typeof wire.orderId === 'string');
 console.assert(Array.isArray(wire.orderLines));

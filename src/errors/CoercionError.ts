@@ -1,12 +1,33 @@
-/**
- * CoercionError — carries a {@link ValidationErrors} collection describing why a value could not be coerced to its schema.
- */
-
+import type { ErrorJsonInterface } from '../interfaces/Error.js';
 import type { ValidationErrorType } from '../types/Validation.js';
 import { CoercionErrorCode } from '../constants/ERROR_CODES.js';
 import { ValidationErrors } from './ValidationErrors.js';
 import { BaseError } from './BaseError.js';
 
+/**
+ * CoercionError — carries a {@link ValidationErrors} collection describing why a value could not be coerced to its schema.
+ *
+ * @remarks
+ * Thrown by coercion operations when a value cannot be cast or converted to the
+ * shape described by its schema. The `errors` property exposes the full structured
+ * collection of per-field validation failures.
+ *
+ * @example
+ * ```ts
+ * try {
+ *   registry.coerce(UserSchema, rawValue);
+ * } catch (err) {
+ *   if (err instanceof CoercionError) {
+ *     console.error(err.errors.items); // ValidationErrorType[]
+ *   }
+ * }
+ * ```
+ *
+ * @category Errors
+ * @since 0.1.0
+ * @see {@link ValidationErrors}
+ * @group Errors
+ */
 export class CoercionError extends BaseError {
   public readonly errors: ValidationErrors;
 
@@ -18,7 +39,7 @@ export class CoercionError extends BaseError {
    */
   public constructor(errors: ValidationErrors | ValidationErrorType[], options?: { 'cause'?: Error }) {
     const validationErrors = errors instanceof ValidationErrors ? errors : new ValidationErrors(errors);
-    const joinedMessages = validationErrors.items.map((err) => {
+    const joinedMessages = validationErrors.items.map((err: ValidationErrorType): string => {
       return `${err.path || 'root'}: ${err.message}`;
     }).join('; ');
 
@@ -32,10 +53,10 @@ export class CoercionError extends BaseError {
    *
    * @returns Flat array of error JSON objects including per-field validation details
    */
-  public override flatten() {
+  public override flatten(): ErrorJsonInterface[] {
     return [
       ...super.flatten(),
-      ...this.errors.items.map((item) => {
+      ...this.errors.items.map((item: ValidationErrorType): ErrorJsonInterface => {
         return {
           'code': item.keyword,
           'message': `${item.path || 'root'}: ${item.message}`,
@@ -53,7 +74,7 @@ export class CoercionError extends BaseError {
   public override toJson() {
     return {
       ...super.toJson(),
-      'errors': this.errors.items.map((item) => {
+      'errors': this.errors.items.map((item: ValidationErrorType): ValidationErrorType => {
         return { ...item };
       })
     };

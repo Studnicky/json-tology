@@ -10,7 +10,6 @@
  * fields during lenient construction (form scaffolding use case).
  */
 
-import type { Order } from '../bookstore/index.js';
 import {
   aboxFixtures, bookstoreEntities, OrderSchema
 } from '../bookstore/index.js';
@@ -19,7 +18,7 @@ import {
 // materialize takes a schema object (not a $id string) as its first argument;
 // the result is typed via the registry's Order (the partial input carries
 // plain literals, so the materialize generic falls back to an untyped result).
-const order = bookstoreEntities.materialize(OrderSchema, { ...aboxFixtures.order }) as Order;
+const order = bookstoreEntities.materialize(OrderSchema, { ...aboxFixtures.order });
 
 console.assert(order.customerId === aboxFixtures.order.customerId);
 console.log('materialize succeeded → orderId:', order.orderId, '| customerId:', order.customerId);

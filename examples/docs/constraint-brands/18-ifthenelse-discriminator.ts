@@ -31,7 +31,7 @@ type Shape = InferType<typeof ShapeSchemaBase & { 'then': typeof thenBranch }>;
 const circle: Shape = {
   'kind': 'circle',
   'radius': 5
-} as unknown as Shape;
+};
 const rectangle: Shape = {
   'kind': 'rect',
   'width': 10

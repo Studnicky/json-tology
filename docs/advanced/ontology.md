@@ -157,7 +157,7 @@ The method exists today for API symmetry with `toShacl()` and to give consumers 
 
 ## `jt.fromQuads` {#jt-fromquads}
 
-**Declaration.** Lifts RDF quads back into typed JS objects. Inverse of `toQuads`. Given quads produced by `toQuads`, a reasoning engine, or any RDF source, recovers plain JS objects matching the target schema. Each returned object is validated through `instantiate` to apply defaults, transforms, and type safety. Returns `Array<TMap[K]>`.
+**Declaration.** Lifts RDF quads back into typed JS objects. Inverse of `toQuads`. Given quads produced by `toQuads`, a reasoning engine, or any RDF source, recovers plain JS objects matching the target schema. Each returned object is validated through `instantiate` to apply defaults, transforms, and type safety. Returns an array of the schema's inferred type (`Array<ParseOutputType<TRefs[K], TRefs>>`).
 
 **Use this when** you have RDF quads from an external source (a triplestore query result, a reasoner output) and need to recover validated domain objects.
 

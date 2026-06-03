@@ -5,6 +5,27 @@ import type {
 import { BaseError } from '../../../errors/BaseError.js';
 import { Predicates } from '../Predicates.js';
 
+/**
+ * Compiled array-keyword validators used by the hot-path schema executor.
+ *
+ * All methods mutate the caller-supplied `errors` array in place and return
+ * a boolean indicating whether validation passed. This avoids per-call
+ * allocations on the hot validation path.
+ *
+ * @remarks
+ * Called directly from closures compiled by {@link SchemaCompiler}. Signatures
+ * are intentionally flat (no options objects) to keep V8 call-site shapes
+ * monomorphic and avoid hidden-class transitions.
+ *
+ * @category Validation
+ * @since 0.1.0
+ * @see {@link SchemaCompiler}
+ * @group Internal
+ * @example
+ * ```ts
+ * const ok = Arrays.validateBounds('/items', arr, 1, 10, false, errors);
+ * ```
+ */
 export class Arrays {
   static validateBounds(
     path: string,
@@ -50,13 +71,10 @@ export class Arrays {
     }
 
     const pre = errors.length;
+    const containsError = resolveContainsError(count, minContains, maxContains);
 
-    if (minContains !== undefined && count < minContains) {
-      errors.push(BaseError.validationError(path, 'contains', `must contain at least ${minContains} matching items`));
-    } else if (maxContains !== undefined && count > maxContains) {
-      errors.push(BaseError.validationError(path, 'contains', `must contain at most ${maxContains} matching items`));
-    } else if (minContains === undefined && maxContains === undefined && count === 0) {
-      errors.push(BaseError.validationError(path, 'contains', 'must contain at least one matching item'));
+    if (containsError !== undefined) {
+      errors.push(BaseError.validationError(path, 'contains', containsError));
     }
 
     return errors.length === pre;
@@ -85,28 +103,16 @@ export class Arrays {
     let valid = true;
 
     for (let i = startIndex; i < arr.length; i++) {
-      const childPath = `${path}/${i}`;
-      const itemResult = itemValidator(
-        arr[i],
-        childPath,
-        errors,
-        collectErrors,
-        applyDefaults,
-        doCoerce,
-        stripUnknown
-      );
+      const outcome = validateSingleItem(itemValidator, arr, i, path, errors, collectErrors, applyDefaults, doCoerce, stripUnknown);
 
-      if (!itemResult.valid) {
-        if (!collectErrors) {
-          return {
-            'earlyExit': true,
-            'valid': false
-          };
-        }
-        valid = false;
+      if (outcome === 'early-exit') {
+        return {
+          'earlyExit': true,
+          'valid': false
+        };
       }
-      if (itemResult.value !== arr[i]) {
-        arr[i] = itemResult.value;
+      if (outcome === 'invalid') {
+        valid = false;
       }
     }
 
@@ -137,28 +143,16 @@ export class Arrays {
     let valid = true;
 
     for (let i = 0; i < prefixValidators.length && i < arr.length; i++) {
-      const childPath = `${path}/${i}`;
-      const prefixResult = prefixValidators[i](
-        arr[i],
-        childPath,
-        errors,
-        collectErrors,
-        applyDefaults,
-        doCoerce,
-        stripUnknown
-      );
+      const outcome = validateSingleItem(prefixValidators[i], arr, i, path, errors, collectErrors, applyDefaults, doCoerce, stripUnknown);
 
-      if (!prefixResult.valid) {
-        if (!collectErrors) {
-          return {
-            'earlyExit': true,
-            'valid': false
-          };
-        }
-        valid = false;
+      if (outcome === 'early-exit') {
+        return {
+          'earlyExit': true,
+          'valid': false
+        };
       }
-      if (prefixResult.value !== arr[i]) {
-        arr[i] = prefixResult.value;
+      if (outcome === 'invalid') {
+        valid = false;
       }
     }
 
@@ -167,4 +161,47 @@ export class Arrays {
       valid
     };
   }
+}
+
+function resolveContainsError(
+  count: number,
+  minContains: number | undefined,
+  maxContains: number | undefined
+): string | undefined {
+  if (minContains !== undefined && count < minContains) {
+    return `must contain at least ${minContains} matching items`;
+  }
+  if (maxContains !== undefined && count > maxContains) {
+    return `must contain at most ${maxContains} matching items`;
+  }
+  if (minContains === undefined && maxContains === undefined && count === 0) {
+    return 'must contain at least one matching item';
+  }
+
+  return undefined;
+}
+
+function validateSingleItem(
+  validator: ValidateWithErrorsFnType,
+  arr: unknown[],
+  index: number,
+  path: string,
+  errors: ValidationErrorType[],
+  collectErrors: boolean,
+  applyDefaults: boolean,
+  doCoerce: boolean,
+  stripUnknown: boolean
+): 'early-exit' | 'invalid' | 'valid' {
+  const childPath = `${path}/${index}`;
+  const result = validator(arr[index], childPath, errors, collectErrors, applyDefaults, doCoerce, stripUnknown);
+
+  if (result.value !== arr[index]) {
+    arr[index] = result.value;
+  }
+
+  if (!result.valid) {
+    return collectErrors ? 'invalid' : 'early-exit';
+  }
+
+  return 'valid';
 }

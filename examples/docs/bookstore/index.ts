@@ -287,7 +287,7 @@ export { aboxFixtures } from './aboxFixtures.js';
 // map is built directly from the schema tuple (not extracted from the live
 // registry instance) so resolution cost scales with ref-chain depth, not
 // registry size.
-type BookstoreRefs = SchemaReferencesMapType<typeof bookstoreSchemas>;
+export type BookstoreRefs = SchemaReferencesMapType<typeof bookstoreSchemas>;
 export type Address = InferType<typeof AddressSchema, BookstoreRefs>;
 export type Book = InferType<typeof BookSchema, BookstoreRefs>;
 export type Customer = InferType<typeof CustomerSchema, BookstoreRefs>;

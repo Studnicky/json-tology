@@ -1,3 +1,4 @@
+import type { ComputedExtensionBrandInterface } from '../interfaces/ComputedExtension.js';
 import type { TransformBrandInterface } from '../interfaces/TransformBrand.js';
 import type { AnyTransformStageInterface } from '../interfaces/TransformStage.js';
 import type { InferSchemaType } from './Infer.js';
@@ -15,12 +16,17 @@ export type TransformedType<TSchema, TOut> = TransformBrandInterface<TOut> & TSc
 /**
  * Resolve the output type of parse() for a schema.
  * - TransformedType schemas return the decoded TOut.
- * - All other schemas return the standard inferred result.
+ * - All other schemas return the standard inferred result, intersected with
+ *   any computed-field extensions registered via `addComputed` (encoded as
+ *   `ComputedExtensionBrandInterface` on the raw schema entry in `TRefs`).
  *
  * @typeParam TReferences - Cross-schema references map for $ref resolution.
  */
 export type ParseOutputType<TSchema, TReferences = Record<never, never>>
-  = TSchema extends TransformBrandInterface<infer Out> ? Out : InferSchemaType<TSchema, TSchema, TReferences>;
+  = TSchema extends TransformBrandInterface<infer Out>
+    ? Out
+    : InferSchemaType<TSchema, TSchema, TReferences>
+      & (TSchema extends ComputedExtensionBrandInterface<infer TFields> ? TFields : unknown);
 
 // ---------------------------------------------------------------------------
 // Chain compatibility (compile-time pairwise validation)

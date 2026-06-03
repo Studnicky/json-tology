@@ -15,8 +15,8 @@ import type { InferType } from '../../../src/types/index.js';
 type AssertEqualType<TLeft, TRight>
   = [TLeft] extends [TRight] ? [TRight] extends [TLeft] ? true : false : false;
 
-function assert<T extends true>(): void {
-  void 0 as unknown as T;
+function assert<T extends true>(_proof?: T): void {
+  return;
 }
 
 // RatingScore — integer 1..5.
@@ -39,4 +39,3 @@ type Email = InferType<typeof EmailSchema>;
 
 assert<AssertEqualType<Email extends string ? true : false, true>>();
 
-void (null as unknown as Email | Isbn | Rating | StockLevel);

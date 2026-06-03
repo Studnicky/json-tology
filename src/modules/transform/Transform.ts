@@ -18,7 +18,9 @@
  * const date = jt.instantiate(DateSchema.$id, '2026-01-01'); // typed as Date
  */
 
-import type { JsonSchemaDocumentType } from '../../types/Schema.js';
+import type {
+  JsonSchemaDocumentObjectType, JsonSchemaDocumentType
+} from '../../types/Schema.js';
 import type {
   ChainOutputType,
   TransformedType,
@@ -46,6 +48,34 @@ const transformRegistry = new WeakMap<object, TransformFnsInterface>();
 // Transform class
 // ---------------------------------------------------------------------------
 
+/**
+ * Attaches decode/encode transform functions to a JSON Schema so that
+ * `instantiate()` automatically converts validated data into a richer runtime
+ * type (e.g. `string` → `Date`).
+ *
+ * @remarks
+ * Schema objects are never mutated — transforms are stored in a `WeakMap`
+ * keyed on the schema reference. The output type is tracked via a phantom
+ * brand on the schema's TypeScript type so that `instantiate()` returns the
+ * fully-decoded type without any runtime cast.
+ *
+ * @example
+ * ```ts
+ * const DateSchema = Transform.create(
+ *   { $id: 'Date', type: 'string', format: 'date-time' } as const,
+ *   {
+ *     decode: (s: string) => new Date(s),
+ *     encode: (d: Date) => d.toISOString(),
+ *   },
+ * );
+ * const date = jt.instantiate(DateSchema.$id, '2026-01-01'); // typed as Date
+ * ```
+ *
+ * @category Transform
+ * @since 0.1.0
+ * @see {@link TransformFnsInterface}
+ * @group Transform
+ */
 export class Transform {
   /**
    * Attach a compile-time brand name to a schema.
@@ -82,13 +112,13 @@ export class Transform {
   ): TransformedType<TSchema, ChainOutputType<TStages>> {
     const stages = transforms as ReadonlyArray<TransformStageInterface<unknown, unknown>>;
     const composed: TransformFnsInterface = {
-      'decode': (value: unknown) => {
-        return stages.reduce<unknown>((accumulator, transform) => {
+      'decode': (value: unknown): unknown => {
+        return stages.reduce<unknown>((accumulator: unknown, transform: TransformStageInterface<unknown, unknown>): unknown => {
           return transform.decode(accumulator);
         }, value);
       },
-      'encode': (value: unknown) => {
-        return [...stages].reverse().reduce<unknown>((accumulator, transform) => {
+      'encode': (value: unknown): unknown => {
+        return [...stages].reverse().reduce<unknown>((accumulator: unknown, transform: TransformStageInterface<unknown, unknown>): unknown => {
           return transform.encode(accumulator);
         }, value);
       }
@@ -114,17 +144,44 @@ export class Transform {
   >(
     schema: TSchema,
     fns: {
-      'decode': (input: InferSchemaType<TSchema>) => TOut;
+      // `decode` and `encode` are the two halves of the same wire boundary, so
+      // both speak the brand-free wire InputType: `decode` consumes raw wire
+      // data (pre-decode) and `encode` produces it. Brands are validation
+      // artifacts that do not exist on the wire; typing `decode`'s input as the
+      // branded `InferSchemaType` also degrades to `RefNotFound` for transforms
+      // attached to composed/`$ref`-bearing schemas (e.g. `Compose.equivalent(
+      // RegisteredEntity, …)`), which cannot resolve standalone in this static
+      // context. `LooseInputType` is the precise wire face for both directions.
+      'decode': (input: LooseInputType<InferSchemaType<TSchema>>) => TOut;
       'encode': (output: TOut) => LooseInputType<InferSchemaType<TSchema>>;
     }
   ): TransformedType<TSchema, TOut> {
-    transformRegistry.set(schema, fns as TransformFnsInterface);
+    Transform.register(schema, fns as TransformFnsInterface);
 
     return brand<TransformedType<TSchema, TOut>>(schema);
   }
 
-  /** Returns the decode/encode functions registered for a schema, or undefined. */
-  public static getDecoder(schema: Record<string, unknown>): TransformFnsInterface | undefined {
+  /**
+   * Return the decode/encode functions registered for a schema, or `undefined`.
+   *
+   * @param schema - The schema object to look up.
+   * @returns The registered decode/encode pair, or `undefined` if none.
+   */
+  public static getDecoder(schema: JsonSchemaDocumentObjectType): TransformFnsInterface | undefined {
     return transformRegistry.get(schema);
+  }
+
+  /**
+   * Store decode/encode functions for a schema in the transform registry.
+   *
+   * The single type-erasure boundary for transforms: typed public callers
+   * ({@link create}, `JsonTology.addTransform`) keep their precise lambda types
+   * and pass the erased {@link TransformFnsInterface} here.
+   *
+   * @param schema - The schema object the decode/encode pair is keyed against.
+   * @param fns - The decode/encode functions to store.
+   */
+  public static register(schema: JsonSchemaDocumentObjectType, fns: TransformFnsInterface): void {
+    transformRegistry.set(schema, fns);
   }
 }

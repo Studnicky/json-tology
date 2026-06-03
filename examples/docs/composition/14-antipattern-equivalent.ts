@@ -21,4 +21,5 @@ const _InPrintBook2 = Compose.subClassOf(
   } as const
 );
 
-void 0 as unknown as [typeof _InPrintBook, typeof _InPrintBook2];
+console.log('equivalent anti-pattern $id:', _InPrintBook.$id, '| preferred subClassOf+hasValue $id:', _InPrintBook2.$id);
+

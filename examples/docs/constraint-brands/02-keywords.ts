@@ -22,8 +22,8 @@ type BookstoreRefs = SchemaReferencesMapType<typeof bookstoreSchemas>;
 type AssertEqualType<TLeft, TRight>
   = [TLeft] extends [TRight] ? [TRight] extends [TLeft] ? true : false : false;
 
-function assert<T extends true>(): void {
-  void 0 as unknown as T;
+function assert<T extends true>(_proof?: T): void {
+  return;
 }
 
 // CustomerSchema.id carries jt:inverseFunctional brand — each customer ID

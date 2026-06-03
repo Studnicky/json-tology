@@ -6,7 +6,7 @@ json-tology validates data against registered JSON Schemas via a compiled graph 
 
 | Method | Returns | Use when |
 |--------|---------|----------|
-| [`instantiate`](./instantiate) | `TMap[K]` (typed) | You want a typed, defaults-applied value or a typed exception |
+| [`instantiate`](./instantiate) | the schema's inferred type (`ParseOutputType<TRefs[K], TRefs>`) | You want a typed, defaults-applied value or a typed exception |
 | [`validate`](./validate) | `ValidationErrors` | You want structured error data (paths, keywords, params) |
 | [`is`](./is) | `boolean` type guard | You need a boolean with TypeScript narrowing |
 | [`subschemaAt`](./subschemaAt) | sub-schema object | You need to validate a sub-schema by JSON Pointer |

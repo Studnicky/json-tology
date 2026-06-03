@@ -100,7 +100,7 @@ Run `fromTbox(toTbox(schemas).jsonLd())` against the canonical bookstore registr
 
 `JsonTology.fromTbox` (and the `OwlImporter` underneath it) resolve an OWL TBox at **runtime**. TypeScript's type system operates at **compile time**: it cannot reach into an external file, execute it, and derive types from the result. This means that even though `fromTbox` reconstructs accurate JSON Schema objects, the static type of those schemas is `JsonSchemaDocumentObjectType`, not a narrow `as const` literal from which `InferType<…>` can extract a meaningful compile-time type.
 
-The solution is a build-step code generator: run the ontology through a code generator once, write the resulting TypeScript module to disk, and then import that module as ordinary source. The generated module contains `as const` schema literals identical to what you would write by hand, so `InferType<typeof PersonSchema>` works exactly as it does for hand-authored schemas.
+The solution is a build-step code generator: run the ontology through a code generator once, write the resulting TypeScript module to disk, and then import that module as ordinary source. The generated module contains `as const` schema literals identical to what you would write by hand, so `InferType<typeof PersonSchema>` works exactly as it does for hand-authored schemas. The generator also emits a `SchemaReferencesMapType` over the full schema set and threads it into every per-class `InferType`, so cross-class `$ref`s (e.g. `Book.author → Person`) resolve to the precise sibling type rather than `unknown` — the ontology → TypeScript direction round-trips losslessly.
 
 ### Codegen workflow
 

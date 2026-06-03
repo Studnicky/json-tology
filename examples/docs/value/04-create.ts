@@ -13,8 +13,9 @@ import type { InferType } from '../../../src/types/index.js';
 import {
   BibliographicRecordSchema, BookSchema, bookstoreEntities
 } from '../bookstore/index.js';
+import type { BookstoreRefs } from '../bookstore/index.js';
 
-type BibliographicRecord = InferType<typeof BibliographicRecordSchema>;
+type BibliographicRecord = InferType<typeof BibliographicRecordSchema, BookstoreRefs>;
 
 // value.create on a flat schema — behavior unchanged.
 const blank: BibliographicRecord = bookstoreEntities.value.create(BibliographicRecordSchema.$id);

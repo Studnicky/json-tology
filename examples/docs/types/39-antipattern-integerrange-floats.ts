@@ -13,6 +13,10 @@ import type { IntegerRangeType } from '../../../src/types/index.js';
 type PriceRange = IntegerRangeType<0.5, 9.99>;
 // Produces unexpected results; the exact resolution is implementation-
 // defined for non-integer bounds.
+// Falls back to `number` — float bounds are not integer literals.
+const _priceRange: PriceRange = 0;
+
+void _priceRange;
 
 // Use the integer form, then narrow with multiplication/division at the
 // boundary, or carry a branded number with a runtime range check.
@@ -22,5 +26,4 @@ type PriceCents = IntegerRangeType<50, 999>;
 
 const cents: PriceCents = 199;
 
-void (null as unknown as PriceRange);
 console.assert(cents === 199);

@@ -45,7 +45,7 @@ When a schema references another by absolute IRI, pass a reference map as the se
 
 <RunnableExample src="examples/docs/types/47-infertype-cross-schema-refs" />
 
-Without the reference map, `items` would resolve to `unknown` at the element level.
+Without the reference map, `items` resolves to `RefNotFoundInterface<'...'>` at the element level — a compile-error brand, not a silent `unknown`. An unresolved cross-schema `$ref` is a compile error: thread the reference map (or register the target schema) so it resolves. A bare `$ref` to the schema's own `$id` still resolves without a map.
 
 ### Comparison
 

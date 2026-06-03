@@ -42,4 +42,3 @@ console.assert(address.country === 'US');
 console.log('street:', address.street);
 console.log('city:', address.city);
 console.log('country (default applied):', address.country);
-void 0 as unknown as typeof address;

@@ -17,11 +17,12 @@ import { StructuralHash } from '../../src/modules/data/StructuralHash.js';
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeEntry(schema: Record<string, unknown>) {
+function makeEntry(schema: Record<string, unknown>, hasTransform = false) {
   return {
     'hasComputedFields': false,
     'hasEmbeddedIds': false,
     'hash': StructuralHash.of(schema),
+    hasTransform,
     schema
   };
 }

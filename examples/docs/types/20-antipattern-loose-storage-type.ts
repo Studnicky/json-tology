@@ -13,12 +13,13 @@ import type {
 import {
   bookstoreEntities, CustomerSchema
 } from '../bookstore/index.js';
+import type { BookstoreRefs } from '../bookstore/index.js';
 
 // ⊥ Don't do this — storage loses the brand guarantees.
-type StoredCustomerLoose = LooseInputType<InferType<typeof CustomerSchema>>;
+type StoredCustomerLoose = LooseInputType<InferType<typeof CustomerSchema, BookstoreRefs>>;
 
 // ✓ Do this — storage retains the branded type.
-type StoredCustomer = InferType<typeof CustomerSchema>;
+type StoredCustomer = InferType<typeof CustomerSchema, BookstoreRefs>;
 
 // Produce a fully branded value via instantiate (the only valid source of brands).
 const stored: StoredCustomer = bookstoreEntities.instantiate(CustomerSchema, {

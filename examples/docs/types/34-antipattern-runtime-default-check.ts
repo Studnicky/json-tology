@@ -31,8 +31,8 @@ type GuardedBadSchema = DefaultAlignedType<typeof _BadSchema>;
 type AssertEqualType<TLeft, TRight>
   = [TLeft] extends [TRight] ? [TRight] extends [TLeft] ? true : false : false;
 
-function assert<T extends true>(): void {
-  void 0 as unknown as T;
+function assert<T extends true>(_proof?: T): void {
+  return;
 }
 
 assert<AssertEqualType<GuardedBadSchema, never>>();

@@ -11,17 +11,15 @@
 import type {
   Address, Book, Customer, Order
 } from '../bookstore/index.js';
-import type {
-  AddressSchema, BookSchema, CustomerSchema, OrderSchema
-} from '../bookstore/index.js';
 
 type AssertEqualType<TLeft, TRight>
   = [TLeft] extends [TRight] ? [TRight] extends [TLeft] ? true : false : false;
 
-function assert<T extends true>(): void {
-  // interop: void 0 as unknown as T is the compile-time type-test idiom; no
-  // typed path exists from void to an arbitrary constraint-bounded type T.
-  void 0 as unknown as T;
+// Compile-time type test: the `T extends true` constraint rejects any call whose
+// type argument resolves to `false`. `T` is consumed as the optional parameter
+// type, so no runtime value or cast is needed.
+function assert<T extends true>(_proof?: T): void {
+  return;
 }
 
 // Customer — customerId, email, name required; addresses optional with default.
@@ -46,10 +44,6 @@ assert<AssertEqualType<
 // Order — orderLines is an array of OrderLine.
 
 assert<AssertEqualType<Order['orderLines'] extends readonly unknown[] ? true : false, true>>();
-
-// Reference all imported types in type position to keep imports live.
-void (null as unknown as typeof AddressSchema | typeof BookSchema | typeof CustomerSchema | typeof OrderSchema);
-void (null as unknown as Address | Book | Customer | Order);
 
 // Log the inferred schema field names — demonstrating what InferType exposes at
 // compile time. keyof gives us the property names the type system knows about.

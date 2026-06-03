@@ -13,6 +13,21 @@ import type { JsonSchemaDocumentObjectType } from '../types/Schema.js';
 
 /**
  * Options accepted by the {@link OwlImporter} constructor.
+ *
+ * @remarks
+ * `baseIRI` anchors relative IRIs during the import session.
+ * `prefixes` extends the default `STANDARD_PREFIXES` map with project-specific
+ * prefix bindings used to compact and expand IRIs throughout the import pipeline.
+ *
+ * @example
+ * ```ts
+ * const importer = new OwlImporter({ baseIRI: 'https://example.com/', prefixes: { ex: 'https://example.com/' } });
+ * ```
+ *
+ * @category OWL Import
+ * @since 0.15.0
+ * @see {@link OwlImportContext}
+ * @group Import
  */
 export interface OwlImporterOptions {
   /** Base IRI for the import session. Used when building OwlImportContext. */
@@ -24,6 +39,21 @@ export interface OwlImporterOptions {
 /**
  * A prefix-to-IRI map, identical in structure to the prefixes accepted by
  * JsonTology and Curie — a plain string record.
+ *
+ * @remarks
+ * Used throughout the import pipeline to compactify and expand IRIs. The
+ * `STANDARD_PREFIXES` constant provides the default set; project-specific
+ * prefixes are merged on top via `OwlImporterOptions.prefixes`.
+ *
+ * @example
+ * ```ts
+ * const prefixes: PrefixMap = { schema: 'https://schema.org/', ex: 'https://example.com/' };
+ * ```
+ *
+ * @category OWL Import
+ * @since 0.15.0
+ * @see {@link OwlImporterOptions}
+ * @group Import
  */
 export type PrefixMap = Record<string, string>;
 
@@ -31,6 +61,25 @@ export type PrefixMap = Record<string, string>;
  * Map from subject IRI / blank-node ID to all quads with that subject.
  * Shared by the OwlImporter dispatcher modules to avoid re-building the index
  * per dispatcher call.
+ *
+ * @remarks
+ * Built once by the orchestrator from the full quad set and passed into every
+ * dispatcher via `OwlImportContext`. Keys are full subject IRIs or blank-node
+ * identifiers; values are all quads sharing that subject.
+ *
+ * @example
+ * ```ts
+ * const index: SubjectIndexType = new Map();
+ * for (const quad of quads) {
+ *   const key = quad.subject.value;
+ *   (index.get(key) ?? (index.set(key, []), index.get(key)!)).push(quad);
+ * }
+ * ```
+ *
+ * @category OWL Import
+ * @since 0.15.0
+ * @see {@link DispatcherFnInterface}
+ * @group Import
  */
 export type SubjectIndexType = Map<string, QuadInterface[]>;
 
@@ -38,14 +87,50 @@ export type SubjectIndexType = Map<string, QuadInterface[]>;
  * Signature of a per-axiom-group dispatcher function.
  * Receives the full quad set for a subject and the import context,
  * returns the fragment of import data it extracted.
+ *
+ * @remarks
+ * Each dispatcher module under `importDispatch/` exports a function matching
+ * this interface. The orchestrator calls each dispatcher in sequence and
+ * deep-merges the returned fragments into the final `OwlImportResult`.
+ *
+ * @example
+ * ```ts
+ * const dispatcher: DispatcherFnInterface = (quads, ctx) => {
+ *   return { characteristics: [], individuals: [], invariants: [], sameAs: [], schemaDeltas: new Map() };
+ * };
+ * ```
+ *
+ * @category OWL Import
+ * @since 0.15.0
+ * @see {@link OwlImportFragment}
+ * @group Dispatchers
  */
-export type DispatcherFnType = (quads: QuadInterface[], ctx: OwlImportContext) => OwlImportFragment;
+export type DispatcherFnInterface = (quads: QuadInterface[], ctx: OwlImportContext) => OwlImportFragment;
 
 /**
  * The value returned by each dispatcher after processing its axiom group.
  *
  * The orchestrator merges all fragments before constructing the final
  * OwlImportResult.
+ *
+ * @remarks
+ * Each field is a partial accumulation — dispatchers that do not produce a
+ * given category return an empty array or empty Map for that field. The
+ * orchestrator deep-merges all fragments, with later entries winning on
+ * per-key conflicts in `schemaDeltas`.
+ *
+ * @example
+ * ```ts
+ * const fragment: OwlImportFragment = {
+ *   characteristics: [], individuals: [], invariants: [],
+ *   sameAs: [], schemaDeltas: new Map(),
+ * };
+ * ```
+ *
+ * @category OWL Import
+ * @since 0.15.0
+ * @see {@link OwlImportResult}
+ * @group Import
  */
 export interface OwlImportFragment {
   /** OWL property characteristics discovered during import (e.g. Functional, Transitive). */
@@ -76,6 +161,25 @@ export interface OwlImportFragment {
  * Provides read-only access to the graph, prefix machinery, and IRI
  * membership sets so dispatchers can resolve and validate without
  * re-deriving those structures.
+ *
+ * @remarks
+ * The orchestrator constructs one `OwlImportContext` per import session and
+ * passes the same instance to every dispatcher. Dispatchers must not mutate
+ * context fields; they use `reportUnsupported` to record unhandled axioms.
+ *
+ * @example
+ * ```ts
+ * function myDispatcher(_quads: QuadInterface[], ctx: OwlImportContext): OwlImportFragment {
+ *   const expanded = ctx.curie.expand('owl:Class');
+ *   ctx.reportUnsupported('owl:unknownAxiom', null);
+ *   return { characteristics: [], individuals: [], invariants: [], sameAs: [], schemaDeltas: new Map() };
+ * }
+ * ```
+ *
+ * @category OWL Import
+ * @since 0.15.0
+ * @see {@link OwlImportFragment}
+ * @group Import
  */
 export interface OwlImportContext {
   /** Set of all class IRIs present in the input graph. */
@@ -112,6 +216,25 @@ export interface OwlImportContext {
 /**
  * The top-level result returned by OwlImporter.import() and
  * JsonTology.fromTbox().
+ *
+ * @remarks
+ * Aggregates the output of all per-axiom-group dispatchers after merging.
+ * `schemas` contains the reconstructed JSON Schema objects for every class
+ * declared in the TBox. `unsupported` logs axiom IRIs that no dispatcher
+ * recognised — useful for diagnosing incomplete imports.
+ *
+ * @example
+ * ```ts
+ * const result = await jt.fromTbox(owlQuads);
+ * for (const schema of result.schemas) {
+ *   jt.register(schema);
+ * }
+ * ```
+ *
+ * @category OWL Import
+ * @since 0.15.0
+ * @see {@link OwlImportFragment}
+ * @group Import
  */
 export interface OwlImportResult {
   /** Property characteristics harvested from property axioms. */

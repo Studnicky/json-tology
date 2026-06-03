@@ -15,6 +15,35 @@ import { SchemaGraphSupport } from './SchemaGraphSupport.js';
 import { QuadBackedSchemaGraph } from './QuadBackedSchemaGraph.js';
 import type { JsonSchemaType } from '../../types/Schema.js';
 
+/**
+ * Canonical schema graph over a compiled JSON Schema document.
+ *
+ * `SchemaGraph` lowers a raw JSON Schema into a navigable node/relation graph
+ * used by `GraphEngine` for validation, `OwlProjection` for ontology export,
+ * and `Materializer` for ABox projection.  Each schema object becomes a
+ * {@link SchemaGraphNodeInterface} keyed by its JSON Pointer; composition,
+ * reference, and keyword relations are encoded as
+ * {@link SchemaGraphRelationInterface} edges.
+ *
+ * @remarks
+ * Instantiate via `new SchemaGraph(schema)` for normal use, or the static
+ * factory methods (`fromNormIR`, `fromQuads`, `buildNormIR`) for
+ * serialization and round-trip scenarios.  The graph is built once at
+ * construction; subsequent accesses to `semantics()`, `relations()`, and
+ * `allRelations()` are memoised.
+ *
+ * @example
+ * ```ts
+ * const graph = new SchemaGraph({ $id: 'https://example.com/Book', type: 'object' });
+ * const root = graph.rootNode;
+ * const sem = graph.semantics(root);
+ * ```
+ *
+ * @category Graph
+ * @since 0.1.0
+ * @see {@link SchemaGraphInterface}
+ * @group Graph
+ */
 export class SchemaGraph implements SchemaGraphInterface {
   public static buildNormIR(rootSchema: JsonSchemaType): NormIRInterface {
     const graph = new SchemaGraph(rootSchema);
@@ -47,25 +76,61 @@ export class SchemaGraph implements SchemaGraphInterface {
     fields.vocabularies = [];
     fields.rootSchema = normIR.rootSchema;
 
-    // Rebuild nodes from NormIR
-    for (const normNode of normIR.nodes) {
-      const schema = SchemaGraphSupport.resolveSchemaAtPointer(normIR.rootSchema, normNode.pointer);
-      const node: SchemaGraphNodeInterface = {
-        'id': normNode.id,
-        'pointer': normNode.pointer,
-        schema
-      };
+    SchemaGraph.rebuildNodes(graph, normIR);
+    SchemaGraph.rebuildChildren(graph, normIR);
+    SchemaGraph.rebuildEntries(graph, normIR);
+    SchemaGraph.rebuildIndexedChildren(graph, normIR);
+    SchemaGraph.rebuildAnchors(graph, normIR);
 
-      graph.nodeMap.set(normNode.pointer, node);
-      if (isRecord(schema)) {
-        graph.identityMap.set(schema, node);
+    return graph;
+  }
+
+  /**
+   * fromQuads — structural inverse of OwlProjection.graph().
+   *
+   * Ingests a QuadInterface[] carrying an OWL 2 TBox ontology (JSON-LD quads,
+   * N-Quads, or any rdf/js-compatible source) and returns a SchemaGraphInterface
+   * populated from those quads.
+   *
+   * Axiom envelope:
+   * - Every IRI predicate that OwlProjection emits in the forward direction is
+   *   accepted here (forward-emit ⊆ inverse-accept).
+   * - Phase-1+ dispatchers may extend the inverse beyond what the forward
+   *   projector emits today — all incoming predicates are recorded in
+   *   allRelations() without filtering.
+   *
+   * Limitation:
+   * - Does NOT materialise JSON Schema objects from the quads — that is the
+   *   phase-1 dispatchers' responsibility.
+   * - semantics() returns an empty stub; dispatchers must traverse allRelations().
+   *
+   * @param quads  - Flat array of rdf/js-compatible quads (prefixed or full IRIs).
+   * @param options - Optional baseIRI and additional prefix mappings merged
+   *                  with STANDARD_PREFIXES.
+   * @returns A SchemaGraphInterface backed by the supplied quads.
+   */
+  public static fromQuads(
+    quads: readonly QuadInterface[],
+    options?: { 'baseIRI'?: string;
+      'prefixes'?: PrefixMap }
+  ): SchemaGraphInterface {
+    return new QuadBackedSchemaGraph(quads, options);
+  }
+
+  private static rebuildAnchors(graph: SchemaGraph, normIR: NormIRInterface): void {
+    for (const [
+      anchor,
+      anchorPointer
+    ] of Object.entries(normIR.anchors)) {
+      const anchorNode = graph.nodeMap.get(anchorPointer);
+
+      if (anchorNode !== undefined) {
+        graph.anchorMap.set(anchor, anchorNode);
       }
-      graph.childMap.set(node, new Map());
-      graph.entryMap.set(node, new Map());
-      graph.indexedChildMap.set(node, new Map());
     }
+  }
 
-    // Rebuild children
+  private static rebuildChildren(graph: SchemaGraph, normIR: NormIRInterface): void {
     for (const [
       pointer,
       childRecord
@@ -92,8 +157,9 @@ export class SchemaGraph implements SchemaGraphInterface {
         }
       }
     }
+  }
 
-    // Rebuild entries
+  private static rebuildEntries(graph: SchemaGraph, normIR: NormIRInterface): void {
     for (const [
       pointer,
       entryRecord
@@ -131,8 +197,9 @@ export class SchemaGraph implements SchemaGraphInterface {
         entryMap.set(key, resolved);
       }
     }
+  }
 
-    // Rebuild indexedChildren
+  private static rebuildIndexedChildren(graph: SchemaGraph, normIR: NormIRInterface): void {
     for (const [
       pointer,
       indexedRecord
@@ -164,51 +231,24 @@ export class SchemaGraph implements SchemaGraphInterface {
         indexedMap.set(key, resolved);
       }
     }
-
-    // Rebuild anchors
-    for (const [
-      anchor,
-      anchorPointer
-    ] of Object.entries(normIR.anchors)) {
-      const anchorNode = graph.nodeMap.get(anchorPointer);
-
-      if (anchorNode !== undefined) {
-        graph.anchorMap.set(anchor, anchorNode);
-      }
-    }
-
-    return graph;
   }
-  /**
-   * fromQuads — structural inverse of OwlProjection.graph().
-   *
-   * Ingests a QuadInterface[] carrying an OWL 2 TBox ontology (JSON-LD quads,
-   * N-Quads, or any rdf/js-compatible source) and returns a SchemaGraphInterface
-   * populated from those quads.
-   *
-   * Axiom envelope:
-   * - Every IRI predicate that OwlProjection emits in the forward direction is
-   *   accepted here (forward-emit ⊆ inverse-accept).
-   * - Phase-1+ dispatchers may extend the inverse beyond what the forward
-   *   projector emits today — all incoming predicates are recorded in
-   *   allRelations() without filtering.
-   *
-   * Limitation:
-   * - Does NOT materialise JSON Schema objects from the quads — that is the
-   *   phase-1 dispatchers' responsibility.
-   * - semantics() returns an empty stub; dispatchers must traverse allRelations().
-   *
-   * @param quads  - Flat array of rdf/js-compatible quads (prefixed or full IRIs).
-   * @param options - Optional baseIRI and additional prefix mappings merged
-   *                  with STANDARD_PREFIXES.
-   * @returns A SchemaGraphInterface backed by the supplied quads.
-   */
-  public static fromQuads(
-    quads: readonly QuadInterface[],
-    options?: { 'baseIRI'?: string;
-      'prefixes'?: PrefixMap }
-  ): SchemaGraphInterface {
-    return new QuadBackedSchemaGraph(quads, options);
+  private static rebuildNodes(graph: SchemaGraph, normIR: NormIRInterface): void {
+    for (const normNode of normIR.nodes) {
+      const schema = SchemaGraphSupport.resolveSchemaAtPointer(normIR.rootSchema, normNode.pointer);
+      const node: SchemaGraphNodeInterface = {
+        'id': normNode.id,
+        'pointer': normNode.pointer,
+        schema
+      };
+
+      graph.nodeMap.set(normNode.pointer, node);
+      if (isRecord(schema)) {
+        graph.identityMap.set(schema, node);
+      }
+      graph.childMap.set(node, new Map());
+      graph.entryMap.set(node, new Map());
+      graph.indexedChildMap.set(node, new Map());
+    }
   }
 
   static resolvePointer(rootSchema: JsonSchemaType, pointer: string): JsonSchemaType {
@@ -298,55 +338,21 @@ export class SchemaGraph implements SchemaGraphInterface {
         'pointer': node.pointer
       });
 
-      const nodeChildren = this.childMap.get(node);
+      const childRecord = this.serializeNodeChildren(node);
 
-      if (nodeChildren !== undefined && nodeChildren.size > 0) {
-        const childRecord: Record<string, string> = {};
-
-        for (const [
-          key,
-          childNode
-        ] of nodeChildren) {
-          childRecord[key] = childNode.pointer;
-        }
+      if (childRecord !== undefined) {
         children[node.pointer] = childRecord;
       }
 
-      const nodeEntries = this.entryMap.get(node);
+      const entryRecord = this.serializeNodeEntries(node);
 
-      if (nodeEntries !== undefined && nodeEntries.size > 0) {
-        const entryRecord: Record<string, Array<[string, string]>> = {};
-
-        for (const [
-          key,
-          entryList
-        ] of nodeEntries) {
-          entryRecord[key] = entryList.map(([
-            name,
-            entryNode
-          ]) => {
-            return [
-              name,
-              entryNode.pointer
-            ];
-          });
-        }
+      if (entryRecord !== undefined) {
         entries[node.pointer] = entryRecord;
       }
 
-      const nodeIndexed = this.indexedChildMap.get(node);
+      const indexedRecord = this.serializeNodeIndexed(node);
 
-      if (nodeIndexed !== undefined && nodeIndexed.size > 0) {
-        const indexedRecord: Record<string, string[]> = {};
-
-        for (const [
-          key,
-          indexedList
-        ] of nodeIndexed) {
-          indexedRecord[key] = indexedList.map((indexedNode) => {
-            return indexedNode.pointer;
-          });
-        }
+      if (indexedRecord !== undefined) {
         indexedChildren[node.pointer] = indexedRecord;
       }
     }
@@ -420,57 +426,78 @@ export class SchemaGraph implements SchemaGraphInterface {
       key,
       value
     ] of Object.entries(schema)) {
+      const childPointer = `${pointer}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`;
+
       if (typeof value === 'boolean' || isRecord(value)) {
-        const childPointer = `${pointer}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}`;
-
-        this.lower(value, childPointer);
-        this.childMap.get(node)?.set(key, this.nodeForPointer(childPointer));
-
-        if (isRecord(value)) {
-          const entries: Array<[string, SchemaGraphNodeInterface]> = [];
-
-          for (const entryKey of Object.keys(value)) {
-            const entryValue = value[entryKey];
-
-            if (!isRecord(entryValue) && typeof entryValue !== 'boolean') {
-              continue;
-            }
-
-            const entryPointer = `${childPointer}/${SchemaGraphSupport.escapeJsonPointerSegment(entryKey)}`;
-
-            entries.push([
-              entryKey,
-              this.nodeForPointer(entryPointer)
-            ]);
-          }
-
-          if (entries.length > 0) {
-            this.entryMap.get(node)?.set(key, entries);
-          }
-        }
+        this.lowerSchemaKeyword(node, childPointer, value);
         continue;
       }
-      if (!Array.isArray(value)) {
+      if (Array.isArray(value)) {
+        this.lowerArrayKeyword(node, childPointer, value);
+      }
+    }
+  }
+
+  private lowerArrayKeyword(
+    node: SchemaGraphNodeInterface,
+    keyPointer: string,
+    value: unknown[]
+  ): void {
+    const key = keyPointer.slice(keyPointer.lastIndexOf('/') + 1).replaceAll('~1', '/')
+      .replaceAll('~0', '~');
+    const indexedChildren: SchemaGraphNodeInterface[] = [];
+
+    for (const [
+      index,
+      element
+    ] of value.entries()) {
+      if (typeof element === 'boolean' || isRecord(element)) {
+        const elementPointer = `${keyPointer}/${index}`;
+
+        this.lower(element, elementPointer);
+        indexedChildren.push(this.nodeForPointer(elementPointer));
+      }
+    }
+
+    if (indexedChildren.length > 0) {
+      this.indexedChildMap.get(node)?.set(key, indexedChildren);
+    }
+  }
+
+  private lowerSchemaKeyword(
+    node: SchemaGraphNodeInterface,
+    childPointer: string,
+    value: boolean | Record<string, unknown>
+  ): void {
+    const key = childPointer.slice(childPointer.lastIndexOf('/') + 1).replaceAll('~1', '/')
+      .replaceAll('~0', '~');
+
+    this.lower(value, childPointer);
+    this.childMap.get(node)?.set(key, this.nodeForPointer(childPointer));
+
+    if (!isRecord(value)) {
+      return;
+    }
+
+    const entries: Array<[string, SchemaGraphNodeInterface]> = [];
+
+    for (const entryKey of Object.keys(value)) {
+      const entryValue = value[entryKey];
+
+      if (!isRecord(entryValue) && typeof entryValue !== 'boolean') {
         continue;
       }
 
-      const indexedChildren: SchemaGraphNodeInterface[] = [];
+      const entryPointer = `${childPointer}/${SchemaGraphSupport.escapeJsonPointerSegment(entryKey)}`;
 
-      for (const [
-        index,
-        element
-      ] of value.entries()) {
-        if (typeof element === 'boolean' || isRecord(element)) {
-          const elementPointer = `${pointer}/${SchemaGraphSupport.escapeJsonPointerSegment(key)}/${index}`;
+      entries.push([
+        entryKey,
+        this.nodeForPointer(entryPointer)
+      ]);
+    }
 
-          this.lower(element, elementPointer);
-          indexedChildren.push(this.nodeForPointer(elementPointer));
-        }
-      }
-
-      if (indexedChildren.length > 0) {
-        this.indexedChildMap.get(node)?.set(key, indexedChildren);
-      }
+    if (entries.length > 0) {
+      this.entryMap.get(node)?.set(key, entries);
     }
   }
 
@@ -507,7 +534,7 @@ export class SchemaGraph implements SchemaGraphInterface {
   }
 
   public relationsForSubject(subjectIri: string): readonly SchemaGraphRelationInterface[] {
-    return this.allRelations().filter((rel) => {
+    return this.allRelations().filter((rel: SchemaGraphRelationInterface): boolean => {
       return rel.source.id === subjectIri;
     });
   }
@@ -576,13 +603,81 @@ export class SchemaGraph implements SchemaGraphInterface {
       return cached;
     }
 
-    const sem = SchemaGraphSupport.extractSemantics(this, node, (ref) => {
+    const sem = SchemaGraphSupport.extractSemantics(this, node, (ref: string): SchemaGraphNodeInterface => {
       return this.resolveLocalRef(ref);
     });
 
     this.semanticMap.set(node, sem);
 
     return sem;
+  }
+
+  private serializeNodeChildren(node: SchemaGraphNodeInterface): Record<string, string> | undefined {
+    const nodeChildren = this.childMap.get(node);
+
+    if (nodeChildren === undefined || nodeChildren.size === 0) {
+      return undefined;
+    }
+
+    const childRecord: Record<string, string> = {};
+
+    for (const [
+      key,
+      childNode
+    ] of nodeChildren) {
+      childRecord[key] = childNode.pointer;
+    }
+
+    return childRecord;
+  }
+
+  private serializeNodeEntries(node: SchemaGraphNodeInterface): Record<string, Array<[string, string]>> | undefined {
+    const nodeEntries = this.entryMap.get(node);
+
+    if (nodeEntries === undefined || nodeEntries.size === 0) {
+      return undefined;
+    }
+
+    const entryRecord: Record<string, Array<[string, string]>> = {};
+
+    for (const [
+      key,
+      entryList
+    ] of nodeEntries) {
+      entryRecord[key] = entryList.map(([
+        name,
+        entryNode
+      ]: [string, SchemaGraphNodeInterface
+      ]): [string, string] => {
+        return [
+          name,
+          entryNode.pointer
+        ];
+      });
+    }
+
+    return entryRecord;
+  }
+
+  private serializeNodeIndexed(node: SchemaGraphNodeInterface): Record<string, string[]> | undefined {
+    const nodeIndexed = this.indexedChildMap.get(node);
+
+    if (nodeIndexed === undefined || nodeIndexed.size === 0) {
+      return undefined;
+    }
+
+    const indexedRecord: Record<string, string[]> = {};
+
+    for (const [
+      key,
+      indexedList
+    ] of nodeIndexed) {
+      indexedRecord[key] = indexedList.map((indexedNode: SchemaGraphNodeInterface): string => {
+        return indexedNode.pointer;
+      });
+    }
+
+    return indexedRecord;
   }
 
   public validateStructure(): StructureWarningInterface[] {

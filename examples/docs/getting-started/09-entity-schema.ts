@@ -9,16 +9,7 @@
  * a single entity with all three fields required.
  */
 
-import type {
-  CustomerIdSchema, EmailSchema, PersonNameSchema
-} from '../bookstore/index.js';
 import { CustomerSchema } from '../bookstore/index.js';
-
-// CustomerSchema references these primitives via $ref — import them
-// at type level to verify the dependency chain at compile time.
-void 0 as unknown as typeof CustomerIdSchema;
-void 0 as unknown as typeof EmailSchema;
-void 0 as unknown as typeof PersonNameSchema;
 
 const schemaId: string = CustomerSchema.$id;
 const schemaType: string = CustomerSchema.type;

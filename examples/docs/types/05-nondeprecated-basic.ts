@@ -12,8 +12,8 @@ import type {
 type AssertEqualType<TLeft, TRight>
   = [TLeft] extends [TRight] ? [TRight] extends [TLeft] ? true : false : false;
 
-function assert<T extends true>(): void {
-  void 0 as unknown as T;
+function assert<T extends true>(_proof?: T): void {
+  return;
 }
 
 const _BookV1Schema = {
@@ -50,7 +50,6 @@ assert<AssertEqualType<
   false
 >>();
 
-void (null as unknown as BookV1Current | BookV1Full);
 
 // Runtime demonstration: the filtered type omits legacySku.
 const bookCurrent: BookV1Current = {

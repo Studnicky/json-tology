@@ -33,8 +33,8 @@ type Email = InferType<typeof EmailSchema>;
 type AssertExtendsType<TLeft, TRight>
   = [TLeft] extends [TRight] ? true : false;
 
-function assert<T extends true>(): void {
-  void 0 as unknown as T;
+function assert<T extends true>(_proof?: T): void {
+  return;
 }
 
 assert<AssertExtendsType<Email, string>>();

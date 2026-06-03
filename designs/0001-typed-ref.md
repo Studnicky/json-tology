@@ -1,6 +1,13 @@
 # Design 0001 — Typed `ref()` builder
 
-**Status.** Draft for 0.4
+**Status.** SUPERSEDED (Path C / `ref()` / `~jt:source` dropped per `designs/0005`).
+The `ref()` builder is a non-native, library-specific authoring form and is
+retired: json-tology authors in native JSON Schema. The native cross-file paths
+this doc also describes — **A** (`$defs` + `#/$defs/X`) and **B** (bare-`$ref` IRIs
++ the registered schema set) — remain first-class, as does the strictness goal
+(an unresolved `$ref` is a `RefNotFound` compile error, never `unknown`). Read the
+rest of this doc as historical context for those native paths, not as a plan to
+ship `ref()`.
 **Authors.** Andrew Studnicky
 **Date.** 2026-05-05
 

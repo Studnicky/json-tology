@@ -16,6 +16,26 @@ const DASH_NS = STANDARD_PREFIXES.dash;
 const DCT_NS = STANDARD_PREFIXES.dct;
 const JT_NS = STANDARD_PREFIXES.jt;
 
+/**
+ * Full-IRI constants for the OWL 2 vocabulary.
+ *
+ * @remarks
+ * Each key is the local name of an OWL 2 term; each value is its canonical full IRI
+ * constructed from `STANDARD_PREFIXES.owl`. Use these constants wherever OWL IRIs
+ * are written to the graph or compared at runtime.
+ *
+ * @example
+ * ```ts
+ * graph.addTriple(classIri, RDF.type, OWL.Class);
+ * graph.addTriple(propIri, RDF.type, OWL.ObjectProperty);
+ * ```
+ *
+ * @category IRI
+ * @since 0.1.0
+ * @see {@link https://www.w3.org/TR/owl2-overview/ OWL 2 Web Ontology Language}
+ * @defaultValue `{...} as const`
+ * @group Constants
+ */
 export const OWL = {
   'allValuesFrom': `${OWL_NS}allValuesFrom`,
   'AsymmetricProperty': `${OWL_NS}AsymmetricProperty`,
@@ -53,6 +73,25 @@ export const OWL = {
   'withRestrictions': `${OWL_NS}withRestrictions`
 } as const;
 
+/**
+ * Full-IRI constants for the RDF vocabulary.
+ *
+ * @remarks
+ * Each key is the local name of an RDF term; each value is its canonical full IRI
+ * constructed from `STANDARD_PREFIXES.rdf`. Use these constants when constructing
+ * or comparing RDF triples at runtime.
+ *
+ * @example
+ * ```ts
+ * graph.addTriple(subjectIri, RDF.type, OWL.Class);
+ * ```
+ *
+ * @category IRI
+ * @since 0.1.0
+ * @see {@link https://www.w3.org/TR/rdf-concepts/ RDF 1.1 Concepts}
+ * @defaultValue `{...} as const`
+ * @group Constants
+ */
 export const RDF = {
   'first': `${RDF_NS}first`,
   'JSON': `${RDF_NS}JSON`,
@@ -63,6 +102,26 @@ export const RDF = {
   'type': `${RDF_NS}type`
 } as const;
 
+/**
+ * Full-IRI constants for the RDFS vocabulary.
+ *
+ * @remarks
+ * Each key is the local name of an RDFS term; each value is its canonical full IRI
+ * constructed from `STANDARD_PREFIXES.rdfs`. Use these constants when writing class
+ * hierarchies, labels, and domain/range assertions to the graph.
+ *
+ * @example
+ * ```ts
+ * graph.addTriple(classIri, RDFS.subClassOf, parentClassIri);
+ * graph.addTriple(propIri, RDFS.domain, classIri);
+ * ```
+ *
+ * @category IRI
+ * @since 0.1.0
+ * @see {@link https://www.w3.org/TR/rdf-schema/ RDF Schema 1.1}
+ * @defaultValue `{...} as const`
+ * @group Constants
+ */
 export const RDFS = {
   'comment': `${RDFS_NS}comment`,
   'Datatype': `${RDFS_NS}Datatype`,
@@ -74,6 +133,26 @@ export const RDFS = {
   'subPropertyOf': `${RDFS_NS}subPropertyOf`
 } as const;
 
+/**
+ * Full-IRI constants for the SHACL vocabulary.
+ *
+ * @remarks
+ * Each key is the local name of a SHACL term; each value is its canonical full IRI
+ * constructed from `STANDARD_PREFIXES.sh`. Use these constants when projecting
+ * JSON Schema constraints to SHACL shapes.
+ *
+ * @example
+ * ```ts
+ * graph.addTriple(shapeIri, RDF.type, SH.NodeShape);
+ * graph.addTriple(shapeIri, SH.closed, literalTrue);
+ * ```
+ *
+ * @category IRI
+ * @since 0.1.0
+ * @see {@link https://www.w3.org/TR/shacl/ SHACL W3C Recommendation}
+ * @defaultValue `{...} as const`
+ * @group Constants
+ */
 export const SH = {
   'and': `${SH_NS}and`,
   'class': `${SH_NS}class`,
@@ -106,6 +185,26 @@ export const SH = {
   'qualifiedValueShape': `${SH_NS}qualifiedValueShape`
 } as const;
 
+/**
+ * Full-IRI constants for the XSD datatype vocabulary.
+ *
+ * @remarks
+ * Each key is the local name of an XSD datatype; each value is its canonical full IRI
+ * constructed from `STANDARD_PREFIXES.xsd`. Used when mapping JSON Schema types and
+ * formats to XSD datatypes in graph nodes and SHACL shapes.
+ *
+ * @example
+ * ```ts
+ * graph.addTriple(propIri, SH.datatype, XSD.string);
+ * graph.addTriple(propIri, SH.datatype, XSD.dateTime);
+ * ```
+ *
+ * @category IRI
+ * @since 0.1.0
+ * @see {@link https://www.w3.org/TR/xmlschema11-2/ XML Schema Definition Language Part 2}
+ * @defaultValue `{...} as const`
+ * @group Constants
+ */
 export const XSD = {
   'anyURI': `${XSD_NS}anyURI`,
   'base64Binary': `${XSD_NS}base64Binary`,
@@ -126,13 +225,72 @@ export const XSD = {
   'time': `${XSD_NS}time`
 } as const;
 
+/**
+ * Full-IRI constants for the DASH vocabulary.
+ *
+ * @remarks
+ * Each key is the local name of a DASH term; each value is its canonical full IRI
+ * constructed from `STANDARD_PREFIXES.dash`. Used for `readOnly` and `writeOnly`
+ * SHACL shape annotations.
+ *
+ * @example
+ * ```ts
+ * graph.addTriple(shapeIri, DASH.readOnly, literalTrue);
+ * ```
+ *
+ * @category IRI
+ * @since 0.1.0
+ * @see {@link https://datashapes.org/dash.html DASH Constraint Components}
+ * @defaultValue `{...} as const`
+ * @group Constants
+ */
 export const DASH = {
   'readOnly': `${DASH_NS}readOnly`,
   'writeOnly': `${DASH_NS}writeOnly`
 } as const;
 
+/**
+ * Full-IRI constants for the Dublin Core Terms vocabulary.
+ *
+ * @remarks
+ * Each key is the local name of a DCT term; each value is its canonical full IRI
+ * constructed from `STANDARD_PREFIXES.dct`. Currently exposes `dct:format` for
+ * format annotation on property shapes.
+ *
+ * @example
+ * ```ts
+ * graph.addTriple(propIri, DCT.format, literalFormatValue);
+ * ```
+ *
+ * @category IRI
+ * @since 0.1.0
+ * @see {@link https://www.dublincore.org/specifications/dublin-core/dcmi-terms/ DCMI Metadata Terms}
+ * @defaultValue `{...} as const`
+ * @group Constants
+ */
 export const DCT = { 'format': `${DCT_NS}format` } as const;
 
+/**
+ * Full-IRI constants for the json-tology extension vocabulary.
+ *
+ * @remarks
+ * Each key is the local name of a json-tology extension term; each value is its
+ * canonical full IRI constructed from `STANDARD_PREFIXES.jt`. These IRIs are used
+ * to represent json-tology-specific graph relations that have no equivalent in
+ * standard RDF vocabularies (e.g. conditional branches, annotated edges).
+ *
+ * @example
+ * ```ts
+ * graph.addTriple(ifNodeIri, JT.thenBranch, thenNodeIri);
+ * graph.addTriple(propIri, JT.multipleOf, multiplierLiteral);
+ * ```
+ *
+ * @category IRI
+ * @since 0.1.0
+ * @see STANDARD_PREFIXES
+ * @defaultValue `{...} as const`
+ * @group Constants
+ */
 export const JT = {
   'annotatedEdge': `${JT_NS}annotatedEdge`,
   'dependentRequired': `${JT_NS}dependentRequired`,

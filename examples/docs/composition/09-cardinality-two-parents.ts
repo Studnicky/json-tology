@@ -28,4 +28,3 @@ console.log(jt.toTbox().jsonLd());
 //     "owl:cardinality": 2
 //   }]
 // }
-void 0 as unknown as typeof jt;

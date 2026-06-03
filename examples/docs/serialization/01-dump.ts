@@ -26,7 +26,7 @@ const book = bookstoreEntities.instantiate(BookSchema.$id, {
 // Basic dump — all fields including defaults.
 const wire = bookstoreEntities.dump(BookSchema.$id, book);
 
-console.assert(typeof wire === 'object' && wire !== null);
+console.assert('inStock' in wire);
 console.assert((wire as { 'inStock': boolean }).inStock);
 
 // excludeDefaults — drops inStock:true.

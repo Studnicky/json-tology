@@ -12,6 +12,6 @@
  * // Schema object form
  * entities.instantiate(UserSchema, data);
  */
-export type SchemaRefType<TMap = Record<never, never>>
-  = | (keyof TMap & string)
+export type SchemaRefType<TRefs = Record<never, never>>
+  = | (keyof TRefs & string)
   | (Record<string, unknown> & { readonly '$id': string });

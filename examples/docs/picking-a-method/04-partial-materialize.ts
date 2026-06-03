@@ -24,4 +24,4 @@ const scaffold = bookstoreEntities.materialize(
 );
 
 console.assert(scaffold.customerId === aboxFixtures.customer.customerId);
-console.log('partial scaffold → customerId:', scaffold.customerId, '| orderId:', scaffold.orderId ?? '(not yet set)');
+console.log('partial scaffold → customerId:', scaffold.customerId, '| orderId:', scaffold.orderId);

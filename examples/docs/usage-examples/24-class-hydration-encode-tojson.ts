@@ -68,7 +68,7 @@ const hydrated = jt.instantiate(
   aboxFixtures.order
 );
 
-const wire = bookstoreEntities.encode(ToJsonOrderTransform, hydrated) as Record<string, unknown>;
+const wire = bookstoreEntities.encode(ToJsonOrderTransform, hydrated);
 
 console.assert(wire.orderId === aboxFixtures.order.orderId);
 // JSON.stringify will use the same toJSON shape.

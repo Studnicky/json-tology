@@ -8,6 +8,12 @@ const _StatusSchema = {
   ]
 } as const;
 
+// EnumValuesType extracts the literal union from the enum:
 // 'active' | 'inactive' | 'pending'
 type Status = EnumValuesType<typeof _StatusSchema>;
-void 0 as unknown as Status;
+
+// A value typed as Status accepts exactly the enum members — no cast needed,
+// confirming the resolved union.
+const status: Status = 'active';
+
+console.log('EnumValuesType<StatusSchema> sample member:', status);

@@ -10,16 +10,14 @@ import type {
   DeepPropertyPathsType, ExhaustiveType, PropertyPathsType
 } from '../../../src/types/Infer.js';
 import type {
-  BookSchema, CustomerSchema, OrderSchema
+  CustomerSchema, OrderSchema
 } from '../bookstore/index.js';
 
 type AssertEqualType<TLeft, TRight>
   = [TLeft] extends [TRight] ? [TRight] extends [TLeft] ? true : false : false;
 
-function assert<T extends true>(): void {
-  // interop: void 0 as unknown as T is the compile-time type-test idiom; no
-  // typed path exists from void to an arbitrary constraint-bounded type T.
-  void 0 as unknown as T;
+function assert<T extends true>(_proof?: T): void {
+  return;
 }
 
 // PropertyPathsType — direct properties only.
@@ -42,8 +40,6 @@ type PrintStatusExhaustive = ExhaustiveType<HandledResidual>;
 
 assert<AssertEqualType<[PrintStatusExhaustive] extends [never] ? true : false, true>>();
 
-void (null as unknown as CustomerPaths | OrderDeep | typeof BookSchema);
-void (null as unknown as PrintStatusExhaustive);
 
 // Log the utility type shapes at runtime — showing what the type system exposes.
 const customerPathSample: CustomerPaths = 'customerId';
@@ -51,4 +47,6 @@ const orderDeepSample: OrderDeep = 'orderLines';
 
 console.log('PropertyPathsType<CustomerSchema> sample path:', customerPathSample);
 console.log('DeepPropertyPathsType<OrderSchema> sample path:', orderDeepSample);
-console.log('ExhaustiveType<never> resolves:', typeof (null as unknown as PrintStatusExhaustive));
+// PrintStatusExhaustive is `ExhaustiveType<never>` = `never` (no runtime value);
+// the type-level assertion above is its proof that every case is handled.
+console.log('ExhaustiveType resolves to never — all PrintStatus cases handled.');
