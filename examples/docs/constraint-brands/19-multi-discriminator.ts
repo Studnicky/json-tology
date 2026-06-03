@@ -46,7 +46,7 @@ const redCircle: MultiShape = {
   'color': 'red',
   'kind': 'circle',
   'radius': 7
-} as unknown as MultiShape;
+};
 const other: MultiShape = {
   'color': 'blue',
   'kind': 'square',

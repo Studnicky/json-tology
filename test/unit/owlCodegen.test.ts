@@ -10,7 +10,9 @@ import assert from 'node:assert/strict';
 import {
   describe, it
 } from 'node:test';
-import { generateTypeScript } from '../../src/modules/codegen/OwlCodegen.js';
+import {
+  generateRegistryFiles, generateTypeScript
+} from '../../src/modules/codegen/OwlCodegen.js';
 import { JsonTology } from '../../src/index.js';
 import {
   bookstoreEntities, bookstoreSchemas
@@ -67,10 +69,17 @@ void describe('OwlCodegen — Good: single-class ontology', () => {
     assert.ok(src.includes('as const;'), 'should emit as const');
   });
 
-  void it('emits export type Widget', () => {
+  void it('emits export type Widget threaded through the schema-set reference map', () => {
     const src = generateTypeScript(resultFromSchemas([singleSchema]), { 'registryConstName': 'ex' });
 
-    assert.ok(src.includes('export type Widget = InferType<typeof WidgetSchema>;'), 'should emit type alias');
+    assert.ok(
+      src.includes('type exSchemasRefs = SchemaReferencesMapType<typeof exSchemas>;'),
+      'should emit the reference map over the schema tuple'
+    );
+    assert.ok(
+      src.includes('export type Widget = InferType<typeof WidgetSchema, exSchemasRefs>;'),
+      'should emit the type alias threaded with the reference map so cross-class $refs resolve'
+    );
   });
 
   void it('emits the registry array with WidgetSchema', () => {
@@ -327,5 +336,56 @@ void describe('OwlCodegen — Ugly: banner customization', () => {
 
     assert.ok(src.includes('Generated for project: example-project'), 'should include header lines');
     assert.ok(src.includes('See: https://example.com'), 'should include second header line');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Registry-directory mode threads the schema-set reference map
+// ---------------------------------------------------------------------------
+
+void describe('OwlCodegen — registry-directory mode reference threading', () => {
+  const schemaB = {
+    '$id': 'urn:rt:B',
+    'properties': { 'n': { 'type': 'number' } },
+    'required': ['n'],
+    'type': 'object'
+  };
+  const schemaA = {
+    '$id': 'urn:rt:A',
+    'properties': { 'link': { '$ref': 'urn:rt:B' } },
+    'required': ['link'],
+    'type': 'object'
+  };
+
+  void it('index.ts exports the reference map over the schema tuple', () => {
+    const { indexSource } = generateRegistryFiles(resultFromSchemas([
+      schemaB,
+      schemaA
+    ]), { 'registryConstName': 'rt' });
+
+    assert.ok(
+      indexSource.includes('export type rtSchemasRefs = SchemaReferencesMapType<typeof rtSchemas>;'),
+      'index.ts should export the reference map'
+    );
+  });
+
+  void it('entity files import and thread the reference map from the index', () => {
+    const { entityFiles } = generateRegistryFiles(resultFromSchemas([
+      schemaB,
+      schemaA
+    ]), { 'registryConstName': 'rt' });
+    const entityA = entityFiles.find((file) => {
+      return file.name === 'A';
+    });
+
+    assert.ok(entityA !== undefined, 'entity A file should be generated');
+    assert.ok(
+      entityA.source.includes("import type { rtSchemasRefs } from '../index.js';"),
+      'entity should type-import the reference map from the index'
+    );
+    assert.ok(
+      entityA.source.includes('export type A = InferType<typeof ASchema, rtSchemasRefs>;'),
+      'entity type should be threaded with the reference map'
+    );
   });
 });

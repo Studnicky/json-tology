@@ -17,6 +17,7 @@ The main runtime entry. Exports:
 
 **What is NOT in the root entry:** type aliases, interface contracts, and type-only utilities. These live behind `json-tology/types` and `json-tology/interfaces` respectively. This is by design — see below.
 
+<!-- inline-ts-ok: published-package import surface for the root entry; documents the export map, not a runnable scenario. -->
 ```ts
 import { JsonTology, Compose, Transform } from 'json-tology';
 import { InstantiationError, SchemaErrorCode } from 'json-tology';
@@ -28,6 +29,7 @@ Value utilities and data-operation primitives for consumers who do not need the 
 
 - `Value`, `Changeset`, `Operations`, `Hash`
 
+<!-- inline-ts-ok: published-package import surface for json-tology/value; documents the export, not a runnable scenario. -->
 ```ts
 import { Value, Operations, Hash } from 'json-tology/value';
 ```
@@ -40,6 +42,7 @@ Schema registration and composition without the graph or ontology modules. Expor
 
 Use this entry when you want the authoring and validation surface but do not need OWL/SHACL output or ABox projection.
 
+<!-- inline-ts-ok: published-package import surface for json-tology/schema; documents the export, not a runnable scenario. -->
 ```ts
 import { Compose, SchemaRegistry } from 'json-tology/schema';
 ```
@@ -50,6 +53,7 @@ Ontology serialization and graph utilities. Exports:
 
 - `GraphOntologySerializer`, `GraphShaclSerializer`, `GraphSchemaSerializer`, `OntologyBuilder`
 
+<!-- inline-ts-ok: published-package import surface for json-tology/ontology; documents the export, not a runnable scenario. -->
 ```ts
 import { OntologyBuilder } from 'json-tology/ontology';
 ```
@@ -62,6 +66,7 @@ import { OntologyBuilder } from 'json-tology/ontology';
 - Branded primitive types, constraint brands (`MinLength`, `Pattern`, etc.), `Brand<T, Tag>`
 - `JsonTologyTypeConfigInterface` for module augmentation (brand-disable configuration)
 
+<!-- inline-ts-ok: published-package type-only import surface for json-tology/types; documents the export, not a runnable scenario. -->
 ```ts
 import type { InferType, SchemaReferencesMapType } from 'json-tology/types';
 ```
@@ -76,6 +81,7 @@ import type { InferType, SchemaReferencesMapType } from 'json-tology/types';
 - `LoggerInterface`, `InvariantInterface`, `FormatRegistryInterface`
 - All other interface contracts used in the public API
 
+<!-- inline-ts-ok: published-package type-only import surface for json-tology/interfaces; documents the export, not a runnable scenario. -->
 ```ts
 import type { SubClassOfSchemaInterface } from 'json-tology/interfaces';
 import type { MaterializerInterface } from 'json-tology/interfaces';
@@ -85,6 +91,7 @@ import type { MaterializerInterface } from 'json-tology/interfaces';
 
 HTML renderer and visualization utilities. Exports `HtmlRenderer`, `VizDataCollector`, `TypeStringEmitter`. Used by the runnable documentation examples.
 
+<!-- inline-ts-ok: published-package import surface for json-tology/viz; documents the export, not a runnable scenario. -->
 ```ts
 import { HtmlRenderer } from 'json-tology/viz';
 ```
@@ -93,6 +100,7 @@ import { HtmlRenderer } from 'json-tology/viz';
 
 Browser-safe programmatic API for OWL TBox → TypeScript codegen. Returns generated source as strings; performs no file I/O. Exports `generateFromTbox`, `generateRegistryDirectory`.
 
+<!-- inline-ts-ok: published-package usage sketch for json-tology/owl-gen; `myJsonLd` is an illustrative placeholder, not a runnable scenario. -->
 ```ts
 import { generateFromTbox } from 'json-tology/owl-gen';
 const source = generateFromTbox({ input: myJsonLd, name: 'bookstore' });
@@ -102,6 +110,7 @@ const source = generateFromTbox({ input: myJsonLd, name: 'bookstore' });
 
 Node-only file-writing wrapper over `json-tology/owl-gen`. Adds `writeFromTbox` and `writeRegistryDirectory` which write the generated source to disk. Import from build scripts and CLI tooling only.
 
+<!-- inline-ts-ok: published-package usage sketch for json-tology/owl-gen-node; `myJsonLd` is an illustrative placeholder, not a runnable scenario. -->
 ```ts
 import { writeFromTbox } from 'json-tology/owl-gen-node';
 writeFromTbox({ input: myJsonLd, name: 'bookstore', output: './src/bookstore-registry.ts' });
@@ -119,6 +128,7 @@ The comment at the top of `src/index.ts` states the reason:
 
 This means `import type { SubClassOfSchemaInterface } from 'json-tology/interfaces'` is **the intended import**, not a workaround. The same applies to `InferType`, `InferSchemaType`, and every other type alias — they live in `json-tology/types`.
 
+<!-- inline-ts-ok: import-path illustration (correct vs incorrect); documents the intended published import paths, not a runnable scenario. -->
 ```ts
 // CORRECT — the intended import paths
 import { JsonTology, Compose } from 'json-tology';

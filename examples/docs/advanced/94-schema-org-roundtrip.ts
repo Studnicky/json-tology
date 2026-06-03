@@ -19,7 +19,9 @@
  * Browser-safe: no node:fs, node:path, or node:url.
  */
 
-import type { InferType } from '../../../src/types/index.js';
+import type {
+  InferType, SchemaReferencesMapType
+} from '../../../src/types/index.js';
 import { JsonTology } from '../../../src/index.js';
 import { generateFromTbox } from '../../../src/owl-gen.js';
 import { schemaOrgSubset } from '../ontologies/schema-org-subset.js';
@@ -176,16 +178,22 @@ if (isbnTypeSchema !== undefined && typeof isbnTypeSchema.$id === 'string') {
 // Step 4: compile-time type narrowing with InferType
 // ---------------------------------------------------------------------------
 
-type IsbnType = InferType<{
-  readonly '$id': 'https://schema.org/IsbnType';
-  readonly 'pattern': '^\\d{13}$';
-  readonly 'type': 'string';
-}>;
+const IsbnTypeSchema = {
+  '$id': 'https://schema.org/IsbnType',
+  'pattern': '^\\d{13}$',
+  'type': 'string'
+} as const;
 
-// IsbnType carries a PatternBrandInterface brand; a plain string literal
-// cannot satisfy the brand without going through instantiate(). The cast
-// demonstrates the type narrows to string at the compile-time annotation level.
-const isbnValue: IsbnType = '9783551551672' as unknown as IsbnType;
+type IsbnType = InferType<typeof IsbnTypeSchema>;
+
+// IsbnType carries a PatternBrandInterface brand; a plain string literal cannot
+// satisfy the brand on its own — a branded value is produced by instantiate(),
+// which validates the wire string and returns the narrowed branded type.
+const isbnRegistry = JsonTology.create({
+  'baseIRI': 'https://schema.org/',
+  'schemas': [IsbnTypeSchema]
+});
+const isbnValue: IsbnType = isbnRegistry.instantiate(IsbnTypeSchema.$id, '9783551551672');
 
 console.assert(
   typeof isbnValue === 'string',
@@ -193,13 +201,23 @@ console.assert(
 );
 console.log('InferType<IsbnTypeSchema> narrows to string:', typeof isbnValue === 'string');
 
+// The `allOf` member references schema:Thing; thread a references map carrying
+// the Thing schema so the cross-schema `$ref` resolves to its inferred shape
+// instead of `RefNotFound`.
+type SchemaOrgRefs = SchemaReferencesMapType<readonly [{
+  readonly '$id': 'https://schema.org/Thing';
+  readonly 'properties': Record<string, never>;
+  readonly 'required': [];
+  readonly 'type': 'object';
+}]>;
+
 type SchemaPerson = InferType<{
   readonly '$id': 'https://schema.org/Person';
   readonly 'allOf': [{ readonly '$ref': 'https://schema.org/Thing' }];
   readonly 'properties': Record<string, never>;
   readonly 'required': [];
   readonly 'type': 'object';
-}>;
+}, SchemaOrgRefs>;
 
 const bastian: SchemaPerson = {};
 

@@ -335,14 +335,17 @@ const OpenLibraryDocCodec = Transform.create<
 >(OpenLibraryDocSchema, {
   'decode': (wire) => {
     // isbn[] — filter to a 13-digit entry, strip hyphens; undefined when none found
-    const isbn = extractIsbn13(wire.isbn);
+    const isbnArr = wire.isbn as readonly string[] | undefined;
+    const isbn = extractIsbn13(isbnArr);
+    const authorName = wire.author_name as string[] | undefined;
+    const title = wire.title as string | undefined;
 
     // OpenLibrary only surfaces first_publish_year (a bare integer year), which
     // is not a full YYYY-MM-DD date, so publishedOn is omitted — not faked.
     return {
-      ...(wire.author_name === undefined ? {} : { 'authors': [...wire.author_name] }),
+      ...(authorName === undefined ? {} : { 'authors': [...authorName] }),
       ...(isbn === undefined ? {} : { 'isbn': isbn }),
-      ...(wire.title === undefined ? {} : { 'title': wire.title })
+      ...(title === undefined ? {} : { 'title': title })
     };
   },
   // encode: record → OpenLibrary-shaped doc (best-effort).
@@ -373,13 +376,12 @@ const WikipediaSummaryCodec = Transform.create<
   typeof WikipediaSummarySchema, WikipediaEnrichment
 >(WikipediaSummarySchema, {
   'decode': (wire) => {
-    // content_urls is a $ref'd nested object, so the inferred type widens it to
-    // `{}`; cast its value (not a declared snake_case type) to read the page URL.
+    // content_urls is a $ref'd nested object; cast to read the nested page URL.
     const links = wire.content_urls as undefined | { 'desktop'?: { 'page'?: string } };
 
     return {
-      'extract': wire.extract ?? '',
-      'title': wire.title ?? '',
+      'extract': (wire.extract as string | undefined) ?? '',
+      'title': (wire.title as string | undefined) ?? '',
       'wikiUrl': links?.desktop?.page ?? ''
     };
   },

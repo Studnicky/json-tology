@@ -6,7 +6,7 @@
 
 ## `jt.dump` {#jt-dump}
 
-**Declaration.** Walks the canonical schema graph for the given `schemaId`, applies any registered `Transform` encoder at each node, filters the result according to options, and returns a wire-form JS value (`unknown`). The input `value` is not mutated.
+**Declaration.** Walks the canonical schema graph for the given `schemaId`, applies any registered `Transform` encoder at each node, filters the result according to options, and returns the brand-free wire **InputType** (`LooseInputType<…>`) — the wire-form JS value, never `unknown`. The input `value` is not mutated.
 
 ### Options
 

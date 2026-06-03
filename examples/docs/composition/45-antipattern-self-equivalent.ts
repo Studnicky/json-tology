@@ -11,5 +11,4 @@ import { IsbnSchema } from '../bookstore/index.js';
 // @ts-expect-error SelfEquivalentType brand fires on $id collision
 const _Bad = Compose.equivalent(IsbnSchema, { '$id': IsbnSchema.$id });
 
-console.log('Self-equivalent anti-pattern: options.$id must differ from source.$id:', IsbnSchema.$id);
-void 0 as unknown as typeof _Bad;
+console.log('Self-equivalent anti-pattern: options.$id must differ from source.$id:', IsbnSchema.$id, '| _Bad.$id:', _Bad.$id);

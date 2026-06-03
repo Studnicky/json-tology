@@ -12,6 +12,7 @@ import type { ContainsBrandInterface } from '../../src/types/ConstraintBrands.js
 import type {
   InferSchemaType, InferType
 } from '../../src/types/Schema.js';
+import type { RefNotFoundInterface } from '../../src/types/TypeErrors.js';
 
 
 // ---------------------------------------------------------------------------
@@ -485,8 +486,13 @@ type NoAnchorResult = InferType<typeof _NoAnchorRecursiveSchema>;
 assert<AssertAssignable<NoAnchorResult, { readonly 'child'?: unknown }>>();
 
 // ---------------------------------------------------------------------------
-// 12. Negative tests — invalid schemas produce unknown, not compile errors
+// 12. Negative tests — unresolvable refs and missing types
 // ---------------------------------------------------------------------------
+//
+// Most unresolvable schemas produce `unknown`. Exception: a bare absolute-IRI
+// $ref (no fragment) with no matching schema always yields
+// RefNotFoundInterface<TRef> — a compile-error brand — so cross-schema refs
+// are never silently inferred as unknown.
 
 // Missing `type` — produces unknown
 const _NoTypeSchema = {} as const;
@@ -508,7 +514,7 @@ type BadRefResult = InferType<typeof _BadRefSchema>;
 // x resolves to unknown
 assert<AssertAssignable<BadRefResult, { readonly 'x'?: unknown }>>();
 
-// External $ref (absolute URI without fragment) — produces unknown
+// External $ref (absolute URI without fragment) — produces RefNotFound compile error brand
 const _ExternalRefSchema = {
   'properties': { 'ext': { '$ref': 'https://example.com/Other' } },
   'type': 'object'
@@ -517,7 +523,7 @@ const _ExternalRefSchema = {
 void _ExternalRefSchema;
 
 type ExternalRefResult = InferType<typeof _ExternalRefSchema>;
-assert<AssertAssignable<ExternalRefResult, { readonly 'ext'?: unknown }>>();
+assert<AssertAssignable<ExternalRefResult, { readonly 'ext'?: RefNotFoundInterface<'https://example.com/Other'> }>>();
 
 // Boolean schema (true/false) — produces unknown
 type BoolSchemaResult = InferSchemaType<true>;
@@ -742,10 +748,16 @@ assert<AssertAssignable<DeepRef, { readonly 'wrapper': { readonly 'inner': { rea
 // ---------------------------------------------------------------------------
 // 18. External fragment refs fall back to unknown without references
 // ---------------------------------------------------------------------------
+//
+// Note: bare absolute-IRI refs (no fragment) yield RefNotFoundInterface<T>
+// instead of unknown — see section 12. Fragment refs (schema#anchor,
+// schema#/pointer) still fall back to unknown when no references map is
+// provided because the base-URI resolver (ResolveRefBaseSchemaType) guards on
+// HasReferencesType — the strictness change applies only to the bare-IRI arm.
 
 /**
- * External $ref with anchor fragment — cannot resolve cross-schema at compile
- * time because we don't have access to the external schema's type.
+ * External $ref with anchor fragment — base-URI resolves to unknown (no
+ * references map, base URI does not match root $id).
  */
 const _ExternalAnchorRefSchema = {
   'properties': { 'ext': { '$ref': 'https://example.com/Other#someAnchor' } },

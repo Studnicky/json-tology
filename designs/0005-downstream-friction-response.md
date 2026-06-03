@@ -51,17 +51,18 @@ type. From that, the hard rules every fix below obeys:
 
 | # | Item | Verified | Class | Effort | Headline |
 |---|------|----------|-------|--------|----------|
-| 1 | Cross-file `$ref` → `unknown` | TRUE | SHIP + DOCS | M | `RefNotFound` brand kills the `unknown` fallback; bless the native schema-set derivation helper (no builder, no shim) |
+| 1 | Cross-file `$ref` → `unknown` | TRUE | **DONE** | M | `RefNotFound` brand replaces the `unknown` fallback (self-`$id` refs still resolve); `SchemaReferencesMapType` / `InferType<X, Refs>` thread the schema set |
 | 2 | Structural-hash collides distinct primitives | TRUE; transforms not in hash | SHIP (refined) + DOCS | M | Nominal-subclass-aware dedup; format-marker is the documented escape today |
 | 3 | CURIE `$id` broken | WAS TRUE | **DONE** | — | Fixed on `feature/curie-canonicalization` |
 | 4 | `materialize` skips Transforms | TRUE | DOCS (+ opt. flag) | S | `instantiate` IS the wire-decode tool; document the split |
 | 5 | Interfaces not in root barrel | TRUE (by design) | DOCS (+ open Q) | S | `json-tology/interfaces` is the intended import; root export is forbidden |
 | 6 | `getDecoder` param type-erasing | TRUE (interface lacks index sig) | **DONE** | XS | Param → precise `JsonSchemaDocumentObjectType`; accepts branded schemas cast-free |
-| 7 | Eager `TMap` → TS2589 on `.d.ts` emit | TRUE | SHIP | L | Make `TMap` lazy; key off `TRefs` — same precise types, lazy timing |
+| 7 | Eager `TMap` → TS2589 on `.d.ts` emit | TRUE | **DONE** | L | `JsonTology<TRefs>`; per-call `ParseOutputType<TRefs[K], TRefs>`; loose overloads deleted; declaration-emit regression test added (designs/0006) |
 | 8 | `addTransform` `encode` typed with wrong face | TRUE | **DONE** | XS | `encode` returns the precise InputType; deletes both internal `as unknown` casts |
 
-Net: **5 SHIP**, **2 DOCS**, **1 DONE**. Two of the SHIPs (#1, #7) are genuine
-type-architecture work; #6 and #8 are one-liners that also remove existing casts.
+Net: the two genuine type-architecture items (#1 `RefNotFound`, #7 lazy `TRefs` +
+precise method surface) are **DONE** (designs/0006) alongside the already-shipped
+#3/#6/#8; #2 ships nominal-aware dedup; #4/#5 remain DOCS.
 
 ---
 
@@ -283,7 +284,20 @@ no `unknown`/`any`, no widening — the signature states precisely what it takes
 
 ---
 
-## 7 — Eager `TMap` trips TS2589 on declaration emit  ·  SHIP (L)
+## 7 — Eager `TMap` trips TS2589 on declaration emit  ·  DONE (designs/0006)
+
+> Shipped. `JsonTology<TRefs>` is the single generic; `create` returns
+> `JsonTology<SchemaReferencesMapType<TSchemas>>` and every typed method computes
+> its output lazily as `ParseOutputType<TRefs[K], TRefs>` — identical precision to
+> the former eager `TMap`, O(1) to construct. The loose `(schema: Record<string,
+> unknown> & {$id}) → unknown | boolean` fallback overloads are deleted; each
+> method has two precise overloads (id + object), both `TRefs`-threaded. The
+> declaration-emit regression test (`test/types/declaration-emit/`, `npm run
+> test:decl`) emits a deep/wide registry's `.d.ts` without TS2589, and parity
+> tests confirm string-id `instantiate`/`materialize` still return the branded
+> type. Full implementation and the refining decisions are in
+> **`designs/0006-precise-method-surface.md`**.
+
 
 **Verified.** `class JsonTology<TMap = Record<never,never>, TRefs = Record<never,never>>`
 (`JsonTology.ts:251`); `create` returns
@@ -334,13 +348,17 @@ do not exist on raw wire data, so a branded `encode` return is **unsatisfiable**
 — which is exactly why the body casts with `as unknown` and why a consumer must
 cast too. Typing `encode` as the schema's **InputType** (`LooseInputType<…>`) is
 the *accurate, fully-known* type — not a loosening of `unknown`; it is the
-correct one of the schema's two precise types. `decode` stays **OutputType**
-(branded) because its input genuinely is the validated payload.
+correct one of the schema's two precise types. `decode` consumes the **InputType**
+too: it receives raw wire data (pre-decode), so a branded `InferSchemaType` input
+both contradicts the brand-free wire *and* degrades to `RefNotFound` for transforms
+attached to composed / `$ref`-bearing schemas (`Transform.create` is static — there
+is no references map to resolve the ref). The decoded runtime shape is `decode`'s
+**return** (`TOut`), not its input.
 
 > Strictness note: `LooseInputType<T>` is a fully-computed, known type — never
-> `unknown`/`any`. "encode returns the InputType, decode consumes the
-> OutputType" is the two-sided model; it is expressed with the **canonical**
-> types directly.
+> `unknown`/`any`. "encode returns the InputType; decode consumes the InputType
+> and returns the decoded `TOut`" is the two-sided model — both halves of the wire
+> boundary speak the InputType — expressed with the **canonical** types directly.
 
 **Implemented (Tier 1).** `addTransform`'s public `encode` is now
 `(output: TOut) => LooseInputType<InferSchemaType<TSchema, TSchema, TRefs>>`
@@ -356,9 +374,10 @@ rename). The canonical types (`InferSchemaType<…>` for output,
 `LooseInputType<InferSchemaType<…>>` for input) are used directly.
 
 **Done:**
-- [x] Public `encode` → `LooseInputType<InferSchemaType<…>>`; `decode` stays
-      branded; both `as unknown as` casts deleted via `Transform.register` +
-      `brand<>()`.
+- [x] `Transform.create` `encode` → `LooseInputType<InferSchemaType<…>>` (the wire
+      InputType) and `decode` input → the same wire InputType (refined under
+      designs/0006 so transforms on composed/`$ref` schemas type cleanly); both
+      `as unknown as` casts deleted via `Transform.register` + `brand<>()`.
 
 **Enables/corrects:** removes the consumer's wrapper cast **and** the two
 internal `as unknown` casts; public and internal types agree on the accurate
@@ -375,12 +394,14 @@ type for each direction.
       type (accepts branded schemas cast-free; deletes the consumer cast and an
       internal one). Same type test.
 
-**Tier 2 — high-leverage type architecture:**
-- [ ] #1 `RefNotFound` error brand replacing the `unknown` fallback (native `$ref`,
-      `Infer.ts:748`) + export/document the native schema-set derivation
-      (`SchemaMapFromTupleType<typeof SCHEMAS>`, `InferType<X, SCHEMAS>`). No
-      builder, no shim, no codemod. (`ref()` / design 0001 Path C: dropped.)
-- [ ] #7 lazy `TMap` (`JsonTology<TRefs>`) + declaration-emit regression test.
+**Tier 2 — high-leverage type architecture (DONE — designs/0006):**
+- [x] #1 `RefNotFound` error brand replaces the `unknown` fallback (native `$ref`,
+      `Infer.ts` bare-IRI arm; root self-`$id` refs still resolve). Native
+      schema-set derivation (`SchemaReferencesMapType`, `InferType<X, Refs>`) is
+      exported. No builder, no shim, no codemod. (`ref()` / design 0001 Path C:
+      dropped.)
+- [x] #7 lazy `TRefs` (`JsonTology<TRefs>`), loose overloads deleted, every typed
+      method precise + `TRefs`-threaded, declaration-emit regression test added.
 
 **Tier 3 — graph-semantics refinement:**
 - [ ] #2 nominal-subclass-aware duplicate detection (+ optional transform-identity in hash).

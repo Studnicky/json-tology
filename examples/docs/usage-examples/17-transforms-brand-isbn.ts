@@ -15,7 +15,6 @@
 import {
   Compose, Transform
 } from '../../../src/index.js';
-import type { BrandedType } from '../../../src/types/index.js';
 import {
   aboxFixtures, createBookstoreDocRegistry,
   IsbnSchema
@@ -34,13 +33,11 @@ const jt2 = jt.set(BrandedIsbnBase);
 
 const BrandedIsbnSchema = Transform.brand(BrandedIsbnBase, 'BrandedIsbn');
 
-type BrandedIsbn = BrandedType<string, 'BrandedIsbn'>;
-
 const wire = aboxFixtures.rareBook.isbn;
-const decoded = jt2.instantiate(BrandedIsbnBase.$id, wire) as BrandedIsbn;
+const decoded = jt2.instantiate(BrandedIsbnSchema, wire);
 
 console.assert(typeof decoded === 'string');
-console.assert((decoded as unknown as string) === wire);
+console.assert(decoded === wire);
 // '9783522128001'
 console.log('wire ISBN:', wire);
 // same string — brand is compile-time only

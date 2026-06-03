@@ -86,7 +86,7 @@ const hydrated = jt.instantiate(
 hydrated.cacheTouch();
 console.assert(hydrated.cacheTouched());
 
-const wire = bookstoreEntities.encode(ToPlainOrderTransform, hydrated) as Record<string, unknown>;
+const wire = bookstoreEntities.encode(ToPlainOrderTransform, hydrated);
 
 console.assert(wire.orderId === aboxFixtures.order.orderId);
 // internalCacheKey is deliberately omitted from the wire shape.

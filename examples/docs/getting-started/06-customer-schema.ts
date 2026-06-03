@@ -6,15 +6,7 @@
  * registry so there is exactly one source per concept.
  */
 
-import type {
-  CustomerIdSchema, EmailSchema, PersonNameSchema
-} from '../bookstore/index.js';
 import { CustomerSchema } from '../bookstore/index.js';
-
-void 0 as unknown as typeof CustomerSchema;
-void 0 as unknown as typeof CustomerIdSchema;
-void 0 as unknown as typeof EmailSchema;
-void 0 as unknown as typeof PersonNameSchema;
 
 const id: string = CustomerSchema.$id;
 

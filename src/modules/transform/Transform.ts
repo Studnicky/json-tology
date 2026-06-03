@@ -144,7 +144,15 @@ export class Transform {
   >(
     schema: TSchema,
     fns: {
-      'decode': (input: InferSchemaType<TSchema>) => TOut;
+      // `decode` and `encode` are the two halves of the same wire boundary, so
+      // both speak the brand-free wire InputType: `decode` consumes raw wire
+      // data (pre-decode) and `encode` produces it. Brands are validation
+      // artifacts that do not exist on the wire; typing `decode`'s input as the
+      // branded `InferSchemaType` also degrades to `RefNotFound` for transforms
+      // attached to composed/`$ref`-bearing schemas (e.g. `Compose.equivalent(
+      // RegisteredEntity, …)`), which cannot resolve standalone in this static
+      // context. `LooseInputType` is the precise wire face for both directions.
+      'decode': (input: LooseInputType<InferSchemaType<TSchema>>) => TOut;
       'encode': (output: TOut) => LooseInputType<InferSchemaType<TSchema>>;
     }
   ): TransformedType<TSchema, TOut> {

@@ -848,7 +848,7 @@ import {
           'ts'
         ]
       };
-      const tagsResult = jt.dump(EmployeeSchema.$id, withTags) as Record<string, unknown>;
+      const tagsResult = jt.dump(EmployeeSchema.$id, withTags);
 
       assert.deepEqual(tagsResult.tags, [
         'engineer',
@@ -863,7 +863,7 @@ import {
       const excl = jt.dump(PersonSchema.$id, {
         'age': 30,
         'name': 'Alice'
-      }, { 'exclude': ['age'] }) as Record<string, unknown>;
+      }, { 'exclude': ['age'] });
 
       assert.equal('age' in excl, false);
       assert.equal(excl.name, 'Alice');
@@ -883,7 +883,7 @@ import {
       const incl = jt.dump(PersonSchema.$id, {
         'age': 30,
         'name': 'Alice'
-      }, { 'include': ['name'] }) as Record<string, unknown>;
+      }, { 'include': ['name'] });
 
       assert.equal(incl.name, 'Alice');
       assert.equal('age' in incl, false);
@@ -895,7 +895,7 @@ import {
       }, {
         'exclude': ['name'],
         'include': ['name']
-      }) as Record<string, unknown>;
+      });
 
       assert.equal(inclOverExcl.name, 'Alice');
       assert.equal('age' in inclOverExcl, false);
@@ -918,7 +918,7 @@ import {
           readonly 'name': string;
         },
         { 'excludeUnset': true }
-      ) as Record<string, unknown>;
+      );
 
       assert.equal('age' in unset, false);
       assert.equal(unset.name, 'Alice');
@@ -927,7 +927,7 @@ import {
       const zero = jt.dump(PersonSchema.$id, {
         'age': 0,
         'name': 'Alice'
-      }, { 'excludeUnset': true }) as Record<string, unknown>;
+      }, { 'excludeUnset': true });
 
       assert.equal(zero.age, 0);
 
@@ -935,7 +935,7 @@ import {
       const defaults = jt.dump(PersonSchema.$id, {
         'age': 0,
         'name': 'Alice'
-      }, { 'excludeDefaults': true }) as Record<string, unknown>;
+      }, { 'excludeDefaults': true });
 
       assert.equal('age' in defaults, false);
       assert.equal(defaults.name, 'Alice');
@@ -944,7 +944,7 @@ import {
       const nonDefault = jt.dump(PersonSchema.$id, {
         'age': 25,
         'name': 'Alice'
-      }, { 'excludeDefaults': true }) as Record<string, unknown>;
+      }, { 'excludeDefaults': true });
 
       assert.equal(nonDefault.age, 25);
 
@@ -955,7 +955,7 @@ import {
           'zip': '97201'
         },
         'name': 'Alice'
-      }, { 'exclude': ['address'] }) as Record<string, unknown>;
+      }, { 'exclude': ['address'] });
 
       assert.equal('address' in exclNested, false);
       assert.equal(exclNested.name, 'Alice');

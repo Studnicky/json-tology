@@ -10,14 +10,16 @@ import {
   JsonTology, SchemaError
 } from '../../../src/index.js';
 
+// invalid-input edge: a schema loaded from an untyped source (disk, network)
+// arrives as `unknown` — no compile-time `$id` guarantee. Narrowing it at the
+// registration boundary triggers the SCHEMA_MISSING_ID runtime guard, the
+// negative path `create`'s typed signature would otherwise forbid.
+const fromDisk: unknown = { 'type': 'object' };
+
 try {
-  // invalid-input edge: schema literal intentionally omits `$id` to trigger the
-  // SCHEMA_MISSING_ID runtime guard. `create` requires `$id` at the type level;
-  // the cast simulates untyped data (e.g. a schema loaded from disk) crossing
-  // the registration boundary — no typed path exists for this negative test.
   JsonTology.create({
     'baseIRI': 'https://bookstore.example',
-    'schemas': [{ 'type': 'object' }] as unknown as readonly [{ readonly '$id': string }]
+    'schemas': [fromDisk as { readonly '$id': string }]
   });
 } catch (error) {
   if (error instanceof SchemaError) {

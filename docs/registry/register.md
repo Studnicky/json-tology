@@ -14,7 +14,7 @@ Schema management: adding, inspecting, and introspecting the schema registry.
 
 Schemas with `$ref` that reference other schemas must have those other schemas in the registry first (or supplied in the same `set` call). Replaces silently on `$id` collision, per `Map.set` semantics.
 
-Returns `JsonTology<merged TMap>` so the new schema's static type is visible to subsequent `validate` / `instantiate` / `is` calls.
+Returns `JsonTology<merged TRefs>` so the new schema's static type is visible to subsequent `validate` / `instantiate` / `is` calls.
 
 **Use this when** you need to add schemas after construction, or when schemas are loaded from files at startup. Prefer `JsonTology.create({ schemas })` for known-at-compile-time schemas since it builds the full type map in one pass.
 

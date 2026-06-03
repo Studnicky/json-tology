@@ -743,13 +743,23 @@ type InferRefType<T, TRoot, TReferences>
                   : InferSchemaType<TResolved, TBaseSchema, TReferences>
               : unknown
             : unknown
-          // Absolute/external ref without fragment
+          // Absolute/external ref without fragment.
           : T extends { readonly '$ref': infer TRef extends string }
             ? TRef extends keyof TReferences
               ? InferSchemaType<TReferences[TRef], TReferences[TRef], TReferences>
-              : HasReferencesType<TReferences> extends true
-                ? RefNotFoundInterface<TRef>
-                : unknown
+              // Self-ref to the document root's own $id resolves to the root
+              // schema — mirrors the fragment-ref path, where
+              // ResolveRefBaseSchemaType resolves `base#…` when `base` equals
+              // `root.$id`. A bare absolute-IRI $ref equal to the root's $id is
+              // resolvable with no references map (e.g. FOAF `Person.knows` →
+              // `Person`), so it must not degrade to RefNotFound.
+              : TRoot extends { readonly '$id': TRef }
+                ? InferSchemaType<TRoot, TRoot, TReferences>
+                // A bare absolute-IRI $ref that is neither in TReferences nor the
+                // root's own $id is always a compile error (RefNotFoundInterface
+                // <TRef>), never silent unknown. Thread the referenced schema via
+                // SchemaReferencesMapType to resolve it.
+                : RefNotFoundInterface<TRef>
             : unknown;
 
 /** Strip the leading `/` from a JSON Pointer path segment. */

@@ -505,16 +505,26 @@ function emitRegistryConstruction(lines: string[], opts: EmitRegistryOptionsInte
 function emitTypeAliases(
   lines: string[],
   sortedIris: string[],
-  nameMap: Map<string, string>
+  nameMap: Map<string, string>,
+  schemasConst: string
 ): void {
-  for (const iri of sortedIris) {
-    const name = nameMap.get(iri);
+  const names = extractSchemaNames(sortedIris, nameMap);
 
-    if (name === undefined || name === '') {
-      continue;
-    }
+  if (names.length === 0) {
+    return;
+  }
 
-    lines.push(`export type ${name} = InferType<typeof ${name}Schema>;`);
+  // Reference map over the registered schema tuple. Threading it into each
+  // per-class `InferType` resolves cross-class `$ref`s to the precise sibling
+  // type instead of `unknown`, so the generated `.ts` round-trips losslessly:
+  // a `$ref: B` on class A surfaces B's inferred type, not an opaque hole.
+  const refsName = `${schemasConst}Refs`;
+
+  lines.push(`type ${refsName} = SchemaReferencesMapType<typeof ${schemasConst}>;`);
+  lines.push('');
+
+  for (const name of names) {
+    lines.push(`export type ${name} = InferType<typeof ${name}Schema, ${refsName}>;`);
   }
 
   lines.push('');
@@ -597,7 +607,7 @@ function buildSingleFileBody(
   const schemaNames = extractSchemaNames(opts.sortedIris, opts.nameMap);
 
   lines.push("import { JsonTology } from 'json-tology';");
-  lines.push(`import type { InferType } from '${opts.inferTypeImportPath}';`);
+  lines.push(`import type { InferType, SchemaReferencesMapType } from '${opts.inferTypeImportPath}';`);
   lines.push('');
   emitSchemaConstants(lines, {
     'nameMap': opts.nameMap,
@@ -610,7 +620,7 @@ function buildSingleFileBody(
     schemaNames,
     schemasConst
   });
-  emitTypeAliases(lines, opts.sortedIris, opts.nameMap);
+  emitTypeAliases(lines, opts.sortedIris, opts.nameMap, schemasConst);
   emitPostProcessing(lines, result, opts.registryConstName);
   lines.push('// ============================================================');
   lines.push('// END AUTO-GENERATED');
@@ -696,6 +706,7 @@ function buildEntityFileSource(opts: BuildEntityFileOptionsInterface): string {
   const {
     iri,
     name,
+    refsName,
     schema,
     sourceLabel,
     ts
@@ -714,13 +725,17 @@ function buildEntityFileSource(opts: BuildEntityFileOptionsInterface): string {
   entityLines.push('// ============================================================');
   entityLines.push('');
   entityLines.push("import type { InferType } from 'json-tology/types';");
+  // Type-only import of the schema-set reference map from the index (erased at
+  // runtime, so no import cycle): threading it resolves cross-class `$ref`s to the
+  // precise sibling type instead of `unknown`.
+  entityLines.push(`import type { ${refsName} } from '../index.js';`);
   entityLines.push('');
 
   const literal = serializeSchemaLiteral(schema, 0);
 
   entityLines.push(`export const ${name}Schema = ${literal} as const;`);
   entityLines.push('');
-  entityLines.push(`export type ${name} = InferType<typeof ${name}Schema>;`);
+  entityLines.push(`export type ${name} = InferType<typeof ${name}Schema, ${refsName}>;`);
   entityLines.push('');
 
   return entityLines.join('\n');
@@ -761,6 +776,7 @@ function buildEntityFiles(ctx: RegistryDirContextInterface): RegistryFileEntry[]
       'source': buildEntityFileSource({
         iri,
         name,
+        'refsName': ctx.refsName,
         schema,
         'sourceLabel': ctx.sourceLabel,
         'ts': ctx.ts
@@ -787,6 +803,7 @@ function buildIndexSource(
   });
 
   indexLines.push("import { JsonTology } from 'json-tology';");
+  indexLines.push("import type { SchemaReferencesMapType } from 'json-tology/types';");
   indexLines.push('');
 
   const schemaNames = extractSchemaNames(ctx.sortedIris, ctx.nameMap);
@@ -798,6 +815,11 @@ function buildIndexSource(
     schemaNames,
     'schemasConst': opts.schemasConst
   });
+  // Exported reference map over the schema tuple. Each `entities/<Name>.ts`
+  // imports this (type-only) to thread it into its `InferType`, so cross-class
+  // `$ref`s resolve to precise sibling types across the directory.
+  indexLines.push(`export type ${ctx.refsName} = SchemaReferencesMapType<typeof ${opts.schemasConst}>;`);
+  indexLines.push('');
   emitPostProcessing(indexLines, result, opts.registryConstName);
   emitEntityReExports(indexLines, schemaNames);
 
@@ -884,6 +906,7 @@ export function generateRegistryFiles(
   const schemasConst = `${registryConstName}Schemas`;
   const ctx: RegistryDirContextInterface = {
     nameMap,
+    'refsName': `${schemasConst}Refs`,
     schemas,
     'sortedIris': sortedIris,
     sourceLabel,

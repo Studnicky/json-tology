@@ -20,10 +20,17 @@ import type { LoggerInterface } from '../../../src/interfaces/index.js';
 // InferType is generic — apply it to a sample schema to verify the import.
 type SampleInferred = InferType<{ readonly 'type': 'string' }>;
 
-void 0 as unknown as [
+// Reference every imported type in a type position to confirm each sub-path
+// export resolves. The imports compiling at all is the real proof; consuming
+// them as an optional parameter type needs no runtime value and no cast.
+const _verifySubpathImports = (_proof?: [
   JsonTology, Compose, Transform, Value, V, Hash, Changeset,
   SchemaRegistry, FormatRegistry, SampleInferred, LoggerInterface
-];
+]): void => {
+  return;
+};
+
+void _verifySubpathImports;
 
 // All imports are compile-time only — log the sub-path names as documentation.
 console.log('sub-paths available:', [

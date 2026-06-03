@@ -53,7 +53,7 @@ const DddMoneySchema = Compose.equivalent(
 
 jt.set(DddMoneySchema);
 
-Transform.create<typeof DddMoneySchema, Money>(DddMoneySchema, {
+const DddMoneyTransform = Transform.create<typeof DddMoneySchema, Money>(DddMoneySchema, {
   'decode': (plain) => {
     return Money.fromPlain(plain as {
       'amount': number;
@@ -69,17 +69,17 @@ Transform.create<typeof DddMoneySchema, Money>(DddMoneySchema, {
 });
 
 const wire = aboxFixtures.rareBook.price;
-const decoded = jt.instantiate(DddMoneySchema, wire);
+const decoded = jt.instantiate(DddMoneyTransform, wire);
 
 console.assert(decoded instanceof Money);
-console.assert((decoded as Money).amount === wire.amount);
+console.assert(decoded.amount === wire.amount);
 
-const doubled = (decoded as Money).add(decoded as Money);
+const doubled = decoded.add(decoded);
 
 console.assert(doubled.amount === wire.amount * 2);
 // true — fromPlain ran
 console.log('instanceof Money:', decoded instanceof Money);
 // rare book price amount
-console.log('amount:', (decoded as Money).amount);
+console.log('amount:', decoded.amount);
 // amount * 2 via add()
 console.log('doubled amount:', doubled.amount);

@@ -10,9 +10,7 @@
  * not included for the round-trip case (would be unfair).
  */
 
-import {
-  type Static, Type
-} from '@sinclair/typebox';
+import { Type } from '@sinclair/typebox';
 import { Value } from '@sinclair/typebox/value';
 import {
   Type as IotType,
@@ -56,8 +54,6 @@ const DateSchemaTypebox = Type.Transform(Type.String({ 'format': 'date-time' }))
   .Encode((output: Date) => {
     return output.toISOString();
   });
-
-type DateOut = Static<typeof DateSchemaTypebox>;
 
 const DateSchemaIoTs = new IotType<Date, string, unknown>(
   'DateFromIsoString',
@@ -140,10 +136,9 @@ export function runTransformBench(): BenchResult[] {
   }));
 
   results.push(bench('encode date', 'typebox', () => {
-    // interop: TypeBox's Transform Encode expects a statically-decoded DateOut
-    // type, but decodedValue is a plain Date without the Transform brand.
-    // TypeBox has no typed path from a plain Date to its encoded form here.
-    Value.Encode(DateSchemaTypebox, decodedValue as unknown as DateOut);
+    // interop: TypeBox's Transform Encode expects the statically-decoded shape.
+    // decodedValue is a `Date`, which matches it, so it is accepted directly.
+    Value.Encode(DateSchemaTypebox, decodedValue);
   }));
 
   results.push(bench('encode date', 'io-ts', () => {

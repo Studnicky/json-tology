@@ -24,6 +24,7 @@ import { fileURLToPath } from 'node:url';
 import { JsonTology } from '../../src/index.js';
 import { generateTypeScript } from '../../src/modules/codegen/OwlCodegen.js';
 import { bookstoreEntities } from '../../examples/docs/bookstore/index.js';
+import type { OwlImportResult } from '../../src/interfaces/OwlImport.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -43,6 +44,85 @@ function cleanTmpDir(): void {
       'force': true,
       'recursive': true
     });
+  }
+}
+
+/** Wrap an array of schemas as a minimal OwlImportResult for codegen. */
+function resultFromSchemas(schemas: ReadonlyArray<Record<string, unknown> & { readonly '$id': string }>): OwlImportResult {
+  return {
+    'characteristics': [],
+    'individuals': [],
+    'invariants': [],
+    'sameAs': [],
+    'schemas': schemas,
+    'unsupported': []
+  };
+}
+
+/**
+ * Write generated source to a tmp file and compile it with `tsc --noEmit`
+ * against the project's `src/` (via tsconfig `paths`). Fails the test on any
+ * type error; silently skips if tsc/paths cannot resolve in the environment.
+ */
+function compileGeneratedSource(fileName: string, src: string): void {
+  ensureTmpDir();
+  const outPath = join(TMP_DIR, fileName);
+
+  writeFileSync(outPath, src, 'utf8');
+
+  const tsconfig = {
+    'compilerOptions': {
+      'declaration': false,
+      'esModuleInterop': true,
+      'lib': ['ES2022'],
+      'module': 'NodeNext',
+      'moduleResolution': 'NodeNext',
+      'noEmit': true,
+      'noImplicitAny': true,
+      'paths': {
+        'json-tology': ['./src/index.js'],
+        'json-tology/types': ['./src/types/index.js']
+      },
+      'rootDir': '.',
+      'strict': true,
+      'target': 'ES2022'
+    },
+    'include': [outPath]
+  };
+  const tsconfigPath = join(TMP_DIR, `${fileName}.tsconfig.json`);
+
+  writeFileSync(tsconfigPath, JSON.stringify(tsconfig, null, 2), 'utf8');
+
+  const projectRoot = resolve(fileURLToPath(new URL('../..', import.meta.url)));
+
+  try {
+    execFileSync(
+      process.execPath,
+      [
+        '--import',
+        'tsx',
+        'node_modules/typescript/bin/tsc',
+        '--project',
+        tsconfigPath,
+        '--noEmit'
+      ],
+      {
+        'cwd': projectRoot,
+        'encoding': 'utf8',
+        'stdio': 'pipe'
+      }
+    );
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    const output = (error as { 'stderr'?: string;
+      'stdout'?: string; }).stdout ?? '';
+
+    // Skip if tsc is not available or paths don't resolve — report but don't fail.
+    if (output.includes('Cannot find module') || output.includes('Could not resolve')) {
+      return;
+    }
+
+    assert.fail(`Generated source has type errors:\n${msg}\n${output}`);
   }
 }
 
@@ -112,9 +192,6 @@ void describe('OwlCodegen round-trip integration', () => {
   });
 
   void it('generated source compiles with tsc --noEmit (zero type errors)', () => {
-    ensureTmpDir();
-    const outPath = join(TMP_DIR, 'bookstore-generated-compile.ts');
-
     const tbox = bookstoreEntities.toTbox().jsonLd();
     const result = JsonTology.fromTbox(tbox);
     const src = generateTypeScript(result, {
@@ -122,65 +199,54 @@ void describe('OwlCodegen round-trip integration', () => {
       'sourceLabel': 'bookstore-tbox-round-trip-test'
     });
 
-    writeFileSync(outPath, src, 'utf8');
+    try {
+      compileGeneratedSource('bookstore-generated-compile.ts', src);
+    } finally {
+      cleanTmpDir();
+    }
+  });
 
-    // Build a minimal tsconfig for compiling the generated file in isolation.
-    // The generated file imports from 'json-tology' and 'json-tology/types',
-    // which resolve to dist/ when tsc follows the package.json exports.
-    const tsconfig = {
-      'compilerOptions': {
-        'declaration': false,
-        'esModuleInterop': true,
-        'lib': ['ES2022'],
-        'module': 'NodeNext',
-        'moduleResolution': 'NodeNext',
-        'noEmit': true,
-        'noImplicitAny': true,
-        'paths': {
-          'json-tology': ['./src/index.js'],
-          'json-tology/types': ['./src/types/index.js']
-        },
-        'rootDir': '.',
-        'strict': true,
-        'target': 'ES2022'
-      },
-      'include': [outPath]
+  void it('threads the reference map so cross-class $refs resolve to sibling types (not unknown)', () => {
+    // Class A references class B by absolute IRI. The generated per-class type
+    // must thread the schema-set reference map so `A['link']` resolves to B's
+    // inferred shape. If it degraded to `unknown` or `RefNotFoundInterface`, the
+    // appended compile-time proof would fail to compile and fail this test —
+    // guarding the ontology → TypeScript → (resolved types) round-trip.
+    const schemaB = {
+      '$id': 'urn:rt:B',
+      'properties': { 'n': { 'type': 'number' } },
+      'required': ['n'],
+      'type': 'object'
+    };
+    const schemaA = {
+      '$id': 'urn:rt:A',
+      'properties': { 'link': { '$ref': 'urn:rt:B' } },
+      'required': ['link'],
+      'type': 'object'
     };
 
-    const tsconfigPath = join(TMP_DIR, 'tsconfig.gen.json');
+    let src = generateTypeScript(resultFromSchemas([
+      schemaB,
+      schemaA
+    ]), { 'registryConstName': 'rt' });
 
-    writeFileSync(tsconfigPath, JSON.stringify(tsconfig, null, 2), 'utf8');
+    // Sanity: the emission threads the reference map rather than using a bare InferType.
+    assert.ok(
+      src.includes('SchemaReferencesMapType<typeof rtSchemas>'),
+      'generated source must build a reference map over the schema tuple'
+    );
+    assert.ok(
+      src.includes('export type A = InferType<typeof ASchema, rtSchemasRefs>;'),
+      'generated per-class type must be threaded with the reference map'
+    );
 
-    const projectRoot = resolve(fileURLToPath(new URL('../..', import.meta.url)));
+    // Compile-time proof: A.link resolves to B (object with `n: number`), not
+    // `unknown`/`RefNotFound`. `false = true` would not compile if resolution broke.
+    src += '\ntype _AlinkResolvesToB = NonNullable<A[\'link\']> extends { readonly n: number } ? true : false;\n';
+    src += 'const _proof: _AlinkResolvesToB = true;\nexport { _proof };\n';
 
     try {
-      execFileSync(
-        process.execPath,
-        [
-          '--import',
-          'tsx',
-          'node_modules/typescript/bin/tsc',
-          '--project',
-          tsconfigPath,
-          '--noEmit'
-        ],
-        {
-          'cwd': projectRoot,
-          'encoding': 'utf8',
-          'stdio': 'pipe'
-        }
-      );
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : String(error);
-      const output = (error as { 'stderr'?: string;
-        'stdout'?: string; }).stdout ?? '';
-
-      // Skip if tsc is not available or paths don't resolve — report but don't fail
-      if (output.includes('Cannot find module') || output.includes('Could not resolve')) {
-        return;
-      }
-
-      assert.fail(`Generated source has type errors:\n${msg}\n${output}`);
+      compileGeneratedSource('refs-resolution.ts', src);
     } finally {
       cleanTmpDir();
     }

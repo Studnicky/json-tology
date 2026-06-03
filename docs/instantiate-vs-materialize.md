@@ -26,6 +26,7 @@ It does four things in order:
 
 The returned value is the decoded, branded runtime type — `Customer`, not `{ id: string, email: string, … }`.
 
+<!-- inline-ts-ok: HTTP-handler usage sketch; `rawBody` is a handler parameter and the imports are doc-relative, not a standalone runnable program. -->
 ```ts
 import { InstantiationError } from 'json-tology';
 import { bookstoreEntities } from './bookstore/index.js';
@@ -51,6 +52,7 @@ It does three things:
 
 **`materialize` does not run Transform decoders.** The data is already in its final runtime shape — no decode step is needed or expected.
 
+<!-- inline-ts-ok: construction-helper usage sketch with doc-relative imports, not a standalone runnable program. -->
 ```ts
 import { bookstoreEntities } from './bookstore/index.js';
 import { BookSchema } from './bookstore/entities/Book.js';
@@ -70,6 +72,7 @@ const fixture = bookstoreEntities.materialize(BookSchema, {
 
 A `Transform` registered on a schema pairs a decoder and an encoder:
 
+<!-- inline-ts-ok: Transform-registration sketch with doc-relative imports, not a standalone runnable program. -->
 ```ts
 import { Transform } from 'json-tology';
 import { CustomerIdSchema } from './bookstore/entities/CustomerId.js';
@@ -89,6 +92,7 @@ When `instantiate` runs, every `$ref`-resolved property that has a registered `T
 
 ## Common misuse pattern
 
+<!-- inline-ts-ok: misuse-vs-correct contrast; `wireBody` is illustrative, not a runnable scenario. -->
 ```ts
 // WRONG — materialize skips Transform decoders
 // If CustomerId has a registered decoder, it never runs here
@@ -104,6 +108,7 @@ The instinct to reach for `materialize` on untrusted input is the most common so
 
 For forms or partial construction where some required fields are legitimately absent:
 
+<!-- inline-ts-ok: enablePartial usage sketch; `bookstoreEntities` context is doc-relative, not a standalone runnable program. -->
 ```ts
 const draft = bookstoreEntities.materialize(BookSchema, {
   isbn: '9781234567890',

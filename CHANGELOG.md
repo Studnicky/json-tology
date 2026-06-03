@@ -7,6 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-06-03
+
+A type-architecture release: every typed public method yields a precise type or a
+compile error — never `unknown`. Under the 0.x policy a breaking type-surface
+change is a minor bump.
+
+### Changed
+
+- **`JsonTology<TMap, TRefs>` collapses to `JsonTology<TRefs>` (breaking, minor).**
+  The single generic carries the registered schemas' raw shapes; output types are
+  computed lazily per call as `ParseOutputType<TRefs[K], TRefs>` — identical
+  precision to the former eager `TMap`, but O(1) to construct, so `declaration:
+  true` (`.d.ts` emit) no longer trips TS2589 on deep registries. Consumers who
+  wrote `JsonTology<SomeMap>` explicitly drop to the single type parameter.
+- **An unresolved cross-schema `$ref` is a compile error, not a silent `unknown`.**
+  A standalone `InferType<typeof Schema>` whose `$ref` targets a sibling that is
+  not threaded now yields `RefNotFoundInterface<'urn:…'>` — a compile-error brand.
+  Thread the reference map (`InferType<typeof Schema, Refs>`) or register the
+  target to resolve it. A `$ref` to the schema's own `$id` resolves without a map.
+- **Precise public method surface — no `unknown`/`boolean`-degraded overloads.**
+  `is` / `materialize` / `validate` / `dump` / `dumpJson` / `fromQuads` /
+  `subschemaAt` carry precise two-overload surfaces (registered `$id` or schema
+  object), both threading `TRefs`; the loose `(schema: Record<string, unknown> &
+  {$id}) → unknown | boolean` overloads are removed. `materialize` gains a
+  string-`$id` form mirroring `instantiate`.
+- **Wire-direction methods return the brand-free InputType.** `dump` and `encode`
+  return `LooseInputType<…>` (the wire shape), never `unknown`. `Transform.create`'s
+  `decode` input and `encode` output both speak the wire InputType, so transforms
+  attached to composed / `$ref`-bearing schemas type cleanly.
+- **Nominal-aware duplicate detection.** Two registered schemas that are explicit
+  named subclasses (`Compose.subClassOf` / `allOf:[{$ref: Parent}]` carrying their
+  own `$id`) no longer flag each other as `SCHEMA_DUPLICATE_SHAPE`; transform
+  identity is folded into the structural hash so a transform-bearing primitive does
+  not collide with a plain one of the same base shape.
+- **CURIE `$id` canonicalization.** A schema registered under a CURIE `$id` is
+  normalized to its absolute IRI across the registry, materialization, `sameAs`,
+  and `Compose`, so CURIE and full-IRI references resolve to the same entity.
+- **`Transform.getDecoder` takes the precise `JsonSchemaDocumentObjectType`,**
+  accepting branded `Compose.*` schemas without an `as unknown as Record<…>` cast.
+
+### Added
+
+- **OWL → TypeScript codegen resolves cross-class types.** `generateFromTbox` /
+  `generateRegistryFiles` thread a `SchemaReferencesMapType` over the generated
+  schema set into every per-class `InferType`, so a generated `Book.author → Person`
+  reference resolves to the precise sibling type instead of `unknown` — the
+  ontology → TypeScript direction round-trips losslessly (single-file and
+  registry-directory modes).
+- **Declaration-emit regression test.** A deep, wide registry fixture emits its
+  `.d.ts` without TS2589, run via `npm run test:decl` (wired into
+  `type-check:all`), plus parity tests that string-`$id` `instantiate` /
+  `materialize` still return the precise branded type.
+- **Documentation.** Package-exports map, `instantiate` vs `materialize` decision
+  table, and a duplicate-detection guide. The bookstore example exports
+  `BookstoreRefs` for threading cross-schema inference.
+
 ## [0.18.0] - 2026-05-31
 
 ### Fixed

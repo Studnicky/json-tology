@@ -41,7 +41,7 @@ const NewOrderSchema = Compose.equivalent(
 
 jt.set(NewOrderSchema);
 
-Transform.create<typeof NewOrderSchema, OrderViaNew>(NewOrderSchema, {
+const NewOrderTransform = Transform.create<typeof NewOrderSchema, OrderViaNew>(NewOrderSchema, {
   'decode': (plain) => {
     return Object.assign(new OrderViaNew(), plain);
   },
@@ -50,11 +50,11 @@ Transform.create<typeof NewOrderSchema, OrderViaNew>(NewOrderSchema, {
   }
 });
 
-const hydrated = jt.instantiate(NewOrderSchema, aboxFixtures.order);
+const hydrated = jt.instantiate(NewOrderTransform, aboxFixtures.order);
 
 console.assert(hydrated instanceof OrderViaNew);
-console.assert((hydrated as OrderViaNew).summary().startsWith('order '));
+console.assert(hydrated.summary().startsWith('order '));
 // true
 console.log('instanceof:', hydrated instanceof OrderViaNew);
 // 'order <orderId>'
-console.log('summary():', (hydrated as OrderViaNew).summary());
+console.log('summary():', hydrated.summary());

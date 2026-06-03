@@ -41,8 +41,9 @@ import type {
 import type {
   ParseOutputType, TransformedType
 } from './types/Transform.js';
+import type { ComputedExtensionBrandInterface } from './interfaces/ComputedExtension.js';
 import type {
-  SchemaEntryType, SchemaMapFromTupleType, SchemaReferencesMapType, UniqueSchemaIdsType
+  SchemaReferencesMapType, UniqueSchemaIdsType
 } from './types/Registry.js';
 import type { PredicateForType } from './types/PredicateFor.js';
 import type { PredicateResolverFnType } from './types/PredicateResolverFn.js';
@@ -242,15 +243,18 @@ function normalizeToQuadsOptions(options: ToQuadsOptionsType | undefined): Norma
  * const user = jt.instantiate(UserSchema.$id, data);
  * ```
  *
- * @typeParam TMap — accumulated schema type map. Built automatically via
- * `create()` or chained `set()` calls.
+ * @typeParam TRefs — raw schema map `{ [$id]: schema }` accumulated via
+ * `create()` or chained `set()` calls. Output types are computed lazily
+ * per call as `ParseOutputType<TRefs[K], TRefs>` — identical precision to
+ * the former eager `TMap`, but O(1) to construct so `declaration: true`
+ * (`.d.ts` emit) does not hit TS2589 on deep registries.
  *
  * @category Core
  * @since 0.1.0
  * @see {@link SchemaRegistryInterface}
  * @group Core
  */
-export class JsonTology<TMap = Record<never, never>, TRefs = Record<never, never>> {
+export class JsonTology<TRefs = Record<never, never>> {
   /**
    * Narrows a JsonSchemaDocumentType to a named-schema object.
    * Throws SchemaError if the value is a boolean schema or lacks `$id`.
@@ -339,7 +343,7 @@ export class JsonTology<TMap = Record<never, never>, TRefs = Record<never, never
    *
    * @param options - `baseIRI`, optional `schemas`, optional `prefetched`, prefixes, dialect.
    */
-  public static create<const TSchemas extends ReadonlyArray<{ readonly '$id': string; }>>(options: JsonTologyOptionsInterface<TSchemas> & { 'schemas'?: UniqueSchemaIdsType<TSchemas> }): JsonTology<SchemaMapFromTupleType<TSchemas>, SchemaReferencesMapType<TSchemas>> {
+  public static create<const TSchemas extends ReadonlyArray<{ readonly '$id': string; }>>(options: JsonTologyOptionsInterface<TSchemas> & { 'schemas'?: UniqueSchemaIdsType<TSchemas> }): JsonTology<SchemaReferencesMapType<TSchemas>> {
     const jt = new JsonTology(options);
 
     if (options.schemas) {
@@ -359,13 +363,13 @@ export class JsonTology<TMap = Record<never, never>, TRefs = Record<never, never
       }
     }
 
-    // The instance carries TWO type maps: TMap (the registered schemas' inferred
-    // OUTPUT types, for instantiate/set/dump) and TRefs (the registered schemas'
-    // RAW shapes keyed by $id, for $ref resolution inside addTransform's decode
-    // input). SchemaMapFromTupleType already pre-inferred TMap; SchemaReferences-
-    // MapType keeps the raw schemas so InferSchemaType can resolve a wire schema's
-    // cross-$ref leaves to readable types with no caller-supplied references.
-    return jt as unknown as JsonTology<SchemaMapFromTupleType<TSchemas>, SchemaReferencesMapType<TSchemas>>;
+    // TRefs is the registered schemas' RAW shapes keyed by $id. Output types are
+    // computed lazily per call as ParseOutputType<TRefs[K], TRefs> — same precise
+    // branded type as the former eager SchemaMapFromTupleType, but O(1) to
+    // construct so declaration emit (tsc -b / declaration: true) does not trip
+    // TS2589 on deep registries. SchemaReferencesMapType<TSchemas> is a single
+    // mapped type over the tuple's element union (depth O(1) in schema count).
+    return jt as unknown as JsonTology<SchemaReferencesMapType<TSchemas>>;
   }
 
   /**
@@ -765,7 +769,7 @@ export class JsonTology<TMap = Record<never, never>, TRefs = Record<never, never
    * Value operations — schema-aware (instance: cast, clean, convert, create)
    * and pure (static: clone, diff, hash, applyOp).
    */
-  public readonly value: ValueInterface<TMap>;
+  public readonly value: ValueInterface<TRefs>;
 
   /**
    * Constructs a new {@link JsonTology} instance (use {@link JsonTology.create} for the public API).
@@ -808,8 +812,8 @@ export class JsonTology<TMap = Record<never, never>, TRefs = Record<never, never
 
     JsonTology.wireComputedFields(this.registry, this.curie, options.computeds);
 
-    // Cast needed: Value is unparameterized at runtime; aligns with compile-time generic TMap
-    this.value = new Value(this.registry) as unknown as ValueInterface<TMap>;
+    // Cast needed: Value is unparameterized at runtime; aligns with compile-time generic TRefs
+    this.value = new Value(this.registry) as unknown as ValueInterface<TRefs>;
     this.materializer = new Materializer(this.registry, options.materializer);
 
     this.graphSchemaSerializer = new GraphSchemaSerializer();
@@ -846,7 +850,7 @@ export class JsonTology<TMap = Record<never, never>, TRefs = Record<never, never
       tboxQuads,
       identities,
       (classId: string, subjectQuads: QuadInterface[]): unknown[] => {
-        return this.fromQuads(classId as keyof TMap & string, subjectQuads);
+        return this.fromQuads(classId as keyof TRefs & string, subjectQuads);
       },
       this.predicateResolver,
       (classIri: string): unknown => {
@@ -863,30 +867,34 @@ export class JsonTology<TMap = Record<never, never>, TRefs = Record<never, never
    * @param fn - Function receiving the instantiated/materialized object and returning the computed value.
    */
   public addComputed<
-    K extends keyof TMap & string,
+    K extends keyof TRefs & string,
     const TName extends string,
     TValue
   >(
     schemaId: K,
     name: TName,
-    fn: (data: TMap[K]) => TValue
-  ): JsonTology<Readonly<Record<K, Readonly<Record<TName, TValue>> & TMap[K]>> & TMap, TRefs>;
+    fn: (data: ParseOutputType<TRefs[K], TRefs>) => TValue
+  ): JsonTology<Omit<TRefs, K> & Record<K, ComputedExtensionBrandInterface<Readonly<Record<TName, TValue>> & (TRefs[K] extends ComputedExtensionBrandInterface<infer Prev> ? Prev : unknown)> & TRefs[K]>>;
+  // Implementation signature — must be wider than the typed overload. Returns the
+  // default `JsonTology` (TRefs = Record<never, never>), the widest instance shape,
+  // so the overload's augmented-TRefs return is assignable to it regardless of how
+  // TRefs variance is inferred elsewhere. Mirrors `set()`'s impl-return pattern.
   public addComputed(
-    schemaId: keyof TMap & string,
+    schemaId: string,
     name: string,
     fn: (data: never) => unknown
-  ): JsonTology<TMap, TRefs> {
-    // interop: the public overload types `fn` over the schema's inferred type, but
-    // the runtime computed store is type-erased over `Record<string, unknown>`
+  ): JsonTology {
+    // interop: the public overload types `fn` over the schema's inferred output type,
+    // but the runtime computed store is type-erased over `Record<string, unknown>`
     // (it invokes `fn` with the materialized object). Bridging the typed public
     // surface to the erased store is the one boundary that needs an assertion.
     this.registry.computedStore.add(this.curie.expand(schemaId), name, fn as ComputedFnType);
 
-    // The typed overload augments `TMap[K]` with the computed field so a
-    // subsequent `instantiate(schemaId, …)` returns it. The runtime instance is
-    // unchanged (computed values are produced at instantiate time), so the impl
-    // returns `this` typed as the base map — same pattern as `set()`.
-    return this;
+    // The typed overload augments TRefs[K] with ComputedExtensionBrandInterface so
+    // ParseOutputType<TRefs[K], TRefs> intersects the new field on the output type.
+    // The runtime instance is unchanged (computed values are produced at instantiate
+    // time), so the impl returns `this` cast to the erased impl return type.
+    return this as unknown as JsonTology;
   }
 
   /**
@@ -896,7 +904,7 @@ export class JsonTology<TMap = Record<never, never>, TRefs = Record<never, never
    *   of the typed schema map; unregistered IRIs are rejected at compile time.
    * @param invariant - The invariant to add. Runs after structural validation succeeds.
    */
-  public addInvariant<T extends object>(schemaId: keyof TMap & string, invariant: InvariantInterface<T>): void {
+  public addInvariant<T extends object>(schemaId: keyof TRefs & string, invariant: InvariantInterface<T>): void {
     this.registry.addInvariant(schemaId, invariant as InvariantInterface);
   }
   /**
@@ -907,7 +915,7 @@ export class JsonTology<TMap = Record<never, never>, TRefs = Record<never, never
    * Customer entity rather than as `unknown`.
    *
    * @param schema - A registered schema with `$id`. Any `$ref` in the
-   *   schema or its sub-properties is resolved against `TMap`.
+   *   schema or its sub-properties is resolved against `TRefs`.
    * @param fns - `decode` runs after validation succeeds; `encode`
    *   round-trips the decoded value back to the wire shape.
    */
@@ -1013,14 +1021,14 @@ export class JsonTology<TMap = Record<never, never>, TRefs = Record<never, never
    * @param options - Filtering and mode options.
    * @returns Wire-form representation of the value.
    */
-  public dump<K extends keyof TMap & string>(schemaId: K, value: TMap[K], options?: DumpOptionsInterface): unknown;
+  public dump<K extends keyof TRefs & string>(schemaId: K, value: ParseOutputType<TRefs[K], TRefs>, options?: DumpOptionsInterface): LooseInputType<ParseOutputType<TRefs[K], TRefs>>;
   public dump<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }>(
     schema: TSchema,
-    value: InferSchemaType<TSchema>,
+    value: ParseOutputType<TSchema, TRefs>,
     options?: DumpOptionsInterface
-  ): unknown;
+  ): LooseInputType<ParseOutputType<TSchema, TRefs>>;
   public dump(
-    schema: (keyof TMap & string) | (Record<string, unknown> & { '$id': string; }),
+    schema: (keyof TRefs & string) | (Record<string, unknown> & { '$id': string; }),
     value: unknown,
     options?: DumpOptionsInterface
   ): unknown {
@@ -1046,14 +1054,14 @@ export class JsonTology<TMap = Record<never, never>, TRefs = Record<never, never
    * @param options - Filtering and mode options (mode is forced to `'json'`).
    * @returns JSON string.
    */
-  public dumpJson<K extends keyof TMap & string>(schemaId: K, value: TMap[K], options?: Omit<DumpOptionsInterface, 'mode'>): string;
+  public dumpJson<K extends keyof TRefs & string>(schemaId: K, value: ParseOutputType<TRefs[K], TRefs>, options?: Omit<DumpOptionsInterface, 'mode'>): string;
   public dumpJson<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }>(
     schema: TSchema,
-    value: InferSchemaType<TSchema>,
+    value: ParseOutputType<TSchema, TRefs>,
     options?: Omit<DumpOptionsInterface, 'mode'>
   ): string;
   public dumpJson(
-    schema: (keyof TMap & string) | (Record<string, unknown> & { '$id': string; }),
+    schema: (keyof TRefs & string) | (Record<string, unknown> & { '$id': string; }),
     value: unknown,
     options?: Omit<DumpOptionsInterface, 'mode'>
   ): string {
@@ -1080,15 +1088,15 @@ export class JsonTology<TMap = Record<never, never>, TRefs = Record<never, never
   public encode<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }, TOut extends unknown>(
     schema: TransformedType<TSchema, TOut>,
     value: TOut
-  ): InferSchemaType<TSchema> {
+  ): LooseInputType<InferSchemaType<TSchema, TSchema, TRefs>> {
     const decoder = Transform.getDecoder(schema);
 
     if (decoder === undefined) {
-      return value as InferSchemaType<TSchema>;
+      return value as LooseInputType<InferSchemaType<TSchema, TSchema, TRefs>>;
     }
 
     try {
-      return decoder.encode(value) as InferSchemaType<TSchema>;
+      return decoder.encode(value) as LooseInputType<InferSchemaType<TSchema, TSchema, TRefs>>;
     } catch (error) {
       if (error instanceof TransformError) {
         throw error;
@@ -1116,7 +1124,7 @@ export class JsonTology<TMap = Record<never, never>, TRefs = Record<never, never
    * schemas: [...] })` or extended through `set()`. Consumers can
    * destructure the IRI as a literal without `as const` casts.
    */
-  public findDuplicates<TKey extends string = keyof TMap & string>(): ReadonlyArray<DuplicateReportEntryType<TKey>> {
+  public findDuplicates<TKey extends string = keyof TRefs & string>(): ReadonlyArray<DuplicateReportEntryType<TKey>> {
     return this.registry.findDuplicates() as ReadonlyArray<DuplicateReportEntryType<TKey>>;
   }
   /**
@@ -1145,18 +1153,18 @@ export class JsonTology<TMap = Record<never, never>, TRefs = Record<never, never
    * @throws {SchemaError} code SCHEMA_NOT_REGISTERED when the schema is not registered.
    * @throws {InstantiationError} code INSTANTIATION_FAILED when a lifted object fails validation.
    */
-  public fromQuads<K extends keyof TMap & string>(
+  public fromQuads<K extends keyof TRefs & string>(
     schemaId: K,
     quads: QuadInterface[],
     options?: { 'deskolemize'?: boolean }
-  ): Array<TMap[K]>;
-  public fromQuads(
-    schemaRef: SchemaRefType<TMap>,
+  ): Array<ParseOutputType<TRefs[K], TRefs>>;
+  public fromQuads<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }>(
+    schema: TSchema,
     quads: QuadInterface[],
     options?: { 'deskolemize'?: boolean }
-  ): unknown[];
+  ): Array<ParseOutputType<TSchema, TRefs>>;
   public fromQuads(
-    schemaRef: SchemaRefType<TMap>,
+    schemaRef: SchemaRefType<TRefs>,
     quads: QuadInterface[],
     options?: { 'deskolemize'?: boolean }
   ): unknown[] {
@@ -1253,14 +1261,14 @@ export class JsonTology<TMap = Record<never, never>, TRefs = Record<never, never
    * @throws {SchemaError} code SCHEMA_NOT_REGISTERED when no schema is registered for the given ID.
    * @throws {SchemaError} code SCHEMA_INVALID_INPUT when schema is null or undefined.
    */
-  public instantiate<K extends keyof TMap & string>(schemaId: K, data: unknown, callOptions?: { 'enableDefaults'?: boolean }): TMap[K];
+  public instantiate<K extends keyof TRefs & string>(schemaId: K, data: unknown, callOptions?: { 'enableDefaults'?: boolean }): ParseOutputType<TRefs[K], TRefs>;
   // ---------------------------------------------------------------------------
   // Registration
   // ---------------------------------------------------------------------------
   public instantiate<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }>(
     schema: TSchema, data: unknown, callOptions?: { 'enableDefaults'?: boolean }
-  ): ParseOutputType<TSchema>;
-  public instantiate(schema: SchemaRefType<TMap>, data: unknown, callOptions?: { 'enableDefaults'?: boolean }): unknown {
+  ): ParseOutputType<TSchema, TRefs>;
+  public instantiate(schema: SchemaRefType<TRefs>, data: unknown, callOptions?: { 'enableDefaults'?: boolean }): unknown {
     if ((schema as unknown) === null || (schema as unknown) === undefined) {
       throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
     }
@@ -1282,9 +1290,9 @@ export class JsonTology<TMap = Record<never, never>, TRefs = Record<never, never
    * @throws {SchemaError} code SCHEMA_NOT_REGISTERED when no schema is registered for the given ID.
    * @throws {SchemaError} code SCHEMA_INVALID_INPUT when schema is null or undefined.
    */
-  public is<K extends keyof TMap & string>(schemaId: K, data: unknown): data is TMap[K];
-  public is(schema: Record<string, unknown> & { '$id': string; }, data: unknown): boolean;
-  public is(schema: SchemaRefType<TMap>, data: unknown): boolean {
+  public is<K extends keyof TRefs & string>(schemaId: K, data: unknown): data is ParseOutputType<TRefs[K], TRefs>;
+  public is<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }>(schema: TSchema, data: unknown): data is ParseOutputType<TSchema, TRefs>;
+  public is(schema: SchemaRefType<TRefs>, data: unknown): boolean {
     if ((schema as unknown) === null || (schema as unknown) === undefined) {
       throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
     }
@@ -1312,24 +1320,48 @@ export class JsonTology<TMap = Record<never, never>, TRefs = Record<never, never
    * @param options - Options; `enablePartial: true` disables validation throw on missing required fields.
    * @returns A fully materialized instance with all defaults populated.
    */
+  public materialize<K extends keyof TRefs & string>(
+    schemaId: K,
+    partial?: Partial<LooseInputType<InferSchemaType<TRefs[K], TRefs[K], TRefs>>>,
+    options?: { 'enablePartial'?: boolean }
+  ): MaterializedSchemaType<TRefs[K], TRefs[K], TRefs>;
   public materialize<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }>(
     schema: TSchema,
-    partial?: Partial<InferSchemaType<TSchema>>,
+    partial?: Partial<LooseInputType<InferSchemaType<TSchema, TSchema, TRefs>>>,
     options?: { 'enablePartial'?: boolean }
-  ): MaterializedSchemaType<TSchema>;
+  ): MaterializedSchemaType<TSchema, TSchema, TRefs>;
   public materialize(
-    schema: Record<string, unknown> & { '$id': string; },
-    partial?: Record<string, unknown>,
-    options?: { 'enablePartial'?: boolean }
-  ): unknown;
-  public materialize(
-    schema: (JsonSchemaDocumentType & { readonly '$id': string }) | (Record<string, unknown> & { '$id': string }),
+    schema: SchemaRefType<TRefs>,
     partial?: Record<string, unknown>,
     options?: { 'enablePartial'?: boolean }
   ): unknown {
+    if ((schema as unknown) === null || (schema as unknown) === undefined) {
+      throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
+    }
+
+    // The Materializer operates on the schema document, not an identifier;
+    // resolve a registered `$id` to its reconstructed schema object first.
+    let schemaObject: Record<string, unknown> & { '$id': string };
+
+    if (typeof schema === 'string') {
+      const resolved = this.registry.get(schema);
+
+      if (resolved === undefined) {
+        throw new SchemaError(
+          'SCHEMA_NOT_REGISTERED',
+          `Schema not registered: ${schema}. Register it first.`,
+          { 'schemaId': schema }
+        );
+      }
+
+      schemaObject = resolved as Record<string, unknown> & { '$id': string };
+    } else {
+      schemaObject = schema;
+    }
+
     if (options?.enablePartial === true) {
       const result = this.materializer.execute(
-        schema as Record<string, unknown> & { '$id': string },
+        schemaObject,
         partial,
         { 'synthesizeDefaults': true }
       );
@@ -1338,7 +1370,7 @@ export class JsonTology<TMap = Record<never, never>, TRefs = Record<never, never
     }
 
     return (this.materializer.materialize)(
-      schema,
+      schemaObject,
       partial
     );
   }
@@ -1432,27 +1464,28 @@ export class JsonTology<TMap = Record<never, never>, TRefs = Record<never, never
 
   /**
    * Add or replace one or more schemas. Schema is always the first argument:
-   * - `set(schema)` — key derived from `schema.$id`; widens `TMap`.
+   * - `set(schema)` — key derived from `schema.$id`; widens `TRefs`.
    * - `set(schema, iri)` — explicit key; rare, for non-canonical aliasing.
    * - `set([s1, s2])` — bulk; each entry is either a schema or `[schema, iri]`.
    *
    * Replaces silently on `$id` collision per `Map.set` semantics.
    *
-   * @returns This instance with the new schema types merged into `TMap`.
+   * @returns This instance with the new schema types merged into `TRefs`.
    */
   public set<const T extends { readonly '$id': string; }>(
     schema: T,
     iri?: string
-  ): JsonTology<SchemaEntryType<T> & TMap, SchemaReferencesMapType<readonly [T]> & TRefs>;
+  ): JsonTology<SchemaReferencesMapType<readonly [T]> & TRefs>;
   public set<const T extends ReadonlyArray<{ readonly '$id': string; }>>(
     entries: T & UniqueSchemaIdsType<T>
-  ): JsonTology<SchemaMapFromTupleType<T> & TMap, SchemaReferencesMapType<T> & TRefs>;
+  ): JsonTology<SchemaReferencesMapType<T> & TRefs>;
+  // Implementation signature — parameters typed wide enough to accept both overloads.
+  // Return typed as plain `JsonTology` (default param) so the impl body compiles;
+  // callers only ever see the overload signatures, not the impl return.
   public set(
-    first:
-      | ReadonlyArray<readonly [{ readonly '$id': string; }, string] | { readonly '$id': string; }>
-      | { readonly '$id': string; },
+    first: readonly unknown[] | { readonly '$id': string; },
     second?: string
-  ): JsonTology<TMap, TRefs> {
+  ): JsonTology {
     if (Array.isArray(first)) {
       this.registry.set(first as ReadonlyArray<Record<string, unknown>>);
     } else if (second === undefined) {
@@ -1461,8 +1494,10 @@ export class JsonTology<TMap = Record<never, never>, TRefs = Record<never, never
       this.registry.set(first as Record<string, unknown>, second);
     }
 
-    // Cast needed: TypeScript cannot track that set() accumulates into the TMap type parameter
-    return this;
+    // Cast needed: TypeScript cannot track that set() accumulates into the TRefs type parameter.
+    // The impl signature return type is the default JsonTology (TRefs = Record<never,never>);
+    // callers only see the typed overload signatures.
+    return this as unknown as JsonTology;
   }
   /**
    * Resolves a sub-schema at a JSON Pointer path within a registered schema.
@@ -1483,16 +1518,16 @@ export class JsonTology<TMap = Record<never, never>, TRefs = Record<never, never
    * @throws {SchemaError} code SCHEMA_INVALID_INPUT when schema is null or undefined.
    * @throws {GraphError} code POINTER_NOT_FOUND when the pointer cannot be resolved.
    */
-  public subschemaAt<K extends keyof TMap & string>(
+  public subschemaAt<K extends keyof TRefs & string>(
     schemaId: K,
-    pointer: (Record<never, never> & string) | SchemaPointerPathsType<TMap[K]>
+    pointer: (Record<never, never> & string) | SchemaPointerPathsType<ParseOutputType<TRefs[K], TRefs>>
   ): Record<string, unknown> & { '$id': string };
   public subschemaAt<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }>(
     schema: TSchema,
     pointer: (Record<never, never> & string) | SchemaPointerPathsType<TSchema>
   ): Record<string, unknown> & { '$id': string };
   public subschemaAt(
-    schemaRef: SchemaRefType<TMap>,
+    schemaRef: SchemaRefType<TRefs>,
     pointer: string
   ): Record<string, unknown> & { '$id': string } {
     if ((schemaRef as unknown) === null || (schemaRef as unknown) === undefined) {
@@ -1547,7 +1582,7 @@ export class JsonTology<TMap = Record<never, never>, TRefs = Record<never, never
    */
   public toQuads<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }>(
     schema: TSchema,
-    data: InferSchemaType<TSchema>,
+    data: unknown,
     options?: ToQuadsOptionsType
   ): QuadInterface[] {
     const normalized = normalizeToQuadsOptions(options);
@@ -1571,7 +1606,7 @@ export class JsonTology<TMap = Record<never, never>, TRefs = Record<never, never
    * @param schemaRef - The `$id` of the schema, or a schema object with `$id`.
    * @returns The reconstructed schema object, or `undefined` if not registered.
    */
-  public toSchema(schemaRef: SchemaRefType<TMap>): Record<string, unknown> | undefined {
+  public toSchema(schemaRef: SchemaRefType<TRefs>): Record<string, unknown> | undefined {
     const schemaId = typeof schemaRef === 'string' ? schemaRef : (schemaRef as Record<string, unknown> & { '$id': string }).$id;
 
     if (typeof schemaRef !== 'string') {
@@ -1640,9 +1675,9 @@ export class JsonTology<TMap = Record<never, never>, TRefs = Record<never, never
    * @throws {SchemaError} code SCHEMA_NOT_REGISTERED when no schema is registered for the given ID.
    * @throws {SchemaError} code SCHEMA_INVALID_INPUT when schema is null or undefined.
    */
-  public validate<K extends keyof TMap & string>(schemaId: K, data: unknown): ValidationErrors;
-  public validate(schema: Record<string, unknown> & { '$id': string; }, data: unknown): ValidationErrors;
-  public validate(schema: SchemaRefType<TMap>, data: unknown): ValidationErrors {
+  public validate<K extends keyof TRefs & string>(schemaId: K, data: unknown): ValidationErrors;
+  public validate<TSchema extends JsonSchemaDocumentType & { readonly '$id': string; }>(schema: TSchema, data: unknown): ValidationErrors;
+  public validate(schema: SchemaRefType<TRefs>, data: unknown): ValidationErrors {
     if ((schema as unknown) === null || (schema as unknown) === undefined) {
       throw new SchemaError('SCHEMA_INVALID_INPUT', 'schema must not be null or undefined');
     }

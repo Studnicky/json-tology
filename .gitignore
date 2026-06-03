@@ -3,6 +3,7 @@
 .git
 *.map
 dist
+dist-decl-emit-test
 node_modules
 vendor
 .claude/worktrees/

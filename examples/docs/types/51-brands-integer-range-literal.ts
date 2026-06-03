@@ -8,9 +8,11 @@
  */
 
 import type { InferType } from '../../../src/types/index.js';
-import type { ReviewSchema } from '../bookstore/index.js';
+import type {
+  BookstoreRefs, ReviewSchema
+} from '../bookstore/index.js';
 
-type Review = InferType<typeof ReviewSchema>;
+type Review = InferType<typeof ReviewSchema, BookstoreRefs>;
 type Rating = Review['rating'];
 // 1 | 2 | 3 | 4 | 5
 

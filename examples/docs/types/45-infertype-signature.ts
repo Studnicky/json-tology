@@ -20,8 +20,16 @@ type Book = InferType<typeof BookSchema>;
 //   type Order    = InferType<typeof OrderSchema>;
 
 const sampleIsbn = '9783522128001';
+// Book fields — the inferred type surface is visible to editors and tooling.
+const _bookFields: Array<keyof Book> = [
+  'isbn',
+  'title',
+  'printStatus',
+  'authors'
+];
+
+void _bookFields;
 
 // At runtime we just hold a placeholder; the value of this example is
 // in the type derivation above.
-void (null as unknown as Book);
 console.assert(sampleIsbn.length === 13);

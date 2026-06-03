@@ -69,7 +69,7 @@ const hydrated = jt.instantiate(
 
 console.assert(typeof hydrated.summarize === 'function');
 
-const wire = bookstoreEntities.encode(FilterEncodeOrderTransform, hydrated) as Record<string, unknown>;
+const wire = bookstoreEntities.encode(FilterEncodeOrderTransform, hydrated);
 
 console.assert(wire.summarize === undefined);
 console.assert(wire.orderId === aboxFixtures.order.orderId);

@@ -23,11 +23,9 @@ const copy = Operations.clone(order);
 console.assert(order.orderLines.length === 1);
 console.assert(copy.orderLines !== order.orderLines, 'clone must produce distinct orderLines reference');
 
-// structuredClone the branded orderLines array into a plain mutable array so a new
+// Spread the branded readonly orderLines tuple into a plain mutable array so a new
 // line item can be appended without satisfying the element brands at compile time.
-// interop: branded readonly tuple → plain mutable array for the push demo;
-// structuredClone strips brands at runtime, unknown intermediate satisfies tsc.
-const copyItems: unknown[] = structuredClone(copy.orderLines as unknown as unknown[]);
+const copyItems: unknown[] = structuredClone([...copy.orderLines]);
 
 copyItems.push({
   // Walter Moers — Die Stadt der Träumenden Bücher (Piper, 2004).

@@ -26,5 +26,4 @@ const _Bad = Compose.pick(
   'https://bookstore.example/BookIsbnOnly'
 );
 
-console.log('pick unknown key anti-pattern: compile-time error for keys not in BibliographicRecordSchema.properties | valid keys:', Object.keys(BibliographicRecordSchema.properties));
-void 0 as unknown as typeof _Bad;
+console.log('pick unknown key anti-pattern: compile-time error for keys not in BibliographicRecordSchema.properties | valid keys:', Object.keys(BibliographicRecordSchema.properties), '| _Bad.$id:', _Bad.$id);

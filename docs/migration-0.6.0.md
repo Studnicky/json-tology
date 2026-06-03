@@ -62,8 +62,8 @@ jt.registry.register(UserSchema);
 formatRegistry.register('phone', validator);
 
 // After
-jt.set(UserSchema);                                 // single, widens TMap
-jt.set([UserSchema, AddressSchema] as const);       // bulk, widens TMap
+jt.set(UserSchema);                                 // single, widens the schema map
+jt.set([UserSchema, AddressSchema] as const);       // bulk, widens the schema map
 jt.set(UserSchema, 'urn:alias');                    // explicit aliasing key
 jt.set([[UserSchema, 'urn:alias'], AddressSchema]); // mixed bulk: tuple + schema
 jt.registry.set(UserSchema);                        // registry-level, no widening

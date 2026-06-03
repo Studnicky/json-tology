@@ -26,8 +26,7 @@ const listing = bookstoreEntities.dump(BookSchema.$id, book, {
   ]
 });
 
-console.assert(typeof listing === 'object' && listing !== null);
-console.assert('isbn' in (listing as object));
+console.assert('isbn' in listing);
 console.assert('title' in (listing as object));
 console.assert('price' in (listing as object));
 console.assert(!('authors' in (listing as object)));

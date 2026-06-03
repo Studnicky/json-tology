@@ -187,6 +187,8 @@ export interface BuildEntityFileOptionsInterface {
   readonly 'iri': string;
   /** PascalCase identifier for this class. */
   readonly 'name': string;
+  /** Name of the schema-set reference-map type exported by `index.ts`. */
+  readonly 'refsName': string;
   /** The JSON Schema object for this class. */
   readonly 'schema': JsonSchemaDocumentObjectType;
   /** Human-readable source label (file path or IRI), or empty string. */
@@ -241,6 +243,8 @@ export interface SerializeContextInterface {
 export interface RegistryDirContextInterface {
   /** Map from IRI to PascalCase identifier. */
   readonly 'nameMap': Map<string, string>;
+  /** Name of the schema-set reference-map type exported by `index.ts`. */
+  readonly 'refsName': string;
   /** All consumer-facing schemas. */
   readonly 'schemas': JsonSchemaDocumentObjectType[];
   /** Sorted IRIs in emission order. */

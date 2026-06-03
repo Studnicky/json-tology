@@ -7,8 +7,13 @@
  * fragment refs whose anchor portion is missing — the result is
  * `AnchorNotFoundInterface<...>`.
  *
- * The "no references map" path must continue to fall back to `unknown` so
- * existing usage of `InferType<S>` without a registry stays unchanged.
+ * Absolute-IRI refs (no fragment): an unresolved `$ref` always yields
+ * `RefNotFoundInterface<TRef>` — even without a references map. A missing or
+ * misspelled cross-schema `$ref` is always a compile error.
+ *
+ * Fragment refs (e.g. `schema#anchor`): the base-URI fallback still yields
+ * `unknown` when no references map is present and the base does not match the
+ * root schema's `$id`, preserving usability for schemas with no registry.
  */
 
 import type { InferType } from '../../src/types/Schema.js';
@@ -66,9 +71,12 @@ assert<AssertAssignable<
   { readonly 'ext'?: RefNotFoundInterface<'https://example.com/Missing'> }
 >>();
 
-// Without a references map, the historical fallback to `unknown` is preserved
+// Without a references map, an absolute-IRI $ref yields RefNotFound (compile error brand)
 type UnknownRefWithoutMap = InferType<typeof _UnknownRefSchema>;
-assert<AssertAssignable<UnknownRefWithoutMap, { readonly 'ext'?: unknown }>>();
+assert<AssertAssignable<
+  UnknownRefWithoutMap,
+  { readonly 'ext'?: RefNotFoundInterface<'https://example.com/Missing'> }
+>>();
 
 // Positive: a known IRI in the same registry resolves to the inferred type
 const _KnownRefSchema = {
@@ -152,8 +160,13 @@ assert<AssertAssignable<
 >>();
 
 // ---------------------------------------------------------------------------
-// Backwards compatibility — without TReferences the behaviour is unchanged
+// Fragment refs — base-URI fallback without TReferences
 // ---------------------------------------------------------------------------
+//
+// Fragment refs (schema#anchor) go through ResolveRefBaseSchemaType which still
+// returns `unknown` when no references map is present and the base URI does not
+// match the root's $id. These stay `unknown` — the strictness change applies
+// only to bare absolute-IRI refs (no fragment), not to fragment refs.
 
 type AnchorWithoutMap = InferType<typeof _MissingAnchorRefSchema>;
 assert<AssertAssignable<AnchorWithoutMap, { readonly 'ext'?: unknown }>>();

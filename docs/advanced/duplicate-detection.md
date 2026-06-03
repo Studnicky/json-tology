@@ -12,6 +12,7 @@ Detection fires when an **anonymous inline sub-shape** inside a registered schem
 
 Example that triggers the error:
 
+<!-- inline-ts-ok: hypothetical inline-shape scenario described in comments; published-package import, not a standalone runnable program. -->
 ```ts
 import { JsonTology } from 'json-tology';
 import { EmailSchema } from './bookstore/entities/Email.js';
@@ -31,6 +32,7 @@ const entities = JsonTology.create({
 
 The correct form uses `$ref`:
 
+<!-- inline-ts-ok: schema fragment (a bare `properties` object), not a standalone runnable program. -->
 ```ts
 // In Customer.ts — reference the named schema, don't inline its shape
 properties: {
@@ -58,6 +60,7 @@ Additionally, transform-bearing schemas are separated from plain schemas by the 
 
 Turns all graph-integrity violations into `logger.warn` calls. Neither inline shapes nor duplicate shapes throw.
 
+<!-- inline-ts-ok: create-options sketch; `schemas: [...]` is a placeholder, not a standalone runnable program. -->
 ```ts
 const entities = JsonTology.create({
   baseIRI: 'urn:bookstore:',
@@ -70,6 +73,7 @@ const entities = JsonTology.create({
 
 Stops `findDuplicates()` from running after each `register()` call. Inline-shape warnings are still active if `enableInlineWarnings` remains on. Use when you have a large nominal-primitive library and the duplicate scan overhead is noticeable during development, or while migrating a large codebase to named schemas incrementally.
 
+<!-- inline-ts-ok: create-options sketch; `schemas: [...]` is a placeholder, not a standalone runnable program. -->
 ```ts
 const entities = JsonTology.create({
   baseIRI: 'urn:bookstore:',
@@ -82,6 +86,7 @@ const entities = JsonTology.create({
 
 Stops registration-time warnings for inline constrained shapes when `enableStrictGraph` is also off.
 
+<!-- inline-ts-ok: create-options sketch; `schemas: [...]` is a placeholder, not a standalone runnable program. -->
 ```ts
 const entities = JsonTology.create({
   baseIRI: 'urn:bookstore:',
@@ -95,6 +100,7 @@ const entities = JsonTology.create({
 
 `format` is a standard JSON Schema keyword for semantic type annotation. Using it to distinguish schemas that share the same base type is not a hack — it is the standard JSON Schema approach.
 
+<!-- inline-ts-ok: schema-definition sketch demonstrating format-based hashing; definitions only, not a standalone runnable program. -->
 ```ts
 // Two string schemas with different format values hash differently.
 // Neither flags the other's inline occurrences.
@@ -119,6 +125,7 @@ This is the right approach when your nominal primitive types have genuinely diff
 
 `registry.findDuplicates()` is available at any time regardless of the current mode. Use it in a CI script to audit an existing schema set before enabling strict mode:
 
+<!-- inline-ts-ok: CI-audit script using the published package and `process.exit`; not a standalone runnable example. -->
 ```ts
 import { JsonTology } from 'json-tology';
 import * as schemas from './bookstore/index.js';

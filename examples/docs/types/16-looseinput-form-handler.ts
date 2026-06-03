@@ -12,8 +12,9 @@ import type {
 import {
   bookstoreEntities, CustomerSchema
 } from '../bookstore/index.js';
+import type { BookstoreRefs } from '../bookstore/index.js';
 
-type Customer = InferType<typeof CustomerSchema>;
+type Customer = InferType<typeof CustomerSchema, BookstoreRefs>;
 //   { readonly customerId: string & FormatBrand<'uuid'>;
 //     readonly email: string & FormatBrand<'email'>;
 //     readonly name: string;

@@ -140,7 +140,7 @@ class Order(BaseModel):
 
 ## `jt.encode` {#jtencode}
 
-**Declaration.** Applies the `encode` function registered on `schema` via `Transform.create` or `Transform.chain`. Converts a decoded domain value back to its wire representation. Returns `InferSchemaType<TSchema>`. If no transform is registered on the schema, returns the value unchanged.
+**Declaration.** Applies the `encode` function registered on `schema` via `Transform.create` or `Transform.chain`. Converts a decoded domain value back to its wire representation. Returns the brand-free wire **InputType** (`LooseInputType<InferSchemaType<TSchema>>`) — encode runs on the way out to the wire, where validation brands do not exist. If no transform is registered on the schema, returns the value unchanged.
 
 **Use this when** you have a decoded domain value (e.g. a `Date` object) and need the wire form (e.g. ISO string) for storage, HTTP response, or queue message.
 

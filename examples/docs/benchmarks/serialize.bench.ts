@@ -10,9 +10,7 @@
  * dumpJson is dump + JSON.stringify in one pass.
  */
 
-import {
-  type Static, Type
-} from '@sinclair/typebox';
+import { Type } from '@sinclair/typebox';
 import { Value } from '@sinclair/typebox/value';
 import { JsonTology } from '../../../src/JsonTology.js';
 import { Transform } from '../../../src/modules/transform/Transform.js';
@@ -45,11 +43,10 @@ const EventSchemaJt = Transform.create(
     'type': 'object'
   } as const,
   {
-    'decode': (raw: { 'at': string;
-      'name': string }) => {
+    'decode': (raw: Record<string, unknown>) => {
       return {
-        'at': new Date(raw.at),
-        'name': raw.name
+        'at': new Date(raw.at as string),
+        'name': raw.name as string
       };
     },
     'encode': (rich: { 'at': Date;
@@ -79,8 +76,6 @@ const EventSchemaTb = Type.Transform(Type.Object({
       'name': rich.name
     };
   });
-
-type EventTb = Static<typeof EventSchemaTb>;
 
 const richEvent = {
   'at': new Date('2024-06-01T12:00:00.000Z'),
@@ -141,10 +136,10 @@ export function runSerializeBench(): BenchResult[] {
   }));
 
   results.push(bench('encode event', 'typebox', () => {
-    // interop: TypeBox's Transform Encode expects a statically-decoded EventTb
-    // type, but richEvent is a plain object literal without the Transform brand.
-    // TypeBox has no typed path from a plain object to its encoded form here.
-    Value.Encode(EventSchemaTb, richEvent as unknown as EventTb);
+    // interop: TypeBox's Transform Encode expects the statically-decoded shape.
+    // richEvent matches it structurally ({ at: Date; name: string }), so it is
+    // accepted directly — no cast needed.
+    Value.Encode(EventSchemaTb, richEvent);
   }));
 
   return results;

@@ -13,6 +13,7 @@ import {
   aboxFixtures, createBookstoreDocRegistry,
   OrderSchema
 } from '../bookstore/index.js';
+import type { BookstoreRefs } from '../bookstore/index.js';
 
 // createBookstoreDocRegistry seeds a permissive copy of the bookstore — docs examples extend
 // it with ad-hoc demo schemas; strict-graph checking is intentionally off here.
@@ -24,16 +25,19 @@ const OrderSummarySchema = Compose.omit(
   'https://bookstore.example/OrderSummary'
 );
 
-type OrderSummary = InferType<typeof OrderSummarySchema>;
+type OrderSummary = InferType<typeof OrderSummarySchema, BookstoreRefs>;
 
 const jt2 = jt.set(OrderSummarySchema);
 
+// Instantiate the full order to get branded field values, then project the
+// OrderSummary view (every field except orderLines) from them.
+const order = jt2.instantiate(OrderSchema.$id, aboxFixtures.order);
 const summary: OrderSummary = {
-  'customerId': aboxFixtures.order.customerId,
-  'orderId': aboxFixtures.order.orderId,
-  'orderTotal': aboxFixtures.order.orderTotal,
-  'placedAt': aboxFixtures.order.placedAt,
-  'shippingAddress': aboxFixtures.order.shippingAddress
+  'customerId': order.customerId,
+  'orderId': order.orderId,
+  'orderTotal': order.orderTotal,
+  'placedAt': order.placedAt,
+  'shippingAddress': order.shippingAddress
 };
 
 const result = jt2.validate(OrderSummarySchema.$id, summary);

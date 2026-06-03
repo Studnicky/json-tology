@@ -10,9 +10,11 @@ import {
   aboxFixtures, type Book, BookSchema, bookstoreEntities
 } from '../bookstore/index.js';
 
-// Anti-pattern: dump on raw uncoerced input — encode runs but coercion did not
-// Don't do this
-const rawInput = {
+// Anti-pattern: dump on raw uncoerced input — encode runs but coercion did not.
+// Raw input is untrusted (`unknown`); the anti-pattern forces it past dump's
+// branded value parameter, the very narrowing the correct path earns via
+// instantiate. Don't do this.
+const rawInput: unknown = {
   'authors': ['Michael Ende'],
   'isbn': aboxFixtures.rareBook.isbn,
   'price': aboxFixtures.rareBook.price,
@@ -20,9 +22,7 @@ const rawInput = {
   'title': aboxFixtures.rareBook.title
 };
 
-// invalid-input edge: raw object is cast to Book to demonstrate the anti-pattern —
-// dump expects an instantiated (branded) value; this bypass is the point of the example.
-const antipatternWire = bookstoreEntities.dump(BookSchema.$id, rawInput as unknown as Book);
+const antipatternWire = bookstoreEntities.dump(BookSchema.$id, rawInput as Book);
 
 void antipatternWire;
 
@@ -31,8 +31,7 @@ void antipatternWire;
 const book = bookstoreEntities.instantiate(BookSchema.$id, rawInput);
 const wireBook = bookstoreEntities.dump(BookSchema.$id, book);
 
-console.assert(typeof wireBook === 'object' && wireBook !== null);
-console.assert('isbn' in (wireBook as object));
+console.assert('isbn' in wireBook);
 console.assert('title' in (wireBook as object));
 
 // Show the correctly-instantiated wire form (anti-pattern omitted from output)
