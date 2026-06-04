@@ -766,6 +766,7 @@ function projectInstanceProperty(args: ProjectInstancePropertyArgs): void {
       'instanceIri': instIRI,
       minter,
       'path': propertyPath,
+      predicateResolver,
       quadOpts,
       quads,
       'sourceId': nodeId,
@@ -871,6 +872,7 @@ interface ProjectAnnotatedEdgeArgs {
   readonly 'instanceIri': string;
   readonly 'minter': IriMinterInterface;
   readonly 'path': string;
+  readonly 'predicateResolver': PredicateResolverFnType;
   readonly 'quadOpts': QuadFactoryQuadOptsInterface;
   readonly 'quads': QuadInterface[];
   readonly 'sourceId': string;
@@ -1012,7 +1014,9 @@ function isClassRange(rangeRef: string): boolean {
  */
 interface EmitAnnotationQuadsArgs {
   readonly 'annotationValues': Record<string, unknown>;
+  readonly 'classId': string;
   readonly 'edge': AnnotatedEdgeStructure;
+  readonly 'predicateResolver': PredicateResolverFnType;
   readonly 'quadOpts': QuadFactoryQuadOptsInterface;
   readonly 'quads': QuadInterface[];
   readonly 'tripleTerm': ReturnType<typeof QuadFactory.tripleTerm>;
@@ -1021,7 +1025,7 @@ interface EmitAnnotationQuadsArgs {
 /** Emit one annotation quad per annotation on the edge. */
 function emitAnnotationQuads(args: EmitAnnotationQuadsArgs): void {
   const {
-    annotationValues, edge, quadOpts, quads, tripleTerm
+    annotationValues, classId, edge, predicateResolver, quadOpts, quads, tripleTerm
   } = args;
 
   for (const annotation of edge.edgeAnnotations) {
@@ -1030,15 +1034,20 @@ function emitAnnotationQuads(args: EmitAnnotationQuadsArgs): void {
     if (annotationValue === undefined || annotationValue === null) {
       continue;
     }
+    const annotationPredicate = predicateResolver({
+      'classId': classId,
+      'propertyName': annotation.propertyName,
+      'propertySchema': annotation.propertySchema
+    });
     const annotationTerm = annotationValueTerm(annotationValue, annotation.rangeRef);
 
-    quads.push(QuadFactory.annotationQuad(tripleTerm, annotation.annotationPredicate, annotationTerm, quadOpts));
+    quads.push(QuadFactory.annotationQuad(tripleTerm, annotationPredicate, annotationTerm, quadOpts));
   }
 }
 
 function projectAnnotatedEdge(args: ProjectAnnotatedEdgeArgs): void {
   const {
-    curie, edge, graphTerm, instanceIri, minter, path, quadOpts, quads, sourceId, value
+    curie, edge, graphTerm, instanceIri, minter, path, predicateResolver, quadOpts, quads, sourceId, value
   } = args;
 
   if (graphTerm.termType === 'DefaultGraph') {
@@ -1081,7 +1090,9 @@ function projectAnnotatedEdge(args: ProjectAnnotatedEdgeArgs): void {
 
   emitAnnotationQuads({
     'annotationValues': isRecord(value.annotations) ? value.annotations : {},
+    'classId': sourceId,
     edge,
+    predicateResolver,
     quadOpts,
     quads,
     tripleTerm

@@ -1,3 +1,5 @@
+import type { JsonSchemaType } from './Schema.js';
+
 /**
  * Item produced by `SchemaGraphInterface.collectList` when walking an
  * `rdf:first` / `rdf:rest` / `rdf:nil` chain.
@@ -74,7 +76,9 @@ export type RelationPredicateType
  * - annotatedEdge: RDF 1.2 triple-term — base triple plus one annotation per entry.
  *   `edgePredicate` is the predicate IRI of the base triple;
  *   `edgeTarget` is the IRI of the base triple object;
- *   `edgeAnnotations` maps annotation property names to their predicate IRIs and range IRIs.
+ *   `edgeAnnotations` carries the raw annotation sub-schema for each annotation
+ *   so predicate IRIs are resolved late (at projection/lift time) via PredicateResolver,
+ *   consistent with every other predicate in the system.
  */
 export type RelationStructure
   = | { 'constraint': RelationPredicateType;
@@ -83,8 +87,8 @@ export type RelationStructure
     'value': unknown }
   | {
     'edgeAnnotations': ReadonlyArray<{
-      readonly 'annotationPredicate': string;
       readonly 'propertyName': string;
+      readonly 'propertySchema': JsonSchemaType;
       readonly 'rangeRef': string;
     }>;
     'edgePredicate': string;

@@ -119,15 +119,18 @@ function extractAnnotatedEdgeDescriptor(schema: Record<string, unknown>): Extrac
     return undefined;
   }
 
-  const annotations: Record<string, { readonly '$ref': string }> = {};
+  const annotations: Record<string, JsonSchemaType> = {};
 
   if (isRecord(raw.annotations)) {
     for (const [
       propName,
       propSchema
     ] of Object.entries(raw.annotations)) {
+      // Carry the whole annotation sub-schema (range `$ref` plus any
+      // predicate-binding keywords like x-jt-predicate / $id) so the predicate
+      // IRI can be grounded by PredicateResolver at projection/lift time.
       if (isRecord(propSchema) && typeof propSchema.$ref === 'string') {
-        annotations[propName] = { '$ref': propSchema.$ref };
+        annotations[propName] = propSchema;
       }
     }
   }

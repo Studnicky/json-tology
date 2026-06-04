@@ -1,6 +1,6 @@
 {
   "name": "json-tology",
-  "version": "0.19.0",
+  "version": "0.20.0",
   "description": "One source of truth for TypeScript types, runtime validation, coercion, and OWL ontology output. Author in JSON Schema; share with any backend; reason over the graph.",
   "type": "module",
   "main": "./dist/index.js",
@@ -75,6 +75,7 @@
     "test:coverage": "tsx --test --test-concurrency=4 --experimental-test-coverage 'test/smoke/**/*.test.ts' 'test/unit/**/*.test.ts'",
     "regen:ontology-fixtures": "node ./scripts/regen-ontology-fixtures.mjs",
     "build:bookstore-tbox": "node ./scripts/build-bookstore-tbox.mjs",
+    "build:bookstore-tbox:check": "node ./scripts/build-bookstore-tbox.mjs --check",
     "build:palette": "node ./scripts/build-palette.mjs",
     "pack:check": "node ./scripts/check-pack.mjs",
     "stamp-version": "node ./scripts/stamp-version.mjs",

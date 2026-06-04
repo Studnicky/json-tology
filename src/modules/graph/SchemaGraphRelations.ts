@@ -6,10 +6,12 @@ import { SchemaIri } from './SchemaIri.js';
 import { XsdTypes } from '../rdf/XsdTypes.js';
 import type { GraphAccessorInterface } from '../../interfaces/GraphAccessor.js';
 import { SchemaGraphSupport } from './SchemaGraphSupport.js';
+import { isRecord } from '../data/DataTypes.js';
 import { FORMAT_PATTERNS } from '../../constants/FORMAT_PATTERNS.js';
 import {
   DASH, DCT, JT, OWL, RDF, RDFS, SH, XSD
 } from '../../constants/IRI.js';
+import type { JsonSchemaType } from '../../types/Schema.js';
 
 /**
  * Common context bundle for relation-push helpers that need graph + node + semantics.
@@ -419,8 +421,8 @@ function pushAnnotatedEdgeRelations(ctx: RelationsPushContextInterface): void {
 
   const edgeTarget = graph.resolveRefId(descriptor.targetRef);
   const edgeAnnotations: Array<{
-    readonly 'annotationPredicate': string;
     readonly 'propertyName': string;
+    readonly 'propertySchema': JsonSchemaType;
     readonly 'rangeRef': string;
   }> = [];
 
@@ -428,9 +430,15 @@ function pushAnnotatedEdgeRelations(ctx: RelationsPushContextInterface): void {
     propName,
     propSchema
   ] of Object.entries(descriptor.annotations)) {
+    // The descriptor extraction already validated a string `$ref`; narrow again
+    // for the type system before reading it and carrying the full sub-schema.
+    if (!isRecord(propSchema) || typeof propSchema.$ref !== 'string') {
+      continue;
+    }
+
     edgeAnnotations.push({
-      'annotationPredicate': `${node.id}#${propName}`,
       'propertyName': propName,
+      'propertySchema': propSchema,
       'rangeRef': graph.resolveRefId(propSchema.$ref)
     });
   }

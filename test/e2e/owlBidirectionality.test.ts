@@ -497,27 +497,18 @@ void describe('A-9: property characteristics preserved in fromTbox characteristi
 });
 
 // ---------------------------------------------------------------------------
-// A-10  owl:onProperty restriction IRIs must match the flat property IRIs
+// A-10  owl:onProperty restriction IRIs match the flat property IRIs
 //
-// SURFACED BUG: every owl:Restriction in the TBox references its property via
-// a CLASS-SCOPED IRI (e.g. `urn:bookstore:Customer#customerId`,
-// `urn:bookstore:Book#authors`) while the actual property declaration
-// (rdfs:domain / rdfs:range) and the ABox assertions use the FLAT property IRI
-// (e.g. `https://bookstore.example/customerId`,
-// `https://bookstore.example/authors`).
+// Every owl:Restriction in the TBox references its property by the FLAT
+// property IRI (e.g. `https://bookstore.example/customerId`,
+// `https://bookstore.example/authors`) — the same IRI that carries the
+// property's rdfs:domain / rdfs:range declaration and that the ABox assertions
+// use. An OWL reasoner can therefore connect every cardinality / value
+// restriction to the instances it constrains.
 //
-// Because the restriction onProperty IRI and the property-assertion IRI differ,
-// an OWL reasoner cannot connect a cardinality / value restriction to the
-// instances it should constrain — the restriction is effectively orphaned.
-//
-// The CORRECT behaviour (asserted below) is that every owl:onProperty target
-// is a flat property IRI that also appears as the subject of an rdfs:domain
-// declaration. This test is `it.skip`-ped because it cannot pass until the OWL
-// projection emits restrictions against the flat property IRI in src/.
-//
-// TODO(src): OwlProjection restriction emission must use the flat property IRI
-// (the one carrying rdfs:domain/range) as owl:onProperty, not the
-// class-scoped `<ClassIRI>#<prop>` form.
+// This test guards that invariant: every owl:onProperty target is a flat
+// property IRI that also appears as the subject of an rdfs:domain declaration,
+// never a class-scoped `<ClassIRI>#<prop>` form.
 // ---------------------------------------------------------------------------
 
 void describe('A-10: owl:onProperty restriction IRIs match flat property IRIs', () => {

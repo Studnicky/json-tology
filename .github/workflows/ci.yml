@@ -37,6 +37,9 @@ jobs:
       - name: Build (so generated example fixtures can import 'json-tology')
         run: npm run build
 
+      - name: Check bookstore graph data is in sync
+        run: npm run build:bookstore-tbox:check
+
       - name: Run smoke tests
         env:
           TSX_CACHE: 1

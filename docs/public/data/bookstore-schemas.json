@@ -189,6 +189,11 @@
     "minLength": 1,
     "type": "string"
   },
+  "urn:bookstore:VerifiedPurchase": {
+    "$id": "urn:bookstore:VerifiedPurchase",
+    "default": false,
+    "type": "boolean"
+  },
   "urn:bookstore:WeightGrams": {
     "$id": "urn:bookstore:WeightGrams",
     "minimum": 0,
@@ -325,12 +330,9 @@
     "type": "array",
     "uniqueItems": true
   },
-  "urn:bookstore:Book": {
-    "$id": "urn:bookstore:Book",
+  "urn:bookstore:BibliographicRecord": {
+    "$id": "urn:bookstore:BibliographicRecord",
     "properties": {
-      "annotations": {
-        "$ref": "urn:bookstore:BookAnnotations"
-      },
       "authors": {
         "items": {
           "$ref": "urn:bookstore:AuthorName"
@@ -339,28 +341,12 @@
         "type": "array",
         "uniqueItems": true
       },
-      "inStock": {
-        "default": true,
-        "type": "boolean"
-      },
       "isbn": {
         "$ref": "urn:bookstore:Isbn",
         "inverseFunctional": true
       },
-      "price": {
-        "$ref": "urn:bookstore:Money"
-      },
-      "printStatus": {
-        "$ref": "urn:bookstore:PrintStatus"
-      },
       "publishedOn": {
         "$ref": "urn:bookstore:PublicationDate"
-      },
-      "ratings": {
-        "$ref": "urn:bookstore:BookRatingHistogram"
-      },
-      "stockLevel": {
-        "$ref": "urn:bookstore:StockLevel"
       },
       "title": {
         "$ref": "urn:bookstore:Title"
@@ -369,11 +355,45 @@
     "required": [
       "isbn",
       "title",
-      "authors",
-      "price",
-      "printStatus"
+      "authors"
     ],
     "type": "object"
+  },
+  "urn:bookstore:Book": {
+    "$id": "urn:bookstore:Book",
+    "allOf": [
+      {
+        "$ref": "urn:bookstore:BibliographicRecord"
+      },
+      {
+        "properties": {
+          "annotations": {
+            "$ref": "urn:bookstore:BookAnnotations"
+          },
+          "inStock": {
+            "default": true,
+            "type": "boolean"
+          },
+          "price": {
+            "$ref": "urn:bookstore:Money"
+          },
+          "printStatus": {
+            "$ref": "urn:bookstore:PrintStatus"
+          },
+          "ratings": {
+            "$ref": "urn:bookstore:BookRatingHistogram"
+          },
+          "stockLevel": {
+            "$ref": "urn:bookstore:StockLevel"
+          }
+        },
+        "required": [
+          "price",
+          "printStatus"
+        ],
+        "type": "object"
+      }
+    ]
   },
   "urn:bookstore:OrderLine": {
     "$id": "urn:bookstore:OrderLine",
@@ -737,7 +757,12 @@
         "jt:annotatedEdge": {
           "annotations": {
             "ratingGiven": {
-              "$ref": "urn:bookstore:RatingScore"
+              "$ref": "urn:bookstore:RatingScore",
+              "x-jt-predicate": "https://schema.org/ratingValue"
+            },
+            "verifiedPurchase": {
+              "$ref": "urn:bookstore:VerifiedPurchase",
+              "x-jt-predicate": "https://schema.org/verified"
             }
           },
           "predicate": "https://bookstore.example/reviews",

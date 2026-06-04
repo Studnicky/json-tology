@@ -47,6 +47,12 @@ The default minter assigns `<baseIRI>/instances/<classId>-<contentHash>` to ever
 
 See [skolemization](/advanced/skolemization) for the strategy reference.
 
+### Blank-node subjects with `BLANK_NODE_IRI_FOR`
+
+Pass `{ iriFor: BLANK_NODE_IRI_FOR }` to produce anonymous blank-node subjects instead of IRI-named nodes. Useful for transient quads (e.g. SHACL validation input) where no persistent identity is needed.
+
+<RunnableExample src="examples/docs/advanced/112-blank-node-iri" />
+
 ### Graph IRI
 
 Set the `graph` field on every emitted quad with `graphIRI`:
@@ -80,6 +86,14 @@ The registry-level `defaultDeskolemize: true` flips this on for every `fromQuads
 #### Example 2: Lift quads from a triple store
 
 <RunnableExample src="examples/docs/advanced/40-fromquads-lift-external-books" />
+
+### `fromQuads` subject-type dispatch
+
+When a combined quad set contains individuals of more than one class, `fromQuads` uses each subject's `rdf:type` triple to dispatch to the correct schema. Calling `fromQuads` with `EBookSchema.$id` lifts only EBook subjects; calling it with `PrintBookSchema.$id` lifts only PrintBook subjects.
+
+<RunnableExample src="examples/docs/advanced/105-fromquads-subject-type-dispatch" />
+
+---
 
 ## Static counterparts
 

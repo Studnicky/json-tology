@@ -142,7 +142,7 @@ void describe('bookstore aboxFixtures', () => {
     assert.deepEqual([...errs], [], 'reviewWithAnnotatedEdge must validate');
   });
 
-  void it('reviewWithAnnotatedEdge: toQuads emits base triple + annotation quad', () => {
+  void it('reviewWithAnnotatedEdge: toQuads emits base triple + 2 annotation quads with grounded predicates', () => {
     // Use instantiate to get a typed value before passing to toQuads.
     const validated = bookstoreEntities.instantiate(
       ReviewSchema,
@@ -168,8 +168,21 @@ void describe('bookstore aboxFixtures', () => {
       return quad.subject.termType === 'Quad';
     });
 
-    assert.equal(annotationQuads.length, 1, 'one annotation (triple-term) quad for ratingGiven');
-    assert.equal(annotationQuads[0].object.value, '5', 'ratingGiven annotation value is 5');
+    assert.equal(annotationQuads.length, 2, 'two annotation (triple-term) quads: ratingGiven + verifiedPurchase');
+
+    const ratingAnnotation = annotationQuads.find((quad) => {
+      return quad.predicate.value === 'https://schema.org/ratingValue';
+    });
+
+    assert.ok(ratingAnnotation, 'ratingGiven annotation uses grounded schema.org/ratingValue predicate');
+    assert.equal(ratingAnnotation.object.value, '5', 'ratingGiven annotation value is 5');
+
+    const verifiedAnnotation = annotationQuads.find((quad) => {
+      return quad.predicate.value === 'https://schema.org/verified';
+    });
+
+    assert.ok(verifiedAnnotation, 'verifiedPurchase annotation uses grounded schema.org/verified predicate');
+    assert.equal(verifiedAnnotation.object.value, 'true', 'verifiedPurchase annotation value is true');
   });
 
   // ── Task D: ABox round-trips ─────────────────────────────────────────────

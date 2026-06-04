@@ -112,6 +112,7 @@ import {
   StockLevelSchema,
   StreetLineSchema,
   TitleSchema,
+  VerifiedPurchaseSchema,
   WeightGramsSchema
 } from '../bookstore/index.js';
 import { aboxFixtures } from '../bookstore/aboxFixtures.js';
@@ -166,6 +167,7 @@ export const bookstoreBenchSchemas = [
   StockLevelSchema,
   StreetLineSchema,
   TitleSchema,
+  VerifiedPurchaseSchema,
   WeightGramsSchema,
   AuthorNameSchema,
   CustomerNameSchema,

@@ -21,6 +21,15 @@ The bookstore domain in [Bookstore Domain](/bookstore-domain) supplies prefixes 
 
 <RunnableExample src="examples/docs/advanced/07-utilities" />
 
+### `jt.toCurie` / `jt.fromCurie`
+
+The `JsonTology` facade exposes two convenience methods that use the registry's merged prefix map (standard prefixes + any custom `prefixes` passed to `create()`):
+
+- `jt.toCurie(iri)` — compact a full IRI to CURIE form. Returns the input unchanged when no prefix matches.
+- `jt.fromCurie(value)` — expand a CURIE to its full IRI. Returns the input unchanged for non-CURIE strings and unknown prefixes.
+
+<RunnableExample src="examples/docs/advanced/110-curie-methods" />
+
 When multiple prefixes share an overlap, `compact` picks the longest match.
 
 The default prefix map used across the package is `STANDARD_PREFIXES` (from `src/constants/STANDARD_PREFIXES.ts`), the canonical prefix-to-namespace lookup for the well-known RDF vocabularies (`rdf`, `rdfs`, `owl`, `sh`, `xsd`, `schema`, `foaf`, `dc`, `dct`, `dcterms`, `dcat`, `skos`, `prov`, `time`, `geo`, `vann`, `dash`, `jt`). Every IRI constant in `src/constants/IRI.ts` derives from this map. Pass your own prefix map to `JsonTology.create({ prefixes })` to extend or override the defaults; your entries merge over `STANDARD_PREFIXES`.

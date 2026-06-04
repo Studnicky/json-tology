@@ -146,6 +146,22 @@ irreducibles.
 
 JSON Schema `if`/`then`/`else` fragments are not currently emitted by either `ShaclProjection` or `OwlProjection`. These fragments are explicitly skipped during graph serialization.
 
+## `GraphEngine`
+
+`GraphEngine` is the core validation and execution engine for compiled JSON Schema graphs. Instantiate once per root schema and reuse across calls.
+
+The primary surface:
+
+- `execute(value)` — returns `{ valid, errors, value, … }`
+- `check(value)` — fast boolean shortcut (no error collection)
+- `errors(value)` — returns only the `ValidationErrorType[]`
+- `keywords()` — returns any registered custom keyword definitions
+- `rootSchemaId()` — returns the `$id` of the root schema (or `undefined`)
+
+<RunnableExample src="examples/docs/advanced/124-graph-engine" />
+
+---
+
 ## See also
 
 - [Graph concepts](./graph-concepts) - TBox/ABox, open-world assumption, subClassOf, equivalence

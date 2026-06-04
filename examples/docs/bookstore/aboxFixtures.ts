@@ -160,9 +160,14 @@ export const aboxFixtures = {
    * The `reviewsBook` field uses the `ReviewsBookEdge` annotated-edge schema:
    * `toQuads` emits the base triple
    *   <review-iri> <https://bookstore.example/reviews> <book-iri>
-   * PLUS one triple-term annotation quad:
+   * PLUS two triple-term annotation quads:
    *   << <review-iri> <https://bookstore.example/reviews> <book-iri> >>
-   *     <…#ratingGiven>  "5"^^xsd:integer .
+   *     <https://schema.org/ratingValue>  "5"^^xsd:integer .
+   *   << <review-iri> <https://bookstore.example/reviews> <book-iri> >>
+   *     <https://schema.org/verified>  "true"^^xsd:boolean .
+   *
+   * Both annotation predicates are grounded to schema.org IRIs via
+   * `x-jt-predicate` on the annotation sub-schemas in ReviewsBookEdge.
    *
    * This fixture requires a `graphIRI` option when calling `toQuads`
    * (see the smoke test and bookstoreGraphData ABox projection).
@@ -175,7 +180,10 @@ export const aboxFixtures = {
     'rating': 5,
     'reviewId': 'a4d3c2b1-a098-7654-a210-fedcba987654',
     'reviewsBook': {
-      'annotations': { 'ratingGiven': 5 },
+      'annotations': {
+        'ratingGiven': 5,
+        'verifiedPurchase': true
+      },
       'target': NEVERENDING_BOOK_IRI
     }
   } as const,

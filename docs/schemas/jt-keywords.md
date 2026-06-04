@@ -158,6 +158,32 @@ Both the base triple and all annotation quads share the same named graph. A `gra
 
 <RunnableExample src="examples/docs/advanced/104-annotated-edge-rdfstar" />
 
+### Predicate grounding on annotation sub-schemas
+
+Annotation predicates on an annotated edge can be grounded to a shared vocabulary IRI using `x-jt-predicate` (and optionally `$id`) on the annotation sub-schema — exactly like regular property sub-schemas. The bookstore `Review` edge grounds `ratingGiven` to `https://schema.org/ratingValue` and `verifiedPurchase` to `https://schema.org/verified` this way:
+
+<!-- inline-ts-ok: schema-fragment illustrating x-jt-predicate on annotation sub-schemas; not a standalone runnable program -->
+```ts
+Compose.annotatedEdge({
+  predicate: 'https://bookstore.example/reviewed',
+  targetRef: BookSchema.$id,
+  annotations: {
+    ratingGiven: {
+      $id: 'https://schema.org/ratingValue',
+      'x-jt-predicate': 'https://schema.org/ratingValue',
+      type: 'number',
+    },
+    verifiedPurchase: {
+      $id: 'https://schema.org/verified',
+      'x-jt-predicate': 'https://schema.org/verified',
+      type: 'boolean',
+    },
+  },
+})
+```
+
+The `x-jt-predicate` value on the annotation sub-schema sets the quad predicate for that annotation triple. The `$id` value, when an absolute IRI, provides a fallback — but `x-jt-predicate` always wins when both are present (see the [predicate priority table](/advanced/predicates#x-jt-predicate)).
+
 See [RDF round-trip](/advanced/quads) for `toQuads` / `fromQuads` documentation.
 
 ## Related

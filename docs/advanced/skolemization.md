@@ -27,6 +27,10 @@ Mints IRIs matching the [RDF 1.1 §3.5 well-known genid pattern](https://www.w3.
 
 <RunnableExample src="examples/docs/advanced/51-skolemize-well-known-genid" />
 
+`Skolemize.isWellKnownGenid(iri)` tests whether a given IRI matches the well-known genid pattern. Useful when writing custom deskolemization passes or filtering quad sets:
+
+<RunnableExample src="examples/docs/advanced/125-skolemize-genid" />
+
 Use this strategy when you want to publish RDF over the wire (which requires named subjects) but preserve blank-node identity on the receiving end.
 
 ### `Skolemize.uuid()`
