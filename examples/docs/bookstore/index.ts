@@ -36,6 +36,7 @@ import { ReviewIdSchema } from './entities/ReviewId.js';
 import { StockLevelSchema } from './entities/StockLevel.js';
 import { StreetLineSchema } from './entities/StreetLine.js';
 import { TitleSchema } from './entities/Title.js';
+import { VerifiedPurchaseSchema } from './entities/VerifiedPurchase.js';
 import { WeightGramsSchema } from './entities/WeightGrams.js';
 
 // CustomerName + AuthorName are sibling extensions of PersonName — must import after
@@ -123,6 +124,7 @@ export const bookstoreSchemas = [
   StockLevelSchema,
   StreetLineSchema,
   TitleSchema,
+  VerifiedPurchaseSchema,
   WeightGramsSchema,
   // CustomerName + AuthorName are sibling extensions of PersonName
   AuthorNameSchema,
@@ -350,4 +352,5 @@ export { SimilarBookSchema } from './entities/SimilarBook.js';
 export { StockLevelSchema } from './entities/StockLevel.js';
 export { StreetLineSchema } from './entities/StreetLine.js';
 export { TitleSchema } from './entities/Title.js';
+export { VerifiedPurchaseSchema } from './entities/VerifiedPurchase.js';
 export { WeightGramsSchema } from './entities/WeightGrams.js';

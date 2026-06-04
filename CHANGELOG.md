@@ -7,6 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-06-04
+
+A SHACL-native validation release: `JsonTology.validateWithShacl` closes the
+`toShacl` / `validateWithShacl` loop so the same shapes that describe a schema
+also enforce it. Annotated-edge annotation predicates are now grounded to a
+shared vocabulary and emit valid RFC 3987 IRIs. Under the 0.x policy a breaking
+change is a minor bump.
+
+### Added
+
+- **`JsonTology.validateWithShacl(shapes, data)` — native SHACL validation
+  engine.** Accepts the `OntologyBuilder` produced by `toShacl()` or raw SHACL
+  shape quads and returns a `ShaclValidationReportInterface` (`{ conforms,
+  results }`). Each `ShaclValidationResultInterface` entry carries `focusNode`,
+  `resultPath`, `resultSeverity`, `sourceConstraintComponent`, `value`, and
+  `resultMessage`. Covers `sh:minCount`/`maxCount`, `sh:datatype`, `sh:class`,
+  `sh:node`, `sh:pattern`, `sh:minLength`/`maxLength`,
+  `sh:minInclusive`/`maxInclusive`/`minExclusive`/`maxExclusive`, `sh:hasValue`,
+  `sh:in`, `sh:closed`, `sh:and`/`or`/`not` (including blank-node member shapes),
+  `sh:qualifiedValueShape` with `qualifiedMinCount`/`maxCount`, and node-level
+  constraints. Recursion is cycle-safe. New public interfaces
+  `ShaclValidationReportInterface` and `ShaclValidationResultInterface`; new type
+  `ShaclSeverityType`.
+- **Predicate grounding for annotated-edge annotation sub-schemas.** Annotation
+  sub-schemas inside `Compose.annotatedEdge` accept `x-jt-predicate` / `$id` to
+  ground the annotation's predicate IRI to a shared vocabulary (e.g. schema.org).
+- **Bookstore drift-check (`npm run build:bookstore-tbox:check`).** Verifies the
+  generated bookstore graph data matches the current domain definition; wired into
+  CI.
+- **Runnable examples for previously-undocumented public API surface.** New
+  examples cover: CURIE `toCurie`/`fromCurie`, `addTransform`,
+  `BLANK_NODE_IRI_FOR`, `validateWithShacl`, `OntologyBuilder.shaclQuads` /
+  `addFromJsonLd` / `addShaclFromJsonLd`, `owl-gen-node` `writeFromTbox` /
+  `writeRegistryDirectory`, `GraphEngine`, `Skolemize.isWellKnownGenid`,
+  `Compose.subClassOf` / `disjointWith` / `complementOf`, and duplicate
+  detection. New `docs/advanced/shacl-validation.md` documentation page.
+
+### Changed
+
+- **Annotated-edge annotation predicate IRIs are grounded at projection/lift time
+  (breaking, minor).** `PredicateResolver` resolves annotation predicates to
+  canonical-flat or vocabulary-grounded IRIs, replacing the previous
+  class-scoped pointer form. The predicate IRIs emitted for annotation quads in
+  `toQuads` and `toShacl` output change accordingly.
+
+### Fixed
+
+- **Annotated-edge annotation predicates previously emitted an invalid
+  multi-fragment IRI** (two `#`), rejected by RFC 3987-compliant triplestores
+  (Oxigraph, Apache Jena Fuseki). Annotation predicates now emit a valid
+  single-fragment IRI.
+- **`PredicateResolver` rejects any resolved predicate IRI containing more than
+  one `#` fragment** with `GraphError` code `INVALID_PREDICATE_IRI`.
+- **`docs/bookstore-domain.md` reflects the current entity set** and the
+  vocabulary-grounded annotated-edge `Review`.
+
 ## [0.19.0] - 2026-06-03
 
 A type-architecture release: every typed public method yields a precise type or a

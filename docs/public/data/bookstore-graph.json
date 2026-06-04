@@ -20,6 +20,15 @@
     },
     {
       "data": {
+        "id": "urn:bookstore:Book__subClassOf__urn:bookstore:BibliographicRecord",
+        "kind": "subClassOf",
+        "label": "subClassOf",
+        "source": "urn:bookstore:Book",
+        "target": "urn:bookstore:BibliographicRecord"
+      }
+    },
+    {
+      "data": {
         "id": "urn:bookstore:EBook__subClassOf__urn:bookstore:Book",
         "kind": "subClassOf",
         "label": "subClassOf",
@@ -164,29 +173,47 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:Book__annotations__urn:bookstore:BookAnnotations",
-        "kind": "range",
-        "label": "annotations",
-        "source": "urn:bookstore:Book",
-        "target": "urn:bookstore:BookAnnotations"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Book__authors__urn:bookstore:AuthorName",
+        "id": "urn:bookstore:BibliographicRecord__authors__urn:bookstore:AuthorName",
         "kind": "range",
         "label": "authors",
-        "source": "urn:bookstore:Book",
+        "source": "urn:bookstore:BibliographicRecord",
         "target": "urn:bookstore:AuthorName"
       }
     },
     {
       "data": {
-        "id": "urn:bookstore:Book__isbn__urn:bookstore:Isbn",
+        "id": "urn:bookstore:BibliographicRecord__isbn__urn:bookstore:Isbn",
         "kind": "range",
         "label": "isbn",
-        "source": "urn:bookstore:Book",
+        "source": "urn:bookstore:BibliographicRecord",
         "target": "urn:bookstore:Isbn"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:BibliographicRecord__publishedOn__urn:bookstore:PublicationDate",
+        "kind": "range",
+        "label": "publishedOn",
+        "source": "urn:bookstore:BibliographicRecord",
+        "target": "urn:bookstore:PublicationDate"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:BibliographicRecord__title__urn:bookstore:Title",
+        "kind": "range",
+        "label": "title",
+        "source": "urn:bookstore:BibliographicRecord",
+        "target": "urn:bookstore:Title"
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Book__annotations__urn:bookstore:BookAnnotations",
+        "kind": "range",
+        "label": "annotations",
+        "source": "urn:bookstore:Book",
+        "target": "urn:bookstore:BookAnnotations"
       }
     },
     {
@@ -209,15 +236,6 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:Book__publishedOn__urn:bookstore:PublicationDate",
-        "kind": "range",
-        "label": "publishedOn",
-        "source": "urn:bookstore:Book",
-        "target": "urn:bookstore:PublicationDate"
-      }
-    },
-    {
-      "data": {
         "id": "urn:bookstore:Book__ratings__urn:bookstore:BookRatingHistogram",
         "kind": "range",
         "label": "ratings",
@@ -232,15 +250,6 @@
         "label": "stockLevel",
         "source": "urn:bookstore:Book",
         "target": "urn:bookstore:StockLevel"
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Book__title__urn:bookstore:Title",
-        "kind": "range",
-        "label": "title",
-        "source": "urn:bookstore:Book",
-        "target": "urn:bookstore:Title"
       }
     },
     {
@@ -776,10 +785,10 @@
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc__a__urn:bookstore:Review",
+        "id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr__a__urn:bookstore:Review",
         "kind": "instanceType",
         "label": "a",
-        "source": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc",
+        "source": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr",
         "target": "urn:bookstore:Review"
       }
     },
@@ -1019,38 +1028,56 @@
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte__qcyop8__inStock__literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#inStock#21",
-        "kind": "instanceProperty",
-        "label": "inStock",
-        "source": "https://bookstore.example/id/die-unendliche-geschichte__qcyop8",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#inStock#21"
-      }
-    },
-    {
-      "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte__qcyop8__isbn__literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#isbn#22",
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__qcyop8__isbn__literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#isbn#21",
         "kind": "instanceProperty",
         "label": "isbn",
         "source": "https://bookstore.example/id/die-unendliche-geschichte__qcyop8",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#isbn#22"
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#isbn#21"
       }
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/850-eur__ero9c3__amount__literal:https://bookstore.example/id/850-eur__ero9c3#amount#23",
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__qcyop8__publishedOn__literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#publishedOn#22",
+        "kind": "instanceProperty",
+        "label": "publishedOn",
+        "source": "https://bookstore.example/id/die-unendliche-geschichte__qcyop8",
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#publishedOn#22"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__qcyop8__title__literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#title#23",
+        "kind": "instanceProperty",
+        "label": "title",
+        "source": "https://bookstore.example/id/die-unendliche-geschichte__qcyop8",
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#title#23"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__qcyop8__inStock__literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#inStock#24",
+        "kind": "instanceProperty",
+        "label": "inStock",
+        "source": "https://bookstore.example/id/die-unendliche-geschichte__qcyop8",
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#inStock#24"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/850-eur__ero9c3__amount__literal:https://bookstore.example/id/850-eur__ero9c3#amount#25",
         "kind": "instanceProperty",
         "label": "amount",
         "source": "https://bookstore.example/id/850-eur__ero9c3",
-        "target": "literal:https://bookstore.example/id/850-eur__ero9c3#amount#23"
+        "target": "literal:https://bookstore.example/id/850-eur__ero9c3#amount#25"
       }
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/850-eur__ero9c3__currency__literal:https://bookstore.example/id/850-eur__ero9c3#currency#24",
+        "id": "https://bookstore.example/id/850-eur__ero9c3__currency__literal:https://bookstore.example/id/850-eur__ero9c3#currency#26",
         "kind": "instanceProperty",
         "label": "currency",
         "source": "https://bookstore.example/id/850-eur__ero9c3",
-        "target": "literal:https://bookstore.example/id/850-eur__ero9c3#currency#24"
+        "target": "literal:https://bookstore.example/id/850-eur__ero9c3#currency#26"
       }
     },
     {
@@ -1064,38 +1091,20 @@
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte__qcyop8__printStatus__literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#printStatus#25",
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__qcyop8__printStatus__literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#printStatus#27",
         "kind": "instanceProperty",
         "label": "printStatus",
         "source": "https://bookstore.example/id/die-unendliche-geschichte__qcyop8",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#printStatus#25"
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#printStatus#27"
       }
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte__qcyop8__publishedOn__literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#publishedOn#26",
-        "kind": "instanceProperty",
-        "label": "publishedOn",
-        "source": "https://bookstore.example/id/die-unendliche-geschichte__qcyop8",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#publishedOn#26"
-      }
-    },
-    {
-      "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte__qcyop8__stockLevel__literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#stockLevel#27",
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__qcyop8__stockLevel__literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#stockLevel#28",
         "kind": "instanceProperty",
         "label": "stockLevel",
         "source": "https://bookstore.example/id/die-unendliche-geschichte__qcyop8",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#stockLevel#27"
-      }
-    },
-    {
-      "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte__qcyop8__title__literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#title#28",
-        "kind": "instanceProperty",
-        "label": "title",
-        "source": "https://bookstore.example/id/die-unendliche-geschichte__qcyop8",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#title#28"
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#stockLevel#28"
       }
     },
     {
@@ -1154,38 +1163,47 @@
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4__inStock__literal:https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4#inStock#35",
-        "kind": "instanceProperty",
-        "label": "inStock",
-        "source": "https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4#inStock#35"
-      }
-    },
-    {
-      "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4__isbn__literal:https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4#isbn#36",
+        "id": "https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4__isbn__literal:https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4#isbn#35",
         "kind": "instanceProperty",
         "label": "isbn",
         "source": "https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4#isbn#36"
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4#isbn#35"
       }
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/699-eur__19793r__amount__literal:https://bookstore.example/id/699-eur__19793r#amount#37",
+        "id": "https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4__title__literal:https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4#title#36",
+        "kind": "instanceProperty",
+        "label": "title",
+        "source": "https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4",
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4#title#36"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4__inStock__literal:https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4#inStock#37",
+        "kind": "instanceProperty",
+        "label": "inStock",
+        "source": "https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4",
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4#inStock#37"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/699-eur__19793r__amount__literal:https://bookstore.example/id/699-eur__19793r#amount#38",
         "kind": "instanceProperty",
         "label": "amount",
         "source": "https://bookstore.example/id/699-eur__19793r",
-        "target": "literal:https://bookstore.example/id/699-eur__19793r#amount#37"
+        "target": "literal:https://bookstore.example/id/699-eur__19793r#amount#38"
       }
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/699-eur__19793r__currency__literal:https://bookstore.example/id/699-eur__19793r#currency#38",
+        "id": "https://bookstore.example/id/699-eur__19793r__currency__literal:https://bookstore.example/id/699-eur__19793r#currency#39",
         "kind": "instanceProperty",
         "label": "currency",
         "source": "https://bookstore.example/id/699-eur__19793r",
-        "target": "literal:https://bookstore.example/id/699-eur__19793r#currency#38"
+        "target": "literal:https://bookstore.example/id/699-eur__19793r#currency#39"
       }
     },
     {
@@ -1199,20 +1217,11 @@
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4__printStatus__literal:https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4#printStatus#39",
+        "id": "https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4__printStatus__literal:https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4#printStatus#40",
         "kind": "instanceProperty",
         "label": "printStatus",
         "source": "https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4#printStatus#39"
-      }
-    },
-    {
-      "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4__title__literal:https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4#title#40",
-        "kind": "instanceProperty",
-        "label": "title",
-        "source": "https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4#title#40"
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4#printStatus#40"
       }
     },
     {
@@ -1262,38 +1271,47 @@
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte__hxov0h__inStock__literal:https://bookstore.example/id/die-unendliche-geschichte__hxov0h#inStock#45",
-        "kind": "instanceProperty",
-        "label": "inStock",
-        "source": "https://bookstore.example/id/die-unendliche-geschichte__hxov0h",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__hxov0h#inStock#45"
-      }
-    },
-    {
-      "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte__hxov0h__isbn__literal:https://bookstore.example/id/die-unendliche-geschichte__hxov0h#isbn#46",
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__hxov0h__isbn__literal:https://bookstore.example/id/die-unendliche-geschichte__hxov0h#isbn#45",
         "kind": "instanceProperty",
         "label": "isbn",
         "source": "https://bookstore.example/id/die-unendliche-geschichte__hxov0h",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__hxov0h#isbn#46"
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__hxov0h#isbn#45"
       }
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/850-eur__ero9c3__amount__literal:https://bookstore.example/id/850-eur__ero9c3#amount#47",
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__hxov0h__title__literal:https://bookstore.example/id/die-unendliche-geschichte__hxov0h#title#46",
+        "kind": "instanceProperty",
+        "label": "title",
+        "source": "https://bookstore.example/id/die-unendliche-geschichte__hxov0h",
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__hxov0h#title#46"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__hxov0h__inStock__literal:https://bookstore.example/id/die-unendliche-geschichte__hxov0h#inStock#47",
+        "kind": "instanceProperty",
+        "label": "inStock",
+        "source": "https://bookstore.example/id/die-unendliche-geschichte__hxov0h",
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__hxov0h#inStock#47"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/850-eur__ero9c3__amount__literal:https://bookstore.example/id/850-eur__ero9c3#amount#48",
         "kind": "instanceProperty",
         "label": "amount",
         "source": "https://bookstore.example/id/850-eur__ero9c3",
-        "target": "literal:https://bookstore.example/id/850-eur__ero9c3#amount#47"
+        "target": "literal:https://bookstore.example/id/850-eur__ero9c3#amount#48"
       }
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/850-eur__ero9c3__currency__literal:https://bookstore.example/id/850-eur__ero9c3#currency#48",
+        "id": "https://bookstore.example/id/850-eur__ero9c3__currency__literal:https://bookstore.example/id/850-eur__ero9c3#currency#49",
         "kind": "instanceProperty",
         "label": "currency",
         "source": "https://bookstore.example/id/850-eur__ero9c3",
-        "target": "literal:https://bookstore.example/id/850-eur__ero9c3#currency#48"
+        "target": "literal:https://bookstore.example/id/850-eur__ero9c3#currency#49"
       }
     },
     {
@@ -1307,20 +1325,11 @@
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte__hxov0h__printStatus__literal:https://bookstore.example/id/die-unendliche-geschichte__hxov0h#printStatus#49",
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__hxov0h__printStatus__literal:https://bookstore.example/id/die-unendliche-geschichte__hxov0h#printStatus#50",
         "kind": "instanceProperty",
         "label": "printStatus",
         "source": "https://bookstore.example/id/die-unendliche-geschichte__hxov0h",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__hxov0h#printStatus#49"
-      }
-    },
-    {
-      "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte__hxov0h__title__literal:https://bookstore.example/id/die-unendliche-geschichte__hxov0h#title#50",
-        "kind": "instanceProperty",
-        "label": "title",
-        "source": "https://bookstore.example/id/die-unendliche-geschichte__hxov0h",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__hxov0h#title#50"
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__hxov0h#printStatus#50"
       }
     },
     {
@@ -1361,38 +1370,47 @@
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte__1dmq3g__inStock__literal:https://bookstore.example/id/die-unendliche-geschichte__1dmq3g#inStock#55",
-        "kind": "instanceProperty",
-        "label": "inStock",
-        "source": "https://bookstore.example/id/die-unendliche-geschichte__1dmq3g",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__1dmq3g#inStock#55"
-      }
-    },
-    {
-      "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte__1dmq3g__isbn__literal:https://bookstore.example/id/die-unendliche-geschichte__1dmq3g#isbn#56",
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__1dmq3g__isbn__literal:https://bookstore.example/id/die-unendliche-geschichte__1dmq3g#isbn#55",
         "kind": "instanceProperty",
         "label": "isbn",
         "source": "https://bookstore.example/id/die-unendliche-geschichte__1dmq3g",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__1dmq3g#isbn#56"
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__1dmq3g#isbn#55"
       }
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/850-eur__ero9c3__amount__literal:https://bookstore.example/id/850-eur__ero9c3#amount#57",
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__1dmq3g__title__literal:https://bookstore.example/id/die-unendliche-geschichte__1dmq3g#title#56",
+        "kind": "instanceProperty",
+        "label": "title",
+        "source": "https://bookstore.example/id/die-unendliche-geschichte__1dmq3g",
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__1dmq3g#title#56"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__1dmq3g__inStock__literal:https://bookstore.example/id/die-unendliche-geschichte__1dmq3g#inStock#57",
+        "kind": "instanceProperty",
+        "label": "inStock",
+        "source": "https://bookstore.example/id/die-unendliche-geschichte__1dmq3g",
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__1dmq3g#inStock#57"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/850-eur__ero9c3__amount__literal:https://bookstore.example/id/850-eur__ero9c3#amount#58",
         "kind": "instanceProperty",
         "label": "amount",
         "source": "https://bookstore.example/id/850-eur__ero9c3",
-        "target": "literal:https://bookstore.example/id/850-eur__ero9c3#amount#57"
+        "target": "literal:https://bookstore.example/id/850-eur__ero9c3#amount#58"
       }
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/850-eur__ero9c3__currency__literal:https://bookstore.example/id/850-eur__ero9c3#currency#58",
+        "id": "https://bookstore.example/id/850-eur__ero9c3__currency__literal:https://bookstore.example/id/850-eur__ero9c3#currency#59",
         "kind": "instanceProperty",
         "label": "currency",
         "source": "https://bookstore.example/id/850-eur__ero9c3",
-        "target": "literal:https://bookstore.example/id/850-eur__ero9c3#currency#58"
+        "target": "literal:https://bookstore.example/id/850-eur__ero9c3#currency#59"
       }
     },
     {
@@ -1406,20 +1424,11 @@
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte__1dmq3g__printStatus__literal:https://bookstore.example/id/die-unendliche-geschichte__1dmq3g#printStatus#59",
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__1dmq3g__printStatus__literal:https://bookstore.example/id/die-unendliche-geschichte__1dmq3g#printStatus#60",
         "kind": "instanceProperty",
         "label": "printStatus",
         "source": "https://bookstore.example/id/die-unendliche-geschichte__1dmq3g",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__1dmq3g#printStatus#59"
-      }
-    },
-    {
-      "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte__1dmq3g__title__literal:https://bookstore.example/id/die-unendliche-geschichte__1dmq3g#title#60",
-        "kind": "instanceProperty",
-        "label": "title",
-        "source": "https://bookstore.example/id/die-unendliche-geschichte__1dmq3g",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__1dmq3g#title#60"
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__1dmq3g#printStatus#60"
       }
     },
     {
@@ -1496,38 +1505,47 @@
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n__inStock__literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#inStock#69",
-        "kind": "instanceProperty",
-        "label": "inStock",
-        "source": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#inStock#69"
-      }
-    },
-    {
-      "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n__isbn__literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#isbn#70",
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n__isbn__literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#isbn#69",
         "kind": "instanceProperty",
         "label": "isbn",
         "source": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#isbn#70"
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#isbn#69"
       }
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/850-eur__ero9c3__amount__literal:https://bookstore.example/id/850-eur__ero9c3#amount#71",
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n__title__literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#title#70",
+        "kind": "instanceProperty",
+        "label": "title",
+        "source": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n",
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#title#70"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n__inStock__literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#inStock#71",
+        "kind": "instanceProperty",
+        "label": "inStock",
+        "source": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n",
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#inStock#71"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/850-eur__ero9c3__amount__literal:https://bookstore.example/id/850-eur__ero9c3#amount#72",
         "kind": "instanceProperty",
         "label": "amount",
         "source": "https://bookstore.example/id/850-eur__ero9c3",
-        "target": "literal:https://bookstore.example/id/850-eur__ero9c3#amount#71"
+        "target": "literal:https://bookstore.example/id/850-eur__ero9c3#amount#72"
       }
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/850-eur__ero9c3__currency__literal:https://bookstore.example/id/850-eur__ero9c3#currency#72",
+        "id": "https://bookstore.example/id/850-eur__ero9c3__currency__literal:https://bookstore.example/id/850-eur__ero9c3#currency#73",
         "kind": "instanceProperty",
         "label": "currency",
         "source": "https://bookstore.example/id/850-eur__ero9c3",
-        "target": "literal:https://bookstore.example/id/850-eur__ero9c3#currency#72"
+        "target": "literal:https://bookstore.example/id/850-eur__ero9c3#currency#73"
       }
     },
     {
@@ -1541,20 +1559,11 @@
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n__printStatus__literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#printStatus#73",
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n__printStatus__literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#printStatus#74",
         "kind": "instanceProperty",
         "label": "printStatus",
         "source": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#printStatus#73"
-      }
-    },
-    {
-      "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n__title__literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#title#74",
-        "kind": "instanceProperty",
-        "label": "title",
-        "source": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#title#74"
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#printStatus#74"
       }
     },
     {
@@ -1577,38 +1586,47 @@
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/momo__1hjwff__inStock__literal:https://bookstore.example/id/momo__1hjwff#inStock#76",
-        "kind": "instanceProperty",
-        "label": "inStock",
-        "source": "https://bookstore.example/id/momo__1hjwff",
-        "target": "literal:https://bookstore.example/id/momo__1hjwff#inStock#76"
-      }
-    },
-    {
-      "data": {
-        "id": "https://bookstore.example/id/momo__1hjwff__isbn__literal:https://bookstore.example/id/momo__1hjwff#isbn#77",
+        "id": "https://bookstore.example/id/momo__1hjwff__isbn__literal:https://bookstore.example/id/momo__1hjwff#isbn#76",
         "kind": "instanceProperty",
         "label": "isbn",
         "source": "https://bookstore.example/id/momo__1hjwff",
-        "target": "literal:https://bookstore.example/id/momo__1hjwff#isbn#77"
+        "target": "literal:https://bookstore.example/id/momo__1hjwff#isbn#76"
       }
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/380-eur__mgbvsv__amount__literal:https://bookstore.example/id/380-eur__mgbvsv#amount#78",
+        "id": "https://bookstore.example/id/momo__1hjwff__title__literal:https://bookstore.example/id/momo__1hjwff#title#77",
+        "kind": "instanceProperty",
+        "label": "title",
+        "source": "https://bookstore.example/id/momo__1hjwff",
+        "target": "literal:https://bookstore.example/id/momo__1hjwff#title#77"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/momo__1hjwff__inStock__literal:https://bookstore.example/id/momo__1hjwff#inStock#78",
+        "kind": "instanceProperty",
+        "label": "inStock",
+        "source": "https://bookstore.example/id/momo__1hjwff",
+        "target": "literal:https://bookstore.example/id/momo__1hjwff#inStock#78"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/380-eur__mgbvsv__amount__literal:https://bookstore.example/id/380-eur__mgbvsv#amount#79",
         "kind": "instanceProperty",
         "label": "amount",
         "source": "https://bookstore.example/id/380-eur__mgbvsv",
-        "target": "literal:https://bookstore.example/id/380-eur__mgbvsv#amount#78"
+        "target": "literal:https://bookstore.example/id/380-eur__mgbvsv#amount#79"
       }
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/380-eur__mgbvsv__currency__literal:https://bookstore.example/id/380-eur__mgbvsv#currency#79",
+        "id": "https://bookstore.example/id/380-eur__mgbvsv__currency__literal:https://bookstore.example/id/380-eur__mgbvsv#currency#80",
         "kind": "instanceProperty",
         "label": "currency",
         "source": "https://bookstore.example/id/380-eur__mgbvsv",
-        "target": "literal:https://bookstore.example/id/380-eur__mgbvsv#currency#79"
+        "target": "literal:https://bookstore.example/id/380-eur__mgbvsv#currency#80"
       }
     },
     {
@@ -1622,20 +1640,11 @@
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/momo__1hjwff__printStatus__literal:https://bookstore.example/id/momo__1hjwff#printStatus#80",
+        "id": "https://bookstore.example/id/momo__1hjwff__printStatus__literal:https://bookstore.example/id/momo__1hjwff#printStatus#81",
         "kind": "instanceProperty",
         "label": "printStatus",
         "source": "https://bookstore.example/id/momo__1hjwff",
-        "target": "literal:https://bookstore.example/id/momo__1hjwff#printStatus#80"
-      }
-    },
-    {
-      "data": {
-        "id": "https://bookstore.example/id/momo__1hjwff__title__literal:https://bookstore.example/id/momo__1hjwff#title#81",
-        "kind": "instanceProperty",
-        "label": "title",
-        "source": "https://bookstore.example/id/momo__1hjwff",
-        "target": "literal:https://bookstore.example/id/momo__1hjwff#title#81"
+        "target": "literal:https://bookstore.example/id/momo__1hjwff#printStatus#81"
       }
     },
     {
@@ -1658,56 +1667,56 @@
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n__inStock__literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#inStock#83",
-        "kind": "instanceProperty",
-        "label": "inStock",
-        "source": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#inStock#83"
-      }
-    },
-    {
-      "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n__isbn__literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#isbn#84",
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n__isbn__literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#isbn#83",
         "kind": "instanceProperty",
         "label": "isbn",
         "source": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#isbn#84"
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#isbn#83"
       }
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/850-eur__ero9c3__amount__literal:https://bookstore.example/id/850-eur__ero9c3#amount#85",
-        "kind": "instanceProperty",
-        "label": "amount",
-        "source": "https://bookstore.example/id/850-eur__ero9c3",
-        "target": "literal:https://bookstore.example/id/850-eur__ero9c3#amount#85"
-      }
-    },
-    {
-      "data": {
-        "id": "https://bookstore.example/id/850-eur__ero9c3__currency__literal:https://bookstore.example/id/850-eur__ero9c3#currency#86",
-        "kind": "instanceProperty",
-        "label": "currency",
-        "source": "https://bookstore.example/id/850-eur__ero9c3",
-        "target": "literal:https://bookstore.example/id/850-eur__ero9c3#currency#86"
-      }
-    },
-    {
-      "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n__printStatus__literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#printStatus#87",
-        "kind": "instanceProperty",
-        "label": "printStatus",
-        "source": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#printStatus#87"
-      }
-    },
-    {
-      "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n__title__literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#title#88",
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n__title__literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#title#84",
         "kind": "instanceProperty",
         "label": "title",
         "source": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#title#88"
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#title#84"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n__inStock__literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#inStock#85",
+        "kind": "instanceProperty",
+        "label": "inStock",
+        "source": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n",
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#inStock#85"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/850-eur__ero9c3__amount__literal:https://bookstore.example/id/850-eur__ero9c3#amount#86",
+        "kind": "instanceProperty",
+        "label": "amount",
+        "source": "https://bookstore.example/id/850-eur__ero9c3",
+        "target": "literal:https://bookstore.example/id/850-eur__ero9c3#amount#86"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/850-eur__ero9c3__currency__literal:https://bookstore.example/id/850-eur__ero9c3#currency#87",
+        "kind": "instanceProperty",
+        "label": "currency",
+        "source": "https://bookstore.example/id/850-eur__ero9c3",
+        "target": "literal:https://bookstore.example/id/850-eur__ero9c3#currency#87"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n__printStatus__literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#printStatus#88",
+        "kind": "instanceProperty",
+        "label": "printStatus",
+        "source": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n",
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#printStatus#88"
       }
     },
     {
@@ -1730,56 +1739,56 @@
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/momo__1hjwff__inStock__literal:https://bookstore.example/id/momo__1hjwff#inStock#90",
-        "kind": "instanceProperty",
-        "label": "inStock",
-        "source": "https://bookstore.example/id/momo__1hjwff",
-        "target": "literal:https://bookstore.example/id/momo__1hjwff#inStock#90"
-      }
-    },
-    {
-      "data": {
-        "id": "https://bookstore.example/id/momo__1hjwff__isbn__literal:https://bookstore.example/id/momo__1hjwff#isbn#91",
+        "id": "https://bookstore.example/id/momo__1hjwff__isbn__literal:https://bookstore.example/id/momo__1hjwff#isbn#90",
         "kind": "instanceProperty",
         "label": "isbn",
         "source": "https://bookstore.example/id/momo__1hjwff",
-        "target": "literal:https://bookstore.example/id/momo__1hjwff#isbn#91"
+        "target": "literal:https://bookstore.example/id/momo__1hjwff#isbn#90"
       }
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/380-eur__mgbvsv__amount__literal:https://bookstore.example/id/380-eur__mgbvsv#amount#92",
-        "kind": "instanceProperty",
-        "label": "amount",
-        "source": "https://bookstore.example/id/380-eur__mgbvsv",
-        "target": "literal:https://bookstore.example/id/380-eur__mgbvsv#amount#92"
-      }
-    },
-    {
-      "data": {
-        "id": "https://bookstore.example/id/380-eur__mgbvsv__currency__literal:https://bookstore.example/id/380-eur__mgbvsv#currency#93",
-        "kind": "instanceProperty",
-        "label": "currency",
-        "source": "https://bookstore.example/id/380-eur__mgbvsv",
-        "target": "literal:https://bookstore.example/id/380-eur__mgbvsv#currency#93"
-      }
-    },
-    {
-      "data": {
-        "id": "https://bookstore.example/id/momo__1hjwff__printStatus__literal:https://bookstore.example/id/momo__1hjwff#printStatus#94",
-        "kind": "instanceProperty",
-        "label": "printStatus",
-        "source": "https://bookstore.example/id/momo__1hjwff",
-        "target": "literal:https://bookstore.example/id/momo__1hjwff#printStatus#94"
-      }
-    },
-    {
-      "data": {
-        "id": "https://bookstore.example/id/momo__1hjwff__title__literal:https://bookstore.example/id/momo__1hjwff#title#95",
+        "id": "https://bookstore.example/id/momo__1hjwff__title__literal:https://bookstore.example/id/momo__1hjwff#title#91",
         "kind": "instanceProperty",
         "label": "title",
         "source": "https://bookstore.example/id/momo__1hjwff",
-        "target": "literal:https://bookstore.example/id/momo__1hjwff#title#95"
+        "target": "literal:https://bookstore.example/id/momo__1hjwff#title#91"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/momo__1hjwff__inStock__literal:https://bookstore.example/id/momo__1hjwff#inStock#92",
+        "kind": "instanceProperty",
+        "label": "inStock",
+        "source": "https://bookstore.example/id/momo__1hjwff",
+        "target": "literal:https://bookstore.example/id/momo__1hjwff#inStock#92"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/380-eur__mgbvsv__amount__literal:https://bookstore.example/id/380-eur__mgbvsv#amount#93",
+        "kind": "instanceProperty",
+        "label": "amount",
+        "source": "https://bookstore.example/id/380-eur__mgbvsv",
+        "target": "literal:https://bookstore.example/id/380-eur__mgbvsv#amount#93"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/380-eur__mgbvsv__currency__literal:https://bookstore.example/id/380-eur__mgbvsv#currency#94",
+        "kind": "instanceProperty",
+        "label": "currency",
+        "source": "https://bookstore.example/id/380-eur__mgbvsv",
+        "target": "literal:https://bookstore.example/id/380-eur__mgbvsv#currency#94"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/momo__1hjwff__printStatus__literal:https://bookstore.example/id/momo__1hjwff#printStatus#95",
+        "kind": "instanceProperty",
+        "label": "printStatus",
+        "source": "https://bookstore.example/id/momo__1hjwff",
+        "target": "literal:https://bookstore.example/id/momo__1hjwff#printStatus#95"
       }
     },
     {
@@ -1802,56 +1811,56 @@
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n__inStock__literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#inStock#97",
-        "kind": "instanceProperty",
-        "label": "inStock",
-        "source": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#inStock#97"
-      }
-    },
-    {
-      "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n__isbn__literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#isbn#98",
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n__isbn__literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#isbn#97",
         "kind": "instanceProperty",
         "label": "isbn",
         "source": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#isbn#98"
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#isbn#97"
       }
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/850-eur__ero9c3__amount__literal:https://bookstore.example/id/850-eur__ero9c3#amount#99",
-        "kind": "instanceProperty",
-        "label": "amount",
-        "source": "https://bookstore.example/id/850-eur__ero9c3",
-        "target": "literal:https://bookstore.example/id/850-eur__ero9c3#amount#99"
-      }
-    },
-    {
-      "data": {
-        "id": "https://bookstore.example/id/850-eur__ero9c3__currency__literal:https://bookstore.example/id/850-eur__ero9c3#currency#100",
-        "kind": "instanceProperty",
-        "label": "currency",
-        "source": "https://bookstore.example/id/850-eur__ero9c3",
-        "target": "literal:https://bookstore.example/id/850-eur__ero9c3#currency#100"
-      }
-    },
-    {
-      "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n__printStatus__literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#printStatus#101",
-        "kind": "instanceProperty",
-        "label": "printStatus",
-        "source": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#printStatus#101"
-      }
-    },
-    {
-      "data": {
-        "id": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n__title__literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#title#102",
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n__title__literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#title#98",
         "kind": "instanceProperty",
         "label": "title",
         "source": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n",
-        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#title#102"
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#title#98"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n__inStock__literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#inStock#99",
+        "kind": "instanceProperty",
+        "label": "inStock",
+        "source": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n",
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#inStock#99"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/850-eur__ero9c3__amount__literal:https://bookstore.example/id/850-eur__ero9c3#amount#100",
+        "kind": "instanceProperty",
+        "label": "amount",
+        "source": "https://bookstore.example/id/850-eur__ero9c3",
+        "target": "literal:https://bookstore.example/id/850-eur__ero9c3#amount#100"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/850-eur__ero9c3__currency__literal:https://bookstore.example/id/850-eur__ero9c3#currency#101",
+        "kind": "instanceProperty",
+        "label": "currency",
+        "source": "https://bookstore.example/id/850-eur__ero9c3",
+        "target": "literal:https://bookstore.example/id/850-eur__ero9c3#currency#101"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n__printStatus__literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#printStatus#102",
+        "kind": "instanceProperty",
+        "label": "printStatus",
+        "source": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n",
+        "target": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#printStatus#102"
       }
     },
     {
@@ -1919,73 +1928,82 @@
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc__body__literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc#body#109",
+        "id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr__body__literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr#body#109",
         "kind": "instanceProperty",
         "label": "body",
-        "source": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc",
-        "target": "literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc#body#109"
+        "source": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr",
+        "target": "literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr#body#109"
       }
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc__bookIsbn__literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc#bookIsbn#110",
+        "id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr__bookIsbn__literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr#bookIsbn#110",
         "kind": "instanceProperty",
         "label": "bookIsbn",
-        "source": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc",
-        "target": "literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc#bookIsbn#110"
+        "source": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr",
+        "target": "literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr#bookIsbn#110"
       }
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc__customerId__literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc#customerId#111",
+        "id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr__customerId__literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr#customerId#111",
         "kind": "instanceProperty",
         "label": "customerId",
-        "source": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc",
-        "target": "literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc#customerId#111"
+        "source": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr",
+        "target": "literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr#customerId#111"
       }
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc__postedAt__literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc#postedAt#112",
+        "id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr__postedAt__literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr#postedAt#112",
         "kind": "instanceProperty",
         "label": "postedAt",
-        "source": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc",
-        "target": "literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc#postedAt#112"
+        "source": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr",
+        "target": "literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr#postedAt#112"
       }
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc__rating__literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc#rating#113",
+        "id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr__rating__literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr#rating#113",
         "kind": "instanceProperty",
         "label": "rating",
-        "source": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc",
-        "target": "literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc#rating#113"
+        "source": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr",
+        "target": "literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr#rating#113"
       }
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc__reviewId__literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc#reviewId#114",
+        "id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr__reviewId__literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr#reviewId#114",
         "kind": "instanceProperty",
         "label": "reviewId",
-        "source": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc",
-        "target": "literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc#reviewId#114"
+        "source": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr",
+        "target": "literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr#reviewId#114"
       }
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc__reviews__https://bookstore.example/books/9783522128001",
+        "id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr__reviews__https://bookstore.example/books/9783522128001",
         "kind": "instanceProperty",
         "label": "reviews",
-        "source": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc",
+        "source": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr",
         "target": "https://bookstore.example/books/9783522128001"
       }
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc__reviews {ratingGiven=5}__https://bookstore.example/books/9783522128001",
+        "id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr__reviews {ratingValue=5}__https://bookstore.example/books/9783522128001",
         "kind": "annotatedEdge",
-        "label": "reviews {ratingGiven=5}",
-        "source": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc",
+        "label": "reviews {ratingValue=5}",
+        "source": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr",
+        "target": "https://bookstore.example/books/9783522128001"
+      }
+    },
+    {
+      "data": {
+        "id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr__reviews {verified=true}__https://bookstore.example/books/9783522128001",
+        "kind": "annotatedEdge",
+        "label": "reviews {verified=true}",
+        "source": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr",
         "target": "https://bookstore.example/books/9783522128001"
       }
     },
@@ -2045,19 +2063,19 @@
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc__customerId__https://bookstore.example/id/bastian-balthazar-bux__uf8uei",
+        "id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr__customerId__https://bookstore.example/id/bastian-balthazar-bux__uf8uei",
         "kind": "instanceProperty",
         "label": "customerId",
-        "source": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc",
+        "source": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr",
         "target": "https://bookstore.example/id/bastian-balthazar-bux__uf8uei"
       }
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc__bookIsbn__https://bookstore.example/id/die-unendliche-geschichte__ds4s0n",
+        "id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr__bookIsbn__https://bookstore.example/id/die-unendliche-geschichte__ds4s0n",
         "kind": "instanceProperty",
         "label": "bookIsbn",
-        "source": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc",
+        "source": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr",
         "target": "https://bookstore.example/id/die-unendliche-geschichte__ds4s0n"
       }
     }
@@ -2070,13 +2088,13 @@
         "label": "AuthorName",
         "layer": "tbox",
         "position": {
-          "x": 1200,
-          "y": 1050
+          "x": 1680,
+          "y": 750
         }
       },
       "position": {
-        "x": 1200,
-        "y": 1050
+        "x": 1680,
+        "y": 750
       }
     },
     {
@@ -2086,12 +2104,12 @@
         "label": "PersonName",
         "layer": "tbox",
         "position": {
-          "x": 1200,
+          "x": 720,
           "y": 1350
         }
       },
       "position": {
-        "x": 1200,
+        "x": 720,
         "y": 1350
       }
     },
@@ -2102,13 +2120,13 @@
         "label": "CustomerName",
         "layer": "tbox",
         "position": {
-          "x": 480,
-          "y": 750
+          "x": 240,
+          "y": 1050
         }
       },
       "position": {
-        "x": 480,
-        "y": 750
+        "x": 240,
+        "y": 1050
       }
     },
     {
@@ -2118,12 +2136,12 @@
         "label": "Money",
         "layer": "tbox",
         "position": {
-          "x": 720,
+          "x": 1200,
           "y": 0
         }
       },
       "position": {
-        "x": 720,
+        "x": 1200,
         "y": 0
       }
     },
@@ -2150,22 +2168,6 @@
         "label": "BookAnnotations",
         "layer": "tbox",
         "position": {
-          "x": 240,
-          "y": 0
-        }
-      },
-      "position": {
-        "x": 240,
-        "y": 0
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:BookCatalogEntry",
-        "kind": "entity",
-        "label": "BookCatalogEntry",
-        "layer": "tbox",
-        "position": {
           "x": 480,
           "y": 0
         }
@@ -2177,18 +2179,34 @@
     },
     {
       "data": {
+        "id": "urn:bookstore:BookCatalogEntry",
+        "kind": "entity",
+        "label": "BookCatalogEntry",
+        "layer": "tbox",
+        "position": {
+          "x": 720,
+          "y": 0
+        }
+      },
+      "position": {
+        "x": 720,
+        "y": 0
+      }
+    },
+    {
+      "data": {
         "id": "urn:bookstore:BookCatalogEntryVariant",
         "kind": "primitive",
         "label": "BookCatalogEntryVariant",
         "layer": "tbox",
         "position": {
-          "x": 1680,
-          "y": 750
+          "x": 0,
+          "y": 1050
         }
       },
       "position": {
-        "x": 1680,
-        "y": 750
+        "x": 0,
+        "y": 1050
       }
     },
     {
@@ -2198,29 +2216,45 @@
         "label": "BookRatingHistogram",
         "layer": "tbox",
         "position": {
-          "x": 1440,
-          "y": 1050
+          "x": 960,
+          "y": 1200
         }
       },
       "position": {
-        "x": 1440,
-        "y": 1050
+        "x": 960,
+        "y": 1200
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:BibliographicRecord",
+        "kind": "entity",
+        "label": "BibliographicRecord",
+        "layer": "tbox",
+        "position": {
+          "x": 240,
+          "y": 0
+        }
+      },
+      "position": {
+        "x": 240,
+        "y": 0
       }
     },
     {
       "data": {
         "id": "urn:bookstore:Book",
-        "kind": "entity",
+        "kind": "primitive",
         "label": "Book",
         "layer": "tbox",
         "position": {
-          "x": 1200,
-          "y": 0
+          "x": 1440,
+          "y": 900
         }
       },
       "position": {
-        "x": 1200,
-        "y": 0
+        "x": 1440,
+        "y": 900
       }
     },
     {
@@ -2230,12 +2264,12 @@
         "label": "Customer",
         "layer": "tbox",
         "position": {
-          "x": 0,
+          "x": 960,
           "y": 150
         }
       },
       "position": {
-        "x": 0,
+        "x": 960,
         "y": 150
       }
     },
@@ -2244,6 +2278,38 @@
         "id": "urn:bookstore:OrderLine",
         "kind": "entity",
         "label": "OrderLine",
+        "layer": "tbox",
+        "position": {
+          "x": 1200,
+          "y": 150
+        }
+      },
+      "position": {
+        "x": 1200,
+        "y": 150
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Order",
+        "kind": "entity",
+        "label": "Order",
+        "layer": "tbox",
+        "position": {
+          "x": 0,
+          "y": 300
+        }
+      },
+      "position": {
+        "x": 0,
+        "y": 300
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Review",
+        "kind": "entity",
+        "label": "Review",
         "layer": "tbox",
         "position": {
           "x": 240,
@@ -2257,25 +2323,9 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:Order",
+        "id": "urn:bookstore:BookListPage",
         "kind": "entity",
-        "label": "Order",
-        "layer": "tbox",
-        "position": {
-          "x": 720,
-          "y": 150
-        }
-      },
-      "position": {
-        "x": 720,
-        "y": 150
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Review",
-        "kind": "entity",
-        "label": "Review",
+        "label": "BookListPage",
         "layer": "tbox",
         "position": {
           "x": 960,
@@ -2289,34 +2339,18 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:BookListPage",
-        "kind": "entity",
-        "label": "BookListPage",
-        "layer": "tbox",
-        "position": {
-          "x": 480,
-          "y": 150
-        }
-      },
-      "position": {
-        "x": 480,
-        "y": 150
-      }
-    },
-    {
-      "data": {
         "id": "urn:bookstore:EBook",
         "kind": "primitive",
         "label": "EBook",
         "layer": "tbox",
         "position": {
-          "x": 1680,
-          "y": 1050
+          "x": 1440,
+          "y": 1200
         }
       },
       "position": {
-        "x": 1680,
-        "y": 1050
+        "x": 1440,
+        "y": 1200
       }
     },
     {
@@ -2326,13 +2360,13 @@
         "label": "PrintBook",
         "layer": "tbox",
         "position": {
-          "x": 0,
-          "y": 1200
+          "x": 960,
+          "y": 1350
         }
       },
       "position": {
-        "x": 0,
-        "y": 1200
+        "x": 960,
+        "y": 1350
       }
     },
     {
@@ -2358,13 +2392,13 @@
         "label": "InPrintBook",
         "layer": "tbox",
         "position": {
-          "x": 960,
-          "y": 1050
+          "x": 480,
+          "y": 750
         }
       },
       "position": {
-        "x": 960,
-        "y": 1050
+        "x": 480,
+        "y": 750
       }
     },
     {
@@ -2374,12 +2408,12 @@
         "label": "OutOfPrintBook",
         "layer": "tbox",
         "position": {
-          "x": 960,
+          "x": 0,
           "y": 150
         }
       },
       "position": {
-        "x": 960,
+        "x": 0,
         "y": 150
       }
     },
@@ -2406,13 +2440,13 @@
         "label": "SimilarBook",
         "layer": "tbox",
         "position": {
-          "x": 0,
-          "y": 300
+          "x": 720,
+          "y": 150
         }
       },
       "position": {
-        "x": 0,
-        "y": 300
+        "x": 720,
+        "y": 150
       }
     },
     {
@@ -2422,12 +2456,12 @@
         "label": "Sequel",
         "layer": "tbox",
         "position": {
-          "x": 1200,
+          "x": 480,
           "y": 150
         }
       },
       "position": {
-        "x": 1200,
+        "x": 480,
         "y": 150
       }
     },
@@ -2438,13 +2472,13 @@
         "label": "Amount",
         "layer": "tbox",
         "position": {
-          "x": 960,
-          "y": 900
+          "x": 1440,
+          "y": 1050
         }
       },
       "position": {
-        "x": 960,
-        "y": 900
+        "x": 1440,
+        "y": 1050
       }
     },
     {
@@ -2454,13 +2488,13 @@
         "label": "CurrencyCode",
         "layer": "tbox",
         "position": {
-          "x": 1200,
-          "y": 900
+          "x": 1680,
+          "y": 1050
         }
       },
       "position": {
-        "x": 1200,
-        "y": 900
+        "x": 1680,
+        "y": 1050
       }
     },
     {
@@ -2534,29 +2568,13 @@
         "label": "Isbn",
         "layer": "tbox",
         "position": {
-          "x": 1440,
+          "x": 1680,
           "y": 900
         }
       },
       "position": {
-        "x": 1440,
+        "x": 1680,
         "y": 900
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:PrintStatus",
-        "kind": "primitive",
-        "label": "PrintStatus",
-        "layer": "tbox",
-        "position": {
-          "x": 240,
-          "y": 1200
-        }
-      },
-      "position": {
-        "x": 240,
-        "y": 1200
       }
     },
     {
@@ -2566,29 +2584,13 @@
         "label": "PublicationDate",
         "layer": "tbox",
         "position": {
-          "x": 480,
-          "y": 1200
+          "x": 0,
+          "y": 900
         }
       },
       "position": {
-        "x": 480,
-        "y": 1200
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:StockLevel",
-        "kind": "primitive",
-        "label": "StockLevel",
-        "layer": "tbox",
-        "position": {
-          "x": 720,
-          "y": 1200
-        }
-      },
-      "position": {
-        "x": 720,
-        "y": 1200
+        "x": 0,
+        "y": 900
       }
     },
     {
@@ -2599,259 +2601,19 @@
         "layer": "tbox",
         "position": {
           "x": 960,
-          "y": 1200
+          "y": 900
         }
       },
       "position": {
         "x": 960,
-        "y": 1200
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:CustomerId",
-        "kind": "primitive",
-        "label": "CustomerId",
-        "layer": "tbox",
-        "position": {
-          "x": 720,
-          "y": 900
-        }
-      },
-      "position": {
-        "x": 720,
         "y": 900
       }
     },
     {
       "data": {
-        "id": "urn:bookstore:Email",
+        "id": "urn:bookstore:PrintStatus",
         "kind": "primitive",
-        "label": "Email",
-        "layer": "tbox",
-        "position": {
-          "x": 720,
-          "y": 750
-        }
-      },
-      "position": {
-        "x": 720,
-        "y": 750
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Quantity",
-        "kind": "primitive",
-        "label": "Quantity",
-        "layer": "tbox",
-        "position": {
-          "x": 1440,
-          "y": 750
-        }
-      },
-      "position": {
-        "x": 1440,
-        "y": 750
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:OrderId",
-        "kind": "primitive",
-        "label": "OrderId",
-        "layer": "tbox",
-        "position": {
-          "x": 1680,
-          "y": 900
-        }
-      },
-      "position": {
-        "x": 1680,
-        "y": 900
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:Iso8601",
-        "kind": "primitive",
-        "label": "Iso8601",
-        "layer": "tbox",
-        "position": {
-          "x": 0,
-          "y": 1050
-        }
-      },
-      "position": {
-        "x": 0,
-        "y": 1050
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:ReviewBody",
-        "kind": "primitive",
-        "label": "ReviewBody",
-        "layer": "tbox",
-        "position": {
-          "x": 480,
-          "y": 1050
-        }
-      },
-      "position": {
-        "x": 480,
-        "y": 1050
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:RatingScore",
-        "kind": "primitive",
-        "label": "RatingScore",
-        "layer": "tbox",
-        "position": {
-          "x": 240,
-          "y": 1050
-        }
-      },
-      "position": {
-        "x": 240,
-        "y": 1050
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:ReviewId",
-        "kind": "primitive",
-        "label": "ReviewId",
-        "layer": "tbox",
-        "position": {
-          "x": 720,
-          "y": 1050
-        }
-      },
-      "position": {
-        "x": 720,
-        "y": 1050
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:PageNumber",
-        "kind": "primitive",
-        "label": "PageNumber",
-        "layer": "tbox",
-        "position": {
-          "x": 240,
-          "y": 900
-        }
-      },
-      "position": {
-        "x": 240,
-        "y": 900
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:PageSize",
-        "kind": "primitive",
-        "label": "PageSize",
-        "layer": "tbox",
-        "position": {
-          "x": 480,
-          "y": 900
-        }
-      },
-      "position": {
-        "x": 480,
-        "y": 900
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:PageCount",
-        "kind": "primitive",
-        "label": "PageCount",
-        "layer": "tbox",
-        "position": {
-          "x": 0,
-          "y": 900
-        }
-      },
-      "position": {
-        "x": 0,
-        "y": 900
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:DownloadUrl",
-        "kind": "primitive",
-        "label": "DownloadUrl",
-        "layer": "tbox",
-        "position": {
-          "x": 0,
-          "y": 1350
-        }
-      },
-      "position": {
-        "x": 0,
-        "y": 1350
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:EBookFormat",
-        "kind": "primitive",
-        "label": "EBookFormat",
-        "layer": "tbox",
-        "position": {
-          "x": 240,
-          "y": 1350
-        }
-      },
-      "position": {
-        "x": 240,
-        "y": 1350
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:FileSizeBytes",
-        "kind": "primitive",
-        "label": "FileSizeBytes",
-        "layer": "tbox",
-        "position": {
-          "x": 720,
-          "y": 1350
-        }
-      },
-      "position": {
-        "x": 720,
-        "y": 1350
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:BindingType",
-        "kind": "primitive",
-        "label": "BindingType",
-        "layer": "tbox",
-        "position": {
-          "x": 1680,
-          "y": 1200
-        }
-      },
-      "position": {
-        "x": 1680,
-        "y": 1200
-      }
-    },
-    {
-      "data": {
-        "id": "urn:bookstore:PrintPageCount",
-        "kind": "primitive",
-        "label": "PrintPageCount",
+        "label": "PrintStatus",
         "layer": "tbox",
         "position": {
           "x": 1440,
@@ -2865,9 +2627,9 @@
     },
     {
       "data": {
-        "id": "urn:bookstore:WeightGrams",
+        "id": "urn:bookstore:StockLevel",
         "kind": "primitive",
-        "label": "WeightGrams",
+        "label": "StockLevel",
         "layer": "tbox",
         "position": {
           "x": 480,
@@ -2881,17 +2643,289 @@
     },
     {
       "data": {
+        "id": "urn:bookstore:CustomerId",
+        "kind": "primitive",
+        "label": "CustomerId",
+        "layer": "tbox",
+        "position": {
+          "x": 1200,
+          "y": 900
+        }
+      },
+      "position": {
+        "x": 1200,
+        "y": 900
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Email",
+        "kind": "primitive",
+        "label": "Email",
+        "layer": "tbox",
+        "position": {
+          "x": 480,
+          "y": 1050
+        }
+      },
+      "position": {
+        "x": 480,
+        "y": 1050
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Quantity",
+        "kind": "primitive",
+        "label": "Quantity",
+        "layer": "tbox",
+        "position": {
+          "x": 0,
+          "y": 1200
+        }
+      },
+      "position": {
+        "x": 0,
+        "y": 1200
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:OrderId",
+        "kind": "primitive",
+        "label": "OrderId",
+        "layer": "tbox",
+        "position": {
+          "x": 720,
+          "y": 750
+        }
+      },
+      "position": {
+        "x": 720,
+        "y": 750
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:Iso8601",
+        "kind": "primitive",
+        "label": "Iso8601",
+        "layer": "tbox",
+        "position": {
+          "x": 1440,
+          "y": 750
+        }
+      },
+      "position": {
+        "x": 1440,
+        "y": 750
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:ReviewBody",
+        "kind": "primitive",
+        "label": "ReviewBody",
+        "layer": "tbox",
+        "position": {
+          "x": 480,
+          "y": 900
+        }
+      },
+      "position": {
+        "x": 480,
+        "y": 900
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:RatingScore",
+        "kind": "primitive",
+        "label": "RatingScore",
+        "layer": "tbox",
+        "position": {
+          "x": 240,
+          "y": 900
+        }
+      },
+      "position": {
+        "x": 240,
+        "y": 900
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:ReviewId",
+        "kind": "primitive",
+        "label": "ReviewId",
+        "layer": "tbox",
+        "position": {
+          "x": 720,
+          "y": 900
+        }
+      },
+      "position": {
+        "x": 720,
+        "y": 900
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:PageNumber",
+        "kind": "primitive",
+        "label": "PageNumber",
+        "layer": "tbox",
+        "position": {
+          "x": 960,
+          "y": 1050
+        }
+      },
+      "position": {
+        "x": 960,
+        "y": 1050
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:PageSize",
+        "kind": "primitive",
+        "label": "PageSize",
+        "layer": "tbox",
+        "position": {
+          "x": 1200,
+          "y": 1050
+        }
+      },
+      "position": {
+        "x": 1200,
+        "y": 1050
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:PageCount",
+        "kind": "primitive",
+        "label": "PageCount",
+        "layer": "tbox",
+        "position": {
+          "x": 720,
+          "y": 1050
+        }
+      },
+      "position": {
+        "x": 720,
+        "y": 1050
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:DownloadUrl",
+        "kind": "primitive",
+        "label": "DownloadUrl",
+        "layer": "tbox",
+        "position": {
+          "x": 1200,
+          "y": 1200
+        }
+      },
+      "position": {
+        "x": 1200,
+        "y": 1200
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:EBookFormat",
+        "kind": "primitive",
+        "label": "EBookFormat",
+        "layer": "tbox",
+        "position": {
+          "x": 1680,
+          "y": 1200
+        }
+      },
+      "position": {
+        "x": 1680,
+        "y": 1200
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:FileSizeBytes",
+        "kind": "primitive",
+        "label": "FileSizeBytes",
+        "layer": "tbox",
+        "position": {
+          "x": 240,
+          "y": 1350
+        }
+      },
+      "position": {
+        "x": 240,
+        "y": 1350
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:BindingType",
+        "kind": "primitive",
+        "label": "BindingType",
+        "layer": "tbox",
+        "position": {
+          "x": 720,
+          "y": 1200
+        }
+      },
+      "position": {
+        "x": 720,
+        "y": 1200
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:PrintPageCount",
+        "kind": "primitive",
+        "label": "PrintPageCount",
+        "layer": "tbox",
+        "position": {
+          "x": 1200,
+          "y": 1350
+        }
+      },
+      "position": {
+        "x": 1200,
+        "y": 1350
+      }
+    },
+    {
+      "data": {
+        "id": "urn:bookstore:WeightGrams",
+        "kind": "primitive",
+        "label": "WeightGrams",
+        "layer": "tbox",
+        "position": {
+          "x": 720,
+          "y": 1500
+        }
+      },
+      "position": {
+        "x": 720,
+        "y": 1500
+      }
+    },
+    {
+      "data": {
         "id": "urn:bookstore:EstimatedAgeYears",
         "kind": "primitive",
         "label": "EstimatedAgeYears",
         "layer": "tbox",
         "position": {
-          "x": 480,
+          "x": 0,
           "y": 1350
         }
       },
       "position": {
-        "x": 480,
+        "x": 0,
         "y": 1350
       }
     },
@@ -2902,12 +2936,12 @@
         "label": "FirstEditionYear",
         "layer": "tbox",
         "position": {
-          "x": 960,
+          "x": 480,
           "y": 1350
         }
       },
       "position": {
-        "x": 960,
+        "x": 480,
         "y": 1350
       }
     },
@@ -2934,12 +2968,12 @@
         "label": "authors",
         "layer": "tbox",
         "position": {
-          "x": 1200,
+          "x": 240,
           "y": 1200
         }
       },
       "position": {
-        "x": 1200,
+        "x": 240,
         "y": 1200
       }
     },
@@ -2950,12 +2984,12 @@
         "label": "printStatus",
         "layer": "tbox",
         "position": {
-          "x": 1440,
+          "x": 480,
           "y": 1200
         }
       },
       "position": {
-        "x": 1440,
+        "x": 480,
         "y": 1200
       }
     },
@@ -3297,7 +3331,7 @@
     },
     {
       "data": {
-        "id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc",
+        "id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr",
         "kind": "instance",
         "label": "Review",
         "layer": "abox",
@@ -3495,12 +3529,12 @@
         "label": "\"850\"",
         "layer": "abox",
         "position": {
-          "x": 1440,
+          "x": 1680,
           "y": 600
         }
       },
       "position": {
-        "x": 1440,
+        "x": 1680,
         "y": 600
       }
     },
@@ -3527,12 +3561,12 @@
         "label": "\"850\"",
         "layer": "abox",
         "position": {
-          "x": 1680,
+          "x": 1920,
           "y": 600
         }
       },
       "position": {
-        "x": 1680,
+        "x": 1920,
         "y": 600
       }
     },
@@ -3650,23 +3684,7 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#inStock#21",
-        "kind": "literal",
-        "label": "\"true\"",
-        "layer": "abox",
-        "position": {
-          "x": 960,
-          "y": 3000
-        }
-      },
-      "position": {
-        "x": 960,
-        "y": 3000
-      }
-    },
-    {
-      "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#isbn#22",
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#isbn#21",
         "kind": "literal",
         "label": "\"9783522128001\"",
         "layer": "abox",
@@ -3682,55 +3700,7 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/850-eur__ero9c3#amount#23",
-        "kind": "literal",
-        "label": "\"850\"",
-        "layer": "abox",
-        "position": {
-          "x": 1920,
-          "y": 600
-        }
-      },
-      "position": {
-        "x": 1920,
-        "y": 600
-      }
-    },
-    {
-      "data": {
-        "id": "literal:https://bookstore.example/id/850-eur__ero9c3#currency#24",
-        "kind": "literal",
-        "label": "\"EUR\"",
-        "layer": "abox",
-        "position": {
-          "x": 1920,
-          "y": 1050
-        }
-      },
-      "position": {
-        "x": 1920,
-        "y": 1050
-      }
-    },
-    {
-      "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#printStatus#25",
-        "kind": "literal",
-        "label": "\"outOfPrint\"",
-        "layer": "abox",
-        "position": {
-          "x": 960,
-          "y": 3150
-        }
-      },
-      "position": {
-        "x": 960,
-        "y": 3150
-      }
-    },
-    {
-      "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#publishedOn#26",
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#publishedOn#22",
         "kind": "literal",
         "label": "\"1979-09-01\"",
         "layer": "abox",
@@ -3746,23 +3716,7 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#stockLevel#27",
-        "kind": "literal",
-        "label": "\"5\"",
-        "layer": "abox",
-        "position": {
-          "x": 720,
-          "y": 3300
-        }
-      },
-      "position": {
-        "x": 720,
-        "y": 3300
-      }
-    },
-    {
-      "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#title#28",
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#title#23",
         "kind": "literal",
         "label": "\"Die unendliche Geschi…\"",
         "layer": "abox",
@@ -3773,6 +3727,86 @@
       },
       "position": {
         "x": 960,
+        "y": 3300
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#inStock#24",
+        "kind": "literal",
+        "label": "\"true\"",
+        "layer": "abox",
+        "position": {
+          "x": 960,
+          "y": 3000
+        }
+      },
+      "position": {
+        "x": 960,
+        "y": 3000
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/id/850-eur__ero9c3#amount#25",
+        "kind": "literal",
+        "label": "\"850\"",
+        "layer": "abox",
+        "position": {
+          "x": 1440,
+          "y": 750
+        }
+      },
+      "position": {
+        "x": 1440,
+        "y": 750
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/id/850-eur__ero9c3#currency#26",
+        "kind": "literal",
+        "label": "\"EUR\"",
+        "layer": "abox",
+        "position": {
+          "x": 1920,
+          "y": 1050
+        }
+      },
+      "position": {
+        "x": 1920,
+        "y": 1050
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#printStatus#27",
+        "kind": "literal",
+        "label": "\"outOfPrint\"",
+        "layer": "abox",
+        "position": {
+          "x": 960,
+          "y": 3150
+        }
+      },
+      "position": {
+        "x": 960,
+        "y": 3150
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__qcyop8#stockLevel#28",
+        "kind": "literal",
+        "label": "\"5\"",
+        "layer": "abox",
+        "position": {
+          "x": 720,
+          "y": 3300
+        }
+      },
+      "position": {
+        "x": 720,
         "y": 3300
       }
     },
@@ -3874,23 +3908,7 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4#inStock#35",
-        "kind": "literal",
-        "label": "\"true\"",
-        "layer": "abox",
-        "position": {
-          "x": 960,
-          "y": 1950
-        }
-      },
-      "position": {
-        "x": 960,
-        "y": 1950
-      }
-    },
-    {
-      "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4#isbn#36",
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4#isbn#35",
         "kind": "literal",
         "label": "\"9783522128001\"",
         "layer": "abox",
@@ -3906,7 +3924,39 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/699-eur__19793r#amount#37",
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4#title#36",
+        "kind": "literal",
+        "label": "\"Die unendliche Geschi…\"",
+        "layer": "abox",
+        "position": {
+          "x": 960,
+          "y": 2100
+        }
+      },
+      "position": {
+        "x": 960,
+        "y": 2100
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4#inStock#37",
+        "kind": "literal",
+        "label": "\"true\"",
+        "layer": "abox",
+        "position": {
+          "x": 960,
+          "y": 1950
+        }
+      },
+      "position": {
+        "x": 960,
+        "y": 1950
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/id/699-eur__19793r#amount#38",
         "kind": "literal",
         "label": "\"699\"",
         "layer": "abox",
@@ -3922,7 +3972,7 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/699-eur__19793r#currency#38",
+        "id": "literal:https://bookstore.example/id/699-eur__19793r#currency#39",
         "kind": "literal",
         "label": "\"EUR\"",
         "layer": "abox",
@@ -3938,7 +3988,7 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4#printStatus#39",
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4#printStatus#40",
         "kind": "literal",
         "label": "\"outOfPrint\"",
         "layer": "abox",
@@ -3949,22 +3999,6 @@
       },
       "position": {
         "x": 720,
-        "y": 2100
-      }
-    },
-    {
-      "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4#title#40",
-        "kind": "literal",
-        "label": "\"Die unendliche Geschi…\"",
-        "layer": "abox",
-        "position": {
-          "x": 960,
-          "y": 2100
-        }
-      },
-      "position": {
-        "x": 960,
         "y": 2100
       }
     },
@@ -4050,23 +4084,7 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__hxov0h#inStock#45",
-        "kind": "literal",
-        "label": "\"true\"",
-        "layer": "abox",
-        "position": {
-          "x": 480,
-          "y": 2850
-        }
-      },
-      "position": {
-        "x": 480,
-        "y": 2850
-      }
-    },
-    {
-      "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__hxov0h#isbn#46",
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__hxov0h#isbn#45",
         "kind": "literal",
         "label": "\"9783522128001\"",
         "layer": "abox",
@@ -4082,23 +4100,55 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/850-eur__ero9c3#amount#47",
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__hxov0h#title#46",
+        "kind": "literal",
+        "label": "\"Die unendliche Geschi…\"",
+        "layer": "abox",
+        "position": {
+          "x": 0,
+          "y": 3150
+        }
+      },
+      "position": {
+        "x": 0,
+        "y": 3150
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__hxov0h#inStock#47",
+        "kind": "literal",
+        "label": "\"true\"",
+        "layer": "abox",
+        "position": {
+          "x": 480,
+          "y": 2850
+        }
+      },
+      "position": {
+        "x": 480,
+        "y": 2850
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/id/850-eur__ero9c3#amount#48",
         "kind": "literal",
         "label": "\"850\"",
         "layer": "abox",
         "position": {
-          "x": 1440,
+          "x": 1680,
           "y": 750
         }
       },
       "position": {
-        "x": 1440,
+        "x": 1680,
         "y": 750
       }
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/850-eur__ero9c3#currency#48",
+        "id": "literal:https://bookstore.example/id/850-eur__ero9c3#currency#49",
         "kind": "literal",
         "label": "\"EUR\"",
         "layer": "abox",
@@ -4114,7 +4164,7 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__hxov0h#printStatus#49",
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__hxov0h#printStatus#50",
         "kind": "literal",
         "label": "\"outOfPrint\"",
         "layer": "abox",
@@ -4126,22 +4176,6 @@
       "position": {
         "x": 480,
         "y": 3000
-      }
-    },
-    {
-      "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__hxov0h#title#50",
-        "kind": "literal",
-        "label": "\"Die unendliche Geschi…\"",
-        "layer": "abox",
-        "position": {
-          "x": 0,
-          "y": 3150
-        }
-      },
-      "position": {
-        "x": 0,
-        "y": 3150
       }
     },
     {
@@ -4210,23 +4244,7 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__1dmq3g#inStock#55",
-        "kind": "literal",
-        "label": "\"true\"",
-        "layer": "abox",
-        "position": {
-          "x": 1680,
-          "y": 1950
-        }
-      },
-      "position": {
-        "x": 1680,
-        "y": 1950
-      }
-    },
-    {
-      "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__1dmq3g#isbn#56",
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__1dmq3g#isbn#55",
         "kind": "literal",
         "label": "\"9783522128001\"",
         "layer": "abox",
@@ -4242,23 +4260,55 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/850-eur__ero9c3#amount#57",
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__1dmq3g#title#56",
         "kind": "literal",
-        "label": "\"850\"",
+        "label": "\"Die unendliche Geschi…\"",
         "layer": "abox",
         "position": {
           "x": 1680,
-          "y": 750
+          "y": 2250
         }
       },
       "position": {
         "x": 1680,
+        "y": 2250
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__1dmq3g#inStock#57",
+        "kind": "literal",
+        "label": "\"true\"",
+        "layer": "abox",
+        "position": {
+          "x": 1680,
+          "y": 1950
+        }
+      },
+      "position": {
+        "x": 1680,
+        "y": 1950
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/id/850-eur__ero9c3#amount#58",
+        "kind": "literal",
+        "label": "\"850\"",
+        "layer": "abox",
+        "position": {
+          "x": 1920,
+          "y": 750
+        }
+      },
+      "position": {
+        "x": 1920,
         "y": 750
       }
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/850-eur__ero9c3#currency#58",
+        "id": "literal:https://bookstore.example/id/850-eur__ero9c3#currency#59",
         "kind": "literal",
         "label": "\"EUR\"",
         "layer": "abox",
@@ -4274,7 +4324,7 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__1dmq3g#printStatus#59",
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__1dmq3g#printStatus#60",
         "kind": "literal",
         "label": "\"outOfPrint\"",
         "layer": "abox",
@@ -4286,22 +4336,6 @@
       "position": {
         "x": 1680,
         "y": 2100
-      }
-    },
-    {
-      "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__1dmq3g#title#60",
-        "kind": "literal",
-        "label": "\"Die unendliche Geschi…\"",
-        "layer": "abox",
-        "position": {
-          "x": 1680,
-          "y": 2250
-        }
-      },
-      "position": {
-        "x": 1680,
-        "y": 2250
       }
     },
     {
@@ -4434,23 +4468,7 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#inStock#69",
-        "kind": "literal",
-        "label": "\"true\"",
-        "layer": "abox",
-        "position": {
-          "x": 2160,
-          "y": 1950
-        }
-      },
-      "position": {
-        "x": 2160,
-        "y": 1950
-      }
-    },
-    {
-      "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#isbn#70",
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#isbn#69",
         "kind": "literal",
         "label": "\"9783522128001\"",
         "layer": "abox",
@@ -4466,23 +4484,55 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/850-eur__ero9c3#amount#71",
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#title#70",
         "kind": "literal",
-        "label": "\"850\"",
+        "label": "\"Die unendliche Geschi…\"",
         "layer": "abox",
         "position": {
-          "x": 1920,
-          "y": 750
+          "x": 2160,
+          "y": 2400
         }
       },
       "position": {
-        "x": 1920,
-        "y": 750
+        "x": 2160,
+        "y": 2400
       }
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/850-eur__ero9c3#currency#72",
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#inStock#71",
+        "kind": "literal",
+        "label": "\"true\"",
+        "layer": "abox",
+        "position": {
+          "x": 2160,
+          "y": 1950
+        }
+      },
+      "position": {
+        "x": 2160,
+        "y": 1950
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/id/850-eur__ero9c3#amount#72",
+        "kind": "literal",
+        "label": "\"850\"",
+        "layer": "abox",
+        "position": {
+          "x": 1440,
+          "y": 900
+        }
+      },
+      "position": {
+        "x": 1440,
+        "y": 900
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/id/850-eur__ero9c3#currency#73",
         "kind": "literal",
         "label": "\"EUR\"",
         "layer": "abox",
@@ -4498,7 +4548,7 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#printStatus#73",
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#printStatus#74",
         "kind": "literal",
         "label": "\"outOfPrint\"",
         "layer": "abox",
@@ -4510,22 +4560,6 @@
       "position": {
         "x": 2400,
         "y": 2250
-      }
-    },
-    {
-      "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#title#74",
-        "kind": "literal",
-        "label": "\"Die unendliche Geschi…\"",
-        "layer": "abox",
-        "position": {
-          "x": 2400,
-          "y": 2400
-        }
-      },
-      "position": {
-        "x": 2400,
-        "y": 2400
       }
     },
     {
@@ -4546,23 +4580,7 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/momo__1hjwff#inStock#76",
-        "kind": "literal",
-        "label": "\"true\"",
-        "layer": "abox",
-        "position": {
-          "x": 1920,
-          "y": 2850
-        }
-      },
-      "position": {
-        "x": 1920,
-        "y": 2850
-      }
-    },
-    {
-      "data": {
-        "id": "literal:https://bookstore.example/id/momo__1hjwff#isbn#77",
+        "id": "literal:https://bookstore.example/id/momo__1hjwff#isbn#76",
         "kind": "literal",
         "label": "\"9783522129503\"",
         "layer": "abox",
@@ -4578,7 +4596,39 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/380-eur__mgbvsv#amount#78",
+        "id": "literal:https://bookstore.example/id/momo__1hjwff#title#77",
+        "kind": "literal",
+        "label": "\"Momo\"",
+        "layer": "abox",
+        "position": {
+          "x": 1920,
+          "y": 3150
+        }
+      },
+      "position": {
+        "x": 1920,
+        "y": 3150
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/id/momo__1hjwff#inStock#78",
+        "kind": "literal",
+        "label": "\"true\"",
+        "layer": "abox",
+        "position": {
+          "x": 1920,
+          "y": 2850
+        }
+      },
+      "position": {
+        "x": 1920,
+        "y": 2850
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/id/380-eur__mgbvsv#amount#79",
         "kind": "literal",
         "label": "\"380\"",
         "layer": "abox",
@@ -4594,7 +4644,7 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/380-eur__mgbvsv#currency#79",
+        "id": "literal:https://bookstore.example/id/380-eur__mgbvsv#currency#80",
         "kind": "literal",
         "label": "\"EUR\"",
         "layer": "abox",
@@ -4610,7 +4660,7 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/momo__1hjwff#printStatus#80",
+        "id": "literal:https://bookstore.example/id/momo__1hjwff#printStatus#81",
         "kind": "literal",
         "label": "\"inPrint\"",
         "layer": "abox",
@@ -4621,22 +4671,6 @@
       },
       "position": {
         "x": 1440,
-        "y": 3150
-      }
-    },
-    {
-      "data": {
-        "id": "literal:https://bookstore.example/id/momo__1hjwff#title#81",
-        "kind": "literal",
-        "label": "\"Momo\"",
-        "layer": "abox",
-        "position": {
-          "x": 1920,
-          "y": 3150
-        }
-      },
-      "position": {
-        "x": 1920,
         "y": 3150
       }
     },
@@ -4658,23 +4692,7 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#inStock#83",
-        "kind": "literal",
-        "label": "\"true\"",
-        "layer": "abox",
-        "position": {
-          "x": 2400,
-          "y": 1950
-        }
-      },
-      "position": {
-        "x": 2400,
-        "y": 1950
-      }
-    },
-    {
-      "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#isbn#84",
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#isbn#83",
         "kind": "literal",
         "label": "\"9783522128001\"",
         "layer": "abox",
@@ -4690,23 +4708,55 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/850-eur__ero9c3#amount#85",
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#title#84",
+        "kind": "literal",
+        "label": "\"Die unendliche Geschi…\"",
+        "layer": "abox",
+        "position": {
+          "x": 2400,
+          "y": 2400
+        }
+      },
+      "position": {
+        "x": 2400,
+        "y": 2400
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#inStock#85",
+        "kind": "literal",
+        "label": "\"true\"",
+        "layer": "abox",
+        "position": {
+          "x": 2400,
+          "y": 1950
+        }
+      },
+      "position": {
+        "x": 2400,
+        "y": 1950
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/id/850-eur__ero9c3#amount#86",
         "kind": "literal",
         "label": "\"850\"",
         "layer": "abox",
         "position": {
-          "x": 1440,
+          "x": 1680,
           "y": 900
         }
       },
       "position": {
-        "x": 1440,
+        "x": 1680,
         "y": 900
       }
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/850-eur__ero9c3#currency#86",
+        "id": "literal:https://bookstore.example/id/850-eur__ero9c3#currency#87",
         "kind": "literal",
         "label": "\"EUR\"",
         "layer": "abox",
@@ -4722,7 +4772,7 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#printStatus#87",
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#printStatus#88",
         "kind": "literal",
         "label": "\"outOfPrint\"",
         "layer": "abox",
@@ -4734,22 +4784,6 @@
       "position": {
         "x": 2640,
         "y": 2250
-      }
-    },
-    {
-      "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#title#88",
-        "kind": "literal",
-        "label": "\"Die unendliche Geschi…\"",
-        "layer": "abox",
-        "position": {
-          "x": 2640,
-          "y": 2400
-        }
-      },
-      "position": {
-        "x": 2640,
-        "y": 2400
       }
     },
     {
@@ -4770,23 +4804,7 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/momo__1hjwff#inStock#90",
-        "kind": "literal",
-        "label": "\"true\"",
-        "layer": "abox",
-        "position": {
-          "x": 1440,
-          "y": 3000
-        }
-      },
-      "position": {
-        "x": 1440,
-        "y": 3000
-      }
-    },
-    {
-      "data": {
-        "id": "literal:https://bookstore.example/id/momo__1hjwff#isbn#91",
+        "id": "literal:https://bookstore.example/id/momo__1hjwff#isbn#90",
         "kind": "literal",
         "label": "\"9783522129503\"",
         "layer": "abox",
@@ -4802,7 +4820,39 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/380-eur__mgbvsv#amount#92",
+        "id": "literal:https://bookstore.example/id/momo__1hjwff#title#91",
+        "kind": "literal",
+        "label": "\"Momo\"",
+        "layer": "abox",
+        "position": {
+          "x": 1440,
+          "y": 3300
+        }
+      },
+      "position": {
+        "x": 1440,
+        "y": 3300
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/id/momo__1hjwff#inStock#92",
+        "kind": "literal",
+        "label": "\"true\"",
+        "layer": "abox",
+        "position": {
+          "x": 1440,
+          "y": 3000
+        }
+      },
+      "position": {
+        "x": 1440,
+        "y": 3000
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/id/380-eur__mgbvsv#amount#93",
         "kind": "literal",
         "label": "\"380\"",
         "layer": "abox",
@@ -4818,7 +4868,7 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/380-eur__mgbvsv#currency#93",
+        "id": "literal:https://bookstore.example/id/380-eur__mgbvsv#currency#94",
         "kind": "literal",
         "label": "\"EUR\"",
         "layer": "abox",
@@ -4834,7 +4884,7 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/momo__1hjwff#printStatus#94",
+        "id": "literal:https://bookstore.example/id/momo__1hjwff#printStatus#95",
         "kind": "literal",
         "label": "\"inPrint\"",
         "layer": "abox",
@@ -4846,22 +4896,6 @@
       "position": {
         "x": 1680,
         "y": 3150
-      }
-    },
-    {
-      "data": {
-        "id": "literal:https://bookstore.example/id/momo__1hjwff#title#95",
-        "kind": "literal",
-        "label": "\"Momo\"",
-        "layer": "abox",
-        "position": {
-          "x": 1440,
-          "y": 3300
-        }
-      },
-      "position": {
-        "x": 1440,
-        "y": 3300
       }
     },
     {
@@ -4882,23 +4916,7 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#inStock#97",
-        "kind": "literal",
-        "label": "\"true\"",
-        "layer": "abox",
-        "position": {
-          "x": 2640,
-          "y": 1950
-        }
-      },
-      "position": {
-        "x": 2640,
-        "y": 1950
-      }
-    },
-    {
-      "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#isbn#98",
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#isbn#97",
         "kind": "literal",
         "label": "\"9783522128001\"",
         "layer": "abox",
@@ -4914,23 +4932,55 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/850-eur__ero9c3#amount#99",
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#title#98",
         "kind": "literal",
-        "label": "\"850\"",
+        "label": "\"Die unendliche Geschi…\"",
         "layer": "abox",
         "position": {
-          "x": 1680,
-          "y": 900
+          "x": 2640,
+          "y": 2400
         }
       },
       "position": {
-        "x": 1680,
-        "y": 900
+        "x": 2640,
+        "y": 2400
       }
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/850-eur__ero9c3#currency#100",
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#inStock#99",
+        "kind": "literal",
+        "label": "\"true\"",
+        "layer": "abox",
+        "position": {
+          "x": 2640,
+          "y": 1950
+        }
+      },
+      "position": {
+        "x": 2640,
+        "y": 1950
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/id/850-eur__ero9c3#amount#100",
+        "kind": "literal",
+        "label": "\"850\"",
+        "layer": "abox",
+        "position": {
+          "x": 1440,
+          "y": 600
+        }
+      },
+      "position": {
+        "x": 1440,
+        "y": 600
+      }
+    },
+    {
+      "data": {
+        "id": "literal:https://bookstore.example/id/850-eur__ero9c3#currency#101",
         "kind": "literal",
         "label": "\"EUR\"",
         "layer": "abox",
@@ -4946,7 +4996,7 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#printStatus#101",
+        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#printStatus#102",
         "kind": "literal",
         "label": "\"outOfPrint\"",
         "layer": "abox",
@@ -4958,22 +5008,6 @@
       "position": {
         "x": 2160,
         "y": 2250
-      }
-    },
-    {
-      "data": {
-        "id": "literal:https://bookstore.example/id/die-unendliche-geschichte__ds4s0n#title#102",
-        "kind": "literal",
-        "label": "\"Die unendliche Geschi…\"",
-        "layer": "abox",
-        "position": {
-          "x": 2160,
-          "y": 2400
-        }
-      },
-      "position": {
-        "x": 2160,
-        "y": 2400
       }
     },
     {
@@ -5074,7 +5108,7 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc#body#109",
+        "id": "literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr#body#109",
         "kind": "literal",
         "label": "\"Ende's framing of a r…\"",
         "layer": "abox",
@@ -5090,7 +5124,7 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc#bookIsbn#110",
+        "id": "literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr#bookIsbn#110",
         "kind": "literal",
         "label": "\"9783522128001\"",
         "layer": "abox",
@@ -5106,7 +5140,7 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc#customerId#111",
+        "id": "literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr#customerId#111",
         "kind": "literal",
         "label": "\"c1a2b3d4-e5f6-7890-ab…\"",
         "layer": "abox",
@@ -5122,7 +5156,7 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc#postedAt#112",
+        "id": "literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr#postedAt#112",
         "kind": "literal",
         "label": "\"2026-04-20T09:15:00Z\"",
         "layer": "abox",
@@ -5138,7 +5172,7 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc#rating#113",
+        "id": "literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr#rating#113",
         "kind": "literal",
         "label": "\"5\"",
         "layer": "abox",
@@ -5154,7 +5188,7 @@
     },
     {
       "data": {
-        "id": "literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc#reviewId#114",
+        "id": "literal:https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr#reviewId#114",
         "kind": "literal",
         "label": "\"a4d3c2b1-a098-7654-a2…\"",
         "layer": "abox",

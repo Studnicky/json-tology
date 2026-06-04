@@ -437,7 +437,10 @@ function findAnnotatedEdgeStructure(
  */
 /** Arguments for lifting an annotated edge back to its JS representation. */
 interface LiftAnnotatedEdgeArgsInterface {
+  readonly 'classId': string;
+  readonly 'curie': CurieInterface | undefined;
   readonly 'edge': AnnotatedEdgeStructure;
+  readonly 'predicateResolver': PredicateResolverFnType | undefined;
   readonly 'subjectIri': string;
   readonly 'subjectQuads': QuadInterface[];
   readonly 'tripleTermIndex': TripleTermIndexType;
@@ -445,7 +448,7 @@ interface LiftAnnotatedEdgeArgsInterface {
 
 function liftAnnotatedEdge(args: LiftAnnotatedEdgeArgsInterface): OptionalLiftedObjectType {
   const {
-    edge, subjectIri, subjectQuads, tripleTermIndex
+    classId, curie, edge, predicateResolver, subjectIri, subjectQuads, tripleTermIndex
   } = args;
   const baseQuad = subjectQuads.find((quad: QuadInterface): boolean => {
     return quad.predicate.value === edge.edgePredicate && quad.object.termType === 'NamedNode';
@@ -475,8 +478,16 @@ function liftAnnotatedEdge(args: LiftAnnotatedEdgeArgsInterface): OptionalLifted
       continue;
     }
 
+    const rawPredicate = predicateResolver === undefined
+      ? `${classId}#${annotation.propertyName}`
+      : predicateResolver({
+        'classId': classId,
+        'propertyName': annotation.propertyName,
+        'propertySchema': annotation.propertySchema
+      });
+    const annotationPredicate = expandPredicateCurie(rawPredicate, curie);
     const match = annotationQuads.find((quad: QuadInterface): boolean => {
-      return quad.predicate.value === annotation.annotationPredicate;
+      return quad.predicate.value === annotationPredicate;
     });
 
     if (match === undefined) {
@@ -656,7 +667,10 @@ function liftPropertyValue(pvArgs: LiftPropertyValueArgsInterface): unknown {
 
   if (edge !== undefined) {
     return liftAnnotatedEdge({
+      classId,
+      'curie': ctx.curie,
       edge,
+      'predicateResolver': ctx.predicateResolver,
       subjectIri,
       subjectQuads,
       'tripleTermIndex': ctx.tripleTermIndex

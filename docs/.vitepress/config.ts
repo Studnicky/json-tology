@@ -156,6 +156,7 @@ const sidebar = [
       { link: '/advanced/ontology#jt-totbox', text: 'toTbox' },
       { link: '/advanced/ontology#jt-toshacl', text: 'toShacl' },
       { link: '/advanced/ontology#jt-ontology', text: 'ontology' },
+      { link: '/advanced/shacl-validation', text: 'SHACL validation (validateWithShacl)' },
       { link: '/advanced/quads', text: 'RDF round-trip (toQuads / fromQuads)' },
       { link: '/advanced/predicates', text: 'RDF predicates (canonical / custom)' },
       { link: '/advanced/sameas', text: 'sameAs (ABox identity)' },

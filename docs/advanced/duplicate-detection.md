@@ -2,9 +2,13 @@
 
 Strict graph mode flags inline anonymous shapes that duplicate a registered named schema. The intent is drift prevention: if `{ type: 'string', format: 'email' }` exists inline in five schemas and you later tighten the format constraint, you must find and update all five occurrences by hand. Extract it to a named `EmailSchema` and there is one place to change.
 
-`SCHEMA_DUPLICATE_SHAPE` is the error code raised when detection fires in strict mode.
+In default strict-graph mode, the structure guard runs first and throws `SCHEMA_STRUCTURE_INVALID` when an inline constrained shape is encountered — regardless of whether it structurally duplicates a named schema. `SCHEMA_DUPLICATE_SHAPE` is the code raised by `findDuplicates()` when running in permissive mode (`enableStrictGraph: false`) and an inline shape matches a registered named schema exactly.
 
-This page explains what triggers detection, what the recent nominal-subclass changes mean, and the escape hatches available when legitimate structural coincidence is not drift.
+This page explains what triggers detection, the nominal-subclass behaviour, and the escape hatches available when legitimate structural coincidence is not drift.
+
+## Runnable example
+
+<RunnableExample src="examples/docs/advanced/120-duplicate-detection" />
 
 ## What triggers `SCHEMA_DUPLICATE_SHAPE`
 

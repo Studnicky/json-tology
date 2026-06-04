@@ -146,6 +146,12 @@ const source: string = generateFromTbox({
 
 <RunnableExample src="examples/docs/advanced/91-owl-codegen-generated" />
 
+### Node.js disk I/O — `writeFromTbox` / `writeRegistryDirectory`
+
+The `json-tology/owl-gen-node` entry adds disk I/O over the browser-safe `owl-gen` core. `writeFromTbox` writes a single TypeScript source file; `writeRegistryDirectory` writes `entities/<Name>.ts` per OWL class plus an `index.ts` that constructs the full registry.
+
+<RunnableExample src="examples/docs/advanced/123-owl-codegen-node" />
+
 ### Build-time integration
 
 **`package.json` prebuild hook.** Run the generator before every TypeScript compilation so the generated file is always current before `tsc` or your bundler starts:

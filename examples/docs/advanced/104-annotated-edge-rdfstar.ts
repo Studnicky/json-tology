@@ -61,17 +61,28 @@ function isTripleTermQuad(quad: QuadInterface): quad is TripleTermQuad {
 
 const annotationQuads = quads.filter(isTripleTermQuad);
 
-console.assert(annotationQuads.length === 1, 'one annotation quad (ratingGiven)');
+console.assert(annotationQuads.length === 2, 'two annotation quads: ratingGiven + verifiedPurchase');
 
-const ratingAnnotation = annotationQuads[0];
+// Each annotation predicate is grounded to a schema.org term via `x-jt-predicate`
+// on its annotation sub-schema, so annotations are addressable by vocabulary IRI.
+const ratingAnnotation = annotationQuads.find((quad) => {
+  return quad.predicate.value === 'https://schema.org/ratingValue';
+});
+const verifiedAnnotation = annotationQuads.find((quad) => {
+  return quad.predicate.value === 'https://schema.org/verified';
+});
 
-if (annotationQuads.length === 0) {
-  throw new Error('expected annotation quad not found in quad set');
+if (ratingAnnotation === undefined || verifiedAnnotation === undefined) {
+  throw new Error('expected grounded annotation quads not found in quad set');
 }
 
 console.assert(
   ratingAnnotation.object.value === String(aboxFixtures.reviewWithAnnotatedEdge.reviewsBook.annotations.ratingGiven),
   'ratingGiven value matches fixture'
+);
+console.assert(
+  verifiedAnnotation.object.value === String(aboxFixtures.reviewWithAnnotatedEdge.reviewsBook.annotations.verifiedPurchase),
+  'verifiedPurchase value matches fixture'
 );
 console.assert(
   ratingAnnotation.graph.value === REVIEWS_GRAPH,
@@ -84,8 +95,13 @@ console.log('  predicate:', baseTriple.predicate.value);
 console.log('  object:', baseTriple.object.value);
 console.log('  graph:', baseTriple.graph.value);
 
-console.log('\nAnnotation quad (triple-term subject):');
-console.log('  subject termType:', ratingAnnotation.subject.termType);
-console.log('  predicate:', ratingAnnotation.predicate.value);
-console.log('  object:', ratingAnnotation.object.value);
-console.log('  graph:', ratingAnnotation.graph.value);
+console.log('\nAnnotation quads (triple-term subject, predicates grounded to schema.org):');
+for (const annotation of [
+  ratingAnnotation,
+  verifiedAnnotation
+]) {
+  console.log('  subject termType:', annotation.subject.termType);
+  console.log('  predicate:', annotation.predicate.value);
+  console.log('  object:', annotation.object.value);
+  console.log('  graph:', annotation.graph.value);
+}

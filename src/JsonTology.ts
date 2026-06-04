@@ -72,7 +72,6 @@ import { Materializer } from './modules/materialization/Materializer.js';
 import { OntologyBuilder } from './modules/ontology/OntologyBuilder.js';
 import { EncodeError } from './errors/EncodeError.js';
 import { TransformError } from './errors/TransformError.js';
-import { GraphError } from './errors/GraphError.js';
 import { PredicateResolver } from './modules/graph/PredicateResolver.js';
 import { SchemaError } from './errors/SchemaError.js';
 import type { DuplicateReportEntryType } from './interfaces/SchemaEntryStore.js';
@@ -80,6 +79,8 @@ import { SchemaRegistry } from './modules/registry/SchemaRegistry.js';
 import { Transform } from './modules/transform/Transform.js';
 import { brand } from './types/Brand.js';
 import { Value } from './modules/data/Value.js';
+import { ShaclValidator } from './modules/validation/ShaclValidator.js';
+import type { ShaclValidationReportInterface } from './interfaces/ShaclValidationReportInterface.js';
 
 import { STANDARD_PREFIXES } from './constants/STANDARD_PREFIXES.js';
 
@@ -1692,28 +1693,53 @@ export class JsonTology<TRefs = Record<never, never>> {
   }
 
   /**
-   * Validates instance data quads against SHACL shapes produced from registered schemas.
+   * Validates ABox instance data quads against SHACL shapes derived from registered schemas.
    *
-   * Intended as the symmetric inverse of {@link JsonTology.toShacl}: `toShacl()`
-   * emits SHACL shape quads; `validateWithShacl()` will consume those shapes plus
-   * ABox data quads and return a structured validation report.
+   * Symmetric inverse of {@link JsonTology.toShacl}: `toShacl()` emits SHACL shape
+   * quads encoding structural constraints; `validateWithShacl()` consumes those shapes
+   * plus ABox data quads (from {@link JsonTology.toQuads}) and returns a structured
+   * conformance report.
    *
-   * @experimental This method is not yet implemented. As a workaround, retrieve
-   * shapes via `toShacl().shaclQuads()` and pass them to an external SHACL
-   * processor (e.g. `rdf-validate-shacl`).
+   * The validator covers every constraint component emitted by `ShaclProjection`:
+   * `sh:minCount`, `sh:maxCount`, `sh:datatype`, `sh:class`, `sh:node`,
+   * `sh:pattern`, `sh:minLength`, `sh:maxLength`,
+   * `sh:minInclusive`, `sh:maxInclusive`, `sh:minExclusive`, `sh:maxExclusive`,
+   * `sh:hasValue`, `sh:in`, `sh:closed`,
+   * `sh:and`, `sh:or`, `sh:not`,
+   * `sh:qualifiedValueShape` + `sh:qualifiedMinCount`/`sh:qualifiedMaxCount`.
+   * Shapes and property shapes with `sh:deactivated true` are skipped.
    *
-   * @param _shapes - SHACL shape quads or an {@link OntologyBuilder} produced by `toShacl()`.
-   * @param _data - ABox instance data quads to validate against the shapes.
-   * @returns Never returns — always throws while the method is unimplemented.
-   * @throws {GraphError} `NOT_IMPLEMENTED` — always throws until this method is implemented.
+   * @param shapes - SHACL shape quads or an {@link OntologyBuilder} produced by
+   *   `toShacl()`. When an `OntologyBuilder` is passed its `.shaclQuads()` are used.
+   * @param data - ABox instance data quads to validate against the shapes.
+   * @returns A {@link ShaclValidationReportInterface} with `conforms: true` when
+   *   no violations are found, or `conforms: false` with a populated `results` array.
+   *
+   * @example
+   * ```ts
+   * const jt = JsonTology.create({ baseIRI: 'https://example.com', schemas: [BookSchema] });
+   * const shapeQuads = jt.toShacl();                           // OntologyBuilder
+   * const dataQuads  = jt.toQuads(BookSchema, bookInstance);   // QuadInterface[]
+   * const report = jt.validateWithShacl(shapeQuads, dataQuads);
+   * if (!report.conforms) {
+   *   for (const result of report.results) {
+   *     console.log(result.resultMessage);
+   *   }
+   * }
+   * ```
+   *
+   * @since 0.20.0
+   * @see {@link JsonTology.toShacl}
+   * @see {@link JsonTology.toQuads}
    */
   public validateWithShacl(
-    _shapes: OntologyBuilder | readonly QuadInterface[],
-    _data: readonly QuadInterface[]
-  ): never {
-    throw new GraphError(
-      'NOT_IMPLEMENTED',
-      'validateWithShacl is not yet available. Retrieve shapes via toShacl().shaclQuads() and validate with an external SHACL processor.'
-    );
+    shapes: OntologyBuilder | readonly QuadInterface[],
+    data: readonly QuadInterface[]
+  ): ShaclValidationReportInterface {
+    const shapeQuads = shapes instanceof OntologyBuilder
+      ? shapes.shaclQuads()
+      : shapes;
+
+    return ShaclValidator.validate(shapeQuads, data);
   }
 }

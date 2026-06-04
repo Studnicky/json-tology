@@ -24,6 +24,12 @@
 
 <RunnableExample src="examples/docs/transforms/04-price-cents-transform" />
 
+#### Example 3: `jt.addTransform` — registry-aware transform registration
+
+`jt.addTransform(schema, { decode, encode })` is the instance-bound counterpart to `Transform.create`. The key difference: `decode` input types resolve cross-registry `$ref`s through the instance's schema map, so a schema whose properties `$ref` registered primitives gets a fully-typed decode input — no cast, no `unknown`.
+
+<RunnableExample src="examples/docs/advanced/111-add-transform" />
+
 ### Bad examples - what NOT to do
 
 #### Anti-pattern 1: Applying transform after the schema was registered

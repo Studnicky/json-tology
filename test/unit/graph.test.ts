@@ -4778,3 +4778,30 @@ void describe('GraphEngine embedded $id resolution (parity regression)', () => {
     );
   });
 });
+
+// ===========================================================================
+// GraphEngine.rootSchemaId — returns the $id of the root schema
+// ===========================================================================
+
+void describe('GraphEngine.rootSchemaId()', () => {
+  void it('returns the $id of a schema that carries one', () => {
+    const schema = {
+      '$id': 'https://example.test/Widget',
+      'properties': { 'name': { 'type': 'string' } },
+      'type': 'object'
+    } as const;
+    const engine = new GraphEngine(schema);
+
+    assert.equal(engine.rootSchemaId(), 'https://example.test/Widget');
+  });
+
+  void it('returns undefined when the schema has no $id', () => {
+    const schema = {
+      'properties': { 'count': { 'type': 'number' } },
+      'type': 'object'
+    } as const;
+    const engine = new GraphEngine(schema);
+
+    assert.equal(engine.rootSchemaId(), undefined);
+  });
+});

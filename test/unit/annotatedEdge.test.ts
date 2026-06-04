@@ -74,8 +74,8 @@ const ReviewSchema = {
 } as const;
 
 const EDGE_PREDICATE = 'https://bookstore.example/reviews';
-const RATING_PREDICATE = 'urn:bookstore:Review#/properties/book#ratingGiven';
-const VERIFIED_PREDICATE = 'urn:bookstore:Review#/properties/book#verifiedPurchase';
+const RATING_PREDICATE = 'https://bookstore.example/ratingGiven';
+const VERIFIED_PREDICATE = 'https://bookstore.example/verifiedPurchase';
 
 const reviewInstance = {
   'book': {
@@ -288,5 +288,102 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
       'named graph IRI is present'
     );
     assert.match(turtle, /ratingGiven>\s+5\b/u);
+  });
+
+  void it('every emitted predicate IRI (including triple-term annotation quads) has at most one #', () => {
+    const jt = freshJt();
+    const quads = jt.toQuads(ReviewSchema, reviewInstance, { 'graphIRI': REVIEWS_GRAPH });
+
+    for (const quad of quads) {
+      const predicate = quad.predicate.value;
+      const firstHash = predicate.indexOf('#');
+
+      if (firstHash !== -1) {
+        assert.equal(
+          predicate.indexOf('#', firstHash + 1),
+          -1,
+          `predicate IRI has more than one '#': ${predicate}`
+        );
+      }
+    }
+  });
+
+  void it('x-jt-predicate binding on an annotation routes to the declared predicate IRI and round-trips', () => {
+    const CustomRatingSchema = {
+      '$id': 'urn:bookstore:CustomRating',
+      'maximum': 5,
+      'minimum': 1,
+      'type': 'integer'
+    } as const;
+
+    const CustomEdge = Compose.annotatedEdge({
+      'annotations': {
+        'ratingValue': {
+          '$ref': 'urn:bookstore:CustomRating',
+          'x-jt-predicate': 'https://schema.org/ratingValue'
+        }
+      },
+      'predicate': 'https://bookstore.example/reviews',
+      'targetRef': 'urn:bookstore:Book'
+    });
+
+    const CustomReviewSchema = {
+      '$id': 'urn:bookstore:CustomReview',
+      'properties': {
+        'book': CustomEdge,
+        'reviewId': { 'type': 'string' }
+      },
+      'required': ['reviewId'],
+      'type': 'object'
+    } as const;
+
+    const jt = JsonTology.create({
+      'baseIRI': 'https://bookstore.example',
+      'enableStrictGraph': false
+    });
+
+    jt.set(BookSchema);
+    jt.set(CustomRatingSchema);
+    jt.set(CustomReviewSchema);
+
+    const instance = {
+      'book': {
+        'annotations': { 'ratingValue': 4 },
+        'target': BOOK_IRI
+      },
+      'reviewId': 'rev-002'
+    };
+
+    const quads = jt.toQuads(CustomReviewSchema, instance, { 'graphIRI': REVIEWS_GRAPH });
+
+    const annotationQuads = quads.filter((quad) => {
+      return isTripleTermSubject(quad);
+    });
+
+    assert.equal(annotationQuads.length, 1, 'one annotation quad for ratingValue');
+    assert.equal(
+      annotationQuads[0].predicate.value,
+      'https://schema.org/ratingValue',
+      'x-jt-predicate binding is honoured for annotation predicate'
+    );
+
+    // Round-trip: fromQuads must recover the annotation value
+    const lifted = jt.fromQuads(CustomReviewSchema, quads);
+
+    assert.equal(lifted.length, 1, 'one lifted instance');
+
+    const liftedInstance = lifted[0];
+
+    assert.ok(isRecord(liftedInstance), 'lifted instance is a record');
+
+    const liftedEdge = liftedInstance.book;
+
+    assert.ok(isRecord(liftedEdge), 'book edge present after round-trip');
+    assert.equal(liftedEdge.target, BOOK_IRI);
+
+    const liftedAnnotations = liftedEdge.annotations;
+
+    assert.ok(isRecord(liftedAnnotations), 'annotations present after round-trip');
+    assert.equal(liftedAnnotations.ratingValue, 4, 'ratingValue annotation survives round-trip');
   });
 });

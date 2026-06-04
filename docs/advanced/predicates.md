@@ -64,6 +64,8 @@ predicateFor: (ctx: { classId: string; propertyName: string }) => string | undef
 
 Add `x-jt-predicate: '<IRI>'` directly to a property schema to pin it to a specific predicate IRI. This takes precedence over `predicateFor` and the default derivation (only an absolute `$id` on the property schema ranks higher).
 
+`x-jt-predicate` is also valid on annotation sub-schemas inside `Compose.annotatedEdge` — it grounds each annotation triple's predicate to a vocabulary IRI (e.g. `https://schema.org/ratingValue`). See the [annotated-edge predicate grounding](/schemas/jt-keywords#jt-annotated-edge) section for the pattern.
+
 **Use this when** a single property must align to an external vocabulary IRI without a registry-level callback.
 
 <RunnableExample src="examples/docs/advanced/102-x-jt-predicate" />

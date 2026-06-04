@@ -35,7 +35,19 @@ Compose.complementOf(other, body):           { $id, not: { $ref }, ...body }
 
 ## Examples
 
-### Example 1: single-parent subclass
+### Example 1: single-parent subclass — runnable
+
+<RunnableExample src="examples/docs/composition/48-sub-class-of" />
+
+### Example 2: disjoint classes — runnable
+
+<RunnableExample src="examples/docs/composition/49-disjoint-with" />
+
+### Example 3: complement class — runnable
+
+<RunnableExample src="examples/docs/composition/50-complement-of" />
+
+### Example 4: single-parent subclass (bookstore domain)
 
 `EBook` is a `Book` with three extra fields. The full source lives in the shared bookstore domain:
 

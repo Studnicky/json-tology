@@ -441,6 +441,13 @@
       ]
     }
   },
+  "urn:bookstore:VerifiedPurchase": {
+    "@id": "urn:bookstore:VerifiedPurchase",
+    "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
+    "http://www.w3.org/2002/07/owl#onDatatype": {
+      "@id": "http://www.w3.org/2001/XMLSchema#boolean"
+    }
+  },
   "urn:bookstore:WeightGrams": {
     "@id": "urn:bookstore:WeightGrams",
     "@type": "http://www.w3.org/2000/01/rdf-schema#Datatype",
@@ -699,7 +706,7 @@
         "@id": "urn:bookstore:BookCatalogEntry"
       },
       {
-        "@id": "urn:bookstore:Book"
+        "@id": "urn:bookstore:BibliographicRecord"
       }
     ],
     "http://www.w3.org/2000/01/rdf-schema#range": [
@@ -773,8 +780,8 @@
       }
     ]
   },
-  "urn:bookstore:Book": {
-    "@id": "urn:bookstore:Book",
+  "urn:bookstore:BibliographicRecord": {
+    "@id": "urn:bookstore:BibliographicRecord",
     "@type": "http://www.w3.org/2002/07/owl#Class",
     "http://www.w3.org/2000/01/rdf-schema#subClassOf": [
       {
@@ -801,25 +808,53 @@
       {
         "@type": "http://www.w3.org/2002/07/owl#Restriction",
         "http://www.w3.org/2002/07/owl#onProperty": {
-          "@id": "https://bookstore.example/price"
-        },
-        "http://www.w3.org/2002/07/owl#minCardinality": 1
-      },
-      {
-        "@type": "http://www.w3.org/2002/07/owl#Restriction",
-        "http://www.w3.org/2002/07/owl#onProperty": {
-          "@id": "https://bookstore.example/printStatus"
-        },
-        "http://www.w3.org/2002/07/owl#minCardinality": 1
-      },
-      {
-        "@type": "http://www.w3.org/2002/07/owl#Restriction",
-        "http://www.w3.org/2002/07/owl#onProperty": {
           "@id": "https://bookstore.example/authors"
         },
         "http://www.w3.org/2002/07/owl#allValuesFrom": {
           "@id": "urn:bookstore:AuthorName"
         }
+      }
+    ]
+  },
+  "https://bookstore.example/authors": {
+    "@id": "https://bookstore.example/authors",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:BibliographicRecord"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "http://www.w3.org/1999/02/22-rdf-syntax-ns#List"
+    }
+  },
+  "https://bookstore.example/publishedOn": {
+    "@id": "https://bookstore.example/publishedOn",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:BibliographicRecord"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:PublicationDate"
+    }
+  },
+  "https://bookstore.example/title": {
+    "@id": "https://bookstore.example/title",
+    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+    "http://www.w3.org/2000/01/rdf-schema#domain": {
+      "@id": "urn:bookstore:BibliographicRecord"
+    },
+    "http://www.w3.org/2000/01/rdf-schema#range": {
+      "@id": "urn:bookstore:Title"
+    }
+  },
+  "urn:bookstore:Book": {
+    "@id": "urn:bookstore:Book",
+    "@type": "http://www.w3.org/2002/07/owl#Class",
+    "http://www.w3.org/2000/01/rdf-schema#subClassOf": [
+      {
+        "@id": "urn:bookstore:BibliographicRecord"
+      },
+      {
+        "@id": "urn:bookstore:Book#/allOf/1"
       }
     ]
   },
@@ -831,16 +866,6 @@
     },
     "http://www.w3.org/2000/01/rdf-schema#range": {
       "@id": "urn:bookstore:BookAnnotations"
-    }
-  },
-  "https://bookstore.example/authors": {
-    "@id": "https://bookstore.example/authors",
-    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
-    "http://www.w3.org/2000/01/rdf-schema#domain": {
-      "@id": "urn:bookstore:Book"
-    },
-    "http://www.w3.org/2000/01/rdf-schema#range": {
-      "@id": "http://www.w3.org/1999/02/22-rdf-syntax-ns#List"
     }
   },
   "https://bookstore.example/inStock": {
@@ -873,16 +898,6 @@
       "@id": "urn:bookstore:PrintStatus"
     }
   },
-  "https://bookstore.example/publishedOn": {
-    "@id": "https://bookstore.example/publishedOn",
-    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
-    "http://www.w3.org/2000/01/rdf-schema#domain": {
-      "@id": "urn:bookstore:Book"
-    },
-    "http://www.w3.org/2000/01/rdf-schema#range": {
-      "@id": "urn:bookstore:PublicationDate"
-    }
-  },
   "https://bookstore.example/ratings": {
     "@id": "https://bookstore.example/ratings",
     "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
@@ -901,16 +916,6 @@
     },
     "http://www.w3.org/2000/01/rdf-schema#range": {
       "@id": "urn:bookstore:StockLevel"
-    }
-  },
-  "https://bookstore.example/title": {
-    "@id": "https://bookstore.example/title",
-    "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
-    "http://www.w3.org/2000/01/rdf-schema#domain": {
-      "@id": "urn:bookstore:Book"
-    },
-    "http://www.w3.org/2000/01/rdf-schema#range": {
-      "@id": "urn:bookstore:Title"
     }
   },
   "urn:bookstore:OrderLine": {
@@ -1255,7 +1260,7 @@
     "@id": "https://bookstore.example/estimatedAgeYears",
     "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
     "http://www.w3.org/2000/01/rdf-schema#domain": {
-      "@id": "urn:bookstore:RareBook#/allOf/1"
+      "@id": "urn:bookstore:RareBook"
     },
     "http://www.w3.org/2000/01/rdf-schema#range": {
       "@id": "urn:bookstore:EstimatedAgeYears"
@@ -1265,7 +1270,7 @@
     "@id": "https://bookstore.example/firstEditionYear",
     "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
     "http://www.w3.org/2000/01/rdf-schema#domain": {
-      "@id": "urn:bookstore:RareBook#/allOf/1"
+      "@id": "urn:bookstore:RareBook"
     },
     "http://www.w3.org/2000/01/rdf-schema#range": {
       "@id": "urn:bookstore:FirstEditionYear"
@@ -1304,7 +1309,7 @@
         "@id": "urn:bookstore:EBook#/allOf/1/if"
       },
       {
-        "@id": "urn:bookstore:EBook#/allOf/1"
+        "@id": "urn:bookstore:EBook"
       }
     ],
     "http://www.w3.org/2000/01/rdf-schema#range": {
@@ -1315,7 +1320,7 @@
     "@id": "https://bookstore.example/downloadUrl",
     "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
     "http://www.w3.org/2000/01/rdf-schema#domain": {
-      "@id": "urn:bookstore:EBook#/allOf/1"
+      "@id": "urn:bookstore:EBook"
     },
     "http://www.w3.org/2000/01/rdf-schema#range": {
       "@id": "urn:bookstore:DownloadUrl"
@@ -1325,7 +1330,7 @@
     "@id": "https://bookstore.example/fileSizeBytes",
     "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
     "http://www.w3.org/2000/01/rdf-schema#domain": {
-      "@id": "urn:bookstore:EBook#/allOf/1"
+      "@id": "urn:bookstore:EBook"
     },
     "http://www.w3.org/2000/01/rdf-schema#range": {
       "@id": "urn:bookstore:FileSizeBytes"
@@ -1360,7 +1365,7 @@
     "@id": "https://bookstore.example/binding",
     "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
     "http://www.w3.org/2000/01/rdf-schema#domain": {
-      "@id": "urn:bookstore:PrintBook#/allOf/1"
+      "@id": "urn:bookstore:PrintBook"
     },
     "http://www.w3.org/2000/01/rdf-schema#range": {
       "@id": "urn:bookstore:BindingType"
@@ -1370,7 +1375,7 @@
     "@id": "https://bookstore.example/pageCount",
     "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
     "http://www.w3.org/2000/01/rdf-schema#domain": {
-      "@id": "urn:bookstore:PrintBook#/allOf/1"
+      "@id": "urn:bookstore:PrintBook"
     },
     "http://www.w3.org/2000/01/rdf-schema#range": {
       "@id": "urn:bookstore:PrintPageCount"
@@ -1380,7 +1385,7 @@
     "@id": "https://bookstore.example/weightGrams",
     "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
     "http://www.w3.org/2000/01/rdf-schema#domain": {
-      "@id": "urn:bookstore:PrintBook#/allOf/1"
+      "@id": "urn:bookstore:PrintBook"
     },
     "http://www.w3.org/2000/01/rdf-schema#range": {
       "@id": "urn:bookstore:WeightGrams"
@@ -1402,7 +1407,7 @@
     "@id": "https://bookstore.example/provenance",
     "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
     "http://www.w3.org/2000/01/rdf-schema#domain": {
-      "@id": "urn:bookstore:SignedFirstEdition#/allOf/1"
+      "@id": "urn:bookstore:SignedFirstEdition"
     },
     "http://www.w3.org/2000/01/rdf-schema#range": {
       "@id": "urn:bookstore:Provenance"
@@ -1412,7 +1417,7 @@
     "@id": "https://bookstore.example/signedBy",
     "@type": "http://www.w3.org/2002/07/owl#ObjectProperty",
     "http://www.w3.org/2000/01/rdf-schema#domain": {
-      "@id": "urn:bookstore:SignedFirstEdition#/allOf/1"
+      "@id": "urn:bookstore:SignedFirstEdition"
     },
     "http://www.w3.org/2000/01/rdf-schema#range": {
       "@id": "urn:bookstore:AuthorName"
@@ -1969,15 +1974,15 @@
     "@id": "https://bookstore.example/id/die-unendliche-geschichte__qcyop8",
     "@type": "urn:bookstore:RareBook",
     "https://bookstore.example/authors": "Michael Ende",
-    "https://bookstore.example/inStock": true,
     "https://bookstore.example/isbn": "9783522128001",
+    "https://bookstore.example/publishedOn": "1979-09-01",
+    "https://bookstore.example/title": "Die unendliche Geschichte",
+    "https://bookstore.example/inStock": true,
     "https://bookstore.example/price": {
       "@id": "https://bookstore.example/id/850-eur__ero9c3"
     },
     "https://bookstore.example/printStatus": "outOfPrint",
-    "https://bookstore.example/publishedOn": "1979-09-01",
     "https://bookstore.example/stockLevel": 5,
-    "https://bookstore.example/title": "Die unendliche Geschichte",
     "https://bookstore.example/binding": "hardcover",
     "https://bookstore.example/pageCount": 428,
     "https://bookstore.example/weightGrams": 980,
@@ -1988,13 +1993,13 @@
     "@id": "https://bookstore.example/id/die-unendliche-geschichte-ebook__8svgj4",
     "@type": "urn:bookstore:EBook",
     "https://bookstore.example/authors": "Michael Ende",
-    "https://bookstore.example/inStock": true,
     "https://bookstore.example/isbn": "9783522128001",
+    "https://bookstore.example/title": "Die unendliche Geschichte (eBook)",
+    "https://bookstore.example/inStock": true,
     "https://bookstore.example/price": {
       "@id": "https://bookstore.example/id/699-eur__19793r"
     },
     "https://bookstore.example/printStatus": "outOfPrint",
-    "https://bookstore.example/title": "Die unendliche Geschichte (eBook)",
     "https://bookstore.example/downloadUrl": {
       "@id": "https://bookstore.example/downloads/9783522128001.epub"
     },
@@ -2012,13 +2017,13 @@
     "@id": "https://bookstore.example/id/die-unendliche-geschichte__hxov0h",
     "@type": "urn:bookstore:PrintBook",
     "https://bookstore.example/authors": "Michael Ende",
-    "https://bookstore.example/inStock": true,
     "https://bookstore.example/isbn": "9783522128001",
+    "https://bookstore.example/title": "Die unendliche Geschichte",
+    "https://bookstore.example/inStock": true,
     "https://bookstore.example/price": {
       "@id": "https://bookstore.example/id/850-eur__ero9c3"
     },
     "https://bookstore.example/printStatus": "outOfPrint",
-    "https://bookstore.example/title": "Die unendliche Geschichte",
     "https://bookstore.example/binding": "hardcover",
     "https://bookstore.example/pageCount": 428,
     "https://bookstore.example/weightGrams": 980
@@ -2027,13 +2032,13 @@
     "@id": "https://bookstore.example/id/die-unendliche-geschichte__1dmq3g",
     "@type": "urn:bookstore:SignedFirstEdition",
     "https://bookstore.example/authors": "Michael Ende",
-    "https://bookstore.example/inStock": true,
     "https://bookstore.example/isbn": "9783522128001",
+    "https://bookstore.example/title": "Die unendliche Geschichte",
+    "https://bookstore.example/inStock": true,
     "https://bookstore.example/price": {
       "@id": "https://bookstore.example/id/850-eur__ero9c3"
     },
     "https://bookstore.example/printStatus": "outOfPrint",
-    "https://bookstore.example/title": "Die unendliche Geschichte",
     "https://bookstore.example/binding": "hardcover",
     "https://bookstore.example/pageCount": 428,
     "https://bookstore.example/weightGrams": 980,
@@ -2064,15 +2069,20 @@
       "Michael Ende",
       "Michael Ende"
     ],
-    "https://bookstore.example/inStock": [
-      true,
-      true,
-      true
-    ],
     "https://bookstore.example/isbn": [
       "9783522128001",
       "9783522128001",
       "9783522128001"
+    ],
+    "https://bookstore.example/title": [
+      "Die unendliche Geschichte",
+      "Die unendliche Geschichte",
+      "Die unendliche Geschichte"
+    ],
+    "https://bookstore.example/inStock": [
+      true,
+      true,
+      true
     ],
     "https://bookstore.example/price": [
       {
@@ -2089,11 +2099,6 @@
       "outOfPrint",
       "outOfPrint",
       "outOfPrint"
-    ],
-    "https://bookstore.example/title": [
-      "Die unendliche Geschichte",
-      "Die unendliche Geschichte",
-      "Die unendliche Geschichte"
     ]
   },
   "https://bookstore.example/id/momo__1hjwff": {
@@ -2106,13 +2111,17 @@
       "Michael Ende",
       "Michael Ende"
     ],
-    "https://bookstore.example/inStock": [
-      true,
-      true
-    ],
     "https://bookstore.example/isbn": [
       "9783522129503",
       "9783522129503"
+    ],
+    "https://bookstore.example/title": [
+      "Momo",
+      "Momo"
+    ],
+    "https://bookstore.example/inStock": [
+      true,
+      true
     ],
     "https://bookstore.example/price": [
       {
@@ -2125,10 +2134,6 @@
     "https://bookstore.example/printStatus": [
       "inPrint",
       "inPrint"
-    ],
-    "https://bookstore.example/title": [
-      "Momo",
-      "Momo"
     ]
   },
   "https://bookstore.example/id/380-eur__mgbvsv": {
@@ -2169,8 +2174,8 @@
     "https://bookstore.example/resultCount": 1,
     "https://bookstore.example/totalPages": 1
   },
-  "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc": {
-    "@id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__pv9gyc",
+  "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr": {
+    "@id": "https://bookstore.example/id/a4d3c2b1-a098-7654-a210-fedcba987654__1dmkkr",
     "@type": "urn:bookstore:Review",
     "https://bookstore.example/body": "Ende's framing of a reader who reads themself into a story is craftsmanship of the highest order; this Thienemann first edition with the red and green ink intact is the only way to read it.",
     "https://bookstore.example/bookIsbn": "9783522128001",
@@ -2184,6 +2189,7 @@
   },
   "": {
     "@id": "",
-    "urn:bookstore:Review#/properties/reviewsBook#ratingGiven": 5
+    "https://schema.org/ratingValue": 5,
+    "https://schema.org/verified": true
   }
 }

@@ -131,3 +131,29 @@ assert<AssertEqual<RatingRange, number>>();
 // A bare `unknown` value must NOT be assignable to a branded range.
 // @ts-expect-error — unknown is not a branded ReviewId range
 assert<AssertAssignable<unknown, ReviewIdRange>>();
+
+// ---------------------------------------------------------------------------
+// Predicate-binding keys (x-jt-predicate / $id) are accepted on an annotation
+// alongside the required range `$ref`, and do not disturb range inference. The
+// annotation predicate IRI is grounded from these keys at projection/lift time
+// via PredicateResolver; authoring them must type-check.
+// ---------------------------------------------------------------------------
+
+const GroundedEdgeSchema = Compose.annotatedEdge({
+  'annotations': {
+    'ratingGiven': {
+      '$ref': 'urn:bookstore:RatingScore',
+      'x-jt-predicate': 'https://schema.org/ratingValue'
+    }
+  },
+  'predicate': 'https://bookstore.example/reviews',
+  'targetRef': 'urn:bookstore:Book'
+});
+
+void GroundedEdgeSchema;
+
+type GroundedEdge = InferType<typeof GroundedEdgeSchema, RefsMap>;
+
+// The binding key does not leak into the inferred annotation range: ratingGiven
+// still resolves to the branded numeric datatype, not `unknown`.
+assert<AssertEqual<GroundedEdge['annotations']['ratingGiven'], number>>();

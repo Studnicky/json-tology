@@ -110,28 +110,32 @@ function sortedEnum(enumVal: unknown): unknown[] {
 // ---------------------------------------------------------------------------
 
 /**
- * ABox-projection hint keywords that have no OWL datatype representation.
- * `x-jt-iriRef` (emit value as a NamedNode) and `x-jt-language` (emit value as
- * an `rdf:langString` with a language tag) steer `toQuads` ABox emission; they
- * are not XSD datatype facets, so the OWL TBox export of a scalar primitive
- * does not carry them and `fromTbox` cannot reconstruct them. They are stripped
- * before the primitive structural comparison, consistent with the other
- * non-OWL-preservable filler keys documented in the file header.
+ * Authoring keywords that have no OWL datatype representation, so a scalar
+ * primitive's OWL TBox export does not carry them and `fromTbox` cannot
+ * reconstruct them. They are stripped before the primitive structural
+ * comparison.
+ *
+ * - `x-jt-iriRef` (emit value as a NamedNode) and `x-jt-language` (emit value as
+ *   an `rdf:langString` with a language tag) steer `toQuads` ABox emission and
+ *   are not XSD datatype facets.
+ * - `default` is a JSON Schema authoring value with no OWL/RDFS predicate; no
+ *   `jt:default` annotation is emitted, so it does not survive the TBox round-trip.
  */
-const ABOX_HINT_KEYS = new Set([
+const NON_OWL_PRESERVABLE_KEYS = new Set([
+  'default',
   'x-jt-iriRef',
   'x-jt-language'
 ]);
 
 /**
- * Return a copy of `obj` with keys sorted alphabetically and ABox-projection
- * hint keywords removed (they have no OWL datatype round-trip).
+ * Return a copy of `obj` with keys sorted alphabetically and non-OWL-preservable
+ * keywords removed (they have no OWL datatype round-trip).
  */
 function sortedKeys(obj: Record<string, unknown>): Record<string, unknown> {
   const sorted: Record<string, unknown> = {};
 
   for (const key of Object.keys(obj).sort()) {
-    if (ABOX_HINT_KEYS.has(key)) {
+    if (NON_OWL_PRESERVABLE_KEYS.has(key)) {
       continue;
     }
     sorted[key] = obj[key];

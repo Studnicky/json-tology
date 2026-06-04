@@ -7,25 +7,42 @@ import { Iso8601Schema } from './Iso8601.js';
 import { RatingScoreSchema } from './RatingScore.js';
 import { ReviewBodySchema } from './ReviewBody.js';
 import { ReviewIdSchema } from './ReviewId.js';
+import { VerifiedPurchaseSchema } from './VerifiedPurchase.js';
 
 /**
  * ReviewsBook — RDF-star annotated edge from a Review individual to a Book
- * individual, with a `ratingGiven` annotation that captures the numeric
- * rating AT THE EDGE LEVEL (not just as a scalar property of the Review).
+ * individual. Carries two annotations at the edge level:
+ *
+ *   - `ratingGiven` — the numeric rating score, predicate grounded to
+ *     `https://schema.org/ratingValue` via `x-jt-predicate`.
+ *   - `verifiedPurchase` — boolean flag indicating the reviewer purchased
+ *     the item, predicate grounded to `https://schema.org/verified` via
+ *     `x-jt-predicate`.
  *
  * This is the bookstore demonstration of `Compose.annotatedEdge` /
- * `jt:annotatedEdge`. The base triple is:
+ * `jt:annotatedEdge` with explicit predicate grounding. The base triple is:
  *   <review-iri> <https://bookstore.example/reviews> <book-iri>
  *
- * The annotation quad (triple-term form) is:
+ * The annotation quads (triple-term form) are:
  *   << <review-iri> <https://bookstore.example/reviews> <book-iri> >>
- *     <urn:bookstore:Review#/properties/reviewsBook#ratingGiven>  "5"^^xsd:integer .
+ *     <https://schema.org/ratingValue>  "5"^^xsd:integer .
+ *   << <review-iri> <https://bookstore.example/reviews> <book-iri> >>
+ *     <https://schema.org/verified>  "true"^^xsd:boolean .
  *
  * The property is OPTIONAL so existing Review fixtures (which supply
  * `bookIsbn` for the ISBN) continue to validate unchanged.
  */
 export const ReviewsBookEdge = Compose.annotatedEdge({
-  'annotations': { 'ratingGiven': { '$ref': RatingScoreSchema.$id } },
+  'annotations': {
+    'ratingGiven': {
+      '$ref': RatingScoreSchema.$id,
+      'x-jt-predicate': 'https://schema.org/ratingValue'
+    },
+    'verifiedPurchase': {
+      '$ref': VerifiedPurchaseSchema.$id,
+      'x-jt-predicate': 'https://schema.org/verified'
+    }
+  },
   'predicate': 'https://bookstore.example/reviews',
   'targetRef': BookSchema.$id
 });

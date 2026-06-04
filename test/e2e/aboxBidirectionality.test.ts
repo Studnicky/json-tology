@@ -588,7 +588,7 @@ void describe('B-11: reviewWithAnnotatedEdge — RDF-star annotated edge', () =>
     assert.equal(baseTriples[0].object.termType, 'NamedNode', 'reviews object is a NamedNode');
   });
 
-  void it('emits one triple-term annotation quad for ratingGiven', () => {
+  void it('emits triple-term annotation quads for ratingGiven and verifiedPurchase with grounded predicates', () => {
     const validated = bookstoreEntities.instantiate(ReviewSchema, aboxFixtures.reviewWithAnnotatedEdge);
     const quads = bookstoreEntities.toQuads(ReviewSchema, validated, { 'graphIRI': REVIEWS_GRAPH });
 
@@ -596,8 +596,19 @@ void describe('B-11: reviewWithAnnotatedEdge — RDF-star annotated edge', () =>
       return quad.subject.termType === 'Quad';
     });
 
-    assert.equal(annotationQuads.length, 1, 'one annotation (triple-term) quad for ratingGiven');
-    assert.equal(annotationQuads[0].object.value, '5', 'ratingGiven annotation value is 5');
+    assert.equal(annotationQuads.length, 2, 'two annotation (triple-term) quads: ratingGiven + verifiedPurchase');
+
+    const ratingAnnotation = annotationQuads.find((quad) => {
+      return quad.predicate.value === 'https://schema.org/ratingValue';
+    });
+    const verifiedAnnotation = annotationQuads.find((quad) => {
+      return quad.predicate.value === 'https://schema.org/verified';
+    });
+
+    assert.ok(ratingAnnotation, 'ratingGiven annotation grounded to schema.org/ratingValue');
+    assert.equal(ratingAnnotation.object.value, '5', 'ratingGiven annotation value is 5');
+    assert.ok(verifiedAnnotation, 'verifiedPurchase annotation grounded to schema.org/verified');
+    assert.equal(verifiedAnnotation.object.value, 'true', 'verifiedPurchase annotation value is true');
   });
 
   void it('base Review scalars are still present alongside the annotated edge', () => {

@@ -15,6 +15,23 @@ const C1_CONTROL_MAX = 0x9F;
 const HEX_RADIX = 16;
 
 /**
+ * Validate that a predicate IRI contains at most one '#' fragment delimiter.
+ * Per RFC 3987, a URI may carry at most one fragment component; a second '#'
+ * produces an invalid IRI that strict triplestores reject.
+ */
+function assertSingleFragment(iri: string): void {
+  // A second '#' exists iff the first and last '#' differ in position. This
+  // holds for 0 or 1 '#' (positions equal, including both -1) and fails only
+  // when two or more are present.
+  if (iri.indexOf('#') !== iri.lastIndexOf('#')) {
+    throw new GraphError(
+      'INVALID_PREDICATE_IRI',
+      `Predicate IRI has more than one '#' fragment (invalid per RFC 3987): ${JSON.stringify(iri)}`
+    );
+  }
+}
+
+/**
  * Validate a predicate IRI for control characters or spaces.
  * Uses a codepoint scan instead of a regex to avoid RegExp injection risks.
  */
@@ -183,6 +200,8 @@ export const PredicateResolver = {
     const schemaIri = resolveSchemaAnnotation(propertySchema);
 
     if (schemaIri !== undefined) {
+      assertSingleFragment(schemaIri);
+
       return schemaIri;
     }
 
@@ -190,15 +209,25 @@ export const PredicateResolver = {
     const callbackIri = resolveViaCallback(predicateFor, classId, propertyName);
 
     if (callbackIri !== undefined) {
+      assertSingleFragment(callbackIri);
+
       return callbackIri;
     }
 
     // 4. Default — canonical flat.
     if (enableCanonicalPredicates !== false) {
-      return resolveCanonicalFlat(baseIRI, propertyName);
+      const canonicalIri = resolveCanonicalFlat(baseIRI, propertyName);
+
+      assertSingleFragment(canonicalIri);
+
+      return canonicalIri;
     }
 
     // 5. Class-scoped (DTO opt-out, enableCanonicalPredicates: false)
-    return SchemaIri.propertyIri(classId, propertyName);
+    const classScoped = SchemaIri.propertyIri(classId, propertyName);
+
+    assertSingleFragment(classScoped);
+
+    return classScoped;
   }
 } as const;

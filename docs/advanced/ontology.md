@@ -90,7 +90,7 @@ The bookstore schemas defined in the [Bookstore Domain](/bookstore-domain) are u
 
 - [`toTbox()`](#jt-totbox) - OWL TBox only
 - [`ontology()`](#jt-ontology) - combined TBox + SHACL (cached)
-- [`validateWithShacl()`](#jt-validatewithshacl) - planned SHACL validation inverse
+- [`validateWithShacl()`](#jt-validatewithshacl) - SHACL validation inverse
 
 ### See also
 
@@ -98,20 +98,11 @@ The bookstore schemas defined in the [Bookstore Domain](/bookstore-domain) are u
 
 ---
 
-## `jt.validateWithShacl` {#jt-validatewithshacl} <Badge type="warning" text="Experimental" />
+## `jt.validateWithShacl` {#jt-validatewithshacl}
 
-**Declaration.** Intended inverse of [`toShacl()`](#jt-toshacl): validate instance quads against SHACL shape quads. **Not yet implemented.** Always throws `GraphError` with code `NOT_IMPLEMENTED`. The signature is published so that future implementations remain source-compatible.
+**Declaration.** Inverse of [`toShacl()`](#jt-toshacl): validate ABox data quads against SHACL shape quads. Accepts the `OntologyBuilder` returned by `toShacl()` directly, or a raw `QuadInterface[]` shape array. Returns a `ShaclValidationReportInterface` with `conforms` and `results`.
 
-<!-- inline-ts-ok: signature illustration of a not-yet-implemented method (always throws NOT_IMPLEMENTED); cannot be a runnable example -->
-```ts
-jt.validateWithShacl(shapes, data);
-// shapes: OntologyBuilder | readonly QuadInterface[]
-// data:   readonly QuadInterface[]
-```
-
-**Workaround.** Retrieve shapes via `toShacl().shaclQuads()` and pass them to an external SHACL processor such as [`rdf-validate-shacl`](https://www.npmjs.com/package/rdf-validate-shacl). The shapes produced by `toShacl()` are standard SHACL and load into any compliant validator.
-
-The method exists today for API symmetry with `toShacl()` and to give consumers a stable name to depend on once the in-process validator lands.
+See [SHACL validation](/advanced/shacl-validation) for the full reference: result shape, constraint components covered, and runnable examples.
 
 ---
 
@@ -172,6 +163,14 @@ The method exists today for API symmetry with `toShacl()` and to give consumers 
 ## `jt.toSchema`
 
 See [`jt.toSchema`](/serialization/toSchema) in the Serialization guide - it reconstructs a JSON Schema from the canonical graph and is useful for verifying round-trip fidelity, but is not specific to the RDF/ontology use case.
+
+---
+
+## `OntologyBuilder.addFromJsonLd` / `addShaclFromJsonLd`
+
+Re-ingest a JSON-LD object into a fresh `OntologyBuilder` via `addFromJsonLd` (for TBox quads) or `addShaclFromJsonLd` (for SHACL quads). Both are async — they call `jsonld.toRDF` internally and append the resulting quads to the canonical store.
+
+<RunnableExample src="examples/docs/advanced/122-ontology-from-jsonld" />
 
 ---
 
