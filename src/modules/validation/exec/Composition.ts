@@ -162,6 +162,18 @@ export class Composition {
     let valid = true;
     let current = workingValue;
 
+    // Pre-pass: collect explicit property defaults from all branches before any
+    // branch's required check runs. Mirrors the VisitComposition.allOf fix for
+    // the graph engine path: a required field in branch N whose default lives in
+    // branch N+1 would otherwise fail the required check in the compiled path.
+    if (applyDefaults) {
+      const preErrors: ValidationErrorType[] = [];
+
+      for (const allOfValidator of allOfValidators) {
+        current = allOfValidator(current, path, preErrors, true, true, doCoerce, false).value;
+      }
+    }
+
     // allOf members run with stripUnknown forced false: each member
     // sees only its own properties as "known" but the value carries
     // fields from all members, so per-member stripping would erase
