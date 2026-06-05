@@ -72,6 +72,7 @@ export const GraphEngineVisit = {
       hasDefault,
       ifNode,
       oneOf,
+      properties,
       rdfsRange,
       ref,
       schemaTypes,
@@ -104,6 +105,26 @@ export const GraphEngineVisit = {
       : dynamicScope;
 
     // --- $ref resolution ---
+    // Pre-apply sibling property defaults before $ref validation so a $ref
+    // schema's required check can see defaults supplied by inline sibling
+    // properties on the same schema node.
+    if (options.applyDefaults && typeof ref === 'string' && properties.size > 0 && isRecord(workingValue)) {
+      const rec = workingValue;
+
+      for (const [
+        key,
+        propNode
+      ] of properties) {
+        if (!(key in rec)) {
+          const propSem = graph.semantics(propNode);
+
+          if (propSem.hasDefault) {
+            rec[key] = GraphEngineSupport.cloneDefault(propSem.defaultValue);
+          }
+        }
+      }
+    }
+
     if (typeof ref === 'string') {
       const refResult = Refs.resolveRef(
         context,

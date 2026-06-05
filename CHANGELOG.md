@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.1] - 2026-06-05
+
+`allOf` cross-branch default pre-pass: a required field declared in one branch whose
+default lives in a sibling branch no longer fails validation when `applyDefaults` is
+active. The fix covers both the graph-engine path (`VisitComposition.allOf`) and the
+compiled-validator path (`Composition.validateAllOf`), plus the `$ref` + sibling-property
+variant in `GraphEngineVisit`.
+
+### Fixed
+
+- **`allOf` cross-branch defaults — graph engine path.** `VisitComposition.allOf` now
+  runs a pre-pass that collects explicit property defaults from every branch before
+  any branch's `required` check executes. A required field in branch N whose default
+  lives in branch N+1 is pre-populated so the main-pass required check finds it already
+  set. `synthesizeDefaults` is suppressed in the pre-pass so zero-values from earlier
+  branches cannot shadow real defaults from later ones.
+- **`allOf` cross-branch defaults — compiled validator path.** `Composition.validateAllOf`
+  receives the same pre-pass: all `allOfValidators` run once with `applyDefaults: true`
+  before the main loop, accumulating defaults into the working value without collecting
+  errors into the final result set.
+- **`$ref` + sibling property defaults.** `GraphEngineVisit` now pre-applies defaults
+  from inline sibling properties on a schema node before `$ref` resolution, so a
+  `$ref` schema's required check can see defaults supplied by co-located property definitions.
+
 ## [0.20.0] - 2026-06-04
 
 A SHACL-native validation release: `JsonTology.validateWithShacl` closes the

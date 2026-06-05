@@ -10,7 +10,7 @@ import {
   describe, it
 } from 'node:test';
 import {
-  Compose, JsonTology
+  Compose, GraphEngine, JsonTology
 } from '../../src/index.js';
 
 // ===========================================================================
@@ -49,6 +49,52 @@ void describe('value.create — allOf-composed schemas', { 'concurrency': false 
     assert.equal(result.kind, 'base');
     // Optional with no default → absent
     assert.equal('score' in result, false);
+  });
+
+  void it('cross-branch default: parent declares required with no default, subclass provides the default', () => {
+    // Regression for the library defect: applyRequiredDefaults only saw a single
+    // branch's propertyNodeMap and would fail if the default lived in a sibling branch.
+    const MessageBase = {
+      '$id': 'urn:test:allof:create:MessageBase',
+      'properties': {
+        'class': { 'type': 'string' },
+        'id': { 'type': 'string' }
+      },
+      'required': [
+        'class',
+        'id'
+      ],
+      'type': 'object'
+    } as const;
+    // Subclass provides the default for `class` — the parent branch has no default.
+    const ChatMessage = Compose.subClassOf(MessageBase, {
+      '$id': 'urn:test:allof:create:ChatMessage',
+      'properties': {
+        'class': {
+          'const': 'discord#ChatMessage',
+          'default': 'discord#ChatMessage',
+          'type': 'string'
+        },
+        'content': { 'type': 'string' }
+      },
+      'required': ['content'],
+      'type': 'object'
+    } as const);
+    const jt = JsonTology.create({
+      'baseIRI': 'urn:test:allof:create:',
+      'schemas': [
+        MessageBase,
+        ChatMessage as unknown as Record<string, unknown> & { '$id': string }
+      ]
+    });
+    const result = jt.value.create(ChatMessage.$id) as Record<string, unknown>;
+
+    // Default from subclass branch satisfies parent's required: ['class']
+    assert.equal(result.class, 'discord#ChatMessage');
+    // Inherited required, no default → zero-value
+    assert.equal(result.id, '');
+    // Own required, no default → zero-value
+    assert.equal(result.content, '');
   });
 
   void it('2-level composition: inherits required + own required fields', () => {
@@ -451,5 +497,160 @@ void describe('Compose.getDefaults — allOf-composed schemas', { 'concurrency':
     const defaults = Compose.getDefaults(schema);
 
     assert.equal(defaults.x, 'second');
+  });
+});
+
+// ===========================================================================
+// Compiled validator path — value.cast (Composition.validateAllOf pre-pass)
+// ===========================================================================
+
+void describe('value.cast — allOf cross-branch defaults (compiled validator)', { 'concurrency': false }, () => {
+  // value.cast uses the SchemaCompiler path (CAST_OPTIONS: applyDefaults:true).
+  // Same cross-branch ordering bug existed there independently.
+
+  void it('sibling branch default satisfies parent required field on cast', () => {
+    const CastParent = {
+      '$id': 'urn:test:allof:cast:CastParent',
+      'properties': { 'kind': { 'type': 'string' } },
+      'required': ['kind'],
+      'type': 'object'
+    } as const;
+    const CastChild = Compose.subClassOf(CastParent, {
+      '$id': 'urn:test:allof:cast:CastChild',
+      'properties': {
+        'extra': { 'type': 'string' },
+        'kind': {
+          'const': 'child',
+          'default': 'child',
+          'type': 'string'
+        }
+      },
+      'type': 'object'
+    } as const);
+    const jt = JsonTology.create({
+      'baseIRI': 'urn:test:allof:cast:',
+      'schemas': [
+        CastParent,
+        CastChild as unknown as Record<string, unknown> & { '$id': string }
+      ]
+    });
+
+    // Empty input: cast must fill `kind` from the subclass branch default
+    const result = jt.value.cast(CastChild.$id, {}) as Record<string, unknown>;
+
+    assert.equal(result.kind, 'child');
+  });
+
+  void it('3-level chain: cast fills defaults across all allOf branches', () => {
+    const CastBase3 = {
+      '$id': 'urn:test:allof:cast:Base3',
+      'properties': {
+        'kind': { 'type': 'string' },
+        'score': {
+          'default': 99,
+          'type': 'number'
+        }
+      },
+      'required': [
+        'kind',
+        'score'
+      ],
+      'type': 'object'
+    } as const;
+    const CastMid3 = Compose.subClassOf(CastBase3, {
+      '$id': 'urn:test:allof:cast:Mid3',
+      'properties': {
+        'kind': {
+          'const': 'mid',
+          'default': 'mid',
+          'type': 'string'
+        }
+      },
+      'type': 'object'
+    } as const);
+    const jt = JsonTology.create({
+      'baseIRI': 'urn:test:allof:cast:',
+      'schemas': [
+        CastBase3,
+        CastMid3 as unknown as Record<string, unknown> & { '$id': string }
+      ]
+    });
+
+    const result = jt.value.cast(CastMid3.$id, {}) as Record<string, unknown>;
+
+    assert.equal(result.kind, 'mid');
+    assert.equal(result.score, 99);
+  });
+});
+
+// ===========================================================================
+// $ref + sibling properties — cross-default (GraphEngineVisit pre-apply)
+// ===========================================================================
+
+void describe('$ref + sibling properties — default pre-apply', { 'concurrency': false }, () => {
+  // When a schema has both $ref and inline properties, the $ref schema's
+  // required check must see defaults supplied by the sibling properties.
+  // Uses GraphEngine directly with applyDefaults:true, synthesizeDefaults:false.
+
+  void it('sibling property default satisfies $ref required field', () => {
+    const RefBase = {
+      '$id': 'urn:test:ref-sibling:RefBase',
+      'properties': { 'kind': { 'type': 'string' } },
+      'required': ['kind'],
+      'type': 'object'
+    } as const;
+    // Schema with $ref to RefBase and sibling properties providing the default
+    const refChildSchema = {
+      '$id': 'urn:test:ref-sibling:RefChild',
+      '$ref': 'urn:test:ref-sibling:RefBase',
+      'properties': {
+        'kind': {
+          'default': 'child-kind',
+          'type': 'string'
+        }
+      },
+      'type': 'object'
+    };
+    const engine = new GraphEngine(refChildSchema, {
+      'applyDefaults': true,
+      'lookupSchema': (id: string) => {
+        return id === RefBase.$id ? RefBase : undefined;
+      },
+      'synthesizeDefaults': false
+    });
+
+    // Empty input: sibling default for `kind` must satisfy the $ref required check
+    const result = engine.execute({});
+
+    assert.ok(result.valid, `expected valid, got errors: ${JSON.stringify(result.errors)}`);
+    assert.equal((result.value as Record<string, unknown>).kind, 'child-kind');
+  });
+
+  void it('no regression: non-sibling $ref required error still reported when no default available', () => {
+    const StrictBase = {
+      '$id': 'urn:test:ref-sibling:StrictBase',
+      'properties': { 'id': { 'type': 'string' } },
+      'required': ['id'],
+      'type': 'object'
+    } as const;
+    const strictRefSchema = {
+      '$id': 'urn:test:ref-sibling:StrictRef',
+      '$ref': 'urn:test:ref-sibling:StrictBase'
+    };
+    const engine = new GraphEngine(strictRefSchema, {
+      'applyDefaults': true,
+      'lookupSchema': (id: string) => {
+        return id === StrictBase.$id ? StrictBase : undefined;
+      },
+      'synthesizeDefaults': false
+    });
+
+    // No default anywhere for `id` — required error must still surface
+    const result = engine.execute({});
+
+    assert.ok(!result.valid);
+    assert.ok(result.errors.some((err) => {
+      return err.params.missingProperty === 'id';
+    }));
   });
 });

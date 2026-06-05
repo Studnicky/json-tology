@@ -27,6 +27,28 @@ export class VisitComposition {
     visitNode: VisitFnType,
     pushErrors: (errors: ValidationErrorType[]) => void
   ): InternalExecutionResultInterface | undefined {
+    // Pre-pass: collect explicit property defaults from all branches before any
+    // branch's required check runs. A required field in branch N whose default
+    // lives in branch N+1 would otherwise fail — the pre-pass pre-populates the
+    // working value so the main-pass required check finds the field already set.
+    // synthesizeDefaults is suppressed so zero-values from earlier branches
+    // don't shadow real defaults from later ones.
+    if (options.applyDefaults) {
+      const prePassOptions: EffectiveOptionsType = options.collectErrors && !options.synthesizeDefaults
+        ? options
+        : {
+          ...options,
+          'collectErrors': true,
+          'synthesizeDefaults': false
+        };
+
+      for (const childNode of allOf) {
+        const branch = visitNode(context, childNode, graph, acc.value, path, prePassOptions, refStack, dynScope, depth + 1);
+
+        acc.value = branch.value;
+      }
+    }
+
     for (const childNode of allOf) {
       const branch = visitNode(context, childNode, graph, acc.value, path, options, refStack, dynScope, depth + 1);
 
