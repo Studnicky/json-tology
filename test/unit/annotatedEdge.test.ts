@@ -683,7 +683,14 @@ void describe('annotated edge (RDF 1.2 triple-term) emission', () => {
       });
 
       assert.ok(baseTriple, 'base triple emitted');
-      assert.ok(baseTriple.object.value.startsWith(BASE), 'target IRI uses baseIRI');
+      const targetIRI = baseTriple.object.value;
+
+      // Verify the target IRI is scoped to BASE with a path separator, preventing
+      // bare prefix matches like https://bookstore.example.other.com.
+      assert.ok(
+        targetIRI === BASE || targetIRI.startsWith(`${BASE}/`),
+        `target IRI must be equal to or a path under baseIRI — got: ${targetIRI}`
+      );
       assert.notEqual(baseTriple.subject.value, baseTriple.object.value, 'root and target IRIs are distinct');
     });
 
